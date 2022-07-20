@@ -437,6 +437,7 @@ void ProjectEditor::InitializeDefaultProject()
 
     const ea::string defaultSceneName = "Scenes/DefaultScene.xml";
     DefaultSceneParameters params;
+    params.highQuality_ = true;
     params.createObjects_ = true;
     CreateDefaultScene(context_, dataPath_ + defaultSceneName, params);
 
@@ -651,6 +652,12 @@ void ProjectEditor::RenderMainMenu()
 {
     if (focusedRootTab_)
         focusedRootTab_->RenderMenu();
+
+    if (focusedRootTab_ && ui::BeginMenu("Tab"))
+    {
+        focusedRootTab_->RenderContextMenuItems();
+        ui::EndMenu();
+    }
 
     if (ui::BeginMenu("Window"))
     {

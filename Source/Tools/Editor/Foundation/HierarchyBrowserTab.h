@@ -46,15 +46,11 @@ public:
     /// Implement EditorTab
     /// @{
     void RenderMenu() override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-    EditorTab* GetOwnerTab() override { return source_ ? sourceInterface_->GetOwnerTab() : nullptr; }
-    /// @}
-
-protected:
-    /// Implement EditorTab
-    /// @{
     void RenderContent() override;
     void RenderContextMenuItems() override;
+
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+    EditorTab* GetOwnerTab() override { return source_ ? sourceInterface_->GetOwnerTab() : nullptr; }
     /// @}
 
 private:

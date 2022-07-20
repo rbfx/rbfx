@@ -48,7 +48,8 @@ void SceneSelectionRenderer::Settings::SerializeInBlock(Archive& archive)
 
 void SceneSelectionRenderer::Settings::RenderSettings()
 {
-    ui::Text("TODO(editor): Implement SceneView.Selection settings page");
+    ui::ColorEdit3("Direct Selection", &directSelectionColor_.r_);
+    ui::ColorEdit3("Indirect Selection", &indirectSelectionColor_.r_);
 }
 
 SceneSelectionRenderer::SceneSelectionRenderer(SceneViewTab* owner, SettingsPage* settings)

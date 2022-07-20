@@ -106,16 +106,14 @@ public:
 
     /// Implement EditorTab
     /// @{
+    void RenderContent() override;
+    void RenderContextMenuItems() override;
+
     bool IsUndoSupported() override { return true; }
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;
     /// @}
 
-protected:
-    /// Implement EditorTab
-    /// @{
-    void RenderContent() override;
-    /// @}
 
 private:
     /// Root index and resource name used to safely reference an entry.
@@ -164,6 +162,7 @@ private:
     void RenderDialogs();
 
     void RenderEntryContextMenu(const FileSystemEntry& entry);
+    void RenderEntryContextMenuItems(const FileSystemEntry& entry);
     ea::optional<unsigned> RenderEntryCreateContextMenu(const FileSystemEntry& entry);
 
     void RenderRenameDialog();
@@ -226,6 +225,7 @@ private:
     /// @}
 
     ea::vector<ResourceRoot> roots_;
+    unsigned defaultRoot_{};
     bool waitingForUpdate_{};
 
     ea::vector<SharedPtr<ResourceBrowserFactory>> factories_;

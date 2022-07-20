@@ -39,7 +39,6 @@ class ConsoleTab_ : public EditorTab
 public:
     explicit ConsoleTab_(Context* context);
 
-protected:
     /// Implement EditorTab
     /// @{
     void RenderContent() override;

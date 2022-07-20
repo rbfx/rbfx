@@ -56,7 +56,6 @@ public:
     void ReleaseInput();
     /// @}
 
-protected:
     /// Implement EditorTab
     /// @{
     void RenderContent() override;

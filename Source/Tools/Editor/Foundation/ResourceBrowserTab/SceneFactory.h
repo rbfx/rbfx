@@ -44,6 +44,7 @@ public:
     /// @}
 
 private:
+    bool highQuality_{true};
     bool defaultObjects_{true};
 };
 

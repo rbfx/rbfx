@@ -46,7 +46,7 @@ void SceneSelector::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
 
     if (!mouseConsumed)
     {
-        if (ui::IsItemClicked(MOUSEB_LEFT))
+        if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
         {
             mouseConsumed = true;
             Node* selectedNode = QuerySelectedNode(scene, camera);

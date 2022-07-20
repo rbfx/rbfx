@@ -43,12 +43,13 @@ public:
     /// Implement EditorTab
     /// @{
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+
+    void RenderContent() override;
     /// @}
 
 protected:
     /// Implement EditorTab
     /// @{
-    void RenderContent() override;
     bool IsMarkedUnsaved() override;
     /// @}
 

@@ -123,6 +123,10 @@ public:
 
     /// Render main menu of the tab.
     virtual void RenderMenu() {}
+    /// Render contents of the tab.
+    virtual void RenderContent() {}
+    /// Render context menu of the tab.
+    virtual void RenderContextMenuItems() {}
     /// Render toolbar of the tab.
     virtual void RenderToolbar() {}
     /// Called when all tabs are created and multi-tab plugins can be safely applied.
@@ -166,11 +170,6 @@ public:
     /// @}
 
 protected:
-    /// Render contents of the tab.
-    virtual void RenderContent() {}
-    /// Render context menu of the tab.
-    virtual void RenderContextMenuItems() {}
-
     /// Return whether the document is modified and prompt to save should be shown.
     virtual bool IsMarkedUnsaved() { return false; }
 

@@ -149,6 +149,8 @@ void ResourceBrowserTab::InitializeRoots()
         root.supportCompositeFiles_ = true;
     }
 
+    defaultRoot_ = 1;
+
     for (ResourceRoot& root : roots_)
     {
         root.reflection_ = MakeShared<FileSystemReflection>(context_, root.watchedDirectories_);
@@ -425,60 +427,52 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
     RenderEntryContextMenu(entry);
 }
 
-void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
+void ResourceBrowserTab::RenderEntryContextMenuItems(const FileSystemEntry& entry)
 {
-    bool renamePending = false;
-    bool deletePending = false;
-    ea::optional<unsigned> createPending;
+    bool needSeparator = false;
 
-    if (ui::BeginPopup(contextMenuId.c_str()))
+    const ResourceRoot& root = GetRoot(entry);
+
+    if (!entry.isFile_ && !IsEntryFromCache(entry))
     {
-        bool needSeparator = false;
-
-        const ResourceRoot& root = GetRoot(entry);
-
-        if (!entry.isFile_ && !IsEntryFromCache(entry))
+        needSeparator = true;
+        if (ui::BeginMenu("Create"))
         {
-            needSeparator = true;
-            if (ui::BeginMenu("Create"))
-            {
-                createPending = RenderEntryCreateContextMenu(entry);
-                ui::EndMenu();
-            }
+            if (const auto index = RenderEntryCreateContextMenu(entry))
+                BeginEntryCreate(entry, factories_[*index]);
+            ui::EndMenu();
         }
-
-        if (needSeparator)
-            ui::Separator();
-        needSeparator = false;
-
-        if (ui::MenuItem("Reveal in Explorer", GetHotkeyLabel(Hotkey_RevealInExplorer).c_str()))
-        {
-            if (entry.resourceName_.empty())
-                RevealInExplorer(root.activeDirectory_);
-            else
-                RevealInExplorer(entry.absolutePath_);
-        }
-
-        const bool isEditable = !entry.resourceName_.empty() && !IsEntryFromCache(entry);
-        ui::BeginDisabled(!isEditable);
-        if (ui::MenuItem("Rename", GetHotkeyLabel(Hotkey_Rename).c_str()))
-            renamePending = true;
-
-        if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
-            deletePending = true;
-        ui::EndDisabled();
-
-        ui::EndPopup();
     }
 
-    if (renamePending)
+    if (needSeparator)
+        ui::Separator();
+    needSeparator = false;
+
+    if (ui::MenuItem("Reveal in Explorer", GetHotkeyLabel(Hotkey_RevealInExplorer).c_str()))
+    {
+        if (entry.resourceName_.empty())
+            RevealInExplorer(root.activeDirectory_);
+        else
+            RevealInExplorer(entry.absolutePath_);
+    }
+
+    const bool isEditable = !entry.resourceName_.empty() && !IsEntryFromCache(entry);
+    ui::BeginDisabled(!isEditable);
+    if (ui::MenuItem("Rename", GetHotkeyLabel(Hotkey_Rename).c_str()))
         BeginEntryRename(entry);
 
-    if (deletePending)
+    if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
         BeginEntryDelete(entry);
+    ui::EndDisabled();
+}
 
-    if (createPending && *createPending < factories_.size())
-        BeginEntryCreate(entry, factories_[*createPending]);
+void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
+{
+    if (ui::BeginPopup(contextMenuId.c_str()))
+    {
+        RenderEntryContextMenuItems(entry);
+        ui::EndPopup();
+    }
 }
 
 ea::optional<unsigned> ResourceBrowserTab::RenderEntryCreateContextMenu(const FileSystemEntry& entry)
@@ -1282,6 +1276,15 @@ void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
     const auto request = MakeShared<OpenResourceRequest>(context_, entry.resourceName_);
     project->ProcessRequest(request, this);
     reentrant_ = false;
+}
+
+void ResourceBrowserTab::RenderContextMenuItems()
+{
+    const FileSystemEntry* entry = GetSelectedEntryForCursor();
+    if (!entry)
+        entry = &roots_[defaultRoot_].reflection_->GetRoot();
+
+    RenderEntryContextMenuItems(*entry);
 }
 
 ChangeResourceSelectionAction::ChangeResourceSelectionAction(ResourceBrowserTab* tab,
