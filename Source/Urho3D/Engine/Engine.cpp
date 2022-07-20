@@ -383,11 +383,16 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* fileSystem = GetSubsystem<FileSystem>();
+    auto* configManager = GetSubsystem<ConfigManager>();
 
     // Initialize app preferences directory
     appPreferencesDir_ = fileSystem->GetAppPreferencesDir(
         GetParameter(parameters, EP_ORGANIZATION_NAME, "urho3d").GetString(),
         GetParameter(parameters, EP_APPLICATION_NAME, "engine").GetString());
+
+    // Set configuration directory to manager
+    configManager->SetConfigDir(
+        GetParameter(parameters, EP_CONFIG_DIR, appPreferencesDir_ + "configs/").GetString());
 
     // Remove all resource paths and packages
     if (removeOld)

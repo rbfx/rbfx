@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,7 @@
 //
 
 #include "../Engine/ConfigManager.h"
+#include "../Engine/Engine.h"
 #include "../IO/Log.h"
 #include "../IO/FileSystem.h"
 #include "../IO/ArchiveSerializationBasic.h"
@@ -66,25 +67,34 @@ bool ConfigFile::Save() const
 ConfigManager::ConfigManager(Context* context)
     : Object(context)
 {
-    const char* configSubfoler = "Config";
-    const auto fileSystem = context_->GetSubsystem<FileSystem>();
-#if defined(__ANDROID__) || defined(__IOS__)
-    configurationFolder_ = fileSystem->GetUserDocumentsDir() + configSubfoler;
-#elif defined(__EMSCRIPTEN__)
-    // TODO: implement local storage utilization for web
-    configurationFolder_ = configSubfoler;
-#else
-    configurationFolder_ = fileSystem->GetProgramDir() + configSubfoler;
-#endif
 }
 
 ConfigManager::~ConfigManager()
 {
 }
 
+void ConfigManager::SetConfigDir(const ea::string& dir)
+{
+    const ea::string trimmedPath = dir.trimmed();
+    if (trimmedPath.length())
+    {
+        configurationDir_ = AddTrailingSlash(trimmedPath);
+
+        const auto fileSystem = context_->GetSubsystem<FileSystem>();
+        if (!fileSystem->DirExists(configurationDir_))
+            fileSystem->CreateDirsRecursive(configurationDir_);
+    }
+}
+
 /// Get configuration file.
 ConfigFile* ConfigManager::Get(StringHash type)
 {
+    if (configurationDir_.empty())
+    {
+        URHO3D_LOGERROR("ConfigManager is not initialized yet");
+        return nullptr;
+    }
+
     const auto fileIt = files_.find(type);
     if (fileIt != files_.end())
     {
@@ -116,8 +126,14 @@ bool ConfigManager::Load(ConfigFile* configFile)
     if (!configFile)
         return false;
 
-    FileSystem* fileSystem = context_->GetSubsystem<FileSystem>();
-    ea::string fileName = configurationFolder_ + "/" + configFile->GetTypeName() + ".json";
+    if (configurationDir_.empty())
+    {
+        URHO3D_LOGERROR("ConfigManager is not initialized yet");
+        return nullptr;
+    }
+
+    const auto fileSystem = context_->GetSubsystem<FileSystem>();
+    const ea::string fileName = configurationDir_ + configFile->GetTypeName() + ".json";
 
     if (fileSystem->Exists(fileName))
     {
@@ -155,16 +171,18 @@ bool ConfigManager::Save(const ConfigFile* configFile)
     if (!configFile)
         return false;
 
-#if defined(__EMSCRIPTEN__)
-    URHO3D_LOGWARNING("Can't save file at web");
-    return false;
-#else
-    const auto fileSystem = context_->GetSubsystem<FileSystem>();
-    if (!fileSystem->DirExists(configurationFolder_))
+    if (configurationDir_.empty())
     {
-        fileSystem->CreateDirsRecursive(configurationFolder_);
+        URHO3D_LOGERROR("ConfigManager is not initialized yet");
+        return nullptr;
     }
-    const ea::string fileName = configurationFolder_ + "/" + configFile->GetTypeName() + ".json";
+
+    const auto fileSystem = context_->GetSubsystem<FileSystem>();
+    if (!fileSystem->DirExists(configurationDir_))
+    {
+        fileSystem->CreateDirsRecursive(configurationDir_);
+    }
+    const ea::string fileName = configurationDir_ + configFile->GetTypeName() + ".json";
     const auto jsonFile = MakeShared<JSONFile>(context_);
     if (!jsonFile->SaveObject(configFile->GetTypeName().c_str(), *configFile))
     {
@@ -177,7 +195,6 @@ bool ConfigManager::Save(const ConfigFile* configFile)
         return false;
     }
     return true;
-#endif
 }
 
 } // namespace Urho3D

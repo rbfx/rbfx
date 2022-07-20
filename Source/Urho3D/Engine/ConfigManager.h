@@ -63,6 +63,9 @@ public:
     /// Destruct.
     ~ConfigManager() override;
 
+    /// Set configuration directory. Executed by engine during initialization.
+    void SetConfigDir(const ea::string& dir);
+
     /// Get configuration file.
     ConfigFile* Get(StringHash type);
 
@@ -82,7 +85,7 @@ private:
 
     ea::unordered_map<StringHash, SharedPtr<ConfigFile>> files_;
 
-    ea::string configurationFolder_;
+    ea::string configurationDir_;
 };
 
 } // namespace Urho3D
