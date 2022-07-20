@@ -137,6 +137,7 @@ void SceneHierarchy::RenderToolbar(SceneViewPage& page)
     ui::InputText("##Rename", &settings.filterByName_);
 
     widget_->SetSettings(settings);
+    owner_->SetComponentSelection(settings.showComponents_);
 }
 
 void SceneHierarchy::RenderSelectionContextMenu(Scene* scene, SceneSelection& selection)

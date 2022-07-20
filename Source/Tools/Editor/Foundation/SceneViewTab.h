@@ -156,6 +156,8 @@ public:
     void RenderEditMenu(Scene* scene, SceneSelection& selection);
     /// Draw Create menu for selection in the scene.
     void RenderCreateMenu(Scene* scene, SceneSelection& selection);
+    /// Set whether component selection is supported.
+    void SetComponentSelection(bool enabled) { componentSelection_ = enabled; }
 
     /// Commands
     /// @{
@@ -170,6 +172,9 @@ public:
     void PasteIntoSelection(Scene* scene, SceneSelection& selection);
     void DeleteSelection(SceneSelection& selection);
     void DuplicateSelection(SceneSelection& selection);
+    void CreateNodeNextToSelection(Scene* scene, SceneSelection& selection);
+    void CreateNodeInSelection(Scene* scene, SceneSelection& selection);
+    void CreateComponentInSelection(Scene* scene, SceneSelection& selection, StringHash componentType);
 
     void CutSelection();
     void CopySelection();
@@ -177,6 +182,8 @@ public:
     void PasteIntoSelection();
     void DeleteSelection();
     void DuplicateSelection();
+    void CreateNodeNextToSelection();
+    void CreateNodeInSelection();
     /// @}
 
     /// ResourceEditorTab implementation
@@ -241,6 +248,8 @@ private:
 
     ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;
     PackedSceneData clipboard_;
+
+    bool componentSelection_{true};
 };
 
 /// Action wrapper that rewinds scene simulation.

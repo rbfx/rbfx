@@ -59,6 +59,9 @@ URHO3D_EDITOR_HOTKEY(Hotkey_PasteInto, "SceneViewTab.PasteInto", QUAL_CTRL | QUA
 URHO3D_EDITOR_HOTKEY(Hotkey_Delete, "SceneViewTab.Delete", QUAL_NONE, KEY_DELETE);
 URHO3D_EDITOR_HOTKEY(Hotkey_Duplicate, "SceneViewTab.Duplicate", QUAL_CTRL, KEY_D);
 
+URHO3D_EDITOR_HOTKEY(Hotkey_CreateSiblingNode, "SceneViewTab.CreateSiblingNode", QUAL_CTRL, KEY_N);
+URHO3D_EDITOR_HOTKEY(Hotkey_CreateChildNode, "SceneViewTab.CreateChildNode", QUAL_CTRL | QUAL_SHIFT, KEY_N);
+
 }
 
 void SerializeValue(Archive& archive, const char* name, SceneViewPage& page, const SceneViewTab* owner)
@@ -202,6 +205,8 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_PasteInto, &SceneViewTab::PasteIntoSelection);
     BindHotkey(Hotkey_Delete, &SceneViewTab::DeleteSelection);
     BindHotkey(Hotkey_Duplicate, &SceneViewTab::DuplicateSelection);
+    BindHotkey(Hotkey_CreateSiblingNode, &SceneViewTab::CreateNodeNextToSelection);
+    BindHotkey(Hotkey_CreateChildNode, &SceneViewTab::CreateNodeInSelection);
 }
 
 SceneViewTab::~SceneViewTab()
@@ -256,12 +261,16 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 
 void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)
 {
-    // TODO(editor): Implement me
-    ui::MenuItem("Create Node");
+    if (ui::MenuItem("Create Node", GetHotkeyLabel(Hotkey_CreateSiblingNode).c_str()))
+        CreateNodeNextToSelection(scene, selection);
+
+    if (ui::MenuItem("Create Child Node", GetHotkeyLabel(Hotkey_CreateChildNode).c_str()))
+        CreateNodeInSelection(scene, selection);
+
     ui::MenuItem("Create Component:", nullptr, false, false);
     ui::Indent();
     if (const auto componentType = RenderCreateComponentMenu(context_))
-        ;
+        CreateComponentInSelection(scene, selection, *componentType);
     ui::Unindent();
 }
 
@@ -354,14 +363,14 @@ void SceneViewTab::PasteNextToSelection(Scene* scene, SceneSelection& selection)
 void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
 {
     // Copy because selection changes during paste
-    auto targetNodes = selection.GetNodesAndScenes();
-    if (targetNodes.empty())
-        targetNodes.emplace(scene);
+    auto parentNodes = selection.GetEffectiveNodesAndScenes();
+    if (parentNodes.empty())
+        parentNodes.emplace(scene);
 
     if (clipboard_.HasNodes())
     {
         selection.Clear();
-        for (Node* selectedNode : targetNodes)
+        for (Node* selectedNode : parentNodes)
         {
             for (const PackedNodeData& packedNode : clipboard_.GetNodes())
             {
@@ -374,12 +383,15 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
     else if (clipboard_.HasComponents())
     {
         selection.Clear();
-        for (Node* selectedNode : targetNodes)
+        for (Node* selectedNode : parentNodes)
         {
             for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
             {
                 Component* newComponent = packedComponent.SpawnCopy(selectedNode);
-                selection.SetSelected(newComponent, true);
+                if (componentSelection_)
+                    selection.SetSelected(newComponent, true);
+                else
+                    selection.SetSelected(selectedNode, true);
                 PushAction<CreateRemoveComponentAction>(newComponent, false);
             }
         }
@@ -445,8 +457,57 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
             const auto data = PackedComponentData{component};
             Component* newComponent = data.SpawnCopy(node);
             PushAction<CreateRemoveComponentAction>(newComponent, false);
-            selection.SetSelected(newComponent, true);
+            if (componentSelection_)
+                selection.SetSelected(newComponent, true);
+            else
+                selection.SetSelected(node, true);
         }
+    }
+}
+
+void SceneViewTab::CreateNodeNextToSelection(Scene* scene, SceneSelection& selection)
+{
+    Node* siblingNode = selection.GetActiveNodeOrScene();
+    Node* parentNode = siblingNode && siblingNode->GetParent() ? siblingNode->GetParent() : scene;
+
+    Node* newNode = parentNode->CreateChild();
+    selection.Clear();
+    selection.SetSelected(newNode, true);
+    PushAction<CreateRemoveNodeAction>(newNode, false);
+}
+
+void SceneViewTab::CreateNodeInSelection(Scene* scene, SceneSelection& selection)
+{
+    // Copy because selection changes during paste
+    auto parentNodes = selection.GetEffectiveNodesAndScenes();
+    if (parentNodes.empty())
+        parentNodes.emplace(scene);
+
+    selection.Clear();
+    for (Node* selectedNode : parentNodes)
+    {
+        Node* newNode = selectedNode->CreateChild();
+        selection.SetSelected(newNode, true);
+        PushAction<CreateRemoveNodeAction>(newNode, false);
+    }
+}
+
+void SceneViewTab::CreateComponentInSelection(Scene* scene, SceneSelection& selection, StringHash componentType)
+{
+    // Copy because selection changes during paste
+    auto parentNodes = selection.GetEffectiveNodesAndScenes();
+    if (parentNodes.empty())
+        parentNodes.emplace(scene);
+
+    selection.Clear();
+    for (Node* selectedNode : parentNodes)
+    {
+        Component* newComponent = selectedNode->CreateComponent(componentType);
+        if (componentSelection_)
+            selection.SetSelected(newComponent, true);
+        else
+            selection.SetSelected(selectedNode, true);
+        PushAction<CreateRemoveComponentAction>(newComponent, false);
     }
 }
 
@@ -484,6 +545,18 @@ void SceneViewTab::DuplicateSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
         DuplicateSelection(activePage->selection_);
+}
+
+void SceneViewTab::CreateNodeNextToSelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        CreateNodeNextToSelection(activePage->scene_, activePage->selection_);
+}
+
+void SceneViewTab::CreateNodeInSelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        CreateNodeInSelection(activePage->scene_, activePage->selection_);
 }
 
 void SceneViewTab::RenderMenu()
@@ -685,7 +758,11 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
 void SceneViewTab::PreRenderUpdate()
 {
     if (SceneViewPage* activePage = GetActivePage())
+    {
+        if (!componentSelection_)
+            activePage->selection_.ConvertToNodes();
         activePage->BeginSelection();
+    }
 }
 
 void SceneViewTab::PostRenderUpdate()
