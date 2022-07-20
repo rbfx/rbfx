@@ -48,6 +48,8 @@ public:
         float maxSpeed_{10.0f};
         float acceleration_{1.0f};
         float shiftFactor_{4.0f};
+        float focusDistance_{10.0f};
+        float focusSpeed_{17.0f};
     };
     using SettingsPage = SimpleSettingsPage<Settings>;
 
@@ -58,6 +60,8 @@ public:
         float yaw_{};
         float pitch_{};
         float currentMoveSpeed_{};
+        Vector3 pendingOffset_;
+        ea::optional<Vector3> orbitPosition_;
 
         PageState();
         void LookAt(const Vector3& position, const Vector3& target);
@@ -76,11 +80,11 @@ public:
 
 private:
     PageState& GetOrInitializeState(SceneViewPage& scenePage) const;
-    void UpdateState(SceneViewPage& scenePage, PageState& state);
+    void UpdateState(SceneViewPage& scenePage, PageState& state) const;
+    void LookAtPosition(SceneViewPage& scenePage, const Vector3& position) const;
 
     Vector2 GetMouseMove() const;
     Vector3 GetMoveDirection() const;
-    bool GetMoveAccelerated() const;
 
     const WeakPtr<SettingsPage> settings_;
     bool isActive_{};
