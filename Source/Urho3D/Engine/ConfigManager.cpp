@@ -129,7 +129,7 @@ bool ConfigManager::Load(ConfigFile* configFile)
     if (configurationDir_.empty())
     {
         URHO3D_LOGERROR("ConfigManager is not initialized yet");
-        return nullptr;
+        return false;
     }
 
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
@@ -174,7 +174,7 @@ bool ConfigManager::Save(const ConfigFile* configFile)
     if (configurationDir_.empty())
     {
         URHO3D_LOGERROR("ConfigManager is not initialized yet");
-        return nullptr;
+        return false;
     }
 
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
