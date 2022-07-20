@@ -37,25 +37,17 @@ namespace Urho3D
 /// Mouse and keyboard combination that can be used as Editor hotkey.
 struct HotkeyCombination
 {
-    QualifierFlags qualifiers_;
-    MouseButton mouseButton_;
-    Key key_;
+    QualifierFlags qualifiers_{};
+    MouseButton mouseButton_{};
+    Key key_{};
+    Scancode scancode_{};
 
-    HotkeyCombination() = default;
-    HotkeyCombination(QualifierFlags qualifiers, MouseButton mouseButton)
-        : qualifiers_{qualifiers}
-        , mouseButton_{mouseButton}
-        , key_{KEY_UNKNOWN}
-    {
-    }
-    HotkeyCombination(QualifierFlags qualifiers, Key key)
-        : qualifiers_{qualifiers}
-        , mouseButton_{MOUSEB_NONE}
-        , key_{key}
-    {
-    }
+    QualifierFlags ignoredQualifiers_{};
+    bool holdMouseButton_{};
+    bool holdKey_{};
 
-    bool IsValid() const { return key_ != KEY_UNKNOWN || mouseButton_ != MOUSEB_NONE; }
+    bool IsValid() const;
+    bool IsInvoked() const;
     ea::string ToString() const;
 };
 
@@ -63,21 +55,27 @@ struct HotkeyCombination
 struct HotkeyInfo
 {
     ea::string command_;
-    ea::string scope_;
     HotkeyCombination defaultHotkey_;
 
     HotkeyInfo() = default;
-    HotkeyInfo(const ea::string& command, const HotkeyCombination& hotkey)
-        : command_(command)
-        , defaultHotkey_{hotkey}
-    {
-    }
-    HotkeyInfo(const ea::string& command, const ea::string& scope, const HotkeyCombination& hotkey)
-        : command_(command)
-        , scope_(scope)
-        , defaultHotkey_{hotkey}
-    {
-    }
+    explicit HotkeyInfo(const ea::string& command) : command_{command} {}
+
+    HotkeyInfo& Shift() { defaultHotkey_.qualifiers_.Set(QUAL_SHIFT); return *this; }
+    HotkeyInfo& Ctrl() { defaultHotkey_.qualifiers_.Set(QUAL_CTRL); return *this; }
+    HotkeyInfo& Alt() { defaultHotkey_.qualifiers_.Set(QUAL_ALT); return *this; }
+
+    HotkeyInfo& IgnoreShift() { defaultHotkey_.ignoredQualifiers_.Set(QUAL_SHIFT); return *this; }
+    HotkeyInfo& IgnoreCtrl() { defaultHotkey_.ignoredQualifiers_.Set(QUAL_CTRL); return *this; }
+    HotkeyInfo& IgnoreAlt() { defaultHotkey_.ignoredQualifiers_.Set(QUAL_ALT); return *this; }
+    HotkeyInfo& IgnoreQualifiers() { defaultHotkey_.ignoredQualifiers_ = QUAL_SHIFT | QUAL_CTRL | QUAL_ALT; return *this; }
+
+    HotkeyInfo& Press(Key key) { defaultHotkey_.key_ = key; return *this; }
+    HotkeyInfo& Press(Scancode scancode) { defaultHotkey_.scancode_ = scancode; return *this; }
+    HotkeyInfo& Press(MouseButton button) { defaultHotkey_.mouseButton_ = button; return *this; }
+
+    HotkeyInfo& Hold(Key key) { defaultHotkey_.holdKey_ = true; defaultHotkey_.key_ = key; return *this; }
+    HotkeyInfo& Hold(Scancode scancode) { defaultHotkey_.holdKey_ = true; defaultHotkey_.scancode_ = scancode; return *this; }
+    HotkeyInfo& Hold(MouseButton button) { defaultHotkey_.holdMouseButton_ = true; defaultHotkey_.mouseButton_ = button; return *this; }
 };
 
 /// Class used to manage and dispatch hotkeys.
@@ -93,6 +91,7 @@ public:
 
     /// Bind new hotkeys. Hotkeys for expired objects will be automatically removed.
     /// @{
+    void BindPassiveHotkey(const HotkeyInfo& info);
     void BindHotkey(Object* owner, const HotkeyInfo& info, HotkeyCallback callback);
     template <class T> void BindHotkey(T* owner, const HotkeyInfo& info, HotkeyMemberCallback<T> callback);
     /// @}
@@ -100,6 +99,7 @@ public:
     /// Return currently bound hotkey combination for given hotkey.
     HotkeyCombination GetHotkey(const HotkeyInfo& info) const;
     ea::string GetHotkeyLabel(const HotkeyInfo& info) const;
+    bool IsHotkeyActive(const HotkeyInfo& info) const;
 
     /// Routine maintenance, no user logic is performed
     /// @{
@@ -113,15 +113,18 @@ public:
 private:
     struct HotkeyBinding
     {
+        HotkeyBinding(Object* owner, const HotkeyInfo& info, HotkeyCallback callback);
+        explicit HotkeyBinding(const HotkeyInfo& info);
+
         WeakPtr<Object> owner_;
         HotkeyInfo info_;
         HotkeyCombination hotkey_;
         HotkeyCallback callback_;
+        bool isPassive_{};
     };
     using HotkeyBindingPtr = ea::shared_ptr<HotkeyBinding>;
 
-    static bool IsBindingExpired(const HotkeyBindingPtr& ptr) { return !ptr->owner_; }
-    bool IsInvoked(const HotkeyCombination& hotkey) const;
+    static bool IsBindingExpired(const HotkeyBindingPtr& ptr);
     HotkeyBindingPtr FindByCommand(const ea::string& command) const;
 
     unsigned cleanupMs_{1000};
@@ -141,7 +144,3 @@ void HotkeyManager::BindHotkey(T* owner, const HotkeyInfo& info, HotkeyMemberCal
 }
 
 }
-
-/// Define hotkey.
-#define URHO3D_EDITOR_HOTKEY(name, command, qual, key) \
-    URHO3D_GLOBAL_CONSTANT(Urho3D::HotkeyInfo name(command, Urho3D::HotkeyCombination(qual, key)))

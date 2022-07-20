@@ -33,8 +33,8 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_SaveDocument, "Global.SaveDocument", QUAL_CTRL, KEY_S);
-URHO3D_EDITOR_HOTKEY(Hotkey_CloseDocument, "Global.CloseDocument", QUAL_CTRL, KEY_W);
+const auto Hotkey_SaveDocument = HotkeyInfo{"Global.SaveDocument"}.Ctrl().Press(KEY_S);
+const auto Hotkey_CloseDocument = HotkeyInfo{"Global.CloseDocument"}.Ctrl().Press(KEY_W);
 
 }
 

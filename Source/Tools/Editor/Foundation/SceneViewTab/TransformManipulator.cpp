@@ -38,12 +38,12 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_ToggleLocal, "TransformGizmo.ToggleLocal", QUAL_NONE, KEY_X);
-URHO3D_EDITOR_HOTKEY(Hotkey_TogglePivoted, "TransformGizmo.TogglePivoted", QUAL_NONE, KEY_Z);
-URHO3D_EDITOR_HOTKEY(Hotkey_Select, "TransformGizmo.Select", QUAL_NONE, KEY_Q);
-URHO3D_EDITOR_HOTKEY(Hotkey_Translate, "TransformGizmo.Translate", QUAL_NONE, KEY_W);
-URHO3D_EDITOR_HOTKEY(Hotkey_Rotate, "TransformGizmo.Rotate", QUAL_NONE, KEY_E);
-URHO3D_EDITOR_HOTKEY(Hotkey_Scale, "TransformGizmo.Scale", QUAL_NONE, KEY_R);
+const auto Hotkey_ToggleLocal = HotkeyInfo{"TransformGizmo.ToggleLocal"}.Press(KEY_X);
+const auto Hotkey_TogglePivoted = HotkeyInfo{"TransformGizmo.TogglePivoted"}.Press(KEY_Z);
+const auto Hotkey_Select = HotkeyInfo{"TransformGizmo.Select"}.Press(KEY_Q);
+const auto Hotkey_Translate = HotkeyInfo{"TransformGizmo.Translate"}.Press(KEY_W);
+const auto Hotkey_Rotate = HotkeyInfo{"TransformGizmo.Rotate"}.Press(KEY_E);
+const auto Hotkey_Scale = HotkeyInfo{"TransformGizmo.Scale"}.Press(KEY_R);
 
 }
 

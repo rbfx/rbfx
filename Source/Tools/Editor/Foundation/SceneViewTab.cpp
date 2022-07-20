@@ -49,18 +49,18 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_RewindSimulation, "SceneViewTab.RewindSimulation", QUAL_NONE, KEY_UNKNOWN);
-URHO3D_EDITOR_HOTKEY(Hotkey_TogglePaused, "SceneViewTab.TogglePaused", QUAL_NONE, KEY_PAUSE);
+const auto Hotkey_RewindSimulation = HotkeyInfo{"SceneViewTab.RewindSimulation"}.Press(KEY_UNKNOWN);
+const auto Hotkey_TogglePaused = HotkeyInfo{"SceneViewTab.TogglePaused"}.Press(KEY_PAUSE);
 
-URHO3D_EDITOR_HOTKEY(Hotkey_Cut, "SceneViewTab.Cut", QUAL_CTRL, KEY_X);
-URHO3D_EDITOR_HOTKEY(Hotkey_Copy, "SceneViewTab.Copy", QUAL_CTRL, KEY_C);
-URHO3D_EDITOR_HOTKEY(Hotkey_Paste, "SceneViewTab.Paste", QUAL_CTRL, KEY_V);
-URHO3D_EDITOR_HOTKEY(Hotkey_PasteInto, "SceneViewTab.PasteInto", QUAL_CTRL | QUAL_SHIFT, KEY_V);
-URHO3D_EDITOR_HOTKEY(Hotkey_Delete, "SceneViewTab.Delete", QUAL_NONE, KEY_DELETE);
-URHO3D_EDITOR_HOTKEY(Hotkey_Duplicate, "SceneViewTab.Duplicate", QUAL_CTRL, KEY_D);
+const auto Hotkey_Cut = HotkeyInfo{"SceneViewTab.Cut"}.Ctrl().Press(KEY_X);
+const auto Hotkey_Copy = HotkeyInfo{"SceneViewTab.Copy"}.Ctrl().Press(KEY_C);
+const auto Hotkey_Paste = HotkeyInfo{"SceneViewTab.Paste"}.Ctrl().Press(KEY_V);
+const auto Hotkey_PasteInto = HotkeyInfo{"SceneViewTab.PasteInto"}.Ctrl().Shift().Press(KEY_V);
+const auto Hotkey_Delete = HotkeyInfo{"SceneViewTab.Delete"}.Press(KEY_DELETE);
+const auto Hotkey_Duplicate = HotkeyInfo{"SceneViewTab.Duplicate"}.Ctrl().Press(KEY_D);
 
-URHO3D_EDITOR_HOTKEY(Hotkey_CreateSiblingNode, "SceneViewTab.CreateSiblingNode", QUAL_CTRL, KEY_N);
-URHO3D_EDITOR_HOTKEY(Hotkey_CreateChildNode, "SceneViewTab.CreateChildNode", QUAL_CTRL | QUAL_SHIFT, KEY_N);
+const auto Hotkey_CreateSiblingNode = HotkeyInfo{"SceneViewTab.CreateSiblingNode"}.Ctrl().Press(KEY_N);
+const auto Hotkey_CreateChildNode = HotkeyInfo{"SceneViewTab.CreateChildNode"}.Ctrl().Shift().Press(KEY_N);
 
 }
 
