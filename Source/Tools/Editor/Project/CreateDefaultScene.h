@@ -32,6 +32,7 @@ namespace Urho3D
 /// Scene creation parameters.
 struct DefaultSceneParameters
 {
+    bool highQuality_{};
     bool createObjects_{};
 };
 

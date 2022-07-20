@@ -41,6 +41,10 @@ void SceneFactory::Render()
 {
     ui::Separator();
 
+    ui::Checkbox("High Quality", &highQuality_);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Use renderer settings for high picture quality");
+
     ui::Checkbox("Default Objects", &defaultObjects_);
     if (ui::IsItemHovered())
         ui::SetTooltip("Add default light, environment and teapot to the scene.");
@@ -51,6 +55,7 @@ void SceneFactory::Render()
 void SceneFactory::EndCreate(const ea::string& fileName, const ea::string& resourceName)
 {
     DefaultSceneParameters params;
+    params.highQuality_ = highQuality_;
     params.createObjects_ = defaultObjects_;
 
     CreateDefaultScene(context_, fileName, params);

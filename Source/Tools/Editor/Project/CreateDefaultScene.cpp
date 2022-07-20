@@ -30,6 +30,7 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
+#include <Urho3D/RenderPipeline/DefaultRenderPipeline.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Scene.h>
@@ -43,6 +44,18 @@ void CreateDefaultScene(Context* context, const ea::string& fileName, const Defa
 
     auto scene = MakeShared<Scene>(context);
     scene->CreateComponent<Octree>();
+
+    if (params.highQuality_)
+    {
+        auto renderPipeline = scene->CreateComponent<RenderPipeline>();
+        RenderPipelineSettings settings = renderPipeline->GetSettings();
+
+        settings.antialiasing_ = PostProcessAntialiasing::FXAA3;
+        settings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearHDR;
+        settings.sceneProcessor_.pcfKernelSize_ = 5;
+
+        renderPipeline->SetSettings(settings);
+    }
 
     if (params.createObjects_)
     {
@@ -64,12 +77,20 @@ void CreateDefaultScene(Context* context, const ea::string& fileName, const Defa
         light->SetLightType(LIGHT_DIRECTIONAL);
         light->SetColor(Color::WHITE);
         light->SetBrightness(0.5f);
+        light->SetCastShadows(true);
 
         auto cubeNode = scene->CreateChild("Sample Cube");
         cubeNode->SetScale(3.0f);
         auto cubeGeometry = cubeNode->CreateComponent<StaticModel>();
         cubeGeometry->SetModel(cache->GetResource<Model>("Models/TeaPot.mdl"));
         cubeGeometry->SetMaterial(cache->GetResource<Material>("Materials/DefaultWhite.xml"));
+        cubeGeometry->SetCastShadows(true);
+
+        auto planeNode = scene->CreateChild("Sample Plane");
+        planeNode->SetScale(7.0f);
+        auto planeGeometry = planeNode->CreateComponent<StaticModel>();
+        planeGeometry->SetModel(cache->GetResource<Model>("Models/Plane.mdl"));
+        planeGeometry->SetMaterial(cache->GetResource<Material>("Materials/DefaultGrey.xml"));
     }
 
     auto xmlFile = MakeShared<XMLFile>(context);

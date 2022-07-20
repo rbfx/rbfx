@@ -49,6 +49,8 @@ public:
 
     /// EditorTab implementation
     /// @{
+    void RenderContextMenuItems() override;
+
     void EnumerateUnsavedItems(ea::vector<ea::string>& items) override;
     ea::optional<EditorActionFrame> PushAction(SharedPtr<EditorAction> action) override;
     using EditorTab::PushAction;
@@ -98,7 +100,6 @@ protected:
     /// EditorTab implementation
     /// @{
     bool IsMarkedUnsaved() override;
-    void RenderContextMenuItems() override;
     /// @}
 
     /// Called when resource should be loaded.
