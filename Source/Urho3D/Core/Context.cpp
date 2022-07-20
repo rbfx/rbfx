@@ -159,10 +159,11 @@ Context::Context()
 
 Context::~Context()
 {
+#ifndef MINI_URHO
+    // Save any configuration that may be unsaved at runtime.
     auto* configManager = GetSubsystem<ConfigManager>();
     configManager->SaveAll();
 
-#ifndef MINI_URHO
     // Destroying resource cache does clear it, however some resources depend on resource cache being available when
     // destructor executes.
     if (auto* cache = GetSubsystem<ResourceCache>())
