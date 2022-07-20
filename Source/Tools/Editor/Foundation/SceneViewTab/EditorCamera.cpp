@@ -44,6 +44,7 @@ const HotkeyInfo Hotkey_MoveDown = HotkeyInfo{"EditorCamera.MoveDown"}.Hold(SCAN
 
 const HotkeyInfo Hotkey_MoveAccelerate = HotkeyInfo{"EditorCamera.MoveAccelerate"}.Hold(SCANCODE_LSHIFT).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
 const HotkeyInfo Hotkey_LookAround = HotkeyInfo{"EditorCamera.LookAround"}.Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+const HotkeyInfo Hotkey_OrbitAround = HotkeyInfo{"EditorCamera.OrbitAround"}.Alt().Hold(MOUSEB_RIGHT).IgnoreCtrl().IgnoreShift();
 
 }
 
@@ -65,6 +66,7 @@ void EditorCamera::Settings::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "MaxSpeed", maxSpeed_, Settings{}.maxSpeed_);
     SerializeOptionalValue(archive, "Acceleration", acceleration_, Settings{}.acceleration_);
     SerializeOptionalValue(archive, "ShiftFactor", shiftFactor_, Settings{}.shiftFactor_);
+    SerializeOptionalValue(archive, "FocusDistance", focusDistance_, Settings{}.focusDistance_);
 }
 
 void EditorCamera::Settings::RenderSettings()
@@ -74,6 +76,7 @@ void EditorCamera::Settings::RenderSettings()
     ui::DragFloat("Max Speed", &maxSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
     ui::DragFloat("Acceleration", &acceleration_, 0.1f, 0.1f, 100.0f, "%.1f");
     ui::DragFloat("Shift Factor", &shiftFactor_, 0.5f, 1.0f, 10.0f, "%.1f");
+    ui::DragFloat("Focus Distance", &focusDistance_, 0.1f, 0.1f, 100.0f, "%.1f");
 }
 
 EditorCamera::PageState::PageState()
@@ -105,6 +108,8 @@ EditorCamera::EditorCamera(SceneViewTab* owner, SettingsPage* settings)
     : SceneViewAddon(owner)
     , settings_(settings)
 {
+    owner_->OnLookAt.Subscribe(this, &EditorCamera::LookAtPosition);
+
     auto hotkeyManager = owner_->GetHotkeyManager();
     hotkeyManager->BindPassiveHotkey(Hotkey_MoveForward);
     hotkeyManager->BindPassiveHotkey(Hotkey_MoveBackward);
@@ -115,6 +120,7 @@ EditorCamera::EditorCamera(SceneViewTab* owner, SettingsPage* settings)
 
     hotkeyManager->BindPassiveHotkey(Hotkey_MoveAccelerate);
     hotkeyManager->BindPassiveHotkey(Hotkey_LookAround);
+    hotkeyManager->BindPassiveHotkey(Hotkey_OrbitAround);
 }
 
 Vector2 EditorCamera::GetMouseMove() const
@@ -143,12 +149,6 @@ Vector3 EditorCamera::GetMoveDirection() const
             moveDirection += direction;
     }
     return moveDirection.Normalized();
-}
-
-bool EditorCamera::GetMoveAccelerated() const
-{
-    auto hotkeyManager = owner_->GetHotkeyManager();
-    return hotkeyManager->IsHotkeyActive(Hotkey_MoveAccelerate);
 }
 
 void EditorCamera::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
@@ -187,8 +187,10 @@ EditorCamera::PageState& EditorCamera::GetOrInitializeState(SceneViewPage& scene
     return ea::any_cast<PageState&>(stateWrapped);
 }
 
-void EditorCamera::UpdateState(SceneViewPage& scenePage, PageState& state)
+void EditorCamera::UpdateState(SceneViewPage& scenePage, PageState& state) const
 {
+    auto hotkeyManager = owner_->GetHotkeyManager();
+    auto time = GetSubsystem<Time>();
     const Settings& cfg = settings_->GetValues();
 
     Camera* camera = scenePage.renderer_->GetCamera();
@@ -200,7 +202,9 @@ void EditorCamera::UpdateState(SceneViewPage& scenePage, PageState& state)
     if (state.lastCameraRotation_ != node->GetRotation())
         node->SetRotation(state.lastCameraRotation_);
 
-    if (isActive_)
+    const bool isAccelerated = hotkeyManager->IsHotkeyActive(Hotkey_MoveAccelerate);
+    const bool isOrbiting = hotkeyManager->IsHotkeyActive(Hotkey_OrbitAround);
+    if (isActive_ && !isOrbiting)
     {
         // Apply mouse movement
         const Vector2 mouseMove = GetMouseMove() * cfg.mouseSensitivity_;
@@ -208,17 +212,17 @@ void EditorCamera::UpdateState(SceneViewPage& scenePage, PageState& state)
         state.pitch_ = Clamp(state.pitch_ + mouseMove.y_, -89.0f, 89.0f);
 
         node->SetRotation(Quaternion{state.pitch_, state.yaw_, 0.0f});
-        state.lastCameraRotation_ = node->GetRotation();
 
         // Apply camera movement
         const float timeStep = GetSubsystem<Time>()->GetTimeStep();
         const Vector3 moveDirection = GetMoveDirection();
-        const float multiplier = GetMoveAccelerated() ? cfg.shiftFactor_ : 1.0f;
+        const float multiplier = isAccelerated ? cfg.shiftFactor_ : 1.0f;
         if (moveDirection == Vector3::ZERO)
             state.currentMoveSpeed_ = cfg.minSpeed_;
+        else
+            state.pendingOffset_ = Vector3::ZERO;
 
         node->Translate(moveDirection * state.currentMoveSpeed_ * multiplier * timeStep);
-        state.lastCameraPosition_ = node->GetPosition();
 
         // Apply acceleration
         state.currentMoveSpeed_ = ea::min(cfg.maxSpeed_, state.currentMoveSpeed_ + cfg.acceleration_ * timeStep);
@@ -227,6 +231,48 @@ void EditorCamera::UpdateState(SceneViewPage& scenePage, PageState& state)
     {
         state.currentMoveSpeed_ = cfg.minSpeed_;
     }
+
+    if (isOrbiting)
+    {
+        if (!state.orbitPosition_)
+            state.orbitPosition_ = node->GetPosition() + node->GetRotation() * Vector3{0.0f, 0.0f, cfg.focusDistance_};
+
+        const Vector2 mouseMove = GetMouseMove() * cfg.mouseSensitivity_;
+        state.yaw_ = Mod(state.yaw_ + mouseMove.x_, 360.0f);
+        state.pitch_ = Clamp(state.pitch_ + mouseMove.y_, -89.0f, 89.0f);
+
+        node->SetRotation(Quaternion{state.pitch_, state.yaw_, 0.0f});
+        state.lastCameraRotation_ = node->GetRotation();
+
+        node->SetPosition(*state.orbitPosition_ - node->GetRotation() * Vector3{0.0f, 0.0f, cfg.focusDistance_});
+        state.lastCameraPosition_ = node->GetPosition();
+    }
+    else
+    {
+        state.orbitPosition_ = ea::nullopt;
+    }
+
+    if (state.pendingOffset_.Length() > 0.05f)
+    {
+        const float factor = ExpSmoothing(cfg.focusSpeed_, time->GetTimeStep());
+        node->Translate(state.pendingOffset_ * factor, TS_WORLD);
+        state.pendingOffset_ *= 1.0f - factor;
+    }
+
+    state.lastCameraRotation_ = node->GetRotation();
+    state.lastCameraPosition_ = node->GetPosition();
+}
+
+void EditorCamera::LookAtPosition(SceneViewPage& scenePage, const Vector3& position) const
+{
+    PageState& state = GetOrInitializeState(scenePage);
+    const Settings& cfg = settings_->GetValues();
+
+    Camera* camera = scenePage.renderer_->GetCamera();
+    Node* node = camera->GetNode();
+
+    const Vector3 newPosition = position - node->GetRotation() * Vector3{0.0f, 0.0f, cfg.focusDistance_};
+    state.pendingOffset_ += newPosition - state.lastCameraPosition_;
 }
 
 }

@@ -59,6 +59,8 @@ const auto Hotkey_PasteInto = HotkeyInfo{"SceneViewTab.PasteInto"}.Ctrl().Shift(
 const auto Hotkey_Delete = HotkeyInfo{"SceneViewTab.Delete"}.Press(KEY_DELETE);
 const auto Hotkey_Duplicate = HotkeyInfo{"SceneViewTab.Duplicate"}.Ctrl().Press(KEY_D);
 
+const auto Hotkey_Focus = HotkeyInfo{"SceneViewTab.Focus"}.Press(KEY_F);
+
 const auto Hotkey_CreateSiblingNode = HotkeyInfo{"SceneViewTab.CreateSiblingNode"}.Ctrl().Press(KEY_N);
 const auto Hotkey_CreateChildNode = HotkeyInfo{"SceneViewTab.CreateChildNode"}.Ctrl().Shift().Press(KEY_N);
 
@@ -205,6 +207,7 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_PasteInto, &SceneViewTab::PasteIntoSelection);
     BindHotkey(Hotkey_Delete, &SceneViewTab::DeleteSelection);
     BindHotkey(Hotkey_Duplicate, &SceneViewTab::DuplicateSelection);
+    BindHotkey(Hotkey_Focus, &SceneViewTab::FocusSelection);
     BindHotkey(Hotkey_CreateSiblingNode, &SceneViewTab::CreateNodeNextToSelection);
     BindHotkey(Hotkey_CreateChildNode, &SceneViewTab::CreateNodeInSelection);
 }
@@ -257,6 +260,11 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
         DeleteSelection(selection);
     if (ui::MenuItem("Duplicate", GetHotkeyLabel(Hotkey_Duplicate).c_str(), false, hasSelection))
         DuplicateSelection(selection);
+
+    ui::Separator();
+
+    if (ui::MenuItem("Focus", GetHotkeyLabel(Hotkey_Focus).c_str(), false, hasSelection))
+        FocusSelection(selection);
 }
 
 void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)
@@ -511,6 +519,15 @@ void SceneViewTab::CreateComponentInSelection(Scene* scene, SceneSelection& sele
     }
 }
 
+void SceneViewTab::FocusSelection(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        if (SceneViewPage* page = GetPage(activeNode->GetScene()))
+            OnLookAt(this, *page, activeNode->GetWorldPosition());
+    }
+}
+
 void SceneViewTab::CutSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
@@ -557,6 +574,12 @@ void SceneViewTab::CreateNodeInSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
         CreateNodeInSelection(activePage->scene_, activePage->selection_);
+}
+
+void SceneViewTab::FocusSelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        FocusSelection(activePage->selection_);
 }
 
 void SceneViewTab::RenderMenu()
@@ -819,7 +842,13 @@ void SceneViewTab::InspectSelection(SceneViewPage& page)
 
 SceneViewPage* SceneViewTab::GetPage(const ea::string& resourceName)
 {
-    auto iter = scenes_.find(resourceName);
+    const auto iter = scenes_.find(resourceName);
+    return iter != scenes_.end() ? iter->second : nullptr;
+}
+
+SceneViewPage* SceneViewTab::GetPage(Scene* scene)
+{
+    const auto iter = ea::find_if(scenes_.begin(), scenes_.end(), [scene](const auto& pair) { return pair.second->scene_ == scene; });
     return iter != scenes_.end() ? iter->second : nullptr;
 }
 

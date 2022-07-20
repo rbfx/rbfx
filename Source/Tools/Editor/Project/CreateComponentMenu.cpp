@@ -32,12 +32,22 @@ ea::optional<StringHash> RenderCreateComponentMenu(Context* context)
     static const ea::string prefix = "Component/";
     const auto& typesByCategory = context->GetObjectCategories();
 
+    static StringVector sortedCategories;
+    sortedCategories.clear();
+    ea::transform(typesByCategory.begin(), typesByCategory.end(), std::back_inserter(sortedCategories),
+        [](const auto& pair) { return pair.first; });
+    std::sort(sortedCategories.begin(), sortedCategories.end());
+
     ea::optional<StringHash> result;
-    for (const auto& [category, types] : typesByCategory)
+    for (const auto& category : sortedCategories)
     {
+        const auto iter = typesByCategory.find(category);
+        if (iter == typesByCategory.end())
+            continue;
         if (!category.starts_with(prefix))
             continue;
 
+        const auto& types = iter->second;
         const ea::string title = category.substr(prefix.length());
         if (ui::BeginMenu(title.c_str()))
         {

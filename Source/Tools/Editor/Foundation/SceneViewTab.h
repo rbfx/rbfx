@@ -123,6 +123,8 @@ class SceneViewTab : public ResourceEditorTab
     URHO3D_OBJECT(SceneViewTab, ResourceEditorTab);
 
 public:
+    Signal<void(SceneViewPage& page, const Vector3& position)> OnLookAt;
+
     struct ByInputPriority
     {
         bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const;
@@ -175,6 +177,7 @@ public:
     void CreateNodeNextToSelection(Scene* scene, SceneSelection& selection);
     void CreateNodeInSelection(Scene* scene, SceneSelection& selection);
     void CreateComponentInSelection(Scene* scene, SceneSelection& selection, StringHash componentType);
+    void FocusSelection(SceneSelection& selection);
 
     void CutSelection();
     void CopySelection();
@@ -184,6 +187,7 @@ public:
     void DuplicateSelection();
     void CreateNodeNextToSelection();
     void CreateNodeInSelection();
+    void FocusSelection();
     /// @}
 
     /// ResourceEditorTab implementation
@@ -214,6 +218,7 @@ public:
     /// @{
     const AddonSetByName& GetAddonsByName() const { return addonsByName_; }
     SceneViewPage* GetPage(const ea::string& resourceName);
+    SceneViewPage* GetPage(Scene* scene);
     SceneViewPage* GetActivePage();
     /// @}
 
