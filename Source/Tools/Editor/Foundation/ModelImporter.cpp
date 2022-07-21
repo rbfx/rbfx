@@ -37,6 +37,16 @@ bool IsFileNameGLTF(const ea::string& fileName)
         || fileName.ends_with(".glb", false);
 }
 
+bool IsFileNameFBX(const ea::string& fileName)
+{
+    return fileName.ends_with(".fbx", false);
+}
+
+bool IsFileNameBlend(const ea::string& fileName)
+{
+    return fileName.ends_with(".blend", false);
+}
+
 }
 
 void Foundation_ModelImporter(Context* context, ProjectEditor* project)
@@ -50,17 +60,72 @@ ModelImporter::ModelImporter(Context* context)
 {
 }
 
+ToolManager* ModelImporter::GetToolManager() const
+{
+    auto project = GetSubsystem<ProjectEditor>();
+    return project->GetToolManager();
+}
+
 bool ModelImporter::IsApplicable(const AssetTransformerInput& input)
 {
-    return IsFileNameGLTF(input.resourceName_);
+    const auto toolManager = GetToolManager();
+
+    if (IsFileNameGLTF(input.resourceName_))
+        return true;
+
+    if (IsFileNameFBX(input.resourceName_))
+    {
+        if (!toolManager->HasFBX2glTF())
+        {
+            static bool logged = false;
+            if (!logged)
+                URHO3D_LOGERROR("FBX2glTF is not found, cannot import FBX files. See Settings/Editor/ExternalTools.");
+            logged = true;
+            return false;
+        }
+
+        return true;
+    }
+
+    if (IsFileNameBlend(input.resourceName_))
+    {
+        if (!toolManager->HasBlender())
+        {
+            static bool logged = false;
+            if (!logged)
+                URHO3D_LOGERROR("Blender is not found, cannot import Blender files. See Settings/Editor/ExternalTools.");
+            logged = true;
+            return false;
+        }
+
+        return true;
+    }
+    return false;
 }
 
 bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformerOutput& output)
 {
+    if (IsFileNameGLTF(input.resourceName_))
+    {
+        return ImportGLTF(input.inputFileName_, input, output);
+    }
+    else if (IsFileNameFBX(input.resourceName_))
+    {
+        return ImportFBX(input.inputFileName_, input, output);
+    }
+    else if (IsFileNameBlend(input.resourceName_))
+    {
+        return ImportBlend(input.inputFileName_, input, output);
+    }
+    return false;
+}
+
+bool ModelImporter::ImportGLTF(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output)
+{
     const GLTFImporterSettings importerSettings;
     auto importer = MakeShared<GLTFImporter>(context_, importerSettings);
 
-    if (!importer->LoadFile(input.inputFileName_, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
+    if (!importer->LoadFile(fileName, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
     {
         URHO3D_LOGERROR("Failed to load asset {} as GLTF model", input.resourceName_);
         return false;
@@ -77,6 +142,56 @@ bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformer
     }
 
     return true;
+}
+
+bool ModelImporter::ImportFBX(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output)
+{
+    auto fs = context_->GetSubsystem<FileSystem>();
+    const auto toolManager = GetToolManager();
+
+    const ea::string tempGltfFile = input.tempPath_ + "model.gltf";
+    const StringVector arguments{
+        "--input",
+        fileName,
+        "--output",
+        tempGltfFile
+    };
+
+    ea::string commandOutput;
+    if (fs->SystemRun(toolManager->GetFBX2glTF(), arguments, commandOutput) != 0)
+    {
+        URHO3D_LOGERROR("{}", commandOutput);
+        return false;
+    }
+
+    const bool result = ImportGLTF(tempGltfFile, input, output);
+    fs->Delete(tempGltfFile);
+    return result;
+}
+
+bool ModelImporter::ImportBlend(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output)
+{
+    auto fs = context_->GetSubsystem<FileSystem>();
+    const auto toolManager = GetToolManager();
+
+    const ea::string tempGltfFile = input.tempPath_ + "model.gltf";
+    const StringVector arguments{
+        "-b",
+        fileName,
+        "--python-expr",
+        Format("import bpy; bpy.ops.export_scene.gltf(filepath='{}', export_format='GLTF_EMBEDDED')", tempGltfFile)
+    };
+
+    ea::string commandOutput;
+    if (fs->SystemRun(toolManager->GetBlender(), arguments, commandOutput) != 0)
+    {
+        URHO3D_LOGERROR("{}", commandOutput);
+        return false;
+    }
+
+    const bool result = ImportGLTF(tempGltfFile, input, output);
+    fs->Delete(tempGltfFile);
+    return result;
 }
 
 }

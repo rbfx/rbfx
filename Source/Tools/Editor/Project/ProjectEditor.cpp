@@ -148,6 +148,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , settingsManager_(MakeShared<SettingsManager>(context_))
     , pluginManager_(MakeShared<PluginManager>(context_))
     , launchManager_(MakeShared<LaunchManager>(context_))
+    , toolManager_(MakeShared<ToolManager>(context_))
     , closeDialog_(MakeShared<CloseDialog>(context_))
 {
     auto initializationGuard = ea::make_shared<int>(0);
@@ -171,6 +172,8 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     assetManager_->OnInitialized.Subscribe(this, [=](ProjectEditor*) mutable { initializationGuard.reset(); });
 
     ApplyPlugins();
+
+    settingsManager_->AddPage(toolManager_);
 
     assetManager_->LoadFile(cacheJsonPath_);
     settingsManager_->LoadFile(settingsJsonPath_);
