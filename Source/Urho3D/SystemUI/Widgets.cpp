@@ -454,13 +454,13 @@ bool EditVariantEnum(Variant& var, const EditVariantOptions& options)
             if (ui::Selectable(items[index].c_str(), value == index))
             {
                 var = index;
+                valueChanged = true;
                 break;
             }
         }
         ui::EndCombo();
-        return true;
     }
-    return false;
+    return valueChanged;
 }
 
 bool EditVariantResourceRef(Variant& var, const EditVariantOptions& options)

@@ -249,6 +249,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
     if (item_width != 0)
         ui::PushItemWidth(item_width);
 
+#if 0
     if (info != nullptr && info->enumNames_ != nullptr)
     {
         // Count enum names.
@@ -273,6 +274,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
                 value = info->enumNames_[current];
         }
     }
+#endif
     else
     {
         switch (info ? info->type_ : value.GetType())

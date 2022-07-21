@@ -213,7 +213,10 @@ void ChangeNodeAttributesAction::SetAttributeValues(const VariantVector& values)
     for (unsigned index = 0; index < nodeIds_.size(); ++index)
     {
         if (Node* node = scene_->GetNode(nodeIds_[index]))
+        {
             node->SetAttribute(attributeName_, values[index]);
+            node->ApplyAttributes();
+        }
     }
 }
 
@@ -258,7 +261,10 @@ void ChangeComponentAttributesAction::SetAttributeValues(const VariantVector& va
     for (unsigned index = 0; index < componentIds_.size(); ++index)
     {
         if (Component* component = scene_->GetComponent(componentIds_[index]))
+        {
             component->SetAttribute(attributeName_, values[index]);
+            component->ApplyAttributes();
+        }
     }
 }
 

@@ -291,8 +291,6 @@ namespace SDL
 %rename(GetVariantType) Urho3D::Variant::GetType;
 %nocsattribute Urho3D::Variant::GetType;
 %csmethodmodifiers ToString() "public override"
-%ignore Urho3D::AttributeInfo::enumNamesStorage_;
-%ignore Urho3D::AttributeInfo::enumNamesPointers_;
 %ignore Urho3D::AttributeInfo::enumNames_;
 
 // Subsystem properties.

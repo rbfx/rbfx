@@ -75,11 +75,15 @@ void SerializableInspectorWidget::RenderContent()
             for (Serializable* object : objects_)
             {
                 if (object)
+                {
                     object->SetAttribute(info->name_, value);
+                    object->ApplyAttributes();
+                }
             }
             OnEditAttributeEnd(this, objects_, info);
         }
     }
+
 }
 
 void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
@@ -106,6 +110,9 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
     ui::BeginDisabled(!canEdit);
 
     Widgets::EditVariantOptions options;
+    if (!info.enumNames_.empty())
+        options = options.Enum(info.enumNames_);
+
     if (Widgets::EditVariant(value, options))
         pendingSetAttributes_.emplace_back(&info, value);
 
