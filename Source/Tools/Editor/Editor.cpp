@@ -488,7 +488,7 @@ void Editor::OnUpdate(VariantMap& args)
                 for (int i = 0; i < recents.size();)
                 {
                     const ea::string& projectPath = recents[i];
-                    ea::string snapshotFile = AddTrailingSlash(projectPath) + ".snapshot.png";
+                    ea::string snapshotFile = AddTrailingSlash(projectPath) + "Preview.png";
                     if (fs->FileExists(snapshotFile))
                     {
                         Image img(editor->context_);

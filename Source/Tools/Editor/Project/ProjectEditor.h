@@ -171,6 +171,7 @@ public:
     const ea::string& GetCoreDataPath() const { return coreDataPath_; }
     const ea::string& GetDataPath() const { return dataPath_; }
     const ea::string& GetCachePath() const { return cachePath_; }
+    const ea::string& GetPreviewPngPath() const { return previewPngPath_; }
     /// @}
 
     /// Return singletons
@@ -232,6 +233,7 @@ private:
     const ea::string cacheJsonPath_;
     const ea::string uiIniPath_;
     const ea::string gitIgnorePath_;
+    const ea::string previewPngPath_;
 
     ea::string dataPath_;
 

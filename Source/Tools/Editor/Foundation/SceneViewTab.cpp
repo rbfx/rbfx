@@ -765,6 +765,9 @@ void SceneViewTab::OnResourceShallowSaved(const ea::string& resourceName)
         return;
 
     SavePageConfig(*page);
+
+    if (GetActiveResourceName() == resourceName)
+        SavePagePreview(*page);
 }
 
 void SceneViewTab::SavePageScene(SceneViewPage& page) const
@@ -776,6 +779,28 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
     page.scene_->SaveXML(rootElement);
 
     xmlFile.SaveFile(page.scene_->GetFileName());
+}
+
+void SceneViewTab::SavePagePreview(SceneViewPage& page) const
+{
+    Texture2D* texture = page.renderer_->GetTexture();
+    SharedPtr<Image> image = texture->GetImage();
+
+    if (!image)
+        return;
+
+    // Crop to square
+    const IntVector2 size{image->GetWidth(), image->GetHeight()};
+    const int minSide = ea::min(size.x_, size.y_);
+    const IntVector2 excess = size - IntVector2::ONE * minSide;
+    const IntVector2 offsetTopLeft = excess / 2;
+    const IntVector2 offsetRightBottom = excess - offsetTopLeft;
+
+    const IntRect rect{offsetTopLeft, size - offsetRightBottom};
+    SharedPtr<Image> croppedImage = image->GetSubimage(rect);
+
+    const ea::string& path = GetProject()->GetPreviewPngPath();
+    croppedImage->SavePNG(path);
 }
 
 void SceneViewTab::PreRenderUpdate()
