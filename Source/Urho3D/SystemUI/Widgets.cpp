@@ -70,6 +70,42 @@ ea::optional<StringHash> GetMatchingType(const ResourceFileDescriptor& desc, Str
     return ea::nullopt;
 };
 
+struct QuaternionCachedInfo
+{
+    unsigned time_{};
+    Quaternion value_;
+    Vector3 angles_{Quaternion::IDENTITY.EulerAngles()};
+};
+
+static ea::unordered_map<ImGuiID, QuaternionCachedInfo> quaternionCache;
+
+void PruneQuaternionCache()
+{
+    static const unsigned expireTimeMs = 1000;
+    const unsigned currentTime = Time::GetSystemTime();
+    ea::erase_if(quaternionCache, [&](const auto& pair) { return currentTime - pair.second.time_ > expireTimeMs; });
+}
+
+Vector3 GetQuaternionAngles(ImGuiID id, const Quaternion& quaternion)
+{
+    QuaternionCachedInfo& info = quaternionCache[id];
+
+    info.time_ = Time::GetSystemTime();
+    if (info.value_ == quaternion)
+        return info.angles_;
+
+    info.value_ = quaternion;
+    info.angles_ = quaternion.EulerAngles();
+    return info.angles_;
+}
+
+void UpdateQuaternionAngles(ImGuiID id, const Quaternion& quaternion, const Vector3& angles)
+{
+    QuaternionCachedInfo& info = quaternionCache[id];
+    info.value_ = quaternion;
+    info.angles_ = angles;
+}
+
 }
 
 float GetSmallButtonSize()
@@ -346,6 +382,27 @@ bool EditVariantVector4(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantQuaternion(Variant& var, const EditVariantOptions& options)
+{
+    const ImGuiID id = ui::GetID("Quaternion");
+    PruneQuaternionCache();
+
+    const Quaternion value = var.GetQuaternion();
+    Vector3 angles = GetQuaternionAngles(id, value);
+
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    const float maxValue = 360.0f;
+    if (ui::DragFloat3("", &angles.x_, 1.0f, -maxValue * 100, maxValue * 100, "%.2f"))
+    {
+        const Quaternion newValue{angles};
+        UpdateQuaternionAngles(id, newValue, angles);
+
+        var = newValue;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariantBool(Variant& var, const EditVariantOptions& options)
 {
     bool value = var.GetBool();
@@ -476,7 +533,8 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
         else
             return EditVariantVector4(var, options);
 
-    // case VAR_QUATERNION:
+    case VAR_QUATERNION:
+        return EditVariantQuaternion(var, options);
 
     case VAR_COLOR:
         return EditVariantColor(var, options);
