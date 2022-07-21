@@ -23,6 +23,8 @@
 #include "../SystemUI/Widgets.h"
 
 #include "../Input/Input.h"
+#include "../Graphics/Texture2D.h"
+#include "../Graphics/TextureCube.h"
 #include "../SystemUI/DragDropPayload.h"
 #include "../SystemUI/SystemUI.h"
 
@@ -193,9 +195,20 @@ bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* all
         if (ui::IsItemHovered())
         {
             if (allowedTypes->empty())
+            {
                 ui::SetTooltip("Resource: any type");
+            }
             else
-                ui::SetTooltip("Resource: %s", ea::string::joined(*allowedTypes, ", ").c_str());
+            {
+                const auto iter = ea::find_if(allowedTypes->begin(), allowedTypes->end(),
+                    [&](const ea::string& allowedType) { return type == StringHash{allowedType}; });
+                ea::string tooltip = "Resource: ";
+                if (iter != allowedTypes->end())
+                    tooltip += *iter;
+                else
+                    tooltip += "Unknown";
+                ui::SetTooltip("%s", tooltip.c_str());
+            }
         }
     }
 
@@ -349,10 +362,34 @@ bool EditVariantEnum(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantResourceRef(Variant& var, const EditVariantOptions& options)
+{
+    ResourceRef value = var.GetResourceRef();
+
+    // TODO(editor): Hack for Light["Light Shape Texture"]
+    static const StringVector lightShapeTypes = {Texture2D::GetTypeNameStatic(), TextureCube::GetTypeNameStatic()};
+    const StringVector* allowedTypes = value.type_ == Texture::GetTypeNameStatic() ? &lightShapeTypes : options.resourceTypes_;
+
+    if (EditResourceRef(value.type_, value.name_, allowedTypes))
+    {
+        var = value;
+        return true;
+    }
+
+    return false;
+}
+
 bool EditVariant(Variant& var, const EditVariantOptions& options)
 {
     switch (var.GetType())
     {
+    case VAR_NONE:
+    case VAR_PTR:
+    case VAR_VOIDPTR:
+    case VAR_CUSTOM:
+        ui::Text("Unsupported type");
+        return false;
+
     case VAR_INT:
         if (options.intToString_ && !options.intToString_->empty())
             return EditVariantEnum(var, options);
@@ -380,11 +417,34 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
         else
             return EditVariantVector4(var, options);
 
+    // case VAR_QUATERNION:
+
     case VAR_COLOR:
         return EditVariantColor(var, options);
 
     case VAR_STRING:
         return EditVariantString(var, options);
+
+    // case VAR_STRING:
+    // case VAR_BUFFER:
+
+    case VAR_RESOURCEREF:
+        return EditVariantResourceRef(var, options);
+
+    // case VAR_RESOURCEREFLIST:
+    // case VAR_VARIANTVECTOR:
+    // case VAR_VARIANTMAP:
+    // case VAR_INTRECT:
+    // case VAR_INTVECTOR2:
+    // case VAR_MATRIX3:
+    // case VAR_MATRIX3X4:
+    // case VAR_MATRIX4:
+    // case VAR_DOUBLE:
+    // case VAR_STRINGVECTOR:
+    // case VAR_RECT:
+    // case VAR_INTVECTOR3:
+    // case VAR_INT64:
+    // case VAR_VARIANTCURVE:
 
     default:
         ui::Button("TODO: Implement");

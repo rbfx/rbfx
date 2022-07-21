@@ -58,11 +58,14 @@ struct EditVariantOptions
     bool asColor_{};
     /// Enum values used to convert integer to string.
     const StringVector* intToString_{};
+    /// Allowed resource types.
+    const StringVector* resourceTypes_{};
 
     EditVariantOptions& AsColor() { asColor_ = true; return *this; }
     EditVariantOptions& Range(double min, double max) { min_ = min; max_ = max; return *this; }
     EditVariantOptions& Step(double step) { step_ = step; return *this; }
     EditVariantOptions& Enum(const StringVector& values) { intToString_ = &values; return *this; }
+    EditVariantOptions& ResourceTypes(const StringVector& types) { resourceTypes_ = &types; return *this; }
 };
 
 /// Render reference to resource with optional type constraints. If allowed types are not specified, only current type is allowed.
