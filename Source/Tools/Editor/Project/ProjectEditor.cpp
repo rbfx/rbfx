@@ -152,6 +152,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , cacheJsonPath_(projectPath_ + "Cache.json")
     , uiIniPath_(projectPath_ + ".ui.ini")
     , gitIgnorePath_(projectPath_ + ".gitignore")
+    , previewPngPath_(projectPath_ + "Preview.png")
     , dataPath_(projectPath_ + "Data/")
     , oldCacheState_(context)
     , hotkeyManager_(MakeShared<HotkeyManager>(context_))
@@ -457,6 +458,7 @@ void ProjectEditor::InitializeDefaultProject()
 
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
     ProcessRequest(request, nullptr);
+
     Save();
 }
 
@@ -530,6 +532,10 @@ void ProjectEditor::SaveGitIgnore()
 
     content += "# Ignore UI settings\n";
     content += "/.ui.ini\n";
+    content += "\n";
+
+    content += "# Ignore preview screenshot\n";
+    content += "/Preview.png\n";
     content += "\n";
 
     content += "# Ignore internal files\n";
@@ -709,7 +715,11 @@ void ProjectEditor::SaveProjectOnly()
     SerializeOptionalValue(archive, "Project", *this, AlwaysSerialize{});
     projectJsonFile.SaveFile(projectJsonPath_);
 
-    SaveGitIgnore();
+    // Save .gitignore file once so user can edit it
+    auto fs = GetSubsystem<FileSystem>();
+    if (!fs->FileExists(gitIgnorePath_))
+        SaveGitIgnore();
+
     assetManager_->SaveFile(cacheJsonPath_);
 
     hasUnsavedChanges_ = false;

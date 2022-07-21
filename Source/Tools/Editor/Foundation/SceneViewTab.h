@@ -240,6 +240,8 @@ private:
 
     void SavePageConfig(const SceneViewPage& page) const;
     void LoadPageConfig(SceneViewPage& page) const;
+
+    void SavePagePreview(SceneViewPage& page) const;
     /// @}
 
     void UpdateAddons(SceneViewPage& page);
