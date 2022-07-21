@@ -56,6 +56,8 @@ struct EditVariantOptions
     double max_{0.0f};
     /// Whether to treat Vector3 and Vector4 as color values.
     bool asColor_{};
+    /// Whether to allow resize for dynamically sized containers.
+    bool allowResize_{};
     /// Enum values used to convert integer to string.
     const StringVector* intToString_{};
     /// Allowed resource types.
@@ -66,10 +68,14 @@ struct EditVariantOptions
     EditVariantOptions& Step(double step) { step_ = step; return *this; }
     EditVariantOptions& Enum(const StringVector& values) { intToString_ = &values; return *this; }
     EditVariantOptions& ResourceTypes(const StringVector& types) { resourceTypes_ = &types; return *this; }
+    EditVariantOptions& AllowResize() { allowResize_ = true; return *this; }
 };
 
 /// Render reference to resource with optional type constraints. If allowed types are not specified, only current type is allowed.
 URHO3D_API bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* allowedTypes);
+
+/// Render vector of resource references with optional type constraints. If allowed types are not specified, only current type is allowed.
+URHO3D_API bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes, bool resizable);
 
 /// Render arbitrary variant value editor.
 URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});
