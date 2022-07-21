@@ -106,6 +106,8 @@
 %ignore Urho3D::EP_ENGINE_AUTO_LOAD_SCRIPTS;
 %constant ea::string EpSystemuiFlags = Urho3D::EP_SYSTEMUI_FLAGS;
 %ignore Urho3D::EP_SYSTEMUI_FLAGS;
+%constant ea::string EpConfigDir = Urho3D::EP_CONFIG_DIR;
+%ignore Urho3D::EP_CONFIG_DIR;
 %csattribute(Urho3D::Engine, %arg(ea::string), AppPreferencesDir, GetAppPreferencesDir);
 %csattribute(Urho3D::Engine, %arg(float), NextTimeStep, GetNextTimeStep, SetNextTimeStep);
 %csattribute(Urho3D::Engine, %arg(int), MinFps, GetMinFps, SetMinFps);
