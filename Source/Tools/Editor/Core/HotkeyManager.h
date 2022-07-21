@@ -28,6 +28,7 @@
 #include <Urho3D/Input/InputConstants.h>
 
 #include <EASTL/shared_ptr.h>
+#include <EASTL/map.h>
 #include <EASTL/vector.h>
 #include <EASTL/unordered_set.h>
 
@@ -104,30 +105,6 @@ public:
     using HotkeyCallback = ea::function<void()>;
     template <class T> using HotkeyMemberCallback = void(T::*)();
 
-    explicit HotkeyManager(Context* context);
-
-    /// Bind new hotkeys. Hotkeys for expired objects will be automatically removed.
-    /// @{
-    void BindPassiveHotkey(const EditorHotkey& hotkey);
-    void BindHotkey(Object* owner, const EditorHotkey& hotkey, HotkeyCallback callback);
-    template <class T> void BindHotkey(T* owner, const EditorHotkey& hotkey, HotkeyMemberCallback<T> callback);
-    /// @}
-
-    /// Return currently bound hotkey combination for given hotkey.
-    const EditorHotkey& GetHotkey(const EditorHotkey& hotkey) const;
-    ea::string GetHotkeyLabel(const EditorHotkey& hotkey) const;
-    bool IsHotkeyActive(const EditorHotkey& hotkey) const;
-
-    /// Routine maintenance, no user logic is performed
-    /// @{
-    void RemoveExpired();
-    void Update();
-    /// @}
-
-    /// Check and invoke all hotkeys corresponding to the owner.
-    void InvokeFor(Object* owner);
-
-private:
     struct HotkeyBinding
     {
         HotkeyBinding(Object* owner, const EditorHotkey& hotkey, HotkeyCallback callback);
@@ -139,7 +116,35 @@ private:
         bool isPassive_{};
     };
     using HotkeyBindingPtr = ea::shared_ptr<HotkeyBinding>;
+    using HotkeyBindingMap = ea::map<ea::string, ea::vector<HotkeyBindingPtr>>;
 
+    explicit HotkeyManager(Context* context);
+
+    /// Bind new hotkeys. Hotkeys for expired objects will be automatically removed.
+    /// @{
+    void BindPassiveHotkey(const EditorHotkey& hotkey);
+    void BindHotkey(Object* owner, const EditorHotkey& hotkey, HotkeyCallback callback);
+    template <class T> void BindHotkey(T* owner, const EditorHotkey& hotkey, HotkeyMemberCallback<T> callback);
+    /// @}
+
+    /// Return currently bound hotkey combination for given hotkey.
+    const EditorHotkey& GetHotkey(const ea::string& command) const;
+    const EditorHotkey& GetHotkey(const EditorHotkey& hotkey) const;
+    ea::string GetHotkeyLabel(const EditorHotkey& hotkey) const;
+    bool IsHotkeyActive(const EditorHotkey& hotkey) const;
+
+    const HotkeyBindingMap& GetBindings() const { return hotkeyByCommand_; }
+
+    /// Routine maintenance, no user logic is performed
+    /// @{
+    void RemoveExpired();
+    void Update();
+    /// @}
+
+    /// Check and invoke all hotkeys corresponding to the owner.
+    void InvokeFor(Object* owner);
+
+private:
     static bool IsBindingExpired(const HotkeyBindingPtr& ptr);
     HotkeyBindingPtr FindByCommand(const ea::string& command) const;
 
@@ -147,7 +152,7 @@ private:
     Timer cleanupTimer_;
 
     ea::unordered_map<WeakPtr<Object>, ea::vector<HotkeyBindingPtr>> hotkeyByOwner_;
-    ea::unordered_map<ea::string, ea::vector<HotkeyBindingPtr>> hotkeyByCommand_;
+    HotkeyBindingMap hotkeyByCommand_;
 
     ea::unordered_set<ea::string> invokedCommands_;
 };
