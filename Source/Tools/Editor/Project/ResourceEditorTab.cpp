@@ -33,8 +33,8 @@ namespace Urho3D
 namespace
 {
 
-const auto Hotkey_SaveDocument = HotkeyInfo{"Global.SaveDocument"}.Ctrl().Press(KEY_S);
-const auto Hotkey_CloseDocument = HotkeyInfo{"Global.CloseDocument"}.Ctrl().Press(KEY_W);
+const auto Hotkey_SaveDocument = EditorHotkey{"Global.SaveDocument"}.Ctrl().Press(KEY_S);
+const auto Hotkey_CloseDocument = EditorHotkey{"Global.CloseDocument"}.Ctrl().Press(KEY_W);
 
 }
 

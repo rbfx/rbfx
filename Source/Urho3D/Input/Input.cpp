@@ -1354,6 +1354,25 @@ ea::string Input::GetScancodeName(Scancode scancode)
     return SDL_GetScancodeName((SDL_Scancode)scancode);
 }
 
+ea::string Input::GetMouseButtonName(MouseButton button)
+{
+    switch (button)
+    {
+    case MOUSEB_LEFT:
+        return "LMB";
+    case MOUSEB_MIDDLE:
+        return "MMB";
+    case MOUSEB_RIGHT:
+        return "RMB";
+    case MOUSEB_X1:
+        return "X1";
+    case MOUSEB_X2:
+        return "X2";
+    default:
+        return "?";
+    }
+}
+
 bool Input::GetKeyDown(Key key) const
 {
     return keyDown_.contains(SDL_tolower(key));

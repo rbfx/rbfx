@@ -35,16 +35,16 @@ namespace Urho3D
 namespace
 {
 
-const HotkeyInfo Hotkey_MoveForward = HotkeyInfo{"EditorCamera.MoveForward"}.Hold(SCANCODE_W).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
-const HotkeyInfo Hotkey_MoveBackward = HotkeyInfo{"EditorCamera.MoveBackward"}.Hold(SCANCODE_S).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
-const HotkeyInfo Hotkey_MoveLeft = HotkeyInfo{"EditorCamera.MoveLeft"}.Hold(SCANCODE_A).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
-const HotkeyInfo Hotkey_MoveRight = HotkeyInfo{"EditorCamera.MoveRight"}.Hold(SCANCODE_D).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
-const HotkeyInfo Hotkey_MoveUp = HotkeyInfo{"EditorCamera.MoveUp"}.Hold(SCANCODE_E).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
-const HotkeyInfo Hotkey_MoveDown = HotkeyInfo{"EditorCamera.MoveDown"}.Hold(SCANCODE_Q).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+const auto Hotkey_MoveForward = EditorHotkey{"EditorCamera.MoveForward"}.Hold(SCANCODE_W).Hold(MOUSEB_RIGHT).MaybeShift();
+const auto Hotkey_MoveBackward = EditorHotkey{"EditorCamera.MoveBackward"}.Hold(SCANCODE_S).Hold(MOUSEB_RIGHT).MaybeShift();
+const auto Hotkey_MoveLeft = EditorHotkey{"EditorCamera.MoveLeft"}.Hold(SCANCODE_A).Hold(MOUSEB_RIGHT).MaybeShift();
+const auto Hotkey_MoveRight = EditorHotkey{"EditorCamera.MoveRight"}.Hold(SCANCODE_D).Hold(MOUSEB_RIGHT).MaybeShift();
+const auto Hotkey_MoveUp = EditorHotkey{"EditorCamera.MoveUp"}.Hold(SCANCODE_E).Hold(MOUSEB_RIGHT).MaybeShift();
+const auto Hotkey_MoveDown = EditorHotkey{"EditorCamera.MoveDown"}.Hold(SCANCODE_Q).Hold(MOUSEB_RIGHT).MaybeShift();
 
-const HotkeyInfo Hotkey_MoveAccelerate = HotkeyInfo{"EditorCamera.MoveAccelerate"}.Hold(SCANCODE_LSHIFT).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
-const HotkeyInfo Hotkey_LookAround = HotkeyInfo{"EditorCamera.LookAround"}.Hold(MOUSEB_RIGHT).IgnoreQualifiers();
-const HotkeyInfo Hotkey_OrbitAround = HotkeyInfo{"EditorCamera.OrbitAround"}.Alt().Hold(MOUSEB_RIGHT).IgnoreCtrl().IgnoreShift();
+const auto Hotkey_MoveAccelerate = EditorHotkey{"EditorCamera.MoveAccelerate"}.Hold(SCANCODE_LSHIFT).Hold(MOUSEB_RIGHT).MaybeShift();
+const auto Hotkey_LookAround = EditorHotkey{"EditorCamera.LookAround"}.Hold(MOUSEB_RIGHT).MaybeShift().MaybeAlt().MaybeCtrl();
+const auto Hotkey_OrbitAround = EditorHotkey{"EditorCamera.OrbitAround"}.Alt().Hold(MOUSEB_RIGHT).MaybeShift();
 
 }
 
@@ -133,7 +133,7 @@ Vector3 EditorCamera::GetMoveDirection() const
 {
     auto hotkeyManager = owner_->GetHotkeyManager();
 
-    const ea::pair<const HotkeyInfo&, Vector3> keyMapping[]{
+    const ea::pair<const EditorHotkey&, Vector3> keyMapping[]{
         {Hotkey_MoveForward, Vector3::FORWARD},
         {Hotkey_MoveBackward, Vector3::BACK},
         {Hotkey_MoveLeft, Vector3::LEFT},

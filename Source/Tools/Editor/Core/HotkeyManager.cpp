@@ -30,106 +30,172 @@
 namespace Urho3D
 {
 
-bool HotkeyCombination::IsValid() const
+namespace
 {
-    return qualifiers_ != QUAL_NONE
-        || key_ != KEY_UNKNOWN
-        || mouseButton_ != MOUSEB_NONE
-        || scancode_ != SCANCODE_UNKNOWN;
+
 }
 
-bool HotkeyCombination::IsInvoked() const
+bool EditorHotkey::IsValid() const
 {
-    if (!IsValid())
-        return false;
+    return qualifiersDown_ != QUAL_NONE
+        || mouseButtonPressed_ != MOUSEB_NONE
+        || mouseButtonsDown_ != MOUSEB_NONE
+        || keyPressed_ != KEY_UNKNOWN
+        || keyDown_ != KEY_UNKNOWN
+        || scancodePressed_ != SCANCODE_UNKNOWN
+        || scancodeDown_ != SCANCODE_UNKNOWN;
+}
 
-    if (key_ != KEY_UNKNOWN)
-    {
-        const bool keyActive = holdKey_
-            ? ui::IsKeyDown(key_)
-            : ui::IsKeyPressed(key_);
-
-        if (!keyActive)
-            return false;
-    }
-    if (scancode_ != SCANCODE_UNKNOWN)
-    {
-        const bool scancodeActive = holdKey_
-            ? ui::IsKeyDown(static_cast<int>(scancode_))
-            : ui::IsKeyPressed(static_cast<int>(scancode_));
-
-        if (!scancodeActive)
-            return false;
-    }
-    if (mouseButton_ != MOUSEB_NONE)
-    {
-        const bool mouseActive = holdMouseButton_
-            ? ui::IsMouseDown(mouseButton_)
-            : ui::IsMouseClicked(mouseButton_);
-
-        if (!mouseActive)
-            return false;
-    }
-
+bool EditorHotkey::CheckKeyboardQualifiers() const
+{
     const bool ctrlDown = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
     const bool altDown = ui::IsKeyDown(KEY_LALT);
     const bool shiftDown = ui::IsKeyDown(KEY_LSHIFT) || ui::IsKeyDown(KEY_RSHIFT);
 
-    if (!ignoredQualifiers_.Test(QUAL_CTRL) && qualifiers_.Test(QUAL_CTRL) != ctrlDown)
+    if (qualifiersDown_.Test(QUAL_CTRL) && !ctrlDown)
         return false;
-    if (!ignoredQualifiers_.Test(QUAL_ALT) && qualifiers_.Test(QUAL_ALT) != altDown)
+    if (qualifiersDown_.Test(QUAL_ALT) && !altDown)
         return false;
-    if (!ignoredQualifiers_.Test(QUAL_SHIFT) && qualifiers_.Test(QUAL_SHIFT) != shiftDown)
+    if (qualifiersDown_.Test(QUAL_SHIFT) && !shiftDown)
         return false;
 
-    if (qualifiers_ == QUAL_NONE && mouseButton_ == MOUSEB_NONE && ui::IsMouseDown(MOUSEB_ANY))
+    if (qualifiersUp_.Test(QUAL_CTRL) && ctrlDown)
+        return false;
+    if (qualifiersUp_.Test(QUAL_ALT) && altDown)
+        return false;
+    if (qualifiersUp_.Test(QUAL_SHIFT) && shiftDown)
         return false;
 
     return true;
 }
 
-ea::string HotkeyCombination::ToString() const
+bool EditorHotkey::CheckMouseQualifiers() const
+{
+    for (const MouseButton mouseButton : {MOUSEB_LEFT, MOUSEB_RIGHT, MOUSEB_MIDDLE, MOUSEB_X1, MOUSEB_X2})
+    {
+        if (mouseButtonsDown_.Test(mouseButton) && !ui::IsMouseDown(mouseButton))
+            return false;
+        if (mouseButtonsUp_.Test(mouseButton) && ui::IsMouseDown(mouseButton))
+            return false;
+    }
+    return true;
+}
+
+bool EditorHotkey::CheckKeyboardPress() const
+{
+    if (keyPressed_ != KEY_UNKNOWN && !ui::IsKeyPressed(keyPressed_))
+        return false;
+    if (scancodePressed_ != SCANCODE_UNKNOWN && !ui::IsKeyPressed(static_cast<int>(scancodePressed_)))
+        return false;
+    if (keyDown_ != KEY_UNKNOWN && !ui::IsKeyDown(keyDown_))
+        return false;
+    if (scancodeDown_ != SCANCODE_UNKNOWN && !ui::IsKeyDown(static_cast<int>(scancodeDown_)))
+        return false;
+    return true;
+}
+
+bool EditorHotkey::CheckMousePress() const
+{
+    if (mouseButtonPressed_ != MOUSEB_NONE && !ui::IsMouseClicked(mouseButtonPressed_))
+        return false;
+    return true;
+}
+
+bool EditorHotkey::Check() const
 {
     if (!IsValid())
+        return false;
+
+    if (!CheckKeyboardQualifiers())
+        return false;
+    if (!CheckMouseQualifiers())
+        return false;
+    if (!CheckKeyboardPress())
+        return false;
+    if (!CheckMousePress())
+        return false;
+
+    return true;
+}
+
+ea::string EditorHotkey::GetQualifiersString() const
+{
+    ea::string str;
+
+    if (qualifiersDown_.Test(QUAL_CTRL))
+        str += "Ctrl+";
+    else if (!qualifiersUp_.Test(QUAL_CTRL))
+        str += "[Ctrl?]+";
+
+    if (qualifiersDown_.Test(QUAL_ALT))
+        str += "Alt+";
+    else if (!qualifiersUp_.Test(QUAL_ALT))
+        str += "[Alt?]+";
+
+    if (qualifiersDown_.Test(QUAL_SHIFT))
+        str += "Shift+";
+    else if (!qualifiersUp_.Test(QUAL_SHIFT))
+        str += "[Shift?]+";
+
+    return str;
+}
+
+ea::string EditorHotkey::GetPressString() const
+{
+    if (mouseButtonPressed_ != MOUSEB_NONE)
+        return Input::GetMouseButtonName(mouseButtonPressed_);
+    else if (keyPressed_ != KEY_UNKNOWN)
+        return Input::GetKeyName(keyPressed_);
+    else if (scancodePressed_ != SCANCODE_UNKNOWN)
+        return Input::GetScancodeName(scancodePressed_);
+    else
         return "";
+}
 
+ea::string EditorHotkey::GetHoldString() const
+{
     ea::string result;
-    if (qualifiers_.Test(QUAL_CTRL))
-        result += "Ctrl+";
-    if (qualifiers_.Test(QUAL_ALT))
-        result += "Alt+";
-    if (qualifiers_.Test(QUAL_SHIFT))
-        result += "Shift+";
 
-    if (key_ != KEY_UNKNOWN)
-        result += Input::GetKeyName(key_);
-    else if (scancode_ != SCANCODE_UNKNOWN)
-        result += Input::GetScancodeName(scancode_);
-    else if (mouseButton_ == MOUSEB_LEFT)
-        result += "Mouse L";
-    else if (mouseButton_ == MOUSEB_RIGHT)
-        result += "Mouse R";
-    else if (mouseButton_ == MOUSEB_MIDDLE)
-        result += "Mouse 3";
-    else if (mouseButton_ == MOUSEB_X1)
-        result += "Mouse 4";
-    else if (mouseButton_ == MOUSEB_X2)
-        result += "Mouse 5";
+    for (const MouseButton mouseButton : {MOUSEB_LEFT, MOUSEB_RIGHT, MOUSEB_MIDDLE, MOUSEB_X1, MOUSEB_X2})
+    {
+        if (mouseButtonsDown_.Test(mouseButton))
+            result += Input::GetMouseButtonName(mouseButton) + "+";
+    }
+
+    if (keyDown_ != KEY_UNKNOWN)
+        result += Input::GetKeyName(keyDown_) + "+";
+    else if (scancodeDown_ != SCANCODE_UNKNOWN)
+        result += Input::GetScancodeName(scancodeDown_) + "+";
+
+    if (result.ends_with("+"))
+        result.pop_back();
 
     return result;
 }
 
-HotkeyManager::HotkeyBinding::HotkeyBinding(Object* owner, const HotkeyInfo& info, HotkeyCallback callback)
+
+ea::string EditorHotkey::ToString() const
+{
+    const ea::string qualifiers = GetQualifiersString();
+    const ea::string press = GetPressString();
+    const ea::string hold = GetHoldString();
+    if (!press.empty())
+        return qualifiers + press;
+    else if (!hold.empty())
+        return qualifiers + hold;
+    else
+        return "";
+}
+
+HotkeyManager::HotkeyBinding::HotkeyBinding(Object* owner, const EditorHotkey& hotkey, HotkeyCallback callback)
     : owner_{owner}
-    , info_{info}
-    , hotkey_{info.defaultHotkey_}
+    , hotkey_{hotkey}
     , callback_{callback}
 {
 }
 
-HotkeyManager::HotkeyBinding::HotkeyBinding(const HotkeyInfo& info)
-    : info_(info)
-    , hotkey_{info.defaultHotkey_}
+HotkeyManager::HotkeyBinding::HotkeyBinding(const EditorHotkey& hotkey)
+    : hotkey_{hotkey}
     , isPassive_{true}
 {
 }
@@ -139,34 +205,35 @@ HotkeyManager::HotkeyManager(Context* context)
 {
 }
 
-void HotkeyManager::BindPassiveHotkey(const HotkeyInfo& info)
+void HotkeyManager::BindPassiveHotkey(const EditorHotkey& hotkey)
 {
-    const auto binding = ea::make_shared<HotkeyBinding>(info);
-    hotkeyByCommand_[info.command_] = {binding};
+    const auto binding = ea::make_shared<HotkeyBinding>(hotkey);
+    hotkeyByCommand_[hotkey.command_] = {binding};
 }
 
-void HotkeyManager::BindHotkey(Object* owner, const HotkeyInfo& info, ea::function<void()> callback)
+void HotkeyManager::BindHotkey(Object* owner, const EditorHotkey& hotkey, ea::function<void()> callback)
 {
     const WeakPtr<Object> weakOwner{owner};
-    const auto binding = ea::make_shared<HotkeyBinding>(weakOwner, info, callback);
+    const auto binding = ea::make_shared<HotkeyBinding>(weakOwner, hotkey, callback);
     hotkeyByOwner_[weakOwner].push_back(binding);
-    hotkeyByCommand_[info.command_].push_back(binding);
+    hotkeyByCommand_[hotkey.command_].push_back(binding);
 }
 
-HotkeyCombination HotkeyManager::GetHotkey(const HotkeyInfo& info) const
+const EditorHotkey& HotkeyManager::GetHotkey(const EditorHotkey& hotkey) const
 {
-    const HotkeyBindingPtr ptr = FindByCommand(info.command_);
-    return ptr ? ptr->hotkey_ : HotkeyCombination{};
+    static const EditorHotkey emptyHotkey;
+    const HotkeyBindingPtr ptr = FindByCommand(hotkey.command_);
+    return ptr ? ptr->hotkey_ : emptyHotkey;
 }
 
-ea::string HotkeyManager::GetHotkeyLabel(const HotkeyInfo& info) const
+ea::string HotkeyManager::GetHotkeyLabel(const EditorHotkey& hotkey) const
 {
-    return GetHotkey(info).ToString();
+    return GetHotkey(hotkey).ToString();
 }
 
-bool HotkeyManager::IsHotkeyActive(const HotkeyInfo& info) const
+bool HotkeyManager::IsHotkeyActive(const EditorHotkey& hotkey) const
 {
-    return GetHotkey(info).IsInvoked();
+    return GetHotkey(hotkey).Check();
 }
 
 void HotkeyManager::RemoveExpired()
@@ -177,7 +244,7 @@ void HotkeyManager::RemoveExpired()
         const auto& [owner, bindings] = elem;
         if (!owner && !bindings.empty())
         {
-            commandsToCheck.insert(bindings[0]->info_.command_);
+            commandsToCheck.insert(bindings[0]->hotkey_.command_);
             return true;
         }
         return false;
@@ -215,8 +282,8 @@ void HotkeyManager::InvokeFor(Object* owner)
 
     for (const HotkeyBindingPtr& bindingPtr : iter->second)
     {
-        const ea::string& command = bindingPtr->info_.command_;
-        if (!invokedCommands_.contains(command) && bindingPtr->hotkey_.IsInvoked())
+        const ea::string& command = bindingPtr->hotkey_.command_;
+        if (!invokedCommands_.contains(command) && bindingPtr->hotkey_.Check())
         {
             bindingPtr->callback_();
             invokedCommands_.insert(command);

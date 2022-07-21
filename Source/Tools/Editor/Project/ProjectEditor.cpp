@@ -50,7 +50,7 @@ namespace Urho3D
 namespace
 {
 
-const auto Hotkey_SaveProject = HotkeyInfo{"Global.SaveProject"}.Ctrl().Shift().Press(KEY_S);
+const auto Hotkey_SaveProject = EditorHotkey{"Global.SaveProject"}.Ctrl().Shift().Press(KEY_S);
 
 static unsigned numActiveProjects = 0;
 

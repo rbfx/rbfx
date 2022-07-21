@@ -266,6 +266,8 @@ public:
     static Scancode GetScancodeFromName(const ea::string& name);
     /// Return name of key from scancode.
     static ea::string GetScancodeName(Scancode scancode);
+    /// Return name of mouse button from code.
+    static ea::string GetMouseButtonName(MouseButton button);
 
     /// Check if a key is held down.
     /// @property
