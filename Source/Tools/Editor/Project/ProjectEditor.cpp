@@ -132,7 +132,7 @@ ResourceCacheGuard::~ResourceCacheGuard()
 
 bool AnalyzeFileContext::HasXMLRoot(ea::string_view root) const
 {
-    return xmlFile_ && xmlFile_->GetRoot().GetName().comparei(ea::string{root}) == 0;
+    return xmlFile_ && Compare(xmlFile_->GetRoot().GetName(), root, false) == 0;
 }
 
 bool AnalyzeFileContext::HasXMLRoot(std::initializer_list<ea::string_view> roots) const

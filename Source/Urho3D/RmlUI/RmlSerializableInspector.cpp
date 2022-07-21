@@ -185,11 +185,10 @@ void RmlSerializableInspector::Connect(Serializable* serializable)
 
         if (attributeInfo.type_ == VAR_BOOL)
             attribute.type_ = AttributeType_Bool;
-        else if (attributeInfo.enumNames_ != nullptr)
+        else if (!attributeInfo.enumNames_.empty())
         {
             attribute.type_ = AttributeType_Enum;
-            for (unsigned i = 0; attributeInfo.enumNames_[i] != nullptr; ++i)
-                attribute.enumNames_.push_back(attributeInfo.enumNames_[i]);
+            attribute.enumNames_ = attributeInfo.enumNames_;
 
             attribute.enumSelector_ = "<select data-value='attribute.value' style='width: 90%'>";
             for (const auto& option : attribute.enumNames_)

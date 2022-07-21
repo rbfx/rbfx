@@ -2051,11 +2051,6 @@ Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
         SharedPtr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
-        if (typeName.empty() || typeName.starts_with("Unknown", false))
-            newComponent->SetType(type);
-        else
-            newComponent->SetTypeName(typeName);
-
         AddComponent(newComponent, id, mode);
         return newComponent;
     }
