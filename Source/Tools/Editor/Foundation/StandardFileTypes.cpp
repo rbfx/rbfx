@@ -24,6 +24,7 @@
 
 #include <Urho3D/Audio/Sound.h>
 #include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Graphics/Texture2DArray.h>
 #include <Urho3D/Graphics/Texture3D.h>
@@ -87,6 +88,12 @@ void Foundation_StandardFileTypes(Context* context, ProjectEditor* project)
             desc.AddObjectType<Texture>();
             desc.AddObjectType<Texture2DArray>();
         }
+    });
+
+    project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
+    {
+        if (desc.HasExtension({".mdl"}))
+            desc.AddObjectType<Model>();
     });
 }
 
