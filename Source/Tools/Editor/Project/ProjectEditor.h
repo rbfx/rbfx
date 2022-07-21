@@ -82,6 +82,9 @@ struct AnalyzeFileContext
     SharedPtr<File> binaryFile_;
     SharedPtr<XMLFile> xmlFile_;
     SharedPtr<JSONFile> jsonFile_;
+
+    bool HasXMLRoot(ea::string_view root) const;
+    bool HasXMLRoot(std::initializer_list<ea::string_view> roots) const;
 };
 
 /// Main class for all Editor logic related to the project folder.

@@ -23,7 +23,10 @@
 #include "../SystemUI/Widgets.h"
 
 #include "../Input/Input.h"
+#include "../SystemUI/DragDropPayload.h"
 #include "../SystemUI/SystemUI.h"
+
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 namespace Urho3D
 {
@@ -44,6 +47,26 @@ ea::string GetFormatStringForStep(double step)
         return Format("%.{}f", numDigits);
     }
 }
+
+ea::optional<StringHash> GetMatchingType(const ResourceFileDescriptor& desc, StringHash currentType, const StringVector* allowedTypes)
+{
+    if (!allowedTypes)
+    {
+        if (desc.HasObjectType(currentType))
+            return currentType;
+        return ea::nullopt;
+    }
+
+    if (allowedTypes->empty())
+        return StringHash{desc.mostDerivedType_};
+
+    const auto iter = ea::find_if(allowedTypes->begin(), allowedTypes->end(),
+        [&](const ea::string& type) { return desc.HasObjectType(type); });
+    if (iter != allowedTypes->end())
+        return StringHash{*iter};
+
+    return ea::nullopt;
+};
 
 }
 
@@ -133,6 +156,69 @@ Color GetItemLabelColor(bool canEdit, bool defaultValue)
         return {0.85f, 0.85f, 0.85f, 1.0f};
     else
         return {1.0f, 1.0f, 0.75f, 1.0f};
+}
+
+bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* allowedTypes)
+{
+    bool modified = false;
+
+    if (allowedTypes != nullptr && !allowedTypes->empty())
+    {
+        if (ui::Button(ICON_FA_LIST))
+            ui::OpenPopup("##SelectType");
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Select resource type (%u allowed)", allowedTypes->size());
+        ui::SameLine();
+
+        if (ui::BeginPopup("##SelectType"))
+        {
+            for (const ea::string& allowedType : *allowedTypes)
+            {
+                if (ui::Selectable(allowedType.c_str(), type == StringHash{allowedType}))
+                {
+                    type = StringHash{allowedType};
+                    modified = true;
+                }
+            }
+            ui::EndPopup();
+        }
+    }
+
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::InputText("##Name", &name, ImGuiInputTextFlags_EnterReturnsTrue))
+        modified = true;
+
+    if (allowedTypes != nullptr)
+    {
+        if (ui::IsItemHovered())
+        {
+            if (allowedTypes->empty())
+                ui::SetTooltip("Resource: any type");
+            else
+                ui::SetTooltip("Resource: %s", ea::string::joined(*allowedTypes, ", ").c_str());
+        }
+    }
+
+    if (ui::BeginDragDropTarget())
+    {
+        auto payload = dynamic_cast<ResourceDragDropPayload*>(DragDropPayload::Get());
+        if (payload && payload->resources_.size() == 1 && !payload->resources_[0].isDirectory_)
+        {
+            const ResourceFileDescriptor& desc = payload->resources_[0];
+            if (const auto matchingType = GetMatchingType(desc, type, allowedTypes))
+            {
+                if (ui::AcceptDragDropPayload(DragDropPayloadType.c_str()))
+                {
+                    name = desc.resourceName_;
+                    type = *matchingType;
+                    modified = true;
+                }
+            }
+        }
+        ui::EndDragDropTarget();
+    }
+
+    return modified;
 }
 
 bool EditVariantColor(Variant& var, const EditVariantOptions& options)

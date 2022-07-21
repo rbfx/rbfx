@@ -70,10 +70,20 @@ struct URHO3D_API ResourceFileDescriptor
     bool isAutomatic_{};
 
     /// File type tags.
-    ea::unordered_set<ea::string> types_;
+    ea::unordered_set<ea::string> typeNames_;
+    ea::unordered_set<StringHash> types_;
 
-    template <class T> void AddObjectType() { types_.emplace(T::GetTypeNameStatic()); }
-    template <class T> bool HasObjectType() const { return types_.contains(T::GetTypeNameStatic()); }
+    ea::string mostDerivedType_;
+
+    void AddObjectType(const ea::string& typeName);
+    bool HasObjectType(const ea::string& typeName) const;
+    bool HasObjectType(StringHash type) const;
+
+    template <class T> void AddObjectType() { AddObjectType(T::GetTypeNameStatic()); }
+    template <class T> bool HasObjectType() const { return HasObjectType(T::GetTypeNameStatic()); }
+
+    bool HasExtension(ea::string_view extension) const;
+    bool HasExtension(std::initializer_list<ea::string_view> extensions) const;
 };
 
 /// Drag&drop payload containing reference to a resource or directory.
