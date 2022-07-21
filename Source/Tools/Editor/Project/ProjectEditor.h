@@ -26,6 +26,7 @@
 #include "../Project/EditorTab.h"
 #include "../Project/LaunchManager.h"
 #include "../Project/ProjectRequest.h"
+#include "../Project/ToolManager.h"
 
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/File.h>
@@ -177,6 +178,7 @@ public:
     UndoManager* GetUndoManager() const { return undoManager_; }
     PluginManager* GetPluginManager() const { return pluginManager_; }
     LaunchManager* GetLaunchManager() const { return launchManager_; }
+    ToolManager* GetToolManager() const { return toolManager_; }
     /// @}
 
     /// Internal
@@ -239,6 +241,7 @@ private:
     SharedPtr<UndoManager> undoManager_;
     SharedPtr<PluginManager> pluginManager_;
     SharedPtr<LaunchManager> launchManager_;
+    SharedPtr<ToolManager> toolManager_;
 
     ea::weak_ptr<void> initializationGuard_;
     bool firstInitialization_{};

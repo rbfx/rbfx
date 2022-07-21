@@ -186,17 +186,22 @@ void ResourceBrowserTab::OnProjectRequest(ProjectRequest* request)
         return;
 
     const ResourceFileDescriptor& desc = openResourceRequest->GetResource();
-    if (!desc.isDirectory_)
+    if (const FileSystemEntry* entry = FindLeftPanelEntry(desc.resourceName_))
     {
-        SelectLeftPanel(GetPath(desc.resourceName_));
-        SelectRightPanel(desc.resourceName_);
+        SelectLeftPanel(entry->resourceName_);
+        if (!desc.isDirectory_)
+            SelectRightPanel(desc.resourceName_);
         ScrollToSelection();
     }
-    else
-    {
-        SelectLeftPanel(desc.resourceName_);
-        ScrollToSelection();
-    }
+}
+
+const FileSystemEntry* ResourceBrowserTab::FindLeftPanelEntry(const ea::string& resourceName) const
+{
+    const ResourceRoot& root = roots_[left_.selectedRoot_];
+    const FileSystemEntry* entry = root.reflection_->FindEntry(resourceName);
+    while (entry && entry->isFile_)
+        entry = entry->parent_;
+    return entry;
 }
 
 ResourceBrowserTab::~ResourceBrowserTab()

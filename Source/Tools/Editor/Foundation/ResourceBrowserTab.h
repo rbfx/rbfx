@@ -141,6 +141,7 @@ private:
     void InitializeHotkeys();
 
     void OnProjectRequest(ProjectRequest* request);
+    const FileSystemEntry* FindLeftPanelEntry(const ea::string& resourceName) const;
 
     /// Render left panel
     /// @{

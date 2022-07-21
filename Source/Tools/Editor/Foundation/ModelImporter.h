@@ -43,6 +43,11 @@ public:
     bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output) override;
 
 private:
+    bool ImportGLTF(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output);
+    bool ImportFBX(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output);
+    bool ImportBlend(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output);
+
+    ToolManager* GetToolManager() const;
 };
 
 }
