@@ -19,52 +19,88 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#if 0
-#include <IconFontCppHeaders/IconsFontAwesome6.h>
+
+#include "../Foundation/ProfilerTab.h"
+
 #include <Urho3D/Core/Thread.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+
+// Use older version of font because Tracy uses it.
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_stdlib.h>
+
 #if URHO3D_PROFILING
 #include <server/TracyBadVersion.hpp>
 #include <server/TracyView.hpp>
 #include <server/TracyMouse.hpp>
 #endif
-#include "ProfilerTab.h"
 
 namespace Urho3D
 {
 
-static ProfilerTab* profilerTab = nullptr;
-static void RunOnMainThread(std::function<void()> cb, bool forceDelay = false) { profilerTab->RunOnMainThread(std::move(cb), forceDelay); }
+namespace
+{
+
+void QueueProfilerCallback(std::function<void()> callback, bool forceDelay)
+{
+    if (auto context = Context::GetInstance())
+    {
+        if (auto project = context->GetSubsystem<ProjectEditor>())
+        {
+            if (auto profilerTab = project->FindTab<ProfilerTab>())
+            {
+                profilerTab->QueueCallback(ea::move(callback), forceDelay);
+            }
+        }
+    }
+}
+
+}
+
+
+void Foundation_ProfilerTab(Context* context, ProjectEditor* projectEditor)
+{
+    projectEditor->AddTab(MakeShared<ProfilerTab>(context));
+}
 
 ProfilerTab::ProfilerTab(Context* context)
-    : Tab(context)
+    : EditorTab(context, "Profiler", "66b41031-f31d-42e0-9fe9-bc33adb4e44d",
+        EditorTabFlag::None, EditorTabPlacement::DockBottom)
 {
-    SetID("cdb45f8e-fc31-415d-9cfc-f0390e112a90");
-    SetTitle("Profiler");
-    isUtility_ = true;
-    assert(profilerTab == nullptr);
-    profilerTab = this;
 }
 
 ProfilerTab::~ProfilerTab()
 {
-    profilerTab = nullptr;
 }
 
-bool ProfilerTab::RenderWindowContent()
+void ProfilerTab::QueueCallback(std::function<void()> callback, bool forceDelay)
 {
-    ui::PushID("Profiler");
-
-    // Executed queued callbacks.
-    if (!pendingCallbacks_.empty())     // Avoid mutex lock most of the time because queue is almost always empty
+    if (!forceDelay && Thread::IsMainThread())
     {
-        MutexLock lock(callbacksLock_);
-        if (!pendingCallbacks_.empty()) // Previous check may have reported false positive because of data race
-        {
-            pendingCallbacks_.back()();
-            pendingCallbacks_.pop_back();
-        }
+        callback();
+    }
+    else
+    {
+        const MutexLock lock(callbacksLock_);
+        pendingCallbacks_.emplace_back(std::move(callback));
+        hasCallbacks_.store(true, std::memory_order_relaxed);
+    }
+}
+
+void ProfilerTab::RenderContent()
+{
+    const IdScopeGuard guard{"ProfilerTab"};
+
+    if (hasCallbacks_.load(std::memory_order_relaxed))
+    {
+        const MutexLock lock(callbacksLock_);
+
+        const auto callbacks = ea::move(pendingCallbacks_);
+        pendingCallbacks_.clear();
+        hasCallbacks_.store(false, std::memory_order_relaxed);
+
+        for (const auto& callback : callbacks)
+            callback();
     }
 
 #if URHO3D_PROFILING
@@ -85,25 +121,11 @@ bool ProfilerTab::RenderWindowContent()
         ui::SameLine();
         connect |= ui::Button(ICON_FA_WIFI " Connect");
         if (connect)
-            view_ = std::make_unique<tracy::View>(&Urho3D::RunOnMainThread, connectTo_.c_str(), port_);
+            view_ = std::make_unique<tracy::View>(&QueueProfilerCallback, connectTo_.c_str(), port_);
     }
 #else
     ui::TextUnformatted("Built without profiling support.");
 #endif
-    ui::PopID();
-    return true;
-}
-
-void ProfilerTab::RunOnMainThread(std::function<void()> cb, bool forceDelay)
-{
-    if (!forceDelay && Thread::IsMainThread())
-        cb();
-    else
-    {
-        MutexLock lock(callbacksLock_);
-        pendingCallbacks_.emplace_back(std::move(cb));
-    }
 }
 
 }
-#endif
