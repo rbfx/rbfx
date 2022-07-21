@@ -461,6 +461,14 @@ void ResourceBrowserTab::RenderEntryContextMenuItems(const FileSystemEntry& entr
             RevealInExplorer(entry.absolutePath_);
     }
 
+    if (ui::MenuItem("Copy Absolute Path"))
+        ui::SetClipboardText(entry.absolutePath_.c_str());
+
+    if (ui::MenuItem("Copy Relative Path (aka Resource Name)"))
+        ui::SetClipboardText(entry.resourceName_.c_str());
+
+    ui::Separator();
+
     const bool isEditable = !entry.resourceName_.empty() && !IsEntryFromCache(entry);
     ui::BeginDisabled(!isEditable);
     if (ui::MenuItem("Rename", GetHotkeyLabel(Hotkey_Rename).c_str()))
@@ -622,14 +630,22 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     else if (isContextMenuOpen)
     {
         if (!IsRightSelected(entry.resourceName_))
+        {
+            suppressInspector_ = true;
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+            suppressInspector_ = false;
+        }
     }
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
     {
         if (!IsRightSelected(entry.resourceName_))
+        {
+            suppressInspector_ = true;
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+            suppressInspector_ = false;
+        }
 
         BeginRightSelectionDrag();
         ui::EndDragDropSource();
@@ -709,14 +725,22 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     else if (isContextMenuOpen)
     {
         if (!IsRightSelected(entry.resourceName_))
+        {
+            suppressInspector_ = true;
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+            suppressInspector_ = false;
+        }
     }
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
     {
         if (!IsRightSelected(entry.resourceName_))
+        {
+            suppressInspector_ = true;
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+            suppressInspector_ = false;
+        }
 
         BeginRightSelectionDrag();
         ui::EndDragDropSource();
@@ -1066,7 +1090,7 @@ void ResourceBrowserTab::ChangeRightPanelSelection(const ea::string& path, bool 
 void ResourceBrowserTab::OnSelectionChanged(bool sendEmptyEvent)
 {
     selectionDirty_ = true;
-    if (sendEmptyEvent || !right_.selectedPaths_.empty())
+    if (!suppressInspector_ && (sendEmptyEvent || !right_.selectedPaths_.empty()))
     {
         auto project = GetProject();
         auto request = MakeShared<InspectResourceRequest>(context_, StringVector{right_.selectedPaths_.begin(), right_.selectedPaths_.end()});

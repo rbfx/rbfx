@@ -24,6 +24,10 @@
 
 #include <Urho3D/Audio/Sound.h>
 #include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/Graphics/Texture2DArray.h>
+#include <Urho3D/Graphics/Texture3D.h>
+#include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Resource/BinaryFile.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
@@ -45,20 +49,44 @@ void Foundation_StandardFileTypes(Context* context, ProjectEditor* project)
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (desc.resourceName_.ends_with(".wav", false) || desc.resourceName_.ends_with(".ogg", false))
+        if (desc.HasExtension({".wav", ".ogg"}))
             desc.AddObjectType<Sound>();
     });
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (ctx.xmlFile_ && ctx.xmlFile_->GetRoot().GetName().comparei("scene") == 0)
+        if (ctx.HasXMLRoot("scene"))
             desc.AddObjectType<Scene>();
     });
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (ctx.xmlFile_ && ctx.xmlFile_->GetRoot().GetName().comparei("material") == 0)
+        if (ctx.HasXMLRoot("material"))
             desc.AddObjectType<Material>();
+    });
+
+    project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
+    {
+        if (desc.HasExtension({".dds", ".bmp", ".jpg", ".jpeg", ".tga", ".png"}))
+        {
+            desc.AddObjectType<Texture>();
+            desc.AddObjectType<Texture2D>();
+        }
+        else if (ctx.HasXMLRoot("cubemap"))
+        {
+            desc.AddObjectType<Texture>();
+            desc.AddObjectType<TextureCube>();
+        }
+        else if (ctx.HasXMLRoot("texture3d"))
+        {
+            desc.AddObjectType<Texture>();
+            desc.AddObjectType<Texture3D>();
+        }
+        else if (ctx.HasXMLRoot("texturearray"))
+        {
+            desc.AddObjectType<Texture>();
+            desc.AddObjectType<Texture2DArray>();
+        }
     });
 }
 

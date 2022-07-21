@@ -233,6 +233,7 @@ private:
     bool sortFactories_{true};
 
     bool reentrant_{};
+    bool suppressInspector_{};
 
     /// UI state
     /// @{

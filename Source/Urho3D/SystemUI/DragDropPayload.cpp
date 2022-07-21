@@ -68,6 +68,34 @@ void DragDropPayload::UpdateSource(const CreateCallback& createPayload)
     ui::TextUnformatted(payload->GetDisplayString().c_str());
 }
 
+void ResourceFileDescriptor::AddObjectType(const ea::string& typeName)
+{
+    types_.emplace(StringHash{typeName});
+    typeNames_.emplace(typeName);
+    mostDerivedType_ = typeName;
+}
+
+bool ResourceFileDescriptor::HasObjectType(const ea::string& typeName) const
+{
+    return typeNames_.contains(typeName);
+}
+
+bool ResourceFileDescriptor::HasObjectType(StringHash type) const
+{
+    return types_.contains(type);
+}
+
+bool ResourceFileDescriptor::HasExtension(ea::string_view extension) const
+{
+    return localName_.ends_with(extension, false);
+}
+
+bool ResourceFileDescriptor::HasExtension(std::initializer_list<ea::string_view> extensions) const
+{
+    return ea::any_of(extensions.begin(), extensions.end(),
+        [this](ea::string_view extension) { return HasExtension(extension); });
+}
+
 ea::string ResourceDragDropPayload::GetDisplayString() const
 {
     return resources_.size() == 1

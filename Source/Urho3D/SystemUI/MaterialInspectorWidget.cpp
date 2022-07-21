@@ -23,6 +23,8 @@
 #include "../SystemUI/MaterialInspectorWidget.h"
 
 #include "../Graphics/Texture2D.h"
+#include "../Graphics/Texture2DArray.h"
+#include "../Graphics/Texture3D.h"
 #include "../Graphics/TextureCube.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
@@ -572,24 +574,23 @@ void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
 
     ui::BeginDisabled(!canEdit);
 
-    ea::string textureName = texture ? texture->GetName() : canEdit ? "" : "???";
-    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::InputText("##Texture", &textureName, ImGuiInputTextFlags_EnterReturnsTrue))
+    static const StringVector allowedTextureTypes{
+        Texture2D::GetTypeNameStatic(),
+        Texture2DArray::GetTypeNameStatic(),
+        TextureCube::GetTypeNameStatic(),
+        Texture3D::GetTypeNameStatic(),
+    };
+
+    StringHash textureType = texture ? texture->GetType() : Texture2D::GetTypeStatic();
+    ea::string textureName = texture ? texture->GetName() : "";
+    if (Widgets::EditResourceRef(textureType, textureName, &allowedTextureTypes))
     {
-        if (textureName.empty())
-            pendingSetTextures_.emplace_back(desc.unit_, nullptr);
-        else if (!textureName.ends_with(".xml"))
-        {
-            if (const auto texture = cache->GetResource<Texture2D>(textureName))
-                pendingSetTextures_.emplace_back(desc.unit_, texture);
-        }
+        if (const auto texture = dynamic_cast<Texture*>(cache->GetResource(textureType, textureName)))
+            pendingSetTextures_.emplace_back(desc.unit_, texture);
         else
-        {
-            if (const auto texture = cache->GetResource<TextureCube>(textureName))
-                pendingSetTextures_.emplace_back(desc.unit_, texture);
-            // TODO(editor): Support Texture3D and TextureArray
-        }
+            pendingSetTextures_.emplace_back(desc.unit_, nullptr);
     }
+
     ui::EndDisabled();
 }
 

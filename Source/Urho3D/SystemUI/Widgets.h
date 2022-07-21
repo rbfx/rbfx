@@ -65,6 +65,9 @@ struct EditVariantOptions
     EditVariantOptions& Enum(const StringVector& values) { intToString_ = &values; return *this; }
 };
 
+/// Render reference to resource with optional type constraints. If allowed types are not specified, only current type is allowed.
+URHO3D_API bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* allowedTypes);
+
 /// Render arbitrary variant value editor.
 URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});
 

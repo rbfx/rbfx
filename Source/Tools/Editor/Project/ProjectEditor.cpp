@@ -130,6 +130,17 @@ ResourceCacheGuard::~ResourceCacheGuard()
         cache->AddResourceDir(resourceDir);
 }
 
+bool AnalyzeFileContext::HasXMLRoot(ea::string_view root) const
+{
+    return xmlFile_ && xmlFile_->GetRoot().GetName().comparei(ea::string{root}) == 0;
+}
+
+bool AnalyzeFileContext::HasXMLRoot(std::initializer_list<ea::string_view> roots) const
+{
+    return ea::any_of(roots.begin(), roots.end(),
+        [this](ea::string_view root) { return HasXMLRoot(root); });
+}
+
 ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     : Object(context)
     , projectPath_(GetSanitizedPath(projectPath + "/"))
