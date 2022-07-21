@@ -219,11 +219,16 @@ void HotkeyManager::BindHotkey(Object* owner, const EditorHotkey& hotkey, ea::fu
     hotkeyByCommand_[hotkey.command_].push_back(binding);
 }
 
-const EditorHotkey& HotkeyManager::GetHotkey(const EditorHotkey& hotkey) const
+const EditorHotkey& HotkeyManager::GetHotkey(const ea::string& command) const
 {
     static const EditorHotkey emptyHotkey;
-    const HotkeyBindingPtr ptr = FindByCommand(hotkey.command_);
+    const HotkeyBindingPtr ptr = FindByCommand(command);
     return ptr ? ptr->hotkey_ : emptyHotkey;
+}
+
+const EditorHotkey& HotkeyManager::GetHotkey(const EditorHotkey& hotkey) const
+{
+    return GetHotkey(hotkey.command_);
 }
 
 ea::string HotkeyManager::GetHotkeyLabel(const EditorHotkey& hotkey) const
