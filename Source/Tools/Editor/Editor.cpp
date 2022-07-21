@@ -19,115 +19,63 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#include <Urho3D/Engine/EngineDefs.h>
-#include <Urho3D/Engine/EngineEvents.h>
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/WorkQueue.h>
-#include <Urho3D/Graphics/Graphics.h>
-#include <Urho3D/Graphics/Model.h>
-#include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/Resource/JSONArchive.h>
-#include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/SystemUI/SystemUI.h>
-#include <Urho3D/SystemUI/Console.h>
-#include <Urho3D/SystemUI/DebugHud.h>
-#include <Urho3D/LibraryInfo.h>
-#include <Urho3D/Core/CommandLine.h>
-#include <Urho3D/Audio/Sound.h>
-
-#include <Toolbox/ToolboxAPI.h>
-#include <Toolbox/SystemUI/Widgets.h>
-#include <IconFontCppHeaders/IconsFontAwesome6.h>
-#include <nativefiledialog/nfd.h>
 
 #include "Editor.h"
-#include "EditorEvents.h"
-#include "EditorIconCache.h"
-#include "Tabs/Scene/SceneTab.h"
-#include "Tabs/Scene/EditorSceneSettings.h"
-#include "Tabs/InspectorTab.h"
-#include "Tabs/HierarchyTab.h"
-#include "Tabs/ConsoleTab.h"
-#include "Tabs/ResourceTab.h"
-#include "Tabs/PreviewTab.h"
-#include "Pipeline/Asset.h"
-#include "Pipeline/Commands/CookScene.h"
-#include "Pipeline/Commands/BuildAssets.h"
-#include "Pipeline/Commands/ImportGLTFCommand.h"
-//#include "Pipeline/Importers/ModelImporter.h"
-#include "Pipeline/Importers/SceneConverter.h"
-#include "Pipeline/Importers/TextureImporter.h"
-/*#if URHO3D_PLUGINS
-#   include "Plugins/PluginManager.h"
-#   include "Plugins/ModulePlugin.h"
-#endif
-#include "Plugins/ScriptBundlePlugin.h"*/
-#include "Inspector/AssetInspector.h"
-#include "Inspector/MaterialInspector.h"
-#include "Inspector/ModelInspector.h"
-#include "Inspector/NodeInspector.h"
-#include "Inspector/ComponentInspector.h"
-#include "Inspector/SerializableInspector.h"
-#include "Inspector/SoundInspector.h"
-//#include "Tabs/ProfilerTab.h"
-#include "EditorUndo.h"
 
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/GameViewTab.h"
+#include "Foundation/Glue/ProjectEditorGlue.h"
+#include "Foundation/Glue/ResourceBrowserGlue.h"
+#include "Foundation/Glue/SceneViewGlue.h"
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
-#include "Foundation/ModelImporter.h"
-#include "Foundation/ResourceBrowserTab.h"
-#include "Foundation/SceneViewTab.h"
-#include "Foundation/SettingsTab.h"
-#include "Foundation/ProfilerTab.h"
-#include "Foundation/StandardFileTypes.h"
-
-#include "Foundation/SettingsTab/KeyBindingsPage.h"
-#include "Foundation/SettingsTab/LaunchPage.h"
-#include "Foundation/SettingsTab/PluginsPage.h"
-
-#include "Foundation/SceneViewTab/EditorCamera.h"
-#include "Foundation/SceneViewTab/SceneSelector.h"
-#include "Foundation/SceneViewTab/SceneHierarchy.h"
-#include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
-#include "Foundation/SceneViewTab/TransformManipulator.h"
-
 #include "Foundation/InspectorTab/EmptyInspector.h"
 #include "Foundation/InspectorTab/MaterialInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
-
+#include "Foundation/ModelImporter.h"
+#include "Foundation/ProfilerTab.h"
+#include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
 #include "Foundation/ResourceBrowserTab/SceneFactory.h"
+#include "Foundation/SceneViewTab.h"
+#include "Foundation/SceneViewTab/EditorCamera.h"
+#include "Foundation/SceneViewTab/SceneHierarchy.h"
+#include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
+#include "Foundation/SceneViewTab/SceneSelector.h"
+#include "Foundation/SceneViewTab/TransformManipulator.h"
+#include "Foundation/SettingsTab.h"
+#include "Foundation/SettingsTab/KeyBindingsPage.h"
+#include "Foundation/SettingsTab/LaunchPage.h"
+#include "Foundation/SettingsTab/PluginsPage.h"
+#include "Foundation/StandardFileTypes.h"
 
-#include "Foundation/Glue/ProjectEditorGlue.h"
-#include "Foundation/Glue/ResourceBrowserGlue.h"
-#include "Foundation/Glue/SceneViewGlue.h"
+#include <Urho3D/Core/CommandLine.h>
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Engine/EngineEvents.h>
+#include <Urho3D/Input/Input.h>
+#include <Urho3D/LibraryInfo.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/SystemUI/Console.h>
+#include <Urho3D/SystemUI/DebugHud.h>
+#include <Urho3D/SystemUI/SystemUI.h>
+
+#include <Toolbox/ToolboxAPI.h>
+#include <Toolbox/SystemUI/Widgets.h>
+
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
+#include <nativefiledialog/nfd.h>
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 namespace Urho3D
 {
-
-namespace
-{
-
-const auto&& DEFAULT_TAB_TYPES = {
-    InspectorTab::GetTypeStatic(),
-    HierarchyTab::GetTypeStatic(),
-    ResourceTab::GetTypeStatic(),
-    ConsoleTab::GetTypeStatic(),
-    PreviewTab::GetTypeStatic(),
-    SceneTab::GetTypeStatic(),
-    //ProfilerTab::GetTypeStatic()
-};
-
-}
 
 Editor::Editor(Context* context)
     : Application(context)
@@ -224,6 +172,9 @@ void Editor::Setup()
 #else
     engineParameters_[EP_HIGH_DPI] = true;
 #endif
+
+    // TODO(editor): Move Editor settings to global place
+#if 0
     // Load editor settings
     {
         auto* fs = context_->GetSubsystem<FileSystem>();
@@ -247,77 +198,22 @@ void Editor::Setup()
             }
         }
     }
+#endif
 
     context_->GetSubsystem<Log>()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
 
-    // Register factories
-    context_->RegisterFactory<EditorIconCache>();
-    context_->RegisterFactory<SceneTab>();
-    context_->RegisterFactory<ConsoleTab>();
-    context_->RegisterFactory<HierarchyTab>();
-    context_->RegisterFactory<InspectorTab>();
-    context_->RegisterFactory<ResourceTab>();
-    context_->RegisterFactory<PreviewTab>();
-    //context_->RegisterFactory<ProfilerTab>();
-
-    // Inspectors.
-    inspectors_.push_back(SharedPtr(new AssetInspector(context_)));
-    inspectors_.push_back(SharedPtr(new ModelInspector(context_)));
-    inspectors_.push_back(SharedPtr(new MaterialInspector(context_)));
-    inspectors_.push_back(SharedPtr(new SoundInspector(context_)));
-    inspectors_.push_back(SharedPtr(new NodeInspector(context_)));
-    inspectors_.push_back(SharedPtr(new ComponentInspector(context_)));
-    // FIXME: If user registers their own inspector later then SerializableInspector would no longer come in last.
-    inspectors_.push_back(SharedPtr(new SerializableInspector(context_)));
-
-#if URHO3D_PLUGINS
-    //RegisterPluginsLibrary(context_);
-#endif
-    RegisterToolboxTypes(context_);
-    EditorSceneSettings::RegisterObject(context_);
-    context_->RegisterFactory<SerializableInspector>();
-
-    // Importers
-    //ModelImporter::RegisterObject(context_);
-    SceneConverter::RegisterObject(context_);
-    TextureImporter::RegisterObject(context_);
-    Asset::RegisterObject(context_);
-
     // Define custom command line parameters here
     auto& cmd = GetCommandLineParser();
     cmd.add_option("project", defaultProjectPath_, "Project to open or create on startup.")->set_custom_option("dir");
-
-    // Subcommands
-    RegisterSubcommand<CookScene>();
-    RegisterSubcommand<BuildAssets>();
-    RegisterSubcommand<ImportGLTFCommand>();
-
-    keyBindings_.Bind(ActionType::OpenProject, this, &Editor::OpenOrCreateProject);
-    keyBindings_.Bind(ActionType::Exit, this, &Editor::OnExitHotkeyPressed);
 
     PluginApplication::RegisterStaticPlugins();
 }
 
 void Editor::Start()
 {
-    // Execute specified subcommand and exit.
-    for (SharedPtr<SubCommand>& cmd : subCommands_)
-    {
-        if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().c_str()))
-        {
-            context_->GetSubsystem<Log>()->SetLogFormat("%v");
-            ExecuteSubcommand(cmd);
-            engine_->Exit();
-            return;
-        }
-    }
-
-    // Continue with normal editor initialization
     Input* input = context_->GetSubsystem<Input>();
-    context_->RegisterSubsystem(new SceneManager(context_));
-    context_->RegisterSubsystem(new EditorIconCache(context_));
     input->SetMouseMode(MM_ABSOLUTE);
     input->SetMouseVisible(true);
     input->SetEnabled(false);
@@ -336,9 +232,7 @@ void Editor::Start()
 
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
-    SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap&) { UpdateWindowTitle(); });
     SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
-    SubscribeToEvent(E_EDITORSELECTIONCHANGED, &Editor::OnSelectionChanged);
     SetupSystemUI();
     if (!defaultProjectPath_.empty())
     {
@@ -350,34 +244,9 @@ void Editor::Start()
     context_->GetSubsystem<Engine>()->CreateDebugHud()->SetMode(DEBUGHUD_SHOW_NONE);
 }
 
-int Editor::RunEditorInstance(const ea::vector<ea::string>& arguments, ea::string& output)
-{
-    auto fs = context_->GetSubsystem<FileSystem>();
-    return fs->SystemRun(fs->GetProgramFileName(), arguments, output);
-}
-
-void Editor::ExecuteSubcommand(SubCommand* cmd)
-{
-    if (!defaultProjectPath_.empty())
-    {
-        project_ = new Project(context_);
-        context_->RegisterSubsystem(project_);
-
-        const bool disableAssetImport = true;
-        if (!project_->LoadProject(defaultProjectPath_, disableAssetImport))
-        {
-            URHO3D_LOGERRORF("Loading project '%s' failed.", pendingOpenProject_.c_str());
-            exitCode_ = EXIT_FAILURE;
-            engine_->Exit();
-            return;
-        }
-    }
-
-    cmd->Execute();
-}
-
 void Editor::Stop()
 {
+#if 0
     // Save editor settings
     if (!engine_->IsHeadless())
     {
@@ -397,10 +266,9 @@ void Editor::Stop()
         if (!json.SaveFile(editorSettingsDir + "Editor.json"))
             URHO3D_LOGERROR("Saving of editor settings failed.");
     }
+#endif
 
     context_->GetSubsystem<WorkQueue>()->Complete(0);
-    if (auto* manager = GetSubsystem<SceneManager>())
-        manager->UnloadAll();
     CloseProject();
     context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
     context_->RemoveSubsystem<Editor>();
@@ -433,36 +301,10 @@ void Editor::OnUpdate(VariantMap& args)
     ImGui::PopStyleVar();
 
     RenderMenuBar();
-    RenderSettingsWindow();
 
-    bool hasModified = false;
     if (projectEditor_)
     {
         projectEditor_->Render();
-    }
-    else if (project_.NotNull())
-    {
-        dockspaceId_ = ui::GetID("Root");
-        ui::DockSpace(dockspaceId_);
-
-        auto tabsCopy = tabs_;
-        for (auto& tab : tabsCopy)
-        {
-            if (tab->RenderWindow())
-                hasModified |= tab->IsModified();
-            else if (!tab->IsUtility())
-                // Content tabs get closed permanently
-                tabs_.erase(tabs_.find(tab));
-        }
-
-        if (loadDefaultLayout_ && project_)
-        {
-            loadDefaultLayout_ = false;
-            LoadDefaultLayout();
-        }
-
-        if (showMetricsWindow_)
-            ui::ShowMetricsWindow(&showMetricsWindow_);
     }
     else
     {
@@ -590,44 +432,6 @@ void Editor::OnUpdate(VariantMap& args)
                 ui::EndPopup();
             }
         }
-        else if (hasModified)
-        {
-            ui::OpenPopup("Save All?");
-
-            if (ui::BeginPopupModal("Save All?", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize |
-                                                          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
-            {
-                ui::TextUnformatted("You have unsaved resources. Save them before exiting?");
-
-                if (ui::Button(ICON_FA_FLOPPY_DISK " Save & Close"))
-                {
-                    for (auto& tab : tabs_)
-                    {
-                        if (tab->IsModified())
-                            tab->SaveResource();
-                    }
-                    ui::CloseCurrentPopup();
-                }
-
-                ui::SameLine();
-
-                if (ui::Button(ICON_FA_TRIANGLE_EXCLAMATION " Close without saving"))
-                {
-                    engine_->Exit();
-                }
-                ui::SetHelpTooltip(ICON_FA_TRIANGLE_EXCLAMATION " All unsaved changes will be lost!", KEY_UNKNOWN);
-
-                ui::SameLine();
-
-                if (ui::Button(ICON_FA_XMARK " Cancel"))
-                {
-                    exiting_ = false;
-                    ui::CloseCurrentPopup();
-                }
-
-                ui::EndPopup();
-            }
-        }
         else if (projectEditor_)
         {
             const auto result = projectEditor_->CloseGracefully();
@@ -639,39 +443,9 @@ void Editor::OnUpdate(VariantMap& args)
         else
         {
             context_->GetSubsystem<WorkQueue>()->Complete(0);
-            if (project_.NotNull())
-            {
-                project_->SaveProject();
-                CloseProject();
-            }
             engine_->Exit();
         }
     }
-}
-
-Tab* Editor::CreateTab(StringHash type)
-{
-    SharedPtr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
-    tabs_.push_back(tab);
-    return tab.Get();
-}
-
-StringVector Editor::GetObjectsByCategory(const ea::string& category)
-{
-    StringVector result;
-    auto it = context_->GetObjectCategories().find(category);
-    if (it != context_->GetObjectCategories().end())
-    {
-        for (const StringHash& type : it->second)
-        {
-            if (auto reflection = context_->GetReflection(type))
-            {
-                if (reflection->HasObjectFactory())
-                    result.push_back(reflection->GetTypeName());
-            }
-        }
-    }
-    return result;
 }
 
 void Editor::OnConsoleCommand(VariantMap& args)
@@ -726,11 +500,6 @@ void Editor::OnEndFrame()
 
 void Editor::OnExitRequested()
 {
-    if (auto* preview = GetTab<PreviewTab>())
-    {
-        if (preview->GetSceneSimulationStatus() != SCENE_SIMULATION_STOPPED)
-            preview->Stop();
-    }
     exiting_ = true;
 }
 
@@ -740,55 +509,6 @@ void Editor::OnExitHotkeyPressed()
         OnExitRequested();
 }
 
-void Editor::CreateDefaultTabs()
-{
-    for (StringHash type : DEFAULT_TAB_TYPES)
-        context_->RemoveSubsystem(type);
-    tabs_.clear();
-
-    for (StringHash type : DEFAULT_TAB_TYPES)
-    {
-        SharedPtr<Tab> tab;
-        tab.StaticCast(context_->CreateObject(type));
-        tabs_.push_back(tab);
-    }
-}
-
-void Editor::LoadDefaultLayout()
-{
-    CreateDefaultTabs();
-
-    auto* inspector = GetTab<InspectorTab>();
-    auto* hierarchy = GetTab<HierarchyTab>();
-    auto* resources = GetTab<ResourceTab>();
-    auto* console = GetTab<ConsoleTab>();
-    auto* preview = GetTab<PreviewTab>();
-    auto* scene = GetTab<SceneTab>();
-    //auto* profiler = GetTab<ProfilerTab>();
-    //profiler->SetOpen(false);
-
-    ImGui::DockBuilderRemoveNode(dockspaceId_);
-    ImGui::DockBuilderAddNode(dockspaceId_, 0);
-    ImGui::DockBuilderSetNodeSize(dockspaceId_, ui::GetMainViewport()->Size);
-
-    ImGuiID dock_main_id = dockspaceId_;
-    ImGuiID dockHierarchy = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
-    ImGuiID dockResources = ImGui::DockBuilderSplitNode(dockHierarchy, ImGuiDir_Down, 0.40f, nullptr, &dockHierarchy);
-    ImGuiID dockInspector = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.30f, nullptr, &dock_main_id);
-    ImGuiID dockLog = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.30f, nullptr, &dock_main_id);
-
-    ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().c_str(), dockHierarchy);
-    ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().c_str(), dockResources);
-    ImGui::DockBuilderDockWindow(console->GetUniqueTitle().c_str(), dockLog);
-    //ImGui::DockBuilderDockWindow(profiler->GetUniqueTitle().c_str(), dockLog);
-    ImGui::DockBuilderDockWindow(scene->GetUniqueTitle().c_str(), dock_main_id);
-    ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().c_str(), dock_main_id);
-    ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().c_str(), dockInspector);
-    ImGui::DockBuilderFinish(dockspaceId_);
-
-    scene->Activate();
-}
-
 void Editor::OpenProject(const ea::string& projectPath)
 {
     pendingOpenProject_ = AddTrailingSlash(projectPath);
@@ -796,46 +516,8 @@ void Editor::OpenProject(const ea::string& projectPath)
 
 void Editor::CloseProject()
 {
-    SendEvent(E_EDITORPROJECTCLOSING);
-    context_->RemoveSubsystem<Project>();
-    for (StringHash type : DEFAULT_TAB_TYPES)
-        context_->RemoveSubsystem(type);
-    tabs_.clear();
-    project_.Reset();
-
     projectEditor_ = nullptr;
     context_->RemoveSubsystem<ProjectEditor>();
-}
-
-Tab* Editor::GetTabByName(const ea::string& uniqueName)
-{
-    for (auto& tab : tabs_)
-    {
-        if (tab->GetUniqueName() == uniqueName)
-            return tab.Get();
-    }
-    return nullptr;
-}
-
-Tab* Editor::GetTabByResource(const ea::string& resourceName)
-{
-    for (auto& tab : tabs_)
-    {
-        auto resource = DynamicCast<BaseResourceTab>(tab);
-        if (resource && resource->GetResourceName() == resourceName)
-            return resource.Get();
-    }
-    return nullptr;
-}
-
-Tab* Editor::GetTab(StringHash type)
-{
-    for (auto& tab : tabs_)
-    {
-        if (tab->GetType() == type)
-            return tab.Get();
-    }
-    return nullptr;
 }
 
 void Editor::SetupSystemUI()
@@ -927,44 +609,19 @@ void Editor::SetupSystemUI()
     };
     handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line)
     {
-        auto* systemUI = ui::GetSystemUI();
         const char* name = static_cast<const char*>(entry);
-        if (auto* editor = systemUI->GetSubsystem<Editor>())
-        {
-            if (auto* projectEditor = editor->GetProjectEditor())
-                projectEditor->ReadIniSettings(name, line);
-        }
-#if 0
-        if (strcmp(name, "Window") == 0)
-            editor->CreateDefaultTabs();
-        else
-        {
-            Tab* tab = editor->GetTabByName(name);
-            if (tab == nullptr)
-            {
-                StringVector parts = ea::string(name).split('#');
-                tab = editor->CreateTab(parts.front());
-            }
-            tab->OnLoadUISettings(name, line);
-        }
-#endif
+
+        auto context = Context::GetInstance();
+        if (auto projectEditor = context->GetSubsystem<ProjectEditor>())
+            projectEditor->ReadIniSettings(name, line);
     };
     handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
     {
         buf->appendf("[Project][Window]\n");
 
-        auto* systemUI = ui::GetSystemUI();
-        auto* editor = systemUI->GetSubsystem<Editor>();
-        if (auto* editor = systemUI->GetSubsystem<Editor>())
-        {
-            if (auto* projectEditor = editor->GetProjectEditor())
-                projectEditor->WriteIniSettings(*buf);
-        }
-#if 0
-        // Save tabs
-        for (auto& tab : editor->GetContentTabs())
-            tab->OnSaveUISettings(buf);
-#endif
+        auto context = Context::GetInstance();
+        if (auto projectEditor = context->GetSubsystem<ProjectEditor>())
+            projectEditor->WriteIniSettings(*buf);
     };
     ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
 }
@@ -974,6 +631,8 @@ void Editor::UpdateWindowTitle(const ea::string& resourcePath)
     if (context_->GetSubsystem<Engine>()->IsHeadless())
         return;
 
+    // TODO(editor): Implement me
+#if 0
     auto* project = GetSubsystem<Project>();
     ea::string title;
     if (project == nullptr)
@@ -987,18 +646,7 @@ void Editor::UpdateWindowTitle(const ea::string& resourcePath)
     }
 
     context_->GetSubsystem<Graphics>()->SetWindowTitle(title);
-}
-
-template<typename T>
-void Editor::RegisterSubcommand()
-{
-    T::RegisterObject(context_);
-    SharedPtr<T> cmd(context_->CreateObject<T>());
-    subCommands_.push_back(DynamicCast<SubCommand>(cmd));
-    if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().c_str()))
-        cmd->RegisterCommandLine(*subCommand);
-    else
-        URHO3D_LOGERROR("Sub-command '{}' was not registered due to user error.", T::GetTypeNameStatic());
+#endif
 }
 
 void Editor::OpenOrCreateProject()
@@ -1021,27 +669,6 @@ void Editor::OnConsoleUriClick(VariantMap& args)
         if (protocol == "res")
             context_->GetSubsystem<FileSystem>()->SystemOpen(context_->GetSubsystem<ResourceCache>()->GetResourceFileName(address));
     }
-}
-
-void Editor::OnSelectionChanged(StringHash, VariantMap& args)
-{
-    using namespace EditorSelectionChanged;
-    auto tab = static_cast<Tab*>(args[P_TAB].GetPtr());
-    auto undo = GetSubsystem<UndoStack>();
-    ByteVector newSelection = tab->SerializeSelection();
-    if (tab == selectionTab_)
-    {
-        if (newSelection == selectionBuffer_)
-            return;
-    }
-    else
-    {
-        if (!selectionTab_.Expired())
-            selectionTab_->ClearSelection();
-    }
-    undo->Add<UndoSetSelection>(selectionTab_, selectionBuffer_, tab, newSelection);
-    selectionTab_ = tab;
-    selectionBuffer_ = newSelection;
 }
 
 }

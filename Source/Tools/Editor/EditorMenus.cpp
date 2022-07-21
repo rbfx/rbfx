@@ -20,19 +20,14 @@
 // THE SOFTWARE.
 //
 
+#include "Editor.h"
+
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <nativefiledialog/nfd.h>
 #include <Toolbox/SystemUI/Widgets.h>
-
-#include "Pipeline/Flavor.h"
-#include "Pipeline/Pipeline.h"
-#include "Tabs/Scene/SceneTab.h"
-#include "Tabs/PreviewTab.h"
-#include "Editor.h"
-#include "EditorEvents.h"
 
 namespace Urho3D
 {
@@ -43,28 +38,18 @@ void Editor::RenderMenuBar()
     {
         if (ui::BeginMenu("Project"))
         {
-            if (project_)
-            {
-                if (ui::MenuItem("Save Project", keyBindings_.GetKeyCombination(ActionType::SaveProject)))
-                {
-                    for (auto& tab : tabs_)
-                        tab->SaveResource();
-                    project_->SaveProject();
-                }
-            }
-
             if (projectEditor_)
             {
                 projectEditor_->RenderProjectMenu();
                 ui::Separator();
             }
 
-            if (ui::MenuItem("Open or Create Project", keyBindings_.GetKeyCombination(ActionType::OpenProject)))
+            if (ui::MenuItem("Open or Create Project"))
                 OpenOrCreateProject();
 
             StringVector & recents = recentProjects_;
             // Does not show very first item, which is current project
-            if (recents.size() == (project_.NotNull() ? 1 : 0))
+            if (recents.size() == (projectEditor_.NotNull() ? 1 : 0))
             {
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
                 ui::MenuItem("Recent Projects");
@@ -72,7 +57,7 @@ void Editor::RenderMenuBar()
             }
             else if (ui::BeginMenu("Recent Projects"))
             {
-                for (int i = project_.NotNull() ? 1 : 0; i < recents.size(); i++)
+                for (int i = projectEditor_.NotNull() ? 1 : 0; i < recents.size(); i++)
                 {
                     const ea::string& projectPath = recents[i];
 
@@ -96,111 +81,16 @@ void Editor::RenderMenuBar()
 
             ui::Separator();
 
-            if (project_)
-            {
-                if (ui::MenuItem("Reset UI"))
-                {
-                    ea::string projectPath = project_->GetProjectPath();
-                    CloseProject();
-                    context_->GetSubsystem<FileSystem>()->Delete(projectPath + ".ui.ini");
-                    OpenProject(projectPath);
-                }
-
-                if (ui::MenuItem("Close Project"))
-                {
-                    CloseProject();
-                }
-            }
-
-            if (ui::MenuItem("Exit", keyBindings_.GetKeyCombination(ActionType::Exit)))
+            if (ui::MenuItem("Exit"))
                 SendEvent(E_EXITREQUESTED);
 
             ui::EndMenu();
         }
         if (projectEditor_)
             projectEditor_->RenderMainMenu();
-        if (project_)
-        {
-            if (ui::BeginMenu("View"))
-            {
-                for (auto& tab : tabs_)
-                {
-                    if (tab->IsUtility())
-                    {
-                        // Tabs that can not be closed permanently
-                        auto open = tab->IsOpen();
-                        if (ui::MenuItem(tab->GetUniqueTitle().c_str(), nullptr, &open))
-                            tab->SetOpen(open);
-                    }
-                }
-                ui::EndMenu();
-            }
-
-            if (ui::BeginMenu("Project"))
-            {
-                RenderProjectMenu();
-                ui::EndMenu();
-            }
-
-#if URHO3D_PROFILING
-            if (ui::BeginMenu("Tools"))
-            {
-                if (ui::MenuItem("Profiler"))
-                {
-                    context_->GetSubsystem<FileSystem>()->SystemSpawn(context_->GetSubsystem<FileSystem>()->GetProgramDir() + "Profiler"
-#if _WIN32
-                        ".exe"
-#endif
-                        , {});
-                }
-
-                ui::MenuItem("Metrics", NULL, &showMetricsWindow_);
-
-                ui::EndMenu();
-            }
-#endif
-        }
-
-        SendEvent(E_EDITORAPPLICATIONMENU);
-
-        // Scene simulation buttons.
-        if (project_)
-        {
-            // Copied from ToolbarButton()
-            auto& g = *ui::GetCurrentContext();
-            float dimension = g.FontBaseSize + g.Style.FramePadding.y * 2.0f;
-            ui::SetCursorScreenPos(ImVec2{ui::GetMainViewport()->Pos.x + g.IO.DisplaySize.x / 2 - dimension * 4 / 2, ui::GetCursorScreenPos().y});
-            if (auto* previewTab = GetTab<PreviewTab>())
-                previewTab->RenderButtons();
-        }
 
         ui::EndMainMenuBar();
     }
-}
-
-void Editor::RenderProjectMenu()
-{
-    settingsOpen_ |= ui::MenuItem("Settings");
-
-    if (ui::BeginMenu(ICON_FA_BOXES_STACKED " Repackage files"))
-    {
-        auto pipeline = GetSubsystem<Pipeline>();
-
-        if (ui::MenuItem("All Flavors"))
-        {
-            for (Flavor* flavor : pipeline->GetFlavors())
-                pipeline->CreatePaksAsync(flavor);
-        }
-
-        for (Flavor* flavor : pipeline->GetFlavors())
-        {
-            if (ui::MenuItem(flavor->GetName().c_str()))
-                pipeline->CreatePaksAsync(flavor);
-        }
-
-        ui::EndMenu();
-    }
-    ui::SetHelpTooltip("(Re)Packages all resources from scratch. Existing packages will be removed!");
 }
 
 }
