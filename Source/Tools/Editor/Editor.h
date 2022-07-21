@@ -21,26 +21,13 @@
 //
 #pragma once
 
+#include "Core/EditorPluginManager.h"
+#include "Project/ProjectEditor.h"
 
 #include <Urho3D/Engine/Application.h>
-#include <Toolbox/SystemUI/AttributeInspector.h>
-
-#include "KeyBindings.h"
-#include "Project.h"
-#include "Pipeline/Commands/SubCommand.h"
-#include "Project/ProjectEditor.h"
-#include "Core/EditorPluginManager.h"
-
-using namespace std::placeholders;
 
 namespace Urho3D
 {
-
-class Tab;
-class SceneTab;
-struct InspectArgs;
-
-static const unsigned EDITOR_VIEW_LAYER = 1u << 31u;
 
 class Editor : public Application
 {
@@ -57,47 +44,17 @@ public:
     /// Tear down editor application.
     void Stop() override;
 
-    /// Run another instance of Editor, block until it exits and return the exit code and output.
-    int RunEditorInstance(const ea::vector<ea::string>& arguments, ea::string& output);
-    void ExecuteSubcommand(SubCommand* cmd);
-
     /// Renders UI elements.
     void OnUpdate(VariantMap& args);
     /// Renders menu bar at the top of the screen.
     void RenderMenuBar();
-    /// Create a new tab of specified type.
-    template<typename T> T* CreateTab() { return (T*)CreateTab(T::GetTypeStatic()); }
-    /// Create a new tab of specified type.
-    Tab* CreateTab(StringHash type);
-    ///
-    Tab* GetTabByName(const ea::string& uniqueName);
-    ///
-    Tab* GetTabByResource(const ea::string& resourceName);
-    /// Returns first tab of specified type.
-    Tab* GetTab(StringHash type);
-    /// Returns first tab of specified type.
-    template<typename T> T* GetTab() { return (T*)GetTab(T::GetTypeStatic()); }
 
-    /// Return active scene tab.
-    Tab* GetActiveTab() { return activeTab_; }
-    /// Return currently open scene tabs.
-    const ea::vector<SharedPtr<Tab>>& GetSceneViews() const { return tabs_; }
-    /// Return a map of names and type hashes from specified category.
-    StringVector GetObjectsByCategory(const ea::string& category);
-    /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
-    const ea::vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
     /// Opens project or creates new one.
     void OpenProject(const ea::string& projectPath);
     /// Close current project.
     void CloseProject();
     /// Return path containing data directories of engine.
     const ea::string& GetCoreResourcePrefixPath() const { return coreResourcePrefixPath_; }
-    /// Create tabs that are open by default and persist through entire lifetime of editor.
-    void CreateDefaultTabs();
-    /// Load default tab layout.
-    void LoadDefaultLayout();
-    /// Returns ID of root dockspace.
-    ImGuiID GetDockspaceID() const { return dockspaceId_; }
     ///
     ImFont* GetMonoSpaceFont() const { return monoFont_; }
     ///
@@ -105,16 +62,6 @@ public:
     ///
     StringVariantMap& GetEngineParameters() { return engineParameters_; }
     ProjectEditor* GetProjectEditor() const { return projectEditor_; }
-
-    /// Serialize editor user-specific settings.
-    void SerializeInBlock(Archive& archive) override;
-
-    /// Key bindings manager.
-    KeyBindings keyBindings_{context_};
-    /// Signal is fired when settings tabs are rendered. Various subsystems can register their tabs.
-    Signal<void()> settingsTabs_{};
-    /// Signal is fired when something wants to inspect a certain object.
-    Signal<void(InspectArgs&)> onInspect_;
 
 protected:
     /// Process console commands.
@@ -125,62 +72,36 @@ protected:
     void OnExitRequested();
     /// Handle user closing editor with a hotkey.
     void OnExitHotkeyPressed();
-    /// Renders a project plugins submenu.
-    void RenderProjectMenu();
-    ///
-    void RenderSettingsWindow();
     ///
     void SetupSystemUI();
-    ///
-    template<typename T> void RegisterSubcommand();
     /// Opens a file dialog for folder selection. Project is opened or created in selected folder.
     void OpenOrCreateProject();
     ///
     void OnConsoleUriClick(VariantMap& args);
-    /// Handle selection changes.
-    void OnSelectionChanged(StringHash, VariantMap& args);
 
-    /// List of active scene tabs.
-    ea::vector<SharedPtr<Tab>> tabs_;
-    /// Last focused scene tab.
-    WeakPtr<Tab> activeTab_;
-    /// Tab containing current user selection.
-    WeakPtr<Tab> selectionTab_;
-    /// Current selection serialized.
-    ByteVector selectionBuffer_;
     /// Prefix path of CoreData and EditorData.
     ea::string coreResourcePrefixPath_;
-    /// Currently loaded project.
-    SharedPtr<Project> project_;
+    /// Editor plugins.
     SharedPtr<EditorPluginManager> editorPluginManager_;
+    /// Currently loaded project.
     SharedPtr<ProjectEditor> projectEditor_;
-    /// ID of dockspace root.
-    ImGuiID dockspaceId_;
     /// Path to a project that editor should open on the end of the frame.
     ea::string pendingOpenProject_;
     bool pendingCloseProject_{};
-    /// Flag indicating that editor should create and load default layout.
-    bool loadDefaultLayout_ = false;
     /// Monospace font.
     ImFont* monoFont_ = nullptr;
     /// Flag indicating editor is exiting.
     bool exiting_ = false;
-    /// Flag indicating that settings window is open.
-    bool settingsOpen_ = false;
     /// Project path passed on command line.
     ea::string defaultProjectPath_;
-    /// Registered subcommands.
-    ea::vector<SharedPtr<SubCommand>> subCommands_;
     /// A list of of recently opened projects. First one is alaways last project that was opened.
     StringVector recentProjects_{};
+#if 0
     /// Window position which is saved between sessions.
     IntVector2 windowPos_{0, 0};
     /// Window size which is saved between sessions.
     IntVector2 windowSize_{1920, 1080};
-    /// All instances of type-specific inspectors.
-    ea::vector<SharedPtr<RefCounted>> inspectors_;
-    /// Show imgui metrics window.
-    bool showMetricsWindow_ = false;
+#endif
 };
 
 }
