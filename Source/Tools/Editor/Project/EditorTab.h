@@ -164,8 +164,8 @@ public:
     HotkeyManager* GetHotkeyManager() const;
     UndoManager* GetUndoManager() const;
 
-    ea::string GetHotkeyLabel(const HotkeyInfo& info) const;
-    template <class T> void BindHotkey(const HotkeyInfo& info, void(T::*callback)());
+    ea::string GetHotkeyLabel(const EditorHotkey& info) const;
+    template <class T> void BindHotkey(const EditorHotkey& info, void(T::*callback)());
     template <class T, class ... Args> void PushAction(const Args& ... args);
     /// @}
 
@@ -202,7 +202,7 @@ private:
 };
 
 template <class T>
-void EditorTab::BindHotkey(const HotkeyInfo& info, void(T::*callback)())
+void EditorTab::BindHotkey(const EditorHotkey& info, void(T::*callback)())
 {
     auto owner = dynamic_cast<T*>(this);
     URHO3D_ASSERT(owner);

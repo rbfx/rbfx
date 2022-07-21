@@ -49,20 +49,20 @@ namespace Urho3D
 namespace
 {
 
-const auto Hotkey_RewindSimulation = HotkeyInfo{"SceneViewTab.RewindSimulation"}.Press(KEY_UNKNOWN);
-const auto Hotkey_TogglePaused = HotkeyInfo{"SceneViewTab.TogglePaused"}.Press(KEY_PAUSE);
+const auto Hotkey_RewindSimulation = EditorHotkey{"SceneViewTab.RewindSimulation"}.Press(KEY_UNKNOWN);
+const auto Hotkey_TogglePaused = EditorHotkey{"SceneViewTab.TogglePaused"}.Press(KEY_PAUSE);
 
-const auto Hotkey_Cut = HotkeyInfo{"SceneViewTab.Cut"}.Ctrl().Press(KEY_X);
-const auto Hotkey_Copy = HotkeyInfo{"SceneViewTab.Copy"}.Ctrl().Press(KEY_C);
-const auto Hotkey_Paste = HotkeyInfo{"SceneViewTab.Paste"}.Ctrl().Press(KEY_V);
-const auto Hotkey_PasteInto = HotkeyInfo{"SceneViewTab.PasteInto"}.Ctrl().Shift().Press(KEY_V);
-const auto Hotkey_Delete = HotkeyInfo{"SceneViewTab.Delete"}.Press(KEY_DELETE);
-const auto Hotkey_Duplicate = HotkeyInfo{"SceneViewTab.Duplicate"}.Ctrl().Press(KEY_D);
+const auto Hotkey_Cut = EditorHotkey{"SceneViewTab.Cut"}.Ctrl().Press(KEY_X);
+const auto Hotkey_Copy = EditorHotkey{"SceneViewTab.Copy"}.Ctrl().Press(KEY_C);
+const auto Hotkey_Paste = EditorHotkey{"SceneViewTab.Paste"}.Ctrl().Press(KEY_V);
+const auto Hotkey_PasteInto = EditorHotkey{"SceneViewTab.PasteInto"}.Ctrl().Shift().Press(KEY_V);
+const auto Hotkey_Delete = EditorHotkey{"SceneViewTab.Delete"}.Press(KEY_DELETE);
+const auto Hotkey_Duplicate = EditorHotkey{"SceneViewTab.Duplicate"}.Ctrl().Press(KEY_D);
 
-const auto Hotkey_Focus = HotkeyInfo{"SceneViewTab.Focus"}.Press(KEY_F);
+const auto Hotkey_Focus = EditorHotkey{"SceneViewTab.Focus"}.Press(KEY_F);
 
-const auto Hotkey_CreateSiblingNode = HotkeyInfo{"SceneViewTab.CreateSiblingNode"}.Ctrl().Press(KEY_N);
-const auto Hotkey_CreateChildNode = HotkeyInfo{"SceneViewTab.CreateChildNode"}.Ctrl().Shift().Press(KEY_N);
+const auto Hotkey_CreateSiblingNode = EditorHotkey{"SceneViewTab.CreateSiblingNode"}.Ctrl().Press(KEY_N);
+const auto Hotkey_CreateChildNode = EditorHotkey{"SceneViewTab.CreateChildNode"}.Ctrl().Shift().Press(KEY_N);
 
 }
 

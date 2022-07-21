@@ -36,9 +36,9 @@ namespace Urho3D
 namespace
 {
 
-const auto Hotkey_Delete = HotkeyInfo{"ResourceBrowserTab.Delete"}.Press(KEY_DELETE);
-const auto Hotkey_Rename = HotkeyInfo{"ResourceBrowserTab.Rename"}.Press(KEY_F2);
-const auto Hotkey_RevealInExplorer = HotkeyInfo{"ResourceBrowserTab.RevealInExplorer"}.Alt().Shift().Press(KEY_R);
+const auto Hotkey_Delete = EditorHotkey{"ResourceBrowserTab.Delete"}.Press(KEY_DELETE);
+const auto Hotkey_Rename = EditorHotkey{"ResourceBrowserTab.Rename"}.Press(KEY_F2);
+const auto Hotkey_RevealInExplorer = EditorHotkey{"ResourceBrowserTab.RevealInExplorer"}.Alt().Shift().Press(KEY_R);
 
 const ea::string contextMenuId = "ResourceBrowserTab_PopupDirectory";
 

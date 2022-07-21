@@ -35,47 +35,64 @@ namespace Urho3D
 {
 
 /// Mouse and keyboard combination that can be used as Editor hotkey.
-struct HotkeyCombination
+class EditorHotkey
 {
-    QualifierFlags qualifiers_{};
-    MouseButton mouseButton_{};
-    Key key_{};
-    Scancode scancode_{};
+public:
+    EditorHotkey() = default;
+    explicit EditorHotkey(const ea::string& command) : command_(command) {}
 
-    QualifierFlags ignoredQualifiers_{};
-    bool holdMouseButton_{};
-    bool holdKey_{};
-
+    /// Check hotkey state
+    /// @{
     bool IsValid() const;
-    bool IsInvoked() const;
+
+    bool CheckKeyboardQualifiers() const;
+    bool CheckMouseQualifiers() const;
+    bool CheckKeyboardPress() const;
+    bool CheckMousePress() const;
+    bool Check() const;
+    /// @}
+
+    /// Return hotkey text
+    /// @{
+    ea::string GetQualifiersString() const;
+    ea::string GetPressString() const;
+    ea::string GetHoldString() const;
     ea::string ToString() const;
-};
+    /// @}
 
-/// Editor hotkey description.
-struct HotkeyInfo
-{
+    /// Hotkey builder
+    /// @{
+    EditorHotkey& Press(Key key) { keyPressed_ = key; return *this; }
+    EditorHotkey& Press(Scancode scancode) { scancodePressed_ = scancode; return *this; }
+    EditorHotkey& Press(MouseButton button) { mouseButtonPressed_ = button; mouseButtonsUp_.Set(button, false); return *this; }
+
+    EditorHotkey& Hold(Key key) { keyDown_ = key; return *this; }
+    EditorHotkey& Hold(Scancode scancode) { scancodeDown_ = scancode; return *this; }
+    EditorHotkey& Hold(MouseButton button) { mouseButtonsDown_.Set(button, true); mouseButtonsUp_.Set(button, false); return *this; }
+
+    EditorHotkey& Shift() { qualifiersDown_.Set(QUAL_SHIFT, true); qualifiersUp_.Set(QUAL_SHIFT, false); return *this; }
+    EditorHotkey& Ctrl() { qualifiersDown_.Set(QUAL_CTRL, true); qualifiersUp_.Set(QUAL_CTRL, false); return *this; }
+    EditorHotkey& Alt() { qualifiersDown_.Set(QUAL_ALT, true); qualifiersUp_.Set(QUAL_ALT, false); return *this; }
+
+    EditorHotkey& MaybeShift() { qualifiersUp_.Set(QUAL_SHIFT, false); return *this; }
+    EditorHotkey& MaybeCtrl() { qualifiersUp_.Set(QUAL_CTRL, false); return *this; }
+    EditorHotkey& MaybeAlt() { qualifiersUp_.Set(QUAL_ALT, false); return *this; }
+    /// @}
+
+public:
     ea::string command_;
-    HotkeyCombination defaultHotkey_;
 
-    HotkeyInfo() = default;
-    explicit HotkeyInfo(const ea::string& command) : command_{command} {}
+    QualifierFlags qualifiersDown_{};
+    QualifierFlags qualifiersUp_{QUAL_SHIFT | QUAL_CTRL | QUAL_ALT};
 
-    HotkeyInfo& Shift() { defaultHotkey_.qualifiers_.Set(QUAL_SHIFT); return *this; }
-    HotkeyInfo& Ctrl() { defaultHotkey_.qualifiers_.Set(QUAL_CTRL); return *this; }
-    HotkeyInfo& Alt() { defaultHotkey_.qualifiers_.Set(QUAL_ALT); return *this; }
+    MouseButton mouseButtonPressed_{};
+    MouseButtonFlags mouseButtonsDown_{};
+    MouseButtonFlags mouseButtonsUp_{MOUSEB_ANY};
 
-    HotkeyInfo& IgnoreShift() { defaultHotkey_.ignoredQualifiers_.Set(QUAL_SHIFT); return *this; }
-    HotkeyInfo& IgnoreCtrl() { defaultHotkey_.ignoredQualifiers_.Set(QUAL_CTRL); return *this; }
-    HotkeyInfo& IgnoreAlt() { defaultHotkey_.ignoredQualifiers_.Set(QUAL_ALT); return *this; }
-    HotkeyInfo& IgnoreQualifiers() { defaultHotkey_.ignoredQualifiers_ = QUAL_SHIFT | QUAL_CTRL | QUAL_ALT; return *this; }
-
-    HotkeyInfo& Press(Key key) { defaultHotkey_.key_ = key; return *this; }
-    HotkeyInfo& Press(Scancode scancode) { defaultHotkey_.scancode_ = scancode; return *this; }
-    HotkeyInfo& Press(MouseButton button) { defaultHotkey_.mouseButton_ = button; return *this; }
-
-    HotkeyInfo& Hold(Key key) { defaultHotkey_.holdKey_ = true; defaultHotkey_.key_ = key; return *this; }
-    HotkeyInfo& Hold(Scancode scancode) { defaultHotkey_.holdKey_ = true; defaultHotkey_.scancode_ = scancode; return *this; }
-    HotkeyInfo& Hold(MouseButton button) { defaultHotkey_.holdMouseButton_ = true; defaultHotkey_.mouseButton_ = button; return *this; }
+    Key keyPressed_{};
+    Key keyDown_{};
+    Scancode scancodePressed_{};
+    Scancode scancodeDown_{};
 };
 
 /// Class used to manage and dispatch hotkeys.
@@ -91,15 +108,15 @@ public:
 
     /// Bind new hotkeys. Hotkeys for expired objects will be automatically removed.
     /// @{
-    void BindPassiveHotkey(const HotkeyInfo& info);
-    void BindHotkey(Object* owner, const HotkeyInfo& info, HotkeyCallback callback);
-    template <class T> void BindHotkey(T* owner, const HotkeyInfo& info, HotkeyMemberCallback<T> callback);
+    void BindPassiveHotkey(const EditorHotkey& hotkey);
+    void BindHotkey(Object* owner, const EditorHotkey& hotkey, HotkeyCallback callback);
+    template <class T> void BindHotkey(T* owner, const EditorHotkey& hotkey, HotkeyMemberCallback<T> callback);
     /// @}
 
     /// Return currently bound hotkey combination for given hotkey.
-    HotkeyCombination GetHotkey(const HotkeyInfo& info) const;
-    ea::string GetHotkeyLabel(const HotkeyInfo& info) const;
-    bool IsHotkeyActive(const HotkeyInfo& info) const;
+    const EditorHotkey& GetHotkey(const EditorHotkey& hotkey) const;
+    ea::string GetHotkeyLabel(const EditorHotkey& hotkey) const;
+    bool IsHotkeyActive(const EditorHotkey& hotkey) const;
 
     /// Routine maintenance, no user logic is performed
     /// @{
@@ -113,12 +130,11 @@ public:
 private:
     struct HotkeyBinding
     {
-        HotkeyBinding(Object* owner, const HotkeyInfo& info, HotkeyCallback callback);
-        explicit HotkeyBinding(const HotkeyInfo& info);
+        HotkeyBinding(Object* owner, const EditorHotkey& hotkey, HotkeyCallback callback);
+        explicit HotkeyBinding(const EditorHotkey& hotkey);
 
         WeakPtr<Object> owner_;
-        HotkeyInfo info_;
-        HotkeyCombination hotkey_;
+        EditorHotkey hotkey_;
         HotkeyCallback callback_;
         bool isPassive_{};
     };
@@ -138,9 +154,9 @@ private:
 
 
 template <class T>
-void HotkeyManager::BindHotkey(T* owner, const HotkeyInfo& info, HotkeyMemberCallback<T> callback)
+void HotkeyManager::BindHotkey(T* owner, const EditorHotkey& hotkey, HotkeyMemberCallback<T> callback)
 {
-    BindHotkey(owner, info, [owner, callback]() { (owner->*callback)(); });
+    BindHotkey(owner, hotkey, [owner, callback]() { (owner->*callback)(); });
 }
 
 }

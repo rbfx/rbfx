@@ -34,7 +34,7 @@ namespace Urho3D
 namespace
 {
 
-const auto Hotkey_Play = HotkeyInfo{"Global.Launch"}.Ctrl().Press(KEY_P);
+const auto Hotkey_Play = EditorHotkey{"Global.Launch"}.Ctrl().Press(KEY_P);
 
 class InternalState
 {

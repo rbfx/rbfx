@@ -38,12 +38,12 @@ namespace Urho3D
 namespace
 {
 
-const auto Hotkey_ToggleLocal = HotkeyInfo{"TransformGizmo.ToggleLocal"}.Press(KEY_X);
-const auto Hotkey_TogglePivoted = HotkeyInfo{"TransformGizmo.TogglePivoted"}.Press(KEY_Z);
-const auto Hotkey_Select = HotkeyInfo{"TransformGizmo.Select"}.Press(KEY_Q);
-const auto Hotkey_Translate = HotkeyInfo{"TransformGizmo.Translate"}.Press(KEY_W);
-const auto Hotkey_Rotate = HotkeyInfo{"TransformGizmo.Rotate"}.Press(KEY_E);
-const auto Hotkey_Scale = HotkeyInfo{"TransformGizmo.Scale"}.Press(KEY_R);
+const auto Hotkey_ToggleLocal = EditorHotkey{"TransformGizmo.ToggleLocal"}.Press(KEY_X);
+const auto Hotkey_TogglePivoted = EditorHotkey{"TransformGizmo.TogglePivoted"}.Press(KEY_Z);
+const auto Hotkey_Select = EditorHotkey{"TransformGizmo.Select"}.Press(KEY_Q);
+const auto Hotkey_Translate = EditorHotkey{"TransformGizmo.Translate"}.Press(KEY_W);
+const auto Hotkey_Rotate = EditorHotkey{"TransformGizmo.Rotate"}.Press(KEY_E);
+const auto Hotkey_Scale = EditorHotkey{"TransformGizmo.Scale"}.Press(KEY_R);
 
 }
 

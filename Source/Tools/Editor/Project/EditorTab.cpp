@@ -33,8 +33,8 @@ namespace Urho3D
 namespace
 {
 
-const auto Hotkey_Undo = HotkeyInfo{"Global.Undo"}.Ctrl().Press(KEY_Z);
-const auto Hotkey_Redo = HotkeyInfo{"Global.Redo"}.Ctrl().Press(KEY_Y);
+const auto Hotkey_Undo = EditorHotkey{"Global.Undo"}.Ctrl().Press(KEY_Z);
+const auto Hotkey_Redo = EditorHotkey{"Global.Redo"}.Ctrl().Press(KEY_Y);
 
 }
 
@@ -229,7 +229,7 @@ UndoManager* EditorTab::GetUndoManager() const
     return project->GetUndoManager();
 }
 
-ea::string EditorTab::GetHotkeyLabel(const HotkeyInfo& info) const
+ea::string EditorTab::GetHotkeyLabel(const EditorHotkey& info) const
 {
     auto hotkeyManager = GetHotkeyManager();
     return hotkeyManager->GetHotkeyLabel(info);
