@@ -234,6 +234,50 @@ bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* all
     return modified;
 }
 
+bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes, bool resizable)
+{
+    bool modified = false;
+    ea::optional<unsigned> pendingRemove;
+
+    unsigned index = 0;
+    for (ea::string& name : names)
+    {
+        if (resizable)
+        {
+            if (ui::Button(ICON_FA_TRASH_CAN))
+                pendingRemove = index;
+            ui::SameLine();
+            if (ui::IsItemHovered())
+                ui::SetTooltip("Remove item");
+        }
+
+        if (EditResourceRef(type, name, allowedTypes))
+            modified = true;
+
+        ++index;
+    }
+
+    if (pendingRemove && *pendingRemove < names.size())
+    {
+        names.erase_at(*pendingRemove);
+        modified = true;
+    }
+
+    if (resizable)
+    {
+        if (ui::Button(ICON_FA_SQUARE_PLUS " Add item"))
+        {
+            names.emplace_back();
+            modified = true;
+        }
+
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Add item");
+    }
+
+    return modified;
+}
+
 bool EditVariantColor(Variant& var, const EditVariantOptions& options)
 {
     const bool isColor = var.GetType() == VAR_COLOR;
@@ -379,8 +423,23 @@ bool EditVariantResourceRef(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantResourceRefList(Variant& var, const EditVariantOptions& options)
+{
+    ResourceRefList value = var.GetResourceRefList();
+    const unsigned effectiveLines = value.names_.size() + (options.allowResize_ ? 1 : 0);
+    if (effectiveLines > 1)
+        ui::NewLine();
+    if (EditResourceRefList(value.type_, value.names_, options.resourceTypes_, options.allowResize_))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariant(Variant& var, const EditVariantOptions& options)
 {
+    // TODO(editor): Implement all types
     switch (var.GetType())
     {
     case VAR_NONE:
@@ -425,13 +484,14 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     case VAR_STRING:
         return EditVariantString(var, options);
 
-    // case VAR_STRING:
     // case VAR_BUFFER:
 
     case VAR_RESOURCEREF:
         return EditVariantResourceRef(var, options);
 
-    // case VAR_RESOURCEREFLIST:
+    case VAR_RESOURCEREFLIST:
+        return EditVariantResourceRefList(var, options);
+
     // case VAR_VARIANTVECTOR:
     // case VAR_VARIANTMAP:
     // case VAR_INTRECT:
