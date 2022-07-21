@@ -74,7 +74,7 @@
 #include "Inspector/ComponentInspector.h"
 #include "Inspector/SerializableInspector.h"
 #include "Inspector/SoundInspector.h"
-#include "Tabs/ProfilerTab.h"
+//#include "Tabs/ProfilerTab.h"
 #include "EditorUndo.h"
 
 #include "Foundation/ConsoleTab.h"
@@ -85,6 +85,7 @@
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/SceneViewTab.h"
 #include "Foundation/SettingsTab.h"
+#include "Foundation/ProfilerTab.h"
 #include "Foundation/StandardFileTypes.h"
 
 #include "Foundation/SettingsTab/KeyBindingsPage.h"
@@ -123,7 +124,7 @@ const auto&& DEFAULT_TAB_TYPES = {
     ConsoleTab::GetTypeStatic(),
     PreviewTab::GetTypeStatic(),
     SceneTab::GetTypeStatic(),
-    ProfilerTab::GetTypeStatic()
+    //ProfilerTab::GetTypeStatic()
 };
 
 }
@@ -141,6 +142,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
     editorPluginManager_->AddPlugin("Foundation.Inspector", &Foundation_InspectorTab);
+    editorPluginManager_->AddPlugin("Foundation.Profiler", &Foundation_ProfilerTab);
 
     editorPluginManager_->AddPlugin("Foundation.Settings.KeyBindings", &Foundation_KeyBindingsPage);
     editorPluginManager_->AddPlugin("Foundation.Settings.Launch", &Foundation_LaunchPage);
@@ -258,7 +260,7 @@ void Editor::Setup()
     context_->RegisterFactory<InspectorTab>();
     context_->RegisterFactory<ResourceTab>();
     context_->RegisterFactory<PreviewTab>();
-    context_->RegisterFactory<ProfilerTab>();
+    //context_->RegisterFactory<ProfilerTab>();
 
     // Inspectors.
     inspectors_.push_back(SharedPtr(new AssetInspector(context_)));
@@ -762,8 +764,8 @@ void Editor::LoadDefaultLayout()
     auto* console = GetTab<ConsoleTab>();
     auto* preview = GetTab<PreviewTab>();
     auto* scene = GetTab<SceneTab>();
-    auto* profiler = GetTab<ProfilerTab>();
-    profiler->SetOpen(false);
+    //auto* profiler = GetTab<ProfilerTab>();
+    //profiler->SetOpen(false);
 
     ImGui::DockBuilderRemoveNode(dockspaceId_);
     ImGui::DockBuilderAddNode(dockspaceId_, 0);
@@ -778,7 +780,7 @@ void Editor::LoadDefaultLayout()
     ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().c_str(), dockHierarchy);
     ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().c_str(), dockResources);
     ImGui::DockBuilderDockWindow(console->GetUniqueTitle().c_str(), dockLog);
-    ImGui::DockBuilderDockWindow(profiler->GetUniqueTitle().c_str(), dockLog);
+    //ImGui::DockBuilderDockWindow(profiler->GetUniqueTitle().c_str(), dockLog);
     ImGui::DockBuilderDockWindow(scene->GetUniqueTitle().c_str(), dock_main_id);
     ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().c_str(), dock_main_id);
     ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().c_str(), dockInspector);
