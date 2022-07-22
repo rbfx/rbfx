@@ -1217,9 +1217,7 @@ void ResourceBrowserTab::RefreshContents()
 void ResourceBrowserTab::RevealInExplorer(const ea::string& path)
 {
     auto fs = GetSubsystem<FileSystem>();
-#ifdef _WIN32
-    fs->SystemCommand(Format("start explorer.exe /select,{}", GetNativePath(path)));
-#endif
+    fs->Reveal(path);
 }
 
 void ResourceBrowserTab::RenameEntry(const FileSystemEntry& entry, const ea::string& newName)

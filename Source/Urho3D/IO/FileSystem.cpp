@@ -953,6 +953,19 @@ bool FileSystem::SetLastModifiedTime(const ea::string& fileName, FileTime newTim
 #endif
 }
 
+bool FileSystem::Reveal(const ea::string& path)
+{
+#ifdef _WIN32
+    return SystemCommand(Format("start explorer.exe /select,{}", GetNativePath(path))) == 0;
+#elif defined(__APPLE__)
+    return SystemCommand(Format("open -R {}", GetNativePath(path))) == 0;
+#elif defined(__linux__)
+    return SystemCommand(Format("xdg-open {}", GetNativePath(path))) == 0;
+#else
+    return false;
+#endif
+}
+
 void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path, const ea::string& startPath,
     const ea::string& filter, unsigned flags, bool recursive) const
 {
@@ -1551,6 +1564,28 @@ ea::string FileSystem::GetTemporaryDir() const
     return "/tmp/";
 #endif
 #endif
+}
+
+ea::string FileSystem::FindResourcePrefixPath() const
+{
+    const auto isFileSystemRoot = [](const ea::string& path)
+    {
+#if WIN32
+        return path.length() <= 3;  // Root path of any drive
+#else
+        return path == "/";         // Filesystem root
+#endif
+    };
+
+    ea::string result = GetProgramDir();
+    while (!isFileSystemRoot(result))
+    {
+        if (DirExists(result + "CoreData"))
+            return result;
+
+        result = GetParentPath(result);
+    }
+    return EMPTY_STRING;
 }
 
 ea::string GetAbsolutePath(const ea::string& path)

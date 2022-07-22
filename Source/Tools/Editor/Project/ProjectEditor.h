@@ -41,6 +41,8 @@
 
 #include <regex>
 
+struct ImFont;
+
 namespace Urho3D
 {
 
@@ -97,11 +99,12 @@ public:
     using AnalyzeFileCallback = ea::function<void(ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)>;
 
     Signal<void()> OnInitialized;
+    Signal<void()> OnShallowSaved;
     Signal<void()> OnRenderProjectMenu;
     Signal<void()> OnRenderProjectToolbar;
     Signal<void(ProjectRequest*)> OnRequest;
 
-    ProjectEditor(Context* context, const ea::string& projectPath);
+    ProjectEditor(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath);
     ~ProjectEditor() override;
     void SerializeInBlock(Archive& archive) override;
 
@@ -168,6 +171,7 @@ public:
 
     /// Return global properties
     /// @{
+    const ea::string& GetProjectPath() const { return projectPath_; }
     const ea::string& GetCoreDataPath() const { return coreDataPath_; }
     const ea::string& GetDataPath() const { return dataPath_; }
     const ea::string& GetCachePath() const { return cachePath_; }
@@ -189,6 +193,12 @@ public:
     /// @{
     void SetFocusedTab(EditorTab* tab);
     EditorTab* GetRootFocusedTab() { return focusedRootTab_; }
+    /// @}
+
+    /// System UI helpers
+    /// @{
+    static void SetMonoFont(ImFont* font);
+    static ImFont* GetMonoFont();
     /// @}
 
 private:
