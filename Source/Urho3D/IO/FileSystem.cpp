@@ -960,7 +960,9 @@ bool FileSystem::Reveal(const ea::string& path)
 #elif defined(__APPLE__)
     return SystemCommand(Format("open -R {}", GetNativePath(path))) == 0;
 #elif defined(__linux__)
-    return SystemCommand(Format("xdg-open {}", GetNativePath(path))) == 0;
+    return SystemCommand(Format("dbus-send "
+        "--session --print-reply --dest=org.freedesktop.FileManager1 --type=method_call "
+        "/org/freedesktop/FileManager1 org.freedesktop.FileManager1.ShowItems array:string:\"file://{}\" string:\"\"", GetNativePath(path))) == 0;
 #else
     return false;
 #endif

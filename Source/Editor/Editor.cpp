@@ -187,7 +187,7 @@ void Editor::Start()
     auto fs = GetSubsystem<FileSystem>();
 
     tempJsonPath_ = engine_->GetAppPreferencesDir() + "Temp.json";
-    settingsJsonPath_ = engine_->GetAppPreferencesDir() + "Editor.json";
+    settingsJsonPath_ = engine_->GetAppPreferencesDir() + "Settings.json";
 
     JSONFile tempFile(context_);
     if (tempFile.LoadFile(tempJsonPath_))
@@ -327,7 +327,7 @@ void Editor::Render()
                     const ea::string& projectPath = recentProjects_[index];
                     if (Texture2D* previewTexture = GetProjectPreview(projectPath))
                     {
-                        if (ui::ImageButton(previewTexture, tileSize - style.ItemInnerSpacing * 2))
+                        if (Widgets::ImageButton(previewTexture, tileSize - style.ItemInnerSpacing * 2))
                             OpenProject(projectPath);
                     }
                     else
