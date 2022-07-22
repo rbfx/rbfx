@@ -130,7 +130,6 @@ void Editor::Setup()
     auto fs = GetSubsystem<FileSystem>();
     auto log = GetSubsystem<Log>();
 
-    context_->RegisterSubsystem(this, Editor::GetTypeStatic());
     context_->RegisterSubsystem(editorPluginManager_, EditorPluginManager::GetTypeStatic());
 
 #ifdef _WIN32
@@ -183,9 +182,9 @@ void Editor::Setup()
 
 void Editor::Start()
 {
-    auto cache = context_->GetSubsystem<ResourceCache>();
-    auto input = context_->GetSubsystem<Input>();
-    auto fs = context_->GetSubsystem<FileSystem>();
+    auto cache = GetSubsystem<ResourceCache>();
+    auto input = GetSubsystem<Input>();
+    auto fs = GetSubsystem<FileSystem>();
 
     tempJsonPath_ = engine_->GetAppPreferencesDir() + "Temp.json";
     settingsJsonPath_ = engine_->GetAppPreferencesDir() + "Editor.json";
@@ -228,10 +227,12 @@ void Editor::Start()
 
 void Editor::Stop()
 {
-    context_->GetSubsystem<WorkQueue>()->Complete(0);
+    auto workQueue = GetSubsystem<WorkQueue>();
+    workQueue->Complete(0);
+
     CloseProject();
+
     context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
-    context_->RemoveSubsystem<Editor>();
     context_->RemoveSubsystem<EditorPluginManager>();
 }
 
