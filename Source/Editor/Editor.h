@@ -50,9 +50,6 @@ public:
     /// Close current project.
     void CloseProject();
 
-    ///
-    void UpdateWindowTitle(const ea::string& resourcePath=EMPTY_STRING);
-
 protected:
     void InitializeUI();
     void RecreateSystemUI();
