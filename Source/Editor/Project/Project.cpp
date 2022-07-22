@@ -195,6 +195,8 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     assetManager_ = MakeShared<AssetManager>(context);
     assetManager_->OnInitialized.Subscribe(this, [=](Project*) mutable { initializationGuard.reset(); });
 
+    IgnoreFileNamePattern("*.user.json");
+
     ApplyPlugins();
 
     settingsManager_->AddPage(toolManager_);

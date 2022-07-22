@@ -104,7 +104,7 @@ SceneViewPage::SceneViewPage(Scene* scene)
     : Object(scene->GetContext())
     , scene_(scene)
     , renderer_(MakeShared<SceneRendererToTexture>(scene_))
-    , cfgFileName_(scene_->GetFileName() + ".cfg")
+    , cfgFileName_(scene_->GetFileName() + ".user.json")
 {
 }
 
@@ -196,9 +196,6 @@ SceneViewTab::SceneViewTab(Context* context)
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault | EditorTabFlag::FocusOnStart,
         EditorTabPlacement::DockCenter)
 {
-    auto project = GetProject();
-    project->IgnoreFileNamePattern("*.xml.cfg");
-
     BindHotkey(Hotkey_RewindSimulation, &SceneViewTab::RewindSimulation);
     BindHotkey(Hotkey_TogglePaused, &SceneViewTab::ToggleSimulationPaused);
     BindHotkey(Hotkey_Cut, &SceneViewTab::CutSelection);

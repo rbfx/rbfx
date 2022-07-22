@@ -589,7 +589,7 @@ void ImageItem(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const 
     ImGuiWindow* window = ui::GetCurrentWindow();
     ImGuiID id = window->GetID(texture);
     ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
-    ui::Image(texture, size, uv0, uv1, tintCol, borderCol);
+    Image(texture, size, uv0, uv1, tintCol, borderCol);
     ui::ItemAdd(bb, id);
 }
 
