@@ -835,8 +835,6 @@ using ImGuiConfigFlags = unsigned;
 %ignore ImGui::IsMouseReleased;
 %ignore ImGui::IsMouseClicked;
 %ignore ImGui::IsItemClicked;
-%ignore ImGui::SetDragDropVariant;
-%ignore ImGui::AcceptDragDropVariant;
 %ignore ImGui::dpx;
 %ignore ImGui::dpy;
 %ignore ImGui::dp;

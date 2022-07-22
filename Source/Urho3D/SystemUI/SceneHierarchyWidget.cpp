@@ -117,6 +117,10 @@ void SceneHierarchyWidget::RenderContent(Scene* scene, SceneSelection& selection
 
     // Suppress future updates if selection was changed by the widget
     lastActiveObject_ = selection.GetActiveObject();
+
+    // Reset flag just in case
+    if (ignoreNextMouseRelease_ && ui::IsMouseReleased(MOUSEB_LEFT))
+        ignoreNextMouseRelease_ = false;
 }
 
 void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
@@ -148,21 +152,24 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
 
     ProcessRangeSelection(node, opened);
 
-    if (!ui::IsItemToggledOpen())
+    if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsItemToggledOpen())
+        ignoreNextMouseRelease_ = true;
+
+    if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
     {
-        if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
-        {
+        if (ignoreNextMouseRelease_)
+            ignoreNextMouseRelease_ = false;
+        else
             ProcessObjectSelected(selection, node, toggleSelect, rangeSelect);
-        }
-        else if (ui::IsItemClicked(MOUSEB_RIGHT))
+    }
+    else if (ui::IsItemClicked(MOUSEB_RIGHT))
+    {
+        if (selection.IsSelected(node))
+            OpenSelectionContextMenu();
+        else
         {
-            if (selection.IsSelected(node))
-                OpenSelectionContextMenu();
-            else
-            {
-                ProcessObjectSelected(selection, node, toggleSelect, false);
-                OpenSelectionContextMenu();
-            }
+            ProcessObjectSelected(selection, node, toggleSelect, false);
+            OpenSelectionContextMenu();
         }
     }
 

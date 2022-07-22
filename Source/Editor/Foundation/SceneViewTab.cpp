@@ -839,7 +839,7 @@ void SceneViewTab::RenderContent()
 
     Texture2D* sceneTexture = activePage->renderer_->GetTexture();
     ui::SetCursorPos(basePosition);
-    ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+    Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 
     const auto contentAreaMin = ToVector2(ui::GetItemRectMin());
     const auto contentAreaMax = ToVector2(ui::GetItemRectMax());

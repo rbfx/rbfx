@@ -200,7 +200,7 @@ void GameViewTab::RenderContent()
     if (state_)
     {
         Texture2D* sceneTexture = backbuffer_->GetTexture();
-        ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+        Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
     }
 
     if (state_)

@@ -45,6 +45,11 @@ URHO3D_API void ItemLabel(ea::string_view title, const ea::optional<Color>& colo
 /// Return recommended color for item label.
 URHO3D_API Color GetItemLabelColor(bool canEdit, bool defaultValue);
 
+/// Render Texture2D as ImGui item.
+URHO3D_API void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tintCol = ImVec4(1, 1, 1, 1), const ImVec4& borderCol = ImVec4(0, 0, 0, 0));
+URHO3D_API void ImageItem(Texture2D* texture, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tintCol = ImVec4(1, 1, 1, 1), const ImVec4& borderCol = ImVec4(0, 0, 0, 0));
+URHO3D_API bool ImageButton(Texture2D* texture, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), int framePadding = -1, const ImVec4 & bgCol = ImVec4(0, 0, 0, 0), const ImVec4 & tintCol = ImVec4(1, 1, 1, 1));
+
 /// Parameters for rendering arbitrary variant value.
 struct EditVariantOptions
 {
@@ -87,15 +92,5 @@ URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {}
 // TODO(editor): Remove or move up
 namespace ImGui
 {
-
-URHO3D_API bool SetDragDropVariant(const ea::string& types, const Urho3D::Variant& variant, ImGuiCond cond = 0);
-URHO3D_API const Urho3D::Variant& AcceptDragDropVariant(const ea::string& type, ImGuiDragDropFlags flags = 0);
-URHO3D_API void Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
-/// Render an image which is also an item that can be activated.
-URHO3D_API void ImageItem(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
-URHO3D_API bool ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), int frame_padding = -1, const ImVec4 & bg_col = ImVec4(0, 0, 0, 0), const ImVec4 & tint_col = ImVec4(1, 1, 1, 1));
-/// Activate last item if specified mouse button is pressed and held over it, deactivate when released.
-URHO3D_API bool ItemMouseActivation(Urho3D::MouseButton button, unsigned flags = ImGuiItemMouseActivation_Click);
-URHO3D_API void HideCursorWhenActive(Urho3D::MouseButton button, bool on_drag = false);
 
 }

@@ -570,126 +570,43 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     }
 }
 
-}
-
-}
-
-bool ui::SetDragDropVariant(const ea::string& types, const Urho3D::Variant& variant, ImGuiCond cond)
+void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol)
 {
-    if (SetDragDropPayload(types.c_str(), nullptr, 0, cond))
-    {
-        auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-        systemUI->GetContext()->SetGlobalVar("SystemUI_Drag&Drop_Value", variant);
-        return true;
-    }
-    return false;
-}
+    auto context = Context::GetInstance();
+    auto systemUI = context->GetSubsystem<SystemUI>();
 
-const Urho3D::Variant& ui::AcceptDragDropVariant(const ea::string& types, ImGuiDragDropFlags flags)
-{
-    using namespace Urho3D;
-
-    if (const ImGuiPayload* payload = GetDragDropPayload())
-    {
-        bool accepted = false;
-        for (const ea::string& type : types.split(','))
-        {
-            const char* t = payload->DataType;
-            while (t < payload->DataType + URHO3D_ARRAYSIZE(payload->DataType))
-            {
-                t = strstr(t, type.c_str());
-                if (t == nullptr)
-                    break;
-
-                const char* tEnd = strstr(t, ",");
-                tEnd = tEnd ? Min(t + strlen(t), tEnd) : t + strlen(t);
-                if ((t == payload->DataType || t[-1] == ',') && (*tEnd == 0 || *tEnd == ','))
-                    accepted = true;
-                t = tEnd;
-            }
-        }
-
-        if (AcceptDragDropPayload(accepted ? payload->DataType : "Smth that won't be accepted.", flags))
-        {
-            SystemUI* systemUI = static_cast<SystemUI*>(GetIO().UserData);
-            return systemUI->GetContext()->GetGlobalVar("SystemUI_Drag&Drop_Value");
-        }
-    }
-
-    return Urho3D::Variant::EMPTY;
-}
-
-void ui::Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
-{
-    auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-    systemUI->ReferenceTexture(user_texture_id);
+    systemUI->ReferenceTexture(texture);
 #if URHO3D_D3D11
-    void* texture_id = user_texture_id->GetShaderResourceView();
+    void* textureId = texture->GetShaderResourceView();
 #else
-    void* texture_id = user_texture_id->GetGPUObject();
+    void* textureId = texture->GetGPUObject();
 #endif
-    Image(texture_id, size, uv0, uv1, tint_col, border_col);
+    ui::Image(textureId, size, uv0, uv1, tintCol, borderCol);
 }
 
-void ui::ImageItem(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
+void ImageItem(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol)
 {
     ImGuiWindow* window = ui::GetCurrentWindow();
-    ImGuiID id = window->GetID(user_texture_id);
+    ImGuiID id = window->GetID(texture);
     ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
-    ui::Image(user_texture_id, size, uv0, uv1, tint_col, border_col);
+    ui::Image(texture, size, uv0, uv1, tintCol, borderCol);
     ui::ItemAdd(bb, id);
 }
 
-bool ui::ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
+bool ImageButton(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int framePadding, const ImVec4& bgCol, const ImVec4& tintCol)
 {
-    auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-    systemUI->ReferenceTexture(user_texture_id);
+    auto context = Context::GetInstance();
+    auto systemUI = context->GetSubsystem<SystemUI>();
+
+    systemUI->ReferenceTexture(texture);
 #if URHO3D_D3D11
-    void* texture_id = user_texture_id->GetShaderResourceView();
+    void* textureId = texture->GetShaderResourceView();
 #else
-    void* texture_id = user_texture_id->GetGPUObject();
+    void* textureId = texture->GetGPUObject();
 #endif
-    return ImageButton(texture_id, size, uv0, uv1, frame_padding, bg_col, tint_col);
+    return ui::ImageButton(textureId, size, uv0, uv1, framePadding, bgCol, tintCol);
 }
 
-bool ui::ItemMouseActivation(Urho3D::MouseButton button, unsigned flags)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiWindow* window = g.CurrentWindow;
-
-    bool activated = !ui::IsItemActive() && ui::IsItemHovered();
-    if (flags == ImGuiItemMouseActivation_Dragging)
-        activated &= ui::IsMouseDragging(button);
-    else
-        activated &= ui::IsMouseClicked(button);
-
-    if (activated)
-        ui::SetActiveID(g.LastItemData.ID, window);
-    else if (ui::IsItemActive() && !ui::IsMouseDown(button))
-        ui::ClearActiveID();
-    return ui::IsItemActive();
 }
 
-void ui::HideCursorWhenActive(Urho3D::MouseButton button, bool on_drag)
-{
-    using namespace Urho3D;
-    ImGuiContext& g = *GImGui;
-    SystemUI* systemUI = reinterpret_cast<SystemUI*>(g.IO.UserData);
-    if (ui::IsItemActive())
-    {
-        if (!on_drag || ui::IsMouseDragging(button))
-        {
-            Input* input = systemUI->GetSubsystem<Input>();
-            if (input->IsMouseVisible())
-            {
-                systemUI->SetRelativeMouseMove(true, true);
-                input->SetMouseVisible(false);
-            }
-        }
-    }
-    else if (ui::IsItemDeactivated())
-    {
-        systemUI->SetRelativeMouseMove(false, true);
-        systemUI->GetSubsystem<Input>()->SetMouseVisible(true);
-    }
 }

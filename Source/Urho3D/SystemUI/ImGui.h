@@ -119,13 +119,6 @@ private:
 
 }
 
-// TODO(editor): Remove this
-enum ImGuiItemMouseActivation
-{
-    ImGuiItemMouseActivation_Click,
-    ImGuiItemMouseActivation_Dragging,
-};
-
 namespace ImGui
 {
 

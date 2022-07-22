@@ -45,6 +45,7 @@ public:
     void RenderTitle();
     void RenderContent();
 
+    ea::string GetTitle() const;
     const SerializableVector& GetObjects() const { return objects_; }
 
 private:
