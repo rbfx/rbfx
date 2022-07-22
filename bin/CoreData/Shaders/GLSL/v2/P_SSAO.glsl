@@ -63,6 +63,12 @@ vec2 NormalToRGB(vec2 xyz)
    return (xyz+vec2(1.0, 1.0))*0.5;
 }
 
+half UVToConfidence(vec2 uv)
+{
+    vec2 weights = step(vec2(0.0,0.0), uv) * step(uv, vec2(1.0,1.0));
+    return weights.x * weights.y;
+}
+
 // Sample depth texture at screen coordinates
 vec3 SampleDepth(vec2 texCoord)
 {
@@ -116,7 +122,7 @@ void SampleNormalAndOcclustion(vec2 uv, out vec2 n, out half confidence, out hal
 {
    vec4 color = texture2D(sDiffMap, uv);
    occlusion = color.a;
-   confidence = color.z;
+   confidence = color.z * UVToConfidence(uv);
    n = RGBToNormal(color.xy);
 }
 
@@ -179,12 +185,13 @@ void main()
       vec3 hemispherePosition = position + sampleOffset - (step(0, -offsetProj) * 2.0 * offsetProj * normal);// + normal * (1/128.0);
       // Translate view space hemisphere point to clip space
       vec4 clipSpaceRay = vec4(hemispherePosition, 1.0) * cProj;
+      vec2 sampleUV = clipSpaceRay.xy/clipSpaceRay.w;
       // Sample depth texture
-      vec3 sampleDepth = SampleDepth(clipSpaceRay.xy/clipSpaceRay.w);
+      vec3 sampleDepth = SampleDepth(sampleUV);
       // Evalue difference between predicted and actual sample depth
       float difference = hemispherePosition.z - sampleDepth.z;
       // Fade out AO when sampled points are too far away
-      half weight = smoothstep(cSSAORadius*3.0, cSSAORadius, difference);
+      half weight = UVToConfidence(sampleUV) * smoothstep(cSSAORadius*3.0, cSSAORadius, difference);
       weightSum += weight;
       occlusion += step(falloff, difference) * weight;
    }

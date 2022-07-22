@@ -85,7 +85,11 @@ protected:
         SharedPtr<PipelineState> combine_;
         SharedPtr<PipelineState> preview_;
 
-        bool IsValid() { return ssao_->IsValid() && blur_->IsValid(); }
+        bool IsValid()
+        {
+            return ssao_ && ssao_->IsValid() && blur_->IsValid() && ssao_deferred_->IsValid()
+                && blur_deferred_->IsValid() && combine_->IsValid() && preview_->IsValid();
+        }
     };
     ea::optional<CachedStates> pipelineStates_;
 
