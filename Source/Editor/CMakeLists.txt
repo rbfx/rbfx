@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_SYSTEMUI)
+if (NOT URHO3D_SYSTEMUI OR MINI_URHO OR NOT URHO3D_EDITOR)
     return ()
 endif ()
 
@@ -60,7 +60,7 @@ if (TARGET libEditor)
 endif ()
 
 target_include_directories(${EDITOR_TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries (${EDITOR_TARGET} PUBLIC Toolbox Urho3D)
+target_link_libraries (${EDITOR_TARGET} PUBLIC Urho3D)
 if (TARGET TracyEmbedded)
     target_link_libraries (${EDITOR_TARGET} PUBLIC TracyEmbedded)
 endif ()
