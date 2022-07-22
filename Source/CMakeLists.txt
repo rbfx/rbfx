@@ -75,6 +75,7 @@ add_subdirectory (Samples)
 add_subdirectory (Tools)
 add_subdirectory (Extras)
 add_subdirectory (Player)
+add_subdirectory (Editor)
 add_subdirectory (Tests)
 
 if (NOT MINI_URHO)
