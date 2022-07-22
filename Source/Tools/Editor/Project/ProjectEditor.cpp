@@ -52,9 +52,11 @@ namespace
 
 const auto Hotkey_SaveProject = EditorHotkey{"Global.SaveProject"}.Ctrl().Shift().Press(KEY_S);
 
-static unsigned numActiveProjects = 0;
+ImFont* monoFont = nullptr;
 
-static const ea::string selfIniEntry{"Project"};
+unsigned numActiveProjects = 0;
+
+const ea::string selfIniEntry{"Project"};
 
 bool IsEscapedChar(const char ch)
 {
@@ -141,14 +143,24 @@ bool AnalyzeFileContext::HasXMLRoot(std::initializer_list<ea::string_view> roots
         [this](ea::string_view root) { return HasXMLRoot(root); });
 }
 
-ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
+void ProjectEditor::SetMonoFont(ImFont* font)
+{
+    monoFont = font;
+}
+
+ImFont* ProjectEditor::GetMonoFont()
+{
+    return monoFont;
+}
+
+ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath)
     : Object(context)
     , projectPath_(GetSanitizedPath(projectPath + "/"))
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
     , tempPath_(projectPath_ + "Temp/")
     , projectJsonPath_(projectPath_ + "Project.json")
-    , settingsJsonPath_(projectPath_ + "Settings.json")
+    , settingsJsonPath_(settingsJsonPath)
     , cacheJsonPath_(projectPath_ + "Cache.json")
     , uiIniPath_(projectPath_ + ".ui.ini")
     , gitIgnorePath_(projectPath_ + ".gitignore")
@@ -465,6 +477,7 @@ void ProjectEditor::InitializeDefaultProject()
 void ProjectEditor::InitializeResourceCache()
 {
     auto cache = GetSubsystem<ResourceCache>();
+    cache->ReleaseAllResources(true);
     cache->RemoveAllResourceDirs();
     cache->AddResourceDir(dataPath_);
     cache->AddResourceDir(coreDataPath_);
@@ -706,6 +719,8 @@ void ProjectEditor::SaveShallowOnly()
         if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
             resourceTab->SaveShallow();
     }
+
+    OnShallowSaved(this);
 }
 
 void ProjectEditor::SaveProjectOnly()

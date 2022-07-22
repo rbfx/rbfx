@@ -87,6 +87,8 @@ public:
     void RegisterPath(const ea::string& pathName);
     /// Set a file's last modified time as seconds since 1.1.1970. Return true on success.
     bool SetLastModifiedTime(const ea::string& fileName, FileTime newTime);
+    /// Reveal path or file in OS file browser.
+    bool Reveal(const ea::string& path);
 
     /// Return the absolute current working directory.
     /// @property
@@ -134,6 +136,8 @@ public:
     /// Return path of temporary directory. Path always ends with a forward slash.
     /// @property
     ea::string GetTemporaryDir() const;
+    /// Try to find resource prefix path starting from executable and going up.
+    ea::string FindResourcePrefixPath() const;
 
 private:
     /// Scan directory, called internally.

@@ -394,8 +394,8 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
 
     // Initialize app preferences directory
     appPreferencesDir_ = fileSystem->GetAppPreferencesDir(
-        GetParameter(EP_ORGANIZATION_NAME, "urho3d").GetString(),
-        GetParameter(EP_APPLICATION_NAME, "engine").GetString());
+        GetParameter(EP_ORGANIZATION_NAME, "Urho3D Rebel Fork").GetString(),
+        GetParameter(EP_APPLICATION_NAME, "Unspecified Application").GetString());
 
     // Remove all resource paths and packages
     if (removeOld)

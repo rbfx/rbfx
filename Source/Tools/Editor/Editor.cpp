@@ -57,14 +57,14 @@
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Engine/EngineEvents.h>
+#include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/Input/Input.h>
-#include <Urho3D/LibraryInfo.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Console.h>
 #include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
-#include <Toolbox/ToolboxAPI.h>
 #include <Toolbox/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
@@ -118,8 +118,20 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Glue.SceneView", &Foundation_SceneViewGlue);
 }
 
+void Editor::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "RecentProjects", recentProjects_);
+
+    auto fs = GetSubsystem<FileSystem>();
+    if (archive.IsInput())
+        ea::erase_if(recentProjects_, [&](const ea::string& path) { return path.empty() || !fs->DirExists(path); });
+}
+
 void Editor::Setup()
 {
+    auto fs = GetSubsystem<FileSystem>();
+    auto log = GetSubsystem<Log>();
+
     context_->RegisterSubsystem(this, Editor::GetTypeStatic());
     context_->RegisterSubsystem(editorPluginManager_, EditorPluginManager::GetTypeStatic());
 
@@ -134,35 +146,30 @@ void Editor::Setup()
     }
 #endif
 
-    // Discover resource prefix path by looking for CoreData and going up.
-    for (coreResourcePrefixPath_ = context_->GetSubsystem<FileSystem>()->GetProgramDir();;
-        coreResourcePrefixPath_ = GetParentPath(coreResourcePrefixPath_))
+    resourcePrefixPath_ = fs->FindResourcePrefixPath();
+    if (resourcePrefixPath_.empty())
     {
-        if (context_->GetSubsystem<FileSystem>()->DirExists(coreResourcePrefixPath_ + "CoreData"))
-            break;
-        else
-        {
-#if WIN32
-            if (coreResourcePrefixPath_.length() <= 3)   // Root path of any drive
-#else
-            if (coreResourcePrefixPath_ == "/")          // Filesystem root
-#endif
-            {
-                URHO3D_LOGERROR("Prefix path not found, unable to continue. Prefix path must contain all of your data "
-                                "directories (including CoreData).");
-                engine_->Exit();
-            }
-        }
+        ErrorDialog("Cannot launch Editor", "Prefix path is not found, unable to continue. Prefix path must contain CoreData and EditorData.");
+        engine_->Exit();
     }
 
+    log->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
+
+    SetRandomSeed(Time::GetTimeSinceEpoch());
+
+    // Define custom command line parameters here
+    auto& cmd = GetCommandLineParser();
+    cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->set_custom_option("dir");
+
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
+    engineParameters_[EP_APPLICATION_NAME] = GetWindowTitle();
     engineParameters_[EP_HEADLESS] = false;
     engineParameters_[EP_FULL_SCREEN] = false;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = resourcePrefixPath_;
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
     engineParameters_[EP_SYSTEMUI_FLAGS] = ImGuiConfigFlags_DpiEnableScaleFonts;
@@ -173,101 +180,56 @@ void Editor::Setup()
     engineParameters_[EP_HIGH_DPI] = true;
 #endif
 
-    // TODO(editor): Move Editor settings to global place
-#if 0
-    // Load editor settings
-    {
-        auto* fs = context_->GetSubsystem<FileSystem>();
-        ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
-        if (!fs->DirExists(editorSettingsDir))
-            fs->CreateDir(editorSettingsDir);
-
-        ea::string editorSettingsFile = editorSettingsDir + "Editor.json";
-        if (fs->FileExists(editorSettingsFile))
-        {
-            JSONFile file(context_);
-            if (file.LoadFile(editorSettingsFile))
-            {
-                JSONInputArchive archive(&file);
-                ConsumeArchiveException([&]{ SerializeValue(archive, "editor", *this); });
-
-                engineParameters_[EP_WINDOW_WIDTH] = windowSize_.x_;
-                engineParameters_[EP_WINDOW_HEIGHT] = windowSize_.y_;
-                engineParameters_[EP_WINDOW_POSITION_X] = windowPos_.x_;
-                engineParameters_[EP_WINDOW_POSITION_Y] = windowPos_.y_;
-            }
-        }
-    }
-#endif
-
-    context_->GetSubsystem<Log>()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
-
-    SetRandomSeed(Time::GetTimeSinceEpoch());
-
-    // Define custom command line parameters here
-    auto& cmd = GetCommandLineParser();
-    cmd.add_option("project", defaultProjectPath_, "Project to open or create on startup.")->set_custom_option("dir");
-
     PluginApplication::RegisterStaticPlugins();
 }
 
 void Editor::Start()
 {
-    Input* input = context_->GetSubsystem<Input>();
+    auto cache = context_->GetSubsystem<ResourceCache>();
+    auto input = context_->GetSubsystem<Input>();
+    auto fs = context_->GetSubsystem<FileSystem>();
+
+    tempJsonPath_ = engine_->GetAppPreferencesDir() + "Temp.json";
+    settingsJsonPath_ = engine_->GetAppPreferencesDir() + "Editor.json";
+
+    JSONFile tempFile(context_);
+    if (tempFile.LoadFile(tempJsonPath_))
+        tempFile.LoadObject(*this);
+
     input->SetMouseMode(MM_ABSOLUTE);
     input->SetMouseVisible(true);
     input->SetEnabled(false);
 
-    context_->GetSubsystem<ResourceCache>()->SetAutoReloadResources(true);
+    cache->SetAutoReloadResources(true);
+
     engine_->SetAutoExit(false);
 
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
-
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
-    auto* console = engine_->CreateConsole();
+    auto console = engine_->CreateConsole();
     console->SetAutoVisibleOnError(false);
-    context_->GetSubsystem<FileSystem>()->SetExecuteConsoleCommands(false);
-    SubscribeToEvent(E_CONSOLECOMMAND, [this](StringHash, VariantMap& args) { OnConsoleCommand(args); });
-    console->RefreshInterpreters();
-
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
-    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
-    SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
-    SetupSystemUI();
-    if (!defaultProjectPath_.empty())
-    {
-        ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases
-        OpenProject(defaultProjectPath_);
-    }
+    fs->SetExecuteConsoleCommands(false);
 
     // Hud will be rendered manually.
-    context_->GetSubsystem<Engine>()->CreateDebugHud()->SetMode(DEBUGHUD_SHOW_NONE);
+    auto debugHud = engine_->CreateDebugHud();
+    debugHud->SetMode(DEBUGHUD_SHOW_NONE);
+
+    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { Render(); });
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateProjectStatus(); });
+    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
+    SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
+
+    SetupSystemUI();
+
+    if (!pendingOpenProject_.empty())
+    {
+        // Avoid creating imgui.ini
+        ui::GetIO().IniFilename = nullptr;
+        OpenProject(pendingOpenProject_);
+    }
 }
 
 void Editor::Stop()
 {
-#if 0
-    // Save editor settings
-    if (!engine_->IsHeadless())
-    {
-        // Save window geometry
-        auto* graphics = GetSubsystem<Graphics>();
-        windowPos_ = graphics->GetWindowPosition();
-        windowSize_ = graphics->GetSize();
-
-        auto* fs = context_->GetSubsystem<FileSystem>();
-        ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
-        if (!fs->DirExists(editorSettingsDir))
-            fs->CreateDir(editorSettingsDir);
-
-        JSONFile json(context_);
-        JSONOutputArchive archive(&json);
-        SerializeValue(archive, "editor", *this);
-        if (!json.SaveFile(editorSettingsDir + "Editor.json"))
-            URHO3D_LOGERROR("Saving of editor settings failed.");
-    }
-#endif
-
     context_->GetSubsystem<WorkQueue>()->Complete(0);
     CloseProject();
     context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
@@ -275,7 +237,12 @@ void Editor::Stop()
     context_->RemoveSubsystem<EditorPluginManager>();
 }
 
-void Editor::OnUpdate(VariantMap& args)
+ea::string Editor::GetWindowTitle() const
+{
+    return "Editor";
+}
+
+void Editor::Render()
 {
     ImGuiContext& g = *GImGui;
 
@@ -446,16 +413,88 @@ void Editor::OnUpdate(VariantMap& args)
             engine_->Exit();
         }
     }
+
+    const ea::string title = GetWindowTitle();
+    if (windowTitle_ != title)
+    {
+        auto graphics = context_->GetSubsystem<Graphics>();
+        graphics->SetWindowTitle(title.c_str());
+        windowTitle_ = title;
+    }
 }
 
-void Editor::OnConsoleCommand(VariantMap& args)
+void Editor::RenderMenuBar()
 {
-    using namespace ConsoleCommand;
-    if (args[P_COMMAND].GetString() == "revision")
-        URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
+    auto fs = GetSubsystem<FileSystem>();
+
+    if (ui::BeginMainMenuBar())
+    {
+        if (ui::BeginMenu("Project"))
+        {
+            if (projectEditor_)
+            {
+                projectEditor_->RenderProjectMenu();
+                ui::Separator();
+            }
+
+            if (ui::MenuItem("Open or Create Project"))
+                OpenOrCreateProject();
+
+            StringVector & recents = recentProjects_;
+            // Does not show very first item, which is current project
+            if (recents.size() == (projectEditor_.NotNull() ? 1 : 0))
+            {
+                ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+                ui::MenuItem("Recent Projects");
+                ui::PopStyleColor();
+            }
+            else if (ui::BeginMenu("Recent Projects"))
+            {
+                for (int i = projectEditor_.NotNull() ? 1 : 0; i < recents.size(); i++)
+                {
+                    const ea::string& projectPath = recents[i];
+
+                    if (ui::MenuItem(GetFileNameAndExtension(RemoveTrailingSlash(projectPath)).c_str()))
+                        OpenProject(projectPath);
+
+                    if (ui::IsItemHovered())
+                        ui::SetTooltip("%s", projectPath.c_str());
+                }
+                ui::Separator();
+                if (ui::MenuItem("Clear All"))
+                    recents.clear();
+                ui::EndMenu();
+            }
+
+            if (projectEditor_)
+            {
+                if (ui::MenuItem("Close Project"))
+                    pendingCloseProject_ = true;
+            }
+
+            ui::Separator();
+
+            if (ui::MenuItem("Exit"))
+                SendEvent(E_EXITREQUESTED);
+
+            ui::EndMenu();
+        }
+
+        if (projectEditor_)
+            projectEditor_->RenderMainMenu();
+
+        if (ui::BeginMenu("Help"))
+        {
+            if (ui::MenuItem("Open Application Preferences Folder"))
+                fs->Reveal(engine_->GetAppPreferencesDir());
+            ui::EndMenu();
+        }
+
+        ui::EndMainMenuBar();
+    }
 }
 
-void Editor::OnEndFrame()
+void Editor::UpdateProjectStatus()
 {
     if (pendingCloseProject_)
     {
@@ -487,26 +526,34 @@ void Editor::OnEndFrame()
         }
 
         CloseProject();
+
         // Reset SystemUI so that imgui loads it's config proper.
+        ProjectEditor::SetMonoFont(nullptr);
         context_->RemoveSubsystem<SystemUI>();
         unsigned flags = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt();
         context_->RegisterSubsystem(new SystemUI(context_, flags));
         SetupSystemUI();
 
-        projectEditor_ = MakeShared<ProjectEditor>(context_, pendingOpenProject_);
+        projectEditor_ = MakeShared<ProjectEditor>(context_, pendingOpenProject_, settingsJsonPath_);
+        projectEditor_->OnShallowSaved.Subscribe(this, &Editor::SaveTempJson);
+
+        recentProjects_.erase_first(pendingOpenProject_);
+        recentProjects_.push_front(pendingOpenProject_);
+
         pendingOpenProject_.clear();
     }
+}
+
+void Editor::SaveTempJson()
+{
+    JSONFile tempFile(context_);
+    tempFile.SaveObject(*this);
+    tempFile.SaveFile(tempJsonPath_);
 }
 
 void Editor::OnExitRequested()
 {
     exiting_ = true;
-}
-
-void Editor::OnExitHotkeyPressed()
-{
-    if (!exiting_)
-        OnExitRequested();
 }
 
 void Editor::OpenProject(const ea::string& projectPath)
@@ -524,16 +571,20 @@ void Editor::SetupSystemUI()
 {
     auto& io = ui::GetIO();
     auto& style = ImGui::GetStyleTemplate();
-    static ImWchar fontAwesomeIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-    static ImWchar notoSansRanges[] = {0x20, 0x52f, 0x1ab0, 0x2189, 0x2c60, 0x2e44, 0xa640, 0xab65, 0};
-    static ImWchar notoMonoRanges[] = {0x20, 0x513, 0x1e00, 0x1f4d, 0};
-    SystemUI* systemUI = GetSubsystem<SystemUI>();
 
+    static const ImWchar fontAwesomeIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+    static const ImWchar notoSansRanges[] = {0x20, 0x52f, 0x1ab0, 0x2189, 0x2c60, 0x2e44, 0xa640, 0xab65, 0};
+    static const ImWchar notoMonoRanges[] = {0x20, 0x513, 0x1e00, 0x1f4d, 0};
+
+    auto systemUI = GetSubsystem<SystemUI>();
     systemUI->ApplyStyleDefault(true, 1.0f);
     systemUI->AddFont("Fonts/NotoSans-Regular.ttf", notoSansRanges, 16.f);
     systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 14.f, true);
-    monoFont_ = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
     systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
+
+    ImFont* monoFont = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
+    ProjectEditor::SetMonoFont(monoFont);
+
     style.WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
 #if URHO3D_SYSTEMUI_VIEWPORTS

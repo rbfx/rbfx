@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include "../Editor.h"
 #include "../Foundation/ConsoleTab.h"
 
 #include <Urho3D/SystemUI/Console.h>
@@ -42,10 +41,8 @@ ConsoleTab_::ConsoleTab_(Context* context)
 void ConsoleTab_::RenderContent()
 {
     auto console = GetSubsystem<Console>();
-    /// TODO(editor): Revisit dependency
-    auto editor = GetSubsystem<Editor>();
 
-    ImFont* font = editor->GetMonoSpaceFont();
+    ImFont* font = ProjectEditor::GetMonoFont();
     if (font)
         ui::PushFont(font);
     console->RenderContent();
