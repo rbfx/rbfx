@@ -35,10 +35,9 @@
 namespace Urho3D
 {
 
-void Foundation_NodeComponentInspector(Context* context, InspectorTab_* inspectorTab);
+void Foundation_NodeComponentInspector(Context* context, InspectorTab* inspectorTab);
 
 /// Scene hierarchy provider for hierarchy browser tab.
-/// TODO(editor): Rename
 class NodeComponentInspector : public Object, public InspectorSource
 {
     URHO3D_OBJECT(NodeComponentInspector, Object)

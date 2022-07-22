@@ -31,13 +31,12 @@ namespace Urho3D
 void Foundation_ConsoleTab(Context* context, Project* project);
 
 /// Tab that displays application log and enables console input.
-/// TODO(editor): Rename
-class ConsoleTab_ : public EditorTab
+class ConsoleTab : public EditorTab
 {
-    URHO3D_OBJECT(ConsoleTab_, EditorTab)
+    URHO3D_OBJECT(ConsoleTab, EditorTab)
 
 public:
-    explicit ConsoleTab_(Context* context);
+    explicit ConsoleTab(Context* context);
 
     /// Implement EditorTab
     /// @{

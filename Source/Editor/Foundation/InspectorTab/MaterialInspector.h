@@ -32,16 +32,15 @@
 namespace Urho3D
 {
 
-void Foundation_MaterialInspector(Context* context, InspectorTab_* inspectorTab);
+void Foundation_MaterialInspector(Context* context, InspectorTab* inspectorTab);
 
 /// Scene hierarchy provider for hierarchy browser tab.
-/// TODO(editor): Rename
-class MaterialInspector_ : public Object, public InspectorSource
+class MaterialInspector : public Object, public InspectorSource
 {
-    URHO3D_OBJECT(MaterialInspector_, Object)
+    URHO3D_OBJECT(MaterialInspector, Object)
 
 public:
-    explicit MaterialInspector_(Project* project);
+    explicit MaterialInspector(Project* project);
 
     /// Implement InspectorSource
     /// @{

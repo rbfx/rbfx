@@ -27,7 +27,7 @@
 namespace Urho3D
 {
 
-void Foundation_EmptyInspector(Context* context, InspectorTab_* inspectorTab);
+void Foundation_EmptyInspector(Context* context, InspectorTab* inspectorTab);
 
 /// Sink to reset inspector on failed inspector request.
 class EmptyInspector : public Object, public InspectorSource

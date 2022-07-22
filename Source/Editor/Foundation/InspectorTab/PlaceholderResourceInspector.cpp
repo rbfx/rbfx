@@ -27,7 +27,7 @@
 namespace Urho3D
 {
 
-void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab_* inspectorTab)
+void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab* inspectorTab)
 {
     inspectorTab->RegisterAddon<PlaceholderResourceInspector>(inspectorTab->GetProject());
 }

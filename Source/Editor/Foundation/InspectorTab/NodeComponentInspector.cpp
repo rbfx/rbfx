@@ -51,7 +51,7 @@ auto CastVectorTo(const ea::vector<WeakPtr<Serializable>>& objects)
 
 }
 
-void Foundation_NodeComponentInspector(Context* context, InspectorTab_* inspectorTab)
+void Foundation_NodeComponentInspector(Context* context, InspectorTab* inspectorTab)
 {
     inspectorTab->RegisterAddon<NodeComponentInspector>(inspectorTab->GetProject());
 }
