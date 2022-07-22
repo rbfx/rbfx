@@ -23,13 +23,13 @@
 #pragma once
 
 #include "../Core/SettingsManager.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 #include "../Project/EditorTab.h"
 
 namespace Urho3D
 {
 
-void Foundation_SettingsTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_SettingsTab(Context* context, Project* project);
 
 /// Tab that displays project settings.
 // TODO(editor): Rename to EditorSettingsTab?

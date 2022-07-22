@@ -22,11 +22,11 @@
 
 #pragma once
 
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 namespace Urho3D
 {
 
-void Foundation_StandardFileTypes(Context* context, ProjectEditor* project);
+void Foundation_StandardFileTypes(Context* context, Project* project);
 
 }

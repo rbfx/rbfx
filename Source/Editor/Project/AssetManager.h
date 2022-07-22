@@ -36,7 +36,7 @@ namespace Urho3D
 {
 
 class JSONFile;
-class ProjectEditor;
+class Project;
 
 /// Manages assets of the project.
 class AssetManager : public Object
@@ -140,7 +140,7 @@ private:
     bool QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor);
     void ProcessAsset(const AssetTransformerInput& input);
 
-    const WeakPtr<ProjectEditor> projectEditor_;
+    const WeakPtr<Project> project_;
     SharedPtr<FileWatcher> dataWatcher_;
 
     ApplicationFlavor defaultFlavor_; // TODO(editor): Make configurable

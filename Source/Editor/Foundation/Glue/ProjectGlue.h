@@ -28,6 +28,6 @@
 namespace Urho3D
 {
 
-void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project);
+void Foundation_ProjectGlue(Context* context, Project* project);
 
 }

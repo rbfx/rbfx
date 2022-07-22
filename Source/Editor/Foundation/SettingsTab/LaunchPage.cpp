@@ -38,7 +38,7 @@ void Foundation_LaunchPage(Context* context, SettingsTab* settingsTab)
 
 LaunchPage::LaunchPage(Context* context)
     : SettingsPage(context)
-    , launchManager_(GetSubsystem<ProjectEditor>()->GetLaunchManager())
+    , launchManager_(GetSubsystem<Project>()->GetLaunchManager())
 {
 }
 
@@ -73,7 +73,7 @@ void LaunchPage::RenderSettings()
     const unsigned newHash = MakeHash(launchManager_->GetConfigurations());
     if (oldHash != newHash)
     {
-        auto project = GetSubsystem<ProjectEditor>();
+        auto project = GetSubsystem<Project>();
         project->MarkUnsaved();
     }
 }

@@ -24,7 +24,7 @@
 
 #include "../Core/CommonEditorActions.h"
 #include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include <Urho3D/Core/Signal.h>
 #include <Urho3D/SystemUI/DragDropPayload.h>
@@ -36,7 +36,7 @@
 namespace Urho3D
 {
 
-void Foundation_ResourceBrowserTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_ResourceBrowserTab(Context* context, Project* project);
 
 class ResourceBrowserFactory : public Object
 {

@@ -35,7 +35,7 @@ class EmptyInspector : public Object, public InspectorSource
     URHO3D_OBJECT(EmptyInspector, Object)
 
 public:
-    explicit EmptyInspector(ProjectEditor* project);
+    explicit EmptyInspector(Project* project);
 
     /// Implement InspectorSource
     /// @{

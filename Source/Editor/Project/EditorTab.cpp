@@ -23,7 +23,7 @@
 #include "../Core/EditorPluginManager.h"
 #include "../Core/IniHelpers.h"
 #include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include <Urho3D/Input/Input.h>
 
@@ -212,9 +212,9 @@ void EditorTab::RenderEditMenuItems()
     ui::Separator();
 }
 
-ProjectEditor* EditorTab::GetProject() const
+Project* EditorTab::GetProject() const
 {
-    return GetSubsystem<ProjectEditor>();
+    return GetSubsystem<Project>();
 }
 
 HotkeyManager* EditorTab::GetHotkeyManager() const

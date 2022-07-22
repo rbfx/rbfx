@@ -51,7 +51,7 @@ void Foundation_PluginsPage(Context* context, SettingsTab* settingsTab)
 PluginsPage::PluginsPage(Context* context)
     : SettingsPage(context)
 {
-    auto project = GetSubsystem<ProjectEditor>();
+    auto project = GetSubsystem<Project>();
     auto hotkeyManager = project->GetHotkeyManager();
     hotkeyManager->BindHotkey(this, Hotkey_Apply, &PluginsPage::Apply);
     hotkeyManager->BindHotkey(this, Hotkey_Discard, &PluginsPage::Discard);
@@ -157,7 +157,7 @@ void PluginsPage::RenderSettings()
     const unsigned newHash = MakeHash(loadedPlugins_);
     if (oldHash != newHash)
     {
-        auto project = GetSubsystem<ProjectEditor>();
+        auto project = GetSubsystem<Project>();
         project->MarkUnsaved();
     }
 }

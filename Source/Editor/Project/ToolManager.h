@@ -30,7 +30,7 @@ namespace Urho3D
 {
 
 class JSONFile;
-class ProjectEditor;
+class Project;
 
 /// Manages third-party tools. Make it SettingsPage for simplicity.
 class ToolManager : public SettingsPage

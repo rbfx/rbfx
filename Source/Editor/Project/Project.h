@@ -90,10 +90,9 @@ struct AnalyzeFileContext
 };
 
 /// Main class for all Editor logic related to the project folder.
-/// TODO(editor): Rename to "Project"
-class ProjectEditor : public Object
+class Project : public Object
 {
-    URHO3D_OBJECT(ProjectEditor, Object);
+    URHO3D_OBJECT(Project, Object);
 
 public:
     using AnalyzeFileCallback = ea::function<void(ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)>;
@@ -104,8 +103,8 @@ public:
     Signal<void()> OnRenderProjectToolbar;
     Signal<void(ProjectRequest*)> OnRequest;
 
-    ProjectEditor(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath);
-    ~ProjectEditor() override;
+    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath);
+    ~Project() override;
     void SerializeInBlock(Archive& archive) override;
 
     /// Request graceful close of the project. Called multiple times during close sequence.
@@ -293,7 +292,7 @@ private:
 };
 
 template <class T>
-T* ProjectEditor::FindTab() const
+T* Project::FindTab() const
 {
     for (EditorTab* tab : tabs_)
     {

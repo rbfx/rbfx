@@ -23,13 +23,13 @@
 #pragma once
 
 #include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 #include "../Foundation/Shared/InspectorSource.h"
 
 namespace Urho3D
 {
 
-void Foundation_InspectorTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_InspectorTab(Context* context, Project* project);
 
 /// Tab that hosts inspectors of any kind.
 /// TODO(editor): Rename

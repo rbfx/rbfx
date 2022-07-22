@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../../Foundation/Glue/ProjectEditorGlue.h"
+#include "../../Foundation/Glue/ProjectGlue.h"
 
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
@@ -39,7 +39,7 @@ const auto Hotkey_Play = EditorHotkey{"Global.Launch"}.Ctrl().Press(KEY_P);
 class InternalState
 {
 public:
-    explicit InternalState(ProjectEditor* project)
+    explicit InternalState(Project* project)
         : project_{project}
         , gameViewTab_{project->FindTab<GameViewTab>()}
         , sceneViewTab_{project->FindTab<SceneViewTab>()}
@@ -81,7 +81,7 @@ public:
     }
 
 private:
-    const WeakPtr<ProjectEditor> project_;
+    const WeakPtr<Project> project_;
     const WeakPtr<GameViewTab> gameViewTab_;
     const WeakPtr<SceneViewTab> sceneViewTab_;
 
@@ -92,7 +92,7 @@ private:
 
 }
 
-void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
+void Foundation_ProjectGlue(Context* context, Project* project)
 {
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
 
@@ -100,7 +100,7 @@ void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
 
     hotkeyManager->BindHotkey(hotkeyManager, Hotkey_Play, [state] { state->TogglePlayedDefault(); });
 
-    project->OnRenderProjectMenu.Subscribe(project, [state](ProjectEditor* project)
+    project->OnRenderProjectMenu.Subscribe(project, [state](Project* project)
     {
         auto hotkeyManager = project->GetHotkeyManager();
         auto launchManager = project->GetLaunchManager();
@@ -127,7 +127,7 @@ void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
         }
     });
 
-    project->OnRenderProjectToolbar.Subscribe(project, [state](ProjectEditor* project)
+    project->OnRenderProjectToolbar.Subscribe(project, [state](Project* project)
     {
         auto launchManager = project->GetLaunchManager();
 

@@ -34,7 +34,7 @@ namespace Urho3D
 {
 
 class HotkeyManager;
-class ProjectEditor;
+class Project;
 class UndoManager;
 
 enum class EditorTabFlag
@@ -160,7 +160,7 @@ public:
 
     /// Syntax sugar for users.
     /// @{
-    ProjectEditor* GetProject() const;
+    Project* GetProject() const;
     HotkeyManager* GetHotkeyManager() const;
     UndoManager* GetUndoManager() const;
 

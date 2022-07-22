@@ -37,7 +37,7 @@
 namespace Urho3D
 {
 
-void Foundation_StandardFileTypes(Context* context, ProjectEditor* project)
+void Foundation_StandardFileTypes(Context* context, Project* project)
 {
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {

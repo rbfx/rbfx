@@ -41,7 +41,7 @@ KeyBindingsPage::KeyBindingsPage(Context* context)
 
 void KeyBindingsPage::RenderSettings()
 {
-    auto project = GetSubsystem<ProjectEditor>();
+    auto project = GetSubsystem<Project>();
     auto hotkeyManager = project->GetHotkeyManager();
 
     ui::Text("TODO: No, you cannot rebind those yet. PRs are welcome.");

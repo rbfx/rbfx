@@ -27,9 +27,9 @@
 namespace Urho3D
 {
 
-void Foundation_InspectorTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_InspectorTab(Context* context, Project* project)
 {
-    projectEditor->AddTab(MakeShared<InspectorTab_>(context));
+    project->AddTab(MakeShared<InspectorTab_>(context));
 }
 
 InspectorTab_::InspectorTab_(Context* context)

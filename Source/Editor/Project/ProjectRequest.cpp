@@ -22,7 +22,7 @@
 
 #include "../Project/ProjectRequest.h"
 
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include <EASTL/sort.h>
 
@@ -56,14 +56,14 @@ void ProjectRequest::InvokeProcessCallback()
 OpenResourceRequest::OpenResourceRequest(Context* context, const ea::string& resourceName)
     : ProjectRequest(context)
 {
-    auto project = GetSubsystem<ProjectEditor>();
+    auto project = GetSubsystem<Project>();
     resourceDesc_ = project->GetResourceDescriptor(resourceName);
 }
 
 InspectResourceRequest::InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames)
     : BaseInspectRequest(context)
 {
-    auto project = GetSubsystem<ProjectEditor>();
+    auto project = GetSubsystem<Project>();
     ea::transform(resourceNames.begin(), resourceNames.end(), ea::back_inserter(resourceDescs_),
         [&](const ea::string& resourceName) { return project->GetResourceDescriptor(resourceName); });
 }

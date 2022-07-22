@@ -22,14 +22,14 @@
 
 #pragma once
 
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include <Urho3D/Utility/AssetTransformer.h>
 
 namespace Urho3D
 {
 
-void Foundation_ModelImporter(Context* context, ProjectEditor* project);
+void Foundation_ModelImporter(Context* context, Project* project);
 
 /// Asset transformer that imports GLTF models.
 class ModelImporter : public AssetTransformer

@@ -45,7 +45,7 @@ void QueueProfilerCallback(std::function<void()> callback, bool forceDelay)
 {
     if (auto context = Context::GetInstance())
     {
-        if (auto project = context->GetSubsystem<ProjectEditor>())
+        if (auto project = context->GetSubsystem<Project>())
         {
             if (auto profilerTab = project->FindTab<ProfilerTab>())
             {
@@ -58,9 +58,9 @@ void QueueProfilerCallback(std::function<void()> callback, bool forceDelay)
 }
 
 
-void Foundation_ProfilerTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_ProfilerTab(Context* context, Project* project)
 {
-    projectEditor->AddTab(MakeShared<ProfilerTab>(context));
+    project->AddTab(MakeShared<ProfilerTab>(context));
 }
 
 ProfilerTab::ProfilerTab(Context* context)

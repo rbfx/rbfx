@@ -27,9 +27,9 @@
 namespace Urho3D
 {
 
-void Foundation_ConsoleTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_ConsoleTab(Context* context, Project* project)
 {
-    projectEditor->AddTab(MakeShared<ConsoleTab_>(context));
+    project->AddTab(MakeShared<ConsoleTab_>(context));
 }
 
 ConsoleTab_::ConsoleTab_(Context* context)
@@ -42,7 +42,7 @@ void ConsoleTab_::RenderContent()
 {
     auto console = GetSubsystem<Console>();
 
-    ImFont* font = ProjectEditor::GetMonoFont();
+    ImFont* font = Project::GetMonoFont();
     if (font)
         ui::PushFont(font);
     console->RenderContent();

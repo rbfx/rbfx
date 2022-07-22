@@ -32,7 +32,7 @@ void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab_* in
     inspectorTab->RegisterAddon<PlaceholderResourceInspector>(inspectorTab->GetProject());
 }
 
-PlaceholderResourceInspector::PlaceholderResourceInspector(ProjectEditor* project)
+PlaceholderResourceInspector::PlaceholderResourceInspector(Project* project)
     : Object(project->GetContext())
     , project_(project)
 {

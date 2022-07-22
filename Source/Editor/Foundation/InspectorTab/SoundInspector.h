@@ -36,7 +36,7 @@ class SoundInspector_ : public Object, public InspectorSource
     URHO3D_OBJECT(SoundInspector_, Object);
 
 public:
-    explicit SoundInspector_(ProjectEditor* project);
+    explicit SoundInspector_(Project* project);
 
     /// Implement InspectorSource
     /// @{
@@ -51,7 +51,7 @@ private:
     void InspectResources();
     void RenderSound(Sound* sound);
 
-    WeakPtr<ProjectEditor> project_;
+    WeakPtr<Project> project_;
 
     StringVector resourceNames_;
     ea::vector<SharedPtr<Sound>> sounds_;
