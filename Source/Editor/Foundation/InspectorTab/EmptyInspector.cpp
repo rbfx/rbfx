@@ -25,7 +25,7 @@
 namespace Urho3D
 {
 
-void Foundation_EmptyInspector(Context* context, InspectorTab_* inspectorTab)
+void Foundation_EmptyInspector(Context* context, InspectorTab* inspectorTab)
 {
     inspectorTab->RegisterAddon<EmptyInspector>(inspectorTab->GetProject());
 }

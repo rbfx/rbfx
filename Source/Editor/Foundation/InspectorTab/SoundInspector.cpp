@@ -30,7 +30,7 @@
 namespace Urho3D
 {
 
-void Foundation_SoundInspector(Context* context, InspectorTab_* inspectorTab)
+void Foundation_SoundInspector(Context* context, InspectorTab* inspectorTab)
 {
     inspectorTab->RegisterAddon<SoundInspector_>(inspectorTab->GetProject());
 }

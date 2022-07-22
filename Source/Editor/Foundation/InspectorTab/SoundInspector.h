@@ -29,7 +29,7 @@
 namespace Urho3D
 {
 
-void Foundation_SoundInspector(Context* context, InspectorTab_* inspectorTab);
+void Foundation_SoundInspector(Context* context, InspectorTab* inspectorTab);
 
 class SoundInspector_ : public Object, public InspectorSource
 {

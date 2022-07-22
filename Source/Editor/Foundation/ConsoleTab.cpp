@@ -29,16 +29,16 @@ namespace Urho3D
 
 void Foundation_ConsoleTab(Context* context, Project* project)
 {
-    project->AddTab(MakeShared<ConsoleTab_>(context));
+    project->AddTab(MakeShared<ConsoleTab>(context));
 }
 
-ConsoleTab_::ConsoleTab_(Context* context)
+ConsoleTab::ConsoleTab(Context* context)
     : EditorTab(context, "Console", "2c1b8e59-3e21-4a14-bc20-d35af0ba5031",
         EditorTabFlag::OpenByDefault, EditorTabPlacement::DockBottom)
 {
 }
 
-void ConsoleTab_::RenderContent()
+void ConsoleTab::RenderContent()
 {
     auto console = GetSubsystem<Console>();
 
@@ -50,7 +50,7 @@ void ConsoleTab_::RenderContent()
         ui::PopFont();
 }
 
-void ConsoleTab_::RenderContextMenuItems()
+void ConsoleTab::RenderContextMenuItems()
 {
     auto console = GetSubsystem<Console>();
 

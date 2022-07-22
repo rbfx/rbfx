@@ -29,46 +29,46 @@ namespace Urho3D
 
 void Foundation_InspectorTab(Context* context, Project* project)
 {
-    project->AddTab(MakeShared<InspectorTab_>(context));
+    project->AddTab(MakeShared<InspectorTab>(context));
 }
 
-InspectorTab_::InspectorTab_(Context* context)
+InspectorTab::InspectorTab(Context* context)
     : EditorTab(context, "Inspector", "bd959865-8929-4f92-a20f-97ff867d6ba6",
         EditorTabFlag::OpenByDefault, EditorTabPlacement::DockRight)
 {
 }
 
-void InspectorTab_::RegisterAddon(const SharedPtr<Object>& addon)
+void InspectorTab::RegisterAddon(const SharedPtr<Object>& addon)
 {
     addons_.push_back(addon);
 }
 
-void InspectorTab_::ConnectToSource(Object* source, InspectorSource* sourceInterface)
+void InspectorTab::ConnectToSource(Object* source, InspectorSource* sourceInterface)
 {
     source_ = source;
     sourceInterface_ = sourceInterface;
 }
 
-void InspectorTab_::RenderMenu()
+void InspectorTab::RenderMenu()
 {
     if (source_)
         sourceInterface_->RenderMenu();
 }
 
-void InspectorTab_::ApplyHotkeys(HotkeyManager* hotkeyManager)
+void InspectorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
     EditorTab::ApplyHotkeys(hotkeyManager);
     if (source_)
         sourceInterface_->ApplyHotkeys(hotkeyManager);
 }
 
-void InspectorTab_::RenderContent()
+void InspectorTab::RenderContent()
 {
     if (source_)
         sourceInterface_->RenderContent();
 }
 
-void InspectorTab_::RenderContextMenuItems()
+void InspectorTab::RenderContextMenuItems()
 {
     if (source_)
         sourceInterface_->RenderContextMenuItems();

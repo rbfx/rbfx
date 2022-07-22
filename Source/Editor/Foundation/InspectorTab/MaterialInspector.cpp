@@ -29,19 +29,19 @@
 namespace Urho3D
 {
 
-void Foundation_MaterialInspector(Context* context, InspectorTab_* inspectorTab)
+void Foundation_MaterialInspector(Context* context, InspectorTab* inspectorTab)
 {
-    inspectorTab->RegisterAddon<MaterialInspector_>(inspectorTab->GetProject());
+    inspectorTab->RegisterAddon<MaterialInspector>(inspectorTab->GetProject());
 }
 
-MaterialInspector_::MaterialInspector_(Project* project)
+MaterialInspector::MaterialInspector(Project* project)
     : Object(project->GetContext())
     , project_(project)
 {
-    project_->OnRequest.Subscribe(this, &MaterialInspector_::OnProjectRequest);
+    project_->OnRequest.Subscribe(this, &MaterialInspector::OnProjectRequest);
 }
 
-void MaterialInspector_::OnProjectRequest(ProjectRequest* request)
+void MaterialInspector::OnProjectRequest(ProjectRequest* request)
 {
     auto inspectResourceRequest = dynamic_cast<InspectResourceRequest*>(request);
     if (!inspectResourceRequest || inspectResourceRequest->GetResources().empty())
@@ -66,7 +66,7 @@ void MaterialInspector_::OnProjectRequest(ProjectRequest* request)
     });
 }
 
-void MaterialInspector_::InspectResources()
+void MaterialInspector::InspectResources()
 {
     auto cache = GetSubsystem<ResourceCache>();
 
@@ -85,11 +85,11 @@ void MaterialInspector_::InspectResources()
 
     widget_ = MakeShared<MaterialInspectorWidget>(context_, materials);
     widget_->UpdateTechniques(techniquePath_);
-    widget_->OnEditBegin.Subscribe(this, &MaterialInspector_::BeginEdit);
-    widget_->OnEditEnd.Subscribe(this, &MaterialInspector_::EndEdit);
+    widget_->OnEditBegin.Subscribe(this, &MaterialInspector::BeginEdit);
+    widget_->OnEditEnd.Subscribe(this, &MaterialInspector::EndEdit);
 }
 
-void MaterialInspector_::BeginEdit()
+void MaterialInspector::BeginEdit()
 {
     // Incomplete action will include all the changes automatically
     if (pendingAction_ && !pendingAction_->IsComplete())
@@ -105,13 +105,13 @@ void MaterialInspector_::BeginEdit()
     undoManager->PushAction(pendingAction_);
 }
 
-void MaterialInspector_::EndEdit()
+void MaterialInspector::EndEdit()
 {
     for (Material* material : widget_->GetMaterials())
         project_->SaveFileDelayed(material);
 }
 
-void MaterialInspector_::RenderContent()
+void MaterialInspector::RenderContent()
 {
     if (!widget_)
         return;
@@ -127,15 +127,15 @@ void MaterialInspector_::RenderContent()
     widget_->RenderContent();
 }
 
-void MaterialInspector_::RenderContextMenuItems()
+void MaterialInspector::RenderContextMenuItems()
 {
 }
 
-void MaterialInspector_::RenderMenu()
+void MaterialInspector::RenderMenu()
 {
 }
 
-void MaterialInspector_::ApplyHotkeys(HotkeyManager* hotkeyManager)
+void MaterialInspector::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
 }
 

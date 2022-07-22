@@ -32,13 +32,12 @@ namespace Urho3D
 void Foundation_InspectorTab(Context* context, Project* project);
 
 /// Tab that hosts inspectors of any kind.
-/// TODO(editor): Rename
-class InspectorTab_ : public EditorTab
+class InspectorTab : public EditorTab
 {
-    URHO3D_OBJECT(InspectorTab_, EditorTab);
+    URHO3D_OBJECT(InspectorTab, EditorTab);
 
 public:
-    explicit InspectorTab_(Context* context);
+    explicit InspectorTab(Context* context);
 
     /// Register new inspector addon.
     void RegisterAddon(const SharedPtr<Object>& addon);
@@ -70,7 +69,7 @@ private:
 };
 
 template <class T, class ... Args>
-T* InspectorTab_::RegisterAddon(const Args&... args)
+T* InspectorTab::RegisterAddon(const Args&... args)
 {
     const auto addon = MakeShared<T>(args...);
     RegisterAddon(addon);
@@ -79,11 +78,11 @@ T* InspectorTab_::RegisterAddon(const Args&... args)
 }
 
 template <class T>
-void InspectorTab_::SubscribeOnActivation(T* source)
+void InspectorTab::SubscribeOnActivation(T* source)
 {
     WeakPtr<T> sourceWeak{source};
     source->OnActivated.Subscribe(this,
-        [sourceWeak](InspectorTab_* inspectorTab)
+        [sourceWeak](InspectorTab* inspectorTab)
     {
         if (sourceWeak)
             inspectorTab->ConnectToSource(sourceWeak.Get());
