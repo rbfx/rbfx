@@ -54,9 +54,16 @@ public:
     void UpdateWindowTitle(const ea::string& resourcePath=EMPTY_STRING);
 
 protected:
-    void SetupSystemUI();
+    void InitializeUI();
+    void RecreateSystemUI();
+    void InitializeSystemUI();
+    void InitializeImGuiConfig();
+    void InitializeImGuiStyle();
+    void InitializeImGuiHandlers();
 
+    Texture2D* GetProjectPreview(const ea::string& projectPath);
     ea::string GetWindowTitle() const;
+
     void Render();
     void RenderMenuBar();
 
@@ -89,7 +96,10 @@ protected:
     ea::string pendingOpenProject_;
     bool pendingCloseProject_{};
     bool exiting_{};
+
+    bool uiAlreadyInitialized_{};
     ea::string windowTitle_;
+    ea::unordered_map<ea::string, SharedPtr<Texture2D>> projectPreviews_;
     /// @}
 };
 
