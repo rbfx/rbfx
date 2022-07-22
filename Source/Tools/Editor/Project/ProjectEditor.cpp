@@ -232,12 +232,12 @@ ProjectEditor::~ProjectEditor()
 
 CloseProjectResult ProjectEditor::CloseGracefully()
 {
-    // Always save shallow data on close
-    SaveShallowOnly();
-
     // If result is ready, return it now and reset state
     if (closeProjectResult_ != CloseProjectResult::Undefined)
     {
+        // Always save shallow data on close
+        SaveShallowOnly();
+
         const auto result = closeProjectResult_;
         closeProjectResult_ = CloseProjectResult::Undefined;
         return result;

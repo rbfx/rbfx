@@ -65,8 +65,6 @@
 #include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
-#include <Toolbox/SystemUI/Widgets.h>
-
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <nativefiledialog/nfd.h>
 
@@ -218,7 +216,7 @@ void Editor::Start()
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
     SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
 
-    SetupSystemUI();
+    InitializeUI();
 
     if (!pendingOpenProject_.empty())
     {
@@ -237,8 +235,31 @@ void Editor::Stop()
     context_->RemoveSubsystem<EditorPluginManager>();
 }
 
+Texture2D* Editor::GetProjectPreview(const ea::string& projectPath)
+{
+    if (projectPreviews_.contains(projectPath))
+        return projectPreviews_[projectPath];
+
+    SharedPtr<Texture2D>& texture = projectPreviews_[projectPath];
+
+    auto fs = GetSubsystem<FileSystem>();
+    const ea::string previewFileName = AddTrailingSlash(projectPath) + "Preview.png";
+    if (fs->FileExists(previewFileName))
+    {
+        Image image(context_);
+        if (image.LoadFile(previewFileName))
+        {
+            texture = MakeShared<Texture2D>(context_);
+            texture->SetData(&image);
+        }
+    }
+
+    return texture;
+}
+
 ea::string Editor::GetWindowTitle() const
 {
+    // TODO(editor): Be more elaborate
     return "Editor";
 }
 
@@ -287,62 +308,28 @@ void Editor::Render()
 
         ui::BeginGroup();
 
-        struct State
-        {
-            explicit State(Editor* editor)
-            {
-                FileSystem *fs = editor->GetContext()->GetSubsystem<FileSystem>();
-                StringVector& recents = editor->recentProjects_;
-                snapshots_.resize(recents.size());
-                for (int i = 0; i < recents.size();)
-                {
-                    const ea::string& projectPath = recents[i];
-                    ea::string snapshotFile = AddTrailingSlash(projectPath) + "Preview.png";
-                    if (fs->FileExists(snapshotFile))
-                    {
-                        Image img(editor->context_);
-                        if (img.LoadFile(snapshotFile))
-                        {
-                            SharedPtr<Texture2D> texture(editor->context_->CreateObject<Texture2D>());
-                            texture->SetData(&img);
-                            snapshots_[i] = texture;
-                        }
-                    }
-                    ++i;
-                }
-            }
-
-            ea::vector<SharedPtr<Texture2D>> snapshots_;
-        };
-
-        auto* state = ui::GetUIState<State>(this);
-        const StringVector& recents = recentProjects_;
-
         int index = 0;
         for (int row = 0; row < 3; row++)
         {
             for (int col = 0; col < 3; col++, index++)
             {
-                SharedPtr<Texture2D> snapshot;
-                if (state->snapshots_.size() > index)
-                    snapshot = state->snapshots_[index];
-
-                if (recents.size() <= index || (row == 2 && col == 2))  // Last tile never shows a project.
+                // Last tile never shows a project.
+                if (recentProjects_.size() <= index || (row == 2 && col == 2))
                 {
                     if (ui::Button("Open/Create Project", tileSize))
                         OpenOrCreateProject();
                 }
                 else
                 {
-                    const ea::string& projectPath = recents[index];
-                    if (snapshot.NotNull())
+                    const ea::string& projectPath = recentProjects_[index];
+                    if (Texture2D* previewTexture = GetProjectPreview(projectPath))
                     {
-                        if (ui::ImageButton(snapshot.Get(), tileSize - style.ItemInnerSpacing * 2))
+                        if (ui::ImageButton(previewTexture, tileSize - style.ItemInnerSpacing * 2))
                             OpenProject(projectPath);
                     }
                     else
                     {
-                        if (ui::Button(recents[index].c_str(), tileSize))
+                        if (ui::Button(recentProjects_[index].c_str(), tileSize))
                             OpenProject(projectPath);
                     }
                     if (ui::IsItemHovered())
@@ -528,11 +515,7 @@ void Editor::UpdateProjectStatus()
         CloseProject();
 
         // Reset SystemUI so that imgui loads it's config proper.
-        ProjectEditor::SetMonoFont(nullptr);
-        context_->RemoveSubsystem<SystemUI>();
-        unsigned flags = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt();
-        context_->RegisterSubsystem(new SystemUI(context_, flags));
-        SetupSystemUI();
+        InitializeUI();
 
         projectEditor_ = MakeShared<ProjectEditor>(context_, pendingOpenProject_, settingsJsonPath_);
         projectEditor_->OnShallowSaved.Subscribe(this, &Editor::SaveTempJson);
@@ -567,11 +550,29 @@ void Editor::CloseProject()
     context_->RemoveSubsystem<ProjectEditor>();
 }
 
-void Editor::SetupSystemUI()
+void Editor::InitializeUI()
 {
-    auto& io = ui::GetIO();
-    auto& style = ImGui::GetStyleTemplate();
+    if (uiAlreadyInitialized_)
+        RecreateSystemUI();
 
+    InitializeSystemUI();
+    InitializeImGuiConfig();
+    InitializeImGuiStyle();
+    InitializeImGuiHandlers();
+
+    uiAlreadyInitialized_ = true;
+}
+
+void Editor::RecreateSystemUI()
+{
+    ProjectEditor::SetMonoFont(nullptr);
+    context_->RemoveSubsystem<SystemUI>();
+    const unsigned flags = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt();
+    context_->RegisterSubsystem(new SystemUI(context_, flags));
+}
+
+void Editor::InitializeSystemUI()
+{
     static const ImWchar fontAwesomeIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     static const ImWchar notoSansRanges[] = {0x20, 0x52f, 0x1ab0, 0x2189, 0x2c60, 0x2e44, 0xa640, 0xab65, 0};
     static const ImWchar notoMonoRanges[] = {0x20, 0x513, 0x1e00, 0x1f4d, 0};
@@ -584,9 +585,12 @@ void Editor::SetupSystemUI()
 
     ImFont* monoFont = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
     ProjectEditor::SetMonoFont(monoFont);
+}
 
-    style.WindowRounding = 3;
+void Editor::InitializeImGuiConfig()
+{
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
+    auto& io = ui::GetIO();
 #if URHO3D_SYSTEMUI_VIEWPORTS
     io.ConfigViewportsNoAutoMerge = true;
 #endif
@@ -594,8 +598,14 @@ void Editor::SetupSystemUI()
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
     io.ConfigWindowsResizeFromEdges = true;
+}
+
+void Editor::InitializeImGuiStyle()
+{
+    auto& style = ImGui::GetStyleTemplate();
 
     // TODO: Make configurable.
+    style.WindowRounding = 3;
     style.FrameBorderSize = 0;
     style.WindowBorderSize = 1;
     style.ItemSpacing = {4, 4};
@@ -650,14 +660,19 @@ void Editor::SetupSystemUI()
     colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.44f, 0.44f, 0.44f, 0.35f);
+}
 
+void Editor::InitializeImGuiHandlers()
+{
     ImGuiSettingsHandler handler;
     handler.TypeName = "Project";
     handler.TypeHash = ImHashStr(handler.TypeName, 0, 0);
-    handler.ReadOpenFn = [](ImGuiContext* context, ImGuiSettingsHandler* handler, const char* name) -> void*
+
+    handler.ReadOpenFn = [](ImGuiContext*, ImGuiSettingsHandler*, const char* name)
     {
-        return (void*) name;
+        return const_cast<void*>(reinterpret_cast<const void*>(name));
     };
+
     handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line)
     {
         const char* name = static_cast<const char*>(entry);
@@ -666,7 +681,8 @@ void Editor::SetupSystemUI()
         if (auto projectEditor = context->GetSubsystem<ProjectEditor>())
             projectEditor->ReadIniSettings(name, line);
     };
-    handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
+
+    handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler*, ImGuiTextBuffer* buf)
     {
         buf->appendf("[Project][Window]\n");
 
@@ -674,6 +690,7 @@ void Editor::SetupSystemUI()
         if (auto projectEditor = context->GetSubsystem<ProjectEditor>())
             projectEditor->WriteIniSettings(*buf);
     };
+
     ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
 }
 
