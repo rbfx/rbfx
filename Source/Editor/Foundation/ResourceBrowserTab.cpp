@@ -71,9 +71,9 @@ bool IsPayloadMovable(const ResourceDragDropPayload& payload)
 
 }
 
-void Foundation_ResourceBrowserTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_ResourceBrowserTab(Context* context, Project* project)
 {
-    projectEditor->AddTab(MakeShared<ResourceBrowserTab>(context));
+    project->AddTab(MakeShared<ResourceBrowserTab>(context));
 }
 
 ResourceBrowserFactory::ResourceBrowserFactory(Context* context,

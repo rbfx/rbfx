@@ -22,13 +22,13 @@
 
 #pragma once
 
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 #include "../Project/EditorTab.h"
 
 namespace Urho3D
 {
 
-void Foundation_ConsoleTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_ConsoleTab(Context* context, Project* project);
 
 /// Tab that displays application log and enables console input.
 /// TODO(editor): Rename

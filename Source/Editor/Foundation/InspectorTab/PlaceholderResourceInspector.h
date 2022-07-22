@@ -35,7 +35,7 @@ class PlaceholderResourceInspector : public Object, public InspectorSource
     URHO3D_OBJECT(PlaceholderResourceInspector, Object)
 
 public:
-    explicit PlaceholderResourceInspector(ProjectEditor* project);
+    explicit PlaceholderResourceInspector(Project* project);
 
     /// Implement InspectorSource
     /// @{
@@ -51,7 +51,7 @@ private:
     void OnProjectRequest(ProjectRequest* request);
     void InspectResources(const ea::vector<ResourceFileDescriptor>& resources);
 
-    WeakPtr<ProjectEditor> project_;
+    WeakPtr<Project> project_;
 
     struct SingleResource
     {

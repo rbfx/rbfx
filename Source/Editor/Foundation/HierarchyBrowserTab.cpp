@@ -25,9 +25,9 @@
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_HierarchyBrowserTab(Context* context, Project* project)
 {
-    projectEditor->AddTab(MakeShared<HierarchyBrowserTab>(context));
+    project->AddTab(MakeShared<HierarchyBrowserTab>(context));
 }
 
 HierarchyBrowserTab::HierarchyBrowserTab(Context* context)

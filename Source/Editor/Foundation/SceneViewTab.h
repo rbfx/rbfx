@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Core/CommonEditorActions.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
 
 #include <Urho3D/Scene/Scene.h>
@@ -37,7 +37,7 @@
 namespace Urho3D
 {
 
-void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_SceneViewTab(Context* context, Project* project);
 
 class SceneViewAddon;
 class SceneViewTab;

@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include "../Core/EditorPluginManager.h"
 #include "../Core/IniHelpers.h"
@@ -143,17 +143,17 @@ bool AnalyzeFileContext::HasXMLRoot(std::initializer_list<ea::string_view> roots
         [this](ea::string_view root) { return HasXMLRoot(root); });
 }
 
-void ProjectEditor::SetMonoFont(ImFont* font)
+void Project::SetMonoFont(ImFont* font)
 {
     monoFont = font;
 }
 
-ImFont* ProjectEditor::GetMonoFont()
+ImFont* Project::GetMonoFont()
 {
     return monoFont;
 }
 
-ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath)
+Project::Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath)
     : Object(context)
     , projectPath_(GetSanitizedPath(projectPath + "/"))
     , coreDataPath_(projectPath_ + "CoreData/")
@@ -179,7 +179,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath, co
     initializationGuard_ = initializationGuard;
 
     URHO3D_ASSERT(numActiveProjects == 0);
-    context_->RegisterSubsystem(this, ProjectEditor::GetTypeStatic());
+    context_->RegisterSubsystem(this, Project::GetTypeStatic());
     ++numActiveProjects;
 
     context_->RemoveSubsystem<PluginManager>();
@@ -193,7 +193,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath, co
 
     // Delay asset manager creation until project is ready
     assetManager_ = MakeShared<AssetManager>(context);
-    assetManager_->OnInitialized.Subscribe(this, [=](ProjectEditor*) mutable { initializationGuard.reset(); });
+    assetManager_->OnInitialized.Subscribe(this, [=](Project*) mutable { initializationGuard.reset(); });
 
     ApplyPlugins();
 
@@ -211,13 +211,13 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath, co
         InitializeDefaultProject();
 }
 
-void ProjectEditor::SerializeInBlock(Archive& archive)
+void Project::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "PluginManager", *pluginManager_, AlwaysSerialize{});
     SerializeOptionalValue(archive, "LaunchManager", *launchManager_, AlwaysSerialize{});
 }
 
-ProjectEditor::~ProjectEditor()
+Project::~Project()
 {
     ProcessDelayedSaves(true);
 
@@ -230,7 +230,7 @@ ProjectEditor::~ProjectEditor()
     ui::GetIO().IniFilename = nullptr;
 }
 
-CloseProjectResult ProjectEditor::CloseGracefully()
+CloseProjectResult Project::CloseGracefully()
 {
     // If result is ready, return it now and reset state
     if (closeProjectResult_ != CloseProjectResult::Undefined)
@@ -278,22 +278,22 @@ CloseProjectResult ProjectEditor::CloseGracefully()
     return CloseProjectResult::Undefined;
 }
 
-void ProjectEditor::CloseResourceGracefully(const CloseResourceRequest& request)
+void Project::CloseResourceGracefully(const CloseResourceRequest& request)
 {
     closeDialog_->RequestClose(request);
 }
 
-void ProjectEditor::ProcessRequest(ProjectRequest* request, EditorTab* sender)
+void Project::ProcessRequest(ProjectRequest* request, EditorTab* sender)
 {
     pendingRequests_.emplace_back(PendingRequest{SharedPtr<ProjectRequest>{request}, WeakPtr<EditorTab>{sender}});
 }
 
-void ProjectEditor::AddAnalyzeFileCallback(const AnalyzeFileCallback& callback)
+void Project::AddAnalyzeFileCallback(const AnalyzeFileCallback& callback)
 {
     analyzeFileCallbacks_.push_back(callback);
 }
 
-ResourceFileDescriptor ProjectEditor::GetResourceDescriptor(const ea::string& resourceName, const ea::string& fileName) const
+ResourceFileDescriptor Project::GetResourceDescriptor(const ea::string& resourceName, const ea::string& fileName) const
 {
     auto cache = context_->GetSubsystem<ResourceCache>();
 
@@ -333,24 +333,24 @@ ResourceFileDescriptor ProjectEditor::GetResourceDescriptor(const ea::string& re
     return result;
 }
 
-void ProjectEditor::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes)
+void Project::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes)
 {
     delayedFileSaves_[resourceName] = PendingFileSave{fileName, bytes};
 }
 
-void ProjectEditor::SaveFileDelayed(Resource* resource)
+void Project::SaveFileDelayed(Resource* resource)
 {
     delayedFileSaves_[resource->GetName()] = PendingFileSave{resource->GetAbsoluteFileName(), nullptr, SharedPtr<Resource>(resource)};
 }
 
-void ProjectEditor::IgnoreFileNamePattern(const ea::string& pattern)
+void Project::IgnoreFileNamePattern(const ea::string& pattern)
 {
     const bool inserted = ignoredFileNames_.insert(pattern).second;
     if (inserted)
         ignoredFileNameRegexes_.push_back(PatternToRegex(pattern));
 }
 
-bool ProjectEditor::IsFileNameIgnored(const ea::string& fileName) const
+bool Project::IsFileNameIgnored(const ea::string& fileName) const
 {
     for (const std::regex& r : ignoredFileNameRegexes_)
     {
@@ -360,28 +360,28 @@ bool ProjectEditor::IsFileNameIgnored(const ea::string& fileName) const
     return false;
 }
 
-void ProjectEditor::AddTab(SharedPtr<EditorTab> tab)
+void Project::AddTab(SharedPtr<EditorTab> tab)
 {
     tabs_.push_back(tab);
     sortedTabs_[tab->GetTitle()] = tab;
 }
 
-ea::string ProjectEditor::GetRandomTemporaryPath() const
+ea::string Project::GetRandomTemporaryPath() const
 {
     return Format("{}{}/", tempPath_, GenerateUUID());
 }
 
-TemporaryDir ProjectEditor::CreateTemporaryDir()
+TemporaryDir Project::CreateTemporaryDir()
 {
     return TemporaryDir{context_, GetRandomTemporaryPath()};
 }
 
-void ProjectEditor::InitializeHotkeys()
+void Project::InitializeHotkeys()
 {
-    hotkeyManager_->BindHotkey(this, Hotkey_SaveProject, &ProjectEditor::Save);
+    hotkeyManager_->BindHotkey(this, Hotkey_SaveProject, &Project::Save);
 }
 
-void ProjectEditor::EnsureDirectoryInitialized()
+void Project::EnsureDirectoryInitialized()
 {
     auto fs = GetSubsystem<FileSystem>();
 
@@ -454,7 +454,7 @@ void ProjectEditor::EnsureDirectoryInitialized()
     }
 }
 
-void ProjectEditor::InitializeDefaultProject()
+void Project::InitializeDefaultProject()
 {
     pluginManager_->SetPluginsLoaded({SceneViewerApplication::GetStaticPluginName()});
 
@@ -474,7 +474,7 @@ void ProjectEditor::InitializeDefaultProject()
     Save();
 }
 
-void ProjectEditor::InitializeResourceCache()
+void Project::InitializeResourceCache()
 {
     auto cache = GetSubsystem<ResourceCache>();
     cache->ReleaseAllResources(true);
@@ -485,7 +485,7 @@ void ProjectEditor::InitializeResourceCache()
     cache->AddResourceDir(oldCacheState_.GetEditorData());
 }
 
-void ProjectEditor::ResetLayout()
+void Project::ResetLayout()
 {
     pendingResetLayout_ = false;
 
@@ -525,7 +525,7 @@ void ProjectEditor::ResetLayout()
     }
 }
 
-void ProjectEditor::ApplyPlugins()
+void Project::ApplyPlugins()
 {
     auto editorPluginManager = GetSubsystem<EditorPluginManager>();
     editorPluginManager->Apply(this);
@@ -534,7 +534,7 @@ void ProjectEditor::ApplyPlugins()
         tab->ApplyPlugins();
 }
 
-void ProjectEditor::SaveGitIgnore()
+void Project::SaveGitIgnore()
 {
     ea::string content;
 
@@ -561,7 +561,7 @@ void ProjectEditor::SaveGitIgnore()
         file.Write(content.c_str(), content.size());
 }
 
-void ProjectEditor::Render()
+void Project::Render()
 {
     const float tint = 0.15f;
     const ColorScopeGuard guardHighlightColors{{
@@ -618,7 +618,7 @@ void ProjectEditor::Render()
     ProcessPendingRequests();
 }
 
-void ProjectEditor::ProcessPendingRequests()
+void Project::ProcessPendingRequests()
 {
     const auto requests = ea::move(pendingRequests_);
     pendingRequests_.clear();
@@ -631,7 +631,7 @@ void ProjectEditor::ProcessPendingRequests()
     }
 }
 
-void ProjectEditor::ProcessDelayedSaves(bool forceSave)
+void Project::ProcessDelayedSaves(bool forceSave)
 {
     auto cache = GetSubsystem<ResourceCache>();
     auto fs = GetSubsystem<FileSystem>();
@@ -662,7 +662,7 @@ void ProjectEditor::ProcessDelayedSaves(bool forceSave)
     ea::erase_if(delayedFileSaves_, [](const auto& pair) { return pair.second.IsEmpty(); });
 }
 
-void ProjectEditor::RenderToolbar()
+void Project::RenderToolbar()
 {
     if (Widgets::ToolbarButton(ICON_FA_FLOPPY_DISK, "Save Project"))
         Save();
@@ -674,14 +674,14 @@ void ProjectEditor::RenderToolbar()
         focusedRootTab_->RenderToolbar();
 }
 
-void ProjectEditor::RenderProjectMenu()
+void Project::RenderProjectMenu()
 {
     if (ui::MenuItem(ICON_FA_FLOPPY_DISK " Save Project", hotkeyManager_->GetHotkeyLabel(Hotkey_SaveProject).c_str()))
         Save();
     OnRenderProjectMenu(this);
 }
 
-void ProjectEditor::RenderMainMenu()
+void Project::RenderMainMenu()
 {
     if (focusedRootTab_)
         focusedRootTab_->RenderMenu();
@@ -709,7 +709,7 @@ void ProjectEditor::RenderMainMenu()
     }
 }
 
-void ProjectEditor::SaveShallowOnly()
+void Project::SaveShallowOnly()
 {
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     settingsManager_->SaveFile(settingsJsonPath_);
@@ -723,7 +723,7 @@ void ProjectEditor::SaveShallowOnly()
     OnShallowSaved(this);
 }
 
-void ProjectEditor::SaveProjectOnly()
+void Project::SaveProjectOnly()
 {
     JSONFile projectJsonFile(context_);
     JSONOutputArchive archive{&projectJsonFile};
@@ -740,7 +740,7 @@ void ProjectEditor::SaveProjectOnly()
     hasUnsavedChanges_ = false;
 }
 
-void ProjectEditor::SaveResourcesOnly()
+void Project::SaveResourcesOnly()
 {
     for (EditorTab* tab : tabs_)
     {
@@ -749,14 +749,14 @@ void ProjectEditor::SaveResourcesOnly()
     }
 }
 
-void ProjectEditor::Save()
+void Project::Save()
 {
     SaveProjectOnly();
     SaveShallowOnly();
     SaveResourcesOnly();
 }
 
-void ProjectEditor::ReadIniSettings(const char* entry, const char* line)
+void Project::ReadIniSettings(const char* entry, const char* line)
 {
     if (entry == selfIniEntry)
     {
@@ -771,7 +771,7 @@ void ProjectEditor::ReadIniSettings(const char* entry, const char* line)
     }
 }
 
-void ProjectEditor::WriteIniSettings(ImGuiTextBuffer& output)
+void Project::WriteIniSettings(ImGuiTextBuffer& output)
 {
     output.appendf("\n[Project][%s]\n", selfIniEntry.c_str());
     WriteStringToIni(output, "LaunchConfiguration", currentLaunchConfiguration_);
@@ -783,7 +783,7 @@ void ProjectEditor::WriteIniSettings(ImGuiTextBuffer& output)
     }
 }
 
-void ProjectEditor::SetFocusedTab(EditorTab* tab)
+void Project::SetFocusedTab(EditorTab* tab)
 {
     if (focusedTab_ != tab)
     {

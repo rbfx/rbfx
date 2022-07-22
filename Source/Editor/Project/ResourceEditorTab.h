@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/set.h>

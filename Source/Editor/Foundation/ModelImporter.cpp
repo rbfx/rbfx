@@ -49,7 +49,7 @@ bool IsFileNameBlend(const ea::string& fileName)
 
 }
 
-void Foundation_ModelImporter(Context* context, ProjectEditor* project)
+void Foundation_ModelImporter(Context* context, Project* project)
 {
     if (!context->IsReflected<ModelImporter>())
         context->RegisterFactory<ModelImporter>();
@@ -62,7 +62,7 @@ ModelImporter::ModelImporter(Context* context)
 
 ToolManager* ModelImporter::GetToolManager() const
 {
-    auto project = GetSubsystem<ProjectEditor>();
+    auto project = GetSubsystem<Project>();
     return project->GetToolManager();
 }
 

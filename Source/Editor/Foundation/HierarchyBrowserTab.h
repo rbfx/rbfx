@@ -24,12 +24,12 @@
 
 #include "../Foundation/Shared/HierarchyBrowserSource.h"
 #include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_HierarchyBrowserTab(Context* context, Project* project);
 
 /// Tab that hosts hierarchy display of any kind.
 class HierarchyBrowserTab : public EditorTab

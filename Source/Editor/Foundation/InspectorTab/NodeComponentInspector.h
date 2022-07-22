@@ -44,7 +44,7 @@ class NodeComponentInspector : public Object, public InspectorSource
     URHO3D_OBJECT(NodeComponentInspector, Object)
 
 public:
-    explicit NodeComponentInspector(ProjectEditor* project);
+    explicit NodeComponentInspector(Project* project);
 
     /// Implement InspectorSource
     /// @{
@@ -77,7 +77,7 @@ private:
     void AddComponentToNodes(StringHash componentType);
     void RemoveComponent(Component* component);
 
-    WeakPtr<ProjectEditor> project_;
+    WeakPtr<Project> project_;
 
     WeakPtr<EditorTab> inspectedTab_;
     WeakPtr<Scene> scene_;

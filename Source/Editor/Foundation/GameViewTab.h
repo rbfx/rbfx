@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/SceneRendererToTexture.h>
@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-void Foundation_GameViewTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_GameViewTab(Context* context, Project* project);
 
 /// Tab that renders Scene and enables Scene manipulation.
 class GameViewTab : public EditorTab

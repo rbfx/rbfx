@@ -28,9 +28,9 @@
 namespace Urho3D
 {
 
-void Foundation_SettingsTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_SettingsTab(Context* context, Project* project)
 {
-    projectEditor->AddTab(MakeShared<SettingsTab>(context));
+    project->AddTab(MakeShared<SettingsTab>(context));
 }
 
 SettingsTab::SettingsTab(Context* context)

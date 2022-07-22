@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 #include "../Project/EditorTab.h"
 
 #include <atomic>
@@ -32,7 +32,7 @@ namespace tracy { struct View; }
 namespace Urho3D
 {
 
-void Foundation_ProfilerTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_ProfilerTab(Context* context, Project* project);
 
 // Tab to host Tracy profiler view.
 class ProfilerTab : public EditorTab

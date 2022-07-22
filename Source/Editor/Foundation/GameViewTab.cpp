@@ -45,9 +45,9 @@ const auto Hotkey_ReleaseInput = EditorHotkey{"GameViewTab.ReleaseInput"}.Shift(
 
 }
 
-void Foundation_GameViewTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_GameViewTab(Context* context, Project* project)
 {
-    projectEditor->AddTab(MakeShared<GameViewTab>(context));
+    project->AddTab(MakeShared<GameViewTab>(context));
 }
 
 class GameViewTab::PlayState : public Object
@@ -61,7 +61,7 @@ public:
         , pluginManager_(GetSubsystem<PluginManager>())
         , input_(GetSubsystem<Input>())
         , systemUi_(GetSubsystem<SystemUI>())
-        , project_(GetSubsystem<ProjectEditor>())
+        , project_(GetSubsystem<Project>())
         , backbuffer_(backbuffer)
     {
         renderer_->SetBackbufferRenderSurface(backbuffer_->GetTexture()->GetRenderSurface());
@@ -132,7 +132,7 @@ private:
     PluginManager* pluginManager_{};
     Input* input_{};
     SystemUI* systemUi_{};
-    ProjectEditor* project_{};
+    Project* project_{};
 
     CustomBackbufferTexture* backbuffer_{};
 

@@ -95,9 +95,9 @@ void SerializeValue(Archive& archive, const char* name, SceneViewPage& page, con
     }
 }
 
-void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_SceneViewTab(Context* context, Project* project)
 {
-    projectEditor->AddTab(MakeShared<SceneViewTab>(context));
+    project->AddTab(MakeShared<SceneViewTab>(context));
 }
 
 SceneViewPage::SceneViewPage(Scene* scene)

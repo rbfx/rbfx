@@ -24,7 +24,7 @@
 
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/GameViewTab.h"
-#include "Foundation/Glue/ProjectEditorGlue.h"
+#include "Foundation/Glue/ProjectGlue.h"
 #include "Foundation/Glue/ResourceBrowserGlue.h"
 #include "Foundation/Glue/SceneViewGlue.h"
 #include "Foundation/HierarchyBrowserTab.h"
@@ -111,7 +111,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.MaterialFactory", &Foundation_MaterialFactory);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.SceneFactory", &Foundation_SceneFactory);
 
-    editorPluginManager_->AddPlugin("Foundation.Glue.ProjectEditor", &Foundation_ProjectEditorGlue);
+    editorPluginManager_->AddPlugin("Foundation.Glue.Project", &Foundation_ProjectGlue);
     editorPluginManager_->AddPlugin("Foundation.Glue.ResourceBrowser", &Foundation_ResourceBrowserGlue);
     editorPluginManager_->AddPlugin("Foundation.Glue.SceneView", &Foundation_SceneViewGlue);
 }
@@ -268,7 +268,7 @@ void Editor::Render()
 {
     ImGuiContext& g = *GImGui;
 
-    const bool hasToolbar = projectEditor_ != nullptr;
+    const bool hasToolbar = project_ != nullptr;
     const float toolbarButtonHeight = Widgets::GetSmallButtonSize();
     const float toolbarWindowPadding = ea::max(3.0f, (g.Style.WindowMinSize.y - toolbarButtonHeight) / 2);
     const float toolbarHeight = hasToolbar
@@ -291,9 +291,9 @@ void Editor::Render()
 
     RenderMenuBar();
 
-    if (projectEditor_)
+    if (project_)
     {
-        projectEditor_->Render();
+        project_->Render();
     }
     else
     {
@@ -364,8 +364,8 @@ void Editor::Render()
         ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(toolbarWindowPadding, toolbarWindowPadding));
         ui::Begin("Toolbar", nullptr, toolbarWindowFlags);
 
-        if (projectEditor_)
-            projectEditor_->RenderToolbar();
+        if (project_)
+            project_->RenderToolbar();
 
         ui::End();
         ui::PopStyleVar(2);
@@ -387,9 +387,9 @@ void Editor::Render()
                 ui::EndPopup();
             }
         }
-        else if (projectEditor_)
+        else if (project_)
         {
-            const auto result = projectEditor_->CloseGracefully();
+            const auto result = project_->CloseGracefully();
             if (result == CloseProjectResult::Closed)
                 engine_->Exit();
             else if (result == CloseProjectResult::Canceled)
@@ -419,9 +419,9 @@ void Editor::RenderMenuBar()
     {
         if (ui::BeginMenu("Project"))
         {
-            if (projectEditor_)
+            if (project_)
             {
-                projectEditor_->RenderProjectMenu();
+                project_->RenderProjectMenu();
                 ui::Separator();
             }
 
@@ -430,7 +430,7 @@ void Editor::RenderMenuBar()
 
             StringVector & recents = recentProjects_;
             // Does not show very first item, which is current project
-            if (recents.size() == (projectEditor_.NotNull() ? 1 : 0))
+            if (recents.size() == (project_.NotNull() ? 1 : 0))
             {
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
                 ui::MenuItem("Recent Projects");
@@ -438,7 +438,7 @@ void Editor::RenderMenuBar()
             }
             else if (ui::BeginMenu("Recent Projects"))
             {
-                for (int i = projectEditor_.NotNull() ? 1 : 0; i < recents.size(); i++)
+                for (int i = project_.NotNull() ? 1 : 0; i < recents.size(); i++)
                 {
                     const ea::string& projectPath = recents[i];
 
@@ -454,7 +454,7 @@ void Editor::RenderMenuBar()
                 ui::EndMenu();
             }
 
-            if (projectEditor_)
+            if (project_)
             {
                 if (ui::MenuItem("Close Project"))
                     pendingCloseProject_ = true;
@@ -468,8 +468,8 @@ void Editor::RenderMenuBar()
             ui::EndMenu();
         }
 
-        if (projectEditor_)
-            projectEditor_->RenderMainMenu();
+        if (project_)
+            project_->RenderMainMenu();
 
         if (ui::BeginMenu("Help"))
         {
@@ -486,9 +486,9 @@ void Editor::UpdateProjectStatus()
 {
     if (pendingCloseProject_)
     {
-        if (projectEditor_)
+        if (project_)
         {
-            const auto result = projectEditor_->CloseGracefully();
+            const auto result = project_->CloseGracefully();
             if (result == CloseProjectResult::Canceled)
             {
                 pendingCloseProject_ = false;
@@ -498,7 +498,7 @@ void Editor::UpdateProjectStatus()
             if (result != CloseProjectResult::Closed)
                 return;
 
-            projectEditor_ = nullptr;
+            project_ = nullptr;
         }
         pendingCloseProject_ = false;
     }
@@ -507,7 +507,7 @@ void Editor::UpdateProjectStatus()
     // candidate. This subsystem will be recreated.
     if (!pendingOpenProject_.empty())
     {
-        if (projectEditor_)
+        if (project_)
         {
             pendingCloseProject_ = true;
             return;
@@ -518,8 +518,8 @@ void Editor::UpdateProjectStatus()
         // Reset SystemUI so that imgui loads it's config proper.
         InitializeUI();
 
-        projectEditor_ = MakeShared<ProjectEditor>(context_, pendingOpenProject_, settingsJsonPath_);
-        projectEditor_->OnShallowSaved.Subscribe(this, &Editor::SaveTempJson);
+        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_);
+        project_->OnShallowSaved.Subscribe(this, &Editor::SaveTempJson);
 
         recentProjects_.erase_first(pendingOpenProject_);
         recentProjects_.push_front(pendingOpenProject_);
@@ -547,8 +547,8 @@ void Editor::OpenProject(const ea::string& projectPath)
 
 void Editor::CloseProject()
 {
-    projectEditor_ = nullptr;
-    context_->RemoveSubsystem<ProjectEditor>();
+    project_ = nullptr;
+    context_->RemoveSubsystem<Project>();
 }
 
 void Editor::InitializeUI()
@@ -566,7 +566,7 @@ void Editor::InitializeUI()
 
 void Editor::RecreateSystemUI()
 {
-    ProjectEditor::SetMonoFont(nullptr);
+    Project::SetMonoFont(nullptr);
     context_->RemoveSubsystem<SystemUI>();
     const unsigned flags = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt();
     context_->RegisterSubsystem(new SystemUI(context_, flags));
@@ -585,7 +585,7 @@ void Editor::InitializeSystemUI()
     systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
 
     ImFont* monoFont = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
-    ProjectEditor::SetMonoFont(monoFont);
+    Project::SetMonoFont(monoFont);
 }
 
 void Editor::InitializeImGuiConfig()
@@ -679,8 +679,8 @@ void Editor::InitializeImGuiHandlers()
         const char* name = static_cast<const char*>(entry);
 
         auto context = Context::GetInstance();
-        if (auto projectEditor = context->GetSubsystem<ProjectEditor>())
-            projectEditor->ReadIniSettings(name, line);
+        if (auto project = context->GetSubsystem<Project>())
+            project->ReadIniSettings(name, line);
     };
 
     handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler*, ImGuiTextBuffer* buf)
@@ -688,8 +688,8 @@ void Editor::InitializeImGuiHandlers()
         buf->appendf("[Project][Window]\n");
 
         auto context = Context::GetInstance();
-        if (auto projectEditor = context->GetSubsystem<ProjectEditor>())
-            projectEditor->WriteIniSettings(*buf);
+        if (auto project = context->GetSubsystem<Project>())
+            project->WriteIniSettings(*buf);
     };
 
     ui::GetCurrentContext()->SettingsHandlers.push_back(handler);

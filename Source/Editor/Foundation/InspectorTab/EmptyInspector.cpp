@@ -30,7 +30,7 @@ void Foundation_EmptyInspector(Context* context, InspectorTab_* inspectorTab)
     inspectorTab->RegisterAddon<EmptyInspector>(inspectorTab->GetProject());
 }
 
-EmptyInspector::EmptyInspector(ProjectEditor* project)
+EmptyInspector::EmptyInspector(Project* project)
     : Object(project->GetContext())
 {
     project->OnRequest.Subscribe(this, &EmptyInspector::OnProjectRequest);

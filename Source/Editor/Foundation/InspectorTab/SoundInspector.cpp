@@ -35,7 +35,7 @@ void Foundation_SoundInspector(Context* context, InspectorTab_* inspectorTab)
     inspectorTab->RegisterAddon<SoundInspector_>(inspectorTab->GetProject());
 }
 
-SoundInspector_::SoundInspector_(ProjectEditor* project)
+SoundInspector_::SoundInspector_(Project* project)
     : Object(project->GetContext())
     , project_(project)
     , soundSource_(MakeShared<SoundSource>(context_))

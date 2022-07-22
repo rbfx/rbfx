@@ -56,7 +56,7 @@ void Foundation_NodeComponentInspector(Context* context, InspectorTab_* inspecto
     inspectorTab->RegisterAddon<NodeComponentInspector>(inspectorTab->GetProject());
 }
 
-NodeComponentInspector::NodeComponentInspector(ProjectEditor* project)
+NodeComponentInspector::NodeComponentInspector(Project* project)
     : Object(project->GetContext())
     , project_(project)
 {

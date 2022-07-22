@@ -22,7 +22,7 @@
 
 #include "../Project/ModifyResourceAction.h"
 
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -30,7 +30,7 @@
 namespace Urho3D
 {
 
-ModifyResourceAction::ModifyResourceAction(ProjectEditor* project)
+ModifyResourceAction::ModifyResourceAction(Project* project)
     : project_(project)
 {
 }

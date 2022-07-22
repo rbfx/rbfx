@@ -27,12 +27,12 @@
 namespace Urho3D
 {
 
-class ProjectEditor;
+class Project;
 
 class ModifyResourceAction : public EditorAction
 {
 public:
-    explicit ModifyResourceAction(ProjectEditor* project);
+    explicit ModifyResourceAction(Project* project);
     void AddResource(Resource* resource);
 
     /// Implement EditorAction.
@@ -54,7 +54,7 @@ private:
 
     void ApplyResourceData(const ea::string& resourceName, const ResourceData& data) const;
 
-    WeakPtr<ProjectEditor> project_;
+    WeakPtr<Project> project_;
     Context* context_{};
     ea::unordered_map<ea::string, ResourceData> oldData_;
     ea::unordered_map<ea::string, ResourceData> newData_;

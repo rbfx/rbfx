@@ -22,7 +22,7 @@
 #pragma once
 
 #include "Core/EditorPluginManager.h"
-#include "Project/ProjectEditor.h"
+#include "Project/Project.h"
 
 #include <Urho3D/Engine/Application.h>
 
@@ -89,7 +89,7 @@ protected:
     /// Editor plugins.
     SharedPtr<EditorPluginManager> editorPluginManager_;
     /// Currently loaded project.
-    SharedPtr<ProjectEditor> projectEditor_;
+    SharedPtr<Project> project_;
 
     /// UI state
     /// @{

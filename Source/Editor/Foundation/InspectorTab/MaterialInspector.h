@@ -41,7 +41,7 @@ class MaterialInspector_ : public Object, public InspectorSource
     URHO3D_OBJECT(MaterialInspector_, Object)
 
 public:
-    explicit MaterialInspector_(ProjectEditor* project);
+    explicit MaterialInspector_(Project* project);
 
     /// Implement InspectorSource
     /// @{
@@ -63,7 +63,7 @@ private:
     const unsigned updatePeriodMs_{1000};
     const ea::string techniquePath_{"Techniques/"};
 
-    WeakPtr<ProjectEditor> project_;
+    WeakPtr<Project> project_;
 
     StringVector resourceNames_;
     SharedPtr<MaterialInspectorWidget> widget_;

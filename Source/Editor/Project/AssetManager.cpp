@@ -21,7 +21,7 @@
 //
 
 #include "../Project/AssetManager.h"
-#include "../Project/ProjectEditor.h"
+#include "../Project/Project.h"
 
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/Log.h>
@@ -62,11 +62,11 @@ ea::string AssetManager::AssetDesc::GetTransformerDebugString() const
 
 AssetManager::AssetManager(Context* context)
     : Object(context)
-    , projectEditor_(GetSubsystem<ProjectEditor>())
+    , project_(GetSubsystem<Project>())
     , dataWatcher_(MakeShared<FileWatcher>(context))
     , transformerHierarchy_(MakeShared<AssetTransformerHierarchy>(context_))
 {
-    dataWatcher_->StartWatching(projectEditor_->GetDataPath(), true);
+    dataWatcher_->StartWatching(project_->GetDataPath(), true);
 }
 
 AssetManager::~AssetManager()
@@ -180,7 +180,7 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector files;
-    fs->ScanDir(files, projectEditor_->GetDataPath(), "*.json", SCAN_FILES, true);
+    fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
 
     const ea::string suffix = Format("/{}", ResourceNameSuffix);
     ea::erase_if(files, [&](const ea::string& resourceName) { return !resourceName.ends_with(suffix); });
@@ -283,7 +283,7 @@ AssetTransformerVector AssetManager::GetTransformers(const AssetPipelineDesc& pi
 
 ea::string AssetManager::GetFileName(const ea::string& resourceName) const
 {
-    return projectEditor_->GetDataPath() + resourceName;
+    return project_->GetDataPath() + resourceName;
 }
 
 bool AssetManager::IsAssetUpToDate(const AssetDesc& assetDesc) const
@@ -302,7 +302,7 @@ bool AssetManager::IsAssetUpToDate(const AssetDesc& assetDesc) const
     // Check if outputs are present, don't check modification times for simplicity
     for (const ea::string& outputResourceName : assetDesc.outputs_)
     {
-        const ea::string outputFileName = projectEditor_->GetCachePath() + outputResourceName;
+        const ea::string outputFileName = project_->GetCachePath() + outputResourceName;
         if (!fs->FileExists(outputFileName))
             return false;
     }
@@ -370,7 +370,7 @@ void AssetManager::CleanupInvalidatedAssets()
 
         for (const ea::string& outputResourceName : assetDesc.outputs_)
         {
-            const ea::string outputFileName = projectEditor_->GetCachePath() + outputResourceName;
+            const ea::string outputFileName = project_->GetCachePath() + outputResourceName;
             fs->Delete(outputFileName);
         }
     }
@@ -393,7 +393,7 @@ void AssetManager::CleanupCacheFolder()
     }
 
     StringVector allFolders;
-    fs->ScanDir(allFolders, projectEditor_->GetCachePath(), "", SCAN_DIRS, true);
+    fs->ScanDir(allFolders, project_->GetCachePath(), "", SCAN_DIRS, true);
 
     if (const auto iter = allFolders.find("."); iter != allFolders.end())
         allFolders.erase(iter);
@@ -405,7 +405,7 @@ void AssetManager::CleanupCacheFolder()
     for (const ea::string& resourcePath : allFolders)
     {
         if (!foldersToKeep.contains(resourcePath))
-            fs->RemoveDir(projectEditor_->GetCachePath() + resourcePath, true);
+            fs->RemoveDir(project_->GetCachePath() + resourcePath, true);
     }
 }
 
@@ -532,7 +532,7 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
         return false;
     }
 
-    const ea::string tempPath = projectEditor_->GetRandomTemporaryPath();
+    const ea::string tempPath = project_->GetRandomTemporaryPath();
     const ea::string outputFileName = tempPath + resourceName;
     requestQueue_.push_back(AssetTransformerInput{input, tempPath, outputFileName});
     return true;
@@ -542,7 +542,7 @@ void AssetManager::ProcessAsset(const AssetTransformerInput& input)
 {
     auto fs = GetSubsystem<FileSystem>();
 
-    const ea::string& cachePath = projectEditor_->GetCachePath();
+    const ea::string& cachePath = project_->GetCachePath();
     const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(
         input.resourceName_, input.flavor_);
 

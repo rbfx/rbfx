@@ -34,7 +34,7 @@ void Foundation_MaterialInspector(Context* context, InspectorTab_* inspectorTab)
     inspectorTab->RegisterAddon<MaterialInspector_>(inspectorTab->GetProject());
 }
 
-MaterialInspector_::MaterialInspector_(ProjectEditor* project)
+MaterialInspector_::MaterialInspector_(Project* project)
     : Object(project->GetContext())
     , project_(project)
 {
