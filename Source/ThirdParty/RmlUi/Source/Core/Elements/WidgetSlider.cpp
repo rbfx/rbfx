@@ -27,6 +27,7 @@
  */
 
 #include "WidgetSlider.h"
+#include "../../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../../Include/RmlUi/Core/Elements/ElementFormControl.h"
 #include "../../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../../Include/RmlUi/Core/Factory.h"
@@ -342,7 +343,7 @@ void WidgetSlider::FormatBar()
 	Vector2f bar_box_content = bar_box.GetSize();
 	if (orientation == HORIZONTAL)
 	{
-		if (computed.height.type == Style::Height::Auto)
+		if (computed.height().type == Style::Height::Auto)
 			bar_box_content.y = parent->GetBox().GetSize().y;
 	}
 
@@ -592,10 +593,8 @@ float WidgetSlider::SetValueInternal(float new_value)
 	parameters["value"] = value;
 	GetParent()->DispatchEvent(EventId::Change, parameters);
 
-
-	// TODO: This might not be the safest approach as this will call SetValue(), 
-	// thus, a slight mismatch will result in infinite recursion.
-	GetParent()->SetAttribute("value", value);
+	if (value != GetParent()->GetAttribute("value", 0.0f))
+		GetParent()->SetAttribute("value", value);
 
 	return (value - min_value) / (max_value - min_value);
 }

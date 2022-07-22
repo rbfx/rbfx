@@ -26,21 +26,25 @@
  *
  */
 
-#include "../../../Include/RmlUi/Core/Elements/ElementProgressBar.h"
-#include "../../../Include/RmlUi/Core/Math.h"
-#include "../../../Include/RmlUi/Core/GeometryUtilities.h"
-#include "../../../Include/RmlUi/Core/PropertyIdSet.h"
-#include "../../../Include/RmlUi/Core/Factory.h"
+#include "../../../Include/RmlUi/Core/Elements/ElementProgress.h"
+#include "../../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../../Include/RmlUi/Core/ElementDocument.h"
-#include "../../../Include/RmlUi/Core/StyleSheet.h"
 #include "../../../Include/RmlUi/Core/ElementUtilities.h"
+#include "../../../Include/RmlUi/Core/Factory.h"
+#include "../../../Include/RmlUi/Core/GeometryUtilities.h"
+#include "../../../Include/RmlUi/Core/Math.h"
+#include "../../../Include/RmlUi/Core/PropertyIdSet.h"
+#include "../../../Include/RmlUi/Core/StyleSheet.h"
 #include "../../../Include/RmlUi/Core/URL.h"
 #include <algorithm>
 
 namespace Rml {
 
-ElementProgressBar::ElementProgressBar(const String& tag) : Element(tag), direction(DefaultDirection), start_edge(DefaultStartEdge), value(0), fill(nullptr), rect_set(false), geometry(this)
+ElementProgress::ElementProgress(const String& tag) : Element(tag), direction(DefaultDirection), start_edge(DefaultStartEdge), fill(nullptr), rect_set(false), geometry(this)
 {
+	if (tag == "progressbar")
+		Log::Message(Log::LT_WARNING, "Deprecation notice: Element '<progressbar>' renamed to '<progress>', please adjust RML tags accordingly.");
+
 	geometry_dirty = false;
 
 	// Add the fill element as a non-DOM element.
@@ -49,37 +53,56 @@ ElementProgressBar::ElementProgressBar(const String& tag) : Element(tag), direct
 	fill = AppendChild(std::move(fill_element), false);
 }
 
-ElementProgressBar::~ElementProgressBar()
+ElementProgress::~ElementProgress()
 {
 }
 
-float ElementProgressBar::GetValue() const
+float ElementProgress::GetValue() const
 {
-	return value;
+	const float max_value = GetMax();
+	return Math::Clamp(GetAttribute< float >("value", 0.0f), 0.0f, max_value);
 }
 
-void ElementProgressBar::SetValue(float in_value)
+float ElementProgress::GetMax() const
+{
+	const float max_value = GetAttribute< float >("max", 1.0f);
+	return max_value <= 0.0f ? 1.0f : max_value;
+}
+
+void ElementProgress::SetMax(float max_value)
+{
+	SetAttribute("max", max_value);
+}
+
+void ElementProgress::SetValue(float in_value)
 {
 	SetAttribute("value", in_value);
 }
 
-void ElementProgressBar::OnRender()
+bool ElementProgress::GetIntrinsicDimensions(Vector2f& dimensions, float& /*ratio*/)
+{
+	dimensions.x = 256;
+	dimensions.y = 16;
+	return true;
+}
+
+void ElementProgress::OnRender()
 {
 	// Some properties may change geometry without dirtying the layout, eg. opacity.
 	if (geometry_dirty)
 		GenerateGeometry();
 
 	// Render the geometry at the fill element's content region.
-	geometry.Render(fill->GetAbsoluteOffset().Round());
+	geometry.Render(fill->GetAbsoluteOffset());
 }
 
-void ElementProgressBar::OnAttributeChange(const ElementAttributes& changed_attributes)
+void ElementProgress::OnAttributeChange(const ElementAttributes& changed_attributes)
 {
 	Element::OnAttributeChange(changed_attributes);
 
-	if (changed_attributes.find("value") != changed_attributes.end())
+	if (changed_attributes.find("value") != changed_attributes.end()
+		|| changed_attributes.find("max") != changed_attributes.end())
 	{
-		value = Math::Clamp( GetAttribute< float >("value", 0.0f), 0.0f, 1.0f);
 		geometry_dirty = true;
 	}
 
@@ -118,7 +141,7 @@ void ElementProgressBar::OnAttributeChange(const ElementAttributes& changed_attr
 	}
 }
 
-void ElementProgressBar::OnPropertyChange(const PropertyIdSet& changed_properties)
+void ElementProgress::OnPropertyChange(const PropertyIdSet& changed_properties)
 {
     Element::OnPropertyChange(changed_properties);
 
@@ -132,7 +155,7 @@ void ElementProgressBar::OnPropertyChange(const PropertyIdSet& changed_propertie
 	}
 }
 
-void ElementProgressBar::OnResize()
+void ElementProgress::OnResize()
 {
 	const Vector2f element_size = GetBox().GetSize();
 
@@ -158,31 +181,32 @@ void ElementProgressBar::OnResize()
 	geometry_dirty = true;
 }
 
-void ElementProgressBar::GenerateGeometry()
+void ElementProgress::GenerateGeometry()
 {
 	// Warn the user when using the old approach of adding the 'fill-image' property to the 'fill' element.
 	if (fill->GetLocalProperty(PropertyId::FillImage))
-		Log::Message(Log::LT_WARNING, "Breaking change: The 'fill-image' property now needs to be set on the <progressbar> element, instead of its inner <fill> element. Please update your RCSS source to fix progress bars in this document.");
+		Log::Message(Log::LT_WARNING, "Breaking change: The 'fill-image' property now needs to be set on the <progress> element, instead of its inner <fill> element. Please update your RCSS source to fix progress bars in this document.");
 
+	const float normalized_value = GetValue() / GetMax();
 	Vector2f render_size = fill_size;
 
 	{
-		// Size and offset the fill element depending on the progressbar value.
+		// Size and offset the fill element depending on the progress value.
 		Vector2f offset = fill_offset;
 
 		switch (direction) {
 		case Direction::Top:
-			render_size.y = fill_size.y * value;
+			render_size.y = fill_size.y * normalized_value;
 			offset.y = fill_offset.y + fill_size.y - render_size.y;
 			break;
 		case Direction::Right:
-			render_size.x = fill_size.x * value;
+			render_size.x = fill_size.x * normalized_value;
 			break;
 		case Direction::Bottom:
-			render_size.y = fill_size.y * value;
+			render_size.y = fill_size.y * normalized_value;
 			break;
 		case Direction::Left:
-			render_size.x = fill_size.x * value;
+			render_size.x = fill_size.x * normalized_value;
 			offset.x = fill_offset.x + fill_size.x - render_size.x;
 			break;
 		case Direction::Clockwise:
@@ -236,8 +260,8 @@ void ElementProgressBar::GenerateGeometry()
 	Colourb quad_colour;
 	{
 		const ComputedValues& computed = GetComputedValues();
-		const float opacity = computed.opacity;
-		quad_colour = computed.image_color;
+		const float opacity = computed.opacity();
+		quad_colour = computed.image_color();
 		quad_colour.alpha = (byte)(opacity * (float)quad_colour.alpha);
 	}
 
@@ -246,10 +270,10 @@ void ElementProgressBar::GenerateGeometry()
 	{
 		// For the top, right, bottom, left directions the fill element already describes where we should draw the fill,
 		// we only need to generate the final texture coordinates here.
-	case Direction::Top:    texcoords[0].y = texcoords[0].y + (1.0f - value) * (texcoords[1].y - texcoords[0].y); break;
-	case Direction::Right:  texcoords[1].x = texcoords[0].x + value * (texcoords[1].x - texcoords[0].x);          break;
-	case Direction::Bottom: texcoords[1].y = texcoords[0].y + value * (texcoords[1].y - texcoords[0].y);          break;
-	case Direction::Left:   texcoords[0].x = texcoords[0].x + (1.0f - value) * (texcoords[1].x - texcoords[0].x); break;
+	case Direction::Top:    texcoords[0].y = texcoords[0].y + (1.0f - normalized_value) * (texcoords[1].y - texcoords[0].y); break;
+	case Direction::Right:  texcoords[1].x = texcoords[0].x + normalized_value * (texcoords[1].x - texcoords[0].x);          break;
+	case Direction::Bottom: texcoords[1].y = texcoords[0].y + normalized_value * (texcoords[1].y - texcoords[0].y);          break;
+	case Direction::Left:   texcoords[0].x = texcoords[0].x + (1.0f - normalized_value) * (texcoords[1].x - texcoords[0].x); break;
 
 	case Direction::Clockwise:
 	case Direction::CounterClockwise:
@@ -257,7 +281,7 @@ void ElementProgressBar::GenerateGeometry()
 		// The circular directions require custom geometry as a box is insufficient.
 		// We divide the "circle" into eight parts, here called octants, such that each part can be represented by a triangle.
 		// 'num_octants' tells us how many of these are completely or partially filled.
-		const int num_octants = Math::Clamp(Math::RoundUpToInteger(8.f * value), 0, 8);
+		const int num_octants = Math::Clamp(Math::RoundUpToInteger(8.f * normalized_value), 0, 8);
 		const int num_vertices = 2 + num_octants;
 		const int num_triangles = num_octants;
 		const bool cw = (direction == Direction::Clockwise);
@@ -286,11 +310,11 @@ void ElementProgressBar::GenerateGeometry()
 		}
 
 		// Find the position of the vertex representing the partially filled triangle.
-		if (value < 1.f)
+		if (normalized_value < 1.f)
 		{
 			using namespace Math;
 			const float angle_offset = float(start_octant) / 8.f * 2.f * RMLUI_PI;
-			const float angle = angle_offset + (cw ? 1.f : -1.f) * value * 2.f * RMLUI_PI;
+			const float angle = angle_offset + (cw ? 1.f : -1.f) * normalized_value * 2.f * RMLUI_PI;
 			Vector2f pos(Sin(angle), -Cos(angle));
 			// Project it from the circle towards the surrounding unit square.
 			pos = pos / Max(AbsoluteValue(pos.x), AbsoluteValue(pos.y));
@@ -330,7 +354,7 @@ void ElementProgressBar::GenerateGeometry()
 	}
 }
 
-bool ElementProgressBar::LoadTexture()
+bool ElementProgress::LoadTexture()
 {
 	geometry_dirty = true;
 	rect_set = false;

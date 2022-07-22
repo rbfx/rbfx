@@ -81,6 +81,7 @@
 #include "Core/StyleSheet.h"
 #include "Core/StyleSheetContainer.h"
 #include "Core/StyleSheetSpecification.h"
+#include "Core/StyleTypes.h"
 #include "Core/SystemInterface.h"
 #include "Core/Texture.h"
 #include "Core/Transform.h"
@@ -102,8 +103,7 @@
 #include "Core/Elements/ElementFormControlInput.h"
 #include "Core/Elements/ElementFormControlSelect.h"
 #include "Core/Elements/ElementFormControlTextArea.h"
-#include "Core/Elements/ElementProgressBar.h"
+#include "Core/Elements/ElementProgress.h"
 #include "Core/Elements/ElementTabSet.h"
-#include "Core/Elements/SelectOption.h"
 
 #endif
