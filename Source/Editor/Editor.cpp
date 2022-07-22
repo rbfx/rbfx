@@ -260,8 +260,10 @@ Texture2D* Editor::GetProjectPreview(const ea::string& projectPath)
 
 ea::string Editor::GetWindowTitle() const
 {
-    // TODO(editor): Be more elaborate
-    return "Editor";
+    if (project_)
+        return "Editor | " + project_->GetProjectPath();
+    else
+        return "Editor";
 }
 
 void Editor::Render()
@@ -693,29 +695,6 @@ void Editor::InitializeImGuiHandlers()
     };
 
     ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
-}
-
-void Editor::UpdateWindowTitle(const ea::string& resourcePath)
-{
-    if (context_->GetSubsystem<Engine>()->IsHeadless())
-        return;
-
-    // TODO(editor): Implement me
-#if 0
-    auto* project = GetSubsystem<Project>();
-    ea::string title;
-    if (project == nullptr)
-        title = "Editor";
-    else
-    {
-        ea::string projectName = GetFileName(RemoveTrailingSlash(project->GetProjectPath()));
-        title = ToString("Editor | %s", projectName.c_str());
-        if (!resourcePath.empty())
-            title += ToString(" | %s", GetFileName(resourcePath).c_str());
-    }
-
-    context_->GetSubsystem<Graphics>()->SetWindowTitle(title);
-#endif
 }
 
 void Editor::OpenOrCreateProject()
