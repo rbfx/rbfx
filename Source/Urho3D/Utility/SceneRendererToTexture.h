@@ -72,7 +72,6 @@ private:
 };
 
 /// Renders scene to texture with its own camera.
-// TODO(editor): Remove inheritance
 class URHO3D_API SceneRendererToTexture : public CustomBackbufferTexture
 {
     URHO3D_OBJECT(SceneRendererToTexture, CustomBackbufferTexture);

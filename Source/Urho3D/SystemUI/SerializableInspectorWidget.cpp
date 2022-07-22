@@ -22,6 +22,8 @@
 
 #include "../SystemUI/SerializableInspectorWidget.h"
 
+#include "../Scene/Component.h"
+#include "../Scene/Node.h"
 #include "../SystemUI/Widgets.h"
 #include "../SystemUI/SystemUI.h"
 
@@ -43,8 +45,48 @@ SerializableInspectorWidget::~SerializableInspectorWidget()
 
 void SerializableInspectorWidget::RenderTitle()
 {
-    // TODO(editor): Make better title
-    ui::Text("%u objects", objects_.size());
+    ui::Text("%s", GetTitle().c_str());
+}
+
+ea::string SerializableInspectorWidget::GetTitle() const
+{
+    if (objects_.empty())
+        return EMPTY_STRING;
+
+    ea::string extras;
+    for (const Serializable* object : objects_)
+    {
+        ea::optional<unsigned> id;
+
+        // TODO(editor): This is a hack to get IDs
+        if (const Node* node = dynamic_cast<const Node*>(object))
+            id = node->GetID();
+        else if (const Component* component = dynamic_cast<const Component*>(object))
+            id = component->GetID();
+
+        if (id)
+        {
+            if (!extras.empty())
+                extras += ", ";
+            extras += ea::to_string(*id);
+        }
+    }
+
+    Serializable* object = objects_.front();
+    if (objects_.size() == 1)
+    {
+        if (extras.empty())
+            return Format("{}", object->GetTypeName());
+        else
+            return Format("{} ({})", object->GetTypeName(), extras);
+    }
+    else
+    {
+        if (extras.empty())
+            return Format("{}x {}", objects_.size(), object->GetTypeName());
+        else
+            return Format("{}x {} ({})", objects_.size(), object->GetTypeName(), extras);
+    }
 }
 
 void SerializableInspectorWidget::RenderContent()

@@ -54,7 +54,6 @@ bool AssetManager::AssetDesc::IsAnyTransformerUsed(const StringVector& transform
 
 ea::string AssetManager::AssetDesc::GetTransformerDebugString() const
 {
-    // TODO(editor): Make algo?
     StringVector transformers{transformers_.begin(), transformers_.end()};
     ea::sort(transformers.begin(), transformers.end());
     return ea::string::joined(transformers, ", ");

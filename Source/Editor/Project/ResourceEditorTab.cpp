@@ -42,7 +42,6 @@ ResourceEditorTab::ResourceEditorTab(Context* context, const ea::string& title, 
     EditorTabFlags flags, EditorTabPlacement placement)
     : EditorTab(context, title, guid, flags, placement)
 {
-    // TODO(editor): Consider doing it at first tab open after loading
     auto project = GetProject();
     project->OnInitialized.Subscribe(this, &ResourceEditorTab::OnProjectInitialized);
     project->OnRequest.Subscribe(this, &ResourceEditorTab::OnProjectRequest);

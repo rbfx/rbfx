@@ -51,8 +51,7 @@ NodeInspectorWidget::~NodeInspectorWidget()
 
 void NodeInspectorWidget::RenderTitle()
 {
-    // TODO(editor): Make better title
-    ui::Text("%u objects", nodes_.size());
+    nodeInspector_->RenderTitle();
 }
 
 void NodeInspectorWidget::RenderContent()
@@ -106,7 +105,7 @@ void NodeInspectorWidget::RenderContent()
             ui::SetTooltip("Remove this component from all selected nodes");
         ui::SameLine();
 
-        if (ui::CollapsingHeader(typeInfo->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+        if (ui::CollapsingHeader(componentInspector->GetTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
         {
             componentInspector->RenderContent();
         }

@@ -101,10 +101,6 @@ void EditorTab::Focus(bool force)
 
 void EditorTab::RenderWindow()
 {
-    // TODO(editor): Hide this dependency
-    auto input = GetSubsystem<Input>();
-    auto project = GetProject();
-
     const bool noContentPadding = flags_.Test(EditorTabFlag::NoContentPadding);
 
     if (noContentPadding)
@@ -131,10 +127,13 @@ void EditorTab::RenderWindow()
 
     if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
     {
+        auto project = GetProject();
         project->SetFocusedTab(this);
     }
     else
     {
+        // TODO(editor): Why do we need this?
+        auto input = GetSubsystem<Input>();
         if (input->IsMouseVisible() && ui::IsAnyMouseDown())
         {
             if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))

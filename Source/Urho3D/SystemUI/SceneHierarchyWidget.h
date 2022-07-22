@@ -107,6 +107,8 @@ private:
     bool isActiveObjectVisible_{};
     bool wasActiveObjectVisible_{};
 
+    bool ignoreNextMouseRelease_{};
+
     bool scrollToActiveObject_{};
     Object* lastActiveObject_{};
     ea::vector<Node*> pathToActiveObject_;

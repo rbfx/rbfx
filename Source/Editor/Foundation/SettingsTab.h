@@ -32,7 +32,6 @@ namespace Urho3D
 void Foundation_SettingsTab(Context* context, Project* project);
 
 /// Tab that displays project settings.
-// TODO(editor): Rename to EditorSettingsTab?
 class SettingsTab : public EditorTab
 {
     URHO3D_OBJECT(SettingsTab, EditorTab)
