@@ -392,7 +392,6 @@ void SystemUI::ReallocateFontTexture()
     // Store main atlas, imgui expects it.
     io.Fonts->TexID = AllocateFontTexture(io.Fonts);
 
-#if URHO3D_SYSTEMUI_VIEWPORTS
     // Initialize per-screen font atlases.
     ClearPerScreenFonts();
     io.AllFonts.push_back(io.Fonts);
@@ -405,7 +404,6 @@ void SystemUI::ReallocateFontTexture()
         io.AllFonts.push_back(atlas);
         atlas->TexID = AllocateFontTexture(atlas);
     }
-#endif
 }
 
 void SystemUI::ClearPerScreenFonts()

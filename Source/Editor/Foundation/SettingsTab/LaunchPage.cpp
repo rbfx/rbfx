@@ -91,7 +91,8 @@ void LaunchPage::RenderConfiguration(unsigned index, LaunchConfiguration& config
 
     const bool isBadName = config.name_.empty() || launchManager_->FindConfiguration(config.name_) != &config;
     const ea::string title = Format("{}{}", isBadName ? ICON_FA_TRIANGLE_EXCLAMATION : "", config.name_);
-    ui::CollapsingHeader(title.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+    if (!ui::CollapsingHeader(title.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+        return;
 
     ui::InputText("Name", &config.name_);
     RenderMainPlugin(config.mainPlugin_);

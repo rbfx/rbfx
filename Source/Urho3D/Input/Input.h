@@ -24,15 +24,16 @@
 
 #pragma once
 
-#include <EASTL/list.h>
-#include <EASTL/unique_ptr.h>
-
 #include "../Container/FlagSet.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 #include "../Core/Signal.h"
 #include "../Input/InputEvents.h"
 #include "../UI/Cursor.h"
+
+#include <EASTL/list.h>
+#include <EASTL/optional.h>
+#include <EASTL/unique_ptr.h>
 
 union SDL_Event;
 
@@ -236,6 +237,10 @@ public:
     /// Set touch emulation by mouse. Only available on desktop platforms. When enabled, actual mouse events are no longer sent and the mouse cursor is forced visible.
     /// @property
     void SetTouchEmulation(bool enable);
+    /// Set explicit window rectangle in system coordinates explicitly.
+    void SetExplicitWindowRect(const IntRect& rect) { explicitWindowRect_ = rect; }
+    /// Disable explicit window rectangle.
+    void ResetExplicitWindowRect() { explicitWindowRect_ = ea::nullopt; }
     /// Begin recording a touch gesture. Return true if successful. The E_GESTURERECORDED event (which contains the ID for the new gesture) will be sent when recording finishes.
     bool RecordGesture();
     /// Save all in-memory touch gestures. Return true if successful.
@@ -301,6 +306,8 @@ public:
     /// Return mouse position within window. Should only be used with a visible mouse cursor. Uses the backbuffer (Graphics width/height) coordinates.
     /// @property
     IntVector2 GetMousePosition() const;
+    /// Return relative mouse position in range [0, 1].
+    Vector2 GetRelativeMousePosition() const;
     /// Return mouse movement since last frame.
     /// @property
     IntVector2 GetMouseMove() const;
@@ -315,7 +322,11 @@ public:
     int GetMouseMoveWheel() const { return mouseMoveWheel_; }
     /// Return input coordinate scaling. Should return non-unity on High DPI display.
     /// @property
-    Vector2 GetInputScale() const { return inputScale_; }
+    Vector2 GetSystemToBackbufferScale() const { return systemToBackbufferScale_; }
+    /// Convert system position or delta to backbuffer one.
+    IntVector2 SystemToBackbuffer(const IntVector2& value) const;
+    /// Convert backbuffer position or delta to system one.
+    IntVector2 BackbufferToSystem(const IntVector2& value) const;
 
     /// Return number of active finger touches.
     /// @property
@@ -383,6 +394,13 @@ public:
     void SetEnabled(bool enabled) { enabled_ = enabled; }
     /// Return true if input reporting is enabled.
     bool GetEnabled() const { return enabled_; }
+
+    /// Helpers to handle global mouse position.
+    /// @{
+    IntVector2 GetGlobalWindowPosition() const;
+    IntVector2 GetGlobalWindowSize() const;
+    IntVector2 GetBackbufferSize() const;
+    /// @}
 
 private:
     /// Initialize when screen mode initially set.
@@ -487,7 +505,7 @@ private:
     /// Mouse wheel movement since last frame.
     int mouseMoveWheel_;
     /// Input coordinate scaling. Non-unity when window and backbuffer have different sizes (e.g. Retina display).
-    Vector2 inputScale_;
+    Vector2 systemToBackbufferScale_;
     /// SDL window ID.
     unsigned windowID_;
     /// Fullscreen toggle flag.
@@ -524,6 +542,8 @@ private:
     bool initialized_;
     /// Flag indicating that input subsystem is reporting events.
     bool enabled_ = true;
+    /// Explicitly specified window rectangle.
+    ea::optional<IntRect> explicitWindowRect_;
 
 #ifdef __EMSCRIPTEN__
     /// Emscripten Input glue instance.
