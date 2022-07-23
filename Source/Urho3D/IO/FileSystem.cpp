@@ -1579,14 +1579,17 @@ ea::string FileSystem::FindResourcePrefixPath() const
 #endif
     };
 
-    ea::string result = GetProgramDir();
-    while (!isFileSystemRoot(result))
+    for (ea::string result : {GetCurrentDir(), GetProgramDir()})
     {
-        if (DirExists(result + "CoreData"))
-            return result;
+        while (!isFileSystemRoot(result))
+        {
+            if (DirExists(result + "CoreData"))
+                return result;
 
-        result = GetParentPath(result);
+            result = GetParentPath(result);
+        }
     }
+
     return EMPTY_STRING;
 }
 

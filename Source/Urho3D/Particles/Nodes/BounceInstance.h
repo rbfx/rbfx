@@ -23,7 +23,9 @@
 #pragma once
 
 #include "ApplyForce.h"
+#if URHO3D_PHYSICS
 #include "../../Physics/PhysicsWorld.h"
+#endif
 #include "../../Scene/Node.h"
 #include "../../Math/Ray.h"
 #include "../../Scene/Scene.h"
@@ -31,6 +33,7 @@
 namespace Urho3D
 {
 class ParticleGraphSystem;
+class PhysicsWorld;
 
 namespace ParticleGraphNodes
 {
@@ -43,6 +46,7 @@ public:
     template <typename Pin0, typename Pin1, typename Pin2, typename Pin3>
     void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Pin2 pin2, Pin3 pin3)
     {
+#if URHO3D_PHYSICS
         auto node = GetNode();
         auto physics = GetScene()->GetComponent<PhysicsWorld>();
         for (unsigned i = 0; i < numParticles; ++i)
@@ -51,12 +55,14 @@ public:
             pin3[i] = pin1[i];
             RayCastAndBounce(context, node, physics, pin2[i], pin3[i]);
         }
+#endif
     }
 };
 
 inline void BounceInstance::RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos,
     Vector3& velocity)
 {
+#if URHO3D_PHYSICS
     if (physics)
     {
         auto bounce = static_cast<Bounce*>(GetGraphNode());
@@ -90,6 +96,7 @@ inline void BounceInstance::RayCastAndBounce(UpdateContext& context, Node* node,
         }
         return;
     }
+#endif
     pos += velocity * context.timeStep_;
 }
 

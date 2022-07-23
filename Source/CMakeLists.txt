@@ -74,9 +74,15 @@ add_subdirectory (Urho3D)
 add_subdirectory (Samples)
 add_subdirectory (Tools)
 add_subdirectory (Extras)
-add_subdirectory (Player)
-add_subdirectory (Editor)
 add_subdirectory (Tests)
+
+# Check options outside so user can add Player and/or Editor explicitly afterwards.
+if (URHO3D_PLAYER)
+    add_subdirectory (Player)
+endif ()
+if (URHO3D_EDITOR)
+    add_subdirectory (Editor)
+endif ()
 
 if (NOT MINI_URHO)
     if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)

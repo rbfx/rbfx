@@ -20,10 +20,6 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_PLAYER)
-    return ()
-endif ()
-
 if (MINI_URHO OR WEB)
     return ()
 endif ()
