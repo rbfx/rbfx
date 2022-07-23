@@ -452,7 +452,7 @@ void UI::RenderUpdate()
     }
 
     // UIElement does not have anything to show. Insert dummy batch that will clear the texture.
-    if (batches_.empty() && texture_)
+    if (batches_.empty() && texture_ && clearColor_.a_ > 0)
     {
         UIBatch batch(rootElement_, BLEND_REPLACE, currentScissor, nullptr, &vertexData_);
         batch.SetColor(Color::BLACK);
