@@ -35,6 +35,7 @@
 #endif
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/Widgets.h>
+#include <Urho3D/UI/UI.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -63,6 +64,7 @@ public:
         , renderer_(GetSubsystem<Renderer>())
         , pluginManager_(GetSubsystem<PluginManager>())
         , input_(GetSubsystem<Input>())
+        , legacyUI_(GetSubsystem<UI>())
         , systemUI_(GetSubsystem<SystemUI>())
 #if URHO3D_RMLUI
         , rmlUI_(GetSubsystem<RmlUI>())
@@ -72,8 +74,13 @@ public:
     {
         UpdateRenderSurface();
 
+        legacyUI_->GetRoot()->RemoveAllChildren();
+        legacyUI_->GetRootModalElement()->RemoveAllChildren();
+
+        legacyUI_->SetRenderTarget(backbuffer_->GetTexture());
         backbuffer_->SetActive(true);
         GrabInput();
+
         pluginManager_->StartApplication();
         UpdatePreferredMouseSetup();
 
@@ -117,8 +124,9 @@ public:
         inputGrabbed_ = false;
     }
 
-    void Update()
+    void Update(const IntRect& windowRect)
     {
+        input_->SetExplicitWindowRect(windowRect);
         UpdateRenderSurface();
     }
 
@@ -127,13 +135,23 @@ public:
     ~PlayState()
     {
         ReleaseInput();
+
         pluginManager_->StopApplication();
         backbuffer_->SetActive(false);
-        renderer_->SetBackbufferRenderSurface(nullptr);
-        renderer_->SetNumViewports(0);
+
+        legacyUI_->SetRenderTarget(nullptr);
+        legacyUI_->SetCustomSize({0, 0});
+        legacyUI_->GetRoot()->RemoveAllChildren();
+        legacyUI_->GetRootModalElement()->RemoveAllChildren();
+
 #if URHO3D_RMLUI
         rmlUI_->SetRenderTarget(nullptr);
 #endif
+
+        input_->ResetExplicitWindowRect();
+
+        renderer_->SetBackbufferRenderSurface(nullptr);
+        renderer_->SetNumViewports(0);
     }
 
 private:
@@ -150,6 +168,7 @@ private:
         {
             backbufferSurface_ = backbufferSurface;
             renderer_->SetBackbufferRenderSurface(backbufferSurface_);
+            legacyUI_->SetCustomSize(backbufferSurface->GetSize());
 #if URHO3D_RMLUI
             rmlUI_->SetRenderTarget(backbufferSurface_);
 #endif
@@ -159,6 +178,7 @@ private:
     Renderer* renderer_{};
     PluginManager* pluginManager_{};
     Input* input_{};
+    UI* legacyUI_{};
     SystemUI* systemUI_{};
 #if URHO3D_RMLUI
     RmlUI* rmlUI_{};
@@ -172,6 +192,8 @@ private:
 
     bool preferredMouseVisible_{true};
     MouseMode preferredMouseMode_{MM_FREE};
+
+    IntVector2 oldRootElementSize_{};
 };
 
 GameViewTab::GameViewTab(Context* context)
@@ -232,8 +254,17 @@ void GameViewTab::RenderContent()
     if (state_)
     {
         Texture2D* sceneTexture = backbuffer_->GetTexture();
-        state_->Update();
-        Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+        Widgets::ImageButton(sceneTexture, ToImGui(sceneTexture->GetSize()), {0, 0}, {1, 1}, 0);
+
+#if URHO3D_SYSTEMUI_VIEWPORTS
+        const IntVector2 origin = IntVector2::ZERO;
+#else
+        auto graphics = GetSubsystem<Graphics>();
+        const IntVector2 origin = graphics->GetWindowPosition();
+#endif
+        const IntVector2 windowMin = origin + ToIntVector2(ui::GetItemRectMin());
+        const IntVector2 windowMax = origin + ToIntVector2(ui::GetItemRectMax());
+        state_->Update({windowMin, windowMax});
     }
 
     if (state_)

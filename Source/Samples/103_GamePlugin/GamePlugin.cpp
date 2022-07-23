@@ -23,7 +23,6 @@
 #include "GamePlugin.h"
 #include "RotateObject.h"
 
-#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Input/FreeFlyController.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -37,9 +36,7 @@
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Math/RandomEngine.h>
-#include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Utility/SceneViewerApplication.h>
 
 URHO3D_DEFINE_PLUGIN_MAIN(Urho3D::GamePlugin);
 
@@ -94,7 +91,6 @@ void GamePlugin::Start(bool isMain)
     cameraNode_ = scene_->CreateChild("Camera");
     cameraNode_->CreateComponent<FreeFlyController>();
     auto camera = cameraNode_->CreateComponent<Camera>();
-    auto controller = cameraNode_->CreateComponent<FreeFlyController>();
 
     // Create skybox
     Node* skyboxNode = scene_->CreateChild("Skybox");
