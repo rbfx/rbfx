@@ -30,6 +30,9 @@
 #include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
+#if URHO3D_RMLUI
+#include <Urho3D/RmlUI/RmlUI.h>
+#endif
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
@@ -60,11 +63,15 @@ public:
         , renderer_(GetSubsystem<Renderer>())
         , pluginManager_(GetSubsystem<PluginManager>())
         , input_(GetSubsystem<Input>())
-        , systemUi_(GetSubsystem<SystemUI>())
+        , systemUI_(GetSubsystem<SystemUI>())
+#if URHO3D_RMLUI
+        , rmlUI_(GetSubsystem<RmlUI>())
+#endif
         , project_(GetSubsystem<Project>())
         , backbuffer_(backbuffer)
     {
-        renderer_->SetBackbufferRenderSurface(backbuffer_->GetTexture()->GetRenderSurface());
+        UpdateRenderSurface();
+
         backbuffer_->SetActive(true);
         GrabInput();
         pluginManager_->StartApplication();
@@ -87,7 +94,7 @@ public:
         input_->SetMouseVisible(preferredMouseVisible_);
         input_->SetMouseMode(preferredMouseMode_);
         input_->SetEnabled(true);
-        systemUi_->SetPassThroughEvents(true);
+        systemUI_->SetPassThroughEvents(true);
         project_->SetGlobalHotkeysEnabled(false);
         project_->SetHighlightEnabled(true);
 
@@ -103,11 +110,16 @@ public:
         input_->SetMouseVisible(true);
         input_->SetMouseMode(MM_ABSOLUTE);
         input_->SetEnabled(false);
-        systemUi_->SetPassThroughEvents(false);
+        systemUI_->SetPassThroughEvents(false);
         project_->SetGlobalHotkeysEnabled(true);
         project_->SetHighlightEnabled(false);
 
         inputGrabbed_ = false;
+    }
+
+    void Update()
+    {
+        UpdateRenderSurface();
     }
 
     bool IsInputGrabbed() const { return inputGrabbed_; }
@@ -119,6 +131,9 @@ public:
         backbuffer_->SetActive(false);
         renderer_->SetBackbufferRenderSurface(nullptr);
         renderer_->SetNumViewports(0);
+#if URHO3D_RMLUI
+        rmlUI_->SetRenderTarget(nullptr);
+#endif
     }
 
 private:
@@ -128,13 +143,30 @@ private:
         preferredMouseMode_ = input_->GetMouseMode();
     }
 
+    void UpdateRenderSurface()
+    {
+        RenderSurface* backbufferSurface = backbuffer_->GetTexture()->GetRenderSurface();
+        if (backbufferSurface_ != backbufferSurface)
+        {
+            backbufferSurface_ = backbufferSurface;
+            renderer_->SetBackbufferRenderSurface(backbufferSurface_);
+#if URHO3D_RMLUI
+            rmlUI_->SetRenderTarget(backbufferSurface_);
+#endif
+        }
+    }
+
     Renderer* renderer_{};
     PluginManager* pluginManager_{};
     Input* input_{};
-    SystemUI* systemUi_{};
+    SystemUI* systemUI_{};
+#if URHO3D_RMLUI
+    RmlUI* rmlUI_{};
+#endif
     Project* project_{};
 
     CustomBackbufferTexture* backbuffer_{};
+    WeakPtr<RenderSurface> backbufferSurface_;
 
     bool inputGrabbed_{};
 
@@ -200,6 +232,7 @@ void GameViewTab::RenderContent()
     if (state_)
     {
         Texture2D* sceneTexture = backbuffer_->GetTexture();
+        state_->Update();
         Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
     }
 

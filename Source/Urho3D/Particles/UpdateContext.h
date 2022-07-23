@@ -28,7 +28,7 @@
 namespace Urho3D
 {
 
-class ParticleGraphPinRef;
+struct ParticleGraphPinRef;
 
 struct UpdateContext
 {
