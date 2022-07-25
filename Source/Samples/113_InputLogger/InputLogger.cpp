@@ -237,11 +237,13 @@ void InputLogger::Update()
 void InputLogger::UpdateText()
 {
     const auto input = GetSubsystem<Input>();
-    const IntVector2& mousePosition = input->GetMousePosition();
+    const IntVector2 mousePosition = input->GetMousePosition();
+    const IntVector2 backbufferSize = input->GetBackbufferSize();
 
     ea::string text;
 
-    text += Format("Mouse Position: {} {}\n", mousePosition.x_, mousePosition.y_);
+    text += Format("Mouse Position: {} {} / {} {}\n",
+        mousePosition.x_, mousePosition.y_, backbufferSize.x_, backbufferSize.y_);
 
     text += "\n";
 
