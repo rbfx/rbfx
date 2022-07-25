@@ -151,7 +151,7 @@ set(URHO3D_PLUGIN_LIST_DOCSTRING "List of plugins to be statically linked with E
 set(URHO3D_PLUGIN_LIST_DEFAULT "103_GamePlugin;113_InputLogger")
 set(URHO3D_PLUGIN_LIST "" CACHE STRING          ${URHO3D_PLUGIN_LIST_DOCSTRING})
 
-cmake_dependent_option(URHO3D_PLAYER            "Build player application"                              ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
+option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_EDITOR            "Build editor application"                              ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 cmake_dependent_option(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT UWP"    OFF)
 cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
