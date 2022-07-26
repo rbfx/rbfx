@@ -108,6 +108,18 @@ std::regex PatternToRegex(const ea::string& pattern)
     return std::regex(r, std::regex::ECMAScript | std::regex::icase | std::regex::optimize);
 }
 
+void CreateAssetPipeline(Context* context, const ea::string& fileName)
+{
+    JSONFile jsonFile(context);
+    JSONValue& root = jsonFile.GetRoot();
+
+    JSONValue modelTransformer;
+    modelTransformer["_Class"] = "ModelImporter";
+    root["Transformers"].Push(modelTransformer);
+
+    jsonFile.SaveFile(fileName);
+}
+
 }
 
 ResourceCacheGuard::ResourceCacheGuard(Context* context)
@@ -472,6 +484,9 @@ void Project::InitializeDefaultProject()
 
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
     ProcessRequest(request, nullptr);
+
+    const ea::string defaultAssetPipeline = "AssetPipeline.json";
+    CreateAssetPipeline(context_, dataPath_ + defaultAssetPipeline);
 
     Save();
 }

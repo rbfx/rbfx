@@ -893,9 +893,13 @@ void SceneViewTab::SavePageConfig(const SceneViewPage& page) const
 
 void SceneViewTab::LoadPageConfig(SceneViewPage& page) const
 {
+    auto fs = GetSubsystem<FileSystem>();
     auto jsonFile = MakeShared<JSONFile>(context_);
-    jsonFile->LoadFile(page.cfgFileName_);
-    jsonFile->LoadObject("Scene", page, this);
+    if (fs->FileExists(page.cfgFileName_))
+    {
+        if (jsonFile->LoadFile(page.cfgFileName_))
+            jsonFile->LoadObject("Scene", page, this);
+    }
 }
 
 SimulateSceneAction::SimulateSceneAction(SceneViewPage* page)
