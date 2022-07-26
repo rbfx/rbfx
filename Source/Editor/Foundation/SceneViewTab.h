@@ -41,6 +41,7 @@ void Foundation_SceneViewTab(Context* context, Project* project);
 
 class SceneViewAddon;
 class SceneViewTab;
+class SimulateSceneAction;
 
 /// Single page of SceneViewTab.
 class SceneViewPage : public Object
@@ -64,16 +65,15 @@ public:
     PackedSceneSelection oldSelection_;
     PackedSceneSelection newSelection_;
 
-    ea::optional<PackedSceneData> simulationBase_;
-    PackedSceneSelection selectionBase_;
+    SharedPtr<SimulateSceneAction> currentSimulationAction_;
 
     /// UI state
     /// @{
     Rect contentArea_;
     /// @}
 
-    void StartSimulation();
-    void RewindSimulation();
+    bool IsSimulationActive() const;
+    void StartSimulation(SceneViewTab* owner);
     void BeginSelection();
     void EndSelection(SceneViewTab* owner);
 };
@@ -253,27 +253,37 @@ private:
     AddonSetByName addonsByName_;
 
     ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;
-    PackedSceneData clipboard_;
+    PackedNodeComponentData clipboard_;
 
     bool componentSelection_{true};
 };
 
-/// Action wrapper that rewinds scene simulation.
-class RewindSceneActionWrapper : public BaseEditorActionWrapper
+/// Action for scene simulation interval.
+class SimulateSceneAction : public EditorAction
 {
 public:
-    RewindSceneActionWrapper(SharedPtr<EditorAction> action, SceneViewPage* page);
+    explicit SimulateSceneAction(SceneViewPage* page);
 
     /// Implement EditorAction.
     /// @{
-    bool CanRedo() const override;
+    bool IsComplete() const override { return isComplete_; }
+    void Complete(bool force) override;
+    bool CanUndoRedo() const override;
     void Redo() const override;
-    bool CanUndo() const override;
     void Undo() const override;
     /// @}
 
 private:
+    void SetState(const PackedSceneData& data, const PackedSceneSelection& selection) const;
+
     WeakPtr<SceneViewPage> page_;
+    bool isComplete_{};
+
+    PackedSceneData oldData_;
+    PackedSceneSelection oldSelection_;
+
+    PackedSceneData newData_;
+    PackedSceneSelection newSelection_;
 };
 
 /// Action for scene selection.

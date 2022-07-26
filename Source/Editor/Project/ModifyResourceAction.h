@@ -38,7 +38,7 @@ public:
     /// Implement EditorAction.
     /// @{
     bool IsComplete() const override { return !newData_.empty(); }
-    void Complete() override;
+    void Complete(bool force) override;
     void Redo() const override;
     void Undo() const override;
     bool MergeWith(const EditorAction& other) override;

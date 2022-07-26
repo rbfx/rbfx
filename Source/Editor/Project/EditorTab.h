@@ -166,7 +166,7 @@ public:
 
     ea::string GetHotkeyLabel(const EditorHotkey& info) const;
     template <class T> void BindHotkey(const EditorHotkey& info, void(T::*callback)());
-    template <class T, class ... Args> void PushAction(const Args& ... args);
+    template <class T, class ... Args> SharedPtr<T> PushAction(const Args& ... args);
     /// @}
 
 protected:
@@ -210,9 +210,11 @@ void EditorTab::BindHotkey(const EditorHotkey& info, void(T::*callback)())
 }
 
 template <class T, class ... Args>
-void EditorTab::PushAction(const Args& ... args)
+SharedPtr<T> EditorTab::PushAction(const Args& ... args)
 {
-    PushAction(MakeShared<T>(args...));
+    const auto action = MakeShared<T>(args...);
+    PushAction(action);
+    return action;
 }
 
 }
