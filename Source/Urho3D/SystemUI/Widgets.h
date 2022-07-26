@@ -99,6 +99,9 @@ URHO3D_API bool EditVariantValue(Variant& value);
 /// Render variant vector with optional type and size constraints.
 URHO3D_API bool EditVariantVector(VariantVector& value, bool resizable, bool dynamicTypes, const StringVector* elementNames = nullptr);
 
+/// Render string vector with optional size constraints.
+URHO3D_API bool EditStringVector(StringVector& value, bool resizable);
+
 /// Render arbitrary variant value editor.
 URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});
 

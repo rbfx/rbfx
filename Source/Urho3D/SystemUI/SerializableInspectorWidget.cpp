@@ -157,6 +157,8 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
         else
             options = options.AllowResize().AllowTypeChange();
     }
+    else if (info.type_ == VAR_STRINGVECTOR)
+        options = options.AllowResize();
     else if (!info.enumNames_.empty())
         options = options.Enum(info.enumNames_);
 
