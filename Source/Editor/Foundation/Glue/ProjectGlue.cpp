@@ -111,7 +111,7 @@ void Foundation_ProjectGlue(Context* context, Project* project)
 
         const ea::string title = state->IsPlaying()
             ? ICON_FA_STOP " Stop"
-            : Format(ICON_FA_EJECT " Launch \"{}\"", currentConfig ? currentConfig->name_ : LaunchConfiguration::UnspecifiedName);
+            : Format(ICON_FA_PLAY " Launch \"{}\"", currentConfig ? currentConfig->name_ : LaunchConfiguration::UnspecifiedName);
         if (ui::MenuItem(title.c_str(), hotkeyManager->GetHotkeyLabel(Hotkey_Play).c_str()))
             state->TogglePlayedDefault();
 
@@ -160,7 +160,7 @@ void Foundation_ProjectGlue(Context* context, Project* project)
         }
 
         {
-            const char* title = isPlaying ? ICON_FA_STOP : ICON_FA_EJECT;
+            const char* title = isPlaying ? ICON_FA_STOP : ICON_FA_PLAY;
             const char* tooltip = isPlaying ? "Stop" : "Launch";
             if (Widgets::ToolbarButton(title, tooltip))
                 state->TogglePlayedDefault();

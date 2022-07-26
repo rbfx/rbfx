@@ -45,10 +45,11 @@ public:
     void RenderTitle();
     void RenderContent();
 
-    ea::string GetTitle() const;
+    ea::string GetTitle();
     const SerializableVector& GetObjects() const { return objects_; }
 
 private:
+    void PruneObjects();
     void RenderAttribute(const AttributeInfo& info);
 
     SerializableVector objects_;
