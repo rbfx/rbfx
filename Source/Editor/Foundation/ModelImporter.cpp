@@ -52,12 +52,19 @@ bool IsFileNameBlend(const ea::string& fileName)
 void Foundation_ModelImporter(Context* context, Project* project)
 {
     if (!context->IsReflected<ModelImporter>())
-        context->RegisterFactory<ModelImporter>();
+        ModelImporter::RegisterObject(context);
 }
 
 ModelImporter::ModelImporter(Context* context)
     : AssetTransformer(context)
 {
+}
+
+void ModelImporter::RegisterObject(Context* context)
+{
+    context->RegisterFactory<ModelImporter>();
+
+    URHO3D_ATTRIBUTE("Scale", float, scale_, 1.0f, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -122,7 +129,8 @@ bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformer
 
 bool ModelImporter::ImportGLTF(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output)
 {
-    const GLTFImporterSettings importerSettings;
+    GLTFImporterSettings importerSettings;
+    importerSettings.scale_ = scale_;
     auto importer = MakeShared<GLTFImporter>(context_, importerSettings);
 
     if (!importer->LoadFile(fileName, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
