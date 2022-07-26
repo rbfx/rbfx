@@ -39,6 +39,8 @@ class ModelImporter : public AssetTransformer
 public:
     explicit ModelImporter(Context* context);
 
+    static void RegisterObject(Context* context);
+
     bool IsApplicable(const AssetTransformerInput& input) override;
     bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output) override;
 
@@ -48,6 +50,8 @@ private:
     bool ImportBlend(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output);
 
     ToolManager* GetToolManager() const;
+
+    float scale_{1.0f};
 };
 
 }

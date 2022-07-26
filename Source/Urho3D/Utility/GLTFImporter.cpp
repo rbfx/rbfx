@@ -2908,7 +2908,7 @@ private:
         scene->CreateComponent<Octree>();
 
         auto renderPipeline = scene->CreateComponent<RenderPipeline>();
-        if (base_.GetSettings().highRenderQuality_)
+        if (base_.GetSettings().preview_.highRenderQuality_)
         {
             auto settings = renderPipeline->GetSettings();
             settings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
@@ -2918,6 +2918,7 @@ private:
         }
 
         Node* rootNode = scene->CreateChild("Imported Scene");
+        rootNode->SetScale(base_.GetSettings().scale_);
 
         if (animationImporter_.HasSceneAnimations())
             InitializeAnimationController(*rootNode, ea::nullopt);
@@ -3044,7 +3045,7 @@ private:
         auto scene = importedScene.scene_;
         const GLTFImporterSettings& settings = base_.GetSettings();
 
-        if (settings.addLights_ && !scene->GetComponent<Light>(true))
+        if (settings.preview_.addLights_ && !scene->GetComponent<Light>(true))
         {
             // Model forward is Z+, make default lighting from top right when looking at forward side of model.
             Node* node = scene->CreateChild("Default Light");
@@ -3055,15 +3056,15 @@ private:
             light->SetCastShadows(true);
         }
 
-        if (settings.addSkybox_ && !scene->GetComponent<Skybox>(true))
+        if (settings.preview_.addSkybox_ && !scene->GetComponent<Skybox>(true))
         {
             static const ea::string skyboxModelName = "Models/Box.mdl";
 
-            auto skyboxMaterial = cache->GetResource<Material>("Materials/Skybox.xml");
+            auto skyboxMaterial = cache->GetResource<Material>(settings.preview_.skyboxMaterial_);
             auto boxModel = cache->GetResource<Model>(skyboxModelName);
 
             if (!skyboxMaterial)
-                URHO3D_LOGWARNING("Cannot add default skybox with material '{}'", settings.skyboxMaterial_);
+                URHO3D_LOGWARNING("Cannot add default skybox with material '{}'", settings.preview_.skyboxMaterial_);
             else if (!boxModel)
                 URHO3D_LOGWARNING("Cannot add default skybox with model '{}'", skyboxModelName);
             else
@@ -3076,11 +3077,11 @@ private:
             }
         }
 
-        if (settings.addReflectionProbe_ && !scene->GetComponent<Zone>(true))
+        if (settings.preview_.addReflectionProbe_ && !scene->GetComponent<Zone>(true))
         {
-            auto skyboxTexture = cache->GetResource<TextureCube>(settings.reflectionProbeCubemap_);
+            auto skyboxTexture = cache->GetResource<TextureCube>(settings.preview_.reflectionProbeCubemap_);
             if (!skyboxTexture)
-                URHO3D_LOGWARNING("Cannot add default reflection probe with material '{}'", settings.reflectionProbeCubemap_);
+                URHO3D_LOGWARNING("Cannot add default reflection probe with material '{}'", settings.preview_.reflectionProbeCubemap_);
             else
             {
                 Node* zoneNode = scene->CreateChild("Default Zone");
@@ -3216,14 +3217,15 @@ private:
 void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
-    SerializeValue(archive, "addLights", value.addLights_);
-    SerializeValue(archive, "addSkybox", value.addSkybox_);
-    SerializeValue(archive, "skyboxMaterial", value.skyboxMaterial_);
-    SerializeValue(archive, "addReflectionProbe", value.addReflectionProbe_);
-    SerializeValue(archive, "reflectionProbeCubemap", value.reflectionProbeCubemap_);
-    SerializeValue(archive, "highRenderQuality", value.highRenderQuality_);
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
+
+    SerializeValue(archive, "addLights", value.preview_.addLights_);
+    SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);
+    SerializeValue(archive, "skyboxMaterial", value.preview_.skyboxMaterial_);
+    SerializeValue(archive, "addReflectionProbe", value.preview_.addReflectionProbe_);
+    SerializeValue(archive, "reflectionProbeCubemap", value.preview_.reflectionProbeCubemap_);
+    SerializeValue(archive, "highRenderQuality", value.preview_.highRenderQuality_);
 }
 
 GLTFImporter::GLTFImporter(Context* context, const GLTFImporterSettings& settings)
