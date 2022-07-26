@@ -87,7 +87,7 @@ protected:
 
         bool IsValid()
         {
-            return ssao_ && ssao_->IsValid() && blur_->IsValid() && ssao_deferred_->IsValid()
+            return !!ssao_ && ssao_->IsValid() && blur_->IsValid() && ssao_deferred_->IsValid()
                 && blur_deferred_->IsValid() && combine_->IsValid() && preview_->IsValid();
         }
     };

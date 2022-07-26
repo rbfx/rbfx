@@ -50,24 +50,6 @@ vec3 RGBToNormal(vec3 rgb)
 {
    return (rgb-vec3(0.5, 0.5, 0.5))*2.0;
 }
-vec3 NormalToRGB(vec3 xyz)
-{
-   return (xyz+vec3(1.0, 1.0, 1.0))*0.5;
-}
-vec2 RGBToNormal(vec2 rgb)
-{
-   return (rgb-vec2(0.5, 0.5))*2.0;
-}
-vec2 NormalToRGB(vec2 xyz)
-{
-   return (xyz+vec2(1.0, 1.0))*0.5;
-}
-
-half UVToConfidence(vec2 uv)
-{
-    vec2 weights = step(vec2(0.0,0.0), uv) * step(uv, vec2(1.0,1.0));
-    return weights.x * weights.y;
-}
 
 // Sample depth texture at screen coordinates
 vec3 SampleDepth(vec2 texCoord)
@@ -78,16 +60,23 @@ vec3 SampleDepth(vec2 texCoord)
 }
 
 // Reconstruct or sample normal
-vec3 EvaluateNormal(vec3 center, vec2 texcoords) {
+vec3 SampleNormal(vec2 texcoords) {
 #ifdef DEFERRED
    // Sample normal render target texture when available
-   vec3 normal = (vec4(RGBToNormal(texture2D(sNormalMap, texcoords).xyz), 0.0) * cCameraView).xyz;
+   vec3 normal = (vec4(RGBToNormal(texture2D(sNormalMap, clamp(texcoords, 0.0, 1.0)).xyz), 0.0) * cCameraView).xyz;
 #ifdef URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
    // Fip Y to match quad texture coordinates
    normal.y = -normal.y;
 #endif
    return normalize(normal);
+#else
+   return vec3(0.0, 0.0, -1.0);
+#endif
+}
 
+vec3 EvaluateNormal(vec3 center, vec2 texcoords) {
+#ifdef DEFERRED
+   return SampleNormal(texcoords);
 #else
    // Reconstruct normal from depth samples
    const vec2 offsetY = vec2(0.0,cInputInvSize.y);
@@ -118,21 +107,22 @@ vec3 EvaluateNormal(vec3 center, vec2 texcoords) {
 
 #ifdef BLUR
 
-void SampleNormalAndOcclustion(vec2 uv, out vec2 n, out half confidence, out half occlusion)
+vec4 SampleOcclustion(vec2 uv)
 {
-   vec4 color = texture2D(sDiffMap, uv);
-   occlusion = color.a;
-   confidence = color.z * UVToConfidence(uv);
-   n = RGBToNormal(color.xy);
+   return texture2D(sDiffMap, uv);
 }
 
-float CompareDepthAndNormal(vec2 uv, vec3 pos, vec2 norm, vec2 sampleNorm)
+half CompareDepthAndNormal(vec3 posA, vec3 posB, vec3 normA, vec3 normB)
 {
-   vec2 normDiff = abs(norm-sampleNorm);
-   float normalMask = step(normDiff.x + normDiff.y, cSSAONormalThreshold);
+#ifdef DEFERRED
+   vec2 normDiff = (normA-normB).xy;
+   half normalMask = step(dot(normDiff,normDiff), cSSAONormalThreshold*cSSAONormalThreshold);
+#else
+   half normalMask = 1.0;
+#endif
 
-   float depthDiff = abs(SampleDepth(uv).z - pos.z);
-   float depthMask = step(depthDiff, cSSAODepthThreshold);
+   float depthDiff = abs(posA.z - posB.z);
+   half depthMask = step(depthDiff, cSSAODepthThreshold);
 
    return normalMask * depthMask;
 }
@@ -191,7 +181,7 @@ void main()
       // Evalue difference between predicted and actual sample depth
       float difference = hemispherePosition.z - sampleDepth.z;
       // Fade out AO when sampled points are too far away
-      half weight = UVToConfidence(sampleUV) * smoothstep(cSSAORadius*3.0, cSSAORadius, difference);
+      half weight = smoothstep(cSSAORadius*3.0, cSSAORadius, difference);
       weightSum += weight;
       occlusion += step(falloff, difference) * weight;
    }
@@ -199,22 +189,12 @@ void main()
    // Normalize accumulated occlustion and fade it with distance
    float ao = 1.0 - cSSAOStrength * smoothstep(fadeDistance,0,position.z) * occlusion * (1.0 / weightSum);
    float finalAO = pow(clamp(ao, 0.0, 1.0), cSSAOExponent);
-   gl_FragColor = vec4(NormalToRGB(normal.xy), weightSum / samples, finalAO);
+   gl_FragColor = vec4(0.0, 0.0, 0.0, finalAO);
 
 #endif
 
 #ifdef BLUR
 #define WINDOW_WIDTH 4
-
-vec3 position = SampleDepth(vTexCoord);
-half confidence;
-half occlusion;
-vec2 normal;
-SampleNormalAndOcclustion(vTexCoord, normal, confidence, occlusion);
-
-occlusion *= confidence;
-half weightSum = confidence;
-half maxSum = 1.0;
 
 float sampleWeights[WINDOW_WIDTH+1] = {
    1.0f,
@@ -224,33 +204,35 @@ float sampleWeights[WINDOW_WIDTH+1] = {
    0.2665483f
 };
 
+vec3 position = SampleDepth(vTexCoord);
+vec3 normal = SampleNormal(vTexCoord);
+vec4 occlusion = SampleOcclustion(vTexCoord);
+
+half weightSum = sampleWeights[0];
+
 for (int i=-WINDOW_WIDTH; i<0;++i)
 {
-   vec2 uv = vTexCoord + cBlurStep*i;
-   vec2 sampleNormal;
-   half sampleConfidence;
-   half ao;
-   SampleNormalAndOcclustion(uv, sampleNormal, sampleConfidence, ao);
+   vec2 sampleUV = vTexCoord + cBlurStep*i;
+   vec3 samplePosition = SampleDepth(sampleUV);
+   vec3 sampleNormal = SampleNormal(sampleUV);
+   vec4 sampleAO = SampleOcclustion(sampleUV);
    half sampleFactor = sampleWeights[abs(i)];
-   maxSum += sampleFactor;
-   half weight = sampleConfidence * CompareDepthAndNormal(uv, position, normal, sampleNormal) * sampleFactor;
-   occlusion += ao * weight;
-   weightSum += weight;
+   half sampleWeight = CompareDepthAndNormal(position, samplePosition, normal, sampleNormal) * sampleFactor;
+   occlusion += sampleAO * sampleWeight;
+   weightSum += sampleWeight;
 }
 for (int i=1; i<=WINDOW_WIDTH;++i)
 {
-   vec2 uv = vTexCoord + cBlurStep*i;
-   vec2 sampleNormal;
-   half sampleConfidence;
-   half ao;
-   SampleNormalAndOcclustion(uv, sampleNormal, sampleConfidence, ao);
+   vec2 sampleUV = vTexCoord + cBlurStep*i;
+   vec3 samplePosition = SampleDepth(sampleUV);
+   vec3 sampleNormal = SampleNormal(sampleUV);
+   vec4 sampleAO = SampleOcclustion(sampleUV);
    half sampleFactor = sampleWeights[abs(i)];
-   maxSum += sampleFactor;
-   half weight = sampleConfidence * CompareDepthAndNormal(uv, position, normal,  sampleNormal) * sampleFactor;
-   occlusion += ao * weight;
-   weightSum += weight;
+   half sampleWeight = CompareDepthAndNormal(position, samplePosition, normal, sampleNormal) * sampleFactor;
+   occlusion += sampleAO * sampleWeight;
+   weightSum += sampleWeight;
 }
-gl_FragColor = vec4(NormalToRGB(normal), weightSum/maxSum, occlusion/weightSum);
+gl_FragColor = occlusion/weightSum;
 
 #endif
 
@@ -263,8 +245,8 @@ gl_FragColor = vec4(ao.a, ao.a, ao.a, 1.0);
 
 #ifdef COMBINE
 
-float ao = 1.0 - texture2D(sDiffMap, vTexCoord).a;
-gl_FragColor = vec4(0.0, 0.0, 0.0, ao);
+vec4 ao = texture2D(sDiffMap, vTexCoord);
+gl_FragColor = vec4(ao.xyz, 1.0-ao.a);
 
 #endif
 }
