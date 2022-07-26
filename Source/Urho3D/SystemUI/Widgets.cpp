@@ -451,12 +451,69 @@ bool EditVariantVector(VariantVector& value, bool resizable, bool dynamicTypes, 
 
     if (resizable)
     {
-        const IdScopeGuard guardAddItem{index};
+        const IdScopeGuard guardAddElement{"##AddElement"};
 
         VariantType newElementType = VAR_NONE;
         if (EditVariantType(newElementType, ICON_FA_SQUARE_PLUS " Add item"))
         {
             value.push_back(Variant{newElementType});
+            modified = true;
+        }
+
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Add item");
+    }
+
+    return modified;
+}
+
+bool EditStringVector(StringVector& value, bool resizable)
+{
+    bool modified = false;
+    ea::optional<unsigned> pendingRemove;
+
+    unsigned index = 0;
+    for (ea::string& element : value)
+    {
+        const IdScopeGuard guardElement{index};
+        if (resizable)
+        {
+            if (ui::Button(ICON_FA_TRASH_CAN))
+                pendingRemove = index;
+            ui::SameLine();
+            if (ui::IsItemHovered())
+                ui::SetTooltip("Remove item");
+        }
+
+        ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+        if (ui::InputText("", &element, ImGuiInputTextFlags_EnterReturnsTrue))
+            return true;
+
+        ++index;
+    }
+
+    if (pendingRemove && *pendingRemove < value.size())
+    {
+        value.erase_at(*pendingRemove);
+        modified = true;
+    }
+
+    if (resizable)
+    {
+        const IdScopeGuard guardAddElement{"##AddElement"};
+
+        const bool isButtonClicked = ui::Button(ICON_FA_SQUARE_PLUS " Add item");
+        ui::SameLine();
+
+        ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+
+        // TODO(editor): this "static" is bad in theory
+        static ea::string newElement;
+        const bool isTextClicked = ui::InputText("", &newElement, ImGuiInputTextFlags_EnterReturnsTrue);
+
+        if (isButtonClicked || isTextClicked)
+        {
+            value.push_back(newElement);
             modified = true;
         }
 
@@ -654,9 +711,25 @@ bool EditVariantVector(Variant& var, const EditVariantOptions& options)
 
     bool modified = false;
     VariantVector value = var.GetVariantVector();
-    const unsigned effectiveLines = value.size() + (options.allowResize_ ? 1 : 0);
     ui::Indent();
     if (EditVariantVector(value, options.allowResize_, options.allowTypeChange_, options.sizedStructVectorElements_))
+    {
+        var = value;
+        modified = true;
+    }
+    ui::Unindent();
+    return modified;
+}
+
+bool EditVariantStringVector(Variant& var, const EditVariantOptions& options)
+{
+    if (!ui::CollapsingHeader("##Elements"))
+        return false;
+
+    bool modified = false;
+    StringVector value = var.GetStringVector();
+    ui::Indent();
+    if (EditStringVector(value, options.allowResize_))
     {
         var = value;
         modified = true;
@@ -731,7 +804,10 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     // case VAR_MATRIX3X4:
     // case VAR_MATRIX4:
     // case VAR_DOUBLE:
-    // case VAR_STRINGVECTOR:
+
+    case VAR_STRINGVECTOR:
+        return EditVariantStringVector(var, options);
+
     // case VAR_RECT:
     // case VAR_INTVECTOR3:
     // case VAR_INT64:
