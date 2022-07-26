@@ -56,9 +56,9 @@ void BaseEditorActionWrapper::OnPushed(EditorActionFrame frame)
     action_->OnPushed(frame);
 }
 
-void BaseEditorActionWrapper::Complete()
+void BaseEditorActionWrapper::Complete(bool force)
 {
-    action_->Complete();
+    action_->Complete(force);
 }
 
 bool BaseEditorActionWrapper::CanRedo() const
@@ -137,7 +137,7 @@ EditorActionFrame UndoManager::PushAction(const EditorActionPtr& action)
 
     group.actions_.push_back(action);
 
-    CommitIncompleteAction();
+    CommitIncompleteAction(true);
     if (!action->IsComplete())
     {
         incompleteAction_ = action;
@@ -155,7 +155,7 @@ bool UndoManager::Undo()
             return false;
 
         ClearCanUndoRedo();
-        CommitIncompleteAction();
+        CommitIncompleteAction(true);
 
         ActionGroup& group = undoStack_.back();
         if (!group.CanUndo())
@@ -188,7 +188,7 @@ bool UndoManager::Redo()
             return false;
 
         ClearCanUndoRedo();
-        CommitIncompleteAction();
+        CommitIncompleteAction(true);
 
         ActionGroup& group = redoStack_.back();
         if (!group.CanRedo())
@@ -238,7 +238,7 @@ void UndoManager::Update()
         NewFrame();
 
     if (incompleteAction_ && NeedNewGroup() && incompleteActionTimer_.GetMSec(false) > actionCompletionTimeoutMs_)
-        CommitIncompleteAction();
+        CommitIncompleteAction(false);
 }
 
 bool UndoManager::NeedNewGroup() const
@@ -246,13 +246,16 @@ bool UndoManager::NeedNewGroup() const
     return undoStack_.empty() || undoStack_.back().frame_ != frame_;
 }
 
-void UndoManager::CommitIncompleteAction()
+void UndoManager::CommitIncompleteAction(bool force)
 {
     if (!incompleteAction_)
         return;
 
-    incompleteAction_->Complete();
-    incompleteAction_ = nullptr;
+    incompleteAction_->Complete(force);
+    if (incompleteAction_->IsComplete())
+        incompleteAction_ = nullptr;
+    else if (force)
+        URHO3D_LOGERROR("Incomplete action failed to complete when it was forced");
 }
 
 }

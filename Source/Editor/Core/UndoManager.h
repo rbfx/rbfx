@@ -56,7 +56,8 @@ public:
     /// Action is pushed to the stack.
     virtual void OnPushed(EditorActionFrame frame) {}
     /// Complete action if needed. Called after merge attempt but before stack modification.
-    virtual void Complete() {}
+    /// Called with force=false periodically.
+    virtual void Complete(bool force) {}
     /// Return whether the action can be redone and undone.
     virtual bool CanUndoRedo() const { return true; }
     /// Return whether the action can be redone.
@@ -83,7 +84,7 @@ public:
     bool IsComplete() const override;
     bool IsTransparent() const override;
     void OnPushed(EditorActionFrame frame) override;
-    void Complete() override;
+    void Complete(bool force) override;
     bool CanRedo() const override;
     void Redo() const override;
     bool CanUndo() const override;
@@ -132,7 +133,7 @@ private:
     void ClearCanUndoRedo();
     void Update();
     bool NeedNewGroup() const;
-    void CommitIncompleteAction();
+    void CommitIncompleteAction(bool force);
 
     const unsigned actionCompletionTimeoutMs_{1000};
 

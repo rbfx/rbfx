@@ -123,22 +123,14 @@ ea::any& SceneViewPage::GetAddonData(const SceneViewAddon& addon)
     return addonData;
 }
 
-void SceneViewPage::StartSimulation()
+bool SceneViewPage::IsSimulationActive() const
 {
-    simulationBase_ = PackedSceneData::FromScene(scene_);
-    selection_.Save(selectionBase_);
+    return currentSimulationAction_ && !currentSimulationAction_->IsComplete();
 }
 
-void SceneViewPage::RewindSimulation()
+void SceneViewPage::StartSimulation(SceneViewTab* owner)
 {
-    scene_->SetUpdateEnabled(false);
-    if (simulationBase_)
-    {
-        simulationBase_->ToScene(scene_);
-        selection_.Load(scene_, selectionBase_);
-        simulationBase_ = ea::nullopt;
-        selectionBase_.Clear();
-    }
+    currentSimulationAction_ = owner->PushAction<SimulateSceneAction>(this);
 }
 
 void SceneViewPage::BeginSelection()
@@ -243,7 +235,7 @@ void SceneViewTab::SetupPluginContext()
 void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 {
     const bool hasSelection = !selection.GetNodes().empty() || !selection.GetComponents().empty();
-    const bool hasClipboard = clipboard_.HasData();
+    const bool hasClipboard = clipboard_.HasNodesOrComponents();
 
     if (ui::MenuItem("Cut", GetHotkeyLabel(Hotkey_Cut).c_str(), false, hasSelection))
         CutSelection(selection);
@@ -285,11 +277,8 @@ void SceneViewTab::ResumeSimulation()
     if (!activePage)
         return;
 
-    if (!activePage->simulationBase_)
-    {
-        PushAction<EmptyEditorAction>();
-        activePage->StartSimulation();
-    }
+    if (!activePage->IsSimulationActive())
+        activePage->StartSimulation(this);
     activePage->scene_->SetUpdateEnabled(true);
 }
 
@@ -339,9 +328,9 @@ void SceneViewTab::CopySelection(SceneSelection& selection)
     const auto& selectedComponents = selection.GetComponents();
 
     if (!selectedNodes.empty())
-        clipboard_ = PackedSceneData::FromNodes(selectedNodes.begin(), selectedNodes.end());
+        clipboard_ = PackedNodeComponentData::FromNodes(selectedNodes.begin(), selectedNodes.end());
     else if (!selectedComponents.empty())
-        clipboard_ = PackedSceneData::FromComponents(selectedComponents.begin(), selectedComponents.end());
+        clipboard_ = PackedNodeComponentData::FromComponents(selectedComponents.begin(), selectedComponents.end());
 }
 
 void SceneViewTab::PasteNextToSelection(Scene* scene, SceneSelection& selection)
@@ -609,7 +598,7 @@ void SceneViewTab::RenderToolbar()
     SceneViewPage* activePage = GetActivePage();
 
     {
-        const bool canRewind = activePage && activePage->simulationBase_;
+        const bool canRewind = activePage && activePage->IsSimulationActive();
         ui::BeginDisabled(!canRewind);
         if (Widgets::ToolbarButton(ICON_FA_BACKWARD_FAST, "Rewind Simulation"))
             RewindSimulation();
@@ -617,7 +606,7 @@ void SceneViewTab::RenderToolbar()
     }
 
     {
-        const bool isStarted = activePage && activePage->simulationBase_;
+        const bool isStarted = activePage && activePage->IsSimulationActive();
         const bool isUpdating = activePage && activePage->scene_->IsUpdateEnabled();
         const char* label = isUpdating ? ICON_FA_PAUSE : ICON_FA_PLAY;
         const char* tooltip = isUpdating ? "Pause Simulation" : (isStarted ? "Resume Simulation" : "Start Simulation");
@@ -662,11 +651,10 @@ ea::optional<EditorActionFrame> SceneViewTab::PushAction(SharedPtr<EditorAction>
         return ea::nullopt;
 
     // Ignore all actions while simulating
-    if (activePage->simulationBase_)
+    if (activePage->IsSimulationActive())
         return ea::nullopt;
 
-    const auto wrappedAction = MakeShared<RewindSceneActionWrapper>(action, activePage);
-    return BaseClassName::PushAction(wrappedAction);
+    return BaseClassName::PushAction(action);
 }
 
 void SceneViewTab::RenderContextMenuItems()
@@ -679,11 +667,11 @@ void SceneViewTab::RenderContextMenuItems()
 
         const char* rewindTitle = ICON_FA_BACKWARD_FAST " Rewind Simulation";
         const char* rewindShortcut = GetHotkeyLabel(Hotkey_RewindSimulation).c_str();
-        if (ui::MenuItem(rewindTitle, rewindShortcut, false, !!activePage->simulationBase_))
+        if (ui::MenuItem(rewindTitle, rewindShortcut, false, activePage->IsSimulationActive()))
             RewindSimulation();
 
         const char* pauseTitle = !activePage->scene_->IsUpdateEnabled()
-            ? (activePage->simulationBase_ ? ICON_FA_PLAY " Resume Simulation" : ICON_FA_PLAY " Start Simulation")
+            ? (activePage->IsSimulationActive() ? ICON_FA_PLAY " Resume Simulation" : ICON_FA_PLAY " Start Simulation")
             : ICON_FA_PAUSE " Pause Simulation";
         if (ui::MenuItem(pauseTitle, GetHotkeyLabel(Hotkey_TogglePaused).c_str()))
             ToggleSimulationPaused();
@@ -912,33 +900,46 @@ void SceneViewTab::LoadPageConfig(SceneViewPage& page) const
     jsonFile->LoadObject("Scene", page, this);
 }
 
-RewindSceneActionWrapper::RewindSceneActionWrapper(SharedPtr<EditorAction> action, SceneViewPage* page)
-    : BaseEditorActionWrapper(action)
-    , page_(page)
+SimulateSceneAction::SimulateSceneAction(SceneViewPage* page)
+    : page_(page)
 {
-
+    oldData_ = PackedSceneData::FromScene(page->scene_);
+    page->selection_.Save(oldSelection_);
 }
 
-bool RewindSceneActionWrapper::CanRedo() const
+void SimulateSceneAction::Complete(bool force)
 {
-    return page_ && BaseEditorActionWrapper::CanRedo();
+    if (!force)
+        return;
+
+    isComplete_ = true;
+    if (page_)
+    {
+        newData_ = PackedSceneData::FromScene(page_->scene_);
+        page_->selection_.Save(newSelection_);
+    }
 }
 
-void RewindSceneActionWrapper::Redo() const
+bool SimulateSceneAction::CanUndoRedo() const
 {
-    page_->RewindSimulation();
-    BaseEditorActionWrapper::Redo();
+    return page_ != nullptr && newData_.HasSceneData();
 }
 
-bool RewindSceneActionWrapper::CanUndo() const
+void SimulateSceneAction::SetState(const PackedSceneData& data, const PackedSceneSelection& selection) const
 {
-    return page_ && BaseEditorActionWrapper::CanUndo();
+    page_->scene_->SetUpdateEnabled(false);
+    data.ToScene(page_->scene_);
+    page_->selection_.Load(page_->scene_, selection);
 }
 
-void RewindSceneActionWrapper::Undo() const
+void SimulateSceneAction::Redo() const
 {
-    page_->RewindSimulation();
-    BaseEditorActionWrapper::Undo();
+    SetState(newData_, newSelection_);
+}
+
+void SimulateSceneAction::Undo() const
+{
+    SetState(oldData_, oldSelection_);
 }
 
 ChangeSceneSelectionAction::ChangeSceneSelectionAction(SceneViewPage* page,

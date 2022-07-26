@@ -80,22 +80,16 @@ private:
 };
 
 /// Packed nodes and components.
-class URHO3D_API PackedSceneData
+class URHO3D_API PackedNodeComponentData
 {
 public:
-    PackedSceneData() = default;
-
-    /// Load into scene.
-    void ToScene(Scene* scene) const;
-
-    /// Pack whole scene.
-    static PackedSceneData FromScene(Scene* scene);
+    PackedNodeComponentData() = default;
 
     /// Pack nodes.
     template <class Iter>
-    static PackedSceneData FromNodes(Iter begin, Iter end)
+    static PackedNodeComponentData FromNodes(Iter begin, Iter end)
     {
-        PackedSceneData result;
+        PackedNodeComponentData result;
         for (Node* node : MakeIteratorRange(begin, end))
         {
             if (node)
@@ -106,9 +100,9 @@ public:
 
     /// Pack components.
     template <class Iter>
-    static PackedSceneData FromComponents(Iter begin, Iter end)
+    static PackedNodeComponentData FromComponents(Iter begin, Iter end)
     {
-        PackedSceneData result;
+        PackedNodeComponentData result;
         for (Component* component : MakeIteratorRange(begin, end))
         {
             if (component)
@@ -123,12 +117,33 @@ public:
     const ea::vector<PackedNodeData>& GetNodes() const { return nodes_; }
     bool HasComponents() const { return !components_.empty(); }
     const ea::vector<PackedComponentData>& GetComponents() const { return components_; }
-    bool HasData() const { return HasNodes() || HasComponents(); }
+    bool HasNodesOrComponents() const { return HasNodes() || HasComponents(); }
     /// @}
 
 private:
     ea::vector<PackedNodeData> nodes_;
     ea::vector<PackedComponentData> components_;
+};
+
+/// Packed Scene as whole.
+class URHO3D_API PackedSceneData
+{
+public:
+    PackedSceneData() = default;
+
+    /// Load into scene.
+    void ToScene(Scene* scene) const;
+
+    /// Pack whole scene.
+    static PackedSceneData FromScene(Scene* scene);
+
+    /// Return contents
+    /// @{
+    const VectorBuffer& GetSceneData() const { return sceneData_; }
+    bool HasSceneData() const { return sceneData_.GetSize() > 0; }
+    /// @}
+
+private:
     VectorBuffer sceneData_;
 };
 

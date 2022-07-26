@@ -9,5 +9,5 @@
 /Preview.png
 
 # Ignore internal files
-*.xml.cfg
+*.user.json
 

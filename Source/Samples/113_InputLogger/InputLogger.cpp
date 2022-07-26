@@ -91,6 +91,7 @@ void InputLogger::Start(bool isMain)
     renderer->SetViewport(0, viewport_);
     input->SetMouseVisible(true);
     input->SetMouseMode(MM_FREE);
+    //input->SetMouseMode(MM_WRAP);
 
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { Update(); });
 

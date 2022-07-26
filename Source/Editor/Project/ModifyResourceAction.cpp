@@ -50,7 +50,7 @@ void ModifyResourceAction::AddResource(Resource* resource)
     oldData_[resource->GetName()] = ea::move(oldData);
 }
 
-void ModifyResourceAction::Complete()
+void ModifyResourceAction::Complete(bool force)
 {
     auto cache = context_ ? context_->GetSubsystem<ResourceCache>() : nullptr;
     for (const auto& [resourceName, oldData] : oldData_)
