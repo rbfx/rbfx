@@ -106,6 +106,22 @@ void UpdateQuaternionAngles(ImGuiID id, const Quaternion& quaternion, const Vect
     info.angles_ = angles;
 }
 
+unsigned GetWrappedIndex(unsigned index, unsigned numLabels)
+{
+    if (index == 0)
+        return 0;
+
+    const unsigned wrappedIndex = (index - 1) % (numLabels - 1);
+    return wrappedIndex + 1;
+}
+
+const char* StripSpaces(const char* str)
+{
+    while (*str && *str == ' ')
+        str++;
+    return str;
+}
+
 }
 
 float GetSmallButtonSize()
@@ -287,6 +303,7 @@ bool EditResourceRefList(StringHash& type, StringVector& names, const StringVect
     unsigned index = 0;
     for (ea::string& name : names)
     {
+        const IdScopeGuard guardElement{index};
         if (resizable)
         {
             if (ui::Button(ICON_FA_TRASH_CAN))
@@ -313,6 +330,133 @@ bool EditResourceRefList(StringHash& type, StringVector& names, const StringVect
         if (ui::Button(ICON_FA_SQUARE_PLUS " Add item"))
         {
             names.emplace_back();
+            modified = true;
+        }
+
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Add item");
+    }
+
+    return modified;
+}
+
+bool EditVariantType(VariantType& value, const char* button)
+{
+    static const ea::vector<VariantType> allowedTypes{
+        VAR_INT,
+        VAR_BOOL,
+        VAR_FLOAT,
+        VAR_VECTOR2,
+        VAR_VECTOR3,
+        VAR_VECTOR4,
+        VAR_QUATERNION,
+        VAR_COLOR,
+        VAR_STRING,
+        VAR_BUFFER,
+        VAR_RESOURCEREF,
+        VAR_RESOURCEREFLIST,
+        VAR_VARIANTVECTOR,
+        VAR_VARIANTMAP,
+        VAR_INTRECT,
+        VAR_INTVECTOR2,
+        VAR_MATRIX3,
+        VAR_MATRIX3X4,
+        VAR_MATRIX4,
+        VAR_DOUBLE,
+        VAR_STRINGVECTOR,
+        VAR_RECT,
+        VAR_INTVECTOR3,
+        VAR_INT64,
+        VAR_VARIANTCURVE
+    };
+
+    bool modified = false;
+
+    if (ui::Button(button ? button : ICON_FA_LIST))
+        ui::OpenPopup("##SelectType");
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Select variant type");
+
+    if (ui::BeginPopup("##SelectType"))
+    {
+        for (const VariantType allowedType : allowedTypes)
+        {
+            if (ui::Selectable(Variant::GetTypeName(allowedType).c_str(), value == allowedType))
+            {
+                value = allowedType;
+                modified = true;
+            }
+        }
+        ui::EndPopup();
+    }
+
+    return modified;
+}
+
+bool EditVariantValue(Variant& value)
+{
+    static const auto options = EditVariantOptions{}.AllowResize().AllowTypeChange();
+    return EditVariant(value, options);
+}
+
+bool EditVariantVector(VariantVector& value, bool resizable, bool dynamicTypes, const StringVector* elementNames)
+{
+    bool modified = false;
+    ea::optional<unsigned> pendingRemove;
+
+    unsigned index = 0;
+    for (Variant& element : value)
+    {
+        const IdScopeGuard guardElement{index};
+
+        if (elementNames && elementNames->size() > 1)
+        {
+            const unsigned wrappedIndex = GetWrappedIndex(index, elementNames->size());
+            if (wrappedIndex == 1)
+                ui::Separator();
+            Widgets::ItemLabel(StripSpaces((*elementNames)[wrappedIndex].c_str()));
+        }
+
+        if (resizable)
+        {
+            if (ui::Button(ICON_FA_TRASH_CAN))
+                pendingRemove = index;
+            ui::SameLine();
+            if (ui::IsItemHovered())
+                ui::SetTooltip("Remove item");
+        }
+
+        VariantType elementType = element.GetType();
+        if (dynamicTypes)
+        {
+            if (EditVariantType(elementType))
+            {
+                element = Variant{elementType};
+                modified = true;
+            }
+            ui::SameLine();
+        }
+
+        if (EditVariantValue(element))
+            modified = true;
+
+        ++index;
+    }
+
+    if (pendingRemove && *pendingRemove < value.size())
+    {
+        value.erase_at(*pendingRemove);
+        modified = true;
+    }
+
+    if (resizable)
+    {
+        const IdScopeGuard guardAddItem{index};
+
+        VariantType newElementType = VAR_NONE;
+        if (EditVariantType(newElementType, ICON_FA_SQUARE_PLUS " Add item"))
+        {
+            value.push_back(Variant{newElementType});
             modified = true;
         }
 
@@ -503,6 +647,24 @@ bool EditVariantResourceRefList(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantVector(Variant& var, const EditVariantOptions& options)
+{
+    if (!ui::CollapsingHeader("##Elements"))
+        return false;
+
+    bool modified = false;
+    VariantVector value = var.GetVariantVector();
+    const unsigned effectiveLines = value.size() + (options.allowResize_ ? 1 : 0);
+    ui::Indent();
+    if (EditVariantVector(value, options.allowResize_, options.allowTypeChange_, options.sizedStructVectorElements_))
+    {
+        var = value;
+        modified = true;
+    }
+    ui::Unindent();
+    return modified;
+}
+
 bool EditVariant(Variant& var, const EditVariantOptions& options)
 {
     // TODO(editor): Implement all types
@@ -559,7 +721,9 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     case VAR_RESOURCEREFLIST:
         return EditVariantResourceRefList(var, options);
 
-    // case VAR_VARIANTVECTOR:
+    case VAR_VARIANTVECTOR:
+        return EditVariantVector(var, options);
+
     // case VAR_VARIANTMAP:
     // case VAR_INTRECT:
     // case VAR_INTVECTOR2:
