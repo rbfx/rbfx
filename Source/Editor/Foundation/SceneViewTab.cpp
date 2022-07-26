@@ -306,14 +306,12 @@ void SceneViewTab::ToggleSimulationPaused()
 void SceneViewTab::RewindSimulation()
 {
     SceneViewPage* activePage = GetActivePage();
-    if (!activePage)
+    if (!activePage || !activePage->IsSimulationActive())
         return;
 
-    // This is a little hack used to rewind consistently both via menu and via Undo action
-    auto project = GetProject();
-    UndoManager* undoManager = project->GetUndoManager();
+    // Simulation is stored as EditorAction, so we can just undo it
+    UndoManager* undoManager = GetUndoManager();
     undoManager->Undo();
-    //activePage->RewindSimulation();
 }
 
 void SceneViewTab::CutSelection(SceneSelection& selection)
@@ -600,7 +598,7 @@ void SceneViewTab::RenderToolbar()
     {
         const bool canRewind = activePage && activePage->IsSimulationActive();
         ui::BeginDisabled(!canRewind);
-        if (Widgets::ToolbarButton(ICON_FA_BACKWARD_FAST, "Rewind Simulation"))
+        if (Widgets::ToolbarButton(ICON_FA_CIRCLE_CHEVRON_LEFT, "Rewind Scene Simulation"))
             RewindSimulation();
         ui::EndDisabled();
     }
@@ -608,8 +606,8 @@ void SceneViewTab::RenderToolbar()
     {
         const bool isStarted = activePage && activePage->IsSimulationActive();
         const bool isUpdating = activePage && activePage->scene_->IsUpdateEnabled();
-        const char* label = isUpdating ? ICON_FA_PAUSE : ICON_FA_PLAY;
-        const char* tooltip = isUpdating ? "Pause Simulation" : (isStarted ? "Resume Simulation" : "Start Simulation");
+        const char* label = isUpdating ? ICON_FA_CIRCLE_PAUSE : ICON_FA_CIRCLE_PLAY;
+        const char* tooltip = isUpdating ? "Pause Scene Simulation" : (isStarted ? "Resume Scene Simulation" : "Start Scene Simulation");
         ui::BeginDisabled(!activePage);
         if (Widgets::ToolbarButton(label, tooltip))
             ToggleSimulationPaused();
@@ -665,14 +663,14 @@ void SceneViewTab::RenderContextMenuItems()
     {
         contextMenuSeparator_.Reset();
 
-        const char* rewindTitle = ICON_FA_BACKWARD_FAST " Rewind Simulation";
+        const char* rewindTitle = ICON_FA_CIRCLE_CHEVRON_LEFT " Rewind Scene Simulation";
         const char* rewindShortcut = GetHotkeyLabel(Hotkey_RewindSimulation).c_str();
         if (ui::MenuItem(rewindTitle, rewindShortcut, false, activePage->IsSimulationActive()))
             RewindSimulation();
 
         const char* pauseTitle = !activePage->scene_->IsUpdateEnabled()
-            ? (activePage->IsSimulationActive() ? ICON_FA_PLAY " Resume Simulation" : ICON_FA_PLAY " Start Simulation")
-            : ICON_FA_PAUSE " Pause Simulation";
+            ? (activePage->IsSimulationActive() ? ICON_FA_CIRCLE_PLAY " Resume Scene Simulation" : ICON_FA_CIRCLE_PLAY " Start Scene Simulation")
+            : ICON_FA_CIRCLE_PAUSE " Pause Scene Simulation";
         if (ui::MenuItem(pauseTitle, GetHotkeyLabel(Hotkey_TogglePaused).c_str()))
             ToggleSimulationPaused();
     }

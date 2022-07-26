@@ -43,15 +43,21 @@ SerializableInspectorWidget::~SerializableInspectorWidget()
 {
 }
 
+void SerializableInspectorWidget::PruneObjects()
+{
+    ea::erase_if(objects_, [](const WeakPtr<Serializable>& obj) { return !obj; });
+}
+
 void SerializableInspectorWidget::RenderTitle()
 {
     ui::Text("%s", GetTitle().c_str());
 }
 
-ea::string SerializableInspectorWidget::GetTitle() const
+ea::string SerializableInspectorWidget::GetTitle()
 {
+    PruneObjects();
     if (objects_.empty())
-        return EMPTY_STRING;
+        return "Nothing selected";
 
     ea::string extras;
     for (const Serializable* object : objects_)
@@ -91,7 +97,7 @@ ea::string SerializableInspectorWidget::GetTitle() const
 
 void SerializableInspectorWidget::RenderContent()
 {
-    ea::erase_if(objects_, [](const WeakPtr<Serializable>& obj) { return !obj; });
+    PruneObjects();
     if (objects_.empty())
         return;
 
