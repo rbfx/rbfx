@@ -30,7 +30,7 @@
 #define RMLUI_CORE_FONTENGINEDEFAULT_FONTPROVIDER_H
 
 #include "../../../Include/RmlUi/Core/Types.h"
-#include "../../../Include/RmlUi/Core/ComputedValues.h"
+#include "../../../Include/RmlUi/Core/StyleTypes.h"
 #include "FontTypes.h"
 
 namespace Rml {
@@ -61,7 +61,7 @@ public:
 	static FontFaceHandleDefault* GetFontFaceHandle(const String& family, Style::FontStyle style, Style::FontWeight weight, int size);
 
 	/// Adds a new font face to the database. The face's family, style and weight will be determined from the face itself.
-	static bool LoadFontFace(const String& file_name, bool fallback_face);
+	static bool LoadFontFace(const String& file_name, bool fallback_face, Style::FontWeight weight = Style::FontWeight::Auto);
 
 	/// Adds a new font face from memory.
 	static bool LoadFontFace(const byte* data, int data_size, const String& font_family, Style::FontStyle style, Style::FontWeight weight, bool fallback_face);
@@ -72,16 +72,20 @@ public:
 	/// Return a font face handle with the given index, at the given font size.
 	static FontFaceHandleDefault* GetFallbackFontFace(int index, int font_size);
 
+	/// Releases resources owned by sized font faces, including their textures and rendered glyphs.
+	static void ReleaseFontResources();
+
 private:
 	FontProvider();
 	~FontProvider();
 
 	static FontProvider& Get();
 
-	bool LoadFontFace(const byte* data, int data_size, bool fallback_face, bool local_data, const String& source,
-		String font_family = {}, Style::FontStyle style = Style::FontStyle::Normal, Style::FontWeight weight = Style::FontWeight::Normal);
+	bool LoadFontFace(const byte* data, int data_size, bool fallback_face, UniquePtr<byte[]> face_memory, const String& source,
+		String font_family, Style::FontStyle style, Style::FontWeight weight);
 
-	bool AddFace(FontFaceHandleFreetype face, const String& family, Style::FontStyle style, Style::FontWeight weight, bool fallback_face, bool release_stream);
+	bool AddFace(FontFaceHandleFreetype face, const String& family, Style::FontStyle style, Style::FontWeight weight, bool fallback_face,
+		UniquePtr<byte[]> face_memory);
 
 	using FontFaceList = Vector<FontFace*>;
 	using FontFamilyMap = UnorderedMap< String, UniquePtr<FontFamily>>;
