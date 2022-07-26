@@ -149,7 +149,15 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
     const ColorScopeGuard guardBackgroundColor{ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
     Widgets::EditVariantOptions options;
-    if (!info.enumNames_.empty())
+
+    if (info.type_ == VAR_VARIANTVECTOR)
+    {
+        if (const StringVector& structElements = info.GetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS).GetStringVector(); !structElements.empty())
+            options = options.SizedStructVector(structElements);
+        else
+            options = options.AllowResize().AllowTypeChange();
+    }
+    else if (!info.enumNames_.empty())
         options = options.Enum(info.enumNames_);
 
     if (Widgets::EditVariant(value, options))

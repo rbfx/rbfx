@@ -65,17 +65,23 @@ struct EditVariantOptions
     bool asColor_{};
     /// Whether to allow resize for dynamically sized containers.
     bool allowResize_{};
+    /// Whether to allow element type changes for containers.
+    bool allowTypeChange_{};
     /// Enum values used to convert integer to string.
     const StringVector* intToString_{};
     /// Allowed resource types.
     const StringVector* resourceTypes_{};
+    /// Structure array element names.
+    const StringVector* sizedStructVectorElements_{};
 
     EditVariantOptions& AsColor() { asColor_ = true; return *this; }
     EditVariantOptions& Range(double min, double max) { min_ = min; max_ = max; return *this; }
     EditVariantOptions& Step(double step) { step_ = step; return *this; }
     EditVariantOptions& Enum(const StringVector& values) { intToString_ = &values; return *this; }
     EditVariantOptions& ResourceTypes(const StringVector& types) { resourceTypes_ = &types; return *this; }
+    EditVariantOptions& SizedStructVector(const StringVector& names) { sizedStructVectorElements_ = &names; return *this; }
     EditVariantOptions& AllowResize() { allowResize_ = true; return *this; }
+    EditVariantOptions& AllowTypeChange() { allowTypeChange_ = true; return *this; }
 };
 
 /// Render reference to resource with optional type constraints. If allowed types are not specified, only current type is allowed.
@@ -83,6 +89,15 @@ URHO3D_API bool EditResourceRef(StringHash& type, ea::string& name, const String
 
 /// Render vector of resource references with optional type constraints. If allowed types are not specified, only current type is allowed.
 URHO3D_API bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes, bool resizable);
+
+/// Render variant type selector.
+URHO3D_API bool EditVariantType(VariantType& value, const char* button = nullptr);
+
+/// Render variant value in most flexible way w/o type selector.
+URHO3D_API bool EditVariantValue(Variant& value);
+
+/// Render variant vector with optional type and size constraints.
+URHO3D_API bool EditVariantVector(VariantVector& value, bool resizable, bool dynamicTypes, const StringVector* elementNames = nullptr);
 
 /// Render arbitrary variant value editor.
 URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});
