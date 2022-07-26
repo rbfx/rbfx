@@ -185,15 +185,24 @@ void ItemLabel(ea::string_view title, const ea::optional<Color>& color, bool isL
         ui::SetCursorScreenPos(lineStart);
 }
 
-Color GetItemLabelColor(bool canEdit, bool defaultValue)
+Color GetItemLabelColor(bool isUndefined, bool defaultValue)
 {
     const auto& style = ui::GetStyle();
-    if (!canEdit)
+    if (isUndefined)
         return ToColor(style.Colors[ImGuiCol_TextDisabled]);
     else if (defaultValue)
         return {0.85f, 0.85f, 0.85f, 1.0f};
     else
         return {1.0f, 1.0f, 0.75f, 1.0f};
+}
+
+Color GetItemBackgroundColor(bool isUndefined)
+{
+    const auto& style = ui::GetStyle();
+    if (isUndefined)
+        return {0.09f, 0.09f, 0.09f, 1.0f};
+    else
+        return ToColor(style.Colors[ImGuiCol_FrameBg]);
 }
 
 bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* allowedTypes)
