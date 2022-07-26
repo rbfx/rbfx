@@ -107,6 +107,23 @@ public:
         }
     }
 
+    ColorScopeGuard(ImGuiCol id, const Color& color, bool enabled = true)
+        : numColors_(enabled ? 1 : 0)
+    {
+        if (enabled)
+            ui::PushStyleColor(id, ToImGui(color));
+    }
+
+    explicit ColorScopeGuard(std::initializer_list<ea::pair<ImGuiCol, Color>> colors, bool enabled = true)
+        : numColors_(enabled ? colors.size() : 0)
+    {
+        if (enabled)
+        {
+            for (const auto& [id, color] : colors)
+                ui::PushStyleColor(id, ToImGui(color));
+        }
+    }
+
     ~ColorScopeGuard()
     {
         ui::PopStyleColor(numColors_);

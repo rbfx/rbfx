@@ -43,7 +43,9 @@ URHO3D_API void ToolbarSeparator();
 /// Render a label for next item. Label may be on the left or on the right, depending on flags.
 URHO3D_API void ItemLabel(ea::string_view title, const ea::optional<Color>& color = ea::nullopt, bool isLeft = true);
 /// Return recommended color for item label.
-URHO3D_API Color GetItemLabelColor(bool canEdit, bool defaultValue);
+URHO3D_API Color GetItemLabelColor(bool isUndefined, bool defaultValue);
+/// Return recommended color for item background.
+URHO3D_API Color GetItemBackgroundColor(bool isUndefined);
 
 /// Render Texture2D as ImGui item.
 URHO3D_API void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tintCol = ImVec4(1, 1, 1, 1), const ImVec4& borderCol = ImVec4(0, 0, 0, 0));

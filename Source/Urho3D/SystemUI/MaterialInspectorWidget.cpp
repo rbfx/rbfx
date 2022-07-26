@@ -306,21 +306,25 @@ void MaterialInspectorWidget::RenderTechniques()
 
     const auto& currentTechniqueEntries = materials_[0]->GetTechniques();
     if (currentTechniqueEntries != sortedTechniqueEntries_)
+    {
         techniqueEntries_ = currentTechniqueEntries;
+        sortedTechniqueEntries_ = currentTechniqueEntries;
+        ea::sort(sortedTechniqueEntries_.begin(), sortedTechniqueEntries_.end());
+    }
 
-    const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
-        [&](Material* material) { return sortedTechniqueEntries_ == material->GetTechniques(); });
+    const bool isUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
+        [&](Material* material) { return sortedTechniqueEntries_ != material->GetTechniques(); });
 
-    const char* title = canEdit ? "Techniques" : "Techniques (different for selected materials)";
+    const char* title = !isUndefined ? "Techniques" : "Techniques (different for selected materials)";
     if (!ui::CollapsingHeader(title, ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
-    ui::BeginDisabled(!canEdit);
+    ui::BeginDisabled(isUndefined);
     if (RenderTechniqueEntries())
         pendingSetTechniques_ = true;
     ui::EndDisabled();
 
-    if (!canEdit)
+    if (!!isUndefined)
     {
         ui::SameLine();
         if (ui::Button(ICON_FA_CODE_MERGE))
@@ -506,28 +510,17 @@ void MaterialInspectorWidget::RenderProperty(const PropertyDesc& desc)
     const IdScopeGuard guard(desc.name_.c_str());
 
     Variant value = desc.getter_(materials_[0]);
-    const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
-        [&](const Material* material) { return value == desc.getter_(material); });
+    const bool isUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return value != desc.getter_(material); });
 
-    Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(canEdit, value == desc.defaultValue_));
+    Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(isUndefined, value == desc.defaultValue_));
     if (!desc.hint_.empty() && ui::IsItemHovered())
         ui::SetTooltip("%s", desc.hint_.c_str());
 
-    if (!canEdit)
-    {
-        if (ui::Button(ICON_FA_CODE_MERGE))
-            pendingSetProperties_.emplace_back(&desc, value);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("Override this property for all materials and enable editing");
-        ui::SameLine();
-    }
-
-    ui::BeginDisabled(!canEdit);
+    const ColorScopeGuard guardBackgroundColor{ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
     if (Widgets::EditVariant(value, desc.options_))
         pendingSetProperties_.emplace_back(&desc, value);
-
-    ui::EndDisabled();
 }
 
 void MaterialInspectorWidget::RenderTextures()
@@ -550,10 +543,10 @@ void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
     auto cache = GetSubsystem<ResourceCache>();
 
     Texture* texture = materials_[0]->GetTexture(desc.unit_);
-    const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
-        [&](const Material* material) { return material->GetTexture(desc.unit_) == texture; });
+    const bool isUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return material->GetTexture(desc.unit_) != texture; });
 
-    Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(canEdit, texture == nullptr));
+    Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(isUndefined, texture == nullptr));
     if (ui::IsItemHovered())
         ui::SetTooltip(desc.hint_.c_str());
 
@@ -563,16 +556,7 @@ void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
         ui::SetTooltip("Remove texture from this unit");
     ui::SameLine();
 
-    if (!canEdit)
-    {
-        if (ui::Button(ICON_FA_CODE_MERGE))
-            pendingSetTextures_.emplace_back(desc.unit_, texture);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("Override this unit for all materials and enable editing");
-        ui::SameLine();
-    }
-
-    ui::BeginDisabled(!canEdit);
+    const ColorScopeGuard guardBackgroundColor{ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
     static const StringVector allowedTextureTypes{
         Texture2D::GetTypeNameStatic(),
@@ -590,8 +574,6 @@ void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
         else
             pendingSetTextures_.emplace_back(desc.unit_, nullptr);
     }
-
-    ui::EndDisabled();
 }
 
 void MaterialInspectorWidget::RenderShaderParameters()
@@ -626,11 +608,16 @@ void MaterialInspectorWidget::RenderShaderParameter(const ea::string& name)
 {
     const IdScopeGuard guard(name.c_str());
 
-    Variant value = materials_[0]->GetShaderParameter(name);
-    const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
-        [&](const Material* material) { return material->GetShaderParameter(name) == value; });
+    const auto materialIter = ea::find_if(materials_.begin(), materials_.end(),
+        [&](const Material* material) { return !material->GetShaderParameter(name).IsEmpty(); });
+    if (materialIter == materials_.end())
+        return;
 
-    Widgets::ItemLabel(name, Widgets::GetItemLabelColor(canEdit, IsDefaultValue(context_, name, value)));
+    Variant value = (*materialIter)->GetShaderParameter(name);
+    const bool isUndefined = ea::any_of(materials_.begin(), materials_.end(),
+        [&](const Material* material) { return material->GetShaderParameter(name) != value; });
+
+    Widgets::ItemLabel(name, Widgets::GetItemLabelColor(isUndefined, IsDefaultValue(context_, name, value)));
 
     if (ui::Button(ICON_FA_TRASH_CAN))
         pendingSetShaderParameters_.emplace_back(name, Variant::EMPTY);
@@ -638,41 +625,28 @@ void MaterialInspectorWidget::RenderShaderParameter(const ea::string& name)
         ui::SetTooltip("Remove this parameter");
     ui::SameLine();
 
-    if (!canEdit)
-    {
-        if (ui::Button(ICON_FA_CODE_MERGE))
-            pendingSetShaderParameters_.emplace_back(name, value);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("Override this parameter for all materials and enable editing");
-        ui::SameLine();
-    }
-    else
-    {
-        if (ui::Button(ICON_FA_LIST))
-            ui::OpenPopup("##ShaderParameterPopup");
-        if (ui::IsItemHovered())
-            ui::SetTooltip("Shader parameter type which should strictly match the type in shader");
+    if (ui::Button(ICON_FA_LIST))
+        ui::OpenPopup("##ShaderParameterPopup");
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Shader parameter type which should strictly match the type in shader");
 
-        if (ui::BeginPopup("##ShaderParameterPopup"))
+    if (ui::BeginPopup("##ShaderParameterPopup"))
+    {
+        for (const auto& [label, defaultValue] : shaderParameterTypes)
         {
-            for (const auto& [label, defaultValue] : shaderParameterTypes)
-            {
-                if (ui::MenuItem(label.c_str()))
-                    pendingSetShaderParameters_.emplace_back(name, defaultValue);
-            }
-            ui::EndPopup();
+            if (ui::MenuItem(label.c_str()))
+                pendingSetShaderParameters_.emplace_back(name, defaultValue);
         }
-        ui::SameLine();
+        ui::EndPopup();
     }
+    ui::SameLine();
 
-    ui::BeginDisabled(!canEdit);
+    const ColorScopeGuard guardBackgroundColor{ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
     Widgets::EditVariantOptions options;
     options.asColor_ = name.contains("Color", false);
     if (Widgets::EditVariant(value, options))
         pendingSetShaderParameters_.emplace_back(name, value);
-
-    ui::EndDisabled();
 }
 
 void MaterialInspectorWidget::RenderNewShaderParameter()

@@ -140,22 +140,13 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
     info.accessor_->Get(objects_[0], value);
 
     Variant tempValue;
-    const bool canEdit = ea::all_of(objects_.begin() + 1, objects_.end(),
-        [&](const WeakPtr<Serializable>& obj) { info.accessor_->Get(obj, tempValue); return tempValue == value; });
+    const bool isUndefined = ea::any_of(objects_.begin() + 1, objects_.end(),
+        [&](const WeakPtr<Serializable>& obj) { info.accessor_->Get(obj, tempValue); return tempValue != value; });
     const bool isDefaultValue = value == info.defaultValue_;
 
-    Widgets::ItemLabel(info.name_.c_str(), Widgets::GetItemLabelColor(canEdit, isDefaultValue));
+    Widgets::ItemLabel(info.name_.c_str(), Widgets::GetItemLabelColor(isUndefined, isDefaultValue));
 
-    if (!canEdit)
-    {
-        if (ui::Button(ICON_FA_CODE_MERGE))
-            pendingSetAttributes_.emplace_back(&info, value);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("Override this attribute and enable editing");
-        ui::SameLine();
-    }
-
-    ui::BeginDisabled(!canEdit);
+    const ColorScopeGuard guardBackgroundColor{ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
     Widgets::EditVariantOptions options;
     if (!info.enumNames_.empty())
@@ -163,8 +154,6 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 
     if (Widgets::EditVariant(value, options))
         pendingSetAttributes_.emplace_back(&info, value);
-
-    ui::EndDisabled();
 }
 
 }
