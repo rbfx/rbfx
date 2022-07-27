@@ -136,6 +136,12 @@ void SerializableInspectorWidget::RenderContent()
 
 void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 {
+    if (info.GetMetadata(AttributeMetadata::P_IS_ACTION).GetBool())
+    {
+        RenderAction(info);
+        return;
+    };
+
     Variant value;
     info.accessor_->Get(objects_[0], value);
 
@@ -164,6 +170,21 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 
     if (Widgets::EditVariant(value, options))
         pendingSetAttributes_.emplace_back(&info, value);
+}
+
+void SerializableInspectorWidget::RenderAction(const AttributeInfo& info)
+{
+    Serializable* object = objects_.front();
+    if (ui::Button(info.name_.c_str()))
+    {
+        object->OnSetAttribute(info, true);
+    }
+
+    ui::SameLine();
+
+    Variant label;
+    object->OnGetAttribute(info, label);
+    ui::Text("%s", label.GetString().c_str());
 }
 
 }

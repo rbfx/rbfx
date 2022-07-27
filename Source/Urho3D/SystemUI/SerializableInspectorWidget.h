@@ -51,6 +51,7 @@ public:
 private:
     void PruneObjects();
     void RenderAttribute(const AttributeInfo& info);
+    void RenderAction(const AttributeInfo& info);
 
     SerializableVector objects_;
     ea::vector<ea::pair<const AttributeInfo*, Variant>> pendingSetAttributes_;
