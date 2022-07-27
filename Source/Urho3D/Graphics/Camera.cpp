@@ -445,22 +445,22 @@ Vector3 Camera::ScreenToWorldPoint(const Vector3& screenPos) const
     return ray.origin_ + ray.direction_ * rayDistance;
 }
 
-Matrix4 Camera::GetProjection() const
+Matrix4 Camera::GetProjection(bool ignoreFlip) const
 {
     if (cachedProjection_.IsInvalidated())
         UpdateProjection();
 
     const Matrix4& projection = cachedProjection_.Get().projection_;
-    return flipVertical_ ? flipMatrix * projection : projection;
+    return (flipVertical_ && !ignoreFlip) ? flipMatrix * projection : projection;
 }
 
-Matrix4 Camera::GetGPUProjection() const
+Matrix4 Camera::GetGPUProjection(bool ignoreFlip) const
 {
 #ifndef URHO3D_OPENGL
-    return GetProjection(); // Already matches API-specific format
+    return GetProjection(ignoreFlip); // Already matches API-specific format
 #else
     // See formulation for depth range conversion at http://www.ogre3d.org/forums/viewtopic.php?f=4&t=13357
-    Matrix4 ret = GetProjection();
+    Matrix4 ret = GetProjection(ignoreFlip);
 
     ret.m20_ = 2.0f * ret.m20_ - ret.m30_;
     ret.m21_ = 2.0f * ret.m21_ - ret.m31_;

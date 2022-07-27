@@ -200,6 +200,9 @@ void SampleSelectionScreen::Deactivate()
 
 void SamplesManager::Start()
 {
+    ResourceCache* resourceCache = context_->GetSubsystem<ResourceCache>();
+    resourceCache->SetAutoReloadResources(true);
+
     UI* ui = context_->GetSubsystem<UI>();
 
 #if MOBILE

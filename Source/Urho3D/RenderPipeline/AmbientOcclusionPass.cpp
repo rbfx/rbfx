@@ -176,7 +176,7 @@ void AmbientOcclusionPass::Execute(Camera* camera)
     Matrix4 texCoord = Matrix4::IDENTITY;
     texCoord.SetScale(Vector3(0.5f, 0.5f, 1.0f));
     texCoord.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
-    const Matrix4 proj = texCoord*camera->GetGPUProjection();
+    const Matrix4 proj = texCoord*camera->GetGPUProjection(true);
     const Matrix4 invProj = proj.Inverse();
 
     renderBufferManager_->SwapColorBuffers(false);
@@ -189,6 +189,7 @@ void AmbientOcclusionPass::Execute(Camera* camera)
         {"SSAORadius", settings_.radius_},
         {"SSAODepthThreshold", settings_.blurDepthThreshold_},
         {"SSAONormalThreshold", settings_.blurNormalThreshold_},
+        {"NormalYScale", camera->GetFlipVertical() ? -1.0f : 1.0f},
         {"Proj", proj},
         {"InvProj", invProj},
         {"CameraView", camera->GetView().ToMatrix4()},

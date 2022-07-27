@@ -25,6 +25,8 @@ UNIFORM_BUFFER_BEGIN(6, Custom)
     UNIFORM(float cSSAODepthThreshold)
     // Blur normal threshold.
     UNIFORM(float cSSAONormalThreshold)
+    // Normal Y scale to flip normals
+    UNIFORM(float cNormalYScale)
     // Projection matrix from texture-adjusted clip space to view space
     UNIFORM(mat4 cProj)
     // Inverted projection matrix from view space to texture-adjusted clip space
@@ -68,6 +70,8 @@ vec3 SampleNormal(vec2 texcoords) {
    // Fip Y to match quad texture coordinates
    normal.y = -normal.y;
 #endif
+
+   normal.y = cNormalYScale*normal.y;
    return normalize(normal);
 #else
    return vec3(0.0, 0.0, -1.0);
