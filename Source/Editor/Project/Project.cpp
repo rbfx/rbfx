@@ -174,7 +174,7 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     , projectJsonPath_(projectPath_ + "Project.json")
     , settingsJsonPath_(settingsJsonPath)
     , cacheJsonPath_(projectPath_ + "Cache.json")
-    , uiIniPath_(projectPath_ + ".ui.ini")
+    , uiIniPath_(projectPath_ + "ui.ini")
     , gitIgnorePath_(projectPath_ + ".gitignore")
     , previewPngPath_(projectPath_ + "Preview.png")
     , dataPath_(projectPath_ + "Data/")
@@ -561,7 +561,7 @@ void Project::SaveGitIgnore()
     content += "\n";
 
     content += "# Ignore UI settings\n";
-    content += "/.ui.ini\n";
+    content += "/ui.ini\n";
     content += "\n";
 
     content += "# Ignore preview screenshot\n";

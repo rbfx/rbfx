@@ -65,18 +65,6 @@ struct Bone
     {
     }
 
-    /// Instance equality operator.
-    bool operator ==(const Bone& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const Bone& rhs) const
-    {
-        return this != &rhs;
-    }
-
     /// Bone name.
     ea::string name_;
     /// Bone name hash.

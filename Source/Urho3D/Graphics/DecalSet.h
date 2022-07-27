@@ -59,18 +59,6 @@ struct URHO3D_API DecalVertex
         }
     }
 
-    /// Instance equality operator.
-    bool operator ==(const DecalVertex& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const DecalVertex& rhs) const
-    {
-        return this != &rhs;
-    }
-
     /// Position.
     Vector3 position_;
     /// Normal.

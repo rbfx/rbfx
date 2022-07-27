@@ -3,7 +3,7 @@
 /Cache.json
 
 # Ignore UI settings
-/.ui.ini
+/ui.ini
 
 # Ignore preview screenshot
 /Preview.png
