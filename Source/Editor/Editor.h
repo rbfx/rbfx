@@ -63,6 +63,7 @@ protected:
 
     void Render();
     void RenderMenuBar();
+    void RenderAboutDialog();
 
     void UpdateProjectStatus();
     void SaveTempJson();
@@ -97,6 +98,8 @@ protected:
     bool uiAlreadyInitialized_{};
     ea::string windowTitle_;
     ea::unordered_map<ea::string, SharedPtr<Texture2D>> projectPreviews_;
+
+    bool showAbout_{};
     /// @}
 };
 

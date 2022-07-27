@@ -64,6 +64,7 @@
 #include <Urho3D/SystemUI/Console.h>
 #include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <nativefiledialog/nfd.h>
@@ -292,6 +293,7 @@ void Editor::Render()
     ImGui::PopStyleVar();
 
     RenderMenuBar();
+    RenderAboutDialog();
 
     if (project_)
     {
@@ -477,11 +479,36 @@ void Editor::RenderMenuBar()
         {
             if (ui::MenuItem("Open Application Preferences Folder"))
                 fs->Reveal(engine_->GetAppPreferencesDir());
+            ui::Separator();
+            if (ui::MenuItem("About"))
+                showAbout_ = true;
             ui::EndMenu();
         }
 
         ui::EndMainMenuBar();
     }
+}
+
+void Editor::RenderAboutDialog()
+{
+    if (!showAbout_)
+        return;
+
+    ui::Begin("Urho3D Rebel Fork aka rbfx", &showAbout_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+    ui::Indent();
+    Widgets::TextURL("GitHub page", "https://github.com/rbfx/rbfx");
+    Widgets::TextURL("Discord server", "https://discord.gg/XKs73yf");
+    ui::Unindent();
+
+    ui::Separator();
+
+    ui::BeginDisabled();
+    ui::Text("Copyright © 2008-2022 the Urho3D project.");
+    ui::Text("Copyright © 2017-2022 the rbfx project.");
+    ui::EndDisabled();
+
+    ui::End();
 }
 
 void Editor::UpdateProjectStatus()

@@ -22,6 +22,7 @@
 //
 #include "../SystemUI/Widgets.h"
 
+#include "../IO/FileSystem.h"
 #include "../Input/Input.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
@@ -176,7 +177,7 @@ void ItemLabel(ea::string_view title, const ea::optional<Color>& color, bool isL
 
     ui::SetCursorScreenPos(textRect.Min);
 
-    ImGui::AlignTextToFramePadding();
+    ui::AlignTextToFramePadding();
     // Adjust text rect manually because we render it directly into a drawlist instead of using public functions.
     textRect.Min.y += window.DC.CurrLineTextBaseOffset;
     textRect.Max.y += window.DC.CurrLineTextBaseOffset;
@@ -219,6 +220,36 @@ Color GetItemBackgroundColor(bool isUndefined)
         return {0.09f, 0.09f, 0.09f, 1.0f};
     else
         return ToColor(style.Colors[ImGuiCol_FrameBg]);
+}
+
+void Underline(const Color& color)
+{
+    const ImVec2 min = ui::GetItemRectMin();
+    const ImVec2 max = ui::GetItemRectMax();
+    ui::GetWindowDrawList()->AddLine({min.x, max.y}, max, color.ToUInt(), 1.0f);
+}
+
+void TextURL(const ea::string& label, const ea::string& url)
+{
+    auto context = Context::GetInstance();
+    auto fs = context->GetSubsystem<FileSystem>();
+
+    const auto& style = ui::GetStyle();
+
+    ui::Text(label.c_str());
+    Underline(ToColor(style.Colors[ImGuiCol_Text]));
+
+    const bool isHovered = ui::IsItemHovered();
+    const bool isOpened = isHovered && ui::IsMouseClicked(MOUSEB_LEFT);
+
+    if (isHovered)
+    {
+        ui::SetTooltip("%s", url.c_str());
+        ui::SetMouseCursor(ImGuiMouseCursor_Hand);
+    }
+
+    if (isOpened)
+        fs->SystemOpen(url);
 }
 
 bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* allowedTypes)
