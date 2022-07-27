@@ -40,8 +40,6 @@
 namespace Urho3D
 {
 
-const char* URHO2D_CATEGORY = "Urho2D";
-
 void RegisterUrho2DLibrary(Context* context)
 {
     Renderer2D::RegisterObject(context);

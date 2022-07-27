@@ -101,9 +101,6 @@ public:
 namespace Urho3D
 {
 
-const char* PHYSICS_CATEGORY = "Physics";
-extern const char* SUBSYSTEM_CATEGORY;
-
 static const int MAX_SOLVER_ITERATIONS = 256;
 static const Vector3 DEFAULT_GRAVITY = Vector3(0.0f, -9.81f, 0.0f);
 
@@ -260,7 +257,7 @@ PhysicsWorld::~PhysicsWorld()
 
 void PhysicsWorld::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PhysicsWorld>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<PhysicsWorld>(Category_Subsystem);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, DEFAULT_GRAVITY, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Physics FPS", int, fps_, DEFAULT_FPS, AM_DEFAULT);

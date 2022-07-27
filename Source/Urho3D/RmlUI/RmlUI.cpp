@@ -61,8 +61,6 @@
 namespace Urho3D
 {
 
-const char* RML_UI_CATEGORY = "Rml UI";
-
 static MouseButton MakeTouchIDMask(int id)
 {
     return static_cast<MouseButton>(1u << static_cast<MouseButtonFlags::Integer>(id)); // NOLINT(misc-misplaced-widening-cast)

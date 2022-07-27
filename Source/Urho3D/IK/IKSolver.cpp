@@ -42,8 +42,6 @@
 namespace Urho3D
 {
 
-extern const char* IK_CATEGORY;
-
 // ----------------------------------------------------------------------------
 IKSolver::IKSolver(Context* context) :
     Component(context),
@@ -79,7 +77,7 @@ IKSolver::~IKSolver()
 // ----------------------------------------------------------------------------
 void IKSolver::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IKSolver>(IK_CATEGORY);
+    context->RegisterFactory<IKSolver>(Category_IK);
 
     static const char* algorithmNames[] = {
         "1 Bone",

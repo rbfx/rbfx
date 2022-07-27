@@ -37,7 +37,6 @@ namespace Urho3D
 {
 
 extern const float PIXEL_SIZE;
-extern const char* URHO2D_CATEGORY;
 
 TileMap2D::TileMap2D(Context* context) :
     Component(context)
@@ -48,7 +47,7 @@ TileMap2D::~TileMap2D() = default;
 
 void TileMap2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TileMap2D>(URHO2D_CATEGORY);
+    context->RegisterFactory<TileMap2D>(Category_Urho2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Tmx File", GetTmxFileAttr, SetTmxFileAttr, ResourceRef, ResourceRef(TmxFile2D::GetTypeStatic()),

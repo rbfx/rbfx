@@ -23,16 +23,16 @@
 		<attribute name="Color" value="1 0.32549 1 0.882353" />
 		<attribute name="Render Order" value="129" />
 		<attribute name="Drawables">
-			<variant type="Int" value="1373" />
-			<variant type="Int" value="1461" />
 			<variant type="Int" value="1518" />
+			<variant type="Int" value="1461" />
+			<variant type="Int" value="1373" />
 		</attribute>
 	</component>
 	<component type="OutlineGroup" id="1375">
 		<attribute name="Color" value="1 1 1 0.964706" />
 		<attribute name="Drawables">
-			<variant type="Int" value="1371" />
 			<variant type="Int" value="1370" />
+			<variant type="Int" value="1371" />
 		</attribute>
 	</component>
 	<node id="2">

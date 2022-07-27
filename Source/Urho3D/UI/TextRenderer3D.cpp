@@ -31,8 +31,6 @@
 namespace Urho3D
 {
 
-extern const char* SUBSYSTEM_CATEGORY;
-
 static const ea::string defaultFontName = "Fonts/Anonymous Pro.ttf";
 
 TextRenderer3D::TextRenderer3D(Context* context)
@@ -44,7 +42,7 @@ TextRenderer3D::TextRenderer3D(Context* context)
 
 void TextRenderer3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TextRenderer3D>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<TextRenderer3D>(Category_Subsystem);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Default Font", GetDefaultFontAttr, SetDefaultFontAttr, ResourceRef, ResourceRef(Font::GetTypeStatic(), defaultFontName), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Default Font Size", float, defaultFontSize_, DEFAULT_FONT_SIZE, AM_DEFAULT);

@@ -368,3 +368,37 @@ function (web_link_resources TARGET RESOURCES)
     target_link_libraries(${TARGET} PRIVATE "--pre-js ${CMAKE_CURRENT_BINARY_DIR}/${RESOURCES}.load.js")
     add_dependencies(${TARGET} ${RESOURCES})
 endfunction ()
+
+function (define_static_plugin TARGET PLUGIN_NAME)
+    string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
+
+    set_target_properties (${TARGET} PROPERTIES OUTPUT_NAME ${PLUGIN_NAME})
+    target_compile_definitions (${TARGET} PRIVATE
+        URHO3D_CURRENT_PLUGIN_NAME=${PLUGIN_NAME}
+        URHO3D_CURRENT_PLUGIN_NAME_SANITATED=${PLUGIN_NAME_SANITATED}
+    )
+endfunction ()
+
+function (link_static_plugins TARGET PLUGIN_LIBRARIES)
+    if (BUILD_SHARED_LIBS)
+        return ()
+    endif ()
+
+    set (DECLARE_FUNCTIONS "")
+    set (REGISTER_PLUGINS "")
+    set (PLUGIN_LIST "")
+    foreach (PLUGIN_LIBRARY ${PLUGIN_LIBRARIES})
+        get_target_property (PLUGIN_NAME ${PLUGIN_LIBRARY} OUTPUT_NAME)
+        string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
+        string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+        string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+        string (APPEND PLUGIN_LIST "${PLUGIN_NAME};")
+    endforeach ()
+
+    configure_file (${rbfx_SOURCE_DIR}/Source/Urho3D/RegisterStaticPlugins.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/RegisterStaticPlugins.cpp @ONLY)
+    add_library (${TARGET}_StaticPlugins ${CMAKE_CURRENT_BINARY_DIR}/RegisterStaticPlugins.cpp)
+    target_link_libraries (${TARGET}_StaticPlugins PRIVATE Urho3D ${PLUGIN_LIBRARIES})
+    target_link_libraries (${TARGET} PRIVATE ${TARGET}_StaticPlugins)
+    target_compile_definitions(${TARGET} PRIVATE URHO3D_PLUGIN_LIST=${PLUGIN_LIST})
+endfunction()
+

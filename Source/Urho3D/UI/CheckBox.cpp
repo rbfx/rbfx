@@ -32,8 +32,6 @@
 namespace Urho3D
 {
 
-extern const char* UI_CATEGORY;
-
 CheckBox::CheckBox(Context* context) :
     BorderImage(context),
     checkedOffset_(IntVector2::ZERO),
@@ -47,7 +45,7 @@ CheckBox::~CheckBox() = default;
 
 void CheckBox::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CheckBox>(UI_CATEGORY);
+    context->RegisterFactory<CheckBox>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Is Enabled", true);

@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../../Math/Ray.h"
-#include "../../Physics/PhysicsWorld.h"
 #include "../../Scene/Node.h"
 #include "../../Scene/Scene.h"
 #include "ApplyForce.h"

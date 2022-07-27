@@ -64,8 +64,8 @@ public:
     /// @{
     bool SaveObjectCallback(const ea::function<void(Archive&)> serializeValue);
     bool LoadObjectCallback(const ea::function<void(Archive&)> serializeValue) const;
-    template <class T> bool SaveObject(const char* name, const T& object);
-    template <class T> bool LoadObject(const char* name, T& object) const;
+    template <class T, class ... Args> bool SaveObject(const char* name, const T& object, Args &&... args);
+    template <class T, class ... Args> bool LoadObject(const char* name, T& object, Args &&... args) const;
     bool SaveObject(const Object& object) { return SaveObject(object.GetTypeName().c_str(), object); }
     bool LoadObject(Object& object) const { return LoadObject(object.GetTypeName().c_str(), object); }
     /// @}
@@ -110,16 +110,22 @@ private:
     ea::unique_ptr<pugi::xml_document> document_;
 };
 
-template <class T>
-bool XMLFile::SaveObject(const char* name, const T& object)
+template <class T, class ... Args>
+bool XMLFile::SaveObject(const char* name, const T& object, Args &&... args)
 {
-    return SaveObjectCallback([&](Archive& archive) { SerializeValue(archive, name, const_cast<T&>(object)); });
+    return SaveObjectCallback([&](Archive& archive)
+    {
+        SerializeValue(archive, name, const_cast<T&>(object), ea::forward<Args>(args)...);
+    });
 }
 
-template <class T>
-bool XMLFile::LoadObject(const char* name, T& object) const
+template <class T, class ... Args>
+bool XMLFile::LoadObject(const char* name, T& object, Args &&... args) const
 {
-    return LoadObjectCallback([&](Archive& archive) { SerializeValue(archive, name, object); });
+    return LoadObjectCallback([&](Archive& archive)
+    {
+        SerializeValue(archive, name, object, ea::forward<Args>(args)...);
+    });
 }
 
 }

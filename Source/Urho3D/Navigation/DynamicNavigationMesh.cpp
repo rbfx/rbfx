@@ -56,8 +56,6 @@ static const unsigned TILECACHE_MAXLAYERS = 255;
 namespace Urho3D
 {
 
-extern const char* NAVIGATION_CATEGORY;
-
 static const int DEFAULT_MAX_OBSTACLES = 1024;
 static const int DEFAULT_MAX_LAYERS = 16;
 
@@ -229,7 +227,7 @@ DynamicNavigationMesh::~DynamicNavigationMesh()
 
 void DynamicNavigationMesh::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DynamicNavigationMesh>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<DynamicNavigationMesh>(Category_Navigation);
 
     URHO3D_COPY_BASE_ATTRIBUTES(NavigationMesh);
     URHO3D_ACCESSOR_ATTRIBUTE("Max Obstacles", GetMaxObstacles, SetMaxObstacles, unsigned, DEFAULT_MAX_OBSTACLES, AM_DEFAULT);

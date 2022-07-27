@@ -35,12 +35,10 @@
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/JSONFile.h"
-#include "../Scene/CameraViewport.h"
 #include "../Scene/Component.h"
 #include "../Scene/ObjectAnimation.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-#include "../Scene/SceneManager.h"
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
@@ -50,10 +48,6 @@
 
 namespace Urho3D
 {
-
-const char* SCENE_CATEGORY = "Scene";
-const char* LOGIC_CATEGORY = "Logic";
-const char* SUBSYSTEM_CATEGORY = "Subsystem";
 
 Scene::Scene(Context* context) :
     Node(context),
@@ -1481,8 +1475,6 @@ void RegisterSceneLibrary(Context* context)
     Scene::RegisterObject(context);
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
-    SceneManager::RegisterObject(context);
-    CameraViewport::RegisterObject(context);
     PrefabReference::RegisterObject(context);
 }
 

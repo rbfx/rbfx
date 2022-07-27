@@ -6,10 +6,4 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>
-    <ItemGroup>
-        <None Include="$(MSBuildThisFileDirectory)/../content/Autoload/**">
-            <Link>Autoload/%(RecursiveDir)%(FileName)%(Extension)</Link>
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
 </Project>

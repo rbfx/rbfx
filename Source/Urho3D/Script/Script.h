@@ -30,7 +30,7 @@
 #include "../Core/Macros.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
-#include "../Engine/PluginApplication.h"
+#include "../Plugins/PluginApplication.h"
 
 #ifndef SWIGSTDCALL
 #   if _WIN32

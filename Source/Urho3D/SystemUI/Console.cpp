@@ -296,7 +296,8 @@ void Console::RenderContent()
             scrollToEnd_--;
         }
 
-        isAtEnd_ = ui::GetScrollY() >= ui::GetScrollMaxY();
+        const float eps = 10.0f;
+        isAtEnd_ = ui::GetScrollY() + eps >= ui::GetScrollMaxY();
 
         if (!copyBuffer_.empty())
         {
