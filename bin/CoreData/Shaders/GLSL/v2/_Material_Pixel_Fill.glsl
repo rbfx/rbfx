@@ -236,7 +236,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
 /// Fill surface reflection color(s).
 /// out: SurfaceData.reflectionColor[]
 #ifdef URHO3D_SURFACE_NEED_REFLECTION_COLOR
-    #if defined(URHO3D_REFLECTION_MAPPING) && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT)
+    #if (defined(URHO3D_REFLECTION_MAPPING) || defined(URHO3D_PHYSICAL_MATERIAL)) && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT)
 
         /// Planar reflections don't support reflection blending
         void FillSurfaceReflectionColorPlanar(out half4 reflectionColor[URHO3D_NUM_REFLECTIONS],
