@@ -58,106 +58,22 @@ void AmbientOcclusionPass::InitializeTextures()
     const RenderBufferParams params{format, 1, RenderBufferFlag::BilinearFiltering};
     textures_.currentTarget_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     textures_.previousTarget_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
-    textures_.noise_ =
-        renderBufferManager_->GetContext()->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/SSAONoise.png");
+    textures_.noise_ = context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/SSAONoise.png");
 }
 
 
 void AmbientOcclusionPass::InitializeStates()
 {
     pipelineStates_ = CachedStates{};
-    pipelineStates_->ssao_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION");
-    pipelineStates_->ssao_deferred_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION DEFERRED");
-    pipelineStates_->blur_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR");
-    pipelineStates_->blur_deferred_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR DEFERRED");
+    pipelineStates_->ssaoForward_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION");
+    pipelineStates_->ssaoDeferred_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION DEFERRED");
+    pipelineStates_->blurForward_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR");
+    pipelineStates_->blurDeferred_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR DEFERRED");
     pipelineStates_->combine_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_SSAO", "COMBINE");
     pipelineStates_->preview_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "PREVIEW");
 }
 
-void AmbientOcclusionPass::EvaluateAO(ea::span<ShaderParameterDesc> shaderParameters)
-{
-    const ShaderResourceDesc shaderResources[] = {
-        {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
-        {TU_DIFFUSE, textures_.noise_},
-        {TU_NORMAL, (normalBuffer_) ? normalBuffer_->GetTexture2D() : nullptr}};
-
-    DrawQuadParams drawParams;
-    drawParams.resources_ = shaderResources;
-    drawParams.parameters_ = shaderParameters;
-    drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
-
-    renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
-    if (normalBuffer_)
-    {
-        drawParams.pipelineState_ = pipelineStates_->ssao_deferred_;
-    }
-    else
-    {
-        drawParams.pipelineState_ = pipelineStates_->ssao_;
-    }
-    renderBufferManager_->DrawQuad("Apply SSAO", drawParams);
-    //renderBufferManager_->SetOutputRenderTargers();
-
-    ea::swap(textures_.currentTarget_, textures_.previousTarget_);
-}
-
-void AmbientOcclusionPass::BlurTexture(ea::span<ShaderParameterDesc> shaderParameters)
-{
-    DrawQuadParams drawParams;
-    drawParams.parameters_ = shaderParameters;
-    drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
-    if (normalBuffer_)
-    {
-        drawParams.pipelineState_ = pipelineStates_->blur_deferred_;
-    }
-    else
-    {
-        drawParams.pipelineState_ = pipelineStates_->blur_;
-    }
-
-    {
-        renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
-        const ShaderResourceDesc shaderResources[] = {
-            {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()},
-            {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
-            {TU_NORMAL, (normalBuffer_) ? normalBuffer_->GetTexture2D() : nullptr}};
-        drawParams.resources_ = shaderResources;
-        shaderParameters[1].value_ = Vector2(shaderParameters[0].value_.GetVector2().x_, 0.0f);
-        renderBufferManager_->DrawQuad("BlurV", drawParams);
-        ea::swap(textures_.currentTarget_, textures_.previousTarget_);
-    }
-
-    {
-        renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
-        const ShaderResourceDesc shaderResources[] = {
-            {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()},
-            {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
-            {TU_NORMAL, (normalBuffer_) ? normalBuffer_->GetTexture2D() : nullptr}};
-        drawParams.resources_ = shaderResources;
-        shaderParameters[1].value_ = Vector2(0.0f, shaderParameters[0].value_.GetVector2().y_);
-        renderBufferManager_->DrawQuad("BlurH", drawParams);
-        ea::swap(textures_.currentTarget_, textures_.previousTarget_);
-    }
-}
-
-void AmbientOcclusionPass::Blit(ea::span<ShaderParameterDesc> shaderParameters, PipelineState* state)
-{
-    renderBufferManager_->SwapColorBuffers(false);
-    renderBufferManager_->SetOutputRenderTargers();
-
-    const ShaderResourceDesc shaderResources[] = {
-        {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()}};
-
-    //renderBufferManager_->SetRenderTargets(nullptr, {renderBufferManager_->GetColorOutput()});
-    renderBufferManager_->DrawViewportQuad("Preview SSAO", state, shaderResources, shaderParameters);
-}
-
-void AmbientOcclusionPass::SetNormalBuffer(RenderBuffer* normalBuffer)
-{
-    normalBuffer_ = normalBuffer;
-}
-
-void AmbientOcclusionPass::Execute(Camera* camera)
+void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextureSpace, const Matrix4& textureToViewSpace)
 {
     static const Matrix4 flipMatrix{
         1.0f,  0.0f, 0.0f, 0.0f,
@@ -166,26 +82,9 @@ void AmbientOcclusionPass::Execute(Camera* camera)
         0.0f,  0.0f, 0.0f, 1.0f
     };
 
-    if (!pipelineStates_)
-        InitializeStates();
-
-    if (!pipelineStates_->IsValid())
-        return;
-
-    if (settings_.strength_ <= 0.0f)
-        return;
-
     const Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
     const IntVector2 inputSize = viewportTexture->GetSize();
     const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(inputSize);
-
-    // Convert texture coordinates into clip space
-    Matrix4 clipToTextureSpace = Matrix4::IDENTITY;
-    clipToTextureSpace.SetScale(Vector3(0.5f, 0.5f, 1.0f));
-    clipToTextureSpace.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
-
-    const Matrix4 viewToTextureSpace = clipToTextureSpace * camera->GetGPUProjection(true);
-    const Matrix4 textureToViewSpace = viewToTextureSpace.Inverse();
 
 #ifdef URHO3D_OPENGL
     const bool invertY = camera->GetFlipVertical();
@@ -195,33 +94,134 @@ void AmbientOcclusionPass::Execute(Camera* camera)
     const Matrix4 worldToViewSpace = camera->GetView().ToMatrix4();
     const Matrix4 worldToViewSpaceCorrected = invertY ? flipMatrix * worldToViewSpace : worldToViewSpace;
 
-    renderBufferManager_->SwapColorBuffers(false);
+    Vector4 radiusInfo;
+    radiusInfo.x_ = (settings_.radiusFar_ - settings_.radiusNear_) / ea::max(1.0f, settings_.distanceFar_ - settings_.distanceNear_);
+    radiusInfo.y_ = settings_.radiusNear_ - radiusInfo.x_ * settings_.distanceNear_;
+    radiusInfo.z_ = settings_.radiusNear_;
+    radiusInfo.w_ = settings_.radiusFar_;
 
-    ShaderParameterDesc shaderParameters[] = {
+    const ShaderParameterDesc shaderParameters[] = {
         {"InputInvSize", inputInvSize},
         {"BlurStep", inputInvSize},
-        {"SSAOStrength", settings_.strength_},
-        {"SSAOExponent", settings_.exponent_},
-        {"SSAORadius", settings_.radius_},
-        {"BlurZThreshold", settings_.blurDepthThreshold_},
-        {"BlurNormalInvThreshold", 1.0f - settings_.blurNormalThreshold_},
+        {"Strength", settings_.strength_},
+        {"Exponent", settings_.exponent_},
+        {"RadiusInfo", radiusInfo},
+        {"FadeDistance", Vector2{settings_.fadeDistanceBegin_, settings_.fadeDistanceEnd_}},
         {"ViewToTexture", viewToTextureSpace},
         {"TextureToView", textureToViewSpace},
         {"WorldToView", worldToViewSpaceCorrected},
     };
 
-    EvaluateAO(shaderParameters);
+    const ShaderResourceDesc shaderResources[] = {
+        {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+        {TU_DIFFUSE, textures_.noise_},
+        {TU_NORMAL, (normalBuffer_) ? normalBuffer_->GetTexture2D() : nullptr}
+    };
 
-    BlurTexture(shaderParameters);
+    DrawQuadParams drawParams;
+    drawParams.resources_ = shaderResources;
+    drawParams.parameters_ = shaderParameters;
+    drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
 
-    if (false)
+    renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
+    if (normalBuffer_)
     {
-        Blit(shaderParameters, pipelineStates_->preview_);
+        drawParams.pipelineState_ = pipelineStates_->ssaoDeferred_;
     }
     else
     {
-        Blit(shaderParameters, pipelineStates_->combine_);
+        drawParams.pipelineState_ = pipelineStates_->ssaoForward_;
     }
+    renderBufferManager_->DrawQuad("Apply SSAO", drawParams);
+    //renderBufferManager_->SetOutputRenderTargers();
+
+    ea::swap(textures_.currentTarget_, textures_.previousTarget_);
+}
+
+void AmbientOcclusionPass::BlurTexture(const Matrix4& textureToViewSpace)
+{
+    const IntVector2 textureSize = textures_.currentTarget_->GetTexture2D()->GetSize();
+    const Vector2 blurStep = Vector2::ONE / static_cast<Vector2>(textureSize);
+
+    ShaderParameterDesc shaderParameters[] = {
+        {"BlurStep", blurStep},
+        {"BlurZThreshold", settings_.blurDepthThreshold_},
+        {"BlurNormalInvThreshold", 1.0f - settings_.blurNormalThreshold_},
+        {"TextureToView", textureToViewSpace},
+    };
+
+    DrawQuadParams drawParams;
+    drawParams.parameters_ = shaderParameters;
+    drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
+    if (normalBuffer_)
+        drawParams.pipelineState_ = pipelineStates_->blurDeferred_;
+    else
+        drawParams.pipelineState_ = pipelineStates_->blurForward_;
+
+    {
+        renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
+        const ShaderResourceDesc shaderResources[] = {
+            {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()},
+            {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+            {TU_NORMAL, normalBuffer_ ? normalBuffer_->GetTexture2D() : nullptr}};
+        drawParams.resources_ = shaderResources;
+        shaderParameters[0].value_ = Vector2(blurStep.x_, 0.0f);
+        renderBufferManager_->DrawQuad("SSAO Blur Horizontally", drawParams);
+        ea::swap(textures_.currentTarget_, textures_.previousTarget_);
+    }
+
+    {
+        renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
+        const ShaderResourceDesc shaderResources[] = {
+            {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()},
+            {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+            {TU_NORMAL, normalBuffer_ ? normalBuffer_->GetTexture2D() : nullptr}};
+        drawParams.resources_ = shaderResources;
+        shaderParameters[0].value_ = Vector2(0.0f, blurStep.y_);
+        renderBufferManager_->DrawQuad("SSAO Blur Vertically", drawParams);
+        ea::swap(textures_.currentTarget_, textures_.previousTarget_);
+    }
+}
+
+void AmbientOcclusionPass::Blit(PipelineState* state)
+{
+    renderBufferManager_->SetOutputRenderTargers();
+
+    const ShaderResourceDesc shaderResources[] = {
+        {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()}};
+
+    renderBufferManager_->DrawViewportQuad("SSAO Combine", state, shaderResources, {});
+}
+
+void AmbientOcclusionPass::SetNormalBuffer(RenderBuffer* normalBuffer)
+{
+    normalBuffer_ = normalBuffer;
+}
+
+void AmbientOcclusionPass::Execute(Camera* camera)
+{
+    if (!pipelineStates_)
+        InitializeStates();
+
+    if (!pipelineStates_->IsValid())
+        return;
+
+    if (settings_.strength_ <= 0.0f)
+        return;
+
+    // Convert texture coordinates into clip space
+    Matrix4 clipToTextureSpace = Matrix4::IDENTITY;
+    clipToTextureSpace.SetScale(Vector3(0.5f, 0.5f, 1.0f));
+    clipToTextureSpace.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
+
+    const Matrix4 viewToTextureSpace = clipToTextureSpace * camera->GetGPUProjection(true);
+    const Matrix4 textureToViewSpace = viewToTextureSpace.Inverse();
+
+    EvaluateAO(camera, viewToTextureSpace, textureToViewSpace);
+    BlurTexture(textureToViewSpace);
+
+    //Blit(pipelineStates_->preview_);
+    Blit(pipelineStates_->combine_);
 }
 
 #endif

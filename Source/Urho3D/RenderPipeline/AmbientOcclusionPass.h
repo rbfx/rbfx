@@ -49,7 +49,7 @@ public:
 
     PostProcessPassFlags GetExecutionFlags() const override
     {
-        return PostProcessPassFlag::NeedColorOutputReadAndWrite | PostProcessPassFlag::NeedColorOutputBilinear;
+        return PostProcessPassFlag::NeedColorOutputBilinear;
     }
 
     void SetNormalBuffer(RenderBuffer* normalBuffer);
@@ -60,9 +60,9 @@ protected:
 
     void InitializeTextures();
     void InitializeStates();
-    void EvaluateAO(ea::span<ShaderParameterDesc> shaderParameters);
-    void BlurTexture(ea::span<ShaderParameterDesc> shaderParameters);
-    void Blit(ea::span<ShaderParameterDesc> shaderParameters, PipelineState* state);
+    void EvaluateAO(Camera* camera, const Matrix4& viewToTextureSpace, const Matrix4& textureToViewSpace);
+    void BlurTexture(const Matrix4& textureToViewSpace);
+    void Blit(PipelineState* state);
 
     AmbientOcclusionPassSettings settings_;
 
@@ -78,17 +78,17 @@ protected:
 
     struct CachedStates
     {
-        SharedPtr<PipelineState> ssao_;
-        SharedPtr<PipelineState> ssao_deferred_;
-        SharedPtr<PipelineState> blur_;
-        SharedPtr<PipelineState> blur_deferred_;
+        SharedPtr<PipelineState> ssaoForward_;
+        SharedPtr<PipelineState> ssaoDeferred_;
+        SharedPtr<PipelineState> blurForward_;
+        SharedPtr<PipelineState> blurDeferred_;
         SharedPtr<PipelineState> combine_;
         SharedPtr<PipelineState> preview_;
 
         bool IsValid()
         {
-            return !!ssao_ && ssao_->IsValid() && blur_->IsValid() && ssao_deferred_->IsValid()
-                && blur_deferred_->IsValid() && combine_->IsValid() && preview_->IsValid();
+            return !!ssaoForward_ && ssaoForward_->IsValid() && blurForward_->IsValid() && ssaoDeferred_->IsValid()
+                && blurDeferred_->IsValid() && combine_->IsValid() && preview_->IsValid();
         }
     };
     ea::optional<CachedStates> pipelineStates_;

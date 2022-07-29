@@ -658,11 +658,20 @@ struct AutoExposurePassSettings
 struct AmbientOcclusionPassSettings
 {
     bool enabled_{};
+
     unsigned downscale_{0};
-    float strength_{0.8f};
-    float exponent_{2.0f};
-    float radius_{0.5f};
-    float blurDepthThreshold_{1.0f};
+    float strength_{0.7f};
+    float exponent_{1.5f};
+
+    float radiusNear_{0.05f};
+    float distanceNear_{1.0f};
+    float radiusFar_{1.0f};
+    float distanceFar_{100.0f};
+
+    float fadeDistanceBegin_{100.0f};
+    float fadeDistanceEnd_{200.0f};
+
+    float blurDepthThreshold_{0.1f};
     float blurNormalThreshold_{0.2f};
 
     /// Utility operators
@@ -671,9 +680,22 @@ struct AmbientOcclusionPassSettings
 
     bool operator==(const AmbientOcclusionPassSettings& rhs) const
     {
-        return (enabled_ == rhs.enabled_) && (downscale_ == rhs.downscale_) && (strength_ == rhs.strength_)
-            && (exponent_ == rhs.exponent_) && (radius_ == rhs.radius_)
-            && (blurDepthThreshold_ == rhs.blurDepthThreshold_) && (blurNormalThreshold_ == rhs.blurNormalThreshold_);
+        return enabled_ == rhs.enabled_
+
+            && downscale_ == rhs.downscale_
+            && strength_ == rhs.strength_
+            && exponent_ == rhs.exponent_
+
+            && radiusNear_ == rhs.radiusNear_
+            && distanceNear_ == rhs.distanceNear_
+            && radiusFar_ == rhs.radiusFar_
+            && distanceFar_ == rhs.distanceFar_
+
+            && fadeDistanceBegin_ == rhs.fadeDistanceBegin_
+            && fadeDistanceEnd_ == rhs.fadeDistanceEnd_
+
+            && blurDepthThreshold_ == rhs.blurDepthThreshold_
+            && blurNormalThreshold_ == rhs.blurNormalThreshold_;
     }
 
     bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }

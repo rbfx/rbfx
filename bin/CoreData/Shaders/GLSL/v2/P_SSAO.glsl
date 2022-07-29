@@ -18,32 +18,34 @@ VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 #ifdef URHO3D_PIXEL_SHADER
 
 UNIFORM_BUFFER_BEGIN(6, Custom)
-    // Converts from view space to input texture space.
+    /// Converts from view space to input texture space.
     UNIFORM(mat4 cViewToTexture)
-    // Converts from input texture space to view space.
+    /// Converts from input texture space to view space.
     UNIFORM(mat4 cTextureToView)
-    // Converts world space to view space.
+    /// Converts world space to view space.
     UNIFORM(mat4 cWorldToView)
 
-    // Inverted size of the input depth and normal textures.
+    /// Inverted size of the input depth and normal textures.
     UNIFORM_HIGHP(vec2 cInputInvSize)
 
-    // Strength of the effect
-    UNIFORM(half cSSAOStrength)
-    // Exponent of the effect
-    UNIFORM(half cSSAOExponent)
-    // Radius
-    UNIFORM(half cSSAORadius)
+    /// Radius function: radius = clamp(z * cRadiusInfo.x + cRadiusInfo.y, cRadiusInfo.z, cRadiusInfo.w).
+    UNIFORM(half4 cRadiusInfo)
+    /// Fade out distances.
+    UNIFORM(half2 cFadeDistance)
+    /// Strength of the effect
+    UNIFORM(half cStrength)
+    /// Exponent of the effect
+    UNIFORM(half cExponent)
 
-    // Blur step, aka inverted size of intermediate textures with either x or y set to 0.
+    /// Blur step, aka inverted size of intermediate textures with either x or y set to 0.
     UNIFORM_HIGHP(vec2 cBlurStep)
-    // Blur depth threshold.
+    /// Blur depth threshold.
     UNIFORM(half cBlurZThreshold)
-    // Blur normal threshold.
+    /// Blur normal threshold.
     UNIFORM(half cBlurNormalInvThreshold)
 UNIFORM_BUFFER_END(6, Custom)
 
-// Sample view-space position from depth texture.
+/// Sample view-space position from depth texture.
 vec3 SamplePosition(const vec2 texCoord)
 {
     float depth = texture2D(sDepthBuffer, texCoord).r;
@@ -51,15 +53,23 @@ vec3 SamplePosition(const vec2 texCoord)
     return position.xyz / position.w;
 }
 
-// Sample view-space normal from normal texture.
+/// Sample view-space normal from normal texture.
+#ifdef DEFERRED
 half3 SampleNormal(const vec2 texCoord)
 {
-#ifdef DEFERRED
     half3 worldNormal = DecodeNormal(texture2D(sNormalMap, texCoord));
     half3 normal = (vec4(worldNormal, 0.0) * cWorldToView).xyz;
     return normal;
+}
+#endif
+
+/// Sample world-space normal from normal texture.
+half3 SampleWorldNormal(const vec2 texCoord)
+{
+#ifdef DEFERRED
+    return DecodeNormal(texture2D(sNormalMap, texCoord));
 #else
-    return vec3(0.0, 0.0, -1.0);
+    return vec3(0.0, 0.0, 0.0);
 #endif
 }
 
@@ -148,7 +158,7 @@ void CalculateBlur(inout half4 finalColor, inout half finalWeight,
     half4 color = texture2D(sDiffMap, texCoord);
 
     vec3 position = SamplePosition(texCoord);
-    half3 normal = SampleNormal(texCoord);
+    half3 normal = SampleWorldNormal(texCoord);
     half weight = weightFactor * GetSampleWeight(basePosition.z, position.z, baseNormal, normal);
 
     finalColor += color * weight;
@@ -170,7 +180,6 @@ void main()
 void main()
 {
 #ifdef EVALUATE_OCCLUSION
-
     const half3 sampleOffsets[NUM_OCCLUSION_SAMPLES] = {
         vec3(-0.3991061,  -0.2619659,   0.7481203),  // Length: 0.887466
         vec3( 0.5641699,  -0.1403742,  -0.5268592),  // Length: 0.7845847
@@ -197,26 +206,26 @@ void main()
 
     // Sample points around position
     half weightSum = 0.00001;
-    half occlusion = 0.0;
-    half radius = cSSAORadius;
+    half occlusionSum = 0.0;
+    half radius = clamp(cRadiusInfo.x * position.z + cRadiusInfo.y, cRadiusInfo.z, cRadiusInfo.w);
     for (int i = 0; i < NUM_OCCLUSION_SAMPLES; i++)
     {
         half3 offsetDirection = reflect(sampleOffsets[i], noise);
         half2 sampleOcclusion = CalculateOcclusion(offsetDirection, radius, position, normal);
-        occlusion += sampleOcclusion.x;
+        occlusionSum += sampleOcclusion.x;
         weightSum += sampleOcclusion.y;
     }
 
     // Normalize accumulated occlustion and fade it with distance
-    const float fadeDistance = 100;
-    float ao = 1.0 - cSSAOStrength * smoothstep(fadeDistance,0,position.z) * occlusion * (1.0 / weightSum);
-    float finalAO = pow(clamp(ao, 0.0, 1.0), cSSAOExponent);
-    gl_FragColor = vec4(0.0, 0.0, 0.0, finalAO);
-
+    const half distanceFactor = 1.0 - smoothstep(cFadeDistance.x, cFadeDistance.y, position.z);
+    const half occlusionFactor = 1.0 - pow(1.0 - occlusionSum / weightSum, cExponent);
+    const half finalOcclusion = 1.0 - cStrength * distanceFactor * occlusionFactor;
+    gl_FragColor = vec4(0.0, 0.0, 0.0, finalOcclusion);
 #endif
 
 #ifdef BLUR
-    const half sampleWeights[NUM_BLUR_SAMPLES] = {
+    const half sampleWeights[NUM_BLUR_SAMPLES + 1] = {
+        1.0,
         0.9071823,
         0.683296,
         0.442073,
@@ -225,15 +234,15 @@ void main()
 
     vec2 baseTexCoord = Saturate(vTexCoord);
     vec3 basePosition = SamplePosition(baseTexCoord);
-    half3 baseNormal = SampleNormal(baseTexCoord);
+    half3 baseNormal = SampleWorldNormal(baseTexCoord);
 
-    half4 occlusion = texture2D(sDiffMap, baseTexCoord);
-    half weightSum = 1.0;
+    half4 occlusion = sampleWeights[0] * texture2D(sDiffMap, baseTexCoord);
+    half weightSum = sampleWeights[0];
 
     for (int i = 1; i <= NUM_BLUR_SAMPLES; ++i)
     {
-        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord + cBlurStep * i), basePosition, baseNormal, sampleWeights[i - 1]);
-        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord - cBlurStep * i), basePosition, baseNormal, sampleWeights[i - 1]);
+        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord + cBlurStep * i), basePosition, baseNormal, sampleWeights[i]);
+        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord - cBlurStep * i), basePosition, baseNormal, sampleWeights[i]);
     }
 
     gl_FragColor = occlusion / weightSum;
