@@ -74,9 +74,9 @@ public:
     /// Close resource gracefully.
     void CloseResourceGracefully(const ea::string& resourceName, ea::function<void()> onClosed = []{});
     /// Close all opened resources gracefully.
-    void CloseAllResourcesGracefully(ea::function<void()> onAllClosed = []{});
+    bool CloseAllResourcesGracefully(ea::function<void()> onAllClosed = []{});
     /// Close all opened resources gracefully. Open other resource if requested.
-    void CloseAllResourcesGracefully(const ea::string& pendingOpenResourceName);
+    bool CloseAllResourcesGracefully(const ea::string& pendingOpenResourceName);
     /// Save specific opened resource.
     void SaveResource(const ea::string& resourceName, bool forced = false);
     /// Save all resources.

@@ -50,6 +50,7 @@
 #include "Foundation/SettingsTab/LaunchPage.h"
 #include "Foundation/SettingsTab/PluginsPage.h"
 #include "Foundation/StandardFileTypes.h"
+#include "Foundation/TextureViewTab.h"
 
 #include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Core/Context.h>
@@ -84,6 +85,7 @@ Editor::Editor(Context* context)
 
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);
+    editorPluginManager_->AddPlugin("Foundation.TextureView", &Foundation_TextureViewTab);
     editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser", &Foundation_ResourceBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
