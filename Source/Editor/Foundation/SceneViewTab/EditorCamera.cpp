@@ -252,6 +252,11 @@ void EditorCamera::UpdateState(SceneViewPage& scenePage, PageState& state) const
         state.orbitPosition_ = ea::nullopt;
     }
 
+    if (ui::IsItemHovered() && Urho3D::Abs(ui::GetMouseWheel()) > 0.05f)
+    {
+        state.pendingOffset_ += node->GetWorldDirection() * cfg.maxSpeed_ * Urho3D::Sign<float>(ui::GetMouseWheel());
+    }
+
     if (state.pendingOffset_.Length() > 0.05f)
     {
         const float factor = ExpSmoothing(cfg.focusSpeed_, time->GetTimeStep());
