@@ -159,6 +159,13 @@ void AmbientOcclusionPass::SetNormalBuffer(RenderBuffer* normalBuffer)
 
 void AmbientOcclusionPass::Execute(Camera* camera)
 {
+    static const Matrix4 flipMatrix{
+        1.0f,  0.0f, 0.0f, 0.0f,
+        0.0f, -1.0f, 0.0f, 0.0f,
+        0.0f,  0.0f, 1.0f, 0.0f,
+        0.0f,  0.0f, 0.0f, 1.0f
+    };
+
     if (!pipelineStates_)
         InitializeStates();
 
@@ -173,11 +180,20 @@ void AmbientOcclusionPass::Execute(Camera* camera)
     const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(inputSize);
 
     // Convert texture coordinates into clip space
-    Matrix4 texCoord = Matrix4::IDENTITY;
-    texCoord.SetScale(Vector3(0.5f, 0.5f, 1.0f));
-    texCoord.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
-    const Matrix4 proj = texCoord*camera->GetGPUProjection(true);
-    const Matrix4 invProj = proj.Inverse();
+    Matrix4 clipToTextureSpace = Matrix4::IDENTITY;
+    clipToTextureSpace.SetScale(Vector3(0.5f, 0.5f, 1.0f));
+    clipToTextureSpace.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
+
+    const Matrix4 viewToTextureSpace = clipToTextureSpace * camera->GetGPUProjection(true);
+    const Matrix4 textureToViewSpace = viewToTextureSpace.Inverse();
+
+#ifdef URHO3D_OPENGL
+    const bool invertY = camera->GetFlipVertical();
+#else
+    const bool invertY = !camera->GetFlipVertical();
+#endif
+    const Matrix4 worldToViewSpace = camera->GetView().ToMatrix4();
+    const Matrix4 worldToViewSpaceCorrected = invertY ? flipMatrix * worldToViewSpace : worldToViewSpace;
 
     renderBufferManager_->SwapColorBuffers(false);
 
@@ -187,12 +203,11 @@ void AmbientOcclusionPass::Execute(Camera* camera)
         {"SSAOStrength", settings_.strength_},
         {"SSAOExponent", settings_.exponent_},
         {"SSAORadius", settings_.radius_},
-        {"SSAODepthThreshold", settings_.blurDepthThreshold_},
-        {"SSAONormalThreshold", settings_.blurNormalThreshold_},
-        {"NormalYScale", camera->GetFlipVertical() ? -1.0f : 1.0f},
-        {"Proj", proj},
-        {"InvProj", invProj},
-        {"CameraView", camera->GetView().ToMatrix4()},
+        {"BlurZThreshold", settings_.blurDepthThreshold_},
+        {"BlurNormalInvThreshold", 1.0f - settings_.blurNormalThreshold_},
+        {"ViewToTexture", viewToTextureSpace},
+        {"TextureToView", textureToViewSpace},
+        {"WorldToView", worldToViewSpaceCorrected},
     };
 
     EvaluateAO(shaderParameters);
