@@ -41,7 +41,6 @@
 namespace Urho3D
 {
 
-extern const char* SUBSYSTEM_CATEGORY;
 static const Vector2 DEFAULT_GRAVITY(0.0f, -9.81f);
 static const int DEFAULT_VELOCITY_ITERATIONS = 8;
 static const int DEFAULT_POSITION_ITERATIONS = 3;
@@ -72,7 +71,7 @@ PhysicsWorld2D::~PhysicsWorld2D()
 
 void PhysicsWorld2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PhysicsWorld2D>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<PhysicsWorld2D>(Category_Subsystem);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Shape", GetDrawShape, SetDrawShape, bool, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Joint", GetDrawJoint, SetDrawJoint, bool, false, AM_DEFAULT);

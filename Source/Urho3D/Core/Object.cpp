@@ -506,6 +506,12 @@ StringHashRegister& GetEventNameRegister()
     return eventNameRegister;
 }
 
+URHO3D_API StringHashRegister& GetEventParamRegister()
+{
+    static StringHashRegister eventParamRegister(false /*non thread safe*/);
+    return eventParamRegister;
+}
+
 void Object::SendEvent(StringHash eventType, const VariantMap& eventData)
 {
     VariantMap eventDataCopy = eventData;

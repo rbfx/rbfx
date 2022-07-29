@@ -48,8 +48,6 @@
 namespace Urho3D
 {
 
-const char* PHYSICS2D_CATEGORY = "Physics2D";
-
 void RegisterPhysics2DLibrary(Context* context)
 {
     PhysicsWorld2D::RegisterObject(context);

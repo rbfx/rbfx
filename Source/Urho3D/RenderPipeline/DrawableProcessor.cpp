@@ -86,16 +86,16 @@ bool IsBoundingBoxShadowInPerspectiveFrustum(const BoundingBox& boundingBox,
 {
     // Extrusion direction depends on the position of the shadow caster
     const Vector3 center = boundingBox.Center();
-    const Ray extrusionRay(center, center);
+    const Vector3 size = boundingBox.Size();
 
     // Because of the perspective, the bounding box must also grow when it is extruded to the distance
-    const float originalDistance = Clamp(center.Length(), M_EPSILON, extrusionDistance);
+    const float originalDistance = Clamp(center.z_ - size.z_ * 0.5f, M_EPSILON, extrusionDistance);
     const float sizeFactor = extrusionDistance / originalDistance;
 
     // Calculate the endpoint box and merge it to the original. Because it's axis-aligned, it will be larger
     // than necessary, so the test will be conservative
-    const Vector3 newCenter = extrusionDistance * extrusionRay.direction_;
-    const Vector3 newHalfSize = boundingBox.Size() * sizeFactor * 0.5f;
+    const Vector3 newCenter = center * sizeFactor;
+    const Vector3 newHalfSize = size * sizeFactor * 0.5f;
 
     BoundingBox extrudedBox(newCenter - newHalfSize, newCenter + newHalfSize);
     extrudedBox.Merge(boundingBox);
@@ -538,21 +538,24 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                 const ReflectionProbeReference& probe1 = reflection.probes_[1];
 
                 if (probe0.data_)
+                {
                     lightAccumulator.reflectionProbes_[0] = probe0.data_;
 
 #ifdef DESKTOP_GRAPHICS
-                if (reflectionMode >= ReflectionMode::BlendProbes && probe1.data_)
-                {
-                    lightAccumulator.reflectionProbes_[1] = probe1.data_;
-                    lightAccumulator.reflectionProbesBlendFactor_ = probe0.priority_ != probe1.priority_
-                        ? 1.0f - probe0.volume_
-                        : probe1.volume_ / (probe0.volume_ + probe1.volume_);
-                }
-                if (reflectionMode == ReflectionMode::BlendProbesAndZone && !probe1.data_)
-                {
-                    lightAccumulator.reflectionProbesBlendFactor_ = 1.0f - probe0.volume_;
-                }
+                    if (reflectionMode >= ReflectionMode::BlendProbes && probe1.data_)
+                    {
+                        lightAccumulator.reflectionProbes_[1] = probe1.data_;
+                        lightAccumulator.reflectionProbesBlendFactor_ = probe0.priority_ != probe1.priority_
+                            ? 1.0f - probe0.volume_
+                            : probe1.volume_ / (probe0.volume_ + probe1.volume_);
+                    }
+                    if (reflectionMode == ReflectionMode::BlendProbesAndZone && !probe1.data_)
+                    {
+                        lightAccumulator.reflectionProbesBlendFactor_ = 1.0f - probe0.volume_;
+                    }
 #endif
+                }
+
             }
         }
 

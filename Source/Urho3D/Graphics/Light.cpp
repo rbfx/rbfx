@@ -40,8 +40,6 @@
 namespace Urho3D
 {
 
-extern const char* SCENE_CATEGORY;
-
 static const char* typeNames[] =
 {
     "Directional",
@@ -115,7 +113,7 @@ Light::~Light() = default;
 
 void Light::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Light>(SCENE_CATEGORY);
+    context->RegisterFactory<Light>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Light Type", GetLightType, SetLightType, LightType, typeNames, DEFAULT_LIGHTTYPE, AM_DEFAULT);

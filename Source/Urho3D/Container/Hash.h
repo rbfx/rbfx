@@ -36,9 +36,16 @@ namespace Urho3D
 {
 
 /// Combine hash into result value.
-inline void CombineHash(unsigned& result, unsigned hash)
+template <class T>
+inline void CombineHash(T& result, unsigned hash, ea::enable_if_t<sizeof(T) == 4, int>* = 0)
 {
     result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
+}
+
+template <class T>
+inline void CombineHash(T& result, unsigned long long hash, ea::enable_if_t<sizeof(T) == 8, int>* = 0)
+{
+    result ^= hash + 0x9e3779b97f4a7c15ull + (result << 6) + (result >> 2);
 }
 
 /// Fold 64-bit hash to 32-bit.
@@ -54,7 +61,7 @@ inline unsigned MakeHash(float value)
 {
     unsigned uintValue{};
     memcpy(&uintValue, &value, sizeof(float));
-    CombineHash(uintValue, 0); // shuffle it a bit
+    CombineHash(uintValue, 0u); // shuffle it a bit
     return uintValue;
 }
 
@@ -91,49 +98,38 @@ struct hash<T, typename enable_if<detail::is_hashable<T>::value>::type>
     }
 };
 
-template <class T, class U, class Enabled> struct hash<pair<T, U>, Enabled>
-{
-    size_t operator()(const pair<T, U>& s) const
-    {
-        return hash<T>()(s.first) ^ hash<U>()(s.second) * 16777619;
-    }
-};
-
-template <class U>
-struct hash<weak_ptr<U>>
-{
-    size_t operator()(const weak_ptr<U>& value) const
-    {
-        return (size_t)(void*)value.Get();
-    }
-};
-
 template <class T, class U> struct hash<pair<T, U>>
 {
-    size_t operator()(const pair<T, U>& s) const
+    size_t operator()(const pair<T, U>& value) const
     {
-        return hash<T>()(s.first) ^ hash<U>()(s.second) * 16777619;
+        size_t result = 0;
+        Urho3D::CombineHash(result, hash<T>{}(value.first));
+        Urho3D::CombineHash(result, hash<U>{}(value.second));
+        return result;
     }
 };
 
 template <class T, class Allocator> struct hash<vector<T, Allocator>>
 {
-    size_t operator()(const vector<T, Allocator>& s) const
+    size_t operator()(const vector<T, Allocator>& value) const
     {
-        size_t result = 16777619;
-        for (const T& value : s)
-            result = result * 31 + hash<T>()(value);
+        size_t result = 0;
+        for (const auto& elem : value)
+            Urho3D::CombineHash(result, hash<T>{}(elem));
         return result;
     }
 };
 
 template <typename Key, typename T> struct hash<unordered_map<Key, T>>
 {
-    size_t operator()(const unordered_map<Key, T>& s) const
+    size_t operator()(const unordered_map<Key, T>& value) const
     {
-        size_t result = 16777619;
-        for (const auto& pair : s)
-            result = result * 31 * 31 + hash<Key>()(pair.first) * 31 + hash<T>()(pair.second);
+        size_t result = 0;
+        for (const auto& [key, elem] : value)
+        {
+            Urho3D::CombineHash(result, hash<Key>{}(key));
+            Urho3D::CombineHash(result, hash<T>{}(elem));
+        }
         return result;
     }
 };

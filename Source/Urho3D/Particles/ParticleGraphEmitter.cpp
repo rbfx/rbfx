@@ -34,8 +34,6 @@
 
 namespace Urho3D
 {
-extern const char* GEOMETRY_CATEGORY;
-
 ParticleGraphEmitter::ParticleGraphEmitter(Context* context)
     : Component(context)
 {
@@ -45,7 +43,7 @@ ParticleGraphEmitter::~ParticleGraphEmitter() = default;
 
 void ParticleGraphEmitter::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleGraphEmitter>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<ParticleGraphEmitter>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Effect", GetEffectAttr, SetEffectAttr, ResourceRef,

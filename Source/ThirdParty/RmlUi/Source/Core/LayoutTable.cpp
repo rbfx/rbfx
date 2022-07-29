@@ -27,11 +27,12 @@
  */
 
 #include "LayoutTable.h"
-#include "LayoutTableDetails.h"
-#include "LayoutDetails.h"
-#include "LayoutEngine.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Element.h"
 #include "../../Include/RmlUi/Core/Types.h"
+#include "LayoutDetails.h"
+#include "LayoutEngine.h"
+#include "LayoutTableDetails.h"
 #include <algorithm>
 #include <numeric>
 
@@ -42,8 +43,8 @@ Vector2f LayoutTable::FormatTable(Box& box, Vector2f min_size, Vector2f max_size
 	const ComputedValues& computed_table = element_table->GetComputedValues();
 
 	// Scrollbars are illegal in the table element.
-	if (!(computed_table.overflow_x == Style::Overflow::Visible || computed_table.overflow_x == Style::Overflow::Hidden) ||
-		!(computed_table.overflow_y == Style::Overflow::Visible || computed_table.overflow_y == Style::Overflow::Hidden))
+	if (!(computed_table.overflow_x() == Style::Overflow::Visible || computed_table.overflow_x() == Style::Overflow::Hidden) ||
+		!(computed_table.overflow_y() == Style::Overflow::Visible || computed_table.overflow_y() == Style::Overflow::Hidden))
 	{
 		Log::Message(Log::LT_WARNING, "Table elements can only have 'overflow' property values of 'visible' or 'hidden'. Table will not be formatted: %s.", element_table->GetAddress().c_str());
 		return Vector2f(0);
@@ -58,14 +59,14 @@ Vector2f LayoutTable::FormatTable(Box& box, Vector2f min_size, Vector2f max_size
 	Math::SnapToPixelGrid(table_content_offset, table_initial_content_size);
 
 	// When width or height is set, they act as minimum width or height, just as in CSS.
-	if (computed_table.width.type != Style::Width::Auto)
+	if (computed_table.width().type != Style::Width::Auto)
 		min_size.x = Math::Max(min_size.x, table_initial_content_size.x);
-	if (computed_table.height.type != Style::Height::Auto)
+	if (computed_table.height().type != Style::Height::Auto)
 		min_size.y = Math::Max(min_size.y, table_initial_content_size.y);
 
 	const Vector2f table_gap = Vector2f(
-		ResolveValue(computed_table.column_gap, table_initial_content_size.x), 
-		ResolveValue(computed_table.row_gap, table_initial_content_size.y)
+		ResolveValue(computed_table.column_gap(), table_initial_content_size.x), 
+		ResolveValue(computed_table.row_gap(), table_initial_content_size.y)
 	);
 
 	TableGrid grid;
@@ -123,7 +124,7 @@ void LayoutTable::DetermineColumnWidths()
 	{
 		if (Element* element_group = grid.columns[i].element_group)
 		{
-			const ComputedTrackSize computed = BuildComputedColumnSize(element_group->GetComputedValues());
+			const ComputedAxisSize computed = LayoutDetails::BuildComputedHorizontalSize(element_group->GetComputedValues());
 			const int span = grid.columns[i].group_span;
 
 			sizing.ApplyGroupElement(i, span, computed);
@@ -131,7 +132,7 @@ void LayoutTable::DetermineColumnWidths()
 
 		if (Element* element_column = grid.columns[i].element_column)
 		{
-			const ComputedTrackSize computed = BuildComputedColumnSize(element_column->GetComputedValues());
+			const ComputedAxisSize computed = LayoutDetails::BuildComputedHorizontalSize(element_column->GetComputedValues());
 			const int span = grid.columns[i].column_span;
 
 			sizing.ApplyTrackElement(i, span, computed);
@@ -143,7 +144,7 @@ void LayoutTable::DetermineColumnWidths()
 	{
 		if (Element* element_cell = grid.columns[i].element_cell)
 		{
-			const ComputedTrackSize computed = BuildComputedColumnSize(element_cell->GetComputedValues());
+			const ComputedAxisSize computed = LayoutDetails::BuildComputedHorizontalSize(element_cell->GetComputedValues());
 			const int colspan = grid.columns[i].cell_span;
 
 			sizing.ApplyCellElement(i, colspan, computed);
@@ -183,7 +184,7 @@ void LayoutTable::InitializeCellBoxes()
 		Box& box = cells[i];
 
 		// Determine the cell's box for formatting later, we may get an indefinite (-1) vertical content size.
-		LayoutDetails::BuildBox(box, table_initial_content_size, grid.cells[i].element_cell, false, 0.f);
+		LayoutDetails::BuildBox(box, table_initial_content_size, grid.cells[i].element_cell, BoxContext::FlexOrTable, 0.f);
 
 		// Determine the cell's content width. Include any spanning columns in the cell width.
 		const float cell_border_width = GetSpanningCellBorderSize(columns, grid.cells[i].column_begin, grid.cells[i].column_last);
@@ -223,7 +224,7 @@ void LayoutTable::DetermineRowHeights()
 		if (Element* element_group = grid.rows[i].element_group)
 		{
 			// The padding/border/margin of column groups are used, but their widths are ignored.
-			const ComputedTrackSize computed = BuildComputedRowSize(element_group->GetComputedValues());
+			const ComputedAxisSize computed = LayoutDetails::BuildComputedVerticalSize(element_group->GetComputedValues());
 			const int span = grid.rows[i].group_span;
 
 			sizing.ApplyGroupElement(i, span, computed);
@@ -232,7 +233,7 @@ void LayoutTable::DetermineRowHeights()
 		if (Element* element_row = grid.rows[i].element_row)
 		{
 			// The padding/border/margin and widths of columns are used.
-			const ComputedTrackSize computed = BuildComputedRowSize(element_row->GetComputedValues());
+			const ComputedAxisSize computed = LayoutDetails::BuildComputedVerticalSize(element_row->GetComputedValues());
 			
 			if (computed.size.type == Style::LengthPercentageAuto::Percentage)
 				percentage_size_used = true;
@@ -318,11 +319,10 @@ void LayoutTable::FormatRows()
 	RMLUI_ASSERT(rows.size() == grid.rows.size());
 
 	// Size and position the row and row group elements.
-	//   @performance: Maybe build the box using a simpler algorithm. Eg. we don't do anything for auto
-	//                 margins. Some of the information is already gathered in the TrackMetric.
 	auto FormatRow = [this](Element* element, float content_height, float offset_y) {
 		Box box;
-		LayoutDetails::BuildBox(box, table_initial_content_size, element, false, 0.0f);
+		// We use inline context here because we only care about padding, border, and (non-auto) margin.
+		LayoutDetails::BuildBox(box, table_initial_content_size, element, BoxContext::Inline, 0.0f);
 		const Vector2f content_size(
 			table_resulting_content_size.x - box.GetSizeAcross(Box::HORIZONTAL, Box::MARGIN, Box::PADDING),
 			content_height
@@ -353,7 +353,8 @@ void LayoutTable::FormatColumns()
 	// Size and position the column and column group elements.
 	auto FormatColumn = [this](Element* element, float content_width, float offset_x) {
 		Box box;
-		LayoutDetails::BuildBox(box, table_initial_content_size, element, false, 0.0f);
+		// We use inline context here because we only care about padding, border, and (non-auto) margin.
+		LayoutDetails::BuildBox(box, table_initial_content_size, element, BoxContext::Inline, 0.0f);
 		const Vector2f content_size(
 			content_width,
 			table_resulting_content_size.y - box.GetSizeAcross(Box::VERTICAL, Box::MARGIN, Box::PADDING)
@@ -387,7 +388,7 @@ void LayoutTable::FormatCells()
 		Element* element_cell = grid_cell.element_cell;
 
 		Box& box = cells[cell_index];
-		Style::VerticalAlign vertical_align = element_cell->GetComputedValues().vertical_align;
+		Style::VerticalAlign vertical_align = element_cell->GetComputedValues().vertical_align();
 
 		const float cell_border_height = GetSpanningCellBorderSize(rows, grid_cell.row_begin, grid_cell.row_last);
 		const Vector2f cell_offset = table_content_offset + Vector2f(

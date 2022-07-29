@@ -41,8 +41,6 @@
 namespace Urho3D
 {
 
-extern const char* NAVIGATION_CATEGORY;
-
 static const CrowdAgentRequestedTarget DEFAULT_AGENT_REQUEST_TARGET_TYPE = CA_REQUESTEDTARGET_NONE;
 static const float DEFAULT_AGENT_MAX_SPEED = 0.f;
 static const float DEFAULT_AGENT_MAX_ACCEL = 0.f;
@@ -104,7 +102,7 @@ CrowdAgent::~CrowdAgent()
 
 void CrowdAgent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CrowdAgent>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<CrowdAgent>(Category_Navigation);
 
     URHO3D_ATTRIBUTE("Target Position", Vector3, targetPosition_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Target Velocity", Vector3, targetVelocity_, Vector3::ZERO, AM_DEFAULT);

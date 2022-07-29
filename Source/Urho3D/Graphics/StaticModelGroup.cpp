@@ -38,8 +38,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 static const StringVector instanceNodesStructureElementNames =
 {
     "Instance Count",
@@ -57,7 +55,7 @@ StaticModelGroup::~StaticModelGroup() = default;
 
 void StaticModelGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticModelGroup>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<StaticModelGroup>(Category_Geometry);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
     URHO3D_ACCESSOR_ATTRIBUTE("Instance Nodes", GetNodeIDsAttr, SetNodeIDsAttr,

@@ -32,8 +32,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
-
 ConstraintMotor2D::ConstraintMotor2D(Context* context) :
     Constraint2D(context),
     linearOffset_(Vector2::ZERO)
@@ -45,7 +43,7 @@ ConstraintMotor2D::~ConstraintMotor2D() = default;
 
 void ConstraintMotor2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintMotor2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<ConstraintMotor2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Linear Offset", GetLinearOffset, SetLinearOffset, Vector2, Vector2::ZERO, AM_DEFAULT);

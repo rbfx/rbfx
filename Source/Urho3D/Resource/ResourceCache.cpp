@@ -1263,7 +1263,7 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
                 // Manual resources do not exist in resource dirs.
                 bool isPhysicalResource = false;
                 for (unsigned i = 0; i < resourceDirs_.size() && !isPhysicalResource; ++i)
-                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + pathName);
+                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + entryName);
 
                 if (!isPhysicalResource)
                 {

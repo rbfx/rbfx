@@ -104,24 +104,13 @@ struct MaterialShaderParameter
 /// %Material's technique list entry.
 struct URHO3D_API TechniqueEntry
 {
-    /// Construct with defaults.
     TechniqueEntry() noexcept;
-    /// Construct with parameters.
     TechniqueEntry(Technique* tech, MaterialQuality qualityLevel, float lodDistance) noexcept;
-    /// Destruct.
     ~TechniqueEntry() noexcept = default;
 
-    /// Instance equality operator.
-    bool operator ==(const TechniqueEntry& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const TechniqueEntry& rhs) const
-    {
-        return this != &rhs;
-    }
+    bool operator<(const TechniqueEntry& rhs) const;
+    bool operator ==(const TechniqueEntry& rhs) const;
+    bool operator !=(const TechniqueEntry& rhs) const { return !(*this == rhs); }
 
     /// Technique.
     SharedPtr<Technique> technique_;
@@ -199,6 +188,8 @@ public:
     void SetNumTechniques(unsigned num);
     /// Set technique.
     void SetTechnique(unsigned index, Technique* tech, MaterialQuality qualityLevel = QUALITY_LOW, float lodDistance = 0.0f);
+    /// Set all techniques in bulk.
+    void SetTechniques(const ea::vector<TechniqueEntry>& techniques);
     /// Set additional vertex shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
     /// @property
     void SetVertexShaderDefines(const ea::string& defines);

@@ -22,67 +22,79 @@
 
 #pragma once
 
-
-#include "../Container/Str.h"
+#include "../Container/ConstString.h"
 
 
 namespace Urho3D
 {
 
-// Engine parameters
-static const ea::string EP_AUTOLOAD_PATHS = "AutoloadPaths";
-static const ea::string EP_BORDERLESS = "Borderless";
-static const ea::string EP_DUMP_SHADERS = "DumpShaders";
-static const ea::string EP_EXTERNAL_WINDOW = "ExternalWindow";
-static const ea::string EP_FLUSH_GPU = "FlushGPU";
-static const ea::string EP_FORCE_GL2 = "ForceGL2";
-static const ea::string EP_FRAME_LIMITER = "FrameLimiter";
-static const ea::string EP_FULL_SCREEN = "FullScreen";
-static const ea::string EP_GPU_DEBUG = "GPUDebug";
-static const ea::string EP_HEADLESS = "Headless";
-static const ea::string EP_VALIDATE_SHADERS = "ValidateShaders";
-static const ea::string EP_HIGH_DPI = "HighDPI";
-static const ea::string EP_LOG_LEVEL = "LogLevel";
-static const ea::string EP_LOG_NAME = "LogName";
-static const ea::string EP_LOG_QUIET = "LogQuiet";
-static const ea::string EP_LOW_QUALITY_SHADOWS = "LowQualityShadows";
-static const ea::string EP_MATERIAL_QUALITY = "MaterialQuality";
-static const ea::string EP_MONITOR = "Monitor";
-static const ea::string EP_MULTI_SAMPLE = "MultiSample";
-static const ea::string EP_ORGANIZATION_NAME = "OrganizationName";
-static const ea::string EP_APPLICATION_NAME = "ApplicationName";
-static const ea::string EP_ORIENTATIONS = "Orientations";
-static const ea::string EP_PACKAGE_CACHE_DIR = "PackageCacheDir";
-static const ea::string EP_RENDER_PATH = "RenderPath";
-static const ea::string EP_REFRESH_RATE = "RefreshRate";
-static const ea::string EP_RESOURCE_PACKAGES = "ResourcePackages";
-static const ea::string EP_RESOURCE_PATHS = "ResourcePaths";
-static const ea::string EP_RESOURCE_PREFIX_PATHS = "ResourcePrefixPaths";
-static const ea::string EP_SHADER_CACHE_DIR = "ShaderCacheDir";
-static const ea::string EP_SHADOWS = "Shadows";
-static const ea::string EP_SOUND = "Sound";
-static const ea::string EP_SOUND_BUFFER = "SoundBuffer";
-static const ea::string EP_SOUND_INTERPOLATION = "SoundInterpolation";
-static const ea::string EP_SOUND_MIX_RATE = "SoundMixRate";
-static const ea::string EP_SOUND_MODE = "SoundMode";
-static const ea::string EP_TEXTURE_ANISOTROPY = "TextureAnisotropy";
-static const ea::string EP_TEXTURE_FILTER_MODE = "TextureFilterMode";
-static const ea::string EP_TEXTURE_QUALITY = "TextureQuality";
-static const ea::string EP_TIME_OUT = "TimeOut";
-static const ea::string EP_TOUCH_EMULATION = "TouchEmulation";
-static const ea::string EP_TRIPLE_BUFFER = "TripleBuffer";
-static const ea::string EP_VSYNC = "VSync";
-static const ea::string EP_WINDOW_HEIGHT = "WindowHeight";
-static const ea::string EP_WINDOW_ICON = "WindowIcon";
-static const ea::string EP_WINDOW_POSITION_X = "WindowPositionX";
-static const ea::string EP_WINDOW_POSITION_Y = "WindowPositionY";
-static const ea::string EP_WINDOW_RESIZABLE = "WindowResizable";
-static const ea::string EP_WINDOW_MAXIMIZE = "WindowMaximize";
-static const ea::string EP_WINDOW_TITLE = "WindowTitle";
-static const ea::string EP_WINDOW_WIDTH = "WindowWidth";
-static const ea::string EP_WORKER_THREADS = "WorkerThreads";
-static const ea::string EP_ENGINE_CLI_PARAMETERS = "EngineCliParameters";
-static const ea::string EP_ENGINE_AUTO_LOAD_SCRIPTS = "EngineAutoLoadScripts";
-static const ea::string EP_SYSTEMUI_FLAGS = "SystemUIFlags";
-static const ea::string EP_CONFIG_DIR = "ConfigurationDir";
+/// Engine parameters
+/// TODO: Rename to CamelCase
+/// @{
+URHO3D_GLOBAL_CONSTANT(ConstString EP_APPLICATION_NAME{"ApplicationName"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_AUTOLOAD_PATHS{"AutoloadPaths"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_BORDERLESS{"Borderless"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_DUMP_SHADERS{"DumpShaders"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_ENGINE_AUTO_LOAD_SCRIPTS{"EngineAutoLoadScripts"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_ENGINE_CLI_PARAMETERS{"EngineCliParameters"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_EXTERNAL_WINDOW{"ExternalWindow"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_FLUSH_GPU{"FlushGPU"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_FORCE_GL2{"ForceGL2"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_FRAME_LIMITER{"FrameLimiter"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_FULL_SCREEN{"FullScreen"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_GPU_DEBUG{"GPUDebug"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_HEADLESS{"Headless"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_HIGH_DPI{"HighDPI"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_LOG_LEVEL{"LogLevel"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_LOG_NAME{"LogName"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_LOG_QUIET{"LogQuiet"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_LOW_QUALITY_SHADOWS{"LowQualityShadows"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_MAIN_PLUGIN{"MainPlugin"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_MATERIAL_QUALITY{"MaterialQuality"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_MONITOR{"Monitor"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_MULTI_SAMPLE{"MultiSample"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_ORGANIZATION_NAME{"OrganizationName"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_ORIENTATIONS{"Orientations"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_PACKAGE_CACHE_DIR{"PackageCacheDir"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_PLUGINS{"Plugins"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_REFRESH_RATE{"RefreshRate"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_RENDER_PATH{"RenderPath"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_RESOURCE_PACKAGES{"ResourcePackages"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_RESOURCE_PATHS{"ResourcePaths"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_RESOURCE_PREFIX_PATHS{"ResourcePrefixPaths"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SHADER_CACHE_DIR{"ShaderCacheDir"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SHADOWS{"Shadows"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND{"Sound"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND_BUFFER{"SoundBuffer"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND_INTERPOLATION{"SoundInterpolation"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND_MIX_RATE{"SoundMixRate"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND_MODE{"SoundMode"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SYSTEMUI_FLAGS{"SystemUIFlags"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_TEXTURE_ANISOTROPY{"TextureAnisotropy"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_TEXTURE_FILTER_MODE{"TextureFilterMode"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_TEXTURE_QUALITY{"TextureQuality"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_TIME_OUT{"TimeOut"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_TOUCH_EMULATION{"TouchEmulation"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_TRIPLE_BUFFER{"TripleBuffer"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_VALIDATE_SHADERS{"ValidateShaders"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_VSYNC{"VSync"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_HEIGHT{"WindowHeight"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_ICON{"WindowIcon"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_MAXIMIZE{"WindowMaximize"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_POSITION_X{"WindowPositionX"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_POSITION_Y{"WindowPositionY"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_RESIZABLE{"WindowResizable"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_TITLE{"WindowTitle"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_WIDTH{"WindowWidth"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_WORKER_THREADS{"WorkerThreads"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_CONFIG_DIR{"ConfigurationDir"});
+/// @}
+
+/// Global parameters for user code which go as Engine parameters as convenience.
+/// @{
+URHO3D_GLOBAL_CONSTANT(ConstString Param_SceneName{"SceneName"});
+URHO3D_GLOBAL_CONSTANT(ConstString Param_ScenePosition{"ScenePosition"});
+URHO3D_GLOBAL_CONSTANT(ConstString Param_SceneRotation{"SceneRotation"});
+/// @}
+
 }

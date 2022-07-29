@@ -27,6 +27,7 @@
  */
 
 #include "DecoratorGradient.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Element.h"
 #include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/Geometry.h"
@@ -70,13 +71,13 @@ DecoratorDataHandle DecoratorGradient::GenerateElementData(Element* element) con
 	const Box& box = element->GetBox();
 
 	const ComputedValues& computed = element->GetComputedValues();
-	const float opacity = computed.opacity;
+	const float opacity = computed.opacity();
 
 	const Vector4f border_radius{
-		computed.border_top_left_radius,
-		computed.border_top_right_radius,
-		computed.border_bottom_right_radius,
-		computed.border_bottom_left_radius,
+		computed.border_top_left_radius(),
+		computed.border_top_right_radius(),
+		computed.border_bottom_right_radius(),
+		computed.border_bottom_left_radius(),
 	};
 	GeometryUtilities::GenerateBackgroundBorder(geometry, element->GetBox(), Vector2f(0), border_radius, Colourb());
 
@@ -95,16 +96,16 @@ DecoratorDataHandle DecoratorGradient::GenerateElementData(Element* element) con
 	{
 		for (int i = 0; i < (int)vertices.size(); i++)
 		{
-			const float t = (vertices[i].position.x - padding_offset.x) / padding_size.x;
-			vertices[i].colour = Math::Lerp(Math::Clamp(t, 0.0f, 1.0f), colour_start, colour_stop);
+			const float t = Math::Clamp((vertices[i].position.x - padding_offset.x) / padding_size.x, 0.0f, 1.0f);
+			vertices[i].colour = Math::RoundedLerp(t, colour_start, colour_stop);
 		}
 	}
 	else if (dir == Direction::Vertical)
 	{
 		for (int i = 0; i < (int)vertices.size(); i++)
 		{
-			const float t = (vertices[i].position.y - padding_offset.y) / padding_size.y;
-			vertices[i].colour = Math::Lerp(t, colour_start, colour_stop);
+			const float t = Math::Clamp((vertices[i].position.y - padding_offset.y) / padding_size.y, 0.0f, 1.0f);
+			vertices[i].colour = Math::RoundedLerp(t, colour_start, colour_stop);
 		}
 	}
 

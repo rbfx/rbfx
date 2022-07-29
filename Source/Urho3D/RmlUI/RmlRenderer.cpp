@@ -80,6 +80,7 @@ void RmlRenderer::BeginRendering()
     vertexBuffer_->Discard();
     indexBuffer_->Discard();
     drawQueue_->Reset(false);
+    textures_.clear();
 
     VertexBuffer* vertexBuffer = vertexBuffer_->GetVertexBuffer();
     IndexBuffer* indexBuffer = indexBuffer_->GetIndexBuffer();
@@ -200,7 +201,10 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
     drawQueue_->SetPipelineState(pipelineState);
 
     if (texture)
+    {
         drawQueue_->AddShaderResource(TU_DIFFUSE, texture);
+        textures_.emplace_back(texture);
+    }
     drawQueue_->CommitShaderResources();
 
     if (drawQueue_->BeginShaderParameterGroup(SP_CAMERA, false))

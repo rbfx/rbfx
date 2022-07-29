@@ -33,6 +33,10 @@ namespace Urho3D
 
 class AsyncExecRequest;
 
+/// Alias for type used for file times.
+/// TODO(editor): Make 64 bit?
+using FileTime = unsigned;
+
 /// Return files.
 static const unsigned SCAN_FILES = 0x1;
 /// Return directories.
@@ -82,7 +86,9 @@ public:
     /// Register a path as allowed to access. If no paths are registered, all are allowed. Registering allowed paths is considered securing the Urho3D execution environment: running programs and opening files externally through the system will fail afterward.
     void RegisterPath(const ea::string& pathName);
     /// Set a file's last modified time as seconds since 1.1.1970. Return true on success.
-    bool SetLastModifiedTime(const ea::string& fileName, unsigned newTime);
+    bool SetLastModifiedTime(const ea::string& fileName, FileTime newTime);
+    /// Reveal path or file in OS file browser.
+    bool Reveal(const ea::string& path);
 
     /// Return the absolute current working directory.
     /// @property
@@ -98,7 +104,7 @@ public:
     /// Check if a path is allowed to be accessed. If no paths are registered, all are allowed.
     bool CheckAccess(const ea::string& pathName) const;
     /// Returns the file's last modified time as seconds since 1.1.1970, or 0 if can not be accessed.
-    unsigned GetLastModifiedTime(const ea::string& fileName) const;
+    FileTime GetLastModifiedTime(const ea::string& fileName, bool creationIsModification = false) const;
     /// Check if a file exists.
     bool FileExists(const ea::string& fileName) const;
     /// Check if a directory exists.
@@ -120,7 +126,7 @@ public:
     /// Check if a file or directory exists at the specified path
     bool Exists(const ea::string& pathName) const { return FileExists(pathName) || DirExists(pathName); }
     /// Copy files from one directory to another.
-    bool CopyDir(const ea::string& directoryIn, const ea::string& directoryOut);
+    bool CopyDir(const ea::string& directoryIn, const ea::string& directoryOut, StringVector* copiedFiles = nullptr);
     /// Create subdirectories. New subdirectories will be made only in a subpath specified by `subdirectory`.
     bool CreateDirs(const ea::string& root, const ea::string& subdirectory);
     /// Create specified subdirectory and any parent directory if it does not exist.
@@ -130,6 +136,8 @@ public:
     /// Return path of temporary directory. Path always ends with a forward slash.
     /// @property
     ea::string GetTemporaryDir() const;
+    /// Try to find resource prefix path starting from executable and going up.
+    ea::string FindResourcePrefixPath() const;
 
 private:
     /// Scan directory, called internally.
@@ -151,11 +159,17 @@ private:
 };
 
 /// Helper class to create and destory temporary directory.
-class URHO3D_API TemporaryDir : public NonCopyable
+class URHO3D_API TemporaryDir : public MovableNonCopyable
 {
 public:
     TemporaryDir(Context* context, const ea::string& path);
     ~TemporaryDir();
+
+    TemporaryDir(TemporaryDir&& rhs);
+    TemporaryDir& operator = (TemporaryDir&& rhs);
+
+    /// Return the path.
+    ea::string GetPath() const { return path_; }
 
 private:
     FileSystem* fs_{};
@@ -193,6 +207,8 @@ URHO3D_API bool IsAbsolutePath(const ea::string& pathName);
 URHO3D_API bool IsAbsoluteParentPath(const ea::string& absParentPath, const ea::string& fullPath);
 ///
 URHO3D_API ea::string GetSanitizedPath(const ea::string& path);
+/// Convert file name to valid Windows filename.
+URHO3D_API ea::string GetSanitizedName(const ea::string& name);
 /// Given two absolute directory paths, get the relative path from one to the other
 /// Returns false if either path isn't absolute, or if they are unrelated
 URHO3D_API bool GetRelativePath(const ea::string& fromPath, const ea::string& toPath, ea::string& output);

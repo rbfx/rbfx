@@ -50,8 +50,6 @@ static const char* typeNames[] =
     nullptr
 };
 
-extern const char* PHYSICS_CATEGORY;
-
 Constraint::Constraint(Context* context) :
     Component(context),
     constraintType_(CONSTRAINT_POINT),
@@ -81,7 +79,7 @@ Constraint::~Constraint()
 
 void Constraint::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Constraint>(PHYSICS_CATEGORY);
+    context->RegisterFactory<Constraint>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Constraint Type", constraintType_, MarkConstraintDirty, typeNames, CONSTRAINT_POINT, AM_DEFAULT);

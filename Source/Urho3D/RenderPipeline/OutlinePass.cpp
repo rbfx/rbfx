@@ -77,10 +77,12 @@ DrawableProcessorPass::AddBatchResult OutlineScenePass::AddCustomBatch(
         if (!outlineGroup->ContainsDrawable(drawable))
             continue;
 
-        Pass* referencePass = GetFirstPass(technique, outlinedPasses_);
-        geometryBatches_.PushBack(threadIndex, GeometryBatch::Deferred(drawable, sourceBatchIndex, referencePass, outlineGroup));
+        if (Pass* referencePass = GetFirstPass(technique, outlinedPasses_))
+        {
+            geometryBatches_.PushBack(threadIndex, GeometryBatch::Deferred(drawable, sourceBatchIndex, referencePass, outlineGroup));
 
-        batchAdded = true;
+            batchAdded = true;
+        }
     }
 
     return {batchAdded, false};
@@ -161,10 +163,10 @@ void OutlinePass::OnRenderBegin(const CommonFrameInfo& frameInfo)
         outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     }
 
-    if (!pipelineState_)
-    {
-        pipelineState_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "");
-    }
+    if (!pipelineStateLinear_)
+        pipelineStateLinear_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "URHO3D_GAMMA_CORRECTION");
+    if (!pipelineStateGamma_)
+        pipelineStateGamma_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "");
 }
 
 void OutlinePass::Execute()
@@ -172,7 +174,9 @@ void OutlinePass::Execute()
     if (!enabled_)
         return;
 
-    if (!pipelineState_->IsValid())
+    const bool inLinearSpace = renderBufferManager_->GetSettings().colorSpace_ != RenderPipelineColorSpace::GammaLDR;
+    PipelineState* pipelineState = inLinearSpace ? pipelineStateLinear_ : pipelineStateGamma_;
+    if (!pipelineState->IsValid())
         return;
 
     auto texture = outlineBuffer_->GetTexture();
@@ -182,7 +186,7 @@ void OutlinePass::Execute()
     const ShaderResourceDesc shaderResources[] = {{TU_DIFFUSE, texture}};
 
     renderBufferManager_->SetOutputRenderTargers();
-    renderBufferManager_->DrawViewportQuad("Apply outline", pipelineState_, shaderResources, result);
+    renderBufferManager_->DrawViewportQuad("Apply outline", pipelineState, shaderResources, result);
 }
 
 }

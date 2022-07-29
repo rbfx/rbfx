@@ -28,8 +28,9 @@
 #include "../Container/Ptr.h"
 #include "../Core/Context.h"
 #include "../Core/Main.h"
+#include "../Core/Macros.h"
 #include "../Engine/Engine.h"
-#include "../Engine/PluginApplication.h"
+#include "../Plugins/PluginApplication.h"
 
 namespace Urho3D
 {
@@ -69,13 +70,11 @@ protected:
     /// Urho3D engine.
     SharedPtr<Engine> engine_;
     /// Engine parameters map.
-    VariantMap engineParameters_;
+    StringVariantMap engineParameters_;
     /// Collected startup error log messages.
     ea::string startupErrors_;
     /// Application exit code.
     int exitCode_;
-    /// A plugin responsible for automatically loading scripts from resource path.
-    SharedPtr<PluginApplication> scriptsPlugin_;
 };
 
 // Macro for defining a main function which creates a Context and the application, then runs it

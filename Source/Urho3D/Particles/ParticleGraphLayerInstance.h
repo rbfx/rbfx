@@ -170,7 +170,7 @@ inline void ParticleGraphLayerInstance::DestroyParticles()
     if (!destructionQueueSize_)
         return;
     auto queue = destructionQueue_.subspan(0, destructionQueueSize_);
-    ea::sort(queue.begin(), queue.end(), ea::greater<float>());
+    ea::sort(queue.begin(), queue.end(), ea::greater<unsigned>());
     //TODO: Eliminate duplicates.
     for (unsigned index: queue)
     {

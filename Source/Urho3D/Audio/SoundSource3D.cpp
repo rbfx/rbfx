@@ -41,8 +41,6 @@ static const float MIN_ROLLOFF = 0.1f;
 static const Color INNER_COLOR(1.0f, 0.5f, 1.0f);
 static const Color OUTER_COLOR(1.0f, 0.0f, 1.0f);
 
-extern const char* AUDIO_CATEGORY;
-
 SoundSource3D::SoundSource3D(Context* context) :
     SoundSource(context),
     nearDistance_(DEFAULT_NEARDISTANCE),
@@ -57,7 +55,7 @@ SoundSource3D::SoundSource3D(Context* context) :
 
 void SoundSource3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundSource3D>(AUDIO_CATEGORY);
+    context->RegisterFactory<SoundSource3D>(Category_Audio);
 
     URHO3D_COPY_BASE_ATTRIBUTES(SoundSource);
     // Remove Attenuation and Panning as attribute as they are constantly being updated

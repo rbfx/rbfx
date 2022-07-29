@@ -120,14 +120,6 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, const ea::string& filename)
 
 static TechniqueEntry noEntry;
 
-bool CompareTechniqueEntries(const TechniqueEntry& lhs, const TechniqueEntry& rhs)
-{
-    if (lhs.lodDistance_ != rhs.lodDistance_)
-        return lhs.lodDistance_ > rhs.lodDistance_;
-    else
-        return lhs.qualityLevel_ > rhs.qualityLevel_;
-}
-
 TechniqueEntry::TechniqueEntry() noexcept :
     qualityLevel_(QUALITY_LOW),
     lodDistance_(0.0f)
@@ -140,6 +132,21 @@ TechniqueEntry::TechniqueEntry(Technique* tech, MaterialQuality qualityLevel, fl
     qualityLevel_(qualityLevel),
     lodDistance_(lodDistance)
 {
+}
+
+bool TechniqueEntry::operator<(const TechniqueEntry& rhs) const
+{
+    if (lodDistance_ != rhs.lodDistance_)
+        return lodDistance_ > rhs.lodDistance_;
+    else
+        return qualityLevel_ > rhs.qualityLevel_;
+}
+
+bool TechniqueEntry::operator ==(const TechniqueEntry& rhs) const
+{
+    return technique_ == rhs.technique_
+        && qualityLevel_ == rhs.qualityLevel_
+        && lodDistance_ == rhs.lodDistance_;
 }
 
 ShaderParameterAnimationInfo::ShaderParameterAnimationInfo(Material* material, const ea::string& name, ValueAnimation* attributeAnimation,
@@ -916,6 +923,13 @@ void Material::SetTechnique(unsigned index, Technique* tech, MaterialQuality qua
     ApplyShaderDefines(index);
 }
 
+void Material::SetTechniques(const ea::vector<TechniqueEntry>& techniques)
+{
+    techniques_ = techniques;
+    SortTechniques();
+    ApplyShaderDefines();
+}
+
 void Material::SetVertexShaderDefines(const ea::string& defines)
 {
     if (defines != vertexShaderDefines_)
@@ -1176,7 +1190,7 @@ SharedPtr<Material> Material::Clone(const ea::string& cloneName) const
 
 void Material::SortTechniques()
 {
-    ea::quick_sort(techniques_.begin(), techniques_.end(), CompareTechniqueEntries);
+    ea::sort(techniques_.begin(), techniques_.end());
 }
 
 void Material::MarkForAuxView(unsigned frameNumber)
@@ -1443,8 +1457,8 @@ unsigned Material::RecalculatePipelineStateHash() const
     CombineHash(hash, cullMode_);
     CombineHash(hash, shadowCullMode_);
     CombineHash(hash, fillMode_);
-    CombineHash(hash, depthBias_.constantBias_);
-    CombineHash(hash, depthBias_.slopeScaledBias_);
+    CombineHash(hash, MakeHash(depthBias_.constantBias_));
+    CombineHash(hash, MakeHash(depthBias_.slopeScaledBias_));
     CombineHash(hash, alphaToCoverage_);
     CombineHash(hash, specular_);
     for (const auto& item : textures_)

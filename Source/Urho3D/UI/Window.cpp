@@ -36,8 +36,6 @@ namespace Urho3D
 
 static const int DEFAULT_RESIZE_BORDER = 4;
 
-extern const char* UI_CATEGORY;
-
 Window::Window(Context* context) :
     BorderImage(context),
     movable_(false),
@@ -61,7 +59,7 @@ Window::~Window() = default;
 
 void Window::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Window>(UI_CATEGORY);
+    context->RegisterFactory<Window>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Bring To Front", true);

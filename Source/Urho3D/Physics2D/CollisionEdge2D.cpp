@@ -31,7 +31,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
 static const Vector2 DEFAULT_VERTEX1(-0.01f, 0.0f);
 static const Vector2 DEFAULT_VERTEX2(0.01f, 0.0f);
 
@@ -50,7 +49,7 @@ CollisionEdge2D::~CollisionEdge2D() = default;
 
 void CollisionEdge2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionEdge2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<CollisionEdge2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Vertex 1", GetVertex1, SetVertex1, Vector2, DEFAULT_VERTEX1, AM_DEFAULT);
