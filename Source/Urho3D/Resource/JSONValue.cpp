@@ -491,6 +491,10 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
         SetVariantMap(variant.GetVariantMap(), context);
         return;
 
+    case VAR_STRINGVARIANTMAP:
+        SetStringVariantMap(variant.GetStringVariantMap(), context);
+        return;
+
     case VAR_RESOURCEREF:
         {
             if (!context)
@@ -591,6 +595,10 @@ Variant JSONValue::GetVariantValue(VariantType type, Context* context) const
         variant = GetVariantMap();
         break;
 
+    case VAR_STRINGVARIANTMAP:
+        variant = GetStringVariantMap();
+        break;
+
     case VAR_RESOURCEREF:
         {
             ResourceRef ref;
@@ -677,8 +685,8 @@ Variant JSONValue::GetVariantValue(VariantType type, Context* context) const
 void JSONValue::SetVariantMap(const VariantMap& variantMap, Context* context)
 {
     SetType(JSON_OBJECT);
-    for (auto i = variantMap.begin(); i != variantMap.end(); ++i)
-        (*this)[i->first.ToString()].SetVariant(i->second);
+    for (const auto& [key, value] : variantMap)
+        (*this)[key.ToString()].SetVariant(value);
 }
 
 VariantMap JSONValue::GetVariantMap() const
@@ -690,11 +698,36 @@ VariantMap JSONValue::GetVariantMap() const
         return variantMap;
     }
 
-    for (const auto& i : *this)
+    for (const auto& [stringKey, value] : *this)
     {
         /// \todo Ideally this should allow any strings, but for now the convention is that the keys need to be hexadecimal StringHashes
-        StringHash key(ToUInt(i.first, 16));
-        Variant variant = i.second.GetVariant();
+        const StringHash hashKey(ToUInt(stringKey, 16));
+        const Variant variant = value.GetVariant();
+        variantMap[hashKey] = variant;
+    }
+
+    return variantMap;
+}
+
+void JSONValue::SetStringVariantMap(const StringVariantMap& variantMap, Context* context)
+{
+    SetType(JSON_OBJECT);
+    for (const auto& [key, value] : variantMap)
+        (*this)[key].SetVariant(value);
+}
+
+StringVariantMap JSONValue::GetStringVariantMap() const
+{
+    StringVariantMap variantMap;
+    if (!IsObject())
+    {
+        URHO3D_LOGERROR("JSONValue is not a object");
+        return variantMap;
+    }
+
+    for (const auto& [key, value] : *this)
+    {
+        const Variant variant = value.GetVariant();
         variantMap[key] = variant;
     }
 

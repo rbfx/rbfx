@@ -289,6 +289,10 @@ public:
     void SetVariantVector(const VariantVector& variantVector, Context* context = nullptr);
     /// Return a variant vector.
     VariantVector GetVariantVector() const;
+    /// Set string variant map, context must provide for resource ref.
+    void SetStringVariantMap(const StringVariantMap& variantMap, Context* context = nullptr);
+    /// Return a string variant map.
+    StringVariantMap GetStringVariantMap() const;
 
     /// Empty JSON value.
     static const JSONValue EMPTY;

@@ -39,6 +39,7 @@ const VariantMap Variant::emptyVariantMap;
 const VariantVector Variant::emptyVariantVector { };
 const StringVector Variant::emptyStringVector { };
 const VariantCurve Variant::emptyCurve;
+const StringVariantMap Variant::emptyStringVariantMap;
 
 static const char* typeNames[] =
 {
@@ -71,6 +72,7 @@ static const char* typeNames[] =
     "Int64",
     "Custom",
     "VariantCurve",
+    "StringVariantMap",
     nullptr
 };
 
@@ -136,6 +138,10 @@ Variant& Variant::operator =(const Variant& rhs)
 
     case VAR_VARIANTCURVE:
         *value_.variantCurve_ = *rhs.value_.variantCurve_;
+        break;
+
+    case VAR_STRINGVARIANTMAP:
+        *value_.stringVariantMap_ = *rhs.value_.stringVariantMap_;
         break;
 
     default:
@@ -245,6 +251,9 @@ bool Variant::operator ==(const Variant& rhs) const
 
     case VAR_VARIANTCURVE:
         return *value_.variantCurve_ == *rhs.value_.variantCurve_;
+
+    case VAR_STRINGVARIANTMAP:
+        return *value_.stringVariantMap_ == *rhs.value_.stringVariantMap_;
 
     default:
         return true;
@@ -368,6 +377,7 @@ Variant::Variant(VariantType type)
     case VAR_VARIANTVECTOR:
     case VAR_VARIANTMAP:
     case VAR_STRINGVECTOR:
+    case VAR_STRINGVARIANTMAP:
         SetType(type);
         break;
 
@@ -636,7 +646,7 @@ ea::string Variant::ToString() const
         return GetCustomVariantValuePtr()->ToString();
 
     default:
-        // VAR_RESOURCEREF, VAR_RESOURCEREFLIST, VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP, VAR_VARIANTCURVE
+        // VAR_RESOURCEREF, VAR_RESOURCEREFLIST, VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP, VAR_VARIANTCURVE, VAR_STRINGVARIANTMAP
         // Reference string serialization requires typehash-to-name mapping from the context. Can not support here
         // Also variant map or vector string serialization is not supported. XML or binary save should be used instead
         return EMPTY_STRING;
@@ -740,6 +750,9 @@ bool Variant::IsZero() const
     case VAR_VARIANTCURVE:
         return *value_.variantCurve_ == emptyCurve;
 
+    case VAR_STRINGVARIANTMAP:
+        return value_.stringVariantMap_->empty();
+
     default:
         return true;
     }
@@ -804,6 +817,10 @@ void Variant::SetType(VariantType newType)
         delete value_.variantCurve_;
         break;
 
+    case VAR_STRINGVARIANTMAP:
+        delete value_.stringVariantMap_;
+        break;
+
     default:
         break;
     }
@@ -863,6 +880,10 @@ void Variant::SetType(VariantType newType)
 
     case VAR_VARIANTCURVE:
         value_.variantCurve_ = new VariantCurve();
+        break;
+
+    case VAR_STRINGVARIANTMAP:
+        value_.stringVariantMap_ = new StringVariantMap();
         break;
 
     default:
@@ -1095,6 +1116,11 @@ template <> VariantCurve Variant::Get<VariantCurve>() const
     return GetVariantCurve();
 }
 
+template <> StringVariantMap Variant::Get<StringVariantMap>() const
+{
+    return GetStringVariantMap();
+}
+
 ea::string Variant::GetTypeName(VariantType type)
 {
     return typeNames[type];
@@ -1239,6 +1265,8 @@ unsigned Variant::ToHash() const
         return MakeHash(Get<long long>());
     case Urho3D::VAR_VARIANTCURVE:
         return MakeHash(Get<VariantCurve>());
+    case Urho3D::VAR_STRINGVARIANTMAP:
+        return MakeHash(Get<StringVariantMap>());
     case Urho3D::VAR_CUSTOM:
     default:
         assert(false);
@@ -1300,6 +1328,8 @@ unsigned GetVariantTypeSize(VariantType variant)
         return sizeof(Matrix3x4);
     case VAR_MATRIX4:
         return sizeof(Matrix4);
+    case VAR_STRINGVARIANTMAP:
+        return sizeof(StringVariantMap);
     }
     assert(!"Unsupported value type");
     return 0;

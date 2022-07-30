@@ -398,7 +398,8 @@ bool EditVariantType(VariantType& value, const char* button)
         VAR_RECT,
         VAR_INTVECTOR3,
         VAR_INT64,
-        VAR_VARIANTCURVE
+        VAR_VARIANTCURVE,
+        VAR_STRINGVARIANTMAP,
     };
 
     bool modified = false;
@@ -531,6 +532,9 @@ bool EditStringVector(StringVector& value, bool resizable)
 
     if (resizable)
     {
+        // TODO(editor): this "static" is bad in theory
+        static ea::string newElement;
+
         const IdScopeGuard guardAddElement{"##AddElement"};
 
         const bool isButtonClicked = ui::Button(ICON_FA_SQUARE_PLUS " Add item");
@@ -538,8 +542,6 @@ bool EditStringVector(StringVector& value, bool resizable)
 
         ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
 
-        // TODO(editor): this "static" is bad in theory
-        static ea::string newElement;
         const bool isTextClicked = ui::InputText("", &newElement, ImGuiInputTextFlags_EnterReturnsTrue);
 
         if (isButtonClicked || isTextClicked)
@@ -555,10 +557,87 @@ bool EditStringVector(StringVector& value, bool resizable)
     return modified;
 }
 
+bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicTypes)
+{
+    bool modified = false;
+    ea::optional<ea::string> pendingRemove;
+
+    StringVector sortedKeys = value.keys();
+    ea::sort(sortedKeys.begin(), sortedKeys.end());
+
+    for (const auto& key : sortedKeys)
+    {
+        const IdScopeGuard guardKey{key.c_str()};
+
+        Widgets::ItemLabel(key.c_str());
+
+        if (resizable)
+        {
+            if (ui::Button(ICON_FA_TRASH_CAN))
+                pendingRemove = key;
+            ui::SameLine();
+            if (ui::IsItemHovered())
+                ui::SetTooltip("Remove item");
+        }
+
+        VariantType elementType = value[key].GetType();
+        if (dynamicTypes)
+        {
+            if (EditVariantType(elementType))
+            {
+                value[key] = Variant{elementType};
+                modified = true;
+            }
+            ui::SameLine();
+        }
+
+        if (EditVariantValue(value[key]))
+            modified = true;
+    }
+
+    if (pendingRemove && value.contains(*pendingRemove))
+    {
+        value.erase(*pendingRemove);
+        modified = true;
+    }
+
+    if (resizable)
+    {
+        // TODO(editor): this "static" is bad in theory
+        static ea::string newKey;
+        static VariantType newElementType = VAR_STRING;
+
+        const IdScopeGuard guardAddElement{"##AddElement"};
+
+        const ea::string addItemTitle = Format(ICON_FA_SQUARE_PLUS " Add new {}", Variant::GetTypeName(newElementType));
+        const bool isButtonClicked = ui::Button(addItemTitle.c_str());
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Add new item to the map");
+        ui::SameLine();
+
+        EditVariantType(newElementType);
+        ui::SameLine();
+
+        ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+        const bool isTextClicked = ui::InputText("", &newKey, ImGuiInputTextFlags_EnterReturnsTrue);
+
+        if (isButtonClicked || isTextClicked)
+        {
+            value[newKey] = Variant{newElementType};
+            modified = true;
+        }
+
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Item name");
+    }
+
+    return modified;
+}
+
 bool EditVariantColor(Variant& var, const EditVariantOptions& options)
 {
     const bool isColor = var.GetType() == VAR_COLOR;
-    const bool hasAlpha = var.GetType() == VAR_VECTOR4;
+    const bool hasAlpha = isColor || var.GetType() == VAR_VECTOR4;
 
     ImGuiColorEditFlags flags{};
     if (!hasAlpha)
@@ -740,12 +819,13 @@ bool EditVariantVector(Variant& var, const EditVariantOptions& options)
     if (!ui::CollapsingHeader("##Elements"))
         return false;
 
+    VariantVector* value = var.GetVariantVectorPtr();
+    URHO3D_ASSERT(value);
+
     bool modified = false;
-    VariantVector value = var.GetVariantVector();
     ui::Indent();
-    if (EditVariantVector(value, options.allowResize_, options.allowTypeChange_, options.sizedStructVectorElements_))
+    if (EditVariantVector(*value, options.allowResize_, options.allowTypeChange_, options.sizedStructVectorElements_))
     {
-        var = value;
         modified = true;
     }
     ui::Unindent();
@@ -757,12 +837,31 @@ bool EditVariantStringVector(Variant& var, const EditVariantOptions& options)
     if (!ui::CollapsingHeader("##Elements"))
         return false;
 
+    StringVector* value = var.GetStringVectorPtr();
+    URHO3D_ASSERT(value);
+
     bool modified = false;
-    StringVector value = var.GetStringVector();
     ui::Indent();
-    if (EditStringVector(value, options.allowResize_))
+    if (EditStringVector(*value, options.allowResize_))
     {
-        var = value;
+        modified = true;
+    }
+    ui::Unindent();
+    return modified;
+}
+
+bool EditVariantStringVariantMap(Variant& var, const EditVariantOptions& options)
+{
+    if (!ui::CollapsingHeader("##Elements"))
+        return false;
+
+    StringVariantMap* value = var.GetStringVariantMapPtr();
+    URHO3D_ASSERT(value);
+
+    bool modified = false;
+    ui::Indent();
+    if (EditStringVariantMap(*value, options.allowResize_, options.allowTypeChange_))
+    {
         modified = true;
     }
     ui::Unindent();
@@ -843,6 +942,9 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     // case VAR_INTVECTOR3:
     // case VAR_INT64:
     // case VAR_VARIANTCURVE:
+
+    case VAR_STRINGVARIANTMAP:
+        return EditVariantStringVariantMap(var, options);
 
     default:
         ui::Button("TODO: Implement");

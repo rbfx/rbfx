@@ -107,6 +107,9 @@ URHO3D_API bool EditVariantVector(VariantVector& value, bool resizable, bool dyn
 /// Render string vector with optional size constraints.
 URHO3D_API bool EditStringVector(StringVector& value, bool resizable);
 
+/// Render string variant map optional type and size constraints.
+URHO3D_API bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicTypes);
+
 /// Render arbitrary variant value editor.
 URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});
 

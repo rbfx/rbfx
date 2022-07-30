@@ -79,6 +79,7 @@ enum VariantType : unsigned char
     VAR_INT64,
     VAR_CUSTOM,
     VAR_VARIANTCURVE,
+    VAR_STRINGVARIANTMAP,
     // Add new types here
     MAX_VAR_TYPES
 };
@@ -420,6 +421,7 @@ union VariantValue
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
     VariantCurve* variantCurve_;
+    StringVariantMap* stringVariantMap_;
 
     /// Construct uninitialized.
     VariantValue() { }      // NOLINT(modernize-use-equals-default)
@@ -632,6 +634,12 @@ public:
 
     /// Construct from a VariantCurve.
     Variant(const VariantCurve& value)       // NOLINT(google-explicit-constructor)
+    {
+        *this = value;
+    }
+
+    /// Construct from a string variant map.
+    Variant(const StringVariantMap& value)    // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -930,6 +938,14 @@ public:
     /// Assign from a VariantCurve.
     Variant& operator =(const VariantCurve& rhs);
 
+    /// Assign from a string variant map.
+    Variant& operator =(const StringVariantMap& rhs)
+    {
+        SetType(VAR_STRINGVARIANTMAP);
+        *value_.stringVariantMap_ = rhs;
+        return *this;
+    }
+
     /// Test for equality with another variant.
     bool operator ==(const Variant& rhs) const;
 
@@ -1095,6 +1111,12 @@ public:
     /// Test for equality with a VariantCurve. To return true, both the type and value must match.
     bool operator ==(const VariantCurve& rhs) const;
 
+    /// Test for equality with a string variant map. To return true, both the type and value must match.
+    bool operator ==(const StringVariantMap& rhs) const
+    {
+        return type_ == VAR_STRINGVARIANTMAP ? *value_.stringVariantMap_ == rhs : false;
+    }
+
     /// Test for inequality with another variant.
     bool operator !=(const Variant& rhs) const { return !(*this == rhs); }
 
@@ -1187,6 +1209,9 @@ public:
 
     /// Test for inequality with a VariantCurve.
     bool operator !=(const VariantCurve& rhs) const { return !(*this == rhs); }
+
+    /// Test for inequality with a variant map.
+    bool operator !=(const StringVariantMap& rhs) const { return !(*this == rhs); }
 
     /// Set from typename and value strings. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
     void FromString(const ea::string& type, const ea::string& value);
@@ -1428,6 +1453,12 @@ public:
     /// Return a VariantCurve or identity on type mismatch.
     const VariantCurve& GetVariantCurve() const;
 
+    /// Return a string variant map or empty on type mismatch.
+    const StringVariantMap& GetStringVariantMap() const
+    {
+        return type_ == VAR_STRINGVARIANTMAP ? *value_.stringVariantMap_ : emptyStringVariantMap;
+    }
+
     /// Return pointer to custom variant value.
     CustomVariantValue* GetCustomVariantValuePtr()
     {
@@ -1495,6 +1526,9 @@ public:
     /// Return a pointer to a modifiable variant map or null on type mismatch.
     VariantMap* GetVariantMapPtr() { return type_ == VAR_VARIANTMAP ? value_.variantMap_ : nullptr; }
 
+    /// Return a pointer to a modifiable string variant map or null on type mismatch.
+    StringVariantMap* GetStringVariantMapPtr() { return type_ == VAR_STRINGVARIANTMAP ? value_.stringVariantMap_ : nullptr; }
+
     /// Return a pointer to a modifiable custom variant value or null on type mismatch.
     template <class T> T* GetCustomPtr() { return const_cast<T*>(const_cast<const Variant*>(this)->GetCustomPtr<T>()); }
 
@@ -1547,6 +1581,8 @@ public:
     static const StringVector emptyStringVector;
     /// Empty variant curve.
     static const VariantCurve emptyCurve;
+    /// Empty string variant map.
+    static const StringVariantMap emptyStringVariantMap;
 
 private:
     /// Set new type and allocate/deallocate memory as necessary.
@@ -1628,6 +1664,8 @@ template <> inline VariantType GetVariantType<Matrix3x4>() { return VAR_MATRIX3X
 template <> inline VariantType GetVariantType<Matrix4>() { return VAR_MATRIX4; }
 
 template <> inline VariantType GetVariantType<VariantCurve>() { return VAR_VARIANTCURVE; }
+
+template <> inline VariantType GetVariantType<StringVariantMap>() { return VAR_STRINGVARIANTMAP; }
 
 // Specializations of Variant::Get<T>
 template <> URHO3D_API int Variant::Get<int>() const;
@@ -1719,6 +1757,8 @@ template <> URHO3D_API Matrix3x4 Variant::Get<Matrix3x4>() const;
 template <> URHO3D_API Matrix4 Variant::Get<Matrix4>() const;
 
 template <> URHO3D_API VariantCurve Variant::Get<VariantCurve>() const;
+
+template <> URHO3D_API StringVariantMap Variant::Get<StringVariantMap>() const;
 
 // Implementations
 template <class T> const T* CustomVariantValue::GetValuePtr() const
