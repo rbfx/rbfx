@@ -20,14 +20,13 @@
 // THE SOFTWARE.
 //
 
+#include "../Foundation/TextureViewTab.h"
+
 #include "../Core/CommonEditorActions.h"
 #include "../Core/IniHelpers.h"
-#include "../Foundation/TextureViewTab.h"
-#include "../Project/CreateComponentMenu.h"
-#include "Urho3D/SystemUI/Widgets.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
-
+#include <Urho3D/SystemUI/Widgets.h>
 
 namespace Urho3D
 {
@@ -42,8 +41,8 @@ void Foundation_TextureViewTab(Context* context, Project* project)
 }
 
 TextureViewTab::TextureViewTab(Context* context)
-    : ResourceEditorTab(context, "Texture", "2A3032E6-541A-42FE-94C3-8BAF96604690",
-        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault | EditorTabFlag::FocusOnStart,
+    : ResourceEditorTab(context, "Texture", "2a3032e6-541a-42fe-94c3-8baf96604690",
+        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
         EditorTabPlacement::DockCenter)
 {
 }

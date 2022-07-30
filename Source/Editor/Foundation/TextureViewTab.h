@@ -26,13 +26,6 @@
 #include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
 
-//#include <EASTL/any.h>
-//#include <EASTL/vector_multiset.h>
-//#include <Urho3D/Scene/Scene.h>
-//#include <Urho3D/Utility/PackedSceneData.h>
-//#include <Urho3D/Utility/SceneRendererToTexture.h>
-//#include <Urho3D/Utility/SceneSelection.h>
-
 namespace Urho3D
 {
 
