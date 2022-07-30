@@ -101,10 +101,12 @@ void ResourceEditorTab::OpenResource(const ea::string& resourceName, bool activa
 {
     if (!resources_.contains(resourceName))
     {
-        if (!SupportMultipleResources())
+        if (!resources_.empty() && !SupportMultipleResources())
         {
-            CloseAllResourcesGracefully(resourceName);
-            return;
+            if (CloseAllResourcesGracefully(resourceName))
+            {
+                return;
+            }
         }
 
         resources_.emplace(resourceName, ResourceData{});
@@ -246,12 +248,12 @@ void ResourceEditorTab::CloseResourceGracefully(const ea::string& resourceName, 
     project->CloseResourceGracefully(request);
 }
 
-void ResourceEditorTab::CloseAllResourcesGracefully(ea::function<void()> onAllClosed)
+bool ResourceEditorTab::CloseAllResourcesGracefully(ea::function<void()> onAllClosed)
 {
     if (!IsAnyResourceUnsaved())
     {
         CloseAllResources();
-        return;
+        return false;
     }
 
     auto delayedCallback = ea::make_finally([onAllClosed]() { onAllClosed(); });
@@ -265,11 +267,12 @@ void ResourceEditorTab::CloseAllResourcesGracefully(ea::function<void()> onAllCl
             releaseWhenClosed.reset();
         });
     }
+    return true;
 }
 
-void ResourceEditorTab::CloseAllResourcesGracefully(const ea::string& pendingOpenResourceName)
+bool ResourceEditorTab::CloseAllResourcesGracefully(const ea::string& pendingOpenResourceName)
 {
-    CloseAllResourcesGracefully([=]()
+    return CloseAllResourcesGracefully([=]()
     {
         if (!pendingOpenResourceName.empty())
             OpenResource(pendingOpenResourceName);
