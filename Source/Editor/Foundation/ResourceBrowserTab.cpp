@@ -126,7 +126,7 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
 
     auto project = GetProject();
     project->OnInitialized.Subscribe(this, &ResourceBrowserTab::RefreshContents);
-    project->OnRequest.Subscribe(this, &ResourceBrowserTab::OnProjectRequest);
+    project->OnRequest.SubscribeWithSender(this, &ResourceBrowserTab::OnProjectRequest);
 }
 
 void ResourceBrowserTab::InitializeRoots()
@@ -176,9 +176,9 @@ void ResourceBrowserTab::InitializeHotkeys()
     BindHotkey(Hotkey_RevealInExplorer, &ResourceBrowserTab::RevealInExplorerSelected);
 }
 
-void ResourceBrowserTab::OnProjectRequest(ProjectRequest* request)
+void ResourceBrowserTab::OnProjectRequest(RefCounted* sender, ProjectRequest* request)
 {
-    if (reentrant_)
+    if (sender == this)
         return;
 
     const auto openResourceRequest = dynamic_cast<OpenResourceRequest*>(request);
@@ -1299,10 +1299,8 @@ void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
 {
     auto project = GetProject();
 
-    reentrant_ = true;
     const auto request = MakeShared<OpenResourceRequest>(context_, entry.resourceName_);
     project->ProcessRequest(request, this);
-    reentrant_ = false;
 }
 
 void ResourceBrowserTab::RenderContextMenuItems()

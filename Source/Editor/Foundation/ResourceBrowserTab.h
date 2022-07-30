@@ -140,7 +140,7 @@ private:
     void InitializeDefaultFactories();
     void InitializeHotkeys();
 
-    void OnProjectRequest(ProjectRequest* request);
+    void OnProjectRequest(RefCounted* sender, ProjectRequest* request);
     const FileSystemEntry* FindLeftPanelEntry(const ea::string& resourceName) const;
 
     /// Render left panel
@@ -232,7 +232,6 @@ private:
     ea::vector<SharedPtr<ResourceBrowserFactory>> factories_;
     bool sortFactories_{true};
 
-    bool reentrant_{};
     bool suppressInspector_{};
 
     /// UI state
