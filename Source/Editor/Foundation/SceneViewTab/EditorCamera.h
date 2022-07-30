@@ -46,6 +46,7 @@ public:
         float mouseSensitivity_{0.25f};
         float minSpeed_{2.0f};
         float maxSpeed_{10.0f};
+        float scrollSpeed_{3.5f};
         float acceleration_{1.0f};
         float shiftFactor_{4.0f};
         float focusDistance_{10.0f};

@@ -64,6 +64,7 @@ void EditorCamera::Settings::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "MouseSensitivity", mouseSensitivity_, Settings{}.mouseSensitivity_);
     SerializeOptionalValue(archive, "MinSpeed", minSpeed_, Settings{}.minSpeed_);
     SerializeOptionalValue(archive, "MaxSpeed", maxSpeed_, Settings{}.maxSpeed_);
+    SerializeOptionalValue(archive, "ScrollSpeed", scrollSpeed_, Settings{}.scrollSpeed_);
     SerializeOptionalValue(archive, "Acceleration", acceleration_, Settings{}.acceleration_);
     SerializeOptionalValue(archive, "ShiftFactor", shiftFactor_, Settings{}.shiftFactor_);
     SerializeOptionalValue(archive, "FocusDistance", focusDistance_, Settings{}.focusDistance_);
@@ -74,6 +75,7 @@ void EditorCamera::Settings::RenderSettings()
     ui::DragFloat("Mouse Sensitivity", &mouseSensitivity_, 0.01f, 0.0f, 1.0f, "%.2f");
     ui::DragFloat("Min Speed", &minSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
     ui::DragFloat("Max Speed", &maxSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
+    ui::DragFloat("Scroll Speed", &scrollSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
     ui::DragFloat("Acceleration", &acceleration_, 0.1f, 0.1f, 100.0f, "%.1f");
     ui::DragFloat("Shift Factor", &shiftFactor_, 0.5f, 1.0f, 10.0f, "%.1f");
     ui::DragFloat("Focus Distance", &focusDistance_, 0.1f, 0.1f, 100.0f, "%.1f");
@@ -219,8 +221,6 @@ void EditorCamera::UpdateState(SceneViewPage& scenePage, PageState& state) const
         const float multiplier = isAccelerated ? cfg.shiftFactor_ : 1.0f;
         if (moveDirection == Vector3::ZERO)
             state.currentMoveSpeed_ = cfg.minSpeed_;
-        else
-            state.pendingOffset_ = Vector3::ZERO;
 
         node->Translate(moveDirection * state.currentMoveSpeed_ * multiplier * timeStep);
 
@@ -250,6 +250,11 @@ void EditorCamera::UpdateState(SceneViewPage& scenePage, PageState& state) const
     else
     {
         state.orbitPosition_ = ea::nullopt;
+    }
+
+    if (ui::IsItemHovered() && Abs(ui::GetMouseWheel()) > 0.05f)
+    {
+        state.pendingOffset_ += node->GetWorldDirection() * cfg.scrollSpeed_ * Sign(ui::GetMouseWheel());
     }
 
     if (state.pendingOffset_.Length() > 0.05f)

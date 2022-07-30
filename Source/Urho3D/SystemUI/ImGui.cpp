@@ -127,3 +127,9 @@ int ui::GetKeyPressedAmount(Urho3D::Key key, float repeatDelay, float rate)
 {
     return GetKeyPressedAmount(SDL_GetScancodeFromKey(key), repeatDelay, rate);
 }
+
+float ui::GetMouseWheel()
+{
+    ImGuiContext& g = *GImGui;
+    return g.IO.MouseWheel;
+}

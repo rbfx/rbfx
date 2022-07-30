@@ -155,6 +155,7 @@ URHO3D_API bool IsKeyDown(Urho3D::Key key);
 URHO3D_API bool IsKeyPressed(Urho3D::Key key, bool repeat = true);
 URHO3D_API bool IsKeyReleased(Urho3D::Key key);
 URHO3D_API int GetKeyPressedAmount(Urho3D::Key key, float repeatDelay, float rate);
+URHO3D_API float GetMouseWheel();
 /// @}
 
 }
