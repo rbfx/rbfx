@@ -130,7 +130,6 @@ int ui::GetKeyPressedAmount(Urho3D::Key key, float repeatDelay, float rate)
 
 float ui::GetMouseWheel()
 {
-    //using namespace Urho3D;
     ImGuiContext& g = *GImGui;
     return g.IO.MouseWheel;
 }
