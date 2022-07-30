@@ -587,8 +587,12 @@ void Editor::OpenProject(const ea::string& projectPath)
 
 void Editor::CloseProject()
 {
-    project_ = nullptr;
-    context_->RemoveSubsystem<Project>();
+    if (project_)
+    {
+        project_->Destroy();
+        project_ = nullptr;
+        context_->RemoveSubsystem<Project>();
+    }
 }
 
 void Editor::InitializeUI()

@@ -107,6 +107,10 @@ public:
     ~Project() override;
     void SerializeInBlock(Archive& archive) override;
 
+    /// Called right before destructor.
+    /// Perform all complicated stuff here because Project is still available for plugins as subsystem.
+    void Destroy();
+
     /// Request graceful close of the project. Called multiple times during close sequence.
     CloseProjectResult CloseGracefully();
     /// Request graceful close of the resource.

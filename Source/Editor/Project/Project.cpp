@@ -231,15 +231,21 @@ void Project::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "LaunchManager", *launchManager_, AlwaysSerialize{});
 }
 
-Project::~Project()
+void Project::Destroy()
 {
+    // Always save shallow data on close
+    SaveShallowOnly();
+
     ProcessDelayedSaves(true);
 
+    context_->RemoveSubsystem<PluginManager>();
+    context_->RegisterSubsystem<PluginManager>();
+}
+
+Project::~Project()
+{
     --numActiveProjects;
     URHO3D_ASSERT(numActiveProjects == 0);
-
-    context_->RemoveSubsystem<PluginManager>();
-    context_->RegisterSubsystem(pluginManager_);
 
     ui::GetIO().IniFilename = nullptr;
 }
@@ -249,9 +255,6 @@ CloseProjectResult Project::CloseGracefully()
     // If result is ready, return it now and reset state
     if (closeProjectResult_ != CloseProjectResult::Undefined)
     {
-        // Always save shallow data on close
-        SaveShallowOnly();
-
         const auto result = closeProjectResult_;
         closeProjectResult_ = CloseProjectResult::Undefined;
         return result;
