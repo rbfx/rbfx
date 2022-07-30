@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
+#include "../Graphics/Texture2D.h"
 
 #include <EASTL/optional.h>
 
@@ -36,60 +37,64 @@ class RenderBufferManager;
 class RenderPipelineInterface;
 
 /// Post-processing pass that adjusts HDR scene exposure.
-class URHO3D_API AutoExposurePass
-    : public PostProcessPass
+class URHO3D_API AmbientOcclusionPass : public PostProcessPass
 {
-    URHO3D_OBJECT(AutoExposurePass, PostProcessPass);
+    URHO3D_OBJECT(AmbientOcclusionPass, PostProcessPass)
 
+#ifdef DESKTOP_GRAPHICS
 public:
-    AutoExposurePass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
-    void SetSettings(const AutoExposurePassSettings& settings);
+    AmbientOcclusionPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
 
-    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
+    void SetSettings(const AmbientOcclusionPassSettings& settings);
+
+    PostProcessPassFlags GetExecutionFlags() const override
+    {
+        return PostProcessPassFlag::NeedColorOutputBilinear;
+    }
+
+    void SetNormalBuffer(RenderBuffer* normalBuffer);
+
     void Execute(Camera* camera) override;
 
 protected:
+
     void InitializeTextures();
     void InitializeStates();
+    void EvaluateAO(Camera* camera, const Matrix4& viewToTextureSpace, const Matrix4& textureToViewSpace);
+    void BlurTexture(const Matrix4& textureToViewSpace);
+    void Blit(PipelineState* state);
 
-    void EvaluateDownsampledColorBuffer();
-    void EvaluateLuminance();
-    void EvaluateAdaptedLuminance();
+    AmbientOcclusionPassSettings settings_;
 
-    bool isAdaptedLuminanceInitialized_{};
-    AutoExposurePassSettings settings_;
+    SharedPtr<RenderBuffer> normalBuffer_;
 
     struct CachedTextures
     {
-        SharedPtr<RenderBuffer> color128_;
-        SharedPtr<RenderBuffer> lum64_;
-        SharedPtr<RenderBuffer> lum16_;
-        SharedPtr<RenderBuffer> lum4_;
-        SharedPtr<RenderBuffer> lum1_;
-        SharedPtr<RenderBuffer> adaptedLum_;
-        SharedPtr<RenderBuffer> prevAdaptedLum_;
-    } textures_;
+        SharedPtr<Texture2D> noise_;
+        SharedPtr<RenderBuffer> currentTarget_;
+        SharedPtr<RenderBuffer> previousTarget_;
+    };
+    CachedTextures textures_;
 
     struct CachedStates
     {
-        SharedPtr<PipelineState> lum64_;
-        SharedPtr<PipelineState> lum16_;
-        SharedPtr<PipelineState> lum4_;
-        SharedPtr<PipelineState> lum1_;
-        SharedPtr<PipelineState> adaptedLum_;
-        SharedPtr<PipelineState> autoExposure_;
+        SharedPtr<PipelineState> ssaoForward_;
+        SharedPtr<PipelineState> ssaoDeferred_;
+        SharedPtr<PipelineState> blurForward_;
+        SharedPtr<PipelineState> blurDeferred_;
+        SharedPtr<PipelineState> combine_;
+        SharedPtr<PipelineState> preview_;
 
         bool IsValid()
         {
-            return lum64_->IsValid()
-                && lum16_->IsValid()
-                && lum4_->IsValid()
-                && lum1_->IsValid()
-                && adaptedLum_->IsValid()
-                && autoExposure_->IsValid();
+            return !!ssaoForward_ && ssaoForward_->IsValid() && blurForward_->IsValid() && ssaoDeferred_->IsValid()
+                && blurDeferred_->IsValid() && combine_->IsValid() && preview_->IsValid();
         }
     };
     ea::optional<CachedStates> pipelineStates_;
+
+#endif
 };
 
-}
+} // namespace Urho3D
+

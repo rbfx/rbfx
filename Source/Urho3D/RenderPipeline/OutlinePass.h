@@ -89,7 +89,7 @@ public:
     /// Implement PostProcessPass.
     /// @{
     PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
-    void Execute() override;
+    void Execute(Camera* camera) override;
     /// @}
 
     RenderBuffer* GetColorOutput() { return outlineBuffer_; }

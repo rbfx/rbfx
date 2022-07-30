@@ -30,6 +30,7 @@
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/ScenePass.h"
+#include "../RenderPipeline/AmbientOcclusionPass.h"
 
 #include <EASTL/optional.h>
 
@@ -96,6 +97,7 @@ private:
     SharedPtr<BackToFrontScenePass> postAlphaPass_;
     SharedPtr<OutlineScenePass> outlineScenePass_;
     SharedPtr<OutlinePass> outlinePostProcessPass_;
+    SharedPtr<AmbientOcclusionPass> ssaoPass_;
 
     struct DeferredLightingData
     {

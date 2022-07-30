@@ -261,10 +261,21 @@ Texture2D* Editor::GetProjectPreview(const ea::string& projectPath)
 
 ea::string Editor::GetWindowTitle() const
 {
+    ea::string result = "Editor";
+
+    if (auto graphics = GetSubsystem<Graphics>())
+    {
+        result += " | ";
+        result += graphics->GetApiName();
+    }
+
     if (project_)
-        return "Editor | " + project_->GetProjectPath();
-    else
-        return "Editor";
+    {
+        result += " | ";
+        result += project_->GetProjectPath();
+    }
+
+    return result;
 }
 
 void Editor::Render()

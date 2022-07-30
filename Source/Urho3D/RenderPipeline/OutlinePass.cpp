@@ -169,7 +169,7 @@ void OutlinePass::OnRenderBegin(const CommonFrameInfo& frameInfo)
         pipelineStateGamma_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "");
 }
 
-void OutlinePass::Execute()
+void OutlinePass::Execute(Camera* camera)
 {
     if (!enabled_)
         return;

@@ -148,7 +148,7 @@
 /// =================================== Global functions ===================================
 
 #define SaturateMediump(x) min(x, M_MEDIUMP_FLT_MAX)
-
+#define Saturate(x) clamp(x, 0.0, 1.0)
 
 /// =================================== Stage inputs and outputs ===================================
 
