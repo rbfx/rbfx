@@ -301,7 +301,7 @@ SceneHierarchyWidget::OptionalReorderInfo SceneHierarchyWidget::RenderObjectReor
     }
     else if (ui::IsItemHovered())
     {
-        ui::SetTooltip(hint);
+        ui::SetTooltip("%s", hint);
     }
     return ea::nullopt;
 }

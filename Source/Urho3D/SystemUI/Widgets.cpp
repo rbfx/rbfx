@@ -236,7 +236,7 @@ void TextURL(const ea::string& label, const ea::string& url)
 
     const auto& style = ui::GetStyle();
 
-    ui::Text(label.c_str());
+    ui::Text("%s", label.c_str());
     Underline(ToColor(style.Colors[ImGuiCol_Text]));
 
     const bool isHovered = ui::IsItemHovered();
