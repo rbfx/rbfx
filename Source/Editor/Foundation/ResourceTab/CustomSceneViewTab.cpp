@@ -20,9 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/CommonEditorActions.h"
-#include "../Core/IniHelpers.h"
-#include "../Foundation/CustomSceneViewTab.h"
+#include "CustomSceneViewTab.h"
+#include "../../Core/CommonEditorActions.h"
+#include "../../Core/IniHelpers.h"
 
 #include <Urho3D/Graphics/Skybox.h>
 #include <Urho3D/Graphics/TextureCube.h>
@@ -42,6 +42,7 @@ CustomSceneViewTab::CustomSceneViewTab(Context* context, const ea::string& title
     : ResourceEditorTab(context, title, guid, flags, placement)
     , scene_(MakeShared<Scene>(context))
     , renderer_(MakeShared<SceneRendererToTexture>(scene_))
+    , cameraController_(context, GetHotkeyManager())
 {
     ResourceCache* cache = context->GetSubsystem<ResourceCache>();
     scene_->CreateComponent<Octree>();
@@ -80,6 +81,7 @@ void CustomSceneViewTab::RenderContent()
     Texture2D* sceneTexture = renderer_->GetTexture();
     ui::SetCursorPos(basePosition);
     Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+    cameraController_.ProcessInput(renderer_->GetCamera(), state_);
 }
 
 } // namespace Urho3D

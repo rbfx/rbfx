@@ -20,9 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/CommonEditorActions.h"
-#include "../Core/IniHelpers.h"
-#include "../Foundation/ModelViewTab.h"
+#include "../../Core/CommonEditorActions.h"
+#include "../../Core/IniHelpers.h"
+#include "ModelViewTab.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>

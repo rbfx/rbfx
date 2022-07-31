@@ -22,39 +22,48 @@
 
 #pragma once
 
-#include "../Core/CommonEditorActions.h"
-#include "../Project/Project.h"
-#include "../Project/ResourceEditorTab.h"
+#include "CustomSceneViewTab.h"
+#include "../../Project/Project.h"
+#include "../../Project/ResourceEditorTab.h"
 
-#include <Urho3D/Graphics/Animation.h>
-#include <Urho3D/Utility/SceneRendererToTexture.h>
+#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/Model.h>
 
 namespace Urho3D
 {
 
-/// Tab that renders custom Scene.
-class CustomSceneViewTab : public ResourceEditorTab
+void Foundation_ModelViewTab(Context* context, Project* project);
+
+/// Tab that renders Scene and enables Scene manipulation.
+class ModelViewTab : public CustomSceneViewTab
 {
-    URHO3D_OBJECT(CustomSceneViewTab, ResourceEditorTab)
+    URHO3D_OBJECT(ModelViewTab, CustomSceneViewTab)
 
 public:
-    explicit CustomSceneViewTab(Context* context, const ea::string& title, const ea::string& guid, EditorTabFlags flags,
-        EditorTabPlacement placement);
-    ~CustomSceneViewTab() override;
+    explicit ModelViewTab(Context* context);
+    ~ModelViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
-    void RenderContent() override;
+    ea::string GetResourceTitle() { return "Model"; }
+    bool SupportMultipleResources() { return false; }
+    bool CanOpenResource(const ResourceFileDescriptor& desc) override;
     /// @}
 
-    Scene* GetScene() const { return scene_; }
+protected:
+    /// ResourceEditorTab implementation
+    /// @{
+    void OnResourceLoaded(const ea::string& resourceName) override;
+    void OnResourceUnloaded(const ea::string& resourceName) override;
+    void OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName) override;
+    void OnResourceSaved(const ea::string& resourceName) override;
+    void OnResourceShallowSaved(const ea::string& resourceName) override;
+    /// @}
 
 private:
-    SharedPtr<Animation> animation_;
-    const SharedPtr<Scene> scene_;
-    const SharedPtr<SceneRendererToTexture> renderer_;
-    Node* cameraNode_;
-    Node* lightNode_;
+    SharedPtr<Model> model_;
+    SharedPtr<Node> modelNode_;
+    SharedPtr<StaticModel> staticModel_;
 };
 
 } // namespace Urho3D

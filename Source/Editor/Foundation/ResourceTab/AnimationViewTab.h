@@ -23,8 +23,8 @@
 #pragma once
 
 #include "CustomSceneViewTab.h"
-#include "../Project/Project.h"
-#include "../Project/ResourceEditorTab.h"
+#include "../../Project/Project.h"
+#include "../../Project/ResourceEditorTab.h"
 
 #include <Urho3D/Utility/SceneRendererToTexture.h>
 #include <Urho3D/Graphics/Animation.h>

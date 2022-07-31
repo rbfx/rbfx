@@ -20,10 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/TextureViewTab.h"
+#include "TextureViewTab.h"
 
-#include "../Core/CommonEditorActions.h"
-#include "../Core/IniHelpers.h"
+#include "../../Core/CommonEditorActions.h"
+#include "../../Core/IniHelpers.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Graphics/TextureCube.h>
