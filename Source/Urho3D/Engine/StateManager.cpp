@@ -262,7 +262,7 @@ Viewport* ApplicationState::GetViewportForScene(Scene* scene, unsigned index) co
 /// Add action to the state's action manager.
 Actions::ActionState* ApplicationState::AddAction(Actions::BaseAction* action, Object* target, bool paused)
 {
-    actionManager_->AddAction(action, target, paused);
+    return actionManager_->AddAction(action, target, paused);
 }
 #endif
 
