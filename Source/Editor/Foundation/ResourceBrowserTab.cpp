@@ -300,7 +300,7 @@ void ResourceBrowserTab::RenderContent()
         root.reflection_->Update();
 
     if (waitingForUpdate_ && ui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
-        ui::SetTooltip("%s", "Waiting for update...");
+        ui::SetTooltip("Waiting for update...");
 
     static const ImVec2 workaroundPadding{0, -5};
     if (ui::BeginTable("##ResourceBrowserTab", 2, ImGuiTableFlags_Resizable))
