@@ -113,7 +113,7 @@ rbfx uses the following third-party libraries:
 - EASTL 3.17.06 (https://github.com/electronicarts/EASTL/)
 - SWIG 4.0 (http://swig.org/)
 - Embree 3.11 (https://github.com/embree/embree)
-- RmlUi (https://github.com/mikke89/RmlUi)
+- RmlUi 4.4 (https://github.com/mikke89/RmlUi)
 - catch2 3.0.0 (https://github.com/catchorg/Catch2)
 - TinyGLTF 2.4.0 (https://github.com/syoyo/tinygltf)
 

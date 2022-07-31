@@ -296,6 +296,17 @@ Renderer::Renderer(Context* context) :
 
 Renderer::~Renderer() = default;
 
+void Renderer::SetBackbufferRenderSurface(RenderSurface* renderSurface)
+{
+    if (backbufferSurface_ != renderSurface)
+    {
+        if (backbufferSurface_)
+            backbufferSurface_->SetNumViewports(0);
+        backbufferSurface_ = renderSurface;
+        backbufferSurfaceViewportsDirty_ = true;
+    }
+}
+
 void Renderer::SetGlobalShaderDefine(ea::string_view define, bool enabled)
 {
     auto iter = globalShaderDefines_.find_as(define, ea::less<ea::string_view>());
@@ -771,10 +782,23 @@ void Renderer::Update(float timeStep)
     if (shadersDirty_)
         LoadShaders();
 
+    // Assign viewports to the render surface
+    if (backbufferSurfaceViewportsDirty_)
+    {
+        backbufferSurfaceViewportsDirty_ = false;
+        if (backbufferSurface_)
+        {
+            const unsigned numViewports = viewports_.size();
+            backbufferSurface_->SetNumViewports(numViewports);
+            for (unsigned i = 0; i < numViewports; ++i)
+                backbufferSurface_->SetViewport(i, viewports_[i]);
+        }
+    }
+
     // Queue update of the main viewports. Use reverse order, as rendering order is also reverse
     // to render auxiliary views before dependent main views
     for (unsigned i = viewports_.size() - 1; i < viewports_.size(); --i)
-        QueueViewport(nullptr, viewports_[i]);
+        QueueViewport(backbufferSurface_, viewports_[i]);
 
     // Update main viewports. This may queue further views
     unsigned numMainViewports = queuedViewports_.size();

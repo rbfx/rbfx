@@ -480,8 +480,7 @@ file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)
     # Multi-config projects store data files in parent dir of binary files.
     string (REPLACE "/$<CONFIG>" "" RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-    file (MAKE_DIRECTORY ${RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG}/Autoload/)
-    foreach(dir Data CoreData EditorData Autoload/LargeData)
+    foreach(dir Data CoreData EditorData)
         create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} ${RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG}/${dir})
         # /${dir}/../ trick is used for installing Autoload subdirs.
         install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR}/${dir}/../)

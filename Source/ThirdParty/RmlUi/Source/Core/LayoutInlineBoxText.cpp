@@ -27,17 +27,38 @@
  */
 
 #include "LayoutInlineBoxText.h"
-#include "LayoutEngine.h"
-#include "LayoutLineBox.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Core.h"
 #include "../../Include/RmlUi/Core/ElementText.h"
 #include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/FontEngineInterface.h"
 #include "../../Include/RmlUi/Core/Log.h"
-#include "../../Include/RmlUi/Core/Property.h"
 #include "../../Include/RmlUi/Core/Profiling.h"
+#include "../../Include/RmlUi/Core/Property.h"
+#include "ComputeProperty.h"
+#include "LayoutEngine.h"
+#include "LayoutLineBox.h"
 
 namespace Rml {
+
+String FontFaceDescription(const String& font_family, Style::FontStyle style, Style::FontWeight weight)
+{
+	String font_attributes;
+
+	if (style == Style::FontStyle::Italic)
+		font_attributes += "italic, ";
+	if (weight == Style::FontWeight::Bold)
+		font_attributes += "bold, ";
+	else if (weight != Style::FontWeight::Auto && weight != Style::FontWeight::Normal)
+		font_attributes += "weight=" + ToString((int)weight) + ", ";
+
+	if (font_attributes.empty())
+		font_attributes = "regular";
+	else
+		font_attributes.resize(font_attributes.size() - 2);
+
+	return CreateString(font_attributes.size() + font_family.size() + 8, "'%s' [%s]", font_family.c_str(), font_attributes.c_str());
+}
 
 LayoutInlineBoxText::LayoutInlineBoxText(ElementText* element, int _line_begin) : LayoutInlineBox(static_cast<Element*>(element), Box())
 {
@@ -158,7 +179,32 @@ void LayoutInlineBoxText::BuildWordBox()
 	{
 		height = 0;
 		baseline = 0;
-		Log::Message(Log::LT_WARNING, "No font face defined on element %s. Please specify a font-family in your RCSS, otherwise make sure Context::Update is run after new elements are constructed, before Context::Render.", text_element->GetAddress().c_str());
+
+		const ComputedValues& computed = text_element->GetComputedValues();
+		const String font_family_property = computed.font_family();
+
+		if (font_family_property.empty())
+		{
+			Log::Message(
+				Log::LT_WARNING,
+				"No font face defined. Missing 'font-family' property, please add it to your RCSS. On element %s",
+				text_element->GetAddress().c_str()
+			);
+		}
+		else
+		{
+			const String font_face_description = FontFaceDescription(font_family_property, computed.font_style(), computed.font_weight());
+
+			Log::Message(
+				Log::LT_WARNING,
+				"No font face defined. Ensure (1) that Context::Update is run after new elements are constructed, before Context::Render, "
+				"and (2) that the specified font face %s has been successfully loaded. "
+				"Please see previous log messages for all successfully loaded fonts. On element %s",
+				font_face_description.c_str(),
+				text_element->GetAddress().c_str()
+			);
+		}
+
 		return;
 	}
 

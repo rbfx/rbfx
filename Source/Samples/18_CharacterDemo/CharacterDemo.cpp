@@ -21,7 +21,6 @@
 //
 
 #include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/AnimationController.h>
@@ -29,7 +28,6 @@
 #include <Urho3D/Graphics/Light.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/Input.h>
@@ -39,6 +37,7 @@
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
@@ -140,23 +139,30 @@ void CharacterDemo::CreateScene()
     auto* shape = floorNode->CreateComponent<CollisionShape>();
     shape->SetBox(Vector3::ONE);
 
+    // Create door
+    {
+        XMLFile* doorPrefab = cache->GetResource<XMLFile>("Prefabs/Door.xml");
+        Node* objectNode = scene_->CreateChild("Door");
+        objectNode->SetPosition(Vector3(2,0.5f,-2));
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(doorPrefab);
+
+        objectNode = scene_->CreateChild("Door");
+        objectNode->SetPosition(Vector3(2, 0.5f, 2));
+        prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(doorPrefab);
+    }
     // Create mushrooms of varying sizes
     const unsigned NUM_MUSHROOMS = 60;
+    XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
     for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
     {
         Node* objectNode = scene_->CreateChild("Mushroom");
         objectNode->SetPosition(Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f));
         objectNode->SetRotation(Quaternion(0.0f, Random(360.0f), 0.0f));
         objectNode->SetScale(2.0f + Random(5.0f));
-        auto* object = objectNode->CreateComponent<StaticModel>();
-        object->SetModel(cache->GetResource<Model>("Models/Mushroom.mdl"));
-        object->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
-        object->SetCastShadows(true);
-
-        auto* body = objectNode->CreateComponent<RigidBody>();
-        body->SetCollisionLayer(2);
-        auto* shape = objectNode->CreateComponent<CollisionShape>();
-        shape->SetTriangleMesh(object->GetModel(), 0);
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(mushroomPrefab);
     }
 
     // Create movable boxes. Let them fall from the sky at first

@@ -117,6 +117,14 @@ void RenderPipelineSettings::AdjustToSupported(Context* context)
         antialiasing_ = PostProcessAntialiasing::FXAA2;
     }
 #endif
+
+#ifdef DESKTOP_GRAPHICS
+    const bool ssaoSupported = Graphics::GetReadableDepthStencilFormat() != 0;
+#else
+    const bool ssaoSupported = false;
+#endif
+
+    ssao_.enabled_ = ssaoSupported && ssao_.enabled_;
 }
 
 void RenderPipelineSettings::PropagateImpliedSettings()
@@ -153,6 +161,9 @@ void RenderPipelineSettings::PropagateImpliedSettings()
         renderBufferManager_.colorSpace_ != RenderPipelineColorSpace::GammaLDR;
 
     bloom_.hdr_ = renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
+
+    if (ssao_.enabled_)
+        renderBufferManager_.readableDepth_ = true;
 }
 
 void RenderPipelineSettings::AdjustForPostProcessing(PostProcessPassFlags flags)

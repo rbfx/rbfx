@@ -24,9 +24,9 @@ void main()
     FillSurfaceAlbedoSpecular(surfaceData);
     FillSurfaceEmission(surfaceData);
 
-    half3 finalColor = GetFinalColor(surfaceData);
-    half finalAlpha = GetFinalAlpha(surfaceData);
-    gl_FragColor = GetFragColor(ApplyFog(finalColor, surfaceData.fogFactor), finalAlpha);
+    half3 surfaceColor = GetSurfaceColor(surfaceData);
+    half surfaceAlpha = GetSurfaceAlpha(surfaceData);
+    gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceAlpha, surfaceData.fogFactor);
 #endif
 }
 #endif

@@ -192,10 +192,10 @@ public:
     const Frustum& GetFrustum() const;
     /// Return projection matrix. It's in D3D convention with depth range 0 - 1.
     /// @property
-    Matrix4 GetProjection() const;
+    Matrix4 GetProjection(bool ignoreFlip = false) const;
     /// Return projection matrix converted to API-specific format for use as a shader parameter.
     /// @property
-    Matrix4 GetGPUProjection() const;
+    Matrix4 GetGPUProjection(bool ignoreFlip = false) const;
     /// Return effective view-projection matrix with optionally applied depth bias.
     Matrix4 GetEffectiveGPUViewProjection(float constantDepthBias) const;
     /// Return view matrix.

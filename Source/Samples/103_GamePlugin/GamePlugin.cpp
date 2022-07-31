@@ -20,50 +20,133 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Scene/LogicComponent.h>
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/Scene/Node.h>
-#include "FPSCameraController.h"
-#include "RotateObject.h"
 #include "GamePlugin.h"
+#include "RotateObject.h"
 
+#include <Urho3D/Input/FreeFlyController.h>
+#include <Urho3D/Input/Input.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/Light.h>
+#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/Renderer.h>
+#include <Urho3D/Graphics/Skybox.h>
+#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/TextureCube.h>
+#include <Urho3D/Graphics/Zone.h>
+#include <Urho3D/Math/RandomEngine.h>
+#include <Urho3D/Resource/ResourceCache.h>
 
 URHO3D_DEFINE_PLUGIN_MAIN(Urho3D::GamePlugin);
-
 
 namespace Urho3D
 {
 
 GamePlugin::GamePlugin(Context* context)
-    : PluginApplication(context)
+    : MainPluginApplication(context)
 {
 }
 
 void GamePlugin::Load()
 {
-    // Register custom components/subsystems/events when plugin is loaded.
-    RotateObject::RegisterObject(context_, this);
-    FPSCameraController::RegisterObject(context_, this);
+    AddObjectReflection<RotateObject>();
 }
 
 void GamePlugin::Unload()
 {
-    // Finalize plugin, ensure that no objects provided by the plugin are alive. Some of that work is automated by
-    // parent class. Objects that had factories registered through PluginApplication::AddFactoryReflection<> have their
-    // attributes automatically unregistered, factories/subsystems removed.
 }
 
-void GamePlugin::Start()
+void GamePlugin::Start(bool isMain)
 {
-    // Set up any game state here. Configure input. Create objects. Add UI. Game application assumes control of the
-    // input.
-    context_->GetSubsystem<Input>()->SetMouseVisible(false);
-    context_->GetSubsystem<Input>()->SetMouseMode(MM_WRAP);
+    if (!isMain)
+        return;
+
+    auto cache = GetSubsystem<ResourceCache>();
+    auto input = GetSubsystem<Input>();
+    auto renderer = GetSubsystem<Renderer>();
+
+    // Get materials for the sample
+    const ea::string materialFolder = "Materials/Constant/";
+    StringVector materialList;
+    cache->Scan(materialList, materialFolder, "*.xml", SCAN_FILES, true);
+
+    // Get models for the sample
+    const ea::string modelFolder = "Models/";
+    const StringVector modelList = {
+        "Box.mdl",
+        "Cone.mdl",
+        "Cylinder.mdl",
+        "Pyramid.mdl",
+        "Sphere.mdl",
+        "TeaPot.mdl",
+        "Torus.mdl",
+    };
+
+    // Create scene
+    scene_ = MakeShared<Scene>(context_);
+    scene_->CreateComponent<Octree>();
+
+    // Create camera
+    cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
+    auto camera = cameraNode_->CreateComponent<Camera>();
+
+    // Create skybox
+    Node* skyboxNode = scene_->CreateChild("Skybox");
+    auto skybox = skyboxNode->CreateComponent<Skybox>();
+    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    skybox->SetMaterial(cache->GetResource<Material>("Materials/Skybox.xml"));
+
+    // Create light
+    auto light = cameraNode_->CreateComponent<Light>();
+    light->SetLightType(LIGHT_POINT);
+    light->SetRange(30.0f);
+
+    // Create zone
+    Node* zoneNode = scene_->CreateChild("Zone");
+    auto zone = zoneNode->CreateComponent<Zone>();
+    zone->SetBoundingBox(BoundingBox(-1000.0f, 1000.0f));
+    zone->SetAmbientColor(Color::BLACK);
+    zone->SetBackgroundBrightness(0.5f);
+    zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/Skybox.xml"));
+
+    // Create objects
+    RandomEngine random{0u};
+    const unsigned numObjects = 3000;
+    for (unsigned i = 0; i < numObjects; ++i)
+    {
+        const ea::string materialName = materialFolder + materialList[random.GetUInt(0, materialList.size() - 1)];
+        const ea::string modelName = modelFolder + modelList[random.GetUInt(0, modelList.size() - 1)];
+
+        Node* node = scene_->CreateChild("Box");
+        node->SetPosition(random.GetVector3(-40.0f * Vector3::ONE, 40.0f * Vector3::ONE));
+        node->SetRotation(random.GetQuaternion());
+        node->SetScale(random.GetFloat(1.0f, 2.0f));
+
+        auto drawable = node->CreateComponent<StaticModel>();
+        drawable->SetModel(cache->GetResource<Model>(modelName));
+        drawable->SetMaterial(cache->GetResource<Material>(materialName));
+
+        auto rotator = node->CreateComponent<RotateObject>();
+    }
+
+    // Setup engine state
+    viewport_ = MakeShared<Viewport>(context_, scene_, camera);
+    renderer->SetNumViewports(1);
+    renderer->SetViewport(0, viewport_);
+    input->SetMouseVisible(false);
+    input->SetMouseMode(MM_WRAP);
 }
 
 void GamePlugin::Stop()
 {
-    // Tear down any game state here. Unregister events. Remove objects. Editor takes back the control.
+    auto renderer = GetSubsystem<Renderer>();
+    renderer->SetNumViewports(0);
+
+    viewport_ = nullptr;
+    cameraNode_ = nullptr;
+    scene_ = nullptr;
 }
 
 }

@@ -29,7 +29,6 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Renderer.h>
-#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Terrain.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -37,13 +36,13 @@
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/Constraint.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
-#include <Urho3D/Physics/RaycastVehicle.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Scene/PrefabReference.h>
 
 #include "RaycastVehicleDemo.h"
 #include "Vehicle.h"
@@ -127,6 +126,7 @@ void RaycastVehicleDemo::CreateScene()
     shape->SetTerrain();
     // Create 1000 mushrooms in the terrain. Always face outward along the terrain normal
     const unsigned NUM_MUSHROOMS = 1000;
+    XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
     for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
     {
         Node* objectNode = scene_->CreateChild("Mushroom");
@@ -136,14 +136,8 @@ void RaycastVehicleDemo::CreateScene()
         // Create a rotation quaternion from up vector to terrain normal
         objectNode->SetRotation(Quaternion(Vector3::UP, terrain->GetNormal(position)));
         objectNode->SetScale(3.0f);
-        auto* object = objectNode->CreateComponent<StaticModel>();
-        object->SetModel(cache->GetResource<Model>("Models/Mushroom.mdl"));
-        object->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
-        object->SetCastShadows(true);
-        auto* body = objectNode->CreateComponent<RigidBody>();
-        body->SetCollisionLayer(2);
-        auto* shape = objectNode->CreateComponent<CollisionShape>();
-        shape->SetTriangleMesh(object->GetModel(), 0);
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(mushroomPrefab);
     }
 }
 

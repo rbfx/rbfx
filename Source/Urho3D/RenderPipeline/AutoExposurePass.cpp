@@ -163,7 +163,7 @@ void AutoExposurePass::EvaluateAdaptedLuminance()
     isAdaptedLuminanceInitialized_ = true;
 }
 
-void AutoExposurePass::Execute()
+void AutoExposurePass::Execute(Camera* camera)
 {
     if (!pipelineStates_)
         InitializeStates();

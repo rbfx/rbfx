@@ -20,8 +20,6 @@ template <typename T> T GetOptional(StringHash key, const VariantMap& map, const
 }
 } // namespace
 
-extern const char* GEOMETRY_CATEGORY;
-
 CharacterConfigurator::CharacterConfigurator(Context* context)
     : Component(context)
 {
@@ -31,7 +29,7 @@ Urho3D::CharacterConfigurator::~CharacterConfigurator() {}
 
 void CharacterConfigurator::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CharacterConfigurator>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<CharacterConfigurator>(Category_Geometry);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Configuration", GetConfigurationAttr, SetConfigurationAttr, ResourceRef,
         ResourceRef(CharacterConfiguration::GetTypeStatic()), AM_DEFAULT);

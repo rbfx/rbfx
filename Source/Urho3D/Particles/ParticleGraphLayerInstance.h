@@ -115,6 +115,9 @@ public:
     ParticleGraphLayer* GetLayer() const { return layer_; }
 
 protected:
+    /// Handle scene change in instance.
+    void OnSceneSet(Scene* scene);
+
     /// Set emitter reference.
     void SetEmitter(ParticleGraphEmitter* emitter);
 
@@ -167,7 +170,7 @@ inline void ParticleGraphLayerInstance::DestroyParticles()
     if (!destructionQueueSize_)
         return;
     auto queue = destructionQueue_.subspan(0, destructionQueueSize_);
-    ea::sort(queue.begin(), queue.end(), ea::greater<float>());
+    ea::sort(queue.begin(), queue.end(), ea::greater<unsigned>());
     //TODO: Eliminate duplicates.
     for (unsigned index: queue)
     {

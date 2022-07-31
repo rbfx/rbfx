@@ -13,11 +13,10 @@
 #ifndef _CONFIG_GLSL_
 #define _CONFIG_GLSL_
 
-#extension GL_ARB_shading_language_420pack: enable
-#extension GL_EXT_shader_texture_lod: enable
-#extension GL_OES_standard_derivatives : enable
-
 /// =================================== Shader configuration controls ===================================
+
+/// Whether to disable light uniform buffer.
+// #define URHO3D_CUSTOM_LIGHT_UNIFORMS
 
 /// Whether to disable default uniform buffer in favor of custom one.
 /// You may still need to declare default constants to use built-in includes.

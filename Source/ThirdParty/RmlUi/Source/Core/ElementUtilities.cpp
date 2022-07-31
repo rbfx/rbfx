@@ -58,7 +58,7 @@ static void SetBox(Element* element)
 	Box box;
 	LayoutDetails::BuildBox(box, containing_block, element);
 
-	if (element->GetComputedValues().height.type != Style::Height::Auto)
+	if (element->GetComputedValues().height().type != Style::Height::Auto)
 		box.SetContent(Vector2f(box.GetSize().x, containing_block.y));
 
 	element->SetBox(box);
@@ -163,29 +163,18 @@ int ElementUtilities::GetStringWidth(Element* element, const String& string, Cha
 	return GetFontEngineInterface()->GetStringWidth(font_face_handle, string, prior_character);
 }
 
-void ElementUtilities::BindEventAttributes(Element* element)
-{
-	// Check for and instance the on* events
-	for (const auto& pair: element->GetAttributes())
-	{
-		if (pair.first.size() > 2 && pair.first[0] == 'o' && pair.first[1] == 'n')
-		{
-			EventListener* listener = Factory::InstanceEventListener(pair.second.Get<String>(), element);
-			if (listener)
-				element->AddEventListener(pair.first.substr(2), listener, false);
-		}
-	}
-}
-	
 // Generates the clipping region for an element.
 bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_dimensions, Element* element)
 {
+	using Style::Clip;
 	clip_origin = Vector2i(-1, -1);
 	clip_dimensions = Vector2i(-1, -1);
-	
-	int num_ignored_clips = element->GetClippingIgnoreDepth();
-	if (num_ignored_clips < 0)
+
+	Clip target_element_clip = element->GetComputedValues().clip();
+	if (target_element_clip == Clip::Type::None)
 		return false;
+
+	int num_ignored_clips = target_element_clip.GetNumber();
 
 	// Search through the element's ancestors, finding all elements that clip their overflow and have overflow to clip.
 	// For each that we find, we combine their clipping region with the existing clipping region, and so build up a
@@ -194,19 +183,26 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 
 	while (clipping_element != nullptr)
 	{
+		const ComputedValues& clip_computed = clipping_element->GetComputedValues();
+		const bool clip_enabled = (clip_computed.overflow_x() != Style::Overflow::Visible || clip_computed.overflow_y() != Style::Overflow::Visible);
+		const bool clip_always = (clip_computed.clip() == Clip::Type::Always);
+		const bool clip_none = (clip_computed.clip() == Clip::Type::None);
+		const int clip_number = clip_computed.clip().GetNumber();
+
 		// Merge the existing clip region with the current clip region if we aren't ignoring clip regions.
-		if (num_ignored_clips == 0 && clipping_element->IsClippingEnabled())
+		if ((clip_always || clip_enabled) && num_ignored_clips == 0)
 		{
 			// Ignore nodes that don't clip.
-			if (clipping_element->GetClientWidth() < clipping_element->GetScrollWidth() - 0.5f
-				|| clipping_element->GetClientHeight() < clipping_element->GetScrollHeight() - 0.5f)
+			if (clip_always || clipping_element->GetClientWidth() < clipping_element->GetScrollWidth() - 0.5f ||
+				clipping_element->GetClientHeight() < clipping_element->GetScrollHeight() - 0.5f)
 			{
 				const Box::Area client_area = clipping_element->GetClientArea();
-				const Vector2f element_origin_f = clipping_element->GetAbsoluteOffset(client_area);
-				const Vector2f element_dimensions_f = clipping_element->GetBox().GetSize(client_area);
-				
-				const Vector2i element_origin(Math::RealToInteger(element_origin_f.x), Math::RealToInteger(element_origin_f.y));
-				const Vector2i element_dimensions(Math::RealToInteger(element_dimensions_f.x), Math::RealToInteger(element_dimensions_f.y));
+				Vector2f element_origin_f = clipping_element->GetAbsoluteOffset(client_area);
+				Vector2f element_dimensions_f = clipping_element->GetBox().GetSize(client_area);
+				Math::SnapToPixelGrid(element_origin_f, element_dimensions_f);
+
+				const Vector2i element_origin(element_origin_f);
+				const Vector2i element_dimensions(element_dimensions_f);
 				
 				if (clip_origin == Vector2i(-1, -1) && clip_dimensions == Vector2i(-1, -1))
 				{
@@ -229,19 +225,15 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 		}
 
 		// If this region is meant to clip and we're skipping regions, update the counter.
-		if (num_ignored_clips > 0)
-		{
-			if (clipping_element->IsClippingEnabled())
-				num_ignored_clips--;
-		}
-
-		// Determine how many clip regions this ancestor ignores, and inherit the value. If this region ignores all
-		// clipping regions, then we do too.
-		int clipping_element_ignore_clips = clipping_element->GetClippingIgnoreDepth();
-		if (clipping_element_ignore_clips < 0)
-			break;
+		if (num_ignored_clips > 0 && clip_enabled)
+			num_ignored_clips--;
 		
-		num_ignored_clips = Math::Max(num_ignored_clips, clipping_element_ignore_clips);
+		// Inherit how many clip regions this ancestor ignores.
+		num_ignored_clips = Math::Max(num_ignored_clips, clip_number);
+
+		// If this region ignores all clipping regions, then we do too.
+		if (clip_none)
+			break;
 
 		// Climb the tree to this region's parent.
 		clipping_element = clipping_element->GetParentNode();
@@ -311,7 +303,7 @@ void ElementUtilities::FormatElement(Element* element, Vector2f containing_block
 // Generates the box for an element.
 void ElementUtilities::BuildBox(Box& box, Vector2f containing_block, Element* element, bool inline_element)
 {
-	LayoutDetails::BuildBox(box, containing_block, element, inline_element);
+	LayoutDetails::BuildBox(box, containing_block, element, inline_element ? BoxContext::Inline : BoxContext::Block);
 }
 
 // Sizes an element, and positions it within its parent offset from the borders of its content area.

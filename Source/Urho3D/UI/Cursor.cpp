@@ -71,8 +71,6 @@ static const int osCursorLookup[CS_MAX_SHAPES] =
 };
 #endif
 
-extern const char* UI_CATEGORY;
-
 Cursor::Cursor(Context* context) :
     BorderImage(context),
     shape_(shapeNames[CS_NORMAL]),
@@ -101,7 +99,7 @@ Cursor::~Cursor()
 
 void Cursor::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Cursor>(UI_CATEGORY);
+    context->RegisterFactory<Cursor>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Priority", M_MAX_INT);

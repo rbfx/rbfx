@@ -86,16 +86,16 @@ bool IsBoundingBoxShadowInPerspectiveFrustum(const BoundingBox& boundingBox,
 {
     // Extrusion direction depends on the position of the shadow caster
     const Vector3 center = boundingBox.Center();
-    const Ray extrusionRay(center, center);
+    const Vector3 size = boundingBox.Size();
 
     // Because of the perspective, the bounding box must also grow when it is extruded to the distance
-    const float originalDistance = Clamp(center.Length(), M_EPSILON, extrusionDistance);
+    const float originalDistance = Clamp(center.z_ - size.z_ * 0.5f, M_EPSILON, extrusionDistance);
     const float sizeFactor = extrusionDistance / originalDistance;
 
     // Calculate the endpoint box and merge it to the original. Because it's axis-aligned, it will be larger
     // than necessary, so the test will be conservative
-    const Vector3 newCenter = extrusionDistance * extrusionRay.direction_;
-    const Vector3 newHalfSize = boundingBox.Size() * sizeFactor * 0.5f;
+    const Vector3 newCenter = center * sizeFactor;
+    const Vector3 newHalfSize = size * sizeFactor * 0.5f;
 
     BoundingBox extrudedBox(newCenter - newHalfSize, newCenter + newHalfSize);
     extrudedBox.Merge(boundingBox);
@@ -119,6 +119,7 @@ DrawableProcessorPass::DrawableProcessorPass(RenderPipelineInterface* renderPipe
     unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
     : Object(renderPipeline->GetContext())
     , flags_(flags)
+    , useBatchCallback_(IsFlagSet(DrawableProcessorPassFlag::BatchCallback))
     , deferredPassIndex_(deferredPassIndex)
     , unlitBasePassIndex_(unlitBasePassIndex)
     , litBasePassIndex_(litBasePassIndex)
@@ -130,9 +131,12 @@ DrawableProcessorPass::DrawableProcessorPass(RenderPipelineInterface* renderPipe
 DrawableProcessorPass::AddBatchResult DrawableProcessorPass::AddBatch(unsigned threadIndex,
     Drawable* drawable, unsigned sourceBatchIndex, Technique* technique)
 {
+    if (useBatchCallback_)
+        return AddCustomBatch(threadIndex, drawable, sourceBatchIndex, technique);
+
     if (Pass* deferredPass = technique->GetPass(deferredPassIndex_))
     {
-        geometryBatches_.PushBack(threadIndex, { drawable, sourceBatchIndex, deferredPass, nullptr, nullptr, nullptr });
+        geometryBatches_.PushBack(threadIndex, GeometryBatch::Deferred(drawable, sourceBatchIndex, deferredPass));
         return { true, false };
     }
 
@@ -143,7 +147,7 @@ DrawableProcessorPass::AddBatchResult DrawableProcessorPass::AddBatch(unsigned t
     if (!unlitBasePass)
         return { false, false };
 
-    geometryBatches_.PushBack(threadIndex, { drawable, sourceBatchIndex, nullptr, unlitBasePass, litBasePass, lightPass });
+    geometryBatches_.PushBack(threadIndex, GeometryBatch::Forward(drawable, sourceBatchIndex, unlitBasePass, litBasePass, lightPass));
     return { true, !!lightPass };
 }
 
@@ -167,7 +171,7 @@ DrawableProcessor::~DrawableProcessor()
 
 void DrawableProcessor::SetPasses(ea::vector<SharedPtr<DrawableProcessorPass>> passes)
 {
-    passes_ = ea::move(passes);
+    allPasses_ = ea::move(passes);
 }
 
 void DrawableProcessor::SetSettings(const DrawableProcessorSettings& settings)
@@ -178,6 +182,10 @@ void DrawableProcessor::SetSettings(const DrawableProcessorSettings& settings)
 
 void DrawableProcessor::OnUpdateBegin(const FrameInfo& frameInfo)
 {
+    passes_.clear();
+    ea::copy_if(allPasses_.begin(), allPasses_.end(), ea::back_inserter(passes_),
+        [](const SharedPtr<DrawableProcessorPass>& pass) { return pass->IsEnabled(); });
+
     // Initialize frame constants
     frameInfo_ = frameInfo;
     numDrawables_ = frameInfo_.octree_->GetAllDrawables().size();
@@ -530,21 +538,24 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                 const ReflectionProbeReference& probe1 = reflection.probes_[1];
 
                 if (probe0.data_)
+                {
                     lightAccumulator.reflectionProbes_[0] = probe0.data_;
 
 #ifdef DESKTOP_GRAPHICS
-                if (reflectionMode >= ReflectionMode::BlendProbes && probe1.data_)
-                {
-                    lightAccumulator.reflectionProbes_[1] = probe1.data_;
-                    lightAccumulator.reflectionProbesBlendFactor_ = probe0.priority_ != probe1.priority_
-                        ? 1.0f - probe0.volume_
-                        : probe1.volume_ / (probe0.volume_ + probe1.volume_);
-                }
-                if (reflectionMode == ReflectionMode::BlendProbesAndZone && !probe1.data_)
-                {
-                    lightAccumulator.reflectionProbesBlendFactor_ = 1.0f - probe0.volume_;
-                }
+                    if (reflectionMode >= ReflectionMode::BlendProbes && probe1.data_)
+                    {
+                        lightAccumulator.reflectionProbes_[1] = probe1.data_;
+                        lightAccumulator.reflectionProbesBlendFactor_ = probe0.priority_ != probe1.priority_
+                            ? 1.0f - probe0.volume_
+                            : probe1.volume_ / (probe0.volume_ + probe1.volume_);
+                    }
+                    if (reflectionMode == ReflectionMode::BlendProbesAndZone && !probe1.data_)
+                    {
+                        lightAccumulator.reflectionProbesBlendFactor_ = 1.0f - probe0.volume_;
+                    }
 #endif
+                }
+
             }
         }
 

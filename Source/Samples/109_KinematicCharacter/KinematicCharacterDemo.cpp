@@ -39,6 +39,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
@@ -142,21 +143,15 @@ void KinematicCharacterDemo::CreateScene()
 
     // Create mushrooms of varying sizes
     const unsigned NUM_MUSHROOMS = 60;
+    XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
     for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
     {
         Node* objectNode = scene_->CreateChild("Mushroom");
         objectNode->SetPosition(Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f));
         objectNode->SetRotation(Quaternion(0.0f, Random(360.0f), 0.0f));
         objectNode->SetScale(2.0f + Random(5.0f));
-        auto* object = objectNode->CreateComponent<StaticModel>();
-        object->SetModel(cache->GetResource<Model>("Models/Mushroom.mdl"));
-        object->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
-        object->SetCastShadows(true);
-
-        auto* body = objectNode->CreateComponent<RigidBody>();
-        body->SetCollisionLayer(2);
-        auto* shape = objectNode->CreateComponent<CollisionShape>();
-        shape->SetTriangleMesh(object->GetModel(), 0);
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(mushroomPrefab);
     }
 
     // Create movable boxes. Let them fall from the sky at first

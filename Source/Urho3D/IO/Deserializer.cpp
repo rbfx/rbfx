@@ -396,6 +396,9 @@ Variant Deserializer::ReadVariant(VariantType type, Context* context)
     case VAR_DOUBLE:
         return Variant(ReadDouble());
 
+    case VAR_STRINGVARIANTMAP:
+        return Variant(ReadStringVariantMap());
+
     case VAR_CUSTOM:
     {
         StringHash typeName(ReadUInt());
@@ -455,6 +458,20 @@ VariantMap Deserializer::ReadVariantMap()
     for (unsigned i = 0; i < num; ++i)
     {
         StringHash key = ReadStringHash();
+        ret[key] = ReadVariant();
+    }
+
+    return ret;
+}
+
+StringVariantMap Deserializer::ReadStringVariantMap()
+{
+    StringVariantMap ret;
+    const unsigned num = ReadVLE();
+
+    for (unsigned i = 0; i < num; ++i)
+    {
+        const ea::string key = ReadString();
         ret[key] = ReadVariant();
     }
 

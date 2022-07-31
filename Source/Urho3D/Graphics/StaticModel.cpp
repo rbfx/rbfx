@@ -42,8 +42,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 StaticModel::StaticModel(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
     occlusionLodLevel_(M_MAX_UNSIGNED),
@@ -55,7 +53,7 @@ StaticModel::~StaticModel() = default;
 
 void StaticModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticModel>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<StaticModel>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);

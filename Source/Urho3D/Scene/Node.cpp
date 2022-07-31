@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -96,7 +96,7 @@ void Node::SerializeInBlock(Archive& archive)
 
         // Load this node ID for resolver
         unsigned nodeID{};
-        Urho3D::SerializeValue(archive, "id", id_);
+        Urho3D::SerializeValue(archive, "id", nodeID);
         resolver.AddNode(nodeID, this);
 
         // Load node content
@@ -587,6 +587,11 @@ void Node::SetTransform(const Matrix3x4& matrix)
     SetTransform(matrix.Translation(), matrix.Rotation(), matrix.Scale());
 }
 
+void Node::SetTransform(const Transform& transform)
+{
+    SetTransform(transform.position_, transform.rotation_, transform.scale_);
+}
+
 void Node::SetWorldPosition(const Vector3& position)
 {
     SetPosition(IsTransformHierarchyRoot() ? position : parent_->GetWorldTransform().Inverse() * position);
@@ -778,6 +783,34 @@ void Node::Scale(float scale)
 void Node::Scale(const Vector3& scale)
 {
     scale_ *= scale;
+    MarkDirty();
+}
+
+void Node::ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space)
+{
+    Vector3 parentSpacePoint;
+    const Vector3 oldScale = scale_;
+
+    switch (space)
+    {
+    case TS_LOCAL:
+        parentSpacePoint = GetTransform() * point;
+        break;
+
+    case TS_PARENT:
+        parentSpacePoint = point;
+        break;
+
+    case TS_WORLD:
+        parentSpacePoint = IsTransformHierarchyRoot() ? point : parent_->GetWorldTransform().Inverse() * point;
+        break;
+    }
+
+    scale_ *= scale;
+
+    const Vector3 oldRelativePos = (Vector3::ONE / oldScale) * (position_ - parentSpacePoint);
+    position_ = scale_ * oldRelativePos + parentSpacePoint;
+
     MarkDirty();
 }
 
@@ -1506,6 +1539,18 @@ bool Node::IsChildOf(Node* node) const
     return false;
 }
 
+bool Node::IsTemporaryEffective() const
+{
+    const Node* parent = this;
+    while (parent)
+    {
+        if (parent->IsTemporary())
+            return true;
+        parent = parent->parent_;
+    }
+    return false;
+}
+
 Node* Node::GetDirectChildFor(Node* indirectChild) const
 {
     Node* parent = indirectChild->GetParent();
@@ -2006,11 +2051,6 @@ Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
         SharedPtr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
-        if (typeName.empty() || typeName.starts_with("Unknown", false))
-            newComponent->SetType(type);
-        else
-            newComponent->SetTypeName(typeName);
-
         AddComponent(newComponent, id, mode);
         return newComponent;
     }
