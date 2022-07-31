@@ -43,7 +43,6 @@ extern const char* horizontalAlignments[];
 extern const char* verticalAlignments[];
 extern const char* textEffects[];
 extern const char* faceCameraModeNames[];
-extern const char* GEOMETRY_CATEGORY;
 
 static const float TEXT_SCALING = 1.0f / 128.0f;
 static const float DEFAULT_EFFECT_DEPTH_BIAS = 0.1f;
@@ -68,7 +67,7 @@ Text3D::~Text3D() = default;
 
 void Text3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Text3D>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<Text3D>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Font", GetFontAttr, SetFontAttr, ResourceRef, ResourceRef(Font::GetTypeStatic()), AM_DEFAULT);

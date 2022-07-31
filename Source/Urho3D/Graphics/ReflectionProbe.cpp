@@ -150,8 +150,6 @@ void QueryBVH(ea::vector<const ReflectionProbeBVH*>& intersections,
 
 }
 
-extern const char* SCENE_CATEGORY;
-
 InternalReflectionProbeData::InternalReflectionProbeData(ReflectionProbe* probe)
     : probe_(probe)
     , data_(&probe_->GetProbeData())
@@ -541,7 +539,7 @@ ReflectionProbe::~ReflectionProbe()
 
 void ReflectionProbe::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReflectionProbe>(SCENE_CATEGORY);
+    context->RegisterFactory<ReflectionProbe>(Category_Scene);
 
     URHO3D_ACTION_STATIC_LABEL("Render!", QueueRender, "Renders cubemap for reflection probe");
 

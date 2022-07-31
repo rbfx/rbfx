@@ -126,6 +126,8 @@ public:
     bool WriteStringVector(const StringVector& value);
     /// Write a variant map.
     bool WriteVariantMap(const VariantMap& value);
+    /// Write a string variant map.
+    bool WriteStringVariantMap(const StringVariantMap& value);
     /// Write a variable-length encoded unsigned integer, which can use 29 bits maximum.
     bool WriteVLE(unsigned value);
     /// Write a 24-bit network object ID.

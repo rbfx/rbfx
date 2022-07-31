@@ -32,7 +32,6 @@ namespace Urho3D
 {
 
 extern const char* orientations[];
-extern const char* UI_CATEGORY;
 
 ProgressBar::ProgressBar(Context * context) :
         BorderImage(context),
@@ -58,7 +57,7 @@ ProgressBar::~ProgressBar() = default;
 
 void ProgressBar::RegisterObject(Context * context)
 {
-    context->RegisterFactory<ProgressBar>(UI_CATEGORY);
+    context->RegisterFactory<ProgressBar>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Is Enabled", true);

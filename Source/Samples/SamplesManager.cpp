@@ -203,6 +203,9 @@ void SampleSelectionScreen::Deactivate()
 
 void SamplesManager::Start()
 {
+    ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
+    cache->SetAutoReloadResources(true);
+
     UI* ui = context_->GetSubsystem<UI>();
 
 #if MOBILE
@@ -245,8 +248,7 @@ void SamplesManager::Start()
     rmlUi->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
 #endif
 
-    sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(
-        context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
+    sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
     IntVector2 listSize = VectorMin(IntVector2(300, 600), ui->GetRoot()->GetSize());
     auto* layout = sampleSelectionScreen_->GetUIRoot()->CreateChild<UIElement>();
@@ -265,7 +267,6 @@ void SamplesManager::Start()
     list->SetFocus(true);
 
     // Get logo texture
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
     Texture2D* logoTexture = cache->GetResource<Texture2D>("Textures/FishBoneLogo.png");
     if (!logoTexture)
         return;

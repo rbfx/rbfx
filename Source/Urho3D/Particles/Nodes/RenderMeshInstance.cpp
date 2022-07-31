@@ -78,18 +78,33 @@ void RenderMeshInstance::Init(ParticleGraphNode* node, ParticleGraphLayerInstanc
 {
     InstanceBase::Init(node, layer);
 
-    const auto scene = GetScene();
     auto graphNode = static_cast<RenderMesh*>(node_);
     sceneNode_ = MakeShared<Node>(GetContext());
     drawable_ = MakeShared<RenderMeshDrawable>(GetContext());
     sceneNode_->AddComponent(drawable_, 0, LOCAL);
     drawable_->SetModelAttr(graphNode->GetModel());
     drawable_->SetMaterialsAttr(graphNode->GetMaterial());
-    octree_ = scene->GetOrCreateComponent<Octree>();
-    octree_->AddManualDrawable(drawable_);
+    OnSceneSet(GetScene());
 }
 
-RenderMeshInstance::~RenderMeshInstance() { octree_->RemoveManualDrawable(drawable_); }
+void RenderMeshInstance::OnSceneSet(Scene* scene)
+{
+    if (octree_)
+    {
+        octree_->RemoveManualDrawable(drawable_);
+        octree_.Reset();
+    }
+    if (scene)
+    {
+        octree_ = scene->GetOrCreateComponent<Octree>();
+        octree_->AddManualDrawable(drawable_);
+    }
+}
+
+RenderMeshInstance::~RenderMeshInstance()
+{
+    OnSceneSet(nullptr);
+}
 
 ea::vector<Matrix3x4>& RenderMeshInstance::Prepare(unsigned numParticles)
 {

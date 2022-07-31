@@ -291,8 +291,6 @@ namespace SDL
 %rename(GetVariantType) Urho3D::Variant::GetType;
 %nocsattribute Urho3D::Variant::GetType;
 %csmethodmodifiers ToString() "public override"
-%ignore Urho3D::AttributeInfo::enumNamesStorage_;
-%ignore Urho3D::AttributeInfo::enumNamesPointers_;
 %ignore Urho3D::AttributeInfo::enumNames_;
 
 // Subsystem properties.
@@ -356,16 +354,15 @@ namespace SDL
 %ignore Urho3D::Engine::DefineParameters;
 %ignore Urho3D::Application::engine_;
 %ignore Urho3D::Application::GetCommandLineParser;
-%ignore Urho3D::PluginApplication::PluginApplicationMain;
-%ignore Urho3D::PluginApplication::InitializeReloadablePlugin;
-%ignore Urho3D::PluginApplication::UninitializeReloadablePlugin;
+%ignore Urho3D::PluginApplicationMain;
+%ignore Urho3D::PluginApplication::Dispose;
 
 %include "generated/Urho3D/_pre_engine.i"
 %include "Urho3D/Engine/EngineDefs.h"
 %include "Urho3D/Engine/Engine.h"
 %include "Urho3D/Engine/Application.h"
 %include "Urho3D/Engine/StateManager.h"
-%include "Urho3D/Engine/PluginApplication.h"
+%include "Urho3D/Plugins/PluginApplication.h"
 %include "generated/Urho3D/_pre_script.i"
 #if URHO3D_CSHARP
 %include "Urho3D/Script/Script.h"
@@ -524,6 +521,7 @@ public:
 %include "Urho3D/Scene/SceneResolver.h"
 %include "Urho3D/Scene/UnknownComponent.h"
 %include "Urho3D/Scene/TrackedComponent.h"
+%include "Urho3D/Scene/PrefabReference.h"
 
 // --------------------------------------- Extra components ---------------------------------------
 %include "Urho3D/Input/FreeFlyController.h"
@@ -867,8 +865,6 @@ using ImGuiConfigFlags = unsigned;
 %ignore ImGui::IsMouseReleased;
 %ignore ImGui::IsMouseClicked;
 %ignore ImGui::IsItemClicked;
-%ignore ImGui::SetDragDropVariant;
-%ignore ImGui::AcceptDragDropVariant;
 %ignore ImGui::dpx;
 %ignore ImGui::dpy;
 %ignore ImGui::dp;
@@ -1017,6 +1013,7 @@ using ImGuiConfigFlags = unsigned;
 
 %template(StringMap)                    eastl::unordered_map<Urho3D::StringHash, eastl::string>;
 %template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>;
+%template(StringVariantMap)             eastl::unordered_map<eastl::string, Urho3D::Variant>;
 %template(AttributeMap)                 eastl::unordered_map<Urho3D::StringHash, eastl::vector<Urho3D::AttributeInfo>>;
 %template(PackageMap)                   eastl::unordered_map<eastl::string, Urho3D::PackageEntry>;
 %template(JSONObject)                   eastl::map<eastl::string, Urho3D::JSONValue>;

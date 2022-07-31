@@ -100,6 +100,12 @@ ResourceCache::ResourceCache(Context* context) :
 
     // Subscribe BeginFrame for handling directory watchers and background loaded resource finalization
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(ResourceCache, HandleBeginFrame));
+
+    auto* fileSystem = GetSubsystem<FileSystem>();
+    if (fileSystem)
+    {
+        exePath_ = fileSystem->GetProgramDir().replaced("/./", "/");
+    }
 }
 
 ResourceCache::~ResourceCache()
@@ -907,12 +913,12 @@ ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
     if (resourceDirs_.size())
     {
         ea::string namePath = GetPath(sanitatedName);
-        ea::string exePath = fileSystem->GetProgramDir().replaced("/./", "/");
+
         for (unsigned i = 0; i < resourceDirs_.size(); ++i)
         {
             ea::string relativeResourcePath = resourceDirs_[i];
-            if (relativeResourcePath.starts_with(exePath))
-                relativeResourcePath = relativeResourcePath.substr(exePath.length());
+            if (relativeResourcePath.starts_with(exePath_))
+                relativeResourcePath = relativeResourcePath.substr(exePath_.length());
 
             if (namePath.starts_with(resourceDirs_[i], false))
                 namePath = namePath.substr(resourceDirs_[i].length());
@@ -1257,7 +1263,7 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
                 // Manual resources do not exist in resource dirs.
                 bool isPhysicalResource = false;
                 for (unsigned i = 0; i < resourceDirs_.size() && !isPhysicalResource; ++i)
-                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + pathName);
+                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + entryName);
 
                 if (!isPhysicalResource)
                 {

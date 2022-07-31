@@ -37,7 +37,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
 extern const char* faceCameraModeNames[];
 static const unsigned MAX_PARTICLES_IN_FRAME = 100;
 
@@ -62,7 +61,7 @@ ParticleEmitter::~ParticleEmitter() = default;
 
 void ParticleEmitter::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleEmitter>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<ParticleEmitter>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Effect", GetEffectAttr, SetEffectAttr, ResourceRef, ResourceRef(ParticleEffect::GetTypeStatic()),

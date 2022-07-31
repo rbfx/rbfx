@@ -43,8 +43,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 static const float INV_SQRT_TWO = 1.0f / sqrtf(2.0f);
 
 const char* faceCameraModeNames[] =
@@ -112,7 +110,7 @@ BillboardSet::~BillboardSet() = default;
 
 void BillboardSet::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BillboardSet>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<BillboardSet>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),
@@ -489,7 +487,8 @@ void BillboardSet::UpdateBufferSize()
 {
     unsigned numBillboards = billboards_.size();
 
-    if (vertexBuffer_->GetVertexCount() != numBillboards * 4 || geometryTypeUpdate_)
+    if (vertexBuffer_->GetVertexCount() != numBillboards * 4 || geometryTypeUpdate_
+        || vertexBuffer_->GetElementMask() == MASK_NONE)
     {
         vertexBuffer_->SetSize(numBillboards * 4, GetVertexBufferFormat(), true);
         geometry_->SetVertexBuffer(0, vertexBuffer_);

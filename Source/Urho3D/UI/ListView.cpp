@@ -48,8 +48,6 @@ static const char* highlightModes[] =
 
 static const StringHash expandedHash("Expanded");
 
-extern const char* UI_CATEGORY;
-
 bool GetItemExpanded(UIElement* item)
 {
     return item ? item->GetVar(expandedHash).GetBool() : false;
@@ -200,7 +198,7 @@ ListView::~ListView() = default;
 
 void ListView::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ListView>(UI_CATEGORY);
+    context->RegisterFactory<ListView>(Category_UI);
 
     HierarchyContainer::RegisterObject(context);
 

@@ -1,0 +1,10 @@
+{
+    "Transformers": [
+        {
+            "_Class": "ModelImporter",
+            "attributes": [
+                {"name": "Scale", "type": "Float", "value": 0.01}
+            ]
+        }
+    ]
+}

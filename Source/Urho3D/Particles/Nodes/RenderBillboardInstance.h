@@ -37,8 +37,10 @@ namespace ParticleGraphNodes
 class RenderBillboardInstance final : public RenderBillboard::InstanceBase
 {
 public:
-    void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
     ~RenderBillboardInstance() override;
+    void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
+    void OnSceneSet(Scene* scene) override;
+
     void Prepare(unsigned numParticles);
     void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color,
         float rotation, Vector3& direction);

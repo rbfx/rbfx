@@ -142,7 +142,7 @@ void BloomPass::CopyTexture(RenderBuffer* source, RenderBuffer* destination)
     renderBufferManager_->DrawTexture("Downscale bloom", source->GetTexture2D());
 }
 
-void BloomPass::Execute()
+void BloomPass::Execute(Camera* camera)
 {
     if (!pipelineStates_)
         InitializeStates();

@@ -81,19 +81,19 @@ void ShaderProgramCompositor::ProcessUserBatch(ShaderProgramDesc& result, Drawab
     ApplyMaterialPixelDefinesForUserPass(result, material);
 
     if (isCameraClipped_)
-        result.vertexShaderDefines_ += "URHO3D_CLIP_PLANE ";
+        result.AddShaderDefines(VS, "URHO3D_CLIP_PLANE");
 
     const bool isDeferred = subpass == BatchCompositorSubpass::Deferred;
     const bool isDepthOnly = flags.Test(DrawableProcessorPassFlag::DepthOnlyPass);
     if (subpass == BatchCompositorSubpass::Light)
-        result.commonShaderDefines_ += "URHO3D_ADDITIVE_LIGHT_PASS ";
+        result.AddCommonShaderDefines("URHO3D_ADDITIVE_LIGHT_PASS");
     else if (flags.Test(DrawableProcessorPassFlag::HasAmbientLighting))
         ApplyAmbientLightingVertexAndCommonDefinesForUserPass(result, drawable, isDeferred);
 
     if (isDeferred)
-        result.commonShaderDefines_ += "URHO3D_NUM_RENDER_TARGETS=4 ";
+        result.AddCommonShaderDefines("URHO3D_NUM_RENDER_TARGETS=4");
     else if (isDepthOnly)
-        result.commonShaderDefines_ += "URHO3D_NUM_RENDER_TARGETS=0 ";
+        result.AddCommonShaderDefines("URHO3D_NUM_RENDER_TARGETS=0");
 
     if (light)
         ApplyPixelLightPixelAndCommonDefines(result, light, hasShadow, material->GetSpecular());
@@ -122,50 +122,48 @@ void ShaderProgramCompositor::ProcessLightVolumeBatch(ShaderProgramDesc& result,
 
 void ShaderProgramCompositor::SetupShaders(ShaderProgramDesc& result, Pass* pass)
 {
-    result.vertexShaderName_ = "v2/" + pass->GetVertexShader();
-    result.pixelShaderName_ = "v2/" + pass->GetPixelShader();
+    result.shaderName_[VS] = "v2/" + pass->GetVertexShader();
+    result.shaderName_[PS] = "v2/" + pass->GetPixelShader();
 }
 
 void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
     DrawableProcessorPassFlags flags, Pass* pass) const
 {
     if (constantBuffersSupported_)
-        result.commonShaderDefines_ += "URHO3D_USE_CBUFFERS ";
+        result.AddCommonShaderDefines("URHO3D_USE_CBUFFERS");
 
     if (isCameraReversed_)
-        result.commonShaderDefines_ += "URHO3D_CAMERA_REVERSED ";
+        result.AddCommonShaderDefines("URHO3D_CAMERA_REVERSED");
 
     if (!flags.Test(DrawableProcessorPassFlag::DepthOnlyPass))
     {
         if (settings_.sceneProcessor_.cubemapBoxProjection_)
-            result.commonShaderDefines_ += "URHO3D_BOX_PROJECTION ";
+            result.AddCommonShaderDefines("URHO3D_BOX_PROJECTION");
 
         if (settings_.sceneProcessor_.linearSpaceLighting_)
-            result.commonShaderDefines_ += "URHO3D_GAMMA_CORRECTION ";
+            result.AddCommonShaderDefines("URHO3D_GAMMA_CORRECTION");
 
         switch (settings_.sceneProcessor_.specularQuality_)
         {
         case SpecularQuality::Simple:
-            result.commonShaderDefines_ += "URHO3D_SPECULAR=1 ";
+            result.AddCommonShaderDefines("URHO3D_SPECULAR=1");
             break;
         case SpecularQuality::Antialiased:
-            result.commonShaderDefines_ += "URHO3D_SPECULAR=2 ";
+            result.AddCommonShaderDefines("URHO3D_SPECULAR=2");
             break;
         default:
             break;
         }
 
         if (settings_.sceneProcessor_.reflectionQuality_ == ReflectionQuality::Vertex)
-            result.commonShaderDefines_ += "URHO3D_VERTEX_REFLECTION ";
+            result.AddCommonShaderDefines("URHO3D_VERTEX_REFLECTION");
     }
 
     if (flags.Test(DrawableProcessorPassFlag::NeedReadableDepth) && settings_.renderBufferManager_.readableDepth_)
-        result.commonShaderDefines_ += "URHO3D_HAS_READABLE_DEPTH ";
+        result.AddCommonShaderDefines("URHO3D_HAS_READABLE_DEPTH");
 
-    result.vertexShaderDefines_ += pass->GetEffectiveVertexShaderDefines();
-    result.vertexShaderDefines_ += " ";
-    result.pixelShaderDefines_ += pass->GetEffectivePixelShaderDefines();
-    result.pixelShaderDefines_ += " ";
+    result.AddShaderDefines(VS, pass->GetEffectiveVertexShaderDefines());
+    result.AddShaderDefines(PS, pass->GetEffectivePixelShaderDefines());
 }
 
 void ShaderProgramCompositor::ApplyGeometryVertexDefines(ShaderProgramDesc& result,
@@ -173,7 +171,7 @@ void ShaderProgramCompositor::ApplyGeometryVertexDefines(ShaderProgramDesc& resu
 {
     result.isInstancingUsed_ = IsInstancingUsed(flags, geometry, geometryType);
     if (result.isInstancingUsed_)
-        result.vertexShaderDefines_ += "URHO3D_INSTANCING ";
+        result.AddShaderDefines(VS, "URHO3D_INSTANCING");
 
     static const ea::string geometryDefines[] = {
         "URHO3D_GEOMETRY_STATIC ",
@@ -188,39 +186,38 @@ void ShaderProgramCompositor::ApplyGeometryVertexDefines(ShaderProgramDesc& resu
 
     const auto geometryTypeIndex = static_cast<int>(geometryType);
     if (geometryTypeIndex < ea::size(geometryDefines))
-        result.vertexShaderDefines_ += geometryDefines[geometryTypeIndex];
+        result.AddShaderDefines(VS, geometryDefines[geometryTypeIndex]);
     else
-        result.vertexShaderDefines_ += Format("URHO3D_GEOMETRY_CUSTOM={} ", geometryTypeIndex);
+        result.AddShaderDefines(VS, Format("URHO3D_GEOMETRY_CUSTOM={} ", geometryTypeIndex));
 }
 
 void ShaderProgramCompositor::ApplyPixelLightPixelAndCommonDefines(ShaderProgramDesc& result,
     Light* light, bool hasShadow, bool materialHasSpecular) const
 {
     if (light->GetShapeTexture())
-        result.commonShaderDefines_ += "URHO3D_LIGHT_CUSTOM_SHAPE ";
+        result.AddCommonShaderDefines("URHO3D_LIGHT_CUSTOM_SHAPE");
 
     if (light->GetRampTexture())
-        result.pixelShaderDefines_ += "URHO3D_LIGHT_CUSTOM_RAMP ";
+        result.AddShaderDefines(PS, "URHO3D_LIGHT_CUSTOM_RAMP");
 
     static const ea::string lightTypeDefines[] = {
         "URHO3D_LIGHT_DIRECTIONAL ",
         "URHO3D_LIGHT_SPOT ",
         "URHO3D_LIGHT_POINT "
     };
-    result.commonShaderDefines_ += lightTypeDefines[static_cast<int>(light->GetLightType())];
+    result.AddCommonShaderDefines(lightTypeDefines[static_cast<int>(light->GetLightType())]);
 
     if (hasShadow)
     {
         const unsigned maxCascades = light->GetLightType() == LIGHT_DIRECTIONAL ? MAX_CASCADE_SPLITS : 1u;
 
-        result.commonShaderDefines_ += "URHO3D_HAS_SHADOW ";
+        result.AddCommonShaderDefines("URHO3D_HAS_SHADOW");
         if (maxCascades > 1)
-            result.commonShaderDefines_ += Format("URHO3D_MAX_SHADOW_CASCADES={} ", maxCascades);
+            result.AddCommonShaderDefines(Format("URHO3D_MAX_SHADOW_CASCADES={}", maxCascades));
         if (settings_.shadowMapAllocator_.enableVarianceShadowMaps_)
-            result.commonShaderDefines_ += "URHO3D_VARIANCE_SHADOW_MAP ";
+            result.AddCommonShaderDefines("URHO3D_VARIANCE_SHADOW_MAP");
         else
-            result.commonShaderDefines_ += Format("URHO3D_SHADOW_PCF_SIZE={} ",
-                settings_.sceneProcessor_.pcfKernelSize_);
+            result.AddCommonShaderDefines(Format("URHO3D_SHADOW_PCF_SIZE={}", settings_.sceneProcessor_.pcfKernelSize_));
     }
 }
 
@@ -228,67 +225,67 @@ void ShaderProgramCompositor::ApplyLayoutVertexAndCommonDefinesForUserPass(
     ShaderProgramDesc& result, VertexBuffer* vertexBuffer) const
 {
     if (vertexBuffer->HasElement(SEM_NORMAL))
-        result.vertexShaderDefines_ += "URHO3D_VERTEX_HAS_NORMAL ";
+        result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_NORMAL");
     if (vertexBuffer->HasElement(SEM_TANGENT))
-        result.vertexShaderDefines_ += "URHO3D_VERTEX_HAS_TANGENT ";
+        result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_TANGENT");
     if (vertexBuffer->HasElement(SEM_TEXCOORD, 0))
-        result.vertexShaderDefines_ += "URHO3D_VERTEX_HAS_TEXCOORD0 ";
+        result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_TEXCOORD0");
     if (vertexBuffer->HasElement(SEM_TEXCOORD, 1))
-        result.vertexShaderDefines_ += "URHO3D_VERTEX_HAS_TEXCOORD1 ";
+        result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_TEXCOORD1");
 
     if (vertexBuffer->HasElement(SEM_COLOR))
-        result.commonShaderDefines_ += "URHO3D_VERTEX_HAS_COLOR ";
+        result.AddCommonShaderDefines("URHO3D_VERTEX_HAS_COLOR");
 }
 
 void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material) const
 {
     if (Texture* diffuseTexture = material->GetTexture(TU_DIFFUSE))
     {
-        result.pixelShaderDefines_ += "URHO3D_MATERIAL_HAS_DIFFUSE ";
+        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
         const int hint = GetTextureColorSpaceHint(diffuseTexture->GetLinear(), diffuseTexture->GetSRGB());
         if (hint > 1)
             URHO3D_LOGWARNING("Texture {} cannot be both sRGB and Linear", diffuseTexture->GetName());
-        result.pixelShaderDefines_ += Format("URHO3D_MATERIAL_DIFFUSE_HINT={} ", ea::min(1, hint));
+        result.AddShaderDefines(PS, Format("URHO3D_MATERIAL_DIFFUSE_HINT={}", ea::min(1, hint)));
     }
 
     if (material->GetTexture(TU_NORMAL))
-        result.pixelShaderDefines_ += "URHO3D_MATERIAL_HAS_NORMAL ";
+        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_NORMAL");
 
     if (material->GetTexture(TU_SPECULAR))
-        result.pixelShaderDefines_ += "URHO3D_MATERIAL_HAS_SPECULAR ";
+        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_SPECULAR");
 
     if (Texture* envTexture = material->GetTexture(TU_ENVIRONMENT))
     {
         if (envTexture->IsInstanceOf<Texture2D>())
-            result.commonShaderDefines_ += "URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT ";
+            result.AddCommonShaderDefines("URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT");
     }
 
     if (Texture* emissiveTexture = material->GetTexture(TU_EMISSIVE))
     {
-        result.pixelShaderDefines_ += "URHO3D_MATERIAL_HAS_EMISSIVE ";
+        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_EMISSIVE");
         const int hint = GetTextureColorSpaceHint(emissiveTexture->GetLinear(), emissiveTexture->GetSRGB());
         if (hint > 1)
             URHO3D_LOGWARNING("Texture {} cannot be both sRGB and Linear", emissiveTexture->GetName());
-        result.pixelShaderDefines_ += Format("URHO3D_MATERIAL_EMISSIVE_HINT={} ", ea::min(1, hint));
+        result.AddShaderDefines(PS, Format("URHO3D_MATERIAL_EMISSIVE_HINT={}", ea::min(1, hint)));
     }
 }
 
 void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserPass(ShaderProgramDesc& result,
     Drawable* drawable, bool isGeometryBufferPass) const
 {
-    result.commonShaderDefines_ += "URHO3D_AMBIENT_PASS ";
+    result.AddCommonShaderDefines("URHO3D_AMBIENT_PASS");
     if (isGeometryBufferPass)
-        result.commonShaderDefines_ += "URHO3D_GBUFFER_PASS ";
+        result.AddCommonShaderDefines("URHO3D_GBUFFER_PASS");
     else if (settings_.sceneProcessor_.maxVertexLights_ > 0)
-        result.commonShaderDefines_ += Format("URHO3D_NUM_VERTEX_LIGHTS={} ", settings_.sceneProcessor_.maxVertexLights_);
+        result.AddCommonShaderDefines(Format("URHO3D_NUM_VERTEX_LIGHTS={}", settings_.sceneProcessor_.maxVertexLights_));
 
     if (drawable->GetGlobalIlluminationType() == GlobalIlluminationType::UseLightMap)
-        result.commonShaderDefines_ += "URHO3D_HAS_LIGHTMAP ";
+        result.AddCommonShaderDefines("URHO3D_HAS_LIGHTMAP");
 
 #ifdef DESKTOP_GRAPHICS
 #ifndef GL_ES_VERSION_2_0
     if (drawable->GetReflectionMode() >= ReflectionMode::BlendProbes)
-        result.commonShaderDefines_ += "URHO3D_BLEND_REFLECTIONS ";
+        result.AddCommonShaderDefines("URHO3D_BLEND_REFLECTIONS");
 #endif
 #endif
 
@@ -298,40 +295,40 @@ void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserP
         "URHO3D_AMBIENT_DIRECTIONAL ",
     };
 
-    result.vertexShaderDefines_ += ambientModeDefines[static_cast<int>(settings_.sceneProcessor_.ambientMode_)];
+    result.AddShaderDefines(VS, ambientModeDefines[static_cast<int>(settings_.sceneProcessor_.ambientMode_)]);
 }
 
 void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& result,
     Light* light, VertexBuffer* vertexBuffer, Material* material, Pass* pass) const
 {
     if (vertexBuffer->HasElement(SEM_NORMAL))
-        result.vertexShaderDefines_ += "URHO3D_VERTEX_HAS_NORMAL ";
+        result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_NORMAL");
 
     if (light->GetShadowBias().normalOffset_ > 0.0)
-        result.vertexShaderDefines_ += "URHO3D_SHADOW_NORMAL_OFFSET ";
+        result.AddShaderDefines(VS, "URHO3D_SHADOW_NORMAL_OFFSET");
 
     if (pass->IsAlphaMask())
     {
         if (vertexBuffer->HasElement(SEM_TEXCOORD, 0))
-            result.vertexShaderDefines_ += "URHO3D_VERTEX_HAS_TEXCOORD0 ";
+            result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_TEXCOORD0");
         if (Texture* diffuseTexture = material->GetTexture(TU_DIFFUSE))
-            result.pixelShaderDefines_ += "URHO3D_MATERIAL_HAS_DIFFUSE ";
+            result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
     }
 
-    result.commonShaderDefines_ += "URHO3D_SHADOW_PASS ";
+    result.AddCommonShaderDefines("URHO3D_SHADOW_PASS");
     if (settings_.shadowMapAllocator_.enableVarianceShadowMaps_)
-        result.commonShaderDefines_ += "URHO3D_VARIANCE_SHADOW_MAP ";
+        result.AddCommonShaderDefines("URHO3D_VARIANCE_SHADOW_MAP");
     else
-        result.commonShaderDefines_ += "URHO3D_NUM_RENDER_TARGETS=0 ";
+        result.AddCommonShaderDefines("URHO3D_NUM_RENDER_TARGETS=0");
 }
 
 void ShaderProgramCompositor::ApplyDefinesForLightVolumePass(ShaderProgramDesc& result) const
 {
-    result.commonShaderDefines_ += "URHO3D_LIGHT_VOLUME_PASS ";
+    result.AddCommonShaderDefines("URHO3D_LIGHT_VOLUME_PASS");
     if (isCameraOrthographic_)
-        result.commonShaderDefines_ += "URHO3D_ORTHOGRAPHIC_DEPTH ";
+        result.AddCommonShaderDefines("URHO3D_ORTHOGRAPHIC_DEPTH");
     if (settings_.sceneProcessor_.lightingMode_ == DirectLightingMode::DeferredPBR)
-        result.commonShaderDefines_ += "URHO3D_PHYSICAL_MATERIAL ";
+        result.AddCommonShaderDefines("URHO3D_PHYSICAL_MATERIAL");
 }
 
 bool ShaderProgramCompositor::IsInstancingUsed(

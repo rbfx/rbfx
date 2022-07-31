@@ -25,28 +25,42 @@
 #include "../Core/Object.h"
 #include "../Core/Variant.h"
 #include "../IO/Archive.h"
+#include "../Engine/ApplicationFlavor.h"
 
 namespace Urho3D
 {
 
-/// A class responsible for serializing application settings. It will be used by editor to save initial settings for player application to load them.
+/// A class responsible for serializing application settings needed to launch player.
 class URHO3D_API ApplicationSettings : public Object
 {
     URHO3D_OBJECT(ApplicationSettings, Object);
+
 public:
+    struct FlavoredSettings
+    {
+        ApplicationFlavorPattern flavor_;
+        StringVariantMap engineParameters_;
+
+        void SerializeInBlock(Archive& archive);
+    };
+    using FlavoredSettingsVector = ea::vector<FlavoredSettings>;
+
     explicit ApplicationSettings(Context* context);
 
-    ///
+    /// Try to load settings for uninitialized engine.
+    static SharedPtr<ApplicationSettings> LoadForCurrentApplication(Context* context);
+    /// Serialize the settings.
     void SerializeInBlock(Archive& archive) override;
 
-    /// Resource name of scene that player application will start.
-    ea::string defaultScene_{};
-    /// A map of settings which will be loaded into Application::engineParameters_ on player startup.
-    StringVariantMap engineParameters_{};
-    /// Plugins to be loaded by the player application.
-    StringVector plugins_{};
-    /// List on platforms this package is valid on.
-    StringVector platforms_{};
+    /// Evaluate parameters for specifed flavor.
+    StringVariantMap GetParameters(const ApplicationFlavor& flavor) const;
+    /// Evaluate parameters for the flavor of the current platform.
+    StringVariantMap GetParametersForCurrentFlavor() const;
+
+    FlavoredSettingsVector& GetParametersPerFlavor() { return settings_; }
+
+private:
+    FlavoredSettingsVector settings_;
 };
 
 

@@ -41,7 +41,6 @@ void RenderBillboardInstance::Init(ParticleGraphNode* node, ParticleGraphLayerIn
 
     auto* renderBillboard = static_cast<RenderBillboard*>(GetGraphNode());
     auto* context = node->GetContext();
-    const auto scene = GetScene();
 
     sceneNode_ = MakeShared<Node>(GetContext());
 
@@ -49,12 +48,26 @@ void RenderBillboardInstance::Init(ParticleGraphNode* node, ParticleGraphLayerIn
     billboardSet_->SetMaterialAttr(renderBillboard->GetMaterial());
     billboardSet_->SetFaceCameraMode(static_cast<FaceCameraMode>(renderBillboard->GetFaceCameraMode()));
     billboardSet_->SetSorted(renderBillboard->GetSortByDistance());
-    octree_ = scene->GetOrCreateComponent<Octree>();
-    octree_->AddManualDrawable(billboardSet_);
+    OnSceneSet(GetScene());
+}
+void RenderBillboardInstance::OnSceneSet(Scene* scene)
+{
+    if (octree_)
+    {
+        octree_->RemoveManualDrawable(billboardSet_);
+        octree_.Reset();
+    }
+    if (scene)
+    {
+        octree_ = scene->GetOrCreateComponent<Octree>();
+        octree_->AddManualDrawable(billboardSet_);
+    }
 }
 
-
-RenderBillboardInstance::~RenderBillboardInstance() { octree_->RemoveManualDrawable(billboardSet_); }
+RenderBillboardInstance::~RenderBillboardInstance()
+{
+    OnSceneSet(nullptr);
+}
 
 void RenderBillboardInstance::Prepare(unsigned numParticles)
 { 

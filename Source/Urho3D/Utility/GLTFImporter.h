@@ -34,27 +34,33 @@ namespace Urho3D
 
 struct GLTFImporterSettings
 {
-    /// Whether to add directional light source if scene doesn't contain any light sources.
-    bool addLights_{ true };
-
-    /// Whether to add skybox background. Doesn't affect object reflections!
-    bool addSkybox_{ true };
-    ea::string skyboxMaterial_{ "Materials/Skybox.xml" };
-
-    /// Whether to add cubemap for reflections
-    bool addReflectionProbe_{ true };
-    ea::string reflectionProbeCubemap_{ "Textures/Skybox.xml" };
-
-    bool highRenderQuality_{ true };
+    float scale_{1.0f};
     float offsetMatrixError_{ 0.00002f };
     float keyFrameTimeError_{ M_EPSILON };
+
+    /// Settings that affect only preview scene.
+    struct PreviewSettings
+    {
+        /// Whether to add directional light source if scene doesn't contain any light sources.
+        bool addLights_{ true };
+
+        /// Whether to add skybox background. Doesn't affect object reflections!
+        bool addSkybox_{ true };
+        ea::string skyboxMaterial_{ "Materials/DefaultSkybox.xml" };
+
+        /// Whether to add cubemap for object reflections.
+        bool addReflectionProbe_{ true };
+        ea::string reflectionProbeCubemap_{ "Textures/DefaultSkybox.xml" };
+
+        bool highRenderQuality_{ true };
+    } preview_;
 };
 
 URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
 
 /// Utility class to load GLTF file and save it as Urho resources.
-/// It may modify Context singletons, so it's better to use this utility from separate executable.
-/// TODO: Remove imported resources from cache on destruction?
+/// Temporarily loads resources into resource cache, removes them from the cache on destruction.
+/// It's better to use this utility from separate executable.
 class URHO3D_API GLTFImporter : public Object
 {
     URHO3D_OBJECT(GLTFImporter, Object);

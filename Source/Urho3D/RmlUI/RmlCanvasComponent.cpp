@@ -48,8 +48,6 @@ static int const UICOMPONENT_DEFAULT_TEXTURE_SIZE = 512;
 static int const UICOMPONENT_MIN_TEXTURE_SIZE = 64;
 static int const UICOMPONENT_MAX_TEXTURE_SIZE = 4096;
 
-extern const char* RML_UI_CATEGORY;
-
 RmlCanvasComponent::RmlCanvasComponent(Context* context)
     : LogicComponent(context)
 {
@@ -68,7 +66,7 @@ RmlCanvasComponent::~RmlCanvasComponent()
 
 void RmlCanvasComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RmlCanvasComponent>(RML_UI_CATEGORY);
+    context->RegisterFactory<RmlCanvasComponent>(Category_RmlUI);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
     URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureRef, SetTextureRef, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);

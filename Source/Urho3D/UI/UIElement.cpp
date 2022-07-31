@@ -83,8 +83,6 @@ static const char* layoutModes[] =
     nullptr
 };
 
-extern const char* UI_CATEGORY;
-
 static bool CompareUIElements(const UIElement* lhs, const UIElement* rhs)
 {
     return lhs->GetPriority() < rhs->GetPriority();
@@ -111,7 +109,7 @@ UIElement::~UIElement()
 
 void UIElement::RegisterObject(Context* context)
 {
-    context->RegisterFactory<UIElement>(UI_CATEGORY);
+    context->RegisterFactory<UIElement>(Category_UI);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, IntVector2, IntVector2::ZERO, AM_FILE);

@@ -1,0 +1,7 @@
+<material>
+	<texture unit="diffuse" name="Textures/DefaultSkybox.xml" />
+	<technique name="Techniques/DiffSkybox.xml" />
+	<cull value="none" />
+	<shadowcull value="ccw" />
+	<shader vsdefines="IGNORENODETRANSFORM" />
+</material>

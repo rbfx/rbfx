@@ -148,7 +148,12 @@ cmake_dependent_option(EMSCRIPTEN_WASM           "Use wasm instead of asm.js"   
 set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to 0 for dynamic growth. Must be multiple of 64KB.")
 
 # Misc
-cmake_dependent_option(URHO3D_PLAYER            "Build player application"                              ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
+set(URHO3D_PLUGIN_LIST_DOCSTRING "List of plugins to be statically linked with Editor and Player executables")
+set(URHO3D_PLUGIN_LIST_DEFAULT "103_GamePlugin;113_InputLogger")
+set(URHO3D_PLUGIN_LIST "" CACHE STRING          ${URHO3D_PLUGIN_LIST_DOCSTRING})
+
+option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
+cmake_dependent_option(URHO3D_EDITOR            "Build editor application"                              ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 cmake_dependent_option(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT UWP"    OFF)
 cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
@@ -191,7 +196,7 @@ if (ANDROID OR WEB OR IOS)
     if (NOT URHO3D_GLES3)
         set (URHO3D_SYSTEMUI OFF)
     endif ()
-elseif (URHO3D_TOOLS AND NOT MINI_URHO)
+elseif ((URHO3D_TOOLS OR URHO3D_EDITOR) AND NOT MINI_URHO)
     set (URHO3D_SYSTEMUI ON)
     set (URHO3D_FILEWATCHER ON)
     set (URHO3D_LOGGING ON)
@@ -216,6 +221,13 @@ endif ()
 if (ANDROID)
     set (SDL_CPUINFO ON)
 endif ()
+
+# Hack to keep plugin list consistent with configuration but not override it when specified by user.
+if (URHO3D_SAMPLES AND (URHO3D_PLUGIN_LIST STREQUAL ""))
+    set (URHO3D_PLUGIN_LIST "${URHO3D_PLUGIN_LIST_DEFAULT}" CACHE STRING ${URHO3D_PLUGIN_LIST_DOCSTRING} FORCE)
+elseif (NOT URHO3D_SAMPLES AND (URHO3D_PLUGIN_LIST STREQUAL "${URHO3D_PLUGIN_LIST_DEFAULT}"))
+    set (URHO3D_PLUGIN_LIST "" CACHE STRING ${URHO3D_PLUGIN_LIST_DOCSTRING} FORCE)
+endif()
 
 # At the end because it depends on URHO3D_SYSTEMUI which is may be off, but implicitly enabled if URHO3D_TOOLS is enabled.
 cmake_dependent_option(URHO3D_SYSTEMUI_VIEWPORTS "Use native viewports in supported applications" ON "URHO3D_SYSTEMUI" OFF)

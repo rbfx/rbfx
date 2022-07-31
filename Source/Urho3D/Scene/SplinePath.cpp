@@ -31,7 +31,6 @@ namespace Urho3D
 {
 
 extern const char* interpolationModeNames[];
-extern const char* LOGIC_CATEGORY;
 
 static const StringVector controlPointsStructureElementNames =
 {
@@ -54,7 +53,7 @@ SplinePath::SplinePath(Context* context) :
 
 void SplinePath::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SplinePath>(LOGIC_CATEGORY);
+    context->RegisterFactory<SplinePath>(Category_Logic);
 
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Interpolation Mode", GetInterpolationMode, SetInterpolationMode, InterpolationMode,
         interpolationModeNames, BEZIER_CURVE, AM_FILE);

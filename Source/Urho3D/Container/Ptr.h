@@ -218,8 +218,8 @@ public:
     /// Return pointer to the RefCount structure.
     RefCount* RefCountPtr() const { return ptr_ ? ptr_->RefCountPtr() : nullptr; }
 
-    /// Return hash value for HashSet & HashMap.
-    unsigned ToHash() const { return (unsigned)((size_t)ptr_ / sizeof(T)); }
+    /// Return hash value for HashSet & HashMap. Use the same hash function as for raw pointers!
+    size_t ToHash() const { return size_t(uintptr_t(ptr_)); }
 
 private:
     template <class U> friend class SharedPtr;
@@ -492,8 +492,8 @@ public:
     /// Return pointer to the RefCount structure.
     RefCount* RefCountPtr() const { return refCount_; }
 
-    /// Return hash value for HashSet & HashMap.
-    unsigned ToHash() const { return (unsigned)((size_t)ptr_ / sizeof(T)); }
+    /// Return hash value for HashSet & HashMap. Use the same hash function as for raw pointers!
+    size_t ToHash() const { return size_t(uintptr_t(ptr_)); }
 
 private:
     template <class U> friend class WeakPtr;

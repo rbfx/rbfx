@@ -46,7 +46,7 @@ public:
     void SetMode(ToneMappingMode mode);
 
     PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
-    void Execute() override;
+    void Execute(Camera* camera) override;
 
 protected:
     void InitializeStates();

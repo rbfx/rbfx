@@ -256,7 +256,7 @@
 
 /// If background color and/or depth is sampled, pixel shader needs screen position.
 #if defined(URHO3D_SURFACE_NEED_BACKGROUND_DEPTH) || defined(URHO3D_SURFACE_NEED_BACKGROUND_COLOR) \
-    || (defined(URHO3D_REFLECTION_MAPPING) && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT))
+    || ((defined(URHO3D_REFLECTION_MAPPING) || defined(URHO3D_PHYSICAL_MATERIAL)) && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT))
     #ifndef URHO3D_PIXEL_NEED_SCREEN_POSITION
         #define URHO3D_PIXEL_NEED_SCREEN_POSITION
     #endif

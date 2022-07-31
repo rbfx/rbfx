@@ -42,8 +42,6 @@
 namespace Urho3D
 {
 
-extern const char* URHO2D_CATEGORY;
-
 const char* loopModeNames[] =
 {
     "Default",
@@ -71,7 +69,7 @@ AnimatedSprite2D::~AnimatedSprite2D()
 
 void AnimatedSprite2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimatedSprite2D>(URHO2D_CATEGORY);
+    context->RegisterFactory<AnimatedSprite2D>(Category_Urho2D);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticSprite2D);
     URHO3D_REMOVE_ATTRIBUTE("Sprite");

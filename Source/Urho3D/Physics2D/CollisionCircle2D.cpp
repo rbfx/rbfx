@@ -31,7 +31,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
 static const float DEFAULT_CLRCLE_RADIUS(0.01f);
 
 CollisionCircle2D::CollisionCircle2D(Context* context) :
@@ -47,7 +46,7 @@ CollisionCircle2D::~CollisionCircle2D() = default;
 
 void CollisionCircle2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionCircle2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<CollisionCircle2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, DEFAULT_CLRCLE_RADIUS, AM_DEFAULT);

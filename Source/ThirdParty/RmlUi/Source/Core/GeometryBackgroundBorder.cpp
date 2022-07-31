@@ -67,7 +67,7 @@ void GeometryBackgroundBorder::Draw(Vector<Vertex>& vertices, Vector<int>& indic
 
 	// -- Find the corner positions --
 
-	const Vector2f border_position = (offset + box.GetPosition(Box::BORDER)).Round();
+	const Vector2f border_position = offset.Round();
 	const Vector2f padding_position = border_position + Vector2f(border_widths[Edge::LEFT], border_widths[Edge::TOP]);
 	const Vector2f border_size = padding_size + Vector2f(border_widths[Edge::LEFT] + border_widths[Edge::RIGHT], border_widths[Edge::TOP] + border_widths[Edge::BOTTOM]);
 
@@ -258,12 +258,11 @@ void GeometryBackgroundBorder::DrawArc(Vector2f pos_center, Vector2f r, float a0
 		const float t = float(i) / float(num_points - 1);
 
 		const float a = Math::Lerp(t, a0, a1);
-		const Colourb color = Math::Lerp(t, color0, color1);
 
 		const Vector2f unit_vector(Math::Cos(a), Math::Sin(a));
 
 		vertices[offset_vertices + i].position = unit_vector * r + pos_center;
-		vertices[offset_vertices + i].colour = color;
+		vertices[offset_vertices + i].colour = Math::RoundedLerp(t, color0, color1);
 	}
 }
 
@@ -336,8 +335,7 @@ void GeometryBackgroundBorder::DrawArcArc(Vector2f pos_center, float R, Vector2f
 		const float t = float(i) / float(num_points - 1);
 
 		const float a = Math::Lerp(t, a0, a1);
-		const Colourb color = Math::Lerp(t, color0, color1);
-
+		const Colourb color = Math::RoundedLerp(t, color0, color1);
 		const Vector2f unit_vector(Math::Cos(a), Math::Sin(a));
 
 		vertices[offset_vertices + 2 * i].position = unit_vector * r + pos_center;
