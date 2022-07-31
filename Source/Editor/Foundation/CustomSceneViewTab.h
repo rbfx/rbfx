@@ -22,46 +22,39 @@
 
 #pragma once
 
-#include "CustomSceneViewTab.h"
+#include "../Core/CommonEditorActions.h"
 #include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
+
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Utility/SceneRendererToTexture.h>
 
 namespace Urho3D
 {
 
-void Foundation_TextureViewTab(Context* context, Project* project);
-
-/// Tab that renders Scene and enables Scene manipulation.
-class TextureViewTab : public CustomSceneViewTab
+/// Tab that renders custom Scene.
+class CustomSceneViewTab : public ResourceEditorTab
 {
-    URHO3D_OBJECT(TextureViewTab, CustomSceneViewTab)
+    URHO3D_OBJECT(CustomSceneViewTab, ResourceEditorTab)
 
 public:
-    explicit TextureViewTab(Context* context);
-    ~TextureViewTab() override;
+    explicit CustomSceneViewTab(Context* context, const ea::string& title, const ea::string& guid, EditorTabFlags flags,
+        EditorTabPlacement placement);
+    ~CustomSceneViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
     void RenderContent() override;
-
-    ea::string GetResourceTitle() { return "Texture"; }
-    bool SupportMultipleResources() { return false; }
-    bool CanOpenResource(const ResourceFileDescriptor& desc) override;
     /// @}
 
-protected:
-    /// ResourceEditorTab implementation
-    /// @{
-    void OnResourceLoaded(const ea::string& resourceName) override;
-    void OnResourceUnloaded(const ea::string& resourceName) override;
-    void OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName) override;
-    void OnResourceSaved(const ea::string& resourceName) override;
-    void OnResourceShallowSaved(const ea::string& resourceName) override;
-    /// @}
+    Scene* GetScene() const { return scene_; }
 
 private:
-    SharedPtr<Texture> texture_;
+    SharedPtr<Animation> animation_;
+    const SharedPtr<Scene> scene_;
+    const SharedPtr<SceneRendererToTexture> renderer_;
+    Node* cameraNode_;
+    Node* lightNode_;
 };
 
 } // namespace Urho3D

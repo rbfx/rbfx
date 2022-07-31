@@ -20,13 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/TextureViewTab.h"
-
 #include "../Core/CommonEditorActions.h"
 #include "../Core/IniHelpers.h"
+#include "../Foundation/ModelViewTab.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
 namespace Urho3D
@@ -36,64 +34,51 @@ namespace
 {
 }
 
-void Foundation_TextureViewTab(Context* context, Project* project)
+void Foundation_ModelViewTab(Context* context, Project* project)
 {
-    project->AddTab(MakeShared<TextureViewTab>(context));
+    project->AddTab(MakeShared<ModelViewTab>(context));
 }
 
-TextureViewTab::TextureViewTab(Context* context)
-    : CustomSceneViewTab(context, "Texture", "2a3032e6-541a-42fe-94c3-8baf96604690",
-        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
-        EditorTabPlacement::DockCenter)
+ModelViewTab::ModelViewTab(Context* context)
+    : CustomSceneViewTab(context, "Model", "1c4962de-c75c-41fa-bf3f-5bb3f2ba7d53",
+        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
+{
+    modelNode_ = GetScene()->CreateChild("Model");
+    staticModel_ = modelNode_->CreateComponent<StaticModel>();
+    staticModel_->SetCastShadows(true);
+}
+
+ModelViewTab::~ModelViewTab()
 {
 }
 
-TextureViewTab::~TextureViewTab()
+bool ModelViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 {
+    return desc.HasObjectType<Model>();
 }
 
-bool TextureViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
-{
-    return desc.HasObjectType<Texture>();
-}
-
-
-void TextureViewTab::RenderContent()
-{
-    if (!texture_)
-        return;
-
-    SharedPtr<Texture2D> texture2D;
-    texture2D.DynamicCast(texture_);
-    if (texture2D)
-    {
-        Widgets::Image(texture2D, ToImGui(GetContentSize()));
-        return;
-    }
-
-    CustomSceneViewTab::RenderContent();
-}
-
-void TextureViewTab::OnResourceLoaded(const ea::string& resourceName)
+void ModelViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    texture_ = cache->GetResource<Texture2D>(resourceName);
+    model_ = cache->GetResource<Model>(resourceName);
+    staticModel_->SetModel(model_);
 }
 
-void TextureViewTab::OnResourceUnloaded(const ea::string& resourceName)
+void ModelViewTab::OnResourceUnloaded(const ea::string& resourceName)
 {
-    texture_.Reset();
+    model_.Reset();
+    staticModel_->SetModel(model_);
 }
 
-void TextureViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)
-{
-}
-
-void TextureViewTab::OnResourceSaved(const ea::string& resourceName)
+void ModelViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)
 {
 }
 
-void TextureViewTab::OnResourceShallowSaved(const ea::string& resourceName)
+void ModelViewTab::OnResourceSaved(const ea::string& resourceName)
+{
+}
+
+void ModelViewTab::OnResourceShallowSaved(const ea::string& resourceName)
 {
 }
 

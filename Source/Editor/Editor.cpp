@@ -22,6 +22,7 @@
 
 #include "Editor.h"
 
+#include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/GameViewTab.h"
 #include "Foundation/Glue/ProjectGlue.h"
@@ -35,6 +36,7 @@
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
 #include "Foundation/ModelImporter.h"
+#include "Foundation/ModelViewTab.h"
 #include "Foundation/ProfilerTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
@@ -86,6 +88,8 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);
     editorPluginManager_->AddPlugin("Foundation.TextureView", &Foundation_TextureViewTab);
+    editorPluginManager_->AddPlugin("Foundation.ModelView", &Foundation_ModelViewTab);
+    editorPluginManager_->AddPlugin("Foundation.AnimationView", &Foundation_AnimationViewTab);
     editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser", &Foundation_ResourceBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);

@@ -25,27 +25,29 @@
 #include "CustomSceneViewTab.h"
 #include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
+
 #include <Urho3D/Utility/SceneRendererToTexture.h>
+#include <Urho3D/Graphics/Animation.h>
 
 namespace Urho3D
 {
 
-void Foundation_TextureViewTab(Context* context, Project* project);
+void Foundation_AnimationViewTab(Context* context, Project* project);
 
 /// Tab that renders Scene and enables Scene manipulation.
-class TextureViewTab : public CustomSceneViewTab
+class AnimationViewTab : public CustomSceneViewTab
 {
-    URHO3D_OBJECT(TextureViewTab, CustomSceneViewTab)
+    URHO3D_OBJECT(AnimationViewTab, CustomSceneViewTab)
 
 public:
-    explicit TextureViewTab(Context* context);
-    ~TextureViewTab() override;
+    explicit AnimationViewTab(Context* context);
+    ~AnimationViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
     void RenderContent() override;
 
-    ea::string GetResourceTitle() { return "Texture"; }
+    ea::string GetResourceTitle() { return "Animation"; }
     bool SupportMultipleResources() { return false; }
     bool CanOpenResource(const ResourceFileDescriptor& desc) override;
     /// @}
@@ -61,7 +63,7 @@ protected:
     /// @}
 
 private:
-    SharedPtr<Texture> texture_;
+    SharedPtr<Animation> animation_;
 };
 
 } // namespace Urho3D

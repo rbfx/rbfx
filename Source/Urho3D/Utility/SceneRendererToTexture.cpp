@@ -86,8 +86,11 @@ void CustomBackbufferTexture::Update()
         textureDirty_ = false;
         texture_->SetSize(textureSize_.x_, textureSize_.y_, GetViewportTextureFormat(), TEXTURE_RENDERTARGET);
         RenderSurface* renderSurface = texture_->GetRenderSurface();
-        OnRenderSurfaceCreated(this, renderSurface);
-        renderSurface->SetUpdateMode(isActive_ ? SURFACE_UPDATEALWAYS : SURFACE_MANUALUPDATE);
+        if (renderSurface)
+        {
+            OnRenderSurfaceCreated(this, renderSurface);
+            renderSurface->SetUpdateMode(isActive_ ? SURFACE_UPDATEALWAYS : SURFACE_MANUALUPDATE);
+        }
     }
 }
 
