@@ -96,8 +96,9 @@ using StringVector = ea::vector<ea::string>;
 /// Map of variants.
 using VariantMap = ea::unordered_map<StringHash, Variant>;
 
-/// Map from string to Variant.
-using StringVariantMap = ea::unordered_map<ea::string, Variant>;
+/// Map from string to Variant. Cache string hashes.
+using StringVariantMap = ea::unordered_map<ea::string, Variant,
+    ea::hash<ea::string>, ea::equal_to<ea::string>, EASTLAllocatorType, true>;
 
 /// Deprecated. Use ByteVector instead.
 /// TODO: Rename all instances of VariantBuffer to ByteVector.

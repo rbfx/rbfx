@@ -36,8 +36,8 @@
 namespace Urho3D
 {
 
-const StringHash VAR_SHOW_POPUP("ShowPopup");
-extern StringHash VAR_ORIGIN;
+const ea::string VAR_SHOW_POPUP("ShowPopup");
+extern ea::string VAR_ORIGIN;
 
 Menu::Menu(Context* context) :
     Button(context),
@@ -319,7 +319,7 @@ void Menu::ShowPopup(bool enable)
         }
 
         static_cast<Window*>(popup_.Get())->SetModal(false);
-        const_cast<VariantMap&>(popup_->GetVars()).erase(VAR_ORIGIN);
+        const_cast<StringVariantMap&>(popup_->GetVars()).erase(VAR_ORIGIN);
 
         popup_->SetVisible(false);
         popup_->Remove();

@@ -68,7 +68,7 @@ using DragAndDropModeFlags = Urho3D::DragAndDropMode;
 %csattribute(Urho3D::UIElement, %arg(Urho3D::Vector2), LayoutFlexScale, GetLayoutFlexScale, SetLayoutFlexScale);
 %csattribute(Urho3D::UIElement, %arg(Urho3D::UIElement *), Root, GetRoot);
 %csattribute(Urho3D::UIElement, %arg(Urho3D::Color), DerivedColor, GetDerivedColor);
-%csattribute(Urho3D::UIElement, %arg(Urho3D::VariantMap), Vars, GetVars);
+%csattribute(Urho3D::UIElement, %arg(Urho3D::StringVariantMap), Vars, GetVars);
 %csattribute(Urho3D::UIElement, %arg(Urho3D::StringVector), Tags, GetTags, SetTags);
 %csattribute(Urho3D::UIElement, %arg(Urho3D::MouseButtonFlags), DragButtonCombo, GetDragButtonCombo);
 %csattribute(Urho3D::UIElement, %arg(unsigned int), DragButtonCount, GetDragButtonCount);

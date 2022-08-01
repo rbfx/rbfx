@@ -91,7 +91,7 @@ URHO3D_FLAGSET(AnimationParameterMask, AnimationParameterFlags);
 
 AnimationParameters::AnimationParameters(Animation* animation)
     : animation_(animation)
-    , animationName_(animation ? animation_->GetNameHash() : StringHash{})
+    , animationName_(animation ? animation_->GetNameHash() : StringHash::Empty)
     , time_{0.0f, 0.0f, animation_ ? animation_->GetLength() : M_LARGE_VALUE}
 {
 }
@@ -183,7 +183,7 @@ AnimationParameters AnimationParameters::FromVariantSpan(Context* context, ea::s
 
     const ea::string animationName = variants[index++].GetResourceRef().name_;
     result.animation_ = context->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationName);
-    result.animationName_ = result.animation_ ? result.animation_->GetNameHash() : StringHash{};
+    result.animationName_ = result.animation_ ? result.animation_->GetNameHash() : StringHash::Empty;
 
     result.looped_ = variants[index++].GetBool();
     result.removeOnCompletion_ = variants[index++].GetBool();

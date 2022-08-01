@@ -72,7 +72,7 @@ using UpdateEventFlags = Urho3D::UpdateEvent;
 %csattribute(Urho3D::Node, %arg(unsigned int), NumComponents, GetNumComponents);
 %csattribute(Urho3D::Node, %arg(unsigned int), NumNetworkComponents, GetNumNetworkComponents);
 %csattribute(Urho3D::Node, %arg(ea::vector<WeakPtr<Component>>), Listeners, GetListeners);
-%csattribute(Urho3D::Node, %arg(Urho3D::VariantMap), Vars, GetVars);
+%csattribute(Urho3D::Node, %arg(Urho3D::StringVariantMap), Vars, GetVars);
 %csattribute(Urho3D::Node, %arg(ea::vector<Node *>), DependencyNodes, GetDependencyNodes);
 %csattribute(Urho3D::Node, %arg(unsigned int), NumPersistentChildren, GetNumPersistentChildren);
 %csattribute(Urho3D::Node, %arg(unsigned int), NumPersistentComponents, GetNumPersistentComponents);

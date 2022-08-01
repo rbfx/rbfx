@@ -84,7 +84,7 @@ void RmlUIComponent::OnNodeSet(Node* node)
 void RmlUIComponent::SetResource(const ResourceRef& resourceRef)
 {
     resource_ = resourceRef;
-    if (resource_.type_ == StringHash::ZERO)
+    if (resource_.type_ == StringHash::Empty)
         resource_.type_ = BinaryFile::GetTypeStatic();
     SetOpen(open_);
 }
