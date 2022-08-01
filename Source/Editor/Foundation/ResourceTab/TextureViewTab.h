@@ -25,7 +25,7 @@
 #include "CustomSceneViewTab.h"
 #include "../../Project/Project.h"
 #include "../../Project/ResourceEditorTab.h"
-#include <Urho3D/Utility/SceneRendererToTexture.h>
+#include <Urho3D/Graphics/StaticModel.h>
 
 namespace Urho3D
 {
@@ -59,9 +59,15 @@ protected:
     void OnResourceSaved(const ea::string& resourceName) override;
     void OnResourceShallowSaved(const ea::string& resourceName) override;
     /// @}
+    void RenderTexture2D(Texture2D* texture);
+    void RenderTextureCube(TextureCube* texture);
 
 private:
-    SharedPtr<Texture> texture_;
+    SharedPtr<Texture2D> texture2D_;
+    SharedPtr<TextureCube> textureCube_;
+    SharedPtr<Node> modelNode_;
+    SharedPtr<StaticModel> staticModel_;
+    SharedPtr<Material> material_;
 };
 
 } // namespace Urho3D

@@ -97,7 +97,12 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
         {
             desc.AddObjectType<Model>();
         }
-        else if (desc.HasExtension({".ani"}))
+    });
+
+    
+    project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
+    {
+        if (desc.HasExtension({".ani"}))
         {
             desc.AddObjectType<Animation>();
         }
