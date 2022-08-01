@@ -20,9 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/CommonEditorActions.h"
-#include "../Core/IniHelpers.h"
-#include "../Foundation/AnimationViewTab.h"
+#include "../../Core/CommonEditorActions.h"
+#include "../../Core/IniHelpers.h"
+#include "AnimationViewTab.h"
+
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/AnimationController.h"
+#include "Urho3D/Graphics/Texture3D.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>
@@ -43,6 +47,10 @@ AnimationViewTab::AnimationViewTab(Context* context)
     : CustomSceneViewTab(context, "Animation", "a8e49ac3-8edb-493c-ac7e-0d42530c62fb",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
 {
+    modelNode_ = GetScene()->CreateChild("Model");
+    animatedModel_ = modelNode_->CreateComponent<AnimatedModel>();
+    animatedModel_->SetCastShadows(true);
+    animationController_ = modelNode_->CreateComponent<AnimationController>();
 }
 
 AnimationViewTab::~AnimationViewTab()
@@ -51,7 +59,27 @@ AnimationViewTab::~AnimationViewTab()
 
 bool AnimationViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 {
+    auto name = desc.typeNames_.begin()->c_str();
     return desc.HasObjectType<Animation>();
+}
+
+void AnimationViewTab::RenderTitle()
+{
+    CustomSceneViewTab::RenderTitle();
+
+    auto* cache = GetSubsystem<ResourceCache>();
+
+    static const StringVector allowedTextureTypes{
+        Model::GetTypeNameStatic(),
+    };
+
+    StringHash textureType = model_ ? model_->GetType() : Texture2D::GetTypeStatic();
+    ea::string textureName = model_ ? model_->GetName() : "";
+    if (Widgets::EditResourceRef(textureType, textureName, &allowedTextureTypes))
+    {
+        model_ = cache->GetResource<Model>(textureName);
+        animatedModel_->SetModel(model_);
+    }
 }
 
 void AnimationViewTab::RenderContent()
@@ -66,6 +94,11 @@ void AnimationViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
     animation_ = cache->GetResource<Animation>(resourceName);
+
+    auto params = AnimationParameters{animation_}.Layer(0);
+    params.removeOnZeroWeight_ = true;
+    params.looped_ = true;
+    animationController_->PlayExisting(params);
 }
 
 void AnimationViewTab::OnResourceUnloaded(const ea::string& resourceName)

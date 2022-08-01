@@ -44,7 +44,7 @@ void Foundation_EditorCamera(Context* context, SceneViewTab* sceneViewTab)
 
 EditorCamera::EditorCamera(SceneViewTab* owner, SettingsPage* settings)
     : SceneViewAddon(owner)
-    , cameraController_(owner->GetContext(), owner->GetHotkeyManager())
+    , cameraController_(MakeShared<CameraController>(owner->GetContext(), owner->GetHotkeyManager()))
     , settings_(settings)
 {
     owner_->OnLookAt.Subscribe(this, &EditorCamera::LookAtPosition);
@@ -56,7 +56,7 @@ void EditorCamera::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
     Camera* camera = scenePage.renderer_->GetCamera();
     const auto& cfg = settings_->GetValues();
 
-    cameraController_.ProcessInput(camera, state, &cfg);
+    cameraController_->ProcessInput(camera, state, &cfg);
 }
 
 void EditorCamera::SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const

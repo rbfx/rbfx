@@ -23,6 +23,7 @@
 #include "../Foundation/StandardFileTypes.h"
 
 #include <Urho3D/Audio/Sound.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Texture2D.h>
@@ -93,7 +94,13 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
         if (desc.HasExtension({".mdl"}))
+        {
             desc.AddObjectType<Model>();
+        }
+        else if (desc.HasExtension({".ani"}))
+        {
+            desc.AddObjectType<Animation>();
+        }
     });
 }
 

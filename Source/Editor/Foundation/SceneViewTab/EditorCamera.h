@@ -54,7 +54,7 @@ private:
     void LookAtPosition(SceneViewPage& scenePage, const Vector3& position) const;
 
     const WeakPtr<CameraController::SettingsPage> settings_;
-    CameraController cameraController_;
+    SharedPtr<CameraController> cameraController_;
     bool isActive_{};
 };
 

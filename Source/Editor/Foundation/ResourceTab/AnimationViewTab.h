@@ -25,8 +25,9 @@
 #include "CustomSceneViewTab.h"
 #include "../../Project/Project.h"
 #include "../../Project/ResourceEditorTab.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
 
-#include <Urho3D/Utility/SceneRendererToTexture.h>
+#include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Animation.h>
 
 namespace Urho3D
@@ -62,8 +63,14 @@ protected:
     void OnResourceShallowSaved(const ea::string& resourceName) override;
     /// @}
 
+    void RenderTitle() override;
+
 private:
+    SharedPtr<Model> model_;
     SharedPtr<Animation> animation_;
+    Node* modelNode_;
+    AnimatedModel* animatedModel_;
+    AnimationController* animationController_;
 };
 
 } // namespace Urho3D

@@ -50,13 +50,15 @@ public:
 
     Scene* GetScene() const { return scene_; }
 
+protected:
+    virtual void RenderTitle();
+
 private:
-    SharedPtr<Animation> animation_;
     const SharedPtr<Scene> scene_;
     const SharedPtr<SceneRendererToTexture> renderer_;
-    Node* cameraNode_;
+    Node* lightPivotNode_;
     Node* lightNode_;
-    CameraController cameraController_;
+    SharedPtr<CameraController> cameraController_;
     CameraController::PageState state_;
 };
 
