@@ -353,7 +353,7 @@ void StateManager::Reset()
     if (hasState)
     {
         originState_ = activeState_->GetType();
-        destinationState_ = StringHash::ZERO;
+        destinationState_ = StringHash::Empty;
         Notify(E_STATETRANSITIONSTARTED);
         DeactivateState();
     }
@@ -419,7 +419,7 @@ void StateManager::SetTransitionState(TransitionState state)
     }
 
     transitionState_ = state;
-   
+
     switch (transitionState_)
     {
     case TransitionState::Sustain:
@@ -448,12 +448,12 @@ void StateManager::SetTransitionState(TransitionState state)
     if (transitionState_ == TransitionState::FadeOut)
     {
         if (stateQueue_.empty())
-            destinationState_ = StringHash::ZERO;
+            destinationState_ = StringHash::Empty;
         else
             destinationState_ = stateQueue_.front().stateType_;
 
         if (!activeState_)
-            originState_ = StringHash::ZERO;
+            originState_ = StringHash::Empty;
         else
             originState_ = activeState_->GetType();
 
@@ -496,7 +496,7 @@ void StateManager::Notify(StringHash eventType)
     if (eventType == E_STATETRANSITIONCOMPLETE)
     {
         originState_ = destinationState_;
-        destinationState_ = StringHash::ZERO;
+        destinationState_ = StringHash::Empty;
     }
 }
 
@@ -529,7 +529,7 @@ StringHash StateManager::GetTargetState() const
 {
     if (stateQueue_.empty())
     {
-        return activeState_ ? activeState_->GetType() : StringHash::ZERO;
+        return activeState_ ? activeState_->GetType() : StringHash::Empty;
     }
     return stateQueue_.back().stateType_;
 }
@@ -654,7 +654,7 @@ void StateManager::CreateNextState()
         stateCache_[destinationState_] = nextState;
         activeState_ = nextState;
 
-        if (originState_ == StringHash::ZERO)
+        if (originState_ == StringHash::Empty)
         {
             Notify(E_STATETRANSITIONSTARTED);
         }
@@ -665,7 +665,7 @@ void StateManager::CreateNextState()
         UpdateFadeOverlay(0.0f);
         return;
     }
-    destinationState_ = StringHash::ZERO;
+    destinationState_ = StringHash::Empty;
     SetTransitionState(TransitionState::Sustain);
     Notify(E_STATETRANSITIONCOMPLETE);
 }

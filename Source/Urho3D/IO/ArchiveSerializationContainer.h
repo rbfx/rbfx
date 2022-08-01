@@ -304,7 +304,7 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
     if (loading)
     {
         // Serialize null object
-        if (type == StringHash{})
+        if (type == StringHash::Empty)
         {
             value = nullptr;
             return;

@@ -43,8 +43,8 @@
 
 // Number of static sprites to draw
 static const unsigned NUM_SPRITES = 200;
-static const StringHash VAR_MOVESPEED("MoveSpeed");
-static const StringHash VAR_ROTATESPEED("RotateSpeed");
+static const ea::string VAR_MOVESPEED("MoveSpeed");
+static const ea::string VAR_ROTATESPEED("RotateSpeed");
 
 
 Urho2DSprite::Urho2DSprite(Context* context) :

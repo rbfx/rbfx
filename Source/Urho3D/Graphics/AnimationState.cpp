@@ -93,7 +93,7 @@ void AnimatedAttributeReference::SetValue(const Variant& value) const
     {
         URHO3D_ASSERT(dynamic_cast<Node*>(serializable_.Get()));
         auto& node = static_cast<Node&>(*serializable_);
-        node.SetVar(StringHash(subAttributeKey_), value);
+        node.SetVarByHash(StringHash(subAttributeKey_), value);
         break;
     }
 

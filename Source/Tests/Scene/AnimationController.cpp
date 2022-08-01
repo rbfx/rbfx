@@ -554,6 +554,7 @@ TEST_CASE("Variant animation tracks are applied to components with optional blen
         scene->CreateComponent<Octree>();
 
         auto node = scene->CreateChild("Root Node");
+        node->SetVar("Test", 0);
         node->SetPosition({ 0.0f, 1.0f, 0.0f });
         auto animatedModel = node->CreateComponent<AnimatedModel>();
         animatedModel->SetModel(model);

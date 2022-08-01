@@ -51,8 +51,13 @@ inline void CombineHash(T& result, unsigned long long hash, ea::enable_if_t<size
 /// Fold 64-bit hash to 32-bit.
 inline unsigned FoldHash(unsigned long long value)
 {
-    auto result = static_cast<unsigned>(value);
-    CombineHash(result, static_cast<unsigned>(value >> 32ull));
+    const auto lowValue = static_cast<unsigned>(value);
+    const auto highValue = static_cast<unsigned>(value >> 32ull);
+    if (highValue == 0)
+        return lowValue;
+
+    auto result = lowValue;
+    CombineHash(result, highValue);
     return result;
 }
 
@@ -98,7 +103,8 @@ struct hash<T, typename enable_if<detail::is_hashable<T>::value>::type>
     }
 };
 
-template <class T, class U> struct hash<pair<T, U>>
+template <class T, class U>
+struct hash<pair<T, U>>
 {
     size_t operator()(const pair<T, U>& value) const
     {
@@ -109,7 +115,8 @@ template <class T, class U> struct hash<pair<T, U>>
     }
 };
 
-template <class T, class Allocator> struct hash<vector<T, Allocator>>
+template <class T, class Allocator>
+struct hash<vector<T, Allocator>>
 {
     size_t operator()(const vector<T, Allocator>& value) const
     {
@@ -120,15 +127,16 @@ template <class T, class Allocator> struct hash<vector<T, Allocator>>
     }
 };
 
-template <typename Key, typename T> struct hash<unordered_map<Key, T>>
+template <class Key, class Value, class Hash, class Predicate, class Allocator, bool bCacheHashCode>
+struct hash<unordered_map<Key, Value, Hash, Predicate, Allocator, bCacheHashCode>>
 {
-    size_t operator()(const unordered_map<Key, T>& value) const
+    size_t operator()(const unordered_map<Key, Value, Hash, Predicate, Allocator, bCacheHashCode>& value) const
     {
         size_t result = 0;
         for (const auto& [key, elem] : value)
         {
             Urho3D::CombineHash(result, hash<Key>{}(key));
-            Urho3D::CombineHash(result, hash<T>{}(elem));
+            Urho3D::CombineHash(result, hash<Value>{}(elem));
         }
         return result;
     }

@@ -50,7 +50,7 @@ Console::Console(Context* context) :
 
     SetNumHistoryRows(historyRows_);
     VariantMap dummy;
-    HandleScreenMode(StringHash::ZERO, dummy);
+    HandleScreenMode(StringHash::Empty, dummy);
     RefreshInterpreters();
 
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Console, HandleScreenMode));

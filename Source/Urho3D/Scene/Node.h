@@ -347,7 +347,8 @@ public:
     /// @property
     void SetParent(Node* parent);
     /// Set a user variable.
-    void SetVar(StringHash key, const Variant& value);
+    void SetVar(const ea::string& key, const Variant& value);
+    void SetVarByHash(StringHash hash, const Variant& value);
     /// Add listener component that is notified of node being dirtied. Can either be in the same node or another.
     void AddListener(Component* component);
     /// Remove listener component.
@@ -631,10 +632,11 @@ public:
     const ea::vector<WeakPtr<Component> > GetListeners() const { return listeners_; }
 
     /// Return a user variable.
-    const Variant& GetVar(StringHash key) const;
+    const Variant& GetVar(const ea::string& key) const;
+    const Variant& GetVarByHash(StringHash key) const;
 
     /// Return all user variables.
-    const VariantMap& GetVars() const { return vars_; }
+    const StringVariantMap& GetVars() const { return vars_; }
 
     /// Return first component derived from class.
     template <class T> T* GetDerivedComponent(bool recursive = false) const;
@@ -768,7 +770,7 @@ private:
 
 protected:
     /// User variables.
-    VariantMap vars_;
+    StringVariantMap vars_;
 };
 
 template <class T> T* Node::CreateComponent(CreateMode mode, unsigned id)
