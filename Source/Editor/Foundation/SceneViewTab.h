@@ -178,6 +178,7 @@ public:
     void CreateNodeInSelection(Scene* scene, SceneSelection& selection);
     void CreateComponentInSelection(Scene* scene, SceneSelection& selection, StringHash componentType);
     void FocusSelection(SceneSelection& selection);
+    void CreatePrefabFile(SceneSelection& selection);
 
     void CutSelection();
     void CopySelection();

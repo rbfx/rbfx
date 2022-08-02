@@ -254,6 +254,11 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 
     if (ui::MenuItem("Focus", GetHotkeyLabel(Hotkey_Focus).c_str(), false, hasSelection))
         FocusSelection(selection);
+
+    ui::Separator();
+
+    if (ui::MenuItem("Create Prefab",0, false, hasSelection))
+        CreatePrefabFile(selection);
 }
 
 void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)
@@ -509,6 +514,37 @@ void SceneViewTab::FocusSelection(SceneSelection& selection)
     {
         if (SceneViewPage* page = GetPage(activeNode->GetScene()))
             OnLookAt(this, *page, activeNode->GetWorldPosition());
+    }
+}
+void SceneViewTab::CreatePrefabFile(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        if (SceneViewPage* page = GetPage(activeNode->GetScene()))
+        {
+            if (activeNode)
+            {
+                eastl::string prefabFileName = activeNode->GetName();
+
+                if (prefabFileName.length() < 1)
+                    prefabFileName = prefabFileName.sprintf("%s %d", "PrefabNodeID_", activeNode->GetID());
+
+                prefabFileName += ".xml";
+
+                Vector3 oldPrefabPosition = activeNode->GetWorldPosition();
+                activeNode->SetWorldPosition(Vector3::ZERO);
+                FileSystem* fs = GetSubsystem<FileSystem>();
+
+                if (fs)
+                {
+                    eastl::string path = fs->FindResourcePrefixPath();
+                    File file = File(context_, path + "Data/Prefabs/" + prefabFileName, FILE_WRITE);
+                    activeNode->SaveXML(file);
+                    file.Close();
+                }
+                activeNode->SetWorldPosition(oldPrefabPosition);
+            }
+        }
     }
 }
 
