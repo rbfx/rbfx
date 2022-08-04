@@ -29,9 +29,9 @@
 #define RMLUI_CORE_FONTENGINEINTERFACE_H
 
 #include "Header.h"
-#include "Types.h"
-#include "ComputedValues.h"
 #include "Geometry.h"
+#include "StyleTypes.h"
+#include "Types.h"
 
 namespace Rml {
 
@@ -52,15 +52,16 @@ public:
 	/// Called by RmlUi when it wants to load a font face from file.
 	/// @param[in] file_name The file to load the face from.
 	/// @param[in] fallback_face True to use this font face for unknown characters in other font faces.
+	/// @param[in] weight The weight to load when the font face contains multiple weights, otherwise the weight to register the font as.
 	/// @return True if the face was loaded successfully, false otherwise.
-	virtual bool LoadFontFace(const String& file_name, bool fallback_face);
+	virtual bool LoadFontFace(const String& file_name, bool fallback_face, Style::FontWeight weight);
 
 	/// Called by RmlUi when it wants to load a font face from memory, registered using the provided family, style, and weight.
 	/// @param[in] data A pointer to the data.
 	/// @param[in] data_size Size of the data in bytes.
 	/// @param[in] family The family to register the font as.
 	/// @param[in] style The style to register the font as.
-	/// @param[in] weight The weight to register the font as.
+	/// @param[in] weight The weight to load when the font face contains multiple weights, otherwise the weight to register the font as.
 	/// @param[in] fallback_face True to use this font face for unknown characters in other font faces.
 	/// @return True if the face was loaded successfully, false otherwise.
 	/// Note: The debugger plugin will load its embedded font faces through this method using the family name 'rmlui-debugger-font'.
@@ -117,16 +118,22 @@ public:
 	/// @param[in] font_effects_handle The handle to the prepared font effects for which the geometry should be generated.
 	/// @param[in] string The string to render.
 	/// @param[in] position The position of the baseline of the first character to render.
-	/// @param[in] colour The colour to render the text.
+	/// @param[in] colour The colour to render the text. Colour alpha is premultiplied with opacity.
+	/// @param[in] opacity The opacity of the text, should be applied to font effects.
 	/// @param[out] geometry An array of geometries to generate the geometry into.
 	/// @return The width, in pixels, of the string geometry.
-	virtual int GenerateString(FontFaceHandle face_handle, FontEffectsHandle font_effects_handle, const String& string, const Vector2f& position, const Colourb& colour, GeometryList& geometry);
+	virtual int GenerateString(FontFaceHandle face_handle, FontEffectsHandle font_effects_handle, const String& string, const Vector2f& position,
+		const Colourb& colour, float opacity, GeometryList& geometry);
 
 	/// Called by RmlUi to determine if the text geometry is required to be re-generated. Whenever the returned version
 	/// is changed, all geometry belonging to the given face handle will be re-generated.
 	/// @param[in] face_handle The font handle.
 	/// @return The version required for using any geometry generated with the face handle.
 	virtual int GetVersion(FontFaceHandle handle);
+
+	/// Called by RmlUi when it wants to garbage collect memory used by fonts.
+	/// @note All existing FontFaceHandles and FontEffectsHandles are considered invalid after this call.
+	virtual void ReleaseFontResources();
 };
 
 } // namespace Rml

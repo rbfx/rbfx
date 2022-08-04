@@ -35,8 +35,6 @@
 namespace Urho3D
 {
 
-extern const char* SUBSYSTEM_CATEGORY;
-
 GlobalIllumination::GlobalIllumination(Context* context) :
     Component(context)
 {
@@ -46,7 +44,7 @@ GlobalIllumination::~GlobalIllumination() = default;
 
 void GlobalIllumination::RegisterObject(Context* context)
 {
-    context->RegisterFactory<GlobalIllumination>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<GlobalIllumination>(Category_Subsystem);
 
     URHO3D_ATTRIBUTE("Emission Brightness", float, emissionBrightness_, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Data File", GetFileRef, SetFileRef, ResourceRef, ResourceRef{ BinaryFile::GetTypeStatic() }, AM_DEFAULT | AM_NOEDIT);

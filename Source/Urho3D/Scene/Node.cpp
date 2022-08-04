@@ -84,7 +84,7 @@ void Node::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE); // Network replication of vars uses custom data
+    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_FILE); // Network replication of vars uses custom data
 }
 
 void Node::SerializeInBlock(Archive& archive)
@@ -96,7 +96,7 @@ void Node::SerializeInBlock(Archive& archive)
 
         // Load this node ID for resolver
         unsigned nodeID{};
-        Urho3D::SerializeValue(archive, "id", id_);
+        Urho3D::SerializeValue(archive, "id", nodeID);
         resolver.AddNode(nodeID, this);
 
         // Load node content
@@ -147,7 +147,7 @@ void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
         {
             // Serialize component ID and type
             unsigned componentID = component ? component->GetID() : 0;
-            StringHash componentType = component ? component->GetType() : StringHash{};
+            StringHash componentType = component ? component->GetType() : StringHash::Empty;
             const ea::string& componentTypeName = component ? component->GetTypeName() : EMPTY_STRING;
             SerializeValue(archive, "id", componentID);
             SerializeStringHash(archive, "type", componentType, componentTypeName);
@@ -587,6 +587,11 @@ void Node::SetTransform(const Matrix3x4& matrix)
     SetTransform(matrix.Translation(), matrix.Rotation(), matrix.Scale());
 }
 
+void Node::SetTransform(const Transform& transform)
+{
+    SetTransform(transform.position_, transform.rotation_, transform.scale_);
+}
+
 void Node::SetWorldPosition(const Vector3& position)
 {
     SetPosition(IsTransformHierarchyRoot() ? position : parent_->GetWorldTransform().Inverse() * position);
@@ -778,6 +783,34 @@ void Node::Scale(float scale)
 void Node::Scale(const Vector3& scale)
 {
     scale_ *= scale;
+    MarkDirty();
+}
+
+void Node::ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space)
+{
+    Vector3 parentSpacePoint;
+    const Vector3 oldScale = scale_;
+
+    switch (space)
+    {
+    case TS_LOCAL:
+        parentSpacePoint = GetTransform() * point;
+        break;
+
+    case TS_PARENT:
+        parentSpacePoint = point;
+        break;
+
+    case TS_WORLD:
+        parentSpacePoint = IsTransformHierarchyRoot() ? point : parent_->GetWorldTransform().Inverse() * point;
+        break;
+    }
+
+    scale_ *= scale;
+
+    const Vector3 oldRelativePos = (Vector3::ONE / oldScale) * (position_ - parentSpacePoint);
+    position_ = scale_ * oldRelativePos + parentSpacePoint;
+
     MarkDirty();
 }
 
@@ -1164,9 +1197,16 @@ void Node::SetParent(Node* parent)
     }
 }
 
-void Node::SetVar(StringHash key, const Variant& value)
+void Node::SetVar(const ea::string& key, const Variant& value)
 {
     vars_[key] = value;
+}
+
+void Node::SetVarByHash(StringHash hash, const Variant& value)
+{
+    const auto iter = vars_.find_by_hash(hash.Value());
+    if (iter != vars_.end())
+        iter->second = value;
 }
 
 void Node::AddListener(Component* component)
@@ -1506,6 +1546,18 @@ bool Node::IsChildOf(Node* node) const
     return false;
 }
 
+bool Node::IsTemporaryEffective() const
+{
+    const Node* parent = this;
+    while (parent)
+    {
+        if (parent->IsTemporary())
+            return true;
+        parent = parent->parent_;
+    }
+    return false;
+}
+
 Node* Node::GetDirectChildFor(Node* indirectChild) const
 {
     Node* parent = indirectChild->GetParent();
@@ -1525,9 +1577,15 @@ bool Node::IsTransformHierarchyRoot() const
     return !parent_ || parent_ == scene_;
 }
 
-const Variant& Node::GetVar(StringHash key) const
+const Variant& Node::GetVar(const ea::string& key) const
 {
     auto i = vars_.find(key);
+    return i != vars_.end() ? i->second : Variant::EMPTY;
+}
+
+const Variant& Node::GetVarByHash(StringHash key) const
+{
+    auto i = vars_.find_by_hash(key.Value());
     return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
@@ -2006,11 +2064,6 @@ Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
         SharedPtr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
-        if (typeName.empty() || typeName.starts_with("Unknown", false))
-            newComponent->SetType(type);
-        else
-            newComponent->SetTypeName(typeName);
-
         AddComponent(newComponent, id, mode);
         return newComponent;
     }

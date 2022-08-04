@@ -26,6 +26,7 @@
 
 #include "../IO/VectorBuffer.h"
 #include "../Math/Matrix3x4.h"
+#include "../Math/Transform.h"
 #include "../Scene/Animatable.h"
 
 #include <atomic>
@@ -173,6 +174,8 @@ public:
     void SetTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale);
     /// Set node transformation in parent space as an atomic operation.
     void SetTransform(const Matrix3x4& matrix);
+    /// Set node transformation in parent space as an atomic operation.
+    void SetTransform(const Transform& transform);
 
     /// Set both position and rotation in parent space as an atomic operation (for Urho2D).
     void SetTransform2D(const Vector2& position, float rotation) { SetTransform(Vector3(position), Quaternion(rotation)); }
@@ -285,6 +288,9 @@ public:
     /// Modify scale in parent space.
     void Scale(const Vector3& scale);
 
+    /// Scale around a point in the chosen transform space.
+    void ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space = TS_LOCAL);
+
     /// Modify scale in parent space (for Urho2D).
     void Scale2D(const Vector2& scale) { Scale(Vector3(scale, 1.0f)); }
 
@@ -341,7 +347,8 @@ public:
     /// @property
     void SetParent(Node* parent);
     /// Set a user variable.
-    void SetVar(StringHash key, const Variant& value);
+    void SetVar(const ea::string& key, const Variant& value);
+    void SetVarByHash(StringHash hash, const Variant& value);
     /// Add listener component that is notified of node being dirtied. Can either be in the same node or another.
     void AddListener(Component* component);
     /// Remove listener component.
@@ -389,6 +396,9 @@ public:
 
     /// Return whether is a direct or indirect child of specified node.
     bool IsChildOf(Node* node) const;
+
+    /// Return whether the node is effectively temporary, i.e. is temporary or is a child of temporary node.
+    bool IsTemporaryEffective() const;
 
     /// Return direct child of this node which contains specified indirect child.
     Node* GetDirectChildFor(Node* indirectChild) const;
@@ -443,6 +453,9 @@ public:
     /// Return parent space transform matrix.
     /// @property
     Matrix3x4 GetTransform() const { return Matrix3x4(position_, rotation_, scale_); }
+
+    /// Return parent space transform tuple.
+    Transform GetDecomposedTransform() const { return Transform{position_, rotation_, scale_}; }
 
     /// Return position in world space.
     /// @property
@@ -619,10 +632,11 @@ public:
     const ea::vector<WeakPtr<Component> > GetListeners() const { return listeners_; }
 
     /// Return a user variable.
-    const Variant& GetVar(StringHash key) const;
+    const Variant& GetVar(const ea::string& key) const;
+    const Variant& GetVarByHash(StringHash key) const;
 
     /// Return all user variables.
-    const VariantMap& GetVars() const { return vars_; }
+    const StringVariantMap& GetVars() const { return vars_; }
 
     /// Return first component derived from class.
     template <class T> T* GetDerivedComponent(bool recursive = false) const;
@@ -756,7 +770,7 @@ private:
 
 protected:
     /// User variables.
-    VariantMap vars_;
+    StringVariantMap vars_;
 };
 
 template <class T> T* Node::CreateComponent(CreateMode mode, unsigned id)

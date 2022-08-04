@@ -28,8 +28,6 @@
 namespace Urho3D
 {
 
-const char* IK_CATEGORY = "Inverse Kinematics";
-
 // ----------------------------------------------------------------------------
 void RegisterIKLibrary(Context* context)
 {

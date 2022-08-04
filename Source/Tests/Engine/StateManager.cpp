@@ -137,9 +137,9 @@ TEST_CASE("StateManager: Enque state, step and reset")
 
     CHECK_THAT(events,
         EaEquals(ea::vector<EventMatcher>{
-            EventMatcher(E_STATETRANSITIONSTARTED, StringHash::ZERO, State1::GetTypeStatic()),
-            EventMatcher(E_ENTERINGAPPLICATIONSTATE, StringHash::ZERO, State1::GetTypeStatic()),
-            EventMatcher(E_STATETRANSITIONCOMPLETE, StringHash::ZERO, State1::GetTypeStatic())
+            EventMatcher(E_STATETRANSITIONSTARTED, StringHash::Empty, State1::GetTypeStatic()),
+            EventMatcher(E_ENTERINGAPPLICATIONSTATE, StringHash::Empty, State1::GetTypeStatic()),
+            EventMatcher(E_STATETRANSITIONCOMPLETE, StringHash::Empty, State1::GetTypeStatic())
         }));
 
     events.clear();
@@ -148,9 +148,9 @@ TEST_CASE("StateManager: Enque state, step and reset")
     CHECK_THAT(events,
         EaEquals(
             ea::vector<EventMatcher>{
-            EventMatcher(E_STATETRANSITIONSTARTED, State1::GetTypeStatic(), StringHash::ZERO),
-            EventMatcher(E_LEAVINGAPPLICATIONSTATE, State1::GetTypeStatic(), StringHash::ZERO),
-            EventMatcher(E_STATETRANSITIONCOMPLETE, State1::GetTypeStatic(), StringHash::ZERO)
+            EventMatcher(E_STATETRANSITIONSTARTED, State1::GetTypeStatic(), StringHash::Empty),
+            EventMatcher(E_LEAVINGAPPLICATIONSTATE, State1::GetTypeStatic(), StringHash::Empty),
+            EventMatcher(E_STATETRANSITIONCOMPLETE, State1::GetTypeStatic(), StringHash::Empty)
         }));
 }
 
@@ -179,9 +179,9 @@ TEST_CASE("StateManager: Enque two states")
 
     CHECK_THAT(events,
         EaEquals(ea::vector<EventMatcher>{
-            EventMatcher(E_STATETRANSITIONSTARTED, StringHash::ZERO, State1::GetTypeStatic()),
-            EventMatcher(E_ENTERINGAPPLICATIONSTATE, StringHash::ZERO, State1::GetTypeStatic()),
-            EventMatcher(E_STATETRANSITIONCOMPLETE, StringHash::ZERO, State1::GetTypeStatic()),
+            EventMatcher(E_STATETRANSITIONSTARTED, StringHash::Empty, State1::GetTypeStatic()),
+            EventMatcher(E_ENTERINGAPPLICATIONSTATE, StringHash::Empty, State1::GetTypeStatic()),
+            EventMatcher(E_STATETRANSITIONCOMPLETE, StringHash::Empty, State1::GetTypeStatic()),
             EventMatcher(E_STATETRANSITIONSTARTED, State1::GetTypeStatic(), State2::GetTypeStatic()),
             EventMatcher(E_LEAVINGAPPLICATIONSTATE, State1::GetTypeStatic(), State2::GetTypeStatic()),
             EventMatcher(E_ENTERINGAPPLICATIONSTATE, State1::GetTypeStatic(), State2::GetTypeStatic()),
@@ -214,9 +214,9 @@ TEST_CASE("StateManager: Skip unknown state")
 
     CHECK_THAT(events,
         EaEquals(
-            ea::vector<EventMatcher>{EventMatcher(E_STATETRANSITIONSTARTED, StringHash::ZERO, State1::GetTypeStatic()),
-                EventMatcher(E_ENTERINGAPPLICATIONSTATE, StringHash::ZERO, State1::GetTypeStatic()),
-                EventMatcher(E_STATETRANSITIONCOMPLETE, StringHash::ZERO, State1::GetTypeStatic()),
+            ea::vector<EventMatcher>{EventMatcher(E_STATETRANSITIONSTARTED, StringHash::Empty, State1::GetTypeStatic()),
+                EventMatcher(E_ENTERINGAPPLICATIONSTATE, StringHash::Empty, State1::GetTypeStatic()),
+                EventMatcher(E_STATETRANSITIONCOMPLETE, StringHash::Empty, State1::GetTypeStatic()),
                 EventMatcher(E_STATETRANSITIONSTARTED, State1::GetTypeStatic(), unknownState),
                 EventMatcher(E_LEAVINGAPPLICATIONSTATE, State1::GetTypeStatic(), unknownState),
                 EventMatcher(E_ENTERINGAPPLICATIONSTATE, State1::GetTypeStatic(), State2::GetTypeStatic()),
@@ -247,10 +247,10 @@ TEST_CASE("StateManager: Last state is unknown")
 
     CHECK_THAT(events,
         EaEquals(
-            ea::vector<EventMatcher>{EventMatcher(E_STATETRANSITIONSTARTED, StringHash::ZERO, State1::GetTypeStatic()),
-                EventMatcher(E_ENTERINGAPPLICATIONSTATE, StringHash::ZERO, State1::GetTypeStatic()),
-                EventMatcher(E_STATETRANSITIONCOMPLETE, StringHash::ZERO, State1::GetTypeStatic()),
+            ea::vector<EventMatcher>{EventMatcher(E_STATETRANSITIONSTARTED, StringHash::Empty, State1::GetTypeStatic()),
+                EventMatcher(E_ENTERINGAPPLICATIONSTATE, StringHash::Empty, State1::GetTypeStatic()),
+                EventMatcher(E_STATETRANSITIONCOMPLETE, StringHash::Empty, State1::GetTypeStatic()),
                 EventMatcher(E_STATETRANSITIONSTARTED, State1::GetTypeStatic(), unknownState),
                 EventMatcher(E_LEAVINGAPPLICATIONSTATE, State1::GetTypeStatic(), unknownState),
-                EventMatcher(E_STATETRANSITIONCOMPLETE, State1::GetTypeStatic(), StringHash::ZERO)}));
+                EventMatcher(E_STATETRANSITIONCOMPLETE, State1::GetTypeStatic(), StringHash::Empty)}));
 }

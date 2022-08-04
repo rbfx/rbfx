@@ -140,6 +140,18 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Min Exposure", float, settings_.autoExposure_.minExposure_, MarkSettingsDirty, AutoExposurePassSettings{}.minExposure_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Max Exposure", float, settings_.autoExposure_.maxExposure_, MarkSettingsDirty, AutoExposurePassSettings{}.maxExposure_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Adapt Rate", float, settings_.autoExposure_.adaptRate_, MarkSettingsDirty, AutoExposurePassSettings{}.adaptRate_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO", bool, settings_.ssao_.enabled_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.enabled_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Downscale", unsigned, settings_.ssao_.downscale_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.downscale_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Strength", float, settings_.ssao_.strength_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.strength_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Exponent", float, settings_.ssao_.exponent_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.exponent_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Near Radius", float, settings_.ssao_.radiusNear_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.radiusNear_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Near Distance", float, settings_.ssao_.distanceNear_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.distanceNear_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Far Radius", float, settings_.ssao_.radiusFar_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.radiusFar_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Far Distance", float, settings_.ssao_.distanceFar_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.distanceFar_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Begin Fade Distance", float, settings_.ssao_.fadeDistanceBegin_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.fadeDistanceBegin_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO End Fade Distance", float, settings_.ssao_.fadeDistanceEnd_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.fadeDistanceEnd_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Depth Threshold", float, settings_.ssao_.blurDepthThreshold_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.blurDepthThreshold_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Normal Threshold", float, settings_.ssao_.blurNormalThreshold_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.blurNormalThreshold_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bloom", bool, settings_.bloom_.enabled_, MarkSettingsDirty, BloomPassSettings{}.enabled_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bloom Iterations", unsigned, settings_.bloom_.numIterations_, MarkSettingsDirty, BloomPassSettings{}.numIterations_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bloom Threshold", float, settings_.bloom_.threshold_, MarkSettingsDirty, BloomPassSettings{}.threshold_, AM_DEFAULT);

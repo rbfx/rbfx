@@ -32,8 +32,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
-
 ConstraintDistance2D::ConstraintDistance2D(Context* context) :
     Constraint2D(context),
     ownerBodyAnchor_(Vector2::ZERO),
@@ -46,7 +44,7 @@ ConstraintDistance2D::~ConstraintDistance2D() = default;
 
 void ConstraintDistance2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintDistance2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<ConstraintDistance2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Owner Body Anchor", GetOwnerBodyAnchor, SetOwnerBodyAnchor, Vector2, Vector2::ZERO, AM_DEFAULT);

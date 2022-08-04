@@ -49,8 +49,6 @@ static const float DEFAULT_FOG_END = 1000.0f;
 static const float DEFAULT_FOG_HEIGHT = 0.0f;
 static const float DEFAULT_FOG_HEIGHT_SCALE = 0.5f;
 
-extern const char* SCENE_CATEGORY;
-
 Zone::Zone(Context* context) :
     Drawable(context, DRAWABLE_ZONE),
     inverseWorldDirty_(true),
@@ -72,7 +70,7 @@ Zone::~Zone() = default;
 
 void Zone::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Zone>(SCENE_CATEGORY);
+    context->RegisterFactory<Zone>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bounding Box Min", Vector3, boundingBox_.min_, MarkNodeDirty, DEFAULT_BOUNDING_BOX_MIN, AM_DEFAULT);

@@ -411,7 +411,8 @@ public:
     /// Set parent element. Same as parent->InsertChild(index, this).
     void SetParent(UIElement* parent, unsigned index = M_MAX_UNSIGNED);
     /// Set a user variable.
-    void SetVar(StringHash key, const Variant& value);
+    void SetVar(const ea::string& key, const Variant& value);
+    void SetVarByHash(StringHash hash, const Variant& value);
     /// Mark as internally (programmatically) created. Used when an element composes itself out of child elements.
     /// @property
     void SetInternal(bool enable);
@@ -684,10 +685,11 @@ public:
     /// Return derived color. Only valid when no gradient.
     const Color& GetDerivedColor() const;
     /// Return a user variable.
-    const Variant& GetVar(const StringHash& key) const;
+    const Variant& GetVar(const ea::string& key) const;
+    const Variant& GetVarByHash(StringHash key) const;
 
     /// Return all user variables.
-    const VariantMap& GetVars() const { return vars_; }
+    const StringVariantMap& GetVars() const { return vars_; }
 
     /// Return whether element is tagged by a specific tag.
     bool HasTag(const ea::string& tag) const;
@@ -792,7 +794,7 @@ protected:
     /// Colors.
     Color colors_[MAX_UIELEMENT_CORNERS];
     /// User variables.
-    VariantMap vars_;
+    StringVariantMap vars_;
     /// Priority.
     int priority_{};
     /// Bring to front when focused flag.

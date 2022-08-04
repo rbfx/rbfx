@@ -38,8 +38,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 Geometry::Geometry(Context* context) :
     Object(context),
     primitiveType_(TRIANGLE_LIST),

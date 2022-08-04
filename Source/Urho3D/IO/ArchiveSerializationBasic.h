@@ -160,9 +160,12 @@ struct AlwaysSerialize
 {
     template <class T>
     bool operator==(const T& rhs) const { return false; }
+};
 
-    template <class T>
-    explicit operator T() const { return T{}; }
+/// Placeholder object that can be serialized as nothing.
+struct EmptySerializableObject
+{
+    void SerializeInBlock(Archive& archive) {}
 };
 
 /// @name Serialize primitive types
@@ -293,7 +296,11 @@ void SerializeOptionalValue(Archive& archive, const char* name, T& value, const 
     if (initialized)
         serializeValue(archive, name, value);
     else if (loading)
-        value = static_cast<T>(defaultValue);
+    {
+        // Don't try to cast from AlwaysSerialize
+        if constexpr(!std::is_base_of_v<AlwaysSerialize, U>)
+            value = static_cast<T>(defaultValue);
+    }
 }
 
 /// Wrapper that consumes ArchiveException and converts it to boolean status.

@@ -30,8 +30,6 @@
 namespace Urho3D
 {
 
-extern const char* SCENE_CATEGORY;
-
 OutlineGroup::MaterialKey::MaterialKey(const Material& material)
 {
     for (const auto& [nameHash, nameValue] : material.GetShaderParameters())
@@ -78,7 +76,7 @@ OutlineGroup::~OutlineGroup()
 
 void OutlineGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<OutlineGroup>(SCENE_CATEGORY);
+    context->RegisterFactory<OutlineGroup>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColor, SetColor, Color, Color::WHITE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Render Order", GetRenderOrder, SetRenderOrder, unsigned, DEFAULT_RENDER_ORDER, AM_DEFAULT);

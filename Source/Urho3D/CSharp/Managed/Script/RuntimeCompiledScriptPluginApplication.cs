@@ -17,13 +17,13 @@ namespace Urho3DNet
             _slaveAssembly = assembly;
         }
 
-        public override void Load()
+        protected override void Load()
         {
             if (_slaveAssembly != null)
                 Context.RegisterFactories(_slaveAssembly);
         }
 
-        public override void Unload()
+        protected override void Unload()
         {
             if (_slaveAssembly != null)
                 Context.RemoveFactories(_slaveAssembly);

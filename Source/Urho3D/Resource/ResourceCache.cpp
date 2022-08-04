@@ -433,7 +433,7 @@ void ResourceCache::ReleaseAllResources(bool force)
 
 bool ResourceCache::ReloadResource(const ea::string_view resourceName)
 {
-    if (Resource* resource = FindResource(StringHash::ZERO, resourceName))
+    if (Resource* resource = FindResource(StringHash::Empty, resourceName))
         return ReloadResource(resource);
     return false;
 }
@@ -619,7 +619,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& 
 
     StringHash nameHash(sanitatedName);
 
-    const SharedPtr<Resource>& existing = type == StringHash::ZERO ? FindResource(type, nameHash) : FindResource(nameHash);
+    const SharedPtr<Resource>& existing = type == StringHash::Empty ? FindResource(type, nameHash) : FindResource(nameHash);
     return existing;
 }
 
@@ -1263,7 +1263,7 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
                 // Manual resources do not exist in resource dirs.
                 bool isPhysicalResource = false;
                 for (unsigned i = 0; i < resourceDirs_.size() && !isPhysicalResource; ++i)
-                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + pathName);
+                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + entryName);
 
                 if (!isPhysicalResource)
                 {

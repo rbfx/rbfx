@@ -44,8 +44,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 static const Vector3 DEFAULT_SPACING(1.0f, 0.25f, 1.0f);
 static const unsigned MIN_LOD_LEVELS = 1;
 static const unsigned MAX_LOD_LEVELS = 4;
@@ -120,7 +118,7 @@ Terrain::~Terrain() = default;
 
 void Terrain::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Terrain>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<Terrain>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Height Map", GetHeightMapAttr, SetHeightMapAttr, ResourceRef, ResourceRef(Image::GetTypeStatic()),

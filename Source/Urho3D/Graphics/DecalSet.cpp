@@ -49,8 +49,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 static const unsigned MIN_VERTICES = 4;
 static const unsigned MIN_INDICES = 6;
 static const unsigned MAX_VERTICES = 65536;
@@ -179,7 +177,7 @@ DecalSet::~DecalSet() = default;
 
 void DecalSet::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DecalSet>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<DecalSet>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),

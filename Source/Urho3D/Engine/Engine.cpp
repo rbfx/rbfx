@@ -82,9 +82,12 @@
 #ifdef URHO3D_PARTICLE_GRAPH
 #include "../Particles/ParticleGraphSystem.h"
 #endif
+#include "../Plugins/PluginManager.h"
 #ifdef URHO3D_COMPUTE
 #include "../Graphics/ComputeDevice.h"
 #endif
+#include "../Utility/AssetTransformer.h"
+#include "../Utility/SceneViewerApplication.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -197,31 +200,36 @@ Engine::Engine(Context* context) :
     RegisterNavigationLibrary(context_);
 #endif
 
+    SceneViewerApplication::RegisterObject();
+    context_->RegisterFactory<AssetTransformer>();
+
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
 }
 
 Engine::~Engine() = default;
 
-bool Engine::Initialize(const VariantMap& parameters)
+bool Engine::Initialize(const StringVariantMap& parameters)
 {
     if (initialized_)
         return true;
 
     URHO3D_PROFILE("InitEngine");
 
+    parameters_ = parameters;
+
     // Start logging
     auto* log = GetSubsystem<Log>();
     if (log)
     {
-        if (HasParameter(parameters, EP_LOG_LEVEL))
-            log->SetLevel(static_cast<LogLevel>(GetParameter(parameters, EP_LOG_LEVEL).GetInt()));
-        log->SetQuiet(GetParameter(parameters, EP_LOG_QUIET, false).GetBool());
-        log->Open(GetParameter(parameters, EP_LOG_NAME, "Urho3D.log").GetString());
+        if (HasParameter(EP_LOG_LEVEL))
+            log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
+        log->SetQuiet(GetParameter(EP_LOG_QUIET, false).GetBool());
+        log->Open(GetParameter(EP_LOG_NAME, "Urho3D.log").GetString());
     }
 
     // Set headless mode
-    headless_ = GetParameter(parameters, EP_HEADLESS, false).GetBool();
+    headless_ = GetParameter(EP_HEADLESS, false).GetBool();
 
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
@@ -253,17 +261,19 @@ bool Engine::Initialize(const VariantMap& parameters)
     RegisterUrho2DLibrary(context_);
 #endif
 
+    context_->RegisterSubsystem(new PluginManager(context_));
+
     // Set maximally accurate low res timer
     GetSubsystem<Time>()->SetTimerPeriod(1);
 
     // Configure max FPS
-    if (GetParameter(parameters, EP_FRAME_LIMITER, true) == false)
+    if (GetParameter(EP_FRAME_LIMITER, true) == false)
         SetMaxFps(0);
 
     // Set amount of worker threads according to the available physical CPU cores. Using also hyperthreaded cores results in
     // unpredictable extra synchronization overhead. Also reserve one core for the main thread
 #ifdef URHO3D_THREADING
-    unsigned numThreads = GetParameter(parameters, EP_WORKER_THREADS, true).GetBool() ? GetNumPhysicalCPUs() - 1 : 0;
+    unsigned numThreads = GetParameter(EP_WORKER_THREADS, true).GetBool() ? GetNumPhysicalCPUs() - 1 : 0;
     if (numThreads)
     {
         GetSubsystem<WorkQueue>()->CreateThreads(numThreads);
@@ -285,64 +295,64 @@ bool Engine::Initialize(const VariantMap& parameters)
         auto* graphics = GetSubsystem<Graphics>();
         auto* renderer = GetSubsystem<Renderer>();
 
-        if (HasParameter(parameters, EP_EXTERNAL_WINDOW))
-            graphics->SetExternalWindow(GetParameter(parameters, EP_EXTERNAL_WINDOW).GetVoidPtr());
-        graphics->SetWindowTitle(GetParameter(parameters, EP_WINDOW_TITLE, "Urho3D").GetString());
-        graphics->SetWindowIcon(cache->GetResource<Image>(GetParameter(parameters, EP_WINDOW_ICON, EMPTY_STRING).GetString()));
-        graphics->SetFlushGPU(GetParameter(parameters, EP_FLUSH_GPU, false).GetBool());
-        graphics->SetOrientations(GetParameter(parameters, EP_ORIENTATIONS, "LandscapeLeft LandscapeRight").GetString());
-        graphics->SetShaderValidationEnabled(GetParameter(parameters, EP_VALIDATE_SHADERS, false).GetBool());
+        if (HasParameter(EP_EXTERNAL_WINDOW))
+            graphics->SetExternalWindow(GetParameter(EP_EXTERNAL_WINDOW).GetVoidPtr());
+        graphics->SetWindowTitle(GetParameter(EP_WINDOW_TITLE, "Urho3D").GetString());
+        graphics->SetWindowIcon(cache->GetResource<Image>(GetParameter(EP_WINDOW_ICON, EMPTY_STRING).GetString()));
+        graphics->SetFlushGPU(GetParameter(EP_FLUSH_GPU, false).GetBool());
+        graphics->SetOrientations(GetParameter(EP_ORIENTATIONS, "LandscapeLeft LandscapeRight").GetString());
+        graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS, false).GetBool());
 
 #ifdef URHO3D_OPENGL
-        if (HasParameter(parameters, EP_FORCE_GL2))
-            graphics->SetForceGL2(GetParameter(parameters, EP_FORCE_GL2).GetBool());
+        if (HasParameter(EP_FORCE_GL2))
+            graphics->SetForceGL2(GetParameter(EP_FORCE_GL2).GetBool());
 #endif
 
         if (!graphics->SetMode(
-            GetParameter(parameters, EP_WINDOW_WIDTH, 0).GetInt(),
-            GetParameter(parameters, EP_WINDOW_HEIGHT, 0).GetInt(),
-            GetParameter(parameters, EP_FULL_SCREEN, true).GetBool(),
-            GetParameter(parameters, EP_BORDERLESS, false).GetBool(),
-            GetParameter(parameters, EP_WINDOW_RESIZABLE, false).GetBool(),
-            GetParameter(parameters, EP_HIGH_DPI, true).GetBool(),
-            GetParameter(parameters, EP_VSYNC, false).GetBool(),
-            GetParameter(parameters, EP_TRIPLE_BUFFER, false).GetBool(),
-            GetParameter(parameters, EP_MULTI_SAMPLE, 1).GetInt(),
-            GetParameter(parameters, EP_MONITOR, 0).GetInt(),
-            GetParameter(parameters, EP_REFRESH_RATE, 0).GetInt(),
-            GetParameter(parameters, EP_GPU_DEBUG, false).GetBool()
+            GetParameter(EP_WINDOW_WIDTH, 0).GetInt(),
+            GetParameter(EP_WINDOW_HEIGHT, 0).GetInt(),
+            GetParameter(EP_FULL_SCREEN, true).GetBool(),
+            GetParameter(EP_BORDERLESS, false).GetBool(),
+            GetParameter(EP_WINDOW_RESIZABLE, false).GetBool(),
+            GetParameter(EP_HIGH_DPI, true).GetBool(),
+            GetParameter(EP_VSYNC, false).GetBool(),
+            GetParameter(EP_TRIPLE_BUFFER, false).GetBool(),
+            GetParameter(EP_MULTI_SAMPLE, 1).GetInt(),
+            GetParameter(EP_MONITOR, 0).GetInt(),
+            GetParameter(EP_REFRESH_RATE, 0).GetInt(),
+            GetParameter(EP_GPU_DEBUG, false).GetBool()
         ))
             return false;
 
-        if (HasParameter(parameters, EP_WINDOW_POSITION_X) && HasParameter(parameters, EP_WINDOW_POSITION_Y))
-            graphics->SetWindowPosition(GetParameter(parameters, EP_WINDOW_POSITION_X).GetInt(),
-                GetParameter(parameters, EP_WINDOW_POSITION_Y).GetInt());
+        if (HasParameter(EP_WINDOW_POSITION_X) && HasParameter(EP_WINDOW_POSITION_Y))
+            graphics->SetWindowPosition(GetParameter(EP_WINDOW_POSITION_X).GetInt(),
+                GetParameter(EP_WINDOW_POSITION_Y).GetInt());
 
-        if (HasParameter(parameters, EP_WINDOW_MAXIMIZE) && GetParameter(parameters, EP_WINDOW_MAXIMIZE).GetBool())
+        if (HasParameter(EP_WINDOW_MAXIMIZE) && GetParameter(EP_WINDOW_MAXIMIZE).GetBool())
             graphics->Maximize();
 
-        graphics->SetShaderCacheDir(GetParameter(parameters, EP_SHADER_CACHE_DIR, appPreferencesDir_).GetString() + "shadercache/");
+        graphics->SetShaderCacheDir(GetParameter(EP_SHADER_CACHE_DIR, appPreferencesDir_).GetString() + "shadercache/");
 
-        if (HasParameter(parameters, EP_DUMP_SHADERS))
-            graphics->BeginDumpShaders(GetParameter(parameters, EP_DUMP_SHADERS, EMPTY_STRING).GetString());
-        if (HasParameter(parameters, EP_RENDER_PATH))
-            renderer->SetDefaultRenderPath(cache->GetResource<XMLFile>(GetParameter(parameters, EP_RENDER_PATH).GetString()));
+        if (HasParameter(EP_DUMP_SHADERS))
+            graphics->BeginDumpShaders(GetParameter(EP_DUMP_SHADERS, EMPTY_STRING).GetString());
+        if (HasParameter(EP_RENDER_PATH))
+            renderer->SetDefaultRenderPath(cache->GetResource<XMLFile>(GetParameter(EP_RENDER_PATH).GetString()));
 
-        renderer->SetDrawShadows(GetParameter(parameters, EP_SHADOWS, true).GetBool());
-        if (renderer->GetDrawShadows() && GetParameter(parameters, EP_LOW_QUALITY_SHADOWS, false).GetBool())
+        renderer->SetDrawShadows(GetParameter(EP_SHADOWS, true).GetBool());
+        if (renderer->GetDrawShadows() && GetParameter(EP_LOW_QUALITY_SHADOWS, false).GetBool())
             renderer->SetShadowQuality(SHADOWQUALITY_SIMPLE_16BIT);
-        renderer->SetMaterialQuality((MaterialQuality)GetParameter(parameters, EP_MATERIAL_QUALITY, QUALITY_HIGH).GetInt());
-        renderer->SetTextureQuality((MaterialQuality)GetParameter(parameters, EP_TEXTURE_QUALITY, QUALITY_HIGH).GetInt());
-        renderer->SetTextureFilterMode((TextureFilterMode)GetParameter(parameters, EP_TEXTURE_FILTER_MODE, FILTER_TRILINEAR).GetInt());
-        renderer->SetTextureAnisotropy(GetParameter(parameters, EP_TEXTURE_ANISOTROPY, 4).GetInt());
+        renderer->SetMaterialQuality((MaterialQuality)GetParameter(EP_MATERIAL_QUALITY, QUALITY_HIGH).GetInt());
+        renderer->SetTextureQuality((MaterialQuality)GetParameter(EP_TEXTURE_QUALITY, QUALITY_HIGH).GetInt());
+        renderer->SetTextureFilterMode((TextureFilterMode)GetParameter(EP_TEXTURE_FILTER_MODE, FILTER_TRILINEAR).GetInt());
+        renderer->SetTextureAnisotropy(GetParameter(EP_TEXTURE_ANISOTROPY, 4).GetInt());
 
-        if (GetParameter(parameters, EP_SOUND, true).GetBool())
+        if (GetParameter(EP_SOUND, true).GetBool())
         {
             GetSubsystem<Audio>()->SetMode(
-                GetParameter(parameters, EP_SOUND_BUFFER, 100).GetInt(),
-                GetParameter(parameters, EP_SOUND_MIX_RATE, 44100).GetInt(),
-                (SpeakerMode)GetParameter(parameters, EP_SOUND_MODE, SpeakerMode::SPK_AUTO).GetInt(),
-                GetParameter(parameters, EP_SOUND_INTERPOLATION, true).GetBool()
+                GetParameter(EP_SOUND_BUFFER, 100).GetInt(),
+                GetParameter(EP_SOUND_MIX_RATE, 44100).GetInt(),
+                (SpeakerMode)GetParameter(EP_SOUND_MODE, SpeakerMode::SPK_AUTO).GetInt(),
+                GetParameter(EP_SOUND_INTERPOLATION, true).GetBool()
             );
         }
     }
@@ -351,24 +361,24 @@ bool Engine::Initialize(const VariantMap& parameters)
     InitFPU();
 
     // Initialize input
-    if (HasParameter(parameters, EP_TOUCH_EMULATION))
-        GetSubsystem<Input>()->SetTouchEmulation(GetParameter(parameters, EP_TOUCH_EMULATION).GetBool());
+    if (HasParameter(EP_TOUCH_EMULATION))
+        GetSubsystem<Input>()->SetTouchEmulation(GetParameter(EP_TOUCH_EMULATION).GetBool());
 
     // Initialize network
 #ifdef URHO3D_NETWORK
-    if (HasParameter(parameters, EP_PACKAGE_CACHE_DIR))
-        GetSubsystem<Network>()->SetPackageCacheDir(GetParameter(parameters, EP_PACKAGE_CACHE_DIR).GetString());
+    if (HasParameter(EP_PACKAGE_CACHE_DIR))
+        GetSubsystem<Network>()->SetPackageCacheDir(GetParameter(EP_PACKAGE_CACHE_DIR).GetString());
 #endif
 
 #ifdef URHO3D_TESTING
-    if (HasParameter(parameters, EP_TIME_OUT))
-        timeOut_ = GetParameter(parameters, EP_TIME_OUT, 0).GetInt() * 1000000LL;
+    if (HasParameter(EP_TIME_OUT))
+        timeOut_ = GetParameter(EP_TIME_OUT, 0).GetInt() * 1000000LL;
 #endif
     if (!headless_)
     {
 #ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_,
-            GetParameter(parameters, EP_SYSTEMUI_FLAGS, 0).GetUInt()));
+            GetParameter(EP_SYSTEMUI_FLAGS, 0).GetUInt()));
 #endif
     }
     frameTimer_.Reset();
@@ -379,7 +389,7 @@ bool Engine::Initialize(const VariantMap& parameters)
     return true;
 }
 
-bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOld /*= true*/)
+bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool removeOld /*= true*/)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* fileSystem = GetSubsystem<FileSystem>();
@@ -387,8 +397,8 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 
     // Initialize app preferences directory
     appPreferencesDir_ = fileSystem->GetAppPreferencesDir(
-        GetParameter(parameters, EP_ORGANIZATION_NAME, "urho3d").GetString(),
-        GetParameter(parameters, EP_APPLICATION_NAME, "engine").GetString());
+        GetParameter(EP_ORGANIZATION_NAME, "Urho3D Rebel Fork").GetString(),
+        GetParameter(EP_APPLICATION_NAME, "Unspecified Application").GetString());
 
     // Set configuration directory to manager
     configManager->SetConfigDir(
@@ -404,15 +414,15 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     }
 
     // Add resource paths
-    ea::vector<ea::string> resourcePrefixPaths = GetParameter(parameters, EP_RESOURCE_PREFIX_PATHS,
+    ea::vector<ea::string> resourcePrefixPaths = GetParameter(EP_RESOURCE_PREFIX_PATHS,
         EMPTY_STRING).GetString().split(';', true);
     for (unsigned i = 0; i < resourcePrefixPaths.size(); ++i)
         resourcePrefixPaths[i] = AddTrailingSlash(
             IsAbsolutePath(resourcePrefixPaths[i]) ? resourcePrefixPaths[i] : fileSystem->GetProgramDir() + resourcePrefixPaths[i]);
-    ea::vector<ea::string> resourcePaths = GetParameter(parameters, EP_RESOURCE_PATHS,
+    ea::vector<ea::string> resourcePaths = GetParameter(EP_RESOURCE_PATHS,
         "Data;CoreData").GetString().split(';');
-    ea::vector<ea::string> resourcePackages = GetParameter(parameters, EP_RESOURCE_PACKAGES).GetString().split(';');
-    ea::vector<ea::string> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().split(';');
+    ea::vector<ea::string> resourcePackages = GetParameter(EP_RESOURCE_PACKAGES).GetString().split(';');
+    ea::vector<ea::string> autoLoadPaths = GetParameter(EP_AUTOLOAD_PATHS, "Autoload").GetString().split(';');
 
     for (unsigned i = 0; i < resourcePaths.size(); ++i)
     {
@@ -673,6 +683,24 @@ void Engine::SetNextTimeStep(float seconds)
     timeStep_ = Max(seconds, 0.0f);
 }
 
+void Engine::SetParameter(const ea::string& name, const Variant& value)
+{
+    if (!value.IsEmpty())
+        parameters_[name] = value;
+    else
+        parameters_.erase(name);
+}
+
+bool Engine::HasParameter(const ea::string& name) const
+{
+    return parameters_.contains(name);
+}
+
+const Variant& Engine::GetParameter(const ea::string& name, const Variant& defaultValue) const
+{
+    return GetParameter(parameters_, name, defaultValue);
+}
+
 void Engine::Exit()
 {
 #if defined(IOS) || defined(TVOS)
@@ -887,7 +915,7 @@ void Engine::ApplyFrameLimit()
 }
 
 #if DESKTOP
-void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameters)
+void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& engineParameters)
 {
     auto addFlagInternal = [&](const char* name, const char* description, CLI::callback_t fun) {
         CLI::Option *opt = commandLine.add_option(name, fun, description, false);
@@ -1039,20 +1067,16 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
 #ifdef URHO3D_TESTING
     addOptionInt("--timeout", EP_TIME_OUT, "Quit application after specified time");
 #endif
+    addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->set_custom_option("plugin1;plugin2;...");
+    addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->set_custom_option("plugin");
 }
 #endif
 
-bool Engine::HasParameter(const VariantMap& parameters, const ea::string& parameter)
+const Variant& Engine::GetParameter(const StringVariantMap& parameters, const ea::string& name, const Variant& defaultValue)
 {
-    StringHash nameHash(parameter);
-    return parameters.find(nameHash) != parameters.end();
-}
+    const auto iter = parameters.find(name);
+    return iter != parameters.end() ? iter->second : defaultValue;
 
-const Variant& Engine::GetParameter(const VariantMap& parameters, const ea::string& parameter, const Variant& defaultValue)
-{
-    StringHash nameHash(parameter);
-    auto i = parameters.find(nameHash);
-    return i != parameters.end() ? i->second : defaultValue;
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)

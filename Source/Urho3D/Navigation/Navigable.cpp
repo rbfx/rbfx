@@ -30,8 +30,6 @@
 namespace Urho3D
 {
 
-extern const char* NAVIGATION_CATEGORY;
-
 Navigable::Navigable(Context* context) :
     Component(context),
     recursive_(true)
@@ -42,7 +40,7 @@ Navigable::~Navigable() = default;
 
 void Navigable::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Navigable>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<Navigable>(Category_Navigation);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Recursive", bool, recursive_, true, AM_DEFAULT);

@@ -89,7 +89,7 @@ public:
     /// Implement PostProcessPass.
     /// @{
     PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
-    void Execute() override;
+    void Execute(Camera* camera) override;
     /// @}
 
     RenderBuffer* GetColorOutput() { return outlineBuffer_; }
@@ -99,7 +99,8 @@ private:
 
     bool enabled_{};
 
-    SharedPtr<PipelineState> pipelineState_;
+    SharedPtr<PipelineState> pipelineStateGamma_;
+    SharedPtr<PipelineState> pipelineStateLinear_;
     SharedPtr<RenderBuffer> outlineBuffer_;
 };
 

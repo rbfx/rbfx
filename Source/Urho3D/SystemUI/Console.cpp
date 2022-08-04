@@ -50,7 +50,7 @@ Console::Console(Context* context) :
 
     SetNumHistoryRows(historyRows_);
     VariantMap dummy;
-    HandleScreenMode(StringHash::ZERO, dummy);
+    HandleScreenMode(StringHash::Empty, dummy);
     RefreshInterpreters();
 
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Console, HandleScreenMode));
@@ -296,7 +296,8 @@ void Console::RenderContent()
             scrollToEnd_--;
         }
 
-        isAtEnd_ = ui::GetScrollY() >= ui::GetScrollMaxY();
+        const float eps = 10.0f;
+        isAtEnd_ = ui::GetScrollY() + eps >= ui::GetScrollMaxY();
 
         if (!copyBuffer_.empty())
         {

@@ -51,8 +51,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 static const unsigned MAX_ANIMATION_STATES = 256;
 
 AnimatedModel::AnimatedModel(Context* context) :
@@ -84,7 +82,7 @@ AnimatedModel::~AnimatedModel()
 
 void AnimatedModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimatedModel>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<AnimatedModel>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);

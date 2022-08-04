@@ -188,7 +188,7 @@ void DebuggerPlugin::Render()
 						Vector2f box_offset;
 						const Box& box = element->GetBox(j, box_offset);
 						Geometry::RenderOutline(
-							element->GetAbsoluteOffset(Box::BORDER) + box_offset + box.GetPosition(Box::BORDER),
+							element->GetAbsoluteOffset(Box::BORDER) + box_offset,
 							box.GetSize(Box::BORDER), 
 							Colourb(255, 0, 0, 128), 
 							1
@@ -309,7 +309,7 @@ bool DebuggerPlugin::LoadMenuElement()
 	menu_element->SetStyleSheetContainer(std::move(style_sheet));
 
 	// Set the version info in the menu.
-	menu_element->GetElementById("version-number")->SetInnerRML("v" + Rml::GetVersion());
+	menu_element->GetElementById("version-number")->SetInnerRML(Rml::GetVersion());
 
 	// Attach to the buttons.
 	Element* event_log_button = menu_element->GetElementById("event-log-button");

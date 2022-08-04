@@ -36,8 +36,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 Skybox::Skybox(Context* context) :
     StaticModel(context),
     lastFrame_(0)
@@ -49,7 +47,7 @@ Skybox::~Skybox() = default;
 
 void Skybox::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Skybox>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<Skybox>(Category_Geometry);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Reflection Mode", static_cast<int>(ReflectionMode::Zone));

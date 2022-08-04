@@ -37,8 +37,6 @@
 namespace Urho3D
 {
 
-extern const char* RML_UI_CATEGORY;
-
 RmlUIComponent::RmlUIComponent(Context* context)
     : LogicComponent(context)
 {
@@ -52,7 +50,7 @@ RmlUIComponent::~RmlUIComponent()
 
 void RmlUIComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RmlUIComponent>(RML_UI_CATEGORY);
+    context->RegisterFactory<RmlUIComponent>(Category_RmlUI);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
     URHO3D_ACCESSOR_ATTRIBUTE("Resource", GetResource, SetResource, ResourceRef, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Use Normalized Coordinates", bool, useNormalized_, false, AM_DEFAULT);
@@ -86,7 +84,7 @@ void RmlUIComponent::OnNodeSet(Node* node)
 void RmlUIComponent::SetResource(const ResourceRef& resourceRef)
 {
     resource_ = resourceRef;
-    if (resource_.type_ == StringHash::ZERO)
+    if (resource_.type_ == StringHash::Empty)
         resource_.type_ = BinaryFile::GetTypeStatic();
     SetOpen(open_);
 }

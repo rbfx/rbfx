@@ -36,10 +36,8 @@
 namespace Urho3D
 {
 
-const StringHash VAR_SHOW_POPUP("ShowPopup");
-extern StringHash VAR_ORIGIN;
-
-extern const char* UI_CATEGORY;
+const ea::string VAR_SHOW_POPUP("ShowPopup");
+extern ea::string VAR_ORIGIN;
 
 Menu::Menu(Context* context) :
     Button(context),
@@ -65,7 +63,7 @@ Menu::~Menu()
 
 void Menu::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Menu>(UI_CATEGORY);
+    context->RegisterFactory<Menu>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Button);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Focus Mode", FM_NOTFOCUSABLE);
@@ -321,7 +319,7 @@ void Menu::ShowPopup(bool enable)
         }
 
         static_cast<Window*>(popup_.Get())->SetModal(false);
-        const_cast<VariantMap&>(popup_->GetVars()).erase(VAR_ORIGIN);
+        const_cast<StringVariantMap&>(popup_->GetVars()).erase(VAR_ORIGIN);
 
         popup_->SetVisible(false);
         popup_->Remove();

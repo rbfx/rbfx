@@ -31,7 +31,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
 static const Vector2 DEFAULT_BOX_SIZE(0.01f, 0.01f);
 
 CollisionBox2D::CollisionBox2D(Context* context) :
@@ -50,7 +49,7 @@ CollisionBox2D::~CollisionBox2D() = default;
 
 void CollisionBox2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionBox2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<CollisionBox2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSize, SetSize, Vector2, DEFAULT_BOX_SIZE, AM_DEFAULT);

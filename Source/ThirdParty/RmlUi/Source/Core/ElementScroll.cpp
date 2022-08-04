@@ -27,13 +27,14 @@
  */
 
 #include "../../Include/RmlUi/Core/ElementScroll.h"
-#include "LayoutDetails.h"
-#include "WidgetScroll.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Context.h"
 #include "../../Include/RmlUi/Core/Element.h"
 #include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/Event.h"
 #include "../../Include/RmlUi/Core/Factory.h"
+#include "LayoutDetails.h"
+#include "WidgetScroll.h"
 
 namespace Rml {
 
@@ -77,7 +78,7 @@ void ElementScroll::EnableScrollbar(Orientation orientation, float element_width
 		if (box.GetSize().y < 0)
 			scrollbars[orientation].size = box.GetCumulativeEdge(Box::CONTENT, Box::LEFT) +
 										   box.GetCumulativeEdge(Box::CONTENT, Box::RIGHT) +
-										   ResolveValue(scrollbars[orientation].element->GetComputedValues().height, element_width);
+										   ResolveValue(scrollbars[orientation].element->GetComputedValues().height(), element_width);
 		else
 			scrollbars[orientation].size = box.GetSize(Box::MARGIN).y;
 	}
@@ -173,7 +174,7 @@ void ElementScroll::FormatScrollbars()
 		}
 
 		float slider_length = containing_block[1 - i];
-		float user_scrollbar_margin = scrollbars[i].element->GetComputedValues().scrollbar_margin;
+		float user_scrollbar_margin = scrollbars[i].element->GetComputedValues().scrollbar_margin();
 		float min_scrollbar_margin = GetScrollbarSize(i == VERTICAL ? HORIZONTAL : VERTICAL);
 		slider_length -= Math::Max(user_scrollbar_margin, min_scrollbar_margin);
 
@@ -209,7 +210,6 @@ void ElementScroll::FormatScrollbars()
 	}
 }
 
-
 // Creates one of the scroll component's scrollbar.
 bool ElementScroll::CreateScrollbar(Orientation orientation)
 {
@@ -226,12 +226,7 @@ bool ElementScroll::CreateScrollbar(Orientation orientation)
 
 	Element* child = element->AppendChild(std::move(scrollbar_element), false);
 
-	// The construction of scrollbars can occur during layouting, then we need some properties and computed values straight away.
-	Context* context = element->GetContext();
-	
-	const float dp_ratio = (context ? context->GetDensityIndependentPixelRatio() : 1.0f);
-	const Vector2f vp_dimensions = (context ? Vector2f(context->GetDimensions()) : Vector2f(1.0f));
-	child->Update(dp_ratio, vp_dimensions);
+	UpdateScrollElementProperties(child);
 
 	return true;
 }
@@ -244,9 +239,24 @@ bool ElementScroll::CreateCorner()
 
 	ElementPtr corner_element = Factory::InstanceElement(element, "*", "scrollbarcorner", XMLAttributes());
 	corner = corner_element.get();
-	element->AppendChild(std::move(corner_element), false);
+	Element* child = element->AppendChild(std::move(corner_element), false);
+
+	UpdateScrollElementProperties(child);
 
 	return true;
+}
+
+void ElementScroll::UpdateScrollElementProperties(Element* scroll_element)
+{
+	// The construction of scrollbars can occur during layouting, then we need some properties and computed values straight away.
+	// In particular their size. Furthermore, updating these properties straight away avoids dirtying the document after layouting,
+	// which may result in one less additional and unnecessary layouting procedure.
+
+	Context* context = element->GetContext();
+
+	const float dp_ratio = (context ? context->GetDensityIndependentPixelRatio() : 1.0f);
+	const Vector2f vp_dimensions = (context ? Vector2f(context->GetDimensions()) : Vector2f(1.0f));
+	scroll_element->Update(dp_ratio, vp_dimensions);
 }
 
 ElementScroll::Scrollbar::Scrollbar()
