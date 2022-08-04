@@ -41,6 +41,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
+#include "../Input/InputManager.h"
 #include "../Input/FreeFlyController.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
@@ -231,6 +232,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
+	context_->RegisterSubsystem(new InputManager(context_));
     context_->RegisterFactory<FreeFlyController>();
 
     context_->RegisterSubsystem(new UI(context_));
