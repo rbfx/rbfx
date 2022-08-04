@@ -131,4 +131,5 @@ private:
 
     bool drawDebug_;
     DirectionalPadAdapter dPadAdapter_;
+    PatternQuery characterPattern_;
 };

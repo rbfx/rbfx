@@ -541,7 +541,7 @@ Vector3 AdvancedNetworking::GetAimPosition(const Vector3& playerPosition, const 
 
         if (closestModel)
         {
-            Node* aimNode = closestModel->GetSkeleton().GetBone("Mutant:RightHandIndex2")->node_;
+            Node* aimNode = closestModel->GetSkeleton().GetBone("mixamorig:RightHandIndex2")->node_;
             return aimNode->GetWorldPosition();
         }
     }

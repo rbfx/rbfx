@@ -524,8 +524,16 @@ public:
 %include "Urho3D/Scene/TrackedComponent.h"
 %include "Urho3D/Scene/PrefabReference.h"
 
-// --------------------------------------- Extra components ---------------------------------------
+// --------------------------------------- Extra components and resources --------------
 %include "Urho3D/Input/FreeFlyController.h"
+// --------------------------------------- Pattern matching --------------
+%ignore Urho3D::PatternIndex::Build(const PatternCollection** begin, const PatternCollection** end);
+%include "Urho3D/PatternMatching/PatternCollection.h"
+%include "Urho3D/PatternMatching/PatternDatabase.h"
+%include "Urho3D/PatternMatching/PatternIndex.h"
+%include "Urho3D/PatternMatching/PatternQuery.h"
+%include "Urho3D/PatternMatching/CharacterConfiguration.h"
+%include "Urho3D/PatternMatching/CharacterConfigurator.h"
 
 // --------------------------------------- Audio ---------------------------------------
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);

@@ -43,6 +43,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Graphics/Animation.h>
 
 #include "KinematicCharacter.h"
 #include "KinematicCharacterDemo.h"
@@ -184,19 +185,19 @@ void KinematicCharacterDemo::CreateCharacter()
     Node* objectNode = scene_->CreateChild("Jack");
     objectNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
 
-    // spin node
-    Node* adjustNode = objectNode->CreateChild("AdjNode");
-    adjustNode->SetRotation( Quaternion(180, Vector3(0,1,0) ) );
+    auto conf = cache->GetResource<CharacterConfiguration>("Models/Mutant/Character.xml");
+    CharacterConfigurator* configurator = objectNode->CreateComponent<CharacterConfigurator>();
+    configurator->SetSecondaryMaterial(cache->GetResource<Material>("Models/Mutant/Materials/mutantSilhouette.xml"));
+    configurator->SetConfiguration(conf);
+    configurator->Update(characterPattern_);
 
     // Create the rendering component + animation controller
-    auto* object = adjustNode->CreateComponent<AnimatedModel>();
-    object->SetModel(cache->GetResource<Model>("Models/Mutant/Mutant.mdl"));
-    object->SetMaterial(cache->GetResource<Material>("Models/Mutant/Materials/mutant_M.xml"));
-    object->SetCastShadows(true);
-    adjustNode->CreateComponent<AnimationController>();
+    auto* object = objectNode->GetComponent<AnimatedModel>(true);
 
     // Set the head bone for manual control
-    object->GetSkeleton().GetBone("Mutant:Head")->animated_ = false;
+    auto* headBone = object->GetSkeleton().GetBone("mixamorig:Head");
+    if (headBone)
+        headBone->animated_ = false;
 
     // Create rigidbody
     auto* body = objectNode->CreateComponent<RigidBody>();
@@ -292,15 +293,17 @@ void KinematicCharacterDemo::Update(float timeStep)
                 for (unsigned i = 0; i < input->GetNumTouches(); ++i)
                 {
                     TouchState* state = input->GetTouch(i);
-                    if (!state->touchedElement_)    // Touch on empty space
+                    if (!state->touchedElement_) // Touch on empty space
                     {
                         auto* camera = cameraNode_->GetComponent<Camera>();
                         if (!camera)
                             return;
 
                         auto* graphics = GetSubsystem<Graphics>();
-                        character_->controls_.yaw_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
-                        character_->controls_.pitch_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
+                        character_->controls_.yaw_ +=
+                            TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
+                        character_->controls_.pitch_ +=
+                            TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
                     }
                 }
             }
@@ -325,15 +328,17 @@ void KinematicCharacterDemo::Update(float timeStep)
             // Check for loading / saving the scene
             if (input->GetKeyPress(KEY_F5))
             {
-                File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml", FILE_WRITE);
+                File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml",
+                    FILE_WRITE);
                 scene_->SaveXML(saveFile);
             }
             if (input->GetKeyPress(KEY_F7))
             {
-                File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml", FILE_READ);
+                File loadFile(
+                    context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml", FILE_READ);
                 scene_->LoadXML(loadFile);
-                // After loading we have to reacquire the weak pointer to the Character component, as it has been recreated
-                // Simply find the character's scene node by name as there's only one of them
+                // After loading we have to reacquire the weak pointer to the Character component, as it has been
+                // recreated Simply find the character's scene node by name as there's only one of them
                 Node* characterNode = scene_->GetChild("Jack", true);
                 if (characterNode)
                     character_ = characterNode->GetComponent<KinematicCharacter>();
@@ -364,12 +369,15 @@ void KinematicCharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& 
     Quaternion dir = rot * Quaternion(character_->controls_.pitch_, Vector3::RIGHT);
 
     // Turn head to camera pitch, but limit to avoid unnatural animation
-    Node* headNode = characterNode->GetChild("Mutant:Head", true);
-    float limitPitch = Clamp(character_->controls_.pitch_, -45.0f, 45.0f);
-    Quaternion headDir = rot * Quaternion(limitPitch, Vector3(1.0f, 0.0f, 0.0f));
-    // This could be expanded to look at an arbitrary target, now just look at a point in front
-    Vector3 headWorldTarget = headNode->GetWorldPosition() + headDir * Vector3(0.0f, 0.0f, -1.0f);
-    headNode->LookAt(headWorldTarget, Vector3(0.0f, 1.0f, 0.0f));
+    Node* headNode = characterNode->GetChild("mixamorig:Head", true);
+    if (headNode)
+    {
+        float limitPitch = Clamp(character_->controls_.pitch_, -45.0f, 45.0f);
+        Quaternion headDir = rot * Quaternion(limitPitch, Vector3(1.0f, 0.0f, 0.0f));
+        // This could be expanded to look at an arbitrary target, now just look at a point in front
+        Vector3 headWorldTarget = headNode->GetWorldPosition() + headDir * Vector3(0.0f, 0.0f, -1.0f);
+        headNode->LookAt(headWorldTarget, Vector3(0.0f, 1.0f, 0.0f));
+    }
 
     if (firstPerson_)
     {

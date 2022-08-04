@@ -1,0 +1,2 @@
+<?xml version="1.0"?>
+<character model="Model;Models/Mutant/Mutant.mdl" material="Material;Models/Mutant/Materials/mutant_M.xml" parent="PatternDatabase;Models/Mutant/States.xml" />

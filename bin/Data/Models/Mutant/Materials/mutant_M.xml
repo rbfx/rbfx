@@ -6,4 +6,5 @@
 	<parameter name="MatDiffColor" value="1 1 1 1" />
 	<parameter name="MatSpecColor" value="0.2 0.2 0.2 6.15385" />
 	<parameter name="MatEmissiveColor" value="0 0 0 1" />
+        <renderorder value="130" />
 </material>

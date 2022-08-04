@@ -163,6 +163,8 @@ protected:
     void SaveMetadataToXML(XMLElement& destination) const;
     /// Copy metadata from another resource.
     void CopyMetadata(const ResourceWithMetadata& source);
+    /// Serialize metadata from/to archive. May throw ArchiveException.
+    void SerializeInArrayBlock(Archive& archive, const char* blockName);
 
 private:
     /// Animation metadata variables.

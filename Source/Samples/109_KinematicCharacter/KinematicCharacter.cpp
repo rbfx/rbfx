@@ -31,7 +31,6 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Math/Ray.h>
-#include <Urho3D/IO/Log.h>
 #include <Urho3D/DebugNew.h>
 
 #include "KinematicCharacter.h"
@@ -65,6 +64,7 @@ void KinematicCharacter::RegisterObject(Context* context)
 void KinematicCharacter::DelayedStart()
 {
     collisionShape_ = node_->GetComponent<CollisionShape>(true);
+    characterConfigurator_ = node_->GetComponent<CharacterConfigurator>(true);
     animController_ = node_->GetComponent<AnimationController>(true);
     kinematicController_ = node_->GetComponent<KinematicCharacterController>(true);
 }
@@ -76,10 +76,7 @@ void KinematicCharacter::Start()
 
 void KinematicCharacter::FixedUpdate(float timeStep)
 {
-    auto* cache = GetSubsystem<ResourceCache>();
-    auto* runAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani");
-    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani");
-    auto* jumpAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Jump1.ani");
+    auto* characterConf = node_->GetComponent<CharacterConfigurator>();
 
     // Update the in air timer. Reset if grounded
     if (!onGround_)
@@ -118,7 +115,8 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         moveDir.Normalize();
 
     // rotate movedir
-    Vector3 velocity = rot * moveDir;
+    const float linearSpeed = characterConfigurator_->GetLinearVelocity().Length();
+    const Vector3 velocity = rot * moveDir * linearSpeed;
     if (onGround_)
     {
         curMoveDir_ = velocity;
@@ -128,7 +126,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         curMoveDir_ = curMoveDir_.Lerp(velocity, 0.03f);
     }
 
-    kinematicController_->SetWalkIncrement(curMoveDir_ * (softGrounded ? MOVE_FORCE : INAIR_MOVE_FORCE));
+    kinematicController_->SetWalkIncrement(curMoveDir_ * timeStep);
 
     if (softGrounded)
     {
@@ -154,34 +152,23 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         }
     }
 
-    if (onGround_)
-    {
-        // Play walk animation if moving on ground, otherwise fade it out
-        if ((softGrounded) && !moveDir.Equals(Vector3::ZERO))
-        {
-            animController_->PlayExistingExclusive(AnimationParameters{runAnimation}.Looped(), 0.2f);
-        }
-        else
-        {
-            animController_->PlayExistingExclusive(AnimationParameters{idleAnimation}.Looped(), 0.2f);
-        }
-    }
-    else if (jumpStarted_)
-    {
-        animController_->PlayNewExclusive(AnimationParameters{jumpAnimation}.KeepOnCompletion(), 0.2f);
-        jumpStarted_ = false;
-    }
+    characterPattern_.SetKey("OnGround", onGround_ ? 1.0f : 0.0f);
+    if (moveDir.Equals(Vector3::ZERO))
+        characterPattern_.RemoveKey("Run");
     else
+        characterPattern_.SetKey("Run");
+    if (controls_.IsDown(CTRL_LEFT))
+        characterPattern_.SetKey("Left");
+    else
+        characterPattern_.RemoveKey("Left");
+    if (controls_.IsDown(CTRL_RIGHT))
+        characterPattern_.SetKey("Right");
+    else
+        characterPattern_.RemoveKey("Right");
+
+    if (characterPattern_.Commit())
     {
-        const float maxDistance = 50.0f;
-        const float segmentDistance = 10.01f;
-        PhysicsRaycastResult result;
-        GetScene()->GetComponent<PhysicsWorld>()->RaycastSingleSegmented(result, Ray(node_->GetPosition(), Vector3::DOWN),
-                                                                         maxDistance, segmentDistance, 0xffff);
-        if (result.body_ && result.distance_ > 0.7f )
-        {
-            animController_->PlayExistingExclusive(AnimationParameters{jumpAnimation}.KeepOnCompletion(), 0.2f);
-        }
+        characterConf->Update(characterPattern_);
     }
 }
 

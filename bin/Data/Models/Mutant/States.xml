@@ -1,0 +1,210 @@
+<?xml version="1.0"?>
+<character>
+	<states>
+		<pattern name="Idle">
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Idle.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern name="SwordIdle">
+			<predicate>
+				<key word="Sword" />
+				<key word="OnGround" min="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/SwordAndShield/Mutant_Idle.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern name="Run">
+			<predicate>
+				<key word="Run" />
+				<key word="OnGround" min="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Run.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern name="SwordRun">
+			<predicate>
+				<key word="Sword" />
+				<key word="Run" />
+				<key word="OnGround" min="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/SwordAndShield/Mutant_Run.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern name="RunLeft">
+			<predicate>
+				<key word="Run" />
+				<key word="Left" />
+				<key word="OnGround" min="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_RunLeft.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern name="SwordRunLeft">
+			<predicate>
+				<key word="Sword" />
+				<key word="Run" />
+				<key word="Left" />
+				<key word="OnGround" min="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/SwordAndShield/Mutant_RunLeft.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern name="RunRight">
+			<predicate>
+				<key word="Run" />
+				<key word="Right" />
+				<key word="OnGround" min="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_RunRight.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern name="SwordRunRight">
+			<predicate>
+				<key word="Sword" />
+				<key word="Run" />
+				<key word="Right" />
+				<key word="OnGround" min="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/SwordAndShield/Mutant_RunRight.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern name="InAir">
+			<predicate>
+				<key word="OnGround" max="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="looped" type="Bool" value="true" />
+						<element key="existing" type="Bool" value="false" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Jump.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+	</states>
+	<bodyParts>
+		<part name="Sword" bone="mixamorig:RightHand" static="true">
+			<variants >
+				<pattern>
+					<events>
+						<event name="SetModel">
+						</event>
+					</events>
+				</pattern>
+				<pattern>
+					<predicate>
+						<key word="Sword" />
+					</predicate>
+					<events>
+						<event name="SetModel">
+							<args>
+								<element key="model" type="ResourceRef" value="Model;Models/Box.mdl" />
+								<element key="scale" type="Vector3" value="1 0.1 0.01" />
+								<element key="position" type="Vector3" value="-0.5 0 0" />
+							</args>
+						</event>
+					</events>
+				</pattern>
+			</variants>
+		</part>
+		<part name="Shield" bone="mixamorig:LeftForeArm" static="true">
+			<variants >
+				<pattern>
+					<events>
+						<event name="SetModel">
+						</event>
+					</events>
+				</pattern>
+				<pattern>
+					<predicate>
+						<key word="Shield" />
+					</predicate>
+					<events>
+						<event name="SetModel">
+							<args>
+								<element key="model" type="ResourceRef" value="Model;Models/Sphere.mdl" />
+								<element key="scale" type="Vector3" value="0.8 0.8 0.02" />
+								<element key="position" type="Vector3" value="0 0.4 -0.15" />
+							</args>
+						</event>
+					</events>
+				</pattern>
+			</variants>
+		</part>
+	</bodyParts>
+</character>

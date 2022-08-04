@@ -24,6 +24,7 @@
 
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Scene/LogicComponent.h>
+#include <Urho3D/PatternMatching/CharacterConfigurator.h>
 
 namespace Urho3D
 {
@@ -42,10 +43,6 @@ const unsigned CTRL_RIGHT = 8;
 const unsigned CTRL_JUMP = 16;
 const unsigned CTRL_CROUCH = 32;
 
-const float MOVE_FORCE = 0.2f;
-const float INAIR_MOVE_FORCE = 0.2f;
-const float BRAKE_FORCE = 0.2f;
-const float JUMP_FORCE = 7.0f;
 const float YAW_SENSITIVITY = 0.1f;
 const float INAIR_THRESHOLD_TIME = 0.1f;
 
@@ -121,8 +118,11 @@ protected:
     bool jumpStarted_;
 
     WeakPtr<CollisionShape> collisionShape_;
+    WeakPtr<CharacterConfigurator> characterConfigurator_;
     WeakPtr<AnimationController> animController_;
     WeakPtr<KinematicCharacterController> kinematicController_;
+
+    PatternQuery characterPattern_;
 
     // moving platform data
     MovingData movingData_[2];

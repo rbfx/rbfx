@@ -142,6 +142,9 @@
 #endif
 #include "111_SplashScreen/SplashScreenDemo.h"
 #include "112_AggregatedInput/AggregatedInput.h"
+#if URHO3D_SYSTEMUI
+#include "113_PatternMatching/PatternMatchingDemo.h"
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -381,6 +384,9 @@ void SamplesManager::Start()
 #endif
     RegisterSample<SplashScreenDemo>();
     RegisterSample<AggregatedInput>();
+#if URHO3D_SYSTEMUI
+    RegisterSample<PatternMatchingDemo>();
+#endif
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
