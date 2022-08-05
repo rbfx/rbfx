@@ -50,6 +50,7 @@
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::VariantVector), VariantVector, GetVariantVector, SetVariantVector);
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::StringVector), StringVector, GetStringVector, SetStringVector);
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::VariantMap), VariantMap, GetVariantMap, SetVariantMap);
+%csattribute(Urho3D::XMLElement, %arg(Urho3D::StringVariantMap), StringVariantMap, GetStringVariantMap, SetStringVariantMap);
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::XMLFile *), File, GetFile);
 %csattribute(Urho3D::XMLElement, %arg(pugi::xml_node_struct *), Node, GetNode);
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::XPathResultSet *), XPathResultSet, GetXPathResultSet);

@@ -333,6 +333,9 @@ namespace SDL
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
 
+%include "generated/Urho3D/_pre_plugins.i"
+%include "generated/Urho3D/_pre_utility.i"
+
 %include "generated/Urho3D/_pre_core.i"
 %include "Urho3D/Core/Variant.h"
 %include "Urho3D/Core/Attribute.h"
