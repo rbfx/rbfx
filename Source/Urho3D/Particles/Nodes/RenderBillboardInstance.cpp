@@ -20,14 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
+#include "../../Precompiled.h"
+
 #include "RenderBillboardInstance.h"
 
 #include "../../Graphics/Camera.h"
 #include "../../Graphics/Octree.h"
 #include "../../Scene/Scene.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
 #include "Urho3D/Resource/ResourceCache.h"
 
 namespace Urho3D
@@ -70,7 +72,7 @@ RenderBillboardInstance::~RenderBillboardInstance()
 }
 
 void RenderBillboardInstance::Prepare(unsigned numParticles)
-{ 
+{
     auto* renderBillboard = static_cast<RenderBillboard*>(GetGraphNode());
 
     if (!renderBillboard->GetIsWorldspace())

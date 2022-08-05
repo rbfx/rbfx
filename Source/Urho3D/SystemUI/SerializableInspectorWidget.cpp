@@ -20,12 +20,14 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../SystemUI/SerializableInspectorWidget.h"
 
 #include "../Scene/Component.h"
 #include "../Scene/Node.h"
-#include "../SystemUI/Widgets.h"
 #include "../SystemUI/SystemUI.h"
+#include "../SystemUI/Widgets.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 

@@ -99,7 +99,7 @@ public:
     /// Move-assign from another shared pointer.
     SharedPtr<T>& operator =(SharedPtr<T>&& rhs)
     {
-        SharedPtr<T> copy(std::move(rhs));
+        SharedPtr<T> copy(ea::move(rhs));
         Swap(copy);
 
         return *this;
@@ -353,7 +353,7 @@ public:
     /// Move-assign from another weak pointer.
     WeakPtr<T>& operator =(WeakPtr<T>&& rhs)
     {
-        WeakPtr<T> copy(std::move(rhs));
+        WeakPtr<T> copy(ea::move(rhs));
         Swap(copy);
 
         return *this;

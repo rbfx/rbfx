@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Graphics/Model.h"
 #include "../Graphics/ModelView.h"
 #include "../Graphics/StaticModel.h"

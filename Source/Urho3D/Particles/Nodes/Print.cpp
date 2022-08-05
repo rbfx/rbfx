@@ -20,22 +20,22 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
 
 #include "Print.h"
-#include "../ParticleGraphSystem.h"
-#include "../../IO/Log.h"
 
+#include "../../IO/Log.h"
 #include "../Helpers.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-namespace 
+namespace
 {
     template <typename T>
     void LogSpan(LogLevel level, unsigned numParticles, T span)

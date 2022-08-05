@@ -26,6 +26,7 @@
 #include "../Project/EditorTab.h"
 
 #include <atomic>
+#include <functional>
 
 namespace tracy { struct View; }
 

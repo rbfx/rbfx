@@ -20,13 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/Log.h"
-#include "../IO/File.h"
+#include "../Precompiled.h"
+
 #include "../Plugins/DynamicModule.h"
 
+#include "../IO/File.h"
+#include "../IO/Log.h"
 #if URHO3D_CSHARP
 #   include "../Script/Script.h"
 #endif
+
 #if _WIN32
 #   include <windows.h>
 #else

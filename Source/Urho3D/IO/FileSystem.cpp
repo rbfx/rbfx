@@ -1129,7 +1129,7 @@ TemporaryDir::~TemporaryDir()
 
 TemporaryDir::TemporaryDir(TemporaryDir&& rhs)
 {
-    *this = std::move(rhs);
+    *this = ea::move(rhs);
 }
 
 TemporaryDir& TemporaryDir::operator=(TemporaryDir&& rhs)

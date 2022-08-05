@@ -24,13 +24,11 @@
 
 #include "ParticleGraphNode.h"
 
+#include "../IO/ArchiveSerialization.h"
+#include "../IO/Log.h"
 #include "ParticleGraph.h"
 #include "ParticleGraphPin.h"
 #include "ParticleGraphSystem.h"
-
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/Log.h"
-
 
 namespace Urho3D
 {

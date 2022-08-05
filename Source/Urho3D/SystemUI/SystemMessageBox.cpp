@@ -21,13 +21,16 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
+#include "SystemMessageBox.h"
+
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Graphics/Graphics.h"
 #include "../IO/Log.h"
-#include "SystemUIEvents.h"
 #include "SystemUI.h"
-#include "SystemMessageBox.h"
+#include "SystemUIEvents.h"
 
 namespace Urho3D
 {

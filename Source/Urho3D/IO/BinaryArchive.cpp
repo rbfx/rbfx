@@ -20,7 +20,10 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../IO/BinaryArchive.h"
+
 #include "../Core/Assert.h"
 
 #include <cassert>

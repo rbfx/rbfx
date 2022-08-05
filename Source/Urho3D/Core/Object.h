@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include <EASTL/intrusive_list.h>
-
 #include "../Container/Allocator.h"
 #include "../Core/Mutex.h"
 #include "../Core/ObjectCategory.h"
@@ -31,8 +29,9 @@
 #include "../Core/StringHashRegister.h"
 #include "../Core/SubsystemCache.h"
 #include "../Core/Variant.h"
-#include <functional>
-#include <utility>
+
+#include <EASTL/functional.h>
+#include <EASTL/intrusive_list.h>
 
 namespace Urho3D
 {
@@ -130,9 +129,9 @@ public:
     /// Subscribe to a specific sender's event.
     void SubscribeToEvent(Object* sender, StringHash eventType, EventHandler* handler);
     /// Subscribe to an event that can be sent by any sender.
-    void SubscribeToEvent(StringHash eventType, const std::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
+    void SubscribeToEvent(StringHash eventType, const ea::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
     /// Subscribe to a specific sender's event.
-    void SubscribeToEvent(Object* sender, StringHash eventType, const std::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
+    void SubscribeToEvent(Object* sender, StringHash eventType, const ea::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
     /// Subscribe to an event that can be sent by any sender.
     template<typename T>
     void SubscribeToEvent(StringHash eventType, void(T::*handler)(StringHash, VariantMap&));
@@ -317,15 +316,15 @@ private:
     HandlerFunctionPtr function_;
 };
 
-/// Template implementation of the event handler invoke helper (std::function instance).
+/// Template implementation of the event handler invoke helper (ea::function instance).
 /// @nobind
 class EventHandler11Impl : public EventHandler
 {
 public:
     /// Construct with receiver and function pointers and userdata.
-    explicit EventHandler11Impl(std::function<void(StringHash, VariantMap&)> function, void* userData = nullptr) :
+    explicit EventHandler11Impl(ea::function<void(StringHash, VariantMap&)> function, void* userData = nullptr) :
         EventHandler(nullptr, userData),
-        function_(std::move(function))
+        function_(ea::move(function))
     {
         assert(function_);
     }
@@ -344,7 +343,7 @@ public:
 
 private:
     /// Class-specific pointer to handler function.
-    std::function<void(StringHash, VariantMap&)> function_;
+    ea::function<void(StringHash, VariantMap&)> function_;
 };
 
 template<typename T>

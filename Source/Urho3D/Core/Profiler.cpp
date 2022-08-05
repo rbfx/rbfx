@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include <stdint.h>
 
 #if URHO3D_PROFILING

@@ -22,6 +22,8 @@
 
 /// \file
 
+#include "../Precompiled.h"
+
 #include "../Glow/BakedLightCache.h"
 
 namespace Urho3D

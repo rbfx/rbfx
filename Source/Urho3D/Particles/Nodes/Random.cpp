@@ -22,19 +22,19 @@
 
 #include "../../Precompiled.h"
 
-#include "../ParticleGraphSystem.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../ParticleGraphNodeInstance.h"
-#include "../UpdateContext.h"
 #include "Random.h"
 
 #include "../Helpers.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../ParticleGraphNodeInstance.h"
+#include "../ParticleGraphSystem.h"
+#include "../UpdateContext.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-namespace 
+namespace
 {
 template <typename T>
 struct Generate

@@ -21,6 +21,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Engine/StateManager.h"
 #include "../Engine/StateManagerEvents.h"
 #include "../Core/CoreEvents.h"

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Scene/TrackedComponent.h"
 
 #include "../Core/Assert.h"

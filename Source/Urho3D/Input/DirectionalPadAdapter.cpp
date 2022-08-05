@@ -20,7 +20,10 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Input/DirectionalPadAdapter.h"
+
 #include "../Core/Context.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
@@ -231,7 +234,7 @@ void DirectionalPadAdapter::HandleJoystickAxisMove(StringHash eventType, Variant
     auto joystickId = args[P_JOYSTICKID].GetInt();
     if (joystickId == ignoreJoystickId_)
         return;
-    
+
     auto eventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickAxis) + joystickId);
 
     auto axisIndex = args[P_AXIS].GetUInt();

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Glow/BakedSceneChunk.h"
 #include "../Glow/Helpers.h"
 #include "../Glow/RaytracerScene.h"
@@ -92,7 +94,7 @@ void GetBasis(const Vector3& e3, Vector3& e1, Vector3& e2)
 /// Generate a cosine-weighted hemisphere direction sample.
 Vector3 RandomHemisphereDirectionCos(const Vector3& normal)
 {
-    const float pi2 = 2.0f * M_PI;  
+    const float pi2 = 2.0f * M_PI;
     float fi = Random() * pi2;
     // Hope the compiler uses sincos if available.
     float sfi = sin(fi);

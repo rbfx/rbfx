@@ -159,7 +159,7 @@ void Application::ErrorExit(const ea::string& message)
     engine_->Exit(); // Close the rendering window
     exitCode_ = EXIT_FAILURE;
 
-    std::function<void(const ea::string&)> showError;
+    ea::function<void(const ea::string&)> showError;
     if (engineParameters_[EP_HEADLESS].GetBool())
     {
         showError = [this](const ea::string& message)

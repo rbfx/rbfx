@@ -23,12 +23,12 @@
 #include "../Precompiled.h"
 
 #include "ParticleGraphLayer.h"
+
+#include "../IO/Log.h"
+#include "../Scene/Serializable.h"
 #include "ParticleGraph.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphPin.h"
-
-#include "../Scene/Serializable.h"
-#include "../IO/Log.h"
 
 namespace Urho3D
 {

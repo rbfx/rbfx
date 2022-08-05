@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Graphics/OutlineGroup.h"
 #include "../RenderPipeline/ShaderConsts.h"
 #include "../Scene/Scene.h"

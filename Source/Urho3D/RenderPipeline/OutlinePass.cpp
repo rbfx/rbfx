@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../RenderPipeline/OutlinePass.h"
 
 #include "../RenderPipeline/BatchRenderer.h"

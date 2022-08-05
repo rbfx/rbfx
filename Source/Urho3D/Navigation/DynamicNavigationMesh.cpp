@@ -20,10 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include <EASTL/shared_array.h>
-
 #include "../Precompiled.h"
 
+#include "../Navigation/DynamicNavigationMesh.h"
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
@@ -31,7 +30,6 @@
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
 #include "../Navigation/CrowdAgent.h"
-#include "../Navigation/DynamicNavigationMesh.h"
 #include "../Navigation/NavArea.h"
 #include "../Navigation/NavBuildData.h"
 #include "../Navigation/NavigationEvents.h"
@@ -41,12 +39,14 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 
-#include <LZ4/lz4.h>
 #include <Detour/DetourNavMesh.h>
 #include <Detour/DetourNavMeshBuilder.h>
 #include <DetourTileCache/DetourTileCache.h>
 #include <DetourTileCache/DetourTileCacheBuilder.h>
+#include <LZ4/lz4.h>
 #include <Recast/Recast.h>
+
+#include <EASTL/shared_array.h>
 
 // DebugNew is deliberately not used because the macro 'free' conflicts with DetourTileCache's LinearAllocator interface
 //#include "../DebugNew.h"

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../SystemUI/TransformGizmo.h"
 
 #include <Urho3D/Graphics/Camera.h>

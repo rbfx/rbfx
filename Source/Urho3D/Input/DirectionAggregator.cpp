@@ -20,11 +20,15 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Input/DirectionAggregator.h"
+
 #include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
+
 #include <SDL.h>
 
 namespace Urho3D

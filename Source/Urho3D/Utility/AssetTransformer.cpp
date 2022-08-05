@@ -20,10 +20,13 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
+#include "../Utility/AssetTransformer.h"
+
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/Base64Archive.h"
 #include "../IO/Log.h"
-#include "../Utility/AssetTransformer.h"
 
 #include <EASTL/sort.h>
 #include <EASTL/unordered_set.h>

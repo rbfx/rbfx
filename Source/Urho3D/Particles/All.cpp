@@ -20,8 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "ParticleGraphSystem.h"
+#include "../Precompiled.h"
+
 #include "All.h"
+
+#include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Core/Context.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../IK/IKConverters.h"
