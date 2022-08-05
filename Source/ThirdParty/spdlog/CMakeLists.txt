@@ -19,13 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-# spdlog is patched to use EASTL. Do following when upgrading the library:
-# Run:
-#   find . -name "*.h" | xargs sed -i "s/std::string/eastl::string/"
-#   find . -name "*.h" | xargs sed -i "s/std::to_string/eastl::to_string/"
-#   find . -name "*.h" | xargs sed -i "s/std::unordered_map/eastl::unordered_map/"
-#   find . -name "*.h" | xargs sed -i "s|<unordered_map>|<EASTL/unordered_map.h>|"
-#
+
 add_library(spdlog INTERFACE)
 target_include_directories(spdlog INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_link_libraries(spdlog INTERFACE fmt)

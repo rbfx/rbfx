@@ -4,12 +4,12 @@
 #pragma once
 
 #ifndef SPDLOG_HEADER_ONLY
-#include "spdlog/logger.h"
+#    include <spdlog/logger.h>
 #endif
 
-#include "spdlog/sinks/sink.h"
-#include "spdlog/details/backtracer.h"
-#include "spdlog/details/pattern_formatter.h"
+#include <spdlog/sinks/sink.h>
+#include <spdlog/details/backtracer.h>
+#include <spdlog/pattern_formatter.h>
 
 #include <cstdio>
 
@@ -64,11 +64,6 @@ SPDLOG_INLINE void swap(logger &a, logger &b)
     a.swap(b);
 }
 
-SPDLOG_INLINE bool logger::should_log(level::level_enum msg_level) const
-{
-    return msg_level >= level_.load(std::memory_order_relaxed);
-}
-
 SPDLOG_INLINE void logger::set_level(level::level_enum log_level)
 {
     level_.store(log_level);
@@ -79,13 +74,13 @@ SPDLOG_INLINE level::level_enum logger::level() const
     return static_cast<level::level_enum>(level_.load(std::memory_order_relaxed));
 }
 
-SPDLOG_INLINE const eastl::string &logger::name() const
+SPDLOG_INLINE const std::string &logger::name() const
 {
     return name_;
 }
 
 // set formatting for the sinks in this logger.
-// each sink will get a seperate instance of the formatter object.
+// each sink will get a separate instance of the formatter object.
 SPDLOG_INLINE void logger::set_formatter(std::unique_ptr<formatter> f)
 {
     for (auto it = sinks_.begin(); it != sinks_.end(); ++it)
@@ -94,6 +89,7 @@ SPDLOG_INLINE void logger::set_formatter(std::unique_ptr<formatter> f)
         {
             // last element - we can be move it.
             (*it)->set_formatter(std::move(f));
+            break; // to prevent clang-tidy warning
         }
         else
         {
@@ -102,7 +98,7 @@ SPDLOG_INLINE void logger::set_formatter(std::unique_ptr<formatter> f)
     }
 }
 
-SPDLOG_INLINE void logger::set_pattern(eastl::string pattern, pattern_time_type time_type)
+SPDLOG_INLINE void logger::set_pattern(std::string pattern, pattern_time_type time_type)
 {
     auto new_formatter = details::make_unique<pattern_formatter>(std::move(pattern), time_type);
     set_formatter(std::move(new_formatter));
@@ -155,11 +151,11 @@ SPDLOG_INLINE std::vector<sink_ptr> &logger::sinks()
 // error handler
 SPDLOG_INLINE void logger::set_error_handler(err_handler handler)
 {
-    custom_err_handler_ = handler;
+    custom_err_handler_ = std::move(handler);
 }
 
 // create new logger with same sinks and configuration.
-SPDLOG_INLINE std::shared_ptr<logger> logger::clone(eastl::string logger_name)
+SPDLOG_INLINE std::shared_ptr<logger> logger::clone(std::string logger_name)
 {
     auto cloned = std::make_shared<logger>(*this);
     cloned->name_ = std::move(logger_name);
@@ -167,6 +163,18 @@ SPDLOG_INLINE std::shared_ptr<logger> logger::clone(eastl::string logger_name)
 }
 
 // protected methods
+SPDLOG_INLINE void logger::log_it_(const spdlog::details::log_msg &log_msg, bool log_enabled, bool traceback_enabled)
+{
+    if (log_enabled)
+    {
+        sink_it_(log_msg);
+    }
+    if (traceback_enabled)
+    {
+        tracer_.push_back(log_msg);
+    }
+}
+
 SPDLOG_INLINE void logger::sink_it_(const details::log_msg &msg)
 {
     for (auto &sink : sinks_)
@@ -177,7 +185,7 @@ SPDLOG_INLINE void logger::sink_it_(const details::log_msg &msg)
             {
                 sink->log(msg);
             }
-            SPDLOG_LOGGER_CATCH()
+            SPDLOG_LOGGER_CATCH(msg.source)
         }
     }
 
@@ -195,14 +203,14 @@ SPDLOG_INLINE void logger::flush_()
         {
             sink->flush();
         }
-        SPDLOG_LOGGER_CATCH()
+        SPDLOG_LOGGER_CATCH(source_loc())
     }
 }
 
 SPDLOG_INLINE void logger::dump_backtrace_()
 {
     using details::log_msg;
-    if (tracer_)
+    if (tracer_.enabled())
     {
         sink_it_(log_msg{name(), level::info, "****************** Backtrace Start ******************"});
         tracer_.foreach_pop([this](const log_msg &msg) { this->sink_it_(msg); });
@@ -216,7 +224,7 @@ SPDLOG_INLINE bool logger::should_flush_(const details::log_msg &msg)
     return (msg.level >= flush_level) && (msg.level != level::off);
 }
 
-SPDLOG_INLINE void logger::err_handler_(const eastl::string &msg)
+SPDLOG_INLINE void logger::err_handler_(const std::string &msg)
 {
     if (custom_err_handler_)
     {
@@ -239,7 +247,11 @@ SPDLOG_INLINE void logger::err_handler_(const eastl::string &msg)
         auto tm_time = details::os::localtime(system_clock::to_time_t(now));
         char date_buf[64];
         std::strftime(date_buf, sizeof(date_buf), "%Y-%m-%d %H:%M:%S", &tm_time);
-        fprintf(stderr, "[*** LOG ERROR #%04zu ***] [%s] [%s] {%s}\n", err_counter, date_buf, name().c_str(), msg.c_str());
+#if defined(USING_R) && defined(R_R_H) // if in R environment
+        REprintf("[*** LOG ERROR #%04zu ***] [%s] [%s] {%s}\n", err_counter, date_buf, name().c_str(), msg.c_str());
+#else
+        std::fprintf(stderr, "[*** LOG ERROR #%04zu ***] [%s] [%s] {%s}\n", err_counter, date_buf, name().c_str(), msg.c_str());
+#endif
     }
 }
 } // namespace spdlog
