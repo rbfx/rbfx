@@ -77,28 +77,28 @@ void Frustum::Define(float fov, float aspectRatio, float zoom, float nearZ, floa
     nearZ = Max(nearZ, 0.0f);
     farZ = Max(farZ, nearZ);
     float halfViewSize = tanf(fov * M_DEGTORAD_2) / zoom;
-    Vector3 near, far;
+    Vector3 nearSize, farSize;
 
-    near.z_ = nearZ;
-    near.y_ = near.z_ * halfViewSize;
-    near.x_ = near.y_ * aspectRatio;
-    far.z_ = farZ;
-    far.y_ = far.z_ * halfViewSize;
-    far.x_ = far.y_ * aspectRatio;
+    nearSize.z_ = nearZ;
+    nearSize.y_ = nearSize.z_ * halfViewSize;
+    nearSize.x_ = nearSize.y_ * aspectRatio;
+    farSize.z_ = farZ;
+    farSize.y_ = farSize.z_ * halfViewSize;
+    farSize.x_ = farSize.y_ * aspectRatio;
 
-    Define(near, far, transform);
+    Define(nearSize, farSize, transform);
 }
 
-void Frustum::Define(const Vector3& near, const Vector3& far, const Matrix3x4& transform)
+void Frustum::Define(const Vector3& nearSize, const Vector3& farSize, const Matrix3x4& transform)
 {
-    vertices_[0] = transform * near;
-    vertices_[1] = transform * Vector3(near.x_, -near.y_, near.z_);
-    vertices_[2] = transform * Vector3(-near.x_, -near.y_, near.z_);
-    vertices_[3] = transform * Vector3(-near.x_, near.y_, near.z_);
-    vertices_[4] = transform * far;
-    vertices_[5] = transform * Vector3(far.x_, -far.y_, far.z_);
-    vertices_[6] = transform * Vector3(-far.x_, -far.y_, far.z_);
-    vertices_[7] = transform * Vector3(-far.x_, far.y_, far.z_);
+    vertices_[0] = transform * nearSize;
+    vertices_[1] = transform * Vector3(nearSize.x_, -nearSize.y_, nearSize.z_);
+    vertices_[2] = transform * Vector3(-nearSize.x_, -nearSize.y_, nearSize.z_);
+    vertices_[3] = transform * Vector3(-nearSize.x_, nearSize.y_, nearSize.z_);
+    vertices_[4] = transform * farSize;
+    vertices_[5] = transform * Vector3(farSize.x_, -farSize.y_, farSize.z_);
+    vertices_[6] = transform * Vector3(-farSize.x_, -farSize.y_, farSize.z_);
+    vertices_[7] = transform * Vector3(-farSize.x_, farSize.y_, farSize.z_);
 
     UpdatePlanes();
 }
@@ -138,34 +138,34 @@ void Frustum::DefineOrtho(float orthoSize, float aspectRatio, float zoom, float 
     nearZ = Max(nearZ, 0.0f);
     farZ = Max(farZ, nearZ);
     float halfViewSize = orthoSize * 0.5f / zoom;
-    Vector3 near, far;
+    Vector3 nearSize, farSize;
 
-    near.z_ = nearZ;
-    far.z_ = farZ;
-    far.y_ = near.y_ = halfViewSize;
-    far.x_ = near.x_ = near.y_ * aspectRatio;
+    nearSize.z_ = nearZ;
+    farSize.z_ = farZ;
+    farSize.y_ = nearSize.y_ = halfViewSize;
+    farSize.x_ = nearSize.x_ = nearSize.y_ * aspectRatio;
 
-    Define(near, far, transform);
+    Define(nearSize, farSize, transform);
 }
 
-void Frustum::DefineSplit(const Matrix4& projection, float near, float far)
+void Frustum::DefineSplit(const Matrix4& projection, float nearZ, float farZ)
 {
-    Matrix4 projInverse = projection.Inverse();
+    const Matrix4 projInverse = projection.Inverse();
 
     // Figure out depth values for near & far
-    Vector4 nearTemp = projection * Vector4(0.0f, 0.0f, near, 1.0f);
-    Vector4 farTemp = projection * Vector4(0.0f, 0.0f, far, 1.0f);
-    float nearZ = nearTemp.z_ / nearTemp.w_;
-    float farZ = farTemp.z_ / farTemp.w_;
+    const Vector4 nearTemp = projection * Vector4(0.0f, 0.0f, nearZ, 1.0f);
+    const Vector4 farTemp = projection * Vector4(0.0f, 0.0f, farZ, 1.0f);
+    const float nearDepth = nearTemp.z_ / nearTemp.w_;
+    const float farDepth = farTemp.z_ / farTemp.w_;
 
-    vertices_[0] = projInverse * Vector3(1.0f, 1.0f, nearZ);
-    vertices_[1] = projInverse * Vector3(1.0f, -1.0f, nearZ);
-    vertices_[2] = projInverse * Vector3(-1.0f, -1.0f, nearZ);
-    vertices_[3] = projInverse * Vector3(-1.0f, 1.0f, nearZ);
-    vertices_[4] = projInverse * Vector3(1.0f, 1.0f, farZ);
-    vertices_[5] = projInverse * Vector3(1.0f, -1.0f, farZ);
-    vertices_[6] = projInverse * Vector3(-1.0f, -1.0f, farZ);
-    vertices_[7] = projInverse * Vector3(-1.0f, 1.0f, farZ);
+    vertices_[0] = projInverse * Vector3(1.0f, 1.0f, nearDepth);
+    vertices_[1] = projInverse * Vector3(1.0f, -1.0f, nearDepth);
+    vertices_[2] = projInverse * Vector3(-1.0f, -1.0f, nearDepth);
+    vertices_[3] = projInverse * Vector3(-1.0f, 1.0f, nearDepth);
+    vertices_[4] = projInverse * Vector3(1.0f, 1.0f, farDepth);
+    vertices_[5] = projInverse * Vector3(1.0f, -1.0f, farDepth);
+    vertices_[6] = projInverse * Vector3(-1.0f, -1.0f, farDepth);
+    vertices_[7] = projInverse * Vector3(-1.0f, 1.0f, farDepth);
 
     UpdatePlanes();
 }
