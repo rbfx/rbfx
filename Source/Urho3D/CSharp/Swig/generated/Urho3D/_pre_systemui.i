@@ -1,9 +1,9 @@
 %ignore Urho3D::SYSTEMUI_DEFAULT_FONT_SIZE;
 %csconst(1) Urho3D::SYSTEMUI_DEFAULT_FONT_SIZE;
 %constant float SystemuiDefaultFontSize = (float)14;
-%constant eastl::string DragDropPayloadType = "DragDropPayload";
+%constant const char* DragDropPayloadType = "DragDropPayload";
 %ignore Urho3D::DragDropPayloadType;
-%constant eastl::string DragDropPayloadVariable = "SystemUI_DragDropPayload";
+%constant const char* DragDropPayloadVariable = "SystemUI_DragDropPayload";
 %ignore Urho3D::DragDropPayloadVariable;
 %csconstvalue("0") Urho3D::DEBUGHUD_SHOW_NONE;
 %csconstvalue("1") Urho3D::DEBUGHUD_SHOW_STATS;
