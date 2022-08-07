@@ -80,18 +80,14 @@ quirks_android=(
 quirks_web=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
+    '-DCI_WEB_BUILD=ON'
 )
 quirks_web_dbg=(
     '-DURHO3D_PLAYER=OFF'
 )
-quirks_web_rel=(
-    '-DCI_WEB_RELEASE=ON'
-)
 quirks_dll=('-DURHO3D_CSHARP=ON')
 quirks_windows_msvc_x64=('-A' 'x64')
 quirks_windows_msvc_x86=('-A' 'Win32')
-quirks_uwo_msvc_x64=${quirks_windows_msvc_x64[*]}
-quirks_uwo_msvc_x86=${quirks_windows_msvc_x86[*]}
 quirks_uwp_msvc_arm=('-A' 'ARM')
 quirks_uwp_msvc_arm64=('-A' 'ARM64')
 quirks_clang=('-DTRACY_NO_PARALLEL_ALGORITHMS=ON')                  # Includes macos and ios
@@ -104,6 +100,9 @@ quirks_linux_x86=(
 quirks_linux_x64=(
     '-DCMAKE_C_FLAGS=-m64'
     '-DCMAKE_CXX_FLAGS=-m64'
+)
+quirks_linux_clang_x64=(
+    '-DURHO3D_PCH=OFF' # Keep PCH disabled somewhere to catch missing includes
 )
 
 # Find msbuild.exe

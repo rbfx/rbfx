@@ -195,10 +195,10 @@ void WorkQueue::AddWorkItem(const SharedPtr<WorkItem>& item)
     }
 }
 
-SharedPtr<WorkItem> WorkQueue::AddWorkItem(std::function<void(unsigned threadIndex)> workFunction, unsigned priority)
+SharedPtr<WorkItem> WorkQueue::AddWorkItem(ea::function<void(unsigned threadIndex)> workFunction, unsigned priority)
 {
     SharedPtr<WorkItem> item = GetFreeItem();
-    item->workLambda_ = std::move(workFunction);
+    item->workLambda_ = ea::move(workFunction);
     item->workFunction_ = [](const WorkItem* item, unsigned threadIndex) { item->workLambda_(threadIndex); };
     item->priority_ = priority;
     AddWorkItem(item);

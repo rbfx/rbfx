@@ -19,18 +19,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 #include "../Precompiled.h"
 
+#include "../RmlUI/RmlUI.h"
+
 #include "../Core/Context.h"
+#include "../Graphics/Material.h"
 #include "../IO/Log.h"
 #include "../Resource/BinaryFile.h"
-#include "../Graphics/Material.h"
+#include "../RmlUI/RmlCanvasComponent.h"
+#include "../RmlUI/RmlUIComponent.h"
+#include "../Scene/Node.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-#include "../RmlUI/RmlUI.h"
-#include "../RmlUI/RmlUIComponent.h"
-#include "../RmlUI/RmlCanvasComponent.h"
-#include "../Scene/Node.h"
 
 #include "../DebugNew.h"
 

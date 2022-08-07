@@ -20,12 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
 #include "../SystemUI/Widgets.h"
 
-#include "../IO/FileSystem.h"
-#include "../Input/Input.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
+#include "../IO/FileSystem.h"
+#include "../Input/Input.h"
 #include "../SystemUI/DragDropPayload.h"
 #include "../SystemUI/SystemUI.h"
 

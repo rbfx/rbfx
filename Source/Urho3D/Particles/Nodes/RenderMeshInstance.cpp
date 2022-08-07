@@ -20,15 +20,17 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
+#include "../../Precompiled.h"
+
 #include "RenderMeshInstance.h"
 
-#include "../../Graphics/StaticModel.h"
 #include "../../Graphics/Camera.h"
-#include "../../Scene/Scene.h"
 #include "../../Graphics/Octree.h"
+#include "../../Graphics/StaticModel.h"
+#include "../../Scene/Scene.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
 
 namespace Urho3D
 {

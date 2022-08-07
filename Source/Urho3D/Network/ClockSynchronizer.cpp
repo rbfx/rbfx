@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Network/ClockSynchronizer.h"
 
 #include "../Core/Assert.h"
@@ -27,9 +29,9 @@
 #include "../IO/Log.h"
 #include "../Math/RandomEngine.h"
 
-#include <EASTL/numeric.h>
-
 #include <cmath>
+
+#include <EASTL/numeric.h>
 
 namespace Urho3D
 {

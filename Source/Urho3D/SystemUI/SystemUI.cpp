@@ -20,25 +20,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
+#include "../SystemUI/SystemUI.h"
+
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
 #include "../Core/Macros.h"
+#include "../Core/Profiler.h"
 #include "../Engine/EngineEvents.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/GraphicsImpl.h"
+#include "../IO/FileSystem.h"
+#include "../IO/Log.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
-#include "../IO/Log.h"
-#include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
-#include "../SystemUI/SystemUI.h"
 #include "../SystemUI/Console.h"
-#include <SDL/SDL.h>
-#include <ImGuizmo/ImGuizmo.h>
-#include <ImGui/imgui_internal.h>
+
 #include <ImGui/imgui_freetype.h>
+#include <ImGui/imgui_internal.h>
+#include <ImGuizmo/ImGuizmo.h>
+#include <SDL/SDL.h>
 
 #define IMGUI_IMPL_API IMGUI_API
 #include <imgui_impl_sdl.h>

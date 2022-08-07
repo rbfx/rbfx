@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Engine/ApplicationFlavor.h"
 #include "../IO/Log.h"
 

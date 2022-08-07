@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "Microphone.h"
 
 #include "../Core/Context.h"
@@ -82,8 +84,8 @@ void Microphone::Init(const ea::string& name, SDL_AudioDeviceID id, int bufferSi
     SetEnabled(true);
 }
 
-void Microphone::SetEnabled(bool state) 
-{ 
+void Microphone::SetEnabled(bool state)
+{
     if (enabled_ != state)
     {
         MutexLock lockHandle(lock_);

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Glow/LightmapCharter.h"
 
 #include "../Core/Variant.h"

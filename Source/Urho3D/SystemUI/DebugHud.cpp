@@ -21,22 +21,24 @@
 // THE SOFTWARE.
 //
 
-#include <EASTL/sort.h>
+#include "../Precompiled.h"
+
+#include "../SystemUI/DebugHud.h"
 
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Engine/Engine.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/Renderer.h"
 #include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
-#include "../UI/UI.h"
 #include "../SystemUI/SystemUI.h"
-#include "../SystemUI/DebugHud.h"
+#include "../UI/UI.h"
+
+#include <EASTL/sort.h>
 
 #include "../DebugNew.h"
-
 
 namespace Urho3D
 {

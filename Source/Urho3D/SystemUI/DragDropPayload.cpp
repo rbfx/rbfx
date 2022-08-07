@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../SystemUI/DragDropPayload.h"
 
 #include "../Scene/Component.h"

@@ -66,21 +66,21 @@ void RunUpdate(UpdateContext& context, Instance& instance, bool scalar, SpanTupl
     {
     case ParticleGraphContainerType::Span:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(span.GetSpan()));
+        auto nextTuple = ea::tuple_cat(ea::move(tuple), ea::make_tuple(span.GetSpan()));
         RunUpdate<Instance, SpanTuple, decltype(nextTuple), Values...>(
             context, instance, false, spanTuple, nextTuple);
         return;
     }
     case ParticleGraphContainerType::Sparse:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(span.GetSparse()));
+        auto nextTuple = ea::tuple_cat(ea::move(tuple), ea::make_tuple(span.GetSparse()));
         RunUpdate<Instance, SpanTuple, decltype(nextTuple), Values...>(
             context, instance, false, spanTuple, nextTuple);
         return;
     }
     case ParticleGraphContainerType::Scalar:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(span.GetScalar()));
+        auto nextTuple = ea::tuple_cat(ea::move(tuple), ea::make_tuple(span.GetScalar()));
         RunUpdate<Instance, SpanTuple, decltype(nextTuple), Values...>(
             context, instance, scalar, spanTuple, nextTuple);
         return;

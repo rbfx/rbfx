@@ -23,12 +23,9 @@
 %csattribute(Urho3D::VectorBuffer, %arg(Urho3D::ByteVector), Buffer, GetBuffer);
 %csattribute(Urho3D::BinaryOutputArchiveBlock, %arg(Urho3D::Serializer *), Serializer, GetSerializer);
 %csattribute(Urho3D::BinaryOutputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
-%csattribute(Urho3D::BinaryOutputArchive, %arg(ea::string_view), Name, GetName);
-%csattribute(Urho3D::BinaryOutputArchive, %arg(unsigned int), Checksum, GetChecksum);
 %csattribute(Urho3D::BinaryInputArchiveBlock, %arg(unsigned int), NextElementPosition, GetNextElementPosition);
 %csattribute(Urho3D::BinaryInputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
-%csattribute(Urho3D::BinaryInputArchive, %arg(ea::string_view), Name, GetName);
-%csattribute(Urho3D::BinaryInputArchive, %arg(unsigned int), Checksum, GetChecksum);
+%csattribute(Urho3D::Base64OutputArchive, %arg(ea::string), Base64, GetBase64);
 %csattribute(Urho3D::File, %arg(ea::string), AbsoluteName, GetAbsoluteName);
 %csattribute(Urho3D::File, %arg(Urho3D::FileMode), Mode, GetMode);
 %csattribute(Urho3D::File, %arg(void *), Handle, GetHandle);
@@ -39,6 +36,7 @@
 %csattribute(Urho3D::FileSystem, %arg(ea::string), ProgramFileName, GetProgramFileName);
 %csattribute(Urho3D::FileSystem, %arg(ea::string), UserDocumentsDir, GetUserDocumentsDir);
 %csattribute(Urho3D::FileSystem, %arg(ea::string), TemporaryDir, GetTemporaryDir);
+%csattribute(Urho3D::TemporaryDir, %arg(ea::string), Path, GetPath);
 %csattribute(Urho3D::FileWatcher, %arg(ea::string), Path, GetPath);
 %csattribute(Urho3D::FileWatcher, %arg(float), Delay, GetDelay, SetDelay);
 %csattribute(Urho3D::MemoryBuffer, %arg(unsigned char *), Data, GetData);

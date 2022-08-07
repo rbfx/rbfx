@@ -349,11 +349,11 @@ Logger Log::GetOrCreateLogger(const ea::string& name)
     std::shared_ptr<spdlog::logger> logger;
     MutexLock lock(logMutex_);
 
-    logger = spdlog::get(name);
+    logger = spdlog::get(name.c_str());
 
     if (!logger)
     {
-        logger = std::make_shared<spdlog::logger>(name, impl_->sinkProxy_);
+        logger = std::make_shared<spdlog::logger>(name.c_str(), impl_->sinkProxy_);
         logger->set_level(ConvertLogLevel(level_));
         spdlog::register_logger(logger);
     }

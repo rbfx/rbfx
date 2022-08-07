@@ -46,6 +46,7 @@ using UpdateEventFlags = Urho3D::UpdateEvent;
 %csattribute(Urho3D::Node, %arg(Urho3D::StringVector), Tags, GetTags, SetTags);
 %csattribute(Urho3D::Node, %arg(Urho3D::Node *), Parent, GetParent, SetParent);
 %csattribute(Urho3D::Node, %arg(Urho3D::Scene *), Scene, GetScene, SetScene);
+%csattribute(Urho3D::Node, %arg(bool), IsTemporaryEffective, IsTemporaryEffective);
 %csattribute(Urho3D::Node, %arg(bool), IsTransformHierarchyRoot, IsTransformHierarchyRoot);
 %csattribute(Urho3D::Node, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
 %csattribute(Urho3D::Node, %arg(bool), IsEnabledSelf, IsEnabledSelf);
@@ -57,6 +58,7 @@ using UpdateEventFlags = Urho3D::UpdateEvent;
 %csattribute(Urho3D::Node, %arg(Urho3D::Vector3), Up, GetUp);
 %csattribute(Urho3D::Node, %arg(Urho3D::Vector3), Right, GetRight);
 %csattribute(Urho3D::Node, %arg(Urho3D::Matrix3x4), Transform, GetTransform, SetTransform);
+%csattribute(Urho3D::Node, %arg(Urho3D::Transform), DecomposedTransform, GetDecomposedTransform);
 %csattribute(Urho3D::Node, %arg(Urho3D::Vector3), WorldPosition, GetWorldPosition, SetWorldPosition);
 %csattribute(Urho3D::Node, %arg(Urho3D::Vector2), WorldPosition2D, GetWorldPosition2D, SetWorldPosition2D);
 %csattribute(Urho3D::Node, %arg(Urho3D::Quaternion), WorldRotation, GetWorldRotation, SetWorldRotation);
@@ -121,16 +123,6 @@ using UpdateEventFlags = Urho3D::UpdateEvent;
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
-    public class CameraViewportResizedEvent {
-        private StringHash _event = new StringHash("CameraViewportResized");
-        public StringHash Camera = new StringHash("Camera");
-        public StringHash Viewport = new StringHash("Viewport");
-        public StringHash SizeNorm = new StringHash("SizeNorm");
-        public StringHash Size = new StringHash("Size");
-        public CameraViewportResizedEvent() { }
-        public static implicit operator StringHash(CameraViewportResizedEvent e) { return e._event; }
-    }
-    public static CameraViewportResizedEvent CameraViewportResized = new CameraViewportResizedEvent();
     public class SceneUpdateEvent {
         private StringHash _event = new StringHash("SceneUpdate");
         public StringHash Scene = new StringHash("Scene");

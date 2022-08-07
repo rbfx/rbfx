@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Utility/SceneViewerApplication.h"
 
 #include "../Engine/Engine.h"

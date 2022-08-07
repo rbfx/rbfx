@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Replica/TickSynchronizer.h"
 
 #include "../IO/Log.h"

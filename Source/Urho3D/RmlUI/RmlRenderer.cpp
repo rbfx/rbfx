@@ -19,17 +19,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../Graphics/IndexBuffer.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/Renderer.h"
-#include "../Resource/ResourceCache.h"
-#include "../Math/Matrix4.h"
+
+#include "../Precompiled.h"
+
 #include "../RmlUI/RmlRenderer.h"
+
+#include "../Core/Context.h"
+#include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/IndexBuffer.h"
+#include "../Graphics/Renderer.h"
+#include "../Graphics/Texture2D.h"
+#include "../Graphics/VertexBuffer.h"
+#include "../IO/Log.h"
+#include "../Math/Matrix4.h"
+#include "../Resource/ResourceCache.h"
 
 #include "../DebugNew.h"
 

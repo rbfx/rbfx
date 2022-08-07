@@ -20,8 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/VariantCurve.h"
+#include "../Precompiled.h"
+
 #include "../IO/ArchiveSerialization.h"
+
+#include "../Core/VariantCurve.h"
 
 namespace Urho3D
 {

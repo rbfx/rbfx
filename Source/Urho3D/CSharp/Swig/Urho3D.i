@@ -201,6 +201,8 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 
 // Containers
 using StringMap = eastl::unordered_map<Urho3D::StringHash, eastl::string>;
+%template(ObjectReflectionMap) eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::ObjectReflection>>;
+%template(CollisionGeometryDataCache) eastl::unordered_map<eastl::pair<Urho3D::Model*, unsigned>, Urho3D::SharedPtr<Urho3D::CollisionGeometryData>>;
 
 // Declare inheritable classes in this file
 %include "Context.i"
@@ -332,6 +334,9 @@ namespace SDL
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
+
+%include "generated/Urho3D/_pre_plugins.i"
+%include "generated/Urho3D/_pre_utility.i"
 
 %include "generated/Urho3D/_pre_core.i"
 %include "Urho3D/Core/Variant.h"

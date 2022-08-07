@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../SystemUI/MaterialInspectorWidget.h"
 
 #include "../Graphics/Texture2D.h"

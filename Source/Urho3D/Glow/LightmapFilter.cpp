@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Glow/Helpers.h"
 #include "../Glow/LightmapFilter.h"
 #include "../IO/Log.h"

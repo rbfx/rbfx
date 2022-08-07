@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "ParticleGraphSystem.h"
 
 #include "ParticleGraphEmitter.h"

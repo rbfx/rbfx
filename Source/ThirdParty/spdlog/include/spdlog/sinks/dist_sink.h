@@ -4,9 +4,9 @@
 #pragma once
 
 #include "base_sink.h"
-#include "spdlog/details/log_msg.h"
-#include "spdlog/details/null_mutex.h"
-#include "spdlog/details/pattern_formatter.h"
+#include <spdlog/details/log_msg.h>
+#include <spdlog/details/null_mutex.h>
+#include <spdlog/pattern_formatter.h>
 
 #include <algorithm>
 #include <memory>
@@ -24,6 +24,10 @@ class dist_sink : public base_sink<Mutex>
 {
 public:
     dist_sink() = default;
+    explicit dist_sink(std::vector<std::shared_ptr<sink>> sinks)
+        : sinks_(sinks)
+    {}
+
     dist_sink(const dist_sink &) = delete;
     dist_sink &operator=(const dist_sink &) = delete;
 
@@ -70,7 +74,7 @@ protected:
         }
     }
 
-    void set_pattern_(const eastl::string &pattern) override
+    void set_pattern_(const std::string &pattern) override
     {
         set_formatter_(details::make_unique<spdlog::pattern_formatter>(pattern));
     }
