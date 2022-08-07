@@ -125,6 +125,12 @@ void RmlUIComponent::OpenInternal()
     ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
 
     document_ = ui->LoadDocument(resource_.name_);
+    if (document_ == nullptr)
+    {
+        URHO3D_LOGERROR("Failed to load UI document: {}", resource_.name_);
+        return;
+    }
+
     SetPosition(position_);
     SetSize(size_);
     document_->Show();
