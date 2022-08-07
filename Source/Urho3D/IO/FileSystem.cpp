@@ -1313,11 +1313,14 @@ bool FileSystem::CreateDirsRecursive(const ea::string& directoryIn)
 
     paths.push_back(directory);
 
-    while (true)
+    for (;;)
     {
         parentPath = GetParentPath(parentPath);
 
         if (!parentPath.length())
+            break;
+
+        if (DirExists(parentPath))
             break;
 
         paths.push_back(parentPath);
@@ -1342,7 +1345,6 @@ bool FileSystem::CreateDirsRecursive(const ea::string& directoryIn)
         // double check
         if (!DirExists(pathName))
             return false;
-
     }
 
     return true;
