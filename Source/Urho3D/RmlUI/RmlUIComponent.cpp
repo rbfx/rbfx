@@ -280,7 +280,7 @@ void RmlUIComponent::OnComponentAdded(StringHash, VariantMap& args)
     if (node != node_)
         return;
 
-    if (canvasComponent_.NotNull())
+    if (canvasComponent_ != nullptr)
         // Window is rendered into some component already.
         return;
 
@@ -316,7 +316,7 @@ void RmlUIComponent::OnComponentRemoved(StringHash, VariantMap& args)
 
 RmlUI* RmlUIComponent::GetUI() const
 {
-    if (canvasComponent_.NotNull())
+    if (canvasComponent_ != nullptr)
         return canvasComponent_->GetUI();
     return GetSubsystem<RmlUI>();
 }

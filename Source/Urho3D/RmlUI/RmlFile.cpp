@@ -47,7 +47,7 @@ Rml::FileHandle RmlFile::Open(const Rml::String& path)
 {
     ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
     SharedPtr<File> file(cache->GetFile(path));
-    if (file.NotNull())
+    if (file != nullptr)
     {
         loadedFiles_.insert(GetAbsolutePath(cache->GetResourceFileName(path)));
         return reinterpret_cast<Rml::FileHandle>(file.Detach());
