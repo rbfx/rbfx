@@ -108,5 +108,9 @@ if (NOT MINI_URHO)
             endif ()
         endforeach ()
     endif ()
+    install(FILES
+        ${rbfx_SOURCE_DIR}/script/rbfx.natvis
+        ${rbfx_SOURCE_DIR}/script/rbfx.vscode.unix.natvis
+        DESTINATION ${DEST_SHARE_DIR})
     install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)
 endif ()
