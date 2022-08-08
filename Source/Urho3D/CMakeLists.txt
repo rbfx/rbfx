@@ -170,7 +170,7 @@ endforeach()
 
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
-    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${rbfx_SOURCE_DIR}/cmake/Modules/GetUrhoRevision.cmake
+    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${rbfx_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
@@ -468,7 +468,7 @@ endif ()
 
 # Install C# dependencies
 if (URHO3D_CSHARP)
-   install (SCRIPT ${rbfx_SOURCE_DIR}/cmake/Install.cmake)
+   install (SCRIPT ${rbfx_SOURCE_DIR}/CMake/Install.cmake)
 endif ()
 
 ################################################### SDK preparation ####################################################

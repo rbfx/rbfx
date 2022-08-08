@@ -54,12 +54,12 @@ generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
 generators_ios=('-G' 'Xcode' '-T' 'buildsystem=1')
 
 toolchains_ios=(
-    '-DCMAKE_TOOLCHAIN_FILE=cmake/Toolchains/IOS.cmake'
+    '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake'
     '-DPLATFORM=SIMULATOR64'
     '-DDEPLOYMENT_TARGET=11'
 )
 toolchains_web=(
-    '-DCMAKE_TOOLCHAIN_FILE=cmake/Toolchains/Emscripten.cmake'
+    '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake'
     '-DURHO3D_PROFILING=OFF'
 )
 

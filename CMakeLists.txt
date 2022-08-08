@@ -32,7 +32,7 @@ endif ()
 project (rbfx)
 
 # Set CMake modules search path
-set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules)
 
 if (WEB AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     # Workaround for following error:
@@ -86,7 +86,7 @@ endif ()
 # Configure variables
 set (URHO3D_URL "https://github.com/urho3d/Urho3D")
 set (URHO3D_DESCRIPTION "Urho3D is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE (http://www.ogre3d.org) and Horde3D (http://www.horde3d.org).")
-execute_process (COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/GetUrhoRevision.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE URHO3D_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE URHO3D_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
 string (REGEX MATCH "([^.]+)\\.([^.]+)\\.(.+)" MATCHED "${URHO3D_VERSION}")
 
 # Setup SDK install destinations
@@ -340,7 +340,7 @@ if (URHO3D_CSHARP)
     endif ()
     unset (DOTNET_FRAMEWORK_INDEX)
     # For .csproj embedded into visual studio solution
-    configure_file("${rbfx_SOURCE_DIR}/cmake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
+    configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
 
     if (NOT SWIG_LIB)
         set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
@@ -472,8 +472,8 @@ if (URHO3D_DOCS)
 endif ()
 
 # Install CMake modules and toolchains provided by and for Urho3D
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/cmake/Toolchains)    # Note: the trailing slash is significant
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Modules/ DESTINATION ${DEST_SHARE_DIR}/cmake/Modules/)
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/CMake/Toolchains)    # Note: the trailing slash is significant
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${DEST_SHARE_DIR}/CMake/Modules/)
 # Install CMake build scripts
 file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
