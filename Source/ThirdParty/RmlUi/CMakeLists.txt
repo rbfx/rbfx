@@ -48,7 +48,9 @@ target_include_directories(RmlUi SYSTEM
     PRIVATE   ../..
 )
 
-install (DIRECTORY Include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+foreach (ext *.h *.inl)
+    install (DIRECTORY Include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN ${ext})
+endforeach ()
 
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(RmlUi PRIVATE -DRmlCore_EXPORTS=1 -DRmlDebugger_EXPORTS=1 -DEASTL_EXPORTS -DEASTDC_EXPORTS)
