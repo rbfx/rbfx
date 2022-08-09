@@ -328,7 +328,7 @@ void SoundEffects::HandleStopMicRecord(StringHash eventType, VariantMap& eventDa
 {
     activeMic_.Reset();
 
-    if (micStream_.NotNull())
+    if (micStream_ != nullptr)
     {
         auto* soundSource = scene_->CreateComponent<SoundSource>();
         // Component will automatically remove itself when the sound finished playing

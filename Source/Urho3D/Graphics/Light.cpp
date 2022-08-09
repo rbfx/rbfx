@@ -531,7 +531,7 @@ ResourceRef Light::GetRampTextureAttr() const
 
 ResourceRef Light::GetShapeTextureAttr() const
 {
-    if (shapeTexture_.NotNull())
+    if (shapeTexture_ != nullptr)
         return GetResourceRef(shapeTexture_, lightType_ == LIGHT_POINT ? TextureCube::GetTypeStatic() : Texture2D::GetTypeStatic());
     else
         // TODO: This is a workaround for attributes not having any metadata. Shape texture now defaults to type `Texture` which hints that

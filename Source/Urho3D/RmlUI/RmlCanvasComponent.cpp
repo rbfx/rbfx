@@ -89,7 +89,7 @@ void RmlCanvasComponent::OnSetEnabled()
 
 void RmlCanvasComponent::SetUISize(IntVector2 size)
 {
-    assert(texture_.NotNull());
+    assert(texture_ != nullptr);
     if (size.x_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.x_ > UICOMPONENT_MAX_TEXTURE_SIZE ||
         size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE || size.x_ != size.y_)
     {
@@ -131,14 +131,14 @@ void RmlCanvasComponent::SetTextureRef(const ResourceRef& texture)
 
 ResourceRef RmlCanvasComponent::GetTextureRef() const
 {
-    if (texture_.Null())
+    if (texture_ == nullptr)
         return ResourceRef(Texture2D::GetTypeStatic());
     return ResourceRef(Texture2D::GetTypeStatic(), texture_->GetName());
 }
 
 void RmlCanvasComponent::ClearTexture()
 {
-    if (texture_.Null())
+    if (texture_ == nullptr)
         return;
 
     Image clear(context_);

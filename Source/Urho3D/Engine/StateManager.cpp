@@ -640,7 +640,7 @@ void StateManager::CreateNextState()
             auto stateCacheIt = stateCache_.find(nextQueueItem.stateType_);
             if (stateCacheIt != stateCache_.end() && !stateCacheIt->second.Expired())
             {
-                nextState = stateCacheIt->second;
+                nextState = stateCacheIt->second.Lock();
             }
             else
             {
