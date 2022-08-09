@@ -52,6 +52,9 @@ URHO3D_API void Underline(const Color& color);
 /// Render clickable URL text.
 URHO3D_API void TextURL(const ea::string& label, const ea::string& url);
 
+/// Fit content into area.
+URHO3D_API ImVec2 FitContent(const ImVec2& contentArea, const ImVec2& originalSize);
+
 /// Render Texture2D as ImGui item.
 URHO3D_API void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tintCol = ImVec4(1, 1, 1, 1), const ImVec4& borderCol = ImVec4(0, 0, 0, 0));
 URHO3D_API void ImageItem(Texture2D* texture, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tintCol = ImVec4(1, 1, 1, 1), const ImVec4& borderCol = ImVec4(0, 0, 0, 0));

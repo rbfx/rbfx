@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "TextureViewTab.h"
+#include "TextureCubeViewTab.h"
 
 #include "../../Core/CommonEditorActions.h"
 #include "../../Core/IniHelpers.h"
@@ -39,13 +39,13 @@ namespace
 {
 }
 
-void Foundation_TextureViewTab(Context* context, Project* project)
+void Foundation_TextureCubeViewTab(Context* context, Project* project)
 {
-    project->AddTab(MakeShared<TextureViewTab>(context));
+    project->AddTab(MakeShared<TextureCubeViewTab>(context));
 }
 
-TextureViewTab::TextureViewTab(Context* context)
-    : CustomSceneViewTab(context, "Texture", "2a3032e6-541a-42fe-94c3-8baf96604690",
+TextureCubeViewTab::TextureCubeViewTab(Context* context)
+    : CustomSceneViewTab(context, "Cubemap", "d66bcf6d-9fe3-4e7c-a519-4b1ad5a0f89c",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
         EditorTabPlacement::DockCenter)
 {
@@ -59,46 +59,22 @@ TextureViewTab::TextureViewTab(Context* context)
     staticModel_->SetMaterial(material_);
 }
 
-TextureViewTab::~TextureViewTab()
+TextureCubeViewTab::~TextureCubeViewTab()
 {
 }
 
-bool TextureViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
+bool TextureCubeViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 {
-    return desc.HasObjectType<Texture>();
+    return desc.HasObjectType<TextureCube>();
 }
 
-void TextureViewTab::RenderTexture2D(Texture2D* texture)
-{
-    const ImVec2 basePosition = ui::GetCursorPos();
-
-    RenderTitle();
-
-    const ImVec2 contentPosition = ui::GetCursorPos();
-    const IntVector2 minSize = IntVector2(1, 1);
-    const auto contentSize = VectorMax(GetContentSize() - IntVector2(0, contentPosition.y - basePosition.y), minSize);
-    const auto imageSize = VectorMax(texture->GetSize(), minSize);
-    const float contentAspect = contentSize.x_ / static_cast<float>(contentSize.y_);
-    const float imageAspect = imageSize.x_ / static_cast<float>(imageSize.y_);
-    IntVector2 previewSize;
-    if (contentAspect > imageAspect)
-    {
-        previewSize = IntVector2(Max(static_cast<int>(contentSize.y_ * imageAspect), 1), contentSize.y_);
-    }
-    else
-    {
-        previewSize = IntVector2(contentSize.x_, Max(static_cast<int>(contentSize.x_ / imageAspect), 1));
-    }
-    Widgets::Image(texture, ToImGui(previewSize));
-}
-
-void TextureViewTab::RenderTextureCube(TextureCube* texture)
+void TextureCubeViewTab::RenderTextureCube(TextureCube* texture)
 {
     material_->SetTexture(TU_DIFFUSE, texture);
     CustomSceneViewTab::RenderContent();
 }
 
-void TextureViewTab::RenderContent()
+void TextureCubeViewTab::RenderContent()
 {
     if (textureCube_)
     {
@@ -106,35 +82,28 @@ void TextureViewTab::RenderContent()
         return;
     }
 
-    if (texture2D_)
-    {
-        RenderTexture2D(texture2D_);
-        return;
-    }
 }
 
-void TextureViewTab::OnResourceLoaded(const ea::string& resourceName)
+void TextureCubeViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    texture2D_ = cache->GetResource<Texture2D>(resourceName);
     textureCube_ = cache->GetResource<TextureCube>(resourceName);
 }
 
-void TextureViewTab::OnResourceUnloaded(const ea::string& resourceName)
+void TextureCubeViewTab::OnResourceUnloaded(const ea::string& resourceName)
 {
-    texture2D_.Reset();
     textureCube_.Reset();
 }
 
-void TextureViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)
+void TextureCubeViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)
 {
 }
 
-void TextureViewTab::OnResourceSaved(const ea::string& resourceName)
+void TextureCubeViewTab::OnResourceSaved(const ea::string& resourceName)
 {
 }
 
-void TextureViewTab::OnResourceShallowSaved(const ea::string& resourceName)
+void TextureCubeViewTab::OnResourceShallowSaved(const ea::string& resourceName)
 {
 }
 

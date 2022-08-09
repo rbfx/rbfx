@@ -30,16 +30,16 @@
 namespace Urho3D
 {
 
-void Foundation_TextureViewTab(Context* context, Project* project);
+void Foundation_Texture2DViewTab(Context* context, Project* project);
 
 /// Tab that renders Scene and enables Scene manipulation.
-class TextureViewTab : public CustomSceneViewTab
+class Texture2DViewTab : public CustomSceneViewTab
 {
-    URHO3D_OBJECT(TextureViewTab, CustomSceneViewTab)
+    URHO3D_OBJECT(Texture2DViewTab, CustomSceneViewTab)
 
 public:
-    explicit TextureViewTab(Context* context);
-    ~TextureViewTab() override;
+    explicit Texture2DViewTab(Context* context);
+    ~Texture2DViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
@@ -64,10 +64,6 @@ protected:
 
 private:
     SharedPtr<Texture2D> texture2D_;
-    SharedPtr<TextureCube> textureCube_;
-    SharedPtr<Node> modelNode_;
-    SharedPtr<StaticModel> staticModel_;
-    SharedPtr<Material> material_;
 };
 
 } // namespace Urho3D

@@ -30,7 +30,11 @@
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
 #include "Foundation/InspectorTab/EmptyInspector.h"
+#include "Foundation/InspectorTab/AnimationInspector.h"
 #include "Foundation/InspectorTab/MaterialInspector.h"
+#include "Foundation/InspectorTab/ModelInspector.h"
+#include "Foundation/InspectorTab/Texture2DInspector.h"
+#include "Foundation/InspectorTab/TextureCubeInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
@@ -41,7 +45,8 @@
 #include "Foundation/ResourceBrowserTab/SceneFactory.h"
 #include "Foundation/ResourceTab/AnimationViewTab.h"
 #include "Foundation/ResourceTab/ModelViewTab.h"
-#include "Foundation/ResourceTab/TextureViewTab.h"
+#include "Foundation/ResourceTab/Texture2DViewTab.h"
+#include "Foundation/ResourceTab/TextureCubeViewTab.h"
 #include "Foundation/SceneViewTab.h"
 #include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneHierarchy.h"
@@ -87,7 +92,8 @@ Editor::Editor(Context* context)
 
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);
-    editorPluginManager_->AddPlugin("Foundation.TextureView", &Foundation_TextureViewTab);
+    editorPluginManager_->AddPlugin("Foundation.Texture2DView", &Foundation_Texture2DViewTab);
+    editorPluginManager_->AddPlugin("Foundation.TextureCubeView", &Foundation_TextureCubeViewTab);
     editorPluginManager_->AddPlugin("Foundation.ModelView", &Foundation_ModelViewTab);
     editorPluginManager_->AddPlugin("Foundation.AnimationView", &Foundation_AnimationViewTab);
     editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);
@@ -110,6 +116,10 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
 
     editorPluginManager_->AddPlugin("Foundation.Inspector.Empty", &Foundation_EmptyInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.Animation", &Foundation_AnimationInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.Texture2D", &Foundation_Texture2DInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.TextureCube", &Foundation_TextureCubeInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.Model", &Foundation_ModelInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Material", &Foundation_MaterialInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.NodeComponent", &Foundation_NodeComponentInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
