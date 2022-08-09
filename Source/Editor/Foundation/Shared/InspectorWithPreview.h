@@ -54,6 +54,7 @@ public:
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
 protected:
+    virtual void RenderPreview(Resource* resource);
     virtual StringHash GetResourceType() const { return 0; }
     virtual SharedPtr<ResourceWidget> MakeWidget(const ResourceVector& resources) { return nullptr; }
 

@@ -48,4 +48,16 @@ SharedPtr<ResourceWidget> Texture2DInspector::MakeWidget(const ResourceVector& r
     return MakeShared<Texture2DInspectorWidget>(context_, resources);
 }
 
+void Texture2DInspector::RenderPreview(Resource* resource)
+{
+    Texture2D* texture = static_cast<Texture2D*>(resource);
+
+    const ImVec2 contentPosition = ui::GetCursorPos();
+    auto reg = ui::GetContentRegionAvail();
+    const auto contentSize = ImVec2(reg.x, reg.x);
+    const ImVec2 previewSize = Widgets::FitContent(contentSize, ToImGui(texture->GetSize()));
+    ui::SetCursorPos(contentPosition + ImVec2((contentSize.x - previewSize.x) * 0.5f, 0.0f));
+    Widgets::Image(texture, previewSize);
+}
+
 } // namespace Urho3D

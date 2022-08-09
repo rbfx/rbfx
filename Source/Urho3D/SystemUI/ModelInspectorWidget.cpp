@@ -35,14 +35,6 @@ namespace
 } // namespace
 
 const ea::vector<ResourceWidget::PropertyDesc> ModelInspectorWidget::properties{
-    //{
-    //    "Length",
-    //    Variant{0.0f},
-    //    [](const Resource* resource) { return Variant{static_cast<const Model*>(resource)->Get()}; },
-    //    [](Resource* resource, const Variant& value)
-    //    { static_cast<Model*>(resource)->SetLength(value.GetFloat()); },
-    //    "Length in seconds",
-    //},
 };
 
 ModelInspectorWidget::ModelInspectorWidget(Context* context, const ResourceVector& resources)

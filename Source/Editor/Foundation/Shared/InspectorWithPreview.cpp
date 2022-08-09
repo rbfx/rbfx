@@ -134,6 +134,11 @@ void InspectorWithPreview::RenderContent()
     }
     ui::Separator();
     widget_->RenderContent();
+    if (resources.size() == 1)
+    {
+        ui::Separator();
+        RenderPreview(resources.front());
+    }
 }
 
 void InspectorWithPreview::RenderContextMenuItems()
@@ -141,6 +146,10 @@ void InspectorWithPreview::RenderContextMenuItems()
 }
 
 void InspectorWithPreview::RenderMenu()
+{
+}
+
+void InspectorWithPreview::RenderPreview(Resource* resource)
 {
 }
 
