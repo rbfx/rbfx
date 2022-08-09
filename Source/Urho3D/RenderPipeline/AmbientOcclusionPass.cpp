@@ -222,8 +222,11 @@ void AmbientOcclusionPass::Execute(Camera* camera)
     EvaluateAO(camera, viewToTextureSpace, textureToViewSpace);
     BlurTexture(textureToViewSpace);
 
-    //Blit(pipelineStates_->preview_);
-    Blit(pipelineStates_->combine_);
+    switch (settings_.ambientOcclusionMode_)
+    {
+    case AmbientOcclusionMode::Preview: Blit(pipelineStates_->preview_); break;
+    default: Blit(pipelineStates_->combine_); break;
+    }
 }
 
 #endif
