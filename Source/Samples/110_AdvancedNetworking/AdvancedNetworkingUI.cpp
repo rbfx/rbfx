@@ -27,6 +27,12 @@
 #include <Urho3D/RmlUI/RmlUI.h>
 #include <Urho3D/Scene/Scene.h>
 
+AdvancedNetworkingUI::AdvancedNetworkingUI(Context* context)
+    : RmlUIComponent(context)
+{
+    SetResource("UI/AdvancedNetworkingUI.rml");
+}
+
 void AdvancedNetworkingUI::StartServer()
 {
     Stop();
@@ -50,48 +56,47 @@ void AdvancedNetworkingUI::Stop()
     network->StopServer();
 }
 
-void AdvancedNetworkingUI::OnNodeSet(Node* node)
+void AdvancedNetworkingUI::OnDocumentPreLoad()
 {
-    BaseClassName::OnNodeSet(node);
-    RmlUI* rmlUI = GetUI();
+    if (model_)
+        return;
+
     Network* network = GetSubsystem<Network>();
-    Rml::Context* rmlContext = rmlUI->GetRmlContext();
 
-    if (node != nullptr && !model_)
-    {
-        Rml::DataModelConstructor constructor = rmlContext->CreateDataModel("AdvancedNetworkingUI_model");
-        if (!constructor)
-            return;
+    Rml::DataModelConstructor constructor = CreateDataModel("AdvancedNetworkingUI_model");
+    URHO3D_ASSERT(constructor);
 
-        constructor.Bind("port", &serverPort_);
-        constructor.Bind("connectionAddress", &connectionAddress_);
-        constructor.BindFunc("isServer", [=](Rml::Variant& result) { result = network->IsServerRunning(); });
-        constructor.BindFunc("isClient", [=](Rml::Variant& result) { result = network->GetServerConnection() != nullptr; });
-        constructor.Bind("cheatAutoMovementCircle", &cheatAutoMovementCircle_);
-        constructor.Bind("cheatAutoAimHand", &cheatAutoAimHand_);
-        constructor.Bind("cheatAutoClick", &checkAutoClick_);
+    constructor.Bind("port", &serverPort_);
+    constructor.Bind("connectionAddress", &connectionAddress_);
+    constructor.BindFunc("isServer", [=](Rml::Variant& result) { result = network->IsServerRunning(); });
+    constructor.BindFunc("isClient", [=](Rml::Variant& result) { result = network->GetServerConnection() != nullptr; });
+    constructor.Bind("cheatAutoMovementCircle", &cheatAutoMovementCircle_);
+    constructor.Bind("cheatAutoAimHand", &cheatAutoAimHand_);
+    constructor.Bind("cheatAutoClick", &checkAutoClick_);
 
-        constructor.BindEventCallback("onStartServer",
-            [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { StartServer(); });
-        constructor.BindEventCallback("onConnectToServer",
-            [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { ConnectToServer(connectionAddress_); });
-        constructor.BindEventCallback("onStop",
-            [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { Stop(); });
+    constructor.BindEventCallback("onStartServer",
+        [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { StartServer(); });
+    constructor.BindEventCallback("onConnectToServer",
+        [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { ConnectToServer(connectionAddress_); });
+    constructor.BindEventCallback("onStop",
+        [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { Stop(); });
 
-        model_ = constructor.GetModelHandle();
+    model_ = constructor.GetModelHandle();
+}
 
-        SetResource("UI/AdvancedNetworkingUI.rml");
-        SetOpen(true);
-    }
-    else if (node == nullptr && model_)
-    {
-        rmlContext->RemoveDataModel("AdvancedNetworkingUI_model");
-        model_ = nullptr;
-    }
+void AdvancedNetworkingUI::OnDocumentPostUnload()
+{
+    if (!model_)
+        return;
+
+    RemoveDataModel("AdvancedNetworkingUI_model");
+    model_ = nullptr;
 }
 
 void AdvancedNetworkingUI::Update(float timeStep)
 {
+    BaseClassName::Update(timeStep);
+
     model_.DirtyVariable("isServer");
     model_.DirtyVariable("isClient");
 }

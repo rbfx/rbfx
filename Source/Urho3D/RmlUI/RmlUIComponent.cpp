@@ -32,7 +32,6 @@
 #include "../RmlUI/RmlUIComponent.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
 
 #include "../DebugNew.h"
 
@@ -61,33 +60,30 @@ void RmlUIComponent::RegisterObject(Context* context)
 {
     context->RegisterFactory<RmlUIComponent>(Category_RmlUI);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Resource", GetResource, SetResource, ResourceRef, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Use Normalized Coordinates", bool, useNormalized_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSize, SetSize, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Auto Size", bool, autoSize_, true, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Is Open", IsOpen, SetOpen, bool, false, AM_DEFAULT);
+}
+
+void RmlUIComponent::Update(float timeStep)
+{
+    // There should be only a few of RmlUIComponent enabled at a time, so this is not a performance issue.
+    UpdateConnectedCanvas();
+}
+
+void RmlUIComponent::OnSetEnabled()
+{
+    UpdateDocumentOpen();
 }
 
 void RmlUIComponent::OnNodeSet(Node* node)
 {
     if (node)
-    {
-        SubscribeToEvent(node->GetScene(), E_COMPONENTADDED, &RmlUIComponent::OnComponentAdded);
-        SubscribeToEvent(node->GetScene(), E_COMPONENTREMOVED, &RmlUIComponent::OnComponentRemoved);
-    }
-    else
-    {
-        UnsubscribeFromEvent(E_COMPONENTADDED);
-        UnsubscribeFromEvent(E_COMPONENTREMOVED);
-    }
-
-    canvasComponent_ = GetComponent<RmlCanvasComponent>();
-
-    if (open_ && node != nullptr)
-        OpenInternal();
-    else
-        CloseInternal();
+        UpdateConnectedCanvas();
+    UpdateDocumentOpen();
 }
 
 void RmlUIComponent::SetResource(const ResourceRef& resourceRef)
@@ -95,24 +91,7 @@ void RmlUIComponent::SetResource(const ResourceRef& resourceRef)
     resource_ = resourceRef;
     if (resource_.type_ == StringHash::Empty)
         resource_.type_ = BinaryFile::GetTypeStatic();
-    SetOpen(open_);
-}
-
-void RmlUIComponent::SetOpen(bool open)
-{
-    if (open)
-    {
-        if (node_ != nullptr && !resource_.name_.empty())
-        {
-            OpenInternal();
-            open_ = document_ != nullptr;
-        }
-    }
-    else
-    {
-        CloseInternal();
-        open_ = false;
-    }
+    UpdateDocumentOpen();
 }
 
 void RmlUIComponent::OpenInternal()
@@ -131,6 +110,7 @@ void RmlUIComponent::OpenInternal()
     ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
     ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
 
+    OnDocumentPreLoad();
     SetDocument(ui->LoadDocument(resource_.name_));
 
     if (document_ == nullptr)
@@ -142,6 +122,7 @@ void RmlUIComponent::OpenInternal()
     SetPosition(position_);
     SetSize(size_);
     document_->Show();
+    OnDocumentPostLoad();
 }
 
 void RmlUIComponent::CloseInternal()
@@ -156,8 +137,11 @@ void RmlUIComponent::CloseInternal()
 
     position_ = GetPosition();
     size_ = GetSize();
+
+    OnDocumentPreUnload();
     document_->Close();
     SetDocument(nullptr);
+    OnDocumentPostUnload();
 }
 
 void RmlUIComponent::OnDocumentClosed(Rml::ElementDocument* document)
@@ -165,7 +149,6 @@ void RmlUIComponent::OnDocumentClosed(Rml::ElementDocument* document)
     if (document_ == document)
     {
         SetDocument(nullptr);
-        open_ = false;
     }
 }
 
@@ -280,48 +263,6 @@ void RmlUIComponent::SetResource(const eastl::string& resourceName)
     SetResource(resourceRef);
 }
 
-void RmlUIComponent::OnComponentAdded(StringHash, VariantMap& args)
-{
-    using namespace ComponentAdded;
-
-    Node* node = static_cast<Node*>(args[P_NODE].GetPtr());
-    if (node != node_)
-        return;
-
-    if (canvasComponent_ != nullptr)
-        // Window is rendered into some component already.
-        return;
-
-    Component* addedComponent = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-    if (addedComponent->IsInstanceOf<RmlCanvasComponent>())
-    {
-        CloseInternal();
-        canvasComponent_ = addedComponent->Cast<RmlCanvasComponent>();
-        OpenInternal();
-    }
-}
-
-void RmlUIComponent::OnComponentRemoved(StringHash, VariantMap& args)
-{
-    using namespace ComponentRemoved;
-
-    Node* node = static_cast<Node*>(args[P_NODE].GetPtr());
-    if (node != node_)
-        return;
-
-    Component* removedComponent = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-
-    // Reopen this window in a new best fitting RmlUI instance.
-    if (removedComponent == canvasComponent_)
-    {
-        CloseInternal();
-        canvasComponent_ = GetNode()->GetComponent<RmlCanvasComponent>();
-        if (canvasComponent_ == removedComponent)
-            canvasComponent_ = nullptr;
-        OpenInternal();
-    }
-}
-
 RmlUI* RmlUIComponent::GetUI() const
 {
     if (canvasComponent_ != nullptr)
@@ -340,6 +281,44 @@ void RmlUIComponent::SetDocument(Rml::ElementDocument* document)
 
         if (document_)
             document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(this));
+    }
+}
+
+Rml::DataModelConstructor RmlUIComponent::CreateDataModel(const ea::string& name)
+{
+    RmlUI* ui = GetUI();
+    Rml::Context* context = ui->GetRmlContext();
+    return context->CreateDataModel(name);
+}
+
+void RmlUIComponent::RemoveDataModel(const ea::string& name)
+{
+    RmlUI* ui = GetUI();
+    Rml::Context* context = ui->GetRmlContext();
+    context->RemoveDataModel(name);
+}
+
+void RmlUIComponent::UpdateDocumentOpen()
+{
+    const bool shouldBeOpen = IsEnabledEffective() && !resource_.name_.empty();
+    const bool isOpen = document_ != nullptr;
+
+    if (shouldBeOpen && !isOpen)
+        OpenInternal();
+    else if (!shouldBeOpen && isOpen)
+        CloseInternal();
+}
+
+void RmlUIComponent::UpdateConnectedCanvas()
+{
+    RmlCanvasComponent* newCanvasComponent = IsEnabledEffective() ? node_->GetComponent<RmlCanvasComponent>() : nullptr;
+    if (canvasComponent_ != newCanvasComponent)
+    {
+        const bool wasOpen = document_ != nullptr;
+        CloseInternal();
+        canvasComponent_ = newCanvasComponent;
+        if (wasOpen)
+            OpenInternal();
     }
 }
 

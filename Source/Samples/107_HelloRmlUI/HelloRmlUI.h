@@ -37,8 +37,6 @@ class SimpleWindow : public RmlUIComponent
 public:
     /// Construct.
     explicit SimpleWindow(Context* context);
-    /// Reload window rml and rcss from disk/cache.
-    void Reload();
     /// Callback function invoked from rml template.
     void CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments);
     /// Process 'CloseWindow' event.
@@ -47,8 +45,10 @@ public:
 protected:
     /// Update model and animate progressbars.
     void Update(float timeStep) override;
-    /// Initialize component state when RmlUI subsystem is available.
-    void OnNodeSet(Node* node) override;
+    /// Initialize document model.
+    void OnDocumentPreLoad() override;
+    /// Release document model.
+    void OnDocumentPostUnload() override;
 
     /// Value of UI slider.
     int sliderValue_ = 0;

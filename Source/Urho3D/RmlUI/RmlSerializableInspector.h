@@ -46,8 +46,9 @@ public:
 protected:
     /// RmlUIComponent implementation
     /// @{
-    void OnNodeSet(Node* node) override;
     void Update(float timeStep) override;
+    void OnDocumentPreLoad() override;
+    void OnDocumentPostUnload() override;
     /// @}
 
     Rml::DataModelHandle model_;

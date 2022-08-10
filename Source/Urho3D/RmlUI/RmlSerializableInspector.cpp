@@ -149,6 +149,7 @@ struct RmlSerializableAttribute
 RmlSerializableInspector::RmlSerializableInspector(Context* context)
     : RmlUIComponent(context)
 {
+    SetResource("UI/SerializableInspector.rml");
 }
 
 RmlSerializableInspector::~RmlSerializableInspector()
@@ -213,54 +214,52 @@ void RmlSerializableInspector::Connect(Serializable* serializable)
     model_.DirtyVariable("type");
 }
 
-void RmlSerializableInspector::OnNodeSet(Node* node)
+void RmlSerializableInspector::OnDocumentPreLoad()
 {
-    BaseClassName::OnNodeSet(node);
-    RmlUI* rmlUI = GetUI();
-    Rml::Context* rmlContext = rmlUI->GetRmlContext();
+    if (model_)
+        return;
 
-    if (node != nullptr && !model_)
+    Rml::DataModelConstructor constructor = CreateDataModel("RmlSerializableInspector_model");
+    URHO3D_ASSERT(constructor);
+
+    constructor.RegisterArray<Rml::StringList>();
+    static const auto getVariant = [](const Rml::Variant& src, Rml::Variant& dest) { dest = src; };
+    static const auto setVariant = [](Rml::Variant& dest, const Rml::Variant& src) { dest = src; };
+    constructor.RegisterScalar<Rml::Variant>(getVariant, setVariant);
+    if (auto attributeHandle = constructor.RegisterStruct<RmlSerializableAttribute>())
     {
-        Rml::DataModelConstructor constructor = rmlContext->CreateDataModel("RmlSerializableInspector_model");
-        if (!constructor)
-            return;
-
-        constructor.RegisterArray<Rml::StringList>();
-        static const auto getVariant = [](const Rml::Variant& src, Rml::Variant& dest) { dest = src; };
-        static const auto setVariant = [](Rml::Variant& dest, const Rml::Variant& src) { dest = src; };
-        constructor.RegisterScalar<Rml::Variant>(getVariant, setVariant);
-        if (auto attributeHandle = constructor.RegisterStruct<RmlSerializableAttribute>())
-        {
-            attributeHandle.RegisterMember("name", &RmlSerializableAttribute::name_);
-            attributeHandle.RegisterMember("type", &RmlSerializableAttribute::type_);
-            attributeHandle.RegisterMember("enum_selector", &RmlSerializableAttribute::enumSelector_);
-            attributeHandle.RegisterMember("value", &RmlSerializableAttribute::GetValue, &RmlSerializableAttribute::SetValue);
-        }
-        constructor.RegisterArray<ea::vector<RmlSerializableAttribute>>();
-
-        constructor.Bind("attributes", &attributes_);
-        constructor.Bind("type", &type_);
-
-        model_ = constructor.GetModelHandle();
-
-        SetResource("UI/SerializableInspector.rml");
-        SetOpen(true);
-
-        SubscribeToEvent(rmlUI, "RmlSerializableInspector_CloseWindow",
-            [this](StringHash, VariantMap& args)
-        {
-            Remove();
-        });
+        attributeHandle.RegisterMember("name", &RmlSerializableAttribute::name_);
+        attributeHandle.RegisterMember("type", &RmlSerializableAttribute::type_);
+        attributeHandle.RegisterMember("enum_selector", &RmlSerializableAttribute::enumSelector_);
+        attributeHandle.RegisterMember("value", &RmlSerializableAttribute::GetValue, &RmlSerializableAttribute::SetValue);
     }
-    else if (node == nullptr && model_)
+    constructor.RegisterArray<ea::vector<RmlSerializableAttribute>>();
+
+    constructor.Bind("attributes", &attributes_);
+    constructor.Bind("type", &type_);
+
+    model_ = constructor.GetModelHandle();
+
+    SubscribeToEvent(GetUI(), "RmlSerializableInspector_CloseWindow",
+        [this](StringHash, VariantMap& args)
     {
-        rmlContext->RemoveDataModel("RmlSerializableInspector_model");
-        model_ = nullptr;
-    }
+        Remove();
+    });
+}
+
+void RmlSerializableInspector::OnDocumentPostUnload()
+{
+    if (!model_)
+        return;
+
+    RemoveDataModel("RmlSerializableInspector_model");
+    model_ = nullptr;
 }
 
 void RmlSerializableInspector::Update(float timeStep)
 {
+    BaseClassName::Update(timeStep);
+
     if (!serializable_ || !model_)
     {
         Remove();

@@ -36,7 +36,7 @@ class AdvancedNetworkingUI : public RmlUIComponent
     URHO3D_OBJECT(AdvancedNetworkingUI, RmlUIComponent);
 
 public:
-    using RmlUIComponent::RmlUIComponent;
+    explicit AdvancedNetworkingUI(Context* context);
 
     void StartServer();
     void ConnectToServer(const ea::string& address);
@@ -47,8 +47,9 @@ public:
     bool GetCheatAutoClick() const { return checkAutoClick_; }
 
 private:
-    void OnNodeSet(Node* node) override;
     void Update(float timeStep) override;
+    void OnDocumentPreLoad() override;
+    void OnDocumentPostUnload() override;
 
     Rml::DataModelHandle model_;
     int serverPort_{2345};
