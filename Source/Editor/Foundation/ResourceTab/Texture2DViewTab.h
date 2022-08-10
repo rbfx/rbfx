@@ -22,10 +22,11 @@
 
 #pragma once
 
-#include "CustomSceneViewTab.h"
+#include "../ResourceTab/CustomSceneViewTab.h"
 #include "../../Project/Project.h"
 #include "../../Project/ResourceEditorTab.h"
-#include <Urho3D/Graphics/StaticModel.h>
+
+#include <Urho3D/SystemUI/Texture2DWidget.h>
 
 namespace Urho3D
 {
@@ -45,8 +46,8 @@ public:
     /// @{
     void RenderContent() override;
 
-    ea::string GetResourceTitle() { return "Texture"; }
-    bool SupportMultipleResources() { return false; }
+    ea::string GetResourceTitle() override { return "Texture2D"; }
+    bool SupportMultipleResources() override { return false; }
     bool CanOpenResource(const ResourceFileDescriptor& desc) override;
     /// @}
 
@@ -59,11 +60,9 @@ protected:
     void OnResourceSaved(const ea::string& resourceName) override;
     void OnResourceShallowSaved(const ea::string& resourceName) override;
     /// @}
-    void RenderTexture2D(Texture2D* texture);
-    void RenderTextureCube(TextureCube* texture);
 
 private:
-    SharedPtr<Texture2D> texture2D_;
+    SharedPtr<Texture2DWidget> preview_;
 };
 
 } // namespace Urho3D

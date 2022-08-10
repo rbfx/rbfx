@@ -49,14 +49,6 @@ TextureCubeViewTab::TextureCubeViewTab(Context* context)
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
         EditorTabPlacement::DockCenter)
 {
-    modelNode_ = GetScene()->CreateChild("Model");
-    staticModel_ = modelNode_->CreateComponent<StaticModel>();
-    staticModel_->SetCastShadows(true);
-    material_ = MakeShared<Material>(context_);
-    auto* cache = context->GetSubsystem<ResourceCache>();
-    material_->SetTechnique(0, cache->GetResource<Technique>("Techniques/UnlitOpaque.xml"));
-    staticModel_->SetModel(cache->GetResource<Model>("Models/Sphere.mdl"));
-    staticModel_->SetMaterial(material_);
 }
 
 TextureCubeViewTab::~TextureCubeViewTab()
@@ -70,7 +62,6 @@ bool TextureCubeViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 
 void TextureCubeViewTab::RenderTextureCube(TextureCube* texture)
 {
-    material_->SetTexture(TU_DIFFUSE, texture);
     CustomSceneViewTab::RenderContent();
 }
 
@@ -78,8 +69,7 @@ void TextureCubeViewTab::RenderContent()
 {
     if (textureCube_)
     {
-        RenderTextureCube(textureCube_);
-        return;
+        BaseClassName::RenderContent();
     }
 
 }
@@ -88,6 +78,7 @@ void TextureCubeViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
     textureCube_ = cache->GetResource<TextureCube>(resourceName);
+    preview_->SetSkyboxTexture(textureCube_);
 }
 
 void TextureCubeViewTab::OnResourceUnloaded(const ea::string& resourceName)

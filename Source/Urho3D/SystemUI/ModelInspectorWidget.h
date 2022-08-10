@@ -22,15 +22,15 @@
 
 #pragma once
 
-#include "../SystemUI/ResourceWidget.h"
+#include "../SystemUI/ResourceInspectorWidget.h"
 
 namespace Urho3D
 {
 
 /// SystemUI widget used to edit models.
-class URHO3D_API ModelInspectorWidget : public ResourceWidget
+class URHO3D_API ModelInspectorWidget : public ResourceInspectorWidget
 {
-    URHO3D_OBJECT(ModelInspectorWidget, ResourceWidget);
+    URHO3D_OBJECT(ModelInspectorWidget, ResourceInspectorWidget);
 
 public:
     ModelInspectorWidget(Context* context, const ResourceVector& resources);

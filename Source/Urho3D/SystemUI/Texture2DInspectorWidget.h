@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "ResourceWidget.h"
+#include "../SystemUI/ResourceInspectorWidget.h"
 #include "../Core/Signal.h"
 #include "../Graphics/Animation.h"
 #include "../SystemUI/Widgets.h"
@@ -33,9 +33,9 @@ namespace Urho3D
 {
 
 /// SystemUI widget used to edit 2D texture.
-class URHO3D_API Texture2DInspectorWidget : public ResourceWidget
+class URHO3D_API Texture2DInspectorWidget : public ResourceInspectorWidget
 {
-    URHO3D_OBJECT(Texture2DInspectorWidget, ResourceWidget);
+    URHO3D_OBJECT(Texture2DInspectorWidget, ResourceInspectorWidget);
 
 public:
     Texture2DInspectorWidget(Context* context, const ResourceVector& resources);

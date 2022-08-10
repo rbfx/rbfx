@@ -25,51 +25,26 @@
 #include "../Core/Signal.h"
 #include "../Graphics/Animation.h"
 #include "../SystemUI/Widgets.h"
-
-#include <EASTL/fixed_set.h>
+#include "../SystemUI/BaseWidget.h"
 
 namespace Urho3D
 {
 
-/// SystemUI widget used to edit resources.
-class URHO3D_API ResourceWidget : public Object
+/// SystemUI widget to preview texture.
+class URHO3D_API Texture2DWidget : public BaseWidget
 {
-    URHO3D_OBJECT(ResourceWidget, Object);
+    URHO3D_OBJECT(Texture2DWidget, BaseWidget)
 
 public:
-    struct PropertyDesc
-    {
-        ea::string name_;
-        Variant defaultValue_;
-        ea::function<Variant(const Resource* material)> getter_;
-        ea::function<void(Resource* material, const Variant& value)> setter_;
-        ea::string hint_;
-        Widgets::EditVariantOptions options_;
-    };
+    Texture2DWidget(Context* context, Texture2D* resource);
+    ~Texture2DWidget() override;
 
-    Signal<void()> OnEditBegin;
-    Signal<void()> OnEditEnd;
+    void RenderContent() override;
 
-    using ResourceVector = ea::vector<SharedPtr<Resource>>;
-
-    ResourceWidget(Context* context, const ResourceVector& resources, ea::span<const PropertyDesc> properties);
-    ~ResourceWidget() override;
-
-    void RenderTitle();
-    void RenderContent();
-
-    const ResourceVector& GetResources() const { return resources_; }
+    Texture2D* GetTexture2D() const { return resource_; }
 
 private:
-    
-    const ea::span<const PropertyDesc> properties;
-
-    void RenderProperties(const PropertyDesc& desc);
-    void RenderProperty(const PropertyDesc& desc);
-
-    ea::vector<ea::pair<const PropertyDesc*, Variant>> pendingSetProperties_;
-
-    ResourceVector resources_;
+    SharedPtr<Texture2D> resource_;
 };
 
 } // namespace Urho3D

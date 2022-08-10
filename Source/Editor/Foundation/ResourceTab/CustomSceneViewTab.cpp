@@ -39,25 +39,10 @@ namespace Urho3D
 CustomSceneViewTab::CustomSceneViewTab(Context* context, const ea::string& title, const ea::string& guid,
     EditorTabFlags flags, EditorTabPlacement placement)
     : ResourceEditorTab(context, title, guid, flags, placement)
-    , scene_(MakeShared<Scene>(context))
-    , renderer_(MakeShared<SceneRendererToTexture>(scene_))
+    , preview_(MakeShared<SceneWidget>(context))
     , cameraController_(MakeShared<CameraController>(context, GetHotkeyManager()))
 {
-    ResourceCache* cache = context->GetSubsystem<ResourceCache>();
-    scene_->CreateComponent<Octree>();
-    auto* zone = scene_->CreateComponent<Zone>();
-    auto* skybox = scene_->CreateComponent<Skybox>();
-    zone->SetBoundingBox(BoundingBox(Vector3::ONE * -1000.0f, Vector3::ONE * 1000.0f));
-    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
-    skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
-    zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml"));
-    lightPivotNode_ = scene_->CreateChild("DirectionalLightPivot");
-    lightNode_ = lightPivotNode_->CreateChild("DirectionalLight");
-    auto* light = lightNode_->CreateComponent<Light>();
-    light->SetLightType(LIGHT_DIRECTIONAL);
-    light->SetCastShadows(true);
-    lightNode_->LookAt(Vector3::FORWARD - Vector3::UP);
-    renderer_->SetActive(true);
+    preview_->CreateDefaultScene();
 }
 
 CustomSceneViewTab::~CustomSceneViewTab()
@@ -71,30 +56,23 @@ void CustomSceneViewTab::RenderTitle()
 
 void CustomSceneViewTab::RenderContent()
 {
-    if (!scene_->HasComponent<DebugRenderer>())
-    {
-        DebugRenderer* debug = scene_->GetOrCreateComponent<DebugRenderer>();
-        debug->SetTemporary(true);
-        debug->SetLineAntiAlias(true);
-    }
     const ImVec2 basePosition = ui::GetCursorPos();
 
     RenderTitle();
 
-    const ImVec2 contentPosition = ui::GetCursorPos();
+    if (preview_)
+    {
+        const ImVec2 contentPosition = ui::GetCursorPos();
 
-    const auto cameraNode = renderer_->GetCameraNode();
-    lightPivotNode_->SetRotation(cameraNode->GetWorldRotation());
+        const auto contentSize = ToImGui(GetContentSize()) - ImVec2(0, contentPosition.y - basePosition.y);
+        if (ui::BeginChild("scene_preview", contentSize))
+        {
+            preview_->RenderContent();
+        }
+        ui::EndChild();
 
-    const auto contentSize = GetContentSize() - IntVector2(0, contentPosition.y - basePosition.y);
-    renderer_->SetTextureSize(contentSize);
-    renderer_->Update();
-
-    Texture2D* sceneTexture = renderer_->GetTexture();
-    ui::SetCursorPos(contentPosition);
-    Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
-
-    cameraController_->ProcessInput(renderer_->GetCamera(), state_);
+        cameraController_->ProcessInput(preview_->GetCamera(), state_);
+    }
 }
 
 } // namespace Urho3D

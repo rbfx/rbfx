@@ -48,7 +48,7 @@ const StringVector textureAddressMode{
 
 } // namespace
 
-const ea::vector<ResourceWidget::PropertyDesc> Texture2DInspectorWidget::properties{
+const ea::vector<ResourceInspectorWidget::PropertyDesc> Texture2DInspectorWidget::properties{
     {
         "SRGB",
         Variant{false},

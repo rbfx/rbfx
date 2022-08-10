@@ -60,37 +60,28 @@ bool Texture2DViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
     return desc.HasObjectType<Texture2D>();
 }
 
-void Texture2DViewTab::RenderTexture2D(Texture2D* texture)
-{
-    const ImVec2 basePosition = ui::GetCursorPos();
-
-    RenderTitle();
-
-    const ImVec2 contentPosition = ui::GetCursorPos();
-    const auto contentSize = GetContentSize() - IntVector2(0, contentPosition.y - basePosition.y);
-    const ImVec2 previewSize = Widgets::FitContent(ToImGui(contentSize), ToImGui(texture->GetSize()));
-    ui::SetCursorPos(contentPosition + (ToImGui(contentSize) - previewSize) * 0.5f);
-    Widgets::Image(texture, previewSize);
-}
-
 void Texture2DViewTab::RenderContent()
 {
-    if (texture2D_)
+    if (preview_)
     {
-        RenderTexture2D(texture2D_);
-        return;
+        RenderTitle();
+        if (ui::BeginChild("content", ImVec2(0,0)))
+        {
+            preview_->RenderContent();
+        }
+        ui::EndChild();
     }
 }
 
 void Texture2DViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    texture2D_ = cache->GetResource<Texture2D>(resourceName);
+    preview_ = MakeShared<Texture2DWidget>(context_, cache->GetResource<Texture2D>(resourceName));
 }
 
 void Texture2DViewTab::OnResourceUnloaded(const ea::string& resourceName)
 {
-    texture2D_.Reset();
+    preview_.Reset();
 }
 
 void Texture2DViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)

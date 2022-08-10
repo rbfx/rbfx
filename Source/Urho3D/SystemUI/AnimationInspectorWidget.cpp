@@ -33,7 +33,7 @@ namespace
 
 } // namespace
 
-const ea::vector<ResourceWidget::PropertyDesc> AnimationInspectorWidget::properties{
+const ea::vector<ResourceInspectorWidget::PropertyDesc> AnimationInspectorWidget::properties{
     {
         "Length",
         Variant{0.0f},

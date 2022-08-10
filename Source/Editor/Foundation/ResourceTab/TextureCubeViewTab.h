@@ -60,12 +60,8 @@ protected:
     void OnResourceShallowSaved(const ea::string& resourceName) override;
     /// @}
     void RenderTextureCube(TextureCube* texture);
-
 private:
     SharedPtr<TextureCube> textureCube_;
-    SharedPtr<Node> modelNode_;
-    SharedPtr<StaticModel> staticModel_;
-    SharedPtr<Material> material_;
 };
 
 } // namespace Urho3D

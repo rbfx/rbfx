@@ -20,47 +20,34 @@
 // THE SOFTWARE.
 //
 
-#include "../../Foundation/InspectorTab/ModelInspector.h"
+#include "../SystemUI/Texture2DWidget.h"
 
-#include "Urho3D/Graphics/StaticModel.h"
-#include "Urho3D/SystemUI/SceneWidget.h"
-
-#include <Urho3D/Graphics/Model.h>
-#include <Urho3D/SystemUI/ModelInspectorWidget.h>
 
 namespace Urho3D
 {
 
-void Foundation_ModelInspector(Context* context, InspectorTab* inspectorTab)
-{
-    inspectorTab->RegisterAddon<ModelInspector>(inspectorTab->GetProject());
-}
-
-ModelInspector::ModelInspector(Project* project)
-    : BaseClassName(project)
+Texture2DWidget::Texture2DWidget(Context* context, Texture2D* resource)
+    : BaseClassName(context)
+    , resource_(resource)
 {
 }
 
-StringHash ModelInspector::GetResourceType() const
+Texture2DWidget::~Texture2DWidget()
 {
-    return Model::GetTypeStatic();
 }
 
-SharedPtr<ResourceInspectorWidget> ModelInspector::MakeInspectorWidget(const ResourceVector& resources)
+void Texture2DWidget::RenderContent()
 {
-    return MakeShared<ModelInspectorWidget>(context_, resources);
-}
+    Texture2D* texture = GetTexture2D();
+    if (!texture)
+        return;
 
-SharedPtr<BaseWidget> ModelInspector::MakePreviewWidget(Resource* resource)
-{
-    auto sceneWidget = MakeShared<SceneWidget>(context_);
-    auto scene = sceneWidget->CreateDefaultScene();
-    auto modelNode = scene->CreateChild("Model");
-    auto staticModel = modelNode->CreateComponent<StaticModel>();
-    auto model = static_cast<Model*>(resource);
-    staticModel->SetModel(model);
-    sceneWidget->LookAt(model->GetBoundingBox());
-    return sceneWidget;
+    const ImVec2 contentPosition = ui::GetCursorPos();
+    auto reg = ui::GetContentRegionAvail();
+    const auto contentSize = ImVec2(reg.x, reg.x);
+    const ImVec2 previewSize = Widgets::FitContent(contentSize, ToImGui(texture->GetSize()));
+    ui::SetCursorPos(contentPosition + ImVec2((contentSize.x - previewSize.x) * 0.5f, 0.0f));
+    Widgets::Image(texture, previewSize);
 }
 
 } // namespace Urho3D

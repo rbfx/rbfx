@@ -40,7 +40,8 @@ public:
 
 protected:
     StringHash GetResourceType() const override;
-    SharedPtr<ResourceWidget> MakeWidget(const ResourceVector& resources) override;
+    SharedPtr<ResourceInspectorWidget> MakeInspectorWidget(const ResourceVector& resources) override;
+    SharedPtr<BaseWidget> MakePreviewWidget(Resource* resource) override;
 };
 
 } // namespace Urho3D

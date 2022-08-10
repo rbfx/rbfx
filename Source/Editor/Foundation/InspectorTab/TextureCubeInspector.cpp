@@ -22,6 +22,9 @@
 
 #include "../../Foundation/InspectorTab/TextureCubeInspector.h"
 
+#include "Urho3D/Graphics/Skybox.h"
+#include "Urho3D/SystemUI/SceneWidget.h"
+
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/SystemUI/TextureCubeInspectorWidget.h>
 
@@ -43,9 +46,16 @@ StringHash TextureCubeInspector::GetResourceType() const
     return TextureCube::GetTypeStatic();
 }
 
-SharedPtr<ResourceWidget> TextureCubeInspector::MakeWidget(const ResourceVector& resources)
+SharedPtr<ResourceInspectorWidget> TextureCubeInspector::MakeInspectorWidget(const ResourceVector& resources)
 {
     return MakeShared<TextureCubeInspectorWidget>(context_, resources);
 }
 
+SharedPtr<BaseWidget> TextureCubeInspector::MakePreviewWidget(Resource* resource)
+{
+    auto sceneWidget = MakeShared<SceneWidget>(context_);
+    sceneWidget->CreateDefaultScene();
+    sceneWidget->SetSkyboxTexture(static_cast<Texture*>(resource));
+    return sceneWidget;
+}
 } // namespace Urho3D

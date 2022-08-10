@@ -25,7 +25,7 @@
 #include "../../Foundation/InspectorTab.h"
 #include "Project/ModifyResourceAction.h"
 
-#include <Urho3D/SystemUI/ResourceWidget.h>
+#include <Urho3D/SystemUI/ResourceInspectorWidget.h>
 
 namespace Urho3D
 {
@@ -40,7 +40,7 @@ class InspectorWithPreview
     URHO3D_OBJECT(InspectorWithPreview, Object)
 
 public:
-    typedef ResourceWidget::ResourceVector ResourceVector;
+    typedef ResourceInspectorWidget::ResourceVector ResourceVector;
 
     explicit InspectorWithPreview(Project* project);
 
@@ -54,9 +54,9 @@ public:
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
 protected:
-    virtual void RenderPreview(Resource* resource);
     virtual StringHash GetResourceType() const { return 0; }
-    virtual SharedPtr<ResourceWidget> MakeWidget(const ResourceVector& resources) { return nullptr; }
+    virtual SharedPtr<ResourceInspectorWidget> MakeInspectorWidget(const ResourceVector& resources) { return nullptr; }
+    virtual SharedPtr<BaseWidget> MakePreviewWidget(Resource* resource) { return nullptr; }
 
 private:
     void OnProjectRequest(ProjectRequest* request);
@@ -68,7 +68,8 @@ private:
 
     StringVector resourceNames_;
 
-    SharedPtr<ResourceWidget> widget_;
+    SharedPtr<ResourceInspectorWidget> inspector_;
+    SharedPtr<BaseWidget> preview_;
     SharedPtr<ModifyResourceAction> pendingAction_;
 };
 

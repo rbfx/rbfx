@@ -22,15 +22,16 @@
 
 #pragma once
 
-#include "../SystemUI/ResourceWidget.h"
+#include "../SystemUI/ResourceInspectorWidget.h"
 
 namespace Urho3D
 {
 
 /// SystemUI widget used to edit animation.
-class URHO3D_API AnimationInspectorWidget : public ResourceWidget
+class URHO3D_API AnimationInspectorWidget : public ResourceInspectorWidget
 {
-    URHO3D_OBJECT(AnimationInspectorWidget, ResourceWidget);
+    URHO3D_OBJECT(AnimationInspectorWidget, ResourceInspectorWidget);
+
 public:
     AnimationInspectorWidget(Context* context, const ResourceVector& resources);
     ~AnimationInspectorWidget() override;

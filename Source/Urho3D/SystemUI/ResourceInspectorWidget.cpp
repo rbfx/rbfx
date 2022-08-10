@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../SystemUI/ResourceWidget.h"
+#include "../SystemUI/ResourceInspectorWidget.h"
 #include "../SystemUI/SystemUI.h"
 
 #include <EASTL/fixed_vector.h>
@@ -33,20 +33,20 @@ namespace
 
 } // namespace
 
-ResourceWidget::ResourceWidget(
+ResourceInspectorWidget::ResourceInspectorWidget(
     Context* context, const ResourceVector& resources, ea::span<const PropertyDesc> properties)
-    : Object(context)
+    : BaseClassName(context)
     , resources_(resources)
     , properties(properties)
 {
     URHO3D_ASSERT(!resources_.empty());
 }
 
-ResourceWidget::~ResourceWidget()
+ResourceInspectorWidget::~ResourceInspectorWidget()
 {
 }
 
-void ResourceWidget::RenderTitle()
+void ResourceInspectorWidget::RenderTitle()
 {
     if (resources_.size() == 1)
         ui::Text("%s", resources_[0]->GetName().c_str());
@@ -54,8 +54,10 @@ void ResourceWidget::RenderTitle()
         ui::Text("%d %s", resources_.size(), resources_[0]->GetTypeInfo()->GetTypeName().c_str());
 }
 
-void ResourceWidget::RenderContent()
+void ResourceInspectorWidget::RenderContent()
 {
+    pendingSetProperties_.clear();
+
     const IdScopeGuard guard("RenderProperties");
 
     if (!ui::CollapsingHeader("Properties", ImGuiTreeNodeFlags_DefaultOpen))
@@ -65,9 +67,20 @@ void ResourceWidget::RenderContent()
         RenderProperty(property);
 
     ui::Separator();
+
+    if (!pendingSetProperties_.empty())
+    {
+        OnEditBegin(this);
+        for (Resource* material : resources_)
+        {
+            for (const auto& [desc, value] : pendingSetProperties_)
+                desc->setter_(material, value);
+        }
+        OnEditEnd(this);
+    }
 }
 
-void ResourceWidget::RenderProperty(const PropertyDesc& desc)
+void ResourceInspectorWidget::RenderProperty(const PropertyDesc& desc)
 {
     const IdScopeGuard guard(desc.name_.c_str());
 

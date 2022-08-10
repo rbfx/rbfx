@@ -20,42 +20,18 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include "../../Core/CommonEditorActions.h"
-#include "../../Project/Project.h"
-#include "../../Project/ResourceEditorTab.h"
-#include "../../Foundation/Shared/CameraController.h"
-
-#include <Urho3D/SystemUI/SceneWidget.h>
-#include <Urho3D/Graphics/Animation.h>
+#include "../SystemUI/BaseWidget.h"
 
 namespace Urho3D
 {
 
-/// Tab that renders custom Scene.
-class CustomSceneViewTab : public ResourceEditorTab
+BaseWidget::BaseWidget(Context* context)
+    : BaseClassName(context)
 {
-    URHO3D_OBJECT(CustomSceneViewTab, ResourceEditorTab)
+}
 
-public:
-    explicit CustomSceneViewTab(Context* context, const ea::string& title, const ea::string& guid, EditorTabFlags flags,
-        EditorTabPlacement placement);
-    ~CustomSceneViewTab() override;
-
-    /// ResourceEditorTab implementation
-    /// @{
-    void RenderContent() override;
-    /// @}
-
-    Scene* GetScene() const { return preview_?preview_->GetScene():nullptr; }
-
-protected:
-    virtual void RenderTitle();
-
-    const SharedPtr<SceneWidget> preview_;
-    SharedPtr<CameraController> cameraController_;
-    CameraController::PageState state_;
-};
+BaseWidget::~BaseWidget()
+{
+}
 
 } // namespace Urho3D

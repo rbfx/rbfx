@@ -39,9 +39,10 @@ public:
     explicit Texture2DInspector(Project* project);
 
 protected:
-    void RenderPreview(Resource* resource) override;
     StringHash GetResourceType() const override;
-    SharedPtr<ResourceWidget> MakeWidget(const ResourceVector& resources) override;
+    SharedPtr<ResourceInspectorWidget> MakeInspectorWidget(const ResourceVector& resources) override;
+    SharedPtr<BaseWidget> MakePreviewWidget(Resource* resource) override;
 };
 
 } // namespace Urho3D
+

@@ -22,40 +22,38 @@
 
 #pragma once
 
-#include "../../Core/CommonEditorActions.h"
-#include "../../Project/Project.h"
-#include "../../Project/ResourceEditorTab.h"
-#include "../../Foundation/Shared/CameraController.h"
-
-#include <Urho3D/SystemUI/SceneWidget.h>
-#include <Urho3D/Graphics/Animation.h>
+#include "../Core/Signal.h"
+#include "../Graphics/Animation.h"
+#include "../SystemUI/BaseWidget.h"
+#include "../SystemUI/Widgets.h"
+#include "../Utility/SceneRendererToTexture.h"
 
 namespace Urho3D
 {
 
-/// Tab that renders custom Scene.
-class CustomSceneViewTab : public ResourceEditorTab
+/// SystemUI widget to preview scene.
+class URHO3D_API SceneWidget : public BaseWidget
 {
-    URHO3D_OBJECT(CustomSceneViewTab, ResourceEditorTab)
+    URHO3D_OBJECT(SceneWidget, BaseWidget)
 
 public:
-    explicit CustomSceneViewTab(Context* context, const ea::string& title, const ea::string& guid, EditorTabFlags flags,
-        EditorTabPlacement placement);
-    ~CustomSceneViewTab() override;
+    SceneWidget(Context* context);
+    ~SceneWidget() override;
 
-    /// ResourceEditorTab implementation
-    /// @{
     void RenderContent() override;
-    /// @}
 
-    Scene* GetScene() const { return preview_?preview_->GetScene():nullptr; }
+    Scene* GetScene() const { return scene_; }
+    SceneRendererToTexture* GetRenderer();
+    Camera* GetCamera() { return GetRenderer() ? GetRenderer()->GetCamera() : nullptr; }
+    Scene* CreateDefaultScene();
+    void SetSkyboxTexture(Texture* texture);
+    void LookAt(const BoundingBox& box);
 
-protected:
-    virtual void RenderTitle();
-
-    const SharedPtr<SceneWidget> preview_;
-    SharedPtr<CameraController> cameraController_;
-    CameraController::PageState state_;
+private:
+    SharedPtr<Scene> scene_;
+    SharedPtr<SceneRendererToTexture> renderer_;
+    Node* lightPivotNode_;
+    Node* lightNode_;
 };
 
 } // namespace Urho3D

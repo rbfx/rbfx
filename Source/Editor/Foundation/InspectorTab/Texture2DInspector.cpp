@@ -23,6 +23,7 @@
 #include "../../Foundation/InspectorTab/Texture2DInspector.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/SystemUI/Texture2DWidget.h>
 #include <Urho3D/SystemUI/Texture2DInspectorWidget.h>
 
 namespace Urho3D
@@ -43,21 +44,14 @@ StringHash Texture2DInspector::GetResourceType() const
     return Texture2D::GetTypeStatic();
 }
 
-SharedPtr<ResourceWidget> Texture2DInspector::MakeWidget(const ResourceVector& resources)
+SharedPtr<BaseWidget> Texture2DInspector::MakePreviewWidget(Resource* resource)
 {
-    return MakeShared<Texture2DInspectorWidget>(context_, resources);
+    return MakeShared<Texture2DWidget>(context_, static_cast<Texture2D*>(resource));
 }
 
-void Texture2DInspector::RenderPreview(Resource* resource)
+SharedPtr<ResourceInspectorWidget> Texture2DInspector::MakeInspectorWidget(const ResourceVector& resources)
 {
-    Texture2D* texture = static_cast<Texture2D*>(resource);
-
-    const ImVec2 contentPosition = ui::GetCursorPos();
-    auto reg = ui::GetContentRegionAvail();
-    const auto contentSize = ImVec2(reg.x, reg.x);
-    const ImVec2 previewSize = Widgets::FitContent(contentSize, ToImGui(texture->GetSize()));
-    ui::SetCursorPos(contentPosition + ImVec2((contentSize.x - previewSize.x) * 0.5f, 0.0f));
-    Widgets::Image(texture, previewSize);
+    return MakeShared<Texture2DInspectorWidget>(context_, resources);
 }
 
 } // namespace Urho3D

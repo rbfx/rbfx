@@ -84,13 +84,25 @@ void InspectorWithPreview::InspectResources()
 
     if (resources.empty())
     {
-        widget_ = nullptr;
+        inspector_ = nullptr;
+        preview_ = nullptr;
         return;
     }
 
-    widget_ = MakeWidget(resources);
-    widget_->OnEditBegin.Subscribe(this, &InspectorWithPreview::BeginEdit);
-    widget_->OnEditEnd.Subscribe(this, &InspectorWithPreview::EndEdit);
+    inspector_ = MakeInspectorWidget(resources);
+    if (inspector_)
+    {
+        inspector_->OnEditBegin.Subscribe(this, &InspectorWithPreview::BeginEdit);
+        inspector_->OnEditEnd.Subscribe(this, &InspectorWithPreview::EndEdit);
+    }
+    if (resources.size() == 1 && resources.front() != nullptr)
+    {
+        preview_ = MakePreviewWidget(resources.front());
+    }
+    else
+    {
+        preview_ = nullptr;
+    }
 }
 
 void InspectorWithPreview::BeginEdit()
@@ -102,7 +114,7 @@ void InspectorWithPreview::BeginEdit()
     auto undoManager = project_->GetUndoManager();
 
     pendingAction_ = MakeShared<ModifyResourceAction>(project_);
-    for (Resource* material : widget_->GetResources())
+    for (Resource* material : inspector_->GetResources())
         pendingAction_->AddResource(material);
 
     // Initialization of "redo" state is delayed so it's okay to push the action here
@@ -111,34 +123,72 @@ void InspectorWithPreview::BeginEdit()
 
 void InspectorWithPreview::EndEdit()
 {
-    for (Resource* material : widget_->GetResources())
+    for (Resource* material : inspector_->GetResources())
         project_->SaveFileDelayed(material);
 }
 
 void InspectorWithPreview::RenderContent()
 {
-    if (!widget_)
+    if (!inspector_)
         return;
 
-    auto& resources = widget_->GetResources();
+    auto& resources = inspector_->GetResources();
 
-    widget_->RenderTitle();
-    if (resources.size() == 1)
+    const ImVec2 basePosition = ui::GetCursorPos();
+
+    inspector_->RenderTitle();
+    ui::Separator();
+
+    const ImVec2 contentPosition = ui::GetCursorPos();
+    const ImGuiContext& g = *GImGui;
+    const ImGuiWindow* window = g.CurrentWindow;
+    const ImRect rect = ImRound(window->ContentRegionRect);
+    const auto contentSize = rect.GetSize() - ImVec2(0, contentPosition.y - basePosition.y + 5);
+
+    if (preview_)
     {
-        auto& singleResource = resources.front();
-        if (ui::Button("Open"))
+        const ImVec2 previewSize(contentSize.x, contentSize.x);
+        const ImVec2 inspectorSize(contentSize.x, contentSize.y - previewSize.y);
+        if (inspectorSize.y > previewSize.y)
         {
-            auto request = MakeShared<OpenResourceRequest>(context_, singleResource->GetName());
-            project_->ProcessRequest(request);
+            if (ui::BeginChild("inspector", inspectorSize, false, ImGuiWindowFlags_None))
+            {
+                auto& singleResource = resources.front();
+                if (ui::Button("Open"))
+                {
+                    auto request = MakeShared<OpenResourceRequest>(context_, singleResource->GetName());
+                    project_->ProcessRequest(request);
+                }
+                inspector_->RenderContent();
+            }
+            ui::EndChild();
+            if (ui::BeginChild("preview", previewSize, false, ImGuiWindowFlags_None))
+            {
+                preview_->RenderContent();
+            }
+            ui::EndChild();
+            return;
         }
     }
-    ui::Separator();
-    widget_->RenderContent();
-    if (resources.size() == 1)
+
+    if (ui::BeginChild("inspector", contentSize, false, ImGuiWindowFlags_None))
     {
-        ui::Separator();
-        RenderPreview(resources.front());
+        if (resources.size() == 1)
+        {
+            auto& singleResource = resources.front();
+            if (ui::Button("Open"))
+            {
+                auto request = MakeShared<OpenResourceRequest>(context_, singleResource->GetName());
+                project_->ProcessRequest(request);
+            }
+        }
+        inspector_->RenderContent();
+        if (preview_)
+        {
+            preview_->RenderContent();
+        }
     }
+    ui::EndChild();
 }
 
 void InspectorWithPreview::RenderContextMenuItems()
@@ -146,10 +196,6 @@ void InspectorWithPreview::RenderContextMenuItems()
 }
 
 void InspectorWithPreview::RenderMenu()
-{
-}
-
-void InspectorWithPreview::RenderPreview(Resource* resource)
 {
 }
 

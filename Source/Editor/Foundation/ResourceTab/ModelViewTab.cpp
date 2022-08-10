@@ -20,12 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include "../../Core/CommonEditorActions.h"
 #include "../../Core/IniHelpers.h"
 #include "ModelViewTab.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/SystemUI/Widgets.h>
 
 namespace Urho3D
 {
@@ -62,6 +60,10 @@ void ModelViewTab::OnResourceLoaded(const ea::string& resourceName)
     auto cache = GetSubsystem<ResourceCache>();
     model_ = cache->GetResource<Model>(resourceName);
     staticModel_->SetModel(model_);
+    if (model_)
+    {
+        preview_->LookAt(model_->GetBoundingBox());
+    }
 }
 
 void ModelViewTab::OnResourceUnloaded(const ea::string& resourceName)

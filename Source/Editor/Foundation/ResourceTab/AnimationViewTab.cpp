@@ -79,6 +79,10 @@ void AnimationViewTab::RenderTitle()
     {
         model_ = cache->GetResource<Model>(textureName);
         animatedModel_->SetModel(model_);
+        if (model_)
+        {
+            preview_->LookAt(model_->GetBoundingBox());
+        }
     }
 }
 

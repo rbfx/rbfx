@@ -34,8 +34,7 @@ namespace
 
 } // namespace
 
-const ea::vector<ResourceWidget::PropertyDesc> ModelInspectorWidget::properties{
-};
+const ea::vector<ResourceInspectorWidget::PropertyDesc> ModelInspectorWidget::properties{};
 
 ModelInspectorWidget::ModelInspectorWidget(Context* context, const ResourceVector& resources)
     : BaseClassName(context, resources, ea::span(properties.begin(), properties.end()))

@@ -44,7 +44,7 @@ StringHash AnimationInspector::GetResourceType() const
 }
 
 
-SharedPtr<ResourceWidget> AnimationInspector::MakeWidget(const ResourceVector& resources)
+SharedPtr<ResourceInspectorWidget> AnimationInspector::MakeInspectorWidget(const ResourceVector& resources)
 {
     return MakeShared<AnimationInspectorWidget>(context_, resources);
 }
