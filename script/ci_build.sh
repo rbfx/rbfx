@@ -46,8 +46,8 @@ declare -A android_types=(
 )
 
 generators_windows_mingw=('-G' 'MinGW Makefiles')
-generators_windows=('-G' 'Visual Studio 16 2019')
-generators_uwp=('-G' 'Visual Studio 16 2019' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0')
+generators_windows=('-G' 'Visual Studio 17 2022')
+generators_uwp=('-G' 'Visual Studio 17 2022' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0')
 generators_linux=('-G' 'Ninja')
 generators_web=('-G' 'Ninja')
 generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
@@ -70,6 +70,8 @@ quirks_mingw=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
     '-DURHO3D_TESTING=OFF'
+    '-DURHO3D_GRAPHICS_API=OpenGL'
+    '-DURHO3D_PCH=OFF'
 )
 quirks_ios=(
     '-DURHO3D_CSHARP=OFF'
