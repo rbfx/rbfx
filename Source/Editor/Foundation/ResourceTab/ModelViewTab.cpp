@@ -62,7 +62,7 @@ void ModelViewTab::OnResourceLoaded(const ea::string& resourceName)
     staticModel_->SetModel(model_);
     if (model_)
     {
-        preview_->LookAt(model_->GetBoundingBox());
+        state_.LookAt(model_->GetBoundingBox());
     }
 }
 

@@ -64,6 +64,7 @@ public:
 
         PageState();
         void LookAt(const Vector3& position, const Vector3& target);
+        void LookAt(const BoundingBox& box);
         void SerializeInBlock(Archive& archive);
     };
 

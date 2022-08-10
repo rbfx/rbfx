@@ -69,10 +69,17 @@ CameraController::PageState::PageState()
     LookAt(Vector3{0.0f, 5.0f, -10.0f}, Vector3::ZERO);
 }
 
+void CameraController::PageState::LookAt(const BoundingBox& box)
+{
+    auto center = box.Center();
+    auto pos = center + box.Size().Length() * Vector3::ONE;
+    LookAt(pos, center);
+}
+
 void CameraController::PageState::LookAt(const Vector3& position, const Vector3& target)
 {
     lastCameraPosition_ = position;
-    lastCameraRotation_ = Quaternion{Vector3::FORWARD, target - position};
+    lastCameraRotation_.FromLookRotation(target - position, Vector3::UP);
     yaw_ = lastCameraRotation_.YawAngle();
     pitch_ = lastCameraRotation_.PitchAngle();
 }
@@ -104,7 +111,6 @@ CameraController::CameraController(Context* context, HotkeyManager* hotkeyManage
     hotkeyManager->BindPassiveHotkey(Hotkey_LookAround);
     hotkeyManager->BindPassiveHotkey(Hotkey_OrbitAround);
 }
-
 
 Vector2 CameraController::GetMouseMove() const
 {
