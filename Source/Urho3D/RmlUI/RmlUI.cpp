@@ -661,8 +661,6 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     if (Rml::Element* element = rmlContext_->GetFocusElement())
         focus = element->GetOwnerDocument() == document ? Rml::FocusFlag::Document : focus;
 
-    document->Close();
-
     Rml::ElementDocument* newDocument = rmlContext_->LoadDocument(document->GetSourceURL());
     newDocument->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x_, Rml::Property::PX));
     newDocument->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y_, Rml::Property::PX));
@@ -677,6 +675,8 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     args.unloadedDocument_ = document;
     args.loadedDocument_ = newDocument;
     documentReloaded_(this, args);
+
+    document->Close();
 
     return newDocument;
 }

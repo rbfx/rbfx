@@ -47,6 +47,9 @@ public:
     /// Registers object with the engine.
     static void RegisterObject(Context* context);
 
+    /// Returns instance of the component from the document.
+    static RmlUIComponent* FromDocument(Rml::ElementDocument* document);
+
     /// Set resource path of rml file defining a window.
     void SetResource(const ResourceRef& resourceRef);
     /// Set resource path of rml file defining a window.
@@ -95,6 +98,9 @@ protected:
     void OnComponentRemoved(StringHash, VariantMap& args);
 
 protected:
+    /// Set currently active document and link it to the component.
+    void SetDocument(Rml::ElementDocument* document);
+
     /// A rml file resource.
     ResourceRef resource_;
     /// Flag indicating that window will open as soon as component is added to an object.

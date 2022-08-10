@@ -39,6 +39,13 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+const Rml::String ComponentPtrAttribute = "__RmlUIComponentPtr__";
+
+}
+
 RmlUIComponent::RmlUIComponent(Context* context)
     : LogicComponent(context)
 {
@@ -124,7 +131,8 @@ void RmlUIComponent::OpenInternal()
     ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
     ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
 
-    document_ = ui->LoadDocument(resource_.name_);
+    SetDocument(ui->LoadDocument(resource_.name_));
+
     if (document_ == nullptr)
     {
         URHO3D_LOGERROR("Failed to load UI document: {}", resource_.name_);
@@ -149,14 +157,14 @@ void RmlUIComponent::CloseInternal()
     position_ = GetPosition();
     size_ = GetSize();
     document_->Close();
-    document_ = nullptr;
+    SetDocument(nullptr);
 }
 
 void RmlUIComponent::OnDocumentClosed(Rml::ElementDocument* document)
 {
     if (document_ == document)
     {
-        document_ = nullptr;
+        SetDocument(nullptr);
         open_ = false;
     }
 }
@@ -263,7 +271,7 @@ void RmlUIComponent::OnUICanvasResized(const RmlCanvasResizedArgs& args)
 void RmlUIComponent::OnDocumentReloaded(const RmlDocumentReloadedArgs& args)
 {
     if (document_ == args.unloadedDocument_)
-        document_ = args.loadedDocument_;
+        SetDocument(args.loadedDocument_);
 }
 
 void RmlUIComponent::SetResource(const eastl::string& resourceName)
@@ -319,6 +327,30 @@ RmlUI* RmlUIComponent::GetUI() const
     if (canvasComponent_ != nullptr)
         return canvasComponent_->GetUI();
     return GetSubsystem<RmlUI>();
+}
+
+void RmlUIComponent::SetDocument(Rml::ElementDocument* document)
+{
+    if (document_ != document)
+    {
+        if (document_)
+            document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(nullptr));
+
+        document_ = document;
+
+        if (document_)
+            document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(this));
+    }
+}
+
+RmlUIComponent* RmlUIComponent::FromDocument(Rml::ElementDocument* document)
+{
+    if (document)
+    {
+        if (const Rml::Variant* value = document->GetAttribute(ComponentPtrAttribute))
+            return static_cast<RmlUIComponent*>(value->Get<void*>());
+    }
+    return nullptr;
 }
 
 }
