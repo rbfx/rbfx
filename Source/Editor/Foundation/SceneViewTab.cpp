@@ -522,28 +522,24 @@ void SceneViewTab::CreatePrefabFile(SceneSelection& selection)
     {
         if (SceneViewPage* page = GetPage(activeNode->GetScene()))
         {
-            if (activeNode)
+            eastl::string prefabFileName = activeNode->GetName();
+
+            if (prefabFileName.length() < 1)
+                prefabFileName = Format("PrefabNodeID_{}", activeNode->GetID());
+
+            Vector3 oldPrefabPosition = activeNode->GetWorldPosition();
+            activeNode->SetWorldPosition(Vector3::ZERO);
+            FileSystem* fs = GetSubsystem<FileSystem>();
+
+            if (fs)
             {
-                eastl::string prefabFileName = activeNode->GetName();
-
-                if (prefabFileName.length() < 1)
-                    prefabFileName = prefabFileName.sprintf("%s %d", "PrefabNodeID_", activeNode->GetID());
-
-                prefabFileName += ".xml";
-
-                Vector3 oldPrefabPosition = activeNode->GetWorldPosition();
-                activeNode->SetWorldPosition(Vector3::ZERO);
-                FileSystem* fs = GetSubsystem<FileSystem>();
-
-                if (fs)
-                {
-                    eastl::string path = fs->FindResourcePrefixPath();
-                    File file = File(context_, path + "Data/Prefabs/" + prefabFileName, FILE_WRITE);
-                    activeNode->SaveXML(file);
-                    file.Close();
-                }
-                activeNode->SetWorldPosition(oldPrefabPosition);
+                eastl::string path = fs->FindResourcePrefixPath();
+                auto xmlFile = MakeShared<XMLFile>(context_);
+                XMLElement xmlRoot = xmlFile->CreateRoot("node");
+                activeNode->SaveXML(xmlRoot);
+                xmlFile->SaveFile(path + "Data/Prefabs/" + prefabFileName + ".xml");
             }
+            activeNode->SetWorldPosition(oldPrefabPosition);
         }
     }
 }
