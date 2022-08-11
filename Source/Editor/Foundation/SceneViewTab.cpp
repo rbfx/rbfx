@@ -40,6 +40,8 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/Widgets.h>
+#include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Graphics/Octree.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -861,6 +863,8 @@ void SceneViewTab::RenderContent()
     activePage->contentArea_ = Rect{contentAreaMin, contentAreaMax};
 
     UpdateAddons(*activePage);
+    DragAndDropPrefabsToSceneView(*activePage);
+
 }
 
 void SceneViewTab::UpdateAddons(SceneViewPage& page)
@@ -878,6 +882,65 @@ void SceneViewTab::InspectSelection(SceneViewPage& page)
     auto project = GetProject();
     auto request = MakeShared<InspectNodeComponentRequest>(context_, page.selection_.GetNodesAndScenes(), page.selection_.GetComponents());
     project->ProcessRequest(request, this);
+}
+
+void SceneViewTab::DragAndDropPrefabsToSceneView(SceneViewPage& page)
+{
+    if (ui::BeginDragDropTarget() && ui::IsMouseReleased(0))
+    {
+        const ImGuiPayload* ui_payload = ui::GetDragDropPayload();
+        if (!ui_payload && !ui_payload->Data)
+            return;
+
+        if (ResourceDragDropPayload* res = static_cast<ResourceDragDropPayload*>(ui_payload->Data))
+        {
+            for (const ResourceFileDescriptor& desc : res->resources_)
+            {
+                bool allowedToInstantiate = desc.mostDerivedType_ == XMLFile::GetTypeNameStatic()
+                    || desc.mostDerivedType_ == Scene::GetTypeNameStatic();
+
+                if (allowedToInstantiate)
+                {
+                    if (XMLFile* prefabFile = GetSubsystem<ResourceCache>()->GetResource<XMLFile>(desc.resourceName_))
+                    {
+                        auto prefabNode = page.scene_->CreateChild(GetFileName(desc.localName_), CreateMode::LOCAL);
+
+                        if (prefabNode)
+                        {
+                            SharedPtr<PrefabReference> prefabRef{prefabNode->CreateComponent<PrefabReference>(CreateMode::LOCAL)};
+                            prefabRef->SetPrefab(prefabFile);
+                        }
+
+                        Camera* camera = page.renderer_->GetCamera();
+                        ImGuiIO& io = ui::GetIO();
+
+                        const ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
+                        const auto pos = ToVector2((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
+                        const Ray cameraRay = camera->GetScreenRay(pos.x_, pos.y_);
+
+                        ea::vector<RayQueryResult> results;
+                        RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
+                        page.scene_->GetComponent<Octree>()->RaycastSingle(query);
+
+                        for (const RayQueryResult& result : results)
+                        {
+                            if (result.drawable_->GetScene() != nullptr)
+                            {
+                                prefabNode->SetPosition(result.position_);
+                                if (ui::IsKeyDown(Urho3D::Key::KEY_ALT))
+                                {
+                                    Quaternion q;
+                                    q.FromLookRotation(result.normal_);
+                                    prefabNode->SetRotation(q * Quaternion(90, 0, 0));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        ui::EndDragDropTarget();
+    }
 }
 
 SceneViewPage* SceneViewTab::GetPage(const ea::string& resourceName)

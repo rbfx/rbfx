@@ -247,6 +247,7 @@ private:
 
     void UpdateAddons(SceneViewPage& page);
     void InspectSelection(SceneViewPage& page);
+    void DragAndDropPrefabsToSceneView(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
     AddonSetByInputPriority addonsByInputPriority_;
