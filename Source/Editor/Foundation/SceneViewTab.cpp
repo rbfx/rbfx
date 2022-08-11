@@ -905,12 +905,8 @@ void SceneViewTab::DragAndDropPrefabsToSceneView(SceneViewPage& page)
                     {
                         auto prefabNode = page.scene_->CreateChild(GetFileName(desc.localName_), CreateMode::LOCAL);
 
-                        if (prefabNode)
-                        {
-                            SharedPtr<PrefabReference> prefabRef{prefabNode->CreateComponent<PrefabReference>(CreateMode::LOCAL)};
-                            prefabRef->SetPrefab(prefabFile);
-                        }
-
+                        SharedPtr<PrefabReference> prefabRef{prefabNode->CreateComponent<PrefabReference>(CreateMode::LOCAL)};
+                        prefabRef->SetPrefab(prefabFile);
                         Camera* camera = page.renderer_->GetCamera();
                         ImGuiIO& io = ui::GetIO();
 
@@ -935,6 +931,10 @@ void SceneViewTab::DragAndDropPrefabsToSceneView(SceneViewPage& page)
                                 }
                             }
                         }
+
+                        page.selection_.Clear();
+                        page.selection_.SetSelected(prefabNode, true);
+                        PushAction<CreateRemoveNodeAction>(prefabNode, false);
                     }
                 }
             }
