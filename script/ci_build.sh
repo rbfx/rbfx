@@ -227,7 +227,15 @@ function action-generate() {
 # Default build path using plain CMake.
 function action-build() {
     cd $ci_build_dir
-    cmake --build . --config "${types[$ci_build_type]}" && \
+    # ci_platform:     windows|linux|macos|android|ios|web
+    if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
+    then
+      NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
+    else
+      NUMBER_OF_PROCESSORS=$(nproc)
+    fi
+
+    cmake --build . --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
     ccache -s
 }
 
@@ -236,7 +244,7 @@ function action-build-msvc() {
     cd $ci_build_dir
     # Invoke msbuild directly when using msvc. Invoking msbuild through cmake causes some custom target dependencies to not be respected.
     python_path=$(python -c "import os, sys; print(os.path.dirname(sys.executable))")
-    "$MSBUILD" "-r" "-p:Configuration=${types[$ci_build_type]}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=$python_path/Scripts/" *.sln && \
+    "$MSBUILD" "-r" "-p:Configuration=${types[$ci_build_type]}" "-maxcpucount:${NUMBER_OF_PROCESSORS}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=$python_path/Scripts/" *.sln && \
     clcache -s
 }
 
