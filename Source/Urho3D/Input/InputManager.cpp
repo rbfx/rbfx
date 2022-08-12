@@ -494,12 +494,63 @@ float InputManager::GetHatPosition(const char* groupName, const char* eventName)
     return 0.0f;
 }
 
-bool InputManager::SaveInputMapToFile(ea::string& filePath)
+const int VERSION = 1;
+
+bool InputManager::SaveInputMapToFile(Archive& archive)
 {
+    if (auto projectBlock = archive.OpenUnorderedBlock("InputRegistry"))
+    {
+        int archiveVersion = VERSION;
+        SerializeValue(archive, "Version", archiveVersion);
+
+        for (auto& inputMapping : inputMap_)
+        {
+            if (auto projectBlock = archive.OpenUnorderedBlock(inputMapping.first))
+            {
+                for (auto& inputDesc : inputMapping.second)
+                {
+                    if (auto projectBlock = archive.OpenUnorderedBlock(inputDesc.eventName_.c_str()))
+                    {
+                        int size = inputDesc.layout_.size();
+                        SerializeValue(archive, "EventName", inputDesc.eventName_);
+                        SerializeValue(archive, "Active", inputDesc.active_);
+                        SerializeValue(archive, "LayoutSize", size);
+
+                        for (auto& layout : inputDesc.layout_)
+                        {
+                            if (auto projectBlock = archive.OpenUnorderedBlock(""))
+                            {
+                                int deviceType = (int)layout.deviceType_;
+                                int keyCode = (int)layout.keyCode_;
+                                int scanCode = (int)layout.scanCode_;
+                                int mouseButton = (int)layout.mouseButton_;
+                                int controllerButton = (int)layout.controllerButton_;
+                                int controllerAxis = (int)layout.controllerAxis_;
+                                int hatPosition = (int)layout.hatPosition;
+                                int qualifier = (int)layout.qualifier_;
+                                int controllerIndex = (int)layout.controllerIndex_;
+
+                                SerializeValue(archive, "DeviceType", deviceType);
+                                SerializeValue(archive, "KeyCode", keyCode);
+                                SerializeValue(archive, "ScanCode", scanCode);
+                                SerializeValue(archive, "MouseButton", mouseButton);
+                                SerializeValue(archive, "ControllerButton", controllerButton);
+                                SerializeValue(archive, "ControllerAxis", controllerAxis);
+                                SerializeValue(archive, "HatPosition", hatPosition);
+                                SerializeValue(archive, "Qualifier", qualifier);
+                                SerializeValue(archive, "ControllerIndex", controllerIndex);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return false;
 }
 
-bool InputManager::LoadInputMapFromFile(ea::string& filePath)
+bool InputManager::LoadInputMapFromFile(Archive& archive)
 {
     return false;
 }
