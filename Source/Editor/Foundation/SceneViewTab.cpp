@@ -888,18 +888,13 @@ void SceneViewTab::DragAndDropPrefabsToSceneView(SceneViewPage& page)
 {
     if (ui::BeginDragDropTarget() && ui::IsMouseReleased(0))
     {
-        const ImGuiPayload* ui_payload = ui::GetDragDropPayload();
-        if (!ui_payload && !ui_payload->Data)
-            return;
-
-        if (ResourceDragDropPayload* res = static_cast<ResourceDragDropPayload*>(ui_payload->Data))
+        if (auto payload = static_cast<ResourceDragDropPayload*>(DragDropPayload::Get()))
         {
-            for (const ResourceFileDescriptor& desc : res->resources_)
+            for (const ResourceFileDescriptor& desc : payload->resources_)
             {
-                bool allowedToInstantiate = desc.mostDerivedType_ == XMLFile::GetTypeNameStatic()
-                    || desc.mostDerivedType_ == Scene::GetTypeNameStatic();
+                bool CanBeDroppedTo = desc.HasObjectType<XMLFile>() || desc.HasObjectType<Scene>();
 
-                if (allowedToInstantiate)
+                if (CanBeDroppedTo)
                 {
                     if (XMLFile* prefabFile = GetSubsystem<ResourceCache>()->GetResource<XMLFile>(desc.resourceName_))
                     {
@@ -907,6 +902,7 @@ void SceneViewTab::DragAndDropPrefabsToSceneView(SceneViewPage& page)
 
                         SharedPtr<PrefabReference> prefabRef{prefabNode->CreateComponent<PrefabReference>(CreateMode::LOCAL)};
                         prefabRef->SetPrefab(prefabFile);
+
                         Camera* camera = page.renderer_->GetCamera();
                         ImGuiIO& io = ui::GetIO();
 
