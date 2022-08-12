@@ -9,4 +9,5 @@
     <parameter name="NoiseStrength" value="0.02" />
     <parameter name="NormalScale" value="0.1" />
     <parameter name="FadeOffsetScale" value="0 5" />
+    <parameter name="SaturationLightnessFactor" value="1.2 0.8" />
 </material>
