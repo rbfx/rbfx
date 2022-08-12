@@ -42,35 +42,35 @@ enum class URHO3D_API JoystickIndex
 {
     JoystickOne = 0,
     JoystickTwo,
-    JoystickThree
+    JoystickThree,
 };
 
 /// Structure that defines all input event key data.
 struct URHO3D_API InputLayout
 {
-    Device DeviceType = Device::Keyboard;
+    Device deviceType_ = Device::Keyboard;
 
-    Key KeyCode = Key::KEY_UNKNOWN;
-    Scancode ScanCode = Scancode::SCANCODE_UNKNOWN;
-    MouseButton MouseButton = MouseButton::MOUSEB_NONE;
-    ControllerButton ControllerButton;
-    ControllerAxis ControllerAxis;
-    HatPosition HatPosition;
+    Key keyCode_ = Key::KEY_UNKNOWN;
+    Scancode scanCode_ = Scancode::SCANCODE_UNKNOWN;
+    MouseButton mouseButton_ = MouseButton::MOUSEB_NONE;
+    ControllerButton controllerButton_;
+    ControllerAxis controllerAxis_;
+    HatPosition hatPosition;
 
-    float AxisScale = 1.0f;
-    float DeadZone = 0.01f;
+    float axisScale_ = 1.0f;
+    float deadZone_ = 0.01f;
 
-    Qualifier InputQualifier = Qualifier::QUAL_NONE;
-    JoystickIndex ControllerIndex = JoystickIndex::JoystickOne;
+    Qualifier qualifier_ = Qualifier::QUAL_NONE;
+    JoystickIndex controllerIndex_ = JoystickIndex::JoystickOne;
 };
 
 /// Input Layout to store bound input keys to an event.
 struct URHO3D_API InputLayoutDesc
 {
-    bool Enabled = true;
+    bool active_ = true;
 
-    ea::vector<InputLayout> Layout;
-    ea::string InputEventName = "InputEvent";
+    ea::vector<InputLayout> layout_;
+    ea::string eventName_ = "InputEvent";
 };
 
 class URHO3D_API InputManager : public Object
@@ -103,14 +103,14 @@ public:
     float GetHatPosition(const char* groupName, const char* eventName);
 
     /// Save Input map to JSON file.
-    bool SaveInputMapToFile(ea::string filePath);
+    bool SaveInputMapToFile(ea::string& filePath);
     /// Load Input map from JSON file.
-    bool LoadInputMapFromFile(ea::string filePath);
+    bool LoadInputMapFromFile(ea::string& filePath);
 
 private:
     // Input map containing all input mappings, as well as their mapping groups.
-    ea::unordered_map<const char*, ea::vector<InputLayoutDesc>> m_InputMap;
+    ea::unordered_map<const char*, ea::vector<InputLayoutDesc>> inputMap_;
     /// Reference to the Input object.
-    WeakPtr<Input> m_Input;
+    WeakPtr<Input> input_;
 };
 } // namespace Urho3D

@@ -22,13 +22,14 @@
 
 #include "../Precompiled.h"
 
+#include "../Input/InputManager.h"
+
 #include "../Engine/Engine.h"
 #include "../Graphics/Graphics.h"
 #include "../IO/Archive.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
-#include "../Input/InputManager.h"
 #include "../Resource/JSONArchive.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
@@ -41,26 +42,29 @@ InputManager::InputManager(Context* context)
     CreateGroup("Default");
 }
 
-InputManager::~InputManager() { m_InputMap.clear(); }
+InputManager::~InputManager()
+{
+    inputMap_.clear();
+}
 
 bool InputManager::CreateGroup(const char* groupName)
 {
-    if (m_InputMap.find(groupName) != m_InputMap.end())
+    if (inputMap_.find(groupName) != inputMap_.end())
     {
         URHO3D_LOGINFO("Input group '{}' already exists", groupName);
         return false;
     }
 
-    m_InputMap.insert(groupName);
+    inputMap_.insert(groupName);
     URHO3D_LOGINFO("Created new input group '{}'", groupName);
     return true;
 }
 
 bool InputManager::RemoveGroup(const char* groupName)
 {
-    if (m_InputMap.find(groupName) != m_InputMap.end())
+    if (inputMap_.find(groupName) != inputMap_.end())
     {
-        m_InputMap.erase(groupName);
+        inputMap_.erase(groupName);
         URHO3D_LOGINFO("Removed and erased input group '{}'", groupName);
         return true;
     }
@@ -71,40 +75,40 @@ bool InputManager::RemoveGroup(const char* groupName)
 
 bool InputManager::AddInputMapping(const char* groupName, InputLayoutDesc& inputLayout)
 {
-    if (m_InputMap.find(groupName) != m_InputMap.end())
+    if (inputMap_.find(groupName) != inputMap_.end())
     {
         // Input group already exists, insert at key into the group.
-        auto& layoutDescArray = m_InputMap.at(groupName);
+        auto& layoutDescArray = inputMap_.at(groupName);
         layoutDescArray.push_back(inputLayout);
 
-        URHO3D_LOGINFO("Added input event '{0}' to group '{1}'", groupName, inputLayout.InputEventName);
+        URHO3D_LOGINFO("Added input event '{0}' to group '{1}'", groupName, inputLayout.eventName_);
         return true;
     }
 
     // Create a group then add input layout to it.
     CreateGroup(groupName);
-    auto& layoutDescArray = m_InputMap.at(groupName);
+    auto& layoutDescArray = inputMap_.at(groupName);
     layoutDescArray.push_back(inputLayout);
-    URHO3D_LOGINFO("Added input event '{0}' to group '{1}'", groupName, inputLayout.InputEventName);
+    URHO3D_LOGINFO("Added input event '{0}' to group '{1}'", groupName, inputLayout.eventName_);
 
     return true;
 }
 
 bool InputManager::RemoveInputMapping(const char* groupName, const char* eventName, bool clearIfEmpty /*= false*/)
 {
-    if (m_InputMap.find(groupName) != m_InputMap.end())
+    if (inputMap_.find(groupName) != inputMap_.end())
     {
         // Find event name
-        if (m_Input && m_InputMap.find(groupName) != m_InputMap.end())
+        if (input_ && inputMap_.find(groupName) != inputMap_.end())
         {
-            auto& mappedLayout = m_InputMap.at(groupName);
+            auto& mappedLayout = inputMap_.at(groupName);
 
             if (mappedLayout.empty())
                 return false;
 
             for (int i = 0; i < mappedLayout.size(); ++i)
             {
-                if (mappedLayout[i].InputEventName.c_str() == eventName)
+                if (mappedLayout[i].eventName_.c_str() == eventName)
                 {
                     mappedLayout.erase_first(mappedLayout[i]);
                     URHO3D_LOGINFO("Erased event '{0}' from input group '{1}'", eventName, groupName);
@@ -114,9 +118,9 @@ bool InputManager::RemoveInputMapping(const char* groupName, const char* eventNa
 
         if (clearIfEmpty)
         {
-            bool isEmpty = m_InputMap.at(groupName).empty();
+            bool isEmpty = inputMap_.at(groupName).empty();
             if (isEmpty)
-                m_InputMap.erase(groupName);
+                inputMap_.erase(groupName);
         }
 
         return true;
@@ -129,72 +133,69 @@ bool InputManager::RemoveInputMapping(const char* groupName, const char* eventNa
 bool InputManager::WasPressed(const char* groupName, const char* eventName)
 {
     // Find event name
-    if (m_Input && m_InputMap.find(groupName) != m_InputMap.end())
+    if (input_ && inputMap_.find(groupName) != inputMap_.end())
     {
-        auto& mappedLayout = m_InputMap.at(groupName);
+        auto& mappedLayout = inputMap_.at(groupName);
 
         if (mappedLayout.empty())
             return false;
 
         for (auto& layoutDesc : mappedLayout)
         {
-            if (layoutDesc.InputEventName.c_str() == eventName)
+            if (layoutDesc.eventName_.c_str() == eventName)
             {
                 // Begin input press logic
-                if (!layoutDesc.Enabled)
+                if (!layoutDesc.active_)
                 {
                     URHO3D_LOGINFO("The event {0} of group {1} is disabled", eventName, groupName);
                     return false;
                 }
 
-                if (layoutDesc.Layout.empty())
+                if (layoutDesc.layout_.empty())
                 {
                     URHO3D_LOGINFO("The event {0} of group {1} does not contain an Input Layout", eventName, groupName);
                     return false;
                 }
 
-                for (auto& layout : layoutDesc.Layout)
+                for (auto& layout : layoutDesc.layout_)
                 {
-                    switch (layout.DeviceType)
+                    switch (layout.deviceType_)
                     {
                     case Device::Mouse:
                     {
                         // If no qualifier, return true if mouse button pressed. Else, return mouse button and qualifier
                         // ressed.
-                        if (layout.InputQualifier == Qualifier::QUAL_NONE
-                            || layout.InputQualifier == Qualifier::QUAL_ANY)
+                        if (layout.qualifier_ == Qualifier::QUAL_NONE || layout.qualifier_ == Qualifier::QUAL_ANY)
                         {
-                            return m_Input->GetMouseButtonPress(layout.MouseButton)
-                                || m_Input->GetMouseButtonClick(layout.MouseButton);
+                            return input_->GetMouseButtonPress(layout.mouseButton_)
+                                || input_->GetMouseButtonClick(layout.mouseButton_);
                         }
                         else
                         {
-                            return m_Input->GetQualifierPress(layout.InputQualifier)
-                                && (m_Input->GetMouseButtonPress(layout.MouseButton)
-                                    || m_Input->GetMouseButtonClick(layout.MouseButton));
+                            return input_->GetQualifierPress(layout.qualifier_)
+                                && (input_->GetMouseButtonPress(layout.mouseButton_)
+                                    || input_->GetMouseButtonClick(layout.mouseButton_));
                         }
 
                         return false;
                     }
                     case Device::Keyboard:
                     {
-                        if (layout.InputQualifier == Qualifier::QUAL_NONE
-                            || layout.InputQualifier == Qualifier::QUAL_ANY)
+                        if (layout.qualifier_ == Qualifier::QUAL_NONE || layout.qualifier_ == Qualifier::QUAL_ANY)
                         {
-                            return m_Input->GetKeyPress(layout.KeyCode) || m_Input->GetScancodePress(layout.ScanCode);
+                            return input_->GetKeyPress(layout.keyCode_) || input_->GetScancodePress(layout.scanCode_);
                         }
                         else
                         {
                             // Check all registered keys
-                            if (m_Input->GetQualifierPress(layout.InputQualifier)
-                                && m_Input->GetKeyPress(layout.KeyCode))
+                            if (input_->GetQualifierPress(layout.qualifier_) && input_->GetKeyPress(layout.keyCode_))
                             {
                                 return true;
                             }
 
                             // Check all registered scancodes
-                            if (m_Input->GetQualifierPress(layout.InputQualifier)
-                                && m_Input->GetScancodePress(layout.ScanCode))
+                            if (input_->GetQualifierPress(layout.qualifier_)
+                                && input_->GetScancodePress(layout.scanCode_))
                             {
                                 return true;
                             }
@@ -206,20 +207,20 @@ bool InputManager::WasPressed(const char* groupName, const char* eventName)
                     }
                     case Device::Joystick:
                     {
-                        int numJoysticks = m_Input->GetNumJoysticks();
+                        int numJoysticks = input_->GetNumJoysticks();
 
                         if (numJoysticks == 0)
                             return false;
 
-                        int joystickIndex = static_cast<int>(layout.ControllerIndex);
+                        int joystickIndex = static_cast<int>(layout.controllerIndex_);
 
                         if (joystickIndex < numJoysticks)
                         {
                             // Get joystick by joystick index
-                            auto* joystick = m_Input->GetJoystickByIndex(joystickIndex);
+                            auto* joystick = input_->GetJoystickByIndex(joystickIndex);
                             if (joystick)
                             {
-                                if (joystick->GetButtonPress(layout.ControllerButton))
+                                if (joystick->GetButtonPress(layout.controllerButton_))
                                 {
                                     return true;
                                 }
@@ -242,69 +243,67 @@ bool InputManager::WasPressed(const char* groupName, const char* eventName)
 bool InputManager::WasDown(const char* groupName, const char* eventName)
 {
     // Find event name
-    if (m_Input && m_InputMap.find(groupName) != m_InputMap.end())
+    if (input_ && inputMap_.find(groupName) != inputMap_.end())
     {
-        auto& mappedLayout = m_InputMap.at(groupName);
+        auto& mappedLayout = inputMap_.at(groupName);
 
         if (mappedLayout.empty())
             return false;
 
         for (auto& layoutDesc : mappedLayout)
         {
-            if (layoutDesc.InputEventName.c_str() == eventName)
+            if (layoutDesc.eventName_.c_str() == eventName)
             {
                 // Begin input press logic
-                if (!layoutDesc.Enabled)
+                if (!layoutDesc.active_)
                 {
                     URHO3D_LOGINFO("The event {0} of group {1} is disabled", eventName, groupName);
                     return false;
                 }
 
-                if (layoutDesc.Layout.empty())
+                if (layoutDesc.layout_.empty())
                 {
                     URHO3D_LOGINFO("The event {0} of group {1} does not contain an Input Layout", eventName, groupName);
                     return false;
                 }
 
-                for (auto& layout : layoutDesc.Layout)
+                for (auto& layout : layoutDesc.layout_)
                 {
-                    switch (layout.DeviceType)
+                    switch (layout.deviceType_)
                     {
                     case Device::Mouse:
                     {
                         // If no qualifier, return true if mouse button pressed. Else, return mouse button and qualifier
                         // ressed.
-                        if (layout.InputQualifier == Qualifier::QUAL_NONE
-                            || layout.InputQualifier == Qualifier::QUAL_ANY)
+                        if (layout.qualifier_ == Qualifier::QUAL_NONE || layout.qualifier_ == Qualifier::QUAL_ANY)
                         {
-                            return m_Input->GetMouseButtonDown(layout.MouseButton);
+                            return input_->GetMouseButtonDown(layout.mouseButton_);
                         }
                         else
                         {
-                            return m_Input->GetQualifierDown(layout.InputQualifier)
-                                && m_Input->GetMouseButtonDown(layout.MouseButton);
+                            return input_->GetQualifierDown(layout.qualifier_)
+                                && input_->GetMouseButtonDown(layout.mouseButton_);
                         }
 
                         return false;
                     }
                     case Device::Keyboard:
                     {
-                        if (layout.InputQualifier == Qualifier::QUAL_NONE
-                            || layout.InputQualifier == Qualifier::QUAL_ANY)
+                        if (layout.qualifier_ == Qualifier::QUAL_NONE || layout.qualifier_ == Qualifier::QUAL_ANY)
                         {
-                            return m_Input->GetKeyDown(layout.KeyCode) || m_Input->GetScancodeDown(layout.ScanCode);
+                            return input_->GetKeyDown(layout.keyCode_) || input_->GetScancodeDown(layout.scanCode_);
                         }
                         else
                         {
                             // Check all registered keys
-                            if (m_Input->GetQualifierDown(layout.InputQualifier) && m_Input->GetKeyDown(layout.KeyCode))
+                            if (input_->GetQualifierDown(layout.qualifier_) && input_->GetKeyDown(layout.keyCode_))
                             {
                                 return true;
                             }
 
                             // Check all registered scancodes
-                            if (m_Input->GetQualifierDown(layout.InputQualifier)
-                                && m_Input->GetScancodeDown(layout.ScanCode))
+                            if (input_->GetQualifierDown(layout.qualifier_)
+                                && input_->GetScancodeDown(layout.scanCode_))
                             {
                                 return true;
                             }
@@ -316,20 +315,20 @@ bool InputManager::WasDown(const char* groupName, const char* eventName)
                     }
                     case Device::Joystick:
                     {
-                        int numJoysticks = m_Input->GetNumJoysticks();
+                        int numJoysticks = input_->GetNumJoysticks();
 
                         if (numJoysticks == 0)
                             return false;
 
-                        int joystickIndex = static_cast<int>(layout.ControllerIndex);
+                        int joystickIndex = static_cast<int>(layout.controllerIndex_);
 
                         if (joystickIndex < numJoysticks)
                         {
                             // Get joystick by joystick index
-                            auto* joystick = m_Input->GetJoystickByIndex(joystickIndex);
+                            auto* joystick = input_->GetJoystickByIndex(joystickIndex);
                             if (joystick)
                             {
-                                if (joystick->GetButtonDown(layout.ControllerButton))
+                                if (joystick->GetButtonDown(layout.controllerButton_))
                                 {
                                     return true;
                                 }
@@ -337,7 +336,8 @@ bool InputManager::WasDown(const char* groupName, const char* eventName)
                         }
                         else
                         {
-                            URHO3D_LOGERROR("Called event {0} of group {1} with an invalid controller index.");
+                            URHO3D_LOGERROR("Called event {0} of group {1} with an invalid controller index.",
+                                layoutDesc.eventName_, layout.controllerIndex_);
                         }
 
                         return false;
@@ -356,65 +356,66 @@ bool InputManager::WasDown(const char* groupName, const char* eventName)
 float InputManager::GetAxis(const char* groupName, const char* eventName)
 {
     // Find event name
-    if (m_Input && m_InputMap.find(groupName) != m_InputMap.end())
+    if (input_ && inputMap_.find(groupName) != inputMap_.end())
     {
-        auto& mappedLayout = m_InputMap.at(groupName);
+        auto& mappedLayout = inputMap_.at(groupName);
 
         if (mappedLayout.empty())
             return false;
 
         for (auto& layoutDesc : mappedLayout)
         {
-            if (layoutDesc.InputEventName.c_str() == eventName)
+            if (layoutDesc.eventName_.c_str() == eventName)
             {
                 // Begin input press logic
-                if (!layoutDesc.Enabled)
+                if (!layoutDesc.active_)
                 {
                     URHO3D_LOGINFO("The event {0} of group {1} is disabled", eventName, groupName);
                     return false;
                 }
 
-                if (layoutDesc.Layout.empty())
+                if (layoutDesc.layout_.empty())
                 {
                     URHO3D_LOGINFO("The event {0} of group {1} does not contain an Input Layout", eventName, groupName);
                     return false;
                 }
 
-                for (auto& layout : layoutDesc.Layout)
+                for (auto& layout : layoutDesc.layout_)
                 {
-                    switch (layout.DeviceType)
+                    switch (layout.deviceType_)
                     {
                     case Device::Keyboard:
                     {
-                        bool pressed = m_Input->GetKeyDown(layout.KeyCode) || m_Input->GetScancodeDown(layout.ScanCode);
+                        bool pressed = input_->GetKeyDown(layout.keyCode_) || input_->GetScancodeDown(layout.scanCode_);
 
-                        return pressed ? layout.AxisScale : 0.0f;
+                        return pressed ? layout.axisScale_ : 0.0f;
                     }
                     case Device::Joystick:
                     {
-                        int numJoysticks = m_Input->GetNumJoysticks();
+                        int numJoysticks = input_->GetNumJoysticks();
 
                         if (numJoysticks == 0)
                             return 0.0f;
 
-                        int joystickIndex = static_cast<int>(layout.ControllerIndex);
+                        int joystickIndex = static_cast<int>(layout.controllerIndex_);
 
                         if (joystickIndex < numJoysticks)
                         {
                             // Get joystick by joystick index
-                            auto* joystick = m_Input->GetJoystickByIndex(joystickIndex);
+                            auto* joystick = input_->GetJoystickByIndex(joystickIndex);
                             if (joystick)
                             {
-                                float axisPosition = joystick->GetAxisPosition(layout.ControllerAxis);
-                                if (Abs(axisPosition) >= layout.DeadZone)
+                                float axisPosition = joystick->GetAxisPosition(layout.controllerAxis_);
+                                if (Abs(axisPosition) >= layout.deadZone_)
                                 {
-                                    return axisPosition * layout.AxisScale;
+                                    return axisPosition * layout.axisScale_;
                                 }
                             }
                         }
                         else
                         {
-                            URHO3D_LOGERROR("Called event {0} of group {1} with an invalid controller index.");
+                            URHO3D_LOGERROR("Called event {0} of group {1} with an invalid controller index.",
+                                layoutDesc.eventName_, layout.controllerIndex_);
                         }
                     }
                     default: return 0.0f;
@@ -431,55 +432,56 @@ float InputManager::GetAxis(const char* groupName, const char* eventName)
 float InputManager::GetHatPosition(const char* groupName, const char* eventName)
 {
     // Find event name
-    if (m_Input && m_InputMap.find(groupName) != m_InputMap.end())
+    if (input_ && inputMap_.find(groupName) != inputMap_.end())
     {
-        auto& mappedLayout = m_InputMap.at(groupName);
+        auto& mappedLayout = inputMap_.at(groupName);
 
         if (mappedLayout.empty())
             return false;
 
         for (auto& layoutDesc : mappedLayout)
         {
-            if (layoutDesc.InputEventName.c_str() == eventName)
+            if (layoutDesc.eventName_.c_str() == eventName)
             {
                 // Begin input press logic
-                if (!layoutDesc.Enabled)
+                if (!layoutDesc.active_)
                 {
                     URHO3D_LOGINFO("The event {0} of group {1} is disabled", eventName, groupName);
                     return false;
                 }
 
-                if (layoutDesc.Layout.empty())
+                if (layoutDesc.layout_.empty())
                 {
                     URHO3D_LOGINFO("The event {0} of group {1} does not contain an Input Layout", eventName, groupName);
                     return false;
                 }
 
-                for (auto& layout : layoutDesc.Layout)
+                for (auto& layout : layoutDesc.layout_)
                 {
-                    switch (layout.DeviceType)
+                    switch (layout.deviceType_)
                     {
                     case Device::Joystick:
                     {
-                        int numJoysticks = m_Input->GetNumJoysticks();
+                        int numJoysticks = input_->GetNumJoysticks();
 
                         if (numJoysticks == 0)
                             return 0.0f;
 
-                        int joystickIndex = static_cast<int>(layout.ControllerIndex);
+                        int joystickIndex = static_cast<int>(layout.controllerIndex_);
 
                         if (joystickIndex < numJoysticks)
                         {
                             // Get joystick by joystick index
-                            auto* joystick = m_Input->GetJoystickByIndex(joystickIndex);
+                            auto* joystick = input_->GetJoystickByIndex(joystickIndex);
                             if (joystick)
                             {
-                                return joystick->GetHatPosition(layout.HatPosition);
+                                return joystick->GetHatPosition(layout.hatPosition);
                             }
                         }
                         else
                         {
-                            URHO3D_LOGERROR("Called event {0} of group {1} with an invalid controller index.");
+                            URHO3D_LOGERROR("Called event {0} of group {1} with an invalid controller index.",
+                                layoutDesc.eventName_, layout.controllerIndex_);
                         }
                     }
                     }
@@ -492,8 +494,14 @@ float InputManager::GetHatPosition(const char* groupName, const char* eventName)
     return 0.0f;
 }
 
-bool InputManager::SaveInputMapToFile(ea::string filePath) { return false; }
+bool InputManager::SaveInputMapToFile(ea::string& filePath)
+{
+    return false;
+}
 
-bool InputManager::LoadInputMapFromFile(ea::string filePath) { return false; }
+bool InputManager::LoadInputMapFromFile(ea::string& filePath)
+{
+    return false;
+}
 
 } // namespace Urho3D
