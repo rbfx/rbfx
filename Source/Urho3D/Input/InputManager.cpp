@@ -496,7 +496,7 @@ float InputManager::GetHatPosition(const char* groupName, const char* eventName)
 
 const int VERSION = 1;
 
-bool InputManager::SaveInputMapToFile(Archive& archive)
+bool InputManager::SerializeToArchive(Archive& archive)
 {
     if (auto projectBlock = archive.OpenUnorderedBlock("InputRegistry"))
     {
@@ -547,10 +547,10 @@ bool InputManager::SaveInputMapToFile(Archive& archive)
         }
     }
 
-    return false;
+    return true;
 }
 
-bool InputManager::LoadInputMapFromFile(Archive& archive)
+bool InputManager::DeserializeFromArchive(Archive& archive)
 {
     return false;
 }

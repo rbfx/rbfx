@@ -103,9 +103,9 @@ public:
     float GetHatPosition(const char* groupName, const char* eventName);
 
     /// Save Input map to JSON file.
-    bool SaveInputMapToFile(Archive& archive);
+    bool SerializeToArchive(Archive& archive);
     /// Load Input map from JSON file.
-    bool LoadInputMapFromFile(Archive& archive);
+    bool DeserializeFromArchive(Archive& archive);
 
 private:
     // Input map containing all input mappings, as well as their mapping groups.
