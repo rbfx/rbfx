@@ -37,16 +37,16 @@ namespace Urho3D
 {
 
 ScenePass::ScenePass(RenderPipelineInterface* renderPipeline, DrawableProcessor* drawableProcessor,
-    BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags, const ea::string& deferredPass,
+    BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags, const ea::string& deferredPass, const ea::string& deferredDecalPass,
     const ea::string& unlitBasePass, const ea::string& litBasePass, const ea::string& lightPass)
-    : BatchCompositorPass(renderPipeline, drawableProcessor, callback, flags, Technique::GetPassIndex(deferredPass),
+    : BatchCompositorPass(renderPipeline, drawableProcessor, callback, flags, Technique::GetPassIndex(deferredPass),Technique::GetPassIndex(deferredDecalPass),
         Technique::GetPassIndex(unlitBasePass), Technique::GetPassIndex(litBasePass), Technique::GetPassIndex(lightPass))
 {
 }
 
 ScenePass::ScenePass(RenderPipelineInterface* renderPipeline, DrawableProcessor* drawableProcessor,
     BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags, const ea::string& pass)
-    : BatchCompositorPass(renderPipeline, drawableProcessor, callback, flags, M_MAX_UNSIGNED,
+    : BatchCompositorPass(renderPipeline, drawableProcessor, callback, flags, M_MAX_UNSIGNED, M_MAX_UNSIGNED,
         Technique::GetPassIndex(pass), M_MAX_UNSIGNED, M_MAX_UNSIGNED)
 {
 }
@@ -54,10 +54,12 @@ ScenePass::ScenePass(RenderPipelineInterface* renderPipeline, DrawableProcessor*
 void UnorderedScenePass::OnBatchesReady()
 {
     BatchCompositor::FillSortKeys(sortedDeferredBatches_, deferredBatches_);
+    BatchCompositor::FillSortKeys(sortedDeferredDecalBatches_, deferredDecalBatches_);
     BatchCompositor::FillSortKeys(sortedBaseBatches_, baseBatches_);
     BatchCompositor::FillSortKeys(sortedLightBatches_, lightBatches_, negativeLightBatches_);
 
     ea::sort(sortedDeferredBatches_.begin(), sortedDeferredBatches_.end());
+    ea::sort(sortedDeferredDecalBatches_.begin(), sortedDeferredDecalBatches_.end());
     ea::sort(sortedBaseBatches_.begin(), sortedBaseBatches_.end());
 
     const unsigned numNegativeLightBatches = negativeLightBatches_.Size();
@@ -65,12 +67,14 @@ void UnorderedScenePass::OnBatchesReady()
     ea::sort(sortedLightBatches_.end() - numNegativeLightBatches, sortedLightBatches_.end());
 
     deferredBatchGroup_ = { sortedDeferredBatches_ };
+    deferredDecalBatchGroup_ = { sortedDeferredDecalBatches_ };
     baseBatchGroup_ = { sortedBaseBatches_ };
     lightBatchGroup_ = { sortedLightBatches_ };
 
     if (!GetFlags().Test(DrawableProcessorPassFlag::DisableInstancing))
     {
         deferredBatchGroup_.flags_ |= BatchRenderFlag::EnableInstancingForStaticGeometry;
+        deferredDecalBatchGroup_.flags_ |= BatchRenderFlag::EnableInstancingForStaticGeometry;
         baseBatchGroup_.flags_ |= BatchRenderFlag::EnableInstancingForStaticGeometry;
         lightBatchGroup_.flags_ |= BatchRenderFlag::EnableInstancingForStaticGeometry;
     }
@@ -84,12 +88,14 @@ void UnorderedScenePass::OnBatchesReady()
     if (GetFlags().Test(DrawableProcessorPassFlag::HasAmbientLighting))
     {
         deferredBatchGroup_.flags_ |= BatchRenderFlag::EnableAmbientLighting;
+        deferredDecalBatchGroup_.flags_ |= BatchRenderFlag::EnableAmbientLighting;
         baseBatchGroup_.flags_ |= BatchRenderFlag::EnableAmbientAndVertexLighting;
     }
 
     if (GetFlags().Test(DrawableProcessorPassFlag::DepthOnlyPass))
     {
         deferredBatchGroup_.flags_ |= BatchRenderFlag::DisableColorOutput;
+        deferredDecalBatchGroup_.flags_ |= BatchRenderFlag::DisableColorOutput;
         baseBatchGroup_.flags_ |= BatchRenderFlag::DisableColorOutput;
     }
 }
@@ -97,6 +103,7 @@ void UnorderedScenePass::OnBatchesReady()
 void UnorderedScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
 {
     batchRenderer->PrepareInstancingBuffer(deferredBatchGroup_);
+    batchRenderer->PrepareInstancingBuffer(deferredDecalBatchGroup_);
     batchRenderer->PrepareInstancingBuffer(baseBatchGroup_);
     batchRenderer->PrepareInstancingBuffer(lightBatchGroup_);
 }

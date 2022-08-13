@@ -128,7 +128,7 @@ public:
     };
 
     DrawableProcessorPass(RenderPipelineInterface* renderPipeline, DrawableProcessorPassFlags flags,
-        unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
+        unsigned deferredPassIndex, unsigned deferredDecalPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
 
     void SetEnabled(bool enabled) { enabled_ = enabled; }
     bool IsEnabled() const { return enabled_; }
@@ -147,6 +147,7 @@ private:
     const bool useBatchCallback_{};
 
     const unsigned deferredPassIndex_{};
+    const unsigned deferredDecalPassIndex_{};
     const unsigned unlitBasePassIndex_{};
     const unsigned litBasePassIndex_{};
     const unsigned lightPassIndex_{};

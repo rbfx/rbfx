@@ -44,7 +44,7 @@ class ScenePass : public BatchCompositorPass
 public:
     /// Construct pass with forward lighting.
     ScenePass(RenderPipelineInterface* renderPipeline, DrawableProcessor* drawableProcessor,
-        BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags, const ea::string& deferredPass,
+        BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags, const ea::string& deferredPass, const ea::string& deferredDecalPass,
         const ea::string& unlitBasePass, const ea::string& litBasePass, const ea::string& lightPass);
 
     /// Construct pass without forward lighting.
@@ -66,6 +66,7 @@ public:
     void PrepareInstancingBuffer(BatchRenderer* batchRenderer) override;
 
     const PipelineBatchGroup<PipelineBatchByState>& GetDeferredBatches() { return deferredBatchGroup_; }
+    const PipelineBatchGroup<PipelineBatchByState>& GetDeferredDecalBatches() { return deferredDecalBatchGroup_; }
     const PipelineBatchGroup<PipelineBatchByState>& GetBaseBatches() { return baseBatchGroup_; }
     const PipelineBatchGroup<PipelineBatchByState>& GetLightBatches() { return lightBatchGroup_; }
 
@@ -73,10 +74,12 @@ protected:
     void OnBatchesReady() override;
 
     ea::vector<PipelineBatchByState> sortedDeferredBatches_;
+    ea::vector<PipelineBatchByState> sortedDeferredDecalBatches_;
     ea::vector<PipelineBatchByState> sortedBaseBatches_;
     ea::vector<PipelineBatchByState> sortedLightBatches_;
 
     PipelineBatchGroup<PipelineBatchByState> deferredBatchGroup_;
+    PipelineBatchGroup<PipelineBatchByState> deferredDecalBatchGroup_;
     PipelineBatchGroup<PipelineBatchByState> baseBatchGroup_;
     PipelineBatchGroup<PipelineBatchByState> lightBatchGroup_;
 };

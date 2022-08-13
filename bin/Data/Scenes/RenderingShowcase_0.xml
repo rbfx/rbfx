@@ -2,30 +2,28 @@
 <scene id="1">
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
-	<attribute name="Smoothing Constant" value="50.000000" />
-	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="1340" />
-	<attribute name="Next Replicated Component ID" value="1314" />
-	<attribute name="Next Local Node ID" value="16777331" />
-	<attribute name="Next Local Component ID" value="16777385" />
+	<attribute name="Next Replicated Node ID" value="1343" />
+	<attribute name="Next Replicated Component ID" value="1322" />
+	<attribute name="Next Local Node ID" value="16777335" />
+	<attribute name="Next Local Component ID" value="16777389" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
-	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="31.3187 19.6742 -1.10012" />
-		<attribute name="Camera Rotation" value="-0.229934 -0.136128 0.828436 -0.492233" />
+	<component type="RenderPipeline" id="315">
+		<attribute name="Color Space" value="LDR Linear" />
+		<attribute name="Readable Depth" value="true" />
+		<attribute name="Lighting Mode" value="Deferred PBR" />
 	</component>
-	<component type="RenderPipeline" id="315" />
 	<component type="ReflectionProbeManager" id="16777390" />
 	<component type="OutlineGroup" id="1374">
 		<attribute name="Color" value="1 0.32549 1 0.882353" />
 		<attribute name="Render Order" value="129" />
 		<attribute name="Drawables">
+			<variant type="Int" value="1373" />
 			<variant type="Int" value="1518" />
 			<variant type="Int" value="1461" />
-			<variant type="Int" value="1373" />
 		</attribute>
 	</component>
 	<component type="OutlineGroup" id="1375">
@@ -1796,6 +1794,41 @@
 			<component type="StaticModel" id="1518">
 				<attribute name="Model" value="Model;Models/Box.mdl" />
 				<attribute name="Material" value="Material;Materials/Showcase/LitWater.xml" />
+			</component>
+		</node>
+	</node>
+	<node id="1340">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Decals" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<node id="1341">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="SampleDecal" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="5.8293 0 5.79966" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="2 2 2" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="1317">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Showcase/DeferredDecal.xml" />
+			</component>
+		</node>
+		<node id="1342">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="5.92495 0 5.72246" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="1318">
+				<attribute name="Model" value="Model;Models/Sphere.mdl" />
+				<attribute name="Material" value="Material;" />
 			</component>
 		</node>
 	</node>
