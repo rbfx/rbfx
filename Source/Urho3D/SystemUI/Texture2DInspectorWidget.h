@@ -41,6 +41,8 @@ public:
     Texture2DInspectorWidget(Context* context, const ResourceVector& resources);
     ~Texture2DInspectorWidget() override;
 
+    bool CanSave() const override { return false; }
+
 private:
     static const ea::vector<PropertyDesc> properties;
 };

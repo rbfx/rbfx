@@ -57,6 +57,7 @@ public:
     void RenderTitle();
     void RenderContent() override;
 
+    virtual bool CanSave() const { return true; }
     const ResourceVector& GetResources() const { return resources_; }
 
 private:

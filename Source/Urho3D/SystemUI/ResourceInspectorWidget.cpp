@@ -95,8 +95,15 @@ void ResourceInspectorWidget::RenderProperty(const PropertyDesc& desc)
     const ColorScopeGuard guardBackgroundColor{
         ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
-    if (Widgets::EditVariant(value, desc.options_))
-        pendingSetProperties_.emplace_back(&desc, value);
+    if (CanSave())
+    {
+        if (Widgets::EditVariant(value, desc.options_))
+            pendingSetProperties_.emplace_back(&desc, value);
+    }
+    else
+    {
+        ui::Text("%s", value.ToString().c_str());
+    }
 }
 
 } // namespace Urho3D

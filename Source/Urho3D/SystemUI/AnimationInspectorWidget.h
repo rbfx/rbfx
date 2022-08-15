@@ -35,6 +35,9 @@ class URHO3D_API AnimationInspectorWidget : public ResourceInspectorWidget
 public:
     AnimationInspectorWidget(Context* context, const ResourceVector& resources);
     ~AnimationInspectorWidget() override;
+
+    bool CanSave() const override { return false; }
+
 private:
     static const ea::vector<PropertyDesc> properties;
 };

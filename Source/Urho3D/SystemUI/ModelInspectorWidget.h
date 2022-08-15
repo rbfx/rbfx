@@ -36,6 +36,8 @@ public:
     ModelInspectorWidget(Context* context, const ResourceVector& resources);
     ~ModelInspectorWidget() override;
 
+    bool CanSave() const override { return false; }
+
 private:
     static const ea::vector<PropertyDesc> properties;
 };
