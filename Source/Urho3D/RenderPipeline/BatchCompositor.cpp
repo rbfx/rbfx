@@ -58,8 +58,8 @@ void AddPipelineBatch(const PipelineBatchDesc& desc, BatchStateCache& cache,
 
 BatchCompositorPass::BatchCompositorPass(RenderPipelineInterface* renderPipeline,
     DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags,
-    unsigned deferredPassIndex, unsigned deferredDecalPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
-    : DrawableProcessorPass(renderPipeline, flags, deferredPassIndex, deferredDecalPassIndex, unlitBasePassIndex, litBasePassIndex, lightPassIndex)
+    unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
+    : DrawableProcessorPass(renderPipeline, flags, deferredPassIndex, unlitBasePassIndex, litBasePassIndex, lightPassIndex)
     , workQueue_(GetSubsystem<WorkQueue>())
     , defaultMaterial_(GetSubsystem<Renderer>()->GetDefaultMaterial())
     , drawableProcessor_(drawableProcessor)
@@ -79,7 +79,6 @@ void BatchCompositorPass::ComposeBatches()
 
     // Create missing pipeline states from main thread
     ResolveDelayedBatches(BatchCompositorSubpass::Deferred, delayedDeferredBatches_, deferredCache_, deferredBatches_);
-    ResolveDelayedBatches(BatchCompositorSubpass::DeferredDecal, delayedDeferredDecalBatches_, deferredDecalCache_, deferredDecalBatches_);
     ResolveDelayedBatches(BatchCompositorSubpass::Base, delayedUnlitBaseBatches_, unlitBaseCache_, baseBatches_);
     ResolveDelayedBatches(BatchCompositorSubpass::Base, delayedLitBaseBatches_, litBaseCache_, baseBatches_);
     ResolveDelayedBatches(BatchCompositorSubpass::Light, delayedLightBatches_, lightCache_, lightBatches_);
@@ -93,13 +92,11 @@ void BatchCompositorPass::OnUpdateBegin(const CommonFrameInfo& frameInfo)
     BaseClassName::OnUpdateBegin(frameInfo);
 
     deferredBatches_.Clear();
-    deferredDecalBatches_.Clear();
     baseBatches_.Clear();
     lightBatches_.Clear();
     negativeLightBatches_.Clear();
 
     delayedDeferredBatches_.Clear();
-    delayedDeferredDecalBatches_.Clear();
     delayedUnlitBaseBatches_.Clear();
     delayedLitBaseBatches_.Clear();
     delayedLightBatches_.Clear();
@@ -109,7 +106,6 @@ void BatchCompositorPass::OnUpdateBegin(const CommonFrameInfo& frameInfo)
 void BatchCompositorPass::OnPipelineStatesInvalidated()
 {
     deferredCache_.Invalidate();
-    deferredDecalCache_.Invalidate();
     unlitBaseCache_.Invalidate();
     litBaseCache_.Invalidate();
     lightCache_.Invalidate();
@@ -129,7 +125,6 @@ void BatchCompositorPass::ProcessGeometryBatch(const GeometryBatch& geometryBatc
     if (desc.pass_)
     {
         AddPipelineBatch(desc, deferredCache_, deferredBatches_, delayedDeferredBatches_);
-        AddPipelineBatch(desc, deferredDecalCache_, deferredDecalBatches_, delayedDeferredDecalBatches_);
         return;
     }
 

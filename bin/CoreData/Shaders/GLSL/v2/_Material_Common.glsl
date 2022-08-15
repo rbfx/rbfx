@@ -2,9 +2,12 @@
 /// Don't include!
 /// Material attributes passed from vertex to pixel shader.
 
+#if !defined(URHO3D_PIXEL_CALCULATES_TEXCOORD)
+VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
+#endif
+
 /// Unconditional attributes:
 /// @{
-VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 VERTEX_OUTPUT_HIGHP(float vWorldDepth)
 /// @}
 

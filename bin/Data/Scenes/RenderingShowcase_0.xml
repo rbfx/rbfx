@@ -4,9 +4,9 @@
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
 	<attribute name="Next Replicated Node ID" value="1343" />
-	<attribute name="Next Replicated Component ID" value="1322" />
-	<attribute name="Next Local Node ID" value="16777335" />
-	<attribute name="Next Local Component ID" value="16777389" />
+	<attribute name="Next Replicated Component ID" value="1328" />
+	<attribute name="Next Local Node ID" value="16777339" />
+	<attribute name="Next Local Component ID" value="16777394" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -21,9 +21,9 @@
 		<attribute name="Color" value="1 0.32549 1 0.882353" />
 		<attribute name="Render Order" value="129" />
 		<attribute name="Drawables">
+			<variant type="Int" value="1461" />
 			<variant type="Int" value="1373" />
 			<variant type="Int" value="1518" />
-			<variant type="Int" value="1461" />
 		</attribute>
 	</component>
 	<component type="OutlineGroup" id="1375">
@@ -1810,7 +1810,7 @@
 			<attribute name="Name" value="SampleDecal" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="5.8293 0 5.79966" />
-			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Rotation" value="0.707107 0.707107 0 0" />
 			<attribute name="Scale" value="2 2 2" />
 			<attribute name="Variables" />
 			<component type="StaticModel" id="1317">

@@ -33,7 +33,9 @@ void FillVertexTransformOutputs(const VertexTransform vertexTransform)
 /// - vColor
 void FillTexCoordOutputs()
 {
+#if !defined(URHO3D_PIXEL_CALCULATES_TEXCOORD)
     vTexCoord = GetTransformedTexCoord();
+#endif
 
 #ifdef URHO3D_PIXEL_NEED_LIGHTMAP_UV
     vTexCoord2 = GetLightMapTexCoord();

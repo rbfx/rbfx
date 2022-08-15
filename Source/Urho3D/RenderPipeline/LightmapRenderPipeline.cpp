@@ -53,7 +53,7 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
     auto instancingBuffer = MakeShared<InstancingBuffer>(context_);
     auto sceneProcessor = MakeShared<SceneProcessor>(this, "", shadowMapAllocator, instancingBuffer);
 
-    auto pass = sceneProcessor->CreatePass<UnorderedScenePass>(DrawableProcessorPassFlag::None, "deferred", "deferred_decal", "", "", "");
+    auto pass = sceneProcessor->CreatePass<UnorderedScenePass>(DrawableProcessorPassFlag::None, "deferred", "", "", "");
 
     const Vector2 size = Vector2::ONE * textureSize;
     const RenderBufferFlags flags = RenderBufferFlag::FixedTextureSize | RenderBufferFlag::Persistent;

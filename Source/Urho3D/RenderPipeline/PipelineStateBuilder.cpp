@@ -119,7 +119,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
     else if (batchCompositorPass)
     {
         const auto subpass = static_cast<BatchCompositorSubpass>(ctx.subpassIndex_);
-        const bool lightMaskToStencil = (subpass == BatchCompositorSubpass::Deferred || subpass == BatchCompositorSubpass::DeferredDecal)
+        const bool lightMaskToStencil = subpass == BatchCompositorSubpass::Deferred
             && batchCompositorPass->GetFlags().Test(DrawableProcessorPassFlag::DeferredLightMaskToStencil);
 
         compositor_->ProcessUserBatch(shaderProgramDesc_, batchCompositorPass->GetFlags(),

@@ -82,8 +82,6 @@ enum class BatchCompositorSubpass
 {
     /// Geometry buffer building pass of deferred rendering.
     Deferred,
-    /// Geometry buffer amending pass of deferred decal rendering.
-    DeferredDecal,
     /// Base pass, optionally lit with forward rendering.
     Base,
     /// Additive light pass for forward rendering.

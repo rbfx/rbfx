@@ -121,7 +121,7 @@ void DefaultRenderPipelineView::ApplySettings()
         {
             opaquePass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(
                 DrawableProcessorPassFlag::HasAmbientLighting | DrawableProcessorPassFlag::DeferredLightMaskToStencil,
-                "deferred", "deferred_decal", "base", "litbase", "light");
+                "deferred", "base", "litbase", "light");
 
             deferred_ = DeferredLightingData{};
             deferred_->albedoBuffer_ = renderBufferManager_->CreateColorBuffer({ Graphics::GetRGBAFormat() });
@@ -132,7 +132,7 @@ void DefaultRenderPipelineView::ApplySettings()
         {
             opaquePass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(
                 DrawableProcessorPassFlag::HasAmbientLighting,
-                "", "", "base", "litbase", "light");
+                "", "base", "litbase", "light");
 
             deferred_ = ea::nullopt;
         }
@@ -140,7 +140,7 @@ void DefaultRenderPipelineView::ApplySettings()
 
     outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(StringVector{"deferred", "deferred_decal", "base", "alpha"});
 
-    sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
+    sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, deferredDecalPass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
 
     postProcessPasses_.clear();
 
@@ -234,9 +234,10 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         sceneProcessor_ = MakeShared<SceneProcessor>(this, "shadow", shadowMapAllocator_, instancingBuffer_);
 
         postOpaquePass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(DrawableProcessorPassFlag::None, "postopaque");
+        deferredDecalPass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(DrawableProcessorPassFlag::NeedReadableDepth, "deferred_decal");
         alphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
             DrawableProcessorPassFlag::HasAmbientLighting | DrawableProcessorPassFlag::NeedReadableDepth
-            | DrawableProcessorPassFlag::RefractionPass, "", "", "alpha", "alpha", "litalpha");
+            | DrawableProcessorPassFlag::RefractionPass, "", "alpha", "alpha", "litalpha");
         postAlphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(DrawableProcessorPassFlag::None, "postalpha");
     }
 
@@ -348,7 +349,10 @@ void DefaultRenderPipelineView::Render()
         };
         renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
         sceneProcessor_->RenderSceneBatches("GeometryBuffer", camera, opaquePass_->GetDeferredBatches());
-        sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, opaquePass_->GetDeferredDecalBatches());
+        if (settings_.renderBufferManager_.readableDepth_)
+        {
+            sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, deferredDecalPass_->GetBaseBatches());
+        }
 
         // Draw deferred lights
         const ShaderResourceDesc geometryBuffer[] = {

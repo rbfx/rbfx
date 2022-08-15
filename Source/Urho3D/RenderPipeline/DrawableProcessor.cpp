@@ -116,12 +116,11 @@ bool IsShadowCasterVisible(const BoundingBox& lightSpaceBoundingBox, Camera* sha
 }
 
 DrawableProcessorPass::DrawableProcessorPass(RenderPipelineInterface* renderPipeline, DrawableProcessorPassFlags flags,
-    unsigned deferredPassIndex, unsigned deferredDecalPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
+    unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
     : Object(renderPipeline->GetContext())
     , flags_(flags)
     , useBatchCallback_(IsFlagSet(DrawableProcessorPassFlag::BatchCallback))
     , deferredPassIndex_(deferredPassIndex)
-    , deferredDecalPassIndex_(deferredDecalPassIndex)
     , unlitBasePassIndex_(unlitBasePassIndex)
     , litBasePassIndex_(litBasePassIndex)
     , lightPassIndex_(lightPassIndex)

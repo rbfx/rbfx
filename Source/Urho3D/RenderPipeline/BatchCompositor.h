@@ -143,7 +143,7 @@ class URHO3D_API BatchCompositorPass : public DrawableProcessorPass
 public:
     BatchCompositorPass(RenderPipelineInterface* renderPipeline,
         DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags,
-        unsigned deferredPassIndex, unsigned deferredDecalPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
+        unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
 
     /// Callback for pipeline state initialization.
     virtual bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
@@ -177,7 +177,6 @@ protected:
     /// @}
 
     WorkQueueVector<PipelineBatch> deferredBatches_;
-    WorkQueueVector<PipelineBatch> deferredDecalBatches_;
     WorkQueueVector<PipelineBatch> baseBatches_;
     WorkQueueVector<PipelineBatch> lightBatches_;
     WorkQueueVector<PipelineBatch> negativeLightBatches_;
@@ -192,7 +191,6 @@ private:
     /// Pipeline state caches
     /// @{
     BatchStateCache deferredCache_;
-    BatchStateCache deferredDecalCache_;
     BatchStateCache unlitBaseCache_;
     BatchStateCache litBaseCache_;
     BatchStateCache lightCache_;
@@ -201,7 +199,6 @@ private:
     /// Batches whose processing is delayed due to missing pipeline state
     /// @{
     WorkQueueVector<PipelineBatchDesc> delayedDeferredBatches_;
-    WorkQueueVector<PipelineBatchDesc> delayedDeferredDecalBatches_;
     WorkQueueVector<PipelineBatchDesc> delayedUnlitBaseBatches_;
     WorkQueueVector<PipelineBatchDesc> delayedLitBaseBatches_;
     WorkQueueVector<PipelineBatchDesc> delayedLightBatches_;

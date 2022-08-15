@@ -83,7 +83,7 @@ void ShaderProgramCompositor::ProcessUserBatch(ShaderProgramDesc& result, Drawab
     if (isCameraClipped_)
         result.AddShaderDefines(VS, "URHO3D_CLIP_PLANE");
 
-    const bool isDeferred = subpass == BatchCompositorSubpass::Deferred || subpass == BatchCompositorSubpass::DeferredDecal;
+    const bool isDeferred = subpass == BatchCompositorSubpass::Deferred;
     const bool isDepthOnly = flags.Test(DrawableProcessorPassFlag::DepthOnlyPass);
     if (subpass == BatchCompositorSubpass::Light)
         result.AddCommonShaderDefines("URHO3D_ADDITIVE_LIGHT_PASS");
