@@ -21,8 +21,9 @@
 //
 
 #include "../CommonUtils.h"
-#include <Urho3D/Input/Input.h>
 
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Input/Input.h>
 #include <Urho3D/Input/DirectionalPadAdapter.h>
 
 using namespace Tests;
@@ -99,6 +100,34 @@ TEST_CASE("DirectionalPadAdapter tests")
         SendAxisEvent(input, 0, 1.0f);
         CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
         adapter.SetJoystickEnabled(true);
+        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
+    }
+    SECTION("Test repeating")
+    {
+        adapter.SetKeyRepeatEnabled(true);
+        adapter.SetRepeatDelay(1.0f);
+        adapter.SetRepeatInterval(0.5f);
+        SendAxisEvent(input, 0, 0.8f);
+        CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
+        auto obj = MakeShared<Node>(context);
+        unsigned eventCounter = 0;
+        obj->SubscribeToEvent(&adapter, E_KEYDOWN, [&](StringHash eventType, VariantMap& args)
+        {
+            ++eventCounter;
+        });
+        Tests::RunFrame(context, 0.9f, 1.0f);
+        CHECK(eventCounter == 0); //Time 0.9, no event yet
+        Tests::RunFrame(context, 0.2f, 1.0f);
+        CHECK(eventCounter == 1); // Time 1.1, first repeat event arrives
+        Tests::RunFrame(context, 0.3f, 1.0f);
+        CHECK(eventCounter == 1); // Time 1.4, no new events
+        Tests::RunFrame(context, 0.2f, 1.0f);
+        CHECK(eventCounter == 2); // Time 1.6, one more repeat event arrives
+        Tests::RunFrame(context, 2.4f, 5.0f);
+        CHECK(eventCounter == 3); // Time 4.0, only one more repeat event arrives
+        SendAxisEvent(input, 0, 0.0f);
+        Tests::RunFrame(context, 2.0f, 5.0f);
+        CHECK(eventCounter == 3); // Time 6.0, no new events arrive since "key" is released
         CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
     }
 }

@@ -35,7 +35,8 @@ enum class SubscriptionMask : unsigned
     None = 0,
     Keyboard = 1 << 0,
     Joystick = 1 << 1,
-    All = Keyboard | Joystick,
+    Update = 1 << 2,
+    All = Keyboard | Joystick | Update,
 };
 URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
 
@@ -61,7 +62,20 @@ private:
         JoystickDPad = 200,
     };
 
-    typedef ea::fixed_vector<InputType, 4> InputVector;
+    struct AggregatedState
+    {
+        AggregatedState(Scancode scancode);
+
+        Scancode scancode_;
+        ea::fixed_vector<InputType, 4> activeSources_;
+        float timeToRepeat_;
+
+        bool Append(InputType inputType);
+        bool Remove(InputType inputType);
+        bool RemoveIf(const ea::function<bool(InputType)>& pred);
+        bool IsActive() const { return !activeSources_.empty(); }
+    };
+
     typedef DirectionalPadAdapterDetail::SubscriptionFlags SubscriptionFlags;
     typedef DirectionalPadAdapterDetail::SubscriptionMask SubscriptionMask;
 
@@ -79,6 +93,12 @@ public:
     void SetAxisUpperThreshold(float threshold);
     /// Set axis lower threshold. Axis value lower than threshold is interpreted as key press.
     void SetAxisLowerThreshold(float threshold);
+    /// Set key repeat enabled flag.
+    void SetKeyRepeatEnabled(bool enabled);
+    /// Set repeat delay in seconds.
+    void SetRepeatDelay(float delayInSeconds);
+    /// Set repeat interval in seconds.
+    void SetRepeatInterval(float intervalInSeconds);
 
     /// Get enabled flag.
     bool IsEnabled() const { return enabled_; }
@@ -86,6 +106,8 @@ public:
     bool IsKeyboardEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Keyboard; }
     /// Set joystick enabled flag.
     bool IsJoystickEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
+    /// Get enabled flag.
+    bool IsKeyRepeatEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Update; }
 
     /// Check if a key is held down by Key code. Only Up, Down, Left and Right keys are supported.
     bool GetKeyDown(Key key) const;
@@ -97,11 +119,16 @@ public:
     float GetAxisUpperThreshold() const { return axisUpperThreshold_; }
     /// Get axis lower threshold. Axis value lower than threshold is interpreted as key press.
     float GetAxisLowerThreshold() const { return axisLowerThreshold_; }
+    /// Get repeat delay in seconds.
+    float GetRepeatDelay() const { return repeatDelay_; }
+    /// Get repeat interval in seconds.
+    float GetRepeatInterval() const { return repeatInterval_; }
 
 private:
     void UpdateSubscriptions(SubscriptionFlags flags);
 
     void HandleInputFocus(StringHash eventType, VariantMap& args);
+    void HandleUpdate(StringHash eventType, VariantMap& args);
     void HandleKeyDown(StringHash eventType, VariantMap& args);
     void HandleKeyUp(StringHash eventType, VariantMap& args);
     void HandleJoystickAxisMove(StringHash eventType, VariantMap& args);
@@ -109,14 +136,14 @@ private:
     void HandleJoystickDisconnected(StringHash eventType, VariantMap& args);
 
     // Append input to set.
-    void Append(InputVector& activeInput, InputType input, Scancode scancode);
+    void Append(AggregatedState& activeInput, InputType input);
     // Remove input from set.
-    void Remove(InputVector& activeInput, InputType input, Scancode scancode);
+    void Remove(AggregatedState& activeInput, InputType input);
     // Remove input from set.
-    void RemoveIf(InputVector& activeInput, const ea::function<bool(InputType)>& pred, Scancode scancode);
+    void RemoveIf(AggregatedState& activeInput, const ea::function<bool(InputType)>& pred);
 
     void SendKeyUp(Scancode key);
-    void SendKeyDown(Scancode key);
+    void SendKeyDown(Scancode key, bool repeat);
 
     /// Is adapter enabled
     bool enabled_{false};
@@ -125,13 +152,15 @@ private:
     /// Active subscriptions bitmask
     SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
     Input* input_{};
-    InputVector up_;
-    InputVector down_;
-    InputVector left_;
-    InputVector right_;
+    AggregatedState up_;
+    AggregatedState down_;
+    AggregatedState left_;
+    AggregatedState right_;
     int ignoreJoystickId_{ea::numeric_limits<int>::lowest()};
     float axisUpperThreshold_{0.6f};
     float axisLowerThreshold_{0.4f};
+    float repeatDelay_{0.5f};
+    float repeatInterval_{0.03f};
 };
 
 } // namespace Urho3D
