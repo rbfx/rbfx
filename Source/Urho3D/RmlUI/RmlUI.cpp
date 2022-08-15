@@ -78,7 +78,7 @@ class RmlEventListenerInstancer : public Rml::EventListenerInstancer
 {
 public:
     /// Create an instance of inline event listener, if applicable.
-	Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override
+    Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override
     {
         if (auto* instancer = SoundEventListener::CreateInstancer(value, element))
             return instancer;
@@ -118,8 +118,8 @@ public:
     void OnDocumentUnload(Rml::ElementDocument* document) override
     {
         RmlContext* rmlContext = static_cast<RmlContext*>(document->GetContext());
-        RmlUI* ui = rmlContext->GetOwnerSubsystem();
-        ui->OnDocumentUnload(document);
+        if (RmlUI* ui = rmlContext->GetOwnerSubsystem())
+            ui->OnDocumentUnload(document);
     }
 };
 
@@ -653,23 +653,37 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     assert(document != nullptr);
     assert(document->GetContext() == rmlContext_);
 
-    Vector2 pos = document->GetAbsoluteOffset(Rml::Box::BORDER);
-    Vector2 size = document->GetBox().GetSize(Rml::Box::CONTENT);
-    Rml::ModalFlag modal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
-    Rml::FocusFlag focus = Rml::FocusFlag::Auto;
-    bool visible = document->IsVisible();
-    if (Rml::Element* element = rmlContext_->GetFocusElement())
-        focus = element->GetOwnerDocument() == document ? Rml::FocusFlag::Document : focus;
+    // Keep some properties of the old document
+    const Vector2 oldPosition = document->GetAbsoluteOffset(Rml::Box::BORDER);
+    const Rml::ModalFlag oldModal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
+    const bool oldVisible = document->IsVisible();
 
+    const Rml::Element* oldFocusedElement = rmlContext_->GetFocusElement();
+    const Rml::FocusFlag focus = oldFocusedElement->GetOwnerDocument() == document ? Rml::FocusFlag::Document : Rml::FocusFlag::Auto;
+
+    const Rml::Property* oldLeftProperty = document->GetProperty(Rml::PropertyId::Left);
+    const Rml::Property* oldTopProperty = document->GetProperty(Rml::PropertyId::Top);
+    const Rml::Property* oldWidthProperty = document->GetProperty(Rml::PropertyId::Width);
+    const Rml::Property* oldHeightProperty = document->GetProperty(Rml::PropertyId::Height);
+
+    // Try to reload document
     Rml::ElementDocument* newDocument = rmlContext_->LoadDocument(document->GetSourceURL());
-    newDocument->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Width, Rml::Property(size.x_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Height, Rml::Property(size.y_, Rml::Property::PX));
+    if (!newDocument)
+        return nullptr;
+
+    // Setup persistent properties
+    if (oldLeftProperty)
+        newDocument->SetProperty(Rml::PropertyId::Left, *oldLeftProperty);
+    if (oldTopProperty)
+        newDocument->SetProperty(Rml::PropertyId::Top, *oldTopProperty);
+    if (oldWidthProperty)
+        newDocument->SetProperty(Rml::PropertyId::Width, *oldWidthProperty);
+    if (oldHeightProperty)
+        newDocument->SetProperty(Rml::PropertyId::Height, *oldHeightProperty);
     newDocument->UpdateDocument();
 
-    if (visible)
-        newDocument->Show(modal, focus);
+    if (oldVisible)
+        newDocument->Show(oldModal, focus);
 
     RmlDocumentReloadedArgs args;
     args.unloadedDocument_ = document;
