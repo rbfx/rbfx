@@ -124,6 +124,7 @@ class SceneViewTab : public ResourceEditorTab
 
 public:
     Signal<void(SceneViewPage& page, const Vector3& position)> OnLookAt;
+    Signal<void(SceneSelection&, const ea::string_view&)> OnEditMenuRequest;
 
     struct ByInputPriority
     {
@@ -178,7 +179,6 @@ public:
     void CreateNodeInSelection(Scene* scene, SceneSelection& selection);
     void CreateComponentInSelection(Scene* scene, SceneSelection& selection, StringHash componentType);
     void FocusSelection(SceneSelection& selection);
-    void CreatePrefabFile(SceneSelection& selection);
 
     void CutSelection();
     void CopySelection();
@@ -247,7 +247,6 @@ private:
 
     void UpdateAddons(SceneViewPage& page);
     void InspectSelection(SceneViewPage& page);
-    void DragAndDropPrefabsToSceneView(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
     AddonSetByInputPriority addonsByInputPriority_;
