@@ -24,16 +24,23 @@
 
 #include "../../Project/Project.h"
 #include "../../Project/ResourceEditorTab.h"
+#include "../../Editor/Foundation/InspectorTab/NodeComponentInspector.h"
 
 #include <Urho3D/Scene/Scene.h>
 
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/AnimatedModel.h>
+#include <Urho3D/Graphics/AnimationController.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
-
+#include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Utility/SceneSelection.h>
 #include <Urho3D/Utility/PackedSceneData.h>
 #include <nativefiledialog/nfd.h>
@@ -82,15 +89,14 @@ void SceneDragAndDropPrefabs::DragAndDropPrefabsToSceneView(SceneViewPage& scene
                 ResourceCache* cache = owner_->GetContext()->GetSubsystem<ResourceCache>();
                 if (XMLFile* prefabFile = cache->GetResource<XMLFile>(desc.resourceName_))
                 {
-                    auto prefabNode =
-                        scenePage.scene_->CreateChild(GetFileName(desc.localName_), CreateMode::LOCAL);
+                    auto prefabNode = scenePage.scene_->CreateChild(GetFileName(desc.localName_), CreateMode::LOCAL);
 
                     SharedPtr<PrefabReference> prefabRef{
                         prefabNode->CreateComponent<PrefabReference>(CreateMode::LOCAL)};
                     prefabRef->SetPrefab(prefabFile);
                     prefabNode->SetPosition(result.position_);
 
-                    if (ui::IsKeyDown(Urho3D::Key::KEY_ALT))
+                    if (ui::IsKeyDown(KEY_ALT))
                     {
                         Quaternion q;
                         q.FromLookRotation(result.normal_);
@@ -103,6 +109,14 @@ void SceneDragAndDropPrefabs::DragAndDropPrefabsToSceneView(SceneViewPage& scene
 
                     owner_->PushAction<CreateRemoveNodeAction>(prefabNode, false);
                 }
+            }
+            else if (desc.HasObjectType<Model>())
+            {
+                CreateNodeWithModel(scenePage, desc, result);
+            }
+            else if (desc.HasObjectType<Material>())
+            {
+                AssignMaterialToDrawable(scenePage, desc, result);
             }
         }
     }
@@ -188,6 +202,93 @@ void SceneDragAndDropPrefabs::SelectNode(SceneSelection& selection, Node* node, 
     {
         selection.Clear();
         selection.SetSelected(node, true);
+    }
+}
+void SceneDragAndDropPrefabs::CreateNodeWithModel(
+    SceneViewPage& scenePage, const ResourceFileDescriptor& desc, const RayQueryResult& result) const
+{
+    const ea::string defaultResourceMaterial("Materials/Constant/MattWhite.xml");
+    ResourceCache* cache = owner_->GetContext()->GetSubsystem<ResourceCache>();
+    if (Model* model = cache->GetResource<Model>(desc.resourceName_))
+    {
+        auto node = scenePage.scene_->CreateChild(GetFileName(desc.localName_), CreateMode::LOCAL);
+        SharedPtr<StaticModel> spawnedModel;
+        SharedPtr<CollisionShape> shape(node->CreateComponent<CollisionShape>(CreateMode::LOCAL));
+        if (!model->GetSkeleton().GetNumBones())
+        {
+            spawnedModel = SharedPtr<StaticModel>(node->CreateComponent<StaticModel>(CreateMode::LOCAL));
+            shape->SetShapeType(ShapeType::SHAPE_TRIANGLEMESH);
+            shape->SetModel(model);
+        }
+        else
+        {
+            SharedPtr<AnimationController> animController(node->CreateComponent<AnimationController>(CreateMode::LOCAL));
+            spawnedModel = SharedPtr<AnimatedModel>(node->CreateComponent<AnimatedModel>(CreateMode::LOCAL));
+            shape->SetShapeType(ShapeType::SHAPE_CAPSULE);
+            Vector3 hs = model->GetBoundingBox().HalfSize();
+            Vector3 s = model->GetBoundingBox().Size();
+            shape->SetCapsule(s.x_, s.y_, Vector3(0,hs.y_, 0));
+
+        }
+        spawnedModel->SetModel(model);
+        spawnedModel->SetCastShadows(true);
+        spawnedModel->ApplyMaterialList();
+
+        // Check if model's material attr is set,
+        // if not set then create copy list and fill empty attr's with default material
+        if (Material* defaultMaterial = cache->GetResource<Material>(defaultResourceMaterial))
+        {
+            ResourceRefList oldMaterialList = spawnedModel->GetMaterialsAttr();
+            StringVector newMaterialList;
+            bool needUpdateAttr = false;
+            for (ea::string name : oldMaterialList.names_)
+            {
+                if (name.empty())
+                {
+                    needUpdateAttr = true;
+                    newMaterialList.push_back(defaultResourceMaterial);
+                }
+                else
+                    newMaterialList.push_back(name); 
+            }
+            if (needUpdateAttr)
+            {
+                const ResourceRefList materialsAttr(Material::GetTypeStatic(), newMaterialList);
+                spawnedModel->SetMaterialsAttr(materialsAttr);
+            }
+        }
+
+        node->SetPosition(result.position_);
+
+        if (ui::IsKeyDown(KEY_ALT))
+        {
+            Quaternion q;
+            q.FromLookRotation(result.normal_);
+            node->SetRotation(q * Quaternion(90, 0, 0));
+        }
+
+        const bool toggle = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
+        const bool append = ui::IsKeyDown(KEY_LSHIFT) || ui::IsKeyDown(KEY_RSHIFT);
+        SelectNode(scenePage.selection_, node, toggle, append);
+
+        owner_->PushAction<CreateRemoveNodeAction>(node, false);
+    }
+}
+void SceneDragAndDropPrefabs::AssignMaterialToDrawable(
+    SceneViewPage& scenePage, const ResourceFileDescriptor& desc, const RayQueryResult& result) const
+{
+    ResourceCache* cache = owner_->GetContext()->GetSubsystem<ResourceCache>();
+    if (Material* material = cache->GetResource<Material>(desc.resourceName_))
+    {
+        if (StaticModel* model = result.drawable_->Cast<StaticModel>())
+        {
+            StringVector sv;
+            for (int i = 0; i < model->GetNumGeometries(); i++)
+                sv.push_back(desc.resourceName_);
+
+            const ResourceRefList materialsAttr(Material::GetTypeStatic(), sv);
+            model->SetMaterialsAttr(materialsAttr);
+        }
     }
 }
 } // namespace Urho3D
