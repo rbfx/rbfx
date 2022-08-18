@@ -34,7 +34,6 @@
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
-
 #include <Urho3D/Utility/SceneSelection.h>
 #include <Urho3D/Utility/PackedSceneData.h>
 #include <nativefiledialog/nfd.h>
@@ -53,65 +52,59 @@ SceneDragAndDropPrefabs::SceneDragAndDropPrefabs(SceneViewTab* owner)
     owner->OnEditMenuRequest.Subscribe(this, &SceneDragAndDropPrefabs::OnEditMenuRequest);
 }
 
-void SceneDragAndDropPrefabs::Render(SceneViewPage& scenePage)
+void SceneDragAndDropPrefabs::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
 {
-    DragAndDropPrefabsToSceneView(scenePage);
+    Scene* scene = scenePage.scene_;
+    Camera* camera = scenePage.renderer_->GetCamera();
+
+    if (!mouseConsumed)
+    {
+        if (ui::BeginDragDropTarget() && ui::IsMouseReleased(MOUSEB_LEFT))
+        {
+            mouseConsumed = true;
+            if (ea::optional<RayQueryResult> result = QuerySingleRayQueryResult(scene, camera))
+            {
+                DragAndDropPrefabsToSceneView(scenePage, result.value());
+            }
+            ui::EndDragDropTarget();
+        }
+    }
 }
 
-void SceneDragAndDropPrefabs::DragAndDropPrefabsToSceneView(SceneViewPage& page)
+void SceneDragAndDropPrefabs::DragAndDropPrefabsToSceneView(SceneViewPage& scenePage, RayQueryResult& result)
 {
-    if (ui::BeginDragDropTarget() && ui::IsMouseReleased(0))
+    if (auto payload = static_cast<ResourceDragDropPayload*>(DragDropPayload::Get()))
     {
-        if (auto payload = static_cast<ResourceDragDropPayload*>(DragDropPayload::Get()))
+        for (const ResourceFileDescriptor& desc : payload->resources_)
         {
-            for (const ResourceFileDescriptor& desc : payload->resources_)
+            if (desc.HasObjectType<Scene>())
             {
-                bool CanBeDroppedTo = desc.HasObjectType<Scene>();
-
-                if (CanBeDroppedTo)
+                ResourceCache* cache = owner_->GetContext()->GetSubsystem<ResourceCache>();
+                if (XMLFile* prefabFile = cache->GetResource<XMLFile>(desc.resourceName_))
                 {
-                    ResourceCache* cache = owner_->GetContext()->GetSubsystem<ResourceCache>();
-                    if (XMLFile* prefabFile = cache->GetResource<XMLFile>(desc.resourceName_))
+                    auto prefabNode =
+                        scenePage.scene_->CreateChild(GetFileName(desc.localName_), CreateMode::LOCAL);
+
+                    SharedPtr<PrefabReference> prefabRef{
+                        prefabNode->CreateComponent<PrefabReference>(CreateMode::LOCAL)};
+                    prefabRef->SetPrefab(prefabFile);
+                    prefabNode->SetPosition(result.position_);
+
+                    if (ui::IsKeyDown(Urho3D::Key::KEY_ALT))
                     {
-                        auto prefabNode = page.scene_->CreateChild(GetFileName(desc.localName_), CreateMode::LOCAL);
-
-                        SharedPtr<PrefabReference> prefabRef{
-                            prefabNode->CreateComponent<PrefabReference>(CreateMode::LOCAL)};
-                        prefabRef->SetPrefab(prefabFile);
-
-                        Camera* camera = page.renderer_->GetCamera();
-                        ImGuiIO& io = ui::GetIO();
-
-                        const ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
-                        const auto pos = ToVector2((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
-                        const Ray cameraRay = camera->GetScreenRay(pos.x_, pos.y_);
-
-                        ea::vector<RayQueryResult> results;
-                        RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
-                        page.scene_->GetComponent<Octree>()->RaycastSingle(query);
-
-                        for (const RayQueryResult& result : results)
-                        {
-                            if (result.drawable_->GetScene() != nullptr)
-                            {
-                                prefabNode->SetPosition(result.position_);
-                                if (ui::IsKeyDown(Urho3D::Key::KEY_ALT))
-                                {
-                                    Quaternion q;
-                                    q.FromLookRotation(result.normal_);
-                                    prefabNode->SetRotation(q * Quaternion(90, 0, 0));
-                                }
-                            }
-                        }
-
-                        page.selection_.Clear();
-                        page.selection_.SetSelected(prefabNode, true);
-                        owner_->PushAction<CreateRemoveNodeAction>(prefabNode, false);
+                        Quaternion q;
+                        q.FromLookRotation(result.normal_);
+                        prefabNode->SetRotation(q * Quaternion(90, 0, 0));
                     }
+
+                    const bool toggle = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
+                    const bool append = ui::IsKeyDown(KEY_LSHIFT) || ui::IsKeyDown(KEY_RSHIFT);
+                    SelectNode(scenePage.selection_, prefabNode, toggle, append);
+
+                    owner_->PushAction<CreateRemoveNodeAction>(prefabNode, false);
                 }
             }
         }
-        ui::EndDragDropTarget();
     }
 }
 
@@ -144,6 +137,7 @@ void SceneDragAndDropPrefabs::CreatePrefabFile(SceneSelection& selection)
         }
     }
 }
+
 ea::optional<ea::string> SceneDragAndDropPrefabs::SelectPrefabPath()
 {
     nfdchar_t* outFilePath = nullptr;
@@ -161,5 +155,39 @@ void SceneDragAndDropPrefabs::OnEditMenuRequest(SceneSelection& selection, const
 {
     if (editMenuItemName == "Create Prefab")
         CreatePrefabFile(selection);
+}
+
+ea::optional<RayQueryResult> SceneDragAndDropPrefabs::QuerySingleRayQueryResult(Scene* scene, Camera* camera) const
+{
+    ImGuiIO& io = ui::GetIO();
+
+    const ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
+    const auto pos = ToVector2((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
+    const Ray cameraRay = camera->GetScreenRay(pos.x_, pos.y_);
+
+    ea::vector<RayQueryResult> results;
+    RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
+    scene->GetComponent<Octree>()->Raycast(query);
+
+    if (results.size())
+        if (results[0].drawable_->GetScene() != nullptr)
+            return results[0];
+
+    return ea::nullopt;
+}
+
+void SceneDragAndDropPrefabs::SelectNode(SceneSelection& selection, Node* node, bool toggle, bool append) const
+{
+    selection.ConvertToNodes();
+
+    if (toggle)
+        selection.SetSelected(node, !selection.IsSelected(node));
+    else if (append)
+        selection.SetSelected(node, true);
+    else
+    {
+        selection.Clear();
+        selection.SetSelected(node, true);
+    }
 }
 } // namespace Urho3D

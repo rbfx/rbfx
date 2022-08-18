@@ -44,15 +44,17 @@ public:
     /// Implement SceneViewAddon.
     /// @{
     ea::string GetUniqueName() const override { return "Editor.Scene:DragAndDropPrefabs"; }
-    int GetInputPriority() const override { return M_MIN_INT; }
-    void Render(SceneViewPage& scenePage);
+    int GetInputPriority() const override { return M_MIN_INT; };
+    void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
     /// @}
 
 private:
-    void DragAndDropPrefabsToSceneView(SceneViewPage& page);
+    void DragAndDropPrefabsToSceneView(SceneViewPage& page, RayQueryResult& result);
     void CreatePrefabFile(SceneSelection& selection);
     ea::optional<ea::string> SelectPrefabPath();
     void OnEditMenuRequest(SceneSelection& selection, const ea::string_view& editMenuItemName);
+    ea::optional<RayQueryResult> QuerySingleRayQueryResult(Scene* scene, Camera* camera) const;
+    void SelectNode(SceneSelection& selection, Node* node, bool toggle, bool append) const;
 };
 
 } // namespace Urho3D
