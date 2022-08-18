@@ -4,9 +4,7 @@
 #define URHO3D_PIXEL_CALCULATES_TEXCOORD
 #define URHO3D_PIXEL_NEED_SCREEN_POSITION
 
-//#ifdef URHO3D_PIXEL_SHADER
 vec2 vTexCoord;
-//#endif
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
@@ -16,6 +14,9 @@ vec2 vTexCoord;
 
 VERTEX_OUTPUT(mat4 vToModelSpace)
 VERTEX_OUTPUT_HIGHP(vec3 vFarRay)
+#ifdef URHO3D_ORTHOGRAPHIC_DEPTH
+    VERTEX_OUTPUT_HIGHP(vec3 vNearRay)
+#endif
 
 #ifdef URHO3D_VERTEX_SHADER
 void main()
@@ -25,7 +26,6 @@ void main()
     vToModelSpace = inverse(cModel);
     vScreenPos = GetDeferredScreenPos(gl_Position);
     vFarRay = GetDeferredFarRay(gl_Position);
-    //vFarRay = GetFarRay(gl_Position);
     #ifdef URHO3D_ORTHOGRAPHIC_DEPTH
         vNearRay = GetDeferredNearRay(gl_Position);
     #endif

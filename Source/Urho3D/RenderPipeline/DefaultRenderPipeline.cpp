@@ -359,12 +359,8 @@ void DefaultRenderPipelineView::Render()
             ShaderResourceDesc depthAndColorTextures[] = {
                 {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
             };
-            //const ShaderParameterDesc cameraParameters[] = {
-            //    {ShaderConsts::Camera_GBufferOffsets, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
-            //    {ShaderConsts::Camera_GBufferInvSize, renderBufferManager_->GetInvOutputSize()},
-            //};
 
-            sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, deferredDecalPass_->GetDeferredBatches(), depthAndColorTextures);//, cameraParameters);
+            sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, deferredDecalPass_->GetDeferredBatches(), depthAndColorTextures);
         }
 
         // Draw deferred lights
