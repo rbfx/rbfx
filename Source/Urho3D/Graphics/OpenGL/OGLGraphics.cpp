@@ -202,8 +202,10 @@ static const unsigned glSrcBlend[] =
     GL_ONE,
     GL_ONE_MINUS_DST_ALPHA,
     GL_ONE,
-    GL_SRC_ALPHA
+    GL_SRC_ALPHA,
+    GL_SRC_ALPHA,
 };
+static_assert(sizeof(glSrcBlend) / sizeof(glSrcBlend[0]) == MAX_BLENDMODES, "");
 
 static const unsigned glDestBlend[] =
 {
@@ -215,8 +217,38 @@ static const unsigned glDestBlend[] =
     GL_ONE_MINUS_SRC_ALPHA,
     GL_DST_ALPHA,
     GL_ONE,
-    GL_ONE
+    GL_ONE,
+    GL_ONE_MINUS_SRC_ALPHA,
 };
+static_assert(sizeof(glDestBlend) / sizeof(glDestBlend[0]) == MAX_BLENDMODES, "");
+
+static const unsigned glSrcAlphaBlend[] = {
+    GL_ONE,
+    GL_ONE,
+    GL_DST_COLOR,
+    GL_SRC_ALPHA,
+    GL_SRC_ALPHA,
+    GL_ONE,
+    GL_ONE_MINUS_DST_ALPHA,
+    GL_ONE,
+    GL_SRC_ALPHA,
+    GL_ZERO,
+};
+static_assert(sizeof(glSrcAlphaBlend) / sizeof(glSrcAlphaBlend[0]) == MAX_BLENDMODES, "");
+
+static const unsigned glDestAlphaBlend[] = {
+    GL_ZERO,
+    GL_ONE,
+    GL_ZERO,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_ONE,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_DST_ALPHA,
+    GL_ONE,
+    GL_ONE,
+    GL_ONE,
+};
+static_assert(sizeof(glDestAlphaBlend) / sizeof(glDestAlphaBlend[0]) == MAX_BLENDMODES, "");
 
 static const unsigned glBlendOp[] =
 {
@@ -228,8 +260,10 @@ static const unsigned glBlendOp[] =
     GL_FUNC_ADD,
     GL_FUNC_ADD,
     GL_FUNC_REVERSE_SUBTRACT,
-    GL_FUNC_REVERSE_SUBTRACT
+    GL_FUNC_REVERSE_SUBTRACT,
+    GL_FUNC_ADD,
 };
+static_assert(sizeof(glBlendOp) / sizeof(glBlendOp[0]) == MAX_BLENDMODES, "");
 
 #ifndef GL_ES_VERSION_2_0
 static const unsigned glFillMode[] =
@@ -1772,7 +1806,7 @@ void Graphics::SetBlendMode(BlendMode mode, bool alphaToCoverage)
         else
         {
             glEnable(GL_BLEND);
-            glBlendFunc(glSrcBlend[mode], glDestBlend[mode]);
+            glBlendFuncSeparate(glSrcBlend[mode], glDestBlend[mode], glSrcAlphaBlend[mode], glDestAlphaBlend[mode]);
             glBlendEquation(glBlendOp[mode]);
         }
 

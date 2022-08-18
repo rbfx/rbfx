@@ -55,8 +55,12 @@ void main()
     {
         discard;
     }
-
-    FillSurfaceNormal(surfaceData);
+    // Get normal
+    #ifdef NORMALMAP
+        surfaceData.normal = normalize((vec4(DecodeNormal(texture2D(sNormalMap, vTexCoord.xy)),0.0) * vToModelSpace).xyz);
+    #else
+        surfaceData.normal = normalize((vec4(0.0, 0.0, 1.0, 0.0) * vToModelSpace).xyz);
+    #endif
     FillSurfaceMetallicRoughnessOcclusion(surfaceData);
     FillSurfaceReflectionColor(surfaceData);
     FillSurfaceAlbedoSpecular(surfaceData);
@@ -64,8 +68,15 @@ void main()
 
     half3 surfaceColor = GetSurfaceColor(surfaceData);
     half surfaceAlpha = GetSurfaceAlpha(surfaceData) * smoothstep(0.5, 0.45, abs(modelSpace.z));
+    if (surfaceAlpha < 1.0/255.0)
+    {
+        discard;
+    }
 
     gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceAlpha, surfaceData.fogFactor);
+    gl_FragData[1].a = surfaceAlpha;
+    gl_FragData[2].a = surfaceAlpha;
+    gl_FragData[3].a = surfaceAlpha;
 #else
     discard;
 #endif

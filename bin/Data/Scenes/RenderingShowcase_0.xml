@@ -3,10 +3,10 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="1343" />
-	<attribute name="Next Replicated Component ID" value="1331" />
-	<attribute name="Next Local Node ID" value="16777341" />
-	<attribute name="Next Local Component ID" value="16777396" />
+	<attribute name="Next Replicated Node ID" value="1347" />
+	<attribute name="Next Replicated Component ID" value="1352" />
+	<attribute name="Next Local Node ID" value="16777353" />
+	<attribute name="Next Local Component ID" value="16777408" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -22,8 +22,8 @@
 		<attribute name="Render Order" value="129" />
 		<attribute name="Drawables">
 			<variant type="Int" value="1373" />
-			<variant type="Int" value="1461" />
 			<variant type="Int" value="1518" />
+			<variant type="Int" value="1461" />
 		</attribute>
 	</component>
 	<component type="OutlineGroup" id="1375">
@@ -1807,9 +1807,9 @@
 		<attribute name="Variables" />
 		<node id="1341">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="SampleDecal" />
+			<attribute name="Name" value="DecalBump" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="5.22883 -0.587922 6.35027" />
+			<attribute name="Position" value="5.42239 -0.305164 6.3046" />
 			<attribute name="Rotation" value="0.707107 0.707107 0 0" />
 			<attribute name="Scale" value="2 2 2" />
 			<attribute name="Variables" />
@@ -1820,11 +1820,11 @@
 		</node>
 		<node id="1342">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="" />
+			<attribute name="Name" value="RealBump" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="5.92495 0 5.72246" />
 			<attribute name="Rotation" value="1 0 0 0" />
-			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Scale" value="1 0.3 1" />
 			<attribute name="Variables" />
 			<component type="StaticModel" id="1318">
 				<attribute name="Model" value="Model;Models/Sphere.mdl" />
