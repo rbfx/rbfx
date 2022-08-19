@@ -55,6 +55,11 @@ using namespace Urho3D;
 
 const float TOUCH_SENSITIVITY = 2.0f;
 
+/// Send this event to exit sample.
+URHO3D_EVENT(E_SAMPLE_EXIT_REQUESTED, SampleExitRequested)
+{
+}
+
 /// Sample class, as framework for all samples.
 ///    - Initialization of the Urho3D engine (in Application class)
 ///    - Modify engine parameters for windowed mode and to show the class name as title
@@ -86,6 +91,9 @@ public:
     virtual void Start();
     /// Cleanup after the main loop. Called by Application.
     virtual void Stop();
+
+    /// Return whether the Esc button should close sample.
+    virtual bool IsEscapeEnabled() { return true; }
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.

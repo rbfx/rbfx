@@ -49,6 +49,7 @@
 #include "../RmlUI/RmlFile.h"
 #include "../RmlUI/RmlEventListeners.h"
 #include "../RmlUI/RmlCanvasComponent.h"
+#include "../RmlUI/RmlNavigable.h"
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
 
@@ -80,13 +81,7 @@ public:
     /// Create an instance of inline event listener, if applicable.
     Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override
     {
-        if (auto* instancer = SoundEventListener::CreateInstancer(value, element))
-            return instancer;
-
-        if (auto* instancer = CustomEventListener::CreateInstancer(value, element))
-            return instancer;
-
-        return nullptr;
+        return PipeEventListener::CreateInstancer(value, element);
     }
 };
 
@@ -278,6 +273,8 @@ RmlUI::RmlUI(Context* context, const char* name)
         Rml::Factory::RegisterEventListenerInstancer(&RmlEventListenerInstancerInstance);
         Rml::Factory::RegisterContextInstancer(&RmlContextInstancerInstance);
         Rml::RegisterPlugin(&RmlPluginInstance);
+
+        RmlNavigable::Register();
     }
     rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize())));
     rmlContext_->SetOwnerSubsystem(this);
@@ -641,7 +638,11 @@ void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
 
         ea::fixed_vector<Rml::ElementDocument*, 64> unloadingDocuments;
         for (int i = 0; i < rmlContext_->GetNumDocuments(); i++)
-            unloadingDocuments.push_back(rmlContext_->GetDocument(i));
+        {
+            Rml::ElementDocument* document = rmlContext_->GetDocument(i);
+            if (!document->GetSourceURL().empty())
+                unloadingDocuments.push_back(document);
+        }
 
         for (Rml::ElementDocument* document : unloadingDocuments)
             ReloadDocument(document);

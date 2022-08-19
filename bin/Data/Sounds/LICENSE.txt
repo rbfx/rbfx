@@ -1,0 +1,2 @@
+UIClicked.wav: https://freesound.org/s/546080/
+UINavigated.wav: https://freesound.org/s/43681/

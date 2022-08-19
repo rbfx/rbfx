@@ -166,3 +166,19 @@ TEST_CASE("SharedPtr is converted between types")
     REQUIRE(lockedRefCountedPtr2.Refs() == 6);
     REQUIRE(lockedRefCountedPtr2.WeakRefs() == 4);
 }
+
+TEST_CASE("WeakPtr is consistent on expiration")
+{
+    auto objectPtr = MakeShared<TestObject>();
+    WeakPtr<TestObject> weakObjectPtr = objectPtr;
+
+    objectPtr.Reset();
+
+    REQUIRE(objectPtr == nullptr);
+    REQUIRE(objectPtr.Refs() == 0);
+    REQUIRE(objectPtr.WeakRefs() == 0);
+
+    REQUIRE(weakObjectPtr == nullptr);
+    REQUIRE(weakObjectPtr.Refs() == 0);
+    REQUIRE(weakObjectPtr.WeakRefs() == 1);
+}

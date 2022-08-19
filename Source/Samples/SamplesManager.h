@@ -94,6 +94,7 @@ public:
     void OnButtonPress(VariantMap& args);
     ///
     void OnFrameStart();
+    void OnCloseCurrentSample();
     /// Add a sample to sample list.
     template<typename T> void RegisterSample();
     /// Start execution of specified sample.

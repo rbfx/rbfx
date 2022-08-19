@@ -163,7 +163,7 @@ void RmlSerializableInspector::RegisterObject(Context* context)
 
 void RmlSerializableInspector::Connect(Serializable* serializable)
 {
-    if (!serializable || !model_)
+    if (!serializable)
     {
         URHO3D_LOGERROR("Cannot connect RmlSerializableInspector to object before initialization");
         return;
@@ -210,18 +210,12 @@ void RmlSerializableInspector::Connect(Serializable* serializable)
         ++index;
     }
 
-    model_.DirtyVariable("attributes");
-    model_.DirtyVariable("type");
+    DirtyVariable("attributes");
+    DirtyVariable("type");
 }
 
-void RmlSerializableInspector::OnDocumentPreLoad()
+void RmlSerializableInspector::OnDataModelInitialized(Rml::DataModelConstructor& constructor)
 {
-    if (model_)
-        return;
-
-    Rml::DataModelConstructor constructor = CreateDataModel("RmlSerializableInspector_model");
-    URHO3D_ASSERT(constructor);
-
     constructor.RegisterArray<Rml::StringList>();
     static const auto getVariant = [](const Rml::Variant& src, Rml::Variant& dest) { dest = src; };
     static const auto setVariant = [](Rml::Variant& dest, const Rml::Variant& src) { dest = src; };
@@ -238,8 +232,6 @@ void RmlSerializableInspector::OnDocumentPreLoad()
     constructor.Bind("attributes", &attributes_);
     constructor.Bind("type", &type_);
 
-    model_ = constructor.GetModelHandle();
-
     SubscribeToEvent(GetUI(), "RmlSerializableInspector_CloseWindow",
         [this](StringHash, VariantMap& args)
     {
@@ -247,26 +239,17 @@ void RmlSerializableInspector::OnDocumentPreLoad()
     });
 }
 
-void RmlSerializableInspector::OnDocumentPostUnload()
-{
-    if (!model_)
-        return;
-
-    RemoveDataModel("RmlSerializableInspector_model");
-    model_ = nullptr;
-}
-
 void RmlSerializableInspector::Update(float timeStep)
 {
     BaseClassName::Update(timeStep);
 
-    if (!serializable_ || !model_)
+    if (!serializable_)
     {
         Remove();
         return;
     }
 
-    model_.DirtyVariable("attributes");
+    DirtyVariable("attributes");
 }
 
 }

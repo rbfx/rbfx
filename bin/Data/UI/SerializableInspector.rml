@@ -6,11 +6,11 @@
 </head>
 
 <body id="window" style="width: 45%; left: 52%; top: 5%; height: 80%;">
-    <div data-model="RmlSerializableInspector_model">
+    <div data-model="RmlSerializableInspector">
         <div id="titlebar">
             <handle move_target="#document">
                 <div id="title">{{type}} Inspector</div>
-                <button class="close-window" onclick="{'e': 'RmlSerializableInspector_CloseWindow'}"></button>
+                <button class="close-window" onclick="event:RmlSerializableInspector_CloseWindow"></button>
             </handle>
         </div>
         <div style="overflow-y: scroll; position: absolute; top: 25pt; bottom: 10pt; left: 0pt; right: 7pt;">

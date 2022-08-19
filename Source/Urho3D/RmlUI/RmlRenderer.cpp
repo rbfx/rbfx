@@ -67,6 +67,26 @@ Rml::TextureHandle WrapTextureHandle(CachedRmlTexture* texture) { return reinter
 /// Unwrap RmlUI handle to CachedRmlTexture pointer.
 CachedRmlTexture* UnwrapTextureHandle(Rml::TextureHandle texture) { return reinterpret_cast<CachedRmlTexture*>(texture); }
 
+/// Roughly transform scissor rect.
+IntRect TransformScissorRect(const IntRect& rect, const Matrix3x4& transform)
+{
+    const Vector3 corners[4] = {
+        {static_cast<float>(rect.left_), static_cast<float>(rect.top_), 0.0f},
+        {static_cast<float>(rect.right_), static_cast<float>(rect.top_), 0.0f},
+        {static_cast<float>(rect.right_), static_cast<float>(rect.bottom_), 0.0f},
+        {static_cast<float>(rect.left_), static_cast<float>(rect.bottom_), 0.0f}
+    };
+
+    IntVector2 minCorner{M_MAX_INT, M_MAX_INT}, maxCorner{M_MIN_INT, M_MIN_INT};
+    for (const Vector3& corner : corners)
+    {
+        const IntVector2 transformedCorner = VectorRoundToInt((transform * corner).ToVector2());
+        minCorner = VectorMin(minCorner, transformedCorner);
+        maxCorner = VectorMax(maxCorner, transformedCorner);
+    }
+    return {minCorner, maxCorner};
+}
+
 }
 
 RmlRenderer::RmlRenderer(Context* context)
@@ -160,12 +180,6 @@ Material* RmlRenderer::GetBatchMaterial(Texture2D* texture)
 void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices,
     Rml::TextureHandle textureHandle, const Rml::Vector2f& translation)
 {
-    if (scissorEnabled_ && transformEnabled_)
-    {
-        URHO3D_LOGERROR("Scissor test is not supported for transformed geometry");
-        return;
-    }
-
     const auto [firstVertex, vertexData] = vertexBuffer_->AddVertices(num_vertices);
     const auto [firstIndex, indexData] = indexBuffer_->AddIndices(num_indices);
 
@@ -199,7 +213,13 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
     const UIBatchStateKey batchStateKey{ isRenderSurfaceSRGB_, material, pass, BLEND_ALPHA };
     PipelineState* pipelineState = batchStateCache_->GetOrCreatePipelineState(batchStateKey, batchStateCreateContext_);
 
-    const IntRect scissor = scissorEnabled_ ? scissor_ : IntRect{ IntVector2::ZERO, viewportSize_ };
+    IntRect scissor;
+    if (!scissorEnabled_)
+        scissor = IntRect{IntVector2::ZERO, viewportSize_};
+    else if (transformEnabled_)
+        scissor = TransformScissorRect(scissor_, transform_);
+    else
+        scissor = scissor_;
 
     drawQueue_->SetScissorRect(scissor);
     drawQueue_->SetPipelineState(pipelineState);
