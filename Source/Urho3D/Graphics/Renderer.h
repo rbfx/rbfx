@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -184,6 +184,14 @@ enum SkinningMode
     SKINNING_SOFTWARE,
 };
 
+/// Statistics collected during the last frame.
+/// TODO: Move other metrics here.
+struct FrameStatistics
+{
+    unsigned animations_{};
+    unsigned changedAnimations_{};
+};
+
 /// High-level rendering subsystem. Manages drawing of 3D views.
 class URHO3D_API Renderer : public Object
 {
@@ -197,6 +205,8 @@ public:
     /// Destruct.
     ~Renderer() override;
 
+    /// Set backbuffer render surface. Null corresponds to the application backbuffer.
+    void SetBackbufferRenderSurface(RenderSurface* renderSurface);
     /// Set global shader define on or off.
     void SetGlobalShaderDefine(ea::string_view define, bool enabled);
     /// Set number of backbuffer viewports to render.
@@ -490,6 +500,10 @@ public:
     /// Return the frame update parameters.
     const FrameInfo& GetFrameInfo() const { return frame_; }
 
+    /// Return statistics of current frame.
+    const FrameStatistics& GetFrameStats() const { return frameStats_; }
+    FrameStatistics& GetMutableFrameStats() { return frameStats_; }
+
     /// Update for rendering. Called by HandleRenderUpdate().
     void Update(float timeStep);
     /// Render. Called by Engine.
@@ -580,9 +594,13 @@ private:
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Blur the shadow map.
     void BlurShadowMap(View* view, Texture2D* shadowMap, float blurScale);
+    void UpdateMousePositionsForMainViewports();
 
     /// Graphics subsystem.
     WeakPtr<Graphics> graphics_;
+    /// Render surface that acts as backbuffer.
+    WeakPtr<RenderSurface> backbufferSurface_;
+    bool backbufferSurfaceViewportsDirty_{};
     /// Default renderpath.
     SharedPtr<RenderPath> defaultRenderPath_;
     /// Default non-textured material technique.
@@ -731,6 +749,8 @@ private:
     /// Pipeline state cache.
     SharedPtr<PipelineStateCache> pipelineStateCache_;
     SharedPtr<DrawCommandQueue> defaultDrawQueue_;
+
+    FrameStatistics frameStats_;
 };
 
 }

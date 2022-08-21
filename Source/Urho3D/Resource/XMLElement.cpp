@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -451,6 +451,9 @@ bool XMLElement::SetVariantValue(const Variant& value)
     case VAR_VARIANTMAP:
         return SetVariantMap(value.GetVariantMap());
 
+    case VAR_STRINGVARIANTMAP:
+        return SetStringVariantMap(value.GetStringVariantMap());
+
     case VAR_CUSTOM:
     {
         if (const Serializable* object = value.GetCustom<SharedPtr<Serializable>>())
@@ -541,17 +544,35 @@ bool XMLElement::SetVariantMap(const VariantMap& value)
     if (!RemoveChildren("variant"))
         return false;
 
-    for (auto i = value.begin(); i != value.end(); ++i)
+    for (const auto& [key, item] : value)
     {
         XMLElement variantElem = CreateChild("variant");
         if (!variantElem)
             return false;
-        variantElem.SetUInt("hash", i->first.Value());
-        variantElem.SetVariant(i->second);
+        variantElem.SetUInt("hash", key.Value());
+        variantElem.SetVariant(item);
     }
 
     return true;
 }
+
+bool XMLElement::SetStringVariantMap(const StringVariantMap& value)
+{
+    if (!RemoveChildren("variant"))
+        return false;
+
+    for (const auto& [key, item] : value)
+    {
+        XMLElement variantElem = CreateChild("variant");
+        if (!variantElem)
+            return false;
+        variantElem.SetAttribute("name", key);
+        variantElem.SetVariant(item);
+    }
+
+    return true;
+}
+
 
 bool XMLElement::SetVector2(const ea::string& name, const Vector2& value)
 {
@@ -897,6 +918,8 @@ Variant XMLElement::GetVariantValue(VariantType type, Context* context) const
         ret = GetStringVector();
     else if (type == VAR_VARIANTMAP)
         ret = GetVariantMap();
+    else if (type == VAR_STRINGVARIANTMAP)
+        ret = GetStringVariantMap();
     else if (type == VAR_CUSTOM)
     {
         if (!context)
@@ -911,7 +934,7 @@ Variant XMLElement::GetVariantValue(VariantType type, Context* context) const
             SharedPtr<Serializable> object;
             object.StaticCast(context->CreateObject(typeName));
 
-            if (object.NotNull())
+            if (object != nullptr)
             {
                 // Restore proper refcount.
                 if (object->LoadXML(*this))
@@ -1002,6 +1025,20 @@ VariantMap XMLElement::GetVariantMap() const
         else if (variantElem.HasAttribute("hash"))
             ret[StringHash(variantElem.GetUInt("hash"))] = variantElem.GetVariant();
 
+        variantElem = variantElem.GetNext("variant");
+    }
+
+    return ret;
+}
+
+StringVariantMap XMLElement::GetStringVariantMap() const
+{
+    StringVariantMap ret;
+
+    XMLElement variantElem = GetChild("variant");
+    while (variantElem)
+    {
+        ret[variantElem.GetAttribute("name")] = variantElem.GetVariant();
         variantElem = variantElem.GetNext("variant");
     }
 

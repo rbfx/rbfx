@@ -41,7 +41,6 @@ public:
     /// Construct RenderMesh.
     explicit RenderMesh(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Evaluate size required to place new node instance.
@@ -51,24 +50,18 @@ public:
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
     /// Set Model.
-    /// @property
     void SetModel(ResourceRef value);
     /// Get Model.
-    /// @property
     ResourceRef GetModel() const;
 
     /// Set Material.
-    /// @property
     void SetMaterial(ResourceRefList value);
     /// Get Material.
-    /// @property
     ResourceRefList GetMaterial() const;
 
     /// Set Is Worldspace.
-    /// @property
     void SetIsWorldspace(bool value);
     /// Get Is Worldspace.
-    /// @property
     bool GetIsWorldspace() const;
 
 protected:

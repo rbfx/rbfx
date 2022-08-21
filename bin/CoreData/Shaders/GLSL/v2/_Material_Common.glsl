@@ -2,9 +2,17 @@
 /// Don't include!
 /// Material attributes passed from vertex to pixel shader.
 
+/// Unconditional attributes:
+/// @{
+VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
+VERTEX_OUTPUT_HIGHP(float vWorldDepth)
+/// @}
+
 /// Vertex transform attributes:
 /// @{
-VERTEX_OUTPUT_HIGHP(float vWorldDepth)
+#ifdef URHO3D_PIXEL_NEED_WORLD_POSITION
+    VERTEX_OUTPUT_HIGHP(vec3 vWorldPos)
+#endif
 
 #ifdef URHO3D_PIXEL_NEED_NORMAL
     VERTEX_OUTPUT(half3 vNormal)
@@ -18,8 +26,6 @@ VERTEX_OUTPUT_HIGHP(float vWorldDepth)
 
 /// Vertex texcoord attributes (also vertex color, for convinience):
 /// @{
-VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
-
 #ifdef URHO3D_PIXEL_NEED_LIGHTMAP_UV
     VERTEX_OUTPUT_HIGHP(vec2 vTexCoord2)
 #endif

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,6 +47,11 @@ void RefCount::Free(RefCount* instance)
     instance->~RefCount();
     EASTLFree(*ea::get_default_allocator((Allocator*)nullptr), instance, sizeof(RefCount));
 }
+
+#if !URHO3D_CSHARP
+void* RefCounted::scriptObject_{};
+bool RefCounted::isScriptStrongRef_{};
+#endif
 
 RefCounted::RefCounted()
     : refCount_(RefCount::Allocate())

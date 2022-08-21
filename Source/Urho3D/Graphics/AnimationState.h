@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,9 @@
 #include <EASTL/unordered_map.h>
 
 #include "../Container/Ptr.h"
+#include "../Graphics/Skeleton.h"
 #include "../Math/StringHash.h"
+#include "../Math/Transform.h"
 
 namespace Urho3D
 {
@@ -53,22 +55,36 @@ enum AnimationBlendMode
     ABM_ADDITIVE
 };
 
-/// Per-track data of skinned model animation.
-/// TODO(animation): Do we want per-bone weights?
-struct URHO3D_API ModelAnimationStateTrack
+/// Transform track applied to the Node that is not used as Bone for AnimatedModel.
+struct NodeAnimationStateTrack
 {
     const AnimationTrack* track_{};
-    Bone* bone_{};
     WeakPtr<Node> node_;
-    unsigned keyFrame_{};
+    // It's temporary cache and it's never accessed from multiple threads, so it's okay to have it mutable here.
+    mutable unsigned keyFrame_{};
 };
 
-/// Per-track data of node model animation.
-struct URHO3D_API NodeAnimationStateTrack
+/// Output that aggregates all NodeAnimationStateTrack-s targeted at the same node.
+struct NodeAnimationOutput
 {
-    const AnimationTrack* track_{};
-    WeakPtr<Node> node_;
-    unsigned keyFrame_{};
+    AnimationChannelFlags dirty_;
+    Transform localToParent_;
+};
+
+/// Transform track applied to the Bone of AnimatedModel.
+/// TODO(animation): Handle Animation reload when tracks are playing?
+/// TODO(animation): Do we want per-bone weights?
+struct ModelAnimationStateTrack : public NodeAnimationStateTrack
+{
+    unsigned boneIndex_{};
+    Bone* bone_{};
+};
+
+/// Output that aggregates all ModelAnimationStateTrack-s targeted at the same bone.
+struct ModelAnimationOutput : public NodeAnimationOutput
+{
+    // Unused by AnimationState, but it's just convinient to have here.
+    Matrix3x4 localToComponent_;
 };
 
 /// Custom attribute type, used to support sub-attribute animation in special cases.
@@ -80,20 +96,42 @@ enum class AnimatedAttributeType
 };
 
 /// Reference to attribute or sub-attribute;
-struct AnimatedAttributeReference
+struct URHO3D_API AnimatedAttributeReference
 {
     WeakPtr<Serializable> serializable_;
     unsigned attributeIndex_{};
     AnimatedAttributeType attributeType_{};
     unsigned subAttributeKey_{};
+
+    /// Set value for attribute. Reference must be valid.
+    void SetValue(const Variant& value) const;
+
+    /// Can be used as key in hash map
+    /// @{
+    unsigned ToHash() const
+    {
+        unsigned result{};
+        CombineHash(result, MakeHash(serializable_.Get()));
+        CombineHash(result, attributeIndex_);
+        CombineHash(result, subAttributeKey_);
+        return result;
+    }
+    bool operator==(const AnimatedAttributeReference& rhs) const
+    {
+        return serializable_ == rhs.serializable_
+            && attributeIndex_ == rhs.attributeIndex_
+            && subAttributeKey_ == rhs.subAttributeKey_;
+    }
+    bool operator!=(const AnimatedAttributeReference& rhs) const { return !(*this == rhs); }
+    /// @}
 };
 
-/// Per-track data of attribute animation.
-struct URHO3D_API AttributeAnimationStateTrack
+/// Value track applied to the specific attribute or sub-attribute.
+struct AttributeAnimationStateTrack
 {
     const VariantAnimationTrack* track_{};
     AnimatedAttributeReference attribute_;
-    unsigned keyFrame_{};
+    mutable unsigned keyFrame_{};
 };
 
 /// %Animation instance.
@@ -101,11 +139,15 @@ class URHO3D_API AnimationState : public RefCounted
 {
 public:
     /// Construct with animated model and animation pointers.
-    AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation);
+    AnimationState(AnimationController* controller, AnimatedModel* model);
     /// Construct with root scene node and animation pointers.
-    AnimationState(AnimationController* controller, Node* node, Animation* animation);
+    AnimationState(AnimationController* controller, Node* node);
     /// Destruct.
     ~AnimationState() override;
+    /// Initialize static properties of the state and dirty tracks if changed.
+    void Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode);
+    /// Update dynamic properies of the state.
+    void Update(bool looped, float time, float weight);
 
     /// Modify tracks. For internal use only.
     /// @{
@@ -124,21 +166,9 @@ public:
     /// Set blending weight.
     /// @property
     void SetWeight(float weight);
-    /// Set blending mode.
-    /// @property
-    void SetBlendMode(AnimationBlendMode mode);
     /// Set time position. Does not fire animation triggers.
     /// @property
     void SetTime(float time);
-    /// Set start bone name.
-    void SetStartBone(const ea::string& name);
-    /// Modify blending weight.
-    void AddWeight(float delta);
-    /// Modify time position. %Animation triggers will be fired.
-    void AddTime(float delta);
-    /// Set blending layer.
-    /// @property
-    void SetLayer(unsigned char layer);
 
     /// Return animation.
     /// @property
@@ -178,23 +208,18 @@ public:
     /// @property
     float GetLength() const;
 
-    /// Return blending layer.
-    /// @property
-    unsigned char GetLayer() const { return layer_; }
-
-    /// Apply animation to a skeleton. Transform changes are applied silently, so the model needs to dirty its root model afterward.
-    void ApplyModelTracks();
+    /// Calculate animation for the model skeleton.
+    void CalculateModelTracks(ea::vector<ModelAnimationOutput>& output) const;
     /// Apply animation to a scene node hierarchy.
-    void ApplyNodeTracks();
+    void CalculateNodeTracks(ea::unordered_map<Node*, NodeAnimationOutput>& output) const;
     /// Apply animation to attributes.
-    void ApplyAttributeTracks();
+    void CalculateAttributeTracks(ea::unordered_map<AnimatedAttributeReference, Variant>& output) const;
 
 private:
-    /// Apply single transformation track to target object. Key frame hint is updated on call.
-    void ApplyTransformTrack(const AnimationTrack& track,
-        Node* node, Bone* bone, unsigned& frame, float weight, bool silent);
+    /// Apply value of transformation track to the output.
+    void CalulcateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const;
     /// Apply single attribute track to target object. Key frame hint is updated on call.
-    void ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrack, float weight);
+    void CalulcateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const;
 
     /// Owner controller.
     WeakPtr<AnimationController> controller_;
@@ -213,7 +238,6 @@ private:
     bool looped_{};
     float weight_{};
     float time_{};
-    unsigned char layer_{};
     AnimationBlendMode blendingMode_{};
     ea::string startBone_;
     /// @}

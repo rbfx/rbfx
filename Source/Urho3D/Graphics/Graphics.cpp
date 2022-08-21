@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/ComputeBuffer.h"
 #include "../Graphics/ConstantBuffer.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
@@ -42,8 +43,10 @@
 #include "../Graphics/Material.h"
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/OutlineGroup.h"
 #include "../Graphics/ParticleEffect.h"
 #include "../Graphics/ParticleEmitter.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/RibbonTrail.h"
 #include "../Graphics/Shader.h"
 #include "../Graphics/ShaderPrecache.h"
@@ -665,6 +668,7 @@ void RegisterGraphicsLibrary(Context* context)
     TerrainPatch::RegisterObject(context);
     DebugRenderer::RegisterObject(context);
     Octree::RegisterObject(context);
+    OutlineGroup::RegisterObject(context);
     Zone::RegisterObject(context);
     VertexBuffer::RegisterObject(context);
     IndexBuffer::RegisterObject(context);
@@ -673,6 +677,11 @@ void RegisterGraphicsLibrary(Context* context)
     View::RegisterObject(context);
     Viewport::RegisterObject(context);
     OcclusionBuffer::RegisterObject(context);
+    ReflectionProbe::RegisterObject(context);
+    ReflectionProbeManager::RegisterObject(context);
+#if defined(URHO3D_COMPUTE)
+    ComputeBuffer::RegisterObject(context);
+#endif
 }
 
 

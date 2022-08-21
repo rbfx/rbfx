@@ -32,7 +32,7 @@ endif ()
 project (rbfx)
 
 # Set CMake modules search path
-set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules)
 
 if (WEB AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     # Workaround for following error:
@@ -58,10 +58,6 @@ if (URHO3D_TESTING)
 endif ()
 
 # Enable common build options
-if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set (CMAKE_CXX_STANDARD 17)
-endif ()
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set (CLANG ON)
     set (GNU ON)
@@ -90,7 +86,7 @@ endif ()
 # Configure variables
 set (URHO3D_URL "https://github.com/urho3d/Urho3D")
 set (URHO3D_DESCRIPTION "Urho3D is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE (http://www.ogre3d.org) and Horde3D (http://www.horde3d.org).")
-execute_process (COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/GetUrhoRevision.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE URHO3D_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE URHO3D_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
 string (REGEX MATCH "([^.]+)\\.([^.]+)\\.(.+)" MATCHED "${URHO3D_VERSION}")
 
 # Setup SDK install destinations
@@ -222,11 +218,18 @@ if (WEB)
         set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_PTHREADS=1")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_PTHREADS=1")
     endif ()
-    set (CMAKE_C_FLAGS_RELEASE "-Oz -DNDEBUG")
-    set (CMAKE_CXX_FLAGS_RELEASE "-Oz -DNDEBUG")
+    if (CI_WEB_BUILD)
+        set (CMAKE_C_FLAGS_DEBUG "-O0 -DNDEBUG")
+        set (CMAKE_CXX_FLAGS_DEBUG "-O0 -DNDEBUG")
+        set (CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+        set (CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+    else ()
+        set (CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
+        set (CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+    endif ()
     # Remove variables to make the -O3 regalloc easier, embed data in asm.js to reduce number of moving part
-    set (CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -O3 -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
-    set (CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} -O3 -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
+    set (CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
+    set (CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
     # Preserve LLVM debug information, show line number debug comments, and generate source maps; always disable exception handling codegen
     set (CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${EMCC_WITH_SOURCE_MAPS_FLAG} -s DISABLE_EXCEPTION_CATCHING=1")
     set (CMAKE_MODULE_LINKER_FLAGS_DEBUG "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} ${EMCC_WITH_SOURCE_MAPS_FLAG} -s DISABLE_EXCEPTION_CATCHING=1")
@@ -337,7 +340,7 @@ if (URHO3D_CSHARP)
     endif ()
     unset (DOTNET_FRAMEWORK_INDEX)
     # For .csproj embedded into visual studio solution
-    configure_file("${rbfx_SOURCE_DIR}/cmake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
+    configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
 
     if (NOT SWIG_LIB)
         set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
@@ -412,6 +415,7 @@ endif ()
 message(STATUS "  Graphics        ${URHO3D_GRAPHICS_API}")
 message(STATUS "  SSE             ${URHO3D_SSE}")
 message(STATUS "  2D              ${URHO3D_URHO2D}")
+message(STATUS "  Physics2D       ${URHO3D_PHYSICS2D}")
 message(STATUS "  Glow            ${URHO3D_GLOW}")
 message(STATUS "  IK              ${URHO3D_IK}")
 message(STATUS "  Threading       ${URHO3D_THREADING}")
@@ -438,6 +442,7 @@ message(STATUS "  Profiling       ${URHO3D_PROFILING}")
 message(STATUS "  Extras          ${URHO3D_EXTRAS}")
 message(STATUS "  Tools           ${URHO3D_TOOLS}")
 message(STATUS "  Docs            ${URHO3D_DOCS}")
+message(STATUS "  Compute         ${URHO3D_COMPUTE}")
 if (TARGET Profiler)
     message(STATUS "     Profiler GUI ${URHO3D_PROFILING}")
 endif ()
@@ -467,8 +472,8 @@ if (URHO3D_DOCS)
 endif ()
 
 # Install CMake modules and toolchains provided by and for Urho3D
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/cmake/Toolchains)    # Note: the trailing slash is significant
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Modules/ DESTINATION ${DEST_SHARE_DIR}/cmake/Modules/)
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/CMake/Toolchains)    # Note: the trailing slash is significant
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${DEST_SHARE_DIR}/CMake/Modules/)
 # Install CMake build scripts
 file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
@@ -477,8 +482,7 @@ file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)
     # Multi-config projects store data files in parent dir of binary files.
     string (REPLACE "/$<CONFIG>" "" RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-    file (MAKE_DIRECTORY ${RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG}/Autoload/)
-    foreach(dir Data CoreData EditorData Autoload/LargeData)
+    foreach(dir Data CoreData EditorData)
         create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} ${RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG}/${dir})
         # /${dir}/../ trick is used for installing Autoload subdirs.
         install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR}/${dir}/../)

@@ -198,7 +198,8 @@ struct LightAccumulator
     /// Accumulated SH lights and ambient light.
     SphericalHarmonicsDot9 sphericalHarmonics_;
     /// Reflection probe.
-    const ReflectionProbeData* reflectionProbe_{};
+    ea::array<const ReflectionProbeData*, 2> reflectionProbes_{};
+    float reflectionProbesBlendFactor_{};
 
 private:
     /// Container with per-pixel and per-vertex lights.

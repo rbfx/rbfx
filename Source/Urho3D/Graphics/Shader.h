@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,7 @@ public:
     ShaderVariation* GetVariation(ShaderType type, const char* defines);
 
     /// Return either vertex or pixel shader source code.
-    const ea::string& GetSourceCode(ShaderType type) const { return type == VS ? vsSourceCode_ : psSourceCode_; }
+    const ea::string& GetSourceCode(ShaderType type) const { return type == VS ? vsSourceCode_ : type == PS ? psSourceCode_ : csSourceCode_; }
 
     /// Return whether the shader is GLSL shader. Used for universal shader support by DX11.
     bool IsGLSL() const { return GetName().ends_with(".glsl"); }
@@ -80,10 +80,14 @@ private:
     ea::string vsSourceCode_;
     /// Source code adapted for pixel shader.
     ea::string psSourceCode_;
+    /// Source code adapted for compute shader.
+    ea::string csSourceCode_;
     /// Vertex shader variations.
     ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > vsVariations_;
     /// Pixel shader variations.
     ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > psVariations_;
+    /// Compute shader variations.
+    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > csVariations_;
     /// Source code timestamp.
     unsigned timeStamp_;
     /// Number of unique variations so far.

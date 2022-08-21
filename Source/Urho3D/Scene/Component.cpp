@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,14 +26,13 @@
 #include "../Core/StringUtils.h"
 #include "../Resource/JSONValue.h"
 #include "../Scene/Component.h"
-#include "../Scene/ReplicationState.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #ifdef URHO3D_PHYSICS
 #include "../Physics/PhysicsWorld.h"
 #endif
-#ifdef URHO3D_URHO2D
-#include "../Urho2D/PhysicsWorld2D.h"
+#ifdef URHO3D_PHYSICS2D
+#include "../Physics2D/PhysicsWorld2D.h"
 #endif
 
 #include "../DebugNew.h"
@@ -97,19 +96,6 @@ bool Component::SaveJSON(JSONValue& dest) const
     return Animatable::SaveJSON(dest);
 }
 
-void Component::MarkNetworkUpdate()
-{
-    if (!networkUpdate_ && IsReplicated())
-    {
-        Scene* scene = GetScene();
-        if (scene)
-        {
-            scene->MarkNetworkUpdate(this);
-            networkUpdate_ = true;
-        }
-    }
-}
-
 void Component::GetDependencyNodes(ea::vector<Node*>& dest)
 {
 }
@@ -124,7 +110,6 @@ void Component::SetEnabled(bool enable)
     {
         enabled_ = enable;
         OnSetEnabled();
-        MarkNetworkUpdate();
 
         // Send change event for the component
         Scene* scene = GetScene();
@@ -156,72 +141,6 @@ bool Component::IsReplicated() const
 Scene* Component::GetScene() const
 {
     return node_ ? node_->GetScene() : nullptr;
-}
-
-void Component::AddReplicationState(ComponentReplicationState* state)
-{
-    if (!networkState_)
-        AllocateNetworkState();
-
-    networkState_->replicationStates_.push_back(state);
-}
-
-void Component::PrepareNetworkUpdate()
-{
-    if (!networkState_)
-        AllocateNetworkState();
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    unsigned numAttributes = attributes->size();
-
-    // Check for attribute changes
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-
-        if (animationEnabled_ && IsAnimatedNetworkAttribute(attr))
-            continue;
-
-        OnGetAttribute(attr, networkState_->currentValues_[i]);
-
-        if (networkState_->currentValues_[i] != networkState_->previousValues_[i])
-        {
-            networkState_->previousValues_[i] = networkState_->currentValues_[i];
-
-            // Mark the attribute dirty in all replication states that are tracking this component
-            for (auto j = networkState_->replicationStates_.begin();
-                 j != networkState_->replicationStates_.end(); ++j)
-            {
-                auto* compState = static_cast<ComponentReplicationState*>(*j);
-                compState->dirtyAttributes_.Set(i);
-
-                // Add component's parent node to the dirty set if not added yet
-                NodeReplicationState* nodeState = compState->nodeState_;
-                if (!nodeState->markedDirty_)
-                {
-                    nodeState->markedDirty_ = true;
-                    nodeState->sceneState_->dirtyNodes_.insert(node_->GetID());
-                }
-            }
-        }
-    }
-
-    networkUpdate_ = false;
-}
-
-void Component::CleanupConnection(Connection* connection)
-{
-    if (networkState_)
-    {
-        for (unsigned i = networkState_->replicationStates_.size() - 1; i < networkState_->replicationStates_.size(); --i)
-        {
-            if (networkState_->replicationStates_[i]->connection_ == connection)
-                networkState_->replicationStates_.erase_at(i);
-        }
-    }
 }
 
 void Component::OnAttributeAnimationAdded()
@@ -305,7 +224,7 @@ Component* Component::GetFixedUpdateSource()
 #ifdef URHO3D_PHYSICS
         ret = scene->GetComponent<PhysicsWorld>();
 #endif
-#ifdef URHO3D_URHO2D
+#ifdef URHO3D_PHYSICS2D
         if (!ret)
             ret = scene->GetComponent<PhysicsWorld2D>();
 #endif

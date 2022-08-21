@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -68,6 +68,17 @@ Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect
     SetRenderPath(renderPath);
 }
 
+Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPipeline* renderPipeline)
+    : Object(context)
+    , scene_(scene)
+    , camera_(camera)
+    , rect_(rect)
+    , drawDebug_(true)
+    , autoRenderPipeline_(false)
+    , renderPipeline_(renderPipeline)
+{
+}
+
 Viewport::~Viewport() = default;
 
 void Viewport::RegisterObject(Context* context)
@@ -80,7 +91,7 @@ void Viewport::SetScene(Scene* scene)
 #ifndef URHO3D_LEGACY_RENDERER
     if (!!scene_ != !!scene)
     {
-        renderPipeline_ = nullptr;
+        renderPipelineView_ = nullptr;
         view_ = nullptr;
     }
 #endif
@@ -174,9 +185,19 @@ View* Viewport::GetView() const
 
 RenderPipelineView* Viewport::GetRenderPipelineView() const
 {
-    if (renderPipelineComponent_ && renderPipelineComponent_->GetScene() == scene_)
-        return renderPipeline_;
-    return nullptr;
+    // Render pipeline is null or expired
+    if (!renderPipeline_)
+        return nullptr;
+
+    // Automatic pipeline is not from the scene
+    if (autoRenderPipeline_ && renderPipeline_->GetScene() != scene_)
+        return nullptr;
+
+    // View is expired or outdated
+    if (!renderPipelineView_ || renderPipelineView_->GetRenderPipeline() != renderPipeline_)
+        return nullptr;
+
+    return renderPipelineView_;
 }
 
 RenderPath* Viewport::GetRenderPath() const
@@ -259,24 +280,23 @@ Vector3 Viewport::ScreenToWorldPoint(int x, int y, float depth) const
 void Viewport::AllocateView()
 {
 #ifndef URHO3D_LEGACY_RENDERER
-    if (!GetRenderPipelineView())
-    {
-        renderPipelineComponent_ = nullptr;
+    // If automatic render pipeline, expire it on scene mismatch
+    if (autoRenderPipeline_ && renderPipeline_ && renderPipeline_->GetScene() != scene_)
         renderPipeline_ = nullptr;
-    }
 
-    if (!renderPipelineComponent_ && scene_)
+    if (!renderPipeline_ && scene_)
     {
-        renderPipelineComponent_ = scene_->GetDerivedComponent<RenderPipeline>();
-        if (!renderPipelineComponent_)
-            renderPipelineComponent_ = scene_->CreateComponent<RenderPipeline>();
+        renderPipeline_ = scene_->GetDerivedComponent<RenderPipeline>();
+        if (!renderPipeline_)
+            renderPipeline_ = scene_->CreateComponent<RenderPipeline>();
     }
 
-    if (!renderPipeline_ && renderPipelineComponent_)
-        renderPipeline_ = renderPipelineComponent_->Instantiate();
+    // Expire view on pipeline mismatch
+    if (renderPipeline_ && (!renderPipelineView_ || renderPipelineView_->GetRenderPipeline() != renderPipeline_))
+        renderPipelineView_ = renderPipeline_->Instantiate();
 #endif
 
-    if (!renderPipeline_)
+    if (!renderPipelineView_)
         view_ = MakeShared<View>(context_);
 }
 

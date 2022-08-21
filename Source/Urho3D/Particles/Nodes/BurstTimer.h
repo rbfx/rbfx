@@ -41,7 +41,6 @@ public:
     /// Construct BurstTimer.
     explicit BurstTimer(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Evaluate size required to place new node instance.
@@ -51,24 +50,18 @@ public:
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
     /// Set Delay.
-    /// @property
     void SetDelay(float value);
     /// Get Delay.
-    /// @property
     float GetDelay() const;
 
     /// Set Interval.
-    /// @property
     void SetInterval(float value);
     /// Get Interval.
-    /// @property
     float GetInterval() const;
 
     /// Set Cycles.
-    /// @property
     void SetCycles(int value);
     /// Get Cycles.
-    /// @property
     int GetCycles() const;
 
 protected:

@@ -44,13 +44,7 @@ struct UIBatchStateKey;
 struct UIBatchStateCreateContext;
 
 /// Macro to define shader constant name. Group name doesn't serve any functional purpose.
-/// VS 2017 has bug:
-/// https://developercommunity.visualstudio.com/t/static-inline-class-variables-have-their-destructo/300686
-#if defined(_MSC_VER) && _MSC_VER <= 1916
-    #define URHO3D_SHADER_CONST(group, name) static const ConstString group##_##name{ #name }
-#else
-    #define URHO3D_SHADER_CONST(group, name) static inline const ConstString group##_##name{ #name }
-#endif
+#define URHO3D_SHADER_CONST(group, name) URHO3D_GLOBAL_CONSTANT(ConstString group##_##name{#name})
 
 /// Common parameters of rendered frame.
 struct CommonFrameInfo
@@ -69,12 +63,16 @@ struct CommonFrameInfo
 enum class DrawableProcessorPassFlag
 {
     None = 0,
+
     HasAmbientLighting = 1 << 0,
     DisableInstancing = 1 << 1,
     DeferredLightMaskToStencil = 1 << 2,
     NeedReadableDepth = 1 << 3,
     RefractionPass = 1 << 4,
     DepthOnlyPass = 1 << 5,
+
+    BatchCallback = 1 << 6,
+    PipelineStateCallback = 1 << 7,
 };
 
 URHO3D_FLAGSET(DrawableProcessorPassFlag, DrawableProcessorPassFlags);
@@ -87,7 +85,9 @@ enum class BatchCompositorSubpass
     /// Base pass, optionally lit with forward rendering.
     Base,
     /// Additive light pass for forward rendering.
-    Light
+    Light,
+    /// Artificial value that indicates to ignore subpass-specific properties.
+    Ignored,
 };
 
 /// Flags that control how exactly batches are rendered.
@@ -395,6 +395,7 @@ enum class DrawableAmbientMode
 struct BatchRendererSettings
 {
     bool linearSpaceLighting_{};
+    bool cubemapBoxProjection_{};
     DrawableAmbientMode ambientMode_{ DrawableAmbientMode::Directional };
     Vector2 varianceShadowMapParams_{ 0.0000001f, 0.9f };
 
@@ -404,6 +405,7 @@ struct BatchRendererSettings
     {
         unsigned hash = 0;
         CombineHash(hash, linearSpaceLighting_);
+        CombineHash(hash, cubemapBoxProjection_);
         CombineHash(hash, MakeHash(ambientMode_));
         return hash;
     }
@@ -415,6 +417,7 @@ struct BatchRendererSettings
     bool operator==(const BatchRendererSettings& rhs) const
     {
         return linearSpaceLighting_ == rhs.linearSpaceLighting_
+            && cubemapBoxProjection_ == rhs.cubemapBoxProjection_
             && ambientMode_ == rhs.ambientMode_
             && varianceShadowMapParams_ == rhs.varianceShadowMapParams_;
     }
@@ -661,6 +664,53 @@ struct AutoExposurePassSettings
     /// @}
 };
 
+struct AmbientOcclusionPassSettings
+{
+    bool enabled_{};
+
+    unsigned downscale_{0};
+    float strength_{0.7f};
+    float exponent_{1.5f};
+
+    float radiusNear_{0.05f};
+    float distanceNear_{1.0f};
+    float radiusFar_{1.0f};
+    float distanceFar_{100.0f};
+
+    float fadeDistanceBegin_{100.0f};
+    float fadeDistanceEnd_{200.0f};
+
+    float blurDepthThreshold_{0.1f};
+    float blurNormalThreshold_{0.2f};
+
+    /// Utility operators
+    /// @{
+    void Validate() { }
+
+    bool operator==(const AmbientOcclusionPassSettings& rhs) const
+    {
+        return enabled_ == rhs.enabled_
+
+            && downscale_ == rhs.downscale_
+            && strength_ == rhs.strength_
+            && exponent_ == rhs.exponent_
+
+            && radiusNear_ == rhs.radiusNear_
+            && distanceNear_ == rhs.distanceNear_
+            && radiusFar_ == rhs.radiusFar_
+            && distanceFar_ == rhs.distanceFar_
+
+            && fadeDistanceBegin_ == rhs.fadeDistanceBegin_
+            && fadeDistanceEnd_ == rhs.fadeDistanceEnd_
+
+            && blurDepthThreshold_ == rhs.blurDepthThreshold_
+            && blurNormalThreshold_ == rhs.blurNormalThreshold_;
+    }
+
+    bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }
+    /// @}
+};
+
 struct BloomPassSettings
 {
     bool enabled_{};
@@ -704,10 +754,16 @@ enum class PostProcessAntialiasing
 /// Settings of default render pipeline.
 struct RenderPipelineSettings : public ShaderProgramCompositorSettings
 {
+    /// Global pipeline settings
+    /// @{
+    bool drawDebugGeometry_{true};
+    /// @}
+
     /// Post-processing settings
     /// @{
     AutoExposurePassSettings autoExposure_;
     BloomPassSettings bloom_;
+    AmbientOcclusionPassSettings ssao_;
     ToneMappingMode toneMapping_{};
     PostProcessAntialiasing antialiasing_{};
     bool greyScale_{};
@@ -733,6 +789,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     bool operator==(const RenderPipelineSettings& rhs) const
     {
         return ShaderProgramCompositorSettings::operator==(rhs)
+            && drawDebugGeometry_ == rhs.drawDebugGeometry_
             && autoExposure_ == rhs.autoExposure_
             && bloom_ == rhs.bloom_
             && toneMapping_ == rhs.toneMapping_

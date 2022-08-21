@@ -68,13 +68,27 @@ UNIFORM_BUFFER_END(1, Camera)
 /// Disabled if pass has no ambient lighting.
 #ifdef URHO3D_AMBIENT_PASS
 UNIFORM_BUFFER_BEGIN(2, Zone)
-    /// Average reflection color in linear space used to approximate roughness if textureCubeLod is not supported.
-    UNIFORM(half3 cReflectionAverageColor)
+#ifdef URHO3D_BOX_PROJECTION
+    UNIFORM_HIGHP(vec4 cCubemapCenter0)
+    UNIFORM_HIGHP(vec4 cProjectionBoxMin0)
+    UNIFORM_HIGHP(vec4 cProjectionBoxMax0)
+    #ifdef URHO3D_BLEND_REFLECTIONS
+        UNIFORM_HIGHP(vec4 cCubemapCenter1)
+        UNIFORM_HIGHP(vec4 cProjectionBoxMin1)
+        UNIFORM_HIGHP(vec4 cProjectionBoxMax1)
+    #endif
+#endif
     /// Multiplier used to convert roughness factor to LOD of reflection cubemap.
-    UNIFORM(half cRoughnessToLODFactor)
+    UNIFORM(half cRoughnessToLODFactor0)
+    #ifdef URHO3D_BLEND_REFLECTIONS
+        UNIFORM(half cRoughnessToLODFactor1)
+    #endif
+    /// Factor used to blend two reflections.
+    UNIFORM(half cReflectionBlendFactor)
 UNIFORM_BUFFER_END(2, Zone)
 #endif
 
+#ifndef URHO3D_CUSTOM_LIGHT_UNIFORMS
 UNIFORM_BUFFER_BEGIN(3, Light)
     /// Light position in world space.
     UNIFORM_HIGHP(vec4 cLightPos)
@@ -133,6 +147,7 @@ UNIFORM_BUFFER_BEGIN(3, Light)
 #endif
 #endif
 UNIFORM_BUFFER_END(3, Light)
+#endif
 
 /// Uniforms needed for UV transformation.
 /// cUOffset: U coordinate transformation: u <- dot(uv, xy) + w.

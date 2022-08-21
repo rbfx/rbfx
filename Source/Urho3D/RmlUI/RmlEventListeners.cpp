@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 #include "../Precompiled.h"
 
 #include "../Audio/Sound.h"
@@ -56,7 +57,7 @@ SoundEventListener::SoundEventListener(const ea::string& soundResource)
 
 void SoundEventListener::ProcessEvent(Rml::Event& event)
 {
-    if (soundNode_.Null())
+    if (soundNode_ == nullptr)
     {
         // At the time event listener is instantiated, element is not added to DOM, so it does not have rml context set and we have no means
         // to find Urho3D::Context. That is why initialization of these objects is delayed until first event invocation.

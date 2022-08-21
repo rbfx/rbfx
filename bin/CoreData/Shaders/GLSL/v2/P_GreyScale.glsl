@@ -19,10 +19,10 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-    const vec3 IntensityWeights = vec3(0.299, 0.587, 0.114);
+    const half3 weights = vec3(0.299, 0.587, 0.114);
 
-    vec3 rgb = texture2D(sDiffMap, vScreenPos).rgb;
-    float intensity = dot(rgb, IntensityWeights);
+    half3 rgb = texture2D(sDiffMap, vScreenPos).rgb;
+    half intensity = dot(rgb, weights);
     gl_FragColor = vec4(intensity, intensity, intensity, 1.0);
 }
 #endif

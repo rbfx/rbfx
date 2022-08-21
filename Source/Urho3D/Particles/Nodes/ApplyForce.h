@@ -41,7 +41,6 @@ public:
     /// Construct ApplyForce.
     explicit ApplyForce(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Evaluate size required to place new node instance.

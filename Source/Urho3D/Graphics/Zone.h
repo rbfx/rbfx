@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 
 #include "../Core/ThreadSafeCache.h"
 #include "../Graphics/Drawable.h"
-#include "../Graphics/ReflectionProbe.h"
+#include "../Graphics/ReflectionProbeData.h"
 #include "../Graphics/Texture.h"
 #include "../Math/Color.h"
 #include "../Math/SphericalHarmonics.h"

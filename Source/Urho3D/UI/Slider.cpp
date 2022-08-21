@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,8 +40,6 @@ const char* orientations[] =
     nullptr
 };
 
-extern const char* UI_CATEGORY;
-
 Slider::Slider(Context* context) :
     BorderImage(context),
     orientation_(O_HORIZONTAL),
@@ -61,7 +59,7 @@ Slider::~Slider() = default;
 
 void Slider::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Slider>(UI_CATEGORY);
+    context->RegisterFactory<Slider>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Is Enabled", true);

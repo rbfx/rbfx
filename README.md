@@ -72,7 +72,7 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 
 ## Screenshots
 
-![editor](https://user-images.githubusercontent.com/19151258/49943614-09376980-fef1-11e8-88fe-8c26fcf30a59.jpg)
+![Editor](https://user-images.githubusercontent.com/8576192/156775751-25008e9d-3248-46d5-8e3a-802f8602568e.png)
 
 ## Dependencies
 
@@ -113,7 +113,7 @@ rbfx uses the following third-party libraries:
 - EASTL 3.17.06 (https://github.com/electronicarts/EASTL/)
 - SWIG 4.0 (http://swig.org/)
 - Embree 3.11 (https://github.com/embree/embree)
-- RmlUi (https://github.com/mikke89/RmlUi)
+- RmlUi 4.4 (https://github.com/mikke89/RmlUi)
 - catch2 3.0.0 (https://github.com/catchorg/Catch2)
 - TinyGLTF 2.4.0 (https://github.com/syoyo/tinygltf)
 

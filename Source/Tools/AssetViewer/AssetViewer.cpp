@@ -37,7 +37,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <Toolbox/SystemUI/Gizmo.h>
+#include <Urho3D/SystemUI/Gizmo.h>
 #include <ctime>
 #include <cstdio>
 #include <Urho3D/IO/Log.h>

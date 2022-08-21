@@ -85,11 +85,6 @@ AttributeHandle ObjectReflection::AddAttribute(const AttributeInfo& attr)
     attributes_.push_back(attr);
     attributeNames_.push_back(attr.nameHash_);
     handle.attributeInfo_ = &attributes_.back();
-    if (attr.mode_ & AM_NET)
-    {
-        networkAttributes_.push_back(attr);
-        handle.networkAttributeInfo_ = &networkAttributes_.back();
-    }
     return handle;
 
 }
@@ -103,28 +98,14 @@ void ObjectReflection::RemoveAttribute(StringHash nameHash)
         return;
     }
 
-    const bool isNetwork = attributes_[index].mode_.Test(AM_NET);
-
     attributes_.erase_at(index);
     attributeNames_.erase_at(index);
-
-    if (isNetwork)
-    {
-        const auto iter = ea::find_if(networkAttributes_.begin(), networkAttributes_.end(),
-            [&](const AttributeInfo& info) { return info.nameHash_ == nameHash; });
-
-        if (iter == networkAttributes_.end())
-            URHO3D_LOGERROR("Cannot find network attribute {}", nameHash.ToDebugString());
-        else
-            networkAttributes_.erase(iter);
-    }
 }
 
 void ObjectReflection::RemoveAllAttributes()
 {
     attributes_.clear();
     attributeNames_.clear();
-    networkAttributes_.clear();
 }
 
 void ObjectReflection::CopyAttributesFrom(const ObjectReflection* other)
@@ -144,7 +125,6 @@ void ObjectReflection::CopyAttributesFrom(const ObjectReflection* other)
 
     attributes_.append(other->attributes_);
     attributeNames_.append(other->attributeNames_);
-    networkAttributes_.append(other->networkAttributes_);
 }
 
 void ObjectReflection::UpdateAttributeDefaultValue(StringHash nameHash, const Variant& defaultValue)

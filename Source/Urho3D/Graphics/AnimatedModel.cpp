@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,8 +51,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 static const unsigned MAX_ANIMATION_STATES = 256;
 
 AnimatedModel::AnimatedModel(Context* context) :
@@ -62,10 +60,6 @@ AnimatedModel::AnimatedModel(Context* context) :
     animationLodTimer_(-1.0f),
     animationLodDistance_(0.0f),
     updateInvisible_(false),
-    animationDirty_(false),
-    morphsDirty_(false),
-    skinningDirty_(true),
-    boneBoundingBoxDirty_(true),
     isMaster_(true),
     loading_(false),
     assignBonesPending_(false),
@@ -88,7 +82,7 @@ AnimatedModel::~AnimatedModel()
 
 void AnimatedModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimatedModel>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<AnimatedModel>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
@@ -149,22 +143,23 @@ void AnimatedModel::ApplyAttributes()
         AssignBoneNodes();
 }
 
-void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+void AnimatedModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox,
+    const Matrix3x4& worldTransform, ea::span<const Matrix3x4> boneWorldTransforms,
+    ea::vector<RayQueryResult>& results)
 {
     // If no bones or no bone-level testing, use the StaticModel test
     RayQueryLevel level = query.level_;
     if (level < RAY_TRIANGLE || !skeleton_.GetNumBones())
     {
-        StaticModel::ProcessRayQuery(query, results);
+        StaticModel::ProcessCustomRayQuery(query, worldBoundingBox, worldTransform, results);
         return;
     }
 
     // Check ray hit distance to AABB before proceeding with bone-level tests
-    if (query.ray_.HitDistance(GetWorldBoundingBox()) >= query.maxDistance_)
+    if (query.ray_.HitDistance(worldBoundingBox) >= query.maxDistance_)
         return;
 
     const ea::vector<Bone>& bones = skeleton_.GetBones();
-    Sphere boneSphere;
 
     for (unsigned i = 0; i < bones.size(); ++i)
     {
@@ -174,12 +169,15 @@ void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQ
 
         float distance;
 
+        // Keep this check to reuse this function for normal raycast without dedicated array of matrices.
+        const Matrix3x4& transform =
+            i < boneWorldTransforms.size() ? boneWorldTransforms[i] : bone.node_->GetWorldTransform();
+
         // Use hitbox if available
         if (bone.collisionMask_ & BONECOLLISION_BOX)
         {
             // Do an initial crude test using the bone's AABB
             const BoundingBox& box = bone.boundingBox_;
-            const Matrix3x4& transform = bone.node_->GetWorldTransform();
             distance = query.ray_.HitDistance(box.Transformed(transform));
             if (distance >= query.maxDistance_)
                 continue;
@@ -195,7 +193,8 @@ void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQ
         }
         else if (bone.collisionMask_ & BONECOLLISION_SPHERE)
         {
-            boneSphere.center_ = bone.node_->GetWorldPosition();
+            Sphere boneSphere;
+            boneSphere.center_ = transform.Translation();
             boneSphere.radius_ = bone.radius_;
             distance = query.ray_.HitDistance(boneSphere);
             if (distance >= query.maxDistance_)
@@ -216,11 +215,16 @@ void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQ
     }
 }
 
-void AnimatedModel::Update(const FrameInfo& frame)
+void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+{
+    ProcessCustomRayQuery(query, GetWorldBoundingBox(), node_->GetWorldTransform(), {}, results);
+}
+
+bool AnimatedModel::PrepareForThreadedUpdate(Camera* camera, unsigned frameNumber)
 {
     // If node was invisible last frame, need to decide animation LOD distance here
     // If headless, retain the current animation distance (should be 0)
-    if (frame.camera_ && abs((int)frame.frameNumber_ - (int)viewFrameNumber_) > 1)
+    if (camera && abs(static_cast<int>(frameNumber - viewFrameNumber_)) > 1)
     {
         // First check for no update at all when invisible, except on first update. In that case reset LOD timer to ensure update
         // next time the model is in view
@@ -231,24 +235,111 @@ void AnimatedModel::Update(const FrameInfo& frame)
                 animationLodTimer_ = -1.0f;
                 forceAnimationUpdate_ = true;
             }
-            return;
+            return false;
         }
 
         // Force view frame number to be valid
         viewFrameNumber_ = ea::max(1u, viewFrameNumber_);
 
-        float distance = frame.camera_->GetDistance(node_->GetWorldPosition());
+        const float distance = camera->GetDistance(node_->GetWorldPosition());
         // If distance is greater than draw distance, no need to update at all
         if (drawDistance_ > 0.0f && distance > drawDistance_)
-            return;
+            return false;
+
         float scale = GetWorldBoundingBox().Size().DotProduct(DOT_SCALE);
-        animationLodDistance_ = frame.camera_->GetLodDistance(distance, scale, lodBias_);
+        animationLodDistance_ = camera->GetLodDistance(distance, scale, lodBias_);
     }
 
-    if (animationDirty_)
-        UpdateAnimation(frame);
-    else if (boneBoundingBoxDirty_)
-        UpdateBoneBoundingBox();
+    return true;
+}
+
+void AnimatedModel::Update(const FrameInfo& frame)
+{
+    if (!PrepareForThreadedUpdate(frame.camera_, frame.frameNumber_))
+        return;
+
+    if (isMaster_)
+    {
+        // On main component, update animation and bounding box
+        bool transformsDirty = false;
+        if (animationDirty_ || boneBoundingBoxDirty_)
+        {
+            InitializeLocalBoneTransforms(false);
+
+            if (animationDirty_)
+            {
+                if (UpdateAndCheckAnimationTimers(frame.timeStep_))
+                {
+                    CalculateAnimations();
+                    transformsDirty = true;
+                }
+            }
+
+            if (boneBoundingBoxDirty_)
+                CalculateLocalBoundingBox();
+        }
+
+        if (transformsDirty)
+        {
+            Octree* octree = octant_->GetOctree();
+            for (unsigned boneIndex = 0; boneIndex < skeleton_.GetNumBones(); ++boneIndex)
+            {
+                Node* node = skeleton_.GetBone(boneIndex)->node_;
+                const Transform& transform = skeletonData_[boneIndex].localToParent_;
+                if (node)
+                    octree->QueueNodeTransformUpdate(node, transform);
+            }
+        }
+    }
+    else
+    {
+        // On sibling components, just update bounding box.
+        // Note that bounding box is delayed by one frame!
+        if (boneBoundingBoxDirty_)
+        {
+            InitializeLocalBoneTransforms(false);
+            CalculateLocalBoundingBox();
+        }
+    }
+}
+
+void AnimatedModel::InitializeLocalBoneTransforms(bool reset)
+{
+    URHO3D_ASSERT(skeleton_.GetNumBones() == skeletonData_.size());
+
+    for (unsigned i = 0; i < skeleton_.GetNumBones(); ++i)
+    {
+        Bone* bone = skeleton_.GetBone(i);
+        ModelAnimationOutput& output = skeletonData_[i];
+
+        output.dirty_ = CHANNEL_NONE;
+        if (!reset && bone->node_)
+        {
+            output.localToParent_.position_ = bone->node_->GetPosition();
+            output.localToParent_.rotation_ = bone->node_->GetRotation();
+            output.localToParent_.scale_ = bone->node_->GetScale();
+        }
+        else
+        {
+            output.localToParent_.position_ = bone->initialPosition_;
+            output.localToParent_.rotation_ = bone->initialRotation_;
+            output.localToParent_.scale_ = bone->initialScale_;
+        }
+    }
+}
+
+void AnimatedModel::CalculateFinalBoneTransforms()
+{
+    for (unsigned boneIndex : skeleton_.GetBonesOrder())
+    {
+        Bone* bone = skeleton_.GetBone(boneIndex);
+        ModelAnimationOutput& output = skeletonData_[boneIndex];
+
+        if (bone->parentIndex_ == boneIndex)
+            output.localToComponent_ = output.localToParent_.ToMatrix3x4();
+        else
+            output.localToComponent_ = skeletonData_[bone->parentIndex_].localToComponent_ * output.localToParent_.ToMatrix3x4();
+    }
 }
 
 void AnimatedModel::UpdateBatches(const FrameInfo& frame)
@@ -294,7 +385,9 @@ void AnimatedModel::UpdateGeometry(const FrameInfo& frame)
     // Late update in case the model came into view and animation was dirtied in the meanwhile
     if (forceAnimationUpdate_)
     {
-        UpdateAnimation(frame);
+        const bool needUpdate = UpdateAndCheckAnimationTimers(frame.timeStep_);
+        URHO3D_ASSERT(needUpdate);
+        ApplyAnimation();
         forceAnimationUpdate_ = false;
     }
 
@@ -376,6 +469,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
 
         // Reserve space for skinning matrices
         skinMatrices_.resize(skeleton_.GetNumBones());
+        skeletonData_.resize(skeleton_.GetNumBones());
         SetGeometryBoneMappings();
 
         // Reconsider software skinning
@@ -428,20 +522,16 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
         SetBoundingBox(BoundingBox());
         SetSkeleton(Skeleton(), false);
     }
-
-    MarkNetworkUpdate();
 }
 
 void AnimatedModel::SetAnimationLodBias(float bias)
 {
     animationLodBias_ = Max(bias, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void AnimatedModel::SetUpdateInvisible(bool enable)
 {
     updateInvisible_ = enable;
-    MarkNetworkUpdate();
 }
 
 
@@ -473,7 +563,6 @@ void AnimatedModel::SetMorphWeight(unsigned index, float weight)
         }
 
         MarkMorphsDirty();
-        MarkNetworkUpdate();
     }
 }
 
@@ -520,7 +609,6 @@ void AnimatedModel::ResetMorphWeights()
     }
 
     MarkMorphsDirty();
-    MarkNetworkUpdate();
 }
 
 const ea::vector<SharedPtr<VertexBuffer> >& AnimatedModel::GetMorphVertexBuffers() const
@@ -707,32 +795,39 @@ const ea::vector<unsigned char>& AnimatedModel::GetMorphsAttr() const
     return attrBuffer_.GetBuffer();
 }
 
-void AnimatedModel::UpdateBoneBoundingBox()
+void AnimatedModel::CalculateLocalBoundingBox()
 {
-    if (skeleton_.GetNumBones())
-    {
-        // The bone bounding box is in local space, so need the node's inverse transform
-        boneBoundingBox_.Clear();
-        Matrix3x4 inverseNodeTransform = node_->GetWorldTransform().Inverse();
+    CalculateFinalBoneTransforms();
 
-        const ea::vector<Bone>& bones = skeleton_.GetBones();
-        for (auto i = bones.begin(); i != bones.end(); ++i)
+    boneBoundingBox_.Clear();
+
+    const ea::vector<Bone>& bones = skeleton_.GetBones();
+    if (bones.empty())
+        boneBoundingBox_.Merge(Vector3::ZERO);
+    else
+    {
+        for (unsigned boneIndex = 0; boneIndex < skeleton_.GetNumBones(); ++boneIndex)
         {
-            Node* boneNode = i->node_;
-            if (!boneNode)
-                continue;
+            Bone* bone = skeleton_.GetBone(boneIndex);
+            const Matrix3x4& transform = skeletonData_[boneIndex].localToComponent_;
 
             // Use hitbox if available. If not, use only half of the sphere radius
             /// \todo The sphere radius should be multiplied with bone scale
-            if (i->collisionMask_ & BONECOLLISION_BOX)
-                boneBoundingBox_.Merge(i->boundingBox_.Transformed(inverseNodeTransform * boneNode->GetWorldTransform()));
-            else if (i->collisionMask_ & BONECOLLISION_SPHERE)
-                boneBoundingBox_.Merge(Sphere(inverseNodeTransform * boneNode->GetWorldPosition(), i->radius_ * 0.5f));
+            if (bone->collisionMask_ & BONECOLLISION_BOX)
+                boneBoundingBox_.Merge(bone->boundingBox_.Transformed(transform));
+            else if (bone->collisionMask_ & BONECOLLISION_SPHERE)
+                boneBoundingBox_.Merge(Sphere(transform.Translation(), bone->radius_ * 0.5f));
         }
     }
 
     boneBoundingBoxDirty_ = false;
     worldBoundingBoxDirty_ = true;
+}
+
+void AnimatedModel::UpdateBoneBoundingBox()
+{
+    InitializeLocalBoneTransforms(false);
+    CalculateLocalBoundingBox();
 }
 
 void AnimatedModel::OnNodeSet(Node* node)
@@ -754,9 +849,7 @@ void AnimatedModel::OnMarkedDirty(Node* node)
     if (skeleton_.GetNumBones())
     {
         skinningDirty_ = true;
-        // Bone bounding box doesn't need to be marked dirty when only the base scene node moves
-        if (node != node_)
-            boneBoundingBoxDirty_ = true;
+        boneBoundingBoxDirty_ = true;
     }
 }
 
@@ -943,7 +1036,7 @@ void AnimatedModel::SetGeometryBoneMappings()
     }
 }
 
-void AnimatedModel::UpdateAnimation(const FrameInfo& frame)
+bool AnimatedModel::UpdateAndCheckAnimationTimers(float timeStep)
 {
     // If using animation LOD, accumulate time and see if it is time to update
     if (animationLodBias_ > 0.0f && animationLodDistance_ > 0.0f)
@@ -951,17 +1044,31 @@ void AnimatedModel::UpdateAnimation(const FrameInfo& frame)
         // Perform the first update always regardless of LOD timer
         if (animationLodTimer_ >= 0.0f)
         {
-            animationLodTimer_ += animationLodBias_ * frame.timeStep_ * ANIMATION_LOD_BASESCALE;
+            animationLodTimer_ += animationLodBias_ * timeStep * ANIMATION_LOD_BASESCALE;
             if (animationLodTimer_ >= animationLodDistance_)
                 animationLodTimer_ = fmodf(animationLodTimer_, animationLodDistance_);
             else
-                return;
+                return false;
         }
         else
             animationLodTimer_ = 0.0f;
     }
+    return true;
+}
 
-    ApplyAnimation();
+void AnimatedModel::CalculateAnimations()
+{
+    URHO3D_ASSERT(isMaster_);
+
+    // AnimationStateSource is a weak pointer which may or may not be an issue
+    if (AnimationStateSource* animationStateSource = animationStateSource_)
+    {
+        for (AnimationState* state : animationStateSource->GetAnimationStates())
+            state->CalculateModelTracks(skeletonData_);
+    }
+
+    animationDirty_ = false;
+    boneBoundingBoxDirty_ = true;
 }
 
 void AnimatedModel::ApplyAnimation()
@@ -970,23 +1077,25 @@ void AnimatedModel::ApplyAnimation()
     // (first AnimatedModel in a node)
     if (isMaster_)
     {
-        skeleton_.ResetSilent();
+        InitializeLocalBoneTransforms(false);
+        CalculateAnimations();
+        CalculateLocalBoundingBox();
+        ApplyBoneTransformsToNodes();
+    }
+}
 
-        // AnimationStateSource is a weak pointer which may or may not be an issue
-        if (AnimationStateSource* animationStateSource = animationStateSource_)
-        {
-            for (AnimationState* state : animationStateSource->GetAnimationStates())
-                state->ApplyModelTracks();
-        }
-
-        // Skeleton reset and animations apply the node transforms "silently" to avoid repeated marking dirty. Mark dirty now
-        node_->MarkDirty();
-
-        // Calculate new bone bounding box
-        UpdateBoneBoundingBox();
+void AnimatedModel::ApplyBoneTransformsToNodes()
+{
+    for (unsigned boneIndex = 0; boneIndex < skeleton_.GetNumBones(); ++boneIndex)
+    {
+        Bone* bone = skeleton_.GetBone(boneIndex);
+        const Transform& transform = skeletonData_[boneIndex].localToParent_;
+        if (Node* node = bone->node_)
+            node->SetTransformSilent(transform.position_, transform.rotation_, transform.scale_);
     }
 
-    animationDirty_ = false;
+    // Skeleton reset and animations apply the node transforms "silently" to avoid repeated marking dirty. Mark dirty now
+    node_->MarkDirty();
 }
 
 void AnimatedModel::ConnectToAnimationStateSource(AnimationStateSource* source)

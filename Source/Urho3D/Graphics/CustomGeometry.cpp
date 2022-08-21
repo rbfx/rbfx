@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,8 +42,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 CustomGeometry::CustomGeometry(Context* context)
     : Drawable(context, DRAWABLE_GEOMETRY)
     , vertexBuffer_(context->CreateObject<VertexBuffer>())
@@ -60,7 +58,7 @@ CustomGeometry::~CustomGeometry() = default;
 
 void CustomGeometry::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CustomGeometry>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<CustomGeometry>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Dynamic Vertex Buffer", bool, dynamic_, false, AM_DEFAULT);
@@ -232,8 +230,6 @@ void CustomGeometry::SetNumGeometries(unsigned num)
 void CustomGeometry::SetDynamic(bool enable)
 {
     dynamic_ = enable;
-
-    MarkNetworkUpdate();
 }
 
 void CustomGeometry::BeginGeometry(unsigned index, PrimitiveType type)
@@ -414,8 +410,6 @@ void CustomGeometry::SetMaterial(Material* material)
 {
     for (unsigned i = 0; i < batches_.size(); ++i)
         batches_[i].material_ = material;
-
-    MarkNetworkUpdate();
 }
 
 bool CustomGeometry::SetMaterial(unsigned index, Material* material)
@@ -427,7 +421,6 @@ bool CustomGeometry::SetMaterial(unsigned index, Material* material)
     }
 
     batches_[index].material_ = material;
-    MarkNetworkUpdate();
     return true;
 }
 

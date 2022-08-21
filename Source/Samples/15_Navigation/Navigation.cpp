@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -72,7 +72,8 @@ void Navigation::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void Navigation::CreateScene()
@@ -204,14 +205,14 @@ void Navigation::CreateUI()
     auto* style = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
 //    SharedPtr<Cursor> cursor(new Cursor(context_));
 //    cursor->SetStyleAuto(style);
-//    ui->SetCursor(cursor);
+//    SetCursor(cursor);
 
     // Set starting position of the cursor at the rendering window center
 //    auto* graphics = GetSubsystem<Graphics>();
 //    cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys to move, RMB to rotate view\n"
         "LMB to set destination, SHIFT+LMB to teleport\n"
@@ -226,7 +227,7 @@ void Navigation::CreateUI()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Navigation::SetupViewport()
@@ -235,14 +236,11 @@ void Navigation::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void Navigation::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Navigation, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Navigation, HandlePostRenderUpdate));
@@ -381,16 +379,15 @@ bool Navigation::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hitDrawa
     hitDrawable = nullptr;
 
     auto* ui = GetSubsystem<UI>();
-    IntVector2 pos = ui->GetCursorPosition();
+    IntVector2 pos = ui->GetUICursorPosition();
     // Check the cursor is visible and there is no UI element in front of the cursor
     if (ui->GetElementAt(pos, true))
         return false;
 
     pos = ui->ConvertUIToSystem(pos);
 
-    auto* graphics = GetSubsystem<Graphics>();
     auto* camera = cameraNode_->GetComponent<Camera>();
-    Ray cameraRay = camera->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
+    Ray cameraRay = camera->GetScreenRayFromMouse();
     // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
     ea::vector<RayQueryResult> results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
@@ -490,13 +487,8 @@ void Navigation::SaveNavigationData()
         }
 }
 
-void Navigation::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Navigation::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 

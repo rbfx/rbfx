@@ -39,7 +39,6 @@ public:
     /// Construct Divide.
     explicit Divide(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
 protected:

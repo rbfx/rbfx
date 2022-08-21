@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,6 @@
 #include "../Resource/ResourceEvents.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-#include "../Scene/SmoothedTransform.h"
 
 #include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 #include <Bullet/BulletDynamics/Dynamics/btRigidBody.h>
@@ -58,8 +57,6 @@ static const char* collisionEventModeNames[] =
     "Always",
     nullptr
 };
-
-extern const char* PHYSICS_CATEGORY;
 
 RigidBody::RigidBody(Context* context) :
     Component(context),
@@ -93,7 +90,7 @@ RigidBody::~RigidBody()
 
 void RigidBody::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RigidBody>(PHYSICS_CATEGORY);
+    context->RegisterFactory<RigidBody>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Physics Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE | AM_NOEDIT);
@@ -105,7 +102,7 @@ void RigidBody::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Rolling Friction", GetRollingFriction, SetRollingFriction, float, DEFAULT_ROLLING_FRICTION, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Restitution", GetRestitution, SetRestitution, float, DEFAULT_RESTITUTION, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Linear Velocity", GetLinearVelocity, SetLinearVelocity, Vector3, Vector3::ZERO,
-        AM_DEFAULT | AM_LATESTDATA);
+        AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Angular Velocity", GetAngularVelocity, SetAngularVelocity, Vector3, Vector3::ZERO, AM_FILE);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Linear Factor", GetLinearFactor, SetLinearFactor, Vector3, Vector3::ONE, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Angular Factor", GetAngularFactor, SetAngularFactor, Vector3, Vector3::ONE, AM_DEFAULT);
@@ -119,8 +116,6 @@ void RigidBody::RegisterObject(Context* context)
         AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("CCD Radius", GetCcdRadius, SetCcdRadius, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("CCD Motion Threshold", GetCcdMotionThreshold, SetCcdMotionThreshold, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Angular Velocity", GetNetAngularVelocityAttr, SetNetAngularVelocityAttr, ea::vector<unsigned char>,
-        Variant::emptyBuffer, AM_NET | AM_LATESTDATA | AM_NOEDIT);
     URHO3D_ENUM_ATTRIBUTE_EX("Collision Event Mode", collisionEventMode_, MarkBodyDirty, collisionEventModeNames, COLLISION_ACTIVE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Use Gravity", GetUseGravity, SetUseGravity, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Is Kinematic", bool, kinematic_, MarkBodyDirty, false, AM_DEFAULT);
@@ -189,8 +184,6 @@ void RigidBody::setWorldTransform(const btTransform& worldTrans)
             delayed.worldRotation_ = newWorldRotation;
             physicsWorld_->AddDelayedWorldTransform(delayed);
         }
-
-        MarkNetworkUpdate();
     }
 
     hasSimulated_ = true;
@@ -219,7 +212,6 @@ void RigidBody::SetMass(float mass)
     {
         mass_ = mass;
         AddBodyToWorld();
-        MarkNetworkUpdate();
     }
 }
 
@@ -242,7 +234,6 @@ void RigidBody::SetPosition(const Vector3& position)
         }
 
         Activate();
-        MarkNetworkUpdate();
     }
 }
 
@@ -268,7 +259,6 @@ void RigidBody::SetRotation(const Quaternion& rotation)
         body_->updateInertiaTensor();
 
         Activate();
-        MarkNetworkUpdate();
     }
 }
 
@@ -291,7 +281,6 @@ void RigidBody::SetTransform(const Vector3& position, const Quaternion& rotation
         body_->updateInertiaTensor();
 
         Activate();
-        MarkNetworkUpdate();
     }
 }
 
@@ -302,7 +291,6 @@ void RigidBody::SetLinearVelocity(const Vector3& velocity)
         body_->setLinearVelocity(ToBtVector3(velocity));
         if (velocity != Vector3::ZERO)
             Activate();
-        MarkNetworkUpdate();
     }
 }
 
@@ -311,7 +299,6 @@ void RigidBody::SetLinearFactor(const Vector3& factor)
     if (body_)
     {
         body_->setLinearFactor(ToBtVector3(factor));
-        MarkNetworkUpdate();
     }
 }
 
@@ -320,7 +307,6 @@ void RigidBody::SetLinearRestThreshold(float threshold)
     if (body_)
     {
         body_->setSleepingThresholds(threshold, body_->getAngularSleepingThreshold());
-        MarkNetworkUpdate();
     }
 }
 
@@ -329,7 +315,6 @@ void RigidBody::SetLinearDamping(float damping)
     if (body_)
     {
         body_->setDamping(damping, body_->getAngularDamping());
-        MarkNetworkUpdate();
     }
 }
 
@@ -340,7 +325,6 @@ void RigidBody::SetAngularVelocity(const Vector3& velocity)
         body_->setAngularVelocity(ToBtVector3(velocity));
         if (velocity != Vector3::ZERO)
             Activate();
-        MarkNetworkUpdate();
     }
 }
 
@@ -349,7 +333,6 @@ void RigidBody::SetAngularFactor(const Vector3& factor)
     if (body_)
     {
         body_->setAngularFactor(ToBtVector3(factor));
-        MarkNetworkUpdate();
     }
 }
 
@@ -358,7 +341,6 @@ void RigidBody::SetAngularRestThreshold(float threshold)
     if (body_)
     {
         body_->setSleepingThresholds(body_->getLinearSleepingThreshold(), threshold);
-        MarkNetworkUpdate();
     }
 }
 
@@ -367,7 +349,6 @@ void RigidBody::SetAngularDamping(float damping)
     if (body_)
     {
         body_->setDamping(body_->getLinearDamping(), damping);
-        MarkNetworkUpdate();
     }
 }
 
@@ -376,7 +357,6 @@ void RigidBody::SetFriction(float friction)
     if (body_)
     {
         body_->setFriction(friction);
-        MarkNetworkUpdate();
     }
 }
 
@@ -385,7 +365,6 @@ void RigidBody::SetAnisotropicFriction(const Vector3& friction)
     if (body_)
     {
         body_->setAnisotropicFriction(ToBtVector3(friction));
-        MarkNetworkUpdate();
     }
 }
 
@@ -394,7 +373,6 @@ void RigidBody::SetRollingFriction(float friction)
     if (body_)
     {
         body_->setRollingFriction(friction);
-        MarkNetworkUpdate();
     }
 }
 
@@ -403,7 +381,6 @@ void RigidBody::SetRestitution(float restitution)
     if (body_)
     {
         body_->setRestitution(restitution);
-        MarkNetworkUpdate();
     }
 }
 
@@ -412,7 +389,6 @@ void RigidBody::SetContactProcessingThreshold(float threshold)
     if (body_)
     {
         body_->setContactProcessingThreshold(threshold);
-        MarkNetworkUpdate();
     }
 }
 
@@ -422,7 +398,6 @@ void RigidBody::SetCcdRadius(float radius)
     if (body_)
     {
         body_->setCcdSweptSphereRadius(radius);
-        MarkNetworkUpdate();
     }
 }
 
@@ -432,7 +407,6 @@ void RigidBody::SetCcdMotionThreshold(float threshold)
     if (body_)
     {
         body_->setCcdMotionThreshold(threshold);
-        MarkNetworkUpdate();
     }
 }
 
@@ -442,7 +416,6 @@ void RigidBody::SetUseGravity(bool enable)
     {
         useGravity_ = enable;
         UpdateGravity();
-        MarkNetworkUpdate();
     }
 }
 
@@ -452,7 +425,6 @@ void RigidBody::SetGravityOverride(const Vector3& gravity)
     {
         gravityOverride_ = gravity;
         UpdateGravity();
-        MarkNetworkUpdate();
     }
 }
 
@@ -462,7 +434,6 @@ void RigidBody::SetKinematic(bool enable)
     {
         kinematic_ = enable;
         AddBodyToWorld();
-        MarkNetworkUpdate();
     }
 }
 
@@ -472,7 +443,6 @@ void RigidBody::SetTrigger(bool enable)
     {
         trigger_ = enable;
         AddBodyToWorld();
-        MarkNetworkUpdate();
     }
 }
 
@@ -482,7 +452,6 @@ void RigidBody::SetCollisionLayer(unsigned layer)
     {
         collisionLayer_ = layer;
         AddBodyToWorld();
-        MarkNetworkUpdate();
     }
 }
 
@@ -492,7 +461,6 @@ void RigidBody::SetCollisionMask(unsigned mask)
     {
         collisionMask_ = mask;
         AddBodyToWorld();
-        MarkNetworkUpdate();
     }
 }
 
@@ -503,14 +471,12 @@ void RigidBody::SetCollisionLayerAndMask(unsigned layer, unsigned mask)
         collisionLayer_ = layer;
         collisionMask_ = mask;
         AddBodyToWorld();
-        MarkNetworkUpdate();
     }
 }
 
 void RigidBody::SetCollisionEventMode(CollisionEventMode mode)
 {
     collisionEventMode_ = mode;
-    MarkNetworkUpdate();
 }
 
 void RigidBody::ApplyForce(const Vector3& force)
@@ -717,21 +683,10 @@ void RigidBody::ApplyWorldTransform(const Vector3& newWorldPosition, const Quate
 
     physicsWorld_->SetApplyingTransforms(true);
 
-    // Apply transform to the SmoothedTransform component instead of node transform if available
-    if (smoothedTransform_)
-    {
-        smoothedTransform_->SetTargetWorldPosition(newWorldPosition);
-        smoothedTransform_->SetTargetWorldRotation(newWorldRotation);
-        lastPosition_ = newWorldPosition;
-        lastRotation_ = newWorldRotation;
-    }
-    else
-    {
-        node_->SetWorldPosition(newWorldPosition);
-        node_->SetWorldRotation(newWorldRotation);
-        lastPosition_ = node_->GetWorldPosition();
-        lastRotation_ = node_->GetWorldRotation();
-    }
+    node_->SetWorldPosition(newWorldPosition);
+    node_->SetWorldRotation(newWorldRotation);
+    lastPosition_ = node_->GetWorldPosition();
+    lastRotation_ = node_->GetWorldRotation();
 
     physicsWorld_->SetApplyingTransforms(false);
 }
@@ -845,21 +800,6 @@ void RigidBody::UpdateGravity()
     }
 }
 
-void RigidBody::SetNetAngularVelocityAttr(const ea::vector<unsigned char>& value)
-{
-    float maxVelocity = physicsWorld_ ? physicsWorld_->GetMaxNetworkAngularVelocity() : DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY;
-    MemoryBuffer buf(value);
-    SetAngularVelocity(buf.ReadPackedVector3(maxVelocity));
-}
-
-const ea::vector<unsigned char>& RigidBody::GetNetAngularVelocityAttr() const
-{
-    float maxVelocity = physicsWorld_ ? physicsWorld_->GetMaxNetworkAngularVelocity() : DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY;
-    attrBuffer_.Clear();
-    attrBuffer_.WritePackedVector3(GetAngularVelocity(), maxVelocity);
-    return attrBuffer_.GetBuffer();
-}
-
 void RigidBody::AddConstraint(Constraint* constraint)
 {
     constraints_.push_back(constraint);
@@ -890,12 +830,10 @@ void RigidBody::ReleaseBody()
 
 void RigidBody::OnMarkedDirty(Node* node)
 {
-    // If node transform changes, apply it back to the physics transform. However, do not do this when a SmoothedTransform
-    // is in use, because in that case the node transform will be constantly updated into smoothed, possibly non-physical
-    // states; rather follow the SmoothedTransform target transform directly
+    // If node transform changes, apply it back to the physics transform.
     // Also, for kinematic objects Bullet asks the position from us, so we do not need to apply ourselves
     // (exception: initial setting of transform)
-    if ((!kinematic_ || !hasSimulated_) && (!physicsWorld_ || !physicsWorld_->IsApplyingTransforms()) && !smoothedTransform_)
+    if ((!kinematic_ || !hasSimulated_) && (!physicsWorld_ || !physicsWorld_->IsApplyingTransforms()))
     {
         // Physics operations are not safe from worker threads
         Scene* scene = GetScene();
@@ -968,15 +906,6 @@ void RigidBody::AddBodyToWorld()
         body_ = ea::make_unique<btRigidBody>(mass_, this, shiftedCompoundShape_.get(), localInertia);
         body_->setUserPointer(this);
 
-        // Check for existence of the SmoothedTransform component, which should be created by now in network client mode.
-        // If it exists, subscribe to its change events
-        smoothedTransform_ = GetComponent<SmoothedTransform>();
-        if (smoothedTransform_)
-        {
-            SubscribeToEvent(smoothedTransform_, E_TARGETPOSITION, URHO3D_HANDLER(RigidBody, HandleTargetPosition));
-            SubscribeToEvent(smoothedTransform_, E_TARGETROTATION, URHO3D_HANDLER(RigidBody, HandleTargetRotation));
-        }
-
         // Check if CollisionShapes already exist in the node and add them to the compound shape.
         // Do not update mass yet, but do it once all shapes have been added
         ea::vector<CollisionShape*> shapes;
@@ -1033,20 +962,6 @@ void RigidBody::RemoveBodyFromWorld()
         world->removeRigidBody(body_.get());
         inWorld_ = false;
     }
-}
-
-void RigidBody::HandleTargetPosition(StringHash eventType, VariantMap& eventData)
-{
-    // Copy the smoothing target position to the rigid body
-    if (!physicsWorld_ || !physicsWorld_->IsApplyingTransforms())
-        SetPosition(static_cast<SmoothedTransform*>(GetEventSender())->GetTargetWorldPosition());
-}
-
-void RigidBody::HandleTargetRotation(StringHash eventType, VariantMap& eventData)
-{
-    // Copy the smoothing target rotation to the rigid body
-    if (!physicsWorld_ || !physicsWorld_->IsApplyingTransforms())
-        SetRotation(static_cast<SmoothedTransform*>(GetEventSender())->GetTargetWorldRotation());
 }
 
 }

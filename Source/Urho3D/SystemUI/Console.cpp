@@ -21,22 +21,25 @@
 // THE SOFTWARE.
 //
 
-#include <EASTL/sort.h>
+#include "../Precompiled.h"
 
+#include "Console.h"
+
+#include "SystemUI.h"
+#include "SystemUIEvents.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Engine/EngineEvents.h"
 #include "Urho3D/Graphics/Graphics.h"
 #include "Urho3D/Graphics/GraphicsEvents.h"
-#include "Urho3D/Input/Input.h"
 #include "Urho3D/IO/IOEvents.h"
 #include "Urho3D/IO/Log.h"
+#include "Urho3D/Input/Input.h"
 #include "Urho3D/Resource/ResourceCache.h"
-#include "SystemUI.h"
-#include "SystemUIEvents.h"
-#include "Console.h"
 
-#include "Urho3D/DebugNew.h"
+#include <EASTL/sort.h>
+
+#include "../DebugNew.h"
 
 namespace Urho3D
 {
@@ -50,7 +53,7 @@ Console::Console(Context* context) :
 
     SetNumHistoryRows(historyRows_);
     VariantMap dummy;
-    HandleScreenMode(StringHash::ZERO, dummy);
+    HandleScreenMode(StringHash::Empty, dummy);
     RefreshInterpreters();
 
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Console, HandleScreenMode));
@@ -296,7 +299,8 @@ void Console::RenderContent()
             scrollToEnd_--;
         }
 
-        isAtEnd_ = ui::GetScrollY() >= ui::GetScrollMaxY();
+        const float eps = 10.0f;
+        isAtEnd_ = ui::GetScrollY() + eps >= ui::GetScrollMaxY();
 
         if (!copyBuffer_.empty())
         {

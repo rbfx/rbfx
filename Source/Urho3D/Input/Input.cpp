@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -64,10 +64,10 @@ namespace Urho3D
 {
 
 const int SCREEN_JOYSTICK_START_ID = 0x40000000;
-const StringHash VAR_BUTTON_KEY_BINDING("VAR_BUTTON_KEY_BINDING");
-const StringHash VAR_BUTTON_MOUSE_BUTTON_BINDING("VAR_BUTTON_MOUSE_BUTTON_BINDING");
-const StringHash VAR_LAST_KEYSYM("VAR_LAST_KEYSYM");
-const StringHash VAR_SCREEN_JOYSTICK_ID("VAR_SCREEN_JOYSTICK_ID");
+const ea::string VAR_BUTTON_KEY_BINDING("VAR_BUTTON_KEY_BINDING");
+const ea::string VAR_BUTTON_MOUSE_BUTTON_BINDING("VAR_BUTTON_MOUSE_BUTTON_BINDING");
+const ea::string VAR_LAST_KEYSYM("VAR_LAST_KEYSYM");
+const ea::string VAR_SCREEN_JOYSTICK_ID("VAR_SCREEN_JOYSTICK_ID");
 
 const unsigned TOUCHID_MAX = 32;
 
@@ -368,7 +368,7 @@ Input::Input(Context* context) :
     mousePressPosition_(MOUSE_POSITION_OFFSCREEN),
     lastVisibleMousePosition_(MOUSE_POSITION_OFFSCREEN),
     mouseMoveWheel_(0),
-    inputScale_(Vector2::ONE),
+    systemToBackbufferScale_(Vector2::ONE),
     windowID_(0),
     toggleFullscreen_(true),
     mouseVisible_(false),
@@ -466,7 +466,7 @@ void Input::Update()
             GainFocus();
 
         // Check for losing focus. The window flags are not reliable when using an external window, so prevent losing focus in that case
-        if (inputFocus_ && !graphics_->GetExternalWindow() && (flags & SDL_WINDOW_INPUT_FOCUS) == 0)
+        if (inputFocus_ && !graphics_->GetExternalWindow() && !explicitWindowRect_ && (flags & SDL_WINDOW_INPUT_FOCUS) == 0)
             LoseFocus();
     }
     else
@@ -475,47 +475,45 @@ void Input::Update()
     // Handle mouse mode MM_WRAP
     if (mouseVisible_ && mouseMode_ == MM_WRAP)
     {
-        IntVector2 windowPos = graphics_->GetWindowPosition();
-        IntVector2 mpos;
-        SDL_GetGlobalMouseState(&mpos.x_, &mpos.y_);
-        mpos -= windowPos;
-
-        const int buffer = 5;
-        const int width = graphics_->GetWidth() - buffer * 2;
-        const int height = graphics_->GetHeight() - buffer * 2;
+        IntVector2 globalPosition;
+        SDL_GetGlobalMouseState(&globalPosition.x_, &globalPosition.y_);
 
         // SetMousePosition utilizes backbuffer coordinate system, scale now from window coordinates
-        mpos.x_ = (int)(mpos.x_ * inputScale_.x_);
-        mpos.y_ = (int)(mpos.y_ * inputScale_.y_);
+        const IntVector2 backbufferSize = GetBackbufferSize();
+        IntVector2 backbufferPosition = SystemToBackbuffer(globalPosition - GetGlobalWindowPosition());
+
+        const int buffer = 5;
+        const int width = backbufferSize.x_ - buffer * 2;
+        const int height = backbufferSize.y_ - buffer * 2;
 
         bool warp = false;
-        if (mpos.x_ < buffer)
+        if (backbufferPosition.x_ < buffer)
         {
             warp = true;
-            mpos.x_ += width;
+            backbufferPosition.x_ += width;
         }
 
-        if (mpos.x_ > buffer + width)
+        if (backbufferPosition.x_ > buffer + width)
         {
             warp = true;
-            mpos.x_ -= width;
+            backbufferPosition.x_ -= width;
         }
 
-        if (mpos.y_ < buffer)
+        if (backbufferPosition.y_ < buffer)
         {
             warp = true;
-            mpos.y_ += height;
+            backbufferPosition.y_ += height;
         }
 
-        if (mpos.y_ > buffer + height)
+        if (backbufferPosition.y_ > buffer + height)
         {
             warp = true;
-            mpos.y_ -= height;
+            backbufferPosition.y_ -= height;
         }
 
         if (warp)
         {
-            SetMousePosition(mpos);
+            SetMousePosition(backbufferPosition);
             SuppressNextMouseMove();
         }
     }
@@ -1324,34 +1322,53 @@ SDL_JoystickID Input::OpenJoystick(unsigned index)
     return joystickID;
 }
 
-Key Input::GetKeyFromName(const ea::string& name) const
+Key Input::GetKeyFromName(const ea::string& name)
 {
     return (Key)SDL_GetKeyFromName(name.c_str());
 }
 
-Key Input::GetKeyFromScancode(Scancode scancode) const
+Key Input::GetKeyFromScancode(Scancode scancode)
 {
     return (Key)SDL_GetKeyFromScancode((SDL_Scancode)scancode);
 }
 
-ea::string Input::GetKeyName(Key key) const
+ea::string Input::GetKeyName(Key key)
 {
     return ea::string(SDL_GetKeyName(key));
 }
 
-Scancode Input::GetScancodeFromKey(Key key) const
+Scancode Input::GetScancodeFromKey(Key key)
 {
     return (Scancode)SDL_GetScancodeFromKey(key);
 }
 
-Scancode Input::GetScancodeFromName(const ea::string& name) const
+Scancode Input::GetScancodeFromName(const ea::string& name)
 {
     return (Scancode)SDL_GetScancodeFromName(name.c_str());
 }
 
-ea::string Input::GetScancodeName(Scancode scancode) const
+ea::string Input::GetScancodeName(Scancode scancode)
 {
     return SDL_GetScancodeName((SDL_Scancode)scancode);
+}
+
+ea::string Input::GetMouseButtonName(MouseButton button)
+{
+    switch (button)
+    {
+    case MOUSEB_LEFT:
+        return "LMB";
+    case MOUSEB_MIDDLE:
+        return "MMB";
+    case MOUSEB_RIGHT:
+        return "RMB";
+    case MOUSEB_X1:
+        return "X1";
+    case MOUSEB_X2:
+        return "X2";
+    default:
+        return "?";
+    }
 }
 
 bool Input::GetKeyDown(Key key) const
@@ -1428,40 +1445,46 @@ QualifierFlags Input::GetQualifiers() const
 
 IntVector2 Input::GetMousePosition() const
 {
-    IntVector2 ret = IntVector2::ZERO;
-
     if (!initialized_)
-        return ret;
+        return IntVector2::ZERO;
 
-    SDL_GetMouseState(&ret.x_, &ret.y_);
-    ret.x_ = (int)(ret.x_ * inputScale_.x_);
-    ret.y_ = (int)(ret.y_ * inputScale_.y_);
+    if (explicitWindowRect_)
+    {
+        IntVector2 globalPosition;
+        SDL_GetGlobalMouseState(&globalPosition.x_, &globalPosition.y_);
+        return SystemToBackbuffer(globalPosition - explicitWindowRect_->Min());
+    }
+    else
+    {
+        IntVector2 localPosition;
+        SDL_GetMouseState(&localPosition.x_, &localPosition.y_);
+        return SystemToBackbuffer(localPosition);
+    }
+}
 
-    return ret;
+Vector2 Input::GetRelativeMousePosition() const
+{
+    const IntVector2 backbufferSize = GetBackbufferSize();
+    const IntVector2 localPosition = GetMousePosition();
+    return static_cast<Vector2>(localPosition) / static_cast<Vector2>(backbufferSize);
 }
 
 IntVector2 Input::GetMouseMove() const
 {
     if (!suppressNextMouseMove_)
-        return mouseMoveScaled_ ? mouseMove_ : IntVector2((int)(mouseMove_.x_ * inputScale_.x_), (int)(mouseMove_.y_ * inputScale_.y_));
+        return mouseMoveScaled_ ? mouseMove_ : SystemToBackbuffer(mouseMove_);
     else
         return IntVector2::ZERO;
 }
 
 int Input::GetMouseMoveX() const
 {
-    if (!suppressNextMouseMove_)
-        return mouseMoveScaled_ ? mouseMove_.x_ : (int)(mouseMove_.x_ * inputScale_.x_);
-    else
-        return 0;
+    return GetMouseMove().x_;
 }
 
 int Input::GetMouseMoveY() const
 {
-    if (!suppressNextMouseMove_)
-        return mouseMoveScaled_ ? mouseMove_.y_ : mouseMove_.y_ * inputScale_.y_;
-    else
-        return 0;
+    return GetMouseMove().y_;
 }
 
 TouchState* Input::GetTouch(unsigned index) const
@@ -1473,6 +1496,14 @@ TouchState* Input::GetTouch(unsigned index) const
     while (index--)
         ++i;
 
+    return const_cast<TouchState*>(&i->second);
+}
+
+TouchState* Input::GetTouchById(int touchId) const
+{
+    const auto i = touches_.find(touchId);
+    if (i == touches_.end())
+        return nullptr;
     return const_cast<TouchState*>(&i->second);
 }
 
@@ -1868,7 +1899,14 @@ void Input::SetMousePosition(const IntVector2& position)
     if (!graphics_)
         return;
 
-    SDL_WarpMouseInWindow(graphics_->GetWindow(), (int)(position.x_ / inputScale_.x_), (int)(position.y_ / inputScale_.y_));
+    const IntVector2 localPosition = BackbufferToSystem(position);
+    if (explicitWindowRect_)
+    {
+        const IntVector2 globalPosition = localPosition + explicitWindowRect_->Min();
+        SDL_WarpMouseGlobal(globalPosition.x_, globalPosition.y_);
+    }
+    else
+        SDL_WarpMouseInWindow(graphics_->GetWindow(), localPosition.x_, localPosition.y_);
 }
 
 void Input::CenterMousePosition()
@@ -2040,18 +2078,15 @@ void Input::HandleSDLEvent(void* sdlEvent)
         }
         else
         {
-            int x, y;
-            SDL_GetMouseState(&x, &y);
-            x = (int)(x * inputScale_.x_);
-            y = (int)(y * inputScale_.y_);
+            const Vector2 relativePosition = GetRelativeMousePosition();
 
             SDL_Event event;
             event.type = SDL_FINGERDOWN;
             event.tfinger.touchId = 0;
             event.tfinger.fingerId = evt.button.button - 1;
             event.tfinger.pressure = 1.0f;
-            event.tfinger.x = (float)x / (float)graphics_->GetWidth();
-            event.tfinger.y = (float)y / (float)graphics_->GetHeight();
+            event.tfinger.x = relativePosition.x_;
+            event.tfinger.y = relativePosition.y_;
             event.tfinger.dx = 0;
             event.tfinger.dy = 0;
             SDL_PushEvent(&event);
@@ -2066,18 +2101,15 @@ void Input::HandleSDLEvent(void* sdlEvent)
         }
         else
         {
-            int x, y;
-            SDL_GetMouseState(&x, &y);
-            x = (int)(x * inputScale_.x_);
-            y = (int)(y * inputScale_.y_);
+            const Vector2 relativePosition = GetRelativeMousePosition();
 
             SDL_Event event;
             event.type = SDL_FINGERUP;
             event.tfinger.touchId = 0;
             event.tfinger.fingerId = evt.button.button - 1;
             event.tfinger.pressure = 0.0f;
-            event.tfinger.x = (float)x / (float)graphics_->GetWidth();
-            event.tfinger.y = (float)y / (float)graphics_->GetHeight();
+            event.tfinger.x = relativePosition.x_;
+            event.tfinger.y = relativePosition.y_;
             event.tfinger.dx = 0;
             event.tfinger.dy = 0;
             SDL_PushEvent(&event);
@@ -2108,12 +2140,19 @@ void Input::HandleSDLEvent(void* sdlEvent)
             {
                 using namespace MouseMove;
 
+                // Adjust position to allow explicit window rectangle
+                SDL_Window* currentWindow = SDL_GetWindowFromID(evt.motion.windowID);
+                IntVector2 windowPosition{};
+                if (currentWindow)
+                    SDL_GetWindowPosition(currentWindow, &windowPosition.x_, &windowPosition.y_);
+                const IntVector2 localPosition = windowPosition + IntVector2{evt.motion.x, evt.motion.y} - GetGlobalWindowPosition();
+
                 VariantMap& eventData = GetEventDataMap();
-                eventData[P_X] = (int)(evt.motion.x * inputScale_.x_);
-                eventData[P_Y] = (int)(evt.motion.y * inputScale_.y_);
+                eventData[P_X] = (int)(localPosition.x_ * systemToBackbufferScale_.x_);
+                eventData[P_Y] = (int)(localPosition.y_ * systemToBackbufferScale_.y_);
                 // The "on-the-fly" motion data needs to be scaled now, though this may reduce accuracy
-                eventData[P_DX] = (int)(evt.motion.xrel * inputScale_.x_);
-                eventData[P_DY] = (int)(evt.motion.yrel * inputScale_.y_);
+                eventData[P_DX] = (int)(evt.motion.xrel * systemToBackbufferScale_.x_);
+                eventData[P_DY] = (int)(evt.motion.yrel * systemToBackbufferScale_.y_);
                 eventData[P_BUTTONS] = (unsigned)mouseButtonDown_;
                 eventData[P_QUALIFIERS] = (unsigned)GetQualifiers();
                 SendEvent(E_MOUSEMOVE, eventData);
@@ -2122,20 +2161,18 @@ void Input::HandleSDLEvent(void* sdlEvent)
         // Only the left mouse button "finger" moves along with the mouse movement
         else if (touchEmulation_ && touches_.contains(0))
         {
-            int x, y;
-            SDL_GetMouseState(&x, &y);
-            x = (int)(x * inputScale_.x_);
-            y = (int)(y * inputScale_.y_);
+            const IntVector2 backbufferSize = GetBackbufferSize();
+            const Vector2 relativePosition = GetRelativeMousePosition();
 
             SDL_Event event;
             event.type = SDL_FINGERMOTION;
             event.tfinger.touchId = 0;
             event.tfinger.fingerId = 0;
             event.tfinger.pressure = 1.0f;
-            event.tfinger.x = (float)x / (float)graphics_->GetWidth();
-            event.tfinger.y = (float)y / (float)graphics_->GetHeight();
-            event.tfinger.dx = (float)evt.motion.xrel * inputScale_.x_ / (float)graphics_->GetWidth();
-            event.tfinger.dy = (float)evt.motion.yrel * inputScale_.y_ / (float)graphics_->GetHeight();
+            event.tfinger.x = relativePosition.x_;
+            event.tfinger.y = relativePosition.y_;
+            event.tfinger.dx = evt.motion.xrel * systemToBackbufferScale_.x_ / backbufferSize.x_;
+            event.tfinger.dy = evt.motion.yrel * systemToBackbufferScale_.y_ / backbufferSize.y_;
             SDL_PushEvent(&event);
         }
         break;
@@ -2540,17 +2577,13 @@ void Input::HandleScreenMode(StringHash eventType, VariantMap& eventData)
     minimized_ = (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED) != 0;
 
     // Calculate input coordinate scaling from SDL window to backbuffer ratio
-    int winWidth, winHeight;
-    int gfxWidth = graphics_->GetWidth();
-    int gfxHeight = graphics_->GetHeight();
-    SDL_GetWindowSize(window, &winWidth, &winHeight);
-    if (winWidth > 0 && winHeight > 0 && gfxWidth > 0 && gfxHeight > 0)
-    {
-        inputScale_.x_ = (float)gfxWidth / (float)winWidth;
-        inputScale_.y_ = (float)gfxHeight / (float)winHeight;
-    }
+    const IntVector2 backbufferSize{graphics_->GetWidth(), graphics_->GetHeight()};
+    IntVector2 windowSize;
+    SDL_GetWindowSize(window, &windowSize.x_, &windowSize.y_);
+    if (windowSize != IntVector2::ZERO && backbufferSize != IntVector2::ZERO)
+        systemToBackbufferScale_ = static_cast<Vector2>(backbufferSize) / static_cast<Vector2>(windowSize);
     else
-        inputScale_ = Vector2::ONE;
+        systemToBackbufferScale_ = Vector2::ONE;
 }
 
 void Input::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
@@ -2710,6 +2743,40 @@ void Input::HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventDat
 
     // Handle the fake SDL event to turn it into Urho3D genuine event
     HandleSDLEvent(&evt);
+}
+
+IntVector2 Input::SystemToBackbuffer(const IntVector2& value) const
+{
+    return VectorRoundToInt(static_cast<Vector2>(value) * systemToBackbufferScale_);
+}
+
+IntVector2 Input::BackbufferToSystem(const IntVector2& value) const
+{
+    return VectorRoundToInt(static_cast<Vector2>(value) / systemToBackbufferScale_);
+}
+
+IntVector2 Input::GetGlobalWindowPosition() const
+{
+    if (explicitWindowRect_)
+        return explicitWindowRect_->Min();
+    else
+        return graphics_->GetWindowPosition();
+}
+
+IntVector2 Input::GetGlobalWindowSize() const
+{
+    if (explicitWindowRect_)
+        return explicitWindowRect_->Size();
+    else
+        return BackbufferToSystem({graphics_->GetWidth(), graphics_->GetHeight()});
+}
+
+IntVector2 Input::GetBackbufferSize() const
+{
+    if (explicitWindowRect_)
+        return SystemToBackbuffer(explicitWindowRect_->Size());
+    else
+        return {graphics_->GetWidth(), graphics_->GetHeight()};
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,9 +47,6 @@
 #include <cstdio>
 
 #ifdef _WIN32
-#ifndef _MSC_VER
-#define _WIN32_IE 0x501
-#endif
 #include <windows.h>
 #include <shellapi.h>
 #include <direct.h>
@@ -715,7 +712,7 @@ bool FileSystem::CheckAccess(const ea::string& pathName) const
     return false;
 }
 
-unsigned FileSystem::GetLastModifiedTime(const ea::string& fileName) const
+FileTime FileSystem::GetLastModifiedTime(const ea::string& fileName, bool creationIsModification) const
 {
     if (fileName.empty() || !CheckAccess(fileName))
         return 0;
@@ -723,13 +720,13 @@ unsigned FileSystem::GetLastModifiedTime(const ea::string& fileName) const
 #ifdef _WIN32
     struct _stat st;
     if (!_stat(fileName.c_str(), &st))
-        return (unsigned)st.st_mtime;
+        return static_cast<FileTime>(ea::max(st.st_mtime, creationIsModification ? st.st_ctime : time_t{}));
     else
         return 0;
 #else
     struct stat st{};
     if (!stat(fileName.c_str(), &st))
-        return (unsigned)st.st_mtime;
+        return static_cast<FileTime>(st.st_mtime);
     else
         return 0;
 #endif
@@ -932,7 +929,7 @@ void FileSystem::RegisterPath(const ea::string& pathName)
     allowedPaths_.insert(AddTrailingSlash(pathName));
 }
 
-bool FileSystem::SetLastModifiedTime(const ea::string& fileName, unsigned newTime)
+bool FileSystem::SetLastModifiedTime(const ea::string& fileName, FileTime newTime)
 {
     if (fileName.empty() || !CheckAccess(fileName))
         return false;
@@ -953,6 +950,21 @@ bool FileSystem::SetLastModifiedTime(const ea::string& fileName, unsigned newTim
     newTimes.actime = oldTime.st_atime;
     newTimes.modtime = newTime;
     return utime(fileName.c_str(), &newTimes) == 0;
+#endif
+}
+
+bool FileSystem::Reveal(const ea::string& path)
+{
+#ifdef _WIN32
+    return SystemCommand(Format("start explorer.exe /select,{}", GetNativePath(path))) == 0;
+#elif defined(__APPLE__)
+    return SystemCommand(Format("open -R {}", GetNativePath(path))) == 0;
+#elif defined(__linux__)
+    return SystemCommand(Format("dbus-send "
+        "--session --print-reply --dest=org.freedesktop.FileManager1 --type=method_call "
+        "/org/freedesktop/FileManager1 org.freedesktop.FileManager1.ShowItems array:string:\"file://{}\" string:\"\"", GetNativePath(path))) == 0;
+#else
+    return false;
 #endif
 }
 
@@ -1104,14 +1116,28 @@ void FileSystem::HandleConsoleCommand(StringHash eventType, VariantMap& eventDat
 
 TemporaryDir::TemporaryDir(Context* context, const ea::string& path)
     : fs_(context->GetSubsystem<FileSystem>())
-    , path_(path)
+    , path_(AddTrailingSlash(path))
 {
     fs_->CreateDirsRecursive(path_);
 }
 
 TemporaryDir::~TemporaryDir()
 {
-    fs_->RemoveDir(path_, true);
+    if (fs_)
+        fs_->RemoveDir(path_, true);
+}
+
+TemporaryDir::TemporaryDir(TemporaryDir&& rhs)
+{
+    *this = ea::move(rhs);
+}
+
+TemporaryDir& TemporaryDir::operator=(TemporaryDir&& rhs)
+{
+    fs_ = rhs.fs_;
+    path_ = ea::move(rhs.path_);
+    rhs.fs_ = nullptr;
+    return *this;
 }
 
 void SplitPath(const ea::string& fullPath, ea::string& pathName, ea::string& fileName, ea::string& extension, bool lowercaseExtension)
@@ -1287,11 +1313,14 @@ bool FileSystem::CreateDirsRecursive(const ea::string& directoryIn)
 
     paths.push_back(directory);
 
-    while (true)
+    for (;;)
     {
         parentPath = GetParentPath(parentPath);
 
         if (!parentPath.length())
+            break;
+
+        if (DirExists(parentPath))
             break;
 
         paths.push_back(parentPath);
@@ -1316,7 +1345,6 @@ bool FileSystem::CreateDirsRecursive(const ea::string& directoryIn)
         // double check
         if (!DirExists(pathName))
             return false;
-
     }
 
     return true;
@@ -1373,30 +1401,39 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
 
 }
 
-bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& directoryOut)
+bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& directoryOut, StringVector* copiedFiles)
 {
     if (FileExists(directoryOut))
         return false;
 
     ea::vector<ea::string> results;
-    ScanDir(results, directoryIn, "*", SCAN_FILES, true );
+    ScanDir(results, directoryIn, "*", SCAN_FILES, true);
 
+    bool success = true;
     for (unsigned i = 0; i < results.size(); i++)
     {
-        ea::string srcFile = directoryIn + "/" + results[i];
-        ea::string dstFile = directoryOut + "/" + results[i];
+        const ea::string srcFile = AddTrailingSlash(directoryIn) + results[i];
+        const ea::string dstFile = AddTrailingSlash(directoryOut) + results[i];
 
-        ea::string dstPath = GetPath(dstFile);
+        const ea::string dstPath = GetPath(dstFile);
 
         if (!CreateDirsRecursive(dstPath))
-            return false;
+        {
+            success = false;
+            continue;
+        }
 
-        //LOGINFOF("SRC: %s DST: %s", srcFile.c_str(), dstFile.c_str());
         if (!Copy(srcFile, dstFile))
-            return false;
+        {
+            success = false;
+            continue;
+        }
+
+        if (copiedFiles)
+            copiedFiles->push_back(dstFile);
     }
 
-    return true;
+    return success;
 
 }
 
@@ -1439,6 +1476,18 @@ ea::string GetSanitizedPath(const ea::string& path)
 
     return sanitized;
 
+}
+
+ea::string GetSanitizedName(const ea::string& name)
+{
+    static const ea::string32 forbiddenSymbols = U"<>:\"/\\|?*";
+
+    ea::string32 unicodeString{ea::string32::CtorConvert{}, name};
+    for (char32_t ch = 0; ch < 31; ++ch)
+        unicodeString.replace(ch, ' ');
+    for (char32_t ch : forbiddenSymbols)
+        unicodeString.replace(ch, '_');
+    return { ea::string::CtorConvert{}, unicodeString };
 }
 
 bool GetRelativePath(const ea::string& fromPath, const ea::string& toPath, ea::string& output)
@@ -1519,6 +1568,31 @@ ea::string FileSystem::GetTemporaryDir() const
     return "/tmp/";
 #endif
 #endif
+}
+
+ea::string FileSystem::FindResourcePrefixPath() const
+{
+    const auto isFileSystemRoot = [](const ea::string& path)
+    {
+#if WIN32
+        return path.length() <= 3;  // Root path of any drive
+#else
+        return path == "/";         // Filesystem root
+#endif
+    };
+
+    for (ea::string result : {GetCurrentDir(), GetProgramDir()})
+    {
+        while (!isFileSystemRoot(result))
+        {
+            if (DirExists(result + "CoreData"))
+                return result;
+
+            result = GetParentPath(result);
+        }
+    }
+
+    return EMPTY_STRING;
 }
 
 ea::string GetAbsolutePath(const ea::string& path)

@@ -31,7 +31,8 @@ class DefineEventsPass(AstPass):
                 f'        private StringHash _event = new StringHash("{event_namespace.name}");')
 
             for param in event_namespace.children:
-                self._writer.write_pre(subsystem_name, f'        public StringHash {param.value[1:-1]} = new StringHash({param.value});')
+                hash_string = self._parser.read_from_source(param._json_node['inner'][0]['inner'][0]['inner'][1]['range'])
+                self._writer.write_pre(subsystem_name, f'        public StringHash {hash_string[1:-1]} = new StringHash({hash_string});')
 
             self._writer.write_pre(
                 subsystem_name,

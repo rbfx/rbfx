@@ -29,6 +29,7 @@
 #include "DataViewDefault.h"
 #include "DataExpression.h"
 #include "DataModel.h"
+#include "XMLParseTools.h"
 #include "../../Include/RmlUi/Core/Core.h"
 #include "../../Include/RmlUi/Core/DataVariable.h"
 #include "../../Include/RmlUi/Core/Element.h"
@@ -39,7 +40,14 @@
 
 namespace Rml {
 
-DataViewCommon::DataViewCommon(Element* element, String override_modifier) : DataView(element), modifier(std::move(override_modifier))
+// Some data views need to offset the update order for proper behavior.
+//  'data-value' may need other attributes applied first, eg. min/max attributes.
+static constexpr int SortOffset_DataValue = 100;
+//  'data-checked' may need a value attribute already set.
+static constexpr int SortOffset_DataChecked = 110;
+
+
+DataViewCommon::DataViewCommon(Element* element, String override_modifier, int sort_offset) : DataView(element, sort_offset), modifier(std::move(override_modifier))
 {}
 
 bool DataViewCommon::Initialize(DataModel& model, Element* element, const String& expression_str, const String& in_modifier)
@@ -78,7 +86,7 @@ void DataViewCommon::Release()
 DataViewAttribute::DataViewAttribute(Element* element) : DataViewCommon(element)
 {}
 
-DataViewAttribute::DataViewAttribute(Element * element, String override_attribute) : DataViewCommon(element, std::move(override_attribute))
+DataViewAttribute::DataViewAttribute(Element * element, String override_attribute, int sort_offset) : DataViewCommon(element, std::move(override_attribute), sort_offset)
 {}
 
 bool DataViewAttribute::Update(DataModel& model)
@@ -132,10 +140,10 @@ bool DataViewAttributeIf::Update(DataModel& model)
 }
 
 
-DataViewValue::DataViewValue(Element* element) : DataViewAttribute(element, "value")
+DataViewValue::DataViewValue(Element* element) : DataViewAttribute(element, "value", SortOffset_DataValue)
 {}
 
-DataViewChecked::DataViewChecked(Element* element) : DataViewCommon(element)
+DataViewChecked::DataViewChecked(Element* element) : DataViewCommon(element, String(), SortOffset_DataChecked)
 {}
 
 bool DataViewChecked::Update(DataModel & model)
@@ -303,7 +311,7 @@ bool DataViewVisible::Update(DataModel& model)
 }
 
 
-DataViewText::DataViewText(Element* element) : DataView(element)
+DataViewText::DataViewText(Element* element) : DataView(element, 0)
 {}
 
 bool DataViewText::Initialize(DataModel& model, Element* element, const String& RMLUI_UNUSED_PARAMETER(expression), const String& RMLUI_UNUSED_PARAMETER(modifier))
@@ -321,34 +329,56 @@ bool DataViewText::Initialize(DataModel& model, Element* element, const String& 
 
 	DataExpressionInterface expression_interface(&model, element);
 
-	size_t previous_close_brackets = 0;
 	size_t begin_brackets = 0;
-	while ((begin_brackets = in_text.find("{{", begin_brackets)) != String::npos)
-	{
-		text.insert(text.end(), in_text.begin() + previous_close_brackets, in_text.begin() + begin_brackets);
+	size_t cur = 0;
+	char previous = 0;
+	bool was_in_brackets = false;
+	bool in_brackets = false;
+	bool in_string = false;
 
-		const size_t begin_name = begin_brackets + 2;
-		const size_t end_name = in_text.find("}}", begin_name);
+	for(char c : in_text) {
+		was_in_brackets = in_brackets;
 
-		if (end_name == String::npos)
+		const char* error_str = XMLParseTools::ParseDataBrackets(in_brackets, in_string, c, previous);
+		if (error_str)
+		{
+			Log::Message(Log::LT_WARNING, "Failed to parse data view text '%s'. %s", in_text.c_str(), error_str);
 			return false;
+		}
 
-		DataEntry entry;
-		entry.index = text.size();
-		entry.data_expression = MakeUnique<DataExpression>(String(in_text.begin() + begin_name, in_text.begin() + end_name));
+		if (!was_in_brackets && in_brackets)
+		{
+			begin_brackets = cur;
+		}
+		else if (was_in_brackets && !in_brackets)
+		{
+			DataEntry entry;
+			entry.index = text.size();
+			entry.data_expression = MakeUnique<DataExpression>(String(in_text.begin() + begin_brackets + 1, in_text.begin() + cur - 1));
+			entry.value = "#rmlui#"; // A random value that the user string will not be initialized with.
 
-		if (entry.data_expression->Parse(expression_interface, false))
-			data_entries.push_back(std::move(entry));
+			if (entry.data_expression->Parse(expression_interface, false))
+				data_entries.push_back(std::move(entry));
 
-		previous_close_brackets = end_name + 2;
-		begin_brackets = previous_close_brackets;
+			// Reset char so that it won't be appended to the output
+			c = 0;
+		}
+		else if (!in_brackets && previous)
+		{
+			text.push_back(previous);
+		}
+
+		cur++;
+		previous = c;
+	}
+
+	if (!in_brackets && previous)
+	{
+		text.push_back(previous);
 	}
 
 	if (data_entries.empty())
 		return false;
-
-	if (previous_close_brackets < in_text.size())
-		text.insert(text.end(), in_text.begin() + previous_close_brackets, in_text.end());
 
 	return true;
 }
@@ -449,7 +479,7 @@ String DataViewText::BuildText() const
 
 
 
-DataViewFor::DataViewFor(Element* element) : DataView(element)
+DataViewFor::DataViewFor(Element* element) : DataView(element, 0)
 {}
 
 bool DataViewFor::Initialize(DataModel& model, Element* element, const String& in_expression, const String& in_rml_content)

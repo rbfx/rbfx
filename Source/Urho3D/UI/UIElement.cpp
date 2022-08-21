@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -83,8 +83,6 @@ static const char* layoutModes[] =
     nullptr
 };
 
-extern const char* UI_CATEGORY;
-
 static bool CompareUIElements(const UIElement* lhs, const UIElement* rhs)
 {
     return lhs->GetPriority() < rhs->GetPriority();
@@ -111,7 +109,7 @@ UIElement::~UIElement()
 
 void UIElement::RegisterObject(Context* context)
 {
-    context->RegisterFactory<UIElement>(UI_CATEGORY);
+    context->RegisterFactory<UIElement>(Category_UI);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, IntVector2, IntVector2::ZERO, AM_FILE);
@@ -152,7 +150,7 @@ void UIElement::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Layout Flex Scale", GetLayoutFlexScale, SetLayoutFlexScale, Vector2, Vector2::ONE, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Indent", GetIndent, SetIndent, int, 0, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Indent Spacing", GetIndentSpacing, SetIndentSpacing, int, 16, AM_FILE);
-    URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE);
+    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_FILE);
     URHO3D_ATTRIBUTE("Tags", StringVector, tags_, Variant::emptyStringVector, AM_FILE);
 }
 
@@ -1462,9 +1460,16 @@ void UIElement::SetParent(UIElement* parent, unsigned index)
         parent->InsertChild(index, this);
 }
 
-void UIElement::SetVar(StringHash key, const Variant& value)
+void UIElement::SetVar(const ea::string& key, const Variant& value)
 {
     vars_[key] = value;
+}
+
+void UIElement::SetVarByHash(StringHash hash, const Variant& value)
+{
+    const auto iter = vars_.find_by_hash(hash.Value());
+    if (iter != vars_.end())
+        iter->second = value;
 }
 
 void UIElement::SetInternal(bool enable)
@@ -1686,7 +1691,7 @@ UIElement* UIElement::GetChild(const StringHash& key, const Variant& value, bool
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
-        const Variant& varValue = (*i)->GetVar(key);
+        const Variant& varValue = (*i)->GetVarByHash(key);
         if (value != Variant::EMPTY ? varValue == value : varValue != Variant::EMPTY)
             return *i;
 
@@ -1723,9 +1728,15 @@ const Color& UIElement::GetDerivedColor() const
     return derivedColor_;
 }
 
-const Variant& UIElement::GetVar(const StringHash& key) const
+const Variant& UIElement::GetVar(const ea::string& key) const
 {
     auto i = vars_.find(key);
+    return i != vars_.end() ? i->second : Variant::EMPTY;
+}
+
+const Variant& UIElement::GetVarByHash(StringHash key) const
+{
+    auto i = vars_.find_by_hash(key.Value());
     return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
@@ -1821,9 +1832,8 @@ void UIElement::SortChildren()
     if (sortChildren_ && sortOrderDirty_)
     {
         // Only sort when there is no layout
-        /// \todo Order is not stable when children have same priorities
         if (layoutMode_ == LM_FREE)
-            ea::quick_sort(children_.begin(), children_.end(), CompareUIElements);
+            ea::stable_sort(children_.begin(), children_.end(), CompareUIElements);
         sortOrderDirty_ = false;
     }
 }

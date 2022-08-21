@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +41,24 @@ URHO3D_EVENT(E_WORKITEMCOMPLETED, WorkItemCompleted)
 
 class WorkerThread;
 
+/// Vector-like collection that can be safely filled from different WorkQueue threads simultaneously.
+template <class T>
+class WorkQueueVector : public MultiVector<T>
+{
+public:
+    /// Clear collection, considering number of threads in WorkQueue.
+    void Clear();
+    /// Insert new element. Thread-safe as long as called from WorkQueue threads (or main thread).
+    auto Insert(const T& value);
+    /// Emplace element. Thread-safe as long as called from WorkQueue threads (or main thread).
+    template <class ... Args>
+    T& Emplace(Args&& ... args);
+};
+
+/// Task function signature.
+/// TODO: Get rid of parameter
+using WorkFunction = ea::function<void(unsigned threadIndex)>;
+
 /// Work queue item.
 /// @nobind
 struct WorkItem : public RefCounted
@@ -66,7 +84,7 @@ public:
 private:
     bool pooled_{};
     /// Work function. Called without any parameters.
-    std::function<void(unsigned threadIndex)> workLambda_;
+    WorkFunction workLambda_;
 };
 
 /// Work queue subsystem for multithreading.
@@ -84,12 +102,16 @@ public:
 
     /// Create worker threads. Can only be called once.
     void CreateThreads(unsigned numThreads);
+
+    /// Invoke callback from main thread. May be called immediately.
+    void CallFromMainThread(WorkFunction workFunction);
+
     /// Get pointer to an usable WorkItem from the item pool. Allocate one if no more free items.
     SharedPtr<WorkItem> GetFreeItem();
     /// Add a work item and resume worker threads.
     void AddWorkItem(const SharedPtr<WorkItem>& item);
     /// Add a work item and resume worker threads.
-    SharedPtr<WorkItem> AddWorkItem(std::function<void(unsigned threadIndex)> workFunction, unsigned priority = 0);
+    SharedPtr<WorkItem> AddWorkItem(WorkFunction workFunction, unsigned priority = 0);
     /// Remove a work item before it has started executing. Return true if successfully removed.
     bool RemoveWorkItem(SharedPtr<WorkItem> item);
     /// Remove a number of work items before they have started executing. Return the number of items successfully removed.
@@ -129,6 +151,8 @@ public:
     static unsigned GetMaxThreadIndex();
 
 private:
+    /// Process main thread tasks.
+    void ProcessMainThreadTasks();
     /// Process work items until shut down. Called by the worker threads.
     void ProcessItems(unsigned threadIndex);
     /// Purge completed work items which have at least the specified priority, and send completion events as necessary.
@@ -142,6 +166,8 @@ private:
 
     /// Worker threads.
     ea::vector<SharedPtr<WorkerThread> > threads_;
+    /// Tasks to be invoked from main thread.
+    WorkQueueVector<WorkFunction> mainThreadTasks_;
     /// Work item pool for reuse to cut down on allocation. The bool is a flag for item pooling and whether it is available or not.
     ea::list<SharedPtr<WorkItem> > poolItems_;
     /// Work item collection. Accessed only by the main thread.
@@ -164,33 +190,6 @@ private:
     unsigned lastSize_;
     /// Maximum milliseconds per frame to spend on low-priority work, when there are no worker threads.
     int maxNonThreadedWorkMs_;
-};
-
-/// Vector-like collection that can be safely filled from different WorkQueue threads simultaneously.
-template <class T>
-class WorkQueueVector : public MultiVector<T>
-{
-public:
-    /// Clear collection, considering number of threads in WorkQueue.
-    void Clear()
-    {
-        MultiVector<T>::Clear(WorkQueue::GetMaxThreadIndex());
-    }
-
-    /// Insert new element. Thread-safe as long as called from WorkQueue threads (or main thread).
-    auto Insert(const T& value)
-    {
-        const unsigned threadIndex = WorkQueue::GetThreadIndex();
-        return this->PushBack(threadIndex, value);
-    }
-
-    /// Emplace element. Thread-safe as long as called from WorkQueue threads (or main thread).
-    template <class ... Args>
-    T& Emplace(Args&& ... args)
-    {
-        const unsigned threadIndex = WorkQueue::GetThreadIndex();
-        return this->EmplaceBack(threadIndex, std::forward<Args>(args)...);
-    }
 };
 
 /// Process arbitrary array in multiple threads. Callback is copied internally.
@@ -250,5 +249,29 @@ void ForEachParallel(WorkQueue* workQueue, Collection&& collection, const Callba
 {
     ForEachParallel(workQueue, 1u, collection, callback);
 }
+
+/// WorkQueueVector implementation
+/// @{
+template <class T>
+void WorkQueueVector<T>::Clear()
+{
+    MultiVector<T>::Clear(WorkQueue::GetMaxThreadIndex());
+}
+
+template <class T>
+auto WorkQueueVector<T>::Insert(const T& value)
+{
+    const unsigned threadIndex = WorkQueue::GetThreadIndex();
+    return this->PushBack(threadIndex, value);
+}
+
+template <class T>
+template <class ... Args>
+T& WorkQueueVector<T>::Emplace(Args&& ... args)
+{
+    const unsigned threadIndex = WorkQueue::GetThreadIndex();
+    return this->EmplaceBack(threadIndex, std::forward<Args>(args)...);
+}
+/// @}
 
 }

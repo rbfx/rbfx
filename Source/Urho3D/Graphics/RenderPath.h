@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,8 @@ enum RenderCommandType
     CMD_FORWARDLIGHTS,
     CMD_LIGHTVOLUMES,
     CMD_RENDERUI,
-    CMD_SENDEVENT
+    CMD_SENDEVENT,
+    CMD_COMPUTE_FILTER
 };
 
 /// Rendering path sorting modes.
@@ -71,18 +72,6 @@ struct URHO3D_API RenderTargetInfo
 {
     /// Read from an XML element.
     void Load(const XMLElement& element);
-
-    /// Instance equality operator.
-    bool operator ==(const RenderTargetInfo& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const RenderTargetInfo& rhs) const
-    {
-        return this != &rhs;
-    }
 
     /// Name.
     ea::string name_;
@@ -160,18 +149,6 @@ struct URHO3D_API RenderPathCommand
     /// @property
     const ea::string& GetDepthStencilName() const { return depthStencilName_; }
 
-    /// Instance equality operator.
-    bool operator ==(const RenderPathCommand& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const RenderPathCommand& rhs) const
-    {
-        return this != &rhs;
-    }
-
     /// Tag name.
     ea::string tag_;
     /// Command type.
@@ -188,6 +165,8 @@ struct URHO3D_API RenderPathCommand
     ea::string vertexShaderName_;
     /// Pixel shader name.
     ea::string pixelShaderName_;
+    /// Compute shader name.
+    ea::string computeShaderName_;
     /// Vertex shader defines.
     ea::string vertexShaderDefines_;
     /// Pixel shader defines.
@@ -222,6 +201,8 @@ struct URHO3D_API RenderPathCommand
     bool vertexLights_{};
     /// Event name.
     ea::string eventName_;
+    /// Dispatch dimensions.
+    IntVector3 computeDispatchDim_;
 };
 
 /// Rendering path definition. A sequence of commands (e.g. clear screen, draw objects with specific pass) that yields the scene rendering result.

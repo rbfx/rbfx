@@ -260,6 +260,8 @@ struct URHO3D_API BoneView
         const Quaternion& rotation = Quaternion::IDENTITY, const Vector3& scale = Vector3::ONE);
     /// Recalculate offset matrix from initial bone transform.
     void RecalculateOffsetMatrix();
+    /// Reset bounding volume.
+    void ResetBoundingVolume();
     /// Reset bounding volume to local bounding box.
     void SetLocalBoundingBox(const BoundingBox& boundingBox);
     /// Reset bounding volume to local bounding sphere.

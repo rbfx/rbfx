@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
-#include "../Scene/ReplicationState.h"
 
 #include "../DebugNew.h"
 
@@ -105,8 +104,6 @@ static const int SOUND_SOURCE_LOW_FREQ_CHANNEL[] = {
 
 static const int STREAM_SAFETY_SAMPLES = 4;
 
-extern const char* AUDIO_CATEGORY;
-
 extern const char* autoRemoveModeNames[];
 
 SoundSource::SoundSource(Context* context) :
@@ -139,7 +136,7 @@ SoundSource::~SoundSource()
 
 void SoundSource::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundSource>(AUDIO_CATEGORY);
+    context->RegisterFactory<SoundSource>(Category_Audio);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Sound", GetSoundAttr, SetSoundAttr, ResourceRef, ResourceRef(Sound::GetTypeStatic()), AM_DEFAULT);
@@ -196,22 +193,6 @@ void SoundSource::Play(Sound* sound)
     }
     else
         PlayLockless(sound);
-
-    // Forget the Sound & Is Playing attribute previous values so that they will be sent again, triggering
-    // the sound correctly on network clients even after the initial playback
-    if (networkState_ && networkState_->attributes_ && networkState_->previousValues_.size())
-    {
-        for (unsigned i = 1; i < networkState_->previousValues_.size(); ++i)
-        {
-            // The indexing is different for SoundSource & SoundSource3D, as SoundSource3D removes two attributes,
-            // so go by attribute types
-            VariantType type = networkState_->attributes_->at(i).type_;
-            if (type == VAR_RESOURCEREF || type == VAR_BOOL)
-                networkState_->previousValues_[i] = Variant::EMPTY;
-        }
-    }
-
-    MarkNetworkUpdate();
 }
 
 void SoundSource::Play(Sound* sound, float frequency)
@@ -276,8 +257,6 @@ void SoundSource::Stop()
     }
     else
         StopLockless();
-
-    MarkNetworkUpdate();
 }
 
 void SoundSource::SetSoundType(const ea::string& type)
@@ -288,50 +267,41 @@ void SoundSource::SetSoundType(const ea::string& type)
     soundType_ = type;
     soundTypeHash_ = StringHash(type);
     UpdateMasterGain();
-
-    MarkNetworkUpdate();
 }
 
 void SoundSource::SetFrequency(float frequency)
 {
     frequency_ = Clamp(frequency, 0.0f, 535232.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource::SetGain(float gain)
 {
     gain_ = Max(gain, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource::SetAttenuation(float attenuation)
 {
     attenuation_ = Clamp(attenuation, 0.0f, 1.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource::SetPanning(float panning)
 {
     panning_ = Clamp(panning, -1.0f, 1.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource::SetReach(float reach)
 {
     reach_ = Clamp(reach, -1.0f, 1.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource::SetLowFrequency(bool state)
 {
     lowFrequency_ = state;
-    MarkNetworkUpdate();
 }
 
 void SoundSource::SetAutoRemoveMode(AutoRemoveMode mode)
 {
     autoRemove_ = mode;
-    MarkNetworkUpdate();
 }
 
 bool SoundSource::IsPlaying() const
@@ -431,6 +401,9 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
         {
             switch (mode)
             {
+            case SPK_AUTO:
+                assert(!"SPK_AUTO");
+                break;
             case SPK_MONO:
                 if (!lowFrequency_) MixMonoToMonoIP(sound, dest, samples, mixRate);
                 break;
@@ -452,6 +425,9 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
         {
             switch (mode)
             {
+            case SPK_AUTO:
+                assert(!"SPK_AUTO");
+                break;
             case SPK_MONO:
                 if (!lowFrequency_) MixMonoToStereo(sound, dest, samples, mixRate);
                 break;

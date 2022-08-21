@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -263,6 +263,33 @@ public:
         return copy;
     }
 
+    /// Return this bounding box clipped by another box.
+    BoundingBox Clipped(const BoundingBox& box) const
+    {
+        BoundingBox copy = *this;
+        copy.Clip(box);
+        return copy;
+    }
+
+    /// Return this bounding box expanded by given value.
+    BoundingBox Padded(const Vector3& minPadding, const Vector3& maxPadding) const
+    {
+        if (!Defined())
+            return BoundingBox{};
+
+        BoundingBox copy = *this;
+        copy.min_ -= minPadding;
+        copy.max_ += maxPadding;
+
+        if (copy.min_.x_ > copy.max_.x_ || copy.min_.y_ > copy.max_.y_ || copy.min_.z_ > copy.max_.z_)
+            return BoundingBox{};
+
+        return copy;
+    }
+
+    /// Return this bounding box expanded by given value, same for min and max.
+    BoundingBox Padded(const Vector3& padding) const { return Padded(padding, padding); }
+
     /// Return true if this bounding box is defined via a previous call to Define() or Merge().
     bool Defined() const
     {
@@ -281,6 +308,13 @@ public:
     /// @property
     Vector3 HalfSize() const { return (max_ - min_) * 0.5f; }
 
+    /// Return volume.
+    float Volume() const
+    {
+        const Vector3 size = Size();
+        return size.x_ * size.y_ * size.z_;
+    }
+
     /// Return transformed by a 3x3 matrix.
     BoundingBox Transformed(const Matrix3& transform) const;
     /// Return transformed by a 3x4 matrix.
@@ -291,6 +325,10 @@ public:
     float DistanceToPoint(const Vector3& point) const;
     /// Return signed distance to point. Negative if point is inside bounding box.
     float SignedDistanceToPoint(const Vector3& point) const;
+    /// Return distance to another bounding box.
+    float DistanceToBoundingBox(const BoundingBox& box) const;
+    /// Return signed distance to another bounding box. Negative if inside.
+    float SignedDistanceToBoundingBox(const BoundingBox& box) const;
 
     /// Test if a point is inside.
     Intersection IsInside(const Vector3& point) const

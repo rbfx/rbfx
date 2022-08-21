@@ -43,19 +43,15 @@ protected:
 
 public:
     /// Set attribute name
-    /// @property
     void SetAttributeName(const ea::string& name) { SetPinName(0, name); }
 
     /// Get attribute name
-    /// @property
     const ea::string& GetAttributeName() const { return GetPinName(0); }
 
     /// Set attribute type
-    /// @property
     virtual void SetAttributeType(VariantType valueType);
 
     /// Get attribute type
-    /// @property
     VariantType GetAttributeType() const { return GetPinValueType(0); }
 
 };
@@ -78,7 +74,6 @@ public:
     /// Construct.
     explicit GetAttribute(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Get number of pins.
@@ -120,7 +115,6 @@ public:
     /// Construct.
     explicit SetAttribute(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Get number of pins.
@@ -130,7 +124,6 @@ public:
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Set attribute type
-    /// @property
     void SetAttributeType(VariantType valueType) override;
 
     /// Evaluate size required to place new node instance.
@@ -144,7 +137,7 @@ public:
 
 protected:
     ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin) override;
-    
+
     /// Pins
     ParticleGraphPin pins_[2];
 };

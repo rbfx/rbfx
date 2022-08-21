@@ -1,5 +1,5 @@
-﻿//
-// Copyright (c) 2008-2020 the Urho3D project.
+//
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,10 +32,8 @@
 #include "../Resource/JSONFile.h"
 #include "../Scene/Component.h"
 #include "../Scene/ObjectAnimation.h"
-#include "../Scene/ReplicationState.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-#include "../Scene/SmoothedTransform.h"
 #include "../Scene/UnknownComponent.h"
 
 #include <charconv>
@@ -55,7 +53,6 @@ Node::Node(Context* context) :
     dirty_(false),
     enabled_(true),
     enabledPrev_(true),
-    networkUpdate_(false),
     parent_(nullptr),
     scene_(nullptr),
     id_(0),
@@ -65,7 +62,6 @@ Node::Node(Context* context) :
     worldRotation_(Quaternion::IDENTITY)
 {
     impl_ = ea::make_unique<NodeImpl>();
-    impl_->owner_ = nullptr;
 }
 
 Node::~Node()
@@ -88,13 +84,7 @@ void Node::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE); // Network replication of vars uses custom data
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Position", GetNetPositionAttr, SetNetPositionAttr, Vector3, Vector3::ZERO,
-        AM_NET | AM_LATESTDATA | AM_NOEDIT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Rotation", GetNetRotationAttr, SetNetRotationAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
-        AM_NET | AM_LATESTDATA | AM_NOEDIT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Parent Node", GetNetParentAttr, SetNetParentAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
-        AM_NET | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_FILE); // Network replication of vars uses custom data
 }
 
 void Node::SerializeInBlock(Archive& archive)
@@ -106,7 +96,7 @@ void Node::SerializeInBlock(Archive& archive)
 
         // Load this node ID for resolver
         unsigned nodeID{};
-        Urho3D::SerializeValue(archive, "id", id_);
+        Urho3D::SerializeValue(archive, "id", nodeID);
         resolver.AddNode(nodeID, this);
 
         // Load node content
@@ -157,7 +147,7 @@ void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
         {
             // Serialize component ID and type
             unsigned componentID = component ? component->GetID() : 0;
-            StringHash componentType = component ? component->GetType() : StringHash{};
+            StringHash componentType = component ? component->GetType() : StringHash::Empty;
             const ea::string& componentTypeName = component ? component->GetTypeName() : EMPTY_STRING;
             SerializeValue(archive, "id", componentID);
             SerializeStringHash(archive, "type", componentType, componentTypeName);
@@ -403,23 +393,6 @@ void Node::ApplyAttributes()
         children_[i]->ApplyAttributes();
 }
 
-void Node::MarkNetworkUpdate()
-{
-    if (!networkUpdate_ && scene_ && IsReplicated())
-    {
-        scene_->MarkNetworkUpdate(this);
-        networkUpdate_ = true;
-    }
-}
-
-void Node::AddReplicationState(NodeReplicationState* state)
-{
-    if (!networkState_)
-        AllocateNetworkState();
-
-    networkState_->replicationStates_.push_back(state);
-}
-
 bool Node::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
     SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
@@ -448,8 +421,6 @@ void Node::SetName(const ea::string& name)
         impl_->name_ = name;
         impl_->nameHash_ = name;
 
-        MarkNetworkUpdate();
-
         // Send change event
         if (scene_)
         {
@@ -468,7 +439,6 @@ void Node::SetTags(const StringVector& tags)
 {
     RemoveAllTags();
     AddTags(tags);
-    // MarkNetworkUpdate() already called in RemoveAllTags() / AddTags()
 }
 
 void Node::AddTag(const ea::string& tag)
@@ -493,8 +463,6 @@ void Node::AddTag(const ea::string& tag)
         eventData[P_TAG] = tag;
         scene_->SendEvent(E_NODETAGADDED, eventData);
     }
-    // Sync
-    MarkNetworkUpdate();
 }
 
 void Node::AddTags(const ea::string& tags, char separator)
@@ -505,7 +473,6 @@ void Node::AddTags(const ea::string& tags, char separator)
 
 void Node::AddTags(const StringVector& tags)
 {
-    // This is OK, as MarkNetworkUpdate() early-outs when called multiple times
     for (unsigned i = 0; i < tags.size(); ++i)
         AddTag(tags[i]);
 }
@@ -533,8 +500,6 @@ bool Node::RemoveTag(const ea::string& tag)
         scene_->SendEvent(E_NODETAGREMOVED, eventData);
     }
 
-    // Sync
-    MarkNetworkUpdate();
     return true;
 }
 
@@ -558,25 +523,18 @@ void Node::RemoveAllTags()
     }
 
     impl_->tags_.clear();
-
-    // Sync
-    MarkNetworkUpdate();
 }
 
 void Node::SetPosition(const Vector3& position)
 {
     position_ = position;
     MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::SetRotation(const Quaternion& rotation)
 {
     rotation_ = rotation;
     MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::SetDirection(const Vector3& direction)
@@ -602,7 +560,6 @@ void Node::SetScale(const Vector3& scale)
         scale_.z_ = M_EPSILON;
 
     MarkDirty();
-    MarkNetworkUpdate();
 }
 
 void Node::SetTransform(const Vector3& position, const Quaternion& rotation)
@@ -610,8 +567,6 @@ void Node::SetTransform(const Vector3& position, const Quaternion& rotation)
     position_ = position;
     rotation_ = rotation;
     MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::SetTransform(const Vector3& position, const Quaternion& rotation, float scale)
@@ -625,8 +580,6 @@ void Node::SetTransform(const Vector3& position, const Quaternion& rotation, con
     rotation_ = rotation;
     scale_ = scale;
     MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::SetTransform(const Matrix3x4& matrix)
@@ -634,19 +587,24 @@ void Node::SetTransform(const Matrix3x4& matrix)
     SetTransform(matrix.Translation(), matrix.Rotation(), matrix.Scale());
 }
 
+void Node::SetTransform(const Transform& transform)
+{
+    SetTransform(transform.position_, transform.rotation_, transform.scale_);
+}
+
 void Node::SetWorldPosition(const Vector3& position)
 {
-    SetPosition((parent_ == scene_ || !parent_) ? position : parent_->GetWorldTransform().Inverse() * position);
+    SetPosition(IsTransformHierarchyRoot() ? position : parent_->GetWorldTransform().Inverse() * position);
 }
 
 void Node::SetWorldRotation(const Quaternion& rotation)
 {
-    SetRotation((parent_ == scene_ || !parent_) ? rotation : parent_->GetWorldRotation().Inverse() * rotation);
+    SetRotation(IsTransformHierarchyRoot() ? rotation : parent_->GetWorldRotation().Inverse() * rotation);
 }
 
 void Node::SetWorldDirection(const Vector3& direction)
 {
-    Vector3 localDirection = (parent_ == scene_ || !parent_) ? direction : parent_->GetWorldRotation().Inverse() * direction;
+    Vector3 localDirection = IsTransformHierarchyRoot() ? direction : parent_->GetWorldRotation().Inverse() * direction;
     SetRotation(Quaternion(Vector3::FORWARD, localDirection));
 }
 
@@ -657,7 +615,7 @@ void Node::SetWorldScale(float scale)
 
 void Node::SetWorldScale(const Vector3& scale)
 {
-    SetScale((parent_ == scene_ || !parent_) ? scale : scale / parent_->GetWorldScale());
+    SetScale(IsTransformHierarchyRoot() ? scale : scale / parent_->GetWorldScale());
 }
 
 void Node::SetWorldTransform(const Vector3& position, const Quaternion& rotation)
@@ -699,13 +657,11 @@ void Node::Translate(const Vector3& delta, TransformSpace space)
         break;
 
     case TS_WORLD:
-        position_ += (parent_ == scene_ || !parent_) ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
+        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
         break;
     }
 
     MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::Rotate(const Quaternion& delta, TransformSpace space)
@@ -721,7 +677,7 @@ void Node::Rotate(const Quaternion& delta, TransformSpace space)
         break;
 
     case TS_WORLD:
-        if (parent_ == scene_ || !parent_)
+        if (IsTransformHierarchyRoot())
             rotation_ = (delta * rotation_).Normalized();
         else
         {
@@ -732,8 +688,6 @@ void Node::Rotate(const Quaternion& delta, TransformSpace space)
     }
 
     MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::RotateAround(const Vector3& point, const Quaternion& delta, TransformSpace space)
@@ -754,7 +708,7 @@ void Node::RotateAround(const Vector3& point, const Quaternion& delta, Transform
         break;
 
     case TS_WORLD:
-        if (parent_ == scene_ || !parent_)
+        if (IsTransformHierarchyRoot())
         {
             parentSpacePoint = point;
             rotation_ = (delta * rotation_).Normalized();
@@ -772,8 +726,6 @@ void Node::RotateAround(const Vector3& point, const Quaternion& delta, Transform
     position_ = rotation_ * oldRelativePos + parentSpacePoint;
 
     MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::Yaw(float angle, TransformSpace space)
@@ -802,7 +754,7 @@ bool Node::LookAt(const Vector3& target, const Vector3& up, TransformSpace space
         break;
 
     case TS_PARENT:
-        worldSpaceTarget = (parent_ == scene_ || !parent_) ? target : parent_->GetWorldTransform() * target;
+        worldSpaceTarget = IsTransformHierarchyRoot() ? target : parent_->GetWorldTransform() * target;
         break;
 
     case TS_WORLD:
@@ -832,8 +784,34 @@ void Node::Scale(const Vector3& scale)
 {
     scale_ *= scale;
     MarkDirty();
+}
 
-    MarkNetworkUpdate();
+void Node::ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space)
+{
+    Vector3 parentSpacePoint;
+    const Vector3 oldScale = scale_;
+
+    switch (space)
+    {
+    case TS_LOCAL:
+        parentSpacePoint = GetTransform() * point;
+        break;
+
+    case TS_PARENT:
+        parentSpacePoint = point;
+        break;
+
+    case TS_WORLD:
+        parentSpacePoint = IsTransformHierarchyRoot() ? point : parent_->GetWorldTransform().Inverse() * point;
+        break;
+    }
+
+    scale_ *= scale;
+
+    const Vector3 oldRelativePos = (Vector3::ONE / oldScale) * (position_ - parentSpacePoint);
+    position_ = scale_ * oldRelativePos + parentSpacePoint;
+
+    MarkDirty();
 }
 
 void Node::SetEnabled(bool enable)
@@ -857,11 +835,6 @@ void Node::ResetDeepEnabled()
 void Node::SetEnabledRecursive(bool enable)
 {
     SetEnabled(enable, true, true);
-}
-
-void Node::SetOwner(Connection* owner)
-{
-    impl_->owner_ = owner;
 }
 
 void Node::MarkDirty()
@@ -969,11 +942,6 @@ void Node::AddChild(Node* node, unsigned index)
 
     node->parent_ = this;
     node->MarkDirty();
-    node->MarkNetworkUpdate();
-    // If the child node has components, also mark network update on them to ensure they have a valid NetworkState
-    for (auto i = node->components_.begin(); i !=
-        node->components_.end(); ++i)
-        (*i)->MarkNetworkUpdate();
 
     // Send change event
     if (scene_)
@@ -1006,35 +974,19 @@ void Node::RemoveChild(Node* node)
 
 void Node::RemoveAllChildren()
 {
-    RemoveChildren(true, true, true);
+    RemoveChildren(true);
 }
 
-void Node::RemoveChildren(bool removeReplicated, bool removeLocal, bool recursive)
+void Node::RemoveChildren(bool recursive)
 {
-    unsigned numRemoved = 0;
-
     for (unsigned i = children_.size() - 1; i < children_.size(); --i)
     {
-        bool remove = false;
         Node* childNode = children_[i];
 
         if (recursive)
-            childNode->RemoveChildren(removeReplicated, removeLocal, true);
-        if (childNode->IsReplicated() && removeReplicated)
-            remove = true;
-        else if (!childNode->IsReplicated() && removeLocal)
-            remove = true;
-
-        if (remove)
-        {
-            RemoveChild(children_.begin() + i);
-            ++numRemoved;
-        }
+            childNode->RemoveChildren(true);
+        RemoveChild(children_.begin() + i);
     }
-
-    // Mark node dirty in all replication states
-    if (numRemoved)
-        MarkReplicationDirty();
 }
 
 Component* Node::CreateComponent(StringHash type, CreateMode mode, unsigned id)
@@ -1134,9 +1086,6 @@ void Node::RemoveComponent(Component* component)
         if (i->Get() == component)
         {
             RemoveComponent(i);
-
-            // Mark node dirty in all replication states
-            MarkReplicationDirty();
             return;
         }
     }
@@ -1149,61 +1098,31 @@ void Node::RemoveComponent(StringHash type)
         if ((*i)->GetType() == type)
         {
             RemoveComponent(i);
-
-            // Mark node dirty in all replication states
-            MarkReplicationDirty();
             return;
         }
     }
 }
 
-void Node::RemoveComponents(bool removeReplicated, bool removeLocal)
+void Node::RemoveComponents()
 {
-    unsigned numRemoved = 0;
-
     for (unsigned i = components_.size() - 1; i < components_.size(); --i)
     {
-        bool remove = false;
-        Component* component = components_[i];
-
-        if (component->IsReplicated() && removeReplicated)
-            remove = true;
-        else if (!component->IsReplicated() && removeLocal)
-            remove = true;
-
-        if (remove)
-        {
-            RemoveComponent(components_.begin() + i);
-            ++numRemoved;
-        }
+        RemoveComponent(components_.begin() + i);
     }
-
-    // Mark node dirty in all replication states
-    if (numRemoved)
-        MarkReplicationDirty();
 }
 
 void Node::RemoveComponents(StringHash type)
 {
-    unsigned numRemoved = 0;
-
     for (unsigned i = components_.size() - 1; i < components_.size(); --i)
     {
         if (components_[i]->GetType() == type)
-        {
             RemoveComponent(components_.begin() + i);
-            ++numRemoved;
-        }
     }
-
-    // Mark node dirty in all replication states
-    if (numRemoved)
-        MarkReplicationDirty();
 }
 
 void Node::RemoveAllComponents()
 {
-    RemoveComponents(true, true);
+    RemoveComponents();
 }
 
 void Node::ReorderChild(Node* child, unsigned index)
@@ -1278,10 +1197,16 @@ void Node::SetParent(Node* parent)
     }
 }
 
-void Node::SetVar(StringHash key, const Variant& value)
+void Node::SetVar(const ea::string& key, const Variant& value)
 {
     vars_[key] = value;
-    MarkNetworkUpdate();
+}
+
+void Node::SetVarByHash(StringHash hash, const Variant& value)
+{
+    const auto iter = vars_.find_by_hash(hash.Value());
+    if (iter != vars_.end())
+        iter->second = value;
 }
 
 void Node::AddListener(Component* component)
@@ -1621,6 +1546,18 @@ bool Node::IsChildOf(Node* node) const
     return false;
 }
 
+bool Node::IsTemporaryEffective() const
+{
+    const Node* parent = this;
+    while (parent)
+    {
+        if (parent->IsTemporary())
+            return true;
+        parent = parent->parent_;
+    }
+    return false;
+}
+
 Node* Node::GetDirectChildFor(Node* indirectChild) const
 {
     Node* parent = indirectChild->GetParent();
@@ -1635,9 +1572,20 @@ Node* Node::GetDirectChildFor(Node* indirectChild) const
     return nullptr;
 }
 
-const Variant& Node::GetVar(StringHash key) const
+bool Node::IsTransformHierarchyRoot() const
+{
+    return !parent_ || parent_ == scene_;
+}
+
+const Variant& Node::GetVar(const ea::string& key) const
 {
     auto i = vars_.find(key);
+    return i != vars_.end() ? i->second : Variant::EMPTY;
+}
+
+const Variant& Node::GetVarByHash(StringHash key) const
+{
+    auto i = vars_.find_by_hash(key.Value());
     return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
@@ -1708,102 +1656,6 @@ void Node::ResetScene()
 {
     SetID(0);
     SetScene(nullptr);
-    SetOwner(nullptr);
-}
-
-void Node::SetNetPositionAttr(const Vector3& value)
-{
-    auto* transform = GetComponent<SmoothedTransform>();
-    if (transform)
-        transform->SetTargetPosition(value);
-    else
-        SetPosition(value);
-}
-
-void Node::SetNetRotationAttr(const ea::vector<unsigned char>& value)
-{
-    MemoryBuffer buf(value);
-    auto* transform = GetComponent<SmoothedTransform>();
-    if (transform)
-        transform->SetTargetRotation(buf.ReadPackedQuaternion());
-    else
-        SetRotation(buf.ReadPackedQuaternion());
-}
-
-void Node::SetNetParentAttr(const ea::vector<unsigned char>& value)
-{
-    Scene* scene = GetScene();
-    if (!scene)
-        return;
-
-    MemoryBuffer buf(value);
-    // If nothing in the buffer, parent is the root node
-    if (buf.IsEof())
-    {
-        scene->AddChild(this);
-        return;
-    }
-
-    unsigned baseNodeID = buf.ReadNetID();
-    Node* baseNode = scene->GetNode(baseNodeID);
-    if (!baseNode)
-    {
-        URHO3D_LOGWARNING("Failed to find parent node " + ea::to_string(baseNodeID));
-        return;
-    }
-
-    // If buffer contains just an ID, the parent is replicated and we are done
-    if (buf.IsEof())
-        baseNode->AddChild(this);
-    else
-    {
-        // Else the parent is local and we must find it recursively by name hash
-        StringHash nameHash = buf.ReadStringHash();
-        Node* parentNode = baseNode->GetChild(nameHash, true);
-        if (!parentNode)
-            URHO3D_LOGWARNING("Failed to find parent node with name hash " + nameHash.ToString());
-        else
-            parentNode->AddChild(this);
-    }
-}
-
-const Vector3& Node::GetNetPositionAttr() const
-{
-    return position_;
-}
-
-const ea::vector<unsigned char>& Node::GetNetRotationAttr() const
-{
-    impl_->attrBuffer_.Clear();
-    impl_->attrBuffer_.WritePackedQuaternion(rotation_);
-    return impl_->attrBuffer_.GetBuffer();
-}
-
-const ea::vector<unsigned char>& Node::GetNetParentAttr() const
-{
-    impl_->attrBuffer_.Clear();
-    Scene* scene = GetScene();
-    if (scene && parent_ && parent_ != scene)
-    {
-        // If parent is replicated, can write the ID directly
-        unsigned parentID = parent_->GetID();
-        if (Scene::IsReplicatedID(parentID))
-            impl_->attrBuffer_.WriteNetID(parentID);
-        else
-        {
-            // Parent is local: traverse hierarchy to find a non-local base node
-            // This iteration always stops due to the scene (root) being non-local
-            Node* current = parent_;
-            while (!current->IsReplicated())
-                current = current->GetParent();
-
-            // Then write the base node ID and the parent's name hash
-            impl_->attrBuffer_.WriteNetID(current->GetID());
-            impl_->attrBuffer_.WriteStringHash(parent_->GetNameHash());
-        }
-    }
-
-    return impl_->attrBuffer_.GetBuffer();
 }
 
 bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode)
@@ -1850,11 +1702,12 @@ bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren
     return true;
 }
 
-bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode)
+bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode, bool removeComponents)
 {
     // Remove all children and components first in case this is not a fresh load
     RemoveAllChildren();
-    RemoveAllComponents();
+    if (removeComponents)
+        RemoveAllComponents();
 
     if (!Animatable::LoadXML(source))
         return false;
@@ -1940,126 +1793,6 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
     return true;
 }
 
-void Node::PrepareNetworkUpdate()
-{
-    // Update dependency nodes list first
-    impl_->dependencyNodes_.clear();
-
-    // Add the parent node, but if it is local, traverse to the first non-local node
-    if (parent_ && parent_ != scene_)
-    {
-        Node* current = parent_;
-        while (!current->IsReplicated())
-            current = current->parent_;
-        if (current && current != scene_)
-            impl_->dependencyNodes_.push_back(current);
-    }
-
-    // Let the components add their dependencies
-    for (auto i = components_.begin(); i != components_.end(); ++i)
-    {
-        Component* component = i->Get();
-        if (component->IsReplicated())
-            component->GetDependencyNodes(impl_->dependencyNodes_);
-    }
-
-    // Then check for node attribute changes
-    if (!networkState_)
-        AllocateNetworkState();
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    unsigned numAttributes = attributes->size();
-
-    // Check for attribute changes
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-
-        if (animationEnabled_ && IsAnimatedNetworkAttribute(attr))
-            continue;
-
-        OnGetAttribute(attr, networkState_->currentValues_[i]);
-
-        if (networkState_->currentValues_[i] != networkState_->previousValues_[i])
-        {
-            networkState_->previousValues_[i] = networkState_->currentValues_[i];
-
-            // Mark the attribute dirty in all replication states that are tracking this node
-            for (auto j = networkState_->replicationStates_.begin();
-                 j != networkState_->replicationStates_.end(); ++j)
-            {
-                auto* nodeState = static_cast<NodeReplicationState*>(*j);
-                nodeState->dirtyAttributes_.Set(i);
-
-                // Add node to the dirty set if not added yet
-                if (!nodeState->markedDirty_)
-                {
-                    nodeState->markedDirty_ = true;
-                    nodeState->sceneState_->dirtyNodes_.insert(id_);
-                }
-            }
-        }
-    }
-
-    // Finally check for user var changes
-    for (auto i = vars_.begin(); i != vars_.end(); ++i)
-    {
-        auto j = networkState_->previousVars_.find(i->first);
-        if (j == networkState_->previousVars_.end() || j->second != i->second)
-        {
-            networkState_->previousVars_[i->first] = i->second;
-
-            // Mark the var dirty in all replication states that are tracking this node
-            for (auto j = networkState_->replicationStates_.begin();
-                 j != networkState_->replicationStates_.end(); ++j)
-            {
-                auto* nodeState = static_cast<NodeReplicationState*>(*j);
-                nodeState->dirtyVars_.insert(i->first);
-
-                if (!nodeState->markedDirty_)
-                {
-                    nodeState->markedDirty_ = true;
-                    nodeState->sceneState_->dirtyNodes_.insert(id_);
-                }
-            }
-        }
-    }
-
-    networkUpdate_ = false;
-}
-
-void Node::CleanupConnection(Connection* connection)
-{
-    if (impl_->owner_ == connection)
-        impl_->owner_ = nullptr;
-
-    if (networkState_)
-    {
-        for (unsigned i = networkState_->replicationStates_.size() - 1; i < networkState_->replicationStates_.size(); --i)
-        {
-            if (networkState_->replicationStates_[i]->connection_ == connection)
-                networkState_->replicationStates_.erase_at(i);
-        }
-    }
-}
-
-void Node::MarkReplicationDirty()
-{
-    if (networkState_)
-    {
-        for (auto j = networkState_->replicationStates_.begin();
-             j != networkState_->replicationStates_.end(); ++j)
-        {
-            auto* nodeState = static_cast<NodeReplicationState*>(*j);
-            if (!nodeState->markedDirty_)
-            {
-                nodeState->markedDirty_ = true;
-                nodeState->sceneState_->dirtyNodes_.insert(id_);
-            }
-        }
-    }
-}
-
 Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
 {
     SharedPtr<Node> newNode(context_->CreateObject<Node>());
@@ -2103,11 +1836,6 @@ void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
         component->SetID(id);
 
     component->OnMarkedDirty(this);
-
-    // Check attributes of the new component on next network update, and mark node dirty in all replication states
-    component->MarkNetworkUpdate();
-    MarkNetworkUpdate();
-    MarkReplicationDirty();
 
     // Send change event
     if (scene_)
@@ -2269,7 +1997,6 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
     if (enable != enabled_)
     {
         enabled_ = enable;
-        MarkNetworkUpdate();
 
         // Notify listener components of the state change
         for (auto i = listeners_.begin(); i != listeners_.end();)
@@ -2337,11 +2064,6 @@ Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
         SharedPtr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
-        if (typeName.empty() || typeName.starts_with("Unknown", false))
-            newComponent->SetType(type);
-        else
-            newComponent->SetTypeName(typeName);
-
         AddComponent(newComponent, id, mode);
         return newComponent;
     }
@@ -2352,7 +2074,7 @@ void Node::UpdateWorldTransform() const
     Matrix3x4 transform = GetTransform();
 
     // Assume the root node (scene) has identity transform
-    if (parent_ == scene_ || !parent_)
+    if (IsTransformHierarchyRoot())
     {
         worldTransform_ = transform;
         worldRotation_ = rotation_;
@@ -2388,7 +2110,6 @@ void Node::RemoveChild(ea::vector<SharedPtr<Node> >::iterator i)
 
     child->parent_ = nullptr;
     child->MarkDirty();
-    child->MarkNetworkUpdate();
     if (scene_)
         scene_->NodeRemoved(child.Get());
 

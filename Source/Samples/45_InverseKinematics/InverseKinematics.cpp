@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -71,9 +71,8 @@ void InverseKinematics::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
-
-    GetSubsystem<Input>()->SetMouseVisible(true);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(true);
 }
 
 void InverseKinematics::CreateScene()
@@ -119,7 +118,7 @@ void InverseKinematics::CreateScene()
 
     // Create animation controller and play walk animation
     jackAnimCtrl_ = jackNode_->CreateComponent<AnimationController>();
-    jackAnimCtrl_->PlayExclusive("Models/Jack_Walk.ani", 0, true, 0.0f);
+    jackAnimCtrl_->PlayNewExclusive(AnimationParameters{context_, "Models/Jack_Walk.ani"}.Looped());
 
     // We need to attach two inverse kinematic effectors to Jack's feet to
     // control the grounding.
@@ -168,14 +167,14 @@ void InverseKinematics::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Left-Click and drag to look around\nRight-Click and drag to change incline\nPress space to reset floor\nPress D to draw debug geometry");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
 
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void InverseKinematics::SetupViewport()
@@ -186,7 +185,7 @@ void InverseKinematics::SetupViewport()
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void InverseKinematics::UpdateCameraAndFloor(float /*timeStep*/)
@@ -239,19 +238,12 @@ void InverseKinematics::UpdateCameraAndFloor(float /*timeStep*/)
 
 void InverseKinematics::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(InverseKinematics, HandleUpdate));
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(InverseKinematics, HandlePostRenderUpdate));
     SubscribeToEvent(E_SCENEDRAWABLEUPDATEFINISHED, URHO3D_HANDLER(InverseKinematics, HandleSceneDrawableUpdateFinished));
 }
 
-void InverseKinematics::HandleUpdate(StringHash /*eventType*/, VariantMap& eventData)
+void InverseKinematics::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     UpdateCameraAndFloor(timeStep);
 }

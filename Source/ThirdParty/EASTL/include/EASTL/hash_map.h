@@ -285,7 +285,6 @@ namespace eastl
 			return (*base_type::DoInsertKey(true_type(), eastl::move(key)).first).second;
 		}
 
-#if EASTL_URHO3D_EXTENSIONS
 		/// Populate the map using variadic template. This handles the base case.
 		this_type& populate(const key_type& key, const mapped_type& value)
 		{
@@ -309,14 +308,6 @@ namespace eastl
 				result.emplace_back(pair.second);
 			return result;
 		}
-
-#ifdef URHO3D_CONTAINER_ADAPTERS
-		using ValueType = mapped_type;
-
-		template <typename... Args> this_type& Populate(const Args&... args) { return populate(args...); }
-		eastl::vector<mapped_type> Values() const { return values(); }
-#endif
-#endif
 	}; // hash_map
 
 	/// hash_map erase_if

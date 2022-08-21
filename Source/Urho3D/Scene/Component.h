@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,6 @@ class DebugRenderer;
 class Node;
 class Scene;
 
-struct ComponentReplicationState;
-
 /// Autoremove is used by some components for automatic removal from the scene hierarchy upon completion of an action, for example sound or particle effect.
 enum AutoRemoveMode
 {
@@ -67,8 +65,6 @@ public:
     bool SaveXML(XMLElement& dest) const override;
     /// Save as JSON data. Return true if successful.
     bool SaveJSON(JSONValue& dest) const override;
-    /// Mark for attribute check on the next network update.
-    void MarkNetworkUpdate() override;
     /// Return the depended on nodes to order network updates.
     virtual void GetDependencyNodes(ea::vector<Node*>& dest);
     /// Visualize the component as debug geometry.
@@ -112,14 +108,6 @@ public:
     template <class T> T* GetComponent() const;
     /// Template version of returning components in the same scene node by type.
     template <class T> void GetComponents(ea::vector<T*>& dest) const;
-
-    /// Add a replication state that is tracking this component.
-    void AddReplicationState(ComponentReplicationState* state);
-    /// Prepare network update by comparing attributes and marking replication states dirty as necessary.
-    void PrepareNetworkUpdate();
-    /// Clean up all references to a network connection that is about to be removed.
-    /// @manualbind
-    void CleanupConnection(Connection* connection);
 
 protected:
     /// Handle attribute animation added.

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Container/Hash.h"
 #include "../Core/VariantCurve.h"
 #include "../IO/Archive.h"

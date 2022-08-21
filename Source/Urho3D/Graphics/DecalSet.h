@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -57,18 +57,6 @@ struct URHO3D_API DecalVertex
             blendWeights_[i] = blendWeights[i];
             blendIndices_[i] = blendIndices[i];
         }
-    }
-
-    /// Instance equality operator.
-    bool operator ==(const DecalVertex& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const DecalVertex& rhs) const
-    {
-        return this != &rhs;
     }
 
     /// Position.
@@ -134,6 +122,8 @@ public:
     void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
+    /// Batch update from main thread. Called on demand only if RequestUpdateBatchesDelayed() is called from UpdateBatches().
+    void UpdateBatchesDelayed(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update).
     void UpdateGeometry(const FrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,6 @@ namespace Urho3D
 {
 
 static const float STEP_FACTOR = 300.0f;
-
-extern const char* UI_CATEGORY;
 
 ScrollView::ScrollView(Context* context) :
     UIElement(context),
@@ -91,7 +89,7 @@ ScrollView::~ScrollView() = default;
 
 void ScrollView::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ScrollView>(UI_CATEGORY);
+    context->RegisterFactory<ScrollView>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Clip Children", true);

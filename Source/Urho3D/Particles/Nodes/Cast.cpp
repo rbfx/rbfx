@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "Cast.h"
-#include "CastInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "CastInstance.h"
 
 namespace Urho3D
 {
@@ -42,13 +44,13 @@ namespace {
 static ea::vector<NodePattern> CastPatterns{
     MakePattern(
         CastInstance<float, int>()
-        , PinPattern<float>("x")
-        , PinPattern<int>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<int>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         CastInstance<int, float>()
-        , PinPattern<int>("x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<int>("x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

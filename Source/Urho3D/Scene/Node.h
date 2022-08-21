@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,10 @@
 
 #include "../IO/VectorBuffer.h"
 #include "../Math/Matrix3x4.h"
+#include "../Math/Transform.h"
 #include "../Scene/Animatable.h"
+
+#include <atomic>
 
 namespace Urho3D
 {
@@ -36,8 +39,6 @@ class Connection;
 class Node;
 class Scene;
 class SceneResolver;
-
-struct NodeReplicationState;
 
 /// Component and child node creation mode for networking.
 enum CreateMode
@@ -59,8 +60,6 @@ struct URHO3D_API NodeImpl
 {
     /// Nodes this node depends on for network updates.
     ea::vector<Node*> dependencyNodes_;
-    /// Network owner connection.
-    Connection* owner_;
     /// Name.
     ea::string name_;
     /// Tag strings.
@@ -110,11 +109,6 @@ public:
 
     /// Return whether should save default-valued attributes into XML. Always save node transforms for readability, even if identity.
     bool SaveDefaultAttributes(const AttributeInfo& attr) const override { return true; }
-
-    /// Mark for attribute check on the next network update.
-    void MarkNetworkUpdate() override;
-    /// Add a replication state that is tracking this node.
-    virtual void AddReplicationState(NodeReplicationState* state);
 
     /// Save to an XML file. Return true if successful.
     bool SaveXML(Serializer& dest, const ea::string& indentation = "\t") const;
@@ -180,6 +174,8 @@ public:
     void SetTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale);
     /// Set node transformation in parent space as an atomic operation.
     void SetTransform(const Matrix3x4& matrix);
+    /// Set node transformation in parent space as an atomic operation.
+    void SetTransform(const Transform& transform);
 
     /// Set both position and rotation in parent space as an atomic operation (for Urho2D).
     void SetTransform2D(const Vector2& position, float rotation) { SetTransform(Vector3(position), Quaternion(rotation)); }
@@ -292,6 +288,9 @@ public:
     /// Modify scale in parent space.
     void Scale(const Vector3& scale);
 
+    /// Scale around a point in the chosen transform space.
+    void ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space = TS_LOCAL);
+
     /// Modify scale in parent space (for Urho2D).
     void Scale2D(const Vector2& scale) { Scale(Vector3(scale, 1.0f)); }
 
@@ -304,9 +303,6 @@ public:
     void ResetDeepEnabled();
     /// Set enabled state on self and child nodes. Unlike SetDeepEnabled this does not remember the nodes' own enabled state, but overwrites it.
     void SetEnabledRecursive(bool enable);
-    /// Set owner connection for networking.
-    /// @manualbind
-    void SetOwner(Connection* owner);
     /// Mark node and child nodes to need world transform recalculation. Notify listener components.
     void MarkDirty();
     /// Create a child scene node (with specified ID if provided).
@@ -320,7 +316,7 @@ public:
     /// Remove all child scene nodes.
     void RemoveAllChildren();
     /// Remove child scene nodes that match criteria.
-    void RemoveChildren(bool removeReplicated, bool removeLocal, bool recursive);
+    void RemoveChildren(bool recursive);
     /// Create a component to this node (with specified ID if provided).
     Component* CreateComponent(StringHash type, CreateMode mode = REPLICATED, unsigned id = 0);
     /// Create a component to this node if it does not exist already.
@@ -334,7 +330,7 @@ public:
     /// Remove the first component of specific type from this node.
     void RemoveComponent(StringHash type);
     /// Remove components that match criteria.
-    void RemoveComponents(bool removeReplicated, bool removeLocal);
+    void RemoveComponents();
     /// Remove all components of specific type.
     void RemoveComponents(StringHash type);
     /// Remove all components from this node.
@@ -351,7 +347,8 @@ public:
     /// @property
     void SetParent(Node* parent);
     /// Set a user variable.
-    void SetVar(StringHash key, const Variant& value);
+    void SetVar(const ea::string& key, const Variant& value);
+    void SetVarByHash(StringHash hash, const Variant& value);
     /// Add listener component that is notified of node being dirtied. Can either be in the same node or another.
     void AddListener(Component* component);
     /// Remove listener component.
@@ -400,8 +397,14 @@ public:
     /// Return whether is a direct or indirect child of specified node.
     bool IsChildOf(Node* node) const;
 
+    /// Return whether the node is effectively temporary, i.e. is temporary or is a child of temporary node.
+    bool IsTemporaryEffective() const;
+
     /// Return direct child of this node which contains specified indirect child.
     Node* GetDirectChildFor(Node* indirectChild) const;
+
+    /// Return whether the node is the root of the transform hierarchy. If true, local transform and world transform are the same.
+    bool IsTransformHierarchyRoot() const;
 
     /// Return whether is enabled. Disables nodes effectively disable all their components.
     /// @property
@@ -410,10 +413,6 @@ public:
     /// Return the node's last own enabled state. May be different than the value returned by IsEnabled when SetDeepEnabled has been used.
     /// @property
     bool IsEnabledSelf() const { return enabledPrev_; }
-
-    /// Return owner connection in networking.
-    /// @manualbind
-    Connection* GetOwner() const { return impl_->owner_; }
 
     /// Return position in parent space.
     /// @property
@@ -454,6 +453,9 @@ public:
     /// Return parent space transform matrix.
     /// @property
     Matrix3x4 GetTransform() const { return Matrix3x4(position_, rotation_, scale_); }
+
+    /// Return parent space transform tuple.
+    Transform GetDecomposedTransform() const { return Transform{position_, rotation_, scale_}; }
 
     /// Return position in world space.
     /// @property
@@ -630,10 +632,11 @@ public:
     const ea::vector<WeakPtr<Component> > GetListeners() const { return listeners_; }
 
     /// Return a user variable.
-    const Variant& GetVar(StringHash key) const;
+    const Variant& GetVar(const ea::string& key) const;
+    const Variant& GetVarByHash(StringHash key) const;
 
     /// Return all user variables.
-    const VariantMap& GetVars() const { return vars_; }
+    const StringVariantMap& GetVars() const { return vars_; }
 
     /// Return first component derived from class.
     template <class T> T* GetDerivedComponent(bool recursive = false) const;
@@ -659,37 +662,18 @@ public:
     void SetScene(Scene* scene);
     /// Reset scene, ID and owner. Called by Scene.
     void ResetScene();
-    /// Set network position attribute.
-    void SetNetPositionAttr(const Vector3& value);
-    /// Set network rotation attribute.
-    void SetNetRotationAttr(const ea::vector<unsigned char>& value);
-    /// Set network parent attribute.
-    void SetNetParentAttr(const ea::vector<unsigned char>& value);
-    /// Return network position attribute.
-    const Vector3& GetNetPositionAttr() const;
-    /// Return network rotation attribute.
-    const ea::vector<unsigned char>& GetNetRotationAttr() const;
-    /// Return network parent attribute.
-    const ea::vector<unsigned char>& GetNetParentAttr() const;
     /// Load components and optionally load child nodes.
     bool Load(Deserializer& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
         CreateMode mode = REPLICATED);
     /// Load components from XML data and optionally load child nodes.
     bool LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED);
+        CreateMode mode = REPLICATED, bool removeComponents = true);
     /// Load components from XML data and optionally load child nodes.
     bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
         CreateMode mode = REPLICATED);
     /// Return the depended on nodes to order network updates.
     const ea::vector<Node*>& GetDependencyNodes() const { return impl_->dependencyNodes_; }
 
-    /// Prepare network update by comparing attributes and marking replication states dirty as necessary.
-    void PrepareNetworkUpdate();
-    /// Clean up all references to a network connection that is about to be removed.
-    /// @manualbind
-    void CleanupConnection(Connection* connection);
-    /// Mark node dirty in scene replication states.
-    void MarkReplicationDirty();
     /// Create a child node with specific ID.
     Node* CreateChild(unsigned id, CreateMode mode, bool temporary = false);
     /// Add a pre-created component. Using this function from application code is discouraged, as component operation without an owner node may not be well-defined in all cases. Prefer CreateComponent() instead.
@@ -754,15 +738,11 @@ private:
     /// World-space transform matrix.
     mutable Matrix3x4 worldTransform_;
     /// World transform needs update flag.
-    mutable bool dirty_;
+    mutable std::atomic_bool dirty_;
     /// Enabled flag.
     bool enabled_;
     /// Last SetEnabled flag before any SetDeepEnabled.
     bool enabledPrev_;
-
-protected:
-    /// Network update queued flag.
-    bool networkUpdate_;
 
 private:
     /// Parent scene node.
@@ -790,7 +770,7 @@ private:
 
 protected:
     /// User variables.
-    VariantMap vars_;
+    StringVariantMap vars_;
 };
 
 template <class T> T* Node::CreateComponent(CreateMode mode, unsigned id)

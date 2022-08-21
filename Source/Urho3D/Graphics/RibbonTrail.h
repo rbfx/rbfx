@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -82,6 +82,8 @@ public:
     void Update(const FrameInfo &frame) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
+    /// Batch update from main thread. Called on demand only if RequestUpdateBatchesDelayed() is called from UpdateBatches().
+    void UpdateBatchesDelayed(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update).
     void UpdateGeometry(const FrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
@@ -101,7 +103,7 @@ public:
     /// Set vertex blended color for start of trail.
     /// @property
     void SetStartColor(const Color& color);
-    /// Set vertex blended scale for end of trail.
+    /// Set vertex blended color for end of trail.
     /// @property
     void SetEndColor(const Color& color);
     /// Set vertex blended color for start of trail.

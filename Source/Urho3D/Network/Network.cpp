@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,15 +27,23 @@
 #include "../Core/Profiler.h"
 #include "../Engine/EngineEvents.h"
 #include "../IO/FileSystem.h"
-#include "../Input/InputEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
+#include "../Input/InputEvents.h"
 #include "../Network/HttpRequest.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
-#include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
+#include "../Replica/BehaviorNetworkObject.h"
+#include "../Replica/FilteredByDistance.h"
+#include "../Replica/NetworkObject.h"
+#include "../Replica/PredictedKinematicController.h"
+#include "../Replica/ReplicatedAnimation.h"
+#include "../Replica/ReplicatedTransform.h"
+#include "../Replica/ReplicationManager.h"
+#include "../Replica/StaticNetworkObject.h"
+#include "../Replica/TrackedAnimatedModel.h"
 #include "../Scene/Scene.h"
 
 #include <slikenet/MessageIdentifiers.h>
@@ -190,15 +198,13 @@ static const char* RAKNET_MESSAGEID_STRINGS[] = {
     "ID_USER_PACKET_ENUM"
 };
 
-static const int DEFAULT_UPDATE_FPS = 30;
 static const int SERVER_TIMEOUT_TIME = 10000;
 
 Network::Network(Context* context) :
     Object(context),
-    updateFps_(DEFAULT_UPDATE_FPS),
     simulatedLatency_(0),
     simulatedPacketLoss_(0.0f),
-    updateInterval_(1.0f / (float)DEFAULT_UPDATE_FPS),
+    updateInterval_(1.0f / updateFps_),
     updateAcc_(0.0f),
     isServer_(false),
     scene_(nullptr),
@@ -221,49 +227,6 @@ Network::Network(Context* context) :
 
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Network, HandleBeginFrame));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Network, HandleRenderUpdate));
-
-    // Blacklist remote events which are not to be allowed to be registered in any case
-    blacklistedRemoteEvents_.insert(E_CONSOLECOMMAND);
-    blacklistedRemoteEvents_.insert(E_LOGMESSAGE);
-    blacklistedRemoteEvents_.insert(E_BEGINFRAME);
-    blacklistedRemoteEvents_.insert(E_UPDATE);
-    blacklistedRemoteEvents_.insert(E_POSTUPDATE);
-    blacklistedRemoteEvents_.insert(E_RENDERUPDATE);
-    blacklistedRemoteEvents_.insert(E_ENDFRAME);
-    blacklistedRemoteEvents_.insert(E_MOUSEBUTTONDOWN);
-    blacklistedRemoteEvents_.insert(E_MOUSEBUTTONUP);
-    blacklistedRemoteEvents_.insert(E_MOUSEMOVE);
-    blacklistedRemoteEvents_.insert(E_MOUSEWHEEL);
-    blacklistedRemoteEvents_.insert(E_KEYDOWN);
-    blacklistedRemoteEvents_.insert(E_KEYUP);
-    blacklistedRemoteEvents_.insert(E_TEXTINPUT);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKCONNECTED);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKDISCONNECTED);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKBUTTONDOWN);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKBUTTONUP);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKAXISMOVE);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKHATMOVE);
-    blacklistedRemoteEvents_.insert(E_TOUCHBEGIN);
-    blacklistedRemoteEvents_.insert(E_TOUCHEND);
-    blacklistedRemoteEvents_.insert(E_TOUCHMOVE);
-    blacklistedRemoteEvents_.insert(E_GESTURERECORDED);
-    blacklistedRemoteEvents_.insert(E_GESTUREINPUT);
-    blacklistedRemoteEvents_.insert(E_MULTIGESTURE);
-    blacklistedRemoteEvents_.insert(E_DROPFILE);
-    blacklistedRemoteEvents_.insert(E_INPUTFOCUS);
-    blacklistedRemoteEvents_.insert(E_MOUSEVISIBLECHANGED);
-    blacklistedRemoteEvents_.insert(E_EXITREQUESTED);
-    blacklistedRemoteEvents_.insert(E_SERVERCONNECTED);
-    blacklistedRemoteEvents_.insert(E_SERVERDISCONNECTED);
-    blacklistedRemoteEvents_.insert(E_CONNECTFAILED);
-    blacklistedRemoteEvents_.insert(E_CLIENTCONNECTED);
-    blacklistedRemoteEvents_.insert(E_CLIENTDISCONNECTED);
-    blacklistedRemoteEvents_.insert(E_CLIENTIDENTITY);
-    blacklistedRemoteEvents_.insert(E_CLIENTSCENELOADED);
-    blacklistedRemoteEvents_.insert(E_NETWORKMESSAGE);
-    blacklistedRemoteEvents_.insert(E_NETWORKUPDATE);
-    blacklistedRemoteEvents_.insert(E_NETWORKUPDATESENT);
-    blacklistedRemoteEvents_.insert(E_NETWORKSCENELOADFAILED);
 }
 
 Network::~Network()
@@ -379,7 +342,6 @@ bool Network::Connect(const ea::string& address, unsigned short port, Scene* sce
         rakPeerClient_->Startup(2, &socket, 1);
     }
 
-    //isServer_ = false;
     SLNet::ConnectionAttemptResult connectResult = rakPeerClient_->Connect(address.c_str(), port, password_.c_str(), password_.length());
     if (connectResult == SLNet::CONNECTION_ATTEMPT_STARTED)
     {
@@ -458,6 +420,8 @@ void Network::StopServer()
 
     if (!IsServerRunning())
         return;
+
+    isServer_ = false;
     // Provide 300 ms to notify
     rakPeer_->Shutdown(300);
 
@@ -570,11 +534,49 @@ void Network::BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrde
     }
 }
 
-void Network::SetUpdateFps(int fps)
+void Network::SetUpdateFps(unsigned fps)
 {
+    if (IsServerRunning())
+    {
+        URHO3D_LOGERROR("Cannot change update frequency of running server. Attempted to change frequency from {} to {}.", updateFps_, fps);
+        return;
+    }
+
     updateFps_ = Max(fps, 1);
     updateInterval_ = 1.0f / (float)updateFps_;
     updateAcc_ = 0.0f;
+}
+
+void Network::SetPingIntervalMs(unsigned interval)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change ping interval for currently active connections.");
+
+    pingIntervalMs_ = interval;
+}
+
+void Network::SetMaxPingIntervalMs(unsigned interval)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change max ping for currently active connections.");
+
+    maxPingMs_ = interval;
+}
+
+void Network::SetClockBufferSize(unsigned size)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change sync buffer size for currently active connections.");
+
+    clockBufferSize_ = size;
+}
+
+void Network::SetPingBufferSize(unsigned size)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change ping buffer size for currently active connections.");
+
+    pingBufferSize_ = size;
 }
 
 void Network::SetSimulatedLatency(int ms)
@@ -591,12 +593,6 @@ void Network::SetSimulatedPacketLoss(float probability)
 
 void Network::RegisterRemoteEvent(StringHash eventType)
 {
-    if (blacklistedRemoteEvents_.find(eventType) != blacklistedRemoteEvents_.end())
-    {
-        URHO3D_LOGERROR("Attempted to register blacklisted remote event type " + eventType.ToString());
-        return;
-    }
-
     allowedRemoteEvents_.insert(eventType);
 }
 
@@ -688,6 +684,50 @@ bool Network::IsServerRunning() const
 bool Network::CheckRemoteEvent(StringHash eventType) const
 {
     return allowedRemoteEvents_.contains(eventType);
+}
+
+ea::string Network::GetDebugInfo() const
+{
+    ea::string result;
+    ea::hash_set<ReplicationManager*> replicationManagers;
+
+    const unsigned localTime = Time::GetSystemTime();
+    result += Format("Local Time {}\n", localTime);
+
+    if (Connection* connection = GetServerConnection())
+    {
+        result += Format("Server Connection {}: {}p-{}b/s in, {}p-{}b/s out, Remote Time {}\n",
+            connection->ToString(),
+            connection->GetPacketsInPerSec(), connection->GetBytesInPerSec(),
+            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec(),
+            connection->LocalToRemoteTime(localTime));
+
+        if (Scene* scene = connection->GetScene())
+        {
+            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
+                replicationManagers.insert(replicationManager);
+        }
+    }
+
+    for (Connection* connection : GetClientConnections())
+    {
+        result += Format("Client Connection {}: {}p-{}b/s in, {}p-{}b/s out, Remote Time {}\n",
+            connection->ToString(),
+            connection->GetPacketsInPerSec(), connection->GetBytesInPerSec(),
+            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec(),
+            connection->LocalToRemoteTime(localTime));
+
+        if (Scene* scene = connection->GetScene())
+        {
+            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
+                replicationManagers.insert(replicationManager);
+        }
+    }
+
+    for (ReplicationManager* replicationManager : replicationManagers)
+        result += replicationManager->GetDebugInfo();
+
+    return result;
 }
 
 void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
@@ -877,7 +917,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
         packetHandled = true;
     }
 
-    if (!packetHandled && packetID < sizeof(RAKNET_MESSAGEID_STRINGS))
+    if (!packetHandled && packetID < ea::size(RAKNET_MESSAGEID_STRINGS))
         URHO3D_LOGERROR("Unhandled network packet: " + ea::string(RAKNET_MESSAGEID_STRINGS[packetID]));
     else if (!packetHandled)
         URHO3D_LOGERRORF("Unhandled network packet: %i", packetID);
@@ -888,7 +928,13 @@ void Network::Update(float timeStep)
 {
     URHO3D_PROFILE("UpdateNetwork");
 
-    //Process all incoming messages for the server
+    // Check if periodic update should happen now
+    updateAcc_ += timeStep;
+    updateNow_ = updateAcc_ >= updateInterval_;
+    if (updateNow_)
+        updateAcc_ = fmodf(updateAcc_, updateInterval_);
+
+    // Process all incoming messages for the server
     if (rakPeer_->IsActive())
     {
         while (SLNet::Packet* packet = rakPeer_->Receive())
@@ -907,63 +953,52 @@ void Network::Update(float timeStep)
             rakPeerClient_->DeallocatePacket(packet);
         }
     }
+
+    {
+        using namespace NetworkInputProcessed;
+        VariantMap& eventData = GetEventDataMap();
+        eventData[P_TIMESTEP] = timeStep;
+        SendEvent(E_NETWORKINPUTPROCESSED, eventData);
+    }
 }
 
 void Network::PostUpdate(float timeStep)
 {
     URHO3D_PROFILE("PostUpdateNetwork");
 
-    // Check if periodic update should happen now
-    updateAcc_ += timeStep;
-    bool updateNow = updateAcc_ >= updateInterval_;
-    if (updateNow)
+    // Update periodically on the server
+    if (updateNow_ && (IsServerRunning() || simulateServerEvents_))
     {
-        // Notify of the impending update to allow for example updated client controls to be set
-        SendEvent(E_NETWORKUPDATE);
-        updateAcc_ = fmodf(updateAcc_, updateInterval_);
+        SendNetworkUpdateEvent(E_NETWORKUPDATE, true);
 
         if (IsServerRunning())
         {
-            // Collect and prepare all networked scenes
+            URHO3D_PROFILE("SendServerUpdate");
+
+            // Then send server updates for each client connection
+            for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
             {
-                URHO3D_PROFILE("PrepareServerUpdate");
-
-                networkScenes_.clear();
-                for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-                {
-                    Scene* scene = i->second->GetScene();
-                    if (scene)
-                        networkScenes_.insert(scene);
-                }
-
-                for (auto i = networkScenes_.begin(); i != networkScenes_.end(); ++i)
-                    (*i)->PrepareNetworkUpdate();
-            }
-
-            {
-                URHO3D_PROFILE("SendServerUpdate");
-
-                // Then send server updates for each client connection
-                for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-                {
-                    i->second->SendServerUpdate();
-                    i->second->SendRemoteEvents();
-                    i->second->SendPackages();
-                    i->second->SendAllBuffers();
-                }
+                i->second->SendRemoteEvents();
+                i->second->SendPackages();
+                i->second->SendAllBuffers();
             }
         }
 
+        SendNetworkUpdateEvent(E_NETWORKUPDATESENT, true);
+    }
+
+    // Always update on the client
+    if (serverConnection_ || simulateClientEvents_)
+    {
+        SendNetworkUpdateEvent(E_NETWORKUPDATE, false);
+
         if (serverConnection_)
         {
-            // Send the client update
-            serverConnection_->SendClientUpdate();
             serverConnection_->SendRemoteEvents();
             serverConnection_->SendAllBuffers();
         }
 
-        // Notify that the update was sent
-        SendEvent(E_NETWORKUPDATESENT);
+        SendNetworkUpdateEvent(E_NETWORKUPDATESENT, false);
     }
 }
 
@@ -1032,9 +1067,32 @@ unsigned long Network::GetEndpointHash(const SLNet::AddressOrGUID& endpoint)
     return SLNet::AddressOrGUID::ToInteger(endpoint);
 }
 
+void Network::SendNetworkUpdateEvent(StringHash eventType, bool isServer)
+{
+    using namespace NetworkUpdate;
+    auto& eventData = GetEventDataMap();
+    eventData[P_ISSERVER] = isServer;
+    SendEvent(eventType, eventData);
+}
+
 void RegisterNetworkLibrary(Context* context)
 {
-    NetworkPriority::RegisterObject(context);
+    NetworkObjectRegistry::RegisterObject(context);
+    ReplicationManager::RegisterObject(context);
+
+    NetworkObject::RegisterObject(context);
+    StaticNetworkObject::RegisterObject(context);
+    BehaviorNetworkObject::RegisterObject(context);
+
+    NetworkBehavior::RegisterObject(context);
+    ReplicatedAnimation::RegisterObject(context);
+    ReplicatedTransform::RegisterObject(context);
+    TrackedAnimatedModel::RegisterObject(context);
+    FilteredByDistance::RegisterObject(context);
+#ifdef URHO3D_PHYSICS
+    PredictedKinematicController::RegisterObject(context);
+#endif
+
     Connection::RegisterObject(context);
 }
 

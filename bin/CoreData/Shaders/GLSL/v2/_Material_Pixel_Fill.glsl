@@ -218,35 +218,93 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
     #define FillSurfaceEmission(surfaceData)
 #endif
 
-/// Fill surface reflection color.
-/// out: SurfaceData.reflectionColor
-#ifdef URHO3D_SURFACE_NEED_REFLECTION_COLOR
-    #ifdef URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT
-        half4 SamplePlanarReflectionColor(const vec2 screenPos, const half3 normal)
+#ifdef URHO3D_BOX_PROJECTION
+    half3 ApplyBoxProjection(half3 reflectionVec, vec3 worldPos, vec4 cubemapCenter, vec3 boxMin, vec3 boxMax)
+    {
+        if (cubemapCenter.w > 0.0)
         {
-            return texture2D(sEnvMap, GetPlanarReflectionUV(screenPos, vec4(normal, 1.0)));
+            // Compute intersection distance to the projection box
+            vec3 maxIntersection = (boxMax - worldPos) / reflectionVec;
+            vec3 minIntersection = (boxMin - worldPos) / reflectionVec;
+            vec3 intersection = max(maxIntersection, minIntersection);
+            float intersectionDistance = min(min(intersection.x, intersection.y), intersection.z);
+
+            // Recalculate reflection vector
+            vec3 intersectWorldPos = worldPos + reflectionVec * intersectionDistance;
+            reflectionVec = intersectWorldPos - cubemapCenter.xyz;
+        }
+        return reflectionVec;
+    }
+#endif
+
+/// Fill surface reflection color(s).
+/// out: SurfaceData.reflectionColor[]
+#ifdef URHO3D_SURFACE_NEED_REFLECTION_COLOR
+    #if (defined(URHO3D_REFLECTION_MAPPING) || defined(URHO3D_PHYSICAL_MATERIAL)) && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT)
+
+        /// Planar reflections don't support reflection blending
+        void FillSurfaceReflectionColorPlanar(out half4 reflectionColor[URHO3D_NUM_REFLECTIONS],
+            const vec2 screenPos, const half3 normal)
+        {
+            reflectionColor[0] = texture2D(sEnvMap, GetPlanarReflectionUV(screenPos, vec4(normal, 1.0)));
         }
 
         #define FillSurfaceReflectionColor(surfaceData) \
-            surfaceData.reflectionColor = SamplePlanarReflectionColor(surfaceData.screenPos, surfaceData.normal)
+            FillSurfaceReflectionColorPlanar(surfaceData.reflectionColor, surfaceData.screenPos, surfaceData.normal)
+
+    #elif defined(URHO3D_VERTEX_REFLECTION)
+
+        /// Vertex reflection must use reflection vector from vertex shader
+        void FillSurfaceReflectionColorCubeSimple(out half4 reflectionColor[URHO3D_NUM_REFLECTIONS])
+        {
+            #ifdef URHO3D_BLEND_REFLECTIONS
+                reflectionColor[1] = textureCube(sZoneCubeMap, vReflectionVec);
+            #endif
+            reflectionColor[0] = textureCube(sEnvCubeMap, vReflectionVec);
+        }
+
+        #define FillSurfaceReflectionColor(surfaceData) \
+            FillSurfaceReflectionColorCubeSimple(surfaceData.reflectionColor)
+
     #else
-        half4 SampleCubeReflectionColor(const half3 normal, const half3 eyeVec, const half roughness)
+
+        /// Best quality reflections with optional LOD sampling
+        half4 SampleCubeReflectionColor(in samplerCube source, \
+            half3 reflectionVec, const half roughness, const half roughnessFactor)
         {
         #ifdef URHO3D_BLUR_REFLECTION
-            half3 reflectionVec = reflect(-eyeVec, normal);
-            return textureCubeLod(sEnvCubeMap, reflectionVec, roughness * cRoughnessToLODFactor);
+            return textureCubeLod(source, reflectionVec, roughness * roughnessFactor);
         #else
-            #ifdef URHO3D_VERTEX_REFLECTION
-                return textureCube(sEnvCubeMap, vReflectionVec);
-            #else
-                half3 reflectionVec = reflect(-eyeVec, normal);
-                return textureCube(sEnvCubeMap, reflectionVec);
-            #endif
+            return textureCube(source, reflectionVec);
         #endif
         }
 
+        void FillSurfaceReflectionColorCube(out half4 reflectionColor[URHO3D_NUM_REFLECTIONS],
+            const half3 normal, const half3 eyeVec, const half roughness)
+        {
+            half3 reflectionVec0 = reflect(-eyeVec, normal);
+
+            #ifdef URHO3D_BLEND_REFLECTIONS
+                half3 reflectionVec1 = reflectionVec0;
+
+                #ifdef URHO3D_BOX_PROJECTION
+                    reflectionVec1 = ApplyBoxProjection(reflectionVec1, vWorldPos,
+                        cCubemapCenter1, cProjectionBoxMin1.xyz, cProjectionBoxMax1.xyz);
+                #endif
+                reflectionColor[1] = SampleCubeReflectionColor(sZoneCubeMap, reflectionVec1, roughness, cRoughnessToLODFactor1);
+            #endif
+
+            #ifdef URHO3D_BOX_PROJECTION
+                reflectionVec0 = ApplyBoxProjection(reflectionVec0, vWorldPos,
+                    cCubemapCenter0, cProjectionBoxMin0.xyz, cProjectionBoxMax0.xyz);
+            #endif
+            reflectionColor[0] = SampleCubeReflectionColor(sEnvCubeMap, reflectionVec0, roughness, cRoughnessToLODFactor0);
+        }
+
         #define FillSurfaceReflectionColor(surfaceData) \
-            surfaceData.reflectionColor = SampleCubeReflectionColor(surfaceData.normal, surfaceData.eyeVec, surfaceData.roughness)
+            FillSurfaceReflectionColorCube(surfaceData.reflectionColor, \
+                surfaceData.normal, surfaceData.eyeVec, surfaceData.roughness)
+
     #endif
 #else
     #define FillSurfaceReflectionColor(surfaceData)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@
 //
 
 #include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/AnimationController.h>
@@ -29,7 +28,6 @@
 #include <Urho3D/Graphics/Light.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/Input.h>
@@ -39,6 +37,7 @@
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
@@ -50,11 +49,13 @@
 #include <Urho3D/DebugNew.h>
 
 
-CharacterDemo::CharacterDemo(Context* context) :
-    Sample(context),
-    firstPerson_(false)
+CharacterDemo::CharacterDemo(Context* context)
+    : Sample(context)
+    , firstPerson_(false)
+    , dPadAdapter_(context)
 {
-    // Register factory and attributes for the Character component so it can be created via CreateComponent, and loaded / saved
+    // Register factory and attributes for the Character component so it can be created via CreateComponent, and loaded
+    // / saved
     if (!context->IsReflected<Character>())
         Character::RegisterObject(context);
 }
@@ -67,6 +68,8 @@ void CharacterDemo::Start()
     Sample::Start();
     if (touchEnabled_)
         touch_ = new Touch(context_, TOUCH_SENSITIVITY);
+
+    dPadAdapter_.SetEnabled(true);
 
     // Create static scene content
     CreateScene();
@@ -81,7 +84,8 @@ void CharacterDemo::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void CharacterDemo::CreateScene()
@@ -99,7 +103,7 @@ void CharacterDemo::CreateScene()
     cameraNode_ = new Node(context_);
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
-    GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
+    SetViewport(0, new Viewport(context_, scene_, camera));
 
     // Create static scene content. First create a zone for ambient lighting and fog control
     Node* zoneNode = scene_->CreateChild("Zone");
@@ -135,23 +139,30 @@ void CharacterDemo::CreateScene()
     auto* shape = floorNode->CreateComponent<CollisionShape>();
     shape->SetBox(Vector3::ONE);
 
+    // Create door
+    {
+        XMLFile* doorPrefab = cache->GetResource<XMLFile>("Prefabs/Door.xml");
+        Node* objectNode = scene_->CreateChild("Door");
+        objectNode->SetPosition(Vector3(2,0.5f,-2));
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(doorPrefab);
+
+        objectNode = scene_->CreateChild("Door");
+        objectNode->SetPosition(Vector3(2, 0.5f, 2));
+        prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(doorPrefab);
+    }
     // Create mushrooms of varying sizes
     const unsigned NUM_MUSHROOMS = 60;
+    XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
     for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
     {
         Node* objectNode = scene_->CreateChild("Mushroom");
         objectNode->SetPosition(Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f));
         objectNode->SetRotation(Quaternion(0.0f, Random(360.0f), 0.0f));
         objectNode->SetScale(2.0f + Random(5.0f));
-        auto* object = objectNode->CreateComponent<StaticModel>();
-        object->SetModel(cache->GetResource<Model>("Models/Mushroom.mdl"));
-        object->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
-        object->SetCastShadows(true);
-
-        auto* body = objectNode->CreateComponent<RigidBody>();
-        body->SetCollisionLayer(2);
-        auto* shape = objectNode->CreateComponent<CollisionShape>();
-        shape->SetTriangleMesh(object->GetModel(), 0);
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(mushroomPrefab);
     }
 
     // Create movable boxes. Let them fall from the sky at first
@@ -227,7 +238,7 @@ void CharacterDemo::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "Space to jump, F to toggle 1st/3rd person\n"
@@ -240,14 +251,11 @@ void CharacterDemo::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void CharacterDemo::SubscribeToEvents()
 {
-    // Subscribe to Update event for setting the character controls before physics simulation
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(CharacterDemo, HandleUpdate));
-
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(CharacterDemo, HandlePostUpdate));
 
@@ -255,7 +263,7 @@ void CharacterDemo::SubscribeToEvents()
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void CharacterDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void CharacterDemo::Update(float timeStep)
 {
     using namespace Update;
 
@@ -276,10 +284,10 @@ void CharacterDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
         {
             if (!touch_ || !touch_->useGyroscope_)
             {
-                character_->controls_.Set(CTRL_FORWARD, input->GetKeyDown(KEY_W));
-                character_->controls_.Set(CTRL_BACK, input->GetKeyDown(KEY_S));
-                character_->controls_.Set(CTRL_LEFT, input->GetKeyDown(KEY_A));
-                character_->controls_.Set(CTRL_RIGHT, input->GetKeyDown(KEY_D));
+                character_->controls_.Set(CTRL_FORWARD, dPadAdapter_.GetScancodeDown(SCANCODE_UP));
+                character_->controls_.Set(CTRL_BACK, dPadAdapter_.GetScancodeDown(SCANCODE_DOWN));
+                character_->controls_.Set(CTRL_LEFT, dPadAdapter_.GetScancodeDown(SCANCODE_LEFT));
+                character_->controls_.Set(CTRL_RIGHT, dPadAdapter_.GetScancodeDown(SCANCODE_RIGHT));
             }
             character_->controls_.Set(CTRL_JUMP, input->GetKeyDown(KEY_SPACE));
 

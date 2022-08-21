@@ -41,7 +41,6 @@ public:
     /// Construct Box.
     explicit Box(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Evaluate size required to place new node instance.
@@ -51,38 +50,28 @@ public:
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
     /// Set Box Thickness.
-    /// @property
     void SetBoxThickness(Vector3 value);
     /// Get Box Thickness.
-    /// @property
     Vector3 GetBoxThickness() const;
 
     /// Set Translation.
-    /// @property
     void SetTranslation(Vector3 value);
     /// Get Translation.
-    /// @property
     Vector3 GetTranslation() const;
 
     /// Set Rotation.
-    /// @property
     void SetRotation(Quaternion value);
     /// Get Rotation.
-    /// @property
     Quaternion GetRotation() const;
 
     /// Set Scale.
-    /// @property
     void SetScale(Vector3 value);
     /// Get Scale.
-    /// @property
     Vector3 GetScale() const;
 
     /// Set From.
-    /// @property
     void SetFrom(int value);
     /// Get From.
-    /// @property
     int GetFrom() const;
 
 protected:

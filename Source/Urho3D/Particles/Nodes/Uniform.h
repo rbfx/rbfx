@@ -43,19 +43,15 @@ protected:
 
 public:
     /// Set attribute name
-    /// @property
     void SetUniformName(const ea::string& name) { SetPinName(0, name); }
 
     /// Get attribute name
-    /// @property
     const ea::string& GetUniformName() const { return GetPinName(0); }
 
     /// Set attribute type
-    /// @property
     virtual void SetUniformType(VariantType valueType);
 
     /// Get attribute type
-    /// @property
     VariantType GetUniformType() const { return GetPinValueType(0); }
 };
 
@@ -80,7 +76,6 @@ public:
     /// Construct.
     explicit GetUniform(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Get number of pins.
@@ -124,7 +119,6 @@ public:
     /// Construct.
     explicit SetUniform(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Get number of pins.
@@ -134,7 +128,6 @@ public:
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Set attribute type
-    /// @property
     void SetUniformType(VariantType valueType) override;
 
     /// Evaluate size required to place new node instance.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,19 +23,17 @@
 #include "../Precompiled.h"
 
 #include "ParticleGraphEmitter.h"
+
+#include "../Core/Context.h"
+#include "../Resource/ResourceCache.h"
+#include "../Resource/ResourceEvents.h"
+#include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 #include "ParticleGraphLayer.h"
 #include "ParticleGraphLayerInstance.h"
 
-#include "../Core/Context.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-
 namespace Urho3D
 {
-extern const char* GEOMETRY_CATEGORY;
-
 ParticleGraphEmitter::ParticleGraphEmitter(Context* context)
     : Component(context)
 {
@@ -45,7 +43,7 @@ ParticleGraphEmitter::~ParticleGraphEmitter() = default;
 
 void ParticleGraphEmitter::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleGraphEmitter>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<ParticleGraphEmitter>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Effect", GetEffectAttr, SetEffectAttr, ResourceRef,
@@ -91,6 +89,26 @@ void ParticleGraphEmitter::ApplyEffect()
     Reset();
 }
 
+void ParticleGraphEmitter::SetEmitting(bool enable)
+{
+    if (enable != emitting_)
+    {
+        emitting_ = enable;
+
+        // If stopping emission now, and there are active particles, send finish event once they are gone
+        //sendFinishedEvent_ = enable || CheckActiveParticles();
+        //periodTimer_ = 0.0f;
+    }
+}
+
+void ParticleGraphEmitter::RemoveAllParticles()
+{
+    for (unsigned i = 0; i < layers_.size(); ++i)
+    {
+        layers_[i].RemoveAllParticles();
+    }
+}
+
 void ParticleGraphEmitter::SetEffect(ParticleGraphEffect* effect)
 {
     if (effect == effect_)
@@ -108,7 +126,6 @@ void ParticleGraphEmitter::SetEffect(ParticleGraphEffect* effect)
         SubscribeToEvent(effect_, E_RELOADFINISHED, URHO3D_HANDLER(ParticleGraphEmitter, HandleEffectReloadFinished));
 
     ApplyEffect();
-    MarkNetworkUpdate();
 }
 
 ParticleGraphEffect* ParticleGraphEmitter::GetEffect() const
@@ -136,6 +153,11 @@ void ParticleGraphEmitter::OnSceneSet(Scene* scene)
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleGraphEmitter, HandleScenePostUpdate));
     else if (!scene)
         UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
+
+    for (unsigned i = 0; i < layers_.size(); ++i)
+    {
+            layers_[i].OnSceneSet(scene);
+    }
 }
 
 bool ParticleGraphEmitter::EmitNewParticle(unsigned layer)
@@ -152,7 +174,7 @@ void ParticleGraphEmitter::Tick(float timeStep)
 {
     for (unsigned i = 0; i < layers_.size(); ++i)
     {
-        layers_[i].Update(timeStep);
+        layers_[i].Update(timeStep, emitting_);
     }
 }
 

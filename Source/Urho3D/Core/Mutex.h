@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -135,19 +135,28 @@ private:
 using ProfiledMutex = Mutex;
 #endif
 
+/// No-op mutex. Useful for template code.
+class DummyMutex
+{
+public:
+    void Acquire() {}
+    bool TryAcquire() { return true; }
+    void Release() {}
+ };
+
 /// Lock that automatically acquires and releases a mutex.
-template<typename Mutex>
+template<typename T>
 class MutexLock : private NonCopyable
 {
 public:
     /// Construct and acquire the mutex.
-    explicit MutexLock(Mutex& mutex) : mutex_(mutex) { mutex_.Acquire(); }
+    explicit MutexLock(T& mutex) : mutex_(mutex) { mutex_.Acquire(); }
     /// Destruct. Release the mutex.
     ~MutexLock() { mutex_.Release(); }
 
 private:
     /// Mutex reference.
-    Mutex& mutex_;
+    T& mutex_;
 };
 
 }

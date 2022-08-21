@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -46,21 +46,19 @@ static const char* highlightModes[] =
     nullptr
 };
 
-static const StringHash expandedHash("Expanded");
-
-extern const char* UI_CATEGORY;
+static const ea::string expandedVar("Expanded");
 
 bool GetItemExpanded(UIElement* item)
 {
-    return item ? item->GetVar(expandedHash).GetBool() : false;
+    return item ? item->GetVar(expandedVar).GetBool() : false;
 }
 
 void SetItemExpanded(UIElement* item, bool enable)
 {
-    item->SetVar(expandedHash, enable);
+    item->SetVar(expandedVar, enable);
 }
 
-static const StringHash hierarchyParentHash("HierarchyParent");
+static const ea::string hierarchyParentHash("HierarchyParent");
 
 bool GetItemHierarchyParent(UIElement* item)
 {
@@ -200,7 +198,7 @@ ListView::~ListView() = default;
 
 void ListView::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ListView>(UI_CATEGORY);
+    context->RegisterFactory<ListView>(Category_UI);
 
     HierarchyContainer::RegisterObject(context);
 

@@ -167,6 +167,7 @@ struct PipelineBatchGroup
     BatchRenderFlags flags_;
     unsigned startInstance_{};
     unsigned numInstances_{};
+    IntRect scissorRect_{};
 };
 
 }

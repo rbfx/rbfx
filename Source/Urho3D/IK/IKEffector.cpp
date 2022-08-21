@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Core/Context.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../IK/IKConverters.h"
@@ -36,8 +38,6 @@
 
 namespace Urho3D
 {
-
-extern const char* IK_CATEGORY;
 
 // ----------------------------------------------------------------------------
 IKEffector::IKEffector(Context* context) :
@@ -61,7 +61,7 @@ IKEffector::~IKEffector()
 // ----------------------------------------------------------------------------
 void IKEffector::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IKEffector>(IK_CATEGORY);
+    context->RegisterFactory<IKEffector>(Category_IK);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Target Node", GetTargetName, SetTargetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Chain Length", GetChainLength, SetChainLength, unsigned, 0, AM_DEFAULT);

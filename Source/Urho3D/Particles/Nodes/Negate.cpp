@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "Negate.h"
-#include "NegateInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "NegateInstance.h"
 
 namespace Urho3D
 {
@@ -42,28 +44,28 @@ namespace {
 static ea::vector<NodePattern> NegatePatterns{
     MakePattern(
         NegateInstance<float, float>()
-        , PinPattern<float>("x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         NegateInstance<Vector2, Vector2>()
-        , PinPattern<Vector2>("x")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector2>("x")
+        , ParticleGraphTypedPin<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         NegateInstance<Vector3, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         NegateInstance<Vector4, Vector4>()
-        , PinPattern<Vector4>("x")
-        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector4>("x")
+        , ParticleGraphTypedPin<Vector4>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         NegateInstance<Color, Color>()
-        , PinPattern<Color>("x")
-        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Color>("x")
+        , ParticleGraphTypedPin<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

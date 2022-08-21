@@ -54,7 +54,7 @@ endmacro()
 define_engine_source_files (Container Core IO Math)
 
 if (NOT MINI_URHO)
-    define_engine_source_files (Audio Engine Input RenderPipeline Resource Scene UI Utility)
+    define_engine_source_files (Audio Engine Input Plugins RenderPipeline Resource Scene Script UI Utility)
     define_engine_source_files (NORECURSE . Graphics)
     list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
     if (URHO3D_OPENGL)
@@ -68,7 +68,6 @@ else ()
     # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
     set (URHO3D_CSHARP OFF)
 endif ()
-
 
 if (URHO3D_PARTICLE_GRAPH)
     define_engine_source_files (Particles)
@@ -92,6 +91,7 @@ endif ()
 
 if (URHO3D_NETWORK)
     define_engine_source_files (Network)
+    define_engine_source_files (Replica)
 endif ()
 
 if (URHO3D_PHYSICS)
@@ -102,12 +102,26 @@ if (URHO3D_URHO2D)
     define_engine_source_files (Urho2D)
 endif ()
 
+if (URHO3D_PHYSICS2D)
+    define_engine_source_files (Physics2D)
+endif ()
+
 if (URHO3D_SYSTEMUI)
     define_engine_source_files (SystemUI)
 endif ()
 
-if (URHO3D_CSHARP)
-    define_engine_source_files (Script)
+# Remove compute source files as needed
+if (NOT URHO3D_COMPUTE)
+    list(REMOVE_ITEM SOURCE_FILES
+        Graphics/Direct3D11/D3D11ComputeBuffer.cpp
+        Graphics/Direct3D11/D3D11ComputeDevice.cpp
+        Graphics/OpenGL/OGLComputeBuffer.cpp
+        Graphics/OpenGL/OGLComputeDevice.cpp
+        Graphics/ComputeBuffer.cpp
+        Graphics/ComputeBuffer.h
+        Graphics/ComputeDevice.cpp
+        Graphics/ComputeDevice.h
+    )
 endif ()
 
 # Group source code in VS solution
@@ -156,7 +170,7 @@ endforeach()
 
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
-    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${rbfx_SOURCE_DIR}/cmake/Modules/GetUrhoRevision.cmake
+    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${rbfx_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
@@ -456,7 +470,7 @@ endif ()
 
 # Install C# dependencies
 if (URHO3D_CSHARP)
-   install (SCRIPT ${rbfx_SOURCE_DIR}/cmake/Install.cmake)
+   install (SCRIPT ${rbfx_SOURCE_DIR}/CMake/Install.cmake)
 endif ()
 
 ################################################### SDK preparation ####################################################
@@ -527,7 +541,8 @@ endforeach()
 list (REMOVE_DUPLICATES URHO3D_ENGINE_CONFIG)
 list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
 # Give defines without value a value "1".
-string (REGEX REPLACE "(^|;)([a-zA-Z0-9_]+);" "\\1\\2=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+string (REPLACE ";" "=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")                   # Append =1 to all defines
+string (REGEX REPLACE "([0-9]|>|\")=1" "\\1" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")   # Clear =1 from defines that already had a value
 # Turn list into c++ preprocessor code
 string (REGEX REPLACE "([^=]+)=([^;]+);" "#ifndef \\1\n#   define \\1 \\2\n#endif\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
 # This will be commented out line in the header.

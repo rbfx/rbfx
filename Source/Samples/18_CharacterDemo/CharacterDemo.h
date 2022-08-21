@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Input/DirectionalPadAdapter.h>
 
 namespace Urho3D
 {
@@ -113,7 +114,7 @@ private:
     /// Subscribe to necessary events.
     void SubscribeToEvents();
     /// Handle application update. Set controls to character.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Handle application post-update. Update camera position after character has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
@@ -123,4 +124,5 @@ private:
     WeakPtr<Character> character_;
     /// First person camera flag.
     bool firstPerson_;
+    DirectionalPadAdapter dPadAdapter_;
 };

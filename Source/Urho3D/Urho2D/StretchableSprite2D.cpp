@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -117,8 +117,6 @@ void pushVertices(ea::vector<Vertex2D>& target, const Vertex2D source[4][4])
 
 } // namespace
 
-extern const char* URHO2D_CATEGORY;
-
 StretchableSprite2D::StretchableSprite2D(Context* context) :
     StaticSprite2D{context}
 {
@@ -126,7 +124,7 @@ StretchableSprite2D::StretchableSprite2D(Context* context) :
 
 void StretchableSprite2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StretchableSprite2D>(URHO2D_CATEGORY);
+    context->RegisterFactory<StretchableSprite2D>(Category_Urho2D);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticSprite2D);
     URHO3D_ACCESSOR_ATTRIBUTE("Border", GetBorder, SetBorder, IntRect, IntRect::ZERO, AM_DEFAULT);

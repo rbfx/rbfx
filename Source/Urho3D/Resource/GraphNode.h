@@ -199,7 +199,6 @@ private:
     ea::fixed_vector<GraphOutPin, 1> outputPins_;
 
     friend class Graph;
-    friend class GraphNode;
 };
 
 template <typename PinType> template<typename OtherPinType> GraphPinRef<OtherPinType> GraphPinRef<PinType>::GetConnectedPin() const

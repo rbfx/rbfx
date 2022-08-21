@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,11 +27,28 @@
 namespace Urho3D
 {
 
+/// Physics world is about to be updated. There may be zero, one, or more physics steps coming.
+URHO3D_EVENT(E_PHYSICSPREUPDATE, PhysicsPreUpdate)
+{
+    URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+};
+
+/// Physics world has been updated. There may have been zero, one, or more physics steps evaluated.
+/// Overtime indicates the amount of non-simulated time after latest step.
+URHO3D_EVENT(E_PHYSICSPOSTUPDATE, PhysicsPostUpdate)
+{
+    URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+    URHO3D_PARAM(P_OVERTIME, Overtime);            // float
+};
+
 /// Physics world is about to be stepped.
 URHO3D_EVENT(E_PHYSICSPRESTEP, PhysicsPreStep)
 {
     URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+    URHO3D_PARAM(P_NETWORKFRAME, NetworkFrame);    // unsigned
 }
 
 /// Physics world has been stepped.

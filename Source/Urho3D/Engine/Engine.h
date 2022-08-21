@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,9 +50,9 @@ public:
     ~Engine() override;
 
     /// Initialize engine using parameters given and show the application window. Return true if successful.
-    bool Initialize(const VariantMap& parameters);
+    bool Initialize(const StringVariantMap& parameters);
     /// Reinitialize resource cache subsystem using parameters given. Implicitly called by Initialize. Return true if successful.
-    bool InitializeResourceCache(const VariantMap& parameters, bool removeOld = true);
+    bool InitializeResourceCache(const StringVariantMap& parameters, bool removeOld = true);
     /// Run one frame.
     void RunFrame();
     /// Create the console and return it. May return null if engine configuration does not allow creation (headless mode).
@@ -79,6 +79,13 @@ public:
     void SetAutoExit(bool enable);
     /// Override timestep of the next frame. Should be called in between RunFrame() calls.
     void SetNextTimeStep(float seconds);
+    /// Set engine parameter. Not all parameter changes will have effect.
+    void SetParameter(const ea::string& name, const Variant& value);
+    /// Return whether engine parameters contains a specific parameter.
+    bool HasParameter(const ea::string& name) const;
+    /// Return engine parameter or default value.
+    const Variant& GetParameter(const ea::string& name, const Variant& defaultValue = Variant::EMPTY) const;
+    static const Variant& GetParameter(const StringVariantMap& parameters, const ea::string& name, const Variant& defaultValue = Variant::EMPTY);
     /// Close the graphics window and set the exit flag. No-op on iOS/tvOS, as an iOS/tvOS application can not legally exit.
     void Exit();
     /// Dump profiling information to the log.
@@ -139,13 +146,8 @@ public:
 
 #if DESKTOP
     /// Parse the engine startup parameters map from command line arguments.
-    static void DefineParameters(CLI::App& commandLine, VariantMap& engineParameters);
+    static void DefineParameters(CLI::App& commandLine, StringVariantMap& engineParameters);
 #endif
-    /// Return whether startup parameters contains a specific parameter.
-    static bool HasParameter(const VariantMap& parameters, const ea::string& parameter);
-    /// Get an engine startup parameter, with default value if missing.
-    static const Variant
-        & GetParameter(const VariantMap& parameters, const ea::string& parameter, const Variant& defaultValue = Variant::EMPTY);
 
 private:
     /// Set flag indicating that exit request has to be handled.
@@ -181,6 +183,8 @@ private:
     bool autoExit_;
     /// Initialized flag.
     bool initialized_;
+    /// Engine parameters used for initialization.
+    StringVariantMap parameters_;
     /// Whether the exit is required by operating system.
     bool exitRequired_{};
     /// Whether the exiting is in progress.

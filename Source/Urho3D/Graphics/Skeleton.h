@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,15 @@
 namespace Urho3D
 {
 
+enum AnimationChannel : unsigned char
+{
+    CHANNEL_NONE = 0,
+    CHANNEL_POSITION = 1 << 0,
+    CHANNEL_ROTATION = 1 << 1,
+    CHANNEL_SCALE    = 1 << 2
+};
+URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
+
 enum BoneCollisionShape : unsigned char
 {
     BONECOLLISION_NONE = 0x0,
@@ -42,7 +51,7 @@ class Deserializer;
 class Serializer;
 
 /// %Bone in a skeleton.
-/// @fakeref
+/// @nocount
 struct Bone
 {
     /// Construct with defaults.
@@ -54,18 +63,6 @@ struct Bone
         animated_(true),
         radius_(0.0f)
     {
-    }
-
-    /// Instance equality operator.
-    bool operator ==(const Bone& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const Bone& rhs) const
-    {
-        return this != &rhs;
     }
 
     /// Bone name.
@@ -95,7 +92,7 @@ struct Bone
 };
 
 /// Hierarchical collection of bones.
-/// @fakeref
+/// @nocount
 class URHO3D_API Skeleton
 {
 public:
@@ -116,11 +113,16 @@ public:
     void SetNumBones(unsigned numBones);
     /// Clear bones.
     void ClearBones();
+    /// Recalculate order of bones in hierarchy, from parents to children.
+    void UpdateBoneOrder();
     /// Reset all animating bones to initial positions.
     void Reset();
 
     /// Return all bones.
     const ea::vector<Bone>& GetBones() const { return bones_; }
+
+    /// Return order of bones from parents to children.
+    const ea::vector<unsigned>& GetBonesOrder() const { return bonesOrder_; }
 
     /// Return modifiable bones.
     ea::vector<Bone>& GetModifiableBones() { return bones_; }
@@ -156,6 +158,8 @@ public:
 private:
     /// Bones.
     ea::vector<Bone> bones_;
+    /// Indices of bones ordered from root to children.
+    ea::vector<unsigned> bonesOrder_;
     /// Root bone index.
     unsigned rootBoneIndex_;
 };

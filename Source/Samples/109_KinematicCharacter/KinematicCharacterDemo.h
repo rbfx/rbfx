@@ -24,6 +24,7 @@
 
 #include "Sample.h"
 #include "KinematicCharacter.h"
+#include <Urho3D/Input/DirectionalPadAdapter.h>
 
 namespace Urho3D
 {
@@ -115,7 +116,7 @@ private:
     /// Subscribe to necessary events.
     void SubscribeToEvents();
     /// Handle application update. Set controls to character.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Handle application post-update. Update camera position after character has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
@@ -129,4 +130,5 @@ private:
     bool firstPerson_;
 
     bool drawDebug_;
+    DirectionalPadAdapter dPadAdapter_;
 };

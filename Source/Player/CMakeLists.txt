@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-2020 the rbfx project.
+# Copyright (c) 2017-2022 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,11 +20,7 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_PLAYER)
-    return ()
-endif ()
-
-if (MINI_URHO OR WEB)
+if (MINI_URHO)
     return ()
 endif ()
 
@@ -63,9 +59,7 @@ endif ()
 target_link_libraries(${PLAYER_TARGET} PUBLIC Urho3D)
 target_include_directories(${PLAYER_TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (URHO3D_SAMPLES AND URHO3D_PLUGINS AND NOT BUILD_SHARED_LIBS)
-    target_link_libraries(${PLAYER_TARGET} PRIVATE 103_GamePlugin)
-endif ()
+link_static_plugins (${PLAYER_TARGET} "${URHO3D_PLUGIN_LIST}")
 
 install(TARGETS ${PLAYER_TARGET}
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}

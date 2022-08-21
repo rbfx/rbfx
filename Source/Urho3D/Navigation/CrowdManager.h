@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -57,7 +57,7 @@ struct CrowdObstacleAvoidanceParams
 };
 
 /// Callback used to adjust crowd agent velocity.
-using CrowdAgentVelocityShader = std::function<void(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed)>;
+using CrowdAgentVelocityShader = ea::function<void(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed)>;
 
 /// Crowd manager scene component. Should be added only to the root scene node.
 class URHO3D_API CrowdManager : public Component

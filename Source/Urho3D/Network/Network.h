@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -88,13 +88,25 @@ public:
     void BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Set network update FPS.
     /// @property
-    void SetUpdateFps(int fps);
+    void SetUpdateFps(unsigned fps);
+    /// Set interval of pings by server.
+    void SetPingIntervalMs(unsigned interval);
+    /// Set max allowed ping by server.
+    void SetMaxPingIntervalMs(unsigned interval);
+    /// Set number of clock synchronization samples used.
+    void SetClockBufferSize(unsigned size);
+    /// Set number of ping samples used.
+    void SetPingBufferSize(unsigned size);
     /// Set simulated latency in milliseconds. This adds a fixed delay before sending each packet.
     /// @property
     void SetSimulatedLatency(int ms);
     /// Set simulated packet loss probability between 0.0 - 1.0.
     /// @property
     void SetSimulatedPacketLoss(float probability);
+    /// Test only. Set whether to send events as server.
+    void SetSimulateServerEvents(bool enable) { simulateServerEvents_ = enable; }
+    /// Test only. Set whether to send events as client.
+    void SetSimulateClientEvents(bool enable) { simulateClientEvents_ = enable; }
     /// Register a remote event as allowed to be received. There is also a fixed blacklist of events that can not be allowed in any case, such as ConsoleCommand.
     void RegisterRemoteEvent(StringHash eventType);
     /// Unregister a remote event as allowed to received.
@@ -112,7 +124,15 @@ public:
     void BanAddress(const ea::string& address);
     /// Return network update FPS.
     /// @property
-    int GetUpdateFps() const { return updateFps_; }
+    unsigned GetUpdateFps() const { return updateFps_; }
+    /// Return interval of pings by server.
+    unsigned GetPingIntervalMs() const { return pingIntervalMs_; }
+    /// Return max allowed ping by server.
+    unsigned GetMaxPingIntervalMs() const { return maxPingMs_; }
+    /// Return number of clock synchronization samples used.
+    unsigned GetClockBufferSize() const { return clockBufferSize_; }
+    /// Return number of ping synchronization samples used.
+    unsigned GetPingBufferSize() const { return pingBufferSize_; }
 
     /// Return simulated latency in milliseconds.
     /// @property
@@ -121,6 +141,12 @@ public:
     /// Return simulated packet loss probability.
     /// @property
     float GetSimulatedPacketLoss() const { return simulatedPacketLoss_; }
+
+    /// Return the amount of time that happened after fixed-time network update.
+    float GetUpdateOvertime() const { return updateAcc_; }
+
+    /// Return whether the network is updated on this frame.
+    bool IsUpdateNow() const { return updateNow_; }
 
     /// Return a client or server connection by RakNet connection address, or null if none exist.
     Connection* GetConnection(const SLNet::AddressOrGUID& connection) const;
@@ -135,6 +161,8 @@ public:
     bool IsServerRunning() const;
     /// Return whether a remote event is allowed to be received.
     bool CheckRemoteEvent(StringHash eventType) const;
+    /// Return aggregated debug info.
+    ea::string GetDebugInfo() const;
 
     /// Return the package download cache directory.
     /// @property
@@ -161,6 +189,23 @@ private:
     /// Return hash of endpoint.
     static unsigned long GetEndpointHash(const SLNet::AddressOrGUID& endpoint);
 
+    void SendNetworkUpdateEvent(StringHash eventType, bool isServer);
+
+    /// Used for testing only
+    /// @{
+    bool simulateServerEvents_{};
+    bool simulateClientEvents_{};
+    /// @}
+
+    /// Properties that need connection reset to apply
+    /// @{
+    unsigned updateFps_{30};
+    unsigned pingIntervalMs_{250};
+    unsigned maxPingMs_{10000};
+    unsigned clockBufferSize_{40};
+    unsigned pingBufferSize_{10};
+    /// @}
+
     /// SLikeNet peer instance for server connection.
     SLNet::RakPeerInterface* rakPeer_;
     /// SLikeNet peer instance for client connection.
@@ -171,12 +216,6 @@ private:
     ea::unordered_map<unsigned long, SharedPtr<Connection> > clientConnections_;
     /// Allowed remote events.
     ea::hash_set<StringHash> allowedRemoteEvents_;
-    /// Remote event fixed blacklist.
-    ea::hash_set<StringHash> blacklistedRemoteEvents_;
-    /// Networked scenes.
-    ea::hash_set<Scene*> networkScenes_;
-    /// Update FPS.
-    int updateFps_;
     /// Simulated latency (send delay) in milliseconds.
     int simulatedLatency_;
     /// Simulated packet loss probability between 0.0 - 1.0.
@@ -185,6 +224,8 @@ private:
     float updateInterval_;
     /// Update time accumulator.
     float updateAcc_;
+    /// Whether the network will be updated on this frame.
+    bool updateNow_{};
     /// Package cache directory.
     ea::string packageCacheDir_;
     /// Whether we started as server or not.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,8 +41,6 @@ static const float MIN_ROLLOFF = 0.1f;
 static const Color INNER_COLOR(1.0f, 0.5f, 1.0f);
 static const Color OUTER_COLOR(1.0f, 0.0f, 1.0f);
 
-extern const char* AUDIO_CATEGORY;
-
 SoundSource3D::SoundSource3D(Context* context) :
     SoundSource(context),
     nearDistance_(DEFAULT_NEARDISTANCE),
@@ -57,7 +55,7 @@ SoundSource3D::SoundSource3D(Context* context) :
 
 void SoundSource3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundSource3D>(AUDIO_CATEGORY);
+    context->RegisterFactory<SoundSource3D>(Category_Audio);
 
     URHO3D_COPY_BASE_ATTRIBUTES(SoundSource);
     // Remove Attenuation and Panning as attribute as they are constantly being updated
@@ -106,44 +104,37 @@ void SoundSource3D::SetDistanceAttenuation(float nearDistance, float farDistance
     nearDistance_ = Max(nearDistance, 0.0f);
     farDistance_ = Max(farDistance, 0.0f);
     rolloffFactor_ = Max(rolloffFactor, MIN_ROLLOFF);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetAngleAttenuation(float innerAngle, float outerAngle)
 {
     innerAngle_ = Clamp(innerAngle, 0.0f, DEFAULT_ANGLE);
     outerAngle_ = Clamp(outerAngle, 0.0f, DEFAULT_ANGLE);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetFarDistance(float distance)
 {
     farDistance_ = Max(distance, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetNearDistance(float distance)
 {
     nearDistance_ = Max(distance, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetInnerAngle(float angle)
 {
     innerAngle_ = Clamp(angle, 0.0f, DEFAULT_ANGLE);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetOuterAngle(float angle)
 {
     outerAngle_ = Clamp(angle, 0.0f, DEFAULT_ANGLE);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetRolloffFactor(float factor)
 {
     rolloffFactor_ = Max(factor, MIN_ROLLOFF);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::CalculateAttenuation()

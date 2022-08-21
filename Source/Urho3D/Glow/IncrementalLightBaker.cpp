@@ -22,6 +22,8 @@
 
 /// \file
 
+#include "../Precompiled.h"
+
 #include "../Glow/IncrementalLightBaker.h"
 
 #include "../Core/Context.h"
@@ -536,6 +538,10 @@ ea::string IncrementalLightBakerStatus::ToString() const
     default:
         return "Not started.";
     }
+}
+
+IncrementalLightBaker::IncrementalLightBaker()
+{
 }
 
 IncrementalLightBaker::~IncrementalLightBaker()

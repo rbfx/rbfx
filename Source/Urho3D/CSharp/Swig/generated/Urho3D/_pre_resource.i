@@ -3,14 +3,6 @@
 %constant int ColorLutSize = 16;
 %constant unsigned int PriorityLast = Urho3D::PRIORITY_LAST;
 %ignore Urho3D::PRIORITY_LAST;
-// %constant char * DefaultRootName = Urho3D::defaultRootName;
-// %ignore Urho3D::defaultRootName;
-// %constant char * DefaultBlockName = Urho3D::defaultBlockName;
-// %ignore Urho3D::defaultBlockName;
-// %constant char * DefaultElementName = Urho3D::defaultElementName;
-// %ignore Urho3D::defaultElementName;
-// %constant char * DefaultRootName = Urho3D::defaultRootName;
-// %ignore Urho3D::defaultRootName;
 %csconstvalue("0") Urho3D::CF_NONE;
 %csconstvalue("0") Urho3D::PLVT_NONE;
 %csconstvalue("0") Urho3D::RESOURCE_CHECKEXISTS;
@@ -28,7 +20,7 @@
 %csattribute(Urho3D::Resource, %arg(unsigned int), MemoryUse, GetMemoryUse, SetMemoryUse);
 %csattribute(Urho3D::Resource, %arg(unsigned int), UseTimer, GetUseTimer);
 %csattribute(Urho3D::Resource, %arg(Urho3D::AsyncLoadState), AsyncLoadState, GetAsyncLoadState, SetAsyncLoadState);
-%csattribute(Urho3D::Resource, %arg(ea::string), AbsoluteFileName, GetAbsoluteFileName);
+%csattribute(Urho3D::Resource, %arg(ea::string), AbsoluteFileName, GetAbsoluteFileName, SetAbsoluteFileName);
 %csattribute(Urho3D::ResourceWithMetadata, %arg(Urho3D::StringVector), MetadataKeys, GetMetadataKeys);
 %csattribute(Urho3D::Image, %arg(bool), IsCubemap, IsCubemap);
 %csattribute(Urho3D::Image, %arg(bool), IsArray, IsArray);
@@ -36,6 +28,7 @@
 %csattribute(Urho3D::Image, %arg(int), Width, GetWidth);
 %csattribute(Urho3D::Image, %arg(int), Height, GetHeight);
 %csattribute(Urho3D::Image, %arg(int), Depth, GetDepth);
+%csattribute(Urho3D::Image, %arg(Urho3D::IntVector3), Size, GetSize);
 %csattribute(Urho3D::Image, %arg(unsigned int), Components, GetComponents);
 %csattribute(Urho3D::Image, %arg(unsigned char *), Data, GetData, SetData);
 %csattribute(Urho3D::Image, %arg(bool), IsCompressed, IsCompressed);
@@ -57,6 +50,7 @@
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::VariantVector), VariantVector, GetVariantVector, SetVariantVector);
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::StringVector), StringVector, GetStringVector, SetStringVector);
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::VariantMap), VariantMap, GetVariantMap, SetVariantMap);
+%csattribute(Urho3D::XMLElement, %arg(Urho3D::StringVariantMap), StringVariantMap, GetStringVariantMap, SetStringVariantMap);
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::XMLFile *), File, GetFile);
 %csattribute(Urho3D::XMLElement, %arg(pugi::xml_node_struct *), Node, GetNode);
 %csattribute(Urho3D::XMLElement, %arg(Urho3D::XPathResultSet *), XPathResultSet, GetXPathResultSet);
@@ -66,14 +60,31 @@
 %csattribute(Urho3D::XPathQuery, %arg(pugi::xpath_variable_set *), XPathVariableSet, GetXPathVariableSet);
 %csattribute(Urho3D::XMLFile, %arg(pugi::xml_document *), Document, GetDocument);
 %csattribute(Urho3D::BackgroundLoader, %arg(unsigned int), NumQueuedResources, GetNumQueuedResources);
+%csattribute(Urho3D::BinaryFile, %arg(Urho3D::ByteVector), Data, GetData, SetData);
+%csattribute(Urho3D::Graph, %arg(unsigned int), NumNodes, GetNumNodes);
+%csattribute(Urho3D::GraphPin, %arg(ea::string), Name, GetName);
+%csattribute(Urho3D::GraphInPin, %arg(bool), IsConnected, IsConnected);
+%csattribute(Urho3D::GraphInPin, %arg(Urho3D::Variant), Value, GetValue, SetValue);
+%csattribute(Urho3D::GraphExitPin, %arg(bool), IsConnected, IsConnected);
+%csattribute(Urho3D::GraphNodeProperty, %arg(ea::string), Name, GetName);
+%csattribute(Urho3D::GraphNodeProperty, %arg(Urho3D::StringHash), NameHash, GetNameHash);
+%csattribute(Urho3D::GraphNode, %arg(unsigned int), Id, GetID);
+%csattribute(Urho3D::GraphNode, %arg(Urho3D::Graph *), Graph, GetGraph);
+%csattribute(Urho3D::GraphNode, %arg(ea::string), Name, GetName, SetName);
+%csattribute(Urho3D::GraphNode, %arg(Urho3D::StringHash), NameHash, GetNameHash);
+%csattribute(Urho3D::GraphNode, %arg(ea::span<GraphNodeProperty>), Properties, GetProperties);
+%csattribute(Urho3D::GraphNode, %arg(unsigned int), NumInputs, GetNumInputs);
+%csattribute(Urho3D::GraphNode, %arg(unsigned int), NumOutputs, GetNumOutputs);
+%csattribute(Urho3D::GraphNode, %arg(unsigned int), NumEnters, GetNumEnters);
+%csattribute(Urho3D::GraphNode, %arg(unsigned int), NumExits, GetNumExits);
 %csattribute(Urho3D::ImageCube, %arg(ea::vector<SharedPtr<Image>>), Images, GetImages);
 %csattribute(Urho3D::ImageCube, %arg(Urho3D::XMLFile *), ParametersXML, GetParametersXML);
 %csattribute(Urho3D::ImageCube, %arg(unsigned int), SphericalHarmonicsMipLevel, GetSphericalHarmonicsMipLevel);
 %csattribute(Urho3D::ImageCube, %arg(SharedPtr<Urho3D::ImageCube>), DecompressedImage, GetDecompressedImage);
 %csattribute(Urho3D::JSONFile, %arg(Urho3D::JSONValue), Root, GetRoot);
-%csattribute(Urho3D::JSONOutputArchiveBlock, %arg(ea::string_view), Name, GetName);
-%csattribute(Urho3D::JSONInputArchiveBlock, %arg(ea::string_view), Name, GetName);
+%csattribute(Urho3D::JSONOutputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
 %csattribute(Urho3D::JSONInputArchiveBlock, %arg(unsigned int), SizeHint, GetSizeHint);
+%csattribute(Urho3D::JSONInputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
 %csattribute(Urho3D::Localization, %arg(int), NumLanguages, GetNumLanguages);
 %csattribute(Urho3D::PListValue, %arg(int), Int, GetInt, SetInt);
 %csattribute(Urho3D::PListValue, %arg(bool), Bool, GetBool, SetBool);
@@ -97,8 +108,8 @@
 %csattribute(Urho3D::ResourceCache, %arg(unsigned int), NumResourceDirs, GetNumResourceDirs);
 %csattribute(Urho3D::XMLAttributeReference, %arg(Urho3D::XMLElement), Element, GetElement);
 %csattribute(Urho3D::XMLAttributeReference, %arg(char *), AttributeName, GetAttributeName);
-%csattribute(Urho3D::XMLOutputArchiveBlock, %arg(ea::string_view), Name, GetName);
-%csattribute(Urho3D::XMLInputArchiveBlock, %arg(ea::string_view), Name, GetName);
+%csattribute(Urho3D::XMLOutputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
+%csattribute(Urho3D::XMLInputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {

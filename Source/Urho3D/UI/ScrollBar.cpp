@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,6 @@ static const float DEFAULT_REPEAT_DELAY = 0.4f;
 static const float DEFAULT_REPEAT_RATE = 20.0f;
 
 extern const char* orientations[];
-extern const char* UI_CATEGORY;
 
 ScrollBar::ScrollBar(Context* context) :
     BorderImage(context),
@@ -78,7 +77,7 @@ ScrollBar::~ScrollBar() = default;
 
 void ScrollBar::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ScrollBar>(UI_CATEGORY);
+    context->RegisterFactory<ScrollBar>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Is Enabled", true);

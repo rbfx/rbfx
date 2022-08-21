@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,8 +36,6 @@ static const Vector3 DEFAULT_BOUNDING_BOX_MIN(-10.0f, -10.0f, -10.0f);
 static const Vector3 DEFAULT_BOUNDING_BOX_MAX(10.0f, 10.0f, 10.0f);
 static const unsigned DEFAULT_AREA_ID = 0;
 
-extern const char* NAVIGATION_CATEGORY;
-
 NavArea::NavArea(Context* context) :
     Component(context),
     areaID_(DEFAULT_AREA_ID),
@@ -49,7 +47,7 @@ NavArea::~NavArea() = default;
 
 void NavArea::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NavArea>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<NavArea>(Category_Navigation);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Component);
     URHO3D_ATTRIBUTE("Bounding Box Min", Vector3, boundingBox_.min_, DEFAULT_BOUNDING_BOX_MIN, AM_DEFAULT);
@@ -62,7 +60,6 @@ void NavArea::SetAreaID(unsigned newID)
     if (newID > MAX_NAV_AREA_ID)
         URHO3D_LOGERRORF("NavArea Area ID %u exceeds maximum value of %u", newID, MAX_NAV_AREA_ID);
     areaID_ = (unsigned char)newID;
-    MarkNetworkUpdate();
 }
 
 BoundingBox NavArea::GetWorldBoundingBox() const

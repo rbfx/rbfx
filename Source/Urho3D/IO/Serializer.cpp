@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -341,6 +341,9 @@ bool Serializer::WriteVariantData(const Variant& value)
     case VAR_DOUBLE:
         return WriteDouble(value.GetDouble());
 
+    case VAR_STRINGVARIANTMAP:
+        return WriteStringVariantMap(value.GetStringVariantMap());
+
     default:
         return false;
     }
@@ -350,8 +353,8 @@ bool Serializer::WriteVariantVector(const VariantVector& value)
 {
     bool success = true;
     success &= WriteVLE(value.size());
-    for (auto i = value.begin(); i != value.end(); ++i)
-        success &= WriteVariant(*i);
+    for (const auto& item : value)
+        success &= WriteVariant(item);
     return success;
 }
 
@@ -359,8 +362,8 @@ bool Serializer::WriteStringVector(const StringVector& value)
 {
     bool success = true;
     success &= WriteVLE(value.size());
-    for (auto i = value.begin(); i != value.end(); ++i)
-        success &= WriteString(*i);
+    for (const auto& item : value)
+        success &= WriteString(item);
     return success;
 }
 
@@ -368,10 +371,22 @@ bool Serializer::WriteVariantMap(const VariantMap& value)
 {
     bool success = true;
     success &= WriteVLE(value.size());
-    for (auto i = value.begin(); i != value.end(); ++i)
+    for (const auto& [key, item] : value)
     {
-        WriteStringHash(i->first);
-        WriteVariant(i->second);
+        success &= WriteStringHash(key);
+        success &= WriteVariant(item);
+    }
+    return success;
+}
+
+bool Serializer::WriteStringVariantMap(const StringVariantMap& value)
+{
+    bool success = true;
+    success &= WriteVLE(value.size());
+    for (const auto& [key, item] : value)
+    {
+        success &= WriteString(key);
+        success &= WriteVariant(item);
     }
     return success;
 }

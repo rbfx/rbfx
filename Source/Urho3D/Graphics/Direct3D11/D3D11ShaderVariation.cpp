@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,15 @@
 namespace Urho3D
 {
 
+const char* ShaderVariation_shaderExtensions[] = {
+    ".vs4",
+    ".ps4",
+    ".gs4",
+    ".hs5",
+    ".ds5",
+    ".cs5"
+};
+
 const char* ShaderVariation::elementSemanticNames[] =
 {
     "POSITION",
@@ -74,7 +83,7 @@ bool ShaderVariation::Create()
     // Check for up-to-date bytecode on disk
     ea::string path, name, extension;
     SplitPath(owner_->GetName(), path, name, extension);
-    extension = type_ == VS ? ".vs4" : ".ps4";
+    extension = ShaderVariation_shaderExtensions[type_];
 
     ea::string binaryShaderName = graphics_->GetShaderCacheDir() + name + "_" + StringHash(defines_).ToString() + extension;
 
@@ -88,36 +97,34 @@ bool ShaderVariation::Create()
             SaveByteCode(binaryShaderName);
     }
 
+#define CREATE_SHADER(TYPEENUM, SHADERTYPE, PRINTNAME) \
+    if (device && byteCode_.size()) { \
+        HRESULT hr = device->Create ## SHADERTYPE (&byteCode_[0], byteCode_.size(), nullptr, (ID3D11 ## SHADERTYPE **)&object_.ptr_); \
+        if (FAILED(hr)) { \
+            URHO3D_SAFE_RELEASE(object_.ptr_); \
+            compilerOutput_ = "Could not create " PRINTNAME " (HRESULT " + ToStringHex((unsigned)hr) + ")"; \
+        } \
+    } \
+    else \
+        compilerOutput_ = "Could not create " PRINTNAME " , empty bytecode";
+
+
     // Then create shader from the bytecode
     ID3D11Device* device = graphics_->GetImpl()->GetDevice();
     if (type_ == VS)
     {
-        if (device && byteCode_.size())
-        {
-            HRESULT hr = device->CreateVertexShader(&byteCode_[0], byteCode_.size(), nullptr, (ID3D11VertexShader**)&object_.ptr_);
-            if (FAILED(hr))
-            {
-                URHO3D_SAFE_RELEASE(object_.ptr_);
-                compilerOutput_ = "Could not create vertex shader (HRESULT " + ToStringHex((unsigned)hr) + ")";
-            }
-        }
-        else
-            compilerOutput_ = "Could not create vertex shader, empty bytecode";
+        CREATE_SHADER(VS, VertexShader, "vertex shader")
+    }
+    else if (type_ == CS)
+    {
+        CREATE_SHADER(CS, ComputeShader, "compute shader")
     }
     else
     {
-        if (device && byteCode_.size())
-        {
-            HRESULT hr = device->CreatePixelShader(&byteCode_[0], byteCode_.size(), nullptr, (ID3D11PixelShader**)&object_.ptr_);
-            if (FAILED(hr))
-            {
-                URHO3D_SAFE_RELEASE(object_.ptr_);
-                compilerOutput_ = "Could not create pixel shader (HRESULT " + ToStringHex((unsigned)hr) + ")";
-            }
-        }
-        else
-            compilerOutput_ = "Could not create pixel shader, empty bytecode";
+        CREATE_SHADER(PS, PixelShader, "pixel shader")
     }
+
+#undef CREATE_SHADER
 
     return object_.ptr_ != nullptr;
 }
@@ -135,6 +142,10 @@ void ShaderVariation::Release()
         {
             if (graphics_->GetVertexShader() == this)
                 graphics_->SetShaders(nullptr, nullptr);
+        }
+        else if (type_ == CS)
+        {
+            // Nothing to-do here yet?
         }
         else
         {
@@ -216,6 +227,8 @@ bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
 
         if (type_ == VS)
             URHO3D_LOGDEBUG("Loaded cached vertex shader " + GetFullName());
+        else if (type_ == CS)
+            URHO3D_LOGDEBUG("Loaded cached compute shader " + GetFullName());
         else
             URHO3D_LOGDEBUG("Loaded cached pixel shader " + GetFullName());
 
@@ -245,6 +258,12 @@ bool ShaderVariation::Compile()
         defines.Append("COMPILEVS");
         profile = "vs_4_0";
     }
+    else if (type_ == CS)
+    {
+        entryPoint = "CS";
+        defines.Append("COMPILECS");
+        profile = "cs_5_0";
+    }
     else
     {
         entryPoint = "PS";
@@ -267,7 +286,7 @@ bool ShaderVariation::Compile()
         ea::string errorMessage;
         if (!ConvertShaderToHLSL5(type_, universalSourceCode, defines, convertedShaderSourceCode, errorMessage))
         {
-            URHO3D_LOGERROR("Failed to convert shader {} from GLSL:\n{}", GetFullName(), errorMessage);
+            URHO3D_LOGERROR("Failed to convert shader {} from GLSL:\n{}{}", GetFullName(), Shader::GetShaderFileList(), errorMessage);
             return false;
         }
 
@@ -320,6 +339,8 @@ bool ShaderVariation::Compile()
     {
         if (type_ == VS)
             URHO3D_LOGDEBUG("Compiled vertex shader " + GetFullName());
+        else if (type_ == CS)
+            URHO3D_LOGDEBUG("Compiled compute shader " + GetFullName());
         else
             URHO3D_LOGDEBUG("Compiled pixel shader " + GetFullName());
 
@@ -440,7 +461,12 @@ void ShaderVariation::SaveByteCode(const ea::string& binaryShaderName)
 
     file->WriteFileID("USHD");
     file->WriteShort((unsigned short)type_);
-    file->WriteShort(4);
+    // Shader Model, CS/HS/DS use SM5
+    if (type_ == CS)
+        file->WriteShort(5);
+    else
+        file->WriteShort(4);
+
     file->WriteUInt(elementHash_ >> 32);
 
     file->WriteUInt(parameters_.size());

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -53,6 +53,10 @@ void Texture2D::Release()
 {
     if (graphics_ && object_.ptr_)
     {
+        VariantMap& eventData = GetEventDataMap();
+        eventData[GPUResourceReleased::P_OBJECT] = this;
+        SendEvent(E_GPURESOURCERELEASED, eventData);
+
         for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
         {
             if (graphics_->GetTexture(i) == this)
@@ -405,6 +409,11 @@ bool Texture2D::Create()
 
     textureDesc.Usage = usage_ == TEXTURE_DYNAMIC ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
     textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    // Is this format supported by compute?
+    if (IsUnorderedAccessSupported() && graphics_->GetComputeSupport())
+        textureDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+
     if (usage_ == TEXTURE_RENDERTARGET)
         textureDesc.BindFlags |= D3D11_BIND_RENDER_TARGET;
     else if (usage_ == TEXTURE_DEPTHSTENCIL)

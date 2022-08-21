@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,8 +43,6 @@
 namespace Urho3D
 {
 
-extern const char* SUBSYSTEM_CATEGORY;
-
 // Cap the amount of lines to prevent crash when eg. debug rendering large heightfields
 static const unsigned MAX_LINES = 1000000;
 // Cap the amount of triangles to prevent crash.
@@ -63,17 +61,14 @@ DebugRenderer::~DebugRenderer() = default;
 
 void DebugRenderer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DebugRenderer>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<DebugRenderer>(Category_Subsystem);
     URHO3D_ACCESSOR_ATTRIBUTE("Line Antialias", GetLineAntiAlias, SetLineAntiAlias, bool, false, AM_DEFAULT);
 }
 
 void DebugRenderer::SetLineAntiAlias(bool enable)
 {
     if (enable != lineAntiAlias_)
-    {
         lineAntiAlias_ = enable;
-        MarkNetworkUpdate();
-    }
 }
 
 void DebugRenderer::SetView(Camera* camera)

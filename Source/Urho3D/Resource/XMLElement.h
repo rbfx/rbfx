@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -166,6 +166,8 @@ public:
     bool SetStringVector(const StringVector& value);
     /// Set a variant map attribute. Creates child elements as necessary.
     bool SetVariantMap(const VariantMap& value);
+    /// Set a string variant map attribute. Creates child elements as necessary.
+    bool SetStringVariantMap(const StringVariantMap& value);
     /// Set a Vector2 attribute.
     bool SetVector2(const ea::string& name, const Vector2& value);
     /// Set a Vector3 attribute.
@@ -279,6 +281,8 @@ public:
     StringVector GetStringVector() const;
     /// Return a variant map attribute, or empty if missing.
     VariantMap GetVariantMap() const;
+    /// Return a string variant map attribute, or empty if missing.
+    StringVariantMap GetStringVariantMap() const;
     /// Return a Vector2 attribute, or zero vector if missing.
     Vector2 GetVector2(const ea::string& name) const;
     /// Return a Vector3 attribute, or zero vector if missing.

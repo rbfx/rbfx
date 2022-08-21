@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,18 +40,20 @@
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "PhysicsStressTest.h"
 
 #include <Urho3D/DebugNew.h>
 
 
-PhysicsStressTest::PhysicsStressTest(Context* context) :
-    Sample(context),
-    drawDebug_(false)
+PhysicsStressTest::PhysicsStressTest(Context* context)
+    : Sample(context)
+    , drawDebug_(false)
 {
 }
 
@@ -73,7 +75,8 @@ void PhysicsStressTest::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void PhysicsStressTest::CreateScene()
@@ -127,21 +130,15 @@ void PhysicsStressTest::CreateScene()
     {
         // Create static mushrooms with triangle mesh collision
         const unsigned NUM_MUSHROOMS = 50;
+        XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
         for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
         {
             Node* mushroomNode = scene_->CreateChild("Mushroom");
             mushroomNode->SetPosition(Vector3(Random(400.0f) - 200.0f, 0.0f, Random(400.0f) - 200.0f));
             mushroomNode->SetRotation(Quaternion(0.0f, Random(360.0f), 0.0f));
             mushroomNode->SetScale(5.0f + Random(5.0f));
-            auto* mushroomObject = mushroomNode->CreateComponent<StaticModel>();
-            mushroomObject->SetModel(cache->GetResource<Model>("Models/Mushroom.mdl"));
-            mushroomObject->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
-            mushroomObject->SetCastShadows(true);
-
-            /*RigidBody* body = */mushroomNode->CreateComponent<RigidBody>();
-            auto* shape = mushroomNode->CreateComponent<CollisionShape>();
-            // By default the highest LOD level will be used, the LOD level can be passed as an optional parameter
-            shape->SetTriangleMesh(mushroomObject->GetModel());
+            auto* prefabReference = mushroomNode->CreateComponent<PrefabReference>();
+            prefabReference->SetPrefab(mushroomPrefab);
         }
     }
 
@@ -171,6 +168,7 @@ void PhysicsStressTest::CreateScene()
     // Create the camera. Limit far clip distance to match the fog. Note: now we actually create the camera node outside
     // the scene, because we want it to be unaffected by scene load / save
     cameraNode_ = new Node(context_);
+    cameraNode_->CreateComponent<FreeFlyController>();
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 
@@ -184,7 +182,7 @@ void PhysicsStressTest::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "LMB to spawn physics objects\n"
@@ -198,7 +196,7 @@ void PhysicsStressTest::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void PhysicsStressTest::SetupViewport()
@@ -207,14 +205,11 @@ void PhysicsStressTest::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void PhysicsStressTest::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(PhysicsStressTest, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(PhysicsStressTest, HandlePostRenderUpdate));
@@ -227,30 +222,6 @@ void PhysicsStressTest::MoveCamera(float timeStep)
         return;
 
     auto* input = GetSubsystem<Input>();
-
-    // Movement speed as world units per second
-    const float MOVE_SPEED = 20.0f;
-    // Mouse sensitivity as degrees per pixel
-    const float MOUSE_SENSITIVITY = 0.1f;
-
-    // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-    IntVector2 mouseMove = input->GetMouseMove();
-    yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
-    pitch_ += MOUSE_SENSITIVITY * mouseMove.y_;
-    pitch_ = Clamp(pitch_, -90.0f, 90.0f);
-
-    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
-
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        cameraNode_->Translate(Vector3::FORWARD * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        cameraNode_->Translate(Vector3::BACK * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        cameraNode_->Translate(Vector3::LEFT * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
 
     // "Shoot" a physics object with left mousebutton
     if (input->GetMouseButtonPress(MOUSEB_LEFT))
@@ -301,13 +272,8 @@ void PhysicsStressTest::SpawnObject()
     body->SetLinearVelocity(cameraNode_->GetRotation() * Vector3(0.0f, 0.25f, 1.0f) * OBJECT_VELOCITY);
 }
 
-void PhysicsStressTest::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void PhysicsStressTest::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

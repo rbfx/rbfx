@@ -20,22 +20,21 @@
 // THE SOFTWARE.
 //
 
-#include "Span.h"
-#include "ParticleGraphLayerInstance.h"
-#include "UpdateContext.h"
 #include "../Precompiled.h"
 
 #include "ParticleGraphLayerInstance.h"
+
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
-
+#include "Span.h"
+#include "UpdateContext.h"
 
 namespace Urho3D
 {
 
 ParticleGraphLayerInstance::ParticleGraphLayerInstance()
     : activeParticles_(0)
-    , destuctionQueueSize_(0)
+    , destructionQueueSize_(0)
 {
 }
 
@@ -83,21 +82,24 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     {
         indices_[i] = i;
     }
-    destuctionQueue_ = layout.destructionQueue_.MakeSpan<unsigned>(attributes_);
+    destructionQueue_ = layout.destructionQueue_.MakeSpan<unsigned>(attributes_);
     Reset();
 }
+
+/// Remove all current particles.
+void ParticleGraphLayerInstance::RemoveAllParticles() { activeParticles_ = 0; }
 
 bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
 {
     emitCounterReminder_ += numParticles;
-    
+
     if (emitCounterReminder_ < 1.0f)
         return true;
 
     unsigned particlesToEmit = static_cast<unsigned>(emitCounterReminder_);
     emitCounterReminder_ -= static_cast<float>(particlesToEmit);
 
-    particlesToEmit = std::min(particlesToEmit, indices_.size() - activeParticles_);
+    particlesToEmit = Urho3D::Min(particlesToEmit, indices_.size() - activeParticles_);
     if (!particlesToEmit)
         return false;
 
@@ -111,14 +113,17 @@ bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
     return true;
 }
 
-void ParticleGraphLayerInstance::Update(float timeStep)
+void ParticleGraphLayerInstance::Update(float timeStep, bool emitting)
 {
     timeStep *= layer_->GetTimeScale();
     auto emitContext = MakeUpdateContext(timeStep);
     if (indices_.empty())
         return;
-    emitContext.indices_ = indices_.subspan(0, 1);
-    RunGraph(emitNodeInstances_, emitContext);
+    if (emitting)
+    {
+        emitContext.indices_ = indices_.subspan(0, 1);
+        RunGraph(emitNodeInstances_, emitContext);
+    }
 
     auto updateContext = MakeUpdateContext(timeStep);
     RunGraph(updateNodeInstances_, updateContext);
@@ -137,10 +142,10 @@ void ParticleGraphLayerInstance::MarkForDeletion(unsigned particleIndex)
         return;
 
     //TODO: if buffer is full sort and eliminate duplicates.
-    if (destuctionQueueSize_ < destuctionQueue_.size())
+    if (destructionQueueSize_ < destructionQueue_.size())
     {
-        destuctionQueue_[destuctionQueueSize_] = particleIndex;
-        ++destuctionQueueSize_;
+        destructionQueue_[destructionQueueSize_] = particleIndex;
+        ++destructionQueueSize_;
     }
 }
 
@@ -175,6 +180,24 @@ void ParticleGraphLayerInstance::SetEmitter(ParticleGraphEmitter* emitter)
 {
     emitter_ = emitter;
 }
+
+/// Handle scene change in instance.
+void ParticleGraphLayerInstance::OnSceneSet(Scene* scene)
+{
+    for (ParticleGraphNodeInstance* node : initNodeInstances_)
+    {
+        node->OnSceneSet(scene);
+    }
+    for (ParticleGraphNodeInstance* node : emitNodeInstances_)
+    {
+        node->OnSceneSet(scene);
+    }
+    for (ParticleGraphNodeInstance* node : updateNodeInstances_)
+    {
+        node->OnSceneSet(scene);
+    }
+}
+
 
 UpdateContext ParticleGraphLayerInstance::MakeUpdateContext(float timeStep)
 {

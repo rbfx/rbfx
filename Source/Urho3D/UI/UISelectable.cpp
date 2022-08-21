@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,11 +28,9 @@
 namespace Urho3D
 {
 
-extern const char* UI_CATEGORY;
-
 void UISelectable::RegisterObject(Context* context)
 {
-    context->RegisterFactory<UISelectable>(UI_CATEGORY);
+    context->RegisterFactory<UISelectable>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_ATTRIBUTE("Selection Color", Color, selectionColor_, Color::TRANSPARENT_BLACK, AM_FILE);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,21 +36,21 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 Skybox::Skybox(Context* context) :
     StaticModel(context),
     lastFrame_(0)
 {
+    SetReflectionMode(ReflectionMode::Zone);
 }
 
 Skybox::~Skybox() = default;
 
 void Skybox::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Skybox>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<Skybox>(Category_Geometry);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
+    URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Reflection Mode", static_cast<int>(ReflectionMode::Zone));
 }
 
 void Skybox::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)

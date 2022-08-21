@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,6 @@
 namespace Urho3D
 {
 
-extern const char* URHO2D_CATEGORY;
-
 StaticSprite2D::StaticSprite2D(Context* context) :
     Drawable2D(context),
     blendMode_(BLEND_ALPHA),
@@ -61,7 +59,7 @@ StaticSprite2D::~StaticSprite2D() = default;
 
 void StaticSprite2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticSprite2D>(URHO2D_CATEGORY);
+    context->RegisterFactory<StaticSprite2D>(Category_Urho2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable2D);
@@ -90,7 +88,6 @@ void StaticSprite2D::SetSprite(Sprite2D* sprite)
     UpdateMaterial();
 
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
 
     UpdateDrawRect();
 }
@@ -123,7 +120,6 @@ void StaticSprite2D::SetBlendMode(BlendMode blendMode)
     blendMode_ = blendMode;
 
     UpdateMaterial();
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetFlip(bool flipX, bool flipY, bool swapXY)
@@ -135,8 +131,6 @@ void StaticSprite2D::SetFlip(bool flipX, bool flipY, bool swapXY)
     flipY_ = flipY;
     swapXY_ = swapXY;
     sourceBatchesDirty_ = true;
-
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetFlipX(bool flipX)
@@ -161,7 +155,6 @@ void StaticSprite2D::SetColor(const Color& color)
 
     color_ = color;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetAlpha(float alpha)
@@ -171,7 +164,6 @@ void StaticSprite2D::SetAlpha(float alpha)
 
     color_.a_ = alpha;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetUseHotSpot(bool useHotSpot)
@@ -181,7 +173,6 @@ void StaticSprite2D::SetUseHotSpot(bool useHotSpot)
 
     useHotSpot_ = useHotSpot;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
     UpdateDrawRect();
 }
 
@@ -192,7 +183,6 @@ void StaticSprite2D::SetUseDrawRect(bool useDrawRect)
 
     useDrawRect_ = useDrawRect;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
     UpdateDrawRect();
 }
 
@@ -203,7 +193,6 @@ void StaticSprite2D::SetUseTextureRect(bool useTextureRect)
 
     useTextureRect_ = useTextureRect;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetHotSpot(const Vector2& hotspot)
@@ -216,7 +205,6 @@ void StaticSprite2D::SetHotSpot(const Vector2& hotspot)
     if (useHotSpot_)
     {
         sourceBatchesDirty_ = true;
-        MarkNetworkUpdate();
     }
 
     UpdateDrawRect();
@@ -231,7 +219,6 @@ void StaticSprite2D::SetCustomMaterial(Material* customMaterial)
     sourceBatchesDirty_ = true;
 
     UpdateMaterial();
-    MarkNetworkUpdate();
 }
 
 Sprite2D* StaticSprite2D::GetSprite() const

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,10 +28,10 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/Thread.h"
-#include "../Core/WorkQueue.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Zone.h"
 #include "../IO/Log.h"
@@ -57,8 +57,6 @@ static ea::vector<Drawable*> unusedDrawablesVector;
 
 static const float DEFAULT_OCTREE_SIZE = 1000.0f;
 static const int DEFAULT_OCTREE_LEVELS = 8;
-
-extern const char* SUBSYSTEM_CATEGORY;
 
 void UpdateDrawablesWork(const WorkItem* item, unsigned threadIndex)
 {
@@ -393,7 +391,7 @@ void ZoneLookupIndex::Commit()
 CachedDrawableZone ZoneLookupIndex::QueryZone(const Vector3& position, unsigned zoneMask) const
 {
     float minDistanceToOtherZone = M_LARGE_VALUE;
-    float distanceToBestZone = M_LARGE_VALUE;
+    float distanceToBestZoneBorder = M_LARGE_VALUE;
     Zone* bestZone = nullptr;
 
     const unsigned numZones = zones_.size();
@@ -415,11 +413,11 @@ CachedDrawableZone ZoneLookupIndex::QueryZone(const Vector3& position, unsigned 
         {
             // Zone may affect point
             bestZone = zones_[i];
-            distanceToBestZone = -signedDistance;
+            distanceToBestZoneBorder = -signedDistance;
         }
     }
 
-    const float cacheInvalidationDistance = ea::min(minDistanceToOtherZone, distanceToBestZone);
+    const float cacheInvalidationDistance = ea::min(minDistanceToOtherZone, distanceToBestZoneBorder);
     return { bestZone ? bestZone : defaultZone_, position, cacheInvalidationDistance * cacheInvalidationDistance };
 }
 
@@ -450,7 +448,7 @@ Octree::~Octree()
 
 void Octree::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Octree>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<Octree>(Category_Subsystem);
 
     Vector3 defaultBoundsMin = -Vector3::ONE * DEFAULT_OCTREE_SIZE;
     Vector3 defaultBoundsMax = Vector3::ONE * DEFAULT_OCTREE_SIZE;
@@ -498,6 +496,8 @@ void Octree::Update(const FrameInfo& frame)
         auto* queue = GetSubsystem<WorkQueue>();
         scene->BeginThreadedUpdate();
 
+        pendingNodeTransforms_.Clear();
+
         int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
         int drawablesPerItem = Max((int)(drawableUpdates_.size() / numWorkItems), 1);
 
@@ -542,6 +542,13 @@ void Octree::Update(const FrameInfo& frame)
         }
 
         threadedDrawableUpdates_.clear();
+    }
+
+    // Commit delayed Node transforms
+    if (!drawableUpdates_.empty())
+    {
+        for (const auto& [node, transform] : pendingNodeTransforms_)
+            node->SetTransform(transform.position_, transform.rotation_, transform.scale_);
     }
 
     // Notify drawable update being finished. Custom animation (eg. IK) can be done at this point
@@ -591,7 +598,16 @@ void Octree::Update(const FrameInfo& frame)
     }
 
     drawableUpdates_.clear();
+
+    // Update other singletons.
+    // TODO: Refactor it, maybe split Octree?
     zones_.Commit();
+
+    if (scene)
+    {
+        if (auto reflectionProbeManager = scene->GetComponent<ReflectionProbeManager>())
+            reflectionProbeManager->Update();
+    }
 }
 
 void Octree::AddManualDrawable(Drawable* drawable)
@@ -609,7 +625,10 @@ void Octree::RemoveManualDrawable(Drawable* drawable)
 
     Octant* octant = drawable->GetOctant();
     if (octant && octant->GetOctree() == this)
+    {
+        CancelUpdate(drawable);
         RemoveDrawable(drawable, octant);
+    }
 }
 
 void Octree::AddDrawable(Drawable* drawable)
@@ -674,6 +693,9 @@ void Octree::RemoveDrawable(Drawable* drawable, Octant* octant)
     drawables_.pop_back();
     drawable->SetDrawableIndex(M_MAX_UNSIGNED);
     drawable->updateQueued_ = false;
+
+    drawable->GetMutableCachedZone() = {};
+    drawable->GetMutableCachedReflection() = {};
 }
 
 void Octree::MarkZoneDirty(Zone* zone)
@@ -771,6 +793,11 @@ void Octree::CancelUpdate(Drawable* drawable)
     // when removing a drawable from octree, which should only ever happen from the main thread.
     drawableUpdates_.erase_first(drawable);
     drawable->updateQueued_ = false;
+}
+
+void Octree::QueueNodeTransformUpdate(Node* node, const Transform& transform)
+{
+    pendingNodeTransforms_.Emplace(node, transform);
 }
 
 void Octree::DrawDebugGeometry(bool depthTest)

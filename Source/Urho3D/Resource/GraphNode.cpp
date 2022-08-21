@@ -20,11 +20,13 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "GraphNode.h"
-#include "Graph.h"
-#include "GraphPin.h"
 
 #include "../IO/ArchiveSerialization.h"
+#include "Graph.h"
+#include "GraphPin.h"
 
 namespace Urho3D
 {

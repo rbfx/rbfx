@@ -21,6 +21,7 @@
 //
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
@@ -28,6 +29,7 @@
 #include <Urho3D/Physics/KinematicCharacterController.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Math/Ray.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/DebugNew.h>
@@ -49,7 +51,7 @@ KinematicCharacter::KinematicCharacter(Context* context) :
 
 void KinematicCharacter::RegisterObject(Context* context)
 {
-    context->AddReflection<KinematicCharacter>();
+    context->AddFactoryReflection<KinematicCharacter>();
 
     // These macros register the class attributes to the Context for automatic load / save handling.
     // We specify the Default attribute mode which means it will be used both for saving into file, and network replication
@@ -74,6 +76,11 @@ void KinematicCharacter::Start()
 
 void KinematicCharacter::FixedUpdate(float timeStep)
 {
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* runAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani");
+    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani");
+    auto* jumpAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Jump1.ani");
+
     // Update the in air timer. Reset if grounded
     if (!onGround_)
         inAirTimer_ += timeStep;
@@ -121,7 +128,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         curMoveDir_ = curMoveDir_.Lerp(velocity, 0.03f);
     }
 
-    kinematicController_->SetWalkDirection(curMoveDir_ * (softGrounded ? MOVE_FORCE : INAIR_MOVE_FORCE));
+    kinematicController_->SetWalkIncrement(curMoveDir_ * (softGrounded ? MOVE_FORCE : INAIR_MOVE_FORCE));
 
     if (softGrounded)
     {
@@ -139,10 +146,6 @@ void KinematicCharacter::FixedUpdate(float timeStep)
                 okToJump_ = false;
                 jumpStarted_ = true;
                 kinematicController_->Jump();
-
-                animController_->StopLayer(0);
-                animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, false, 0.2f);
-                animController_->SetTime("Models/Mutant/Mutant_Jump1.ani", 0);
             }
         }
         else
@@ -156,17 +159,16 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         // Play walk animation if moving on ground, otherwise fade it out
         if ((softGrounded) && !moveDir.Equals(Vector3::ZERO))
         {
-            animController_->PlayExclusive("Models/Mutant/Mutant_Run.ani", 0, true, 0.2f);
+            animController_->PlayExistingExclusive(AnimationParameters{runAnimation}.Looped(), 0.2f);
         }
         else
         {
-            animController_->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true, 0.2f);
+            animController_->PlayExistingExclusive(AnimationParameters{idleAnimation}.Looped(), 0.2f);
         }
     }
     else if (jumpStarted_)
     {
-        animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.3f);
-        animController_->SetTime("Models/Mutant/Mutant_Jump1.ani", 0);
+        animController_->PlayNewExclusive(AnimationParameters{jumpAnimation}.KeepOnCompletion(), 0.2f);
         jumpStarted_ = false;
     }
     else
@@ -178,7 +180,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
                                                                          maxDistance, segmentDistance, 0xffff);
         if (result.body_ && result.distance_ > 0.7f )
         {
-            animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.2f);
+            animController_->PlayExistingExclusive(AnimationParameters{jumpAnimation}.KeepOnCompletion(), 0.2f);
         }
     }
 }
@@ -187,6 +189,8 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
 {
     if (movingData_[0] == movingData_[1])
     {
+        // TODO: Implement riding on platforms
+#if 0
         Matrix3x4 delta = movingData_[0].transform_ * movingData_[1].transform_.Inverse();
 
         // add delta
@@ -201,10 +205,8 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
 
         // update yaw control (directly rotates char)
         controls_.yaw_ += delta.Rotation().YawAngle();
+#endif
     }
-
-    // update node position
-    node_->SetWorldPosition(kinematicController_->GetPosition());
 
     // shift and clear
     movingData_[1] = movingData_[0];
@@ -213,6 +215,9 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
 
 bool KinematicCharacter::IsNodeMovingPlatform(Node *node) const
 {
+    // TODO: Implement riding on platforms
+    return false;
+#if 0
     if (node == 0)
     {
         return false;
@@ -220,6 +225,7 @@ bool KinematicCharacter::IsNodeMovingPlatform(Node *node) const
 
     const Variant& var = node->GetVar(StringHash("IsMovingPlatform"));
     return (var != Variant::EMPTY && var.GetBool());
+#endif
 }
 
 void KinematicCharacter::NodeOnMovingPlatform(Node *node)

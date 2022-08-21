@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "Lerp.h"
-#include "LerpInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "LerpInstance.h"
 
 namespace Urho3D
 {
@@ -42,38 +44,38 @@ namespace {
 static ea::vector<NodePattern> LerpPatterns{
     MakePattern(
         LerpInstance<float, float, float, float>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("t")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<float>("t")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         LerpInstance<Vector2, Vector2, float, Vector2>()
-        , PinPattern<Vector2>("x")
-        , PinPattern<Vector2>("y")
-        , PinPattern<float>("t")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector2>("x")
+        , ParticleGraphTypedPin<Vector2>("y")
+        , ParticleGraphTypedPin<float>("t")
+        , ParticleGraphTypedPin<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         LerpInstance<Vector3, Vector3, float, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<Vector3>("y")
-        , PinPattern<float>("t")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<Vector3>("y")
+        , ParticleGraphTypedPin<float>("t")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         LerpInstance<Vector4, Vector4, float, Vector4>()
-        , PinPattern<Vector4>("x")
-        , PinPattern<Vector4>("y")
-        , PinPattern<float>("t")
-        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector4>("x")
+        , ParticleGraphTypedPin<Vector4>("y")
+        , ParticleGraphTypedPin<float>("t")
+        , ParticleGraphTypedPin<Vector4>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         LerpInstance<Color, Color, float, Color>()
-        , PinPattern<Color>("x")
-        , PinPattern<Color>("y")
-        , PinPattern<float>("t")
-        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Color>("x")
+        , ParticleGraphTypedPin<Color>("y")
+        , ParticleGraphTypedPin<float>("t")
+        , ParticleGraphTypedPin<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

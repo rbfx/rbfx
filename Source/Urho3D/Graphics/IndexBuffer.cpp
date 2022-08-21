@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -57,8 +57,6 @@ IndexBuffer::~IndexBuffer()
 {
     Release();
 }
-
-extern const char* GEOMETRY_CATEGORY;
 
 void IndexBuffer::RegisterObject(Context* context)
 {
@@ -272,9 +270,9 @@ void DynamicIndexBuffer::Commit()
     indexBuffer_->SetData(shadowData_.data());
 }
 
-void DynamicIndexBuffer::GrowBuffer()
+void DynamicIndexBuffer::GrowBuffer(unsigned newMaxNumIndices)
 {
-    maxNumIndices_ = maxNumIndices_ > 0 ? 2 * maxNumIndices_ : 128;
+    maxNumIndices_ = ea::max(newMaxNumIndices, maxNumIndices_ > 0 ? 2 * maxNumIndices_ : 128);
     shadowData_.resize(maxNumIndices_ * indexSize_);
     indexBufferNeedResize_ = true;
 }

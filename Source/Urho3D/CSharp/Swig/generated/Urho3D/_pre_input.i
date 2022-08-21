@@ -508,6 +508,10 @@ using QualifierFlags = Urho3D::Qualifier;
 %csconstvalue("2") Urho3D::HAT_RIGHT;
 %csconstvalue("4") Urho3D::HAT_DOWN;
 %csconstvalue("8") Urho3D::HAT_LEFT;
+%csconstvalue("3") Urho3D::HAT_RIGHTUP;
+%csconstvalue("6") Urho3D::HAT_RIGHTDOWN;
+%csconstvalue("9") Urho3D::HAT_LEFTUP;
+%csconstvalue("12") Urho3D::HAT_LEFTDOWN;
 %csconstvalue("0") Urho3D::CONTROLLER_BUTTON_A;
 %csconstvalue("1") Urho3D::CONTROLLER_BUTTON_B;
 %csconstvalue("2") Urho3D::CONTROLLER_BUTTON_X;
@@ -530,16 +534,43 @@ using QualifierFlags = Urho3D::Qualifier;
 %csconstvalue("4") Urho3D::CONTROLLER_AXIS_TRIGGERLEFT;
 %csconstvalue("5") Urho3D::CONTROLLER_AXIS_TRIGGERRIGHT;
 %csconstvalue("0") Urho3D::MM_ABSOLUTE;
+%csconstvalue("0") Urho3D::DirectionAggregatorDetail::SubscriptionMask::None;
+%csconstvalue("1") Urho3D::DirectionAggregatorDetail::SubscriptionMask::Keyboard;
+%csconstvalue("2") Urho3D::DirectionAggregatorDetail::SubscriptionMask::Joystick;
+%csconstvalue("4") Urho3D::DirectionAggregatorDetail::SubscriptionMask::Touch;
+%csconstvalue("7") Urho3D::DirectionAggregatorDetail::SubscriptionMask::All;
+%typemap(csattributes) Urho3D::DirectionAggregatorDetail::SubscriptionMask "[global::System.Flags]";
+using SubscriptionFlags = Urho3D::DirectionAggregatorDetail::SubscriptionMask;
+%typemap(ctype) SubscriptionFlags "size_t";
+%typemap(out) SubscriptionFlags "$result = (size_t)$1.AsInteger();"
+%csconstvalue("0") Urho3D::DirectionAggregator::InputType::External;
+%csconstvalue("1") Urho3D::DirectionAggregator::InputType::Keyboard;
+%csconstvalue("2") Urho3D::DirectionAggregator::InputType::Touch;
+%csconstvalue("3") Urho3D::DirectionAggregator::InputType::JoystickAxis;
+%csconstvalue("4") Urho3D::DirectionAggregator::InputType::JoystickDPad;
+%csconstvalue("0") Urho3D::DirectionalPadAdapterDetail::SubscriptionMask::None;
+%csconstvalue("1") Urho3D::DirectionalPadAdapterDetail::SubscriptionMask::Keyboard;
+%csconstvalue("2") Urho3D::DirectionalPadAdapterDetail::SubscriptionMask::Joystick;
+%csconstvalue("3") Urho3D::DirectionalPadAdapterDetail::SubscriptionMask::All;
+%typemap(csattributes) Urho3D::DirectionalPadAdapterDetail::SubscriptionMask "[global::System.Flags]";
+using SubscriptionFlags = Urho3D::DirectionalPadAdapterDetail::SubscriptionMask;
+%typemap(ctype) SubscriptionFlags "size_t";
+%typemap(out) SubscriptionFlags "$result = (size_t)$1.AsInteger();"
+%csconstvalue("0") Urho3D::DirectionalPadAdapter::InputType::External;
+%csconstvalue("1") Urho3D::DirectionalPadAdapter::InputType::Keyboard;
+%csconstvalue("100") Urho3D::DirectionalPadAdapter::InputType::JoystickAxis;
+%csconstvalue("200") Urho3D::DirectionalPadAdapter::InputType::JoystickDPad;
 %csattribute(Urho3D::JoystickState, %arg(unsigned int), NumButtons, GetNumButtons);
 %csattribute(Urho3D::JoystickState, %arg(unsigned int), NumAxes, GetNumAxes);
 %csattribute(Urho3D::JoystickState, %arg(unsigned int), NumHats, GetNumHats);
 %csattribute(Urho3D::Input, %arg(Urho3D::QualifierFlags), Qualifiers, GetQualifiers);
 %csattribute(Urho3D::Input, %arg(Urho3D::IntVector2), MousePosition, GetMousePosition, SetMousePosition);
+%csattribute(Urho3D::Input, %arg(Urho3D::Vector2), RelativeMousePosition, GetRelativeMousePosition);
 %csattribute(Urho3D::Input, %arg(Urho3D::IntVector2), MouseMove, GetMouseMove);
 %csattribute(Urho3D::Input, %arg(int), MouseMoveX, GetMouseMoveX);
 %csattribute(Urho3D::Input, %arg(int), MouseMoveY, GetMouseMoveY);
 %csattribute(Urho3D::Input, %arg(int), MouseMoveWheel, GetMouseMoveWheel);
-%csattribute(Urho3D::Input, %arg(Urho3D::Vector2), InputScale, GetInputScale);
+%csattribute(Urho3D::Input, %arg(Urho3D::Vector2), SystemToBackbufferScale, GetSystemToBackbufferScale);
 %csattribute(Urho3D::Input, %arg(unsigned int), NumTouches, GetNumTouches);
 %csattribute(Urho3D::Input, %arg(unsigned int), NumJoysticks, GetNumJoysticks);
 %csattribute(Urho3D::Input, %arg(bool), ToggleFullscreen, GetToggleFullscreen, SetToggleFullscreen);
@@ -549,6 +580,21 @@ using QualifierFlags = Urho3D::Qualifier;
 %csattribute(Urho3D::Input, %arg(bool), IsMouseLocked, IsMouseLocked);
 %csattribute(Urho3D::Input, %arg(bool), IsMinimized, IsMinimized);
 %csattribute(Urho3D::Input, %arg(bool), Enabled, GetEnabled, SetEnabled);
+%csattribute(Urho3D::Input, %arg(Urho3D::IntVector2), GlobalWindowPosition, GetGlobalWindowPosition);
+%csattribute(Urho3D::Input, %arg(Urho3D::IntVector2), GlobalWindowSize, GetGlobalWindowSize);
+%csattribute(Urho3D::Input, %arg(Urho3D::IntVector2), BackbufferSize, GetBackbufferSize);
+%csattribute(Urho3D::DirectionAggregator, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
+%csattribute(Urho3D::DirectionAggregator, %arg(bool), IsKeyboardEnabled, IsKeyboardEnabled, SetKeyboardEnabled);
+%csattribute(Urho3D::DirectionAggregator, %arg(Urho3D::UIElement *), UIElement, GetUIElement, SetUIElement);
+%csattribute(Urho3D::DirectionAggregator, %arg(float), DeadZone, GetDeadZone, SetDeadZone);
+%csattribute(Urho3D::DirectionAggregator, %arg(Urho3D::Vector2), Direction, GetDirection);
+%csattribute(Urho3D::DirectionalPadAdapter, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
+%csattribute(Urho3D::DirectionalPadAdapter, %arg(bool), IsKeyboardEnabled, IsKeyboardEnabled, SetKeyboardEnabled);
+%csattribute(Urho3D::DirectionalPadAdapter, %arg(float), AxisUpperThreshold, GetAxisUpperThreshold, SetAxisUpperThreshold);
+%csattribute(Urho3D::DirectionalPadAdapter, %arg(float), AxisLowerThreshold, GetAxisLowerThreshold, SetAxisLowerThreshold);
+%csattribute(Urho3D::MultitouchAdapter, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
+%csattribute(Urho3D::FreeFlyController, %arg(float), Speed, GetSpeed, SetSpeed);
+%csattribute(Urho3D::FreeFlyController, %arg(float), AcceleratedSpeed, GetAcceleratedSpeed, SetAcceleratedSpeed);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
@@ -793,4 +839,18 @@ public static partial class E
         public static implicit operator StringHash(InputEndEvent e) { return e._event; }
     }
     public static InputEndEvent InputEnd = new InputEndEvent();
+    public class MultitouchEvent {
+        private StringHash _event = new StringHash("Multitouch");
+        public StringHash NumFingers = new StringHash("NumFingers");
+        public StringHash EventType = new StringHash("EventType");
+        public StringHash X = new StringHash("X");
+        public StringHash Y = new StringHash("Y");
+        public StringHash DX = new StringHash("DX");
+        public StringHash DY = new StringHash("DY");
+        public StringHash Size = new StringHash("Size");
+        public StringHash DSize = new StringHash("DSize");
+        public MultitouchEvent() { }
+        public static implicit operator StringHash(MultitouchEvent e) { return e._event; }
+    }
+    public static MultitouchEvent Multitouch = new MultitouchEvent();
 } %}

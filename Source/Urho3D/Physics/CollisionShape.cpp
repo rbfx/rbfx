@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -80,8 +80,6 @@ static const char* typeNames[] =
     "GImpactMesh",
     nullptr
 };
-
-extern const char* PHYSICS_CATEGORY;
 
 class TriangleMeshInterface : public btTriangleIndexVertexArray
 {
@@ -214,6 +212,10 @@ TriangleMeshData::TriangleMeshData(CustomGeometry* custom)
     btGenerateInternalEdgeInfo(shape_.get(), infoMap_.get());
 }
 
+TriangleMeshData::~TriangleMeshData()
+{
+}
+
 GImpactMeshData::GImpactMeshData(Model* model, unsigned lodLevel)
 {
     meshInterface_ = ea::make_unique<TriangleMeshInterface>(model, lodLevel);
@@ -222,6 +224,10 @@ GImpactMeshData::GImpactMeshData(Model* model, unsigned lodLevel)
 GImpactMeshData::GImpactMeshData(CustomGeometry* custom)
 {
     meshInterface_ = ea::make_unique<TriangleMeshInterface>(custom);
+}
+
+GImpactMeshData::~GImpactMeshData()
+{
 }
 
 ConvexData::ConvexData(Model* model, unsigned lodLevel)
@@ -478,7 +484,7 @@ CollisionShape::~CollisionShape()
 
 void CollisionShape::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionShape>(PHYSICS_CATEGORY);
+    context->RegisterFactory<CollisionShape>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Shape Type", shapeType_, MarkShapeDirty, typeNames, SHAPE_BOX, AM_DEFAULT);
@@ -581,7 +587,6 @@ void CollisionShape::SetBox(const Vector3& size, const Vector3& position, const 
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 void CollisionShape::SetSphere(float diameter, const Vector3& position, const Quaternion& rotation)
@@ -598,7 +603,6 @@ void CollisionShape::SetSphere(float diameter, const Vector3& position, const Qu
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 void CollisionShape::SetStaticPlane(const Vector3& position, const Quaternion& rotation)
@@ -614,7 +618,6 @@ void CollisionShape::SetStaticPlane(const Vector3& position, const Quaternion& r
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 void CollisionShape::SetCylinder(float diameter, float height, const Vector3& position, const Quaternion& rotation)
@@ -631,7 +634,6 @@ void CollisionShape::SetCylinder(float diameter, float height, const Vector3& po
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 void CollisionShape::SetCapsule(float diameter, float height, const Vector3& position, const Quaternion& rotation)
@@ -648,7 +650,6 @@ void CollisionShape::SetCapsule(float diameter, float height, const Vector3& pos
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 void CollisionShape::SetCone(float diameter, float height, const Vector3& position, const Quaternion& rotation)
@@ -665,7 +666,6 @@ void CollisionShape::SetCone(float diameter, float height, const Vector3& positi
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 void CollisionShape::SetTriangleMesh(Model* model, unsigned lodLevel, const Vector3& scale, const Vector3& position,
@@ -721,7 +721,6 @@ void CollisionShape::SetTerrain(unsigned lodLevel)
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 void CollisionShape::SetShapeType(ShapeType type)
@@ -731,7 +730,6 @@ void CollisionShape::SetShapeType(ShapeType type)
         shapeType_ = type;
         UpdateShape();
         NotifyRigidBody();
-        MarkNetworkUpdate();
     }
 }
 
@@ -742,7 +740,6 @@ void CollisionShape::SetSize(const Vector3& size)
         size_ = size;
         UpdateShape();
         NotifyRigidBody();
-        MarkNetworkUpdate();
     }
 }
 
@@ -752,7 +749,6 @@ void CollisionShape::SetPosition(const Vector3& position)
     {
         position_ = position;
         NotifyRigidBody();
-        MarkNetworkUpdate();
     }
 }
 
@@ -762,7 +758,6 @@ void CollisionShape::SetRotation(const Quaternion& rotation)
     {
         rotation_ = rotation;
         NotifyRigidBody();
-        MarkNetworkUpdate();
     }
 }
 
@@ -773,7 +768,6 @@ void CollisionShape::SetTransform(const Vector3& position, const Quaternion& rot
         position_ = position;
         rotation_ = rotation;
         NotifyRigidBody();
-        MarkNetworkUpdate();
     }
 }
 
@@ -786,7 +780,6 @@ void CollisionShape::SetMargin(float margin)
         if (shape_)
             shape_->setMargin(margin);
         margin_ = margin;
-        MarkNetworkUpdate();
     }
 }
 
@@ -803,7 +796,6 @@ void CollisionShape::SetModel(Model* model)
             UpdateShape();
             NotifyRigidBody();
         }
-        MarkNetworkUpdate();
     }
 }
 
@@ -817,7 +809,6 @@ void CollisionShape::SetLodLevel(unsigned lodLevel)
             UpdateShape();
             NotifyRigidBody();
         }
-        MarkNetworkUpdate();
     }
 }
 
@@ -878,7 +869,6 @@ void CollisionShape::SetModelAttr(const ResourceRef& value)
     auto* cache = GetSubsystem<ResourceCache>();
     model_ = cache->GetResource<Model>(value.name_);
     recreateShape_ = true;
-    MarkNetworkUpdate();
 }
 
 ResourceRef CollisionShape::GetModelAttr() const
@@ -1158,7 +1148,6 @@ void CollisionShape::SetModelShape(ShapeType shapeType, Model* model, unsigned l
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 void CollisionShape::SetCustomShape(ShapeType shapeType, CustomGeometry* custom,
@@ -1188,7 +1177,6 @@ void CollisionShape::SetCustomShape(ShapeType shapeType, CustomGeometry* custom,
 
     UpdateShape();
     NotifyRigidBody();
-    MarkNetworkUpdate();
 }
 
 btCollisionShape* CollisionShape::UpdateDerivedShape(int shapeType, const Vector3& newWorldScale)

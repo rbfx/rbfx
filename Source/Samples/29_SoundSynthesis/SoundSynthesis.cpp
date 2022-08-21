@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -63,7 +63,8 @@ void SoundSynthesis::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void SoundSynthesis::CreateSound()
@@ -116,7 +117,7 @@ void SoundSynthesis::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    instructionText_ = ui->GetRoot()->CreateChild<Text>();
+    instructionText_ = GetUIRoot()->CreateChild<Text>();
     instructionText_->SetText("Use cursor up and down to control sound filtering");
     instructionText_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
 
@@ -124,22 +125,15 @@ void SoundSynthesis::CreateInstructions()
     instructionText_->SetTextAlignment(HA_CENTER);
     instructionText_->SetHorizontalAlignment(HA_CENTER);
     instructionText_->SetVerticalAlignment(VA_CENTER);
-    instructionText_->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText_->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void SoundSynthesis::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(SoundSynthesis, HandleUpdate));
 }
 
-void SoundSynthesis::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void SoundSynthesis::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Use keys to control the filter constant
     auto* input = GetSubsystem<Input>();
     if (input->GetKeyDown(KEY_UP))

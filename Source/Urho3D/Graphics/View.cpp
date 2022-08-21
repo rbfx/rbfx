@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -53,6 +53,10 @@
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
 #include "../UI/UI.h"
+
+#if defined(URHO3D_COMPUTE)
+    #include "../Graphics/ComputeDevice.h"
+#endif
 
 #include "../DebugNew.h"
 #include "View.h"
@@ -1750,6 +1754,56 @@ void View::ExecuteRenderPathCommands()
                     eventData[P_NAME] = command.eventName_;
                     renderer_->SendEvent(E_RENDERPATHEVENT, eventData);
                 }
+                break;
+
+            case CMD_COMPUTE_FILTER:
+                #if defined(URHO3D_COMPUTE)
+                {
+                    if (auto device = graphics_->GetSubsystem<ComputeDevice>())
+                    {
+                        Texture* firstInput = nullptr;
+                        for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+                        {
+                            if (!command.textureNames_[i].empty())
+                            {
+                                if (auto tex = FindNamedTexture(command.GetTextureName((TextureUnit)i), false, i == TU_VOLUMEMAP))
+                                    device->SetReadTexture(tex, i);
+                            }
+                        }
+
+                        Texture* firstOutput = nullptr;
+                        for (unsigned i = 0; i < command.outputs_.size(); ++i)
+                        {
+                            if (auto tex = FindNamedTexture(command.outputs_[i].first, true, false))
+                            {
+                                device->SetWriteTexture(tex, i, 0, UINT_MAX);
+                                if (firstOutput == nullptr)
+                                    firstOutput = tex;
+                            }
+                        }
+
+                        ea::string shaderDefs = Format("TEX_IN_X={}, TEX_IN_Y={}, TEX_OUT_X={}, TEX_OUT_Y={}",
+                            firstInput ? firstInput->GetWidth() : 0,
+                            firstInput ? firstInput->GetHeight() : 0,
+                            firstOutput ? firstOutput->GetWidth() : 0,
+                            firstOutput ? firstOutput->GetHeight() : 0
+                        );
+
+                        if (auto shader = graphics_->GetShader(CS, command.computeShaderName_, shaderDefs))
+                        {
+                            device->SetProgram(SharedPtr<ShaderVariation>(shader));
+
+                            // must always
+                            if (command.computeDispatchDim_.x_)
+                                device->Dispatch(command.computeDispatchDim_.x_, command.computeDispatchDim_.y_, command.computeDispatchDim_.z_);
+                            else
+                                device->Dispatch(firstOutput->GetWidth(), firstOutput->GetHeight(), 1);
+                        }
+                    }
+                }
+                #else
+                URHO3D_LOGERROR("RenderPath Compute Filter is not supported on current target.");
+                #endif
                 break;
 
             default:

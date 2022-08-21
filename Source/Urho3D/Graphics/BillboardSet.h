@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,21 +35,9 @@ class IndexBuffer;
 class VertexBuffer;
 
 /// One billboard in the billboard set.
-/// @fakeref
+/// @nocount
 struct URHO3D_API Billboard
 {
-    /// Instance equality operator.
-    bool operator ==(const Billboard& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const Billboard& rhs) const
-    {
-        return this != &rhs;
-    }
-
     /// Position.
     Vector3 position_;
     /// Two-dimensional size. If BillboardSet has fixed screen size enabled, this is measured in pixels instead of world units.
@@ -88,6 +76,8 @@ public:
     void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
+    /// Batch update from main thread. Called on demand only if RequestUpdateBatchesDelayed() is called from UpdateBatches().
+    void UpdateBatchesDelayed(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update).
     void UpdateGeometry(const FrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
@@ -170,14 +160,10 @@ public:
     void SetMaterialAttr(const ResourceRef& value);
     /// Set billboards attribute.
     void SetBillboardsAttr(const VariantVector& value);
-    /// Set billboards attribute for network replication.
-    void SetNetBillboardsAttr(const ea::vector<unsigned char>& value);
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
     /// Return billboards attribute.
     VariantVector GetBillboardsAttr() const;
-    /// Return billboards attribute for network replication.
-    const ea::vector<unsigned char>& GetNetBillboardsAttr() const;
     /// Return FaceCameraMode enum value names.
     static const char** GetFaceCameraModeNames();
 
@@ -217,6 +203,8 @@ private:
     void BuildDirectionVertexBuffer(unsigned enabledBillboards, float* dest, const Vector3& billboardScale);
     ///
     void BuildAxisAngleVertexBuffer(unsigned enabledBillboards, float* dest, const Vector3& billboardScale);
+    /// Return currently requested format of vertex buffer.
+    unsigned GetVertexBufferFormat() const;
     /// Calculate billboard scale factors in fixed screen size mode.
     void CalculateFixedScreenSize(const FrameInfo& frame);
 
@@ -246,8 +234,6 @@ private:
     Vector3 previousOffset_;
     /// Billboard pointers for sorting.
     ea::vector<Billboard*> sortedBillboards_;
-    /// Attribute buffer for network replication.
-    mutable VectorBuffer attrBuffer_;
 };
 
 }

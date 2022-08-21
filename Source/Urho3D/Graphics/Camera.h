@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@
 #include "../Graphics/GraphicsDefs.h"
 #include "../Math/Frustum.h"
 #include "../Math/Ray.h"
+#include "../Math/Rect.h"
 #include "../Scene/Component.h"
 
 namespace Urho3D
@@ -65,6 +66,11 @@ public:
 
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    /// Set current mouse position in normalized coordinates.
+    void SetMousePosition(const Vector2& pos) { mousePosition_ = pos; }
+    const Vector2& GetMousePosition() const { return mousePosition_; }
+    bool HasMousePosition() const { return Rect::POSITIVE.IsInside(mousePosition_) != OUTSIDE; }
 
     /// Set near clip distance.
     /// @property
@@ -186,10 +192,10 @@ public:
     const Frustum& GetFrustum() const;
     /// Return projection matrix. It's in D3D convention with depth range 0 - 1.
     /// @property
-    Matrix4 GetProjection() const;
+    Matrix4 GetProjection(bool ignoreFlip = false) const;
     /// Return projection matrix converted to API-specific format for use as a shader parameter.
     /// @property
-    Matrix4 GetGPUProjection() const;
+    Matrix4 GetGPUProjection(bool ignoreFlip = false) const;
     /// Return effective view-projection matrix with optionally applied depth bias.
     Matrix4 GetEffectiveGPUViewProjection(float constantDepthBias) const;
     /// Return view matrix.
@@ -215,6 +221,8 @@ public:
     Frustum GetViewSpaceSplitFrustum(float nearClip, float farClip) const;
     /// Return ray corresponding to normalized screen coordinates (0 - 1), with origin on the near clip plane.
     Ray GetScreenRay(float x, float y) const;
+    /// Return ray corresponding to current mouse position, with origin on the near clip plane.
+    Ray GetScreenRayFromMouse() const;
     /// Convert a world space point to normalized screen coordinates (0 - 1).
     Vector2 WorldToScreenPoint(const Vector3& worldPos) const;
     /// Convert normalized screen coordinates (0 - 1) and distance along view Z axis (in Z coordinate) to a world space point. The distance can not be closer than the near clip plane.
@@ -375,6 +383,9 @@ private:
     bool useReflection_;
     /// Use custom clip plane flag.
     bool useClipping_;
+
+    /// Current normalized mouse position supplied externally.
+    Vector2 mousePosition_;
 };
 
 }

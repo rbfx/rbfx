@@ -41,7 +41,6 @@ public:
 
 
 /// Register Particle Graph library objects.
-/// @nobind
 void URHO3D_API RegisterParticleGraphLibrary(Context* context, ParticleGraphSystem* system);
 
 }

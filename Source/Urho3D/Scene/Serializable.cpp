@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,6 @@
 #include "../Resource/JSONFile.h"
 #include "../Resource/JSONValue.h"
 #include "../Resource/ResourceCache.h"
-#include "../Scene/ReplicationState.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/Serializable.h"
 
@@ -78,216 +77,12 @@ void Serializable::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
     if (setInstanceDefault_)
         SetInstanceDefault(attr.name_, src);
 
-    // Check for accessor function mode
-    if (attr.accessor_)
-    {
-        attr.accessor_->Set(this, src);
-        return;
-    }
-
-    // Get the destination address
-    assert(attr.ptr_);
-    void* dest = attr.ptr_;
-
-    switch (attr.type_)
-    {
-    case VAR_INT:
-        // If enum type, use the low 8 bits only
-        if (attr.enumNames_)
-            *(reinterpret_cast<unsigned char*>(dest)) = src.GetInt();
-        else
-            *(reinterpret_cast<int*>(dest)) = src.GetInt();
-        break;
-
-    case VAR_INT64:
-        *(reinterpret_cast<long long*>(dest)) = src.GetInt64();
-        break;
-
-    case VAR_BOOL:
-        *(reinterpret_cast<bool*>(dest)) = src.GetBool();
-        break;
-
-    case VAR_FLOAT:
-        *(reinterpret_cast<float*>(dest)) = src.GetFloat();
-        break;
-
-    case VAR_VECTOR2:
-        *(reinterpret_cast<Vector2*>(dest)) = src.GetVector2();
-        break;
-
-    case VAR_VECTOR3:
-        *(reinterpret_cast<Vector3*>(dest)) = src.GetVector3();
-        break;
-
-    case VAR_VECTOR4:
-        *(reinterpret_cast<Vector4*>(dest)) = src.GetVector4();
-        break;
-
-    case VAR_QUATERNION:
-        *(reinterpret_cast<Quaternion*>(dest)) = src.GetQuaternion();
-        break;
-
-    case VAR_COLOR:
-        *(reinterpret_cast<Color*>(dest)) = src.GetColor();
-        break;
-
-    case VAR_STRING:
-        *(reinterpret_cast<ea::string*>(dest)) = src.GetString();
-        break;
-
-    case VAR_BUFFER:
-        *(reinterpret_cast<ea::vector<unsigned char>*>(dest)) = src.GetBuffer();
-        break;
-
-    case VAR_RESOURCEREF:
-        *(reinterpret_cast<ResourceRef*>(dest)) = src.GetResourceRef();
-        break;
-
-    case VAR_RESOURCEREFLIST:
-        *(reinterpret_cast<ResourceRefList*>(dest)) = src.GetResourceRefList();
-        break;
-
-    case VAR_VARIANTVECTOR:
-        *(reinterpret_cast<VariantVector*>(dest)) = src.GetVariantVector();
-        break;
-
-    case VAR_STRINGVECTOR:
-        *(reinterpret_cast<StringVector*>(dest)) = src.GetStringVector();
-        break;
-
-    case VAR_VARIANTMAP:
-        *(reinterpret_cast<VariantMap*>(dest)) = src.GetVariantMap();
-        break;
-
-    case VAR_INTRECT:
-        *(reinterpret_cast<IntRect*>(dest)) = src.GetIntRect();
-        break;
-
-    case VAR_INTVECTOR2:
-        *(reinterpret_cast<IntVector2*>(dest)) = src.GetIntVector2();
-        break;
-
-    case VAR_INTVECTOR3:
-        *(reinterpret_cast<IntVector3*>(dest)) = src.GetIntVector3();
-        break;
-
-    case VAR_DOUBLE:
-        *(reinterpret_cast<double*>(dest)) = src.GetDouble();
-        break;
-
-    default:
-        URHO3D_LOGERROR("Unsupported attribute type for OnSetAttribute()");
-        return;
-    }
-
-    // If it is a network attribute then mark it for next network update
-    if (attr.mode_ & AM_NET)
-        MarkNetworkUpdate();
+    attr.accessor_->Set(this, src);
 }
 
 void Serializable::OnGetAttribute(const AttributeInfo& attr, Variant& dest) const
 {
-    // Check for accessor function mode
-    if (attr.accessor_)
-    {
-        attr.accessor_->Get(this, dest);
-        return;
-    }
-
-    // Get the source address
-    assert(attr.ptr_);
-    const void* src = attr.ptr_;
-
-    switch (attr.type_)
-    {
-    case VAR_INT:
-        // If enum type, use the low 8 bits only
-        if (attr.enumNames_)
-            dest = *(reinterpret_cast<const unsigned char*>(src));
-        else
-            dest = *(reinterpret_cast<const int*>(src));
-        break;
-
-    case VAR_INT64:
-        dest = *(reinterpret_cast<const long long*>(src));
-        break;
-
-    case VAR_BOOL:
-        dest = *(reinterpret_cast<const bool*>(src));
-        break;
-
-    case VAR_FLOAT:
-        dest = *(reinterpret_cast<const float*>(src));
-        break;
-
-    case VAR_VECTOR2:
-        dest = *(reinterpret_cast<const Vector2*>(src));
-        break;
-
-    case VAR_VECTOR3:
-        dest = *(reinterpret_cast<const Vector3*>(src));
-        break;
-
-    case VAR_VECTOR4:
-        dest = *(reinterpret_cast<const Vector4*>(src));
-        break;
-
-    case VAR_QUATERNION:
-        dest = *(reinterpret_cast<const Quaternion*>(src));
-        break;
-
-    case VAR_COLOR:
-        dest = *(reinterpret_cast<const Color*>(src));
-        break;
-
-    case VAR_STRING:
-        dest = *(reinterpret_cast<const ea::string*>(src));
-        break;
-
-    case VAR_BUFFER:
-        dest = *(reinterpret_cast<const ea::vector<unsigned char>*>(src));
-        break;
-
-    case VAR_RESOURCEREF:
-        dest = *(reinterpret_cast<const ResourceRef*>(src));
-        break;
-
-    case VAR_RESOURCEREFLIST:
-        dest = *(reinterpret_cast<const ResourceRefList*>(src));
-        break;
-
-    case VAR_VARIANTVECTOR:
-        dest = *(reinterpret_cast<const VariantVector*>(src));
-        break;
-
-    case VAR_STRINGVECTOR:
-        dest = *(reinterpret_cast<const StringVector*>(src));
-        break;
-
-    case VAR_VARIANTMAP:
-        dest = *(reinterpret_cast<const VariantMap*>(src));
-        break;
-
-    case VAR_INTRECT:
-        dest = *(reinterpret_cast<const IntRect*>(src));
-        break;
-
-    case VAR_INTVECTOR2:
-        dest = *(reinterpret_cast<const IntVector2*>(src));
-        break;
-
-    case VAR_INTVECTOR3:
-        dest = *(reinterpret_cast<const IntVector3*>(src));
-        break;
-
-    case VAR_DOUBLE:
-        dest = *(reinterpret_cast<const double*>(src));
-        break;
-
-    default:
-        URHO3D_LOGERROR("Unsupported attribute type for OnGetAttribute()");
-        return;
-    }
+    attr.accessor_->Get(this, dest);
 }
 
 ObjectReflection* Serializable::GetReflection() const
@@ -298,11 +93,6 @@ ObjectReflection* Serializable::GetReflection() const
 const ea::vector<AttributeInfo>* Serializable::GetAttributes() const
 {
     return context_->GetAttributes(GetType());
-}
-
-const ea::vector<AttributeInfo>* Serializable::GetNetworkAttributes() const
-{
-    return networkState_ ? networkState_->attributes_ : context_->GetNetworkAttributes(GetType());
 }
 
 bool Serializable::Load(Deserializer& source)
@@ -385,23 +175,11 @@ bool Serializable::LoadXML(const XMLElement& source)
                 Variant varValue;
 
                 // If enums specified, do enum lookup and int assignment. Otherwise assign the variant directly
-                if (attr.enumNames_ && attr.type_ == VAR_INT)
+                if (!attr.enumNames_.empty() && attr.type_ == VAR_INT)
                 {
                     ea::string value = attrElem.GetAttribute("value");
-                    bool enumFound = false;
-                    int enumValue = 0;
-                    const char** enumPtr = attr.enumNames_;
-                    while (*enumPtr)
-                    {
-                        if (!value.comparei(*enumPtr))
-                        {
-                            enumFound = true;
-                            break;
-                        }
-                        ++enumPtr;
-                        ++enumValue;
-                    }
-                    if (enumFound)
+                    const unsigned enumValue = attr.ConvertEnumToUInt(value);
+                    if (enumValue != M_MAX_UNSIGNED)
                         varValue = enumValue;
                     else
                         URHO3D_LOGWARNING("Unknown enum value " + value + " in attribute " + attr.name_);
@@ -466,23 +244,11 @@ bool Serializable::LoadJSON(const JSONValue& source)
 
             Variant varValue;
             // If enums specified, do enum lookup ad int assignment. Otherwise assign variant directly
-            if (attr.enumNames_ && attr.type_ == VAR_INT)
+            if (!attr.enumNames_.empty() && attr.type_ == VAR_INT)
             {
                 const ea::string& valueStr = value.GetString();
-                bool enumFound = false;
-                int enumValue = 0;
-                const char** enumPtr = attr.enumNames_;
-                while (*enumPtr)
-                {
-                    if (!valueStr.comparei(*enumPtr))
-                    {
-                        enumFound = true;
-                        break;
-                    }
-                    ++enumPtr;
-                    ++enumValue;
-                }
-                if (enumFound)
+                const unsigned enumValue = attr.ConvertEnumToUInt(valueStr);
+                if (enumValue != M_MAX_UNSIGNED)
                     varValue = enumValue;
                 else
                     URHO3D_LOGWARNING("Unknown enum value " + valueStr + " in attribute " + attr.name_);
@@ -538,7 +304,7 @@ bool Serializable::SaveXML(XMLElement& dest) const
         XMLElement attrElem = dest.CreateChild("attribute");
         attrElem.SetAttribute("name", attr.name_);
         // If enums specified, set as an enum string. Otherwise set directly as a Variant
-        if (attr.enumNames_ && attr.type_ == VAR_INT)
+        if (!attr.enumNames_.empty() && attr.type_ == VAR_INT)
         {
             int enumValue = value.GetInt();
             attrElem.SetAttribute("value", attr.enumNames_[enumValue]);
@@ -574,7 +340,7 @@ bool Serializable::SaveJSON(JSONValue& dest) const
 
         JSONValue attrVal;
         // If enums specified, set as an enum string. Otherwise set directly as a Variant
-        if (attr.enumNames_ && attr.type_ == VAR_INT)
+        if (!attr.enumNames_.empty() && attr.type_ == VAR_INT)
         {
             int enumValue = value.GetInt();
             attrVal = attr.enumNames_[enumValue];
@@ -667,7 +433,7 @@ void Serializable::SerializeInBlock(Archive& archive)
                 }
             }
 
-            if (enumsAsStrings && attr.enumNames_)
+            if (enumsAsStrings && !attr.enumNames_.empty())
                 value = attr.ConvertEnumToString(value.GetUInt());
         }
     }
@@ -720,7 +486,7 @@ void Serializable::SerializeInBlock(Archive& archive)
             if (!attr.ShouldLoad())
                 continue;
 
-            if (enumsAsStrings && attr.enumNames_)
+            if (enumsAsStrings && !attr.enumNames_.empty())
             {
                 const unsigned enumValue = attr.ConvertEnumToUInt(value.GetString());
                 if (enumValue != M_MAX_UNSIGNED)
@@ -839,218 +605,6 @@ void Serializable::SetTemporary(bool enable)
     }
 }
 
-void Serializable::SetInterceptNetworkUpdate(const ea::string& attributeName, bool enable)
-{
-    AllocateNetworkState();
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    for (unsigned i = 0; i < attributes->size(); ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-        if (!attr.name_.compare(attributeName))
-        {
-            if (enable)
-                networkState_->interceptMask_ |= 1ULL << i;
-            else
-                networkState_->interceptMask_ &= ~(1ULL << i);
-            break;
-        }
-    }
-}
-
-void Serializable::AllocateNetworkState()
-{
-    if (networkState_)
-        return;
-
-    const ea::vector<AttributeInfo>* networkAttributes = GetNetworkAttributes();
-    networkState_ = ea::make_unique<NetworkState>();
-    networkState_->attributes_ = networkAttributes;
-
-    if (!networkAttributes)
-        return;
-
-    unsigned numAttributes = networkAttributes->size();
-
-    if (networkState_->currentValues_.size() != numAttributes)
-    {
-        networkState_->currentValues_.resize(numAttributes);
-        networkState_->previousValues_.resize(numAttributes);
-
-        // Copy the default attribute values to the previous state as a starting point
-        for (unsigned i = 0; i < numAttributes; ++i)
-            networkState_->previousValues_[i] = networkAttributes->at(i).defaultValue_;
-    }
-}
-
-void Serializable::WriteInitialDeltaUpdate(Serializer& dest, unsigned char timeStamp)
-{
-    if (!networkState_)
-    {
-        URHO3D_LOGERROR("WriteInitialDeltaUpdate called without allocated NetworkState");
-        return;
-    }
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    unsigned numAttributes = attributes->size();
-    DirtyBits attributeBits;
-
-    // Compare against defaults
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-        if (networkState_->currentValues_[i] != attr.defaultValue_)
-            attributeBits.Set(i);
-    }
-
-    // First write the change bitfield, then attribute data for non-default attributes
-    dest.WriteUByte(timeStamp);
-    dest.Write(attributeBits.data_, (numAttributes + 7) >> 3u);
-
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        if (attributeBits.IsSet(i))
-            dest.WriteVariantData(networkState_->currentValues_[i]);
-    }
-}
-
-void Serializable::WriteDeltaUpdate(Serializer& dest, const DirtyBits& attributeBits, unsigned char timeStamp)
-{
-    if (!networkState_)
-    {
-        URHO3D_LOGERROR("WriteDeltaUpdate called without allocated NetworkState");
-        return;
-    }
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    unsigned numAttributes = attributes->size();
-
-    // First write the change bitfield, then attribute data for changed attributes
-    // Note: the attribute bits should not contain LATESTDATA attributes
-    dest.WriteUByte(timeStamp);
-    dest.Write(attributeBits.data_, (numAttributes + 7) >> 3u);
-
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        if (attributeBits.IsSet(i))
-            dest.WriteVariantData(networkState_->currentValues_[i]);
-    }
-}
-
-void Serializable::WriteLatestDataUpdate(Serializer& dest, unsigned char timeStamp)
-{
-    if (!networkState_)
-    {
-        URHO3D_LOGERROR("WriteLatestDataUpdate called without allocated NetworkState");
-        return;
-    }
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    unsigned numAttributes = attributes->size();
-
-    dest.WriteUByte(timeStamp);
-
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        if (attributes->at(i).mode_ & AM_LATESTDATA)
-            dest.WriteVariantData(networkState_->currentValues_[i]);
-    }
-}
-
-bool Serializable::ReadDeltaUpdate(Deserializer& source)
-{
-    const ea::vector<AttributeInfo>* attributes = GetNetworkAttributes();
-    if (!attributes)
-        return false;
-
-    unsigned numAttributes = attributes->size();
-    DirtyBits attributeBits;
-    bool changed = false;
-
-    unsigned long long interceptMask = networkState_ ? networkState_->interceptMask_ : 0;
-    unsigned char timeStamp = source.ReadUByte();
-    source.Read(attributeBits.data_, (numAttributes + 7) >> 3u);
-
-    for (unsigned i = 0; i < numAttributes && !source.IsEof(); ++i)
-    {
-        if (attributeBits.IsSet(i))
-        {
-            const AttributeInfo& attr = attributes->at(i);
-            if (!(interceptMask & (1ULL << i)))
-            {
-                OnSetAttribute(attr, source.ReadVariant(attr.type_));
-                changed = true;
-            }
-            else
-            {
-                using namespace InterceptNetworkUpdate;
-
-                VariantMap& eventData = GetEventDataMap();
-                eventData[P_SERIALIZABLE] = this;
-                eventData[P_TIMESTAMP] = (unsigned)timeStamp;
-                eventData[P_INDEX] = RemapAttributeIndex(GetAttributes(), attr, i);
-                eventData[P_NAME] = attr.name_;
-                eventData[P_VALUE] = source.ReadVariant(attr.type_);
-                SendEvent(E_INTERCEPTNETWORKUPDATE, eventData);
-            }
-        }
-    }
-
-    return changed;
-}
-
-bool Serializable::ReadLatestDataUpdate(Deserializer& source)
-{
-    const ea::vector<AttributeInfo>* attributes = GetNetworkAttributes();
-    if (!attributes)
-        return false;
-
-    unsigned numAttributes = attributes->size();
-    bool changed = false;
-
-    unsigned long long interceptMask = networkState_ ? networkState_->interceptMask_ : 0;
-    unsigned char timeStamp = source.ReadUByte();
-
-    for (unsigned i = 0; i < numAttributes && !source.IsEof(); ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-        if (attr.mode_ & AM_LATESTDATA)
-        {
-            if (!(interceptMask & (1ULL << i)))
-            {
-                OnSetAttribute(attr, source.ReadVariant(attr.type_));
-                changed = true;
-            }
-            else
-            {
-                using namespace InterceptNetworkUpdate;
-
-                VariantMap& eventData = GetEventDataMap();
-                eventData[P_SERIALIZABLE] = this;
-                eventData[P_TIMESTAMP] = (unsigned)timeStamp;
-                eventData[P_INDEX] = RemapAttributeIndex(GetAttributes(), attr, i);
-                eventData[P_NAME] = attr.name_;
-                eventData[P_VALUE] = source.ReadVariant(attr.type_);
-                SendEvent(E_INTERCEPTNETWORKUPDATE, eventData);
-            }
-        }
-    }
-
-    return changed;
-}
-
 Variant Serializable::GetAttribute(unsigned index) const
 {
     Variant ret;
@@ -1141,31 +695,6 @@ unsigned Serializable::GetNumAttributes() const
 {
     const ea::vector<AttributeInfo>* attributes = GetAttributes();
     return attributes ? attributes->size() : 0;
-}
-
-unsigned Serializable::GetNumNetworkAttributes() const
-{
-    const ea::vector<AttributeInfo>* attributes = networkState_ ? networkState_->attributes_ :
-        context_->GetNetworkAttributes(GetType());
-    return attributes ? attributes->size() : 0;
-}
-
-bool Serializable::GetInterceptNetworkUpdate(const ea::string& attributeName) const
-{
-    const ea::vector<AttributeInfo>* attributes = GetNetworkAttributes();
-    if (!attributes)
-        return false;
-
-    unsigned long long interceptMask = networkState_ ? networkState_->interceptMask_ : 0;
-
-    for (unsigned i = 0; i < attributes->size(); ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-        if (!attr.name_.compare(attributeName))
-            return interceptMask & (1ULL << i) ? true : false;
-    }
-
-    return false;
 }
 
 void Serializable::SetInstanceDefault(const ea::string& name, const Variant& defaultValue)

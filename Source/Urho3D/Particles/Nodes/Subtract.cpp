@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "Subtract.h"
-#include "SubtractInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "SubtractInstance.h"
 
 namespace Urho3D
 {
@@ -42,33 +44,33 @@ namespace {
 static ea::vector<NodePattern> SubtractPatterns{
     MakePattern(
         SubtractInstance<float, float, float>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         SubtractInstance<Vector2, Vector2, Vector2>()
-        , PinPattern<Vector2>("x")
-        , PinPattern<Vector2>("y")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector2>("x")
+        , ParticleGraphTypedPin<Vector2>("y")
+        , ParticleGraphTypedPin<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         SubtractInstance<Vector3, Vector3, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<Vector3>("y")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<Vector3>("y")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         SubtractInstance<Vector4, Vector4, Vector4>()
-        , PinPattern<Vector4>("x")
-        , PinPattern<Vector4>("y")
-        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector4>("x")
+        , ParticleGraphTypedPin<Vector4>("y")
+        , ParticleGraphTypedPin<Vector4>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         SubtractInstance<Color, Color, Color>()
-        , PinPattern<Color>("x")
-        , PinPattern<Color>("y")
-        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Color>("x")
+        , ParticleGraphTypedPin<Color>("y")
+        , ParticleGraphTypedPin<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

@@ -20,10 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/VariantCurve.h"
+#include "../Precompiled.h"
+
 #include "../IO/ArchiveSerialization.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Resource.h"
+
+#include "../Core/VariantCurve.h"
 
 namespace Urho3D
 {
@@ -154,7 +157,7 @@ struct ResourceRefListStringCaster
 
 void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, VariantType variantType)
 {
-    static_assert(MAX_VAR_TYPES == 29, "Update me");
+    static_assert(MAX_VAR_TYPES == 30, "Update me");
     switch (variantType)
     {
     case VAR_NONE:
@@ -299,6 +302,17 @@ void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, 
         return;
     }
 
+    case VAR_STRINGVARIANTMAP:
+    {
+        if (archive.IsInput() && !value.GetStringVariantMapPtr())
+            value = StringVariantMap{};
+
+        auto ptr = value.GetStringVariantMapPtr();
+        URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
+        SerializeMap(archive, name, *ptr);
+        return;
+    }
+
     case VAR_VOIDPTR:
     case VAR_PTR:
         throw ArchiveException("'{}/{}' has unsupported variant type");
@@ -320,6 +334,11 @@ void SerializeValue(Archive& archive, const char* name, VariantVector& value)
 }
 
 void SerializeValue(Archive& archive, const char* name, VariantMap& value)
+{
+    SerializeMap(archive, name, value);
+}
+
+void SerializeValue(Archive& archive, const char* name, StringVariantMap& value)
 {
     SerializeMap(archive, name, value);
 }

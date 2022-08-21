@@ -19,17 +19,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../Graphics/IndexBuffer.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/Renderer.h"
-#include "../Resource/ResourceCache.h"
-#include "../Math/Matrix4.h"
+
+#include "../Precompiled.h"
+
 #include "../RmlUI/RmlRenderer.h"
+
+#include "../Core/Context.h"
+#include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/IndexBuffer.h"
+#include "../Graphics/Renderer.h"
+#include "../Graphics/Texture2D.h"
+#include "../Graphics/VertexBuffer.h"
+#include "../IO/Log.h"
+#include "../Math/Matrix4.h"
+#include "../Resource/ResourceCache.h"
 
 #include "../DebugNew.h"
 
@@ -80,6 +84,7 @@ void RmlRenderer::BeginRendering()
     vertexBuffer_->Discard();
     indexBuffer_->Discard();
     drawQueue_->Reset(false);
+    textures_.clear();
 
     VertexBuffer* vertexBuffer = vertexBuffer_->GetVertexBuffer();
     IndexBuffer* indexBuffer = indexBuffer_->GetIndexBuffer();
@@ -200,7 +205,10 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
     drawQueue_->SetPipelineState(pipelineState);
 
     if (texture)
+    {
         drawQueue_->AddShaderResource(TU_DIFFUSE, texture);
+        textures_.emplace_back(texture);
+    }
     drawQueue_->CommitShaderResources();
 
     if (drawQueue_->BeginShaderParameterGroup(SP_CAMERA, false))

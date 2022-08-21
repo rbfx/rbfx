@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,6 @@
 namespace Urho3D
 {
 
-extern const char* UI_CATEGORY;
-
 Button::Button(Context* context) :
     BorderImage(context),
     pressedOffset_(IntVector2::ZERO),
@@ -52,7 +50,7 @@ Button::~Button() = default;
 
 void Button::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Button>(UI_CATEGORY);
+    context->RegisterFactory<Button>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Is Enabled", true);

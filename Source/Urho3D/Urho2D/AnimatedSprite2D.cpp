@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,8 +42,6 @@
 namespace Urho3D
 {
 
-extern const char* URHO2D_CATEGORY;
-
 const char* loopModeNames[] =
 {
     "Default",
@@ -71,7 +69,7 @@ AnimatedSprite2D::~AnimatedSprite2D()
 
 void AnimatedSprite2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimatedSprite2D>(URHO2D_CATEGORY);
+    context->RegisterFactory<AnimatedSprite2D>(Category_Urho2D);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticSprite2D);
     URHO3D_REMOVE_ATTRIBUTE("Sprite");
@@ -190,7 +188,6 @@ void AnimatedSprite2D::SetLoopMode(LoopMode2D loopMode)
 void AnimatedSprite2D::SetSpeed(float speed)
 {
     speed_ = speed;
-    MarkNetworkUpdate();
 }
 
 AnimationSet2D* AnimatedSprite2D::GetAnimationSet() const
@@ -287,7 +284,6 @@ void AnimatedSprite2D::SetSpineAnimation()
     spAnimationState_setAnimationByName(animationState_, 0, animationName_.c_str(), loopMode_ != LM_FORCE_CLAMPED ? true : false);
 
     UpdateAnimation(0.0f);
-    MarkNetworkUpdate();
 }
 
 void AnimatedSprite2D::UpdateSpineAnimation(float timeStep)
@@ -408,7 +404,6 @@ void AnimatedSprite2D::SetSpriterAnimation()
     }
 
     UpdateAnimation(0.0f);
-    MarkNetworkUpdate();
 }
 
 void AnimatedSprite2D::UpdateSpriterAnimation(float timeStep)

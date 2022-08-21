@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,19 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/Context.h"
-#include "../Physics/PhysicsUtils.h"
-#include "../Physics/RigidBody.h"
-#include "../Physics/PhysicsWorld.h"
-#include "../Scene/Scene.h"
-#include "../IO/Log.h"
+#include "../Precompiled.h"
+
 #include "../Physics/RaycastVehicle.h"
 
-#include <Bullet/BulletDynamics/Vehicle/btRaycastVehicle.h>
+#include "../Core/Context.h"
+#include "../IO/Log.h"
+#include "../Physics/PhysicsUtils.h"
+#include "../Physics/PhysicsWorld.h"
+#include "../Physics/RigidBody.h"
+#include "../Scene/Scene.h"
+
 #include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
+#include <Bullet/BulletDynamics/Vehicle/btRaycastVehicle.h>
 
 namespace Urho3D
 {

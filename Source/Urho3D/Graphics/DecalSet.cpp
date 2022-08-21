@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,8 +48,6 @@
 
 namespace Urho3D
 {
-
-extern const char* GEOMETRY_CATEGORY;
 
 static const unsigned MIN_VERTICES = 4;
 static const unsigned MIN_INDICES = 6;
@@ -179,7 +177,7 @@ DecalSet::~DecalSet() = default;
 
 void DecalSet::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DecalSet>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<DecalSet>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),
@@ -224,22 +222,25 @@ void DecalSet::UpdateBatches(const FrameInfo& frame)
     batches_[0].distance_ = distance_;
     if (!skinned_)
         batches_[0].worldTransform_ = &worldTransform;
+
+    if (bufferDirty_ || vertexBuffer_->IsDataLost() || indexBuffer_->IsDataLost())
+        RequestUpdateBatchesDelayed(frame);
+}
+
+void DecalSet::UpdateBatchesDelayed(const FrameInfo& frame)
+{
+    UpdateBuffers();
 }
 
 void DecalSet::UpdateGeometry(const FrameInfo& frame)
 {
-    if (bufferDirty_ || vertexBuffer_->IsDataLost() || indexBuffer_->IsDataLost())
-        UpdateBuffers();
-
     if (skinningDirty_)
         UpdateSkinning();
 }
 
 UpdateGeometryType DecalSet::GetUpdateGeometryType()
 {
-    if (bufferDirty_ || vertexBuffer_->IsDataLost() || indexBuffer_->IsDataLost())
-        return UPDATE_MAIN_THREAD;
-    else if (skinningDirty_)
+    if (skinningDirty_)
         return UPDATE_WORKER_THREAD;
     else
         return UPDATE_NONE;
@@ -248,7 +249,6 @@ UpdateGeometryType DecalSet::GetUpdateGeometryType()
 void DecalSet::SetMaterial(Material* material)
 {
     batches_[0].material_ = material;
-    MarkNetworkUpdate();
 }
 
 void DecalSet::SetMaxVertices(unsigned num)
@@ -264,8 +264,6 @@ void DecalSet::SetMaxVertices(unsigned num)
 
         while (decals_.size() && numVertices_ > maxVertices_)
             RemoveDecals(1);
-
-        MarkNetworkUpdate();
     }
 }
 
@@ -282,8 +280,6 @@ void DecalSet::SetMaxIndices(unsigned num)
 
         while (decals_.size() && numIndices_ > maxIndices_)
             RemoveDecals(1);
-
-        MarkNetworkUpdate();
     }
 }
 
@@ -293,8 +289,6 @@ void DecalSet::SetOptimizeBufferSize(bool enable)
     {
         optimizeBufferSize_ = enable;
         bufferDirty_ = true;
-
-        MarkNetworkUpdate();
     }
 }
 

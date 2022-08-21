@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -57,7 +57,7 @@ private:
     /// Handle console command event.
     void HandleConsoleCommand(StringHash eventType, VariantMap& eventData);
     /// Handle frame update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Handle ESC key down event to quit the engine.
     void HandleEscKeyDown(StringHash eventType, VariantMap& eventData);
     /// Print intro message and initialize the game state.

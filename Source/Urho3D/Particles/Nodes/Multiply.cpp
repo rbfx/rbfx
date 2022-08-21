@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "Multiply.h"
-#include "MultiplyInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "MultiplyInstance.h"
 
 namespace Urho3D
 {
@@ -42,27 +44,27 @@ namespace {
 static ea::vector<NodePattern> MultiplyPatterns{
     MakePattern(
         MultiplyInstance<float, float, float>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         MultiplyInstance<Vector3, float, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<float>("y")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         MultiplyInstance<float, Vector3, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<Vector3>("y")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<Vector3>("y")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         MultiplyInstance<Color, Color, Color>()
-        , PinPattern<Color>("x")
-        , PinPattern<Color>("y")
-        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Color>("x")
+        , ParticleGraphTypedPin<Color>("y")
+        , ParticleGraphTypedPin<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

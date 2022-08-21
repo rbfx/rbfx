@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -67,14 +67,15 @@ void NATPunchtrough::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void NATPunchtrough::CreateUI()
 {
     SetLogoVisible(true); // We need the full rendering window
 
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetUIRoot();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* uiStyle = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     // Set style to the UI root so that elements will inherit it
@@ -138,7 +139,7 @@ Button* NATPunchtrough::CreateButton(const ea::string& text, int width, IntVecto
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
 
-    auto* button = GetSubsystem<UI>()->GetRoot()->CreateChild<Button>();
+    auto* button = GetUIRoot()->CreateChild<Button>();
     button->SetStyleAuto();
     button->SetFixedWidth(width);
     button->SetFixedHeight(30);
@@ -154,7 +155,7 @@ Button* NATPunchtrough::CreateButton(const ea::string& text, int width, IntVecto
 
 LineEdit* NATPunchtrough::CreateLineEdit(const ea::string& placeholder, int width, IntVector2 pos)
 {
-    auto* textEdit = GetSubsystem<UI>()->GetRoot()->CreateChild<LineEdit>("");
+    auto* textEdit = GetUIRoot()->CreateChild<LineEdit>("");
     textEdit->SetStyleAuto();
     textEdit->SetFixedWidth(width);
     textEdit->SetFixedHeight(30);
@@ -168,7 +169,7 @@ void NATPunchtrough::CreateLabel(const ea::string& text, IntVector2 pos)
     auto* cache = GetSubsystem<ResourceCache>();
     // Create log element to view latest logs from the system
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
-    auto* label = GetSubsystem<UI>()->GetRoot()->CreateChild<Text>();
+    auto* label = GetUIRoot()->CreateChild<Text>();
     label->SetFont(font, 12);
     label->SetColor(Color(0.0f, 1.0f, 0.0f));
     label->SetPosition(pos);

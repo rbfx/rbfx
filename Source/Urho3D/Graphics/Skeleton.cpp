@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,8 @@
 
 #include "../Graphics/Skeleton.h"
 #include "../IO/Log.h"
+
+#include <EASTL/numeric.h>
 
 #include "../DebugNew.h"
 
@@ -71,6 +73,7 @@ bool Skeleton::Load(Deserializer& source)
         bones_.push_back(newBone);
     }
 
+    UpdateBoneOrder();
     return true;
 }
 
@@ -110,6 +113,8 @@ void Skeleton::Define(const Skeleton& src)
     for (auto i = bones_.begin(); i != bones_.end(); ++i)
         i->node_.Reset();
     rootBoneIndex_ = src.rootBoneIndex_;
+
+    UpdateBoneOrder();
 }
 
 void Skeleton::SetRootBoneIndex(unsigned index)
@@ -129,6 +134,42 @@ void Skeleton::ClearBones()
 {
     bones_.clear();
     rootBoneIndex_ = M_MAX_UNSIGNED;
+}
+
+void Skeleton::UpdateBoneOrder()
+{
+    const unsigned numBones = bones_.size();
+    bonesOrder_.reserve(numBones);
+    bonesOrder_.clear();
+
+    // Collect roots first
+    for (unsigned boneIndex = 0; boneIndex < numBones; ++boneIndex)
+    {
+        if (bones_[boneIndex].parentIndex_ == boneIndex)
+            bonesOrder_.push_back(boneIndex);
+    }
+
+    // Collect layer by layer
+    unsigned rangeBegin = 0;
+    unsigned rangeEnd = bonesOrder_.size();
+
+    while (bonesOrder_.size() < numBones && rangeBegin != rangeEnd)
+    {
+        const auto currentParents = ea::span<unsigned>{bonesOrder_}.subspan(rangeBegin, rangeEnd - rangeBegin);
+        for (unsigned boneIndex = 0; boneIndex < numBones; ++boneIndex)
+        {
+            const unsigned parentBoneIndex = bones_[boneIndex].parentIndex_;
+            if (parentBoneIndex == boneIndex)
+                continue;
+
+            const bool isDirectChild = ea::find(currentParents.begin(), currentParents.end(), parentBoneIndex) != currentParents.end();
+            if (isDirectChild)
+                bonesOrder_.push_back(boneIndex);
+        }
+
+        rangeBegin = rangeEnd;
+        rangeEnd = bonesOrder_.size();
+    }
 }
 
 void Skeleton::Reset()

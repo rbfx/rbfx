@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
 class CharacterIsometric;
 class Sample2D;
 
-/// Urho2D tile map example.
+/// Tile map example.
 /// This sample demonstrates:
 ///    - Creating an isometric 2D scene with tile map
 ///    - Displaying the scene using the Renderer subsystem
@@ -55,7 +55,7 @@ private:
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Handle the logic post update event.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle the post render update event.

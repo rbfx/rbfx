@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,8 +40,6 @@
 namespace Urho3D
 {
 
-extern const char* URHO2D_CATEGORY;
-
 ParticleEmitter2D::ParticleEmitter2D(Context* context) :
     Drawable2D(context),
     blendMode_(BLEND_ADDALPHA),
@@ -60,7 +58,7 @@ ParticleEmitter2D::~ParticleEmitter2D() = default;
 
 void ParticleEmitter2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleEmitter2D>(URHO2D_CATEGORY);
+    context->RegisterFactory<ParticleEmitter2D>(Category_Urho2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable2D);
@@ -92,7 +90,6 @@ void ParticleEmitter2D::SetEffect(ParticleEffect2D* effect)
         return;
 
     effect_ = effect;
-    MarkNetworkUpdate();
 
     if (!effect_)
         return;
@@ -112,8 +109,6 @@ void ParticleEmitter2D::SetSprite(Sprite2D* sprite)
 
     sprite_ = sprite;
     UpdateMaterial();
-
-    MarkNetworkUpdate();
 }
 
 void ParticleEmitter2D::SetBlendMode(BlendMode blendMode)
@@ -123,8 +118,6 @@ void ParticleEmitter2D::SetBlendMode(BlendMode blendMode)
 
     blendMode_ = blendMode;
     UpdateMaterial();
-
-    MarkNetworkUpdate();
 }
 
 void ParticleEmitter2D::SetMaxParticles(unsigned maxParticles)
@@ -172,8 +165,6 @@ void ParticleEmitter2D::SetEmitting(bool enable)
 
     emitting_ = enable;
     emitParticleTime_ = 0.0f;
-
-    MarkNetworkUpdate();
 }
 
 ResourceRef ParticleEmitter2D::GetSpriteAttr() const

@@ -13,11 +13,10 @@
 #ifndef _CONFIG_GLSL_
 #define _CONFIG_GLSL_
 
-#extension GL_ARB_shading_language_420pack: enable
-#extension GL_EXT_shader_texture_lod: enable
-#extension GL_OES_standard_derivatives : enable
-
 /// =================================== Shader configuration controls ===================================
+
+/// Whether to disable light uniform buffer.
+// #define URHO3D_CUSTOM_LIGHT_UNIFORMS
 
 /// Whether to disable default uniform buffer in favor of custom one.
 /// You may still need to declare default constants to use built-in includes.
@@ -33,6 +32,7 @@
 // #define URHO3D_PIXEL_NEED_NORMAL
 // #define URHO3D_PIXEL_NEED_TANGENT
 // #define URHO3D_PIXEL_NEED_VERTEX_COLOR
+// #define URHO3D_PIXEL_NEED_WORLD_POSITION
 
 /// Configures what data pixel shader needs to prepare for user shader:
 // #define URHO3D_SURFACE_NEED_AMBIENT
@@ -84,6 +84,9 @@
 
 /// Whether to unpack normal from red and alpha channels of normal map.
 // #define PACKEDNORMAL
+
+/// Indicates that the alpha will be discarded, so any kind of attenuation should be performed by modulating the output color itself.
+// #define ADDITIVE
 
 
 /// =================================== Deprecated material defines ===================================

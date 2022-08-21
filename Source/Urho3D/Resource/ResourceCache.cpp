@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -100,6 +100,12 @@ ResourceCache::ResourceCache(Context* context) :
 
     // Subscribe BeginFrame for handling directory watchers and background loaded resource finalization
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(ResourceCache, HandleBeginFrame));
+
+    auto* fileSystem = GetSubsystem<FileSystem>();
+    if (fileSystem)
+    {
+        exePath_ = fileSystem->GetProgramDir().replaced("/./", "/");
+    }
 }
 
 ResourceCache::~ResourceCache()
@@ -219,6 +225,13 @@ void ResourceCache::RemoveResourceDir(const ea::string& pathName)
             return;
         }
     }
+}
+
+void ResourceCache::RemoveAllResourceDirs()
+{
+    const auto resourceDirsCopy = resourceDirs_;
+    for (const ea::string& dir : resourceDirsCopy)
+        RemoveResourceDir(dir);
 }
 
 void ResourceCache::RemovePackageFile(PackageFile* package, bool releaseResources, bool forceRelease)
@@ -420,7 +433,7 @@ void ResourceCache::ReleaseAllResources(bool force)
 
 bool ResourceCache::ReloadResource(const ea::string_view resourceName)
 {
-    if (Resource* resource = FindResource(StringHash::ZERO, resourceName))
+    if (Resource* resource = FindResource(StringHash::Empty, resourceName))
         return ReloadResource(resource);
     return false;
 }
@@ -606,7 +619,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& 
 
     StringHash nameHash(sanitatedName);
 
-    const SharedPtr<Resource>& existing = type == StringHash::ZERO ? FindResource(type, nameHash) : FindResource(nameHash);
+    const SharedPtr<Resource>& existing = type == StringHash::Empty ? FindResource(type, nameHash) : FindResource(nameHash);
     return existing;
 }
 
@@ -900,12 +913,12 @@ ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
     if (resourceDirs_.size())
     {
         ea::string namePath = GetPath(sanitatedName);
-        ea::string exePath = fileSystem->GetProgramDir().replaced("/./", "/");
+
         for (unsigned i = 0; i < resourceDirs_.size(); ++i)
         {
             ea::string relativeResourcePath = resourceDirs_[i];
-            if (relativeResourcePath.starts_with(exePath))
-                relativeResourcePath = relativeResourcePath.substr(exePath.length());
+            if (relativeResourcePath.starts_with(exePath_))
+                relativeResourcePath = relativeResourcePath.substr(exePath_.length());
 
             if (namePath.starts_with(resourceDirs_[i], false))
                 namePath = namePath.substr(resourceDirs_[i].length());
@@ -1250,7 +1263,7 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
                 // Manual resources do not exist in resource dirs.
                 bool isPhysicalResource = false;
                 for (unsigned i = 0; i < resourceDirs_.size() && !isPhysicalResource; ++i)
-                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + pathName);
+                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + entryName);
 
                 if (!isPhysicalResource)
                 {

@@ -63,7 +63,7 @@ unsigned ParticleGraphAttributeLayout::GetOrAddAttribute(const ea::string& name,
     }
 
     unsigned i = attributes_.size();
-    unsigned size = GetVariantSize(type) * capacity_;
+    unsigned size = GetVariantTypeSize(type) * capacity_;
     attributes_.push_back(AttrSpan{name, nameHash, type, ParticleGraphSpan(position_, size)});
     position_ += size;
     return i;
@@ -79,7 +79,7 @@ unsigned ParticleGraphBufferLayout::Allocate(ParticleGraphContainerType containe
 {
     assert(container != ParticleGraphContainerType::Auto);
     unsigned index = spans_.size();
-    unsigned size = ((container == ParticleGraphContainerType::Scalar) ? 1 : capacity_) * GetVariantSize(type);
+    unsigned size = ((container == ParticleGraphContainerType::Scalar) ? 1 : capacity_) * GetVariantTypeSize(type);
     spans_.push_back(PinSpan{container, type, ParticleGraphSpan(position_, size)});
     position_ += size;
     return index;

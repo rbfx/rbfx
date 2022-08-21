@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -77,18 +77,16 @@ static MouseButton MakeTouchIDMask(int id)
     return static_cast<MouseButton>(1u << static_cast<MouseButtonFlags::Integer>(id)); // NOLINT(misc-misplaced-widening-cast)
 }
 
-StringHash VAR_ORIGIN("Origin");
-const StringHash VAR_ORIGINAL_PARENT("OriginalParent");
-const StringHash VAR_ORIGINAL_CHILD_INDEX("OriginalChildIndex");
-const StringHash VAR_PARENT_CHANGED("ParentChanged");
+ea::string VAR_ORIGIN("Origin");
+const ea::string VAR_ORIGINAL_PARENT("OriginalParent");
+const ea::string VAR_ORIGINAL_CHILD_INDEX("OriginalChildIndex");
+const ea::string VAR_PARENT_CHANGED("ParentChanged");
 
 const float DEFAULT_DOUBLECLICK_INTERVAL = 0.5f;
 const float DEFAULT_DRAGBEGIN_INTERVAL = 0.5f;
 const float DEFAULT_TOOLTIP_DELAY = 0.5f;
 const int DEFAULT_DRAGBEGIN_DISTANCE = 5;
 const int DEFAULT_FONT_TEXTURE_MAX_SIZE = 2048;
-
-const char* UI_CATEGORY = "UI";
 
 UI::UI(Context* context) :
     Object(context),
@@ -130,18 +128,19 @@ UI::UI(Context* context) :
 {
     rootElement_->SetTraversalMode(TM_DEPTH_FIRST);
     rootModalElement_->SetTraversalMode(TM_DEPTH_FIRST);
-
+    Input* input = context_->GetSubsystem<Input>();
+    URHO3D_ASSERT(input);
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(UI, HandleScreenMode));
-    SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(UI, HandleMouseButtonDown));
-    SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(UI, HandleMouseButtonUp));
-    SubscribeToEvent(E_MOUSEMOVE, URHO3D_HANDLER(UI, HandleMouseMove));
-    SubscribeToEvent(E_MOUSEWHEEL, URHO3D_HANDLER(UI, HandleMouseWheel));
-    SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(UI, HandleTouchBegin));
-    SubscribeToEvent(E_TOUCHEND, URHO3D_HANDLER(UI, HandleTouchEnd));
-    SubscribeToEvent(E_TOUCHMOVE, URHO3D_HANDLER(UI, HandleTouchMove));
-    SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(UI, HandleKeyDown));
-    SubscribeToEvent(E_TEXTINPUT, URHO3D_HANDLER(UI, HandleTextInput));
-    SubscribeToEvent(E_DROPFILE, URHO3D_HANDLER(UI, HandleDropFile));
+    SubscribeToEvent(input, E_MOUSEBUTTONDOWN, URHO3D_HANDLER(UI, HandleMouseButtonDown));
+    SubscribeToEvent(input, E_MOUSEBUTTONUP, URHO3D_HANDLER(UI, HandleMouseButtonUp));
+    SubscribeToEvent(input, E_MOUSEMOVE, URHO3D_HANDLER(UI, HandleMouseMove));
+    SubscribeToEvent(input, E_MOUSEWHEEL, URHO3D_HANDLER(UI, HandleMouseWheel));
+    SubscribeToEvent(input, E_TOUCHBEGIN, URHO3D_HANDLER(UI, HandleTouchBegin));
+    SubscribeToEvent(input, E_TOUCHEND, URHO3D_HANDLER(UI, HandleTouchEnd));
+    SubscribeToEvent(input, E_TOUCHMOVE, URHO3D_HANDLER(UI, HandleTouchMove));
+    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(UI, HandleKeyDown));
+    SubscribeToEvent(input, E_TEXTINPUT, URHO3D_HANDLER(UI, HandleTextInput));
+    SubscribeToEvent(input, E_DROPFILE, URHO3D_HANDLER(UI, HandleDropFile));
     SubscribeToEvent(E_FOCUSED, URHO3D_HANDLER(UI, HandleFocused));
 
     // Try to initialize right now, but skip if screen mode is not yet set
@@ -281,7 +280,7 @@ bool UI::SetModalElement(UIElement* modalElement, bool enable)
         // Revert back to original parent
         modalElement->SetParent(static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
             modalElement->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
-        auto& vars = const_cast<VariantMap&>(modalElement->GetVars());
+        auto& vars = const_cast<StringVariantMap&>(modalElement->GetVars());
         vars.erase(VAR_ORIGINAL_PARENT);
         vars.erase(VAR_ORIGINAL_CHILD_INDEX);
 
@@ -292,10 +291,10 @@ bool UI::SetModalElement(UIElement* modalElement, bool enable)
             auto* element = static_cast<UIElement*>(originElement->GetVar(VAR_PARENT_CHANGED).GetPtr());
             if (element)
             {
-                const_cast<VariantMap&>(originElement->GetVars()).erase(VAR_PARENT_CHANGED);
+                const_cast<StringVariantMap&>(originElement->GetVars()).erase(VAR_PARENT_CHANGED);
                 element->SetParent(static_cast<UIElement*>(element->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
                     element->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
-                vars = const_cast<VariantMap&>(element->GetVars());
+                vars = const_cast<StringVariantMap&>(element->GetVars());
                 vars.erase(VAR_ORIGINAL_PARENT);
                 vars.erase(VAR_ORIGINAL_CHILD_INDEX);
             }
@@ -453,7 +452,7 @@ void UI::RenderUpdate()
     }
 
     // UIElement does not have anything to show. Insert dummy batch that will clear the texture.
-    if (batches_.empty() && texture_)
+    if (batches_.empty() && texture_ && clearColor_.a_ > 0)
     {
         UIBatch batch(rootElement_, BLEND_REPLACE, currentScissor, nullptr, &vertexData_);
         batch.SetColor(Color::BLACK);
@@ -698,12 +697,20 @@ void UI::SetCustomSize(int width, int height)
     ResizeRootElement();
 }
 
-IntVector2 UI::GetCursorPosition() const
+IntVector2 UI::GetUICursorPosition() const
 {
     if (cursor_)
         return cursor_->GetPosition();
 
     return ConvertSystemToUI(GetSubsystem<Input>()->GetMousePosition());
+}
+
+IntVector2 UI::GetSystemCursorPosition() const
+{
+    if (cursor_)
+        return ConvertUIToSystem(cursor_->GetPosition());
+
+    return GetSubsystem<Input>()->GetMousePosition();
 }
 
 UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly)
@@ -2087,6 +2094,16 @@ void UI::ResizeRootElement()
     }
 }
 
+IntVector2 UI::GetSize() const
+{
+    // Use a fake size in headless mode
+    IntVector2 size = graphics_ ? IntVector2(graphics_->GetWidth(), graphics_->GetHeight()) : IntVector2(1024, 768);
+    size.x_ = RoundToInt(static_cast<float>(size.x_) / uiScale_);
+    size.y_ = RoundToInt(static_cast<float>(size.y_) / uiScale_);
+    return size;
+}
+
+
 IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
 {
     // Use a fake size in headless mode
@@ -2096,8 +2113,8 @@ IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
 
     if (applyScale)
     {
-        size.x_ = RoundToInt((float)size.x_ / uiScale_);
-        size.y_ = RoundToInt((float)size.y_ / uiScale_);
+        size.x_ = RoundToInt(static_cast<float>(size.x_) / uiScale_);
+        size.y_ = RoundToInt(static_cast<float>(size.y_) / uiScale_);
     }
 
     return size;

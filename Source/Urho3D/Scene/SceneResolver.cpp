@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,30 +38,32 @@ SceneResolver::~SceneResolver() = default;
 
 void SceneResolver::Reset()
 {
-    nodes_.clear();
-    components_.clear();
+    nodeLookup_.clear();
+    componentLookup_.clear();
 }
 
 void SceneResolver::AddNode(unsigned oldID, Node* node)
 {
     if (node)
-        nodes_[oldID] = node;
+        nodeLookup_[oldID] = node;
 }
 
 void SceneResolver::AddComponent(unsigned oldID, Component* component)
 {
     if (component)
-        components_[oldID] = component;
+    {
+        componentLookup_[oldID] = component;
+        components_.emplace_back(component);
+    }
 }
 
 void SceneResolver::Resolve()
 {
     // Nodes do not have component or node ID attributes, so only have to go through components
     ea::hash_set<StringHash> noIDAttributes;
-    for (auto i = components_.begin(); i !=
-        components_.end(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        Component* component = i->second;
+        Component* component = *i;
         if (!component || noIDAttributes.contains(component->GetType()))
             continue;
 
@@ -83,9 +85,9 @@ void SceneResolver::Resolve()
 
                 if (oldNodeID)
                 {
-                    auto k = nodes_.find(oldNodeID);
+                    auto k = nodeLookup_.find(oldNodeID);
 
-                    if (k != nodes_.end() && k->second)
+                    if (k != nodeLookup_.end() && k->second)
                     {
                         unsigned newNodeID = k->second->GetID();
                         component->SetAttribute(j, Variant(newNodeID));
@@ -101,10 +103,10 @@ void SceneResolver::Resolve()
 
                 if (oldComponentID)
                 {
-                    auto k = components_.find(
+                    auto k = componentLookup_.find(
                         oldComponentID);
 
-                    if (k != components_.end() && k->second)
+                    if (k != componentLookup_.end() && k->second)
                     {
                         unsigned newComponentID = k->second->GetID();
                         component->SetAttribute(j, Variant(newComponentID));
@@ -129,9 +131,9 @@ void SceneResolver::Resolve()
                     for (unsigned k = 1; k < oldNodeIDs.size(); ++k)
                     {
                         unsigned oldNodeID = oldNodeIDs[k].GetUInt();
-                        auto l = nodes_.find(oldNodeID);
+                        auto l = nodeLookup_.find(oldNodeID);
 
-                        if (l != nodes_.end() && l->second)
+                        if (l != nodeLookup_.end() && l->second)
                             newIDs.push_back(l->second->GetID());
                         else
                         {

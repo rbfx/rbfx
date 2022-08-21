@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -64,8 +64,6 @@ const char* navmeshPartitionTypeNames[] =
     "monotone",
     nullptr
 };
-
-const char* NAVIGATION_CATEGORY = "Navigation";
 
 static const int DEFAULT_TILE_SIZE = 128;
 static const float DEFAULT_CELL_SIZE = 0.3f;
@@ -133,7 +131,7 @@ NavigationMesh::~NavigationMesh()
 
 void NavigationMesh::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NavigationMesh>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<NavigationMesh>(Category_Navigation);
 
     URHO3D_ACTION_STATIC_LABEL("Build!", Build, "(Re)builds navigation mesh");
 
@@ -229,99 +227,71 @@ void NavigationMesh::SetMeshName(const ea::string& newName)
 void NavigationMesh::SetTileSize(int size)
 {
     tileSize_ = Max(size, 16);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetCellSize(float size)
 {
     cellSize_ = Max(size, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetCellHeight(float height)
 {
     cellHeight_ = Max(height, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetAgentHeight(float height)
 {
     agentHeight_ = Max(height, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetAgentRadius(float radius)
 {
     agentRadius_ = Max(radius, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetAgentMaxClimb(float maxClimb)
 {
     agentMaxClimb_ = Max(maxClimb, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetAgentMaxSlope(float maxSlope)
 {
     agentMaxSlope_ = Max(maxSlope, 0.0f);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetRegionMinSize(float size)
 {
     regionMinSize_ = Max(size, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetRegionMergeSize(float size)
 {
     regionMergeSize_ = Max(size, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetEdgeMaxLength(float length)
 {
     edgeMaxLength_ = Max(length, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetEdgeMaxError(float error)
 {
     edgeMaxError_ = Max(error, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetDetailSampleDistance(float distance)
 {
     detailSampleDistance_ = Max(distance, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetDetailSampleMaxError(float error)
 {
     detailSampleMaxError_ = Max(error, M_EPSILON);
-
-    MarkNetworkUpdate();
 }
 
 void NavigationMesh::SetPadding(const Vector3& padding)
 {
     padding_ = padding;
-
-    MarkNetworkUpdate();
 }
 
 bool NavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned maxTiles)
@@ -1584,7 +1554,6 @@ void NavigationMesh::ReleaseNavigationMesh()
 void NavigationMesh::SetPartitionType(NavmeshPartitionType partitionType)
 {
     partitionType_ = partitionType;
-    MarkNetworkUpdate();
 }
 
 void RegisterNavigationLibrary(Context* context)

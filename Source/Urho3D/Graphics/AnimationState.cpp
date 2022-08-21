@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -81,21 +81,63 @@ Variant BlendAdditive(const Variant& oldValue, const Variant& newValue, const Va
 
 }
 
-AnimationState::AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation) :
+void AnimatedAttributeReference::SetValue(const Variant& value) const
+{
+    switch (attributeType_)
+    {
+    case AnimatedAttributeType::Default:
+        serializable_->SetAttribute(attributeIndex_, value);
+        break;
+
+    case AnimatedAttributeType::NodeVariables:
+    {
+        URHO3D_ASSERT(dynamic_cast<Node*>(serializable_.Get()));
+        auto& node = static_cast<Node&>(*serializable_);
+        node.SetVarByHash(StringHash(subAttributeKey_), value);
+        break;
+    }
+
+    case AnimatedAttributeType::AnimatedModelMorphs:
+    {
+        URHO3D_ASSERT(dynamic_cast<AnimatedModel*>(serializable_.Get()));
+        auto& animatedModel = static_cast<AnimatedModel&>(*serializable_);
+        animatedModel.SetMorphWeight(subAttributeKey_, value.GetFloat());
+        break;
+    }
+    }
+}
+
+AnimationState::AnimationState(AnimationController* controller, AnimatedModel* model) :
     controller_(controller),
-    model_(model),
-    animation_(animation)
+    model_(model)
 {
 }
 
-AnimationState::AnimationState(AnimationController* controller, Node* node, Animation* animation) :
+AnimationState::AnimationState(AnimationController* controller, Node* node) :
     controller_(controller),
-    node_(node),
-    animation_(animation)
+    node_(node)
 {
 }
 
 AnimationState::~AnimationState() = default;
+
+void AnimationState::Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode)
+{
+    if (animation_ != animation || startBone_ != startBone || blendMode != blendingMode_)
+    {
+        animation_ = animation;
+        startBone_ = startBone;
+        blendingMode_ = blendMode;
+        MarkTracksDirty();
+    }
+}
+
+void AnimationState::Update(bool looped, float time, float weight)
+{
+    SetLooped(looped);
+    SetTime(time);
+    SetWeight(weight);
+}
 
 bool AnimationState::AreTracksDirty() const
 {
@@ -138,7 +180,12 @@ void AnimationState::OnTracksReady()
 
 void AnimationState::SetLooped(bool looped)
 {
-    looped_ = looped;
+    if (looped_ != looped)
+    {
+        looped_ = looped;
+        if (model_)
+            model_->MarkAnimationDirty();
+    }
 }
 
 void AnimationState::SetWeight(float weight)
@@ -150,16 +197,6 @@ void AnimationState::SetWeight(float weight)
     if (weight != weight_)
     {
         weight_ = weight;
-        if (model_)
-            model_->MarkAnimationDirty();
-    }
-}
-
-void AnimationState::SetBlendMode(AnimationBlendMode mode)
-{
-    if (blendingMode_ != mode)
-    {
-        blendingMode_ = mode;
         if (model_)
             model_->MarkAnimationDirty();
     }
@@ -179,148 +216,6 @@ void AnimationState::SetTime(float time)
     }
 }
 
-void AnimationState::SetStartBone(const ea::string& name)
-{
-    if (!animation_)
-        return;
-
-    if (name != startBone_)
-    {
-        startBone_ = name;
-        MarkTracksDirty();
-        if (model_)
-            model_->MarkAnimationDirty();
-    }
-}
-
-void AnimationState::AddWeight(float delta)
-{
-    if (delta == 0.0f)
-        return;
-
-    SetWeight(GetWeight() + delta);
-}
-
-void AnimationState::AddTime(float delta)
-{
-    if (!animation_ || (!model_ && !node_))
-        return;
-
-    float length = animation_->GetLength();
-    if (delta == 0.0f || length == 0.0f)
-        return;
-
-    bool sendFinishEvent = false;
-
-    float oldTime = GetTime();
-    float time = oldTime + delta;
-    if (looped_)
-    {
-        while (time >= length)
-        {
-            time -= length;
-            sendFinishEvent = true;
-        }
-        while (time < 0.0f)
-        {
-            time += length;
-            sendFinishEvent = true;
-        }
-    }
-
-    SetTime(time);
-
-    if (!looped_)
-    {
-        if (delta > 0.0f && oldTime < length && GetTime() == length)
-            sendFinishEvent = true;
-        else if (delta < 0.0f && oldTime > 0.0f && GetTime() == 0.0f)
-            sendFinishEvent = true;
-    }
-
-    // Process finish event
-    if (sendFinishEvent)
-    {
-        using namespace AnimationFinished;
-
-        WeakPtr<AnimationState> self(this);
-        WeakPtr<Node> senderNode(model_ ? model_->GetNode() : node_.Get());
-
-        VariantMap& eventData = senderNode->GetEventDataMap();
-        eventData[P_NODE] = senderNode;
-        eventData[P_ANIMATION] = animation_;
-        eventData[P_NAME] = animation_->GetAnimationName();
-        eventData[P_LOOPED] = looped_;
-
-        // Note: this may cause arbitrary deletion of animation states, including the one we are currently processing
-        senderNode->SendEvent(E_ANIMATIONFINISHED, eventData);
-        if (senderNode.Expired() || self.Expired())
-            return;
-    }
-
-    // Process animation triggers
-    if (animation_->GetNumTriggers())
-    {
-        bool wrap = false;
-
-        if (delta > 0.0f)
-        {
-            if (oldTime > time)
-            {
-                oldTime -= length;
-                wrap = true;
-            }
-        }
-        if (delta < 0.0f)
-        {
-            if (time > oldTime)
-            {
-                time -= length;
-                wrap = true;
-            }
-        }
-        if (oldTime > time)
-            ea::swap(oldTime, time);
-
-        const ea::vector<AnimationTriggerPoint>& triggers = animation_->GetTriggers();
-        for (auto i = triggers.begin(); i != triggers.end(); ++i)
-        {
-            float frameTime = i->time_;
-            if (looped_ && wrap)
-                frameTime = fmodf(frameTime, length);
-
-            if (oldTime <= frameTime && time > frameTime)
-            {
-                using namespace AnimationTrigger;
-
-                WeakPtr<AnimationState> self(this);
-                WeakPtr<Node> senderNode(model_ ? model_->GetNode() : node_.Get());
-
-                VariantMap& eventData = senderNode->GetEventDataMap();
-                eventData[P_NODE] = senderNode;
-                eventData[P_ANIMATION] = animation_;
-                eventData[P_NAME] = animation_->GetAnimationName();
-                eventData[P_TIME] = i->time_;
-                eventData[P_DATA] = i->data_;
-
-                // Note: this may cause arbitrary deletion of animation states, including the one we are currently processing
-                senderNode->SendEvent(E_ANIMATIONTRIGGER, eventData);
-                if (senderNode.Expired() || self.Expired())
-                    return;
-            }
-        }
-    }
-}
-
-void AnimationState::SetLayer(unsigned char layer)
-{
-    if (layer != layer_)
-    {
-        layer_ = layer;
-        controller_->MarkAnimationStateOrderDirty();
-    }
-}
-
 AnimatedModel* AnimationState::GetModel() const
 {
     return model_;
@@ -336,172 +231,150 @@ float AnimationState::GetLength() const
     return animation_ ? animation_->GetLength() : 0.0f;
 }
 
-void AnimationState::ApplyModelTracks()
+void AnimationState::CalculateModelTracks(ea::vector<ModelAnimationOutput>& output) const
 {
     if (!animation_ || !IsEnabled())
         return;
 
-    for (ModelAnimationStateTrack& stateTrack : modelTracks_)
+    for (const ModelAnimationStateTrack& stateTrack : modelTracks_)
     {
         // Do not apply if the bone has animation disabled
         if (!stateTrack.bone_->animated_)
             continue;
 
-        ApplyTransformTrack(*stateTrack.track_, stateTrack.node_, stateTrack.bone_, stateTrack.keyFrame_, weight_, true);
+        URHO3D_ASSERT(output.size() > stateTrack.boneIndex_);
+        ModelAnimationOutput& trackOutput = output[stateTrack.boneIndex_];
+
+        unsigned keyFrame = stateTrack.keyFrame_;
+        CalulcateTransformTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
+        stateTrack.keyFrame_ = keyFrame;
     }
 }
 
-void AnimationState::ApplyNodeTracks()
+void AnimationState::CalculateNodeTracks(ea::unordered_map<Node*, NodeAnimationOutput>& output) const
 {
     if (!animation_ || !IsEnabled())
         return;
 
-    for (NodeAnimationStateTrack& stateTrack : nodeTracks_)
+    for (const NodeAnimationStateTrack& stateTrack : nodeTracks_)
     {
-        ApplyTransformTrack(*stateTrack.track_, stateTrack.node_, nullptr, stateTrack.keyFrame_, weight_, false);
+        NodeAnimationOutput& trackOutput = output[stateTrack.node_.Get()];
+
+        unsigned keyFrame = stateTrack.keyFrame_;
+        CalulcateTransformTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
+        stateTrack.keyFrame_ = keyFrame;
     }
 }
 
-void AnimationState::ApplyAttributeTracks()
+void AnimationState::CalculateAttributeTracks(ea::unordered_map<AnimatedAttributeReference, Variant>& output) const
 {
     if (!animation_ || !IsEnabled())
         return;
 
-    for (AttributeAnimationStateTrack& stateTrack : attributeTracks_)
+    for (const AttributeAnimationStateTrack& stateTrack : attributeTracks_)
     {
-        ApplyAttributeTrack(stateTrack, weight_);
+        Variant& trackOutput = output[stateTrack.attribute_];
+
+        unsigned keyFrame = stateTrack.keyFrame_;
+        CalulcateAttributeTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
+        stateTrack.keyFrame_ = keyFrame;
     }
 }
 
-void AnimationState::ApplyTransformTrack(const AnimationTrack& track,
-    Node* node, Bone* bone, unsigned& frame, float weight, bool silent)
+void AnimationState::CalulcateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const
 {
-    if (track.keyFrames_.empty() || !node)
+    if (track.keyFrames_.empty())
         return;
 
+    const bool isFullWeight = Equals(weight, 1.0f);
     const AnimationKeyFrame& baseValue = track.keyFrames_.front();
-    const AnimationChannelFlags channelMask = track.channelMask_;
 
-    Transform newTransform;
-    track.Sample(time_, animation_->GetLength(), looped_, frame, newTransform);
+    Transform sampledValue;
+    track.Sample(time_, animation_->GetLength(), looped_, frame, sampledValue);
 
-    if (blendingMode_ == ABM_ADDITIVE) // not ABM_LERP
+    if (blendingMode_ == ABM_ADDITIVE)
     {
-        if (channelMask & CHANNEL_POSITION)
+        // In additive mode, check for output being already initialzed
+        if ((track.channelMask_ & output.dirty_).Test(CHANNEL_POSITION))
         {
-            const Vector3 delta = newTransform.position_ - baseValue.position_;
-            newTransform.position_ = node->GetPosition() + delta * weight;
+            const Vector3 delta = sampledValue.position_ - baseValue.position_;
+            output.localToParent_.position_ += delta * weight;
         }
-        if (channelMask & CHANNEL_ROTATION)
+
+        if ((track.channelMask_ & output.dirty_).Test(CHANNEL_ROTATION))
         {
-            const Quaternion delta = newTransform.rotation_ * baseValue.rotation_.Inverse();
-            newTransform.rotation_ = (delta * node->GetRotation()).Normalized();
-            if (!Equals(weight, 1.0f))
-                newTransform.rotation_ = node->GetRotation().Slerp(newTransform.rotation_, weight);
+            const Quaternion delta = sampledValue.rotation_ * baseValue.rotation_.Inverse();
+            if (isFullWeight)
+                output.localToParent_.rotation_ = delta * output.localToParent_.rotation_;
+            else
+                output.localToParent_.rotation_ = Quaternion::IDENTITY.Slerp(delta, weight) * output.localToParent_.rotation_;
         }
-        if (channelMask & CHANNEL_SCALE)
+
+        if ((track.channelMask_ & output.dirty_).Test(CHANNEL_SCALE))
         {
-            const Vector3 delta = newTransform.scale_ - baseValue.scale_;
-            newTransform.scale_ = node->GetScale() + delta * weight;
+            const Vector3 delta = sampledValue.scale_ - baseValue.scale_;
+            output.localToParent_.scale_ += delta * weight;
         }
     }
     else
     {
-        if (!Equals(weight, 1.0f)) // not full weight
+        // In interpolation mode, disable interpolation if output is not initialzed yet
+        if (track.channelMask_.Test(CHANNEL_POSITION))
         {
-            if (channelMask & CHANNEL_POSITION)
-                newTransform.position_ = node->GetPosition().Lerp(newTransform.position_, weight);
-            if (channelMask & CHANNEL_ROTATION)
-                newTransform.rotation_ = node->GetRotation().Slerp(newTransform.rotation_, weight);
-            if (channelMask & CHANNEL_SCALE)
-                newTransform.scale_ = node->GetScale().Lerp(newTransform.scale_, weight);
+            if (!isFullWeight && output.dirty_.Test(CHANNEL_POSITION))
+                output.localToParent_.position_ = output.localToParent_.position_.Lerp(sampledValue.position_, weight);
+            else
+            {
+                output.dirty_ |= CHANNEL_POSITION;
+                output.localToParent_.position_ = sampledValue.position_;
+            }
         }
-    }
 
-    if (silent)
-    {
-        if (channelMask & CHANNEL_POSITION)
-            node->SetPositionSilent(newTransform.position_);
-        if (channelMask & CHANNEL_ROTATION)
-            node->SetRotationSilent(newTransform.rotation_);
-        if (channelMask & CHANNEL_SCALE)
-            node->SetScaleSilent(newTransform.scale_);
-    }
-    else
-    {
-        if (channelMask & CHANNEL_POSITION)
-            node->SetPosition(newTransform.position_);
-        if (channelMask & CHANNEL_ROTATION)
-            node->SetRotation(newTransform.rotation_);
-        if (channelMask & CHANNEL_SCALE)
-            node->SetScale(newTransform.scale_);
+        if (track.channelMask_.Test(CHANNEL_ROTATION))
+        {
+            if (!isFullWeight && output.dirty_.Test(CHANNEL_ROTATION))
+                output.localToParent_.rotation_ = output.localToParent_.rotation_.Slerp(sampledValue.rotation_, weight);
+            else
+            {
+                output.dirty_ |= CHANNEL_ROTATION;
+                output.localToParent_.rotation_ = sampledValue.rotation_;
+            }
+        }
+
+        if (track.channelMask_.Test(CHANNEL_SCALE))
+        {
+            if (!isFullWeight && output.dirty_.Test(CHANNEL_SCALE))
+                output.localToParent_.scale_ = output.localToParent_.scale_.Lerp(sampledValue.scale_, weight);
+            else
+            {
+                output.dirty_ |= CHANNEL_SCALE;
+                output.localToParent_.scale_ = sampledValue.scale_;
+            }
+        }
     }
 }
 
-void AnimationState::ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrack, float weight)
+void AnimationState::CalulcateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const
 {
-    const VariantAnimationTrack& track = *stateTrack.track_;
-    Serializable* serializable = stateTrack.attribute_.serializable_;
-    if (track.keyFrames_.empty() || !serializable)
+    if (track.keyFrames_.empty())
         return;
 
+    const bool isFullWeight = Equals(weight, 1.0f);
     const Variant& baseValue = track.keyFrames_.front().value_;
-    Variant newValue = track.Sample(time_, animation_->GetLength(), looped_, stateTrack.keyFrame_);
 
-    // Apply blending
-    if (blendingMode_ == ABM_ADDITIVE || !Equals(weight, 1.0f))
+    const Variant sampledValue = track.Sample(time_, animation_->GetLength(), looped_, frame);
+
+    if (blendingMode_ == ABM_ADDITIVE)
     {
-        Variant oldValue;
-        switch (stateTrack.attribute_.attributeType_)
-        {
-        case AnimatedAttributeType::Default:
-            oldValue = serializable->GetAttribute(stateTrack.attribute_.attributeIndex_);
-            break;
-
-        case AnimatedAttributeType::NodeVariables:
-        {
-            assert(dynamic_cast<Node*>(serializable));
-            auto node = static_cast<Node*>(serializable);
-            oldValue = node->GetVar(StringHash(stateTrack.attribute_.subAttributeKey_));
-            break;
-        }
-
-        case AnimatedAttributeType::AnimatedModelMorphs:
-        {
-            assert(dynamic_cast<AnimatedModel*>(serializable));
-            auto animatedModel = static_cast<AnimatedModel*>(serializable);
-            oldValue = animatedModel->GetMorphWeight(stateTrack.attribute_.subAttributeKey_);
-            break;
-        }
-        }
-
-        if (blendingMode_ == ABM_ADDITIVE)
-            newValue = BlendAdditive(oldValue, newValue, baseValue, weight);
+        if (!output.IsEmpty())
+            output = BlendAdditive(output, sampledValue, baseValue, weight);
+    }
+    else
+    {
+        if (!output.IsEmpty() && !isFullWeight)
+            output = output.Lerp(sampledValue, weight);
         else
-            newValue = oldValue.Lerp(newValue, weight);
-    }
-
-    // Apply final value
-    switch (stateTrack.attribute_.attributeType_)
-    {
-    case AnimatedAttributeType::Default:
-        serializable->SetAttribute(stateTrack.attribute_.attributeIndex_, newValue);
-        break;
-
-    case AnimatedAttributeType::NodeVariables:
-    {
-        assert(dynamic_cast<Node*>(serializable));
-        auto node = static_cast<Node*>(serializable);
-        node->SetVar(StringHash(stateTrack.attribute_.subAttributeKey_), newValue);
-        break;
-    }
-    case AnimatedAttributeType::AnimatedModelMorphs:
-    {
-        assert(dynamic_cast<AnimatedModel*>(serializable));
-        auto animatedModel = static_cast<AnimatedModel*>(serializable);
-        animatedModel->SetMorphWeight(stateTrack.attribute_.subAttributeKey_, newValue.GetFloat());
-        break;
-    }
+            output = sampledValue;
     }
 }
 

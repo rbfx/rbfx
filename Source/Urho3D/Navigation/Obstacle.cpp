@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,8 +35,6 @@
 namespace Urho3D
 {
 
-extern const char* NAVIGATION_CATEGORY;
-
 Obstacle::Obstacle(Context* context) :
     Component(context),
     height_(5.0f),
@@ -53,7 +51,7 @@ Obstacle::~Obstacle()
 
 void Obstacle::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Obstacle>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<Obstacle>(Category_Navigation);
     URHO3D_COPY_BASE_ATTRIBUTES(Component);
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, 5.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Height", GetHeight, SetHeight, float, 5.0f, AM_DEFAULT);
@@ -75,7 +73,6 @@ void Obstacle::SetHeight(float newHeight)
     height_ = newHeight;
     if (ownerMesh_)
         ownerMesh_->ObstacleChanged(this);
-    MarkNetworkUpdate();
 }
 
 void Obstacle::SetRadius(float newRadius)
@@ -83,7 +80,6 @@ void Obstacle::SetRadius(float newRadius)
     radius_ = newRadius;
     if (ownerMesh_)
         ownerMesh_->ObstacleChanged(this);
-    MarkNetworkUpdate();
 }
 
 void Obstacle::OnNodeSet(Node* node)

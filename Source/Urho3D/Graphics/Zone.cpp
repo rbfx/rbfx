@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,8 +49,6 @@ static const float DEFAULT_FOG_END = 1000.0f;
 static const float DEFAULT_FOG_HEIGHT = 0.0f;
 static const float DEFAULT_FOG_HEIGHT_SCALE = 0.5f;
 
-extern const char* SCENE_CATEGORY;
-
 Zone::Zone(Context* context) :
     Drawable(context, DRAWABLE_ZONE),
     inverseWorldDirty_(true),
@@ -72,7 +70,7 @@ Zone::~Zone() = default;
 
 void Zone::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Zone>(SCENE_CATEGORY);
+    context->RegisterFactory<Zone>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bounding Box Min", Vector3, boundingBox_.min_, MarkNodeDirty, DEFAULT_BOUNDING_BOX_MIN, AM_DEFAULT);
@@ -107,27 +105,23 @@ void Zone::SetBoundingBox(const BoundingBox& box)
 {
     boundingBox_ = box;
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Zone::SetAmbientColor(const Color& color)
 {
     ambientColor_ = color;
-    MarkNetworkUpdate();
     MarkCachedAmbientDirty();
 }
 
 void Zone::SetAmbientBrightness(float brightness)
 {
     ambientBrightness_ = brightness;
-    MarkNetworkUpdate();
     MarkCachedAmbientDirty();
 }
 
 void Zone::SetBackgroundBrightness(float brightness)
 {
     backgroundBrightness_ = brightness;
-    MarkNetworkUpdate();
     MarkCachedAmbientDirty();
 }
 
@@ -139,7 +133,6 @@ void Zone::SetBackgroundStatic(bool isStatic)
 void Zone::SetFogColor(const Color& color)
 {
     fogColor_ = color;
-    MarkNetworkUpdate();
     MarkCachedAmbientDirty();
 }
 
@@ -149,7 +142,6 @@ void Zone::SetFogStart(float start)
         start = 0.0f;
 
     fogStart_ = start;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetFogEnd(float end)
@@ -158,25 +150,21 @@ void Zone::SetFogEnd(float end)
         end = 0.0f;
 
     fogEnd_ = end;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetFogHeight(float height)
 {
     fogHeight_ = height;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetFogHeightScale(float scale)
 {
     fogHeightScale_ = scale;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetPriority(int priority)
 {
     priority_ = priority;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetZoneTexture(Texture* texture)
@@ -184,25 +172,21 @@ void Zone::SetZoneTexture(Texture* texture)
     zoneTexture_ = texture;
     UpdateZoneTextureSubscription();
     MarkCachedTextureDirty();
-    MarkNetworkUpdate();
 }
 
 void Zone::SetHeightFog(bool enable)
 {
     heightFog_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetOverride(bool enable)
 {
     override_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetAmbientGradient(bool enable)
 {
     ambientGradient_ = enable;
-    MarkNetworkUpdate();
 }
 
 const ReflectionProbeData* Zone::GetReflectionProbe() const
@@ -449,7 +433,6 @@ void Zone::UpdateCachedData()
         if (!data.reflectionMap_ && renderer)
             data.reflectionMap_ = renderer->GetBlackCubeMap();
         data.roughnessToLODFactor_ = data.reflectionMap_ ? LogBaseTwo(data.reflectionMap_->GetWidth()) : 1.0f;
-        data.reflectionMapSH_ = cachedTextureLighting_.Get();
 
         reflectionProbeData_.Restore(data);
     }

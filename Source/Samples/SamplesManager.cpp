@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -75,15 +75,17 @@
 #if URHO3D_SYSTEMUI
 #include "26_ConsoleInput/ConsoleInput.h"
 #endif
-#if URHO3D_URHO2D
-#include "27_Urho2DPhysics/Urho2DPhysics.h"
-#include "28_Urho2DPhysicsRope/Urho2DPhysicsRope.h"
+#if URHO3D_PHYSICS2D
+#include "27_Physics2D/Urho2DPhysics.h"
+#include "28_Physics2DRope/Urho2DPhysicsRope.h"
 #endif
 #include "29_SoundSynthesis/SoundSynthesis.h"
 #include "30_LightAnimation/LightAnimation.h"
 #include "31_MaterialAnimation/MaterialAnimation.h"
+#if URHO3D_PHYSICS2D
+#include "32_Physics2DConstraints/Urho2DConstraints.h"
+#endif
 #if URHO3D_URHO2D
-#include "32_Urho2DConstraints/Urho2DConstraints.h"
 #include "33_Urho2DSpriterAnimation/Urho2DSpriterAnimation.h"
 #endif
 #include "34_DynamicGeometry/DynamicGeometry.h"
@@ -132,7 +134,15 @@
 #if URHO3D_PHYSICS
 #include "109_KinematicCharacter/KinematicCharacterDemo.h"
 #endif
-#include "110_ParticleGraph/ParticleGraph.h"
+#if URHO3D_RMLUI
+#if URHO3D_NETWORK
+#if URHO3D_PHYSICS
+#include "110_AdvancedNetworking/AdvancedNetworking.h"
+#endif
+#endif
+#endif
+#include "111_SplashScreen/SplashScreenDemo.h"
+#include "112_AggregatedInput/AggregatedInput.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -169,29 +179,62 @@ void SamplesManager::Setup()
 #endif
 }
 
+SampleSelectionScreen::SampleSelectionScreen(Context* context)
+    : ApplicationState(context)
+    , dpadAdapter_(context)
+{
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
+}
+
+void SampleSelectionScreen::Activate(VariantMap& bundle)
+{
+    ApplicationState::Activate(bundle);
+    dpadAdapter_.SetEnabled(true);
+}
+
+void SampleSelectionScreen::Deactivate()
+{
+    ApplicationState::Deactivate();
+    dpadAdapter_.SetEnabled(false);
+}
+
 void SamplesManager::Start()
 {
-    Input* input = context_->GetSubsystem<Input>();
+    ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
+    cache->SetAutoReloadResources(true);
+
     UI* ui = context_->GetSubsystem<UI>();
+
+#if MOBILE
+    // Scale UI for high DPI mobile screens
+    auto dpi = GetSubsystem<Graphics>()->GetDisplayDPI();
+    if (dpi.z_ >= 200)
+        ui->SetScale(2.0f);
+#endif
 
     // Parse command line arguments
     ea::transform(commandLineArgsTemp_.begin(), commandLineArgsTemp_.end(), ea::back_inserter(commandLineArgs_),
         [](const std::string& str) { return ea::string(str.c_str()); });
 
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
-    context_->AddReflection<Rotator>();
+    context_->AddFactoryReflection<Rotator>();
+    context_->AddFactoryReflection<SampleSelectionScreen>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
-
-    input->SetMouseMode(MM_FREE);
-    input->SetMouseVisible(true);
+    sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
+    // Keyboard arrow keys are already handled by UI
+    sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
+    context_->GetSubsystem<StateManager>()->EnqueueState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
-    context_->GetSubsystem<Engine>()->CreateDebugHud()->ToggleAll();
+    if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
+        debugHud->ToggleAll();
 #endif
-
+    auto* input = context_->GetSubsystem<Input>();
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-    SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
+    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnArrowKeyPress(args); });
+    SubscribeToEvent(input, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
     SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
@@ -203,29 +246,30 @@ void SamplesManager::Start()
     rmlUi->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
 #endif
 
-    ui->GetRoot()->SetDefaultStyle(context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
+    sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
-    auto* layout = ui->GetRoot()->CreateChild<UIElement>();
+    IntVector2 listSize = VectorMin(IntVector2(300, 600), ui->GetRoot()->GetSize());
+    auto* layout = sampleSelectionScreen_->GetUIRoot()->CreateChild<UIElement>();
     listViewHolder_ = layout;
     layout->SetLayoutMode(LM_VERTICAL);
     layout->SetAlignment(HA_CENTER, VA_CENTER);
-    layout->SetSize(300, 600);
+    layout->SetSize(listSize);
     layout->SetStyleAuto();
 
     auto* list = layout->CreateChild<ListView>();
-    list->SetMinSize(300, 600);
+    list->SetMinSize(listSize);
     list->SetSelectOnClickEnd(true);
     list->SetHighlightMode(HM_ALWAYS);
     list->SetStyleAuto();
     list->SetName("SampleList");
+    list->SetFocus(true);
 
     // Get logo texture
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
     Texture2D* logoTexture = cache->GetResource<Texture2D>("Textures/FishBoneLogo.png");
     if (!logoTexture)
         return;
 
-    logoSprite_ = ui->GetRoot()->CreateChild<Sprite>();
+    logoSprite_ = sampleSelectionScreen_->GetUIRoot()->CreateChild<Sprite>();
     logoSprite_->SetTexture(logoTexture);
 
     int textureWidth = logoTexture->GetWidth();
@@ -330,7 +374,15 @@ void SamplesManager::Start()
 #if URHO3D_PHYSICS
     RegisterSample<KinematicCharacterDemo>();
 #endif
-    RegisterSample<ParticleGraph>();
+#if URHO3D_RMLUI
+#if URHO3D_NETWORK
+#if URHO3D_PHYSICS
+    RegisterSample<AdvancedNetworking>();
+#endif
+#endif
+#endif
+    RegisterSample<SplashScreenDemo>();
+    RegisterSample<AggregatedInput>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
@@ -354,7 +406,6 @@ void SamplesManager::OnClickSample(VariantMap& args)
 void SamplesManager::StartSample(StringHash sampleType)
 {
     UI* ui = context_->GetSubsystem<UI>();
-    ui->GetRoot()->RemoveAllChildren();
     ui->SetFocusElement(nullptr);
 
 #if MOBILE
@@ -363,11 +414,9 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    runningSample_.DynamicCast(context_->CreateObject(sampleType));
-    if (runningSample_)
-        runningSample_->Start(commandLineArgs_);
-    else
-        ErrorExit("Specified sample does not exist.");
+    VariantMap args;
+    args["Args"] = GetArgs();
+    context_->GetSubsystem<StateManager>()->EnqueueState(sampleType, args);
 }
 
 UIElement* SamplesManager::GetSampleButtonAt(int index)
@@ -406,6 +455,8 @@ int SamplesManager::GetSelectedIndex() const
 
 void SamplesManager::OnButtonPress(VariantMap& args)
 {
+    if (!sampleSelectionScreen_->IsActive())
+        return;
     using namespace JoystickButtonDown;
     int key = args[P_BUTTON].GetInt();
     int joystick = args[P_JOYSTICKID].GetInt();
@@ -416,28 +467,6 @@ void SamplesManager::OnButtonPress(VariantMap& args)
     {
         switch (key)
         {
-            case CONTROLLER_BUTTON_DPAD_UP:
-            {
-                int currentIndex = GetSelectedIndex();
-                UIElement* currentSelection = GetSampleButtonAt(currentIndex);
-                if (currentSelection)
-                    currentSelection->SetSelected(false);
-                UIElement* nextSelection = GetSampleButtonAt(currentIndex - 1);
-                if (nextSelection)
-                    nextSelection->SetSelected(true);
-                break;
-            }
-            case CONTROLLER_BUTTON_DPAD_DOWN:
-            {
-                int currentIndex = GetSelectedIndex();
-                UIElement* currentSelection = GetSampleButtonAt(currentIndex);
-                if (currentSelection)
-                    currentSelection->SetSelected(false);
-                UIElement* nextSelection = GetSampleButtonAt(currentIndex + 1);
-                if (nextSelection)
-                    nextSelection->SetSelected(true);
-                break;
-            }
             case CONTROLLER_BUTTON_A:
             {
                 UIElement* button = GetSampleButtonAt(GetSelectedIndex());
@@ -453,12 +482,6 @@ void SamplesManager::OnButtonPress(VariantMap& args)
                 }
                 break;
             }
-            // CONTROLLER_BUTTON_B converted by SDL into Escape key code.
-            //case CONTROLLER_BUTTON_B:
-            //{
-            //    isClosing_ = true;
-            //    break;
-            //}
         }
     }
 }
@@ -501,7 +524,7 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     }
 #endif
 
-    if (runningSample_)
+    if (!sampleSelectionScreen_->IsActive())
         return;
 
     if (key == KEY_SPACE)
@@ -518,6 +541,13 @@ void SamplesManager::OnKeyPress(VariantMap& args)
             StartSample(sampleType);
         }
     }
+}
+
+void SamplesManager::OnArrowKeyPress(VariantMap& args)
+{
+    using namespace KeyUp;
+
+    int key = args[P_KEY].GetInt();
 
     if (key == KEY_DOWN)
     {
@@ -529,7 +559,6 @@ void SamplesManager::OnKeyPress(VariantMap& args)
         if (nextSelection)
             nextSelection->SetSelected(true);
     }
-
 
     if (key == KEY_UP)
     {
@@ -547,19 +576,13 @@ void SamplesManager::OnFrameStart()
 {
     if (isClosing_)
     {
+        StateManager* stateManager = context_->GetSubsystem<StateManager>();
         isClosing_ = false;
-        if (runningSample_.NotNull())
+        if (stateManager->GetTargetState() != SampleSelectionScreen::GetTypeNameStatic())
         {
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
-            runningSample_->Stop();
-            runningSample_ = nullptr;
-            input->SetMouseMode(MM_FREE);
-            input->SetMouseVisible(true);
-            ui->SetCursor(nullptr);
-            ui->GetRoot()->RemoveAllChildren();
-            ui->GetRoot()->AddChild(listViewHolder_);
-            ui->GetRoot()->AddChild(logoSprite_);
+            stateManager->EnqueueState(sampleSelectionScreen_);
 #if MOBILE
             Graphics* graphics = context_->GetSubsystem<Graphics>();
             graphics->SetOrientations("Portrait");
@@ -594,7 +617,7 @@ void SamplesManager::OnFrameStart()
 template<typename T>
 void SamplesManager::RegisterSample()
 {
-    context_->AddReflection<T>();
+    context_->AddFactoryReflection<T>();
 
     auto* button = context_->CreateObject<Button>().Detach();
     button->SetMinHeight(30);
@@ -607,7 +630,7 @@ void SamplesManager::RegisterSample()
     title->SetFont(context_->GetSubsystem<ResourceCache>()->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 30);
     title->SetStyleAuto();
 
-    context_->GetSubsystem<UI>()->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
+    sampleSelectionScreen_->GetUIRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
 }
 
 }

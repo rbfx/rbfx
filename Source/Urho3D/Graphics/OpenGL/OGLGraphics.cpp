@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -1196,7 +1196,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     impl_->vertexBuffersDirty_ = true;
 }
 
-void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange, MAX_SHADER_PARAMETER_GROUPS> constantBuffers)
+void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
 {
     if (!caps.constantBuffersSupported_)
     {
@@ -1453,6 +1453,10 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
         {
             switch (info->glType_)
             {
+            case GL_FLOAT_VEC4:
+                glUniform4fv(info->location_, 3, matrix.Data());
+                break;
+
             case GL_FLOAT_MAT3:
                 glUniformMatrix3fv(info->location_, 1, GL_FALSE, matrix.ToMatrix3().Data());
                 break;
@@ -2908,6 +2912,10 @@ void Graphics::CheckFeatureSupport()
     caps.maxTextureSize_ = GetIntParam(GL_MAX_TEXTURE_SIZE);
     const IntVector2 maxViewportDims = GetIntVectorParam(GL_MAX_VIEWPORT_DIMS);
     caps.maxRenderTargetSize_ = NextPowerOfTwo(ea::min(maxViewportDims.x_, maxViewportDims.y_) + 1) >> 1;
+
+#ifdef URHO3D_COMPUTE
+    computeSupport_ = !!GLEW_VERSION_4_3;
+#endif
 }
 
 void Graphics::PrepareDraw()

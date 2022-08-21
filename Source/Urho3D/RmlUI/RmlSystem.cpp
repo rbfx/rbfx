@@ -19,12 +19,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
+#include "../RmlUI/RmlSystem.h"
+
 #include "../Core/Context.h"
 #include "../Core/Timer.h"
 #include "../IO/Log.h"
 #include "../Input/Input.h"
 #include "../Resource/Localization.h"
-#include "../RmlUI/RmlSystem.h"
 
 #include <SDL/SDL_clipboard.h>
 

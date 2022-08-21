@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 #include "../../Core/Context.h"
 #include "../../Core/ProcessUtils.h"
 #include "../../Core/Profiler.h"
+#include "../../Graphics/ComputeDevice.h"
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/Geometry.h"
 #include "../../Graphics/Graphics.h"
@@ -994,7 +995,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
 }
 
-void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange, MAX_SHADER_PARAMETER_GROUPS> constantBuffers)
+void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
 {
     bool buffersDirty = false;
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
@@ -2275,6 +2276,10 @@ void Graphics::CheckFeatureSupport()
     caps.maxTextureSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     caps.maxRenderTargetSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     caps.maxNumRenderTargets_ = 8;
+
+#ifdef URHO3D_COMPUTE
+    computeSupport_ = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+#endif
 }
 
 void Graphics::ResetCachedState()

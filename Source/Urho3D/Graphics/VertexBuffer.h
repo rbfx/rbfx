@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -224,8 +224,9 @@ public:
     ea::pair<unsigned, unsigned char*> AddVertices(unsigned count)
     {
         const unsigned startVertex = numVertices_;
-        if (startVertex + count > maxNumVertices_)
-            GrowBuffer();
+        const unsigned newMaxNumVertices = startVertex + count;
+        if (newMaxNumVertices > maxNumVertices_)
+            GrowBuffer(newMaxNumVertices);
 
         numVertices_ += count;
         unsigned char* data = shadowData_.data() + startVertex * vertexSize_;
@@ -244,7 +245,7 @@ public:
     unsigned GetVertexCount() const { return numVertices_; }
 
 private:
-    void GrowBuffer();
+    void GrowBuffer(unsigned newMaxNumVertices);
 
     SharedPtr<VertexBuffer> vertexBuffer_;
     ByteVector shadowData_;

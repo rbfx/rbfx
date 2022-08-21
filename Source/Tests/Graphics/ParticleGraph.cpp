@@ -25,7 +25,7 @@
 #include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/Resource/XMLArchive.h"
 
-#include <Urho3D/Particles//ParticleGraphLayer.h>
+#include <Urho3D/Particles/ParticleGraphLayer.h>
 #include <Urho3D/Particles/ParticleGraphLayerInstance.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -296,7 +296,7 @@ TEST_CASE("Test Burst")
 			    <nodes>
     			    <node id="1" name="BurstTimer">
 	    			    <properties>
-    	    			    <property name="Delay" type="float" value="1.0" />
+    	    			    <property name="Delay" type="float" value="0.15" />
     	    			    <property name="Interval" type="float" value="1.0" />
                             <property name="Cycles" type="int" value="2" />
 	    			    </properties>
@@ -336,7 +336,7 @@ TEST_CASE("Test Burst")
     Tests::RunFrame(context, 0.1f, 0.1f);
     CHECK(!emitter->CheckActiveParticles());
 
-    Tests::RunFrame(context, 1.1f, 0.1f);
+    Tests::RunFrame(context, 0.1f, 0.1f);
     CHECK(emitter->CheckActiveParticles());
 }
 

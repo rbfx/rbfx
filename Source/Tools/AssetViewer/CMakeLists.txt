@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-2020 the rbfx project.
+# Copyright (c) 2017-2022 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,6 @@ endif ()
 
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (AssetViewer ${TARGET_TYPE} ${SOURCE_FILES})
-target_link_libraries(AssetViewer Toolbox Urho3D)
+target_link_libraries(AssetViewer Urho3D)
 add_dependencies(AssetViewer AssetImporter)
 install(TARGETS AssetViewer RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})

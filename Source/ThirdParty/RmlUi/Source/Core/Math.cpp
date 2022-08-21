@@ -59,6 +59,11 @@ RMLUICORE_API float AbsoluteValue(float value)
 	return fabsf(value);
 }
 
+RMLUICORE_API int AbsoluteValue(int value)
+{
+	return abs(value);
+}
+
 // Calculates the cosine of an angle.
 RMLUICORE_API float Cos(float angle)
 {
@@ -246,6 +251,32 @@ RMLUICORE_API int RandomInteger(int max_value)
 RMLUICORE_API bool RandomBool()
 {
 	return RandomInteger(2) == 1;
+}
+
+template <>
+Vector2f Max<Vector2f>(Vector2f a, Vector2f b)
+{
+	return Vector2f(Max(a.x, b.x), Max(a.y, b.y));
+}
+
+template <>
+Vector2f Min<Vector2f>(Vector2f a, Vector2f b)
+{
+	return Vector2f(Min(a.x, b.x), Min(a.y, b.y));
+}
+
+Colourb RoundedLerp(float t, Colourb v0, Colourb v1)
+{
+	return Colourb{
+		static_cast<unsigned char>(RoundToInteger(Lerp(t, 
+			static_cast<float>(v0[0]), static_cast<float>(v1[0])))),
+		static_cast<unsigned char>(RoundToInteger(Lerp(t, 
+			static_cast<float>(v0[1]), static_cast<float>(v1[1])))),
+		static_cast<unsigned char>(RoundToInteger(Lerp(t, 
+			static_cast<float>(v0[2]), static_cast<float>(v1[2])))),
+		static_cast<unsigned char>(RoundToInteger(Lerp(t, 
+			static_cast<float>(v0[3]), static_cast<float>(v1[3]))))
+	};
 }
 
 }

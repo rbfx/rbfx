@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,6 +48,7 @@ static const char* commandTypeNames[] =
     "lightvolumes",
     "renderui",
     "sendevent",
+    "compute_filter",
     nullptr
 };
 
@@ -174,6 +175,10 @@ void RenderPathCommand::Load(const XMLElement& element)
 
     case CMD_SENDEVENT:
         eventName_ = element.GetAttribute("name");
+        break;
+
+    case CMD_COMPUTE_FILTER:
+        computeDispatchDim_ = element.GetIntVector3("dispatch");
         break;
 
     default:

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@
 namespace Urho3D
 {
 
+class ConstantBuffer;
 class Vector3;
 
 // Graphics capability support level. Web platform (Emscripten) also uses OpenGL ES, but is considered a desktop platform capability-wise
@@ -324,6 +325,11 @@ enum ShaderType
 {
     VS = 0,
     PS,
+    GS,
+    HS,
+    DS,
+    CS,
+    MAX_SHADER_TYPES
 };
 
 /// Shader parameter groups for determining need to update. On APIs that support constant buffers, these correspond to different constant buffers.
@@ -395,6 +401,28 @@ enum ShadowQuality
     SHADOWQUALITY_PCF_24BIT,
     SHADOWQUALITY_VSM,
     SHADOWQUALITY_BLUR_VSM
+};
+
+/// Range of constant buffer to bind.
+struct ConstantBufferRange
+{
+    /// Constant buffer.
+    ConstantBuffer* constantBuffer_{};
+    /// Offset in buffer. Shall be multiply of constant buffer offset alignment.
+    unsigned offset_{};
+    /// Size of region.
+    unsigned size_{};
+
+    /// Compare equal.
+    bool operator ==(const ConstantBufferRange& rhs) const
+    {
+        return constantBuffer_ == rhs.constantBuffer_
+            && offset_ == rhs.offset_
+            && size_ == rhs.size_;
+    }
+
+    /// Compare not equal.
+    bool operator !=(const ConstantBufferRange& rhs) const { return !(*this == rhs); }
 };
 
 // Inbuilt shader parameters.

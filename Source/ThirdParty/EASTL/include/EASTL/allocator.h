@@ -51,7 +51,6 @@ namespace eastl
 	class EASTL_API allocator
 	{
 	public:
-		// rbfx fix: functions marked as inline to fix excessive warnings.
 		EASTL_ALLOCATOR_EXPLICIT inline allocator(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME));
 		inline allocator(const allocator& x);
 		inline allocator(const allocator& x, const char* pName);

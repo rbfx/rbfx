@@ -20,35 +20,31 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/RenderPath.h>
 #include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
-#include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/Font.h>
-#include <Urho3D/UI/Slider.h>
 #include <Urho3D/UI/UI.h>
-#include <Urho3D/UI/UIEvents.h>
 #include <Urho3D/UI/Text.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "RenderingShowcase.h"
 
 #include <Urho3D/DebugNew.h>
 
 
-RenderingShowcase::RenderingShowcase(Context* context) : Sample(context)
+RenderingShowcase::RenderingShowcase(Context* context)
+    : Sample(context)
 {
     // All these scenes correspond to Scenes/RenderingShowcase_*.xml resources
     sceneNames_.push_back({ "0" });
     sceneNames_.push_back({ "2_Dynamic", "2_BakedDirect", "2_BakedIndirect", "2_BakedDirectIndirect" });
+    sceneNames_.push_back({ "3_MixedBoxProbes", "3_MixedProbes" });
     // Keep 1 last because it may crash mobile browsers
     sceneNames_.push_back({ "1" });
 }
@@ -67,30 +63,30 @@ void RenderingShowcase::Start()
 
     // Setup the viewport for displaying the scene
     SetupViewport();
-
-    // Subscribe to global events for camera movement
-    SubscribeToEvents();
-
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void RenderingShowcase::CreateInstructions()
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
+    auto* input = GetSubsystem<Input>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
-    instructionText->SetText("Press Tab to switch scene. Press Q to switch scene mode. \n"
-        "Press F to toggle probe object. Use WASD keys and mouse to move.");
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
+    auto rName = input->GetKeyName(input->GetKeyFromScancode(SCANCODE_R));
+    auto fName = input->GetKeyName(input->GetKeyFromScancode(SCANCODE_F));
+    instructionText->SetText(Format("Press Tab to switch scene. Press {} to switch scene mode. \n"
+        "Press {} to toggle probe object. Use WASD keys and mouse to move.", rName, fName));
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     instructionText->SetTextAlignment(HA_CENTER);
 
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void RenderingShowcase::CreateScene()
@@ -103,6 +99,7 @@ void RenderingShowcase::CreateScene()
     // Create the camera (not included in the scene file)
     cameraNode_ = cameraScene_->CreateChild("Camera");
     cameraNode_->CreateComponent<Camera>();
+    cameraNode_->CreateComponent<FreeFlyController>()->SetAcceleratedSpeed(2.0f);
 
     Node* probeObjectNode = cameraNode_->CreateChild();
     probeObjectNode->SetPosition({ 0.0f, 0.0f, 1.0f });
@@ -111,7 +108,9 @@ void RenderingShowcase::CreateScene()
     probeObject_ = probeObjectNode->CreateComponent<StaticModel>();
     probeObject_->SetModel(cache->GetResource<Model>("Models/TeaPot.mdl"));
     probeObject_->SetCastShadows(true);
+    probeObject_->SetViewMask(0x1);
     probeObject_->SetGlobalIlluminationType(GlobalIlluminationType::BlendLightProbes);
+    probeObject_->SetReflectionMode(ReflectionMode::BlendProbesAndZone);
 }
 
 void RenderingShowcase::SetupSelectedScene(bool resetCamera)
@@ -149,60 +148,18 @@ void RenderingShowcase::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
-void RenderingShowcase::SubscribeToEvents()
+void RenderingShowcase::Update(float timeStep)
 {
-    // Subscribe HandleUpdate() function for camera motion
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(RenderingShowcase, HandleUpdate));
-}
-
-void RenderingShowcase::MoveCamera(float timeStep)
-{
-    // Right mouse button controls mouse cursor visibility: hide when pressed
     auto* input = GetSubsystem<Input>();
-
-    // Movement speed as world units per second
-    const float MOVE_SPEED = 10.0f;
-    // Mouse sensitivity as degrees per pixel
-    const float MOUSE_SENSITIVITY = 0.1f;
-
-    // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-    IntVector2 mouseMove = input->GetMouseMove();
-    yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
-    pitch_ += MOUSE_SENSITIVITY * mouseMove.y_;
-    pitch_ = Clamp(pitch_, -90.0f, 90.0f);
-
-    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
-
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        cameraNode_->Translate(Vector3::FORWARD * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        cameraNode_->Translate(Vector3::BACK * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        cameraNode_->Translate(Vector3::LEFT * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
-}
-
-void RenderingShowcase::HandleUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
-    // Move the camera, scale movement with time step
-    MoveCamera(timeStep);
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // Keep probe object orientation
     probeObject_->GetNode()->SetWorldRotation(Quaternion::IDENTITY);
 
     // Update scene
-    auto* input = GetSubsystem<Input>();
     if (sceneNames_.size() > 1 && input->GetKeyPress(KEY_TAB))
     {
         sceneIndex_ = (sceneIndex_ + 1) % sceneNames_.size();
@@ -211,20 +168,38 @@ void RenderingShowcase::HandleUpdate(StringHash eventType, VariantMap& eventData
     }
 
     // Update scene mode
-    if (sceneNames_[sceneIndex_].size() > 1 && input->GetKeyPress(KEY_Q))
+    if (sceneNames_[sceneIndex_].size() > 1 && input->GetScancodePress(SCANCODE_R))
     {
         sceneMode_ = (sceneMode_ + 1) % sceneNames_[sceneIndex_].size();
         SetupSelectedScene(false);
     }
 
     // Update probe object
-    if (input->GetKeyPress(KEY_F))
+    static const ea::string probeMaterials[] = {
+        "",
+        "Materials/Constant/GlossyWhiteDielectric.xml",
+        "Materials/Constant/GlossyWhiteMetal.xml",
+        "Materials/CheckboardProperties.xml",
+    };
+    if (input->GetScancodePress(SCANCODE_F))
     {
+        const unsigned numProbeMaterials = sizeof(probeMaterials) / sizeof(probeMaterials[0]);
+        probeMaterialIndex_ = (probeMaterialIndex_ + 1) % numProbeMaterials;
+        const ea::string& probeMaterialName = probeMaterials[probeMaterialIndex_];
+
         const bool isProbeObjectVisible = probeObject_->IsInOctree();
+        const bool shouldProbeObjectBeVisible = !probeMaterialName.empty();
+
         auto* octree = scene_->GetComponent<Octree>();
-        if (isProbeObjectVisible)
+        if (isProbeObjectVisible && !shouldProbeObjectBeVisible)
             octree->RemoveManualDrawable(probeObject_);
-        else
+        else if (!isProbeObjectVisible && shouldProbeObjectBeVisible)
             octree->AddManualDrawable(probeObject_);
+
+        if (shouldProbeObjectBeVisible)
+        {
+            auto probeModel = probeObject_->GetComponent<StaticModel>();
+            probeModel->SetMaterial(cache->GetResource<Material>(probeMaterialName));
+        }
     }
 }

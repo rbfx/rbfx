@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,25 +36,22 @@ namespace Urho3D
 enum AttributeMode
 {
     /// Attribute shown only in the editor, but not serialized.
-    AM_EDIT = 0x0,
+    AM_EDIT = 0,
     /// Attribute used for file serialization.
-    AM_FILE = 0x1,
-    /// Attribute used for network replication.
-    AM_NET = 0x2,
-    /// Attribute used for both file serialization and network replication (default).
-    AM_DEFAULT = 0x3,
-    /// Attribute should use latest data grouping instead of delta update in network replication.
-    AM_LATESTDATA = 0x4,
+    AM_FILE = 1 << 0,
     /// Attribute should not be shown in the editor.
-    AM_NOEDIT = 0x8,
+    AM_NOEDIT = 1 << 1,
     /// Attribute is a node ID and may need rewriting.
-    AM_NODEID = 0x10,
+    AM_NODEID = 1 << 2,
     /// Attribute is a component ID and may need rewriting.
-    AM_COMPONENTID = 0x20,
+    AM_COMPONENTID = 1 << 3,
     /// Attribute is a node ID vector where first element is the amount of nodes.
-    AM_NODEIDVECTOR = 0x40,
+    AM_NODEIDVECTOR = 1 << 4,
     /// Attribute is readonly. Can't be used with binary serialized objects.
-    AM_READONLY = 0x80,
+    AM_READONLY = 1 << 5,
+
+    /// Default mode, same as AM_FILE.
+    AM_DEFAULT = 1 << 0,
 };
 URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
 
@@ -76,11 +73,24 @@ public:
 /// Description of an automatically serializable variable.
 struct AttributeInfo
 {
-    /// Construct empty.
     AttributeInfo() = default;
+    AttributeInfo(const AttributeInfo& other) = default;
+
 #ifndef SWIG
     /// Construct attribute.
     AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
+        type_(type),
+        name_(name),
+        nameHash_(name_),
+        enumNames_(ToVector(enumNames)),
+        accessor_(accessor),
+        defaultValue_(defaultValue),
+        mode_(mode)
+    {
+    }
+#endif
+    /// Construct attribute.
+    AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const StringVector& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
         nameHash_(name_),
@@ -89,38 +99,6 @@ struct AttributeInfo
         defaultValue_(defaultValue),
         mode_(mode)
     {
-    }
-#endif
-    /// Construct attribute.
-    AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const ea::vector<ea::string>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
-        type_(type),
-        name_(name),
-        nameHash_(name_),
-        enumNames_(nullptr),
-        enumNamesStorage_(enumNames),
-        accessor_(accessor),
-        defaultValue_(defaultValue),
-        mode_(mode)
-    {
-        InitializeEnumNamesFromStorage();
-    }
-
-    /// Copy attribute info.
-    AttributeInfo(const AttributeInfo& other)
-    {
-        type_ = other.type_;
-        name_ = other.name_;
-        nameHash_ = other.nameHash_;
-        enumNames_ = other.enumNames_;
-        accessor_ = other.accessor_;
-        defaultValue_ = other.defaultValue_;
-        mode_ = other.mode_;
-        metadata_ = other.metadata_;
-        ptr_ = other.ptr_;
-        enumNamesStorage_ = other.enumNamesStorage_;
-
-        if (!enumNamesStorage_.empty())
-            InitializeEnumNamesFromStorage();
     }
 
     /// Return attribute metadata.
@@ -143,15 +121,15 @@ struct AttributeInfo
     bool ShouldLoad() const { return !!(mode_ & AM_FILE); }
 
     /// Convert enum value to string.
-    const char* ConvertEnumToString(unsigned value) const { return enumNames_[value]; }
+    const ea::string& ConvertEnumToString(unsigned value) const { return enumNames_[value]; }
 
     /// Convert enum value to integer.
     unsigned ConvertEnumToUInt(ea::string_view value) const
     {
         unsigned index = 0;
-        for (const char** namePtr = enumNames_; *namePtr; ++namePtr)
+        for (const ea::string& name : enumNames_)
         {
-            if (Compare(ea::string_view(*namePtr), value, false) == 0)
+            if (Compare(name, value, false) == 0)
                 return index;
             ++index;
         }
@@ -165,7 +143,7 @@ struct AttributeInfo
     /// Name hash.
     StringHash nameHash_;
     /// Enum names.
-    const char** enumNames_ = nullptr;
+    StringVector enumNames_;
     /// Helper object for accessor mode.
     SharedPtr<AttributeAccessor> accessor_;
     /// Default value for network replication.
@@ -174,25 +152,17 @@ struct AttributeInfo
     AttributeModeFlags mode_ = AM_DEFAULT;
     /// Attribute metadata.
     VariantMap metadata_;
-    /// Attribute data pointer if elsewhere than in the Serializable.
-    void* ptr_ = nullptr;
-    /// List of enum names. Used when names can not be stored externally.
-    ea::vector<ea::string> enumNamesStorage_;
-    /// List of enum name pointers. Front of this vector will be assigned to enumNames_ when enumNamesStorage_ is in use.
-    ea::vector<const char*> enumNamesPointers_;
 
 private:
-    void InitializeEnumNamesFromStorage()
+    static StringVector ToVector(const char* const* strings)
     {
-        if (enumNamesStorage_.empty())
-            enumNames_ = nullptr;
-        else
+        StringVector vector;
+        if (strings)
         {
-            for (const auto& enumName : enumNamesStorage_)
-                enumNamesPointers_.emplace_back(enumName.c_str());
-            enumNamesPointers_.emplace_back(nullptr);
-            enumNames_ = &enumNamesPointers_.front();
+            for (const char* const* ptr = strings; *ptr; ++ptr)
+                vector.push_back(*ptr);
         }
+        return vector;
     }
 };
 
@@ -208,16 +178,12 @@ public:
     {
         if (attributeInfo_)
             attributeInfo_->metadata_[key] = value;
-        if (networkAttributeInfo_)
-            networkAttributeInfo_->metadata_[key] = value;
         return *this;
     }
 
 private:
     /// Attribute info.
     AttributeInfo* attributeInfo_ = nullptr;
-    /// Network attribute info.
-    AttributeInfo* networkAttributeInfo_ = nullptr;
 };
 
 }

@@ -41,7 +41,6 @@ public:
     /// Construct EmitterPosition.
     explicit EmitterPosition(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Evaluate size required to place new node instance.

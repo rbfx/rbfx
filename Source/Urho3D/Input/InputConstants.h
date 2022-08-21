@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -558,6 +558,10 @@ enum HatPosition : unsigned
     HAT_RIGHT = SDL_HAT_RIGHT,
     HAT_DOWN = SDL_HAT_DOWN,
     HAT_LEFT = SDL_HAT_LEFT,
+    HAT_RIGHTUP = SDL_HAT_RIGHTUP,
+    HAT_RIGHTDOWN = SDL_HAT_RIGHTDOWN,
+    HAT_LEFTUP = SDL_HAT_LEFTUP,
+    HAT_LEFTDOWN = SDL_HAT_LEFTDOWN,
 };
 
 enum ControllerButton : unsigned

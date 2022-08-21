@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -103,6 +103,8 @@ public:
     bool AddManualResource(Resource* resource);
     /// Remove a resource load directory.
     void RemoveResourceDir(const ea::string& pathName);
+    /// Remove all resource directories. At least one directory should be added before cache is used again!
+    void RemoveAllResourceDirs();
     /// Remove a package file. Optionally release the resources loaded from it.
     void RemovePackageFile(PackageFile* package, bool releaseResources = true, bool forceRelease = false);
     /// Remove a package file by name. Optionally release the resources loaded from it.
@@ -298,6 +300,8 @@ private:
     int finishBackgroundResourcesMs_;
     /// List of resources that will not be auto-reloaded if reloading event triggers.
     ea::vector<ea::string> ignoreResourceAutoReload_;
+    /// Sanitized path to executable
+    ea::string exePath_;
 };
 
 template <class T> T* ResourceCache::GetExistingResource(const ea::string& name)

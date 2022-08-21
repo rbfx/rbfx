@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,7 @@
 #endif
 
 // Identifier for the chat network messages
-const int MSG_CHAT = MSG_USER + 0;
+const auto MSG_CHAT = static_cast<NetworkMessageId>(MSG_USER + 0);
 // UDP port we will use
 const unsigned short CHAT_SERVER_PORT = 2345;
 
@@ -77,7 +77,8 @@ void Chat::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void Chat::CreateUI()
@@ -85,7 +86,7 @@ void Chat::CreateUI()
     SetLogoVisible(false); // We need the full rendering window
 
     auto* graphics = GetSubsystem<Graphics>();
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetUIRoot();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* uiStyle = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     // Set style to the UI root so that elements will inherit it

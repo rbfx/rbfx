@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,8 @@ void HttpRequestDemo::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void HttpRequestDemo::CreateUI()
@@ -70,20 +71,18 @@ void HttpRequestDemo::CreateUI()
     text_->SetVerticalAlignment(VA_CENTER);
 
     // Add Text instance to the UI root element
-    GetSubsystem<UI>()->GetRoot()->AddChild(text_);
+    GetUIRoot()->AddChild(text_);
 }
 
 void HttpRequestDemo::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing HTTP request
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HttpRequestDemo, HandleUpdate));
 }
 
-void HttpRequestDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void HttpRequestDemo::Update(float timeStep)
 {
     auto* network = GetSubsystem<Network>();
 
-    if (httpRequest_.Null())
+    if (httpRequest_ == nullptr)
 #ifdef URHO3D_SSL
         httpRequest_ = network->MakeHttpRequest("https://api.ipify.org/?format=json");
 #else

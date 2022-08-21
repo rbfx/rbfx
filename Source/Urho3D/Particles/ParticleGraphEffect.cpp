@@ -23,17 +23,16 @@
 #include "../Precompiled.h"
 
 #include "ParticleGraphEffect.h"
-#include "ParticleGraphLayer.h"
 
 #include "../Core/Context.h"
-
-#include "../Graphics//Graphics.h"
 #include "../Core/Thread.h"
+#include "../Graphics//Graphics.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/Deserializer.h"
 #include "../IO/FileSystem.h"
-#include "../Resource/XMLFile.h"
 #include "../Resource/XMLArchive.h"
+#include "../Resource/XMLFile.h"
+#include "ParticleGraphLayer.h"
 
 namespace Urho3D
 {
@@ -50,7 +49,6 @@ void ParticleGraphEffect::RegisterObject(Context* context)
     context->RegisterFactory<ParticleGraphEffect>();
 }
 
-/// Set number of layers.
 void ParticleGraphEffect::SetNumLayers(unsigned numLayers)
 {
     while (numLayers < layers_.size())
@@ -64,38 +62,27 @@ void ParticleGraphEffect::SetNumLayers(unsigned numLayers)
     }
 }
 
-/// Get number of layers.
 unsigned ParticleGraphEffect::GetNumLayers() const
 {
     return static_cast<unsigned>(layers_.size());
 }
 
-/// Get layer by index.
 SharedPtr<ParticleGraphLayer> ParticleGraphEffect::GetLayer(unsigned layerIndex) const
 {
     return layers_[layerIndex];
 }
 
-
-
 bool ParticleGraphEffect::BeginLoad(Deserializer& source)
 {
-    // In headless mode, do not actually load the material, just return success
-    //auto* graphics = GetSubsystem<Graphics>();
-    //if (!graphics)
-    //    return true;
-
     ea::string extension = GetExtension(source.GetName());
-
-    bool success = false;
 
     ResetToDefaults();
 
-    loadXMLFile_ = context_->CreateObject<XMLFile>();
-    if (!loadXMLFile_->Load(source))
+    const auto xmlFile = MakeShared<XMLFile>(context_);
+    if (!xmlFile->Load(source))
         return false;
 
-    return true;
+    return xmlFile->LoadObject("particleGraphEffect", *this);
 }
 
 void ParticleGraphEffect::ResetToDefaults()
@@ -107,51 +94,25 @@ void ParticleGraphEffect::ResetToDefaults()
     layers_.clear();
 }
 
-bool ParticleGraphEffect::EndLoad()
-{
-    // In headless mode, do not actually load the material, just return success
-    //auto* graphics = GetSubsystem<Graphics>();
-    //if (!graphics)
-    //    return true;
-
-    XMLInputArchive archive(loadXMLFile_);
-    auto block = archive.OpenUnorderedBlock("particleGraphEffect");
-    SerializeInBlock(archive);
-    //if (archive.HasError())
-    //    URHO3D_LOGERROR(archive.GetErrorString());
-    return true;
-}
-
 bool ParticleGraphEffect::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
-    XMLOutputArchive archive(xml);
-    auto block = archive.OpenUnorderedBlock("particleGraphEffect");
-    const_cast<ParticleGraphEffect*>(this)->SerializeInBlock(archive);
-    xml->Save(dest);
+    const auto xmlFile = MakeShared<XMLFile>(context_);
+    xmlFile->SaveObject("particleGraphEffect", *this);
+    xmlFile->Save(dest);
     return true;
 }
 
 void ParticleGraphEffect::SerializeInBlock(Archive& archive)
 {
-    //SerializeVectorAsObjects(archive, "particleGraphEffect", layers_ , "layer");
-    
-    unsigned numElements = layers_.size();
-    auto block = archive.OpenArrayBlock("layers", numElements);
+    const bool loading = archive.IsInput();
 
-    if (archive.IsInput())
+    SerializeVectorAsObjects(archive, "layers", layers_, "layer",
+        [&](Archive& archive, const char* name, SharedPtr<ParticleGraphLayer>& value)
     {
-        numElements = block.GetSizeHint();
-        layers_.clear();
-        layers_.resize(numElements);
-        for (unsigned i = 0; i < numElements; ++i)
-        {
-            layers_[i] = MakeShared<ParticleGraphLayer>(context_);
-        }
-    }
-
-    for (unsigned i = 0; i < numElements; ++i)
-        SerializeValue(archive, "layer", *layers_[i]);
+        if (loading)
+            value = MakeShared<ParticleGraphLayer>(context_);
+        SerializeValue(archive, name, *value);
+    });
 }
 
 

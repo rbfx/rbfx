@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,10 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include <EASTL/shared_array.h>
-
 #include "../Precompiled.h"
 
+#include "../Navigation/DynamicNavigationMesh.h"
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
@@ -31,7 +30,6 @@
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
 #include "../Navigation/CrowdAgent.h"
-#include "../Navigation/DynamicNavigationMesh.h"
 #include "../Navigation/NavArea.h"
 #include "../Navigation/NavBuildData.h"
 #include "../Navigation/NavigationEvents.h"
@@ -41,12 +39,14 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 
-#include <LZ4/lz4.h>
 #include <Detour/DetourNavMesh.h>
 #include <Detour/DetourNavMeshBuilder.h>
 #include <DetourTileCache/DetourTileCache.h>
 #include <DetourTileCache/DetourTileCacheBuilder.h>
+#include <LZ4/lz4.h>
 #include <Recast/Recast.h>
+
+#include <EASTL/shared_array.h>
 
 // DebugNew is deliberately not used because the macro 'free' conflicts with DetourTileCache's LinearAllocator interface
 //#include "../DebugNew.h"
@@ -55,8 +55,6 @@ static const unsigned TILECACHE_MAXLAYERS = 255;
 
 namespace Urho3D
 {
-
-extern const char* NAVIGATION_CATEGORY;
 
 static const int DEFAULT_MAX_OBSTACLES = 1024;
 static const int DEFAULT_MAX_LAYERS = 16;
@@ -229,7 +227,7 @@ DynamicNavigationMesh::~DynamicNavigationMesh()
 
 void DynamicNavigationMesh::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DynamicNavigationMesh>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<DynamicNavigationMesh>(Category_Navigation);
 
     URHO3D_COPY_BASE_ATTRIBUTES(NavigationMesh);
     URHO3D_ACCESSOR_ATTRIBUTE("Max Obstacles", GetMaxObstacles, SetMaxObstacles, unsigned, DEFAULT_MAX_OBSTACLES, AM_DEFAULT);

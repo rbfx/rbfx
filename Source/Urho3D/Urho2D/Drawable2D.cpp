@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -82,7 +82,6 @@ void Drawable2D::SetLayer(int layer)
     layer_ = layer;
 
     OnDrawOrderChanged();
-    MarkNetworkUpdate();
 }
 
 void Drawable2D::SetOrderInLayer(int orderInLayer)
@@ -93,7 +92,6 @@ void Drawable2D::SetOrderInLayer(int orderInLayer)
     orderInLayer_ = orderInLayer;
 
     OnDrawOrderChanged();
-    MarkNetworkUpdate();
 }
 
 const ea::vector<SourceBatch2D>& Drawable2D::GetSourceBatches()

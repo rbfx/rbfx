@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2020 the Urho3D project.
+# Copyright (c) 2008-2022 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,13 +30,11 @@ if (URHO3D_TOOLS OR URHO3D_PACKAGING)
 endif ()
 
 if (URHO3D_TOOLS AND NOT MINI_URHO)
-    add_subdirectory(Toolbox)
     add_subdirectory(AssetImporter)
     add_subdirectory(AssetViewer)
     add_subdirectory(OgreImporter)
     add_subdirectory(RampGenerator)
     add_subdirectory(SpritePacker)
-    add_subdirectory(Editor)
     add_subdirectory(ScriptPlayer)
 endif ()
 

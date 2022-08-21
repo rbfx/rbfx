@@ -29,6 +29,7 @@
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/OctreeQuery.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Technique.h"
@@ -45,6 +46,7 @@
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/ScenePass.h"
 #include "../RenderPipeline/SceneProcessor.h"
+#include "../Graphics/OutlineGroup.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
 #include "../Scene/Scene.h"
 
@@ -223,7 +225,11 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
     frameInfo_.camera_ = frameInfo_.viewport_->GetCullCamera()
         ? frameInfo_.viewport_->GetCullCamera()
         : frameInfo_.viewport_->GetCamera();
-    frameInfo_.octree_ = frameInfo_.scene_ ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
+
+    frameInfo_.octree_ = frameInfo_.scene_
+        ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
+    frameInfo_.reflectionProbeManager_ = frameInfo_.octree_
+        ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>(LOCAL) : nullptr;
 
     return frameInfo_.octree_ && frameInfo_.camera_;
 }
@@ -267,12 +273,12 @@ void SceneProcessor::Update()
 {
     // Collect occluders
     currentOcclusionBuffer_ = nullptr;
+    const Frustum& frustum = frameInfo_.camera_->GetFrustum();
     if (settings_.maxOccluderTriangles_ > 0)
     {
         URHO3D_PROFILE("ProcessOccluders");
 
-        OccluderOctreeQuery occluderQuery(occluders_,
-            frameInfo_.camera_->GetFrustum(), frameInfo_.camera_->GetViewMask());
+        OccluderOctreeQuery occluderQuery(occluders_, frustum, frameInfo_.camera_->GetViewMask());
         frameInfo_.octree_->GetDrawables(occluderQuery);
         drawableProcessor_->ProcessOccluders(occluders_, settings_.occluderSizeThreshold_);
 
@@ -294,14 +300,14 @@ void SceneProcessor::Update()
     if (currentOcclusionBuffer_)
     {
         URHO3D_PROFILE("QueryVisibleDrawables");
-        OccludedFrustumOctreeQuery query(drawables_, frameInfo_.camera_->GetFrustum(),
+        OccludedFrustumOctreeQuery query(drawables_, frustum,
             currentOcclusionBuffer_, DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
         frameInfo_.octree_->GetDrawables(query);
     }
     else
     {
         URHO3D_PROFILE("QueryVisibleDrawables");
-        FrustumOctreeQuery drawableQuery(drawables_, frameInfo_.camera_->GetFrustum(),
+        FrustumOctreeQuery drawableQuery(drawables_, frustum,
             DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
         frameInfo_.octree_->GetDrawables(drawableQuery);
     }
@@ -310,8 +316,6 @@ void SceneProcessor::Update()
     drawableProcessor_->ProcessVisibleDrawables(drawables_, currentOcclusionBuffer_);
     drawableProcessor_->ProcessLights(this);
     drawableProcessor_->ProcessForwardLighting();
-
-    drawableProcessor_->UpdateGeometries();
 
     batchCompositor_->ComposeSceneBatches();
     if (settings_.enableShadows_)
@@ -338,9 +342,17 @@ void SceneProcessor::PrepareInstancingBuffer()
     }
 
     for (ScenePass* pass : passes_)
-        pass->PrepareInstacingBuffer(batchRenderer_);
+    {
+        if (pass->IsEnabled())
+            pass->PrepareInstancingBuffer(batchRenderer_);
+    }
 
     instancingBuffer_->End();
+}
+
+void SceneProcessor::PrepareDrawablesBeforeRendering()
+{
+    drawableProcessor_->UpdateGeometries();
 }
 
 void SceneProcessor::RenderShadowMaps()
@@ -423,6 +435,8 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     ctx.globalResources_ = globalResources;
     ctx.cameraParameters_ = cameraParameters;
 
+    if (batchGroup.scissorRect_ != IntRect::ZERO)
+        drawQueue_->SetScissorRect(batchGroup.scissorRect_);
     batchRenderer_->RenderBatches(ctx, batchGroup);
 
     graphics_->SetClipPlane(camera->GetUseClipping(),

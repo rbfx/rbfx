@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -240,6 +240,19 @@ URHO3D_EVENT(E_INPUTBEGIN, InputBegin)
 /// Input handling ends.
 URHO3D_EVENT(E_INPUTEND, InputEnd)
 {
+}
+
+/// Multitouch event from MultitouchAdapter.
+URHO3D_EVENT(E_MULTITOUCH, Multitouch)
+{
+    URHO3D_PARAM(P_NUMFINGERS, NumFingers); // int
+    URHO3D_PARAM(P_EVENTTYPE, EventType);   // int
+    URHO3D_PARAM(P_X, X);                   // int
+    URHO3D_PARAM(P_Y, Y);                   // int
+    URHO3D_PARAM(P_DX, DX);                 // int
+    URHO3D_PARAM(P_DY, DY);                 // int
+    URHO3D_PARAM(P_SIZE, Size);             // IntVector2
+    URHO3D_PARAM(P_DSIZE, DSize);           // IntVector2
 }
 
 }

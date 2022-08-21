@@ -24,9 +24,9 @@
 %}
 
 /* K is the C++ key type, T is the C++ value type */
-%define SWIG_EASTL_UNORDERED_MAP_INTERNAL(K, T)
+%define SWIG_EASTL_UNORDERED_MAP_INTERNAL(K, T, Hash, Predicate, Allocator, bCacheHashCode)
 
-%typemap(csinterfaces) eastl::unordered_map< K, T > "global::System.IDisposable \n    , global::System.Collections.Generic.IDictionary<$typemap(cstype, K), $typemap(cstype, T)>\n";
+%typemap(csinterfaces) eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode > "global::System.IDisposable \n    , global::System.Collections.Generic.IDictionary<$typemap(cstype, K), $typemap(cstype, T)>\n";
 %proxycode %{
 
   public $typemap(cstype, T) this[$typemap(cstype, K) key] {
@@ -216,14 +216,14 @@
     typedef T mapped_type;
 
     unordered_map();
-    unordered_map(const unordered_map< K, T > &other);
+    unordered_map(const unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode > &other);
     size_t size() const;
     bool empty() const;
     %rename(Clear) clear;
     void clear();
     %extend {
       const T& getitem(const K& key) throw (std::out_of_range) {
-        eastl::unordered_map< K, T >::iterator iter = $self->find(key);
+        eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator iter = $self->find(key);
         if (iter != $self->end())
           return iter->second;
         else
@@ -235,19 +235,19 @@
       }
 
       bool ContainsKey(const K& key) {
-        eastl::unordered_map< K, T >::iterator iter = $self->find(key);
+        eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator iter = $self->find(key);
         return iter != $self->end();
       }
 
       void Add(const K& key, const T& value) throw (std::out_of_range) {
-        eastl::unordered_map< K, T >::iterator iter = $self->find(key);
+        eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator iter = $self->find(key);
         if (iter != $self->end())
           throw std::out_of_range("key already exists");
         $self->insert(eastl::pair< K, T >(key, value));
       }
 
       bool Remove(const K& key) {
-        eastl::unordered_map< K, T >::iterator iter = $self->find(key);
+        eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator iter = $self->find(key);
         if (iter != $self->end()) {
           $self->erase(iter);
           return true;
@@ -256,20 +256,20 @@
       }
 
       // create_iterator_begin(), get_next_key() and destroy_iterator work together to provide a collection of keys to C#
-      %apply void *VOID_INT_PTR { eastl::unordered_map< K, T >::iterator *create_iterator_begin }
-      %apply void *VOID_INT_PTR { eastl::unordered_map< K, T >::iterator *swigiterator }
+      %apply void *VOID_INT_PTR { eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator *create_iterator_begin }
+      %apply void *VOID_INT_PTR { eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator *swigiterator }
 
-      eastl::unordered_map< K, T >::iterator *create_iterator_begin() {
-        return new eastl::unordered_map< K, T >::iterator($self->begin());
+      eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator *create_iterator_begin() {
+        return new eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator($self->begin());
       }
 
-      const K& get_next_key(eastl::unordered_map< K, T >::iterator *swigiterator) {
-        eastl::unordered_map< K, T >::iterator iter = *swigiterator;
+      const K& get_next_key(eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator *swigiterator) {
+        eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator iter = *swigiterator;
         (*swigiterator)++;
         return (*iter).first;
       }
 
-      void destroy_iterator(eastl::unordered_map< K, T >::iterator *swigiterator) {
+      void destroy_iterator(eastl::unordered_map< K, T, Hash, Predicate, Allocator, bCacheHashCode >::iterator *swigiterator) {
         delete swigiterator;
       }
     }
@@ -286,7 +286,7 @@
 
 // Default implementation
 namespace eastl {
-  template<class K, class T > class unordered_map {
-    SWIG_EASTL_UNORDERED_MAP_INTERNAL(K, T)
+  template<class K, class T, class Hash = eastl::hash<K>, class Predicate = eastl::equal_to<K>, class Allocator = eastl::allocator, bool bCacheHashCode = false > class unordered_map {
+    SWIG_EASTL_UNORDERED_MAP_INTERNAL(K, T, Hash, Predicate, Allocator, bCacheHashCode)
   };
 }

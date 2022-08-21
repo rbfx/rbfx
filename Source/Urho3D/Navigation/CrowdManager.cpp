@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,8 +40,6 @@
 
 namespace Urho3D
 {
-
-extern const char* NAVIGATION_CATEGORY;
 
 static const unsigned DEFAULT_MAX_AGENTS = 512;
 static const float DEFAULT_MAX_AGENT_RADIUS = 0.f;
@@ -97,7 +95,7 @@ CrowdManager::~CrowdManager()
 
 void CrowdManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CrowdManager>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<CrowdManager>(Category_Navigation);
 
     URHO3D_ATTRIBUTE("Max Agents", unsigned, maxAgents_, DEFAULT_MAX_AGENTS, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Agent Radius", float, maxAgentRadius_, DEFAULT_MAX_AGENT_RADIUS, AM_DEFAULT);
@@ -243,7 +241,6 @@ void CrowdManager::SetMaxAgents(unsigned maxAgents)
     {
         maxAgents_ = maxAgents;
         CreateCrowd();
-        MarkNetworkUpdate();
     }
 }
 
@@ -253,7 +250,6 @@ void CrowdManager::SetMaxAgentRadius(float maxAgentRadius)
     {
         maxAgentRadius_ = maxAgentRadius;
         CreateCrowd();
-        MarkNetworkUpdate();
     }
 }
 
@@ -277,7 +273,6 @@ void CrowdManager::SetNavigationMesh(NavigationMesh* navMesh)
         }
 
         CreateCrowd();
-        MarkNetworkUpdate();
     }
 }
 
@@ -320,7 +315,6 @@ void CrowdManager::SetIncludeFlags(unsigned queryFilterType, unsigned short flag
         filter->setIncludeFlags(flags);
         if (numQueryFilterTypes_ < queryFilterType + 1)
             numQueryFilterTypes_ = queryFilterType + 1;
-        MarkNetworkUpdate();
     }
 }
 
@@ -332,7 +326,6 @@ void CrowdManager::SetExcludeFlags(unsigned queryFilterType, unsigned short flag
         filter->setExcludeFlags(flags);
         if (numQueryFilterTypes_ < queryFilterType + 1)
             numQueryFilterTypes_ = queryFilterType + 1;
-        MarkNetworkUpdate();
     }
 }
 
@@ -346,7 +339,6 @@ void CrowdManager::SetAreaCost(unsigned queryFilterType, unsigned areaID, float 
             numQueryFilterTypes_ = queryFilterType + 1;
         if (numAreas_[queryFilterType] < areaID + 1)
             numAreas_[queryFilterType] = areaID + 1;
-        MarkNetworkUpdate();
     }
 }
 
@@ -387,7 +379,6 @@ void CrowdManager::SetObstacleAvoidanceParams(unsigned obstacleAvoidanceType, co
         crowd_->setObstacleAvoidanceParams(obstacleAvoidanceType, reinterpret_cast<const dtObstacleAvoidanceParams*>(&params));
         if (numObstacleAvoidanceTypes_ < obstacleAvoidanceType + 1)
             numObstacleAvoidanceTypes_ = obstacleAvoidanceType + 1;
-        MarkNetworkUpdate();
     }
 }
 

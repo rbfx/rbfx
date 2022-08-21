@@ -88,7 +88,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
     Light* light = key.pixelLight_ ? key.pixelLight_->GetLight() : nullptr;
     const bool hasShadow = key.pixelLight_ && key.pixelLight_->HasShadow();
 
-    const BatchCompositorPass* batchCompositorPass = sceneProcessor_->GetUserPass(ctx.pass_);
+    BatchCompositorPass* batchCompositorPass = sceneProcessor_->GetUserPass(ctx.pass_);
     const bool isShadowPass = batchCompositorPass == nullptr && ctx.subpassIndex_ == BatchCompositor::ShadowSubpass;
     const bool isLightVolumePass = batchCompositorPass == nullptr && ctx.subpassIndex_ == BatchCompositor::LitVolumeSubpass;
 
@@ -99,12 +99,22 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
         compositor_->ProcessShadowBatch(shaderProgramDesc_,
             key.geometry_, key.geometryType_, key.material_, key.pass_, light);
         SetupShadowPassState(ctx.shadowSplitIndex_, key.pixelLight_, key.material_, key.pass_);
+
+        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
+        SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
     else if (isLightVolumePass)
     {
         compositor_->ProcessLightVolumeBatch(shaderProgramDesc_,
             key.geometry_, key.geometryType_, key.pass_, light, hasShadow);
         SetupLightVolumePassState(key.pixelLight_);
+
+        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
+        SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
+    }
+    else if (batchCompositorPass && batchCompositorPass->IsFlagSet(DrawableProcessorPassFlag::PipelineStateCallback))
+    {
+        batchCompositorPass->CreatePipelineState(pipelineStateDesc_, this, key, ctx);
     }
     else if (batchCompositorPass)
     {
@@ -125,25 +135,18 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
             else if (pipelineStateDesc_.blendMode_ == BLEND_ADDALPHA)
                 pipelineStateDesc_.blendMode_ = BLEND_SUBTRACTALPHA;
         }
+
+        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
+        SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
 
-    if (shaderProgramDesc_.isInstancingUsed_)
-        pipelineStateDesc_.InitializeInputLayoutAndPrimitiveType(key.geometry_, instancingBuffer_->GetVertexBuffer());
-    else
-        pipelineStateDesc_.InitializeInputLayoutAndPrimitiveType(key.geometry_);
-
-    SetupShaders();
     return renderer_->GetOrCreatePipelineState(pipelineStateDesc_);
 }
 
 void PipelineStateBuilder::ClearState()
 {
     pipelineStateDesc_ = {};
-    shaderProgramDesc_.vertexShaderName_.clear();
-    shaderProgramDesc_.vertexShaderDefines_.clear();
-    shaderProgramDesc_.pixelShaderName_.clear();
-    shaderProgramDesc_.pixelShaderDefines_.clear();
-    shaderProgramDesc_.commonShaderDefines_.clear();
+    shaderProgramDesc_.Clear();
 }
 
 void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const LightProcessor* lightProcessor,
@@ -236,14 +239,24 @@ void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
     }
 }
 
-void PipelineStateBuilder::SetupShaders()
+void PipelineStateBuilder::SetupInputLayoutAndPrimitiveType(
+    PipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const
 {
-    shaderProgramDesc_.vertexShaderDefines_ += shaderProgramDesc_.commonShaderDefines_;
-    shaderProgramDesc_.pixelShaderDefines_ += shaderProgramDesc_.commonShaderDefines_;
-    pipelineStateDesc_.vertexShader_ = graphics_->GetShader(
-        VS, shaderProgramDesc_.vertexShaderName_, shaderProgramDesc_.vertexShaderDefines_);
-    pipelineStateDesc_.pixelShader_ = graphics_->GetShader(
-        PS, shaderProgramDesc_.pixelShaderName_, shaderProgramDesc_.pixelShaderDefines_);
+    if (shaderProgramDesc.isInstancingUsed_)
+        pipelineStateDesc.InitializeInputLayoutAndPrimitiveType(geometry, instancingBuffer_->GetVertexBuffer());
+    else
+        pipelineStateDesc.InitializeInputLayoutAndPrimitiveType(geometry);
+}
+
+void PipelineStateBuilder::SetupShaders(PipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const
+{
+    for (ea::string& shaderDefines : shaderProgramDesc.shaderDefines_)
+        shaderDefines += shaderProgramDesc.commonShaderDefines_;
+
+    pipelineStateDesc.vertexShader_ = graphics_->GetShader(
+        VS, shaderProgramDesc.shaderName_[VS], shaderProgramDesc.shaderDefines_[VS]);
+    pipelineStateDesc.pixelShader_ = graphics_->GetShader(
+        PS, shaderProgramDesc.shaderName_[PS], shaderProgramDesc.shaderDefines_[PS]);
 }
 
 }

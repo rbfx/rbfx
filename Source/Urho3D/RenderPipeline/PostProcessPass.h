@@ -47,7 +47,7 @@ public:
     ~PostProcessPass() override;
 
     virtual PostProcessPassFlags GetExecutionFlags() const = 0;
-    virtual void Execute() = 0;
+    virtual void Execute(Camera* camera) = 0;
 
 protected:
     RenderBufferManager* renderBufferManager_{};
@@ -68,7 +68,7 @@ public:
     void AddShaderResource(TextureUnit unit, Texture* texture);
 
     PostProcessPassFlags GetExecutionFlags() const override { return flags_; }
-    void Execute() override;
+    void Execute(Camera* camera) override;
 
 protected:
     const PostProcessPassFlags flags_;

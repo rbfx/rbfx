@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,6 @@
 namespace Urho3D
 {
 
-extern const char* UI_CATEGORY;
-
 BorderImage::BorderImage(Context* context) :
     UIElement(context),
     imageRect_(IntRect::ZERO),
@@ -51,7 +49,7 @@ BorderImage::~BorderImage() = default;
 
 void BorderImage::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BorderImage>(UI_CATEGORY);
+    context->RegisterFactory<BorderImage>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Texture", GetTextureAttr, SetTextureAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()),

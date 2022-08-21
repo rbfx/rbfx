@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "Divide.h"
-#include "DivideInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "DivideInstance.h"
 
 namespace Urho3D
 {
@@ -42,27 +44,27 @@ namespace {
 static ea::vector<NodePattern> DividePatterns{
     MakePattern(
         DivideInstance<float, float, float>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         DivideInstance<Vector2, float, Vector2>()
-        , PinPattern<Vector2>("x")
-        , PinPattern<float>("y")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector2>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         DivideInstance<Vector3, float, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<float>("y")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         DivideInstance<Vector4, float, Vector4>()
-        , PinPattern<Vector4>("x")
-        , PinPattern<float>("y")
-        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector4>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<Vector4>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

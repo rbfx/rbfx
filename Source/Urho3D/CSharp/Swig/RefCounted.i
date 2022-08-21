@@ -60,7 +60,7 @@
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
       [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private bool _swigCMemOwn = false;
-      internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
+      internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
         // This function gets called when we want to turn a native cPtr into managed instance. For example when some
         // method returns a pointer to a wrapped object.
         if (cPtr == global::System.IntPtr.Zero)
@@ -211,6 +211,9 @@
 
 // TODO: Fix autoswig script to output these as well.
 URHO3D_REFCOUNTED(Urho3D::RefCounted);
+URHO3D_REFCOUNTED(Urho3D::NetworkObject);
+URHO3D_REFCOUNTED(Urho3D::StaticNetworkObject);
+URHO3D_REFCOUNTED(Urho3D::BehaviorNetworkObject);
 %include "generated/Urho3D/_pre_refcounted.i";
 
 //%interface_custom("%s", "I%s", Urho3D::RefCounted);

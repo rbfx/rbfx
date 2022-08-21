@@ -68,8 +68,31 @@ struct SortedOccluder
 /// Reference to SourceBatch of Drawable geometry, with resolved material passes.
 struct GeometryBatch
 {
+    static GeometryBatch Deferred(Drawable* drawable, unsigned sourceBatchIndex, Pass* deferredPass, void* userData = nullptr)
+    {
+        GeometryBatch batch;
+        batch.drawable_ = drawable;
+        batch.sourceBatchIndex_ = sourceBatchIndex;
+        batch.deferredPass_ = deferredPass;
+        batch.userData_ = userData;
+        return batch;
+    }
+
+    static GeometryBatch Forward(Drawable* drawable, unsigned sourceBatchIndex, Pass* unlitBasePass, Pass* litBasePass, Pass* lightPass, void* userData = nullptr)
+    {
+        GeometryBatch batch;
+        batch.drawable_ = drawable;
+        batch.sourceBatchIndex_ = sourceBatchIndex;
+        batch.unlitBasePass_ = unlitBasePass;
+        batch.litBasePass_ = litBasePass;
+        batch.lightPass_ = lightPass;
+        batch.userData_ = userData;
+        return batch;
+    }
+
     Drawable* drawable_{};
     unsigned sourceBatchIndex_{};
+    void* userData_{};
 
     /// If deferred pass is present, unlit base, lit base and light passes are ignored.
     Pass* deferredPass_{};
@@ -107,18 +130,28 @@ public:
     DrawableProcessorPass(RenderPipelineInterface* renderPipeline, DrawableProcessorPassFlags flags,
         unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
 
+    void SetEnabled(bool enabled) { enabled_ = enabled; }
+    bool IsEnabled() const { return enabled_; }
+
+    /// Custom callback for adding batches.
+    virtual AddBatchResult AddCustomBatch(unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique) { return {}; }
+
     AddBatchResult AddBatch(unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique);
 
     DrawableProcessorPassFlags GetFlags() const { return flags_; }
+    bool IsFlagSet(DrawableProcessorPassFlags flag) const { return flags_.Test(flag); }
     bool HasLightPass() const { return lightPassIndex_ != M_MAX_UNSIGNED; }
 
 private:
     const DrawableProcessorPassFlags flags_{};
+    const bool useBatchCallback_{};
 
     const unsigned deferredPassIndex_{};
     const unsigned unlitBasePassIndex_{};
     const unsigned litBasePassIndex_{};
     const unsigned lightPassIndex_{};
+
+    bool enabled_{true};
 
 protected:
     /// RenderPipeline callbacks
@@ -203,6 +236,7 @@ protected:
     void ProcessVisibleDrawable(Drawable* drawable);
     void ProcessQueuedDrawable(Drawable* drawable);
     void UpdateDrawableZone(const BoundingBox& boundingBox, Drawable* drawable) const;
+    void UpdateDrawableReflection(const BoundingBox& boundingBox, Drawable* drawable) const;
     void QueueDrawableUpdate(Drawable* drawable);
     void QueueDrawableGeometryUpdate(unsigned threadIndex, Drawable* drawable);
     void CheckMaterialForAuxiliaryRenderSurfaces(Material* material);
@@ -230,7 +264,8 @@ private:
 
     /// Cached between frames
     /// @{
-    ea::vector<SharedPtr<DrawableProcessorPass>> passes_;
+    ea::vector<SharedPtr<DrawableProcessorPass>> allPasses_;
+    ea::vector<DrawableProcessorPass*> passes_;
     DrawableProcessorSettings settings_;
     ea::unique_ptr<LightProcessorCache> lightProcessorCache_;
     /// @}

@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
@@ -48,8 +49,6 @@ static int const UICOMPONENT_DEFAULT_TEXTURE_SIZE = 512;
 static int const UICOMPONENT_MIN_TEXTURE_SIZE = 64;
 static int const UICOMPONENT_MAX_TEXTURE_SIZE = 4096;
 
-extern const char* RML_UI_CATEGORY;
-
 RmlCanvasComponent::RmlCanvasComponent(Context* context)
     : LogicComponent(context)
 {
@@ -68,7 +67,7 @@ RmlCanvasComponent::~RmlCanvasComponent()
 
 void RmlCanvasComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RmlCanvasComponent>(RML_UI_CATEGORY);
+    context->RegisterFactory<RmlCanvasComponent>(Category_RmlUI);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
     URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureRef, SetTextureRef, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);
@@ -90,7 +89,7 @@ void RmlCanvasComponent::OnSetEnabled()
 
 void RmlCanvasComponent::SetUISize(IntVector2 size)
 {
-    assert(texture_.NotNull());
+    assert(texture_ != nullptr);
     if (size.x_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.x_ > UICOMPONENT_MAX_TEXTURE_SIZE ||
         size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE || size.x_ != size.y_)
     {
@@ -132,14 +131,14 @@ void RmlCanvasComponent::SetTextureRef(const ResourceRef& texture)
 
 ResourceRef RmlCanvasComponent::GetTextureRef() const
 {
-    if (texture_.Null())
+    if (texture_ == nullptr)
         return ResourceRef(Texture2D::GetTypeStatic());
     return ResourceRef(Texture2D::GetTypeStatic(), texture_->GetName());
 }
 
 void RmlCanvasComponent::ClearTexture()
 {
-    if (texture_.Null())
+    if (texture_ == nullptr)
         return;
 
     Image clear(context_);

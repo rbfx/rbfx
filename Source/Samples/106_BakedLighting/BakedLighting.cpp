@@ -24,6 +24,7 @@
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/AnimatedModel.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
@@ -71,7 +72,8 @@ void BakedLighting::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void BakedLighting::CreateScene()
@@ -95,7 +97,7 @@ void BakedLighting::CreateScene()
     agent_->SetUpdateNodePosition(false);
 
     auto animController = agent_->GetNode()->GetComponent<AnimationController>(true);
-    animController->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true);
+    animController->PlayNewExclusive(AnimationParameters{context_, "Models/Mutant/Mutant_Idle0.ani"}.Looped());
 
     auto crowdManager = scene_->GetComponent<CrowdManager>();
     CrowdObstacleAvoidanceParams params = crowdManager->GetObstacleAvoidanceParams(0);
@@ -115,7 +117,7 @@ void BakedLighting::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "Shift to sprint, Tab to toggle character textures"
@@ -127,23 +129,21 @@ void BakedLighting::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void BakedLighting::SubscribeToEvents()
 {
-    // Subscribe to Update event for setting the character controls before physics simulation
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(BakedLighting, HandleUpdate));
-
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void BakedLighting::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void BakedLighting::Update(float timeStep)
 {
     using namespace Update;
 
     auto* input = GetSubsystem<Input>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // Update camera rotation
     const float rotationSensitivity = 0.1f;
@@ -173,18 +173,21 @@ void BakedLighting::HandleUpdate(StringHash eventType, VariantMap& eventData)
     agent_->SetTargetVelocity(speed * movementDirection);
 
     // Animate model
+    auto* runAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani");
+    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani");
+
     auto animController = agent_->GetNode()->GetComponent<AnimationController>(true);
     auto rotationNode = animController->GetNode()->GetParent();
     const Vector3 actualVelocityFlat = (agent_->GetActualVelocity() * Vector3(1, 0, 1));
     if (actualVelocityFlat.Length() > M_LARGE_EPSILON)
     {
+        const float speed = actualVelocityFlat.Length() * 0.3f;
         rotationNode->SetWorldDirection(actualVelocityFlat);
-        animController->PlayExclusive("Models/Mutant/Mutant_Run.ani", 0, true, 0.2f);
-        animController->SetSpeed("Models/Mutant/Mutant_Run.ani", actualVelocityFlat.Length() * 0.3f);
+        animController->PlayExistingExclusive(AnimationParameters{runAnimation}.Looped().Speed(speed), 0.2f);
     }
     else
     {
-        animController->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true, 0.2f);
+        animController->PlayExistingExclusive(AnimationParameters{idleAnimation}.Looped(), 0.2f);
     }
 
     // Snap position to ground

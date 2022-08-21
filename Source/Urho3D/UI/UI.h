@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -169,7 +169,9 @@ public:
 
     /// Return cursor position.
     /// @property
-    IntVector2 GetCursorPosition() const;
+    IntVector2 GetUICursorPosition() const;
+    IntVector2 GetSystemCursorPosition() const;
+    /// Return mouse position.
     /// Return UI element at global screen coordinates. By default returns only input-enabled elements.
     UIElement* GetElementAt(const IntVector2& position, bool enabledOnly = true);
     /// Return UI element at global screen coordinates. By default returns only input-enabled elements.
@@ -265,6 +267,10 @@ public:
     /// Return current UI scale.
     /// @property
     float GetScale() const { return uiScale_; }
+
+    /// Return screen size adjusted by scale.
+    /// @property
+    IntVector2 GetSize() const;
 
     /// Return root element custom size. Returns 0,0 when custom size is not being used and automatic resizing according to window size is in use instead (default).
     /// @property

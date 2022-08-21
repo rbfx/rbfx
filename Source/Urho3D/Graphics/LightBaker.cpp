@@ -57,8 +57,6 @@ static const char* qualityNames[] =
 
 }
 
-extern const char* SUBSYSTEM_CATEGORY;
-
 /// State of async light baker task.
 struct LightBaker::TaskData
 {
@@ -99,7 +97,7 @@ LightBaker::~LightBaker()
 void LightBaker::RegisterObject(Context* context)
 {
     static const LightBakingSettings defaultSettings;
-    context->RegisterFactory<LightBaker>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<LightBaker>(Category_Subsystem);
 
     URHO3D_ACTION_DYNAMIC_LABEL("Bake", BakeAsync, GetBakeLabel);
 

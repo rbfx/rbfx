@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,18 @@ URHO3D_EVENT(E_SCENEUPDATE, SceneUpdate)
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
 }
 
+/// Network-aware scene update.
+/// In standalone mode, SceneNetworkUpdate is equivalent to SceneUpdate.
+/// In server mode, SceneNetworkUpdate is called once per network frame with fixed timestep.
+/// In client mode, SceneNetworkUpdate is called on each rendered frame like SceneUpdate,
+/// but timesteps are properly scaled according to network clocks.
+URHO3D_EVENT(E_SCENENETWORKUPDATE, SceneNetworkUpdate)
+{
+    URHO3D_PARAM(P_SCENE, Scene);                       // Scene pointer
+    URHO3D_PARAM(P_TIMESTEP_REPLICA, TimeStepReplica);  // float
+    URHO3D_PARAM(P_TIMESTEP_INPUT, TimeStepInput);      // float
+}
+
 /// Scene subsystem update.
 URHO3D_EVENT(E_SCENESUBSYSTEMUPDATE, SceneSubsystemUpdate)
 {
@@ -41,28 +53,11 @@ URHO3D_EVENT(E_SCENESUBSYSTEMUPDATE, SceneSubsystemUpdate)
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
 }
 
-/// Scene transform smoothing update.
-URHO3D_EVENT(E_UPDATESMOOTHING, UpdateSmoothing)
-{
-    URHO3D_PARAM(P_CONSTANT, Constant);            // float
-    URHO3D_PARAM(P_SQUAREDSNAPTHRESHOLD, SquaredSnapThreshold);  // float
-}
-
 /// Scene drawable update finished. Custom animation (eg. IK) can be done at this point.
 URHO3D_EVENT(E_SCENEDRAWABLEUPDATEFINISHED, SceneDrawableUpdateFinished)
 {
     URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
-}
-
-/// SmoothedTransform target position changed.
-URHO3D_EVENT(E_TARGETPOSITION, TargetPositionChanged)
-{
-}
-
-/// SmoothedTransform target position changed.
-URHO3D_EVENT(E_TARGETROTATION, TargetRotationChanged)
-{
 }
 
 /// Scene attribute animation update.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -143,8 +143,6 @@ protected:
     void OnObjectAnimationRemoved(ObjectAnimation* objectAnimation);
     /// Update attribute animations.
     void UpdateAttributeAnimations(float timeStep);
-    /// Is animated network attribute.
-    bool IsAnimatedNetworkAttribute(const AttributeInfo& attrInfo) const;
     /// Return attribute animation info.
     AttributeAnimationInfo* GetAttributeAnimationInfo(const ea::string& name) const;
     /// Handle attribute animation added.
@@ -156,8 +154,6 @@ protected:
     bool animationEnabled_;
     /// Animation.
     SharedPtr<ObjectAnimation> objectAnimation_;
-    /// Animated network attribute set.
-    ea::hash_set<const AttributeInfo*> animatedNetworkAttributes_;
     /// Attribute animation infos.
     ea::unordered_map<ea::string, SharedPtr<AttributeAnimationInfo> > attributeAnimationInfos_;
 };

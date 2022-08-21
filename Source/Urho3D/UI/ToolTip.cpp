@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,8 +29,6 @@
 namespace Urho3D
 {
 
-extern const char* UI_CATEGORY;
-
 ToolTip::ToolTip(Context* context) :
     UIElement(context),
     delay_(0.0f),
@@ -43,7 +41,7 @@ ToolTip::~ToolTip() = default;
 
 void ToolTip::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ToolTip>(UI_CATEGORY);
+    context->RegisterFactory<ToolTip>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_ACCESSOR_ATTRIBUTE("Delay", GetDelay, SetDelay, float, 0.0f, AM_FILE);

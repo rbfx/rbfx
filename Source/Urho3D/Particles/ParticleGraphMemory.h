@@ -53,18 +53,6 @@ struct ParticleGraphSpan
 /// Memory layout for attributes.
 class ParticleGraphAttributeLayout
 {
-    /// Attribute layout.
-    struct AttrSpan
-    {
-        /// Name of attribute.
-        ea::string name_;
-        /// Attribute name hash.
-        StringHash nameHash_;
-        /// Type of attribute.
-        VariantType type_;
-        /// Location at emitter attribute buffer.
-        ParticleGraphSpan span_;
-    };
 public:
     /// Reset layout.
     void Reset(unsigned offset, unsigned capacity);
@@ -88,6 +76,19 @@ public:
     ParticleGraphSpan GetSpan(unsigned attrIndex) const { return attributes_[attrIndex].span_; }
 
 private:
+    /// Attribute layout.
+    struct AttrSpan
+    {
+        /// Name of attribute.
+        ea::string name_;
+        /// Attribute name hash.
+        StringHash nameHash_;
+        /// Type of attribute.
+        VariantType type_;
+        /// Location at emitter attribute buffer.
+        ParticleGraphSpan span_;
+    };
+
     /// All known attributes.
     ea::vector<AttrSpan> attributes_;
 
@@ -101,16 +102,6 @@ private:
 /// Memory layout for intermediate values.
 class ParticleGraphBufferLayout
 {
-    /// Attribute layout.
-    struct PinSpan
-    {
-        /// Container type of attribute.
-        ParticleGraphContainerType container_;
-        /// Type of attribute.
-        VariantType type_;
-        /// Location at emitter attribute buffer.
-        ParticleGraphSpan span_;
-    };
 
 public:
     /// Reset layout.
@@ -129,6 +120,17 @@ public:
     }
 
 private:
+    /// Attribute layout.
+    struct PinSpan
+    {
+        /// Container type of attribute.
+        ParticleGraphContainerType container_;
+        /// Type of attribute.
+        VariantType type_;
+        /// Location at emitter attribute buffer.
+        ParticleGraphSpan span_;
+    };
+
     /// Allocated spans.
     ea::vector<PinSpan> spans_;
 

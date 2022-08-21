@@ -12,16 +12,28 @@ fixed GetFogFactor(const half depth)
 }
 
 #ifdef URHO3D_PIXEL_SHADER
-    #ifndef URHO3D_ADDITIVE_LIGHT_PASS
-        half3 ApplyFog(const half3 color, const fixed fogFactor)
-        {
-            return mix(cFogColor, color, fogFactor);
-        }
+    /// Evaluate background or fog color according to premultiplied alpha.
+    #ifdef URHO3D_PREMULTIPLY_ALPHA
+        #define GetConstantFragmentColor(color, alpha) ((color) * (alpha))
     #else
-        half3 ApplyFog(const half3 color, const fixed fogFactor)
-        {
-            return color * fogFactor;
-        }
+        #define GetConstantFragmentColor(color, alpha) (color)
+    #endif
+
+    /// Evaluate final color of the fragment.
+    half3 GetFragmentColor(const half3 color, const half alpha, const fixed fogFactor)
+    {
+        #ifdef URHO3D_ADDITIVE_BLENDING
+            return color * (alpha * fogFactor);
+        #else
+            return mix(GetConstantFragmentColor(cFogColor, alpha), color, fogFactor);
+        #endif
+    }
+
+    /// Evaluate final color and alpha of the fragment.
+    #ifndef URHO3D_ADDITIVE_BLENDING
+        #define GetFragmentColorAlpha(color, alpha, fogFactor) vec4(GetFragmentColor(color, alpha, fogFactor), alpha)
+    #else
+        #define GetFragmentColorAlpha(color, alpha, fogFactor) vec4(GetFragmentColor(color, alpha, fogFactor), 0.0)
     #endif
 #endif // URHO3D_PIXEL_SHADER
 

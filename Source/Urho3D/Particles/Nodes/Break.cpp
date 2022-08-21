@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "Break.h"
-#include "BreakInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "BreakInstance.h"
 
 namespace Urho3D
 {
@@ -42,30 +44,30 @@ namespace {
 static ea::vector<NodePattern> BreakPatterns{
     MakePattern(
         BreakInstance<Vector3, float, float, float>()
-        , PinPattern<Vector3>("vec")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "y")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "z")
+        , ParticleGraphTypedPin<Vector3>("vec")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "y")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "z")
     ),
     MakePattern(
         BreakInstance<Vector2, float, float>()
-        , PinPattern<Vector2>("vec")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "y")
+        , ParticleGraphTypedPin<Vector2>("vec")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "y")
     ),
     MakePattern(
         BreakInstance<Quaternion, float, float, float, float>()
-        , PinPattern<Quaternion>("q")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "y")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "z")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "w")
+        , ParticleGraphTypedPin<Quaternion>("q")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "y")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "z")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "w")
     ),
     MakePattern(
         BreakInstance<Quaternion, Vector3, float>()
-        , PinPattern<Quaternion>("q")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "axis")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "angle")
+        , ParticleGraphTypedPin<Quaternion>("q")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "axis")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "angle")
     ),
 };
 } // namespace

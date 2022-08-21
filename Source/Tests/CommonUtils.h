@@ -22,14 +22,25 @@
 
 #pragma once
 
+#include <Urho3D/Core/Assert.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Variant.h>
 #include <Urho3D/Container/Ptr.h>
+#include <Urho3D/Input/Input.h>
+
+#include <EASTL/optional.h>
 
 #include <catch2/catch_amalgamated.hpp>
 #include <ostream>
 
 using namespace Urho3D;
+
+namespace Urho3D
+{
+
+class Resource;
+
+}
 
 namespace Tests
 {
@@ -48,6 +59,98 @@ SharedPtr<Context> CreateCompleteContext();
 
 /// Run frame with given time step.
 void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);
+
+/// Return resource by name. Creates and adds manual resource if missing.
+Resource* GetOrCreateResource(
+    Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>(Context*)> factory);
+
+void SendKeyEvent(Input* input, StringHash eventId, Scancode scancode, Key key);
+
+void SendDPadEvent(Input* input, HatPosition position, int hatIndex = 0, int joystickId = 0);
+
+void SendJoystickDisconnected(Input* input, int joystickId = 0);
+
+void SendAxisEvent(Input* input, int axis, float value, int joystickId = 0);
+
+/// Return resource by name. Creates and adds manual resource if missing.
+template <class T>
+T* GetOrCreateResource(Context* context, const ea::string& name, ea::function<SharedPtr<Resource>(Context*)> factory)
+{
+    return dynamic_cast<T*>(GetOrCreateResource(context, T::GetTypeStatic(), name, factory));
+}
+
+/// Helper class to track events in the engine.
+/// Events are grouped by frames using specified event.
+/// Events during the first tracked frame and after the last tracked frame are ignored.
+class FrameEventTracker : public Object
+{
+    URHO3D_OBJECT(FrameEventTracker, Object);
+
+public:
+    explicit FrameEventTracker(Context* context);
+    FrameEventTracker(Context* context, StringHash endFrameEventType);
+
+    void TrackEvent(StringHash eventType);
+    void TrackEvent(Object* object, StringHash eventType);
+
+    unsigned GetNumFrames() const { return recordedFrames_.size(); }
+
+    template <class T>
+    void SkipFramesUntil(T callback)
+    {
+        const auto iter = ea::find_if(recordedFrames_.begin(), recordedFrames_.end(), callback);
+        recordedFrames_.erase(recordedFrames_.begin(), iter);
+    }
+
+    void SkipFramesUntilEvent(StringHash eventType, unsigned hits = 1);
+    void ValidatePattern(const ea::vector<ea::vector<StringHash>>& pattern) const;
+
+private:
+    struct EventRecord
+    {
+        StringHash eventType_;
+        VariantMap eventData_;
+    };
+
+    void HandleEvent(StringHash eventType, VariantMap& eventData);
+
+    bool recordEvents_{};
+    ea::vector<EventRecord> currentFrameEvents_;
+    ea::vector<ea::vector<EventRecord>> recordedFrames_;
+};
+
+/// Helper class to track attribute of serializable at specified event.
+class AttributeTracker : public Object
+{
+    URHO3D_OBJECT(AttributeTracker, Object);
+
+public:
+    explicit AttributeTracker(Context* context);
+    AttributeTracker(Context* context, StringHash endFrameEventType);
+
+    void Track(Serializable* serializable, const ea::string& attributeName);
+
+    template <class T>
+    void SkipUntil(T callback)
+    {
+        const auto iter = ea::find_if(recordedValues_.begin(), recordedValues_.end(), callback);
+        recordedValues_.erase(recordedValues_.begin(), iter);
+    }
+
+    void SkipUntilChanged()
+    {
+        const auto iter = ea::adjacent_find(recordedValues_.begin(), recordedValues_.end(), ea::not_equal_to<Variant>());
+        recordedValues_.erase(recordedValues_.begin(), iter);
+    }
+
+    const ea::vector<Variant>& GetValues() const { return recordedValues_; }
+    unsigned Size() const { return recordedValues_.size(); }
+    const Variant& operator[](unsigned i) const { return recordedValues_[i]; }
+
+private:
+    ea::vector<ea::pair<WeakPtr<Serializable>, ea::string>> trackers_;
+    ea::vector<Variant> recordedValues_;
+};
 
 }
 
@@ -69,8 +172,17 @@ DEFINE_STRING_MAKER(Variant, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector2, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector3, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector4, value.ToString().c_str());
+DEFINE_STRING_MAKER(Quaternion, value.ToString().c_str());
 
 #undef DEFINE_STRING_MAKER
+
+template<class T> struct StringMaker<ea::optional<T>>
+{
+    static std::string convert(const ea::optional<T>& value)
+    {
+        return value ? StringMaker<T>::convert(*value) : "(nullopt)";
+    }
+};
 
 }
 /// @}

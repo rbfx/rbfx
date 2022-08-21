@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,15 +51,16 @@ static StringHashRegister& GetGlobalStringHashRegister()
 
 #endif
 
-const StringHash StringHash::ZERO;
+const StringHash StringHash::Empty{""};
 
-#ifdef URHO3D_HASH_DEBUG
 StringHash::StringHash(const char* str) noexcept :      // NOLINT(google-explicit-constructor)
     value_(Calculate(str))
 {
+#ifdef URHO3D_HASH_DEBUG
     GetGlobalStringHashRegister()->RegisterString(*this, str);
-}
 #endif
+}
+
 StringHash::StringHash(const ea::string& str) noexcept :
     value_(Calculate(str.c_str()))
 {
@@ -76,30 +77,15 @@ StringHash::StringHash(const ea::string_view& str) noexcept :
 #endif
 }
 
-#ifdef URHO3D_HASH_DEBUG
-unsigned StringHash::Calculate(const char* str, unsigned hash)
+unsigned StringHash::Calculate(const char* str)
 {
-    if (!str)
-        return hash;
-
-    while (*str)
-        hash = SDBMHash(hash, (unsigned char)*str++);
-
-    return hash;
+    return Calculate(static_cast<const void*>(str), strlen(str));
 }
-#endif
 
-unsigned StringHash::Calculate(const void* data, unsigned int length, unsigned int hash)
+unsigned StringHash::Calculate(const void* data, unsigned length)
 {
-    if (!data)
-        return hash;
-
-    auto* bytes = static_cast<const unsigned char*>(data);
-    auto* end = bytes + length;
-    while (bytes < end)
-        hash = SDBMHash(hash, (unsigned char)*bytes++);
-
-    return hash;
+    const ea::string_view view{static_cast<const char*>(data), length};
+    return MakeHash(view);
 }
 
 StringHashRegister* StringHash::GetGlobalStringHashRegister()

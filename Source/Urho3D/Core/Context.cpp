@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -166,13 +166,16 @@ Context::~Context()
 #endif
     // Remove subsystems that use SDL in reverse order of construction, so that Graphics can shut down SDL last
     /// \todo Context should not need to know about subsystems
+    RemoveSubsystem("PluginManager");
     RemoveSubsystem("Audio");
     RemoveSubsystem("UI");
     RemoveSubsystem("SystemUI");
     RemoveSubsystem("ResourceCache");
     RemoveSubsystem("Input");
     RemoveSubsystem("Renderer");
+    RemoveSubsystem("ComputeDevice");
     RemoveSubsystem("Graphics");
+    RemoveSubsystem("StateManager");
 
     subsystems_.Clear();
 
@@ -187,7 +190,6 @@ Context::~Context()
 
 Context* Context::GetInstance()
 {
-    assert(contextInstance != nullptr);
     return contextInstance;
 }
 

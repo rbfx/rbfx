@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,6 @@ namespace Urho3D
 class CollisionShape;
 class Constraint;
 class PhysicsWorld;
-class SmoothedTransform;
 
 /// Rigid body collision event signaling mode.
 enum CollisionEventMode
@@ -289,10 +288,6 @@ public:
     void UpdateMass();
     /// Update gravity parameters to the Bullet rigid body.
     void UpdateGravity();
-    /// Set network angular velocity attribute.
-    void SetNetAngularVelocityAttr(const ea::vector<unsigned char>& value);
-    /// Return network angular velocity attribute.
-    const ea::vector<unsigned char>& GetNetAngularVelocityAttr() const;
     /// Add a constraint that refers to this rigid body.
     void AddConstraint(Constraint* constraint);
     /// Remove a constraint that refers to this rigid body.
@@ -313,10 +308,6 @@ private:
     void AddBodyToWorld();
     /// Remove the rigid body from the physics world.
     void RemoveBodyFromWorld();
-    /// Handle SmoothedTransform target position update.
-    void HandleTargetPosition(StringHash eventType, VariantMap& eventData);
-    /// Handle SmoothedTransform target rotation update.
-    void HandleTargetRotation(StringHash eventType, VariantMap& eventData);
     /// Mark body dirty.
     void MarkBodyDirty() { readdBody_ = true; }
 
@@ -328,8 +319,6 @@ private:
     ea::unique_ptr<btCompoundShape> shiftedCompoundShape_;
     /// Physics world.
     WeakPtr<PhysicsWorld> physicsWorld_;
-    /// Smoothed transform, if has one.
-    WeakPtr<SmoothedTransform> smoothedTransform_;
     /// Constraints that refer to this rigid body.
     ea::vector<Constraint*> constraints_;
     /// Gravity override vector.
@@ -338,8 +327,6 @@ private:
     Vector3 centerOfMass_;
     /// Mass.
     float mass_;
-    /// Attribute buffer for network replication.
-    mutable VectorBuffer attrBuffer_;
     /// Collision layer.
     unsigned collisionLayer_;
     /// Collision mask.

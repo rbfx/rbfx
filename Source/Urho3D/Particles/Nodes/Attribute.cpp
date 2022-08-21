@@ -20,16 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
 
 #include "Attribute.h"
-#include "../Helpers.h"
-#include "../ParticleGraphSystem.h"
 
 #include "../../Resource/XMLElement.h"
+#include "../Helpers.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
 
 namespace Urho3D
 {
@@ -45,6 +45,9 @@ template <typename T> struct CopyValues
         const unsigned numParticles = context.indices_.size();
         switch (pin1.GetContainerType())
         {
+        case ParticleGraphContainerType::Auto:
+            assert(!"ParticleGraphContainerType::Auto");
+            break;
         case ParticleGraphContainerType::Scalar:
         {
             auto src = context.GetScalar<T>(pin1.GetMemoryReference());

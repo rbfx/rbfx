@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,8 +28,6 @@
 namespace Urho3D
 {
 
-extern const char* AUDIO_CATEGORY;
-
 SoundListener::SoundListener(Context* context) :
     Component(context)
 {
@@ -39,7 +37,7 @@ SoundListener::~SoundListener() = default;
 
 void SoundListener::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundListener>(AUDIO_CATEGORY);
+    context->RegisterFactory<SoundListener>(Category_Audio);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +54,8 @@ void UIDrag::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void UIDrag::CreateGUI()
@@ -62,7 +63,7 @@ void UIDrag::CreateGUI()
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
 
-    UIElement* root = ui->GetRoot();
+    UIElement* root = GetUIRoot();
     // Load the style sheet from xml
     root->SetDefaultStyle(cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
@@ -111,7 +112,7 @@ void UIDrag::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Drag on the buttons to move them around.\n"
                              "Touch input allows also multi-drag.\n"
                              "Press SPACE to show/hide tagged UI elements.");
@@ -121,12 +122,11 @@ void UIDrag::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void UIDrag::SubscribeToEvents()
 {
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(UIDrag, HandleUpdate));
 }
 
 void UIDrag::HandleClick(StringHash eventType, VariantMap& eventData)
@@ -183,10 +183,10 @@ void UIDrag::HandleDragCancel(StringHash eventType, VariantMap& eventData)
     element->SetPosition(P);
 }
 
-void UIDrag::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void UIDrag::Update(float timeStep)
 {
     auto* ui = GetSubsystem<UI>();
-    UIElement* root = ui->GetRoot();
+    UIElement* root = GetUIRoot();
 
     auto* input = GetSubsystem<Input>();
 

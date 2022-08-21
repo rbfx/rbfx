@@ -1,17 +1,17 @@
 /// _Material_Pixel_Evaluate.glsl
 /// Don't include!
 
-/// Return final alpha with optionally applied fade out.
+/// Return final surface alpha with optionally applied fade out.
 #ifdef URHO3D_SOFT_PARTICLES
     half GetSoftParticleFade(const half fragmentDepth, const half backgroundDepth)
     {
         half depthDelta = backgroundDepth - fragmentDepth - cFadeOffsetScale.x;
         return clamp(depthDelta * cFadeOffsetScale.y, 0.0, 1.0);
     }
-    #define GetFinalAlpha(surfaceData) \
+    #define GetSurfaceAlpha(surfaceData) \
         surfaceData.albedo.a * GetSoftParticleFade(vWorldDepth, surfaceData.backgroundDepth)
 #else
-    #define GetFinalAlpha(surfaceData) surfaceData.albedo.a
+    #define GetSurfaceAlpha(surfaceData) surfaceData.albedo.a
 #endif
 
 #ifdef URHO3D_IS_LIT
@@ -21,23 +21,39 @@
     half3 CalculateAmbientLighting(const SurfaceData surfaceData)
     {
     #ifdef URHO3D_PHYSICAL_MATERIAL
-        half NoV = abs(dot(surfaceData.normal, surfaceData.eyeVec)) + 1e-5;
-        #ifdef URHO3D_BLUR_REFLECTION
-            half3 linearReflectionColor = GammaToLinearSpace(surfaceData.reflectionColor.rgb);
+
+        #ifdef URHO3D_BLEND_REFLECTIONS
+            half3 linearReflectionColor0 = GammaToLinearSpace(surfaceData.reflectionColor[0].rgb);
+            half3 linearReflectionColor1 = GammaToLinearSpace(surfaceData.reflectionColor[1].rgb);
+
+            half3 linearReflectionColor = mix(
+                linearReflectionColor0, linearReflectionColor1, cReflectionBlendFactor);
         #else
-            half3 linearReflectionColor = mix(GammaToLinearSpace(surfaceData.reflectionColor.rgb),
-                cReflectionAverageColor, surfaceData.roughness * surfaceData.roughness);
+            half3 linearReflectionColor = GammaToLinearSpace(surfaceData.reflectionColor[0].rgb);
         #endif
+
+        half NoV = abs(dot(surfaceData.normal, surfaceData.eyeVec)) + 1e-5;
         half3 diffuseAndSpecularColor = Indirect_PBR(
             surfaceData.ambientLighting, linearReflectionColor,
             surfaceData.albedo.rgb, surfaceData.specular,
             surfaceData.roughness, NoV);
+
     #elif defined(URHO3D_REFLECTION_MAPPING)
+
+        #ifdef URHO3D_BLEND_REFLECTIONS
+            half3 gammaReflectionColor = mix(
+                surfaceData.reflectionColor[0].rgb, surfaceData.reflectionColor[1].rgb, cReflectionBlendFactor);
+        #else
+            half3 gammaReflectionColor = surfaceData.reflectionColor[0].rgb;
+        #endif
+
         half3 diffuseAndSpecularColor = Indirect_SimpleReflection(
-            surfaceData.ambientLighting, surfaceData.reflectionColor.rgb, surfaceData.albedo.rgb, cMatEnvMapColor);
+            surfaceData.ambientLighting, gammaReflectionColor, surfaceData.albedo.rgb, cMatEnvMapColor);
+
     #else
-        half3 diffuseAndSpecularColor = Indirect_Simple(
-            surfaceData.ambientLighting, surfaceData.albedo.rgb, cMatEnvMapColor);
+
+        half3 diffuseAndSpecularColor = Indirect_Simple(surfaceData.ambientLighting, surfaceData.albedo.rgb);
+
     #endif
         return diffuseAndSpecularColor * surfaceData.occlusion + surfaceData.emission;
     }
@@ -90,12 +106,12 @@
 
 /// Return color with applied lighting, but without fog.
 /// Fills all channels of geometry buffer except destination color.
-half3 GetFinalColor(const SurfaceData surfaceData)
+half3 GetSurfaceColor(const SurfaceData surfaceData)
 {
 #ifdef URHO3D_AMBIENT_PASS
-    half3 finalColor = CalculateAmbientLighting(surfaceData);
+    half3 surfaceColor = CalculateAmbientLighting(surfaceData);
 #else
-    half3 finalColor = vec3(0.0);
+    half3 surfaceColor = vec3(0.0);
 #endif
 
 #ifdef URHO3D_GBUFFER_PASS
@@ -109,19 +125,19 @@ half3 GetFinalColor(const SurfaceData surfaceData)
     gl_FragData[2] = vec4(surfaceData.fogFactor * surfaceData.specular, roughness);
     gl_FragData[3] = vec4(surfaceData.normal * 0.5 + 0.5, 0.0);
 #elif defined(URHO3D_LIGHT_PASS)
-    finalColor += CalculateDirectLighting(surfaceData);
+    surfaceColor += CalculateDirectLighting(surfaceData);
 #endif
-    return finalColor;
+    return surfaceColor;
 }
 
 #else // URHO3D_IS_LIT
 
 /// Return color with optionally applied reflection, but without fog.
-half3 GetFinalColor(const SurfaceData surfaceData)
+half3 GetSurfaceColor(const SurfaceData surfaceData)
 {
-    half3 finalColor = surfaceData.albedo.rgb;
+    half3 surfaceColor = surfaceData.albedo.rgb;
 #ifdef URHO3D_REFLECTION_MAPPING
-    finalColor += GammaToLightSpace(cMatEnvMapColor * surfaceData.reflectionColor.rgb);
+    surfaceColor += GammaToLightSpace(cMatEnvMapColor * surfaceData.reflectionColor.rgb);
 #endif
 
 #ifdef URHO3D_GBUFFER_PASS
@@ -130,7 +146,7 @@ half3 GetFinalColor(const SurfaceData surfaceData)
     gl_FragData[3] = vec4(0.5, 0.5, 0.5, 0.0);
 #endif
 
-    return finalColor;
+    return surfaceColor;
 }
 
 #endif // URHO3D_IS_LIT

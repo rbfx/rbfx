@@ -63,7 +63,6 @@ public:
     /// Construct.
     explicit Curve(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Get number of pins.

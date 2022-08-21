@@ -22,29 +22,33 @@
 
 #include "../Precompiled.h"
 
+#include "../RenderPipeline/DefaultRenderPipeline.h"
+
 #include "../Core/Context.h"
-#include "../Input/Input.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/OutlineGroup.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Viewport.h"
-#include "../RenderPipeline/DefaultRenderPipeline.h"
+#include "../Input/Input.h"
+#include "../RenderPipeline/AutoExposurePass.h"
+#include "../RenderPipeline/BatchRenderer.h"
+#include "../RenderPipeline/BloomPass.h"
+#include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/BatchRenderer.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
-#include "../RenderPipeline/AutoExposurePass.h"
-#include "../RenderPipeline/ToneMappingPass.h"
-#include "../RenderPipeline/BloomPass.h"
+#include "../RenderPipeline/OutlinePass.h"
 #include "../RenderPipeline/ShaderConsts.h"
+#include "../RenderPipeline/ShadowMapAllocator.h"
+#include "../RenderPipeline/ToneMappingPass.h"
 #include "../Scene/Scene.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/SystemUI.h"
 #endif
 
+#include "AmbientOcclusionPass.h"
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -79,17 +83,20 @@ void DefaultRenderPipelineView::SetSettings(const RenderPipelineSettings& settin
 
 void DefaultRenderPipelineView::SendViewEvent(StringHash eventType)
 {
+    Texture* parentTexture = frameInfo_.renderTarget_ ? frameInfo_.renderTarget_->GetParentTexture() : nullptr;
+
     using namespace BeginViewRender;
 
     VariantMap& eventData = GetEventDataMap();
 
     eventData[P_RENDERPIPELINEVIEW] = this;
     eventData[P_SURFACE] = frameInfo_.renderTarget_;
-    eventData[P_TEXTURE] = frameInfo_.renderTarget_ ? frameInfo_.renderTarget_->GetParentTexture() : nullptr;
+    eventData[P_TEXTURE] = parentTexture;
     eventData[P_SCENE] = sceneProcessor_->GetFrameInfo().scene_;
     eventData[P_CAMERA] = sceneProcessor_->GetFrameInfo().camera_;
 
-    renderer_->SendEvent(eventType, eventData);
+    Object* sender = parentTexture ? static_cast<Object*>(parentTexture) : renderer_;
+    sender->SendEvent(eventType, eventData);
 }
 
 void DefaultRenderPipelineView::ApplySettings()
@@ -131,7 +138,9 @@ void DefaultRenderPipelineView::ApplySettings()
         }
     }
 
-    sceneProcessor_->SetPasses({ depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_ });
+    outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(StringVector{"deferred", "base", "alpha"});
+
+    sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
 
     postProcessPasses_.clear();
 
@@ -142,11 +151,25 @@ void DefaultRenderPipelineView::ApplySettings()
         postProcessPasses_.push_back(pass);
     }
 
+#ifdef DESKTOP_GRAPHICS
+    if (settings_.ssao_.enabled_ && settings_.renderBufferManager_.readableDepth_)
+    {
+        ssaoPass_ = MakeShared<AmbientOcclusionPass>(this, renderBufferManager_);
+        ssaoPass_->SetSettings(settings_.ssao_);
+        postProcessPasses_.push_back(ssaoPass_);
+    }
+#endif
+
     if (settings_.bloom_.enabled_)
     {
         auto pass = MakeShared<BloomPass>(this, renderBufferManager_);
         pass->SetSettings(settings_.bloom_);
         postProcessPasses_.push_back(pass);
+    }
+
+    {
+        outlinePostProcessPass_ = MakeShared<OutlinePass>(this, renderBufferManager_);
+        postProcessPasses_.push_back(outlinePostProcessPass_);
     }
 
     if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
@@ -198,6 +221,9 @@ void DefaultRenderPipelineView::ApplySettings()
 bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* viewport)
 {
     URHO3D_PROFILE("SetupRenderPipeline");
+
+    if (!viewport->GetScene())
+        return false;
 
     // Lazy initialize heavy objects
     if (!sceneProcessor_)
@@ -265,7 +291,11 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
         OnPipelineStatesInvalidated(this);
     }
 
+    outlineScenePass_->SetOutlineGroups(sceneProcessor_->GetFrameInfo().scene_);
+
     sceneProcessor_->Update();
+
+    outlinePostProcessPass_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
 
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
@@ -289,6 +319,7 @@ void DefaultRenderPipelineView::Render()
     // HACK: Graphics may keep expired vertex buffers for some reason, reset it just in case
     graphics_->SetVertexBuffer(nullptr);
 
+    sceneProcessor_->PrepareDrawablesBeforeRendering();
     sceneProcessor_->PrepareInstancingBuffer();
     sceneProcessor_->RenderShadowMaps();
 
@@ -344,9 +375,14 @@ void DefaultRenderPipelineView::Render()
             sceneProcessor_->RenderSceneBatches("DepthPrePass", camera, depthPrePass_->GetBaseBatches());
     }
 
-    sceneProcessor_->RenderSceneBatches("OpaqueBase", camera, opaquePass_->GetBaseBatches());
-    sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches());
-    sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches());
+    const ShaderParameterDesc cameraParameters[] = {
+        {VSP_GBUFFEROFFSETS, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
+        {PSP_GBUFFERINVSIZE, renderBufferManager_->GetInvOutputSize()},
+    };
+
+    sceneProcessor_->RenderSceneBatches("OpaqueBase", camera, opaquePass_->GetBaseBatches(), {}, cameraParameters);
+    sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters);
+    sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters);
 
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
@@ -362,19 +398,44 @@ void DefaultRenderPipelineView::Render()
     };
 #endif
 
-    const ShaderParameterDesc cameraParameters[] = {
-        { VSP_GBUFFEROFFSETS, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale() },
-        { PSP_GBUFFERINVSIZE, renderBufferManager_->GetInvOutputSize() },
-    };
     sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
         depthAndColorTextures, cameraParameters);
     sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches());
 
+    if (outlinePostProcessPass_->IsEnabled())
+    {
+        // TODO: Do we want it dynamic?
+        const unsigned outlinePadding = 2;
+
+        RenderBuffer* const renderTargets[] = {outlinePostProcessPass_->GetColorOutput()};
+        auto batches = outlineScenePass_->GetBatches();
+
+        batches.scissorRect_ = renderTargets[0]->GetViewportRect();
+        if (batches.scissorRect_.Width() > outlinePadding * 2 && batches.scissorRect_.Height() > outlinePadding * 2)
+        {
+            batches.scissorRect_.left_ += outlinePadding;
+            batches.scissorRect_.top_ += outlinePadding;
+            batches.scissorRect_.right_ -= outlinePadding;
+            batches.scissorRect_.bottom_ -= outlinePadding;
+        }
+
+        renderBufferManager_->SetRenderTargets(nullptr, renderTargets);
+        renderBufferManager_->ClearColor(renderTargets[0], Color::TRANSPARENT_BLACK);
+        sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
+    }
+
+#ifdef DESKTOP_GRAPHICS
+    if (ssaoPass_ && deferred_)
+    {
+        ssaoPass_->SetNormalBuffer(deferred_->normalBuffer_);
+    }
+#endif
+
     for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessPass->Execute();
+        postProcessPass->Execute(camera);
 
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
-    if (debug && debug->IsEnabledEffective() && debug->HasContent())
+    if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())
     {
         renderBufferManager_->SetOutputRenderTargers();
         debug->SetView(sceneProcessor_->GetFrameInfo().camera_);

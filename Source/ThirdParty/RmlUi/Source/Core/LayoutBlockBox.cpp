@@ -27,14 +27,15 @@
  */
 
 #include "LayoutBlockBox.h"
-#include "LayoutBlockBoxSpace.h"
-#include "LayoutEngine.h"
-#include "LayoutDetails.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Element.h"
-#include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/ElementScroll.h"
-#include "../../Include/RmlUi/Core/Property.h"
+#include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/Profiling.h"
+#include "../../Include/RmlUi/Core/Property.h"
+#include "LayoutBlockBoxSpace.h"
+#include "LayoutDetails.h"
+#include "LayoutEngine.h"
 #include <float.h>
 
 namespace Rml {
@@ -64,7 +65,7 @@ LayoutBlockBox::LayoutBlockBox(LayoutBlockBox* _parent, Element* _element, const
 		offset_root = this;
 
 	// Determine the offset parent for this element.
-	const LayoutBlockBox* self_offset_parent;
+	LayoutBlockBox* self_offset_parent;
 	if (parent && parent->offset_parent->GetElement())
 		self_offset_parent = parent->offset_parent;
 	else
@@ -89,7 +90,7 @@ LayoutBlockBox::LayoutBlockBox(LayoutBlockBox* _parent, Element* _element, const
 			if (self_offset_parent != this)
 			{
 				// Get the next position within our offset parent's containing block.
-				parent->PositionBlockBox(position, box, element ? element->GetComputedValues().clear : Style::Clear::None);
+				parent->PositionBlockBox(position, box, element ? element->GetComputedValues().clear() : Style::Clear::None);
 				element->SetOffset(position - (self_offset_parent->GetPosition() - offset_root->GetPosition()), self_offset_parent->GetElement());
 			}
 			else
@@ -100,11 +101,11 @@ LayoutBlockBox::LayoutBlockBox(LayoutBlockBox* _parent, Element* _element, const
 	if (element)
 	{
 		const auto& computed = element->GetComputedValues();
-		wrap_content = computed.white_space != Style::WhiteSpace::Nowrap;
+		wrap_content = computed.white_space() != Style::WhiteSpace::Nowrap;
 
 		// Determine if this element should have scrollbars or not, and create them if so.
-		overflow_x_property = computed.overflow_x;
-		overflow_y_property = computed.overflow_y;
+		overflow_x_property = computed.overflow_x();
+		overflow_y_property = computed.overflow_y();
 
 		if (overflow_x_property == Style::Overflow::Scroll)
 			element->GetElementScroll()->EnableScrollbar(ElementScroll::HORIZONTAL, box.GetSize(Box::PADDING).x);
@@ -115,6 +116,11 @@ LayoutBlockBox::LayoutBlockBox(LayoutBlockBox* _parent, Element* _element, const
 			element->GetElementScroll()->EnableScrollbar(ElementScroll::VERTICAL, box.GetSize(Box::PADDING).x);
 		else
 			element->GetElementScroll()->DisableScrollbar(ElementScroll::VERTICAL);
+
+		// Store relatively positioned elements with their containing block so that their offset can be updated after their containing block has been
+		// sized.
+		if (self_offset_parent != this && computed.position() == Style::Position::Relative)
+			self_offset_parent->relative_elements.push_back(element);
 	}
 	else
 	{
@@ -277,9 +283,12 @@ LayoutBlockBox::CloseResult LayoutBlockBox::Close()
 		// If we represent a positioned element, then we can now (as we've been sized) act as the containing block for all
 		// the absolutely-positioned elements of our descendants.
 		if (element->GetPosition() != Style::Position::Static)
-		{
 			CloseAbsoluteElements();
-		}
+
+		// Any relatively positioned elements that we act as containing block for may also need to be have their positions
+		// updated to reflect changes to the size of this block box.
+		for (Element* child : relative_elements)
+			child->UpdateOffset();
 
 		// Set the baseline for inline-block elements to the baseline of the last line of the element.
 		// This is a special rule for inline-blocks (see CSS 2.1 Sec. 10.8.1).
@@ -306,7 +315,7 @@ LayoutBlockBox::CloseResult LayoutBlockBox::Close()
 
 			if (found_baseline)
 			{
-				if (baseline < 0 && (overflow_x_property != Style::Overflow::Visible || overflow_x_property != Style::Overflow::Visible))
+				if (baseline < 0 && (overflow_x_property != Style::Overflow::Visible || overflow_y_property != Style::Overflow::Visible))
 				{
 					baseline = 0;
 				}
@@ -557,8 +566,23 @@ void LayoutBlockBox::PositionBox(Vector2f& box_position, float top_margin, Style
 		if (!block_boxes.empty() &&
 			block_boxes.back()->context == BLOCK)
 		{
-			float bottom_margin = block_boxes.back()->GetBox().GetEdge(Box::MARGIN, Box::BOTTOM);
-			box_position.y -= Math::Min(top_margin, bottom_margin);
+			const float bottom_margin = block_boxes.back()->GetBox().GetEdge(Box::MARGIN, Box::BOTTOM);
+
+			const int num_negative_margins = int(top_margin < 0.f) + int(bottom_margin < 0.f);
+			switch (num_negative_margins)
+			{
+			case 0:
+				// Use the largest margin by subtracting the smallest margin.
+				box_position.y -= Math::Min(top_margin, bottom_margin);
+				break;
+			case 1:
+				// Use the sum of the positive and negative margin, no special behavior needed here.
+				break;
+			case 2:
+				// Use the most negative margin by subtracting the least negative margin.
+				box_position.y -= Math::Max(top_margin, bottom_margin);
+				break;
+			}
 		}
 	}
 }
@@ -608,13 +632,13 @@ float LayoutBlockBox::GetShrinkToFitWidth() const
 			auto& computed = element->GetComputedValues();
 			const float block_width = box.GetSize(Box::CONTENT).x;
 
-			if(computed.width.type == Style::Width::Auto)
+			if (computed.width().type == Style::Width::Auto)
 			{
 				get_content_width_from_children();
 			}
 			else
 			{
-				float width_value = ResolveValue(computed.width, block_width);
+				float width_value = ResolveValue(computed.width(), block_width);
 				content_width = Math::Max(content_width, width_value);
 			}
 
@@ -756,6 +780,8 @@ bool LayoutBlockBox::CatchVerticalOverflow(float cursor)
 
 			box_cursor = 0;
 			interrupted_chain = nullptr;
+
+			inner_content_size = Vector2f(0);
 
 			return false;
 		}

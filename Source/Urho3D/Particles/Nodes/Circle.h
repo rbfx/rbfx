@@ -41,7 +41,6 @@ public:
     /// Construct Circle.
     explicit Circle(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Evaluate size required to place new node instance.
@@ -51,38 +50,28 @@ public:
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
     /// Set Radius.
-    /// @property
     void SetRadius(float value);
     /// Get Radius.
-    /// @property
     float GetRadius() const;
 
     /// Set Radius Thickness.
-    /// @property
     void SetRadiusThickness(float value);
     /// Get Radius Thickness.
-    /// @property
     float GetRadiusThickness() const;
 
     /// Set Translation.
-    /// @property
     void SetTranslation(Vector3 value);
     /// Get Translation.
-    /// @property
     Vector3 GetTranslation() const;
 
     /// Set Rotation.
-    /// @property
     void SetRotation(Quaternion value);
     /// Get Rotation.
-    /// @property
     Quaternion GetRotation() const;
 
     /// Set Scale.
-    /// @property
     void SetScale(Vector3 value);
     /// Get Scale.
-    /// @property
     Vector3 GetScale() const;
 
 protected:

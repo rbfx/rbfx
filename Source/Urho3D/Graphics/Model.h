@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -54,18 +54,6 @@ struct VertexBufferMorph
 /// Definition of a model's vertex morph.
 struct ModelMorph
 {
-    /// Instance equality operator.
-    bool operator ==(const ModelMorph& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const ModelMorph& rhs) const
-    {
-        return this != &rhs;
-    }
-
     /// Morph name.
     ea::string name_;
     /// Morph name hash.

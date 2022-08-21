@@ -69,7 +69,7 @@ void ToneMappingPass::InitializeStates()
         BLEND_REPLACE, "v2/P_ToneMapping", defines);
 }
 
-void ToneMappingPass::Execute()
+void ToneMappingPass::Execute(Camera* camera)
 {
     if (!toneMappingState_)
         InitializeStates();

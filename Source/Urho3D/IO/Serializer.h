@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ class Vector3;
 class Vector4;
 
 /// Abstract stream for writing.
-/// @fakeref
+/// @nocount
 class URHO3D_API Serializer
 {
 public:
@@ -126,6 +126,8 @@ public:
     bool WriteStringVector(const StringVector& value);
     /// Write a variant map.
     bool WriteVariantMap(const VariantMap& value);
+    /// Write a string variant map.
+    bool WriteStringVariantMap(const StringVariantMap& value);
     /// Write a variable-length encoded unsigned integer, which can use 29 bits maximum.
     bool WriteVLE(unsigned value);
     /// Write a 24-bit network object ID.

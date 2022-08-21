@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../IK/IK.h"
 #include "../IK/IKConstraint.h"
 #include "../IK/IKEffector.h"
@@ -27,8 +29,6 @@
 
 namespace Urho3D
 {
-
-const char* IK_CATEGORY = "Inverse Kinematics";
 
 // ----------------------------------------------------------------------------
 void RegisterIKLibrary(Context* context)

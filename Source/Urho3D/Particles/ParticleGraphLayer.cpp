@@ -23,17 +23,19 @@
 #include "../Precompiled.h"
 
 #include "ParticleGraphLayer.h"
+
+#include "../IO/Log.h"
+#include "../Scene/Serializable.h"
 #include "ParticleGraph.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphPin.h"
 
-#include "../Scene/Serializable.h"
-#include "../IO/Log.h"
-
 namespace Urho3D
 {
+
 namespace
 {
+
 ParticleGraphSpan Append(ParticleGraphLayer::AttributeBufferLayout* layout, unsigned bytes)
 {
     ParticleGraphSpan span;
@@ -84,7 +86,7 @@ struct ParticleGraphAttributeBuilder
         const auto node = graph.GetNode(i);
 
         ParticleGraphContainerType defaultOutputType = ParticleGraphContainerType::Scalar;
-        
+
         // Connect input pins.
         for (unsigned pinIndex = 0; pinIndex < node->GetNumPins(); ++pinIndex)
         {
@@ -182,7 +184,8 @@ struct ParticleGraphAttributeBuilder
 
         for (unsigned i = 0; i < graphNodes; ++i)
         {
-            if (!BuildNode(graph, i)) return false;
+            if (!BuildNode(graph, i))
+                return false;
         }
         return true;
     }
@@ -191,14 +194,16 @@ struct ParticleGraphAttributeBuilder
     ParticleGraphBufferLayout& tempBufferLayout_;
     unsigned capacity_;
 };
+
 void ParticleGraphLayer::RegisterObject(Context* context)
 {
     context->RegisterFactory<ParticleGraphLayer>();
     URHO3D_ACCESSOR_ATTRIBUTE("Capacity", GetCapacity, SetCapacity, unsigned, DefaultCapacity, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("TimeScale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("TimeScale", GetTimeScale, SetTimeScale, float, DefaultTimeScale, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Duration", GetDuration, SetDuration, float, DefaultDuration, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Loop", IsLoop, SetLoop, bool, false, AM_DEFAULT);
 }
+
 /// Construct ParticleGraphLayer.
 ParticleGraphLayer::ParticleGraphLayer(Context* context)
     : Serializable(context)
@@ -213,43 +218,35 @@ ParticleGraphLayer::ParticleGraphLayer(Context* context)
     Invalidate();
 }
 
-/// Destruct ParticleGraphLayer.
 ParticleGraphLayer::~ParticleGraphLayer() = default;
 
-/// Set maximum number of particles the layer can hold.
 void ParticleGraphLayer::SetCapacity(unsigned capacity)
 {
     capacity_ = capacity;
     Invalidate();
 }
 
-/// Set time step scale.
 void ParticleGraphLayer::SetTimeScale(float timeScale)
 {
     timeScale_ = timeScale;
     Invalidate();
 }
 
-/// Set time step scale.
 void ParticleGraphLayer::SetLoop(bool isLoop)
 {
     loop_ = isLoop;
     Invalidate();
 }
 
-/// Set effect duration in seconds.
 void ParticleGraphLayer::SetDuration(float duration)
 {
     duration_ = ea::max(1e-6f, duration);
 }
 
-/// Get emit graph.
 ParticleGraph& ParticleGraphLayer::GetEmitGraph() { return *emit_; }
 
-/// Get initialization graph.
 ParticleGraph& ParticleGraphLayer::GetInitGraph() { return *init_; }
 
-/// Get update graph.
 ParticleGraph& ParticleGraphLayer::GetUpdateGraph() { return *update_; }
 
 void ParticleGraphLayer::Invalidate()
@@ -331,20 +328,19 @@ const ParticleGraphLayer::AttributeBufferLayout& ParticleGraphLayer::GetAttribut
 
 unsigned ParticleGraphLayer::GetTempBufferSize() const { return tempMemory_.GetRequiredMemory(); }
 
-/// Serialize from/to archive. Return true if successful.
 void ParticleGraphLayer::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "capacity", capacity_);
-    SerializeOptionalValue(archive, "duration", duration_);
-    SerializeOptionalValue(archive, "timeScale", timeScale_);
+    SerializeOptionalValue(archive, "capacity", capacity_, DefaultCapacity);
+    SerializeOptionalValue(archive, "duration", duration_, DefaultDuration);
+    SerializeOptionalValue(archive, "timeScale", timeScale_, DefaultTimeScale);
     SerializeOptionalValue(archive, "loop", loop_);
 
     SerializeOptionalValue(archive, "emit", emit_, EmptyObject{},
-        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+        [&](Archive& archive, const char* name, auto& value) { SerializeValue(archive, name, *value); });
     SerializeOptionalValue(archive, "init", init_, EmptyObject{},
-        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+        [&](Archive& archive, const char* name, auto& value) { SerializeValue(archive, name, *value); });
     SerializeOptionalValue(archive, "update", update_, EmptyObject{},
-        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+        [&](Archive& archive, const char* name, auto& value) { SerializeValue(archive, name, *value); });
 
     if (archive.IsInput())
     {

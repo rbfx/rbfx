@@ -24,13 +24,11 @@
 
 #include "ParticleGraphNode.h"
 
+#include "../IO/ArchiveSerialization.h"
+#include "../IO/Log.h"
 #include "ParticleGraph.h"
 #include "ParticleGraphPin.h"
 #include "ParticleGraphSystem.h"
-
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/Log.h"
-
 
 namespace Urho3D
 {
@@ -129,7 +127,7 @@ bool ParticleGraphNode::Save(ParticleGraphWriter& writer, GraphNode& node)
         return false;
     if (!SavePins(writer, node))
         return false;
-    
+
     return true;
 }
 

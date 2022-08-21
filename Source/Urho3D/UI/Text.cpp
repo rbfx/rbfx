@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,7 +49,6 @@ const char* textEffects[] =
 static const float MIN_ROW_SPACING = 0.5f;
 
 extern const char* horizontalAlignments[];
-extern const char* UI_CATEGORY;
 
 Text::Text(Context* context) :
     UISelectable(context),
@@ -77,7 +76,7 @@ Text::~Text() = default;
 
 void Text::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Text>(UI_CATEGORY);
+    context->RegisterFactory<Text>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UISelectable);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Use Derived Opacity", false);

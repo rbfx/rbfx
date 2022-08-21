@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "RenderBillboard.h"
-#include "RenderBillboardInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "RenderBillboardInstance.h"
 
 namespace Urho3D
 {
@@ -42,6 +44,7 @@ void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Face Camera Mode", GetFaceCameraMode, SetFaceCameraMode, int, int{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Sort By Distance", GetSortByDistance, SetSortByDistance, bool, bool{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Worldspace", GetIsWorldspace, SetIsWorldspace, bool, bool{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Crop", GetCrop, SetCrop, Rect, Rect::POSITIVE, AM_DEFAULT);
 }
 
 
@@ -95,6 +98,10 @@ bool RenderBillboard::GetSortByDistance() const { return sortByDistance_; }
 void RenderBillboard::SetIsWorldspace(bool value) { isWorldspace_ = value; }
 
 bool RenderBillboard::GetIsWorldspace() const { return isWorldspace_; }
+
+void RenderBillboard::SetCrop(Rect value) { crop_ = value; }
+
+Rect RenderBillboard::GetCrop() const { return crop_; }
 
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

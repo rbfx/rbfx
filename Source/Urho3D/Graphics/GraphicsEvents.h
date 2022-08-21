@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -147,6 +147,11 @@ URHO3D_EVENT(E_DEVICELOST, DeviceLost)
 /// Graphics context has been recreated after being lost. GPU objects in the "data lost" state can be restored now.
 URHO3D_EVENT(E_DEVICERESET, DeviceReset)
 {
+}
+
+URHO3D_EVENT(E_GPURESOURCERELEASED, GPUResourceReleased)
+{
+    URHO3D_PARAM(P_OBJECT, Object);                // Ptr
 }
 
 }

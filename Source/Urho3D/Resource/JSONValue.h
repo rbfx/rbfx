@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -146,7 +146,7 @@ public:
     JSONValue(JSONValue && value) :
         type_(0)
     {
-        *this = std::move(value);
+        *this = ea::move(value);
     }
     /// Destruct.
     ~JSONValue()
@@ -289,6 +289,10 @@ public:
     void SetVariantVector(const VariantVector& variantVector, Context* context = nullptr);
     /// Return a variant vector.
     VariantVector GetVariantVector() const;
+    /// Set string variant map, context must provide for resource ref.
+    void SetStringVariantMap(const StringVariantMap& variantMap, Context* context = nullptr);
+    /// Return a string variant map.
+    StringVariantMap GetStringVariantMap() const;
 
     /// Empty JSON value.
     static const JSONValue EMPTY;

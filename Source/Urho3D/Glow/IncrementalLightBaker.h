@@ -57,7 +57,7 @@ class URHO3D_API IncrementalLightBaker
 {
 public:
     /// Construct.
-    IncrementalLightBaker() {}
+    IncrementalLightBaker();
     /// Destruct.
     ~IncrementalLightBaker();
 

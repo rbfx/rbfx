@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/ByteVector.h"
 #include "../Core/Variant.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/Rect.h"
@@ -32,7 +33,7 @@ namespace Urho3D
 class Context;
 
 /// Abstract stream for reading.
-/// @fakeref
+/// @nocount
 class URHO3D_API Deserializer
 {
 public:
@@ -128,7 +129,9 @@ public:
     /// Read a 32-bit StringHash.
     StringHash ReadStringHash();
     /// Read a buffer with size encoded as VLE.
-    ea::vector<unsigned char> ReadBuffer();
+    ByteVector ReadBuffer();
+    /// Read a buffer with size encoded as VLE (inplace).
+    void ReadBuffer(ByteVector& byteVector);
     /// Read a resource reference.
     ResourceRef ReadResourceRef();
     /// Read a resource reference list.
@@ -143,6 +146,8 @@ public:
     StringVector ReadStringVector();
     /// Read a variant map.
     VariantMap ReadVariantMap();
+    /// Read a string variant map.
+    StringVariantMap ReadStringVariantMap();
     /// Read a variable-length encoded unsigned integer, which can use 29 bits maximum.
     unsigned ReadVLE();
     /// Read a 24-bit network object ID.

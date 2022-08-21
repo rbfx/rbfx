@@ -36,49 +36,15 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 
-struct PinPatternBase
-{
-    PinPatternBase(ParticleGraphPinFlags flags, ea::string_view name, VariantType type = VAR_NONE)
-        : flags_(flags)
-        , name_(name)
-        , nameHash_(name)
-        , type_(type)
-    {
-    }
-    PinPatternBase(ea::string_view name, VariantType type = VAR_NONE)
-        : PinPatternBase(ParticleGraphPinFlag::Input, name, type)
-    {
-    }
-    ParticleGraphPinFlags flags_;
-    ea::string_view name_;
-    StringHash nameHash_;
-    VariantType type_;
-};
-
-template <typename T> struct PinPattern : public PinPatternBase
-{
-    typedef T Type;
-
-    PinPattern(ParticleGraphPinFlags flags, const char* name)
-        : PinPatternBase(flags, name, GetVariantType<T>())
-    {
-    }
-    PinPattern(const char* name)
-        : PinPatternBase(name, GetVariantType<T>())
-    {
-    }
-};
-
 template <typename T>
 struct GetPinType
 {
     typedef T Type;
 };
-template <typename T> struct GetPinType<PinPattern<T>>
+template <typename T> struct GetPinType<ParticleGraphTypedPin<T>>
 {
     typedef T Type;
 };
-
 
 /// Abstract update runner.
 template <typename Instance, typename SpanTuple, typename Tuple>
@@ -100,21 +66,21 @@ void RunUpdate(UpdateContext& context, Instance& instance, bool scalar, SpanTupl
     {
     case ParticleGraphContainerType::Span:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(span.GetSpan()));
+        auto nextTuple = ea::tuple_cat(ea::move(tuple), ea::make_tuple(span.GetSpan()));
         RunUpdate<Instance, SpanTuple, decltype(nextTuple), Values...>(
             context, instance, false, spanTuple, nextTuple);
         return;
     }
     case ParticleGraphContainerType::Sparse:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(span.GetSparse()));
+        auto nextTuple = ea::tuple_cat(ea::move(tuple), ea::make_tuple(span.GetSparse()));
         RunUpdate<Instance, SpanTuple, decltype(nextTuple), Values...>(
             context, instance, false, spanTuple, nextTuple);
         return;
     }
     case ParticleGraphContainerType::Scalar:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(span.GetScalar()));
+        auto nextTuple = ea::tuple_cat(ea::move(tuple), ea::make_tuple(span.GetScalar()));
         RunUpdate<Instance, SpanTuple, decltype(nextTuple), Values...>(
             context, instance, scalar, spanTuple, nextTuple);
         return;

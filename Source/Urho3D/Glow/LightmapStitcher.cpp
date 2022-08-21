@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Glow/LightmapStitcher.h"
 
 #include "../Core/Context.h"

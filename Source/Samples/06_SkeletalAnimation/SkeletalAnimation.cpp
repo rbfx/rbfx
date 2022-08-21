@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@
 #include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
-#include <Urho3D/Graphics/AnimationState.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -40,6 +39,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "Mover.h"
 #include "SkeletalAnimation.h"
@@ -47,13 +47,13 @@
 #include <Urho3D/DebugNew.h>
 
 
-SkeletalAnimation::SkeletalAnimation(Context* context) :
-    Sample(context),
-    drawDebug_(false)
+SkeletalAnimation::SkeletalAnimation(Context* context)
+    : Sample(context)
+    , drawDebug_(false)
 {
     // Register an object factory for our custom Mover3D component so that we can create them to scene nodes
     if (!context->IsReflected<Mover3D>())
-        context->AddReflection<Mover3D>();
+        context->AddFactoryReflection<Mover3D>();
 }
 
 void SkeletalAnimation::Start()
@@ -74,7 +74,8 @@ void SkeletalAnimation::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void SkeletalAnimation::CreateScene()
@@ -135,12 +136,11 @@ void SkeletalAnimation::CreateScene()
         // Create an AnimationState for a walk animation. Its time position will need to be manually updated to advance the
         // animation, The alternative would be to use an AnimationController component which updates the animation automatically,
         // but we need to update the model's position manually in any case
-        const ea::string walkAnimationName = "Models/Kachujin/Kachujin_Walk.ani";
-        auto* walkAnimation = cache->GetResource<Animation>(walkAnimationName);
+        auto* walkAnimation = cache->GetResource<Animation>("Models/Kachujin/Kachujin_Walk.ani");
+        const float startTime = Random(walkAnimation->GetLength());
 
         auto animationController = modelNode->CreateComponent<AnimationController>();
-        animationController->Play(walkAnimationName, 0, true);
-        animationController->SetTime(walkAnimationName, Random(walkAnimation->GetLength()));
+        animationController->PlayNewExclusive(AnimationParameters{walkAnimation}.Looped().Time(startTime));
 
         // Create our custom Mover3D component that will move & animate the model during each frame's update
         auto* mover = modelNode->CreateComponent<Mover3D>();
@@ -149,6 +149,7 @@ void SkeletalAnimation::CreateScene()
 
     // Create the camera. Limit far clip distance to match the fog
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 
@@ -162,7 +163,7 @@ void SkeletalAnimation::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "Space to toggle debug geometry"
@@ -174,7 +175,7 @@ void SkeletalAnimation::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void SkeletalAnimation::SetupViewport()
@@ -183,21 +184,18 @@ void SkeletalAnimation::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void SkeletalAnimation::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(SkeletalAnimation, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, sent after Renderer subsystem is
     // done with defining the draw calls for the viewports (but before actually executing them.) We will request debug geometry
     // rendering during that event
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(SkeletalAnimation, HandlePostRenderUpdate));
 }
 
-void SkeletalAnimation::MoveCamera(float timeStep)
+void SkeletalAnimation::Update(float timeStep)
 {
     // Do not move if the UI has a focused element (the console)
     if (GetSubsystem<UI>()->GetFocusElement())
@@ -205,44 +203,9 @@ void SkeletalAnimation::MoveCamera(float timeStep)
 
     auto* input = GetSubsystem<Input>();
 
-    // Movement speed as world units per second
-    const float MOVE_SPEED = 20.0f;
-    // Mouse sensitivity as degrees per pixel
-    const float MOUSE_SENSITIVITY = 0.1f;
-
-    // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-    IntVector2 mouseMove = input->GetMouseMove();
-    yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
-    pitch_ += MOUSE_SENSITIVITY * mouseMove.y_;
-    pitch_ = Clamp(pitch_, -90.0f, 90.0f);
-
-    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
-
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        cameraNode_->Translate(Vector3::FORWARD * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        cameraNode_->Translate(Vector3::BACK * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        cameraNode_->Translate(Vector3::LEFT * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
-
     // Toggle debug geometry with space
     if (input->GetKeyPress(KEY_SPACE))
         drawDebug_ = !drawDebug_;
-}
-
-void SkeletalAnimation::HandleUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
-    // Move the camera, scale movement with time step
-    MoveCamera(timeStep);
 }
 
 void SkeletalAnimation::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)

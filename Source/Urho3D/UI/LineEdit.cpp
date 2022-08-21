@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,9 +36,7 @@
 namespace Urho3D
 {
 
-StringHash VAR_DRAGDROPCONTENT("DragDropContent");
-
-extern const char* UI_CATEGORY;
+const ea::string VAR_DRAGDROPCONTENT("DragDropContent");
 
 LineEdit::LineEdit(Context* context) :
     BorderImage(context),
@@ -73,7 +71,7 @@ LineEdit::~LineEdit() = default;
 
 void LineEdit::RegisterObject(Context* context)
 {
-    context->RegisterFactory<LineEdit>(UI_CATEGORY);
+    context->RegisterFactory<LineEdit>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Clip Children", true);

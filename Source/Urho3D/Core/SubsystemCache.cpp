@@ -29,10 +29,17 @@
 #include "../Core/WorkQueue.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
+#if URHO3D_COMPUTE
+#include "../Graphics/ComputeDevice.h"
+#endif
 #include "../IO/FileSystem.h"
 #if URHO3D_LOGGING
 #include "../IO/Log.h"
 #endif
+#ifdef URHO3D_PARTICLE_GRAPH
+#include "../Particles/ParticleGraphSystem.h"
+#endif
+#include "../Plugins/PluginManager.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
 #if URHO3D_NETWORK
@@ -43,6 +50,7 @@
 #if URHO3D_SYSTEMUI
 #include "../SystemUI/SystemUI.h"
 #endif
+#include "../Engine/StateManager.h"
 
 #include "../DebugNew.h"
 
@@ -82,6 +90,10 @@ void SubsystemCache::Remove(StringHash type)
 
 void SubsystemCache::Clear()
 {
+    // Don't modify collections during destruction
+    const auto tempCachedSubsystems = ea::move(cachedSubsystems_);
+    const auto tempSubsystems = ea::move(subsystems_);
+
     cachedSubsystems_.fill(nullptr);
     subsystems_.clear();
 }

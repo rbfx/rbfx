@@ -22,28 +22,35 @@
 
 #pragma once
 
-
-#include <Urho3D/Engine/PluginApplication.h>
-
+#include <Urho3D/Graphics/Viewport.h>
+#include <Urho3D/Plugins/PluginApplication.h>
+#include <Urho3D/Scene/Scene.h>
 
 namespace Urho3D
 {
 
-class GamePlugin : public PluginApplication
+class GamePlugin : public MainPluginApplication
 {
-    URHO3D_OBJECT(GamePlugin, PluginApplication);
+    URHO3D_OBJECT(GamePlugin, MainPluginApplication);
+
 public:
     /// Construct.
     explicit GamePlugin(Context* context);
 
-    /// Initialize plugin.
+protected:
+    /// Implement MainPluginApplication
+    /// @{
     void Load() override;
-    /// Start game.
-    void Start() override;
-    /// Stop game.
+    void Start(bool isMain) override;
     void Stop() override;
-    /// Deinitialize plugin.
     void Unload() override;
+    /// @}
+
+private:
+    SharedPtr<Viewport> viewport_;
+    SharedPtr<Scene> scene_;
+
+    SharedPtr<Node> cameraNode_;
 };
 
 

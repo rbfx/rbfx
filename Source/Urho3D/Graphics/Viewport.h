@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -52,6 +52,8 @@ public:
     Viewport(Context* context, Scene* scene, Camera* camera, RenderPath* renderPath = nullptr);
     /// Construct with a specified rectangle.
     Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPath* renderPath = nullptr);
+    /// Construct with a specified rectangle and render pipeline.
+    Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPipeline* renderPipeline);
     /// Destruct.
     ~Viewport() override;
 
@@ -135,10 +137,12 @@ private:
     /// Debug draw flag.
     bool drawDebug_;
 
+    /// Whether to search for render pipeline automatically.
+    bool autoRenderPipeline_{true};
     /// Render pipeline component from scene_.
-    WeakPtr<RenderPipeline> renderPipelineComponent_;
-    /// Instance of render pipeline connected to renderPipelineComponent_.
-    SharedPtr<RenderPipelineView> renderPipeline_;
+    WeakPtr<RenderPipeline> renderPipeline_;
+    /// Instance of render pipeline connected to renderPipeline_.
+    SharedPtr<RenderPipelineView> renderPipelineView_;
 };
 
 }

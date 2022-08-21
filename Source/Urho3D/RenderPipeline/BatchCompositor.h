@@ -38,6 +38,7 @@ class LightProcessor;
 class Material;
 class Pass;
 class PipelineState;
+class PipelineStateBuilder;
 class ShadowSplitProcessor;
 class WorkQueue;
 struct PipelineBatchByState;
@@ -49,6 +50,7 @@ struct PipelineBatch
     Geometry* geometry_{};
     Material* material_{};
     PipelineState* pipelineState_{};
+    void* userData_{};
     unsigned drawableIndex_{};
     unsigned pixelLightIndex_{ M_MAX_UNSIGNED };
     unsigned vertexLightsHash_{};
@@ -64,11 +66,12 @@ struct PipelineBatch
     }
 
     PipelineBatch() = default;
-    PipelineBatch(Drawable* drawable, unsigned sourceBatchIndex)
+    PipelineBatch(Drawable* drawable, unsigned sourceBatchIndex, void* userData = nullptr)
     {
         drawable_ = drawable;
         drawableIndex_ = drawable_->GetDrawableIndex();
         sourceBatchIndex_ = sourceBatchIndex;
+        userData_ = userData;
 
         const SourceBatch& sourceBatch = GetSourceBatch();
         geometry_ = sourceBatch.geometry_;
@@ -94,8 +97,8 @@ struct PipelineBatchDesc : public PipelineBatch
     /// @}
 
     PipelineBatchDesc() = default;
-    PipelineBatchDesc(Drawable* drawable, unsigned sourceBatchIndex, Pass* pass)
-        : PipelineBatch(drawable, sourceBatchIndex)
+    PipelineBatchDesc(Drawable* drawable, unsigned sourceBatchIndex, Pass* pass, void* userData = nullptr)
+        : PipelineBatch(drawable, sourceBatchIndex, userData)
         , pass_(pass)
         , drawableHash_(drawable->GetPipelineStateHash())
     {
@@ -141,6 +144,10 @@ public:
     BatchCompositorPass(RenderPipelineInterface* renderPipeline,
         DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags,
         unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
+
+    /// Callback for pipeline state initialization.
+    virtual bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+        const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) { return false; }
 
     void ComposeBatches();
 
@@ -276,7 +283,8 @@ private:
 
     /// Cached between frames
     /// @{
-    ea::vector<SharedPtr<BatchCompositorPass>> passes_;
+    ea::vector<SharedPtr<BatchCompositorPass>> allPasses_;
+    ea::vector<BatchCompositorPass*> passes_;
     MaterialQuality shadowMaterialQuality_{};
     SharedPtr<Material> lightVolumeMaterial_;
     SharedPtr<Material> negativeLightVolumeMaterial_;

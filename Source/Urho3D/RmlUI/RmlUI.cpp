@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 #include "../Precompiled.h"
 
 #include "../Audio/Sound.h"
@@ -61,8 +62,6 @@
 namespace Urho3D
 {
 
-const char* RML_UI_CATEGORY = "Rml UI";
-
 static MouseButton MakeTouchIDMask(int id)
 {
     return static_cast<MouseButton>(1u << static_cast<MouseButtonFlags::Integer>(id)); // NOLINT(misc-misplaced-widening-cast)
@@ -79,7 +78,7 @@ class RmlEventListenerInstancer : public Rml::EventListenerInstancer
 {
 public:
     /// Create an instance of inline event listener, if applicable.
-	Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override
+    Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override
     {
         if (auto* instancer = SoundEventListener::CreateInstancer(value, element))
             return instancer;
@@ -119,8 +118,8 @@ public:
     void OnDocumentUnload(Rml::ElementDocument* document) override
     {
         RmlContext* rmlContext = static_cast<RmlContext*>(document->GetContext());
-        RmlUI* ui = rmlContext->GetOwnerSubsystem();
-        ui->OnDocumentUnload(document);
+        if (RmlUI* ui = rmlContext->GetOwnerSubsystem())
+            ui->OnDocumentUnload(document);
     }
 };
 
@@ -286,15 +285,17 @@ RmlUI::RmlUI(Context* context, const char* name)
     if (auto* ui = GetSubsystem<RmlUI>())
         ui->siblingSubsystems_.push_back(WeakPtr(this));
 
-    SubscribeToEvent(E_MOUSEBUTTONDOWN, &RmlUI::HandleMouseButtonDown);
-    SubscribeToEvent(E_MOUSEBUTTONUP, &RmlUI::HandleMouseButtonUp);
-    SubscribeToEvent(E_MOUSEMOVE, &RmlUI::HandleMouseMove);
-    SubscribeToEvent(E_MOUSEWHEEL, &RmlUI::HandleMouseWheel);
-    SubscribeToEvent(E_TOUCHBEGIN, &RmlUI::HandleTouchBegin);
-    SubscribeToEvent(E_TOUCHEND, &RmlUI::HandleTouchEnd);
-    SubscribeToEvent(E_TOUCHMOVE, &RmlUI::HandleTouchMove);
-    SubscribeToEvent(E_KEYDOWN, &RmlUI::HandleKeyDown);
-    SubscribeToEvent(E_KEYUP, &RmlUI::HandleKeyUp);
+    Input* input = context_->GetSubsystem<Input>();
+    URHO3D_ASSERT(input);
+    SubscribeToEvent(input, E_MOUSEBUTTONDOWN, &RmlUI::HandleMouseButtonDown);
+    SubscribeToEvent(input, E_MOUSEBUTTONUP, &RmlUI::HandleMouseButtonUp);
+    SubscribeToEvent(input, E_MOUSEMOVE, &RmlUI::HandleMouseMove);
+    SubscribeToEvent(input, E_MOUSEWHEEL, &RmlUI::HandleMouseWheel);
+    SubscribeToEvent(input, E_TOUCHBEGIN, &RmlUI::HandleTouchBegin);
+    SubscribeToEvent(input, E_TOUCHEND, &RmlUI::HandleTouchEnd);
+    SubscribeToEvent(input, E_TOUCHMOVE, &RmlUI::HandleTouchMove);
+    SubscribeToEvent(input, E_KEYDOWN, &RmlUI::HandleKeyDown);
+    SubscribeToEvent(input, E_KEYUP, &RmlUI::HandleKeyUp);
     SubscribeToEvent(E_TEXTINPUT, &RmlUI::HandleTextInput);
     SubscribeToEvent(E_DROPFILE, &RmlUI::HandleDropFile);
 
@@ -652,30 +653,44 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     assert(document != nullptr);
     assert(document->GetContext() == rmlContext_);
 
-    Vector2 pos = document->GetAbsoluteOffset(Rml::Box::BORDER);
-    Vector2 size = document->GetBox().GetSize(Rml::Box::CONTENT);
-    Rml::ModalFlag modal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
-    Rml::FocusFlag focus = Rml::FocusFlag::Auto;
-    bool visible = document->IsVisible();
-    if (Rml::Element* element = rmlContext_->GetFocusElement())
-        focus = element->GetOwnerDocument() == document ? Rml::FocusFlag::Document : focus;
+    // Keep some properties of the old document
+    const Vector2 oldPosition = document->GetAbsoluteOffset(Rml::Box::BORDER);
+    const Rml::ModalFlag oldModal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
+    const bool oldVisible = document->IsVisible();
 
-    document->Close();
+    const Rml::Element* oldFocusedElement = rmlContext_->GetFocusElement();
+    const Rml::FocusFlag focus = oldFocusedElement->GetOwnerDocument() == document ? Rml::FocusFlag::Document : Rml::FocusFlag::Auto;
 
+    const Rml::Property* oldLeftProperty = document->GetProperty(Rml::PropertyId::Left);
+    const Rml::Property* oldTopProperty = document->GetProperty(Rml::PropertyId::Top);
+    const Rml::Property* oldWidthProperty = document->GetProperty(Rml::PropertyId::Width);
+    const Rml::Property* oldHeightProperty = document->GetProperty(Rml::PropertyId::Height);
+
+    // Try to reload document
     Rml::ElementDocument* newDocument = rmlContext_->LoadDocument(document->GetSourceURL());
-    newDocument->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Width, Rml::Property(size.x_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Height, Rml::Property(size.y_, Rml::Property::PX));
+    if (!newDocument)
+        return nullptr;
+
+    // Setup persistent properties
+    if (oldLeftProperty)
+        newDocument->SetProperty(Rml::PropertyId::Left, *oldLeftProperty);
+    if (oldTopProperty)
+        newDocument->SetProperty(Rml::PropertyId::Top, *oldTopProperty);
+    if (oldWidthProperty)
+        newDocument->SetProperty(Rml::PropertyId::Width, *oldWidthProperty);
+    if (oldHeightProperty)
+        newDocument->SetProperty(Rml::PropertyId::Height, *oldHeightProperty);
     newDocument->UpdateDocument();
 
-    if (visible)
-        newDocument->Show(modal, focus);
+    if (oldVisible)
+        newDocument->Show(oldModal, focus);
 
     RmlDocumentReloadedArgs args;
     args.unloadedDocument_ = document;
     args.loadedDocument_ = newDocument;
     documentReloaded_(this, args);
+
+    document->Close();
 
     return newDocument;
 }

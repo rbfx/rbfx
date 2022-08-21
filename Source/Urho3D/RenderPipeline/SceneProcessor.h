@@ -63,15 +63,9 @@ public:
 
     /// Create scene passes
     /// @{
-    template <class T> SharedPtr<T> CreatePass(DrawableProcessorPassFlags flags, const ea::string& deferredPass,
-        const ea::string& unlitBasePass, const ea::string& litBasePass, const ea::string& lightPass)
+    template <class T, class ... Args> SharedPtr<T> CreatePass(Args&& ... args)
     {
-        return MakeShared<T>(renderPipeline_, drawableProcessor_, batchStateCacheCallback_,
-            flags, deferredPass, unlitBasePass, litBasePass, lightPass);
-    }
-    template <class T> SharedPtr<T> CreatePass(DrawableProcessorPassFlags flags, const ea::string& pass)
-    {
-        return MakeShared<T>(renderPipeline_, drawableProcessor_, batchStateCacheCallback_, flags, pass);
+        return MakeShared<T>(renderPipeline_, drawableProcessor_, batchStateCacheCallback_, ea::forward<Args>(args)...);
     }
     /// @}
 
@@ -83,6 +77,7 @@ public:
 
     void Update();
     void PrepareInstancingBuffer();
+    void PrepareDrawablesBeforeRendering();
     void RenderShadowMaps();
     void RenderSceneBatches(ea::string_view debugName, Camera* camera,
         const PipelineBatchGroup<PipelineBatchByState>& batchGroup,

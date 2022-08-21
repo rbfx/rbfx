@@ -51,7 +51,7 @@ public:
     void SetSettings(const BloomPassSettings& settings);
 
     PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite | PostProcessPassFlag::NeedColorOutputBilinear; }
-    void Execute() override;
+    void Execute(Camera* camera) override;
 
 protected:
     void InitializeTextures();

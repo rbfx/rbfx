@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,8 +42,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 StaticModel::StaticModel(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
     occlusionLodLevel_(M_MAX_UNSIGNED),
@@ -55,7 +53,7 @@ StaticModel::~StaticModel() = default;
 
 void StaticModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticModel>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<StaticModel>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
@@ -77,18 +75,24 @@ void StaticModel::RegisterObject(Context* context)
 
 void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
+    ProcessCustomRayQuery(query, GetWorldBoundingBox(), node_->GetWorldTransform(), results);
+}
+
+void StaticModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox,
+    const Matrix3x4& worldTransform, ea::vector<RayQueryResult>& results)
+{
     RayQueryLevel level = query.level_;
 
     switch (level)
     {
     case RAY_AABB:
-        Drawable::ProcessRayQuery(query, results);
+        Drawable::ProcessCustomRayQuery(query, worldBoundingBox, results);
         break;
 
     case RAY_OBB:
     case RAY_TRIANGLE:
     case RAY_TRIANGLE_UV:
-        Matrix3x4 inverse(node_->GetWorldTransform().Inverse());
+        Matrix3x4 inverse(worldTransform.Inverse());
         Ray localRay = query.ray_.Transformed(inverse);
         float distance = localRay.HitDistance(boundingBox_);
         Vector3 normal = -query.ray_.direction_;
@@ -110,7 +114,7 @@ void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQue
                     if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                     {
                         distance = geometryDistance;
-                        normal = (node_->GetWorldTransform() * Vector4(geometryNormal, 0.0f)).Normalized();
+                        normal = (worldTransform * Vector4(geometryNormal, 0.0f)).Normalized();
                         hitBatch = i;
                     }
                 }
@@ -272,16 +276,12 @@ void StaticModel::SetModel(Model* model)
         SetNumGeometries(0);
         SetBoundingBox(BoundingBox());
     }
-
-    MarkNetworkUpdate();
 }
 
 void StaticModel::SetMaterial(Material* material)
 {
     for (unsigned i = 0; i < batches_.size(); ++i)
         batches_[i].material_ = material;
-
-    MarkNetworkUpdate();
 }
 
 bool StaticModel::SetMaterial(unsigned index, Material* material)
@@ -293,14 +293,12 @@ bool StaticModel::SetMaterial(unsigned index, Material* material)
     }
 
     batches_[index].material_ = material;
-    MarkNetworkUpdate();
     return true;
 }
 
 void StaticModel::SetOcclusionLodLevel(unsigned level)
 {
     occlusionLodLevel_ = level;
-    MarkNetworkUpdate();
 }
 
 void StaticModel::ApplyMaterialList(const ea::string& fileName)

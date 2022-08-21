@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -1158,7 +1158,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
 }
 
-void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange, MAX_SHADER_PARAMETER_GROUPS> constantBuffers)
+void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
 {
     URHO3D_LOGERROR("Graphics::SetShaderConstantBuffers is not supported for D3D9 graphics");
 }

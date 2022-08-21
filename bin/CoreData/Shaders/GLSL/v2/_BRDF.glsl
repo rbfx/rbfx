@@ -25,7 +25,7 @@ half3 F_Schlick(const half3 specularColor, const half u)
 #ifdef URHO3D_AMBIENT_PASS
 
 /// Calculate simple indirect lighting for diffuse material.
-half3 Indirect_Simple(const half3 ambientLighting, const half3 albedo, const half3 specular)
+half3 Indirect_Simple(const half3 ambientLighting, const half3 albedo)
 {
     return ambientLighting * albedo;
 }

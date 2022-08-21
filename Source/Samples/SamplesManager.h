@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,11 @@
 //
 #pragma once
 
-#include <Urho3D/Engine/Application.h>
+#include <Urho3D/Engine/StateManager.h>
+#include <Urho3D/UI/SplashScreen.h>
 
 #include "Sample.h"
+#include "Urho3D/Input/DirectionalPadAdapter.h"
 
 #include <string>
 #include <vector>
@@ -39,10 +41,28 @@ struct SampleInformation
     StringHash type_;
 };
 
+class SampleSelectionScreen
+    : public ApplicationState
+{
+    // Enable type information.
+    URHO3D_OBJECT(SampleSelectionScreen, ApplicationState);
+
+public:
+    /// Construct.
+    explicit SampleSelectionScreen(Context* context);
+
+    void Activate(VariantMap& bundle) override;
+
+    void Deactivate() override;
+
+    DirectionalPadAdapter dpadAdapter_;
+};
+
 class SamplesManager : public Application
 {
     // Enable type information.
     URHO3D_OBJECT(SamplesManager, Application);
+
 public:
     /// Construct.
     explicit SamplesManager(Context* context);
@@ -54,7 +74,12 @@ public:
     /// Cleanup after the main loop. Called by Application.
     void Stop() override;
 
-private:
+    /// Return command line arguments.
+    const ea::vector<ea::string>& GetArgs() const { return commandLineArgs_; }
+
+    ApplicationState* GetMenuState() const { return sampleSelectionScreen_; }
+
+    private:
     ///
     int GetSelectedIndex() const;
     ///
@@ -63,6 +88,8 @@ private:
     void OnClickSample(VariantMap& args);
     ///
     void OnKeyPress(VariantMap& args);
+    ///
+    void OnArrowKeyPress(VariantMap& args);
     ///
     void OnButtonPress(VariantMap& args);
     ///
@@ -73,7 +100,7 @@ private:
     void StartSample(StringHash sampleType);
 
     ///
-    SharedPtr<Sample> runningSample_;
+    SharedPtr<SampleSelectionScreen> sampleSelectionScreen_;
     ///
     SharedPtr<UIElement> listViewHolder_;
     /// Logo sprite.

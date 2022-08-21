@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -97,29 +97,20 @@ struct MaterialShaderParameter
     ea::string name_;
     /// Value.
     Variant value_;
+    /// Whether to assign material to "Custom" uniform group.
+    bool isCustom_{};
 };
 
 /// %Material's technique list entry.
 struct URHO3D_API TechniqueEntry
 {
-    /// Construct with defaults.
     TechniqueEntry() noexcept;
-    /// Construct with parameters.
     TechniqueEntry(Technique* tech, MaterialQuality qualityLevel, float lodDistance) noexcept;
-    /// Destruct.
     ~TechniqueEntry() noexcept = default;
 
-    /// Instance equality operator.
-    bool operator ==(const TechniqueEntry& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const TechniqueEntry& rhs) const
-    {
-        return this != &rhs;
-    }
+    bool operator<(const TechniqueEntry& rhs) const;
+    bool operator ==(const TechniqueEntry& rhs) const;
+    bool operator !=(const TechniqueEntry& rhs) const { return !(*this == rhs); }
 
     /// Technique.
     SharedPtr<Technique> technique_;
@@ -197,6 +188,8 @@ public:
     void SetNumTechniques(unsigned num);
     /// Set technique.
     void SetTechnique(unsigned index, Technique* tech, MaterialQuality qualityLevel = QUALITY_LOW, float lodDistance = 0.0f);
+    /// Set all techniques in bulk.
+    void SetTechniques(const ea::vector<TechniqueEntry>& techniques);
     /// Set additional vertex shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
     /// @property
     void SetVertexShaderDefines(const ea::string& defines);
@@ -205,7 +198,7 @@ public:
     void SetPixelShaderDefines(const ea::string& defines);
     /// Set shader parameter.
     /// @property{set_shaderParameters}
-    void SetShaderParameter(const ea::string& name, const Variant& value);
+    void SetShaderParameter(const ea::string& name, const Variant& value, bool isCustom = false);
     /// Set shader parameter animation.
     void
         SetShaderParameterAnimation(const ea::string& name, ValueAnimation* animation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);

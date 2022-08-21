@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -254,7 +254,8 @@ void FileWatcher::ThreadFunction()
             BUFFERSIZE,
             watchSubDirs_,
             FILE_NOTIFY_CHANGE_FILE_NAME |
-            FILE_NOTIFY_CHANGE_LAST_WRITE,
+            FILE_NOTIFY_CHANGE_LAST_WRITE |
+            FILE_NOTIFY_CHANGE_DIR_NAME,
             &bytesFilled,
             nullptr,
             nullptr))
@@ -369,9 +370,9 @@ void FileWatcher::ThreadFunction()
                 if (change.kind_ == FILECHANGE_RENAMED)
                 {
                     if (GetSubsystem<FileSystem>()->FileExists(fileName))
-                        change.fileName_ = std::move(fileName);
+                        change.fileName_ = ea::move(fileName);
                     else
-                        change.oldFileName_ = std::move(fileName);
+                        change.oldFileName_ = ea::move(fileName);
 
                     if (!change.fileName_.empty() && !change.oldFileName_.empty())
                     {
@@ -381,7 +382,7 @@ void FileWatcher::ThreadFunction()
                 }
                 else
                 {
-                    change.fileName_ = std::move(fileName);
+                    change.fileName_ = ea::move(fileName);
                     AddChange(change);
                     change = {};
                 }

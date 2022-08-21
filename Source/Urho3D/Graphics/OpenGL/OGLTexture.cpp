@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -387,6 +387,24 @@ unsigned Texture::GetSRVFormat(unsigned format)
 unsigned Texture::GetDSVFormat(unsigned format)
 {
     return 0;
+}
+
+bool Texture::IsComputeWriteable(unsigned format)
+{
+#ifdef URHO3D_COMPUTE
+    switch (format)
+    {
+    case GL_RGBA:
+    case GL_RGBA8:
+    case GL_RGBA16:
+    case GL_RGBA16F:
+    case GL_RGBA32F:
+    case GL_R32F:
+    case GL_R32UI:
+        return true;
+    }
+#endif
+    return false;
 }
 
 }

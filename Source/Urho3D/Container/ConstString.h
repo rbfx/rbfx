@@ -56,4 +56,13 @@ private:
     const StringHash hash_;
 };
 
+/// Macro to define global constant.
+/// VS 2017 has bug, so it uses less optimal version.
+/// https://developercommunity.visualstudio.com/t/static-inline-class-variables-have-their-destructo/300686
+#if defined(_MSC_VER) && _MSC_VER <= 1916
+    #define URHO3D_GLOBAL_CONSTANT(definition) static const definition
+#else
+    #define URHO3D_GLOBAL_CONSTANT(definition) static inline const definition
+#endif
+
 }

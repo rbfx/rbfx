@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -65,7 +65,8 @@ void L10n::Start()
     CreateGUI();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void L10n::InitLocalizationSystem()
@@ -87,7 +88,7 @@ void L10n::CreateGUI()
     auto* l10n = GetSubsystem<Localization>();
 
     auto* cache = GetSubsystem<ResourceCache>();
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetUIRoot();
     root->SetDefaultStyle(cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
     auto* window = new Window(context_);
@@ -189,15 +190,11 @@ void L10n::CreateScene()
 
     auto* renderer = GetSubsystem<Renderer>();
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
-
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(L10n, HandleUpdate));
+    SetViewport(0, viewport);
 }
 
-void L10n::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void L10n::Update(float timeStep)
 {
-    using namespace Update;
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
     auto* input = GetSubsystem<Input>();
     const float MOUSE_SENSITIVITY = 0.1f;
     IntVector2 mouseMove = input->GetMouseMove();
@@ -227,7 +224,7 @@ void L10n::HandleQuitButtonPressed(StringHash eventType, VariantMap& eventData)
 void L10n::HandleChangeLanguage(StringHash eventType, VariantMap& eventData)
 {
     auto* l10n = GetSubsystem<Localization>();
-    UIElement* uiRoot = GetSubsystem<UI>()->GetRoot();
+    UIElement* uiRoot = GetUIRoot();
 
     auto* windowTitle = uiRoot->GetChildStaticCast<Text>("WindowTitle", true);
     windowTitle->SetText(l10n->Get("title") + " (" + ea::to_string(l10n->GetLanguageIndex()) + " " + l10n->GetLanguage() + ")");

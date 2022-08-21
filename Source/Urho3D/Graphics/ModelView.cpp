@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Graphics/ModelView.h"
 
 #include "../Graphics/Geometry.h"
@@ -387,7 +389,7 @@ void NormalizeModelVertexMorphVector(ModelVertexMorphVector& morphVector)
     morphVector.erase(ea::unique(morphVector.begin(), morphVector.end(), isEqual), morphVector.end());
 
     // Remove empty elements
-    morphVector.erase(ea::remove_if(morphVector.begin(), morphVector.end(), isEmpty), morphVector.end());
+    ea::erase_if(morphVector, isEmpty);
 }
 
 void ModelVertexFormat::MergeFrom(const ModelVertexFormat& rhs)
@@ -463,6 +465,11 @@ void BoneView::SetInitialTransform(const Vector3& position, const Quaternion& ro
 void BoneView::RecalculateOffsetMatrix()
 {
     offsetMatrix_ = Matrix3x4(position_, rotation_, scale_).Inverse();
+}
+
+void BoneView::ResetBoundingVolume()
+{
+    shapeFlags_ = BONECOLLISION_NONE;
 }
 
 void BoneView::SetLocalBoundingBox(const BoundingBox& boundingBox)
@@ -1234,6 +1241,7 @@ void ModelView::ExportModel(Model* model) const
             skeleton.SetRootBoneIndex(boneIndex);
     }
 
+    skeleton.UpdateBoneOrder();
     model->SetSkeleton(skeleton);
 }
 
@@ -1447,6 +1455,13 @@ void ModelView::RecalculateBoneBoundingBoxes()
             }
         }
     }
+
+    for (BoneView& bone : bones_)
+    {
+        if (!bone.localBoundingBox_.Defined())
+            bone.ResetBoundingVolume();
+    }
+
 }
 
 void ModelView::SetMorph(unsigned index, const ModelMorphView& morph)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -61,6 +61,11 @@ public:
     bool LoadJSON(const JSONValue& source) override;
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     void ApplyAttributes() override;
+
+    /// Process raycast with custom transform.
+    void ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox,
+        const Matrix3x4& worldTransform, ea::span<const Matrix3x4> boneWorldTransforms,
+        ea::vector<RayQueryResult>& results);
     /// Process octree raycast. May be called from a worker thread.
     void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Update before octree reinsertion. Is called from a worker thread.
@@ -178,19 +183,38 @@ private:
     void SetGeometryBoneMappings();
     /// Clone geometries for vertex morphing.
     void CloneGeometries();
-    /// Recalculate animations. Called from Update().
-    void UpdateAnimation(const FrameInfo& frame);
-    /// Recalculate skinning.
-    void UpdateSkinning();
-    /// Reapply all vertex morphs.
-    void UpdateMorphs();
     /// Handle model reload finished.
     void HandleModelReloadFinished(StringHash eventType, VariantMap& eventData);
     /// Reconsider whether to use software skinning.
     void UpdateSoftwareSkinningState();
 
+    /// Animation update sequence. Called from Update whenever possible, and from UpdateGeometry in other cases.
+    /// @{
+    bool PrepareForThreadedUpdate(Camera* camera, unsigned frameNumber);
+    bool UpdateAndCheckAnimationTimers(float timeStep);
+
+    void InitializeLocalBoneTransforms(bool reset);
+    void CalculateFinalBoneTransforms();
+    void CalculateLocalBoundingBox();
+    void CalculateAnimations();
+    void ApplyBoneTransformsToNodes();
+
+    void UpdateSkinning();
+    void UpdateMorphs();
+    /// @}
+
+    /// Dirty flags used in animation update sequence.
+    /// @{
+    bool animationDirty_{};
+    bool morphsDirty_{};
+    bool skinningDirty_{true};
+    bool boneBoundingBoxDirty_{true};
+    /// @}
+
     /// Skeleton.
     Skeleton skeleton_;
+    /// Animation data of Skeleton, used only during Update.
+    ea::vector<ModelAnimationOutput> skeletonData_;
     /// Component that provides animation states for the model.
     WeakPtr<AnimationStateSource> animationStateSource_;
     /// Software model animator.
@@ -219,14 +243,6 @@ private:
     float animationLodDistance_;
     /// Update animation when invisible flag.
     bool updateInvisible_;
-    /// Animation dirty flag.
-    bool animationDirty_;
-    /// Vertex morphs dirty flag.
-    bool morphsDirty_;
-    /// Skinning dirty flag.
-    bool skinningDirty_;
-    /// Bone bounding box dirty flag.
-    bool boneBoundingBoxDirty_;
     /// Software skinning flag.
     bool softwareSkinning_{};
     /// Number of bones used for software skinning.

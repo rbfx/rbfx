@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -74,7 +74,7 @@ private:
     /// Handle close button pressed and released.
     void HandleClosePressed(StringHash eventType, VariantMap& eventData);
     /// Animate cube.
-    void HandleUpdate(StringHash, VariantMap& eventData);
+    virtual void Update(float timeStep) override;
     /// Create 3D UI.
     void Init3DUI();
 

@@ -1,6 +1,6 @@
 //
 
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@
 #include <EASTL/sort.h>
 
 #include "../Core/Context.h"
+#include "../Core/WorkQueue.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../IO/File.h"
@@ -47,12 +48,17 @@
 namespace Urho3D
 {
 
-const char* GEOMETRY_CATEGORY = "Geometry";
-
 static const ea::vector<ea::string> giTypeNames = {
     "None",
     "Use LightMap",
-    "Blend Light Probes"
+    "Blend Light Probes",
+};
+
+static const ea::vector<ea::string> reflectionModeNames = {
+    "Zone",
+    "Nearest Probe",
+    "Blend Probes",
+    "Blend Probes and Zone",
 };
 
 SourceBatch::SourceBatch() = default;
@@ -107,6 +113,7 @@ void Drawable::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Shadow Mask", int, shadowMask_, DEFAULT_SHADOWMASK, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Zone Mask", GetZoneMask, SetZoneMask, unsigned, DEFAULT_ZONEMASK, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Global Illumination", GetGlobalIlluminationType, SetGlobalIlluminationType, GlobalIlluminationType, giTypeNames, GlobalIlluminationType::None, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Reflection Mode", GetReflectionMode, SetReflectionMode, ReflectionMode, reflectionModeNames, ReflectionMode::BlendProbesAndZone, AM_DEFAULT);
 }
 
 void Drawable::OnSetEnabled()
@@ -119,9 +126,9 @@ void Drawable::OnSetEnabled()
         RemoveFromOctree();
 }
 
-void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+void Drawable::ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox, ea::vector<RayQueryResult>& results)
 {
-    float distance = query.ray_.HitDistance(GetWorldBoundingBox());
+    float distance = query.ray_.HitDistance(worldBoundingBox);
     if (distance < query.maxDistance_)
     {
         RayQueryResult result;
@@ -133,6 +140,11 @@ void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryR
         result.subObject_ = M_MAX_UNSIGNED;
         results.push_back(result);
     }
+}
+
+void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+{
+    ProcessCustomRayQuery(query, GetWorldBoundingBox(), results);
 }
 
 void Drawable::UpdateBatches(const FrameInfo& frame)
@@ -171,44 +183,38 @@ bool Drawable::DrawOcclusion(OcclusionBuffer* buffer)
 void Drawable::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     if (debug && IsEnabledEffective())
-        debug->AddBoundingBox(GetWorldBoundingBox(), Color::GREEN, depthTest);
+        debug->AddBoundingBox(GetWorldBoundingBox(), 0x7700ff00_argb, depthTest);
 }
 
 void Drawable::SetDrawDistance(float distance)
 {
     drawDistance_ = distance;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetShadowDistance(float distance)
 {
     shadowDistance_ = distance;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetLodBias(float bias)
 {
     lodBias_ = Max(bias, M_EPSILON);
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetViewMask(unsigned mask)
 {
     viewMask_ = mask;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetLightMask(unsigned mask)
 {
     lightMask_ = mask;
     MarkPipelineStateHashDirty();
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetShadowMask(unsigned mask)
 {
     shadowMask_ = mask;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetZoneMask(unsigned mask)
@@ -217,25 +223,21 @@ void Drawable::SetZoneMask(unsigned mask)
     // Mark dirty to reset cached zone
     cachedZone_.cacheInvalidationDistanceSquared_ = -1.0f;
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetMaxLights(unsigned num)
 {
     maxLights_ = num;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetCastShadows(bool enable)
 {
     castShadows_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetOccluder(bool enable)
 {
     occluder_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetOccludee(bool enable)
@@ -246,7 +248,6 @@ void Drawable::SetOccludee(bool enable)
         // Reinsert to octree to make sure octant occlusion does not erroneously hide this drawable
         if (octant_ && !updateQueued_)
             octant_->GetOctree()->QueueUpdate(this);
-        MarkNetworkUpdate();
     }
 }
 
@@ -254,7 +255,12 @@ void Drawable::SetGlobalIlluminationType(GlobalIlluminationType type)
 {
     giType_ = type;
     MarkPipelineStateHashDirty();
-    MarkNetworkUpdate();
+}
+
+void Drawable::SetReflectionMode(ReflectionMode mode)
+{
+    reflectionMode_ = mode;
+    MarkPipelineStateHashDirty();
 }
 
 void Drawable::MarkForUpdate()
@@ -316,6 +322,7 @@ unsigned Drawable::RecalculatePipelineStateHash() const
     unsigned hash = 0;
     CombineHash(hash, GetLightMaskInZone() & PORTABLE_LIGHTMASK);
     CombineHash(hash, static_cast<unsigned>(giType_));
+    CombineHash(hash, reflectionMode_ >= ReflectionMode::BlendProbes);
     return hash;
 }
 
@@ -459,6 +466,15 @@ void Drawable::RemoveFromOctree()
 
         octree->RemoveDrawable(this, octant_);
     }
+}
+
+void Drawable::RequestUpdateBatchesDelayed(const FrameInfo& frame)
+{
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->CallFromMainThread([this, &frame](unsigned)
+    {
+        UpdateBatchesDelayed(frame);
+    });
 }
 
 bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)
@@ -629,7 +645,7 @@ bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFil
                     ea::string output = "f ";
                     if (hasNormals)
                     {
-                        output.append_sprintf("%l/%l/%l %l/%l/%l %l/%l/%l", currentPositionIndex + longIndices[0],
+                        output.append_sprintf("%u/%u/%u %u/%u/%u %u/%u/%u", currentPositionIndex + longIndices[0],
                             currentUVIndex + longIndices[0], currentNormalIndex + longIndices[0],
                             currentPositionIndex + longIndices[1], currentUVIndex + longIndices[1],
                             currentNormalIndex + longIndices[1], currentPositionIndex + longIndices[2],
@@ -638,7 +654,7 @@ bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFil
                     else if (hasNormals || hasUV)
                     {
                         unsigned secondTraitIndex = hasNormals ? currentNormalIndex : currentUVIndex;
-                        output.append_sprintf("%l%s%l %l%s%l %l%s%l", currentPositionIndex + longIndices[0],
+                        output.append_sprintf("%u%s%u %u%s%u %u%s%u", currentPositionIndex + longIndices[0],
                             slashCharacter.c_str(), secondTraitIndex + longIndices[0],
                             currentPositionIndex + longIndices[1], slashCharacter.c_str(),
                             secondTraitIndex + longIndices[1], currentPositionIndex + longIndices[2],
@@ -646,7 +662,7 @@ bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFil
                     }
                     else
                     {
-                        output.append_sprintf("%l %l %l", currentPositionIndex + longIndices[0],
+                        output.append_sprintf("%u %u %u", currentPositionIndex + longIndices[0],
                             currentPositionIndex + longIndices[1], currentPositionIndex + longIndices[2]);
                     }
                     outputFile->WriteLine(output);

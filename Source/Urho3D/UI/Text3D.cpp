@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,6 @@ extern const char* horizontalAlignments[];
 extern const char* verticalAlignments[];
 extern const char* textEffects[];
 extern const char* faceCameraModeNames[];
-extern const char* GEOMETRY_CATEGORY;
 
 static const float TEXT_SCALING = 1.0f / 128.0f;
 static const float DEFAULT_EFFECT_DEPTH_BIAS = 0.1f;
@@ -68,7 +67,7 @@ Text3D::~Text3D() = default;
 
 void Text3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Text3D>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<Text3D>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Font", GetFontAttr, SetFontAttr, ResourceRef, ResourceRef(Font::GetTypeStatic()), AM_DEFAULT);
@@ -134,9 +133,12 @@ void Text3D::UpdateBatches(const FrameInfo& frame)
             break;
         }
     }
+
+    if (geometryDirty_ || fontDataLost_ || vertexBuffer_->IsDataLost())
+        RequestUpdateBatchesDelayed(frame);
 }
 
-void Text3D::UpdateGeometry(const FrameInfo& frame)
+void Text3D::UpdateBatchesDelayed(const FrameInfo& frame)
 {
     if (fontDataLost_)
     {
@@ -145,10 +147,6 @@ void Text3D::UpdateGeometry(const FrameInfo& frame)
         UpdateTextMaterials();
         fontDataLost_ = false;
     }
-
-    // In case is being rendered from multiple views, recalculate camera facing & fixed size
-    if (faceCameraMode_ != FC_NONE || fixedScreenSize_)
-        CalculateFixedScreenSize(frame);
 
     if (geometryDirty_)
     {
@@ -171,9 +169,16 @@ void Text3D::UpdateGeometry(const FrameInfo& frame)
     geometryDirty_ = false;
 }
 
+void Text3D::UpdateGeometry(const FrameInfo& frame)
+{
+    // In case is being rendered from multiple views, recalculate camera facing & fixed size
+    if (faceCameraMode_ != FC_NONE || fixedScreenSize_)
+        CalculateFixedScreenSize(frame);
+}
+
 UpdateGeometryType Text3D::GetUpdateGeometryType()
 {
-    if (geometryDirty_ || fontDataLost_ || vertexBuffer_->IsDataLost() || faceCameraMode_ != FC_NONE || fixedScreenSize_)
+    if (faceCameraMode_ != FC_NONE || fixedScreenSize_)
         return UPDATE_MAIN_THREAD;
     else
         return UPDATE_NONE;
@@ -365,7 +370,6 @@ void Text3D::SetFixedScreenSize(bool enable)
 
         // Bounding box must be recalculated
         OnMarkedDirty(node_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -377,7 +381,6 @@ void Text3D::SetSnapToPixels(bool enable)
 
         // Bounding box must be recalculated
         OnMarkedDirty(node_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -389,7 +392,6 @@ void Text3D::SetFaceCameraMode(FaceCameraMode mode)
 
         // Bounding box must be recalculated
         OnMarkedDirty(node_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -546,7 +548,6 @@ void Text3D::MarkTextDirty()
     textDirty_ = true;
 
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Text3D::SetMaterialAttr(const ResourceRef& value)

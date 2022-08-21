@@ -13,6 +13,10 @@ void FillVertexTransformOutputs(const VertexTransform vertexTransform)
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
     vWorldDepth = GetDepth(gl_Position);
 
+#ifdef URHO3D_PIXEL_NEED_WORLD_POSITION
+    vWorldPos = vertexTransform.position.xyz;
+#endif
+
 #ifdef URHO3D_PIXEL_NEED_NORMAL
     vNormal = vertexTransform.normal;
 #endif

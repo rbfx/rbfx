@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,16 +32,11 @@ namespace Urho3D
 
 class Archive;
 class ArchiveBlock;
-class Connection;
 class Deserializer;
 class Serializer;
 class XMLElement;
 class JSONValue;
 class ObjectReflection;
-
-struct DirtyBits;
-struct NetworkState;
-struct ReplicationState;
 
 /// Base class for objects with automatic serialization through attributes.
 class URHO3D_API Serializable : public Object
@@ -62,8 +57,6 @@ public:
     virtual ObjectReflection* GetReflection() const;
     /// Return attribute descriptions, or null if none defined.
     virtual const ea::vector<AttributeInfo>* GetAttributes() const;
-    /// Return network replication attribute descriptions, or null if none defined.
-    virtual const ea::vector<AttributeInfo>* GetNetworkAttributes() const;
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
@@ -95,9 +88,6 @@ public:
     /// Return whether should save default-valued attributes into XML. Default false.
     virtual bool SaveDefaultAttributes(const AttributeInfo& attr) const { return false; }
 
-    /// Mark for attribute check on the next network update.
-    virtual void MarkNetworkUpdate() { }
-
     /// Set attribute by index. Return true if successfully set.
     /// @property{set_attributes}
     bool SetAttribute(unsigned index, const Variant& value);
@@ -116,20 +106,6 @@ public:
     /// Set temporary flag. Temporary objects will not be saved.
     /// @property
     void SetTemporary(bool enable);
-    /// Enable interception of an attribute from network updates. Intercepted attributes are sent as events instead of applying directly. This can be used to implement client side prediction.
-    void SetInterceptNetworkUpdate(const ea::string& attributeName, bool enable);
-    /// Allocate network attribute state.
-    void AllocateNetworkState();
-    /// Write initial delta network update.
-    void WriteInitialDeltaUpdate(Serializer& dest, unsigned char timeStamp);
-    /// Write a delta network update according to dirty attribute bits.
-    void WriteDeltaUpdate(Serializer& dest, const DirtyBits& attributeBits, unsigned char timeStamp);
-    /// Write a latest data network update.
-    void WriteLatestDataUpdate(Serializer& dest, unsigned char timeStamp);
-    /// Read and apply a network delta update. Return true if attributes were changed.
-    bool ReadDeltaUpdate(Deserializer& source);
-    /// Read and apply a network latest data update. Return true if attributes were changed.
-    bool ReadLatestDataUpdate(Deserializer& source);
 
     /// Return attribute value by index. Return empty if illegal index.
     /// @property{get_attributes}
@@ -144,23 +120,12 @@ public:
     /// Return number of attributes.
     /// @property
     unsigned GetNumAttributes() const;
-    /// Return number of network replication attributes.
-    unsigned GetNumNetworkAttributes() const;
 
     /// Return whether is temporary.
     /// @property
     bool IsTemporary() const { return temporary_; }
 
-    /// Return whether an attribute's network updates are being intercepted.
-    bool GetInterceptNetworkUpdate(const ea::string& attributeName) const;
-
-    /// Return the network attribute state, if allocated.
-    NetworkState* GetNetworkState() const { return networkState_.get(); }
-
 protected:
-    /// Network attribute state.
-    ea::unique_ptr<NetworkState> networkState_;
-
     /// Attribute default value at each instance level.
     ea::unique_ptr<VariantMap> instanceDefaultValues_;
     /// When true, store the attribute value as instance's default value (internal use only).

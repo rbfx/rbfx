@@ -81,7 +81,7 @@ namespace eastl
 
 		// We declare this version of 'eastl::swap' to make compile-time existance checks for swap functions possible.  
 		//
-		namespace Internal  // Urho3D: this creates ambiguity in some cases
+		namespace Internal  // this creates ambiguity in some cases
 		{
 		#if EASTL_VARIADIC_TEMPLATES_ENABLED
 			eastl::unused swap(eastl::argument_sink, eastl::argument_sink);
@@ -415,7 +415,7 @@ namespace eastl
 	//
 	// See bug submitted to LLVM for more details.
 	// https://bugs.llvm.org/show_bug.cgi?id=38374
-	#if !defined(EA_COMPILER_CLANG)
+	#if !defined(__clang__)
 		template<typename T>
 		using single_pair_ctor_sfinae = eastl::enable_if_t<eastl::is_default_constructible_v<T>>;
 	#else

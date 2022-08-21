@@ -123,10 +123,6 @@
         <attribute name="Texture" value="Texture2D;Textures/Editor/EditorIcons.png" />
         <attribute name="Image Rect" value="48 0 62 14" />
     </element>
-    <element type="NetworkPriority">
-        <attribute name="Texture" value="Texture2D;Textures/Editor/EditorIcons.png" />
-        <attribute name="Image Rect" value="144 0 158 14" />
-    </element>
     <element type="Octree">
         <attribute name="Texture" value="Texture2D;Textures/Editor/EditorIcons.png" />
         <attribute name="Image Rect" value="160 0 174 14" />
@@ -166,10 +162,6 @@
     <element type="Skybox">
         <attribute name="Texture" value="Texture2D;Textures/Editor/EditorIcons.png" />
         <attribute name="Image Rect" value="16 16 30 30" />
-    </element>
-    <element type="SmoothedTransform">
-        <attribute name="Texture" value="Texture2D;Textures/Editor/EditorIcons.png" />
-        <attribute name="Image Rect" value="144 0 158 14" />
     </element>
     <element type="SoundListener">
         <attribute name="Texture" value="Texture2D;Textures/Editor/EditorIcons.png" />

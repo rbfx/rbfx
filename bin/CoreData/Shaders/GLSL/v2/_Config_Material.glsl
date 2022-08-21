@@ -63,6 +63,12 @@
     #endif
 #endif
 
+#if defined(ADDITIVE) || defined(URHO3D_ADDITIVE_LIGHT_PASS)
+    #ifndef URHO3D_ADDITIVE_BLENDING
+        #define URHO3D_ADDITIVE_BLENDING
+    #endif
+#endif
+
 /// =================================== Configure material with color output ===================================
 
 #if !defined(URHO3D_DEPTH_ONLY_PASS) && !defined(URHO3D_LIGHT_VOLUME_PASS)
@@ -219,6 +225,14 @@
     #endif
 #endif
 
+// If box projection is used for cubemap reflections, pixel shader needs world position.
+#if defined(URHO3D_SURFACE_NEED_REFLECTION_COLOR) && !defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT) \
+    && defined(URHO3D_BOX_PROJECTION)
+    #ifndef URHO3D_PIXEL_NEED_WORLD_POSITION
+        #define URHO3D_PIXEL_NEED_WORLD_POSITION
+    #endif
+#endif
+
 /// If pixel shader needs normal, vertex shader needs normal.
 #ifdef URHO3D_PIXEL_NEED_NORMAL
     #ifndef URHO3D_VERTEX_NEED_NORMAL
@@ -242,9 +256,16 @@
 
 /// If background color and/or depth is sampled, pixel shader needs screen position.
 #if defined(URHO3D_SURFACE_NEED_BACKGROUND_DEPTH) || defined(URHO3D_SURFACE_NEED_BACKGROUND_COLOR) \
-    || (defined(URHO3D_REFLECTION_MAPPING) && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT))
+    || ((defined(URHO3D_REFLECTION_MAPPING) || defined(URHO3D_PHYSICAL_MATERIAL)) && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT))
     #ifndef URHO3D_PIXEL_NEED_SCREEN_POSITION
         #define URHO3D_PIXEL_NEED_SCREEN_POSITION
+    #endif
+#endif
+
+/// If planar reflection is used, disable reflection blending.
+#ifdef URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT
+    #ifdef URHO3D_BLEND_REFLECTIONS
+        #undef URHO3D_BLEND_REFLECTIONS
     #endif
 #endif
 
@@ -253,4 +274,11 @@
     #ifndef URHO3D_VERTEX_NEED_NORMAL
         #define URHO3D_VERTEX_NEED_NORMAL
     #endif
+#endif
+
+/// Number of reflections handled by the code
+#ifdef URHO3D_BLEND_REFLECTIONS
+    #define URHO3D_NUM_REFLECTIONS 2
+#else
+    #define URHO3D_NUM_REFLECTIONS 1
 #endif

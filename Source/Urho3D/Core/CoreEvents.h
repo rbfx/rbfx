@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,12 @@ URHO3D_EVENT(E_BEGINFRAME, BeginFrame)
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
 }
 
+/// Pre-update event that indicates that both local and network input has been processed.
+URHO3D_EVENT(E_INPUTREADY, InputReady)
+{
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+}
+
 /// Application-wide logic update event.
 URHO3D_EVENT(E_UPDATE, Update)
 {
@@ -60,6 +66,11 @@ URHO3D_EVENT(E_POSTRENDERUPDATE, PostRenderUpdate)
 
 /// Frame end event.
 URHO3D_EVENT(E_ENDFRAME, EndFrame)
+{
+}
+
+/// Frame end event, only for tools and testing.
+URHO3D_EVENT(E_ENDFRAMEPRIVATE, EndFramePrivate)
 {
 }
 
