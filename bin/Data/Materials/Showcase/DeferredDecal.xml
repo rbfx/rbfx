@@ -11,6 +11,7 @@
 	<parameter name="DielectricReflectance" value="0.500000" />
 	<parameter name="Metallic" value="1.000000" />
 	<parameter name="MatSpecColor" value="1 1 1 0" />
+	<parameter name="DecalMask" value="1 1 1 1" />
 	<parameter name="MatEmissiveColor" value="0 0 0" />
 	<parameter name="UOffset" value="1 0 0 0" />
 	<parameter name="Roughness" value="1.000000" />

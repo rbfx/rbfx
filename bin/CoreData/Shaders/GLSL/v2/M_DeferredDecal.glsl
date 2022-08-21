@@ -3,11 +3,18 @@
 #endif
 #define URHO3D_PIXEL_CALCULATES_TEXCOORD
 #define URHO3D_PIXEL_NEED_SCREEN_POSITION
+#define URHO3D_CUSTOM_MATERIAL_UNIFORMS
 
 vec2 vTexCoord;
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+
+UNIFORM_BUFFER_BEGIN(4, Material)
+    DEFAULT_MATERIAL_UNIFORMS
+    UNIFORM(half4 cDecalMask)
+UNIFORM_BUFFER_END(4, Material)
+
 #include "_Material.glsl"
 #include "_VertexScreenPos.glsl"
 #include "_DeferredLighting.glsl"
@@ -50,6 +57,7 @@ void main()
     vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth)+cCameraPos, 1.0);
     vec4 modelSpace = worldPos * vToModelSpace;
     vTexCoord = (modelSpace.xy) + vec2(0.5, 0.5);
+    vTexCoord.y = 1.0 - vTexCoord.y;
     vec3 crop = step(abs(modelSpace.xyz), vec3(0.5,0.5,0.5));
     if (crop.x*crop.y*crop.z < 0.5)
     {
@@ -59,7 +67,7 @@ void main()
     #ifdef NORMALMAP
         surfaceData.normal = normalize((vec4(DecodeNormal(texture2D(sNormalMap, vTexCoord.xy)),0.0) * vToModelSpace).xyz);
     #else
-        surfaceData.normal = normalize((vec4(0.0, 0.0, 1.0, 0.0) * vToModelSpace).xyz);
+        surfaceData.normal = normalize((vec4(0.0, 0.0, -1.0, 0.0) * vToModelSpace).xyz);
     #endif
     FillSurfaceMetallicRoughnessOcclusion(surfaceData);
     FillSurfaceReflectionColor(surfaceData);
@@ -74,9 +82,10 @@ void main()
     }
 
     gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceAlpha, surfaceData.fogFactor);
-    gl_FragData[1].a = surfaceAlpha;
-    gl_FragData[2].a = surfaceAlpha;
-    gl_FragData[3].a = surfaceAlpha;
+    gl_FragData[0].a *= cDecalMask.x;
+    gl_FragData[1].a = surfaceAlpha*cDecalMask.y;
+    gl_FragData[2].a = surfaceAlpha*cDecalMask.z;
+    gl_FragData[3].a = surfaceAlpha*cDecalMask.w;
 #else
     discard;
 #endif
