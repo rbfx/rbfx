@@ -30,7 +30,7 @@
 #include "../Input/Input.h"
 #include "../Resource/Localization.h"
 
-#include <SDL/SDL_clipboard.h>
+#include <SDL_clipboard.h>
 
 #include "../DebugNew.h"
 

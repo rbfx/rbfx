@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -19,7 +19,7 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 #include "../SDL_internal.h"
-#include "../../include/SDL/SDL_touch.h"
+#include "../../include/SDL_touch.h"
 
 #ifndef SDL_touch_c_h_
 #define SDL_touch_c_h_
@@ -31,6 +31,7 @@ typedef struct SDL_Touch
     int num_fingers;
     int max_fingers;
     SDL_Finger** fingers;
+    char *name;
 } SDL_Touch;
 
 
@@ -44,11 +45,11 @@ extern int SDL_AddTouch(SDL_TouchID id, SDL_TouchDeviceType type, const char *na
 extern SDL_Touch *SDL_GetTouch(SDL_TouchID id);
 
 /* Send a touch down/up event for a touch */
-extern int SDL_SendTouch(SDL_TouchID id, SDL_FingerID fingerid,
+extern int SDL_SendTouch(SDL_TouchID id, SDL_FingerID fingerid, SDL_Window * window,
                          SDL_bool down, float x, float y, float pressure);
 
 /* Send a touch motion event for a touch */
-extern int SDL_SendTouchMotion(SDL_TouchID id, SDL_FingerID fingerid,
+extern int SDL_SendTouchMotion(SDL_TouchID id, SDL_FingerID fingerid, SDL_Window * window,
                                float x, float y, float pressure);
 
 /* Remove a touch */

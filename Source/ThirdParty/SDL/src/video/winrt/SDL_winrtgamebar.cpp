@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -25,8 +25,7 @@
 /* Windows includes */
 #include <roapi.h>
 #include <windows.foundation.h>
-#include <windows.gaming.ui.h>  // rbfx: build fix.
-#include <EventToken.h>
+#include <windows.system.h>
 
 
 /* SDL includes */
@@ -90,7 +89,7 @@ WINRT_GetGameBar()
     IGameBarStatics_ *pGameBar = NULL;
     HRESULT hr;
 
-    hr = ::WindowsCreateString(wClassName, (UINT32)wcslen(wClassName), &hClassName);
+    hr = ::WindowsCreateString(wClassName, (UINT32)SDL_wcslen(wClassName), &hClassName);
     if (FAILED(hr)) {
         goto done;
     }
