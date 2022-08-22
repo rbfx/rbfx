@@ -27,10 +27,11 @@
  */
 
 #include "../../../Include/RmlUi/Core/Elements/ElementFormControlTextArea.h"
-#include "../../../Include/RmlUi/Core/Math.h"
-#include "../../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../../Include/RmlUi/Core/ElementText.h"
+#include "../../../Include/RmlUi/Core/ElementUtilities.h"
+#include "../../../Include/RmlUi/Core/Math.h"
 #include "../../../Include/RmlUi/Core/PropertyIdSet.h"
+#include "../../../Include/RmlUi/Core/StyleSheetSpecification.h"
 #include "WidgetTextInputMultiLine.h"
 
 namespace Rml {
@@ -164,15 +165,16 @@ void ElementFormControlTextArea::OnAttributeChange(const ElementAttributes& chan
 			SetProperty(PropertyId::WhiteSpace, Property(Style::WhiteSpace::Pre));
 	}
 
-	if (changed_attributes.find("rows") != changed_attributes.end() ||
-			 changed_attributes.find("cols") != changed_attributes.end())
+	if (changed_attributes.find("rows") != changed_attributes.end() || changed_attributes.find("cols") != changed_attributes.end())
 		DirtyLayout();
 
-	if (changed_attributes.find("maxlength") != changed_attributes.end())
-		widget->SetMaxLength(GetMaxLength());
+	auto it = changed_attributes.find("maxlength");
+	if (it != changed_attributes.end())
+		widget->SetMaxLength(it->second.Get(-1));
 
-	if (changed_attributes.find("value") != changed_attributes.end())
-		widget->SetValue(GetValue());
+	it = changed_attributes.find("value");
+	if (it != changed_attributes.end())
+		widget->SetValue(it->second.Get<String>());
 }
 
 // Called when properties on the control are changed.
@@ -180,8 +182,14 @@ void ElementFormControlTextArea::OnPropertyChange(const PropertyIdSet& changed_p
 {
 	ElementFormControl::OnPropertyChange(changed_properties);
 
-	if (changed_properties.Contains(PropertyId::Color) ||
-		changed_properties.Contains(PropertyId::BackgroundColor))
+	// Some inherited properties require text formatting update, mainly font and line-height properties.
+	const PropertyIdSet changed_inherited_layout_properties = changed_properties &
+		(StyleSheetSpecification::GetRegisteredInheritedProperties() & StyleSheetSpecification::GetRegisteredPropertiesForcingLayout());
+
+	if (!changed_inherited_layout_properties.Empty())
+		widget->ForceFormattingOnNextLayout();
+
+	if (changed_properties.Contains(PropertyId::Color) || changed_properties.Contains(PropertyId::BackgroundColor))
 		widget->UpdateSelectionColours();
 
 	if (changed_properties.Contains(PropertyId::CaretColor))

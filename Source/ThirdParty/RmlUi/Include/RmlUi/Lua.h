@@ -26,28 +26,13 @@
  *
  */
 
-#ifndef RMLUI_CORE_STYLESHEETNODESELECTORLASTCHILD_H
-#define RMLUI_CORE_STYLESHEETNODESELECTORLASTCHILD_H
+#ifndef RMLUI_LUA_H
+#define RMLUI_LUA_H
 
-#include "StyleSheetNodeSelector.h"
+#include "Lua/Lua.h"
 
-namespace Rml {
+#include "Lua/IncludeLua.h"
+#include "Lua/LuaType.h"
+#include "Lua/Interpreter.h"
 
-/**
-	A node selector for the last generic child.
-
-	@author Peter Curry
- */
-
-class StyleSheetNodeSelectorLastChild : public StyleSheetNodeSelector
-{
-public:
-	StyleSheetNodeSelectorLastChild();
-	virtual ~StyleSheetNodeSelectorLastChild();
-
-	// Returns true if the element is the last DOM child in its parent.
-	bool IsApplicable(const Element* element, int a, int b) override;
-};
-
-} // namespace Rml
 #endif

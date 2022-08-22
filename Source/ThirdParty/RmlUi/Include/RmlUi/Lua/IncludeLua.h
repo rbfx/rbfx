@@ -25,48 +25,15 @@
  * THE SOFTWARE.
  *
  */
+ 
+#ifndef RMLUI_LUA_INCLUDELUA_H
+#define RMLUI_LUA_INCLUDELUA_H 
 
-#include "StyleSheetNodeSelectorOnlyOfType.h"
-#include "../../Include/RmlUi/Core/ElementText.h"
-
-namespace Rml {
-
-StyleSheetNodeSelectorOnlyOfType::StyleSheetNodeSelectorOnlyOfType()
-{
+//The standard Lua headers
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
 }
 
-StyleSheetNodeSelectorOnlyOfType::~StyleSheetNodeSelectorOnlyOfType()
-{
-}
-
-// Returns true if the element is the only DOM child of its parent of its type.
-bool StyleSheetNodeSelectorOnlyOfType::IsApplicable(const Element* element, int RMLUI_UNUSED_PARAMETER(a), int RMLUI_UNUSED_PARAMETER(b))
-{
-	RMLUI_UNUSED(a);
-	RMLUI_UNUSED(b);
-
-	Element* parent = element->GetParentNode();
-	if (parent == nullptr)
-		return false;
-
-	for (int i = 0; i < parent->GetNumChildren(); ++i)
-	{
-		Element* child = parent->GetChild(i);
-
-		// Skip the child if it is our element.
-		if (child == element)
-			continue;
-
-		// Skip the child if it does not share our tag.
-		if (child->GetTagName() != element->GetTagName() ||
-			child->GetDisplay() == Style::Display::None)
-			continue;
-
-		// We've found a similarly-tagged child to our element; selector fails.
-		return false;
-	}
-
-	return true;
-}
-
-} // namespace Rml
+#endif

@@ -29,20 +29,23 @@
 #ifndef RMLUI_RBFX_CONFIG_H
 #define RMLUI_RBFX_CONFIG_H
 
-#include <utility>
-#include <type_traits>
+#include <Urho3D/Container/Hash.h>
+
+#include <EASTL/array.h>
+#include <EASTL/functional.h>
+#include <EASTL/list.h>
+#include <EASTL/queue.h>
+#include <EASTL/set.h>
+#include <EASTL/shared_ptr.h>
+#include <EASTL/stack.h>
 #include <EASTL/string.h>
 #include <EASTL/unique_ptr.h>
-#include <EASTL/shared_ptr.h>
-#include <EASTL/vector.h>
 #include <EASTL/unordered_map.h>
-#include <EASTL/set.h>
 #include <EASTL/unordered_set.h>
-#include <EASTL/stack.h>
-#include <EASTL/list.h>
-#include <EASTL/functional.h>
-#include <EASTL/queue.h>
-#include <EASTL/array.h>
+#include <EASTL/utility.h>
+#include <EASTL/vector.h>
+
+#include <cmath>
 
 namespace Rml
 {
@@ -107,21 +110,5 @@ template<typename T, typename... Args>
 inline UniquePtr<T> MakeUnique(Args&&... args) { return eastl::make_unique<T, Args...>(std::forward<Args>(args)...); }
 
 }
-
-#include <Urho3D/Math/Color.h>
-#include <Urho3D/Math/Vector2.h>
-#include <Urho3D/Math/Vector3.h>
-#include <Urho3D/Math/Vector4.h>
-#include <Urho3D/Math/Matrix4.h>
-
-#define RMLUI_COLOUR_USER_INCLUDE "RbfxColor.inl"
-
-#define RMLUI_VECTOR2_USER_INCLUDE "RbfxVector2.inl"
-
-#define RMLUI_VECTOR3_USER_INCLUDE "RbfxVector3.inl"
-
-#define RMLUI_VECTOR4_USER_INCLUDE "RbfxVector4.inl"
-
-#define RMLUI_MATRIX4_USER_EXTRA operator Urho3D::Matrix4() const { return Urho3D::Matrix4(data()); }
 
 #endif  // RMLUI_RBFX_CONFIG_H

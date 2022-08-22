@@ -125,8 +125,20 @@ namespace eastl
 		///
 		/// Default constructor.
 		///
-		explicit hash_map(const allocator_type& allocator = EASTL_HASH_MAP_DEFAULT_ALLOCATOR)
-			: base_type(0, Hash(), mod_range_hashing(), default_ranged_hash(), 
+		hash_map()
+			: base_type(0, Hash(), mod_range_hashing(), default_ranged_hash(),
+						Predicate(), eastl::use_first<eastl::pair<const Key, T> >(), EASTL_HASH_MAP_DEFAULT_ALLOCATOR)
+		{
+			// Empty
+		}
+
+
+		/// hash_map
+		///
+		/// Default constructor.
+		///
+		explicit hash_map(const allocator_type& allocator)
+			: base_type(0, Hash(), mod_range_hashing(), default_ranged_hash(),
 						Predicate(), eastl::use_first<eastl::pair<const Key, T> >(), allocator)
 		{
 			// Empty

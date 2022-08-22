@@ -229,7 +229,7 @@ void RmlCanvasComponent::RemapMousePos(IntVector2& screenPos)
         }
 
         Vector2& uv = queryResult.textureUV_;
-        IntVector2 uiSize = offScreenUI_->GetRmlContext()->GetDimensions();
+        IntVector2 uiSize = ToIntVector2(offScreenUI_->GetRmlContext()->GetDimensions());
         screenPos = IntVector2(static_cast<int>(uv.x_ * uiSize.x_), static_cast<int>(uv.y_ * uiSize.y_));
     }
 }

@@ -83,12 +83,4 @@
 	#define RMLUICORE_API_INLINE inline
 #endif
 
-// rbfx: RmlUi uses "#ifdef RMLUI_DEBUG", which makes it impossible to always define this flag in cmake using a generator expression 
-// "RMLUI_DEBUG=$<CONFIG:Debug>". Use intermediate preprocessor define to help define RMLUI_DEBUG without patching it all across RmlUi 
-// source code. It is done here, because Debug.h eventually includes this header, but it does not include our custom config header and we
-// can not define helper there, even though it would be preferable.
-#if RMLUI_DEBUG_BUILD == 1
-#define RMLUI_DEBUG
-#endif
-
 #endif

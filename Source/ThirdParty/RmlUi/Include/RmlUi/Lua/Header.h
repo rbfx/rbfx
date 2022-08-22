@@ -25,48 +25,28 @@
  * THE SOFTWARE.
  *
  */
+ 
+#ifndef RMLUI_LUA_HEADER_H
+#define RMLUI_LUA_HEADER_H
 
-#include "StyleSheetNodeSelectorLastOfType.h"
-#include "../../Include/RmlUi/Core/Element.h"
+#include <RmlUi/Core/Platform.h>
 
-namespace Rml {
+#ifdef RMLUILUA_API
+#undef RMLUILUA_API
+#endif
 
-StyleSheetNodeSelectorLastOfType::StyleSheetNodeSelectorLastOfType()
-{
-}
+#if !defined RMLUI_STATIC_LIB
+	#ifdef RMLUI_PLATFORM_WIN32
+		#if defined RmlLua_EXPORTS 
+			#define RMLUILUA_API __declspec(dllexport)
+		#else
+			#define RMLUILUA_API __declspec(dllimport)
+		#endif
+	#else
+		#define RMLUILUA_API __attribute__((visibility("default")))
+	#endif
+#else
+	#define RMLUILUA_API
+#endif
 
-StyleSheetNodeSelectorLastOfType::~StyleSheetNodeSelectorLastOfType()
-{
-}
-
-// Returns true if the element is the last DOM child in its parent.
-bool StyleSheetNodeSelectorLastOfType::IsApplicable(const Element* element, int RMLUI_UNUSED_PARAMETER(a), int RMLUI_UNUSED_PARAMETER(b))
-{
-	RMLUI_UNUSED(a);
-	RMLUI_UNUSED(b);
-
-	Element* parent = element->GetParentNode();
-	if (parent == nullptr)
-		return false;
-
-	int child_index = parent->GetNumChildren() - 1;
-	while (child_index >= 0)
-	{
-		// If this child is our element, then it's the first one we've found with our tag; the selector succeeds.
-		Element* child = parent->GetChild(child_index);
-		if (child == element)
-			return true;
-
-		// Otherwise, if this child shares our element's tag, then our element is not the first tagged child; the
-		// selector fails.
-		if (child->GetTagName() == element->GetTagName() &&
-			child->GetDisplay() != Style::Display::None)
-			return false;
-
-		child_index--;
-	}
-
-	return false;
-}
-
-} // namespace Rml
+#endif

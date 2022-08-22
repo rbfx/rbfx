@@ -101,7 +101,7 @@ void RmlSystem::GetClipboardText(Rml::String& text)
     text = SDL_GetClipboardText();
 }
 
-void RmlSystem::ActivateKeyboard()
+void RmlSystem::ActivateKeyboard(Rml::Vector2f caret_position, float line_height)
 {
     Input* input = context_->GetSubsystem<Input>();
     Time* time = context_->GetSubsystem<Time>();

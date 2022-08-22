@@ -25,48 +25,29 @@
  * THE SOFTWARE.
  *
  */
+ 
+#ifndef RMLUI_LUA_LUA_H
+#define RMLUI_LUA_LUA_H 
 
-#include "StyleSheetNodeSelectorLastChild.h"
-#include "../../Include/RmlUi/Core/ElementText.h"
+#include "Header.h"
+
+typedef struct lua_State lua_State;
 
 namespace Rml {
+namespace Lua {
 
-StyleSheetNodeSelectorLastChild::StyleSheetNodeSelectorLastChild()
-{
-}
+/** Initialise the Lua plugin.
+    @remark This is equivalent to calling Initialise(nullptr). */
+RMLUILUA_API void Initialise();
 
-StyleSheetNodeSelectorLastChild::~StyleSheetNodeSelectorLastChild()
-{
-}
+/** Initialise the Lua plugin and add RmlUi to an existing Lua state if one is provided.
+ @remark If nullptr is passed as an argument, the plugin will automatically create the lua state during initialisation
+   and close the state during the call to Rml::Shutdown(). Otherwise, if a Lua state is provided, the user is
+   responsible for closing the provided Lua state. The state must then be closed after the call to Rml::Shutdown().
+ @remark The plugin registers the "body" tag to generate a LuaDocument rather than a ElementDocument. */
+RMLUILUA_API void Initialise(lua_State* L);
 
-// Returns true if the element is the last DOM child in its parent.
-bool StyleSheetNodeSelectorLastChild::IsApplicable(const Element* element, int RMLUI_UNUSED_PARAMETER(a), int RMLUI_UNUSED_PARAMETER(b))
-{
-	RMLUI_UNUSED(a);
-	RMLUI_UNUSED(b);
 
-	Element* parent = element->GetParentNode();
-	if (parent == nullptr)
-		return false;
-
-	int child_index = parent->GetNumChildren() - 1;
-	while (child_index >= 0)
-	{
-		// If this child (the last non-text child) is our element, then the selector succeeds.
-		Element* child = parent->GetChild(child_index);
-		if (child == element)
-			return true;
-
-		// If this child is not a text element, then the selector fails; this element is non-trivial.
-		if (rmlui_dynamic_cast< ElementText* >(child) == nullptr &&
-			child->GetDisplay() != Style::Display::None)
-			return false;
-
-		// Otherwise, skip over the text element to find the last non-trivial element.
-		child_index--;
-	}
-
-	return false;
-}
-
+} // namespace Lua
 } // namespace Rml
+#endif

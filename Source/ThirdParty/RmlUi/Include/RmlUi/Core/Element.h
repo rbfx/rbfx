@@ -301,6 +301,8 @@ public:
 	/// @param[in] name Name of the attribute to retrieve.
 	/// @return A variant representing the attribute, or nullptr if the attribute doesn't exist.
 	Variant* GetAttribute(const String& name);
+	/// Gets the specified attribute.
+	const Variant* GetAttribute(const String& name) const;
 	/// Gets the specified attribute, with default value.
 	/// @param[in] name Name of the attribute to retrieve.
 	/// @param[in] default_value Value to return if the attribute doesn't exist.
@@ -626,7 +628,6 @@ protected:
 
 	/// Forces a re-layout of this element, and any other elements required.
 	virtual void DirtyLayout();
-
 	/// Returns true if the element has been marked as needing a re-layout.
 	virtual bool IsLayoutDirty();
 
@@ -639,6 +640,10 @@ protected:
 	/// @param[in] pseudo_class The pseudo class to activate or deactivate.
 	/// @param[in] activate True if the pseudo-class is to be activated, false to be deactivated.
 	static void OverridePseudoClass(Element* target_element, const String& pseudo_class, bool activate);
+
+	enum class DirtyNodes { Self, SelfAndSiblings };
+	// Dirty the element style definition, including all descendants of the specificed nodes.
+	void DirtyDefinition(DirtyNodes dirty_nodes);
 
 	void SetOwnerDocument(ElementDocument* document);
 
@@ -661,8 +666,7 @@ private:
 	static void BuildStackingContextForTable(Vector<StackingOrderedChild>& ordered_children, Element* child);
 	void DirtyStackingContext();
 
-	void DirtyStructure();
-	void UpdateStructure();
+	void UpdateDefinition();
 
 	void DirtyTransformState(bool perspective_dirty, bool transform_dirty);
 	void UpdateTransformState();
@@ -701,7 +705,8 @@ private:
 	bool offset_fixed;
 	bool absolute_offset_dirty;
 
-	bool structure_dirty : 1;
+	bool dirty_definition : 1; // Implies dirty child definitions as well.
+	bool dirty_child_definitions : 1;
 
 	bool dirty_animation : 1;
 	bool dirty_transition : 1;
