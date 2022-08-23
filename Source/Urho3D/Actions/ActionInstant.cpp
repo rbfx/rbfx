@@ -45,8 +45,8 @@ void ActionInstant::SerializeInBlock(Archive& archive)
     BaseAction::SerializeInBlock(archive);
 }
 
-    /// Get action duration.
-float ActionInstant::GetDuration() const { return 0.0f; }
+/// Get action duration.
+float ActionInstant::GetDuration() const { return ea::numeric_limits<float>::epsilon(); }
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> ActionInstant::Reverse() const

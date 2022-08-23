@@ -293,7 +293,7 @@ void ActionManager::Update(float dt)
             continue;
         }
 
-        currentTarget_ = element.Target;
+        currentTarget_ = element.Target.Get();
         currentTargetSalvaged_ = false;
 
         if (!element.Paused)
