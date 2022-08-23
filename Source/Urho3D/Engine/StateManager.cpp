@@ -41,6 +41,9 @@ namespace Urho3D
 ApplicationState::ApplicationState(Context* context)
     : Object(context)
     , rootElement_(context->CreateObject<UIElement>())
+#if URHO3D_ACTIONS
+    , actionManager_(MakeShared<ActionManager>(context, false))
+#endif
 {
 }
 
@@ -257,6 +260,14 @@ Viewport* ApplicationState::GetViewportForScene(Scene* scene, unsigned index) co
     return nullptr;
 }
 
+#if URHO3D_ACTIONS
+/// Add action to the state's action manager.
+Actions::ActionState* ApplicationState::AddAction(Actions::BaseAction* action, Object* target, bool paused)
+{
+    return actionManager_->AddAction(action, target, paused);
+}
+#endif
+
 void ApplicationState::InitMouseMode()
 {
     Input* input = GetSubsystem<Input>();
@@ -317,6 +328,10 @@ void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
 
     // Take the frame time step, which is stored as a float
     float timeStep = eventData[P_TIMESTEP].GetFloat();
+
+#if URHO3D_ACTIONS
+    actionManager_->Update(timeStep);
+#endif
 
     // Move the camera, scale movement with time step
     Update(timeStep);
