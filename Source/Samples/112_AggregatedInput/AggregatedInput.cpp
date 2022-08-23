@@ -175,11 +175,9 @@ void AggregatedInput::HandleDPadKeyDown(StringHash eventType, VariantMap& args)
     using namespace KeyDown;
     const auto* input = context_->GetSubsystem<Input>();
 
-    if (args[P_REPEAT].GetBool())
-        return;
-
-    AddFilteredEvent(Format("KeyDown: Key {}, Scancode {}", input->GetKeyName(static_cast<Key>(args[P_KEY].GetUInt())),
-        input->GetScancodeName(static_cast<Scancode>(args[P_SCANCODE].GetUInt()))));
+    AddFilteredEvent(Format("KeyDown: Key {}, Scancode {}{}", input->GetKeyName(static_cast<Key>(args[P_KEY].GetUInt())),
+            input->GetScancodeName(static_cast<Scancode>(args[P_SCANCODE].GetUInt())),
+            args[P_REPEAT].GetBool() ? ", R" : ""));
 }
 
 void AggregatedInput::HandleDPadKeyUp(StringHash eventType, VariantMap& args)
