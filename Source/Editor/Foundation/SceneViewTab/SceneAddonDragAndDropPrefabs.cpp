@@ -259,6 +259,11 @@ void SceneDragAndDropPrefabs::CreateNodeWithModel(
         }
 
         node->SetPosition(result.position_);
+        {
+            BoundingBox bb = spawnedModel->GetWorldBoundingBox();
+            if (result.position_.DistanceToPoint(bb.Center()) < 0.05f)
+                node->SetPosition(result.position_ + Vector3(0, bb.HalfSize().y_, 0));
+        }
 
         if (ui::IsKeyDown(KEY_ALT))
         {
@@ -266,7 +271,7 @@ void SceneDragAndDropPrefabs::CreateNodeWithModel(
             q.FromLookRotation(result.normal_);
             node->SetRotation(q * Quaternion(90, 0, 0));
         }
-
+        
         const bool toggle = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
         const bool append = ui::IsKeyDown(KEY_LSHIFT) || ui::IsKeyDown(KEY_RSHIFT);
         SelectNode(scenePage.selection_, node, toggle, append);
