@@ -81,8 +81,6 @@ static const char* typeNames[] =
     nullptr
 };
 
-extern const char* PHYSICS_CATEGORY;
-
 class TriangleMeshInterface : public btTriangleIndexVertexArray
 {
 public:
@@ -486,7 +484,7 @@ CollisionShape::~CollisionShape()
 
 void CollisionShape::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionShape>(PHYSICS_CATEGORY);
+    context->RegisterFactory<CollisionShape>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Shape Type", shapeType_, MarkShapeDirty, typeNames, SHAPE_BOX, AM_DEFAULT);

@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include "spdlog/sinks/base_sink.h"
-#include "spdlog/details/null_mutex.h"
+#include <spdlog/sinks/base_sink.h>
+#include <spdlog/details/null_mutex.h>
+#include <spdlog/details/synchronous_factory.h>
 
 #include <array>
 #include <string>
@@ -20,7 +21,7 @@ class syslog_sink : public base_sink<Mutex>
 {
 
 public:
-    syslog_sink(eastl::string ident, int syslog_option, int syslog_facility, bool enable_formatting)
+    syslog_sink(std::string ident, int syslog_option, int syslog_facility, bool enable_formatting)
         : enable_formatting_{enable_formatting}
         , syslog_levels_{{/* spdlog::level::trace      */ LOG_DEBUG,
               /* spdlog::level::debug      */ LOG_DEBUG,
@@ -76,7 +77,7 @@ private:
     levels_array syslog_levels_;
     // must store the ident because the man says openlog might use the pointer as
     // is and not a string copy
-    const eastl::string ident_;
+    const std::string ident_;
 
     //
     // Simply maps spdlog's log level to syslog priority level.
@@ -92,15 +93,15 @@ using syslog_sink_st = syslog_sink<details::null_mutex>;
 } // namespace sinks
 
 // Create and register a syslog logger
-template<typename Factory = default_factory>
-inline std::shared_ptr<logger> syslog_logger_mt(const eastl::string &logger_name, const eastl::string &syslog_ident = "", int syslog_option = 0,
+template<typename Factory = spdlog::synchronous_factory>
+inline std::shared_ptr<logger> syslog_logger_mt(const std::string &logger_name, const std::string &syslog_ident = "", int syslog_option = 0,
     int syslog_facility = LOG_USER, bool enable_formatting = false)
 {
     return Factory::template create<sinks::syslog_sink_mt>(logger_name, syslog_ident, syslog_option, syslog_facility, enable_formatting);
 }
 
-template<typename Factory = default_factory>
-inline std::shared_ptr<logger> syslog_logger_st(const eastl::string &logger_name, const eastl::string &syslog_ident = "", int syslog_option = 0,
+template<typename Factory = spdlog::synchronous_factory>
+inline std::shared_ptr<logger> syslog_logger_st(const std::string &logger_name, const std::string &syslog_ident = "", int syslog_option = 0,
     int syslog_facility = LOG_USER, bool enable_formatting = false)
 {
     return Factory::template create<sinks::syslog_sink_st>(logger_name, syslog_ident, syslog_option, syslog_facility, enable_formatting);

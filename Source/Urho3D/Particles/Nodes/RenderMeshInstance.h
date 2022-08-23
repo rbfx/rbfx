@@ -54,6 +54,8 @@ class RenderMeshInstance final : public RenderMesh::InstanceBase
 public:
     void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
 
+    void OnSceneSet(Scene* scene) override;
+
     ~RenderMeshInstance() override;
 
     ea::vector<Matrix3x4>& Prepare(unsigned numParticles);

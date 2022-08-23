@@ -43,7 +43,8 @@ class Box;
 class LayoutEngine
 {
 public:
-	/// Formats the contents for a root-level element (usually a document, floating or replaced element). Establishes a new block formatting context.
+	/// Formats the contents for a root-level element, usually a document, absolutely positioned, floating, or replaced element. Establishes a new
+	/// block formatting context.
 	/// @param[in] element The element to lay out.
 	/// @param[in] containing_block The size of the containing block.
 	/// @param[in] override_initial_box Optional pointer to a box to override the generated box for the element.
@@ -71,11 +72,15 @@ private:
 	/// @param[in] block_context_box The open block box to layout the element in.
 	/// @param[in] element The inline-block element.
 	static bool FormatElementInlineBlock(LayoutBlockBox* block_context_box, Element* element);
+	/// Formats and positions a flexbox.
+	/// @param[in] block_context_box The open block box to layout the element in.
+	/// @param[in] element The flex container element.
+	static bool FormatElementFlex(LayoutBlockBox* block_context_box, Element* element);
 	/// Formats and positions a table, including all table-rows and table-cells contained within.
 	/// @param[in] block_context_box The open block box to layout the element in.
 	/// @param[in] element The table element.
 	static bool FormatElementTable(LayoutBlockBox* block_context_box, Element* element);
-
+	/// Executes any formatting for special elements.
 	/// @param[in] block_context_box The open block box to layout the element in.
 	/// @param[in] element The element to parse.
 	/// @return True if the element was parsed as a special element, false otherwise.

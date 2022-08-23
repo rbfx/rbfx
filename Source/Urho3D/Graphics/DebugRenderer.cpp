@@ -43,8 +43,6 @@
 namespace Urho3D
 {
 
-extern const char* SUBSYSTEM_CATEGORY;
-
 // Cap the amount of lines to prevent crash when eg. debug rendering large heightfields
 static const unsigned MAX_LINES = 1000000;
 // Cap the amount of triangles to prevent crash.
@@ -63,7 +61,7 @@ DebugRenderer::~DebugRenderer() = default;
 
 void DebugRenderer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DebugRenderer>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<DebugRenderer>(Category_Subsystem);
     URHO3D_ACCESSOR_ATTRIBUTE("Line Antialias", GetLineAntiAlias, SetLineAntiAlias, bool, false, AM_DEFAULT);
 }
 

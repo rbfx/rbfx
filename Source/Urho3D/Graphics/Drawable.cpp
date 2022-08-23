@@ -48,8 +48,6 @@
 namespace Urho3D
 {
 
-const char* GEOMETRY_CATEGORY = "Geometry";
-
 static const ea::vector<ea::string> giTypeNames = {
     "None",
     "Use LightMap",
@@ -185,7 +183,7 @@ bool Drawable::DrawOcclusion(OcclusionBuffer* buffer)
 void Drawable::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     if (debug && IsEnabledEffective())
-        debug->AddBoundingBox(GetWorldBoundingBox(), Color::GREEN, depthTest);
+        debug->AddBoundingBox(GetWorldBoundingBox(), 0x7700ff00_argb, depthTest);
 }
 
 void Drawable::SetDrawDistance(float distance)

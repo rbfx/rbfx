@@ -64,7 +64,7 @@ public:
     /// @{
     const TypeInfo* GetTypeInfo() const { return typeInfo_; }
     const ea::string& GetTypeName() const { return typeInfo_ ? typeInfo_->GetTypeName() : EMPTY_STRING; }
-    StringHash GetTypeNameHash() const { return typeInfo_ ? typeInfo_->GetType() : StringHash(); }
+    StringHash GetTypeNameHash() const { return typeInfo_ ? typeInfo_->GetType() : StringHash::Empty; }
     /// @}
 
     /// @name Modify attributes

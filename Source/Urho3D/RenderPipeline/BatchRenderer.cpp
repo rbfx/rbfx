@@ -259,6 +259,8 @@ public:
         , objectParameterBuilder_(settings_, flags)
         , instanceIndex_(startInstance)
     {
+        static thread_local ea::vector<const ea::pair<const StringHash, MaterialShaderParameter>*> customMaterialParameters;
+        customMaterialParameters_ = &customMaterialParameters;
     }
 
     /// Process batches
@@ -431,12 +433,19 @@ private:
             dirty_.vertexLightConstants_ = false;
         }
 
+        customMaterialParameters_->clear();
         if (drawQueue_.BeginShaderParameterGroup(SP_MATERIAL, dirty_.material_ || dirty_.lightmapConstants_))
         {
             // TODO: This block may be cached for some APIs
             const auto& materialParameters = current_.material_->GetShaderParameters();
             for (const auto& parameter : materialParameters)
             {
+                if (parameter.second.isCustom_)
+                {
+                    customMaterialParameters_->push_back(&parameter);
+                    continue;
+                }
+
                 if (parameter.first == ShaderConsts::Material_FadeOffsetScale)
                 {
                     const Vector2 param = parameter.second.value_.GetVector2();
@@ -453,6 +462,16 @@ private:
             drawQueue_.CommitShaderParameterGroup(SP_MATERIAL);
         }
         dirty_.lightmapConstants_ = false;
+
+        if (!customMaterialParameters_->empty())
+        {
+            if (drawQueue_.BeginShaderParameterGroup(SP_CUSTOM, true))
+            {
+                for (const auto* parameter : *customMaterialParameters_)
+                    drawQueue_.AddShaderParameter(parameter->first, parameter->second.value_);
+                drawQueue_.CommitShaderParameterGroup(SP_CUSTOM);
+            }
+        }
     }
 
     void UpdateDirtyResources()
@@ -837,6 +856,8 @@ private:
 
     ObjectParameterBuilder objectParameterBuilder_;
     unsigned instanceIndex_{};
+
+    ea::vector<const ea::pair<const StringHash, MaterialShaderParameter>*>* customMaterialParameters_{};
 };
 
 }

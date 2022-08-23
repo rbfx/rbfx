@@ -76,7 +76,8 @@ public:
 	/// Sets or removes a class on the element.
 	/// @param[in] class_name The name of the class to add or remove from the class list.
 	/// @param[in] activate True if the class is to be added, false to be removed.
-	void SetClass(const String& class_name, bool activate);
+	/// @return True if the class was changed, false otherwise.
+	bool SetClass(const String& class_name, bool activate);
 	/// Checks if a class is set on the element.
 	/// @param[in] class_name The name of the class to check for.
 	/// @return True if the class is set on the element, false otherwise.
@@ -87,6 +88,8 @@ public:
 	/// Return the active class list.
 	/// @return A string containing all the classes on the element, separated by spaces.
 	String GetClassNames() const;
+	/// Return the active class list.
+	const StringList& GetClassNameList() const;
 
 	/// Sets a local property override on the element to a pre-parsed value.
 	/// @param[in] name The name of the new property.
@@ -118,14 +121,13 @@ public:
 	/// Numbers and percentages are resolved by scaling the size of the specified target.
 	float ResolveLength(const Property* property, RelativeTarget relative_target) const;
 
-	/// Mark definition and all children dirty.
-	void DirtyDefinition();
-
 	/// Mark inherited properties dirty.
 	/// Inherited properties will automatically be set when parent inherited properties are changed. However,
 	/// some operations may require to dirty these manually, such as when moving an element into another.
 	void DirtyInheritedProperties();
 
+	// Sets a single property as dirty.
+	void DirtyProperty(PropertyId id);
 	/// Dirties all properties with any of the given units (OR-ed together) on the current element (*not* recursive).
 	void DirtyPropertiesWithUnits(Property::Unit units);
 	/// Dirties all properties with any of the given units (OR-ed together) on the current element and recursively on all children.
@@ -143,10 +145,6 @@ public:
 	PropertiesIterator Iterate() const;
 
 private:
-	// Dirty all child definitions
-	void DirtyChildDefinitions();
-	// Sets a single property as dirty.
-	void DirtyProperty(PropertyId id);
 	// Sets a list of properties as dirty.
 	void DirtyProperties(const PropertyIdSet& properties);
 
@@ -165,9 +163,7 @@ private:
 	// Any properties that have been overridden in this element.
 	PropertyDictionary inline_properties;
 	// The definition of this element, provides applicable properties from the stylesheet.
-	SharedPtr<ElementDefinition> definition;
-	// Set if a new element definition should be fetched from the style.
-	bool definition_dirty;
+	SharedPtr<const ElementDefinition> definition;
 
 	PropertyIdSet dirty_properties;
 };

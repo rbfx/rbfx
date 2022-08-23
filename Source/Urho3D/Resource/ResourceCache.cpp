@@ -100,6 +100,12 @@ ResourceCache::ResourceCache(Context* context) :
 
     // Subscribe BeginFrame for handling directory watchers and background loaded resource finalization
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(ResourceCache, HandleBeginFrame));
+
+    auto* fileSystem = GetSubsystem<FileSystem>();
+    if (fileSystem)
+    {
+        exePath_ = fileSystem->GetProgramDir().replaced("/./", "/");
+    }
 }
 
 ResourceCache::~ResourceCache()
@@ -427,7 +433,7 @@ void ResourceCache::ReleaseAllResources(bool force)
 
 bool ResourceCache::ReloadResource(const ea::string_view resourceName)
 {
-    if (Resource* resource = FindResource(StringHash::ZERO, resourceName))
+    if (Resource* resource = FindResource(StringHash::Empty, resourceName))
         return ReloadResource(resource);
     return false;
 }
@@ -613,7 +619,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& 
 
     StringHash nameHash(sanitatedName);
 
-    const SharedPtr<Resource>& existing = type == StringHash::ZERO ? FindResource(type, nameHash) : FindResource(nameHash);
+    const SharedPtr<Resource>& existing = type == StringHash::Empty ? FindResource(type, nameHash) : FindResource(nameHash);
     return existing;
 }
 
@@ -907,12 +913,12 @@ ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
     if (resourceDirs_.size())
     {
         ea::string namePath = GetPath(sanitatedName);
-        ea::string exePath = fileSystem->GetProgramDir().replaced("/./", "/");
+
         for (unsigned i = 0; i < resourceDirs_.size(); ++i)
         {
             ea::string relativeResourcePath = resourceDirs_[i];
-            if (relativeResourcePath.starts_with(exePath))
-                relativeResourcePath = relativeResourcePath.substr(exePath.length());
+            if (relativeResourcePath.starts_with(exePath_))
+                relativeResourcePath = relativeResourcePath.substr(exePath_.length());
 
             if (namePath.starts_with(resourceDirs_[i], false))
                 namePath = namePath.substr(resourceDirs_[i].length());
@@ -1257,7 +1263,7 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
                 // Manual resources do not exist in resource dirs.
                 bool isPhysicalResource = false;
                 for (unsigned i = 0; i < resourceDirs_.size() && !isPhysicalResource; ++i)
-                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + pathName);
+                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + entryName);
 
                 if (!isPhysicalResource)
                 {
@@ -1404,7 +1410,9 @@ bool ResourceCache::RenameResource(const ea::string& source, const ea::string& d
             movedAny = true;
 
             using namespace ResourceRenamed;
-            SendEvent(E_RESOURCERENAMED, P_FROM, resourceName, P_TO, destinationName);
+            SendEvent(E_RESOURCERENAMED,
+                ea::forward_as_tuple(P_FROM, resourceName),
+                ea::forward_as_tuple(P_TO, destinationName));
         }
         if (movedAny)
             UpdateResourceGroup(groupPair.first);
@@ -1413,7 +1421,9 @@ bool ResourceCache::RenameResource(const ea::string& source, const ea::string& d
     if (dirMode)
     {
         using namespace ResourceRenamed;
-        SendEvent(E_RESOURCERENAMED, P_FROM, resourceName, P_TO, destinationName);
+        SendEvent(E_RESOURCERENAMED,
+            ea::forward_as_tuple(P_FROM, resourceName),
+            ea::forward_as_tuple(P_TO, destinationName));
     }
 
     return true;

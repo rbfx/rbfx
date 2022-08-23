@@ -22,6 +22,7 @@
 #pragma once
 
 #include "../Scene/Component.h"
+#include "../Input/Input.h"
 #include "../Input/MultitouchAdapter.h"
 
 namespace Urho3D
@@ -43,19 +44,13 @@ public:
     /// Handle enabled/disabled state change. Changes update event subscription.
     void OnSetEnabled() override;
 
-    /// Set normal camera speed.
-    /// @property
-    void SetSpeed(float speed);
-    /// Set accelerated camera speed.
-    /// @property
-    void SetAcceleratedSpeed(float speed);
-
-    /// Get normal camera speed.
-    /// @property
+    /// Attributes
+    /// @{
+    void SetSpeed(float value) { speed_ = value; }
     float GetSpeed() const { return speed_; }
-    /// Get accelerated camera speed.
-    /// @property
-    float GetAcceleratedSpeed() const { return speed_; }
+    void SetAcceleratedSpeed(float value) { acceleratedSpeed_ = value; }
+    float GetAcceleratedSpeed() const { return acceleratedSpeed_; }
+    /// @}
 
 private:
     /// Handle scene node being assigned at creation.
@@ -98,6 +93,11 @@ private:
     ea::optional<Quaternion> lastKnownCameraRotation_;
     /// Last known yaw, pitch and roll to prevent gimbal lock.
     Vector3 lastKnownEulerAngles_;
+
+    /// Whether the rotation is performing now.
+    bool isActive_{};
+    bool oldMouseVisible_{};
+    MouseMode oldMouseMode_{};
 };
 
 } // namespace Urho3D

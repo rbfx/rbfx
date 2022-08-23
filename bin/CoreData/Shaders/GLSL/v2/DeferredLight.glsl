@@ -44,7 +44,7 @@ void main()
     half3 eyeVec = normalize(-worldPos.xyz);
     worldPos.xyz += cCameraPos;
 
-    half3 normal = normalize(normalInput.rgb * 2.0 - 1.0);
+    half3 normal = DecodeNormal(normalInput);
     #ifdef URHO3D_PHYSICAL_MATERIAL
         half roughness = specularInput.a;
     #else

@@ -54,7 +54,7 @@ endmacro()
 define_engine_source_files (Container Core IO Math)
 
 if (NOT MINI_URHO)
-    define_engine_source_files (Audio Engine Input RenderPipeline Resource Scene UI Utility)
+    define_engine_source_files (Audio Engine Input Plugins RenderPipeline Resource Scene Script UI Utility)
     define_engine_source_files (NORECURSE . Graphics)
     list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
     if (URHO3D_OPENGL)
@@ -108,10 +108,6 @@ endif ()
 
 if (URHO3D_SYSTEMUI)
     define_engine_source_files (SystemUI)
-endif ()
-
-if (URHO3D_CSHARP)
-    define_engine_source_files (Script)
 endif ()
 
 if (URHO3D_ACTIONS)
@@ -178,7 +174,7 @@ endforeach()
 
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
-    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${rbfx_SOURCE_DIR}/cmake/Modules/GetUrhoRevision.cmake
+    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${rbfx_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
@@ -476,7 +472,7 @@ endif ()
 
 # Install C# dependencies
 if (URHO3D_CSHARP)
-   install (SCRIPT ${rbfx_SOURCE_DIR}/cmake/Install.cmake)
+   install (SCRIPT ${rbfx_SOURCE_DIR}/CMake/Install.cmake)
 endif ()
 
 ################################################### SDK preparation ####################################################

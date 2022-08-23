@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Glow/LightmapUVGenerator.h"
 
 #include <xatlas.h>

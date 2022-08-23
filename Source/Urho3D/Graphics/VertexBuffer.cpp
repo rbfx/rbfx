@@ -125,8 +125,6 @@ Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value 
 
 }
 
-extern const char* GEOMETRY_CATEGORY;
-
 VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
     Object(context),
     GPUObject(forceHeadless ? nullptr : GetSubsystem<Graphics>())
@@ -509,9 +507,9 @@ void DynamicVertexBuffer::Commit()
     vertexBuffer_->SetDataRange(shadowData_.data(), 0, numVertices_, true);
 }
 
-void DynamicVertexBuffer::GrowBuffer()
+void DynamicVertexBuffer::GrowBuffer(unsigned newMaxNumVertices)
 {
-    maxNumVertices_ = maxNumVertices_ > 0 ? 2 * maxNumVertices_ : 128;
+    maxNumVertices_ = ea::max(newMaxNumVertices, maxNumVertices_ > 0 ? 2 * maxNumVertices_ : 128u);
     shadowData_.resize(maxNumVertices_ * vertexSize_);
     vertexBufferNeedResize_ = true;
 }

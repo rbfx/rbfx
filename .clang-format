@@ -36,7 +36,7 @@ AllowAllConstructorInitializersOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: All
+AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: false
@@ -88,18 +88,29 @@ ForEachMacros:
   - foreach
   - Q_FOREACH
   - BOOST_FOREACH
-IncludeBlocks: Preserve # TODO: Reconsider
+IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex: '^"(llvm|llvm-c|clang|clang-c)/'
-    Priority: 2
-    SortPriority: 0
-  - Regex: '^(<|"(gtest|gmock|isl|json)/)'
-    Priority: 3
-    SortPriority: 0
-  - Regex: '.*'
+  # 2. Main header
+  # 1. Precompiled header
+  - Regex: '".*\/Precompiled\..*"'
+    Priority: -1
+  # 6. DebugNew goes last
+  - Regex: '.*\/DebugNew\.h.*'
+    Priority: 10000
+  # 4. Includes for our libraries
+  - Regex: '<Urho3D\/.*>'
+    Priority: 100
+  # 5. Includes for 3rd-party libraries
+  - Regex: '<EASTL\/.*>'
+    Priority: 301
+  - Regex: '<.*\/.*>'
+    Priority: 299
+  - Regex: '<.*>'
+    Priority: 302
+  # 3. Includes for this target
+  - Regex: '".*"'
     Priority: 1
-    SortPriority: 0
-IncludeIsMainRegex: '(Test)?$' # TODO: Reconsider
+IncludeIsMainRegex: ''
 IncludeIsMainSourceRegex: ''
 IndentCaseLabels: false
 IndentGotoLabels: true

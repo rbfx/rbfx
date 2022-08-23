@@ -145,6 +145,9 @@
 #if URHO3D_ACTIONS
 #include "113_Actions/ActionDemo.h"
 #endif
+#if URHO3D_RMLUI
+#include "114_AdvancedUI/AdvancedUI.h"
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -203,6 +206,9 @@ void SampleSelectionScreen::Deactivate()
 
 void SamplesManager::Start()
 {
+    ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
+    cache->SetAutoReloadResources(true);
+
     UI* ui = context_->GetSubsystem<UI>();
 
 #if MOBILE
@@ -234,6 +240,7 @@ void SamplesManager::Start()
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
     SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnArrowKeyPress(args); });
     SubscribeToEvent(input, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
+    SubscribeToEvent(E_SAMPLE_EXIT_REQUESTED, [this](StringHash, VariantMap&) { OnCloseCurrentSample(); });
     SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
@@ -245,8 +252,7 @@ void SamplesManager::Start()
     rmlUi->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
 #endif
 
-    sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(
-        context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
+    sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
     IntVector2 listSize = VectorMin(IntVector2(300, 600), ui->GetRoot()->GetSize());
     auto* layout = sampleSelectionScreen_->GetUIRoot()->CreateChild<UIElement>();
@@ -265,7 +271,6 @@ void SamplesManager::Start()
     list->SetFocus(true);
 
     // Get logo texture
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
     Texture2D* logoTexture = cache->GetResource<Texture2D>("Textures/FishBoneLogo.png");
     if (!logoTexture)
         return;
@@ -385,6 +390,9 @@ void SamplesManager::Start()
     RegisterSample<AggregatedInput>();
 #if URHO3D_ACTIONS
     RegisterSample<ActionDemo>();
+#endif	
+#if URHO3D_RMLUI
+    RegisterSample<AdvancedUI>();
 #endif
 
     if (!commandLineArgs_.empty())
@@ -496,7 +504,9 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     int key = args[P_KEY].GetInt();
 
     // Close console (if open) or exit when ESC is pressed
-    if (key == KEY_ESCAPE)
+    StateManager* stateManager = GetSubsystem<StateManager>();
+    auto* currentSample = dynamic_cast<Sample*>(stateManager->GetState());
+    if (key == KEY_ESCAPE && (!currentSample || currentSample->IsEscapeEnabled()))
         isClosing_ = true;
 
 #if URHO3D_RMLUI
@@ -615,6 +625,11 @@ void SamplesManager::OnFrameStart()
         inspectorNode_->RemoveComponent<RmlSerializableInspector>();
 #endif
     }
+}
+
+void SamplesManager::OnCloseCurrentSample()
+{
+    isClosing_ = true;
 }
 
 template<typename T>

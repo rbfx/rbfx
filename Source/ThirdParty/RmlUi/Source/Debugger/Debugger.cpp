@@ -57,6 +57,19 @@ bool Initialise(Context* context)
 	return true;
 }
 
+// Shuts down the debugger.
+void Shutdown()
+{
+	DebuggerPlugin* plugin = DebuggerPlugin::GetInstance();
+	if (!plugin)
+	{
+		Log::Message(Log::LT_WARNING, "Unable to shutdown debugger plugin, it was not initialised!");
+		return;
+	}
+
+	UnregisterPlugin(plugin);
+}
+
 // Sets the context to be debugged.
 bool SetContext(Context* context)
 {

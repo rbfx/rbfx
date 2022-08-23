@@ -36,7 +36,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
 static const BodyType2D DEFAULT_BODYTYPE = BT_STATIC;
 
 static const char* bodyTypeNames[] =
@@ -70,7 +69,7 @@ RigidBody2D::~RigidBody2D()
 
 void RigidBody2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RigidBody2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<RigidBody2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Body Type", GetBodyType, SetBodyType, BodyType2D, bodyTypeNames, DEFAULT_BODYTYPE, AM_DEFAULT);

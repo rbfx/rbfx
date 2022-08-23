@@ -22,6 +22,8 @@
 
 /// \file
 
+#include "../Precompiled.h"
+
 #include "../Glow/BakedSceneCollector.h"
 
 #include "../Glow/RaytracerScene.h"

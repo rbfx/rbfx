@@ -20,25 +20,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
+#include "../SystemUI/SystemUI.h"
+
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
 #include "../Core/Macros.h"
+#include "../Core/Profiler.h"
 #include "../Engine/EngineEvents.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/GraphicsImpl.h"
+#include "../IO/FileSystem.h"
+#include "../IO/Log.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
-#include "../IO/Log.h"
-#include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
-#include "../SystemUI/SystemUI.h"
 #include "../SystemUI/Console.h"
-#include <SDL/SDL.h>
-#include <ImGuizmo/ImGuizmo.h>
-#include <ImGui/imgui_internal.h>
+
 #include <ImGui/imgui_freetype.h>
+#include <ImGui/imgui_internal.h>
+#include <ImGuizmo/ImGuizmo.h>
+#include <SDL/SDL.h>
 
 #define IMGUI_IMPL_API IMGUI_API
 #include <imgui_impl_sdl.h>
@@ -70,7 +75,8 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
     SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
-    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
+    SubscribeToEvent(E_INPUTBEGIN, [this](StringHash, VariantMap& args) { OnInputBegin(); });
+    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(); });
     SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
     SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
@@ -146,6 +152,8 @@ void SystemUI::OnRawEvent(VariantMap& args)
             io.MousePos.x = evt->motion.x;
             io.MousePos.y = evt->motion.y;
         }
+        relativeMouseMove_.x_ += evt->motion.xrel;
+        relativeMouseMove_.y_ += evt->motion.yrel;
         break;
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
@@ -199,7 +207,12 @@ void SystemUI::OnScreenMode(VariantMap& args)
     io.DisplaySize = {args[P_WIDTH].GetFloat(), args[P_HEIGHT].GetFloat()};
 }
 
-void SystemUI::OnInputEnd(VariantMap& args)
+void SystemUI::OnInputBegin()
+{
+    relativeMouseMove_ = Vector2::ZERO;
+}
+
+void SystemUI::OnInputEnd()
 {
     assert(imContext_ != nullptr);
 
@@ -232,40 +245,27 @@ void SystemUI::OnInputEnd(VariantMap& args)
     ImGuizmo::BeginFrame();
 }
 
-void SystemUI::SetMouseWrapping(bool enabled, bool revertMousePositionOnDisable)
+void SystemUI::SetRelativeMouseMove(bool enabled, bool revertMousePositionOnDisable)
 {
     ImGuiWindow* currentWindow = ui::GetCurrentWindowRead();
     const ImGuiContext& g = *ui::GetCurrentContext();
     if (!enabled || !currentWindow)
     {
-        enableWrapping_ = false;
+        enableRelativeMouseMove_ = false;
+        SDL_SetRelativeMouseMode(SDL_FALSE);
         return;
     }
 
-    enableWrapping_ = true;
-    const ImVec2& windowPosition = currentWindow->Pos;
-    const ImVec2& windowSize = currentWindow->Size;
-    minWrapBound_ = windowPosition;
-    maxWrapBound_ = windowPosition + windowSize - ImVec2{ 1, 1 };
-
-    const unsigned monitorIndex = currentWindow->Viewport->PlatformMonitor;
-    if (monitorIndex < g.PlatformIO.Monitors.size())
-    {
-        const ImGuiPlatformMonitor& currentMonitor = g.PlatformIO.Monitors[monitorIndex];
-        const ImVec2& monitorPosition = currentMonitor.WorkPos;
-        const ImVec2& monitorSize = currentMonitor.WorkSize;
-        const ImVec2 minMonitorBound = monitorPosition;
-        const ImVec2 maxMonitorBound = monitorPosition + monitorSize - ImVec2{ 1, 1 };
-        minWrapBound_ = ImClamp(minWrapBound_, minMonitorBound, maxMonitorBound);
-        maxWrapBound_ = ImClamp(maxWrapBound_, minMonitorBound, maxMonitorBound);
-    }
-
-    const ImVec2 wrapRegionSize = maxWrapBound_ - minWrapBound_;
-    if (wrapRegionSize.x <= 3 || wrapRegionSize.y <= 3)
-        enableWrapping_ = false;
+    enableRelativeMouseMove_ = true;
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     revertMousePositionOnDisable_ = revertMousePositionOnDisable;
     revertMousePosition_ = g.IO.MousePos;
+}
+
+const Vector2 SystemUI::GetRelativeMouseMove() const
+{
+    return relativeMouseMove_;
 }
 
 void SystemUI::OnRenderEnd()
@@ -278,42 +278,19 @@ void SystemUI::OnRenderEnd()
     URHO3D_PROFILE("SystemUiRender");
     SendEvent(E_ENDRENDERINGSYSTEMUI);
 
-    // Disable mouse wrapping automatically if none of mouse buttons are down
+    // Disable relative mouse movement automatically if none of mouse buttons are down
     if (!ui::IsAnyMouseDown())
-        enableWrapping_ = false;
+    {
+        enableRelativeMouseMove_ = false;
+        SDL_SetRelativeMouseMode(SDL_FALSE);
+    }
 
     ImGuiIO& io = ui::GetIO();
     if (imContext_->WithinFrameScope)
         ui::Render();
 
-    // Apply mouse wrapping in the same way ImGUI controls mouse
-    if (enableWrapping_)
-    {
-        ImVec2 mousePos = io.MousePos;
-
-        if (mousePos.x <= minWrapBound_.x)
-            mousePos.x = maxWrapBound_.x - 1;
-        if (mousePos.x >= maxWrapBound_.x)
-            mousePos.x = minWrapBound_.x + 1;
-        if (mousePos.y <= minWrapBound_.y)
-            mousePos.y = maxWrapBound_.y - 1;
-        if (mousePos.y >= maxWrapBound_.y)
-            mousePos.y = minWrapBound_.y + 1;
-
-        if (mousePos != io.MousePos)
-        {
-            for (int btn = 0; btn < ImGuiMouseButton_COUNT; btn++)
-            {
-                if (io.MouseDown[btn])
-                    io.MouseClickedPos[btn] += mousePos - io.MousePos;
-            }
-
-            io.MousePos = mousePos;
-            io.MousePosPrev = mousePos;
-            io.WantSetMousePos = true;
-        }
-    }
-    else if (revertMousePositionOnDisable_)
+    // Revert mouse position after relative movement
+    if (!enableRelativeMouseMove_ && revertMousePositionOnDisable_)
     {
         revertMousePositionOnDisable_ = false;
         io.MousePos = revertMousePosition_;
@@ -420,7 +397,6 @@ void SystemUI::ReallocateFontTexture()
     // Store main atlas, imgui expects it.
     io.Fonts->TexID = AllocateFontTexture(io.Fonts);
 
-#if URHO3D_SYSTEMUI_VIEWPORTS
     // Initialize per-screen font atlases.
     ClearPerScreenFonts();
     io.AllFonts.push_back(io.Fonts);
@@ -433,7 +409,6 @@ void SystemUI::ReallocateFontTexture()
         io.AllFonts.push_back(atlas);
         atlas->TexID = AllocateFontTexture(atlas);
     }
-#endif
 }
 
 void SystemUI::ClearPerScreenFonts()
@@ -484,203 +459,4 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
     style.FrameRounding = 3.0f;
 }
 
-int ToImGui(MouseButton button)
-{
-    switch (button)
-    {
-    case MOUSEB_LEFT:
-        return ImGuiMouseButton_Left;
-    case MOUSEB_MIDDLE:
-        return ImGuiMouseButton_Middle;
-    case MOUSEB_RIGHT:
-        return ImGuiMouseButton_Right;
-    case MOUSEB_X1:
-        return 3;
-    case MOUSEB_X2:
-        return 4;
-    default:
-        return -1;
-    }
-}
-
-}
-
-bool ui::IsMouseDown(Urho3D::MouseButton button)
-{
-    return ui::IsMouseDown(Urho3D::ToImGui(button));
-}
-
-bool ui::IsMouseDoubleClicked(Urho3D::MouseButton button)
-{
-    return ui::IsMouseDoubleClicked(Urho3D::ToImGui(button));
-}
-
-bool ui::IsMouseDragging(Urho3D::MouseButton button, float lock_threshold)
-{
-    return ui::IsMouseDragging(Urho3D::ToImGui(button), lock_threshold);
-}
-
-bool ui::IsMouseReleased(Urho3D::MouseButton button)
-{
-    return ui::IsMouseReleased(Urho3D::ToImGui(button));
-}
-
-bool ui::IsMouseClicked(Urho3D::MouseButton button, bool repeat)
-{
-    return ui::IsMouseClicked(Urho3D::ToImGui(button), repeat);
-}
-
-bool ui::IsItemClicked(Urho3D::MouseButton button)
-{
-    return ui::IsItemClicked(Urho3D::ToImGui(button));
-}
-
-ImVec2 ui::GetMouseDragDelta(Urho3D::MouseButton button, float lock_threshold)
-{
-    return ui::GetMouseDragDelta(Urho3D::ToImGui(button), lock_threshold);
-}
-
-void ui::ResetMouseDragDelta(Urho3D::MouseButton button)
-{
-    ResetMouseDragDelta(Urho3D::ToImGui(button));
-}
-
-bool ui::SetDragDropVariant(const ea::string& types, const Urho3D::Variant& variant, ImGuiCond cond)
-{
-    if (SetDragDropPayload(types.c_str(), nullptr, 0, cond))
-    {
-        auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-        systemUI->GetContext()->SetGlobalVar("SystemUI_Drag&Drop_Value", variant);
-        return true;
-    }
-    return false;
-}
-
-const Urho3D::Variant& ui::AcceptDragDropVariant(const ea::string& types, ImGuiDragDropFlags flags)
-{
-    using namespace Urho3D;
-
-    if (const ImGuiPayload* payload = GetDragDropPayload())
-    {
-        bool accepted = false;
-        for (const ea::string& type : types.split(','))
-        {
-            const char* t = payload->DataType;
-            while (t < payload->DataType + URHO3D_ARRAYSIZE(payload->DataType))
-            {
-                t = strstr(t, type.c_str());
-                if (t == nullptr)
-                    break;
-
-                const char* tEnd = strstr(t, ",");
-                tEnd = tEnd ? Min(t + strlen(t), tEnd) : t + strlen(t);
-                if ((t == payload->DataType || t[-1] == ',') && (*tEnd == 0 || *tEnd == ','))
-                    accepted = true;
-                t = tEnd;
-            }
-        }
-
-        if (AcceptDragDropPayload(accepted ? payload->DataType : "Smth that won't be accepted.", flags))
-        {
-            SystemUI* systemUI = static_cast<SystemUI*>(GetIO().UserData);
-            return systemUI->GetContext()->GetGlobalVar("SystemUI_Drag&Drop_Value");
-        }
-    }
-
-    return Urho3D::Variant::EMPTY;
-}
-
-void ui::Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
-{
-    auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-    systemUI->ReferenceTexture(user_texture_id);
-#if URHO3D_D3D11
-    void* texture_id = user_texture_id->GetShaderResourceView();
-#else
-    void* texture_id = user_texture_id->GetGPUObject();
-#endif
-    Image(texture_id, size, uv0, uv1, tint_col, border_col);
-}
-
-void ui::ImageItem(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
-{
-    ImGuiWindow* window = ui::GetCurrentWindow();
-    ImGuiID id = window->GetID(user_texture_id);
-    ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
-    ui::Image(user_texture_id, size, uv0, uv1, tint_col, border_col);
-    ui::ItemAdd(bb, id);
-}
-
-bool ui::ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
-{
-    auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-    systemUI->ReferenceTexture(user_texture_id);
-#if URHO3D_D3D11
-    void* texture_id = user_texture_id->GetShaderResourceView();
-#else
-    void* texture_id = user_texture_id->GetGPUObject();
-#endif
-    return ImageButton(texture_id, size, uv0, uv1, frame_padding, bg_col, tint_col);
-}
-
-bool ui::IsKeyDown(Urho3D::Key key)
-{
-    return IsKeyDown(SDL_GetScancodeFromKey(key));
-}
-
-bool ui::IsKeyPressed(Urho3D::Key key, bool repeat)
-{
-    return IsKeyPressed(SDL_GetScancodeFromKey(key), repeat);
-}
-
-bool ui::IsKeyReleased(Urho3D::Key key)
-{
-    return IsKeyReleased(SDL_GetScancodeFromKey(key));
-}
-
-int ui::GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate)
-{
-    return GetKeyPressedAmount(SDL_GetScancodeFromKey(key), repeat_delay, rate);
-}
-
-bool ui::ItemMouseActivation(Urho3D::MouseButton button, unsigned flags)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiWindow* window = g.CurrentWindow;
-
-    bool activated = !ui::IsItemActive() && ui::IsItemHovered();
-    if (flags == ImGuiItemMouseActivation_Dragging)
-        activated &= ui::IsMouseDragging(button);
-    else
-        activated &= ui::IsMouseClicked(button);
-
-    if (activated)
-        ui::SetActiveID(g.LastItemData.ID, window);
-    else if (ui::IsItemActive() && !ui::IsMouseDown(button))
-        ui::ClearActiveID();
-    return ui::IsItemActive();
-}
-
-void ui::HideCursorWhenActive(Urho3D::MouseButton button, bool on_drag)
-{
-    using namespace Urho3D;
-    ImGuiContext& g = *GImGui;
-    SystemUI* systemUI = reinterpret_cast<SystemUI*>(g.IO.UserData);
-    if (ui::IsItemActive())
-    {
-        if (!on_drag || ui::IsMouseDragging(button))
-        {
-            Input* input = systemUI->GetSubsystem<Input>();
-            if (input->IsMouseVisible())
-            {
-                systemUI->SetMouseWrapping(true, true);
-                input->SetMouseVisible(false);
-            }
-        }
-    }
-    else if (ui::IsItemDeactivated())
-    {
-        systemUI->SetMouseWrapping(false, true);
-        systemUI->GetSubsystem<Input>()->SetMouseVisible(true);
-    }
 }

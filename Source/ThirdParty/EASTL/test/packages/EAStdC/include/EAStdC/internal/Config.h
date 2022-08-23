@@ -278,10 +278,12 @@
 // EASTDC_ASAN_ENABLED
 //
 // Defined as 0 or 1. It's value depends on the compile environment.
-// Specifies whether the code is being built with Clang's Address Sanitizer.
+// Specifies whether the code is being built with Address Sanitizer.
 //
-#if defined(__has_feature)
-	#if __has_feature(address_sanitizer)
+#if defined(__SANITIZE_ADDRESS__) // GCC or MSVC
+	#define EASTDC_ASAN_ENABLED 1
+#elif defined(__has_feature)
+	#if __has_feature(address_sanitizer)  // Clang
 		#define EASTDC_ASAN_ENABLED 1
 	#else
 		#define EASTDC_ASAN_ENABLED 0

@@ -367,14 +367,18 @@ TEST_CASE("Animation track with empty name is applied to the owner node itself")
 
         // Time 0.5: Translate X to -1
         Tests::RunFrame(context, 0.5f, 0.05f);
-        REQUIRE(nodeRef->GetPosition().Equals({-1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
-        REQUIRE(rootRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
+        REQUIRE(nodeRef);
+        CHECK(nodeRef->GetPosition().Equals({-1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(rootRef);
+        CHECK(rootRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
 
         // Time 1.5: Translate X to 1
         Tests::SerializeAndDeserializeScene(scene);
         Tests::RunFrame(context, 1.0f, 0.05f);
-        REQUIRE(nodeRef->GetPosition().Equals({1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
-        REQUIRE(rootRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
+        REQUIRE(nodeRef);
+        CHECK(nodeRef->GetPosition().Equals({1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(rootRef);
+        CHECK(rootRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
     }
 
     // Test Node mode
@@ -550,6 +554,7 @@ TEST_CASE("Variant animation tracks are applied to components with optional blen
         scene->CreateComponent<Octree>();
 
         auto node = scene->CreateChild("Root Node");
+        node->SetVar("Test", 0);
         node->SetPosition({ 0.0f, 1.0f, 0.0f });
         auto animatedModel = node->CreateComponent<AnimatedModel>();
         animatedModel->SetModel(model);

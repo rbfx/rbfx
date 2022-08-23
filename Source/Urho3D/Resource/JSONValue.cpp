@@ -181,15 +181,15 @@ JSONValue& JSONValue::operator=(JSONValue && rhs)
         break;
 
     case JSON_STRING:
-        *stringValue_ = std::move(*rhs.stringValue_);
+        *stringValue_ = ea::move(*rhs.stringValue_);
         break;
 
     case JSON_ARRAY:
-        *arrayValue_ = std::move(*rhs.arrayValue_);
+        *arrayValue_ = ea::move(*rhs.arrayValue_);
         break;
 
     case JSON_OBJECT:
-        *objectValue_ = std::move(*rhs.objectValue_);
+        *objectValue_ = ea::move(*rhs.objectValue_);
 
     default:
         break;
@@ -276,7 +276,7 @@ void JSONValue::Push(JSONValue value)
     // Convert to array type
     SetType(JSON_ARRAY);
 
-    arrayValue_->push_back(std::move(value));
+    arrayValue_->push_back(ea::move(value));
 }
 
 void JSONValue::Pop()
@@ -292,7 +292,7 @@ void JSONValue::Insert(unsigned pos, JSONValue value)
     if (GetValueType() != JSON_ARRAY)
         return;
 
-    arrayValue_->insert(arrayValue_->begin() + pos, std::move(value));
+    arrayValue_->insert(arrayValue_->begin() + pos, ea::move(value));
 }
 
 void JSONValue::Erase(unsigned pos, unsigned length)
@@ -342,7 +342,7 @@ void JSONValue::Set(const ea::string& key, JSONValue value)
     // Convert to object type
     SetType(JSON_OBJECT);
 
-    (*objectValue_)[key] = std::move(value);
+    (*objectValue_)[key] = ea::move(value);
 }
 
 const JSONValue& JSONValue::Get(const ea::string& key) const
@@ -491,6 +491,10 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
         SetVariantMap(variant.GetVariantMap(), context);
         return;
 
+    case VAR_STRINGVARIANTMAP:
+        SetStringVariantMap(variant.GetStringVariantMap(), context);
+        return;
+
     case VAR_RESOURCEREF:
         {
             if (!context)
@@ -591,6 +595,10 @@ Variant JSONValue::GetVariantValue(VariantType type, Context* context) const
         variant = GetVariantMap();
         break;
 
+    case VAR_STRINGVARIANTMAP:
+        variant = GetStringVariantMap();
+        break;
+
     case VAR_RESOURCEREF:
         {
             ResourceRef ref;
@@ -651,7 +659,7 @@ Variant JSONValue::GetVariantValue(VariantType type, Context* context) const
                 SharedPtr<Serializable> object;
                 object.StaticCast(context->CreateObject(typeName));
 
-                if (object.NotNull())
+                if (object != nullptr)
                 {
                     // Restore proper refcount.
                     if (object->LoadJSON((*this)["value"]))
@@ -677,8 +685,8 @@ Variant JSONValue::GetVariantValue(VariantType type, Context* context) const
 void JSONValue::SetVariantMap(const VariantMap& variantMap, Context* context)
 {
     SetType(JSON_OBJECT);
-    for (auto i = variantMap.begin(); i != variantMap.end(); ++i)
-        (*this)[i->first.ToString()].SetVariant(i->second);
+    for (const auto& [key, value] : variantMap)
+        (*this)[key.ToString()].SetVariant(value);
 }
 
 VariantMap JSONValue::GetVariantMap() const
@@ -690,11 +698,36 @@ VariantMap JSONValue::GetVariantMap() const
         return variantMap;
     }
 
-    for (const auto& i : *this)
+    for (const auto& [stringKey, value] : *this)
     {
         /// \todo Ideally this should allow any strings, but for now the convention is that the keys need to be hexadecimal StringHashes
-        StringHash key(ToUInt(i.first, 16));
-        Variant variant = i.second.GetVariant();
+        const StringHash hashKey(ToUInt(stringKey, 16));
+        const Variant variant = value.GetVariant();
+        variantMap[hashKey] = variant;
+    }
+
+    return variantMap;
+}
+
+void JSONValue::SetStringVariantMap(const StringVariantMap& variantMap, Context* context)
+{
+    SetType(JSON_OBJECT);
+    for (const auto& [key, value] : variantMap)
+        (*this)[key].SetVariant(value);
+}
+
+StringVariantMap JSONValue::GetStringVariantMap() const
+{
+    StringVariantMap variantMap;
+    if (!IsObject())
+    {
+        URHO3D_LOGERROR("JSONValue is not a object");
+        return variantMap;
+    }
+
+    for (const auto& [key, value] : *this)
+    {
+        const Variant variant = value.GetVariant();
         variantMap[key] = variant;
     }
 

@@ -1,111 +1,121 @@
-%constant ea::string EpAutoloadPaths = Urho3D::EP_AUTOLOAD_PATHS;
-%ignore Urho3D::EP_AUTOLOAD_PATHS;
-%constant ea::string EpBorderless = Urho3D::EP_BORDERLESS;
-%ignore Urho3D::EP_BORDERLESS;
-%constant ea::string EpDumpShaders = Urho3D::EP_DUMP_SHADERS;
-%ignore Urho3D::EP_DUMP_SHADERS;
-%constant ea::string EpExternalWindow = Urho3D::EP_EXTERNAL_WINDOW;
-%ignore Urho3D::EP_EXTERNAL_WINDOW;
-%constant ea::string EpFlushGpu = Urho3D::EP_FLUSH_GPU;
-%ignore Urho3D::EP_FLUSH_GPU;
-%constant ea::string EpForceGl2 = Urho3D::EP_FORCE_GL2;
-%ignore Urho3D::EP_FORCE_GL2;
-%constant ea::string EpFrameLimiter = Urho3D::EP_FRAME_LIMITER;
-%ignore Urho3D::EP_FRAME_LIMITER;
-%constant ea::string EpFullScreen = Urho3D::EP_FULL_SCREEN;
-%ignore Urho3D::EP_FULL_SCREEN;
-%constant ea::string EpGpuDebug = Urho3D::EP_GPU_DEBUG;
-%ignore Urho3D::EP_GPU_DEBUG;
-%constant ea::string EpHeadless = Urho3D::EP_HEADLESS;
-%ignore Urho3D::EP_HEADLESS;
-%constant ea::string EpValidateShaders = Urho3D::EP_VALIDATE_SHADERS;
-%ignore Urho3D::EP_VALIDATE_SHADERS;
-%constant ea::string EpHighDpi = Urho3D::EP_HIGH_DPI;
-%ignore Urho3D::EP_HIGH_DPI;
-%constant ea::string EpLogLevel = Urho3D::EP_LOG_LEVEL;
-%ignore Urho3D::EP_LOG_LEVEL;
-%constant ea::string EpLogName = Urho3D::EP_LOG_NAME;
-%ignore Urho3D::EP_LOG_NAME;
-%constant ea::string EpLogQuiet = Urho3D::EP_LOG_QUIET;
-%ignore Urho3D::EP_LOG_QUIET;
-%constant ea::string EpLowQualityShadows = Urho3D::EP_LOW_QUALITY_SHADOWS;
-%ignore Urho3D::EP_LOW_QUALITY_SHADOWS;
-%constant ea::string EpMaterialQuality = Urho3D::EP_MATERIAL_QUALITY;
-%ignore Urho3D::EP_MATERIAL_QUALITY;
-%constant ea::string EpMonitor = Urho3D::EP_MONITOR;
-%ignore Urho3D::EP_MONITOR;
-%constant ea::string EpMultiSample = Urho3D::EP_MULTI_SAMPLE;
-%ignore Urho3D::EP_MULTI_SAMPLE;
-%constant ea::string EpOrganizationName = Urho3D::EP_ORGANIZATION_NAME;
-%ignore Urho3D::EP_ORGANIZATION_NAME;
-%constant ea::string EpApplicationName = Urho3D::EP_APPLICATION_NAME;
+%constant const char* EpApplicationName = "ApplicationName";
 %ignore Urho3D::EP_APPLICATION_NAME;
-%constant ea::string EpOrientations = Urho3D::EP_ORIENTATIONS;
-%ignore Urho3D::EP_ORIENTATIONS;
-%constant ea::string EpPackageCacheDir = Urho3D::EP_PACKAGE_CACHE_DIR;
-%ignore Urho3D::EP_PACKAGE_CACHE_DIR;
-%constant ea::string EpRenderPath = Urho3D::EP_RENDER_PATH;
-%ignore Urho3D::EP_RENDER_PATH;
-%constant ea::string EpRefreshRate = Urho3D::EP_REFRESH_RATE;
-%ignore Urho3D::EP_REFRESH_RATE;
-%constant ea::string EpResourcePackages = Urho3D::EP_RESOURCE_PACKAGES;
-%ignore Urho3D::EP_RESOURCE_PACKAGES;
-%constant ea::string EpResourcePaths = Urho3D::EP_RESOURCE_PATHS;
-%ignore Urho3D::EP_RESOURCE_PATHS;
-%constant ea::string EpResourcePrefixPaths = Urho3D::EP_RESOURCE_PREFIX_PATHS;
-%ignore Urho3D::EP_RESOURCE_PREFIX_PATHS;
-%constant ea::string EpShaderCacheDir = Urho3D::EP_SHADER_CACHE_DIR;
-%ignore Urho3D::EP_SHADER_CACHE_DIR;
-%constant ea::string EpShadows = Urho3D::EP_SHADOWS;
-%ignore Urho3D::EP_SHADOWS;
-%constant ea::string EpSound = Urho3D::EP_SOUND;
-%ignore Urho3D::EP_SOUND;
-%constant ea::string EpSoundBuffer = Urho3D::EP_SOUND_BUFFER;
-%ignore Urho3D::EP_SOUND_BUFFER;
-%constant ea::string EpSoundInterpolation = Urho3D::EP_SOUND_INTERPOLATION;
-%ignore Urho3D::EP_SOUND_INTERPOLATION;
-%constant ea::string EpSoundMixRate = Urho3D::EP_SOUND_MIX_RATE;
-%ignore Urho3D::EP_SOUND_MIX_RATE;
-%constant ea::string EpSoundMode = Urho3D::EP_SOUND_MODE;
-%ignore Urho3D::EP_SOUND_MODE;
-%constant ea::string EpTextureAnisotropy = Urho3D::EP_TEXTURE_ANISOTROPY;
-%ignore Urho3D::EP_TEXTURE_ANISOTROPY;
-%constant ea::string EpTextureFilterMode = Urho3D::EP_TEXTURE_FILTER_MODE;
-%ignore Urho3D::EP_TEXTURE_FILTER_MODE;
-%constant ea::string EpTextureQuality = Urho3D::EP_TEXTURE_QUALITY;
-%ignore Urho3D::EP_TEXTURE_QUALITY;
-%constant ea::string EpTimeOut = Urho3D::EP_TIME_OUT;
-%ignore Urho3D::EP_TIME_OUT;
-%constant ea::string EpTouchEmulation = Urho3D::EP_TOUCH_EMULATION;
-%ignore Urho3D::EP_TOUCH_EMULATION;
-%constant ea::string EpTripleBuffer = Urho3D::EP_TRIPLE_BUFFER;
-%ignore Urho3D::EP_TRIPLE_BUFFER;
-%constant ea::string EpVsync = Urho3D::EP_VSYNC;
-%ignore Urho3D::EP_VSYNC;
-%constant ea::string EpWindowHeight = Urho3D::EP_WINDOW_HEIGHT;
-%ignore Urho3D::EP_WINDOW_HEIGHT;
-%constant ea::string EpWindowIcon = Urho3D::EP_WINDOW_ICON;
-%ignore Urho3D::EP_WINDOW_ICON;
-%constant ea::string EpWindowPositionX = Urho3D::EP_WINDOW_POSITION_X;
-%ignore Urho3D::EP_WINDOW_POSITION_X;
-%constant ea::string EpWindowPositionY = Urho3D::EP_WINDOW_POSITION_Y;
-%ignore Urho3D::EP_WINDOW_POSITION_Y;
-%constant ea::string EpWindowResizable = Urho3D::EP_WINDOW_RESIZABLE;
-%ignore Urho3D::EP_WINDOW_RESIZABLE;
-%constant ea::string EpWindowMaximize = Urho3D::EP_WINDOW_MAXIMIZE;
-%ignore Urho3D::EP_WINDOW_MAXIMIZE;
-%constant ea::string EpWindowTitle = Urho3D::EP_WINDOW_TITLE;
-%ignore Urho3D::EP_WINDOW_TITLE;
-%constant ea::string EpWindowWidth = Urho3D::EP_WINDOW_WIDTH;
-%ignore Urho3D::EP_WINDOW_WIDTH;
-%constant ea::string EpWorkerThreads = Urho3D::EP_WORKER_THREADS;
-%ignore Urho3D::EP_WORKER_THREADS;
-%constant ea::string EpEngineCliParameters = Urho3D::EP_ENGINE_CLI_PARAMETERS;
-%ignore Urho3D::EP_ENGINE_CLI_PARAMETERS;
-%constant ea::string EpEngineAutoLoadScripts = Urho3D::EP_ENGINE_AUTO_LOAD_SCRIPTS;
+%constant const char* EpAutoloadPaths = "AutoloadPaths";
+%ignore Urho3D::EP_AUTOLOAD_PATHS;
+%constant const char* EpBorderless = "Borderless";
+%ignore Urho3D::EP_BORDERLESS;
+%constant const char* EpDumpShaders = "DumpShaders";
+%ignore Urho3D::EP_DUMP_SHADERS;
+%constant const char* EpEngineAutoLoadScripts = "EngineAutoLoadScripts";
 %ignore Urho3D::EP_ENGINE_AUTO_LOAD_SCRIPTS;
-%constant ea::string EpSystemuiFlags = Urho3D::EP_SYSTEMUI_FLAGS;
+%constant const char* EpEngineCliParameters = "EngineCliParameters";
+%ignore Urho3D::EP_ENGINE_CLI_PARAMETERS;
+%constant const char* EpExternalWindow = "ExternalWindow";
+%ignore Urho3D::EP_EXTERNAL_WINDOW;
+%constant const char* EpFlushGpu = "FlushGPU";
+%ignore Urho3D::EP_FLUSH_GPU;
+%constant const char* EpForceGl2 = "ForceGL2";
+%ignore Urho3D::EP_FORCE_GL2;
+%constant const char* EpFrameLimiter = "FrameLimiter";
+%ignore Urho3D::EP_FRAME_LIMITER;
+%constant const char* EpFullScreen = "FullScreen";
+%ignore Urho3D::EP_FULL_SCREEN;
+%constant const char* EpGpuDebug = "GPUDebug";
+%ignore Urho3D::EP_GPU_DEBUG;
+%constant const char* EpHeadless = "Headless";
+%ignore Urho3D::EP_HEADLESS;
+%constant const char* EpHighDpi = "HighDPI";
+%ignore Urho3D::EP_HIGH_DPI;
+%constant const char* EpLogLevel = "LogLevel";
+%ignore Urho3D::EP_LOG_LEVEL;
+%constant const char* EpLogName = "LogName";
+%ignore Urho3D::EP_LOG_NAME;
+%constant const char* EpLogQuiet = "LogQuiet";
+%ignore Urho3D::EP_LOG_QUIET;
+%constant const char* EpLowQualityShadows = "LowQualityShadows";
+%ignore Urho3D::EP_LOW_QUALITY_SHADOWS;
+%constant const char* EpMainPlugin = "MainPlugin";
+%ignore Urho3D::EP_MAIN_PLUGIN;
+%constant const char* EpMaterialQuality = "MaterialQuality";
+%ignore Urho3D::EP_MATERIAL_QUALITY;
+%constant const char* EpMonitor = "Monitor";
+%ignore Urho3D::EP_MONITOR;
+%constant const char* EpMultiSample = "MultiSample";
+%ignore Urho3D::EP_MULTI_SAMPLE;
+%constant const char* EpOrganizationName = "OrganizationName";
+%ignore Urho3D::EP_ORGANIZATION_NAME;
+%constant const char* EpOrientations = "Orientations";
+%ignore Urho3D::EP_ORIENTATIONS;
+%constant const char* EpPackageCacheDir = "PackageCacheDir";
+%ignore Urho3D::EP_PACKAGE_CACHE_DIR;
+%constant const char* EpPlugins = "Plugins";
+%ignore Urho3D::EP_PLUGINS;
+%constant const char* EpRefreshRate = "RefreshRate";
+%ignore Urho3D::EP_REFRESH_RATE;
+%constant const char* EpRenderPath = "RenderPath";
+%ignore Urho3D::EP_RENDER_PATH;
+%constant const char* EpResourcePackages = "ResourcePackages";
+%ignore Urho3D::EP_RESOURCE_PACKAGES;
+%constant const char* EpResourcePaths = "ResourcePaths";
+%ignore Urho3D::EP_RESOURCE_PATHS;
+%constant const char* EpResourcePrefixPaths = "ResourcePrefixPaths";
+%ignore Urho3D::EP_RESOURCE_PREFIX_PATHS;
+%constant const char* EpShaderCacheDir = "ShaderCacheDir";
+%ignore Urho3D::EP_SHADER_CACHE_DIR;
+%constant const char* EpShadows = "Shadows";
+%ignore Urho3D::EP_SHADOWS;
+%constant const char* EpSound = "Sound";
+%ignore Urho3D::EP_SOUND;
+%constant const char* EpSoundBuffer = "SoundBuffer";
+%ignore Urho3D::EP_SOUND_BUFFER;
+%constant const char* EpSoundInterpolation = "SoundInterpolation";
+%ignore Urho3D::EP_SOUND_INTERPOLATION;
+%constant const char* EpSoundMixRate = "SoundMixRate";
+%ignore Urho3D::EP_SOUND_MIX_RATE;
+%constant const char* EpSoundMode = "SoundMode";
+%ignore Urho3D::EP_SOUND_MODE;
+%constant const char* EpSystemuiFlags = "SystemUIFlags";
 %ignore Urho3D::EP_SYSTEMUI_FLAGS;
+%constant const char* EpTextureAnisotropy = "TextureAnisotropy";
+%ignore Urho3D::EP_TEXTURE_ANISOTROPY;
+%constant const char* EpTextureFilterMode = "TextureFilterMode";
+%ignore Urho3D::EP_TEXTURE_FILTER_MODE;
+%constant const char* EpTextureQuality = "TextureQuality";
+%ignore Urho3D::EP_TEXTURE_QUALITY;
+%constant const char* EpTimeOut = "TimeOut";
+%ignore Urho3D::EP_TIME_OUT;
+%constant const char* EpTouchEmulation = "TouchEmulation";
+%ignore Urho3D::EP_TOUCH_EMULATION;
+%constant const char* EpTripleBuffer = "TripleBuffer";
+%ignore Urho3D::EP_TRIPLE_BUFFER;
+%constant const char* EpValidateShaders = "ValidateShaders";
+%ignore Urho3D::EP_VALIDATE_SHADERS;
+%constant const char* EpVsync = "VSync";
+%ignore Urho3D::EP_VSYNC;
+%constant const char* EpWindowHeight = "WindowHeight";
+%ignore Urho3D::EP_WINDOW_HEIGHT;
+%constant const char* EpWindowIcon = "WindowIcon";
+%ignore Urho3D::EP_WINDOW_ICON;
+%constant const char* EpWindowMaximize = "WindowMaximize";
+%ignore Urho3D::EP_WINDOW_MAXIMIZE;
+%constant const char* EpWindowPositionX = "WindowPositionX";
+%ignore Urho3D::EP_WINDOW_POSITION_X;
+%constant const char* EpWindowPositionY = "WindowPositionY";
+%ignore Urho3D::EP_WINDOW_POSITION_Y;
+%constant const char* EpWindowResizable = "WindowResizable";
+%ignore Urho3D::EP_WINDOW_RESIZABLE;
+%constant const char* EpWindowTitle = "WindowTitle";
+%ignore Urho3D::EP_WINDOW_TITLE;
+%constant const char* EpWindowWidth = "WindowWidth";
+%ignore Urho3D::EP_WINDOW_WIDTH;
+%constant const char* EpWorkerThreads = "WorkerThreads";
+%ignore Urho3D::EP_WORKER_THREADS;
+%constant const char* ParamScenename = "SceneName";
+%ignore Urho3D::Param_SceneName;
+%constant const char* ParamSceneposition = "ScenePosition";
+%ignore Urho3D::Param_ScenePosition;
+%constant const char* ParamScenerotation = "SceneRotation";
+%ignore Urho3D::Param_SceneRotation;
 %csattribute(Urho3D::Engine, %arg(ea::string), AppPreferencesDir, GetAppPreferencesDir);
 %csattribute(Urho3D::Engine, %arg(float), NextTimeStep, GetNextTimeStep, SetNextTimeStep);
 %csattribute(Urho3D::Engine, %arg(int), MinFps, GetMinFps, SetMinFps);
@@ -117,6 +127,8 @@
 %csattribute(Urho3D::Engine, %arg(bool), IsInitialized, IsInitialized);
 %csattribute(Urho3D::Engine, %arg(bool), IsExiting, IsExiting);
 %csattribute(Urho3D::Engine, %arg(bool), IsHeadless, IsHeadless);
+%csattribute(Urho3D::ApplicationSettings, %arg(Urho3D::StringVariantMap), ParametersForCurrentFlavor, GetParametersForCurrentFlavor);
+%csattribute(Urho3D::ApplicationSettings, %arg(Urho3D::ApplicationSettings::FlavoredSettingsVector), ParametersPerFlavor, GetParametersPerFlavor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsActive, IsActive);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::Cursor *), Cursor, GetCursor, SetCursor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseVisible, IsMouseVisible, SetMouseVisible);
@@ -161,36 +173,18 @@ public static partial class E
         public static implicit operator StringHash(ApplicationStartedEvent e) { return e._event; }
     }
     public static ApplicationStartedEvent ApplicationStarted = new ApplicationStartedEvent();
-    public class PluginLoadEvent {
-        private StringHash _event = new StringHash("PluginLoad");
-        public PluginLoadEvent() { }
-        public static implicit operator StringHash(PluginLoadEvent e) { return e._event; }
+    public class BeginPluginReloadEvent {
+        private StringHash _event = new StringHash("BeginPluginReload");
+        public BeginPluginReloadEvent() { }
+        public static implicit operator StringHash(BeginPluginReloadEvent e) { return e._event; }
     }
-    public static PluginLoadEvent PluginLoad = new PluginLoadEvent();
-    public class PluginUnloadEvent {
-        private StringHash _event = new StringHash("PluginUnload");
-        public PluginUnloadEvent() { }
-        public static implicit operator StringHash(PluginUnloadEvent e) { return e._event; }
+    public static BeginPluginReloadEvent BeginPluginReload = new BeginPluginReloadEvent();
+    public class EndPluginReloadEvent {
+        private StringHash _event = new StringHash("EndPluginReload");
+        public EndPluginReloadEvent() { }
+        public static implicit operator StringHash(EndPluginReloadEvent e) { return e._event; }
     }
-    public static PluginUnloadEvent PluginUnload = new PluginUnloadEvent();
-    public class PluginStartEvent {
-        private StringHash _event = new StringHash("PluginStart");
-        public PluginStartEvent() { }
-        public static implicit operator StringHash(PluginStartEvent e) { return e._event; }
-    }
-    public static PluginStartEvent PluginStart = new PluginStartEvent();
-    public class PluginStopEvent {
-        private StringHash _event = new StringHash("PluginStop");
-        public PluginStopEvent() { }
-        public static implicit operator StringHash(PluginStopEvent e) { return e._event; }
-    }
-    public static PluginStopEvent PluginStop = new PluginStopEvent();
-    public class RegisterStaticPluginsEvent {
-        private StringHash _event = new StringHash("RegisterStaticPlugins");
-        public RegisterStaticPluginsEvent() { }
-        public static implicit operator StringHash(RegisterStaticPluginsEvent e) { return e._event; }
-    }
-    public static RegisterStaticPluginsEvent RegisterStaticPlugins = new RegisterStaticPluginsEvent();
+    public static EndPluginReloadEvent EndPluginReload = new EndPluginReloadEvent();
     public class EnqueueApplicationStateEvent {
         private StringHash _event = new StringHash("EnqueueApplicationState");
         public StringHash State = new StringHash("State");

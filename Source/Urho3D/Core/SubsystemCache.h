@@ -57,6 +57,10 @@ using CachedSubsystemList = ea::tuple<
 #if URHO3D_COMPUTE
     , class ComputeDevice
 #endif
+#ifdef URHO3D_PARTICLE_GRAPH
+    , class ParticleGraphSystem
+#endif
+    , class PluginManager
     , class StateManager
 #if URHO3D_ACTIONS
     , class ActionManager

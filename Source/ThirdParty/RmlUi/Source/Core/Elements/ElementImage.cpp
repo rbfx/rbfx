@@ -27,13 +27,14 @@
  */
 
 #include "ElementImage.h"
-#include "../TextureDatabase.h"
-#include "../../../Include/RmlUi/Core/URL.h"
-#include "../../../Include/RmlUi/Core/PropertyIdSet.h"
-#include "../../../Include/RmlUi/Core/GeometryUtilities.h"
+#include "../../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../../Include/RmlUi/Core/ElementDocument.h"
 #include "../../../Include/RmlUi/Core/ElementUtilities.h"
+#include "../../../Include/RmlUi/Core/GeometryUtilities.h"
+#include "../../../Include/RmlUi/Core/PropertyIdSet.h"
 #include "../../../Include/RmlUi/Core/StyleSheet.h"
+#include "../../../Include/RmlUi/Core/URL.h"
+#include "../TextureDatabase.h"
 
 namespace Rml {
 
@@ -90,7 +91,7 @@ void ElementImage::OnRender()
 		GenerateGeometry();
 
 	// Render the geometry beginning at this element's content region.
-	geometry.Render(GetAbsoluteOffset(Box::CONTENT).Round());
+	geometry.Render(GetAbsoluteOffset(Box::CONTENT));
 }
 
 // Called when attributes on the element are changed.
@@ -144,9 +145,11 @@ void ElementImage::OnPropertyChange(const PropertyIdSet& changed_properties)
 
 void ElementImage::OnChildAdd(Element* child)
 {
-	if (child == this && texture_dirty)
+	// Load the texture once we have attached to the document so that it can immediately be found during the call to `Rml::GetTextureSourceList`. The
+	// texture won't actually be loaded from the backend before it is shown. However, only do this if we have an active context so that the dp-ratio
+	// can be retrieved. If there is no context now the texture loading will be deferred until the next layout update.
+	if (child == this && texture_dirty && GetContext())
 	{
-		// Load the texture once we have attached to the document
 		LoadTexture();
 	}
 }
@@ -207,8 +210,8 @@ void ElementImage::GenerateGeometry()
 
 	const ComputedValues& computed = GetComputedValues();
 
-	float opacity = computed.opacity;
-	Colourb quad_colour = computed.image_color;
+	float opacity = computed.opacity();
+	Colourb quad_colour = computed.image_color();
     quad_colour.alpha = (byte)(opacity * (float)quad_colour.alpha);
 	
 	Vector2f quad_size = GetBox().GetSize(Box::CONTENT).Round();

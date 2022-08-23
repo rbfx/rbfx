@@ -29,16 +29,17 @@
 #ifndef RMLUI_CORE_ELEMENT_H
 #define RMLUI_CORE_ELEMENT_H
 
-#include "ScriptInterface.h"
-#include "Header.h"
 #include "Box.h"
-#include "ComputedValues.h"
+#include "Core.h"
 #include "Event.h"
+#include "Header.h"
 #include "ObserverPtr.h"
 #include "Property.h"
-#include "Types.h"
+#include "ScriptInterface.h"
+#include "StyleTypes.h"
 #include "Transform.h"
 #include "Tween.h"
+#include "Types.h"
 
 namespace Rml {
 
@@ -300,6 +301,8 @@ public:
 	/// @param[in] name Name of the attribute to retrieve.
 	/// @return A variant representing the attribute, or nullptr if the attribute doesn't exist.
 	Variant* GetAttribute(const String& name);
+	/// Gets the specified attribute.
+	const Variant* GetAttribute(const String& name) const;
 	/// Gets the specified attribute, with default value.
 	/// @param[in] name Name of the attribute to retrieve.
 	/// @param[in] default_value Value to return if the attribute doesn't exist.
@@ -566,11 +569,6 @@ public:
 	DataModel* GetDataModel() const;
 	//@}
 	
-	/// Returns true if this element requires clipping
-	int GetClippingIgnoreDepth();
-	/// Returns true if this element has clipping enabled
-	bool IsClippingEnabled();
-
 	/// Gets the render interface owned by this element's context.
 	/// @return The element's context's render interface.
 	RenderInterface* GetRenderInterface();
@@ -630,7 +628,6 @@ protected:
 
 	/// Forces a re-layout of this element, and any other elements required.
 	virtual void DirtyLayout();
-
 	/// Returns true if the element has been marked as needing a re-layout.
 	virtual bool IsLayoutDirty();
 
@@ -644,6 +641,10 @@ protected:
 	/// @param[in] activate True if the pseudo-class is to be activated, false to be deactivated.
 	static void OverridePseudoClass(Element* target_element, const String& pseudo_class, bool activate);
 
+	enum class DirtyNodes { Self, SelfAndSiblings };
+	// Dirty the element style definition, including all descendants of the specificed nodes.
+	void DirtyDefinition(DirtyNodes dirty_nodes);
+
 	void SetOwnerDocument(ElementDocument* document);
 
 	void OnStyleSheetChangeRecursive();
@@ -655,7 +656,8 @@ private:
 	
 	void SetDataModel(DataModel* new_data_model);
 
-	void DirtyOffset();
+	void DirtyAbsoluteOffset();
+	void DirtyAbsoluteOffsetRecursive();
 	void UpdateOffset();
 	void SetBaseline(float baseline);
 
@@ -664,13 +666,13 @@ private:
 	static void BuildStackingContextForTable(Vector<StackingOrderedChild>& ordered_children, Element* child);
 	void DirtyStackingContext();
 
-	void DirtyStructure();
-	void UpdateStructure();
+	void UpdateDefinition();
 
 	void DirtyTransformState(bool perspective_dirty, bool transform_dirty);
 	void UpdateTransformState();
 
 	void OnDpRatioChangeRecursive();
+	void DirtyFontFaceRecursive();
 
 	/// Start an animation, replacing any existing animations of the same property name. If start_value is null, the element's current value is used.
 	ElementAnimationList::iterator StartAnimation(PropertyId property_id, const Property * start_value, int num_iterations, bool alternate_direction, float delay, bool initiated_by_animation_property);
@@ -691,6 +693,31 @@ private:
 
 	/// Advances the animations (including transitions) forward in time.
 	void AdvanceAnimations();
+
+	// State flags are packed together for compact data layout.
+	bool local_stacking_context;
+	bool local_stacking_context_forced;
+	bool stacking_context_dirty;
+	bool computed_values_are_default_initialized;
+
+	bool visible; // True if the element is visible and active.
+
+	bool offset_fixed;
+	bool absolute_offset_dirty;
+
+	bool dirty_definition : 1; // Implies dirty child definitions as well.
+	bool dirty_child_definitions : 1;
+
+	bool dirty_animation : 1;
+	bool dirty_transition : 1;
+	bool dirty_transform : 1;
+	bool dirty_perspective : 1;
+
+	OwnedElementList children;
+	int num_non_dom_children;
+
+	// Defines what box area represents the element's client area; this is usually padding, but may be content.
+	Box::Area client_area;
 
 	// Original tag this element came from.
 	String tag;
@@ -717,10 +744,8 @@ private:
 	Element* offset_parent;
 	Vector2f relative_offset_base;		// the base offset from the parent
 	Vector2f relative_offset_position;	// the offset of a relatively positioned element
-	bool offset_fixed;
 
-	mutable Vector2f absolute_offset;
-	mutable bool offset_dirty;
+	Vector2f absolute_offset;
 
 	// The offset this element adds to its logical children due to scrolling content.
 	Vector2f scroll_offset;
@@ -738,36 +763,14 @@ private:
 	Vector2f content_offset;
 	Vector2f content_box;
 
-	// Defines what box area represents the element's client area; this is usually padding, but may be content.
-	Box::Area client_area;
-
 	float baseline;
-
-	// True if the element is visible and active.
-	bool visible;
-
-	OwnedElementList children;
-	int num_non_dom_children;
-
 	float z_index;
-	bool local_stacking_context;
-	bool local_stacking_context_forced;
 
 	ElementList stacking_context;
-	bool stacking_context_dirty;
-
-	bool structure_dirty;
-
-	bool computed_values_are_default_initialized;
-
-	// Transform state
+	
 	UniquePtr< TransformState > transform_state;
-	bool dirty_transform;
-	bool dirty_perspective;
 
 	ElementAnimationList animations;
-	bool dirty_animation;
-	bool dirty_transition;
 
 	ElementMeta* meta;
 
@@ -777,6 +780,7 @@ private:
 	friend class Rml::LayoutBlockBox;
 	friend class Rml::LayoutInlineBox;
 	friend class Rml::ElementScroll;
+	friend RMLUICORE_API void Rml::ReleaseFontResources();
 };
 
 } // namespace Rml

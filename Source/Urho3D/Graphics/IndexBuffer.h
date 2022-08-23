@@ -176,13 +176,14 @@ public:
     void Commit();
 
     /// Allocate indices. Returns index of first index and writeable buffer of sufficient size.
-    ea::pair<unsigned, unsigned char*> AddIndices(unsigned numIndices)
+    ea::pair<unsigned, unsigned char*> AddIndices(unsigned count)
     {
         const unsigned startIndex = numIndices_;
-        if (startIndex + numIndices > maxNumIndices_)
-            GrowBuffer();
+        const unsigned newMaxNumIndices = startIndex + count;
+        if (newMaxNumIndices > maxNumIndices_)
+            GrowBuffer(newMaxNumIndices);
 
-        numIndices_ += numIndices;
+        numIndices_ += count;
         unsigned char* data = shadowData_.data() + startIndex * indexSize_;
         return { startIndex, data };
     }
@@ -198,7 +199,7 @@ public:
     IndexBuffer* GetIndexBuffer() { return indexBuffer_; }
 
 private:
-    void GrowBuffer();
+    void GrowBuffer(unsigned newMaxNumIndices);
 
     SharedPtr<IndexBuffer> indexBuffer_;
     ByteVector shadowData_;

@@ -44,23 +44,13 @@ namespace Rml {
 static bool BuildToken(String& token, const char*& token_begin, const char* string_end, bool first_token, bool collapse_white_space, bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters);
 static bool LastToken(const char* token_begin, const char* string_end, bool collapse_white_space, bool break_at_endline);
 
-ElementText::ElementText(const String& tag) : Element(tag), colour(255, 255, 255), decoration(this)
-{
-	dirty_layout_on_change = true;
+ElementText::ElementText(const String& tag) :
+	Element(tag), colour(255, 255, 255), opacity(1), font_handle_version(0), geometry_dirty(true), dirty_layout_on_change(true),
+	generated_decoration(Style::TextDecoration::None), decoration_property(Style::TextDecoration::None), font_effects_dirty(true),
+	font_effects_handle(0)
+{}
 
-	generated_decoration = Style::TextDecoration::None;
-	decoration_property = Style::TextDecoration::None;
-
-	geometry_dirty = true;
-
-	font_effects_handle = 0;
-	font_effects_dirty = true;
-	font_handle_version = 0;
-}
-
-ElementText::~ElementText()
-{
-}
+ElementText::~ElementText() {}
 
 void ElementText::SetText(const String& _text)
 {
@@ -105,10 +95,19 @@ void ElementText::OnRender()
 	// Regenerate text decoration if necessary.
 	if (decoration_property != generated_decoration)
 	{
-		decoration.Release(true);
+		if (decoration_property == Style::TextDecoration::None)
+		{
+			decoration.reset();
+		}
+		else
+		{
+			if (decoration)
+				decoration->Release(true);
+			else
+				decoration = MakeUnique<Geometry>(this);
 
-		if (decoration_property != Style::TextDecoration::None)
 			GenerateDecoration(font_face_handle);
+		}
 
 		generated_decoration = decoration_property;
 	}
@@ -153,8 +152,8 @@ void ElementText::OnRender()
 			geometry[i].Render(translation);
 	}
 
-	if (decoration_property != Style::TextDecoration::None)
-		decoration.Render(translation);
+	if (decoration)
+		decoration->Render(translation);
 }
 
 // Generates a token of text from this element, returning only the width.
@@ -171,7 +170,7 @@ bool ElementText::GenerateToken(float& token_width, int line_begin)
 	// Determine how we are processing white-space while formatting the text.
 	using namespace Style;
 	auto& computed = GetComputedValues();
-	WhiteSpace white_space_property = computed.white_space;
+	WhiteSpace white_space_property = computed.white_space();
 	bool collapse_white_space = white_space_property == WhiteSpace::Normal ||
 								white_space_property == WhiteSpace::Nowrap ||
 								white_space_property == WhiteSpace::Preline;
@@ -182,7 +181,7 @@ bool ElementText::GenerateToken(float& token_width, int line_begin)
 	const char* token_begin = text.c_str() + line_begin;
 	String token;
 
-	BuildToken(token, token_begin, text.c_str() + text.size(), true, collapse_white_space, break_at_endline, computed.text_transform, true);
+	BuildToken(token, token_begin, text.c_str() + text.size(), true, collapse_white_space, break_at_endline, computed.text_transform(), true);
 	token_width = (float) GetFontEngineInterface()->GetStringWidth(font_face_handle, token);
 
 	return LastToken(token_begin, text.c_str() + text.size(), collapse_white_space, break_at_endline);
@@ -207,7 +206,7 @@ bool ElementText::GenerateLine(String& line, int& line_length, float& line_width
 	// Determine how we are processing white-space while formatting the text.
 	using namespace Style;
 	auto& computed = GetComputedValues();
-	WhiteSpace white_space_property = computed.white_space;
+	WhiteSpace white_space_property = computed.white_space();
 	bool collapse_white_space = white_space_property == WhiteSpace::Normal ||
 								white_space_property == WhiteSpace::Nowrap ||
 								white_space_property == WhiteSpace::Preline;
@@ -219,8 +218,8 @@ bool ElementText::GenerateLine(String& line, int& line_length, float& line_width
 							white_space_property == WhiteSpace::Prewrap ||
 							white_space_property == WhiteSpace::Preline;
 
-	TextTransform text_transform_property = computed.text_transform;
-	WordBreak word_break = computed.word_break;
+	TextTransform text_transform_property = computed.text_transform();
+	WordBreak word_break = computed.word_break();
 
 	FontEngineInterface* font_engine_interface = GetFontEngineInterface();
 
@@ -316,7 +315,6 @@ void ElementText::ClearLines()
 
 	lines.clear();
 	generated_decoration = Style::TextDecoration::None;
-	decoration.Release(true);
 }
 
 // Adds a new line into the text element.
@@ -355,13 +353,23 @@ void ElementText::OnPropertyChange(const PropertyIdSet& changed_properties)
 	if (changed_properties.Contains(PropertyId::Color) ||
 		changed_properties.Contains(PropertyId::Opacity))
 	{
-		// Fetch our (potentially) new colour.
-		Colourb new_colour = computed.color;
-		float opacity = computed.opacity;
-		new_colour.alpha = byte(opacity * float(new_colour.alpha));
+		const float new_opacity = computed.opacity();
+		const bool opacity_changed = opacity != new_opacity;
+
+		Colourb new_colour = computed.color();
+		new_colour.alpha = byte(new_opacity * float(new_colour.alpha));
 		colour_changed = colour != new_colour;
+
 		if (colour_changed)
+		{
 			colour = new_colour;
+		}
+		if (opacity_changed)
+		{
+			opacity = new_opacity;
+			font_effects_dirty = true;
+			geometry_dirty = true;
+		}
 	}
 
 	if (changed_properties.Contains(PropertyId::FontFamily) ||
@@ -372,7 +380,11 @@ void ElementText::OnPropertyChange(const PropertyIdSet& changed_properties)
 		font_face_changed = true;
 
 		geometry.clear();
+		geometry_dirty = true;
+
+		font_effects_handle = 0;
 		font_effects_dirty = true;
+		font_handle_version = 0;
 	}
 
 	if (changed_properties.Contains(PropertyId::FontEffect))
@@ -382,7 +394,9 @@ void ElementText::OnPropertyChange(const PropertyIdSet& changed_properties)
 
 	if (changed_properties.Contains(PropertyId::TextDecoration))
 	{
-		decoration_property = computed.text_decoration;
+		decoration_property = computed.text_decoration();
+		if (decoration && decoration_property == Style::TextDecoration::None)
+			decoration.reset();
 	}
 
 	if (font_face_changed)
@@ -397,11 +411,14 @@ void ElementText::OnPropertyChange(const PropertyIdSet& changed_properties)
 		geometry_dirty = true;
 
 		// Re-colour the decoration geometry.
-		Vector< Vertex >& vertices = decoration.GetVertices();
-		for (size_t i = 0; i < vertices.size(); ++i)
-			vertices[i].colour = colour;
+		if (decoration)
+		{
+			Vector<Vertex>& vertices = decoration->GetVertices();
+			for (size_t i = 0; i < vertices.size(); ++i)
+				vertices[i].colour = colour;
 
-		decoration.Release();
+			decoration->Release();
+		}
 	}
 }
 
@@ -425,7 +442,7 @@ bool ElementText::UpdateFontEffects()
 
 	// Fetch the font-effect for this text element
 	const FontEffectList* font_effects = &empty_font_effects;
-	if (GetComputedValues().has_font_effect)
+	if (GetComputedValues().has_font_effect())
 	{
 		if (const Property* p = GetProperty(PropertyId::FontEffect))
 			if (FontEffectsPtr effects = p->Get<FontEffectsPtr>())
@@ -457,7 +474,6 @@ void ElementText::GenerateGeometry(const FontFaceHandle font_face_handle)
 	for (size_t i = 0; i < lines.size(); ++i)
 		GenerateGeometry(font_face_handle, lines[i]);
 
-	decoration.Release(true);
 	generated_decoration = Style::TextDecoration::None;
 
 	geometry_dirty = false;
@@ -465,7 +481,7 @@ void ElementText::GenerateGeometry(const FontFaceHandle font_face_handle)
 
 void ElementText::GenerateGeometry(const FontFaceHandle font_face_handle, Line& line)
 {
-	line.width = GetFontEngineInterface()->GenerateString(font_face_handle, font_effects_handle, line.text, line.position, colour, geometry);
+	line.width = GetFontEngineInterface()->GenerateString(font_face_handle, font_effects_handle, line.text, line.position, colour, opacity, geometry);
 	for (size_t i = 0; i < geometry.size(); ++i)
 		geometry[i].SetHostElement(this);
 }
@@ -474,9 +490,10 @@ void ElementText::GenerateGeometry(const FontFaceHandle font_face_handle, Line& 
 void ElementText::GenerateDecoration(const FontFaceHandle font_face_handle)
 {
 	RMLUI_ZoneScopedC(0xA52A2A);
+	RMLUI_ASSERT(decoration);
 	
 	for(const Line& line : lines)
-		GeometryUtilities::GenerateLine(font_face_handle, &decoration, line.position, line.width, decoration_property, colour);
+		GeometryUtilities::GenerateLine(font_face_handle, decoration.get(), line.position, line.width, decoration_property, colour);
 }
 
 static bool BuildToken(String& token, const char*& token_begin, const char* string_end, bool first_token, bool collapse_white_space, bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters)

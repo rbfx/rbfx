@@ -33,8 +33,6 @@
 namespace Urho3D
 {
 
-extern const char* UI_CATEGORY;
-
 BorderImage::BorderImage(Context* context) :
     UIElement(context),
     imageRect_(IntRect::ZERO),
@@ -51,7 +49,7 @@ BorderImage::~BorderImage() = default;
 
 void BorderImage::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BorderImage>(UI_CATEGORY);
+    context->RegisterFactory<BorderImage>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Texture", GetTextureAttr, SetTextureAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()),

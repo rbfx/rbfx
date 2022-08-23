@@ -89,11 +89,9 @@ URHO3D_FLAGSET(AnimationParameterMask, AnimationParameterFlags);
 
 }
 
-extern const char* LOGIC_CATEGORY;
-
 AnimationParameters::AnimationParameters(Animation* animation)
     : animation_(animation)
-    , animationName_(animation ? animation_->GetNameHash() : StringHash{})
+    , animationName_(animation ? animation_->GetNameHash() : StringHash::Empty)
     , time_{0.0f, 0.0f, animation_ ? animation_->GetLength() : M_LARGE_VALUE}
 {
 }
@@ -185,7 +183,7 @@ AnimationParameters AnimationParameters::FromVariantSpan(Context* context, ea::s
 
     const ea::string animationName = variants[index++].GetResourceRef().name_;
     result.animation_ = context->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationName);
-    result.animationName_ = result.animation_ ? result.animation_->GetNameHash() : StringHash{};
+    result.animationName_ = result.animation_ ? result.animation_->GetNameHash() : StringHash::Empty;
 
     result.looped_ = variants[index++].GetBool();
     result.removeOnCompletion_ = variants[index++].GetBool();
@@ -369,7 +367,7 @@ AnimationController::~AnimationController() = default;
 
 void AnimationController::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimationController>(LOGIC_CATEGORY);
+    context->RegisterFactory<AnimationController>(Category_Logic);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)

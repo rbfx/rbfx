@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Core/Context.h"
 #include "../IK/IK.h"
 #include "../IK/IKConstraint.h"
@@ -31,8 +33,6 @@
 
 namespace Urho3D
 {
-
-extern const char* IK_CATEGORY;
 
 // ----------------------------------------------------------------------------
 IKConstraint::IKConstraint(Context* context) :
@@ -49,7 +49,7 @@ IKConstraint::~IKConstraint() = default;
 // ----------------------------------------------------------------------------
 void IKConstraint::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IKConstraint>(IK_CATEGORY);
+    context->RegisterFactory<IKConstraint>(Category_IK);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Stiffness", GetStiffness, SetStiffness, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Stretchiness", GetStretchiness, SetStretchiness, float, 0.0f, AM_DEFAULT);

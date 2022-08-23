@@ -94,7 +94,7 @@ void UnorderedScenePass::OnBatchesReady()
     }
 }
 
-void UnorderedScenePass::PrepareInstacingBuffer(BatchRenderer* batchRenderer)
+void UnorderedScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
 {
     batchRenderer->PrepareInstancingBuffer(deferredBatchGroup_);
     batchRenderer->PrepareInstancingBuffer(baseBatchGroup_);
@@ -150,7 +150,7 @@ void BackToFrontScenePass::OnBatchesReady()
         batchGroup_.flags_ |= BatchRenderFlag::EnableInstancingForStaticGeometry;
 }
 
-void BackToFrontScenePass::PrepareInstacingBuffer(BatchRenderer* batchRenderer)
+void BackToFrontScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
 {
     batchRenderer->PrepareInstancingBuffer(batchGroup_);
 }

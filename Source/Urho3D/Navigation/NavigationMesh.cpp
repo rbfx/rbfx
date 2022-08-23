@@ -65,8 +65,6 @@ const char* navmeshPartitionTypeNames[] =
     nullptr
 };
 
-const char* NAVIGATION_CATEGORY = "Navigation";
-
 static const int DEFAULT_TILE_SIZE = 128;
 static const float DEFAULT_CELL_SIZE = 0.3f;
 static const float DEFAULT_CELL_HEIGHT = 0.2f;
@@ -133,7 +131,7 @@ NavigationMesh::~NavigationMesh()
 
 void NavigationMesh::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NavigationMesh>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<NavigationMesh>(Category_Navigation);
 
     URHO3D_ACTION_STATIC_LABEL("Build!", Build, "(Re)builds navigation mesh");
 

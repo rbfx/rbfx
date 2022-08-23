@@ -28,6 +28,7 @@
 
 #include "../../Include/RmlUi/Core/Context.h"
 #include "../../Include/RmlUi/Core/ContextInstancer.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Core.h"
 #include "../../Include/RmlUi/Core/DataModelHandle.h"
 #include "../../Include/RmlUi/Core/ElementDocument.h"
@@ -67,9 +68,19 @@ Context::Context(const String& name) : name(name), dimensions(0, 0), density_ind
 	ElementDocument* cursor_proxy_document = rmlui_dynamic_cast< ElementDocument* >(cursor_proxy.get());
 	RMLUI_ASSERT(cursor_proxy_document);
 	cursor_proxy_document->context = this;
-		
-	enable_cursor = true;
 
+	// The cursor proxy takes the style from its cloned element's document. The latter may define style rules for `<body>` which we don't want on the
+	// proxy. Thus, we override some properties here that we in particular don't want to inherit from the client document, especially those that
+	// result in decoration of the body element.
+	cursor_proxy_document->SetProperty(PropertyId::BackgroundColor, Property(Colourb(255, 255, 255, 0), Property::COLOUR));
+	cursor_proxy_document->SetProperty(PropertyId::BorderTopWidth, Property(0, Property::PX));
+	cursor_proxy_document->SetProperty(PropertyId::BorderRightWidth, Property(0, Property::PX));
+	cursor_proxy_document->SetProperty(PropertyId::BorderBottomWidth, Property(0, Property::PX));
+	cursor_proxy_document->SetProperty(PropertyId::BorderLeftWidth, Property(0, Property::PX));
+	cursor_proxy_document->SetProperty(PropertyId::Decorator, Property());
+	cursor_proxy_document->SetProperty(PropertyId::OverflowX, Property(Style::Overflow::Visible));
+	cursor_proxy_document->SetProperty(PropertyId::OverflowY, Property(Style::Overflow::Visible));
+		
 	document_focus_history.push_back(root.get());
 	focus = root.get();
 	hover = nullptr;
@@ -83,7 +94,10 @@ Context::Context(const String& name) : name(name), dimensions(0, 0), density_ind
 
 	last_click_element = nullptr;
 	last_click_time = 0;
-	last_click_mouse_position = Vector2i(0, 0);
+
+	mouse_active = false;
+
+	enable_cursor = true;
 }
 
 Context::~Context()
@@ -168,10 +182,20 @@ float Context::GetDensityIndependentPixelRatio() const
 bool Context::Update()
 {
 	RMLUI_ZoneScoped;
+	
+	// Update the hover chain to detect any new or moved elements under the mouse.
+	if (mouse_active)
+		UpdateHoverChain(mouse_position);
 
-	// Update all data models first
+	// Update all the data models before updating properties and layout.
 	for (auto& data_model : data_models)
 		data_model.second->Update(true);
+
+	// The style definition of each document should be independent of each other. By manually resetting these flags we avoid unnecessary definition
+	// lookups in unrelated documents, such as when adding a new document. Adding an element dirties the parent definition, which in this case is the
+	// root. By extension the definition of all the other documents are also dirtied, unnecessarily.
+	root->dirty_definition = false;
+	root->dirty_child_definitions = false;
 
 	root->Update(density_independent_pixel_ratio, Vector2f(dimensions));
 
@@ -270,8 +294,6 @@ ElementDocument* Context::LoadDocument(Stream* stream)
 	
 	root->AppendChild(std::move(element));
 
-	ElementUtilities::BindEventAttributes(document);
-
 	// The 'load' event is fired before updating the document, because the user might
 	// need to initalize things before running an update. The drawback is that computed
 	// values and layouting are not performed yet, resulting in default values when
@@ -357,7 +379,7 @@ void Context::UnloadDocument(ElementDocument* _document)
 	}
 
 	// Rebuild the hover state.
-	UpdateHoverChain(Dictionary(), Dictionary(), mouse_position);
+	UpdateHoverChain(mouse_position);
 }
 
 // Unload all the currently loaded documents
@@ -580,26 +602,13 @@ bool Context::ProcessMouseMove(int x, int y, int key_modifier_state)
 {
 	// Check whether the mouse moved since the last event came through.
 	Vector2i old_mouse_position = mouse_position;
-	bool mouse_moved = (x != mouse_position.x) || (y != mouse_position.y);
-	if (mouse_moved)
-	{
-		mouse_position.x = x;
-		mouse_position.y = y;
-	}
+	mouse_position = {x, y};
+	const bool mouse_moved = (mouse_position != old_mouse_position || !mouse_active);
+	mouse_active = true;
 
-	// Generate the parameters for the mouse events (there could be a few!).
-	Dictionary parameters;
-	GenerateMouseEventParameters(parameters, -1);
-	GenerateKeyModifierEventParameters(parameters, key_modifier_state);
-
-	Dictionary drag_parameters;
-	GenerateMouseEventParameters(drag_parameters);
-	GenerateDragEventParameters(drag_parameters);
-	GenerateKeyModifierEventParameters(drag_parameters, key_modifier_state);
-
-	// Update the current hover chain. This will send all necessary 'onmouseout', 'onmouseover', 'ondragout' and
-	// 'ondragover' messages.
-	UpdateHoverChain(parameters, drag_parameters, old_mouse_position);
+	// Update the current hover chain. This will send all necessary 'onmouseout', 'onmouseover', 'ondragout' and 'ondragover' messages.
+	Dictionary parameters, drag_parameters;
+	UpdateHoverChain(old_mouse_position, key_modifier_state, &parameters, &drag_parameters);
 
 	// Dispatch any 'onmousemove' events.
 	if (mouse_moved)
@@ -608,22 +617,21 @@ bool Context::ProcessMouseMove(int x, int y, int key_modifier_state)
 		{
 			hover->DispatchEvent(EventId::Mousemove, parameters);
 
-			if (drag_hover &&
-				drag_verbose)
+			if (drag_hover && drag_verbose)
 				drag_hover->DispatchEvent(EventId::Dragmove, drag_parameters);
 		}
 	}
 
 	return !IsMouseInteracting();
 }
-	
+
 static Element* FindFocusElement(Element* element)
 {
 	ElementDocument* owner_document = element->GetOwnerDocument();
-	if (!owner_document || owner_document->GetComputedValues().focus == Style::Focus::None)
+	if (!owner_document || owner_document->GetComputedValues().focus() == Style::Focus::None)
 		return nullptr;
 	
-	while (element && element->GetComputedValues().focus == Style::Focus::None)
+	while (element && element->GetComputedValues().focus() == Style::Focus::None)
 	{
 		element = element->GetParentNode();
 	}
@@ -699,7 +707,7 @@ bool Context::ProcessMouseButtonDown(int button_index, int key_modifier_state)
 			drag = hover;
 			while (drag)
 			{
-				Style::Drag drag_style = drag->GetComputedValues().drag;
+				Style::Drag drag_style = drag->GetComputedValues().drag();
 				switch (drag_style)
 				{
 				case Style::Drag::None:		drag = drag->GetParentNode(); continue;
@@ -747,9 +755,8 @@ bool Context::ProcessMouseButtonUp(int button_index, int key_modifier_state)
 
 		// Unset the 'active' pseudo-class on all the elements in the active chain; because they may not necessarily
 		// have had 'onmouseup' called on them, we can't guarantee this has happened already.
-		std::for_each(active_chain.begin(), active_chain.end(), [](Element* element) {
+		for (Element* element : active_chain)
 			element->SetPseudoClass("active", false);
-		});
 		active_chain.clear();
 		active = nullptr;
 
@@ -810,6 +817,16 @@ bool Context::ProcessMouseWheel(float wheel_delta, int key_modifier_state)
 	}
 
 	return true;
+}
+
+bool Context::ProcessMouseLeave()
+{
+	mouse_active = false;
+	
+	// Update the hover chain. Now that 'mouse_active' is disabled this will remove the hover state from all elements.
+	UpdateHoverChain(mouse_position);
+	
+	return !IsMouseInteracting();
 }
 
 bool Context::IsMouseInteracting() const
@@ -999,7 +1016,7 @@ bool Context::OnFocusChange(Element* new_focus)
 	ElementDocument* document = focus->GetOwnerDocument();
 	if (document != nullptr)
 	{
-		Style::ZIndex z_index_property = document->GetComputedValues().z_index;
+		Style::ZIndex z_index_property = document->GetComputedValues().z_index();
 		if (z_index_property.type == Style::ZIndex::Auto)
 			document->PullToFront();
 	}
@@ -1029,9 +1046,21 @@ void Context::GenerateClickEvent(Element* element)
 }
 
 // Updates the current hover elements, sending required events.
-void Context::UpdateHoverChain(const Dictionary& parameters, const Dictionary& drag_parameters, const Vector2i old_mouse_position)
+void Context::UpdateHoverChain(Vector2i old_mouse_position, int key_modifier_state, Dictionary* out_parameters, Dictionary* out_drag_parameters)
 {
 	const Vector2f position(mouse_position);
+
+	Dictionary local_parameters, local_drag_parameters;
+	Dictionary& parameters = out_parameters ? *out_parameters : local_parameters;
+	Dictionary& drag_parameters = out_drag_parameters ? *out_drag_parameters : local_drag_parameters;
+
+	// Generate the parameters for the mouse events (there could be a few!).
+	GenerateMouseEventParameters(parameters);
+	GenerateKeyModifierEventParameters(parameters, key_modifier_state);
+	
+	GenerateMouseEventParameters(drag_parameters);
+	GenerateDragEventParameters(drag_parameters);
+	GenerateKeyModifierEventParameters(drag_parameters, key_modifier_state);
 
 	// Send out drag events.
 	if (drag)
@@ -1046,7 +1075,7 @@ void Context::UpdateHoverChain(const Dictionary& parameters, const Dictionary& d
 				drag->DispatchEvent(EventId::Dragstart, drag_start_parameters);
 				drag_started = true;
 
-				if (drag->GetComputedValues().drag == Style::Drag::Clone)
+				if (drag->GetComputedValues().drag() == Style::Drag::Clone)
 				{
 					// Clone the element and attach it to the mouse cursor.
 					CreateDragClone(drag);
@@ -1057,16 +1086,16 @@ void Context::UpdateHoverChain(const Dictionary& parameters, const Dictionary& d
 		}
 	}
 
-	hover = GetElementAtPoint(position);
+	hover = mouse_active ? GetElementAtPoint(position) : nullptr;
 
 	if(enable_cursor)
 	{
 		String new_cursor_name;
 
 		if(drag)
-			new_cursor_name = drag->GetComputedValues().cursor;
+			new_cursor_name = drag->GetComputedValues().cursor();
 		else if (hover)
-			new_cursor_name = hover->GetComputedValues().cursor;
+			new_cursor_name = hover->GetComputedValues().cursor();
 
 		if(new_cursor_name != cursor_name)
 		{
@@ -1089,7 +1118,7 @@ void Context::UpdateHoverChain(const Dictionary& parameters, const Dictionary& d
 	SendEvents(new_hover_chain, hover_chain, EventId::Mouseover, parameters);
 
 	// Send out drag events.
-	if (drag)
+	if (drag && mouse_active)
 	{
 		drag_hover = GetElementAtPoint(position, drag);
 
@@ -1173,7 +1202,7 @@ Element* Context::GetElementAtPoint(Vector2f point, const Element* ignore_elemen
 	}
 
 	// Ignore elements whose pointer events are disabled.
-	if (element->GetComputedValues().pointer_events == Style::PointerEvents::None)
+	if (element->GetComputedValues().pointer_events() == Style::PointerEvents::None)
 		return nullptr;
 
 	// Projection may fail if we have a singular transformation matrix.
@@ -1214,11 +1243,6 @@ void Context::CreateDragClone(Element* element)
 		return;
 	}
 
-	drag_clone = element_drag_clone.get();
-
-	// Append the clone to the cursor proxy element.
-	cursor_proxy->AppendChild(std::move(element_drag_clone));
-
 	// Set the style sheet on the cursor proxy.
 	if (ElementDocument* document = element->GetOwnerDocument())
 	{
@@ -1227,11 +1251,24 @@ void Context::CreateDragClone(Element* element)
 		static_cast<ElementDocument&>(*cursor_proxy).SetStyleSheetContainer(document->style_sheet_container);
 	}
 
-	// Set all the required properties and pseudo-classes on the clone.
-	drag_clone->SetPseudoClass("drag", true);
+	drag_clone = element_drag_clone.get();
+
+	// Append the clone to the cursor proxy element.
+	cursor_proxy->AppendChild(std::move(element_drag_clone));
+
+	// Position the clone. Use projected mouse coordinates to handle any ancestor transforms.
+	const Vector2f absolute_pos = element->GetAbsoluteOffset(Box::BORDER);
+	Vector2f projected_mouse_position = Vector2f(mouse_position);
+	if (Element* parent = element->GetParentNode())
+		parent->Project(projected_mouse_position);
+
 	drag_clone->SetProperty(PropertyId::Position, Property(Style::Position::Absolute));
-	drag_clone->SetProperty(PropertyId::Left, Property(element->GetAbsoluteLeft() - element->GetBox().GetEdge(Box::MARGIN, Box::LEFT) - mouse_position.x, Property::PX));
-	drag_clone->SetProperty(PropertyId::Top, Property(element->GetAbsoluteTop() - element->GetBox().GetEdge(Box::MARGIN, Box::TOP) - mouse_position.y, Property::PX));
+	drag_clone->SetProperty(PropertyId::Left, Property(absolute_pos.x - projected_mouse_position.x, Property::PX));
+	drag_clone->SetProperty(PropertyId::Top, Property(absolute_pos.y - projected_mouse_position.y, Property::PX));
+	// We remove margins so that percentage- and auto-margins are evaluated correctly.
+	drag_clone->SetProperty(PropertyId::MarginLeft, Property(0.f, Property::PX));
+	drag_clone->SetProperty(PropertyId::MarginTop, Property(0.f, Property::PX));
+	drag_clone->SetPseudoClass("drag", true);
 }
 
 // Releases the drag clone, if one exists.

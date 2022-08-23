@@ -166,6 +166,15 @@ private:
     friend class Detail::RmlPlugin;
 };
 
+/// Convert math types from/to RmlUI
+/// @{
+inline Rml::Vector2f ToRmlUi(const Vector2& value) { return {value.x_, value.y_}; };
+inline Rml::Vector2i ToRmlUi(const IntVector2& value) { return {value.x_, value.y_}; };
+
+inline Vector2 ToVector2(const Rml::Vector2f& value) { return {value.x, value.y}; }
+inline IntVector2 ToIntVector2(const Rml::Vector2i& value) { return {value.x, value.y}; }
+/// @}
+
 namespace Detail
 {
 

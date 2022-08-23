@@ -19,30 +19,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 #include "../Precompiled.h"
 
+#include "../RmlUI/RmlUI.h"
+
 #include "../Core/Context.h"
+#include "../Graphics/Material.h"
 #include "../IO/Log.h"
 #include "../Resource/BinaryFile.h"
-#include "../Graphics/Material.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../RmlUI/RmlUI.h"
-#include "../RmlUI/RmlUIComponent.h"
 #include "../RmlUI/RmlCanvasComponent.h"
+#include "../RmlUI/RmlNavigationManager.h"
+#include "../RmlUI/RmlUIComponent.h"
 #include "../Scene/Node.h"
+#include "../Scene/Scene.h"
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-extern const char* RML_UI_CATEGORY;
+namespace
+{
+
+const Rml::String ComponentPtrAttribute = "__RmlUIComponentPtr__";
+
+}
 
 RmlUIComponent::RmlUIComponent(Context* context)
     : LogicComponent(context)
+    , navigationManager_(MakeShared<RmlNavigationManager>(this))
 {
     SetUpdateEventMask(USE_UPDATE);
+    navigationManager_->OnGroupChanged.Subscribe(this, &RmlUIComponent::OnNavigableGroupChanged);
 }
 
 RmlUIComponent::~RmlUIComponent()
@@ -52,60 +61,41 @@ RmlUIComponent::~RmlUIComponent()
 
 void RmlUIComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RmlUIComponent>(RML_UI_CATEGORY);
+    context->RegisterFactory<RmlUIComponent>(Category_RmlUI);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Resource", GetResource, SetResource, ResourceRef, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Use Normalized Coordinates", bool, useNormalized_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSize, SetSize, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Auto Size", bool, autoSize_, true, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Is Open", IsOpen, SetOpen, bool, false, AM_DEFAULT);
+}
+
+void RmlUIComponent::Update(float timeStep)
+{
+    navigationManager_->Update();
+    // There should be only a few of RmlUIComponent enabled at a time, so this is not a performance issue.
+    UpdateConnectedCanvas();
+}
+
+void RmlUIComponent::OnSetEnabled()
+{
+    UpdateDocumentOpen();
 }
 
 void RmlUIComponent::OnNodeSet(Node* node)
 {
     if (node)
-    {
-        SubscribeToEvent(node->GetScene(), E_COMPONENTADDED, &RmlUIComponent::OnComponentAdded);
-        SubscribeToEvent(node->GetScene(), E_COMPONENTREMOVED, &RmlUIComponent::OnComponentRemoved);
-    }
-    else
-    {
-        UnsubscribeFromEvent(E_COMPONENTADDED);
-        UnsubscribeFromEvent(E_COMPONENTREMOVED);
-    }
-
-    canvasComponent_ = GetComponent<RmlCanvasComponent>();
-
-    if (open_ && node != nullptr)
-        OpenInternal();
-    else
-        CloseInternal();
+        UpdateConnectedCanvas();
+    UpdateDocumentOpen();
 }
 
 void RmlUIComponent::SetResource(const ResourceRef& resourceRef)
 {
     resource_ = resourceRef;
-    if (resource_.type_ == StringHash::ZERO)
+    if (resource_.type_ == StringHash::Empty)
         resource_.type_ = BinaryFile::GetTypeStatic();
-    SetOpen(open_);
-}
-
-void RmlUIComponent::SetOpen(bool open)
-{
-    if (open)
-    {
-        if (node_ != nullptr && !resource_.name_.empty())
-        {
-            OpenInternal();
-            open_ = document_ != nullptr;
-        }
-    }
-    else
-    {
-        CloseInternal();
-        open_ = false;
-    }
+    UpdateDocumentOpen();
 }
 
 void RmlUIComponent::OpenInternal()
@@ -124,10 +114,27 @@ void RmlUIComponent::OpenInternal()
     ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
     ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
 
-    document_ = ui->LoadDocument(resource_.name_);
+    OnDocumentPreLoad();
+
+    if (!dataModel_)
+    {
+        Rml::DataModelConstructor constructor = CreateDataModel();
+        OnDataModelInitialized(constructor);
+        dataModel_ = constructor.GetModelHandle();
+    }
+
+    SetDocument(ui->LoadDocument(resource_.name_));
+
+    if (document_ == nullptr)
+    {
+        URHO3D_LOGERROR("Failed to load UI document: {}", resource_.name_);
+        return;
+    }
+
     SetPosition(position_);
     SetSize(size_);
     document_->Show();
+    OnDocumentPostLoad();
 }
 
 void RmlUIComponent::CloseInternal()
@@ -142,16 +149,22 @@ void RmlUIComponent::CloseInternal()
 
     position_ = GetPosition();
     size_ = GetSize();
+
+    OnDocumentPreUnload();
     document_->Close();
-    document_ = nullptr;
+    SetDocument(nullptr);
+
+    if (dataModel_)
+        RemoveDataModel();
+
+    OnDocumentPostUnload();
 }
 
 void RmlUIComponent::OnDocumentClosed(Rml::ElementDocument* document)
 {
     if (document_ == document)
     {
-        document_ = nullptr;
-        open_ = false;
+        SetDocument(nullptr);
     }
 }
 
@@ -160,10 +173,10 @@ Vector2 RmlUIComponent::GetPosition() const
     if (document_ == nullptr)
         return position_;
 
-    Vector2 pos = document_->GetAbsoluteOffset(Rml::Box::BORDER);
+    Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::Box::BORDER));
     if (useNormalized_)
     {
-        IntVector2 canvasSize = document_->GetContext()->GetDimensions();
+        IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
         pos.x_ = 1.0f / static_cast<float>(canvasSize.x_) * pos.x_;
         pos.y_ = 1.0f / static_cast<float>(canvasSize.y_) * pos.y_;
     }
@@ -183,7 +196,7 @@ void RmlUIComponent::SetPosition(Vector2 pos)
 
     if (useNormalized_)
     {
-        IntVector2 canvasSize = document_->GetContext()->GetDimensions();
+        IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
         pos.x_ = Round(static_cast<float>(canvasSize.x_) * pos.x_);
         pos.y_ = Round(static_cast<float>(canvasSize.y_) * pos.y_);
     }
@@ -200,10 +213,10 @@ Vector2 RmlUIComponent::GetSize() const
     if (autoSize_)
         return Vector2::ZERO;
 
-    Vector2 size = document_->GetBox().GetSize(Rml::Box::CONTENT);
+    Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::Box::CONTENT));
     if (useNormalized_)
     {
-        IntVector2 canvasSize = document_->GetContext()->GetDimensions();
+        IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
         size.x_ = 1.0f / static_cast<float>(canvasSize.x_) * size.x_;
         size.y_ = 1.0f / static_cast<float>(canvasSize.y_) * size.y_;
     }
@@ -223,7 +236,7 @@ void RmlUIComponent::SetSize(Vector2 size)
 
     if (useNormalized_)
     {
-        IntVector2 canvasSize = document_->GetContext()->GetDimensions();
+        IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
         size.x_ = Round(static_cast<float>(canvasSize.x_) * size.x_);
         size.y_ = Round(static_cast<float>(canvasSize.y_) * size.y_);
     }
@@ -242,8 +255,8 @@ void RmlUIComponent::OnUICanvasResized(const RmlCanvasResizedArgs& args)
     // valid. Convert pixel size and position back to normalized coordiantes using old size and reapply them, which will use new canvas size
     // for calculating new pixel position and size.
 
-    Vector2 pos = document_->GetAbsoluteOffset(Rml::Box::BORDER);
-    Vector2 size = document_->GetBox().GetSize(Rml::Box::CONTENT);
+    Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::Box::BORDER));
+    Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::Box::CONTENT));
 
     pos.x_ = 1.0f / static_cast<float>(args.oldSize_.x_) * pos.x_;
     pos.y_ = 1.0f / static_cast<float>(args.oldSize_.y_) * pos.y_;
@@ -257,7 +270,7 @@ void RmlUIComponent::OnUICanvasResized(const RmlCanvasResizedArgs& args)
 void RmlUIComponent::OnDocumentReloaded(const RmlDocumentReloadedArgs& args)
 {
     if (document_ == args.unloadedDocument_)
-        document_ = args.loadedDocument_;
+        SetDocument(args.loadedDocument_);
 }
 
 void RmlUIComponent::SetResource(const eastl::string& resourceName)
@@ -266,53 +279,119 @@ void RmlUIComponent::SetResource(const eastl::string& resourceName)
     SetResource(resourceRef);
 }
 
-void RmlUIComponent::OnComponentAdded(StringHash, VariantMap& args)
-{
-    using namespace ComponentAdded;
-
-    Node* node = static_cast<Node*>(args[P_NODE].GetPtr());
-    if (node != node_)
-        return;
-
-    if (canvasComponent_.NotNull())
-        // Window is rendered into some component already.
-        return;
-
-    Component* addedComponent = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-    if (addedComponent->IsInstanceOf<RmlCanvasComponent>())
-    {
-        CloseInternal();
-        canvasComponent_ = addedComponent->Cast<RmlCanvasComponent>();
-        OpenInternal();
-    }
-}
-
-void RmlUIComponent::OnComponentRemoved(StringHash, VariantMap& args)
-{
-    using namespace ComponentRemoved;
-
-    Node* node = static_cast<Node*>(args[P_NODE].GetPtr());
-    if (node != node_)
-        return;
-
-    Component* removedComponent = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-
-    // Reopen this window in a new best fitting RmlUI instance.
-    if (removedComponent == canvasComponent_)
-    {
-        CloseInternal();
-        canvasComponent_ = GetNode()->GetComponent<RmlCanvasComponent>();
-        if (canvasComponent_ == removedComponent)
-            canvasComponent_ = nullptr;
-        OpenInternal();
-    }
-}
-
 RmlUI* RmlUIComponent::GetUI() const
 {
-    if (canvasComponent_.NotNull())
+    if (canvasComponent_ != nullptr)
         return canvasComponent_->GetUI();
     return GetSubsystem<RmlUI>();
+}
+
+void RmlUIComponent::SetDocument(Rml::ElementDocument* document)
+{
+    if (document_ != document)
+    {
+        if (document_)
+            document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(nullptr));
+
+        document_ = document;
+
+        if (document_)
+        {
+            document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(this));
+            navigationManager_->Reset(document_);
+        }
+    }
+}
+
+void RmlUIComponent::OnNavigableGroupChanged()
+{
+    DirtyVariable("navigable_group");
+}
+
+void RmlUIComponent::DoNavigablePush(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args)
+{
+    if (args.size() > 2)
+    {
+        URHO3D_LOGWARNING("RmlUIComponent::DoNavigablePush is called with unexpected arguments");
+        return;
+    }
+
+    const bool enabled = args.size() > 1 ? args[0].Get<bool>() : true;
+    const ea::string group = args.back().Get<Rml::String>();
+    if (enabled)
+        navigationManager_->PushCursorGroup(group);
+}
+
+void RmlUIComponent::DoNavigablePop(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args)
+{
+    if (args.size() > 1)
+    {
+        URHO3D_LOGWARNING("RmlUIComponent::DoNavigablePop is called with unexpected arguments");
+        return;
+    }
+
+    const bool enabled = args.size() > 0 ? args[0].Get<bool>() : true;
+    if (enabled)
+        navigationManager_->PopCursorGroup();
+}
+
+Rml::DataModelConstructor RmlUIComponent::CreateDataModel()
+{
+    RmlUI* ui = GetUI();
+    Rml::Context* context = ui->GetRmlContext();
+
+    dataModelName_ = GetDataModelName();
+    Rml::DataModelConstructor constructor = context->CreateDataModel(dataModelName_);
+
+    constructor.BindFunc("navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
+    constructor.BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);
+    constructor.BindEventCallback("navigable_pop", &RmlUIComponent::DoNavigablePop, this);
+
+    return constructor;
+}
+
+void RmlUIComponent::RemoveDataModel()
+{
+    RmlUI* ui = GetUI();
+    Rml::Context* context = ui->GetRmlContext();
+    context->RemoveDataModel(dataModelName_);
+
+    dataModel_ = nullptr;
+    dataModelName_.clear();
+}
+
+void RmlUIComponent::UpdateDocumentOpen()
+{
+    const bool shouldBeOpen = IsEnabledEffective() && !resource_.name_.empty();
+    const bool isOpen = document_ != nullptr;
+
+    if (shouldBeOpen && !isOpen)
+        OpenInternal();
+    else if (!shouldBeOpen && isOpen)
+        CloseInternal();
+}
+
+void RmlUIComponent::UpdateConnectedCanvas()
+{
+    RmlCanvasComponent* newCanvasComponent = IsEnabledEffective() ? node_->GetComponent<RmlCanvasComponent>() : nullptr;
+    if (canvasComponent_ != newCanvasComponent)
+    {
+        const bool wasOpen = document_ != nullptr;
+        CloseInternal();
+        canvasComponent_ = newCanvasComponent;
+        if (wasOpen)
+            OpenInternal();
+    }
+}
+
+RmlUIComponent* RmlUIComponent::FromDocument(Rml::ElementDocument* document)
+{
+    if (document)
+    {
+        if (const Rml::Variant* value = document->GetAttribute(ComponentPtrAttribute))
+            return static_cast<RmlUIComponent*>(value->Get<void*>());
+    }
+    return nullptr;
 }
 
 }

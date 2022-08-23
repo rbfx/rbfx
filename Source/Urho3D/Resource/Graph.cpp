@@ -20,13 +20,15 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "Graph.h"
+
+#include "../IO/ArchiveSerialization.h"
+#include "../IO/MemoryBuffer.h"
 #include "GraphNode.h"
 #include "XMLArchive.h"
 #include "XMLFile.h"
-
-#include "../IO/ArchiveSerialization.h"
-#include "Urho3D/IO/MemoryBuffer.h"
 
 namespace Urho3D
 {
@@ -57,7 +59,7 @@ void Graph::Connect(GraphPinRef<GraphExitPin> pin, GraphPinRef<GraphEnterPin> ta
 
 /// Connect input pin to output pin.
 void Graph::Connect(GraphPinRef<GraphInPin> pin, GraphPinRef<GraphOutPin> target) {
-    
+
 }
 
 /// Get pin connected to the exit pin.

@@ -28,30 +28,23 @@
 
 #include "InputTypeText.h"
 #include "../../../Include/RmlUi/Core/ElementUtilities.h"
-#include "WidgetTextInputSingleLine.h"
-#include "WidgetTextInputSingleLinePassword.h"
 #include "../../../Include/RmlUi/Core/Elements/ElementFormControlInput.h"
 #include "../../../Include/RmlUi/Core/PropertyIdSet.h"
+#include "../../../Include/RmlUi/Core/StyleSheetSpecification.h"
+#include "WidgetTextInputSingleLine.h"
+#include "WidgetTextInputSingleLinePassword.h"
 
 namespace Rml {
 
 InputTypeText::InputTypeText(ElementFormControlInput* element, Visibility visibility) : InputType(element)
 {
 	if (visibility == VISIBLE)
-		widget = new WidgetTextInputSingleLine(element);
+		widget = MakeUnique<WidgetTextInputSingleLine>(element);
 	else
-		widget = new WidgetTextInputSingleLinePassword(element);
-
-	widget->SetMaxLength(element->GetAttribute< int >("maxlength", -1));
-	widget->SetValue(element->GetAttribute< String >("value", ""));
-
-	size = element->GetAttribute< int >("size", 20);
+		widget = MakeUnique<WidgetTextInputSingleLinePassword>(element);
 }
 
-InputTypeText::~InputTypeText()
-{
-	delete widget;
-}
+InputTypeText::~InputTypeText() {}
 
 // Called every update from the host element.
 void InputTypeText::OnUpdate()
@@ -104,8 +97,14 @@ bool InputTypeText::OnAttributeChange(const ElementAttributes& changed_attribute
 // Called when properties on the control are changed.
 void InputTypeText::OnPropertyChange(const PropertyIdSet& changed_properties)
 {
-	if (changed_properties.Contains(PropertyId::Color) ||
-		changed_properties.Contains(PropertyId::BackgroundColor))
+	// Some inherited properties require text formatting update, mainly font and line-height properties.
+	const PropertyIdSet changed_inherited_layout_properties = changed_properties &
+		(StyleSheetSpecification::GetRegisteredInheritedProperties() & StyleSheetSpecification::GetRegisteredPropertiesForcingLayout());
+
+	if (!changed_inherited_layout_properties.Empty())
+		widget->ForceFormattingOnNextLayout();
+
+	if (changed_properties.Contains(PropertyId::Color) || changed_properties.Contains(PropertyId::BackgroundColor))
 		widget->UpdateSelectionColours();
 
 	if (changed_properties.Contains(PropertyId::CaretColor))

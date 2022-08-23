@@ -68,8 +68,9 @@ public:
 
 	void DirtyVariable(const String& variable_name);
 	bool IsVariableDirty(const String& variable_name) const;
+	void DirtyAllVariables();
 
-	bool CallTransform(const String& name, Variant& inout_result, const VariantList& arguments) const;
+	bool CallTransform(const String& name, const VariantList& arguments, Variant& out_result) const;
 
 	// Elements declaring 'data-model' need to be attached.
 	void AttachModelRootElement(Element* element);

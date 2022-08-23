@@ -1,0 +1,429 @@
+<rml>
+
+<head>
+<link type="text/rcss" href="rml.rcss"/>
+<style>
+    /* Style of the body element, i.e. the root of the window */
+    body {
+        /* Position at the top-left corner of the viewport */
+        position: absolute;
+        left: 0;
+        top: 0;
+
+        /* Fullscreen, no margins */
+        margin: 0;
+        width: 100%;
+        height: 100%;
+
+        /* Default font to be used in child elements */
+        font-size: 16dp;
+        font-family: "Noto Sans";
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    /* Helper class to align contained div vertically */
+    .vertical-align-container {
+        /* Flex display supports automatic centering */
+        display: flex;
+
+        /* Take all space vertically */
+        height: 100%;
+    }
+
+    /* Helper class with absolute position to enable overlap of the nested panels */
+    .panel-overlap-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* --------------------------------------------------------------
+    ** Panels
+    ** --------------------------------------------------------------
+    ** The panels are used to place UI elements in a certain positions,
+    ** but they are not rendered directly.
+    ** -------------------------------------------------------------- */
+
+    /* Root panel of the window */
+    #root-panel {
+        /* Use flexible boxes to support two-panel UI */
+        display: flex;
+    }
+
+    /* Left panel with menu items */
+    #left-panel {
+        /* Place panels horizontally in the same line */
+        display: inline-block;
+
+        /* Panel has fixed width */
+        width: 340dp;
+        /* Take all space vertically */
+        height: 100%;
+    }
+
+    /* Right panel with content */
+    #right-panel {
+        /* Take all available space horizontally */
+        flex: 1;
+
+        /* Place panels horizontally in the same line */
+        display: inline-block;
+
+        /* Take all space vertically */
+        height: 100%;
+    }
+
+    /* Panel with the main menu */
+    #main-menu-panel {
+        /* Take all space horizontally */
+        width: 100%;
+
+        /* Add margins to the left and right, center vertically */
+        margin-top: auto;
+        margin-right: 20dp;
+        margin-bottom: auto;
+        margin-left: 20dp;
+    }
+
+    /* Panel with the Load Game window */
+    #load-game-panel {
+        /* Limit minimum and maximum sizes, take most of space vertically */
+        min-width: 400dp;
+        max-width: 500dp;
+        min-height: 300dp;
+        height: 50%;
+
+        /* Leave some small gaps at the top and the bottom */
+        margin-top: 25%;
+        margin-bottom: 25%;
+    }
+
+    /* --------------------------------------------------------------
+    ** Controllers
+    ** --------------------------------------------------------------
+    ** The controllers are used to setup navigation behaviors.
+    ** They are not rendered directly.
+    ** -------------------------------------------------------------- */
+
+    navigable.game-to-load-button-controller{
+        nav-mode-mouse: sticky;
+        nav-mode-keyboard: trigger;
+        nav-mode-joystick: trigger;
+    }
+
+    /* --------------------------------------------------------------
+    ** Displayed elements: scrollbars
+    ** -------------------------------------------------------------- */
+    scrollbarvertical {
+        margin-left: 5dp;
+        border-top: 0dp;
+        border-bottom: 0dp;
+        width: 12dp;
+    }
+
+    scrollbarvertical sliderarrowinc,
+    scrollbarvertical sliderarrowdec {
+        /* Scrollbar arrows are hidden */
+        height: 0dp;
+    }
+
+    sliderbar
+    {
+        width: 12dp;
+
+        background: #e8f1ff93;
+    }
+
+    sliderbar:hover
+    {
+        background: #e8f1ffda;
+    }
+
+    /* --------------------------------------------------------------
+    ** Displayed elements: windows
+    ** -------------------------------------------------------------- */
+
+    .window {
+        transition: opacity transform visibility 0.15s linear-in-out 0.0;
+
+        /* Colors and shape of the windows */
+        border-top: 2dp #63a4ffcb;
+        border-bottom: 2dp #004ba0cb;
+        border-left: 2dp #63a4ffcb;
+        border-right: 2dp #004ba0cb;
+        border-radius: 3dp;
+        box-sizing: border-box;
+
+        background: #1976d253;
+    }
+
+    .window.disabled {
+        pointer-events: none;
+        opacity: 0.35;
+    }
+
+    .window.hidden {
+        /* Window is moves to the left and fades out when hidden. */
+        transform: scale(0.45) translateX(-150%);
+
+        visibility: hidden;
+        pointer-events: none;
+        opacity: 0;
+    }
+
+    #main-menu-window {
+        z-index: 1;
+
+        padding: 5dp;
+    }
+
+    #main-menu-window > * > .menu-button {
+        display: block;
+
+        margin: 5dp;
+    }
+
+    #load-game-window {
+        /* Use flex to stretch list of saved game */
+        z-index: 0;
+        flex-direction: column;
+
+        display: flex;
+
+        /* Disable padding because it interferes with relative height */
+        margin: 0dp;
+        padding: 0dp;
+
+        /* Take all the panel vertically */
+        height: 100%;
+    }
+
+    #games-to-load-panel {
+        /* Saved games take up as much vertical space as possible */
+        flex-grow: 1;
+        flex-shrink: 0;
+        flex-basis: 0;
+
+        /* Keep small padding and margin */
+        margin-top: 10dp;
+        margin-right: 10dp;
+        margin-bottom: 0dp;
+        margin-left: 10dp;
+    }
+
+    #games-to-load-list {
+        /* Saved games take up as much vertical space as possible */
+        flex-grow: 1;
+        flex-shrink: 0;
+        flex-basis: 0;
+
+        /* Enable scroll bar for the lists */
+        overflow-y: scroll;
+
+        /* Keep small padding and margin */
+        margin-top: 10dp;
+        margin-right: 10dp;
+        margin-bottom: 0dp;
+        margin-left: 10dp;
+        padding-top: 15dp;
+        padding-right: 10dp;
+        padding-bottom: 15dp;
+        padding-left: 15dp;
+        max-height: 100%;
+    }
+
+    #games-to-load-list > * > .list-button {
+        display: block;
+
+        /* Keep small margin between elements in the list ... */
+        margin-top: 0dp;
+        margin-right: 0dp;
+        margin-bottom: 5dp;
+        margin-left: 0dp;
+    }
+
+    #games-to-load-list > *:last-child > .list-button {
+        display: block;
+
+        /* ... but remove it from the last element */
+        margin: 0dp;
+    }
+
+    #load-game-buttons-panel {
+        /* Buttons take up as little vertical space as possible */
+        flex-grow: 0;
+        flex-shrink: 1;
+
+        margin: 10dp;
+    }
+
+    #load-game-buttons-panel > .utility-button {
+        display: inline-block;
+
+        margin-top: 0dp;
+        margin-right: 10dp;
+        margin-bottom: 0dp;
+        margin-left: 0dp;
+    }
+
+    /* --------------------------------------------------------------
+    ** Displayed elements: buttons
+    ** -------------------------------------------------------------- */
+
+    /* Common style of all buttons */
+    input {
+        /* Default animation transition */
+        transition: transform background-color 0.4s exponential-out 0.0;
+
+        /* Colors and shape of the button background */
+        border-top: 2dp #63a4ff;
+        border-right: 2dp #004ba0;
+        border-bottom: 2dp #004ba0;
+        border-left: 2dp #63a4ff;
+        border-radius: 3dp;
+        min-width: 100dp;
+
+        background-color: #1976d2c7;
+
+        /* Text properties */
+        color: #e8f1ff;
+        font-effect: shadow(2dp 2dp #004ba0);
+    }
+
+    input:disabled {
+        pointer-events: none;
+
+        /* Make disabled buttons transparent.
+        ** "opacity" is intentionally unused because we want it for window hiding. */
+        border-top: 2dp #63a4ff66;
+        border-right: 2dp #004ba066;
+        border-bottom: 2dp #004ba066;
+        border-left: 2dp #63a4ff66;
+        background-color: #1976d24f;
+        color: #e8f1ff66;
+        font-effect: shadow(2dp 2dp #004ba066);
+    }
+
+    .menu-button {
+        padding: 15dp 25dp;
+
+        /* Menu buttons use large font, text is aligned to the right */
+        font-size: 28dp;
+        text-align: right;
+    }
+
+    .utility-button {
+        padding: 10dp 5dp;
+
+        /* Small buttons use medium font, text is centered */
+        font-size: 20dp;
+        text-align: center;
+    }
+
+    .list-button {
+        padding: 5dp 10dp;
+
+        /* List buttons use small font, text is aligned to the left */
+        font-size: 16dp;
+    }
+
+    .navigable-button:navigated,
+    .navigable-button:pressed,
+    .native-button:hover,
+    .native-button:active {
+        /* Upscale button on hover. */
+        transform: scale(1.045);
+
+        /* Change gradient of the background. */
+        background-color: #539ce5c7;
+
+        /* Change font color. */
+        color: #ffffff;
+    }
+
+    .navigable-button:pressed,
+    .native-button:active {
+        /* Shrink button on click. */
+        transform: scale(0.97);
+
+        /* Faster animation transition on press. */
+        transition: transform background-color 0.1s exponential-out 0.0;
+    }
+</style>
+</head>
+
+<body navigation-group="main_menu_group">
+<div id="root-panel" data-model="AdvancedUIWindow">
+    <!-- Main menu of the game -->
+    <div id="left-panel">
+    <div class="vertical-align-container">
+    <div id="main-menu-panel">
+    <div class="window" id="main-menu-window" data-class-disabled="navigable_group!='main_menu_group'">
+        <navigable group="main_menu_group"
+            onnavigated="sound:20% Sounds/UINavigated.wav" onpressed="sound:Sounds/UIClicked.wav"
+            data-event-depressed="" data-class-disabled="!is_game_played">
+            <input type="button" class="navigable-button menu-button">Continue</input>
+        </navigable>
+        <navigable group="main_menu_group"
+            onnavigated="sound:20% Sounds/UINavigated.wav" onpressed="sound:Sounds/UIClicked.wav"
+            data-event-depressed="on_new_game()">
+            <input type="button" class="navigable-button menu-button">New Game</input>
+        </navigable>
+        <navigable group="main_menu_group"
+            onnavigated="sound:20% Sounds/UINavigated.wav" onpressed="sound:Sounds/UIClicked.wav"
+            data-event-depressed="game_to_load=''; navigable_push('game_to_load_group')">
+            <input type="button" class="navigable-button menu-button">Load Game</input>
+        </navigable>
+        <navigable group="main_menu_group" class="disabled"
+            onnavigated="sound:20% Sounds/UINavigated.wav" onpressed="sound:Sounds/UIClicked.wav"
+            data-event-depressed="">
+            <input type="button" class="navigable-button menu-button">Settings</input>
+        </navigable>
+        <navigable group="main_menu_group"
+            onnavigated="sound:20% Sounds/UINavigated.wav" onpressed="sound:Sounds/UIClicked.wav"
+            data-event-depressed="on_exit()">
+            <input type="button" class="navigable-button menu-button">Exit</input>
+        </navigable>
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="right-panel">
+    <div class="panel-overlap-container">
+    <!-- "Load Game" window -->
+    <div id="load-game-panel">
+    <div class="window" id="load-game-window" data-class-hidden="navigable_group!='game_to_load_group'">
+        <div class="window" id="games-to-load-list">
+            <navigable group="game_to_load_group" data-for="saved_game_text : saved_games" class="game-to-load-button-controller"
+                onnavigated="sound:20% Sounds/UINavigated.wav" onpressed="sound:Sounds/UIClicked.wav"
+                data-event-pressed="game_to_load=saved_game_text; on_load_game(!ev.is_mouse); navigable_pop(!ev.is_mouse)"
+                data-event-dblclick="game_to_load=saved_game_text; on_load_game(); navigable_pop()">
+                <input type="button" class="navigable-button list-button" data-rml="saved_game_text"></input>
+            </navigable>
+        </div>
+        <div id="load-game-buttons-panel">
+            <input type="button" class="native-button utility-button"
+                onmouseover="sound:20% Sounds/UINavigated.wav" onclick="sound:Sounds/UIClicked.wav"
+                data-event-click="navigable_pop()">Back</input>
+            <input type="button" class="native-button utility-button"
+                onmouseover="sound:20% Sounds/UINavigated.wav" onclick="sound:Sounds/UIClicked.wav"
+                data-event-click="on_load_game(); navigable_pop()"
+                data-attrif-disabled="game_to_load==''">Load</input>
+            <input type="button" class="native-button utility-button" disabled
+                onmouseover="sound:20% Sounds/UINavigated.wav" onclick="sound:Sounds/UIClicked.wav">Delete</input>
+        </div>
+    </div>
+    </div>
+    </div>
+    </div>
+</div>
+</body>
+
+</rml>

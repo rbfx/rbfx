@@ -211,6 +211,9 @@
 
 // TODO: Fix autoswig script to output these as well.
 URHO3D_REFCOUNTED(Urho3D::RefCounted);
+URHO3D_REFCOUNTED(Urho3D::NetworkObject);
+URHO3D_REFCOUNTED(Urho3D::StaticNetworkObject);
+URHO3D_REFCOUNTED(Urho3D::BehaviorNetworkObject);
 %include "generated/Urho3D/_pre_refcounted.i";
 
 //%interface_custom("%s", "I%s", Urho3D::RefCounted);

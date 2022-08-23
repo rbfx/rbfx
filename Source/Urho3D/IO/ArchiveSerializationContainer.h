@@ -59,6 +59,27 @@ inline void SerializeVectorTie(Archive& archive, const char* name, T& vectorTie,
     }
 }
 
+URHO3D_TYPE_TRAIT(IsVectorType, (\
+    std::declval<T&>().size(),\
+    std::declval<T&>().data(),\
+    std::declval<T&>().clear(),\
+    std::declval<T&>().resize(0u),\
+    std::declval<typename T::value_type&>() = std::declval<T&>()[0u]\
+));
+
+URHO3D_TYPE_TRAIT(IsMapType, (\
+    std::declval<T&>().size(),\
+    std::declval<T&>().clear(),\
+    std::declval<typename T::mapped_type&>() = std::declval<T&>()[std::declval<typename T::key_type>()]\
+));
+
+URHO3D_TYPE_TRAIT(IsSetType, (\
+    std::declval<T&>().size(),\
+    std::declval<T&>().clear(),\
+    std::declval<T&>().emplace(std::declval<typename T::key_type>()),\
+    std::declval<typename T::key_type&>() = *std::declval<T&>().begin()\
+));
+
 }
 
 /// Serialize vector with standard interface. Content is serialized as separate objects.
@@ -251,7 +272,6 @@ void SerializeSet(Archive& archive, const char* name, T& set, const char* elemen
         set.clear();
         for (unsigned i = 0; i < block.GetSizeHint(); ++i)
         {
-            auto elementBlock = archive.OpenUnorderedBlock(element);
             ValueType value{};
             serializeValue(archive, element, value);
             set.emplace(ea::move(value));
@@ -284,7 +304,7 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
     if (loading)
     {
         // Serialize null object
-        if (type == StringHash{})
+        if (type == StringHash::Empty)
         {
             value = nullptr;
             return;
@@ -303,5 +323,28 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
     if (value)
         SerializeValue(archive, "value", *value);
 }
+
+/// Aliases for SerializeValue.
+/// @{
+template <class T, std::enable_if_t<Detail::IsVectorType<T>::value, int> = 0>
+void SerializeValue(Archive& archive, const char* name, T& vector) { SerializeVector(archive, name, vector); }
+template <class T, std::enable_if_t<Detail::IsMapType<T>::value, int> = 0>
+void SerializeValue(Archive& archive, const char* name, T& map) { SerializeMap(archive, name, map); }
+template <class T, std::enable_if_t<Detail::IsSetType<T>::value, int> = 0>
+void SerializeValue(Archive& archive, const char* name, T& set) { SerializeSet(archive, name, set); }
+/// @}
+
+
+// This code is non-intuitive, commented out for now.
+#if 0
+/// Serialize optional value, construct if empty.
+template <class T, class TSerializer = Detail::DefaultSerializer>
+void SerializeValue(Archive& archive, const char* name, ea::optional<T>& value, const TSerializer& serializeValue = TSerializer{})
+{
+    if (!value.has_value())
+        value.emplace();
+    serializeValue(archive, name, *value);
+}
+#endif
 
 }

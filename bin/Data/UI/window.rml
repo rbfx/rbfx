@@ -7,7 +7,7 @@
     <div id="titlebar">
         <handle move_target="#document">
             <div id="title">Title</div>
-            <button class="close-window" onclick="{'e': 'CloseWindow'}"></button>
+            <button class="close-window" onclick="event:CloseWindow"></button>
         </handle>
     </div>
     <div id="content">

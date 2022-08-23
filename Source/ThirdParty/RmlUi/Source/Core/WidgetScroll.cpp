@@ -27,12 +27,13 @@
  */
 
 #include "WidgetScroll.h"
-#include "Clock.h"
-#include "LayoutDetails.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Element.h"
 #include "../../Include/RmlUi/Core/Event.h"
 #include "../../Include/RmlUi/Core/Factory.h"
 #include "../../Include/RmlUi/Core/Property.h"
+#include "Clock.h"
+#include "LayoutDetails.h"
 
 namespace Rml {
 
@@ -214,10 +215,9 @@ void WidgetScroll::FormatElements(const Vector2f containing_block, bool resize_e
 {
 	int length_axis = orientation == VERTICAL ? 1 : 0;
 
-	// Build the box for the containing slider element. As the containing block is not guaranteed to have a defined
-	// height, we must use the width for both axes.
+	// Build the box for the containing slider element.
 	Box parent_box;
-	LayoutDetails::BuildBox(parent_box, Vector2f(containing_block.x, containing_block.x), parent);
+	LayoutDetails::BuildBox(parent_box, containing_block, parent);
 	slider_length -= orientation == VERTICAL ? (parent_box.GetCumulativeEdge(Box::CONTENT, Box::TOP) + parent_box.GetCumulativeEdge(Box::CONTENT, Box::BOTTOM)) :
 											   (parent_box.GetCumulativeEdge(Box::CONTENT, Box::LEFT) + parent_box.GetCumulativeEdge(Box::CONTENT, Box::RIGHT));
 
@@ -301,8 +301,8 @@ void WidgetScroll::FormatBar(float bar_length)
 
 	const auto& computed = bar->GetComputedValues();
 
-	const Style::Width width = computed.width;
-	const Style::Height height = computed.height;
+	const Style::Width width = computed.width();
+	const Style::Height height = computed.height();
 
 	Vector2f bar_box_content = bar_box.GetSize();
 	if (orientation == HORIZONTAL)
@@ -324,13 +324,12 @@ void WidgetScroll::FormatBar(float bar_length)
 				bar_box_content.y = track_length * bar_length;
 
 				// Check for 'min-height' restrictions.
-				float min_track_length = ResolveValue(computed.min_height, track_length);
+				float min_track_length = ResolveValue(computed.min_height(), track_length);
 				bar_box_content.y = Math::Max(min_track_length, bar_box_content.y);
 
 				// Check for 'max-height' restrictions.
-				float max_track_length = ResolveValue(computed.max_height, track_length);
-				if (max_track_length > 0)
-					bar_box_content.y = Math::Min(max_track_length, bar_box_content.y);
+				float max_track_length = ResolveValue(computed.max_height(), track_length);
+				bar_box_content.y = Math::Min(max_track_length, bar_box_content.y);
 			}
 
 			// Make sure we haven't gone further than we're allowed to (min-height may have made us too big).
@@ -345,13 +344,12 @@ void WidgetScroll::FormatBar(float bar_length)
 				bar_box_content.x = track_length * bar_length;
 
 				// Check for 'min-width' restrictions.
-				float min_track_length = ResolveValue(computed.min_width, track_length);
+				float min_track_length = ResolveValue(computed.min_width(), track_length);
 				bar_box_content.x = Math::Max(min_track_length, bar_box_content.x);
 
 				// Check for 'max-width' restrictions.
-				float max_track_length = ResolveValue(computed.max_width, track_length);
-				if (max_track_length > 0)
-					bar_box_content.x = Math::Min(max_track_length, bar_box_content.x);
+				float max_track_length = ResolveValue(computed.max_width(), track_length);
+				bar_box_content.x = Math::Min(max_track_length, bar_box_content.x);
 			}
 
 			// Make sure we haven't gone further than we're allowed to (min-width may have made us too big).

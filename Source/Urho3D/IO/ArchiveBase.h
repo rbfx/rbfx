@@ -192,8 +192,7 @@ public:
 
     bool IsUnorderedAccessSupportedInCurrentBlock() const final
     {
-        CheckIfRootBlockOpen();
-        return GetCurrentBlock().IsUnorderedAccessSupported();
+        return !stack_.empty() && GetCurrentBlock().IsUnorderedAccessSupported();
     }
 
     bool HasElementOrBlock(const char* name) const final

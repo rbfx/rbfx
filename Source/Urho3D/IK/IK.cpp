@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../IK/IK.h"
 #include "../IK/IKConstraint.h"
 #include "../IK/IKEffector.h"
@@ -27,8 +29,6 @@
 
 namespace Urho3D
 {
-
-const char* IK_CATEGORY = "Inverse Kinematics";
 
 // ----------------------------------------------------------------------------
 void RegisterIKLibrary(Context* context)

@@ -270,6 +270,32 @@ bool PropertySpecification::ParseShorthandDeclaration(PropertyDictionary& dictio
 	if (!shorthand_definition)
 		return false;
 
+	// Handle the special behavior of the flex shorthand first, otherwise it acts like 'FallThrough'.
+	if (shorthand_definition->type == ShorthandType::Flex)
+	{
+		RMLUI_ASSERT(shorthand_definition->items.size() == 3);
+		if (!property_values.empty() && property_values[0] == "none")
+		{
+			property_values = {"0", "0", "auto"};
+		}
+		else
+		{
+			// Default values when omitted from the 'flex' shorthand is specified here. These defaults are special
+			// for this shorthand only, otherwise each underlying property has a different default value.
+			const char* default_omitted_values[] = {"1", "1", "0"}; // flex-grow, flex-shrink, flex-basis
+			Property new_property;
+			bool result = true;
+			for (int i = 0; i < 3; i++)
+			{
+				auto& item = shorthand_definition->items[i];
+				result &= item.property_definition->ParseValue(new_property, default_omitted_values[i]);
+				dictionary.SetProperty(item.property_id, new_property);
+			}
+			(void)result;
+			RMLUI_ASSERT(result);
+		}
+	}
+
 	// If this definition is a 'box'-style shorthand (x-top, x-right, x-bottom, x-left, etc) and there are fewer
 	// than four values
 	if (shorthand_definition->type == ShorthandType::Box &&
@@ -362,6 +388,9 @@ bool PropertySpecification::ParseShorthandDeclaration(PropertyDictionary& dictio
 	}
 	else
 	{
+		RMLUI_ASSERT(shorthand_definition->type == ShorthandType::Box || shorthand_definition->type == ShorthandType::FallThrough ||
+			shorthand_definition->type == ShorthandType::Replicate || shorthand_definition->type == ShorthandType::Flex);
+
 		size_t value_index = 0;
 		size_t property_index = 0;
 
@@ -373,7 +402,7 @@ bool PropertySpecification::ParseShorthandDeclaration(PropertyDictionary& dictio
 			{
 				// This definition failed to parse; if we're falling through, try the next property. If there is no
 				// next property, then abort!
-				if (shorthand_definition->type == ShorthandType::FallThrough)
+				if (shorthand_definition->type == ShorthandType::FallThrough || shorthand_definition->type == ShorthandType::Flex)
 				{
 					if (property_index + 1 < shorthand_definition->items.size())
 						continue;
@@ -423,11 +452,15 @@ bool PropertySpecification::ParsePropertyValues(StringList& values_list, const S
 	int open_parentheses = 0;
 
 	size_t character_index = 0;
-	char previous_character = 0;
+	bool escape_next = false;
+
 	while (character_index < values.size())
 	{
-		char character = values[character_index];
+		const char character = values[character_index];
 		character_index++;
+
+		const bool escape_character = escape_next;
+		escape_next = false;
 
 		switch (state)
 		{
@@ -489,13 +522,15 @@ bool PropertySpecification::ParsePropertyValues(StringList& values_list, const S
 
 			case VALUE_PARENTHESIS:
 			{
-				if (previous_character == '/')
+				if (escape_character)
 				{
-					if (character == ')' || character == '(')
+					if (character == ')' || character == '(' || character == '\\')
+					{
 						value += character;
+					}
 					else
 					{
-						value += '/';
+						value += '\\';
 						value += character;
 					}
 				}
@@ -513,7 +548,11 @@ bool PropertySpecification::ParsePropertyValues(StringList& values_list, const S
 						if (open_parentheses == 0)
 							state = VALUE;
 					}
-					else if (character != '/')
+					else if (character == '\\')
+					{
+						escape_next = true;
+					}
+					else
 					{
 						value += character;
 					}
@@ -523,13 +562,15 @@ bool PropertySpecification::ParsePropertyValues(StringList& values_list, const S
 
 			case VALUE_QUOTE:
 			{
-				if (previous_character == '/')
+				if (escape_character)
 				{
-					if (character == '"')
+					if (character == '"' || character == '\\')
+					{
 						value += character;
+					}
 					else
 					{
-						value += '/';
+						value += '\\';
 						value += character;
 					}
 				}
@@ -550,15 +591,17 @@ bool PropertySpecification::ParsePropertyValues(StringList& values_list, const S
 							value += ' ';
 						state = VALUE;
 					}
-					else if (character != '/')
+					else if (character == '\\')
+					{
+						escape_next = true;
+					}
+					else
 					{
 						value += character;
 					}
 				}
 			}
 		}
-
-		previous_character = character;
 	}
 
 	if (state == VALUE)

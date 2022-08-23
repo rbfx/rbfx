@@ -27,7 +27,9 @@
  */
 
 #include "LayoutTableDetails.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Element.h"
+#include "LayoutDetails.h"
 #include <algorithm>
 #include <float.h>
 
@@ -219,7 +221,7 @@ void TableGrid::PushRow(Element* element_row, ElementList cell_elements)
 		{
 			Element* element_cell = element_row->GetChild(j);
 
-			const Style::Display cell_display = element_cell->GetComputedValues().display;
+			const Style::Display cell_display = element_cell->GetComputedValues().display();
 			if (cell_display == Style::Display::TableCell)
 			{
 				cell_elements.push_back(element_cell);
@@ -296,42 +298,12 @@ void TableGrid::PushRow(Element* element_row, ElementList cell_elements)
 	open_cells.erase(open_cells.begin(), it_cells_in_row_end);
 }
 
-
-ComputedTrackSize BuildComputedColumnSize(const ComputedValues& computed)
+void TracksSizing::GetEdgeSizes(float& margin_a, float& margin_b, float& padding_border_a, float& padding_border_b, const ComputedAxisSize& computed) const
 {
-	return ComputedTrackSize{
-		computed.width,
-		computed.min_width, computed.max_width,
-		computed.padding_left, computed.padding_right,
-		computed.margin_left, computed.margin_right,
-		computed.border_left_width, computed.border_right_width,
-		computed.box_sizing
-	};
+	LayoutDetails::GetEdgeSizes(margin_a, margin_b, padding_border_a, padding_border_b, computed, table_initial_content_size);
 }
 
-
-ComputedTrackSize BuildComputedRowSize(const ComputedValues& computed)
-{
-	return ComputedTrackSize{
-		computed.height,
-		computed.min_height, computed.max_height,
-		computed.padding_top, computed.padding_bottom,
-		computed.margin_top, computed.margin_bottom,
-		computed.border_top_width, computed.border_bottom_width,
-		computed.box_sizing
-	};
-}
-
-void TracksSizing::GetEdgeSizes(float& margin_a, float& margin_b, float& padding_border_a, float& padding_border_b, const ComputedTrackSize& computed) const
-{
-	margin_a = ResolveValue(computed.margin_a, table_initial_content_size);
-	margin_b = ResolveValue(computed.margin_b, table_initial_content_size);
-
-	padding_border_a = Math::Max(0.0f, ResolveValue(computed.padding_a, table_initial_content_size)) + Math::Max(0.0f, computed.border_a);
-	padding_border_b = Math::Max(0.0f, ResolveValue(computed.padding_b, table_initial_content_size)) + Math::Max(0.0f, computed.border_b);
-}
-
-void TracksSizing::ApplyGroupElement(const int index, const int span, const ComputedTrackSize& computed)
+void TracksSizing::ApplyGroupElement(const int index, const int span, const ComputedAxisSize& computed)
 {
 	RMLUI_ASSERT(span >= 1 && index + span - 1 < (int)metrics.size());
 
@@ -351,7 +323,7 @@ void TracksSizing::ApplyGroupElement(const int index, const int span, const Comp
 	metric_last.sum_margin_b = margin_b;
 }
 
-void TracksSizing::ApplyTrackElement(const int index, const int span, const ComputedTrackSize& computed)
+void TracksSizing::ApplyTrackElement(const int index, const int span, const ComputedAxisSize& computed)
 {
 	RMLUI_ASSERT(span >= 1 && index + span - 1 < (int)metrics.size());
 
@@ -384,7 +356,7 @@ void TracksSizing::ApplyTrackElement(const int index, const int span, const Comp
 	}
 }
 
-void TracksSizing::ApplyCellElement(const int index, const int span, const ComputedTrackSize& computed)
+void TracksSizing::ApplyCellElement(const int index, const int span, const ComputedAxisSize& computed)
 {
 	//  Merge the metrics of the cell with the existing track: If the existing track
 	//  has auto min-/max-/size, we use the cell's min-/max-/size if it has any.
@@ -429,7 +401,7 @@ void TracksSizing::ApplyCellElement(const int index, const int span, const Compu
 	}
 }
 
-void TracksSizing::InitializeSize(TrackMetric& metric, float& margin_a, float& margin_b, float& padding_border_a, float& padding_border_b, const ComputedTrackSize& computed, const int span, const Style::BoxSizing target_box) const
+void TracksSizing::InitializeSize(TrackMetric& metric, float& margin_a, float& margin_b, float& padding_border_a, float& padding_border_b, const ComputedAxisSize& computed, const int span, const Style::BoxSizing target_box) const
 {
 	RMLUI_ASSERT(span >= 1);
 
@@ -439,7 +411,7 @@ void TracksSizing::InitializeSize(TrackMetric& metric, float& margin_a, float& m
 
 	// Find the min/max size.
 	metric.min_size = ResolveValue(computed.min_size, table_initial_content_size);
-	metric.max_size = (computed.max_size.value < 0.f ? FLT_MAX : ResolveValue(computed.max_size, table_initial_content_size));
+	metric.max_size = ResolveValue(computed.max_size, table_initial_content_size);
 
 	if (target_box == Style::BoxSizing::ContentBox && computed.box_sizing == Style::BoxSizing::BorderBox)
 	{

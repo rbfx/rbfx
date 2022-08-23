@@ -31,8 +31,8 @@ add_library(RmlUi STATIC ${SOURCE_FILES})
 target_compile_definitions(RmlUi
     PRIVATE RMLUI_VERSION="${RMLUI_VERSION_SHORT}"
     PUBLIC  RMLUI_NO_THIRDPARTY_CONTAINERS=1
-            RMLUI_CUSTOM_CONFIGURATION_FILE="../RbfxConfig.h"
-            RMLUI_DEBUG_BUILD=$<CONFIG:Debug>
+            RMLUI_CUSTOM_CONFIGURATION_FILE="${CMAKE_CURRENT_SOURCE_DIR}/Config/RbfxConfig.h"
+            RMLUI_DEBUG_BUILD=$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:${CI_WEB_BUILD}>>>
 )
 if (APPLE)
     # Disables naked builtins from AssertMacros.h which
@@ -48,7 +48,9 @@ target_include_directories(RmlUi SYSTEM
     PRIVATE   ../..
 )
 
-install (DIRECTORY Include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+foreach (ext *.h *.inl)
+    install (DIRECTORY Include/ Config/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN ${ext})
+endforeach ()
 
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(RmlUi PRIVATE -DRmlCore_EXPORTS=1 -DRmlDebugger_EXPORTS=1 -DEASTL_EXPORTS -DEASTDC_EXPORTS)

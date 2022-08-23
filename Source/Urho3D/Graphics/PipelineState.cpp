@@ -35,7 +35,7 @@
 namespace Urho3D
 {
 
-GeometryBufferArray::GeometryBufferArray(Geometry* geometry, VertexBuffer* instancingBuffer)
+GeometryBufferArray::GeometryBufferArray(const Geometry* geometry, VertexBuffer* instancingBuffer)
     : GeometryBufferArray(geometry->GetVertexBuffers(), geometry->GetIndexBuffer(), instancingBuffer)
 {
 }
@@ -63,7 +63,7 @@ void PipelineStateDesc::InitializeInputLayout(const GeometryBufferArray& buffers
     }
 }
 
-void PipelineStateDesc::InitializeInputLayoutAndPrimitiveType(Geometry* geometry, VertexBuffer* instancingBuffer)
+void PipelineStateDesc::InitializeInputLayoutAndPrimitiveType(const Geometry* geometry, VertexBuffer* instancingBuffer)
 {
     InitializeInputLayout(GeometryBufferArray{ geometry, instancingBuffer });
     primitiveType_ = geometry->GetPrimitiveType();

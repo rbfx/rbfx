@@ -88,6 +88,7 @@ private:
     bool isRenderSurfaceSRGB_{};
     IntVector2 viewportSize_{};
     DrawCommandQueue* drawQueue_{};
+    ea::vector<SharedPtr<Texture2D>> textures_{};
     Matrix4 projection_;
     /// @}
 

@@ -265,9 +265,9 @@ private:
     void Notify(StringHash eventType);
 
     /// Origin state.
-    StringHash originState_{StringHash::ZERO};
+    StringHash originState_{StringHash::Empty};
     /// Destination state.
-    StringHash destinationState_{StringHash::ZERO};
+    StringHash destinationState_{StringHash::Empty};
 
     /// Cache of previously created states.
     ea::unordered_map<StringHash, WeakPtr<ApplicationState>> stateCache_;

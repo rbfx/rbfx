@@ -23,19 +23,17 @@
 #include "../Precompiled.h"
 
 #include "ParticleGraphEmitter.h"
+
+#include "../Core/Context.h"
+#include "../Resource/ResourceCache.h"
+#include "../Resource/ResourceEvents.h"
+#include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 #include "ParticleGraphLayer.h"
 #include "ParticleGraphLayerInstance.h"
 
-#include "../Core/Context.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-
 namespace Urho3D
 {
-extern const char* GEOMETRY_CATEGORY;
-
 ParticleGraphEmitter::ParticleGraphEmitter(Context* context)
     : Component(context)
 {
@@ -45,7 +43,7 @@ ParticleGraphEmitter::~ParticleGraphEmitter() = default;
 
 void ParticleGraphEmitter::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleGraphEmitter>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<ParticleGraphEmitter>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Effect", GetEffectAttr, SetEffectAttr, ResourceRef,
@@ -155,6 +153,11 @@ void ParticleGraphEmitter::OnSceneSet(Scene* scene)
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleGraphEmitter, HandleScenePostUpdate));
     else if (!scene)
         UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
+
+    for (unsigned i = 0; i < layers_.size(); ++i)
+    {
+            layers_[i].OnSceneSet(scene);
+    }
 }
 
 bool ParticleGraphEmitter::EmitNewParticle(unsigned layer)

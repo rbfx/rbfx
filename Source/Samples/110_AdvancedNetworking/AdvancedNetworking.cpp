@@ -98,7 +98,7 @@ void AdvancedNetworking::Start(const ea::vector<ea::string>& args)
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    SetMouseMode(MM_ABSOLUTE);
+    SetMouseMode(MM_FREE);
     SetMouseVisible(false);
 
     // Process command line
@@ -226,15 +226,7 @@ void AdvancedNetworking::CreateUI()
     // Set style to the UI root so that elements will inherit it
     root->SetDefaultStyle(uiStyle);
 
-    // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
-    // control the camera, and when visible, it can interact with the login UI
-    SharedPtr<Cursor> cursor(new Cursor(context_));
-    cursor->SetStyleAuto(uiStyle);
-    SetCursor(cursor);
-    // Set starting position of the cursor at the rendering window center
     auto* graphics = GetSubsystem<Graphics>();
-    cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
-
     // Construct the instructions text element
     instructionsText_ = GetUIRoot()->CreateChild<Text>();
     instructionsText_->SetText(
@@ -421,14 +413,16 @@ void AdvancedNetworking::MoveCamera()
     auto* input = GetSubsystem<Input>();
 
     // Right mouse button controls mouse cursor visibility: hide when pressed
-    ui->GetCursor()->SetVisible(!input->GetMouseButtonDown(MOUSEB_RIGHT));
+    const bool isCameraMoving = input->GetMouseButtonDown(MOUSEB_RIGHT);
+    SetMouseMode(isCameraMoving ? MM_RELATIVE : MM_FREE);
+    SetMouseVisible(!isCameraMoving);
 
     // Mouse sensitivity as degrees per pixel
     const float MOUSE_SENSITIVITY = 0.1f;
 
     // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch and only move the camera
     // when the cursor is hidden
-    if (!ui->GetCursor()->IsVisible())
+    if (isCameraMoving)
     {
         IntVector2 mouseMove = input->GetMouseMove();
         yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;

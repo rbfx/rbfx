@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+include(CheckIncludeFile)
 check_include_file("cpu-features.h" HAVE_CPU_FEATURES_H)
 
 file (GLOB_RECURSE SOURCE_FILES src/*.c src/*.h)

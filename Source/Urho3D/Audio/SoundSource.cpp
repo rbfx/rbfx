@@ -104,8 +104,6 @@ static const int SOUND_SOURCE_LOW_FREQ_CHANNEL[] = {
 
 static const int STREAM_SAFETY_SAMPLES = 4;
 
-extern const char* AUDIO_CATEGORY;
-
 extern const char* autoRemoveModeNames[];
 
 SoundSource::SoundSource(Context* context) :
@@ -138,7 +136,7 @@ SoundSource::~SoundSource()
 
 void SoundSource::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundSource>(AUDIO_CATEGORY);
+    context->RegisterFactory<SoundSource>(Category_Audio);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Sound", GetSoundAttr, SetSoundAttr, ResourceRef, ResourceRef(Sound::GetTypeStatic()), AM_DEFAULT);

@@ -34,14 +34,14 @@ On linux:
 docker run -it --mount type=bind,source=`git rev-parse --show-toplevel`,target=/rbfx --rm generateswig bash
 ```
 
-On windows you have to pass path to the repository manually.
-```console
-docker run -it --mount type=bind,source=C:\github\rbfx\,target=/rbfx --rm generateswig bash
+On windows you can use powershell to get the git root and call mount command.
+```shell
+pwsh -c "$GitRoot = git rev-parse --show-toplevel; docker run -it --mount type=bind,source=$GitRoot,target=/rbfx --rm generateswig bash"
 ```
 
 Now you are inside of the docker image.
 
-Run this if you need to configure the rbfx:
+Run this if you need to configure the rbfx. The output folder is set to a path inside docker container for perfomance.
 ```console
 cmake -DURHO3D_TESTING=OFF -DURHO3D_PROFILING=OFF -DURHO3D_SAMPLES=OFF -DURHO3D_GLOW=OFF -DURHO3D_CSHARP=ON -S /rbfx -B /cmake-build-clang
 ```

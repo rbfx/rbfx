@@ -22,16 +22,16 @@
 
 #pragma once
 
-#include <EASTL/intrusive_list.h>
-
 #include "../Container/Allocator.h"
 #include "../Core/Mutex.h"
+#include "../Core/ObjectCategory.h"
 #include "../Core/Profiler.h"
 #include "../Core/StringHashRegister.h"
 #include "../Core/SubsystemCache.h"
 #include "../Core/Variant.h"
-#include <functional>
-#include <utility>
+
+#include <EASTL/functional.h>
+#include <EASTL/intrusive_list.h>
 
 namespace Urho3D
 {
@@ -129,9 +129,9 @@ public:
     /// Subscribe to a specific sender's event.
     void SubscribeToEvent(Object* sender, StringHash eventType, EventHandler* handler);
     /// Subscribe to an event that can be sent by any sender.
-    void SubscribeToEvent(StringHash eventType, const std::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
+    void SubscribeToEvent(StringHash eventType, const ea::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
     /// Subscribe to a specific sender's event.
-    void SubscribeToEvent(Object* sender, StringHash eventType, const std::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
+    void SubscribeToEvent(Object* sender, StringHash eventType, const ea::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
     /// Subscribe to an event that can be sent by any sender.
     template<typename T>
     void SubscribeToEvent(StringHash eventType, void(T::*handler)(StringHash, VariantMap&));
@@ -156,10 +156,12 @@ public:
     void SendEvent(StringHash eventType, VariantMap& eventData);
     /// Return a preallocated map for event data. Used for optimization to avoid constant re-allocation of event data maps.
     VariantMap& GetEventDataMap() const;
-    /// Send event with variadic parameter pairs to all subscribers. The parameter pairs is a list of paramID and paramValue separated by comma, one pair after another.
-    template <typename... Args> void SendEvent(StringHash eventType, Args... args)
+    /// Send event with variadic parameter pairs to all subscribers. The parameters are (paramID, paramValue) pairs.
+    template <typename... Args> void SendEvent(StringHash eventType, const Args&... args)
     {
-        SendEvent(eventType, GetEventDataMap().populate(args...));
+        VariantMap& eventData = GetEventDataMap();
+        ((void)eventData.emplace(ea::get<0>(args), Variant(ea::get<1>(args))), ...);
+        SendEvent(eventType, eventData);
     }
 
     /// Return execution context.
@@ -316,15 +318,15 @@ private:
     HandlerFunctionPtr function_;
 };
 
-/// Template implementation of the event handler invoke helper (std::function instance).
+/// Template implementation of the event handler invoke helper (ea::function instance).
 /// @nobind
 class EventHandler11Impl : public EventHandler
 {
 public:
     /// Construct with receiver and function pointers and userdata.
-    explicit EventHandler11Impl(std::function<void(StringHash, VariantMap&)> function, void* userData = nullptr) :
+    explicit EventHandler11Impl(ea::function<void(StringHash, VariantMap&)> function, void* userData = nullptr) :
         EventHandler(nullptr, userData),
-        function_(std::move(function))
+        function_(ea::move(function))
     {
         assert(function_);
     }
@@ -343,7 +345,7 @@ public:
 
 private:
     /// Class-specific pointer to handler function.
-    std::function<void(StringHash, VariantMap&)> function_;
+    ea::function<void(StringHash, VariantMap&)> function_;
 };
 
 template<typename T>
@@ -360,11 +362,12 @@ inline void Object::SubscribeToEvent(Object* sender, StringHash eventType, void(
 
 /// Get register of event names.
 URHO3D_API StringHashRegister& GetEventNameRegister();
+URHO3D_API StringHashRegister& GetEventParamRegister();
 
 /// Describe an event's hash ID and begin a namespace in which to define its parameters.
 #define URHO3D_EVENT(eventID, eventName) static const Urho3D::StringHash eventID(Urho3D::GetEventNameRegister().RegisterString(#eventName)); namespace eventName
 /// Describe an event's parameter hash ID. Should be used inside an event namespace.
-#define URHO3D_PARAM(paramID, paramName) static const Urho3D::StringHash paramID = #paramName
+#define URHO3D_PARAM(paramID, paramName) static const Urho3D::StringHash paramID(Urho3D::GetEventParamRegister().RegisterString(#paramName))
 /// Convenience macro to construct an EventHandler that points to a receiver object and its member function.
 #define URHO3D_HANDLER(className, function) (new Urho3D::EventHandlerImpl<className>(this, &className::function))
 /// Convenience macro to construct an EventHandler that points to a receiver object and its member function, and also defines a userdata pointer.

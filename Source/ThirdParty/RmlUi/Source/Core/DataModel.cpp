@@ -341,10 +341,17 @@ bool DataModel::IsVariableDirty(const String& variable_name) const
 	return dirty_variables.count(variable_name) == 1;
 }
 
-bool DataModel::CallTransform(const String& name, Variant& inout_result, const VariantList& arguments) const
+void DataModel::DirtyAllVariables() {
+	dirty_variables.reserve(variables.size());
+	for (const auto& variable : variables) {
+		dirty_variables.emplace(variable.first);
+	}
+}
+
+bool DataModel::CallTransform(const String& name, const VariantList& arguments, Variant& out_result) const
 {
 	if (transform_register)
-		return transform_register->Call(name, inout_result, arguments);
+		return transform_register->Call(name, arguments, out_result);
 	return false;
 }
 

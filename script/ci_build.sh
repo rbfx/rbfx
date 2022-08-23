@@ -46,20 +46,20 @@ declare -A android_types=(
 )
 
 generators_windows_mingw=('-G' 'MinGW Makefiles')
-generators_windows=('-G' 'Visual Studio 16 2019')
-generators_uwp=('-G' 'Visual Studio 16 2019' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0')
+generators_windows=('-G' 'Visual Studio 17 2022')
+generators_uwp=('-G' 'Visual Studio 17 2022' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0')
 generators_linux=('-G' 'Ninja')
 generators_web=('-G' 'Ninja')
 generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
 generators_ios=('-G' 'Xcode' '-T' 'buildsystem=1')
 
 toolchains_ios=(
-    '-DCMAKE_TOOLCHAIN_FILE=cmake/Toolchains/IOS.cmake'
+    '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake'
     '-DPLATFORM=SIMULATOR64'
     '-DDEPLOYMENT_TARGET=11'
 )
 toolchains_web=(
-    '-DCMAKE_TOOLCHAIN_FILE=cmake/Toolchains/Emscripten.cmake'
+    '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake'
     '-DURHO3D_PROFILING=OFF'
 )
 
@@ -70,6 +70,8 @@ quirks_mingw=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
     '-DURHO3D_TESTING=OFF'
+    '-DURHO3D_GRAPHICS_API=OpenGL'
+    '-DURHO3D_PCH=OFF'
 )
 quirks_ios=(
     '-DURHO3D_CSHARP=OFF'
@@ -80,15 +82,14 @@ quirks_android=(
 quirks_web=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
+    '-DCI_WEB_BUILD=ON'
 )
-quirks_web_rel=(
-    '-DCI_WEB_RELEASE=ON'
+quirks_web_dbg=(
+    '-DURHO3D_PLAYER=OFF'
 )
 quirks_dll=('-DURHO3D_CSHARP=ON')
 quirks_windows_msvc_x64=('-A' 'x64')
 quirks_windows_msvc_x86=('-A' 'Win32')
-quirks_uwo_msvc_x64=${quirks_windows_msvc_x64[*]}
-quirks_uwo_msvc_x86=${quirks_windows_msvc_x86[*]}
 quirks_uwp_msvc_arm=('-A' 'ARM')
 quirks_uwp_msvc_arm64=('-A' 'ARM64')
 quirks_clang=('-DTRACY_NO_PARALLEL_ALGORITHMS=ON')                  # Includes macos and ios
@@ -101,6 +102,9 @@ quirks_linux_x86=(
 quirks_linux_x64=(
     '-DCMAKE_C_FLAGS=-m64'
     '-DCMAKE_CXX_FLAGS=-m64'
+)
+quirks_linux_clang_x64=(
+    '-DURHO3D_PCH=OFF' # Keep PCH disabled somewhere to catch missing includes
 )
 
 # Find msbuild.exe
@@ -223,7 +227,15 @@ function action-generate() {
 # Default build path using plain CMake.
 function action-build() {
     cd $ci_build_dir
-    cmake --build . --config "${types[$ci_build_type]}" && \
+    # ci_platform:     windows|linux|macos|android|ios|web
+    if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
+    then
+      NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
+    else
+      NUMBER_OF_PROCESSORS=$(nproc)
+    fi
+
+    cmake --build . --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
     ccache -s
 }
 
@@ -232,7 +244,7 @@ function action-build-msvc() {
     cd $ci_build_dir
     # Invoke msbuild directly when using msvc. Invoking msbuild through cmake causes some custom target dependencies to not be respected.
     python_path=$(python -c "import os, sys; print(os.path.dirname(sys.executable))")
-    "$MSBUILD" "-r" "-p:Configuration=${types[$ci_build_type]}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=$python_path/Scripts/" *.sln && \
+    "$MSBUILD" "-r" "-p:Configuration=${types[$ci_build_type]}" "-maxcpucount:${NUMBER_OF_PROCESSORS}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=$python_path/Scripts/" *.sln && \
     clcache -s
 }
 

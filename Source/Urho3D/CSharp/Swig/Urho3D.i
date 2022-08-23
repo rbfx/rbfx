@@ -8,6 +8,7 @@ using namespace Urho3D;
 #define final
 #define URHO3D_DEPRECATED
 #define static_assert(...)
+#define EASTLAllocatorType eastl::allocator
 
 %include "stl.i"
 %include "stdint.i"
@@ -200,6 +201,8 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 
 // Containers
 using StringMap = eastl::unordered_map<Urho3D::StringHash, eastl::string>;
+%template(ObjectReflectionMap) eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::ObjectReflection>>;
+%template(CollisionGeometryDataCache) eastl::unordered_map<eastl::pair<Urho3D::Model*, unsigned>, Urho3D::SharedPtr<Urho3D::CollisionGeometryData>>;
 
 // Declare inheritable classes in this file
 %include "Context.i"
@@ -291,8 +294,6 @@ namespace SDL
 %rename(GetVariantType) Urho3D::Variant::GetType;
 %nocsattribute Urho3D::Variant::GetType;
 %csmethodmodifiers ToString() "public override"
-%ignore Urho3D::AttributeInfo::enumNamesStorage_;
-%ignore Urho3D::AttributeInfo::enumNamesPointers_;
 %ignore Urho3D::AttributeInfo::enumNames_;
 
 // Subsystem properties.
@@ -334,6 +335,9 @@ namespace SDL
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
 
+%include "generated/Urho3D/_pre_plugins.i"
+%include "generated/Urho3D/_pre_utility.i"
+
 %include "generated/Urho3D/_pre_core.i"
 %include "Urho3D/Core/Variant.h"
 %include "Urho3D/Core/Attribute.h"
@@ -356,16 +360,15 @@ namespace SDL
 %ignore Urho3D::Engine::DefineParameters;
 %ignore Urho3D::Application::engine_;
 %ignore Urho3D::Application::GetCommandLineParser;
-%ignore Urho3D::PluginApplication::PluginApplicationMain;
-%ignore Urho3D::PluginApplication::InitializeReloadablePlugin;
-%ignore Urho3D::PluginApplication::UninitializeReloadablePlugin;
+%ignore Urho3D::PluginApplicationMain;
+%ignore Urho3D::PluginApplication::Dispose;
 
 %include "generated/Urho3D/_pre_engine.i"
 %include "Urho3D/Engine/EngineDefs.h"
 %include "Urho3D/Engine/Engine.h"
 %include "Urho3D/Engine/Application.h"
 %include "Urho3D/Engine/StateManager.h"
-%include "Urho3D/Engine/PluginApplication.h"
+%include "Urho3D/Plugins/PluginApplication.h"
 %include "generated/Urho3D/_pre_script.i"
 #if URHO3D_CSHARP
 %include "Urho3D/Script/Script.h"
@@ -524,6 +527,7 @@ public:
 %include "Urho3D/Scene/SceneResolver.h"
 %include "Urho3D/Scene/UnknownComponent.h"
 %include "Urho3D/Scene/TrackedComponent.h"
+%include "Urho3D/Scene/PrefabReference.h"
 
 // --------------------------------------- Extra components ---------------------------------------
 %include "Urho3D/Input/FreeFlyController.h"
@@ -650,6 +654,9 @@ public:
 %ignore Urho3D::Drawable::lights_;
 %ignore Urho3D::Drawable::vertexLights_;
 %ignore Urho3D::GlobalIllumination::SampleAmbientSH;
+%ignore Urho3D::AnimationState::CalculateModelTracks;
+%ignore Urho3D::AnimationState::CalculateNodeTracks;
+%ignore Urho3D::AnimationState::CalculateAttributeTracks;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {
@@ -867,8 +874,6 @@ using ImGuiConfigFlags = unsigned;
 %ignore ImGui::IsMouseReleased;
 %ignore ImGui::IsMouseClicked;
 %ignore ImGui::IsItemClicked;
-%ignore ImGui::SetDragDropVariant;
-%ignore ImGui::AcceptDragDropVariant;
 %ignore ImGui::dpx;
 %ignore ImGui::dpy;
 %ignore ImGui::dp;
@@ -1016,7 +1021,8 @@ using ImGuiConfigFlags = unsigned;
 #endif
 
 %template(StringMap)                    eastl::unordered_map<Urho3D::StringHash, eastl::string>;
-%template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>;
+%template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant, eastl::hash<Urho3D::StringHash>, eastl::equal_to<Urho3D::StringHash>, eastl::allocator, false>;
+%template(StringVariantMap)             eastl::unordered_map<eastl::string, Urho3D::Variant, eastl::hash<eastl::string>, eastl::equal_to<eastl::string>, eastl::allocator, true>;
 %template(AttributeMap)                 eastl::unordered_map<Urho3D::StringHash, eastl::vector<Urho3D::AttributeInfo>>;
 %template(PackageMap)                   eastl::unordered_map<eastl::string, Urho3D::PackageEntry>;
 %template(JSONObject)                   eastl::map<eastl::string, Urho3D::JSONValue>;

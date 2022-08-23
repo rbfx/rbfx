@@ -19,12 +19,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
+#include "../RmlUI/RmlSystem.h"
+
 #include "../Core/Context.h"
 #include "../Core/Timer.h"
 #include "../IO/Log.h"
 #include "../Input/Input.h"
 #include "../Resource/Localization.h"
-#include "../RmlUI/RmlSystem.h"
 
 #include <SDL/SDL_clipboard.h>
 
@@ -97,7 +101,7 @@ void RmlSystem::GetClipboardText(Rml::String& text)
     text = SDL_GetClipboardText();
 }
 
-void RmlSystem::ActivateKeyboard()
+void RmlSystem::ActivateKeyboard(Rml::Vector2f caret_position, float line_height)
 {
     Input* input = context_->GetSubsystem<Input>();
     Time* time = context_->GetSubsystem<Time>();

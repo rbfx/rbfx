@@ -26,35 +26,15 @@
  *
  */
 
-#include "../../Include/RmlUi/Core/Property.h"
 #include "ComputeProperty.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
+#include "../../Include/RmlUi/Core/Property.h"
 
 namespace Rml {
 
-const Style::ComputedValues DefaultComputedValues = Style::ComputedValues{};
+const Style::ComputedValues DefaultComputedValues{nullptr};
 
 static constexpr float PixelsPerInch = 96.0f;
-
-
-
-float ResolveValue(Style::LengthPercentageAuto length, float base_value)
-{
-	if (length.type == Style::LengthPercentageAuto::Length)
-		return length.value;
-	else if (length.type == Style::LengthPercentageAuto::Percentage)
-		return length.value * 0.01f * base_value;
-	return 0.0f;
-}
-
-float ResolveValue(Style::LengthPercentage length, float base_value)
-{
-	if (length.type == Style::LengthPercentage::Length)
-		return length.value;
-	else if (length.type == Style::LengthPercentage::Percentage)
-		return length.value * 0.01f * base_value;
-	return 0.0f;
-}
-
 
 float ComputeLength(const Property* property, float font_size, float document_font_size, float dp_ratio, Vector2f vp_dimensions)
 {
@@ -173,6 +153,11 @@ float ComputeAngle(const Property& property)
 	return 0.0f;
 }
 
+String ComputeFontFamily(String font_family)
+{
+	return StringUtilities::ToLower(std::move(font_family));
+}
+
 float ComputeFontsize(const Property& property, const Style::ComputedValues& values, const Style::ComputedValues* parent_values, const Style::ComputedValues* document_values, float dp_ratio, Vector2f vp_dimensions)
 {
 	// The calculated value of the font-size property is inherited, so we need to check if this
@@ -189,16 +174,16 @@ float ComputeFontsize(const Property& property, const Style::ComputedValues& val
 		case Property::EM:
 			if (!parent_values)
 				return 0;
-			return property.value.Get< float >() * multiplier * parent_values->font_size;
+			return property.value.Get<float>() * multiplier * parent_values->font_size();
 
 		case Property::REM:
 			if (!document_values)
 				return 0;
 			// If the current element is a document, the rem unit is relative to the default size
 			if(&values == document_values)
-				return property.value.Get< float >() * DefaultComputedValues.font_size;
+				return property.value.Get<float>() * DefaultComputedValues.font_size();
 			// Otherwise it is relative to the document font size
-			return property.value.Get< float >() * document_values->font_size;
+			return property.value.Get<float>() * document_values->font_size();
 		default:
 			RMLUI_ERRORMSG("A relative unit must be percentage, em or rem.");
 		}
@@ -209,11 +194,11 @@ float ComputeFontsize(const Property& property, const Style::ComputedValues& val
 
 Style::Clip ComputeClip(const Property* property)
 {
-	int value = property->Get<int>();
+	const int value = property->Get<int>();
 	if (property->unit == Property::KEYWORD)
 		return Style::Clip(static_cast<Style::Clip::Type>(value));
 	else if (property->unit == Property::NUMBER)
-		return Style::Clip(Style::Clip::Type::Number, value);
+		return Style::Clip(Style::Clip::Type::Number, static_cast<int8_t>(value));
 	RMLUI_ERRORMSG("Invalid clip type");
 	return Style::Clip();
 }
@@ -305,5 +290,27 @@ Style::LengthPercentage ComputeOrigin(const Property* property, float font_size,
 	return LengthPercentage(LengthPercentage::Length, ComputeLength(property, font_size, document_font_size, dp_ratio, vp_dimensions));
 }
 
+Style::LengthPercentage ComputeMaxSize(const Property* property, float font_size, float document_font_size, float dp_ratio, Vector2f vp_dimensions)
+{
+	using namespace Style;
+	if (property->unit & Property::KEYWORD)
+		return LengthPercentage(LengthPercentage::Length, FLT_MAX);
+	else if (property->unit & Property::PERCENT)
+		return LengthPercentage(LengthPercentage::Percentage, property->Get<float>());
+
+	const float length = ComputeLength(property, font_size, document_font_size, dp_ratio, vp_dimensions);
+	return LengthPercentage(LengthPercentage::Length, length < 0.f ? FLT_MAX : length);
+}
+
+uint16_t ComputeBorderWidth(float computed_length)
+{
+	if (computed_length <= 0.f)
+		return 0;
+
+	if (computed_length <= 1.f)
+		return 1;
+	
+	return uint16_t(computed_length + 0.5f);
+}
 
 } // namespace Rml

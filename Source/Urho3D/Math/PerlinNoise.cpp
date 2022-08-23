@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Math/PerlinNoise.h"
 
 #include <EASTL/numeric.h>

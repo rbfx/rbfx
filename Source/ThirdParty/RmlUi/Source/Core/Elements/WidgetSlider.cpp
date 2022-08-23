@@ -27,6 +27,7 @@
  */
 
 #include "WidgetSlider.h"
+#include "../../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../../Include/RmlUi/Core/Elements/ElementFormControl.h"
 #include "../../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../../Include/RmlUi/Core/Factory.h"
@@ -249,10 +250,9 @@ void WidgetSlider::FormatElements(const Vector2f containing_block, float slider_
 {
 	int length_axis = orientation == VERTICAL ? 1 : 0;
 
-	// Build the box for the containing slider element. As the containing block is not guaranteed to have a defined
-	// height, we must use the width for both axes.
+	// Build the box for the containing slider element.
 	Box parent_box;
-	ElementUtilities::BuildBox(parent_box, Vector2f(containing_block.x, containing_block.x), parent);
+	ElementUtilities::BuildBox(parent_box, containing_block, parent);
 
 	// Set the length of the slider.
 	Vector2f content = parent_box.GetSize();
@@ -342,7 +342,7 @@ void WidgetSlider::FormatBar()
 	Vector2f bar_box_content = bar_box.GetSize();
 	if (orientation == HORIZONTAL)
 	{
-		if (computed.height.type == Style::Height::Auto)
+		if (computed.height().type == Style::Height::Auto)
 			bar_box_content.y = parent->GetBox().GetSize().y;
 	}
 
@@ -592,10 +592,8 @@ float WidgetSlider::SetValueInternal(float new_value)
 	parameters["value"] = value;
 	GetParent()->DispatchEvent(EventId::Change, parameters);
 
-
-	// TODO: This might not be the safest approach as this will call SetValue(), 
-	// thus, a slight mismatch will result in infinite recursion.
-	GetParent()->SetAttribute("value", value);
+	if (value != GetParent()->GetAttribute("value", 0.0f))
+		GetParent()->SetAttribute("value", value);
 
 	return (value - min_value) / (max_value - min_value);
 }

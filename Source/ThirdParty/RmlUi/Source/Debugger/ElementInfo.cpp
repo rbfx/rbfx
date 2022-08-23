@@ -59,6 +59,9 @@ ElementInfo::ElementInfo(const String& tag) : ElementDocument(tag)
 
 ElementInfo::~ElementInfo()
 {
+	RemoveEventListener(EventId::Click, this);
+	RemoveEventListener(EventId::Mouseover, this);
+	RemoveEventListener(EventId::Mouseout, this);
 }
 
 // Initialises the info element.
@@ -143,7 +146,7 @@ void ElementInfo::RenderHoverElement()
 			Vector2f size = element_box.GetSize(Box::BORDER);
 			size = Vector2f(std::max(size.x, 2.0f), std::max(size.y, 2.0f));
 			Geometry::RenderOutline(
-				hover_element->GetAbsoluteOffset(Box::BORDER) + box_offset + element_box.GetPosition(Box::BORDER),
+				hover_element->GetAbsoluteOffset(Box::BORDER) + box_offset,
 				size,
 				Colourb(255, 0, 0, 255), 
 				1

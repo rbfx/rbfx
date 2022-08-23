@@ -43,8 +43,6 @@ namespace Urho3D
 
 static const float LOD_CONSTANT = 1.0f / 150.0f;
 
-extern const char* GEOMETRY_CATEGORY;
-
 TerrainPatch::TerrainPatch(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
     geometry_(context->CreateObject<Geometry>()),
@@ -208,6 +206,10 @@ bool TerrainPatch::DrawOcclusion(OcclusionBuffer* buffer)
 
 void TerrainPatch::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
+    BaseClassName::DrawDebugGeometry(debug, depthTest);
+
+    // TODO: This debug geometry is way too heavy to render
+#if 0
     if (!vertexBuffer_->IsShadowed())
     {
         URHO3D_LOGERROR("TerrainPatch requires shadowed vertex buffer for drawing debug geometry.");
@@ -225,6 +227,7 @@ void TerrainPatch::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
                                geometry->GetIndexStart(), geometry->GetIndexCount(), node->GetWorldTransform(),
                                Color::GREEN, depthTest);
     }
+#endif
 }
 
 void TerrainPatch::SetOwner(Terrain* terrain)

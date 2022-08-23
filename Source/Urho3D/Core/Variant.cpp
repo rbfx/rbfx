@@ -39,6 +39,7 @@ const VariantMap Variant::emptyVariantMap;
 const VariantVector Variant::emptyVariantVector { };
 const StringVector Variant::emptyStringVector { };
 const VariantCurve Variant::emptyCurve;
+const StringVariantMap Variant::emptyStringVariantMap;
 
 static const char* typeNames[] =
 {
@@ -71,6 +72,7 @@ static const char* typeNames[] =
     "Int64",
     "Custom",
     "VariantCurve",
+    "StringVariantMap",
     nullptr
 };
 
@@ -136,6 +138,10 @@ Variant& Variant::operator =(const Variant& rhs)
 
     case VAR_VARIANTCURVE:
         *value_.variantCurve_ = *rhs.value_.variantCurve_;
+        break;
+
+    case VAR_STRINGVARIANTMAP:
+        *value_.stringVariantMap_ = *rhs.value_.stringVariantMap_;
         break;
 
     default:
@@ -245,6 +251,9 @@ bool Variant::operator ==(const Variant& rhs) const
 
     case VAR_VARIANTCURVE:
         return *value_.variantCurve_ == *rhs.value_.variantCurve_;
+
+    case VAR_STRINGVARIANTMAP:
+        return *value_.stringVariantMap_ == *rhs.value_.stringVariantMap_;
 
     default:
         return true;
@@ -368,6 +377,7 @@ Variant::Variant(VariantType type)
     case VAR_VARIANTVECTOR:
     case VAR_VARIANTMAP:
     case VAR_STRINGVECTOR:
+    case VAR_STRINGVARIANTMAP:
         SetType(type);
         break;
 
@@ -636,7 +646,7 @@ ea::string Variant::ToString() const
         return GetCustomVariantValuePtr()->ToString();
 
     default:
-        // VAR_RESOURCEREF, VAR_RESOURCEREFLIST, VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP, VAR_VARIANTCURVE
+        // VAR_RESOURCEREF, VAR_RESOURCEREFLIST, VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP, VAR_VARIANTCURVE, VAR_STRINGVARIANTMAP
         // Reference string serialization requires typehash-to-name mapping from the context. Can not support here
         // Also variant map or vector string serialization is not supported. XML or binary save should be used instead
         return EMPTY_STRING;
@@ -740,6 +750,9 @@ bool Variant::IsZero() const
     case VAR_VARIANTCURVE:
         return *value_.variantCurve_ == emptyCurve;
 
+    case VAR_STRINGVARIANTMAP:
+        return value_.stringVariantMap_->empty();
+
     default:
         return true;
     }
@@ -804,6 +817,10 @@ void Variant::SetType(VariantType newType)
         delete value_.variantCurve_;
         break;
 
+    case VAR_STRINGVARIANTMAP:
+        delete value_.stringVariantMap_;
+        break;
+
     default:
         break;
     }
@@ -863,6 +880,10 @@ void Variant::SetType(VariantType newType)
 
     case VAR_VARIANTCURVE:
         value_.variantCurve_ = new VariantCurve();
+        break;
+
+    case VAR_STRINGVARIANTMAP:
+        value_.stringVariantMap_ = new StringVariantMap();
         break;
 
     default:
@@ -1095,6 +1116,11 @@ template <> VariantCurve Variant::Get<VariantCurve>() const
     return GetVariantCurve();
 }
 
+template <> StringVariantMap Variant::Get<StringVariantMap>() const
+{
+    return GetStringVariantMap();
+}
+
 ea::string Variant::GetTypeName(VariantType type)
 {
     return typeNames[type];
@@ -1186,59 +1212,61 @@ unsigned Variant::ToHash() const
     case Urho3D::VAR_NONE:
         return 0;
     case Urho3D::VAR_INT:
-        return ea::hash<int>()(Get<int>());
+        return MakeHash(Get<int>());
     case Urho3D::VAR_BOOL:
-        return ea::hash<bool>()(Get<bool>());
+        return MakeHash(Get<bool>());
     case Urho3D::VAR_FLOAT:
-        return ea::hash<float>()(Get<float>());
+        return MakeHash(Get<float>());
     case Urho3D::VAR_VECTOR2:
-        return ea::hash<Urho3D::Vector2>()(Get<Urho3D::Vector2>());
+        return MakeHash(Get<Urho3D::Vector2>());
     case Urho3D::VAR_VECTOR3:
-        return ea::hash<Urho3D::Vector3>()(Get<Urho3D::Vector3>());
+        return MakeHash(Get<Urho3D::Vector3>());
     case Urho3D::VAR_VECTOR4:
-        return ea::hash<Urho3D::Vector4>()(Get<Urho3D::Vector4>());
+        return MakeHash(Get<Urho3D::Vector4>());
     case Urho3D::VAR_QUATERNION:
-        return ea::hash<Urho3D::Quaternion>()(Get<Urho3D::Quaternion>());
+        return MakeHash(Get<Urho3D::Quaternion>());
     case Urho3D::VAR_COLOR:
-        return ea::hash<Urho3D::Color>()(Get<Urho3D::Color>());
+        return MakeHash(Get<Urho3D::Color>());
     case Urho3D::VAR_STRING:
-        return ea::hash<ea::string>()(Get<ea::string>());
+        return MakeHash(Get<ea::string>());
     case Urho3D::VAR_BUFFER:
-        return ea::hash<ea::vector<unsigned char>>()(Get<ea::vector<unsigned char>>());
+        return MakeHash(Get<ea::vector<unsigned char>>());
     case Urho3D::VAR_VOIDPTR:
-        return ea::hash<void*>()(Get<void*>());
+        return MakeHash(Get<void*>());
     case Urho3D::VAR_RESOURCEREF:
-        return ea::hash<Urho3D::ResourceRef>()(Get<Urho3D::ResourceRef>());
+        return MakeHash(Get<Urho3D::ResourceRef>());
     case Urho3D::VAR_RESOURCEREFLIST:
-        return ea::hash<Urho3D::ResourceRefList>()(Get<Urho3D::ResourceRefList>());
+        return MakeHash(Get<Urho3D::ResourceRefList>());
     case Urho3D::VAR_VARIANTVECTOR:
-        return ea::hash<Urho3D::VariantVector>()(Get<Urho3D::VariantVector>());
+        return MakeHash(Get<Urho3D::VariantVector>());
     case Urho3D::VAR_VARIANTMAP:
-        return ea::hash<Urho3D::VariantMap>()(Get<Urho3D::VariantMap>());
+        return MakeHash(Get<Urho3D::VariantMap>());
     case Urho3D::VAR_INTRECT:
-        return ea::hash<Urho3D::IntRect>()(Get<Urho3D::IntRect>());
+        return MakeHash(Get<Urho3D::IntRect>());
     case Urho3D::VAR_INTVECTOR2:
-        return ea::hash<Urho3D::IntVector2>()(Get<Urho3D::IntVector2>());
+        return MakeHash(Get<Urho3D::IntVector2>());
     case Urho3D::VAR_PTR:
-        return ea::hash<Urho3D::RefCounted*>()(Get<Urho3D::RefCounted*>());
+        return MakeHash(Get<Urho3D::RefCounted*>());
     case Urho3D::VAR_MATRIX3:
-        return ea::hash<Urho3D::Matrix3>()(Get<Urho3D::Matrix3>());
+        return MakeHash(Get<Urho3D::Matrix3>());
     case Urho3D::VAR_MATRIX3X4:
-        return ea::hash<Urho3D::Matrix3x4>()(Get<Urho3D::Matrix3x4>());
+        return MakeHash(Get<Urho3D::Matrix3x4>());
     case Urho3D::VAR_MATRIX4:
-        return ea::hash<Urho3D::Matrix4>()(Get<Urho3D::Matrix4>());
+        return MakeHash(Get<Urho3D::Matrix4>());
     case Urho3D::VAR_DOUBLE:
-        return ea::hash<double>()(Get<double>());
+        return MakeHash(Get<double>());
     case Urho3D::VAR_STRINGVECTOR:
-        return ea::hash<Urho3D::StringVector>()(Get<Urho3D::StringVector>());
+        return MakeHash(Get<Urho3D::StringVector>());
     case Urho3D::VAR_RECT:
-        return ea::hash<Urho3D::Rect>()(Get<Urho3D::Rect>());
+        return MakeHash(Get<Urho3D::Rect>());
     case Urho3D::VAR_INTVECTOR3:
-        return ea::hash<Urho3D::IntVector3>()(Get<Urho3D::IntVector3>());
+        return MakeHash(Get<Urho3D::IntVector3>());
     case Urho3D::VAR_INT64:
-        return ea::hash<long long>()(Get<long long>());
+        return MakeHash(Get<long long>());
     case Urho3D::VAR_VARIANTCURVE:
-        return ea::hash<VariantCurve>()(Get<VariantCurve>());
+        return MakeHash(Get<VariantCurve>());
+    case Urho3D::VAR_STRINGVARIANTMAP:
+        return MakeHash(Get<StringVariantMap>());
     case Urho3D::VAR_CUSTOM:
     default:
         assert(false);
@@ -1300,6 +1328,8 @@ unsigned GetVariantTypeSize(VariantType variant)
         return sizeof(Matrix3x4);
     case VAR_MATRIX4:
         return sizeof(Matrix4);
+    case VAR_STRINGVARIANTMAP:
+        return sizeof(StringVariantMap);
     }
     assert(!"Unsupported value type");
     return 0;

@@ -36,7 +36,7 @@ extern "C"
 
 URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_CrowdManager_SetVelocityShader(CrowdManager* crowdManager, EventHandlerCallback callback, void* callbackHandle)
 {
-    // GCHandleRef will be moved into std::function() and remain allocated until function is unset. When that happens holder will free gc
+    // GCHandleRef will be moved into ea::function() and remain allocated until function is unset. When that happens holder will free gc
     // handle associated with callback enabling .NET runtime to GC callback delegate.
     GCHandleRef callbackHandleHolder(callbackHandle);
     auto shader([callback, callbackHandleHolder{ea::move(callbackHandleHolder)}](CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) {

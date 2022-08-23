@@ -185,7 +185,8 @@ bool Texture2D::GetImage(Image& image) const
     }
 
     image.SetSize(width_, height_, GetComponents());
-    GetData(0, image.GetData());
+    if (!GetData(0, image.GetData()))
+        return false;
     return true;
 }
 

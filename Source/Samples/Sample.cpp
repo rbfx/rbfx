@@ -341,23 +341,5 @@ void Sample::HandleTouchBegin(StringHash /*eventType*/, VariantMap& eventData)
 
 void Sample::CloseSample()
 {
-    auto* input = context_->GetSubsystem<Input>();
-    VariantMap args;
-    {
-        using namespace KeyDown;
-        args[P_KEY] = KEY_ESCAPE;
-        args[P_SCANCODE] = SCANCODE_ESCAPE;
-        args[P_BUTTONS] = 0;
-        args[P_QUALIFIERS] = 0;
-        args[P_REPEAT] = false;
-        input->SendEvent(E_KEYDOWN, args);
-    }
-    {
-        using namespace KeyUp;
-        args[P_KEY] = KEY_ESCAPE;
-        args[P_SCANCODE] = SCANCODE_ESCAPE;
-        args[P_BUTTONS] = 0;
-        args[P_QUALIFIERS] = 0;
-        input->SendEvent(E_KEYUP, args);
-    }
+    SendEvent(E_SAMPLE_EXIT_REQUESTED);
 }

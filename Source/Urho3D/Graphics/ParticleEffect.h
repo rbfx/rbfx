@@ -77,18 +77,6 @@ struct ColorFrame
             return next.color_;
     }
 
-    /// Instance equality operator.
-    bool operator ==(const ColorFrame& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const ColorFrame& rhs) const
-    {
-        return this != &rhs;
-    }
-
     /// Color.
     Color color_;
     /// Time.
