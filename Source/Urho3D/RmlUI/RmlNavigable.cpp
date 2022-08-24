@@ -244,8 +244,7 @@ void RmlNavigable::SetNavigated(bool navigated, NavigableEventMode eventMode)
 
     if (navigated)
     {
-        // TODO(ui): Scroll when implemented
-        //ScrollIntoView();
+        ScrollIntoView(Rml::ScrollIntoViewOptions(Rml::ScrollIntoViewOptions::NEAREST));
     }
 }
 
