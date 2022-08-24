@@ -304,7 +304,7 @@ RmlNavigable* RmlNavigationManager::GetTopCursorNavigable() const
 bool RmlNavigationManager::IsGroupInStack(const ea::string& group) const
 {
     const auto isFound = [&](const NavigationStackFrame& frame) { return frame.group_ == group; };
-    return std::find_if(navigationStack_.begin(), navigationStack_.end(), isFound) != navigationStack_.end();
+    return ea::find_if(navigationStack_.begin(), navigationStack_.end(), isFound) != navigationStack_.end();
 }
 
 void RmlNavigationManager::MoveCursor(const Vector2& direction)
