@@ -24,11 +24,11 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/UI/UIEvents.h>
+#include <Urho3D/Actions/ActionBuilder.h>
+#include <Urho3D/Actions/ActionManager.h>
 
 #include "ActionDemo.h"
-
-#include "Urho3D/Actions/ActionBuilder.h"
-#include "Urho3D/Actions/ActionManager.h"
 
 #include <Urho3D/DebugNew.h>
 

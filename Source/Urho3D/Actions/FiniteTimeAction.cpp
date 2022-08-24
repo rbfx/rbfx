@@ -36,7 +36,7 @@ namespace Actions
 namespace
 {
 /// "No-operation" finite time action for irreversible actions.
-class URHO3D_API NoAction : public FiniteTimeAction
+class NoAction : public FiniteTimeAction
 {
 public:
     /// Construct.
