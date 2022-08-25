@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,40 +22,40 @@
 
 #pragma once
 
-#include "../../Core/SettingsManager.h"
-#include "../../Foundation/SceneViewTab.h"
-#include "Foundation/Shared/CameraController.h"
+#include "../../Core/CommonEditorActions.h"
+#include "../../Project/Project.h"
+#include "../../Project/ResourceEditorTab.h"
+#include "../../Foundation/Shared/CameraController.h"
+
+#include <Urho3D/SystemUI/SceneWidget.h>
+#include <Urho3D/Graphics/Animation.h>
 
 namespace Urho3D
 {
 
-void Foundation_EditorCamera(Context* context, SceneViewTab* sceneViewTab);
-
-/// Camera controller used by Scene View.
-class EditorCamera : public SceneViewAddon
+/// Tab that renders custom Scene.
+class CustomSceneViewTab : public ResourceEditorTab
 {
-    URHO3D_OBJECT(EditorCamera, SceneViewAddon);
+    URHO3D_OBJECT(CustomSceneViewTab, ResourceEditorTab)
 
 public:
-    using SettingsPage = SimpleSettingsPage<CameraController::Settings>;
+    CustomSceneViewTab(Context* context, const ea::string& title, const ea::string& guid, EditorTabFlags flags,
+        EditorTabPlacement placement);
+    ~CustomSceneViewTab() override;
 
-    EditorCamera(SceneViewTab* owner, CameraController::SettingsPage* settings);
-
-    /// Implement SceneViewAddon.
+    /// ResourceEditorTab implementation
     /// @{
-    ea::string GetUniqueName() const override { return "Camera"; }
-    int GetInputPriority() const override { return M_MAX_INT; }
-    void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
-    void SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const override;
+    void RenderContent() override;
     /// @}
 
-private:
-    CameraController::PageState& GetOrInitializeState(SceneViewPage& scenePage) const;
-    void LookAtPosition(SceneViewPage& scenePage, const Vector3& position) const;
+    Scene* GetScene() const { return preview_ ? preview_->GetScene() : nullptr; }
 
-    const WeakPtr<CameraController::SettingsPage> settings_;
+protected:
+    virtual void RenderTitle();
+
+    const SharedPtr<SceneWidget> preview_;
     SharedPtr<CameraController> cameraController_;
-    bool isActive_{};
+    CameraController::PageState state_;
 };
 
-}
+} // namespace Urho3D

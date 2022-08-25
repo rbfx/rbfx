@@ -22,29 +22,30 @@
 
 #pragma once
 
-#include "../Core/CommonEditorActions.h"
+#include "../Foundation/Shared/CustomSceneViewTab.h"
 #include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
+
+#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/Model.h>
 
 namespace Urho3D
 {
 
-void Foundation_TextureViewTab(Context* context, Project* project);
+void Foundation_ModelViewTab(Context* context, Project* project);
 
 /// Tab that renders Scene and enables Scene manipulation.
-class TextureViewTab : public ResourceEditorTab
+class ModelViewTab : public CustomSceneViewTab
 {
-    URHO3D_OBJECT(TextureViewTab, ResourceEditorTab)
+    URHO3D_OBJECT(ModelViewTab, CustomSceneViewTab)
 
 public:
-    explicit TextureViewTab(Context* context);
-    ~TextureViewTab() override;
+    explicit ModelViewTab(Context* context);
+    ~ModelViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
-    void RenderContent() override;
-
-    ea::string GetResourceTitle() { return "Texture"; }
+    ea::string GetResourceTitle() { return "Model"; }
     bool SupportMultipleResources() { return false; }
     bool CanOpenResource(const ResourceFileDescriptor& desc) override;
     /// @}
@@ -60,7 +61,9 @@ protected:
     /// @}
 
 private:
-    SharedPtr<Texture> texture_;
+    SharedPtr<Model> model_;
+    SharedPtr<Node> modelNode_;
+    SharedPtr<StaticModel> staticModel_;
 };
 
 } // namespace Urho3D

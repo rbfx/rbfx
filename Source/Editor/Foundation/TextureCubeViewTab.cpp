@@ -20,11 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/TextureViewTab.h"
+#include "../Foundation/TextureCubeViewTab.h"
 
 #include "../Core/CommonEditorActions.h"
 #include "../Core/IniHelpers.h"
 
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
@@ -35,61 +39,62 @@ namespace
 {
 }
 
-void Foundation_TextureViewTab(Context* context, Project* project)
+void Foundation_TextureCubeViewTab(Context* context, Project* project)
 {
-    project->AddTab(MakeShared<TextureViewTab>(context));
+    project->AddTab(MakeShared<TextureCubeViewTab>(context));
 }
 
-TextureViewTab::TextureViewTab(Context* context)
-    : ResourceEditorTab(context, "Texture", "2a3032e6-541a-42fe-94c3-8baf96604690",
+TextureCubeViewTab::TextureCubeViewTab(Context* context)
+    : CustomSceneViewTab(context, "Cubemap", "d66bcf6d-9fe3-4e7c-a519-4b1ad5a0f89c",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
         EditorTabPlacement::DockCenter)
 {
 }
 
-TextureViewTab::~TextureViewTab()
+TextureCubeViewTab::~TextureCubeViewTab()
 {
 }
 
-bool TextureViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
+bool TextureCubeViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 {
-    return desc.HasObjectType<Texture>();
+    return desc.HasObjectType<TextureCube>();
 }
 
-
-void TextureViewTab::RenderContent()
+void TextureCubeViewTab::RenderTextureCube(TextureCube* texture)
 {
-    if (!texture_)
-        return;
+    CustomSceneViewTab::RenderContent();
+}
 
-    SharedPtr<Texture2D> texture2D;
-    texture2D.DynamicCast(texture_);
-    if (texture2D)
+void TextureCubeViewTab::RenderContent()
+{
+    if (textureCube_)
     {
-        Widgets::Image(texture2D, ToImGui(GetContentSize()));
+        BaseClassName::RenderContent();
     }
+
 }
 
-void TextureViewTab::OnResourceLoaded(const ea::string& resourceName)
+void TextureCubeViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    texture_ = cache->GetResource<Texture2D>(resourceName);
+    textureCube_ = cache->GetResource<TextureCube>(resourceName);
+    preview_->SetSkyboxTexture(textureCube_);
 }
 
-void TextureViewTab::OnResourceUnloaded(const ea::string& resourceName)
+void TextureCubeViewTab::OnResourceUnloaded(const ea::string& resourceName)
 {
-    texture_.Reset();
+    textureCube_.Reset();
 }
 
-void TextureViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)
-{
-}
-
-void TextureViewTab::OnResourceSaved(const ea::string& resourceName)
+void TextureCubeViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)
 {
 }
 
-void TextureViewTab::OnResourceShallowSaved(const ea::string& resourceName)
+void TextureCubeViewTab::OnResourceSaved(const ea::string& resourceName)
+{
+}
+
+void TextureCubeViewTab::OnResourceShallowSaved(const ea::string& resourceName)
 {
 }
 
