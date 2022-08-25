@@ -20,14 +20,14 @@
 // THE SOFTWARE.
 //
 
-#include "../../Core/CommonEditorActions.h"
-#include "../../Core/IniHelpers.h"
-#include "AnimationViewTab.h"
+#include "../Foundation/AnimationViewTab.h"
 
-#include "Urho3D/Graphics/AnimatedModel.h"
-#include "Urho3D/Graphics/AnimationController.h"
-#include "Urho3D/Graphics/Texture3D.h"
+#include "../Core/CommonEditorActions.h"
+#include "../Core/IniHelpers.h"
 
+#include <Urho3D/Graphics/AnimatedModel.h>
+#include <Urho3D/Graphics/AnimationController.h>
+#include <Urho3D/Graphics/Texture3D.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>
 

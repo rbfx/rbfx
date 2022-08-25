@@ -20,8 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "CameraController.h"
-#include "Urho3D/Graphics/Camera.h"
+#include "../../Foundation/Shared/CameraController.h"
+
+#include <Urho3D/Graphics/Camera.h>
 
 namespace Urho3D
 {

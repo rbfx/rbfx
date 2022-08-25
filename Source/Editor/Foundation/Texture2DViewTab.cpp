@@ -20,16 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include "Texture2DViewTab.h"
+#include "../Foundation/Texture2DViewTab.h"
 
-#include "../../Core/CommonEditorActions.h"
-#include "../../Core/IniHelpers.h"
+#include "../Core/CommonEditorActions.h"
+#include "../Core/IniHelpers.h"
 
 #include <Urho3D/Graphics/Material.h>
-#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Model.h>
-#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/TextureCube.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
 namespace Urho3D

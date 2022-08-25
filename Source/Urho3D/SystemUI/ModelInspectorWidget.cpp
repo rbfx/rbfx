@@ -21,10 +21,9 @@
 //
 
 #include "../Graphics/Model.h"
+
 #include "../SystemUI/ModelInspectorWidget.h"
 #include "../SystemUI/SystemUI.h"
-
-#include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {

@@ -20,16 +20,17 @@
 // THE SOFTWARE.
 //
 
-#include "CustomSceneViewTab.h"
+#include "../../Foundation/Shared/CustomSceneViewTab.h"
+
 #include "../../Core/IniHelpers.h"
 
+#include <Urho3D/Graphics/DebugRenderer.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Skybox.h>
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
-#include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/Material.h>
-#include <Urho3D/Graphics/Model.h>
-#include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>
 

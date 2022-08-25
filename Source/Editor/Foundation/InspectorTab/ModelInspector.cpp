@@ -22,11 +22,10 @@
 
 #include "../../Foundation/InspectorTab/ModelInspector.h"
 
-#include "Urho3D/Graphics/StaticModel.h"
-#include "Urho3D/SystemUI/SceneWidget.h"
-
 #include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/SystemUI/ModelInspectorWidget.h>
+#include <Urho3D/SystemUI/SceneWidget.h>
 
 namespace Urho3D
 {

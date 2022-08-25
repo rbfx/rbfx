@@ -27,11 +27,6 @@
 namespace Urho3D
 {
 
-void Foundation_InspectorWithPreview(Context* context, InspectorTab* inspectorTab)
-{
-    inspectorTab->RegisterAddon<InspectorWithPreview>(inspectorTab->GetProject());
-}
-
 InspectorWithPreview::InspectorWithPreview(Project* project)
     : Object(project->GetContext())
     , project_(project)

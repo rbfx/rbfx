@@ -21,9 +21,8 @@
 //
 
 #include "../SystemUI/AnimationInspectorWidget.h"
-#include "../SystemUI/SystemUI.h"
 
-#include <EASTL/fixed_vector.h>
+#include "../SystemUI/SystemUI.h"
 
 namespace Urho3D
 {

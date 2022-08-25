@@ -24,10 +24,8 @@
 
 #include "../Core/Signal.h"
 #include "../Graphics/Animation.h"
-#include "../SystemUI/Widgets.h"
 #include "../SystemUI/ResourceInspectorWidget.h"
-
-#include <EASTL/fixed_set.h>
+#include "../SystemUI/Widgets.h"
 
 namespace Urho3D
 {

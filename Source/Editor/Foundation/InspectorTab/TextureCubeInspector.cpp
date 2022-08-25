@@ -22,10 +22,9 @@
 
 #include "../../Foundation/InspectorTab/TextureCubeInspector.h"
 
-#include "Urho3D/Graphics/Skybox.h"
-#include "Urho3D/SystemUI/SceneWidget.h"
-
+#include <Urho3D/Graphics/Skybox.h>
 #include <Urho3D/Graphics/TextureCube.h>
+#include <Urho3D/SystemUI/SceneWidget.h>
 #include <Urho3D/SystemUI/TextureCubeInspectorWidget.h>
 
 namespace Urho3D

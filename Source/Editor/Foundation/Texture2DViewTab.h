@@ -22,34 +22,32 @@
 
 #pragma once
 
-#include "CustomSceneViewTab.h"
-#include "../../Project/Project.h"
-#include "../../Project/ResourceEditorTab.h"
-#include "Urho3D/Graphics/AnimatedModel.h"
+#include "../Foundation/Shared/CustomSceneViewTab.h"
+#include "../Project/Project.h"
+#include "../Project/ResourceEditorTab.h"
 
-#include <Urho3D/Graphics/Model.h>
-#include <Urho3D/Graphics/Animation.h>
+#include <Urho3D/SystemUI/Texture2DWidget.h>
 
 namespace Urho3D
 {
 
-void Foundation_AnimationViewTab(Context* context, Project* project);
+void Foundation_Texture2DViewTab(Context* context, Project* project);
 
 /// Tab that renders Scene and enables Scene manipulation.
-class AnimationViewTab : public CustomSceneViewTab
+class Texture2DViewTab : public CustomSceneViewTab
 {
-    URHO3D_OBJECT(AnimationViewTab, CustomSceneViewTab)
+    URHO3D_OBJECT(Texture2DViewTab, CustomSceneViewTab)
 
 public:
-    explicit AnimationViewTab(Context* context);
-    ~AnimationViewTab() override;
+    explicit Texture2DViewTab(Context* context);
+    ~Texture2DViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
     void RenderContent() override;
 
-    ea::string GetResourceTitle() { return "Animation"; }
-    bool SupportMultipleResources() { return false; }
+    ea::string GetResourceTitle() override { return "Texture2D"; }
+    bool SupportMultipleResources() override { return false; }
     bool CanOpenResource(const ResourceFileDescriptor& desc) override;
     /// @}
 
@@ -63,14 +61,8 @@ protected:
     void OnResourceShallowSaved(const ea::string& resourceName) override;
     /// @}
 
-    void RenderTitle() override;
-
 private:
-    SharedPtr<Model> model_;
-    SharedPtr<Animation> animation_;
-    Node* modelNode_;
-    AnimatedModel* animatedModel_;
-    AnimationController* animationController_;
+    SharedPtr<Texture2DWidget> preview_;
 };
 
 } // namespace Urho3D

@@ -21,9 +21,8 @@
 //
 
 #include "../SystemUI/ResourceInspectorWidget.h"
-#include "../SystemUI/SystemUI.h"
 
-#include <EASTL/fixed_vector.h>
+#include "../SystemUI/SystemUI.h"
 
 namespace Urho3D
 {
@@ -95,15 +94,10 @@ void ResourceInspectorWidget::RenderProperty(const PropertyDesc& desc)
     const ColorScopeGuard guardBackgroundColor{
         ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
-    if (CanSave())
-    {
-        if (Widgets::EditVariant(value, desc.options_))
-            pendingSetProperties_.emplace_back(&desc, value);
-    }
-    else
-    {
-        ui::Text("%s", value.ToString().c_str());
-    }
+    ui::BeginDisabled(!CanSave());
+    if (Widgets::EditVariant(value, desc.options_))
+        pendingSetProperties_.emplace_back(&desc, value);
+    ui::EndDisabled();
 }
 
 } // namespace Urho3D

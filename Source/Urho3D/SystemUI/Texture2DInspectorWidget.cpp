@@ -24,8 +24,6 @@
 
 #include "../SystemUI/SystemUI.h"
 
-#include <EASTL/fixed_vector.h>
-
 namespace Urho3D
 {
 

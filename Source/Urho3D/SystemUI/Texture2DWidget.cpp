@@ -22,7 +22,6 @@
 
 #include "../SystemUI/Texture2DWidget.h"
 
-
 namespace Urho3D
 {
 

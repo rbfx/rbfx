@@ -24,8 +24,8 @@
 
 #include "../Core/Signal.h"
 #include "../Graphics/Animation.h"
-#include "../SystemUI/Widgets.h"
 #include "../SystemUI/BaseWidget.h"
+#include "../SystemUI/Widgets.h"
 
 namespace Urho3D
 {

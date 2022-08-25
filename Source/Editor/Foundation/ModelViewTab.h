@@ -22,30 +22,30 @@
 
 #pragma once
 
-#include "CustomSceneViewTab.h"
-#include "../../Project/Project.h"
-#include "../../Project/ResourceEditorTab.h"
+#include "../Foundation/Shared/CustomSceneViewTab.h"
+#include "../Project/Project.h"
+#include "../Project/ResourceEditorTab.h"
+
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/Model.h>
 
 namespace Urho3D
 {
 
-void Foundation_TextureCubeViewTab(Context* context, Project* project);
+void Foundation_ModelViewTab(Context* context, Project* project);
 
 /// Tab that renders Scene and enables Scene manipulation.
-class TextureCubeViewTab : public CustomSceneViewTab
+class ModelViewTab : public CustomSceneViewTab
 {
-    URHO3D_OBJECT(TextureCubeViewTab, CustomSceneViewTab)
+    URHO3D_OBJECT(ModelViewTab, CustomSceneViewTab)
 
 public:
-    explicit TextureCubeViewTab(Context* context);
-    ~TextureCubeViewTab() override;
+    explicit ModelViewTab(Context* context);
+    ~ModelViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
-    void RenderContent() override;
-
-    ea::string GetResourceTitle() { return "Cubemap"; }
+    ea::string GetResourceTitle() { return "Model"; }
     bool SupportMultipleResources() { return false; }
     bool CanOpenResource(const ResourceFileDescriptor& desc) override;
     /// @}
@@ -59,9 +59,11 @@ protected:
     void OnResourceSaved(const ea::string& resourceName) override;
     void OnResourceShallowSaved(const ea::string& resourceName) override;
     /// @}
-    void RenderTextureCube(TextureCube* texture);
+
 private:
-    SharedPtr<TextureCube> textureCube_;
+    SharedPtr<Model> model_;
+    SharedPtr<Node> modelNode_;
+    SharedPtr<StaticModel> staticModel_;
 };
 
 } // namespace Urho3D

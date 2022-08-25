@@ -20,8 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "../../Core/IniHelpers.h"
-#include "ModelViewTab.h"
+#include "../Foundation/ModelViewTab.h"
+
+#include "../Core/IniHelpers.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
 

@@ -22,40 +22,47 @@
 
 #pragma once
 
-#include "../../Core/CommonEditorActions.h"
-#include "../../Project/Project.h"
-#include "../../Project/ResourceEditorTab.h"
-#include "../../Foundation/Shared/CameraController.h"
+#include "../Foundation/Shared/CustomSceneViewTab.h"
+#include "../Project/Project.h"
+#include "../Project/ResourceEditorTab.h"
 
-#include <Urho3D/SystemUI/SceneWidget.h>
-#include <Urho3D/Graphics/Animation.h>
+#include <Urho3D/Graphics/StaticModel.h>
 
 namespace Urho3D
 {
 
-/// Tab that renders custom Scene.
-class CustomSceneViewTab : public ResourceEditorTab
+void Foundation_TextureCubeViewTab(Context* context, Project* project);
+
+/// Tab that renders Scene and enables Scene manipulation.
+class TextureCubeViewTab : public CustomSceneViewTab
 {
-    URHO3D_OBJECT(CustomSceneViewTab, ResourceEditorTab)
+    URHO3D_OBJECT(TextureCubeViewTab, CustomSceneViewTab)
 
 public:
-    explicit CustomSceneViewTab(Context* context, const ea::string& title, const ea::string& guid, EditorTabFlags flags,
-        EditorTabPlacement placement);
-    ~CustomSceneViewTab() override;
+    explicit TextureCubeViewTab(Context* context);
+    ~TextureCubeViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
     void RenderContent() override;
+
+    ea::string GetResourceTitle() { return "Cubemap"; }
+    bool SupportMultipleResources() { return false; }
+    bool CanOpenResource(const ResourceFileDescriptor& desc) override;
     /// @}
 
-    Scene* GetScene() const { return preview_?preview_->GetScene():nullptr; }
-
 protected:
-    virtual void RenderTitle();
-
-    const SharedPtr<SceneWidget> preview_;
-    SharedPtr<CameraController> cameraController_;
-    CameraController::PageState state_;
+    /// ResourceEditorTab implementation
+    /// @{
+    void OnResourceLoaded(const ea::string& resourceName) override;
+    void OnResourceUnloaded(const ea::string& resourceName) override;
+    void OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName) override;
+    void OnResourceSaved(const ea::string& resourceName) override;
+    void OnResourceShallowSaved(const ea::string& resourceName) override;
+    /// @}
+    void RenderTextureCube(TextureCube* texture);
+private:
+    SharedPtr<TextureCube> textureCube_;
 };
 
 } // namespace Urho3D

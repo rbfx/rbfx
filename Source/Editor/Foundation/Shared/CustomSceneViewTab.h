@@ -22,48 +22,40 @@
 
 #pragma once
 
-#include "CustomSceneViewTab.h"
+#include "../../Core/CommonEditorActions.h"
 #include "../../Project/Project.h"
 #include "../../Project/ResourceEditorTab.h"
+#include "../../Foundation/Shared/CameraController.h"
 
-#include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/SystemUI/SceneWidget.h>
+#include <Urho3D/Graphics/Animation.h>
 
 namespace Urho3D
 {
 
-void Foundation_ModelViewTab(Context* context, Project* project);
-
-/// Tab that renders Scene and enables Scene manipulation.
-class ModelViewTab : public CustomSceneViewTab
+/// Tab that renders custom Scene.
+class CustomSceneViewTab : public ResourceEditorTab
 {
-    URHO3D_OBJECT(ModelViewTab, CustomSceneViewTab)
+    URHO3D_OBJECT(CustomSceneViewTab, ResourceEditorTab)
 
 public:
-    explicit ModelViewTab(Context* context);
-    ~ModelViewTab() override;
+    CustomSceneViewTab(Context* context, const ea::string& title, const ea::string& guid, EditorTabFlags flags,
+        EditorTabPlacement placement);
+    ~CustomSceneViewTab() override;
 
     /// ResourceEditorTab implementation
     /// @{
-    ea::string GetResourceTitle() { return "Model"; }
-    bool SupportMultipleResources() { return false; }
-    bool CanOpenResource(const ResourceFileDescriptor& desc) override;
+    void RenderContent() override;
     /// @}
+
+    Scene* GetScene() const { return preview_ ? preview_->GetScene() : nullptr; }
 
 protected:
-    /// ResourceEditorTab implementation
-    /// @{
-    void OnResourceLoaded(const ea::string& resourceName) override;
-    void OnResourceUnloaded(const ea::string& resourceName) override;
-    void OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName) override;
-    void OnResourceSaved(const ea::string& resourceName) override;
-    void OnResourceShallowSaved(const ea::string& resourceName) override;
-    /// @}
+    virtual void RenderTitle();
 
-private:
-    SharedPtr<Model> model_;
-    SharedPtr<Node> modelNode_;
-    SharedPtr<StaticModel> staticModel_;
+    const SharedPtr<SceneWidget> preview_;
+    SharedPtr<CameraController> cameraController_;
+    CameraController::PageState state_;
 };
 
 } // namespace Urho3D

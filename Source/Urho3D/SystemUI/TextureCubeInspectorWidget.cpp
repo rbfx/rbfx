@@ -20,11 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include "../SystemUI/SystemUI.h"
 #include "../SystemUI/TextureCubeInspectorWidget.h"
-#include "../Graphics/TextureCube.h"
 
-#include <EASTL/fixed_vector.h>
+#include "../Graphics/TextureCube.h"
+#include "../SystemUI/SystemUI.h"
 
 namespace Urho3D
 {

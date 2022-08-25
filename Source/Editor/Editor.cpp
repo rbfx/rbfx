@@ -22,6 +22,7 @@
 
 #include "Editor.h"
 
+#include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/GameViewTab.h"
 #include "Foundation/Glue/ProjectGlue.h"
@@ -29,24 +30,21 @@
 #include "Foundation/Glue/SceneViewGlue.h"
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
-#include "Foundation/InspectorTab/EmptyInspector.h"
 #include "Foundation/InspectorTab/AnimationInspector.h"
+#include "Foundation/InspectorTab/EmptyInspector.h"
 #include "Foundation/InspectorTab/MaterialInspector.h"
 #include "Foundation/InspectorTab/ModelInspector.h"
-#include "Foundation/InspectorTab/Texture2DInspector.h"
-#include "Foundation/InspectorTab/TextureCubeInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
+#include "Foundation/InspectorTab/Texture2DInspector.h"
+#include "Foundation/InspectorTab/TextureCubeInspector.h"
 #include "Foundation/ModelImporter.h"
+#include "Foundation/ModelViewTab.h"
 #include "Foundation/ProfilerTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
 #include "Foundation/ResourceBrowserTab/SceneFactory.h"
-#include "Foundation/ResourceTab/AnimationViewTab.h"
-#include "Foundation/ResourceTab/ModelViewTab.h"
-#include "Foundation/ResourceTab/Texture2DViewTab.h"
-#include "Foundation/ResourceTab/TextureCubeViewTab.h"
 #include "Foundation/SceneViewTab.h"
 #include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneHierarchy.h"
@@ -58,6 +56,10 @@
 #include "Foundation/SettingsTab/LaunchPage.h"
 #include "Foundation/SettingsTab/PluginsPage.h"
 #include "Foundation/StandardFileTypes.h"
+#include "Foundation/Texture2DViewTab.h"
+#include "Foundation/TextureCubeViewTab.h"
+
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 #include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Core/Context.h>
@@ -73,8 +75,6 @@
 #include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Widgets.h>
-
-#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <nativefiledialog/nfd.h>
 
 #ifdef WIN32

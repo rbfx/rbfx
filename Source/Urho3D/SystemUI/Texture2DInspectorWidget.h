@@ -22,12 +22,10 @@
 
 #pragma once
 
-#include "../SystemUI/ResourceInspectorWidget.h"
 #include "../Core/Signal.h"
 #include "../Graphics/Animation.h"
+#include "../SystemUI/ResourceInspectorWidget.h"
 #include "../SystemUI/Widgets.h"
-
-#include <EASTL/fixed_set.h>
 
 namespace Urho3D
 {

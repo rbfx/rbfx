@@ -30,8 +30,6 @@
 namespace Urho3D
 {
 
-void Foundation_InspectorWithPreview(Context* context, InspectorTab* inspectorTab);
-
 /// Simple default inspector for selected resources.
 class InspectorWithPreview
     : public Object
@@ -40,7 +38,7 @@ class InspectorWithPreview
     URHO3D_OBJECT(InspectorWithPreview, Object)
 
 public:
-    typedef ResourceInspectorWidget::ResourceVector ResourceVector;
+    using ResourceVector = ResourceInspectorWidget::ResourceVector;
 
     explicit InspectorWithPreview(Project* project);
 
@@ -53,6 +51,7 @@ public:
     void RenderMenu() override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
+
 protected:
     virtual StringHash GetResourceType() const { return 0; }
     virtual SharedPtr<ResourceInspectorWidget> MakeInspectorWidget(const ResourceVector& resources) { return nullptr; }
