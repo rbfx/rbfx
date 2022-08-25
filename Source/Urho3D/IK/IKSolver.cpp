@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../IK/IKSolver.h"
 #include "../IK/IKConstraint.h"
 #include "../IK/IKEvents.h"

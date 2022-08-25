@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Graphics/PipelineStateTracker.h"
 
 namespace Urho3D

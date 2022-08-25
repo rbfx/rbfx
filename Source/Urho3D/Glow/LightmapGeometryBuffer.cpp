@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Glow/LightmapGeometryBuffer.h"
 
 #include "../Core/Context.h"

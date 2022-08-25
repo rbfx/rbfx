@@ -20,8 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/Log.h"
+#include "../Precompiled.h"
+
 #include "../Utility/AssetTransformerHierarchy.h"
+
+#include "../IO/Log.h"
 
 #include <EASTL/sort.h>
 #include <EASTL/unordered_set.h>

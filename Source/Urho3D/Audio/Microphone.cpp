@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "Microphone.h"
 
 #include "../Core/Context.h"
@@ -28,8 +30,8 @@
 #include "AudioEvents.h"
 #include "BufferedSoundStream.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_audio.h>
+#include <SDL.h>
+#include <SDL_audio.h>
 
 namespace Urho3D
 {
@@ -82,8 +84,8 @@ void Microphone::Init(const ea::string& name, SDL_AudioDeviceID id, int bufferSi
     SetEnabled(true);
 }
 
-void Microphone::SetEnabled(bool state) 
-{ 
+void Microphone::SetEnabled(bool state)
+{
     if (enabled_ != state)
     {
         MutexLock lockHandle(lock_);

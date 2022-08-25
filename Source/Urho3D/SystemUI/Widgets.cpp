@@ -20,12 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
 #include "../SystemUI/Widgets.h"
 
-#include "../IO/FileSystem.h"
-#include "../Input/Input.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
+#include "../IO/FileSystem.h"
+#include "../Input/Input.h"
 #include "../SystemUI/DragDropPayload.h"
 #include "../SystemUI/SystemUI.h"
 
@@ -236,7 +239,7 @@ void TextURL(const ea::string& label, const ea::string& url)
 
     const auto& style = ui::GetStyle();
 
-    ui::Text(label.c_str());
+    ui::Text("%s", label.c_str());
     Underline(ToColor(style.Colors[ImGuiCol_Text]));
 
     const bool isHovered = ui::IsItemHovered();
@@ -949,6 +952,25 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     default:
         ui::Button("TODO: Implement");
         return false;
+    }
+}
+
+ImVec2 FitContent(const ImVec2& contentArea, const ImVec2& originalSize)
+{
+    const float eps = ea::numeric_limits<float>::epsilon();
+    if (contentArea.x <= eps || contentArea.y <= eps || originalSize.x <= eps || originalSize.y <= eps)
+    {
+        return ImVec2(0.0f, 0.0f);
+    }
+    const float contentAspect = contentArea.x / contentArea.y;
+    const float imageAspect = originalSize.x / originalSize.y;
+    if (contentAspect > imageAspect)
+    {
+        return ImVec2(contentArea.y * imageAspect, contentArea.y);
+    }
+    else
+    {
+        return ImVec2(contentArea.x, contentArea.x / imageAspect);
     }
 }
 

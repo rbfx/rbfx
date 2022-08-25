@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -39,12 +39,6 @@
 #include "SDL_vivanteopengles.h"
 #include "SDL_vivantevulkan.h"
 
-
-static int
-VIVANTE_Available(void)
-{
-    return 1;
-}
 
 static void
 VIVANTE_Destroy(SDL_VideoDevice * device)
@@ -125,7 +119,6 @@ VIVANTE_Create()
 VideoBootStrap VIVANTE_bootstrap = {
     "vivante",
     "Vivante EGL Video Driver",
-    VIVANTE_Available,
     VIVANTE_Create
 };
 
@@ -177,7 +170,7 @@ VIVANTE_AddVideoDisplays(_THIS)
     display.desktop_mode = current_mode;
     display.current_mode = current_mode;
     display.driverdata = data;
-    SDL_AddVideoDisplay(&display);
+    SDL_AddVideoDisplay(&display, SDL_FALSE);
     return 0;
 }
 
@@ -389,15 +382,14 @@ VIVANTE_GetWindowWMInfo(_THIS, SDL_Window * window, struct SDL_SysWMinfo *info)
     SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
     SDL_DisplayData *displaydata = SDL_GetDisplayDriverData(0);
 
-    if (info->version.major == SDL_MAJOR_VERSION &&
-        info->version.minor == SDL_MINOR_VERSION) {
+    if (info->version.major == SDL_MAJOR_VERSION) {
         info->subsystem = SDL_SYSWM_VIVANTE;
         info->info.vivante.display = displaydata->native_display;
         info->info.vivante.window = data->native_window;
         return SDL_TRUE;
     } else {
-        SDL_SetError("Application not compiled with SDL %d.%d",
-                     SDL_MAJOR_VERSION, SDL_MINOR_VERSION);
+        SDL_SetError("Application not compiled with SDL %d",
+                     SDL_MAJOR_VERSION);
         return SDL_FALSE;
     }
 }

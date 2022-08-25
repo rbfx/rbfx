@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
@@ -88,7 +89,7 @@ void RmlCanvasComponent::OnSetEnabled()
 
 void RmlCanvasComponent::SetUISize(IntVector2 size)
 {
-    assert(texture_.NotNull());
+    assert(texture_ != nullptr);
     if (size.x_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.x_ > UICOMPONENT_MAX_TEXTURE_SIZE ||
         size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE || size.x_ != size.y_)
     {
@@ -130,14 +131,14 @@ void RmlCanvasComponent::SetTextureRef(const ResourceRef& texture)
 
 ResourceRef RmlCanvasComponent::GetTextureRef() const
 {
-    if (texture_.Null())
+    if (texture_ == nullptr)
         return ResourceRef(Texture2D::GetTypeStatic());
     return ResourceRef(Texture2D::GetTypeStatic(), texture_->GetName());
 }
 
 void RmlCanvasComponent::ClearTexture()
 {
-    if (texture_.Null())
+    if (texture_ == nullptr)
         return;
 
     Image clear(context_);
@@ -228,7 +229,7 @@ void RmlCanvasComponent::RemapMousePos(IntVector2& screenPos)
         }
 
         Vector2& uv = queryResult.textureUV_;
-        IntVector2 uiSize = offScreenUI_->GetRmlContext()->GetDimensions();
+        IntVector2 uiSize = ToIntVector2(offScreenUI_->GetRmlContext()->GetDimensions());
         screenPos = IntVector2(static_cast<int>(uv.x_ * uiSize.x_), static_cast<int>(uv.y_ * uiSize.y_));
     }
 }

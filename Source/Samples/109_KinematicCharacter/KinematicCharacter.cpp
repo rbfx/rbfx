@@ -215,6 +215,9 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
 
 bool KinematicCharacter::IsNodeMovingPlatform(Node *node) const
 {
+    // TODO: Implement riding on platforms
+    return false;
+#if 0
     if (node == 0)
     {
         return false;
@@ -222,6 +225,7 @@ bool KinematicCharacter::IsNodeMovingPlatform(Node *node) const
 
     const Variant& var = node->GetVar(StringHash("IsMovingPlatform"));
     return (var != Variant::EMPTY && var.GetBool());
+#endif
 }
 
 void KinematicCharacter::NodeOnMovingPlatform(Node *node)

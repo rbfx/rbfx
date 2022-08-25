@@ -76,8 +76,8 @@ half3 SampleWorldNormal(const vec2 texCoord)
 /// Reconstruct view-space normal from depth buffer.
 half3 ReconstructNormal(const vec3 centerPos, const vec2 texCoord)
 {
-    const vec2 offsetY = vec2(0.0, cInputInvSize.y);
-    const vec2 offsetX = vec2(cInputInvSize.x, 0.0);
+    vec2 offsetY = vec2(0.0, cInputInvSize.y);
+    vec2 offsetX = vec2(cInputInvSize.x, 0.0);
 
 #ifdef SSAO_QUALITY_MID
     vec3 upPos = SamplePosition(Saturate(texCoord - offsetY));
@@ -113,7 +113,9 @@ vec3 SampleOrReconstructNormal(const vec3 centerPos, const vec2 texCoord)
 half3 ToHemisphere(const half3 direction, const half3 normal)
 {
     half proj = dot(direction, normal);
-    return direction - (step(0, -proj) * 2.0 * proj * normal);
+    half factor = proj > 0.0 ? 1.0 : -1.0;
+    const half bias = 0.03; // TODO: Configure
+    return direction * factor + normal * bias;
 }
 
 /// Calculate occlusion for single sample around given position.
@@ -180,7 +182,7 @@ void main()
 void main()
 {
 #ifdef EVALUATE_OCCLUSION
-    const half3 sampleOffsets[NUM_OCCLUSION_SAMPLES] = {
+    const half3 sampleOffsets[NUM_OCCLUSION_SAMPLES] = half3[NUM_OCCLUSION_SAMPLES] (
         vec3(-0.3991061,  -0.2619659,   0.7481203),  // Length: 0.887466
         vec3( 0.5641699,  -0.1403742,  -0.5268592),  // Length: 0.7845847
         vec3(-0.4665807,   0.3778321,  -0.06707126), // Length: 0.6041135
@@ -197,7 +199,7 @@ void main()
         vec3( 0.2557214,  -0.3414094,   0.8358757),  // Length: 0.9384254
         vec3(-0.5374408,   0.1441735,   0.4326658),  // Length: 0.7048605
         vec3( 0.4646511,   0.1468607,   0.4646904)   // Length: 0.6733543
-    };
+    );
 
     // Sample textures at the position
     vec3 position = SamplePosition(vTexCoord);
@@ -217,20 +219,20 @@ void main()
     }
 
     // Normalize accumulated occlustion and fade it with distance
-    const half distanceFactor = 1.0 - smoothstep(cFadeDistance.x, cFadeDistance.y, position.z);
-    const half occlusionFactor = 1.0 - pow(1.0 - occlusionSum / weightSum, cExponent);
-    const half finalOcclusion = 1.0 - cStrength * distanceFactor * occlusionFactor;
+    half distanceFactor = 1.0 - smoothstep(cFadeDistance.x, cFadeDistance.y, position.z);
+    half occlusionFactor = 1.0 - pow(1.0 - occlusionSum / weightSum, cExponent);
+    half finalOcclusion = 1.0 - cStrength * distanceFactor * occlusionFactor;
     gl_FragColor = vec4(0.0, 0.0, 0.0, finalOcclusion);
 #endif
 
 #ifdef BLUR
-    const half sampleWeights[NUM_BLUR_SAMPLES + 1] = {
+    const half sampleWeights[NUM_BLUR_SAMPLES + 1] = half[NUM_BLUR_SAMPLES + 1] (
         1.0,
         0.9071823,
         0.683296,
         0.442073,
         0.2665483
-    };
+    );
 
     vec2 baseTexCoord = Saturate(vTexCoord);
     vec3 basePosition = SamplePosition(baseTexCoord);

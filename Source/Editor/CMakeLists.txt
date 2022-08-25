@@ -24,7 +24,7 @@ if (NOT URHO3D_SYSTEMUI OR MINI_URHO OR NOT DESKTOP)
     return ()
 endif ()
 
-file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
+file (GLOB_RECURSE SOURCE_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h *.hpp)
 
 if (URHO3D_NO_EDITOR_PLAYER_EXE)
     # User is going to build their own editor executable

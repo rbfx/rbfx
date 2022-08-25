@@ -21,13 +21,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
 #include "../../Precompiled.h"
+
 #include "Normalized.h"
-#include "NormalizedInstance.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
+#include "NormalizedInstance.h"
 
 namespace Urho3D
 {

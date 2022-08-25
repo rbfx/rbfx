@@ -31,12 +31,12 @@
 
 #include "../DebugNew.h"
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 namespace Urho3D
 {
 
-StringHash VAR_DRAGDROPCONTENT("DragDropContent");
+const ea::string VAR_DRAGDROPCONTENT("DragDropContent");
 
 LineEdit::LineEdit(Context* context) :
     BorderImage(context),

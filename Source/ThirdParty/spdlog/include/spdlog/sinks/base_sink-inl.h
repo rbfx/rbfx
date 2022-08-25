@@ -4,11 +4,11 @@
 #pragma once
 
 #ifndef SPDLOG_HEADER_ONLY
-#include "spdlog/sinks/base_sink.h"
+#    include <spdlog/sinks/base_sink.h>
 #endif
 
-#include "spdlog/common.h"
-#include "spdlog/details/pattern_formatter.h"
+#include <spdlog/common.h>
+#include <spdlog/pattern_formatter.h>
 
 #include <memory>
 
@@ -37,7 +37,7 @@ void SPDLOG_INLINE spdlog::sinks::base_sink<Mutex>::flush()
 }
 
 template<typename Mutex>
-void SPDLOG_INLINE spdlog::sinks::base_sink<Mutex>::set_pattern(const eastl::string &pattern)
+void SPDLOG_INLINE spdlog::sinks::base_sink<Mutex>::set_pattern(const std::string &pattern)
 {
     std::lock_guard<Mutex> lock(mutex_);
     set_pattern_(pattern);
@@ -51,7 +51,7 @@ void SPDLOG_INLINE spdlog::sinks::base_sink<Mutex>::set_formatter(std::unique_pt
 }
 
 template<typename Mutex>
-void SPDLOG_INLINE spdlog::sinks::base_sink<Mutex>::set_pattern_(const eastl::string &pattern)
+void SPDLOG_INLINE spdlog::sinks::base_sink<Mutex>::set_pattern_(const std::string &pattern)
 {
     set_formatter_(details::make_unique<spdlog::pattern_formatter>(pattern));
 }

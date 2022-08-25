@@ -934,7 +934,7 @@ Variant XMLElement::GetVariantValue(VariantType type, Context* context) const
             SharedPtr<Serializable> object;
             object.StaticCast(context->CreateObject(typeName));
 
-            if (object.NotNull())
+            if (object != nullptr)
             {
                 // Restore proper refcount.
                 if (object->LoadXML(*this))

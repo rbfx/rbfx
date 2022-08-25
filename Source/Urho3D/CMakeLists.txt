@@ -170,7 +170,7 @@ endforeach()
 
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
-    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${rbfx_SOURCE_DIR}/cmake/Modules/GetUrhoRevision.cmake
+    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${rbfx_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
@@ -180,7 +180,7 @@ set (THIRD_PARTY_DEPENDENCIES
     LZ4
     PugiXml
     rapidjson
-    SDL
+    SDL2-static
     StanHull
     STB
     IconFontCppHeaders
@@ -260,7 +260,8 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         get_target_property(VALUE ${dep} INTERFACE_LINK_LIBRARIES)
         if (VALUE)
             foreach (dep_lib ${VALUE})
-                if (NOT TARGET ${dep_lib})
+                string(FIND "${dep_lib}" "$" DOLLAR_OFFSET)
+                if (DOLLAR_OFFSET LESS 0 AND NOT TARGET "${dep_lib}")
                     target_link_libraries (Urho3D PUBLIC "${dep_lib}")
                 endif ()
             endforeach ()
@@ -468,7 +469,7 @@ endif ()
 
 # Install C# dependencies
 if (URHO3D_CSHARP)
-   install (SCRIPT ${rbfx_SOURCE_DIR}/cmake/Install.cmake)
+   install (SCRIPT ${rbfx_SOURCE_DIR}/CMake/Install.cmake)
 endif ()
 
 ################################################### SDK preparation ####################################################

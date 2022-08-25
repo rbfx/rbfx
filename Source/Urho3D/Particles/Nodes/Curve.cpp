@@ -20,11 +20,14 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
+#include "../../Precompiled.h"
+
 #include "Curve.h"
+
+#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
+#include "../Span.h"
+#include "../UpdateContext.h"
 
 namespace Urho3D
 {
@@ -56,7 +59,7 @@ void Curve::Instance::Update(UpdateContext& context)
         pinRefs[i] = node_->pins_[i].GetMemoryReference();
     }
     SelectByVariantType<DispatchUpdate>(node_->pins_[1].GetValueType(), context, this, pinRefs);
-    
+
 }
 
 Curve::Curve(Context* context)

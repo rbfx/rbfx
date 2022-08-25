@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 #include "../Precompiled.h"
 
 #include "../Audio/Sound.h"
@@ -48,6 +49,7 @@
 #include "../RmlUI/RmlFile.h"
 #include "../RmlUI/RmlEventListeners.h"
 #include "../RmlUI/RmlCanvasComponent.h"
+#include "../RmlUI/RmlNavigable.h"
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
 
@@ -77,15 +79,9 @@ class RmlEventListenerInstancer : public Rml::EventListenerInstancer
 {
 public:
     /// Create an instance of inline event listener, if applicable.
-	Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override
+    Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override
     {
-        if (auto* instancer = SoundEventListener::CreateInstancer(value, element))
-            return instancer;
-
-        if (auto* instancer = CustomEventListener::CreateInstancer(value, element))
-            return instancer;
-
-        return nullptr;
+        return PipeEventListener::CreateInstancer(value, element);
     }
 };
 
@@ -117,8 +113,8 @@ public:
     void OnDocumentUnload(Rml::ElementDocument* document) override
     {
         RmlContext* rmlContext = static_cast<RmlContext*>(document->GetContext());
-        RmlUI* ui = rmlContext->GetOwnerSubsystem();
-        ui->OnDocumentUnload(document);
+        if (RmlUI* ui = rmlContext->GetOwnerSubsystem())
+            ui->OnDocumentUnload(document);
     }
 };
 
@@ -277,8 +273,10 @@ RmlUI::RmlUI(Context* context, const char* name)
         Rml::Factory::RegisterEventListenerInstancer(&RmlEventListenerInstancerInstance);
         Rml::Factory::RegisterContextInstancer(&RmlContextInstancerInstance);
         Rml::RegisterPlugin(&RmlPluginInstance);
+
+        RmlNavigable::Register();
     }
-    rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), GetDesiredCanvasSize()));
+    rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize())));
     rmlContext_->SetOwnerSubsystem(this);
 
     if (auto* ui = GetSubsystem<RmlUI>())
@@ -361,9 +359,9 @@ void RmlUI::HandleScreenMode(StringHash, VariantMap& eventData)
 {
     assert(rmlContext_ != nullptr);
     RmlCanvasResizedArgs args;
-    args.oldSize_ = rmlContext_->GetDimensions();
+    args.oldSize_ = ToIntVector2(rmlContext_->GetDimensions());
     args.newSize_ = GetDesiredCanvasSize();
-    rmlContext_->SetDimensions(args.newSize_);
+    rmlContext_->SetDimensions(ToRmlUi(args.newSize_));
     canvasResizedEvent_(this, args);
 }
 
@@ -525,9 +523,9 @@ void RmlUI::SetRenderTarget(RenderSurface* target, const Color& clearColor)
     renderSurface_ = target;
     clearColor_ = clearColor;
     RmlCanvasResizedArgs args;
-    args.oldSize_ = rmlContext_->GetDimensions();
+    args.oldSize_ = ToIntVector2(rmlContext_->GetDimensions());
     args.newSize_ = GetDesiredCanvasSize();
-    rmlContext_->SetDimensions(args.newSize_);
+    rmlContext_->SetDimensions(ToRmlUi(args.newSize_));
     canvasResizedEvent_(this, args);
 }
 
@@ -640,7 +638,11 @@ void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
 
         ea::fixed_vector<Rml::ElementDocument*, 64> unloadingDocuments;
         for (int i = 0; i < rmlContext_->GetNumDocuments(); i++)
-            unloadingDocuments.push_back(rmlContext_->GetDocument(i));
+        {
+            Rml::ElementDocument* document = rmlContext_->GetDocument(i);
+            if (!document->GetSourceURL().empty())
+                unloadingDocuments.push_back(document);
+        }
 
         for (Rml::ElementDocument* document : unloadingDocuments)
             ReloadDocument(document);
@@ -652,30 +654,44 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     assert(document != nullptr);
     assert(document->GetContext() == rmlContext_);
 
-    Vector2 pos = document->GetAbsoluteOffset(Rml::Box::BORDER);
-    Vector2 size = document->GetBox().GetSize(Rml::Box::CONTENT);
-    Rml::ModalFlag modal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
-    Rml::FocusFlag focus = Rml::FocusFlag::Auto;
-    bool visible = document->IsVisible();
-    if (Rml::Element* element = rmlContext_->GetFocusElement())
-        focus = element->GetOwnerDocument() == document ? Rml::FocusFlag::Document : focus;
+    // Keep some properties of the old document
+    const Vector2 oldPosition = ToVector2(document->GetAbsoluteOffset(Rml::Box::BORDER));
+    const Rml::ModalFlag oldModal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
+    const bool oldVisible = document->IsVisible();
 
-    document->Close();
+    const Rml::Element* oldFocusedElement = rmlContext_->GetFocusElement();
+    const Rml::FocusFlag focus = oldFocusedElement->GetOwnerDocument() == document ? Rml::FocusFlag::Document : Rml::FocusFlag::Auto;
 
+    const Rml::Property* oldLeftProperty = document->GetProperty(Rml::PropertyId::Left);
+    const Rml::Property* oldTopProperty = document->GetProperty(Rml::PropertyId::Top);
+    const Rml::Property* oldWidthProperty = document->GetProperty(Rml::PropertyId::Width);
+    const Rml::Property* oldHeightProperty = document->GetProperty(Rml::PropertyId::Height);
+
+    // Try to reload document
     Rml::ElementDocument* newDocument = rmlContext_->LoadDocument(document->GetSourceURL());
-    newDocument->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Width, Rml::Property(size.x_, Rml::Property::PX));
-    newDocument->SetProperty(Rml::PropertyId::Height, Rml::Property(size.y_, Rml::Property::PX));
+    if (!newDocument)
+        return nullptr;
+
+    // Setup persistent properties
+    if (oldLeftProperty)
+        newDocument->SetProperty(Rml::PropertyId::Left, *oldLeftProperty);
+    if (oldTopProperty)
+        newDocument->SetProperty(Rml::PropertyId::Top, *oldTopProperty);
+    if (oldWidthProperty)
+        newDocument->SetProperty(Rml::PropertyId::Width, *oldWidthProperty);
+    if (oldHeightProperty)
+        newDocument->SetProperty(Rml::PropertyId::Height, *oldHeightProperty);
     newDocument->UpdateDocument();
 
-    if (visible)
-        newDocument->Show(modal, focus);
+    if (oldVisible)
+        newDocument->Show(oldModal, focus);
 
     RmlDocumentReloadedArgs args;
     args.unloadedDocument_ = document;
     args.loadedDocument_ = newDocument;
     documentReloaded_(this, args);
+
+    document->Close();
 
     return newDocument;
 }

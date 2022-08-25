@@ -29,7 +29,7 @@
 #include "../IO/Log.h"
 #include "../Resource/Decompress.h"
 
-#include <SDL/SDL_surface.h>
+#include <SDL_surface.h>
 #include <STB/stb_image.h>
 #include <STB/stb_image_write.h>
 #ifdef URHO3D_WEBP
@@ -413,7 +413,7 @@ bool Image::BeginLoad(Deserializer& source)
             }
             else
             {
-                unsigned blockSize = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1 || compressedFormat_ == CF_ETC2_RGB) ? 8 : 16; 
+                unsigned blockSize = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1 || compressedFormat_ == CF_ETC2_RGB) ? 8 : 16;
                 // Add 3 to ensure valid block: ie 2x2 fits uses a whole 4x4 block
                 unsigned blocksWide = (ddsd.dwWidth_ + 3) / 4;
                 unsigned blocksHeight = (ddsd.dwHeight_ + 3) / 4;

@@ -24,6 +24,7 @@
 
 #include "../../Core/SettingsManager.h"
 #include "../../Foundation/SceneViewTab.h"
+#include "Foundation/Shared/CameraController.h"
 
 namespace Urho3D
 {
@@ -36,40 +37,9 @@ class EditorCamera : public SceneViewAddon
     URHO3D_OBJECT(EditorCamera, SceneViewAddon);
 
 public:
-    struct Settings
-    {
-        ea::string GetUniqueName() { return "Editor.Scene:Camera"; }
+    using SettingsPage = SimpleSettingsPage<CameraController::Settings>;
 
-        void SerializeInBlock(Archive& archive);
-        void RenderSettings();
-
-        float mouseSensitivity_{0.25f};
-        float minSpeed_{2.0f};
-        float maxSpeed_{10.0f};
-        float scrollSpeed_{3.5f};
-        float acceleration_{1.0f};
-        float shiftFactor_{4.0f};
-        float focusDistance_{10.0f};
-        float focusSpeed_{17.0f};
-    };
-    using SettingsPage = SimpleSettingsPage<Settings>;
-
-    struct PageState
-    {
-        Vector3 lastCameraPosition_;
-        Quaternion lastCameraRotation_;
-        float yaw_{};
-        float pitch_{};
-        float currentMoveSpeed_{};
-        Vector3 pendingOffset_;
-        ea::optional<Vector3> orbitPosition_;
-
-        PageState();
-        void LookAt(const Vector3& position, const Vector3& target);
-        void SerializeInBlock(Archive& archive);
-    };
-
-    EditorCamera(SceneViewTab* owner, SettingsPage* settings);
+    EditorCamera(SceneViewTab* owner, CameraController::SettingsPage* settings);
 
     /// Implement SceneViewAddon.
     /// @{
@@ -80,14 +50,11 @@ public:
     /// @}
 
 private:
-    PageState& GetOrInitializeState(SceneViewPage& scenePage) const;
-    void UpdateState(SceneViewPage& scenePage, PageState& state) const;
+    CameraController::PageState& GetOrInitializeState(SceneViewPage& scenePage) const;
     void LookAtPosition(SceneViewPage& scenePage, const Vector3& position) const;
 
-    Vector2 GetMouseMove() const;
-    Vector3 GetMoveDirection() const;
-
-    const WeakPtr<SettingsPage> settings_;
+    const WeakPtr<CameraController::SettingsPage> settings_;
+    SharedPtr<CameraController> cameraController_;
     bool isActive_{};
 };
 

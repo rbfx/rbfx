@@ -2,7 +2,8 @@ body, div,
 h1, h2, h3, h4,
 h5, h6, p,
 hr, pre, datagrid,
-tabset tabs, pre
+tabset tabs, pre,
+navigable
 {
     display: block;
     line-height: 1.25em;

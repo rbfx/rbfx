@@ -20,7 +20,10 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "MultitouchAdapter.h"
+
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
 

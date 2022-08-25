@@ -189,7 +189,7 @@ ea::string Pass::GetEffectivePixelShaderDefines() const
 ea::vector<SharedPtr<ShaderVariation> >& Pass::GetVertexShaders(const StringHash& extraDefinesHash)
 {
     // If empty hash, return the base shaders
-    if (!extraDefinesHash.Value())
+    if (!extraDefinesHash)
         return vertexShaders_;
     else
         return extraVertexShaders_[extraDefinesHash];
@@ -197,7 +197,7 @@ ea::vector<SharedPtr<ShaderVariation> >& Pass::GetVertexShaders(const StringHash
 
 ea::vector<SharedPtr<ShaderVariation> >& Pass::GetPixelShaders(const StringHash& extraDefinesHash)
 {
-    if (!extraDefinesHash.Value())
+    if (!extraDefinesHash)
         return pixelShaders_;
     else
         return extraPixelShaders_[extraDefinesHash];

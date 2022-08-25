@@ -20,11 +20,14 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
+#include "../Plugins/PluginApplication.h"
+
 #include "../Core/Context.h"
 #include "../IO/Archive.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/Log.h"
-#include "../Plugins/PluginApplication.h"
 #include "../Plugins/PluginManager.h"
 
 namespace Urho3D

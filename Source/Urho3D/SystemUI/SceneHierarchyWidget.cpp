@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../SystemUI/SceneHierarchyWidget.h"
 
 #include "../Scene/Component.h"
@@ -301,7 +303,7 @@ SceneHierarchyWidget::OptionalReorderInfo SceneHierarchyWidget::RenderObjectReor
     }
     else if (ui::IsItemHovered())
     {
-        ui::SetTooltip(hint);
+        ui::SetTooltip("%s", hint);
     }
     return ea::nullopt;
 }

@@ -20,8 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../Plugins/PluginManager.h"
+#include "../Precompiled.h"
+
 #include "../Plugins/ScriptBundlePlugin.h"
+
+#include "../Plugins/PluginManager.h"
 #include "../Resource/ResourceEvents.h"
 #include "../Script/Script.h"
 

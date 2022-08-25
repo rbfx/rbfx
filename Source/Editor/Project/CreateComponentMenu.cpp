@@ -24,6 +24,8 @@
 
 #include <Urho3D/SystemUI/SystemUI.h>
 
+#include <EASTL/sort.h>
+
 namespace Urho3D
 {
 
@@ -36,7 +38,7 @@ ea::optional<StringHash> RenderCreateComponentMenu(Context* context)
     sortedCategories.clear();
     ea::transform(typesByCategory.begin(), typesByCategory.end(), std::back_inserter(sortedCategories),
         [](const auto& pair) { return pair.first; });
-    std::sort(sortedCategories.begin(), sortedCategories.end());
+    ea::sort(sortedCategories.begin(), sortedCategories.end());
 
     ea::optional<StringHash> result;
     for (const auto& category : sortedCategories)

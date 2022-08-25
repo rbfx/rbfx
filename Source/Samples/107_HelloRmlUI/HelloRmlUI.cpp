@@ -38,43 +38,24 @@
 
 #include <Urho3D/DebugNew.h>
 
-
 SimpleWindow::SimpleWindow(Context* context)
     : RmlUIComponent(context)
 {
+    SetResource("UI/HelloRmlUI.rml");
 }
 
-void SimpleWindow::OnNodeSet(Node* node)
+void SimpleWindow::OnDataModelInitialized(Rml::DataModelConstructor& constructor)
 {
-    BaseClassName::OnNodeSet(node);
+    // Create a data model for connecting UI with state kept in this class.
+    // Important: there can only be one data model with given name per unique RmlUI subsystem!
+    constructor.Bind("slider_value", &sliderValue_);
+    constructor.Bind("counter", &counter_);
+    constructor.Bind("progress", &progress_);
+    constructor.BindEventCallback("count", &SimpleWindow::CountClicks, this);
 
+    // Act on pressing window close button.
     RmlUI* ui = GetUI();
-    Rml::Context* context = ui->GetRmlContext();
-    if (node != nullptr && !model_)
-    {
-        // Create a data model for connecting UI with state kept in this class.
-        // Important: there can only be one data model with given name per unique RmlUI subsystem!
-        Rml::DataModelConstructor constructor = context->CreateDataModel("example_model");
-        assert(constructor);
-        constructor.Bind("slider_value", &sliderValue_);
-        constructor.Bind("counter", &counter_);
-        constructor.Bind("progress", &progress_);
-        constructor.BindEventCallback("count", &SimpleWindow::CountClicks, this);
-        model_ = constructor.GetModelHandle();
-
-        // Load UI.
-        SetResource("UI/HelloRmlUI.rml");
-        SetOpen(true);
-
-        // Act on pressing window close button.
-        SubscribeToEvent(ui, "CloseWindow", &SimpleWindow::OnCloseWindow);
-    }
-    else if (node == nullptr && model_)
-    {
-        // Dispose of data model when it is no longer necessary.
-        context->RemoveDataModel("example_model");
-        model_ = nullptr;
-    }
+    SubscribeToEvent(ui, "CloseWindow", &SimpleWindow::OnCloseWindow);
 }
 
 void SimpleWindow::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments)
@@ -86,25 +67,19 @@ void SimpleWindow::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev,
 
 void SimpleWindow::Update(float timeStep)
 {
+    BaseClassName::Update(timeStep);
+
     // Animate progressbars
     progress_ = (Sin(GetSubsystem<Time>()->GetElapsedTime() * 50) + 1) / 2;
-    model_.DirtyVariable("progress");
-}
-
-void SimpleWindow::Reload()
-{
-    RmlUI* ui = GetSubsystem<RmlUI>();
-    document_ = ui->ReloadDocument(document_);
-    // Model does not have to be recreated and old model will be reused. State stored in the model persists across reloads.
+    DirtyVariable("progress");
 }
 
 void SimpleWindow::OnCloseWindow(StringHash, VariantMap& args)
 {
     Rml::Element* element = static_cast<Rml::Element*>(args["_Element"].GetVoidPtr());
-    if (element->GetOwnerDocument() == document_)
+    if (element->GetOwnerDocument() == GetDocument())
     {
-        document_->Close();
-        document_ = nullptr;
+        Remove();
     }
 }
 
@@ -228,11 +203,6 @@ void HelloRmlUI::OnUpdate(StringHash, VariantMap& eventData)
     node->Pitch(-6.0f * timeStep * 1.5f);
 
     Input* input = GetSubsystem<Input>();
-    if (input->GetKeyPress(KEY_F5))
-    {
-        window_->Reload();
-        windowOnCube_->Reload();
-    }
 
     if (input->GetKeyPress(KEY_F9))
     {

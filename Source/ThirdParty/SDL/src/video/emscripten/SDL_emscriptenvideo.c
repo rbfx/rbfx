@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -42,6 +42,8 @@
 static int Emscripten_VideoInit(_THIS);
 static int Emscripten_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode);
 static void Emscripten_VideoQuit(_THIS);
+static int Emscripten_GetDisplayUsableBounds(_THIS, SDL_VideoDisplay * display, SDL_Rect * rect);
+static int Emscripten_GetDisplayDPI(_THIS, SDL_VideoDisplay * display, float * ddpi, float * hdpi, float * vdpi);
 
 static int Emscripten_CreateWindow(_THIS, SDL_Window * window);
 static void Emscripten_SetWindowSize(_THIS, SDL_Window * window);
@@ -53,12 +55,6 @@ static void Emscripten_SetWindowTitle(_THIS, SDL_Window * window);
 
 /* Emscripten driver bootstrap functions */
 
-static int
-Emscripten_Available(void)
-{
-    return (1);
-}
-
 static void
 Emscripten_DeleteDevice(SDL_VideoDevice * device)
 {
@@ -66,7 +62,7 @@ Emscripten_DeleteDevice(SDL_VideoDevice * device)
 }
 
 static SDL_VideoDevice *
-Emscripten_CreateDevice(int devindex)
+Emscripten_CreateDevice(void)
 {
     SDL_VideoDevice *device;
 
@@ -86,6 +82,8 @@ Emscripten_CreateDevice(int devindex)
     /* Set the function pointers */
     device->VideoInit = Emscripten_VideoInit;
     device->VideoQuit = Emscripten_VideoQuit;
+    device->GetDisplayUsableBounds = Emscripten_GetDisplayUsableBounds;
+    device->GetDisplayDPI = Emscripten_GetDisplayDPI;
     device->SetDisplayMode = Emscripten_SetDisplayMode;
 
 
@@ -102,7 +100,7 @@ Emscripten_CreateDevice(int devindex)
     device->MaximizeWindow = Emscripten_MaximizeWindow;
     device->MinimizeWindow = Emscripten_MinimizeWindow;
     device->RestoreWindow = Emscripten_RestoreWindow;
-    device->SetWindowGrab = Emscripten_SetWindowGrab;*/
+    device->SetWindowMouseGrab = Emscripten_SetWindowMouseGrab;*/
     device->DestroyWindow = Emscripten_DestroyWindow;
     device->SetWindowFullscreen = Emscripten_SetWindowFullscreen;
 
@@ -130,7 +128,7 @@ Emscripten_CreateDevice(int devindex)
 
 VideoBootStrap Emscripten_bootstrap = {
     EMSCRIPTENVID_DRIVER_NAME, "SDL emscripten video driver",
-    Emscripten_Available, Emscripten_CreateDevice
+    Emscripten_CreateDevice
 };
 
 
@@ -141,14 +139,7 @@ Emscripten_VideoInit(_THIS)
 
     /* Use a fake 32-bpp desktop mode */
     mode.format = SDL_PIXELFORMAT_RGB888;
-
-    mode.w = EM_ASM_INT_V({
-        return screen.width;
-    });
-
-    mode.h = EM_ASM_INT_V({
-        return screen.height;
-    });
+    emscripten_get_screen_size(&mode.w, &mode.h);
 
     mode.refresh_rate = 0;
     mode.driverdata = NULL;
@@ -175,6 +166,43 @@ static void
 Emscripten_VideoQuit(_THIS)
 {
     Emscripten_FiniMouse();
+}
+
+static int
+Emscripten_GetDisplayUsableBounds(_THIS, SDL_VideoDisplay * display, SDL_Rect * rect)
+{
+    if (rect) {
+        rect->x = 0;
+        rect->y = 0;
+        rect->w = MAIN_THREAD_EM_ASM_INT({
+            return window.innerWidth;
+        });
+        rect->h = MAIN_THREAD_EM_ASM_INT({
+            return window.innerHeight;
+        });
+    }
+    return 0;
+}
+
+static int
+Emscripten_GetDisplayDPI(_THIS, SDL_VideoDisplay * display, float * ddpi_out, float * hdpi_out, float * vdpi_out)
+{
+    const float dpi_reference = 96.0f;
+    float dpi;
+
+    dpi = (float)emscripten_get_device_pixel_ratio() * dpi_reference;
+
+    if (ddpi_out) {
+        *ddpi_out = dpi;
+    }
+    if (hdpi_out) {
+        *hdpi_out = dpi;
+    }
+    if (vdpi_out) {
+        *vdpi_out = dpi;
+    }
+
+    return 0;
 }
 
 static void
@@ -347,12 +375,7 @@ Emscripten_SetWindowFullscreen(_THIS, SDL_Window * window, SDL_VideoDisplay * di
 
 static void
 Emscripten_SetWindowTitle(_THIS, SDL_Window * window) {
-    EM_ASM_INT({
-      if (typeof Module['setWindowTitle'] !== 'undefined') {
-        Module['setWindowTitle'](UTF8ToString($0));
-      }
-      return 0;
-    }, window->title);
+    emscripten_set_window_title(window->title);
 }
 
 #endif /* SDL_VIDEO_DRIVER_EMSCRIPTEN */

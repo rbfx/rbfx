@@ -110,7 +110,7 @@ extern "C" RPCRTAPI RPC_STATUS RPC_ENTRY RpcStringFreeA(RPC_CSTR* String);
 #endif
 
 #ifndef MINI_URHO
-#include <SDL/SDL.h>
+#include <SDL.h>
 #endif
 
 #include "../DebugNew.h"

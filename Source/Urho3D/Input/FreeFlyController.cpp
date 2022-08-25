@@ -20,15 +20,17 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "FreeFlyController.h"
 
 #include "../Core/CoreEvents.h"
-#include "../UI/UI.h"
+#include "../Graphics/Camera.h"
+#include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Camera.h"
 #include "../Scene/Node.h"
+#include "../UI/UI.h"
 
 namespace Urho3D
 {

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Engine/ApplicationSettings.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/File.h"

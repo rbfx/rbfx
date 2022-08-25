@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../SystemUI/MaterialInspectorWidget.h"
 
 #include "../Graphics/Texture2D.h"
@@ -548,7 +550,7 @@ void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
 
     Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(isUndefined, texture == nullptr));
     if (ui::IsItemHovered())
-        ui::SetTooltip(desc.hint_.c_str());
+        ui::SetTooltip("%s", desc.hint_.c_str());
 
     if (ui::Button(ICON_FA_TRASH_CAN))
         pendingSetTextures_.emplace_back(desc.unit_, nullptr);

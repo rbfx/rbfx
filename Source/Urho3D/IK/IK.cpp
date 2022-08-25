@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../IK/IK.h"
 #include "../IK/IKConstraint.h"
 #include "../IK/IKEffector.h"

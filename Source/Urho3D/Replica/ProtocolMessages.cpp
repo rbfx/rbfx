@@ -20,11 +20,12 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Replica/ProtocolMessages.h"
 
-#include "../Replica/ReplicationManager.h"
-
 #include "../Core/StringUtils.h"
+#include "../Replica/ReplicationManager.h"
 
 namespace Urho3D
 {

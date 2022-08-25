@@ -20,8 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/StringUtils.h"
+#include "../Precompiled.h"
+
 #include "../IO/Base64Archive.h"
+
+#include "../Core/StringUtils.h"
 
 namespace Urho3D
 {

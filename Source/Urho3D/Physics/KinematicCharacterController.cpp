@@ -20,22 +20,25 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/Context.h"
-#include "../Physics/PhysicsWorld.h"
-#include "../Physics/PhysicsEvents.h"
-#include "../Physics/CollisionShape.h"
-#include "../Physics/PhysicsUtils.h"
-#include "../Scene/Scene.h"
-#include "../IO/Log.h"
-
-#include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
-#include <BulletCollision/CollisionDispatch/btGhostObject.h>
-#include <BulletCollision/CollisionShapes/btConvexShape.h>
-#include <BulletCollision/CollisionShapes/btCapsuleShape.h>
-#include <Bullet/BulletDynamics/Character/btKinematicCharacterController.h>
-#include <cassert>
+#include "../Precompiled.h"
 
 #include "KinematicCharacterController.h"
+
+#include "../Core/Context.h"
+#include "../IO/Log.h"
+#include "../Physics/CollisionShape.h"
+#include "../Physics/PhysicsEvents.h"
+#include "../Physics/PhysicsUtils.h"
+#include "../Physics/PhysicsWorld.h"
+#include "../Scene/Scene.h"
+
+#include <Bullet/BulletDynamics/Character/btKinematicCharacterController.h>
+#include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
+#include <BulletCollision/CollisionShapes/btCapsuleShape.h>
+#include <BulletCollision/CollisionShapes/btConvexShape.h>
+
+#include <cassert>
 
 namespace Urho3D
 {

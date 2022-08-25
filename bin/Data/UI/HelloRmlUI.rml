@@ -6,7 +6,7 @@
 
 <body template="window" style="width: 300px">
     <p>Sample Window</p>
-    <div data-model="example_model">
+    <div data-model="SimpleWindow">
         <h3>Text</h3>
         <b>Bold text</b>, <i>italic text</i>, <s><span>striked out text</span></s>.
         <hr/>

@@ -43,7 +43,7 @@
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #include "../../DebugNew.h"
 
@@ -448,6 +448,7 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
 #endif
 
         SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
+        SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
 
         // Try 24-bit depth first, fallback to 16-bit
         for (const int depthSize : { 24, 16 })

@@ -146,7 +146,7 @@ public:
     JSONValue(JSONValue && value) :
         type_(0)
     {
-        *this = std::move(value);
+        *this = ea::move(value);
     }
     /// Destruct.
     ~JSONValue()

@@ -20,6 +20,10 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
+#include "../Plugins/ModulePlugin.h"
+
 #include "../Core/ProcessUtils.h"
 #include "../Core/StringUtils.h"
 #include "../Engine/Engine.h"
@@ -27,7 +31,6 @@
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/VectorBuffer.h"
-#include "../Plugins/ModulePlugin.h"
 #include "../Script/Script.h"
 
 namespace Urho3D
