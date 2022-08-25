@@ -45,7 +45,7 @@
 #include <Urho3D/DebugNew.h>
 
 // Custom variable identifier for storing sound effect name within the UI element
-static const StringHash VAR_SOUNDRESOURCE("SoundResource");
+static const ea::string VAR_SOUNDRESOURCE("SoundResource");
 static const unsigned NUM_SOUNDS = 3;
 
 static const char* soundNames[] = {
@@ -328,7 +328,7 @@ void SoundEffects::HandleStopMicRecord(StringHash eventType, VariantMap& eventDa
 {
     activeMic_.Reset();
 
-    if (micStream_.NotNull())
+    if (micStream_ != nullptr)
     {
         auto* soundSource = scene_->CreateComponent<SoundSource>();
         // Component will automatically remove itself when the sound finished playing

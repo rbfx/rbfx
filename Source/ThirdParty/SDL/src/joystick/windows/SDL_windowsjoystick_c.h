@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -27,6 +27,11 @@
 
 #define MAX_INPUTS  256     /* each joystick can have up to 256 inputs */
 
+/* Set up for C function definitions, even when using C++ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct JoyStick_DeviceData
 {
     SDL_JoystickGUID guid;
@@ -37,7 +42,7 @@ typedef struct JoyStick_DeviceData
     BYTE SubType;
     Uint8 XInputUserId;
     DIDEVICEINSTANCE dxdevice;
-    WCHAR hidPath[MAX_PATH];
+    char path[MAX_PATH];
     struct JoyStick_DeviceData *pNext;
 } JoyStick_DeviceData;
 
@@ -66,7 +71,6 @@ typedef struct input_t
 struct joystick_hwdata
 {
     SDL_JoystickGUID guid;
-    Uint32 rumble_expiration;
 
 #if SDL_JOYSTICK_DINPUT
     LPDIRECTINPUTDEVICE8 InputDevice;
@@ -91,5 +95,10 @@ extern const DIDATAFORMAT SDL_c_dfDIJoystick2;
 #endif
 
 extern void WINDOWS_AddJoystickDevice(JoyStick_DeviceData *device);
+
+/* Ends C function definitions when using C++ */
+#ifdef __cplusplus
+}
+#endif
 
 /* vi: set ts=4 sw=4 expandtab: */

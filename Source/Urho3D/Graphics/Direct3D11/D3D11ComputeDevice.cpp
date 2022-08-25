@@ -323,7 +323,7 @@ void ComputeDevice::ApplyBindings()
 
     if (programDirty_)
     {
-        if (computeShader_.NotNull())
+        if (computeShader_ != nullptr)
             d3dContext->CSSetShader((ID3D11ComputeShader*)computeShader_->GetGPUObject(), nullptr, 0);
         else
             d3dContext->CSSetShader(nullptr, nullptr, 0);
@@ -362,14 +362,14 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
     ApplyBindings();
 
     auto d3dContext = graphics_->GetImpl()->GetDeviceContext();
-    if (computeShader_.NotNull())
+    if (computeShader_ != nullptr)
         d3dContext->Dispatch(xDim, yDim, zDim);
 }
 
 void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData)
 {
     SharedPtr<Object> object(dynamic_cast<Object*>(eventData["GPUObject"].GetPtr()));
-    if (object.Null())
+    if (object == nullptr)
         return;
     void* gpuObject = ((GPUObject*)object.Get())->GetGPUObject();
 

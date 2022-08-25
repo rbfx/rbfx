@@ -27,10 +27,10 @@
 #include "../Container/FlagSet.h"
 #include "../Math/MathDefs.h"
 
-#include <SDL/SDL_joystick.h>
-#include <SDL/SDL_gamecontroller.h>
-#include <SDL/SDL_keycode.h>
-#include <SDL/SDL_mouse.h>
+#include <SDL_joystick.h>
+#include <SDL_gamecontroller.h>
+#include <SDL_keycode.h>
+#include <SDL_mouse.h>
 
 
 namespace Urho3D

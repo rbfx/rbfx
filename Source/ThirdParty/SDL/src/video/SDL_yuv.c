@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -55,6 +55,8 @@ SDL_YUV_CONVERSION_MODE SDL_GetYUVConversionModeForResolution(int width, int hei
     }
     return mode;
 }
+
+#if SDL_HAVE_YUV
 
 static int GetYUVConversionType(int width, int height, YCbCrType *yuv_type)
 {
@@ -288,6 +290,48 @@ static SDL_bool yuv_rgb_sse(
     return SDL_FALSE;
 }
 
+static SDL_bool yuv_rgb_lsx(
+    Uint32 src_format, Uint32 dst_format,
+    Uint32 width, Uint32 height,
+    const Uint8 *y, const Uint8 *u, const Uint8 *v, Uint32 y_stride, Uint32 uv_stride,
+    Uint8 *rgb, Uint32 rgb_stride,
+    YCbCrType yuv_type)
+{
+#ifdef __loongarch_sx
+    if (!SDL_HasLSX()) {
+        return SDL_FALSE;
+    }
+    if (src_format == SDL_PIXELFORMAT_YV12 ||
+        src_format == SDL_PIXELFORMAT_IYUV) {
+
+        switch (dst_format) {
+        case SDL_PIXELFORMAT_RGB24:
+            yuv420_rgb24_lsx(width, height, y, u, v, y_stride, uv_stride, rgb, rgb_stride, yuv_type);
+            return SDL_TRUE;
+        case SDL_PIXELFORMAT_RGBX8888:
+        case SDL_PIXELFORMAT_RGBA8888:
+            yuv420_rgba_lsx(width, height, y, u, v, y_stride, uv_stride, rgb, rgb_stride, yuv_type);
+            return SDL_TRUE;
+        case SDL_PIXELFORMAT_BGRX8888:
+        case SDL_PIXELFORMAT_BGRA8888:
+            yuv420_bgra_lsx(width, height, y, u, v, y_stride, uv_stride, rgb, rgb_stride, yuv_type);
+            return SDL_TRUE;
+        case SDL_PIXELFORMAT_RGB888:
+        case SDL_PIXELFORMAT_ARGB8888:
+            yuv420_argb_lsx(width, height, y, u, v, y_stride, uv_stride, rgb, rgb_stride, yuv_type);
+            return SDL_TRUE;
+        case SDL_PIXELFORMAT_BGR888:
+        case SDL_PIXELFORMAT_ABGR8888:
+            yuv420_abgr_lsx(width, height, y, u, v, y_stride, uv_stride, rgb, rgb_stride, yuv_type);
+            return SDL_TRUE;
+        default:
+            break;
+        }
+    }
+#endif
+    return SDL_FALSE;
+}
+
 static SDL_bool yuv_rgb_std(
     Uint32 src_format, Uint32 dst_format,
     Uint32 width, Uint32 height, 
@@ -412,6 +456,10 @@ SDL_ConvertPixels_YUV_to_RGB(int width, int height,
     }
 
     if (yuv_rgb_sse(src_format, dst_format, width, height, y, u, v, y_stride, uv_stride, (Uint8*)dst, dst_pitch, yuv_type)) {
+        return 0;
+    }
+
+    if (yuv_rgb_lsx(src_format, dst_format, width, height, y, u, v, y_stride, uv_stride, (Uint8*)dst, dst_pitch, yuv_type)) {
         return 0;
     }
 
@@ -1221,6 +1269,7 @@ SDL_ConvertPixels_Planar2x2_to_Planar2x2(int width, int height,
     return SDL_SetError("SDL_ConvertPixels_Planar2x2_to_Planar2x2: Unsupported YUV conversion: %s -> %s", SDL_GetPixelFormatName(src_format), SDL_GetPixelFormatName(dst_format));
 }
 
+#ifdef __SSE2__
 #define PACKED4_TO_PACKED4_ROW_SSE2(shuffle)                                                        \
     while (x >= 4) {                                                                                \
         __m128i yuv = _mm_loadu_si128((__m128i*)srcYUV);                                            \
@@ -1236,6 +1285,8 @@ SDL_ConvertPixels_Planar2x2_to_Planar2x2(int width, int height,
         dstYUV += 16;                                                                               \
         x -= 4;                                                                                     \
     }                                                                                               \
+
+#endif
 
 static int
 SDL_ConvertPixels_YUY2_to_UYVY(int width, int height, const void *src, int src_pitch, void *dst, int dst_pitch)
@@ -1806,11 +1857,14 @@ SDL_ConvertPixels_Packed4_to_Planar2x2(int width, int height,
     return 0;
 }
 
+#endif /* SDL_HAVE_YUV */
+
 int
 SDL_ConvertPixels_YUV_to_YUV(int width, int height,
          Uint32 src_format, const void *src, int src_pitch,
          Uint32 dst_format, void *dst, int dst_pitch)
 {
+#if SDL_HAVE_YUV
     if (src_format == dst_format) {
         if (src == dst) {
             /* Nothing to do */
@@ -1830,6 +1884,9 @@ SDL_ConvertPixels_YUV_to_YUV(int width, int height,
     } else {
         return SDL_SetError("SDL_ConvertPixels_YUV_to_YUV: Unsupported YUV conversion: %s -> %s", SDL_GetPixelFormatName(src_format), SDL_GetPixelFormatName(dst_format));
     }
+#else
+    return SDL_SetError("SDL not built with YUV support");
+#endif
 }
 
 /* vi: set ts=4 sw=4 expandtab: */

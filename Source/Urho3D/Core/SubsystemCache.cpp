@@ -90,6 +90,10 @@ void SubsystemCache::Remove(StringHash type)
 
 void SubsystemCache::Clear()
 {
+    // Don't modify collections during destruction
+    const auto tempCachedSubsystems = ea::move(cachedSubsystems_);
+    const auto tempSubsystems = ea::move(subsystems_);
+
     cachedSubsystems_.fill(nullptr);
     subsystems_.clear();
 }

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,12 +20,12 @@
 */
 #include "../../SDL_internal.h"
 
-#if SDL_VIDEO_DRIVER_WINDOWS && SDL_VIDEO_OPENGL_EGL
+#if SDL_VIDEO_DRIVER_WINDOWS && SDL_VIDEO_OPENGL_EGL && !defined(__XBOXONE__) && !defined(__XBOXSERIES__)
 
 #include "SDL_windowsvideo.h"
 #include "SDL_windowsopengles.h"
 #include "SDL_windowsopengl.h"
-#include "SDL_log.h"
+#include "SDL_windowswindow.h"
 
 /* EGL implementation of SDL OpenGL support */
 
@@ -41,6 +41,7 @@ WIN_GLES_LoadLibrary(_THIS, const char *path) {
         _this->GL_UnloadLibrary = WIN_GL_UnloadLibrary;
         _this->GL_CreateContext = WIN_GL_CreateContext;
         _this->GL_MakeCurrent = WIN_GL_MakeCurrent;
+        _this->GL_GetDrawableSize = WIN_GL_GetDrawableSize;
         _this->GL_SetSwapInterval = WIN_GL_SetSwapInterval;
         _this->GL_GetSwapInterval = WIN_GL_GetSwapInterval;
         _this->GL_SwapWindow = WIN_GL_SwapWindow;
@@ -73,6 +74,7 @@ WIN_GLES_CreateContext(_THIS, SDL_Window * window)
         _this->GL_UnloadLibrary = WIN_GL_UnloadLibrary;
         _this->GL_CreateContext = WIN_GL_CreateContext;
         _this->GL_MakeCurrent = WIN_GL_MakeCurrent;
+        _this->GL_GetDrawableSize = WIN_GL_GetDrawableSize;
         _this->GL_SetSwapInterval = WIN_GL_SetSwapInterval;
         _this->GL_GetSwapInterval = WIN_GL_GetSwapInterval;
         _this->GL_SwapWindow = WIN_GL_SwapWindow;
@@ -100,6 +102,12 @@ WIN_GLES_DeleteContext(_THIS, SDL_GLContext context)
 SDL_EGL_SwapWindow_impl(WIN)
 SDL_EGL_MakeCurrent_impl(WIN)
 
+void
+WIN_GLES_GetDrawableSize(_THIS, SDL_Window* window, int* w, int* h)
+{
+    WIN_GetDrawableSize(window, w, h);
+}
+
 int
 WIN_GLES_SetupWindow(_THIS, SDL_Window * window)
 {
@@ -108,12 +116,16 @@ WIN_GLES_SetupWindow(_THIS, SDL_Window * window)
     SDL_Window *current_win = SDL_GL_GetCurrentWindow();
     SDL_GLContext current_ctx = SDL_GL_GetCurrentContext();
 
-
     if (_this->egl_data == NULL) {
+        /* !!! FIXME: commenting out this assertion is (I think) incorrect; figure out why driver_loaded is wrong for ANGLE instead. --ryan. */
+        #if 0  /* When hint SDL_HINT_OPENGL_ES_DRIVER is set to "1" (e.g. for ANGLE support), _this->gl_config.driver_loaded can be 1, while the below lines function. */
+        SDL_assert(!_this->gl_config.driver_loaded);
+        #endif
         if (SDL_EGL_LoadLibrary(_this, NULL, EGL_DEFAULT_DISPLAY, 0) < 0) {
             SDL_EGL_UnloadLibrary(_this);
             return -1;
         }
+        _this->gl_config.driver_loaded = 1;
     }
   
     /* Create the GLES window surface */

@@ -20,9 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
 #include "../SystemUI/ImGui.h"
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 namespace Urho3D
 {

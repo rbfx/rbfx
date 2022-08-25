@@ -63,16 +63,14 @@ public struct StringHash : IEquatable<StringHash>
         return new StringHash(type);
     }
 
-    public static uint Calculate(string value, uint hash=0)
+    public static uint Calculate(string value)
     {
-        // Perform the actual hashing as case-insensitive
         var bytes = Encoding.UTF8.GetBytes(value);
+        uint result = 2166136261u;
         foreach (var b in bytes)
-            hash = SDBMHash(hash, b);
-        return hash;
+            result = (result * 16777619u) ^ b;
+        return result;
     }
-
-    public static uint SDBMHash(uint hash, byte c) { return c + (hash << 6) + (hash << 16) - hash; }
 
     public override string ToString()
     {

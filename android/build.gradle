@@ -5,29 +5,28 @@ def projectSourceDir = '..'
 // Relative path to project source code directory. Modify as required.
 def rbfxSourceDir = '..'
 // Minimum required CMake version. This is same as in ../CMakeLists.txt.
-def cmakeVersion = '3.14.0.0+'
+def cmakeVersion = '3.22.0.0+'
 
 buildscript {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.1'
+        classpath 'com.android.tools.build:gradle:7.2.1'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
 }
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion '29.0.2'
+    compileSdkVersion 32
     defaultConfig {
         applicationId 'io.urho3d'
         versionCode 1
         versionName '1.0.0'
         minSdkVersion 17
-        targetSdkVersion 28
+        targetSdkVersion 32
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
         }
@@ -58,21 +57,15 @@ android {
         res.srcDirs = ['res']
         assets.srcDirs = ['assets', "${rbfxSourceDir}/bin"]
     }
-    dexOptions {
-        javaMaxHeapSize "4g"
-        // If you get "Java heap error" you may need to add "org.gradle.jvmargs=-Xms128m -Xmx4096m" to gradle.properties
-        // in gradle service directory path (find it in Settings>Build>Gradle).
-    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    ndkVersion '20.0.5594570'
 }
 
 allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 }

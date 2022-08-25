@@ -20,6 +20,10 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
+#include "../Plugins/PluginManager.h"
+
 #include "../Core/CoreEvents.h"
 #include "../Core/ProcessUtils.h"
 #include "../Engine/Engine.h"
@@ -31,11 +35,10 @@
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
 #include "../Plugins/ModulePlugin.h"
-#include "../Plugins/PluginManager.h"
 #include "../Plugins/ScriptBundlePlugin.h"
 
-#include <EASTL/finally.h>
 #include <EASTL/bonus/adaptors.h>
+#include <EASTL/finally.h>
 
 namespace Urho3D
 {

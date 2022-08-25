@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -19,6 +19,8 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 #include "../SDL_internal.h"
+
+#if SDL_HAVE_BLIT_1
 
 #include "SDL_video.h"
 #include "SDL_blit.h"
@@ -48,7 +50,7 @@ Blit1to1(SDL_BlitInfo * info)
 
     while (height--) {
 #ifdef USE_DUFFS_LOOP
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP(
             {
               *dst = map[*src];
@@ -56,7 +58,7 @@ Blit1to1(SDL_BlitInfo * info)
             dst++;
             src++;
         , width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
 #else
         for (c = width; c; --c) {
             *dst = map[*src];
@@ -101,14 +103,14 @@ Blit1to2(SDL_BlitInfo * info)
 
 #ifdef USE_DUFFS_LOOP
     while (height--) {
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP(
         {
             *(Uint16 *)dst = map[*src++];
             dst += 2;
         },
         width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
         src += srcskip;
         dst += dstskip;
     }
@@ -208,7 +210,7 @@ Blit1to3(SDL_BlitInfo * info)
 
     while (height--) {
 #ifdef USE_DUFFS_LOOP
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP(
             {
                 o = *src * 4;
@@ -219,7 +221,7 @@ Blit1to3(SDL_BlitInfo * info)
             src++;
             dst += 3;
         , width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
 #else
         for (c = width; c; --c) {
             o = *src * 4;
@@ -257,11 +259,11 @@ Blit1to4(SDL_BlitInfo * info)
 
     while (height--) {
 #ifdef USE_DUFFS_LOOP
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP(
             *dst++ = map[*src++];
         , width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
 #else
         for (c = width / 4; c; --c) {
             *dst++ = map[*src++];
@@ -297,7 +299,7 @@ Blit1to1Key(SDL_BlitInfo * info)
 
     if (palmap) {
         while (height--) {
-            /* *INDENT-OFF* */
+            /* *INDENT-OFF* */ /* clang-format off */
             DUFFS_LOOP(
             {
                 if ( *src != ckey ) {
@@ -307,13 +309,13 @@ Blit1to1Key(SDL_BlitInfo * info)
                 src++;
             },
             width);
-            /* *INDENT-ON* */
+            /* *INDENT-ON* */ /* clang-format on */
             src += srcskip;
             dst += dstskip;
         }
     } else {
         while (height--) {
-            /* *INDENT-OFF* */
+            /* *INDENT-OFF* */ /* clang-format off */
             DUFFS_LOOP(
             {
                 if ( *src != ckey ) {
@@ -323,7 +325,7 @@ Blit1to1Key(SDL_BlitInfo * info)
                 src++;
             },
             width);
-            /* *INDENT-ON* */
+            /* *INDENT-ON* */ /* clang-format on */
             src += srcskip;
             dst += dstskip;
         }
@@ -346,7 +348,7 @@ Blit1to2Key(SDL_BlitInfo * info)
     dstskip /= 2;
 
     while (height--) {
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP(
         {
             if ( *src != ckey ) {
@@ -356,7 +358,7 @@ Blit1to2Key(SDL_BlitInfo * info)
             dstp++;
         },
         width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
         src += srcskip;
         dstp += dstskip;
     }
@@ -376,7 +378,7 @@ Blit1to3Key(SDL_BlitInfo * info)
     int o;
 
     while (height--) {
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP(
         {
             if ( *src != ckey ) {
@@ -389,7 +391,7 @@ Blit1to3Key(SDL_BlitInfo * info)
             dst += 3;
         },
         width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
         src += srcskip;
         dst += dstskip;
     }
@@ -411,7 +413,7 @@ Blit1to4Key(SDL_BlitInfo * info)
     dstskip /= 4;
 
     while (height--) {
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP(
         {
             if ( *src != ckey ) {
@@ -421,7 +423,7 @@ Blit1to4Key(SDL_BlitInfo * info)
             dstp++;
         },
         width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
         src += srcskip;
         dstp += dstskip;
     }
@@ -448,7 +450,7 @@ Blit1toNAlpha(SDL_BlitInfo * info)
     dstbpp = dstfmt->BytesPerPixel;
 
     while (height--) {
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP4(
         {
             sR = srcpal[*src].r;
@@ -461,7 +463,7 @@ Blit1toNAlpha(SDL_BlitInfo * info)
             dst += dstbpp;
         },
         width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
         src += srcskip;
         dst += dstskip;
     }
@@ -489,7 +491,7 @@ Blit1toNAlphaKey(SDL_BlitInfo * info)
     dstbpp = dstfmt->BytesPerPixel;
 
     while (height--) {
-        /* *INDENT-OFF* */
+        /* *INDENT-OFF* */ /* clang-format off */
         DUFFS_LOOP(
         {
             if ( *src != ckey ) {
@@ -504,7 +506,7 @@ Blit1toNAlphaKey(SDL_BlitInfo * info)
             dst += dstbpp;
         },
         width);
-        /* *INDENT-ON* */
+        /* *INDENT-ON* */ /* clang-format on */
         src += srcskip;
         dst += dstskip;
     }
@@ -548,5 +550,7 @@ SDL_CalculateBlit1(SDL_Surface * surface)
     }
     return (SDL_BlitFunc) NULL;
 }
+
+#endif /* SDL_HAVE_BLIT_1 */
 
 /* vi: set ts=4 sw=4 expandtab: */

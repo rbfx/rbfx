@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -37,7 +37,7 @@ extern "C" {
 #include <string>
 #include <unordered_map>
 
-using namespace std;
+//using namespace std;  // rbfx fix
 using namespace Windows::Storage;
 
 extern "C" const wchar_t *
@@ -46,16 +46,25 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
     switch (pathType) {
         case SDL_WINRT_PATH_INSTALLED_LOCATION:
         {
-            static wstring path;
+            static std::wstring path;
             if (path.empty()) {
+#if defined(NTDDI_WIN10_19H1) && (NTDDI_VERSION >= NTDDI_WIN10_19H1) && (WINAPI_FAMILY == WINAPI_FAMILY_PC_APP) /* Only PC supports mods */
+                /* Windows 1903 supports mods, via the EffectiveLocation API */
+                if (Windows::Foundation::Metadata::ApiInformation::IsApiContractPresent("Windows.Foundation.UniversalApiContract", 8, 0)) {
+                    path = Windows::ApplicationModel::Package::Current->EffectiveLocation->Path->Data();
+                } else {
+                    path = Windows::ApplicationModel::Package::Current->InstalledLocation->Path->Data();
+                }
+#else
                 path = Windows::ApplicationModel::Package::Current->InstalledLocation->Path->Data();
+#endif
             }
             return path.c_str();
         }
 
         case SDL_WINRT_PATH_LOCAL_FOLDER:
         {
-            static wstring path;
+            static std::wstring path;
             if (path.empty()) {
                 path = ApplicationData::Current->LocalFolder->Path->Data();
             }
@@ -65,7 +74,7 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
 #if (WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP) || (NTDDI_VERSION > NTDDI_WIN8)
         case SDL_WINRT_PATH_ROAMING_FOLDER:
         {
-            static wstring path;
+            static std::wstring path;
             if (path.empty()) {
                 path = ApplicationData::Current->RoamingFolder->Path->Data();
             }
@@ -74,7 +83,7 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
 
         case SDL_WINRT_PATH_TEMP_FOLDER:
         {
-            static wstring path;
+            static std::wstring path;
             if (path.empty()) {
                 path = ApplicationData::Current->TemporaryFolder->Path->Data();
             }
@@ -93,7 +102,7 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
 extern "C" const char *
 SDL_WinRTGetFSPathUTF8(SDL_WinRT_Path pathType)
 {
-    typedef unordered_map<SDL_WinRT_Path, string> UTF8PathMap;
+    typedef std::unordered_map<SDL_WinRT_Path, std::string> UTF8PathMap;
     static UTF8PathMap utf8Paths;
 
     UTF8PathMap::iterator searchResult = utf8Paths.find(pathType);

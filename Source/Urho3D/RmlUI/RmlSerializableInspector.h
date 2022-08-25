@@ -46,11 +46,9 @@ public:
 protected:
     /// RmlUIComponent implementation
     /// @{
-    void OnNodeSet(Node* node) override;
     void Update(float timeStep) override;
+    void OnDataModelInitialized(Rml::DataModelConstructor& constructor) override;
     /// @}
-
-    Rml::DataModelHandle model_;
 
     WeakPtr<Serializable> serializable_;
     Rml::String type_;

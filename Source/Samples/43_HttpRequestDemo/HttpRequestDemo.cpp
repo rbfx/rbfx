@@ -82,7 +82,7 @@ void HttpRequestDemo::Update(float timeStep)
 {
     auto* network = GetSubsystem<Network>();
 
-    if (httpRequest_.Null())
+    if (httpRequest_ == nullptr)
 #ifdef URHO3D_SSL
         httpRequest_ = network->MakeHttpRequest("https://api.ipify.org/?format=json");
 #else

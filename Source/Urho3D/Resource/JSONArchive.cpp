@@ -20,9 +20,12 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
+#include "../Resource/JSONArchive.h"
+
 #include "../Core/StringUtils.h"
 #include "../IO/ArchiveSerialization.h"
-#include "../Resource/JSONArchive.h"
 
 namespace Urho3D
 {

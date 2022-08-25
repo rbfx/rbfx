@@ -181,15 +181,15 @@ JSONValue& JSONValue::operator=(JSONValue && rhs)
         break;
 
     case JSON_STRING:
-        *stringValue_ = std::move(*rhs.stringValue_);
+        *stringValue_ = ea::move(*rhs.stringValue_);
         break;
 
     case JSON_ARRAY:
-        *arrayValue_ = std::move(*rhs.arrayValue_);
+        *arrayValue_ = ea::move(*rhs.arrayValue_);
         break;
 
     case JSON_OBJECT:
-        *objectValue_ = std::move(*rhs.objectValue_);
+        *objectValue_ = ea::move(*rhs.objectValue_);
 
     default:
         break;
@@ -276,7 +276,7 @@ void JSONValue::Push(JSONValue value)
     // Convert to array type
     SetType(JSON_ARRAY);
 
-    arrayValue_->push_back(std::move(value));
+    arrayValue_->push_back(ea::move(value));
 }
 
 void JSONValue::Pop()
@@ -292,7 +292,7 @@ void JSONValue::Insert(unsigned pos, JSONValue value)
     if (GetValueType() != JSON_ARRAY)
         return;
 
-    arrayValue_->insert(arrayValue_->begin() + pos, std::move(value));
+    arrayValue_->insert(arrayValue_->begin() + pos, ea::move(value));
 }
 
 void JSONValue::Erase(unsigned pos, unsigned length)
@@ -342,7 +342,7 @@ void JSONValue::Set(const ea::string& key, JSONValue value)
     // Convert to object type
     SetType(JSON_OBJECT);
 
-    (*objectValue_)[key] = std::move(value);
+    (*objectValue_)[key] = ea::move(value);
 }
 
 const JSONValue& JSONValue::Get(const ea::string& key) const
@@ -659,7 +659,7 @@ Variant JSONValue::GetVariantValue(VariantType type, Context* context) const
                 SharedPtr<Serializable> object;
                 object.StaticCast(context->CreateObject(typeName));
 
-                if (object.NotNull())
+                if (object != nullptr)
                 {
                     // Restore proper refcount.
                     if (object->LoadJSON((*this)["value"]))

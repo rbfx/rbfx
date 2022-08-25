@@ -19,11 +19,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
+#include "../RmlUI/RmlFile.h"
+
 #include "../Core/Context.h"
 #include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
-#include "../RmlUI/RmlFile.h"
 
 #include "../DebugNew.h"
 
@@ -43,7 +47,7 @@ Rml::FileHandle RmlFile::Open(const Rml::String& path)
 {
     ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
     SharedPtr<File> file(cache->GetFile(path));
-    if (file.NotNull())
+    if (file != nullptr)
     {
         loadedFiles_.insert(GetAbsolutePath(cache->GetResourceFileName(path)));
         return reinterpret_cast<Rml::FileHandle>(file.Detach());

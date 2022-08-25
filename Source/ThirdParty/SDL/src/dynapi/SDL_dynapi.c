@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -71,11 +71,28 @@ static void SDL_InitDynamicAPI(void);
 
 #define SDL_DYNAPI_VARARGS(_static, name, initcall) \
     _static int SDLCALL SDL_SetError##name(SDL_PRINTF_FORMAT_STRING const char *fmt, ...) { \
-        char buf[512]; /* !!! FIXME: dynamic allocation */ \
-        va_list ap; initcall; va_start(ap, fmt); \
-        jump_table.SDL_vsnprintf(buf, sizeof (buf), fmt, ap); \
+        char buf[128], *str = buf; \
+        int result; \
+        va_list ap; initcall; \
+        va_start(ap, fmt); \
+        result = jump_table.SDL_vsnprintf(buf, sizeof(buf), fmt, ap); \
         va_end(ap); \
-        return jump_table.SDL_SetError("%s", buf); \
+        if (result >= 0 && (size_t)result >= sizeof(buf)) { \
+            size_t len = (size_t)result + 1; \
+            str = (char *)jump_table.SDL_malloc(len); \
+            if (str) { \
+                va_start(ap, fmt); \
+                result = jump_table.SDL_vsnprintf(str, len, fmt, ap); \
+                va_end(ap); \
+            } \
+        } \
+        if (result >= 0) { \
+            result = jump_table.SDL_SetError("%s", str); \
+        } \
+        if (str != buf) { \
+            jump_table.SDL_free(str); \
+        } \
+        return result; \
     } \
     _static int SDLCALL SDL_sscanf##name(const char *buf, SDL_SCANF_FORMAT_STRING const char *fmt, ...) { \
         int retval; va_list ap; initcall; va_start(ap, fmt); \
@@ -86,6 +103,12 @@ static void SDL_InitDynamicAPI(void);
     _static int SDLCALL SDL_snprintf##name(SDL_OUT_Z_CAP(maxlen) char *buf, size_t maxlen, SDL_PRINTF_FORMAT_STRING const char *fmt, ...) { \
         int retval; va_list ap; initcall; va_start(ap, fmt); \
         retval = jump_table.SDL_vsnprintf(buf, maxlen, fmt, ap); \
+        va_end(ap); \
+        return retval; \
+    } \
+    _static int SDLCALL SDL_asprintf##name(char **strp, SDL_PRINTF_FORMAT_STRING const char *fmt, ...) { \
+        int retval; va_list ap; initcall; va_start(ap, fmt); \
+        retval = jump_table.SDL_vasprintf(strp, fmt, ap); \
         va_end(ap); \
         return retval; \
     } \
@@ -251,12 +274,12 @@ static SDL_INLINE void *get_sdlapi_entry(const char *fname, const char *sym)
     HMODULE hmodule;
     PFN retval = NULL;
     char error[256];
-    if (DosLoadModule(&error, sizeof(error), fname, &hmodule) == NO_ERROR) {
+    if (DosLoadModule(error, sizeof(error), fname, &hmodule) == NO_ERROR) {
         if (DosQueryProcAddr(hmodule, 0, sym, &retval) != NO_ERROR) {
             DosFreeModule(hmodule);
         }
     }
-    return (void *) retval;
+    return (void *)retval;
 }
 
 #else
@@ -264,29 +287,58 @@ static SDL_INLINE void *get_sdlapi_entry(const char *fname, const char *sym)
 #endif
 
 
+static void dynapi_warn(const char *msg)
+{
+    const char *caption = "SDL Dynamic API Failure!";
+    /* SDL_ShowSimpleMessageBox() is a too heavy for here. */
+    #if (defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__)) && !defined(__XBOXONE__) && !defined(__XBOXSERIES__)
+    MessageBoxA(NULL, msg, caption, MB_OK | MB_ICONERROR);
+    #elif defined(HAVE_STDIO_H)
+    fprintf(stderr, "\n\n%s\n%s\n\n", caption, msg);
+    fflush(stderr);
+    #endif
+}
+
+/* This is not declared in any header, although it is shared between some
+    parts of SDL, because we don't want anything calling it without an
+    extremely good reason. */
+#if defined(__WATCOMC__)
+void SDL_ExitProcess(int exitcode);
+#pragma aux SDL_ExitProcess aborts;
+#endif
+SDL_NORETURN void SDL_ExitProcess(int exitcode);
+
+
 static void
 SDL_InitDynamicAPILocked(void)
 {
     const char *libname = SDL_getenv_REAL("SDL_DYNAMIC_API");
     SDL_DYNAPI_ENTRYFN entry = NULL;  /* funcs from here by default. */
+    SDL_bool use_internal = SDL_TRUE;
 
     if (libname) {
         entry = (SDL_DYNAPI_ENTRYFN) get_sdlapi_entry(libname, "SDL_DYNAPI_entry");
         if (!entry) {
-            /* !!! FIXME: fail to startup here instead? */
-            /* !!! FIXME: definitely warn user. */
-            /* Just fill in the function pointers from this library. */
+            dynapi_warn("Couldn't load overriding SDL library. Please fix or remove the SDL_DYNAMIC_API environment variable. Using the default SDL.");
+            /* Just fill in the function pointers from this library, later. */
         }
     }
 
-    if (!entry || (entry(SDL_DYNAPI_VERSION, &jump_table, sizeof (jump_table)) < 0)) {
-        /* !!! FIXME: fail to startup here instead? */
-        /* !!! FIXME: definitely warn user. */
-        /* Just fill in the function pointers from this library. */
-        if (!entry) {
-            if (!initialize_jumptable(SDL_DYNAPI_VERSION, &jump_table, sizeof (jump_table))) {
-                /* !!! FIXME: now we're screwed. Should definitely abort now. */
-            }
+    if (entry) {
+        if (entry(SDL_DYNAPI_VERSION, &jump_table, sizeof (jump_table)) < 0) {
+            dynapi_warn("Couldn't override SDL library. Using a newer SDL build might help. Please fix or remove the SDL_DYNAMIC_API environment variable. Using the default SDL.");
+            /* Just fill in the function pointers from this library, later. */
+        } else {
+            use_internal = SDL_FALSE;   /* We overrode SDL! Don't use the internal version! */
+        }
+    }
+
+    /* Just fill in the function pointers from this library. */
+    if (use_internal) {
+        if (initialize_jumptable(SDL_DYNAPI_VERSION, &jump_table, sizeof (jump_table)) < 0) {
+            /* Now we're screwed. Should definitely abort now. */
+            dynapi_warn("Failed to initialize internal SDL dynapi. As this would otherwise crash, we have to abort now.");
+            SDL_ExitProcess(86);
         }
     }
 

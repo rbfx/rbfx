@@ -309,10 +309,12 @@ EASTDC_API int Strlcpy(char16_t* pDest, const char32_t* pSource, size_t nDestCap
 #if EA_CHAR8_UNIQUE
 	inline int Strlcpy(char8_t* pDestination, const char* pSource, size_t nDestCapacity, size_t nSourceLength = kSizeTypeUnset)
 	{
+		EA_UNUSED(nSourceLength);
 		return (int)Strlcpy((char*)pDestination, pSource, nDestCapacity);
 	}
 	inline int Strlcpy(char* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength = kSizeTypeUnset)
 	{
+		EA_UNUSED(nSourceLength);
 		return (int)Strlcpy(pDestination, (const char*)pSource, nDestCapacity);
 	}
 

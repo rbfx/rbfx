@@ -53,7 +53,7 @@ StringHash StringHashRegister::RegisterString(const StringHash& hash, ea::string
     auto iter = map_.find(hash);
     if (iter == map_.end())
     {
-        map_.populate(hash, ea::string(string));
+        map_.emplace(hash, ea::string(string));
     }
     else if (ea::string_view(iter->second) != string)
     {

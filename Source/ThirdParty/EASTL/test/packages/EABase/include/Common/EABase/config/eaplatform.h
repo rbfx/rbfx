@@ -569,6 +569,10 @@
 	#define EA_PLATFORM_DESKTOP 1
 	#define EA_PLATFORM_MICROSOFT 1
 
+	#if defined(_KERNEL_MODE)
+		#define EA_PLATFORM_WINDOWS_KERNEL 1
+	#endif
+
 	// WINAPI_FAMILY defines to support Windows 8 Metro Apps - mirroring winapifamily.h in the Windows 8 SDK
 	#define EA_WINAPI_FAMILY_APP         1000
 	#define EA_WINAPI_FAMILY_DESKTOP_APP 1001

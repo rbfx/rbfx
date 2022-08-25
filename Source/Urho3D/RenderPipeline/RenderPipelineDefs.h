@@ -655,6 +655,12 @@ struct AutoExposurePassSettings
     /// @}
 };
 
+enum class AmbientOcclusionMode
+{
+    Combine,
+    Preview
+};
+
 struct AmbientOcclusionPassSettings
 {
     bool enabled_{};
@@ -673,6 +679,8 @@ struct AmbientOcclusionPassSettings
 
     float blurDepthThreshold_{0.1f};
     float blurNormalThreshold_{0.2f};
+
+    AmbientOcclusionMode ambientOcclusionMode_{AmbientOcclusionMode::Combine};
 
     /// Utility operators
     /// @{
@@ -695,7 +703,9 @@ struct AmbientOcclusionPassSettings
             && fadeDistanceEnd_ == rhs.fadeDistanceEnd_
 
             && blurDepthThreshold_ == rhs.blurDepthThreshold_
-            && blurNormalThreshold_ == rhs.blurNormalThreshold_;
+            && blurNormalThreshold_ == rhs.blurNormalThreshold_
+
+            && ambientOcclusionMode_ == rhs.ambientOcclusionMode_;
     }
 
     bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }

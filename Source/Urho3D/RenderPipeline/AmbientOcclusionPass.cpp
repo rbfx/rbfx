@@ -20,13 +20,15 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "AmbientOcclusionPass.h"
 
-#include "RenderBufferManager.h"
+#include "../Graphics/Camera.h"
+#include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
 #include "../Resource/ResourceCache.h"
-#include "Urho3D/Graphics/Camera.h"
-#include "Urho3D/Graphics/Renderer.h"
+#include "RenderBufferManager.h"
 
 namespace Urho3D
 {
@@ -220,8 +222,11 @@ void AmbientOcclusionPass::Execute(Camera* camera)
     EvaluateAO(camera, viewToTextureSpace, textureToViewSpace);
     BlurTexture(textureToViewSpace);
 
-    //Blit(pipelineStates_->preview_);
-    Blit(pipelineStates_->combine_);
+    switch (settings_.ambientOcclusionMode_)
+    {
+    case AmbientOcclusionMode::Preview: Blit(pipelineStates_->preview_); break;
+    default: Blit(pipelineStates_->combine_); break;
+    }
 }
 
 #endif

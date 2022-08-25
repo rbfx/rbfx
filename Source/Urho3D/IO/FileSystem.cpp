@@ -36,11 +36,11 @@
 #endif
 
 #ifdef __ANDROID__
-#include <SDL/SDL_rwops.h>
+#include <SDL_rwops.h>
 #endif
 
 #ifndef MINI_URHO
-#include <SDL/SDL_filesystem.h>
+#include <SDL_filesystem.h>
 #endif
 
 #include <sys/stat.h>
@@ -1129,7 +1129,7 @@ TemporaryDir::~TemporaryDir()
 
 TemporaryDir::TemporaryDir(TemporaryDir&& rhs)
 {
-    *this = std::move(rhs);
+    *this = ea::move(rhs);
 }
 
 TemporaryDir& TemporaryDir::operator=(TemporaryDir&& rhs)
@@ -1313,11 +1313,14 @@ bool FileSystem::CreateDirsRecursive(const ea::string& directoryIn)
 
     paths.push_back(directory);
 
-    while (true)
+    for (;;)
     {
         parentPath = GetParentPath(parentPath);
 
         if (!parentPath.length())
+            break;
+
+        if (DirExists(parentPath))
             break;
 
         paths.push_back(parentPath);
@@ -1342,7 +1345,6 @@ bool FileSystem::CreateDirsRecursive(const ea::string& directoryIn)
         // double check
         if (!DirExists(pathName))
             return false;
-
     }
 
     return true;

@@ -8,6 +8,7 @@ using namespace Urho3D;
 #define final
 #define URHO3D_DEPRECATED
 #define static_assert(...)
+#define EASTLAllocatorType eastl::allocator
 
 %include "stl.i"
 %include "stdint.i"
@@ -96,9 +97,9 @@ using namespace Urho3D;
 #   include <Urho3D/WindowsSupport.h>
 #endif
 #include <Urho3D/Urho3DAll.h>   // If this include is missing please build with -DURHO3D_MONOLITHIC_HEADER=ON
-#include <SDL/SDL_joystick.h>
-#include <SDL/SDL_gamecontroller.h>
-#include <SDL/SDL_keycode.h>
+#include <SDL_joystick.h>
+#include <SDL_gamecontroller.h>
+#include <SDL_keycode.h>
 #include <Urho3D/CSharp/Native/SWIGHelpers.h>
 %}
 
@@ -200,6 +201,8 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 
 // Containers
 using StringMap = eastl::unordered_map<Urho3D::StringHash, eastl::string>;
+%template(ObjectReflectionMap) eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::ObjectReflection>>;
+%template(CollisionGeometryDataCache) eastl::unordered_map<eastl::pair<Urho3D::Model*, unsigned>, Urho3D::SharedPtr<Urho3D::CollisionGeometryData>>;
 
 // Declare inheritable classes in this file
 %include "Context.i"
@@ -331,6 +334,9 @@ namespace SDL
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
+
+%include "generated/Urho3D/_pre_plugins.i"
+%include "generated/Urho3D/_pre_utility.i"
 
 %include "generated/Urho3D/_pre_core.i"
 %include "Urho3D/Core/Variant.h"
@@ -625,6 +631,9 @@ public:
 %ignore Urho3D::Drawable::lights_;
 %ignore Urho3D::Drawable::vertexLights_;
 %ignore Urho3D::GlobalIllumination::SampleAmbientSH;
+%ignore Urho3D::AnimationState::CalculateModelTracks;
+%ignore Urho3D::AnimationState::CalculateNodeTracks;
+%ignore Urho3D::AnimationState::CalculateAttributeTracks;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {
@@ -982,8 +991,8 @@ using ImGuiConfigFlags = unsigned;
 #endif
 
 %template(StringMap)                    eastl::unordered_map<Urho3D::StringHash, eastl::string>;
-%template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>;
-%template(StringVariantMap)             eastl::unordered_map<eastl::string, Urho3D::Variant>;
+%template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant, eastl::hash<Urho3D::StringHash>, eastl::equal_to<Urho3D::StringHash>, eastl::allocator, false>;
+%template(StringVariantMap)             eastl::unordered_map<eastl::string, Urho3D::Variant, eastl::hash<eastl::string>, eastl::equal_to<eastl::string>, eastl::allocator, true>;
 %template(AttributeMap)                 eastl::unordered_map<Urho3D::StringHash, eastl::vector<Urho3D::AttributeInfo>>;
 %template(PackageMap)                   eastl::unordered_map<eastl::string, Urho3D::PackageEntry>;
 %template(JSONObject)                   eastl::map<eastl::string, Urho3D::JSONValue>;

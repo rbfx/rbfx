@@ -180,7 +180,7 @@ Logger::Logger(void* logger)
 {
 }
 
-void Logger::Write(LogLevel level, const ea::string& message) const
+void Logger::Write(LogLevel level, ea::string_view message) const
 {
     if (logger_ == nullptr)
         return;
@@ -190,23 +190,24 @@ void Logger::Write(LogLevel level, const ea::string& message) const
     switch (level)
     {
     case LOG_TRACE:
-        logger->trace(message.c_str());
+        logger->trace(ToFmtStringView(message));
         break;
     case LOG_DEBUG:
-        logger->debug(message.c_str());
+        logger->debug(ToFmtStringView(message));
         break;
     case LOG_INFO:
-        logger->info(message.c_str());
+        logger->info(ToFmtStringView(message));
         break;
     case LOG_WARNING:
-        logger->warn(message.c_str());
+        logger->warn(ToFmtStringView(message));
         break;
     case LOG_ERROR:
-        logger->error(message.c_str());
+        logger->error(ToFmtStringView(message));
         break;
     case LOG_NONE:
     case MAX_LOGLEVELS:
-        logger->warn("(Unknown log level used!) %s", message.c_str());
+    default:
+        logger->warn(ToFmtStringView(message));
         break;
     }
 }
@@ -349,11 +350,11 @@ Logger Log::GetOrCreateLogger(const ea::string& name)
     std::shared_ptr<spdlog::logger> logger;
     MutexLock lock(logMutex_);
 
-    logger = spdlog::get(name);
+    logger = spdlog::get(name.c_str());
 
     if (!logger)
     {
-        logger = std::make_shared<spdlog::logger>(name, impl_->sinkProxy_);
+        logger = std::make_shared<spdlog::logger>(name.c_str(), impl_->sinkProxy_);
         logger->set_level(ConvertLogLevel(level_));
         spdlog::register_logger(logger);
     }

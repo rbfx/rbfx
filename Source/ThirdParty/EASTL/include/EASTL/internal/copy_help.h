@@ -143,7 +143,7 @@ namespace eastl
 	template <bool isMove, typename InputIterator, typename OutputIterator>
 	inline OutputIterator move_and_copy_unwrapper(InputIterator first, InputIterator last, OutputIterator result)
 	{
-		return OutputIterator(eastl::move_and_copy_chooser<isMove>(eastl::unwrap_iterator(first), eastl::unwrap_iterator(last), eastl::unwrap_iterator(result))); // Have to convert to OutputIterator because result.base() could be a T*
+		return OutputIterator(eastl::move_and_copy_chooser<isMove>(eastl::unwrap_iterator(first), eastl::unwrap_iterator(last), eastl::unwrap_iterator(result))); // Have to convert to OutputIterator because unwrap_iterator(result) could be a T*
 	}
 
 

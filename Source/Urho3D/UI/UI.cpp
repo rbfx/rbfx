@@ -65,7 +65,7 @@
 #include "../UI/UIComponent.h"
 
 #include <cassert>
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #include "../DebugNew.h"
 
@@ -77,10 +77,10 @@ static MouseButton MakeTouchIDMask(int id)
     return static_cast<MouseButton>(1u << static_cast<MouseButtonFlags::Integer>(id)); // NOLINT(misc-misplaced-widening-cast)
 }
 
-StringHash VAR_ORIGIN("Origin");
-const StringHash VAR_ORIGINAL_PARENT("OriginalParent");
-const StringHash VAR_ORIGINAL_CHILD_INDEX("OriginalChildIndex");
-const StringHash VAR_PARENT_CHANGED("ParentChanged");
+ea::string VAR_ORIGIN("Origin");
+const ea::string VAR_ORIGINAL_PARENT("OriginalParent");
+const ea::string VAR_ORIGINAL_CHILD_INDEX("OriginalChildIndex");
+const ea::string VAR_PARENT_CHANGED("ParentChanged");
 
 const float DEFAULT_DOUBLECLICK_INTERVAL = 0.5f;
 const float DEFAULT_DRAGBEGIN_INTERVAL = 0.5f;
@@ -280,7 +280,7 @@ bool UI::SetModalElement(UIElement* modalElement, bool enable)
         // Revert back to original parent
         modalElement->SetParent(static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
             modalElement->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
-        auto& vars = const_cast<VariantMap&>(modalElement->GetVars());
+        auto& vars = const_cast<StringVariantMap&>(modalElement->GetVars());
         vars.erase(VAR_ORIGINAL_PARENT);
         vars.erase(VAR_ORIGINAL_CHILD_INDEX);
 
@@ -291,10 +291,10 @@ bool UI::SetModalElement(UIElement* modalElement, bool enable)
             auto* element = static_cast<UIElement*>(originElement->GetVar(VAR_PARENT_CHANGED).GetPtr());
             if (element)
             {
-                const_cast<VariantMap&>(originElement->GetVars()).erase(VAR_PARENT_CHANGED);
+                const_cast<StringVariantMap&>(originElement->GetVars()).erase(VAR_PARENT_CHANGED);
                 element->SetParent(static_cast<UIElement*>(element->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
                     element->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
-                vars = const_cast<VariantMap&>(element->GetVars());
+                vars = const_cast<StringVariantMap&>(element->GetVars());
                 vars.erase(VAR_ORIGINAL_PARENT);
                 vars.erase(VAR_ORIGINAL_CHILD_INDEX);
             }

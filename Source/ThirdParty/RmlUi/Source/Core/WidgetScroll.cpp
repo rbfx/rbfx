@@ -215,10 +215,9 @@ void WidgetScroll::FormatElements(const Vector2f containing_block, bool resize_e
 {
 	int length_axis = orientation == VERTICAL ? 1 : 0;
 
-	// Build the box for the containing slider element. As the containing block is not guaranteed to have a defined
-	// height, we must use the width for both axes.
+	// Build the box for the containing slider element.
 	Box parent_box;
-	LayoutDetails::BuildBox(parent_box, Vector2f(containing_block.x, containing_block.x), parent);
+	LayoutDetails::BuildBox(parent_box, containing_block, parent);
 	slider_length -= orientation == VERTICAL ? (parent_box.GetCumulativeEdge(Box::CONTENT, Box::TOP) + parent_box.GetCumulativeEdge(Box::CONTENT, Box::BOTTOM)) :
 											   (parent_box.GetCumulativeEdge(Box::CONTENT, Box::LEFT) + parent_box.GetCumulativeEdge(Box::CONTENT, Box::RIGHT));
 
@@ -330,8 +329,7 @@ void WidgetScroll::FormatBar(float bar_length)
 
 				// Check for 'max-height' restrictions.
 				float max_track_length = ResolveValue(computed.max_height(), track_length);
-				if (max_track_length > 0)
-					bar_box_content.y = Math::Min(max_track_length, bar_box_content.y);
+				bar_box_content.y = Math::Min(max_track_length, bar_box_content.y);
 			}
 
 			// Make sure we haven't gone further than we're allowed to (min-height may have made us too big).
@@ -351,8 +349,7 @@ void WidgetScroll::FormatBar(float bar_length)
 
 				// Check for 'max-width' restrictions.
 				float max_track_length = ResolveValue(computed.max_width(), track_length);
-				if (max_track_length > 0)
-					bar_box_content.x = Math::Min(max_track_length, bar_box_content.x);
+				bar_box_content.x = Math::Min(max_track_length, bar_box_content.x);
 			}
 
 			// Make sure we haven't gone further than we're allowed to (min-width may have made us too big).

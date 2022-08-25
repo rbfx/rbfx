@@ -57,7 +57,7 @@ public:
 
 /// Task function signature.
 /// TODO: Get rid of parameter
-using WorkFunction = std::function<void(unsigned threadIndex)>;
+using WorkFunction = ea::function<void(unsigned threadIndex)>;
 
 /// Work queue item.
 /// @nobind

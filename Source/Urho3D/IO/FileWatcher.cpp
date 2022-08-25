@@ -370,9 +370,9 @@ void FileWatcher::ThreadFunction()
                 if (change.kind_ == FILECHANGE_RENAMED)
                 {
                     if (GetSubsystem<FileSystem>()->FileExists(fileName))
-                        change.fileName_ = std::move(fileName);
+                        change.fileName_ = ea::move(fileName);
                     else
-                        change.oldFileName_ = std::move(fileName);
+                        change.oldFileName_ = ea::move(fileName);
 
                     if (!change.fileName_.empty() && !change.oldFileName_.empty())
                     {
@@ -382,7 +382,7 @@ void FileWatcher::ThreadFunction()
                 }
                 else
                 {
-                    change.fileName_ = std::move(fileName);
+                    change.fileName_ = ea::move(fileName);
                     AddChange(change);
                     change = {};
                 }

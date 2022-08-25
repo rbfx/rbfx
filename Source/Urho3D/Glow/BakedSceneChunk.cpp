@@ -22,6 +22,8 @@
 
 /// \file
 
+#include "../Precompiled.h"
+
 #include "../Glow/BakedSceneChunk.h"
 
 #include "../Glow/Helpers.h"

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "../Utility/SceneSelection.h"
 
 #include <EASTL/sort.h>

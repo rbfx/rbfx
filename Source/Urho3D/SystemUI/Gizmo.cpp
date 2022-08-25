@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
 #include "Gizmo.h"
 
 namespace Urho3D
@@ -222,8 +224,10 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
                     continue;
                 }
 
-                SendEvent(E_GIZMONODEMODIFIED, P_NODE, &*node, P_OLDTRANSFORM, jt->second,
-                    P_NEWTRANSFORM, node->GetTransform());
+                SendEvent(E_GIZMONODEMODIFIED,
+                    ea::forward_as_tuple(P_NODE, node),
+                    ea::forward_as_tuple(P_OLDTRANSFORM, jt->second),
+                    ea::forward_as_tuple(P_NEWTRANSFORM, node->GetTransform()));
             }
         }
         wasActive_ = false;

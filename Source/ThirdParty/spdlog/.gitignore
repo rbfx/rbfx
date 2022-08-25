@@ -1,0 +1,11 @@
+.clang-tidy
+.travis.yml
+appveyor.yml
+
+bench/
+cmake/
+example/
+include/spdlog/fmt/bundled/
+logos/
+scripts/
+tests/

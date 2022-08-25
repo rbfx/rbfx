@@ -190,7 +190,7 @@ bool ChangeNodeAttributesAction::CanUndoRedo() const
     if (!scene_)
         return false;
 
-    const bool allNodesFound = std::all_of(nodeIds_.begin(), nodeIds_.end(),
+    const bool allNodesFound = ea::all_of(nodeIds_.begin(), nodeIds_.end(),
         [this](unsigned nodeId) { return scene_->GetNode(nodeId) != nullptr; });
     return allNodesFound;
 }
@@ -238,7 +238,7 @@ bool ChangeComponentAttributesAction::CanUndoRedo() const
     if (!scene_)
         return false;
 
-    const bool allComponentsFound = std::all_of(componentIds_.begin(), componentIds_.end(),
+    const bool allComponentsFound = ea::all_of(componentIds_.begin(), componentIds_.end(),
         [this](unsigned componentId) { return scene_->GetComponent(componentId) != nullptr; });
     return allComponentsFound;
 }

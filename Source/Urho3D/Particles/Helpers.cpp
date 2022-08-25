@@ -20,12 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "Span.h"
-#include "ParticleGraphLayerInstance.h"
-#include "UpdateContext.h"
+#include "../Precompiled.h"
+
 #include "Helpers.h"
+
+#include "ParticleGraphLayerInstance.h"
 #include "ParticleGraphSystem.h"
 #include "PatternMatchingNode.h"
+#include "Span.h"
+#include "UpdateContext.h"
 #include "Urho3D/IO/Log.h"
 
 namespace Urho3D
@@ -33,7 +36,7 @@ namespace Urho3D
 
 namespace ParticleGraphNodes
 {
-namespace 
+namespace
 {
 class NopInstance: public ParticleGraphNodeInstance
 {

@@ -20,9 +20,12 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
+
+#include "../Resource/XMLArchive.h"
+
 #include "../Core/StringUtils.h"
 #include "../IO/ArchiveSerialization.h"
-#include "../Resource/XMLArchive.h"
 
 namespace Urho3D
 {

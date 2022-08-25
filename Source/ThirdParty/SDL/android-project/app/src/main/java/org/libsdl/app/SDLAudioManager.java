@@ -1,9 +1,10 @@
-// Modified by Yao Wei Tjong for Urho3D
-
 package org.libsdl.app;
 
-import android.annotation.TargetApi;
-import android.media.*;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
+import android.media.MediaRecorder;
 import android.os.Build;
 import android.util.Log;
 
@@ -46,6 +47,10 @@ public class SDLAudioManager
             if (desiredChannels > 2) {
                 desiredChannels = 2;
             }
+        }
+
+        /* AudioTrack has sample rate limitation of 48000 (fixed in 5.0.2) */
+        if (Build.VERSION.SDK_INT < 22) {
             if (sampleRate < 8000) {
                 sampleRate = 8000;
             } else if (sampleRate > 48000) {
@@ -202,7 +207,6 @@ public class SDLAudioManager
             results[0] = mAudioRecord.getSampleRate();
             results[1] = mAudioRecord.getAudioFormat();
             results[2] = mAudioRecord.getChannelCount();
-            results[3] = desiredFrames;
 
         } else {
             if (mAudioTrack == null) {
@@ -226,8 +230,8 @@ public class SDLAudioManager
             results[0] = mAudioTrack.getSampleRate();
             results[1] = mAudioTrack.getAudioFormat();
             results[2] = mAudioTrack.getChannelCount();
-            results[3] = desiredFrames;
         }
+        results[3] = desiredFrames;
 
         Log.v(TAG, "Opening " + (isCapture ? "capture" : "playback") + ", got " + results[3] + " frames of " + results[2] + " channel " + getAudioFormatString(results[1]) + " audio at " + results[0] + " Hz");
 
@@ -244,8 +248,6 @@ public class SDLAudioManager
     /**
      * This method is called by SDL using JNI.
      */
-    // Urho3D - suppress lint error
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public static void audioWriteFloatBuffer(float[] buffer) {
         if (mAudioTrack == null) {
             Log.e(TAG, "Attempted to make audio call with uninitialized audio!");
@@ -329,8 +331,6 @@ public class SDLAudioManager
     }
 
     /** This method is called by SDL using JNI. */
-    // Urho3D - suppress lint error
-    @TargetApi(Build.VERSION_CODES.M)
     public static int captureReadFloatBuffer(float[] buffer, boolean blocking) {
         return mAudioRecord.read(buffer, 0, buffer.length, blocking ? AudioRecord.READ_BLOCKING : AudioRecord.READ_NON_BLOCKING);
     }

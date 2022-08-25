@@ -1,0 +1,13 @@
+.appveyor.yml
+changelog.md
+
+/Backends/
+/Build/
+/CMake/
+/Dependencies/
+/Samples/
+/Tests/
+
+/Source/Lottie/
+/Source/Lua/
+/Source/SVG/

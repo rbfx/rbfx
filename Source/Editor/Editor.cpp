@@ -461,7 +461,7 @@ void Editor::RenderMenuBar()
 
             StringVector & recents = recentProjects_;
             // Does not show very first item, which is current project
-            if (recents.size() == (project_.NotNull() ? 1 : 0))
+            if (recents.size() == (project_ != nullptr ? 1 : 0))
             {
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
                 ui::MenuItem("Recent Projects");
@@ -469,7 +469,7 @@ void Editor::RenderMenuBar()
             }
             else if (ui::BeginMenu("Recent Projects"))
             {
-                for (int i = project_.NotNull() ? 1 : 0; i < recents.size(); i++)
+                for (int i = project_ != nullptr ? 1 : 0; i < recents.size(); i++)
                 {
                     const ea::string& projectPath = recents[i];
 

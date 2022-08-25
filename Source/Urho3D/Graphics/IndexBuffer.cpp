@@ -270,9 +270,9 @@ void DynamicIndexBuffer::Commit()
     indexBuffer_->SetData(shadowData_.data());
 }
 
-void DynamicIndexBuffer::GrowBuffer()
+void DynamicIndexBuffer::GrowBuffer(unsigned newMaxNumIndices)
 {
-    maxNumIndices_ = maxNumIndices_ > 0 ? 2 * maxNumIndices_ : 128;
+    maxNumIndices_ = ea::max(newMaxNumIndices, maxNumIndices_ > 0 ? 2 * maxNumIndices_ : 128);
     shadowData_.resize(maxNumIndices_ * indexSize_);
     indexBufferNeedResize_ = true;
 }
