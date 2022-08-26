@@ -52,7 +52,7 @@ void Player::Setup()
 #else
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = fs->GetProgramDir() + ";" + fs->GetCurrentDir();
 #endif
-    engineParameters_[EP_PLUGINS] = TO_STRING(URHO3D_PLUGIN_LIST);
+    engineParameters_[EP_PLUGINS] = ea::string::joined(PluginApplication::GetStaticPlugins(), ";");
 
     settings_ = ApplicationSettings::LoadForCurrentApplication(context_);
     for (const auto& [name, value] : settings_->GetParametersForCurrentFlavor())
