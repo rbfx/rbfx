@@ -20,45 +20,40 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "../Project/ResourceFactory.h"
 
-#include "../../Foundation/ResourceBrowserTab.h"
+#include <Urho3D/IO/FileSystem.h>
+
+#include <EASTL/tuple.h>
 
 namespace Urho3D
 {
 
-void Foundation_MaterialFactory(Context* context, ResourceBrowserTab* resourceBrowserTab);
-
-/// Camera controller used by Scene View.
-class MaterialFactory : public ResourceFactory
+ResourceFactory::ResourceFactory(Context* context, int group, const ea::string& title)
+    : Object(context)
+    , group_(group)
+    , title_(title)
 {
-    URHO3D_OBJECT(MaterialFactory, ResourceFactory);
+}
 
-public:
-    explicit MaterialFactory(Context* context);
+bool ResourceFactory::Compare(
+    const SharedPtr<ResourceFactory>& lhs, const SharedPtr<ResourceFactory>& rhs)
+{
+    return ea::tie(lhs->group_, lhs->title_) < ea::tie(rhs->group_, rhs->title_);
+}
 
-    /// Implement ResourceFactory.
-    /// @{
-    ea::string GetFileName() const override { return "Material.xml"; }
-    void Render() override;
-    void EndCreate(const ea::string& fileName, const ea::string& resourceName) override;
-    /// @}
+SimpleResourceFactory::SimpleResourceFactory(Context* context,
+    int group, const ea::string& title, const ea::string& fileName, const Callback& callback)
+    : ResourceFactory(context, group, title)
+    , fileName_(fileName)
+    , callback_(callback)
+{
+    URHO3D_ASSERT(callback_);
+}
 
-private:
-    ea::string GetTechniqueName() const;
-
-    enum Type
-    {
-        Opaque,
-        AlphaMask,
-        Transparent,
-        TransparentFade
-    };
-
-    int type_{};
-    bool lit_{true};
-    bool pbr_{true};
-    bool normal_{true};
-};
+void SimpleResourceFactory::EndCreate(const ea::string& fileName, const ea::string& resourceName)
+{
+    callback_(fileName, resourceName);
+}
 
 }

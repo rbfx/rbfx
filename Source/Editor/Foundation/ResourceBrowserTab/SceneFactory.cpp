@@ -33,7 +33,7 @@ void Foundation_SceneFactory(Context* context, ResourceBrowserTab* resourceBrows
 }
 
 SceneFactory::SceneFactory(Context* context)
-    : ResourceBrowserFactory(context, 0, "Scene", "Scene.xml")
+    : ResourceFactory(context, 0, "Scene")
 {
 }
 

@@ -30,15 +30,16 @@ namespace Urho3D
 void Foundation_SceneFactory(Context* context, ResourceBrowserTab* resourceBrowserTab);
 
 /// Camera controller used by Scene View.
-class SceneFactory : public ResourceBrowserFactory
+class SceneFactory : public ResourceFactory
 {
-    URHO3D_OBJECT(SceneFactory, ResourceBrowserFactory);
+    URHO3D_OBJECT(SceneFactory, ResourceFactory);
 
 public:
     explicit SceneFactory(Context* context);
 
-    /// Implement ResourceBrowserFactory.
+    /// Implement ResourceFactory.
     /// @{
+    ea::string GetFileName() const override { return "Scene.xml"; }
     void Render() override;
     void EndCreate(const ea::string& fileName, const ea::string& resourceName) override;
     /// @}

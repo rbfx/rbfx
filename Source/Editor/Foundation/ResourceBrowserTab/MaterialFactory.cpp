@@ -34,7 +34,7 @@ void Foundation_MaterialFactory(Context* context, ResourceBrowserTab* resourceBr
 }
 
 MaterialFactory::MaterialFactory(Context* context)
-    : ResourceBrowserFactory(context, 0, "Material", "Material.xml")
+    : ResourceFactory(context, 0, "Material")
 {
 }
 
