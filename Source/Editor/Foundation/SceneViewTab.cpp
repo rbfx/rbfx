@@ -840,11 +840,54 @@ void SceneViewTab::RenderContent()
 void SceneViewTab::UpdateAddons(SceneViewPage& page)
 {
     bool mouseConsumed = false;
+
+    if (UpdateDropToScene())
+        mouseConsumed = true;
+
     for (SceneViewAddon* addon : addonsByInputPriority_)
         addon->ProcessInput(page, mouseConsumed);
 
     for (SceneViewAddon* addon : addons_)
         addon->Render(page);
+}
+
+bool SceneViewTab::UpdateDropToScene()
+{
+    if (ui::BeginDragDropTarget())
+    {
+        const auto payload = DragDropPayload::Get();
+
+        if (!dragAndDropAddon_)
+        {
+            const auto isPayloadSupported = [&](SceneViewAddon* addon) { return addon->IsDragDropPayloadSupported(payload); };
+            const auto iter = ea::find_if(addonsByInputPriority_.begin(), addonsByInputPriority_.end(), isPayloadSupported);
+
+            dragAndDropAddon_ = iter != addonsByInputPriority_.end() ? *iter : nullptr;
+            if (dragAndDropAddon_)
+                dragAndDropAddon_->BeginDragDrop(payload);
+        }
+
+        if (dragAndDropAddon_)
+        {
+            if (ui::AcceptDragDropPayload(DragDropPayloadType.c_str(), ImGuiDragDropFlags_AcceptBeforeDelivery))
+            {
+                dragAndDropAddon_->UpdateDragDrop(payload);
+                if (ui::GetDragDropPayload()->IsDelivery())
+                {
+                    dragAndDropAddon_->CompleteDragDrop(payload);
+                    dragAndDropAddon_ = nullptr;
+                }
+            }
+        }
+
+        ui::EndDragDropTarget();
+    }
+    else if (dragAndDropAddon_)
+    {
+        dragAndDropAddon_->CancelDragDrop();
+        dragAndDropAddon_ = nullptr;
+    }
+    return dragAndDropAddon_ != nullptr;
 }
 
 void SceneViewTab::InspectSelection(SceneViewPage& page)
