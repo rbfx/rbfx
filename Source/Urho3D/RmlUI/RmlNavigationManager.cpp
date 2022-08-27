@@ -424,7 +424,7 @@ void RmlNavigationManager::SetPressedNavigable(RmlNavigable* navigable, Navigabl
 void RmlNavigationManager::ScrollNavigableIntoView(RmlNavigable* navigable)
 {
     if (navigable)
-        navigable->AsElement()->ScrollIntoView(Rml::ScrollIntoViewOptions(Rml::ScrollIntoViewOptions::NEAREST));
+        navigable->AsElement()->ScrollIntoView(Rml::ScrollIntoViewOptions(Rml::ScrollAlignment::Nearest));
 }
 
 }

@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -66,33 +66,21 @@ class TransformState;
 struct ElementMeta;
 struct StackingOrderedChild;
 
+enum class ScrollAlignment {
+	Start,   // Align to the top or left edge of the parent element.
+	Center,  // Align to the center of the parent element.
+	End,     // Align to the bottom or right edge of the parent element.
+	Nearest, // Align with minimal scroll change.
+};
 /**
-	Describes behavior of Element::ScrollIntoView.
+	Defines behavior of Element::ScrollIntoView.
  */
-
-struct ScrollIntoViewOptions
-{
-	enum Alignment
-	{
-		/// Align to the left or top edge of the parent element.
-		START,
-		/// Align to the center of the parent element.
-		CENTER,
-		/// Align to the right or bottom edge of the parent element.
-		END,
-		/// Align with minimal scroll change.
-		NEAREST
-	};
-
-	/// Initializes default behavior. Vertical scroll alignment is START, horizontal scroll alignment is NEAREST.
-	ScrollIntoViewOptions();
-	/// Initializes behavior with the same alignment for vertical and horizontal scroll.
-	explicit ScrollIntoViewOptions(Alignment alignment);
-	/// Initializes behavior with the specified alignments for vertical and horizontal scroll.
-	ScrollIntoViewOptions(Alignment vertical, Alignment horizontal);
-
-	Alignment vertical;
-	Alignment horizontal;
+struct ScrollIntoViewOptions {
+	ScrollIntoViewOptions(ScrollAlignment vertical = ScrollAlignment::Start, ScrollAlignment horizontal = ScrollAlignment::Nearest) :
+		vertical(vertical), horizontal(horizontal)
+	{}
+	ScrollAlignment vertical;
+	ScrollAlignment horizontal;
 };
 
 /**
@@ -232,13 +220,13 @@ public:
 	/// @param[in] name The name of the local property definition to remove.
 	void RemoveProperty(const String& name);
 	void RemoveProperty(PropertyId id);
-	/// Returns one of this element's properties. If the property is not defined for this element and not inherited
+	/// Returns one of this element's properties. If the property is not defined for this element and not inherited 
 	/// from an ancestor, the default value will be returned.
 	/// @param[in] name The name of the property to fetch the value for.
 	/// @return The value of this property for this element, or nullptr if no property exists with the given name.
-	const Property* GetProperty(const String& name);
-	const Property* GetProperty(PropertyId id);
-	/// Returns the values of one of this element's properties.
+	const Property* GetProperty(const String& name);		
+	const Property* GetProperty(PropertyId id);		
+	/// Returns the values of one of this element's properties.		
 	/// @param[in] name The name of the property to get.
 	/// @return The value of this property.
 	template < typename T >
@@ -291,7 +279,7 @@ public:
 	/// If no animation exists for the given property name, the call will be ignored.
 	/// @return True if a new animation key was added.
 	bool AddAnimationKey(const String& property_name, const Property& target_value, float duration, Tween tween = Tween{});
-
+	
 	/// Iterator for the local (non-inherited) properties defined on this element.
 	/// @warning Modifying the element's properties or classes invalidates the iterator.
 	/// @return Iterator to the first property defined on this element.
@@ -530,7 +518,7 @@ public:
 
 	/// Scrolls the parent element's contents so that this element is visible.
 	/// @param[in] options Scroll parameters that control desired element alignment relative to the parent.
-	void ScrollIntoView(const ScrollIntoViewOptions& options);
+	void ScrollIntoView(ScrollIntoViewOptions options);
 	/// Scrolls the parent element's contents so that this element is visible.
 	/// @param[in] align_with_top If true, the element will align itself to the top of the parent element's window. If false, the element will be aligned to the bottom of the parent element's window.
 	void ScrollIntoView(bool align_with_top = true);
@@ -600,7 +588,7 @@ public:
 	/// Returns the data model of this element.
 	DataModel* GetDataModel() const;
 	//@}
-
+	
 	/// Gets the render interface owned by this element's context.
 	/// @return The element's context's render interface.
 	RenderInterface* GetRenderInterface();
@@ -685,7 +673,7 @@ protected:
 
 private:
 	void SetParent(Element* parent);
-
+	
 	void SetDataModel(DataModel* new_data_model);
 
 	void DirtyAbsoluteOffset();
@@ -799,7 +787,7 @@ private:
 	float z_index;
 
 	ElementList stacking_context;
-
+	
 	UniquePtr< TransformState > transform_state;
 
 	ElementAnimationList animations;
