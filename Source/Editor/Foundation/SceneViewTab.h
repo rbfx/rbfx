@@ -93,6 +93,7 @@ public:
     virtual int GetInputPriority() const { return 0; }
     /// Return priority in the toolbar.
     virtual int GetToolbarPriority() const { return 0; }
+
     /// Initialize addon for the given page.
     virtual void Initialize(SceneViewPage& page) {}
     /// Process input.
@@ -105,8 +106,20 @@ public:
     virtual bool RenderTabContextMenu() { return false; }
     /// Render main toolbar.
     virtual bool RenderToolbar() { return false; }
+
     /// Serialize per-scene page state of the addon.
     virtual void SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const;
+
+    /// Check if this type of drag&drop payload is accepted.
+    virtual bool IsDragDropPayloadSupported(DragDropPayload* payload) const { return false; }
+    /// Begin drag&drop operation, render preview.
+    virtual void BeginDragDrop(DragDropPayload* payload) {}
+    /// Update drag&drop state, called continuously while dragging.
+    virtual void UpdateDragDrop(DragDropPayload* payload) {}
+    /// End drag&drop operation and commit result.
+    virtual void CompleteDragDrop(DragDropPayload* payload) {}
+    /// End drag&drop operation and discard result.
+    virtual void CancelDragDrop() {}
 
     /// Write INI settings to file. Use as few lines as possible.
     virtual void WriteIniSettings(ImGuiTextBuffer& output) {}
@@ -246,12 +259,15 @@ private:
     /// @}
 
     void UpdateAddons(SceneViewPage& page);
+    bool UpdateDropToScene();
     void InspectSelection(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
     AddonSetByInputPriority addonsByInputPriority_;
     AddonSetByToolbarPriority addonsByToolbarPriority_;
     AddonSetByName addonsByName_;
+
+    SharedPtr<SceneViewAddon> dragAndDropAddon_;
 
     ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;
     PackedNodeComponentData clipboard_;
