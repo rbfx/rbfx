@@ -255,11 +255,13 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
     if (ui::MenuItem("Focus", GetHotkeyLabel(Hotkey_Focus).c_str(), false, hasSelection))
         FocusSelection(selection);
 
-    ui::Separator();
+    if (SceneViewPage* activePage = GetActivePage())
+    {
+        ui::Separator();
+        OnSelectionEditMenu(this, *activePage, scene, selection);
+    }
+}
 
-    if (ui::MenuItem("Create prefab"))
-        OnEditMenuRequest(this, selection, "Create Prefab");
- }
 void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)
 {
     if (ui::MenuItem("Create Node", GetHotkeyLabel(Hotkey_CreateSiblingNode).c_str()))
@@ -833,7 +835,6 @@ void SceneViewTab::RenderContent()
     activePage->contentArea_ = Rect{contentAreaMin, contentAreaMax};
 
     UpdateAddons(*activePage);
-
 }
 
 void SceneViewTab::UpdateAddons(SceneViewPage& page)

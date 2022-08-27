@@ -95,6 +95,7 @@ private:
     void SetCursorNavigable(RmlNavigable* navigable, NavigableEventMode eventMode);
     void ResetPressedNavigable();
     void SetPressedNavigable(RmlNavigable* navigable, NavigableInputSource eventSource);
+    void ScrollNavigableIntoView(RmlNavigable* navigable);
 
     template <class T>
     RmlNavigable* FindBestNavigable(const T& penaltyFunction) const;

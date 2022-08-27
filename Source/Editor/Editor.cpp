@@ -46,6 +46,7 @@
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
 #include "Foundation/ResourceBrowserTab/SceneFactory.h"
 #include "Foundation/SceneViewTab.h"
+#include "Foundation/SceneViewTab/CreatePrefabFromNode.h"
 #include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneHierarchy.h"
 #include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
@@ -110,6 +111,7 @@ Editor::Editor(Context* context)
 
     editorPluginManager_->AddPlugin("Foundation.Asset.ModelImporter", &Foundation_ModelImporter);
 
+    editorPluginManager_->AddPlugin("Foundation.SceneView.CreatePrefabFromNode", &Foundation_CreatePrefabFromNode);
     editorPluginManager_->AddPlugin("Foundation.SceneView.EditorCamera", &Foundation_EditorCamera);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Selector", &Foundation_SceneSelector);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Hierarchy", &Foundation_SceneHierarchy);

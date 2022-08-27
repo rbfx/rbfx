@@ -271,6 +271,7 @@ void RmlNavigationManager::RepairNavigation()
         });
 
         SetCursorNavigable(bestNavigable, NavigableEventMode::OnActivation);
+        ScrollNavigableIntoView(bestNavigable);
     }
 }
 
@@ -332,7 +333,10 @@ void RmlNavigationManager::MoveCursor(const Vector2& direction)
     });
 
     if (bestNavigable)
+    {
         SetCursorNavigable(bestNavigable, NavigableEventMode::OnActivation);
+        ScrollNavigableIntoView(bestNavigable);
+    }
 }
 
 void RmlNavigationManager::PushCursorGroup(const ea::string& group)
@@ -415,6 +419,12 @@ void RmlNavigationManager::SetPressedNavigable(RmlNavigable* navigable, Navigabl
 
     if (pressedNavigable_)
         pressedNavigable_->SetPressed(true, pressEventSource_, NavigableEventMode::Always);
+}
+
+void RmlNavigationManager::ScrollNavigableIntoView(RmlNavigable* navigable)
+{
+    if (navigable)
+        navigable->AsElement()->ScrollIntoView(Rml::ScrollIntoViewOptions(Rml::ScrollIntoViewOptions::NEAREST));
 }
 
 }

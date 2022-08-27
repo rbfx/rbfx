@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Project/EditorTab.h"
+#include "../Project/ResourceFactory.h"
 
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/File.h>
@@ -146,6 +147,20 @@ public:
 private:
     WeakNodeVector nodes_;
     WeakComponentVector components_;
+};
+
+/// Request to create resource.
+class CreateResourceRequest : public ProjectRequest
+{
+    URHO3D_OBJECT(CreateResourceRequest, ProjectRequest);
+
+public:
+    explicit CreateResourceRequest(ResourceFactory* factory);
+
+    ResourceFactory* GetFactory() const { return factory_; }
+
+private:
+    SharedPtr<ResourceFactory> factory_;
 };
 
 }
