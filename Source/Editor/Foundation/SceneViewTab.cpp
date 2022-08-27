@@ -254,6 +254,12 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 
     if (ui::MenuItem("Focus", GetHotkeyLabel(Hotkey_Focus).c_str(), false, hasSelection))
         FocusSelection(selection);
+
+    if (SceneViewPage* activePage = GetActivePage())
+    {
+        ui::Separator();
+        OnSelectionEditMenu(this, *activePage, scene, selection);
+    }
 }
 
 void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)

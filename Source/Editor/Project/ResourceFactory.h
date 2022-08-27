@@ -67,6 +67,7 @@ public:
     BaseResourceFactory(Context* context, int group, const ea::string& title);
 
     virtual ea::string GetDefaultFileName() const = 0;
+    virtual bool IsFileNameEditable() const { return true; }
     virtual void RenderAuxilary() {}
 
     /// Implement ResourceFactory.
@@ -77,6 +78,9 @@ public:
     /// @}
 
 protected:
+    const ea::string& GetFinalFilePath() const { return baseFilePath_; }
+    const ea::string& GetFinalResourcePath() const { return baseResourcePath_; }
+
     ea::string GetFinalFileName() const;
     ea::string GetFinalResourceName() const;
 

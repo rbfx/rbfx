@@ -124,6 +124,7 @@ class SceneViewTab : public ResourceEditorTab
 
 public:
     Signal<void(SceneViewPage& page, const Vector3& position)> OnLookAt;
+    Signal<void(SceneViewPage& page, Scene* scene, SceneSelection& selection)> OnSelectionEditMenu;
 
     struct ByInputPriority
     {

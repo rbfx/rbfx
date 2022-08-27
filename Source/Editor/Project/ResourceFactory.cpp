@@ -56,7 +56,7 @@ void BaseResourceFactory::Open(const ea::string& baseFilePath, const ea::string 
     baseResourcePath_ = AddTrailingSlash(baseResourcePath);
     localFileName_ = GetDefaultFileName();
 
-    selectFileNameInput_ = true;
+    selectFileNameInput_ = IsFileNameEditable();
 }
 
 void BaseResourceFactory::Render(const FileNameChecker& checker, bool& canCommit, bool& shouldCommit)
@@ -68,8 +68,10 @@ void BaseResourceFactory::Render(const FileNameChecker& checker, bool& canCommit
 
     if (selectFileNameInput_)
         ui::SetKeyboardFocusHere();
+    ui::BeginDisabled(!IsFileNameEditable());
     const bool isEnterPressed = ui::InputText("##FileName", &localFileName_,
         ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+    ui::EndDisabled();
 
     newResourcePath_ = RemoveTrailingSlash(baseResourcePath_);
     ui::Text(ICON_FA_FOLDER " in folder:");
