@@ -33,11 +33,11 @@ void Foundation_SceneFactory(Context* context, ResourceBrowserTab* resourceBrows
 }
 
 SceneFactory::SceneFactory(Context* context)
-    : ResourceFactory(context, 0, "Scene")
+    : BaseResourceFactory(context, 0, "Scene")
 {
 }
 
-void SceneFactory::Render()
+void SceneFactory::RenderAuxilary()
 {
     ui::Separator();
 
@@ -52,13 +52,13 @@ void SceneFactory::Render()
     ui::Separator();
 }
 
-void SceneFactory::EndCreate(const ea::string& fileName, const ea::string& resourceName)
+void SceneFactory::CommitAndClose()
 {
     DefaultSceneParameters params;
     params.highQuality_ = highQuality_;
     params.createObjects_ = defaultObjects_;
 
-    CreateDefaultScene(context_, fileName, params);
+    CreateDefaultScene(context_, GetFinalFileName(), params);
 }
 
 }

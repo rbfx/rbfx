@@ -767,7 +767,7 @@ void ResourceBrowserTab::RenderRenameDialog()
     const bool justOpened = rename_.openPending_;
     rename_.openPending_ = false;
 
-    const auto [isEnabled, extraLine] = CheckFileNameInput(
+    const auto [isEnabled, extraLine] = IsFileNameAvailable(
         *entry->parent_, entry->localName_, rename_.inputBuffer_);
     const char* formatString = "Would you like to rename '%s'?\n";
     ui::Text(formatString, entry->absolutePath_.c_str(), extraLine.c_str());
@@ -853,31 +853,36 @@ void ResourceBrowserTab::RenderCreateDialog()
     create_.openPending_ = false;
 
     if (justOpened)
-        create_.factory_->BeginCreate();
-
-    const ea::string baseFilePath = parentEntry->absolutePath_.empty()
-        ? GetRoot(*parentEntry).activeDirectory_
-        : parentEntry->absolutePath_ + "/";
-    const ea::string baseResourcePath = parentEntry->resourceName_.empty()
-        ? ""
-        : parentEntry->resourceName_ + "/";
-
-    const auto [isEnabled, extraLine] = CheckFileNameInput(*parentEntry, "", create_.inputBuffer_);
-    const ea::string fileName = baseFilePath + create_.inputBuffer_;
-    const ea::string resourceName = baseResourcePath + create_.inputBuffer_;
-    ui::Text("Would you like to create '%s'?\n%s", resourceName.c_str(), extraLine.c_str());
-
-    if (justOpened)
-        ui::SetKeyboardFocusHere();
-    const bool done = ui::InputText("##Create", &create_.inputBuffer_,
-        ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-
-    create_.factory_->Render();
-
-    ui::BeginDisabled(!isEnabled);
-    if (ui::Button(ICON_FA_CHECK " Create") || (isEnabled && done))
     {
-        create_.factory_->EndCreate(fileName, resourceName);
+        const ea::string baseFilePath = parentEntry->absolutePath_.empty()
+            ? GetRoot(*parentEntry).activeDirectory_
+            : parentEntry->absolutePath_ + "/";
+        const ea::string baseResourcePath = parentEntry->resourceName_.empty()
+            ? ""
+            : parentEntry->resourceName_ + "/";
+
+        create_.factory_->Open(baseFilePath, baseResourcePath);
+    }
+
+    const auto checkFileName = [this](const ea::string& filePath, const ea::string& fileName) -> ResourceFactory::CheckResult
+    {
+        const ea::string fullFileName = AddTrailingSlash(filePath) + fileName;
+
+        auto fs = GetSubsystem<FileSystem>();
+        if (fs->FileExists(fullFileName) || fs->DirExists(fullFileName))
+            return {false, ICON_FA_TRIANGLE_EXCLAMATION " File or directory with this name already exists"};
+
+        return IsFileNameValid(fileName);
+    };
+
+    bool canCommit{};
+    bool shouldCommit{};
+    create_.factory_->Render(checkFileName, canCommit, shouldCommit);
+
+    ui::BeginDisabled(!canCommit);
+    if (ui::Button(ICON_FA_CHECK " Create") || (canCommit && shouldCommit))
+    {
+        create_.factory_->CommitAndClose();
         create_ = {};
         ui::CloseCurrentPopup();
     }
@@ -887,6 +892,7 @@ void ResourceBrowserTab::RenderCreateDialog()
 
     if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
     {
+        create_.factory_->DiscardAndClose();
         create_ = {};
         ui::CloseCurrentPopup();
     }
@@ -1112,24 +1118,27 @@ void ResourceBrowserTab::AdjustSelectionOnRename(unsigned oldRootIndex, const ea
     ScrollToSelection();
 }
 
-ea::pair<bool, ea::string> ResourceBrowserTab::CheckFileNameInput(
+ea::pair<bool, ea::string> ResourceBrowserTab::IsFileNameValid(const ea::string& name) const
+{
+    const bool isEmptyName = name.empty();
+    const bool isInvalidName = GetSanitizedName(name) != name;
+
+    if (isInvalidName)
+        return {false, ICON_FA_TRIANGLE_EXCLAMATION " Name contains forbidden characters"};
+    else if (isEmptyName)
+        return {false, ICON_FA_TRIANGLE_EXCLAMATION " Name must not be empty"};
+    else
+        return {true, ICON_FA_CIRCLE_CHECK " Name is OK"};
+}
+
+ea::pair<bool, ea::string> ResourceBrowserTab::IsFileNameAvailable(
     const FileSystemEntry& parentEntry, const ea::string& oldName, const ea::string& newName) const
 {
-    const bool isEmptyName = newName.empty();
-    const bool isInvalidName = GetSanitizedName(newName) != newName;
     const bool isUsedName = newName != oldName && parentEntry.FindChild(newName);
-    const bool isDisabled = isEmptyName || isInvalidName || isUsedName;
+    if (isUsedName)
+        return {false, ICON_FA_TRIANGLE_EXCLAMATION " File or directory with this name already exists"};
 
-    ea::string extraLine;
-    if (isInvalidName)
-        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " Name contains forbidden characters";
-    else if (isUsedName)
-        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " File or directory with this name already exists";
-    else if (isEmptyName)
-        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " Name must not be empty";
-    else
-        extraLine = ICON_FA_CIRCLE_CHECK " Name is OK";
-    return {!isDisabled, extraLine};
+    return IsFileNameValid(newName);
 }
 
 ea::vector<const FileSystemEntry*> ResourceBrowserTab::GetEntries(const ea::vector<EntryReference>& refs) const
@@ -1192,7 +1201,6 @@ void ResourceBrowserTab::BeginEntryCreate(const FileSystemEntry& entry, Resource
     create_.parentEntryRef_ = GetReference(entry);
     create_.popupTitle_ = Format("Create {}...##CreateDialog", factory->GetTitle());
     create_.factory_ = factory;
-    create_.inputBuffer_ = factory->GetFileName();
     create_.openPending_ = true;
 }
 

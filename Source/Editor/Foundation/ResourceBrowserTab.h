@@ -159,7 +159,8 @@ private:
     const FileSystemEntry* GetEntry(const EntryReference& ref) const;
     const FileSystemEntry* GetSelectedEntryForCursor() const;
     const FileSystemEntry* GetCurrentFolderEntry() const;
-    ea::pair<bool, ea::string> CheckFileNameInput(const FileSystemEntry& parentEntry,
+    ea::pair<bool, ea::string> IsFileNameValid(const ea::string& name) const;
+    ea::pair<bool, ea::string> IsFileNameAvailable(const FileSystemEntry& parentEntry,
         const ea::string& oldName, const ea::string& newName) const;
     ea::vector<const FileSystemEntry*> GetEntries(const ea::vector<EntryReference>& refs) const;
     ea::optional<unsigned> GetRootIndex(const ea::string& fileName) const;
@@ -246,7 +247,6 @@ private:
         EntryReference parentEntryRef_;
         ea::string popupTitle_;
         SharedPtr<ResourceFactory> factory_;
-        ea::string inputBuffer_;
         bool openPending_{};
     } create_;
     /// @}

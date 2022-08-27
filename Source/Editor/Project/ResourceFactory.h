@@ -29,22 +29,23 @@
 namespace Urho3D
 {
 
-/// Base class for utility to create new files.
+/// Interface of file and folder factory.
 class ResourceFactory : public Object
 {
     URHO3D_OBJECT(ResourceFactory, Object);
 
 public:
+    using CheckResult = ea::pair<bool, ea::string>;
+    using FileNameChecker = ea::function<CheckResult(const ea::string& filePath, const ea::string& fileName)>;
+
     ResourceFactory(Context* context, int group, const ea::string& title);
 
-    /// Overridable interface
-    /// @{
-    virtual ea::string GetFileName() const = 0;
     virtual bool IsEnabled(const FileSystemEntry& parentEntry) const { return true; }
-    virtual void BeginCreate() {}
-    virtual void Render() {}
-    virtual void EndCreate(const ea::string& fileName, const ea::string& resourceName) = 0;
-    /// @}
+
+    virtual void Open(const ea::string& baseFilePath, const ea::string baseResourcePath) = 0;
+    virtual void Render(const FileNameChecker& checker, bool& canCommit, bool& shouldCommit) = 0;
+    virtual void CommitAndClose() = 0;
+    virtual void DiscardAndClose() {}
 
     int GetGroup() const { return group_; }
     const ea::string& GetTitle() const { return title_; }
@@ -57,10 +58,42 @@ private:
     const ea::string title_;
 };
 
-/// Simple implementation of ResourceFactory.
-class SimpleResourceFactory : public ResourceFactory
+/// Base implementation of ResourceFactory.
+class BaseResourceFactory : public ResourceFactory
 {
-    URHO3D_OBJECT(SimpleResourceFactory, ResourceFactory);
+    URHO3D_OBJECT(BaseResourceFactory, ResourceFactory);
+
+public:
+    BaseResourceFactory(Context* context, int group, const ea::string& title);
+
+    virtual ea::string GetDefaultFileName() const = 0;
+    virtual void RenderAuxilary() {}
+
+    /// Implement ResourceFactory.
+    /// @{
+    void Open(const ea::string& baseFilePath, const ea::string baseResourcePath) override;
+    void Render(const FileNameChecker& checker, bool& canCommit, bool& shouldCommit) override;
+    void CommitAndClose() override;
+    /// @}
+
+protected:
+    ea::string GetFinalFileName() const;
+    ea::string GetFinalResourceName() const;
+
+private:
+    ea::string baseFilePath_;
+    ea::string baseResourcePath_;
+
+    ea::string localFileName_;
+    ea::string newResourcePath_;
+
+    bool selectFileNameInput_{};
+};
+
+/// Simple implementation of ResourceFactory.
+class SimpleResourceFactory : public BaseResourceFactory
+{
+    URHO3D_OBJECT(SimpleResourceFactory, BaseResourceFactory);
 
 public:
     using Callback = ea::function<void(const ea::string& fileName, const ea::string& resourceName)>;
@@ -70,8 +103,8 @@ public:
 
     /// Overridable interface
     /// @{
-    ea::string GetFileName() const override { return fileName_; };
-    void EndCreate(const ea::string& fileName, const ea::string& resourceName) override;
+    ea::string GetDefaultFileName() const override { return fileName_; };
+    void CommitAndClose() override;
     /// @}
 
 private:
