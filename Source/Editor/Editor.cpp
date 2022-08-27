@@ -52,7 +52,8 @@
 #include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
 #include "Foundation/SceneViewTab/SceneSelector.h"
 #include "Foundation/SceneViewTab/TransformManipulator.h"
-#include "Foundation/SceneViewTab/SceneAddonDragAndDropPrefabs.h"
+#include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
+#include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
 #include "Foundation/SettingsTab.h"
 #include "Foundation/SettingsTab/KeyBindingsPage.h"
 #include "Foundation/SettingsTab/LaunchPage.h"
@@ -117,7 +118,8 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.Hierarchy", &Foundation_SceneHierarchy);
     editorPluginManager_->AddPlugin("Foundation.SceneView.SelectionRenderer", &Foundation_SceneSelectionRenderer);
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
-    editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefabs", &Foundation_SceneDragAndDropPrefabs);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefab", &Foundation_SceneDragAndDropPrefab);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
 
     editorPluginManager_->AddPlugin("Foundation.Inspector.Empty", &Foundation_EmptyInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Animation", &Foundation_AnimationInspector);

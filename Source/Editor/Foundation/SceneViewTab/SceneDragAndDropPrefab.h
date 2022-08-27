@@ -25,35 +25,47 @@
 #include "../../Core/SettingsManager.h"
 #include "../../Foundation/SceneViewTab.h"
 
-#include <Urho3D/Graphics/Drawable.h>
-#include <Urho3D/Graphics/OctreeQuery.h>
-
 namespace Urho3D
 {
 
-void Foundation_SceneDragAndDropPrefabs(Context* context, SceneViewTab* sceneViewTab);
+void Foundation_SceneDragAndDropPrefab(Context* context, SceneViewTab* sceneViewTab);
 
-/// Addon to manage scene selection with mouse and render debug geometry.
-class SceneDragAndDropPrefabs : public SceneViewAddon
+/// Addon to create new nodes via drag&drop.
+class SceneDragAndDropPrefab : public SceneViewAddon
 {
-    URHO3D_OBJECT(SceneDragAndDropPrefabs, SceneViewAddon);
+    URHO3D_OBJECT(SceneDragAndDropPrefab, SceneViewAddon);
 
 public:
-    explicit SceneDragAndDropPrefabs(SceneViewTab* owner);
+    explicit SceneDragAndDropPrefab(SceneViewTab* owner);
 
     /// Implement SceneViewAddon.
     /// @{
-    ea::string GetUniqueName() const override { return "Editor.Scene:DragAndDropPrefabs"; }
-    int GetInputPriority() const override { return M_MIN_INT; };
-    void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
+    ea::string GetUniqueName() const override { return "DragAndDropPrefab"; }
+    bool IsDragDropPayloadSupported(SceneViewPage& page, DragDropPayload* payload) const override;
+    void BeginDragDrop(SceneViewPage& page, DragDropPayload* payload) override;
+    void UpdateDragDrop(DragDropPayload* payload) override;
+    void CompleteDragDrop(DragDropPayload* payload) override;
+    void CancelDragDrop() override;
     /// @}
 
 private:
-    void DragAndDropPrefabsToSceneView(SceneViewPage& page, RayQueryResult& result);
-    ea::optional<RayQueryResult> QuerySingleRayQueryResult(Scene* scene, Camera* camera) const;
-    void SelectNode(SceneSelection& selection, Node* node, bool toggle, bool append) const;
-    void CreateNodeWithModel(SceneViewPage& scenePage, const ResourceFileDescriptor& desc, const RayQueryResult& result) const;
-    void AssignMaterialToDrawable(SceneViewPage& scenePage, const ResourceFileDescriptor& desc, const RayQueryResult& result) const;
+    static constexpr float DefaultDistance = 10.0f; // TODO: Make configurable
+
+    struct HitResult
+    {
+        bool hit_{};
+        float distance_{};
+        Vector3 position_;
+        Vector3 normal_;
+    };
+
+    void CreateNodeFromPrefab(Scene* scene, const ResourceFileDescriptor& desc);
+    void CreateNodeFromModel(Scene* scene, const ResourceFileDescriptor& desc);
+
+    HitResult QueryHoveredGeometry(Scene* scene, const Ray& cameraRay);
+
+    SharedPtr<Node> temporaryNode_;
+    WeakPtr<SceneViewPage> currentPage_;
 };
 
 } // namespace Urho3D
