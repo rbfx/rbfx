@@ -26,6 +26,8 @@
 #include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
 
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/OctreeQuery.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/SceneRendererToTexture.h>
 #include <Urho3D/Utility/SceneSelection.h>
@@ -67,6 +69,8 @@ public:
 
     SharedPtr<SimulateSceneAction> currentSimulationAction_;
 
+    Ray cameraRay_;
+
     /// UI state
     /// @{
     Rect contentArea_;
@@ -97,9 +101,9 @@ public:
     /// Initialize addon for the given page.
     virtual void Initialize(SceneViewPage& page) {}
     /// Process input.
-    virtual void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) {}
+    virtual void ProcessInput(SceneViewPage& page, bool& mouseConsumed) {}
     /// Update and render addon.
-    virtual void Render(SceneViewPage& scenePage) {}
+    virtual void Render(SceneViewPage& page) {}
     /// Apply hotkeys for given addon.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
     /// Render context menu of the tab.
@@ -111,9 +115,9 @@ public:
     virtual void SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const;
 
     /// Check if this type of drag&drop payload is accepted.
-    virtual bool IsDragDropPayloadSupported(DragDropPayload* payload) const { return false; }
+    virtual bool IsDragDropPayloadSupported(SceneViewPage& page, DragDropPayload* payload) const { return false; }
     /// Begin drag&drop operation, render preview.
-    virtual void BeginDragDrop(DragDropPayload* payload) {}
+    virtual void BeginDragDrop(SceneViewPage& page, DragDropPayload* payload) {}
     /// Update drag&drop state, called continuously while dragging.
     virtual void UpdateDragDrop(DragDropPayload* payload) {}
     /// End drag&drop operation and commit result.
@@ -259,6 +263,7 @@ private:
     /// @}
 
     void UpdateAddons(SceneViewPage& page);
+    void UpdateCameraRay();
     bool UpdateDropToScene();
     void InspectSelection(SceneViewPage& page);
 
@@ -325,6 +330,10 @@ private:
     const PackedSceneSelection oldSelection_;
     PackedSceneSelection newSelection_;
 };
+
+/// Helper function to query geometries from a scene.
+ea::vector<RayQueryResult> QueryGeometriesFromScene(Scene* scene, const Ray& ray,
+    RayQueryLevel level = RAY_TRIANGLE, float maxDistance = M_INFINITY, unsigned viewMask = DEFAULT_VIEWMASK);
 
 template <class T, class ... Args>
 SceneViewAddon* SceneViewTab::RegisterAddon(const Args&... args)
