@@ -834,6 +834,7 @@ void SceneViewTab::RenderContent()
     const auto contentAreaMax = ToVector2(ui::GetItemRectMax());
     activePage->contentArea_ = Rect{contentAreaMin, contentAreaMax};
 
+    UpdateCameraRay();
     UpdateAddons(*activePage);
 }
 
@@ -851,20 +852,35 @@ void SceneViewTab::UpdateAddons(SceneViewPage& page)
         addon->Render(page);
 }
 
+void SceneViewTab::UpdateCameraRay()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    ImGuiIO& io = ui::GetIO();
+    Camera* camera = activePage->renderer_->GetCamera();
+
+    const ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
+    const auto pos = ToVector2((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
+    activePage->cameraRay_ = camera->GetScreenRay(pos.x_, pos.y_);
+}
+
 bool SceneViewTab::UpdateDropToScene()
 {
-    if (ui::BeginDragDropTarget())
+    SceneViewPage* activePage = GetActivePage();
+    if (activePage && ui::BeginDragDropTarget())
     {
         const auto payload = DragDropPayload::Get();
 
         if (!dragAndDropAddon_)
         {
-            const auto isPayloadSupported = [&](SceneViewAddon* addon) { return addon->IsDragDropPayloadSupported(payload); };
+            const auto isPayloadSupported = [&](SceneViewAddon* addon) { return addon->IsDragDropPayloadSupported(*activePage, payload); };
             const auto iter = ea::find_if(addonsByInputPriority_.begin(), addonsByInputPriority_.end(), isPayloadSupported);
 
             dragAndDropAddon_ = iter != addonsByInputPriority_.end() ? *iter : nullptr;
             if (dragAndDropAddon_)
-                dragAndDropAddon_->BeginDragDrop(payload);
+                dragAndDropAddon_->BeginDragDrop(*activePage, payload);
         }
 
         if (dragAndDropAddon_)
@@ -1031,6 +1047,14 @@ bool ChangeSceneSelectionAction::MergeWith(const EditorAction& other)
 
     newSelection_ = otherAction->newSelection_;
     return true;
+}
+
+ea::vector<RayQueryResult> QueryGeometriesFromScene(Scene* scene, const Ray& ray, RayQueryLevel level, float maxDistance, unsigned viewMask)
+{
+    ea::vector<RayQueryResult> results;
+    RayOctreeQuery query(results, ray, level, maxDistance, DRAWABLE_GEOMETRY, viewMask);
+    scene->GetComponent<Octree>()->Raycast(query);
+    return results;
 }
 
 }

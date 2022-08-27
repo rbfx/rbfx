@@ -925,6 +925,12 @@ SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreatePayloadFromRightSel
             AddEntryToPayload(*payload, *entry);
     }
 
+    // Last selected resource is the first in the payload
+    const auto isLastSelected = [&](const ResourceFileDescriptor& desc) { return desc.resourceName_ == right_.lastSelectedPath_; };
+    const auto lastSelectedIter = ea::find_if(payload->resources_.begin(), payload->resources_.end(), isLastSelected);
+    if (lastSelectedIter != payload->resources_.end())
+        ea::swap(*lastSelectedIter, payload->resources_.front());
+
     return payload;
 }
 

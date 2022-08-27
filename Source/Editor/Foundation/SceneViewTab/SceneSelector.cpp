@@ -42,14 +42,13 @@ SceneSelector::SceneSelector(SceneViewTab* owner)
 void SceneSelector::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
 {
     Scene* scene = scenePage.scene_;
-    Camera* camera = scenePage.renderer_->GetCamera();
 
     if (!mouseConsumed)
     {
         if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
         {
             mouseConsumed = true;
-            Node* selectedNode = QuerySelectedNode(scene, camera);
+            Node* selectedNode = QuerySelectedNode(scene, scenePage.cameraRay_);
 
             const bool toggle = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
             const bool append = ui::IsKeyDown(KEY_LSHIFT) || ui::IsKeyDown(KEY_RSHIFT);
@@ -58,17 +57,9 @@ void SceneSelector::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
     }
 }
 
-Drawable* SceneSelector::QuerySelectedDrawable(Scene* scene, Camera* camera, RayQueryLevel level) const
+Drawable* SceneSelector::QuerySelectedDrawable(Scene* scene, const Ray& cameraRay, RayQueryLevel level) const
 {
-    ImGuiIO& io = ui::GetIO();
-
-    const ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
-    const auto pos = ToVector2((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
-    const Ray cameraRay = camera->GetScreenRay(pos.x_, pos.y_);
-
-    ea::vector<RayQueryResult> results;
-    RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
-    scene->GetComponent<Octree>()->Raycast(query);
+    const auto results = QueryGeometriesFromScene(scene, cameraRay);
 
     for (const RayQueryResult& result : results)
     {
@@ -79,11 +70,11 @@ Drawable* SceneSelector::QuerySelectedDrawable(Scene* scene, Camera* camera, Ray
     return nullptr;
 }
 
-Node* SceneSelector::QuerySelectedNode(Scene* scene, Camera* camera) const
+Node* SceneSelector::QuerySelectedNode(Scene* scene, const Ray& cameraRay) const
 {
-    Drawable* selectedDrawable = QuerySelectedDrawable(scene, camera, RAY_TRIANGLE);
+    Drawable* selectedDrawable = QuerySelectedDrawable(scene, cameraRay, RAY_TRIANGLE);
     if (!selectedDrawable)
-        selectedDrawable = QuerySelectedDrawable(scene, camera, RAY_OBB);
+        selectedDrawable = QuerySelectedDrawable(scene, cameraRay, RAY_OBB);
 
     Node* selectedNode = selectedDrawable ? selectedDrawable->GetNode() : nullptr;
 
