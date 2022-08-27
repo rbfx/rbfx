@@ -56,7 +56,6 @@ void Foundation_SceneDragAndDropPrefabs(Context* context, SceneViewTab* sceneVie
 SceneDragAndDropPrefabs::SceneDragAndDropPrefabs(SceneViewTab* owner)
     : SceneViewAddon(owner)
 {
-    owner->OnEditMenuRequest.Subscribe(this, &SceneDragAndDropPrefabs::OnEditMenuRequest);
 }
 
 void SceneDragAndDropPrefabs::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
@@ -120,55 +119,6 @@ void SceneDragAndDropPrefabs::DragAndDropPrefabsToSceneView(SceneViewPage& scene
             }
         }
     }
-}
-
-void SceneDragAndDropPrefabs::CreatePrefabFile(SceneSelection& selection)
-{
-    if (Node* activeNode = selection.GetActiveNode())
-    {
-        if (SceneViewPage* page = owner_->GetPage(activeNode->GetScene()))
-        {
-            eastl::string prefabFileName = activeNode->GetName();
-
-            if (prefabFileName.length() < 1)
-                prefabFileName = Format("PrefabNodeID_{}", activeNode->GetID());
-
-            Vector3 oldPrefabPosition = activeNode->GetWorldPosition();
-            activeNode->SetWorldPosition(Vector3::ZERO);
-            auto xmlFile = MakeShared<XMLFile>(context_);
-            {
-                XMLElement xmlRoot = xmlFile->CreateRoot("scene");
-                xmlRoot.SetAttribute("id", "1");
-                XMLElement xmlNode = xmlRoot.CreateChild("node");
-                activeNode->SaveXML(xmlNode);
-            }
-
-            ea::optional<ea::string> selectedPath = SelectPrefabPath();
-            if (selectedPath)
-                xmlFile->SaveFile(selectedPath.value() + prefabFileName + ".xml");
-
-            activeNode->SetWorldPosition(oldPrefabPosition);
-        }
-    }
-}
-
-ea::optional<ea::string> SceneDragAndDropPrefabs::SelectPrefabPath()
-{
-    nfdchar_t* outFilePath = nullptr;
-
-    if (NFD_PickFolder("", &outFilePath) == NFD_OKAY)
-    {
-        ea::string resultPath(outFilePath);
-        NFD_FreePath(outFilePath);
-        return ea::string(resultPath + "\\");
-    }
-
-    return ea::nullopt;
-}
-void SceneDragAndDropPrefabs::OnEditMenuRequest(SceneSelection& selection, const ea::string_view& editMenuItemName)
-{
-    if (editMenuItemName == "Create Prefab")
-        CreatePrefabFile(selection);
 }
 
 ea::optional<RayQueryResult> SceneDragAndDropPrefabs::QuerySingleRayQueryResult(Scene* scene, Camera* camera) const
@@ -249,7 +199,7 @@ void SceneDragAndDropPrefabs::CreateNodeWithModel(
                     newMaterialList.push_back(defaultResourceMaterial);
                 }
                 else
-                    newMaterialList.push_back(name); 
+                    newMaterialList.push_back(name);
             }
             if (needUpdateAttr)
             {
@@ -271,7 +221,7 @@ void SceneDragAndDropPrefabs::CreateNodeWithModel(
             q.FromLookRotation(result.normal_);
             node->SetRotation(q * Quaternion(90, 0, 0));
         }
-        
+
         const bool toggle = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
         const bool append = ui::IsKeyDown(KEY_LSHIFT) || ui::IsKeyDown(KEY_RSHIFT);
         SelectNode(scenePage.selection_, node, toggle, append);

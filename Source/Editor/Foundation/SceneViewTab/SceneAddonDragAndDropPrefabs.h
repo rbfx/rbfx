@@ -50,9 +50,6 @@ public:
 
 private:
     void DragAndDropPrefabsToSceneView(SceneViewPage& page, RayQueryResult& result);
-    void CreatePrefabFile(SceneSelection& selection);
-    ea::optional<ea::string> SelectPrefabPath();
-    void OnEditMenuRequest(SceneSelection& selection, const ea::string_view& editMenuItemName);
     ea::optional<RayQueryResult> QuerySingleRayQueryResult(Scene* scene, Camera* camera) const;
     void SelectNode(SceneSelection& selection, Node* node, bool toggle, bool append) const;
     void CreateNodeWithModel(SceneViewPage& scenePage, const ResourceFileDescriptor& desc, const RayQueryResult& result) const;
