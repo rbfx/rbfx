@@ -25,6 +25,7 @@
 #include "../Core/CommonEditorActions.h"
 #include "../Project/EditorTab.h"
 #include "../Project/Project.h"
+#include "../Project/ResourceFactory.h"
 
 #include <Urho3D/Core/Signal.h>
 #include <Urho3D/SystemUI/DragDropPayload.h>
@@ -37,40 +38,6 @@ namespace Urho3D
 {
 
 void Foundation_ResourceBrowserTab(Context* context, Project* project);
-
-class ResourceBrowserFactory : public Object
-{
-    URHO3D_OBJECT(ResourceBrowserFactory, Object);
-
-public:
-    using Callback = ea::function<void(const ea::string& fileName, const ea::string& resourceName)>;
-
-    ResourceBrowserFactory(Context* context,
-        int group, const ea::string& title, const ea::string& fileName);
-    ResourceBrowserFactory(Context* context,
-        int group, const ea::string& title, const ea::string& fileName, const Callback& callback);
-
-    /// Overridable interface
-    /// @{
-    virtual bool IsEnabled(const FileSystemEntry& parentEntry) const { return true; }
-    virtual void BeginCreate() {}
-    virtual void Render() {}
-    virtual void EndCreate(const ea::string& fileName, const ea::string& resourceName);
-    /// @}
-
-    int GetGroup() const { return group_; }
-    const ea::string& GetTitle() const { return title_; }
-    const ea::string& GetFileName() const { return fileName_; }
-
-    static bool Compare(const SharedPtr<ResourceBrowserFactory>& lhs, const SharedPtr<ResourceBrowserFactory>& rhs);
-
-private:
-    const int group_{};
-    const ea::string title_;
-    const ea::string fileName_;
-
-    Callback callback_;
-};
 
 class ResourceBrowserTab : public EditorTab
 {
@@ -90,7 +57,7 @@ public:
     explicit ResourceBrowserTab(Context* context);
     ~ResourceBrowserTab() override;
 
-    void AddFactory(SharedPtr<ResourceBrowserFactory> factory);
+    void AddFactory(SharedPtr<ResourceFactory> factory);
 
     Selection GetSelection() const;
     void SetSelection(const Selection& selection);
@@ -191,7 +158,9 @@ private:
     EntryReference GetReference(const FileSystemEntry& entry) const;
     const FileSystemEntry* GetEntry(const EntryReference& ref) const;
     const FileSystemEntry* GetSelectedEntryForCursor() const;
-    ea::pair<bool, ea::string> CheckFileNameInput(const FileSystemEntry& parentEntry,
+    const FileSystemEntry* GetCurrentFolderEntry() const;
+    ea::pair<bool, ea::string> IsFileNameValid(const ea::string& name) const;
+    ea::pair<bool, ea::string> IsFileNameAvailable(const FileSystemEntry& parentEntry,
         const ea::string& oldName, const ea::string& newName) const;
     ea::vector<const FileSystemEntry*> GetEntries(const ea::vector<EntryReference>& refs) const;
     ea::optional<unsigned> GetRootIndex(const ea::string& fileName) const;
@@ -215,7 +184,7 @@ private:
     void BeginEntryDelete(const FileSystemEntry& entry);
     void BeginRightSelectionDelete();
     void BeginEntryRename(const FileSystemEntry& entry);
-    void BeginEntryCreate(const FileSystemEntry& entry, ResourceBrowserFactory* factory);
+    void BeginEntryCreate(const FileSystemEntry& entry, ResourceFactory* factory);
 
     void RefreshContents();
     void RevealInExplorer(const ea::string& path);
@@ -229,7 +198,7 @@ private:
     unsigned defaultRoot_{};
     bool waitingForUpdate_{};
 
-    ea::vector<SharedPtr<ResourceBrowserFactory>> factories_;
+    ea::vector<SharedPtr<ResourceFactory>> factories_;
     bool sortFactories_{true};
 
     bool suppressInspector_{};
@@ -277,8 +246,7 @@ private:
     {
         EntryReference parentEntryRef_;
         ea::string popupTitle_;
-        ResourceBrowserFactory* factory_{};
-        ea::string inputBuffer_;
+        SharedPtr<ResourceFactory> factory_;
         bool openPending_{};
     } create_;
     /// @}

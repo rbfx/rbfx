@@ -39,7 +39,8 @@ else ()
 endif ()
 
 add_library (ImGui STATIC ${SOURCE_FILES})
-target_link_libraries(ImGui PUBLIC SDL STB FreeType EASTL)
+target_link_libraries(ImGui PUBLIC SDL2-static STB FreeType EASTL)
+target_compile_definitions(ImGui PRIVATE -DSDL_EXPORTS) # A workaround for MinGW to not try to import SDL APIs from a static library that exports them.
 if (URHO3D_OPENGL)
     if (MOBILE)
         # Mobiles do not need a loader. Lets game Dear ImGui here.

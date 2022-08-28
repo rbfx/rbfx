@@ -30,8 +30,8 @@
 #include "AudioEvents.h"
 #include "BufferedSoundStream.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_audio.h>
+#include <SDL.h>
+#include <SDL_audio.h>
 
 namespace Urho3D
 {

@@ -26,7 +26,7 @@
 #include "../Core/Profiler.h"
 #include "../Core/Timer.h"
 
-#include <SDL/SDL_timer.h>
+#include <SDL_timer.h>
 
 #include <ctime>
 

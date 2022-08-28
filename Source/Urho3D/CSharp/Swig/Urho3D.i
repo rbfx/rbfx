@@ -97,9 +97,9 @@ using namespace Urho3D;
 #   include <Urho3D/WindowsSupport.h>
 #endif
 #include <Urho3D/Urho3DAll.h>   // If this include is missing please build with -DURHO3D_MONOLITHIC_HEADER=ON
-#include <SDL/SDL_joystick.h>
-#include <SDL/SDL_gamecontroller.h>
-#include <SDL/SDL_keycode.h>
+#include <SDL_joystick.h>
+#include <SDL_gamecontroller.h>
+#include <SDL_keycode.h>
 #include <Urho3D/CSharp/Native/SWIGHelpers.h>
 %}
 

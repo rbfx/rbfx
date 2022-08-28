@@ -65,7 +65,7 @@
 #include "../UI/UIComponent.h"
 
 #include <cassert>
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #include "../DebugNew.h"
 

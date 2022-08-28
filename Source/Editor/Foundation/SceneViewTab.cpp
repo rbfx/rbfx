@@ -254,6 +254,12 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 
     if (ui::MenuItem("Focus", GetHotkeyLabel(Hotkey_Focus).c_str(), false, hasSelection))
         FocusSelection(selection);
+
+    if (SceneViewPage* activePage = GetActivePage())
+    {
+        ui::Separator();
+        OnSelectionEditMenu(this, *activePage, scene, selection);
+    }
 }
 
 void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)
@@ -828,17 +834,76 @@ void SceneViewTab::RenderContent()
     const auto contentAreaMax = ToVector2(ui::GetItemRectMax());
     activePage->contentArea_ = Rect{contentAreaMin, contentAreaMax};
 
+    UpdateCameraRay();
     UpdateAddons(*activePage);
 }
 
 void SceneViewTab::UpdateAddons(SceneViewPage& page)
 {
     bool mouseConsumed = false;
+
+    if (UpdateDropToScene())
+        mouseConsumed = true;
+
     for (SceneViewAddon* addon : addonsByInputPriority_)
         addon->ProcessInput(page, mouseConsumed);
 
     for (SceneViewAddon* addon : addons_)
         addon->Render(page);
+}
+
+void SceneViewTab::UpdateCameraRay()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    ImGuiIO& io = ui::GetIO();
+    Camera* camera = activePage->renderer_->GetCamera();
+
+    const ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
+    const auto pos = ToVector2((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
+    activePage->cameraRay_ = camera->GetScreenRay(pos.x_, pos.y_);
+}
+
+bool SceneViewTab::UpdateDropToScene()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (activePage && ui::BeginDragDropTarget())
+    {
+        const auto payload = DragDropPayload::Get();
+
+        if (!dragAndDropAddon_)
+        {
+            const auto isPayloadSupported = [&](SceneViewAddon* addon) { return addon->IsDragDropPayloadSupported(*activePage, payload); };
+            const auto iter = ea::find_if(addonsByInputPriority_.begin(), addonsByInputPriority_.end(), isPayloadSupported);
+
+            dragAndDropAddon_ = iter != addonsByInputPriority_.end() ? *iter : nullptr;
+            if (dragAndDropAddon_)
+                dragAndDropAddon_->BeginDragDrop(*activePage, payload);
+        }
+
+        if (dragAndDropAddon_)
+        {
+            if (ui::AcceptDragDropPayload(DragDropPayloadType.c_str(), ImGuiDragDropFlags_AcceptBeforeDelivery))
+            {
+                dragAndDropAddon_->UpdateDragDrop(payload);
+                if (ui::GetDragDropPayload()->IsDelivery())
+                {
+                    dragAndDropAddon_->CompleteDragDrop(payload);
+                    dragAndDropAddon_ = nullptr;
+                }
+            }
+        }
+
+        ui::EndDragDropTarget();
+    }
+    else if (dragAndDropAddon_)
+    {
+        dragAndDropAddon_->CancelDragDrop();
+        dragAndDropAddon_ = nullptr;
+    }
+    return dragAndDropAddon_ != nullptr;
 }
 
 void SceneViewTab::InspectSelection(SceneViewPage& page)
@@ -982,6 +1047,14 @@ bool ChangeSceneSelectionAction::MergeWith(const EditorAction& other)
 
     newSelection_ = otherAction->newSelection_;
     return true;
+}
+
+ea::vector<RayQueryResult> QueryGeometriesFromScene(Scene* scene, const Ray& ray, RayQueryLevel level, float maxDistance, unsigned viewMask)
+{
+    ea::vector<RayQueryResult> results;
+    RayOctreeQuery query(results, ray, level, maxDistance, DRAWABLE_GEOMETRY, viewMask);
+    scene->GetComponent<Octree>()->Raycast(query);
+    return results;
 }
 
 }

@@ -399,6 +399,5 @@ function (link_static_plugins TARGET PLUGIN_LIBRARIES)
     add_library (${TARGET}_StaticPlugins ${CMAKE_CURRENT_BINARY_DIR}/RegisterStaticPlugins.cpp)
     target_link_libraries (${TARGET}_StaticPlugins PRIVATE Urho3D ${PLUGIN_LIBRARIES})
     target_link_libraries (${TARGET} PRIVATE ${TARGET}_StaticPlugins)
-    target_compile_definitions(${TARGET} PRIVATE URHO3D_PLUGIN_LIST=${PLUGIN_LIST})
 endfunction()
 

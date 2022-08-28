@@ -76,34 +76,6 @@ void Foundation_ResourceBrowserTab(Context* context, Project* project)
     project->AddTab(MakeShared<ResourceBrowserTab>(context));
 }
 
-ResourceBrowserFactory::ResourceBrowserFactory(Context* context,
-    int group, const ea::string& title, const ea::string& fileName)
-    : Object(context)
-    , group_(group)
-    , title_(title)
-    , fileName_(fileName)
-{
-}
-
-ResourceBrowserFactory::ResourceBrowserFactory(Context* context,
-    int group, const ea::string& title, const ea::string& fileName, const Callback& callback)
-    : ResourceBrowserFactory(context, group, title, fileName)
-{
-    callback_ = callback;
-}
-
-void ResourceBrowserFactory::EndCreate(const ea::string& fileName, const ea::string& resourceName)
-{
-    if (callback_)
-        callback_(fileName, resourceName);
-}
-
-bool ResourceBrowserFactory::Compare(
-    const SharedPtr<ResourceBrowserFactory>& lhs, const SharedPtr<ResourceBrowserFactory>& rhs)
-{
-    return ea::tie(lhs->group_, lhs->title_) < ea::tie(rhs->group_, rhs->title_);
-}
-
 bool ResourceBrowserTab::Selection::operator==(const Selection& rhs) const
 {
     return selectedRoot_ == rhs.selectedRoot_
@@ -160,7 +132,7 @@ void ResourceBrowserTab::InitializeRoots()
 
 void ResourceBrowserTab::InitializeDefaultFactories()
 {
-    AddFactory(MakeShared<ResourceBrowserFactory>(
+    AddFactory(MakeShared<SimpleResourceFactory>(
         context_, M_MIN_INT, ICON_FA_FOLDER " Folder", "New Folder",
         [this](const ea::string& fileName, const ea::string& resourceName)
     {
@@ -181,17 +153,24 @@ void ResourceBrowserTab::OnProjectRequest(RefCounted* sender, ProjectRequest* re
     if (sender == this)
         return;
 
-    const auto openResourceRequest = dynamic_cast<OpenResourceRequest*>(request);
-    if (!openResourceRequest)
-        return;
-
-    const ResourceFileDescriptor& desc = openResourceRequest->GetResource();
-    if (const FileSystemEntry* entry = FindLeftPanelEntry(desc.resourceName_))
+    if (const auto openResourceRequest = dynamic_cast<OpenResourceRequest*>(request))
     {
-        SelectLeftPanel(entry->resourceName_);
-        if (!desc.isDirectory_)
-            SelectRightPanel(desc.resourceName_);
-        ScrollToSelection();
+        const ResourceFileDescriptor& desc = openResourceRequest->GetResource();
+        if (const FileSystemEntry* entry = FindLeftPanelEntry(desc.resourceName_))
+        {
+            SelectLeftPanel(entry->resourceName_);
+            if (!desc.isDirectory_)
+                SelectRightPanel(desc.resourceName_);
+            ScrollToSelection();
+        }
+    }
+    else if (const auto createResourceRequest = dynamic_cast<CreateResourceRequest*>(request))
+    {
+        if (create_.factory_ == nullptr)
+        {
+            if (const FileSystemEntry* entry = GetCurrentFolderEntry())
+                BeginEntryCreate(*entry, createResourceRequest->GetFactory());
+        }
     }
 }
 
@@ -208,7 +187,7 @@ ResourceBrowserTab::~ResourceBrowserTab()
 {
 }
 
-void ResourceBrowserTab::AddFactory(SharedPtr<ResourceBrowserFactory> factory)
+void ResourceBrowserTab::AddFactory(SharedPtr<ResourceFactory> factory)
 {
     factories_.push_back(factory);
     sortFactories_ = true;
@@ -494,13 +473,13 @@ ea::optional<unsigned> ResourceBrowserTab::RenderEntryCreateContextMenu(const Fi
 
     if (sortFactories_)
     {
-        ea::sort(factories_.begin(), factories_.end(), ResourceBrowserFactory::Compare);
+        ea::sort(factories_.begin(), factories_.end(), ResourceFactory::Compare);
         sortFactories_ = false;
     }
 
     ea::optional<int> previousGroup;
     unsigned index = 0;
-    for (const ResourceBrowserFactory* factory : factories_)
+    for (const ResourceFactory* factory : factories_)
     {
         const IdScopeGuard guard(index);
 
@@ -788,7 +767,7 @@ void ResourceBrowserTab::RenderRenameDialog()
     const bool justOpened = rename_.openPending_;
     rename_.openPending_ = false;
 
-    const auto [isEnabled, extraLine] = CheckFileNameInput(
+    const auto [isEnabled, extraLine] = IsFileNameAvailable(
         *entry->parent_, entry->localName_, rename_.inputBuffer_);
     const char* formatString = "Would you like to rename '%s'?\n";
     ui::Text(formatString, entry->absolutePath_.c_str(), extraLine.c_str());
@@ -874,31 +853,37 @@ void ResourceBrowserTab::RenderCreateDialog()
     create_.openPending_ = false;
 
     if (justOpened)
-        create_.factory_->BeginCreate();
-
-    const ea::string baseFilePath = parentEntry->absolutePath_.empty()
-        ? GetRoot(*parentEntry).activeDirectory_
-        : parentEntry->absolutePath_ + "/";
-    const ea::string baseResourcePath = parentEntry->resourceName_.empty()
-        ? ""
-        : parentEntry->resourceName_ + "/";
-
-    const auto [isEnabled, extraLine] = CheckFileNameInput(*parentEntry, "", create_.inputBuffer_);
-    const ea::string fileName = baseFilePath + create_.inputBuffer_;
-    const ea::string resourceName = baseResourcePath + create_.inputBuffer_;
-    ui::Text("Would you like to create '%s'?\n%s", resourceName.c_str(), extraLine.c_str());
-
-    if (justOpened)
-        ui::SetKeyboardFocusHere();
-    const bool done = ui::InputText("##Create", &create_.inputBuffer_,
-        ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-
-    create_.factory_->Render();
-
-    ui::BeginDisabled(!isEnabled);
-    if (ui::Button(ICON_FA_CHECK " Create") || (isEnabled && done))
     {
-        create_.factory_->EndCreate(fileName, resourceName);
+        const ea::string baseFilePath = parentEntry->absolutePath_.empty()
+            ? GetRoot(*parentEntry).activeDirectory_
+            : parentEntry->absolutePath_ + "/";
+        const ea::string baseResourcePath = parentEntry->resourceName_.empty()
+            ? ""
+            : parentEntry->resourceName_ + "/";
+
+        create_.factory_->Open(baseFilePath, baseResourcePath);
+    }
+
+    const auto checkFileName = [this](const ea::string& filePath, const ea::string& fileName) -> ResourceFactory::CheckResult
+    {
+        const ea::string fullFileName = AddTrailingSlash(filePath) + fileName;
+
+        auto fs = GetSubsystem<FileSystem>();
+        if (fs->FileExists(fullFileName) || fs->DirExists(fullFileName))
+            return {false, ICON_FA_TRIANGLE_EXCLAMATION " File or directory with this name already exists"};
+
+        return IsFileNameValid(fileName);
+    };
+
+    bool canCommit{};
+    bool shouldCommit{};
+    create_.factory_->Render(checkFileName, canCommit, shouldCommit);
+
+    ui::BeginDisabled(!canCommit);
+    if (ui::Button(ICON_FA_CHECK " Create") || (canCommit && shouldCommit))
+    {
+        create_.factory_->CommitAndClose();
+        create_ = {};
         ui::CloseCurrentPopup();
     }
     ui::EndDisabled();
@@ -906,7 +891,11 @@ void ResourceBrowserTab::RenderCreateDialog()
     ui::SameLine();
 
     if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
+    {
+        create_.factory_->DiscardAndClose();
+        create_ = {};
         ui::CloseCurrentPopup();
+    }
 
     ui::EndPopup();
 }
@@ -935,6 +924,12 @@ SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreatePayloadFromRightSel
         if (entry)
             AddEntryToPayload(*payload, *entry);
     }
+
+    // Last selected resource is the first in the payload
+    const auto isLastSelected = [&](const ResourceFileDescriptor& desc) { return desc.resourceName_ == right_.lastSelectedPath_; };
+    const auto lastSelectedIter = ea::find_if(payload->resources_.begin(), payload->resources_.end(), isLastSelected);
+    if (lastSelectedIter != payload->resources_.end())
+        ea::swap(*lastSelectedIter, payload->resources_.front());
 
     return payload;
 }
@@ -1023,6 +1018,11 @@ const FileSystemEntry* ResourceBrowserTab::GetEntry(const EntryReference& ref) c
 const FileSystemEntry* ResourceBrowserTab::GetSelectedEntryForCursor() const
 {
     return GetEntry(EntryReference{left_.selectedRoot_, cursor_.selectedPath_});
+}
+
+const FileSystemEntry* ResourceBrowserTab::GetCurrentFolderEntry() const
+{
+    return GetEntry(EntryReference{left_.selectedRoot_, left_.selectedPath_});
 }
 
 bool ResourceBrowserTab::IsRightSelected(const ea::string& path) const
@@ -1124,24 +1124,27 @@ void ResourceBrowserTab::AdjustSelectionOnRename(unsigned oldRootIndex, const ea
     ScrollToSelection();
 }
 
-ea::pair<bool, ea::string> ResourceBrowserTab::CheckFileNameInput(
+ea::pair<bool, ea::string> ResourceBrowserTab::IsFileNameValid(const ea::string& name) const
+{
+    const bool isEmptyName = name.empty();
+    const bool isInvalidName = GetSanitizedName(name) != name;
+
+    if (isInvalidName)
+        return {false, ICON_FA_TRIANGLE_EXCLAMATION " Name contains forbidden characters"};
+    else if (isEmptyName)
+        return {false, ICON_FA_TRIANGLE_EXCLAMATION " Name must not be empty"};
+    else
+        return {true, ICON_FA_CIRCLE_CHECK " Name is OK"};
+}
+
+ea::pair<bool, ea::string> ResourceBrowserTab::IsFileNameAvailable(
     const FileSystemEntry& parentEntry, const ea::string& oldName, const ea::string& newName) const
 {
-    const bool isEmptyName = newName.empty();
-    const bool isInvalidName = GetSanitizedName(newName) != newName;
     const bool isUsedName = newName != oldName && parentEntry.FindChild(newName);
-    const bool isDisabled = isEmptyName || isInvalidName || isUsedName;
+    if (isUsedName)
+        return {false, ICON_FA_TRIANGLE_EXCLAMATION " File or directory with this name already exists"};
 
-    ea::string extraLine;
-    if (isInvalidName)
-        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " Name contains forbidden characters";
-    else if (isUsedName)
-        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " File or directory with this name already exists";
-    else if (isEmptyName)
-        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " Name must not be empty";
-    else
-        extraLine = ICON_FA_CIRCLE_CHECK " Name is OK";
-    return {!isDisabled, extraLine};
+    return IsFileNameValid(newName);
 }
 
 ea::vector<const FileSystemEntry*> ResourceBrowserTab::GetEntries(const ea::vector<EntryReference>& refs) const
@@ -1196,7 +1199,7 @@ void ResourceBrowserTab::BeginEntryRename(const FileSystemEntry& entry)
     rename_.openPending_ = true;
 }
 
-void ResourceBrowserTab::BeginEntryCreate(const FileSystemEntry& entry, ResourceBrowserFactory* factory)
+void ResourceBrowserTab::BeginEntryCreate(const FileSystemEntry& entry, ResourceFactory* factory)
 {
     if (entry.isFile_)
         return;
@@ -1204,7 +1207,6 @@ void ResourceBrowserTab::BeginEntryCreate(const FileSystemEntry& entry, Resource
     create_.parentEntryRef_ = GetReference(entry);
     create_.popupTitle_ = Format("Create {}...##CreateDialog", factory->GetTitle());
     create_.factory_ = factory;
-    create_.inputBuffer_ = factory->GetFileName();
     create_.openPending_ = true;
 }
 

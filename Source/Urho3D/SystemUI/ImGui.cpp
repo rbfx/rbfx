@@ -25,7 +25,7 @@
 
 #include "../SystemUI/ImGui.h"
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 namespace Urho3D
 {

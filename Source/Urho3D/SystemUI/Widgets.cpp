@@ -955,6 +955,25 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     }
 }
 
+ImVec2 FitContent(const ImVec2& contentArea, const ImVec2& originalSize)
+{
+    const float eps = ea::numeric_limits<float>::epsilon();
+    if (contentArea.x <= eps || contentArea.y <= eps || originalSize.x <= eps || originalSize.y <= eps)
+    {
+        return ImVec2(0.0f, 0.0f);
+    }
+    const float contentAspect = contentArea.x / contentArea.y;
+    const float imageAspect = originalSize.x / originalSize.y;
+    if (contentAspect > imageAspect)
+    {
+        return ImVec2(contentArea.y * imageAspect, contentArea.y);
+    }
+    else
+    {
+        return ImVec2(contentArea.x, contentArea.x / imageAspect);
+    }
+}
+
 void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol)
 {
     auto context = Context::GetInstance();

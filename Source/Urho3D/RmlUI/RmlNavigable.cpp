@@ -241,12 +241,6 @@ void RmlNavigable::SetNavigated(bool navigated, NavigableEventMode eventMode)
         Rml::Dictionary parameters;
         DispatchEvent(navigated ? "navigated" : "abandoned", parameters);
     }
-
-    if (navigated)
-    {
-        // TODO(ui): Scroll when implemented
-        //ScrollIntoView();
-    }
 }
 
 void RmlNavigable::SetPressed(bool pressed, NavigableInputSource inputSource, NavigableEventMode eventMode)

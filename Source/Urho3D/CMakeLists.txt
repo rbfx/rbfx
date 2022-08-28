@@ -184,7 +184,7 @@ set (THIRD_PARTY_DEPENDENCIES
     LZ4
     PugiXml
     rapidjson
-    SDL
+    SDL2-static
     StanHull
     STB
     IconFontCppHeaders
@@ -264,7 +264,8 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         get_target_property(VALUE ${dep} INTERFACE_LINK_LIBRARIES)
         if (VALUE)
             foreach (dep_lib ${VALUE})
-                if (NOT TARGET ${dep_lib})
+                string(FIND "${dep_lib}" "$" DOLLAR_OFFSET)
+                if (DOLLAR_OFFSET LESS 0 AND NOT TARGET "${dep_lib}")
                     target_link_libraries (Urho3D PUBLIC "${dep_lib}")
                 endif ()
             endforeach ()

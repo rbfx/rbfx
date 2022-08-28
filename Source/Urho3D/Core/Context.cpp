@@ -45,7 +45,7 @@
 #endif
 
 #ifndef MINI_URHO
-#include <SDL/SDL.h>
+#include <SDL.h>
 #ifdef URHO3D_IK
 #include <ik/log.h>
 #include <ik/memory.h>

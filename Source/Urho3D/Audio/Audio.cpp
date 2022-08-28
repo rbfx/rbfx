@@ -33,7 +33,7 @@
 #include "../Core/Profiler.h"
 #include "../IO/Log.h"
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #include "../DebugNew.h"
 
