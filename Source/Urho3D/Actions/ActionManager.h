@@ -59,11 +59,15 @@ public:
 
     ~ActionManager() override;
 
-    void RemoveAllActions();
+    void CompleteAllActions();
 
-    void RemoveAllActionsFromTarget(Object* target);
+    void CancelAllActions();
 
-    void RemoveAction(Actions::ActionState* actionState);
+    void CompleteAllActionsOnTarget(Object* target);
+
+    void CancelAllActionsFromTarget(Object* target);
+
+    void CancelAction(Actions::ActionState* actionState);
 
     unsigned GetNumActions(Object* target) const;
 

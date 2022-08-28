@@ -53,8 +53,14 @@ public:
     /// Activate game state. Executed by StateManager.
     virtual void Activate(VariantMap& bundle);
 
+    /// Transition into the state complete. Executed by StateManager.
+    virtual void TransitionComplete();
+
     /// Return true if state is ready to be deactivated. Executed by StateManager.
     virtual bool CanLeaveState() const;
+
+    /// Transition out of the state started. Executed by StateManager.
+    virtual void TransitionStarted();
 
     /// Deactivate game state. Executed by StateManager.
     virtual void Deactivate();
@@ -254,6 +260,12 @@ private:
 
     /// Update fade overlay size and transparency.
     void UpdateFadeOverlay(float t);
+
+    /// Start transition out of the current state.
+    void StartTransition();
+
+    /// Complete transition into the current state.
+    void CompleteTransition();
 
     /// Deactivate state.
     void DeactivateState();

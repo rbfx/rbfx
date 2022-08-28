@@ -102,7 +102,7 @@ ActionManager::ActionManager(Context* context, bool autoupdate)
     }
 }
 
-ActionManager::~ActionManager() { RemoveAllActions(); }
+ActionManager::~ActionManager() { CancelAllActions(); }
 
 void RegisterActionLibrary(Context* context, ActionManager* manager)
 {
@@ -149,7 +149,7 @@ void ActionManager::HandleUpdate(StringHash eventType, VariantMap& eventData)
     Update(eventData[P_TIMESTEP].GetFloat());
 }
 
-void ActionManager::RemoveAllActions()
+void ActionManager::CompleteAllActions()
 {
     if (targets_.empty())
         return;
@@ -166,16 +166,37 @@ void ActionManager::RemoveAllActions()
 
     for (auto target : tmpKeysArray_)
     {
-        RemoveAllActionsFromTarget(target);
+        CompleteAllActionsOnTarget(target);
     }
 }
 
-void ActionManager::RemoveAllActionsFromTarget(Object* target)
+void ActionManager::CancelAllActions()
+{
+    if (targets_.empty())
+        return;
+
+    auto count = targets_.size();
+
+    tmpKeysArray_.clear();
+    tmpKeysArray_.reserve(targets_.size() * 2);
+
+    for (auto target : targets_)
+    {
+        tmpKeysArray_.push_back(target.first);
+    }
+
+    for (auto target : tmpKeysArray_)
+    {
+        CancelAllActionsFromTarget(target);
+    }
+}
+
+void ActionManager::CancelAllActionsFromTarget(Object* target)
 {
     if (target == nullptr)
         return;
 
-    auto targetIt = targets_.find(target);
+    const auto targetIt = targets_.find(target);
     if (targetIt != targets_.end())
     {
         HashElement& element = targetIt->second;
@@ -195,7 +216,48 @@ void ActionManager::RemoveAllActionsFromTarget(Object* target)
     }
 }
 
-void ActionManager::RemoveAction(ActionState* actionState)
+void ActionManager::CompleteAllActionsOnTarget(Object* target)
+{
+    if (target == nullptr)
+        return;
+
+    const auto targetIt = targets_.find(target);
+    if (targetIt != targets_.end())
+    {
+        HashElement& element = targetIt->second;
+
+        if (element.ActionStates.contains(element.CurrentActionState) && !element.CurrentActionSalvaged)
+            element.CurrentActionSalvaged = true;
+
+        for (const auto& action: element.ActionStates)
+        {
+            // Do a zero step to be sure that the action is initialized.
+            action->Step(0.0f);
+            float duration = ea::numeric_limits<float>::max();
+            const auto finiteTimeAction = dynamic_cast<FiniteTimeAction*>(action->GetAction());
+            if (finiteTimeAction)
+            {
+                duration = finiteTimeAction->GetDuration();
+                if (duration >= ea::numeric_limits<float>::max())
+                {
+                    duration = 0.0f;
+                }
+            }
+            // Do a step beyond duration to complete the action.
+            action->Step(duration * 2.0f);
+        }
+        element.ActionStates.clear();
+        if (currentTarget_ == target)
+        {
+            currentTargetSalvaged_ = true;
+        }
+        else
+        {
+            targets_.erase(targetIt);
+        }
+    }
+}
+void ActionManager::CancelAction(ActionState* actionState)
 {
     if (!actionState || !actionState->GetOriginalTarget())
         return;
@@ -326,7 +388,7 @@ void ActionManager::Update(float dt)
                     auto actionState = element.CurrentActionState;
                     // Make currentAction nil to prevent removeAction from salvaging it.
                     element.CurrentActionState.Reset();
-                    RemoveAction(actionState);
+                    CancelAction(actionState);
                 }
 
                 element.CurrentActionState.Reset();

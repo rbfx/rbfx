@@ -437,3 +437,58 @@ TEST_CASE("Serialize Action")
     CHECK(Equals(expected->GetDuration(), actual->GetDuration()));
     CHECK(expected->GetPositionDelta().Equals(actual->GetPositionDelta()));
 }
+
+TEST_CASE("Cancel Action")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    const auto actionManager = context->GetSubsystem<ActionManager>();
+    const auto target = MakeShared<Node>(context);
+
+    SharedPtr<Actions::BaseAction> action = ActionBuilder(context).MoveBy(2.0f, Vector3(10, 0, 0)).Build();
+    actionManager->AddAction(action, target);
+    actionManager->CancelAllActions();
+
+    CHECK(target->GetPosition() == Vector3::ZERO);
+}
+
+TEST_CASE("Complete Action")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    const auto actionManager = context->GetSubsystem<ActionManager>();
+    const auto target = MakeShared<Node>(context);
+
+    SharedPtr<Actions::BaseAction> action = ActionBuilder(context).MoveBy(2.0f, Vector3(10, 0, 0)).Build();
+    actionManager->AddAction(action, target);
+    actionManager->CompleteAllActions();
+
+    CHECK(target->GetPosition() == Vector3(10,0,0));
+}
+
+TEST_CASE("Complete composite Action")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    const auto actionManager = context->GetSubsystem<ActionManager>();
+    const auto target = MakeShared<Node>(context);
+
+    SharedPtr<Actions::BaseAction> action = ActionBuilder(context)
+        .MoveBy(2.0f, Vector3(10, 0, 0))
+        .MoveBy(2.0f, Vector3(00, 10, 0))
+        .Build();
+    actionManager->AddAction(action, target);
+    actionManager->CompleteAllActions();
+
+    CHECK(target->GetPosition() == Vector3(10, 10, 0));
+}
+
+TEST_CASE("Complete infinite Action")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    const auto actionManager = context->GetSubsystem<ActionManager>();
+    const auto target = MakeShared<Node>(context);
+
+    SharedPtr<Actions::BaseAction> action = ActionBuilder(context).MoveBy(2.0f, Vector3(10, 0, 0)).RepeatForever().Build();
+    actionManager->AddAction(action, target);
+    actionManager->CompleteAllActions();
+
+    CHECK(0 == actionManager->GetNumActions(target));
+}
