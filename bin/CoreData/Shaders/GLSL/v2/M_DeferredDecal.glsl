@@ -65,7 +65,10 @@ void main()
     }
     // Get normal
     #ifdef NORMALMAP
-        surfaceData.normal = normalize((vec4(DecodeNormal(texture2D(sNormalMap, vTexCoord.xy)),0.0) * vToModelSpace).xyz);
+        vec3 localNormal = DecodeNormal(texture2D(sNormalMap, vTexCoord.xy)) * vec3(1.0, 1.0, -1.0);
+        vec4 normalInModelSpace = vToModelSpace * vec4(localNormal, 0.0);
+
+        surfaceData.normal = normalize(normalInModelSpace.xyz);
     #else
         surfaceData.normal = normalize((vec4(0.0, 0.0, -1.0, 0.0) * vToModelSpace).xyz);
     #endif
