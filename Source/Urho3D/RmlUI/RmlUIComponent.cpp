@@ -29,6 +29,7 @@
 #include "../IO/Log.h"
 #include "../Resource/BinaryFile.h"
 #include "../RmlUI/RmlCanvasComponent.h"
+#include "../RmlUI/RmlNavigationManager.h"
 #include "../RmlUI/RmlUIComponent.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
@@ -47,8 +48,10 @@ const Rml::String ComponentPtrAttribute = "__RmlUIComponentPtr__";
 
 RmlUIComponent::RmlUIComponent(Context* context)
     : LogicComponent(context)
+    , navigationManager_(MakeShared<RmlNavigationManager>(this))
 {
     SetUpdateEventMask(USE_UPDATE);
+    navigationManager_->OnGroupChanged.Subscribe(this, &RmlUIComponent::OnNavigableGroupChanged);
 }
 
 RmlUIComponent::~RmlUIComponent()
@@ -70,6 +73,7 @@ void RmlUIComponent::RegisterObject(Context* context)
 
 void RmlUIComponent::Update(float timeStep)
 {
+    navigationManager_->Update();
     // There should be only a few of RmlUIComponent enabled at a time, so this is not a performance issue.
     UpdateConnectedCanvas();
 }
@@ -111,6 +115,14 @@ void RmlUIComponent::OpenInternal()
     ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
 
     OnDocumentPreLoad();
+
+    if (!dataModel_)
+    {
+        Rml::DataModelConstructor constructor = CreateDataModel();
+        OnDataModelInitialized(constructor);
+        dataModel_ = constructor.GetModelHandle();
+    }
+
     SetDocument(ui->LoadDocument(resource_.name_));
 
     if (document_ == nullptr)
@@ -141,6 +153,10 @@ void RmlUIComponent::CloseInternal()
     OnDocumentPreUnload();
     document_->Close();
     SetDocument(nullptr);
+
+    if (dataModel_)
+        RemoveDataModel();
+
     OnDocumentPostUnload();
 }
 
@@ -157,10 +173,10 @@ Vector2 RmlUIComponent::GetPosition() const
     if (document_ == nullptr)
         return position_;
 
-    Vector2 pos = document_->GetAbsoluteOffset(Rml::Box::BORDER);
+    Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::Box::BORDER));
     if (useNormalized_)
     {
-        IntVector2 canvasSize = document_->GetContext()->GetDimensions();
+        IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
         pos.x_ = 1.0f / static_cast<float>(canvasSize.x_) * pos.x_;
         pos.y_ = 1.0f / static_cast<float>(canvasSize.y_) * pos.y_;
     }
@@ -180,7 +196,7 @@ void RmlUIComponent::SetPosition(Vector2 pos)
 
     if (useNormalized_)
     {
-        IntVector2 canvasSize = document_->GetContext()->GetDimensions();
+        IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
         pos.x_ = Round(static_cast<float>(canvasSize.x_) * pos.x_);
         pos.y_ = Round(static_cast<float>(canvasSize.y_) * pos.y_);
     }
@@ -197,10 +213,10 @@ Vector2 RmlUIComponent::GetSize() const
     if (autoSize_)
         return Vector2::ZERO;
 
-    Vector2 size = document_->GetBox().GetSize(Rml::Box::CONTENT);
+    Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::Box::CONTENT));
     if (useNormalized_)
     {
-        IntVector2 canvasSize = document_->GetContext()->GetDimensions();
+        IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
         size.x_ = 1.0f / static_cast<float>(canvasSize.x_) * size.x_;
         size.y_ = 1.0f / static_cast<float>(canvasSize.y_) * size.y_;
     }
@@ -220,7 +236,7 @@ void RmlUIComponent::SetSize(Vector2 size)
 
     if (useNormalized_)
     {
-        IntVector2 canvasSize = document_->GetContext()->GetDimensions();
+        IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
         size.x_ = Round(static_cast<float>(canvasSize.x_) * size.x_);
         size.y_ = Round(static_cast<float>(canvasSize.y_) * size.y_);
     }
@@ -239,8 +255,8 @@ void RmlUIComponent::OnUICanvasResized(const RmlCanvasResizedArgs& args)
     // valid. Convert pixel size and position back to normalized coordiantes using old size and reapply them, which will use new canvas size
     // for calculating new pixel position and size.
 
-    Vector2 pos = document_->GetAbsoluteOffset(Rml::Box::BORDER);
-    Vector2 size = document_->GetBox().GetSize(Rml::Box::CONTENT);
+    Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::Box::BORDER));
+    Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::Box::CONTENT));
 
     pos.x_ = 1.0f / static_cast<float>(args.oldSize_.x_) * pos.x_;
     pos.y_ = 1.0f / static_cast<float>(args.oldSize_.y_) * pos.y_;
@@ -280,22 +296,68 @@ void RmlUIComponent::SetDocument(Rml::ElementDocument* document)
         document_ = document;
 
         if (document_)
+        {
             document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(this));
+            navigationManager_->Reset(document_);
+        }
     }
 }
 
-Rml::DataModelConstructor RmlUIComponent::CreateDataModel(const ea::string& name)
+void RmlUIComponent::OnNavigableGroupChanged()
 {
-    RmlUI* ui = GetUI();
-    Rml::Context* context = ui->GetRmlContext();
-    return context->CreateDataModel(name);
+    DirtyVariable("navigable_group");
 }
 
-void RmlUIComponent::RemoveDataModel(const ea::string& name)
+void RmlUIComponent::DoNavigablePush(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args)
+{
+    if (args.size() > 2)
+    {
+        URHO3D_LOGWARNING("RmlUIComponent::DoNavigablePush is called with unexpected arguments");
+        return;
+    }
+
+    const bool enabled = args.size() > 1 ? args[0].Get<bool>() : true;
+    const ea::string group = args.back().Get<Rml::String>();
+    if (enabled)
+        navigationManager_->PushCursorGroup(group);
+}
+
+void RmlUIComponent::DoNavigablePop(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args)
+{
+    if (args.size() > 1)
+    {
+        URHO3D_LOGWARNING("RmlUIComponent::DoNavigablePop is called with unexpected arguments");
+        return;
+    }
+
+    const bool enabled = args.size() > 0 ? args[0].Get<bool>() : true;
+    if (enabled)
+        navigationManager_->PopCursorGroup();
+}
+
+Rml::DataModelConstructor RmlUIComponent::CreateDataModel()
 {
     RmlUI* ui = GetUI();
     Rml::Context* context = ui->GetRmlContext();
-    context->RemoveDataModel(name);
+
+    dataModelName_ = GetDataModelName();
+    Rml::DataModelConstructor constructor = context->CreateDataModel(dataModelName_);
+
+    constructor.BindFunc("navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
+    constructor.BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);
+    constructor.BindEventCallback("navigable_pop", &RmlUIComponent::DoNavigablePop, this);
+
+    return constructor;
+}
+
+void RmlUIComponent::RemoveDataModel()
+{
+    RmlUI* ui = GetUI();
+    Rml::Context* context = ui->GetRmlContext();
+    context->RemoveDataModel(dataModelName_);
+
+    dataModel_ = nullptr;
+    dataModelName_.clear();
 }
 
 void RmlUIComponent::UpdateDocumentOpen()

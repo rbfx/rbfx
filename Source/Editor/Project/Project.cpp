@@ -213,8 +213,8 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
 
     settingsManager_->AddPage(toolManager_);
 
-    assetManager_->LoadFile(cacheJsonPath_);
     settingsManager_->LoadFile(settingsJsonPath_);
+    assetManager_->LoadFile(cacheJsonPath_);
 
     JSONFile projectJsonFile(context_);
     projectJsonFile.LoadFile(projectJsonPath_);

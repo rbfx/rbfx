@@ -36,16 +36,17 @@ namespace Urho3D
 {
 
 class RmlCanvasComponent;
+class RmlNavigationManager;
 struct RmlCanvasResizedArgs;
 struct RmlDocumentReloadedArgs;
 
 class RmlUI;
-class RmlUIComponent;
 
 /// Adds a single window to game screen.
 class URHO3D_API RmlUIComponent : public LogicComponent
 {
     URHO3D_OBJECT(RmlUIComponent, LogicComponent);
+
 public:
     /// Construct.
     explicit RmlUIComponent(Context* context);
@@ -80,19 +81,38 @@ public:
 
     /// Return RmlUI subsystem this component renders into.
     RmlUI* GetUI() const;
-
-protected:
     /// Return currently open document, may be null.
     Rml::ElementDocument* GetDocument() const { return document_; }
+    /// Return navigation manager.
+    RmlNavigationManager& GetNavigationManager() const { return *navigationManager_; }
 
-    /// Create new data model.
-    Rml::DataModelConstructor CreateDataModel(const ea::string& name);
-    /// Remove data model.
-    void RemoveDataModel(const ea::string& name);
+protected:
+    /// Data model facade
+    /// @{
+    bool IsVariableDirty(const ea::string& variableName) { return dataModel_.IsVariableDirty(variableName); }
+    void DirtyVariable(const ea::string& variableName) { dataModel_.DirtyVariable(variableName); }
+    void DirtyAllVariables() { dataModel_.DirtyAllVariables(); }
+    /// @}
+
+    /// Wrap data event callback.
+    template <class T>
+    Rml::DataEventFunc WrapCallback(void(T::*callback)())
+    {
+        auto self = static_cast<T*>(this);
+        return [self, callback](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& args)
+        {
+            const bool enabled = args.empty() || args[0].Get<bool>();
+            if (enabled)
+                (self->*callback)();
+        };
+    }
 
     /// Callbacks for document loading and unloading.
     /// If load failed, only first callback will be called.
     /// @{
+    virtual ea::string GetDataModelName() { return GetTypeName(); }
+    virtual void OnDataModelInitialized(Rml::DataModelConstructor& constructor) {}
+
     virtual void OnDocumentPreLoad() {}
     virtual void OnDocumentPostLoad() {}
     virtual void OnDocumentPreUnload() {}
@@ -123,6 +143,13 @@ private:
     void UpdateDocumentOpen();
     void UpdateConnectedCanvas();
 
+    Rml::DataModelConstructor CreateDataModel();
+    void RemoveDataModel();
+
+    void OnNavigableGroupChanged();
+    void DoNavigablePush(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
+    void DoNavigablePop(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
+
     /// Attributes
     /// @{
     ResourceRef resource_;
@@ -132,10 +159,17 @@ private:
     bool autoSize_ = true;
     /// @}
 
+    /// Navigation manager.
+    SharedPtr<RmlNavigationManager> navigationManager_;
     /// Currently open document. Null if document was closed.
     Rml::ElementDocument* document_{};
     /// Component which holds RmlUI instance containing UI managed by this component. May be null if UI is rendered into default RmlUI subsystem.
     WeakPtr<RmlCanvasComponent> canvasComponent_;
+
+    /// Data model for the document.
+    Rml::DataModelHandle dataModel_;
+    /// Name of the data model.
+    ea::string dataModelName_;
 };
 
 }

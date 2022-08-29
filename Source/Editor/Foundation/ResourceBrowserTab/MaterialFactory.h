@@ -30,17 +30,18 @@ namespace Urho3D
 void Foundation_MaterialFactory(Context* context, ResourceBrowserTab* resourceBrowserTab);
 
 /// Camera controller used by Scene View.
-class MaterialFactory : public ResourceBrowserFactory
+class MaterialFactory : public BaseResourceFactory
 {
-    URHO3D_OBJECT(MaterialFactory, ResourceBrowserFactory);
+    URHO3D_OBJECT(MaterialFactory, BaseResourceFactory);
 
 public:
     explicit MaterialFactory(Context* context);
 
-    /// Implement ResourceBrowserFactory.
+    /// Implement BaseResourceFactory.
     /// @{
-    void Render() override;
-    void EndCreate(const ea::string& fileName, const ea::string& resourceName) override;
+    ea::string GetDefaultFileName() const override { return "Material.xml"; }
+    void RenderAuxilary() override;
+    void CommitAndClose() override;
     /// @}
 
 private:

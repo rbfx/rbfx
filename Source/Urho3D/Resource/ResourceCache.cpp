@@ -1410,7 +1410,9 @@ bool ResourceCache::RenameResource(const ea::string& source, const ea::string& d
             movedAny = true;
 
             using namespace ResourceRenamed;
-            SendEvent(E_RESOURCERENAMED, P_FROM, resourceName, P_TO, destinationName);
+            SendEvent(E_RESOURCERENAMED,
+                ea::forward_as_tuple(P_FROM, resourceName),
+                ea::forward_as_tuple(P_TO, destinationName));
         }
         if (movedAny)
             UpdateResourceGroup(groupPair.first);
@@ -1419,7 +1421,9 @@ bool ResourceCache::RenameResource(const ea::string& source, const ea::string& d
     if (dirMode)
     {
         using namespace ResourceRenamed;
-        SendEvent(E_RESOURCERENAMED, P_FROM, resourceName, P_TO, destinationName);
+        SendEvent(E_RESOURCERENAMED,
+            ea::forward_as_tuple(P_FROM, resourceName),
+            ea::forward_as_tuple(P_TO, destinationName));
     }
 
     return true;

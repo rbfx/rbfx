@@ -22,6 +22,7 @@
 
 #include "Editor.h"
 
+#include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/GameViewTab.h"
 #include "Foundation/Glue/ProjectGlue.h"
@@ -29,28 +30,39 @@
 #include "Foundation/Glue/SceneViewGlue.h"
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
+#include "Foundation/InspectorTab/AnimationInspector.h"
 #include "Foundation/InspectorTab/EmptyInspector.h"
 #include "Foundation/InspectorTab/MaterialInspector.h"
+#include "Foundation/InspectorTab/ModelInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
+#include "Foundation/InspectorTab/Texture2DInspector.h"
+#include "Foundation/InspectorTab/TextureCubeInspector.h"
 #include "Foundation/ModelImporter.h"
+#include "Foundation/ModelViewTab.h"
 #include "Foundation/ProfilerTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
 #include "Foundation/ResourceBrowserTab/SceneFactory.h"
 #include "Foundation/SceneViewTab.h"
+#include "Foundation/SceneViewTab/CreatePrefabFromNode.h"
 #include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneHierarchy.h"
 #include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
 #include "Foundation/SceneViewTab/SceneSelector.h"
 #include "Foundation/SceneViewTab/TransformManipulator.h"
+#include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
+#include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
 #include "Foundation/SettingsTab.h"
 #include "Foundation/SettingsTab/KeyBindingsPage.h"
 #include "Foundation/SettingsTab/LaunchPage.h"
 #include "Foundation/SettingsTab/PluginsPage.h"
 #include "Foundation/StandardFileTypes.h"
-#include "Foundation/TextureViewTab.h"
+#include "Foundation/Texture2DViewTab.h"
+#include "Foundation/TextureCubeViewTab.h"
+
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 #include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Core/Context.h>
@@ -66,8 +78,6 @@
 #include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Widgets.h>
-
-#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <nativefiledialog/nfd.h>
 
 #ifdef WIN32
@@ -85,7 +95,10 @@ Editor::Editor(Context* context)
 
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);
-    editorPluginManager_->AddPlugin("Foundation.TextureView", &Foundation_TextureViewTab);
+    editorPluginManager_->AddPlugin("Foundation.Texture2DView", &Foundation_Texture2DViewTab);
+    editorPluginManager_->AddPlugin("Foundation.TextureCubeView", &Foundation_TextureCubeViewTab);
+    editorPluginManager_->AddPlugin("Foundation.ModelView", &Foundation_ModelViewTab);
+    editorPluginManager_->AddPlugin("Foundation.AnimationView", &Foundation_AnimationViewTab);
     editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser", &Foundation_ResourceBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
@@ -99,13 +112,20 @@ Editor::Editor(Context* context)
 
     editorPluginManager_->AddPlugin("Foundation.Asset.ModelImporter", &Foundation_ModelImporter);
 
+    editorPluginManager_->AddPlugin("Foundation.SceneView.CreatePrefabFromNode", &Foundation_CreatePrefabFromNode);
     editorPluginManager_->AddPlugin("Foundation.SceneView.EditorCamera", &Foundation_EditorCamera);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Selector", &Foundation_SceneSelector);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Hierarchy", &Foundation_SceneHierarchy);
     editorPluginManager_->AddPlugin("Foundation.SceneView.SelectionRenderer", &Foundation_SceneSelectionRenderer);
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefab", &Foundation_SceneDragAndDropPrefab);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
 
     editorPluginManager_->AddPlugin("Foundation.Inspector.Empty", &Foundation_EmptyInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.Animation", &Foundation_AnimationInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.Texture2D", &Foundation_Texture2DInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.TextureCube", &Foundation_TextureCubeInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.Model", &Foundation_ModelInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Material", &Foundation_MaterialInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.NodeComponent", &Foundation_NodeComponentInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);

@@ -16,6 +16,7 @@ using DebugHudModeFlags = Urho3D::DebugHudMode;
 %csconstvalue("7") Urho3D::GIZMOOP_TRANSLATE;
 %csconstvalue("120") Urho3D::GIZMOOP_ROTATE;
 %csconstvalue("896") Urho3D::GIZMOOP_SCALE;
+%csattribute(Urho3D::ResourceInspectorWidget, %arg(Urho3D::ResourceInspectorWidget::ResourceVector), Resources, GetResources);
 %csattribute(Urho3D::Console, %arg(bool), IsVisible, IsVisible, SetVisible);
 %csattribute(Urho3D::Console, %arg(bool), IsAutoVisibleOnError, IsAutoVisibleOnError, SetAutoVisibleOnError);
 %csattribute(Urho3D::Console, %arg(ea::string), CommandInterpreter, GetCommandInterpreter, SetCommandInterpreter);
@@ -36,9 +37,13 @@ using DebugHudModeFlags = Urho3D::DebugHudMode;
 %csattribute(Urho3D::SerializableInspectorWidget, %arg(Urho3D::SerializableInspectorWidget::SerializableVector), Objects, GetObjects);
 %csattribute(Urho3D::NodeInspectorWidget, %arg(Urho3D::NodeInspectorWidget::NodeVector), Nodes, GetNodes);
 %csattribute(Urho3D::SceneHierarchyWidget, %arg(Urho3D::SceneHierarchySettings), Settings, GetSettings, SetSettings);
+%csattribute(Urho3D::SceneWidget, %arg(Urho3D::Scene *), Scene, GetScene);
+%csattribute(Urho3D::SceneWidget, %arg(Urho3D::SceneRendererToTexture *), Renderer, GetRenderer);
+%csattribute(Urho3D::SceneWidget, %arg(Urho3D::Camera *), Camera, GetCamera);
 %csattribute(Urho3D::SystemMessageBox, %arg(ea::string), Title, GetTitle, SetTitle);
 %csattribute(Urho3D::SystemMessageBox, %arg(ea::string), Message, GetMessage, SetMessage);
 %csattribute(Urho3D::SystemMessageBox, %arg(bool), IsOpen, IsOpen);
+%csattribute(Urho3D::Texture2DWidget, %arg(Urho3D::Texture2D *), Texture2D, GetTexture2D);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {

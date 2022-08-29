@@ -41,13 +41,14 @@ void ModifyResourceAction::AddResource(Resource* resource)
     context_ = resource->GetContext();
 
     VectorBuffer buffer;
-    resource->Save(buffer);
-
-    ResourceData oldData;
-    oldData.resourceType_ = resource->GetType();
-    oldData.fileName_ = resource->GetAbsoluteFileName();
-    oldData.bytes_ = ea::make_shared<ByteVector>(buffer.GetBuffer());
-    oldData_[resource->GetName()] = ea::move(oldData);
+    if (resource->Save(buffer))
+    {
+        ResourceData oldData;
+        oldData.resourceType_ = resource->GetType();
+        oldData.fileName_ = resource->GetAbsoluteFileName();
+        oldData.bytes_ = ea::make_shared<ByteVector>(buffer.GetBuffer());
+        oldData_[resource->GetName()] = ea::move(oldData);
+    }
 }
 
 void ModifyResourceAction::Complete(bool force)
@@ -58,13 +59,14 @@ void ModifyResourceAction::Complete(bool force)
         if (Resource* resource = cache->GetResource(oldData.resourceType_, resourceName))
         {
             VectorBuffer buffer;
-            resource->Save(buffer);
-
-            ResourceData newData;
-            newData.resourceType_ = oldData.resourceType_;
-            newData.fileName_ = oldData.fileName_;
-            newData.bytes_ = ea::make_shared<ByteVector>(buffer.GetBuffer());
-            newData_[resourceName] = ea::move(newData);
+            if (resource->Save(buffer))
+            {
+                ResourceData newData;
+                newData.resourceType_ = oldData.resourceType_;
+                newData.fileName_ = oldData.fileName_;
+                newData.bytes_ = ea::make_shared<ByteVector>(buffer.GetBuffer());
+                newData_[resourceName] = ea::move(newData);
+            }
         }
     }
 

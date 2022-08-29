@@ -49,6 +49,7 @@
 #include "../RmlUI/RmlFile.h"
 #include "../RmlUI/RmlEventListeners.h"
 #include "../RmlUI/RmlCanvasComponent.h"
+#include "../RmlUI/RmlNavigable.h"
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
 
@@ -80,13 +81,7 @@ public:
     /// Create an instance of inline event listener, if applicable.
     Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override
     {
-        if (auto* instancer = SoundEventListener::CreateInstancer(value, element))
-            return instancer;
-
-        if (auto* instancer = CustomEventListener::CreateInstancer(value, element))
-            return instancer;
-
-        return nullptr;
+        return PipeEventListener::CreateInstancer(value, element);
     }
 };
 
@@ -278,8 +273,10 @@ RmlUI::RmlUI(Context* context, const char* name)
         Rml::Factory::RegisterEventListenerInstancer(&RmlEventListenerInstancerInstance);
         Rml::Factory::RegisterContextInstancer(&RmlContextInstancerInstance);
         Rml::RegisterPlugin(&RmlPluginInstance);
+
+        RmlNavigable::Register();
     }
-    rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), GetDesiredCanvasSize()));
+    rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize())));
     rmlContext_->SetOwnerSubsystem(this);
 
     if (auto* ui = GetSubsystem<RmlUI>())
@@ -362,9 +359,9 @@ void RmlUI::HandleScreenMode(StringHash, VariantMap& eventData)
 {
     assert(rmlContext_ != nullptr);
     RmlCanvasResizedArgs args;
-    args.oldSize_ = rmlContext_->GetDimensions();
+    args.oldSize_ = ToIntVector2(rmlContext_->GetDimensions());
     args.newSize_ = GetDesiredCanvasSize();
-    rmlContext_->SetDimensions(args.newSize_);
+    rmlContext_->SetDimensions(ToRmlUi(args.newSize_));
     canvasResizedEvent_(this, args);
 }
 
@@ -526,9 +523,9 @@ void RmlUI::SetRenderTarget(RenderSurface* target, const Color& clearColor)
     renderSurface_ = target;
     clearColor_ = clearColor;
     RmlCanvasResizedArgs args;
-    args.oldSize_ = rmlContext_->GetDimensions();
+    args.oldSize_ = ToIntVector2(rmlContext_->GetDimensions());
     args.newSize_ = GetDesiredCanvasSize();
-    rmlContext_->SetDimensions(args.newSize_);
+    rmlContext_->SetDimensions(ToRmlUi(args.newSize_));
     canvasResizedEvent_(this, args);
 }
 
@@ -641,7 +638,11 @@ void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
 
         ea::fixed_vector<Rml::ElementDocument*, 64> unloadingDocuments;
         for (int i = 0; i < rmlContext_->GetNumDocuments(); i++)
-            unloadingDocuments.push_back(rmlContext_->GetDocument(i));
+        {
+            Rml::ElementDocument* document = rmlContext_->GetDocument(i);
+            if (!document->GetSourceURL().empty())
+                unloadingDocuments.push_back(document);
+        }
 
         for (Rml::ElementDocument* document : unloadingDocuments)
             ReloadDocument(document);
@@ -654,7 +655,7 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     assert(document->GetContext() == rmlContext_);
 
     // Keep some properties of the old document
-    const Vector2 oldPosition = document->GetAbsoluteOffset(Rml::Box::BORDER);
+    const Vector2 oldPosition = ToVector2(document->GetAbsoluteOffset(Rml::Box::BORDER));
     const Rml::ModalFlag oldModal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
     const bool oldVisible = document->IsVisible();
 

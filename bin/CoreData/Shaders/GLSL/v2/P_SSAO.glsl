@@ -113,7 +113,9 @@ vec3 SampleOrReconstructNormal(const vec3 centerPos, const vec2 texCoord)
 half3 ToHemisphere(const half3 direction, const half3 normal)
 {
     half proj = dot(direction, normal);
-    return direction - (step(0, -proj) * 2.0 * proj * normal);
+    half factor = proj > 0.0 ? 1.0 : -1.0;
+    const half bias = 0.03; // TODO: Configure
+    return direction * factor + normal * bias;
 }
 
 /// Calculate occlusion for single sample around given position.

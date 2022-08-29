@@ -29,7 +29,7 @@
 #include "../Resource/ResourceCache.h"
 #include "../UI/UI.h"
 
-#include <SDL/SDL_mouse.h>
+#include <SDL_mouse.h>
 
 #include "../DebugNew.h"
 

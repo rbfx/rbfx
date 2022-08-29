@@ -30,7 +30,7 @@
 #include "../IO/PackageFile.h"
 
 #ifdef __ANDROID__
-#include <SDL/SDL_rwops.h>
+#include <SDL_rwops.h>
 #endif
 
 #include <cstdio>

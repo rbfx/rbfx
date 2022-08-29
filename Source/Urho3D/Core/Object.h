@@ -156,10 +156,12 @@ public:
     void SendEvent(StringHash eventType, VariantMap& eventData);
     /// Return a preallocated map for event data. Used for optimization to avoid constant re-allocation of event data maps.
     VariantMap& GetEventDataMap() const;
-    /// Send event with variadic parameter pairs to all subscribers. The parameter pairs is a list of paramID and paramValue separated by comma, one pair after another.
-    template <typename... Args> void SendEvent(StringHash eventType, Args... args)
+    /// Send event with variadic parameter pairs to all subscribers. The parameters are (paramID, paramValue) pairs.
+    template <typename... Args> void SendEvent(StringHash eventType, const Args&... args)
     {
-        SendEvent(eventType, GetEventDataMap().populate(args...));
+        VariantMap& eventData = GetEventDataMap();
+        ((void)eventData.emplace(ea::get<0>(args), Variant(ea::get<1>(args))), ...);
+        SendEvent(eventType, eventData);
     }
 
     /// Return execution context.

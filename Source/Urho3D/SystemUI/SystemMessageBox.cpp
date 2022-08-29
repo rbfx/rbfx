@@ -104,7 +104,7 @@ void SystemMessageBox::RenderFrame(StringHash eventType, VariantMap& eventData)
 
         if (closeWindow)
         {
-            SendEvent(E_MESSAGEACK, P_OK, status);
+            SendEvent(E_MESSAGEACK, ea::forward_as_tuple(P_OK, status));
             isOpen_ = false;
         }
     }

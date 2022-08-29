@@ -6,7 +6,7 @@
 </head>
 
 <body id="window" style="width: 45%; left: 10%; top: 1%">
-    <div data-model="AdvancedNetworkingUI_model">
+    <div data-model="AdvancedNetworkingUI">
         <div id="titlebar">
             <handle move_target="#document">
                 <div id="title">Settings</div>

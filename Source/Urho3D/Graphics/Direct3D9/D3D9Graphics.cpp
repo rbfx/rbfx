@@ -40,8 +40,8 @@
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_syswm.h>
+#include <SDL.h>
+#include <SDL_syswm.h>
 
 #include "../../DebugNew.h"
 
@@ -317,6 +317,7 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
     const bool monitorChanged = screenParams_.monitor_ != newParams.monitor_;
 
     SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
 
     if (!window_)
     {

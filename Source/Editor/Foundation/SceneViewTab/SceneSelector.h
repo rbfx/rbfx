@@ -49,8 +49,8 @@ public:
     /// @}
 
 private:
-    Drawable* QuerySelectedDrawable(Scene* scene, Camera* camera, RayQueryLevel level) const;
-    Node* QuerySelectedNode(Scene* scene, Camera* camera) const;
+    Drawable* QuerySelectedDrawable(Scene* scene, const Ray& cameraRay, RayQueryLevel level) const;
+    Node* QuerySelectedNode(Scene* scene, const Ray& cameraRay) const;
     void SelectNode(SceneSelection& selection, Node* node, bool toggle, bool append) const;
 };
 

@@ -35,6 +35,11 @@ namespace Urho3D
 
 // Placeholder for shared linking
 #if !URHO3D_STATIC
+const StringVector& PluginApplication::GetStaticPlugins()
+{
+    return Variant::emptyStringVector;
+}
+
 void PluginApplication::RegisterStaticPlugins()
 {
 }

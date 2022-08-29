@@ -25,7 +25,7 @@
 #include "../Core/Object.h"
 #include "../Core/Mutex.h"
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 namespace Urho3D
 {

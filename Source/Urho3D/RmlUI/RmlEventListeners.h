@@ -38,44 +38,81 @@ class RmlUI;
 namespace Detail
 {
 
-class URHO3D_API SoundEventListener : public Rml::EventListener
+using EventListenerVector = ea::vector<ea::unique_ptr<Rml::EventListener>>;
+
+URHO3D_API Rml::EventListener* CreateSingleEventListener(ea::string_view value, Rml::Element* element);
+
+class URHO3D_API PipeEventListener : public Rml::EventListener, public NonCopyable
 {
 public:
-    /// Create event instancer if value is acceptable, or return null otherwise.
-    static SoundEventListener* CreateInstancer(const ea::string& value, Rml::Element* element);
-    /// Initialize from inline event value.
-    explicit SoundEventListener(const ea::string& soundResource);
-    /// Process event.
+    static Rml::EventListener* CreateInstancer(ea::string_view value, Rml::Element* element);
+    explicit PipeEventListener(EventListenerVector&& listeners);
+
+    /// Implement Rml::EventListener
+    /// @{
     void ProcessEvent(Rml::Event& event) override;
-    /// Free this event listener.
     void OnDetach(Rml::Element* element) override;
+    /// @}
 
 private:
+    const EventListenerVector listeners_;
+};
+
+class URHO3D_API NavigateEventListener : public Rml::EventListener, public NonCopyable
+{
+public:
+    static Rml::EventListener* CreateInstancer(ea::string_view value, Rml::Element* element);
+    explicit NavigateEventListener(const ea::string& group);
+
+    /// Implement Rml::EventListener
+    /// @{
+    void ProcessEvent(Rml::Event& event) override;
+    void OnDetach(Rml::Element* element) override;
+    /// @}
+
+private:
+    const ea::string group_;
+};
+
+class URHO3D_API SoundEventListener : public Rml::EventListener, public NonCopyable
+{
+public:
+    static Rml::EventListener* CreateInstancer(ea::string_view value, Rml::Element* element);
+    SoundEventListener(const ea::string& soundResource, float volume);
+
+    /// Implement Rml::EventListener
+    /// @{
+    void ProcessEvent(Rml::Event& event) override;
+    void OnDetach(Rml::Element* element) override;
+    /// @}
+
+private:
+    /// Sound resource.
+    const ea::string soundResource_;
+    /// Volume of the sound.
+    const float volume_{1.0f};
+
     /// Node that contains SoundSource component.
     SharedPtr<Node> soundNode_;
     /// Sound player.
     WeakPtr<SoundSource> soundPlayer_;
-    /// Sound resource.
-    ea::string soundResource_;
 };
 
-class URHO3D_API CustomEventListener : public Rml::EventListener
+class URHO3D_API CustomEventListener : public Rml::EventListener, public NonCopyable
 {
 public:
-    /// Create event instancer if value is acceptable, or return null otherwise.
-    static CustomEventListener* CreateInstancer(const ea::string& value, Rml::Element* element);
-    /// Initialize from inline event value.
-    CustomEventListener(const JSONValue& value);
-    /// Process event.
+    static Rml::EventListener* CreateInstancer(ea::string_view value, Rml::Element* element);
+    CustomEventListener(const ea::string& eventType, const VariantMap& eventData);
+
+    /// Implement Rml::EventListener
+    /// @{
     void ProcessEvent(Rml::Event& event) override;
-    /// Free this event listener.
     void OnDetach(Rml::Element* element) override;
+    /// @}
 
 private:
-    /// Event.
-    StringHash event_;
-    /// Event arguments.
-    VariantMap eventArgs_;
+    StringHash eventType_;
+    VariantMap eventData_;
 };
 
 }

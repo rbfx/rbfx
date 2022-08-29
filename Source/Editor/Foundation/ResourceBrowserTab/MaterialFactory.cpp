@@ -34,11 +34,11 @@ void Foundation_MaterialFactory(Context* context, ResourceBrowserTab* resourceBr
 }
 
 MaterialFactory::MaterialFactory(Context* context)
-    : ResourceBrowserFactory(context, 0, "Material", "Material.xml")
+    : BaseResourceFactory(context, 0, "Material")
 {
 }
 
-void MaterialFactory::Render()
+void MaterialFactory::RenderAuxilary()
 {
     ui::Separator();
 
@@ -73,7 +73,7 @@ void MaterialFactory::Render()
     ui::Separator();
 }
 
-void MaterialFactory::EndCreate(const ea::string& fileName, const ea::string& resourceName)
+void MaterialFactory::CommitAndClose()
 {
     auto cache = GetSubsystem<ResourceCache>();
 
@@ -94,7 +94,7 @@ void MaterialFactory::EndCreate(const ea::string& fileName, const ea::string& re
     material->SetVertexShaderDefines(pixelDefines);
     material->SetPixelShaderDefines(pixelDefines);
 
-    material->SaveFile(fileName);
+    material->SaveFile(GetFinalFileName());
 }
 
 ea::string MaterialFactory::GetTechniqueName() const

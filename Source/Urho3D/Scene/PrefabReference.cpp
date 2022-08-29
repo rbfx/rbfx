@@ -178,7 +178,8 @@ Node* PrefabReference::CreateInstance() const
         const XMLElement nextNode = firstNode.GetNext("node");
         if (!nextNode.IsNull())
         {
-            URHO3D_LOGERROR("More than one root node in prefab");
+            // Disable spam
+            //URHO3D_LOGERROR("More than one root node in prefab");
         }
         rootElement = firstNode;
     }

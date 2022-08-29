@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,9 +20,8 @@
 */
 #include "../../SDL_internal.h"
 
-#if SDL_VIDEO_DRIVER_WINDOWS
+#if SDL_VIDEO_DRIVER_WINDOWS && !defined(__XBOXONE__) && !defined(__XBOXSERIES__)
 
-#include "SDL_assert.h"
 #include "SDL_loadso.h"
 #include "SDL_windowsvideo.h"
 #include "SDL_windowsopengles.h"
@@ -73,6 +72,11 @@
 #ifndef WGL_ARB_framebuffer_sRGB
 #define WGL_ARB_framebuffer_sRGB
 #define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB                0x20A9
+#endif
+
+#ifndef WGL_ARB_pixel_format_float
+#define WGL_ARB_pixel_format_float
+#define WGL_TYPE_RGBA_FLOAT_ARB                         0x21A0
 #endif
 
 #ifndef WGL_ARB_context_flush_control
@@ -598,6 +602,10 @@ WIN_GL_SetupWindowInternal(_THIS, SDL_Window * window)
         *iAttr++ = _this->gl_config.multisamplesamples;
     }
 
+    if (_this->gl_config.floatbuffers) {
+        *iAttr++ = WGL_TYPE_RGBA_FLOAT_ARB;
+    }
+
     if (_this->gl_config.framebuffer_srgb_capable) {
         *iAttr++ = WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB;
         *iAttr++ = _this->gl_config.framebuffer_srgb_capable;
@@ -677,6 +685,7 @@ WIN_GL_CreateContext(_THIS, SDL_Window * window)
         _this->GL_UnloadLibrary = WIN_GLES_UnloadLibrary;
         _this->GL_CreateContext = WIN_GLES_CreateContext;
         _this->GL_MakeCurrent = WIN_GLES_MakeCurrent;
+        _this->GL_GetDrawableSize = WIN_GLES_GetDrawableSize;
         _this->GL_SetSwapInterval = WIN_GLES_SetSwapInterval;
         _this->GL_GetSwapInterval = WIN_GLES_GetSwapInterval;
         _this->GL_SwapWindow = WIN_GLES_SwapWindow;
@@ -821,6 +830,12 @@ WIN_GL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context)
         return WIN_SetError("wglMakeCurrent()");
     }
     return 0;
+}
+
+void
+WIN_GL_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h)
+{
+    WIN_GetDrawableSize(window, w, h);
 }
 
 int

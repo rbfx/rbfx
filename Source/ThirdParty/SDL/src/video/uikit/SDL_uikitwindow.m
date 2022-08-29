@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -22,11 +22,11 @@
 
 #if SDL_VIDEO_DRIVER_UIKIT
 
+#include "SDL_hints.h"
+#include "SDL_mouse.h"
+#include "SDL_system.h"
 #include "SDL_syswm.h"
 #include "SDL_video.h"
-#include "SDL_mouse.h"
-#include "SDL_assert.h"
-#include "SDL_hints.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_pixels_c.h"
 #include "../../events/SDL_events_c.h"
@@ -162,13 +162,13 @@ UIKit_CreateWindow(_THIS, SDL_Window *window)
     @autoreleasepool {
         SDL_VideoDisplay *display = SDL_GetDisplayForWindow(window);
         SDL_DisplayData *data = (__bridge SDL_DisplayData *) display->driverdata;
-
-        /* SDL currently puts this window at the start of display's linked list. We rely on this. */
-        SDL_assert(_this->windows == window);
+        SDL_Window *other;
 
         /* We currently only handle a single window per display on iOS */
-        if (window->next != NULL) {
-            return SDL_SetError("Only one window allowed per display.");
+        for (other = _this->windows; other; other = other->next) {
+            if (other != window && SDL_GetDisplayForWindow(other) == display) {
+                return SDL_SetError("Only one window allowed per display.");
+            }
         }
 
         /* If monitor has a resolution of 0x0 (hasn't been explicitly set by the
@@ -322,6 +322,28 @@ UIKit_SetWindowFullscreen(_THIS, SDL_Window * window, SDL_VideoDisplay * display
 }
 
 void
+UIKit_SetWindowMouseGrab(_THIS, SDL_Window * window, SDL_bool grabbed)
+{
+    /* There really isn't a concept of window grab or cursor confinement on iOS */
+}
+
+void
+UIKit_UpdatePointerLock(_THIS, SDL_Window * window)
+{
+#if !TARGET_OS_TV
+#if defined(__IPHONE_14_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_14_0
+    @autoreleasepool {
+        SDL_WindowData *data = (__bridge SDL_WindowData *) window->driverdata;
+        SDL_uikitviewcontroller *viewcontroller = data.viewcontroller;
+        if (@available(iOS 14.0, *)) {
+            [viewcontroller setNeedsUpdateOfPrefersPointerLocked];
+        }
+    }
+#endif /* defined(__IPHONE_14_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_14_0 */
+#endif /* !TARGET_OS_TV */
+}
+
+void
 UIKit_DestroyWindow(_THIS, SDL_Window * window)
 {
     @autoreleasepool {
@@ -364,12 +386,16 @@ UIKit_GetWindowWMInfo(_THIS, SDL_Window * window, SDL_SysWMinfo * info)
 
             /* These struct members were added in SDL 2.0.4. */
             if (versionnum >= SDL_VERSIONNUM(2,0,4)) {
+#if SDL_VIDEO_OPENGL_ES || SDL_VIDEO_OPENGL_ES2
                 if ([data.viewcontroller.view isKindOfClass:[SDL_uikitopenglview class]]) {
                     SDL_uikitopenglview *glview = (SDL_uikitopenglview *)data.viewcontroller.view;
                     info->info.uikit.framebuffer = glview.drawableFramebuffer;
                     info->info.uikit.colorbuffer = glview.drawableRenderbuffer;
                     info->info.uikit.resolveFramebuffer = glview.msaaResolveFramebuffer;
                 } else {
+#else
+                {
+#endif
                     info->info.uikit.framebuffer = 0;
                     info->info.uikit.colorbuffer = 0;
                     info->info.uikit.resolveFramebuffer = 0;
@@ -378,8 +404,8 @@ UIKit_GetWindowWMInfo(_THIS, SDL_Window * window, SDL_SysWMinfo * info)
 
             return SDL_TRUE;
         } else {
-            SDL_SetError("Application not compiled with SDL %d.%d",
-                         SDL_MAJOR_VERSION, SDL_MINOR_VERSION);
+            SDL_SetError("Application not compiled with SDL %d",
+                         SDL_MAJOR_VERSION);
             return SDL_FALSE;
         }
     }

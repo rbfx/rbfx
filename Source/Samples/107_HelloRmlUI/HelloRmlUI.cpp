@@ -44,35 +44,18 @@ SimpleWindow::SimpleWindow(Context* context)
     SetResource("UI/HelloRmlUI.rml");
 }
 
-void SimpleWindow::OnDocumentPreLoad()
+void SimpleWindow::OnDataModelInitialized(Rml::DataModelConstructor& constructor)
 {
-    if (model_)
-        return;
-
     // Create a data model for connecting UI with state kept in this class.
     // Important: there can only be one data model with given name per unique RmlUI subsystem!
-    Rml::DataModelConstructor constructor = CreateDataModel("HelloRmlUI_model");
-    URHO3D_ASSERT(constructor);
-
     constructor.Bind("slider_value", &sliderValue_);
     constructor.Bind("counter", &counter_);
     constructor.Bind("progress", &progress_);
     constructor.BindEventCallback("count", &SimpleWindow::CountClicks, this);
-    model_ = constructor.GetModelHandle();
 
     // Act on pressing window close button.
     RmlUI* ui = GetUI();
     SubscribeToEvent(ui, "CloseWindow", &SimpleWindow::OnCloseWindow);
-}
-
-void SimpleWindow::OnDocumentPostUnload()
-{
-    if (!model_)
-        return;
-
-    // Dispose of data model when it is no longer necessary.
-    RemoveDataModel("HelloRmlUI_model");
-    model_ = nullptr;
 }
 
 void SimpleWindow::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments)
@@ -88,7 +71,7 @@ void SimpleWindow::Update(float timeStep)
 
     // Animate progressbars
     progress_ = (Sin(GetSubsystem<Time>()->GetElapsedTime() * 50) + 1) / 2;
-    model_.DirtyVariable("progress");
+    DirtyVariable("progress");
 }
 
 void SimpleWindow::OnCloseWindow(StringHash, VariantMap& args)

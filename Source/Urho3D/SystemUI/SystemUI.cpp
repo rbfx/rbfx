@@ -43,7 +43,7 @@
 #include <ImGui/imgui_freetype.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #define IMGUI_IMPL_API IMGUI_API
 #include <imgui_impl_sdl.h>

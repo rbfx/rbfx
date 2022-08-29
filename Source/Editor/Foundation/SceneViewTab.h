@@ -26,6 +26,8 @@
 #include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
 
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/OctreeQuery.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/SceneRendererToTexture.h>
 #include <Urho3D/Utility/SceneSelection.h>
@@ -67,6 +69,8 @@ public:
 
     SharedPtr<SimulateSceneAction> currentSimulationAction_;
 
+    Ray cameraRay_;
+
     /// UI state
     /// @{
     Rect contentArea_;
@@ -93,20 +97,33 @@ public:
     virtual int GetInputPriority() const { return 0; }
     /// Return priority in the toolbar.
     virtual int GetToolbarPriority() const { return 0; }
+
     /// Initialize addon for the given page.
     virtual void Initialize(SceneViewPage& page) {}
     /// Process input.
-    virtual void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) {}
+    virtual void ProcessInput(SceneViewPage& page, bool& mouseConsumed) {}
     /// Update and render addon.
-    virtual void Render(SceneViewPage& scenePage) {}
+    virtual void Render(SceneViewPage& page) {}
     /// Apply hotkeys for given addon.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
     /// Render context menu of the tab.
     virtual bool RenderTabContextMenu() { return false; }
     /// Render main toolbar.
     virtual bool RenderToolbar() { return false; }
+
     /// Serialize per-scene page state of the addon.
     virtual void SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const;
+
+    /// Check if this type of drag&drop payload is accepted.
+    virtual bool IsDragDropPayloadSupported(SceneViewPage& page, DragDropPayload* payload) const { return false; }
+    /// Begin drag&drop operation, render preview.
+    virtual void BeginDragDrop(SceneViewPage& page, DragDropPayload* payload) {}
+    /// Update drag&drop state, called continuously while dragging.
+    virtual void UpdateDragDrop(DragDropPayload* payload) {}
+    /// End drag&drop operation and commit result.
+    virtual void CompleteDragDrop(DragDropPayload* payload) {}
+    /// End drag&drop operation and discard result.
+    virtual void CancelDragDrop() {}
 
     /// Write INI settings to file. Use as few lines as possible.
     virtual void WriteIniSettings(ImGuiTextBuffer& output) {}
@@ -124,6 +141,7 @@ class SceneViewTab : public ResourceEditorTab
 
 public:
     Signal<void(SceneViewPage& page, const Vector3& position)> OnLookAt;
+    Signal<void(SceneViewPage& page, Scene* scene, SceneSelection& selection)> OnSelectionEditMenu;
 
     struct ByInputPriority
     {
@@ -245,12 +263,16 @@ private:
     /// @}
 
     void UpdateAddons(SceneViewPage& page);
+    void UpdateCameraRay();
+    bool UpdateDropToScene();
     void InspectSelection(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
     AddonSetByInputPriority addonsByInputPriority_;
     AddonSetByToolbarPriority addonsByToolbarPriority_;
     AddonSetByName addonsByName_;
+
+    SharedPtr<SceneViewAddon> dragAndDropAddon_;
 
     ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;
     PackedNodeComponentData clipboard_;
@@ -308,6 +330,10 @@ private:
     const PackedSceneSelection oldSelection_;
     PackedSceneSelection newSelection_;
 };
+
+/// Helper function to query geometries from a scene.
+ea::vector<RayQueryResult> QueryGeometriesFromScene(Scene* scene, const Ray& ray,
+    RayQueryLevel level = RAY_TRIANGLE, float maxDistance = M_INFINITY, unsigned viewMask = DEFAULT_VIEWMASK);
 
 template <class T, class ... Args>
 SceneViewAddon* SceneViewTab::RegisterAddon(const Args&... args)

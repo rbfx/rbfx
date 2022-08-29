@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -55,7 +55,7 @@ static const SDL_Scancode emscripten_scancode_table[] = {
     /*  9 */    SDL_SCANCODE_TAB,
     /*  10 */   SDL_SCANCODE_UNKNOWN,
     /*  11 */   SDL_SCANCODE_UNKNOWN,
-    /*  12 */   SDL_SCANCODE_UNKNOWN,
+    /*  12 */   SDL_SCANCODE_KP_5,
     /*  13 */   SDL_SCANCODE_RETURN,
     /*  14 */   SDL_SCANCODE_UNKNOWN,
     /*  15 */   SDL_SCANCODE_UNKNOWN,
@@ -103,10 +103,10 @@ static const SDL_Scancode emscripten_scancode_table[] = {
     /*  57 */   SDL_SCANCODE_9,
     /*  58 */   SDL_SCANCODE_UNKNOWN,
     /*  59 */   SDL_SCANCODE_SEMICOLON,
-    /*  60 */   SDL_SCANCODE_UNKNOWN,
+    /*  60 */   SDL_SCANCODE_NONUSBACKSLASH,
     /*  61 */   SDL_SCANCODE_EQUALS,
     /*  62 */   SDL_SCANCODE_UNKNOWN,
-    /*  63 */   SDL_SCANCODE_UNKNOWN,
+    /*  63 */   SDL_SCANCODE_MINUS,
     /*  64 */   SDL_SCANCODE_UNKNOWN,
     /*  65 */   SDL_SCANCODE_A,
     /*  66 */   SDL_SCANCODE_B,
@@ -203,18 +203,18 @@ static const SDL_Scancode emscripten_scancode_table[] = {
     /* 157 */   SDL_SCANCODE_UNKNOWN,
     /* 158 */   SDL_SCANCODE_UNKNOWN,
     /* 159 */   SDL_SCANCODE_UNKNOWN,
-    /* 160 */   SDL_SCANCODE_UNKNOWN,
+    /* 160 */   SDL_SCANCODE_GRAVE,
     /* 161 */   SDL_SCANCODE_UNKNOWN,
     /* 162 */   SDL_SCANCODE_UNKNOWN,
-    /* 163 */   SDL_SCANCODE_UNKNOWN,
+    /* 163 */   SDL_SCANCODE_KP_HASH, /*KaiOS phone keypad*/
     /* 164 */   SDL_SCANCODE_UNKNOWN,
     /* 165 */   SDL_SCANCODE_UNKNOWN,
     /* 166 */   SDL_SCANCODE_UNKNOWN,
     /* 167 */   SDL_SCANCODE_UNKNOWN,
     /* 168 */   SDL_SCANCODE_UNKNOWN,
     /* 169 */   SDL_SCANCODE_UNKNOWN,
-    /* 170 */   SDL_SCANCODE_UNKNOWN,
-    /* 171 */   SDL_SCANCODE_UNKNOWN,
+    /* 170 */   SDL_SCANCODE_KP_MULTIPLY, /*KaiOS phone keypad*/
+    /* 171 */   SDL_SCANCODE_RIGHTBRACKET,
     /* 172 */   SDL_SCANCODE_UNKNOWN,
     /* 173 */   SDL_SCANCODE_MINUS, /*FX*/
     /* 174 */   SDL_SCANCODE_VOLUMEDOWN, /*IE, Chrome*/
@@ -363,7 +363,7 @@ Emscripten_HandleMouseButton(int eventType, const EmscriptenMouseEvent *mouseEve
 
     if (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN) {
         if (SDL_GetMouse()->relative_mode && !window_data->has_pointer_lock) {
-            emscripten_request_pointerlock(NULL, 0);  /* try to regrab lost pointer lock. */
+            emscripten_request_pointerlock(window_data->canvas_id, 0);  /* try to regrab lost pointer lock. */
         }
         sdl_button_state = SDL_PRESSED;
         sdl_event_type = SDL_MOUSEBUTTONDOWN;
@@ -409,7 +409,22 @@ static EM_BOOL
 Emscripten_HandleWheel(int eventType, const EmscriptenWheelEvent *wheelEvent, void *userData)
 {
     SDL_WindowData *window_data = userData;
-    SDL_SendMouseWheel(window_data->window, 0, (float)wheelEvent->deltaX, (float)-wheelEvent->deltaY, SDL_MOUSEWHEEL_NORMAL);
+
+    float deltaY = wheelEvent->deltaY;
+
+    switch (wheelEvent->deltaMode) {
+        case DOM_DELTA_PIXEL:
+            deltaY /= 100; /* 100 pixels make up a step */
+            break;
+        case DOM_DELTA_LINE:
+            deltaY /= 3; /* 3 lines make up a step */
+            break;
+        case DOM_DELTA_PAGE:
+            deltaY *= 80; /* A page makes up 80 steps */
+            break;
+    }
+
+    SDL_SendMouseWheel(window_data->window, 0, (float)wheelEvent->deltaX, -deltaY, SDL_MOUSEWHEEL_NORMAL);
     return SDL_GetEventState(SDL_MOUSEWHEEL) == SDL_ENABLE;
 }
 
@@ -455,16 +470,16 @@ Emscripten_HandleTouch(int eventType, const EmscriptenTouchEvent *touchEvent, vo
         y = touchEvent->touches[i].targetY / client_h;
 
         if (eventType == EMSCRIPTEN_EVENT_TOUCHSTART) {
-            SDL_SendTouch(deviceId, id, SDL_TRUE, x, y, 1.0f);
+            SDL_SendTouch(deviceId, id, window_data->window, SDL_TRUE, x, y, 1.0f);
 
             /* disable browser scrolling/pinch-to-zoom if app handles touch events */
             if (!preventDefault && SDL_GetEventState(SDL_FINGERDOWN) == SDL_ENABLE) {
                 preventDefault = 1;
             }
         } else if (eventType == EMSCRIPTEN_EVENT_TOUCHMOVE) {
-            SDL_SendTouchMotion(deviceId, id, x, y, 1.0f);
+            SDL_SendTouchMotion(deviceId, id, window_data->window, x, y, 1.0f);
         } else {
-            SDL_SendTouch(deviceId, id, SDL_FALSE, x, y, 1.0f);
+            SDL_SendTouch(deviceId, id, window_data->window, SDL_FALSE, x, y, 1.0f);
 
             /* block browser's simulated mousedown/mouseup on touchscreen devices */
             preventDefault = 1;
@@ -478,12 +493,22 @@ static EM_BOOL
 Emscripten_HandleKey(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData)
 {
     Uint32 scancode;
-    SDL_bool prevent_default;
+    SDL_bool prevent_default = SDL_FALSE;
     SDL_bool is_nav_key;
 
     /* .keyCode is deprecated, but still the most reliable way to get keys */
     if (keyEvent->keyCode < SDL_arraysize(emscripten_scancode_table)) {
         scancode = emscripten_scancode_table[keyEvent->keyCode];
+
+        if (keyEvent->keyCode == 0) {
+            /* KaiOS Left Soft Key and Right Soft Key, they act as OK/Next/Menu and Cancel/Back/Clear */
+            if (SDL_strncmp(keyEvent->key, "SoftLeft", 9) == 0) {
+                scancode = SDL_SCANCODE_AC_FORWARD;
+            }
+            if (SDL_strncmp(keyEvent->key, "SoftRight", 10) == 0) {
+                scancode = SDL_SCANCODE_AC_BACK;
+            }
+        }
 
         if (scancode != SDL_SCANCODE_UNKNOWN) {
 
@@ -503,11 +528,58 @@ Emscripten_HandleKey(int eventType, const EmscriptenKeyboardEvent *keyEvent, voi
                         break;
                 }
             }
-            SDL_SendKeyboardKey(eventType == EMSCRIPTEN_EVENT_KEYDOWN ? SDL_PRESSED : SDL_RELEASED, scancode);
+            else if (keyEvent->location == DOM_KEY_LOCATION_NUMPAD) {
+                switch (scancode) {
+                    case SDL_SCANCODE_0:
+                    case SDL_SCANCODE_INSERT:
+                        scancode = SDL_SCANCODE_KP_0;
+                        break;
+                    case SDL_SCANCODE_1:
+                    case SDL_SCANCODE_END:
+                        scancode = SDL_SCANCODE_KP_1;
+                        break;
+                    case SDL_SCANCODE_2:
+                    case SDL_SCANCODE_DOWN:
+                        scancode = SDL_SCANCODE_KP_2;
+                        break;
+                    case SDL_SCANCODE_3:
+                    case SDL_SCANCODE_PAGEDOWN:
+                        scancode = SDL_SCANCODE_KP_3;
+                        break;
+                    case SDL_SCANCODE_4:
+                    case SDL_SCANCODE_LEFT:
+                        scancode = SDL_SCANCODE_KP_4;
+                        break;
+                    case SDL_SCANCODE_5:
+                        scancode = SDL_SCANCODE_KP_5;
+                        break;
+                    case SDL_SCANCODE_6:
+                    case SDL_SCANCODE_RIGHT:
+                        scancode = SDL_SCANCODE_KP_6;
+                        break;
+                    case SDL_SCANCODE_7:
+                    case SDL_SCANCODE_HOME:
+                        scancode = SDL_SCANCODE_KP_7;
+                        break;
+                    case SDL_SCANCODE_8:
+                    case SDL_SCANCODE_UP:
+                        scancode = SDL_SCANCODE_KP_8;
+                        break;
+                    case SDL_SCANCODE_9:
+                    case SDL_SCANCODE_PAGEUP:
+                        scancode = SDL_SCANCODE_KP_9;
+                        break;
+                    case SDL_SCANCODE_RETURN:
+                        scancode = SDL_SCANCODE_KP_ENTER;
+                        break;
+                    case SDL_SCANCODE_DELETE:
+                        scancode = SDL_SCANCODE_KP_PERIOD;
+                        break;
+                }
+            }
+            prevent_default = SDL_SendKeyboardKey(eventType == EMSCRIPTEN_EVENT_KEYDOWN ? SDL_PRESSED : SDL_RELEASED, scancode);
         }
     }
-
-    prevent_default = SDL_GetEventState(eventType == EMSCRIPTEN_EVENT_KEYDOWN ? SDL_KEYDOWN : SDL_KEYUP) == SDL_ENABLE;
 
     /* if TEXTINPUT events are enabled we can't prevent keydown or we won't get keypress
      * we need to ALWAYS prevent backspace and tab otherwise chrome takes action and does bad navigation UX
@@ -517,7 +589,9 @@ Emscripten_HandleKey(int eventType, const EmscriptenKeyboardEvent *keyEvent, voi
                  keyEvent->keyCode == 37 /* left */ ||
                  keyEvent->keyCode == 38 /* up */ ||
                  keyEvent->keyCode == 39 /* right */ ||
-                 keyEvent->keyCode == 40 /* down */;
+                 keyEvent->keyCode == 40 /* down */ ||
+                 (keyEvent->keyCode >= 112 && keyEvent->keyCode <= 135) /* F keys*/ ||
+                 keyEvent->ctrlKey;
 
     if (eventType == EMSCRIPTEN_EVENT_KEYDOWN && SDL_GetEventState(SDL_TEXTINPUT) == SDL_ENABLE && !is_nav_key)
         prevent_default = SDL_FALSE;
@@ -546,9 +620,6 @@ Emscripten_HandleFullscreenChange(int eventType, const EmscriptenFullscreenChang
         window_data->window->flags |= window_data->requested_fullscreen_mode;
 
         window_data->requested_fullscreen_mode = 0;
-
-        if(!window_data->requested_fullscreen_mode)
-            window_data->window->flags |= SDL_WINDOW_FULLSCREEN; /*we didn't reqest fullscreen*/
     }
     else
     {
@@ -635,6 +706,16 @@ Emscripten_HandleVisibilityChange(int eventType, const EmscriptenVisibilityChang
     return 0;
 }
 
+static const char*
+Emscripten_HandleBeforeUnload(int eventType, const void *reserved, void *userData)
+{
+    /* This event will need to be handled synchronously, e.g. using
+       SDL_AddEventWatch, as the page is being closed *now*. */
+    /* No need to send a SDL_QUIT, the app won't get control again. */
+    SDL_SendAppEvent(SDL_APP_TERMINATING);
+    return ""; /* don't trigger confirmation dialog */
+}
+
 void
 Emscripten_RegisterEventHandlers(SDL_WindowData *data)
 {
@@ -674,6 +755,8 @@ Emscripten_RegisterEventHandlers(SDL_WindowData *data)
     emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, data, 0, Emscripten_HandleResize);
 
     emscripten_set_visibilitychange_callback(data, 0, Emscripten_HandleVisibilityChange);
+
+    emscripten_set_beforeunload_callback(data, Emscripten_HandleBeforeUnload);
 }
 
 void
@@ -716,6 +799,8 @@ Emscripten_UnregisterEventHandlers(SDL_WindowData *data)
     emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, 0, NULL);
 
     emscripten_set_visibilitychange_callback(NULL, 0, NULL);
+
+    emscripten_set_beforeunload_callback(NULL, NULL);
 }
 
 #endif /* SDL_VIDEO_DRIVER_EMSCRIPTEN */

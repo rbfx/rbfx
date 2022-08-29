@@ -56,15 +56,9 @@ void AdvancedNetworkingUI::Stop()
     network->StopServer();
 }
 
-void AdvancedNetworkingUI::OnDocumentPreLoad()
+void AdvancedNetworkingUI::OnDataModelInitialized(Rml::DataModelConstructor& constructor)
 {
-    if (model_)
-        return;
-
     Network* network = GetSubsystem<Network>();
-
-    Rml::DataModelConstructor constructor = CreateDataModel("AdvancedNetworkingUI_model");
-    URHO3D_ASSERT(constructor);
 
     constructor.Bind("port", &serverPort_);
     constructor.Bind("connectionAddress", &connectionAddress_);
@@ -80,23 +74,12 @@ void AdvancedNetworkingUI::OnDocumentPreLoad()
         [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { ConnectToServer(connectionAddress_); });
     constructor.BindEventCallback("onStop",
         [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { Stop(); });
-
-    model_ = constructor.GetModelHandle();
-}
-
-void AdvancedNetworkingUI::OnDocumentPostUnload()
-{
-    if (!model_)
-        return;
-
-    RemoveDataModel("AdvancedNetworkingUI_model");
-    model_ = nullptr;
 }
 
 void AdvancedNetworkingUI::Update(float timeStep)
 {
     BaseClassName::Update(timeStep);
 
-    model_.DirtyVariable("isServer");
-    model_.DirtyVariable("isClient");
+    DirtyVariable("isServer");
+    DirtyVariable("isClient");
 }

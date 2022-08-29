@@ -99,9 +99,8 @@ void StyleSheet::MergeStyleSheet(const StyleSheet& other_sheet)
 void StyleSheet::BuildNodeIndex()
 {
 	RMLUI_ZoneScoped;
-	styled_node_index = StyleSheetIndex();  // rbfx: compilation fix.
+	styled_node_index = {};
 	root->BuildIndex(styled_node_index);
-	root->SetStructurallyVolatileRecursive(false);
 }
 
 // Returns the Keyframes of the given name, or null if it does not exist.
@@ -194,6 +193,10 @@ SharedPtr<const ElementDefinition> StyleSheet::GetElementDefinition(const Elemen
 	const String& tag = element->GetTagName();
 	const String& id = element->GetId();
 	const StringList& class_names = element->GetStyle()->GetClassNameList();
+
+	// Text elements are never matched.
+	if (tag == "#text")
+		return nullptr;
 
 	// First, look up the indexed requirements. 
 	if (!id.empty())

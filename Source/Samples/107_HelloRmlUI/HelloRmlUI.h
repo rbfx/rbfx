@@ -46,9 +46,7 @@ protected:
     /// Update model and animate progressbars.
     void Update(float timeStep) override;
     /// Initialize document model.
-    void OnDocumentPreLoad() override;
-    /// Release document model.
-    void OnDocumentPostUnload() override;
+    void OnDataModelInitialized(Rml::DataModelConstructor& constructor) override;
 
     /// Value of UI slider.
     int sliderValue_ = 0;
@@ -56,8 +54,6 @@ protected:
     int counter_ = 0;
     /// Value of progressbar progress.
     float progress_ = 0;
-    /// Handle of our data model.
-    Rml::DataModelHandle model_;
 };
 
 

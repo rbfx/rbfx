@@ -108,4 +108,10 @@ Scene* InspectNodeComponentRequest::GetCommonScene() const
     return scene;
 }
 
+CreateResourceRequest::CreateResourceRequest(ResourceFactory* factory)
+    : ProjectRequest(factory->GetContext())
+    , factory_(factory)
+{
+}
+
 }
