@@ -134,11 +134,14 @@ void Camera::SetFov(float fov)
 
 void Camera::SetOrthoSize(float orthoSize)
 {
-    orthoSize_ = orthoSize;
-    aspectRatio_ = 1.0f;
-    cachedFrustum_.Invalidate();
-    cachedProjection_.Invalidate();
-    cachedViewProj_.Invalidate();
+    if (orthoSize_ != orthoSize || aspectRatio_ != 1.0f)
+    {
+        orthoSize_ = orthoSize;
+        aspectRatio_ = 1.0f;
+        cachedFrustum_.Invalidate();
+        cachedProjection_.Invalidate();
+        cachedViewProj_.Invalidate();
+    }
 }
 
 void Camera::SetOrthoSize(const Vector2& orthoSize)
@@ -192,10 +195,13 @@ void Camera::SetFillMode(FillMode mode)
 
 void Camera::SetOrthographic(bool enable)
 {
-    orthographic_ = enable;
-    cachedFrustum_.Invalidate();
-    cachedProjection_.Invalidate();
-    cachedViewProj_.Invalidate();
+    if (orthographic_ != enable)
+    {
+        orthographic_ = enable;
+        cachedFrustum_.Invalidate();
+        cachedProjection_.Invalidate();
+        cachedViewProj_.Invalidate();
+    }
 }
 
 void Camera::SetAutoAspectRatio(bool enable)

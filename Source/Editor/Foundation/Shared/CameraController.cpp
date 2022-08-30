@@ -52,6 +52,8 @@ void CameraController::Settings::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "Acceleration", acceleration_, Settings{}.acceleration_);
     SerializeOptionalValue(archive, "ShiftFactor", shiftFactor_, Settings{}.shiftFactor_);
     SerializeOptionalValue(archive, "FocusDistance", focusDistance_, Settings{}.focusDistance_);
+    SerializeOptionalValue(archive, "Orthographic", orthographic_, Settings{}.orthographic_);
+    SerializeOptionalValue(archive, "OrthographicSize", orthoSize_, Settings{}.orthoSize_);
 }
 
 void CameraController::Settings::RenderSettings()
@@ -63,6 +65,8 @@ void CameraController::Settings::RenderSettings()
     ui::DragFloat("Acceleration", &acceleration_, 0.1f, 0.1f, 100.0f, "%.1f");
     ui::DragFloat("Shift Factor", &shiftFactor_, 0.5f, 1.0f, 10.0f, "%.1f");
     ui::DragFloat("Focus Distance", &focusDistance_, 0.1f, 0.1f, 100.0f, "%.1f");
+    ui::Checkbox("Orthographic", &orthographic_);
+    ui::InputFloat("Orthographic Size", &orthoSize_, 0.1f, 1.0f, "%.1f");
 }
 
 CameraController::PageState::PageState()
@@ -139,7 +143,7 @@ Vector3 CameraController::GetMoveDirection() const
     return moveDirection.Normalized();
 }
 
-void CameraController::ProcessInput(const Camera* camera, PageState& state, const Settings* settings)
+void CameraController::ProcessInput(Camera* camera, PageState& state, const Settings* settings)
 {
     if (!settings)
     {
@@ -154,6 +158,8 @@ void CameraController::ProcessInput(const Camera* camera, PageState& state, cons
     {
         return;
     }
+    camera->SetOrthographic(settings->orthographic_);
+    camera->SetOrthoSize(settings->orthoSize_);
 
     const auto systemUI = GetSubsystem<SystemUI>();
 
