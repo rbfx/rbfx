@@ -134,7 +134,7 @@ void Camera::SetFov(float fov)
 
 void Camera::SetOrthoSize(float orthoSize)
 {
-    if (orthoSize_ != orthoSize)
+    if (orthoSize_ != orthoSize || aspectRatio_ != 1.0f)
     {
         orthoSize_ = orthoSize;
         aspectRatio_ = 1.0f;
