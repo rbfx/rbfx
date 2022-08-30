@@ -42,27 +42,28 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 
 #ifdef URHO3D_ORTHOGRAPHIC_DEPTH
-    #define GetDeferredWorldPos(depth) mix(vNearRay, vFarRay, depth)/vScreenPos.w
+    #define GetDeferredWorldPos(depth) mix(vNearRay, vFarRay, depth) / vScreenPos.w
 #else
-    #define GetDeferredWorldPos(depth) (vFarRay * depth)/vScreenPos.w
+    #define GetDeferredWorldPos(depth) (vFarRay * depth) / vScreenPos.w
 #endif
 
 void main()
 {
-#ifdef URHO3D_HAS_READABLE_DEPTH
     SurfaceData surfaceData;
 
     FillSurfaceCommon(surfaceData);
     FillSurfaceBackgroundDepth(surfaceData);
-    vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth)+cCameraPos, 1.0);
+
+    vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth) + cCameraPos, 1.0);
     vec4 modelSpace = worldPos * vToModelSpace;
-    vTexCoord = (modelSpace.xy) + vec2(0.5, 0.5);
+    vTexCoord = modelSpace.xy + vec2(0.5, 0.5);
     vTexCoord.y = 1.0 - vTexCoord.y;
-    vec3 crop = step(abs(modelSpace.xyz), vec3(0.5,0.5,0.5));
+    vec3 crop = step(abs(modelSpace.xyz), vec3(0.5, 0.5, 0.5));
     if (crop.x*crop.y*crop.z < 0.5)
     {
         discard;
     }
+
     // Get normal
     #ifdef NORMALMAP
         vec3 localNormal = DecodeNormal(texture2D(sNormalMap, vTexCoord.xy)) * vec3(1.0, 1.0, -1.0);
@@ -72,11 +73,13 @@ void main()
     #else
         surfaceData.normal = normalize((vec4(0.0, 0.0, -1.0, 0.0) * vToModelSpace).xyz);
     #endif
+
     FillSurfaceMetallicRoughnessOcclusion(surfaceData);
     FillSurfaceReflectionColor(surfaceData);
     FillSurfaceAlbedoSpecular(surfaceData);
     FillSurfaceEmission(surfaceData);
 
+    // TODO: Make configurable
     half3 surfaceColor = GetSurfaceColor(surfaceData);
     half surfaceAlpha = GetSurfaceAlpha(surfaceData) * smoothstep(0.5, 0.45, abs(modelSpace.z));
     if (surfaceAlpha < 1.0/255.0)
@@ -86,11 +89,8 @@ void main()
 
     gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceAlpha, surfaceData.fogFactor);
     gl_FragData[0].a *= cDecalMask.x;
-    gl_FragData[1].a = surfaceAlpha*cDecalMask.y;
-    gl_FragData[2].a = surfaceAlpha*cDecalMask.z;
-    gl_FragData[3].a = surfaceAlpha*cDecalMask.w;
-#else
-    discard;
-#endif
+    gl_FragData[1].a = surfaceAlpha * cDecalMask.y;
+    gl_FragData[2].a = surfaceAlpha * cDecalMask.z;
+    gl_FragData[3].a = surfaceAlpha * cDecalMask.w;
 }
 #endif

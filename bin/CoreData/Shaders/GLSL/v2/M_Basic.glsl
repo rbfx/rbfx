@@ -1,3 +1,5 @@
+#define URHO3D_PIXEL_NEED_TEXCOORD
+
 #include "_Config.glsl"
 #include "_GammaCorrection.glsl"
 #include "_BRDF.glsl"

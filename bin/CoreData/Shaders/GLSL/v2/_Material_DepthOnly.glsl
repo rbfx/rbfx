@@ -12,7 +12,7 @@ void FillVertexOutputs(const VertexTransform vertexTransform)
 {
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
     ApplyClipPlane(gl_Position);
-#if !defined(URHO3D_PIXEL_CALCULATES_TEXCOORD)
+#ifdef URHO3D_PIXEL_NEED_TEXCOORD
     vTexCoord = GetTransformedTexCoord();
 #endif
 #ifdef URHO3D_VARIANCE_SHADOW_MAP

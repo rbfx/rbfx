@@ -1,3 +1,4 @@
+#define URHO3D_PIXEL_NEED_TEXCOORD
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
 
 #include "_Config.glsl"
