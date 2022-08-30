@@ -2,11 +2,12 @@
 /// Don't include!
 /// Material attributes passed from vertex to pixel shader.
 
-/// Unconditional attributes:
-/// @{
-VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
+/// Note: Don't use ALPHAMASK if URHO3D_PIXEL_NEED_TEXCOORD is not defined, it will mess up with M_OutlinePixel.
+#ifdef URHO3D_PIXEL_NEED_TEXCOORD
+    VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
+#endif
+
 VERTEX_OUTPUT_HIGHP(float vWorldDepth)
-/// @}
 
 /// Vertex transform attributes:
 /// @{

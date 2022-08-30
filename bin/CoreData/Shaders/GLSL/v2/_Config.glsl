@@ -27,6 +27,7 @@
 // #define URHO3D_VERTEX_NEED_TANGENT
 
 /// Configures what data pixel shader needs from vertex shader:
+// #define URHO3D_PIXEL_NEED_TEXCOORD
 // #define URHO3D_PIXEL_NEED_SCREEN_POSITION
 // #define URHO3D_PIXEL_NEED_EYE_VECTOR
 // #define URHO3D_PIXEL_NEED_NORMAL
