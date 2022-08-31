@@ -88,6 +88,16 @@ NodeInspectorWidget::NodeVector GetSortedTopmostNodes(const SerializableInspecto
     return result;
 }
 
+bool HasScene(const NodeInspectorWidget::NodeVector& nodes)
+{
+    for (Node* node : nodes)
+    {
+        if (node->GetScene() == node)
+            return true;
+    }
+    return false;
+}
+
 }
 
 void Foundation_NodeComponentInspector(Context* context, InspectorTab* inspectorTab)
@@ -247,9 +257,16 @@ void NodeComponentInspector::EndEditComponentAttribute(const SerializableVector&
 
 void NodeComponentInspector::BeginAction(const SerializableVector& objects)
 {
-    changedNodes_ = GetSortedTopmostNodes(objects);
-
     oldData_.clear();
+    changedNodes_ = GetSortedTopmostNodes(objects);
+    if (HasScene(changedNodes_))
+    {
+        // Disable undo/redo for scene actions for simplicity and performance
+        // TODO: Implement it?
+        changedNodes_.clear();
+        return;
+    }
+
     for (Node* node : changedNodes_)
     {
         oldData_.push_back(PackedNodeData{node});
