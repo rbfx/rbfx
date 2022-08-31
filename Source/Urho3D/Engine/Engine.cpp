@@ -33,6 +33,7 @@
 #include "../SystemUI/SystemUI.h"
 #include "../SystemUI/Console.h"
 #include "../SystemUI/DebugHud.h"
+#include "../SystemUI/StandardSerializableHooks.h"
 #endif
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
@@ -373,6 +374,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 #ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_,
             GetParameter(EP_SYSTEMUI_FLAGS, 0).GetUInt()));
+        RegisterStandardSerializableHooks();
 #endif
     }
     frameTimer_.Reset();

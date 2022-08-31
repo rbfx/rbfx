@@ -43,13 +43,13 @@ struct WeakToRawStaticCaster
 };
 
 template <class T>
-auto CastVectorTo(const ea::vector<WeakPtr<Serializable>>& objects)
+auto CastVectorTo(const WeakSerializableVector& objects)
 {
     ea::span<const WeakPtr<Serializable>> objectsSpan{objects};
     return TransformedSpan<const WeakPtr<Serializable>, T, WeakToRawStaticCaster<T>>(objectsSpan);
 }
 
-NodeInspectorWidget::NodeVector GetSortedTopmostNodes(const SerializableInspectorWidget::SerializableVector& objects)
+NodeInspectorWidget::NodeVector GetSortedTopmostNodes(const WeakSerializableVector& objects)
 {
     using NodeAndIndex = ea::pair<Node*, unsigned>;
 
@@ -158,7 +158,7 @@ NodeComponentInspector::NodeVector NodeComponentInspector::CollectNodes() const
     return {};
 }
 
-NodeComponentInspector::SerializableVector NodeComponentInspector::CollectComponents() const
+WeakSerializableVector NodeComponentInspector::CollectComponents() const
 {
     // If components are of the same type, inspect components
     const bool sameType = ea::all_of(components_.begin(), components_.end(),
@@ -207,7 +207,7 @@ void NodeComponentInspector::InspectObjects()
     }
 }
 
-void NodeComponentInspector::BeginEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::BeginEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
@@ -218,7 +218,7 @@ void NodeComponentInspector::BeginEditNodeAttribute(const SerializableVector& ob
         oldValues_.push_back(node->GetAttribute(attribute->name_));
 }
 
-void NodeComponentInspector::EndEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::EndEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
@@ -231,7 +231,7 @@ void NodeComponentInspector::EndEditNodeAttribute(const SerializableVector& obje
     inspectedTab_->PushAction<ChangeNodeAttributesAction>(scene_, attribute->name_, nodes, oldValues_, newValues_);
 }
 
-void NodeComponentInspector::BeginEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::BeginEditComponentAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
@@ -242,7 +242,7 @@ void NodeComponentInspector::BeginEditComponentAttribute(const SerializableVecto
         oldValues_.push_back(component->GetAttribute(attribute->name_));
 }
 
-void NodeComponentInspector::EndEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::EndEditComponentAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
@@ -255,7 +255,7 @@ void NodeComponentInspector::EndEditComponentAttribute(const SerializableVector&
     inspectedTab_->PushAction<ChangeComponentAttributesAction>(scene_, attribute->name_, components, oldValues_, newValues_);
 }
 
-void NodeComponentInspector::BeginAction(const SerializableVector& objects)
+void NodeComponentInspector::BeginAction(const WeakSerializableVector& objects)
 {
     oldData_.clear();
     changedNodes_ = GetSortedTopmostNodes(objects);
@@ -273,7 +273,7 @@ void NodeComponentInspector::BeginAction(const SerializableVector& objects)
     }
 }
 
-void NodeComponentInspector::EndAction(const SerializableVector& objects)
+void NodeComponentInspector::EndAction(const WeakSerializableVector& objects)
 {
     for (unsigned i = 0; i < changedNodes_.size(); ++i)
     {
