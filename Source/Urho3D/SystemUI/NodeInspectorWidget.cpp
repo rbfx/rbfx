@@ -45,6 +45,8 @@ NodeInspectorWidget::NodeInspectorWidget(Context* context, const NodeVector& nod
     URHO3D_ASSERT(!nodes_.empty());
     nodeInspector_->OnEditAttributeBegin.Subscribe(this, ea::ref(OnEditNodeAttributeBegin));
     nodeInspector_->OnEditAttributeEnd.Subscribe(this, ea::ref(OnEditNodeAttributeEnd));
+    nodeInspector_->OnActionBegin.Subscribe(this, ea::ref(OnActionBegin));
+    nodeInspector_->OnActionEnd.Subscribe(this, ea::ref(OnActionEnd));
 }
 
 NodeInspectorWidget::~NodeInspectorWidget()
@@ -85,6 +87,8 @@ void NodeInspectorWidget::RenderContent()
         {
             inspector->OnEditAttributeBegin.Subscribe(this, ea::ref(OnEditComponentAttributeBegin));
             inspector->OnEditAttributeEnd.Subscribe(this, ea::ref(OnEditComponentAttributeEnd));
+            inspector->OnActionBegin.Subscribe(this, ea::ref(OnActionBegin));
+            inspector->OnActionEnd.Subscribe(this, ea::ref(OnActionEnd));
         }
     }
 

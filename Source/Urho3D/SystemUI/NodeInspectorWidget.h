@@ -43,6 +43,8 @@ public:
     Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditNodeAttributeEnd;
     Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditComponentAttributeBegin;
     Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditComponentAttributeEnd;
+    Signal<void(const SerializableVector& objects)> OnActionBegin;
+    Signal<void(const SerializableVector& objects)> OnActionEnd;
     Signal<void(Component* component)> OnComponentRemoved;
 
     NodeInspectorWidget(Context* context, const NodeVector& nodes);

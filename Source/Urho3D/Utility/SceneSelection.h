@@ -84,6 +84,8 @@ public:
     void Save(PackedSceneSelection& packedSelection) const;
     /// Load selection.
     void Load(Scene* scene, const PackedSceneSelection& packedSelection);
+    /// Return packed selection.
+    PackedSceneSelection Pack() const;
 
     /// Clear selection.
     void Clear();

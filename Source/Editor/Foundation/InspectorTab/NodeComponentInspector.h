@@ -28,6 +28,7 @@
 
 #include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/SerializableInspectorWidget.h>
+#include <Urho3D/Utility/PackedSceneData.h>
 #include <Urho3D/Utility/SceneSelection.h>
 
 #include <EASTL/map.h>
@@ -73,6 +74,8 @@ private:
     void EndEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
     void BeginEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
     void EndEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
+    void BeginAction(const SerializableVector& objects);
+    void EndAction(const SerializableVector& objects);
     void AddComponentToNodes(StringHash componentType);
     void RemoveComponent(Component* component);
 
@@ -89,6 +92,9 @@ private:
 
     VariantVector oldValues_;
     VariantVector newValues_;
+
+    NodeVector changedNodes_;
+    ea::vector<PackedNodeData> oldData_;
 };
 
 }

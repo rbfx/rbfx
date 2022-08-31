@@ -154,6 +154,13 @@ void SceneSelection::Load(Scene* scene, const PackedSceneSelection& packedSelect
     NotifyChanged();
 }
 
+PackedSceneSelection SceneSelection::Pack() const
+{
+    PackedSceneSelection packedSelection;
+    Save(packedSelection);
+    return packedSelection;
+}
+
 void SceneSelection::Clear()
 {
     ClearInternal();

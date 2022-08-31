@@ -38,6 +38,8 @@ public:
 
     Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeBegin;
     Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeEnd;
+    Signal<void(const SerializableVector& objects)> OnActionBegin;
+    Signal<void(const SerializableVector& objects)> OnActionEnd;
 
     SerializableInspectorWidget(Context* context, const SerializableVector& objects);
     ~SerializableInspectorWidget() override;
@@ -55,6 +57,7 @@ private:
 
     SerializableVector objects_;
     ea::vector<ea::pair<const AttributeInfo*, Variant>> pendingSetAttributes_;
+    ea::vector<const AttributeInfo*> pendingActions_;
 };
 
 }

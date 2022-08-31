@@ -108,6 +108,7 @@ void SerializableInspectorWidget::RenderContent()
         return;
 
     pendingSetAttributes_.clear();
+    pendingActions_.clear();
     for (const AttributeInfo& info : *attributes)
     {
         if (info.mode_ & AM_NOEDIT)
@@ -134,6 +135,19 @@ void SerializableInspectorWidget::RenderContent()
         }
     }
 
+    if (!pendingActions_.empty())
+    {
+        OnActionBegin(this, objects_);
+        for (const AttributeInfo* info : pendingActions_)
+        {
+            for (Serializable* object : objects_)
+            {
+                if (object)
+                    object->SetAttribute(info->name_, true);
+            }
+        }
+        OnActionEnd(this, objects_);
+    }
 }
 
 void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
@@ -180,9 +194,7 @@ void SerializableInspectorWidget::RenderAction(const AttributeInfo& info)
 {
     Serializable* object = objects_.front();
     if (ui::Button(info.name_.c_str()))
-    {
-        object->OnSetAttribute(info, true);
-    }
+        pendingActions_.emplace_back(&info);
 
     ui::SameLine();
 

@@ -108,6 +108,8 @@ public:
     template <class T> T* GetComponent() const;
     /// Template version of returning components in the same scene node by type.
     template <class T> void GetComponents(ea::vector<T*>& dest) const;
+    /// Return index of this component in the node.
+    unsigned GetIndexInParent() const;
 
 protected:
     /// Handle attribute animation added.

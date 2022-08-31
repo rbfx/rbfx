@@ -36,6 +36,7 @@ namespace Urho3D
 PackedNodeData::PackedNodeData(Node* node)
     : id_(node->GetID())
     , parentId_(node->GetParent() ? node->GetParent()->GetID() : 0)
+    , indexInParent_(node->GetIndexInParent())
     , name_(node->GetName())
 {
     ConsumeArchiveException([&]
@@ -65,6 +66,7 @@ Node* PackedNodeData::SpawnExact(Scene* scene) const
         SerializeValue(archive, "Node", *node);
     });
 
+    parent->ReorderChild(node, indexInParent_);
     return node;
 }
 
@@ -85,6 +87,7 @@ Node* PackedNodeData::SpawnCopy(Node* parent) const
 PackedComponentData::PackedComponentData(Component* component)
     : id_(component->GetID())
     , nodeId_(component->GetNode() ? component->GetNode()->GetID() : 0)
+    , indexInParent_(component->GetIndexInParent())
     , type_(component->GetType())
 {
     ConsumeArchiveException([&]
@@ -117,6 +120,7 @@ Component* PackedComponentData::SpawnExact(Scene* scene) const
         SerializeValue(archive, "Component", *component);
     });
 
+    node->ReorderComponent(component, indexInParent_);
     return component;
 }
 
