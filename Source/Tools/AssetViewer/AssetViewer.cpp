@@ -37,7 +37,6 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <Urho3D/SystemUI/Gizmo.h>
 #include <ctime>
 #include <cstdio>
 #include <Urho3D/IO/Log.h>
@@ -62,12 +61,12 @@ public:
     WeakPtr<AnimatedModel> model_;
     WeakPtr<AnimationController> animator_;
     float lookSensitivity_ = 1.0f;
-    Gizmo gizmo_;
+    //Gizmo gizmo_;
     bool showHelp_ = false;
     ea::string assetFile_;
 
     explicit AssetViewer(Context* context)
-        : Application(context), gizmo_(context)
+        : Application(context)//, gizmo_(context)
     {
     }
 
@@ -166,7 +165,7 @@ public:
                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
         {
-            gizmo_.RenderUI();
+            //gizmo_.RenderUI();
 
             if (ui::Button("Reset"))
                 ResetNode();
@@ -187,7 +186,7 @@ public:
         }
 
         if (node_ && context_->GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
-            gizmo_.ManipulateNode(camera_, parentNode_);
+            ;//gizmo_.ManipulateNode(camera_, parentNode_);
     }
 
     void OnFileDrop(VariantMap& args)

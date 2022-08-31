@@ -22,7 +22,6 @@
 //
 #pragma once
 
-#include "../Container/ValueCache.h"
 #include "../Core/Object.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Texture2D.h"
@@ -75,10 +74,7 @@ public:
     void ApplyStyleDefault(bool darkStyle, float alpha);
     /// Hold a reference to this texture until end of frame.
     void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
-#ifndef SWIG    // Due to some quirk SWIG fails to ignore this API.
-    /// Return value cache for storing temporary UI state that expires when unused.
-    ValueCache& GetValueCache() { return cache_; }
-#endif
+
     /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
     void SetPassThroughEvents(bool enabled) { passThroughEvents_ = enabled; }
     /// Return true if SystemUI is allowing events through even when SystemUI is handling them.
@@ -91,7 +87,6 @@ protected:
     ea::vector<float> fontSizes_;
     ImGuiContext* imContext_;
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
-    ValueCache cache_{context_};
     /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
     bool passThroughEvents_ = false;
 

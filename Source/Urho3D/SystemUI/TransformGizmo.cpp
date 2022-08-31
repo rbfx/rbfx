@@ -159,6 +159,12 @@ void TransformGizmo::PrepareToManipulate() const
     ImGuizmo::SetOrthographic(camera_->IsOrthographic());
 }
 
+TransformNodesGizmo::TransformNodesGizmo(Node* activeNode)
+    : activeNode_(activeNode)
+    , nodes_{WeakPtr<Node>{activeNode}}
+{
+}
+
 bool TransformNodesGizmo::Manipulate(const TransformGizmo& gizmo,
     TransformGizmoOperation op, bool local, bool pivoted, const Vector3& snap)
 {
