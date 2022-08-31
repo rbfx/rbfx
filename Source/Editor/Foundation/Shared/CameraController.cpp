@@ -159,7 +159,12 @@ void CameraController::ProcessInput(Camera* camera, PageState& state, const Sett
         return;
     }
     camera->SetOrthographic(settings->orthographic_);
-    camera->SetOrthoSize(settings->orthoSize_);
+    if (settings->orthographic_)
+    {
+        const float aspectRatio = camera->GetAspectRatio();
+        camera->SetOrthoSize(settings->orthoSize_);
+        camera->SetAspectRatioInternal(aspectRatio);
+    }
 
     const auto systemUI = GetSubsystem<SystemUI>();
 
