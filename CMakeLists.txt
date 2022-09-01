@@ -441,7 +441,6 @@ message(STATUS "  Logging         ${URHO3D_LOGGING}")
 message(STATUS "  Profiling       ${URHO3D_PROFILING}")
 message(STATUS "  Extras          ${URHO3D_EXTRAS}")
 message(STATUS "  Tools           ${URHO3D_TOOLS}")
-message(STATUS "  Docs            ${URHO3D_DOCS}")
 message(STATUS "  Compute         ${URHO3D_COMPUTE}")
 if (TARGET Profiler)
     message(STATUS "     Profiler GUI ${URHO3D_PROFILING}")
@@ -465,10 +464,6 @@ endif()
 ################################################### SDK preparation ####################################################
 if (MINI_URHO)
     return ()
-endif ()
-
-if (URHO3D_DOCS)
-    add_subdirectory(Docs)
 endif ()
 
 # Install CMake modules and toolchains provided by and for Urho3D
