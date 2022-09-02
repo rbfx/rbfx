@@ -81,7 +81,7 @@ public:
     }
 
     explicit ColorScopeGuard(std::initializer_list<ea::pair<ImGuiCol, ImVec4>> colors, bool enabled = true)
-        : numColors_(enabled ? colors.size() : 0)
+        : numColors_(enabled ? static_cast<unsigned>(colors.size()) : 0)
     {
         if (enabled)
         {
@@ -98,7 +98,7 @@ public:
     }
 
     explicit ColorScopeGuard(std::initializer_list<ea::pair<ImGuiCol, ImU32>> colors, bool enabled = true)
-        : numColors_(enabled ? colors.size() : 0)
+        : numColors_(enabled ? static_cast<unsigned>(colors.size()) : 0)
     {
         if (enabled)
         {
@@ -115,7 +115,7 @@ public:
     }
 
     explicit ColorScopeGuard(std::initializer_list<ea::pair<ImGuiCol, Color>> colors, bool enabled = true)
-        : numColors_(enabled ? colors.size() : 0)
+        : numColors_(enabled ? static_cast<unsigned>(colors.size()) : 0)
     {
         if (enabled)
         {

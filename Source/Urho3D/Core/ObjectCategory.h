@@ -38,6 +38,7 @@ URHO3D_GLOBAL_CONSTANT(ConstString Category_RmlUI{"Component/RmlUI"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Scene{"Component/Scene"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Subsystem{"Component/Subsystem"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Urho2D{"Component/Urho2D"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_User{"Component/User"});
 
 URHO3D_GLOBAL_CONSTANT(ConstString Category_UI{"UI"});
 

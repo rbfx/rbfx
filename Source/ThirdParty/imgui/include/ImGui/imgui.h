@@ -3178,7 +3178,7 @@ namespace ImGui
         //   using namespace ImGui::Literals;
         //   float from_int = 123_pt;
         //   float from_float = 123.4_pt;
-        inline float operator "" _pt(long double value)            { return ImGui::GetStyle().PointSize * value; }
+        inline float operator "" _pt(long double value)            { return ImGui::GetStyle().PointSize * (float)value; }
         inline float operator "" _pt(unsigned long long int value) { return ImGui::GetStyle().PointSize * (float)value; }
     }
 #endif

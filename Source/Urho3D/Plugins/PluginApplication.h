@@ -52,6 +52,8 @@ public:
 
     /// Return whether the plugin can act as main entry point.
     virtual bool IsMain() const { return false; }
+    /// Return default object category for the plugin.
+    virtual ea::string GetDefaultCategory() const { return Category_User; }
 
     /// Prepare object for destruction.
     void Dispose();
@@ -79,7 +81,8 @@ public:
     bool IsStarted() const { return isStarted_; }
 
     /// Register a factory for an object type that would be automatically unregistered on unload.
-    template<typename T> ObjectReflection* AddFactoryReflection(ea::string_view category = "");
+    template<typename T> ObjectReflection* AddFactoryReflection();
+    template<typename T> ObjectReflection* AddFactoryReflection(ea::string_view category);
     /// Register an object that would be automatically unregistered on unload.
     template<typename T> void AddObjectReflection();
 
@@ -119,6 +122,15 @@ public:
     bool IsMain() const final { return true; }
     /// @}
 };
+
+template<typename T>
+ObjectReflection* PluginApplication::AddFactoryReflection()
+{
+    auto reflection = context_->AddFactoryReflection<T>(GetDefaultCategory());
+    if (reflection)
+        reflectedTypes_.push_back(T::GetTypeStatic());
+    return reflection;
+}
 
 template<typename T>
 ObjectReflection* PluginApplication::AddFactoryReflection(ea::string_view category)
