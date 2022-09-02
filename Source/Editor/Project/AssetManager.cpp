@@ -33,6 +33,20 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+bool IsAssetPipelineFile(const ea::string& fileName)
+{
+    const ea::string suffix1 = Format("/{}", AssetManager::ResourceNameSuffix);
+    const ea::string suffix2 = Format(".{}", AssetManager::ResourceNameSuffix);
+    return fileName == AssetManager::ResourceNameSuffix
+        || fileName.ends_with(suffix1)
+        || fileName.ends_with(suffix2);
+}
+
+}
+
 const ea::string AssetManager::ResourceNameSuffix{"AssetPipeline.json"};
 
 void AssetManager::AssetDesc::SerializeInBlock(Archive& archive)
@@ -181,8 +195,7 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     StringVector files;
     fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
 
-    const ea::string suffix = Format("/{}", ResourceNameSuffix);
-    ea::erase_if(files, [&](const ea::string& resourceName) { return !resourceName.ends_with(suffix); });
+    ea::erase_if(files, [&](const ea::string& resourceName) { return !IsAssetPipelineFile(resourceName); });
 
     AssetPipelineList result;
     for (const ea::string& resourceName : files)
