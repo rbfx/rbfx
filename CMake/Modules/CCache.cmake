@@ -23,7 +23,7 @@
 include(ucm)
 
 find_program(CCACHE ccache)
-if (CCACHE_FOUND AND ENV{CCACHE_DIR})
+if (NOT MSVC AND CCACHE_FOUND AND ENV{CCACHE_DIR})  # MSVC side is handled in ci_build.sh action-build-msvc()
     if (CMAKE_GENERATOR STREQUAL "Xcode")
         if ("${CMAKE_C_COMPILER_LAUNCHER}" STREQUAL "ccache")
             if (NOT CCACHE)
@@ -50,6 +50,7 @@ if (CCACHE_FOUND AND ENV{CCACHE_DIR})
     endif ()
 endif ()
 
-if (MSVC AND (DEFINED ENV{CLCACHE_DIR} AND NOT ENV{CLCACHE_DIR} STREQUAL ""))
+if (MSVC AND (DEFINED ENV{CCACHE_DIR} AND NOT ENV{CCACHE_DIR} STREQUAL ""))
     ucm_replace_flag("/Z[iI]" "" REGEX CONFIG Debug RelWithDebInfo)
+    ucm_replace_flag("/FI"    "" REGEX)
 endif ()

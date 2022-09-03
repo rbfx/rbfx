@@ -66,11 +66,15 @@ toolchains_web=(
 lib_types_lib=('-DBUILD_SHARED_LIBS=OFF')
 lib_types_dll=('-DBUILD_SHARED_LIBS=ON')
 
+# !! ccache only supports GCC precompiled headers. https://ccache.dev/manual/latest.html#_precompiled_headers
 quirks_mingw=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
     '-DURHO3D_TESTING=OFF'
     '-DURHO3D_GRAPHICS_API=OpenGL'
+    '-DURHO3D_PCH=OFF'
+)
+quirks_msvc=(
     '-DURHO3D_PCH=OFF'
 )
 quirks_ios=(
@@ -168,7 +172,6 @@ function action-dependencies() {
     then
         # Windows dependencies
         choco install -y ccache
-        pip install clcache
     fi
 }
 
@@ -186,9 +189,6 @@ function action-generate() {
     esac
 
     # Generate.
-    mkdir $ci_build_dir
-    cd $ci_build_dir
-
     ci_cmake_params=()
     v="generators_${ci_platform}_${ci_compiler}[@]";        ci_cmake_params+=("${!v}")
     if [[ -z "${!v}" ]];
@@ -218,7 +218,7 @@ function action-generate() {
     fi
 
     ci_cmake_params+=(${ci_cmake_params_user[@]})
-    ci_cmake_params+=("$ci_source_dir")
+    ci_cmake_params+=(-B $ci_build_dir -S "$ci_source_dir")
 
     echo "${ci_cmake_params[@]}"
     cmake "${ci_cmake_params[@]}"
@@ -226,7 +226,6 @@ function action-generate() {
 
 # Default build path using plain CMake.
 function action-build() {
-    cd $ci_build_dir
     # ci_platform:     windows|linux|macos|android|ios|web
     if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
     then
@@ -235,17 +234,18 @@ function action-build() {
       NUMBER_OF_PROCESSORS=$(nproc)
     fi
 
-    cmake --build . --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
+    ccache -s
+    cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
     ccache -s
 }
 
 # Custom compiler build paths used only on windows.
 function action-build-msvc() {
-    cd $ci_build_dir
-    # Invoke msbuild directly when using msvc. Invoking msbuild through cmake causes some custom target dependencies to not be respected.
-    python_path=$(python -c "import os, sys; print(os.path.dirname(sys.executable))")
-    "$MSBUILD" "-r" "-p:Configuration=${types[$ci_build_type]}" "-maxcpucount:${NUMBER_OF_PROCESSORS}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=$python_path/Scripts/" *.sln && \
-    clcache -s
+    ccache_path=$(realpath /c/ProgramData/chocolatey/lib/ccache/tools/ccache-*)
+    cp $ccache_path/ccache.exe $ccache_path/cl.exe  # https://github.com/ccache/ccache/wiki/MS-Visual-Studio
+    $ccache_path/ccache.exe -s
+    cmake --build $ci_build_dir --config "${types[$ci_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path && \
+    $ccache_path/ccache.exe -s
 }
 
 function action-build-mingw() {
@@ -255,14 +255,14 @@ function action-build-mingw() {
 # Custom platform build paths used only on android.
 function action-build-android() {
     cd $ci_source_dir/android
+    ccache -s
     gradle wrapper                                && \
     ./gradlew "${android_types[$ci_build_type]}"  && \
-    ccache --show-stats
+    ccache -s
 }
 
 function action-install() {
-    cd $ci_build_dir
-    cmake --install . --config "${types[$ci_build_type]}"
+    cmake --install $ci_build_dir --config "${types[$ci_build_type]}"
 }
 
 function action-test() {
