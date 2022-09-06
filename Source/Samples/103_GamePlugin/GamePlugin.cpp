@@ -50,7 +50,7 @@ GamePlugin::GamePlugin(Context* context)
 
 void GamePlugin::Load()
 {
-    AddObjectReflection<RotateObject>();
+    RegisterObject<RotateObject>();
 }
 
 void GamePlugin::Unload()

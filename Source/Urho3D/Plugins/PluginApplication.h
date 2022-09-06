@@ -84,7 +84,7 @@ public:
     template<typename T> ObjectReflection* AddFactoryReflection();
     template<typename T> ObjectReflection* AddFactoryReflection(ea::string_view category);
     /// Register an object that would be automatically unregistered on unload.
-    template<typename T> void AddObjectReflection();
+    template<typename T> void RegisterObject();
 
 protected:
     /// Called on LoadPlugin().
@@ -142,7 +142,7 @@ ObjectReflection* PluginApplication::AddFactoryReflection(ea::string_view catego
 }
 
 template<typename T>
-void PluginApplication::AddObjectReflection()
+void PluginApplication::RegisterObject()
 {
     T::RegisterObject(context_);
     reflectedTypes_.push_back(T::GetTypeStatic());
