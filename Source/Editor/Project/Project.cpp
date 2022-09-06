@@ -455,6 +455,8 @@ void Project::EnsureDirectoryInitialized()
     // Legacy: to support old projects
     if (fs->DirExists(projectPath_ + "Resources/"))
         dataPath_ = projectPath_ + "Resources/";
+    if (fs->FileExists(dataPath_ + "AssetPipeline.json"))
+        fs->Rename(dataPath_ + "AssetPipeline.json", dataPath_ + ".AssetPipeline.json");
 
     if (!fs->DirExists(dataPath_))
     {
@@ -488,7 +490,7 @@ void Project::InitializeDefaultProject()
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
     ProcessRequest(request, nullptr);
 
-    const ea::string defaultAssetPipeline = "AssetPipeline.json";
+    const ea::string defaultAssetPipeline = ".AssetPipeline.json";
     CreateAssetPipeline(context_, dataPath_ + defaultAssetPipeline);
 
     Save();

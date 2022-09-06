@@ -22,51 +22,38 @@
 
 #pragma once
 
-#include "../Core/CommonEditorActions.h"
+#include "../Resource/ResourceCache.h"
+#include "../Utility/AssetTransformer.h"
 
 namespace Urho3D
 {
 
-class Project;
-
-class ModifyResourceAction : public EditorAction
+/// Resource containing an array of AssetTransformer-s.
+class URHO3D_API AssetPipeline : public Resource
 {
+    URHO3D_OBJECT(AssetPipeline, Resource);
+
 public:
-    explicit ModifyResourceAction(Project* project);
-    void AddResource(Resource* resource);
+    explicit AssetPipeline(Context* context);
+    static bool CheckExtension(const ea::string& fileName);
 
-    void DisableAutoComplete();
-    void SaveOnComplete();
+    void AddTransformer(AssetTransformer* transformer);
+    void RemoveTransformer(AssetTransformer* transformer);
+    void ReorderTransformer(AssetTransformer* transformer, unsigned index);
 
-    /// Implement EditorAction.
+    /// Implement Resource.
     /// @{
-    bool IsComplete() const override { return !newData_.empty(); }
-    void Complete(bool force) override;
-    void Redo() const override;
-    void Undo() const override;
-    bool MergeWith(const EditorAction& other) override;
+    void SerializeInBlock(Archive& archive) override;
+    bool BeginLoad(Deserializer& source) override;
+    bool Save(Serializer& dest) const override;
     /// @}
 
+    const ea::vector<SharedPtr<AssetTransformer>>& GetTransformers() const { return transformers_; }
+    const ea::vector<AssetTransformerDependency>& GetDependencies() const { return dependencies_; }
+
 private:
-    struct ResourceData
-    {
-        StringHash resourceType_;
-        ea::string fileName_;
-        SharedByteVector bytes_;
-    };
-
-    void ApplyResourceData(const ea::string& resourceName, const ResourceData& data) const;
-
-    WeakPtr<Project> project_;
-    Context* context_{};
-
-    bool autoComplete_{true};
-    bool saveOnComplete_{};
-
-    ea::unordered_map<ea::string, ResourceData> oldData_;
-    ea::unordered_map<ea::string, ResourceData> newData_;
-
-    mutable ea::function<void()> callback_;
+    ea::vector<SharedPtr<AssetTransformer>> transformers_;
+    ea::vector<AssetTransformerDependency> dependencies_;
 };
 
 }

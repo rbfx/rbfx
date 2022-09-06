@@ -51,12 +51,13 @@ class SceneViewPage : public Object
     URHO3D_OBJECT(SceneViewPage, Object);
 
 public:
-    explicit SceneViewPage(Scene* scene);
+    SceneViewPage(Resource* resource, Scene* scene);
     ~SceneViewPage() override;
 
     ea::any& GetAddonData(const SceneViewAddon& addon);
 
 public:
+    const SharedPtr<Resource> resource_;
     const SharedPtr<Scene> scene_;
     const SharedPtr<SceneRendererToTexture> renderer_;
     const ea::string cfgFileName_;
@@ -253,7 +254,7 @@ protected:
 private:
     /// Manage pages
     /// @{
-    SharedPtr<SceneViewPage> CreatePage(Scene* scene, bool isActive);
+    SharedPtr<SceneViewPage> CreatePage(XMLFile* xmlFile, bool isActive);
     void SavePageScene(SceneViewPage& page) const;
 
     void SavePageConfig(const SceneViewPage& page) const;

@@ -33,22 +33,6 @@
 namespace Urho3D
 {
 
-namespace
-{
-
-bool IsAssetPipelineFile(const ea::string& fileName)
-{
-    const ea::string suffix1 = Format("/{}", AssetManager::ResourceNameSuffix);
-    const ea::string suffix2 = Format(".{}", AssetManager::ResourceNameSuffix);
-    return fileName == AssetManager::ResourceNameSuffix
-        || fileName.ends_with(suffix1)
-        || fileName.ends_with(suffix2);
-}
-
-}
-
-const ea::string AssetManager::ResourceNameSuffix{"AssetPipeline.json"};
-
 void AssetManager::AssetDesc::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "Outputs", outputs_);
@@ -195,7 +179,7 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     StringVector files;
     fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
 
-    ea::erase_if(files, [&](const ea::string& resourceName) { return !IsAssetPipelineFile(resourceName); });
+    ea::erase_if(files, [&](const ea::string& resourceName) { return !AssetPipeline::CheckExtension(resourceName); });
 
     AssetPipelineList result;
     for (const ea::string& resourceName : files)
@@ -203,61 +187,33 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     return result;
 }
 
-AssetManager::AssetPipelineDesc AssetManager::LoadAssetPipeline(
-    const JSONFile& jsonFile, const ea::string& resourceName, FileTime modificationTime) const
+AssetManager::AssetPipelineDesc AssetManager::LoadAssetPipeline(const AssetPipeline& pipeline, FileTime modificationTime) const
 {
     AssetPipelineDesc result;
-    result.resourceName_ = resourceName;
+    result.resourceName_ = pipeline.GetName();
     result.modificationTime_ = modificationTime;
-
-    const JSONValue& rootElement = jsonFile.GetRoot();
-    const JSONValue& transformersElement = rootElement["Transformers"];
-    const JSONValue& dependenciesElement = rootElement["Dependencies"];
-
-    for (const JSONValue& value : transformersElement.GetArray())
-    {
-        const ea::string& transformerClass = value["_Class"].GetString();
-        const auto newTransformer = DynamicCast<AssetTransformer>(context_->CreateObject(transformerClass));
-        if (!newTransformer)
-        {
-            URHO3D_LOGERROR("Failed to instantiate transformer {} of JSON file {}", transformerClass, resourceName);
-            continue;
-        }
-
-        JSONInputArchive archive{context_, value, &jsonFile};
-        const bool loaded = ConsumeArchiveException([&]
-        {
-            SerializeValue(archive, transformerClass.c_str(), *newTransformer);
-        });
-
-        if (loaded)
-            result.transformers_.push_back(newTransformer);
-    }
-
-    for (const JSONValue& value : dependenciesElement.GetArray())
-    {
-        const ea::string& transformerClass = value["Class"].GetString();
-        const ea::string& dependsOn = value["DependsOn"].GetString();
-        result.dependencies_.emplace_back(transformerClass, dependsOn);
-    }
-
+    result.transformers_ = pipeline.GetTransformers();
+    result.dependencies_ = pipeline.GetDependencies();
     return result;
 }
 
 AssetManager::AssetPipelineDescVector AssetManager::LoadAssetPipelines(
     const AssetPipelineList& assetPipelineFiles) const
 {
+    auto cache = GetSubsystem<ResourceCache>();
+
     AssetPipelineDescVector result;
     for (const auto& [resourceName, modificationTime] : assetPipelineFiles)
     {
-        auto jsonFile = MakeShared<JSONFile>(context_);
-        if (!jsonFile->LoadFile(GetFileName(resourceName)))
+        // Never cache these files.
+        auto pipeline = cache->GetTempResource<AssetPipeline>(resourceName);
+        if (!pipeline)
         {
             URHO3D_LOGERROR("Failed to load {} as JSON file", resourceName);
             continue;
         }
 
-        result.push_back(LoadAssetPipeline(*jsonFile, resourceName, modificationTime));
+        result.push_back(LoadAssetPipeline(*pipeline, modificationTime));
     }
     return result;
 }
@@ -502,8 +458,8 @@ void AssetManager::UpdateTransformHierarchy()
     {
         for (AssetTransformer* transformer : pipeline.transformers_)
             transformerHierarchy_->AddTransformer(GetPath(pipeline.resourceName_), transformer);
-        for (const auto& [transformerClass, dependsOn] : pipeline.dependencies_)
-            transformerHierarchy_->AddDependency(transformerClass, dependsOn);
+        for (const AssetTransformerDependency& link : pipeline.dependencies_)
+            transformerHierarchy_->AddDependency(link.class_, link.dependsOn_);
     }
     transformerHierarchy_->CommitDependencies();
 }

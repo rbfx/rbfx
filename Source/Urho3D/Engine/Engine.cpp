@@ -86,6 +86,7 @@
 #ifdef URHO3D_COMPUTE
 #include "../Graphics/ComputeDevice.h"
 #endif
+#include "../Utility/AssetPipeline.h"
 #include "../Utility/AssetTransformer.h"
 #include "../Utility/SceneViewerApplication.h"
 
@@ -196,6 +197,7 @@ Engine::Engine(Context* context) :
 #endif
 
     SceneViewerApplication::RegisterObject();
+    context_->RegisterFactory<AssetPipeline>();
     context_->RegisterFactory<AssetTransformer>();
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));

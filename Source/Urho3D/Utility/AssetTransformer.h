@@ -108,4 +108,14 @@ private:
     ApplicationFlavorPattern flavor_{};
 };
 
+/// Dependency between two transformer classes.
+/// Note: this dependency is global within a project regardless of transformer scope!
+struct AssetTransformerDependency
+{
+    ea::string class_;
+    ea::string dependsOn_;
+
+    void SerializeInBlock(Archive& archive);
+};
+
 }

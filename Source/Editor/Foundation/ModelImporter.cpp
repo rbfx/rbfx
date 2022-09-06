@@ -62,7 +62,7 @@ ModelImporter::ModelImporter(Context* context)
 
 void ModelImporter::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ModelImporter>();
+    context->RegisterFactory<ModelImporter>(Category_Transformer);
 
     URHO3D_ATTRIBUTE("Scale", float, scale_, 1.0f, AM_DEFAULT);
 }

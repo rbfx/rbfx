@@ -286,7 +286,7 @@ void SerializeSet(Archive& archive, const char* name, T& set, const char* elemen
 
 /// Serialize shared pointer to Object.
 template <class T, std::enable_if_t<std::is_base_of<Object, T>::value, int> = 0>
-void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
+void SerializeSharedPtr(Archive& archive, const char* name, SharedPtr<T>& value, bool singleBlock = false)
 {
     const bool loading = archive.IsInput();
     ArchiveBlock block = archive.OpenUnorderedBlock(name);
@@ -299,7 +299,7 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
         typeName = value->GetTypeName();
     }
 
-    SerializeStringHash(archive, "type", type, typeName);
+    SerializeStringHash(archive, singleBlock ? "_Class" : "type", type, typeName);
 
     if (loading)
     {
@@ -321,7 +321,12 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
     }
 
     if (value)
-        SerializeValue(archive, "value", *value);
+    {
+        if (singleBlock)
+            value->SerializeInBlock(archive);
+        else
+            SerializeValue(archive, "value", *value);
+    }
 }
 
 /// Aliases for SerializeValue.
@@ -332,6 +337,8 @@ template <class T, std::enable_if_t<Detail::IsMapType<T>::value, int> = 0>
 void SerializeValue(Archive& archive, const char* name, T& map) { SerializeMap(archive, name, map); }
 template <class T, std::enable_if_t<Detail::IsSetType<T>::value, int> = 0>
 void SerializeValue(Archive& archive, const char* name, T& set) { SerializeSet(archive, name, set); }
+template <class T, std::enable_if_t<std::is_base_of<Object, T>::value, int> = 0>
+void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value) { SerializeSharedPtr(archive, name, value); }
 /// @}
 
 

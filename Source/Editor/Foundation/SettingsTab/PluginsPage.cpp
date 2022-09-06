@@ -154,6 +154,11 @@ void PluginsPage::RenderSettings()
     if (ui::Button("Reload Plugins"))
         pluginManager->Reload();
 
+    if (hasChanges_)
+        ui::Text(ICON_FA_TRIANGLE_EXCLAMATION " Some changes are not applied yet!");
+    else
+        ui::NewLine();
+
     const unsigned newHash = MakeHash(loadedPlugins_);
     if (oldHash != newHash)
     {
