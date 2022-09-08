@@ -290,7 +290,8 @@ void Navigation::SetPathPoint()
         {
             // Calculate path from Jack's current position to the end point
             endPos_ = pathPos;
-            navMesh->FindPath(currentPath_, jackNode_->GetPosition(), endPos_);
+            bool pathWasCut = false;
+            navMesh->FindPath(currentPath_, pathWasCut, jackNode_->GetPosition(), endPos_);
         }
     }
 }
@@ -322,8 +323,10 @@ void Navigation::AddOrRemoveObject()
         // Rebuild part of the navigation mesh, then recalculate path if applicable
         auto* navMesh = scene_->GetComponent<NavigationMesh>();
         navMesh->Build(updateBox);
-        if (currentPath_.size())
-            navMesh->FindPath(currentPath_, jackNode_->GetPosition(), endPos_);
+        if (currentPath_.size()) {
+            bool pathWasCut = false;
+            navMesh->FindPath(currentPath_, pathWasCut, jackNode_->GetPosition(), endPos_);
+        }
     }
 }
 

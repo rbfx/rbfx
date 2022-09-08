@@ -622,22 +622,23 @@ Vector3 NavigationMesh::MoveAlongSurface(const Vector3& start, const Vector3& en
     return transform * resultPos;
 }
 
-void NavigationMesh::FindPath(ea::vector<Vector3>& dest, const Vector3& start, const Vector3& end, const Vector3& extents,
+void NavigationMesh::FindPath(ea::vector<Vector3>& dest, bool &pathWasCut, const Vector3& start, const Vector3& end, const Vector3& extents,
     const dtQueryFilter* filter)
 {
     ea::vector<NavigationPathPoint> navPathPoints;
-    FindPath(navPathPoints, start, end, extents, filter);
+    FindPath(navPathPoints, pathWasCut, start, end, extents, filter);
 
     dest.clear();
     for (unsigned i = 0; i < navPathPoints.size(); ++i)
         dest.push_back(navPathPoints[i].position_);
 }
 
-void NavigationMesh::FindPath(ea::vector<NavigationPathPoint>& dest, const Vector3& start, const Vector3& end,
+void NavigationMesh::FindPath(ea::vector<NavigationPathPoint>& dest, bool &pathWasCut, const Vector3& start, const Vector3& end,
     const Vector3& extents, const dtQueryFilter* filter)
 {
     URHO3D_PROFILE("FindPath");
     dest.clear();
+    pathWasCut = false;
 
     if (!InitializeQuery())
         return;
@@ -669,8 +670,10 @@ void NavigationMesh::FindPath(ea::vector<NavigationPathPoint>& dest, const Vecto
     Vector3 actualLocalEnd = localEnd;
 
     // If full path was not found, clamp end point to the end polygon
-    if (pathData_->polys_[numPolys - 1] != endRef)
+    if (pathData_->polys_[numPolys - 1] != endRef) {
+        pathWasCut = true;
         navMeshQuery_->closestPointOnPoly(pathData_->polys_[numPolys - 1], &localEnd.x_, &actualLocalEnd.x_, nullptr);
+    }
 
     navMeshQuery_->findStraightPath(&localStart.x_, &actualLocalEnd.x_, pathData_->polys_, numPolys,
         &pathData_->pathPoints_[0].x_, pathData_->pathFlags_, pathData_->pathPolys_, &numPathPoints, MAX_POLYS);
