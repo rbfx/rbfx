@@ -79,8 +79,18 @@ void PluginsPage::RenderSettings()
 
     const unsigned oldHash = MakeHash(loadedPlugins_);
 
+    ui::Separator();
+
     {
         const IdScopeGuard guardLoadedPlugins("##LoadedPlugins");
+
+        if (ui::SmallButton(ICON_FA_ARROWS_ROTATE))
+            pluginManager->Reload();
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Unload and reload all currently loaded plugins");
+        ui::SameLine();
+        ui::TextUnformatted("Loaded plugins:");
+        ui::Separator();
 
         if (ui::SmallButton(ICON_FA_SQUARE_MINUS))
         {
@@ -109,6 +119,15 @@ void PluginsPage::RenderSettings()
 
     {
         const IdScopeGuard guardUnloadedPlugins("##UnloadedPlugins");
+
+        if (ui::SmallButton(ICON_FA_ARROWS_ROTATE))
+            refreshPlugins_ = true;
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Refresh the list of available plugins");
+        ui::SameLine();
+        ui::TextUnformatted("Available plugins:");
+        ui::Separator();
+
         if (ui::SmallButton(ICON_FA_SQUARE_PLUS))
         {
             auto pluginsToLoad = availablePlugins_;
@@ -140,19 +159,12 @@ void PluginsPage::RenderSettings()
     ui::Separator();
 
     ui::BeginDisabled(!hasChanges_);
-    if (ui::Button("Apply"))
+    if (ui::Button(ICON_FA_SQUARE_CHECK " Apply"))
         Apply();
     ui::SameLine();
-    if (ui::Button("Discard"))
+    if (ui::Button(ICON_FA_SQUARE_XMARK " Discard"))
         Discard();
     ui::EndDisabled();
-
-    ui::SameLine();
-    if (ui::Button("Refresh List"))
-        refreshPlugins_ = true;
-    ui::SameLine();
-    if (ui::Button("Reload Plugins"))
-        pluginManager->Reload();
 
     if (hasChanges_)
         ui::Text(ICON_FA_TRIANGLE_EXCLAMATION " Some changes are not applied yet!");

@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/ModelImporter.h"
+#include "../Assets/ModelImporter.h"
 
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Utility/GLTFImporter.h>
@@ -49,7 +49,7 @@ bool IsFileNameBlend(const ea::string& fileName)
 
 }
 
-void Foundation_ModelImporter(Context* context, Project* project)
+void Assets_ModelImporter(Context* context, Project* project)
 {
     if (!context->IsReflected<ModelImporter>())
         ModelImporter::RegisterObject(context);

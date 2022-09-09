@@ -29,7 +29,7 @@
 namespace Urho3D
 {
 
-void Foundation_ModelImporter(Context* context, Project* project);
+void Assets_ModelImporter(Context* context, Project* project);
 
 /// Asset transformer that imports GLTF models.
 class ModelImporter : public AssetTransformer

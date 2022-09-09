@@ -248,7 +248,7 @@ void AssetPipelineInspector::RenderInspector(SerializableInspectorWidget* inspec
 
 void AssetPipelineInspector::RenderAddTransformer()
 {
-    if (ui::Button("Add Transformer"))
+    if (ui::Button(ICON_FA_SQUARE_PLUS " Add Transformer"))
         ui::OpenPopup("##AddTransformer");
     if (ui::BeginPopup("##AddTransformer"))
     {
@@ -266,10 +266,10 @@ void AssetPipelineInspector::RenderFinalButtons()
     const bool hasChanges = HasPendingChanges();
 
     ui::BeginDisabled(!hasChanges);
-    if (ui::Button("Apply"))
+    if (ui::Button(ICON_FA_SQUARE_CHECK " Apply"))
         Apply();
     ui::SameLine();
-    if (ui::Button("Discard"))
+    if (ui::Button(ICON_FA_SQUARE_XMARK " Discard"))
         Discard();
     ui::EndDisabled();
 

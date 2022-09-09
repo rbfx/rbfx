@@ -22,6 +22,7 @@
 
 #include "Editor.h"
 
+#include "Assets/ModelImporter.h"
 #include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/GameViewTab.h"
@@ -40,10 +41,10 @@
 #include "Foundation/InspectorTab/SoundInspector.h"
 #include "Foundation/InspectorTab/Texture2DInspector.h"
 #include "Foundation/InspectorTab/TextureCubeInspector.h"
-#include "Foundation/ModelImporter.h"
 #include "Foundation/ModelViewTab.h"
 #include "Foundation/ProfilerTab.h"
 #include "Foundation/ResourceBrowserTab.h"
+#include "Foundation/ResourceBrowserTab/AssetPipelineFactory.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
 #include "Foundation/ResourceBrowserTab/SceneFactory.h"
 #include "Foundation/SceneViewTab.h"
@@ -92,6 +93,8 @@ Editor::Editor(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
+    editorPluginManager_->AddPlugin("Assets.ModelImporter", &Assets_ModelImporter);
+
     editorPluginManager_->AddPlugin("Foundation.StandardFileTypes", &Foundation_StandardFileTypes);
 
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
@@ -110,8 +113,6 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Settings.KeyBindings", &Foundation_KeyBindingsPage);
     editorPluginManager_->AddPlugin("Foundation.Settings.Launch", &Foundation_LaunchPage);
     editorPluginManager_->AddPlugin("Foundation.Settings.Plugins", &Foundation_PluginsPage);
-
-    editorPluginManager_->AddPlugin("Foundation.Asset.ModelImporter", &Foundation_ModelImporter);
 
     editorPluginManager_->AddPlugin("Foundation.SceneView.CreatePrefabFromNode", &Foundation_CreatePrefabFromNode);
     editorPluginManager_->AddPlugin("Foundation.SceneView.EditorCamera", &Foundation_EditorCamera);
@@ -133,6 +134,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Sound", &Foundation_SoundInspector);
 
+    editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.AssetPipelineFactory", &Foundation_AssetPipelineFactory);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.MaterialFactory", &Foundation_MaterialFactory);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.SceneFactory", &Foundation_SceneFactory);
 
