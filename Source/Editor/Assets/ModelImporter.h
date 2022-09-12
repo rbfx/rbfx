@@ -42,12 +42,12 @@ public:
     static void RegisterObject(Context* context);
 
     bool IsApplicable(const AssetTransformerInput& input) override;
-    bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output) override;
+    bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers) override;
 
 private:
-    bool ImportGLTF(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output);
-    bool ImportFBX(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output);
-    bool ImportBlend(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output);
+    bool ImportGLTF(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers);
+    bool ImportFBX(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers);
+    bool ImportBlend(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers);
 
     ToolManager* GetToolManager() const;
 

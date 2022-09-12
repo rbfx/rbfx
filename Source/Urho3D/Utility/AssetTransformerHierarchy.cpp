@@ -107,6 +107,18 @@ void AssetTransformerHierarchy::AddTransformer(const ea::string& path, AssetTran
     node.transformers_.push_back(SharedPtr<AssetTransformer>(transformer));
 }
 
+bool AssetTransformerHierarchy::RemoveTransformers(const TypeInfo* typeInfo)
+{
+    bool anyRemoved = false;
+    root_.Iterate([&](TreeNode& node)
+    {
+        const unsigned oldSize = node.transformers_.size();
+        ea::erase_if(node.transformers_, [&](AssetTransformer* transformer) { return transformer->GetTypeInfo() == typeInfo; });
+        anyRemoved = anyRemoved || (oldSize != node.transformers_.size());
+    });
+    return anyRemoved;
+}
+
 bool AssetTransformerHierarchy::AddDependency(const ea::string& transformerClass, const ea::string& dependsOn)
 {
     const auto rootNode = GetOrCreateDependencyNode(transformerClass);
@@ -239,6 +251,14 @@ const AssetTransformerHierarchy::TreeNode* AssetTransformerHierarchy::TreeNode::
     if (iter != children_.end())
         return iter->get();
     return nullptr;
+}
+
+template <class T>
+void AssetTransformerHierarchy::TreeNode::Iterate(const T& callback)
+{
+    callback(*this);
+    for (auto& child : children_)
+        child->Iterate(callback);
 }
 
 template <class T>

@@ -250,6 +250,7 @@ void ObjectReflectionRegistry::RemoveReflection(StringHash typeNameHash)
     const auto reflection = iter->second;
     RemoveReflectionFromCurrentCategory(reflection);
     reflections_.erase(iter);
+    OnReflectionRemoved(this, reflection.Get());
 }
 
 SharedPtr<Object> ObjectReflectionRegistry::CreateObject(StringHash typeNameHash)

@@ -190,6 +190,7 @@ public:
     const tg::Model& GetModel() const { return model_; }
     Context* GetContext() const { return context_; }
     const GLTFImporterSettings& GetSettings() const { return settings_; }
+    const GLTFImporter::ResourceToFileNameMap& GetResourceNames() const { return resourceNameToAbsoluteFileName_; }
 
     void CheckAnimation(int index) const { CheckT(index, model_.animations, "Invalid animation #{} referenced"); }
     void CheckAccessor(int index) const { CheckT(index, model_.accessors, "Invalid accessor #{} referenced"); }
@@ -217,7 +218,7 @@ private:
     const ea::string resourceNamePrefix_;
 
     ea::unordered_set<ea::string> localResourceNames_;
-    ea::unordered_map<ea::string, ea::string> resourceNameToAbsoluteFileName_;
+    GLTFImporter::ResourceToFileNameMap resourceNameToAbsoluteFileName_;
 
     ea::vector<ea::pair<StringHash, ea::string>> manualResources_;
 };
@@ -3217,6 +3218,8 @@ public:
         sceneImporter_.SaveResources();
     }
 
+    const ResourceToFileNameMap& GetResourceNames() const { return importerContext_.GetResourceNames(); }
+
 private:
     GLTFImporterBase importerContext_;
     const GLTFBufferReader bufferReader_;
@@ -3284,6 +3287,18 @@ bool GLTFImporter::SaveResources()
         URHO3D_LOGERROR("{}", e.what());
         return false;
     }
+}
+
+const GLTFImporter::ResourceToFileNameMap& GLTFImporter::GetSavedResources() const
+{
+    if (!impl_)
+    {
+        URHO3D_LOGERROR("Imported asserts weren't cooked");
+        static const GLTFImporter::ResourceToFileNameMap emptyMap;
+        return emptyMap;
+    }
+
+    return impl_->GetResourceNames();
 }
 
 }

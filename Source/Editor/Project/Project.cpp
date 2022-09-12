@@ -565,6 +565,10 @@ void Project::SaveGitIgnore()
     content += "/Cache.json\n";
     content += "\n";
 
+    content += "# Ignore temporary files\n";
+    content += "/Temp/\n";
+    content += "\n";
+
     content += "# Ignore UI settings\n";
     content += "/ui.ini\n";
     content += "\n";
@@ -606,6 +610,12 @@ void Project::Render()
 
     if (pendingResetLayout_)
         ResetLayout();
+
+    if (!assetManagerInitialized_ && !pluginManager_->IsReloadPending())
+    {
+        assetManagerInitialized_ = true;
+        assetManager_->Initialize();
+    }
 
     bool initialFocusPending = false;
     if (!initialized_ && initializationGuard_.expired())

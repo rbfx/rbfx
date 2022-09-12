@@ -261,6 +261,7 @@ private:
     SharedPtr<LaunchManager> launchManager_;
     SharedPtr<ToolManager> toolManager_;
 
+    bool assetManagerInitialized_{};
     ea::weak_ptr<void> initializationGuard_;
     bool firstInitialization_{};
     bool initialized_{};

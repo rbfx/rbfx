@@ -110,24 +110,25 @@ bool ModelImporter::IsApplicable(const AssetTransformerInput& input)
     return false;
 }
 
-bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformerOutput& output)
+bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     if (IsFileNameGLTF(input.resourceName_))
     {
-        return ImportGLTF(input.inputFileName_, input, output);
+        return ImportGLTF(input.inputFileName_, input, output, transformers);
     }
     else if (IsFileNameFBX(input.resourceName_))
     {
-        return ImportFBX(input.inputFileName_, input, output);
+        return ImportFBX(input.inputFileName_, input, output, transformers);
     }
     else if (IsFileNameBlend(input.resourceName_))
     {
-        return ImportBlend(input.inputFileName_, input, output);
+        return ImportBlend(input.inputFileName_, input, output, transformers);
     }
     return false;
 }
 
-bool ModelImporter::ImportGLTF(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output)
+bool ModelImporter::ImportGLTF(const ea::string& fileName,
+    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     GLTFImporterSettings importerSettings;
     importerSettings.scale_ = scale_;
@@ -149,10 +150,24 @@ bool ModelImporter::ImportGLTF(const ea::string& fileName, const AssetTransforme
         return false;
     }
 
+    for (const auto& [resourceName, fileName] : importer->GetSavedResources())
+    {
+        AssetTransformerInput nestedInput = input;
+        nestedInput.resourceName_ = resourceName;
+        nestedInput.inputFileName_ = fileName;
+        nestedInput.outputFileName_ = fileName;
+        if (!AssetTransformer::ExecuteTransformers(nestedInput, output, transformers, true))
+        {
+            URHO3D_LOGERROR("Failed to apply nested transformer for asset {}", resourceName);
+            return false;
+        }
+    }
+
     return true;
 }
 
-bool ModelImporter::ImportFBX(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output)
+bool ModelImporter::ImportFBX(const ea::string& fileName,
+    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto fs = context_->GetSubsystem<FileSystem>();
     const auto toolManager = GetToolManager();
@@ -172,12 +187,13 @@ bool ModelImporter::ImportFBX(const ea::string& fileName, const AssetTransformer
         return false;
     }
 
-    const bool result = ImportGLTF(tempGltfFile, input, output);
+    const bool result = ImportGLTF(tempGltfFile, input, output, transformers);
     fs->Delete(tempGltfFile);
     return result;
 }
 
-bool ModelImporter::ImportBlend(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output)
+bool ModelImporter::ImportBlend(const ea::string& fileName,
+    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto fs = context_->GetSubsystem<FileSystem>();
     const auto toolManager = GetToolManager();
@@ -197,7 +213,7 @@ bool ModelImporter::ImportBlend(const ea::string& fileName, const AssetTransform
         return false;
     }
 
-    const bool result = ImportGLTF(tempGltfFile, input, output);
+    const bool result = ImportGLTF(tempGltfFile, input, output, transformers);
     fs->Delete(tempGltfFile);
     return result;
 }

@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/Attribute.h"
+#include "../Core/Signal.h"
 #include "../Container/Ptr.h"
 
 #include <EASTL/functional.h>
@@ -106,6 +107,10 @@ private:
 class URHO3D_API ObjectReflectionRegistry
 {
 public:
+    /// Object type is removed from reflection.
+    /// All existing instances of the type shall be immediately destroyed.
+    Signal<void(ObjectReflection*), ObjectReflectionRegistry> OnReflectionRemoved;
+
     explicit ObjectReflectionRegistry(Context* context);
 
     /// Return existing or new reflection for given type.
