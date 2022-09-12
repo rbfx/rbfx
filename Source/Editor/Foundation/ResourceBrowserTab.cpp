@@ -178,7 +178,7 @@ const FileSystemEntry* ResourceBrowserTab::FindLeftPanelEntry(const ea::string& 
 {
     const ResourceRoot& root = roots_[left_.selectedRoot_];
     const FileSystemEntry* entry = root.reflection_->FindEntry(resourceName);
-    while (entry && entry->isFile_)
+    while (entry && (entry->isFile_ || IsEntryFromCache(*entry)))
         entry = entry->parent_;
     return entry;
 }

@@ -51,6 +51,7 @@ public:
     ~AssetManager() override;
 
     void Update();
+    void MarkCacheDirty(const ea::string& resourcePath);
 
     /// Serialize
     /// @{

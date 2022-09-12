@@ -22,7 +22,7 @@
 
 #include "../../Foundation/InspectorTab/AssetPipelineInspector.h"
 
-#include "../../Project/CreateComponentMenu.h"
+#include "../../Project/AssetManager.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
@@ -188,6 +188,11 @@ void AssetPipelineInspector::RenderContent()
     EnsureInitialized();
 
     ui::Text("%s", resourceName_.c_str());
+
+    if (ui::Button(ICON_FA_ARROWS_ROTATE " Update Assets"))
+        project_->GetAssetManager()->MarkCacheDirty(GetPath(resource_->GetName()));
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Re-import all assets potentially affected by this pipeline");
 
     pendingRemoves_.clear();
     pendingAdds_.clear();

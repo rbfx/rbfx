@@ -2664,9 +2664,10 @@ private:
 class GLTFAnimationImporter : public NonCopyable
 {
 public:
-    GLTFAnimationImporter(GLTFImporterBase& base, const GLTFHierarchyAnalyzer& hierarchyAnalyzer)
+    GLTFAnimationImporter(GLTFImporterBase& base, const GLTFHierarchyAnalyzer& hierarchyAnalyzer, const GLTFModelImporter& modelImporter)
         : base_(base)
         , hierarchyAnalyzer_(hierarchyAnalyzer)
+        , modelImporter_(modelImporter)
     {
         ImportAnimations();
     }
@@ -2701,6 +2702,18 @@ private:
                 const ea::string animationName = base_.GetResourceName(animationNameHint, "Animations/", "Animation", ".ani");
 
                 auto animation = ImportAnimation(animationName, group);
+
+                if (groupIndex)
+                {
+                    const GLTFSkeleton& skeleton = hierarchyAnalyzer_.GetSkeleton(*groupIndex);
+                    if (!skeleton.rootNode_->skinnedMeshNodes_.empty())
+                    {
+                        const GLTFNode& skinnedMeshNode = hierarchyAnalyzer_.GetNode(skeleton.rootNode_->skinnedMeshNodes_[0]);
+                        if (Model* model = modelImporter_.GetModel(*skinnedMeshNode.mesh_, *skinnedMeshNode.skin_))
+                            animation->AddMetadata("Model", model->GetName());
+                    }
+                }
+
                 base_.AddToResourceCache(animation);
                 animations_[{ animationIndex, groupIndex }] = animation;
                 if (!groupIndex)
@@ -2849,6 +2862,7 @@ private:
 
     GLTFImporterBase& base_;
     const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
+    const GLTFModelImporter& modelImporter_;
 
     ea::unordered_map<AnimationKey, SharedPtr<Animation>> animations_;
     bool hasSceneAnimations_{};
@@ -2951,7 +2965,7 @@ private:
             for (const unsigned nodeIndex : sourceNode.skinnedMeshNodes_)
             {
                 const GLTFNode& skinnedMeshNode = hierarchyAnalyzer_.GetNode(nodeIndex);
-                // Always create animated model in order to preserve moprh animation order
+                // Always create animated model in order to preserve morph animation order
                 auto animatedModel = node->CreateComponent<AnimatedModel>();
                 InitializeComponentModelAndMaterials(*animatedModel, *skinnedMeshNode.mesh_, *skinnedMeshNode.skin_);
                 InitializeDefaultMorphWeights(*animatedModel, skinnedMeshNode);
@@ -3189,7 +3203,7 @@ public:
         , textureImporter_(importerContext_)
         , materialImporter_(importerContext_, textureImporter_)
         , modelImporter_(importerContext_, bufferReader_, hierarchyAnalyzer_, materialImporter_)
-        , animationImporter_(importerContext_, hierarchyAnalyzer_)
+        , animationImporter_(importerContext_, hierarchyAnalyzer_, modelImporter_)
         , sceneImporter_(importerContext_, hierarchyAnalyzer_, modelImporter_, animationImporter_)
     {
     }

@@ -105,6 +105,11 @@ void AssetManager::Update()
     ScanAndQueueAssetProcessing();
 }
 
+void AssetManager::MarkCacheDirty(const ea::string& resourcePath)
+{
+    InvalidateAssetsInPath(resourcePath);
+}
+
 void AssetManager::ProcessFileSystemUpdates()
 {
     // TODO(editor): Throttle updates?
@@ -534,6 +539,11 @@ StringVector AssetManager::EnumerateAssetFiles(const ea::string& resourcePath) c
 
     StringVector result;
     fs->ScanDir(result, GetFileName(resourcePath), "", SCAN_FILES, true);
+
+    ea::erase_if(result, [this](const ea::string& fileName)
+    {
+        return project_->IsFileNameIgnored(fileName);
+    });
     return result;
 }
 
