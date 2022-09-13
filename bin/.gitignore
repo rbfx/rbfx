@@ -2,6 +2,9 @@
 /Cache/
 /Cache.json
 
+# Ignore temporary files
+/Temp/
+
 # Ignore UI settings
 /ui.ini
 

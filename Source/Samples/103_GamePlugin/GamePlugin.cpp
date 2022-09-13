@@ -22,6 +22,7 @@
 
 #include "GamePlugin.h"
 #include "RotateObject.h"
+#include "PixelArtGenerator.h"
 
 #include <Urho3D/Input/FreeFlyController.h>
 #include <Urho3D/Input/Input.h>
@@ -51,6 +52,7 @@ GamePlugin::GamePlugin(Context* context)
 void GamePlugin::Load()
 {
     RegisterObject<RotateObject>();
+    RegisterObject<PixelArtGenerator>();
 }
 
 void GamePlugin::Unload()

@@ -9,6 +9,9 @@
 					"value": 0.009999999776482582
 				}
 			]
+		},
+		{
+			"_Class": "PixelArtGenerator"
 		}
 	]
 }
