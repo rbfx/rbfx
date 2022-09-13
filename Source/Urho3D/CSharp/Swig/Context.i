@@ -71,3 +71,4 @@
 // Ignore some parts of reflection API
 %ignore Urho3D::ObjectReflection::ObjectReflection;
 %ignore Urho3D::ObjectReflectionRegistry::ReflectCustomType;
+%ignore Urho3D::ObjectReflectionRegistry::OnReflectionRemoved;
