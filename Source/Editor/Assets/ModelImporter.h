@@ -52,6 +52,7 @@ private:
     ToolManager* GetToolManager() const;
 
     float scale_{1.0f};
+    bool repairLooping_{false};
 };
 
 }

@@ -37,6 +37,7 @@ struct GLTFImporterSettings
     float scale_{1.0f};
     float offsetMatrixError_{ 0.00002f };
     float keyFrameTimeError_{ M_EPSILON };
+    bool repairLooping_{false};
 
     /// Settings that affect only preview scene.
     struct PreviewSettings

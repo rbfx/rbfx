@@ -65,6 +65,7 @@ void ModelImporter::RegisterObject(Context* context)
     context->RegisterFactory<ModelImporter>(Category_Transformer);
 
     URHO3D_ATTRIBUTE("Scale", float, scale_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -132,6 +133,7 @@ bool ModelImporter::ImportGLTF(const ea::string& fileName,
 {
     GLTFImporterSettings importerSettings;
     importerSettings.scale_ = scale_;
+    importerSettings.repairLooping_ = repairLooping_;
     auto importer = MakeShared<GLTFImporter>(context_, importerSettings);
 
     if (!importer->LoadFile(fileName, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))

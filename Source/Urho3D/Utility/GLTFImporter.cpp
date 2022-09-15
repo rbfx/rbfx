@@ -176,6 +176,7 @@ public:
         const ea::string& fileName = GetAbsoluteFileName(resource->GetName());
         if (fileName.empty())
             throw RuntimeException("Cannot save imported resource");
+        resource->SetAbsoluteFileName(fileName);
         resource->SaveFile(fileName);
     }
 
@@ -2779,7 +2780,7 @@ private:
             }
         }
 
-        animation->SetLength(CalculateLength(*animation));
+        animation->SetLength(CalculateLength(*animation, base_.GetSettings().repairLooping_));
         return animation;
     }
 
@@ -2842,20 +2843,42 @@ private:
         return result;
     }
 
-    static float CalculateLength(const Animation& animation)
+    template <class T>
+    static ea::optional<float> GetTrackLength(const T& track)
+    {
+        if (track.keyFrames_.empty())
+            return ea::nullopt;
+        return track.keyFrames_.back().time_;
+    }
+
+    template <class T>
+    static ea::optional<float> GetTrackStep(const T& track)
+    {
+        const unsigned numFrames = track.keyFrames_.size();
+        if (numFrames <= 1)
+            return ea::nullopt;
+        return track.keyFrames_[numFrames - 1].time_ - track.keyFrames_[numFrames - 2].time_;
+    }
+
+    static float CalculateLength(const Animation& animation, bool repairLooping)
     {
         float length = 0.0f;
+        ea::optional<float> timeStep;
         for (const auto& [nameHash, track] : animation.GetTracks())
         {
-            if (!track.keyFrames_.empty())
-                length = ea::max(length, track.keyFrames_.back().time_);
+            if (const auto trackLength = GetTrackLength(track))
+                length = ea::max(length, *trackLength);
+            if (const auto trackStep = GetTrackStep(track))
+                timeStep = ea::min(timeStep.value_or(M_LARGE_VALUE), *trackStep);
         }
         for (const auto& [nameHash, track] : animation.GetVariantTracks())
         {
-            if (!track.keyFrames_.empty())
-                length = ea::max(length, track.keyFrames_.back().time_);
+            if (const auto trackLength = GetTrackLength(track))
+                length = ea::max(length, *trackLength);
+            if (const auto trackStep = GetTrackStep(track))
+                timeStep = ea::min(timeStep.value_or(M_LARGE_VALUE), *trackStep);
         }
-        return length;
+        return repairLooping ? length + timeStep.value_or(0.0f) : length;
     }
 
     static Vector3 LerpValue(const Vector3& lhs, const Vector3& rhs, float factor) { return Lerp(lhs, rhs, factor); }
@@ -3234,8 +3257,10 @@ private:
 void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
+    SerializeValue(archive, "scale", value.scale_);
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
+    SerializeValue(archive, "repairLooping", value.repairLooping_);
 
     SerializeValue(archive, "addLights", value.preview_.addLights_);
     SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);
