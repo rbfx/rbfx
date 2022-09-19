@@ -60,7 +60,7 @@ NetworkObject* NetworkBehavior::FindClosestNetworkObject() const
 
 void NetworkBehavior::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (!node && owner_)
+    if (!node_ && owner_)
     {
         owner_->InvalidateBehaviors();
         owner_ = nullptr;

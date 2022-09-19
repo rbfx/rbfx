@@ -70,10 +70,10 @@ void NetworkObject::UpdateObjectHierarchy()
 
 void NetworkObject::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
-        node->MarkDirty();
+        node_->AddListener(this);
+        node_->MarkDirty();
     }
     else
     {

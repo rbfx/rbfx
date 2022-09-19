@@ -516,9 +516,9 @@ float RigidBody2D::GetAngularVelocity() const
 
 void RigidBody2D::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
+        node_->AddListener(this);
 
         ea::vector<CollisionShape2D*> shapes;
         node_->GetDerivedComponents<CollisionShape2D>(shapes);

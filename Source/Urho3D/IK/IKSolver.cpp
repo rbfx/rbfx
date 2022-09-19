@@ -528,7 +528,7 @@ void IKSolver::OnNodeSet(Node* previousNode, Node* currentNode)
     ApplyOriginalPoseToScene();
     DestroyTree();
 
-    if (node != nullptr)
+    if (node_ != nullptr)
         RebuildTree();
 }
 
