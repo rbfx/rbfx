@@ -589,6 +589,9 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
+    if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsItemToggledOpen())
+        ignoreNextMouseRelease_ = true;
+
     if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
     {
         if (isNormalDirectory)
@@ -604,7 +607,10 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     }
     else if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
     {
-        ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+        if (ignoreNextMouseRelease_)
+            ignoreNextMouseRelease_ = false;
+        else
+            ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
     }
     else if (isContextMenuOpen)
     {
