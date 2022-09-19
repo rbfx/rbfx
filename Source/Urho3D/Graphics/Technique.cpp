@@ -246,7 +246,7 @@ Technique::~Technique() = default;
 
 void Technique::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Technique>();
+    context->AddFactoryReflection<Technique>();
 }
 
 bool Technique::BeginLoad(Deserializer& source)

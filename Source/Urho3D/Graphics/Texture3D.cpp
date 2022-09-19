@@ -56,7 +56,7 @@ Texture3D::~Texture3D()
 
 void Texture3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Texture3D>();
+    context->AddFactoryReflection<Texture3D>();
 }
 
 bool Texture3D::BeginLoad(Deserializer& source)

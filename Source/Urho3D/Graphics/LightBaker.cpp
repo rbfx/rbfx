@@ -97,7 +97,7 @@ LightBaker::~LightBaker()
 void LightBaker::RegisterObject(Context* context)
 {
     static const LightBakingSettings defaultSettings;
-    context->RegisterFactory<LightBaker>(Category_Subsystem);
+    context->AddFactoryReflection<LightBaker>(Category_Subsystem);
 
     URHO3D_ACTION_DYNAMIC_LABEL("Bake", BakeAsync, GetBakeLabel);
 

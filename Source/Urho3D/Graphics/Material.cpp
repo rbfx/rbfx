@@ -175,7 +175,7 @@ Material::~Material() = default;
 
 void Material::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Material>();
+    context->AddFactoryReflection<Material>();
 }
 
 SharedPtr<Material> Material::CreateBaseMaterial(Context* context,

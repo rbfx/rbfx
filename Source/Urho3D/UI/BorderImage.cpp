@@ -49,7 +49,7 @@ BorderImage::~BorderImage() = default;
 
 void BorderImage::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BorderImage>(Category_UI);
+    context->AddFactoryReflection<BorderImage>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Texture", GetTextureAttr, SetTextureAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()),

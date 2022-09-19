@@ -175,7 +175,7 @@ ReplicationManager::~ReplicationManager() = default;
 
 void ReplicationManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReplicationManager>(Category_Subsystem);
+    context->AddFactoryReflection<ReplicationManager>(Category_Subsystem);
 }
 
 void ReplicationManager::OnSceneSet(Scene* scene)

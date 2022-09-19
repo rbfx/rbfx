@@ -62,7 +62,7 @@ ModelImporter::ModelImporter(Context* context)
 
 void ModelImporter::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ModelImporter>(Category_Transformer);
+    context->AddFactoryReflection<ModelImporter>(Category_Transformer);
 
     URHO3D_ATTRIBUTE("Scale", float, scale_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);

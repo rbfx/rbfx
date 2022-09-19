@@ -140,7 +140,7 @@ FileSelector::~FileSelector()
 
 void FileSelector::RegisterObject(Context* context)
 {
-    context->RegisterFactory<FileSelector>();
+    context->AddFactoryReflection<FileSelector>();
 }
 
 void FileSelector::SetDefaultStyle(XMLFile* style)

@@ -257,7 +257,7 @@ PhysicsWorld::~PhysicsWorld()
 
 void PhysicsWorld::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PhysicsWorld>(Category_Subsystem);
+    context->AddFactoryReflection<PhysicsWorld>(Category_Subsystem);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, DEFAULT_GRAVITY, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Physics FPS", int, fps_, DEFAULT_FPS, AM_DEFAULT);

@@ -76,7 +76,7 @@ Node::~Node()
 
 void Node::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Node>();
+    context->AddFactoryReflection<Node>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);

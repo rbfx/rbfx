@@ -196,8 +196,8 @@ UIComponent::~UIComponent() = default;
 
 void UIComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<UIComponent>();
-    context->RegisterFactory<UIElement3D>();
+    context->AddFactoryReflection<UIComponent>();
+    context->AddFactoryReflection<UIElement3D>();
 }
 
 UIElement* UIComponent::GetRoot() const

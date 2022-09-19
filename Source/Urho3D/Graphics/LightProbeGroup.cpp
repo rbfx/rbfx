@@ -71,7 +71,7 @@ LightProbeGroup::~LightProbeGroup() = default;
 
 void LightProbeGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<LightProbeGroup>(Category_Scene);
+    context->AddFactoryReflection<LightProbeGroup>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Light Mask", unsigned, lightMask_, DEFAULT_LIGHTMASK, AM_DEFAULT);

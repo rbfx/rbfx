@@ -56,7 +56,7 @@ SoftwareModelAnimator::~SoftwareModelAnimator() {}
 
 void SoftwareModelAnimator::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoftwareModelAnimator>();
+    context->AddFactoryReflection<SoftwareModelAnimator>();
 }
 
 void SoftwareModelAnimator::Initialize(Model* model, bool skinned, unsigned numBones)

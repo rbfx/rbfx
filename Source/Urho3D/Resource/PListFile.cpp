@@ -305,7 +305,7 @@ PListFile::~PListFile() = default;
 
 void PListFile::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PListFile>();
+    context->AddFactoryReflection<PListFile>();
 }
 
 bool PListFile::BeginLoad(Deserializer& source)

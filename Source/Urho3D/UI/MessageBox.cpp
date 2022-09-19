@@ -108,7 +108,7 @@ MessageBox::~MessageBox()
 
 void MessageBox::RegisterObject(Context* context)
 {
-    context->RegisterFactory<MessageBox>();
+    context->AddFactoryReflection<MessageBox>();
 }
 
 void MessageBox::SetTitle(const ea::string& text)

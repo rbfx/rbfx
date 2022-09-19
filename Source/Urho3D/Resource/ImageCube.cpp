@@ -59,7 +59,7 @@ ImageCube::~ImageCube() = default;
 
 void ImageCube::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ImageCube>();
+    context->AddFactoryReflection<ImageCube>();
 }
 
 bool ImageCube::BeginLoad(Deserializer& source)

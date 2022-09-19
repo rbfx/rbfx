@@ -42,7 +42,7 @@ ConstraintWeld2D::~ConstraintWeld2D() = default;
 
 void ConstraintWeld2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintWeld2D>(Category_Physics2D);
+    context->AddFactoryReflection<ConstraintWeld2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Anchor", GetAnchor, SetAnchor, Vector2, Vector2::ZERO, AM_DEFAULT);

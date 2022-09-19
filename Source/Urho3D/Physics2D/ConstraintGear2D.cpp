@@ -41,7 +41,7 @@ ConstraintGear2D::~ConstraintGear2D() = default;
 
 void ConstraintGear2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintGear2D>(Category_Physics2D);
+    context->AddFactoryReflection<ConstraintGear2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Ratio", GetRatio, SetRatio, float, 0.0f, AM_DEFAULT);

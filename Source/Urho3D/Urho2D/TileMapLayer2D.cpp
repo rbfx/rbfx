@@ -45,7 +45,7 @@ TileMapLayer2D::~TileMapLayer2D() = default;
 
 void TileMapLayer2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TileMapLayer2D>();
+    context->AddFactoryReflection<TileMapLayer2D>();
 }
 
 // Transform vector from node-local space to global space

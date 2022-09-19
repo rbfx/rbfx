@@ -197,8 +197,8 @@ Engine::Engine(Context* context) :
 #endif
 
     SceneViewerApplication::RegisterObject();
-    context_->RegisterFactory<AssetPipeline>();
-    context_->RegisterFactory<AssetTransformer>();
+    context_->AddFactoryReflection<AssetPipeline>();
+    context_->AddFactoryReflection<AssetTransformer>();
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
@@ -230,7 +230,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
-    context_->RegisterFactory<FreeFlyController>();
+    context_->AddFactoryReflection<FreeFlyController>();
 
     context_->RegisterSubsystem(new UI(context_));
 

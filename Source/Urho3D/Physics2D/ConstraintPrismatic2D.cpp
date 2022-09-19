@@ -43,7 +43,7 @@ ConstraintPrismatic2D::~ConstraintPrismatic2D() = default;
 
 void ConstraintPrismatic2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintPrismatic2D>(Category_Physics2D);
+    context->AddFactoryReflection<ConstraintPrismatic2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Anchor", GetAnchor, SetAnchor, Vector2, Vector2::ZERO, AM_DEFAULT);

@@ -30,7 +30,7 @@ namespace Urho3D
 
 void UISelectable::RegisterObject(Context* context)
 {
-    context->RegisterFactory<UISelectable>(Category_UI);
+    context->AddFactoryReflection<UISelectable>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_ATTRIBUTE("Selection Color", Color, selectionColor_, Color::TRANSPARENT_BLACK, AM_FILE);

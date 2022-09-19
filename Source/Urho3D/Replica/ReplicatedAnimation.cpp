@@ -43,7 +43,7 @@ ReplicatedAnimation::~ReplicatedAnimation()
 
 void ReplicatedAnimation::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReplicatedAnimation>(Category_Network);
+    context->AddFactoryReflection<ReplicatedAnimation>(Category_Network);
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 

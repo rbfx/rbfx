@@ -89,7 +89,7 @@ ScrollView::~ScrollView() = default;
 
 void ScrollView::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ScrollView>(Category_UI);
+    context->AddFactoryReflection<ScrollView>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Clip Children", true);

@@ -110,7 +110,7 @@ BillboardSet::~BillboardSet() = default;
 
 void BillboardSet::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BillboardSet>(Category_Geometry);
+    context->AddFactoryReflection<BillboardSet>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),

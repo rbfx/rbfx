@@ -48,7 +48,7 @@ Sprite2D::~Sprite2D() = default;
 
 void Sprite2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Sprite2D>();
+    context->AddFactoryReflection<Sprite2D>();
 }
 
 bool Sprite2D::BeginLoad(Deserializer& source)

@@ -484,7 +484,7 @@ CollisionShape::~CollisionShape()
 
 void CollisionShape::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionShape>(Category_Physics);
+    context->AddFactoryReflection<CollisionShape>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Shape Type", shapeType_, MarkShapeDirty, typeNames, SHAPE_BOX, AM_DEFAULT);

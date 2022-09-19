@@ -53,7 +53,7 @@ StaticModel::~StaticModel() = default;
 
 void StaticModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticModel>(Category_Geometry);
+    context->AddFactoryReflection<StaticModel>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);

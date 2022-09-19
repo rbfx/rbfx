@@ -78,7 +78,7 @@ TextureCube::~TextureCube()
 
 void TextureCube::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TextureCube>();
+    context->AddFactoryReflection<TextureCube>();
 }
 
 bool TextureCube::BeginLoad(Deserializer& source)

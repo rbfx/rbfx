@@ -59,7 +59,7 @@ StaticSprite2D::~StaticSprite2D() = default;
 
 void StaticSprite2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticSprite2D>(Category_Urho2D);
+    context->AddFactoryReflection<StaticSprite2D>(Category_Urho2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable2D);

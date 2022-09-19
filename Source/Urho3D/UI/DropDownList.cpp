@@ -68,7 +68,7 @@ DropDownList::~DropDownList() = default;
 
 void DropDownList::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DropDownList>(Category_UI);
+    context->AddFactoryReflection<DropDownList>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Menu);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Focus Mode", FM_FOCUSABLE_DEFOCUSABLE);

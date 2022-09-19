@@ -70,7 +70,7 @@ Font::~Font()
 
 void Font::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Font>();
+    context->AddFactoryReflection<Font>();
 }
 
 bool Font::BeginLoad(Deserializer& source)

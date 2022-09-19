@@ -67,7 +67,7 @@ RmlCanvasComponent::~RmlCanvasComponent()
 
 void RmlCanvasComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RmlCanvasComponent>(Category_RmlUI);
+    context->AddFactoryReflection<RmlCanvasComponent>(Category_RmlUI);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
     URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureRef, SetTextureRef, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);

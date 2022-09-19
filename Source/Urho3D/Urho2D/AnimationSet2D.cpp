@@ -117,7 +117,7 @@ AnimationSet2D::~AnimationSet2D()
 
 void AnimationSet2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimationSet2D>();
+    context->AddFactoryReflection<AnimationSet2D>();
 }
 
 bool AnimationSet2D::BeginLoad(Deserializer& source)

@@ -52,7 +52,7 @@ ReplicatedTransform::~ReplicatedTransform()
 
 void ReplicatedTransform::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReplicatedTransform>(Category_Network);
+    context->AddFactoryReflection<ReplicatedTransform>(Category_Network);
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 

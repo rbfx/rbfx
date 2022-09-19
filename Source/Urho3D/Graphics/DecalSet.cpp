@@ -177,7 +177,7 @@ DecalSet::~DecalSet() = default;
 
 void DecalSet::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DecalSet>(Category_Geometry);
+    context->AddFactoryReflection<DecalSet>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),

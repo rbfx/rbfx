@@ -42,7 +42,7 @@ FilteredByDistance::~FilteredByDistance()
 
 void FilteredByDistance::RegisterObject(Context* context)
 {
-    context->RegisterFactory<FilteredByDistance>(Category_Network);
+    context->AddFactoryReflection<FilteredByDistance>(Category_Network);
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 

@@ -367,7 +367,7 @@ AnimationController::~AnimationController() = default;
 
 void AnimationController::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimationController>(Category_Logic);
+    context->AddFactoryReflection<AnimationController>(Category_Logic);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)

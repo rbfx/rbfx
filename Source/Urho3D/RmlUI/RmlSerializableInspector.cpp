@@ -158,7 +158,7 @@ RmlSerializableInspector::~RmlSerializableInspector()
 
 void RmlSerializableInspector::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RmlSerializableInspector>();
+    context->AddFactoryReflection<RmlSerializableInspector>();
 }
 
 void RmlSerializableInspector::Connect(Serializable* serializable)

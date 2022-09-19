@@ -69,7 +69,7 @@ Model::~Model() = default;
 
 void Model::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Model>();
+    context->AddFactoryReflection<Model>();
 }
 
 bool Model::BeginLoad(Deserializer& source)

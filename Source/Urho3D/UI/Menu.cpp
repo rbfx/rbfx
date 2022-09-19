@@ -63,7 +63,7 @@ Menu::~Menu()
 
 void Menu::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Menu>(Category_UI);
+    context->AddFactoryReflection<Menu>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Button);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Focus Mode", FM_NOTFOCUSABLE);

@@ -192,7 +192,7 @@ ReflectionProbeManager::~ReflectionProbeManager()
 
 void ReflectionProbeManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReflectionProbeManager>();
+    context->AddFactoryReflection<ReflectionProbeManager>();
 
     URHO3D_ACTION_STATIC_LABEL("Bake!", QueueBakeAll, "Renders all baked reflection probes");
 
@@ -539,7 +539,7 @@ ReflectionProbe::~ReflectionProbe()
 
 void ReflectionProbe::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReflectionProbe>(Category_Scene);
+    context->AddFactoryReflection<ReflectionProbe>(Category_Scene);
 
     URHO3D_ACTION_STATIC_LABEL("Render!", QueueRender, "Renders cubemap for reflection probe");
 

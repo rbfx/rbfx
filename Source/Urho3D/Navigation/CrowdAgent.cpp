@@ -102,7 +102,7 @@ CrowdAgent::~CrowdAgent()
 
 void CrowdAgent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CrowdAgent>(Category_Navigation);
+    context->AddFactoryReflection<CrowdAgent>(Category_Navigation);
 
     URHO3D_ATTRIBUTE("Target Position", Vector3, targetPosition_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Target Velocity", Vector3, targetVelocity_, Vector3::ZERO, AM_DEFAULT);

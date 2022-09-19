@@ -54,7 +54,7 @@ ObjectAnimation::~ObjectAnimation() = default;
 
 void ObjectAnimation::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ObjectAnimation>();
+    context->AddFactoryReflection<ObjectAnimation>();
 }
 
 bool ObjectAnimation::BeginLoad(Deserializer& source)

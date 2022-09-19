@@ -86,7 +86,7 @@ Renderer2D::~Renderer2D() = default;
 
 void Renderer2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Renderer2D>();
+    context->AddFactoryReflection<Renderer2D>();
 }
 
 static inline bool CompareRayQueryResults(const RayQueryResult& lr, const RayQueryResult& rr)

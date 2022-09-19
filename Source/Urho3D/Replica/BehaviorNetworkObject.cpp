@@ -78,7 +78,7 @@ BehaviorNetworkObject::~BehaviorNetworkObject()
 
 void BehaviorNetworkObject::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BehaviorNetworkObject>(Category_Network);
+    context->AddFactoryReflection<BehaviorNetworkObject>(Category_Network);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticNetworkObject);
 }

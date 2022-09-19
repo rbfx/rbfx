@@ -54,7 +54,7 @@ Texture2D::~Texture2D()
 
 void Texture2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Texture2D>();
+    context->AddFactoryReflection<Texture2D>();
 }
 
 bool Texture2D::BeginLoad(Deserializer& source)

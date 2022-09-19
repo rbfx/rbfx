@@ -61,7 +61,7 @@ RmlUIComponent::~RmlUIComponent()
 
 void RmlUIComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RmlUIComponent>(Category_RmlUI);
+    context->AddFactoryReflection<RmlUIComponent>(Category_RmlUI);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Resource", GetResource, SetResource, ResourceRef, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);

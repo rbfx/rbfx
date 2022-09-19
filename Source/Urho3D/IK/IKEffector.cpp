@@ -61,7 +61,7 @@ IKEffector::~IKEffector()
 // ----------------------------------------------------------------------------
 void IKEffector::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IKEffector>(Category_IK);
+    context->AddFactoryReflection<IKEffector>(Category_IK);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Target Node", GetTargetName, SetTargetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Chain Length", GetChainLength, SetChainLength, unsigned, 0, AM_DEFAULT);

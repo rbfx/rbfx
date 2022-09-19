@@ -118,7 +118,7 @@ Terrain::~Terrain() = default;
 
 void Terrain::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Terrain>(Category_Geometry);
+    context->AddFactoryReflection<Terrain>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Height Map", GetHeightMapAttr, SetHeightMapAttr, ResourceRef, ResourceRef(Image::GetTypeStatic()),

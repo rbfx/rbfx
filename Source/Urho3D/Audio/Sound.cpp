@@ -78,7 +78,7 @@ Sound::~Sound() = default;
 
 void Sound::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Sound>();
+    context->AddFactoryReflection<Sound>();
 }
 
 bool Sound::BeginLoad(Deserializer& source)

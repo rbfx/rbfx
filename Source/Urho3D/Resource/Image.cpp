@@ -261,7 +261,7 @@ Image::~Image() = default;
 
 void Image::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Image>();
+    context->AddFactoryReflection<Image>();
 }
 
 bool Image::BeginLoad(Deserializer& source)

@@ -77,7 +77,7 @@ int strlen(const char* void_ptr_string);
   %director NS::CTYPE;
   %wrapper %{
       $moduleDirectorTypes[SwigDirector_##CTYPE::GetTypeStatic()] = SwigDirector_##CTYPE::GetTypeInfoStatic();
-      context->RegisterFactory<SwigDirector_##CTYPE>();%}
+      context->AddFactoryReflection<SwigDirector_##CTYPE>();%}
   %typemap(directorbody) NS::CTYPE %{
   public:
     using ClassName = SwigDirector_##CTYPE;

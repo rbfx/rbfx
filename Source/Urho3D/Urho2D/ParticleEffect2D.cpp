@@ -110,7 +110,7 @@ ParticleEffect2D::~ParticleEffect2D() = default;
 
 void ParticleEffect2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleEffect2D>();
+    context->AddFactoryReflection<ParticleEffect2D>();
 }
 
 bool ParticleEffect2D::BeginLoad(Deserializer& source)

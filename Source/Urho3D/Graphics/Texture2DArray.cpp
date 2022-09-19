@@ -60,7 +60,7 @@ Texture2DArray::~Texture2DArray()
 
 void Texture2DArray::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Texture2DArray>();
+    context->AddFactoryReflection<Texture2DArray>();
 }
 
 bool Texture2DArray::BeginLoad(Deserializer& source)

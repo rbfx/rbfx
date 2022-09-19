@@ -80,7 +80,7 @@ PrefabReference::~PrefabReference() = default;
 
 void PrefabReference::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PrefabReference>(Category_Scene);
+    context->AddFactoryReflection<PrefabReference>(Category_Scene);
 
     URHO3D_ACTION_STATIC_LABEL("Inline", Inline, "Inline the prefab nodes");
 

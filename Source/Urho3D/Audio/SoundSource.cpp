@@ -136,7 +136,7 @@ SoundSource::~SoundSource()
 
 void SoundSource::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundSource>(Category_Audio);
+    context->AddFactoryReflection<SoundSource>(Category_Audio);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Sound", GetSoundAttr, SetSoundAttr, ResourceRef, ResourceRef(Sound::GetTypeStatic()), AM_DEFAULT);

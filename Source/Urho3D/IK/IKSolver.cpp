@@ -79,7 +79,7 @@ IKSolver::~IKSolver()
 // ----------------------------------------------------------------------------
 void IKSolver::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IKSolver>(Category_IK);
+    context->AddFactoryReflection<IKSolver>(Category_IK);
 
     static const char* algorithmNames[] = {
         "1 Bone",

@@ -89,7 +89,7 @@ Animation::~Animation() = default;
 
 void Animation::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Animation>();
+    context->AddFactoryReflection<Animation>();
 }
 
 void Animation::ResetToDefault()

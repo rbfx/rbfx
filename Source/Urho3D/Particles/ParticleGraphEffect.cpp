@@ -46,7 +46,7 @@ ParticleGraphEffect::~ParticleGraphEffect() = default;
 
 void ParticleGraphEffect::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleGraphEffect>();
+    context->AddFactoryReflection<ParticleGraphEffect>();
 }
 
 void ParticleGraphEffect::SetNumLayers(unsigned numLayers)

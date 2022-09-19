@@ -65,7 +65,7 @@ TerrainPatch::~TerrainPatch() = default;
 
 void TerrainPatch::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TerrainPatch>();
+    context->AddFactoryReflection<TerrainPatch>();
 }
 
 void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)

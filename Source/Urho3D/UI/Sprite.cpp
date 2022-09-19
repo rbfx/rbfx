@@ -51,7 +51,7 @@ Sprite::~Sprite() = default;
 
 void Sprite::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Sprite>(Category_UI);
+    context->AddFactoryReflection<Sprite>(Category_UI);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector2, Vector2::ZERO, AM_FILE);

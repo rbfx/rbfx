@@ -67,7 +67,7 @@ Text3D::~Text3D() = default;
 
 void Text3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Text3D>(Category_Geometry);
+    context->AddFactoryReflection<Text3D>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Font", GetFontAttr, SetFontAttr, ResourceRef, ResourceRef(Font::GetTypeStatic()), AM_DEFAULT);

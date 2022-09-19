@@ -82,7 +82,7 @@ AnimatedModel::~AnimatedModel()
 
 void AnimatedModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimatedModel>(Category_Geometry);
+    context->AddFactoryReflection<AnimatedModel>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);

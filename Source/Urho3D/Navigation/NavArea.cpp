@@ -47,7 +47,7 @@ NavArea::~NavArea() = default;
 
 void NavArea::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NavArea>(Category_Navigation);
+    context->AddFactoryReflection<NavArea>(Category_Navigation);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Component);
     URHO3D_ATTRIBUTE("Bounding Box Min", Vector3, boundingBox_.min_, DEFAULT_BOUNDING_BOX_MIN, AM_DEFAULT);

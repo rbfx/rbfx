@@ -95,7 +95,7 @@ ParticleEffect::~ParticleEffect() = default;
 
 void ParticleEffect::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleEffect>();
+    context->AddFactoryReflection<ParticleEffect>();
 }
 
 bool ParticleEffect::BeginLoad(Deserializer& source)

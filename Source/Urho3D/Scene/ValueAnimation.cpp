@@ -65,7 +65,7 @@ ValueAnimation::~ValueAnimation() = default;
 
 void ValueAnimation::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ValueAnimation>();
+    context->AddFactoryReflection<ValueAnimation>();
 }
 
 bool ValueAnimation::BeginLoad(Deserializer& source)

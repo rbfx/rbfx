@@ -45,7 +45,7 @@ BinaryFile::~BinaryFile() = default;
 
 void BinaryFile::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BinaryFile>();
+    context->AddFactoryReflection<BinaryFile>();
 }
 
 bool BinaryFile::BeginLoad(Deserializer& source)

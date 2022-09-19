@@ -58,7 +58,7 @@ CustomGeometry::~CustomGeometry() = default;
 
 void CustomGeometry::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CustomGeometry>(Category_Geometry);
+    context->AddFactoryReflection<CustomGeometry>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Dynamic Vertex Buffer", bool, dynamic_, false, AM_DEFAULT);

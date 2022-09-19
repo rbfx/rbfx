@@ -387,7 +387,7 @@ TmxFile2D::~TmxFile2D()
 
 void TmxFile2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TmxFile2D>();
+    context->AddFactoryReflection<TmxFile2D>();
 }
 
 bool TmxFile2D::BeginLoad(Deserializer& source)

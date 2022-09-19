@@ -123,7 +123,7 @@ Shader::~Shader()
 
 void Shader::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Shader>();
+    context->AddFactoryReflection<Shader>();
 }
 
 bool Shader::BeginLoad(Deserializer& source)
@@ -226,7 +226,7 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
 
     if (variations == nullptr)
         return nullptr;
-    
+
     auto i = variations->find(definesHash);
     if (i == variations->end())
     {

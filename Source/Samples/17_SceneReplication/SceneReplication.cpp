@@ -148,7 +148,7 @@ void SceneReplication::Start(const ea::vector<ea::string>& args)
 {
     // Register sample types
     if (!context_->IsReflected<SceneReplicationPlayer>())
-        context_->RegisterFactory<SceneReplicationPlayer>();
+        context_->AddFactoryReflection<SceneReplicationPlayer>();
 
     // Execute base class startup
     Sample::Start();

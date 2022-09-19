@@ -42,7 +42,7 @@ TrackedAnimatedModel::~TrackedAnimatedModel()
 
 void TrackedAnimatedModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TrackedAnimatedModel>(Category_Network);
+    context->AddFactoryReflection<TrackedAnimatedModel>(Category_Network);
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 

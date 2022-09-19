@@ -88,7 +88,7 @@ Scene::~Scene()
 
 void Scene::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Scene>();
+    context->AddFactoryReflection<Scene>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);

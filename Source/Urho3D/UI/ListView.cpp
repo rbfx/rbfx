@@ -198,7 +198,7 @@ ListView::~ListView() = default;
 
 void ListView::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ListView>(Category_UI);
+    context->AddFactoryReflection<ListView>(Category_UI);
 
     HierarchyContainer::RegisterObject(context);
 

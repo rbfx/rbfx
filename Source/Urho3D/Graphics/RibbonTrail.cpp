@@ -105,7 +105,7 @@ RibbonTrail::~RibbonTrail() = default;
 
 void RibbonTrail::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RibbonTrail>(Category_Geometry);
+    context->AddFactoryReflection<RibbonTrail>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);

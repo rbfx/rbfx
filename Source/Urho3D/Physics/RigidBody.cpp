@@ -90,7 +90,7 @@ RigidBody::~RigidBody()
 
 void RigidBody::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RigidBody>(Category_Physics);
+    context->AddFactoryReflection<RigidBody>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Physics Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE | AM_NOEDIT);
