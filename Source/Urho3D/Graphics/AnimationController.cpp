@@ -917,7 +917,7 @@ VariantVector AnimationController::GetAnimationsAttr() const
     return ret;
 }
 
-void AnimationController::OnNodeSet(Node* node)
+void AnimationController::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     ConnectToAnimatedModel();
 }

@@ -109,7 +109,7 @@ public:
 protected:
     /// Component implementation
     /// @{
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     void OnMarkedDirty(Node* node) override;
     /// @}
 

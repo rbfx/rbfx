@@ -514,7 +514,7 @@ float RigidBody2D::GetAngularVelocity() const
     return body_ ? body_->GetAngularVelocity() : bodyDef_.angularVelocity;
 }
 
-void RigidBody2D::OnNodeSet(Node* node)
+void RigidBody2D::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     if (node)
     {

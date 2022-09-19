@@ -271,7 +271,7 @@ Vector2 CollisionShape2D::GetMassCenter() const
     return ToVector2(massData.center);
 }
 
-void CollisionShape2D::OnNodeSet(Node* node)
+void CollisionShape2D::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     Component::OnNodeSet(node);
 

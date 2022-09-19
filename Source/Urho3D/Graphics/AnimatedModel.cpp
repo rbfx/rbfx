@@ -830,11 +830,11 @@ void AnimatedModel::UpdateBoneBoundingBox()
     CalculateLocalBoundingBox();
 }
 
-void AnimatedModel::OnNodeSet(Node* node)
+void AnimatedModel::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    Drawable::OnNodeSet(node);
+    Drawable::OnNodeSet(previousNode, currentNode);
 
-    if (node)
+    if (node_)
     {
         // If this AnimatedModel is the first in the node, it is the master which controls animation & morphs
         isMaster_ = GetComponent<AnimatedModel>() == this;

@@ -58,7 +58,7 @@ NetworkObject* NetworkBehavior::FindClosestNetworkObject() const
     return node_->GetParentDerivedComponent<NetworkObject>(true);
 }
 
-void NetworkBehavior::OnNodeSet(Node* node)
+void NetworkBehavior::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     if (!node && owner_)
     {

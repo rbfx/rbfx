@@ -601,10 +601,10 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
     }
 }
 
-void CrowdAgent::OnNodeSet(Node* node)
+void CrowdAgent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void CrowdAgent::OnSceneSet(Scene* scene)

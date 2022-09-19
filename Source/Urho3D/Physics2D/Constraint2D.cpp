@@ -141,7 +141,7 @@ void Constraint2D::SetAttachedConstraint(Constraint2D* constraint)
     attachedConstraint_ = constraint;
 }
 
-void Constraint2D::OnNodeSet(Node* node)
+void Constraint2D::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     Component::OnNodeSet(node);
 

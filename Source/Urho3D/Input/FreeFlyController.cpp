@@ -56,7 +56,7 @@ FreeFlyController::FreeFlyController(Context* context)
 void FreeFlyController::OnSetEnabled() { UpdateEventSubscription(); }
 
 
-void FreeFlyController::OnNodeSet(Node* node)
+void FreeFlyController::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     UpdateEventSubscription();
 }

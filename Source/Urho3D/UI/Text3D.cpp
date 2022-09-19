@@ -520,12 +520,12 @@ float Text3D::GetOpacity() const
     return text_.GetOpacity();
 }
 
-void Text3D::OnNodeSet(Node* node)
+void Text3D::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    Drawable::OnNodeSet(node);
+    Drawable::OnNodeSet(previousNode, currentNode);
 
-    if (node)
-        customWorldTransform_ = node->GetWorldTransform();
+    if (node_)
+        customWorldTransform_ = node_->GetWorldTransform();
 }
 
 void Text3D::OnWorldBoundingBoxUpdate()

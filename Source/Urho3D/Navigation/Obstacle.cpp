@@ -82,10 +82,10 @@ void Obstacle::SetRadius(float newRadius)
         ownerMesh_->ObstacleChanged(this);
 }
 
-void Obstacle::OnNodeSet(Node* node)
+void Obstacle::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void Obstacle::OnSceneSet(Scene* scene)

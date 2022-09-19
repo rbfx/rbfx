@@ -73,9 +73,9 @@ void RmlCanvasComponent::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);
 }
 
-void RmlCanvasComponent::OnNodeSet(Node* node)
+void RmlCanvasComponent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node == nullptr)
+    if (node_ == nullptr)
         ClearTexture();
 }
 

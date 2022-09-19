@@ -228,7 +228,7 @@ public:
 
 protected:
     /// Handle node being assigned.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
     /// Mark text & geometry dirty.

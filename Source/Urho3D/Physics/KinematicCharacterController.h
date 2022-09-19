@@ -136,7 +136,7 @@ protected:
     void ResetShape();
     void ReleaseKinematic();
     void ApplySettings(bool readdToWorld);
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     void OnSceneSet(Scene* scene) override;
     void AddKinematicToWorld();
     void RemoveKinematicFromWorld();

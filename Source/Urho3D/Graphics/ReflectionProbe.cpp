@@ -779,11 +779,11 @@ void ReflectionProbe::UpdateProbeBoxData()
     data_.projectionBox_.max_ = position + projectionBox_.max_;
 }
 
-void ReflectionProbe::OnNodeSet(Node* node)
+void ReflectionProbe::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
+        node_->AddListener(this);
         MarkTransformDirty();
     }
 

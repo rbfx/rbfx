@@ -78,9 +78,9 @@ void LogicComponent::SetUpdateEventMask(UpdateEventFlags mask)
     }
 }
 
-void LogicComponent::OnNodeSet(Node* node)
+void LogicComponent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
         // Execute the user-defined start function
         Start();

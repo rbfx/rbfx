@@ -192,7 +192,7 @@ public:
 
 protected:
     /// Handle scene node being assigned at creation.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle scene node transform dirtied.
     void OnMarkedDirty(Node* node) override;
     /// Update local bounding box.

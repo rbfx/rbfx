@@ -112,10 +112,10 @@ void KinematicCharacterController::ReleaseKinematic()
     pairCachingGhostObject_.reset();
 }
 
-void KinematicCharacterController::OnNodeSet(Node* node)
+void KinematicCharacterController::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void KinematicCharacterController::OnSceneSet(Scene* scene)

@@ -292,10 +292,10 @@ ResourceRef LightProbeGroup::GetBakedDataFileRef() const
     return bakedDataRef_;
 }
 
-void LightProbeGroup::OnNodeSet(Node* node)
+void LightProbeGroup::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void LightProbeGroup::OnMarkedDirty(Node* node)

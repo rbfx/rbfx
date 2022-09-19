@@ -860,10 +860,10 @@ void RigidBody::OnMarkedDirty(Node* node)
     }
 }
 
-void RigidBody::OnNodeSet(Node* node)
+void RigidBody::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void RigidBody::OnSceneSet(Scene* scene)

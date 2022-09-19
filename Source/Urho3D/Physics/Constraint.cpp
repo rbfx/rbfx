@@ -397,12 +397,12 @@ void Constraint::ApplyFrames()
     }
 }
 
-void Constraint::OnNodeSet(Node* node)
+void Constraint::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
-        cachedWorldScale_ = node->GetWorldScale();
+        node_->AddListener(this);
+        cachedWorldScale_ = node_->GetWorldScale();
     }
 }
 

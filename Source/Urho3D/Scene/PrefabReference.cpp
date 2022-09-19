@@ -210,7 +210,7 @@ void PrefabReference::OnSetEnabled()
 }
 
 /// Handle scene node being assigned at creation.
-void PrefabReference::OnNodeSet(Node* node)
+void PrefabReference::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     ToggleNode();
 }

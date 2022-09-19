@@ -523,7 +523,7 @@ void IKSolver::OnSceneSet(Scene* scene)
 }
 
 // ----------------------------------------------------------------------------
-void IKSolver::OnNodeSet(Node* node)
+void IKSolver::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     ApplyOriginalPoseToScene();
     DestroyTree();

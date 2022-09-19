@@ -684,10 +684,10 @@ Vector4 Camera::GetClipPlaneAttr() const
     return clipPlane_.ToVector4();
 }
 
-void Camera::OnNodeSet(Node* node)
+void Camera::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void Camera::OnMarkedDirty(Node* node)

@@ -68,7 +68,7 @@ void NetworkObject::UpdateObjectHierarchy()
         UpdateTransformOnServer();
 }
 
-void NetworkObject::OnNodeSet(Node* node)
+void NetworkObject::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     if (node)
     {

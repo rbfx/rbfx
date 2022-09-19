@@ -83,9 +83,9 @@ void RmlUIComponent::OnSetEnabled()
     UpdateDocumentOpen();
 }
 
-void RmlUIComponent::OnNodeSet(Node* node)
+void RmlUIComponent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
         UpdateConnectedCanvas();
     UpdateDocumentOpen();
 }

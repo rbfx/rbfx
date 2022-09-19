@@ -215,16 +215,16 @@ Texture2D* UIComponent::GetTexture() const
     return texture_;
 }
 
-void UIComponent::OnNodeSet(Node* node)
+void UIComponent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    rootElement_->SetNode(node);
-    if (node)
+    rootElement_->SetNode(node_);
+    if (node_)
     {
         auto* renderer = GetSubsystem<Renderer>();
-        auto* model = node->GetComponent<StaticModel>();
+        auto* model = node_->GetComponent<StaticModel>();
         rootElement_->SetViewport(renderer->GetViewportForScene(GetScene(), viewportIndex_));
         if (model == nullptr)
-            model_ = model = node->CreateComponent<StaticModel>();
+            model_ = model = node_->CreateComponent<StaticModel>();
         model->SetMaterial(material_);
     }
     else
