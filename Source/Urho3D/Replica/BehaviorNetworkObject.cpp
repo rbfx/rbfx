@@ -41,7 +41,7 @@ NetworkBehavior::~NetworkBehavior()
 
 void NetworkBehavior::RegisterObject(Context* context)
 {
-    context->AddReflection<NetworkBehavior>();
+    context->AddAbstractReflection<NetworkBehavior>(Category_Network);
 }
 
 void NetworkBehavior::SetNetworkObject(BehaviorNetworkObject* owner)
@@ -78,7 +78,7 @@ BehaviorNetworkObject::~BehaviorNetworkObject()
 
 void BehaviorNetworkObject::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BehaviorNetworkObject>();
+    context->RegisterFactory<BehaviorNetworkObject>(Category_Network);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticNetworkObject);
 }

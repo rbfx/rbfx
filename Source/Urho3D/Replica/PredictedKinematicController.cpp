@@ -50,7 +50,7 @@ PredictedKinematicController::~PredictedKinematicController()
 
 void PredictedKinematicController::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PredictedKinematicController>();
+    context->RegisterFactory<PredictedKinematicController>(Category_Network);
 }
 
 void PredictedKinematicController::SetWalkVelocity(const Vector3& velocity)

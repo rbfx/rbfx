@@ -38,7 +38,7 @@ StaticNetworkObject::~StaticNetworkObject() = default;
 
 void StaticNetworkObject::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticNetworkObject>();
+    context->RegisterFactory<StaticNetworkObject>(Category_Network);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Client Prefab", GetClientPrefabAttr, SetClientPrefabAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
 }

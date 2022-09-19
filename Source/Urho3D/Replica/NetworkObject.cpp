@@ -47,7 +47,7 @@ void NetworkObject::SetOwner(AbstractConnection* owner)
 
 void NetworkObject::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NetworkObject>();
+    context->AddAbstractReflection<NetworkObject>(Category_Network);
 }
 
 void NetworkObject::UpdateObjectHierarchy()

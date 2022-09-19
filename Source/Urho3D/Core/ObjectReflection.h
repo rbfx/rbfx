@@ -118,9 +118,10 @@ public:
     ObjectReflection* ReflectCustomType(ea::unique_ptr<TypeInfo> typeInfo);
     template <class T> ObjectReflection* Reflect();
 
-    /// Add new object reflection with factory and assign it to the category.
-    template <class T> ObjectReflection* AddReflection(ea::string_view category = "") { return AddReflectionInternal<T, false>(category); }
-    template <class T> ObjectReflection* AddFactoryReflection(ea::string_view category = "") { return AddReflectionInternal<T, true>(category); }
+    /// Add new object reflection with or without object creation factory and assign it to the category.
+    template <class T> ObjectReflection* AddReflection(ea::string_view category = "") { return AddReflectionInternal<T, true, false>(category); }
+    template <class T> ObjectReflection* AddFactoryReflection(ea::string_view category = "") { return AddReflectionInternal<T, true, true>(category); }
+    template <class T> ObjectReflection* AddAbstractReflection(ea::string_view category = "") { return AddReflectionInternal<T, false, false>(category); }
 
     /// Return existing reflection for given type.
     ObjectReflection* GetReflection(StringHash typeNameHash);
@@ -154,7 +155,7 @@ public:
     const ea::unordered_map<ea::string, ea::vector<StringHash>>& GetObjectCategories() const { return categories_; }
 
 private:
-    template <class T, bool RequireFactory> ObjectReflection* AddReflectionInternal(ea::string_view category);
+    template <class T, bool EnableFactory, bool RequireFactory> ObjectReflection* AddReflectionInternal(ea::string_view category);
 
     void ErrorReflectionNotFound(StringHash typeNameHash) const;
     void ErrorDuplicateReflection(StringHash typeNameHash) const;
@@ -179,7 +180,7 @@ ObjectReflection* ObjectReflectionRegistry::Reflect()
     return Reflect(T::GetTypeInfoStatic());
 }
 
-template <class T, bool RequireFactory>
+template <class T, bool EnableFactory, bool RequireFactory>
 ObjectReflection* ObjectReflectionRegistry::AddReflectionInternal(ea::string_view category)
 {
     if (IsReflected<T>())
@@ -193,7 +194,7 @@ ObjectReflection* ObjectReflectionRegistry::AddReflectionInternal(ea::string_vie
         constexpr bool isConstructible = ea::is_constructible_v<T, Context*>;
         static_assert(isConstructible || !RequireFactory, "Object should be constructible from Context*");
 
-        if constexpr(isConstructible)
+        if constexpr(EnableFactory && isConstructible)
             reflection->SetObjectFactory<T>();
 
         if (!category.empty())
