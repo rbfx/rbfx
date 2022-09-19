@@ -129,7 +129,7 @@ bool Model::BeginLoad(Deserializer& source)
         morphRangeStarts_[i] = source.ReadUInt();
         morphRangeCounts_[i] = source.ReadUInt();
 
-        SharedPtr<VertexBuffer> buffer(context_->CreateObject<VertexBuffer>());
+        SharedPtr<VertexBuffer> buffer(MakeShared<VertexBuffer>(context_));
         unsigned vertexSize = VertexBuffer::GetVertexSize(desc.vertexElements_);
         desc.dataSize_ = desc.vertexCount_ * vertexSize;
 
@@ -163,7 +163,7 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned indexCount = source.ReadUInt();
         unsigned indexSize = source.ReadUInt();
 
-        SharedPtr<IndexBuffer> buffer(context_->CreateObject<IndexBuffer>());
+        SharedPtr<IndexBuffer> buffer(MakeShared<IndexBuffer>(context_));
 
         // Prepare index buffer data to be uploaded during EndLoad()
         if (async)
@@ -236,7 +236,7 @@ bool Model::BeginLoad(Deserializer& source)
                 return false;
             }
 
-            SharedPtr<Geometry> geometry(context_->CreateObject<Geometry>());
+            SharedPtr<Geometry> geometry(MakeShared<Geometry>(context_));
             geometry->SetLodDistance(distance);
 
             // Prepare geometry to be defined during EndLoad()
@@ -474,7 +474,7 @@ bool Model::Save(Serializer& dest) const
         {
             ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+            SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
             XMLElement rootElem = xml->CreateRoot("model");
             SaveMetadataToXML(rootElem);
 
@@ -621,7 +621,7 @@ void Model::SetMorphs(const ea::vector<ModelMorph>& morphs)
 
 SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
 {
-    SharedPtr<Model> ret(context_->CreateObject<Model>());
+    SharedPtr<Model> ret(MakeShared<Model>(context_));
 
     ret->SetName(cloneName);
     ret->boundingBox_ = boundingBox_;
@@ -641,7 +641,7 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
 
         if (origBuffer)
         {
-            cloneBuffer = context_->CreateObject<VertexBuffer>();
+            cloneBuffer = MakeShared<VertexBuffer>(context_);
             cloneBuffer->SetSize(origBuffer->GetVertexCount(), origBuffer->GetElements(), origBuffer->IsDynamic());
             cloneBuffer->SetShadowed(origBuffer->IsShadowed());
             if (origBuffer->IsShadowed())
@@ -668,7 +668,7 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
 
         if (origBuffer)
         {
-            cloneBuffer = context_->CreateObject<IndexBuffer>();
+            cloneBuffer = MakeShared<IndexBuffer>(context_);
             cloneBuffer->SetSize(origBuffer->GetIndexCount(), origBuffer->GetIndexSize() == sizeof(unsigned),
                 origBuffer->IsDynamic());
             cloneBuffer->SetShadowed(origBuffer->IsShadowed());
@@ -700,7 +700,7 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
 
             if (origGeometry)
             {
-                cloneGeometry = context_->CreateObject<Geometry>();
+                cloneGeometry = MakeShared<Geometry>(context_);
                 cloneGeometry->SetIndexBuffer(ibMapping[origGeometry->GetIndexBuffer()]);
                 unsigned numVbs = origGeometry->GetNumVertexBuffers();
                 for (unsigned k = 0; k < numVbs; ++k)

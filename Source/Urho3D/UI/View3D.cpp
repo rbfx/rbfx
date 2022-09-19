@@ -43,9 +43,9 @@ View3D::View3D(Context* context) :
     rttFormat_(Graphics::GetRGBFormat()),
     autoUpdate_(true)
 {
-    renderTexture_ = context_->CreateObject<Texture2D>();
-    depthTexture_ = context_->CreateObject<Texture2D>();
-    viewport_ = context_->CreateObject<Viewport>();
+    renderTexture_ = MakeShared<Texture2D>(context_);
+    depthTexture_ = MakeShared<Texture2D>(context_);
+    viewport_ = MakeShared<Viewport>(context_);
 
     // Disable mipmaps since the texel ratio should be 1:1
     renderTexture_->SetNumLevels(1);

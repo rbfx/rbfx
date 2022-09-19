@@ -319,7 +319,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
 bool ParticleEffect::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     XMLElement materialElem = xml->CreateRoot("particleeffect");
 
     Save(materialElem);
@@ -735,7 +735,7 @@ void ParticleEffect::SortTextureFrames()
 
 SharedPtr<ParticleEffect> ParticleEffect::Clone(const ea::string& cloneName) const
 {
-    SharedPtr<ParticleEffect> ret(context_->CreateObject<ParticleEffect>());
+    SharedPtr<ParticleEffect> ret(MakeShared<ParticleEffect>(context_));
 
     ret->SetName(cloneName);
     ret->material_ = material_;

@@ -84,7 +84,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
     ea::string texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
 
-    loadParameters_ = (context_->CreateObject<XMLFile>());
+    loadParameters_ = (MakeShared<XMLFile>(context_));
     if (!loadParameters_->Load(source))
     {
         loadParameters_.Reset();

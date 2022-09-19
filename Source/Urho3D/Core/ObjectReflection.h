@@ -147,7 +147,6 @@ public:
 
     /// Create an object by type. Return pointer to it or null if no reflection is found.
     SharedPtr<Object> CreateObject(StringHash typeNameHash);
-    template <class T> SharedPtr<T> CreateObject(); // TODO: Remove this function
 
     /// Return reflections of all objects.
     const ea::unordered_map<StringHash, SharedPtr<ObjectReflection>>& GetObjectReflections() const { return reflections_; }
@@ -249,12 +248,6 @@ template <class T>
 void ObjectReflectionRegistry::RemoveReflection()
 {
     RemoveReflection(T::GetTypeStatic());
-}
-
-template <class T>
-SharedPtr<T> ObjectReflectionRegistry::CreateObject()
-{
-    return StaticCast<T>(CreateObject(T::GetTypeStatic()));
 }
 
 }

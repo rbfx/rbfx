@@ -383,7 +383,7 @@ bool Animation::Save(Serializer& dest) const
         {
             ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+            SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
             XMLElement rootElem = xml->CreateRoot("animation");
 
             for (unsigned i = 0; i < triggers_.size(); ++i)
@@ -506,7 +506,7 @@ void Animation::SetNumTriggers(unsigned num)
 
 SharedPtr<Animation> Animation::Clone(const ea::string& cloneName) const
 {
-    SharedPtr<Animation> ret(context_->CreateObject<Animation>());
+    SharedPtr<Animation> ret(MakeShared<Animation>(context_));
 
     ret->SetName(cloneName);
     ret->SetAnimationName(animationName_);

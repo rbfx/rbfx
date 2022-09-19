@@ -151,9 +151,9 @@ void Decal::CalculateBoundingBox()
 
 DecalSet::DecalSet(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(context->CreateObject<Geometry>()),
-    vertexBuffer_(context_->CreateObject<VertexBuffer>()),
-    indexBuffer_(context_->CreateObject<IndexBuffer>()),
+    geometry_(MakeShared<Geometry>(context)),
+    vertexBuffer_(MakeShared<VertexBuffer>(context_)),
+    indexBuffer_(MakeShared<IndexBuffer>(context_)),
     numVertices_(0),
     numIndices_(0),
     maxVertices_(DEFAULT_MAX_VERTICES),

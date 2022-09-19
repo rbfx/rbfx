@@ -631,7 +631,7 @@ void SamplesManager::RegisterSample()
 {
     context_->AddFactoryReflection<T>();
 
-    auto* button = context_->CreateObject<Button>().Detach();
+    auto button = MakeShared<Button>(context_);
     button->SetMinHeight(30);
     button->SetStyleAuto();
     button->SetVar("SampleType", T::GetTypeStatic());

@@ -448,7 +448,7 @@ bool AnimationSet2D::EndLoadSpriter()
                 }
             }
 
-            SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
+            SharedPtr<Texture2D> texture(MakeShared<Texture2D>(context_));
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
             texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
@@ -457,7 +457,7 @@ bool AnimationSet2D::EndLoadSpriter()
             ea::shared_array<unsigned char> textureData(new unsigned char[textureDataSize]);
             memset(textureData.get(), 0, textureDataSize);
 
-            sprite_ = context_->CreateObject<Sprite2D>();
+            sprite_ = MakeShared<Sprite2D>(context_);
             sprite_->SetTexture(texture);
 
             for (unsigned i = 0; i < spriteInfos.size(); ++i)
@@ -471,7 +471,7 @@ bool AnimationSet2D::EndLoadSpriter()
                         image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
                 }
 
-                SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+                SharedPtr<Sprite2D> sprite(MakeShared<Sprite2D>(context_));
                 sprite->SetTexture(texture);
                 sprite->SetRectangle(IntRect(info.x, info.y, info.x + image->GetWidth(), info.y + image->GetHeight()));
                 sprite->SetHotSpot(Vector2(info.file_->pivotX_, info.file_->pivotY_));
@@ -484,14 +484,14 @@ bool AnimationSet2D::EndLoadSpriter()
         }
         else
         {
-            SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
+            SharedPtr<Texture2D> texture(MakeShared<Texture2D>(context_));
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
 
             SpriteInfo& info = spriteInfos[0];
             texture->SetData(info.image_, true);
 
-            sprite_ = context_->CreateObject<Sprite2D>();
+            sprite_ = MakeShared<Sprite2D>(context_);
             sprite_->SetTexture(texture);
             sprite_->SetRectangle(IntRect(info.x, info.y, info.x + info.image_->GetWidth(), info.y + info.image_->GetHeight()));
             sprite_->SetHotSpot(Vector2(info.file_->pivotX_, info.file_->pivotY_));

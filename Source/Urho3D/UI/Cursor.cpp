@@ -148,7 +148,7 @@ void Cursor::DefineShape(const ea::string& shape, Image* image, const IntRect& i
     info.texture_ = cache->GetResource<Texture2D>(image->GetName(), false);
     if (!info.texture_)
     {
-        auto texture(context_->CreateObject<Texture2D>());
+        auto texture(MakeShared<Texture2D>(context_));
         texture->SetData(image);
         info.texture_ = texture;
     }

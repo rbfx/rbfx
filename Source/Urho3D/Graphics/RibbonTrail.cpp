@@ -62,11 +62,11 @@ TrailPoint::TrailPoint(const Vector3& position, const Vector3& forward) :
 
 RibbonTrail::RibbonTrail(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(context->CreateObject<Geometry>()),
+    geometry_(MakeShared<Geometry>(context)),
     animationLodBias_(1.0f),
     animationLodTimer_(0.0f),
-    vertexBuffer_(context->CreateObject<VertexBuffer>()),
-    indexBuffer_(context->CreateObject<IndexBuffer>()),
+    vertexBuffer_(MakeShared<VertexBuffer>(context)),
+    indexBuffer_(MakeShared<IndexBuffer>(context)),
     transforms_(Matrix3x4::IDENTITY),
     bufferSizeDirty_(false),
     bufferDirty_(true),

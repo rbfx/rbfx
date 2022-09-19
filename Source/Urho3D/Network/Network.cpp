@@ -271,7 +271,7 @@ void Network::HandleMessage(const SLNet::AddressOrGUID& source, int packetID, in
 void Network::NewConnectionEstablished(const SLNet::AddressOrGUID& connection)
 {
     // Create a new client connection corresponding to this MessageConnection
-    SharedPtr<Connection> newConnection(context_->CreateObject<Connection>());
+    SharedPtr<Connection> newConnection(MakeShared<Connection>(context_));
     newConnection->Initialize(true, connection, rakPeer_);
     newConnection->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
     clientConnections_[GetEndpointHash(connection)] = newConnection;

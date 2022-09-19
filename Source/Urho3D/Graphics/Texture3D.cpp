@@ -80,7 +80,7 @@ bool Texture3D::BeginLoad(Deserializer& source)
 
     cache->ResetDependencies(this);
 
-    loadParameters_ = context_->CreateObject<XMLFile>();
+    loadParameters_ = MakeShared<XMLFile>(context_);
     if (!loadParameters_->Load(source))
     {
         loadParameters_.Reset();
@@ -119,7 +119,7 @@ bool Texture3D::BeginLoad(Deserializer& source)
             name = texPath + name;
 
         SharedPtr<File> file = GetSubsystem<ResourceCache>()->GetFile(name);
-        loadImage_ = context_->CreateObject<Image>();
+        loadImage_ = MakeShared<Image>(context_);
         if (!loadImage_->LoadColorLUT(*(file.Get())))
         {
             loadParameters_.Reset();

@@ -97,7 +97,7 @@ bool FontFace::IsDataLost() const
 
 SharedPtr<Texture2D> FontFace::CreateFaceTexture()
 {
-    SharedPtr<Texture2D> texture(font_->GetContext()->CreateObject<Texture2D>());
+    auto texture = MakeShared<Texture2D>(font_->GetContext());
     texture->SetMipsToSkip(QUALITY_LOW, 0); // No quality reduction
     texture->SetNumLevels(1); // No mipmaps
     texture->SetAddressMode(COORD_U, ADDRESS_BORDER);

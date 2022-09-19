@@ -40,7 +40,7 @@ namespace Urho3D
 
 ApplicationState::ApplicationState(Context* context)
     : Object(context)
-    , rootElement_(context->CreateObject<UIElement>())
+    , rootElement_(MakeShared<UIElement>(context))
 {
 }
 

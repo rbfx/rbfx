@@ -200,7 +200,7 @@ SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
         return SharedPtr<Image>();
     }
 
-    auto rawImage = context_->CreateObject<Image>();
+    auto rawImage = MakeShared<Image>(context_);
     if (format_ == Graphics::GetRGBAFormat())
         rawImage->SetSize(width_, height_, 4);
     else if (format_ == Graphics::GetRGBFormat())

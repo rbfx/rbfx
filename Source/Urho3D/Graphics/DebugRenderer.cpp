@@ -52,7 +52,7 @@ DebugRenderer::DebugRenderer(Context* context) :
     Component(context),
     lineAntiAlias_(false)
 {
-    vertexBuffer_ = context_->CreateObject<VertexBuffer>();
+    vertexBuffer_ = MakeShared<VertexBuffer>(context_);
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
 }

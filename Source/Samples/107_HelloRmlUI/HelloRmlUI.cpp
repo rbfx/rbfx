@@ -127,10 +127,10 @@ void HelloRmlUI::InitWindow()
     Node* boxNode = scene_->GetChild("Box");
 
     // Create a texture we will render to.
-    texture_ = context_->CreateObject<Texture2D>();
+    texture_ = MakeShared<Texture2D>(context_);
 
     // Create a material that will display UI texture on a cube.
-    material_ = context_->CreateObject<Material>();
+    material_ = MakeShared<Material>(context_);
     material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/DiffUnlit.xml"));
     material_->SetTexture(TU_DIFFUSE, texture_);
 

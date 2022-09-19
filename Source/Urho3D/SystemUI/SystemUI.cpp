@@ -432,7 +432,7 @@ ImTextureID SystemUI::AllocateFontTexture(ImFontAtlas* atlas)
     fontBuilder->FontBuilder_Build(atlas);
     atlas->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-    SharedPtr<Texture2D> fontTexture = context_->CreateObject<Texture2D>();
+    SharedPtr<Texture2D> fontTexture = MakeShared<Texture2D>(context_);
     fontTexture->SetNumLevels(1);
     fontTexture->SetFilterMode(FILTER_BILINEAR);
     fontTexture->SetSize(width, height, Graphics::GetRGBAFormat());
