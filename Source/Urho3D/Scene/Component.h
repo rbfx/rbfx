@@ -106,8 +106,6 @@ public:
     void GetComponents(ea::vector<Component*>& dest, StringHash type) const;
     /// Template version of returning a component in the same scene node by type.
     template <class T> T* GetComponent() const;
-    /// Template version of returning components in the same scene node by type.
-    template <class T> void GetComponents(ea::vector<T*>& dest) const;
     /// Return index of this component in the node.
     unsigned GetIndexInParent() const;
 
@@ -147,10 +145,5 @@ protected:
 };
 
 template <class T> T* Component::GetComponent() const { return static_cast<T*>(GetComponent(T::GetTypeStatic())); }
-
-template <class T> void Component::GetComponents(ea::vector<T*>& dest) const
-{
-    GetComponents(reinterpret_cast<ea::vector<Component*>&>(dest), T::GetTypeStatic());
-}
 
 }

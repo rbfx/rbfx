@@ -552,7 +552,7 @@ void AnimatedModel::SetMorphWeight(unsigned index, float weight)
         if (isMaster_)
         {
             ea::vector<AnimatedModel*> models;
-            GetComponents<AnimatedModel>(models);
+            node_->GetComponents(models);
 
             // Indexing might not be the same, so use the name hash instead
             for (unsigned i = 1; i < models.size(); ++i)
@@ -599,7 +599,7 @@ void AnimatedModel::ResetMorphWeights()
     if (isMaster_)
     {
         ea::vector<AnimatedModel*> models;
-        GetComponents<AnimatedModel>(models);
+        node_->GetComponents(models);
 
         for (unsigned i = 1; i < models.size(); ++i)
         {
@@ -908,7 +908,7 @@ void AnimatedModel::FinalizeBoneBoundingBoxes()
 {
     ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
     ea::vector<AnimatedModel*> models;
-    GetComponents<AnimatedModel>(models);
+    node_->GetComponents(models);
 
     if (models.size() > 1)
     {

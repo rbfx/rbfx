@@ -200,14 +200,6 @@ ea::string Component::GetFullNameDebug() const
     return fullName;
 }
 
-void Component::GetComponents(ea::vector<Component*>& dest, StringHash type) const
-{
-    if (node_)
-        node_->GetComponents(dest, type);
-    else
-        dest.clear();
-}
-
 unsigned Component::GetIndexInParent() const
 {
     return node_ ? node_->GetComponentIndex(this) : M_MAX_UNSIGNED;
