@@ -102,8 +102,6 @@ public:
 
     /// Return component in the same scene node by type. If there are several, returns the first.
     Component* GetComponent(StringHash type) const;
-    /// Return components in the same scene node by type.
-    void GetComponents(ea::vector<Component*>& dest, StringHash type) const;
     /// Template version of returning a component in the same scene node by type.
     template <class T> T* GetComponent() const;
     /// Return index of this component in the node.
