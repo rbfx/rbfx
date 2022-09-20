@@ -28,6 +28,7 @@
 #include "../Math/Matrix3x4.h"
 #include "../Math/Transform.h"
 #include "../Scene/Animatable.h"
+#include "../Scene/Component.h"
 
 #include <EASTL/type_traits.h>
 
@@ -36,7 +37,6 @@
 namespace Urho3D
 {
 
-class Component;
 class Connection;
 class Node;
 class Scene;
