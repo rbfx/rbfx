@@ -286,10 +286,10 @@ void SerializeSet(Archive& archive, const char* name, T& set, const char* elemen
 
 /// Serialize shared pointer to Object.
 template <class T, std::enable_if_t<std::is_base_of<Object, T>::value, int> = 0>
-void SerializeSharedPtr(Archive& archive, const char* name, SharedPtr<T>& value, bool singleBlock = false)
+void SerializeSharedPtr(Archive& archive, const char* name, SharedPtr<T>& value, bool singleBlock = false, bool ignoreUnknown = false)
 {
     const bool loading = archive.IsInput();
-    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    ArchiveBlock block = ignoreUnknown ? archive.OpenSafeUnorderedBlock(name) : archive.OpenUnorderedBlock(name);
 
     StringHash type{};
     ea::string_view typeName{};
@@ -315,8 +315,16 @@ void SerializeSharedPtr(Archive& archive, const char* name, SharedPtr<T>& value,
         value.StaticCast(context->CreateObject(type));
         if (!value)
         {
-            throw ArchiveException("Failed to create object '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
-                type.ToDebugString());
+            if (ignoreUnknown)
+            {
+                URHO3D_LOGWARNING("Unknown object type is ignored on serialization");
+                return;
+            }
+            else
+            {
+                throw ArchiveException("Failed to create object '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
+                    type.ToDebugString());
+            }
         }
     }
 

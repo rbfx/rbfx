@@ -2780,7 +2780,33 @@ private:
             }
         }
 
-        animation->SetLength(CalculateLength(*animation, base_.GetSettings().repairLooping_));
+        const bool ensureLooped = base_.GetSettings().repairLooping_;
+        const bool isAnimationLooped = IsAnimationLooped(*animation);
+        const auto frameStep = GetFrameStep(*animation);
+        const float animationLength = GetAnimationLength(*animation);
+
+        // TODO: It would be better to add a keyframe at the end of the animation
+        if (!isAnimationLooped && ensureLooped && frameStep)
+        {
+            animation->SetLength(animationLength + *frameStep);
+            animation->AddMetadata("Looped", true);
+        }
+        else
+        {
+            animation->SetLength(animationLength);
+            animation->AddMetadata("Looped", isAnimationLooped);
+        }
+
+        if (frameStep)
+        {
+            const int frameRate = RoundToInt(1.0f / *frameStep);
+            const float frameRateError = Abs(frameRate - 1.0f / *frameStep);
+
+            animation->AddMetadata("FrameStep", *frameStep);
+            if (frameRateError < 0.01f)
+                animation->AddMetadata("FrameRate", frameRate);
+        }
+
         return animation;
     }
 
@@ -2860,25 +2886,51 @@ private:
         return track.keyFrames_[numFrames - 1].time_ - track.keyFrames_[numFrames - 2].time_;
     }
 
-    static float CalculateLength(const Animation& animation, bool repairLooping)
+    static bool IsAnimationLooped(const Animation& animation)
+    {
+        for (const auto& [_, track] : animation.GetTracks())
+        {
+            if (!track.IsLooped())
+                return false;
+        }
+        for (const auto& [_, track] : animation.GetVariantTracks())
+        {
+            if (!track.IsLooped())
+                return false;
+        }
+        return true;
+    }
+
+    static ea::optional<float> GetFrameStep(const Animation& animation)
+    {
+        ea::optional<float> frameStep;
+        for (const auto& [_, track] : animation.GetTracks())
+        {
+            if (const auto trackStep = GetTrackStep(track))
+                frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+        }
+        for (const auto& [_, track] : animation.GetVariantTracks())
+        {
+            if (const auto trackStep = GetTrackStep(track))
+                frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+        }
+        return frameStep;
+    }
+
+    static float GetAnimationLength(const Animation& animation)
     {
         float length = 0.0f;
-        ea::optional<float> timeStep;
         for (const auto& [nameHash, track] : animation.GetTracks())
         {
             if (const auto trackLength = GetTrackLength(track))
                 length = ea::max(length, *trackLength);
-            if (const auto trackStep = GetTrackStep(track))
-                timeStep = ea::min(timeStep.value_or(M_LARGE_VALUE), *trackStep);
         }
         for (const auto& [nameHash, track] : animation.GetVariantTracks())
         {
             if (const auto trackLength = GetTrackLength(track))
                 length = ea::max(length, *trackLength);
-            if (const auto trackStep = GetTrackStep(track))
-                timeStep = ea::min(timeStep.value_or(M_LARGE_VALUE), *trackStep);
         }
-        return repairLooping ? length + timeStep.value_or(0.0f) : length;
+        return length;
     }
 
     static Vector3 LerpValue(const Vector3& lhs, const Vector3& rhs, float factor) { return Lerp(lhs, rhs, factor); }
