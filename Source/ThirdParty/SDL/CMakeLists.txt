@@ -2831,20 +2831,20 @@ configure_file("${SDL2_SOURCE_DIR}/include/SDL_revision.h.cmake"
 
 # Copy all non-generated headers to "${SDL2_BINARY_DIR}/include"
 # This is done to avoid the inclusion of a pre-generated SDL_config.h
-file(GLOB SDL2_INCLUDE_FILES ${SDL2_SOURCE_DIR}/include/*.h)
+#file(GLOB SDL2_INCLUDE_FILES ${SDL2_SOURCE_DIR}/include/*.h)
 set(SDL2_COPIED_INCLUDE_FILES)
-foreach(_hdr IN LISTS SDL2_INCLUDE_FILES)
-  if(_hdr MATCHES ".*(SDL_config|SDL_revision).*")
-    list(REMOVE_ITEM SDL2_INCLUDE_FILES "${_hdr}")
-  else()
-    get_filename_component(_name "${_hdr}" NAME)
-    set(_bin_hdr "${SDL2_BINARY_DIR}/include/${_name}")
-    list(APPEND SDL2_COPIED_INCLUDE_FILES "${_bin_hdr}")
-    add_custom_command(OUTPUT "${_bin_hdr}"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_hdr}" "${_bin_hdr}"
-        DEPENDS "${_hdr}")
-  endif()
-endforeach()
+#foreach(_hdr IN LISTS SDL2_INCLUDE_FILES)
+#  if(_hdr MATCHES ".*(SDL_config|SDL_revision).*")
+#    list(REMOVE_ITEM SDL2_INCLUDE_FILES "${_hdr}")
+#  else()
+#    get_filename_component(_name "${_hdr}" NAME)
+#    set(_bin_hdr "${SDL2_BINARY_DIR}/include/${_name}")
+#    list(APPEND SDL2_COPIED_INCLUDE_FILES "${_bin_hdr}")
+#    add_custom_command(OUTPUT "${_bin_hdr}"
+#        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_hdr}" "${_bin_hdr}"
+#        DEPENDS "${_hdr}")
+#  endif()
+#endforeach()
 list(APPEND SDL_GENERATED_HEADERS ${SDL2_COPIED_INCLUDE_FILES})
 
 if(NOT WINDOWS OR CYGWIN OR MINGW)
@@ -3362,10 +3362,12 @@ endif()
 # Urho3D - use 'generated' path suffix for generated config header file, the suffic prevents overwriting the header file with the same name in the source tree in case of non out-of-source build tree is being used
 target_include_directories (SDL2-static SYSTEM
   PUBLIC $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL/generated>
-  $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include/SDL>
-  $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/SDL>
+         $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
+         $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/SDL>
 )
+if (WEB)
+    target_compile_options(SDL2-static PUBLIC -sUSE_SDL=0)
+endif ()
 if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0")) OR
 ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0")))
   # Fix multiple definition of `WAYLAND_*' with GCC 10, because -fno-common is a new default.
