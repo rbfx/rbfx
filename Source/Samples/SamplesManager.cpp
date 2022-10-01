@@ -425,6 +425,7 @@ void SamplesManager::Start()
 void SamplesManager::Stop()
 {
     engine_->DumpResources(true);
+    GetSubsystem<StateManager>()->Reset();
 }
 
 void SamplesManager::OnClickSample(VariantMap& args)
