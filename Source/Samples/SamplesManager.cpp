@@ -124,7 +124,9 @@
 #include "100_HelloSystemUI/HelloSystemUI.h"
 #endif
 #if URHO3D_NAVIGATION
+#if URHO3D_PHYSICS
 #include "106_BakedLighting/BakedLighting.h"
+#endif
 #endif
 #if URHO3D_RMLUI
 #include "107_HelloRmlUI/HelloRmlUI.h"
@@ -367,7 +369,9 @@ void SamplesManager::Start()
     RegisterSample<HelloSystemUi>();
 #endif
 #if URHO3D_NAVIGATION
+#if URHO3D_PHYSICS
     RegisterSample<BakedLighting>();
+#endif
 #endif
 #if URHO3D_RMLUI
     RegisterSample<HelloRmlUI>();
