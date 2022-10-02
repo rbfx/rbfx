@@ -50,7 +50,7 @@ static const float DEFAULT_EFFECT_DEPTH_BIAS = 0.1f;
 Text3D::Text3D(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
     text_(context),
-    vertexBuffer_(context_->CreateObject<VertexBuffer>()),
+    vertexBuffer_(MakeShared<VertexBuffer>(context_)),
     customWorldTransform_(Matrix3x4::IDENTITY),
     faceCameraMode_(FC_NONE),
     minAngle_(0.0f),
@@ -67,7 +67,7 @@ Text3D::~Text3D() = default;
 
 void Text3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Text3D>(Category_Geometry);
+    context->AddFactoryReflection<Text3D>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Font", GetFontAttr, SetFontAttr, ResourceRef, ResourceRef(Font::GetTypeStatic()), AM_DEFAULT);
@@ -520,12 +520,12 @@ float Text3D::GetOpacity() const
     return text_.GetOpacity();
 }
 
-void Text3D::OnNodeSet(Node* node)
+void Text3D::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    Drawable::OnNodeSet(node);
+    Drawable::OnNodeSet(previousNode, currentNode);
 
-    if (node)
-        customWorldTransform_ = node->GetWorldTransform();
+    if (node_)
+        customWorldTransform_ = node_->GetWorldTransform();
 }
 
 void Text3D::OnWorldBoundingBoxUpdate()
@@ -661,7 +661,7 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
     {
         if (!geometries_[i])
         {
-            auto geometry = context_->CreateObject<Geometry>();
+            auto geometry = MakeShared<Geometry>(context_);
             geometry->SetVertexBuffer(0, vertexBuffer_);
             batches_[i].geometry_ = geometries_[i] = geometry;
         }
@@ -671,8 +671,8 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
             // If material not defined, create a reasonable default from scratch
             if (!material_)
             {
-                auto material = context_->CreateObject<Material>();
-                auto tech = context_->CreateObject<Technique>();
+                auto material = MakeShared<Material>(context_);
+                auto tech = MakeShared<Technique>(context_);
                 Pass* pass = tech->CreatePass("alpha");
                 pass->SetVertexShader("Text");
                 pass->SetPixelShader("Text");

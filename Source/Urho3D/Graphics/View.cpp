@@ -324,7 +324,7 @@ View::View(Context* context) :
 
 void View::RegisterObject(Context* context)
 {
-    context->RegisterFactory<View>();
+    context->AddFactoryReflection<View>();
 }
 
 bool View::Define(RenderSurface* renderTarget, Viewport* viewport)

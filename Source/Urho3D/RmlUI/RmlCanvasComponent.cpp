@@ -54,7 +54,7 @@ RmlCanvasComponent::RmlCanvasComponent(Context* context)
 {
     offScreenUI_ = new RmlUI(context_, Format("RmlTextureComponent_{:p}", (void*)this).c_str());
     offScreenUI_->mouseMoveEvent_.Subscribe(this, &RmlCanvasComponent::RemapMousePos);
-    texture_ = context_->CreateObject<Texture2D>().Detach();
+    texture_ = MakeShared<Texture2D>(context_);
     SetUpdateEventMask(USE_UPDATE);
 }
 
@@ -67,15 +67,15 @@ RmlCanvasComponent::~RmlCanvasComponent()
 
 void RmlCanvasComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RmlCanvasComponent>(Category_RmlUI);
+    context->AddFactoryReflection<RmlCanvasComponent>(Category_RmlUI);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
     URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureRef, SetTextureRef, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);
 }
 
-void RmlCanvasComponent::OnNodeSet(Node* node)
+void RmlCanvasComponent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node == nullptr)
+    if (node_ == nullptr)
         ClearTexture();
 }
 

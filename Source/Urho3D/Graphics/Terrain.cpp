@@ -77,7 +77,7 @@ inline void GrowUpdateRegion(IntRect& updateRegion, int x, int y)
 
 Terrain::Terrain(Context* context) :
     Component(context),
-    indexBuffer_(context->CreateObject<IndexBuffer>()),
+    indexBuffer_(MakeShared<IndexBuffer>(context)),
     spacing_(DEFAULT_SPACING),
     lastSpacing_(Vector3::ZERO),
     patchWorldOrigin_(Vector2::ZERO),
@@ -118,7 +118,7 @@ Terrain::~Terrain() = default;
 
 void Terrain::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Terrain>(Category_Geometry);
+    context->AddFactoryReflection<Terrain>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Height Map", GetHeightMapAttr, SetHeightMapAttr, ResourceRef, ResourceRef(Image::GetTypeStatic()),

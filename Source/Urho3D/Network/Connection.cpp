@@ -107,7 +107,7 @@ void Connection::Initialize(bool isClient, const SLNet::AddressOrGUID& address, 
 
 void Connection::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Connection>();
+    context->AddFactoryReflection<Connection>();
 }
 
 PacketType Connection::GetPacketType(bool reliable, bool inOrder)

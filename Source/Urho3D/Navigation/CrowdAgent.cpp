@@ -102,7 +102,7 @@ CrowdAgent::~CrowdAgent()
 
 void CrowdAgent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CrowdAgent>(Category_Navigation);
+    context->AddFactoryReflection<CrowdAgent>(Category_Navigation);
 
     URHO3D_ATTRIBUTE("Target Position", Vector3, targetPosition_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Target Velocity", Vector3, targetVelocity_, Vector3::ZERO, AM_DEFAULT);
@@ -601,10 +601,10 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
     }
 }
 
-void CrowdAgent::OnNodeSet(Node* node)
+void CrowdAgent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void CrowdAgent::OnSceneSet(Scene* scene)

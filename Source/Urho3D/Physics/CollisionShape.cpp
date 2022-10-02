@@ -484,7 +484,7 @@ CollisionShape::~CollisionShape()
 
 void CollisionShape::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionShape>(Category_Physics);
+    context->AddFactoryReflection<CollisionShape>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Shape Type", shapeType_, MarkShapeDirty, typeNames, SHAPE_BOX, AM_DEFAULT);
@@ -893,15 +893,15 @@ void CollisionShape::ReleaseShape()
         physicsWorld_->CleanupGeometryCache();
 }
 
-void CollisionShape::OnNodeSet(Node* node)
+void CollisionShape::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
-        cachedWorldScale_ = node->GetWorldScale();
+        node_->AddListener(this);
+        cachedWorldScale_ = node_->GetWorldScale();
 
         // Terrain collision shape depends on the terrain component's geometry updates. Subscribe to them
-        SubscribeToEvent(node, E_TERRAINCREATED, URHO3D_HANDLER(CollisionShape, HandleTerrainCreated));
+        SubscribeToEvent(node_, E_TERRAINCREATED, URHO3D_HANDLER(CollisionShape, HandleTerrainCreated));
     }
 }
 

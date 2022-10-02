@@ -77,10 +77,10 @@ void AdvancedNetworking::Start(const ea::vector<ea::string>& args)
 {
     // Register sample types
     if (!context_->IsReflected<AdvancedNetworkingUI>())
-        context_->RegisterFactory<AdvancedNetworkingUI>();
+        context_->AddFactoryReflection<AdvancedNetworkingUI>();
 
     if (!context_->IsReflected<AdvancedNetworkingPlayer>())
-        context_->RegisterFactory<AdvancedNetworkingPlayer>();
+        context_->AddFactoryReflection<AdvancedNetworkingPlayer>();
 
     // Execute base class startup
     Sample::Start();

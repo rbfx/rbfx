@@ -76,7 +76,7 @@ Text::~Text() = default;
 
 void Text::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Text>(Category_UI);
+    context->AddFactoryReflection<Text>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UISelectable);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Use Derived Opacity", false);

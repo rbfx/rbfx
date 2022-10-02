@@ -60,7 +60,7 @@ IndexBuffer::~IndexBuffer()
 
 void IndexBuffer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IndexBuffer>();
+    context->AddFactoryReflection<IndexBuffer>();
 }
 
 void IndexBuffer::SetShadowed(bool enable)

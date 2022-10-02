@@ -51,7 +51,7 @@ Obstacle::~Obstacle()
 
 void Obstacle::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Obstacle>(Category_Navigation);
+    context->AddFactoryReflection<Obstacle>(Category_Navigation);
     URHO3D_COPY_BASE_ATTRIBUTES(Component);
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, 5.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Height", GetHeight, SetHeight, float, 5.0f, AM_DEFAULT);
@@ -82,10 +82,10 @@ void Obstacle::SetRadius(float newRadius)
         ownerMesh_->ObstacleChanged(this);
 }
 
-void Obstacle::OnNodeSet(Node* node)
+void Obstacle::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void Obstacle::OnSceneSet(Scene* scene)

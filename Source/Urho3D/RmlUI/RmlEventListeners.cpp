@@ -279,7 +279,7 @@ void SoundEventListener::ProcessEvent(Rml::Event& event)
         Detail::RmlContext* rmlContext = static_cast<Detail::RmlContext*>(event.GetTargetElement()->GetContext());
         RmlUI* ui = rmlContext->GetOwnerSubsystem();
         Context* context = ui->GetContext();
-        soundNode_ = context->CreateObject<Node>();
+        soundNode_ = MakeShared<Node>(context);
         soundPlayer_ = soundNode_->CreateComponent<SoundSource>();
         soundPlayer_->SetGain(volume_);
     }

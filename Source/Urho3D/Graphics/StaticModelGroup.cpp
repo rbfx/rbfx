@@ -55,7 +55,7 @@ StaticModelGroup::~StaticModelGroup() = default;
 
 void StaticModelGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticModelGroup>(Category_Geometry);
+    context->AddFactoryReflection<StaticModelGroup>(Category_Geometry);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
     URHO3D_ACCESSOR_ATTRIBUTE("Instance Nodes", GetNodeIDsAttr, SetNodeIDsAttr,

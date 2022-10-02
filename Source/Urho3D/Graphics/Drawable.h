@@ -462,7 +462,7 @@ protected:
     static Geometry* GetGeometryIfNotEmpty(Geometry* geometry);
 
     /// Handle node being assigned.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle scene being assigned.
     void OnSceneSet(Scene* scene) override;
     /// Handle node transform being dirtied.

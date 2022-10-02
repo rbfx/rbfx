@@ -60,7 +60,7 @@ protected:
     /// Get texture (for attribute).
     ResourceRef GetTextureRef() const;
     /// Handle component being added to Node or removed from it.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle component being enabled or disabled.
     void OnSetEnabled() override;
     /// Set texture color to transparent.

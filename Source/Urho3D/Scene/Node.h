@@ -28,13 +28,15 @@
 #include "../Math/Matrix3x4.h"
 #include "../Math/Transform.h"
 #include "../Scene/Animatable.h"
+#include "../Scene/Component.h"
+
+#include <EASTL/type_traits.h>
 
 #include <atomic>
 
 namespace Urho3D
 {
 
-class Component;
 class Connection;
 class Node;
 class Scene;
@@ -645,7 +647,8 @@ public:
     /// Return first component derived from class in the parent node, or if fully traversing then the first node up the tree with one.
     template <class T> T* GetParentDerivedComponent(bool fullTraversal = false) const;
     /// Return components derived from class.
-    template <class T> void GetDerivedComponents(ea::vector<T*>& dest, bool recursive = false, bool clearVector = true) const;
+    template <class T, class U> void GetDerivedComponents(U& destVector, bool recursive = false, bool clearVector = true) const;
+    template <class U> void GetDerivedComponents(U& destVector, bool recursive = false, bool clearVector = true) const;
     /// Template version of returning child nodes with a specific component.
     template <class T> void GetChildrenWithComponent(ea::vector<Node*>& dest, bool recursive = false) const;
     /// Template version of returning a component by type.
@@ -653,7 +656,8 @@ public:
     /// Template version of returning a parent's component by type.
     template <class T> T* GetParentComponent(bool fullTraversal = false) const;
     /// Template version of returning all components of type.
-    template <class T> void GetComponents(ea::vector<T*>& dest, bool recursive = false) const;
+    template <class T, class U> void GetComponents(U& destVector, bool recursive = false, bool clearVector = true) const;
+    template <class U> void GetComponents(U& destVector, bool recursive = false, bool clearVector = true) const;
     /// Template version of checking whether has a specific component.
     template <class T> bool HasComponent() const;
 
@@ -798,9 +802,32 @@ template <class T> T* Node::GetComponent(bool recursive) const { return static_c
 
 template <class T> T* Node::GetParentComponent(bool fullTraversal) const { return static_cast<T*>(GetParentComponent(T::GetTypeStatic(), fullTraversal)); }
 
-template <class T> void Node::GetComponents(ea::vector<T*>& dest, bool recursive) const
+template <class T, class U> void Node::GetComponents(U& destVector, bool recursive, bool clearVector) const
 {
-    GetComponents(reinterpret_cast<ea::vector<Component*>&>(dest), T::GetTypeStatic(), recursive);
+    using PointerType = ea::remove_reference_t<decltype(destVector[0])>;
+
+    if (clearVector)
+        destVector.clear();
+
+    for (const auto& component : components_)
+    {
+        if constexpr (ea::is_same_v<T, Component>)
+            destVector.push_back(PointerType{component.Get()});
+        else if (component->GetType() == T::GetTypeStatic())
+            destVector.push_back(PointerType{static_cast<T*>(component.Get())});
+    }
+
+    if (recursive)
+    {
+        for (const auto& child : children_)
+            child->GetComponents<T>(destVector, true, false);
+    }
+}
+
+template <class U> void Node::GetComponents(U& destVector, bool recursive, bool clearVector) const
+{
+    using ComponentType = ea::remove_reference_t<decltype(*destVector[0])>;
+    GetComponents<ComponentType>(destVector, recursive, clearVector);
 }
 
 template <class T> bool Node::HasComponent() const { return HasComponent(T::GetTypeStatic()); }
@@ -844,23 +871,30 @@ template <class T> T* Node::GetParentDerivedComponent(bool fullTraversal) const
     return 0;
 }
 
-template <class T> void Node::GetDerivedComponents(ea::vector<T*>& dest, bool recursive, bool clearVector) const
+template <class T, class U> void Node::GetDerivedComponents(U& destVector, bool recursive, bool clearVector) const
 {
-    if (clearVector)
-        dest.clear();
+    using PointerType = ea::remove_reference_t<decltype(destVector[0])>;
 
-    for (auto i = components_.begin(); i != components_.end(); ++i)
+    if (clearVector)
+        destVector.clear();
+
+    for (const auto& component : components_)
     {
-        auto* component = dynamic_cast<T*>(i->Get());
-        if (component)
-            dest.push_back(component);
+        if (auto derivedComponent = dynamic_cast<T*>(component.Get()))
+            destVector.push_back(PointerType{derivedComponent});
     }
 
     if (recursive)
     {
-        for (auto i = children_.begin(); i != children_.end(); ++i)
-            (*i)->GetDerivedComponents<T>(dest, true, false);
+        for (const auto& child : children_)
+            child->GetDerivedComponents<T>(destVector, true, false);
     }
+}
+
+template <class U> void Node::GetDerivedComponents(U& destVector, bool recursive, bool clearVector) const
+{
+    using ComponentType = ea::remove_reference_t<decltype(*destVector[0])>;
+    GetDerivedComponents<ComponentType>(destVector, recursive, clearVector);
 }
 
 }

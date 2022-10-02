@@ -181,7 +181,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     int textureHeight = maxTextureSize;
     hasMutableGlyph_ = false;
 
-    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
+    auto image = MakeShared<Image>(font_->GetContext());
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());
@@ -317,7 +317,7 @@ const FontGlyph* FontFaceFreeType::GetGlyph(unsigned c)
 
 bool FontFaceFreeType::SetupNextTexture(int textureWidth, int textureHeight)
 {
-    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
+    auto image = MakeShared<Image>(font_->GetContext());
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());

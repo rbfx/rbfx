@@ -76,7 +76,7 @@ namespace Urho3DNet
         public void RegisterFactories(Assembly assembly)
         {
             foreach (var pair in assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
-                RegisterFactory(pair.Item1, pair.Item2.Category);
+                AddFactoryReflection(pair.Item1, pair.Item2.Category);
         }
 
         public void RemoveFactories(Assembly assembly)
@@ -85,9 +85,9 @@ namespace Urho3DNet
                 RemoveReflection(pair.Item1);
         }
 
-        public void RegisterFactory<T>(string category = "") where T : Object
+        public void AddFactoryReflection<T>(string category = "") where T : Object
         {
-            RegisterFactory(typeof(T), category);
+            AddFactoryReflection(typeof(T), category);
         }
 
         public bool IsReflected<T>() where T : Object
@@ -100,7 +100,7 @@ namespace Urho3DNet
             return IsReflected(new StringHash(type));
         }
 
-        public void RegisterFactory(Type type, string category="")
+        public void AddFactoryReflection(Type type, string category="")
         {
             if (!type.IsSubclassOf(typeof(Object)))
                 throw new ArgumentException("Type must be subclass of Object.");

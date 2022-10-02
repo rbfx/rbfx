@@ -44,11 +44,11 @@ DropDownList::DropDownList(Context* context) :
 {
     focusMode_ = FM_FOCUSABLE_DEFOCUSABLE;
 
-    auto window(context_->CreateObject<Window>());
+    auto window(MakeShared<Window>(context_));
     window->SetInternal(true);
     SetPopup(window.Get());
 
-    listView_ = context_->CreateObject<ListView>();
+    listView_ = MakeShared<ListView>(context_);
     listView_->SetInternal(true);
     listView_->SetScrollBarsVisible(false, false);
     popup_->SetLayout(LM_VERTICAL);
@@ -68,7 +68,7 @@ DropDownList::~DropDownList() = default;
 
 void DropDownList::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DropDownList>(Category_UI);
+    context->AddFactoryReflection<DropDownList>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Menu);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Focus Mode", FM_FOCUSABLE_DEFOCUSABLE);

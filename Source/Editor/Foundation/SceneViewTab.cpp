@@ -296,6 +296,8 @@ void SceneViewTab::PauseSimulation()
     if (!activePage)
         return;
 
+    if (activePage->IsSimulationActive())
+        activePage->currentSimulationAction_->Complete(true);
     activePage->scene_->SetUpdateEnabled(false);
 }
 
@@ -768,7 +770,13 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
     page.scene_->SetUpdateEnabled(false);
     page.scene_->SaveXML(rootElement);
 
-    xmlFile.SaveFile(page.scene_->GetFileName());
+    VectorBuffer buffer;
+    xmlFile.Save(buffer);
+
+    auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
+
+    auto project = GetProject();
+    project->SaveFileDelayed(page.scene_->GetFileName(), page.resource_->GetName(), sharedBuffer);
 }
 
 void SceneViewTab::SavePagePreview(SceneViewPage& page) const
@@ -999,9 +1007,10 @@ void SimulateSceneAction::Complete(bool force)
     isComplete_ = true;
     if (page_)
     {
+        page_->scene_->SetElapsedTime(0.0f);
+        page_->scene_->SetUpdateEnabled(false);
         newData_ = PackedSceneData::FromScene(page_->scene_);
         page_->selection_.Save(newSelection_);
-        page_->scene_->SetUpdateEnabled(false);
     }
 }
 

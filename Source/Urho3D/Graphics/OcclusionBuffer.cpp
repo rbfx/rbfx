@@ -62,7 +62,7 @@ OcclusionBuffer::~OcclusionBuffer() = default;
 
 void OcclusionBuffer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<OcclusionBuffer>();
+    context->AddFactoryReflection<OcclusionBuffer>();
 }
 
 bool OcclusionBuffer::SetSize(int width, int height, bool threaded)

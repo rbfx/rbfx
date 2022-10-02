@@ -45,10 +45,10 @@ static const float LOD_CONSTANT = 1.0f / 150.0f;
 
 TerrainPatch::TerrainPatch(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(context->CreateObject<Geometry>()),
-    maxLodGeometry_(context->CreateObject<Geometry>()),
-    occlusionGeometry_(context->CreateObject<Geometry>()),
-    vertexBuffer_(context->CreateObject<VertexBuffer>()),
+    geometry_(MakeShared<Geometry>(context)),
+    maxLodGeometry_(MakeShared<Geometry>(context)),
+    occlusionGeometry_(MakeShared<Geometry>(context)),
+    vertexBuffer_(MakeShared<VertexBuffer>(context)),
     coordinates_(IntVector2::ZERO),
     lodLevel_(0)
 {
@@ -65,7 +65,7 @@ TerrainPatch::~TerrainPatch() = default;
 
 void TerrainPatch::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TerrainPatch>();
+    context->AddFactoryReflection<TerrainPatch>();
 }
 
 void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)

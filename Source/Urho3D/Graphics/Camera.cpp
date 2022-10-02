@@ -78,7 +78,7 @@ Camera::~Camera() = default;
 
 void Camera::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Camera>(Category_Scene);
+    context->AddFactoryReflection<Camera>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Near Clip", GetNearClip, SetNearClip, float, DEFAULT_NEARCLIP, AM_DEFAULT);
@@ -684,10 +684,10 @@ Vector4 Camera::GetClipPlaneAttr() const
     return clipPlane_.ToVector4();
 }
 
-void Camera::OnNodeSet(Node* node)
+void Camera::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void Camera::OnMarkedDirty(Node* node)

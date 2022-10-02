@@ -37,7 +37,7 @@ SoundListener::~SoundListener() = default;
 
 void SoundListener::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundListener>(Category_Audio);
+    context->AddFactoryReflection<SoundListener>(Category_Audio);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
 }

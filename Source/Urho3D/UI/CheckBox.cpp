@@ -45,7 +45,7 @@ CheckBox::~CheckBox() = default;
 
 void CheckBox::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CheckBox>(Category_UI);
+    context->AddFactoryReflection<CheckBox>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Is Enabled", true);

@@ -143,7 +143,7 @@ VertexBuffer::~VertexBuffer()
 
 void VertexBuffer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<VertexBuffer>();
+    context->AddFactoryReflection<VertexBuffer>();
 }
 
 void VertexBuffer::SetShadowed(bool enable)

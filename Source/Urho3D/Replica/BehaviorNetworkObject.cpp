@@ -41,7 +41,7 @@ NetworkBehavior::~NetworkBehavior()
 
 void NetworkBehavior::RegisterObject(Context* context)
 {
-    context->AddReflection<NetworkBehavior>();
+    context->AddAbstractReflection<NetworkBehavior>(Category_Network);
 }
 
 void NetworkBehavior::SetNetworkObject(BehaviorNetworkObject* owner)
@@ -58,9 +58,9 @@ NetworkObject* NetworkBehavior::FindClosestNetworkObject() const
     return node_->GetParentDerivedComponent<NetworkObject>(true);
 }
 
-void NetworkBehavior::OnNodeSet(Node* node)
+void NetworkBehavior::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (!node && owner_)
+    if (!node_ && owner_)
     {
         owner_->InvalidateBehaviors();
         owner_ = nullptr;
@@ -78,7 +78,7 @@ BehaviorNetworkObject::~BehaviorNetworkObject()
 
 void BehaviorNetworkObject::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BehaviorNetworkObject>();
+    context->AddFactoryReflection<BehaviorNetworkObject>(Category_Network);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticNetworkObject);
 }

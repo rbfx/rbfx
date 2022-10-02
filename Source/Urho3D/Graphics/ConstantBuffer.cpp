@@ -45,7 +45,7 @@ ConstantBuffer::~ConstantBuffer()
 
 void ConstantBuffer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstantBuffer>();
+    context->AddFactoryReflection<ConstantBuffer>();
 }
 
 }

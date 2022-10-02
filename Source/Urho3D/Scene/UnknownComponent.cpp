@@ -42,7 +42,7 @@ UnknownComponent::UnknownComponent(Context* context) :
 
 void UnknownComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<UnknownComponent>();
+    context->AddFactoryReflection<UnknownComponent>();
 }
 
 bool UnknownComponent::Load(Deserializer& source)

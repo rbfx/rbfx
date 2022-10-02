@@ -79,7 +79,7 @@ IKSolver::~IKSolver()
 // ----------------------------------------------------------------------------
 void IKSolver::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IKSolver>(Category_IK);
+    context->AddFactoryReflection<IKSolver>(Category_IK);
 
     static const char* algorithmNames[] = {
         "1 Bone",
@@ -523,12 +523,12 @@ void IKSolver::OnSceneSet(Scene* scene)
 }
 
 // ----------------------------------------------------------------------------
-void IKSolver::OnNodeSet(Node* node)
+void IKSolver::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     ApplyOriginalPoseToScene();
     DestroyTree();
 
-    if (node != nullptr)
+    if (node_ != nullptr)
         RebuildTree();
 }
 

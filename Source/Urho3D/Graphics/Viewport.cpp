@@ -83,7 +83,7 @@ Viewport::~Viewport() = default;
 
 void Viewport::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Viewport>();
+    context->AddFactoryReflection<Viewport>();
 }
 
 void Viewport::SetScene(Scene* scene)

@@ -1749,7 +1749,7 @@ void Graphics::SetDepthStencil(RenderSurface* depthStencil)
                 depthStencil = i->second->GetRenderSurface();
             else
             {
-                SharedPtr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
+                SharedPtr<Texture2D> newDepthTexture(MakeShared<Texture2D>(context_));
                 newDepthTexture->SetSize(width, height, GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL);
                 impl_->depthTextures_[searchKey] = newDepthTexture;
                 depthStencil = newDepthTexture->GetRenderSurface();
@@ -2395,7 +2395,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsign
     if (i == impl_->allConstantBuffers_.end())
     {
         i = impl_->allConstantBuffers_.insert(
-            ea::make_pair(key, SharedPtr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>()))).first;
+            ea::make_pair(key, SharedPtr<ConstantBuffer>(MakeShared<ConstantBuffer>(context_)))).first;
         i->second->SetSize(size);
     }
     return i->second;

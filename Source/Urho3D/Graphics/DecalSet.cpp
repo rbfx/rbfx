@@ -151,9 +151,9 @@ void Decal::CalculateBoundingBox()
 
 DecalSet::DecalSet(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(context->CreateObject<Geometry>()),
-    vertexBuffer_(context_->CreateObject<VertexBuffer>()),
-    indexBuffer_(context_->CreateObject<IndexBuffer>()),
+    geometry_(MakeShared<Geometry>(context)),
+    vertexBuffer_(MakeShared<VertexBuffer>(context_)),
+    indexBuffer_(MakeShared<IndexBuffer>(context_)),
     numVertices_(0),
     numIndices_(0),
     maxVertices_(DEFAULT_MAX_VERTICES),
@@ -177,7 +177,7 @@ DecalSet::~DecalSet() = default;
 
 void DecalSet::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DecalSet>(Category_Geometry);
+    context->AddFactoryReflection<DecalSet>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),

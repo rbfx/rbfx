@@ -41,7 +41,7 @@ ToolTip::~ToolTip() = default;
 
 void ToolTip::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ToolTip>(Category_UI);
+    context->AddFactoryReflection<ToolTip>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(UIElement);
     URHO3D_ACCESSOR_ATTRIBUTE("Delay", GetDelay, SetDelay, float, 0.0f, AM_FILE);

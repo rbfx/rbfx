@@ -71,7 +71,7 @@ LightProbeGroup::~LightProbeGroup() = default;
 
 void LightProbeGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<LightProbeGroup>(Category_Scene);
+    context->AddFactoryReflection<LightProbeGroup>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Light Mask", unsigned, lightMask_, DEFAULT_LIGHTMASK, AM_DEFAULT);
@@ -292,10 +292,10 @@ ResourceRef LightProbeGroup::GetBakedDataFileRef() const
     return bakedDataRef_;
 }
 
-void LightProbeGroup::OnNodeSet(Node* node)
+void LightProbeGroup::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void LightProbeGroup::OnMarkedDirty(Node* node)

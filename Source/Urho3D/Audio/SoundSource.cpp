@@ -136,7 +136,7 @@ SoundSource::~SoundSource()
 
 void SoundSource::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundSource>(Category_Audio);
+    context->AddFactoryReflection<SoundSource>(Category_Audio);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Sound", GetSoundAttr, SetSoundAttr, ResourceRef, ResourceRef(Sound::GetTypeStatic()), AM_DEFAULT);
@@ -583,7 +583,7 @@ void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
         unsigned sampleSize = stream->GetSampleSize();
         unsigned streamBufferSize = sampleSize * stream->GetIntFrequency() * STREAM_BUFFER_LENGTH / 1000;
 
-        streamBuffer_ = context_->CreateObject<Sound>();
+        streamBuffer_ = MakeShared<Sound>(context_);
         streamBuffer_->SetSize(streamBufferSize);
         streamBuffer_->SetFormat(stream->GetIntFrequency(), stream->IsSixteenBit(), stream->IsStereo());
         streamBuffer_->SetLooped(true);

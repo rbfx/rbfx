@@ -34,12 +34,12 @@ CreateRagdoll::CreateRagdoll(Context* context) :
 {
 }
 
-void CreateRagdoll::OnNodeSet(Node* node)
+void CreateRagdoll::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     // If the node pointer is non-null, this component has been created into a scene node. Subscribe to physics collisions that
     // concern this scene node
-    if (node)
-        SubscribeToEvent(node, E_NODECOLLISION, URHO3D_HANDLER(CreateRagdoll, HandleNodeCollision));
+    if (node_)
+        SubscribeToEvent(node_, E_NODECOLLISION, URHO3D_HANDLER(CreateRagdoll, HandleNodeCollision));
 }
 
 void CreateRagdoll::HandleNodeCollision(StringHash eventType, VariantMap& eventData)

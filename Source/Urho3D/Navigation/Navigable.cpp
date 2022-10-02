@@ -40,7 +40,7 @@ Navigable::~Navigable() = default;
 
 void Navigable::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Navigable>(Category_Navigation);
+    context->AddFactoryReflection<Navigable>(Category_Navigation);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Recursive", bool, recursive_, true, AM_DEFAULT);

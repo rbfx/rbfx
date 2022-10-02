@@ -42,7 +42,7 @@ ConstraintMouse2D::~ConstraintMouse2D() = default;
 
 void ConstraintMouse2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintMouse2D>(Category_Physics2D);
+    context->AddFactoryReflection<ConstraintMouse2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Target", GetTarget, SetTarget, Vector2, Vector2::ZERO, AM_DEFAULT);

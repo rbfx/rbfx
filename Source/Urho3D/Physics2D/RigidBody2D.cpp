@@ -69,7 +69,7 @@ RigidBody2D::~RigidBody2D()
 
 void RigidBody2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RigidBody2D>(Category_Physics2D);
+    context->AddFactoryReflection<RigidBody2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Body Type", GetBodyType, SetBodyType, BodyType2D, bodyTypeNames, DEFAULT_BODYTYPE, AM_DEFAULT);
@@ -514,11 +514,11 @@ float RigidBody2D::GetAngularVelocity() const
     return body_ ? body_->GetAngularVelocity() : bodyDef_.angularVelocity;
 }
 
-void RigidBody2D::OnNodeSet(Node* node)
+void RigidBody2D::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
+        node_->AddListener(this);
 
         ea::vector<CollisionShape2D*> shapes;
         node_->GetDerivedComponents<CollisionShape2D>(shapes);

@@ -67,7 +67,7 @@ KinematicCharacterController::~KinematicCharacterController()
 
 void KinematicCharacterController::RegisterObject(Context* context)
 {
-    context->RegisterFactory<KinematicCharacterController>();
+    context->AddFactoryReflection<KinematicCharacterController>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, Vector3(0.0f, -14.0f, 0.0f), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Collision Layer", int, colLayer_, 1, AM_DEFAULT);
@@ -112,10 +112,10 @@ void KinematicCharacterController::ReleaseKinematic()
     pairCachingGhostObject_.reset();
 }
 
-void KinematicCharacterController::OnNodeSet(Node* node)
+void KinematicCharacterController::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void KinematicCharacterController::OnSceneSet(Scene* scene)

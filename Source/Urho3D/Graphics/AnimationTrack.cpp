@@ -59,4 +59,33 @@ void AnimationTrack::Sample(float time, float duration, bool isLooped, unsigned&
     }
 }
 
+bool AnimationTrack::IsLooped(float positionThreshold, float rotationThreshold, float scaleThreshold) const
+{
+    if (keyFrames_.empty())
+        return true;
+
+    const Transform& firstTransform = keyFrames_.front();
+    const Transform& lastTransform = keyFrames_.back();
+
+    if (channelMask_.Test(CHANNEL_POSITION) && !firstTransform.position_.Equals(lastTransform.position_, positionThreshold))
+        return false;
+    if (channelMask_.Test(CHANNEL_ROTATION) && !firstTransform.rotation_.Equals(lastTransform.rotation_, rotationThreshold))
+        return false;
+    if (channelMask_.Test(CHANNEL_SCALE) && !firstTransform.scale_.Equals(lastTransform.scale_, scaleThreshold))
+        return false;
+
+    return true;
+}
+
+bool VariantAnimationTrack::IsLooped() const
+{
+    if (keyFrames_.empty())
+        return true;
+
+    const Variant& firstValue = keyFrames_.front().value_;
+    const Variant& lastValue = keyFrames_.back().value_;
+
+    return firstValue == lastValue;
+}
+
 }

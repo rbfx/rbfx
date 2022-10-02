@@ -42,7 +42,7 @@ ConstraintRevolute2D::~ConstraintRevolute2D() = default;
 
 void ConstraintRevolute2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintRevolute2D>(Category_Physics2D);
+    context->AddFactoryReflection<ConstraintRevolute2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Anchor", GetAnchor, SetAnchor, Vector2, Vector2::ZERO, AM_DEFAULT);

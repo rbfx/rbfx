@@ -3361,11 +3361,14 @@ endif()
 # General includes
 # Urho3D - use 'generated' path suffix for generated config header file, the suffic prevents overwriting the header file with the same name in the source tree in case of non out-of-source build tree is being used
 target_include_directories (SDL2-static SYSTEM
-  PUBLIC $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL/generated>
-  $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include/SDL>
-  $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/SDL>
+  PUBLIC $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>>
+         $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL/generated>
+         $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
+         $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/SDL>
 )
+if (WEB)
+    target_compile_options(SDL2-static PUBLIC -sUSE_SDL=0)
+endif ()
 if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0")) OR
 ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0")))
   # Fix multiple definition of `WAYLAND_*' with GCC 10, because -fno-common is a new default.

@@ -109,7 +109,7 @@ UIElement::~UIElement()
 
 void UIElement::RegisterObject(Context* context)
 {
-    context->RegisterFactory<UIElement>(Category_UI);
+    context->AddFactoryReflection<UIElement>(Category_UI);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, IntVector2, IntVector2::ZERO, AM_FILE);
@@ -178,7 +178,7 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
     if (!defaultStyleFileName.empty())
         defaultStyleFileName_ = defaultStyleFileName;
 
-    SharedPtr<XMLFile> savedStyleFile(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> savedStyleFile(MakeShared<XMLFile>(context_));
     if (styleFile == nullptr)
     {
         if (!defaultStyleFileName.empty())
@@ -494,13 +494,13 @@ IntVector2 UIElement::ElementToScreen(const IntVector2& position)
 
 bool UIElement::LoadXML(Deserializer& source)
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     return xml->Load(source) && LoadXML(xml->GetRoot());
 }
 
 bool UIElement::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     XMLElement rootElem = xml->CreateRoot("element");
     return SaveXML(rootElem) && xml->Save(dest, indentation);
 }

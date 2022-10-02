@@ -87,7 +87,7 @@ bool Animatable::LoadXML(const XMLElement& source)
     XMLElement elem = source.GetChild("objectanimation");
     if (elem)
     {
-        SharedPtr<ObjectAnimation> objectAnimation(context_->CreateObject<ObjectAnimation>());
+        SharedPtr<ObjectAnimation> objectAnimation(MakeShared<ObjectAnimation>(context_));
         if (!objectAnimation->LoadXML(elem))
             return false;
 
@@ -98,7 +98,7 @@ bool Animatable::LoadXML(const XMLElement& source)
     while (elem)
     {
         ea::string name = elem.GetAttribute("name");
-        SharedPtr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> attributeAnimation(MakeShared<ValueAnimation>(context_));
         if (!attributeAnimation->LoadXML(elem))
             return false;
 
@@ -133,7 +133,7 @@ bool Animatable::LoadJSON(const JSONValue& source)
     JSONValue value = source.Get("objectanimation");
     if (!value.IsNull())
     {
-        SharedPtr<ObjectAnimation> objectAnimation(context_->CreateObject<ObjectAnimation>());
+        SharedPtr<ObjectAnimation> objectAnimation(MakeShared<ObjectAnimation>(context_));
         if (!objectAnimation->LoadJSON(value))
             return false;
 
@@ -156,7 +156,7 @@ bool Animatable::LoadJSON(const JSONValue& source)
     {
         ea::string name = it->first;
         JSONValue value = it->second;
-        SharedPtr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> attributeAnimation(MakeShared<ValueAnimation>(context_));
         if (!attributeAnimation->LoadJSON(it->second))
             return false;
 

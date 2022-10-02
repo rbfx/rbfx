@@ -79,7 +79,7 @@ Constraint::~Constraint()
 
 void Constraint::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Constraint>(Category_Physics);
+    context->AddFactoryReflection<Constraint>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Constraint Type", constraintType_, MarkConstraintDirty, typeNames, CONSTRAINT_POINT, AM_DEFAULT);
@@ -397,12 +397,12 @@ void Constraint::ApplyFrames()
     }
 }
 
-void Constraint::OnNodeSet(Node* node)
+void Constraint::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
-        cachedWorldScale_ = node->GetWorldScale();
+        node_->AddListener(this);
+        cachedWorldScale_ = node_->GetWorldScale();
     }
 }
 

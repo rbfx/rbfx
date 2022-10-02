@@ -47,7 +47,7 @@ void NetworkObject::SetOwner(AbstractConnection* owner)
 
 void NetworkObject::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NetworkObject>();
+    context->AddAbstractReflection<NetworkObject>(Category_Network);
 }
 
 void NetworkObject::UpdateObjectHierarchy()
@@ -68,12 +68,12 @@ void NetworkObject::UpdateObjectHierarchy()
         UpdateTransformOnServer();
 }
 
-void NetworkObject::OnNodeSet(Node* node)
+void NetworkObject::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
-        node->MarkDirty();
+        node_->AddListener(this);
+        node_->MarkDirty();
     }
     else
     {

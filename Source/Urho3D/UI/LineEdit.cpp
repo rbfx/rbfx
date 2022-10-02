@@ -71,7 +71,7 @@ LineEdit::~LineEdit() = default;
 
 void LineEdit::RegisterObject(Context* context)
 {
-    context->RegisterFactory<LineEdit>(Category_UI);
+    context->AddFactoryReflection<LineEdit>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Clip Children", true);

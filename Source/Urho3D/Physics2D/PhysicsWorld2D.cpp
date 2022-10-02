@@ -71,7 +71,7 @@ PhysicsWorld2D::~PhysicsWorld2D()
 
 void PhysicsWorld2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PhysicsWorld2D>(Category_Subsystem);
+    context->AddFactoryReflection<PhysicsWorld2D>(Category_Subsystem);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Shape", GetDrawShape, SetDrawShape, bool, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Joint", GetDrawJoint, SetDrawJoint, bool, false, AM_DEFAULT);

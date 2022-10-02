@@ -73,7 +73,7 @@ XMLFile::~XMLFile() = default;
 
 void XMLFile::RegisterObject(Context* context)
 {
-    context->RegisterFactory<XMLFile>();
+    context->AddFactoryReflection<XMLFile>();
 }
 
 bool XMLFile::BeginLoad(Deserializer& source)

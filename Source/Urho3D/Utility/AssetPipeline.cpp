@@ -82,11 +82,13 @@ void AssetPipeline::SerializeInBlock(Archive& archive)
         SerializeVectorAsObjects(archive, name, value, "Transformer",
             [](Archive& archive, const char* name, SharedPtr<AssetTransformer>& value)
         {
-            SerializeSharedPtr(archive, name, value, true);
+            SerializeSharedPtr(archive, name, value, true, true);
         });
     });
 
     SerializeOptionalValue(archive, "Dependencies", dependencies_);
+
+    ea::erase(transformers_, nullptr);
 }
 
 bool AssetPipeline::BeginLoad(Deserializer& source)

@@ -745,6 +745,7 @@ void Project::SaveShallowOnly()
 {
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     settingsManager_->SaveFile(settingsJsonPath_);
+    assetManager_->SaveFile(cacheJsonPath_);
 
     for (EditorTab* tab : tabs_)
     {
@@ -766,8 +767,6 @@ void Project::SaveProjectOnly()
     auto fs = GetSubsystem<FileSystem>();
     if (!fs->FileExists(gitIgnorePath_))
         SaveGitIgnore();
-
-    assetManager_->SaveFile(cacheJsonPath_);
 
     hasUnsavedChanges_ = false;
 }

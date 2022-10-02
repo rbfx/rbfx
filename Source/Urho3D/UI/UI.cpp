@@ -90,8 +90,8 @@ const int DEFAULT_FONT_TEXTURE_MAX_SIZE = 2048;
 
 UI::UI(Context* context) :
     Object(context),
-    rootElement_(context->CreateObject<UIElement>()),
-    rootModalElement_(context->CreateObject<UIElement>()),
+    rootElement_(MakeShared<UIElement>(context)),
+    rootModalElement_(MakeShared<UIElement>(context)),
     doubleClickInterval_(DEFAULT_DOUBLECLICK_INTERVAL),
     dragBeginInterval_(DEFAULT_DRAGBEGIN_INTERVAL),
     defaultToolTipDelay_(DEFAULT_TOOLTIP_DELAY),
@@ -503,7 +503,7 @@ void UI::DebugDraw(UIElement* element)
 
 SharedPtr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     if (!xml->Load(source))
         return SharedPtr<UIElement>();
     else
@@ -861,8 +861,8 @@ void UI::Initialize()
     // Set initial root element size
     ResizeRootElement();
 
-    vertexBuffer_ = context_->CreateObject<VertexBuffer>();
-    debugVertexBuffer_ = context_->CreateObject<VertexBuffer>();
+    vertexBuffer_ = MakeShared<VertexBuffer>(context_);
+    debugVertexBuffer_ = MakeShared<VertexBuffer>(context_);
 
     batchStateCache_ = MakeShared<DefaultUIBatchStateCache>(context_);
 

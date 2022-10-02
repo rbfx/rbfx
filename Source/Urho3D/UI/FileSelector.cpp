@@ -56,53 +56,53 @@ FileSelector::FileSelector(Context* context) :
     directoryMode_(false),
     ignoreEvents_(false)
 {
-    window_ = context_->CreateObject<Window>();
+    window_ = MakeShared<Window>(context_);
     window_->SetLayout(LM_VERTICAL);
 
-    titleLayout = context_->CreateObject<UIElement>();
+    titleLayout = MakeShared<UIElement>(context_);
     titleLayout->SetLayout(LM_HORIZONTAL);
     window_->AddChild(titleLayout.Get());
 
-    titleText_ = context_->CreateObject<Text>();
+    titleText_ = MakeShared<Text>(context_);
     titleLayout->AddChild(titleText_.Get());
 
-    closeButton_ = context_->CreateObject<Button>();
+    closeButton_ = MakeShared<Button>(context_);
     titleLayout->AddChild(closeButton_.Get());
 
-    pathEdit_ = context_->CreateObject<LineEdit>();
+    pathEdit_ = MakeShared<LineEdit>(context_);
     window_->AddChild(pathEdit_.Get());
 
-    fileList_ = context_->CreateObject<ListView>();
+    fileList_ = MakeShared<ListView>(context_);
     window_->AddChild(fileList_.Get());
 
-    fileNameLayout_ = context_->CreateObject<UIElement>();
+    fileNameLayout_ = MakeShared<UIElement>(context_);
     fileNameLayout_->SetLayout(LM_HORIZONTAL);
 
-    fileNameEdit_ = context_->CreateObject<LineEdit>();
+    fileNameEdit_ = MakeShared<LineEdit>(context_);
     fileNameLayout_->AddChild(fileNameEdit_.Get());
 
-    filterList_ = context_->CreateObject<DropDownList>();
+    filterList_ = MakeShared<DropDownList>(context_);
     fileNameLayout_->AddChild(filterList_.Get());
 
     window_->AddChild(fileNameLayout_.Get());
 
-    separatorLayout_ = context_->CreateObject<UIElement>();
+    separatorLayout_ = MakeShared<UIElement>(context_);
     window_->AddChild(separatorLayout_.Get());
 
-    buttonLayout_ = context_->CreateObject<UIElement>();
+    buttonLayout_ = MakeShared<UIElement>(context_);
     buttonLayout_->SetLayout(LM_HORIZONTAL);
 
-    auto spacer = context_->CreateObject<UIElement>();
+    auto spacer = MakeShared<UIElement>(context_);
     buttonLayout_->AddChild(spacer.Get()); // Add spacer
 
-    cancelButton_ = context_->CreateObject<Button>();
-    cancelButtonText_ = context_->CreateObject<Text>();
+    cancelButton_ = MakeShared<Button>(context_);
+    cancelButtonText_ = MakeShared<Text>(context_);
     cancelButtonText_->SetAlignment(HA_CENTER, VA_CENTER);
     cancelButton_->AddChild(cancelButtonText_.Get());
     buttonLayout_->AddChild(cancelButton_.Get());
 
-    okButton_ = context_->CreateObject<Button>();
-    okButtonText_ = context_->CreateObject<Text>();
+    okButton_ = MakeShared<Button>(context_);
+    okButtonText_ = MakeShared<Text>(context_);
     okButtonText_->SetAlignment(HA_CENTER, VA_CENTER);
     okButton_->AddChild(okButtonText_.Get());
     buttonLayout_->AddChild(okButton_.Get());
@@ -140,7 +140,7 @@ FileSelector::~FileSelector()
 
 void FileSelector::RegisterObject(Context* context)
 {
-    context->RegisterFactory<FileSelector>();
+    context->AddFactoryReflection<FileSelector>();
 }
 
 void FileSelector::SetDefaultStyle(XMLFile* style)
@@ -226,7 +226,7 @@ void FileSelector::SetFilters(const ea::vector<ea::string>& filters, unsigned de
     filterList_->RemoveAllItems();
     for (unsigned i = 0; i < filters_.size(); ++i)
     {
-        auto filterText = context_->CreateObject<Text>();
+        auto filterText = MakeShared<Text>(context_);
         filterList_->AddItem(filterText);
         filterText->SetText(filters_[i]);
         filterText->SetStyle("FileSelectorFilterText");
@@ -332,7 +332,7 @@ void FileSelector::RefreshFiles()
         else
             displayName = fileEntries_[i].name_;
 
-        auto entryText = context_->CreateObject<Text>();
+        auto entryText = MakeShared<Text>(context_);
         fileList_->AddItem(entryText);
         entryText->SetText(displayName);
         entryText->SetStyle("FileSelectorListText");

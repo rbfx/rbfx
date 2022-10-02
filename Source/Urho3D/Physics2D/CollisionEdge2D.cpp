@@ -49,7 +49,7 @@ CollisionEdge2D::~CollisionEdge2D() = default;
 
 void CollisionEdge2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionEdge2D>(Category_Physics2D);
+    context->AddFactoryReflection<CollisionEdge2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Vertex 1", GetVertex1, SetVertex1, Vector2, DEFAULT_VERTEX1, AM_DEFAULT);

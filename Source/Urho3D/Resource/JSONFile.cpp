@@ -52,7 +52,7 @@ JSONFile::~JSONFile() = default;
 
 void JSONFile::RegisterObject(Context* context)
 {
-    context->RegisterFactory<JSONFile>();
+    context->AddFactoryReflection<JSONFile>();
 }
 
 // Convert rapidjson value to JSON value.

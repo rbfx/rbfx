@@ -76,7 +76,7 @@ Node::~Node()
 
 void Node::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Node>();
+    context->AddFactoryReflection<Node>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
@@ -395,7 +395,7 @@ void Node::ApplyAttributes()
 
 bool Node::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     XMLElement rootElem = xml->CreateRoot("node");
     if (!SaveXML(rootElem))
         return false;
@@ -405,7 +405,7 @@ bool Node::SaveXML(Serializer& dest, const ea::string& indentation) const
 
 bool Node::SaveJSON(Serializer& dest, const ea::string& indentation) const
 {
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(MakeShared<JSONFile>(context_));
     JSONValue& rootElem = json->GetRoot();
 
     if (!SaveJSON(rootElem))
@@ -1802,7 +1802,7 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
 
 Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
 {
-    SharedPtr<Node> newNode(context_->CreateObject<Node>());
+    SharedPtr<Node> newNode(MakeShared<Node>(context_));
     newNode->SetTemporary(temporary);
 
     // If zero ID specified, or the ID is already taken, let the scene assign
@@ -2070,7 +2070,7 @@ Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type
     {
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
-        SharedPtr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
+        SharedPtr<UnknownComponent> newComponent(MakeShared<UnknownComponent>(context_));
         AddComponent(newComponent, id, mode);
         return newComponent;
     }

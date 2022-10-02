@@ -176,6 +176,7 @@ public:
         const ea::string& fileName = GetAbsoluteFileName(resource->GetName());
         if (fileName.empty())
             throw RuntimeException("Cannot save imported resource");
+        resource->SetAbsoluteFileName(fileName);
         resource->SaveFile(fileName);
     }
 
@@ -2779,7 +2780,33 @@ private:
             }
         }
 
-        animation->SetLength(CalculateLength(*animation));
+        const bool ensureLooped = base_.GetSettings().repairLooping_;
+        const bool isAnimationLooped = IsAnimationLooped(*animation);
+        const auto frameStep = GetFrameStep(*animation);
+        const float animationLength = GetAnimationLength(*animation);
+
+        // TODO: It would be better to add a keyframe at the end of the animation
+        if (!isAnimationLooped && ensureLooped && frameStep)
+        {
+            animation->SetLength(animationLength + *frameStep);
+            animation->AddMetadata("Looped", true);
+        }
+        else
+        {
+            animation->SetLength(animationLength);
+            animation->AddMetadata("Looped", isAnimationLooped);
+        }
+
+        if (frameStep)
+        {
+            const int frameRate = RoundToInt(1.0f / *frameStep);
+            const float frameRateError = Abs(frameRate - 1.0f / *frameStep);
+
+            animation->AddMetadata("FrameStep", *frameStep);
+            if (frameRateError < 0.01f)
+                animation->AddMetadata("FrameRate", frameRate);
+        }
+
         return animation;
     }
 
@@ -2842,18 +2869,66 @@ private:
         return result;
     }
 
-    static float CalculateLength(const Animation& animation)
+    template <class T>
+    static ea::optional<float> GetTrackLength(const T& track)
+    {
+        if (track.keyFrames_.empty())
+            return ea::nullopt;
+        return track.keyFrames_.back().time_;
+    }
+
+    template <class T>
+    static ea::optional<float> GetTrackStep(const T& track)
+    {
+        const unsigned numFrames = track.keyFrames_.size();
+        if (numFrames <= 1)
+            return ea::nullopt;
+        return track.keyFrames_[numFrames - 1].time_ - track.keyFrames_[numFrames - 2].time_;
+    }
+
+    static bool IsAnimationLooped(const Animation& animation)
+    {
+        for (const auto& [_, track] : animation.GetTracks())
+        {
+            if (!track.IsLooped())
+                return false;
+        }
+        for (const auto& [_, track] : animation.GetVariantTracks())
+        {
+            if (!track.IsLooped())
+                return false;
+        }
+        return true;
+    }
+
+    static ea::optional<float> GetFrameStep(const Animation& animation)
+    {
+        ea::optional<float> frameStep;
+        for (const auto& [_, track] : animation.GetTracks())
+        {
+            if (const auto trackStep = GetTrackStep(track))
+                frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+        }
+        for (const auto& [_, track] : animation.GetVariantTracks())
+        {
+            if (const auto trackStep = GetTrackStep(track))
+                frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+        }
+        return frameStep;
+    }
+
+    static float GetAnimationLength(const Animation& animation)
     {
         float length = 0.0f;
         for (const auto& [nameHash, track] : animation.GetTracks())
         {
-            if (!track.keyFrames_.empty())
-                length = ea::max(length, track.keyFrames_.back().time_);
+            if (const auto trackLength = GetTrackLength(track))
+                length = ea::max(length, *trackLength);
         }
         for (const auto& [nameHash, track] : animation.GetVariantTracks())
         {
-            if (!track.keyFrames_.empty())
-                length = ea::max(length, track.keyFrames_.back().time_);
+            if (const auto trackLength = GetTrackLength(track))
+                length = ea::max(length, *trackLength);
         }
         return length;
     }
@@ -3234,8 +3309,10 @@ private:
 void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
+    SerializeValue(archive, "scale", value.scale_);
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
+    SerializeValue(archive, "repairLooping", value.repairLooping_);
 
     SerializeValue(archive, "addLights", value.preview_.addLights_);
     SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);

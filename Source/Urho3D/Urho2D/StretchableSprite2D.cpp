@@ -124,7 +124,7 @@ StretchableSprite2D::StretchableSprite2D(Context* context) :
 
 void StretchableSprite2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StretchableSprite2D>(Category_Urho2D);
+    context->AddFactoryReflection<StretchableSprite2D>(Category_Urho2D);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticSprite2D);
     URHO3D_ACCESSOR_ATTRIBUTE("Border", GetBorder, SetBorder, IntRect, IntRect::ZERO, AM_DEFAULT);

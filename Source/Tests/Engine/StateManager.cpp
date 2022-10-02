@@ -108,9 +108,9 @@ EaEqualsMatcher<T, AllocComp, AllocMatch> EaEquals(ea::vector<T, AllocComp> cons
 void PrepareStateReflections(Context* context)
 {
     if (!context->IsReflected<State1>())
-        context->RegisterFactory<State1>();
+        context->AddFactoryReflection<State1>();
     if (!context->IsReflected<State2>())
-        context->RegisterFactory<State2>();
+        context->AddFactoryReflection<State2>();
 }
 
 }

@@ -48,7 +48,7 @@ SpriteSheet2D::~SpriteSheet2D() = default;
 
 void SpriteSheet2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SpriteSheet2D>();
+    context->AddFactoryReflection<SpriteSheet2D>();
 }
 
 bool SpriteSheet2D::BeginLoad(Deserializer& source)
@@ -102,7 +102,7 @@ void SpriteSheet2D::DefineSprite(const ea::string& name, const IntRect& rectangl
     if (GetSprite(name))
         return;
 
-    SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+    SharedPtr<Sprite2D> sprite(MakeShared<Sprite2D>(context_));
     sprite->SetName(name);
     sprite->SetTexture(texture_);
     sprite->SetRectangle(rectangle);
@@ -124,7 +124,7 @@ Sprite2D* SpriteSheet2D::GetSprite(const ea::string& name) const
 
 bool SpriteSheet2D::BeginLoadFromPListFile(Deserializer& source)
 {
-    loadPListFile_ = context_->CreateObject<PListFile>();
+    loadPListFile_ = MakeShared<PListFile>(context_);
     if (!loadPListFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
@@ -240,7 +240,7 @@ bool SpriteSheet2D::EndLoadFromPListFile()
 
 bool SpriteSheet2D::BeginLoadFromXMLFile(Deserializer& source)
 {
-    loadXMLFile_ = context_->CreateObject<XMLFile>();
+    loadXMLFile_ = MakeShared<XMLFile>(context_);
     if (!loadXMLFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
@@ -314,7 +314,7 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
 
 bool SpriteSheet2D::BeginLoadFromJSONFile(Deserializer& source)
 {
-    loadJSONFile_ = context_->CreateObject<JSONFile>();
+    loadJSONFile_ = MakeShared<JSONFile>(context_);
     if (!loadJSONFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
