@@ -983,6 +983,31 @@ void Terrain::CreateGeometry()
                 }
             }
         }
+        else if (imgComps == 4)
+        {
+            URHO3D_PROFILE("CopyHeightData");
+
+            for (int z = 0; z < numVertices_.y_; ++z)
+            {
+                for (int x = 0; x < numVertices_.x_; ++x)
+                {
+                    float newHeight = *(float*)&src[imgRow * (numVertices_.y_ - 1 - z) + x * imgComps] * spacing_.y_;
+
+                    if (updateAll)
+                        *dest = newHeight;
+                    else
+                    {
+                        if (*dest != newHeight)
+                        {
+                            *dest = newHeight;
+                            GrowUpdateRegion(updateRegion, x, z);
+                        }
+                    }
+
+                    ++dest;
+                }
+            }
+        }
         else
         {
             URHO3D_PROFILE("CopyHeightData");
