@@ -216,9 +216,7 @@ set (THIRD_PARTY_DEPENDENCIES
     tinygltf
 )
 
-if (URHO3D_MERGE_STATIC_LIBS)
-    list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
-elseif (TARGET Bullet)
+if (TARGET Bullet)
     # This library can not be exported from .dll on windows platforms.
     if (WEB AND BUILD_SHARED_LIBS)
         # With this configuration public linking causes some symbols to be multiply defined.
@@ -231,8 +229,6 @@ endif ()
 
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
-        # By linking them as private but inheriting definitions/options/dirs we avoid having
-        # to export third party lib targets in a monolithic dll build.
         get_target_property(_TARGET_TYPE ${dep} TYPE)
         if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
             if (BUILD_SHARED_LIBS)
@@ -245,39 +241,13 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
                 set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
             endif ()
         endif ()
-        get_target_property(VALUE ${dep} INTERFACE_COMPILE_DEFINITIONS)
-        if (VALUE)
-            target_compile_definitions(Urho3D PUBLIC ${VALUE})
+
+        if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
+            target_link_libraries(Urho3D PUBLIC -Wl,--whole-archive)
         endif ()
-        get_target_property(VALUE ${dep} INTERFACE_COMPILE_OPTIONS)
-        if (VALUE)
-            target_compile_options(Urho3D PUBLIC ${VALUE})
-        endif ()
-        get_target_property(VALUE ${dep} INTERFACE_INCLUDE_DIRECTORIES)
-        if (VALUE)
-            target_include_directories(Urho3D PUBLIC ${VALUE})
-        endif ()
-        get_target_property(VALUE ${dep} INTERFACE_LINK_LIBRARIES)
-        if (VALUE)
-            foreach (dep_lib ${VALUE})
-                string(FIND "${dep_lib}" "$" DOLLAR_OFFSET)
-                if (DOLLAR_OFFSET LESS 0 AND NOT TARGET "${dep_lib}")
-                    target_link_libraries (Urho3D PUBLIC "${dep_lib}")
-                endif ()
-            endforeach ()
-        endif ()
-        if (BUILD_SHARED_LIBS OR NOT URHO3D_MERGE_STATIC_LIBS)
-            if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
-                target_link_libraries(Urho3D PRIVATE -Wl,--whole-archive)
-            endif ()
-            target_link_libraries(Urho3D PRIVATE ${dep})
-            if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
-                target_link_libraries(Urho3D PRIVATE -Wl,--no-whole-archive)
-            endif ()
-        else ()
-            if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
-                list (APPEND DEPENDENCY_TARGET_FILES $<TARGET_FILE:${dep}>)
-            endif ()
+        target_link_libraries(Urho3D PUBLIC ${dep})
+        if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
+            target_link_libraries(Urho3D PUBLIC -Wl,--no-whole-archive)
         endif ()
     endif ()
 endforeach()
@@ -477,39 +447,6 @@ if (MINI_URHO)
     return ()
 endif ()
 
-if (URHO3D_MERGE_STATIC_LIBS)
-    # Merge static libraries of third party dependencies to final engine static library
-    add_custom_command (TARGET Urho3D PRE_BUILD COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:Urho3D>)
-    if (MSVC)
-        # If merged library is not deleted in this step then sometimes build system will try to merge dependencies
-        # to already merged library inflating it further.
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND lib.exe /OUT:$<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D> ${DEPENDENCY_TARGET_FILES}
-            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D>
-            COMMENT "Merging all archives into a single static library using lib.exe")
-    elseif (APPLE)
-        # Apple libtool takes archives directly as input
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND libtool -static $<TARGET_FILE:Urho3D> ${DEPENDENCY_TARGET_FILES} -o $<TARGET_FILE:Urho3D>.engine
-            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D>
-            COMMENT "Merging all archives into a single static library using libtool")
-    else ()
-        # GCC ar does not take archives directly as input like Apple libtool, however, it can be scripted to do so
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D> $<TARGET_FILE:Urho3D>.engine
-            COMMAND echo CREATE $<TARGET_FILE:Urho3D> >script.ar
-            COMMAND echo ADDLIB $<TARGET_FILE:Urho3D>.engine >>script.ar)
-        foreach (ARCHIVE ${DEPENDENCY_TARGET_FILES})
-            add_custom_command (TARGET Urho3D POST_BUILD COMMAND echo ADDLIB ${ARCHIVE} >>script.ar)
-        endforeach ()
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND echo SAVE >>script.ar
-            COMMAND echo END >>script.ar
-            COMMAND ${CMAKE_AR} -M <script.ar
-            COMMAND ${CMAKE_COMMAND} -E remove $<TARGET_FILE:Urho3D>.engine script.ar
-            COMMENT "Merging all archives into a single static library using ar")
-    endif ()
-endif ()
 
 # SDK installation
 install(TARGETS Urho3D

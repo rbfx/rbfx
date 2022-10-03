@@ -42,7 +42,5 @@ target_include_directories(LibCpuId
 )
 
 if (NOT MINI_URHO)
-    if (NOT URHO3D_MERGE_STATIC_LIBS)
-        install(TARGETS LibCpuId EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-    endif ()
+    install(TARGETS LibCpuId EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
 endif ()
