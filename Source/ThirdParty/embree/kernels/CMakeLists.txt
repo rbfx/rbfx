@@ -251,9 +251,7 @@ IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   CheckGlobals(embree_sse42)
   # Urho3D: Export library.
   if (NOT MINI_URHO)
-    if (NOT URHO3D_MERGE_STATIC_LIBS)
-      install(TARGETS embree_sse42 EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
-    endif ()
+    install(TARGETS embree_sse42 EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
   endif ()
 ENDIF ()
 
@@ -267,9 +265,7 @@ IF (EMBREE_ISA_AVX  AND EMBREE_LIBRARY_FILES_AVX)
   CheckGlobals(embree_avx)
   # Urho3D: Export library.
   if (NOT MINI_URHO)
-    if (NOT URHO3D_MERGE_STATIC_LIBS)
-      install(TARGETS embree_avx EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
-    endif ()
+    install(TARGETS embree_avx EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
   endif ()
 ENDIF()
 
@@ -283,9 +279,7 @@ IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
   CheckGlobals(embree_avx2)
   # Urho3D: Export library.
   if (NOT MINI_URHO)
-    if (NOT URHO3D_MERGE_STATIC_LIBS)
-      install(TARGETS embree_avx2 EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
-    endif ()
+    install(TARGETS embree_avx2 EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
   endif ()
 ENDIF()
 
@@ -299,9 +293,7 @@ IF (EMBREE_ISA_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
   CheckGlobals(embree_avx512knl)
   # Urho3D: Export library.
   if (NOT MINI_URHO)
-    if (NOT URHO3D_MERGE_STATIC_LIBS)
-      install(TARGETS embree_avx512knl EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
-    endif ()
+    install(TARGETS embree_avx512knl EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
   endif ()
 ENDIF()
 
@@ -315,9 +307,7 @@ IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
   CheckGlobals(embree_avx512skx)
   # Urho3D: Export library.
   if (NOT MINI_URHO)
-    if (NOT URHO3D_MERGE_STATIC_LIBS)
-      install(TARGETS embree_avx512skx EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
-    endif ()
+    install(TARGETS embree_avx512skx EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
   endif ()
 ENDIF()
 
@@ -373,7 +363,5 @@ SIGN_TARGET(embree)
 
 # Urho3D: Install targets
 if (NOT MINI_URHO)
-    if (NOT URHO3D_MERGE_STATIC_LIBS)
-        install(TARGETS embree EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
-    endif ()
+  install(TARGETS embree EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 endif ()
