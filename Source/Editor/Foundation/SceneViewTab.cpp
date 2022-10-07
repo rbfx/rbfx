@@ -776,7 +776,7 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
     auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
 
     auto project = GetProject();
-    project->SaveFileDelayed(page.scene_->GetFileName(), page.resource_->GetName(), sharedBuffer);
+    project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer);
 }
 
 void SceneViewTab::SavePagePreview(SceneViewPage& page) const
