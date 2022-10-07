@@ -370,6 +370,7 @@ void AnimationController::RegisterObject(Context* context)
     context->AddFactoryReflection<AnimationController>(Category_Logic);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Reset Skeleton", bool, resetSkeleton_, false, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)
         .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, animationParametersNames);
 }
@@ -430,6 +431,13 @@ void AnimationController::Update(float timeStep)
     {
         if (state->AreTracksDirty())
             UpdateAnimationStateTracks(state);
+    }
+
+    // Reset skeleton if necessary
+    if (resetSkeleton_)
+    {
+        if (auto model = GetComponent<AnimatedModel>())
+            model->GetSkeleton().Reset();
     }
 
     // Node and attribute animations need to be applied manually
