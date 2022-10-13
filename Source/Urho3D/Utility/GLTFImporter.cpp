@@ -1746,8 +1746,11 @@ public:
     static bool LoadImageData(tg::Image* image, const int imageIndex, std::string*, std::string*,
         int reqWidth, int reqHeight, const unsigned char* bytes, int size, void*)
     {
-        if (image->name.empty() == true)
+        if (image->name.empty())
             image->name = GetFileName(image->uri.c_str()).c_str();
+        else
+            image->name = GetFileName(image->name.c_str()).c_str();
+        
         image->as_is = true;
         image->image.resize(size);
         ea::copy_n(bytes, size, image->image.begin());
