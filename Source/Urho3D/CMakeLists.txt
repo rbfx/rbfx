@@ -146,10 +146,12 @@ if (URHO3D_PCH)
     target_precompile_headers(Urho3D PRIVATE $<BUILD_INTERFACE:$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/Precompiled.h>>)
 endif ()
 
-# Add any variables starting with URHO3D_ as project defines
+# Add any variables starting with URHO3D_ as project defines, with some exceptions
 get_cmake_property(__cmake_variables VARIABLES)
+set (IGNORED_URHO3D_OPTIONS "URHO3D_PLAYER;URHO3D_EDITOR;URHO3D_EXTRAS;URHO3D_TOOLS;URHO3D_SAMPLES;URHO3D_MERGE_STATIC_LIBS;URHO3D_NO_EDITOR_PLAYER_EXE")
 foreach (var ${__cmake_variables})
-    if ("${var}" MATCHES "^URHO3D_")
+    list (FIND IGNORED_URHO3D_OPTIONS ${var} _index)
+    if ("${var}" MATCHES "^URHO3D_" AND NOT "${var}" MATCHES "_AVAILABLE$" AND _index EQUAL -1)
         if ("${${var}}")
             target_compile_definitions(Urho3D PUBLIC -D${var})
         endif ()

@@ -33,6 +33,8 @@
    !!! FIXME:  true always once pthread support becomes widespread. Revisit this code
    !!! FIXME:  at some point and see what needs to be done for that! */
 
+EM_JS_DEPS(main, "$autoResumeAudioContext");
+
 static void
 FeedAudioDevice(_THIS, const void *buf, const int buflen)
 {

@@ -229,6 +229,9 @@ private:
     void CommitNodeAndAttributeAnimations();
     void SendTriggerEvents();
 
+    /// Whether to reset AnimatedModel skeleton to bind pose every frame.
+    bool resetSkeleton_{};
+
     /// Currently playing animations.
     struct AnimationInstance
     {

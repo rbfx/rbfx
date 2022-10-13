@@ -158,7 +158,6 @@ cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                 
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player executables."            OFF)
-option(URHO3D_CONTAINER_ADAPTERS                "Enable EASTL-to-Urho container adapters for easier porting of legacy code." OFF)
 option(URHO3D_SSL                               "Enable OpenSSL support"                                OFF)
 
 if (WIN32)
