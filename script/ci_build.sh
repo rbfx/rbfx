@@ -60,6 +60,7 @@ toolchains_ios=(
 )
 toolchains_web=(
     '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake'
+    "-DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/"
     '-DURHO3D_PROFILING=OFF'
 )
 

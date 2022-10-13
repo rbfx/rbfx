@@ -568,6 +568,9 @@ jobs:
         ci_build_type:
           - dbg
           - rel
+        ci_emsdk_version:
+          - latest
+          - 3.1.24  # Minimal supported
 
     env:
       BINARYEN_CORES: 1
@@ -585,9 +588,9 @@ jobs:
                     }}
 
     steps:
-      - uses: mymindstorm/setup-emsdk@v9
+      - uses: mymindstorm/setup-emsdk@v11
         with:
-          version: latest
+          version: ${{ matrix.ci_emsdk_version }}
 
       - uses: actions/checkout@v2
         with:
