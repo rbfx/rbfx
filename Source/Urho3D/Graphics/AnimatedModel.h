@@ -98,6 +98,8 @@ public:
     void SetMorphWeight(StringHash nameHash, float weight);
     /// Reset all vertex morphs to zero.
     void ResetMorphWeights();
+    /// Reset node transforms of skeleton bones.
+    void ResetBones();
     /// Apply all animation states to nodes.
     void ApplyAnimation();
     /// Connect to AnimationStateSource that provides animation states.
