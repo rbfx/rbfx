@@ -36,8 +36,6 @@
 #include "../Scene/SceneEvents.h"
 #include "../Scene/UnknownComponent.h"
 
-#include <charconv>
-
 #include "../DebugNew.h"
 
 #ifdef _MSC_VER
@@ -1412,9 +1410,8 @@ Node* Node::GetChildByNameOrIndex(ea::string_view name) const
 
     if (name[0] == '#')
     {
-        unsigned index = 0;
-        const auto result = std::from_chars(name.begin() + 1, name.end(), index, 10);
-        if (result.ec == std::errc{} && result.ptr == name.end())
+        unsigned index = std::atoi(name.begin() + 1);
+        if (index != 0 || (name.length() == 2 && name[1] == '0'))
             return GetChild(index);
     }
 
