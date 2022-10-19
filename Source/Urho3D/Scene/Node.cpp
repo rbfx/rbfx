@@ -1424,7 +1424,7 @@ Serializable* Node::GetSerializableByName(ea::string_view name) const
         return const_cast<Node*>(this);
 
     unsigned index = 0;
-    const unsigned sep = name.find('#');
+    const ea::string_view::size_type sep = name.find('#');
     if (sep != ea::string_view::npos)
     {
         // TODO(string): Refactor StringUtils

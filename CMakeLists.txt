@@ -28,8 +28,12 @@ if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 17)
 endif ()
 
-# Set project name
-project (rbfx)
+# Set project name and languages
+project (rbfx C CXX)
+if (APPLE)
+    enable_language(OBJC)
+    enable_language(OBJCXX)
+endif ()
 
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules)
