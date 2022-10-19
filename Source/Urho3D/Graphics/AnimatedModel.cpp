@@ -415,7 +415,7 @@ void AnimatedModel::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     if (debug && IsEnabledEffective())
     {
         debug->AddBoundingBox(GetWorldBoundingBox(), Color::GREEN, depthTest);
-        debug->AddSkeleton(skeleton_, Color(0.75f, 0.75f, 0.75f), depthTest);
+        debug->AddSkeleton(skeleton_, Color(0.75f, 0.75f, 0.75f), false);
     }
 }
 
