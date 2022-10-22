@@ -26,6 +26,10 @@
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
 
+#ifdef URHO3D_D3D11
+class ID3D11Texture2D;
+#endif
+
 namespace Urho3D
 {
 
@@ -78,6 +82,14 @@ public:
     /// @property
     RenderSurface* GetRenderSurface() const { return renderSurface_; }
 
+#ifdef URHO3D_D3D11
+    /// Initialize texture from an external texture. This function will not touch the reference-counts, caller is responsible.
+    bool CreateFromExternal(ID3D11Texture2D*, int msaaLevel, bool isSRGB);
+#endif
+#ifdef URHO3D_OPENGL
+    bool CreateFromExternal(int, int w, int h, int msaaLevel, int format, TextureUsage usage);
+#endif
+
 protected:
     /// Create the GPU texture.
     bool Create() override;
@@ -92,6 +104,8 @@ private:
     SharedPtr<Image> loadImage_;
     /// Parameter file acquired during BeginLoad.
     SharedPtr<XMLFile> loadParameters_;
+    /// Does this texture own the texture in question? Required for GL.
+    bool owned_{ true };
 };
 
 }
