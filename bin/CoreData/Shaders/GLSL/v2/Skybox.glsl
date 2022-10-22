@@ -4,6 +4,12 @@
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+
+// JS: this has to be before samplers so we can see it for depth reconstruction
+#ifdef URHO3D_XR
+    VERTEX_OUTPUT(int vInstID)
+#endif
+
 #include "_Samplers.glsl"
 #include "_VertexLayout.glsl"
 
@@ -17,11 +23,16 @@ void main()
 {
     mat4 modelMatrix = GetModelMatrix();
     vec4 worldPos = vec4(iPos.xyz, 0.0) * modelMatrix;
-    worldPos.xyz += cCameraPos;
+    worldPos.xyz += STEREO_VAR(cCameraPos);    
     worldPos.w = 1.0;
-    gl_Position = worldPos * cViewProj;
+    
+    gl_Position = WorldToClipSpace(worldPos.xyz);
     gl_Position.z = gl_Position.w;
     vTexCoord = iPos.xyz;
+    
+    #ifdef URHO3D_XR
+        vInstID = gl_InstanceID;
+    #endif
 }
 #endif
 
