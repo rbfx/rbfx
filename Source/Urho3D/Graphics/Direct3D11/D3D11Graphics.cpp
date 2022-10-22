@@ -802,6 +802,31 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     ++numBatches_;
 }
 
+void Graphics::DrawInstanced(PrimitiveType type, unsigned vertexStart, unsigned vertexCount, unsigned instanceCount)
+{
+    if (vertexCount == 0 || instanceCount == 0 || !impl_->shaderProgram_)
+        return;
+
+    PrepareDraw();
+
+    unsigned primitiveCount;
+    D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
+
+    if (fillMode_ == FILL_POINT)
+        type = POINT_LIST;
+
+    GetD3DPrimitiveType(vertexCount, type, primitiveCount, d3dPrimitiveType);
+    if (d3dPrimitiveType != primitiveType_)
+    {
+        impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
+        primitiveType_ = d3dPrimitiveType;
+    }
+    impl_->deviceContext_->DrawInstanced(vertexCount, instanceCount, vertexStart, 0);
+
+    numPrimitives_ += instanceCount * primitiveCount;
+    ++numBatches_;
+}
+
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,
     unsigned instanceCount)
 {
@@ -880,15 +905,17 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
         {
             const ea::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data
-            bool hasInstanceData = elements.size() && elements[0].perInstance_;
+            bool hasInstanceData = elements.size() && elements[0].stepRate_;
+            unsigned stepRate = elements.size() ? elements[0].stepRate_ : 1;
             unsigned offset = hasInstanceData ? instanceOffset * buffer->GetVertexSize() : 0;
 
-            if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
+            if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i] || impl_->vertexStepRates_[i] != stepRate)
             {
                 vertexBuffers_[i] = buffer;
                 impl_->vertexBuffers_[i] = (ID3D11Buffer*)buffer->GetGPUObject();
                 impl_->vertexSizes_[i] = buffer->GetVertexSize();
                 impl_->vertexOffsets_[i] = offset;
+                impl_->vertexStepRates_[i] = stepRate;
                 changed = true;
             }
         }
@@ -898,6 +925,7 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
             impl_->vertexBuffers_[i] = nullptr;
             impl_->vertexSizes_[i] = 0;
             impl_->vertexOffsets_[i] = 0;
+            impl_->vertexStepRates_[i] = 0;
             changed = true;
         }
 

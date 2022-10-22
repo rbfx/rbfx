@@ -67,13 +67,13 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertex
             // Override existing element if necessary
             for (unsigned k = 0; k < prevBufferDescs; ++k)
             {
-                if (elementDescs[k].SemanticName == semanticName && elementDescs[k].SemanticIndex == srcElement.index_)
+                if (elementDescs[k].SemanticName == semanticName && elementDescs[k].SemanticIndex == srcElement.index_ && elementDescs[k].InstanceDataStepRate == srcElement.stepRate_)
                 {
                     isExisting = true;
                     elementDescs[k].InputSlot = i;
                     elementDescs[k].AlignedByteOffset = srcElement.offset_;
-                    elementDescs[k].InputSlotClass = srcElement.perInstance_ ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
-                    elementDescs[k].InstanceDataStepRate = srcElement.perInstance_ ? 1 : 0;
+                    elementDescs[k].InputSlotClass = srcElement.stepRate_ > 0 ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
+                    elementDescs[k].InstanceDataStepRate = srcElement.stepRate_;
                     break;
                 }
             }
@@ -87,8 +87,8 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertex
             newDesc.Format = d3dElementFormats[srcElement.type_];
             newDesc.InputSlot = (UINT)i;
             newDesc.AlignedByteOffset = srcElement.offset_;
-            newDesc.InputSlotClass = srcElement.perInstance_ ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
-            newDesc.InstanceDataStepRate = srcElement.perInstance_ ? 1 : 0;
+            newDesc.InputSlotClass = srcElement.stepRate_ > 0 ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
+            newDesc.InstanceDataStepRate = srcElement.stepRate_;
             elementDescs.push_back(newDesc);
         }
 

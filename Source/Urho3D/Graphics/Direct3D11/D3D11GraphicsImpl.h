@@ -113,6 +113,8 @@ private:
     unsigned vertexSizes_[MAX_VERTEX_STREAMS];
     /// Vertex stream offsets per buffer.
     unsigned vertexOffsets_[MAX_VERTEX_STREAMS];
+    /// Vertex instancign step-rates per buffer.
+    unsigned vertexStepRates_[MAX_VERTEX_STREAMS];
     /// Rendertargets dirty flag.
     bool renderTargetsDirty_;
     /// Textures dirty flag.

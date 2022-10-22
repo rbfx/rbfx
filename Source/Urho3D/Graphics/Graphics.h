@@ -239,6 +239,8 @@ public:
     void Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount);
     /// Draw indexed geometry with vertex index offset.
     void Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertex, unsigned vertexCount);
+    /// Draw non-indexed instanced geometry.
+    void DrawInstanced(PrimitiveType type, unsigned vertexStart, unsigned vertexCount, unsigned instanceCount);
     /// Draw indexed, instanced geometry. An instancing vertex buffer must be set.
     void DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,
         unsigned instanceCount);
