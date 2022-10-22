@@ -1,0 +1,3 @@
+<material>
+    <technique name="Techniques/NoTextureVColAddAlpha.xml" />
+</material>
