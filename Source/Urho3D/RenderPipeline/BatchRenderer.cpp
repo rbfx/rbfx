@@ -531,43 +531,114 @@ private:
         for (const ShaderParameterDesc& shaderParameter : cameraParameters_)
             drawQueue_.AddShaderParameter(shaderParameter.name_, shaderParameter.value_);
 
-        const Matrix3x4 cameraEffectiveTransform = camera_.GetEffectiveWorldTransform();
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_CameraPos, cameraEffectiveTransform.Translation());
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewInv, cameraEffectiveTransform);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_View, camera_.GetView());
-
-        const float nearClip = camera_.GetNearClip();
-        const float farClip = camera_.GetFarClip();
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_NearClip, nearClip);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FarClip, farClip);
-
-        if (outputShadowSplit_)
+        // XR: we can tell we're not in a shadowmap pass by the instanceMultiplier_ at present and
+        // for good measure check the camera matches the first camera of additionalCameras_
+        // would need to change if shadows ever used multiplexed instancing to write to layers / viewports / or manually-clip
+        if (instanceMultiplier_ > 1 && frameInfo_.additionalCameras_[0] == &camera_)
         {
-            const CookedLightParams& lightParams = outputShadowSplit_->GetLightProcessor()->GetParams();
-            drawQueue_.AddShaderParameter(ShaderConsts::Camera_NormalOffsetScale,
-                lightParams.shadowNormalBias_[outputShadowSplit_->GetSplitIndex()]);
+            // stereoscopic, pull parameters for both eyes
+            // Assumption: quad-views eye-focus targets would be best done as a second stereo target pass
+            // because of the difference in frustum sizes (large for far field, narrow for focus)
+
+            const Camera* cameras[2] = { frameInfo_.additionalCameras_[0], frameInfo_.additionalCameras_[1] };
+
+#define CAM_FLD(TARGET, CODE) { TARGET [0] CODE, TARGET [1] CODE }
+#define CAM_FUNC(TARGET, FUNC) { FUNC(*TARGET[0]), FUNC(*TARGET[1]) }
+
+            typedef ea::pair<Matrix4, Matrix4> MatrixDual;
+            typedef ea::pair<Vector4, Vector3> Vec3Dual; // vector alignment in cbuffer, 4 bytes of space gets padded to round out to a float4
+            typedef ea::pair<Vector4, Vector4> Vec4Dual;
+
+            MatrixDual cameraEffectiveTransforms = CAM_FLD(cameras, ->GetEffectiveWorldTransform().ToMatrix4());
+            Vec3Dual cameraPos = { Vector4(cameraEffectiveTransforms.first.Translation(), 0.0f), Vector3(cameraEffectiveTransforms.second.Translation()) };
+            MatrixDual cameraView = CAM_FLD(cameras, ->GetView().ToMatrix4());
+            
+            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_CameraPos, cameraPos);
+            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_ViewInv, cameraEffectiveTransforms);
+            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_View, cameraView);
+
+            const float nearClip = camera_.GetNearClip();
+            const float farClip = camera_.GetFarClip();
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_NearClip, nearClip);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FarClip, farClip);
+
+            Vector4 depthModes[2] = CAM_FUNC(cameras, GetCameraDepthModeParameter);
+            Vector4 depthRecon[2] = CAM_FUNC(cameras, GetCameraDepthReconstructParameter);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, ea::span<const Vector4> { depthModes });
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, ea::span<const Vector4> { depthRecon });
+
+            Vector3 nearVector3[2]{};
+            Vector3 farVector3[2]{};
+            cameras[0]->GetFrustumSize(nearVector3[0], farVector3[0]);
+            cameras[1]->GetFrustumSize(nearVector3[1], farVector3[1]);
+            Vec3Dual farVectors = { Vector4(farVector3[0], 0), farVector3[1] };
+            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_FrustumSize, farVectors);
+
+            MatrixDual viewProj = CAM_FLD(cameras, ->GetEffectiveGPUViewProjection(constantDepthBias));
+            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_ViewProj, viewProj);
+            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);
+
+            if (!enabled_.colorOutput_)
+                return;
+
+            // Average these colors to avoid anything extreme happening with any minima between eyes
+            const Color ambientColorGammas[2] = {
+                cameras[0]->GetEffectiveAmbientColor() * cameras[0]->GetEffectiveAmbientBrightness(),
+                cameras[1]->GetEffectiveAmbientColor() * cameras[1]->GetEffectiveAmbientBrightness()
+            };
+            const Color ambientColorGammaCombined = ambientColorGammas[0].Lerp(ambientColorGammas[1], 0.5f);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
+                settings_.linearSpaceLighting_ ? ambientColorGammaCombined.GammaToLinear() : ambientColorGammaCombined);
+
+            const Color fogColors[2] = CAM_FLD(cameras, ->GetEffectiveFogColor()); // TODO(xr): Fix linear color space
+            const Vector4 fogParams[2] = CAM_FUNC(cameras, GetFogParameter);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor, fogColors[0].Lerp(fogColors[1], 0.5f));
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, fogParams[0].Lerp(fogParams[1], 0.5f));
+
+#undef CAM_FUNC
+#undef CAM_FLD
         }
+        else
+        {
+            // Not stereoscopic rendering, single eye
+            const Matrix3x4 cameraEffectiveTransform = camera_.GetEffectiveWorldTransform();
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_CameraPos, cameraEffectiveTransform.Translation());
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewInv, cameraEffectiveTransform);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_View, camera_.GetView());
 
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, GetCameraDepthModeParameter(camera_));
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, GetCameraDepthReconstructParameter(camera_));
+            const float nearClip = camera_.GetNearClip();
+            const float farClip = camera_.GetFarClip();
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_NearClip, nearClip);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FarClip, farClip);
 
-        Vector3 nearVector, farVector;
-        camera_.GetFrustumSize(nearVector, farVector);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FrustumSize, farVector);
+            if (outputShadowSplit_)
+            {
+                const CookedLightParams& lightParams = outputShadowSplit_->GetLightProcessor()->GetParams();
+                drawQueue_.AddShaderParameter(ShaderConsts::Camera_NormalOffsetScale,
+                    lightParams.shadowNormalBias_[outputShadowSplit_->GetSplitIndex()]);
+            }
 
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewProj, camera_.GetEffectiveGPUViewProjection(constantDepthBias));
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, GetCameraDepthModeParameter(camera_));
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, GetCameraDepthReconstructParameter(camera_));
 
-        if (!enabled_.colorOutput_)
-            return;
+            Vector3 nearVector, farVector;
+            camera_.GetFrustumSize(nearVector, farVector);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FrustumSize, farVector);
 
-        const Color ambientColorGamma = camera_.GetEffectiveAmbientColor() * camera_.GetEffectiveAmbientBrightness();
-        const Color& fogColorGamma = camera_.GetEffectiveFogColor();
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
-            settings_.linearSpaceLighting_ ? ambientColorGamma.GammaToLinear() : ambientColorGamma);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor,
-            settings_.linearSpaceLighting_ ? fogColorGamma.GammaToLinear() : fogColorGamma);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, GetFogParameter(camera_));
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewProj, camera_.GetEffectiveGPUViewProjection(constantDepthBias));
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);
+
+            if (!enabled_.colorOutput_)
+                return;
+
+            const Color ambientColorGamma = camera_.GetEffectiveAmbientColor() * camera_.GetEffectiveAmbientBrightness();
+            const Color& fogColorGamma = camera_.GetEffectiveFogColor();
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
+                settings_.linearSpaceLighting_ ? ambientColorGamma.GammaToLinear() : ambientColorGamma);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor,
+                settings_.linearSpaceLighting_ ? fogColorGamma.GammaToLinear() : fogColorGamma);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, GetFogParameter(camera_));
+        }
     }
 
     void AddReflectionProbeConstants()
@@ -661,12 +732,25 @@ private:
 
         for (unsigned i = 0; i < numInstances; ++i)
         {
-            objectParameterBuilder_.AddBatchUniformsToDrawQueue(drawQueue_, cameraNode_, sourceBatch, i);
-
-            if (indexBuffer != nullptr)
-                drawQueue_.DrawIndexed(current_.geometry_->GetIndexStart(), current_.geometry_->GetIndexCount());
+            if (frameInfo_.viewReferenceNode_)
+                objectParameterBuilder_.AddBatchUniformsToDrawQueue(drawQueue_, *frameInfo_.viewReferenceNode_, sourceBatch, i);
             else
-                drawQueue_.Draw(current_.geometry_->GetVertexStart(), current_.geometry_->GetVertexCount());
+                objectParameterBuilder_.AddBatchUniformsToDrawQueue(drawQueue_, cameraNode_, sourceBatch, i);
+
+            if (instanceMultiplier_ == 1)
+            {
+                if (indexBuffer != nullptr)
+                    drawQueue_.DrawIndexed(current_.geometry_->GetIndexStart(), current_.geometry_->GetIndexCount());
+                else
+                    drawQueue_.Draw(current_.geometry_->GetVertexStart(), current_.geometry_->GetVertexCount());
+            }
+            else // if multiply instance counts for a purpose such as stereo then it's necessary to replace uninstanced draws with instanced draws.
+            {
+                if (indexBuffer != nullptr)
+                    drawQueue_.DrawIndexedInstanced(current_.geometry_->GetIndexStart(), current_.geometry_->GetIndexCount(), 0, instanceMultiplier_);
+                else
+                    drawQueue_.DrawInstanced(current_.geometry_->GetVertexStart(), current_.geometry_->GetVertexCount(), 0, instanceMultiplier_);
+            }
         }
     }
 
@@ -677,7 +761,7 @@ private:
         drawQueue_.SetBuffers({ geometry->GetVertexBuffers(), geometry->GetIndexBuffer(),
             instancingBuffer_.GetVertexBuffer() });
         drawQueue_.DrawIndexedInstanced(geometry->GetIndexStart(), geometry->GetIndexCount(),
-            instancingGroup_.start_, instancingGroup_.count_);
+            instancingGroup_.start_, instancingGroup_.count_ * instanceMultiplier_ /*multiply for stereo*/);
         instancingGroup_.count_ = 0;
     }
     /// @}

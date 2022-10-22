@@ -32,6 +32,7 @@
 namespace Urho3D
 {
 
+class Camera;
 class Light;
 class PipelineState;
 class RenderPipelineDebugger;
@@ -57,6 +58,8 @@ struct CommonFrameInfo
 
     Viewport* viewport_{};
     RenderSurface* renderTarget_{};
+
+    ea::array<Camera*, 2> cameras_{};
 };
 
 /// Traits of scene pass.
@@ -73,6 +76,8 @@ enum class DrawableProcessorPassFlag
 
     BatchCallback = 1 << 6,
     PipelineStateCallback = 1 << 7,
+
+    StereoInstancing = 1 << 8,
 };
 
 URHO3D_FLAGSET(DrawableProcessorPassFlag, DrawableProcessorPassFlags);
@@ -358,6 +363,7 @@ struct InstancingBufferSettings
     bool enableInstancing_{};
     unsigned firstInstancingTexCoord_{};
     unsigned numInstancingTexCoords_{};
+    unsigned stepRate_{ 1 };
 
     /// Utility operators
     /// @{
@@ -367,6 +373,7 @@ struct InstancingBufferSettings
         CombineHash(hash, enableInstancing_);
         CombineHash(hash, firstInstancingTexCoord_);
         CombineHash(hash, numInstancingTexCoords_);
+        CombineHash(hash, stepRate_);
         return hash;
     }
 
@@ -378,7 +385,8 @@ struct InstancingBufferSettings
     {
         return enableInstancing_ == rhs.enableInstancing_
             && firstInstancingTexCoord_ == rhs.firstInstancingTexCoord_
-            && numInstancingTexCoords_ == rhs.numInstancingTexCoords_;
+            && numInstancingTexCoords_ == rhs.numInstancingTexCoords_
+            && stepRate_ == rhs.stepRate_;
     }
 
     bool operator!=(const InstancingBufferSettings& rhs) const { return !(*this == rhs); }

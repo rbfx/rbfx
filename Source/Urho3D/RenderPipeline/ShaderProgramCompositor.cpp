@@ -165,6 +165,8 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
         if (isCameraOrthographic_)
             result.AddCommonShaderDefines("URHO3D_ORTHOGRAPHIC_DEPTH");
     }
+    if (flags.Test(DrawableProcessorPassFlag::StereoInstancing))
+        result.AddCommonShaderDefines("URHO3D_XR");
 
     result.AddShaderDefines(VS, pass->GetEffectiveVertexShaderDefines());
     result.AddShaderDefines(PS, pass->GetEffectivePixelShaderDefines());

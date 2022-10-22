@@ -191,7 +191,7 @@ public:
     const auto& GetOccluders() const { return sortedOccluders_; }
     /// @}
 
-    void ProcessVisibleDrawables(const ea::vector<Drawable*>& drawables, OcclusionBuffer* occlusionBuffer);
+    void ProcessVisibleDrawables(const ea::vector<Drawable*>& drawables, ea::span<OcclusionBuffer*> occlusionBuffers);
 
     /// Return information about visible geometries and lights
     /// @{
