@@ -110,6 +110,30 @@ if (URHO3D_ACTIONS)
     define_engine_source_files (Actions)
 endif ()
 
+if (URHO3D_XR)
+    if (URHO3D_D3D11)
+        add_definitions(-DXR_USE_PLATFORM_WIN32
+            -DXR_OS_WINDOWS
+            -DXR_USE_TIMESPEC
+            -DXR_USE_GRAPHICS_API_D3D11)
+    endif ()
+    if (URHO3D_OPENGL)
+        if (LINUX)
+            add_definitions(-DXR_USE_PLATFORM_LINUX
+                -DXR_OS_LINUX
+                -DXR_USE_TIMESPEC
+                -DXR_USE_GRAPHICS_API_OPENGL)
+        else ()
+            add_definitions(-DXR_USE_PLATFORM_WIN32
+                -DXR_OS_WINDOWS
+                -DXR_USE_TIMESPEC
+                -DXR_USE_GRAPHICS_API_OPENGL)
+        endif ()
+    endif ()
+    
+    define_engine_source_files (XR)
+endif ()
+
 # Remove compute source files as needed
 if (NOT URHO3D_COMPUTE)
     list(REMOVE_ITEM SOURCE_FILES
@@ -215,6 +239,14 @@ set (THIRD_PARTY_DEPENDENCIES
     spirv-cross-hlsl
     tinygltf
 )
+
+if (URHO3D_XR)
+    if (URHO3D_MERGE_STATIC_LIBS)
+        list (APPEND THIRD_PARTY_DEPENDENCIES openxr_loader)
+    else () # shouldn't need to wrorry about WEB right now
+        target_link_libraries(Urho3D PUBLIC openxr_loader)
+    endif ()
+endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)

@@ -43,6 +43,10 @@ add_subdirectory(spdlog)
 add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
 
+if (URHO3D_XR)
+    add_subdirectory(OpenXRSDK)
+endif ()
+
 if (NOT MINI_URHO)
     add_subdirectory(tinygltf)
     if (URHO3D_TESTING)
