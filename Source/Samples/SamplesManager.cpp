@@ -145,6 +145,11 @@
 #if URHO3D_RMLUI
 #include "114_AdvancedUI/AdvancedUI.h"
 #endif
+
+#if URHO3D_XR
+#include "120_VRSample/VRSimple.h"
+#endif
+
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -387,6 +392,10 @@ void SamplesManager::Start()
     RegisterSample<AggregatedInput>();
 #if URHO3D_RMLUI
     RegisterSample<AdvancedUI>();
+#endif
+
+#if URHO3D_XR
+    RegisterSample<VRSimple>();
 #endif
 
     if (!commandLineArgs_.empty())
