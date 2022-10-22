@@ -193,12 +193,16 @@ void VertexBuffer::UpdateOffsets()
     elementHash_ = 0;
     elementMask_ = MASK_NONE;
 
+    unsigned lowerHash = 0;
+    unsigned upperHash = 0;
     for (auto i = elements_.begin(); i != elements_.end(); ++i)
     {
         i->offset_ = elementOffset;
         elementOffset += ELEMENT_TYPESIZES[i->type_];
-        elementHash_ <<= 6;
-        elementHash_ += (((int)i->type_ + 1) * ((int)i->semantic_ + 1) + i->index_);
+        CombineHash(upperHash, MakeHash(i->type_ + 1));
+        CombineHash(upperHash, MakeHash(i->semantic_ + 1));
+        CombineHash(lowerHash, MakeHash(i->index_));
+        CombineHash(lowerHash, MakeHash(i->stepRate_));
 
         for (unsigned j = 0; j < MAX_LEGACY_VERTEX_ELEMENTS; ++j)
         {
@@ -208,6 +212,7 @@ void VertexBuffer::UpdateOffsets()
         }
     }
 
+    elementHash_ = (((unsigned long long)upperHash) << 32ull) | lowerHash;
     vertexSize_ = elementOffset;
 }
 
@@ -337,6 +342,21 @@ void VertexBuffer::SetUnpackedData(const Vector4 data[], unsigned start, unsigne
         PackVertexData(data + i, sourceStride, buffer.data(), vertexSize_, elements_[i], 0, count);
 
     SetDataRange(buffer.data(), start, count);
+}
+
+void VertexBuffer::ChangeElementStepRate(unsigned stepRate)
+{
+    bool anyChanged = false;
+    for (auto& element : elements_)
+    {
+        if (element.stepRate_ != stepRate)
+        {
+            element.stepRate_ = stepRate;
+            anyChanged = true;
+        }
+    }
+
+    UpdateOffsets();
 }
 
 void VertexBuffer::UnpackVertexData(const void* source, unsigned sourceStride,

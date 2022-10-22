@@ -975,6 +975,23 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 #endif
 }
 
+void Graphics::DrawInstanced(PrimitiveType type, unsigned vertexStart, unsigned vertexCount, unsigned instanceCount)
+{
+    if (!vertexCount)
+        return;
+
+    PrepareDraw();
+
+    unsigned primitiveCount;
+    GLenum glPrimitiveType;
+
+    GetGLPrimitiveType(vertexCount, type, primitiveCount, glPrimitiveType);
+    glDrawArraysInstanced(glPrimitiveType, vertexStart, instanceCount, vertexCount);
+
+    numPrimitives_ += primitiveCount * instanceCount;
+    ++numBatches_;
+}
+
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,
     unsigned instanceCount)
 {
@@ -3208,21 +3225,21 @@ void Graphics::PrepareDraw()
 
                     // Enable/disable instancing divisor as necessary
                     unsigned dataStart = element.offset_;
-                    if (element.perInstance_)
+                    if (element.stepRate_)
                     {
                         dataStart += impl_->lastInstanceOffset_ * buffer->GetVertexSize();
-                        if (!(impl_->instancingVertexAttributes_ & locationMask))
+                        if (impl_->instancingVertexStepRates_[location] != element.stepRate_)
                         {
-                            SetVertexAttribDivisor(location, 1);
-                            impl_->instancingVertexAttributes_ |= locationMask;
+                            SetVertexAttribDivisor(location, element.stepRate_);
+                            impl_->instancingVertexStepRates_[location] = element.stepRate_;
                         }
                     }
                     else
                     {
-                        if (impl_->instancingVertexAttributes_ & locationMask)
+                        if (impl_->instancingVertexStepRates_[location])
                         {
                             SetVertexAttribDivisor(location, 0);
-                            impl_->instancingVertexAttributes_ &= ~locationMask;
+                            impl_->instancingVertexStepRates_[location] = 0;
                         }
                     }
 
@@ -3337,7 +3354,8 @@ void Graphics::ResetCachedState()
     impl_->activeTexture_ = 0;
     impl_->enabledVertexAttributes_ = 0;
     impl_->usedVertexAttributes_ = 0;
-    impl_->instancingVertexAttributes_ = 0;
+    for (auto& r : impl_->instancingVertexStepRates_)
+        r = 0;
     impl_->boundFBO_ = impl_->systemFBO_;
     impl_->boundVBO_ = 0;
     impl_->boundUBO_ = 0;

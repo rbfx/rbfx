@@ -195,6 +195,34 @@ public:
         }
     }
 
+    // JS: this is a cludge to work around unsupported types in the NOT using cbuffers route above
+    template<typename T>
+    void AddCBufferParameter(StringHash name, const T& value)
+    {
+        if (useConstantBuffers_)
+        {
+            const auto& paramInfo = constantBuffers_.currentLayout_->GetConstantBufferParameter(name);
+            if (paramInfo.offset_ != M_MAX_UNSIGNED)
+            {
+                if (constantBuffers_.currentGroup_ != paramInfo.group_)
+                {
+                    URHO3D_LOGERROR("Shader parameter #{} '{}' shall be stored in group {} instead of group {}",
+                        name.Value(), name.Reverse(), constantBuffers_.currentGroup_, paramInfo.group_);
+                    return;
+                }
+
+                if (!ConstantBufferCollection::StoreParameter(constantBuffers_.currentData_ + paramInfo.offset_,
+                    paramInfo.size_, value))
+                {
+                    URHO3D_LOGERROR("Shader parameter #{} '{}' has unexpected type, {} bytes expected",
+                        name.Value(), name.Reverse(), paramInfo.size_);
+                }
+            }
+        }
+        else
+            URHO3D_LOGERROR("Explicit specification of shader parameters requires constant buffer usage");
+    }
+
     /// Commit shader parameter group. Shall be called only if BeginShaderParameterGroup returned true.
     void CommitShaderParameterGroup(ShaderParameterGroup group)
     {
@@ -270,6 +298,21 @@ public:
         currentDrawCommand_.baseVertexIndex_ = baseVertexIndex;
         currentDrawCommand_.instanceStart_ = 0;
         currentDrawCommand_.instanceCount_ = 0;
+        drawCommands_.push_back(currentDrawCommand_);
+    }
+
+    void DrawInstanced(unsigned vertexStart, unsigned vertexCount, unsigned instanceStart, unsigned instanceCount)
+    {
+        currentDrawCommand_.inputBuffers_.indexBuffer_ = nullptr;
+        currentDrawCommand_.indexStart_ = vertexStart;
+        currentDrawCommand_.indexCount_ = vertexCount;
+        currentDrawCommand_.baseVertexIndex_ = 0;
+        currentDrawCommand_.instanceStart_ = instanceStart;
+        currentDrawCommand_.instanceCount_ = instanceCount;
+#ifdef URHO3D_D3D9
+        currentDrawCommand_.vertexStart_ = vertexStart;
+        currentDrawCommand_.vertexCount_ = vertexCount;
+#endif
         drawCommands_.push_back(currentDrawCommand_);
     }
 

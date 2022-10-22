@@ -202,7 +202,12 @@ void DrawCommandQueue::Execute()
 #endif
         if (cmd.instanceCount_ != 0)
         {
-            if (cmd.baseVertexIndex_ == 0)
+            if (!currentIndexBuffer)
+            {
+                // non-indexed
+                graphics_->DrawInstanced(currentPrimitiveType, cmd.indexStart_, cmd.indexCount_, cmd.instanceCount_);
+            }
+            else if (cmd.baseVertexIndex_ == 0)
             {
                 graphics_->DrawInstanced(currentPrimitiveType, cmd.indexStart_, cmd.indexCount_,
                     vertexStart, vertexCount, cmd.instanceCount_);
