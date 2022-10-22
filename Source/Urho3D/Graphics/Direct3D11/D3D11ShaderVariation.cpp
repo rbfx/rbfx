@@ -260,7 +260,7 @@ bool ShaderVariation::Compile()
     {
         entryPoint = "VS";
         defines.Append("COMPILEVS");
-        profile = "vs_4_0";
+        profile = "vs_5_0";
     }
     else if (type_ == CS)
     {
@@ -272,7 +272,7 @@ bool ShaderVariation::Compile()
     {
         entryPoint = "PS";
         defines.Append("COMPILEPS");
-        profile = "ps_4_0";
+        profile = "ps_5_0";
         flags |= D3DCOMPILE_PREFER_FLOW_CONTROL;
     }
 
