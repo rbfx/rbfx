@@ -85,7 +85,8 @@ void Texture2D::Release()
                     graphics_->SetTexture(i, nullptr);
             }
 
-            glDeleteTextures(1, &object_.name_);
+            if (owned_)
+                glDeleteTextures(1, &object_.name_);
         }
 
         if (renderSurface_)
@@ -498,6 +499,37 @@ bool Texture2D::Create()
     graphics_->SetTexture(0, nullptr);
 
     return success;
+}
+
+bool Texture2D::CreateFromExternal(int object, int w, int h, int msaaLevel, int format, TextureUsage usage)
+{
+    Release();
+
+    object_.name_ = object;
+    format_ = format;
+    width_ = w;
+    height_ = h;
+    depth_ = 1;
+    levels_ = 1;
+    multiSample_ = msaaLevel;
+    filterMode_ = FILTER_NEAREST;
+
+    if (format == GL_SRGB8)
+        sRGB_ = true;
+    else
+        sRGB_ = false;
+
+    if (usage == TEXTURE_RENDERTARGET)
+    {
+        renderSurface_ = new RenderSurface(this);
+        autoResolve_ = true;
+        SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(Texture2D, HandleRenderSurfaceUpdate));
+    }
+    usage_ = usage;
+
+    owned_ = false;
+
+    return true;
 }
 
 }

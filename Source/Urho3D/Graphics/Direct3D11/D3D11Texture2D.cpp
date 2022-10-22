@@ -521,4 +521,91 @@ bool Texture2D::Create()
     return true;
 }
 
+bool Texture2D::CreateFromExternal(ID3D11Texture2D* tex, int msaaLevel, bool isSRGB)
+{
+    D3D11_TEXTURE2D_DESC desc;
+    tex->GetDesc(&desc);
+
+    // Allow amping up the MSAA of what we get, it's a bit of extra checks but makes everything 'just work' without added resolve work
+    // what happens is auto-resolve is forced on and it the given texture is used as the resolve texture instead of the main one which will be created
+    const bool differingMSAA = msaaLevel != desc.SampleDesc.Count;
+
+    // typelessness is unpleasant to deal with
+    format_ = desc.Format = desc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS ? (isSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM) : desc.Format;
+    width_ = desc.Width;
+    height_ = desc.Height;
+    levels_ = desc.MipLevels;
+    multiSample_ = Max(desc.SampleDesc.Count, msaaLevel);
+    depth_ = 1;
+    if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+        sRGB_ = true;
+
+    if (differingMSAA) // construct an MSAA fake texture for it
+    {
+        auto hr = graphics_->GetImpl()->GetDevice()->CreateTexture2D(&desc, nullptr, (ID3D11Texture2D**)&object_);
+        if (FAILED(hr))
+        {
+            URHO3D_LOGD3DERROR("Failed to create MSAA upsample shadow for texture", hr);
+            URHO3D_SAFE_RELEASE(object_.ptr_);
+            return false;
+        }
+    }
+    else // use as is, no MSAA front-man
+        object_.ptr_ = tex;
+
+    if (desc.BindFlags & D3D11_BIND_RENDER_TARGET)
+    {
+        filterMode_ = FILTER_NEAREST;
+        renderSurface_ = new RenderSurface(this);
+
+        SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(Texture2D, HandleRenderSurfaceUpdate));
+        usage_ = TEXTURE_RENDERTARGET;
+        D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+        memset(&renderTargetViewDesc, 0, sizeof renderTargetViewDesc);
+        renderTargetViewDesc.Format = desc.Format;
+        renderTargetViewDesc.ViewDimension = multiSample_ > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D;
+        renderTargetViewDesc.Texture2D.MipSlice = 0;
+
+        auto hr = graphics_->GetImpl()->GetDevice()->CreateRenderTargetView((ID3D11Resource*)object_.ptr_, &renderTargetViewDesc,
+            (ID3D11RenderTargetView**)&renderSurface_->renderTargetView_);
+        if (FAILED(hr))
+        {
+            URHO3D_LOGD3DERROR("Failed to create rendertarget view for texture", hr);
+            URHO3D_SAFE_RELEASE(renderSurface_->renderTargetView_);
+            return false;
+        }
+
+        autoResolve_ = true;
+
+        if (!differingMSAA && desc.SampleDesc.Count > 1)
+        {
+            desc.MipLevels = levels_;
+            desc.SampleDesc.Count = 1;
+            desc.SampleDesc.Quality = 0;
+            if (levels_ != 1)
+                desc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
+
+            HRESULT hr = graphics_->GetImpl()->GetDevice()->CreateTexture2D(&desc, nullptr, (ID3D11Texture2D**)&resolveTexture_);
+            if (FAILED(hr))
+            {
+                URHO3D_LOGD3DERROR("Failed to create resolve texture", hr);
+                URHO3D_SAFE_RELEASE(resolveTexture_);
+                return false;
+            }
+        }
+        else
+        {
+            resolveTexture_ = tex;
+        }
+    }
+    else if (desc.CPUAccessFlags & D3D11_CPU_ACCESS_WRITE)
+        usage_ = TEXTURE_DYNAMIC;
+    else
+        usage_ = TEXTURE_STATIC;
+
+    owned_ = false;
+
+    return true;
+}
+
 }
