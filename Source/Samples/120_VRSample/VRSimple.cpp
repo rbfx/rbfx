@@ -253,10 +253,6 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
                 if (auto rightStick = xr->GetInputBinding("stick", VR_HAND_RIGHT))
                 {
                     auto cmd = JoystickAsDPad(rightStick, 0.3f);
-                    if (turnLeft.CheckStrict(cmd))
-                        rig->RotateAround(head->GetWorldPosition(), Quaternion(-45, Vector3::UP), TS_WORLD);
-                    if (turnRight.CheckStrict(cmd))
-                        rig->RotateAround(head->GetWorldPosition(), Quaternion(45, Vector3::UP), TS_WORLD);
 
                     auto curHeadPos = head->GetWorldPosition();
                     auto rigPos = rig->GetWorldPosition();
