@@ -148,6 +148,10 @@
 #endif
 #include "115_RayCast/RayCastSample.h"
 #include "116_VirtualFileSystem/VFSSample.h"
+#if URHO3D_XR
+#include "120_VRSample/VRSimple.h"
+#endif
+
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -397,6 +401,10 @@ void SamplesManager::Start()
 #endif
     RegisterSample<RayCastSample>();
     RegisterSample<VFSSample>();
+
+#if URHO3D_XR
+    RegisterSample<VRSimple>();
+#endif
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
