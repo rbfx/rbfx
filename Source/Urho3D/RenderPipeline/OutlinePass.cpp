@@ -48,9 +48,9 @@ Pass* GetFirstPass(Technique* technique, const ea::vector<unsigned>& passIndices
 
 OutlineScenePass::OutlineScenePass(RenderPipelineInterface* renderPipeline,
     DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback,
-    const StringVector& outlinedPasses)
+    const StringVector& outlinedPasses, DrawableProcessorPassFlags flags)
     : ScenePass(renderPipeline, drawableProcessor, callback,
-        DrawableProcessorPassFlag::BatchCallback | DrawableProcessorPassFlag::PipelineStateCallback,
+        DrawableProcessorPassFlag::BatchCallback | DrawableProcessorPassFlag::PipelineStateCallback | flags,
         "base") // Pass here doesn't matter
 {
     ea::transform(outlinedPasses.begin(), outlinedPasses.end(), std::back_inserter(outlinedPasses_),

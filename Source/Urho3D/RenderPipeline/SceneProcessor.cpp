@@ -225,11 +225,14 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
     frameInfo_.camera_ = frameInfo_.viewport_->GetCullCamera()
         ? frameInfo_.viewport_->GetCullCamera()
         : frameInfo_.viewport_->GetCamera();
+    frameInfo_.viewReferenceNode_ = frameInfo_.camera_->GetNode();
 
     frameInfo_.octree_ = frameInfo_.scene_
         ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
     frameInfo_.reflectionProbeManager_ = frameInfo_.octree_
         ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>(LOCAL) : nullptr;
+
+    frameInfo_.additionalCameras_ = frameInfo.cameras_;
 
     return frameInfo_.octree_ && frameInfo_.camera_;
 }
@@ -313,7 +316,7 @@ void SceneProcessor::Update()
     }
 
     // Process drawables
-    drawableProcessor_->ProcessVisibleDrawables(drawables_, currentOcclusionBuffer_);
+    drawableProcessor_->ProcessVisibleDrawables(drawables_, currentOcclusionBuffer_ ? ea::span(&currentOcclusionBuffer_, 1u) : ea::span<OcclusionBuffer*>() );
     drawableProcessor_->ProcessLights(this);
     drawableProcessor_->ProcessForwardLighting();
 
@@ -389,20 +392,20 @@ void SceneProcessor::RenderShadowMaps()
 
 void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camera,
     const PipelineBatchGroup<PipelineBatchByState>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
 {
-    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters);
+    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters, instanceMultiplier);
 }
 
 void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camera,
     const PipelineBatchGroup<PipelineBatchBackToFront>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
 {
-    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters);
+    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters, instanceMultiplier);
 }
 
 void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera* camera,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
 {
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
@@ -410,6 +413,7 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
     drawQueue_->Reset();
 
     BatchRenderingContext ctx{ *drawQueue_, *camera };
+    ctx.instanceMultiplier_ = instanceMultiplier;
     ctx.globalResources_ = globalResources;
     ctx.cameraParameters_ = cameraParameters;
 
@@ -424,7 +428,7 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
 
 template <class T>
 void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* camera, const PipelineBatchGroup<T>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
 {
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
@@ -432,6 +436,7 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     drawQueue_->Reset();
 
     BatchRenderingContext ctx{ *drawQueue_, *camera };
+    ctx.instanceMultiplier_ = instanceMultiplier;
     ctx.globalResources_ = globalResources;
     ctx.cameraParameters_ = cameraParameters;
 
@@ -439,7 +444,9 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
         drawQueue_->SetScissorRect(batchGroup.scissorRect_);
     batchRenderer_->RenderBatches(ctx, batchGroup);
 
-    graphics_->SetClipPlane(camera->GetUseClipping(),
+    // XR: Need a clip-plane if there's multiple cameras to process for stereo, necessary check because GL clip-plane state is controlled outside of shader through glEnable
+    // unliked D3D11 that sees a shader with clip-plane and goes okay. Currently only this function needs it.
+    graphics_->SetClipPlane(camera->GetUseClipping() || frameInfo_.additionalCameras_[1] != nullptr,
         camera->GetClipPlane(), camera->GetView(), camera->GetGPUProjection());
     drawQueue_->Execute();
 

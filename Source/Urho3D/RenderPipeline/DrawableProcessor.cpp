@@ -279,15 +279,25 @@ void DrawableProcessor::ProcessOccluders(const ea::vector<Drawable*>& occluders,
     ea::sort(sortedOccluders_.begin(), sortedOccluders_.end());
 }
 
-void DrawableProcessor::ProcessVisibleDrawables(const ea::vector<Drawable*>& drawables, OcclusionBuffer* occlusionBuffer)
+void DrawableProcessor::ProcessVisibleDrawables(const ea::vector<Drawable*>& drawables, ea::span<OcclusionBuffer*> occlusionBuffers)
 {
     URHO3D_PROFILE("ProcessVisibleDrawables");
 
     ForEachParallel(workQueue_, drawables,
         [&](unsigned /*index*/, Drawable* drawable)
     {
-        if (occlusionBuffer && drawable->IsOccludee() && !occlusionBuffer->IsVisible(drawable->GetWorldBoundingBox()))
-            return;
+        // do occlusion test for occludees if possible
+        if (!occlusionBuffers.empty() && drawable->IsOccludee())
+        {
+            // check for visible
+            bool anyPass = false;
+            // may have multiple buffers in stereo and possibly for other cases such as lightspace shadowcaster occlusion, likely not applicable here
+            for (auto o : occlusionBuffers)
+                anyPass |= o->IsVisible(drawable->GetWorldBoundingBox());
+
+            if (!anyPass)
+                return;
+        }
 
         ProcessVisibleDrawable(drawable);
     });

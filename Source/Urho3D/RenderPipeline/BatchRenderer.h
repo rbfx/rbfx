@@ -44,6 +44,7 @@ struct BatchRenderingContext
     DrawCommandQueue& drawQueue_;
     const Camera& camera_;
     const ShadowSplitProcessor* outputShadowSplit_{};
+    unsigned instanceMultiplier_ { 1u };
 
     ea::span<const ShaderResourceDesc> globalResources_;
     ea::span<const ShaderParameterDesc> frameParameters_;
