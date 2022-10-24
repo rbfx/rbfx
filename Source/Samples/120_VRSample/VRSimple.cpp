@@ -21,6 +21,7 @@
 //
 
 #include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
@@ -240,16 +241,36 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
                 xr->UpdateRig(rig, 0.001f, 150.0f, true);
                 xr->UpdateHands(scene_, rig, rig->GetChild("Left_Hand"), rig->GetChild("Right_Hand"));
 
-                if (auto child = rig->GetChild("Left_Hand", true))
-                    xr->UpdateControllerModel(VR_HAND_LEFT, SharedPtr<Node>(child->GetChild(0u)));
-                if (auto child = rig->GetChild("Right_Hand", true))
-                    xr->UpdateControllerModel(VR_HAND_RIGHT, SharedPtr<Node>(child->GetChild(0u)));
+                auto dbg = scene_->GetOrCreateComponent<DebugRenderer>();
+                
+                // this should show where the tracking volume centroid is
+                dbg->AddNode(rig, 1.0f, false);
 
+                if (auto child = rig->GetChild("Left_Hand", true))
+                {
+                    xr->UpdateControllerModel(VR_HAND_LEFT, SharedPtr<Node>(child->GetChild(0u)));
+                    // draw hand axis so we can see it even if we have no model
+                    dbg->AddNode(child, 0.15f, false);
+                }
+                if (auto child = rig->GetChild("Right_Hand", true))
+                {
+                    xr->UpdateControllerModel(VR_HAND_RIGHT, SharedPtr<Node>(child->GetChild(0u)));
+                    // draw hand axis so we can see it even if we have no model
+                    dbg->AddNode(child, 0.15f, false);
+
+                    // draw a white line going off 2 meters along the aim axis.
+                    auto aimMatrix = xr->GetHandAimTransform(VR_HAND_RIGHT);
+                    dbg->AddLine(aimMatrix * Vector3(0, 0, 0), aimMatrix * Vector3(0, 0, 2), Color::WHITE, false);
+                }
+
+                // use left stick to move based on where the user is looking
                 if (auto leftStick = xr->GetInputBinding("stick", VR_HAND_LEFT))
                 {
                     auto delta = SmoothLocomotionHead(rig, leftStick, 0.3f);
                     rig->Translate(delta * 0.025f, TS_WORLD);
                 }
+
+                // use right stick for left/right snap turning
                 if (auto rightStick = xr->GetInputBinding("stick", VR_HAND_RIGHT))
                 {
                     auto cmd = JoystickAsDPad(rightStick, 0.3f);
@@ -261,18 +282,18 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
                     if (turnRight.CheckStrict(cmd))
                         rig->RotateAround(Vector3(curHeadPos.x_, rigPos.y_, curHeadPos.z_), Quaternion(45, Vector3::UP), TS_WORLD);
                 }
-            }
-
-            
+            }            
         }
     }
 }
 
 void VRSimple::HandleControllerChange(StringHash eventType, VariantMap& eventData)
 {
+    // User could turn on/off their controller while we're responding to.
     int hand = eventData[VRControllerChange::P_HAND].GetInt();
     auto rig = scene_->GetChild("VRRig");
     auto child = rig->GetChild(hand == 0 ? "Left_Hand" : "Right_Hand", true);
+
     if (child)
     {
         child->RemoveAllChildren();
