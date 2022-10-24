@@ -519,7 +519,12 @@ void StereoRenderPipelineView::Render()
     
     renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
 
-    // JS: this currently doesn't work for some reason. DrawEyeMask() causes state to get bungled in some way.
+    // JS: doesn't work because it's explicitly setting the output target because it's not what it expected
+    // which mangled rendering and then RenderBufferManager copied over ontop of us in OnRenderEnd.
+    // Trivial fix, but need to address that just copying > 8 million pixels is not a good thing.
+    // Need to at least squeeze an uber post-processing into that to justify it.
+    // Samsung Odyssey+ OXR reported recommended resolution is 3864 x 2420 which is just plain massive 9.3 million
+    // compared to 1080p's 2 million.
     //auto xr = GetSubsystem<OpenXR>();
     //xr->DrawEyeMask();
 
@@ -581,18 +586,20 @@ void StereoRenderPipelineView::Render()
     graphics_->SetVertexBuffer(nullptr);
 
     // Not going to work, something will need to be done
-    //for (PostProcessPass* postProcessPass : postProcessPasses_)
-    //    postProcessPass->Execute();
+    const auto outSize = renderBufferManager_->GetOutputSize(); // used for debug view
+
+    // Post-process passes that do not use the camera will work ... those that do, go ... KABOOM!
+    for (PostProcessPass* postProcessPass : postProcessPasses_)
+        postProcessPass->Execute(nullptr);
 
     // draw debug geometry into each half
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
     if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())
     {
         renderBufferManager_->SetOutputRenderTargers();
-        const auto outSize = renderBufferManager_->GetOutputSize();
         for (int i = 0; i < 2; ++i)
         {
-            graphics_->SetViewport(i == 0 ? IntRect(0, 0, outSize.x_ / 2, outSize.y_) : IntRect(outSize.x_ / 2, 0, outSize.x_ / 2, outSize.y_));
+            graphics_->SetViewport(i == 0 ? IntRect(0, 0, outSize.x_ / 2, outSize.y_) : IntRect(outSize.x_ / 2, 0, outSize.x_, outSize.y_));
             debug->SetView(frameInfo_.viewport_->GetEye(i));
             debug->Render();
         }

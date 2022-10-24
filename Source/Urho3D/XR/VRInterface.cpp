@@ -397,6 +397,7 @@ void VRInterface::DrawEyeMask()
             drawQueue->DrawIndexed(hiddenAreaMesh_[i]->GetIndexStart(), hiddenAreaMesh_[i]->GetIndexCount());
 
             drawQueue->Execute();
+            drawQueue->Reset();
         }
 
         gfx->SetViewport(oldViewport);

@@ -76,8 +76,6 @@ SharedPtr<Node> LoadGLTFModel(Context* ctx, tinygltf::Model& model);
 
 const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
-#pragma optimize("", off)
-
 #define XR_INIT_TYPE(D, T) for (auto& a : D) a.type = T
 
 #define XR_FOREACH(X)\
@@ -275,6 +273,62 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         return projection;
     }
 
+    Urho3D::Matrix4 uxrGetSharedProjection(float nearZ, float farZ, XrFovf left, XrFovf right, Vector3 eyeLeftLocal, Vector3 eyeRightLocal, Vector3* outLocalPos)
+    {
+        // Check if we're reasonably possible to do, if not return Matrix4::ZERO so we know this isn't viable.
+        if (Abs(M_RADTODEG * left.angleLeft) + Abs(M_RADTODEG * right.angleRight) > 160.0f)
+            return Matrix4::ZERO;
+
+        // just bottom out the vertical angles
+        const float trueDown = Min(left.angleDown, right.angleDown);
+        const float trueUp = Max(left.angleUp, right.angleUp);
+
+        if (Abs(M_RADTODEG * trueDown) + Abs(M_RADTODEG * trueUp) > 160.0f)
+            return Matrix4::ZERO;
+
+        // Reference:
+        // https://computergraphics.stackexchange.com/questions/1736/vr-and-frustum-culling
+        // using generalized, note that the above assumes POSITIVE angles, hence -angleLeft here and there below
+        const float ipd = Abs(eyeRightLocal.x_ - eyeLeftLocal.x_);
+
+        /// how deeply it needs move back
+        float recess = ipd / (tanf(-left.angleLeft) + tanf(right.angleRight));
+        const float upDownRecess = Abs(eyeRightLocal.y_ - eyeLeftLocal.y_) / (tanf(-trueDown) + tanf(trueUp));
+
+        // how far along we need to center the moved back point
+        const float leftDist = tanf(-left.angleLeft) * recess;
+        const float downDist = tanf(-trueDown) * upDownRecess;
+
+        // we may have to go back even further because of up/down
+        recess = Max(recess, upDownRecess);
+
+        if (outLocalPos)
+            *outLocalPos = Vector3(eyeLeftLocal.x_ + leftDist, eyeLeftLocal.y_ + downDist, eyeLeftLocal.z_ - recess);
+
+        nearZ += recess;
+
+        const float tanLeft = tanf(left.angleLeft);
+        const float tanRight = tanf(right.angleRight);
+        const float tanDown = tanf(trueDown);
+        const float tanUp = tanf(trueUp);
+        const float tanAngleWidth = tanRight - tanLeft;
+        const float tanAngleHeight = tanUp - tanDown;
+        const float q = farZ / (farZ - nearZ);
+        const float r = -q * nearZ;
+
+        Matrix4 projection = Matrix4::ZERO;
+        projection.m00_ = 2 / tanAngleWidth;
+        projection.m11_ = 2 / tanAngleHeight;
+
+        projection.m02_ = -(tanRight + tanLeft) / tanAngleWidth;
+        projection.m12_ = -(tanUp + tanDown) / tanAngleHeight;
+
+        projection.m22_ = q;
+        projection.m23_ = r;
+        projection.m32_ = 1.0f;
+        return projection;
+    }
+
     struct OpenXR::Opaque
     {
 #ifdef URHO3D_D3D11
@@ -403,6 +457,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         XR_FOREACH(XR_LOAD);
         XR_PLATFORM(XR_LOAD);
         XR_EXTENSION_BASED(XR_LOAD);
+
+        // Print the runtime name and version, that will be useful information to have
+        XrInstanceProperties instProps = { XR_TYPE_INSTANCE_PROPERTIES };
+        if (xrGetInstanceProperties(instance_, &instProps) == XR_SUCCESS)
+            URHO3D_LOGINFOF("OpenXR Runtime is: {} version {}", instProps.runtimeName, instProps.runtimeVersion);
 
         if (supportsDebug)
         {
@@ -1972,5 +2031,4 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         return root;
     }
 
-#pragma optimize("", on)
 }
