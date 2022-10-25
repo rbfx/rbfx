@@ -244,9 +244,9 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         return out;
     }
 
-    Urho3D::Matrix3x4 uxrGetTransform(XrPosef pose)
+    Urho3D::Matrix3x4 uxrGetTransform(XrPosef pose, float scale)
     {
-        return Matrix3x4(uxrGetVec(pose.position), uxrGetQuat(pose.orientation), 1.0f);
+        return Matrix3x4(uxrGetVec(pose.position), uxrGetQuat(pose.orientation), scale);
     }
 
     Urho3D::Matrix4 uxrGetProjection(float nearZ, float farZ, float angleLeft, float angleTop, float angleRight, float angleBottom)
@@ -273,18 +273,18 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         return projection;
     }
 
-    Urho3D::Matrix4 uxrGetSharedProjection(float nearZ, float farZ, XrFovf left, XrFovf right, Vector3 eyeLeftLocal, Vector3 eyeRightLocal, Vector3* outLocalPos)
+    ea::pair<Vector3, Urho3D::Matrix4> uxrGetSharedProjection(float nearZ, float farZ, XrFovf left, XrFovf right, Vector3 eyeLeftLocal, Vector3 eyeRightLocal)
     {
         // Check if we're reasonably possible to do, if not return Matrix4::ZERO so we know this isn't viable.
         if (Abs(M_RADTODEG * left.angleLeft) + Abs(M_RADTODEG * right.angleRight) > 160.0f)
-            return Matrix4::ZERO;
+            return { Vector3::ZERO, Matrix4::ZERO };
 
-        // just bottom out the vertical angles
+        // just bottom out the vertical angles, have one for each eye so take the most extreme
         const float trueDown = Min(left.angleDown, right.angleDown);
         const float trueUp = Max(left.angleUp, right.angleUp);
 
         if (Abs(M_RADTODEG * trueDown) + Abs(M_RADTODEG * trueUp) > 160.0f)
-            return Matrix4::ZERO;
+            return { Vector3::ZERO, Matrix4::ZERO };
 
         // Reference:
         // https://computergraphics.stackexchange.com/questions/1736/vr-and-frustum-culling
@@ -299,11 +299,10 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         const float leftDist = tanf(-left.angleLeft) * recess;
         const float downDist = tanf(-trueDown) * upDownRecess;
 
-        // we may have to go back even further because of up/down
+        // we may have to go back even further because of up/down instead of left/right being the big issue
         recess = Max(recess, upDownRecess);
 
-        if (outLocalPos)
-            *outLocalPos = Vector3(eyeLeftLocal.x_ + leftDist, eyeLeftLocal.y_ + downDist, eyeLeftLocal.z_ - recess);
+        Vector3 outLocalPos = Vector3(eyeLeftLocal.x_ + leftDist, eyeLeftLocal.y_ + downDist, eyeLeftLocal.z_ - recess);
 
         nearZ += recess;
 
@@ -326,7 +325,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         projection.m22_ = q;
         projection.m23_ = r;
         projection.m32_ = 1.0f;
-        return projection;
+
+        return { outLocalPos, projection };
     }
 
     struct OpenXR::Opaque
@@ -1299,10 +1299,10 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     {
                         // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
                         bind->active_ = pose.isActive;
-                        Vector3 v = uxrGetVec(bind->location_.pose.position);
+                        Vector3 v = uxrGetVec(bind->location_.pose.position) * scaleCorrection_;
                         bind->storedData_ = v;
                         bind->changed_ = true;
-                        bind->extraData_[0] = uxrGetVec(bind->velocity_.linearVelocity);
+                        bind->extraData_[0] = uxrGetVec(bind->velocity_.linearVelocity) * scaleCorrection_;
                     }
                 } break;
                 case VAR_MATRIX3X4: {
@@ -1311,11 +1311,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     {
                         // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
                         bind->active_ = pose.isActive;
-                        Matrix3x4 m = Matrix3x4(uxrGetVec(bind->location_.pose.position), uxrGetQuat(bind->location_.pose.orientation), 1);
+                        Matrix3x4 m = uxrGetTransform(bind->location_.pose, scaleCorrection_);
                         bind->storedData_ = m;
                         bind->changed_ = true;
-                        bind->extraData_[0] = uxrGetVec(bind->velocity_.linearVelocity);
-                        bind->extraData_[1] = uxrGetVec(bind->velocity_.angularVelocity);
+                        bind->extraData_[0] = uxrGetVec(bind->velocity_.linearVelocity) * scaleCorrection_;
+                        bind->extraData_[1] = uxrGetVec(bind->velocity_.angularVelocity) * scaleCorrection_;
                     }
                 } break;
                 }
@@ -1746,7 +1746,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
     {
         // TODO: fixme, why is view space not correct xrLocateViews( view-space )
         // one would expect them to be in head relative local space already ... but they're ... not?
-        return GetHeadTransform().Inverse() * uxrGetTransform(views_[eye].pose);
+        return GetHeadTransform().Inverse() * uxrGetTransform(views_[eye].pose, scaleCorrection_);
     }
 
     Matrix4 OpenXR::GetProjection(VREye eye, float nearDist, float farDist) const
@@ -1756,7 +1756,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     Matrix3x4 OpenXR::GetHeadTransform() const
     {
-        return uxrGetTransform(headLoc_.pose);
+        return uxrGetTransform(headLoc_.pose, scaleCorrection_);
     }
 
     OpenXR::XRActionBinding::~XRActionBinding()
