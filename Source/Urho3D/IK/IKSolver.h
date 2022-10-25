@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,47 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#pragma once
 
-#include "../IK/IK.h"
-#include "../IK/IKSolver.h"
 #include "../IK/IKSolverComponent.h"
+#include "../Scene/LogicComponent.h"
+#include "../Scene/SceneEvents.h"
 
 namespace Urho3D
 {
 
-// ----------------------------------------------------------------------------
-void RegisterIKLibrary(Context* context)
+class IKSolver : public LogicComponent
 {
-    IKSolver::RegisterObject(context);
-    IKSolverComponent::RegisterObject(context);
+    URHO3D_OBJECT(IKSolver, LogicComponent);
 
-    IKChainSolver::RegisterObject(context);
-    IKIdentitySolver::RegisterObject(context);
-    IKLegSolver::RegisterObject(context);
-    IKTrigonometrySolver::RegisterObject(context);
+public:
+    explicit IKSolver(Context* context);
+    ~IKSolver() override;
+    static void RegisterObject(Context* context);
+
+    /// Notify host component that the list of solvers is dirty and needs to be rebuilt.
+    void MarkSolversDirty() { solversDirty_ = true; }
+    /// Solve the IK forcibly.
+    void Solve();
+
+    void PostUpdate(float timeStep) override;
+    StringHash GetPostUpdateEvent() const override { return E_SCENEDRAWABLEUPDATEFINISHED; }
+
+private:
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
+
+    bool IsChainTreeExpired() const;
+    void RebuildSolvers();
+    void InitializeNodeTransforms();
+
+    bool solveWhenPaused_{};
+    IKSettings settings_;
+
+    bool solversDirty_{};
+
+    ea::vector<WeakPtr<IKSolverComponent>> solvers_;
+
+    IKNodeCache solverNodes_;
+};
+
 }
-
-} // namespace Urho3D
