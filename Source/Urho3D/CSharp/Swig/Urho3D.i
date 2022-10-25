@@ -555,6 +555,8 @@ public:
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)
 %include "generated/Urho3D/_pre_ik.i"
+%include "Urho3D/IK/IKSolver.h"
+%include "Urho3D/IK/IKSolverComponent.h"
 #endif
 // --------------------------------------- Graphics ---------------------------------------
 %ignore Urho3D::FrustumOctreeQuery::TestDrawables;
