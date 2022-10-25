@@ -20,20 +20,6 @@
 // THE SOFTWARE.
 //
 
-/*
- * TODO
- *  - Optimise.
- *  - Profile.
- *  - Documentation.
- *
- * FUTURE
- *  - Support for "stretchiness" with min/max lengths.
- *  - Support for "stiffness" factor, describes how well a bone rotates.
- *  - Implement constraints.
- *  - Skip bones when building the tree.
- *  - Mass/Spring/Damper solver.
- */
-
 namespace Urho3D
 {
 

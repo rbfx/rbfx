@@ -22,6 +22,8 @@
 
 #pragma once
 
+#if 0
+
 #include "Sample.h"
 
 namespace Urho3D
@@ -86,3 +88,5 @@ private:
     /// Camera node.
     SharedPtr<Node> cameraRotateNode_;
 };
+
+#endif

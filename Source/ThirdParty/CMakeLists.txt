@@ -106,10 +106,6 @@ if (NOT MINI_URHO)
         add_subdirectory (SLikeNet)
     endif ()
 
-    if (URHO3D_IK)
-        add_subdirectory (ik)
-    endif ()
-
     if (URHO3D_NAVIGATION)
         add_subdirectory (Detour)
         add_subdirectory (DetourCrowd)
