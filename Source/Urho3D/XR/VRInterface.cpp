@@ -359,26 +359,8 @@ void VRInterface::DrawEyeMask()
             GetRightEyeRect()
         };
 
-        RenderSurface* surfaces[] = {
-            sharedTexture_->GetRenderSurface(),
-            sharedTexture_->GetRenderSurface()
-        };
-
-        Texture2D* ds[] = {
-            sharedDS_.Get(),
-            sharedDS_.Get(),
-        };
-
         for (int i = 0; i < 2; ++i)
         {
-            if (gfx->GetRenderTarget(0) != surfaces[i])
-            {
-                gfx->ResetRenderTargets();
-                gfx->SetRenderTarget(0, surfaces[i]);
-            }
-            if (gfx->GetDepthStencil() == nullptr || gfx->GetDepthStencil()->GetParentTexture() != ds[i])
-                gfx->SetDepthStencil(ds[i]);
-
             gfx->SetViewport(vpts[i]);
 
             auto drawQueue = renderer->GetDefaultDrawQueue();
@@ -397,7 +379,6 @@ void VRInterface::DrawEyeMask()
             drawQueue->DrawIndexed(hiddenAreaMesh_[i]->GetIndexStart(), hiddenAreaMesh_[i]->GetIndexCount());
 
             drawQueue->Execute();
-            drawQueue->Reset();
         }
 
         gfx->SetViewport(oldViewport);
@@ -449,11 +430,6 @@ void VRInterface::DrawRadialMask(Color inside, Color outside, float power)
 
         for (int i = 0; i < 2; ++i)
         {
-            if (gfx->GetRenderTarget(0) != surfaces[i])
-                gfx->SetRenderTarget(0, surfaces[i]);
-            if (gfx->GetDepthStencil() == nullptr || gfx->GetDepthStencil()->GetParentTexture() != ds[i])
-                gfx->SetDepthStencil(ds[i]);
-
             gfx->SetViewport(vpts[i]);
 
             auto drawQueue = renderer->GetDefaultDrawQueue();

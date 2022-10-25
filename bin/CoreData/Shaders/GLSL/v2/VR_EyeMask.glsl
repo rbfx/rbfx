@@ -11,7 +11,9 @@ VERTEX_INPUT(vec4 iPos)
 
 void main()
 {
-    gl_Position = cProjection * iPos;
+#ifdef OPEN_XR
+    gl_Position = iPos;
+#endif
 }
 
 #endif

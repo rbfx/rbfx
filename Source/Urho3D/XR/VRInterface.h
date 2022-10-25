@@ -204,15 +204,11 @@ namespace Urho3D
 
         /// IPD correction factor in millimeters.
         float GetIPDCorrection() const { return ipdCorrection_; }
-        /// Height correction factor, added into vertical positioning.
-        float GetHeightCorrection() const { return heightCorrection_; }
         /// Scale correction factor, premultiplied into all transforms.
         float GetScaleCorrection() const { return scaleCorrection_; }
 
         /// Set a software IPD adjustment in millimeters, applied by translating each eye in local space on the X axis by half the specified amount. Only intended for small corrective changes of ~2mm.
         void SetIPDCorrection(float value) { ipdCorrection_ = value; }
-        /// Height correction can also be done on the VRRig node.
-        void SetHeightCorrection(float value) { heightCorrection_ = value; }
         /// Scale correction can also be done on the VRRig node.
         void SetScaleCorrection(float value) { scaleCorrection_ = value; }
 
@@ -331,8 +327,6 @@ namespace Urho3D
         int eyeTexHeight_;
         /// External IPD adjustment.
         float ipdCorrection_ = 0.0f;
-        /// Vertical correction factor.
-        float heightCorrection_ = 0.0f;
         /// Scaling factor correct by.
         float scaleCorrection_ = 1.0f;
         /// Scaling factor to apply to recommended render-target resolutions. Such as going lower res or higher res.

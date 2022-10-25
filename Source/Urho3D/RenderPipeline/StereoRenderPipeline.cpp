@@ -525,8 +525,8 @@ void StereoRenderPipelineView::Render()
     // Need to at least squeeze an uber post-processing into that to justify it.
     // Samsung Odyssey+ OXR reported recommended resolution is 3864 x 2420 which is just plain massive 9.3 million
     // compared to 1080p's 2 million.
-    //auto xr = GetSubsystem<OpenXR>();
-    //xr->DrawEyeMask();
+    auto xr = GetSubsystem<OpenXR>();
+    xr->DrawEyeMask();
 
     const ShaderParameterDesc cameraParameters[] = {
         {VSP_GBUFFEROFFSETS, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
