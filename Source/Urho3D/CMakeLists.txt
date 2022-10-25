@@ -184,7 +184,6 @@ set (THIRD_PARTY_DEPENDENCIES
     IconFontCppHeaders
     Civetweb
     SLikeNet
-    ik
     Detour
     DetourCrowd
     DetourTileCache

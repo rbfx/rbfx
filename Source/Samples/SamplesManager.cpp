@@ -347,7 +347,7 @@ void SamplesManager::Start()
     RegisterSample<RibbonTrailDemo>();
 #if URHO3D_PHYSICS
 #if URHO3D_IK
-    RegisterSample<InverseKinematics>();
+    //RegisterSample<InverseKinematics>();
 #endif
     RegisterSample<RaycastVehicleDemo>();
 #endif

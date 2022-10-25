@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#if 0
+
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/AnimatedModel.h>
@@ -287,3 +289,4 @@ void InverseKinematics::HandleSceneDrawableUpdateFinished(StringHash /*eventType
 
     solver_->Solve();
 }
+#endif

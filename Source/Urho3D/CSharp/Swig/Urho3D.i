@@ -554,13 +554,7 @@ public:
 
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)
-%{ using Algorithm = Urho3D::IKSolver::Algorithm; %}
-
 %include "generated/Urho3D/_pre_ik.i"
-%include "Urho3D/IK/IKConstraint.h"
-%include "Urho3D/IK/IKEffector.h"
-%include "Urho3D/IK/IK.h"
-%include "Urho3D/IK/IKSolver.h"
 #endif
 // --------------------------------------- Graphics ---------------------------------------
 %ignore Urho3D::FrustumOctreeQuery::TestDrawables;
