@@ -44,6 +44,7 @@ add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
 
 if (NOT MINI_URHO)
+    add_subdirectory(renderdoc)
     add_subdirectory(tinygltf)
     if (URHO3D_TESTING)
         add_subdirectory(catch2)

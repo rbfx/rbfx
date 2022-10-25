@@ -809,7 +809,8 @@ private:
     void SetVertexAttribDivisor(unsigned location, unsigned divisor);
     /// Release/clear GPU objects and optionally close the window. Used only on OpenGL.
     void Release(bool clearGPUObjects, bool closeWindow);
-
+    /// Init RenderDoc API.
+    void InitRenderDoc();
     /// Mutex for accessing the GPU objects vector from several threads.
     Mutex gpuObjectMutex_;
     /// Implementation.
@@ -988,6 +989,8 @@ private:
     static bool gl3Support;
     /// Graphics capabilities. Static for easier access.
     static GraphicsCaps caps;
+    /// Pointer to renderdoc api if available.
+    void* renderDocApi_{};
 };
 
 /// Register Graphics library objects.

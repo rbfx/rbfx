@@ -400,6 +400,11 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
     if (IsInitialized() && width == width_ && height == height_ && screenParams_ == newParams)
         return true;
 
+    if (params.gpuDebug_)
+    {
+        InitRenderDoc();
+    }
+
     // If only vsync changes, do not destroy/recreate the context
     if (IsInitialized() && width == width_ && height == height_
         && screenParams_.EqualsExceptVSync(newParams) && screenParams_.vsync_ != newParams.vsync_)

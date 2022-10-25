@@ -69,6 +69,9 @@
 #include "../IO/Log.h"
 
 #include <SDL.h>
+#if (defined _WIN32) || (defined __linux__)
+#include <renderdoc_app.h>
+#endif
 
 #include "../DebugNew.h"
 
@@ -617,6 +620,38 @@ void Graphics::OnScreenModeChanged()
     eventData[P_MONITOR] = screenParams_.monitor_;
     eventData[P_REFRESHRATE] = screenParams_.refreshRate_;
     SendEvent(E_SCREENMODE, eventData);
+}
+
+void Graphics::InitRenderDoc()
+{
+    if (renderDocApi_)
+        return;
+
+    // Get RenderDoc API if available.
+#ifdef _WIN32
+    if (HMODULE mod = GetModuleHandleA("renderdoc.dll"))
+    {
+        pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+        int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, &renderDocApi_);
+        if (ret != 1)
+        {
+            URHO3D_LOGERROR("Failed to get RenderDoc API 1.1.2");
+            renderDocApi_ = nullptr;
+        }
+    }
+#endif
+#if defined(__linux__)
+    if (void* mod = dlopen("librenderdoc.so", RTLD_NOW | RTLD_NOLOAD))
+    {
+        pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)dlsym(mod, "RENDERDOC_GetAPI");
+        int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, &renderDocApi_);
+        if (ret != 1)
+        {
+            URHO3D_LOGERROR("Failed to get RenderDoc API 1.1.2");
+            renderDocApi_ = nullptr;
+        }
+    }
+#endif
 }
 
 void RegisterGraphicsLibrary(Context* context)

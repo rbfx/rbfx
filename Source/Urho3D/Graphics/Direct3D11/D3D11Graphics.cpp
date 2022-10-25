@@ -2043,6 +2043,8 @@ bool Graphics::CreateDevice(int width, int height)
         {
             // Enable the debug layer if requested.
             deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+
+            InitRenderDoc();
         }
         ID3D11DeviceContext* deviceContext = nullptr;
         const D3D_FEATURE_LEVEL featureLevels[] =
