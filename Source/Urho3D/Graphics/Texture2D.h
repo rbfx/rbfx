@@ -84,7 +84,7 @@ public:
 
 #ifdef URHO3D_D3D11
     /// Initialize texture from an external texture. This function will not touch the reference-counts, caller is responsible.
-    bool CreateFromExternal(ID3D11Texture2D*, int msaaLevel, bool isSRGB);
+    bool CreateFromExternal(void*, int msaaLevel, bool isSRGB);
 #endif
 #ifdef URHO3D_OPENGL
     bool CreateFromExternal(int, int w, int h, int msaaLevel, int format, TextureUsage usage);

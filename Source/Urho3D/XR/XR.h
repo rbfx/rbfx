@@ -124,7 +124,7 @@ protected:
     /// Attempts to load controller models, note that this can only be done if there are grip actions bound for some reason.
     void LoadControllerModels();
 
-    SharedPtr<XMLFile> manifest_ = { };
+    SharedPtr<XMLFile> manifest_;
     XrInstance instance_ = { };
     XrSystemId system_ = { };
     XrSession session_ = { };

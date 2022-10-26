@@ -521,10 +521,12 @@ bool Texture2D::Create()
     return true;
 }
 
-bool Texture2D::CreateFromExternal(ID3D11Texture2D* tex, int msaaLevel, bool isSRGB)
+bool Texture2D::CreateFromExternal(void* tex, int msaaLevel, bool isSRGB)
 {
+    ID3D11Texture2D* d3dTex = (ID3D11Texture2D*)tex;
+
     D3D11_TEXTURE2D_DESC desc;
-    tex->GetDesc(&desc);
+    d3dTex->GetDesc(&desc);
 
     // Allow amping up the MSAA of what we get, it's a bit of extra checks but makes everything 'just work' without added resolve work
     // what happens is auto-resolve is forced on and it the given texture is used as the resolve texture instead of the main one which will be created
