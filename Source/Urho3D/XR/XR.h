@@ -24,6 +24,7 @@
 
 #include "../XR/VRInterface.h"
 #include "../Graphics/Model.h"
+#include "../Core/Variant.h"
 
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr.h>
 
