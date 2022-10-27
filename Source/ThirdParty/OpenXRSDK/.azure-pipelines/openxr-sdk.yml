@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 The Khronos Group Inc.
+# Copyright (c) 2019-2022, The Khronos Group Inc.
 # SPDX-License-Identifier: Apache-2.0
 
 # Main azure-pipelines configuration for the OpenXR-SDK repo.
@@ -7,8 +7,12 @@ trigger:
   branches:
     include:
       - "*"
+variables:
+  VULKAN_SDK_VERSION: "1.1.114.0"
 
 stages:
   - stage: Build
     jobs:
       - template: shared/build_jobs.yml
+        parameters:
+          isSdkSourceRepo: false

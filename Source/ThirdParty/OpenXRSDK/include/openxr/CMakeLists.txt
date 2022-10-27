@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2021, The Khronos Group Inc.
+# Copyright (c) 2017-2022, The Khronos Group Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -91,7 +91,11 @@ else()
     )
 endif()
 set_target_properties(generate_openxr_header PROPERTIES FOLDER ${CODEGEN_FOLDER})
+if(NOT CMAKE_INSTALL_INCDIR)
+    set(CMAKE_INSTALL_INCDIR include)
+endif()
 
 INSTALL(FILES ${INSTALL_HEADERS}
-    DESTINATION include/openxr
+    DESTINATION ${CMAKE_INSTALL_INCDIR}/openxr
+    COMPONENT Headers
 )
