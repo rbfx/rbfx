@@ -119,8 +119,8 @@ option                (URHO3D_PHYSICS2D          "2D physics subsystem enabled" 
 option                (URHO3D_RMLUI              "HTML subset UIs via RmlUI middleware"                  ${URHO3D_ENABLE_ALL})
 option                (URHO3D_PARTICLE_GRAPH     "Particle Graph Effects"                                ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_COMPUTE            "Enable Compute shaders"                                ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT URHO3D_D3D9;NOT URHO3D_GLES2" OFF)
-# Note: None of the rules below are necessarilly permanent, to be removed 1 by 1 as supported.
-cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT URHO3D_D3D9;NOT URHO3D_GLES2" OFF)
+# Note: None of the rules below are necessarilly permanent, to be removed 1 by 1 as supported. Add MacOS exclusion as OpenXR SDK doesn't recognize it as a platform.
+cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT URHO3D_D3D9;NOT URHO3D_GLES2;NOT MACOS" OFF)
 
 # Features
 set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
