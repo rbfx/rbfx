@@ -883,7 +883,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         headLoc_.next = &headVel_;
         xrLocateSpace(viewSpace_, headSpace_, frameState.predictedDisplayTime, &headLoc_);
 
-        HandlePreRender(StringHash(), VariantMap());
+        HandlePreRender();
 
         for (int i = 0; i < 2; ++i)
         {
@@ -929,7 +929,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         }
     }
 
-    void OpenXR::HandlePreRender(StringHash, VariantMap&)
+    void OpenXR::HandlePreRender()
     {
         if (IsLive())
         {

@@ -101,7 +101,7 @@ public:
     virtual void CreateEyeTextures() override;
 
     void HandlePreUpdate(StringHash, VariantMap&);
-    void HandlePreRender(StringHash, VariantMap&);
+    void HandlePreRender();
     void HandlePostRender(StringHash, VariantMap&);
 
     virtual void BindActions(SharedPtr<XMLFile>);
