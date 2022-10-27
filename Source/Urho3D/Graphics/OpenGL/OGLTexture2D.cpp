@@ -514,10 +514,14 @@ bool Texture2D::CreateFromExternal(int object, int w, int h, int msaaLevel, int 
     multiSample_ = msaaLevel;
     filterMode_ = FILTER_NEAREST;
 
+#ifndef GL_ES_VERSION_2_0
     if (format == GL_SRGB8)
         sRGB_ = true;
     else
         sRGB_ = false;
+#else
+    sRGB_ = false;
+#endif
 
     if (usage == TEXTURE_RENDERTARGET)
     {

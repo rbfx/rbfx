@@ -986,7 +986,12 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned vertexStart, unsigned 
     GLenum glPrimitiveType;
 
     GetGLPrimitiveType(vertexCount, type, primitiveCount, glPrimitiveType);
-    glDrawArraysInstanced(glPrimitiveType, vertexStart, instanceCount, vertexCount);
+#ifdef __EMSCRIPTEN__
+    glDrawArraysInstancedANGLE(glPrimitiveType, indexCount, indexType, reinterpret_cast<const GLvoid*>((uintptr_t)(indexStart * indexSize)),
+        instanceCount);
+#else
+    glDrawArraysInstancedEXT(glPrimitiveType, vertexStart, instanceCount, vertexCount);
+#endif
 
     numPrimitives_ += primitiveCount * instanceCount;
     ++numBatches_;
