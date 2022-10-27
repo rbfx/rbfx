@@ -69,8 +69,13 @@
 #include "../IO/Log.h"
 
 #include <SDL.h>
-#if (defined _WIN32) || (defined __linux__)
+
+#ifdef _WIN32
 #include <renderdoc_app.h>
+#endif
+#ifdef __linux__
+#include <renderdoc_app.h>
+#include <dlfcn.h>
 #endif
 
 #include "../DebugNew.h"
@@ -640,8 +645,14 @@ void Graphics::InitRenderDoc()
         }
     }
 #endif
-#if defined(__linux__)
-    if (void* mod = dlopen("librenderdoc.so", RTLD_NOW | RTLD_NOLOAD))
+#ifdef __linux__
+    #ifdef ANDROID
+        const char modName = "libVkLayer_GLES_RenderDoc.so";
+    #else
+        const char modName = "librenderdoc.so";
+    #endif
+
+    if (void* mod = dlopen(modName, RTLD_NOW | RTLD_NOLOAD))
     {
         pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)dlsym(mod, "RENDERDOC_GetAPI");
         int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, &renderDocApi_);
