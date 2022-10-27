@@ -126,12 +126,12 @@ static const XrColor4f XrColorCyan = {0.0f, 1.0f, 1.0f, 1.0f};
 static const XrColor4f XrColorLightGrey = {0.7f, 0.7f, 0.7f, 1.0f};
 static const XrColor4f XrColorDarkGrey = {0.3f, 0.3f, 0.3f, 1.0f};
 
-enum GraphicsAPI { GRAPHICS_VULKAN, GRAPHICS_OPENGL, GRAPHICS_OPENGL_ES, GRAPHICS_D3D };
+typedef enum GraphicsAPI { GRAPHICS_VULKAN, GRAPHICS_OPENGL, GRAPHICS_OPENGL_ES, GRAPHICS_D3D } GraphicsAPI;
 
 // Column-major, pre-multiplied. This type does not exist in the OpenXR API and is provided for convenience.
-struct XrMatrix4x4f {
+typedef struct XrMatrix4x4f {
     float m[16];
-};
+} XrMatrix4x4f;
 
 inline static float XrRcpSqrt(const float x) {
     const float SMALLEST_NON_DENORMAL = 1.1754943508222875e-038f;  // ( 1U << 23 )
@@ -195,7 +195,7 @@ inline static float XrVector3f_Dot(const XrVector3f* a, const XrVector3f* b) { r
 inline static void XrVector3f_Cross(XrVector3f* result, const XrVector3f* a, const XrVector3f* b) {
     result->x = a->y * b->z - a->z * b->y;
     result->y = a->z * b->x - a->x * b->z;
-    result->x = a->x * b->y - a->y * b->x;
+    result->z = a->x * b->y - a->y * b->x;
 }
 
 inline static void XrVector3f_Normalize(XrVector3f* v) {

@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 The Khronos Group Inc.
+# Copyright (c) 2019-2022, The Khronos Group Inc.
 # SPDX-License-Identifier: Apache-2.0
 
 parameters:
@@ -7,7 +7,7 @@ parameters:
     default: "Debug"
   - name: generator
     type: string
-    default: "Visual Studio 16 2019"
+    default: "Visual Studio 17 2022"
   - name: cmakeArgs
     type: string
     default: ""

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021, The Khronos Group Inc.
+// Copyright (c) 2017-2022, The Khronos Group Inc.
 // Copyright (c) 2017-2019 Valve Corporation
 // Copyright (c) 2017-2019 LunarG, Inc.
 //
@@ -53,7 +53,6 @@ XrResult ApiLayerInterface::GetApiLayerProperties(const std::string& openxr_comm
                                                   uint32_t* outgoing_count, XrApiLayerProperties* api_layer_properties) {
     std::vector<std::unique_ptr<ApiLayerManifestFile>> manifest_files;
     uint32_t manifest_count = 0;
-
     // Validate props struct before proceeding
     if (0 < incoming_count && nullptr != api_layer_properties) {
         for (uint32_t i = 0; i < incoming_count; i++) {

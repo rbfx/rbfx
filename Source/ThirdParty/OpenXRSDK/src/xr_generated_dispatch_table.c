@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021, The Khronos Group Inc.
+// Copyright (c) 2017-2022, The Khronos Group Inc.
 // Copyright (c) 2017-2019 Valve Corporation
 // Copyright (c) 2017-2019 LunarG, Inc.
 // SPDX-License-Identifier: Apache-2.0 OR MIT
@@ -6,7 +6,7 @@
 //     See utility_source_generator.py for modifications
 // ************************************************************
 
-// Copyright (c) 2017-2021, The Khronos Group Inc.
+// Copyright (c) 2017-2022, The Khronos Group Inc.
 // Copyright (c) 2017-2019 Valve Corporation
 // Copyright (c) 2017-2019 LunarG, Inc.
 //
@@ -202,6 +202,9 @@ void GeneratedXrPopulateDispatchTable(struct XrGeneratedDispatchTable *table,
 
     // ---- XR_MSFT_spatial_graph_bridge extension commands
     (get_inst_proc_addr(instance, "xrCreateSpatialGraphNodeSpaceMSFT", (PFN_xrVoidFunction*)&table->CreateSpatialGraphNodeSpaceMSFT));
+    (get_inst_proc_addr(instance, "xrTryCreateSpatialGraphStaticNodeBindingMSFT", (PFN_xrVoidFunction*)&table->TryCreateSpatialGraphStaticNodeBindingMSFT));
+    (get_inst_proc_addr(instance, "xrDestroySpatialGraphNodeBindingMSFT", (PFN_xrVoidFunction*)&table->DestroySpatialGraphNodeBindingMSFT));
+    (get_inst_proc_addr(instance, "xrGetSpatialGraphNodeBindingPropertiesMSFT", (PFN_xrVoidFunction*)&table->GetSpatialGraphNodeBindingPropertiesMSFT));
 
     // ---- XR_EXT_hand_tracking extension commands
     (get_inst_proc_addr(instance, "xrCreateHandTrackerEXT", (PFN_xrVoidFunction*)&table->CreateHandTrackerEXT));
@@ -254,16 +257,77 @@ void GeneratedXrPopulateDispatchTable(struct XrGeneratedDispatchTable *table,
     (get_inst_proc_addr(instance, "xrGetDisplayRefreshRateFB", (PFN_xrVoidFunction*)&table->GetDisplayRefreshRateFB));
     (get_inst_proc_addr(instance, "xrRequestDisplayRefreshRateFB", (PFN_xrVoidFunction*)&table->RequestDisplayRefreshRateFB));
 
+    // ---- XR_HTCX_vive_tracker_interaction extension commands
+    (get_inst_proc_addr(instance, "xrEnumerateViveTrackerPathsHTCX", (PFN_xrVoidFunction*)&table->EnumerateViveTrackerPathsHTCX));
+
+    // ---- XR_HTC_facial_tracking extension commands
+    (get_inst_proc_addr(instance, "xrCreateFacialTrackerHTC", (PFN_xrVoidFunction*)&table->CreateFacialTrackerHTC));
+    (get_inst_proc_addr(instance, "xrDestroyFacialTrackerHTC", (PFN_xrVoidFunction*)&table->DestroyFacialTrackerHTC));
+    (get_inst_proc_addr(instance, "xrGetFacialExpressionsHTC", (PFN_xrVoidFunction*)&table->GetFacialExpressionsHTC));
+
     // ---- XR_FB_color_space extension commands
     (get_inst_proc_addr(instance, "xrEnumerateColorSpacesFB", (PFN_xrVoidFunction*)&table->EnumerateColorSpacesFB));
     (get_inst_proc_addr(instance, "xrSetColorSpaceFB", (PFN_xrVoidFunction*)&table->SetColorSpaceFB));
+
+    // ---- XR_FB_hand_tracking_mesh extension commands
+    (get_inst_proc_addr(instance, "xrGetHandMeshFB", (PFN_xrVoidFunction*)&table->GetHandMeshFB));
+
+    // ---- XR_FB_spatial_entity extension commands
+    (get_inst_proc_addr(instance, "xrCreateSpatialAnchorFB", (PFN_xrVoidFunction*)&table->CreateSpatialAnchorFB));
+    (get_inst_proc_addr(instance, "xrGetSpaceUuidFB", (PFN_xrVoidFunction*)&table->GetSpaceUuidFB));
+    (get_inst_proc_addr(instance, "xrEnumerateSpaceSupportedComponentsFB", (PFN_xrVoidFunction*)&table->EnumerateSpaceSupportedComponentsFB));
+    (get_inst_proc_addr(instance, "xrSetSpaceComponentStatusFB", (PFN_xrVoidFunction*)&table->SetSpaceComponentStatusFB));
+    (get_inst_proc_addr(instance, "xrGetSpaceComponentStatusFB", (PFN_xrVoidFunction*)&table->GetSpaceComponentStatusFB));
 
     // ---- XR_FB_foveation extension commands
     (get_inst_proc_addr(instance, "xrCreateFoveationProfileFB", (PFN_xrVoidFunction*)&table->CreateFoveationProfileFB));
     (get_inst_proc_addr(instance, "xrDestroyFoveationProfileFB", (PFN_xrVoidFunction*)&table->DestroyFoveationProfileFB));
 
+    // ---- XR_FB_keyboard_tracking extension commands
+    (get_inst_proc_addr(instance, "xrQuerySystemTrackedKeyboardFB", (PFN_xrVoidFunction*)&table->QuerySystemTrackedKeyboardFB));
+    (get_inst_proc_addr(instance, "xrCreateKeyboardSpaceFB", (PFN_xrVoidFunction*)&table->CreateKeyboardSpaceFB));
+
+    // ---- XR_FB_triangle_mesh extension commands
+    (get_inst_proc_addr(instance, "xrCreateTriangleMeshFB", (PFN_xrVoidFunction*)&table->CreateTriangleMeshFB));
+    (get_inst_proc_addr(instance, "xrDestroyTriangleMeshFB", (PFN_xrVoidFunction*)&table->DestroyTriangleMeshFB));
+    (get_inst_proc_addr(instance, "xrTriangleMeshGetVertexBufferFB", (PFN_xrVoidFunction*)&table->TriangleMeshGetVertexBufferFB));
+    (get_inst_proc_addr(instance, "xrTriangleMeshGetIndexBufferFB", (PFN_xrVoidFunction*)&table->TriangleMeshGetIndexBufferFB));
+    (get_inst_proc_addr(instance, "xrTriangleMeshBeginUpdateFB", (PFN_xrVoidFunction*)&table->TriangleMeshBeginUpdateFB));
+    (get_inst_proc_addr(instance, "xrTriangleMeshEndUpdateFB", (PFN_xrVoidFunction*)&table->TriangleMeshEndUpdateFB));
+    (get_inst_proc_addr(instance, "xrTriangleMeshBeginVertexBufferUpdateFB", (PFN_xrVoidFunction*)&table->TriangleMeshBeginVertexBufferUpdateFB));
+    (get_inst_proc_addr(instance, "xrTriangleMeshEndVertexBufferUpdateFB", (PFN_xrVoidFunction*)&table->TriangleMeshEndVertexBufferUpdateFB));
+
+    // ---- XR_FB_passthrough extension commands
+    (get_inst_proc_addr(instance, "xrCreatePassthroughFB", (PFN_xrVoidFunction*)&table->CreatePassthroughFB));
+    (get_inst_proc_addr(instance, "xrDestroyPassthroughFB", (PFN_xrVoidFunction*)&table->DestroyPassthroughFB));
+    (get_inst_proc_addr(instance, "xrPassthroughStartFB", (PFN_xrVoidFunction*)&table->PassthroughStartFB));
+    (get_inst_proc_addr(instance, "xrPassthroughPauseFB", (PFN_xrVoidFunction*)&table->PassthroughPauseFB));
+    (get_inst_proc_addr(instance, "xrCreatePassthroughLayerFB", (PFN_xrVoidFunction*)&table->CreatePassthroughLayerFB));
+    (get_inst_proc_addr(instance, "xrDestroyPassthroughLayerFB", (PFN_xrVoidFunction*)&table->DestroyPassthroughLayerFB));
+    (get_inst_proc_addr(instance, "xrPassthroughLayerPauseFB", (PFN_xrVoidFunction*)&table->PassthroughLayerPauseFB));
+    (get_inst_proc_addr(instance, "xrPassthroughLayerResumeFB", (PFN_xrVoidFunction*)&table->PassthroughLayerResumeFB));
+    (get_inst_proc_addr(instance, "xrPassthroughLayerSetStyleFB", (PFN_xrVoidFunction*)&table->PassthroughLayerSetStyleFB));
+    (get_inst_proc_addr(instance, "xrCreateGeometryInstanceFB", (PFN_xrVoidFunction*)&table->CreateGeometryInstanceFB));
+    (get_inst_proc_addr(instance, "xrDestroyGeometryInstanceFB", (PFN_xrVoidFunction*)&table->DestroyGeometryInstanceFB));
+    (get_inst_proc_addr(instance, "xrGeometryInstanceSetTransformFB", (PFN_xrVoidFunction*)&table->GeometryInstanceSetTransformFB));
+
+    // ---- XR_FB_render_model extension commands
+    (get_inst_proc_addr(instance, "xrEnumerateRenderModelPathsFB", (PFN_xrVoidFunction*)&table->EnumerateRenderModelPathsFB));
+    (get_inst_proc_addr(instance, "xrGetRenderModelPropertiesFB", (PFN_xrVoidFunction*)&table->GetRenderModelPropertiesFB));
+    (get_inst_proc_addr(instance, "xrLoadRenderModelFB", (PFN_xrVoidFunction*)&table->LoadRenderModelFB));
+
     // ---- XR_VARJO_environment_depth_estimation extension commands
     (get_inst_proc_addr(instance, "xrSetEnvironmentDepthEstimationVARJO", (PFN_xrVoidFunction*)&table->SetEnvironmentDepthEstimationVARJO));
+
+    // ---- XR_VARJO_marker_tracking extension commands
+    (get_inst_proc_addr(instance, "xrSetMarkerTrackingVARJO", (PFN_xrVoidFunction*)&table->SetMarkerTrackingVARJO));
+    (get_inst_proc_addr(instance, "xrSetMarkerTrackingTimeoutVARJO", (PFN_xrVoidFunction*)&table->SetMarkerTrackingTimeoutVARJO));
+    (get_inst_proc_addr(instance, "xrSetMarkerTrackingPredictionVARJO", (PFN_xrVoidFunction*)&table->SetMarkerTrackingPredictionVARJO));
+    (get_inst_proc_addr(instance, "xrGetMarkerSizeVARJO", (PFN_xrVoidFunction*)&table->GetMarkerSizeVARJO));
+    (get_inst_proc_addr(instance, "xrCreateMarkerSpaceVARJO", (PFN_xrVoidFunction*)&table->CreateMarkerSpaceVARJO));
+
+    // ---- XR_VARJO_view_offset extension commands
+    (get_inst_proc_addr(instance, "xrSetViewOffsetVARJO", (PFN_xrVoidFunction*)&table->SetViewOffsetVARJO));
 
     // ---- XR_MSFT_spatial_anchor_persistence extension commands
     (get_inst_proc_addr(instance, "xrCreateSpatialAnchorStoreConnectionMSFT", (PFN_xrVoidFunction*)&table->CreateSpatialAnchorStoreConnectionMSFT));
@@ -274,6 +338,14 @@ void GeneratedXrPopulateDispatchTable(struct XrGeneratedDispatchTable *table,
     (get_inst_proc_addr(instance, "xrUnpersistSpatialAnchorMSFT", (PFN_xrVoidFunction*)&table->UnpersistSpatialAnchorMSFT));
     (get_inst_proc_addr(instance, "xrClearSpatialAnchorStoreMSFT", (PFN_xrVoidFunction*)&table->ClearSpatialAnchorStoreMSFT));
 
+    // ---- XR_FB_spatial_entity_query extension commands
+    (get_inst_proc_addr(instance, "xrQuerySpacesFB", (PFN_xrVoidFunction*)&table->QuerySpacesFB));
+    (get_inst_proc_addr(instance, "xrRetrieveSpaceQueryResultsFB", (PFN_xrVoidFunction*)&table->RetrieveSpaceQueryResultsFB));
+
+    // ---- XR_FB_spatial_entity_storage extension commands
+    (get_inst_proc_addr(instance, "xrSaveSpaceFB", (PFN_xrVoidFunction*)&table->SaveSpaceFB));
+    (get_inst_proc_addr(instance, "xrEraseSpaceFB", (PFN_xrVoidFunction*)&table->EraseSpaceFB));
+
     // ---- XR_OCULUS_audio_device_guid extension commands
 #if defined(XR_USE_PLATFORM_WIN32)
     (get_inst_proc_addr(instance, "xrGetAudioOutputDeviceGuidOculus", (PFN_xrVoidFunction*)&table->GetAudioOutputDeviceGuidOculus));
@@ -281,6 +353,28 @@ void GeneratedXrPopulateDispatchTable(struct XrGeneratedDispatchTable *table,
 #if defined(XR_USE_PLATFORM_WIN32)
     (get_inst_proc_addr(instance, "xrGetAudioInputDeviceGuidOculus", (PFN_xrVoidFunction*)&table->GetAudioInputDeviceGuidOculus));
 #endif // defined(XR_USE_PLATFORM_WIN32)
+
+    // ---- XR_FB_scene extension commands
+    (get_inst_proc_addr(instance, "xrGetSpaceBoundingBox2DFB", (PFN_xrVoidFunction*)&table->GetSpaceBoundingBox2DFB));
+    (get_inst_proc_addr(instance, "xrGetSpaceBoundingBox3DFB", (PFN_xrVoidFunction*)&table->GetSpaceBoundingBox3DFB));
+    (get_inst_proc_addr(instance, "xrGetSpaceSemanticLabelsFB", (PFN_xrVoidFunction*)&table->GetSpaceSemanticLabelsFB));
+    (get_inst_proc_addr(instance, "xrGetSpaceBoundary2DFB", (PFN_xrVoidFunction*)&table->GetSpaceBoundary2DFB));
+    (get_inst_proc_addr(instance, "xrGetSpaceRoomLayoutFB", (PFN_xrVoidFunction*)&table->GetSpaceRoomLayoutFB));
+
+    // ---- XR_ALMALENCE_digital_lens_control extension commands
+    (get_inst_proc_addr(instance, "xrSetDigitalLensControlALMALENCE", (PFN_xrVoidFunction*)&table->SetDigitalLensControlALMALENCE));
+
+    // ---- XR_FB_spatial_entity_container extension commands
+    (get_inst_proc_addr(instance, "xrGetSpaceContainerFB", (PFN_xrVoidFunction*)&table->GetSpaceContainerFB));
+
+    // ---- XR_FB_passthrough_keyboard_hands extension commands
+    (get_inst_proc_addr(instance, "xrPassthroughLayerSetKeyboardHandsIntensityFB", (PFN_xrVoidFunction*)&table->PassthroughLayerSetKeyboardHandsIntensityFB));
+
+    // ---- XR_META_performance_metrics extension commands
+    (get_inst_proc_addr(instance, "xrEnumeratePerformanceMetricsCounterPathsMETA", (PFN_xrVoidFunction*)&table->EnumeratePerformanceMetricsCounterPathsMETA));
+    (get_inst_proc_addr(instance, "xrSetPerformanceMetricsStateMETA", (PFN_xrVoidFunction*)&table->SetPerformanceMetricsStateMETA));
+    (get_inst_proc_addr(instance, "xrGetPerformanceMetricsStateMETA", (PFN_xrVoidFunction*)&table->GetPerformanceMetricsStateMETA));
+    (get_inst_proc_addr(instance, "xrQueryPerformanceMetricsCounterMETA", (PFN_xrVoidFunction*)&table->QueryPerformanceMetricsCounterMETA));
 }
 
 

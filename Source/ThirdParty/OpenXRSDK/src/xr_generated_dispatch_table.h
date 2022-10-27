@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021, The Khronos Group Inc.
+// Copyright (c) 2017-2022, The Khronos Group Inc.
 // Copyright (c) 2017-2019 Valve Corporation
 // Copyright (c) 2017-2019 LunarG, Inc.
 // SPDX-License-Identifier: Apache-2.0 OR MIT
@@ -6,7 +6,7 @@
 //     See utility_source_generator.py for modifications
 // ************************************************************
 
-// Copyright (c) 2017-2021, The Khronos Group Inc.
+// Copyright (c) 2017-2022, The Khronos Group Inc.
 // Copyright (c) 2017-2019 Valve Corporation
 // Copyright (c) 2017-2019 LunarG, Inc.
 //
@@ -205,6 +205,9 @@ struct XrGeneratedDispatchTable {
 
     // ---- XR_MSFT_spatial_graph_bridge extension commands
     PFN_xrCreateSpatialGraphNodeSpaceMSFT CreateSpatialGraphNodeSpaceMSFT;
+    PFN_xrTryCreateSpatialGraphStaticNodeBindingMSFT TryCreateSpatialGraphStaticNodeBindingMSFT;
+    PFN_xrDestroySpatialGraphNodeBindingMSFT DestroySpatialGraphNodeBindingMSFT;
+    PFN_xrGetSpatialGraphNodeBindingPropertiesMSFT GetSpatialGraphNodeBindingPropertiesMSFT;
 
     // ---- XR_EXT_hand_tracking extension commands
     PFN_xrCreateHandTrackerEXT CreateHandTrackerEXT;
@@ -257,16 +260,77 @@ struct XrGeneratedDispatchTable {
     PFN_xrGetDisplayRefreshRateFB GetDisplayRefreshRateFB;
     PFN_xrRequestDisplayRefreshRateFB RequestDisplayRefreshRateFB;
 
+    // ---- XR_HTCX_vive_tracker_interaction extension commands
+    PFN_xrEnumerateViveTrackerPathsHTCX EnumerateViveTrackerPathsHTCX;
+
+    // ---- XR_HTC_facial_tracking extension commands
+    PFN_xrCreateFacialTrackerHTC CreateFacialTrackerHTC;
+    PFN_xrDestroyFacialTrackerHTC DestroyFacialTrackerHTC;
+    PFN_xrGetFacialExpressionsHTC GetFacialExpressionsHTC;
+
     // ---- XR_FB_color_space extension commands
     PFN_xrEnumerateColorSpacesFB EnumerateColorSpacesFB;
     PFN_xrSetColorSpaceFB SetColorSpaceFB;
+
+    // ---- XR_FB_hand_tracking_mesh extension commands
+    PFN_xrGetHandMeshFB GetHandMeshFB;
+
+    // ---- XR_FB_spatial_entity extension commands
+    PFN_xrCreateSpatialAnchorFB CreateSpatialAnchorFB;
+    PFN_xrGetSpaceUuidFB GetSpaceUuidFB;
+    PFN_xrEnumerateSpaceSupportedComponentsFB EnumerateSpaceSupportedComponentsFB;
+    PFN_xrSetSpaceComponentStatusFB SetSpaceComponentStatusFB;
+    PFN_xrGetSpaceComponentStatusFB GetSpaceComponentStatusFB;
 
     // ---- XR_FB_foveation extension commands
     PFN_xrCreateFoveationProfileFB CreateFoveationProfileFB;
     PFN_xrDestroyFoveationProfileFB DestroyFoveationProfileFB;
 
+    // ---- XR_FB_keyboard_tracking extension commands
+    PFN_xrQuerySystemTrackedKeyboardFB QuerySystemTrackedKeyboardFB;
+    PFN_xrCreateKeyboardSpaceFB CreateKeyboardSpaceFB;
+
+    // ---- XR_FB_triangle_mesh extension commands
+    PFN_xrCreateTriangleMeshFB CreateTriangleMeshFB;
+    PFN_xrDestroyTriangleMeshFB DestroyTriangleMeshFB;
+    PFN_xrTriangleMeshGetVertexBufferFB TriangleMeshGetVertexBufferFB;
+    PFN_xrTriangleMeshGetIndexBufferFB TriangleMeshGetIndexBufferFB;
+    PFN_xrTriangleMeshBeginUpdateFB TriangleMeshBeginUpdateFB;
+    PFN_xrTriangleMeshEndUpdateFB TriangleMeshEndUpdateFB;
+    PFN_xrTriangleMeshBeginVertexBufferUpdateFB TriangleMeshBeginVertexBufferUpdateFB;
+    PFN_xrTriangleMeshEndVertexBufferUpdateFB TriangleMeshEndVertexBufferUpdateFB;
+
+    // ---- XR_FB_passthrough extension commands
+    PFN_xrCreatePassthroughFB CreatePassthroughFB;
+    PFN_xrDestroyPassthroughFB DestroyPassthroughFB;
+    PFN_xrPassthroughStartFB PassthroughStartFB;
+    PFN_xrPassthroughPauseFB PassthroughPauseFB;
+    PFN_xrCreatePassthroughLayerFB CreatePassthroughLayerFB;
+    PFN_xrDestroyPassthroughLayerFB DestroyPassthroughLayerFB;
+    PFN_xrPassthroughLayerPauseFB PassthroughLayerPauseFB;
+    PFN_xrPassthroughLayerResumeFB PassthroughLayerResumeFB;
+    PFN_xrPassthroughLayerSetStyleFB PassthroughLayerSetStyleFB;
+    PFN_xrCreateGeometryInstanceFB CreateGeometryInstanceFB;
+    PFN_xrDestroyGeometryInstanceFB DestroyGeometryInstanceFB;
+    PFN_xrGeometryInstanceSetTransformFB GeometryInstanceSetTransformFB;
+
+    // ---- XR_FB_render_model extension commands
+    PFN_xrEnumerateRenderModelPathsFB EnumerateRenderModelPathsFB;
+    PFN_xrGetRenderModelPropertiesFB GetRenderModelPropertiesFB;
+    PFN_xrLoadRenderModelFB LoadRenderModelFB;
+
     // ---- XR_VARJO_environment_depth_estimation extension commands
     PFN_xrSetEnvironmentDepthEstimationVARJO SetEnvironmentDepthEstimationVARJO;
+
+    // ---- XR_VARJO_marker_tracking extension commands
+    PFN_xrSetMarkerTrackingVARJO SetMarkerTrackingVARJO;
+    PFN_xrSetMarkerTrackingTimeoutVARJO SetMarkerTrackingTimeoutVARJO;
+    PFN_xrSetMarkerTrackingPredictionVARJO SetMarkerTrackingPredictionVARJO;
+    PFN_xrGetMarkerSizeVARJO GetMarkerSizeVARJO;
+    PFN_xrCreateMarkerSpaceVARJO CreateMarkerSpaceVARJO;
+
+    // ---- XR_VARJO_view_offset extension commands
+    PFN_xrSetViewOffsetVARJO SetViewOffsetVARJO;
 
     // ---- XR_MSFT_spatial_anchor_persistence extension commands
     PFN_xrCreateSpatialAnchorStoreConnectionMSFT CreateSpatialAnchorStoreConnectionMSFT;
@@ -277,6 +341,14 @@ struct XrGeneratedDispatchTable {
     PFN_xrUnpersistSpatialAnchorMSFT UnpersistSpatialAnchorMSFT;
     PFN_xrClearSpatialAnchorStoreMSFT ClearSpatialAnchorStoreMSFT;
 
+    // ---- XR_FB_spatial_entity_query extension commands
+    PFN_xrQuerySpacesFB QuerySpacesFB;
+    PFN_xrRetrieveSpaceQueryResultsFB RetrieveSpaceQueryResultsFB;
+
+    // ---- XR_FB_spatial_entity_storage extension commands
+    PFN_xrSaveSpaceFB SaveSpaceFB;
+    PFN_xrEraseSpaceFB EraseSpaceFB;
+
     // ---- XR_OCULUS_audio_device_guid extension commands
 #if defined(XR_USE_PLATFORM_WIN32)
     PFN_xrGetAudioOutputDeviceGuidOculus GetAudioOutputDeviceGuidOculus;
@@ -284,6 +356,28 @@ struct XrGeneratedDispatchTable {
 #if defined(XR_USE_PLATFORM_WIN32)
     PFN_xrGetAudioInputDeviceGuidOculus GetAudioInputDeviceGuidOculus;
 #endif // defined(XR_USE_PLATFORM_WIN32)
+
+    // ---- XR_FB_scene extension commands
+    PFN_xrGetSpaceBoundingBox2DFB GetSpaceBoundingBox2DFB;
+    PFN_xrGetSpaceBoundingBox3DFB GetSpaceBoundingBox3DFB;
+    PFN_xrGetSpaceSemanticLabelsFB GetSpaceSemanticLabelsFB;
+    PFN_xrGetSpaceBoundary2DFB GetSpaceBoundary2DFB;
+    PFN_xrGetSpaceRoomLayoutFB GetSpaceRoomLayoutFB;
+
+    // ---- XR_ALMALENCE_digital_lens_control extension commands
+    PFN_xrSetDigitalLensControlALMALENCE SetDigitalLensControlALMALENCE;
+
+    // ---- XR_FB_spatial_entity_container extension commands
+    PFN_xrGetSpaceContainerFB GetSpaceContainerFB;
+
+    // ---- XR_FB_passthrough_keyboard_hands extension commands
+    PFN_xrPassthroughLayerSetKeyboardHandsIntensityFB PassthroughLayerSetKeyboardHandsIntensityFB;
+
+    // ---- XR_META_performance_metrics extension commands
+    PFN_xrEnumeratePerformanceMetricsCounterPathsMETA EnumeratePerformanceMetricsCounterPathsMETA;
+    PFN_xrSetPerformanceMetricsStateMETA SetPerformanceMetricsStateMETA;
+    PFN_xrGetPerformanceMetricsStateMETA GetPerformanceMetricsStateMETA;
+    PFN_xrQueryPerformanceMetricsCounterMETA QueryPerformanceMetricsCounterMETA;
 };
 
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2021, The Khronos Group Inc.
+# Copyright (c) 2017-2022, The Khronos Group Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -12,6 +12,9 @@ CMakeLists.txt.user
 *.tar.gz
 *.log
 pregen/
+
+# Marker file for a snapshot build
+SNAPSHOT
 
 # Cached python scripts in bytecode form
 *.pyc
@@ -42,6 +45,7 @@ local.properties
 
 # Don't ignore these things
 !.*.license
+!.appveyor.yml
 !.azure-pipelines/
 !.azure-pipelines/nuget/NugetTemplate/build
 !.clang-format
@@ -53,8 +57,13 @@ local.properties
 !.gitattributes
 !.github
 !.gitignore
+!.gitlab
 !.gitlab-ci.yml
 !.mailmap
 !.markdownlint.yaml
 !.proclamation.json
 !.reuse
+
+# Output artifact
+*.aar
+*.pom

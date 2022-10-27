@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2021, The Khronos Group Inc.
+# Copyright (c) 2017-2022, The Khronos Group Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -25,11 +25,12 @@
 *.png     binary
 *.pdf     binary
 
-# Shell scripts that don't end in .sh
+# Shell/python scripts that don't end in .sh
 specification/makeAllExts           eol=lf
 specification/makeExt               eol=lf
 specification/makeKHR               eol=lf
 specification/makeKHRAndKHX         eol=lf
 specification/makeReleaseArtifacts  eol=lf
+specification/makeSpec              eol=lf
 specification/checkMarkup           eol=lf
 specification/checkSpecLinks        eol=lf
