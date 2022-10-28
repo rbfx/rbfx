@@ -12,7 +12,7 @@
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
 	<component type="RenderPipeline" id="372">
-		<attribute name="Color Space" value="LDR Linear" />
+		<attribute name="Color Space" value="HDR Linear" />
 		<attribute name="Specular Quality" value="Antialiased" />
 		<attribute name="Readable Depth" value="true" />
 		<attribute name="PCF Kernel Size" value="5" />
