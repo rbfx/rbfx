@@ -217,7 +217,8 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
     if (input->GetKeyDown(KEY_S))
     {
         XMLFile file(GetContext());
-        scene_->SaveXML(file.GetOrCreateRoot("scene"));
+        auto rootElem = file.GetOrCreateRoot("scene");
+        scene_->SaveXML(rootElem);
         
         file.SaveFile(AddTrailingSlash(fs->GetProgramDir()) + "vrsimple_scene.xml");
     }

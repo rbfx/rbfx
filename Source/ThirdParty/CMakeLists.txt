@@ -44,6 +44,13 @@ add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
 
 if (URHO3D_XR)
+    add_definitions(-DDISABLE_STD_FILESYSTEM=1)
+    
+    if (URHO3D_UWP)
+        set (DYNAMIC_LOADER ON CACHE BOOL "")
+        add_definitions(-DDYNAMIC_LOADER=1)
+    endif ()
+    
     add_subdirectory(OpenXRSDK)
 endif ()
 
