@@ -20,6 +20,11 @@
 # THE SOFTWARE.
 #
 
+# Don't include XR sample if we don't have XR on.
+if (NOT URHO3D_XR)
+    return ()
+endif ()
+
 file (GLOB SAMPLE_CODE *.h *.cpp)
 list (APPEND SOURCE_CODE ${SAMPLE_CODE})
 set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)

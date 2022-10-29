@@ -986,13 +986,21 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned vertexStart, unsigned 
     GLenum glPrimitiveType;
 
     GetGLPrimitiveType(vertexCount, type, primitiveCount, glPrimitiveType);
-#ifdef __EMSCRIPTEN__
-    glDrawArraysInstancedANGLE(glPrimitiveType, indexCount, indexType, reinterpret_cast<const GLvoid*>((uintptr_t)(indexStart * indexSize)),
-        instanceCount);
-#else
-    glDrawArraysInstancedEXT(glPrimitiveType, vertexStart, instanceCount, vertexCount);
-#endif
 
+#ifdef ANDROID
+    // doesn't even support this function without GLES3
+#else
+#ifdef __EMSCRIPTEN__
+    glDrawArraysInstancedANGLE(glPrimitiveType, vertexStart, instanceCount, vertexCount);
+#elif defined(IOS)
+    glDrawArraysInstancedEXT(glPrimitiveType, vertexStart, instanceCount, vertexCount);
+#else
+    if (gl3Support)
+        glDrawArraysInstanced(glPrimitiveType, vertexStart, instanceCount, vertexCount);
+    else
+        glDrawArraysInstancedARB(glPrimitiveType, vertexStart, instanceCount, vertexCount);
+#endif
+#endif
     numPrimitives_ += primitiveCount * instanceCount;
     ++numBatches_;
 }
