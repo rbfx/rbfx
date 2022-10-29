@@ -95,6 +95,9 @@ void IKSolver::Solve()
 
 bool IKSolver::IsChainTreeExpired() const
 {
+    if (!solvers_.empty() && solverNodes_.empty())
+        return true;
+
     return ea::any_of(solverNodes_.begin(), solverNodes_.end(),
         [](const IKNodeCache::value_type& entry) { return !entry.first; });
 }

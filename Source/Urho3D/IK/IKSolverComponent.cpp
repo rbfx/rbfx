@@ -367,10 +367,18 @@ void IKLegSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Target Name", ea::string, targetName_, EMPTY_STRING, AM_DEFAULT);
 
-    URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 180.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Min Knee Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Max Knee Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Weight", float, bendWeight_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Normal", Vector3, bendNormal_, Vector3::RIGHT, AM_DEFAULT);
+
+    URHO3D_ACTION_STATIC_LABEL("Update Properties", UpdateProperties, "Set properties below from current bone positions");
+    URHO3D_ATTRIBUTE("Min Heel Angle", float, minHeelAngle_, -1.0f, AM_DEFAULT);
+}
+
+void IKLegSolver::UpdateProperties()
+{
+    UpdateMinHeelAngle();
 }
 
 void IKLegSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -433,39 +441,64 @@ void IKLegSolver::UpdateChainLengths()
 {
     legChain_.UpdateLengths();
     footSegment_.UpdateLength();
+}
 
-    IKNode* thighBone = legChain_.GetMiddleNode();
-    IKNode* heelBone = legChain_.GetEndNode();
-    IKNode* toeBone = footSegment_.endNode_;
+void IKLegSolver::UpdateMinHeelAngle()
+{
+    Node* thighNode = node_->GetChild(thighBoneName_, true);
+    Node* heelNode = node_->GetChild(heelBoneName_, true);
+    Node* toeNode = node_->GetChild(toeBoneName_, true);
 
-    const Vector3 heelToThigh = thighBone->position_ - heelBone->position_;
-    const Vector3 heelToToe = toeBone->position_ - heelBone->position_;
+    if (thighNode && heelNode && toeNode)
+    {
+        const Vector3 heelToThigh = thighNode->GetWorldPosition() - heelNode->GetWorldPosition();
+        const Vector3 heelToToe = toeNode->GetWorldPosition() - heelNode->GetWorldPosition();
 
-    heelBaseAngle_ = heelToThigh.SignedAngle(heelToToe, bendNormal_);
+        minHeelAngle_ = heelToThigh.SignedAngle(heelToToe, bendNormal_);
+    }
+}
+
+Vector3 IKLegSolver::CalculateFootDirectionStraight(const Vector3& toeTargetPosition) const
+{
+    IKNode* thighBone = legChain_.GetBeginNode();
+    return GetToeToHeel(
+        thighBone->position_, toeTargetPosition, footSegment_.length_, minHeelAngle_,
+        GetMaxDistance(legChain_, maxKneeAngle_), bendNormal_);
+}
+
+Vector3 IKLegSolver::CalculateFootDirectionBent(const Vector3& toeTargetPosition) const
+{
+    IKNode* thighBone = legChain_.GetBeginNode();
+    const auto [newPos1, newPos2] = IKTrigonometricChain::Solve(
+        thighBone->position_, legChain_.GetFirstLength(), legChain_.GetSecondLength() + footSegment_.length_,
+        toeTargetPosition, bendNormal_, minKneeAngle_, maxKneeAngle_);
+    return (newPos1 - newPos2).Normalized() * footSegment_.length_;
+}
+
+void IKLegSolver::EnsureInitialized()
+{
+    if (minHeelAngle_ < 0.0f)
+        UpdateMinHeelAngle();
+    bendWeight_ = Clamp(bendWeight_, 0.0f, 1.0f);
+    minKneeAngle_ = Clamp(minKneeAngle_, 0.0f, 180.0f);
+    maxKneeAngle_ = Clamp(maxKneeAngle_, 0.0f, 180.0f);
 }
 
 void IKLegSolver::SolveInternal(const IKSettings& settings)
 {
-    bendWeight_ = Clamp(bendWeight_, 0.0f, 1.0f);
-    minAngle_ = Clamp(minAngle_, 0.0f, 180.0f);
-    maxAngle_ = Clamp(maxAngle_, 0.0f, 180.0f);
+    EnsureInitialized();
 
     const Vector3& toeTargetPosition = target_->GetWorldPosition();
 
-    IKNode* thighBone = legChain_.GetBeginNode();
-    IKNode* calfBone = legChain_.GetMiddleNode();
     IKNode* heelBone = legChain_.GetEndNode();
 
-    const Vector3 toeToThigh = thighBone->position_ - toeTargetPosition;
-    const Vector3 toeToHeelBent = toeToThigh.Normalized() * footSegment_.length_;
-    const Vector3 toeToHeelStraight = GetToeToHeel(
-        thighBone->position_, toeTargetPosition, footSegment_.length_, heelBaseAngle_,
-        GetMaxDistance(legChain_, maxAngle_), bendNormal_);
+    const Vector3 toeToHeel0 = CalculateFootDirectionStraight(toeTargetPosition);
+    const Vector3 toeToHeel1 = CalculateFootDirectionBent(toeTargetPosition);
 
-    const Vector3 toeToHeel = InterpolateDirection(toeToHeelStraight, toeToHeelBent, bendWeight_);
+    const Vector3 toeToHeel = InterpolateDirection(toeToHeel0, toeToHeel1, bendWeight_);
     const Vector3 heelTargetPosition = toeTargetPosition + toeToHeel;
 
-    legChain_.Solve(heelTargetPosition, bendNormal_, minAngle_, maxAngle_, settings);
+    legChain_.Solve(heelTargetPosition, bendNormal_, minKneeAngle_, maxKneeAngle_, settings);
 
     const Vector3 toeTargetPositionAdjusted = heelBone->position_ - toeToHeel;
     footSegment_.endNode_->position_ = toeTargetPositionAdjusted;
