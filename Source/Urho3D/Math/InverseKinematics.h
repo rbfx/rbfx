@@ -99,6 +99,10 @@ public:
     void Solve(const Vector3& target, const Vector3& bendNormal,
         float minAngle, float maxAngle, const IKSettings& settings);
 
+    /// Return positions of second and third bones.
+    static ea::pair<Vector3, Vector3> Solve(const Vector3& pos0, float len01, float len12,
+        const Vector3& target, const Vector3& bendNormal, float minAngle, float maxAngle);
+
     IKNode* GetBeginNode() const { return segments_[0].beginNode_; }
     IKNode* GetMiddleNode() const { return segments_[1].beginNode_; }
     IKNode* GetEndNode() const { return segments_[1].endNode_; }

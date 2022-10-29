@@ -124,6 +124,8 @@ public:
     ~IKLegSolver() override;
     static void RegisterObject(Context* context);
 
+    void UpdateProperties();
+
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
 private:
@@ -134,6 +136,11 @@ private:
     void SolveInternal(const IKSettings& settings) override;
     /// @}
 
+    void EnsureInitialized();
+    void UpdateMinHeelAngle();
+    Vector3 CalculateFootDirectionStraight(const Vector3& toeTargetPosition) const;
+    Vector3 CalculateFootDirectionBent(const Vector3& toeTargetPosition) const;
+
     /// Attributes.
     /// @{
     ea::string thighBoneName_;
@@ -143,10 +150,11 @@ private:
 
     ea::string targetName_;
 
-    float minAngle_{0.0f};
-    float maxAngle_{180.0f};
+    float minKneeAngle_{0.0f};
+    float maxKneeAngle_{180.0f};
     float bendWeight_{};
     Vector3 bendNormal_{Vector3::RIGHT};
+    float minHeelAngle_{-1.0f};
     /// @}
 
     /// IK nodes and effectors.
@@ -155,8 +163,6 @@ private:
     IKNodeSegment footSegment_;
     WeakPtr<Node> target_;
     /// @}
-
-    float heelBaseAngle_{};
 };
 
 class IKChainSolver : public IKSolverComponent

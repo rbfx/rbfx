@@ -150,31 +150,37 @@ void IKTrigonometricChain::UpdateLengths()
     segments_[1].UpdateLength();
 }
 
-void IKTrigonometricChain::Solve(const Vector3& target, const Vector3& bendNormal,
-    float minAngle, float maxAngle, const IKSettings& settings)
+ea::pair<Vector3, Vector3> IKTrigonometricChain::Solve(const Vector3& pos0, float len01, float len12,
+    const Vector3& target, const Vector3& bendNormal, float minAngle, float maxAngle)
 {
-    const Vector3 oldPos0 = segments_[0].beginNode_->position_;
-    const Vector3 oldPos1 = segments_[1].beginNode_->position_;
-    const Vector3 oldPos2 = segments_[1].endNode_->position_;
-
-    const float len01 = segments_[0].length_;
-    const float len12 = segments_[1].length_;
     const float minLen02 = Sqrt(len01 * len01 + len12 * len12 - 2 * len01 * len12 * Cos(minAngle));
     const float maxLen02 = Sqrt(len01 * len01 + len12 * len12 - 2 * len01 * len12 * Cos(maxAngle));
-    const float len02 = Clamp((target - oldPos0).Length(), minLen02, maxLen02);
-    const Vector3 newPos2 = (target - oldPos0).ReNormalized(len02, len02) + oldPos0;
+    const float len02 = Clamp((target - pos0).Length(), minLen02, maxLen02);
+    const Vector3 newPos2 = (target - pos0).ReNormalized(len02, len02) + pos0;
 
-    const Vector3 firstAxis = (newPos2 - oldPos0).NormalizedOrDefault(Vector3::DOWN);
+    const Vector3 firstAxis = (newPos2 - pos0).NormalizedOrDefault(Vector3::DOWN);
     const Vector3 secondAxis = firstAxis.CrossProduct(bendNormal).NormalizedOrDefault(Vector3::RIGHT);
 
     // This is angle between begin-to-middle and begin-to-end vectors.
     const float cosAngle = Clamp((len01 * len01 + len02 * len02 - len12 * len12) / (2.0f * len01 * len02), -1.0f, 1.0f);
     const float sinAngle = Sqrt(1.0f - cosAngle * cosAngle);
 
-    const Vector3 newPos1 = oldPos0 + (firstAxis * cosAngle + secondAxis * sinAngle) * len01;
+    const Vector3 newPos1 = pos0 + (firstAxis * cosAngle + secondAxis * sinAngle) * len01;
+    return {newPos1, newPos2};
+}
+
+void IKTrigonometricChain::Solve(const Vector3& target, const Vector3& bendNormal,
+    float minAngle, float maxAngle, const IKSettings& settings)
+{
+    const Vector3 pos0 = segments_[0].beginNode_->position_;
+    const float len01 = segments_[0].length_;
+    const float len12 = segments_[1].length_;
+
+    const auto [newPos1, newPos2] = Solve(pos0, len01, len12, target, bendNormal, minAngle, maxAngle);
 
     segments_[1].beginNode_->position_ = newPos1;
-    segments_[1].endNode_->position_ = (newPos2 - newPos1).ReNormalized(len12, len12) + newPos1;
+    segments_[1].endNode_->position_ = newPos2;
+    //segments_[1].endNode_->position_ = (newPos2 - newPos1).ReNormalized(len12, len12) + newPos1;
 
     segments_[0].UpdateRotationInNodes(settings, false);
     segments_[1].UpdateRotationInNodes(settings, true);
