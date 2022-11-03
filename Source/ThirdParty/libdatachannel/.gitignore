@@ -1,0 +1,15 @@
+build/
+node_modules/
+output/
+*.d
+*.o
+*.a
+*.so
+*.pyc
+*.pyo
+__pycache__
+compile_commands.json
+/tests
+.DS_Store
+.idea
+

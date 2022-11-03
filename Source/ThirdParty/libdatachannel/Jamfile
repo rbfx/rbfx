@@ -1,0 +1,263 @@
+import feature : feature ;
+
+project libdatachannel ;
+path-constant CWD : . ;
+
+feature gnutls : off on : composite propagated ;
+feature.compose <gnutls>off
+    : <define>USE_GNUTLS=0 ;
+feature.compose <gnutls>on
+    : <define>USE_GNUTLS=1 ;
+
+lib libdatachannel
+	: # sources
+	[ glob ./src/*.cpp ]
+	[ glob ./src/impl/*.cpp ]
+	: # requirements
+	<cxxstd>17
+	<include>./include
+	<include>./include/rtc
+	<include>./src
+	<define>RTC_ENABLE_MEDIA=0
+	<define>RTC_ENABLE_WEBSOCKET=0
+	<define>USE_NICE=0
+	<toolset>msvc:<define>WIN32_LEAN_AND_MEAN
+	<toolset>msvc:<define>NOMINMAX
+	<toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS
+	<toolset>msvc:<define>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+	<library>/libdatachannel//usrsctp
+	<library>/libdatachannel//juice
+	<library>/libdatachannel//plog
+	<gnutls>on:<library>gnutls/<link>shared
+	<gnutls>off:<library>ssl
+	<gnutls>off:<library>crypto
+	: # default build
+	<link>static
+	: # usage requirements
+	<include>./include
+	<define>RTC_ENABLE_MEDIA=0
+	<define>RTC_ENABLE_WEBSOCKET=0
+	<library>/libdatachannel//plog
+	<toolset>gcc:<cxxflags>"-pthread -Wno-pedantic -Wno-unused-parameter -Wno-unused-variable"
+	<toolset>clang:<cxxflags>"-pthread -Wno-pedantic -Wno-unused-parameter -Wno-unused-variable"
+	;
+
+alias plog
+    : # no sources
+    : # no build requirements
+    : # no default build
+    : # usage requirements
+    <include>./deps/plog/include
+    ;
+
+alias usrsctp
+    : # no sources
+    : # no build requirements
+    : # no default build
+    : # usage requirements
+    <include>./deps/usrsctp/usrsctplib
+    <library>libusrsctp.a
+    ;
+
+alias usrsctp
+    : # no sources
+    : <toolset>msvc
+    : # no default build
+    : # usage requirements
+    <include>./deps/usrsctp/usrsctplib
+    <library>usrsctp.lib
+    ;
+
+alias juice
+    : # no sources
+    : # no build requirements
+    : # no default build
+    : # usage requirements
+    <include>./deps/libjuice/include
+    <gnutls>on:<library>libjuice-gnutls.a
+    <gnutls>on:<library>nettle/<link>shared
+    <gnutls>off:<library>libjuice-openssl.a
+    ;
+
+alias juice
+    : # no sources
+    : <toolset>msvc
+    : # no default build
+    : # usage requirements
+    <include>./deps/libjuice/include
+    <library>juice-static.lib
+    ;
+
+make libusrsctp.a : : @make_libusrsctp ;
+make usrsctp.lib : : @make_libusrsctp_msvc ;
+
+rule make_libusrsctp ( targets * : sources * : properties * )
+{
+	local VARIANT = [ feature.get-values <variant> : $(properties) ] ;
+	VARIANT on $(targets) = $(VARIANT) ;
+	BUILD_DIR on $(targets) = "build-$(VARIANT)" ;
+}
+actions make_libusrsctp
+{
+    (cd $(CWD)/deps/usrsctp && mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_BUILD_TYPE=$(VARIANT) -DCMAKE_C_FLAGS="-fPIC -Wno-unknown-warning-option -Wno-format-truncation" -Dsctp_build_shared_lib=0 -Dsctp_build_programs=0 -Dsctp_inet=0 -Dsctp_inet6=0 .. && make -j2 usrsctp)
+    cp $(CWD)/deps/usrsctp/$(BUILD_DIR)/usrsctplib/libusrsctp.a $(<)
+}
+rule make_libusrsctp_msvc ( targets * : sources * : properties * )
+{
+	local VARIANT = [ feature.get-values <variant> : $(properties) ] ;
+	VARIANT on $(targets) = $(VARIANT) ;
+	BUILD_DIR on $(targets) = "build-$(VARIANT)" ;
+}
+actions make_libusrsctp_msvc
+{
+	SET OLDD=%CD%
+    cd $(CWD)/deps/usrsctp
+    mkdir $(BUILD_DIR)
+    cd $(BUILD_DIR)
+    cmake -G "Visual Studio 16 2019" -Dsctp_build_shared_lib=0 -Dsctp_build_programs=0 ..
+    msbuild usrsctplib.sln /property:Configuration=$(VARIANT)
+    cd %OLDD%
+    cp $(CWD)/deps/usrsctp/$(BUILD_DIR)/usrsctplib/Release/usrsctp.lib $(<)
+}
+
+make libjuice-gnutls.a : : @make_libjuice_gnutls ;
+make libjuice-openssl.a : : @make_libjuice_openssl ;
+make juice-static.lib : : @make_libjuice_msvc ;
+
+rule make_libjuice_gnutls ( targets * : sources * : properties * )
+{
+	local VARIANT = [ feature.get-values <variant> : $(properties) ] ;
+	BUILD_DIR on $(targets) = "build-gnutls-$(VARIANT)" ;
+	CMAKEOPTS on $(targets) = "-DCMAKE_C_FLAGS=\"-fPIC\" -DCMAKE_BUILD_TYPE=$(VARIANT) -DUSE_NETTLE=1" ;
+}
+actions make_libjuice_gnutls
+{
+    (cd $(CWD)/deps/libjuice && mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake $(CMAKEOPTS) .. && make -j2 juice-static)
+    cp $(CWD)/deps/libjuice/$(BUILD_DIR)/libjuice-static.a $(<)
+}
+rule make_libjuice_openssl ( targets * : sources * : properties * )
+{
+	local VARIANT = [ feature.get-values <variant> : $(properties) ] ;
+	BUILD_DIR on $(targets) = "build-openssl-$(VARIANT)" ;
+	CMAKEOPTS on $(targets) = "-DCMAKE_C_FLAGS=\"-fPIC\" -DCMAKE_BUILD_TYPE=$(VARIANT) -DUSE_NETTLE=0" ;
+
+	local OPENSSL_INCLUDE = [ feature.get-values <openssl-include> : $(properties) ] ;
+	if <target-os>darwin in $(properties) && $(OPENSSL_INCLUDE) = ""
+	{
+		# on macOS, default to pick up openssl from the homebrew installation
+		# brew install openssl
+		OPENSSL_INCLUDE = /opt/homebrew/opt/openssl /usr/local/opt/openssl/include ;
+	}
+
+	if $(OPENSSL_INCLUDE) != ""
+	{ CMAKEOPTS on $(targets) += " -DOPENSSL_ROOT_DIR=$(OPENSSL_INCLUDE)/.." ; }
+}
+actions make_libjuice_openssl
+{
+    (cd $(CWD)/deps/libjuice && mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake $(CMAKEOPTS) .. && make -j2 juice-static)
+    cp $(CWD)/deps/libjuice/$(BUILD_DIR)/libjuice-static.a $(<)
+}
+rule make_libjuice_msvc ( targets * : sources * : properties * )
+{
+	local VARIANT = [ feature.get-values <variant> : $(properties) ] ;
+	VARIANT on $(targets) = $(VARIANT) ;
+	if <gnutls>on in $(properties)
+	{
+		BUILD_DIR on $(targets) += "build-gnutls-$(VARIANT)" ;
+		CMAKEOPTS on $(targets) = "-DUSE_NETTLE=1" ;
+	}
+	else
+	{
+		BUILD_DIR on $(targets) += "build-openssl-$(VARIANT)" ;
+		CMAKEOPTS on $(targets) = "-DUSE_NETTLE=0" ;
+	}
+}
+actions make_libjuice_msvc
+{
+	SET OLDD=%CD%
+    cd $(CWD)/deps/libjuice
+    mkdir $(BUILD_DIR)
+    cd $(BUILD_DIR)
+    cmake -G "Visual Studio 16 2019" $(CMAKEOPTS) ..
+    msbuild libjuice.sln /property:Configuration=$(VARIANT)
+    cd %OLDD%
+    cp $(CWD)/deps/libjuice/$(BUILD_DIR)/Release/juice-static.lib $(<)
+}
+
+# the search path to pick up the openssl libraries from. This is the <search>
+# property of those libraries
+rule openssl-lib-path ( properties * )
+{
+    local OPENSSL_LIB = [ feature.get-values <openssl-lib> : $(properties) ] ;
+
+    if <target-os>darwin in $(properties) && $(OPENSSL_LIB) = ""
+    {
+        # on macOS, default to pick up openssl from the homebrew installation
+        # brew install openssl
+        OPENSSL_LIB = /opt/homebrew/opt/openssl/lib /usr/local/opt/openssl/lib ;
+    }
+    else if <target-os>windows in $(properties) && $(OPENSSL_LIB) = ""
+    {
+        # on windows, assume openssl is installed to c:\OpenSSL-Win32
+        if <address-model>64 in $(properties)
+        { OPENSSL_LIB = c:\\OpenSSL-Win64\\lib ; }
+        else
+        { OPENSSL_LIB = c:\\OpenSSL-Win32\\lib ; }
+    }
+
+    local result ;
+    result += <search>$(OPENSSL_LIB) ;
+    return $(result) ;
+}
+
+# the include path to pick up openssl headers from. This is the
+# usage-requirement for the openssl-related libraries
+rule openssl-include-path ( properties * )
+{
+    local OPENSSL_INCLUDE = [ feature.get-values <openssl-include> : $(properties) ] ;
+
+    if <target-os>darwin in $(properties) && $(OPENSSL_INCLUDE) = ""
+    {
+        # on macOS, default to pick up openssl from the homebrew installation
+        # brew install openssl
+        OPENSSL_INCLUDE = /opt/homebrew/opt/openssl/include /usr/local/opt/openssl/include ;
+    }
+    else if <target-os>windows in $(properties) && $(OPENSSL_INCLUDE) = ""
+    {
+        # on windows, assume openssl is installed to c:\OpenSSL-Win32
+        if <address-model>64 in $(properties)
+        { OPENSSL_INCLUDE = c:\\OpenSSL-Win64\\include ; }
+        else
+        { OPENSSL_INCLUDE = c:\\OpenSSL-Win32\\include ; }
+    }
+
+    local result ;
+    result += <include>$(OPENSSL_INCLUDE) ;
+    return $(result) ;
+}
+
+# libraries for OpenSSL on Windows
+lib advapi32 : : <name>advapi32 ;
+lib user32 : : <name>user32 ;
+lib shell32 : : <name>shell32 ;
+lib gdi32 : : <name>gdi32 ;
+lib bcrypt : : <name>bcrypt ;
+lib z : : <link>shared <name>z ;
+alias ssl-deps : advapi32 user32 shell32 gdi32 ;
+
+# OpenSSL on Windows
+lib crypto : ssl-deps : <toolset>msvc <openssl-version>1.1 <name>libcrypto
+    <conditional>@openssl-lib-path : : <conditional>@openssl-include-path ;
+lib ssl : ssl-deps : <toolset>msvc <openssl-version>1.1 <name>libssl <use>crypto
+    <conditional>@openssl-lib-path : : <conditional>@openssl-include-path ;
+
+# OpenSSL on other platforms
+lib crypto : : <name>crypto <use>z <conditional>@openssl-lib-path : :
+    <conditional>@openssl-include-path ;
+lib ssl : : <name>ssl <use>crypto <conditional>@openssl-lib-path : :
+    <conditional>@openssl-include-path ;
+
+# GnuTLS
+lib gnutls : : <link>shared <name>gnutls ;
+lib nettle : : <link>shared <name>nettle ;
+
