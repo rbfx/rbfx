@@ -480,6 +480,8 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
         for (unsigned sourceBatchIndex = 0; sourceBatchIndex < sourceBatches.size(); ++sourceBatchIndex)
         {
             const SourceBatch& sourceBatch = sourceBatches[sourceBatchIndex];
+            if (sourceBatch.numWorldTransforms_ == 0)
+                continue;
 
             // Find current technique
             Material* material = sourceBatch.material_ ? sourceBatch.material_ : defaultMaterial_;
