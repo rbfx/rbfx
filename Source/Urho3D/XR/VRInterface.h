@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2022 the RBFX project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -281,7 +281,7 @@ namespace Urho3D
         /// Draws the hidden area mask.
         virtual void DrawEyeMask();
         /// Draws an inner radial mask suitable for simple vignette effects, lerps the two colors as lerp(inside, outside, pow(vertex_alpha, power)).
-        virtual void DrawRadialMask(Color inside, Color outside, float power);
+        virtual void DrawRadialMask(BlendMode blendMode, Color inside, Color outside, float power);
 
         /// Returns true if our VR system is alive, but may not necessarilly actively rendering.
         virtual bool IsConnected() const = 0;
@@ -311,6 +311,13 @@ namespace Urho3D
         SharedPtr<Viewport> GetViewport() const { return viewport_; }
         /// Sets the viewport that should be used for rendering, will warn and construct a default if never specified.
         void SetViewport(SharedPtr<Viewport> vp) { viewport_ = vp; }
+
+        void SetVignette(bool enabled, Color insideColor, Color outsideColor, float power);
+
+        Color GetVignetteInsideColor() const { return vignetteInsideColor_; }
+        Color GetVignetteOutsideColor() const { return vignetteOutsideColor_; }
+        float GetVignettePower() const { return vignettePower_; }
+        bool IsVignetteEnabled() const { return vignetteEnabled_; }
 
     protected:
         /// Name of the system being run, ie. Windows Mixed Reality
@@ -367,7 +374,12 @@ namespace Urho3D
         /// Pipeline state for the hidden area eye mask.
         SharedPtr<PipelineState> eyeMaskPipelineState_;
         /// Pipeline state for the trivial vignette drawing.
-        SharedPtr<PipelineState> simpleVignettePipelineState_;
+        SharedPtr<PipelineState> simpleVignettePipelineState_[MAX_BLENDMODES];
+
+        Color vignetteInsideColor_;
+        Color vignetteOutsideColor_;
+        float vignettePower_{ 1.0f };
+        bool vignetteEnabled_{ false };
     };
 
     void RegisterVR(Context*);

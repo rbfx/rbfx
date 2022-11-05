@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2022 the RBFX project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -1446,7 +1446,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
                 struct V {
                     Vector3 pos;
-                    Color color;
+                    unsigned color;
                 };
 
                 ea::vector<V> vtxData;
@@ -1454,15 +1454,19 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 Vector3 centroid = Vector3::ZERO;
                 Vector3 minVec = Vector3(10000, 10000, 10000);
                 Vector3 maxVec = Vector3(-10000, -10000, -10000);
+
+                const unsigned whiteColor = Color::WHITE.ToUInt();
+                const unsigned transWhiteColor = Color(1.0f, 1.0f, 1.0f, 0.0f).ToUInt();
+
                 for (unsigned i = 0; i < verts.size(); ++i)
                 {
-                    vtxData[i] = { Vector3(verts[i].x, verts[i].y, 0.0f), Color::WHITE };
+                    vtxData[i] = { Vector3(verts[i].x, verts[i].y, 0.0f), whiteColor };
                     centroid += vtxData[i].pos;
                 }
                 centroid /= verts.size();
 
                 ea::vector<unsigned short> newIndices;
-                vtxData.push_back({ centroid, Color(1.0f, 1.0f, 1.0f, 0.0f) });
+                vtxData.push_back({ { centroid.x_, centroid.y_, 0.0f }, transWhiteColor });
 
                 // turn the line loop into a fan
                 for (unsigned i = 0; i < indices.size(); ++i)
@@ -1470,7 +1474,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     unsigned me = indices[i];
                     unsigned next = indices[(i + 1) % indices.size()];
 
-                    newIndices.push_back(0);
+                    newIndices.push_back(vtxData.size() - 1); // center is at the end
                     newIndices.push_back(me);
                     newIndices.push_back(next);
                 }
@@ -1486,7 +1490,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 radialAreaMesh_[eye] = new Geometry(GetContext());
                 radialAreaMesh_[eye]->SetVertexBuffer(0, vtx);
                 radialAreaMesh_[eye]->SetIndexBuffer(idx);
-                radialAreaMesh_[eye]->SetDrawRange(TRIANGLE_LIST, 0, indices.size());
+                radialAreaMesh_[eye]->SetDrawRange(TRIANGLE_LIST, 0, newIndices.size());
             }
         }
     }
