@@ -283,6 +283,12 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
                     if (turnRight.CheckStrict(cmd))
                         rig->RotateAround(Vector3(curHeadPos.x_, rigPos.y_, curHeadPos.z_), Quaternion(45, Vector3::UP), TS_WORLD);
                 }
+
+                if (auto rightTrigger = xr->GetInputBinding("trigger", VR_HAND_RIGHT))
+                {
+                    if (rightTrigger->IsChanged()) // would work that anyways because of power * rightHandTrigger
+                        xr->SetVignette(rightTrigger->GetFloat() > 0.5f, Color(25.0f, 0.0f, 0.0f, 0.0f), Color(0.25f, 0.0f, 0.0f, 1.0f), rightTrigger->GetFloat() * 40);
+                }
             }            
         }
     }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2022 the RBFX project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -385,47 +385,38 @@ void VRInterface::DrawEyeMask()
     }
 }
 
-void VRInterface::DrawRadialMask(Color inside, Color outside, float power)
+void VRInterface::DrawRadialMask(BlendMode blendMode, Color inside, Color outside, float power)
 {
     if (radialAreaMesh_[0] && radialAreaMesh_[1])
     {
         auto renderer = GetSubsystem<Renderer>();
         auto gfx = GetSubsystem<Graphics>();
 
-        if (!simpleVignettePipelineState_)
+        if (!simpleVignettePipelineState_[blendMode])
         {
             PipelineStateDesc stateDesc = { };
-            stateDesc.InitializeInputLayout(GeometryBufferArray{ { hiddenAreaMesh_[0]->GetVertexBuffer(0) }, hiddenAreaMesh_[0]->GetIndexBuffer(), nullptr });
+            stateDesc.InitializeInputLayout(GeometryBufferArray{ { radialAreaMesh_[0]->GetVertexBuffer(0) }, radialAreaMesh_[0]->GetIndexBuffer(), nullptr });
             stateDesc.indexType_ = IBT_UINT32;
             stateDesc.primitiveType_ = TRIANGLE_LIST;
             stateDesc.depthWriteEnabled_ = false;
-            stateDesc.blendMode_ = BLEND_ALPHA;
+            stateDesc.blendMode_ = blendMode;
             stateDesc.colorWriteEnabled_ = true;
             stateDesc.cullMode_ = CULL_NONE;
 
-            stateDesc.vertexShader_ = gfx->GetShader(VS, "v2/XR_SimpleVignette", "OPEN_XR");
-            stateDesc.pixelShader_ = gfx->GetShader(PS, "v2/XR_SimpleVignette", "OPEN_XR");
+            ea::string defs = ea::string("URHO3D_USE_CBUFFERS ") + GetRuntimeName();
+            stateDesc.vertexShader_ = gfx->GetShader(VS, "v2/VR_SimpleVignette", defs);
+            stateDesc.pixelShader_ = gfx->GetShader(PS, "v2/VR_SimpleVignette", defs);
 
-            simpleVignettePipelineState_ = renderer->GetOrCreatePipelineState(stateDesc);
+            simpleVignettePipelineState_[blendMode] = renderer->GetOrCreatePipelineState(stateDesc);
         }
 
-        if (!simpleVignettePipelineState_)
+        if (!simpleVignettePipelineState_[blendMode])
             return;
 
         IntRect oldViewport = gfx->GetViewport();
         IntRect vpts[] = {
             GetLeftEyeRect(),
             GetRightEyeRect()
-        };
-
-        RenderSurface* surfaces[] = {
-            sharedTexture_->GetRenderSurface(),
-            sharedTexture_->GetRenderSurface()
-        };
-
-        Texture2D* ds[] = {
-            sharedDS_.Get(),
-            sharedDS_.Get(),
         };
 
         for (int i = 0; i < 2; ++i)
@@ -436,11 +427,11 @@ void VRInterface::DrawRadialMask(Color inside, Color outside, float power)
             drawQueue->Reset();
 
             drawQueue->SetBuffers({ { radialAreaMesh_[i]->GetVertexBuffer(0) }, radialAreaMesh_[i]->GetIndexBuffer(), nullptr });
-            drawQueue->SetPipelineState(eyeMaskPipelineState_);
+            drawQueue->SetPipelineState(simpleVignettePipelineState_[blendMode]);
 
             if (drawQueue->BeginShaderParameterGroup(SP_CUSTOM, true))
             {
-                drawQueue->AddShaderParameter(StringHash("ProjMat"), GetProjection((VREye)i, 0, 1));
+                drawQueue->AddShaderParameter(StringHash("Projection"), GetProjection((VREye)i, 0, 1));
                 drawQueue->AddShaderParameter(StringHash("InsideColor"), inside);
                 drawQueue->AddShaderParameter(StringHash("OutsideColor"), outside);
                 drawQueue->AddShaderParameter(StringHash("BlendPower"), power);
@@ -461,6 +452,14 @@ void VRInterface::SetCurrentActionSet(const ea::string& setName)
     auto found = actionSets_.find(setName);
     if (found != actionSets_.end())
         SetCurrentActionSet(found->second);
+}
+
+void VRInterface::SetVignette(bool enabled, Color insideColor, Color outsideColor, float power)
+{
+    vignetteEnabled_ = enabled;
+    vignetteInsideColor_ = insideColor;
+    vignetteOutsideColor_ = outsideColor;
+    vignettePower_ = power;
 }
 
 void RegisterVR(Context* context)
