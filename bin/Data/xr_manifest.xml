@@ -30,7 +30,7 @@
             <action name="stickdown" type="boolean" handed="true" />
             <action name="menu" type="boolean" handed="true" />
             
-            <action name="shoulder" type="boolean" handed="true" /> <!-- only applies to cosmos -->
+            <action name="shoulder" type="boolean" handed="true" /> <!-- only applies to Cosmos -->
             <action name="thumbrest" type="boolean" handed="true" /> <!-- Oculus / Vive Focus 3 -->
             
             <action name="a" type="boolean" /> <!-- Oculus / Cosmos / Vive Focus 3 / Reverb G2 / Index -->
@@ -38,8 +38,7 @@
             <action name="x" type="boolean" />
             <action name="y" type="boolean" />
             
-            <action name="vibrateleft" type="haptic" />
-            <action name="vibrateright" type="haptic" />
+            <action name="vibrate" type="haptic" handed="true"/>
         </actions>
         
         <!-- Windows Mixed Reality -->
@@ -72,8 +71,8 @@
             <bind action="menu" path="/user/hand/left/input/menu/click" />
             <bind action="menu" path="/user/hand/right/input/menu/click" />
             
-            <bind action="vibrateleft" path="/user/hand/left/output/haptic" />
-            <bind action="vibrateright" path="/user/hand/right/output/haptic" />
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
         </profile>
         
         <!-- Oculus Touch -->
@@ -106,8 +105,8 @@
             <bind action="x" path="/user/hand/right/x/click" />
             <bind action="y" path="/user/hand/right/y/click" />
             
-            <bind action="vibrateleft" path="/user/hand/left/output/haptic" />
-            <bind action="vibrateright" path="/user/hand/right/output/haptic" />
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
         </profile>
         
         <!-- Vive Wand -->
@@ -132,8 +131,8 @@
             <bind action="touchpad_touch" path="/user/hand/left/input/trackpad/touch" />
             <bind action="touchpad_touch" path="/user/hand/right/input/trackpad/touch" />
             
-            <bind action="vibrateleft" path="/user/hand/left/output/haptic" />
-            <bind action="vibrateright" path="/user/hand/right/output/haptic" />
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
         </profile>
         
         <!-- Vive Cosmos -->
@@ -166,8 +165,8 @@
             <bind action="shoulder" path="/user/hand/left/input/shoulder/click" />
             <bind action="shoulder" path="/user/hand/right/input/shoulder/click" />
             
-            <bind action="vibrateleft" path="/user/hand/left/output/haptic" />
-            <bind action="vibrateright" path="/user/hand/right/output/haptic" />
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
         </profile>
         
         <!-- Vive Focus 3 -->
@@ -231,8 +230,8 @@
             <bind action="x" path="/user/hand/left/a/click" />
             <bind action="y" path="/user/hand/left/b/click" />
             
-            <bind action="vibrateleft" path="/user/hand/left/output/haptic" />
-            <bind action="vibrateright" path="/user/hand/right/output/haptic" />
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
         </profile>
         
         <!-- Reverb G2 -->
@@ -263,8 +262,8 @@
             <bind action="x" path="/user/hand/left/x/click" />
             <bind action="y" path="/user/hand/left/y/click" />
             
-            <bind action="vibrateleft" path="/user/hand/left/output/haptic" />
-            <bind action="vibrateright" path="/user/hand/right/output/haptic" />
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
         </profile>
     </actionset>
 </xr_manifest>
