@@ -17,7 +17,7 @@
         <bind action="name of action from above" path="action path as per OpenXR Spec 6.4 Interaction Profile Paths" />
     -->
     
-        <!-- this is a "universal" binding by binding inputs to nearly verbatim titles -->
+        <!-- This is a "universal" binding by binding inputs to nearly verbatim titles. You have to ask bindings if they're bound. -->
         <actions>
             <action name="handpose" type="pose" handed="true" grip="true" />
             <action name="aimpose" type="pose" handed="true" aim="true"/>
@@ -26,17 +26,22 @@
             <action name="touchpad" type="vector2" handed="true" /> <!-- compound action, documentation on these is junk, WMR / Vive Wand / Index -->
             <action name="touchpad_click" type="bool" handed="true" />
             <action name="touchpad_touch" type="bool" handed="true" />
-            <action name="stick" type="vector2" handed="true" /> <!-- basically everyone -->
-            <action name="stickdown" type="boolean" handed="true" />
-            <action name="menu" type="boolean" handed="true" />
+            <action name="stick" type="vector2" handed="true" /> <!-- basically everyone has a joystick except a few Gyro based cases that aren't super real -->
+            <action name="stickdown" type="boolean" handed="true" /> <!-- note: stick down may not function correctly, such as activating SteamVR menus -->
+            <action name="menu" type="boolean" handed="true" /> <!-- note: some systems only have a single hand menu on the left-hand -->
             
             <action name="shoulder" type="boolean" handed="true" /> <!-- only applies to Cosmos -->
             <action name="thumbrest" type="boolean" handed="true" /> <!-- Oculus / Vive Focus 3 -->
             
-            <action name="a" type="boolean" /> <!-- Oculus / Cosmos / Vive Focus 3 / Reverb G2 / Index -->
+            <!-- Oculus / Cosmos / Vive Focus 3 / Reverb G2 / Index -->
+            <action name="a" type="boolean" />
             <action name="b" type="boolean" />
-            <action name="x" type="boolean" />
-            <action name="y" type="boolean" />
+            <action name="x" type="boolean" /> <!-- left A on index -->
+            <action name="y" type="boolean" /> <!-- left B on index -->
+            <!-- TODO: add touch inputs, a_touch, b_touch, stick_touch, trigger_touch etc that Oculus and Index have for capacitive contacts            
+            Vive Focus 3 has touch on stick, squeeze, and trigger
+            Cosmos has touch on stick only
+            -->
             
             <action name="vibrate" type="haptic" handed="true"/>
         </actions>
