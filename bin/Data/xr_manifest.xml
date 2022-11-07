@@ -194,8 +194,8 @@
             
             <bind action="a" path="/user/hand/right/a/click" />
             <bind action="b" path="/user/hand/right/b/click" />
-            <bind action="x" path="/user/hand/right/x/click" />
-            <bind action="y" path="/user/hand/right/y/click" />
+            <bind action="x" path="/user/hand/left/x/click" />
+            <bind action="y" path="/user/hand/left/y/click" />
         </profile>
         
         <!-- Valve Index, treating left-hand A/B as Oculus X/Y -->
@@ -227,6 +227,37 @@
             <bind action="b" path="/user/hand/right/b/click" />
             <bind action="x" path="/user/hand/left/a/click" />
             <bind action="y" path="/user/hand/left/b/click" />
+            
+            <bind action="vibrateleft" path="/user/hand/left/output/haptic" />
+            <bind action="vibrateright" path="/user/hand/right/output/haptic" />
+        </profile>
+        
+        <!-- Reverb G2 -->
+        <profile device="interaction_profiles/hp/mixed_reality_controller">
+            <bind action="handpose" path="/user/hand/left/input/grip/pose" />
+            <bind action="handpose" path="/user/hand/right/input/grip/pose" />
+            
+            <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
+            <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
+            
+            <bind action="grab" path="/user/hand/left/input/squeeze/value" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/value" />
+            
+            <bind action="stick" path="/user/hand/left/input/thumbstick" />
+            <bind action="stick" path="/user/hand/right/input/thumbstick" />
+            
+            <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
+            <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
+            
+            <bind action="trigger" path="/user/hand/left/input/trigger/value" />
+            <bind action="trigger" path="/user/hand/right/input/trigger/value" />
+            
+            <bind action="menu" path="/user/hand/left/input/menu/click" />
+            
+            <bind action="a" path="/user/hand/right/a/click" />
+            <bind action="b" path="/user/hand/right/b/click" />
+            <bind action="x" path="/user/hand/left/x/click" />
+            <bind action="y" path="/user/hand/left/y/click" />
             
             <bind action="vibrateleft" path="/user/hand/left/output/haptic" />
             <bind action="vibrateright" path="/user/hand/right/output/haptic" />
