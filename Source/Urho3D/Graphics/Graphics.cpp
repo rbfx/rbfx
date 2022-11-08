@@ -647,9 +647,9 @@ void Graphics::InitRenderDoc()
 #endif
 #ifdef __linux__
     #ifdef ANDROID
-        const char modName = "libVkLayer_GLES_RenderDoc.so";
+        const char* modName = "libVkLayer_GLES_RenderDoc.so";
     #else
-        const char modName = "librenderdoc.so";
+        const char* modName = "librenderdoc.so";
     #endif
 
     if (void* mod = dlopen(modName, RTLD_NOW | RTLD_NOLOAD))
