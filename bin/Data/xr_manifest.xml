@@ -1,5 +1,5 @@
 <xr_manifest>
-    <actionset name="default">
+    <actionset name="default"> <!-- in OpenXR land this is an XrActionSet -->
     <!-- 
         <action 
             name="LOWER_CASE_NAME_OF_ACTION"
@@ -18,6 +18,7 @@
     -->
     
         <!-- This is a "universal" binding by binding inputs to nearly verbatim titles. You have to ask bindings if they're bound. -->
+        <!-- In OpenXR land these are XrActions -->
         <actions>
             <action name="handpose" type="pose" handed="true" grip="true" />
             <action name="aimpose" type="pose" handed="true" aim="true"/>
@@ -28,10 +29,10 @@
             <action name="touchpad_touch" type="bool" handed="true" />
             <action name="stick" type="vector2" handed="true" /> <!-- basically everyone has a joystick except a few Gyro based cases that aren't super real -->
             <action name="stickdown" type="boolean" handed="true" /> <!-- note: stick down may not function correctly, such as activating SteamVR menus -->
-            <action name="menu" type="boolean" handed="true" /> <!-- note: some systems only have a single hand menu on the left-hand -->
+            <action name="menu" type="boolean" handed="true" /> <!-- note: some systems only have a single hand menu on the left-hand, right-hand menu will be unbound -->
             
             <action name="shoulder" type="boolean" handed="true" /> <!-- only applies to Cosmos -->
-            <action name="thumbrest" type="boolean" handed="true" /> <!-- Oculus / Vive Focus 3 -->
+            <action name="thumbrest" type="boolean" handed="true" /> <!-- Oculus Touch 1 & 2b / Vive Focus 3 -->
             
             <!-- Oculus / Cosmos / Vive Focus 3 / Reverb G2 / Index -->
             <action name="a" type="boolean" />
@@ -45,6 +46,8 @@
             
             <action name="vibrate" type="haptic" handed="true"/>
         </actions>
+        
+        <!-- Porifles are xrSuggestInteractionProfileBindings -->
         
         <!-- Windows Mixed Reality -->
         <profile device="/interaction_profiles/microsoft/motion_controller">
@@ -107,8 +110,8 @@
             
             <bind action="a" path="/user/hand/right/a/click" />
             <bind action="b" path="/user/hand/right/b/click" />
-            <bind action="x" path="/user/hand/right/x/click" />
-            <bind action="y" path="/user/hand/right/y/click" />
+            <bind action="x" path="/user/hand/left/x/click" />
+            <bind action="y" path="/user/hand/left/y/click" />
             
             <bind action="vibrate" path="/user/hand/left/output/haptic" />
             <bind action="vibrate" path="/user/hand/right/output/haptic" />
@@ -130,6 +133,9 @@
             
             <bind action="touchpad" path="/user/hand/left/input/trackpad" />
             <bind action="touchpad" path="/user/hand/right/input/trackpad" />
+            
+            <bind action="menu" path="/user/hand/left/input/menu/click" />
+            <bind action="menu" path="/user/hand/right/input/menu/click" />
             
             <bind action="touchpad_click" path="/user/hand/left/input/trackpad/click" />
             <bind action="touchpad_click" path="/user/hand/right/input/trackpad/click" />
