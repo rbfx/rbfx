@@ -338,6 +338,7 @@ void DefaultRenderPipelineView::Render()
         // Draw deferred GBuffer
         renderBufferManager_->ClearColor(deferred_->albedoBuffer_, Color::TRANSPARENT_BLACK);
         renderBufferManager_->ClearColor(deferred_->specularBuffer_, Color::TRANSPARENT_BLACK);
+        renderBufferManager_->ClearColor(deferred_->normalBuffer_, Color::TRANSPARENT_BLACK);
         renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
 
         if (depthPrePass_)
