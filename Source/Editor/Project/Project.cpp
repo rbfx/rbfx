@@ -686,7 +686,10 @@ void Project::ProcessDelayedSaves(bool forceSave)
         }
 
         if (fileExists)
+        {
             cache->IgnoreResourceReload(resourceName);
+            cache->ReleaseResource(resourceName, true);
+        }
 
         delayedSave.Clear();
     }
