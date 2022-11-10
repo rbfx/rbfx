@@ -188,24 +188,18 @@ public:
 
     /// Hard reset of state manager. Current state will be set to nullptr and the queue is purged.
     void Reset();
+    /// Update state manager. This is called automatically by the engine every frame.
+    void Update(float timeStep);
 
     /// Transition to the application state.
+    /// @{
     void EnqueueState(ApplicationState* gameScreen, StringVariantMap& bundle);
-
-    /// Transition to the application state.
     void EnqueueState(ApplicationState* gameScreen);
-
-    /// Transition to the application state.
     void EnqueueState(StringHash type, StringVariantMap& bundle);
-
-    /// Transition to the application state.
     void EnqueueState(StringHash type);
-
-    /// Set current application state.
     template <typename T> void EnqueueState(StringVariantMap& bundle);
-
-    /// Set current application state.
     template <typename T> void EnqueueState();
+    /// @}
 
     /// Get current application state.
     ApplicationState* GetState() const;
@@ -275,8 +269,9 @@ private:
     TransitionState transitionState_{TransitionState::Sustain};
 };
 
-template <class T> void StateManager::EnqueueState(StringVariantMap& bundle) {
-    SetState(T::GetTypeStatic(), bundle);
+template <class T> void StateManager::EnqueueState(StringVariantMap& bundle)
+{
+    EnqueueState(T::GetTypeStatic(), bundle);
 }
 
 template <class T> void StateManager::EnqueueState()

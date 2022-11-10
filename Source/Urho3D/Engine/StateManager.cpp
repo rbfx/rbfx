@@ -566,7 +566,11 @@ void StateManager::HandleUpdate(StringHash eventName, VariantMap& args)
 {
     using namespace Update;
     auto timeStep = args[P_TIMESTEP].GetFloat();
+    Update(timeStep);
+}
 
+void StateManager::Update(float timeStep)
+{
     int iterationCount{0};
     do
     {
