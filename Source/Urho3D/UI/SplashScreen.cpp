@@ -32,7 +32,7 @@
 namespace Urho3D
 {
 
-namespace 
+namespace
 {
 void UpdateSizeAndPosition(IntVector2 screenSize, Sprite* sprite, bool stretch)
 {
@@ -73,7 +73,7 @@ SplashScreen::SplashScreen(Context* context)
     soundSource_ = scene_->CreateComponent<SoundSource>();
 }
 
-void SplashScreen::Activate(VariantMap& bundle)
+void SplashScreen::Activate(StringVariantMap& bundle)
 {
     ApplicationState::Activate(bundle);
     auto* input = context_->GetSubsystem<Input>();
@@ -152,7 +152,7 @@ void SplashScreen::UpdateLayout(float ratio)
 
     UpdateSizeAndPosition(screenSize, background_, true);
     UpdateSizeAndPosition(screenSize, foreground_, false);
-    
+
     IntVector2 progressBarAreaSize = IntVector2(screenSize.x_, screenSize.y_ / 10);
     const Texture* barTexture = progressBar_->GetTexture();
     if (barTexture)

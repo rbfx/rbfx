@@ -48,7 +48,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Activate game state. Executed by StateManager.
-    virtual void Activate(VariantMap& bundle);
+    virtual void Activate(StringVariantMap& bundle);
 
     /// Return true if state is ready to be deactivated. Executed by StateManager.
     virtual bool CanLeaveState() const;
@@ -168,7 +168,7 @@ class URHO3D_API StateManager: public Object
         /// Target state if set by type StringHash.
         StringHash stateType_;
         /// Target state arguments.
-        VariantMap bundle_;
+        StringVariantMap bundle_;
     };
 
     enum class TransitionState
@@ -190,19 +190,19 @@ public:
     void Reset();
 
     /// Transition to the application state.
-    void EnqueueState(ApplicationState* gameScreen, VariantMap& bundle);
+    void EnqueueState(ApplicationState* gameScreen, StringVariantMap& bundle);
 
     /// Transition to the application state.
     void EnqueueState(ApplicationState* gameScreen);
 
     /// Transition to the application state.
-    void EnqueueState(StringHash type, VariantMap& bundle);
+    void EnqueueState(StringHash type, StringVariantMap& bundle);
 
     /// Transition to the application state.
     void EnqueueState(StringHash type);
 
     /// Set current application state.
-    template <typename T> void EnqueueState(VariantMap& bundle);
+    template <typename T> void EnqueueState(StringVariantMap& bundle);
 
     /// Set current application state.
     template <typename T> void EnqueueState();
@@ -227,9 +227,6 @@ public:
 private:
     /// Initiate state transition if necessary.
     void InitiateTransition();
-
-    /// Handle SetApplicationState event and add the state to the queue.
-    void HandleSetApplicationState(StringHash eventName, VariantMap& args);
 
     /// Handle update event to animate state transitions.
     void HandleUpdate(StringHash eventName, VariantMap& args);
@@ -278,13 +275,13 @@ private:
     TransitionState transitionState_{TransitionState::Sustain};
 };
 
-template <class T> void StateManager::EnqueueState(VariantMap& bundle) {
+template <class T> void StateManager::EnqueueState(StringVariantMap& bundle) {
     SetState(T::GetTypeStatic(), bundle);
 }
 
 template <class T> void StateManager::EnqueueState()
 {
-    VariantMap bundle;
+    StringVariantMap bundle;
     EnqueueState<T>(bundle);
 }
 

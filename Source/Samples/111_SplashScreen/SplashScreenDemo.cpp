@@ -31,7 +31,7 @@ SplashScreenDemo::SplashScreenDemo(Context* context)
     SetMouseVisible(true);
 }
 
-void SplashScreenDemo::Activate(VariantMap& bundle)
+void SplashScreenDemo::Activate(StringVariantMap& bundle)
 {
     Sample::Activate(bundle);
 
