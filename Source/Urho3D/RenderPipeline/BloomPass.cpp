@@ -171,7 +171,7 @@ void BloomPass::Execute(Camera* camera)
         intensityMultipliers_[i] *= settings_.intensity_ / totalIntensity;
 
     renderBufferManager_->SwapColorBuffers(false);
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
     for (unsigned i = 0; i < numIterations; ++i)
         ApplyBloom(textures_[i].final_, intensityMultipliers_[i]);
 }

@@ -376,14 +376,14 @@ void DefaultRenderPipelineView::Render()
             {ShaderConsts::Camera_GBufferInvSize, renderBufferManager_->GetInvOutputSize()},
         };
 
-        renderBufferManager_->SetOutputRenderTargers();
+        renderBufferManager_->SetOutputRenderTargets();
         sceneProcessor_->RenderLightVolumeBatches("LightVolumes", camera, geometryBuffer, cameraParameters);
     }
     else
 #endif
     {
         renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
-        renderBufferManager_->SetOutputRenderTargers();
+        renderBufferManager_->SetOutputRenderTargets();
 
         if (depthPrePass_)
             sceneProcessor_->RenderSceneBatches("DepthPrePass", camera, depthPrePass_->GetBaseBatches());
@@ -451,7 +451,7 @@ void DefaultRenderPipelineView::Render()
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
     if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())
     {
-        renderBufferManager_->SetOutputRenderTargers();
+        renderBufferManager_->SetOutputRenderTargets();
         debug->SetView(sceneProcessor_->GetFrameInfo().camera_);
         debug->Render();
     }
