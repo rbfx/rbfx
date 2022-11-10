@@ -279,7 +279,7 @@ void SystemUI::OnRenderEnd()
     SendEvent(E_ENDRENDERINGSYSTEMUI);
 
     // Disable relative mouse movement automatically if none of mouse buttons are down
-    if (!ui::IsAnyMouseDown())
+    if (enableRelativeMouseMove_ && !ui::IsAnyMouseDown())
     {
         enableRelativeMouseMove_ = false;
         SDL_SetRelativeMouseMode(SDL_FALSE);
