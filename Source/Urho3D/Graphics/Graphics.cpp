@@ -521,6 +521,11 @@ void Graphics::AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams&
     params.fullscreen_ = true;
 #endif
 
+#ifdef __EMSCRIPTEN__
+    // Emscripten cannot be truly fullscreen
+    params.fullscreen_ = false;
+#endif
+
     // Make sure monitor index is not bigger than the currently detected monitors
     const int numMonitors = SDL_GetNumVideoDisplays();
     if (params.monitor_ >= numMonitors || params.monitor_ < 0)
