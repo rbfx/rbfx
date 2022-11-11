@@ -3,20 +3,12 @@
 #include "Transform.hlsl"
 #include "ScreenPos.hlsl"
 
-#ifndef D3D11
-
-#error DX9 is not supported
-
-#else
-
 cbuffer LightmapVS : register(b6)
 {
     float cLightmapLayer;
     float cLightmapGeometry;
     float2 cLightmapPositionBias;
 }
-
-#endif
 
 void VS(float4 iPos : POSITION,
     #if !defined(BILLBOARD) && !defined(TRAILFACECAM)

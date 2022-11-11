@@ -51,8 +51,6 @@
 #include <imgui_impl_opengl3.h>
 #elif defined(URHO3D_D3D11)
 #include <imgui_impl_dx11.h>
-#else
-#include <imgui_impl_dx9.h>
 #endif
 
 namespace Urho3D
@@ -114,8 +112,6 @@ void SystemUI::PlatformInitialize()
     ImGui_ImplOpenGL3_Init(glslVersion);
 #elif URHO3D_D3D11
     ImGui_ImplDX11_Init(graphics->GetImpl()->GetDevice(), graphics->GetImpl()->GetDeviceContext());
-#else
-    ImGui_ImplDX9_Init(graphics->GetImpl()->GetDevice());
 #endif
 }
 
@@ -128,8 +124,6 @@ void SystemUI::PlatformShutdown()
     ImGui_ImplOpenGL3_Shutdown();
 #elif URHO3D_D3D11
     ImGui_ImplDX11_Shutdown();
-#else
-    ImGui_ImplDX9_Shutdown();
 #endif
     ImGui_ImplSDL2_Shutdown();
 }
@@ -231,8 +225,6 @@ void SystemUI::OnInputEnd()
         ImGui_ImplOpenGL3_NewFrame();
 #elif URHO3D_D3D11
         ImGui_ImplDX11_NewFrame();
-#else
-        ImGui_ImplDX9_NewFrame();
 #endif
         ImGui_ImplSDL2_NewFrame();
     }
@@ -309,8 +301,6 @@ void SystemUI::OnRenderEnd()
     graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
     graphicsImpl->MarkRenderTargetsDirty();
     ImGui_ImplDX11_RenderDrawData(ui::GetDrawData());
-#else
-    ImGui_ImplDX9_RenderDrawData(ui::GetDrawData());
 #endif
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {

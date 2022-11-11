@@ -154,6 +154,7 @@ private:
     /// Last used instance data offset.
     unsigned lastInstanceOffset_{};
     /// Map for additional depth textures, to emulate Direct3D9 ability to mix render texture and backbuffer rendering.
+    /// TODO: Revisit this place? We may want to handle this manually.
     ea::unordered_map<unsigned, SharedPtr<Texture2D> > depthTextures_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_{};

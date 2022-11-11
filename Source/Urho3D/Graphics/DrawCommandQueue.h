@@ -85,10 +85,6 @@ struct DrawCommandDescription
     unsigned baseVertexIndex_{};
     unsigned instanceStart_{};
     unsigned instanceCount_{};
-#ifdef URHO3D_D3D9
-    unsigned vertexStart_{};
-    unsigned vertexCount_{};
-#endif
     /// @}
 };
 
@@ -242,10 +238,6 @@ public:
         currentDrawCommand_.baseVertexIndex_ = 0;
         currentDrawCommand_.instanceStart_ = 0;
         currentDrawCommand_.instanceCount_ = 0;
-#ifdef URHO3D_D3D9
-        currentDrawCommand_.vertexStart_ = vertexStart;
-        currentDrawCommand_.vertexCount_ = vertexCount;
-#endif
         drawCommands_.push_back(currentDrawCommand_);
     }
 
@@ -295,74 +287,6 @@ public:
         currentDrawCommand_.baseVertexIndex_ = baseVertexIndex;
         currentDrawCommand_.instanceStart_ = instanceStart;
         currentDrawCommand_.instanceCount_ = instanceCount;
-        drawCommands_.push_back(currentDrawCommand_);
-    }
-
-    /// Enqueue draw indexed geometry (compatible with D3D9).
-    void DrawIndexedLegacy(unsigned indexStart, unsigned indexCount,
-        unsigned vertexStart, unsigned vertexCount)
-    {
-        assert(currentDrawCommand_.inputBuffers_.indexBuffer_);
-        currentDrawCommand_.indexStart_ = indexStart;
-        currentDrawCommand_.indexCount_ = indexCount;
-        currentDrawCommand_.baseVertexIndex_ = 0;
-        currentDrawCommand_.instanceStart_ = 0;
-        currentDrawCommand_.instanceCount_ = 0;
-#ifdef URHO3D_D3D9
-        currentDrawCommand_.vertexStart_ = vertexStart;
-        currentDrawCommand_.vertexCount_ = vertexCount;
-#endif
-        drawCommands_.push_back(currentDrawCommand_);
-    }
-
-    /// Enqueue draw indexed geometry with vertex index offset (compatible with D3D9).
-    void DrawIndexedLegacy(unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex,
-        unsigned vertexStart, unsigned vertexCount)
-    {
-        assert(currentDrawCommand_.inputBuffers_.indexBuffer_);
-        currentDrawCommand_.indexStart_ = indexStart;
-        currentDrawCommand_.indexCount_ = indexCount;
-        currentDrawCommand_.baseVertexIndex_ = baseVertexIndex;
-        currentDrawCommand_.instanceStart_ = 0;
-        currentDrawCommand_.instanceCount_ = 0;
-#ifdef URHO3D_D3D9
-        currentDrawCommand_.vertexStart_ = vertexStart;
-        currentDrawCommand_.vertexCount_ = vertexCount;
-#endif
-        drawCommands_.push_back(currentDrawCommand_);
-    }
-
-    /// Enqueue draw indexed, instanced geometry (compatible with D3D9).
-    void DrawIndexedInstancedLegacy(unsigned indexStart, unsigned indexCount, unsigned instanceStart,
-        unsigned vertexStart, unsigned vertexCount, unsigned instanceCount)
-    {
-        assert(currentDrawCommand_.inputBuffers_.indexBuffer_);
-        currentDrawCommand_.indexStart_ = indexStart;
-        currentDrawCommand_.indexCount_ = indexCount;
-        currentDrawCommand_.baseVertexIndex_ = 0;
-        currentDrawCommand_.instanceStart_ = instanceStart;
-        currentDrawCommand_.instanceCount_ = instanceCount;
-#ifdef URHO3D_D3D9
-        currentDrawCommand_.vertexStart_ = vertexStart;
-        currentDrawCommand_.vertexCount_ = vertexCount;
-#endif
-        drawCommands_.push_back(currentDrawCommand_);
-    }
-
-    /// Enqueue draw indexed, instanced geometry with vertex index offset (compatible with D3D9).
-    void DrawIndexedInstancedLegacy(unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex,
-        unsigned vertexStart, unsigned vertexCount, unsigned instanceStart, unsigned instanceCount)
-    {
-        assert(currentDrawCommand_.inputBuffers_.indexBuffer_);
-        currentDrawCommand_.indexStart_ = indexStart;
-        currentDrawCommand_.indexCount_ = indexCount;
-        currentDrawCommand_.baseVertexIndex_ = baseVertexIndex;
-        currentDrawCommand_.instanceStart_ = instanceStart;
-        currentDrawCommand_.instanceCount_ = instanceCount;
-#ifdef URHO3D_D3D9
-        currentDrawCommand_.vertexStart_ = vertexStart;
-        currentDrawCommand_.vertexCount_ = vertexCount;
-#endif
         drawCommands_.push_back(currentDrawCommand_);
     }
 

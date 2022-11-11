@@ -17,7 +17,6 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 ## Features overview
 
 * Multiple rendering API support
-  * Direct3D9
   * Direct3D11
   * OpenGL 2.0 or 3.2
   * OpenGL ES 2.0 or 3.0
@@ -85,7 +84,6 @@ rbfx uses the following third-party libraries:
 - SLikeNet (https://github.com/SLikeSoft/SLikeNet)
 - libcpuid 0.4.0+ (https://github.com/anrieff/libcpuid)
 - LZ4 1.7.5 (https://github.com/lz4/lz4)
-- MojoShader (https://icculus.org/mojoshader)
 - Open Asset Import Library 4.1.0 (http://assimp.sourceforge.net)
 - pugixml 1.10 (http://pugixml.org)
 - rapidjson 1.1.0 (https://github.com/miloyip/rapidjson)

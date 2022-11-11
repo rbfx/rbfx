@@ -856,7 +856,6 @@ void UI::Initialize()
 
     graphics_ = graphics;
     renderer_ = GetSubsystem<Renderer>();
-    UIBatch::posAdjust = Vector3(Graphics::GetPixelUVOffset(), 0.0f);
 
     // Set initial root element size
     ResizeRootElement();
