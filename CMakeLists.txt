@@ -234,9 +234,6 @@ if (WEB)
     # Remove variables to make the -O3 regalloc easier, embed data in asm.js to reduce number of moving part
     set (CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
     set (CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
-    # Preserve LLVM debug information, show line number debug comments, and generate source maps; always disable exception handling codegen
-    set (CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${EMCC_WITH_SOURCE_MAPS_FLAG} -s DISABLE_EXCEPTION_CATCHING=1")
-    set (CMAKE_MODULE_LINKER_FLAGS_DEBUG "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} ${EMCC_WITH_SOURCE_MAPS_FLAG} -s DISABLE_EXCEPTION_CATCHING=1")
 endif ()
 
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")

@@ -35,7 +35,7 @@ if (WEB)
     if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 2.0.17)
         set (EMCC_WITH_SOURCE_MAPS_FLAG -g4)
     else ()
-        set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map)
+        set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map --source-map-base=. -fdebug-compilation-dir='.' -gseparate-dwarf)
     endif ()
 endif ()
 
@@ -400,4 +400,3 @@ function (link_static_plugins TARGET PLUGIN_LIBRARIES)
     target_link_libraries (${TARGET}_StaticPlugins PRIVATE Urho3D ${PLUGIN_LIBRARIES})
     target_link_libraries (${TARGET} PRIVATE ${TARGET}_StaticPlugins)
 endfunction()
-
