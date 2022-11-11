@@ -34,8 +34,6 @@ macro (define_engine_source_files)
             Urho3D.h
             Graphics/Direct3D11/D3D11GraphicsImpl.cpp
             Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/Direct3D9/D3D9GraphicsImpl.cpp
-            Graphics/Direct3D9/D3D9GraphicsImpl.h
             Graphics/GraphicsImpl.h
             Graphics/OpenGL/OGLGraphicsImpl.h
             IK/IKConverters.h
@@ -61,8 +59,6 @@ if (NOT MINI_URHO)
         define_engine_source_files (Graphics/OpenGL)
     elseif (URHO3D_D3D11)
         define_engine_source_files (Graphics/Direct3D11)
-    elseif (URHO3D_D3D9)
-        define_engine_source_files (Graphics/Direct3D9)
     endif ()
 else ()
     # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
@@ -198,7 +194,6 @@ set (THIRD_PARTY_DEPENDENCIES
     ImGui
     LibCpuId
     GLEW
-    MojoShader
     nativefiledialog
     CLI11
     fmt
@@ -345,11 +340,7 @@ if (NOT MINI_URHO)
             target_link_libraries (Urho3D PUBLIC GL)
         endif ()
     else ()
-        if (URHO3D_D3D9)
-            find_package(DirectX REQUIRED D3D9)
-        else ()
-            find_package(DirectX REQUIRED D3D11)
-        endif ()
+        find_package(DirectX REQUIRED D3D11)
         target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
     endif ()
 endif ()

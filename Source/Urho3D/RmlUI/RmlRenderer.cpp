@@ -249,7 +249,7 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
         drawQueue_->CommitShaderParameterGroup(SP_OBJECT);
     }
 
-    drawQueue_->DrawIndexedLegacy(firstIndex, num_indices, firstVertex, num_vertices);
+    drawQueue_->DrawIndexed(firstIndex, num_indices);
 }
 
 void RmlRenderer::EnableScissorRegion(bool enable)

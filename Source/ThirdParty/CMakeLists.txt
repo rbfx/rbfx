@@ -137,8 +137,6 @@ if (NOT MINI_URHO)
     if (NOT ANDROID AND NOT ARM AND NOT WEB)
         if (URHO3D_OPENGL)
             add_subdirectory (GLEW)
-        elseif (URHO3D_D3D9)
-            add_subdirectory (MojoShader)
         endif ()
     endif ()
 
