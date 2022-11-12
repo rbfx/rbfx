@@ -156,7 +156,6 @@ cmake_dependent_option(URHO3D_EDITOR            "Build editor application"      
 cmake_dependent_option(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT UWP"    OFF)
 cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
-cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player executables."            OFF)
 option(URHO3D_SSL                               "Enable OpenSSL support"                                OFF)
 
