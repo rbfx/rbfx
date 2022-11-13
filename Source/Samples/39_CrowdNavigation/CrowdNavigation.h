@@ -161,7 +161,7 @@ private:
     /// Save navigation data for streaming.
     void SaveNavigationData();
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
     /// Handle the post-render update event.
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle problems with crowd agent placement.

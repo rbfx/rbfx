@@ -222,6 +222,9 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
     case CS:
         variations = &csVariations_;
         break;
+    default:
+        URHO3D_ASSERT(false);
+        return nullptr;
     }
 
     if (variations == nullptr)

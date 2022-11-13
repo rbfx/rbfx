@@ -75,7 +75,7 @@ private:
     /// Subscribe to application-wide logic update and post-render update events.
     void SubscribeToEvents();
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
     /// Handle the post-render update event.
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
