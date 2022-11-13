@@ -347,7 +347,6 @@ endif ()
 
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")
-    target_compile_options(Urho3D PRIVATE -Wno-warn-absolute-paths -Wno-unknown-warning-option)
     if (URHO3D_THREADING)
         target_compile_options(Urho3D PRIVATE "-s USE_PTHREADS=1")
     endif ()
