@@ -447,8 +447,6 @@ private:
     void HandleSDLEvent(void* sdlEvent);
     /// Send SDLRawInput event.
     void OnSDLRawInput(SDL_Event& evt, bool& consumed);
-    /// Called on user action (click or tap).
-    void OnUserAction();
 
 #ifndef __EMSCRIPTEN__
     /// Set SDL mouse mode relative.

@@ -1919,19 +1919,6 @@ void Input::OnSDLRawInput(SDL_Event& evt, bool& consumed)
     consumed = eventData[P_CONSUMED].GetBool();
 }
 
-void Input::OnUserAction()
-{
-#ifdef __EMSCRIPTEN__
-    static bool audioRefreshed = false;
-    if (!audioRefreshed)
-    {
-        audioRefreshed = true;
-        auto audio = GetSubsystem<Audio>();
-        audio->RefreshMode();
-    }
-#endif
-}
-
 void Input::HandleSDLEvent(void* sdlEvent)
 {
     SDL_Event& evt = *static_cast<SDL_Event*>(sdlEvent);
@@ -2044,7 +2031,6 @@ void Input::HandleSDLEvent(void* sdlEvent)
     case SDL_MOUSEBUTTONDOWN:
         if (!touchEmulation_)
         {
-            OnUserAction();
             const auto mouseButton = static_cast<MouseButton>(1u << (evt.button.button - 1u));  // NOLINT(misc-misplaced-widening-cast)
             SetMouseButton(mouseButton, true, evt.button.clicks);
         }
@@ -2155,7 +2141,6 @@ void Input::HandleSDLEvent(void* sdlEvent)
         break;
 
     case SDL_FINGERDOWN:
-        OnUserAction();
         if (evt.tfinger.touchId != SDL_TOUCH_MOUSEID)
         {
             int touchID = GetTouchIndexFromID(evt.tfinger.fingerId & 0x7ffffffu);
@@ -2502,7 +2487,8 @@ void Input::HandleSDLEvent(void* sdlEvent)
             if (evt.adevice.iscapture == SDL_FALSE)
             {
                 auto audio = GetSubsystem<Audio>();
-                audio->RefreshMode();
+                if (audio && audio->IsInitialized())
+                    audio->RefreshMode();
             }
         }
         break;
