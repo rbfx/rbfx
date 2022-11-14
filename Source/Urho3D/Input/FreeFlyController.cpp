@@ -140,7 +140,7 @@ void FreeFlyController::RegisterObject(Context* context)
 
 void FreeFlyController::SetCameraAngles(Vector3 eulerAngles)
 {
-    eulerAngles.x_ = Clamp(eulerAngles.x_, -90.0f, 90.0f);
+    eulerAngles.x_ = Clamp(eulerAngles.x_, -84.0f, 84.0f);
     lastKnownEulerAngles_ = eulerAngles;
     lastKnownCameraRotation_ = Quaternion(eulerAngles);
 
