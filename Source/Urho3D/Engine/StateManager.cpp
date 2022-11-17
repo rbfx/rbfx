@@ -565,7 +565,7 @@ void StateManager::SetFadeOutDuration(float durationInSeconds)
 void StateManager::HandleUpdate(StringHash eventName, VariantMap& args)
 {
     using namespace Update;
-    auto timeStep = args[P_TIMESTEP].GetFloat();
+    const auto timeStep = args[P_TIMESTEP].GetFloat();
     Update(timeStep);
 }
 
@@ -601,6 +601,7 @@ void StateManager::Update(float timeStep)
             else
             {
                 UpdateFadeOverlay(fadeTime_ / fadeInDuration_);
+                return;
             }
             break;
         case TransitionState::FadeOut:
@@ -613,6 +614,7 @@ void StateManager::Update(float timeStep)
             else
             {
                 UpdateFadeOverlay(fadeTime_ / fadeOutDuration_);
+                return;
             }
             break;
         }
