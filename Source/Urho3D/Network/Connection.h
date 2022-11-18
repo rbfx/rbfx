@@ -25,21 +25,12 @@
 #pragma once
 
 #include <EASTL/hash_set.h>
+#include <EASTL/queue.h>
 
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/AbstractConnection.h"
-
-namespace SLNet
-{
-    class SystemAddress;
-    struct AddressOrGUID;
-    struct RakNetGUID;
-    struct Packet;
-    class NatPunchthroughClient;
-    class RakPeerInterface;
-}
 
 namespace Urho3D
 {
@@ -52,6 +43,7 @@ class Node;
 class Scene;
 class Serializable;
 class PackageFile;
+class NetworkConnection;
 
 /// Queued remote event.
 struct RemoteEvent
@@ -98,27 +90,44 @@ struct PackageUpload
     unsigned totalFragments_;
 };
 
+/// Tracks number of sent and received packets.
+struct PacketCounter
+{
+    int incoming_ = 0;
+    int outgoing_ = 0;
+
+    /// Set packet counts to 0.
+    void Reset()
+    {
+        incoming_ = 0;
+        outgoing_ = 0;
+    }
+};
+
+class Connection;
+
 /// %Connection to a remote network host.
 class URHO3D_API Connection : public AbstractConnection
 {
     URHO3D_OBJECT(Connection, AbstractConnection);
+    friend class Network;
 
 public:
     using AbstractConnection::SendMessage;
 
     /// Construct with context, RakNet connection address and Raknet peer pointer.
-    Connection(Context* context);
+    Connection(Context* context, NetworkConnection* wtConnection = nullptr);
     /// Destruct.
     ~Connection() override;
     /// Initialize object state. Should be called immediately after constructor.
-    void Initialize(bool isClient, const SLNet::AddressOrGUID& address, SLNet::RakPeerInterface* peer);
+    void Initialize();
 
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
     /// Implement AbstractConnection
     /// @{
-    void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
+    void SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered) override;
     ea::string ToString() const override;
     bool IsClockSynchronized() const override;
     unsigned RemoteToLocalTime(unsigned time) const override;
@@ -128,8 +137,6 @@ public:
     unsigned GetPing() const override;
     /// @}
 
-    /// Get packet type based on the message parameters
-    PacketType GetPacketType(bool reliable, bool inOrder);
     /// Send a remote event.
     void SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Assign scene. On the server, this will cause the client to load it.
@@ -143,23 +150,21 @@ public:
     /// @property
     void SetLogStatistics(bool enable);
     /// Disconnect. If wait time is non-zero, will block while waiting for disconnect to finish.
-    void Disconnect(int waitMSec = 0);
+    void Disconnect();
     /// Send queued remote events. Called by Network.
     void SendRemoteEvents();
     /// Send package files to client. Called by network.
     void SendPackages();
     /// Send out buffered messages by their type
-    void SendBuffer(PacketType type);
+    void SendBuffer(PacketTypeFlags type);
+    /// Send out buffered messages by their type
+    void SendBuffer(PacketTypeFlags type, VectorBuffer& buffer);
     /// Send out all buffered messages
     void SendAllBuffers();
     /// Process a message from the server or client. Called by Network.
-    bool ProcessMessage(int msgID, MemoryBuffer& buffer);
+    bool ProcessMessage(MemoryBuffer& buffer);
     /// Ban this connections IP address.
     void Ban();
-    /// Return the RakNet address/guid.
-    const SLNet::AddressOrGUID& GetAddressOrGUID() const { return *address_; }
-    /// Set the the RakNet address/guid.
-    void SetAddressOrGUID(const SLNet::AddressOrGUID& addr);
     /// Return client identity.
     VariantMap& GetIdentity() { return identity_; }
 
@@ -170,6 +175,7 @@ public:
     /// Return whether is a client connection.
     /// @property
     bool IsClient() const { return isClient_; }
+    void SetIsClient(bool isClient) { isClient_ = isClient; }
 
     /// Return whether is fully connected.
     /// @property
@@ -193,7 +199,7 @@ public:
 
     /// Return remote port.
     /// @property
-    unsigned short GetPort() const { return port_; }
+    unsigned short GetPort() const;
 
     /// Return the connection's round trip time in milliseconds.
     /// @property
@@ -227,8 +233,6 @@ public:
     /// Trigger client connection to download a package file from the server. Can be used to download additional resource packages when client is already joined in a scene. The package must have been added as a requirement to the scene the client is joined in, or else the eventual download will fail.
     void SendPackageToClient(PackageFile* package);
 
-    /// Set network simulation parameters. Called by Network.
-    void ConfigureNetworkSimulator(int latencyMs, float packetLoss);
     /// Buffered packet size limit, when reached, packet is sent out immediately
     void SetPacketSizeLimit(int limit);
 
@@ -266,48 +270,60 @@ private:
     void OnPackageDownloadFailed(const ea::string& name);
     /// Handle all packages loaded successfully. Also called directly on MSG_LOADSCENE if there are none.
     void OnPackagesReady();
+    /// Handles queued packets. Should only be called from main thread.
+    void ProcessPackets();
 
+    /// Packet handling.
+    /// @{
+    /// Temporary variable to hold packet count in the next second.
+    PacketCounter tempPacketCounter_;
+    /// Packet count in the last second.
+    PacketCounter packetCounter_;
+    /// Packet count timer which resets every 1s.
+    Timer packetCounterTimer_;
+    /// Statistics timer.
+    Timer statsTimer_;
+    /// Outgoing packet buffer which can contain multiple messages.
+    ea::unordered_map<int, VectorBuffer> outgoingBuffer_;
+    /// Outgoing packet size limit.
+    int packedMessageLimit_ = 1024;
+    /// Queued remote events.
+    ea::vector<RemoteEvent> remoteEvents_;
+    /// @}
+
+    /// Scene synchronization.
+    /// @{
     /// Utility to keep server and client clocks synchronized.
     ea::unique_ptr<ClockSynchronizer> clock_;
-    /// Scene.
     WeakPtr<Scene> scene_;
     /// Scene replication and synchronization manager.
     WeakPtr<ReplicationManager> replicationManager_;
-
     /// Waiting or ongoing package file receive transfers.
     ea::unordered_map<StringHash, PackageDownload> downloads_;
     /// Ongoing package send transfers.
     ea::unordered_map<StringHash, PackageUpload> uploads_;
-    /// Queued remote events.
-    ea::vector<RemoteEvent> remoteEvents_;
     /// Scene file to load once all packages (if any) have been downloaded.
     ea::string sceneFileName_;
-    /// Statistics timer.
-    Timer statsTimer_;
-    /// Remote endpoint port.
-    unsigned short port_;
+    /// @}
+
+    /// General connection state.
+    /// @{
     /// Client connection flag.
-    bool isClient_;
-    /// Connection pending flag.
-    bool connectPending_;
+    /// True for many connections accepted by the server through %Network::StartServer.
+    /// False for a single client connection connected to the server through %Network::Connect.
+    bool isClient_ = false;
+    /// Set to true when connection is initiated, but has not fully opened yet and network stream is not available yet.
+    bool connectPending_ = true;
     /// Scene loaded flag.
-    bool sceneLoaded_;
+    bool sceneLoaded_ = false;
     /// Show statistics flag.
-    bool logStatistics_;
-    /// Address of this connection.
-    SLNet::AddressOrGUID* address_;
-    /// Raknet peer object.
-    SLNet::RakPeerInterface* peer_;
-    /// Temporary variable to hold packet count in the next second, x - packets in, y - packets out.
-    IntVector2 tempPacketCounter_;
-    /// Packet count in the last second, x - packets in, y - packets out.
-    IntVector2 packetCounter_;
-    /// Packet count timer which resets every 1s.
-    Timer packetCounterTimer_;
-    /// Outgoing packet buffer which can contain multiple messages
-    ea::unordered_map<int, VectorBuffer> outgoingBuffer_;
-    /// Outgoing packet size limit
-    int packedMessageLimit_;
+    bool logStatistics_ = false;
+    /// @}
+
+    SharedPtr<NetworkConnection> transportConnection_;
+    Mutex packetQueueLock_;
+    ea::vector<VectorBuffer> incomingPackets_;
+
 };
 
 }

@@ -63,7 +63,7 @@ public:
     void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
     void SetQuality(const ConnectionQuality& quality) { quality_ = quality; }
 
-    void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
+    void SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered) override;
     ea::string ToString() const override { return "Manual Connection"; }
     bool IsClockSynchronized() const override { return true; }
     unsigned RemoteToLocalTime(unsigned time) const override { return time; }

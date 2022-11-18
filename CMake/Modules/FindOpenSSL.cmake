@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2022 the Urho3D project.
+# Copyright (c) 2017-2022 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,10 +20,10 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_NETWORK)
-    return ()
+# A dummy script to help dependencies of libdatachannel to find OpenSSL.
+if (TARGET ssl)
+    add_library(OpenSSL::SSL ALIAS ssl)
 endif ()
-
-file (GLOB SAMPLE_CODE *.h *.cpp)
-list (APPEND SOURCE_CODE ${SAMPLE_CODE})
-set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)
+if (TARGET crypto)
+    add_library(OpenSSL::Crypto ALIAS crypto)
+endif ()

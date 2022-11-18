@@ -236,7 +236,7 @@ void ClientSynchronizationState::SendMessages()
     if (!synchronizationMagic_)
     {
         const unsigned magic = MakeMagic();
-        connection_->SendSerializedMessage(MSG_CONFIGURE, MsgConfigure{magic, settings_}, PT_RELIABLE_UNORDERED);
+        connection_->SendSerializedMessage(MSG_CONFIGURE, MsgConfigure{magic, settings_}, PacketType::ReliableUnordered);
         synchronizationMagic_ = magic;
     }
 
@@ -250,7 +250,7 @@ void ClientSynchronizationState::SendMessages()
         UpdateInputBuffer();
 
         const MsgSceneClock msg{frame_, frameLocalTime_, inputDelay_ + inputBufferSize_};
-        connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, PT_UNRELIABLE_UNORDERED);
+        connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, PacketType::UnreliableUnordered);
     }
 }
 
@@ -392,7 +392,7 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
 
 void ClientReplicationState::SendRemoveObjects()
 {
-    connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS, PT_RELIABLE_ORDERED,
+    connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         if (debugInfo)
@@ -416,7 +416,7 @@ void ClientReplicationState::SendRemoveObjects()
 
 void ClientReplicationState::SendAddObjects()
 {
-    connection_->SendGeneratedMessage(MSG_ADD_OBJECTS, PT_RELIABLE_ORDERED,
+    connection_->SendGeneratedMessage(MSG_ADD_OBJECTS, PacketType::ReliableOrdered,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
@@ -449,7 +449,7 @@ void ClientReplicationState::SendAddObjects()
 
 void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationState& sharedState)
 {
-    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE, PT_RELIABLE_ORDERED,
+    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE, PacketType::ReliableOrdered,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
@@ -486,7 +486,7 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
 void ClientReplicationState::SendUpdateObjectsUnreliable(
     NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
-    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, PT_UNRELIABLE_UNORDERED,
+    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         bool sendMessage = false;

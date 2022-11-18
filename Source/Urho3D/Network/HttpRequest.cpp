@@ -27,7 +27,9 @@
 #include "../IO/Log.h"
 #include "../Network/HttpRequest.h"
 
+#ifndef EMSCRIPTEN
 #include <Civetweb/civetweb.h>
+#endif
 
 #include "../DebugNew.h"
 
@@ -121,6 +123,7 @@ void HttpRequest::ThreadFunction()
             headersStr += header + "\r\n";
     }
 
+#ifndef EMSCRIPTEN
     // Initiate the connection. This may block due to DNS query
     mg_connection* connection = nullptr;
 
@@ -202,7 +205,7 @@ void HttpRequest::ThreadFunction()
 
     // Close the connection
     mg_close_connection(connection);
-
+#endif  // EMSCRIPTEN
     {
         MutexLock lock(mutex_);
         state_ = HTTP_CLOSED;
