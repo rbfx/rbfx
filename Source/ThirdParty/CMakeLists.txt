@@ -126,7 +126,6 @@ endif ()
 if (URHO3D_NETWORK)
     add_subdirectory(openssl)
     add_subdirectory(Civetweb)
-    add_subdirectory (SLikeNet)
 endif ()
 
 if (URHO3D_NAVIGATION)

@@ -177,7 +177,6 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     STB
     IconFontCppHeaders
     Civetweb
-    SLikeNet
     Detour
     DetourCrowd
     DetourTileCache
