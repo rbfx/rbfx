@@ -28,6 +28,24 @@
 namespace Urho3D
 {
 
+static unsigned short GetDefaultPort(const ea::string& scheme)
+{
+    if (scheme == "http")
+        return 80;
+    if (scheme == "https")
+        return 443;
+    return 0;
+}
+
+static bool IsDefaultPort(unsigned short port, const ea::string& scheme)
+{
+    if (scheme == "http" && port == 80)
+        return true;
+    if (scheme == "https" && port == 443)
+        return true;
+    return false;
+}
+
 void URL::ParseURL(ea::string_view url)
 {
     scheme_ = user_ = password_ = host_ = path_ = query_ = hash_ = "";
@@ -42,7 +60,9 @@ void URL::ParseURL(ea::string_view url)
         password_ = matches[7].str().c_str();
         host_ = matches[8].str().c_str();
         port_ = atoi(matches[10].str().c_str());
-        path_ = matches[12].str().c_str();
+        if (!port_)
+            port_ = GetDefaultPort(scheme_);
+        path_ = matches[11].str().c_str();
         query_ = matches[14].str().c_str();
         hash_ = matches[16].str().c_str();
     }
@@ -67,7 +87,7 @@ ea::string URL::ToString() const
         url += "@";
     }
     url += host_;
-    if (port_)
+    if (port_ && !IsDefaultPort(port_, scheme_))
         url += Format(":{}", port_);
     if (!path_.empty())
     {
