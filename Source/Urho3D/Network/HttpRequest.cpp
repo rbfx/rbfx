@@ -64,12 +64,14 @@ HttpRequest::HttpRequest(const ea::string& url, const ea::string& verb, const ea
             request->state_ = HTTP_CLOSED;
             request->readBuffer_.Resize(len);
             request->readBuffer_.SetData(buf, len);
+            request->requestHandle_ = 0;
         }, [](unsigned handle, void* arg, int code, const char* msg)    // onerror
         {
             HttpRequest* request = static_cast<HttpRequest*>(arg);
             MutexLock lock(request->mutex_);
             request->state_ = HTTP_ERROR;
             request->error_ = msg;
+            request->requestHandle_ = 0;
         }, [](unsigned handle, void* arg, int loaded, int total)        // onprogress
         {
             //HttpRequest* request = static_cast<HttpRequest*>(arg);
@@ -92,6 +94,13 @@ HttpRequest::HttpRequest(const ea::string& url, const ea::string& verb, const ea
 
 HttpRequest::~HttpRequest()
 {
+#ifdef EMSCRIPTEN
+    if (requestHandle_)
+    {
+        emscripten_async_wget2_abort(requestHandle_);
+        requestHandle_ = 0;
+    }
+#endif
     Stop();
 }
 
