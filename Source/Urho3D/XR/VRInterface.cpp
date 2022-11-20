@@ -177,6 +177,10 @@ void VRInterface::UpdateRig(Node* vrRig, float nearDist, float farDist, bool for
 
 void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* rightEye, float nearDist, float farDist, bool forSinglePass)
 {
+    // always update these, they get used going into depth layers for time-warp, best assume that ever feeding bad values means bad things to eyeballs.
+    lastNearDist_ = nearDist;
+    lastFarDist_ = farDist;
+
     if (!IsLive())
         return;
 

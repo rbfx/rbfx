@@ -130,6 +130,7 @@ protected:
     XrSystemId system_ = { };
     XrSession session_ = { };
     XrSwapchain swapChain_ = { };
+    XrSwapchain depthChain_ = { };
     XrView views_[2] = { { XR_TYPE_VIEW }, { XR_TYPE_VIEW } };
     XrDebugUtilsMessengerEXT messenger_ = { };
 
@@ -138,8 +139,10 @@ protected:
     /// Contains hidden objects that are obscured due to header inclusion complexities with #defines.
     ea::unique_ptr<Opaque> opaque_;
 
-    SharedPtr<Texture2D> eyeColorTextures_[4] = { {}, {} };
+    SharedPtr<Texture2D> eyeColorTextures_[4];
+    SharedPtr<Texture2D> eyeDepthTextures_[4];
     unsigned imgCount_ = { };
+    unsigned depthImgCount_{ };
 
     // Pointless head-space.
     XrSpace headSpace_ = { };   
@@ -159,6 +162,8 @@ protected:
     bool supportsMask_ = false;
     /// Indicates that controller model is supported.
     bool supportsControllerModel_ = false;
+    /// Indicates that we support the depth extension so we can provide that to help out time-warp.
+    bool supportsDepthExt_ = false;
 
     struct ControllerModel {
         XrControllerModelKeyMSFT modelKey_ = 0;
