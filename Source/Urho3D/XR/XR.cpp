@@ -445,6 +445,16 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             supportsDepthExt_ = true;
         }
 
+        // Controllers
+        if (SupportsExt(extensions_, XR_HTC_VIVE_COSMOS_CONTROLLER_INTERACTION_EXTENSION_NAME))
+            activeExt.push_back(XR_HTC_VIVE_COSMOS_CONTROLLER_INTERACTION_EXTENSION_NAME);
+        if (SupportsExt(extensions_, XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME))
+            activeExt.push_back(XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME);
+        if (SupportsExt(extensions_, XR_EXT_HP_MIXED_REALITY_CONTROLLER_EXTENSION_NAME))
+            activeExt.push_back(XR_EXT_HP_MIXED_REALITY_CONTROLLER_EXTENSION_NAME);
+        if (SupportsExt(extensions_, XR_EXT_SAMSUNG_ODYSSEY_CONTROLLER_EXTENSION_NAME))
+            activeExt.push_back(XR_EXT_SAMSUNG_ODYSSEY_CONTROLLER_EXTENSION_NAME);
+
         for (auto e : extraExtensions_)
             activeExt.push_back(e.c_str());
 
