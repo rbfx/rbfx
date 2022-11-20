@@ -66,6 +66,7 @@
         #include <Unknwn.h>
     #endif
 #endif
+
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform_defines.h>
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
 
@@ -333,12 +334,15 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
     {
 #ifdef URHO3D_D3D11
         XrSwapchainImageD3D11KHR swapImages_[4] = { };
+        XrSwapchainImageD3D11KHR depthImages_[4] = { };
 #endif
 #ifdef URHO3D_OPENGL
     #ifndef GL_ES_VERSION_2_0
         XrSwapchainImageOpenGLKHR swapImages_[4] = { };
+        XrSwapchainImageOpenGLKHR depthImages_[4] = { };
     #else
         XrSwapchainImageOpenGLESKHR swapImages_[4] = { };
+        XrSwapchainImageOpenGLESKHR depthImages_[4] = { };
     #endif
 #endif
     };
@@ -432,6 +436,13 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         {
             activeExt.push_back(XR_MSFT_CONTROLLER_MODEL_EXTENSION_NAME);
             supportsControllerModel_ = true;
+        }
+        if (SupportsExt(extensions_, XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME))
+        {
+            activeExt.push_back(XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
+            /* at the moment we don't function correctly
+            * presumably has to do with RenderBufferManager */
+            supportsDepthExt_ = true;
         }
 
         for (auto e : extraExtensions_)
@@ -543,6 +554,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
         trueEyeTexWidth_ = eyeTexWidth_ = (int)Min(views[VR_EYE_LEFT].recommendedImageRectWidth, views[VR_EYE_RIGHT].recommendedImageRectWidth);
         trueEyeTexHeight_ = eyeTexHeight_ = (int)Min(views[VR_EYE_LEFT].recommendedImageRectHeight, views[VR_EYE_RIGHT].recommendedImageRectHeight);
+        msaaLevel_ = Min(msaaLevel_, views[VR_EYE_LEFT].maxSwapchainSampleCount);
 
         eyeTexWidth_ = eyeTexWidth_ * renderTargetScale_;
         eyeTexHeight_ = eyeTexHeight_ * renderTargetScale_;
@@ -701,6 +713,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 #ifdef URHO3D_D3D11
             opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR;
             opaque_->swapImages_[j].next = nullptr;
+            opaque_->depthImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR;
+            opaque_->depthImages_[j].next = nullptr;
 #endif
 #ifdef URHO3D_OPENGL
 #ifndef GL_ES_VERSION_2_0
@@ -737,6 +751,24 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             }
         }
 
+        // See if we've got a depth format we can handle, if we do this means we'll produce swapchains
+        // We'll be able to count on details like MSAA-Quality being compatible.
+        for (auto fmt : fmts)
+        {
+            if (fmt == graphics->GetDepthStencilFormat())
+            {
+                depthFormat_ = fmt;
+                break;
+            }
+#ifdef URHO3D_D3D11
+            if (fmt == DXGI_FORMAT_D24_UNORM_S8_UINT) // what we actually construct, as opposed to typeless
+            {
+                depthFormat_ = fmt;
+                break;
+            }
+#endif
+        }
+
         XrSwapchainCreateInfo swapInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
         swapInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
         swapInfo.format = backbufferFormat_;
@@ -753,10 +785,36 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         errCode = xrEnumerateSwapchainImages(swapChain_, 4, &imgCount_, (XrSwapchainImageBaseHeader*)opaque_->swapImages_);
         XR_COMMON_ER("swapchain images")
 
+        // If we found a depth format than construct swapchains for depth.
+        // Doing this should mean we've done as much as possible to prevent ourselves from blocking due to something.
+        // At the present, checking we have depth-info-ext to do anything with it.
+        if (supportsDepthExt_ && depthFormat_)
+        {
+            XrSwapchainCreateInfo swapInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
+            swapInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
+            swapInfo.format = depthFormat_;
+            swapInfo.width = eyeTexWidth_ * 2; // note: if eventually supported array targets this will change.
+            swapInfo.height = eyeTexHeight_;
+            swapInfo.sampleCount = msaaLevel_;
+            swapInfo.faceCount = 1;
+            swapInfo.arraySize = 1; // note: if we support array targets and layered this changes, we're still as single texture mode
+            swapInfo.mipCount = 1;
+
+            auto errCode = xrCreateSwapchain(session_, &swapInfo, &depthChain_);
+            XR_COMMON_ER("swapchain")
+
+            errCode = xrEnumerateSwapchainImages(depthChain_, 4, &depthImgCount_, (XrSwapchainImageBaseHeader*)opaque_->depthImages_);
+            XR_COMMON_ER("swapchain images")
+        }
+        else
+            depthImgCount_ = 0;
+
 #ifdef URHO3D_D3D11
         // bump the d3d-ref count
         for (int i = 0; i < imgCount_; ++i)
             opaque_->swapImages_[i].texture->AddRef();
+        for (int i = 0; i < depthImgCount_; ++i)
+            opaque_->depthImages_[i].texture->AddRef();
 #endif
 
         CreateEyeTextures();
@@ -767,27 +825,37 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
     void OpenXR::DestroySwapchain()
     {
         for (int i = 0; i < 4; ++i)
+        {
             eyeColorTextures_[i].Reset();
+            eyeDepthTextures_[i].Reset();
+        }
 
         if (swapChain_)
             xrDestroySwapchain(swapChain_);
+        if (depthChain_)
+            xrDestroySwapchain(depthChain_);
 
         swapChain_ = { };
+        depthChain_ = { };
     }
 
     void OpenXR::CreateEyeTextures()
     {
         sharedTexture_ = new Texture2D(GetContext());
+        sharedDS_.Reset();
+
+        // OXR we never use these, TODO: remove from SteamVR as well.
         leftTexture_.Reset();
         rightTexture_.Reset();
-
-        sharedDS_.Reset();
         leftDS_.Reset();
         rightDS_.Reset();
 
-        sharedDS_ = new Texture2D(GetContext());
-        sharedDS_->SetNumLevels(1);
-        sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, Graphics::GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL, msaaLevel_);
+        if (depthChain_ == 0)
+        {
+            sharedDS_ = new Texture2D(GetContext());
+            sharedDS_->SetNumLevels(1);
+            sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, Graphics::GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL, msaaLevel_);
+        }
 
         for (unsigned i = 0; i < imgCount_; ++i)
         {
@@ -796,13 +864,23 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 #ifdef URHO3D_D3D11
             // NOTE: D3D11 we can get most info from queries more easily
             eyeColorTextures_[i]->CreateFromExternal(opaque_->swapImages_[i].texture, msaaLevel_, backbufferFormat_ == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+            if (depthChain_)
+            {
+                eyeDepthTextures_[i] = new Texture2D(GetContext());
+                eyeDepthTextures_[i]->CreateFromExternal(opaque_->depthImages_[i].texture, msaaLevel_, false);
+            }
 #endif
 
 #ifdef URHO3D_OPENGL
             // Queries pain, we already know this information so just pass it
             eyeColorTextures_[i]->CreateFromExternal(opaque_->swapImages_[i].image, eyeTexWidth_ * 2, eyeTexHeight_, msaaLevel_, backbufferFormat_, TEXTURE_RENDERTARGET);
+            if (depthChain_)
+            {
+                eyeDepthTextures_[i] = new Texture2D(GetContext());
+                eyeDepthTextures_[i]->CreateFromExternal(opaque_->depthImages_[i].image, eyeTexWidth_ * 2, eyeTexHeight_, msaaLevel_, depthFormat_, TEXTURE_RENDERTARGET);
+            }
 #endif
-            eyeColorTextures_[i]->GetRenderSurface()->SetLinkedDepthStencil(sharedDS_->GetRenderSurface());
+            eyeColorTextures_[i]->GetRenderSurface()->SetLinkedDepthStencil(depthChain_ ? eyeDepthTextures_[i]->GetRenderSurface() : sharedDS_->GetRenderSurface());
         }
     }
 
@@ -950,6 +1028,24 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
             // update which shared-texture we're using so UpdateRig will do things correctly.
             sharedTexture_ = eyeColorTextures_[imgID];
+
+            // If we've got depth then do the same and setup the linked depth stencil for the above shared texture.
+            if (depthChain_)
+            {
+                // still remaking the objects here, assuming that at any time these may one day do something
+                // in such a fashion that reuse is not a good thing.
+                unsigned depthID;
+                XrSwapchainImageAcquireInfo acquireInfo = { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
+                auto res = xrAcquireSwapchainImage(depthChain_, &acquireInfo, &depthID);
+                if (res == XR_SUCCESS)
+                {
+                    XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
+                    waitInfo.timeout = XR_INFINITE_DURATION;
+                    res = xrWaitSwapchainImage(depthChain_, &waitInfo);
+                    sharedDS_ = eyeDepthTextures_[depthID];
+                    sharedTexture_->GetRenderSurface()->SetLinkedDepthStencil(sharedDS_->GetRenderSurface());
+                }
+            }
         }
     }
 
@@ -961,6 +1057,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             
             XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
             xrReleaseSwapchainImage(swapChain_, &releaseInfo);
+            if (depthChain_)
+            {
+                XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
+                xrReleaseSwapchainImage(depthChain_, &releaseInfo);
+            }
 
             // it's harmless but checking this will prevent early bad draws with null FOV
             // XR eats the error, but handle it anyways to keep a clean output log
@@ -980,6 +1081,37 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             eyes[VR_EYE_RIGHT].fov = views_[VR_EYE_RIGHT].fov;
             eyes[VR_EYE_RIGHT].pose = views_[VR_EYE_RIGHT].pose;
 
+            static XrCompositionLayerDepthInfoKHR depth[2] = {
+                    { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR }, { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR }
+            };
+
+            // May we ever have a depth-chain without this in theory?
+            if (supportsDepthExt_ && depthChain_)
+            {
+                // depth
+                depth[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
+                depth[VR_EYE_LEFT].subImage.swapchain = depthChain_;
+                depth[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTexWidth_, eyeTexHeight_} };
+                depth[VR_EYE_LEFT].minDepth = 0.0f; // spec says range of 0-1, so doesn't respect GL -1 to 1?
+                depth[VR_EYE_LEFT].maxDepth = 1.0f;
+                depth[VR_EYE_LEFT].nearZ = lastNearDist_;
+                depth[VR_EYE_LEFT].farZ = lastFarDist_;
+
+                depth[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
+                depth[VR_EYE_RIGHT].subImage.swapchain = depthChain_;
+                depth[VR_EYE_RIGHT].subImage.imageRect = { { eyeTexWidth_, 0 }, { eyeTexWidth_, eyeTexHeight_} };
+                depth[VR_EYE_RIGHT].minDepth = 0.0f;
+                depth[VR_EYE_RIGHT].maxDepth = 1.0f;
+                depth[VR_EYE_RIGHT].nearZ = lastNearDist_;
+                depth[VR_EYE_RIGHT].farZ = lastFarDist_;
+
+                // These are chained to the relevant eye, not passed in through another mechanism.
+
+                /* not attached at present as it's messed up, probably as referenced above in depth-info ext detection that it's probably a RenderBuffermanager copy issue */
+                //eyes[VR_EYE_LEFT].next = &depth[VR_EYE_LEFT];
+                //eyes[VR_EYE_RIGHT].next = &depth[VR_EYE_RIGHT];
+            }
+
             XrCompositionLayerProjection proj = { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
             proj.viewCount = 2;
             proj.views = eyes;
@@ -992,7 +1124,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             endInfo.layers = &header;
             endInfo.environmentBlendMode = blendMode_;
             endInfo.displayTime = predictedTime_;
-                
+
             xrEndFrame(session_, &endInfo);
         }
     }
@@ -1265,7 +1397,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     if (xrGetActionStateFloat(session_, &getInfo, &floatC) == XR_SUCCESS)
                     {
                         bind->active_ = floatC.isActive;
-                        if (floatC.changedSinceLastSync)
+                        if (floatC.changedSinceLastSync || !Equals(floatC.currentState, bind->GetFloat()))
                         {
                             bind->storedData_ = floatC.currentState;
                             bind->changed_ = true;
@@ -1560,10 +1692,10 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     }
                 }
                 else
-                    URHO3D_LOGERRORF("xrLoadControllerModelMSFT failure: {}", xrGetErrorStr(errCodes[i]));
+                    URHO3D_LOGERRORF("xrLoadControllerModelMSFT failure: %s", xrGetErrorStr(errCodes[i]));
             }
             else
-                URHO3D_LOGERRORF("xrGetControllerModelKeyMSFT failure: {}", xrGetErrorStr(errCodes[i]));
+                URHO3D_LOGERRORF("xrGetControllerModelKeyMSFT failure: %s", xrGetErrorStr(errCodes[i]));
         }
     }
 
