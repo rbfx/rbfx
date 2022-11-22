@@ -25,6 +25,7 @@
 #include "../IK/IK.h"
 #include "../IK/IKSolver.h"
 #include "../IK/IKSolverComponent.h"
+#include "../IK/IKTargetExtractor.h"
 
 namespace Urho3D
 {
@@ -39,6 +40,8 @@ void RegisterIKLibrary(Context* context)
     IKIdentitySolver::RegisterObject(context);
     IKLegSolver::RegisterObject(context);
     IKTrigonometrySolver::RegisterObject(context);
+
+    IKTargetExtractor::RegisterObject(context);
 }
 
 } // namespace Urho3D
