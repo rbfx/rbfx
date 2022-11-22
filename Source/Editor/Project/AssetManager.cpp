@@ -258,7 +258,7 @@ ea::string AssetManager::GetFileName(const ea::string& resourceName) const
     return project_->GetDataPath() + resourceName;
 }
 
-bool AssetManager::IsAssetUpToDate(const AssetDesc& assetDesc) const
+bool AssetManager::IsAssetUpToDate(AssetDesc& assetDesc)
 {
     auto fs = GetSubsystem<FileSystem>();
 
@@ -268,8 +268,16 @@ bool AssetManager::IsAssetUpToDate(const AssetDesc& assetDesc) const
         return false;
 
     // Check if the asset has not been modified
+    const FileTime assetModificationTime = fs->GetLastModifiedTime(fileName, true);
     if (assetDesc.modificationTime_ != fs->GetLastModifiedTime(fileName))
-        return false;
+    {
+        if (!ignoredAssetUpdates_.contains(assetDesc.resourceName_))
+            return false;
+
+        // Ignore the update once if it was requested
+        ignoredAssetUpdates_.erase(assetDesc.resourceName_);
+        assetDesc.modificationTime_ = assetModificationTime;
+    }
 
     // Check if outputs are present, don't check modification times for simplicity
     for (const ea::string& outputResourceName : assetDesc.outputs_)
@@ -527,8 +535,12 @@ void AssetManager::ProcessAsset(const AssetTransformerInput& input)
         assetDesc.outputs_ = output.outputResourceNames_;
         assetDesc.transformers_ = output.appliedTransformers_;
 
-        URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated)",
-            input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size());
+        if (output.sourceModified_)
+            ignoredAssetUpdates_.insert(input.resourceName_);
+
+        URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated{})",
+            input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size(),
+            output.sourceModified_ ? ", source modified" : "");
     }
 }
 

@@ -154,17 +154,19 @@ bool ModelImporter::ImportGLTF(const ea::string& fileName,
 
     for (const auto& [resourceName, fileName] : importer->GetSavedResources())
     {
+        AssetTransformerOutput nestedOutput;
         AssetTransformerInput nestedInput = input;
         nestedInput.resourceName_ = resourceName;
         nestedInput.inputFileName_ = fileName;
         nestedInput.outputFileName_ = fileName;
-        if (!AssetTransformer::ExecuteTransformers(nestedInput, output, transformers, true))
+        if (!AssetTransformer::ExecuteTransformers(nestedInput, nestedOutput, transformers, true))
         {
             URHO3D_LOGERROR("Failed to apply nested transformer for asset {}", resourceName);
             return false;
         }
-    }
 
+        output.appliedTransformers_.insert(nestedOutput.appliedTransformers_.begin(), nestedOutput.appliedTransformers_.end());
+    }
     return true;
 }
 
