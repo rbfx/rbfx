@@ -115,7 +115,7 @@ private:
     StringVector GetTransformerTypes(const AssetPipelineDesc& pipeline) const;
     AssetTransformerVector GetTransformers(const AssetPipelineDesc& pipeline) const;
     ea::string GetFileName(const ea::string& resourceName) const;
-    bool IsAssetUpToDate(const AssetDesc& assetDesc) const;
+    bool IsAssetUpToDate(AssetDesc& assetDesc);
     /// @}
 
     /// Cache manipulation.
@@ -157,6 +157,7 @@ private:
     SharedPtr<AssetTransformerHierarchy> transformerHierarchy_;
     ea::unordered_map<ea::string, AssetDesc> assets_;
     AssetPipelineList assetPipelineFiles_;
+    ea::unordered_set<ea::string> ignoredAssetUpdates_;
 
     ea::vector<AssetTransformerInput> requestQueue_;
 };
