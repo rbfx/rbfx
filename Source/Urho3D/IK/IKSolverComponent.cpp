@@ -266,6 +266,27 @@ void IKIdentitySolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Bone Name", ea::string, boneName_, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Target Name", ea::string, targetName_, EMPTY_STRING, AM_DEFAULT);
+
+    URHO3D_ACTION_STATIC_LABEL("Update Properties", UpdateProperties, "Set properties below from current bone positions");
+    URHO3D_ATTRIBUTE("Identity Rotation", Quaternion, identityRotation_, Quaternion::ZERO, AM_DEFAULT);
+}
+
+void IKIdentitySolver::UpdateProperties()
+{
+    UpdateIdentityRotation();
+}
+
+void IKIdentitySolver::UpdateIdentityRotation()
+{
+    Node* boneNode = node_->GetChild(boneName_, true);
+    if (boneNode)
+        identityRotation_ = node_->GetWorldRotation().Inverse() * boneNode->GetWorldRotation();
+}
+
+void IKIdentitySolver::EnsureInitialized()
+{
+    if (identityRotation_ == Quaternion::ZERO)
+        UpdateIdentityRotation();
 }
 
 bool IKIdentitySolver::InitializeNodes(IKNodeCache& nodeCache)
@@ -287,8 +308,13 @@ void IKIdentitySolver::UpdateChainLengths()
 
 void IKIdentitySolver::SolveInternal(const IKSettings& settings)
 {
+    EnsureInitialized();
+
     boneNode_->position_ = target_->GetWorldPosition();
+    boneNode_->rotation_ = target_->GetWorldRotation() * identityRotation_;
+
     boneNode_->MarkPositionDirty();
+    boneNode_->MarkRotationDirty();
 }
 
 IKTrigonometrySolver::IKTrigonometrySolver(Context* context)
