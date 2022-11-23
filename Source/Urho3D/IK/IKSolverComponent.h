@@ -69,6 +69,8 @@ public:
     ~IKIdentitySolver() override;
     static void RegisterObject(Context* context);
 
+    void UpdateProperties();
+
 private:
     /// Implement IKSolverComponent
     /// @{
@@ -77,8 +79,12 @@ private:
     void SolveInternal(const IKSettings& settings) override;
     /// @}
 
+    void EnsureInitialized();
+    void UpdateIdentityRotation();
+
     ea::string boneName_;
     ea::string targetName_;
+    Quaternion identityRotation_{Quaternion::ZERO};
 
     IKNode* boneNode_{};
     WeakPtr<Node> target_;
