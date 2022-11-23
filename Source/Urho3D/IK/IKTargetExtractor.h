@@ -52,6 +52,7 @@ private:
     ea::string GetNewFileName(const ea::string& fileName) const;
     ea::string GetModelName(Animation* sourceAnimation) const;
 
+    bool extractRotations_{true};
     float sampleRate_{0.0f};
     bool extractToExistingFile_{true};
     bool extractToNewFile_{true};

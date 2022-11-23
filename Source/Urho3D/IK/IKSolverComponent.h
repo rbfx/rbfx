@@ -80,11 +80,11 @@ private:
     /// @}
 
     void EnsureInitialized();
-    void UpdateIdentityRotation();
+    void UpdateRotationOffset();
 
     ea::string boneName_;
     ea::string targetName_;
-    Quaternion identityRotation_{Quaternion::ZERO};
+    Quaternion rotationOffset_{Quaternion::ZERO};
 
     IKNode* boneNode_{};
     WeakPtr<Node> target_;
