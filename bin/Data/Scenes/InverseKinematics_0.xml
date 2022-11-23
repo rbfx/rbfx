@@ -4,7 +4,7 @@
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
 	<attribute name="Next Replicated Node ID" value="38" />
-	<attribute name="Next Replicated Component ID" value="111" />
+	<attribute name="Next Replicated Component ID" value="117" />
 	<attribute name="Next Local Node ID" value="16777728" />
 	<attribute name="Next Local Component ID" value="16777217" />
 	<attribute name="Variables" />
@@ -177,7 +177,7 @@
 			<component type="IKIdentitySolver" id="101">
 				<attribute name="Bone Name" value="Hips" />
 				<attribute name="Target Name" value="Target" />
-				<attribute name="Identity Rotation" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
+				<attribute name="Rotation Offset" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
 			</component>
 			<node id="34">
 				<attribute name="Is Enabled" value="true" />
@@ -205,7 +205,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="100">
 					<attribute name="Model" value="Model;Models/Torus.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16777664">
@@ -1399,7 +1399,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.118141 -0.0412213 -0.632836 0.764107" />
+					<attribute name="Rotation" value="0.118141 -0.0412213 -0.632835 0.764108" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16777336">
@@ -1407,7 +1407,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.800633 0.592216 0.0280649 0.0864937" />
+						<attribute name="Rotation" value="0.800635 0.592214 0.0280648 0.0864934" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777335">
@@ -2102,7 +2102,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.0620487 0.00314011 -0.639382 0.766375" />
+					<attribute name="Rotation" value="0.0620487 0.00314009 -0.639382 0.766375" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16777463">
@@ -2118,7 +2118,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.63461 -0.76613 -0.0914709 -0.04411" />
+							<attribute name="Rotation" value="0.63461 -0.76613 -0.0914709 -0.0441101" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777465">
@@ -2126,7 +2126,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579043" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579041" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16777466">
@@ -2814,7 +2814,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.659162 0.746995 0.0644575 0.0578556" />
+						<attribute name="Rotation" value="0.659162 0.746995 0.0644577 0.0578554" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777528">
@@ -2822,7 +2822,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.993765 -0.00308613 -0.111366 -0.00434037" />
+							<attribute name="Rotation" value="0.993765 -0.00308639 -0.111366 -0.00434011" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777529">
@@ -3699,7 +3699,6 @@
 			<component type="IKIdentitySolver" id="107">
 				<attribute name="Bone Name" value="Hips" />
 				<attribute name="Target Name" value="Hips_Target" />
-				<attribute name="Identity Rotation" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
 			</component>
 			<component type="IKLegSolver" id="72">
 				<attribute name="Thigh Bone Name" value="LeftUpLeg" />
@@ -3745,7 +3744,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="106">
 					<attribute name="Model" value="Model;Models/Torus.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="31">

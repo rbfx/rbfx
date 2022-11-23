@@ -39,11 +39,17 @@ struct ExtractedTrack
     ea::string name_;
     WeakPtr<Node> node_;
     AnimationTrack* track_{};
+    Quaternion rotationOffset_;
 };
 
-ea::vector<ExtractedTrack> GetTracks(AnimatedModel* animatedModel, Animation* destAnimation)
+ea::vector<ExtractedTrack> GetTracks(AnimatedModel* animatedModel, Animation* destAnimation, bool includeRotations)
 {
     const Skeleton& skeleton = animatedModel->GetSkeleton();
+
+    ea::unordered_set<ea::string> boneNames;
+    for (const Bone& bone : skeleton.GetBones())
+        boneNames.insert(bone.name_);
+
     const unsigned numBones = skeleton.GetNumBones();
 
     ea::vector<ExtractedTrack> tracks;
@@ -53,14 +59,26 @@ ea::vector<ExtractedTrack> GetTracks(AnimatedModel* animatedModel, Animation* de
         if (bone.node_)
         {
             const ea::string trackName = bone.name_ + "_Target";
-            if (!destAnimation->GetTrack(trackName))
+            AnimationTrack* track = destAnimation->GetTrack(trackName);
+            if (!track)
+                track = destAnimation->CreateTrack(trackName);
+            else
             {
-                ExtractedTrack track;
-                track.node_ = bone.node_;
-                track.track_ = destAnimation->CreateTrack(trackName);
-                track.track_->channelMask_ = CHANNEL_POSITION;
-                tracks.push_back(track);
+                // Skip tracks on name collision
+                if (boneNames.contains(trackName))
+                    continue;
+
+                track->RemoveAllKeyFrames();
             }
+
+            ExtractedTrack entry;
+            entry.node_ = bone.node_;
+            entry.rotationOffset_ = bone.node_->GetWorldRotation();
+            entry.track_ = track;
+            entry.track_->channelMask_ = CHANNEL_POSITION;
+            if (includeRotations)
+                entry.track_->channelMask_ |= CHANNEL_ROTATION;
+            tracks.push_back(entry);
         }
     }
     return tracks;
@@ -83,6 +101,7 @@ void IKTargetExtractor::RegisterObject(Context* context)
 {
     context->RegisterFactory<IKTargetExtractor>(Category_Transformer);
 
+    URHO3D_ATTRIBUTE("Extract Rotations", bool, extractRotations_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Sample Rate", float, sampleRate_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Extract to Existing File", bool, extractToExistingFile_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Extract to New File", bool, extractToNewFile_, true, AM_DEFAULT);
@@ -173,6 +192,9 @@ void IKTargetExtractor::ExtractAnimation(Animation* sourceAnimation, Animation* 
 
     auto animatedModel = node->CreateComponent<AnimatedModel>();
     animatedModel->SetModel(model);
+    animatedModel->ApplyAnimation();
+
+    ea::vector<ExtractedTrack> tracks = GetTracks(animatedModel, destAnimation, extractRotations_);
 
     auto animationController = node->CreateComponent<AnimationController>();
     animationController->Update(0.0f);
@@ -187,8 +209,6 @@ void IKTargetExtractor::ExtractAnimation(Animation* sourceAnimation, Animation* 
         destAnimation->SetLength(animationLength);
     }
 
-    ea::vector<ExtractedTrack> tracks = GetTracks(animatedModel, destAnimation);
-
     const float sampleRate = sampleRate_ != 0 ? sampleRate_ : animationFrameRate != 0.0f ? animationFrameRate : 30.0f;
     const float numFramesEstimate = animationLength * sampleRate;
     const unsigned numFrames = CeilToInt(numFramesEstimate - M_LARGE_EPSILON);
@@ -200,7 +220,12 @@ void IKTargetExtractor::ExtractAnimation(Animation* sourceAnimation, Animation* 
         animatedModel->ApplyAnimation();
 
         for (ExtractedTrack& track : tracks)
-            track.track_->AddKeyFrame(AnimationKeyFrame{frameTime, track.node_->GetWorldPosition()});
+        {
+            AnimationKeyFrame frame{frameTime, track.node_->GetWorldPosition()};
+            if (extractRotations_)
+                frame.rotation_ = track.node_->GetWorldRotation() * track.rotationOffset_.Inverse();
+            track.track_->AddKeyFrame(frame);
+        }
     }
 }
 
