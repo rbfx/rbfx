@@ -287,6 +287,7 @@ bool ShaderVariation::Compile()
         if (!ConvertShaderToHLSL5(type_, universalSourceCode, defines, convertedShaderSourceCode, errorMessage))
         {
             URHO3D_LOGERROR("Failed to convert shader {} from GLSL:\n{}{}", GetFullName(), Shader::GetShaderFileList(), errorMessage);
+            graphics_->SaveFailedShaderSource(GetName(), universalSourceCode);
             return false;
         }
 

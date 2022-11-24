@@ -750,6 +750,9 @@ public:
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
 
+    /// Save failed shader source code if GPU debug is enabled.
+    void SaveFailedShaderSource(const ea::string& shaderName, const ea::string& sourceCode);
+
 private:
     /// Create the application window.
     bool OpenWindow(int width, int height, bool resizable, bool borderless);

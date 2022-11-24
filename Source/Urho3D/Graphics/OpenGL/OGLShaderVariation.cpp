@@ -221,6 +221,8 @@ bool ShaderVariation::Create()
     glGetShaderiv(object_.name_, GL_COMPILE_STATUS, &compiled);
     if (!compiled)
     {
+        graphics_->SaveFailedShaderSource(GetName(), shaderCode);
+
         glGetShaderiv(object_.name_, GL_INFO_LOG_LENGTH, &length);
         compilerOutput_.resize((unsigned) length);
         int outLength;

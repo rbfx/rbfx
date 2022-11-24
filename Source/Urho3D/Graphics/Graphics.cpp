@@ -79,6 +79,7 @@
 #endif
 
 #include "../DebugNew.h"
+#include "Urho3D/IO/File.h"
 
 namespace Urho3D
 {
@@ -664,6 +665,32 @@ void Graphics::InitRenderDoc()
     }
 #endif
 }
+
+void Graphics::SaveFailedShaderSource(const ea::string& shaderName, const ea::string& sourceCode)
+{
+    if (!GetGPUDebug())
+        return;
+
+    const auto fileSystem = context_->GetSubsystem<FileSystem>();
+    const auto fullName = fileSystem->GetTemporaryDir() + shaderName + "_" + StringHash(sourceCode).ToString() + ".txt";
+
+    ea::string path, fileName, extension;
+    SplitPath(fullName, path, fileName, extension);
+
+    if (!fileSystem->DirExists(path))
+        fileSystem->CreateDir(path);
+
+    // Create file in scope to ensure file content before log record.
+    {
+        const SharedPtr<File> file(MakeShared<File>(context_, fullName, FILE_WRITE));
+        if (!file->IsOpen())
+            return;
+        file->WriteString(sourceCode);
+    }
+
+    URHO3D_LOGERROR("Failed shader source code available at {}", fullName);
+}
+
 
 void RegisterGraphicsLibrary(Context* context)
 {
