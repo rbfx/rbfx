@@ -420,6 +420,7 @@ public:
 %interface_custom("%s", "I%s", Urho3D::Deserializer);
 %include "Urho3D/IO/Deserializer.h"
 %interface_custom("%s", "I%s", Urho3D::AbstractFile);
+URHO3D_REFCOUNTED_INTERFACE(Urho3D::AbstractFile, Urho3D::RefCounted);
 %include "Urho3D/IO/AbstractFile.h"
 %include "Urho3D/IO/Compression.h"
 %include "Urho3D/IO/File.h"

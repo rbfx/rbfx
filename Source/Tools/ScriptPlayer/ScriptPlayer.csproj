@@ -3,7 +3,7 @@
     <AssemblyName>ScriptPlayer</AssemblyName>
     <OutputType>WinExe</OutputType>
     <RootNamespace>ScriptPlayer</RootNamespace>
-    <LangVersion>7.2</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
