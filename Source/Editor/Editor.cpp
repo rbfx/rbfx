@@ -56,6 +56,7 @@
 #include "Foundation/SceneViewTab/TransformManipulator.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
+#include "Foundation/SceneViewTab/SceneDebugInfo.h"
 #include "Foundation/SettingsTab.h"
 #include "Foundation/SettingsTab/KeyBindingsPage.h"
 #include "Foundation/SettingsTab/LaunchPage.h"
@@ -122,6 +123,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefab", &Foundation_SceneDragAndDropPrefab);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.SceneDebugInfo", &Foundation_SceneDebugInfo);
 
     editorPluginManager_->AddPlugin("Foundation.Inspector.Empty", &Foundation_EmptyInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.AssetPipeline", &Foundation_AssetPipelineInspector);
