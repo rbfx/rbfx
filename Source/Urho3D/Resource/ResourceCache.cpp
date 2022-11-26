@@ -564,7 +564,7 @@ AbstractFilePtr ResourceCache::GetFile(const ea::string& name, bool sendEventOnF
 
     if (sanitatedName.length())
     {
-        AbstractFilePtr file {};
+        AbstractFilePtr file;
 
         if (searchPackagesFirst_)
         {

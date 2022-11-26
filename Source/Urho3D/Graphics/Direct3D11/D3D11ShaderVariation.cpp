@@ -455,7 +455,7 @@ void ShaderVariation::SaveByteCode(const ea::string& binaryShaderName)
     if (!fileSystem->DirExists(path))
         fileSystem->CreateDir(path);
 
-    const AbstractFilePtr file(MakeShared<File>(owner_->GetContext(), fullName, FILE_WRITE));
+    auto file = MakeShared<File>(owner_->GetContext(), fullName, FILE_WRITE);
     if (!file->IsOpen())
         return;
 

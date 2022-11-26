@@ -53,7 +53,7 @@ PackageFile::~PackageFile() = default;
 
 bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
 {
-    const AbstractFilePtr file(MakeShared<File>(context_, fileName));
+    auto file = MakeShared<File>(context_, fileName);
     if (!file->IsOpen())
         return false;
 

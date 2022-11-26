@@ -549,7 +549,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                     }
 
                     // Try to open the file now
-                    const AbstractFilePtr file(MakeShared<File>(context_, packageFullName));
+                    const auto file = MakeShared<File>(context_, packageFullName);
                     if (!file->IsOpen())
                     {
                         URHO3D_LOGERROR("Failed to transmit package file " + name);

@@ -108,13 +108,9 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, const ea::string& filename)
     if (!cache)
         return type;
 
-    AbstractFilePtr texXmlFile = cache->GetFile(filename, false);
-    if (texXmlFile)
-    {
-        auto texXml = MakeShared<XMLFile>(cache->GetContext());
-        if (texXml->Load(*texXmlFile))
-            type = ParseTextureTypeName(texXml->GetRoot().GetName());
-    }
+    auto texXml = cache->GetTempResource<XMLFile>(filename, false);
+    if (texXml)
+        type = ParseTextureTypeName(texXml->GetRoot().GetName());
     return type;
 }
 

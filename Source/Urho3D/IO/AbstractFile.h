@@ -63,6 +63,6 @@ protected:
     ea::string name_;
 };
 
-typedef SharedPtr<AbstractFile, RefCounted> AbstractFilePtr;
+using AbstractFilePtr = SharedPtr<AbstractFile, RefCounted>;
 
 }

@@ -71,8 +71,8 @@ void SceneAndUILoad::CreateScene()
 
     // Load scene content prepared in the editor (XML format). GetFile() returns an open file from the resource system
     // which scene.LoadXML() will read
-    AbstractFilePtr file = cache->GetFile("Scenes/SceneLoadExample.xml");
-    scene_->LoadXML(*file);
+    const auto xmlFile = cache->GetResource<XMLFile>("Scenes/SceneLoadExample.xml");
+    scene_->LoadXML(xmlFile->GetRoot());
 
     // Create the camera (not included in the scene file)
     cameraNode_ = scene_->CreateChild("Camera");

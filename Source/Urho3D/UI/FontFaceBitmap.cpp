@@ -100,9 +100,8 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         ea::string textureFile = fontPath + pageElem.GetAttribute("file");
 
         // Load texture manually to allow controlling the alpha channel mode
-        AbstractFilePtr fontFile = resourceCache->GetFile(textureFile);
-        SharedPtr<Image> fontImage(MakeShared<Image>(context));
-        if (!fontFile || !fontImage->Load(*fontFile))
+        auto fontImage = resourceCache->GetTempResource<Image>(textureFile);
+        if (!fontImage)
         {
             URHO3D_LOGERROR("Failed to load font image file");
             return false;
@@ -114,7 +113,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         textures_.push_back(texture);
 
         // Add texture to resource cache
-        texture->SetName(fontFile->GetName());
+        texture->SetName(fontImage->GetName());
         resourceCache->AddManualResource(texture.Get());
 
         totalTextureSize += fontImage->GetWidth() * fontImage->GetHeight() * fontImage->GetComponents();

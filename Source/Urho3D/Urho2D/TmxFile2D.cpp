@@ -598,9 +598,8 @@ void TmxFile2D::SetSpriteTextureEdgeOffset(float offset)
 SharedPtr<XMLFile> TmxFile2D::LoadTSXFile(const ea::string& source)
 {
     ea::string tsxFilePath = GetParentPath(GetName()) + source;
-    AbstractFilePtr tsxFile = GetSubsystem<ResourceCache>()->GetFile(tsxFilePath);
-    SharedPtr<XMLFile> tsxXMLFile(MakeShared<XMLFile>(context_));
-    if (!tsxFile || !tsxXMLFile->Load(*tsxFile))
+    auto tsxXMLFile = GetSubsystem<ResourceCache>()->GetTempResource<XMLFile>(tsxFilePath);
+    if (!tsxXMLFile)
     {
         URHO3D_LOGERROR("Load TSX file failed " + tsxFilePath);
         return SharedPtr<XMLFile>();
