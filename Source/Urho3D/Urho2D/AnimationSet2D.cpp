@@ -80,7 +80,7 @@ char* _spUtil_readFile(const char* path, int* length)
         return 0;
 
     ResourceCache* cache = currentAnimationSet->GetSubsystem<ResourceCache>();
-    SharedPtr<File> file = cache->GetFile(path);
+    AbstractFilePtr file = cache->GetFile(path);
     if (!file)
         return 0;
 

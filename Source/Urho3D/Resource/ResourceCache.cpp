@@ -446,7 +446,7 @@ bool ResourceCache::ReloadResource(Resource* resource)
     resource->SendEvent(E_RELOADSTARTED);
 
     bool success = false;
-    SharedPtr<File> file = GetFile(resource->GetName());
+    const AbstractFilePtr file = GetFile(resource->GetName());
     if (file)
         success = resource->Load(*(file.Get()));
 
@@ -555,7 +555,7 @@ void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
     }
 }
 
-SharedPtr<File> ResourceCache::GetFile(const ea::string& name, bool sendEventOnFailure)
+AbstractFilePtr ResourceCache::GetFile(const ea::string& name, bool sendEventOnFailure)
 {
     MutexLock lock(resourceMutex_);
 
@@ -564,7 +564,7 @@ SharedPtr<File> ResourceCache::GetFile(const ea::string& name, bool sendEventOnF
 
     if (sanitatedName.length())
     {
-        File* file = nullptr;
+        AbstractFilePtr file {};
 
         if (searchPackagesFirst_)
         {
@@ -580,7 +580,7 @@ SharedPtr<File> ResourceCache::GetFile(const ea::string& name, bool sendEventOnF
         }
 
         if (file)
-            return SharedPtr<File>(file);
+            return file;
     }
 
     if (sendEventOnFailure)
@@ -668,7 +668,7 @@ Resource* ResourceCache::GetResource(StringHash type, const ea::string& name, bo
     }
 
     // Attempt to load the resource
-    SharedPtr<File> file = GetFile(sanitatedName, sendEventOnFailure);
+    const AbstractFilePtr file = GetFile(sanitatedName, sendEventOnFailure);
     if (!file)
         return nullptr;   // Error is already logged
 
@@ -748,7 +748,7 @@ SharedPtr<Resource> ResourceCache::GetTempResource(StringHash type, const ea::st
     }
 
     // Attempt to load the resource
-    SharedPtr<File> file = GetFile(sanitatedName, sendEventOnFailure);
+    const AbstractFilePtr file = GetFile(sanitatedName, sendEventOnFailure);
     if (!file)
         return SharedPtr<Resource>();  // Error is already logged
 
@@ -1174,7 +1174,7 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 #endif
 }
 
-File* ResourceCache::SearchResourceDirs(const ea::string& name)
+AbstractFilePtr ResourceCache::SearchResourceDirs(const ea::string& name)
 {
     auto* fileSystem = GetSubsystem<FileSystem>();
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
@@ -1183,25 +1183,25 @@ File* ResourceCache::SearchResourceDirs(const ea::string& name)
         {
             // Construct the file first with full path, then rename it to not contain the resource path,
             // so that the file's sanitatedName can be used in further GetFile() calls (for example over the network)
-            File* file(new File(context_, resourceDirs_[i] + name));
+            SharedPtr<File> file(MakeShared<File>(context_, resourceDirs_[i] + name));
             file->SetName(name);
-            return file;
+            return AbstractFilePtr(file, file);
         }
     }
 
     // Fallback using absolute path
     if (fileSystem->FileExists(name))
-        return new File(context_, name);
+        return AbstractFilePtr(MakeShared<File>(context_, name));
 
     return nullptr;
 }
 
-File* ResourceCache::SearchPackages(const ea::string& name)
+AbstractFilePtr ResourceCache::SearchPackages(const ea::string& name)
 {
     for (unsigned i = 0; i < packages_.size(); ++i)
     {
         if (packages_[i]->Exists(name))
-            return new File(context_, packages_[i], name);
+            return AbstractFilePtr(MakeShared<File>(context_, packages_[i], name));
     }
 
     return nullptr;

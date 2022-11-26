@@ -178,14 +178,14 @@ bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
     if (!cache->Exists(binaryShaderName))
         return false;
 
-    FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
-    unsigned sourceTimeStamp = owner_->GetTimeStamp();
+    const FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
+    const unsigned sourceTimeStamp = owner_->GetTimeStamp();
     // If source code is loaded from a package, its timestamp will be zero. Else check that binary is not older
     // than source
     if (sourceTimeStamp && fileSystem->GetLastModifiedTime(cache->GetResourceFileName(binaryShaderName)) < sourceTimeStamp)
         return false;
 
-    SharedPtr<File> file = cache->GetFile(binaryShaderName);
+    const AbstractFilePtr file = cache->GetFile(binaryShaderName);
     if (!file || file->ReadFileID() != "USHD")
     {
         URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
@@ -455,7 +455,7 @@ void ShaderVariation::SaveByteCode(const ea::string& binaryShaderName)
     if (!fileSystem->DirExists(path))
         fileSystem->CreateDir(path);
 
-    SharedPtr<File> file(new File(owner_->GetContext(), fullName, FILE_WRITE));
+    const AbstractFilePtr file(MakeShared<File>(owner_->GetContext(), fullName, FILE_WRITE));
     if (!file->IsOpen())
         return;
 

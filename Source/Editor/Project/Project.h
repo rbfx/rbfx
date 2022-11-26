@@ -81,7 +81,7 @@ struct AnalyzeFileContext
 {
     Context* context_{};
 
-    SharedPtr<File> binaryFile_;
+    AbstractFilePtr binaryFile_;
     SharedPtr<XMLFile> xmlFile_;
     SharedPtr<JSONFile> jsonFile_;
 

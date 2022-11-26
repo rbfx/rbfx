@@ -494,6 +494,7 @@ public:
 
 
 // --------------------------------------- Scene ---------------------------------------
+%ignore Urho3D::AsyncProgress;
 %ignore Urho3D::AsyncProgress::resources_;
 %ignore Urho3D::ValueAnimation::GetKeyFrames;
 %ignore Urho3D::Serializable::networkState_;

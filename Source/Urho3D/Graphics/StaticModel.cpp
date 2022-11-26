@@ -309,7 +309,7 @@ void StaticModel::ApplyMaterialList(const ea::string& fileName)
         useFileName = ReplaceExtension(model_->GetName(), ".txt");
 
     auto* cache = GetSubsystem<ResourceCache>();
-    SharedPtr<File> file = cache->GetFile(useFileName, false);
+    const AbstractFilePtr file = cache->GetFile(useFileName, false);
     if (!file)
         return;
 

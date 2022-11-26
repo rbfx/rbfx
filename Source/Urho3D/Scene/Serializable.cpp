@@ -357,7 +357,7 @@ bool Serializable::SaveJSON(JSONValue& dest) const
 
 bool Serializable::Load(const ea::string& resourceName)
 {
-    SharedPtr<File> file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
+    AbstractFilePtr file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
     if (file)
         return Load(*file);
     return false;

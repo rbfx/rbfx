@@ -249,7 +249,6 @@ public:
     /// Convert to a raw pointer.
     operator InterfaceType*() const noexcept { return this->GetPointer(); }    // NOLINT(google-explicit-constructor)
 
-    /// Reset.
     void Reset() noexcept
     {
         ThisType temp;
@@ -261,6 +260,13 @@ public:
     void Reset(U* ptr) noexcept
     {
         ThisType temp(ptr);
+        this->Swap(temp);
+    }
+
+    /// Reset with another pointers.
+    void Reset(InterfaceType* ptr, RefCounted* refCounted) noexcept
+    {
+        ThisType temp(ptr, refCounted);
         this->Swap(temp);
     }
 
