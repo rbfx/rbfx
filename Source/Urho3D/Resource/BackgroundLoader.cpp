@@ -81,7 +81,7 @@ void BackgroundLoader::ThreadFunction()
             backgroundLoadMutex_.Release();
 
             bool success = false;
-            SharedPtr<File> file = owner_->GetFile(resource->GetName(), item.sendEventOnFailure_);
+            AbstractFilePtr file = owner_->GetFile(resource->GetName(), item.sendEventOnFailure_);
             if (file)
             {
                 resource->SetAsyncLoadState(ASYNC_LOADING);

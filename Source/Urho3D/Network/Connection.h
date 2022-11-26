@@ -73,7 +73,7 @@ struct PackageDownload
     PackageDownload();
 
     /// Destination file.
-    SharedPtr<File> file_;
+    AbstractFilePtr file_;
     /// Already received fragments.
     ea::hash_set<unsigned> receivedFragments_;
     /// Package name.
@@ -93,7 +93,7 @@ struct PackageUpload
     PackageUpload();
 
     /// Source file.
-    SharedPtr<File> file_;
+    AbstractFilePtr file_;
     /// Current fragment index.
     unsigned fragment_;
     /// Total number of fragments.

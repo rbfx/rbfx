@@ -125,7 +125,7 @@ void RenderingShowcase::SetupSelectedScene(bool resetCamera)
     // Load scene content prepared in the editor (XML format). GetFile() returns an open file from the resource system
     // which scene.LoadXML() will read
     const ea::string fileName = Format("Scenes/RenderingShowcase_{}.xml", sceneNames_[sceneIndex_][sceneMode_]);
-    SharedPtr<File> file = cache->GetFile(fileName);
+    const AbstractFilePtr file = cache->GetFile(fileName);
     scene_->LoadXML(*file);
 
     if (resetCamera)

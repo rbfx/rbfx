@@ -46,7 +46,7 @@ RmlFile::RmlFile(Urho3D::Context* context)
 Rml::FileHandle RmlFile::Open(const Rml::String& path)
 {
     ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
-    SharedPtr<File> file(cache->GetFile(path));
+    AbstractFilePtr file(cache->GetFile(path));
     if (file != nullptr)
     {
         loadedFiles_.insert(GetAbsolutePath(cache->GetResourceFileName(path)));

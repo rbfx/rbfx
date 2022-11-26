@@ -80,7 +80,7 @@ void BakedLighting::CreateScene()
     // Load scene
     scene_ = new Scene(context_);
 
-    SharedPtr<File> file = cache->GetFile("Scenes/BakedLightingExample.xml");
+    const AbstractFilePtr file = cache->GetFile("Scenes/BakedLightingExample.xml");
     scene_->LoadXML(*file);
 
     auto camera = scene_->GetComponent<Camera>(true);
