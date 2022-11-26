@@ -136,7 +136,7 @@ int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* 
     // Capture the standard error stream
     if (!stderrFilename.empty())
     {
-        const AbstractFilePtr errFile(MakeShared<File>(context, stderrFilename, FILE_READ));
+        auto errFile = MakeShared<File>(context, stderrFilename, FILE_READ);
         while (!errFile->IsEof())
         {
             unsigned numRead = errFile->Read(buffer, sizeof(buffer));
@@ -622,10 +622,10 @@ bool FileSystem::Copy(const ea::string& srcFileName, const ea::string& destFileN
         return false;
     }
 
-    const AbstractFilePtr srcFile(MakeShared<File>(context_, srcFileName, FILE_READ));
+    auto srcFile = MakeShared<File>(context_, srcFileName, FILE_READ);
     if (!srcFile->IsOpen())
         return false;
-    const AbstractFilePtr destFile(MakeShared<File>(context_, destFileName, FILE_WRITE));
+    auto destFile = MakeShared<File>(context_, destFileName, FILE_WRITE);
     if (!destFile->IsOpen())
         return false;
 
