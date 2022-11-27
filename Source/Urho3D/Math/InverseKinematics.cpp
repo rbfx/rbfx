@@ -186,22 +186,25 @@ void IKTrigonometricChain::Solve(const Vector3& target, const Vector3& bendNorma
     segments_[1].UpdateRotationInNodes(settings, true);
 }
 
-void IKFabrikChain::Clear()
+void IKChain::Clear()
 {
     segments_.clear();
 }
 
-void IKFabrikChain::AddNode(IKNode* node)
+void IKChain::AddNode(IKNode* node)
 {
     if (segments_.empty())
     {
         IKNodeSegment segment;
         segment.beginNode_ = node;
+        segment.endNode_ = node;
         segments_.push_back(segment);
+        isFirstSegmentIncomplete_ = true;
     }
-    else if (segments_.size() == 1 && segments_.back().endNode_ == nullptr)
+    else if (isFirstSegmentIncomplete_)
     {
         segments_.back().endNode_ = node;
+        isFirstSegmentIncomplete_ = false;
     }
     else
     {
@@ -212,10 +215,180 @@ void IKFabrikChain::AddNode(IKNode* node)
     }
 }
 
-void IKFabrikChain::UpdateLengths()
+void IKChain::UpdateLengths()
 {
     for (IKNodeSegment& segment : segments_)
         segment.UpdateLength();
+}
+
+void IKChain::StorePreviousTransforms()
+{
+    for (const IKNodeSegment& segment : segments_)
+    {
+        segment.beginNode_->previousPosition_ = segment.beginNode_->position_;
+        segment.beginNode_->previousRotation_ = segment.beginNode_->rotation_;
+    }
+
+    IKNode& lastNode = *segments_.back().endNode_;
+    lastNode.previousPosition_ = lastNode.position_;
+    lastNode.previousRotation_ = lastNode.rotation_;
+}
+
+void IKChain::RestorePreviousTransforms()
+{
+    for (const IKNodeSegment& segment : segments_)
+    {
+        segment.beginNode_->position_ = segment.beginNode_->previousPosition_;
+        segment.beginNode_->rotation_ = segment.beginNode_->previousRotation_;
+    }
+
+    IKNode& lastNode = *segments_.back().endNode_;
+    lastNode.position_ = lastNode.previousPosition_;
+    lastNode.rotation_ = lastNode.previousRotation_;
+}
+
+void IKChain::UpdateSegmentRotations(const IKSettings& settings)
+{
+    for (IKNodeSegment& segment : segments_)
+    {
+        const bool isLastSegment = &segment == &segments_.back();
+        segment.UpdateRotationInNodes(settings, isLastSegment);
+    }
+}
+
+void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSettings& settings)
+{
+    if (segments_.size() < 2)
+        return;
+
+    StorePreviousTransforms();
+    UpdateSegmentWeights();
+
+    const Vector3 basePosition = segments_[0].beginNode_->position_;
+    const Vector3 baseDirection = segments_[0].CalculateDirection();
+    const Vector3 bendDirection = GetProjectionAndOffset(
+        target, basePosition, baseDirection).second.Normalized();
+
+    //    Target
+    //   /|
+    //  / |
+    // o--> Base Direction (= x axis)
+    // ^
+    // Base Position
+    const Vector2 projectedTarget = ProjectTarget(target, basePosition, baseDirection);
+
+    // TODO: Calculate number of iterations based on error.
+    const float totalAngle = FindBestAngle(projectedTarget, maxRotation, settings.maxIterations_);
+
+    EvaluateSegmentPositions(totalAngle, baseDirection, bendDirection);
+    UpdateSegmentRotations(settings);
+}
+
+void IKSpineChain::UpdateSegmentWeights()
+{
+    weights_.resize(segments_.size());
+    ea::fill(weights_.begin(), weights_.end(), 0.0f);
+
+    float totalWeight = 0.0f;
+    for (unsigned i = 1; i < segments_.size(); ++i)
+    {
+        const float length = segments_[i].length_;
+        totalWeight += length;
+        weights_[i] = length;
+    }
+
+    if (totalWeight > 0.0f)
+    {
+        for (unsigned i = 1; i < segments_.size(); ++i)
+            weights_[i] /= totalWeight;
+    }
+    else
+    {
+        weights_[1] = 1.0f;
+    }
+}
+
+ea::pair<float, Vector3> IKSpineChain::GetProjectionAndOffset(const Vector3& target,
+    const Vector3& basePosition, const Vector3& baseDirection) const
+{
+    const Vector3 targetOffset = target - basePosition;
+    const float projection = targetOffset.ProjectOntoAxis(baseDirection);
+    const Vector3 normalOffset = targetOffset - baseDirection * projection;
+    return {projection, normalOffset};
+}
+
+Vector2 IKSpineChain::ProjectTarget(const Vector3& target,
+    const Vector3& basePosition, const Vector3& baseDirection) const
+{
+    const auto [projection, offset] = GetProjectionAndOffset(target, basePosition, baseDirection);
+    return {projection, offset.Length()};
+}
+
+template <class T>
+void IKSpineChain::EnumerateProjectedPositions(float totalRotation, const T& callback) const
+{
+    Vector2 position;
+    float angle = 0.0f;
+    for (unsigned i = 0; i < segments_.size(); ++i)
+    {
+        const float length = segments_[i].length_;
+        const float rotation = totalRotation * weights_[i];
+
+        angle += rotation;
+        position += Vector2{Cos(angle), Sin(angle)} * length;
+        callback(position);
+    }
+}
+
+Vector2 IKSpineChain::EvaluateProjectedEnd(float totalRotation) const
+{
+    Vector2 position;
+    EnumerateProjectedPositions(totalRotation, [&](const Vector2& pos) { position = pos; });
+    return position;
+}
+
+IKSpineChain::AngleAndError IKSpineChain::EvaluateError(
+    float totalRotation, const Vector2& target) const
+{
+    const Vector2 endPosition = EvaluateProjectedEnd(totalRotation);
+    const float error = (endPosition - target).LengthSquared();
+    return {totalRotation, error};
+}
+
+float IKSpineChain::FindBestAngle(
+    const Vector2& projectedTarget, float maxRotation, unsigned maxIterations) const
+{
+    AngleAndError begin = EvaluateError(0.0f, projectedTarget);
+    AngleAndError end = EvaluateError(maxRotation, projectedTarget);
+    AngleAndError middle;
+
+    for (unsigned i = 0; i < maxIterations; ++i)
+    {
+        middle = EvaluateError((begin.angle_ + end.angle_) * 0.5f, projectedTarget);
+
+        // This should not happen most of the time
+        if (middle.error_ >= begin.error_ && middle.error_ >= end.error_)
+            break;
+
+        if (begin.error_ >= middle.error_ && begin.error_ >= end.error_)
+            begin = middle;
+        else
+            end = middle;
+    }
+
+    return middle.angle_;
+}
+
+void IKSpineChain::EvaluateSegmentPositions(float totalRotation,
+    const Vector3& baseDirection, const Vector3& bendDirection)
+{
+    unsigned segmentIndex = 0;
+    EnumerateProjectedPositions(totalRotation, [&](const Vector2& position)
+    {
+        const Vector3 offset = baseDirection * position.x_ + bendDirection * position.y_;
+        segments_[segmentIndex].endNode_->position_ += offset;
+        ++segmentIndex;
+    });
 }
 
 void IKFabrikChain::Solve(const Vector3& target, const IKSettings& settings)
@@ -244,11 +417,7 @@ void IKFabrikChain::Solve(const Vector3& target, const IKSettings& settings)
         }
     }
 
-    for (IKNodeSegment& segment : segments_)
-    {
-        const bool isLastSegment = &segment == &segments_.back();
-        segment.UpdateRotationInNodes(settings, isLastSegment);
-    }
+    UpdateSegmentRotations(settings);
 }
 
 Vector3 IKFabrikChain::GetDeadlockRotationAxis(const Vector3& target) const
@@ -294,32 +463,6 @@ bool IKFabrikChain::TrySolve(const Vector3& target, const IKSettings& settings)
             break;
     }
     return true;
-}
-
-void IKFabrikChain::StorePreviousTransforms()
-{
-    for (const IKNodeSegment& segment : segments_)
-    {
-        segment.beginNode_->previousPosition_ = segment.beginNode_->position_;
-        segment.beginNode_->previousRotation_ = segment.beginNode_->rotation_;
-    }
-
-    IKNode& lastNode = *segments_.back().endNode_;
-    lastNode.previousPosition_ = lastNode.position_;
-    lastNode.previousRotation_ = lastNode.rotation_;
-}
-
-void IKFabrikChain::RestorePreviousTransforms()
-{
-    for (const IKNodeSegment& segment : segments_)
-    {
-        segment.beginNode_->position_ = segment.beginNode_->previousPosition_;
-        segment.beginNode_->rotation_ = segment.beginNode_->previousRotation_;
-    }
-
-    IKNode& lastNode = *segments_.back().endNode_;
-    lastNode.position_ = lastNode.previousPosition_;
-    lastNode.rotation_ = lastNode.previousRotation_;
 }
 
 void IKFabrikChain::SolveIteration(const Vector3& target, const IKSettings& settings, bool backward)
