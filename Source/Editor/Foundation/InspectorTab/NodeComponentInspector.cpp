@@ -361,10 +361,14 @@ void NodeComponentInspector::RenderContextMenuItems()
 
 void NodeComponentInspector::RenderMenu()
 {
+    if (inspectedTab_)
+        inspectedTab_->RenderMenu();
 }
 
 void NodeComponentInspector::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
+    if (inspectedTab_)
+        inspectedTab_->ApplyHotkeys(hotkeyManager);
 }
 
 }
