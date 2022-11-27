@@ -36,10 +36,11 @@ void RegisterIKLibrary(Context* context)
     IKSolver::RegisterObject(context);
     IKSolverComponent::RegisterObject(context);
 
-    IKChainSolver::RegisterObject(context);
     IKIdentitySolver::RegisterObject(context);
     IKLegSolver::RegisterObject(context);
     IKTrigonometrySolver::RegisterObject(context);
+    IKSpineSolver::RegisterObject(context);
+    IKChainSolver::RegisterObject(context);
 
     IKTargetExtractor::RegisterObject(context);
 }

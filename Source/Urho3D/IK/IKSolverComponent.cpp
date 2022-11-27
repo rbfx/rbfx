@@ -271,6 +271,23 @@ void IKIdentitySolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Rotation Offset", Quaternion, rotationOffset_, Quaternion::ZERO, AM_DEFAULT);
 }
 
+void IKIdentitySolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    const float jointRadius = 0.02f;
+    const float targetRadius = 0.05f;
+    const BoundingBox box{-Vector3::ONE, Vector3::ONE};
+
+    if (boneNode_)
+    {
+        debug->AddBoundingBox(box, Matrix3x4{boneNode_->position_, boneNode_->rotation_, jointRadius},
+            Color::YELLOW, false);
+    }
+    if (target_)
+    {
+        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
+    }
+}
+
 void IKIdentitySolver::UpdateProperties()
 {
     UpdateRotationOffset();
@@ -339,6 +356,29 @@ void IKTrigonometrySolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Normal", Vector3, bendNormal_, Vector3::RIGHT, AM_DEFAULT);
+}
+
+void IKTrigonometrySolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    const float jointRadius = 0.02f;
+    const float targetRadius = 0.05f;
+
+    IKNode* thighBone = chain_.GetBeginNode();
+    IKNode* calfBone = chain_.GetMiddleNode();
+    IKNode* heelBone = chain_.GetEndNode();
+
+    if (thighBone && calfBone && heelBone)
+    {
+        debug->AddLine(thighBone->position_, calfBone->position_, Color::YELLOW, false);
+        debug->AddLine(calfBone->position_, heelBone->position_, Color::YELLOW, false);
+        debug->AddSphere(Sphere(thighBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddSphere(Sphere(calfBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddSphere(Sphere(heelBone->position_, jointRadius), Color::YELLOW, false);
+    }
+    if (target_)
+    {
+        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
+    }
 }
 
 bool IKTrigonometrySolver::InitializeNodes(IKNodeCache& nodeCache)
@@ -529,6 +569,79 @@ void IKLegSolver::SolveInternal(const IKSettings& settings)
     const Vector3 toeTargetPositionAdjusted = heelBone->position_ - toeToHeel;
     footSegment_.endNode_->position_ = toeTargetPositionAdjusted;
     footSegment_.UpdateRotationInNodes(settings, true);
+}
+
+IKSpineSolver::IKSpineSolver(Context* context)
+    : IKSolverComponent(context)
+{
+}
+
+IKSpineSolver::~IKSpineSolver()
+{
+}
+
+void IKSpineSolver::RegisterObject(Context* context)
+{
+    context->AddFactoryReflection<IKSpineSolver>(Category_IK);
+
+    URHO3D_ATTRIBUTE_EX("Bone Names", StringVector, boneNames_, OnTreeDirty, Variant::emptyStringVector, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+}
+
+void IKSpineSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    const float jointRadius = 0.02f;
+    const float targetRadius = 0.05f;
+
+    const auto& segments = chain_.GetSegments();
+    for (const IKNodeSegment& segment : segments)
+    {
+        debug->AddLine(segment.beginNode_->position_, segment.endNode_->position_, Color::YELLOW, false);
+        debug->AddSphere(Sphere(segment.beginNode_->position_, jointRadius), Color::YELLOW, false);
+    }
+    if (segments.size() >= 2)
+        debug->AddSphere(Sphere(segments.back().endNode_->position_, jointRadius), Color::YELLOW, false);
+
+    if (target_)
+    {
+        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
+    }
+}
+
+bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
+{
+    target_ = AddCheckedNode(nodeCache, targetName_);
+    if (!target_)
+        return false;
+
+    IKSpineChain chain;
+    for (const ea::string& boneName : boneNames_)
+    {
+        IKNode* boneNode = AddSolverNode(nodeCache, boneName);
+        if (!boneNode)
+            return false;
+
+        chain.AddNode(boneNode);
+    }
+
+    chain_ = ea::move(chain);
+    return true;
+}
+
+void IKSpineSolver::UpdateChainLengths()
+{
+    chain_.UpdateLengths();
+}
+
+void IKSpineSolver::SolveInternal(const IKSettings& settings)
+{
+    chain_.Solve(target_->GetWorldPosition(), 90.0f, settings);
+}
+
+void IKSpineSolver::OnTreeDirty()
+{
+    if (auto solver = GetComponent<IKSolver>())
+        solver->MarkSolversDirty();
 }
 
 }

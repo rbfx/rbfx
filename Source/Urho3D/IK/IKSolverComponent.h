@@ -69,6 +69,8 @@ public:
     ~IKIdentitySolver() override;
     static void RegisterObject(Context* context);
 
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
     void UpdateProperties();
 
 private:
@@ -98,6 +100,8 @@ public:
     explicit IKTrigonometrySolver(Context* context);
     ~IKTrigonometrySolver() override;
     static void RegisterObject(Context* context);
+
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
 private:
     /// Implement IKSolverComponent
@@ -169,6 +173,41 @@ private:
     IKNodeSegment footSegment_;
     WeakPtr<Node> target_;
     /// @}
+};
+
+class IKSpineSolver : public IKSolverComponent
+{
+    URHO3D_OBJECT(IKSpineSolver, IKSolverComponent);
+
+public:
+    explicit IKSpineSolver(Context* context);
+    ~IKSpineSolver() override;
+    static void RegisterObject(Context* context);
+
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    /// Return the bone names.
+    const StringVector& GetBoneNames() const { return boneNames_; }
+    /// Return the target name.
+    const ea::string& GetTargetName() const { return targetName_; }
+
+    /// Internal. Marks chain tree as dirty.
+    void OnTreeDirty();
+
+protected:
+    /// Implement IKSolverComponent
+    /// @{
+    bool InitializeNodes(IKNodeCache& nodeCache) override;
+    void UpdateChainLengths() override;
+    void SolveInternal(const IKSettings& settings) override;
+    /// @}
+
+private:
+    StringVector boneNames_;
+    ea::string targetName_;
+
+    IKSpineChain chain_;
+    WeakPtr<Node> target_;
 };
 
 class IKChainSolver : public IKSolverComponent

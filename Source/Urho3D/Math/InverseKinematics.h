@@ -113,8 +113,8 @@ private:
     IKNodeSegment segments_[2];
 };
 
-/// Generic unconstrained FABRIK chain.
-class URHO3D_API IKFabrikChain
+/// Base class for generic IK chain.
+class URHO3D_API IKChain
 {
 public:
     void Clear();
@@ -122,14 +122,56 @@ public:
 
     void UpdateLengths();
 
-    void Solve(const Vector3& target, const IKSettings& settings);
+    ea::vector<IKNodeSegment>& GetSegments() { return segments_; }
+    const ea::vector<IKNodeSegment>& GetSegments() const { return segments_; }
 
-    // TODO: Make private.
-    ea::vector<IKNodeSegment> segments_;
-
-private:
+protected:
     void StorePreviousTransforms();
     void RestorePreviousTransforms();
+    void UpdateSegmentRotations(const IKSettings& settings);
+
+    bool isFirstSegmentIncomplete_{};
+    ea::vector<IKNodeSegment> segments_;
+};
+
+/// Uniformly bending IK chain.
+class URHO3D_API IKSpineChain : public IKChain
+{
+public:
+    void Solve(const Vector3& target, float maxRotation, const IKSettings& settings);
+
+private:
+    struct AngleAndError
+    {
+        float angle_{};
+        float error_{};
+    };
+
+    void UpdateSegmentWeights();
+
+    template <class T>
+    void EnumerateProjectedPositions(float totalRotation, const T& callback) const;
+    ea::pair<float, Vector3> GetProjectionAndOffset(const Vector3& target,
+        const Vector3& basePosition, const Vector3& baseDirection) const;
+    Vector2 ProjectTarget(const Vector3& target,
+        const Vector3& basePosition, const Vector3& baseDirection) const;
+    Vector2 EvaluateProjectedEnd(float totalRotation) const;
+    AngleAndError EvaluateError(float totalRotation, const Vector2& target) const;
+    float FindBestAngle(const Vector2& projectedTarget, float maxRotation, unsigned maxIterations) const;
+
+    void EvaluateSegmentPositions(float totalRotation,
+        const Vector3& baseDirection, const Vector3& bendDirection);
+
+    ea::vector<float> weights_;
+};
+
+/// Generic unconstrained FABRIK chain.
+class URHO3D_API IKFabrikChain : public IKChain
+{
+public:
+    void Solve(const Vector3& target, const IKSettings& settings);
+
+private:
     Vector3 GetDeadlockRotationAxis(const Vector3& target) const;
     void RotateChain(const Quaternion& rotation);
     void RotateChainNode(IKNode& node, const Quaternion& rotation) const;
