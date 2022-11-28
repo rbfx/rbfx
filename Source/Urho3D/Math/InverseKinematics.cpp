@@ -281,7 +281,14 @@ void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSetti
     const float totalAngle = FindBestAngle(projectedTarget, maxRotation, settings.maxIterations_);
 
     EvaluateSegmentPositions(totalAngle, baseDirection, bendDirection);
-    UpdateSegmentRotations(settings);
+
+    for (IKNodeSegment& segment : segments_)
+    {
+        const bool isFirstSegment = &segment == &segments_.front();
+        const bool isLastSegment = &segment == &segments_.back();
+        if (!isFirstSegment)
+            segment.UpdateRotationInNodes(settings, isLastSegment);
+    }
 }
 
 void IKSpineChain::UpdateSegmentWeights()
