@@ -586,6 +586,8 @@ void IKSpineSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE_EX("Bone Names", StringVector, boneNames_, OnTreeDirty, Variant::emptyStringVector, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 90.0f, AM_DEFAULT);
 }
 
 void IKSpineSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -635,7 +637,7 @@ void IKSpineSolver::UpdateChainLengths()
 
 void IKSpineSolver::SolveInternal(const IKSettings& settings)
 {
-    chain_.Solve(target_->GetWorldPosition(), 90.0f, settings);
+    chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
 }
 
 void IKSpineSolver::OnTreeDirty()
