@@ -271,5 +271,10 @@ function action-test() {
     ctest --output-on-failure -C "${types[$ci_build_type]}"
 }
 
+function action-cstest() {
+    cd "$ci_build_dir/bin/${types[$ci_build_type]}"
+    dotnet test Urho3DNet.Tests.dll
+}
+
 # Invoke requested action.
 action-$ci_action
