@@ -138,6 +138,11 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} test
 
+      - name: Test
+        if: (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll')
+        shell: bash
+        run: ${{ env.ci_build_script }} cstest
+
       - name: Install
         shell: bash
         run: ${{ env.ci_build_script }} install

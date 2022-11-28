@@ -269,9 +269,11 @@ function action-install() {
 function action-test() {
     cd $ci_build_dir
     ctest --output-on-failure -C "${types[$ci_build_type]}"
-    if test -f "Urho3DNet.Tests.dll"; then
-        dotnet test Urho3DNet.Tests.dll
-    fi
+}
+
+function action-cstest() {
+    cd "$ci_build_dir/bin/${types[$ci_build_type]}"
+    dotnet test Urho3DNet.Tests.dll
 }
 
 # Invoke requested action.
