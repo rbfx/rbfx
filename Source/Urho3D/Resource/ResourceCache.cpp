@@ -1174,34 +1174,35 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 #endif
 }
 
-AbstractFilePtr ResourceCache::SearchResourceDirs(const ea::string& name)
+SharedPtr<File> ResourceCache::SearchResourceDirs(const ea::string& name)
 {
     auto* fileSystem = GetSubsystem<FileSystem>();
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
     {
-        if (fileSystem->FileExists(resourceDirs_[i] + name))
+        const auto nameAtResourceDir = resourceDirs_[i] + name;
+        if (fileSystem->FileExists(nameAtResourceDir))
         {
             // Construct the file first with full path, then rename it to not contain the resource path,
             // so that the file's sanitatedName can be used in further GetFile() calls (for example over the network)
-            SharedPtr<File> file(MakeShared<File>(context_, resourceDirs_[i] + name));
+            const SharedPtr<File> file = fileSystem->OpenFile(nameAtResourceDir);
             file->SetName(name);
-            return AbstractFilePtr(file, file);
+            return file;
         }
     }
 
     // Fallback using absolute path
     if (fileSystem->FileExists(name))
-        return AbstractFilePtr(MakeShared<File>(context_, name));
+        return fileSystem->OpenFile(name);
 
     return nullptr;
 }
 
-AbstractFilePtr ResourceCache::SearchPackages(const ea::string& name)
+SharedPtr<File> ResourceCache::SearchPackages(const ea::string& name)
 {
     for (unsigned i = 0; i < packages_.size(); ++i)
     {
         if (packages_[i]->Exists(name))
-            return AbstractFilePtr(MakeShared<File>(context_, packages_[i], name));
+            return packages_[i]->OpenFile(name);
     }
 
     return nullptr;

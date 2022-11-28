@@ -549,7 +549,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                     }
 
                     // Try to open the file now
-                    const auto file = MakeShared<File>(context_, packageFullName);
+                    const auto file = context_->GetSubsystem<FileSystem>()->OpenFile(packageFullName);
                     if (!file->IsOpen())
                     {
                         URHO3D_LOGERROR("Failed to transmit package file " + name);
@@ -601,7 +601,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             // If file has not yet been opened, try to open now. Prepend the checksum to the filename to allow multiple versions
             if (!download.file_)
             {
-                download.file_ = MakeShared<File>(context_,
+                download.file_ = context_->GetSubsystem<FileSystem>()->OpenFile(
                     GetSubsystem<Network>()->GetPackageCacheDir() + ToStringHex(download.checksum_) + "_" + download.name_,
                     FILE_WRITE);
                 if (!download.file_->IsOpen())

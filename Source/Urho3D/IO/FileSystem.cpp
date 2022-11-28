@@ -136,10 +136,10 @@ int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* 
     // Capture the standard error stream
     if (!stderrFilename.empty())
     {
-        auto errFile = MakeShared<File>(context, stderrFilename, FILE_READ);
+        const auto errFile = context->GetSubsystem<FileSystem>()->OpenFile(stderrFilename, FILE_READ);
         while (!errFile->IsEof())
         {
-            unsigned numRead = errFile->Read(buffer, sizeof(buffer));
+            const unsigned numRead = errFile->Read(buffer, sizeof(buffer));
             if (numRead)
                 URHO3D_LOGERROR(ea::string(buffer, numRead));
         }
@@ -622,14 +622,14 @@ bool FileSystem::Copy(const ea::string& srcFileName, const ea::string& destFileN
         return false;
     }
 
-    auto srcFile = MakeShared<File>(context_, srcFileName, FILE_READ);
+    const auto srcFile = OpenFile(srcFileName, FILE_READ);
     if (!srcFile->IsOpen())
         return false;
-    auto destFile = MakeShared<File>(context_, destFileName, FILE_WRITE);
+    const auto destFile = OpenFile(destFileName, FILE_WRITE);
     if (!destFile->IsOpen())
         return false;
 
-    unsigned fileSize = srcFile->GetSize();
+    const unsigned fileSize = srcFile->GetSize();
     ea::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
 
     unsigned bytesRead = srcFile->Read(buffer.get(), fileSize);
@@ -1593,6 +1593,12 @@ ea::string FileSystem::FindResourcePrefixPath() const
     }
 
     return EMPTY_STRING;
+}
+
+/// Open file from the file system.
+SharedPtr<File> FileSystem::OpenFile(const ea::string& fileName, FileMode mode)
+{
+    return MakeShared<File>(context_, fileName, mode);
 }
 
 ea::string GetAbsolutePath(const ea::string& path)

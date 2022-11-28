@@ -676,7 +676,7 @@ void Project::ProcessDelayedSaves(bool forceSave)
 
         if (delayedSave.bytes_)
         {
-            auto file = MakeShared<File>(context_, delayedSave.fileName_, FILE_WRITE);
+            const auto file = fs->OpenFile(delayedSave.fileName_, FILE_WRITE);
             if (file->IsOpen())
                 file->Write(delayedSave.bytes_->data(), delayedSave.bytes_->size());
         }

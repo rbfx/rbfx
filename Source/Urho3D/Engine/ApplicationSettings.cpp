@@ -103,8 +103,7 @@ SharedPtr<JSONFile> LoadSettingsFile(Context* context)
         auto package = MakeShared<PackageFile>(context);
         if (package->Open(APK + packageFile))
         {
-            auto file = MakeShared<File>(context);
-            if (file->Open(package, defaultFileName))
+            if (const auto file = package->OpenFile(defaultFileName))
             {
                 auto jsonFile = MakeShared<JSONFile>(context);
                 if (jsonFile->Load(*file))

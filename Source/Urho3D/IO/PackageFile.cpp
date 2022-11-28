@@ -26,6 +26,7 @@
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
 #include "../IO/FileSystem.h"
+#include "../Core/Context.h"
 
 namespace Urho3D
 {
@@ -53,7 +54,7 @@ PackageFile::~PackageFile() = default;
 
 bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
 {
-    auto file = MakeShared<File>(context_, fileName);
+    auto file = context_->GetSubsystem<FileSystem>()->OpenFile(fileName);
     if (!file->IsOpen())
         return false;
 
@@ -199,6 +200,12 @@ void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathNam
             result.push_back(fileName);
         }
     }
+}
+
+/// Open file from the package.
+SharedPtr<File> PackageFile::OpenFile(const ea::string& fileName)
+{
+    return MakeShared<File>(context_, this, fileName);
 }
 
 }

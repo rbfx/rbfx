@@ -106,6 +106,9 @@ public:
     /// Scan package for specified files.
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
 
+    /// Open file from the package.
+    SharedPtr<File> OpenFile(const ea::string& fileName);
+
 private:
     /// File entries.
     ea::unordered_map<ea::string, PackageEntry> entries_;
