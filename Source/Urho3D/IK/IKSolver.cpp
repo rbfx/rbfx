@@ -23,6 +23,8 @@
 #include "../IK/IKSolver.h"
 
 #include "../Core/Context.h"
+#include "../Graphics/AnimatedModel.h"
+#include "../Graphics/AnimationController.h"
 #include "../IO/Log.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
@@ -116,6 +118,14 @@ void IKSolver::RebuildSolvers()
     }
 
     solverNodes_ = ea::move(solverNodes);
+
+    // Reset skeleton on initialization to get true initial pose.
+    auto animationController = node_->GetComponent<AnimationController>();
+    if (animationController && animationController->IsSkeletonReset())
+    {
+        if (auto animatedModel = GetComponent<AnimatedModel>())
+            animatedModel->GetSkeleton().Reset();
+    }
 
     InitializeNodeTransforms();
 

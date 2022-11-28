@@ -206,6 +206,8 @@ private:
     StringVector boneNames_;
     ea::string targetName_;
 
+    float maxAngle_{90.0f};
+
     IKSpineChain chain_;
     WeakPtr<Node> target_;
 };

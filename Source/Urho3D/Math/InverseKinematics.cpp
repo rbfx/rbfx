@@ -382,12 +382,13 @@ float IKSpineChain::FindBestAngle(
 void IKSpineChain::EvaluateSegmentPositions(float totalRotation,
     const Vector3& baseDirection, const Vector3& bendDirection)
 {
+    const Vector3 basePosition = segments_[0].beginNode_->position_;
     unsigned segmentIndex = 0;
     EnumerateProjectedPositions(totalRotation, [&](const Vector2& position)
     {
+        IKNodeSegment& segment = segments_[segmentIndex++];
         const Vector3 offset = baseDirection * position.x_ + bendDirection * position.y_;
-        segments_[segmentIndex].endNode_->position_ += offset;
-        ++segmentIndex;
+        segment.endNode_->position_ = basePosition + offset;
     });
 }
 
