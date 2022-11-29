@@ -106,10 +106,6 @@ public:
     /// Return the file handle.
     void* GetHandle() const { return handle_; }
 
-    /// Return whether the file originates from a package.
-    /// @property
-    bool IsPackaged() const { return offset_ != 0; }
-
     /// Reads a binary file to buffer.
     void ReadBinary(ea::vector<unsigned char>& buffer);
 
@@ -152,12 +148,8 @@ private:
     unsigned readBufferOffset_;
     /// Bytes in the current read buffer.
     unsigned readBufferSize_;
-    /// Start position within a package file, 0 for regular files.
-    unsigned offset_;
     /// Content checksum.
     unsigned checksum_;
-    /// Compression flag.
-    bool compressed_;
     /// Synchronization needed before read -flag.
     bool readSyncNeeded_;
     /// Synchronization needed before write -flag.

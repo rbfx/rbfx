@@ -271,14 +271,14 @@ unsigned PackageEntryFile::GetChecksum()
 
     URHO3D_PROFILE("CalculateFileChecksum");
 
-    unsigned oldPos = position_;
+    const unsigned oldPos = position_;
     checksum_ = 0;
 
     Seek(0);
     while (!IsEof())
     {
         unsigned char block[1024];
-        unsigned readBytes = Read(block, 1024);
+        const unsigned readBytes = Read(block, 1024);
         for (unsigned i = 0; i < readBytes; ++i)
             checksum_ = SDBMHash(checksum_, block[i]);
     }
@@ -326,7 +326,6 @@ bool PackageEntryFile::OpenInternal(PackageFile* package, const ea::string& file
         URHO3D_LOGERROR("Could not open file with empty name");
         return false;
     }
-
     name_ = fileName;
     absoluteFileName_ = fileName;
     position_ = 0;

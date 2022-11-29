@@ -77,10 +77,6 @@ public:
     /// @property
     bool IsOpen() const override;
 
-    /// Return whether the file originates from a package.
-    /// @property
-    bool IsPackaged() const { return offset_ != 0; }
-
     /// Reads a binary file to buffer.
     void ReadBinary(ea::vector<unsigned char>& buffer);
 
@@ -105,10 +101,6 @@ private:
     ea::string absoluteFileName_;
     /// Underlying package file.
     SharedPtr<FileSystemFile> sourceFile_;
-#ifdef __ANDROID__
-    /// SDL RWops context for Android asset loading.
-    SDL_RWops* assetHandle_;
-#endif
     /// Read buffer for Android asset or compressed file loading.
     ea::shared_array<unsigned char> readBuffer_;
     /// Decompression input buffer for compressed file loading.
