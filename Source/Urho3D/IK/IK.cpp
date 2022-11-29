@@ -40,6 +40,7 @@ void RegisterIKLibrary(Context* context)
     IKLegSolver::RegisterObject(context);
     IKTrigonometrySolver::RegisterObject(context);
     IKSpineSolver::RegisterObject(context);
+    IKArmSolver::RegisterObject(context);
     IKChainSolver::RegisterObject(context);
 
     IKTargetExtractor::RegisterObject(context);
