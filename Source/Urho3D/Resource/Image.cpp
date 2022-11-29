@@ -883,7 +883,7 @@ bool Image::BeginLoad(Deserializer& source)
         source.Seek(0);
         int width, height;
         unsigned components;
-        unsigned char* pixelData = GetImageData(source, width, height, components, bytesPerPixel_);
+        unsigned char* pixelData = GetImageData(source, width, height, components, bytesPerComponent_);
         if (!pixelData)
         {
             URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + ea::string(stbi_failure_reason()));
@@ -961,7 +961,7 @@ bool Image::SetSize(int width, int height, int depth, unsigned components)
         return false;
     }
 
-    data_ = new unsigned char[width * height * depth * components * bytesPerPixel_];
+    data_ = new unsigned char[width * height * depth * components * bytesPerComponent_];
     width_ = width;
     height_ = height;
     depth_ = depth;
@@ -1025,7 +1025,7 @@ void Image::SetData(const unsigned char* pixelData)
         return;
     }
 
-    auto size = (size_t)width_ * height_ * depth_ * components_ * bytesPerPixel_;
+    auto size = (size_t)width_ * height_ * depth_ * components_ * bytesPerComponent_;
     if (pixelData)
         memcpy(data_.get(), pixelData, size);
     else
@@ -1044,7 +1044,7 @@ void Image::SetData(const float* pixelData)
         return;
     }
 
-    auto size = (size_t)width_ * height_ * depth_ * components_ * bytesPerPixel_;
+    auto size = (size_t)width_ * height_ * depth_ * components_ * bytesPerComponent_;
     if (pixelData)
         memcpy(data_.get(), pixelData, size);
     else
@@ -1065,7 +1065,7 @@ bool Image::LoadColorLUT(Deserializer& source)
     source.Seek(0);
     int width, height;
     unsigned components;
-    unsigned char* pixelDataIn = GetImageData(source, width, height, components, bytesPerPixel_);
+    unsigned char* pixelDataIn = GetImageData(source, width, height, components, bytesPerComponent_);
     if (!pixelDataIn)
     {
         URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + ea::string(stbi_failure_reason()));
@@ -2427,7 +2427,7 @@ void Image::GetLevels(ea::vector<const Image*>& levels) const
     }
 }
 
-unsigned char* Image::GetImageData(Deserializer& source, int& width, int& height, unsigned& components, unsigned& bytesPerPixel)
+unsigned char* Image::GetImageData(Deserializer& source, int& width, int& height, unsigned& components, unsigned& bytesPerComponent)
 {
     unsigned dataSize = source.GetSize();
 
@@ -2436,17 +2436,17 @@ unsigned char* Image::GetImageData(Deserializer& source, int& width, int& height
 
     if (stbi_is_16_bit_from_memory(buffer.get(), (int)dataSize))
     {
-        bytesPerPixel = sizeof(unsigned short);
+        bytesPerComponent = sizeof(unsigned short);
         return reinterpret_cast<unsigned char*>(stbi_load_16_from_memory(buffer.get(), (int)dataSize, &width, &height, (int*)&components, 0));
     }
     else if (stbi_is_hdr_from_memory(buffer.get(), (int)dataSize))
     {
-        bytesPerPixel = sizeof(float);
+        bytesPerComponent = sizeof(float);
         return reinterpret_cast<unsigned char*>(stbi_loadf_from_memory(buffer.get(), (int)dataSize, &width, &height, (int*)&components, 0));
     }
     else
     {
-        bytesPerPixel = sizeof(unsigned char);
+        bytesPerComponent = sizeof(unsigned char);
         return stbi_load_from_memory(buffer.get(), (int)dataSize, &width, &height, (int*)&components, 0);
     }
 }
