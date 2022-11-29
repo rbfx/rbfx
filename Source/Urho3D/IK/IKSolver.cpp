@@ -93,6 +93,9 @@ void IKSolver::Solve()
         URHO3D_ASSERT(solver);
         solver->Solve(settings_);
     }
+
+    if (auto animatedModel = node_->GetComponent<AnimatedModel>())
+        animatedModel->UpdateBoneBoundingBox();
 }
 
 bool IKSolver::IsChainTreeExpired() const
