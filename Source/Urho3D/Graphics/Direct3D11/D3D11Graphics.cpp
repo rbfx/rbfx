@@ -254,7 +254,6 @@ static HWND GetWindowHandle(SDL_Window* window)
 }
 #endif
 
-const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
 
 Graphics::Graphics(Context* context) :

@@ -209,6 +209,43 @@
     %}
 %enddef
 
+%define URHO3D_REFCOUNTED_INTERFACE(TYPE, BASE)
+    // SharedPtr
+    %typemap(ctype)  Urho3D::SharedPtr<TYPE, BASE> "BASE*"                               // c layer type
+    %typemap(imtype) Urho3D::SharedPtr<TYPE, BASE> "global::System.IntPtr"               // pinvoke type
+    %typemap(cstype) Urho3D::SharedPtr<TYPE, BASE> "$typemap(cstype, TYPE*)"             // c# type
+    %typemap(in)     Urho3D::SharedPtr<TYPE, BASE> %{ $1 = Urho3D::SharedPtr<TYPE, BASE>(dynamic_cast<TYPE*>($input), $input); %}    // c to cpp
+    %typemap(out)    Urho3D::SharedPtr<TYPE, BASE> %{ $result = $1.GetRefCounted(); $1.Detach(); %}          // cpp to c
+    %typemap(out)    TYPE*                         %{ $result = $1;          %}          // cpp to c
+    %typemap(csin)   Urho3D::SharedPtr<TYPE, BASE> "$csinput.GetInterfaceCPtr().Handle"      // convert C# to pinvoke
+    %typemap(csout, excode=SWIGEXCODE) Urho3D::SharedPtr<TYPE, BASE> {                   // convert pinvoke to C#
+        var ret = ($typemap(cstype, TYPE*))$typemap(cstype, BASE*).wrap($imcall, true);$excode
+        return ret;
+    }
+    %typemap(directorin)  Urho3D::SharedPtr<TYPE, BASE> "$iminput"
+    %typemap(directorout) Urho3D::SharedPtr<TYPE, BASE> "$cscall"
+
+    %typemap(csvarin, excode=SWIGEXCODE2) Urho3D::SharedPtr<TYPE, BASE> & %{
+    set {
+        $imcall;$excode
+    }
+    %}
+    %typemap(csvarout, excode=SWIGEXCODE2) Urho3D::SharedPtr<TYPE, BASE> & %{
+    get {
+        var ret = ($typemap(cstype, TYPE*))$typemap(cstype, BASE*).wrap($imcall, true);$excode
+        return ret;
+    }
+    %}
+
+    %apply Urho3D::SharedPtr<TYPE, BASE> { Urho3D::SharedPtr<TYPE, BASE>& }
+
+    %typemap(in) Urho3D::SharedPtr<TYPE, BASE> & %{
+        $*1_ltype $1Ref($input);
+        $1 = &$1Ref;
+    %}
+    %typemap(out) Urho3D::SharedPtr<TYPE, BASE> & %{ $result = $1->GetRefCounted(); %}             // cpp to c
+%enddef
+
 // TODO: Fix autoswig script to output these as well.
 URHO3D_REFCOUNTED(Urho3D::RefCounted);
 URHO3D_REFCOUNTED(Urho3D::NetworkObject);

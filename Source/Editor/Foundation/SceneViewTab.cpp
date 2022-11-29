@@ -777,6 +777,9 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
 
     auto project = GetProject();
     project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer);
+
+    auto cache = GetSubsystem<ResourceCache>();
+    cache->ReleaseResource(page.resource_->GetName(), true);
 }
 
 void SceneViewTab::SavePagePreview(SceneViewPage& page) const

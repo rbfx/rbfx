@@ -67,8 +67,7 @@ void main()
 
 #ifdef COMBINE
     half3 bloom = cIntensity * texture2D(sDiffMap, vTexCoord).rgb;
-    half brightness = clamp(dot(bloom, cLuminanceWeights), 0.0, 1.0);
-    gl_FragColor = vec4(bloom, brightness);
+    gl_FragColor = vec4(bloom, 1.0);
 #endif
 }
 #endif

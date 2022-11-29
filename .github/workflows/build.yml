@@ -133,10 +133,15 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build-${{ env.ci_compiler }}
 
-      - name: Test
+      - name: Test (Native)
         if: matrix.ci_compiler == 'msvc'
         shell: bash
         run: ${{ env.ci_build_script }} test
+
+      - name: Test (Managed)
+        if: (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll')
+        shell: bash
+        run: ${{ env.ci_build_script }} cstest
 
       - name: Install
         shell: bash
@@ -308,7 +313,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build
 
-      - name: Test
+      - name: Test (Native)
         shell: bash
         run: ${{ env.ci_build_script }} test
 

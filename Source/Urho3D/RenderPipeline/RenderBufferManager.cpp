@@ -297,12 +297,12 @@ void RenderBufferManager::SetRenderTargets(RenderBuffer* depthStencilBuffer,
     SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, ToSpan(colorBuffers), face);
 }
 
-void RenderBufferManager::SetOutputRenderTargersRect(const IntRect& viewportRect)
+void RenderBufferManager::SetOutputRenderTargetsRect(const IntRect& viewportRect)
 {
     SetRenderTargetsRect(viewportRect, GetDepthStencilOutput(), { GetColorOutput() });
 }
 
-void RenderBufferManager::SetOutputRenderTargers()
+void RenderBufferManager::SetOutputRenderTargets()
 {
     SetRenderTargetsRect(IntRect::ZERO, GetDepthStencilOutput(), { GetColorOutput() });
 }

@@ -120,9 +120,6 @@ public:
     /// @property
     Texture* GetParentTexture() const { return parentTexture_; }
 
-    /// Return Direct3D9 surface.
-    void* GetSurface() const { return surface_; }
-
     /// Return Direct3D11 rendertarget or depth-stencil view. Not valid on OpenGL.
     void* GetRenderTargetView() const { return renderTargetView_; }
 
@@ -160,9 +157,6 @@ private:
     // https://github.com/doxygen/doxygen/issues/7623
     union
     {
-        /// Direct3D9 surface.
-        /// @nobind
-        void* surface_;
         /// Direct3D11 rendertarget or depth-stencil view.
         /// @nobind
         void* renderTargetView_;

@@ -60,7 +60,7 @@ private:
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
 
     ea::string message_;
     SharedPtr<Text> text_;

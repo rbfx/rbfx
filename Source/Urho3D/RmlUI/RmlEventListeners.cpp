@@ -144,7 +144,7 @@ Variant ToVariant(const JSONValue& json)
 
 ea::pair<ea::string, VariantMap> ParseEvent(ea::string_view str)
 {
-    const unsigned pos = str.find('(');
+    const ea::string_view::size_type pos = str.find('(');
     if (pos == ea::string_view::npos)
         return ea::make_pair(ea::string(str).trimmed(), VariantMap{});
 

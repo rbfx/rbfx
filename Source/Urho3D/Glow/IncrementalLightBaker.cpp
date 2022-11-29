@@ -113,13 +113,6 @@ struct IncrementalLightBaker::Impl
     /// Initialize.
     bool Initialize()
     {
-        // DX9 is not supported
-        if (Graphics::GetPixelUVOffset() != Vector2::ZERO)
-        {
-            URHO3D_LOGERROR("Cannot bake light on DX9");
-            return false;
-        }
-
         // Find or fix output directory
         if (settings_.incremental_.outputDirectory_.empty())
         {

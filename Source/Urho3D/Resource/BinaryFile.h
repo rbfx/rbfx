@@ -68,6 +68,10 @@ public:
     void SetData(const ByteVector& data);
     /// Return immutable data.
     const ByteVector& GetData() const;
+    /// Return immutable data as string view.
+    ea::string_view GetText() const;
+    /// Return data as text lines.
+    StringVector ReadLines() const;
 
     /// Cast to Serializer.
     Serializer& AsSerializer() { return buffer_; }

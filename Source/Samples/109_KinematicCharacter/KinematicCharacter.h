@@ -90,7 +90,7 @@ public:
     void Start() override;
     /// Handle physics world update. Called by LogicComponent base class.
     void FixedUpdate(float timeStep) override;
-    virtual void FixedPostUpdate(float timeStep);
+    void FixedPostUpdate(float timeStep) override;
 
     void SetOnMovingPlatform(RigidBody *platformBody)
     {

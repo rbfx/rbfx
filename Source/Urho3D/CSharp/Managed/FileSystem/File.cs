@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,33 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "../../Precompiled.h"
-
-#include "../../Graphics/Graphics.h"
-#include "../../Graphics/ConstantBuffer.h"
-#include "../../IO/Log.h"
-
-#include "../../DebugNew.h"
-
-namespace Urho3D
+namespace Urho3DNet
 {
-
-void ConstantBuffer::OnDeviceReset()
-{
-}
-
-void ConstantBuffer::Release()
-{
-}
-
-bool ConstantBuffer::SetSize(unsigned size)
-{
-    URHO3D_LOGERROR("Constant buffers are not supported on Direct3D9");
-    return false;
-}
-
-void ConstantBuffer::Update(const void* data)
-{
-}
-
+    partial class File
+    {
+        string IAbstractFile.GetAbsoluteName()
+        {
+            return AbsoluteName;
+        }
+    }
 }

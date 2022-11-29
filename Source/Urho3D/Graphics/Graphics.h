@@ -209,7 +209,7 @@ public:
     /// Set whether to flush the GPU command buffer to prevent multiple frames being queued and uneven frame timesteps. Default off, may decrease performance if enabled. Not currently implemented on OpenGL.
     /// @property
     void SetFlushGPU(bool enable);
-    /// Set forced use of OpenGL 2 even if OpenGL 3 is available. Must be called before setting the screen mode for the first time. Default false. No effect on Direct3D9 & 11.
+    /// Set forced use of OpenGL 2 even if OpenGL 3 is available. Must be called before setting the screen mode for the first time. Default false. No effect on DirectX 11.
     void SetForceGL2(bool enable);
     /// Set allowed screen orientations as a space-separated list of "LandscapeLeft", "LandscapeRight", "Portrait" and "PortraitUpsideDown". Affects currently only iOS platform.
     /// @property
@@ -323,7 +323,7 @@ public:
     void SetDepthStencil(Texture2D* texture);
     /// Set viewport.
     void SetViewport(const IntRect& rect);
-    /// Set blending and alpha-to-coverage modes. Alpha-to-coverage is not supported on Direct3D9.
+    /// Set blending and alpha-to-coverage modes.
     void SetBlendMode(BlendMode mode, bool alphaToCoverage = false);
     /// Set color write on/off.
     void SetColorWrite(bool enable);
@@ -737,12 +737,9 @@ public:
     /// Return the API-specific texture format from a textual description, for example "rgb".
     static unsigned GetFormat(const ea::string& formatName);
 
-    /// Return UV offset required for pixel perfect rendering.
-    static const Vector2& GetPixelUVOffset() { return pixelUVOffset; }
-
     /// Return maximum number of supported bones for skinning.
     static unsigned GetMaxBones();
-    /// Return whether is using an OpenGL 3 context. Return always false on Direct3D9 & Direct3D11.
+    /// Return whether is using an OpenGL 3 context. Return always false on DirectX 11.
     static bool GetGL3Support();
     /// Return graphics capabilities.
     static const GraphicsCaps& GetCaps() { return caps; }
@@ -765,20 +762,6 @@ private:
     bool CreateDevice(int width, int height);
     /// Update Direct3D11 swap chain state for a new mode and create views for the backbuffer & default depth buffer. Return true on success.
     bool UpdateSwapChain(int width, int height);
-    /// Create the Direct3D9 interface.
-    bool CreateInterface();
-    /// Create the Direct3D9 device.
-    bool CreateDevice(unsigned adapter, unsigned deviceType);
-    /// Reset the Direct3D9 device.
-    void ResetDevice();
-    /// Notify all GPU resources so they can release themselves as needed. Used only on Direct3D9.
-    void OnDeviceLost();
-    /// Notify all GPU resources so they can recreate themselves as needed. Used only on Direct3D9.
-    void OnDeviceReset();
-    /// Set vertex buffer stream frequency. Used only on Direct3D9.
-    void SetStreamFrequency(unsigned index, unsigned frequency);
-    /// Reset stream frequencies. Used only on Direct3D9.
-    void ResetStreamFrequencies();
     /// Check supported rendering features.
     void CheckFeatureSupport();
     /// Reset cached rendering state.
@@ -982,8 +965,6 @@ private:
     /// Hash of global shader defines.
     StringHash globalShaderDefinesHash_;
 
-    /// Pixel perfect UV offset.
-    static const Vector2 pixelUVOffset;
     /// OpenGL3 support flag.
     static bool gl3Support;
     /// Graphics capabilities. Static for easier access.

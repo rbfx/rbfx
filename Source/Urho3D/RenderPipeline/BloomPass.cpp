@@ -76,7 +76,7 @@ void BloomPass::InitializeStates()
     pipelineStates_->bright_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BRIGHT");
     pipelineStates_->blurH_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURH");
     pipelineStates_->blurV_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURV");
-    pipelineStates_->bloom_ = renderBufferManager_->CreateQuadPipelineState(BLEND_PREMULALPHA, "v2/P_Bloom", "COMBINE");
+    pipelineStates_->bloom_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ADD, "v2/P_Bloom", "COMBINE");
 }
 
 unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
@@ -171,7 +171,7 @@ void BloomPass::Execute(Camera* camera)
         intensityMultipliers_[i] *= settings_.intensity_ / totalIntensity;
 
     renderBufferManager_->SwapColorBuffers(false);
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
     for (unsigned i = 0; i < numIterations; ++i)
         ApplyBloom(textures_[i].final_, intensityMultipliers_[i]);
 }

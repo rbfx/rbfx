@@ -41,7 +41,7 @@ Sample::Sample(Context* context) :
 }
 
 /// Activate game state. Executed by StateManager.
-void Sample::Activate(VariantMap& bundle)
+void Sample::Activate(StringVariantMap& bundle)
 {
     ApplicationState::Activate(bundle);
     Start(bundle["Args"].GetStringVector());

@@ -187,7 +187,7 @@ void OutlinePass::Execute(Camera* camera)
     const ShaderParameterDesc result[] = {{"InputInvSize", inputInvSize}};
     const ShaderResourceDesc shaderResources[] = {{TU_DIFFUSE, texture}};
 
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
     renderBufferManager_->DrawViewportQuad("Apply outline", pipelineState, shaderResources, result);
 }
 

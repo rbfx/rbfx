@@ -24,6 +24,7 @@
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Plugins/PluginManager.h>
@@ -90,6 +91,9 @@ void Player::Stop()
 {
     auto pluginManager = GetSubsystem<PluginManager>();
     pluginManager->StopApplication();
+
+    auto stateManager = GetSubsystem<StateManager>();
+    stateManager->Reset();
 }
 
 }

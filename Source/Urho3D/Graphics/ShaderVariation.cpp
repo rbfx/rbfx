@@ -47,14 +47,6 @@ ShaderParameter::ShaderParameter(ShaderType type, const ea::string& name, unsign
 {
 }
 
-ShaderParameter::ShaderParameter(ShaderType type, const ea::string& name, unsigned reg, unsigned regCount) :    // NOLINT(hicpp-member-init)
-    type_{type},
-    name_{name},
-    register_{reg},
-    regCount_{regCount}
-{
-}
-
 ShaderVariation::ShaderVariation(Shader* owner, ShaderType type) :
     GPUObject(owner->GetSubsystem<Graphics>()),
     owner_(owner),

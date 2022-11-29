@@ -74,7 +74,7 @@ void SimplePostProcessPass::Execute(Camera* camera)
 
     if (colorReadAndWrite)
         renderBufferManager_->SwapColorBuffers(false);
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
 
     if (colorReadAndWrite)
         renderBufferManager_->DrawFeedbackViewportQuad(debugComment_, pipelineState_, shaderResources_, shaderParameters_);

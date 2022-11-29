@@ -356,7 +356,6 @@ static void GetGLPrimitiveType(unsigned elementCount, PrimitiveType type, unsign
     }
 }
 
-const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
 
 Graphics::Graphics(Context* context) :

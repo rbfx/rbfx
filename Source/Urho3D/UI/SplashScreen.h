@@ -40,7 +40,7 @@ public:
     explicit SplashScreen(Context* context);
 
     /// Activate game screen. Executed by StateManager.
-    void Activate(VariantMap& bundle) override;
+    void Activate(StringVariantMap& bundle) override;
 
     /// Return true if state is ready to be deactivated. Executed by StateManager.
     bool CanLeaveState() const override;
@@ -95,7 +95,7 @@ private:
 
     SharedPtr<Scene> scene_;
     SharedPtr<SoundSource> soundSource_;
-    
+
     SharedPtr<Sprite> background_;
     SharedPtr<Sprite> foreground_;
     SharedPtr<Sprite> progressBar_;

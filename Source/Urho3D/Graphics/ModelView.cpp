@@ -507,7 +507,7 @@ ModelVertex::BoneArray ModelVertex::GetBlendIndicesAndWeights() const
     {
         const float index = blendIndices_.Data()[i];
         const float weight = blendWeights_.Data()[i];
-        if (index >= 0 && index <= M_MAX_UNSIGNED)
+        if (index >= 0 && index <= 16777216)
             result[i] = { static_cast<unsigned>(index), weight };
         else
             result[i] = { 0, 0.0f };

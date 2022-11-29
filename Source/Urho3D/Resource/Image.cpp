@@ -224,6 +224,10 @@ bool CompressedLevel::Decompress(unsigned char* dest) const
 
     switch (format_)
     {
+    case CF_RGBA:
+        memcpy(dest, data_, width_ * height_ * depth_ * 4);
+        return true;
+
     case CF_DXT1:
     case CF_DXT3:
     case CF_DXT5:
@@ -361,8 +365,7 @@ bool Image::BeginLoad(Deserializer& source)
             break;
 
         case 0:
-            if (ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 32 && ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 24 &&
-                ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 16)
+            if (ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 32)
             {
                 URHO3D_LOGERROR("Unsupported DDS pixel byte size");
                 return false;
@@ -2166,7 +2169,11 @@ SharedPtr<Image> Image::GetDecompressedImageLevel(unsigned index) const
 
         auto decompressedImage = MakeShared<Image>(context_);
         decompressedImage->SetSize(compressedLevel.width_, compressedLevel.height_, 4);
-        compressedLevel.Decompress(decompressedImage->GetData());
+        if (!compressedLevel.Decompress(decompressedImage->GetData()))
+        {
+            URHO3D_LOGERROR("Failed to decompress image level");
+            return nullptr;
+        }
 
         return decompressedImage;
     }

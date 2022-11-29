@@ -60,7 +60,7 @@ enum LoadMode
 struct AsyncProgress
 {
     /// File for binary mode.
-    SharedPtr<File> file_;
+    AbstractFilePtr file_;
     /// XML file for XML mode.
     SharedPtr<XMLFile> xmlFile_;
     /// JSON file for JSON mode.
@@ -149,11 +149,11 @@ public:
     /// Save to a JSON file. Return true if successful.
     bool SaveJSON(Serializer& dest, const ea::string& indentation = "\t") const;
     /// Load from a binary file asynchronously. Return true if started successfully. The LOAD_RESOURCES_ONLY mode can also be used to preload resources from object prefab files.
-    bool LoadAsync(File* file, LoadMode mode = LOAD_SCENE_AND_RESOURCES);
+    bool LoadAsync(AbstractFilePtr file, LoadMode mode = LOAD_SCENE_AND_RESOURCES);
     /// Load from an XML file asynchronously. Return true if started successfully. The LOAD_RESOURCES_ONLY mode can also be used to preload resources from object prefab files.
-    bool LoadAsyncXML(File* file, LoadMode mode = LOAD_SCENE_AND_RESOURCES);
+    bool LoadAsyncXML(AbstractFilePtr file, LoadMode mode = LOAD_SCENE_AND_RESOURCES);
     /// Load from a JSON file asynchronously. Return true if started successfully. The LOAD_RESOURCES_ONLY mode can also be used to preload resources from object prefab files.
-    bool LoadAsyncJSON(File* file, LoadMode mode = LOAD_SCENE_AND_RESOURCES);
+    bool LoadAsyncJSON(AbstractFilePtr file, LoadMode mode = LOAD_SCENE_AND_RESOURCES);
     /// Stop asynchronous loading.
     void StopAsyncLoading();
     /// Instantiate scene content from binary data. Return root node if successful.
@@ -300,7 +300,7 @@ private:
     /// Finish saving. Sets the scene filename and checksum.
     void FinishSaving(Serializer* dest) const;
     /// Preload resources from a binary scene or object prefab file.
-    void PreloadResources(File* file, bool isSceneFile);
+    void PreloadResources(AbstractFilePtr file, bool isSceneFile);
     /// Preload resources from an XML scene or object prefab file.
     void PreloadResourcesXML(const XMLElement& element);
     /// Preload resources from a JSON scene or object prefab file.

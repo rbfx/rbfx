@@ -351,6 +351,11 @@ unsigned File::Write(const void* data, unsigned size)
     return size;
 }
 
+const ea::string& File::GetAbsoluteName() const
+{
+    return absoluteFileName_;
+}
+
 unsigned File::GetChecksum()
 {
     if (offset_ || checksum_)

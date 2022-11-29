@@ -57,7 +57,7 @@ private:
     /// Handle console command event.
     void HandleConsoleCommand(StringHash eventType, VariantMap& eventData);
     /// Handle frame update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
     /// Handle ESC key down event to quit the engine.
     void HandleEscKeyDown(StringHash eventType, VariantMap& eventData);
     /// Print intro message and initialize the game state.

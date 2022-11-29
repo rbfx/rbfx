@@ -1330,9 +1330,10 @@ unsigned GetVariantTypeSize(VariantType variant)
         return sizeof(Matrix4);
     case VAR_STRINGVARIANTMAP:
         return sizeof(StringVariantMap);
+    default:
+        assert(!"Unsupported value type");
+        return 0;
     }
-    assert(!"Unsupported value type");
-    return 0;
 }
 
 }

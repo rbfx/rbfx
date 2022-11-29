@@ -80,7 +80,7 @@ public:
     explicit Sample(Context* context);
 
     /// Activate game state. Executed by StateManager.
-    virtual void Activate(VariantMap& bundle) override;
+    virtual void Activate(StringVariantMap& bundle) override;
 
     /// Deactivate game state. Executed by StateManager.
     virtual void Deactivate() override;
