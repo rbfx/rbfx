@@ -162,6 +162,12 @@ void IKSolverComponent::Solve(const IKSettings& settings)
     }
 }
 
+void IKSolverComponent::OnTreeDirty()
+{
+    if (auto solver = GetComponent<IKSolver>())
+        solver->MarkSolversDirty();
+}
+
 IKNode* IKSolverComponent::AddSolverNode(IKNodeCache& nodeCache, const ea::string& name)
 {
     Node* boneNode = node_->GetChild(name, true);
@@ -245,12 +251,6 @@ void IKChainSolver::SolveInternal(const IKSettings& settings)
     chain_.Solve(targetNode_->GetWorldPosition(), settings);
 }
 
-void IKChainSolver::OnTreeDirty()
-{
-    if (auto solver = GetComponent<IKSolver>())
-        solver->MarkSolversDirty();
-}
-
 IKIdentitySolver::IKIdentitySolver(Context* context)
     : IKSolverComponent(context)
 {
@@ -264,8 +264,8 @@ void IKIdentitySolver::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<IKIdentitySolver>(Category_IK);
 
-    URHO3D_ATTRIBUTE("Bone Name", ea::string, boneName_, EMPTY_STRING, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Target Name", ea::string, targetName_, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Bone Name", ea::string, boneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ACTION_STATIC_LABEL("Update Properties", UpdateProperties, "Set properties below from current bone positions");
     URHO3D_ATTRIBUTE("Rotation Offset", Quaternion, rotationOffset_, Quaternion::ZERO, AM_DEFAULT);
@@ -347,11 +347,11 @@ void IKTrigonometrySolver::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<IKTrigonometrySolver>(Category_IK);
 
-    URHO3D_ATTRIBUTE("Bone 0 Name", ea::string, firstBoneName_, EMPTY_STRING, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bone 1 Name", ea::string, secondBoneName_, EMPTY_STRING, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bone 2 Name", ea::string, thirdBoneName_, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Bone 0 Name", ea::string, firstBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Bone 1 Name", ea::string, secondBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Bone 2 Name", ea::string, thirdBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
-    URHO3D_ATTRIBUTE("Target Name", ea::string, targetName_, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 180.0f, AM_DEFAULT);
@@ -426,12 +426,12 @@ void IKLegSolver::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<IKLegSolver>(Category_IK);
 
-    URHO3D_ATTRIBUTE("Thigh Bone Name", ea::string, thighBoneName_, EMPTY_STRING, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Calf Bone Name", ea::string, calfBoneName_, EMPTY_STRING, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Heel Bone Name", ea::string, heelBoneName_, EMPTY_STRING, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Toe Bone Name", ea::string, toeBoneName_, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Thigh Bone Name", ea::string, thighBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Calf Bone Name", ea::string, calfBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Heel Bone Name", ea::string, heelBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Toe Bone Name", ea::string, toeBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
-    URHO3D_ATTRIBUTE("Target Name", ea::string, targetName_, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Min Knee Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Knee Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
@@ -640,10 +640,104 @@ void IKSpineSolver::SolveInternal(const IKSettings& settings)
     chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
 }
 
-void IKSpineSolver::OnTreeDirty()
+IKArmSolver::IKArmSolver(Context* context)
+    : IKSolverComponent(context)
 {
-    if (auto solver = GetComponent<IKSolver>())
-        solver->MarkSolversDirty();
+}
+
+IKArmSolver::~IKArmSolver()
+{
+}
+
+void IKArmSolver::RegisterObject(Context* context)
+{
+    context->AddFactoryReflection<IKArmSolver>(Category_IK);
+
+    URHO3D_ATTRIBUTE_EX("Shoulder Bone Name", ea::string, shoulderBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Arm Bone Name", ea::string, armBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Forearm Bone Name", ea::string, forearmBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Hand Bone Name", ea::string, handBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE("Min Elbow Angle", float, minElbowAngle_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Max Elbow Angle", float, maxElbowAngle_, 180.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Normal", Vector3, bendNormal_, Vector3::RIGHT, AM_DEFAULT);
+}
+
+void IKArmSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    const float jointRadius = 0.02f;
+    const float targetRadius = 0.05f;
+
+    IKNode* armBone = armChain_.GetBeginNode();
+    IKNode* forearmBone = armChain_.GetMiddleNode();
+    IKNode* handBone = armChain_.GetEndNode();
+    IKNode* shoulderBone = shoulderSegment_.beginNode_;
+
+    if (armBone && forearmBone && handBone)
+    {
+        debug->AddLine(armBone->position_, forearmBone->position_, Color::YELLOW, false);
+        debug->AddLine(forearmBone->position_, handBone->position_, Color::YELLOW, false);
+        debug->AddSphere(Sphere(armBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddSphere(Sphere(forearmBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddSphere(Sphere(handBone->position_, jointRadius), Color::YELLOW, false);
+    }
+    if (shoulderBone && armBone)
+    {
+        debug->AddLine(shoulderBone->position_, armBone->position_, Color::YELLOW, false);
+        debug->AddSphere(Sphere(shoulderBone->position_, jointRadius), Color::YELLOW, false);
+    }
+    if (target_)
+    {
+        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
+    }
+}
+
+bool IKArmSolver::InitializeNodes(IKNodeCache& nodeCache)
+{
+    target_ = AddCheckedNode(nodeCache, targetName_);
+    if (!target_)
+        return false;
+
+    IKNode* shoulderBone = AddSolverNode(nodeCache, shoulderBoneName_);
+    if (!shoulderBone)
+        return false;
+
+    IKNode* armBone = AddSolverNode(nodeCache, armBoneName_);
+    if (!armBone)
+        return false;
+
+    IKNode* forearmBone = AddSolverNode(nodeCache, forearmBoneName_);
+    if (!forearmBone)
+        return false;
+
+    IKNode* handBone = AddSolverNode(nodeCache, handBoneName_);
+    if (!handBone)
+        return false;
+
+    armChain_.Initialize(armBone, forearmBone, handBone);
+    shoulderSegment_ = {shoulderBone, armBone};
+    return true;
+}
+
+void IKArmSolver::UpdateChainLengths()
+{
+    armChain_.UpdateLengths();
+    shoulderSegment_.UpdateLength();
+}
+
+void IKArmSolver::EnsureInitialized()
+{
+}
+
+void IKArmSolver::SolveInternal(const IKSettings& settings)
+{
+    EnsureInitialized();
+
+    const Vector3 handTargetPosition = target_->GetWorldPosition();
+
+    armChain_.Solve(handTargetPosition, bendNormal_, minElbowAngle_, maxElbowAngle_, settings);
 }
 
 }

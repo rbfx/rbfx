@@ -44,6 +44,9 @@ public:
     void NotifyPositionsReady();
     void Solve(const IKSettings& settings);
 
+    /// Internal. Marks chain tree as dirty.
+    void OnTreeDirty();
+
 protected:
     virtual bool InitializeNodes(IKNodeCache& nodeCache) = 0;
     virtual void UpdateChainLengths() = 0;
@@ -191,9 +194,6 @@ public:
     /// Return the target name.
     const ea::string& GetTargetName() const { return targetName_; }
 
-    /// Internal. Marks chain tree as dirty.
-    void OnTreeDirty();
-
 protected:
     /// Implement IKSolverComponent
     /// @{
@@ -212,6 +212,49 @@ private:
     WeakPtr<Node> target_;
 };
 
+class IKArmSolver : public IKSolverComponent
+{
+    URHO3D_OBJECT(IKArmSolver, IKSolverComponent);
+
+public:
+    explicit IKArmSolver(Context* context);
+    ~IKArmSolver() override;
+    static void RegisterObject(Context* context);
+
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+private:
+    /// Implement IKSolverComponent
+    /// @{
+    bool InitializeNodes(IKNodeCache& nodeCache) override;
+    void UpdateChainLengths() override;
+    void SolveInternal(const IKSettings& settings) override;
+    /// @}
+
+    void EnsureInitialized();
+
+    /// Attributes.
+    /// @{
+    ea::string shoulderBoneName_;
+    ea::string armBoneName_;
+    ea::string forearmBoneName_;
+    ea::string handBoneName_;
+
+    ea::string targetName_;
+
+    float minElbowAngle_{0.0f};
+    float maxElbowAngle_{180.0f};
+    Vector3 bendNormal_{Vector3::RIGHT};
+    /// @}
+
+    /// IK nodes and effectors.
+    /// @{
+    IKTrigonometricChain armChain_;
+    IKNodeSegment shoulderSegment_;
+    WeakPtr<Node> target_;
+    /// @}
+};
+
 class IKChainSolver : public IKSolverComponent
 {
     URHO3D_OBJECT(IKChainSolver, IKSolverComponent);
@@ -225,9 +268,6 @@ public:
     const StringVector& GetBoneNames() const { return boneNames_; }
     /// Return the target name.
     const ea::string& GetTargetName() const { return targetName_; }
-
-    /// Internal. Marks chain tree as dirty.
-    void OnTreeDirty();
 
 protected:
     /// Implement IKSolverComponent
