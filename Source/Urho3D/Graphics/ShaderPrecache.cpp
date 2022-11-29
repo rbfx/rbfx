@@ -26,7 +26,6 @@
 #include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/ShaderPrecache.h"
 #include "../Graphics/ShaderVariation.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 
@@ -40,11 +39,12 @@ ShaderPrecache::ShaderPrecache(Context* context, const ea::string& fileName) :
     fileName_(fileName),
     xmlFile_(context)
 {
-    if (GetSubsystem<FileSystem>()->FileExists(fileName))
+    const auto fileSystem = GetSubsystem<FileSystem>();
+    if (fileSystem->FileExists(fileName))
     {
         // If file exists, read the already listed combinations
-        File source(context_, fileName);
-        xmlFile_.Load(source);
+        const auto source = fileSystem->OpenFile(fileName);
+        xmlFile_.Load(*source);
 
         XMLElement shader = xmlFile_.GetRoot().GetChild("shader");
         while (shader)
@@ -71,8 +71,9 @@ ShaderPrecache::~ShaderPrecache()
     if (usedCombinations_.empty())
         return;
 
-    File dest(context_, fileName_, FILE_WRITE);
-    xmlFile_.Save(dest);
+    const auto fileSystem = GetSubsystem<FileSystem>();
+    auto dest = fileSystem->OpenFile(fileName_, FILE_WRITE);
+    xmlFile_.Save(*dest);
 }
 
 void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)

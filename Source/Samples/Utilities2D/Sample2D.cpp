@@ -29,7 +29,7 @@
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Input/Input.h>
-#include <Urho3D/IO/File.h>
+#include <Urho3D/IO/FileSystemFile.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Physics2D/CollisionBox2D.h>
 #include <Urho3D/Physics2D/CollisionChain2D.h>
@@ -492,7 +492,8 @@ void Sample2D::SaveScene(bool initial)
     ea::string filename = demoFilename_;
     if (!initial)
         filename += "InGame";
-    File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/" + filename + ".xml", FILE_WRITE);
+    FileSystemFile saveFile(
+        context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/" + filename + ".xml", FILE_WRITE);
     scene_->SaveXML(saveFile);
 }
 

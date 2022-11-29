@@ -26,9 +26,7 @@
 #include "../Project/ResourceFactory.h"
 
 #include <Urho3D/Core/Object.h>
-#include <Urho3D/IO/File.h>
 #include <Urho3D/Resource/JSONFile.h>
-#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Component.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>

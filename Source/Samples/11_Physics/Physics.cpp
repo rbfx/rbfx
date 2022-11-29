@@ -33,7 +33,7 @@
 #include <Urho3D/Graphics/Skybox.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
-#include <Urho3D/IO/File.h>
+#include <Urho3D/IO/FileSystemFile.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
@@ -257,7 +257,7 @@ void Physics::MoveCamera(float timeStep)
         filePath += "../";
 #endif
         filePath += "Data/Scenes/Physics.xml";
-        File saveFile(context_, filePath, FILE_WRITE);
+        FileSystemFile saveFile(context_, filePath, FILE_WRITE);
         scene_->SaveXML(saveFile);
     }
     if (input->GetKeyPress(KEY_F7))
@@ -267,7 +267,7 @@ void Physics::MoveCamera(float timeStep)
         filePath += "../";
 #endif
         filePath += "Data/Scenes/Physics.xml";
-        File loadFile(context_, filePath, FILE_READ);
+        FileSystemFile loadFile(context_, filePath, FILE_READ);
         scene_->LoadXML(loadFile);
     }
 

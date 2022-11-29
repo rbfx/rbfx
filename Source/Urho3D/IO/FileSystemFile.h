@@ -58,22 +58,18 @@ enum FileMode
     FILE_READWRITE
 };
 
-class PackageFile;
-
-/// %File opened either through the filesystem or from within a package file.
-class URHO3D_API File : public Object, public AbstractFile
+/// %File opened through the filesystem.
+class URHO3D_API FileSystemFile : public Object, public AbstractFile
 {
-    URHO3D_OBJECT(File, Object);
+URHO3D_OBJECT(FileSystemFile, Object);
 
 public:
     /// Construct.
-    explicit File(Context* context);
+    explicit FileSystemFile(Context* context);
     /// Construct and open a filesystem file.
-    File(Context* context, const ea::string& fileName, FileMode mode = FILE_READ);
-    /// Construct and open from a package file.
-    File(Context* context, PackageFile* package, const ea::string& fileName);
+    FileSystemFile(Context* context, const ea::string& fileName, FileMode mode = FILE_READ);
     /// Destruct. Close the file if open.
-    ~File() override;
+    ~FileSystemFile() override;
 
     /// Read bytes from the file. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;
@@ -90,8 +86,6 @@ public:
 
     /// Open a filesystem file. Return true if successful.
     bool Open(const ea::string& fileName, FileMode mode = FILE_READ);
-    /// Open from within a package file. Return true if successful.
-    bool Open(PackageFile* package, const ea::string& fileName);
     /// Close the file.
     void Close() override;
     /// Flush any buffered output to the file.
@@ -104,6 +98,10 @@ public:
     /// Return whether is open.
     /// @property
     bool IsOpen() const override;
+
+    /// Gets a value indicating whether the current file supports reading.
+    /// @property
+    bool CanRead() const override { return mode_ != FILE_WRITE; }
 
     /// Return the file handle.
     void* GetHandle() const { return handle_; }
@@ -126,11 +124,11 @@ public:
 
     /// Copy a file from a source file, must be opened and FILE_WRITE
     /// Unlike FileSystem.Copy this copy works when the source file is in a package file
-    bool Copy(File* srcFile);
+    bool Copy(AbstractFile* srcFile);
 
 private:
     /// Open file internally using either C standard IO functions or SDL RWops for Android asset files. Return true if successful.
-    bool OpenInternal(const ea::string& fileName, FileMode mode, bool fromPackage = false);
+    bool OpenInternal(const ea::string& fileName, FileMode mode);
     /// Perform the file read internally using either C standard IO functions or SDL RWops for Android asset files. Return true if successful. This does not handle compressed package file reading.
     bool ReadInternal(void* dest, unsigned size);
     /// Seek in file internally using either C standard IO functions or SDL RWops for Android asset files.

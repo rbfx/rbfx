@@ -77,7 +77,7 @@ static const char* logLevelNames[] =
     nullptr
 };
 
-class File;
+class FileSystemFile;
 
 /// Stored log message from another thread.
 struct StoredLogMessage

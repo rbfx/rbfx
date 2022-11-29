@@ -25,7 +25,7 @@
 #include <EASTL/list.h>
 #include <EASTL/hash_set.h>
 
-#include "../IO/File.h"
+#include "../IO/FileSystemFile.h"
 #include "../Core/NonCopyable.h"
 
 namespace Urho3D
@@ -139,7 +139,7 @@ public:
     /// Try to find resource prefix path starting from executable and going up.
     ea::string FindResourcePrefixPath() const;
     /// Open file from the file system.
-    SharedPtr<File> OpenFile(const ea::string& fileName, FileMode mode = FILE_READ);
+    SharedPtr<FileSystemFile> OpenFile(const ea::string& fileName, FileMode mode = FILE_READ);
 
 private:
     /// Scan directory, called internally.

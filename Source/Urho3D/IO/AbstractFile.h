@@ -44,6 +44,9 @@ public:
     /// Return whether is open.
     /// @property
     virtual bool IsOpen() const { return true; }
+    /// Gets a value indicating whether the current file supports reading.
+    /// @property
+    virtual bool CanRead() const { return true; }
     /// Return absolute file name in file system.
     /// @property
     virtual const ea::string& GetAbsoluteName() const { return name_; }

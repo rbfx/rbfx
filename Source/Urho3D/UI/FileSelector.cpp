@@ -25,7 +25,6 @@
 #include <EASTL/sort.h>
 
 #include "../Core/Context.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../Input/InputEvents.h"
 #include "../UI/DropDownList.h"

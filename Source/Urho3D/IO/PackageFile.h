@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
+#include "../IO/PackageEntryFile.h"
 
 namespace Urho3D
 {
@@ -107,7 +108,10 @@ public:
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
 
     /// Open file from the package.
-    SharedPtr<File> OpenFile(const ea::string& fileName);
+    SharedPtr<PackageEntryFile> OpenFile(const ea::string& fileName);
+
+    /// Open the package file.
+    SharedPtr<FileSystemFile> OpenPackageFile();
 
 private:
     /// File entries.

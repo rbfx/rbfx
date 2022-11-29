@@ -600,7 +600,7 @@ AbstractFilePtr ResourceCache::GetFile(const ea::string& name, bool sendEventOnF
         }
     }
 
-    return SharedPtr<File>();
+    return AbstractFilePtr();
 }
 
 Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& name)
@@ -1174,7 +1174,7 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 #endif
 }
 
-SharedPtr<File> ResourceCache::SearchResourceDirs(const ea::string& name)
+AbstractFilePtr ResourceCache::SearchResourceDirs(const ea::string& name)
 {
     auto* fileSystem = GetSubsystem<FileSystem>();
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
@@ -1184,7 +1184,7 @@ SharedPtr<File> ResourceCache::SearchResourceDirs(const ea::string& name)
         {
             // Construct the file first with full path, then rename it to not contain the resource path,
             // so that the file's sanitatedName can be used in further GetFile() calls (for example over the network)
-            const SharedPtr<File> file = fileSystem->OpenFile(nameAtResourceDir);
+            const SharedPtr<FileSystemFile> file = fileSystem->OpenFile(nameAtResourceDir);
             file->SetName(name);
             return file;
         }
@@ -1197,7 +1197,7 @@ SharedPtr<File> ResourceCache::SearchResourceDirs(const ea::string& name)
     return nullptr;
 }
 
-SharedPtr<File> ResourceCache::SearchPackages(const ea::string& name)
+AbstractFilePtr ResourceCache::SearchPackages(const ea::string& name)
 {
     for (unsigned i = 0; i < packages_.size(); ++i)
     {

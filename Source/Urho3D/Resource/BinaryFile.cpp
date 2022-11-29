@@ -25,7 +25,6 @@
 #include "../Core/Context.h"
 #include "../IO/BinaryArchive.h"
 #include "../IO/Deserializer.h"
-#include "../IO/File.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/Serializer.h"

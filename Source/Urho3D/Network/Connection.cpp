@@ -24,7 +24,6 @@
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"

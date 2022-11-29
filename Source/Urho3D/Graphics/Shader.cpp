@@ -280,8 +280,8 @@ void Shader::ProcessSource(ea::string& code, Deserializer& source)
         fileIndex = fileToIndexMapping.size();
 
     // If the source if a non-packaged file, store the timestamp
-    auto* file = dynamic_cast<File*>(&source);
-    if (file && !file->IsPackaged())
+    auto* file = dynamic_cast<FileSystemFile*>(&source);
+    if (file)
     {
         auto* fileSystem = GetSubsystem<FileSystem>();
         ea::string fullName = cache->GetResourceFileName(file->GetName());

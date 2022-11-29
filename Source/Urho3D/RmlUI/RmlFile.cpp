@@ -25,7 +25,6 @@
 #include "../RmlUI/RmlFile.h"
 
 #include "../Core/Context.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 

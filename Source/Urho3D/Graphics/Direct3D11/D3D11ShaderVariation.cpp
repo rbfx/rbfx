@@ -27,8 +27,6 @@
 #include "../../Graphics/Shader.h"
 #include "../../Graphics/ShaderDefineArray.h"
 #include "../../Graphics/ShaderConverter.h"
-#include "../../Graphics/VertexBuffer.h"
-#include "../../IO/File.h"
 #include "../../IO/FileSystem.h"
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"

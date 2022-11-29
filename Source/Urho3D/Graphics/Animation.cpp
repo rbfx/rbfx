@@ -378,7 +378,7 @@ bool Animation::Save(Serializer& dest) const
     // If triggers have been defined, write an XML file for them
     if (!triggers_.empty() || HasMetadata())
     {
-        auto* destFile = dynamic_cast<File*>(&dest);
+        auto* destFile = dynamic_cast<AbstractFile*>(&dest);
         if (destFile)
         {
             ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
@@ -395,8 +395,8 @@ bool Animation::Save(Serializer& dest) const
 
             SaveMetadataToXML(rootElem);
 
-            File xmlFile(context_, xmlName, FILE_WRITE);
-            xml->Save(xmlFile);
+            auto xmlFile = context_->GetSubsystem<FileSystem>()->OpenFile(xmlName, FILE_WRITE);
+            xml->Save(*xmlFile);
         }
         else
             URHO3D_LOGWARNING("Can not save animation trigger data when not saving into a file");

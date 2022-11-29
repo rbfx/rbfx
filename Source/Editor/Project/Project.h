@@ -29,7 +29,7 @@
 #include "../Project/ToolManager.h"
 
 #include <Urho3D/Core/Object.h>
-#include <Urho3D/IO/File.h>
+#include <Urho3D/IO/FileSystemFile.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/JSONFile.h>

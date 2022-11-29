@@ -22,7 +22,8 @@
 
 #include "../Precompiled.h"
 
-#include "../IO/File.h"
+#include "../IO/PackageEntryFile.h"
+#include "../IO/FileSystemFile.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
 #include "../IO/FileSystem.h"
@@ -54,7 +55,9 @@ PackageFile::~PackageFile() = default;
 
 bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
 {
-    auto file = context_->GetSubsystem<FileSystem>()->OpenFile(fileName);
+    fileName_ = fileName;
+
+    auto file = OpenPackageFile();
     if (!file->IsOpen())
         return false;
 
@@ -85,7 +88,6 @@ bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
         }
     }
 
-    fileName_ = fileName;
     nameHash_ = fileName_;
     totalSize_ = file->GetSize();
     compressed_ = id == "ULZ4" || id == "RLZ4";
@@ -203,9 +205,15 @@ void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathNam
 }
 
 /// Open file from the package.
-SharedPtr<File> PackageFile::OpenFile(const ea::string& fileName)
+SharedPtr<PackageEntryFile> PackageFile::OpenFile(const ea::string& fileName)
 {
-    return MakeShared<File>(context_, this, fileName);
+    return MakeShared<PackageEntryFile>(context_, this, fileName);
+}
+
+/// Open the package file.
+SharedPtr<FileSystemFile> PackageFile::OpenPackageFile()
+{
+    return context_->GetSubsystem<FileSystem>()->OpenFile(fileName_);
 }
 
 }

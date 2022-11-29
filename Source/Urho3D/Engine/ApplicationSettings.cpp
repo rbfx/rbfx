@@ -24,7 +24,7 @@
 
 #include "../Engine/ApplicationSettings.h"
 #include "../IO/ArchiveSerialization.h"
-#include "../IO/File.h"
+#include "../IO/FileSystemFile.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"

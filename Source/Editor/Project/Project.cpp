@@ -31,7 +31,7 @@
 #include "../Project/ResourceEditorTab.h"
 
 #include <Urho3D/Core/ProcessUtils.h>
-#include <Urho3D/IO/File.h>
+#include <Urho3D/IO/FileSystemFile.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -582,7 +582,7 @@ void Project::SaveGitIgnore()
         content += Format("{}\n", pattern);
     content += "\n";
 
-    File file(context_, gitIgnorePath_, FILE_WRITE);
+    FileSystemFile file(context_, gitIgnorePath_, FILE_WRITE);
     if (file.IsOpen())
         file.Write(content.c_str(), content.size());
 }

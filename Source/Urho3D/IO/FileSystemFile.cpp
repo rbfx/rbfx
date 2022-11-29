@@ -23,7 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Profiler.h"
-#include "../IO/File.h"
+#include "../IO/FileSystemFile.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
@@ -40,31 +40,21 @@
 
 namespace Urho3D
 {
-
+namespace
+{
 #ifdef _WIN32
-static const wchar_t* openMode[] =
-{
-    L"rb",
-    L"wb",
-    L"r+b",
-    L"w+b"
-};
+static const wchar_t* openMode[] = {L"rb", L"wb", L"r+b", L"w+b"};
 #else
-static const char* openMode[] =
-{
-    "rb",
-    "wb",
-    "r+b",
-    "w+b"
-};
+static const char* openMode[] = {"rb", "wb", "r+b", "w+b"};
 #endif
 
 #ifdef __ANDROID__
 static const unsigned READ_BUFFER_SIZE = 32768;
 #endif
 static const unsigned SKIP_BUFFER_SIZE = 1024;
+} // namespace
 
-File::File(Context* context) :
+FileSystemFile::FileSystemFile(Context* context):
     Object(context),
     mode_(FILE_READ),
     handle_(nullptr),
@@ -81,7 +71,7 @@ File::File(Context* context) :
 {
 }
 
-File::File(Context* context, const ea::string& fileName, FileMode mode) :
+FileSystemFile::FileSystemFile(Context* context, const ea::string& fileName, FileMode mode):
     Object(context),
     mode_(FILE_READ),
     handle_(nullptr),
@@ -99,62 +89,17 @@ File::File(Context* context, const ea::string& fileName, FileMode mode) :
     Open(fileName, mode);
 }
 
-File::File(Context* context, PackageFile* package, const ea::string& fileName) :
-    Object(context),
-    mode_(FILE_READ),
-    handle_(nullptr),
-#ifdef __ANDROID__
-    assetHandle_(0),
-#endif
-    readBufferOffset_(0),
-    readBufferSize_(0),
-    offset_(0),
-    checksum_(0),
-    compressed_(false),
-    readSyncNeeded_(false),
-    writeSyncNeeded_(false)
-{
-    Open(package, fileName);
-}
-
-File::~File()
+FileSystemFile::~FileSystemFile()
 {
     Close();
 }
 
-bool File::Open(const ea::string& fileName, FileMode mode)
+bool FileSystemFile::Open(const ea::string& fileName, FileMode mode)
 {
     return OpenInternal(fileName, mode);
 }
 
-bool File::Open(PackageFile* package, const ea::string& fileName)
-{
-    if (!package)
-        return false;
-
-    const PackageEntry* entry = package->GetEntry(fileName);
-    if (!entry)
-        return false;
-
-    bool success = OpenInternal(package->GetName(), FILE_READ, true);
-    if (!success)
-    {
-        URHO3D_LOGERROR("Could not open package file " + fileName);
-        return false;
-    }
-
-    name_ = fileName;
-    offset_ = entry->offset_;
-    checksum_ = entry->checksum_;
-    size_ = entry->size_;
-    compressed_ = package->IsCompressed();
-
-    // Seek to beginning of package entry's file data
-    SeekInternal(offset_);
-    return true;
-}
-
-unsigned File::Read(void* dest, unsigned size)
+unsigned FileSystemFile::Read(void* dest, unsigned size)
 {
     if (!IsOpen())
     {
@@ -269,7 +214,7 @@ unsigned File::Read(void* dest, unsigned size)
     return size;
 }
 
-unsigned File::Seek(unsigned position)
+unsigned FileSystemFile::Seek(unsigned position)
 {
     if (!IsOpen())
     {
@@ -311,7 +256,7 @@ unsigned File::Seek(unsigned position)
     return position_;
 }
 
-unsigned File::Write(const void* data, unsigned size)
+unsigned FileSystemFile::Write(const void* data, unsigned size)
 {
     if (!IsOpen())
     {
@@ -351,12 +296,12 @@ unsigned File::Write(const void* data, unsigned size)
     return size;
 }
 
-const ea::string& File::GetAbsoluteName() const
+const ea::string& FileSystemFile::GetAbsoluteName() const
 {
     return absoluteFileName_;
 }
 
-unsigned File::GetChecksum()
+unsigned FileSystemFile::GetChecksum()
 {
     if (offset_ || checksum_)
         return checksum_;
@@ -385,7 +330,7 @@ unsigned File::GetChecksum()
     return checksum_;
 }
 
-void File::Close()
+void FileSystemFile::Close()
 {
 #ifdef __ANDROID__
     if (assetHandle_)
@@ -409,13 +354,13 @@ void File::Close()
     }
 }
 
-void File::Flush()
+void FileSystemFile::Flush()
 {
     if (handle_)
         fflush((FILE*)handle_);
 }
 
-bool File::IsOpen() const
+bool FileSystemFile::IsOpen() const
 {
 #ifdef __ANDROID__
     return handle_ != 0 || assetHandle_ != 0;
@@ -424,7 +369,7 @@ bool File::IsOpen() const
 #endif
 }
 
-bool File::OpenInternal(const ea::string& fileName, FileMode mode, bool fromPackage)
+bool FileSystemFile::OpenInternal(const ea::string& fileName, FileMode mode)
 {
     Close();
 
@@ -499,21 +444,18 @@ bool File::OpenInternal(const ea::string& fileName, FileMode mode, bool fromPack
         return false;
     }
 
-    if (!fromPackage)
+    fseek((FILE*)handle_, 0, SEEK_END);
+    long size = ftell((FILE*)handle_);
+    fseek((FILE*)handle_, 0, SEEK_SET);
+    if (size > M_MAX_UNSIGNED)
     {
-        fseek((FILE*)handle_, 0, SEEK_END);
-        long size = ftell((FILE*)handle_);
-        fseek((FILE*)handle_, 0, SEEK_SET);
-        if (size > M_MAX_UNSIGNED)
-        {
-            URHO3D_LOGERRORF("Could not open file %s which is larger than 4GB", fileName.c_str());
-            Close();
-            size_ = 0;
-            return false;
-        }
-        size_ = (unsigned)size;
-        offset_ = 0;
+        URHO3D_LOGERRORF("Could not open file %s which is larger than 4GB", fileName.c_str());
+        Close();
+        size_ = 0;
+        return false;
     }
+    size_ = (unsigned)size;
+    offset_ = 0;
 
     name_ = fileName;
     absoluteFileName_ = fileName;
@@ -524,7 +466,7 @@ bool File::OpenInternal(const ea::string& fileName, FileMode mode, bool fromPack
     return true;
 }
 
-bool File::ReadInternal(void* dest, unsigned size)
+bool FileSystemFile::ReadInternal(void* dest, unsigned size)
 {
 #ifdef __ANDROID__
     if (assetHandle_)
@@ -536,7 +478,7 @@ bool File::ReadInternal(void* dest, unsigned size)
         return fread(dest, size, 1, (FILE*)handle_) == 1;
 }
 
-void File::SeekInternal(unsigned newPosition)
+void FileSystemFile::SeekInternal(unsigned newPosition)
 {
 #ifdef __ANDROID__
     if (assetHandle_)
@@ -551,7 +493,7 @@ void File::SeekInternal(unsigned newPosition)
         fseek((FILE*)handle_, newPosition, SEEK_SET);
 }
 
-void File::ReadBinary(ea::vector<unsigned char>& buffer)
+void FileSystemFile::ReadBinary(ea::vector<unsigned char>& buffer)
 {
     buffer.clear();
 
@@ -563,7 +505,7 @@ void File::ReadBinary(ea::vector<unsigned char>& buffer)
     Read(static_cast<void*>(buffer.data()), size_);
 }
 
-void File::ReadText(ea::string& text)
+void FileSystemFile::ReadText(ea::string& text)
 {
     text.clear();
 
@@ -575,9 +517,9 @@ void File::ReadText(ea::string& text)
     Read(static_cast<void*>(&text[0]), size_);
 }
 
-bool File::Copy(File* srcFile)
+bool FileSystemFile::Copy(AbstractFile* srcFile)
 {
-    if (!srcFile || !srcFile->IsOpen() || srcFile->GetMode() != FILE_READ)
+    if (!srcFile || !srcFile->IsOpen() || !srcFile->CanRead())
         return false;
 
     if (!IsOpen() || GetMode() != FILE_WRITE)

@@ -28,7 +28,6 @@
 #include "../Core/WorkQueue.h"
 #include "../Graphics/Texture2D.h"
 #include "../IO/Archive.h"
-#include "../IO/File.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
 #include "../Resource/ResourceCache.h"

@@ -30,7 +30,6 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/Log.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
@@ -469,7 +468,7 @@ bool Model::Save(Serializer& dest) const
     // Write metadata
     if (HasMetadata())
     {
-        auto* destFile = dynamic_cast<File*>(&dest);
+        auto* destFile = dynamic_cast<FileSystemFile*>(&dest);
         if (destFile)
         {
             ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
@@ -478,8 +477,8 @@ bool Model::Save(Serializer& dest) const
             XMLElement rootElem = xml->CreateRoot("model");
             SaveMetadataToXML(rootElem);
 
-            File xmlFile(context_, xmlName, FILE_WRITE);
-            xml->Save(xmlFile);
+            auto xmlFile = context_->GetSubsystem<FileSystem>()->OpenFile(xmlName, FILE_WRITE);
+            xml->Save(*xmlFile);
         }
         else
             URHO3D_LOGWARNING("Can not save model metadata when not saving into a file");

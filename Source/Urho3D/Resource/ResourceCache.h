@@ -29,7 +29,7 @@
 
 #include "../Container/Ptr.h"
 #include "../Core/Mutex.h"
-#include "../IO/File.h"
+#include "../IO/AbstractFile.h"
 #include "../Resource/Resource.h"
 
 namespace Urho3D
@@ -268,9 +268,9 @@ private:
     /// Handle begin frame event. Automatic resource reloads and the finalization of background loaded resources are processed here.
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
     /// Search FileSystem for file.
-    SharedPtr<File> SearchResourceDirs(const ea::string& name);
+    AbstractFilePtr SearchResourceDirs(const ea::string& name);
     /// Search resource packages for file.
-    SharedPtr<File> SearchPackages(const ea::string& name);
+    AbstractFilePtr SearchPackages(const ea::string& name);
 
     /// Mutex for thread-safe access to the resource directories, resource packages and resource dependencies.
     mutable Mutex resourceMutex_;

@@ -22,7 +22,7 @@
 
 #include "../Precompiled.h"
 
-#include "../IO/File.h"
+#include "../IO/FileSystemFile.h"
 #include "../IO/FileSystem.h"
 #include "../IO/FileWatcher.h"
 #include "../IO/Log.h"

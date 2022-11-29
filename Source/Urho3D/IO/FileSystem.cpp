@@ -27,7 +27,7 @@
 #include "../Core/Thread.h"
 #include "../Core/Profiler.h"
 #include "../Engine/EngineEvents.h"
-#include "../IO/File.h"
+#include "../IO/FileSystemFile.h"
 #include "../IO/FileSystem.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
@@ -1596,9 +1596,9 @@ ea::string FileSystem::FindResourcePrefixPath() const
 }
 
 /// Open file from the file system.
-SharedPtr<File> FileSystem::OpenFile(const ea::string& fileName, FileMode mode)
+SharedPtr<FileSystemFile> FileSystem::OpenFile(const ea::string& fileName, FileMode mode)
 {
-    return MakeShared<File>(context_, fileName, mode);
+    return MakeShared<FileSystemFile>(context_, fileName, mode);
 }
 
 ea::string GetAbsolutePath(const ea::string& path)

@@ -24,8 +24,9 @@
 
 #include "../Plugins/DynamicModule.h"
 
-#include "../IO/File.h"
 #include "../IO/Log.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/FileSystem.h"
 #if URHO3D_CSHARP
 #   include "../Script/Script.h"
 #endif
@@ -349,12 +350,13 @@ ModuleType DynamicModule::ReadModuleInformation(Context* context, const ea::stri
 #if _WIN32 || URHO3D_CSHARP
     if (path.ends_with(".dll"))
     {
-        File file(context);
-        if (!file.Open(path.data(), FILE_READ))
+        const auto fileSystem = context->GetSubsystem<FileSystem>();
+        auto file = fileSystem->OpenFile(path.data(), FILE_READ);
+        if (!file || !file->IsOpen())
             return MODULE_INVALID;
 
-        data.resize(file.GetSize());
-        if (file.Read(data.data(), data.size()) != data.size())
+        data.resize(file->GetSize());
+        if (file->Read(data.data(), data.size()) != data.size())
             return MODULE_INVALID;
 
         auto* dos = reinterpret_cast<PIMAGE_DOS_HEADER>(data.data());

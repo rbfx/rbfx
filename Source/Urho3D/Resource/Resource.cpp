@@ -25,7 +25,6 @@
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Core/Thread.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/Resource.h"
@@ -91,18 +90,19 @@ bool Resource::Save(Serializer& dest) const
 
 bool Resource::LoadFile(const ea::string& fileName)
 {
-    File file(context_);
-    return file.Open(fileName, FILE_READ) && Load(file);
+    const auto fs = GetSubsystem<FileSystem>();
+    const auto file = fs->OpenFile(fileName, FILE_READ);
+    return file && file->IsOpen() && Load(*file);
 }
 
 bool Resource::SaveFile(const ea::string& fileName) const
 {
-    auto fs = GetSubsystem<FileSystem>();
+    const auto fs = GetSubsystem<FileSystem>();
     if (!fs->CreateDirsRecursive(GetPath(fileName)))
         return false;
 
-    File file(context_);
-    return file.Open(fileName, FILE_WRITE) && Save(file);
+    const auto file = fs->OpenFile(fileName, FILE_WRITE);
+    return file && file->IsOpen() && Save(*file);
 }
 
 void Resource::SetName(const ea::string& name)

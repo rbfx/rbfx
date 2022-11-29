@@ -25,7 +25,6 @@
 #include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Texture2D.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
@@ -285,7 +284,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const ea::string& ind
 
     // Construct the path to store the texture
     ea::string pathName;
-    auto* file = dynamic_cast<File*>(&dest);
+    auto* file = dynamic_cast<FileSystemFile*>(&dest);
     if (file)
         // If serialize to file, use the file's path
         pathName = GetPath(file->GetName());

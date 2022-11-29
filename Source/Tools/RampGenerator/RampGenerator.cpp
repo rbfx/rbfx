@@ -23,7 +23,6 @@
 #include <EASTL/unique_ptr.h>
 
 #include <Urho3D/Core/Context.h>
-#include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
@@ -56,7 +55,7 @@ static const float sigma3Kernel9x9[9 * 9] = {
 int main(int argc, char** argv);
 void Run(const ea::vector<ea::string>& arguments);
 
-bool ReadIES(File* data, ea::vector<float>& vertical, ea::vector<float>& horizontal, ea::vector<float>& luminance);
+bool ReadIES(FileSystemFile* data, ea::vector<float>& vertical, ea::vector<float>& horizontal, ea::vector<float>& luminance);
 void WriteIES(unsigned char* data, unsigned width, unsigned height, ea::vector<float>& horizontal, ea::vector<float>& vertical, ea::vector<float>& luminance);
 void Blur(unsigned char* data, unsigned width, unsigned height, const float* kernel, unsigned kernelWidth);
 
@@ -95,7 +94,7 @@ void Run(const ea::vector<ea::string>& arguments)
         const int height = dim == 2 ? width : 1;
 
         Context context;
-        File file(&context);
+        FileSystemFile file(&context);
         file.Open(inputFile);
 
         ea::vector<float> horizontal;
@@ -238,7 +237,7 @@ int PopFirstInt(ea::vector<ea::string>& words)
     return -1; // < 0 ever valid?
 }
 
-bool ReadIES(File* data, ea::vector<float>& vertical, ea::vector<float>& horizontal, ea::vector<float>& luminance)
+bool ReadIES(FileSystemFile* data, ea::vector<float>& vertical, ea::vector<float>& horizontal, ea::vector<float>& luminance)
 {
     ea::string line = data->ReadLine();
     if (!line.contains("IESNA:LM-63-1995") && !line.contains("IESNA:LM-63-2002"))

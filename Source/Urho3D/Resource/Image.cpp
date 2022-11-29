@@ -24,7 +24,6 @@
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/Decompress.h"
@@ -1306,7 +1305,7 @@ bool Image::SaveBMP(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageBMP");
 
-    auto* fileSystem = GetSubsystem<FileSystem>();
+    const auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
     {
         URHO3D_LOGERROR("Access denied to " + fileName);
@@ -1329,9 +1328,10 @@ bool Image::SavePNG(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImagePNG");
 
-    File outFile(context_, fileName, FILE_WRITE);
-    if (outFile.IsOpen())
-        return Image::Save(outFile); // Save uses PNG format
+    const auto fs = context_->GetSubsystem<FileSystem>();
+    const auto outFile = fs->OpenFile(fileName, FILE_WRITE);
+    if (outFile &&  outFile->IsOpen())
+        return Image::Save(*outFile); // Save uses PNG format
     else
         return false;
 }
@@ -1340,7 +1340,7 @@ bool Image::SaveTGA(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageTGA");
 
-    auto* fileSystem = GetSubsystem<FileSystem>();
+    const auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
     {
         URHO3D_LOGERROR("Access denied to " + fileName);
@@ -1363,7 +1363,7 @@ bool Image::SaveJPG(const ea::string& fileName, int quality) const
 {
     URHO3D_PROFILE("SaveImageJPG");
 
-    auto* fileSystem = GetSubsystem<FileSystem>();
+    const auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
     {
         URHO3D_LOGERROR("Access denied to " + fileName);
@@ -1386,8 +1386,9 @@ bool Image::SaveDDS(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageDDS");
 
-    File outFile(context_, fileName, FILE_WRITE);
-    if (!outFile.IsOpen())
+    const auto fs = context_->GetSubsystem<FileSystem>();
+    const auto outFile = fs->OpenFile(fileName, FILE_WRITE);
+    if (!outFile || !outFile->IsOpen())
     {
         URHO3D_LOGERROR("Access denied to " + fileName);
         return false;
@@ -1409,7 +1410,7 @@ bool Image::SaveDDS(const ea::string& fileName) const
     ea::vector<const Image*> levels;
     GetLevels(levels);
 
-    outFile.WriteFileID("DDS ");
+    outFile->WriteFileID("DDS ");
 
     DDSurfaceDesc2 ddsd;        // NOLINT(hicpp-member-init)
     memset(&ddsd, 0, sizeof(ddsd));
@@ -1427,9 +1428,9 @@ bool Image::SaveDDS(const ea::string& fileName) const
     ddsd.ddpfPixelFormat_.dwBBitMask_ = 0x00ff0000;
     ddsd.ddpfPixelFormat_.dwRGBAlphaBitMask_ = 0xff000000;
 
-    outFile.Write(&ddsd, sizeof(ddsd));
+    outFile->Write(&ddsd, sizeof(ddsd));
     for (unsigned i = 0; i < levels.size(); ++i)
-        outFile.Write(levels[i]->GetData(), levels[i]->GetWidth() * levels[i]->GetHeight() * 4);
+        outFile->Write(levels[i]->GetData(), levels[i]->GetWidth() * levels[i]->GetHeight() * 4);
 
     return true;
 }
@@ -1440,13 +1441,14 @@ bool Image::SaveWEBP(const ea::string& fileName, float compression /* = 0.0f */)
     URHO3D_PROFILE("SaveImageWEBP");
 
     auto* fileSystem(GetSubsystem<FileSystem>());
-    File outFile(context_, fileName, FILE_WRITE);
 
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
     {
         URHO3D_LOGERROR("Access denied to " + fileName);
         return false;
     }
+
+    auto outFile = fileSystem->OpenFile(fileName, FILE_WRITE);
 
     if (IsCompressed())
     {
@@ -1517,7 +1519,7 @@ bool Image::SaveWEBP(const ea::string& fileName, float compression /* = 0.0f */)
     }
 
     WebPPictureFree(&pic);
-    outFile.Write(wrt.mem, wrt.size);
+    outFile->Write(wrt.mem, wrt.size);
     WebPMemoryWriterClear(&wrt);
 
     return true;

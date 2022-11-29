@@ -27,7 +27,6 @@
 #include "../Core/ProcessUtils.h"
 #include "../Core/StringUtils.h"
 #include "../Engine/Engine.h"
-#include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/VectorBuffer.h"
@@ -172,10 +171,10 @@ ea::string ModulePlugin::GetVersionModulePath(const ea::string& path)
     {
         if (pdbOffset != 0)
         {
-            File dll(context_);
-            if (dll.Open(versionedPath, FILE_READWRITE))
+            auto dll = fs->OpenFile(versionedPath, FILE_READWRITE);
+            if (dll && dll->IsOpen())
             {
-                VectorBuffer fileData(dll, dll.GetSize());
+                VectorBuffer fileData(dll, dll->GetSize());
                 char* pdbPointer = (char*)fileData.GetModifiableData() + pdbOffset;
 
                 ea::string pdbPath;
@@ -194,8 +193,8 @@ ea::string ModulePlugin::GetVersionModulePath(const ea::string& path)
                 }
 
                 strcpy((char*)fileData.GetModifiableData() + pdbOffset, versionedPdbPath.c_str());
-                dll.Seek(0);
-                dll.Write(fileData.GetData(), fileData.GetSize());
+                dll->Seek(0);
+                dll->Write(fileData.GetData(), fileData.GetSize());
             }
             else
                 return EMPTY_STRING;

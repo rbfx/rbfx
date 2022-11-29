@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../IO/File.h"
+#include "../IO/FileSystemFile.h"
 
 #include <SDL_rwops.h>
 
@@ -36,7 +36,7 @@ public:
     /// Construct with object reference.
     explicit RWOpsWrapper(T& object)
     {
-        ops_.type = dynamic_cast<File*>(&object) ? SDL_RWOPS_STDFILE : SDL_RWOPS_MEMORY;
+        ops_.type = dynamic_cast<FileSystemFile*>(&object) ? SDL_RWOPS_STDFILE : SDL_RWOPS_MEMORY;
         ops_.hidden.unknown.data1 = &object;
         ops_.size = &Size;
         ops_.seek = &Seek;
@@ -91,7 +91,7 @@ private:
     static int Close(SDL_RWops* context)
     {
         auto* object = reinterpret_cast<T*>(context->hidden.unknown.data1);
-        auto* file = dynamic_cast<File*>(object);
+        auto* file = dynamic_cast<AbstractFile*>(object);
         if (file)
             file->Close();
         return 0;

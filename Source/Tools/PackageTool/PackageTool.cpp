@@ -24,7 +24,7 @@
 
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/ProcessUtils.h>
-#include <Urho3D/IO/File.h>
+#include <Urho3D/IO/FileSystemFile.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/PackageFile.h>
 
@@ -69,7 +69,7 @@ int main(int argc, char** argv);
 void Run(const ea::vector<ea::string>& arguments);
 void ProcessFile(const ea::string& fileName, const ea::string& rootDir);
 void WritePackageFile(const ea::string& fileName, const ea::string& rootDir);
-void WriteHeader(File& dest);
+void WriteHeader(FileSystemFile& dest);
 
 int main(int argc, char** argv)
 {
@@ -240,7 +240,7 @@ void Run(const ea::vector<ea::string>& arguments)
 void ProcessFile(const ea::string& fileName, const ea::string& rootDir)
 {
     ea::string fullPath = rootDir + "/" + fileName;
-    File file(context_);
+    FileSystemFile file(context_);
     if (!file.Open(fullPath))
         ErrorExit("Could not open file " + fileName);
 
@@ -257,7 +257,7 @@ void WritePackageFile(const ea::string& fileName, const ea::string& rootDir)
     if (!quiet_)
         PrintLine("Writing package");
 
-    File dest(context_);
+    FileSystemFile dest(context_);
     if (!dest.Open(fileName, FILE_WRITE))
         ErrorExit("Could not open output file " + fileName);
 
@@ -282,7 +282,7 @@ void WritePackageFile(const ea::string& fileName, const ea::string& rootDir)
         lastOffset = entries_[i].offset_ = dest.GetSize();
         ea::string fileFullPath = rootDir + "/" + entries_[i].name_;
 
-        File srcFile(context_, fileFullPath);
+        FileSystemFile srcFile(context_, fileFullPath);
         if (!srcFile.IsOpen())
             ErrorExit("Could not open file " + fileFullPath);
 
@@ -366,7 +366,7 @@ void WritePackageFile(const ea::string& fileName, const ea::string& rootDir)
     }
 }
 
-void WriteHeader(File& dest)
+void WriteHeader(FileSystemFile& dest)
 {
     if (!compress_)
         dest.WriteFileID("UPAK");
