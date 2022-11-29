@@ -221,6 +221,24 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
             default: break;
             }
         }
+        else if (image->Is16Bit())
+        {
+            switch (components)
+            {
+            case 1:
+                format = DXGI_FORMAT_R16_UNORM;
+                break;
+            case 2:
+                format = DXGI_FORMAT_R16G16_UNORM;
+                break;
+
+            case 4:
+                format = DXGI_FORMAT_R16G16B16A16_UNORM;
+                break;
+
+            default: break;
+            }
+        }
         else
         {
             switch (components)

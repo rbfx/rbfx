@@ -295,7 +295,7 @@ unsigned Texture::GetExternalFormat(unsigned format)
         return GL_RG;
     else if (format == GL_RGBA16 || format == GL_RGBA16F_ARB || format == GL_RGBA32F_ARB || format == GL_SRGB_ALPHA_EXT)
         return GL_RGBA;
-    else if (format == GL_SRGB_EXT)
+    else if (format == GL_SRGB_EXT || format == GL_RGB16F)
         return GL_RGB;
     else
         return format;
