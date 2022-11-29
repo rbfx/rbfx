@@ -258,7 +258,7 @@ private:
     /// Number of compressed mip levels.
     unsigned numCompressedLevels_{};
     /// Bytes per single component.
-    unsigned bytesPerComponent_{};
+    unsigned bytesPerComponent_{1};
     /// Cubemap status if DDS.
     bool cubemap_{};
     /// Texture array status if DDS.
