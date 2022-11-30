@@ -43,6 +43,8 @@
 #include <SDL_filesystem.h>
 #endif
 
+#include "MountPoint.h"
+
 #include <sys/stat.h>
 #include <cstdio>
 
@@ -1594,6 +1596,7 @@ ea::string FileSystem::FindResourcePrefixPath() const
 
     return EMPTY_STRING;
 }
+
 
 ea::string GetAbsolutePath(const ea::string& path)
 {

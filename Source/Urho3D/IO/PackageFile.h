@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Core/Object.h"
+#include "../IO/MountPoint.h"
 
 namespace Urho3D
 {
@@ -39,9 +39,9 @@ struct PackageEntry
 };
 
 /// Stores files of a directory tree sequentially for convenient access.
-class URHO3D_API PackageFile : public Object
+class URHO3D_API PackageFile : public MountPoint
 {
-    URHO3D_OBJECT(PackageFile, Object);
+    URHO3D_OBJECT(PackageFile, MountPoint);
 
 public:
     /// Construct.
@@ -105,6 +105,12 @@ public:
 
     /// Scan package for specified files.
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
+
+    /// Check if a file exists within the mount point.
+    bool Exists(const ea::string& scheme, const ea::string& fileName) const override;
+
+    /// Open package file. Returns null if file not found.
+    AbstractFilePtr OpenFile(const ea::string& scheme, const ea::string& name, FileMode mode) override;
 
 private:
     /// File entries.

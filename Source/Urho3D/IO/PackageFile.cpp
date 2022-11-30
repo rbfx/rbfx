@@ -31,7 +31,7 @@ namespace Urho3D
 {
 
 PackageFile::PackageFile(Context* context) :
-    Object(context),
+    MountPoint(context),
     totalSize_(0),
     totalDataSize_(0),
     checksum_(0),
@@ -40,7 +40,7 @@ PackageFile::PackageFile(Context* context) :
 }
 
 PackageFile::PackageFile(Context* context, const ea::string& fileName, unsigned startOffset) :
-    Object(context),
+    MountPoint(context),
     totalSize_(0),
     totalDataSize_(0),
     checksum_(0),
@@ -199,6 +199,36 @@ void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathNam
             result.push_back(fileName);
         }
     }
+}
+
+/// Check if a file exists within the mount point.
+bool PackageFile::Exists(const ea::string& scheme, const ea::string& fileName) const
+{
+    // If scheme defined it should match package name. Otherwise this package can't open the file.
+    if (!scheme.empty() && scheme != GetName())
+        return {};
+
+    // Quit if file doesn't exists in the package.
+    return Exists(fileName);
+}
+
+/// Open package file. Returns null if file not found.
+AbstractFilePtr PackageFile::OpenFile(const ea::string& scheme, const ea::string& name, FileMode mode)
+{
+    // Package file can write files.
+    if (mode != FILE_READ)
+        return {};
+
+    // If scheme defined it should match package name. Otherwise this package can't open the file.
+    if (!scheme.empty() && scheme != GetName())
+        return {};
+
+    // Quit if file doesn't exists in the package.
+    if (!Exists(name))
+        return {};
+
+    auto file = MakeShared<File>(context_, this, name);
+    return file;
 }
 
 }

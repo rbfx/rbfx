@@ -27,11 +27,13 @@
 
 #include "../Core/NonCopyable.h"
 #include "../Core/Object.h"
+#include "../IO/AbstractFile.h"
 
 namespace Urho3D
 {
 
 class AsyncExecRequest;
+class MountPoint;
 
 /// Alias for type used for file times.
 /// TODO(editor): Make 64 bit?

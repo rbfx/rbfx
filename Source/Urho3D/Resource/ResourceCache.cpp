@@ -43,6 +43,7 @@
 #include "../Resource/GraphNode.h"
 
 #include "../DebugNew.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
 
 #include <cstdio>
 
@@ -84,9 +85,7 @@ static const SharedPtr<Resource> noResource;
 
 ResourceCache::ResourceCache(Context* context) :
     Object(context),
-    autoReloadResources_(false),
     returnFailedResources_(false),
-    searchPackagesFirst_(true),
     isRouting_(false),
     finishBackgroundResourcesMs_(5)
 {
@@ -116,70 +115,6 @@ ResourceCache::~ResourceCache()
 #endif
 }
 
-bool ResourceCache::AddResourceDir(const ea::string& pathName, unsigned priority)
-{
-    MutexLock lock(resourceMutex_);
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    if (!fileSystem || !fileSystem->DirExists(pathName))
-    {
-        URHO3D_LOGERROR("Could not open directory " + pathName);
-        return false;
-    }
-
-    // Convert path to absolute
-    ea::string fixedPath = SanitateResourceDirName(pathName);
-
-    // Check that the same path does not already exist
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (!resourceDirs_[i].comparei(fixedPath))
-            return true;
-    }
-
-    if (priority < resourceDirs_.size())
-        resourceDirs_.insert_at(priority, fixedPath);
-    else
-        resourceDirs_.push_back(fixedPath);
-
-    // If resource auto-reloading active, create a file watcher for the directory
-    if (autoReloadResources_)
-    {
-        SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
-        watcher->StartWatching(fixedPath, true);
-        fileWatchers_.push_back(watcher);
-    }
-
-    URHO3D_LOGINFO("Added resource path " + fixedPath);
-    return true;
-}
-
-bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
-{
-    MutexLock lock(resourceMutex_);
-
-    // Do not add packages that failed to load
-    if (!package || !package->GetNumFiles())
-    {
-        URHO3D_LOGERRORF("Could not add package file %s due to load failure", package->GetName().c_str());
-        return false;
-    }
-
-    if (priority < packages_.size())
-        packages_.insert_at(priority, SharedPtr<PackageFile>(package));
-    else
-        packages_.push_back(SharedPtr<PackageFile>(package));
-
-    URHO3D_LOGINFO("Added resource package " + package->GetName());
-    return true;
-}
-
-bool ResourceCache::AddPackageFile(const ea::string& fileName, unsigned priority)
-{
-    SharedPtr<PackageFile> package(new PackageFile(context_));
-    return package->Open(fileName) && AddPackageFile(package, priority);
-}
-
 bool ResourceCache::AddManualResource(Resource* resource)
 {
     if (!resource)
@@ -199,76 +134,6 @@ bool ResourceCache::AddManualResource(Resource* resource)
     resourceGroups_[resource->GetType()].resources_[resource->GetNameHash()] = resource;
     UpdateResourceGroup(resource->GetType());
     return true;
-}
-
-void ResourceCache::RemoveResourceDir(const ea::string& pathName)
-{
-    MutexLock lock(resourceMutex_);
-
-    ea::string fixedPath = SanitateResourceDirName(pathName);
-
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (!resourceDirs_[i].comparei(fixedPath))
-        {
-            resourceDirs_.erase_at(i);
-            // Remove the filewatcher with the matching path
-            for (unsigned j = 0; j < fileWatchers_.size(); ++j)
-            {
-                if (!fileWatchers_[j]->GetPath().comparei(fixedPath))
-                {
-                    fileWatchers_.erase_at(j);
-                    break;
-                }
-            }
-            URHO3D_LOGINFO("Removed resource path " + fixedPath);
-            return;
-        }
-    }
-}
-
-void ResourceCache::RemoveAllResourceDirs()
-{
-    const auto resourceDirsCopy = resourceDirs_;
-    for (const ea::string& dir : resourceDirsCopy)
-        RemoveResourceDir(dir);
-}
-
-void ResourceCache::RemovePackageFile(PackageFile* package, bool releaseResources, bool forceRelease)
-{
-    MutexLock lock(resourceMutex_);
-
-    for (auto i = packages_.begin(); i != packages_.end(); ++i)
-    {
-        if (i->Get() == package)
-        {
-            if (releaseResources)
-                ReleasePackageResources(i->Get(), forceRelease);
-            URHO3D_LOGINFO("Removed resource package " + (*i)->GetName());
-            packages_.erase(i);
-            return;
-        }
-    }
-}
-
-void ResourceCache::RemovePackageFile(const ea::string& fileName, bool releaseResources, bool forceRelease)
-{
-    MutexLock lock(resourceMutex_);
-
-    // Compare the name and extension only, not the path
-    ea::string fileNameNoPath = GetFileNameAndExtension(fileName);
-
-    for (auto i = packages_.begin(); i != packages_.end(); ++i)
-    {
-        if (!GetFileNameAndExtension((*i)->GetName()).comparei(fileNameNoPath))
-        {
-            if (releaseResources)
-                ReleasePackageResources(i->Get(), forceRelease);
-            URHO3D_LOGINFO("Removed resource package " + (*i)->GetName());
-            packages_.erase(i);
-            return;
-        }
-    }
 }
 
 void ResourceCache::ReleaseResource(StringHash type, const ea::string& name, bool force)
@@ -508,26 +373,6 @@ void ResourceCache::SetMemoryBudget(StringHash type, unsigned long long budget)
     resourceGroups_[type].memoryBudget_ = budget;
 }
 
-void ResourceCache::SetAutoReloadResources(bool enable)
-{
-    if (enable != autoReloadResources_)
-    {
-        if (enable)
-        {
-            for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-            {
-                SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
-                watcher->StartWatching(resourceDirs_[i], true);
-                fileWatchers_.push_back(watcher);
-            }
-        }
-        else
-            fileWatchers_.clear();
-
-        autoReloadResources_ = enable;
-    }
-}
-
 void ResourceCache::AddResourceRouter(ResourceRouter* router, bool addAsFirst)
 {
     // Check for duplicate
@@ -564,20 +409,8 @@ AbstractFilePtr ResourceCache::GetFile(const ea::string& name, bool sendEventOnF
 
     if (sanitatedName.length())
     {
-        AbstractFilePtr file;
-
-        if (searchPackagesFirst_)
-        {
-            file = SearchPackages(sanitatedName);
-            if (!file)
-                file = SearchResourceDirs(sanitatedName);
-        }
-        else
-        {
-            file = SearchResourceDirs(sanitatedName);
-            if (!file)
-                file = SearchPackages(sanitatedName);
-        }
+        const auto fs = context_->GetSubsystem<VirtualFileSystem>();
+        AbstractFilePtr file = fs->OpenFile(ea::string(), name, FILE_READ);
 
         if (file)
             return file;
@@ -805,21 +638,8 @@ bool ResourceCache::Exists(const ea::string& name) const
     if (sanitatedName.empty())
         return false;
 
-    for (unsigned i = 0; i < packages_.size(); ++i)
-    {
-        if (packages_[i]->Exists(sanitatedName))
-            return true;
-    }
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (fileSystem->FileExists(resourceDirs_[i] + sanitatedName))
-            return true;
-    }
-
-    // Fallback using absolute path
-    return fileSystem->FileExists(sanitatedName);
+    auto* fileSystem = GetSubsystem<VirtualFileSystem>();
+    return fileSystem->Exists(sanitatedName);
 }
 
 unsigned long long ResourceCache::GetMemoryBudget(StringHash type) const
@@ -845,19 +665,8 @@ unsigned long long ResourceCache::GetTotalMemoryUse() const
 
 ea::string ResourceCache::GetResourceFileName(const ea::string& name) const
 {
-    MutexLock lock(resourceMutex_);
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (fileSystem->FileExists(resourceDirs_[i] + name))
-            return resourceDirs_[i] + name;
-    }
-
-    if (IsAbsolutePath(name) && fileSystem->FileExists(name))
-        return name;
-    else
-        return ea::string();
+    auto* fileSystem = GetSubsystem<VirtualFileSystem>();
+    return fileSystem->GetFileName(name);
 }
 
 ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
@@ -1174,39 +983,6 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 #endif
 }
 
-AbstractFilePtr ResourceCache::SearchResourceDirs(const ea::string& name)
-{
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (fileSystem->FileExists(resourceDirs_[i] + name))
-        {
-            // Construct the file first with full path, then rename it to not contain the resource path,
-            // so that the file's sanitatedName can be used in further GetFile() calls (for example over the network)
-            SharedPtr<File> file(MakeShared<File>(context_, resourceDirs_[i] + name));
-            file->SetName(name);
-            return AbstractFilePtr(file, file);
-        }
-    }
-
-    // Fallback using absolute path
-    if (fileSystem->FileExists(name))
-        return AbstractFilePtr(MakeShared<File>(context_, name));
-
-    return nullptr;
-}
-
-AbstractFilePtr ResourceCache::SearchPackages(const ea::string& name)
-{
-    for (unsigned i = 0; i < packages_.size(); ++i)
-    {
-        if (packages_[i]->Exists(name))
-            return AbstractFilePtr(MakeShared<File>(context_, packages_[i], name));
-    }
-
-    return nullptr;
-}
-
 void RegisterResourceLibrary(Context* context)
 {
     BinaryFile::RegisterObject(context);
@@ -1221,20 +997,9 @@ void RegisterResourceLibrary(Context* context)
 
 void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
 {
-    ea::vector<ea::string> interimResult;
+    VirtualFileSystem* fileSystem = GetSubsystem<VirtualFileSystem>();
+    fileSystem->Scan(result, pathName, filter, flags, recursive);
 
-    for (unsigned i = 0; i < packages_.size(); ++i)
-    {
-        packages_[i]->Scan(interimResult, pathName, filter, recursive);
-        result.insert(result.end(), interimResult.begin(), interimResult.end());
-    }
-
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        fileSystem->ScanDir(interimResult, resourceDirs_[i] + pathName, filter, flags, recursive);
-        result.insert(result.end(), interimResult.begin(), interimResult.end());
-    }
 
     // Filtering copied from PackageFile::Scan().
     ea::string sanitizedPath = GetSanitizedPath(pathName);

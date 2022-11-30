@@ -50,6 +50,8 @@
 #include "../DebugNew.h"
 #include "Connection.h"
 
+#include "Urho3D/IO/VirtualFileSystem.h"
+
 
 #include <cstdio>
 
@@ -628,7 +630,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
 
                 // Instantiate the package and add to the resource system, as we will need it to load the scene
                 download.file_->Close();
-                GetSubsystem<ResourceCache>()->AddPackageFile(download.file_->GetName(), 0);
+                GetSubsystem<VirtualFileSystem>()->Mount(MakeShared<PackageFile>(context_, download.file_->GetName(), 0));
 
                 // Then start the next download if there are more
                 downloads_.erase(i);

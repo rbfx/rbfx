@@ -96,6 +96,8 @@
 #include "../Core/CommandLine.h"
 
 #include "../DebugNew.h"
+#include "Urho3D/IO/ResourceFolder.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
 
 
 #if defined(_MSC_VER) && defined(_DEBUG)
@@ -387,6 +389,7 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* fileSystem = GetSubsystem<FileSystem>();
+    auto* virtualFileSystem = GetSubsystem<VirtualFileSystem>();
 
     // Initialize app preferences directory
     appPreferencesDir_ = fileSystem->GetAppPreferencesDir(
@@ -396,10 +399,7 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
     // Remove all resource paths and packages
     if (removeOld)
     {
-        cache->RemoveAllResourceDirs();
-        ea::vector<SharedPtr<PackageFile> > packageFiles = cache->GetPackageFiles();
-        for (unsigned i = 0; i < packageFiles.size(); ++i)
-            cache->RemovePackageFile(packageFiles[i].Get());
+        virtualFileSystem->UnmountAll();
     }
 
     // Add resource paths
@@ -424,18 +424,17 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
                 ea::string packageName = resourcePrefixPaths[j] + resourcePaths[i] + ".pak";
                 if (fileSystem->FileExists(packageName))
                 {
-                    if (cache->AddPackageFile(packageName))
-                        break;
-                    else
-                        return false;   // The root cause of the error should have already been logged
+                    auto package = MakeShared<PackageFile>(context_, packageName, 0);
+                    if (package->GetNumFiles())
+                    {
+                        virtualFileSystem->Mount(package);
+                    }
                 }
                 ea::string pathName = resourcePrefixPaths[j] + resourcePaths[i];
                 if (fileSystem->DirExists(pathName))
                 {
-                    if (cache->AddResourceDir(pathName))
-                        break;
-                    else
-                        return false;
+                    auto resourceFolder = MakeShared<ResourceFolder>(context_, pathName);
+                    virtualFileSystem->Mount(resourceFolder);
                 }
             }
             if (j == resourcePrefixPaths.size() && !headless_)
@@ -450,8 +449,10 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
         {
             ea::string pathName = resourcePaths[i];
             if (fileSystem->DirExists(pathName))
-                if (!cache->AddResourceDir(pathName))
-                    return false;
+            {
+                auto resourceFolder = MakeShared<ResourceFolder>(context_, pathName);
+                virtualFileSystem->Mount(resourceFolder);
+            }
         }
     }
 
@@ -464,10 +465,11 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
             ea::string packageName = resourcePrefixPaths[j] + resourcePackages[i];
             if (fileSystem->FileExists(packageName))
             {
-                if (cache->AddPackageFile(packageName))
-                    break;
-                else
-                    return false;
+                auto package = MakeShared<PackageFile>(context_, packageName, 0);
+                if (package->GetNumFiles())
+                {
+                    virtualFileSystem->Mount(package);
+                }
             }
         }
         if (j == resourcePrefixPaths.size() && !headless_)
@@ -504,8 +506,8 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
                         continue;
 
                     ea::string autoResourceDir = AddTrailingSlash(autoLoadPath) + dir;
-                    if (!cache->AddResourceDir(autoResourceDir, 0))
-                        return false;
+                    auto resourceFolder = MakeShared<ResourceFolder>(context_, autoResourceDir);
+                    virtualFileSystem->Mount(resourceFolder);
                 }
 
                 // Add all the found package files (non-recursive)
@@ -518,8 +520,12 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
                         continue;
 
                     ea::string autoPackageName = autoLoadPath + "/" + pak;
-                    if (!cache->AddPackageFile(autoPackageName, 0))
-                        return false;
+
+                    auto package = MakeShared<PackageFile>(context_, autoPackageName, 0);
+                    if (package->GetNumFiles())
+                    {
+                        virtualFileSystem->Mount(package);
+                    }
                 }
             }
         }

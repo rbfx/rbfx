@@ -93,22 +93,8 @@ public:
     /// Destruct. Free all resources.
     ~ResourceCache() override;
 
-    /// Add a resource load directory. Optional priority parameter which will control search order.
-    bool AddResourceDir(const ea::string& pathName, unsigned priority = PRIORITY_LAST);
-    /// Add a package file for loading resources from. Optional priority parameter which will control search order.
-    bool AddPackageFile(PackageFile* package, unsigned priority = PRIORITY_LAST);
-    /// Add a package file for loading resources from by name. Optional priority parameter which will control search order.
-    bool AddPackageFile(const ea::string& fileName, unsigned priority = PRIORITY_LAST);
     /// Add a manually created resource. Must be uniquely named within its type.
     bool AddManualResource(Resource* resource);
-    /// Remove a resource load directory.
-    void RemoveResourceDir(const ea::string& pathName);
-    /// Remove all resource directories. At least one directory should be added before cache is used again!
-    void RemoveAllResourceDirs();
-    /// Remove a package file. Optionally release the resources loaded from it.
-    void RemovePackageFile(PackageFile* package, bool releaseResources = true, bool forceRelease = false);
-    /// Remove a package file by name. Optionally release the resources loaded from it.
-    void RemovePackageFile(const ea::string& fileName, bool releaseResources = true, bool forceRelease = false);
     /// Release a resource by name.
     void ReleaseResource(StringHash type, const ea::string& name, bool force = false);
     /// Release a resource by name.
@@ -130,16 +116,9 @@ public:
     /// Set memory budget for a specific resource type, default 0 is unlimited.
     /// @property
     void SetMemoryBudget(StringHash type, unsigned long long budget);
-    /// Enable or disable automatic reloading of resources as files are modified. Default false.
-    /// @property
-    void SetAutoReloadResources(bool enable);
     /// Enable or disable returning resources that failed to load. Default false. This may be useful in editing to not lose resource ref attributes.
     /// @property
     void SetReturnFailedResources(bool enable) { returnFailedResources_ = enable; }
-
-    /// Define whether when getting resources should check package files or directories first. True for packages, false for directories.
-    /// @property
-    void SetSearchPackagesFirst(bool value) { searchPackagesFirst_ = value; }
 
     /// Set how many milliseconds maximum per frame to spend on finishing background loaded resources.
     /// @property
@@ -169,14 +148,6 @@ public:
     /// Return all loaded resources.
     const ea::unordered_map<StringHash, ResourceGroup>& GetAllResources() const { return resourceGroups_; }
 
-    /// Return added resource load directories.
-    /// @property
-    const ea::vector<ea::string>& GetResourceDirs() const { return resourceDirs_; }
-
-    /// Return added package files.
-    /// @property
-    const ea::vector<SharedPtr<PackageFile> >& GetPackageFiles() const { return packages_; }
-
     /// Template version of returning a resource by name.
     template <class T> T* GetResource(const ea::string& name, bool sendEventOnFailure = true);
     /// Template version of returning an existing resource by name.
@@ -203,17 +174,9 @@ public:
     /// Return full absolute file name of resource if possible, or empty if not found.
     ea::string GetResourceFileName(const ea::string& name) const;
 
-    /// Return whether automatic resource reloading is enabled.
-    /// @property
-    bool GetAutoReloadResources() const { return autoReloadResources_; }
-
     /// Return whether resources that failed to load are returned.
     /// @property
     bool GetReturnFailedResources() const { return returnFailedResources_; }
-
-    /// Return whether when getting resources should check package files or directories first.
-    /// @property
-    bool GetSearchPackagesFirst() const { return searchPackagesFirst_; }
 
     /// Return how many milliseconds maximum to spend on finishing background loaded resources.
     /// @property
@@ -235,10 +198,6 @@ public:
 
     /// Returns a formatted string containing the memory actively used.
     ea::string PrintMemoryUsage() const;
-    /// Get the number of resource directories
-    unsigned GetNumResourceDirs() const { return resourceDirs_.size(); }
-    /// Get resource directory at a given index
-    const ea::string& GetResourceDir(unsigned index) const { return index < resourceDirs_.size() ? resourceDirs_[index] : EMPTY_STRING; }
 
     /// Scan for specified files.
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
@@ -267,33 +226,19 @@ private:
     void UpdateResourceGroup(StringHash type);
     /// Handle begin frame event. Automatic resource reloads and the finalization of background loaded resources are processed here.
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
-    /// Search FileSystem for file.
-    AbstractFilePtr SearchResourceDirs(const ea::string& name);
-    /// Search resource packages for file.
-    AbstractFilePtr SearchPackages(const ea::string& name);
 
     /// Mutex for thread-safe access to the resource directories, resource packages and resource dependencies.
     mutable Mutex resourceMutex_;
     /// Resources by type.
     ea::unordered_map<StringHash, ResourceGroup> resourceGroups_;
-    /// Resource load directories.
-    ea::vector<ea::string> resourceDirs_;
-    /// File watchers for resource directories, if automatic reloading enabled.
-    ea::vector<SharedPtr<FileWatcher> > fileWatchers_;
-    /// Package files.
-    ea::vector<SharedPtr<PackageFile> > packages_;
     /// Dependent resources. Only used with automatic reload to eg. trigger reload of a cube texture when any of its faces change.
     ea::unordered_map<StringHash, ea::hash_set<StringHash> > dependentResources_;
     /// Resource background loader.
     SharedPtr<BackgroundLoader> backgroundLoader_;
     /// Resource routers.
     ea::vector<SharedPtr<ResourceRouter> > resourceRouters_;
-    /// Automatic resource reloading flag.
-    bool autoReloadResources_;
     /// Return failed resources flag.
     bool returnFailedResources_;
-    /// Search priority flag.
-    bool searchPackagesFirst_;
     /// Resource routing flag to prevent endless recursion.
     mutable bool isRouting_;
     /// How many milliseconds maximum per frame to spend on finishing background loaded resources.
