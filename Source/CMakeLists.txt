@@ -73,7 +73,6 @@ add_subdirectory (ThirdParty)
 add_subdirectory (Urho3D)
 add_subdirectory (Samples)
 add_subdirectory (Tools)
-add_subdirectory (Extras)
 add_subdirectory (Tests)
 
 # Check options outside so user can add Player and/or Editor explicitly afterwards.

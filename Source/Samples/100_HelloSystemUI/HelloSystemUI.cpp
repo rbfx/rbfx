@@ -32,6 +32,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/SystemUI/TransformGizmo.h>
 #include <Urho3D/SystemUI/Console.h>
 #include <Urho3D/Input/FreeFlyController.h>
 
@@ -78,8 +79,6 @@ void HelloSystemUi::SubscribeToEvents()
 
 void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
 {
-    gizmo_->ManipulateNode(cameraNode_->GetComponent<Camera>(), boxNode_);
-
     ui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
     ui::SetNextWindowPos(ImVec2(200, 300), ImGuiCond_FirstUseEver);
     if (ui::Begin("Sample SystemUI", 0, ImGuiWindowFlags_NoSavedSettings))
@@ -106,7 +105,9 @@ void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
         if (ui::Button("Toggle metrics window"))
             metricsOpen_ ^= true;
 
-        gizmo_->RenderUI();
+        TransformGizmo gizmo{cameraNode_->GetComponent<Camera>()};
+        TransformNodesGizmo nodeGizmo{boxNode_};
+        nodeGizmo.Manipulate(gizmo, TransformGizmoOperation::Translate, false, false, Vector3::ZERO);
     }
     ui::End();
     if (metricsOpen_)
@@ -153,6 +154,4 @@ void HelloSystemUi::CreateScene()
     const auto staticModel = boxNode_->CreateComponent<StaticModel>();
     staticModel->SetModel(GetSubsystem<ResourceCache>()->GetResource<Model>("Models/Box.mdl"));
     staticModel->SetMaterial(GetSubsystem<ResourceCache>()->GetResource<Material>("Materials/DefaultGrey.xml"));
-
-    gizmo_ = MakeShared<Gizmo>(context_);
 }

@@ -34,7 +34,31 @@
 namespace Urho3D
 {
 
-SerializableInspectorWidget::SerializableInspectorWidget(Context* context, const SerializableVector& objects)
+namespace
+{
+
+ea::unordered_map<SerializableHookKey, SerializableHookFunction> hooks;
+
+}
+
+void SerializableInspectorWidget::RegisterHook(const SerializableHookKey& key, const SerializableHookFunction& function)
+{
+    hooks[key] = function;
+}
+
+void SerializableInspectorWidget::UnregisterHook(const SerializableHookKey& key)
+{
+    hooks.erase(key);
+}
+
+const SerializableHookFunction& SerializableInspectorWidget::GetHook(const SerializableHookKey& key)
+{
+    static const SerializableHookFunction empty{};
+    const auto iter = hooks.find(key);
+    return iter != hooks.end() ? iter->second : empty;
+}
+
+SerializableInspectorWidget::SerializableInspectorWidget(Context* context, const WeakSerializableVector& objects)
     : Object(context)
     , objects_(objects)
 {
@@ -108,6 +132,7 @@ void SerializableInspectorWidget::RenderContent()
         return;
 
     pendingSetAttributes_.clear();
+    pendingActions_.clear();
     for (const AttributeInfo& info : *attributes)
     {
         if (info.mode_ & AM_NOEDIT)
@@ -134,11 +159,26 @@ void SerializableInspectorWidget::RenderContent()
         }
     }
 
+    if (!pendingActions_.empty())
+    {
+        OnActionBegin(this, objects_);
+        for (const AttributeInfo* info : pendingActions_)
+        {
+            for (Serializable* object : objects_)
+            {
+                if (object)
+                    object->SetAttribute(info->name_, true);
+            }
+        }
+        OnActionEnd(this, objects_);
+    }
 }
 
 void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 {
-    if (info.GetMetadata(AttributeMetadata::P_IS_ACTION).GetBool())
+    const SerializableHookFunction& hook = GetHook(SerializableHookKey{objects_[0]->GetTypeName(), info.name_});
+
+    if (!hook && info.GetMetadata(AttributeMetadata::P_IS_ACTION).GetBool())
     {
         RenderAction(info);
         return;
@@ -151,6 +191,18 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
     const bool isUndefined = ea::any_of(objects_.begin() + 1, objects_.end(),
         [&](const WeakPtr<Serializable>& obj) { info.accessor_->Get(obj, tempValue); return tempValue != value; });
     const bool isDefaultValue = value == info.defaultValue_;
+
+    if (hook)
+    {
+        SerializableHookContext ctx;
+        ctx.objects_ = &objects_;
+        ctx.info_ = &info;
+        ctx.isUndefined_ = isUndefined;
+        ctx.isDefaultValue_ = isDefaultValue;
+        if (hook(ctx, value))
+            pendingSetAttributes_.emplace_back(&info, value);
+        return;
+    }
 
     Widgets::ItemLabel(info.name_.c_str(), Widgets::GetItemLabelColor(isUndefined, isDefaultValue));
 
@@ -180,9 +232,7 @@ void SerializableInspectorWidget::RenderAction(const AttributeInfo& info)
 {
     Serializable* object = objects_.front();
     if (ui::Button(info.name_.c_str()))
-    {
-        object->OnSetAttribute(info, true);
-    }
+        pendingActions_.emplace_back(&info);
 
     ui::SameLine();
 

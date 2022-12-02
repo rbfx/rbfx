@@ -37,12 +37,13 @@ class URHO3D_API NodeInspectorWidget : public Object
 
 public:
     using NodeVector = ea::vector<WeakPtr<Node>>;
-    using SerializableVector = SerializableInspectorWidget::SerializableVector;
 
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditNodeAttributeBegin;
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditNodeAttributeEnd;
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditComponentAttributeBegin;
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditComponentAttributeEnd;
+    Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditNodeAttributeBegin;
+    Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditNodeAttributeEnd;
+    Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditComponentAttributeBegin;
+    Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditComponentAttributeEnd;
+    Signal<void(const WeakSerializableVector& objects)> OnActionBegin;
+    Signal<void(const WeakSerializableVector& objects)> OnActionEnd;
     Signal<void(Component* component)> OnComponentRemoved;
 
     NodeInspectorWidget(Context* context, const NodeVector& nodes);

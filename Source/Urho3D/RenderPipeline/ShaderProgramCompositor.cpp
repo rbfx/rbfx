@@ -160,7 +160,11 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
     }
 
     if (flags.Test(DrawableProcessorPassFlag::NeedReadableDepth) && settings_.renderBufferManager_.readableDepth_)
+    {
         result.AddCommonShaderDefines("URHO3D_HAS_READABLE_DEPTH");
+        if (isCameraOrthographic_)
+            result.AddCommonShaderDefines("URHO3D_ORTHOGRAPHIC_DEPTH");
+    }
 
     result.AddShaderDefines(VS, pass->GetEffectiveVertexShaderDefines());
     result.AddShaderDefines(PS, pass->GetEffectivePixelShaderDefines());

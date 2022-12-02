@@ -86,6 +86,7 @@ public:
         : activeNode_(activeNode)
         , nodes_(begin, end)
     {}
+    explicit TransformNodesGizmo(Node* activeNode);
 
     /// Manipulate nodes.
     bool Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, bool local, bool pivoted, const Vector3& snap);

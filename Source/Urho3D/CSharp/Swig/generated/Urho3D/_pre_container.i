@@ -17,4 +17,3 @@
 %csattribute(Urho3D::ArrayDimensions2D, %arg(Urho3D::IntRect), Rect, GetRect);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(unsigned int), Capacity, GetCapacity);
 %csattribute(Urho3D::ConstString, %arg(Urho3D::StringHash), Hash, GetHash);
-%csattribute(Urho3D::ValueCache, %arg(unsigned int), ExpireFrames, GetExpireFrames, SetExpireFrames);

@@ -64,7 +64,6 @@ private:
     const bool removed_{};
     WeakPtr<Scene> scene_;
     PackedNodeData data_;
-    unsigned indexInParent_{};
 };
 
 /// Create or remove component.
@@ -87,7 +86,6 @@ private:
     const bool removed_{};
     WeakPtr<Scene> scene_;
     PackedComponentData data_;
-    unsigned indexInParent_{};
 };
 
 /// Change node transform.
@@ -259,6 +257,29 @@ private:
     const unsigned nodeId_{};
     const unsigned oldParentId_{};
     unsigned newParentId_{};
+};
+
+/// Change subtree of nodes.
+class ChangeNodeSubtreeAction : public EditorAction
+{
+public:
+    ChangeNodeSubtreeAction(Scene* scene, const PackedNodeData& oldData, Node* newData);
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void UpdateSubtree(unsigned nodeId, const PackedNodeData* data) const;
+
+    const WeakPtr<Scene> scene_;
+    const PackedNodeData oldData_;
+    PackedNodeData newData_;
+    bool newRemoved_{};
 };
 
 }

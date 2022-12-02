@@ -52,6 +52,7 @@ public:
 private:
     unsigned id_{};
     unsigned parentId_{};
+    unsigned indexInParent_{};
     ea::string name_;
     VectorBuffer data_;
 };
@@ -75,6 +76,7 @@ public:
 private:
     unsigned id_{};
     unsigned nodeId_{};
+    unsigned indexInParent_{};
     StringHash type_;
     VectorBuffer data_;
 };

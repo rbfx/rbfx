@@ -207,6 +207,11 @@ void Component::GetComponents(ea::vector<Component*>& dest, StringHash type) con
         dest.clear();
 }
 
+unsigned Component::GetIndexInParent() const
+{
+    return node_ ? node_->GetComponentIndex(this) : M_MAX_UNSIGNED;
+}
+
 void Component::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData)
 {
     using namespace AttributeAnimationUpdate;

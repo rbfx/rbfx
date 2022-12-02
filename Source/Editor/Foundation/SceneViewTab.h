@@ -331,6 +331,26 @@ private:
     PackedSceneSelection newSelection_;
 };
 
+/// Wrapper to preserve scene selection on undo/redo.
+class PreserveSceneSelectionWrapper : public BaseEditorActionWrapper
+{
+public:
+    PreserveSceneSelectionWrapper(SharedPtr<EditorAction> action, SceneViewPage* page);
+
+    /// Implement BaseEditorActionWrapper.
+    /// @{
+    bool CanRedo() const override;
+    void Redo() const override;
+    bool CanUndo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    const WeakPtr<SceneViewPage> page_;
+    const PackedSceneSelection selection_;
+};
+
 /// Helper function to query geometries from a scene.
 ea::vector<RayQueryResult> QueryGeometriesFromScene(Scene* scene, const Ray& ray,
     RayQueryLevel level = RAY_TRIANGLE, float maxDistance = M_INFINITY, unsigned viewMask = DEFAULT_VIEWMASK);

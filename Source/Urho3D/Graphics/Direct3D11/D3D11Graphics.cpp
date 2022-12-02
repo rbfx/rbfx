@@ -88,55 +88,93 @@ static const D3D11_COMPARISON_FUNC d3dCmpFunc[] =
 
 static const DWORD d3dBlendEnable[] =
 {
-    FALSE,
-    TRUE,
-    TRUE,
-    TRUE,
-    TRUE,
-    TRUE,
-    TRUE,
-    TRUE,
-    TRUE
+    FALSE,  // BLEND_REPLACE
+    TRUE,   // BLEND_ADD
+    TRUE,   // BLEND_MULTIPLY
+    TRUE,   // BLEND_ALPHA
+    TRUE,   // BLEND_ADDALPHA
+    TRUE,   // BLEND_PREMULALPHA
+    TRUE,   // BLEND_INVDESTALPHA
+    TRUE,   // BLEND_SUBTRACT
+    TRUE,   // BLEND_SUBTRACTALPHA
+    TRUE,   // BLEND_DEFERRED_DECAL
 };
+static_assert(sizeof(d3dBlendEnable) / sizeof(d3dBlendEnable[0]) == MAX_BLENDMODES, "");
 
 static const D3D11_BLEND d3dSrcBlend[] =
 {
-    D3D11_BLEND_ONE,
-    D3D11_BLEND_ONE,
-    D3D11_BLEND_DEST_COLOR,
-    D3D11_BLEND_SRC_ALPHA,
-    D3D11_BLEND_SRC_ALPHA,
-    D3D11_BLEND_ONE,
-    D3D11_BLEND_INV_DEST_ALPHA,
-    D3D11_BLEND_ONE,
-    D3D11_BLEND_SRC_ALPHA,
+    D3D11_BLEND_ONE,            // BLEND_REPLACE
+    D3D11_BLEND_ONE,            // BLEND_ADD
+    D3D11_BLEND_DEST_COLOR,     // BLEND_MULTIPLY
+    D3D11_BLEND_SRC_ALPHA,      // BLEND_ALPHA
+    D3D11_BLEND_SRC_ALPHA,      // BLEND_ADDALPHA
+    D3D11_BLEND_ONE,            // BLEND_PREMULALPHA
+    D3D11_BLEND_INV_DEST_ALPHA, // BLEND_INVDESTALPHA
+    D3D11_BLEND_ONE,            // BLEND_SUBTRACT
+    D3D11_BLEND_SRC_ALPHA,      // BLEND_SUBTRACTALPHA
+    D3D11_BLEND_SRC_ALPHA,      // BLEND_DEFERRED_DECAL
 };
+static_assert(sizeof(d3dSrcBlend) / sizeof(d3dSrcBlend[0]) == MAX_BLENDMODES, "");
 
 static const D3D11_BLEND d3dDestBlend[] =
 {
-    D3D11_BLEND_ZERO,
-    D3D11_BLEND_ONE,
-    D3D11_BLEND_ZERO,
-    D3D11_BLEND_INV_SRC_ALPHA,
-    D3D11_BLEND_ONE,
-    D3D11_BLEND_INV_SRC_ALPHA,
-    D3D11_BLEND_DEST_ALPHA,
-    D3D11_BLEND_ONE,
-    D3D11_BLEND_ONE
+    D3D11_BLEND_ZERO,          // BLEND_REPLACE
+    D3D11_BLEND_ONE,           // BLEND_ADD
+    D3D11_BLEND_ZERO,          // BLEND_MULTIPLY
+    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_ALPHA
+    D3D11_BLEND_ONE,           // BLEND_ADDALPHA
+    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_PREMULALPHA
+    D3D11_BLEND_DEST_ALPHA,    // BLEND_INVDESTALPHA
+    D3D11_BLEND_ONE,           // BLEND_SUBTRACT
+    D3D11_BLEND_ONE,           // BLEND_SUBTRACTALPHA
+    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_DEFERRED_DECAL
 };
+static_assert(sizeof(d3dDestBlend) / sizeof(d3dDestBlend[0]) == MAX_BLENDMODES, "");
+
+static const D3D11_BLEND d3dSrcAlphaBlend[] =
+{
+    D3D11_BLEND_ONE,            // BLEND_REPLACE
+    D3D11_BLEND_ONE,            // BLEND_ADD
+    D3D11_BLEND_DEST_COLOR,     // BLEND_MULTIPLY
+    D3D11_BLEND_SRC_ALPHA,      // BLEND_ALPHA
+    D3D11_BLEND_SRC_ALPHA,      // BLEND_ADDALPHA
+    D3D11_BLEND_ONE,            // BLEND_PREMULALPHA
+    D3D11_BLEND_INV_DEST_ALPHA, // BLEND_INVDESTALPHA
+    D3D11_BLEND_ONE,            // BLEND_SUBTRACT
+    D3D11_BLEND_SRC_ALPHA,      // BLEND_SUBTRACTALPHA
+    D3D11_BLEND_ZERO,           // BLEND_DEFERRED_DECAL
+};
+static_assert(sizeof(d3dSrcAlphaBlend) / sizeof(d3dSrcAlphaBlend[0]) == MAX_BLENDMODES, "");
+
+static const D3D11_BLEND d3dDestAlphaBlend[] =
+{
+    D3D11_BLEND_ZERO,          // BLEND_REPLACE
+    D3D11_BLEND_ONE,           // BLEND_ADD
+    D3D11_BLEND_ZERO,          // BLEND_MULTIPLY
+    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_ALPHA
+    D3D11_BLEND_ONE,           // BLEND_ADDALPHA
+    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_PREMULALPHA
+    D3D11_BLEND_DEST_ALPHA,    // BLEND_INVDESTALPHA
+    D3D11_BLEND_ONE,           // BLEND_SUBTRACT
+    D3D11_BLEND_ONE,           // BLEND_SUBTRACTALPHA
+    D3D11_BLEND_ONE,           // BLEND_DEFERRED_DECAL
+};
+static_assert(sizeof(d3dDestAlphaBlend) / sizeof(d3dDestAlphaBlend[0]) == MAX_BLENDMODES, "");
 
 static const D3D11_BLEND_OP d3dBlendOp[] =
 {
-    D3D11_BLEND_OP_ADD,
-    D3D11_BLEND_OP_ADD,
-    D3D11_BLEND_OP_ADD,
-    D3D11_BLEND_OP_ADD,
-    D3D11_BLEND_OP_ADD,
-    D3D11_BLEND_OP_ADD,
-    D3D11_BLEND_OP_ADD,
-    D3D11_BLEND_OP_REV_SUBTRACT,
-    D3D11_BLEND_OP_REV_SUBTRACT
+    D3D11_BLEND_OP_ADD,          // BLEND_REPLACE
+    D3D11_BLEND_OP_ADD,          // BLEND_ADD
+    D3D11_BLEND_OP_ADD,          // BLEND_MULTIPLY
+    D3D11_BLEND_OP_ADD,          // BLEND_ALPHA
+    D3D11_BLEND_OP_ADD,          // BLEND_ADDALPHA
+    D3D11_BLEND_OP_ADD,          // BLEND_PREMULALPHA
+    D3D11_BLEND_OP_ADD,          // BLEND_INVDESTALPHA
+    D3D11_BLEND_OP_REV_SUBTRACT, // BLEND_SUBTRACT
+    D3D11_BLEND_OP_REV_SUBTRACT, // BLEND_SUBTRACTALPHA
+    D3D11_BLEND_OP_ADD,          // BLEND_DEFERRED_DECAL
 };
+static_assert(sizeof(d3dBlendOp) / sizeof(d3dBlendOp[0]) == MAX_BLENDMODES, "");
 
 static const D3D11_STENCIL_OP d3dStencilOp[] =
 {
@@ -2457,8 +2495,8 @@ void Graphics::PrepareDraw()
                 stateDesc.RenderTarget[0].SrcBlend = d3dSrcBlend[blendMode_];
                 stateDesc.RenderTarget[0].DestBlend = d3dDestBlend[blendMode_];
                 stateDesc.RenderTarget[0].BlendOp = d3dBlendOp[blendMode_];
-                stateDesc.RenderTarget[0].SrcBlendAlpha = d3dSrcBlend[blendMode_];
-                stateDesc.RenderTarget[0].DestBlendAlpha = d3dDestBlend[blendMode_];
+                stateDesc.RenderTarget[0].SrcBlendAlpha = d3dSrcAlphaBlend[blendMode_];
+                stateDesc.RenderTarget[0].DestBlendAlpha = d3dDestAlphaBlend[blendMode_];
                 stateDesc.RenderTarget[0].BlendOpAlpha = d3dBlendOp[blendMode_];
                 stateDesc.RenderTarget[0].RenderTargetWriteMask = colorWrite_ ? D3D11_COLOR_WRITE_ENABLE_ALL : 0x0;
 

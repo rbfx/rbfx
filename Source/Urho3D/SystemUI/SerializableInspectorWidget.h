@@ -28,33 +28,49 @@
 namespace Urho3D
 {
 
+struct SerializableHookContext
+{
+    const WeakSerializableVector* objects_{};
+    const AttributeInfo* info_{};
+    bool isUndefined_{};
+    bool isDefaultValue_{};
+};
+
+using SerializableHookKey = ea::pair<ea::string /*class*/, ea::string /*attribute*/>;
+using SerializableHookFunction = ea::function<bool(const SerializableHookContext& ctx, Variant& boxedValue)>;
+
 /// SystemUI widget used to edit materials.
 class URHO3D_API SerializableInspectorWidget : public Object
 {
     URHO3D_OBJECT(SerializableInspectorWidget, Object);
 
 public:
-    using SerializableVector = ea::vector<WeakPtr<Serializable>>;
+    static void RegisterHook(const SerializableHookKey& key, const SerializableHookFunction& function);
+    static void UnregisterHook(const SerializableHookKey& key);
+    static const SerializableHookFunction& GetHook(const SerializableHookKey& key);
 
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeBegin;
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeEnd;
+    Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeBegin;
+    Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeEnd;
+    Signal<void(const WeakSerializableVector& objects)> OnActionBegin;
+    Signal<void(const WeakSerializableVector& objects)> OnActionEnd;
 
-    SerializableInspectorWidget(Context* context, const SerializableVector& objects);
+    SerializableInspectorWidget(Context* context, const WeakSerializableVector& objects);
     ~SerializableInspectorWidget() override;
 
     void RenderTitle();
     void RenderContent();
 
     ea::string GetTitle();
-    const SerializableVector& GetObjects() const { return objects_; }
+    const WeakSerializableVector& GetObjects() const { return objects_; }
 
 private:
     void PruneObjects();
     void RenderAttribute(const AttributeInfo& info);
     void RenderAction(const AttributeInfo& info);
 
-    SerializableVector objects_;
+    WeakSerializableVector objects_;
     ea::vector<ea::pair<const AttributeInfo*, Variant>> pendingSetAttributes_;
+    ea::vector<const AttributeInfo*> pendingActions_;
 };
 
 }

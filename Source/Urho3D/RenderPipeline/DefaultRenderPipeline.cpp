@@ -138,9 +138,9 @@ void DefaultRenderPipelineView::ApplySettings()
         }
     }
 
-    outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(StringVector{"deferred", "base", "alpha"});
+    outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(StringVector{"deferred", "deferred_decal", "base", "alpha"});
 
-    sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
+    sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, deferredDecalPass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
 
     postProcessPasses_.clear();
 
@@ -234,6 +234,9 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         sceneProcessor_ = MakeShared<SceneProcessor>(this, "shadow", shadowMapAllocator_, instancingBuffer_);
 
         postOpaquePass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(DrawableProcessorPassFlag::None, "postopaque");
+        deferredDecalPass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(
+            DrawableProcessorPassFlag::HasAmbientLighting | DrawableProcessorPassFlag::NeedReadableDepth,
+            "deferred_decal", "", "", "");
         alphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
             DrawableProcessorPassFlag::HasAmbientLighting | DrawableProcessorPassFlag::NeedReadableDepth
             | DrawableProcessorPassFlag::RefractionPass, "", "alpha", "alpha", "litalpha");
@@ -346,8 +349,19 @@ void DefaultRenderPipelineView::Render()
             deferred_->specularBuffer_,
             deferred_->normalBuffer_
         };
+
         renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
         sceneProcessor_->RenderSceneBatches("GeometryBuffer", camera, opaquePass_->GetDeferredBatches());
+        if (!deferredDecalPass_->GetDeferredBatches().batches_.empty() && settings_.renderBufferManager_.readableDepth_)
+        {
+            renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
+
+            ShaderResourceDesc depthAndColorTextures[] = {
+                {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+            };
+
+            sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, deferredDecalPass_->GetDeferredBatches(), depthAndColorTextures);
+        }
 
         // Draw deferred lights
         const ShaderResourceDesc geometryBuffer[] = {
@@ -356,10 +370,9 @@ void DefaultRenderPipelineView::Render()
             { TU_NORMAL, deferred_->normalBuffer_->GetTexture() },
             { TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture() }
         };
-
         const ShaderParameterDesc cameraParameters[] = {
-            { ShaderConsts::Camera_GBufferOffsets, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale() },
-            { ShaderConsts::Camera_GBufferInvSize, renderBufferManager_->GetInvOutputSize() },
+            {ShaderConsts::Camera_GBufferOffsets, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
+            {ShaderConsts::Camera_GBufferInvSize, renderBufferManager_->GetInvOutputSize()},
         };
 
         renderBufferManager_->SetOutputRenderTargers();

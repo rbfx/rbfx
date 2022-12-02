@@ -1,0 +1,3 @@
+<technique vs="M_DeferredDecal" ps="M_DeferredDecal">
+    <pass name="deferred_decal" depthwrite="false" blend="decal" />
+</technique>

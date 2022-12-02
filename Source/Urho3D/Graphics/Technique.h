@@ -45,6 +45,7 @@ static const char* blendModeNames[] =
     "invdestalpha",
     "subtract",
     "subtractalpha",
+    "decal",
     nullptr
 };
 

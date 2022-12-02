@@ -1367,6 +1367,11 @@ unsigned Node::GetChildIndex(const Node* child) const
     return iter != children_.end() ? static_cast<unsigned>(iter - children_.begin()) : M_MAX_UNSIGNED;
 }
 
+unsigned Node::GetIndexInParent() const
+{
+    return parent_ ? parent_->GetChildIndex(this) : M_MAX_UNSIGNED;
+}
+
 Node* Node::GetChild(unsigned index) const
 {
     return index < children_.size() ? children_[index] : nullptr;

@@ -658,7 +658,11 @@ ea::optional<EditorActionFrame> SceneViewTab::PushAction(SharedPtr<EditorAction>
     if (activePage->IsSimulationActive())
         return ea::nullopt;
 
-    return BaseClassName::PushAction(action);
+    if (auto selectionAction = dynamic_cast<ChangeSceneSelectionAction*>(action.Get()))
+        return BaseClassName::PushAction(action);
+
+    const auto wrappedAction = MakeShared<PreserveSceneSelectionWrapper>(action, activePage);
+    return BaseClassName::PushAction(wrappedAction);
 }
 
 void SceneViewTab::RenderContextMenuItems()
@@ -1047,6 +1051,47 @@ bool ChangeSceneSelectionAction::MergeWith(const EditorAction& other)
 
     newSelection_ = otherAction->newSelection_;
     return true;
+}
+
+PreserveSceneSelectionWrapper::PreserveSceneSelectionWrapper(SharedPtr<EditorAction> action, SceneViewPage* page)
+    : BaseEditorActionWrapper(action)
+    , page_(page)
+    , selection_(page->selection_.Pack())
+{
+}
+
+bool PreserveSceneSelectionWrapper::CanRedo() const
+{
+    return page_ && action_->CanRedo();
+}
+
+void PreserveSceneSelectionWrapper::Redo() const
+{
+    action_->Redo();
+    page_->selection_.Load(page_->scene_, selection_);
+}
+
+bool PreserveSceneSelectionWrapper::CanUndo() const
+{
+    return page_ && action_->CanUndo();
+}
+
+void PreserveSceneSelectionWrapper::Undo() const
+{
+    action_->Undo();
+    page_->selection_.Load(page_->scene_, selection_);
+}
+
+bool PreserveSceneSelectionWrapper::MergeWith(const EditorAction& other)
+{
+    const auto otherWrapper = dynamic_cast<const PreserveSceneSelectionWrapper*>(&other);
+    if (!otherWrapper)
+        return false;
+
+    if (page_ != otherWrapper->page_ || selection_ != otherWrapper->selection_)
+        return false;
+
+    return action_->MergeWith(*otherWrapper->action_);
 }
 
 ea::vector<RayQueryResult> QueryGeometriesFromScene(Scene* scene, const Ray& ray, RayQueryLevel level, float maxDistance, unsigned viewMask)

@@ -29,7 +29,6 @@ CreateRemoveNodeAction::CreateRemoveNodeAction(Node* node, bool removed)
     : removed_(removed)
     , scene_(node->GetScene())
     , data_(node)
-    , indexInParent_(node->GetParent()->GetChildIndex(node))
 {
 }
 
@@ -59,9 +58,8 @@ void CreateRemoveNodeAction::AddNode() const
     if (!scene_)
         return;
 
-    if (Node* node = data_.SpawnExact(scene_))
-        node->GetParent()->ReorderChild(node, indexInParent_);
-    else
+    Node* node = data_.SpawnExact(scene_);
+    if (!node)
         throw UndoException("Cannot create node with id {}", data_.GetId());
 }
 
@@ -80,7 +78,6 @@ CreateRemoveComponentAction::CreateRemoveComponentAction(Component* component, b
     : removed_(removed)
     , scene_(component->GetScene())
     , data_(component)
-    , indexInParent_(component->GetNode()->GetComponentIndex(component))
 {
 }
 
@@ -110,9 +107,8 @@ void CreateRemoveComponentAction::AddComponent() const
     if (!scene_)
         return;
 
-    if (Component* component = data_.SpawnExact(scene_))
-        component->GetNode()->ReorderComponent(component, indexInParent_);
-    else
+    Component* component = data_.SpawnExact(scene_);
+    if (!component)
         throw UndoException("Cannot create component with id {}", data_.GetId());
 }
 
@@ -424,6 +420,51 @@ bool ReparentNodeAction::MergeWith(const EditorAction& other)
         return false;
 
     newParentId_ = otherAction->newParentId_;
+    return true;
+}
+
+ChangeNodeSubtreeAction::ChangeNodeSubtreeAction(Scene* scene, const PackedNodeData& oldData, Node* newData)
+    : scene_(scene)
+    , oldData_(oldData)
+    , newData_(newData ? PackedNodeData{newData} : PackedNodeData{})
+    , newRemoved_(newData == nullptr)
+{
+}
+
+bool ChangeNodeSubtreeAction::CanUndoRedo() const
+{
+    return scene_;
+}
+
+void ChangeNodeSubtreeAction::Redo() const
+{
+    UpdateSubtree(oldData_.GetId(), newRemoved_ ? nullptr : &newData_);
+}
+
+void ChangeNodeSubtreeAction::Undo() const
+{
+    UpdateSubtree(oldData_.GetId(), &oldData_);
+}
+
+void ChangeNodeSubtreeAction::UpdateSubtree(unsigned nodeId, const PackedNodeData* data) const
+{
+    if (Node* oldNode = scene_->GetNode(nodeId))
+        oldNode->Remove();
+    if (data)
+        data->SpawnExact(scene_);
+}
+
+bool ChangeNodeSubtreeAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ChangeNodeSubtreeAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_)
+        return false;
+
+    newData_ = otherAction->newData_;
+    newRemoved_ = otherAction->newRemoved_;
     return true;
 }
 

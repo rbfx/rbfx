@@ -49,6 +49,8 @@ public:
         float shiftFactor_{4.0f};
         float focusDistance_{10.0f};
         float focusSpeed_{17.0f};
+        bool orthographic_{false};
+        float orthoSize_{10.0f};
     };
     using SettingsPage = SimpleSettingsPage<Settings>;
 
@@ -70,7 +72,7 @@ public:
 
     CameraController(Context* context, HotkeyManager* hotkeyManager);
 
-    void ProcessInput(const Camera* camera, PageState& state, const Settings* settings = nullptr);
+    void ProcessInput(Camera* camera, PageState& state, const Settings* settings = nullptr);
 
 private:
     void UpdateState(const Settings& settings, const Camera* camera, PageState& state) const;

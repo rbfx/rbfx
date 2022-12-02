@@ -43,10 +43,59 @@ struct WeakToRawStaticCaster
 };
 
 template <class T>
-auto CastVectorTo(const ea::vector<WeakPtr<Serializable>>& objects)
+auto CastVectorTo(const WeakSerializableVector& objects)
 {
     ea::span<const WeakPtr<Serializable>> objectsSpan{objects};
     return TransformedSpan<const WeakPtr<Serializable>, T, WeakToRawStaticCaster<T>>(objectsSpan);
+}
+
+NodeInspectorWidget::NodeVector GetSortedTopmostNodes(const WeakSerializableVector& objects)
+{
+    using NodeAndIndex = ea::pair<Node*, unsigned>;
+
+    ea::unordered_set<Node*> nodeSet;
+    for (Serializable* obj : objects)
+    {
+        if (auto node = dynamic_cast<Node*>(obj))
+            nodeSet.insert(node);
+        else if (auto component = dynamic_cast<Component*>(obj))
+            nodeSet.insert(component->GetNode());
+    }
+
+    ea::vector<NodeAndIndex> nodeVector;
+    for (Node* node : nodeSet)
+    {
+        Node* parentNode = node->GetParent();
+        nodeVector.emplace_back(node, node->GetIndexInParent());
+    }
+
+    for (auto& [node, _] : nodeVector)
+    {
+        if (!node)
+            continue;
+
+        const auto isParentOfNode = [node = node](Node* other) { return node && node->IsChildOf(other); };
+        const auto parentIter = ea::find_if(nodeSet.begin(), nodeSet.end(), isParentOfNode);
+        if (parentIter != nodeSet.end())
+            node = nullptr;
+    }
+    ea::erase_if(nodeVector, [](const NodeAndIndex& nodeAndIndex) { return !nodeAndIndex.first; });
+    ea::sort(nodeVector.begin(), nodeVector.end());
+
+    NodeInspectorWidget::NodeVector result;
+    for (const auto& [node, _] : nodeVector)
+        result.emplace_back(node);
+    return result;
+}
+
+bool HasScene(const NodeInspectorWidget::NodeVector& nodes)
+{
+    for (Node* node : nodes)
+    {
+        if (node->GetScene() == node)
+            return true;
+    }
+    return false;
 }
 
 }
@@ -109,7 +158,7 @@ NodeComponentInspector::NodeVector NodeComponentInspector::CollectNodes() const
     return {};
 }
 
-NodeComponentInspector::SerializableVector NodeComponentInspector::CollectComponents() const
+WeakSerializableVector NodeComponentInspector::CollectComponents() const
 {
     // If components are of the same type, inspect components
     const bool sameType = ea::all_of(components_.begin(), components_.end(),
@@ -132,6 +181,8 @@ void NodeComponentInspector::InspectObjects()
         nodeWidget_->OnEditNodeAttributeEnd.Subscribe(this, &NodeComponentInspector::EndEditNodeAttribute);
         nodeWidget_->OnEditComponentAttributeBegin.Subscribe(this, &NodeComponentInspector::BeginEditComponentAttribute);
         nodeWidget_->OnEditComponentAttributeEnd.Subscribe(this, &NodeComponentInspector::EndEditComponentAttribute);
+        nodeWidget_->OnActionBegin.Subscribe(this, &NodeComponentInspector::BeginAction);
+        nodeWidget_->OnActionEnd.Subscribe(this, &NodeComponentInspector::EndAction);
         nodeWidget_->OnComponentRemoved.Subscribe(this, &NodeComponentInspector::RemoveComponent);
     }
     else if (const auto components = CollectComponents(); !components.empty())
@@ -142,6 +193,8 @@ void NodeComponentInspector::InspectObjects()
 
         componentWidget_->OnEditAttributeBegin.Subscribe(this, &NodeComponentInspector::BeginEditComponentAttribute);
         componentWidget_->OnEditAttributeEnd.Subscribe(this, &NodeComponentInspector::EndEditComponentAttribute);
+        componentWidget_->OnActionBegin.Subscribe(this, &NodeComponentInspector::BeginAction);
+        componentWidget_->OnActionEnd.Subscribe(this, &NodeComponentInspector::EndAction);
     }
     else
     {
@@ -154,7 +207,7 @@ void NodeComponentInspector::InspectObjects()
     }
 }
 
-void NodeComponentInspector::BeginEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::BeginEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
@@ -165,7 +218,7 @@ void NodeComponentInspector::BeginEditNodeAttribute(const SerializableVector& ob
         oldValues_.push_back(node->GetAttribute(attribute->name_));
 }
 
-void NodeComponentInspector::EndEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::EndEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
@@ -178,7 +231,7 @@ void NodeComponentInspector::EndEditNodeAttribute(const SerializableVector& obje
     inspectedTab_->PushAction<ChangeNodeAttributesAction>(scene_, attribute->name_, nodes, oldValues_, newValues_);
 }
 
-void NodeComponentInspector::BeginEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::BeginEditComponentAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
@@ -189,7 +242,7 @@ void NodeComponentInspector::BeginEditComponentAttribute(const SerializableVecto
         oldValues_.push_back(component->GetAttribute(attribute->name_));
 }
 
-void NodeComponentInspector::EndEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::EndEditComponentAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
@@ -200,6 +253,32 @@ void NodeComponentInspector::EndEditComponentAttribute(const SerializableVector&
         newValues_.push_back(component->GetAttribute(attribute->name_));
 
     inspectedTab_->PushAction<ChangeComponentAttributesAction>(scene_, attribute->name_, components, oldValues_, newValues_);
+}
+
+void NodeComponentInspector::BeginAction(const WeakSerializableVector& objects)
+{
+    oldData_.clear();
+    changedNodes_ = GetSortedTopmostNodes(objects);
+    if (HasScene(changedNodes_))
+    {
+        // Disable undo/redo for scene actions for simplicity and performance
+        // TODO: Implement it?
+        changedNodes_.clear();
+        return;
+    }
+
+    for (Node* node : changedNodes_)
+    {
+        oldData_.push_back(PackedNodeData{node});
+    }
+}
+
+void NodeComponentInspector::EndAction(const WeakSerializableVector& objects)
+{
+    for (unsigned i = 0; i < changedNodes_.size(); ++i)
+    {
+        inspectedTab_->PushAction<ChangeNodeSubtreeAction>(scene_, oldData_[i], changedNodes_[i]);
+    }
 }
 
 void NodeComponentInspector::AddComponentToNodes(StringHash componentType)

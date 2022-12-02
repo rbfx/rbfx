@@ -28,6 +28,7 @@
 
 #include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/SerializableInspectorWidget.h>
+#include <Urho3D/Utility/PackedSceneData.h>
 #include <Urho3D/Utility/SceneSelection.h>
 
 #include <EASTL/map.h>
@@ -58,21 +59,22 @@ public:
 
 private:
     using NodeVector = NodeInspectorWidget::NodeVector;
-    using SerializableVector = SerializableInspectorWidget::SerializableVector;
 
     void OnProjectRequest(RefCounted* senderTab, ProjectRequest* request);
 
     NodeVector CollectNodes() const;
-    SerializableVector CollectComponents() const;
+    WeakSerializableVector CollectComponents() const;
     void InspectObjects();
 
     void RenderComponentSummary();
     void RenderAddComponent();
 
-    void BeginEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
-    void EndEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
-    void BeginEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
-    void EndEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
+    void BeginEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute);
+    void EndEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute);
+    void BeginEditComponentAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute);
+    void EndEditComponentAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute);
+    void BeginAction(const WeakSerializableVector& objects);
+    void EndAction(const WeakSerializableVector& objects);
     void AddComponentToNodes(StringHash componentType);
     void RemoveComponent(Component* component);
 
@@ -89,6 +91,9 @@ private:
 
     VariantVector oldValues_;
     VariantVector newValues_;
+
+    NodeVector changedNodes_;
+    ea::vector<PackedNodeData> oldData_;
 };
 
 }

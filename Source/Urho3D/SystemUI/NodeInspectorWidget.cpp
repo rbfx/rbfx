@@ -39,12 +39,13 @@ namespace Urho3D
 NodeInspectorWidget::NodeInspectorWidget(Context* context, const NodeVector& nodes)
     : Object(context)
     , nodes_(nodes)
-    , nodeInspector_(MakeShared<SerializableInspectorWidget>(context_,
-        SerializableInspectorWidget::SerializableVector{nodes.begin(), nodes.end()}))
+    , nodeInspector_(MakeShared<SerializableInspectorWidget>(context_, WeakSerializableVector{nodes.begin(), nodes.end()}))
 {
     URHO3D_ASSERT(!nodes_.empty());
     nodeInspector_->OnEditAttributeBegin.Subscribe(this, ea::ref(OnEditNodeAttributeBegin));
     nodeInspector_->OnEditAttributeEnd.Subscribe(this, ea::ref(OnEditNodeAttributeEnd));
+    nodeInspector_->OnActionBegin.Subscribe(this, ea::ref(OnActionBegin));
+    nodeInspector_->OnActionEnd.Subscribe(this, ea::ref(OnActionEnd));
 }
 
 NodeInspectorWidget::~NodeInspectorWidget()
@@ -74,7 +75,7 @@ void NodeInspectorWidget::RenderContent()
         for (const auto& components : sharedComponents)
         {
             componentInspectors_.emplace_back(MakeShared<SerializableInspectorWidget>(
-                context_, SerializableInspectorWidget::SerializableVector{components.begin(), components.end()}));
+                context_, WeakSerializableVector{components.begin(), components.end()}));
         }
 
         const unsigned numSharedComponents = ea::accumulate(sharedComponents.begin(), sharedComponents.end(), 0u,
@@ -85,6 +86,8 @@ void NodeInspectorWidget::RenderContent()
         {
             inspector->OnEditAttributeBegin.Subscribe(this, ea::ref(OnEditComponentAttributeBegin));
             inspector->OnEditAttributeEnd.Subscribe(this, ea::ref(OnEditComponentAttributeEnd));
+            inspector->OnActionBegin.Subscribe(this, ea::ref(OnActionBegin));
+            inspector->OnActionEnd.Subscribe(this, ea::ref(OnActionEnd));
         }
     }
 

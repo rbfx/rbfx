@@ -1,6 +1,5 @@
 URHO3D_REFCOUNTED(Urho3D::Object);
 URHO3D_REFCOUNTED(Urho3D::Time);
-URHO3D_REFCOUNTED(Urho3D::ValueCache);
 URHO3D_REFCOUNTED(Urho3D::AttributeAccessor);
 URHO3D_REFCOUNTED(Urho3D::ObjectReflection);
 URHO3D_REFCOUNTED(Urho3D::EventReceiverGroup);
@@ -335,7 +334,6 @@ URHO3D_REFCOUNTED(Urho3D::DebugHud);
 URHO3D_REFCOUNTED(Urho3D::DragDropPayload);
 URHO3D_REFCOUNTED(Urho3D::ResourceDragDropPayload);
 URHO3D_REFCOUNTED(Urho3D::NodeComponentDragDropPayload);
-URHO3D_REFCOUNTED(Urho3D::Gizmo);
 URHO3D_REFCOUNTED(Urho3D::MaterialInspectorWidget);
 URHO3D_REFCOUNTED(Urho3D::ModelInspectorWidget);
 URHO3D_REFCOUNTED(Urho3D::SerializableInspectorWidget);

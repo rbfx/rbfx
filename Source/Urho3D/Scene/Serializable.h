@@ -134,6 +134,8 @@ protected:
     bool temporary_;
 };
 
+using WeakSerializableVector = ea::vector<WeakPtr<Serializable>>;
+
 /// Template implementation of the variant attribute accessor.
 template <class TClassType, class TGetFunction, class TSetFunction>
 class VariantAttributeAccessorImpl : public AttributeAccessor

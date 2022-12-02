@@ -93,6 +93,7 @@ private:
     SharedPtr<UnorderedScenePass> depthPrePass_;
     SharedPtr<UnorderedScenePass> opaquePass_;
     SharedPtr<UnorderedScenePass> postOpaquePass_;
+    SharedPtr<UnorderedScenePass> deferredDecalPass_;
     SharedPtr<BackToFrontScenePass> alphaPass_;
     SharedPtr<BackToFrontScenePass> postAlphaPass_;
     SharedPtr<OutlineScenePass> outlineScenePass_;
