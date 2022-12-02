@@ -26,5 +26,16 @@ namespace Urho3DNet.Tests
 
             Context.Engine.Exit();
         }
+
+        public static void Run(Action<SimpleHeadlessApplication> callback)
+        {
+            using (var context = new Context())
+            {
+                using (var application = new SimpleHeadlessApplication(context, callback))
+                {
+                    application.Run();
+                }
+            }
+        }
     }
 }
