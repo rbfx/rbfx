@@ -63,6 +63,8 @@ struct URHO3D_API IKNode
     IKNode(const Vector3& position, const Quaternion& rotation) { InitializeTransform(position, rotation); }
 
     void InitializeTransform(const Vector3& position, const Quaternion& rotation);
+    void RotateAround(const Vector3& point, const Quaternion& rotation);
+    void ResetOriginalTransform();
     void StorePreviousTransform();
     void MarkPositionDirty() { positionDirty_ = true; }
     void MarkRotationDirty() { rotationDirty_ = true; }
@@ -87,7 +89,7 @@ struct URHO3D_API IKNodeSegment
     /// Update cached length.
     void UpdateLength();
     /// Update current rotation for nodes.
-    void UpdateRotationInNodes(const IKSettings& settings, bool isLastSegment);
+    void UpdateRotationInNodes(bool fromPrevious, bool isLastSegment);
 };
 
 /// Trigonometric two-segment IK chain.
@@ -96,21 +98,25 @@ class URHO3D_API IKTrigonometricChain
 public:
     void Initialize(IKNode* node1, IKNode* node2, IKNode* node3);
     void UpdateLengths();
-    void Solve(const Vector3& target, const Vector3& bendNormal,
-        float minAngle, float maxAngle, const IKSettings& settings);
+    void Solve(const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle);
 
     /// Return positions of second and third bones.
     static ea::pair<Vector3, Vector3> Solve(const Vector3& pos0, float len01, float len12,
-        const Vector3& target, const Vector3& bendNormal, float minAngle, float maxAngle);
+        const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle);
 
     IKNode* GetBeginNode() const { return segments_[0].beginNode_; }
     IKNode* GetMiddleNode() const { return segments_[1].beginNode_; }
     IKNode* GetEndNode() const { return segments_[1].endNode_; }
     float GetFirstLength() const { return segments_[0].length_; }
     float GetSecondLength() const { return segments_[1].length_; }
+    Vector3 GetCurrentBendDirection() const { return currentBendDirection_; }
 
 private:
+    void RotateChainToTarget(const Vector3& target, const Vector3& originalBendDirection);
+    void RotateSegmentsToTarget(const Vector3& newPos1, const Vector3& newPos2);
+
     IKNodeSegment segments_[2];
+    Vector3 currentBendDirection_;
 };
 
 /// Base class for generic IK chain.

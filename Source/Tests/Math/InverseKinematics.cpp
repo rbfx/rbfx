@@ -64,7 +64,7 @@ TEST_CASE("Two-segment trigonometric chain is solved")
     chain.UpdateLengths();
 
     {
-        chain.Solve(Vector3{5.0f, 0.0f, 0.0f}, Vector3::FORWARD, 0.0f, 180.0f, IKSettings{});
+        chain.Solve(Vector3{5.0f, 0.0f, 0.0f}, Vector3::DOWN, 0.0f, 180.0f);
 
         CHECK(nodes[0].position_.Equals(Vector3{0.0f, 0.0f, 0.0f}));
         CHECK(nodes[1].position_.Equals(Vector3{1.8f, -2.4f, 0.0f}));
@@ -76,7 +76,7 @@ TEST_CASE("Two-segment trigonometric chain is solved")
     }
 
     {
-        chain.Solve(Vector3{7.0f, 0.0f, 0.0f}, Vector3::FORWARD, 0.0f, 180.0f, IKSettings{});
+        chain.Solve(Vector3{7.0f, 0.0f, 0.0f}, Vector3::DOWN, 0.0f, 180.0f);
 
         CHECK(nodes[0].position_.Equals(Vector3{0.0f, 0.0f, 0.0f}));
         CHECK(nodes[1].position_.Equals(Vector3{3.0f, 0.0f, 0.0f}));
@@ -88,7 +88,7 @@ TEST_CASE("Two-segment trigonometric chain is solved")
     }
 
     {
-        chain.Solve(Vector3{7.0f, 0.0f, 0.0f}, Vector3::FORWARD, 0.0f, 90.0f, IKSettings{});
+        chain.Solve(Vector3{7.0f, 0.0f, 0.0f}, Vector3::DOWN, 0.0f, 90.0f);
 
         CHECK(nodes[0].position_.Equals(Vector3{0.0f, 0.0f, 0.0f}));
         CHECK(nodes[1].position_.Equals(Vector3{1.8f, -2.4f, 0.0f}));
@@ -100,7 +100,7 @@ TEST_CASE("Two-segment trigonometric chain is solved")
     }
 
     {
-        chain.Solve(Vector3{1.0f, 0.0f, 0.0f}, Vector3::FORWARD, 90.0f, 180.0f, IKSettings{});
+        chain.Solve(Vector3{1.0f, 0.0f, 0.0f}, Vector3::DOWN, 90.0f, 180.0f);
 
         CHECK(nodes[0].position_.Equals(Vector3{0.0f, 0.0f, 0.0f}));
         CHECK(nodes[1].position_.Equals(Vector3{1.8f, -2.4f, 0.0f}));

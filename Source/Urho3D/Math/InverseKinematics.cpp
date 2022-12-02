@@ -69,12 +69,27 @@ void IKNode::InitializeTransform(const Vector3& position, const Quaternion& rota
     previousRotation_ = rotation;
 }
 
+void IKNode::RotateAround(const Vector3& point, const Quaternion& rotation)
+{
+    position_ = rotation * (position_ - point) + point;
+    rotation_ = rotation * rotation_;
+    rotationDirty_ = true;
+}
+
 void IKNode::StorePreviousTransform()
 {
     previousPosition_ = position_;
     previousRotation_ = rotation_;
     positionDirty_ = false;
     rotationDirty_ = false;
+}
+
+void IKNode::ResetOriginalTransform()
+{
+    position_ = originalPosition_;
+    rotation_ = originalRotation_;
+    positionDirty_ = true;
+    rotationDirty_ = true;
 }
 
 Quaternion IKNodeSegment::CalculateRotationDeltaFromPrevious() const
@@ -115,9 +130,9 @@ void IKNodeSegment::UpdateLength()
     length_ = (endNode_->position_ - beginNode_->position_).Length();
 }
 
-void IKNodeSegment::UpdateRotationInNodes(const IKSettings& settings, bool isLastSegment)
+void IKNodeSegment::UpdateRotationInNodes(bool fromPrevious, bool isLastSegment)
 {
-    if (settings.continuousRotations_)
+    if (fromPrevious)
     {
         const Quaternion delta = CalculateRotationDeltaFromPrevious();
         beginNode_->rotation_ = delta * beginNode_->previousRotation_;
@@ -151,7 +166,7 @@ void IKTrigonometricChain::UpdateLengths()
 }
 
 ea::pair<Vector3, Vector3> IKTrigonometricChain::Solve(const Vector3& pos0, float len01, float len12,
-    const Vector3& target, const Vector3& bendNormal, float minAngle, float maxAngle)
+    const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle)
 {
     const float minLen02 = Sqrt(len01 * len01 + len12 * len12 - 2 * len01 * len12 * Cos(minAngle));
     const float maxLen02 = Sqrt(len01 * len01 + len12 * len12 - 2 * len01 * len12 * Cos(maxAngle));
@@ -159,7 +174,7 @@ ea::pair<Vector3, Vector3> IKTrigonometricChain::Solve(const Vector3& pos0, floa
     const Vector3 newPos2 = (target - pos0).ReNormalized(len02, len02) + pos0;
 
     const Vector3 firstAxis = (newPos2 - pos0).NormalizedOrDefault(Vector3::DOWN);
-    const Vector3 secondAxis = firstAxis.CrossProduct(bendNormal).NormalizedOrDefault(Vector3::RIGHT);
+    const Vector3 secondAxis = bendDirection.Orthogonalize(firstAxis);
 
     // This is angle between begin-to-middle and begin-to-end vectors.
     const float cosAngle = Clamp((len01 * len01 + len02 * len02 - len12 * len12) / (2.0f * len01 * len02), -1.0f, 1.0f);
@@ -169,21 +184,55 @@ ea::pair<Vector3, Vector3> IKTrigonometricChain::Solve(const Vector3& pos0, floa
     return {newPos1, newPos2};
 }
 
-void IKTrigonometricChain::Solve(const Vector3& target, const Vector3& bendNormal,
-    float minAngle, float maxAngle, const IKSettings& settings)
+void IKTrigonometricChain::Solve(
+    const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle)
 {
+    RotateChainToTarget(target, bendDirection);
+
     const Vector3 pos0 = segments_[0].beginNode_->position_;
     const float len01 = segments_[0].length_;
     const float len12 = segments_[1].length_;
 
-    const auto [newPos1, newPos2] = Solve(pos0, len01, len12, target, bendNormal, minAngle, maxAngle);
+    const auto [newPos1, newPos2] = Solve(pos0, len01, len12, target, currentBendDirection_, minAngle, maxAngle);
+    RotateSegmentsToTarget(newPos1, newPos2);
+}
+
+void IKTrigonometricChain::RotateChainToTarget(const Vector3& target, const Vector3& originalBendDirection)
+{
+    const Vector3 pos0 = segments_[0].beginNode_->position_;
+    const Vector3 originalOffset02 = segments_[1].endNode_->originalPosition_ - segments_[0].beginNode_->originalPosition_;
+    const Vector3 currentOffset02 = target - pos0;
+    const Quaternion bendRotation{originalOffset02, currentOffset02};
+    currentBendDirection_ = bendRotation * originalBendDirection;
+
+    const Quaternion chainRotation = bendRotation;
+
+    segments_[0].beginNode_->ResetOriginalTransform();
+    segments_[1].beginNode_->ResetOriginalTransform();
+    segments_[1].endNode_->ResetOriginalTransform();
+
+    segments_[0].beginNode_->RotateAround(pos0, chainRotation);
+    segments_[1].beginNode_->RotateAround(pos0, chainRotation);
+    segments_[1].endNode_->RotateAround(pos0, chainRotation);
+}
+
+void IKTrigonometricChain::RotateSegmentsToTarget(const Vector3& newPos1, const Vector3& newPos2)
+{
+    segments_[0].beginNode_->previousPosition_ = segments_[0].beginNode_->position_;
+    segments_[0].beginNode_->previousRotation_ = segments_[0].beginNode_->rotation_;
+
+    segments_[1].beginNode_->previousPosition_ = segments_[1].beginNode_->position_;
+    segments_[1].beginNode_->previousRotation_ = segments_[1].beginNode_->rotation_;
+
+    segments_[1].endNode_->previousPosition_ = segments_[1].endNode_->position_;
+    segments_[1].endNode_->previousRotation_ = segments_[1].endNode_->rotation_;
 
     segments_[1].beginNode_->position_ = newPos1;
     segments_[1].endNode_->position_ = newPos2;
-    //segments_[1].endNode_->position_ = (newPos2 - newPos1).ReNormalized(len12, len12) + newPos1;
 
-    segments_[0].UpdateRotationInNodes(settings, false);
-    segments_[1].UpdateRotationInNodes(settings, true);
+    const bool fromPrevious = true;
+    segments_[0].UpdateRotationInNodes(fromPrevious, false);
+    segments_[1].UpdateRotationInNodes(fromPrevious, true);
 }
 
 void IKChain::Clear()
@@ -252,7 +301,7 @@ void IKChain::UpdateSegmentRotations(const IKSettings& settings)
     for (IKNodeSegment& segment : segments_)
     {
         const bool isLastSegment = &segment == &segments_.back();
-        segment.UpdateRotationInNodes(settings, isLastSegment);
+        segment.UpdateRotationInNodes(settings.continuousRotations_, isLastSegment);
     }
 }
 
@@ -287,7 +336,7 @@ void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSetti
         const bool isFirstSegment = &segment == &segments_.front();
         const bool isLastSegment = &segment == &segments_.back();
         if (!isFirstSegment)
-            segment.UpdateRotationInNodes(settings, isLastSegment);
+            segment.UpdateRotationInNodes(settings.continuousRotations_, isLastSegment);
     }
 }
 

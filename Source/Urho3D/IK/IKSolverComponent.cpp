@@ -142,23 +142,24 @@ void IKSolverComponent::NotifyPositionsReady()
     UpdateChainLengths();
 }
 
-void IKSolverComponent::Solve(const IKSettings& settings)
+void IKSolverComponent::Solve(const IKSettings& settings,
+    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
 {
     for (const auto& [node, solverNode] : solverNodes_)
     {
-        solverNode->position_ = node->GetWorldPosition();
-        solverNode->rotation_ = node->GetWorldRotation();
+        solverNode->position_ = inverseWorldTransform * node->GetWorldPosition();
+        solverNode->rotation_ = inverseWorldRotation * node->GetWorldRotation();
         solverNode->StorePreviousTransform();
     }
 
-    SolveInternal(settings);
+    SolveInternal(settings, inverseWorldTransform, inverseWorldRotation);
 
     for (const auto& [node, solverNode] : solverNodes_)
     {
         if (solverNode->positionDirty_)
-            node->SetWorldPosition(solverNode->position_);
+            node->SetWorldPosition(node_->GetWorldTransform() * solverNode->position_);
         if (solverNode->rotationDirty_)
-            node->SetWorldRotation(solverNode->rotation_);
+            node->SetWorldRotation(node_->GetWorldRotation() * solverNode->rotation_);
     }
 }
 
@@ -246,7 +247,8 @@ void IKChainSolver::UpdateChainLengths()
     }*/
 }
 
-void IKChainSolver::SolveInternal(const IKSettings& settings)
+void IKChainSolver::SolveInternal(const IKSettings& settings,
+    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
 {
     chain_.Solve(targetNode_->GetWorldPosition(), settings);
 }
@@ -323,12 +325,13 @@ void IKIdentitySolver::UpdateChainLengths()
 {
 }
 
-void IKIdentitySolver::SolveInternal(const IKSettings& settings)
+void IKIdentitySolver::SolveInternal(const IKSettings& settings,
+    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
 {
     EnsureInitialized();
 
-    boneNode_->position_ = target_->GetWorldPosition();
-    boneNode_->rotation_ = target_->GetWorldRotation() * rotationOffset_;
+    boneNode_->position_ = inverseWorldTransform * target_->GetWorldPosition();
+    boneNode_->rotation_ = inverseWorldRotation * target_->GetWorldRotation() * rotationOffset_;
 
     boneNode_->MarkPositionDirty();
     boneNode_->MarkRotationDirty();
@@ -355,25 +358,33 @@ void IKTrigonometrySolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 180.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bend Normal", Vector3, bendNormal_, Vector3::RIGHT, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
 }
 
 void IKTrigonometrySolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     const float jointRadius = 0.02f;
     const float targetRadius = 0.05f;
+    const float lineLength = 0.1f;
 
     IKNode* thighBone = chain_.GetBeginNode();
     IKNode* calfBone = chain_.GetMiddleNode();
     IKNode* heelBone = chain_.GetEndNode();
 
+    const Matrix3x4 worldTransform = node_->GetWorldTransform();
+    const Quaternion worldRotation = node_->GetWorldRotation();
     if (thighBone && calfBone && heelBone)
     {
-        debug->AddLine(thighBone->position_, calfBone->position_, Color::YELLOW, false);
-        debug->AddLine(calfBone->position_, heelBone->position_, Color::YELLOW, false);
-        debug->AddSphere(Sphere(thighBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(calfBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(heelBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddLine(worldTransform * thighBone->position_, worldTransform * calfBone->position_, Color::YELLOW, false);
+        debug->AddLine(worldTransform * calfBone->position_, worldTransform * heelBone->position_, Color::YELLOW, false);
+        debug->AddSphere(Sphere(worldTransform * thighBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddSphere(Sphere(worldTransform * calfBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddSphere(Sphere(worldTransform * heelBone->position_, jointRadius), Color::YELLOW, false);
+
+        const Vector3 bendA = worldTransform * calfBone->position_;
+        const Vector3 bendB = bendA + worldRotation * chain_.GetCurrentBendDirection() * lineLength;
+        debug->AddLine(bendA, bendB, Color::GREEN, false);
+        debug->AddSphere(Sphere(bendB, jointRadius), Color::GREEN, false);
     }
     if (target_)
     {
@@ -408,9 +419,11 @@ void IKTrigonometrySolver::UpdateChainLengths()
     chain_.UpdateLengths();
 }
 
-void IKTrigonometrySolver::SolveInternal(const IKSettings& settings)
+void IKTrigonometrySolver::SolveInternal(const IKSettings& settings,
+    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
 {
-    chain_.Solve(target_->GetWorldPosition(), bendNormal_, minAngle_, maxAngle_, settings);
+    const Vector3 targetPosition = inverseWorldTransform * target_->GetWorldPosition();
+    chain_.Solve(targetPosition, bendDirection_, minAngle_, maxAngle_);
 }
 
 IKLegSolver::IKLegSolver(Context* context)
@@ -436,7 +449,7 @@ void IKLegSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Min Knee Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Knee Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Weight", float, bendWeight_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bend Normal", Vector3, bendNormal_, Vector3::RIGHT, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
 
     URHO3D_ACTION_STATIC_LABEL("Update Properties", UpdateProperties, "Set properties below from current bone positions");
     URHO3D_ATTRIBUTE("Min Heel Angle", float, minHeelAngle_, -1.0f, AM_DEFAULT);
@@ -520,25 +533,27 @@ void IKLegSolver::UpdateMinHeelAngle()
         const Vector3 heelToThigh = thighNode->GetWorldPosition() - heelNode->GetWorldPosition();
         const Vector3 heelToToe = toeNode->GetWorldPosition() - heelNode->GetWorldPosition();
 
-        minHeelAngle_ = heelToThigh.SignedAngle(heelToToe, bendNormal_);
+        //minHeelAngle_ = heelToThigh.SignedAngle(heelToToe, bendNormal_);
     }
 }
 
 Vector3 IKLegSolver::CalculateFootDirectionStraight(const Vector3& toeTargetPosition) const
 {
-    IKNode* thighBone = legChain_.GetBeginNode();
+    return Vector3::ZERO;
+    /*IKNode* thighBone = legChain_.GetBeginNode();
     return GetToeToHeel(
         thighBone->position_, toeTargetPosition, footSegment_.length_, minHeelAngle_,
-        GetMaxDistance(legChain_, maxKneeAngle_), bendNormal_);
+        GetMaxDistance(legChain_, maxKneeAngle_), bendNormal_);*/
 }
 
 Vector3 IKLegSolver::CalculateFootDirectionBent(const Vector3& toeTargetPosition) const
 {
-    IKNode* thighBone = legChain_.GetBeginNode();
+    return Vector3::ZERO;
+    /*IKNode* thighBone = legChain_.GetBeginNode();
     const auto [newPos1, newPos2] = IKTrigonometricChain::Solve(
         thighBone->position_, legChain_.GetFirstLength(), legChain_.GetSecondLength() + footSegment_.length_,
         toeTargetPosition, bendNormal_, minKneeAngle_, maxKneeAngle_);
-    return (newPos1 - newPos2).Normalized() * footSegment_.length_;
+    return (newPos1 - newPos2).Normalized() * footSegment_.length_;*/
 }
 
 void IKLegSolver::EnsureInitialized()
@@ -550,8 +565,10 @@ void IKLegSolver::EnsureInitialized()
     maxKneeAngle_ = Clamp(maxKneeAngle_, 0.0f, 180.0f);
 }
 
-void IKLegSolver::SolveInternal(const IKSettings& settings)
+void IKLegSolver::SolveInternal(const IKSettings& settings,
+    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
 {
+    return;
     EnsureInitialized();
 
     const Vector3& toeTargetPosition = target_->GetWorldPosition();
@@ -564,11 +581,11 @@ void IKLegSolver::SolveInternal(const IKSettings& settings)
     const Vector3 toeToHeel = InterpolateDirection(toeToHeel0, toeToHeel1, bendWeight_);
     const Vector3 heelTargetPosition = toeTargetPosition + toeToHeel;
 
-    legChain_.Solve(heelTargetPosition, bendNormal_, minKneeAngle_, maxKneeAngle_, settings);
+    //legChain_.Solve(heelTargetPosition, bendNormal_, minKneeAngle_, maxKneeAngle_, settings);
 
     const Vector3 toeTargetPositionAdjusted = heelBone->position_ - toeToHeel;
     footSegment_.endNode_->position_ = toeTargetPositionAdjusted;
-    footSegment_.UpdateRotationInNodes(settings, true);
+    footSegment_.UpdateRotationInNodes(settings.continuousRotations_, true);
 }
 
 IKSpineSolver::IKSpineSolver(Context* context)
@@ -635,7 +652,8 @@ void IKSpineSolver::UpdateChainLengths()
     chain_.UpdateLengths();
 }
 
-void IKSpineSolver::SolveInternal(const IKSettings& settings)
+void IKSpineSolver::SolveInternal(const IKSettings& settings,
+    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
 {
     chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
 }
@@ -662,7 +680,7 @@ void IKArmSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Min Elbow Angle", float, minElbowAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Elbow Angle", float, maxElbowAngle_, 180.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bend Normal", Vector3, bendNormal_, Vector3::RIGHT, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
 }
 
 void IKArmSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -731,13 +749,15 @@ void IKArmSolver::EnsureInitialized()
 {
 }
 
-void IKArmSolver::SolveInternal(const IKSettings& settings)
+void IKArmSolver::SolveInternal(const IKSettings& settings,
+    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
 {
+    return;
     EnsureInitialized();
 
     const Vector3 handTargetPosition = target_->GetWorldPosition();
 
-    armChain_.Solve(handTargetPosition, bendNormal_, minElbowAngle_, maxElbowAngle_, settings);
+    //armChain_.Solve(handTargetPosition, bendNormal_, minElbowAngle_, maxElbowAngle_, settings);
 }
 
 }
