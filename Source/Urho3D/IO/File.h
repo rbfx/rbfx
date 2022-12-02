@@ -50,14 +50,6 @@ static const char* APK = "/apk/";
 static const char* APK = "";
 #endif
 
-/// File open mode.
-enum FileMode
-{
-    FILE_READ = 0,
-    FILE_WRITE,
-    FILE_READWRITE
-};
-
 class PackageFile;
 
 /// %File opened either through the filesystem or from within a package file.

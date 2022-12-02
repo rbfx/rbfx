@@ -30,7 +30,9 @@
 #include "../Project/CreateDefaultScene.h"
 #include "../Project/ResourceEditorTab.h"
 
+#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
@@ -498,6 +500,7 @@ void Project::InitializeDefaultProject()
 
 void Project::InitializeResourceCache()
 {
+    auto engine = GetSubsystem<Engine>();
     auto cache = GetSubsystem<ResourceCache>();
     cache->ReleaseAllResources(true);
     cache->RemoveAllResourceDirs();
@@ -505,6 +508,7 @@ void Project::InitializeResourceCache()
     cache->AddResourceDir(coreDataPath_);
     cache->AddResourceDir(cachePath_);
     cache->AddResourceDir(oldCacheState_.GetEditorData());
+    engine->InitializeVirtualFileSystem();
 }
 
 void Project::ResetLayout()

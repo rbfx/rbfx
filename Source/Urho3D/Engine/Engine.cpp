@@ -43,6 +43,8 @@
 #include "../Input/Input.h"
 #include "../Input/FreeFlyController.h"
 #include "../IO/FileSystem.h"
+#include "../IO/VirtualFileSystem.h"
+#include "../IO/MountedDirectory.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
 #ifdef URHO3D_GLOW
@@ -150,6 +152,7 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem(new Time(context_));
     context_->RegisterSubsystem(new WorkQueue(context_));
     context_->RegisterSubsystem(new FileSystem(context_));
+    context_->RegisterSubsystem(new VirtualFileSystem(context_));
 #ifdef URHO3D_LOGGING
     context_->RegisterSubsystem(new Log(context_));
 #endif
@@ -278,9 +281,10 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     // Add resource paths
     if (!InitializeResourceCache(parameters, false))
         return false;
+    if (!InitializeVirtualFileSystem())
+        return false;
 
     auto* cache = GetSubsystem<ResourceCache>();
-    auto* fileSystem = GetSubsystem<FileSystem>();
 
     // Initialize graphics & audio output
     if (!headless_)
@@ -380,6 +384,33 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     URHO3D_LOGINFO("Initialized engine");
     initialized_ = true;
     SendEvent(E_ENGINEINITIALIZED);
+    return true;
+}
+
+bool Engine::InitializeVirtualFileSystem()
+{
+    const auto* cache = GetSubsystem<ResourceCache>();
+    const auto* fileSystem = GetSubsystem<FileSystem>();
+    auto* virtualFileSystem = GetSubsystem<VirtualFileSystem>();
+
+    virtualFileSystem->UnmountAll();
+
+    for (auto& packageFile : cache->GetPackageFiles())
+    {
+        virtualFileSystem->Mount(packageFile);
+    }
+
+    for (auto& resourceDir : cache->GetResourceDirs())
+    {
+        virtualFileSystem->Mount(MakeShared<MountedDirectory>(context_, ea::string{}, resourceDir));
+    }
+
+    // Ignore errors for now until we figure out how this should work in real projects.
+    virtualFileSystem->MountFileSystem("user", fileSystem->GetUserDocumentsDir(), false);
+    virtualFileSystem->MountFileSystem("conf", appPreferencesDir_, true);
+    virtualFileSystem->MountFileSystem("temp", fileSystem->GetTemporaryDir(), false);
+    virtualFileSystem->MountFileSystem("app", fileSystem->GetProgramDir(), false);
+
     return true;
 }
 

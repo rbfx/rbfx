@@ -53,6 +53,8 @@ public:
     bool Initialize(const StringVariantMap& parameters);
     /// Reinitialize resource cache subsystem using parameters given. Implicitly called by Initialize. Return true if successful.
     bool InitializeResourceCache(const StringVariantMap& parameters, bool removeOld = true);
+    /// Reinitialize virtual file system. Implicitly called by Initialize. Return true if successful.
+    bool InitializeVirtualFileSystem();
     /// Run one frame.
     void RunFrame();
     /// Create the console and return it. May return null if engine configuration does not allow creation (headless mode).
