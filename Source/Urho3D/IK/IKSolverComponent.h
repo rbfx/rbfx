@@ -42,7 +42,8 @@ public:
 
     bool Initialize(IKNodeCache& nodeCache);
     void NotifyPositionsReady();
-    void Solve(const IKSettings& settings);
+    void Solve(const IKSettings& settings,
+        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation);
 
     /// Internal. Marks chain tree as dirty.
     void OnTreeDirty();
@@ -50,7 +51,8 @@ public:
 protected:
     virtual bool InitializeNodes(IKNodeCache& nodeCache) = 0;
     virtual void UpdateChainLengths() = 0;
-    virtual void SolveInternal(const IKSettings& settings) = 0;
+    virtual void SolveInternal(const IKSettings& settings,
+        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) = 0;
 
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
 
@@ -81,7 +83,8 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void SolveInternal(const IKSettings& settings,
+        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
     /// @}
 
     void EnsureInitialized();
@@ -111,7 +114,8 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void SolveInternal(const IKSettings& settings,
+        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
     /// @}
 
     ea::string firstBoneName_;
@@ -122,7 +126,7 @@ private:
 
     float minAngle_{0.0f};
     float maxAngle_{180.0f};
-    Vector3 bendNormal_{Vector3::RIGHT};
+    Vector3 bendDirection_{Vector3::FORWARD};
 
     IKTrigonometricChain chain_;
     WeakPtr<Node> target_;
@@ -146,7 +150,8 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void SolveInternal(const IKSettings& settings,
+        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
     /// @}
 
     void EnsureInitialized();
@@ -166,7 +171,7 @@ private:
     float minKneeAngle_{0.0f};
     float maxKneeAngle_{180.0f};
     float bendWeight_{};
-    Vector3 bendNormal_{Vector3::RIGHT};
+    Vector3 bendDirection_{Vector3::FORWARD};
     float minHeelAngle_{-1.0f};
     /// @}
 
@@ -199,7 +204,8 @@ protected:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void SolveInternal(const IKSettings& settings,
+        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
     /// @}
 
 private:
@@ -228,7 +234,8 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void SolveInternal(const IKSettings& settings,
+        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
     /// @}
 
     void EnsureInitialized();
@@ -244,7 +251,7 @@ private:
 
     float minElbowAngle_{0.0f};
     float maxElbowAngle_{180.0f};
-    Vector3 bendNormal_{Vector3::RIGHT};
+    Vector3 bendDirection_{Vector3::FORWARD};
     /// @}
 
     /// IK nodes and effectors.
@@ -274,7 +281,8 @@ protected:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void SolveInternal(const IKSettings& settings,
+        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
     /// @}
 
 private:

@@ -45,6 +45,9 @@ void IKSolver::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<IKSolver>(Category_IK);
 
+    URHO3D_ACTION_STATIC_LABEL("Set as origin", MarkSolversDirty,
+        "Set current pose as original one. If AnimatedModel skeleton is used if present.");
+
     URHO3D_ATTRIBUTE("Solve when Paused", bool, solveWhenPaused_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Continuous Rotation", bool, settings_.continuousRotations_, false, AM_DEFAULT);
 }
@@ -69,6 +72,11 @@ void IKSolver::PostUpdate(float timeStep)
         return;
 
     auto scene = GetScene();
+
+    // Cannot solve when paused if there's no AnimatedModel because it will disturb original pose.
+    if (solveWhenPaused_ && !node_->HasComponent<AnimatedModel>())
+        solveWhenPaused_ = false;
+
     if (scene->IsUpdateEnabled() || solveWhenPaused_)
         Solve();
 }
@@ -88,10 +96,12 @@ void IKSolver::Solve()
     if (solvers_.empty() || solverNodes_.empty())
         return;
 
+    const Matrix3x4 inverseWorldTransform = node_->GetWorldTransform().Inverse();
+    const Quaternion inverseWorldRotation = node_->GetWorldRotation().Inverse();
     for (IKSolverComponent* solver : solvers_)
     {
         URHO3D_ASSERT(solver);
-        solver->Solve(settings_);
+        solver->Solve(settings_, inverseWorldTransform, inverseWorldRotation);
     }
 
     if (auto animatedModel = node_->GetComponent<AnimatedModel>())
@@ -138,8 +148,14 @@ void IKSolver::RebuildSolvers()
 
 void IKSolver::InitializeNodeTransforms()
 {
+    const Matrix3x4& inverseRootWorldTransform = node_->GetWorldTransform().Inverse();
+    const Quaternion& inverseRootWorldRotation = node_->GetWorldRotation().Inverse();
+
     for (auto& [node, solverNode] : solverNodes_)
-        solverNode.InitializeTransform(node->GetWorldPosition(), node->GetWorldRotation());
+    {
+        solverNode.InitializeTransform(inverseRootWorldTransform * node->GetWorldPosition(),
+            inverseRootWorldRotation * node->GetWorldRotation());
+    }
 }
 
 }
