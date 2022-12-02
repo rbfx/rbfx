@@ -38,17 +38,17 @@ class URHO3D_API ActionBuilder
 {
 private:
     /// Construct.
-    explicit ActionBuilder(Context* context, Actions::FiniteTimeAction* action);
+    explicit ActionBuilder(Context* context, const SharedPtr<Actions::FiniteTimeAction>& action);
 
 public:
     /// Construct.
     explicit ActionBuilder(Context* context);
 
     /// Continue with provided action.
-    ActionBuilder Then(Actions::FiniteTimeAction* nextAction);
+    ActionBuilder Then(const SharedPtr<Actions::FiniteTimeAction>& nextAction);
 
     /// Run action in parallel to current one.
-    ActionBuilder Also(Actions::FiniteTimeAction* parallelAction);
+    ActionBuilder Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction);
 
     /// Continue with MoveBy action.
     ActionBuilder MoveBy(float duration, const Vector3& offset);
@@ -173,11 +173,11 @@ public:
 
     /// Run current action on object.
     /// Use Build() instead of Run() if you run the action more than once to reduce allocations.
-    Actions::ActionState* Run(Object* target);
+    Actions::ActionState* Run(Object* target) const;
 
     /// Run current action on object via action manager.
     /// Use Build() instead of Run() if you run the action more than once to reduce allocations.
-    Actions::ActionState* Run(ActionManager* actionManager, Object* target);
+    Actions::ActionState* Run(ActionManager* actionManager, Object* target) const;
 
 private:
     /// Urho3D context.

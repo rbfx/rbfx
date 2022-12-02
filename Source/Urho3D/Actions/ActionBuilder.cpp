@@ -38,7 +38,7 @@ namespace Urho3D
 using namespace Actions;
 
 /// Construct.
-ActionBuilder::ActionBuilder(Context* context, FiniteTimeAction* action)
+ActionBuilder::ActionBuilder(Context* context, const SharedPtr<Actions::FiniteTimeAction>& action)
     : context_(context)
     , action_(action)
 {
@@ -50,7 +50,7 @@ ActionBuilder::ActionBuilder(Context* context)
 }
 
 /// Continue with provided action.
-ActionBuilder ActionBuilder::Then(FiniteTimeAction* nextAction)
+ActionBuilder ActionBuilder::Then(const SharedPtr<Actions::FiniteTimeAction>& nextAction)
 {
     if (!nextAction)
     {
@@ -59,7 +59,7 @@ ActionBuilder ActionBuilder::Then(FiniteTimeAction* nextAction)
 
     if (action_)
     {
-        auto action = MakeShared<Urho3D::Sequence>(context_);
+        const auto action = MakeShared<Urho3D::Sequence>(context_);
         action->SetFirstAction(action_);
         action->SetSecondAction(nextAction);
         return ActionBuilder(context_, action);
@@ -68,8 +68,8 @@ ActionBuilder ActionBuilder::Then(FiniteTimeAction* nextAction)
     return ActionBuilder(context_, nextAction);
 }
 
-/// Run action in parallel to currrent one.
-ActionBuilder ActionBuilder::Also(Actions::FiniteTimeAction* parallelAction)
+/// Run action in parallel to current one.
+ActionBuilder ActionBuilder::Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction)
 {
     if (!parallelAction)
     {
@@ -119,7 +119,7 @@ ActionBuilder ActionBuilder::JumpBy(const Vector3& offset)
 
 ActionBuilder ActionBuilder::JumpBy2D(const Vector2& offset)
 {
-    auto action = MakeShared<Actions::JumpBy2D>(context_);
+    const auto action = MakeShared<Actions::JumpBy2D>(context_);
     action->SetPositionDelta(offset);
     return Then(action);
 }
@@ -167,7 +167,7 @@ ActionBuilder ActionBuilder::Show()
 
 ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks)
 {
-    auto action = MakeShared<Actions::Blink>(context_);
+    const auto action = MakeShared<Actions::Blink>(context_);
     action->SetDuration(duration);
     action->SetNumOfBlinks(numOfBlinks);
     return Then(action);
@@ -389,21 +389,21 @@ ActionBuilder ActionBuilder::Repeat(unsigned times)
 /// Repeat current action forever (until canceled).
 ActionBuilder ActionBuilder::RepeatForever()
 {
-    auto action = MakeShared<Actions::RepeatForever>(context_);
+    const auto action = MakeShared<Actions::RepeatForever>(context_);
     action->SetInnerAction(action_);
     return ActionBuilder(context_, action);
 }
 
 /// Run current action on object.
 /// Use Build() instead of Run() if you run the action more than once to reduce allocations.
-Actions::ActionState* ActionBuilder::Run(Object* target)
+Actions::ActionState* ActionBuilder::Run(Object* target) const
 {
     return Run(context_->GetSubsystem<ActionManager>(), target);
 }
 
 /// Run current action on object via action manager.
 /// Use Build() instead of Run() if you run the action more than once to reduce allocations.
-Actions::ActionState* ActionBuilder::Run(ActionManager* actionManager, Object* target)
+Actions::ActionState* ActionBuilder::Run(ActionManager* actionManager, Object* target) const
 {
     if (actionManager)
     {

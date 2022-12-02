@@ -54,7 +54,7 @@ void ActionDemo::Start()
     SubscribeToEvents();
 }
 
-ActionDemo::DemoElement& ActionDemo::AddElement(const IntVector2& pos, Actions::BaseAction* action)
+ActionDemo::DemoElement& ActionDemo::AddElement(const IntVector2& pos, const SharedPtr<Actions::BaseAction>& action)
 {
     auto uiRoot = GetUIRoot();
     auto& element = markers_.push_back();

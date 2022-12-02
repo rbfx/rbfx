@@ -49,7 +49,8 @@ public:
 private:
     /// Construct a new Text instance, containing the 'Hello World' String, and add it to the UI root element.
     void CreateUI();
-    DemoElement& AddElement(const IntVector2& pos, Actions::BaseAction* action);
+    /// Add element to UI to showcase an action.
+    DemoElement& AddElement(const IntVector2& pos, const SharedPtr<Actions::BaseAction>& action);
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
 
