@@ -942,17 +942,17 @@ bool Image::SaveFile(const ea::string& fileName) const
         return SavePNG(fileName);
 }
 
-bool Image::SetSize(int width, int height, unsigned components)
+bool Image::SetSize(int width, int height, unsigned components, unsigned bytesPerComponent)
 {
-    return SetSize(width, height, 1, components);
+    return SetSize(width, height, 1, components, bytesPerComponent);
 }
 
-bool Image::SetSize(int width, int height, int depth, unsigned components)
+bool Image::SetSize(int width, int height, int depth, unsigned components, unsigned bytesPerComponent = 1)
 {
-    if (width == width_ && height == height_ && depth == depth_ && components == components_)
+    if (width == width_ && height == height_ && depth == depth_ && components == components_ && bytesPerComponent == bytesPerComponent_)
         return true;
 
-    if (width <= 0 || height <= 0 || depth <= 0)
+    if (width <= 0 || height <= 0 || depth <= 0 || bytesPerComponent <= 0)
         return false;
 
     if (components > 4)
@@ -961,11 +961,12 @@ bool Image::SetSize(int width, int height, int depth, unsigned components)
         return false;
     }
 
-    data_ = new unsigned char[width * height * depth * components * bytesPerComponent_];
+    data_ = new unsigned char[width * height * depth * components * bytesPerComponent];
     width_ = width;
     height_ = height;
     depth_ = depth;
     components_ = components;
+    bytesPerComponent_ = bytesPerComponent;
     compressedFormat_ = CF_NONE;
     numCompressedLevels_ = 0;
     nextLevel_.Reset();
@@ -1014,26 +1015,7 @@ void Image::SetPixelInt(int x, int y, int z, unsigned uintColor)
     }
 }
 
-void Image::SetData(const unsigned char* pixelData)
-{
-    if (!data_)
-        return;
-
-    if (IsCompressed())
-    {
-        URHO3D_LOGERROR("Can not set new pixel data for a compressed image");
-        return;
-    }
-
-    auto size = (size_t)width_ * height_ * depth_ * components_ * bytesPerComponent_;
-    if (pixelData)
-        memcpy(data_.get(), pixelData, size);
-    else
-        memset(data_.get(), 0, size);
-    nextLevel_.Reset();
-}
-
-void Image::SetData(const float* pixelData)
+void Image::SetData(const void* pixelData)
 {
     if (!data_)
         return;

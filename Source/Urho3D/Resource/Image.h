@@ -100,13 +100,11 @@ public:
     bool SaveFile(const ea::string& fileName) const override;
 
     /// Set 2D size and number of color components. Old image data will be destroyed and new data is undefined. Return true if successful.
-    bool SetSize(int width, int height, unsigned components);
+    bool SetSize(int width, int height, unsigned components, unsigned bytesPerComponent = 1);
     /// Set 3D size and number of color components. Old image data will be destroyed and new data is undefined. Return true if successful.
-    bool SetSize(int width, int height, int depth, unsigned components);
+    bool SetSize(int width, int height, int depth, unsigned components, unsigned bytesPerComponent = 1);
     /// Set new image data.
-    void SetData(const unsigned char* pixelData);
-    /// Set new image data.
-    void SetData(const float* pixelData);
+    void SetData(const void* pixelData);
     /// Set a 2D pixel.
     void SetPixel(int x, int y, const Color& color);
     /// Set a 3D pixel.
