@@ -53,7 +53,7 @@ SystemMessageBox::~SystemMessageBox()
 
 void SystemMessageBox::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SystemMessageBox>();
+    context->AddFactoryReflection<SystemMessageBox>();
 }
 
 void SystemMessageBox::SetTitle(const ea::string& text)

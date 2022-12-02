@@ -81,7 +81,7 @@ void BackgroundLoader::ThreadFunction()
             backgroundLoadMutex_.Release();
 
             bool success = false;
-            SharedPtr<File> file = owner_->GetFile(resource->GetName(), item.sendEventOnFailure_);
+            AbstractFilePtr file = owner_->GetFile(resource->GetName(), item.sendEventOnFailure_);
             if (file)
             {
                 resource->SetAsyncLoadState(ASYNC_LOADING);
@@ -178,8 +178,7 @@ void BackgroundLoader::WaitForResource(StringHash type, StringHash nameHash)
 
     // Check if the resource in question is being background loaded
     ea::pair<StringHash, StringHash> key = ea::make_pair(type, nameHash);
-    auto i = backgroundLoadQueue_.find(
-        key);
+    auto i = backgroundLoadQueue_.find(key);
     if (i != backgroundLoadQueue_.end())
     {
         backgroundLoadMutex_.Release();
@@ -211,7 +210,8 @@ void BackgroundLoader::WaitForResource(StringHash type, StringHash nameHash)
         FinishBackgroundLoading(i->second);
 
         backgroundLoadMutex_.Acquire();
-        backgroundLoadQueue_.erase(i);
+        // Erasing by key since queue may change since iterator been acquired.
+        backgroundLoadQueue_.erase(key);
         backgroundLoadMutex_.Release();
     }
     else
@@ -226,9 +226,10 @@ void BackgroundLoader::FinishResources(int maxMs)
 
         backgroundLoadMutex_.Acquire();
 
-        for (auto i = backgroundLoadQueue_.begin();
-             i != backgroundLoadQueue_.end();)
+        for (auto i = backgroundLoadQueue_.begin(); i != backgroundLoadQueue_.end();
+             i = backgroundLoadQueue_.begin())
         {
+            const auto key = i->first;
             Resource* resource = i->second.resource_;
             unsigned numDeps = i->second.dependencies_.size();
             AsyncLoadState state = resource->GetAsyncLoadState();
@@ -241,7 +242,8 @@ void BackgroundLoader::FinishResources(int maxMs)
                 backgroundLoadMutex_.Release();
                 FinishBackgroundLoading(i->second);
                 backgroundLoadMutex_.Acquire();
-                i = backgroundLoadQueue_.erase(i);
+                // Erasing by key because the queue may change since last time
+                backgroundLoadQueue_.erase(key);
             }
 
             // Break when the time limit passed so that we keep sufficient FPS

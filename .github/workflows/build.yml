@@ -19,10 +19,12 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_COMPRESS: true
   CCACHE_COMPRESSLEVEL: 9
-  # clcache configuration
-  CLCACHE_DIR: ${{ github.workspace }}\.ccache            # Intentionally same as CCACHE_DIR
-  CLCACHE_COMPRESS: true
-  CLACHE_COMPRESSLEVEL: 9
+  CCACHE_DEPEND: true
+  CCACHE_HARDLINK: true
+  CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
+  CCACHE_NOHASHDIR: true
+  CCACHE_MAXSIZE: 5G
+  CCACHE_LIMIT_MULTIPLE: 0.6
   # paths
   ci_source_dir: ${{ github.workspace }}/source-code
   ci_build_script: ./source-code/script/ci_build.sh
@@ -44,6 +46,7 @@ jobs:
     name: Discord Commits
     runs-on: ubuntu-20.04
     continue-on-error: true
+    if: github.repository == 'rbfx/rbfx' && github.branch == 'master'
     steps:
       - name: Discord Commits
         uses: dearimgui/github_discord_notifier@latest
@@ -51,7 +54,6 @@ jobs:
           discord-webhook: ${{ secrets.DISCORD_WEBHOOK_COMMITS }}
           github-token: ${{ github.token }}
           action-task: discord-commits
-          discord-filter: "'{{ github.branch }}' == 'master'"
           discord-username: GitHub
 
   Windows:
@@ -131,10 +133,15 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build-${{ env.ci_compiler }}
 
-      - name: Test
+      - name: Test (Native)
         if: matrix.ci_compiler == 'msvc'
         shell: bash
         run: ${{ env.ci_build_script }} test
+
+      - name: Test (Managed)
+        if: (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll')
+        shell: bash
+        run: ${{ env.ci_build_script }} cstest
 
       - name: Install
         shell: bash
@@ -193,7 +200,7 @@ jobs:
       - name: Build Cache
         uses: actions/cache@v2
         with:
-          path: ${{ env.CLCACHE_DIR }}
+          path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
@@ -306,7 +313,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build
 
-      - name: Test
+      - name: Test (Native)
         shell: bash
         run: ${{ env.ci_build_script }} test
 
@@ -566,6 +573,9 @@ jobs:
         ci_build_type:
           - dbg
           - rel
+        ci_emsdk_version:
+          - latest
+          - 3.1.24  # Minimal supported
 
     env:
       BINARYEN_CORES: 1
@@ -583,9 +593,9 @@ jobs:
                     }}
 
     steps:
-      - uses: mymindstorm/setup-emsdk@v9
+      - uses: mymindstorm/setup-emsdk@v11
         with:
-          version: latest
+          version: ${{ matrix.ci_emsdk_version }}
 
       - uses: actions/checkout@v2
         with:
@@ -661,3 +671,23 @@ jobs:
           do
             dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
           done
+
+  Docs:
+    runs-on: ubuntu-20.04
+    if: github.repository == 'rbfx/rbfx' && github.branch == 'master'
+    needs:
+      - Windows
+      - UWP
+      - MacOS
+      - Android
+      - iOS
+      - Web
+      - CheckSkipCI
+    env:
+      GH_TOKEN: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
+
+    steps:
+      - name: Trigger
+        shell: bash
+        run: |
+          gh workflow run --repo rbfx/rbfx-docs Documentation

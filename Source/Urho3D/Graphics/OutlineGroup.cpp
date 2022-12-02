@@ -78,7 +78,7 @@ OutlineGroup::~OutlineGroup()
 
 void OutlineGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<OutlineGroup>(Category_Scene);
+    context->AddFactoryReflection<OutlineGroup>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColor, SetColor, Color, Color::WHITE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Render Order", GetRenderOrder, SetRenderOrder, unsigned, DEFAULT_RENDER_ORDER, AM_DEFAULT);

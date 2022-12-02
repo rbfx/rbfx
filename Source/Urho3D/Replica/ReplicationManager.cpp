@@ -43,7 +43,7 @@ NetworkObjectRegistry::NetworkObjectRegistry(Context* context)
 
 void NetworkObjectRegistry::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NetworkObjectRegistry>();
+    context->AddAbstractReflection<NetworkObjectRegistry>(Category_Network);
 }
 
 void NetworkObjectRegistry::OnComponentAdded(TrackedComponentBase* baseComponent)
@@ -175,7 +175,7 @@ ReplicationManager::~ReplicationManager() = default;
 
 void ReplicationManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReplicationManager>();
+    context->AddFactoryReflection<ReplicationManager>(Category_Subsystem);
 }
 
 void ReplicationManager::OnSceneSet(Scene* scene)

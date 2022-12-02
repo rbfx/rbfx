@@ -33,5 +33,5 @@ public:
     /// Construct.
     explicit SplashScreenDemo(Context* context);
 
-    void Activate(VariantMap& bundle) override;
+    void Activate(StringVariantMap& bundle) override;
 };

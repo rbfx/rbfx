@@ -80,7 +80,7 @@ PrefabReference::~PrefabReference() = default;
 
 void PrefabReference::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PrefabReference>(Category_Scene);
+    context->AddFactoryReflection<PrefabReference>(Category_Scene);
 
     URHO3D_ACTION_STATIC_LABEL("Inline", Inline, "Inline the prefab nodes");
 
@@ -210,7 +210,7 @@ void PrefabReference::OnSetEnabled()
 }
 
 /// Handle scene node being assigned at creation.
-void PrefabReference::OnNodeSet(Node* node)
+void PrefabReference::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     ToggleNode();
 }

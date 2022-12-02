@@ -46,7 +46,7 @@ CollisionCircle2D::~CollisionCircle2D() = default;
 
 void CollisionCircle2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionCircle2D>(Category_Physics2D);
+    context->AddFactoryReflection<CollisionCircle2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, DEFAULT_CLRCLE_RADIUS, AM_DEFAULT);

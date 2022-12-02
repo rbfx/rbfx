@@ -725,7 +725,7 @@ static int ModifiersUrho3DToRml(QualifierFlags modifier)
 
 void RegisterRmlUILibrary(Context* context)
 {
-    context->RegisterFactory<RmlUI>();
+    context->AddFactoryReflection<RmlUI>();
     RmlUIComponent::RegisterObject(context);
     RmlCanvasComponent::RegisterObject(context);
     RmlSerializableInspector::RegisterObject(context);

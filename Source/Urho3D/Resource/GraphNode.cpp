@@ -103,7 +103,7 @@ GraphNode::GraphNode(Context* context)
 
 GraphNode::~GraphNode() = default;
 
-void GraphNode::RegisterObject(Context* context) { context->RegisterFactory<GraphNode>(); }
+void GraphNode::RegisterObject(Context* context) { context->AddFactoryReflection<GraphNode>(); }
 
 Variant& GraphNode::GetOrAddProperty(const ea::string_view name)
 {

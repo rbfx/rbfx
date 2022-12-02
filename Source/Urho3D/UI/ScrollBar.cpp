@@ -77,7 +77,7 @@ ScrollBar::~ScrollBar() = default;
 
 void ScrollBar::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ScrollBar>(Category_UI);
+    context->AddFactoryReflection<ScrollBar>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Is Enabled", true);

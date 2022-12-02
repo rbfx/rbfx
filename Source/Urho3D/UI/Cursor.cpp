@@ -99,7 +99,7 @@ Cursor::~Cursor()
 
 void Cursor::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Cursor>(Category_UI);
+    context->AddFactoryReflection<Cursor>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Priority", M_MAX_INT);
@@ -148,7 +148,7 @@ void Cursor::DefineShape(const ea::string& shape, Image* image, const IntRect& i
     info.texture_ = cache->GetResource<Texture2D>(image->GetName(), false);
     if (!info.texture_)
     {
-        auto texture(context_->CreateObject<Texture2D>());
+        auto texture(MakeShared<Texture2D>(context_));
         texture->SetData(image);
         info.texture_ = texture;
     }

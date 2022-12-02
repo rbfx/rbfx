@@ -111,15 +111,18 @@ bool AssetTransformer::IsApplicable(const AssetTransformerInput& input, const As
     return false;
 }
 
-bool AssetTransformer::Execute(const AssetTransformerInput& input, const AssetTransformerVector& transformers,
-    AssetTransformerOutput& output)
+bool AssetTransformer::ExecuteTransformers(const AssetTransformerInput& input, AssetTransformerOutput& output,
+    const AssetTransformerVector& transformers, bool isNestedExecution)
 {
     URHO3D_ASSERT(!transformers.empty());
     for (AssetTransformer* transformer : transformers)
     {
+        if (isNestedExecution && !transformer->IsExecutedOnOutput())
+            continue;
+
         if (transformer->IsApplicable(input))
         {
-            if (!transformer->Execute(input, output))
+            if (!transformer->Execute(input, output, transformers))
                 return false;
             output.appliedTransformers_.insert(transformer->GetTypeName());
         }
@@ -127,15 +130,15 @@ bool AssetTransformer::Execute(const AssetTransformerInput& input, const AssetTr
     return true;
 }
 
-bool AssetTransformer::ExecuteAndStore(const AssetTransformerInput& input, const AssetTransformerVector& transformers,
-    const ea::string& outputPath, AssetTransformerOutput& output)
+bool AssetTransformer::ExecuteTransformersAndStore(const AssetTransformerInput& input, const ea::string& outputPath, AssetTransformerOutput& output,
+    const AssetTransformerVector& transformers)
 {
     URHO3D_ASSERT(!transformers.empty());
     Context* context = transformers[0]->GetContext();
     auto fs = context->GetSubsystem<FileSystem>();
 
     const TemporaryDir tempFolderHolder{context, input.tempPath_};
-    if (!AssetTransformer::Execute(input, transformers, output))
+    if (!AssetTransformer::ExecuteTransformers(input, output, transformers, false))
         return false;
 
     StringVector copiedFiles;

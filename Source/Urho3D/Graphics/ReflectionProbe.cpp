@@ -192,7 +192,7 @@ ReflectionProbeManager::~ReflectionProbeManager()
 
 void ReflectionProbeManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReflectionProbeManager>();
+    context->AddFactoryReflection<ReflectionProbeManager>();
 
     URHO3D_ACTION_STATIC_LABEL("Bake!", QueueBakeAll, "Renders all baked reflection probes");
 
@@ -539,7 +539,7 @@ ReflectionProbe::~ReflectionProbe()
 
 void ReflectionProbe::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReflectionProbe>(Category_Scene);
+    context->AddFactoryReflection<ReflectionProbe>(Category_Scene);
 
     URHO3D_ACTION_STATIC_LABEL("Render!", QueueRender, "Renders cubemap for reflection probe");
 
@@ -779,11 +779,11 @@ void ReflectionProbe::UpdateProbeBoxData()
     data_.projectionBox_.max_ = position + projectionBox_.max_;
 }
 
-void ReflectionProbe::OnNodeSet(Node* node)
+void ReflectionProbe::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
+    if (node_)
     {
-        node->AddListener(this);
+        node_->AddListener(this);
         MarkTransformDirty();
     }
 

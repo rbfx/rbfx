@@ -127,7 +127,7 @@ public:
     /// Set custom clipping plane in world space.
     /// @property
     void SetClipPlane(const Plane& plane);
-    /// Set vertical flipping mode. Called internally by View to resolve OpenGL / Direct3D9 rendertarget sampling differences.
+    /// Set vertical flipping mode. Called internally by View to resolve OpenGL rendertarget sampling differences.
     void SetFlipVertical(bool enable);
     /// Set custom projection matrix, which should be specified in D3D convention with depth range 0 - 1. Disables auto aspect ratio.
     /// @property
@@ -301,7 +301,7 @@ public:
 
 protected:
     /// Handle node being assigned.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle node transform being dirtied.
     void OnMarkedDirty(Node* node) override;
 

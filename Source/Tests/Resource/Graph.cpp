@@ -227,7 +227,7 @@ TEST_CASE("Graph serialization roundtrip")
     // Save to xml
     VectorBuffer buf;
     {
-        SharedPtr<XMLFile> xml(context->CreateObject<XMLFile>());
+        SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context));
         REQUIRE(xml->SaveObject(*graph));
         REQUIRE(xml->Save(buf));
     }
@@ -235,7 +235,7 @@ TEST_CASE("Graph serialization roundtrip")
     auto restoredGraph = MakeShared<Graph>(context);
     buf.Seek(0);
     {
-        SharedPtr<XMLFile> xml(context->CreateObject<XMLFile>());
+        SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context));
         REQUIRE(xml->Load(buf));
         REQUIRE(xml->LoadObject(*restoredGraph));
     }

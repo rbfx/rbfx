@@ -28,8 +28,12 @@ if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 17)
 endif ()
 
-# Set project name
-project (rbfx)
+# Set project name and languages
+project (rbfx C CXX)
+if (APPLE)
+    enable_language(OBJC)
+    enable_language(OBJCXX)
+endif ()
 
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules)
@@ -212,8 +216,8 @@ if (WEB)
     if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 1.31.3)
         message(FATAL_ERROR "Unsupported compiler version")
     endif ()
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-warn-absolute-paths -Wno-unknown-warning-option")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-warn-absolute-paths -Wno-unknown-warning-option")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-warn-absolute-paths -Wno-unknown-warning-option -Wno-deprecated-builtins")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-warn-absolute-paths -Wno-unknown-warning-option -Wno-deprecated-builtins")
     if (URHO3D_THREADING)
         set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_PTHREADS=1")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_PTHREADS=1")
@@ -230,9 +234,6 @@ if (WEB)
     # Remove variables to make the -O3 regalloc easier, embed data in asm.js to reduce number of moving part
     set (CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
     set (CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
-    # Preserve LLVM debug information, show line number debug comments, and generate source maps; always disable exception handling codegen
-    set (CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${EMCC_WITH_SOURCE_MAPS_FLAG} -s DISABLE_EXCEPTION_CATCHING=1")
-    set (CMAKE_MODULE_LINKER_FLAGS_DEBUG "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} ${EMCC_WITH_SOURCE_MAPS_FLAG} -s DISABLE_EXCEPTION_CATCHING=1")
 endif ()
 
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")

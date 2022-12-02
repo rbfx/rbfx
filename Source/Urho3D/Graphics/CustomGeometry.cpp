@@ -44,7 +44,7 @@ namespace Urho3D
 
 CustomGeometry::CustomGeometry(Context* context)
     : Drawable(context, DRAWABLE_GEOMETRY)
-    , vertexBuffer_(context->CreateObject<VertexBuffer>())
+    , vertexBuffer_(MakeShared<VertexBuffer>(context))
     , elementMask_(MASK_POSITION)
     , geometryIndex_(0)
     , materialsAttr_(Material::GetTypeStatic())
@@ -58,7 +58,7 @@ CustomGeometry::~CustomGeometry() = default;
 
 void CustomGeometry::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CustomGeometry>(Category_Geometry);
+    context->AddFactoryReflection<CustomGeometry>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Dynamic Vertex Buffer", bool, dynamic_, false, AM_DEFAULT);
@@ -221,7 +221,7 @@ void CustomGeometry::SetNumGeometries(unsigned num)
     for (unsigned i = 0; i < geometries_.size(); ++i)
     {
         if (!geometries_[i])
-            geometries_[i] = context_->CreateObject<Geometry>();
+            geometries_[i] = MakeShared<Geometry>(context_);
 
         batches_[i].geometry_ = GetGeometryIfNotEmpty(geometries_[i]);
     }

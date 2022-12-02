@@ -80,7 +80,7 @@ private:
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
     /// Handle KeyUp event.
     void OnKeyUp(StringHash eventType, VariantMap& eventData);
     /// Translate sprite nodes.

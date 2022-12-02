@@ -53,7 +53,7 @@ struct GeometryBufferArray
     GeometryBufferArray(std::initializer_list<VertexBuffer*> vertexBuffers,
         IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
     {
-        ea::span<VertexBuffer* const> tempVertexBuffers(vertexBuffers.begin(), vertexBuffers.size());
+        ea::span<VertexBuffer* const> tempVertexBuffers(vertexBuffers.begin(), static_cast<unsigned>(vertexBuffers.size()));
         Initialize(tempVertexBuffers, indexBuffer, instancingBuffer);
     }
 

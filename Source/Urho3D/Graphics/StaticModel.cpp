@@ -34,6 +34,7 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
+#include "../Resource/BinaryFile.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 
@@ -53,7 +54,7 @@ StaticModel::~StaticModel() = default;
 
 void StaticModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticModel>(Category_Geometry);
+    context->AddFactoryReflection<StaticModel>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
@@ -309,18 +310,16 @@ void StaticModel::ApplyMaterialList(const ea::string& fileName)
         useFileName = ReplaceExtension(model_->GetName(), ".txt");
 
     auto* cache = GetSubsystem<ResourceCache>();
-    SharedPtr<File> file = cache->GetFile(useFileName, false);
+    auto file = cache->GetTempResource<BinaryFile>(useFileName, false);
     if (!file)
         return;
 
-    unsigned index = 0;
-    while (!file->IsEof() && index < batches_.size())
+    const StringVector lines = file->ReadLines();
+    for (unsigned index = 0; index < ea::min(batches_.size(), lines.size()); ++index)
     {
-        auto* material = cache->GetResource<Material>(file->ReadLine());
+        auto* material = cache->GetResource<Material>(lines[index]);
         if (material)
             SetMaterial(index, material);
-
-        ++index;
     }
 }
 

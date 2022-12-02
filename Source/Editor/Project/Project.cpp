@@ -455,6 +455,8 @@ void Project::EnsureDirectoryInitialized()
     // Legacy: to support old projects
     if (fs->DirExists(projectPath_ + "Resources/"))
         dataPath_ = projectPath_ + "Resources/";
+    if (fs->FileExists(dataPath_ + "AssetPipeline.json"))
+        fs->Rename(dataPath_ + "AssetPipeline.json", dataPath_ + "Default.AssetPipeline.json");
 
     if (!fs->DirExists(dataPath_))
     {
@@ -488,7 +490,7 @@ void Project::InitializeDefaultProject()
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
     ProcessRequest(request, nullptr);
 
-    const ea::string defaultAssetPipeline = "AssetPipeline.json";
+    const ea::string defaultAssetPipeline = "Default.AssetPipeline.json";
     CreateAssetPipeline(context_, dataPath_ + defaultAssetPipeline);
 
     Save();
@@ -563,6 +565,10 @@ void Project::SaveGitIgnore()
     content += "/Cache.json\n";
     content += "\n";
 
+    content += "# Ignore temporary files\n";
+    content += "/Temp/\n";
+    content += "\n";
+
     content += "# Ignore UI settings\n";
     content += "/ui.ini\n";
     content += "\n";
@@ -604,6 +610,12 @@ void Project::Render()
 
     if (pendingResetLayout_)
         ResetLayout();
+
+    if (!assetManagerInitialized_ && !pluginManager_->IsReloadPending())
+    {
+        assetManagerInitialized_ = true;
+        assetManager_->Initialize();
+    }
 
     bool initialFocusPending = false;
     if (!initialized_ && initializationGuard_.expired())
@@ -733,6 +745,7 @@ void Project::SaveShallowOnly()
 {
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     settingsManager_->SaveFile(settingsJsonPath_);
+    assetManager_->SaveFile(cacheJsonPath_);
 
     for (EditorTab* tab : tabs_)
     {
@@ -755,8 +768,6 @@ void Project::SaveProjectOnly()
     if (!fs->FileExists(gitIgnorePath_))
         SaveGitIgnore();
 
-    assetManager_->SaveFile(cacheJsonPath_);
-
     hasUnsavedChanges_ = false;
 }
 
@@ -767,6 +778,7 @@ void Project::SaveResourcesOnly()
         if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
             resourceTab->SaveAllResources();
     }
+    ProcessDelayedSaves(true);
 }
 
 void Project::Save()

@@ -54,7 +54,7 @@ public:
 
 private:
     /// Handle scene node being assigned at creation.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
 
     /// Subscribe/unsubscribe to update events based on current enabled state and update event mask.
     void UpdateEventSubscription();

@@ -110,7 +110,7 @@ ParticleEffect2D::~ParticleEffect2D() = default;
 
 void ParticleEffect2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleEffect2D>();
+    context->AddFactoryReflection<ParticleEffect2D>();
 }
 
 bool ParticleEffect2D::BeginLoad(Deserializer& source)
@@ -475,7 +475,7 @@ void ParticleEffect2D::SetRotationEndVariance(float rotationEndVariance)
 
 SharedPtr<ParticleEffect2D> ParticleEffect2D::Clone(const ea::string& cloneName) const
 {
-    SharedPtr<ParticleEffect2D> ret(context_->CreateObject<ParticleEffect2D>());
+    SharedPtr<ParticleEffect2D> ret(MakeShared<ParticleEffect2D>(context_));
 
     ret->SetName(cloneName);
     ret->sprite_ = sprite_;

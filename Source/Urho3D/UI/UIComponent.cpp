@@ -161,7 +161,7 @@ UIComponent::UIComponent(Context* context)
     : Component(context),
     viewportIndex_(0)
 {
-    texture_ = context_->CreateObject<Texture2D>();
+    texture_ = MakeShared<Texture2D>(context_);
     texture_->SetFilterMode(FILTER_BILINEAR);
     texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
     texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
@@ -172,12 +172,12 @@ UIComponent::UIComponent(Context* context)
     else
         URHO3D_LOGERROR("Resizing of UI rendertarget texture failed.");
 
-    rootElement_ = context_->CreateObject<UIElement3D>();
+    rootElement_ = MakeShared<UIElement3D>(context_);
     rootElement_->SetTraversalMode(TM_BREADTH_FIRST);
     rootElement_->SetEnabled(true);
     rootElement_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE);
 
-    rootModalElement_ = context_->CreateObject<UIElement3D>();
+    rootModalElement_ = MakeShared<UIElement3D>(context_);
     rootModalElement_->SetTraversalMode(TM_BREADTH_FIRST);
     rootModalElement_->SetEnabled(true);
     rootModalElement_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE);
@@ -187,7 +187,7 @@ UIComponent::UIComponent(Context* context)
     offScreenUI_->SetRootModalElement(rootModalElement_);
     offScreenUI_->SetRenderTarget(texture_);
 
-    material_ = context_->CreateObject<Material>();
+    material_ = MakeShared<Material>(context_);
     material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/Diff.xml"));
     material_->SetTexture(TU_DIFFUSE, texture_);
 }
@@ -196,8 +196,8 @@ UIComponent::~UIComponent() = default;
 
 void UIComponent::RegisterObject(Context* context)
 {
-    context->RegisterFactory<UIComponent>();
-    context->RegisterFactory<UIElement3D>();
+    context->AddFactoryReflection<UIComponent>();
+    context->AddFactoryReflection<UIElement3D>();
 }
 
 UIElement* UIComponent::GetRoot() const
@@ -215,16 +215,16 @@ Texture2D* UIComponent::GetTexture() const
     return texture_;
 }
 
-void UIComponent::OnNodeSet(Node* node)
+void UIComponent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    rootElement_->SetNode(node);
-    if (node)
+    rootElement_->SetNode(node_);
+    if (node_)
     {
         auto* renderer = GetSubsystem<Renderer>();
-        auto* model = node->GetComponent<StaticModel>();
+        auto* model = node_->GetComponent<StaticModel>();
         rootElement_->SetViewport(renderer->GetViewportForScene(GetScene(), viewportIndex_));
         if (model == nullptr)
-            model_ = model = node->CreateComponent<StaticModel>();
+            model_ = model = node_->CreateComponent<StaticModel>();
         model->SetMaterial(material_);
     }
     else

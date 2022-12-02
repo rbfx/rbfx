@@ -286,10 +286,10 @@ void SerializeSet(Archive& archive, const char* name, T& set, const char* elemen
 
 /// Serialize shared pointer to Object.
 template <class T, std::enable_if_t<std::is_base_of<Object, T>::value, int> = 0>
-void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
+void SerializeSharedPtr(Archive& archive, const char* name, SharedPtr<T>& value, bool singleBlock = false, bool ignoreUnknown = false)
 {
     const bool loading = archive.IsInput();
-    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    ArchiveBlock block = ignoreUnknown ? archive.OpenSafeUnorderedBlock(name) : archive.OpenUnorderedBlock(name);
 
     StringHash type{};
     ea::string_view typeName{};
@@ -299,7 +299,7 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
         typeName = value->GetTypeName();
     }
 
-    SerializeStringHash(archive, "type", type, typeName);
+    SerializeStringHash(archive, singleBlock ? "_Class" : "type", type, typeName);
 
     if (loading)
     {
@@ -315,13 +315,26 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
         value.StaticCast(context->CreateObject(type));
         if (!value)
         {
-            throw ArchiveException("Failed to create object '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
-                type.ToDebugString());
+            if (ignoreUnknown)
+            {
+                URHO3D_LOGWARNING("Unknown object type is ignored on serialization");
+                return;
+            }
+            else
+            {
+                throw ArchiveException("Failed to create object '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
+                    type.ToDebugString());
+            }
         }
     }
 
     if (value)
-        SerializeValue(archive, "value", *value);
+    {
+        if (singleBlock)
+            value->SerializeInBlock(archive);
+        else
+            SerializeValue(archive, "value", *value);
+    }
 }
 
 /// Aliases for SerializeValue.
@@ -332,6 +345,8 @@ template <class T, std::enable_if_t<Detail::IsMapType<T>::value, int> = 0>
 void SerializeValue(Archive& archive, const char* name, T& map) { SerializeMap(archive, name, map); }
 template <class T, std::enable_if_t<Detail::IsSetType<T>::value, int> = 0>
 void SerializeValue(Archive& archive, const char* name, T& set) { SerializeSet(archive, name, set); }
+template <class T, std::enable_if_t<std::is_base_of<Object, T>::value, int> = 0>
+void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value) { SerializeSharedPtr(archive, name, value); }
 /// @}
 
 

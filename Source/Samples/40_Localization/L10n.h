@@ -48,7 +48,7 @@ private:
     // Init the user interface
     void CreateGUI();
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
     // Handle the change language event.
     void HandleChangeLanguage(StringHash eventType, VariantMap& eventData);
     // Hook up to the buttons pressing

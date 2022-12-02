@@ -45,7 +45,7 @@ StaticModelForLightmap::~StaticModelForLightmap() = default;
 
 void StaticModelForLightmap::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticModelForLightmap>();
+    context->AddFactoryReflection<StaticModelForLightmap>();
 }
 
 GeometryIDToObjectMappingVector StaticModelForLightmap::Initialize(

@@ -54,7 +54,7 @@ ObjectAnimation::~ObjectAnimation() = default;
 
 void ObjectAnimation::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ObjectAnimation>();
+    context->AddFactoryReflection<ObjectAnimation>();
 }
 
 bool ObjectAnimation::BeginLoad(Deserializer& source)
@@ -87,7 +87,7 @@ bool ObjectAnimation::LoadXML(const XMLElement& source)
     {
         ea::string name = animElem.GetAttribute("name");
 
-        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> animation(MakeShared<ValueAnimation>(context_));
         if (!animation->LoadXML(animElem))
             return false;
 
@@ -146,7 +146,7 @@ bool ObjectAnimation::LoadJSON(const JSONValue& source)
     {
         ea::string name = it->first;
         JSONValue value = it->second;
-        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> animation(MakeShared<ValueAnimation>(context_));
         if (!animation->LoadJSON(value))
             return false;
 

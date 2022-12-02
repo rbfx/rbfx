@@ -170,7 +170,7 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
 
 bool TextureCube::SetData(CubeMapFace face, Deserializer& source)
 {
-    SharedPtr<Image> image(context_->CreateObject<Image>());
+    SharedPtr<Image> image(MakeShared<Image>(context_));
     if (!image->Load(source))
         return false;
 

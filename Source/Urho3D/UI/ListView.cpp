@@ -198,7 +198,7 @@ ListView::~ListView() = default;
 
 void ListView::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ListView>(Category_UI);
+    context->AddFactoryReflection<ListView>(Category_UI);
 
     HierarchyContainer::RegisterObject(context);
 
@@ -726,14 +726,14 @@ void ListView::SetHierarchyMode(bool enable)
     SharedPtr<UIElement> container;
     if (enable)
     {
-        overlayContainer_ = context_->CreateObject<UIElement>();
+        overlayContainer_ = MakeShared<UIElement>(context_);
         overlayContainer_->SetName("LV_OverlayContainer");
         overlayContainer_->SetInternal(true);
         AddChild(overlayContainer_);
         overlayContainer_->SetSortChildren(false);
         overlayContainer_->SetClipChildren(true);
 
-        container = context_->CreateObject<HierarchyContainer>();
+        container = MakeShared<HierarchyContainer>(context_);
         container->Cast<HierarchyContainer>()->Initialize(this, overlayContainer_);
     }
     else
@@ -744,7 +744,7 @@ void ListView::SetHierarchyMode(bool enable)
             overlayContainer_.Reset();
         }
 
-        container = context_->CreateObject<UIElement>();
+        container = MakeShared<UIElement>(context_);
     }
 
     container->SetName("LV_ItemContainer");

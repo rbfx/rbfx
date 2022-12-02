@@ -197,7 +197,7 @@ struct ParticleGraphAttributeBuilder
 
 void ParticleGraphLayer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleGraphLayer>();
+    context->AddFactoryReflection<ParticleGraphLayer>();
     URHO3D_ACCESSOR_ATTRIBUTE("Capacity", GetCapacity, SetCapacity, unsigned, DefaultCapacity, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("TimeScale", GetTimeScale, SetTimeScale, float, DefaultTimeScale, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Duration", GetDuration, SetDuration, float, DefaultDuration, AM_DEFAULT);

@@ -40,7 +40,7 @@ namespace Urho3D
 
 ApplicationState::ApplicationState(Context* context)
     : Object(context)
-    , rootElement_(context->CreateObject<UIElement>())
+    , rootElement_(MakeShared<UIElement>(context))
 #if URHO3D_ACTIONS
     , actionManager_(MakeShared<ActionManager>(context, false))
 #endif
@@ -52,7 +52,7 @@ ApplicationState::~ApplicationState() = default;
 void ApplicationState::RegisterObject(Context* context) { context->AddFactoryReflection<ApplicationState>(); }
 
 /// Activate game screen. Executed by Application.
-void ApplicationState::Activate(VariantMap& bundle)
+void ApplicationState::Activate(StringVariantMap& bundle)
 {
     if (active_)
     {
@@ -354,7 +354,6 @@ void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
 StateManager::StateManager(Context* context)
     : BaseClassName(context)
 {
-    SubscribeToEvent(E_ENQUEUEAPPLICATIONSTATE, URHO3D_HANDLER(StateManager, HandleSetApplicationState));
 }
 
 StateManager::~StateManager()
@@ -419,7 +418,7 @@ void StateManager::Reset()
 }
 
 /// Set current game state.
-void StateManager::EnqueueState(ApplicationState* gameScreen, VariantMap& bundle)
+void StateManager::EnqueueState(ApplicationState* gameScreen, StringVariantMap& bundle)
 {
     if (!gameScreen)
     {
@@ -438,12 +437,12 @@ void StateManager::EnqueueState(ApplicationState* gameScreen, VariantMap& bundle
 /// Transition to the application state.
 void StateManager::EnqueueState(ApplicationState* gameScreen)
 {
-    VariantMap bundle;
+    StringVariantMap bundle;
     EnqueueState(gameScreen, bundle);
 }
 
 /// Transition to the application state.
-void StateManager::EnqueueState(StringHash type, VariantMap& bundle)
+void StateManager::EnqueueState(StringHash type, StringVariantMap& bundle)
 {
     if (!Thread::IsMainThread())
     {
@@ -457,7 +456,7 @@ void StateManager::EnqueueState(StringHash type, VariantMap& bundle)
 /// Transition to the application state.
 void StateManager::EnqueueState(StringHash type)
 {
-    VariantMap bundle;
+    StringVariantMap bundle;
     EnqueueState(type, bundle);
 }
 
@@ -606,19 +605,16 @@ void StateManager::SetFadeOutDuration(float durationInSeconds)
     fadeOutDuration_ = Clamp(durationInSeconds, ea::numeric_limits<float>::epsilon(), ea::numeric_limits<float>::max());
 }
 
-/// Handle SetApplicationState event and add the state to the queue.
-void StateManager::HandleSetApplicationState(StringHash eventName, VariantMap& args)
-{
-    using namespace EnqueueApplicationState;
-    EnqueueState(args[P_STATE].GetStringHash(), args);
-}
-
 /// Handle update event to animate state transitions.
 void StateManager::HandleUpdate(StringHash eventName, VariantMap& args)
 {
     using namespace Update;
-    auto timeStep = args[P_TIMESTEP].GetFloat();
+    const auto timeStep = args[P_TIMESTEP].GetFloat();
+    Update(timeStep);
+}
 
+void StateManager::Update(float timeStep)
+{
     int iterationCount{0};
     do
     {
@@ -649,6 +645,7 @@ void StateManager::HandleUpdate(StringHash eventName, VariantMap& args)
             else
             {
                 UpdateFadeOverlay(fadeTime_ / fadeInDuration_);
+                return;
             }
             break;
         case TransitionState::FadeOut:
@@ -661,6 +658,7 @@ void StateManager::HandleUpdate(StringHash eventName, VariantMap& args)
             else
             {
                 UpdateFadeOverlay(fadeTime_ / fadeOutDuration_);
+                return;
             }
             break;
         }

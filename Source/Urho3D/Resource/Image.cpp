@@ -224,6 +224,10 @@ bool CompressedLevel::Decompress(unsigned char* dest) const
 
     switch (format_)
     {
+    case CF_RGBA:
+        memcpy(dest, data_, width_ * height_ * depth_ * 4);
+        return true;
+
     case CF_DXT1:
     case CF_DXT3:
     case CF_DXT5:
@@ -261,7 +265,7 @@ Image::~Image() = default;
 
 void Image::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Image>();
+    context->AddFactoryReflection<Image>();
 }
 
 bool Image::BeginLoad(Deserializer& source)
@@ -361,8 +365,7 @@ bool Image::BeginLoad(Deserializer& source)
             break;
 
         case 0:
-            if (ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 32 && ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 24 &&
-                ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 16)
+            if (ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 32)
             {
                 URHO3D_LOGERROR("Unsupported DDS pixel byte size");
                 return false;
@@ -470,7 +473,7 @@ bool Image::BeginLoad(Deserializer& source)
             if (faceIndex < imageChainCount - 1)
             {
                 // Build the image chain
-                SharedPtr<Image> nextImage(context_->CreateObject<Image>());
+                SharedPtr<Image> nextImage(MakeShared<Image>(context_));
                 currentImage->nextSibling_ = nextImage;
                 currentImage = nextImage;
             }
@@ -1670,7 +1673,7 @@ SharedPtr<Image> Image::GetNextLevel() const
     if (depthOut < 1)
         depthOut = 1;
 
-    SharedPtr<Image> mipImage(context_->CreateObject<Image>());
+    SharedPtr<Image> mipImage(MakeShared<Image>(context_));
 
     if (depth_ > 1)
         mipImage->SetSize(widthOut, heightOut, depthOut, components_);
@@ -1968,7 +1971,7 @@ SharedPtr<Image> Image::ConvertToRGBA() const
     if (components_ == 4)
         return SharedPtr<Image>(const_cast<Image*>(this));
 
-    SharedPtr<Image> ret(context_->CreateObject<Image>());
+    SharedPtr<Image> ret(MakeShared<Image>(context_));
     ret->SetSize(width_, height_, depth_, 4);
 
     const unsigned char* src = data_.get();
@@ -2166,7 +2169,11 @@ SharedPtr<Image> Image::GetDecompressedImageLevel(unsigned index) const
 
         auto decompressedImage = MakeShared<Image>(context_);
         decompressedImage->SetSize(compressedLevel.width_, compressedLevel.height_, 4);
-        compressedLevel.Decompress(decompressedImage->GetData());
+        if (!compressedLevel.Decompress(decompressedImage->GetData()))
+        {
+            URHO3D_LOGERROR("Failed to decompress image level");
+            return nullptr;
+        }
 
         return decompressedImage;
     }
@@ -2201,7 +2208,7 @@ SharedPtr<Image> Image::GetSubimage(const IntRect& rect) const
         int width = rect.Width();
         int height = rect.Height();
 
-        auto image = context_->CreateObject<Image>();
+        auto image = MakeShared<Image>(context_);
         image->SetSize(width, height, components_);
 
         unsigned char* dest = image->GetData();
@@ -2270,7 +2277,7 @@ SharedPtr<Image> Image::GetSubimage(const IntRect& rect) const
             return nullptr;
         }
 
-        auto image = context_->CreateObject<Image>();
+        auto image = MakeShared<Image>(context_);
         image->width_ = paddedRect.Width();
         image->height_ = paddedRect.Height();
         image->depth_ = 1;

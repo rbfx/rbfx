@@ -52,7 +52,7 @@ DebugRenderer::DebugRenderer(Context* context) :
     Component(context),
     lineAntiAlias_(false)
 {
-    vertexBuffer_ = context_->CreateObject<VertexBuffer>();
+    vertexBuffer_ = MakeShared<VertexBuffer>(context_);
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
 }
@@ -61,7 +61,7 @@ DebugRenderer::~DebugRenderer() = default;
 
 void DebugRenderer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DebugRenderer>(Category_Subsystem);
+    context->AddFactoryReflection<DebugRenderer>(Category_Subsystem);
     URHO3D_ACCESSOR_ATTRIBUTE("Line Antialias", GetLineAntiAlias, SetLineAntiAlias, bool, false, AM_DEFAULT);
 }
 

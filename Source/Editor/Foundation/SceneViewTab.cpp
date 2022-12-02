@@ -37,6 +37,7 @@
 #include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/Widgets.h>
@@ -100,8 +101,9 @@ void Foundation_SceneViewTab(Context* context, Project* project)
     project->AddTab(MakeShared<SceneViewTab>(context));
 }
 
-SceneViewPage::SceneViewPage(Scene* scene)
+SceneViewPage::SceneViewPage(Resource* resource, Scene* scene)
     : Object(scene->GetContext())
+    , resource_(resource)
     , scene_(scene)
     , renderer_(MakeShared<SceneRendererToTexture>(scene_))
     , cfgFileName_(scene_->GetFileName() + ".user.json")
@@ -294,6 +296,8 @@ void SceneViewTab::PauseSimulation()
     if (!activePage)
         return;
 
+    if (activePage->IsSimulationActive())
+        activePage->currentSimulationAction_->Complete(true);
     activePage->scene_->SetUpdateEnabled(false);
 }
 
@@ -715,13 +719,8 @@ void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
         return;
     }
 
-    auto scene = MakeShared<Scene>(context_);
-    scene->LoadXML(xmlFile->GetRoot());
-    scene->SetFileName(xmlFile->GetAbsoluteFileName());
-    scene->SetUpdateEnabled(false);
-
     const bool isActive = resourceName == GetActiveResourceName();
-    scenes_[resourceName] = CreatePage(scene, isActive);
+    scenes_[resourceName] = CreatePage(xmlFile, isActive);
 }
 
 void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
@@ -771,7 +770,16 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
     page.scene_->SetUpdateEnabled(false);
     page.scene_->SaveXML(rootElement);
 
-    xmlFile.SaveFile(page.scene_->GetFileName());
+    VectorBuffer buffer;
+    xmlFile.Save(buffer);
+
+    auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
+
+    auto project = GetProject();
+    project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer);
+
+    auto cache = GetSubsystem<ResourceCache>();
+    cache->ReleaseResource(page.resource_->GetName(), true);
 }
 
 void SceneViewTab::SavePagePreview(SceneViewPage& page) const
@@ -934,13 +942,29 @@ SceneViewPage* SceneViewTab::GetActivePage()
     return GetPage(GetActiveResourceName());
 }
 
-SharedPtr<SceneViewPage> SceneViewTab::CreatePage(Scene* scene, bool isActive)
+SharedPtr<SceneViewPage> SceneViewTab::CreatePage(XMLFile* xmlFile, bool isActive)
 {
-    auto page = MakeShared<SceneViewPage>(scene);
+    auto scene = MakeShared<Scene>(context_);
+    scene->LoadXML(xmlFile->GetRoot());
+    scene->SetFileName(xmlFile->GetAbsoluteFileName());
+    scene->SetUpdateEnabled(false);
+
+    auto page = MakeShared<SceneViewPage>(xmlFile, scene);
+
+    WeakPtr<SceneViewPage> weakPage{page};
+    page->SubscribeToEvent(xmlFile, E_RELOADFINISHED, [this, weakPage](StringHash, VariantMap&)
+    {
+        if (weakPage && !IsResourceUnsaved(weakPage->resource_->GetName()))
+        {
+            const PackedSceneSelection selection = weakPage->selection_.Pack();
+            auto xmlFile = static_cast<XMLFile*>(weakPage->resource_.Get());
+            weakPage->scene_->LoadXML(xmlFile->GetRoot());
+            weakPage->selection_.Load(weakPage->scene_, selection);
+        }
+    });
 
     page->renderer_->SetActive(isActive);
 
-    WeakPtr<SceneViewPage> weakPage{page};
     page->selection_.OnChanged.Subscribe(this, [weakPage](SceneViewTab* self)
     {
         if (weakPage)
@@ -986,6 +1010,8 @@ void SimulateSceneAction::Complete(bool force)
     isComplete_ = true;
     if (page_)
     {
+        page_->scene_->SetElapsedTime(0.0f);
+        page_->scene_->SetUpdateEnabled(false);
         newData_ = PackedSceneData::FromScene(page_->scene_);
         page_->selection_.Save(newSelection_);
     }

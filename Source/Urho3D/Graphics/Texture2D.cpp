@@ -54,7 +54,7 @@ Texture2D::~Texture2D()
 
 void Texture2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Texture2D>();
+    context->AddFactoryReflection<Texture2D>();
 }
 
 bool Texture2D::BeginLoad(Deserializer& source)
@@ -72,7 +72,7 @@ bool Texture2D::BeginLoad(Deserializer& source)
     }
 
     // Load the image data for EndLoad()
-    loadImage_ = context_->CreateObject<Image>();
+    loadImage_ = MakeShared<Image>(context_);
     if (!loadImage_->Load(source))
     {
         loadImage_.Reset();

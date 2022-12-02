@@ -192,7 +192,7 @@ SampleSelectionScreen::SampleSelectionScreen(Context* context)
     SetMouseVisible(true);
 }
 
-void SampleSelectionScreen::Activate(VariantMap& bundle)
+void SampleSelectionScreen::Activate(StringVariantMap& bundle)
 {
     ApplicationState::Activate(bundle);
     dpadAdapter_.SetEnabled(true);
@@ -425,7 +425,7 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    VariantMap args;
+    StringVariantMap args;
     args["Args"] = GetArgs();
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleType, args);
 }
@@ -637,7 +637,7 @@ void SamplesManager::RegisterSample()
 {
     context_->AddFactoryReflection<T>();
 
-    auto* button = context_->CreateObject<Button>().Detach();
+    auto button = MakeShared<Button>(context_);
     button->SetMinHeight(30);
     button->SetStyleAuto();
     button->SetVar("SampleType", T::GetTypeStatic());

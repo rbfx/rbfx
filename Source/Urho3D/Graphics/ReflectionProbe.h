@@ -233,7 +233,7 @@ public:
     bool IsRenderOnWake() const { return probeType_ == ReflectionProbeType::Mixed || probeType_ == ReflectionProbeType::Dynamic; }
 
 protected:
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     void OnMarkedDirty(Node* node) override;
 
 private:

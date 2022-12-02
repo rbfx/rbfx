@@ -59,7 +59,7 @@ Window::~Window() = default;
 
 void Window::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Window>(Category_UI);
+    context->AddFactoryReflection<Window>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Bring To Front", true);

@@ -342,7 +342,7 @@ void NodeComponentInspector::RenderComponentSummary()
 
 void NodeComponentInspector::RenderAddComponent()
 {
-    if (ui::Button("Add Component"))
+    if (ui::Button(ICON_FA_SQUARE_PLUS " Add Component"))
         ui::OpenPopup("##AddComponent");
     if (ui::BeginPopup("##AddComponent"))
     {

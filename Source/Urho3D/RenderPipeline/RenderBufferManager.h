@@ -87,8 +87,8 @@ public:
     void SetRenderTargets(RenderBuffer* depthStencilBuffer,
         std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
 
-    void SetOutputRenderTargersRect(const IntRect& viewportRect);
-    void SetOutputRenderTargers();
+    void SetOutputRenderTargetsRect(const IntRect& viewportRect);
+    void SetOutputRenderTargets();
     /// @}
 
     /// Clear color, depth and/or stencil render target(s).

@@ -43,8 +43,6 @@ struct URHO3D_API ShaderParameter
     ShaderParameter(const ea::string& name, unsigned glType, int location);
     /// Construct with type, name, offset, size, and buffer, leaving the remaining attributes zero-initialized (used only in Direct3D11).
     ShaderParameter(ShaderType type, const ea::string& name, unsigned offset, unsigned size, unsigned buffer);
-    /// Construct with type, name, register, and register count, leaving the remaining attributes zero-initialized (used only in Direct3D9).
-    ShaderParameter(ShaderType type, const ea::string& name, unsigned reg, unsigned regCount);
 
     /// %Shader type.
     ShaderType type_{};
@@ -57,8 +55,6 @@ struct URHO3D_API ShaderParameter
         unsigned offset_;
         /// OpenGL uniform location.
         int location_;
-        /// Direct3D9 register index.
-        unsigned register_;
     };
 
     union
@@ -67,8 +63,6 @@ struct URHO3D_API ShaderParameter
         unsigned size_;
         /// Parameter OpenGL type.
         unsigned glType_;
-        /// Number of registers on Direct3D9.
-        unsigned regCount_;
     };
 
     /// Constant buffer index. Only used on Direct3D11.

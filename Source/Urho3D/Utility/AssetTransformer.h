@@ -85,18 +85,20 @@ public:
     /// Return whether the transformer array is applied to the given asset in any way.
     static bool IsApplicable(const AssetTransformerInput& input, const AssetTransformerVector& transformers);
     /// Execute transformer array on the asset.
-    static bool Execute(const AssetTransformerInput& input, const AssetTransformerVector& transformers,
-        AssetTransformerOutput& output);
+    static bool ExecuteTransformers(const AssetTransformerInput& input, AssetTransformerOutput& output,
+        const AssetTransformerVector& transformers, bool isNestedExecution);
     /// Execute transformer array on the asset and copy results in the output path.
-    static bool ExecuteAndStore(const AssetTransformerInput& input, const AssetTransformerVector& transformers,
-        const ea::string& outputPath, AssetTransformerOutput& output);
+    static bool ExecuteTransformersAndStore(const AssetTransformerInput& input, const ea::string& outputPath, AssetTransformerOutput& output,
+        const AssetTransformerVector& transformers);
 
     /// Return whether the transformer can be applied to the given asset. Should be as fast as possible.
     virtual bool IsApplicable(const AssetTransformerInput& input) { return false; }
     /// Execute this transformer on the asset. Return true if any action was performed.
-    virtual bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output) { return false; }
+    virtual bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers) { return false; }
     /// Return whether the importer of this type should be invoked at most once.
     virtual bool IsSingleInstanced() { return true; }
+    /// Return whether to execute this transformer on the output of the other transformer.
+    virtual bool IsExecutedOnOutput() { return false; }
 
     /// Manage requirement flavor of the transformer.
     /// @{
@@ -106,6 +108,16 @@ public:
 
 private:
     ApplicationFlavorPattern flavor_{};
+};
+
+/// Dependency between two transformer classes.
+/// Note: this dependency is global within a project regardless of transformer scope!
+struct AssetTransformerDependency
+{
+    ea::string class_;
+    ea::string dependsOn_;
+
+    void SerializeInBlock(Archive& archive);
 };
 
 }

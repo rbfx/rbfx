@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>Urho3DNet.Scripts</AssemblyName>
     <OutputType>Library</OutputType>
-    <LangVersion>7.2</LangVersion>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Scripts/**/*.cs" />

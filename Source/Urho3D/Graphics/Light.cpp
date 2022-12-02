@@ -113,7 +113,7 @@ Light::~Light() = default;
 
 void Light::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Light>(Category_Scene);
+    context->AddFactoryReflection<Light>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Light Type", GetLightType, SetLightType, LightType, typeNames, DEFAULT_LIGHTTYPE, AM_DEFAULT);

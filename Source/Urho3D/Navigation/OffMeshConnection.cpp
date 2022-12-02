@@ -51,7 +51,7 @@ OffMeshConnection::~OffMeshConnection() = default;
 
 void OffMeshConnection::RegisterObject(Context* context)
 {
-    context->RegisterFactory<OffMeshConnection>(Category_Navigation);
+    context->AddFactoryReflection<OffMeshConnection>(Category_Navigation);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Endpoint NodeID", int, endPointID_, MarkEndPointDirty, 0, AM_DEFAULT | AM_NODEID);

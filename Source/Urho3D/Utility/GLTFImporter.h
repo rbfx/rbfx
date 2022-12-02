@@ -37,6 +37,7 @@ struct GLTFImporterSettings
     float scale_{1.0f};
     float offsetMatrixError_{ 0.00002f };
     float keyFrameTimeError_{ M_EPSILON };
+    bool repairLooping_{false};
 
     /// Settings that affect only preview scene.
     struct PreviewSettings
@@ -66,6 +67,8 @@ class URHO3D_API GLTFImporter : public Object
     URHO3D_OBJECT(GLTFImporter, Object);
 
 public:
+    using ResourceToFileNameMap = ea::unordered_map<ea::string, ea::string>;
+
     GLTFImporter(Context* context, const GLTFImporterSettings& settings);
     ~GLTFImporter() override;
 
@@ -74,6 +77,8 @@ public:
         const ea::string& outputPath, const ea::string& resourceNamePrefix);
     /// Save generated resources.
     bool SaveResources();
+    /// Return saved resources and their absolute names.
+    const ResourceToFileNameMap& GetSavedResources() const;
 
 private:
     class Impl;

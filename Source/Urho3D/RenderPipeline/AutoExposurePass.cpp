@@ -187,7 +187,7 @@ void AutoExposurePass::Execute(Camera* camera)
         { "MinMaxExposure", Vector2(settings_.minExposure_, settings_.maxExposure_) },
         { "AutoExposureMiddleGrey", 0.6f },
     };
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
     renderBufferManager_->DrawFeedbackViewportQuad("Apply exposure",
         pipelineStates_->autoExposure_, shaderResources, shaderParameters);
 }

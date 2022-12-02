@@ -254,7 +254,6 @@ static HWND GetWindowHandle(SDL_Window* window)
 }
 #endif
 
-const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
 
 Graphics::Graphics(Context* context) :
@@ -1802,7 +1801,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
         return i->second.Get();
     else
     {
-        SharedPtr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
+        SharedPtr<ConstantBuffer> newConstantBuffer(MakeShared<ConstantBuffer>(context_));
         newConstantBuffer->SetSize(size);
         impl_->allConstantBuffers_[key] = newConstantBuffer;
         return newConstantBuffer.Get();

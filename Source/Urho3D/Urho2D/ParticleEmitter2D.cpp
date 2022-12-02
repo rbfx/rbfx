@@ -58,7 +58,7 @@ ParticleEmitter2D::~ParticleEmitter2D() = default;
 
 void ParticleEmitter2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleEmitter2D>(Category_Urho2D);
+    context->AddFactoryReflection<ParticleEmitter2D>(Category_Urho2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable2D);

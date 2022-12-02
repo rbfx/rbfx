@@ -111,8 +111,6 @@ public:
 
     /// Static callback method for Pointer Lock API. Handles change in Pointer Lock state and sends events for mouse mode change.
     static EM_BOOL HandlePointerLockChange(int eventType, const EmscriptenPointerlockChangeEvent* keyEvent, void* userData);
-    /// Static callback method for tracking focus change events.
-    static EM_BOOL HandleFocusChange(int eventType, const EmscriptenFocusEvent* keyEvent, void* userData);
     /// Static callback method for suppressing mouse jump.
     static EM_BOOL HandleMouseJump(int eventType, const EmscriptenMouseEvent * mouseEvent, void* userData);
 
@@ -156,10 +154,6 @@ EmscriptenInput::EmscriptenInput(Input* inputInst) :
     // Handle mouse events to prevent mouse jumps
     emscripten_set_mousedown_callback(NULL, vInputInst, true, EmscriptenInput::HandleMouseJump);
     emscripten_set_mousemove_callback(NULL, vInputInst, true, EmscriptenInput::HandleMouseJump);
-
-    // Handle focus changes
-    emscripten_set_focusout_callback(NULL, vInputInst, false, EmscriptenInput::HandleFocusChange);
-    emscripten_set_focus_callback(NULL, vInputInst, false, EmscriptenInput::HandleFocusChange);
 
     // Handle SDL events
     SDL_AddEventWatch(EmscriptenInput::HandleSDLEvents, vInputInst);
@@ -252,20 +246,6 @@ EM_BOOL EmscriptenInput::HandlePointerLockChange(int eventType, const Emscripten
 
     invalidatedRequestedMouseMode_ = MM_INVALID;
     invalidatedSuppressMouseModeEvent_ = false;
-
-    return EM_TRUE;
-}
-
-EM_BOOL EmscriptenInput::HandleFocusChange(int eventType, const EmscriptenFocusEvent* keyEvent, void* userData)
-{
-    auto* const inputInst = (Input*)userData;
-
-    inputInst->SuppressNextMouseMove();
-
-    if (eventType == EMSCRIPTEN_EVENT_FOCUSOUT)
-        inputInst->LoseFocus();
-    else if (eventType == EMSCRIPTEN_EVENT_FOCUS)
-        inputInst->GainFocus();
 
     return EM_TRUE;
 }
@@ -1584,15 +1564,7 @@ void Input::Initialize()
 
     // Set the initial activation
     initialized_ = true;
-#ifndef __EMSCRIPTEN__
     GainFocus();
-#else
-    // Note: Page visibility and focus are slightly different, however we can't query last focus with Emscripten (1.29.0)
-    if (emscriptenInput_->IsVisible())
-        GainFocus();
-    else
-        LoseFocus();
-#endif
 
     ResetJoysticks();
     ResetState();
@@ -1947,19 +1919,6 @@ void Input::OnSDLRawInput(SDL_Event& evt, bool& consumed)
     consumed = eventData[P_CONSUMED].GetBool();
 }
 
-void Input::OnUserAction()
-{
-#ifdef __EMSCRIPTEN__
-    static bool audioRefreshed = false;
-    if (!audioRefreshed)
-    {
-        audioRefreshed = true;
-        auto audio = GetSubsystem<Audio>();
-        audio->RefreshMode();
-    }
-#endif
-}
-
 void Input::HandleSDLEvent(void* sdlEvent)
 {
     SDL_Event& evt = *static_cast<SDL_Event*>(sdlEvent);
@@ -2072,7 +2031,6 @@ void Input::HandleSDLEvent(void* sdlEvent)
     case SDL_MOUSEBUTTONDOWN:
         if (!touchEmulation_)
         {
-            OnUserAction();
             const auto mouseButton = static_cast<MouseButton>(1u << (evt.button.button - 1u));  // NOLINT(misc-misplaced-widening-cast)
             SetMouseButton(mouseButton, true, evt.button.clicks);
         }
@@ -2183,7 +2141,6 @@ void Input::HandleSDLEvent(void* sdlEvent)
         break;
 
     case SDL_FINGERDOWN:
-        OnUserAction();
         if (evt.tfinger.touchId != SDL_TOUCH_MOUSEID)
         {
             int touchID = GetTouchIndexFromID(evt.tfinger.fingerId & 0x7ffffffu);
@@ -2530,7 +2487,8 @@ void Input::HandleSDLEvent(void* sdlEvent)
             if (evt.adevice.iscapture == SDL_FALSE)
             {
                 auto audio = GetSubsystem<Audio>();
-                audio->RefreshMode();
+                if (audio && audio->IsInitialized())
+                    audio->RefreshMode();
             }
         }
         break;

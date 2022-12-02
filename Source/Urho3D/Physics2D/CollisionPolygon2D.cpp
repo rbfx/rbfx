@@ -43,7 +43,7 @@ CollisionPolygon2D::~CollisionPolygon2D() = default;
 
 void CollisionPolygon2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionPolygon2D>(Category_Physics2D);
+    context->AddFactoryReflection<CollisionPolygon2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(CollisionShape2D);

@@ -314,7 +314,7 @@ SharedPtr<Scene> CreateTestScene(Context* context, int numObjects)
 void PrepareContext(Context* context)
 {
     if (!context->IsReflected<SerializableObject>())
-        context->RegisterFactory<SerializableObject>();
+        context->AddFactoryReflection<SerializableObject>();
 
     auto cache = context->GetSubsystem<ResourceCache>();
     if (!cache->GetResource<Material>(testResourceName))

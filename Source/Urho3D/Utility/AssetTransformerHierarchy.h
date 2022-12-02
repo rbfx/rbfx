@@ -43,6 +43,8 @@ public:
     void Clear();
     /// Add new transformer.
     void AddTransformer(const ea::string& path, AssetTransformer* transformer);
+    /// Remove all transformers of specified type.
+    bool RemoveTransformers(const TypeInfo* typeInfo);
     /// Add dependency between transformer types.
     bool AddDependency(const ea::string& transformerClass, const ea::string& dependsOn);
     /// Should be called after all dependencies are added.
@@ -77,6 +79,8 @@ private:
         TreeNode& GetOrCreateChild(ea::span<const ea::string> path);
         const TreeNode* GetChild(const ea::string& name) const;
 
+        template <class T>
+        void Iterate(const T& callback);
         template <class T>
         void IterateNodesChildFirst(ea::span<const ea::string> path, const T& callback) const;
 

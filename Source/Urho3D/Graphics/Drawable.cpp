@@ -406,10 +406,10 @@ void Drawable::LimitVertexLights(bool removeConvertedLights)
     vertexLights_.resize(MAX_VERTEX_LIGHTS);
 }
 
-void Drawable::OnNodeSet(Node* node)
+void Drawable::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void Drawable::OnSceneSet(Scene* scene)

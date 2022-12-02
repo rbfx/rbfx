@@ -175,7 +175,7 @@ bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int w
 
 bool Texture2DArray::SetData(unsigned layer, Deserializer& source)
 {
-    SharedPtr<Image> image(context_->CreateObject<Image>());
+    SharedPtr<Image> image(MakeShared<Image>(context_));
     if (!image->Load(source))
         return false;
 

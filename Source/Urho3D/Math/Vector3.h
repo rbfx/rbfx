@@ -418,8 +418,19 @@ public:
         return Urho3D::Equals(x_, rhs.x_, eps) && Urho3D::Equals(y_, rhs.y_, eps) && Urho3D::Equals(z_, rhs.z_, eps);
     }
 
-    /// Returns the angle between this vector and another vector in degrees.
+    /// Returns the angle between this vector and another vector in degrees, from 0 to 180.
     float Angle(const Vector3& rhs) const { return Urho3D::Acos(DotProduct(rhs) / (Length() * rhs.Length())); }
+
+    /// Returns the signed angle between this vector and another vector in degrees, from -180 to 180.
+    /// Axis is used to determine the sign of the angle.
+    /// If axis is orthogonal to both vectors, it is guaranteed that quaternion rotation with this axis and angle
+    /// will result in transition from first vector to the second one.
+    float SignedAngle(const Vector3& rhs, const Vector3& axis) const
+    {
+        const float angle = Angle(rhs);
+        const float sign = (CrossProduct(rhs).DotProduct(axis) < 0.0f) ? -1.0f : 1.0f;
+        return angle * sign;
+    }
 
     /// Return whether any component is NaN.
     bool IsNaN() const { return Urho3D::IsNaN(x_) || Urho3D::IsNaN(y_) || Urho3D::IsNaN(z_); }

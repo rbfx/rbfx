@@ -279,7 +279,7 @@ inline ea::vector<VertexElement> CreateInstancingBufferElements(unsigned numExtr
 
 Renderer::Renderer(Context* context) :
     Object(context),
-    defaultZone_(context->CreateObject<Zone>()),
+    defaultZone_(MakeShared<Zone>(context)),
     pipelineStateCache_(MakeShared<PipelineStateCache>(context))
 {
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Renderer, HandleScreenMode));
@@ -1074,7 +1074,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     if (!shadowMapFormat)
         return nullptr;
 
-    SharedPtr<Texture2D> newShadowMap(context_->CreateObject<Texture2D>());
+    SharedPtr<Texture2D> newShadowMap(MakeShared<Texture2D>(context_));
     int retries = 3;
     unsigned dummyColorFormat = graphics_->GetDummyColorFormat();
 
@@ -1096,19 +1096,14 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
             newShadowMap->SetFilterMode(FILTER_BILINEAR);
             newShadowMap->SetShadowCompare(shadowMapUsage == TEXTURE_DEPTHSTENCIL);
 #endif
-#ifndef URHO3D_OPENGL
-            // Direct3D9: when shadow compare must be done manually, use nearest filtering so that the filtering of point lights
-            // and other shadowed lights matches
-            newShadowMap->SetFilterMode(graphics_->GetHardwareShadowSupport() ? FILTER_BILINEAR : FILTER_NEAREST);
-#endif
-            // Create dummy color texture for the shadow map if necessary: Direct3D9, or OpenGL when working around an OS X +
+            // Create dummy color texture for the shadow map if necessary: on OpenGL when working around an OS X +
             // Intel driver bug
             if (shadowMapUsage == TEXTURE_DEPTHSTENCIL && dummyColorFormat)
             {
                 // If no dummy color rendertarget for this size exists yet, create one now
                 if (!colorShadowMaps_.contains(searchKey))
                 {
-                    colorShadowMaps_[searchKey] = context_->CreateObject<Texture2D>();
+                    colorShadowMaps_[searchKey] = MakeShared<Texture2D>(context_);
                     colorShadowMaps_[searchKey]->SetNumLevels(1);
                     colorShadowMaps_[searchKey]->SetSize(width, height, dummyColorFormat, TEXTURE_RENDERTARGET);
                 }
@@ -1177,7 +1172,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
 
         if (!cubemap)
         {
-            SharedPtr<Texture2D> newTex2D(context_->CreateObject<Texture2D>());
+            SharedPtr<Texture2D> newTex2D(MakeShared<Texture2D>(context_));
             /// \todo Mipmaps disabled for now. Allow to request mipmapped buffer?
             newTex2D->SetNumLevels(1);
             newTex2D->SetSize(width, height, format, depthStencil ? TEXTURE_DEPTHSTENCIL : TEXTURE_RENDERTARGET, multiSample, autoResolve);
@@ -1200,7 +1195,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
         }
         else
         {
-            SharedPtr<TextureCube> newTexCube(context_->CreateObject<TextureCube>());
+            SharedPtr<TextureCube> newTexCube(MakeShared<TextureCube>(context_));
             newTexCube->SetNumLevels(1);
             newTexCube->SetSize(width, format, TEXTURE_RENDERTARGET, multiSample);
 
@@ -1255,7 +1250,7 @@ OcclusionBuffer* Renderer::GetOcclusionBuffer(Camera* camera)
     assert(numOcclusionBuffers_ <= occlusionBuffers_.size());
     if (numOcclusionBuffers_ == occlusionBuffers_.size())
     {
-        SharedPtr<OcclusionBuffer> newBuffer(context_->CreateObject<OcclusionBuffer>());
+        SharedPtr<OcclusionBuffer> newBuffer(MakeShared<OcclusionBuffer>(context_));
         occlusionBuffers_.push_back(newBuffer);
     }
 
@@ -1277,7 +1272,7 @@ Camera* Renderer::GetShadowCamera()
     assert(numShadowCameras_ <= shadowCameraNodes_.size());
     if (numShadowCameras_ == shadowCameraNodes_.size())
     {
-        SharedPtr<Node> newNode(context_->CreateObject<Node>());
+        SharedPtr<Node> newNode(MakeShared<Node>(context_));
         newNode->CreateComponent<Camera>();
         shadowCameraNodes_.push_back(newNode);
     }
@@ -1771,7 +1766,7 @@ void Renderer::Initialize()
 
     defaultLightRamp_ = cache->GetResource<Texture2D>("Textures/Ramp.png");
     defaultLightSpot_ = cache->GetResource<Texture2D>("Textures/Spot.png");
-    defaultMaterial_ = context_->CreateObject<Material>();
+    defaultMaterial_ = MakeShared<Material>(context_);
 
     defaultRenderPath_ = new RenderPath();
     defaultRenderPath_->Load(cache->GetResource<XMLFile>("RenderPaths/Forward.xml"));
@@ -1951,47 +1946,47 @@ void Renderer::ReloadTextures()
 
 void Renderer::CreateGeometries()
 {
-    SharedPtr<VertexBuffer> dlvb(context_->CreateObject<VertexBuffer>());
+    SharedPtr<VertexBuffer> dlvb(MakeShared<VertexBuffer>(context_));
     dlvb->SetShadowed(true);
     dlvb->SetSize(4, MASK_POSITION);
     dlvb->SetData(dirLightVertexData);
 
-    SharedPtr<IndexBuffer> dlib(context_->CreateObject<IndexBuffer>());
+    SharedPtr<IndexBuffer> dlib(MakeShared<IndexBuffer>(context_));
     dlib->SetShadowed(true);
     dlib->SetSize(6, false);
     dlib->SetData(dirLightIndexData);
 
-    dirLightGeometry_ = context_->CreateObject<Geometry>();
+    dirLightGeometry_ = MakeShared<Geometry>(context_);
     dirLightGeometry_->SetVertexBuffer(0, dlvb);
     dirLightGeometry_->SetIndexBuffer(dlib);
     dirLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, dlib->GetIndexCount());
 
-    SharedPtr<VertexBuffer> slvb(context_->CreateObject<VertexBuffer>());
+    SharedPtr<VertexBuffer> slvb(MakeShared<VertexBuffer>(context_));
     slvb->SetShadowed(true);
     slvb->SetSize(8, MASK_POSITION);
     slvb->SetData(spotLightVertexData);
 
-    SharedPtr<IndexBuffer> slib(context_->CreateObject<IndexBuffer>());
+    SharedPtr<IndexBuffer> slib(MakeShared<IndexBuffer>(context_));
     slib->SetShadowed(true);
     slib->SetSize(36, false);
     slib->SetData(spotLightIndexData);
 
-    spotLightGeometry_ = context_->CreateObject<Geometry>();
+    spotLightGeometry_ = MakeShared<Geometry>(context_);
     spotLightGeometry_->SetVertexBuffer(0, slvb);
     spotLightGeometry_->SetIndexBuffer(slib);
     spotLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, slib->GetIndexCount());
 
-    SharedPtr<VertexBuffer> plvb(context_->CreateObject<VertexBuffer>());
+    SharedPtr<VertexBuffer> plvb(MakeShared<VertexBuffer>(context_));
     plvb->SetShadowed(true);
     plvb->SetSize(24, MASK_POSITION);
     plvb->SetData(pointLightVertexData);
 
-    SharedPtr<IndexBuffer> plib(context_->CreateObject<IndexBuffer>());
+    SharedPtr<IndexBuffer> plib(MakeShared<IndexBuffer>(context_));
     plib->SetShadowed(true);
     plib->SetSize(132, false);
     plib->SetData(pointLightIndexData);
 
-    pointLightGeometry_ = context_->CreateObject<Geometry>();
+    pointLightGeometry_ = MakeShared<Geometry>(context_);
     pointLightGeometry_->SetVertexBuffer(0, plvb);
     pointLightGeometry_->SetIndexBuffer(plib);
     pointLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, plib->GetIndexCount());
@@ -1999,12 +1994,12 @@ void Renderer::CreateGeometries()
 #if !defined(URHO3D_OPENGL) || !defined(GL_ES_VERSION_2_0)
     if (graphics_->GetShadowMapFormat())
     {
-        faceSelectCubeMap_ = context_->CreateObject<TextureCube>();
+        faceSelectCubeMap_ = MakeShared<TextureCube>(context_);
         faceSelectCubeMap_->SetNumLevels(1);
         faceSelectCubeMap_->SetSize(1, graphics_->GetRGBAFormat());
         faceSelectCubeMap_->SetFilterMode(FILTER_NEAREST);
 
-        indirectionCubeMap_ = context_->CreateObject<TextureCube>();
+        indirectionCubeMap_ = MakeShared<TextureCube>(context_);
         indirectionCubeMap_->SetNumLevels(1);
         indirectionCubeMap_->SetSize(256, graphics_->GetRGBAFormat());
         indirectionCubeMap_->SetFilterMode(FILTER_BILINEAR);
@@ -2080,7 +2075,7 @@ void Renderer::CreateInstancingBuffer()
         return;
     }
 
-    instancingBuffer_ = context_->CreateObject<VertexBuffer>();
+    instancingBuffer_ = MakeShared<VertexBuffer>(context_);
     const ea::vector<VertexElement> instancingBufferElements = CreateInstancingBufferElements(numExtraInstancingBufferElements_);
     if (!instancingBuffer_->SetSize(INSTANCING_BUFFER_DEFAULT_SIZE, instancingBufferElements, true))
     {

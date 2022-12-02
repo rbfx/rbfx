@@ -246,7 +246,7 @@ Technique::~Technique() = default;
 
 void Technique::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Technique>();
+    context->AddFactoryReflection<Technique>();
 }
 
 bool Technique::BeginLoad(Deserializer& source)
@@ -256,7 +256,7 @@ bool Technique::BeginLoad(Deserializer& source)
 
     SetMemoryUse(sizeof(Technique));
 
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     if (!xml->Load(source))
         return false;
 
@@ -373,7 +373,7 @@ void Technique::ReleaseShaders()
 
 SharedPtr<Technique> Technique::Clone(const ea::string& cloneName) const
 {
-    SharedPtr<Technique> ret(context_->CreateObject<Technique>());
+    SharedPtr<Technique> ret(MakeShared<Technique>(context_));
     ret->SetIsDesktop(isDesktop_);
     ret->SetName(cloneName);
 

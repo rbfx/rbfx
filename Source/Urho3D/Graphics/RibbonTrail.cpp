@@ -62,11 +62,11 @@ TrailPoint::TrailPoint(const Vector3& position, const Vector3& forward) :
 
 RibbonTrail::RibbonTrail(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(context->CreateObject<Geometry>()),
+    geometry_(MakeShared<Geometry>(context)),
     animationLodBias_(1.0f),
     animationLodTimer_(0.0f),
-    vertexBuffer_(context->CreateObject<VertexBuffer>()),
-    indexBuffer_(context->CreateObject<IndexBuffer>()),
+    vertexBuffer_(MakeShared<VertexBuffer>(context)),
+    indexBuffer_(MakeShared<IndexBuffer>(context)),
     transforms_(Matrix3x4::IDENTITY),
     bufferSizeDirty_(false),
     bufferDirty_(true),
@@ -105,7 +105,7 @@ RibbonTrail::~RibbonTrail() = default;
 
 void RibbonTrail::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RibbonTrail>(Category_Geometry);
+    context->AddFactoryReflection<RibbonTrail>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);

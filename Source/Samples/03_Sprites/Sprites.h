@@ -59,7 +59,7 @@ private:
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
 
     /// Vector to store the sprites for iterating through them.
     ea::vector<SharedPtr<Sprite> > sprites_;

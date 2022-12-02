@@ -35,6 +35,9 @@ public:
     explicit ModifyResourceAction(Project* project);
     void AddResource(Resource* resource);
 
+    void DisableAutoComplete();
+    void SaveOnComplete();
+
     /// Implement EditorAction.
     /// @{
     bool IsComplete() const override { return !newData_.empty(); }
@@ -56,6 +59,10 @@ private:
 
     WeakPtr<Project> project_;
     Context* context_{};
+
+    bool autoComplete_{true};
+    bool saveOnComplete_{};
+
     ea::unordered_map<ea::string, ResourceData> oldData_;
     ea::unordered_map<ea::string, ResourceData> newData_;
 

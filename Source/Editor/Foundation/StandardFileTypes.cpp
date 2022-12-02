@@ -34,6 +34,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Utility/AssetPipeline.h>
 
 namespace Urho3D
 {
@@ -99,12 +100,19 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
         }
     });
 
-    
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
         if (desc.HasExtension({".ani"}))
         {
             desc.AddObjectType<Animation>();
+        }
+    });
+
+    project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
+    {
+        if (desc.HasExtension({".AssetPipeline.json"}))
+        {
+            desc.AddObjectType<AssetPipeline>();
         }
     });
 }

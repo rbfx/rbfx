@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/Attribute.h"
+#include "../Core/Signal.h"
 #include "../Container/Ptr.h"
 
 #include <EASTL/functional.h>
@@ -106,6 +107,10 @@ private:
 class URHO3D_API ObjectReflectionRegistry
 {
 public:
+    /// Object type is removed from reflection.
+    /// All existing instances of the type shall be immediately destroyed.
+    Signal<void(ObjectReflection*), ObjectReflectionRegistry> OnReflectionRemoved;
+
     explicit ObjectReflectionRegistry(Context* context);
 
     /// Return existing or new reflection for given type.
@@ -113,9 +118,10 @@ public:
     ObjectReflection* ReflectCustomType(ea::unique_ptr<TypeInfo> typeInfo);
     template <class T> ObjectReflection* Reflect();
 
-    /// Add new object reflection with factory and assign it to the category.
-    template <class T> ObjectReflection* AddReflection(ea::string_view category = "") { return AddReflectionInternal<T, false>(category); }
-    template <class T> ObjectReflection* AddFactoryReflection(ea::string_view category = "") { return AddReflectionInternal<T, true>(category); }
+    /// Add new object reflection with or without object creation factory and assign it to the category.
+    template <class T> ObjectReflection* AddReflection(ea::string_view category = "") { return AddReflectionInternal<T, true, false>(category); }
+    template <class T> ObjectReflection* AddFactoryReflection(ea::string_view category = "") { return AddReflectionInternal<T, true, true>(category); }
+    template <class T> ObjectReflection* AddAbstractReflection(ea::string_view category = "") { return AddReflectionInternal<T, false, false>(category); }
 
     /// Return existing reflection for given type.
     ObjectReflection* GetReflection(StringHash typeNameHash);
@@ -141,7 +147,6 @@ public:
 
     /// Create an object by type. Return pointer to it or null if no reflection is found.
     SharedPtr<Object> CreateObject(StringHash typeNameHash);
-    template <class T> SharedPtr<T> CreateObject(); // TODO: Remove this function
 
     /// Return reflections of all objects.
     const ea::unordered_map<StringHash, SharedPtr<ObjectReflection>>& GetObjectReflections() const { return reflections_; }
@@ -149,7 +154,7 @@ public:
     const ea::unordered_map<ea::string, ea::vector<StringHash>>& GetObjectCategories() const { return categories_; }
 
 private:
-    template <class T, bool RequireFactory> ObjectReflection* AddReflectionInternal(ea::string_view category);
+    template <class T, bool EnableFactory, bool RequireFactory> ObjectReflection* AddReflectionInternal(ea::string_view category);
 
     void ErrorReflectionNotFound(StringHash typeNameHash) const;
     void ErrorDuplicateReflection(StringHash typeNameHash) const;
@@ -174,7 +179,7 @@ ObjectReflection* ObjectReflectionRegistry::Reflect()
     return Reflect(T::GetTypeInfoStatic());
 }
 
-template <class T, bool RequireFactory>
+template <class T, bool EnableFactory, bool RequireFactory>
 ObjectReflection* ObjectReflectionRegistry::AddReflectionInternal(ea::string_view category)
 {
     if (IsReflected<T>())
@@ -188,7 +193,7 @@ ObjectReflection* ObjectReflectionRegistry::AddReflectionInternal(ea::string_vie
         constexpr bool isConstructible = ea::is_constructible_v<T, Context*>;
         static_assert(isConstructible || !RequireFactory, "Object should be constructible from Context*");
 
-        if constexpr(isConstructible)
+        if constexpr(EnableFactory && isConstructible)
             reflection->SetObjectFactory<T>();
 
         if (!category.empty())
@@ -243,12 +248,6 @@ template <class T>
 void ObjectReflectionRegistry::RemoveReflection()
 {
     RemoveReflection(T::GetTypeStatic());
-}
-
-template <class T>
-SharedPtr<T> ObjectReflectionRegistry::CreateObject()
-{
-    return StaticCast<T>(CreateObject(T::GetTypeStatic()));
 }
 
 }

@@ -61,7 +61,7 @@ public:
     /// Set texture max. anisotropy level. No effect if not using anisotropic filtering. Value 0 (default) uses the default setting from Renderer.
     /// @property
     void SetAnisotropy(unsigned level);
-    /// Set shadow compare mode. Not used on Direct3D9.
+    /// Set shadow compare mode.
     void SetShadowCompare(bool enable);
     /// Set border color for border addressing mode.
     /// @property
@@ -121,7 +121,7 @@ public:
     /// @property
     unsigned GetAnisotropy() const { return anisotropy_; }
 
-    /// Return whether shadow compare is enabled. Not used on Direct3D9.
+    /// Return whether shadow compare is enabled.
     bool GetShadowCompare() const { return shadowCompare_; }
 
     /// Return border color.
@@ -208,7 +208,7 @@ public:
     /// Return texture's target. Only used on OpenGL.
     unsigned GetTarget() const { return target_; }
 
-    /// Convert format to sRGB. Not used on Direct3D9.
+    /// Convert format to sRGB.
     /// @nobind
     unsigned GetSRGBFormat(unsigned format);
 
@@ -220,7 +220,7 @@ public:
 
     /// Set the mipmap levels dirty flag. Called internally by Graphics.
     void SetLevelsDirty();
-    /// Regenerate mipmap levels for a rendertarget after rendering and before sampling. Called internally by Graphics. No-op on Direct3D9. On OpenGL the texture must have been bound to work properly.
+    /// Regenerate mipmap levels for a rendertarget after rendering and before sampling. Called internally by Graphics. On OpenGL the texture must have been bound to work properly.
     void RegenerateLevels();
 
     /// Check maximum allowed mip levels for a specific texture size.

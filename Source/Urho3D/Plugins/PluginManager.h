@@ -110,6 +110,8 @@ public:
     const StringVector& GetLoadedPlugins() const { return loadedPlugins_; }
     /// Return revision of loaded plugins.
     unsigned GetRevision() const { return revision_; }
+    /// Return whether the load is pending at the end of the frame.
+    bool IsReloadPending() const { return stackReloadPending_; }
 
     /// Manually add new plugin with dynamic reloading.
     bool AddDynamicPlugin(Plugin* plugin);

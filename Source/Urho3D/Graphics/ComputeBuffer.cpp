@@ -49,7 +49,7 @@ ComputeBuffer::~ComputeBuffer()
 
 void ComputeBuffer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ComputeBuffer>();
+    context->AddFactoryReflection<ComputeBuffer>();
 }
 
 }

@@ -82,7 +82,9 @@ AnimatedModel::~AnimatedModel()
 
 void AnimatedModel::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimatedModel>(Category_Geometry);
+    context->AddFactoryReflection<AnimatedModel>(Category_Geometry);
+
+    URHO3D_ACTION_STATIC_LABEL("Reset Bones!", ResetBones, "Reset bone transforms to the bind pose");
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
@@ -552,7 +554,7 @@ void AnimatedModel::SetMorphWeight(unsigned index, float weight)
         if (isMaster_)
         {
             ea::vector<AnimatedModel*> models;
-            GetComponents<AnimatedModel>(models);
+            node_->GetComponents(models);
 
             // Indexing might not be the same, so use the name hash instead
             for (unsigned i = 1; i < models.size(); ++i)
@@ -599,7 +601,7 @@ void AnimatedModel::ResetMorphWeights()
     if (isMaster_)
     {
         ea::vector<AnimatedModel*> models;
-        GetComponents<AnimatedModel>(models);
+        node_->GetComponents(models);
 
         for (unsigned i = 1; i < models.size(); ++i)
         {
@@ -609,6 +611,11 @@ void AnimatedModel::ResetMorphWeights()
     }
 
     MarkMorphsDirty();
+}
+
+void AnimatedModel::ResetBones()
+{
+    skeleton_.Reset();
 }
 
 const ea::vector<SharedPtr<VertexBuffer> >& AnimatedModel::GetMorphVertexBuffers() const
@@ -830,11 +837,11 @@ void AnimatedModel::UpdateBoneBoundingBox()
     CalculateLocalBoundingBox();
 }
 
-void AnimatedModel::OnNodeSet(Node* node)
+void AnimatedModel::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    Drawable::OnNodeSet(node);
+    Drawable::OnNodeSet(previousNode, currentNode);
 
-    if (node)
+    if (node_)
     {
         // If this AnimatedModel is the first in the node, it is the master which controls animation & morphs
         isMaster_ = GetComponent<AnimatedModel>() == this;
@@ -908,7 +915,7 @@ void AnimatedModel::FinalizeBoneBoundingBoxes()
 {
     ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
     ea::vector<AnimatedModel*> models;
-    GetComponents<AnimatedModel>(models);
+    node_->GetComponents(models);
 
     if (models.size() > 1)
     {

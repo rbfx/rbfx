@@ -46,7 +46,7 @@ RmlFile::RmlFile(Urho3D::Context* context)
 Rml::FileHandle RmlFile::Open(const Rml::String& path)
 {
     ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
-    SharedPtr<File> file(cache->GetFile(path));
+    AbstractFilePtr file = cache->GetFile(path);
     if (file != nullptr)
     {
         loadedFiles_.insert(GetAbsolutePath(cache->GetResourceFileName(path)));
@@ -57,17 +57,17 @@ Rml::FileHandle RmlFile::Open(const Rml::String& path)
 
 void RmlFile::Close(Rml::FileHandle file)
 {
-    delete reinterpret_cast<File*>(file);
+    delete reinterpret_cast<AbstractFile*>(file);
 }
 
 size_t RmlFile::Read(void* buffer, size_t size, Rml::FileHandle file)
 {
-    return reinterpret_cast<File*>(file)->Read(buffer, size);
+    return reinterpret_cast<AbstractFile*>(file)->Read(buffer, size);
 }
 
 bool RmlFile::Seek(Rml::FileHandle file, long offset, int origin)
 {
-    File* fp = reinterpret_cast<File*>(file);
+    AbstractFile* fp = reinterpret_cast<AbstractFile*>(file);
     if (origin == SEEK_CUR)
         offset = fp->Tell() + offset;
     else if (origin == SEEK_END)
@@ -77,12 +77,12 @@ bool RmlFile::Seek(Rml::FileHandle file, long offset, int origin)
 
 size_t RmlFile::Tell(Rml::FileHandle file)
 {
-    return reinterpret_cast<File*>(file)->Tell();
+    return reinterpret_cast<AbstractFile*>(file)->Tell();
 }
 
 size_t RmlFile::Length(Rml::FileHandle file)
 {
-    return reinterpret_cast<File*>(file)->GetSize();
+    return reinterpret_cast<AbstractFile*>(file)->GetSize();
 }
 
 bool RmlFile::IsFileLoaded(const ea::string& path)

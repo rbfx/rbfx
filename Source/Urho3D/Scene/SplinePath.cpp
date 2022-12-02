@@ -53,7 +53,7 @@ SplinePath::SplinePath(Context* context) :
 
 void SplinePath::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SplinePath>(Category_Logic);
+    context->AddFactoryReflection<SplinePath>(Category_Logic);
 
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Interpolation Mode", GetInterpolationMode, SetInterpolationMode, InterpolationMode,
         interpolationModeNames, BEZIER_CURVE, AM_FILE);

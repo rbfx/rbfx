@@ -70,7 +70,7 @@ Zone::~Zone() = default;
 
 void Zone::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Zone>(Category_Scene);
+    context->AddFactoryReflection<Zone>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bounding Box Min", Vector3, boundingBox_.min_, MarkNodeDirty, DEFAULT_BOUNDING_BOX_MIN, AM_DEFAULT);

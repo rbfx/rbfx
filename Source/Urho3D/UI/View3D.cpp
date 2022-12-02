@@ -43,9 +43,9 @@ View3D::View3D(Context* context) :
     rttFormat_(Graphics::GetRGBFormat()),
     autoUpdate_(true)
 {
-    renderTexture_ = context_->CreateObject<Texture2D>();
-    depthTexture_ = context_->CreateObject<Texture2D>();
-    viewport_ = context_->CreateObject<Viewport>();
+    renderTexture_ = MakeShared<Texture2D>(context_);
+    depthTexture_ = MakeShared<Texture2D>(context_);
+    viewport_ = MakeShared<Viewport>(context_);
 
     // Disable mipmaps since the texel ratio should be 1:1
     renderTexture_->SetNumLevels(1);
@@ -61,7 +61,7 @@ View3D::~View3D()
 
 void View3D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<View3D>(Category_UI);
+    context->AddFactoryReflection<View3D>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Window);
     // The texture format is API specific, so do not register it as a serializable attribute

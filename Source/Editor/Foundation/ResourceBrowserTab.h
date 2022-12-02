@@ -202,6 +202,7 @@ private:
     bool sortFactories_{true};
 
     bool suppressInspector_{};
+    bool ignoreNextMouseRelease_{};
 
     /// UI state
     /// @{

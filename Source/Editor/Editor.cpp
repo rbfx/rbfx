@@ -22,6 +22,7 @@
 
 #include "Editor.h"
 
+#include "Assets/ModelImporter.h"
 #include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/GameViewTab.h"
@@ -31,6 +32,7 @@
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
 #include "Foundation/InspectorTab/AnimationInspector.h"
+#include "Foundation/InspectorTab/AssetPipelineInspector.h"
 #include "Foundation/InspectorTab/EmptyInspector.h"
 #include "Foundation/InspectorTab/MaterialInspector.h"
 #include "Foundation/InspectorTab/ModelInspector.h"
@@ -39,10 +41,10 @@
 #include "Foundation/InspectorTab/SoundInspector.h"
 #include "Foundation/InspectorTab/Texture2DInspector.h"
 #include "Foundation/InspectorTab/TextureCubeInspector.h"
-#include "Foundation/ModelImporter.h"
 #include "Foundation/ModelViewTab.h"
 #include "Foundation/ProfilerTab.h"
 #include "Foundation/ResourceBrowserTab.h"
+#include "Foundation/ResourceBrowserTab/AssetPipelineFactory.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
 #include "Foundation/ResourceBrowserTab/SceneFactory.h"
 #include "Foundation/SceneViewTab.h"
@@ -54,6 +56,7 @@
 #include "Foundation/SceneViewTab/TransformManipulator.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
+#include "Foundation/SceneViewTab/SceneDebugInfo.h"
 #include "Foundation/SettingsTab.h"
 #include "Foundation/SettingsTab/KeyBindingsPage.h"
 #include "Foundation/SettingsTab/LaunchPage.h"
@@ -91,6 +94,8 @@ Editor::Editor(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
+    editorPluginManager_->AddPlugin("Assets.ModelImporter", &Assets_ModelImporter);
+
     editorPluginManager_->AddPlugin("Foundation.StandardFileTypes", &Foundation_StandardFileTypes);
 
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
@@ -110,8 +115,6 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Settings.Launch", &Foundation_LaunchPage);
     editorPluginManager_->AddPlugin("Foundation.Settings.Plugins", &Foundation_PluginsPage);
 
-    editorPluginManager_->AddPlugin("Foundation.Asset.ModelImporter", &Foundation_ModelImporter);
-
     editorPluginManager_->AddPlugin("Foundation.SceneView.CreatePrefabFromNode", &Foundation_CreatePrefabFromNode);
     editorPluginManager_->AddPlugin("Foundation.SceneView.EditorCamera", &Foundation_EditorCamera);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Selector", &Foundation_SceneSelector);
@@ -120,8 +123,10 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefab", &Foundation_SceneDragAndDropPrefab);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.SceneDebugInfo", &Foundation_SceneDebugInfo);
 
     editorPluginManager_->AddPlugin("Foundation.Inspector.Empty", &Foundation_EmptyInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.AssetPipeline", &Foundation_AssetPipelineInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Animation", &Foundation_AnimationInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Texture2D", &Foundation_Texture2DInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.TextureCube", &Foundation_TextureCubeInspector);
@@ -131,6 +136,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Sound", &Foundation_SoundInspector);
 
+    editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.AssetPipelineFactory", &Foundation_AssetPipelineFactory);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.MaterialFactory", &Foundation_MaterialFactory);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.SceneFactory", &Foundation_SceneFactory);
 
@@ -560,7 +566,7 @@ void Editor::UpdateProjectStatus()
             if (result != CloseProjectResult::Closed)
                 return;
 
-            project_ = nullptr;
+            CloseProject();
         }
         pendingCloseProject_ = false;
     }

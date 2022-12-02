@@ -51,8 +51,21 @@ void ModifyResourceAction::AddResource(Resource* resource)
     }
 }
 
+void ModifyResourceAction::DisableAutoComplete()
+{
+    autoComplete_ = false;
+}
+
+void ModifyResourceAction::SaveOnComplete()
+{
+    saveOnComplete_ = true;
+}
+
 void ModifyResourceAction::Complete(bool force)
 {
+    if (!autoComplete_ && !force)
+        return;
+
     auto cache = context_ ? context_->GetSubsystem<ResourceCache>() : nullptr;
     for (const auto& [resourceName, oldData] : oldData_)
     {
@@ -72,6 +85,12 @@ void ModifyResourceAction::Complete(bool force)
 
     if (oldData_.size() != newData_.size())
         throw UndoException("ModifyResourceAction failed to complete action creation");
+
+    if (saveOnComplete_)
+    {
+        for (const auto& [resourceName, data] : newData_)
+            project_->SaveFileDelayed(data.fileName_, resourceName, data.bytes_);
+    }
 }
 
 void ModifyResourceAction::Redo() const

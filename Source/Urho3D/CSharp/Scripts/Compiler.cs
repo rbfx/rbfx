@@ -19,12 +19,13 @@ namespace Urho3DNet
             Context.Instance.ResourceCache.Scan(scriptRsrcs, scanPath, "*.cs", Urho3D.ScanFiles, true);
             foreach (string fileName in scriptRsrcs)
             {
-                using (File file = Context.Instance.ResourceCache.GetFile(fileName))
+                IAbstractFile file = Context.Instance.ResourceCache.GetFile(fileName);
+                using (file as IDisposable)
                 {
                     // Gather both paths and code text here. If scripts are packaged we must compile them from
                     // text form. However if we are running a development version of application we prefer to
                     // compile scripts directly from file because then we get proper error locations.
-                    if (file.IsPackaged)
+                    if (file is Urho3DNet.File fsFile && fsFile.IsPackaged)
                         scriptCodes.Add(file.ReadString());
                     else
                     {

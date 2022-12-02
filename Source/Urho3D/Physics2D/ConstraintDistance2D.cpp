@@ -44,7 +44,7 @@ ConstraintDistance2D::~ConstraintDistance2D() = default;
 
 void ConstraintDistance2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintDistance2D>(Category_Physics2D);
+    context->AddFactoryReflection<ConstraintDistance2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Owner Body Anchor", GetOwnerBodyAnchor, SetOwnerBodyAnchor, Vector2, Vector2::ZERO, AM_DEFAULT);

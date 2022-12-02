@@ -108,13 +108,9 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, const ea::string& filename)
     if (!cache)
         return type;
 
-    SharedPtr<File> texXmlFile = cache->GetFile(filename, false);
-    if (texXmlFile)
-    {
-        SharedPtr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
-        if (texXml->Load(*texXmlFile))
-            type = ParseTextureTypeName(texXml->GetRoot().GetName());
-    }
+    auto texXml = cache->GetTempResource<XMLFile>(filename, false);
+    if (texXml)
+        type = ParseTextureTypeName(texXml->GetRoot().GetName());
     return type;
 }
 
@@ -175,7 +171,7 @@ Material::~Material() = default;
 
 void Material::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Material>();
+    context->AddFactoryReflection<Material>();
 }
 
 SharedPtr<Material> Material::CreateBaseMaterial(Context* context,
@@ -258,7 +254,7 @@ bool Material::EndLoad()
 bool Material::BeginLoadXML(Deserializer& source)
 {
     ResetToDefaults();
-    loadXMLFile_ = context_->CreateObject<XMLFile>();
+    loadXMLFile_ = MakeShared<XMLFile>(context_);
     if (loadXMLFile_->Load(source))
     {
         // If async loading, scan the XML content beforehand for technique & texture resources
@@ -317,7 +313,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
     loadXMLFile_.Reset();
 
     // Attempt to load from JSON file instead
-    loadJSONFile_ = context_->CreateObject<JSONFile>();
+    loadJSONFile_ = MakeShared<JSONFile>(context_);
     if (loadJSONFile_->Load(source))
     {
         // If async loading, scan the XML content beforehand for technique & texture resources
@@ -373,7 +369,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
 
 bool Material::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     XMLElement materialElem = xml->CreateRoot("material");
 
     Save(materialElem);
@@ -471,7 +467,7 @@ bool Material::Load(const XMLElement& source)
     while (parameterAnimationElem)
     {
         ea::string name = parameterAnimationElem.GetAttribute("name");
-        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> animation(MakeShared<ValueAnimation>(context_));
         if (!animation->LoadXML(parameterAnimationElem))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -635,7 +631,7 @@ bool Material::Load(const JSONValue& source)
         ea::string name = it->first;
         JSONValue paramAnimVal = it->second;
 
-        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> animation(MakeShared<ValueAnimation>(context_));
         if (!animation->LoadJSON(paramAnimVal))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -1164,7 +1160,7 @@ void Material::ReleaseShaders()
 
 SharedPtr<Material> Material::Clone(const ea::string& cloneName) const
 {
-    SharedPtr<Material> ret(context_->CreateObject<Material>());
+    SharedPtr<Material> ret(MakeShared<Material>(context_));
 
     ret->SetName(cloneName);
     ret->techniques_ = techniques_;

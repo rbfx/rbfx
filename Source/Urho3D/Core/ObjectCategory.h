@@ -32,13 +32,16 @@ URHO3D_GLOBAL_CONSTANT(ConstString Category_Geometry{"Component/Geometry"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_IK{"Component/Inverse Kinematics"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Logic{"Component/Logic"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Navigation{"Component/Navigation"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Network{"Component/Network"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Physics{"Component/Physics"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Physics2D{"Component/Physics2D"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_RmlUI{"Component/RmlUI"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Scene{"Component/Scene"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Subsystem{"Component/Subsystem"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_Urho2D{"Component/Urho2D"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_User{"Component/User"});
 
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Transformer{"Transformer"});
 URHO3D_GLOBAL_CONSTANT(ConstString Category_UI{"UI"});
 
 }

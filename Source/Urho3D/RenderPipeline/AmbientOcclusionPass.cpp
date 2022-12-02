@@ -135,7 +135,7 @@ void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextu
         drawParams.pipelineState_ = pipelineStates_->ssaoForward_;
     }
     renderBufferManager_->DrawQuad("Apply SSAO", drawParams);
-    //renderBufferManager_->SetOutputRenderTargers();
+    //renderBufferManager_->SetOutputRenderTargets();
 
     ea::swap(textures_.currentTarget_, textures_.previousTarget_);
 }
@@ -187,7 +187,7 @@ void AmbientOcclusionPass::BlurTexture(const Matrix4& textureToViewSpace)
 
 void AmbientOcclusionPass::Blit(PipelineState* state)
 {
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
 
     const ShaderResourceDesc shaderResources[] = {
         {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()}};

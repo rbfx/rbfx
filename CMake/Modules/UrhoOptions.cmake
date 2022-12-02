@@ -118,7 +118,7 @@ option                (URHO3D_URHO2D             "2D subsystem enabled"         
 option                (URHO3D_PHYSICS2D          "2D physics subsystem enabled"                          ${URHO3D_ENABLE_ALL})
 option                (URHO3D_RMLUI              "HTML subset UIs via RmlUI middleware"                  ${URHO3D_ENABLE_ALL})
 option                (URHO3D_PARTICLE_GRAPH     "Particle Graph Effects"                                ${URHO3D_ENABLE_ALL})
-cmake_dependent_option(URHO3D_COMPUTE            "Enable Compute shaders"                                ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT URHO3D_D3D9;NOT URHO3D_GLES2" OFF)
+cmake_dependent_option(URHO3D_COMPUTE            "Enable Compute shaders"                                ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT URHO3D_GLES2" OFF)
 option                (URHO3D_ACTIONS            "Tweening actions"                                      ${URHO3D_ENABLE_ALL})
 
 # Features
@@ -159,7 +159,6 @@ cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                 
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player executables."            OFF)
-option(URHO3D_CONTAINER_ADAPTERS                "Enable EASTL-to-Urho container adapters for easier porting of legacy code." OFF)
 option(URHO3D_SSL                               "Enable OpenSSL support"                                OFF)
 
 if (WIN32)
@@ -179,7 +178,7 @@ if (URHO3D_GLES2 OR URHO3D_GLES3)
 endif ()
 
 cmake_dependent_option(URHO3D_SPIRV "Enable universal GLSL shaders for other GAPIs via glslang and SpirV" ON "URHO3D_D3D11" OFF)
-# Whether to use legacy renderer. DX11 doesn't support legacy renderer. DX9 supports only legacy renderer.
+# Whether to use legacy renderer. Only OpenGL support legacy renderer.
 cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)
 if (URHO3D_D3D9)
     set (URHO3D_LEGACY_RENDERER ON)

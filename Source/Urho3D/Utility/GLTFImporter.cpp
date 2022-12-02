@@ -176,6 +176,7 @@ public:
         const ea::string& fileName = GetAbsoluteFileName(resource->GetName());
         if (fileName.empty())
             throw RuntimeException("Cannot save imported resource");
+        resource->SetAbsoluteFileName(fileName);
         resource->SaveFile(fileName);
     }
 
@@ -190,6 +191,7 @@ public:
     const tg::Model& GetModel() const { return model_; }
     Context* GetContext() const { return context_; }
     const GLTFImporterSettings& GetSettings() const { return settings_; }
+    const GLTFImporter::ResourceToFileNameMap& GetResourceNames() const { return resourceNameToAbsoluteFileName_; }
 
     void CheckAnimation(int index) const { CheckT(index, model_.animations, "Invalid animation #{} referenced"); }
     void CheckAccessor(int index) const { CheckT(index, model_.accessors, "Invalid accessor #{} referenced"); }
@@ -217,7 +219,7 @@ private:
     const ea::string resourceNamePrefix_;
 
     ea::unordered_set<ea::string> localResourceNames_;
-    ea::unordered_map<ea::string, ea::string> resourceNameToAbsoluteFileName_;
+    GLTFImporter::ResourceToFileNameMap resourceNameToAbsoluteFileName_;
 
     ea::vector<ea::pair<StringHash, ea::string>> manualResources_;
 };
@@ -1744,7 +1746,11 @@ public:
     static bool LoadImageData(tg::Image* image, const int imageIndex, std::string*, std::string*,
         int reqWidth, int reqHeight, const unsigned char* bytes, int size, void*)
     {
-        image->name = GetFileName(image->uri.c_str()).c_str();
+        if (image->name.empty())
+            image->name = GetFileName(image->uri.c_str()).c_str();
+        else
+            image->name = GetFileName(image->name.c_str()).c_str();
+
         image->as_is = true;
         image->image.resize(size);
         ea::copy_n(bytes, size, image->image.begin());
@@ -2664,9 +2670,10 @@ private:
 class GLTFAnimationImporter : public NonCopyable
 {
 public:
-    GLTFAnimationImporter(GLTFImporterBase& base, const GLTFHierarchyAnalyzer& hierarchyAnalyzer)
+    GLTFAnimationImporter(GLTFImporterBase& base, const GLTFHierarchyAnalyzer& hierarchyAnalyzer, const GLTFModelImporter& modelImporter)
         : base_(base)
         , hierarchyAnalyzer_(hierarchyAnalyzer)
+        , modelImporter_(modelImporter)
     {
         ImportAnimations();
     }
@@ -2701,6 +2708,18 @@ private:
                 const ea::string animationName = base_.GetResourceName(animationNameHint, "Animations/", "Animation", ".ani");
 
                 auto animation = ImportAnimation(animationName, group);
+
+                if (groupIndex)
+                {
+                    const GLTFSkeleton& skeleton = hierarchyAnalyzer_.GetSkeleton(*groupIndex);
+                    if (!skeleton.rootNode_->skinnedMeshNodes_.empty())
+                    {
+                        const GLTFNode& skinnedMeshNode = hierarchyAnalyzer_.GetNode(skeleton.rootNode_->skinnedMeshNodes_[0]);
+                        if (Model* model = modelImporter_.GetModel(*skinnedMeshNode.mesh_, *skinnedMeshNode.skin_))
+                            animation->AddMetadata("Model", model->GetName());
+                    }
+                }
+
                 base_.AddToResourceCache(animation);
                 animations_[{ animationIndex, groupIndex }] = animation;
                 if (!groupIndex)
@@ -2765,7 +2784,33 @@ private:
             }
         }
 
-        animation->SetLength(CalculateLength(*animation));
+        const bool ensureLooped = base_.GetSettings().repairLooping_;
+        const bool isAnimationLooped = IsAnimationLooped(*animation);
+        const auto frameStep = GetFrameStep(*animation);
+        const float animationLength = GetAnimationLength(*animation);
+
+        // TODO: It would be better to add a keyframe at the end of the animation
+        if (!isAnimationLooped && ensureLooped && frameStep)
+        {
+            animation->SetLength(animationLength + *frameStep);
+            animation->AddMetadata("Looped", true);
+        }
+        else
+        {
+            animation->SetLength(animationLength);
+            animation->AddMetadata("Looped", isAnimationLooped);
+        }
+
+        if (frameStep)
+        {
+            const int frameRate = RoundToInt(1.0f / *frameStep);
+            const float frameRateError = Abs(frameRate - 1.0f / *frameStep);
+
+            animation->AddMetadata("FrameStep", *frameStep);
+            if (frameRateError < 0.01f)
+                animation->AddMetadata("FrameRate", frameRate);
+        }
+
         return animation;
     }
 
@@ -2828,18 +2873,66 @@ private:
         return result;
     }
 
-    static float CalculateLength(const Animation& animation)
+    template <class T>
+    static ea::optional<float> GetTrackLength(const T& track)
+    {
+        if (track.keyFrames_.empty())
+            return ea::nullopt;
+        return track.keyFrames_.back().time_;
+    }
+
+    template <class T>
+    static ea::optional<float> GetTrackStep(const T& track)
+    {
+        const unsigned numFrames = track.keyFrames_.size();
+        if (numFrames <= 1)
+            return ea::nullopt;
+        return track.keyFrames_[numFrames - 1].time_ - track.keyFrames_[numFrames - 2].time_;
+    }
+
+    static bool IsAnimationLooped(const Animation& animation)
+    {
+        for (const auto& [_, track] : animation.GetTracks())
+        {
+            if (!track.IsLooped())
+                return false;
+        }
+        for (const auto& [_, track] : animation.GetVariantTracks())
+        {
+            if (!track.IsLooped())
+                return false;
+        }
+        return true;
+    }
+
+    static ea::optional<float> GetFrameStep(const Animation& animation)
+    {
+        ea::optional<float> frameStep;
+        for (const auto& [_, track] : animation.GetTracks())
+        {
+            if (const auto trackStep = GetTrackStep(track))
+                frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+        }
+        for (const auto& [_, track] : animation.GetVariantTracks())
+        {
+            if (const auto trackStep = GetTrackStep(track))
+                frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+        }
+        return frameStep;
+    }
+
+    static float GetAnimationLength(const Animation& animation)
     {
         float length = 0.0f;
         for (const auto& [nameHash, track] : animation.GetTracks())
         {
-            if (!track.keyFrames_.empty())
-                length = ea::max(length, track.keyFrames_.back().time_);
+            if (const auto trackLength = GetTrackLength(track))
+                length = ea::max(length, *trackLength);
         }
         for (const auto& [nameHash, track] : animation.GetVariantTracks())
         {
-            if (!track.keyFrames_.empty())
-                length = ea::max(length, track.keyFrames_.back().time_);
+            if (const auto trackLength = GetTrackLength(track))
+                length = ea::max(length, *trackLength);
         }
         return length;
     }
@@ -2849,6 +2942,7 @@ private:
 
     GLTFImporterBase& base_;
     const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
+    const GLTFModelImporter& modelImporter_;
 
     ea::unordered_map<AnimationKey, SharedPtr<Animation>> animations_;
     bool hasSceneAnimations_{};
@@ -2951,7 +3045,7 @@ private:
             for (const unsigned nodeIndex : sourceNode.skinnedMeshNodes_)
             {
                 const GLTFNode& skinnedMeshNode = hierarchyAnalyzer_.GetNode(nodeIndex);
-                // Always create animated model in order to preserve moprh animation order
+                // Always create animated model in order to preserve morph animation order
                 auto animatedModel = node->CreateComponent<AnimatedModel>();
                 InitializeComponentModelAndMaterials(*animatedModel, *skinnedMeshNode.mesh_, *skinnedMeshNode.skin_);
                 InitializeDefaultMorphWeights(*animatedModel, skinnedMeshNode);
@@ -3189,7 +3283,7 @@ public:
         , textureImporter_(importerContext_)
         , materialImporter_(importerContext_, textureImporter_)
         , modelImporter_(importerContext_, bufferReader_, hierarchyAnalyzer_, materialImporter_)
-        , animationImporter_(importerContext_, hierarchyAnalyzer_)
+        , animationImporter_(importerContext_, hierarchyAnalyzer_, modelImporter_)
         , sceneImporter_(importerContext_, hierarchyAnalyzer_, modelImporter_, animationImporter_)
     {
     }
@@ -3202,6 +3296,8 @@ public:
         animationImporter_.SaveResources();
         sceneImporter_.SaveResources();
     }
+
+    const ResourceToFileNameMap& GetResourceNames() const { return importerContext_.GetResourceNames(); }
 
 private:
     GLTFImporterBase importerContext_;
@@ -3217,8 +3313,10 @@ private:
 void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
+    SerializeValue(archive, "scale", value.scale_);
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
+    SerializeValue(archive, "repairLooping", value.repairLooping_);
 
     SerializeValue(archive, "addLights", value.preview_.addLights_);
     SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);
@@ -3270,6 +3368,18 @@ bool GLTFImporter::SaveResources()
         URHO3D_LOGERROR("{}", e.what());
         return false;
     }
+}
+
+const GLTFImporter::ResourceToFileNameMap& GLTFImporter::GetSavedResources() const
+{
+    if (!impl_)
+    {
+        URHO3D_LOGERROR("Imported asserts weren't cooked");
+        static const GLTFImporter::ResourceToFileNameMap emptyMap;
+        return emptyMap;
+    }
+
+    return impl_->GetResourceNames();
 }
 
 }

@@ -90,7 +90,7 @@ RigidBody::~RigidBody()
 
 void RigidBody::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RigidBody>(Category_Physics);
+    context->AddFactoryReflection<RigidBody>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Physics Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE | AM_NOEDIT);
@@ -860,10 +860,10 @@ void RigidBody::OnMarkedDirty(Node* node)
     }
 }
 
-void RigidBody::OnNodeSet(Node* node)
+void RigidBody::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    if (node)
-        node->AddListener(this);
+    if (node_)
+        node_->AddListener(this);
 }
 
 void RigidBody::OnSceneSet(Scene* scene)

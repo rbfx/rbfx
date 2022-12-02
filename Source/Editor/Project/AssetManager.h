@@ -26,6 +26,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/Scene/Serializable.h>
+#include <Urho3D/Utility/AssetPipeline.h>
 #include <Urho3D/Utility/AssetTransformerHierarchy.h>
 
 #include <EASTL/map.h>
@@ -44,13 +45,16 @@ class AssetManager : public Object
     URHO3D_OBJECT(AssetManager, Object);
 
 public:
-    static const ea::string ResourceNameSuffix;
     Signal<void()> OnInitialized;
 
     explicit AssetManager(Context* context);
     ~AssetManager() override;
 
+    /// Initialize asset manager.
+    /// Should be called after the manager configuration is loaded from file *and* plugins are initialized.
+    void Initialize();
     void Update();
+    void MarkCacheDirty(const ea::string& resourcePath);
 
     /// Serialize
     /// @{
@@ -68,7 +72,7 @@ private:
         ea::string resourceName_;
         FileTime modificationTime_{};
         ea::vector<SharedPtr<AssetTransformer>> transformers_;
-        ea::vector<ea::pair<ea::string, ea::string>> dependencies_;
+        ea::vector<AssetTransformerDependency> dependencies_;
     };
     using AssetPipelineDescVector = ea::vector<AssetPipelineDesc>;
 
@@ -104,8 +108,7 @@ private:
     /// @{
     StringVector EnumerateAssetFiles(const ea::string& resourcePath) const;
     AssetPipelineList EnumerateAssetPipelineFiles() const;
-    AssetPipelineDesc LoadAssetPipeline(const JSONFile& jsonFile,
-        const ea::string& resourceName, FileTime modificationTime) const;
+    AssetPipelineDesc LoadAssetPipeline(const AssetPipeline& pipeline, FileTime modificationTime) const;
     AssetPipelineDescVector LoadAssetPipelines(const AssetPipelineList& assetPipelineFiles) const;
     AssetPipelineDiffMap DiffAssetPipelines(const AssetPipelineDescVector& oldPipelines,
         const AssetPipelineDescVector& newPipelines) const;
@@ -127,8 +130,6 @@ private:
 
     StringVector GetUpdatedPaths(bool updateAll);
 
-    void Initialize();
-
     void InitializeAssetPipelines();
     void UpdateAssetPipelines();
     void UpdateTransformHierarchy();
@@ -139,6 +140,8 @@ private:
     void ScanAssetsInPath(const ea::string& resourcePath, Stats& stats);
     bool QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor);
     void ProcessAsset(const AssetTransformerInput& input);
+
+    void OnReflectionRemoved(ObjectReflection* reflection);
 
     const WeakPtr<Project> project_;
     SharedPtr<FileWatcher> dataWatcher_;

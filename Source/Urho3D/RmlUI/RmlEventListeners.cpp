@@ -144,7 +144,7 @@ Variant ToVariant(const JSONValue& json)
 
 ea::pair<ea::string, VariantMap> ParseEvent(ea::string_view str)
 {
-    const unsigned pos = str.find('(');
+    const ea::string_view::size_type pos = str.find('(');
     if (pos == ea::string_view::npos)
         return ea::make_pair(ea::string(str).trimmed(), VariantMap{});
 
@@ -279,7 +279,7 @@ void SoundEventListener::ProcessEvent(Rml::Event& event)
         Detail::RmlContext* rmlContext = static_cast<Detail::RmlContext*>(event.GetTargetElement()->GetContext());
         RmlUI* ui = rmlContext->GetOwnerSubsystem();
         Context* context = ui->GetContext();
-        soundNode_ = context->CreateObject<Node>();
+        soundNode_ = MakeShared<Node>(context);
         soundPlayer_ = soundNode_->CreateComponent<SoundSource>();
         soundPlayer_->SetGain(volume_);
     }

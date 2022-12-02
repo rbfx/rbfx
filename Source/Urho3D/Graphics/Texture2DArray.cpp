@@ -60,7 +60,7 @@ Texture2DArray::~Texture2DArray()
 
 void Texture2DArray::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Texture2DArray>();
+    context->AddFactoryReflection<Texture2DArray>();
 }
 
 bool Texture2DArray::BeginLoad(Deserializer& source)
@@ -84,7 +84,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
     ea::string texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
 
-    loadParameters_ = (context_->CreateObject<XMLFile>());
+    loadParameters_ = (MakeShared<XMLFile>(context_));
     if (!loadParameters_->Load(source))
     {
         loadParameters_.Reset();

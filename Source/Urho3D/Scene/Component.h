@@ -102,12 +102,8 @@ public:
 
     /// Return component in the same scene node by type. If there are several, returns the first.
     Component* GetComponent(StringHash type) const;
-    /// Return components in the same scene node by type.
-    void GetComponents(ea::vector<Component*>& dest, StringHash type) const;
     /// Template version of returning a component in the same scene node by type.
     template <class T> T* GetComponent() const;
-    /// Template version of returning components in the same scene node by type.
-    template <class T> void GetComponents(ea::vector<T*>& dest) const;
     /// Return index of this component in the node.
     unsigned GetIndexInParent() const;
 
@@ -117,7 +113,7 @@ protected:
     /// Handle attribute animation removed.
     void OnAttributeAnimationRemoved() override;
     /// Handle scene node being assigned at creation.
-    virtual void OnNodeSet(Node* node);
+    virtual void OnNodeSet(Node* previousNode, Node* currentNode);
     /// Handle scene being assigned. This may happen several times during the component's lifetime. Scene-wide subsystems and events are subscribed to here.
     virtual void OnSceneSet(Scene* scene);
     /// Handle scene node transform dirtied.
@@ -147,10 +143,5 @@ protected:
 };
 
 template <class T> T* Component::GetComponent() const { return static_cast<T*>(GetComponent(T::GetTypeStatic())); }
-
-template <class T> void Component::GetComponents(ea::vector<T*>& dest) const
-{
-    GetComponents(reinterpret_cast<ea::vector<Component*>&>(dest), T::GetTypeStatic());
-}
 
 }

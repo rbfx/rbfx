@@ -107,7 +107,7 @@ void Connection::Initialize(bool isClient, const SLNet::AddressOrGUID& address, 
 
 void Connection::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Connection>();
+    context->AddFactoryReflection<Connection>();
 }
 
 PacketType Connection::GetPacketType(bool reliable, bool inOrder)
@@ -549,7 +549,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                     }
 
                     // Try to open the file now
-                    SharedPtr<File> file(new File(context_, packageFullName));
+                    const auto file = MakeShared<File>(context_, packageFullName);
                     if (!file->IsOpen())
                     {
                         URHO3D_LOGERROR("Failed to transmit package file " + name);
@@ -601,7 +601,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             // If file has not yet been opened, try to open now. Prepend the checksum to the filename to allow multiple versions
             if (!download.file_)
             {
-                download.file_ = new File(context_,
+                download.file_ = MakeShared<File>(context_,
                     GetSubsystem<Network>()->GetPackageCacheDir() + ToStringHex(download.checksum_) + "_" + download.name_,
                     FILE_WRITE);
                 if (!download.file_->IsOpen())
@@ -614,7 +614,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             // Write the fragment data to the proper index
             unsigned char buffer[PACKAGE_FRAGMENT_SIZE];
             unsigned index = msg.ReadUInt();
-            unsigned fragmentSize = msg.GetSize() - msg.GetPosition();
+            const unsigned fragmentSize = msg.GetSize() - msg.GetPosition();
 
             msg.Read(buffer, fragmentSize);
             download.file_->Seek(index * PACKAGE_FRAGMENT_SIZE);
@@ -1060,7 +1060,7 @@ void Connection::OnPackagesReady()
     {
         // Otherwise start the async loading process
         ea::string extension = GetExtension(sceneFileName_);
-        SharedPtr<File> file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
+        AbstractFilePtr file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
         bool success;
 
         if (extension == ".xml")

@@ -56,7 +56,7 @@ Geometry::~Geometry() = default;
 
 void Geometry::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Geometry>();
+    context->AddFactoryReflection<Geometry>();
 }
 
 bool Geometry::SetNumVertexBuffers(unsigned num)

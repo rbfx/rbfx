@@ -54,7 +54,7 @@ Microphone::~Microphone()
 
 void Microphone::RegisterObject(Context* ctx)
 {
-    ctx->RegisterFactory<Microphone>();
+    ctx->AddFactoryReflection<Microphone>();
 }
 
 void Microphone::CopyData(ea::vector<int16_t>& dest) const

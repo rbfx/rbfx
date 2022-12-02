@@ -31,3 +31,12 @@ set (TARGET_NAME Tests)
 add_executable(${TARGET_NAME} ${TEST_SOURCE_CODE})
 target_link_libraries(${TARGET_NAME} PRIVATE Urho3D catch2)
 catch_discover_tests(${TARGET_NAME})
+
+if (URHO3D_CSHARP)
+    add_target_csharp(
+        TARGET Urho3DNet.Tests
+        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Tests.csproj
+        OUTPUT ${NET_OUTPUT_DIRECTORY}/Urho3DNet.Tests.dll
+        DEPENDS Urho3DNet
+    )
+endif()

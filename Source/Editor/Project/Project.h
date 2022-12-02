@@ -81,7 +81,7 @@ struct AnalyzeFileContext
 {
     Context* context_{};
 
-    SharedPtr<File> binaryFile_;
+    AbstractFilePtr binaryFile_;
     SharedPtr<XMLFile> xmlFile_;
     SharedPtr<JSONFile> jsonFile_;
 
@@ -261,6 +261,7 @@ private:
     SharedPtr<LaunchManager> launchManager_;
     SharedPtr<ToolManager> toolManager_;
 
+    bool assetManagerInitialized_{};
     ea::weak_ptr<void> initializationGuard_;
     bool firstInitialization_{};
     bool initialized_{};

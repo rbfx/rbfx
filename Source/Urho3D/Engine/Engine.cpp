@@ -66,9 +66,7 @@
 #endif
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
-#ifndef URHO3D_D3D9
 #include "../RenderPipeline/RenderPipeline.h"
-#endif
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../UI/UI.h"
@@ -86,6 +84,7 @@
 #ifdef URHO3D_COMPUTE
 #include "../Graphics/ComputeDevice.h"
 #endif
+#include "../Utility/AssetPipeline.h"
 #include "../Utility/AssetTransformer.h"
 #include "../Utility/SceneViewerApplication.h"
 #ifdef URHO3D_ACTIONS
@@ -176,11 +175,9 @@ Engine::Engine(Context* context) :
     StaticModelForLightmap::RegisterObject(context_);
 #endif
 
-#ifndef URHO3D_D3D9
     // Register render pipeline.
     // Extract this code into function if you are adding more.
     RenderPipeline::RegisterObject(context_);
-#endif
 
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);
@@ -199,7 +196,8 @@ Engine::Engine(Context* context) :
 #endif
 
     SceneViewerApplication::RegisterObject();
-    context_->RegisterFactory<AssetTransformer>();
+    context_->AddFactoryReflection<AssetPipeline>();
+    context_->AddFactoryReflection<AssetTransformer>();
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
@@ -231,7 +229,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
-    context_->RegisterFactory<FreeFlyController>();
+    context_->AddFactoryReflection<FreeFlyController>();
 
     context_->RegisterSubsystem(new UI(context_));
 

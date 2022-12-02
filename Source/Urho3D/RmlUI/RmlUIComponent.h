@@ -123,7 +123,7 @@ private:
     /// Implement Component
     /// @{
     void OnSetEnabled() override;
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// @}
 
     /// Open a window document if it was not already open.

@@ -27,11 +27,6 @@
 namespace Urho3D
 {
 
-URHO3D_EVENT(E_ENQUEUEAPPLICATIONSTATE, EnqueueApplicationState)
-{
-    URHO3D_PARAM(P_STATE, State); // (StringHash) Target state type hash
-}
-
 URHO3D_EVENT(E_STATETRANSITIONSTARTED, StateTransitionStarted)
 {
     URHO3D_PARAM(P_FROM, From); // (StringHash) Origin state type hash

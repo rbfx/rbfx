@@ -88,7 +88,7 @@ Scene::~Scene()
 
 void Scene::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Scene>();
+    context->AddFactoryReflection<Scene>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
@@ -248,7 +248,7 @@ bool Scene::LoadXML(Deserializer& source)
 
     StopAsyncLoading();
 
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     if (!xml->Load(source))
         return false;
 
@@ -271,7 +271,7 @@ bool Scene::LoadJSON(Deserializer& source)
 
     StopAsyncLoading();
 
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(MakeShared<JSONFile>(context_));
     if (!json->Load(source))
         return false;
 
@@ -292,7 +292,7 @@ bool Scene::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
     URHO3D_PROFILE("SaveSceneXML");
 
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     XMLElement rootElem = xml->CreateRoot("scene");
     if (!SaveXML(rootElem))
         return false;
@@ -314,7 +314,7 @@ bool Scene::SaveJSON(Serializer& dest, const ea::string& indentation) const
 {
     URHO3D_PROFILE("SaveSceneJSON");
 
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(MakeShared<JSONFile>(context_));
     JSONValue rootVal;
     if (!SaveJSON(rootVal))
         return false;
@@ -334,7 +334,7 @@ bool Scene::SaveJSON(Serializer& dest, const ea::string& indentation) const
         return false;
 }
 
-bool Scene::LoadAsync(File* file, LoadMode mode)
+bool Scene::LoadAsync(AbstractFilePtr file, LoadMode mode)
 {
     if (!file)
     {
@@ -407,7 +407,7 @@ bool Scene::LoadAsync(File* file, LoadMode mode)
     return true;
 }
 
-bool Scene::LoadAsyncXML(File* file, LoadMode mode)
+bool Scene::LoadAsyncXML(AbstractFilePtr file, LoadMode mode)
 {
     if (!file)
     {
@@ -417,7 +417,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     if (!xml->Load(*file))
         return false;
 
@@ -476,7 +476,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
     return true;
 }
 
-bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
+bool Scene::LoadAsyncJSON(AbstractFilePtr file, LoadMode mode)
 {
     if (!file)
     {
@@ -486,7 +486,7 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(MakeShared<JSONFile>(context_));
     if (!json->Load(*file))
         return false;
 
@@ -624,7 +624,7 @@ Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, c
 
 Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     if (!xml->Load(source))
         return nullptr;
 
@@ -633,7 +633,7 @@ Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const
 
 Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(MakeShared<JSONFile>(context_));
     if (!json->Load(source))
         return nullptr;
 
@@ -1217,7 +1217,7 @@ void Scene::FinishSaving(Serializer* dest) const
     }
 }
 
-void Scene::PreloadResources(File* file, bool isSceneFile)
+void Scene::PreloadResources(AbstractFilePtr file, bool isSceneFile)
 {
     // If not threaded, can not background load resources, so rather load synchronously later when needed
 #ifdef URHO3D_THREADING

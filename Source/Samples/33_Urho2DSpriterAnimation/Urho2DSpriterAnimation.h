@@ -81,7 +81,7 @@ private:
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
     /// Handle mouse button down event.
     void HandleMouseButtonDown(StringHash eventType, VariantMap& eventData);
 

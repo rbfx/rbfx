@@ -95,7 +95,7 @@ CrowdManager::~CrowdManager()
 
 void CrowdManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CrowdManager>(Category_Navigation);
+    context->AddFactoryReflection<CrowdManager>(Category_Navigation);
 
     URHO3D_ATTRIBUTE("Max Agents", unsigned, maxAgents_, DEFAULT_MAX_AGENTS, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Agent Radius", float, maxAgentRadius_, DEFAULT_MAX_AGENT_RADIUS, AM_DEFAULT);

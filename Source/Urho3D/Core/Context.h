@@ -99,7 +99,7 @@ public:
     void ReleaseIK();
 #endif
 
-    /// Deprecated. Use RegisterObject instead.
+    /// Deprecated. Use AddFactoryReflection, AddAbstractReflection or AddReflection instead.
     template <class T> void RegisterFactory(ea::string_view category = {}) { AddFactoryReflection<T>(category); }
     /// Template version of registering subsystem.
     template <class T> T* RegisterSubsystem();

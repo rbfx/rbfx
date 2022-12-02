@@ -162,7 +162,8 @@ public:
     SharedPtr(const SharedPtr<U1, U2>& rhs) noexcept : BaseType(rhs.GetPointer(), rhs.GetRefCounted()) {} // NOLINT(google-explicit-constructor)
 
     /// Construct from a raw pointer.
-    explicit SharedPtr(InterfaceType* ptr) noexcept : BaseType(ptr, ptr) {}
+    template <class U>
+    explicit SharedPtr(U* ptr) noexcept : BaseType(ptr, ptr) {}
 
     /// Assign from another shared pointer.
     ThisType& operator=(const ThisType& rhs) noexcept
@@ -248,10 +249,24 @@ public:
     /// Convert to a raw pointer.
     operator InterfaceType*() const noexcept { return this->GetPointer(); }    // NOLINT(google-explicit-constructor)
 
+    void Reset() noexcept
+    {
+        ThisType temp;
+        this->Swap(temp);
+    }
+
     /// Reset with another pointer.
-    void Reset(InterfaceType* ptr = nullptr) noexcept
+    template <class U>
+    void Reset(U* ptr) noexcept
     {
         ThisType temp(ptr);
+        this->Swap(temp);
+    }
+
+    /// Reset with another pointers.
+    void Reset(InterfaceType* ptr, RefCounted* refCounted) noexcept
+    {
+        ThisType temp(ptr, refCounted);
         this->Swap(temp);
     }
 

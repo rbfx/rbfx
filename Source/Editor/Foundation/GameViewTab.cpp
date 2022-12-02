@@ -22,6 +22,7 @@
 
 #include "../Foundation/GameViewTab.h"
 
+#include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/GraphicsEvents.h>
 #include <Urho3D/Graphics/Renderer.h>
@@ -69,6 +70,7 @@ public:
 #if URHO3D_RMLUI
         , rmlUI_(GetSubsystem<RmlUI>())
 #endif
+        , stateManager_(GetSubsystem<StateManager>())
         , project_(GetSubsystem<Project>())
         , backbuffer_(backbuffer)
     {
@@ -152,6 +154,8 @@ public:
 
         renderer_->SetBackbufferRenderSurface(nullptr);
         renderer_->SetNumViewports(0);
+
+        stateManager_->Reset();
     }
 
 private:
@@ -183,6 +187,7 @@ private:
 #if URHO3D_RMLUI
     RmlUI* rmlUI_{};
 #endif
+    StateManager* stateManager_{};
     Project* project_{};
 
     CustomBackbufferTexture* backbuffer_{};

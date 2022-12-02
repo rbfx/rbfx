@@ -212,12 +212,12 @@ public:
     bool IsInCrowd() const;
 
 protected:
-    /// Handle crowd agent pre-update. 
+    /// Handle crowd agent pre-update.
     virtual void OnCrowdVelocityUpdate(dtCrowdAgent* ag, float* pos, float dt);
     /// Handle crowd agent being updated. It is called by CrowdManager::Update() via callback.
     virtual void OnCrowdPositionUpdate(dtCrowdAgent* ag, float* pos, float dt);
     /// Handle node being assigned.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle node being assigned.
     void OnSceneSet(Scene* scene) override;
     /// \todo Handle node transform being dirtied.

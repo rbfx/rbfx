@@ -61,7 +61,7 @@ ParticleEmitter::~ParticleEmitter() = default;
 
 void ParticleEmitter::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleEmitter>(Category_Geometry);
+    context->AddFactoryReflection<ParticleEmitter>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Effect", GetEffectAttr, SetEffectAttr, ResourceRef, ResourceRef(ParticleEffect::GetTypeStatic()),

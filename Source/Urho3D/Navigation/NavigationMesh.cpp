@@ -131,7 +131,7 @@ NavigationMesh::~NavigationMesh()
 
 void NavigationMesh::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NavigationMesh>(Category_Navigation);
+    context->AddFactoryReflection<NavigationMesh>(Category_Navigation);
 
     URHO3D_ACTION_STATIC_LABEL("Build!", Build, "(Re)builds navigation mesh");
 

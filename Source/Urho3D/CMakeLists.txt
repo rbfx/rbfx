@@ -34,8 +34,6 @@ macro (define_engine_source_files)
             Urho3D.h
             Graphics/Direct3D11/D3D11GraphicsImpl.cpp
             Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/Direct3D9/D3D9GraphicsImpl.cpp
-            Graphics/Direct3D9/D3D9GraphicsImpl.h
             Graphics/GraphicsImpl.h
             Graphics/OpenGL/OGLGraphicsImpl.h
             IK/IKConverters.h
@@ -61,8 +59,6 @@ if (NOT MINI_URHO)
         define_engine_source_files (Graphics/OpenGL)
     elseif (URHO3D_D3D11)
         define_engine_source_files (Graphics/Direct3D11)
-    elseif (URHO3D_D3D9)
-        define_engine_source_files (Graphics/Direct3D9)
     endif ()
 else ()
     # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
@@ -150,10 +146,12 @@ if (URHO3D_PCH)
     target_precompile_headers(Urho3D PRIVATE $<BUILD_INTERFACE:$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/Precompiled.h>>)
 endif ()
 
-# Add any variables starting with URHO3D_ as project defines
+# Add any variables starting with URHO3D_ as project defines, with some exceptions
 get_cmake_property(__cmake_variables VARIABLES)
+set (IGNORED_URHO3D_OPTIONS "URHO3D_PLAYER;URHO3D_EDITOR;URHO3D_EXTRAS;URHO3D_TOOLS;URHO3D_SAMPLES;URHO3D_MERGE_STATIC_LIBS;URHO3D_NO_EDITOR_PLAYER_EXE")
 foreach (var ${__cmake_variables})
-    if ("${var}" MATCHES "^URHO3D_")
+    list (FIND IGNORED_URHO3D_OPTIONS ${var} _index)
+    if ("${var}" MATCHES "^URHO3D_" AND NOT "${var}" MATCHES "_AVAILABLE$" AND _index EQUAL -1)
         if ("${${var}}")
             target_compile_definitions(Urho3D PUBLIC -D${var})
         endif ()
@@ -200,7 +198,6 @@ set (THIRD_PARTY_DEPENDENCIES
     ImGui
     LibCpuId
     GLEW
-    MojoShader
     nativefiledialog
     CLI11
     fmt
@@ -347,25 +344,20 @@ if (NOT MINI_URHO)
             target_link_libraries (Urho3D PUBLIC GL)
         endif ()
     else ()
-        if (URHO3D_D3D9)
-            find_package(DirectX REQUIRED D3D9)
-        else ()
-            find_package(DirectX REQUIRED D3D11)
-        endif ()
+        find_package(DirectX REQUIRED D3D11)
         target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
     endif ()
 endif ()
 
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")
-    target_compile_options(Urho3D PRIVATE -Wno-warn-absolute-paths -Wno-unknown-warning-option)
     if (URHO3D_THREADING)
         target_compile_options(Urho3D PRIVATE "-s USE_PTHREADS=1")
     endif ()
     set_target_properties(Urho3D PROPERTIES COMPILE_OPTIONS $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:-O3>)
-    set_target_properties(Urho3D PROPERTIES LINK_FLAGS_RELEASE "-s AGGRESSIVE_VARIABLE_ELIMINATION=1")
+    set_target_properties(Urho3D PROPERTIES LINK_FLAGS_RELEASE -sAGGRESSIVE_VARIABLE_ELIMINATION=1)
     target_compile_options(Urho3D PUBLIC $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:${EMCC_WITH_SOURCE_MAPS_FLAG}>)
-    target_link_libraries(Urho3D PUBLIC "-s DISABLE_EXCEPTION_CATCHING=1" "-s FORCE_FILESYSTEM=1" "-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
+    target_link_libraries(Urho3D PUBLIC -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0)
     if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 2.0.18)
         set (EXTRA_ "EXTRA_")
     endif ()

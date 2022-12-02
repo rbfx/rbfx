@@ -50,6 +50,9 @@ ea::optional<StringHash> RenderCreateComponentMenu(Context* context)
             continue;
 
         const auto& types = iter->second;
+        if (types.empty())
+            continue;
+
         const ea::string title = category.substr(prefix.length());
         if (ui::BeginMenu(title.c_str()))
         {

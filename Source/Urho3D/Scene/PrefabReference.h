@@ -66,7 +66,7 @@ public:
 
 protected:
     /// Handle scene node being assigned at creation.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
 private:
     /// Handle prefab reloaded.
     void HandlePrefabReloaded(StringHash eventType, VariantMap& map);

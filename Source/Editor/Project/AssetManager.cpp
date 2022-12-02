@@ -33,8 +33,6 @@
 namespace Urho3D
 {
 
-const ea::string AssetManager::ResourceNameSuffix{"AssetPipeline.json"};
-
 void AssetManager::AssetDesc::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "Outputs", outputs_);
@@ -66,6 +64,7 @@ AssetManager::AssetManager(Context* context)
     , transformerHierarchy_(MakeShared<AssetTransformerHierarchy>(context_))
 {
     dataWatcher_->StartWatching(project_->GetDataPath(), true);
+    context_->OnReflectionRemoved.Subscribe(this, &AssetManager::OnReflectionRemoved);
 }
 
 AssetManager::~AssetManager()
@@ -105,6 +104,11 @@ void AssetManager::Update()
     ProcessFileSystemUpdates();
     EnsureAssetsAndCacheValid();
     ScanAndQueueAssetProcessing();
+}
+
+void AssetManager::MarkCacheDirty(const ea::string& resourcePath)
+{
+    InvalidateAssetsInPath(resourcePath);
 }
 
 void AssetManager::ProcessFileSystemUpdates()
@@ -163,8 +167,6 @@ void AssetManager::LoadFile(const ea::string& fileName)
     auto jsonFile = MakeShared<JSONFile>(context_);
     if (jsonFile->LoadFile(fileName))
         jsonFile->LoadObject("Cache", *this);
-
-    Initialize();
 }
 
 void AssetManager::SaveFile(const ea::string& fileName) const
@@ -181,8 +183,7 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     StringVector files;
     fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
 
-    const ea::string suffix = Format("/{}", ResourceNameSuffix);
-    ea::erase_if(files, [&](const ea::string& resourceName) { return !resourceName.ends_with(suffix); });
+    ea::erase_if(files, [&](const ea::string& resourceName) { return !AssetPipeline::CheckExtension(resourceName); });
 
     AssetPipelineList result;
     for (const ea::string& resourceName : files)
@@ -190,61 +191,33 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     return result;
 }
 
-AssetManager::AssetPipelineDesc AssetManager::LoadAssetPipeline(
-    const JSONFile& jsonFile, const ea::string& resourceName, FileTime modificationTime) const
+AssetManager::AssetPipelineDesc AssetManager::LoadAssetPipeline(const AssetPipeline& pipeline, FileTime modificationTime) const
 {
     AssetPipelineDesc result;
-    result.resourceName_ = resourceName;
+    result.resourceName_ = pipeline.GetName();
     result.modificationTime_ = modificationTime;
-
-    const JSONValue& rootElement = jsonFile.GetRoot();
-    const JSONValue& transformersElement = rootElement["Transformers"];
-    const JSONValue& dependenciesElement = rootElement["Dependencies"];
-
-    for (const JSONValue& value : transformersElement.GetArray())
-    {
-        const ea::string& transformerClass = value["_Class"].GetString();
-        const auto newTransformer = DynamicCast<AssetTransformer>(context_->CreateObject(transformerClass));
-        if (!newTransformer)
-        {
-            URHO3D_LOGERROR("Failed to instantiate transformer {} of JSON file {}", transformerClass, resourceName);
-            continue;
-        }
-
-        JSONInputArchive archive{context_, value, &jsonFile};
-        const bool loaded = ConsumeArchiveException([&]
-        {
-            SerializeValue(archive, transformerClass.c_str(), *newTransformer);
-        });
-
-        if (loaded)
-            result.transformers_.push_back(newTransformer);
-    }
-
-    for (const JSONValue& value : dependenciesElement.GetArray())
-    {
-        const ea::string& transformerClass = value["Class"].GetString();
-        const ea::string& dependsOn = value["DependsOn"].GetString();
-        result.dependencies_.emplace_back(transformerClass, dependsOn);
-    }
-
+    result.transformers_ = pipeline.GetTransformers();
+    result.dependencies_ = pipeline.GetDependencies();
     return result;
 }
 
 AssetManager::AssetPipelineDescVector AssetManager::LoadAssetPipelines(
     const AssetPipelineList& assetPipelineFiles) const
 {
+    auto cache = GetSubsystem<ResourceCache>();
+
     AssetPipelineDescVector result;
     for (const auto& [resourceName, modificationTime] : assetPipelineFiles)
     {
-        auto jsonFile = MakeShared<JSONFile>(context_);
-        if (!jsonFile->LoadFile(GetFileName(resourceName)))
+        // Never cache these files.
+        auto pipeline = cache->GetTempResource<AssetPipeline>(resourceName);
+        if (!pipeline)
         {
             URHO3D_LOGERROR("Failed to load {} as JSON file", resourceName);
             continue;
         }
 
-        result.push_back(LoadAssetPipeline(*jsonFile, resourceName, modificationTime));
+        result.push_back(LoadAssetPipeline(*pipeline, modificationTime));
     }
     return result;
 }
@@ -489,8 +462,8 @@ void AssetManager::UpdateTransformHierarchy()
     {
         for (AssetTransformer* transformer : pipeline.transformers_)
             transformerHierarchy_->AddTransformer(GetPath(pipeline.resourceName_), transformer);
-        for (const auto& [transformerClass, dependsOn] : pipeline.dependencies_)
-            transformerHierarchy_->AddDependency(transformerClass, dependsOn);
+        for (const AssetTransformerDependency& link : pipeline.dependencies_)
+            transformerHierarchy_->AddDependency(link.class_, link.dependsOn_);
     }
     transformerHierarchy_->CommitDependencies();
 }
@@ -546,7 +519,7 @@ void AssetManager::ProcessAsset(const AssetTransformerInput& input)
         input.resourceName_, input.flavor_);
 
     AssetTransformerOutput output;
-    if (AssetTransformer::ExecuteAndStore(input, transformers, cachePath, output))
+    if (AssetTransformer::ExecuteTransformersAndStore(input, cachePath, output, transformers))
     {
         AssetDesc& assetDesc = assets_[input.resourceName_];
         assetDesc.resourceName_ = input.resourceName_;
@@ -565,7 +538,25 @@ StringVector AssetManager::EnumerateAssetFiles(const ea::string& resourcePath) c
 
     StringVector result;
     fs->ScanDir(result, GetFileName(resourcePath), "", SCAN_FILES, true);
+
+    ea::erase_if(result, [this](const ea::string& fileName)
+    {
+        return project_->IsFileNameIgnored(fileName);
+    });
     return result;
+}
+
+void AssetManager::OnReflectionRemoved(ObjectReflection* reflection)
+{
+    if (transformerHierarchy_->RemoveTransformers(reflection->GetTypeInfo()))
+    {
+        InvalidateAssetsInPath("");
+        assetPipelines_.clear();
+        reloadAssetPipelines_ = true;
+
+        auto cache = GetSubsystem<ResourceCache>();
+        cache->ReleaseResources(AssetPipeline::GetTypeStatic());
+    }
 }
 
 }

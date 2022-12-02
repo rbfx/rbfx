@@ -63,7 +63,7 @@ public:
 
 protected:
     /// Handle component being added to Node or removed from it.
-    void OnNodeSet(Node* node) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
 
     /// Material that is set to the model.
     SharedPtr<Material> material_;

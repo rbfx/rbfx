@@ -85,9 +85,9 @@ BillboardSet::BillboardSet(Context* context) :
     fixedScreenSize_(false),
     faceCameraMode_(FC_ROTATE_XYZ),
     minAngle_(0.0f),
-    geometry_(context->CreateObject<Geometry>()),
-    vertexBuffer_(context_->CreateObject<VertexBuffer>()),
-    indexBuffer_(context_->CreateObject<IndexBuffer>()),
+    geometry_(MakeShared<Geometry>(context)),
+    vertexBuffer_(MakeShared<VertexBuffer>(context_)),
+    indexBuffer_(MakeShared<IndexBuffer>(context_)),
     bufferSizeDirty_(true),
     bufferDirty_(true),
     forceUpdate_(false),
@@ -110,7 +110,7 @@ BillboardSet::~BillboardSet() = default;
 
 void BillboardSet::RegisterObject(Context* context)
 {
-    context->RegisterFactory<BillboardSet>(Category_Geometry);
+    context->AddFactoryReflection<BillboardSet>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),

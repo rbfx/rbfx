@@ -155,7 +155,7 @@ void Component::OnAttributeAnimationRemoved()
         UnsubscribeFromEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE);
 }
 
-void Component::OnNodeSet(Node* node)
+void Component::OnNodeSet(Node* previousNode, Node* currentNode)
 {
 }
 
@@ -178,8 +178,9 @@ void Component::SetID(unsigned id)
 
 void Component::SetNode(Node* node)
 {
+    Node* previousNode = node_;
     node_ = node;
-    OnNodeSet(node_);
+    OnNodeSet(previousNode, node_);
 }
 
 Component* Component::GetComponent(StringHash type) const
@@ -197,14 +198,6 @@ ea::string Component::GetFullNameDebug() const
     ea::string fullName = node_ ? Format("{}/({})", node_->GetFullNameDebug(), node_->GetComponentIndex(this)) : "";
     fullName += GetTypeName();
     return fullName;
-}
-
-void Component::GetComponents(ea::vector<Component*>& dest, StringHash type) const
-{
-    if (node_)
-        node_->GetComponents(dest, type);
-    else
-        dest.clear();
 }
 
 unsigned Component::GetIndexInParent() const

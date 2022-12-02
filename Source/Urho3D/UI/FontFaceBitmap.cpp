@@ -52,7 +52,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
 {
     Context* context = font_->GetContext();
 
-    SharedPtr<XMLFile> xmlReader(context->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xmlReader(MakeShared<XMLFile>(context));
     MemoryBuffer memoryBuffer(fontData, fontDataSize);
     if (!xmlReader->Load(memoryBuffer))
     {
@@ -100,9 +100,8 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         ea::string textureFile = fontPath + pageElem.GetAttribute("file");
 
         // Load texture manually to allow controlling the alpha channel mode
-        SharedPtr<File> fontFile = resourceCache->GetFile(textureFile);
-        SharedPtr<Image> fontImage(context->CreateObject<Image>());
-        if (!fontFile || !fontImage->Load(*fontFile))
+        auto fontImage = resourceCache->GetTempResource<Image>(textureFile);
+        if (!fontImage)
         {
             URHO3D_LOGERROR("Failed to load font image file");
             return false;
@@ -114,7 +113,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         textures_.push_back(texture);
 
         // Add texture to resource cache
-        texture->SetName(fontFile->GetName());
+        texture->SetName(fontImage->GetName());
         resourceCache->AddManualResource(texture.Get());
 
         totalTextureSize += fontImage->GetWidth() * fontImage->GetHeight() * fontImage->GetComponents();
@@ -224,7 +223,7 @@ bool FontFaceBitmap::Load(FontFace* fontFace, bool usedGlyphs)
     ea::vector<SharedPtr<Image> > newImages(numPages);
     for (unsigned i = 0; i < numPages; ++i)
     {
-        SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
+        auto image = MakeShared<Image>(font_->GetContext());
 
         int width = maxTextureSize;
         int height = maxTextureSize;
@@ -269,7 +268,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const ea::string& ind
 {
     Context* context = font_->GetContext();
 
-    SharedPtr<XMLFile> xml(context->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context));
     XMLElement rootElem = xml->CreateRoot("font");
 
     // Information
@@ -359,7 +358,7 @@ unsigned FontFaceBitmap::ConvertFormatToNumComponents(unsigned format)
 
 SharedPtr<Image> FontFaceBitmap::SaveFaceTexture(Texture2D* texture)
 {
-    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
+    auto image = MakeShared<Image>(font_->GetContext());
     image->SetSize(texture->GetWidth(), texture->GetHeight(), ConvertFormatToNumComponents(texture->GetFormat()));
     if (!texture->GetData(0, image->GetData()))
     {
