@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Math/Matrix3x4.h"
 #include "../Math/Vector3.h"
 #include "../Math/Quaternion.h"
 
@@ -45,8 +46,12 @@ struct URHO3D_API IKSettings
 /// Singular node of the IK chain.
 /// Node should be used only once within a chain.
 /// However, node may belong to multiple independet chains.
+/// Positions and rotations are in world space.
 struct URHO3D_API IKNode
 {
+    Vector3 localOriginalPosition_;
+    Quaternion localOriginalRotation_;
+
     Vector3 originalPosition_;
     Quaternion originalRotation_;
 
@@ -60,9 +65,11 @@ struct URHO3D_API IKNode
     bool rotationDirty_{};
 
     IKNode() = default;
-    IKNode(const Vector3& position, const Quaternion& rotation) { InitializeTransform(position, rotation); }
+    IKNode(const Vector3& position, const Quaternion& rotation);
 
-    void InitializeTransform(const Vector3& position, const Quaternion& rotation);
+    void SetOriginalTransform(const Vector3& position, const Quaternion& rotation, const Matrix3x4& inverseWorldTransform);
+    void UpdateOriginalTransform(const Matrix3x4& worldTransform);
+
     void RotateAround(const Vector3& point, const Quaternion& rotation);
     void ResetOriginalTransform();
     void StorePreviousTransform();

@@ -42,8 +42,7 @@ public:
 
     bool Initialize(IKNodeCache& nodeCache);
     void NotifyPositionsReady();
-    void Solve(const IKSettings& settings,
-        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation);
+    void Solve(const IKSettings& settings);
 
     /// Internal. Marks chain tree as dirty.
     void OnTreeDirty();
@@ -51,8 +50,7 @@ public:
 protected:
     virtual bool InitializeNodes(IKNodeCache& nodeCache) = 0;
     virtual void UpdateChainLengths() = 0;
-    virtual void SolveInternal(const IKSettings& settings,
-        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) = 0;
+    virtual void SolveInternal(const IKSettings& settings) = 0;
 
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
 
@@ -83,8 +81,7 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings,
-        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
+    void SolveInternal(const IKSettings& settings) override;
     /// @}
 
     void EnsureInitialized();
@@ -114,8 +111,7 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings,
-        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
+    void SolveInternal(const IKSettings& settings) override;
     /// @}
 
     ea::string firstBoneName_;
@@ -150,8 +146,7 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings,
-        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
+    void SolveInternal(const IKSettings& settings) override;
     /// @}
 
     void EnsureInitialized();
@@ -204,8 +199,7 @@ protected:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings,
-        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
+    void SolveInternal(const IKSettings& settings) override;
     /// @}
 
 private:
@@ -234,8 +228,7 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings,
-        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
+    void SolveInternal(const IKSettings& settings) override;
     /// @}
 
     void EnsureInitialized();
@@ -281,8 +274,7 @@ protected:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings,
-        const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation) override;
+    void SolveInternal(const IKSettings& settings) override;
     /// @}
 
 private:
