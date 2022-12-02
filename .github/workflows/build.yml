@@ -674,7 +674,7 @@ jobs:
 
   Docs:
     runs-on: ubuntu-20.04
-    if: github.repository == 'rbfx/rbfx'
+    if: github.repository == 'rbfx/rbfx' && github.branch == 'master'
     needs:
       - Windows
       - UWP
