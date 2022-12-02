@@ -51,7 +51,8 @@ private:
 
     bool IsChainTreeExpired() const;
     void RebuildSolvers();
-    void InitializeNodeTransforms();
+    void SetOriginalTransforms();
+    void UpdateOriginalTransforms();
 
     bool solveWhenPaused_{};
     IKSettings settings_;

@@ -96,12 +96,11 @@ void IKSolver::Solve()
     if (solvers_.empty() || solverNodes_.empty())
         return;
 
-    const Matrix3x4 inverseWorldTransform = node_->GetWorldTransform().Inverse();
-    const Quaternion inverseWorldRotation = node_->GetWorldRotation().Inverse();
+    UpdateOriginalTransforms();
     for (IKSolverComponent* solver : solvers_)
     {
         URHO3D_ASSERT(solver);
-        solver->Solve(settings_, inverseWorldTransform, inverseWorldRotation);
+        solver->Solve(settings_);
     }
 
     if (auto animatedModel = node_->GetComponent<AnimatedModel>())
@@ -140,22 +139,24 @@ void IKSolver::RebuildSolvers()
             animatedModel->GetSkeleton().Reset();
     }
 
-    InitializeNodeTransforms();
+    SetOriginalTransforms();
 
     for (IKSolverComponent* solver : solvers_)
         solver->NotifyPositionsReady();
 }
 
-void IKSolver::InitializeNodeTransforms()
+void IKSolver::SetOriginalTransforms()
 {
-    const Matrix3x4& inverseRootWorldTransform = node_->GetWorldTransform().Inverse();
-    const Quaternion& inverseRootWorldRotation = node_->GetWorldRotation().Inverse();
-
+    const Matrix3x4 inverseWorldTransform = node_->GetWorldTransform().Inverse();
     for (auto& [node, solverNode] : solverNodes_)
-    {
-        solverNode.InitializeTransform(inverseRootWorldTransform * node->GetWorldPosition(),
-            inverseRootWorldRotation * node->GetWorldRotation());
-    }
+        solverNode.SetOriginalTransform(node->GetWorldPosition(), node->GetWorldRotation(), inverseWorldTransform);
+}
+
+void IKSolver::UpdateOriginalTransforms()
+{
+    const Matrix3x4 worldTransform = node_->GetWorldTransform();
+    for (auto& [_, solverNode] : solverNodes_)
+        solverNode.UpdateOriginalTransform(worldTransform);
 }
 
 }

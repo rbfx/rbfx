@@ -59,14 +59,28 @@ Vector3 IterateSegment(const IKSettings& settings,
 
 }
 
-void IKNode::InitializeTransform(const Vector3& position, const Quaternion& rotation)
+IKNode::IKNode(const Vector3& position, const Quaternion& rotation)
 {
+    SetOriginalTransform(position, rotation, Matrix3x4::IDENTITY);
+}
+
+void IKNode::SetOriginalTransform(
+    const Vector3& position, const Quaternion& rotation, const Matrix3x4& inverseWorldTransform)
+{
+    localOriginalPosition_ = inverseWorldTransform * position;
+    localOriginalRotation_ = inverseWorldTransform.Rotation() * rotation;
     originalPosition_ = position;
     originalRotation_ = rotation;
     position_ = position;
     rotation_ = rotation;
     previousPosition_ = position;
     previousRotation_ = rotation;
+}
+
+void IKNode::UpdateOriginalTransform(const Matrix3x4& worldTransform)
+{
+    originalPosition_ = worldTransform * localOriginalPosition_;
+    originalRotation_ = worldTransform.Rotation() * localOriginalRotation_;
 }
 
 void IKNode::RotateAround(const Vector3& point, const Quaternion& rotation)
@@ -88,8 +102,6 @@ void IKNode::ResetOriginalTransform()
 {
     position_ = originalPosition_;
     rotation_ = originalRotation_;
-    positionDirty_ = true;
-    rotationDirty_ = true;
 }
 
 Quaternion IKNodeSegment::CalculateRotationDeltaFromPrevious() const

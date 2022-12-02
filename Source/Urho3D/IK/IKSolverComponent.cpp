@@ -142,24 +142,23 @@ void IKSolverComponent::NotifyPositionsReady()
     UpdateChainLengths();
 }
 
-void IKSolverComponent::Solve(const IKSettings& settings,
-    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
+void IKSolverComponent::Solve(const IKSettings& settings)
 {
     for (const auto& [node, solverNode] : solverNodes_)
     {
-        solverNode->position_ = inverseWorldTransform * node->GetWorldPosition();
-        solverNode->rotation_ = inverseWorldRotation * node->GetWorldRotation();
+        solverNode->position_ = node->GetWorldPosition();
+        solverNode->rotation_ = node->GetWorldRotation();
         solverNode->StorePreviousTransform();
     }
 
-    SolveInternal(settings, inverseWorldTransform, inverseWorldRotation);
+    SolveInternal(settings);
 
     for (const auto& [node, solverNode] : solverNodes_)
     {
         if (solverNode->positionDirty_)
-            node->SetWorldPosition(node_->GetWorldTransform() * solverNode->position_);
+            node->SetWorldPosition(solverNode->position_);
         if (solverNode->rotationDirty_)
-            node->SetWorldRotation(node_->GetWorldRotation() * solverNode->rotation_);
+            node->SetWorldRotation(solverNode->rotation_);
     }
 }
 
@@ -247,8 +246,7 @@ void IKChainSolver::UpdateChainLengths()
     }*/
 }
 
-void IKChainSolver::SolveInternal(const IKSettings& settings,
-    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
+void IKChainSolver::SolveInternal(const IKSettings& settings)
 {
     chain_.Solve(targetNode_->GetWorldPosition(), settings);
 }
@@ -325,13 +323,12 @@ void IKIdentitySolver::UpdateChainLengths()
 {
 }
 
-void IKIdentitySolver::SolveInternal(const IKSettings& settings,
-    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
+void IKIdentitySolver::SolveInternal(const IKSettings& settings)
 {
     EnsureInitialized();
 
-    boneNode_->position_ = inverseWorldTransform * target_->GetWorldPosition();
-    boneNode_->rotation_ = inverseWorldRotation * target_->GetWorldRotation() * rotationOffset_;
+    boneNode_->position_ = target_->GetWorldPosition();
+    boneNode_->rotation_ = target_->GetWorldRotation() * rotationOffset_;
 
     boneNode_->MarkPositionDirty();
     boneNode_->MarkRotationDirty();
@@ -371,18 +368,16 @@ void IKTrigonometrySolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTes
     IKNode* calfBone = chain_.GetMiddleNode();
     IKNode* heelBone = chain_.GetEndNode();
 
-    const Matrix3x4 worldTransform = node_->GetWorldTransform();
-    const Quaternion worldRotation = node_->GetWorldRotation();
     if (thighBone && calfBone && heelBone)
     {
-        debug->AddLine(worldTransform * thighBone->position_, worldTransform * calfBone->position_, Color::YELLOW, false);
-        debug->AddLine(worldTransform * calfBone->position_, worldTransform * heelBone->position_, Color::YELLOW, false);
-        debug->AddSphere(Sphere(worldTransform * thighBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(worldTransform * calfBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(worldTransform * heelBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddLine(thighBone->position_, calfBone->position_, Color::YELLOW, false);
+        debug->AddLine(calfBone->position_, heelBone->position_, Color::YELLOW, false);
+        debug->AddSphere(Sphere(thighBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddSphere(Sphere(calfBone->position_, jointRadius), Color::YELLOW, false);
+        debug->AddSphere(Sphere(heelBone->position_, jointRadius), Color::YELLOW, false);
 
-        const Vector3 bendA = worldTransform * calfBone->position_;
-        const Vector3 bendB = bendA + worldRotation * chain_.GetCurrentBendDirection() * lineLength;
+        const Vector3 bendA = calfBone->position_;
+        const Vector3 bendB = bendA + chain_.GetCurrentBendDirection() * lineLength;
         debug->AddLine(bendA, bendB, Color::GREEN, false);
         debug->AddSphere(Sphere(bendB, jointRadius), Color::GREEN, false);
     }
@@ -419,11 +414,10 @@ void IKTrigonometrySolver::UpdateChainLengths()
     chain_.UpdateLengths();
 }
 
-void IKTrigonometrySolver::SolveInternal(const IKSettings& settings,
-    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
+void IKTrigonometrySolver::SolveInternal(const IKSettings& settings)
 {
-    const Vector3 targetPosition = inverseWorldTransform * target_->GetWorldPosition();
-    chain_.Solve(targetPosition, bendDirection_, minAngle_, maxAngle_);
+    const Vector3 targetPosition = target_->GetWorldPosition();
+    chain_.Solve(targetPosition, node_->GetWorldRotation() * bendDirection_, minAngle_, maxAngle_);
 }
 
 IKLegSolver::IKLegSolver(Context* context)
@@ -565,8 +559,7 @@ void IKLegSolver::EnsureInitialized()
     maxKneeAngle_ = Clamp(maxKneeAngle_, 0.0f, 180.0f);
 }
 
-void IKLegSolver::SolveInternal(const IKSettings& settings,
-    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
+void IKLegSolver::SolveInternal(const IKSettings& settings)
 {
     return;
     EnsureInitialized();
@@ -652,8 +645,7 @@ void IKSpineSolver::UpdateChainLengths()
     chain_.UpdateLengths();
 }
 
-void IKSpineSolver::SolveInternal(const IKSettings& settings,
-    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
+void IKSpineSolver::SolveInternal(const IKSettings& settings)
 {
     chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
 }
@@ -749,8 +741,7 @@ void IKArmSolver::EnsureInitialized()
 {
 }
 
-void IKArmSolver::SolveInternal(const IKSettings& settings,
-    const Matrix3x4& inverseWorldTransform, const Quaternion& inverseWorldRotation)
+void IKArmSolver::SolveInternal(const IKSettings& settings)
 {
     return;
     EnsureInitialized();
