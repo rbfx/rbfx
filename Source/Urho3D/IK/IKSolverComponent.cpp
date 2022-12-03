@@ -695,6 +695,7 @@ void IKArmSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Min Elbow Angle", float, minElbowAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Elbow Angle", float, maxElbowAngle_, 180.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Shoulder Weight", float, shoulderWeight_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
 }
 
@@ -762,6 +763,9 @@ void IKArmSolver::UpdateChainLengths()
 
 void IKArmSolver::EnsureInitialized()
 {
+    minElbowAngle_ = Clamp(minElbowAngle_, 0.0f, 180.0f);
+    maxElbowAngle_ = Clamp(maxElbowAngle_, 0.0f, 180.0f);
+    shoulderWeight_ = Clamp(shoulderWeight_, 0.0f, 1.0f);
 }
 
 void IKArmSolver::SolveInternal(const IKSettings& settings)
@@ -770,7 +774,37 @@ void IKArmSolver::SolveInternal(const IKSettings& settings)
 
     const Vector3 handTargetPosition = target_->GetWorldPosition();
 
+    const Quaternion shoulderRotation = CalculateShoulderRotation(handTargetPosition, shoulderWeight_);
+    RotateShoulder(shoulderRotation);
+
     armChain_.Solve(handTargetPosition, bendDirection_, minElbowAngle_, maxElbowAngle_);
+}
+
+void IKArmSolver::RotateShoulder(const Quaternion& rotation)
+{
+    const Vector3 shoulderPosition = shoulderSegment_.beginNode_->position_;
+    const Vector3 shoulderOffset = shoulderPosition - shoulderSegment_.beginNode_->originalPosition_;
+
+    shoulderSegment_.beginNode_->ResetOriginalTransform();
+    shoulderSegment_.endNode_->ResetOriginalTransform();
+
+    shoulderSegment_.beginNode_->position_ += shoulderOffset;
+    shoulderSegment_.endNode_->position_ += shoulderOffset;
+
+    shoulderSegment_.beginNode_->RotateAround(shoulderPosition, rotation);
+    shoulderSegment_.endNode_->RotateAround(shoulderPosition, rotation);
+}
+
+Quaternion IKArmSolver::CalculateShoulderRotation(const Vector3& handTargetPosition, float blendFactor) const
+{
+    const Vector3 shoulderPosition = shoulderSegment_.beginNode_->position_;
+    const Vector3 shoulderToArmMax = (handTargetPosition - shoulderPosition).ReNormalized(
+        shoulderSegment_.length_, shoulderSegment_.length_);
+    const Vector3 armTargetPosition = shoulderPosition + shoulderToArmMax;
+    const Vector3 originalShoulderToArm = shoulderSegment_.endNode_->position_ - shoulderSegment_.beginNode_->position_;
+    const Vector3 maxShoulderToArm = armTargetPosition - shoulderPosition;
+    const Vector3 shoulderToArm = originalShoulderToArm.Lerp(maxShoulderToArm, blendFactor);
+    return Quaternion{originalShoulderToArm, shoulderToArm};
 }
 
 }

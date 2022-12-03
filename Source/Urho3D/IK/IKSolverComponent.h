@@ -235,6 +235,8 @@ private:
     /// @}
 
     void EnsureInitialized();
+    void RotateShoulder(const Quaternion& rotation);
+    Quaternion CalculateShoulderRotation(const Vector3& handTargetPosition, float blendFactor) const;
 
     /// Attributes.
     /// @{
@@ -247,6 +249,7 @@ private:
 
     float minElbowAngle_{0.0f};
     float maxElbowAngle_{180.0f};
+    float shoulderWeight_{};
     Vector3 bendDirection_{Vector3::FORWARD};
     /// @}
 
