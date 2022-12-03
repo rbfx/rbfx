@@ -151,8 +151,11 @@ private:
 
     void EnsureInitialized();
     void UpdateMinHeelAngle();
-    Vector3 CalculateFootDirectionStraight(const Vector3& toeTargetPosition) const;
-    Vector3 CalculateFootDirectionBent(const Vector3& toeTargetPosition) const;
+    Vector3 CalculateCurrentBendDirection(const Vector3& toeTargetPosition) const;
+    Vector3 CalculateFootDirectionStraight(
+        const Vector3& toeTargetPosition, const Vector3& currentBendDirection) const;
+    Vector3 CalculateFootDirectionBent(
+        const Vector3& toeTargetPosition, const Vector3& currentBendDirection) const;
 
     /// Attributes.
     /// @{
