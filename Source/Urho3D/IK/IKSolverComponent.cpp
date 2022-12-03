@@ -704,6 +704,7 @@ void IKArmSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     const float jointRadius = 0.02f;
     const float targetRadius = 0.05f;
+    const float lineLength = 0.1f;
 
     IKNode* armBone = armChain_.GetBeginNode();
     IKNode* forearmBone = armChain_.GetMiddleNode();
@@ -717,6 +718,11 @@ void IKArmSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         debug->AddSphere(Sphere(armBone->position_, jointRadius), Color::YELLOW, false);
         debug->AddSphere(Sphere(forearmBone->position_, jointRadius), Color::YELLOW, false);
         debug->AddSphere(Sphere(handBone->position_, jointRadius), Color::YELLOW, false);
+
+        const Vector3 bendA = forearmBone->position_;
+        const Vector3 bendB = bendA + armChain_.GetCurrentBendDirection() * lineLength;
+        debug->AddLine(bendA, bendB, Color::GREEN, false);
+        debug->AddSphere(Sphere(bendB, jointRadius), Color::GREEN, false);
     }
     if (shoulderBone && armBone)
     {
@@ -776,12 +782,12 @@ void IKArmSolver::SolveInternal(const IKSettings& settings)
     const Vector3 handTargetPosition = target_->GetWorldPosition();
 
     const Quaternion maxShoulderRotation = CalculateMaxShoulderRotation(handTargetPosition);
-    const auto [swing, twist] = maxShoulderRotation.ToSwingTwist(upDirection_);
+    const auto [swing, twist] = maxShoulderRotation.ToSwingTwist(node_->GetWorldRotation() * upDirection_);
     const Quaternion shoulderRotation = Quaternion::IDENTITY.Slerp(swing, shoulderWeight_.y_)
         * Quaternion::IDENTITY.Slerp(twist, shoulderWeight_.x_);
     RotateShoulder(shoulderRotation);
 
-    armChain_.Solve(handTargetPosition, bendDirection_, minElbowAngle_, maxElbowAngle_);
+    armChain_.Solve(handTargetPosition, node_->GetWorldRotation() * bendDirection_, minElbowAngle_, maxElbowAngle_);
 }
 
 void IKArmSolver::RotateShoulder(const Quaternion& rotation)
