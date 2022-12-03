@@ -236,7 +236,7 @@ private:
 
     void EnsureInitialized();
     void RotateShoulder(const Quaternion& rotation);
-    Quaternion CalculateShoulderRotation(const Vector3& handTargetPosition, float blendFactor) const;
+    Quaternion CalculateMaxShoulderRotation(const Vector3& handTargetPosition) const;
 
     /// Attributes.
     /// @{
@@ -249,8 +249,9 @@ private:
 
     float minElbowAngle_{0.0f};
     float maxElbowAngle_{180.0f};
-    float shoulderWeight_{};
+    Vector2 shoulderWeight_{};
     Vector3 bendDirection_{Vector3::FORWARD};
+    Vector3 upDirection_{Vector3::UP};
     /// @}
 
     /// IK nodes and effectors.
