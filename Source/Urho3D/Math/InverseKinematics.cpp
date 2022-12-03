@@ -165,6 +165,17 @@ void IKNodeSegment::UpdateRotationInNodes(bool fromPrevious, bool isLastSegment)
     endNode_->MarkRotationDirty();
 }
 
+void IKNodeSegment::Twist(float angle, bool isLastSegment)
+{
+    const Quaternion rotation{angle, CalculateDirection()};
+    beginNode_->rotation_ = rotation * beginNode_->rotation_;
+    if (isLastSegment)
+        endNode_->rotation_ = rotation * endNode_->rotation_;
+
+    beginNode_->MarkRotationDirty();
+    endNode_->MarkRotationDirty();
+}
+
 void IKTrigonometricChain::Initialize(IKNode* node1, IKNode* node2, IKNode* node3)
 {
     segments_[0] = IKNodeSegment{node1, node2};
@@ -294,6 +305,16 @@ void IKChain::UpdateLengths()
         segment.UpdateLength();
 }
 
+const IKNodeSegment* IKChain::FindSegment(const IKNode* node) const
+{
+    const auto isNodeReferenced = [&](const IKNodeSegment& segment)
+    {
+        return segment.beginNode_ == node || segment.endNode_ == node;
+    };
+    const auto iter = ea::find_if(segments_.begin(), segments_.end(), isNodeReferenced);
+    return iter != segments_.end() ? &(*iter) : nullptr;
+}
+
 void IKChain::StorePreviousTransforms()
 {
     for (const IKNodeSegment& segment : segments_)
@@ -364,9 +385,23 @@ void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSetti
     }
 }
 
+void IKSpineChain::Twist(float angle, const IKSettings& settings)
+{
+    if (segments_.size() < 2)
+        return;
+
+    float accumulatedAngle = 0.0f;
+    for (size_t i = 0; i < segments_.size(); ++i)
+    {
+        accumulatedAngle += angle * weights_[i];
+        segments_[i].Twist(accumulatedAngle, i == segments_.size() - 1);
+    }
+}
+
 void IKSpineChain::UpdateSegmentWeights()
 {
     weights_.resize(segments_.size());
+
     ea::fill(weights_.begin(), weights_.end(), 0.0f);
 
     float totalWeight = 0.0f;

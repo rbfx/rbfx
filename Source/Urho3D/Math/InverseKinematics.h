@@ -97,6 +97,8 @@ struct URHO3D_API IKNodeSegment
     void UpdateLength();
     /// Update current rotation for nodes.
     void UpdateRotationInNodes(bool fromPrevious, bool isLastSegment);
+    /// Twist the segment around its direction.
+    void Twist(float angle, bool isLastSegment);
 };
 
 /// Trigonometric two-segment IK chain.
@@ -139,6 +141,7 @@ public:
 
     void UpdateLengths();
 
+    const IKNodeSegment* FindSegment(const IKNode* node) const;
     ea::vector<IKNodeSegment>& GetSegments() { return segments_; }
     const ea::vector<IKNodeSegment>& GetSegments() const { return segments_; }
 
@@ -156,6 +159,7 @@ class URHO3D_API IKSpineChain : public IKChain
 {
 public:
     void Solve(const Vector3& target, float maxRotation, const IKSettings& settings);
+    void Twist(float angle, const IKSettings& settings);
 
 private:
     struct AngleAndError

@@ -215,13 +215,17 @@ protected:
     /// @}
 
 private:
+    float GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const;
+
     StringVector boneNames_;
+    ea::string twistTargetName_;
     ea::string targetName_;
 
     float maxAngle_{90.0f};
 
     IKSpineChain chain_;
     WeakPtr<Node> target_;
+    WeakPtr<Node> twistTarget_;
 };
 
 class IKArmSolver : public IKSolverComponent
