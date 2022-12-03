@@ -59,6 +59,15 @@ protected:
     /// Add node that should be checked for existence before solving.
     Node* AddCheckedNode(IKNodeCache& nodeCache, const ea::string& name) const;
 
+    /// Draw IK node in DebugRenderer.
+    void DrawIKNode(DebugRenderer* debug, const IKNode& node, bool oriented) const;
+    /// Draw IK segment line in DebugRenderer.
+    void DrawIKSegment(DebugRenderer* debug, const IKNode& beginNode, const IKNode& endNode) const;
+    /// Draw IK target in DebugRenderer.
+    void DrawIKTarget(DebugRenderer* debug, const Node* node, bool oriented) const;
+    /// Draw direction in DebugRenderer.
+    void DrawDirection(DebugRenderer* debug, const Vector3& position, const Vector3& direction) const;
+
 private:
     ea::vector<ea::pair<Node*, IKNode*>> solverNodes_;
 };
