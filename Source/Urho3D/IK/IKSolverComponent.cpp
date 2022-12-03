@@ -101,6 +101,20 @@ Vector3 GetToeToHeel(const Vector3& thighPosition, const Vector3& toePosition, f
     return (rotation * toeToThigh).Normalized() * toeToHeelDistance;
 }
 
+void DrawNode(DebugRenderer* debug, bool oriented,
+    const Vector3& position, const Quaternion& rotation, const Color& color, float radius)
+{
+    static const BoundingBox box{-1.0f, 1.0f};
+
+    if (!oriented)
+        debug->AddSphere(Sphere(position, radius), color, false);
+    else
+    {
+        const Matrix3x4 transform{position, rotation, Vector3::ONE * radius};
+        debug->AddBoundingBox(box, transform, color, false);
+    }
+}
+
 }
 
 IKSolverComponent::IKSolverComponent(Context* context)
@@ -196,6 +210,40 @@ Node* IKSolverComponent::AddCheckedNode(IKNodeCache& nodeCache, const ea::string
     return boneNode;
 }
 
+void IKSolverComponent::DrawIKNode(DebugRenderer* debug, const IKNode& node, bool oriented) const
+{
+    static const float radius = 0.02f;
+    static const Color color = Color::YELLOW;
+
+    DrawNode(debug, oriented, node.position_, node.rotation_, color, radius);
+}
+
+void IKSolverComponent::DrawIKSegment(DebugRenderer* debug, const IKNode& beginNode, const IKNode& endNode) const
+{
+    static const Color color = Color::YELLOW;
+
+    debug->AddLine(beginNode.position_, endNode.position_, color, false);
+}
+
+void IKSolverComponent::DrawIKTarget(DebugRenderer* debug, const Node* node, bool oriented) const
+{
+    static const float radius = 0.05f;
+    static const Color color = Color::GREEN;
+
+    DrawNode(debug, oriented, node->GetWorldPosition(), node->GetWorldRotation(), color, radius);
+}
+
+void IKSolverComponent::DrawDirection(DebugRenderer* debug, const Vector3& position, const Vector3& direction) const
+{
+    const float radius = 0.02f;
+    const float length = 0.1f;
+    static const Color color = Color::GREEN;
+
+    const Vector3 endPosition = position + direction * length;
+    debug->AddLine(position, endPosition, Color::GREEN, false);
+    debug->AddSphere(Sphere(endPosition, radius), Color::GREEN, false);
+}
+
 IKChainSolver::IKChainSolver(Context* context)
     : IKSolverComponent(context)
 {
@@ -273,19 +321,10 @@ void IKIdentitySolver::RegisterObject(Context* context)
 
 void IKIdentitySolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    const float jointRadius = 0.02f;
-    const float targetRadius = 0.05f;
-    const BoundingBox box{-Vector3::ONE, Vector3::ONE};
-
     if (boneNode_)
-    {
-        debug->AddBoundingBox(box, Matrix3x4{boneNode_->position_, boneNode_->rotation_, jointRadius},
-            Color::YELLOW, false);
-    }
+        DrawIKNode(debug, *boneNode_, true);
     if (target_)
-    {
-        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
-    }
+        DrawIKTarget(debug, target_, true);
 }
 
 void IKIdentitySolver::UpdateProperties()
@@ -360,30 +399,22 @@ void IKTrigonometrySolver::RegisterObject(Context* context)
 
 void IKTrigonometrySolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    const float jointRadius = 0.02f;
-    const float targetRadius = 0.05f;
-    const float lineLength = 0.1f;
+    IKNode* firstBone = chain_.GetBeginNode();
+    IKNode* secondBone = chain_.GetMiddleNode();
+    IKNode* thirdBone = chain_.GetEndNode();
 
-    IKNode* thighBone = chain_.GetBeginNode();
-    IKNode* calfBone = chain_.GetMiddleNode();
-    IKNode* heelBone = chain_.GetEndNode();
-
-    if (thighBone && calfBone && heelBone)
+    if (firstBone && secondBone && thirdBone)
     {
-        debug->AddLine(thighBone->position_, calfBone->position_, Color::YELLOW, false);
-        debug->AddLine(calfBone->position_, heelBone->position_, Color::YELLOW, false);
-        debug->AddSphere(Sphere(thighBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(calfBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(heelBone->position_, jointRadius), Color::YELLOW, false);
-
-        const Vector3 bendA = calfBone->position_;
-        const Vector3 bendB = bendA + chain_.GetCurrentBendDirection() * lineLength;
-        debug->AddLine(bendA, bendB, Color::GREEN, false);
-        debug->AddSphere(Sphere(bendB, jointRadius), Color::GREEN, false);
+        DrawIKNode(debug, *firstBone, false);
+        DrawIKNode(debug, *secondBone, false);
+        DrawIKNode(debug, *thirdBone, false);
+        DrawIKSegment(debug, *firstBone, *secondBone);
+        DrawIKSegment(debug, *secondBone, *thirdBone);
+        DrawDirection(debug, secondBone->position_, chain_.GetCurrentBendDirection());
     }
     if (target_)
     {
-        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
+        DrawIKTarget(debug, target_, false);
     }
 }
 
@@ -456,10 +487,6 @@ void IKLegSolver::UpdateProperties()
 
 void IKLegSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    const float jointRadius = 0.02f;
-    const float targetRadius = 0.05f;
-    const float lineLength = 0.1f;
-
     IKNode* thighBone = legChain_.GetBeginNode();
     IKNode* calfBone = legChain_.GetMiddleNode();
     IKNode* heelBone = legChain_.GetEndNode();
@@ -467,25 +494,21 @@ void IKLegSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
     if (thighBone && calfBone && heelBone)
     {
-        debug->AddLine(thighBone->position_, calfBone->position_, Color::YELLOW, false);
-        debug->AddLine(calfBone->position_, heelBone->position_, Color::YELLOW, false);
-        debug->AddSphere(Sphere(thighBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(calfBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(heelBone->position_, jointRadius), Color::YELLOW, false);
-
-        const Vector3 bendA = calfBone->position_;
-        const Vector3 bendB = bendA + legChain_.GetCurrentBendDirection() * lineLength;
-        debug->AddLine(bendA, bendB, Color::GREEN, false);
-        debug->AddSphere(Sphere(bendB, jointRadius), Color::GREEN, false);
+        DrawIKNode(debug, *thighBone, false);
+        DrawIKNode(debug, *calfBone, false);
+        DrawIKNode(debug, *heelBone, false);
+        DrawIKSegment(debug, *thighBone, *calfBone);
+        DrawIKSegment(debug, *calfBone, *heelBone);
+        DrawDirection(debug, calfBone->position_, legChain_.GetCurrentBendDirection());
     }
     if (heelBone && toeBone)
     {
-        debug->AddLine(heelBone->position_, toeBone->position_, Color::YELLOW, false);
-        debug->AddSphere(Sphere(toeBone->position_, jointRadius), Color::YELLOW, false);
+        DrawIKNode(debug, *toeBone, false);
+        DrawIKSegment(debug, *heelBone, *toeBone);
     }
     if (target_)
     {
-        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
+        DrawIKTarget(debug, target_, false);
     }
 }
 
@@ -625,22 +648,17 @@ void IKSpineSolver::RegisterObject(Context* context)
 
 void IKSpineSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    const float jointRadius = 0.02f;
-    const float targetRadius = 0.05f;
-
     const auto& segments = chain_.GetSegments();
     for (const IKNodeSegment& segment : segments)
     {
-        debug->AddLine(segment.beginNode_->position_, segment.endNode_->position_, Color::YELLOW, false);
-        debug->AddSphere(Sphere(segment.beginNode_->position_, jointRadius), Color::YELLOW, false);
+        DrawIKNode(debug, *segment.beginNode_, false);
+        DrawIKSegment(debug, *segment.beginNode_, *segment.endNode_);
     }
-    if (segments.size() >= 2)
-        debug->AddSphere(Sphere(segments.back().endNode_->position_, jointRadius), Color::YELLOW, false);
+    if (!segments.empty())
+        DrawIKNode(debug, *segments.back().endNode_, false);
 
     if (target_)
-    {
-        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
-    }
+        DrawIKTarget(debug, target_, false);
 }
 
 bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
@@ -702,37 +720,27 @@ void IKArmSolver::RegisterObject(Context* context)
 
 void IKArmSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    const float jointRadius = 0.02f;
-    const float targetRadius = 0.05f;
-    const float lineLength = 0.1f;
-
+    IKNode* shoulderBone = shoulderSegment_.beginNode_;
     IKNode* armBone = armChain_.GetBeginNode();
     IKNode* forearmBone = armChain_.GetMiddleNode();
     IKNode* handBone = armChain_.GetEndNode();
-    IKNode* shoulderBone = shoulderSegment_.beginNode_;
 
     if (armBone && forearmBone && handBone)
     {
-        debug->AddLine(armBone->position_, forearmBone->position_, Color::YELLOW, false);
-        debug->AddLine(forearmBone->position_, handBone->position_, Color::YELLOW, false);
-        debug->AddSphere(Sphere(armBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(forearmBone->position_, jointRadius), Color::YELLOW, false);
-        debug->AddSphere(Sphere(handBone->position_, jointRadius), Color::YELLOW, false);
-
-        const Vector3 bendA = forearmBone->position_;
-        const Vector3 bendB = bendA + armChain_.GetCurrentBendDirection() * lineLength;
-        debug->AddLine(bendA, bendB, Color::GREEN, false);
-        debug->AddSphere(Sphere(bendB, jointRadius), Color::GREEN, false);
+        DrawIKNode(debug, *armBone, false);
+        DrawIKNode(debug, *forearmBone, false);
+        DrawIKNode(debug, *handBone, false);
+        DrawIKSegment(debug, *armBone, *forearmBone);
+        DrawIKSegment(debug, *forearmBone, *handBone);
+        DrawDirection(debug, forearmBone->position_, armChain_.GetCurrentBendDirection());
     }
     if (shoulderBone && armBone)
     {
-        debug->AddLine(shoulderBone->position_, armBone->position_, Color::YELLOW, false);
-        debug->AddSphere(Sphere(shoulderBone->position_, jointRadius), Color::YELLOW, false);
+        DrawIKNode(debug, *shoulderBone, false);
+        DrawIKSegment(debug, *shoulderBone, *armBone);
     }
     if (target_)
-    {
-        debug->AddSphere(Sphere(target_->GetWorldPosition(), targetRadius), Color::GREEN, false);
-    }
+        DrawIKTarget(debug, target_, false);
 }
 
 bool IKArmSolver::InitializeNodes(IKNodeCache& nodeCache)
