@@ -345,6 +345,19 @@ Quaternion Quaternion::Nlerp(const Quaternion& rhs, float t, bool shortestPath) 
     return result;
 }
 
+ea::pair<Quaternion, Quaternion> Quaternion::ToSwingTwist(const Vector3& twistAxis) const
+{
+    // https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
+    const Vector3 ra{x_, y_, z_};
+    const Vector3 p = twistAxis * ra.ProjectOntoAxis(twistAxis);
+
+    Quaternion twist{w_, p.x_, p.y_, p.z_};
+    twist.Normalize();
+
+    const Quaternion swing = *this * twist.Conjugate();
+    return {swing, twist};
+}
+
 ea::string Quaternion::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];

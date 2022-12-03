@@ -695,8 +695,9 @@ void IKArmSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Min Elbow Angle", float, minElbowAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Elbow Angle", float, maxElbowAngle_, 180.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Shoulder Weight", float, shoulderWeight_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Shoulder Weight", Vector2, shoulderWeight_, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Up Direction", Vector3, upDirection_, Vector3::UP, AM_DEFAULT);
 }
 
 void IKArmSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -765,7 +766,7 @@ void IKArmSolver::EnsureInitialized()
 {
     minElbowAngle_ = Clamp(minElbowAngle_, 0.0f, 180.0f);
     maxElbowAngle_ = Clamp(maxElbowAngle_, 0.0f, 180.0f);
-    shoulderWeight_ = Clamp(shoulderWeight_, 0.0f, 1.0f);
+    shoulderWeight_ = VectorClamp(shoulderWeight_, Vector2::ZERO, Vector2::ONE);
 }
 
 void IKArmSolver::SolveInternal(const IKSettings& settings)
@@ -774,7 +775,10 @@ void IKArmSolver::SolveInternal(const IKSettings& settings)
 
     const Vector3 handTargetPosition = target_->GetWorldPosition();
 
-    const Quaternion shoulderRotation = CalculateShoulderRotation(handTargetPosition, shoulderWeight_);
+    const Quaternion maxShoulderRotation = CalculateMaxShoulderRotation(handTargetPosition);
+    const auto [swing, twist] = maxShoulderRotation.ToSwingTwist(upDirection_);
+    const Quaternion shoulderRotation = Quaternion::IDENTITY.Slerp(swing, shoulderWeight_.y_)
+        * Quaternion::IDENTITY.Slerp(twist, shoulderWeight_.x_);
     RotateShoulder(shoulderRotation);
 
     armChain_.Solve(handTargetPosition, bendDirection_, minElbowAngle_, maxElbowAngle_);
@@ -795,16 +799,17 @@ void IKArmSolver::RotateShoulder(const Quaternion& rotation)
     shoulderSegment_.endNode_->RotateAround(shoulderPosition, rotation);
 }
 
-Quaternion IKArmSolver::CalculateShoulderRotation(const Vector3& handTargetPosition, float blendFactor) const
+Quaternion IKArmSolver::CalculateMaxShoulderRotation(const Vector3& handTargetPosition) const
 {
     const Vector3 shoulderPosition = shoulderSegment_.beginNode_->position_;
     const Vector3 shoulderToArmMax = (handTargetPosition - shoulderPosition).ReNormalized(
         shoulderSegment_.length_, shoulderSegment_.length_);
     const Vector3 armTargetPosition = shoulderPosition + shoulderToArmMax;
+
     const Vector3 originalShoulderToArm = shoulderSegment_.endNode_->position_ - shoulderSegment_.beginNode_->position_;
     const Vector3 maxShoulderToArm = armTargetPosition - shoulderPosition;
-    const Vector3 shoulderToArm = originalShoulderToArm.Lerp(maxShoulderToArm, blendFactor);
-    return Quaternion{originalShoulderToArm, shoulderToArm};
+
+    return Quaternion{originalShoulderToArm, maxShoulderToArm};
 }
 
 }
