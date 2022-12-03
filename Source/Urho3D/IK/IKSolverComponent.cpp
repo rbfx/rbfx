@@ -766,12 +766,11 @@ void IKArmSolver::EnsureInitialized()
 
 void IKArmSolver::SolveInternal(const IKSettings& settings)
 {
-    return;
     EnsureInitialized();
 
     const Vector3 handTargetPosition = target_->GetWorldPosition();
 
-    //armChain_.Solve(handTargetPosition, bendNormal_, minElbowAngle_, maxElbowAngle_, settings);
+    armChain_.Solve(handTargetPosition, bendDirection_, minElbowAngle_, maxElbowAngle_);
 }
 
 }
