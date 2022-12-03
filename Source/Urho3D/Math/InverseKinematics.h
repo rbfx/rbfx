@@ -107,6 +107,10 @@ public:
     void UpdateLengths();
     void Solve(const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle);
 
+    /// Return rotation of the entire chain.
+    static Quaternion CalculateRotation(
+        const Vector3& originalPos0, const Vector3& originalPos2,
+        const Vector3& pos0, const Vector3& pos2);
     /// Return positions of second and third bones.
     static ea::pair<Vector3, Vector3> Solve(const Vector3& pos0, float len01, float len12,
         const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle);

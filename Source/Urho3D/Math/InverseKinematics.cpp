@@ -177,6 +177,12 @@ void IKTrigonometricChain::UpdateLengths()
     segments_[1].UpdateLength();
 }
 
+Quaternion IKTrigonometricChain::CalculateRotation(
+    const Vector3& originalPos0, const Vector3& originalPos2, const Vector3& pos0, const Vector3& pos2)
+{
+    return Quaternion{originalPos2 - originalPos0, pos2 - pos0};
+}
+
 ea::pair<Vector3, Vector3> IKTrigonometricChain::Solve(const Vector3& pos0, float len01, float len12,
     const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle)
 {
@@ -205,23 +211,29 @@ void IKTrigonometricChain::Solve(
     const float len01 = segments_[0].length_;
     const float len12 = segments_[1].length_;
 
-    const auto [newPos1, newPos2] = Solve(pos0, len01, len12, target, currentBendDirection_, minAngle, maxAngle);
+    const auto [newPos1, newPos2] = Solve(
+        pos0, len01, len12, target, currentBendDirection_, minAngle, maxAngle);
     RotateSegmentsToTarget(newPos1, newPos2);
 }
 
 void IKTrigonometricChain::RotateChainToTarget(const Vector3& target, const Vector3& originalBendDirection)
 {
     const Vector3 pos0 = segments_[0].beginNode_->position_;
-    const Vector3 originalOffset02 = segments_[1].endNode_->originalPosition_ - segments_[0].beginNode_->originalPosition_;
-    const Vector3 currentOffset02 = target - pos0;
-    const Quaternion bendRotation{originalOffset02, currentOffset02};
-    currentBendDirection_ = bendRotation * originalBendDirection;
+    const Quaternion chainRotation = CalculateRotation(
+        segments_[0].beginNode_->originalPosition_, segments_[1].endNode_->originalPosition_,
+        pos0, target);
 
-    const Quaternion chainRotation = bendRotation;
+    currentBendDirection_ = chainRotation * originalBendDirection;
+
+    const Vector3 chainOffset = segments_[0].beginNode_->position_ - segments_[0].beginNode_->originalPosition_;
 
     segments_[0].beginNode_->ResetOriginalTransform();
     segments_[1].beginNode_->ResetOriginalTransform();
     segments_[1].endNode_->ResetOriginalTransform();
+
+    segments_[0].beginNode_->position_ += chainOffset;
+    segments_[1].beginNode_->position_ += chainOffset;
+    segments_[1].endNode_->position_ += chainOffset;
 
     segments_[0].beginNode_->RotateAround(pos0, chainRotation);
     segments_[1].beginNode_->RotateAround(pos0, chainRotation);

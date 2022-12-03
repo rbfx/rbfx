@@ -1398,22 +1398,22 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.0812776 -0.026246 -0.636465 0.766562" />
+					<attribute name="Rotation" value="-0.0812776 0.026246 0.636465 -0.766562" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16777336">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0.00333476 0.46605 0.00188094" />
-						<attribute name="Rotation" value="0.800707 0.598759 0.0170207 0.00812944" />
+						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
+						<attribute name="Rotation" value="0.800707 0.598759 0.0170208 0.00812949" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777335">
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-0.00439024 0.504882 -0.00403452" />
+							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
 							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206205 -0.0156247" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1579,8 +1579,7 @@
 				<attribute name="Heel Bone Name" value="LeftFoot" />
 				<attribute name="Toe Bone Name" value="LeftToeBase" />
 				<attribute name="Target Name" value="Target" />
-				<attribute name="Bend Direction" value="1 0 0" />
-				<attribute name="Min Heel Angle" value="123.435799" />
+				<attribute name="Min Heel Angle" value="123.435768" />
 			</component>
 			<node id="20">
 				<attribute name="Is Enabled" value="true" />
@@ -2101,7 +2100,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.00297393 0.000105801 -0.0109538 0.999936" />
+					<attribute name="Rotation" value="-0.0790227 0.0338046 0.634627 -0.768024" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16777463">
@@ -2109,7 +2108,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.998499 0.0524848 0.0156084 -0.00111464" />
+						<attribute name="Rotation" value="0.684744 0.728532 0.0163058 0.0100755" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777464">
@@ -2117,7 +2116,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206206 -0.0156247" />
+							<attribute name="Rotation" value="0.632845 -0.770975 -0.0625764 0.0344661" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777465">
@@ -2125,7 +2124,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579039" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579038" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16777466">
@@ -2283,8 +2282,7 @@
 				<attribute name="Toe Bone Name" value="LeftToeBase" />
 				<attribute name="Target Name" value="Target" />
 				<attribute name="Bend Weight" value="1.000000" />
-				<attribute name="Bend Direction" value="1 0 0" />
-				<attribute name="Min Heel Angle" value="123.435799" />
+				<attribute name="Min Heel Angle" value="123.435768" />
 			</component>
 			<node id="22">
 				<attribute name="Is Enabled" value="true" />
@@ -2805,7 +2803,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.00297393 0.000105801 -0.0109538 0.999936" />
+					<attribute name="Rotation" value="-0.0746627 0.0330532 0.771543 -0.630915" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16777527">
@@ -2813,7 +2811,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.998499 0.0524848 0.0156084 -0.00111464" />
+						<attribute name="Rotation" value="0.661504 0.749696 0.0161233 0.0103924" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777528">
@@ -2821,7 +2819,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206206 -0.0156247" />
+							<attribute name="Rotation" value="0.99958 -0.00394603 -0.0285748 0.00293078" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777529">
@@ -3033,7 +3031,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.98465 0.0920846 -0.00861686 0.148025" />
+					<attribute name="Rotation" value="-0.99557 0.0940206 2.56723e-05 -0.000276915" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16777730">
@@ -3041,7 +3039,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984837 0.0393183 -1.8999e-07 0.168966" />
+						<attribute name="Rotation" value="0.984837 -0.173481 -4.46837e-07 2.11764e-05" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777731">
@@ -3049,7 +3047,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980823 0.0441721 -1.67638e-06 0.189831" />
+							<attribute name="Rotation" value="0.980822 -0.194903 -3.93629e-08 2.66141e-05" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777732">
@@ -3057,7 +3055,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51917e-05 -0.000259751" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51878e-05 -0.000259729" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16777733">
@@ -5114,7 +5112,6 @@
 				<attribute name="Toe Bone Name" value="LeftToeBase" />
 				<attribute name="Target Name" value="LeftToeBase_Target" />
 				<attribute name="Bend Weight" value="0.050000" />
-				<attribute name="Bend Direction" value="1 0 0" />
 				<attribute name="Min Heel Angle" value="123.435799" />
 			</component>
 			<component type="IKLegSolver" id="91">
@@ -5124,7 +5121,6 @@
 				<attribute name="Toe Bone Name" value="RightToeBase" />
 				<attribute name="Target Name" value="RightToeBase_Target" />
 				<attribute name="Bend Weight" value="0.050000" />
-				<attribute name="Bend Direction" value="1 0 0" />
 				<attribute name="Min Heel Angle" value="123.435799" />
 			</component>
 			<component type="IKSpineSolver" id="155">
