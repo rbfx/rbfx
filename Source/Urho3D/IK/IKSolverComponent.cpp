@@ -641,6 +641,7 @@ void IKSpineSolver::RegisterObject(Context* context)
     context->AddFactoryReflection<IKSpineSolver>(Category_IK);
 
     URHO3D_ATTRIBUTE_EX("Bone Names", StringVector, boneNames_, OnTreeDirty, Variant::emptyStringVector, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Twist Target Name", ea::string, twistTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 90.0f, AM_DEFAULT);
@@ -651,12 +652,15 @@ void IKSpineSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     const auto& segments = chain_.GetSegments();
     for (const IKNodeSegment& segment : segments)
     {
-        DrawIKNode(debug, *segment.beginNode_, false);
+        const bool isLastSegment = &segment == &segments.back();
+        DrawIKNode(debug, *segment.beginNode_, isLastSegment);
         DrawIKSegment(debug, *segment.beginNode_, *segment.endNode_);
+        if (isLastSegment)
+            DrawIKNode(debug, *segment.endNode_, false);
     }
-    if (!segments.empty())
-        DrawIKNode(debug, *segments.back().endNode_, false);
 
+    if (twistTarget_)
+        DrawIKTarget(debug, twistTarget_, true);
     if (target_)
         DrawIKTarget(debug, target_, false);
 }
@@ -677,6 +681,19 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
         chain.AddNode(boneNode);
     }
 
+    if (chain.GetSegments().size() < 2)
+    {
+        URHO3D_LOGERROR("Spine solver must have at least 3 bones");
+        return false;
+    }
+
+    if (!twistTargetName_.empty())
+    {
+        twistTarget_ = AddCheckedNode(nodeCache, twistTargetName_);
+        if (!twistTarget_)
+            return false;
+    }
+
     chain_ = ea::move(chain);
     return true;
 }
@@ -689,6 +706,21 @@ void IKSpineSolver::UpdateChainLengths()
 void IKSpineSolver::SolveInternal(const IKSettings& settings)
 {
     chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
+
+    const auto& segments = chain_.GetSegments();
+    const float twistAngle = twistTarget_ ? GetTwistAngle(segments.back(), twistTarget_) : 0.0f;
+    URHO3D_LOGWARNING("{}: {}", (void*)this, twistAngle);
+    chain_.Twist(twistAngle, settings);
+}
+
+float IKSpineSolver::GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const
+{
+    const Quaternion targetRotation = node_->GetWorldRotation().Inverse() * targetNode->GetWorldRotation();
+    const Vector3 direction = (segment.endNode_->position_ - segment.beginNode_->position_).Normalized();
+    const auto [_, twist] = targetRotation.ToSwingTwist(direction);
+    const float angle = twist.Angle();
+    const float sign = twist.Axis().DotProduct(direction) > 0.0f ? 1.0f : -1.0f;
+    return sign * (angle > 180.0f ? angle - 360.0f : angle);
 }
 
 IKArmSolver::IKArmSolver(Context* context)
