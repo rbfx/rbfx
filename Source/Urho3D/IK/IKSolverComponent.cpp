@@ -709,7 +709,6 @@ void IKSpineSolver::SolveInternal(const IKSettings& settings)
 
     const auto& segments = chain_.GetSegments();
     const float twistAngle = twistTarget_ ? GetTwistAngle(segments.back(), twistTarget_) : 0.0f;
-    URHO3D_LOGWARNING("{}: {}", (void*)this, twistAngle);
     chain_.Twist(twistAngle, settings);
 }
 
