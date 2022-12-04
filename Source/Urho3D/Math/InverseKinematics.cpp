@@ -303,6 +303,9 @@ void IKChain::UpdateLengths()
 {
     for (IKNodeSegment& segment : segments_)
         segment.UpdateLength();
+
+    totalLength_ = ea::accumulate(segments_.begin(), segments_.end(), 0.0f,
+        [](float sum, const IKNodeSegment& segment) { return sum + segment.length_; });
 }
 
 const IKNodeSegment* IKChain::FindSegment(const IKNode* node) const
@@ -371,9 +374,9 @@ void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSetti
     // Base Position
     const Vector2 projectedTarget = ProjectTarget(target, basePosition, baseDirection);
 
-    // TODO: Calculate number of iterations based on error.
-    const float totalAngle = FindBestAngle(projectedTarget, maxRotation, settings.maxIterations_);
-
+    const float angularTolerance = settings.tolerance_ / totalLength_ * M_RADTODEG;
+    const unsigned maxIterations = FindMaxIterations(maxRotation, angularTolerance);
+    const float totalAngle = FindBestAngle(projectedTarget, maxRotation, maxIterations, angularTolerance);
     EvaluateSegmentPositions(totalAngle, baseDirection, bendDirection);
 
     for (IKNodeSegment& segment : segments_)
@@ -383,6 +386,12 @@ void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSetti
         if (!isFirstSegment)
             segment.UpdateRotationInNodes(settings.continuousRotations_, isLastSegment);
     }
+}
+
+unsigned IKSpineChain::FindMaxIterations(float maxRotation, float angularTolerance) const
+{
+    const float res = Ln(angularTolerance / maxRotation) / Ln(2.0f / 3.0f);
+    return static_cast<unsigned>(Clamp(Ceil(res), 1.0f, 100.0f));
 }
 
 void IKSpineChain::Twist(float angle, const IKSettings& settings)
@@ -471,15 +480,14 @@ IKSpineChain::AngleAndError IKSpineChain::EvaluateError(
 }
 
 float IKSpineChain::FindBestAngle(
-    const Vector2& projectedTarget, float maxRotation, unsigned maxIterations) const
+    const Vector2& projectedTarget, float maxRotation, unsigned maxIterations, float angularTolerance) const
 {
     AngleAndError begin = EvaluateError(0.0f, projectedTarget);
     AngleAndError end = EvaluateError(maxRotation, projectedTarget);
-    AngleAndError middle;
 
     for (unsigned i = 0; i < maxIterations; ++i)
     {
-        middle = EvaluateError((begin.angle_ + end.angle_) * 0.5f, projectedTarget);
+        const AngleAndError middle = EvaluateError((begin.angle_ + end.angle_) * 0.5f, projectedTarget);
 
         // This should not happen most of the time
         if (middle.error_ >= begin.error_ && middle.error_ >= end.error_)
@@ -489,9 +497,13 @@ float IKSpineChain::FindBestAngle(
             begin = middle;
         else
             end = middle;
+
+        // If the error is small enough, we can stop
+        if (end.angle_ - begin.angle_ < 2 * angularTolerance)
+            break;
     }
 
-    return middle.angle_;
+    return (begin.angle_ + end.angle_) * 0.5f;
 }
 
 void IKSpineChain::EvaluateSegmentPositions(float totalRotation,

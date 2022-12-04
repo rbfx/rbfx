@@ -152,6 +152,7 @@ protected:
 
     bool isFirstSegmentIncomplete_{};
     ea::vector<IKNodeSegment> segments_;
+    float totalLength_{};
 };
 
 /// Uniformly bending IK chain.
@@ -178,7 +179,9 @@ private:
         const Vector3& basePosition, const Vector3& baseDirection) const;
     Vector2 EvaluateProjectedEnd(float totalRotation) const;
     AngleAndError EvaluateError(float totalRotation, const Vector2& target) const;
-    float FindBestAngle(const Vector2& projectedTarget, float maxRotation, unsigned maxIterations) const;
+    unsigned FindMaxIterations(float maxRotation, float angularTolerance) const;
+    float FindBestAngle(const Vector2& projectedTarget, float maxRotation,
+        unsigned maxIterations, float angularTolerance) const;
 
     void EvaluateSegmentPositions(float totalRotation,
         const Vector3& baseDirection, const Vector3& bendDirection);
