@@ -55,7 +55,7 @@ namespace CLI
 namespace detail
 {
 
-template <> constexpr const char *type_name<ea::string>() { return "TEXT"; }
+template <> inline std::string type_name<ea::string>() { return "TEXT"; }
 
 }
 
