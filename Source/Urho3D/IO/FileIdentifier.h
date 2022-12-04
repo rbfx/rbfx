@@ -27,14 +27,14 @@
 namespace Urho3D
 {
 /// File locator, similar to Universal Resource Locator (URL).
-struct URHO3D_API FileLocator
+struct URHO3D_API FileIdentifier
 {
     /// Construct.
-    FileLocator();
+    FileIdentifier();
     /// Construct from url-like path.
-    FileLocator(const ea::string& url);
+    FileIdentifier(const ea::string& url);
     /// Construct from scheme and file name.
-    FileLocator(const ea::string& scheme, const ea::string& fileName);
+    FileIdentifier(const ea::string& scheme, const ea::string& fileName);
 
     /// URL-like scheme. May be empty if not specified.
     ea::string scheme_;
@@ -45,19 +45,19 @@ struct URHO3D_API FileLocator
     bool operator!() const { return !(scheme_.empty() && fileName_.empty()); }
 
     /// Test for less than with another file locator.
-    bool operator<(const FileLocator& rhs) const noexcept
+    bool operator<(const FileIdentifier& rhs) const noexcept
     {
         return (scheme_ < rhs.scheme_) || (scheme_ == rhs.scheme_ && fileName_ < rhs.fileName_);
     }
 
     /// Test for equality with another file locator.
-    bool operator==(const FileLocator& rhs) const noexcept
+    bool operator==(const FileIdentifier& rhs) const noexcept
     {
         return scheme_ == rhs.scheme_ && fileName_ == rhs.fileName_;
     }
 
     /// Test for inequality with another file locator.
-    bool operator!=(const FileLocator& rhs) const noexcept
+    bool operator!=(const FileIdentifier& rhs) const noexcept
     {
         return scheme_ != rhs.scheme_ || fileName_ != rhs.fileName_;
     }

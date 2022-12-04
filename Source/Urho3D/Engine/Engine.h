@@ -53,8 +53,6 @@ public:
     bool Initialize(const StringVariantMap& parameters);
     /// Reinitialize resource cache subsystem using parameters given. Implicitly called by Initialize. Return true if successful.
     bool InitializeResourceCache(const StringVariantMap& parameters, bool removeOld = true);
-    /// Reinitialize virtual file system. Implicitly called by Initialize. Return true if successful.
-    bool InitializeVirtualFileSystem();
     /// Run one frame.
     void RunFrame();
     /// Create the console and return it. May return null if engine configuration does not allow creation (headless mode).
@@ -86,7 +84,7 @@ public:
     /// Return whether engine parameters contains a specific parameter.
     bool HasParameter(const ea::string& name) const;
     /// Return engine parameter or default value.
-    const Variant& GetParameter(const ea::string& name, const Variant& defaultValue = Variant::EMPTY) const;
+    const Variant& GetParameter(const ea::string& name) const;
     static const Variant& GetParameter(const StringVariantMap& parameters, const ea::string& name, const Variant& defaultValue = Variant::EMPTY);
     /// Close the graphics window and set the exit flag. No-op on iOS/tvOS, as an iOS/tvOS application can not legally exit.
     void Exit();
@@ -152,12 +150,32 @@ public:
 #endif
 
 private:
+    /// Load and merge config files.
+    void LoadConfigFiles();
+    /// Save config file.
+    void SaveConfigFile();
+    /// Populate default parameter values.
+    void PopulateDefaultParameters();
     /// Set flag indicating that exit request has to be handled.
     void HandleExitRequested(StringHash eventType, VariantMap& eventData);
     /// Do housekeeping tasks at the end of frame. Actually handles exit requested event. Auto-exit if enabled.
     void HandleEndFrame(StringHash eventType, VariantMap& eventData);
     /// Actually perform the exit actions.
     void DoExit();
+
+    /// Engine parameter description.
+    struct EngineParameterDesc
+    {
+        void Set(bool configOverride, Variant value);
+
+        /// Read parameter from config file.
+        bool configOverride_ {};
+        /// Engine parameter default value. Also defines type.
+        Variant defaultValue_ {};
+    };
+
+    /// Engine parameter map.
+    ea::unordered_map<ea::string, EngineParameterDesc> parameterDesc_;
 
     /// App preference directory.
     ea::string appPreferencesDir_;

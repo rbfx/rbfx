@@ -29,6 +29,7 @@
 #include "../Project/AssetManager.h"
 #include "../Project/CreateDefaultScene.h"
 #include "../Project/ResourceEditorTab.h"
+#include "Urho3D/IO/MountedDirectory.h"
 
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Core/ProcessUtils.h>
@@ -508,7 +509,14 @@ void Project::InitializeResourceCache()
     cache->AddResourceDir(coreDataPath_);
     cache->AddResourceDir(cachePath_);
     cache->AddResourceDir(oldCacheState_.GetEditorData());
-    engine->InitializeVirtualFileSystem();
+
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+    vfs->UnmountAll();
+    vfs->Mount(MakeShared<MountedDirectory>(context_, oldCacheState_.GetEditorData()));
+    vfs->Mount(MakeShared<MountedDirectory>(context_, coreDataPath_));
+    vfs->Mount(MakeShared<MountedDirectory>(context_, dataPath_));
+    vfs->Mount(MakeShared<MountedDirectory>(context_, cachePath_));
+    vfs->Mount(MakeShared<MountedDirectory>(context_, engine->GetAppPreferencesDir(), "conf"));
 }
 
 void Project::ResetLayout()

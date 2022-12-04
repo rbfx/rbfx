@@ -24,6 +24,7 @@
 
 #include "FileWatcher.h"
 #include "../IO/MountPoint.h"
+#include "../Container/FlagSet.h"
 
 namespace Urho3D
 {
@@ -37,18 +38,21 @@ public:
     /// Construct.
     explicit MountedDirectory(Context* context);
     /// Construct and open.
-    MountedDirectory(Context* context, const ea::string& scheme, const ea::string& directory);
+    MountedDirectory(Context* context, const ea::string& directory, ea::string scheme = EMPTY_STRING);
     /// Destruct.
     ~MountedDirectory() override;
 
+    /// Checks if mount point accepts scheme.
+    bool AcceptsScheme(const ea::string& scheme) const override;
+
     /// Check if a file exists within the mount point.
-    bool Exists(const FileLocator& fileName) const override;
+    bool Exists(const FileIdentifier& fileName) const override;
 
     /// Open file in a virtual file system. Returns null if file not found.
-    AbstractFilePtr OpenFile(const FileLocator& fileName, FileMode mode) override;
+    AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
 
     /// Return full absolute file name of the file if possible, or empty if not found.
-    ea::string GetFileName(const FileLocator& fileName) const override;
+    ea::string GetFileName(const FileIdentifier& fileName) const override;
 
 protected:
     ea::string SanitizeDirName(const ea::string& name) const;

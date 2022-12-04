@@ -24,7 +24,7 @@
 
 #include "../Core/Object.h"
 #include "../IO/AbstractFile.h"
-#include "../IO/FileLocator.h"
+#include "../IO/FileIdentifier.h"
 
 namespace Urho3D
 {
@@ -40,16 +40,19 @@ public:
     /// Destruct.
     ~MountPoint() override;
 
+    /// Checks if mount point accepts scheme.
+    virtual bool AcceptsScheme(const ea::string& scheme) const = 0;
+
     /// Check if a file exists within the mount point.
     /// The file name may be be case-insensitive on Windows and case-sensitive on other platforms.
-    virtual bool Exists(const FileLocator& fileName) const = 0;
+    virtual bool Exists(const FileIdentifier& fileName) const = 0;
 
     /// Open file in a virtual file system. Returns null if file not found.
     /// The file name may be be case-insensitive on Windows and case-sensitive on other platforms.
-    virtual AbstractFilePtr OpenFile(const FileLocator& fileName, FileMode mode) = 0;
+    virtual AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) = 0;
 
     /// Get full path to a file if it exists in a mount point.
-    virtual ea::string GetFileName(const FileLocator& fileName) const = 0;
+    virtual ea::string GetFileName(const FileIdentifier& fileName) const = 0;
 };
 
 } // namespace Urho3D

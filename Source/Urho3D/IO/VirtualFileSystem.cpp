@@ -24,10 +24,14 @@
 
 #include "../IO/VirtualFileSystem.h"
 
+#include "PackageFile.h"
 #include "../IO/Log.h"
 #include "../IO/FileSystem.h"
 #include "../IO/MountedDirectory.h"
 #include "../IO/MountPoint.h"
+#include "../Core/Context.h"
+#include "../Engine/EngineDefs.h"
+#include "../Engine/Engine.h"
 
 namespace Urho3D
 {
@@ -51,35 +55,63 @@ void VirtualFileSystem::Mount(MountPoint* mountPoint)
     mountPoints_.push_back(pointPtr);
 }
 
-bool VirtualFileSystem::MountFileSystem(const ea::string& scheme, const ea::string& directory, bool createIfNotExists)
+void VirtualFileSystem::MountDefault()
 {
-    auto* fileSystem = GetSubsystem<FileSystem>();
+    const auto engine = context_->GetSubsystem<Engine>();
+    const auto fileSystem = context_->GetSubsystem<FileSystem>();
 
-    if (!fileSystem)
-        return false;
+    const ea::string& prefixPaths = engine->GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString();
+    const ea::string& packages = engine->GetParameter(EP_RESOURCE_PACKAGES).GetString();
+    const ea::string& paths = engine->GetParameter(EP_RESOURCE_PATHS).GetString();
+    const ea::string& autoloadPaths = engine->GetParameter(EP_AUTOLOAD_PATHS).GetString();
+        
 
-    if (directory.empty())
-        return false;
-
-    if (!fileSystem->DirExists(directory))
+    // Converts paths to absolute
+    ea::vector<ea::string> resourcePrefixPaths = prefixPaths.split(';', true);
+    const auto& programDir = fileSystem->GetProgramDir();
+    bool hasProgramDir = false;
+    for (unsigned i = 0; i < resourcePrefixPaths.size(); ++i)
     {
-        if (createIfNotExists)
-        {
-            if (fileSystem->CreateDirsRecursive(directory))
-            {
-                URHO3D_LOGERROR("Could not create directory " + directory);
-                return false;
-            }
-        }
-        else
-        {
-            URHO3D_LOGERROR("Could not open directory " + directory);
-            return false;
-        }
+        hasProgramDir |= resourcePrefixPaths[i].empty() || resourcePrefixPaths[i] == programDir;
+        resourcePrefixPaths[i] = AddTrailingSlash(IsAbsolutePath(resourcePrefixPaths[i])
+                ? resourcePrefixPaths[i] : programDir + resourcePrefixPaths[i]);
     }
 
-    Mount(MakeShared<MountedDirectory>(context_, scheme, directory));
-    return true;
+    // Append program dir as default fall-back option
+    if (!hasProgramDir)
+        resourcePrefixPaths.push_back(programDir);
+
+    // Combine resource paths and autoload paths. Autoload appended last to have most priority.
+    ea::vector<ea::string> resourcePaths = paths.split(';');
+    resourcePaths.append(autoloadPaths.split(';'));
+
+    // Split package names.
+    ea::vector<ea::string> resourcePackages = packages.split(';');
+
+    ea::vector<SharedPtr<MountedDirectory>> directories;
+    for (auto& resourcePrefixPath : resourcePrefixPaths)
+    {
+        for (auto& resourcePackage: resourcePackages)
+        {
+            auto packagePath = resourcePrefixPath + resourcePackage;
+            if (fileSystem->FileExists(packagePath))
+            {
+                Mount(MakeShared<PackageFile>(context_, packagePath, 0));
+            }
+        }
+        for (auto& resourcePath : resourcePaths)
+        {
+            auto dirPath = resourcePrefixPath + resourcePath;
+            if (fileSystem->DirExists(dirPath))
+            {
+                directories.push_back(MakeShared<MountedDirectory>(context_, dirPath));
+            }
+        }
+    }
+    for (auto& dir : directories)
+        Mount(dir);
+
+    Mount(MakeShared<MountedDirectory>(context_, engine->GetAppPreferencesDir(), "conf"));
 }
 
 void VirtualFileSystem::Unmount(MountPoint* mountPoint)
@@ -102,7 +134,7 @@ void VirtualFileSystem::UnmountAll()
     mountPoints_.clear();
 }
 
-MountPoint* VirtualFileSystem::GetMountPoint(unsigned index)
+MountPoint* VirtualFileSystem::GetMountPoint(unsigned index) const
 {
     MutexLock lock(mountMutex_);
 
@@ -110,7 +142,7 @@ MountPoint* VirtualFileSystem::GetMountPoint(unsigned index)
 }
 
 /// Open file in a virtual file system. Returns null if file not found.
-AbstractFilePtr VirtualFileSystem::OpenFile(const FileLocator& fileName, FileMode mode) const
+AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, FileMode mode) const
 {
     MutexLock lock(mountMutex_);
 
@@ -122,7 +154,7 @@ AbstractFilePtr VirtualFileSystem::OpenFile(const FileLocator& fileName, FileMod
     return AbstractFilePtr();
 }
 
-ea::string VirtualFileSystem::GetFileName(const FileLocator& fileName)
+ea::string VirtualFileSystem::GetFileName(const FileIdentifier& fileName)
 {
     MutexLock lock(mountMutex_);
 
@@ -145,7 +177,7 @@ ea::string VirtualFileSystem::GetFileName(const FileLocator& fileName)
 }
 
 /// Check if a file exists in the virtual file system.
-bool VirtualFileSystem::Exists(const FileLocator& fileName) const
+bool VirtualFileSystem::Exists(const FileIdentifier& fileName) const
 {
     MutexLock lock(mountMutex_);
 

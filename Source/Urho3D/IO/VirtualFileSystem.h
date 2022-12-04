@@ -41,8 +41,8 @@ public:
 
     /// Mount virtual or real folder into virtual file system.
     void Mount(MountPoint* mountPoint);
-    /// Mount real file system folder into virtual file system.
-    bool MountFileSystem(const ea::string& scheme, const ea::string& directory, bool createIfNotExists);
+    /// Mount default mount points. Does not unmount previously mounted points.
+    void MountDefault();
     /// Remove mount point from the virtual file system.
     void Unmount(MountPoint* mountPoint);
     /// Remove all mount points.
@@ -50,14 +50,14 @@ public:
     /// Get number of mount points.
     unsigned NumMountPoints() const { return mountPoints_.size(); }
     /// Get mount point by index.
-    MountPoint* GetMountPoint(unsigned index);
+    MountPoint* GetMountPoint(unsigned index) const;
 
     /// Check if a file exists in the virtual file system.
-    bool Exists(const FileLocator& fileName) const;
+    bool Exists(const FileIdentifier& fileName) const;
     /// Open file in the virtual file system. Returns null if file not found.
-    AbstractFilePtr OpenFile(const FileLocator& fileName, FileMode mode) const;
+    AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) const;
     /// Return full absolute file name of the file if possible, or empty if not found.
-    ea::string GetFileName(const FileLocator& name);
+    ea::string GetFileName(const FileIdentifier& name);
 
 private:
     /// Mutex for thread-safe access to the mount points.

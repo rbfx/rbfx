@@ -20,16 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/FileLocator.h"
+#include "../IO/FileIdentifier.h"
 
 namespace Urho3D
 {
 
-FileLocator::FileLocator()
+FileIdentifier::FileIdentifier()
 {
 }
 
-FileLocator::FileLocator(const ea::string& url)
+FileIdentifier::FileIdentifier(const ea::string& url)
 {
     constexpr ea::string_view schemeSeparator(":/");
     auto schemePos = url.find(schemeSeparator);
@@ -50,13 +50,13 @@ FileLocator::FileLocator(const ea::string& url)
     }
 }
 
-FileLocator::FileLocator(const ea::string& scheme, const ea::string& fileName)
+FileIdentifier::FileIdentifier(const ea::string& scheme, const ea::string& fileName)
     : scheme_(scheme)
     , fileName_(SanitizeFileName(fileName))
 {
 }
 
-ea::string FileLocator::SanitizeFileName(const ea::string& fileName)
+ea::string FileIdentifier::SanitizeFileName(const ea::string& fileName)
 {
     ea::string sanitizedName = fileName;
     sanitizedName.replace('\\', '/');

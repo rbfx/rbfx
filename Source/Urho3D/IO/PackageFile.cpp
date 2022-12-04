@@ -201,11 +201,17 @@ void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathNam
     }
 }
 
-/// Check if a file exists within the mount point.
-bool PackageFile::Exists(const FileLocator& fileName) const
+/// Checks if mount point accepts scheme.
+bool PackageFile::AcceptsScheme(const ea::string& scheme) const
 {
-    // If scheme defined it should match package name. Otherwise this package can't open the file.
-    if (!fileName.scheme_.empty() && fileName.scheme_ != GetName())
+    return scheme.empty() || scheme.comparei(GetName()) == 0;
+}
+
+/// Check if a file exists within the mount point.
+bool PackageFile::Exists(const FileIdentifier& fileName) const
+{
+    // If scheme defined then it should match package name. Otherwise this package can't open the file.
+    if (!AcceptsScheme(fileName.scheme_))
         return {};
 
     // Quit if file doesn't exists in the package.
@@ -213,7 +219,7 @@ bool PackageFile::Exists(const FileLocator& fileName) const
 }
 
 /// Open package file. Returns null if file not found.
-AbstractFilePtr PackageFile::OpenFile(const FileLocator& fileName, FileMode mode)
+AbstractFilePtr PackageFile::OpenFile(const FileIdentifier& fileName, FileMode mode)
 {
     // Package file can write files.
     if (mode != FILE_READ)
@@ -232,7 +238,7 @@ AbstractFilePtr PackageFile::OpenFile(const FileLocator& fileName, FileMode mode
 }
 
 /// Get full path to a file if it exists in a mount point.
-ea::string PackageFile::GetFileName(const FileLocator& fileName) const
+ea::string PackageFile::GetFileName(const FileIdentifier& fileName) const
 {
     // Can't make path to a file within the PAK.
     return ea::string();

@@ -36,9 +36,10 @@ MountedDirectory::MountedDirectory(Context* context)
 {
 }
 
-MountedDirectory::MountedDirectory(Context* context, const ea::string& scheme, const ea::string& directory)
+MountedDirectory::MountedDirectory(
+    Context* context, const ea::string& directory, ea::string scheme)
     : MountPoint(context)
-    , scheme_(scheme)
+    , scheme_(std::move(scheme))
     , directory_(SanitizeDirName(directory))
 {
 }
@@ -60,12 +61,17 @@ ea::string MountedDirectory::SanitizeDirName(const ea::string& name) const
     return fixedPath;
 }
 
+/// Checks if mount point accepts scheme.
+bool MountedDirectory::AcceptsScheme(const ea::string& scheme) const
+{
+    return scheme.comparei(scheme_) == 0;
+}
 
 /// Check if a file exists within the mount point.
-bool MountedDirectory::Exists(const FileLocator& fileName) const
+bool MountedDirectory::Exists(const FileIdentifier& fileName) const
 {
     // File system directory only reacts on specific scheme.
-    if (fileName.scheme_ != scheme_)
+    if (!AcceptsScheme(fileName.scheme_))
         return false;
 
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
@@ -74,35 +80,39 @@ bool MountedDirectory::Exists(const FileLocator& fileName) const
 }
 
 /// Open file in a virtual file system. Returns null if file not found.
-AbstractFilePtr MountedDirectory::OpenFile(const FileLocator& fileName, FileMode mode)
+AbstractFilePtr MountedDirectory::OpenFile(const FileIdentifier& fileName, FileMode mode)
 {
     // File system directory only reacts on specific scheme.
-    if (fileName.scheme_ != scheme_)
+    if (!AcceptsScheme(fileName.scheme_))
         return AbstractFilePtr();
 
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
-    auto fullPath = directory_ + fileName;
+    auto fullPath = directory_ + fileName.fileName_;
 
-    if (!fileSystem->FileExists(fullPath))
+    if (mode == FILE_READ && !fileSystem->FileExists(fullPath))
         return AbstractFilePtr();
 
     // Construct the file first with full path, then rename it to not contain the resource path,
     // so that the file's sanitized name can be used in further GetFile() calls (for example over the network)
-    auto file(MakeShared<File>(context_, fullPath));
+    auto file(MakeShared<File>(context_, fullPath, mode));
     file->SetName(fileName.fileName_);
+    if (!file->IsOpen())
+        return AbstractFilePtr();
+
     return file;
 }
+
 /// Return full absolute file name of the file if possible, or empty if not found.
-ea::string MountedDirectory::GetFileName(const FileLocator& fileName) const
+ea::string MountedDirectory::GetFileName(const FileIdentifier& fileName) const
 {
     // File system directory only reacts on specific scheme.
     if (fileName.scheme_ != scheme_)
-        return ea::string();
+        return EMPTY_STRING;
 
     if (Exists(fileName))
         return directory_ + fileName.fileName_;
 
-    return ea::string();
+    return EMPTY_STRING;
 }
 
 } // namespace Urho3D
