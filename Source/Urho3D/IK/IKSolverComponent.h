@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Math/InverseKinematics.h"
+#include "../Math/Transform.h"
 #include "../Scene/Component.h"
 
 namespace Urho3D
@@ -49,8 +50,8 @@ public:
 
 protected:
     virtual bool InitializeNodes(IKNodeCache& nodeCache) = 0;
-    virtual void UpdateChainLengths() = 0;
-    virtual void SolveInternal(const IKSettings& settings) = 0;
+    virtual void UpdateChainLengths(const Transform& inverseFrameOfReference) = 0;
+    virtual void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) = 0;
 
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
 
@@ -58,6 +59,12 @@ protected:
     IKNode* AddSolverNode(IKNodeCache& nodeCache, const ea::string& name);
     /// Add node that should be checked for existence before solving.
     Node* AddCheckedNode(IKNodeCache& nodeCache, const ea::string& name) const;
+    /// Find Node corresponding to solver IKNode. Suboptimal, prefer to call it on initialization only!
+    Node* FindNode(const IKNode& node) const;
+    /// Set frame of reference Node used for calculations.
+    void SetFrameOfReference(Node* node);
+    /// Same as SetFrameOfReference, except it accepts first child of the node.
+    void SetParentAsFrameOfReference(const IKNode& childNode);
 
     /// Draw IK node in DebugRenderer.
     void DrawIKNode(DebugRenderer* debug, const IKNode& node, bool oriented) const;
@@ -66,10 +73,14 @@ protected:
     /// Draw IK target in DebugRenderer.
     void DrawIKTarget(DebugRenderer* debug, const Node* node, bool oriented) const;
     /// Draw direction in DebugRenderer.
-    void DrawDirection(DebugRenderer* debug, const Vector3& position, const Vector3& direction) const;
+    void DrawDirection(DebugRenderer* debug, const Vector3& position, const Vector3& direction,
+        bool markBegin = false, bool markEnd = true) const;
 
 private:
+    Transform GetFrameOfReferenceTransform() const;
+
     ea::vector<ea::pair<Node*, IKNode*>> solverNodes_;
+    WeakPtr<Node> frameOfReferenceNode_;
 };
 
 class IKIdentitySolver : public IKSolverComponent
@@ -89,8 +100,8 @@ private:
     /// Implement IKSolverComponent
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
-    void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
     /// @}
 
     void EnsureInitialized();
@@ -119,8 +130,8 @@ private:
     /// Implement IKSolverComponent
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
-    void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
     /// @}
 
     ea::string firstBoneName_;
@@ -135,6 +146,11 @@ private:
 
     IKTrigonometricChain chain_;
     WeakPtr<Node> target_;
+
+    struct LocalCache
+    {
+        Vector3 defaultDirection_;
+    } local_;
 };
 
 class IKLegSolver : public IKSolverComponent
@@ -154,8 +170,8 @@ private:
     /// Implement IKSolverComponent
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
-    void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
     /// @}
 
     void EnsureInitialized();
@@ -210,8 +226,8 @@ protected:
     /// Implement IKSolverComponent
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
-    void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
     /// @}
 
 private:
@@ -243,8 +259,8 @@ private:
     /// Implement IKSolverComponent
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
-    void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
     /// @}
 
     void EnsureInitialized();
@@ -293,8 +309,8 @@ protected:
     /// Implement IKSolverComponent
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
-    void UpdateChainLengths() override;
-    void SolveInternal(const IKSettings& settings) override;
+    void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
     /// @}
 
 private:
@@ -302,7 +318,7 @@ private:
     ea::string targetName_;
 
     IKFabrikChain chain_;
-    WeakPtr<Node> targetNode_;
+    WeakPtr<Node> target_;
 };
 
 }

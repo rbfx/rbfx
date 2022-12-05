@@ -213,10 +213,10 @@ ea::pair<Vector3, Vector3> IKTrigonometricChain::Solve(const Vector3& pos0, floa
     return {newPos1, newPos2};
 }
 
-void IKTrigonometricChain::Solve(
-    const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle)
+void IKTrigonometricChain::Solve(const Vector3& target, const Vector3& originalDirection,
+    const Vector3& currentDirection, float minAngle, float maxAngle)
 {
-    RotateChainToTarget(target, bendDirection);
+    RotateChainToTarget(target, originalDirection, currentDirection);
 
     const Vector3 pos0 = segments_[0].beginNode_->position_;
     const float len01 = segments_[0].length_;
@@ -227,14 +227,20 @@ void IKTrigonometricChain::Solve(
     RotateSegmentsToTarget(newPos1, newPos2);
 }
 
-void IKTrigonometricChain::RotateChainToTarget(const Vector3& target, const Vector3& originalBendDirection)
+void IKTrigonometricChain::RotateChainToTarget(const Vector3& target,
+    const Vector3& originalDirection, const Vector3& currentDirection)
 {
     const Vector3 pos0 = segments_[0].beginNode_->position_;
-    const Quaternion chainRotation = CalculateRotation(
+    const Vector3 twistAxis = (target - pos0).Normalized();
+    const auto [_, twist] = Quaternion{originalDirection, currentDirection}.ToSwingTwist(twistAxis);
+
+    const Quaternion swing = CalculateRotation(
         segments_[0].beginNode_->originalPosition_, segments_[1].endNode_->originalPosition_,
         pos0, target);
 
-    currentBendDirection_ = chainRotation * originalBendDirection;
+    const Quaternion chainRotation = twist * swing;
+
+    currentBendDirection_ = chainRotation * originalDirection;
 
     const Vector3 chainOffset = segments_[0].beginNode_->position_ - segments_[0].beginNode_->originalPosition_;
 
