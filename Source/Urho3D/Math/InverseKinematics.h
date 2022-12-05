@@ -165,12 +165,6 @@ public:
     void Twist(float angle, const IKSettings& settings);
 
 private:
-    struct AngleAndError
-    {
-        float angle_{};
-        float error_{};
-    };
-
     void UpdateSegmentWeights();
 
     template <class T>
@@ -180,10 +174,8 @@ private:
     Vector2 ProjectTarget(const Vector3& target,
         const Vector3& basePosition, const Vector3& baseDirection) const;
     Vector2 EvaluateProjectedEnd(float totalRotation) const;
-    AngleAndError EvaluateError(float totalRotation, const Vector2& target) const;
-    unsigned FindMaxIterations(float maxRotation, float angularTolerance) const;
-    float FindBestAngle(const Vector2& projectedTarget, float maxRotation,
-        unsigned maxIterations, float angularTolerance) const;
+    float EvaluateError(float totalRotation, const Vector2& target) const;
+    float FindBestAngle(const Vector2& projectedTarget, float maxRotation, float angularTolerance) const;
 
     void EvaluateSegmentPositions(float totalRotation,
         const Vector3& baseDirection, const Vector3& bendDirection);
@@ -204,5 +196,38 @@ private:
     void SolveIteration(const Vector3& target, const IKSettings& settings, bool backward);
     bool TrySolve(const Vector3& target, const IKSettings& settings);
 };
+
+/// Solve error function f(x) for minimum value using bisection method.
+template <class T, class U>
+U SolveBisect(const T& f, U minValue, U maxValue, U tolerance, unsigned maxIterations = 100)
+{
+    using ValueAndError = ea::pair<U, double>;
+
+    const float approximateNumSteps = Ceil(Ln(tolerance / (maxValue - minValue + M_EPSILON)) / Ln(0.5f));
+    const auto numSteps = static_cast<unsigned>(Clamp(approximateNumSteps, 1.0f, static_cast<float>(maxIterations)));
+
+    ValueAndError begin{minValue, static_cast<double>(f(minValue))};
+    ValueAndError end{maxValue, static_cast<double>(f(maxValue))};
+
+    for (unsigned i = 0; i < numSteps; ++i)
+    {
+        const auto middleValue = static_cast<U>((begin.first + end.first) / 2);
+        const ValueAndError middle{middleValue, static_cast<double>(f(middleValue))};
+
+        if (middle.second >= begin.second && middle.second >= end.second)
+            break;
+
+        if (begin.second >= middle.second && begin.second >= end.second)
+            begin = middle;
+        else
+            end = middle;
+
+        // If the error is small enough, we can stop
+        if (end.first - begin.first < 2 * tolerance)
+            break;
+    }
+
+    return static_cast<U>((begin.first + end.first) / 2);
+}
 
 }

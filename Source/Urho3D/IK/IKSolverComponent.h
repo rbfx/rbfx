@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Math/InverseKinematics.h"
+#include "../Math/Ray.h"
 #include "../Math/Transform.h"
 #include "../Scene/Component.h"
 
@@ -341,6 +342,58 @@ private:
 
     IKFabrikChain chain_;
     WeakPtr<Node> target_;
+};
+
+class IKLookAtSolver : public IKSolverComponent
+{
+    URHO3D_OBJECT(IKLookAtSolver, IKSolverComponent);
+
+public:
+    explicit IKLookAtSolver(Context* context);
+    ~IKLookAtSolver() override;
+    static void RegisterObject(Context* context);
+
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+protected:
+    /// Implement IKSolverComponent
+    /// @{
+    bool InitializeNodes(IKNodeCache& nodeCache) override;
+    void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
+    /// @}
+
+private:
+    void EnsureInitialized();
+    Ray GetEyeRay() const;
+
+    // TODO: Extract to common place?
+    static Quaternion SolveLookAt(const Transform& jointTransform,
+        const Vector3& localEyePosition, const Vector3& localEyeDirection, const Vector3& lookAtTarget,
+        const IKSettings& settings);
+
+    ea::string neckBoneName_;
+    ea::string headBoneName_;
+    ea::string targetName_;
+
+    Vector3 eyeDirection_{Vector3::FORWARD};
+    Vector3 eyeOffset_;
+    float neckWeight_{0.5f};
+
+    IKNodeSegment neckSegment_;
+    WeakPtr<Node> target_;
+
+    struct LocalCache
+    {
+        Transform defaultNeckTransform_;
+        Transform defaultHeadTransform_;
+
+        Vector3 eyeDirectionInHeadSpace_;
+        Vector3 eyePositionInHeadSpace_;
+
+        Vector3 eyeDirectionInNeckSpace_;
+        Vector3 eyePositionInNeckSpace_;
+    } local_;
 };
 
 }
