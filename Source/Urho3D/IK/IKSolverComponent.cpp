@@ -151,9 +151,18 @@ bool IKSolverComponent::Initialize(IKNodeCache& nodeCache)
     return InitializeNodes(nodeCache);
 }
 
+Transform IKSolverComponent::GetFrameOfReferenceTransform() const
+{
+    if (frameOfReferenceNode_)
+        return {frameOfReferenceNode_->GetWorldPosition(), frameOfReferenceNode_->GetWorldRotation()};
+    else
+        return {};
+}
+
 void IKSolverComponent::NotifyPositionsReady()
 {
-    UpdateChainLengths();
+    const Transform frameOfReference = GetFrameOfReferenceTransform();
+    UpdateChainLengths(frameOfReference.Inverse());
 }
 
 void IKSolverComponent::Solve(const IKSettings& settings)
@@ -165,7 +174,8 @@ void IKSolverComponent::Solve(const IKSettings& settings)
         solverNode->StorePreviousTransform();
     }
 
-    SolveInternal(settings);
+    const Transform frameOfReference = GetFrameOfReferenceTransform();
+    SolveInternal(frameOfReference, settings);
 
     for (const auto& [node, solverNode] : solverNodes_)
     {
@@ -210,6 +220,34 @@ Node* IKSolverComponent::AddCheckedNode(IKNodeCache& nodeCache, const ea::string
     return boneNode;
 }
 
+Node* IKSolverComponent::FindNode(const IKNode& node) const
+{
+    for (const auto& [sceneNode, ikNode] : solverNodes_)
+    {
+        if (ikNode == &node)
+            return sceneNode;
+    }
+    return nullptr;
+}
+
+void IKSolverComponent::SetFrameOfReference(Node* node)
+{
+    if (!node || !(node == node_ || node->IsChildOf(node_)))
+    {
+        URHO3D_LOGERROR("IKSolverComponent has invalid frame of reference");
+        return;
+    }
+
+    frameOfReferenceNode_ = node;
+}
+
+void IKSolverComponent::SetParentAsFrameOfReference(const IKNode& childNode)
+{
+    auto node = FindNode(childNode);
+    auto parent = node ? node->GetParent() : nullptr;
+    SetFrameOfReference(parent);
+}
+
 void IKSolverComponent::DrawIKNode(DebugRenderer* debug, const IKNode& node, bool oriented) const
 {
     static const float radius = 0.02f;
@@ -233,15 +271,19 @@ void IKSolverComponent::DrawIKTarget(DebugRenderer* debug, const Node* node, boo
     DrawNode(debug, oriented, node->GetWorldPosition(), node->GetWorldRotation(), color, radius);
 }
 
-void IKSolverComponent::DrawDirection(DebugRenderer* debug, const Vector3& position, const Vector3& direction) const
+void IKSolverComponent::DrawDirection(
+    DebugRenderer* debug, const Vector3& position, const Vector3& direction, bool markBegin, bool markEnd) const
 {
     const float radius = 0.02f;
     const float length = 0.1f;
     static const Color color = Color::GREEN;
 
     const Vector3 endPosition = position + direction * length;
+    if (markBegin)
+        debug->AddSphere(Sphere(position, radius), Color::GREEN, false);
     debug->AddLine(position, endPosition, Color::GREEN, false);
-    debug->AddSphere(Sphere(endPosition, radius), Color::GREEN, false);
+    if (markEnd)
+        debug->AddSphere(Sphere(endPosition, radius), Color::GREEN, false);
 }
 
 IKChainSolver::IKChainSolver(Context* context)
@@ -263,8 +305,8 @@ void IKChainSolver::RegisterObject(Context* context)
 
 bool IKChainSolver::InitializeNodes(IKNodeCache& nodeCache)
 {
-    targetNode_ = AddCheckedNode(nodeCache, targetName_);
-    if (!targetNode_)
+    target_ = AddCheckedNode(nodeCache, targetName_);
+    if (!target_)
         return false;
 
     IKFabrikChain chain;
@@ -281,7 +323,7 @@ bool IKChainSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKChainSolver::UpdateChainLengths()
+void IKChainSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     chain_.UpdateLengths();
 
@@ -294,9 +336,9 @@ void IKChainSolver::UpdateChainLengths()
     }*/
 }
 
-void IKChainSolver::SolveInternal(const IKSettings& settings)
+void IKChainSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
-    chain_.Solve(targetNode_->GetWorldPosition(), settings);
+    chain_.Solve(target_->GetWorldPosition(), settings);
 }
 
 IKIdentitySolver::IKIdentitySolver(Context* context)
@@ -358,11 +400,11 @@ bool IKIdentitySolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKIdentitySolver::UpdateChainLengths()
+void IKIdentitySolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
 }
 
-void IKIdentitySolver::SolveInternal(const IKSettings& settings)
+void IKIdentitySolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
     EnsureInitialized();
 
@@ -436,19 +478,24 @@ bool IKTrigonometrySolver::InitializeNodes(IKNodeCache& nodeCache)
     if (!thirdBone)
         return false;
 
+    SetParentAsFrameOfReference(*firstBone);
     chain_.Initialize(firstBone, secondBone, thirdBone);
     return true;
 }
 
-void IKTrigonometrySolver::UpdateChainLengths()
+void IKTrigonometrySolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     chain_.UpdateLengths();
+
+    local_.defaultDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
 }
 
-void IKTrigonometrySolver::SolveInternal(const IKSettings& settings)
+void IKTrigonometrySolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
     const Vector3 targetPosition = target_->GetWorldPosition();
-    chain_.Solve(targetPosition, node_->GetWorldRotation() * bendDirection_, minAngle_, maxAngle_);
+    const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
+    const Vector3 currentDirection = frameOfReference.rotation_ * local_.defaultDirection_;
+    chain_.Solve(targetPosition, originalDirection, currentDirection, minAngle_, maxAngle_);
 }
 
 IKLegSolver::IKLegSolver(Context* context)
@@ -539,7 +586,7 @@ bool IKLegSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKLegSolver::UpdateChainLengths()
+void IKLegSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     legChain_.UpdateLengths();
     footSegment_.UpdateLength();
@@ -605,7 +652,7 @@ void IKLegSolver::EnsureInitialized()
     maxKneeAngle_ = Clamp(maxKneeAngle_, 0.0f, 180.0f);
 }
 
-void IKLegSolver::SolveInternal(const IKSettings& settings)
+void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
     EnsureInitialized();
 
@@ -620,7 +667,7 @@ void IKLegSolver::SolveInternal(const IKSettings& settings)
     const Vector3 toeToHeel = InterpolateDirection(toeToHeel0, toeToHeel1, bendWeight_);
     const Vector3 heelTargetPosition = toeTargetPosition + toeToHeel;
 
-    legChain_.Solve(heelTargetPosition, node_->GetWorldRotation() * bendDirection_, minKneeAngle_, maxKneeAngle_);
+    legChain_.Solve(heelTargetPosition, node_->GetWorldRotation() * bendDirection_, node_->GetWorldRotation() * bendDirection_, minKneeAngle_, maxKneeAngle_);
 
     const Vector3 toeTargetPositionAdjusted = heelBone->position_ - toeToHeel;
     footSegment_.endNode_->position_ = toeTargetPositionAdjusted;
@@ -698,12 +745,12 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKSpineSolver::UpdateChainLengths()
+void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     chain_.UpdateLengths();
 }
 
-void IKSpineSolver::SolveInternal(const IKSettings& settings)
+void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
     chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
 
@@ -801,7 +848,7 @@ bool IKArmSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKArmSolver::UpdateChainLengths()
+void IKArmSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     armChain_.UpdateLengths();
     shoulderSegment_.UpdateLength();
@@ -814,7 +861,7 @@ void IKArmSolver::EnsureInitialized()
     shoulderWeight_ = VectorClamp(shoulderWeight_, Vector2::ZERO, Vector2::ONE);
 }
 
-void IKArmSolver::SolveInternal(const IKSettings& settings)
+void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
     EnsureInitialized();
 
@@ -826,7 +873,7 @@ void IKArmSolver::SolveInternal(const IKSettings& settings)
         * Quaternion::IDENTITY.Slerp(twist, shoulderWeight_.x_);
     RotateShoulder(shoulderRotation);
 
-    armChain_.Solve(handTargetPosition, node_->GetWorldRotation() * bendDirection_, minElbowAngle_, maxElbowAngle_);
+    armChain_.Solve(handTargetPosition, node_->GetWorldRotation() * bendDirection_, node_->GetWorldRotation() * bendDirection_, minElbowAngle_, maxElbowAngle_);
 }
 
 void IKArmSolver::RotateShoulder(const Quaternion& rotation)

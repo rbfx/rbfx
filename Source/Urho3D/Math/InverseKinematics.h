@@ -107,7 +107,8 @@ class URHO3D_API IKTrigonometricChain
 public:
     void Initialize(IKNode* node1, IKNode* node2, IKNode* node3);
     void UpdateLengths();
-    void Solve(const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle);
+    void Solve(const Vector3& target, const Vector3& originalDirection,
+        const Vector3& currentDirection, float minAngle, float maxAngle);
 
     /// Return rotation of the entire chain.
     static Quaternion CalculateRotation(
@@ -125,7 +126,8 @@ public:
     Vector3 GetCurrentBendDirection() const { return currentBendDirection_; }
 
 private:
-    void RotateChainToTarget(const Vector3& target, const Vector3& originalBendDirection);
+    void RotateChainToTarget(const Vector3& target,
+        const Vector3& originalDirection, const Vector3& currentDirection);
     void RotateSegmentsToTarget(const Vector3& newPos1, const Vector3& newPos2);
 
     IKNodeSegment segments_[2];

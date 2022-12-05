@@ -38,6 +38,16 @@ struct Transform
     Vector3 scale_{Vector3::ONE};
 
     Matrix3x4 ToMatrix3x4() const { return Matrix3x4(position_, rotation_, scale_); };
+
+    /// Return inverse transform. It is not precise for non-uniform scale.
+    Transform Inverse() const
+    {
+        Transform ret;
+        ret.rotation_ = rotation_.Inverse();
+        ret.scale_ = Vector3::ONE / scale_;
+        ret.position_ = -(ret.rotation_ * position_) * ret.scale_;
+        return ret;
+    }
 };
 
 }
