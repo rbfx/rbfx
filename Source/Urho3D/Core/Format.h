@@ -37,7 +37,7 @@ namespace Urho3D
 
 /// Helper function to create fmt::string_view from any container.
 template <class T>
-inline fmt::string_view ToFmtStringView(const T& str)
+inline EA_CONSTEXPR fmt::string_view ToFmtStringView(const T& str)
 {
     return fmt::string_view{str.data(), str.size()};
 }
@@ -47,7 +47,7 @@ template <typename... Args>
 ea::string Format(ea::string_view formatString, const Args&... args)
 {
     ea::string ret;
-    fmt::format_to(std::back_inserter(ret), ToFmtStringView(formatString), args...);
+    fmt::vformat_to(std::back_inserter(ret), ToFmtStringView(formatString), fmt::make_format_args(args...));
     return ret;
 }
 

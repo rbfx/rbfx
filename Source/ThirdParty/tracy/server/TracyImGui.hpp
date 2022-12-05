@@ -188,7 +188,7 @@ static const ImVec4 SyntaxColorsDimmed[] = {
     ImGui::PushStyleColor( ImGuiCol_ButtonActive, ImVec4( 0.06f, 0.53f, 0.98f, 0.5f ) );
     ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
     ImGui::PushID( id );
-    const auto res = ImGui::SmallButton( ICON_FA_CLIPBOARD );
+    const auto res = ImGui::SmallButton((const char*)ICON_FA_CLIPBOARD );
     ImGui::PopID();
     ImGui::PopStyleColor( 5 );
     return res;
