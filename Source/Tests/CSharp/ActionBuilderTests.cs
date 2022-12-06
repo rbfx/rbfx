@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Urho3DNet.Tests
@@ -27,10 +28,9 @@ namespace Urho3DNet.Tests
     public class ActionBuilderTests
     {
         [Fact]
-        public void SimpleApplication_DoesNotThrow()
+        public async Task SimpleApplication_DoesNotThrow()
         {
-            SimpleHeadlessApplication.Run(app =>
-            {
+            await ApplicationRunner.RunAsync(app=>{
                 var startPos = new Vector3(0, 1, 0);
                 var moveBy = new Vector3(2, 0, 0);
 
@@ -44,7 +44,7 @@ namespace Urho3DNet.Tests
                     actionManager.Update(0.0f);
                     actionManager.Update(0.1f);
 
-                    Assert.Equal(startPos+ moveBy, node.Position);
+                    Assert.Equal(startPos + moveBy, node.Position);
                 }
                 finally
                 {

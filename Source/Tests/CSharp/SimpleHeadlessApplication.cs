@@ -1,14 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Urho3DNet.Tests
 {
     public class SimpleHeadlessApplication : Application
     {
-        private readonly Action<SimpleHeadlessApplication> _callback;
+        private Queue<QueueItem> _tasks = new Queue<QueueItem>();
 
-        public SimpleHeadlessApplication(Context context, Action<SimpleHeadlessApplication> callback) : base(context)
+        public SimpleHeadlessApplication(Context context) : base(context)
         {
-            _callback = callback;
         }
 
         public override void Setup()
@@ -16,25 +17,73 @@ namespace Urho3DNet.Tests
             base.Setup();
 
             EngineParameters[Urho3D.EpHeadless] = true;
+
+        }
+
+        private void HandleUpdate(VariantMap obj)
+        {
+            for (;;)
+            {
+                QueueItem item;
+                lock (_tasks)
+                {
+                    if (_tasks.Count == 0)
+                    {
+                        return;
+                    }
+
+                    item = _tasks.Dequeue();
+                }
+
+                item.Run(this);
+            }
         }
 
         public override void Start()
         {
             base.Start();
-
-            _callback(this);
-
-            Context.Engine.Exit();
+            SubscribeToEvent(E.Update, HandleUpdate);
         }
 
-        public static void Run(Action<SimpleHeadlessApplication> callback)
+        public async Task RunAsync(Action<Application> action)
         {
-            using (var context = new Context())
+            var tcs = new QueueItem(action);
+            lock (_tasks)
             {
-                using (var application = new SimpleHeadlessApplication(context, callback))
+                _tasks.Enqueue(tcs);
+            }
+
+            await tcs.RunAsync();
+        }
+
+        class QueueItem
+        {
+            private readonly TaskCompletionSource _tcs;
+            private readonly Action<Application> _action;
+
+            public QueueItem(Action<Application> action)
+            {
+                _tcs = new TaskCompletionSource();
+                _action = action;
+            }
+
+            public async Task RunAsync()
+            {
+                await _tcs.Task;
+            }
+
+            public void Run(Application app)
+            {
+                try
                 {
-                    application.Run();
+                    _action(app);
                 }
+                catch (Exception ex)
+                {
+                    _tcs.TrySetException(ex);
+                }
+
+                _tcs.TrySetResult();
             }
         }
     }
