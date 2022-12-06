@@ -170,12 +170,12 @@ void SamplesManager::Setup()
     engineParameters_[EP_SOUND]        = true;
     engineParameters_[EP_HIGH_DPI]     = true;
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
+    engineParameters_[EP_CONFIG_NAME] = "engineparams.json";
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
-
 #if DESKTOP
     GetCommandLineParser().add_option("--sample", commandLineArgsTemp_);
 #endif

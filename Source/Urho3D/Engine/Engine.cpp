@@ -99,6 +99,7 @@
 #include "../Core/CommandLine.h"
 
 #include "../DebugNew.h"
+#include "Urho3D/IO/ConfigFile.h"
 
 #if defined(_MSC_VER) && defined(_DEBUG)
 // From dbgint.h
@@ -121,37 +122,47 @@ namespace Urho3D
 {
 namespace
 {
-const ea::string defaultSettingsFileName = "Settings.json";
-
-bool LoadConfigFileImpl(Context* context, AbstractFilePtr file, StringVariantMap& parameters)
+void LoadConfigFileImpl(Context* context, const AbstractFilePtr& file, ConfigFile& configFile)
 {
-    if (!file)
-        return false;
-
-    const auto jsonFile = MakeShared<JSONFile>(context);
-    if (!jsonFile->Load(*file))
-        return false;
-
-    JSONInputArchive archive(context, jsonFile->GetRoot(), jsonFile);
-    SerializeOptionalValue(archive, "Settings", parameters);
-    return true;
+    if (file)
+    {
+        ea::string extension = GetExtension(file->GetName());
+        if (extension == ".xml")
+        {
+            XMLFile xmlFile(context);
+            xmlFile.Load(*file);
+            configFile.LoadXML(&xmlFile);
+        }
+        else
+        {
+            JSONFile jsonFile(context);
+            jsonFile.Load(*file);
+            configFile.LoadJSON(&jsonFile);
+        }
+    }
 }
 
-bool SaveConfigFileImpl(Context* context, AbstractFilePtr file, StringVariantMap& parameters)
+void SaveConfigFileImpl(Context* context, const AbstractFilePtr& file, ConfigFile& configFile)
 {
-    if (!file)
-        return false;
-
-    const auto jsonFile = MakeShared<JSONFile>(context);
-    JSONOutputArchive archive(context, jsonFile->GetRoot(), jsonFile);
-    SerializeOptionalValue(archive, "Settings", parameters);
-
-    if (!jsonFile->Save(*file))
-        return false;
-    return true;
+    if (file)
+    {
+        ea::string extension = GetExtension(file->GetName());
+        if (extension == ".xml")
+        {
+            XMLFile xmlFile(context);
+            configFile.SaveXML(&xmlFile);
+            xmlFile.Save(*file);
+        }
+        else
+        {
+            JSONFile jsonFile(context);
+            configFile.SaveJSON(&jsonFile);
+            jsonFile.Save(*file);
+        }
+    }
 }
 
-} // namespace
+}
 } // namespace Urho3D
 
 namespace Urho3D
@@ -1127,52 +1138,99 @@ const Variant& Engine::GetParameter(const StringVariantMap& parameters, const ea
 
 void Engine::LoadConfigFiles()
 {
+    auto configName = GetParameter(EP_CONFIG_NAME).GetString();
+    if (configName.empty())
+        return;
+
     const auto* vfs = GetSubsystem<VirtualFileSystem>();
 
-    const auto settingsFileId = FileIdentifier(EMPTY_STRING, defaultSettingsFileName);
+    // Populate default values in config file
+    ConfigFile mergedConfig;
+    for (auto& keyValue : parameterDesc_)
+    {
+        if (keyValue.second.configOverride_)
+        {
+            mergedConfig.SetDefaultValue(keyValue.first, keyValue.second.defaultValue_);
+            if (HasParameter(keyValue.first))
+                mergedConfig.SetValue(keyValue.first, GetParameter(keyValue.first));
+        }
+    }
+
+    // Merge with values from config files.
+    const auto settingsFileId = FileIdentifier(EMPTY_STRING, configName);
 
     // Load config files from least to most prioritized.
-    StringVariantMap parameters;
     for (unsigned i = 0; i<vfs->NumMountPoints(); ++i)
     {
         const auto mountPoint = vfs->GetMountPoint(i);
-        LoadConfigFileImpl(context_, mountPoint->OpenFile(settingsFileId, FILE_READ), parameters);
+        LoadConfigFileImpl(context_, mountPoint->OpenFile(settingsFileId, FILE_READ), mergedConfig);
     }
     // User config folder is the most prioritized config source.
-    LoadConfigFileImpl(context_, vfs->OpenFile(FileIdentifier("conf", defaultSettingsFileName), FILE_READ), parameters);
+    LoadConfigFileImpl(context_, vfs->OpenFile(FileIdentifier("conf", configName), FILE_READ), mergedConfig);
 
     // Set parameters from merged values.
-    for (auto& keyValue : parameters)
+    for (auto& keyValue : mergedConfig.GetValues())
     {
-        auto descIt = parameterDesc_.find(keyValue.first);
-        if (descIt != parameterDesc_.end() && descIt->second.configOverride_)
-        {
-            parameters_[keyValue.first] = keyValue.second;
-        }
+        parameters_[keyValue.first] = keyValue.second;
     }
 }
 
 void Engine::SaveConfigFile()
 {
-    const auto* vfs = GetSubsystem<VirtualFileSystem>();
+    auto configName = GetParameter(EP_CONFIG_NAME).GetString();
+    if (configName.empty())
+        return;
 
-    StringVariantMap parameters;
-    for (auto& keyValue : parameters_)
+    auto* vfs = GetSubsystem<VirtualFileSystem>();
+
+    // Populate default values in config file
+    ConfigFile mergedConfig;
+    for (auto& keyValue : parameterDesc_)
     {
-        URHO3D_LOGDEBUG("keyValue.first {}", keyValue.first);
-        auto descIt = parameterDesc_.find(keyValue.first);
-        if (descIt != parameterDesc_.end() && descIt->second.configOverride_)
+        if (keyValue.second.configOverride_)
         {
-            parameters[keyValue.first] = keyValue.second;
+            mergedConfig.SetDefaultValue(keyValue.first, keyValue.second.defaultValue_);
         }
     }
-    SaveConfigFileImpl(context_, vfs->OpenFile(FileIdentifier("conf", defaultSettingsFileName), FILE_WRITE), parameters);
+
+    auto settingsFileId = FileIdentifier("", configName);
+    // Load config files from least to most prioritized.
+    for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
+    {
+        const auto mountPoint = vfs->GetMountPoint(i);
+        LoadConfigFileImpl(context_, mountPoint->OpenFile(settingsFileId, FILE_READ), mergedConfig);
+    }
+
+    // Set values from parent files as default values. Actual config file will store only values different from the parent and default.
+    for (auto& keyValue : mergedConfig.GetValues())
+    {
+        mergedConfig.SetDefaultValue(keyValue.first, keyValue.second);
+    }
+
+    // Set values from the parameters.
+    for (auto& keyValue : parameterDesc_)
+    {
+        if (keyValue.second.configOverride_)
+        {
+            mergedConfig.SetValue(keyValue.first, GetParameter(keyValue.first));
+        }
+    }
+
+    auto fileId = FileIdentifier("conf", configName);
+    auto absFileName = vfs->GetFileName(fileId);
+    if (!absFileName.empty())
+    {
+        auto* fs = GetSubsystem<FileSystem>();
+        fs->CreateDir(GetPath(absFileName));
+    }
+    SaveConfigFileImpl(context_, vfs->OpenFile(fileId, FILE_WRITE), mergedConfig);
 }
 
 void Engine::PopulateDefaultParameters()
 {
     parameterDesc_[EP_APPLICATION_NAME].Set(false, "Unspecified Application");
     parameterDesc_[EP_AUTOLOAD_PATHS].Set(false, "Autoload");
+    parameterDesc_[EP_CONFIG_NAME].Set(false, EMPTY_STRING);
     parameterDesc_[EP_BORDERLESS].Set(false, false);
     parameterDesc_[EP_DUMP_SHADERS].Set(false, EMPTY_STRING);
     parameterDesc_[EP_ENGINE_AUTO_LOAD_SCRIPTS].Set(false, false);

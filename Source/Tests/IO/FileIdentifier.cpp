@@ -22,31 +22,31 @@
 
 #include "../CommonUtils.h"
 
-#include <Urho3D/IO/FileLocator.h>
+#include <Urho3D/IO/FileIdentifier.h>
 
 TEST_CASE("FileLocator")
 {
-    FileLocator signleForwardSlash("file:/FileName");
+    FileIdentifier signleForwardSlash("file:/FileName");
     CHECK(signleForwardSlash.scheme_ == "file");
     CHECK(signleForwardSlash.fileName_ == "FileName");
 
-    FileLocator twoForwardSlash("file://FileName");
+    FileIdentifier twoForwardSlash("file://FileName");
     CHECK(twoForwardSlash.scheme_ == "file");
     CHECK(twoForwardSlash.fileName_ == "FileName");
 
-    FileLocator threeForwardSlash("file:///FileName");
+    FileIdentifier threeForwardSlash("file:///FileName");
     CHECK(threeForwardSlash.scheme_ == "file");
     CHECK(threeForwardSlash.fileName_ == "FileName");
 
-    FileLocator noSchema("Dir/FileName");
+    FileIdentifier noSchema("Dir/FileName");
     CHECK(noSchema.scheme_ == "");
     CHECK(noSchema.fileName_ == "Dir/FileName");
 
-    FileLocator dotSlash("./Dir/FileName");
+    FileIdentifier dotSlash("./Dir/FileName");
     CHECK(dotSlash.scheme_ == "");
     CHECK(dotSlash.fileName_ == "Dir/FileName");
 
-    FileLocator backSlash("Dir\\SubDir\\FileName");
+    FileIdentifier backSlash("Dir\\SubDir\\FileName");
     CHECK(backSlash.scheme_ == "");
     CHECK(backSlash.fileName_ == "Dir/SubDir/FileName");
 }
