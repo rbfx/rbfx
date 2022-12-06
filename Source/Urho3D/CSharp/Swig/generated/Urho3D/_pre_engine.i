@@ -4,6 +4,8 @@
 %ignore Urho3D::EP_AUTOLOAD_PATHS;
 %constant const char* EpBorderless = "Borderless";
 %ignore Urho3D::EP_BORDERLESS;
+%constant const char* EpConfigName = "EngineConfigName";
+%ignore Urho3D::EP_CONFIG_NAME;
 %constant const char* EpDumpShaders = "DumpShaders";
 %ignore Urho3D::EP_DUMP_SHADERS;
 %constant const char* EpEngineAutoLoadScripts = "EngineAutoLoadScripts";
@@ -64,8 +66,6 @@
 %ignore Urho3D::EP_SHADER_CACHE_DIR;
 %constant const char* EpShadows = "Shadows";
 %ignore Urho3D::EP_SHADOWS;
-%constant const char* EpSound = "Sound";
-%ignore Urho3D::EP_SOUND;
 %constant const char* EpSoundBuffer = "SoundBuffer";
 %ignore Urho3D::EP_SOUND_BUFFER;
 %constant const char* EpSoundInterpolation = "SoundInterpolation";
@@ -74,6 +74,8 @@
 %ignore Urho3D::EP_SOUND_MIX_RATE;
 %constant const char* EpSoundMode = "SoundMode";
 %ignore Urho3D::EP_SOUND_MODE;
+%constant const char* EpSound = "Sound";
+%ignore Urho3D::EP_SOUND;
 %constant const char* EpSystemuiFlags = "SystemUIFlags";
 %ignore Urho3D::EP_SYSTEMUI_FLAGS;
 %constant const char* EpTextureAnisotropy = "TextureAnisotropy";

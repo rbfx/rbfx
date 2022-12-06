@@ -431,6 +431,7 @@ URHO3D_REFCOUNTED_INTERFACE(Urho3D::AbstractFile, Urho3D::RefCounted);
 %include "Urho3D/IO/MountPoint.h"
 %include "Urho3D/IO/VirtualFileSystem.h"
 %include "Urho3D/IO/PackageFile.h"
+%include "Urho3D/IO/ConfigFile.h"
 
 %ignore Urho3D::NonCopyable;
 %ignore Urho3D::ArchiveBase;
