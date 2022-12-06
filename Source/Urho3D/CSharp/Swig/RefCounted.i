@@ -240,7 +240,7 @@
     %apply Urho3D::SharedPtr<TYPE, BASE> { Urho3D::SharedPtr<TYPE, BASE>& }
 
     %typemap(in) Urho3D::SharedPtr<TYPE, BASE> & %{
-        $*1_ltype $1Ref($input);
+        $*1_ltype $1Ref(dynamic_cast<TYPE*>($input), $input);
         $1 = &$1Ref;
     %}
     %typemap(out) Urho3D::SharedPtr<TYPE, BASE> & %{ $result = $1->GetRefCounted(); %}             // cpp to c
