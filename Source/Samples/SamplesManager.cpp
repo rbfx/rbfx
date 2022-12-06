@@ -170,7 +170,7 @@ void SamplesManager::Setup()
     engineParameters_[EP_SOUND]        = true;
     engineParameters_[EP_HIGH_DPI]     = true;
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
-    engineParameters_[EP_CONFIG_NAME] = "engineparams.json";
+    engineParameters_[EP_CONFIG_NAME] = "configs/engineparams.json";
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif

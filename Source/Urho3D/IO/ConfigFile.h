@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../IO/AbstractFile.h"
 #include "../Core/Variant.h"
 
 namespace Urho3D
@@ -29,22 +30,42 @@ namespace Urho3D
 class XMLFile;
 class JSONFile;
 
-class URHO3D_API ConfigFile
+class URHO3D_API ConfigFileBase
+{
+public:
+    virtual ~ConfigFileBase() = default;
+
+    /// Config file serialization.
+    virtual void SerializeInBlock(Archive& archive);
+
+    /// Load all config files and merge the result. Return true if successful.
+    bool Merge(Context* context, const ea::string& fileName);
+    /// Load from file at app preferences location. Return true if successful.
+    bool Load(Context* context, const ea::string& fileName);
+    /// Save to file at app preferences location. Return true if successful.
+    bool Save(Context* context, const ea::string& fileName);
+
+    /// Load from file. Return true if successful.
+    bool LoadFile(Context* context, const AbstractFilePtr& file);
+    /// Save to file. Return true if successful.
+    bool SaveFile(Context* context, const AbstractFilePtr& file);
+    /// Load from XML file. Return true if successful.
+    bool LoadXML(const XMLFile* xmlFile);
+    /// Save to XML file. Return true if successful.
+    bool SaveXML(XMLFile* xmlFile);
+    /// Load from JSON file. Return true if successful.
+    bool LoadJSON(const JSONFile* jsonFile);
+    /// Save to JSON file. Return true if successful.
+    bool SaveJSON(JSONFile* jsonFile);
+};
+
+class URHO3D_API ConfigFile : public ConfigFileBase
 {
 public:
     /// Reset values to default.
     void Clear();
     /// Config file serialization.
-    void SerializeInBlock(Archive& archive);
-
-    /// Load from XML data. Return true if successful.
-    bool LoadXML(const XMLFile* xmlFile);
-    /// Save as XML data. Return true if successful.
-    bool SaveXML(XMLFile* xmlFile);
-    /// Load from JSON data. Return true if successful.
-    bool LoadJSON(const JSONFile* jsonFile);
-    /// Save as JSON data. Return true if successful.
-    bool SaveJSON(JSONFile* jsonFile);
+    void SerializeInBlock(Archive& archive) override;
 
     /// Set default value.
     void SetDefaultValue(const ea::string key, const Variant& vault);

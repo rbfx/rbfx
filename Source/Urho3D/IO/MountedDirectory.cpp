@@ -76,7 +76,7 @@ bool MountedDirectory::Exists(const FileIdentifier& fileName) const
 
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
 
-    return fileSystem->FileExists(directory_ + fileName);
+    return fileSystem->FileExists(directory_ + fileName.fileName_);
 }
 
 /// Open file in a virtual file system. Returns null if file not found.
@@ -88,6 +88,14 @@ AbstractFilePtr MountedDirectory::OpenFile(const FileIdentifier& fileName, FileM
 
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
     auto fullPath = directory_ + fileName.fileName_;
+
+    if (mode == FILE_WRITE)
+    {
+        const auto directory = GetPath(fullPath);
+        if (!fileSystem->DirExists(directory))
+            if (!fileSystem->CreateDir(directory))
+                return AbstractFilePtr();
+    }
 
     if (mode == FILE_READ && !fileSystem->FileExists(fullPath))
         return AbstractFilePtr();

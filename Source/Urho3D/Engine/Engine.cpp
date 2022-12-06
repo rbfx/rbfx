@@ -120,53 +120,6 @@ typedef struct _CrtMemBlockHeader
 
 namespace Urho3D
 {
-namespace
-{
-void LoadConfigFileImpl(Context* context, const AbstractFilePtr& file, ConfigFile& configFile)
-{
-    if (file)
-    {
-        ea::string extension = GetExtension(file->GetName());
-        if (extension == ".xml")
-        {
-            XMLFile xmlFile(context);
-            xmlFile.Load(*file);
-            configFile.LoadXML(&xmlFile);
-        }
-        else
-        {
-            JSONFile jsonFile(context);
-            jsonFile.Load(*file);
-            configFile.LoadJSON(&jsonFile);
-        }
-    }
-}
-
-void SaveConfigFileImpl(Context* context, const AbstractFilePtr& file, ConfigFile& configFile)
-{
-    if (file)
-    {
-        ea::string extension = GetExtension(file->GetName());
-        if (extension == ".xml")
-        {
-            XMLFile xmlFile(context);
-            configFile.SaveXML(&xmlFile);
-            xmlFile.Save(*file);
-        }
-        else
-        {
-            JSONFile jsonFile(context);
-            configFile.SaveJSON(&jsonFile);
-            jsonFile.Save(*file);
-        }
-    }
-}
-
-}
-} // namespace Urho3D
-
-namespace Urho3D
-{
 void Engine::EngineParameterDesc::Set(bool configOverride, Variant value)
 {
     configOverride_ = configOverride;
@@ -1138,7 +1091,7 @@ const Variant& Engine::GetParameter(const StringVariantMap& parameters, const ea
 
 void Engine::LoadConfigFiles()
 {
-    auto configName = GetParameter(EP_CONFIG_NAME).GetString();
+    const auto configName = GetParameter(EP_CONFIG_NAME).GetString();
     if (configName.empty())
         return;
 
@@ -1157,16 +1110,7 @@ void Engine::LoadConfigFiles()
     }
 
     // Merge with values from config files.
-    const auto settingsFileId = FileIdentifier(EMPTY_STRING, configName);
-
-    // Load config files from least to most prioritized.
-    for (unsigned i = 0; i<vfs->NumMountPoints(); ++i)
-    {
-        const auto mountPoint = vfs->GetMountPoint(i);
-        LoadConfigFileImpl(context_, mountPoint->OpenFile(settingsFileId, FILE_READ), mergedConfig);
-    }
-    // User config folder is the most prioritized config source.
-    LoadConfigFileImpl(context_, vfs->OpenFile(FileIdentifier("conf", configName), FILE_READ), mergedConfig);
+    mergedConfig.Merge(context_, configName);
 
     // Set parameters from merged values.
     for (auto& keyValue : mergedConfig.GetValues())
@@ -1198,7 +1142,10 @@ void Engine::SaveConfigFile()
     for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
     {
         const auto mountPoint = vfs->GetMountPoint(i);
-        LoadConfigFileImpl(context_, mountPoint->OpenFile(settingsFileId, FILE_READ), mergedConfig);
+        if (mountPoint->Exists(settingsFileId))
+        {
+            mergedConfig.LoadFile(context_, mountPoint->OpenFile(settingsFileId, FILE_READ));
+        }
     }
 
     // Set values from parent files as default values. Actual config file will store only values different from the parent and default.
@@ -1216,14 +1163,7 @@ void Engine::SaveConfigFile()
         }
     }
 
-    auto fileId = FileIdentifier("conf", configName);
-    auto absFileName = vfs->GetFileName(fileId);
-    if (!absFileName.empty())
-    {
-        auto* fs = GetSubsystem<FileSystem>();
-        fs->CreateDir(GetPath(absFileName));
-    }
-    SaveConfigFileImpl(context_, vfs->OpenFile(fileId, FILE_WRITE), mergedConfig);
+    mergedConfig.Save(context_, configName);
 }
 
 void Engine::PopulateDefaultParameters()
