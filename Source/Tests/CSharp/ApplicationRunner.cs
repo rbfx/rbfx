@@ -11,7 +11,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Urho3DNet.Tests
 {
-    public class ApplicationRunner : XunitTestFramework
+    public class ApplicationRunner : XunitTestFramework, IDisposable
     {
         private static ApplicationRunner _instance;
         private readonly Thread _workerThread;
@@ -55,7 +55,10 @@ namespace Urho3DNet.Tests
 
         public new void Dispose()
         {
-            _engine.Exit();
+            if (_application != null)
+            {
+                _ = _application.RunAsync(_ => _.Context.Engine.Exit()).Result;
+            }
             _workerThread.Join();
             base.Dispose();
             _instance = null;

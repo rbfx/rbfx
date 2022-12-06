@@ -45,7 +45,7 @@ namespace Urho3DNet.Tests
             SubscribeToEvent(E.Update, HandleUpdate);
         }
 
-        public async Task RunAsync(Action<Application> action)
+        public async Task<bool> RunAsync(Action<Application> action)
         {
             var tcs = new QueueItem(action);
             lock (_tasks)
@@ -54,6 +54,7 @@ namespace Urho3DNet.Tests
             }
 
             await tcs.RunAsync();
+            return true;
         }
 
         class QueueItem
