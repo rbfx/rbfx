@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Scene/Serializable.h"
 #include "../IO/AbstractFile.h"
 #include "../Core/Variant.h"
 
@@ -30,42 +31,63 @@ namespace Urho3D
 class XMLFile;
 class JSONFile;
 
-class URHO3D_API ConfigFileBase
+class URHO3D_API ConfigFileBase : public Serializable
 {
+    URHO3D_OBJECT(ConfigFileBase, Serializable)
 public:
-    virtual ~ConfigFileBase() = default;
+    /// Construct.
+    explicit ConfigFileBase(Context* context);
+    /// Destruct.
+    ~ConfigFileBase() override;
 
     /// Config file serialization.
     virtual void SerializeInBlock(Archive& archive);
 
     /// Load all config files and merge the result. Return true if successful.
-    bool Merge(Context* context, const ea::string& fileName);
+    virtual bool MergeFile(const ea::string& fileName);
     /// Load from file at app preferences location. Return true if successful.
-    bool Load(Context* context, const ea::string& fileName);
+    bool LoadFile(const ea::string& fileName) override;
     /// Save to file at app preferences location. Return true if successful.
-    bool Save(Context* context, const ea::string& fileName);
+    virtual bool SaveFile(const ea::string& fileName);
 
+    /// Load from binary data. Return true if successful.
+    bool Load(Deserializer& source) override;
+    /// Save as binary data. Return true if successful.
+    bool Save(Serializer& dest) const override;
+    /// Load from XML data. Return true if successful.
+    bool LoadXML(const XMLElement& source) override;
+    /// Save as XML data. Return true if successful.
+    bool SaveXML(XMLElement& dest) const override;
+    /// Load from JSON data. Return true if successful.
+    bool LoadJSON(const JSONValue& source) override;
+    /// Save as JSON data. Return true if successful.
+    bool SaveJSON(JSONValue& dest) const override;
+    /// Load from binary resource.
+    bool Load(const ea::string& resourceName) override;
+    /// Load from XML resource.
+    bool LoadXML(const ea::string& resourceName) override;
+    /// Load from JSON resource.
+    bool LoadJSON(const ea::string& resourceName) override;
+protected:
     /// Load from file. Return true if successful.
-    bool LoadFile(Context* context, const AbstractFilePtr& file);
-    /// Save to file. Return true if successful.
-    bool SaveFile(Context* context, const AbstractFilePtr& file);
-    /// Load from XML file. Return true if successful.
-    bool LoadXML(const XMLFile* xmlFile);
-    /// Save to XML file. Return true if successful.
-    bool SaveXML(XMLFile* xmlFile);
-    /// Load from JSON file. Return true if successful.
-    bool LoadJSON(const JSONFile* jsonFile);
-    /// Save to JSON file. Return true if successful.
-    bool SaveJSON(JSONFile* jsonFile);
+    bool LoadImpl(const AbstractFilePtr& source);
 };
 
 class URHO3D_API ConfigFile : public ConfigFileBase
 {
+    URHO3D_OBJECT(ConfigFile, ConfigFileBase)
 public:
+    /// Construct.
+    explicit ConfigFile(Context* context);
+    /// Destruct.
+    ~ConfigFile() override;
+
     /// Reset values to default.
     void Clear();
     /// Config file serialization.
     void SerializeInBlock(Archive& archive) override;
+    /// Save difference between current config and resources into file.
+    bool SaveDiffFile(const ea::string& fileName);
 
     /// Set default value.
     void SetDefaultValue(const ea::string key, const Variant& vault);

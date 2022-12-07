@@ -29,12 +29,12 @@
 #include "../Project/AssetManager.h"
 #include "../Project/CreateDefaultScene.h"
 #include "../Project/ResourceEditorTab.h"
-#include "Urho3D/IO/MountedDirectory.h"
 
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/IO/File.h>
+#include <Urho3D/IO/MountedDirectory.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>

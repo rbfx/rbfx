@@ -21,6 +21,7 @@
 //
 
 #include "../CommonUtils.h"
+#include "Urho3D/IO/VectorBuffer.h"
 
 #include <Urho3D/IO/ConfigFile.h>
 #include <Urho3D/IO/MemoryBuffer.h>
@@ -32,12 +33,12 @@ TEST_CASE("Load config file from JSON")
 
     JSONFile jsonFile(context);
     MemoryBuffer buffer(R"({"key0":3, "key2":6})");
-    jsonFile.Load(buffer);
+    CHECK(jsonFile.Load(buffer));
 
-    ConfigFile configFile;
+    ConfigFile configFile(context);
     configFile.SetDefaultValue("key0", 1);
     configFile.SetDefaultValue("key1", 2);
-    configFile.LoadJSON(&jsonFile);
+    CHECK(configFile.LoadJSON(jsonFile.GetRoot()));
 
     CHECK(configFile.GetValue("key0").GetInt() == 3);
     CHECK(configFile.GetValue("key1").GetInt() == 2);
@@ -48,17 +49,16 @@ TEST_CASE("Save config file to JSON")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    JSONFile jsonFile(context);
-
-    ConfigFile configFile;
+    ConfigFile configFile(context);
     configFile.SetDefaultValue("key0", 1);
     configFile.SetDefaultValue("key1", 2);
     CHECK(configFile.SetValue("key0", 3));
     CHECK(!configFile.SetValue("key2", 6));
-    configFile.SaveJSON(&jsonFile);
+    JSONValue value;
+    CHECK(configFile.SaveJSON(value));
 
     configFile.Clear();
-    configFile.LoadJSON(&jsonFile);
+    CHECK(configFile.LoadJSON(value));
     CHECK(configFile.GetValue("key0").GetInt() == 3);
     CHECK(configFile.GetValue("key1").GetInt() == 2);
     CHECK(configFile.GetValue("key2").GetInt() == 0);
@@ -71,12 +71,12 @@ TEST_CASE("Load config file from XML")
 
     XMLFile xmlFile(context);
     MemoryBuffer buffer(R"(<Values key0="3" key2="6"/>)");
-    xmlFile.Load(buffer);
+    CHECK(xmlFile.Load(buffer));
 
-    ConfigFile configFile;
+    ConfigFile configFile(context);
     configFile.SetDefaultValue("key0", 1);
     configFile.SetDefaultValue("key1", 2);
-    configFile.LoadXML(&xmlFile);
+    CHECK(configFile.LoadXML(xmlFile.GetRoot()));
 
     CHECK(configFile.GetValue("key0").GetInt() == 3);
     CHECK(configFile.GetValue("key1").GetInt() == 2);
@@ -89,16 +89,38 @@ TEST_CASE("Save config file to XML")
 
     XMLFile xmlFile(context);
 
-    ConfigFile configFile;
+    ConfigFile configFile(context);
     configFile.SetDefaultValue("key0", 1);
     configFile.SetDefaultValue("key1", 2);
     CHECK(configFile.SetValue("key0", 3));
     CHECK(!configFile.SetValue("key2", 6));
-    configFile.SaveXML(&xmlFile);
+    CHECK(configFile.SaveXML(xmlFile.CreateRoot("Settings")));
 
     configFile.Clear();
-    configFile.LoadXML(&xmlFile);
+    CHECK(configFile.LoadXML(xmlFile.GetRoot()));
     CHECK(configFile.GetValue("key0").GetInt() == 3);
     CHECK(configFile.GetValue("key1").GetInt() == 2);
     CHECK(configFile.GetValue("key2").GetInt() == 0);
 }
+
+//TEST_CASE("Save config file to binarry")
+//{
+//    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+//
+//    VectorBuffer buffer;
+//
+//    ConfigFile configFile(context);
+//    configFile.SetDefaultValue("key0", 1);
+//    configFile.SetDefaultValue("key1", 2);
+//    CHECK(configFile.SetValue("key0", 3));
+//    CHECK(!configFile.SetValue("key2", 6));
+//    CHECK(configFile.Save(buffer));
+//
+//    configFile.Clear();
+//    buffer.Seek(0);
+//
+//    CHECK(configFile.Load(buffer));
+//    CHECK(configFile.GetValue("key0").GetInt() == 3);
+//    CHECK(configFile.GetValue("key1").GetInt() == 2);
+//    CHECK(configFile.GetValue("key2").GetInt() == 0);
+//}

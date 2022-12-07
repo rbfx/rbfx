@@ -23,6 +23,8 @@
 #include "../Precompiled.h"
 
 #include "../IO/ConfigFile.h"
+
+#include "BinaryArchive.h"
 #include "../IO/FileIdentifier.h"
 #include "../IO/FileSystem.h"
 #include "../IO/VirtualFileSystem.h"
@@ -79,141 +81,254 @@ void SerializeConfigVariant(Archive& archive, const char* key, Variant& defaultV
 
 }
 
-void ConfigFileBase::SerializeInBlock(Archive& archive)
+ConfigFileBase::ConfigFileBase(Context* context)
+    : BaseClassName(context)
 {
 }
+
+ConfigFileBase::~ConfigFileBase() = default;
+
+void ConfigFileBase::SerializeInBlock(Archive& archive)
+{
+    BaseClassName::SerializeInBlock(archive);
+}
+
+ConfigFile::ConfigFile(Context* context)
+    : BaseClassName(context)
+{
+}
+
+ConfigFile::~ConfigFile() = default;
 
 void ConfigFile::Clear()
 {
     values_.clear();
 }
 
-bool ConfigFileBase::Merge(Context* context, const ea::string& fileName)
+bool ConfigFileBase::MergeFile(const ea::string& fileName)
 {
-    const auto* vfs = context->GetSubsystem<VirtualFileSystem>();
+    const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
     const auto settingsFileId = FileIdentifier("", fileName);
+
     // Load config files from least to most prioritized.
     for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
     {
         const auto mountPoint = vfs->GetMountPoint(i);
-        LoadFile(context, mountPoint->OpenFile(settingsFileId, FILE_READ));
+        if (const auto file = mountPoint->OpenFile(settingsFileId, FILE_READ))
+            LoadImpl(file);
     }
-    return LoadFile(context, vfs->OpenFile(FileIdentifier("conf", fileName), FILE_READ));
-}
-
-bool ConfigFileBase::Load(Context* context, const ea::string& fileName)
-{
-    const auto* vfs = context->GetSubsystem<VirtualFileSystem>();
-    return LoadFile(context, vfs->OpenFile(FileIdentifier("conf", fileName), FILE_READ));
-}
-
-bool ConfigFileBase::LoadFile(Context* context, const AbstractFilePtr& file)
-{
-    if (file)
+    if (const auto file = vfs->OpenFile(FileIdentifier("conf", fileName), FILE_READ))
     {
-        ea::string extension = GetExtension(file->GetName());
-        if (extension == ".xml")
-        {
-            XMLFile xmlFile(context);
-            xmlFile.Load(*file);
-            return LoadXML(&xmlFile);
-        }
-        JSONFile jsonFile(context);
-        jsonFile.Load(*file);
-        return LoadJSON(&jsonFile);
+        LoadImpl(file);
+    }
+
+    return true;
+}
+
+bool ConfigFileBase::LoadFile(const ea::string& fileName)
+{
+    const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
+    if (const auto file = vfs->OpenFile(FileIdentifier("conf", fileName), FILE_READ))
+    {
+        return LoadImpl(file);
     }
     return false;
 }
 
-bool ConfigFileBase::Save(Context* context, const ea::string& fileName)
+/// Load from binary resource.
+bool ConfigFileBase::Load(const ea::string& resourceName)
 {
-    const auto* vfs = context->GetSubsystem<VirtualFileSystem>();
+    const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
+    if (const auto file = vfs->OpenFile(FileIdentifier("conf", resourceName), FILE_READ))
+    {
+        return Load(*file);
+    }
+    return false;
+}
+
+/// Load from XML resource.
+bool ConfigFileBase::LoadXML(const ea::string& resourceName)
+{
+    const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
+    if (const auto file = vfs->OpenFile(FileIdentifier("conf", resourceName), FILE_READ))
+    {
+        XMLFile xmlFile(context_);
+        if (!xmlFile.Load(*file))
+            return false;
+        return LoadXML(xmlFile.GetRoot());
+    }
+    return false;
+}
+
+/// Load from JSON resource.
+bool ConfigFileBase::LoadJSON(const ea::string& resourceName)
+{
+    const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
+    if (const auto file = vfs->OpenFile(FileIdentifier("conf", resourceName), FILE_READ))
+    {
+        JSONFile jsonFile(context_);
+        if (!jsonFile.Load(*file))
+            return false;
+        return LoadJSON(jsonFile.GetRoot());
+    }
+    return false;
+}
+
+/// Load from file. Return true if successful.
+bool ConfigFileBase::LoadImpl(const AbstractFilePtr& source)
+{
+    if (!source)
+        return false;
+
+    ea::string extension = GetExtension(source->GetName());
+    if (extension == ".xml")
+    {
+        XMLFile xmlFile(context_);
+        xmlFile.Load(*source);
+        return LoadXML(xmlFile.GetRoot());
+
+    }
+    if (extension == ".json")
+    {
+        JSONFile jsonFile(context_);
+        jsonFile.Load(*source);
+        return LoadJSON(&jsonFile.GetRoot());
+    }
+    return Load(*source);
+}
+
+bool ConfigFileBase::SaveFile(const ea::string& fileName)
+{
+    const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
     auto fileId = FileIdentifier("conf", fileName);
     for (unsigned i = vfs->NumMountPoints(); i-- > 0; )
     {
         const auto mountPoint = vfs->GetMountPoint(i);
         if (mountPoint->AcceptsScheme(fileId.scheme_))
         {
-            return SaveFile(context, mountPoint->OpenFile(fileId, FILE_WRITE));
+            if (const auto file = mountPoint->OpenFile(fileId, FILE_WRITE))
+            {
+                ea::string extension = GetExtension(fileName);
+                if (extension == ".xml")
+                {
+                    XMLFile xmlFile(context_);
+                    if (!SaveXML(xmlFile.CreateRoot("Settings")))
+                    {
+                        return false;
+                    }
+                    return xmlFile.Save(*file);
+                }
+                if (extension == ".json")
+                {
+                    JSONValue value;
+                    if (!SaveJSON(value))
+                    {
+                        return false;
+                    }
+                    JSONFile jsonFile(context_);
+                    jsonFile.GetRoot() = value;
+                    return jsonFile.Save(*file);
+                }
+                return Save(*file);
+            }
         }
     }
     return false;
 }
 
-bool ConfigFileBase::SaveFile(Context* context, const AbstractFilePtr& file)
+bool ConfigFileBase::Load(Deserializer& source)
 {
-    if (file)
-    {
-        ea::string extension = GetExtension(file->GetName());
-        if (extension == ".xml")
-        {
-            XMLFile xmlFile(context);
-            if (!SaveXML(&xmlFile))
-            {
-                return false;
-            }
-            return xmlFile.Save(*file);
-        }
-        else
-        {
-            JSONFile jsonFile(context);
-            if (!SaveJSON(&jsonFile))
-            {
-                return false;
-            }
-            return jsonFile.Save(*file);
-        }
-    }
-    return false;
+    BinaryInputArchive archive(context_, source);
+    auto block = archive.OpenUnorderedBlock("Settings");
+    SerializeInBlock(archive);
+    return true;
 }
 
-bool ConfigFileBase::LoadXML(const XMLFile* xmlFile)
+bool ConfigFileBase::Save(Serializer& dest) const
 {
-    if (!xmlFile)
-        return false;
+    BinaryOutputArchive archive(context_, dest);
+    auto block = archive.OpenUnorderedBlock("Settings");
+    const_cast<ConfigFileBase*>(this)->SerializeInBlock(archive);
+    return true;
+}
 
-    XMLInputArchive archive(xmlFile->GetContext(), xmlFile->GetRoot());
-    auto block = archive.OpenUnorderedBlock(xmlFile->GetRoot().GetName().c_str());
+bool ConfigFileBase::LoadXML(const XMLElement& xmlFile)
+{
+    XMLInputArchive archive(context_, xmlFile);
+    auto block = archive.OpenUnorderedBlock(xmlFile.GetName().c_str());
     this->SerializeInBlock(archive);
     return true;
 }
 
-bool ConfigFileBase::SaveXML(XMLFile* xmlFile)
+bool ConfigFileBase::SaveXML(XMLElement& xmlFile) const
 {
-    if (!xmlFile)
-        return false;
-
-    if (!xmlFile->GetRoot())
+    if (xmlFile.IsNull())
     {
-        xmlFile->CreateRoot("Settings");
+        URHO3D_LOGERROR("Could not save " + GetTypeName() + ", null destination element");
+        return false;
     }
 
-    XMLOutputArchive archive(xmlFile->GetContext(), xmlFile->GetRoot());
-    auto block = archive.OpenUnorderedBlock(xmlFile->GetRoot().GetName().c_str());
-    this->SerializeInBlock(archive);
+    XMLOutputArchive archive(context_, xmlFile);
+    auto block = archive.OpenUnorderedBlock(xmlFile.GetName().c_str());
+    const_cast<ConfigFileBase*>(this)->SerializeInBlock(archive);
     return true;
 }
 
-bool ConfigFileBase::LoadJSON(const JSONFile* jsonFile)
+bool ConfigFileBase::LoadJSON(const JSONValue& source)
 {
-    if (!jsonFile)
+    if (source.IsNull())
         return false;
 
-    JSONInputArchive archive(jsonFile->GetContext(), jsonFile->GetRoot());
+    JSONInputArchive archive(context_, source);
     auto block = archive.OpenUnorderedBlock("Settings");
     this->SerializeInBlock(archive);
     return true;
 }
 
-bool ConfigFileBase::SaveJSON(JSONFile* jsonFile)
+bool ConfigFileBase::SaveJSON(JSONValue& dest) const
 {
-    if (!jsonFile)
-        return false;
-
-    JSONOutputArchive archive(jsonFile->GetContext(), jsonFile->GetRoot());
+    JSONOutputArchive archive(context_, dest);
     auto block = archive.OpenUnorderedBlock("Settings");
-    this->SerializeInBlock(archive);
+    const_cast<ConfigFileBase*>(this)->SerializeInBlock(archive);
     return true;
+}
+
+bool ConfigFile::SaveDiffFile(const ea::string& fileName)
+{
+    const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
+    auto settingsFileId = FileIdentifier("", fileName);
+
+    ConfigFile mergedConfig(context_);
+
+    // Copy default values.
+    for (auto& keyValue : default_)
+    {
+        mergedConfig.SetDefaultValue(keyValue.first, keyValue.second);
+    }
+
+    // Load config files from least to most prioritized.
+    for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
+    {
+         const auto mountPoint = vfs->GetMountPoint(i);
+         if (mountPoint->Exists(settingsFileId))
+         {
+             mergedConfig.LoadImpl(mountPoint->OpenFile(settingsFileId, FILE_READ));
+         }
+     }
+
+    ConfigFile diffConfig(context_);
+    // Set values from parent files as default values.
+    for (auto& keyValue : mergedConfig.default_)
+    {
+         diffConfig.SetDefaultValue(keyValue.first, mergedConfig.GetValue(keyValue.first));
+    }
+
+    for (auto& keyValue : values_)
+    {
+         diffConfig.SetValue(keyValue.first, keyValue.second);
+    }
+
+    return diffConfig.SaveFile(fileName);
 }
 
 void ConfigFile::SerializeInBlock(Archive& archive)

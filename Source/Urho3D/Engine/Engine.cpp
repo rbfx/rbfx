@@ -1098,7 +1098,7 @@ void Engine::LoadConfigFiles()
     const auto* vfs = GetSubsystem<VirtualFileSystem>();
 
     // Populate default values in config file
-    ConfigFile mergedConfig;
+    ConfigFile mergedConfig(context_);
     for (auto& keyValue : parameterDesc_)
     {
         if (keyValue.second.configOverride_)
@@ -1110,7 +1110,7 @@ void Engine::LoadConfigFiles()
     }
 
     // Merge with values from config files.
-    mergedConfig.Merge(context_, configName);
+    mergedConfig.MergeFile(configName);
 
     // Set parameters from merged values.
     for (auto& keyValue : mergedConfig.GetValues())
@@ -1125,45 +1125,18 @@ void Engine::SaveConfigFile()
     if (configName.empty())
         return;
 
-    auto* vfs = GetSubsystem<VirtualFileSystem>();
-
-    // Populate default values in config file
-    ConfigFile mergedConfig;
+    // Populate values in config file
+    ConfigFile config(context_);
     for (auto& keyValue : parameterDesc_)
     {
         if (keyValue.second.configOverride_)
         {
-            mergedConfig.SetDefaultValue(keyValue.first, keyValue.second.defaultValue_);
+            config.SetDefaultValue(keyValue.first, keyValue.second.defaultValue_);
+            config.SetValue(keyValue.first, GetParameter(keyValue.first));
         }
     }
 
-    auto settingsFileId = FileIdentifier("", configName);
-    // Load config files from least to most prioritized.
-    for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
-    {
-        const auto mountPoint = vfs->GetMountPoint(i);
-        if (mountPoint->Exists(settingsFileId))
-        {
-            mergedConfig.LoadFile(context_, mountPoint->OpenFile(settingsFileId, FILE_READ));
-        }
-    }
-
-    // Set values from parent files as default values. Actual config file will store only values different from the parent and default.
-    for (auto& keyValue : mergedConfig.GetValues())
-    {
-        mergedConfig.SetDefaultValue(keyValue.first, keyValue.second);
-    }
-
-    // Set values from the parameters.
-    for (auto& keyValue : parameterDesc_)
-    {
-        if (keyValue.second.configOverride_)
-        {
-            mergedConfig.SetValue(keyValue.first, GetParameter(keyValue.first));
-        }
-    }
-
-    mergedConfig.Save(context_, configName);
+    config.SaveDiffFile(configName);
 }
 
 void Engine::PopulateDefaultParameters()
