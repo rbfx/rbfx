@@ -176,11 +176,12 @@ private:
 
     void EnsureInitialized();
     void UpdateMinHeelAngle();
-    Vector3 CalculateCurrentBendDirection(const Vector3& toeTargetPosition) const;
+    Vector3 GetApproximateBendDirection(const Vector3& toeTargetPosition,
+        const Vector3& originalDirection, const Vector3& currentDirection) const;
     Vector3 CalculateFootDirectionStraight(
-        const Vector3& toeTargetPosition, const Vector3& currentBendDirection) const;
+        const Vector3& toeTargetPosition, const Vector3& approximateBendDirection) const;
     Vector3 CalculateFootDirectionBent(
-        const Vector3& toeTargetPosition, const Vector3& currentBendDirection) const;
+        const Vector3& toeTargetPosition, const Vector3& approximateBendDirection) const;
 
     /// Attributes.
     /// @{
@@ -204,6 +205,14 @@ private:
     IKNodeSegment footSegment_;
     WeakPtr<Node> target_;
     /// @}
+
+    struct LocalCache
+    {
+        Vector3 defaultDirection_;
+        Quaternion defaultFootRotation_;
+        Vector3 defaultToeOffset_;
+        Quaternion defaultToeRotation_;
+    } local_;
 };
 
 class IKSpineSolver : public IKSolverComponent

@@ -107,13 +107,14 @@ class URHO3D_API IKTrigonometricChain
 public:
     void Initialize(IKNode* node1, IKNode* node2, IKNode* node3);
     void UpdateLengths();
+
     void Solve(const Vector3& target, const Vector3& originalDirection,
         const Vector3& currentDirection, float minAngle, float maxAngle);
 
     /// Return rotation of the entire chain.
     static Quaternion CalculateRotation(
-        const Vector3& originalPos0, const Vector3& originalPos2,
-        const Vector3& pos0, const Vector3& pos2);
+        const Vector3& originalPos0, const Vector3& originalPos2, const Vector3& originalDirection,
+        const Vector3& currentPos0, const Vector3& currentPos2, const Vector3& currentDirection);
     /// Return positions of second and third bones.
     static ea::pair<Vector3, Vector3> Solve(const Vector3& pos0, float len01, float len12,
         const Vector3& target, const Vector3& bendDirection, float minAngle, float maxAngle);
@@ -123,15 +124,14 @@ public:
     IKNode* GetEndNode() const { return segments_[1].endNode_; }
     float GetFirstLength() const { return segments_[0].length_; }
     float GetSecondLength() const { return segments_[1].length_; }
-    Vector3 GetCurrentBendDirection() const { return currentBendDirection_; }
+    Quaternion GetCurrentChainRotation() const { return currentChainRotation_; }
 
 private:
-    void RotateChainToTarget(const Vector3& target,
-        const Vector3& originalDirection, const Vector3& currentDirection);
+    void RotateChain(const Quaternion& chainRotation);
     void RotateSegmentsToTarget(const Vector3& newPos1, const Vector3& newPos2);
 
     IKNodeSegment segments_[2];
-    Vector3 currentBendDirection_;
+    Quaternion currentChainRotation_;
 };
 
 /// Base class for generic IK chain.

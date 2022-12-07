@@ -452,7 +452,10 @@ void IKTrigonometrySolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTes
         DrawIKNode(debug, *thirdBone, false);
         DrawIKSegment(debug, *firstBone, *secondBone);
         DrawIKSegment(debug, *secondBone, *thirdBone);
-        DrawDirection(debug, secondBone->position_, chain_.GetCurrentBendDirection());
+
+        const Vector3 currentBendDirection = chain_.GetCurrentChainRotation()
+            * node_->GetWorldRotation() * bendDirection_;
+        DrawDirection(debug, secondBone->position_, currentBendDirection);
     }
     if (target_)
     {
@@ -546,7 +549,10 @@ void IKLegSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         DrawIKNode(debug, *heelBone, false);
         DrawIKSegment(debug, *thighBone, *calfBone);
         DrawIKSegment(debug, *calfBone, *heelBone);
-        DrawDirection(debug, calfBone->position_, legChain_.GetCurrentBendDirection());
+
+        const Vector3 currentBendDirection = legChain_.GetCurrentChainRotation()
+            * node_->GetWorldRotation() * bendDirection_;
+        DrawDirection(debug, calfBone->position_, currentBendDirection);
     }
     if (heelBone && toeBone)
     {
@@ -581,6 +587,7 @@ bool IKLegSolver::InitializeNodes(IKNodeCache& nodeCache)
     if (!toeBone)
         return false;
 
+    SetParentAsFrameOfReference(*thighBone);
     legChain_.Initialize(thighBone, calfBone, heelBone);
     footSegment_ = {heelBone, toeBone};
     return true;
@@ -590,6 +597,15 @@ void IKLegSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     legChain_.UpdateLengths();
     footSegment_.UpdateLength();
+
+    const IKNode& calfBone = *legChain_.GetMiddleNode();
+    const IKNode& heelBone = *legChain_.GetEndNode();
+    const IKNode& toeBone = *footSegment_.endNode_;
+
+    local_.defaultDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
+    local_.defaultFootRotation_ = calfBone.rotation_.Inverse() * heelBone.rotation_;
+    local_.defaultToeOffset_ = heelBone.rotation_.Inverse() * (toeBone.position_ - heelBone.position_);
+    local_.defaultToeRotation_ = heelBone.rotation_.Inverse() * toeBone.rotation_;
 }
 
 void IKLegSolver::UpdateMinHeelAngle()
@@ -609,24 +625,25 @@ void IKLegSolver::UpdateMinHeelAngle()
     }
 }
 
-Vector3 IKLegSolver::CalculateCurrentBendDirection(const Vector3& toeTargetPosition) const
+Vector3 IKLegSolver::GetApproximateBendDirection(const Vector3& toeTargetPosition,
+    const Vector3& originalDirection, const Vector3& currentDirection) const
 {
     IKNode* thighBone = legChain_.GetBeginNode();
     IKNode* toeBone = footSegment_.endNode_;
 
     const Quaternion chainRotation = IKTrigonometricChain::CalculateRotation(
-        thighBone->originalPosition_, toeBone->originalPosition_,
-        thighBone->position_, toeTargetPosition);
+        thighBone->originalPosition_, toeBone->originalPosition_, originalDirection,
+        thighBone->position_, toeTargetPosition, currentDirection);
     return chainRotation * node_->GetWorldRotation() * bendDirection_;
 }
 
 Vector3 IKLegSolver::CalculateFootDirectionStraight(
-    const Vector3& toeTargetPosition, const Vector3& currentBendDirection) const
+    const Vector3& toeTargetPosition, const Vector3& approximateBendDirection) const
 {
     IKNode* thighBone = legChain_.GetBeginNode();
 
     const Vector3 thighToToe = toeTargetPosition - thighBone->position_;
-    const Vector3 bendNormal = thighToToe.CrossProduct(currentBendDirection);
+    const Vector3 bendNormal = thighToToe.CrossProduct(approximateBendDirection);
 
     return GetToeToHeel(
         thighBone->position_, toeTargetPosition, footSegment_.length_, minHeelAngle_,
@@ -634,12 +651,12 @@ Vector3 IKLegSolver::CalculateFootDirectionStraight(
 }
 
 Vector3 IKLegSolver::CalculateFootDirectionBent(
-    const Vector3& toeTargetPosition, const Vector3& currentBendDirection) const
+    const Vector3& toeTargetPosition, const Vector3& approximateBendDirection) const
 {
     IKNode* thighBone = legChain_.GetBeginNode();
     const auto [newPos1, newPos2] = IKTrigonometricChain::Solve(
         thighBone->position_, legChain_.GetFirstLength(), legChain_.GetSecondLength() + footSegment_.length_,
-        toeTargetPosition, currentBendDirection, minKneeAngle_, maxKneeAngle_);
+        toeTargetPosition, approximateBendDirection, minKneeAngle_, maxKneeAngle_);
     return (newPos1 - newPos2).Normalized() * footSegment_.length_;
 }
 
@@ -657,21 +674,31 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     EnsureInitialized();
 
     const Vector3& toeTargetPosition = target_->GetWorldPosition();
+    const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
+    const Vector3 currentDirection = frameOfReference.rotation_ * local_.defaultDirection_;
+    const Vector3 approximateBendDirection = GetApproximateBendDirection(
+        toeTargetPosition, originalDirection, currentDirection);
 
-    IKNode* heelBone = legChain_.GetEndNode();
-
-    const Vector3 currentBendDirection = CalculateCurrentBendDirection(toeTargetPosition);
-    const Vector3 toeToHeel0 = CalculateFootDirectionStraight(toeTargetPosition, currentBendDirection);
-    const Vector3 toeToHeel1 = CalculateFootDirectionBent(toeTargetPosition, currentBendDirection);
+    const Vector3 toeToHeel0 = CalculateFootDirectionStraight(toeTargetPosition, approximateBendDirection);
+    const Vector3 toeToHeel1 = CalculateFootDirectionBent(toeTargetPosition, approximateBendDirection);
 
     const Vector3 toeToHeel = InterpolateDirection(toeToHeel0, toeToHeel1, bendWeight_);
     const Vector3 heelTargetPosition = toeTargetPosition + toeToHeel;
 
-    legChain_.Solve(heelTargetPosition, node_->GetWorldRotation() * bendDirection_, node_->GetWorldRotation() * bendDirection_, minKneeAngle_, maxKneeAngle_);
+    legChain_.Solve(heelTargetPosition, originalDirection, currentDirection, minKneeAngle_, maxKneeAngle_);
 
-    const Vector3 toeTargetPositionAdjusted = heelBone->position_ - toeToHeel;
-    footSegment_.endNode_->position_ = toeTargetPositionAdjusted;
-    footSegment_.UpdateRotationInNodes(settings.continuousRotations_, true);
+    // Update foot segment
+    IKNode& calfBone = *legChain_.GetMiddleNode();
+    IKNode& heelBone = *legChain_.GetEndNode();
+    IKNode& toeBone = *footSegment_.endNode_;
+
+    heelBone.previousPosition_ = heelBone.position_;
+    heelBone.previousRotation_ = calfBone.rotation_ * local_.defaultFootRotation_;
+    toeBone.previousPosition_ = heelBone.previousPosition_ + heelBone.previousRotation_ * local_.defaultToeOffset_;
+    toeBone.previousRotation_ = heelBone.previousRotation_ * local_.defaultToeRotation_;
+    // heelBone.position is already set by legChain_.Solve()
+    toeBone.position_ = heelBone.position_ - toeToHeel;
+    footSegment_.UpdateRotationInNodes(true, true);
 }
 
 IKSpineSolver::IKSpineSolver(Context* context)
@@ -810,7 +837,10 @@ void IKArmSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         DrawIKNode(debug, *handBone, false);
         DrawIKSegment(debug, *armBone, *forearmBone);
         DrawIKSegment(debug, *forearmBone, *handBone);
-        DrawDirection(debug, forearmBone->position_, armChain_.GetCurrentBendDirection());
+
+        const Vector3 currentBendDirection = armChain_.GetCurrentChainRotation()
+            * node_->GetWorldRotation() * bendDirection_;
+        DrawDirection(debug, forearmBone->position_, currentBendDirection);
     }
     if (shoulderBone && armBone)
     {
