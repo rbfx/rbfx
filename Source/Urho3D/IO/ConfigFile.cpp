@@ -212,7 +212,8 @@ bool ConfigFileBase::SaveFile(const ea::string& fileName)
                 if (extension == ".xml")
                 {
                     XMLFile xmlFile(context_);
-                    if (!SaveXML(xmlFile.CreateRoot("Settings")))
+                    auto root = xmlFile.CreateRoot("Settings");
+                    if (!SaveXML(root))
                     {
                         return false;
                     }
