@@ -431,7 +431,6 @@ URHO3D_REFCOUNTED_INTERFACE(Urho3D::AbstractFile, Urho3D::RefCounted);
 %include "Urho3D/IO/MountPoint.h"
 %include "Urho3D/IO/VirtualFileSystem.h"
 %include "Urho3D/IO/PackageFile.h"
-%include "Urho3D/IO/ConfigFile.h"
 
 %ignore Urho3D::NonCopyable;
 %ignore Urho3D::ArchiveBase;
@@ -533,6 +532,9 @@ public:
 %include "Urho3D/Scene/UnknownComponent.h"
 %include "Urho3D/Scene/TrackedComponent.h"
 %include "Urho3D/Scene/PrefabReference.h"
+
+// --------------------------------------- Config files ---------------------------------------
+%include "Urho3D/IO/ConfigFile.h"
 
 // --------------------------------------- Extra components ---------------------------------------
 %include "Urho3D/Input/FreeFlyController.h"
