@@ -94,7 +94,8 @@ TEST_CASE("Save config file to XML")
     configFile.SetDefaultValue("key1", 2);
     CHECK(configFile.SetValue("key0", 3));
     CHECK(!configFile.SetValue("key2", 6));
-    CHECK(configFile.SaveXML(xmlFile.CreateRoot("Settings")));
+    auto rootElement = xmlFile.CreateRoot("Settings");
+    CHECK(configFile.SaveXML(rootElement));
 
     configFile.Clear();
     CHECK(configFile.LoadXML(xmlFile.GetRoot()));
