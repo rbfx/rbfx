@@ -26,9 +26,9 @@
 
 TEST_CASE("FileLocator")
 {
-    FileIdentifier signleForwardSlash("file:/FileName");
-    CHECK(signleForwardSlash.scheme_ == "file");
-    CHECK(signleForwardSlash.fileName_ == "FileName");
+    FileIdentifier singleForwardSlash("file:/FileName");
+    CHECK(singleForwardSlash.scheme_ == "file");
+    CHECK(singleForwardSlash.fileName_ == "FileName");
 
     FileIdentifier twoForwardSlash("file://FileName");
     CHECK(twoForwardSlash.scheme_ == "file");

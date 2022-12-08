@@ -166,7 +166,8 @@ private:
     /// Engine parameter description.
     struct EngineParameterDesc
     {
-        void Set(bool configOverride, Variant value);
+        EngineParameterDesc& SetDefault(Variant value);
+        EngineParameterDesc& OverrideInConfig();
 
         /// Read parameter from config file.
         bool configOverride_ {};

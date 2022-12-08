@@ -120,10 +120,16 @@ typedef struct _CrtMemBlockHeader
 
 namespace Urho3D
 {
-void Engine::EngineParameterDesc::Set(bool configOverride, Variant value)
+Engine::EngineParameterDesc& Engine::EngineParameterDesc::SetDefault(Variant value)
 {
-    configOverride_ = configOverride;
     defaultValue_ = ea::move(value);
+    return *this;
+}
+
+Engine::EngineParameterDesc& Engine::EngineParameterDesc::OverrideInConfig()
+{
+    configOverride_ = true;
+    return *this;
 }
 
 extern const char* logLevelNames[];
@@ -1141,63 +1147,63 @@ void Engine::SaveConfigFile()
 
 void Engine::PopulateDefaultParameters()
 {
-    parameterDesc_[EP_APPLICATION_NAME].Set(false, "Unspecified Application");
-    parameterDesc_[EP_AUTOLOAD_PATHS].Set(false, "Autoload");
-    parameterDesc_[EP_CONFIG_NAME].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_BORDERLESS].Set(false, false);
-    parameterDesc_[EP_DUMP_SHADERS].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_ENGINE_AUTO_LOAD_SCRIPTS].Set(false, false);
-    parameterDesc_[EP_ENGINE_CLI_PARAMETERS].Set(false, true);
-    parameterDesc_[EP_EXTERNAL_WINDOW].Set(false, static_cast<void*>(nullptr));
-    parameterDesc_[EP_FLUSH_GPU].Set(false, false);
-    parameterDesc_[EP_FORCE_GL2].Set(false, false);
-    parameterDesc_[EP_FRAME_LIMITER].Set(true, true);
-    parameterDesc_[EP_FULL_SCREEN].Set(true, true);
-    parameterDesc_[EP_GPU_DEBUG].Set(false, false);
-    parameterDesc_[EP_HEADLESS].Set(false, false);
-    parameterDesc_[EP_HIGH_DPI].Set(false, true);
-    parameterDesc_[EP_LOG_LEVEL].Set(false, LOG_TRACE);
-    parameterDesc_[EP_LOG_NAME].Set(false, "Urho3D.log");
-    parameterDesc_[EP_LOG_QUIET].Set(false, false);
-    parameterDesc_[EP_LOW_QUALITY_SHADOWS].Set(true, false);
-    parameterDesc_[EP_MAIN_PLUGIN].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_MATERIAL_QUALITY].Set(true, QUALITY_HIGH);
-    parameterDesc_[EP_MONITOR].Set(true, 0);
-    parameterDesc_[EP_MULTI_SAMPLE].Set(false, 1);
-    parameterDesc_[EP_ORGANIZATION_NAME].Set(false, "Urho3D Rebel Fork");
-    parameterDesc_[EP_ORIENTATIONS].Set(false, "LandscapeLeft LandscapeRight");
-    parameterDesc_[EP_PACKAGE_CACHE_DIR].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_PLUGINS].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_REFRESH_RATE].Set(false, 0);
-    parameterDesc_[EP_RENDER_PATH].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_RESOURCE_PACKAGES].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_RESOURCE_PATHS].Set(false, "Data;CoreData");
-    parameterDesc_[EP_RESOURCE_PREFIX_PATHS].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_SHADER_CACHE_DIR].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_SHADOWS].Set(true, true);
-    parameterDesc_[EP_SOUND].Set(false, true);
-    parameterDesc_[EP_SOUND_BUFFER].Set(false, 100);
-    parameterDesc_[EP_SOUND_INTERPOLATION].Set(false, true);
-    parameterDesc_[EP_SOUND_MIX_RATE].Set(false, 44100);
-    parameterDesc_[EP_SOUND_MODE].Set(false, SpeakerMode::SPK_AUTO);
-    parameterDesc_[EP_SYSTEMUI_FLAGS].Set(false, 0u);
-    parameterDesc_[EP_TEXTURE_ANISOTROPY].Set(true, 4);
-    parameterDesc_[EP_TEXTURE_FILTER_MODE].Set(true, FILTER_TRILINEAR);
-    parameterDesc_[EP_TEXTURE_QUALITY].Set(true, QUALITY_HIGH);
-    parameterDesc_[EP_TIME_OUT].Set(false, 0);
-    parameterDesc_[EP_TOUCH_EMULATION].Set(false, false);
-    parameterDesc_[EP_TRIPLE_BUFFER].Set(false, false);
-    parameterDesc_[EP_VALIDATE_SHADERS].Set(false, false);
-    parameterDesc_[EP_VSYNC].Set(true, false);
-    parameterDesc_[EP_WINDOW_HEIGHT].Set(true, 0);
-    parameterDesc_[EP_WINDOW_ICON].Set(false, EMPTY_STRING);
-    parameterDesc_[EP_WINDOW_MAXIMIZE].Set(true, true);
-    parameterDesc_[EP_WINDOW_POSITION_X].Set(false, 0);
-    parameterDesc_[EP_WINDOW_POSITION_Y].Set(false, 0);
-    parameterDesc_[EP_WINDOW_RESIZABLE].Set(false, false);
-    parameterDesc_[EP_WINDOW_TITLE].Set(false, "Urho3D");
-    parameterDesc_[EP_WINDOW_WIDTH].Set(true, 0);
-    parameterDesc_[EP_WORKER_THREADS].Set(false, true);
+    parameterDesc_[EP_APPLICATION_NAME].SetDefault("Unspecified Application");
+    parameterDesc_[EP_AUTOLOAD_PATHS].SetDefault("Autoload");
+    parameterDesc_[EP_CONFIG_NAME].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_BORDERLESS].SetDefault(false);
+    parameterDesc_[EP_DUMP_SHADERS].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_ENGINE_AUTO_LOAD_SCRIPTS].SetDefault(false);
+    parameterDesc_[EP_ENGINE_CLI_PARAMETERS].SetDefault(true);
+    parameterDesc_[EP_EXTERNAL_WINDOW].SetDefault(static_cast<void*>(nullptr));
+    parameterDesc_[EP_FLUSH_GPU].SetDefault(false);
+    parameterDesc_[EP_FORCE_GL2].SetDefault(false);
+    parameterDesc_[EP_FRAME_LIMITER].SetDefault(true).OverrideInConfig();
+    parameterDesc_[EP_FULL_SCREEN].SetDefault(true).OverrideInConfig();
+    parameterDesc_[EP_GPU_DEBUG].SetDefault(false);
+    parameterDesc_[EP_HEADLESS].SetDefault(false);
+    parameterDesc_[EP_HIGH_DPI].SetDefault(true);
+    parameterDesc_[EP_LOG_LEVEL].SetDefault(LOG_TRACE);
+    parameterDesc_[EP_LOG_NAME].SetDefault("Urho3D.log");
+    parameterDesc_[EP_LOG_QUIET].SetDefault(false);
+    parameterDesc_[EP_LOW_QUALITY_SHADOWS].SetDefault(false).OverrideInConfig();
+    parameterDesc_[EP_MAIN_PLUGIN].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_MATERIAL_QUALITY].SetDefault(QUALITY_HIGH).OverrideInConfig();
+    parameterDesc_[EP_MONITOR].SetDefault(0).OverrideInConfig();
+    parameterDesc_[EP_MULTI_SAMPLE].SetDefault(1);
+    parameterDesc_[EP_ORGANIZATION_NAME].SetDefault("Urho3D Rebel Fork");
+    parameterDesc_[EP_ORIENTATIONS].SetDefault("LandscapeLeft LandscapeRight");
+    parameterDesc_[EP_PACKAGE_CACHE_DIR].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_PLUGINS].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_REFRESH_RATE].SetDefault(0);
+    parameterDesc_[EP_RENDER_PATH].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_RESOURCE_PACKAGES].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_RESOURCE_PATHS].SetDefault("Data;CoreData");
+    parameterDesc_[EP_RESOURCE_PREFIX_PATHS].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_SHADER_CACHE_DIR].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_SHADOWS].SetDefault(true).OverrideInConfig();
+    parameterDesc_[EP_SOUND].SetDefault(true);
+    parameterDesc_[EP_SOUND_BUFFER].SetDefault(100);
+    parameterDesc_[EP_SOUND_INTERPOLATION].SetDefault(true);
+    parameterDesc_[EP_SOUND_MIX_RATE].SetDefault(44100);
+    parameterDesc_[EP_SOUND_MODE].SetDefault(SpeakerMode::SPK_AUTO);
+    parameterDesc_[EP_SYSTEMUI_FLAGS].SetDefault(0u);
+    parameterDesc_[EP_TEXTURE_ANISOTROPY].SetDefault(4).OverrideInConfig();
+    parameterDesc_[EP_TEXTURE_FILTER_MODE].SetDefault(FILTER_TRILINEAR).OverrideInConfig();
+    parameterDesc_[EP_TEXTURE_QUALITY].SetDefault(QUALITY_HIGH).OverrideInConfig();
+    parameterDesc_[EP_TIME_OUT].SetDefault(0);
+    parameterDesc_[EP_TOUCH_EMULATION].SetDefault(false);
+    parameterDesc_[EP_TRIPLE_BUFFER].SetDefault(false);
+    parameterDesc_[EP_VALIDATE_SHADERS].SetDefault(false);
+    parameterDesc_[EP_VSYNC].SetDefault(false).OverrideInConfig();
+    parameterDesc_[EP_WINDOW_HEIGHT].SetDefault(0).OverrideInConfig();
+    parameterDesc_[EP_WINDOW_ICON].SetDefault(EMPTY_STRING);
+    parameterDesc_[EP_WINDOW_MAXIMIZE].SetDefault(true).OverrideInConfig();
+    parameterDesc_[EP_WINDOW_POSITION_X].SetDefault(0);
+    parameterDesc_[EP_WINDOW_POSITION_Y].SetDefault(0);
+    parameterDesc_[EP_WINDOW_RESIZABLE].SetDefault(false);
+    parameterDesc_[EP_WINDOW_TITLE].SetDefault("Urho3D");
+    parameterDesc_[EP_WINDOW_WIDTH].SetDefault(0).OverrideInConfig();
+    parameterDesc_[EP_WORKER_THREADS].SetDefault(true);
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
