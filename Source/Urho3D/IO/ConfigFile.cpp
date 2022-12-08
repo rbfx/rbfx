@@ -70,11 +70,11 @@ bool ConfigFileBase::MergeFile(const ea::string& fileName)
     {
         const auto mountPoint = vfs->GetMountPoint(i);
         if (const auto file = mountPoint->OpenFile(settingsFileId, FILE_READ))
-            LoadImpl(file);
+            LoadImpl(*file);
     }
     if (const auto file = vfs->OpenFile(FileIdentifier("conf", fileName), FILE_READ))
     {
-        LoadImpl(file);
+        LoadImpl(*file);
     }
 
     return true;
@@ -85,7 +85,7 @@ bool ConfigFileBase::LoadFile(const ea::string& fileName)
     const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
     if (const auto file = vfs->OpenFile(FileIdentifier("conf", fileName), FILE_READ))
     {
-        return LoadImpl(file);
+        return LoadImpl(*file);
     }
     return false;
 }
@@ -96,7 +96,7 @@ bool ConfigFileBase::Load(const ea::string& resourceName)
     const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
     if (const auto file = vfs->OpenFile(FileIdentifier("conf", resourceName), FILE_READ))
     {
-        return LoadImpl(file);
+        return LoadImpl(*file);
     }
     return false;
 }
@@ -130,16 +130,13 @@ bool ConfigFileBase::LoadJSON(const ea::string& resourceName)
 }
 
 /// Load from file. Return true if successful.
-bool ConfigFileBase::LoadImpl(const AbstractFilePtr& source)
+bool ConfigFileBase::LoadImpl(Deserializer& source)
 {
-    if (!source)
-        return false;
-
-    ea::string extension = GetExtension(source->GetName());
+    ea::string extension = GetExtension(source.GetName());
     if (extension == ".xml")
     {
         XMLFile xmlFile(context_);
-        if (!xmlFile.Load(*source))
+        if (!xmlFile.Load(source))
             return false;
         return LoadXML(xmlFile.GetRoot());
 
@@ -147,11 +144,11 @@ bool ConfigFileBase::LoadImpl(const AbstractFilePtr& source)
     if (extension == ".json")
     {
         JSONFile jsonFile(context_);
-        if (!jsonFile.Load(*source))
+        if (!jsonFile.Load(source))
             return false;
         return LoadJSON(jsonFile.GetRoot());
     }
-    return Load(*source);
+    return Load(source);
 }
 
 bool ConfigFileBase::SaveFile(const ea::string& fileName)
@@ -278,7 +275,11 @@ bool ConfigFile::SaveDiffFile(const ea::string& fileName)
          const auto mountPoint = vfs->GetMountPoint(i);
          if (mountPoint->Exists(settingsFileId))
          {
-             mergedConfig.LoadImpl(mountPoint->OpenFile(settingsFileId, FILE_READ));
+            auto file = mountPoint->OpenFile(settingsFileId, FILE_READ);
+            if (file)
+            {
+                mergedConfig.LoadImpl(*file);
+            }
          }
      }
 

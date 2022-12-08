@@ -70,7 +70,7 @@ public:
     bool LoadJSON(const ea::string& resourceName) override;
 protected:
     /// Load from file. Return true if successful.
-    bool LoadImpl(const AbstractFilePtr& source);
+    bool LoadImpl(Deserializer& source);
 };
 
 class URHO3D_API ConfigFile : public ConfigFileBase

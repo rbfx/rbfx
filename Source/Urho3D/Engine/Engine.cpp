@@ -243,7 +243,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         GetParameter(EP_ORGANIZATION_NAME).GetString(), GetParameter(EP_APPLICATION_NAME).GetString());
     if (!appPreferencesDir_.empty())
         fileSystem->CreateDir(appPreferencesDir_);
-    parameterDesc_[EP_SHADER_CACHE_DIR].defaultValue_ = appPreferencesDir_;
+    parameterDesc_[EP_SHADER_CACHE_DIR].SetDefault(appPreferencesDir_);
 
     // Initialize 
     auto* vfs = GetSubsystem<VirtualFileSystem>();
