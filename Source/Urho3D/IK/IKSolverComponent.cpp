@@ -634,7 +634,7 @@ Vector3 IKLegSolver::GetApproximateBendDirection(const Vector3& toeTargetPositio
     const Quaternion chainRotation = IKTrigonometricChain::CalculateRotation(
         thighBone->originalPosition_, toeBone->originalPosition_, originalDirection,
         thighBone->position_, toeTargetPosition, currentDirection);
-    return chainRotation * node_->GetWorldRotation() * bendDirection_;
+    return chainRotation * originalDirection;
 }
 
 Vector3 IKLegSolver::CalculateFootDirectionStraight(
@@ -873,6 +873,7 @@ bool IKArmSolver::InitializeNodes(IKNodeCache& nodeCache)
     if (!handBone)
         return false;
 
+    SetParentAsFrameOfReference(*shoulderBone);
     armChain_.Initialize(armBone, forearmBone, handBone);
     shoulderSegment_ = {shoulderBone, armBone};
     return true;
@@ -882,6 +883,9 @@ void IKArmSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     armChain_.UpdateLengths();
     shoulderSegment_.UpdateLength();
+
+    local_.defaultDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
+    local_.up_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * upDirection_;
 }
 
 void IKArmSolver::EnsureInitialized()
@@ -895,15 +899,18 @@ void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
 {
     EnsureInitialized();
 
+    const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
+    const Vector3 currentDirection = frameOfReference.rotation_ * local_.defaultDirection_;
+
     const Vector3 handTargetPosition = target_->GetWorldPosition();
 
     const Quaternion maxShoulderRotation = CalculateMaxShoulderRotation(handTargetPosition);
-    const auto [swing, twist] = maxShoulderRotation.ToSwingTwist(node_->GetWorldRotation() * upDirection_);
+    const auto [swing, twist] = maxShoulderRotation.ToSwingTwist(frameOfReference.rotation_ * local_.up_);
     const Quaternion shoulderRotation = Quaternion::IDENTITY.Slerp(swing, shoulderWeight_.y_)
         * Quaternion::IDENTITY.Slerp(twist, shoulderWeight_.x_);
     RotateShoulder(shoulderRotation);
 
-    armChain_.Solve(handTargetPosition, node_->GetWorldRotation() * bendDirection_, node_->GetWorldRotation() * bendDirection_, minElbowAngle_, maxElbowAngle_);
+    armChain_.Solve(handTargetPosition, originalDirection, currentDirection, minElbowAngle_, maxElbowAngle_);
 }
 
 void IKArmSolver::RotateShoulder(const Quaternion& rotation)
