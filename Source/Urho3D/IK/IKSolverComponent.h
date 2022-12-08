@@ -298,6 +298,12 @@ private:
     IKNodeSegment shoulderSegment_;
     WeakPtr<Node> target_;
     /// @}
+
+    struct LocalCache
+    {
+        Vector3 defaultDirection_;
+        Vector3 up_;
+    } local_;
 };
 
 class IKChainSolver : public IKSolverComponent
