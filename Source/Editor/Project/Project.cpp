@@ -34,7 +34,6 @@
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/IO/File.h>
-#include <Urho3D/IO/MountedDirectory.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -501,8 +500,8 @@ void Project::InitializeDefaultProject()
 
 void Project::InitializeResourceCache()
 {
-    auto engine = GetSubsystem<Engine>();
-    auto cache = GetSubsystem<ResourceCache>();
+    const auto engine = GetSubsystem<Engine>();
+    const auto cache = GetSubsystem<ResourceCache>();
     cache->ReleaseAllResources(true);
     cache->RemoveAllResourceDirs();
     cache->AddResourceDir(dataPath_);
@@ -510,13 +509,13 @@ void Project::InitializeResourceCache()
     cache->AddResourceDir(cachePath_);
     cache->AddResourceDir(oldCacheState_.GetEditorData());
 
-    auto vfs = GetSubsystem<VirtualFileSystem>();
+    const auto vfs = GetSubsystem<VirtualFileSystem>();
     vfs->UnmountAll();
-    vfs->Mount(MakeShared<MountedDirectory>(context_, oldCacheState_.GetEditorData()));
-    vfs->Mount(MakeShared<MountedDirectory>(context_, coreDataPath_));
-    vfs->Mount(MakeShared<MountedDirectory>(context_, dataPath_));
-    vfs->Mount(MakeShared<MountedDirectory>(context_, cachePath_));
-    vfs->Mount(MakeShared<MountedDirectory>(context_, engine->GetAppPreferencesDir(), "conf"));
+    vfs->MountDir(oldCacheState_.GetEditorData());
+    vfs->MountDir(coreDataPath_);
+    vfs->MountDir(dataPath_);
+    vfs->MountDir(cachePath_);
+    vfs->MountDir("conf" , engine->GetAppPreferencesDir());
 }
 
 void Project::ResetLayout()

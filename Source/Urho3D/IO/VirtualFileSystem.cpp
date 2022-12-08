@@ -43,6 +43,16 @@ VirtualFileSystem::VirtualFileSystem(Context* context)
 
 VirtualFileSystem::~VirtualFileSystem() = default;
 
+void VirtualFileSystem::MountDir(const ea::string& path)
+{
+    Mount(MakeShared<MountedDirectory>(context_, path, EMPTY_STRING));
+}
+
+void VirtualFileSystem::MountDir(const ea::string& scheme, const ea::string& path)
+{
+    Mount(MakeShared<MountedDirectory>(context_, path, scheme));
+}
+
 void VirtualFileSystem::Mount(MountPoint* mountPoint)
 {
     MutexLock lock(mountMutex_);
@@ -111,7 +121,7 @@ void VirtualFileSystem::MountDefault()
     for (auto& dir : directories)
         Mount(dir);
 
-    Mount(MakeShared<MountedDirectory>(context_, engine->GetAppPreferencesDir(), "conf"));
+    MountDir("conf", engine->GetAppPreferencesDir());
 }
 
 void VirtualFileSystem::Unmount(MountPoint* mountPoint)

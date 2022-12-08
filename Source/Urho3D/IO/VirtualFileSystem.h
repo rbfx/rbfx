@@ -39,6 +39,10 @@ public:
     /// Destruct.
     ~VirtualFileSystem() override;
 
+    /// Mount real folder into virtual file system.
+    void MountDir(const ea::string& path);
+    /// Mount real folder into virtual file system under the scheme.
+    void MountDir(const ea::string& scheme, const ea::string& path);
     /// Mount virtual or real folder into virtual file system.
     void Mount(MountPoint* mountPoint);
     /// Mount default mount points. Does not unmount previously mounted points.

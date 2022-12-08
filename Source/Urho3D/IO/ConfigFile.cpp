@@ -35,51 +35,6 @@
 
 namespace Urho3D
 {
-namespace
-{
-template <typename T>
-void SerializeConfigValue(Archive& archive, const char* key, Variant& defaultValue, StringVariantMap& values)
-{
-    if (archive.IsInput())
-    {
-        if (archive.HasElementOrBlock(key))
-        {
-            T actualValue = defaultValue.Get<T>();
-            SerializeValue(archive, key, actualValue);
-            values[key] = actualValue;
-        }
-    }
-    else
-    {
-        const auto valueIterator = values.find(key);
-        if (valueIterator != values.end())
-        {
-            T actualValue = valueIterator->second.Get<T>();
-            if (defaultValue.Get<T>() != actualValue)
-            {
-                SerializeValue(archive, key, actualValue);
-            }
-        }
-    }
-}
-void SerializeConfigVariant(Archive& archive, const char* key, Variant& defaultValue, StringVariantMap& values)
-{
-    switch (defaultValue.GetType())
-    {
-    case VAR_BOOL: SerializeConfigValue<bool>(archive, key, defaultValue, values); break;
-    case VAR_STRING: SerializeConfigValue<ea::string>(archive, key, defaultValue, values); break;
-    case VAR_INT: SerializeConfigValue<int>(archive, key, defaultValue, values); break;
-    case VAR_INT64: SerializeConfigValue<long long>(archive, key, defaultValue, values); break;
-    case VAR_FLOAT: SerializeConfigValue<float>(archive, key, defaultValue, values); break;
-    case VAR_DOUBLE: SerializeConfigValue<double>(archive, key, defaultValue, values); break;
-    case VAR_VECTOR2: SerializeConfigValue<Vector2>(archive, key, defaultValue, values); break;
-    case VAR_VECTOR3: SerializeConfigValue<Vector3>(archive, key, defaultValue, values); break;
-    case VAR_VECTOR4: SerializeConfigValue<Vector4>(archive, key, defaultValue, values); break;
-    default: URHO3D_LOGERROR("Config value serialization for key {} not implemented", key);
-    }
-}
-
-}
 
 ConfigFileBase::ConfigFileBase(Context* context)
     : BaseClassName(context)
@@ -141,7 +96,7 @@ bool ConfigFileBase::Load(const ea::string& resourceName)
     const auto* vfs = context_->GetSubsystem<VirtualFileSystem>();
     if (const auto file = vfs->OpenFile(FileIdentifier("conf", resourceName), FILE_READ))
     {
-        return Load(*file);
+        return LoadImpl(file);
     }
     return false;
 }
@@ -184,15 +139,17 @@ bool ConfigFileBase::LoadImpl(const AbstractFilePtr& source)
     if (extension == ".xml")
     {
         XMLFile xmlFile(context_);
-        xmlFile.Load(*source);
+        if (!xmlFile.Load(*source))
+            return false;
         return LoadXML(xmlFile.GetRoot());
 
     }
     if (extension == ".json")
     {
         JSONFile jsonFile(context_);
-        jsonFile.Load(*source);
-        return LoadJSON(&jsonFile.GetRoot());
+        if (!jsonFile.Load(*source))
+            return false;
+        return LoadJSON(jsonFile.GetRoot());
     }
     return Load(*source);
 }
@@ -239,9 +196,17 @@ bool ConfigFileBase::SaveFile(const ea::string& fileName)
 
 bool ConfigFileBase::Load(Deserializer& source)
 {
-    BinaryInputArchive archive(context_, source);
-    auto block = archive.OpenUnorderedBlock("Settings");
-    SerializeInBlock(archive);
+    try
+    {
+        BinaryInputArchive archive(context_, source);
+        auto block = archive.OpenUnorderedBlock("Settings");
+        SerializeInBlock(archive);
+    }
+    catch (std::exception ex)
+    {
+        URHO3D_LOGERROR("{}", ex.what());
+        return false;
+    }
     return true;
 }
 
@@ -334,12 +299,24 @@ bool ConfigFile::SaveDiffFile(const ea::string& fileName)
 
 void ConfigFile::SerializeInBlock(Archive& archive)
 {
-    for (auto& keyValue : default_)
+    if (archive.IsInput())
     {
-        auto& key = keyValue.first;
-        auto& defaultValue = keyValue.second;
-
-        SerializeConfigVariant(archive, key.c_str(), defaultValue, values_);
+         StringVariantMap map;
+         SerializeMap(archive, "Settings", map, "Value");
+         for (auto& keyValue : map)
+             SetValue(keyValue.first, keyValue.second);
+    }
+    else
+    {
+         StringVariantMap map;
+         for (auto& keyValue : values_)
+         {
+             if (keyValue.second != default_[keyValue.first])
+             {
+                map[keyValue.first] = keyValue.second;
+             }
+         }
+         SerializeMap(archive, "Settings", map, "Value");
     }
 }
 

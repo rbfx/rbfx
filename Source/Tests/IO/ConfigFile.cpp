@@ -22,17 +22,101 @@
 
 #include "../CommonUtils.h"
 #include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
 #include <Urho3D/IO/ConfigFile.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Resource/JSONFile.h>
+
+namespace
+{
+class ConfigMountPoint : public MountPoint
+{
+    URHO3D_OBJECT(ConfigMountPoint, MountPoint);
+
+public:
+    explicit ConfigMountPoint(Context* context, AbstractFilePtr file)
+        : BaseClassName(context)
+        , file_(file)
+    {
+    }
+
+    ~ConfigMountPoint() override = default;
+
+    bool AcceptsScheme(const ea::string& scheme) const override { return scheme == "conf"; }
+
+    bool Exists(const FileIdentifier& fileName) const override { return AcceptsScheme(fileName.scheme_) && fileName.fileName_ == file_->GetName(); }
+
+    AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override
+    {
+        if (fileName.fileName_ == file_->GetName())
+            return file_;
+        return nullptr;
+    }
+
+    ea::string GetFileName(const FileIdentifier& fileName) const override { return EMPTY_STRING; }
+
+    AbstractFilePtr file_;
+};
+}
+
+TEST_CASE("Load malformed file returns false")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto* vfs = context->GetSubsystem<VirtualFileSystem>();
+    MemoryBuffer buffer(R"({"key0": -3-})");
+    buffer.SetName("file.json");
+    const auto refCounted = MakeShared<File>(context);
+    const auto config = MakeShared<ConfigMountPoint>(context, AbstractFilePtr(&buffer, refCounted.Get()));
+    vfs->Mount(config);
+    ConfigFile configFile(context);
+    CHECK(!configFile.Load(buffer.GetName()));
+    vfs->Unmount(config);
+}
+
+TEST_CASE("Load config from file")
+{
+    MemoryBuffer buffer(R"({
+"Settings": [
+    {
+		"key": "key0",
+		"type": "Int",
+		"value": 3
+    }
+]})");
+
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto* vfs = context->GetSubsystem<VirtualFileSystem>();
+    buffer.SetName("file.json");
+    const auto refCounted = MakeShared<File>(context);
+    const auto config = MakeShared<ConfigMountPoint>(context, AbstractFilePtr(&buffer, refCounted.Get()));
+    vfs->Mount(config);
+    ConfigFile configFile(context);
+    configFile.SetDefaultValue("key0", 1);
+    CHECK(configFile.Load(buffer.GetName()));
+    CHECK(configFile.GetValue("key0").GetInt() == 3);
+    vfs->Unmount(config);
+}
 
 TEST_CASE("Load config file from JSON")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     JSONFile jsonFile(context);
-    MemoryBuffer buffer(R"({"key0":3, "key2":6})");
+    MemoryBuffer buffer(R"({
+"Settings": [
+    {
+		"key": "key0",
+		"type": "Int",
+		"value": 3
+    },
+    {
+		"key": "key2",
+		"type": "Int",
+		"value": 6
+    }
+]})");
     CHECK(jsonFile.Load(buffer));
 
     ConfigFile configFile(context);
@@ -70,7 +154,13 @@ TEST_CASE("Load config file from XML")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     XMLFile xmlFile(context);
-    MemoryBuffer buffer(R"(<Values key0="3" key2="6"/>)");
+    MemoryBuffer buffer(R"(<?xml version="1.0"?>
+<Settings>
+	<Settings>
+		<Value key="key0" type="Int" value="3" />
+		<Value key="key2" type="Int" value="6" />
+	</Settings>
+</Settings>)");
     CHECK(xmlFile.Load(buffer));
 
     ConfigFile configFile(context);
@@ -104,24 +194,24 @@ TEST_CASE("Save config file to XML")
     CHECK(configFile.GetValue("key2").GetInt() == 0);
 }
 
-//TEST_CASE("Save config file to binarry")
-//{
-//    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-//
-//    VectorBuffer buffer;
-//
-//    ConfigFile configFile(context);
-//    configFile.SetDefaultValue("key0", 1);
-//    configFile.SetDefaultValue("key1", 2);
-//    CHECK(configFile.SetValue("key0", 3));
-//    CHECK(!configFile.SetValue("key2", 6));
-//    CHECK(configFile.Save(buffer));
-//
-//    configFile.Clear();
-//    buffer.Seek(0);
-//
-//    CHECK(configFile.Load(buffer));
-//    CHECK(configFile.GetValue("key0").GetInt() == 3);
-//    CHECK(configFile.GetValue("key1").GetInt() == 2);
-//    CHECK(configFile.GetValue("key2").GetInt() == 0);
-//}
+TEST_CASE("Save config file to binarry")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    VectorBuffer buffer;
+
+    ConfigFile configFile(context);
+    configFile.SetDefaultValue("key0", 1);
+    configFile.SetDefaultValue("key1", 2);
+    CHECK(configFile.SetValue("key0", 3));
+    CHECK(!configFile.SetValue("key2", 6));
+    CHECK(configFile.Save(buffer));
+
+    configFile.Clear();
+    buffer.Seek(0);
+
+    CHECK(configFile.Load(buffer));
+    CHECK(configFile.GetValue("key0").GetInt() == 3);
+    CHECK(configFile.GetValue("key1").GetInt() == 2);
+    CHECK(configFile.GetValue("key2").GetInt() == 0);
+}
