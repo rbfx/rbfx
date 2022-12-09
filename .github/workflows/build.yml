@@ -31,6 +31,10 @@ env:
   ci_build_dir: ${{ github.workspace }}/cmake-build
   ci_sdk_dir: ${{ github.workspace }}/SDK
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   CheckSkipCI:
     runs-on: ubuntu-20.04
@@ -46,6 +50,7 @@ jobs:
     name: Discord Commits
     runs-on: ubuntu-20.04
     continue-on-error: true
+    if: github.repository == 'rbfx/rbfx' && github.branch == 'master'
     steps:
       - name: Discord Commits
         uses: dearimgui/github_discord_notifier@latest
@@ -53,7 +58,6 @@ jobs:
           discord-webhook: ${{ secrets.DISCORD_WEBHOOK_COMMITS }}
           github-token: ${{ github.token }}
           action-task: discord-commits
-          discord-filter: "'{{ github.branch }}' == 'master'"
           discord-username: GitHub
 
   Windows:
@@ -671,3 +675,23 @@ jobs:
           do
             dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
           done
+
+  Docs:
+    runs-on: ubuntu-20.04
+    if: github.repository == 'rbfx/rbfx' && github.branch == 'master'
+    needs:
+      - Windows
+      - UWP
+      - MacOS
+      - Android
+      - iOS
+      - Web
+      - CheckSkipCI
+    env:
+      GH_TOKEN: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
+
+    steps:
+      - name: Trigger
+        shell: bash
+        run: |
+          gh workflow run --repo rbfx/rbfx-docs Documentation
