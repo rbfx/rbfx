@@ -241,6 +241,11 @@ void IKSolverComponent::SetFrameOfReference(Node* node)
     frameOfReferenceNode_ = node;
 }
 
+void IKSolverComponent::SetFrameOfReference(const IKNode& node)
+{
+    SetFrameOfReference(FindNode(node));
+}
+
 void IKSolverComponent::SetParentAsFrameOfReference(const IKNode& childNode)
 {
     auto node = FindNode(childNode);
@@ -768,6 +773,7 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
             return false;
     }
 
+    SetFrameOfReference(*chain.GetSegments().front().beginNode_);
     chain_ = ea::move(chain);
     return true;
 }
@@ -775,10 +781,31 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
 void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     chain_.UpdateLengths();
+
+    const auto& segments = chain_.GetSegments();
+    local_.defaultTransforms_.resize(segments.size());
+    for (size_t i = 0; i < segments.size(); ++i)
+    {
+        const IKNode& node = *segments[i].endNode_;
+        local_.defaultTransforms_[i] = inverseFrameOfReference * Transform{node.position_, node.rotation_};
+    }
+}
+
+void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)
+{
+    const auto& segments = chain_.GetSegments();
+    for (size_t i = 0; i < segments.size(); ++i)
+    {
+        IKNode& node = *segments[i].endNode_;
+        const Transform& defaultTransform = local_.defaultTransforms_[i];
+        node.position_ = frameOfReference * defaultTransform.position_;
+        node.rotation_ = frameOfReference * defaultTransform.rotation_;
+    }
 }
 
 void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
+    SetOriginalTransforms(frameOfReference);
     chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
 
     const auto& segments = chain_.GetSegments();

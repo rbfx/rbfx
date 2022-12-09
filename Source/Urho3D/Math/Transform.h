@@ -48,6 +48,28 @@ struct Transform
         ret.position_ = -(ret.rotation_ * position_) * ret.scale_;
         return ret;
     }
+
+    /// Return transform multiplied by another transform.
+    Transform operator *(const Transform& rhs) const
+    {
+        Transform ret;
+        ret.rotation_ = rotation_ * rhs.rotation_;
+        ret.scale_ = scale_ * rhs.scale_;
+        ret.position_ = position_ + rotation_ * (rhs.position_ * scale_);
+        return ret;
+    }
+
+    /// Return position multiplied by the transform.
+    Vector3 operator *(const Vector3& rhs) const
+    {
+        return position_ + rotation_ * (rhs * scale_);
+    }
+
+    /// Return rotation multiplied by the transform.
+    Quaternion operator *(const Quaternion& rhs) const
+    {
+        return rotation_ * rhs;
+    }
 };
 
 }
