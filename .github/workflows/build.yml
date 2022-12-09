@@ -574,6 +574,7 @@ jobs:
       matrix:
         ci_lib_type:
           - lib
+          - dll
         ci_build_type:
           - dbg
           - rel
