@@ -63,6 +63,7 @@ protected:
     Node* FindNode(const IKNode& node) const;
     /// Set frame of reference Node used for calculations.
     void SetFrameOfReference(Node* node);
+    void SetFrameOfReference(const IKNode& node);
     /// Same as SetFrameOfReference, except it accepts first child of the node.
     void SetParentAsFrameOfReference(const IKNode& childNode);
 
@@ -240,6 +241,7 @@ protected:
     /// @}
 
 private:
+    void SetOriginalTransforms(const Transform& frameOfReference);
     float GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const;
 
     StringVector boneNames_;
@@ -251,6 +253,11 @@ private:
     IKSpineChain chain_;
     WeakPtr<Node> target_;
     WeakPtr<Node> twistTarget_;
+
+    struct LocalCache
+    {
+        ea::vector<Transform> defaultTransforms_;
+    } local_;
 };
 
 class IKArmSolver : public IKSolverComponent

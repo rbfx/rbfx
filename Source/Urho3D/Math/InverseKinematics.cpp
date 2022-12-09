@@ -389,7 +389,7 @@ void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSetti
         const bool isFirstSegment = &segment == &segments_.front();
         const bool isLastSegment = &segment == &segments_.back();
         if (!isFirstSegment)
-            segment.UpdateRotationInNodes(settings.continuousRotations_, isLastSegment);
+            segment.UpdateRotationInNodes(true, isLastSegment);
     }
 }
 
