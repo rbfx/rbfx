@@ -947,7 +947,7 @@ bool Image::SetSize(int width, int height, unsigned components, unsigned bytesPe
     return SetSize(width, height, 1, components, bytesPerComponent);
 }
 
-bool Image::SetSize(int width, int height, int depth, unsigned components, unsigned bytesPerComponent = 1)
+bool Image::SetSize(int width, int height, int depth, unsigned components, unsigned bytesPerComponent)
 {
     if (width == width_ && height == height_ && depth == depth_ && components == components_ && bytesPerComponent == bytesPerComponent_)
         return true;
