@@ -570,7 +570,6 @@ public:
 %include "Urho3D/Actions/Sequence.h"
 %include "Urho3D/Actions/Misc.h"
 %include "Urho3D/Actions/Repeat.h"
-%include "Urho3D/Actions/Speed.h"
 %include "Urho3D/Actions/ShaderParameter.h"
 
 // --------------------------------------- IK ---------------------------------------
