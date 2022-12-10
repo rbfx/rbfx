@@ -30,7 +30,7 @@
 namespace Urho3D
 {
 
-using IKNodeCache = ea::unordered_map<Node*, IKNode>;
+using IKNodeCache = ea::unordered_map<WeakPtr<Node>, IKNode>;
 
 /// Base component for all IK solvers.
 class IKSolverComponent : public Component

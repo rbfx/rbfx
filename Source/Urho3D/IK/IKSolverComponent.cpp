@@ -232,7 +232,7 @@ Node* IKSolverComponent::AddCheckedNode(IKNodeCache& nodeCache, const ea::string
         return nullptr;
     }
 
-    nodeCache.emplace(boneNode, IKNode{});
+    nodeCache.emplace(WeakPtr<Node>{boneNode}, IKNode{});
     return boneNode;
 }
 
@@ -330,6 +330,9 @@ bool IKChainSolver::InitializeNodes(IKNodeCache& nodeCache)
     if (!target_)
         return false;
 
+    if (boneNames_.size() < 2)
+        return false;
+
     IKFabrikChain chain;
     for (const ea::string& boneName : boneNames_)
     {
@@ -348,13 +351,6 @@ void IKChainSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     chain_.UpdateLengths();
 
-    // TODO: Temp
-    /*for (auto& segment : chain_.segments_)
-    {
-        segment.angularConstraint_.enabled_ = true;
-        segment.angularConstraint_.maxAngle_ = 90.0f;
-        segment.angularConstraint_.axis_ = Vector3::DOWN;
-    }*/
 }
 
 void IKChainSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
