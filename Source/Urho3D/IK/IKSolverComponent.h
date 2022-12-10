@@ -367,13 +367,6 @@ private:
     void EnsureInitialized();
     Ray GetEyeRay() const;
 
-    // TODO: Extract to common place?
-    static Quaternion SolveLookAt(const Transform& jointTransform,
-        const Vector3& localEyePosition, const Vector3& localEyeDirection, const Vector3& lookAtTarget,
-        const IKSettings& settings);
-    static Quaternion SolveLookTo(const Transform& jointTransform,
-        const Vector3& localEyeDirection, const Vector3& lookToDirection);
-
     ea::string neckBoneName_;
     ea::string headBoneName_;
     ea::string headTargetName_;
@@ -385,6 +378,9 @@ private:
     float lookAtWeight_{0.0f};
 
     IKNodeSegment neckSegment_;
+    IKEyeChain neckChain_;
+    IKEyeChain headChain_;
+
     WeakPtr<Node> headTarget_;
     WeakPtr<Node> lookAtTarget_;
 
@@ -392,12 +388,6 @@ private:
     {
         Transform defaultNeckTransform_;
         Transform defaultHeadTransform_;
-
-        Vector3 eyeDirectionInHeadSpace_;
-        Vector3 eyePositionInHeadSpace_;
-
-        Vector3 eyeDirectionInNeckSpace_;
-        Vector3 eyePositionInNeckSpace_;
     } local_;
 };
 

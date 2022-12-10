@@ -134,6 +134,26 @@ private:
     Quaternion currentChainRotation_;
 };
 
+/// Two-segment IK chain for eyes.
+class URHO3D_API IKEyeChain
+{
+public:
+    void Initialize(IKNode* rootNode);
+    void SetLocalEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection);
+    void SetWorldEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection);
+
+    Quaternion SolveLookAt(const Vector3& lookAtTarget, const IKSettings& settings) const;
+    Quaternion SolveLookTo(const Vector3& lookToDirection) const;
+
+    const Vector3& GetLocalEyeOffset() const { return eyeOffset_; }
+    const Vector3& GetLocalEyeDirection() const { return eyeDirection_; }
+
+private:
+    IKNode* rootNode_{};
+    Vector3 eyeOffset_;
+    Vector3 eyeDirection_;
+};
+
 /// Base class for generic IK chain.
 class URHO3D_API IKChain
 {

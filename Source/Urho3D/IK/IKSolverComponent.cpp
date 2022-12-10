@@ -1048,6 +1048,8 @@ bool IKLookAtSolver::InitializeNodes(IKNodeCache& nodeCache)
         return false;
 
     SetParentAsFrameOfReference(*neckNode);
+    neckChain_.Initialize(neckNode);
+    headChain_.Initialize(headNode);
     neckSegment_ = {neckNode, headNode};
     return true;
 }
@@ -1062,11 +1064,10 @@ void IKLookAtSolver::UpdateChainLengths(const Transform& inverseFrameOfReference
     local_.defaultNeckTransform_ = inverseFrameOfReference * Transform{neckNode.position_, neckNode.rotation_};
     local_.defaultHeadTransform_ = inverseFrameOfReference * Transform{headNode.position_, headNode.rotation_};
 
-    local_.eyeDirectionInHeadSpace_ = headNode.rotation_.Inverse() * node_->GetWorldRotation() * eyeDirection_;
-    local_.eyePositionInHeadSpace_ = headNode.rotation_.Inverse() * node_->GetWorldRotation() * eyeOffset_;
-
-    local_.eyeDirectionInNeckSpace_ = neckNode.rotation_.Inverse() * node_->GetWorldRotation() * eyeDirection_;
-    local_.eyePositionInNeckSpace_ = neckNode.rotation_.Inverse() * node_->GetWorldRotation() * eyeOffset_;
+    const Vector3 eyeDirection = node_->GetWorldRotation() * eyeDirection_;
+    const Vector3 eyeOffset = node_->GetWorldRotation() * eyeOffset_;
+    neckChain_.SetWorldEyeTransform(eyeOffset, eyeDirection);
+    headChain_.SetWorldEyeTransform(eyeOffset, eyeDirection);
 }
 
 void IKLookAtSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
@@ -1088,10 +1089,8 @@ void IKLookAtSolver::SolveInternal(const Transform& frameOfReference, const IKSe
 
     {
         const Transform parentTransform{neckNode.position_, neckNode.rotation_};
-        const Quaternion neckRotation0 = SolveLookTo(
-            parentTransform, local_.eyeDirectionInNeckSpace_, headDirection);
-        const Quaternion neckRotation1 = SolveLookAt(
-            parentTransform, local_.eyePositionInNeckSpace_, local_.eyeDirectionInNeckSpace_, lookAtTarget, settings);
+        const Quaternion neckRotation0 = neckChain_.SolveLookTo(headDirection);
+        const Quaternion neckRotation1 = neckChain_.SolveLookAt(lookAtTarget, settings);
 
         const Quaternion neckRotation = MixRotation(neckRotation0, neckRotation1, lookAtWeight);
         const Quaternion neckRotationWeighted = Quaternion::IDENTITY.Slerp(neckRotation, neckWeight_);
@@ -1101,10 +1100,8 @@ void IKLookAtSolver::SolveInternal(const Transform& frameOfReference, const IKSe
 
     {
         const Transform parentTransform{headNode.position_, headNode.rotation_};
-        const Quaternion headRotation0 = SolveLookTo(
-            parentTransform, local_.eyeDirectionInHeadSpace_, headDirection);
-        const Quaternion headRotation1 = SolveLookAt(
-            parentTransform, local_.eyePositionInHeadSpace_, local_.eyeDirectionInHeadSpace_, lookAtTarget, settings);
+        const Quaternion headRotation0 = headChain_.SolveLookTo(headDirection);
+        const Quaternion headRotation1 = headChain_.SolveLookAt(lookAtTarget, settings);
 
         const Quaternion headRotation = MixRotation(headRotation0, headRotation1, lookAtWeight);
         headNode.rotation_ = headRotation * headNode.rotation_;
@@ -1123,31 +1120,9 @@ void IKLookAtSolver::EnsureInitialized()
 Ray IKLookAtSolver::GetEyeRay() const
 {
     const IKNode& headBone = *neckSegment_.endNode_;
-    const Vector3 origin = headBone.position_ + headBone.rotation_ * local_.eyePositionInHeadSpace_;
-    const Vector3 direction = headBone.rotation_ * local_.eyeDirectionInHeadSpace_;
+    const Vector3 origin = headBone.position_ + headBone.rotation_ * headChain_.GetLocalEyeOffset();
+    const Vector3 direction = headBone.rotation_ * headChain_.GetLocalEyeDirection();
     return {origin, direction};
-}
-
-Quaternion IKLookAtSolver::SolveLookAt(const Transform& jointTransform,
-    const Vector3& localEyePosition, const Vector3& localEyeDirection, const Vector3& lookAtTarget,
-    const IKSettings& settings)
-{
-    Transform newTransform = jointTransform;
-    for (unsigned i = 0; i < settings.maxIterations_; ++i)
-    {
-        const Vector3 initialEyeDirection = newTransform.rotation_ * localEyeDirection;
-        const Vector3 desiredEyeRotation = lookAtTarget - newTransform * localEyePosition;
-        const Quaternion rotation{initialEyeDirection, desiredEyeRotation};
-        newTransform.rotation_ = rotation * newTransform.rotation_;
-    }
-    return newTransform.rotation_ * jointTransform.rotation_.Inverse();
-}
-
-Quaternion IKLookAtSolver::SolveLookTo(const Transform& jointTransform,
-    const Vector3& localEyeDirection, const Vector3& lookToDirection)
-{
-    const Vector3 initialEyeDirection = jointTransform.rotation_ * localEyeDirection;
-    return Quaternion{initialEyeDirection, lookToDirection};
 }
 
 }

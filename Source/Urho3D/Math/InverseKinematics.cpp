@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Math/InverseKinematics.h"
+#include "../Math/Transform.h"
 
 #include <EASTL/bonus/adaptors.h>
 #include <EASTL/numeric.h>
@@ -273,6 +274,44 @@ void IKTrigonometricChain::RotateSegmentsToTarget(const Vector3& newPos1, const 
     const bool fromPrevious = true;
     segments_[0].UpdateRotationInNodes(fromPrevious, false);
     segments_[1].UpdateRotationInNodes(fromPrevious, true);
+}
+
+void IKEyeChain::Initialize(IKNode* rootNode)
+{
+    rootNode_ = rootNode;
+}
+
+void IKEyeChain::SetLocalEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection)
+{
+    eyeOffset_ = eyeOffset;
+    eyeDirection_ = eyeDirection;
+}
+
+void IKEyeChain::SetWorldEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection)
+{
+    eyeOffset_ = rootNode_->rotation_.Inverse() * eyeOffset;
+    eyeDirection_ = rootNode_->rotation_.Inverse() * eyeDirection;
+}
+
+Quaternion IKEyeChain::SolveLookAt(const Vector3& lookAtTarget, const IKSettings& settings) const
+{
+    const Transform parentTransform{rootNode_->position_, rootNode_->rotation_};
+    Transform newTransform = parentTransform;
+    for (unsigned i = 0; i < settings.maxIterations_; ++i)
+    {
+        const Vector3 initialEyeDirection = newTransform.rotation_ * eyeDirection_;
+        const Vector3 desiredEyeRotation = lookAtTarget - newTransform * eyeOffset_;
+        const Quaternion rotation{initialEyeDirection, desiredEyeRotation};
+        newTransform.rotation_ = rotation * newTransform.rotation_;
+    }
+    return newTransform.rotation_ * parentTransform.rotation_.Inverse();
+}
+
+Quaternion IKEyeChain::SolveLookTo(const Vector3& lookToDirection) const
+{
+    const Transform parentTransform{rootNode_->position_, rootNode_->rotation_};
+    const Vector3 initialEyeDirection = parentTransform.rotation_ * eyeDirection_;
+    return Quaternion{initialEyeDirection, lookToDirection};
 }
 
 void IKChain::Clear()
