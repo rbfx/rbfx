@@ -27,6 +27,13 @@
 
 namespace Urho3D
 {
+/// File open mode.
+enum FileMode
+{
+    FILE_READ = 0,
+    FILE_WRITE,
+    FILE_READWRITE
+};
 
 /// A common root class for objects that implement both Serializer and Deserializer.
 class URHO3D_API AbstractFile : public Deserializer, public Serializer

@@ -28,12 +28,14 @@
 namespace Urho3D
 {
 
-/// Engine parameters
+/// Engine parameters sorted by name.
+/// Keep the list sorted when adding new elements.
 /// TODO: Rename to CamelCase
 /// @{
 URHO3D_GLOBAL_CONSTANT(ConstString EP_APPLICATION_NAME{"ApplicationName"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_AUTOLOAD_PATHS{"AutoloadPaths"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_BORDERLESS{"Borderless"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_CONFIG_NAME{"EngineConfigName"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_DUMP_SHADERS{"DumpShaders"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_ENGINE_AUTO_LOAD_SCRIPTS{"EngineAutoLoadScripts"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_ENGINE_CLI_PARAMETERS{"EngineCliParameters"});
@@ -64,11 +66,11 @@ URHO3D_GLOBAL_CONSTANT(ConstString EP_RESOURCE_PATHS{"ResourcePaths"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_RESOURCE_PREFIX_PATHS{"ResourcePrefixPaths"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_SHADER_CACHE_DIR{"ShaderCacheDir"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_SHADOWS{"Shadows"});
-URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND{"Sound"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND_BUFFER{"SoundBuffer"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND_INTERPOLATION{"SoundInterpolation"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND_MIX_RATE{"SoundMixRate"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND_MODE{"SoundMode"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_SOUND{"Sound"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_SYSTEMUI_FLAGS{"SystemUIFlags"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_TEXTURE_ANISOTROPY{"TextureAnisotropy"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_TEXTURE_FILTER_MODE{"TextureFilterMode"});
