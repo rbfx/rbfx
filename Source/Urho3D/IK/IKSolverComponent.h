@@ -371,17 +371,22 @@ private:
     static Quaternion SolveLookAt(const Transform& jointTransform,
         const Vector3& localEyePosition, const Vector3& localEyeDirection, const Vector3& lookAtTarget,
         const IKSettings& settings);
+    static Quaternion SolveLookTo(const Transform& jointTransform,
+        const Vector3& localEyeDirection, const Vector3& lookToDirection);
 
     ea::string neckBoneName_;
     ea::string headBoneName_;
-    ea::string targetName_;
+    ea::string headTargetName_;
+    ea::string lookAtTargetName_;
 
     Vector3 eyeDirection_{Vector3::FORWARD};
     Vector3 eyeOffset_;
     float neckWeight_{0.5f};
+    float lookAtWeight_{0.0f};
 
     IKNodeSegment neckSegment_;
-    WeakPtr<Node> target_;
+    WeakPtr<Node> headTarget_;
+    WeakPtr<Node> lookAtTarget_;
 
     struct LocalCache
     {
