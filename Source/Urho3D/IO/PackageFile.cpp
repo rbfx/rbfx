@@ -31,7 +31,7 @@ namespace Urho3D
 {
 
 PackageFile::PackageFile(Context* context) :
-    Object(context),
+    MountPoint(context),
     totalSize_(0),
     totalDataSize_(0),
     checksum_(0),
@@ -40,7 +40,7 @@ PackageFile::PackageFile(Context* context) :
 }
 
 PackageFile::PackageFile(Context* context, const ea::string& fileName, unsigned startOffset) :
-    Object(context),
+    MountPoint(context),
     totalSize_(0),
     totalDataSize_(0),
     checksum_(0),
@@ -199,6 +199,49 @@ void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathNam
             result.push_back(fileName);
         }
     }
+}
+
+/// Checks if mount point accepts scheme.
+bool PackageFile::AcceptsScheme(const ea::string& scheme) const
+{
+    return scheme.empty() || scheme.comparei(GetName()) == 0;
+}
+
+/// Check if a file exists within the mount point.
+bool PackageFile::Exists(const FileIdentifier& fileName) const
+{
+    // If scheme defined then it should match package name. Otherwise this package can't open the file.
+    if (!AcceptsScheme(fileName.scheme_))
+        return {};
+
+    // Quit if file doesn't exists in the package.
+    return Exists(fileName.fileName_);
+}
+
+/// Open package file. Returns null if file not found.
+AbstractFilePtr PackageFile::OpenFile(const FileIdentifier& fileName, FileMode mode)
+{
+    // Package file can write files.
+    if (mode != FILE_READ)
+        return {};
+
+    // If scheme defined it should match package name. Otherwise this package can't open the file.
+    if (!fileName.scheme_.empty() && fileName.scheme_ != GetName())
+        return {};
+
+    // Quit if file doesn't exists in the package.
+    if (!Exists(fileName.fileName_))
+        return {};
+
+    auto file = MakeShared<File>(context_, this, fileName.fileName_);
+    return file;
+}
+
+/// Get full path to a file if it exists in a mount point.
+ea::string PackageFile::GetFileName(const FileIdentifier& fileName) const
+{
+    // Can't make path to a file within the PAK.
+    return ea::string();
 }
 
 }

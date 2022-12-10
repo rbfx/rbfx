@@ -27,6 +27,7 @@
 %csattribute(Urho3D::BinaryInputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
 %csattribute(Urho3D::Base64OutputArchive, %arg(ea::string), Base64, GetBase64);
 %csattribute(Urho3D::File, %arg(ea::string), AbsoluteName, GetAbsoluteName);
+%csattribute(Urho3D::ConfigFile, %arg(Urho3D::StringVariantMap), Values, GetValues);
 %csattribute(Urho3D::File, %arg(Urho3D::FileMode), Mode, GetMode);
 %csattribute(Urho3D::File, %arg(void *), Handle, GetHandle);
 %csattribute(Urho3D::File, %arg(bool), IsPackaged, IsPackaged);

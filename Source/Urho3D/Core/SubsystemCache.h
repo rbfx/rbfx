@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,7 @@ using CachedSubsystemList = ea::tuple<
     , class Time
     , class WorkQueue
     , class FileSystem
+    , class VirtualFileSystem
 #if URHO3D_LOGGING
     , class Log
 #endif

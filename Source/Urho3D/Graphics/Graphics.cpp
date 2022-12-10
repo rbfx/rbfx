@@ -67,6 +67,8 @@
 #include "../Graphics/Zone.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
+#include "../Engine/Engine.h"
+#include "../Engine/EngineDefs.h"
 
 #include <SDL.h>
 
@@ -185,7 +187,17 @@ bool Graphics::SetMode(int width, int height)
 bool Graphics::ToggleFullscreen()
 {
     ea::swap(primaryWindowMode_, secondaryWindowMode_);
-    return SetScreenMode(primaryWindowMode_.width_, primaryWindowMode_.height_, primaryWindowMode_.screenParams_);
+    if (SetScreenMode(primaryWindowMode_.width_, primaryWindowMode_.height_, primaryWindowMode_.screenParams_))
+    {
+        auto engine = context_->GetSubsystem<Engine>();
+        engine->SetParameter(EP_WINDOW_WIDTH, primaryWindowMode_.width_);
+        engine->SetParameter(EP_WINDOW_HEIGHT, primaryWindowMode_.height_);
+        engine->SetParameter(EP_FULL_SCREEN, primaryWindowMode_.screenParams_.fullscreen_);
+        engine->SetParameter(EP_BORDERLESS, primaryWindowMode_.screenParams_.borderless_);
+        engine->SetParameter(EP_MONITOR, primaryWindowMode_.screenParams_.monitor_);
+        return true;
+    }
+    return false;
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Variant& value)
