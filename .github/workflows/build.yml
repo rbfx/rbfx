@@ -31,6 +31,10 @@ env:
   ci_build_dir: ${{ github.workspace }}/cmake-build
   ci_sdk_dir: ${{ github.workspace }}/SDK
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   CheckSkipCI:
     runs-on: ubuntu-20.04
