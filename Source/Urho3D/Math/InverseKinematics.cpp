@@ -364,6 +364,9 @@ const IKNodeSegment* IKChain::FindSegment(const IKNode* node) const
 
 void IKChain::StorePreviousTransforms()
 {
+    if (segments_.empty())
+        return;
+
     for (const IKNodeSegment& segment : segments_)
     {
         segment.beginNode_->previousPosition_ = segment.beginNode_->position_;
@@ -536,55 +539,13 @@ void IKSpineChain::EvaluateSegmentPositions(float totalRotation,
 
 void IKFabrikChain::Solve(const Vector3& target, const IKSettings& settings)
 {
+    if (segments_.empty())
+        return;
+
     StorePreviousTransforms();
-
-    if (!TrySolve(target, settings))
-    {
-        bool solved = false;
-        const Vector3 rotationAxis = GetDeadlockRotationAxis(target);
-        for (float angle = 0.0f; angle < 360.0f; angle += 10.0f)
-        {
-            RestorePreviousTransforms();
-            RotateChain(Quaternion{angle, rotationAxis});
-            if (TrySolve(target, settings))
-            {
-                solved = true;
-                break;
-            }
-        }
-        if (!solved)
-        {
-            // TODO: Handle fail?
-            //URHO3D_LOGERROR("Failed to solve IK chain");
-            return;
-        }
-    }
-
+    // Don't do more than one attempt for now
+    TrySolve(target, settings);
     UpdateSegmentRotations(settings);
-}
-
-Vector3 IKFabrikChain::GetDeadlockRotationAxis(const Vector3& target) const
-{
-    const Vector3& beginPosition = segments_.front().beginNode_->position_;
-    const Vector3& endPosition = segments_.back().endNode_->previousPosition_;
-    const Vector3 directionToEnd = (endPosition - beginPosition).Normalized();
-    const Vector3 directionToTarget = (target - beginPosition).Normalized();
-    return directionToEnd.CrossProduct(directionToTarget).Normalized();
-}
-
-void IKFabrikChain::RotateChain(const Quaternion& rotation)
-{
-    for (IKNodeSegment& segment : segments_)
-        RotateChainNode(*segment.beginNode_, rotation);
-    RotateChainNode(*segments_.back().endNode_, rotation);
-}
-
-void IKFabrikChain::RotateChainNode(IKNode& node, const Quaternion& rotation) const
-{
-    const Vector3& origin = segments_.front().beginNode_->position_;
-
-    node.rotation_ = rotation * node.rotation_;
-    node.position_ = rotation * (node.position_ - origin) + origin;
 }
 
 bool IKFabrikChain::TrySolve(const Vector3& target, const IKSettings& settings)

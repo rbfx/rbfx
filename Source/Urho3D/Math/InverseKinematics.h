@@ -210,9 +210,6 @@ public:
     void Solve(const Vector3& target, const IKSettings& settings);
 
 private:
-    Vector3 GetDeadlockRotationAxis(const Vector3& target) const;
-    void RotateChain(const Quaternion& rotation);
-    void RotateChainNode(IKNode& node, const Quaternion& rotation) const;
     void SolveIteration(const Vector3& target, const IKSettings& settings, bool backward);
     bool TrySolve(const Vector3& target, const IKSettings& settings);
 };
