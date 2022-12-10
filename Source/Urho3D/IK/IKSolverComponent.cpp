@@ -115,6 +115,16 @@ void DrawNode(DebugRenderer* debug, bool oriented,
     }
 }
 
+Quaternion MixRotation(const Quaternion& from, const Quaternion& to, float factor)
+{
+    if (factor <= 0.0f)
+        return from;
+    else if (factor >= 1.0f)
+        return to;
+    else
+        return from.Slerp(to, factor);
+}
+
 }
 
 IKSolverComponent::IKSolverComponent(Context* context)
@@ -194,6 +204,9 @@ void IKSolverComponent::OnTreeDirty()
 
 IKNode* IKSolverComponent::AddSolverNode(IKNodeCache& nodeCache, const ea::string& name)
 {
+    if (name.empty())
+        return nullptr;
+
     Node* boneNode = node_->GetChild(name, true);
     if (!boneNode)
     {
@@ -209,6 +222,9 @@ IKNode* IKSolverComponent::AddSolverNode(IKNodeCache& nodeCache, const ea::strin
 
 Node* IKSolverComponent::AddCheckedNode(IKNodeCache& nodeCache, const ea::string& name) const
 {
+    if (name.empty())
+        return nullptr;
+
     Node* boneNode = node_->GetChild(name, true);
     if (!boneNode)
     {
@@ -984,11 +1000,13 @@ void IKLookAtSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Neck Bone Name", ea::string, neckBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Head Bone Name", ea::string, headBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
-    URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Head Target Name", ea::string, headTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Look At Target Name", ea::string, lookAtTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE_EX("Eye Direction", Vector3, eyeDirection_, OnTreeDirty, Vector3::FORWARD, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Eye Offset", Vector3, eyeOffset_, OnTreeDirty, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Neck Weight", float, neckWeight_, OnTreeDirty, 0.5f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Look At Weight", float, lookAtWeight_, OnTreeDirty, 0.0f, AM_DEFAULT);
 }
 
 void IKLookAtSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -1005,15 +1023,21 @@ void IKLookAtSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         const Ray eyeRay = GetEyeRay();
         DrawDirection(debug, eyeRay.origin_, eyeRay.direction_, true, false);
     }
-    if (target_)
-        DrawIKTarget(debug, target_, false);
+    if (headTarget_)
+        DrawIKTarget(debug, headTarget_, true);
+    if (lookAtTarget_)
+        DrawIKTarget(debug, lookAtTarget_, false);
 }
 
 bool IKLookAtSolver::InitializeNodes(IKNodeCache& nodeCache)
 {
-    target_ = AddCheckedNode(nodeCache, targetName_);
-    if (!target_)
+    headTarget_ = AddCheckedNode(nodeCache, headTargetName_);
+    lookAtTarget_ = AddCheckedNode(nodeCache, lookAtTargetName_);
+    if (!headTarget_ && !lookAtTarget_)
+    {
+        URHO3D_LOGERROR("IKLookAtSolver: Either head or look at target must be specified");
         return false;
+    }
 
     IKNode* neckNode = AddSolverNode(nodeCache, neckBoneName_);
     if (!neckNode)
@@ -1058,19 +1082,33 @@ void IKLookAtSolver::SolveInternal(const Transform& frameOfReference, const IKSe
     neckNode.StorePreviousTransform();
     headNode.StorePreviousTransform();
 
-    const Vector3 lookAtTarget = target_->GetWorldPosition();
+    const float lookAtWeight = !lookAtTarget_ ? 0.0f : !headTarget_ ? 1.0f : lookAtWeight_;
+    const Vector3 headDirection = headTarget_ ? headTarget_->GetWorldDirection() : Vector3::DOWN;
+    const Vector3 lookAtTarget = lookAtTarget_ ? lookAtTarget_->GetWorldPosition() : Vector3::ZERO;
 
-    const Quaternion neckRotation = SolveLookAt(
-        Transform{neckNode.position_, neckNode.rotation_},
-        local_.eyePositionInNeckSpace_, local_.eyeDirectionInNeckSpace_, lookAtTarget, settings);
-    const Quaternion neckRotationWeighted = Quaternion::IDENTITY.Slerp(neckRotation, neckWeight_);
-    neckNode.rotation_ = neckRotationWeighted * neckNode.rotation_;
-    headNode.RotateAround(neckNode.position_, neckRotationWeighted);
+    {
+        const Transform parentTransform{neckNode.position_, neckNode.rotation_};
+        const Quaternion neckRotation0 = SolveLookTo(
+            parentTransform, local_.eyeDirectionInNeckSpace_, headDirection);
+        const Quaternion neckRotation1 = SolveLookAt(
+            parentTransform, local_.eyePositionInNeckSpace_, local_.eyeDirectionInNeckSpace_, lookAtTarget, settings);
 
-    const Quaternion headRotation = SolveLookAt(
-        Transform{headNode.position_, headNode.rotation_},
-        local_.eyePositionInHeadSpace_, local_.eyeDirectionInHeadSpace_, lookAtTarget, settings);
-    headNode.rotation_ = headRotation * headNode.rotation_;
+        const Quaternion neckRotation = MixRotation(neckRotation0, neckRotation1, lookAtWeight);
+        const Quaternion neckRotationWeighted = Quaternion::IDENTITY.Slerp(neckRotation, neckWeight_);
+        neckNode.rotation_ = neckRotationWeighted * neckNode.rotation_;
+        headNode.RotateAround(neckNode.position_, neckRotationWeighted);
+    }
+
+    {
+        const Transform parentTransform{headNode.position_, headNode.rotation_};
+        const Quaternion headRotation0 = SolveLookTo(
+            parentTransform, local_.eyeDirectionInHeadSpace_, headDirection);
+        const Quaternion headRotation1 = SolveLookAt(
+            parentTransform, local_.eyePositionInHeadSpace_, local_.eyeDirectionInHeadSpace_, lookAtTarget, settings);
+
+        const Quaternion headRotation = MixRotation(headRotation0, headRotation1, lookAtWeight);
+        headNode.rotation_ = headRotation * headNode.rotation_;
+    }
 
     neckNode.MarkRotationDirty();
     headNode.MarkRotationDirty();
@@ -1079,6 +1117,7 @@ void IKLookAtSolver::SolveInternal(const Transform& frameOfReference, const IKSe
 void IKLookAtSolver::EnsureInitialized()
 {
     neckWeight_ = Clamp(neckWeight_, 0.0f, 1.0f);
+    lookAtWeight_ = Clamp(lookAtWeight_, 0.0f, 1.0f);
 }
 
 Ray IKLookAtSolver::GetEyeRay() const
@@ -1102,6 +1141,13 @@ Quaternion IKLookAtSolver::SolveLookAt(const Transform& jointTransform,
         newTransform.rotation_ = rotation * newTransform.rotation_;
     }
     return newTransform.rotation_ * jointTransform.rotation_.Inverse();
+}
+
+Quaternion IKLookAtSolver::SolveLookTo(const Transform& jointTransform,
+    const Vector3& localEyeDirection, const Vector3& lookToDirection)
+{
+    const Vector3 initialEyeDirection = jointTransform.rotation_ * localEyeDirection;
+    return Quaternion{initialEyeDirection, lookToDirection};
 }
 
 }
