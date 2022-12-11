@@ -3,7 +3,6 @@
     <AssemblyName>Urho3DNet.Tests</AssemblyName>
     <OutputType>Library</OutputType>
     <LangVersion>9.0</LangVersion>
-    <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <PropertyGroup>
