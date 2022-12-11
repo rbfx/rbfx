@@ -37,20 +37,13 @@ namespace Urho3D
 {
 using namespace Actions;
 
-/// Construct.
-ActionBuilder::ActionBuilder(Context* context, const SharedPtr<Actions::FiniteTimeAction>& action)
-    : context_(context)
-    , action_(action)
-{
-}
-
 ActionBuilder::ActionBuilder(Context* context)
     : context_(context)
 {
 }
 
 /// Continue with provided action.
-ActionBuilder ActionBuilder::Then(const SharedPtr<Actions::FiniteTimeAction>& nextAction)
+ActionBuilder& ActionBuilder::Then(const SharedPtr<Actions::FiniteTimeAction>& nextAction)
 {
     if (!nextAction)
     {
@@ -62,14 +55,16 @@ ActionBuilder ActionBuilder::Then(const SharedPtr<Actions::FiniteTimeAction>& ne
         const auto action = MakeShared<Urho3D::Sequence>(context_);
         action->SetFirstAction(action_);
         action->SetSecondAction(nextAction);
-        return ActionBuilder(context_, action);
+        action_ = action;
+        return *this;
     }
 
-    return ActionBuilder(context_, nextAction);
+    action_ = nextAction;
+    return *this;
 }
 
 /// Run action in parallel to current one.
-ActionBuilder ActionBuilder::Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction)
+ActionBuilder& ActionBuilder::Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction)
 {
     if (!parallelAction)
     {
@@ -86,15 +81,15 @@ ActionBuilder ActionBuilder::Also(const SharedPtr<Actions::FiniteTimeAction>& pa
             parallel->AddAction(action_);
         }
         parallel->AddAction(parallelAction);
-
-        return ActionBuilder(context_, parallel);
+        action_ = parallel;
+        return *this;
     }
-
-    return ActionBuilder(context_, parallelAction);
+    action_ = parallelAction;
+    return *this;
 }
 
 /// Build MoveBy action.
-ActionBuilder ActionBuilder::MoveBy(float duration, const Vector3& offset)
+ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector3& offset)
 {
     const auto action = MakeShared<Actions::MoveBy>(context_);
     action->SetDuration(duration);
@@ -102,7 +97,7 @@ ActionBuilder ActionBuilder::MoveBy(float duration, const Vector3& offset)
     return Then(action);
 }
 
-ActionBuilder ActionBuilder::MoveBy2D(float duration, const Vector2& offset)
+ActionBuilder& ActionBuilder::MoveBy2D(float duration, const Vector2& offset)
 {
     const auto action = MakeShared<Actions::MoveBy2D>(context_);
     action->SetDuration(duration);
@@ -110,14 +105,14 @@ ActionBuilder ActionBuilder::MoveBy2D(float duration, const Vector2& offset)
     return Then(action);
 }
 
-ActionBuilder ActionBuilder::JumpBy(const Vector3& offset)
+ActionBuilder& ActionBuilder::JumpBy(const Vector3& offset)
 {
     const auto action = MakeShared<Actions::JumpBy>(context_);
     action->SetPositionDelta(offset);
     return Then(action);
 }
 
-ActionBuilder ActionBuilder::JumpBy2D(const Vector2& offset)
+ActionBuilder& ActionBuilder::JumpBy2D(const Vector2& offset)
 {
     const auto action = MakeShared<Actions::JumpBy2D>(context_);
     action->SetPositionDelta(offset);
@@ -125,7 +120,7 @@ ActionBuilder ActionBuilder::JumpBy2D(const Vector2& offset)
 }
 
 /// Continue with ScaleBy action.
-ActionBuilder ActionBuilder::ScaleBy(float duration, const Vector3& delta)
+ActionBuilder& ActionBuilder::ScaleBy(float duration, const Vector3& delta)
 {
     const auto action = MakeShared<Actions::ScaleBy>(context_);
     action->SetDuration(duration);
@@ -134,7 +129,7 @@ ActionBuilder ActionBuilder::ScaleBy(float duration, const Vector3& delta)
 }
 
 /// Continue with RotateBy action.
-ActionBuilder ActionBuilder::RotateBy(float duration, const Quaternion& delta)
+ActionBuilder& ActionBuilder::RotateBy(float duration, const Quaternion& delta)
 {
     const auto action = MakeShared<Actions::RotateBy>(context_);
     action->SetDuration(duration);
@@ -143,7 +138,7 @@ ActionBuilder ActionBuilder::RotateBy(float duration, const Quaternion& delta)
 }
 
 /// Continue with RotateAround action.
-ActionBuilder ActionBuilder::RotateAround(float duration, const Vector3& pivot, const Quaternion& delta)
+ActionBuilder& ActionBuilder::RotateAround(float duration, const Vector3& pivot, const Quaternion& delta)
 {
     const auto action = MakeShared<Actions::RotateAround>(context_);
     action->SetDuration(duration);
@@ -153,19 +148,19 @@ ActionBuilder ActionBuilder::RotateAround(float duration, const Vector3& pivot, 
 }
 
 
-ActionBuilder ActionBuilder::Hide()
+ActionBuilder& ActionBuilder::Hide()
 {
     const auto action = MakeShared<Actions::Hide>(context_);
     return Then(action);
 }
 
-ActionBuilder ActionBuilder::Show()
+ActionBuilder& ActionBuilder::Show()
 {
     const auto action = MakeShared<Actions::Show>(context_);
     return Then(action);
 }
 
-ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks)
+ActionBuilder& ActionBuilder::Blink(float duration, unsigned numOfBlinks)
 {
     const auto action = MakeShared<Actions::Blink>(context_);
     action->SetDuration(duration);
@@ -173,7 +168,7 @@ ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks)
     return Then(action);
 }
 
-ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName)
+ActionBuilder& ActionBuilder::Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName)
 {
     const auto action = MakeShared<Actions::Blink>(context_);
     action->SetDuration(duration);
@@ -183,7 +178,7 @@ ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks, ea::str
 }
 
 /// Continue with AttributeTo action.
-ActionBuilder ActionBuilder::AttributeTo(float duration, ea::string_view attributeName, const Variant& to)
+ActionBuilder& ActionBuilder::AttributeTo(float duration, ea::string_view attributeName, const Variant& to)
 {
     const auto action = MakeShared<Actions::AttributeTo>(context_);
     action->SetDuration(duration);
@@ -193,7 +188,7 @@ ActionBuilder ActionBuilder::AttributeTo(float duration, ea::string_view attribu
 }
 
 /// Continue with AttributeFromTo action.
-ActionBuilder ActionBuilder::AttributeFromTo(
+ActionBuilder& ActionBuilder::AttributeFromTo(
     float duration, ea::string_view attributeName, const Variant& from, const Variant& to)
 {
     const auto action = MakeShared<Actions::AttributeFromTo>(context_);
@@ -205,7 +200,7 @@ ActionBuilder ActionBuilder::AttributeFromTo(
 }
 
 /// Continue with ShaderParameterTo action.
-ActionBuilder ActionBuilder::ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to)
+ActionBuilder& ActionBuilder::ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to)
 {
     const auto action = MakeShared<Actions::ShaderParameterTo>(context_);
     action->SetDuration(duration);
@@ -215,7 +210,7 @@ ActionBuilder ActionBuilder::ShaderParameterTo(float duration, ea::string_view p
 }
 
 /// Continue with ShaderParameterFromTo action.
-ActionBuilder ActionBuilder::ShaderParameterFromTo(
+ActionBuilder& ActionBuilder::ShaderParameterFromTo(
     float duration, ea::string_view parameter, const Variant& from, const Variant& to)
 {
     const auto action = MakeShared<Actions::ShaderParameterFromTo>(context_);
@@ -227,7 +222,7 @@ ActionBuilder ActionBuilder::ShaderParameterFromTo(
 }
 
 /// Continue with SendEvent action.
-ActionBuilder ActionBuilder::SendEvent(ea::string_view eventType, const StringVariantMap& data)
+ActionBuilder& ActionBuilder::SendEvent(ea::string_view eventType, const StringVariantMap& data)
 {
     const auto action = MakeShared<Actions::SendEvent>(context_);
     action->SetEventType(eventType);
@@ -236,7 +231,7 @@ ActionBuilder ActionBuilder::SendEvent(ea::string_view eventType, const StringVa
 }
 
 /// Continue with CallFunc action.
-ActionBuilder ActionBuilder::CallFunc(Actions::ActionCallHandler* handler)
+ActionBuilder& ActionBuilder::CallFunc(Actions::ActionCallHandler* handler)
 {
     const auto action = MakeShared<Actions::CallFunc>(context_);
     action->SetCallHandler(handler);
@@ -244,133 +239,148 @@ ActionBuilder ActionBuilder::CallFunc(Actions::ActionCallHandler* handler)
 }
 
 /// Combine with BackIn action.
-ActionBuilder ActionBuilder::BackIn()
+ActionBuilder& ActionBuilder::BackIn()
 {
     const auto action = MakeShared<EaseBackIn>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with BackOut action.
-ActionBuilder ActionBuilder::BackOut()
+ActionBuilder& ActionBuilder::BackOut()
 {
     const auto action = MakeShared<EaseBackOut>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with BackInOut action.
-ActionBuilder ActionBuilder::BackInOut()
+ActionBuilder& ActionBuilder::BackInOut()
 {
     const auto action = MakeShared<EaseBackInOut>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with BounceOut action.
-ActionBuilder ActionBuilder::BounceOut()
+ActionBuilder& ActionBuilder::BounceOut()
 {
     const auto action = MakeShared<EaseBounceOut>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with BounceIn action.
-ActionBuilder ActionBuilder::BounceIn()
+ActionBuilder& ActionBuilder::BounceIn()
 {
     const auto action = MakeShared<EaseBounceIn>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with BounceInOut action.
-ActionBuilder ActionBuilder::BounceInOut()
+ActionBuilder& ActionBuilder::BounceInOut()
 {
     const auto action = MakeShared<EaseBounceInOut>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with SineOut action.
-ActionBuilder ActionBuilder::SineOut()
+ActionBuilder& ActionBuilder::SineOut()
 {
     const auto action = MakeShared<EaseSineOut>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with SineIn action.
-ActionBuilder ActionBuilder::SineIn()
+ActionBuilder& ActionBuilder::SineIn()
 {
     const auto action = MakeShared<EaseSineIn>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with SineInOut action.
-ActionBuilder ActionBuilder::SineInOut()
+ActionBuilder& ActionBuilder::SineInOut()
 {
     const auto action = MakeShared<EaseSineInOut>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with ExponentialOut action.
-ActionBuilder ActionBuilder::ExponentialOut()
+ActionBuilder& ActionBuilder::ExponentialOut()
 {
     const auto action = MakeShared<EaseExponentialOut>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with ExponentialIn action.
-ActionBuilder ActionBuilder::ExponentialIn()
+ActionBuilder& ActionBuilder::ExponentialIn()
 {
     const auto action = MakeShared<EaseExponentialIn>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with ExponentialInOut action.
-ActionBuilder ActionBuilder::ExponentialInOut()
+ActionBuilder& ActionBuilder::ExponentialInOut()
 {
     const auto action = MakeShared<EaseExponentialInOut>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with ElasticIn action.
-ActionBuilder ActionBuilder::ElasticIn(float period)
+ActionBuilder& ActionBuilder::ElasticIn(float period)
 {
     const auto action = MakeShared<EaseElasticIn>(context_);
     action->SetInnerAction(action_);
     action->SetPeriod(period);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with ElasticOut action.
-ActionBuilder ActionBuilder::ElasticOut(float period)
+ActionBuilder& ActionBuilder::ElasticOut(float period)
 {
     const auto action = MakeShared<EaseElasticOut>(context_);
     action->SetInnerAction(action_);
     action->SetPeriod(period);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with ElasticInOut action.
-ActionBuilder ActionBuilder::ElasticInOut(float period)
+ActionBuilder& ActionBuilder::ElasticInOut(float period)
 {
     const auto action = MakeShared<EaseElasticInOut>(context_);
     action->SetInnerAction(action_);
     action->SetPeriod(period);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Combine with RemoveSelf action.
-ActionBuilder ActionBuilder::RemoveSelf() { return Then(MakeShared<Actions::RemoveSelf>(context_)); }
+ActionBuilder& ActionBuilder::RemoveSelf() { return Then(MakeShared<Actions::RemoveSelf>(context_)); }
 
 /// Combine with DelayTime action.
-ActionBuilder ActionBuilder::DelayTime(float duration)
+ActionBuilder& ActionBuilder::DelayTime(float duration)
 {
     const auto action = MakeShared<Actions::DelayTime>(context_);
     action->SetDuration(duration);
@@ -378,20 +388,22 @@ ActionBuilder ActionBuilder::DelayTime(float duration)
 }
 
 /// Repeat current action.
-ActionBuilder ActionBuilder::Repeat(unsigned times)
+ActionBuilder& ActionBuilder::Repeat(unsigned times)
 {
     const auto action = MakeShared<Actions::Repeat>(context_);
     action->SetInnerAction(action_);
     action->SetTimes(times);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Repeat current action forever (until canceled).
-ActionBuilder ActionBuilder::RepeatForever()
+ActionBuilder& ActionBuilder::RepeatForever()
 {
     const auto action = MakeShared<Actions::RepeatForever>(context_);
     action->SetInnerAction(action_);
-    return ActionBuilder(context_, action);
+    action_ = action;
+    return *this;
 }
 
 /// Run current action on object.

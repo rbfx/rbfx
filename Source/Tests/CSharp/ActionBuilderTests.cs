@@ -40,7 +40,10 @@ namespace Urho3DNet.Tests
                 try
                 {
                     node.Position = startPos;
-                    new ActionBuilder(app.Context).MoveBy(0.1f, moveBy).Run(actionManager, node);
+                    using (var builder = new ActionBuilder(app.Context))
+                    {
+                        builder.MoveBy(0.1f, moveBy).Run(actionManager, node);
+                    }
                     actionManager.Update(0.0f);
                     actionManager.Update(0.1f);
 

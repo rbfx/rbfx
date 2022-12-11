@@ -36,137 +36,133 @@ class ActionManager;
 /// Action as resource
 class URHO3D_API ActionBuilder
 {
-private:
-    /// Construct.
-    explicit ActionBuilder(Context* context, const SharedPtr<Actions::FiniteTimeAction>& action);
-
 public:
     /// Construct.
     explicit ActionBuilder(Context* context);
 
     /// Continue with provided action.
-    ActionBuilder Then(const SharedPtr<Actions::FiniteTimeAction>& nextAction);
+    ActionBuilder& Then(const SharedPtr<Actions::FiniteTimeAction>& nextAction);
 
     /// Run action in parallel to current one.
-    ActionBuilder Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction);
+    ActionBuilder& Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction);
 
     /// Continue with MoveBy action.
-    ActionBuilder MoveBy(float duration, const Vector3& offset);
+    ActionBuilder& MoveBy(float duration, const Vector3& offset);
 
     /// Continue with MoveBy2D action.
-    ActionBuilder MoveBy2D(float duration, const Vector2& offset);
+    ActionBuilder& MoveBy2D(float duration, const Vector2& offset);
 
     /// Continue with JumpBy action.
-    ActionBuilder JumpBy(const Vector3& offset);
+    ActionBuilder& JumpBy(const Vector3& offset);
 
     /// Continue with MoveBy2D action.
-    ActionBuilder JumpBy2D(const Vector2& offset);
+    ActionBuilder& JumpBy2D(const Vector2& offset);
 
     /// Continue with ScaleBy action.
-    ActionBuilder ScaleBy(float duration, const Vector3& delta);
+    ActionBuilder& ScaleBy(float duration, const Vector3& delta);
 
     /// Continue with RotateBy action.
-    ActionBuilder RotateBy(float duration, const Quaternion& delta);
+    ActionBuilder& RotateBy(float duration, const Quaternion& delta);
 
     /// Continue with RotateAround action.
-    ActionBuilder RotateAround(float duration, const Vector3& pivot, const Quaternion& delta);
+    ActionBuilder& RotateAround(float duration, const Vector3& pivot, const Quaternion& delta);
 
     /// Continue with Hide action.
-    ActionBuilder Hide();
+    ActionBuilder& Hide();
 
     /// Continue with Show action.
-    ActionBuilder Show();
+    ActionBuilder& Show();
 
     /// Continue with Blink action.
-    ActionBuilder Blink(float duration, unsigned numOfBlinks);
+    ActionBuilder& Blink(float duration, unsigned numOfBlinks);
 
     /// Continue with AttributeBlink action.
-    ActionBuilder Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName);
+    ActionBuilder& Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName);
 
     /// Continue with AttributeTo action.
-    ActionBuilder AttributeTo(float duration, ea::string_view attributeName, const Variant& to);
+    ActionBuilder& AttributeTo(float duration, ea::string_view attributeName, const Variant& to);
 
     /// Continue with AttributeFromTo action.
-    ActionBuilder AttributeFromTo(
+    ActionBuilder& AttributeFromTo(
         float duration, ea::string_view attributeName, const Variant& from, const Variant& to);
 
     /// Continue with ShaderParameterTo action.
-    ActionBuilder ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to);
+    ActionBuilder& ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to);
 
     /// Continue with ShaderParameterFromTo action.
-    ActionBuilder ShaderParameterFromTo(
+    ActionBuilder& ShaderParameterFromTo(
         float duration, ea::string_view parameter, const Variant& from, const Variant& to);
 
     /// Continue with SendEvent action.
-    ActionBuilder SendEvent(ea::string_view eventType, const StringVariantMap& data);
+    ActionBuilder& SendEvent(ea::string_view eventType, const StringVariantMap& data);
 
     /// Continue with CallFunc action.
-    ActionBuilder CallFunc(Actions::ActionCallHandler* handler);
+    ActionBuilder& CallFunc(Actions::ActionCallHandler* handler);
 
     /// Continue with CallFunc action.
     template <typename T>
-    ActionBuilder CallFunc(
+    ActionBuilder& CallFunc(
         T* receiver, typename Actions::ActionCallHandlerImpl<T>::HandlerFunctionPtr func, void* userData = nullptr)
     {
         return CallFunc(new Actions::ActionCallHandlerImpl<T>(receiver, func, userData));
     }
 
     /// Combine with BackIn action.
-    ActionBuilder BackIn();
+    ActionBuilder& BackIn();
 
     /// Combine with BackOut action.
-    ActionBuilder BackOut();
+    ActionBuilder& BackOut();
 
     /// Combine with BackInOut action.
-    ActionBuilder BackInOut();
+    ActionBuilder& BackInOut();
 
     /// Combine with BounceOut action.
-    ActionBuilder BounceOut();
+    ActionBuilder& BounceOut();
 
     /// Combine with BounceIn action.
-    ActionBuilder BounceIn();
+    ActionBuilder& BounceIn();
 
     /// Combine with BounceInOut action.
-    ActionBuilder BounceInOut();
+    ActionBuilder& BounceInOut();
 
     /// Combine with SineOut action.
-    ActionBuilder SineOut();
+    ActionBuilder& SineOut();
 
     /// Combine with SineIn action.
-    ActionBuilder SineIn();
+    ActionBuilder& SineIn();
 
     /// Combine with SineInOut action.
-    ActionBuilder SineInOut();
+    ActionBuilder& SineInOut();
 
     /// Combine with ExponentialOut action.
-    ActionBuilder ExponentialOut();
+    ActionBuilder& ExponentialOut();
 
     /// Combine with ExponentialIn action.
-    ActionBuilder ExponentialIn();
+    ActionBuilder& ExponentialIn();
 
     /// Combine with ExponentialInOut action.
-    ActionBuilder ExponentialInOut();
+    ActionBuilder& ExponentialInOut();
 
     /// Combine with ElasticIn action.
-    ActionBuilder ElasticIn(float period = 0.3f);
+    ActionBuilder& ElasticIn(float period = 0.3f);
 
     /// Combine with ElasticOut action.
-    ActionBuilder ElasticOut(float period = 0.3f);
+    ActionBuilder& ElasticOut(float period = 0.3f);
 
     /// Combine with ElasticInOut action.
-    ActionBuilder ElasticInOut(float period = 0.3f);
+    ActionBuilder& ElasticInOut(float period = 0.3f);
 
     /// Combine with RemoveSelf action.
-    ActionBuilder RemoveSelf();
+    ActionBuilder& RemoveSelf();
 
     /// Combine with DelayTime action.
-    ActionBuilder DelayTime(float duration);
+    ActionBuilder& DelayTime(float duration);
 
     /// Repeat current action.
-    ActionBuilder Repeat(unsigned times);
+    ActionBuilder& Repeat(unsigned times);
 
     /// Repeat current action forever (until canceled).
-    ActionBuilder RepeatForever();
+    ActionBuilder& RepeatForever();
 
     /// Complete action building and produce result.
     SharedPtr<Actions::FiniteTimeAction> Build() { return action_; }
