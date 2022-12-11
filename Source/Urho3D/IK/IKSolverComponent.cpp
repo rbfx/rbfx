@@ -324,6 +324,22 @@ void IKChainSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 }
 
+void IKChainSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    const auto& segments = chain_.GetSegments();
+    for (const IKNodeSegment& segment : segments)
+    {
+        const bool isLastSegment = &segment == &segments.back();
+        DrawIKNode(debug, *segment.beginNode_, isLastSegment);
+        DrawIKSegment(debug, *segment.beginNode_, *segment.endNode_);
+        if (isLastSegment)
+            DrawIKNode(debug, *segment.endNode_, false);
+    }
+
+    if (target_)
+        DrawIKTarget(debug, target_, false);
+}
+
 bool IKChainSolver::InitializeNodes(IKNodeCache& nodeCache)
 {
     target_ = AddCheckedNode(nodeCache, targetName_);

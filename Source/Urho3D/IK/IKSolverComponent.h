@@ -323,6 +323,8 @@ public:
     ~IKChainSolver() override;
     static void RegisterObject(Context* context);
 
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
     /// Return the bone names.
     const StringVector& GetBoneNames() const { return boneNames_; }
     /// Return the target name.
