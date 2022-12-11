@@ -542,6 +542,10 @@ void IKFabrikChain::Solve(const Vector3& target, const IKSettings& settings)
     if (segments_.empty())
         return;
 
+    const IKNode& targetNode = *segments_.back().endNode_;
+    if ((targetNode.position_ - target).Length() < settings.tolerance_)
+        return;
+
     StorePreviousTransforms();
     // Don't do more than one attempt for now
     TrySolve(target, settings);
@@ -550,6 +554,7 @@ void IKFabrikChain::Solve(const Vector3& target, const IKSettings& settings)
 
 bool IKFabrikChain::TrySolve(const Vector3& target, const IKSettings& settings)
 {
+    const IKNode& targetNode = *segments_.back().endNode_;
     ea::optional<float> previousError;
     for (unsigned i = 0; i < settings.maxIterations_; ++i)
     {
@@ -557,13 +562,12 @@ bool IKFabrikChain::TrySolve(const Vector3& target, const IKSettings& settings)
         SolveIteration(target, settings, true);
         SolveIteration(startPosition, settings, false);
 
-        const Vector3 endPosition = segments_.back().endNode_->position_;
-        const float error = (endPosition - target).Length();
+        const float error = (targetNode.position_ - target).Length();
         if (previousError && error >= *previousError)
             return false;
         previousError = error;
 
-        if ((endPosition - target).Length() < settings.tolerance_)
+        if ((targetNode.position_ - target).Length() < settings.tolerance_)
             break;
     }
     return true;
