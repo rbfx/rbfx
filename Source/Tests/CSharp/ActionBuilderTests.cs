@@ -28,7 +28,7 @@ namespace Urho3DNet.Tests
     public class ActionBuilderTests
     {
         [Fact]
-        public async Task SimpleApplication_DoesNotThrow()
+        public async Task SimpleAction_MoveBy_NodePositionUpdated()
         {
             await ApplicationRunner.RunAsync(app=>{
                 var startPos = new Vector3(0, 1, 0);
