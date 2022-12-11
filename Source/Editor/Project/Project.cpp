@@ -787,7 +787,7 @@ void Project::SaveResourcesOnly()
     for (EditorTab* tab : tabs_)
     {
         if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
-            resourceTab->SaveAllResources();
+            resourceTab->SaveAllResources(true);
     }
     ProcessDelayedSaves(true);
 }
