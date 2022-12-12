@@ -554,6 +554,8 @@ public:
 
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)
+%ignore Urho3D::IKSolverComponent::Initialize;
+
 %include "generated/Urho3D/_pre_ik.i"
 %include "Urho3D/IK/IKSolver.h"
 %include "Urho3D/IK/IKSolverComponent.h"
