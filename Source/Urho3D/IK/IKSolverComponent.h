@@ -311,6 +311,10 @@ private:
     {
         Vector3 defaultDirection_;
         Vector3 up_;
+
+        Quaternion shoulderRotation_;
+        Vector3 armOffset_;
+        Quaternion armRotation_;
     } local_;
 };
 

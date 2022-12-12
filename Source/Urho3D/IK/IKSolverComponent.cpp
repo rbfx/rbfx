@@ -941,6 +941,10 @@ void IKArmSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 
     local_.defaultDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
     local_.up_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * upDirection_;
+
+    local_.shoulderRotation_ = inverseFrameOfReference * shoulderSegment_.beginNode_->rotation_;
+    local_.armOffset_ = inverseFrameOfReference * shoulderSegment_.endNode_->position_;
+    local_.armRotation_ = inverseFrameOfReference * shoulderSegment_.endNode_->rotation_;
 }
 
 void IKArmSolver::EnsureInitialized()
@@ -953,6 +957,10 @@ void IKArmSolver::EnsureInitialized()
 void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
     EnsureInitialized();
+
+    shoulderSegment_.beginNode_->rotation_ = frameOfReference * local_.shoulderRotation_;
+    shoulderSegment_.endNode_->position_ = frameOfReference * local_.armOffset_;
+    shoulderSegment_.endNode_->rotation_ = frameOfReference * local_.armRotation_;
 
     const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
     const Vector3 currentDirection = frameOfReference.rotation_ * local_.defaultDirection_;
@@ -971,14 +979,6 @@ void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
 void IKArmSolver::RotateShoulder(const Quaternion& rotation)
 {
     const Vector3 shoulderPosition = shoulderSegment_.beginNode_->position_;
-    const Vector3 shoulderOffset = shoulderPosition - shoulderSegment_.beginNode_->originalPosition_;
-
-    shoulderSegment_.beginNode_->ResetOriginalTransform();
-    shoulderSegment_.endNode_->ResetOriginalTransform();
-
-    shoulderSegment_.beginNode_->position_ += shoulderOffset;
-    shoulderSegment_.endNode_->position_ += shoulderOffset;
-
     shoulderSegment_.beginNode_->RotateAround(shoulderPosition, rotation);
     shoulderSegment_.endNode_->RotateAround(shoulderPosition, rotation);
 }
