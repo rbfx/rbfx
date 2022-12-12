@@ -9,8 +9,8 @@ namespace Urho3DNet.Tests
         [Fact]
         public async Task CanThrow()
         {
-            Assert.ThrowsAsync<ArgumentException>(async () =>
-                await ApplicationRunner.RunAsync(app => { throw new ArgumentException(); }));
+            await Assert.ThrowsAsync<ArgumentException>(async () =>
+                await ApplicationRunner.RunAsync(app => throw new ArgumentException()));
         }
     }
 }
