@@ -59,12 +59,12 @@ namespace Urho3DNet.Tests
 
         class QueueItem
         {
-            private readonly TaskCompletionSource _tcs;
+            private readonly TaskCompletionSource<bool> _tcs;
             private readonly Action<Application> _action;
 
             public QueueItem(Action<Application> action)
             {
-                _tcs = new TaskCompletionSource();
+                _tcs = new TaskCompletionSource<bool>();
                 _action = action;
             }
 
@@ -84,7 +84,7 @@ namespace Urho3DNet.Tests
                     _tcs.TrySetException(ex);
                 }
 
-                _tcs.TrySetResult();
+                _tcs.TrySetResult(true);
             }
         }
     }

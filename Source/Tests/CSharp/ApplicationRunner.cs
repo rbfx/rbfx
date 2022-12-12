@@ -18,13 +18,13 @@ namespace Urho3DNet.Tests
         private Context _context;
         private SimpleHeadlessApplication _application;
         private Engine _engine;
-        private TaskCompletionSource _initializationTask;
+        private TaskCompletionSource<bool> _initializationTask;
 
         public ApplicationRunner(IMessageSink messageSink)
             : base(messageSink)
         {
             _instance = this;
-            _initializationTask = new TaskCompletionSource();
+            _initializationTask = new TaskCompletionSource<bool>();
             _workerThread = new Thread(WorkerThread);
             _workerThread.Start();
         }
@@ -38,7 +38,7 @@ namespace Urho3DNet.Tests
                     _engine = _context.Engine;
                     using (_application = new SimpleHeadlessApplication(_context))
                     {
-                        _initializationTask.SetResult();
+                        _initializationTask.SetResult(true);
                         _application.Run();
                     }
 
