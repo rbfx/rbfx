@@ -50,6 +50,10 @@
 #include <GL/glew.h>
 #endif
 
+#ifndef GL_RGB16F
+#define GL_RGB16F 0x881B
+#endif
+
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83f1
 #endif

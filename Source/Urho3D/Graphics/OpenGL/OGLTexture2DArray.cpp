@@ -251,7 +251,7 @@ bool Texture2DArray::SetData(unsigned layer, Image* image, bool useAlpha)
                 break;
 
             case 3:
-                format = GL_RGB16F;
+                format = Graphics::GetRGBFloat32Format();
                 break;
 
             case 4:

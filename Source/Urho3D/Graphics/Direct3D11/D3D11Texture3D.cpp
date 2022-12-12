@@ -223,6 +223,9 @@ bool Texture3D::SetData(Image* image, bool useAlpha)
             case 2:
                 format = Graphics::GetRGFloat32Format();
                 break;
+            case 3:
+                format = Graphics::GetRGBFloat32Format();
+                break;
             case 4:
                 format = Graphics::GetRGBAFloat32Format();
                 break;
