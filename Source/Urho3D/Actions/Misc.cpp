@@ -77,55 +77,55 @@ SharedPtr<ActionState> RemoveSelf::StartAction(Object* target) { return MakeShar
 
 /// Construct.
 Hide::Hide(Context* context)
-    : BaseClassName(context)
+    : BaseClassName(context, ISVISIBLE_ATTRIBUTE)
 {
 }
 
 /// Create new action state from the action.
 SharedPtr<ActionState> Hide::StartAction(Object* target)
 {
-    return MakeShared<SetAttributeState>(this, target, "Is Visible", false);
+    return MakeShared<SetAttributeState>(this, target, GetAttribute(target), false);
 }
 
 /// Construct.
 Show::Show(Context* context)
-    : BaseClassName(context)
+    : BaseClassName(context, ISVISIBLE_ATTRIBUTE)
 {
 }
 
 /// Create new action state from the action.
 SharedPtr<ActionState> Show::StartAction(Object* target)
 {
-    return MakeShared<SetAttributeState>(this, target, "Is Visible", true);
+    return MakeShared<SetAttributeState>(this, target, GetAttribute(target), true);
 }
 
 /// Construct.
 Disable::Disable(Context* context)
-    : BaseClassName(context)
+    : BaseClassName(context, ISENABLED_ATTRIBUTE)
 {
 }
 
 /// Create new action state from the action.
 SharedPtr<ActionState> Disable::StartAction(Object* target)
 {
-    return MakeShared<SetAttributeState>(this, target, "Is Enabled", false);
+    return MakeShared<SetAttributeState>(this, target, GetAttribute(target), false);
 }
 
 /// Construct.
 Enable::Enable(Context* context)
-    : BaseClassName(context)
+    : BaseClassName(context, ISENABLED_ATTRIBUTE)
 {
 }
 
 /// Create new action state from the action.
 SharedPtr<ActionState> Enable::StartAction(Object* target)
 {
-    return MakeShared<SetAttributeState>(this, target, "Is Enabled", true);
+    return MakeShared<SetAttributeState>(this, target, GetAttribute(target), true);
 }
 
 /// Construct.
 Blink::Blink(Context* context)
-    : BaseClassName(context)
+    : BaseClassName(context, ISENABLED_ATTRIBUTE)
 {
 }
 
@@ -134,11 +134,10 @@ void Blink::SerializeInBlock(Archive& archive)
 {
     BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "times", times_, 1);
-    SerializeOptionalValue(archive, "attribute", attribute_);
 }
 
 /// Create new action state from the action.
-SharedPtr<ActionState> Blink::StartAction(Object* target) { return MakeShared<AttributeBlinkState>(this, target, attribute_, false, true, times_); }
+SharedPtr<ActionState> Blink::StartAction(Object* target) { return MakeShared<AttributeBlinkState>(this, target, GetAttribute(target), false, true, times_); }
 
 
 /// Construct.

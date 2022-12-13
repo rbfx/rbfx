@@ -27,6 +27,7 @@
 
 namespace Urho3D
 {
+class Vector3;
 
 /// Three-dimensional vector with integer values.
 class URHO3D_API IntVector3
@@ -149,8 +150,11 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
-    /// Return 2D vector (z component is ignored).
+    /// Return 2D int vector (z component is ignored).
     IntVector2 ToVector2() const { return { x_, y_ }; }
+
+    /// Return 3D vector.
+    Vector3 ToVector3() const;
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return (unsigned)x_ * 31 * 31 + (unsigned)y_ * 31 + (unsigned)z_; }
@@ -492,6 +496,12 @@ public:
     /// Return 2D vector (z component is ignored).
     Vector2 ToVector2() const { return { x_, y_ }; }
 
+    /// Return 3D int vector.
+    IntVector3 ToIntVector3() const { return {static_cast<int>(x_), static_cast<int>(y_), static_cast<int>(z_)}; }
+
+    /// Return 2D int vector (z component is ignored).
+    IntVector2 ToIntVector2() const { return {static_cast<int>(x_), static_cast<int>(y_)}; }
+
     /// Return x and z components as 2D vector (y component is ignored).
     Vector2 ToXZ() const { return { x_, z_ }; }
 
@@ -519,6 +529,13 @@ public:
     /// (1,1,1) vector.
     static const Vector3 ONE;
 };
+
+/// Return 3D vector.
+inline Vector3 IntVector3::ToVector3() const { return {static_cast<float>(x_), static_cast<float>(y_), static_cast<float>(z_)}; }
+
+inline Vector3 Vector2::ToVector3() const { return {x_, y_, 0.0f}; }
+
+inline IntVector3 Vector2::ToIntVector3() const { return {static_cast<int>(x_), static_cast<int>(y_), 0}; }
 
 /// Multiply Vector3 with a scalar.
 inline Vector3 operator *(float lhs, const Vector3& rhs) { return rhs * lhs; }

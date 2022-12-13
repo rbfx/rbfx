@@ -27,6 +27,9 @@
 
 namespace Urho3D
 {
+class IntVector3;
+class Vector2;
+class Vector3;
 
 /// Two-dimensional vector with integer values.
 class URHO3D_API IntVector2
@@ -145,6 +148,12 @@ public:
 
     /// Return as string.
     ea::string ToString() const;
+
+    /// Return 2D vector.
+    Vector2 ToVector2() const;
+
+    /// Return 3D vector.
+    Vector3 ToVector3() const;
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return (unsigned)x_ * 31 + (unsigned)y_; }
@@ -381,6 +390,15 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
+    /// Return 2D int vector
+    IntVector2 ToIntVector2() const { return {static_cast<int>(x_), static_cast<int>(y_)}; }
+
+    /// Return 3D vector (z component is set to 0).
+    Vector3 ToVector3() const;
+
+    /// Return 3D int vector (z component is set to 0).
+    IntVector3 ToIntVector3() const;
+
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const
     {
@@ -409,6 +427,8 @@ public:
     /// (1,1) vector.
     static const Vector2 ONE;
 };
+
+inline Vector2 IntVector2::ToVector2() const { return {static_cast<float>(x_), static_cast<float>(y_)}; }
 
 /// Multiply Vector2 with a scalar.
 inline Vector2 operator *(float lhs, const Vector2& rhs) { return rhs * lhs; }

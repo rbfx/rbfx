@@ -34,6 +34,100 @@
 
 using namespace Urho3D;
 
+class CustomAttributeTestObject : public Serializable
+{
+    URHO3D_OBJECT(CustomAttributeTestObject, Serializable)
+public:
+    CustomAttributeTestObject(Context* c)
+        : BaseClassName(c){}
+
+    static void RegisterObject(Context* context)
+    {
+        context->AddFactoryReflection<CustomAttributeTestObject>();
+
+        URHO3D_ATTRIBUTE("MoveVec3", Vector3, moveVec3_, Vector3::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("MoveVec2", Vector2, moveVec2_, Vector2::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("MoveIntVec3", IntVector3, moveIntVec3_, IntVector3::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("MoveIntVec2", IntVector2, moveIntVec2_, IntVector2::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("JumpVec3", Vector3, jumpVec3_, Vector3::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("JumpVec2", Vector2, jumpVec2_, Vector2::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("JumpIntVec3", IntVector3, jumpIntVec3_, IntVector3::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("JumpIntVec2", IntVector2, jumpIntVec2_, IntVector2::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("ScaleVec3", Vector3, scaleVec3_, Vector3::ONE, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("ScaleVec2", Vector2, scaleVec2_, Vector2::ONE, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Rotate", Quaternion, rotate_, Quaternion::IDENTITY, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Enable", bool, enable_, false, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Disable", bool, disable_, false, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Show", bool, show_, false, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Hide", bool, hide_, false, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Blink", bool, blink_, false, AM_DEFAULT);
+    }
+
+    Vector3 moveVec3_;
+    Vector2 moveVec2_;
+    IntVector3 moveIntVec3_;
+    IntVector2 moveIntVec2_;
+    Vector3 jumpVec3_;
+    Vector2 jumpVec2_;
+    IntVector3 jumpIntVec3_;
+    IntVector2 jumpIntVec2_;
+    Vector3 scaleVec3_{Vector3::ONE};
+    Vector2 scaleVec2_{Vector2::ONE};
+    Quaternion rotate_{Quaternion::IDENTITY};
+    bool show_;
+    bool hide_{true};
+    bool enable_;
+    bool disable_{true};
+    bool blink_{false};
+};
+
+TEST_CASE("Custom attributes tweening")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+        CustomAttributeTestObject::RegisterObject(context);
+    auto actionManager = context->GetSubsystem<ActionManager>();
+    auto obj = MakeShared<CustomAttributeTestObject>(context);
+
+    ActionBuilder(context)
+    .MoveBy(1.0f, Vector3(2, 0, 0), "MoveVec3")
+        .Also(ActionBuilder(context).MoveBy(1.0f, Vector2(2, 0), "MoveVec2").Build())
+        .Also(ActionBuilder(context).MoveBy(1.0f, Vector3(4.1f, 0), "MoveIntVec3").Build())
+        .Also(ActionBuilder(context).MoveBy(1.0f, Vector2(4.1f, 0), "MoveIntVec2").Build())
+        .Also(ActionBuilder(context).JumpBy(Vector3(2, 0, 0), "JumpVec3").Build())
+        .Also(ActionBuilder(context).JumpBy(Vector2(2, 0), "JumpVec2").Build())
+        .Also(ActionBuilder(context).JumpBy(Vector3(4.1f, 0), "JumpIntVec3").Build())
+        .Also(ActionBuilder(context).JumpBy(Vector2(4.1f, 0), "JumpIntVec2").Build())
+        .Also(ActionBuilder(context).ScaleBy(1.0f, Vector3(2, 1, 1), "ScaleVec3").Build())
+        .Also(ActionBuilder(context).ScaleBy(1.0f, Vector2(2, 1), "ScaleVec2").Build())
+        .Also(ActionBuilder(context).RotateBy(1.0f, Quaternion(90, Vector3::UP), "Rotate").Build())
+        .Also(ActionBuilder(context).Enable("Enable").Build())
+        .Also(ActionBuilder(context).Disable("Disable").Build())
+        .Also(ActionBuilder(context).Show("Show").Build())
+        .Also(ActionBuilder(context).Hide("Hide").Build())
+        .Also(ActionBuilder(context).Blink(2.0, 1, "Blink").Build())
+        .Run(actionManager, obj);
+
+    actionManager->Update(0.0f);
+    actionManager->Update(0.5f);
+
+    CHECK(obj->moveVec3_.Equals(Vector3(1, 0, 0)));
+    CHECK(obj->moveVec2_.Equals(Vector2(1, 0)));
+    CHECK(obj->moveIntVec3_ == IntVector3(2, 0, 0));
+    CHECK(obj->moveIntVec2_ == IntVector2(2, 0));
+    CHECK(obj->jumpVec3_.Equals(Vector3(2, 0, 0)));
+    CHECK(obj->jumpVec2_.Equals(Vector2(2, 0)));
+    CHECK(obj->jumpIntVec3_ == IntVector3(4, 0, 0));
+    CHECK(obj->jumpIntVec2_ == IntVector2(4, 0));
+    CHECK(obj->scaleVec3_.Equals(Vector3(1.5f, 1, 1)));
+    CHECK(obj->scaleVec2_.Equals(Vector2(1.5f, 1)));
+    CHECK(obj->rotate_.Equals(Quaternion(90 / 2, Vector3::UP)));
+    CHECK(obj->enable_ == true);
+    CHECK(obj->disable_ == false);
+    CHECK(obj->show_ == true);
+    CHECK(obj->hide_ == false);
+    CHECK(obj->blink_ == true);
+}
+
 TEST_CASE("BackIn tweening")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
@@ -90,9 +184,9 @@ TEST_CASE("MoveBy2D tweening")
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto moveBy = MakeShared<Actions::MoveBy2D>(context);
+    auto moveBy = MakeShared<Actions::MoveBy>(context);
     moveBy->SetDuration(2.0f);
-    moveBy->SetPositionDelta(Vector2(12, 0));
+    moveBy->SetPositionDelta(Vector3(12, 0, 0));
     auto uiElement = MakeShared<UIElement>(context);
 
     // Initial state - no actions added

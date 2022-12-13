@@ -89,49 +89,61 @@ ActionBuilder& ActionBuilder::Also(const SharedPtr<Actions::FiniteTimeAction>& p
 }
 
 /// Build MoveBy action.
-ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector3& offset)
+ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector3& offset, const ea::string& attributeName)
 {
     const auto action = MakeShared<Actions::MoveBy>(context_);
+    action->SetAttributeName(attributeName);
     action->SetDuration(duration);
     action->SetPositionDelta(offset);
     return Then(action);
 }
 
-ActionBuilder& ActionBuilder::MoveBy2D(float duration, const Vector2& offset)
+ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector2& offset, const ea::string& attributeName)
 {
-    const auto action = MakeShared<Actions::MoveBy2D>(context_);
+    const auto action = MakeShared<Actions::MoveBy>(context_);
+    action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetPositionDelta(offset);
+    action->SetPositionDelta(offset.ToVector3());
     return Then(action);
 }
 
-ActionBuilder& ActionBuilder::JumpBy(const Vector3& offset)
+ActionBuilder& ActionBuilder::JumpBy(const Vector3& offset, const ea::string& attributeName)
 {
     const auto action = MakeShared<Actions::JumpBy>(context_);
+    action->SetAttributeName(attributeName);
     action->SetPositionDelta(offset);
     return Then(action);
 }
 
-ActionBuilder& ActionBuilder::JumpBy2D(const Vector2& offset)
+ActionBuilder& ActionBuilder::JumpBy(const Vector2& offset, const ea::string& attributeName)
 {
-    const auto action = MakeShared<Actions::JumpBy2D>(context_);
-    action->SetPositionDelta(offset);
+    const auto action = MakeShared<Actions::JumpBy>(context_);
+    action->SetAttributeName(attributeName);
+    action->SetPositionDelta(offset.ToVector3());
     return Then(action);
 }
 
 /// Continue with ScaleBy action.
-ActionBuilder& ActionBuilder::ScaleBy(float duration, const Vector3& delta)
+ActionBuilder& ActionBuilder::ScaleBy(float duration, const Vector3& delta, const ea::string& attributeName)
 {
     const auto action = MakeShared<Actions::ScaleBy>(context_);
+    action->SetAttributeName(attributeName);
     action->SetDuration(duration);
     action->SetScaleDelta(delta);
     return Then(action);
 }
 
+/// Continue with ScaleBy action.
+ActionBuilder& ActionBuilder::ScaleBy(float duration, const Vector2& delta, const ea::string& attributeName)
+{
+    return ScaleBy(duration, Vector3(delta.x_, delta.y_, 1.0f), attributeName);
+}
+
 /// Continue with RotateBy action.
-ActionBuilder& ActionBuilder::RotateBy(float duration, const Quaternion& delta)
+ActionBuilder& ActionBuilder::RotateBy(float duration, const Quaternion& delta, const ea::string& attributeName)
 {
     const auto action = MakeShared<Actions::RotateBy>(context_);
+    action->SetAttributeName(attributeName);
     action->SetDuration(duration);
     action->SetRotationDelta(delta);
     return Then(action);
@@ -147,28 +159,35 @@ ActionBuilder& ActionBuilder::RotateAround(float duration, const Vector3& pivot,
     return Then(action);
 }
 
-
-ActionBuilder& ActionBuilder::Hide()
+ActionBuilder& ActionBuilder::Hide(const ea::string& attributeName)
 {
     const auto action = MakeShared<Actions::Hide>(context_);
+    action->SetAttributeName(attributeName);
     return Then(action);
 }
 
-ActionBuilder& ActionBuilder::Show()
+ActionBuilder& ActionBuilder::Show(const ea::string& attributeName)
 {
     const auto action = MakeShared<Actions::Show>(context_);
+    action->SetAttributeName(attributeName);
     return Then(action);
 }
 
-ActionBuilder& ActionBuilder::Blink(float duration, unsigned numOfBlinks)
+ActionBuilder& ActionBuilder::Enable(const ea::string& attributeName)
 {
-    const auto action = MakeShared<Actions::Blink>(context_);
-    action->SetDuration(duration);
-    action->SetNumOfBlinks(numOfBlinks);
+    const auto action = MakeShared<Actions::Enable>(context_);
+    action->SetAttributeName(attributeName);
     return Then(action);
 }
 
-ActionBuilder& ActionBuilder::Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName)
+ActionBuilder& ActionBuilder::Disable(const ea::string& attributeName)
+{
+    const auto action = MakeShared<Actions::Disable>(context_);
+    action->SetAttributeName(attributeName);
+    return Then(action);
+}
+
+ActionBuilder& ActionBuilder::Blink(float duration, unsigned numOfBlinks, const ea::string& attributeName)
 {
     const auto action = MakeShared<Actions::Blink>(context_);
     action->SetDuration(duration);
@@ -178,7 +197,7 @@ ActionBuilder& ActionBuilder::Blink(float duration, unsigned numOfBlinks, ea::st
 }
 
 /// Continue with AttributeTo action.
-ActionBuilder& ActionBuilder::AttributeTo(float duration, ea::string_view attributeName, const Variant& to)
+ActionBuilder& ActionBuilder::AttributeTo(float duration, const ea::string& attributeName, const Variant& to)
 {
     const auto action = MakeShared<Actions::AttributeTo>(context_);
     action->SetDuration(duration);
@@ -189,7 +208,7 @@ ActionBuilder& ActionBuilder::AttributeTo(float duration, ea::string_view attrib
 
 /// Continue with AttributeFromTo action.
 ActionBuilder& ActionBuilder::AttributeFromTo(
-    float duration, ea::string_view attributeName, const Variant& from, const Variant& to)
+    float duration, const ea::string& attributeName, const Variant& from, const Variant& to)
 {
     const auto action = MakeShared<Actions::AttributeFromTo>(context_);
     action->SetDuration(duration);

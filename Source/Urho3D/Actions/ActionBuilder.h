@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "AttributeAction.h"
 #include "CallFunc.h"
 
 namespace Urho3D
@@ -47,44 +48,53 @@ public:
     ActionBuilder& Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction);
 
     /// Continue with MoveBy action.
-    ActionBuilder& MoveBy(float duration, const Vector3& offset);
+    ActionBuilder& MoveBy(float duration, const Vector3& offset, const ea::string& attributeName = Actions::POSITION_ATTRIBUTE);
 
-    /// Continue with MoveBy2D action.
-    ActionBuilder& MoveBy2D(float duration, const Vector2& offset);
+    /// Continue with MoveBy action.
+    ActionBuilder& MoveBy(float duration, const Vector2& offset, const ea::string& attributeName = Actions::POSITION_ATTRIBUTE);
 
     /// Continue with JumpBy action.
-    ActionBuilder& JumpBy(const Vector3& offset);
+    ActionBuilder& JumpBy(const Vector3& offset, const ea::string& attributeName = Actions::POSITION_ATTRIBUTE);
 
-    /// Continue with MoveBy2D action.
-    ActionBuilder& JumpBy2D(const Vector2& offset);
+    /// Continue with MoveBy action.
+    ActionBuilder& JumpBy(const Vector2& offset, const ea::string& attributeName = Actions::POSITION_ATTRIBUTE);
 
     /// Continue with ScaleBy action.
-    ActionBuilder& ScaleBy(float duration, const Vector3& delta);
+    ActionBuilder& ScaleBy(
+        float duration, const Vector3& delta, const ea::string& attributeName = Actions::SCALE_ATTRIBUTE);
+
+    /// Continue with ScaleBy action.
+    ActionBuilder& ScaleBy(
+        float duration, const Vector2& delta, const ea::string& attributeName = Actions::SCALE_ATTRIBUTE);
 
     /// Continue with RotateBy action.
-    ActionBuilder& RotateBy(float duration, const Quaternion& delta);
+    ActionBuilder& RotateBy(
+        float duration, const Quaternion& delta, const ea::string& attributeName = Actions::ROTATION_ATTRIBUTE);
 
     /// Continue with RotateAround action.
     ActionBuilder& RotateAround(float duration, const Vector3& pivot, const Quaternion& delta);
 
     /// Continue with Hide action.
-    ActionBuilder& Hide();
+    ActionBuilder& Hide(const ea::string& attributeName = Actions::ISVISIBLE_ATTRIBUTE);
 
     /// Continue with Show action.
-    ActionBuilder& Show();
+    ActionBuilder& Show(const ea::string& attributeName = Actions::ISVISIBLE_ATTRIBUTE);
 
-    /// Continue with Blink action.
-    ActionBuilder& Blink(float duration, unsigned numOfBlinks);
+    /// Continue with Enable action.
+    ActionBuilder& Enable(const ea::string& attributeName = Actions::ISENABLED_ATTRIBUTE);
+
+    /// Continue with Disable action.
+    ActionBuilder& Disable(const ea::string& attributeName = Actions::ISENABLED_ATTRIBUTE);
 
     /// Continue with AttributeBlink action.
-    ActionBuilder& Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName);
+    ActionBuilder& Blink(float duration, unsigned numOfBlinks, const ea::string& attributeName = Actions::ISENABLED_ATTRIBUTE);
 
     /// Continue with AttributeTo action.
-    ActionBuilder& AttributeTo(float duration, ea::string_view attributeName, const Variant& to);
+    ActionBuilder& AttributeTo(float duration, const ea::string& attributeName, const Variant& to);
 
     /// Continue with AttributeFromTo action.
     ActionBuilder& AttributeFromTo(
-        float duration, ea::string_view attributeName, const Variant& from, const Variant& to);
+        float duration, const ea::string& attributeName, const Variant& from, const Variant& to);
 
     /// Continue with ShaderParameterTo action.
     ActionBuilder& ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to);

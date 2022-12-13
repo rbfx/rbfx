@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include "FiniteTimeAction.h"
+#include "AttributeAction.h"
 
 namespace Urho3D
 {
@@ -44,9 +44,9 @@ protected:
 };
 
 /// Show target. The Target should have "Is Visible" attribute.
-class URHO3D_API Show : public FiniteTimeAction
+class URHO3D_API Show : public AttributeAction
 {
-    URHO3D_OBJECT(Show, FiniteTimeAction)
+    URHO3D_OBJECT(Show, AttributeAction)
 public:
     /// Construct.
     explicit Show(Context* context);
@@ -57,9 +57,9 @@ protected:
 };
 
 /// Hide target. The Target should have "Is Visible" attribute.
-class URHO3D_API Hide : public FiniteTimeAction
+class URHO3D_API Hide : public AttributeAction
 {
-    URHO3D_OBJECT(Hide, FiniteTimeAction)
+    URHO3D_OBJECT(Hide, AttributeAction)
 public:
     /// Construct.
     explicit Hide(Context* context);
@@ -71,9 +71,9 @@ protected:
 
 
 /// Show target. The Target should have "Is Enabled" attribute.
-class URHO3D_API Enable : public FiniteTimeAction
+class URHO3D_API Enable : public AttributeAction
 {
-    URHO3D_OBJECT(Enable, FiniteTimeAction)
+    URHO3D_OBJECT(Enable, AttributeAction)
 public:
     /// Construct.
     explicit Enable(Context* context);
@@ -84,9 +84,9 @@ protected:
 };
 
 /// Hide target. The Target should have "Is Enabled" attribute.
-class URHO3D_API Disable : public FiniteTimeAction
+class URHO3D_API Disable : public AttributeAction
 {
-    URHO3D_OBJECT(Disable, FiniteTimeAction)
+    URHO3D_OBJECT(Disable, AttributeAction)
 public:
     /// Construct.
     explicit Disable(Context* context);
@@ -97,9 +97,9 @@ protected:
 };
 
 /// Blink target by toggling "Is Enabled" attribute. The Target should have "Is Enabled" attribute.
-class URHO3D_API Blink : public FiniteTimeAction
+class URHO3D_API Blink : public AttributeAction
 {
-    URHO3D_OBJECT(Blink, FiniteTimeAction)
+    URHO3D_OBJECT(Blink, AttributeAction)
 public:
 
     /// Construct.
@@ -110,11 +110,6 @@ public:
     /// Set number of blinks.
     void SetNumOfBlinks(unsigned times) { times_ = Max(1, times); };
 
-    /// Get target attibute name.
-    const ea::string& GetAttributeName() const { return attribute_; };
-    /// Set target attibute name.
-    void SetAttributeName(ea::string_view attribute) { attribute_ = attribute; };
-
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
 
@@ -123,7 +118,6 @@ protected:
     SharedPtr<ActionState> StartAction(Object* target) override;
 
     unsigned times_{1};
-    ea::string attribute_{"Is Enabled"};
 };
 
 

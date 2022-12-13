@@ -36,116 +36,114 @@ namespace Actions
 
 namespace
 {
-class MoveByState : public AttributeActionState
+class MoveByVec3State : public AttributeActionState
 {
     Vector3 positionDelta_;
     Vector3 startPosition_;
     Vector3 previousPosition_;
 
 public:
-    MoveByState(MoveBy* action, Object* target)
-        : AttributeActionState(action, target, "Position")
+    MoveByVec3State(MoveBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
     {
         positionDelta_ = action->GetPositionDelta();
-        if (attribute_)
-        {
-            if (attribute_->type_ == VAR_VECTOR3)
-                previousPosition_ = startPosition_ = Get<Vector3>();
-            else if (attribute_->type_ == VAR_INTVECTOR3)
-                previousPosition_ = startPosition_ = Vector3(Get<IntVector3>());
-            else
-            {
-                URHO3D_LOGERROR(
-                    Format("Attribute {} is not of type VAR_VECTOR3 or VAR_INTVECTOR3.", attribute_->name_));
-                attribute_ = nullptr;
-                return;
-            }
-        }
+        previousPosition_ = startPosition_ = Get<Vector3>();
     }
 
     void Update(float time, Variant& value) override
     {
-        if (attribute_->type_ == VAR_VECTOR3)
-        {
-            const auto currentPos = value.GetVector3();
-            auto diff = currentPos - previousPosition_;
-            startPosition_ = startPosition_ + diff;
-            const auto newPos = startPosition_ + positionDelta_ * time;
-            value = newPos;
-            previousPosition_ = newPos;
-        }
-        else
-        {
-            const auto currentPos = Vector3(value.GetIntVector3());
-            auto diff = currentPos - previousPosition_;
-            startPosition_ = startPosition_ + diff;
-            const auto newPos = startPosition_ + positionDelta_ * time;
-            const IntVector3 newIntPos = IntVector3(newPos.x_, newPos.y_, newPos.z_);
-            value = newIntPos;
-            previousPosition_ = Vector3(newIntPos);
-        }
+        const auto currentPos = value.GetVector3();
+        auto diff = currentPos - previousPosition_;
+        startPosition_ = startPosition_ + diff;
+        const auto newPos = startPosition_ + positionDelta_ * time;
+        value = newPos;
+        previousPosition_ = newPos;
     }
 };
 
-class MoveBy2DState : public AttributeActionState
+class MoveByIntVec3State : public AttributeActionState
+{
+    Vector3 positionDelta_;
+    IntVector3 startPosition_;
+    IntVector3 previousPosition_;
+
+public:
+    MoveByIntVec3State(MoveBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+    {
+        positionDelta_ = action->GetPositionDelta();
+        previousPosition_ = startPosition_ = Get<IntVector3>();
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        const auto currentPos = value.GetIntVector3();
+        const auto diff = currentPos - previousPosition_;
+        startPosition_ = startPosition_ + diff;
+        const auto newPos = startPosition_ + (positionDelta_ * time).ToIntVector3();
+        value = newPos;
+        previousPosition_ = newPos;
+    }
+};
+
+class MoveByVec2State : public AttributeActionState
 {
     Vector2 positionDelta_;
     Vector2 startPosition_;
     Vector2 previousPosition_;
 
 public:
-    MoveBy2DState(MoveBy2D* action, Object* target)
-        : AttributeActionState(action, target, "Position")
+    MoveByVec2State(MoveBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
     {
-        positionDelta_ = action->GetPositionDelta();
-        if (attribute_)
-        {
-            if (attribute_->type_ == VAR_VECTOR2)
-                previousPosition_ = startPosition_ = Get<Vector2>();
-            else if (attribute_->type_ == VAR_INTVECTOR2)
-                previousPosition_ = startPosition_ = Vector2(Get<IntVector2>());
-            else
-            {
-                URHO3D_LOGERROR(
-                    Format("Attribute {} is not of type VAR_VECTOR2 or VAR_INTVECTOR2.", attribute_->name_));
-                attribute_ = nullptr;
-                return;
-            }
-        }
+        positionDelta_ = action->GetPositionDelta().ToVector2();
+        previousPosition_ = startPosition_ = Get<Vector2>();
     }
 
     void Update(float time, Variant& value) override
     {
-        if (attribute_->type_ == VAR_VECTOR2)
-        {
-            const auto currentPos = value.GetVector2();
-            auto diff = currentPos - previousPosition_;
-            startPosition_ = startPosition_ + diff;
-            const auto newPos = startPosition_ + positionDelta_ * time;
-            value = newPos;
-            previousPosition_ = newPos;
-        }
-        else
-        {
-            const auto currentPos = Vector2(value.GetIntVector2());
-            auto diff = currentPos - previousPosition_;
-            startPosition_ = startPosition_ + diff;
-            const auto newPos = startPosition_ + positionDelta_ * time;
-            const IntVector2 newIntPos = IntVector2(newPos.x_, newPos.y_);
-            value = newIntPos;
-            previousPosition_ = Vector2(newIntPos);
-        }
+        const auto currentPos = value.GetVector2();
+        const auto diff = currentPos - previousPosition_;
+        startPosition_ = startPosition_ + diff;
+        const auto newPos = startPosition_ + positionDelta_ * time;
+        value = newPos;
+        previousPosition_ = newPos;
     }
 };
 
-class JumpByState : public AttributeActionState
+class MoveByIntVec2State : public AttributeActionState
+{
+    Vector2 positionDelta_;
+    IntVector2 startPosition_;
+    IntVector2 previousPosition_;
+
+public:
+    MoveByIntVec2State(MoveBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+    {
+        positionDelta_ = action->GetPositionDelta().ToVector2();
+        previousPosition_ = startPosition_ = Get<IntVector2>();
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        const auto currentPos = value.GetIntVector2();
+        const auto diff = currentPos - previousPosition_;
+        startPosition_ = startPosition_ + diff;
+        const auto newPos = startPosition_ + (positionDelta_ * time).ToIntVector2();
+        value = newPos;
+        previousPosition_ = newPos;
+    }
+};
+
+class JumpByVec3State : public AttributeActionState
 {
     Vector3 positionDelta_;
     bool triggered_;
 
 public:
-    JumpByState(JumpBy* action, Object* target)
-        : AttributeActionState(action, target, "Position")
+    JumpByVec3State(JumpBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
         , positionDelta_(action->GetPositionDelta())
         , triggered_(false)
     {
@@ -156,30 +154,18 @@ public:
         if (triggered_)
             return;
         triggered_ = true; 
-        if (attribute_->type_ == VAR_VECTOR3)
-        {
-            value = value.GetVector3() + positionDelta_;
-        }
-        else if (attribute_->type_ == VAR_INTVECTOR3)
-        {
-            auto res = Vector3(value.GetIntVector3()) + positionDelta_;
-            value = IntVector3(res.x_, res.y_, res.z_);
-        }
-        else
-        {
-            URHO3D_LOGERROR("Can't JumpBy: Position attribute is neither Vector3 nor IntVector3");
-        }
+        value = value.GetVector3() + positionDelta_;
     }
 };
 
-class JumpBy2DState : public AttributeActionState
+class JumpByIntVec3State : public AttributeActionState
 {
-    Vector2 positionDelta_;
+    Vector3 positionDelta_;
     bool triggered_;
 
 public:
-    JumpBy2DState(JumpBy2D* action, Object* target)
-        : AttributeActionState(action, target, "Position")
+    JumpByIntVec3State(JumpBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
         , positionDelta_(action->GetPositionDelta())
         , triggered_(false)
     {
@@ -190,19 +176,52 @@ public:
         if (triggered_)
             return;
         triggered_ = true;
-        if (attribute_->type_ == VAR_VECTOR2)
-        {
-            value = value.GetVector2() + positionDelta_;
-        }
-        else if (attribute_->type_ == VAR_INTVECTOR2)
-        {
-            auto res = Vector2(value.GetIntVector2()) + positionDelta_;
-            value = IntVector2(res.x_, res.y_);
-        }
-        else
-        {
-            URHO3D_LOGERROR("Can't JumpBy2D: Position attribute is neither Vector2 nor IntVector2");
-        }
+        const auto res = Vector3(value.GetIntVector3()) + positionDelta_;
+        value = res.ToIntVector3();
+    }
+};
+
+class JumpByVec2State : public AttributeActionState
+{
+    Vector3 positionDelta_;
+    bool triggered_;
+
+public:
+    JumpByVec2State(JumpBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+        , positionDelta_(action->GetPositionDelta())
+        , triggered_(false)
+    {
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        if (triggered_)
+            return;
+        triggered_ = true;
+        value = value.GetVector2() + positionDelta_.ToVector2();
+    }
+};
+
+class JumpByIntVec2State : public AttributeActionState
+{
+    Vector3 positionDelta_;
+    bool triggered_;
+
+public:
+    JumpByIntVec2State(JumpBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+        , positionDelta_(action->GetPositionDelta())
+        , triggered_(false)
+    {
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        if (triggered_)
+            return;
+        triggered_ = true;
+        value = value.GetIntVector2() + positionDelta_.ToIntVector2();
     }
 };
 
@@ -213,8 +232,8 @@ class ScaleByState : public AttributeActionState
     Vector3 previousScale_;
 
 public:
-    ScaleByState(ScaleBy* action, Object* target)
-        : AttributeActionState(action, target, "Scale", VAR_VECTOR3)
+    ScaleByState(ScaleBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
     {
         scaleDelta_ = action->GetScaleDelta();
         previousScale_ = startScale_ = Get<Vector3>();
@@ -231,12 +250,38 @@ public:
     }
 };
 
+
+class ScaleByVec2State : public AttributeActionState
+{
+    Vector2 scaleDelta_;
+    Vector2 startScale_;
+    Vector2 previousScale_;
+
+public:
+    ScaleByVec2State(ScaleBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+    {
+        scaleDelta_ = action->GetScaleDelta().ToVector2();
+        previousScale_ = startScale_ = Get<Vector2>();
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        const auto currentScale = value.GetVector2();
+        const auto diff = currentScale / previousScale_;
+        startScale_ = startScale_ * diff;
+        const auto newScale = startScale_ * Vector2::ONE.Lerp(scaleDelta_, time);
+        value = newScale;
+        previousScale_ = newScale;
+    }
+};
+
 } // namespace
 
 /// ------------------------------------------------------------------------------
 /// Construct.
 MoveBy::MoveBy(Context* context)
-    : BaseClassName(context)
+    : BaseClassName(context, POSITION_ATTRIBUTE)
 {
 }
 
@@ -259,36 +304,21 @@ void MoveBy::SerializeInBlock(Archive& archive)
 }
 
 /// Create new action state from the action.
-SharedPtr<ActionState> MoveBy::StartAction(Object* target) { return MakeShared<MoveByState>(this, target); }
-
-/// ------------------------------------------------------------------------------
-/// Construct.
-MoveBy2D::MoveBy2D(Context* context)
-    : BaseClassName(context)
+SharedPtr<ActionState> MoveBy::StartAction(Object* target)
 {
+    if (auto attribute = GetAttribute(target))
+    {
+        switch (attribute->type_)
+        {
+        case VAR_VECTOR2: return MakeShared<MoveByVec2State>(this, target, attribute);
+        case VAR_VECTOR3: return MakeShared<MoveByVec3State>(this, target, attribute);
+        case VAR_INTVECTOR2: return MakeShared<MoveByIntVec2State>(this, target, attribute);
+        case VAR_INTVECTOR3: return MakeShared<MoveByIntVec3State>(this, target, attribute);
+        default: URHO3D_LOGERROR(Format("Attribute {} is not of valid type.", GetAttributeName())); break;
+        }
+    }
+    return BaseClassName::StartAction(target);
 }
-
-/// Set position delta.
-void MoveBy2D::SetPositionDelta(const Vector2& pos) { delta_ = pos; }
-
-SharedPtr<FiniteTimeAction> MoveBy2D::Reverse() const
-{
-    auto result = MakeShared<MoveBy2D>(context_);
-    result->SetDuration(GetDuration());
-    result->SetPositionDelta(-delta_);
-    return result;
-}
-
-/// Serialize content from/to archive. May throw ArchiveException.
-void MoveBy2D::SerializeInBlock(Archive& archive)
-{
-    BaseClassName::SerializeInBlock(archive);
-    SerializeOptionalValue(archive, "delta", delta_, Vector2::ZERO);
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> MoveBy2D::StartAction(Object* target) { return MakeShared<MoveBy2DState>(this, target); }
-
 
 /// ------------------------------------------------------------------------------
 /// Construct.
@@ -316,35 +346,21 @@ void JumpBy::SerializeInBlock(Archive& archive)
 }
 
 /// Create new action state from the action.
-SharedPtr<ActionState> JumpBy::StartAction(Object* target) { return MakeShared<JumpByState>(this, target); }
-
-/// ------------------------------------------------------------------------------
-/// Construct.
-JumpBy2D::JumpBy2D(Context* context)
-    : BaseClassName(context)
+SharedPtr<ActionState> JumpBy::StartAction(Object* target)
 {
+    if (auto attribute = GetAttribute(target))
+    {
+        switch (attribute->type_)
+        {
+        case VAR_VECTOR2: return MakeShared<JumpByVec2State>(this, target, attribute);
+        case VAR_VECTOR3: return MakeShared<JumpByVec3State>(this, target, attribute);
+        case VAR_INTVECTOR2: return MakeShared<JumpByIntVec2State>(this, target, attribute);
+        case VAR_INTVECTOR3: return MakeShared<JumpByIntVec3State>(this, target, attribute);
+        default: URHO3D_LOGERROR(Format("Attribute {} is not of valid type.", GetAttributeName())); break;
+        }
+    }
+    return BaseClassName::StartAction(target);
 }
-
-/// Set position delta.
-void JumpBy2D::SetPositionDelta(const Vector2& pos) { delta_ = pos; }
-
-SharedPtr<FiniteTimeAction> JumpBy2D::Reverse() const
-{
-    auto result = MakeShared<JumpBy2D>(context_);
-    result->SetDuration(GetDuration());
-    result->SetPositionDelta(-delta_);
-    return result;
-}
-
-/// Serialize content from/to archive. May throw ArchiveException.
-void JumpBy2D::SerializeInBlock(Archive& archive)
-{
-    BaseClassName::SerializeInBlock(archive);
-    SerializeOptionalValue(archive, "delta", delta_, Vector2::ZERO);
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> JumpBy2D::StartAction(Object* target) { return MakeShared<JumpBy2DState>(this, target); }
 
 /// ------------------------------------------------------------------------------
 /// Construct.
@@ -372,7 +388,19 @@ void ScaleBy::SerializeInBlock(Archive& archive)
 }
 
 /// Create new action state from the action.
-SharedPtr<ActionState> ScaleBy::StartAction(Object* target) { return MakeShared<ScaleByState>(this, target); }
+SharedPtr<ActionState> ScaleBy::StartAction(Object* target)
+{
+    if (auto attribute = GetAttribute(target))
+    {
+        switch (attribute->type_)
+        {
+        case VAR_VECTOR3: return MakeShared<ScaleByState>(this, target, attribute);
+        case VAR_VECTOR2: return MakeShared<ScaleByVec2State>(this, target, attribute);
+        default: URHO3D_LOGERROR(Format("Attribute {} is not of valid type.", GetAttributeName())); break;
+        }
+    }
+    return BaseClassName::StartAction(target);
+}
 
 
 /// ------------------------------------------------------------------------------
@@ -386,8 +414,8 @@ class RotateByState : public AttributeActionState
     Quaternion previousRotation_;
 
 public:
-    RotateByState(RotateBy* action, Object* target)
-        : AttributeActionState(action, target, "Rotation", VAR_QUATERNION)
+    RotateByState(RotateBy* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
     {
         rotationDelta_ = action->GetRotationDelta();
         previousRotation_ = startRotation_ = Get<Quaternion>();
@@ -430,7 +458,18 @@ void RotateBy::SerializeInBlock(Archive& archive)
 }
 
 /// Create new action state from the action.
-SharedPtr<ActionState> RotateBy::StartAction(Object* target) { return MakeShared<RotateByState>(this, target); }
+SharedPtr<ActionState> RotateBy::StartAction(Object* target)
+{
+    if (auto attribute = GetAttribute(target))
+    {
+        switch (attribute->type_)
+        {
+        case VAR_QUATERNION: return MakeShared<RotateByState>(this, target, attribute);
+        default: URHO3D_LOGERROR(Format("Attribute {} is not of valid type.", GetAttributeName())); break;
+        }
+    }
+    return BaseClassName::StartAction(target);
+}
 
 /// ------------------------------------------------------------------------------
 

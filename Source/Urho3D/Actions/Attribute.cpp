@@ -42,8 +42,8 @@ class AttributeFromToState : public AttributeActionState
     Variant to_;
 
 public:
-    AttributeFromToState(AttributeFromTo* action, Object* target)
-        : AttributeActionState(action, target, action->GetAttributeName(), action->GetFrom().GetType())
+    AttributeFromToState(AttributeFromTo* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
         , from_(action->GetFrom())
         , to_(action->GetTo())
     {
@@ -58,8 +58,8 @@ class AttributeToState : public AttributeActionState
     Variant to_;
 
 public:
-    AttributeToState(AttributeTo* action, Object* target)
-        : AttributeActionState(action, target, action->GetAttributeName().c_str(), action->GetTo().GetType())
+    AttributeToState(AttributeTo* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
         , to_(action->GetTo())
     {
         if (attribute_)
@@ -84,15 +84,12 @@ void AttributeFromTo::SetFrom(const Variant& variant) { from_ = variant; }
 // Get "to" value.
 void AttributeFromTo::SetTo(const Variant& variant) { to_ = variant; }
 
-// Get shader parameter name
-void AttributeFromTo::SetAttributeName(ea::string_view name) { name_ = name; }
-
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> AttributeFromTo::Reverse() const
 {
     auto result = MakeShared<AttributeFromTo>(context_);
     result->SetDuration(GetDuration());
-    result->SetAttributeName(name_);
+    result->SetAttributeName(GetAttributeName());
     result->SetFrom(to_);
     result->SetTo(from_);
     return result;
@@ -101,8 +98,7 @@ SharedPtr<FiniteTimeAction> AttributeFromTo::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void AttributeFromTo::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
-    SerializeValue(archive, "attribute", name_);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "from", from_, Variant::EMPTY);
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
@@ -110,7 +106,7 @@ void AttributeFromTo::SerializeInBlock(Archive& archive)
 /// Create new action state from the action.
 SharedPtr<ActionState> AttributeFromTo::StartAction(Object* target)
 {
-    return MakeShared<AttributeFromToState>(this, target);
+    return MakeShared<AttributeFromToState>(this, target, GetAttribute(target));
 }
 
 /// Construct.
@@ -122,19 +118,18 @@ AttributeTo::AttributeTo(Context* context)
 // Get "to" value.
 void AttributeTo::SetTo(const Variant& variant) { to_ = variant; }
 
-// Get shader parameter name
-void AttributeTo::SetAttributeName(ea::string_view name) { name_ = name; }
-
 /// Serialize content from/to archive. May throw ArchiveException.
 void AttributeTo::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
-    SerializeValue(archive, "attribute", name_);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
 
 /// Create new action state from the action.
-SharedPtr<ActionState> AttributeTo::StartAction(Object* target) { return MakeShared<AttributeToState>(this, target); }
+SharedPtr<ActionState> AttributeTo::StartAction(Object* target)
+{
+    return MakeShared<AttributeToState>(this, target, GetAttribute(target));
+}
 
 /// Construct.
 AttributeBlink::AttributeBlink(Context* context)
@@ -148,15 +143,12 @@ void AttributeBlink::SetFrom(const Variant& variant) { from_ = variant; }
 // Get "to" value.
 void AttributeBlink::SetTo(const Variant& variant) { to_ = variant; }
 
-// Get shader parameter name
-void AttributeBlink::SetAttributeName(const ea::string& name) { name_ = name; }
-
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> AttributeBlink::Reverse() const
 {
     auto result = MakeShared<AttributeFromTo>(context_);
     result->SetDuration(GetDuration());
-    result->SetAttributeName(name_);
+    result->SetAttributeName(GetAttributeName());
     result->SetFrom(to_);
     result->SetTo(from_);
     return result;
@@ -165,8 +157,7 @@ SharedPtr<FiniteTimeAction> AttributeBlink::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void AttributeBlink::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
-    SerializeValue(archive, "attribute", name_);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "from", from_, Variant::EMPTY);
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
@@ -174,7 +165,7 @@ void AttributeBlink::SerializeInBlock(Archive& archive)
 /// Create new action state from the action.
 SharedPtr<ActionState> AttributeBlink::StartAction(Object* target)
 {
-    return MakeShared<AttributeBlinkState>(this, target, name_, from_, to_, times_);
+    return MakeShared<AttributeBlinkState>(this, target, GetAttribute(target), from_, to_, times_);
 }
 
 } // namespace Actions

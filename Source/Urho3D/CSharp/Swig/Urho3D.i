@@ -566,6 +566,7 @@ public:
 %include "Urho3D/Actions/FiniteTimeActionState.h"
 %include "Urho3D/Actions/ActionInstant.h"
 %include "Urho3D/Actions/ActionInstantState.h"
+%include "Urho3D/Actions/AttributeAction.h"
 %include "Urho3D/Actions/AttributeActionState.h"
 %include "Urho3D/Actions/Attribute.h"
 %include "Urho3D/Actions/CallFunc.h"

@@ -22,16 +22,16 @@
 
 #pragma once
 
-#include "FiniteTimeAction.h"
+#include "AttributeAction.h"
 
 namespace Urho3D
 {
 namespace Actions
 {
 /// Animate attribute between two values.
-class URHO3D_API AttributeFromTo : public FiniteTimeAction
+class URHO3D_API AttributeFromTo : public AttributeAction
 {
-    URHO3D_OBJECT(AttributeFromTo, FiniteTimeAction)
+    URHO3D_OBJECT(AttributeFromTo, AttributeAction)
 
 public:
     /// Construct.
@@ -41,15 +41,11 @@ public:
     void SetFrom(const Variant&);
     // Get "to" value.
     void SetTo(const Variant&);
-    // Get shader parameter name.
-    void SetAttributeName(ea::string_view attribute);
 
     // Get "from" value.
     const Variant& GetFrom() const { return from_; }
     // Get "to" value.
     const Variant& GetTo() const { return to_; }
-    // Get attribute parameter name.
-    const ea::string& GetAttributeName() const { return name_; }
 
     /// Create reversed action.
     SharedPtr<FiniteTimeAction> Reverse() const override;
@@ -62,15 +58,14 @@ protected:
     SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
-    ea::string name_;
     Variant from_;
     Variant to_;
 };
 
 /// Animate attribute between current and provided value.
-class URHO3D_API AttributeTo : public FiniteTimeAction
+class URHO3D_API AttributeTo : public AttributeAction
 {
-    URHO3D_OBJECT(AttributeTo, FiniteTimeAction)
+    URHO3D_OBJECT(AttributeTo, AttributeAction)
 
 public:
     /// Construct.
@@ -78,13 +73,9 @@ public:
 
     // Get "to" value.
     void SetTo(const Variant&);
-    // Get shader parameter name.
-    void SetAttributeName(ea::string_view attribute);
 
     // Get "to" value.
     const Variant& GetTo() const { return to_; }
-    // Get attribute parameter name.
-    const ea::string& GetAttributeName() const { return name_; }
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
@@ -94,14 +85,13 @@ protected:
     SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
-    ea::string name_;
     Variant to_;
 };
 
 /// Animate attribute between two values.
-class URHO3D_API AttributeBlink : public FiniteTimeAction
+class URHO3D_API AttributeBlink : public AttributeAction
 {
-    URHO3D_OBJECT(AttributeBlink, FiniteTimeAction)
+    URHO3D_OBJECT(AttributeBlink, AttributeAction)
 
 public:
     /// Construct.
@@ -111,8 +101,6 @@ public:
     void SetFrom(const Variant&);
     // Get "to" value.
     void SetTo(const Variant&);
-    // Get shader parameter name.
-    void SetAttributeName(const ea::string& attribute);
     /// Set number of blinks.
     void SetNumOfBlinks(unsigned times) { times_ = Max(1, times); };
 
@@ -120,8 +108,6 @@ public:
     const Variant& GetFrom() const { return from_; }
     // Get "to" value.
     const Variant& GetTo() const { return to_; }
-    // Get attribute parameter name.
-    const ea::string& GetAttributeName() const { return name_; }
     /// Get number of blinks.
     unsigned GetNumOfBlinks() const { return times_; };
 
@@ -136,7 +122,6 @@ protected:
     SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
-    ea::string name_;
     Variant from_;
     Variant to_;
     unsigned times_{1};

@@ -25,8 +25,7 @@
 
 #include "ActionManager.h"
 #include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "Urho3D/IO/ArchiveSerializationBasic.h"
+#include "../IO/ArchiveSerializationBasic.h"
 
 namespace Urho3D
 {

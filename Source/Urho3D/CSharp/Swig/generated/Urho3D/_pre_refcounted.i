@@ -359,6 +359,7 @@ URHO3D_REFCOUNTED(Urho3D::Actions::ActionState);
 URHO3D_REFCOUNTED(Urho3D::Actions::FiniteTimeActionState);
 URHO3D_REFCOUNTED(Urho3D::Actions::ActionInstantState);
 URHO3D_REFCOUNTED(Urho3D::ActionSet);
+URHO3D_REFCOUNTED(Urho3D::Actions::AttributeAction);
 URHO3D_REFCOUNTED(Urho3D::Actions::AttributeFromTo);
 URHO3D_REFCOUNTED(Urho3D::Actions::AttributeTo);
 URHO3D_REFCOUNTED(Urho3D::Actions::AttributeBlink);

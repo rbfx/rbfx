@@ -55,8 +55,11 @@ struct ParallelState : public FiniteTimeActionState
         {
             FiniteTimeAction* innerAction = action->GetAction(i);
             const auto innerDuration = innerAction->GetDuration();
-            innerActionStates_.emplace_back(
-                StateAndDuration{StartAction(innerAction, target), totalDuration / innerDuration});
+            auto action = StartAction(innerAction, target);
+            if (action)
+            {
+                innerActionStates_.emplace_back(StateAndDuration{action, totalDuration / innerDuration});
+            }
         }
     }
 

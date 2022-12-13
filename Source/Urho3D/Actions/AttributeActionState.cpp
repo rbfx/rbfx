@@ -33,29 +33,10 @@ namespace Actions
 {
 /// Construct.
 AttributeActionState::AttributeActionState(
-    FiniteTimeAction* action, Object* target, ea::string_view attribute, VariantType type)
+    FiniteTimeAction* action, Object* target, AttributeInfo* attribute)
     : FiniteTimeActionState(action, target)
-    , attributeType_(type)
+    , attribute_(attribute)
 {
-    auto serializable = target->Cast<Serializable>();
-    if (!serializable)
-    {
-        URHO3D_LOGERROR(
-            Format("Can animate only serializable class but {} is not serializable.", target->GetTypeName()));
-        return;
-    }
-    attribute_ = target->GetContext()->GetReflection(target->GetType())->GetAttribute(attribute);
-    if (!attribute_)
-    {
-        URHO3D_LOGERROR(Format("Attribute {} not found in {}.", attribute, target->GetTypeName()));
-        return;
-    }
-    if (attributeType_ != VAR_NONE && attribute_->type_ != attributeType_)
-    {
-        URHO3D_LOGERROR(Format("Attribute {} is not of type {}.", attribute, Variant::GetTypeName(attributeType_)));
-        attribute_ = nullptr;
-        return;
-    }
 }
 
 /// Destruct.
@@ -89,22 +70,13 @@ void AttributeActionState::Update(float dt)
 
     Variant dst;
     Get(dst);
-    if (attributeType_ != VAR_NONE && dst.GetType() != attributeType_)
-    {
-        URHO3D_LOGERROR(
-            Format("Attribute {} value is not of type {}.", attribute_->name_, Variant::GetTypeName(attributeType_)));
-        attribute_ = nullptr;
-        return;
-    }
-
     Update(dt, dst);
-
     Set(dst);
 }
 
 SetAttributeState::SetAttributeState(
-    FiniteTimeAction* action, Object* target, ea::string_view attribute, const Variant& value)
-    : AttributeActionState(action, target, attribute, value.GetType())
+    FiniteTimeAction* action, Object* target, AttributeInfo* attribute, const Variant& value)
+    : AttributeActionState(action, target, attribute)
     , value_(value)
     , triggered_(false)
 {
@@ -119,10 +91,11 @@ void SetAttributeState::Update(float time, Variant& var)
     }
 }
 
-AttributeBlinkState::AttributeBlinkState(FiniteTimeAction* action, Object* target, ea::string_view attribute,
+AttributeBlinkState::AttributeBlinkState(
+    FiniteTimeAction* action, Object* target, AttributeInfo* attribute,
     Variant from,
     Variant to, unsigned times)
-    : AttributeActionState(action, target, attribute, from.GetType())
+    : AttributeActionState(action, target, attribute)
     , from_(from)
     , to_(to)
 {

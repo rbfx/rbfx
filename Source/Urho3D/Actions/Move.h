@@ -23,17 +23,16 @@
 
 #pragma once
 
-#include "FiniteTimeAction.h"
+#include "AttributeAction.h"
 
 namespace Urho3D
 {
 namespace Actions
 {
-
-/// Move by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
-class URHO3D_API MoveBy : public FiniteTimeAction
+/// Move by 3D or 2D offset action. Target should have attribute "Position" of type Vector3, Vector2, IntVector2 or IntVector3.
+class URHO3D_API MoveBy : public AttributeAction
 {
-    URHO3D_OBJECT(MoveBy, FiniteTimeAction)
+    URHO3D_OBJECT(MoveBy, AttributeAction)
 public:
     /// Construct.
     explicit MoveBy(Context* context);
@@ -58,40 +57,10 @@ private:
     Vector3 delta_{Vector3::ZERO};
 };
 
-/// Move by 2D offset action. Target should have attribute "Position" of type Vector2 or IntVector2.
-class URHO3D_API MoveBy2D : public FiniteTimeAction
-{
-    URHO3D_OBJECT(MoveBy2D, FiniteTimeAction)
-
-public:
-    /// Construct.
-    explicit MoveBy2D(Context* context);
-
-    /// Set position delta.
-    void SetPositionDelta(const Vector2& delta);
-
-    /// Get position delta.
-    const Vector2& GetPositionDelta() const { return delta_; }
-
-    /// Create reversed action.
-    SharedPtr<FiniteTimeAction> Reverse() const override;
-
-    /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive) override;
-
-protected:
-    /// Create new action state from the action.
-    SharedPtr<ActionState> StartAction(Object* target) override;
-
-private:
-    Vector2 delta_{Vector2::ZERO};
-};
-
-
 /// Move instantly by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
-class URHO3D_API JumpBy : public FiniteTimeAction
+class URHO3D_API JumpBy : public AttributeAction
 {
-    URHO3D_OBJECT(JumpBy, FiniteTimeAction)
+    URHO3D_OBJECT(JumpBy, AttributeAction)
 public:
     /// Construct.
     explicit JumpBy(Context* context);
@@ -116,39 +85,10 @@ private:
     Vector3 delta_{Vector3::ZERO};
 };
 
-/// Move instantly by 2D offset action. Target should have attribute "Position" of type Vector2 or IntVector2.
-class URHO3D_API JumpBy2D : public FiniteTimeAction
-{
-    URHO3D_OBJECT(JumpBy2D, FiniteTimeAction)
-
-public:
-    /// Construct.
-    explicit JumpBy2D(Context* context);
-
-    /// Set position delta.
-    void SetPositionDelta(const Vector2& delta);
-
-    /// Get position delta.
-    const Vector2& GetPositionDelta() const { return delta_; }
-
-    /// Create reversed action.
-    SharedPtr<FiniteTimeAction> Reverse() const override;
-
-    /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive) override;
-
-protected:
-    /// Create new action state from the action.
-    SharedPtr<ActionState> StartAction(Object* target) override;
-
-private:
-    Vector2 delta_{Vector2::ZERO};
-};
-
 /// Scale by 3D offset action. Target should have attribute "Scale" of type Vector3.
-class URHO3D_API ScaleBy : public FiniteTimeAction
+class URHO3D_API ScaleBy : public AttributeAction
 {
-    URHO3D_OBJECT(MoveBy, FiniteTimeAction)
+    URHO3D_OBJECT(MoveBy, AttributeAction)
 public:
     /// Construct.
     explicit ScaleBy(Context* context);
@@ -174,9 +114,9 @@ private:
 };
 
 /// Rotate by 3D delta action. Target should have attribute "Rotation" of type Quaternion.
-class URHO3D_API RotateBy : public FiniteTimeAction
+class URHO3D_API RotateBy : public AttributeAction
 {
-    URHO3D_OBJECT(RotateBy, FiniteTimeAction)
+    URHO3D_OBJECT(RotateBy, AttributeAction)
 public:
     /// Construct.
     explicit RotateBy(Context* context);
@@ -203,9 +143,9 @@ private:
 
 
 /// Rotate around 3D point action. Target should have "Position" of type Vector3 and "Rotation" of type Quaternion attributes.
-class URHO3D_API RotateAround : public FiniteTimeAction
+class URHO3D_API RotateAround : public AttributeAction
 {
-    URHO3D_OBJECT(RotateAround, FiniteTimeAction)
+    URHO3D_OBJECT(RotateAround, AttributeAction)
 public:
     /// Construct.
     explicit RotateAround(Context* context);

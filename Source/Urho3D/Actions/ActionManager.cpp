@@ -115,7 +115,9 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<BaseAction>();
     manager->AddFactoryReflection<FiniteTimeAction>();
     manager->AddFactoryReflection<MoveBy>();
-    manager->AddFactoryReflection<MoveBy2D>();
+    manager->AddFactoryReflection<JumpBy>();
+    manager->AddFactoryReflection<RotateBy>();
+    manager->AddFactoryReflection<RotateAround>();
     manager->AddFactoryReflection<AttributeFromTo>();
     manager->AddFactoryReflection<AttributeTo>();
     manager->AddFactoryReflection<AttributeBlink>();
@@ -458,5 +460,6 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<FiniteTimeActi
         value.DynamicCast(baseAction);
     }
 }
+
 
 } // namespace Urho3D

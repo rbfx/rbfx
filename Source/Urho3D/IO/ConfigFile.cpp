@@ -217,9 +217,16 @@ bool ConfigFileBase::Save(Serializer& dest) const
 
 bool ConfigFileBase::LoadXML(const XMLElement& xmlFile)
 {
-    XMLInputArchive archive(context_, xmlFile);
-    auto block = archive.OpenUnorderedBlock(xmlFile.GetName().c_str());
-    this->SerializeInBlock(archive);
+    try
+    {
+        XMLInputArchive archive(context_, xmlFile);
+        auto block = archive.OpenUnorderedBlock(xmlFile.GetName().c_str());
+        this->SerializeInBlock(archive);
+    }
+    catch (const ArchiveException& exception)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -242,9 +249,16 @@ bool ConfigFileBase::LoadJSON(const JSONValue& source)
     if (source.IsNull())
         return false;
 
-    JSONInputArchive archive(context_, source);
-    auto block = archive.OpenUnorderedBlock("Settings");
-    this->SerializeInBlock(archive);
+    try
+    {
+        JSONInputArchive archive(context_, source);
+        auto block = archive.OpenUnorderedBlock("Settings");
+        this->SerializeInBlock(archive);
+    }
+    catch (const ArchiveException& exception)
+    {
+        return false;
+    }
     return true;
 }
 

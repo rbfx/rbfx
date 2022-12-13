@@ -36,7 +36,7 @@ class URHO3D_API AttributeActionState : public FiniteTimeActionState
 {
 public:
     /// Construct.
-    AttributeActionState(FiniteTimeAction* action, Object* target, ea::string_view attribute, VariantType type = VAR_NONE);
+    AttributeActionState(FiniteTimeAction* action, Object* target, AttributeInfo* attribute);
     /// Destruct.
     ~AttributeActionState() override;
 
@@ -64,13 +64,12 @@ private:
 
 protected:
     AttributeInfo* attribute_{};
-    VariantType attributeType_{VAR_NONE};
 };
 
 class SetAttributeState : public AttributeActionState
 {
 public:
-    SetAttributeState(FiniteTimeAction* action, Object* target, ea::string_view attribute, const Variant& value);
+    SetAttributeState(FiniteTimeAction* action, Object* target, AttributeInfo* attribute, const Variant& value);
 
 private:
     void Update(float time, Variant& var) override;
@@ -84,7 +83,8 @@ private:
 class AttributeBlinkState : public AttributeActionState
 {
 public:
-    AttributeBlinkState(FiniteTimeAction* action, Object* target, ea::string_view attribute, Variant from,
+    AttributeBlinkState(
+        FiniteTimeAction* action, Object* target, AttributeInfo* attribute, Variant from,
         Variant to, unsigned times);
 
     void Update(float time, Variant& var) override;
