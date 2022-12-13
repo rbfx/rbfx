@@ -466,7 +466,10 @@ void IKTrigonometrySolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Bone 2 Name", ea::string, thirdBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Bend Target Name", ea::string, bendTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
+    URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
@@ -491,9 +494,9 @@ void IKTrigonometrySolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTes
         DrawDirection(debug, secondBone->position_, currentBendDirection);
     }
     if (target_)
-    {
         DrawIKTarget(debug, target_, false);
-    }
+    if (bendTarget_)
+        DrawIKTarget(debug, bendTarget_, false);
 }
 
 bool IKTrigonometrySolver::InitializeNodes(IKNodeCache& nodeCache)
@@ -501,6 +504,8 @@ bool IKTrigonometrySolver::InitializeNodes(IKNodeCache& nodeCache)
     target_ = AddCheckedNode(nodeCache, targetName_);
     if (!target_)
         return false;
+
+    bendTarget_ = AddCheckedNode(nodeCache, bendTargetName_);
 
     IKNode* firstBone = AddSolverNode(nodeCache, firstBoneName_);
     if (!firstBone)
@@ -526,12 +531,41 @@ void IKTrigonometrySolver::UpdateChainLengths(const Transform& inverseFrameOfRef
     local_.defaultDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
 }
 
+void IKTrigonometrySolver::EnsureInitialized()
+{
+    positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
+    bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
+    minAngle_ = Clamp(minAngle_, 0.0f, 180.0f);
+    maxAngle_ = Clamp(maxAngle_, minAngle_, 180.0f);
+}
+
 void IKTrigonometrySolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
 {
+    EnsureInitialized();
+
+    IKNode& firstBone = *chain_.GetBeginNode();
+    IKNode& secondBone = *chain_.GetMiddleNode();
+    IKNode& thirdBone = *chain_.GetEndNode();
+
+    const Quaternion firstBoneRotation = firstBone.rotation_;
+    const Quaternion secondBoneRotation = secondBone.rotation_;
+    const Quaternion thirdBoneRotation = thirdBone.rotation_;
+
+    const float bendTargetWeight = bendTarget_ ? bendTargetWeight_ : 0.0f;
+    const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
+
     const Vector3 targetPosition = target_->GetWorldPosition();
+    const Vector3 bendTargetDirection = bendTargetPosition - Lerp(firstBone.position_, targetPosition, 0.5f);
+
     const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
-    const Vector3 currentDirection = frameOfReference.rotation_ * local_.defaultDirection_;
+    const Vector3 currentDirection0 = frameOfReference.rotation_ * local_.defaultDirection_;
+    const Vector3 currentDirection1 = bendTargetDirection.Normalized();
+    const Vector3 currentDirection = Lerp(currentDirection0, currentDirection1, bendTargetWeight);
     chain_.Solve(targetPosition, originalDirection, currentDirection, minAngle_, maxAngle_);
+
+    firstBone.rotation_ = firstBoneRotation.Slerp(firstBone.rotation_, positionWeight_);
+    secondBone.rotation_ = secondBoneRotation.Slerp(secondBone.rotation_, positionWeight_);
+    thirdBone.rotation_ = thirdBoneRotation.Slerp(thirdBone.rotation_, positionWeight_);
 }
 
 IKLegSolver::IKLegSolver(Context* context)

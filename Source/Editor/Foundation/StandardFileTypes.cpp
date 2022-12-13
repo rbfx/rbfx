@@ -103,7 +103,7 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (desc.HasExtension({".ani"}))
+        if (desc.HasExtension({".ani"}) || ctx.HasXMLRoot("animation"))
         {
             desc.AddObjectType<Animation>();
         }
