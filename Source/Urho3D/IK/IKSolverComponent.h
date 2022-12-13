@@ -136,18 +136,24 @@ private:
     void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
     /// @}
 
+    void EnsureInitialized();
+
     ea::string firstBoneName_;
     ea::string secondBoneName_;
     ea::string thirdBoneName_;
 
     ea::string targetName_;
+    ea::string bendTargetName_;
 
+    float positionWeight_{1.0f};
+    float bendTargetWeight_{1.0f};
     float minAngle_{0.0f};
     float maxAngle_{180.0f};
     Vector3 bendDirection_{Vector3::FORWARD};
 
     IKTrigonometricChain chain_;
     WeakPtr<Node> target_;
+    WeakPtr<Node> bendTarget_;
 
     struct LocalCache
     {
