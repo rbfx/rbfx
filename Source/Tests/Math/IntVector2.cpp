@@ -20,33 +20,15 @@
 // THE SOFTWARE.
 //
 
-
 #include "../CommonUtils.h"
 
 using namespace Urho3D;
 
-TEST_CASE("Vector3 conversion")
+TEST_CASE("IntVector2 conversion")
 {
-    const Vector3 value{1, 2, 3};
+    const IntVector2 value{1, 2};
 
     CHECK(value.ToVector2().Equals(Vector2(1, 2)));
-    CHECK(value.ToIntVector2() == IntVector2(1, 2));
-    CHECK(value.ToIntVector3() == IntVector3(1, 2, 3));
-}
-
-TEST_CASE("Signed angle between vectors is consistent with quaternion rotation")
-{
-    const Vector3 axis{0, 0, 1};
-    const Vector3 vectorAlpha{1, 0, 0};
-    const Vector3 vectorBeta{0, 1, 0};
-    const float angleAlphaToBeta = vectorAlpha.SignedAngle(vectorBeta, axis);
-    const float angleBetaToAlpha = vectorBeta.SignedAngle(vectorAlpha, axis);
-
-    CHECK(angleAlphaToBeta == -angleBetaToAlpha);
-
-    const Quaternion rotationAlphaToBeta{angleAlphaToBeta, axis};
-    const Quaternion rotationBetaToAlpha{angleBetaToAlpha, axis};
-
-    CHECK((rotationAlphaToBeta * vectorAlpha).Equals(vectorBeta, 0.00001f));
-    CHECK((rotationBetaToAlpha * vectorBeta).Equals(vectorAlpha, 0.00001f));
+    CHECK(value.ToVector3().Equals(Vector3(1, 2, 0)));
+    CHECK(value.ToIntVector3() == IntVector3(1, 2, 0));
 }

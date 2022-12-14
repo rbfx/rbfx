@@ -152,8 +152,11 @@ public:
     /// Return 2D vector.
     Vector2 ToVector2() const;
 
-    /// Return 3D vector.
+    /// Return 3D vector (z component is set to 0).
     Vector3 ToVector3() const;
+
+    /// Return 3D int vector (z component is set to 0).
+    IntVector3 ToIntVector3() const;
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return (unsigned)x_ * 31 + (unsigned)y_; }
@@ -428,6 +431,7 @@ public:
     static const Vector2 ONE;
 };
 
+/// Return 2D vector.
 inline Vector2 IntVector2::ToVector2() const { return {static_cast<float>(x_), static_cast<float>(y_)}; }
 
 /// Multiply Vector2 with a scalar.

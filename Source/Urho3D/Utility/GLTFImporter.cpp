@@ -1977,15 +1977,15 @@ private:
 
         const IntVector3 metallicRoughnessImageSize = metallicRoughnessImage ? metallicRoughnessImage->GetSize() : IntVector3::ZERO;
         const IntVector3 occlusionImageSize = occlusionImage ? occlusionImage->GetSize() : IntVector3::ZERO;
-        const IntVector2 repackedImageSize = VectorMax(metallicRoughnessImageSize.ToVector2(), occlusionImageSize.ToVector2());
+        const IntVector2 repackedImageSize = VectorMax(metallicRoughnessImageSize.ToIntVector2(), occlusionImageSize.ToIntVector2());
 
         if (repackedImageSize.x_ <= 0 || repackedImageSize.y_ <= 0)
             throw RuntimeException("Repacked metallic-roughness-occlusion texture has invalid size");
 
-        if (metallicRoughnessImage && metallicRoughnessImageSize.ToVector2() != repackedImageSize)
+        if (metallicRoughnessImage && metallicRoughnessImageSize.ToIntVector2() != repackedImageSize)
             metallicRoughnessImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
 
-        if (occlusionImage && occlusionImageSize.ToVector2() != repackedImageSize)
+        if (occlusionImage && occlusionImageSize.ToIntVector2() != repackedImageSize)
             occlusionImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
 
         auto finalImage = MakeShared<Image>(base_.GetContext());

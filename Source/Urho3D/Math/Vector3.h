@@ -150,8 +150,11 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
+    /// Return 2D vector (z component is ignored).
+    Vector2 ToVector2() const { return { static_cast<float>(x_), static_cast<float>(y_) }; }
+
     /// Return 2D int vector (z component is ignored).
-    IntVector2 ToVector2() const { return { x_, y_ }; }
+    IntVector2 ToIntVector2() const { return {x_, y_}; }
 
     /// Return 3D vector.
     Vector3 ToVector3() const;
@@ -533,9 +536,17 @@ public:
 /// Return 3D vector.
 inline Vector3 IntVector3::ToVector3() const { return {static_cast<float>(x_), static_cast<float>(y_), static_cast<float>(z_)}; }
 
+/// Return 3D vector.
+inline Vector3 IntVector2::ToVector3() const { return {static_cast<float>(x_), static_cast<float>(y_), 0.0f}; }
+
+/// Return 3D vector.
 inline Vector3 Vector2::ToVector3() const { return {x_, y_, 0.0f}; }
 
+/// Return 3D int vector.
 inline IntVector3 Vector2::ToIntVector3() const { return {static_cast<int>(x_), static_cast<int>(y_), 0}; }
+
+/// Return 3D int vector.
+inline IntVector3 IntVector2::ToIntVector3() const { return {x_, y_, 0}; }
 
 /// Multiply Vector3 with a scalar.
 inline Vector3 operator *(float lhs, const Vector3& rhs) { return rhs * lhs; }
