@@ -77,14 +77,13 @@ TEST_CASE("Load malformed file returns false")
 
 TEST_CASE("Load config from file")
 {
-    MemoryBuffer buffer(R"({
-"Settings": [
+    MemoryBuffer buffer(R"([
     {
 		"key": "key0",
 		"type": "Int",
 		"value": 3
     }
-]})");
+])");
 
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto* vfs = context->GetSubsystem<VirtualFileSystem>();
@@ -104,8 +103,7 @@ TEST_CASE("Load config file from JSON")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     JSONFile jsonFile(context);
-    MemoryBuffer buffer(R"({
-"Settings": [
+    MemoryBuffer buffer(R"([
     {
 		"key": "key0",
 		"type": "Int",
@@ -116,7 +114,7 @@ TEST_CASE("Load config file from JSON")
 		"type": "Int",
 		"value": 6
     }
-]})");
+])");
     CHECK(jsonFile.Load(buffer));
 
     ConfigFile configFile(context);
@@ -155,12 +153,10 @@ TEST_CASE("Load config file from XML")
 
     XMLFile xmlFile(context);
     MemoryBuffer buffer(R"(<?xml version="1.0"?>
-<Settings>
 	<Settings>
 		<Value key="key0" type="Int" value="3" />
 		<Value key="key2" type="Int" value="6" />
-	</Settings>
-</Settings>)");
+	</Settings>)");
     CHECK(xmlFile.Load(buffer));
 
     ConfigFile configFile(context);
