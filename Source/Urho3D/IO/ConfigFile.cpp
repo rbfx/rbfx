@@ -196,7 +196,6 @@ bool ConfigFileBase::Load(Deserializer& source)
     try
     {
         BinaryInputArchive archive(context_, source);
-        auto block = archive.OpenUnorderedBlock("Settings");
         SerializeInBlock(archive);
     }
     catch (std::exception ex)
@@ -210,7 +209,6 @@ bool ConfigFileBase::Load(Deserializer& source)
 bool ConfigFileBase::Save(Serializer& dest) const
 {
     BinaryOutputArchive archive(context_, dest);
-    auto block = archive.OpenUnorderedBlock("Settings");
     const_cast<ConfigFileBase*>(this)->SerializeInBlock(archive);
     return true;
 }
@@ -220,11 +218,11 @@ bool ConfigFileBase::LoadXML(const XMLElement& xmlFile)
     try
     {
         XMLInputArchive archive(context_, xmlFile);
-        auto block = archive.OpenUnorderedBlock(xmlFile.GetName().c_str());
         this->SerializeInBlock(archive);
     }
-    catch (const ArchiveException& exception)
+    catch (const ArchiveException& ex)
     {
+        URHO3D_LOGERROR("{}", ex.what());
         return false;
     }
     return true;
@@ -239,7 +237,6 @@ bool ConfigFileBase::SaveXML(XMLElement& xmlFile) const
     }
 
     XMLOutputArchive archive(context_, xmlFile);
-    auto block = archive.OpenUnorderedBlock(xmlFile.GetName().c_str());
     const_cast<ConfigFileBase*>(this)->SerializeInBlock(archive);
     return true;
 }
@@ -252,11 +249,11 @@ bool ConfigFileBase::LoadJSON(const JSONValue& source)
     try
     {
         JSONInputArchive archive(context_, source);
-        auto block = archive.OpenUnorderedBlock("Settings");
         this->SerializeInBlock(archive);
     }
-    catch (const ArchiveException& exception)
+    catch (const ArchiveException& ex)
     {
+        URHO3D_LOGERROR("{}", ex.what());
         return false;
     }
     return true;
@@ -265,7 +262,6 @@ bool ConfigFileBase::LoadJSON(const JSONValue& source)
 bool ConfigFileBase::SaveJSON(JSONValue& dest) const
 {
     JSONOutputArchive archive(context_, dest);
-    auto block = archive.OpenUnorderedBlock("Settings");
     const_cast<ConfigFileBase*>(this)->SerializeInBlock(archive);
     return true;
 }
