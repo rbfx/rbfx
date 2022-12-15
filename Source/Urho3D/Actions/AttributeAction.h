@@ -29,11 +29,11 @@ namespace Urho3D
 {
 namespace Actions
 {
-const ea::string POSITION_ATTRIBUTE{"Position"};
-const ea::string ROTATION_ATTRIBUTE{"Rotation"};
-const ea::string SCALE_ATTRIBUTE{"Scale"};
-const ea::string ISVISIBLE_ATTRIBUTE{"Is Visible"};
-const ea::string ISENABLED_ATTRIBUTE{"Is Enabled"};
+const ea::string_view POSITION_ATTRIBUTE{"Position"};
+const ea::string_view ROTATION_ATTRIBUTE{"Rotation"};
+const ea::string_view SCALE_ATTRIBUTE{"Scale"};
+const ea::string_view ISVISIBLE_ATTRIBUTE{"Is Visible"};
+const ea::string_view ISENABLED_ATTRIBUTE{"Is Enabled"};
 
 /// Finite time action.
 class URHO3D_API AttributeAction : public FiniteTimeAction
@@ -43,13 +43,13 @@ public:
     /// Construct.
     AttributeAction(Context* context);
     /// Construct.
-    AttributeAction(Context* context, const ea::string& animatedAttribute);
+    AttributeAction(Context* context, ea::string_view animatedAttribute);
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
 
     /// Set action duration.
-    void SetAttributeName(const ea::string& animatedAttribute);
+    void SetAttributeName(ea::string_view animatedAttribute);
     /// Get action duration.
     virtual const ea::string& GetAttributeName() const;
 protected:

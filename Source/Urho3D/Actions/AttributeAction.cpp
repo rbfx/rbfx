@@ -39,7 +39,7 @@ AttributeAction::AttributeAction(Context* context)
 }
 
 /// Construct.
-AttributeAction::AttributeAction(Context* context, const ea::string& animatedAttribute)
+AttributeAction::AttributeAction(Context* context, ea::string_view animatedAttribute)
     : BaseClassName(context)
     , animatedAttribute_(animatedAttribute)
 {
@@ -57,7 +57,7 @@ const ea::string& AttributeAction::GetAttributeName() const
     return animatedAttribute_;
 }
 
-void AttributeAction::SetAttributeName(const ea::string& animatedAttribute)
+void AttributeAction::SetAttributeName(ea::string_view animatedAttribute)
 {
     animatedAttribute_ = animatedAttribute;
 }
