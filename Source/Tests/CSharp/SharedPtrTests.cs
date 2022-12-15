@@ -20,22 +20,23 @@
 // THE SOFTWARE.
 //
 
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Urho3DNet.Tests
 {
-    public class ContextTests
+    public class SharedPtrTests
     {
         [Fact]
-        public void SimpleApplication_DoesNotThrow()
+        public async Task CreateAndDestroyObject()
         {
-            using (var context = new Context())
+            await ApplicationRunner.RunAsync(app =>
             {
-                using (var application = new SimpleHeadlessApplication(context, (app) => { }))
+                using (var file = SharedPtr.MakeShared<Viewport>(app.Context))
                 {
-                    application.Run();
+                    Assert.NotNull(file.Ptr);
                 }
-            }
+            });
         }
     }
 }

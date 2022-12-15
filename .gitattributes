@@ -19,7 +19,7 @@ bin/Data/Fonts/* linguist-vendored
 *.dox text
 *.in text
 *.md text
-*.sh text
+*.sh text eol=lf
 *.bat text
 *.py text
 *.glsl text
