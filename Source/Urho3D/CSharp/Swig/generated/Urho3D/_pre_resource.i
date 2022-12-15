@@ -61,6 +61,7 @@
 %csattribute(Urho3D::XMLFile, %arg(pugi::xml_document *), Document, GetDocument);
 %csattribute(Urho3D::BackgroundLoader, %arg(unsigned int), NumQueuedResources, GetNumQueuedResources);
 %csattribute(Urho3D::BinaryFile, %arg(Urho3D::ByteVector), Data, GetData, SetData);
+%csattribute(Urho3D::BinaryFile, %arg(ea::string_view), Text, GetText);
 %csattribute(Urho3D::Graph, %arg(unsigned int), NumNodes, GetNumNodes);
 %csattribute(Urho3D::GraphPin, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::GraphInPin, %arg(bool), IsConnected, IsConnected);

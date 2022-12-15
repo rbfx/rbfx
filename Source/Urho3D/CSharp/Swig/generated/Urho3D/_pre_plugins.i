@@ -15,5 +15,6 @@
 %csattribute(Urho3D::PluginManager, %arg(bool), IsStarted, IsStarted);
 %csattribute(Urho3D::PluginManager, %arg(Urho3D::StringVector), LoadedPlugins, GetLoadedPlugins);
 %csattribute(Urho3D::PluginManager, %arg(unsigned int), Revision, GetRevision);
+%csattribute(Urho3D::PluginManager, %arg(bool), IsReloadPending, IsReloadPending);
 %csattribute(Urho3D::ScriptBundlePlugin, %arg(bool), IsLoaded, IsLoaded);
 %csattribute(Urho3D::ScriptBundlePlugin, %arg(bool), IsOutOfDate, IsOutOfDate);
