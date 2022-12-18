@@ -147,4 +147,18 @@ TEST_CASE("FilteredByDistance handles object hierarchies")
         REQUIRE(filteredParentNode->GetWorldPosition() == Vector3{0.0f, 0.0f, -8.0f});
         REQUIRE(unfilteredChildNode->GetWorldPosition() == Vector3{0.0f, 0.0f, 0.0f});
     }
+
+    // Test child node removal
+    serverScene->GetChild("Unfiltered Child Node", true)->Remove();
+    sim.SimulateTime(8.0f);
+
+    {
+        auto clientNode = clientScene->GetChild("Client Node", true);
+        auto filteredParentNode = clientScene->GetChild("Filtered Parent Node", true);
+        auto unfilteredChildNode = clientScene->GetChild("Unfiltered Child Node", true);
+
+        REQUIRE(clientNode);
+        REQUIRE(filteredParentNode);
+        REQUIRE_FALSE(unfilteredChildNode);
+    }
 }

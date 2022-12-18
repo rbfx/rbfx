@@ -64,6 +64,9 @@ void NetworkObject::UpdateObjectHierarchy()
             parentNetworkObject_->AddChildNetworkObject(this);
     }
 
+    // Remove expired children
+    ea::erase_if(childrenNetworkObjects_, [](const WeakPtr<NetworkObject>& child) { return !child; });
+
     if (IsServer())
         UpdateTransformOnServer();
 }

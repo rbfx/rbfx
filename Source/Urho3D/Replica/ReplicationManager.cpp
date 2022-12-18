@@ -119,6 +119,7 @@ void NetworkObjectRegistry::UpdateNetworkObjects()
             networkObject->UpdateObjectHierarchy();
             networkObject->GetNode()->GetWorldTransform();
         }
+        networkObjectsDirty_[index] = false;
     }
 }
 
