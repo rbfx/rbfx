@@ -352,18 +352,36 @@ public void SetTranslation(in Vector3 translation)
     /// Test for equality with another matrix with epsilon.
     public bool Equals(Matrix3x4 rhs)
     {
-        return M00 == rhs.M00 &&
-               M01 == rhs.M01 &&
-               M02 == rhs.M02 &&
-               M03 == rhs.M03 &&
-               M10 == rhs.M10 &&
-               M11 == rhs.M11 &&
-               M12 == rhs.M12 &&
-               M13 == rhs.M13 &&
-               M20 == rhs.M20 &&
-               M21 == rhs.M21 &&
-               M22 == rhs.M22 &&
-               M23 == rhs.M23;
+        return this == rhs;
+    }
+
+    /// Test for equality with another matrix with epsilon.
+    public override bool Equals(object rhs)
+    {
+        if (rhs == null)
+            return false;
+        if (rhs.GetType() != GetType())
+            return false;
+        return this == (Matrix3x4)rhs;
+    }
+
+    /// Returns hash code of this matrix.
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        hashCode.Add(M00);
+        hashCode.Add(M01);
+        hashCode.Add(M02);
+        hashCode.Add(M03);
+        hashCode.Add(M10);
+        hashCode.Add(M11);
+        hashCode.Add(M12);
+        hashCode.Add(M13);
+        hashCode.Add(M20);
+        hashCode.Add(M21);
+        hashCode.Add(M22);
+        hashCode.Add(M23);
+        return hashCode.ToHashCode();
     }
 
     /// Return decomposition to translation, rotation and scale.
