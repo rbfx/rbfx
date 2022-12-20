@@ -543,6 +543,7 @@ void IKTrigonometrySolver::SolveInternal(const Transform& frameOfReference, cons
 {
     EnsureInitialized();
 
+    // Store original rotation
     IKNode& firstBone = *chain_.GetBeginNode();
     IKNode& secondBone = *chain_.GetMiddleNode();
     IKNode& thirdBone = *chain_.GetEndNode();
@@ -550,6 +551,22 @@ void IKTrigonometrySolver::SolveInternal(const Transform& frameOfReference, cons
     const Quaternion firstBoneRotation = firstBone.rotation_;
     const Quaternion secondBoneRotation = secondBone.rotation_;
     const Quaternion thirdBoneRotation = thirdBone.rotation_;
+
+    // Solve rotations for full solver weight
+    const Vector3 targetPosition = target_->GetWorldPosition();
+    const auto [originalDirection, currentDirection] = CalculateBendDirections(frameOfReference);
+
+    chain_.Solve(targetPosition, originalDirection, currentDirection, minAngle_, maxAngle_);
+
+    // Interpolate rotation to apply solver weight
+    firstBone.rotation_ = firstBoneRotation.Slerp(firstBone.rotation_, positionWeight_);
+    secondBone.rotation_ = secondBoneRotation.Slerp(secondBone.rotation_, positionWeight_);
+    thirdBone.rotation_ = thirdBoneRotation.Slerp(thirdBone.rotation_, positionWeight_);
+}
+
+ea::pair<Vector3, Vector3> IKTrigonometrySolver::CalculateBendDirections(const Transform& frameOfReference) const
+{
+    IKNode& firstBone = *chain_.GetBeginNode();
 
     const float bendTargetWeight = bendTarget_ ? bendTargetWeight_ : 0.0f;
     const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
@@ -561,11 +578,8 @@ void IKTrigonometrySolver::SolveInternal(const Transform& frameOfReference, cons
     const Vector3 currentDirection0 = frameOfReference.rotation_ * local_.defaultDirection_;
     const Vector3 currentDirection1 = bendTargetDirection.Normalized();
     const Vector3 currentDirection = Lerp(currentDirection0, currentDirection1, bendTargetWeight);
-    chain_.Solve(targetPosition, originalDirection, currentDirection, minAngle_, maxAngle_);
 
-    firstBone.rotation_ = firstBoneRotation.Slerp(firstBone.rotation_, positionWeight_);
-    secondBone.rotation_ = secondBoneRotation.Slerp(secondBone.rotation_, positionWeight_);
-    thirdBone.rotation_ = thirdBoneRotation.Slerp(thirdBone.rotation_, positionWeight_);
+    return {originalDirection, currentDirection};
 }
 
 IKLegSolver::IKLegSolver(Context* context)
