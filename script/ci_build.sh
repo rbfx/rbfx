@@ -208,6 +208,7 @@ function action-generate() {
     ci_cmake_params+=(
         "-DCMAKE_BUILD_TYPE=${types[$ci_build_type]}"
         "-DCMAKE_INSTALL_PREFIX=$ci_sdk_dir"
+        "-DURHO3D_NETFX=net$DOTNET_VERSION"
     )
 
     if [[ "$ci_compiler" != "msvc" ]];
