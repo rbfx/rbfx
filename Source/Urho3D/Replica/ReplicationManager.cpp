@@ -70,6 +70,9 @@ void NetworkObjectRegistry::OnComponentRemoved(TrackedComponentBase* baseCompone
 
     const NetworkId networkId = networkObject->GetNetworkId();
 
+    if (NetworkObject* parentObject = networkObject->GetParentNetworkObject())
+        QueueNetworkObjectUpdate(parentObject);
+
     OnNetworkObjectRemoved(this, networkObject);
 
     URHO3D_LOGINFO("NetworkObject {} is removed", ToString(networkId));

@@ -75,9 +75,6 @@ void SharedReplicationState::OnNetworkObjectRemoved(NetworkObject* networkObject
     if (recentlyAddedObjects_.erase(networkObject->GetNetworkId()) == 0)
         recentlyRemovedObjects_.insert(networkObject->GetNetworkId());
 
-    if (NetworkObject* parentObject = networkObject->GetParentNetworkObject())
-        objectRegistry_->QueueNetworkObjectUpdate(parentObject);
-
     if (AbstractConnection* ownerConnection = networkObject->GetOwnerConnection())
     {
         auto& ownedObjects = ownedObjectsByConnection_[ownerConnection];
@@ -92,6 +89,7 @@ void SharedReplicationState::PrepareForUpdate()
     ResetFrameBuffers();
     InitializeNewObjects();
 
+    objectRegistry_->UpdateNetworkObjects();
     objectRegistry_->GetSortedNetworkObjects(sortedNetworkObjects_);
 }
 
