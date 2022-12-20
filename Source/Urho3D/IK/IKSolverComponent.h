@@ -137,6 +137,7 @@ private:
     /// @}
 
     void EnsureInitialized();
+    ea::pair<Vector3, Vector3> CalculateBendDirections(const Transform& frameOfReference) const;
 
     ea::string firstBoneName_;
     ea::string secondBoneName_;
