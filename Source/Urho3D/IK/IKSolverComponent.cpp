@@ -601,7 +601,11 @@ void IKLegSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Toe Bone Name", ea::string, toeBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Bend Target Name", ea::string, bendTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Ground Target Name", ea::string, groundTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
+    URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Knee Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Knee Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Weight", float, bendWeight_, 0.0f, AM_DEFAULT);
@@ -644,6 +648,16 @@ void IKLegSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     {
         DrawIKTarget(debug, target_, false);
     }
+    if (bendTarget_)
+    {
+        DrawIKTarget(debug, bendTarget_, false);
+    }
+    if (groundTarget_)
+    {
+        const BoundingBox groundBox{{-0.5f, -0.2f, -0.5f}, {0.5f, 0.0f, 0.5f}};
+        const Matrix3x4 groundTransform = groundTarget_->GetWorldTransform();
+        debug->AddBoundingBox(groundBox, groundTransform, Color::GREEN, false);
+    }
 }
 
 bool IKLegSolver::InitializeNodes(IKNodeCache& nodeCache)
@@ -651,6 +665,9 @@ bool IKLegSolver::InitializeNodes(IKNodeCache& nodeCache)
     target_ = AddCheckedNode(nodeCache, targetName_);
     if (!target_)
         return false;
+
+    bendTarget_ = AddCheckedNode(nodeCache, bendTargetName_);
+    groundTarget_ = AddCheckedNode(nodeCache, groundTargetName_);
 
     IKNode* thighBone = AddSolverNode(nodeCache, thighBoneName_);
     if (!thighBone)
@@ -745,18 +762,34 @@ void IKLegSolver::EnsureInitialized()
 {
     if (minHeelAngle_ < 0.0f)
         UpdateMinHeelAngle();
+    positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
+    bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
     bendWeight_ = Clamp(bendWeight_, 0.0f, 1.0f);
     minKneeAngle_ = Clamp(minKneeAngle_, 0.0f, 180.0f);
     maxKneeAngle_ = Clamp(maxKneeAngle_, 0.0f, 180.0f);
 }
 
-void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
+ea::pair<Vector3, Vector3> IKLegSolver::CalculateBendDirections(const Transform& frameOfReference) const
 {
-    EnsureInitialized();
+    IKNode& thighBone = *legChain_.GetBeginNode();
 
-    const Vector3& toeTargetPosition = target_->GetWorldPosition();
+    const float bendTargetWeight = bendTarget_ ? bendTargetWeight_ : 0.0f;
+    const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
+
+    const Vector3 targetPosition = target_->GetWorldPosition();
+    const Vector3 bendTargetDirection = bendTargetPosition - Lerp(thighBone.position_, targetPosition, 0.5f);
+
     const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
-    const Vector3 currentDirection = frameOfReference.rotation_ * local_.defaultDirection_;
+    const Vector3 currentDirection0 = frameOfReference.rotation_ * local_.defaultDirection_;
+    const Vector3 currentDirection1 = bendTargetDirection.Normalized();
+    const Vector3 currentDirection = Lerp(currentDirection0, currentDirection1, bendTargetWeight);
+
+    return {originalDirection, currentDirection};
+}
+
+Vector3 IKLegSolver::CalculateToeToHeel(const Vector3& originalDirection, const Vector3& currentDirection) const
+{
+    const Vector3& toeTargetPosition = target_->GetWorldPosition();
     const Vector3 approximateBendDirection = GetApproximateBendDirection(
         toeTargetPosition, originalDirection, currentDirection);
 
@@ -764,15 +797,33 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     const Vector3 toeToHeel1 = CalculateFootDirectionBent(toeTargetPosition, approximateBendDirection);
 
     const Vector3 toeToHeel = InterpolateDirection(toeToHeel0, toeToHeel1, bendWeight_);
+    return toeToHeel;
+}
+
+void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings)
+{
+    EnsureInitialized();
+
+    // Store original rotation
+    IKNode& thighBone = *legChain_.GetBeginNode();
+    IKNode& calfBone = *legChain_.GetMiddleNode();
+    IKNode& heelBone = *legChain_.GetEndNode();
+    IKNode& toeBone = *footSegment_.endNode_;
+
+    const Quaternion thighBoneRotation = thighBone.rotation_;
+    const Quaternion calfBoneRotation = calfBone.rotation_;
+    const Quaternion heelBoneRotation = heelBone.rotation_;
+    const Quaternion toeBoneRotation = toeBone.rotation_;
+
+    // Solve rotations for full solver weight
+    const Vector3& toeTargetPosition = target_->GetWorldPosition();
+    const auto [originalDirection, currentDirection] = CalculateBendDirections(frameOfReference);
+    const Vector3 toeToHeel = CalculateToeToHeel(originalDirection, currentDirection);
     const Vector3 heelTargetPosition = toeTargetPosition + toeToHeel;
 
     legChain_.Solve(heelTargetPosition, originalDirection, currentDirection, minKneeAngle_, maxKneeAngle_);
 
     // Update foot segment
-    IKNode& calfBone = *legChain_.GetMiddleNode();
-    IKNode& heelBone = *legChain_.GetEndNode();
-    IKNode& toeBone = *footSegment_.endNode_;
-
     heelBone.previousPosition_ = heelBone.position_;
     heelBone.previousRotation_ = calfBone.rotation_ * local_.defaultFootRotation_;
     toeBone.previousPosition_ = heelBone.previousPosition_ + heelBone.previousRotation_ * local_.defaultToeOffset_;
@@ -780,6 +831,12 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     // heelBone.position is already set by legChain_.Solve()
     toeBone.position_ = heelBone.position_ - toeToHeel;
     footSegment_.UpdateRotationInNodes(true, true);
+
+    // Interpolate rotation to apply solver weight
+    thighBone.rotation_ = thighBoneRotation.Slerp(thighBone.rotation_, positionWeight_);
+    calfBone.rotation_ = calfBoneRotation.Slerp(calfBone.rotation_, positionWeight_);
+    heelBone.rotation_ = heelBoneRotation.Slerp(heelBone.rotation_, positionWeight_);
+    toeBone.rotation_ = toeBoneRotation.Slerp(toeBone.rotation_, positionWeight_);
 }
 
 IKSpineSolver::IKSpineSolver(Context* context)
