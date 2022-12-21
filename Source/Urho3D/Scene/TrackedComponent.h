@@ -92,7 +92,7 @@ private:
 };
 
 /// Strongly typed component ID. Default value is considered invalid.
-enum ComponentReference : unsigned;
+enum class ComponentReference : unsigned;
 static constexpr ComponentReference InvalidComponentReference = ComponentReference{};
 URHO3D_API ComponentReference ConstructComponentReference(unsigned index, unsigned version);
 URHO3D_API ea::pair<unsigned, unsigned> DeconstructComponentReference(ComponentReference componentId);
