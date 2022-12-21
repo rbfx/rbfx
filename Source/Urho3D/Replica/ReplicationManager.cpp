@@ -71,7 +71,10 @@ void NetworkObjectRegistry::OnComponentRemoved(TrackedComponentBase* baseCompone
     const NetworkId networkId = networkObject->GetNetworkId();
 
     if (NetworkObject* parentObject = networkObject->GetParentNetworkObject())
-        QueueNetworkObjectUpdate(parentObject);
+    {
+        if (parentObject->GetNetworkId() != InvalidNetworkId)
+            QueueNetworkObjectUpdate(parentObject);
+    }
 
     OnNetworkObjectRemoved(this, networkObject);
 
