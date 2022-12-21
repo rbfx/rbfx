@@ -185,6 +185,8 @@ private:
 
     void EnsureInitialized();
     void UpdateMinHeelAngle();
+    ea::pair<Vector3, Vector3> CalculateBendDirections(const Transform& frameOfReference) const;
+    Vector3 CalculateToeToHeel(const Vector3& originalDirection, const Vector3& currentDirection) const;
     Vector3 GetApproximateBendDirection(const Vector3& toeTargetPosition,
         const Vector3& originalDirection, const Vector3& currentDirection) const;
     Vector3 CalculateFootDirectionStraight(
@@ -200,7 +202,11 @@ private:
     ea::string toeBoneName_;
 
     ea::string targetName_;
+    ea::string bendTargetName_;
+    ea::string groundTargetName_;
 
+    float positionWeight_{1.0f};
+    float bendTargetWeight_{1.0f};
     float minKneeAngle_{0.0f};
     float maxKneeAngle_{180.0f};
     float bendWeight_{};
@@ -213,6 +219,8 @@ private:
     IKTrigonometricChain legChain_;
     IKNodeSegment footSegment_;
     WeakPtr<Node> target_;
+    WeakPtr<Node> bendTarget_;
+    WeakPtr<Node> groundTarget_;
     /// @}
 
     struct LocalCache
