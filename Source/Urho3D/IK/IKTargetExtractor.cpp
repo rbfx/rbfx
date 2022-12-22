@@ -117,9 +117,12 @@ bool IKTargetExtractor::IsApplicable(const AssetTransformerInput& input)
 bool IKTargetExtractor::Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    auto sourceAnimation = cache->GetTempResource<Animation>(input.resourceName_);
+    SharedPtr<Animation> sourceAnimation{cache->GetResource<Animation>(input.resourceName_)};
     if (!sourceAnimation)
         return false;
+
+    // Copy to avoid modifying currently used animation
+    sourceAnimation = sourceAnimation->Clone(sourceAnimation->GetName());
 
     const ea::string& modelName = GetModelName(sourceAnimation);
     auto model = cache->GetResource<Model>(modelName);

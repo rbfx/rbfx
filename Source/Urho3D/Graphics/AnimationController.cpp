@@ -892,7 +892,7 @@ void AnimationController::SetAnimationsAttr(const VariantVector& value)
     if (value.empty() || value[0].GetType() != VAR_INT)
         return;
 
-    const unsigned numAnimations = value[0].GetUInt();
+    const auto numAnimations = static_cast<unsigned>(ea::max(0, value[0].GetInt()));
     const unsigned numAnimationsSet = (value.size() - 1) / AnimationParameters::NumVariants;
     const unsigned numLoadedAnimations = ea::min(numAnimations, numAnimationsSet);
 
