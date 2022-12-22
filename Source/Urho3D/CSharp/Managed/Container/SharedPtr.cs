@@ -71,6 +71,13 @@ namespace Urho3DNet
         /// <param name="@this">SharedPtr object instance.</param>
         public static implicit operator T(SharedPtr<T> @this) => @this._ptr;
 
+        /// <summary>
+        /// Implicitly construct a SharedPtr when assigning an object instance to it.
+        /// </summary>
+        /// <param name="other">Object instance</param>
+        /// <returns></returns>
+        public static implicit operator SharedPtr<T>(T other) => new SharedPtr<T>(other);
+
         /// <summary>Indicates whether the two objects are equal.</summary>
         public static bool operator ==(SharedPtr<T> left, SharedPtr<T> right)
         {
