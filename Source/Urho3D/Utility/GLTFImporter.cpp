@@ -169,6 +169,7 @@ public:
         auto cache = context_->GetSubsystem<ResourceCache>();
         cache->AddManualResource(resource);
         manualResources_.emplace_back(resource->GetType(), resource->GetName());
+        resource->SetAbsoluteFileName(GetAbsoluteFileName(resource->GetName()));
     }
 
     void SaveResource(Resource* resource)

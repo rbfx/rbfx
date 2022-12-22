@@ -509,9 +509,11 @@ SharedPtr<Animation> Animation::Clone(const ea::string& cloneName) const
     SharedPtr<Animation> ret(MakeShared<Animation>(context_));
 
     ret->SetName(cloneName);
+    ret->SetAbsoluteFileName(cloneName == GetName() ? GetAbsoluteFileName() : EMPTY_STRING);
     ret->SetAnimationName(animationName_);
     ret->length_ = length_;
     ret->tracks_ = tracks_;
+    ret->variantTracks_ = variantTracks_;
     ret->triggers_ = triggers_;
     ret->CopyMetadata(*this);
     ret->SetMemoryUse(GetMemoryUse());
