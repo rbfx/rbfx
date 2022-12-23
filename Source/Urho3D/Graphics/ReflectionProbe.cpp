@@ -172,7 +172,7 @@ ea::optional<float> InternalReflectionProbeData::GetIntersectionVolume(const Bou
     const BoundingBox localBoundingBox = worldBoundingBox.Transformed(worldToLocal_);
     const BoundingBox clippedBoundingBox = localBoundingBox.Clipped(localBoundingBox_);
     if (clippedBoundingBox.Defined())
-        return clippedBoundingBox.Volume() / localBoundingBox.Volume();
+        return clippedBoundingBox.Volume() / ea::max(localBoundingBox.Volume(), M_EPSILON);
     return ea::nullopt;
 }
 
