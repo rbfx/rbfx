@@ -44,7 +44,7 @@ public:
 
     bool Initialize(IKNodeCache& nodeCache);
     void NotifyPositionsReady();
-    void Solve(const IKSettings& settings);
+    void Solve(const IKSettings& settings, float timeStep);
 
     /// Internal. Marks chain tree as dirty.
     void OnTreeDirty();
@@ -52,7 +52,7 @@ public:
 protected:
     virtual bool InitializeNodes(IKNodeCache& nodeCache) = 0;
     virtual void UpdateChainLengths(const Transform& inverseFrameOfReference) = 0;
-    virtual void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) = 0;
+    virtual void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) = 0;
 
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
 
@@ -73,6 +73,7 @@ protected:
     /// Draw IK segment line in DebugRenderer.
     void DrawIKSegment(DebugRenderer* debug, const IKNode& beginNode, const IKNode& endNode) const;
     /// Draw IK target in DebugRenderer.
+    void DrawIKTarget(DebugRenderer* debug, const Vector3& position, const Quaternion& rotation, bool oriented) const;
     void DrawIKTarget(DebugRenderer* debug, const Node* node, bool oriented) const;
     /// Draw direction in DebugRenderer.
     void DrawDirection(DebugRenderer* debug, const Vector3& position, const Vector3& direction,
@@ -103,7 +104,7 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
-    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) override;
     /// @}
 
     void EnsureInitialized();
@@ -133,10 +134,11 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
-    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) override;
     /// @}
 
     void EnsureInitialized();
+    Vector3 GetTargetPosition() const;
     ea::pair<Vector3, Vector3> CalculateBendDirections(const Transform& frameOfReference) const;
 
     ea::string firstBoneName_;
@@ -160,6 +162,8 @@ private:
     {
         Vector3 defaultDirection_;
     } local_;
+
+    Vector3 latestTargetPosition_;
 };
 
 class IKLegSolver : public IKSolverComponent
@@ -180,18 +184,32 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
-    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) override;
     /// @}
 
     void EnsureInitialized();
-    void UpdateMinHeelAngle();
-    ea::pair<Vector3, Vector3> CalculateBendDirections(const Transform& frameOfReference) const;
-    Vector3 CalculateToeToHeel(const Vector3& originalDirection, const Vector3& currentDirection) const;
-    Vector3 GetApproximateBendDirection(const Vector3& toeTargetPosition,
-        const Vector3& originalDirection, const Vector3& currentDirection) const;
-    Vector3 CalculateFootDirectionStraight(
-        const Vector3& toeTargetPosition, const Vector3& approximateBendDirection) const;
-    Vector3 CalculateFootDirectionBent(
+    void UpdateHeelGroundOffset();
+    void UpdateToeGroundOffset();
+
+    Vector3 GetTargetPosition() const;
+    Plane GetGroundPlane() const;
+    Vector2 ProjectOnGround(const Vector3& position) const;
+    float GetHeelReachDistance() const;
+    float GetToeReachDistance() const;
+    Vector3 RecoverFromGroundPenetration(const Vector3& toeToHeel, const Vector3& toePosition) const;
+    Vector3 SnapToReachablePosition(const Vector3& toeToHeel, const Vector3& toePosition) const;
+
+    ea::pair<Vector3, Vector3> CalculateBendDirections(
+        const Transform& frameOfReference, const Vector3& toeTargetPosition) const;
+    Quaternion CalculateLegRotation(
+        const Vector3& toeTargetPosition, const Vector3& originalDirection, const Vector3& currentDirection) const;
+    Vector2 CalculateLegOffset(
+        const Transform& frameOfReference, const Vector3& toeTargetPosition, const Vector3& bendDirection);
+    float CalculateTiptoeFactor(const Vector3& toeTargetPosition) const;
+
+    Vector3 CalculateToeToHeel(const Transform& frameOfReference,
+        const Vector3& toeTargetPosition, const Vector3& originalDirection, const Vector3& currentDirection) const;
+    Vector3 CalculateToeToHeelBent(
         const Vector3& toeTargetPosition, const Vector3& approximateBendDirection) const;
 
     /// Attributes.
@@ -209,9 +227,12 @@ private:
     float bendTargetWeight_{1.0f};
     float minKneeAngle_{0.0f};
     float maxKneeAngle_{180.0f};
-    float bendWeight_{};
+    Vector2 baseTiptoe_{0.5f, 0.0f};
+    Vector4 groundTiptoeTweaks_{0.2f, 0.2f, 0.2f, 0.2f};
     Vector3 bendDirection_{Vector3::FORWARD};
-    float minHeelAngle_{-1.0f};
+
+    float heelGroundOffset_{-1.0f};
+    float toeGroundOffset_{-1.0f};
     /// @}
 
     /// IK nodes and effectors.
@@ -225,11 +246,18 @@ private:
 
     struct LocalCache
     {
+        Vector3 toeToHeel_;
+        float defaultThighToToeDistance_{};
+        float tiptoeTweakOffset_{};
+
         Vector3 defaultDirection_;
         Quaternion defaultFootRotation_;
         Vector3 defaultToeOffset_;
         Quaternion defaultToeRotation_;
     } local_;
+
+    Vector3 latestTargetPosition_;
+    float latestTiptoeFactor_{};
 };
 
 class IKSpineSolver : public IKSolverComponent
@@ -253,7 +281,7 @@ protected:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
-    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) override;
     /// @}
 
 private:
@@ -292,7 +320,7 @@ private:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
-    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) override;
     /// @}
 
     void EnsureInitialized();
@@ -354,7 +382,7 @@ protected:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
-    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) override;
     /// @}
 
 private:
@@ -381,7 +409,7 @@ protected:
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
     void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
-    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings) override;
+    void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) override;
     /// @}
 
 private:

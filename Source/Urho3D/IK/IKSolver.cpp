@@ -78,10 +78,10 @@ void IKSolver::PostUpdate(float timeStep)
         solveWhenPaused_ = false;
 
     if (scene->IsUpdateEnabled() || solveWhenPaused_)
-        Solve();
+        Solve(timeStep);
 }
 
-void IKSolver::Solve()
+void IKSolver::Solve(float timeStep)
 {
     if (IsChainTreeExpired())
         solversDirty_ = true;
@@ -100,7 +100,7 @@ void IKSolver::Solve()
     for (IKSolverComponent* solver : solvers_)
     {
         URHO3D_ASSERT(solver);
-        solver->Solve(settings_);
+        solver->Solve(settings_, timeStep);
     }
 
     if (auto animatedModel = node_->GetComponent<AnimatedModel>())
