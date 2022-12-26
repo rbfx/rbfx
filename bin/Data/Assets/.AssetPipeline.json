@@ -12,6 +12,16 @@
 		},
 		{
 			"_Class": "PixelArtGenerator"
+		},
+		{
+			"_Class": "IKTargetExtractor",
+			"attributes": [
+				{
+					"name": "New File Name",
+					"type": "String",
+					"value": "*_IK_Only.ani"
+				}
+			]
 		}
 	]
 }

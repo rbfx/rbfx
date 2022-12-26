@@ -41,7 +41,7 @@ public:
     /// Notify host component that the list of solvers is dirty and needs to be rebuilt.
     void MarkSolversDirty() { solversDirty_ = true; }
     /// Solve the IK forcibly.
-    void Solve();
+    void Solve(float timeStep);
 
     void PostUpdate(float timeStep) override;
     StringHash GetPostUpdateEvent() const override { return E_SCENEDRAWABLEUPDATEFINISHED; }
