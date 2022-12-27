@@ -5563,7 +5563,7 @@
 			<component type="IKSolver" id="15">
 				<attribute name="Solve when Paused" value="true" />
 			</component>
-			<component type="IKTrigonometrySolver" id="37">
+			<component type="IKLimbSolver" id="37">
 				<attribute name="Bone 0 Name" value="LeftUpLeg" />
 				<attribute name="Bone 1 Name" value="LeftLeg" />
 				<attribute name="Bone 2 Name" value="LeftFoot" />
@@ -6297,13 +6297,13 @@
 				<attribute name="Target Name" value="Hips_Target" />
 				<attribute name="Rotation Offset" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
 			</component>
-			<component type="IKTrigonometrySolver" id="304">
+			<component type="IKLimbSolver" id="304">
 				<attribute name="Bone 0 Name" value="LeftUpLeg" />
 				<attribute name="Bone 1 Name" value="LeftLeg" />
 				<attribute name="Bone 2 Name" value="LeftFoot" />
 				<attribute name="Target Name" value="LeftFoot_Target" />
 			</component>
-			<component type="IKTrigonometrySolver" id="309">
+			<component type="IKLimbSolver" id="309">
 				<attribute name="Bone 0 Name" value="RightUpLeg" />
 				<attribute name="Bone 1 Name" value="RightLeg" />
 				<attribute name="Bone 2 Name" value="RightFoot" />
@@ -7058,14 +7058,14 @@
 				<attribute name="Target Name" value="Hips_Target" />
 				<attribute name="Rotation Offset" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
 			</component>
-			<component type="IKTrigonometrySolver" id="539">
+			<component type="IKLimbSolver" id="539">
 				<attribute name="Bone 0 Name" value="LeftUpLeg" />
 				<attribute name="Bone 1 Name" value="LeftLeg" />
 				<attribute name="Bone 2 Name" value="LeftFoot" />
 				<attribute name="Target Name" value="LeftFoot_Target" />
 				<attribute name="Position Weight" value="0.691915" />
 			</component>
-			<component type="IKTrigonometrySolver" id="540">
+			<component type="IKLimbSolver" id="540">
 				<attribute name="Bone 0 Name" value="RightUpLeg" />
 				<attribute name="Bone 1 Name" value="RightLeg" />
 				<attribute name="Bone 2 Name" value="RightFoot" />
@@ -7821,13 +7821,13 @@
 				<attribute name="Target Name" value="Hips_Target" />
 				<attribute name="Rotation Offset" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
 			</component>
-			<component type="IKTrigonometrySolver" id="558">
+			<component type="IKLimbSolver" id="558">
 				<attribute name="Bone 0 Name" value="LeftUpLeg" />
 				<attribute name="Bone 1 Name" value="LeftLeg" />
 				<attribute name="Bone 2 Name" value="LeftFoot" />
 				<attribute name="Target Name" value="LeftFoot_Target" />
 			</component>
-			<component type="IKTrigonometrySolver" id="559">
+			<component type="IKLimbSolver" id="559">
 				<attribute name="Bone 0 Name" value="RightUpLeg" />
 				<attribute name="Bone 1 Name" value="RightLeg" />
 				<attribute name="Bone 2 Name" value="RightFoot" />
@@ -8582,14 +8582,14 @@
 				<attribute name="Target Name" value="Hips_Target" />
 				<attribute name="Rotation Offset" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
 			</component>
-			<component type="IKTrigonometrySolver" id="575">
+			<component type="IKLimbSolver" id="575">
 				<attribute name="Bone 0 Name" value="LeftUpLeg" />
 				<attribute name="Bone 1 Name" value="LeftLeg" />
 				<attribute name="Bone 2 Name" value="LeftFoot" />
 				<attribute name="Target Name" value="LeftFoot_Target" />
 				<attribute name="Bend Target Name" value="BendTarget" />
 			</component>
-			<component type="IKTrigonometrySolver" id="576">
+			<component type="IKLimbSolver" id="576">
 				<attribute name="Bone 0 Name" value="RightUpLeg" />
 				<attribute name="Bone 1 Name" value="RightLeg" />
 				<attribute name="Bone 2 Name" value="RightFoot" />
@@ -9358,7 +9358,7 @@
 				<attribute name="Target Name" value="Hips_Target" />
 				<attribute name="Rotation Offset" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
 			</component>
-			<component type="IKTrigonometrySolver" id="601">
+			<component type="IKLimbSolver" id="601">
 				<attribute name="Bone 0 Name" value="LeftUpLeg" />
 				<attribute name="Bone 1 Name" value="LeftLeg" />
 				<attribute name="Bone 2 Name" value="LeftFoot" />
@@ -9366,7 +9366,7 @@
 				<attribute name="Bend Target Name" value="BendTarget" />
 				<attribute name="Bend Target Weight" value="0.691915" />
 			</component>
-			<component type="IKTrigonometrySolver" id="602">
+			<component type="IKLimbSolver" id="602">
 				<attribute name="Bone 0 Name" value="RightUpLeg" />
 				<attribute name="Bone 1 Name" value="RightLeg" />
 				<attribute name="Bone 2 Name" value="RightFoot" />
