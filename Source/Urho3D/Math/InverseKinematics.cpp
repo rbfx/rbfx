@@ -316,11 +316,14 @@ Quaternion IKEyeChain::SolveLookTo(const Vector3& lookToDirection) const
 
 void IKChain::Clear()
 {
+    nodes_.clear();
     segments_.clear();
 }
 
 void IKChain::AddNode(IKNode* node)
 {
+    nodes_.push_back(node);
+
     if (segments_.empty())
     {
         IKNodeSegment segment;

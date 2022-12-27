@@ -293,6 +293,8 @@ private:
     ea::string twistTargetName_;
     ea::string targetName_;
 
+    float positionWeight_{1.0f};
+    float rotationWeight_{1.0f};
     float maxAngle_{90.0f};
 
     IKSpineChain chain_;
@@ -303,6 +305,8 @@ private:
     {
         ea::vector<Transform> defaultTransforms_;
     } local_;
+
+    ea::vector<Quaternion> originalBoneRotations_;
 };
 
 class IKArmSolver : public IKSolverComponent

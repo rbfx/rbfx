@@ -952,6 +952,8 @@ void IKSpineSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Twist Target Name", ea::string, twistTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
+    URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 90.0f, AM_DEFAULT);
 }
 
@@ -1034,12 +1036,27 @@ void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)
 
 void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep)
 {
+    auto& bones = chain_.GetNodes();
+    auto& segments = chain_.GetSegments();
+    if (segments.size() < 2)
+        return;
+
+    // Store original rotation
+    originalBoneRotations_.resize(bones.size());
+    for (size_t i = 0; i < bones.size(); ++i)
+        originalBoneRotations_[i] = bones[i]->rotation_;
+
+    // Solve rotations for full solver weight for position target
     SetOriginalTransforms(frameOfReference);
     chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
 
-    const auto& segments = chain_.GetSegments();
+    // Interpolate rotation to apply solver weight
+    for (size_t i = 0; i < bones.size(); ++i)
+        bones[i]->rotation_ = originalBoneRotations_[i].Slerp(bones[i]->rotation_, positionWeight_);
+
+    // Solve rotations for partial solver weight for twist target
     const float twistAngle = twistTarget_ ? GetTwistAngle(segments.back(), twistTarget_) : 0.0f;
-    chain_.Twist(twistAngle, settings);
+    chain_.Twist(twistAngle * rotationWeight_, settings);
 }
 
 float IKSpineSolver::GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const
