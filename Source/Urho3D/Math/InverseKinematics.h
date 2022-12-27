@@ -166,6 +166,8 @@ public:
     const IKNodeSegment* FindSegment(const IKNode* node) const;
     ea::vector<IKNodeSegment>& GetSegments() { return segments_; }
     const ea::vector<IKNodeSegment>& GetSegments() const { return segments_; }
+    ea::vector<IKNode*>& GetNodes() { return nodes_; }
+    const ea::vector<IKNode*>& GetNodes() const { return nodes_; }
 
 protected:
     void StorePreviousTransforms();
@@ -173,6 +175,7 @@ protected:
     void UpdateSegmentRotations(const IKSettings& settings);
 
     bool isFirstSegmentIncomplete_{};
+    ea::vector<IKNode*> nodes_;
     ea::vector<IKNodeSegment> segments_;
     float totalLength_{};
 };
