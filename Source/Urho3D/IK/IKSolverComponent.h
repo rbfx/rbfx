@@ -301,9 +301,11 @@ private:
     WeakPtr<Node> target_;
     WeakPtr<Node> twistTarget_;
 
+    // TODO: Rename "local cache"
     struct LocalCache
     {
         ea::vector<Transform> defaultTransforms_;
+        Vector3 baseDirection_;
     } local_;
 
     ea::vector<Quaternion> originalBoneRotations_;

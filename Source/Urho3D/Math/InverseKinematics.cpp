@@ -403,16 +403,16 @@ void IKChain::UpdateSegmentRotations(const IKSettings& settings)
     }
 }
 
-void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSettings& settings)
+void IKSpineChain::Solve(const Vector3& target, const Vector3& baseDirection,
+    float maxRotation, const IKSettings& settings)
 {
-    if (segments_.size() < 2)
+    if (nodes_.size() < 2)
         return;
 
     StorePreviousTransforms();
     UpdateSegmentWeights();
 
-    const Vector3 basePosition = segments_[0].beginNode_->position_;
-    const Vector3 baseDirection = segments_[0].CalculateDirection();
+    const Vector3 basePosition = nodes_[0]->position_;
     const Vector3 bendDirection = GetProjectionAndOffset(
         target, basePosition, baseDirection).second.Normalized();
 
@@ -430,10 +430,8 @@ void IKSpineChain::Solve(const Vector3& target, float maxRotation, const IKSetti
 
     for (IKNodeSegment& segment : segments_)
     {
-        const bool isFirstSegment = &segment == &segments_.front();
         const bool isLastSegment = &segment == &segments_.back();
-        if (!isFirstSegment)
-            segment.UpdateRotationInNodes(true, isLastSegment);
+        segment.UpdateRotationInNodes(true, isLastSegment);
     }
 }
 
@@ -457,7 +455,7 @@ void IKSpineChain::UpdateSegmentWeights()
     ea::fill(weights_.begin(), weights_.end(), 0.0f);
 
     float totalWeight = 0.0f;
-    for (unsigned i = 1; i < segments_.size(); ++i)
+    for (unsigned i = 0; i < segments_.size(); ++i)
     {
         const float length = segments_[i].length_;
         totalWeight += length;
@@ -466,7 +464,7 @@ void IKSpineChain::UpdateSegmentWeights()
 
     if (totalWeight > 0.0f)
     {
-        for (unsigned i = 1; i < segments_.size(); ++i)
+        for (unsigned i = 0; i < segments_.size(); ++i)
             weights_[i] /= totalWeight;
     }
     else
