@@ -434,10 +434,11 @@ private:
     ea::string headTargetName_;
     ea::string lookAtTargetName_;
 
+    float lookAtWeight_{0.0f};
+    float rotationWeight_{1.0f};
     Vector3 eyeDirection_{Vector3::FORWARD};
     Vector3 eyeOffset_;
     float neckWeight_{0.5f};
-    float lookAtWeight_{0.0f};
 
     IKNodeSegment neckSegment_;
     IKEyeChain neckChain_;
