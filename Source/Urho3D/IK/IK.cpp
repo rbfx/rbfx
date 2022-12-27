@@ -38,7 +38,7 @@ void RegisterIKLibrary(Context* context)
 
     IKIdentitySolver::RegisterObject(context);
     IKLegSolver::RegisterObject(context);
-    IKTrigonometrySolver::RegisterObject(context);
+    IKLimbSolver::RegisterObject(context);
     IKSpineSolver::RegisterObject(context);
     IKArmSolver::RegisterObject(context);
     IKChainSolver::RegisterObject(context);

@@ -118,13 +118,13 @@ private:
     WeakPtr<Node> target_;
 };
 
-class IKTrigonometrySolver : public IKSolverComponent
+class IKLimbSolver : public IKSolverComponent
 {
-    URHO3D_OBJECT(IKTrigonometrySolver, IKSolverComponent);
+    URHO3D_OBJECT(IKLimbSolver, IKSolverComponent);
 
 public:
-    explicit IKTrigonometrySolver(Context* context);
-    ~IKTrigonometrySolver() override;
+    explicit IKLimbSolver(Context* context);
+    ~IKLimbSolver() override;
     static void RegisterObject(Context* context);
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
