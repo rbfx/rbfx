@@ -795,12 +795,21 @@ Vector3 IKLegSolver::RecoverFromGroundPenetration(const Vector3& toeToHeel, cons
     const Vector3& yAxis = groundPlane.normal_;
     const Vector3& xAxis = toeToHeel.Orthogonalize(yAxis);
 
+    // Decompose the vector into vertical and horizontal components relative to ground normal
+    //
+    //      o-heel
+    //     / } (x,y)
+    //    o-toe
+    //    | } y0
+    // ___|_____
     const float x = xAxis.DotProduct(toeToHeel);
     const float y = yAxis.DotProduct(toeToHeel);
     const float y0 = groundPlane.Distance(toePosition);
 
-    const float y2 = ea::max(y, heelGroundOffset_ - y0);
-    const float x2 = Sqrt(ea::max(toeToHeel.LengthSquared() - y2 * y2, 0.0f)) * (x < 0.0f ? -1.0f : 1.0f);
+    // Clamp heel y to the minimum distance from the ground
+    const float len = footSegment_.length_;
+    const float y2 = ea::min(ea::max(y, heelGroundOffset_ - y0), len);
+    const float x2 = Sqrt(ea::max(len * len - y2 * y2, 0.0f)) * (x < 0.0f ? -1.0f : 1.0f);
 
     return xAxis * x2 + yAxis * y2;
 }
@@ -861,7 +870,7 @@ float IKLegSolver::CalculateTiptoeFactor(const Vector3& toeTargetPosition) const
     const float baseTiptoe = Lerp(baseTiptoe_.x_, baseTiptoe_.y_, stretchFactor);
     const float tiptoeTweakX = groundFactorXY.x_ * (groundFactorXY.x_ < 0.0f ? -groundTiptoeTweaks_.x_ : groundTiptoeTweaks_.y_);
     const float tiptoeTweakY = groundFactorXY.y_ * (groundFactorXY.y_ < 0.0f ? -groundTiptoeTweaks_.z_ : groundTiptoeTweaks_.w_);
-    return Clamp(baseTiptoe + tiptoeTweakX + tiptoeTweakY, 0.0f, 1.0f);
+    return Clamp(baseTiptoe + tiptoeTweakX + tiptoeTweakY, 0.0f, baseTiptoe_.x_);
 }
 
 Vector3 IKLegSolver::CalculateToeToHeelBent(
