@@ -4,7 +4,7 @@
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
 	<attribute name="Next Replicated Node ID" value="307" />
-	<attribute name="Next Replicated Component ID" value="1016" />
+	<attribute name="Next Replicated Component ID" value="1028" />
 	<attribute name="Next Local Node ID" value="16780608" />
 	<attribute name="Next Local Component ID" value="16777217" />
 	<attribute name="Variables" />
@@ -1588,7 +1588,6 @@
 				</component>
 				<component type="IKSpineSolver" id="413">
 					<attribute name="Bone Names">
-						<string value="Hips" />
 						<string value="Spine" />
 						<string value="Spine1" />
 						<string value="Spine2" />
@@ -1620,7 +1619,7 @@
 					<attribute name="Neck Bone Name" value="Neck" />
 					<attribute name="Head Bone Name" value="Head" />
 					<attribute name="Look At Target Name" value="LookAt_Target" />
-					<attribute name="Rotation Target Name" value="Rotation_Target" />
+					<attribute name="Rotation Target Name" value="Head_Target" />
 					<attribute name="Eye Offset" value="0 0.1 0.13" />
 				</component>
 				<node id="16778048">
@@ -2272,7 +2271,7 @@
 					</node>
 					<node id="135">
 						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="Rotation_Target" />
+						<attribute name="Name" value="Head_Target" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.027726 1.68365 -0.0539584" />
 						<attribute name="Rotation" value="-0.998881 0.0363322 -0.0210644 -0.0217279" />
@@ -2431,7 +2430,6 @@
 			</component>
 			<component type="IKSpineSolver" id="155">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -2463,7 +2461,7 @@
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
-				<attribute name="Rotation Target Name" value="Rotation_Target" />
+				<attribute name="Rotation Target Name" value="Head_Target" />
 				<attribute name="Eye Offset" value="0 0.1 0.13" />
 			</component>
 			<node id="30">
@@ -3159,7 +3157,7 @@
 				</node>
 				<node id="126">
 					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="Rotation_Target" />
+					<attribute name="Name" value="Head_Target" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.0188267 1.68454 -0.0387274" />
 					<attribute name="Rotation" value="-0.998836 0.0337726 -0.0323559 -0.0117806" />
@@ -3311,7 +3309,6 @@
 			</component>
 			<component type="IKSpineSolver" id="489">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -23014,7 +23011,6 @@
 			</component>
 			<component type="IKSpineSolver" id="284">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -23079,7 +23075,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.990891 -0.093606 0.0964077 -0.00883164" />
+					<attribute name="Rotation" value="0.998295 0.0583761 1.51879e-05 0.000259729" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16778178">
@@ -23087,7 +23083,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.97879 -0.165487 0.108968 -0.0520587" />
+						<attribute name="Rotation" value="0.958026 -0.240468 0.151391 -0.0379673" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778179">
@@ -23095,7 +23091,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.973203 -0.167132 0.122024 -0.100267" />
+							<attribute name="Rotation" value="0.94706 -0.241045 0.168735 -0.128466" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778180">
@@ -23103,7 +23099,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52029e-05 -0.000259742" />
+								<attribute name="Rotation" value="0.998295 -0.058376 -1.5229e-05 -0.000259742" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778181">
@@ -23738,7 +23734,6 @@
 			</component>
 			<component type="IKSpineSolver" id="365">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -23816,7 +23811,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.981104 0.139122 -0.126297 -0.0461512" />
+					<attribute name="Rotation" value="0.998295 0.0583761 1.51843e-05 0.000259742" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16778562">
@@ -23824,7 +23819,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.983743 0.0774065 -0.146918 -0.0683645" />
+						<attribute name="Rotation" value="0.949899 0.154546 -0.252492 -0.100273" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778563">
@@ -23832,7 +23827,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.979453 0.0589389 -0.164885 -0.100058" />
+							<attribute name="Rotation" value="0.936864 0.08873 -0.281895 -0.186945" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778564">
@@ -23840,7 +23835,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.52197e-05 -0.000259757" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52495e-05 -0.000259727" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778565">
@@ -24485,7 +24480,6 @@
 			</component>
 			<component type="IKSpineSolver" id="135">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -24537,7 +24531,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.99557 -0.0940212 -2.54422e-05 0.000277829" />
+					<attribute name="Rotation" value="0.998295 0.0583761 1.51879e-05 0.000259729" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16777730">
@@ -24545,7 +24539,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984837 -0.173482 -1.43758e-07 2.18395e-05" />
+						<attribute name="Rotation" value="0.969914 -0.243447 2.07692e-08 3.02104e-05" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777731">
@@ -24553,7 +24547,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980823 -0.194903 2.64365e-07 2.28031e-05" />
+							<attribute name="Rotation" value="0.961973 -0.273143 -1.33416e-07 3.33972e-05" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777732">
@@ -25219,7 +25213,6 @@
 			</component>
 			<component type="IKSpineSolver" id="917">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -25271,7 +25264,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.99557 -0.0940212 -2.55848e-05 0.000277843" />
+					<attribute name="Rotation" value="0.998295 0.0583761 1.51879e-05 0.000259729" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780098">
@@ -25279,7 +25272,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984837 -0.173482 6.27078e-08 2.14391e-05" />
+						<attribute name="Rotation" value="0.969914 -0.243447 2.0571e-08 2.979e-05" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780099">
@@ -25287,7 +25280,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980823 -0.194903 1.90601e-07 2.38863e-05" />
+							<attribute name="Rotation" value="0.961974 -0.273143 5.82913e-08 3.36477e-05" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780100">
@@ -25295,7 +25288,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.51879e-05 -0.000259729" />
+								<attribute name="Rotation" value="0.998295 -0.058376 -1.51878e-05 -0.000259729" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780101">
@@ -25953,7 +25946,6 @@
 			</component>
 			<component type="IKSpineSolver" id="927">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -26005,7 +25997,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.99557 -0.0940212 -2.55529e-05 0.000277683" />
+					<attribute name="Rotation" value="0.998295 0.0583761 1.51879e-05 0.000259729" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780162">
@@ -26013,7 +26005,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984837 -0.173482 1.66074e-09 2.13265e-05" />
+						<attribute name="Rotation" value="0.969914 -0.243447 -7.45786e-11 2.99316e-05" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780163">
@@ -26021,7 +26013,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980823 -0.194903 8.73843e-09 2.39674e-05" />
+							<attribute name="Rotation" value="0.961974 -0.273143 7.00311e-09 3.35885e-05" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780164">
@@ -26687,7 +26679,6 @@
 			</component>
 			<component type="IKSpineSolver" id="937">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -26739,7 +26730,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.99557 -0.0940212 -2.54422e-05 0.000277829" />
+					<attribute name="Rotation" value="0.998295 0.0583761 1.51879e-05 0.000259729" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780226">
@@ -26747,7 +26738,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984837 -0.173482 -1.43758e-07 2.18395e-05" />
+						<attribute name="Rotation" value="0.969914 -0.243447 2.05691e-08 3.02101e-05" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780227">
@@ -26755,7 +26746,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980823 -0.194903 2.64365e-07 2.28031e-05" />
+							<attribute name="Rotation" value="0.961974 -0.273143 -7.32722e-07 3.28147e-05" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780228">
@@ -27421,7 +27412,6 @@
 			</component>
 			<component type="IKSpineSolver" id="950">
 				<attribute name="Bone Names">
-					<string value="Hips" />
 					<string value="Spine" />
 					<string value="Spine1" />
 					<string value="Spine2" />
@@ -27473,7 +27463,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.990891 -0.093606 0.0964077 -0.00883164" />
+					<attribute name="Rotation" value="0.998295 0.0583761 1.51879e-05 0.000259729" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780290">
@@ -27481,7 +27471,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.97879 -0.165487 0.108968 -0.0520587" />
+						<attribute name="Rotation" value="0.958026 -0.240468 0.15139 -0.0379688" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780291">
@@ -27489,7 +27479,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.973203 -0.167132 0.122024 -0.100267" />
+							<attribute name="Rotation" value="0.94706 -0.241048 0.168737 -0.128463" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780292">
@@ -27497,7 +27487,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52029e-05 -0.000259742" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.5188e-05 -0.000259742" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780293">
@@ -31880,7 +31870,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.965926 -4.32542e-08 0.258819 3.66905e-08" />
+									<attribute name="Rotation" value="0.965926 -4.31911e-08 0.258819 3.67269e-08" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>

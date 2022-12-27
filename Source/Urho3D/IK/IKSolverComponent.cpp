@@ -981,6 +981,12 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
     if (!target_)
         return false;
 
+    if (boneNames_.size() < 2)
+    {
+        URHO3D_LOGERROR("Spine solver must have at least 2 bones");
+        return false;
+    }
+
     IKSpineChain chain;
     for (const ea::string& boneName : boneNames_)
     {
@@ -991,12 +997,6 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
         chain.AddNode(bone);
     }
 
-    if (chain.GetSegments().size() < 2)
-    {
-        URHO3D_LOGERROR("Spine solver must have at least 3 bones");
-        return false;
-    }
-
     if (!twistTargetName_.empty())
     {
         twistTarget_ = AddCheckedNode(nodeCache, twistTargetName_);
@@ -1004,7 +1004,7 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
             return false;
     }
 
-    SetFrameOfReference(*chain.GetSegments().front().beginNode_);
+    SetParentAsFrameOfReference(*chain.GetNodes().front());
     chain_ = ea::move(chain);
     return true;
 }
@@ -1013,32 +1013,34 @@ void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     chain_.UpdateLengths();
 
-    const auto& segments = chain_.GetSegments();
-    local_.defaultTransforms_.resize(segments.size());
-    for (size_t i = 0; i < segments.size(); ++i)
+    const auto& bones = chain_.GetNodes();
+    local_.defaultTransforms_.resize(bones.size());
+    for (size_t i = 0; i < bones.size(); ++i)
     {
-        const IKNode& node = *segments[i].endNode_;
-        local_.defaultTransforms_[i] = inverseFrameOfReference * Transform{node.position_, node.rotation_};
+        const IKNode& bone = *bones[i];
+        local_.defaultTransforms_[i] = inverseFrameOfReference * Transform{bone.position_, bone.rotation_};
     }
+
+    const Vector3 baseDirection = (bones[1]->position_ - bones[0]->position_).Normalized();
+    local_.baseDirection_ = inverseFrameOfReference.rotation_ * baseDirection;
 }
 
 void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)
 {
-    const auto& segments = chain_.GetSegments();
-    for (size_t i = 0; i < segments.size(); ++i)
+    auto& nodes = chain_.GetNodes();
+    for (size_t i = 0; i < nodes.size(); ++i)
     {
-        IKNode& node = *segments[i].endNode_;
+        IKNode& bone = *nodes[i];
         const Transform& defaultTransform = local_.defaultTransforms_[i];
-        node.position_ = frameOfReference * defaultTransform.position_;
-        node.rotation_ = frameOfReference * defaultTransform.rotation_;
+        bone.position_ = frameOfReference * defaultTransform.position_;
+        bone.rotation_ = frameOfReference * defaultTransform.rotation_;
     }
 }
 
 void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep)
 {
     auto& bones = chain_.GetNodes();
-    auto& segments = chain_.GetSegments();
-    if (segments.size() < 2)
+    if (bones.size() < 2)
         return;
 
     // Store original rotation
@@ -1048,14 +1050,15 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
 
     // Solve rotations for full solver weight for position target
     SetOriginalTransforms(frameOfReference);
-    chain_.Solve(target_->GetWorldPosition(), maxAngle_, settings);
+    const Vector3 baseDirection = frameOfReference.rotation_ * local_.baseDirection_;
+    chain_.Solve(target_->GetWorldPosition(), baseDirection, maxAngle_, settings);
 
     // Interpolate rotation to apply solver weight
     for (size_t i = 0; i < bones.size(); ++i)
         bones[i]->rotation_ = originalBoneRotations_[i].Slerp(bones[i]->rotation_, positionWeight_);
 
     // Solve rotations for partial solver weight for twist target
-    const float twistAngle = twistTarget_ ? GetTwistAngle(segments.back(), twistTarget_) : 0.0f;
+    const float twistAngle = twistTarget_ ? GetTwistAngle(chain_.GetSegments().back(), twistTarget_) : 0.0f;
     chain_.Twist(twistAngle * rotationWeight_, settings);
 }
 

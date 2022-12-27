@@ -184,7 +184,7 @@ protected:
 class URHO3D_API IKSpineChain : public IKChain
 {
 public:
-    void Solve(const Vector3& target, float maxRotation, const IKSettings& settings);
+    void Solve(const Vector3& target, const Vector3& baseDirection, float maxRotation, const IKSettings& settings);
     void Twist(float angle, const IKSettings& settings);
 
 private:
