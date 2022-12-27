@@ -508,7 +508,8 @@ void IKTrigonometrySolver::SolveInternal(const Transform& frameOfReference, cons
 
     // Solve rotations for full solver weight
     latestTargetPosition_ = GetTargetPosition();
-    const auto [originalDirection, currentDirection] = CalculateBendDirections(frameOfReference);
+    const auto [originalDirection, currentDirection] = CalculateBendDirections(
+        frameOfReference, latestTargetPosition_);
 
     chain_.Solve(latestTargetPosition_, originalDirection, currentDirection, minAngle_, maxAngle_);
 
@@ -529,15 +530,15 @@ Vector3 IKTrigonometrySolver::GetTargetPosition() const
     return origin + (target - origin).ReNormalized(minDistance, maxDistance);
 }
 
-ea::pair<Vector3, Vector3> IKTrigonometrySolver::CalculateBendDirections(const Transform& frameOfReference) const
+ea::pair<Vector3, Vector3> IKTrigonometrySolver::CalculateBendDirections(
+    const Transform& frameOfReference, const Vector3& toeTargetPosition) const
 {
     IKNode& firstBone = *chain_.GetBeginNode();
 
     const float bendTargetWeight = bendTarget_ ? bendTargetWeight_ : 0.0f;
     const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
-
-    const Vector3 targetPosition = target_->GetWorldPosition();
-    const Vector3 bendTargetDirection = bendTargetPosition - Lerp(firstBone.position_, targetPosition, 0.5f);
+    const Vector3 bendTargetDirection =
+        bendTargetPosition - Lerp(firstBone.position_, toeTargetPosition, 0.5f);
 
     const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
     const Vector3 currentDirection0 = frameOfReference.rotation_ * local_.defaultDirection_;
@@ -571,21 +572,19 @@ void IKLegSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Min Knee Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Max Knee Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Min Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Max Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Base Tiptoe", Vector2, baseTiptoe_, Vector2(0.5f, 0.0f), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Ground Tiptoe Tweaks", Vector4, groundTiptoeTweaks_, Vector4(0.2f, 0.2f, 0.2f, 0.2f), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
 
     URHO3D_ACTION_STATIC_LABEL("Update Properties", UpdateProperties, "Set properties below from current bone positions");
     URHO3D_ATTRIBUTE("Heel Ground Offset", float, heelGroundOffset_, -1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Toe Ground Offset", float, toeGroundOffset_, -1.0f, AM_DEFAULT);
 }
 
 void IKLegSolver::UpdateProperties()
 {
     UpdateHeelGroundOffset();
-    UpdateToeGroundOffset();
 }
 
 void IKLegSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -722,9 +721,6 @@ void IKLegSolver::EnsureInitialized()
     if (heelGroundOffset_ < 0.0f)
         UpdateHeelGroundOffset();
 
-    if (toeGroundOffset_ < 0.0f)
-        UpdateToeGroundOffset();
-
     positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
     bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
     minKneeAngle_ = Clamp(minKneeAngle_, 0.0f, 180.0f);
@@ -740,16 +736,6 @@ void IKLegSolver::UpdateHeelGroundOffset()
     {
         const Vector3 heelOffset = heelNode->GetWorldPosition() - node_->GetWorldPosition();
         heelGroundOffset_ = ea::max(0.0f, heelOffset.y_);
-    }
-}
-
-void IKLegSolver::UpdateToeGroundOffset()
-{
-    Node* toeNode = node_->GetChild(toeBoneName_, true);
-    if (toeNode)
-    {
-        const Vector3 toeOffset = toeNode->GetWorldPosition() - node_->GetWorldPosition();
-        toeGroundOffset_ = ea::max(0.0f, toeOffset.y_);
     }
 }
 
@@ -883,7 +869,7 @@ Vector3 IKLegSolver::CalculateToeToHeelBent(
     return (newPos1 - newPos2).Normalized() * footSegment_.length_;
 }
 
-Vector3 IKLegSolver::CalculateToeToHeel(const Transform& frameOfReference,
+Vector3 IKLegSolver::CalculateToeToHeel(const Transform& frameOfReference, float tiptoeFactor,
     const Vector3& toeTargetPosition, const Vector3& originalDirection, const Vector3& currentDirection) const
 {
     const auto legRotation = CalculateLegRotation(
@@ -893,7 +879,7 @@ Vector3 IKLegSolver::CalculateToeToHeel(const Transform& frameOfReference,
     const Vector3 toeToHeelMin = legRotation * node_->GetWorldRotation() * local_.toeToHeel_;
     const Vector3 toeToHeelMax = CalculateToeToHeelBent(toeTargetPosition, approximateBendDirection);
 
-    const Vector3 toeToHeelDirection = Lerp(toeToHeelMin, toeToHeelMax, latestTiptoeFactor_);
+    const Vector3 toeToHeelDirection = Lerp(toeToHeelMin, toeToHeelMax, tiptoeFactor);
     const Vector3 toeToHeel = toeToHeelDirection.ReNormalized(footSegment_.length_, footSegment_.length_);
 
     return SnapToReachablePosition(RecoverFromGroundPenetration(toeToHeel, toeTargetPosition), toeTargetPosition);
@@ -917,27 +903,36 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     // Solve rotations for full solver weight
     latestTargetPosition_ = GetTargetPosition();
     latestTiptoeFactor_ = CalculateTiptoeFactor(latestTargetPosition_);
+
     const auto [originalDirection, currentDirection] = CalculateBendDirections(frameOfReference, latestTargetPosition_);
     const Vector3 toeToHeel = CalculateToeToHeel(
-        frameOfReference, latestTargetPosition_, originalDirection, currentDirection);
+        frameOfReference, latestTiptoeFactor_, latestTargetPosition_, originalDirection, currentDirection);
     const Vector3 heelTargetPosition = latestTargetPosition_ + toeToHeel;
 
     legChain_.Solve(heelTargetPosition, originalDirection, currentDirection, minKneeAngle_, maxKneeAngle_);
-
-    // Update foot segment
-    heelBone.previousPosition_ = heelBone.position_;
-    heelBone.previousRotation_ = calfBone.rotation_ * local_.defaultFootRotation_;
-    toeBone.previousPosition_ = heelBone.previousPosition_ + heelBone.previousRotation_ * local_.defaultToeOffset_;
-    toeBone.previousRotation_ = heelBone.previousRotation_ * local_.defaultToeRotation_;
-    // heelBone.position is already set by legChain_.Solve()
-    toeBone.position_ = heelBone.position_ - toeToHeel;
-    footSegment_.UpdateRotationInNodes(true, true);
+    RotateFoot(toeToHeel);
 
     // Interpolate rotation to apply solver weight
     thighBone.rotation_ = thighBoneRotation.Slerp(thighBone.rotation_, positionWeight_);
     calfBone.rotation_ = calfBoneRotation.Slerp(calfBone.rotation_, positionWeight_);
     heelBone.rotation_ = heelBoneRotation.Slerp(heelBone.rotation_, positionWeight_);
     toeBone.rotation_ = toeBoneRotation.Slerp(toeBone.rotation_, positionWeight_);
+}
+
+void IKLegSolver::RotateFoot(const Vector3& toeToHeel)
+{
+    IKNode& calfBone = *legChain_.GetMiddleNode();
+    IKNode& heelBone = *legChain_.GetEndNode();
+    IKNode& toeBone = *footSegment_.endNode_;
+
+    // heelBone.position should already set by legChain_.Solve()
+    heelBone.previousPosition_ = heelBone.position_;
+    heelBone.previousRotation_ = calfBone.rotation_ * local_.defaultFootRotation_;
+    toeBone.previousPosition_ = heelBone.previousPosition_ + heelBone.previousRotation_ * local_.defaultToeOffset_;
+    toeBone.previousRotation_ = heelBone.previousRotation_ * local_.defaultToeRotation_;
+    toeBone.position_ = heelBone.position_ - toeToHeel;
+
+    footSegment_.UpdateRotationInNodes(true, true);
 }
 
 IKSpineSolver::IKSpineSolver(Context* context)
@@ -1076,9 +1071,12 @@ void IKArmSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Hand Bone Name", ea::string, handBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Bend Target Name", ea::string, bendTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
-    URHO3D_ATTRIBUTE("Min Elbow Angle", float, minElbowAngle_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Max Elbow Angle", float, maxElbowAngle_, 180.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Min Angle", float, minElbowAngle_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Max Angle", float, maxElbowAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Shoulder Weight", Vector2, shoulderWeight_, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Up Direction", Vector3, upDirection_, Vector3::UP, AM_DEFAULT);
@@ -1117,6 +1115,8 @@ bool IKArmSolver::InitializeNodes(IKNodeCache& nodeCache)
     target_ = AddCheckedNode(nodeCache, targetName_);
     if (!target_)
         return false;
+
+    bendTarget_ = AddCheckedNode(nodeCache, bendTargetName_);
 
     IKNode* shoulderBone = AddSolverNode(nodeCache, shoulderBoneName_);
     if (!shoulderBone)
@@ -1164,14 +1164,25 @@ void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
 {
     EnsureInitialized();
 
+    // Store original rotation
+    IKNode& shoulderBone = *shoulderSegment_.beginNode_;
+    IKNode& armBone = *armChain_.GetBeginNode();
+    IKNode& forearmBone = *armChain_.GetMiddleNode();
+    IKNode& handBone = *armChain_.GetEndNode();
+
+    const Quaternion shoulderBoneRotation = shoulderBone.rotation_;
+    const Quaternion armBoneRotation = armBone.rotation_;
+    const Quaternion forearmBoneRotation = forearmBone.rotation_;
+    const Quaternion handBoneRotation = handBone.rotation_;
+
+    // Solve rotations for full solver weight
     shoulderSegment_.beginNode_->rotation_ = frameOfReference * local_.shoulderRotation_;
     shoulderSegment_.endNode_->position_ = frameOfReference * local_.armOffset_;
     shoulderSegment_.endNode_->rotation_ = frameOfReference * local_.armRotation_;
 
-    const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
-    const Vector3 currentDirection = frameOfReference.rotation_ * local_.defaultDirection_;
-
     const Vector3 handTargetPosition = target_->GetWorldPosition();
+    const auto [originalDirection, currentDirection] = CalculateBendDirections(
+        frameOfReference, handTargetPosition);
 
     const Quaternion maxShoulderRotation = CalculateMaxShoulderRotation(handTargetPosition);
     const auto [swing, twist] = maxShoulderRotation.ToSwingTwist(frameOfReference.rotation_ * local_.up_);
@@ -1180,6 +1191,12 @@ void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     RotateShoulder(shoulderRotation);
 
     armChain_.Solve(handTargetPosition, originalDirection, currentDirection, minElbowAngle_, maxElbowAngle_);
+
+    // Interpolate rotation to apply solver weight
+    shoulderBone.rotation_ = shoulderBoneRotation.Slerp(shoulderBone.rotation_, positionWeight_);
+    armBone.rotation_ = armBoneRotation.Slerp(armBone.rotation_, positionWeight_);
+    forearmBone.rotation_ = forearmBoneRotation.Slerp(forearmBone.rotation_, positionWeight_);
+    handBone.rotation_ = handBoneRotation.Slerp(handBone.rotation_, positionWeight_);
 }
 
 void IKArmSolver::RotateShoulder(const Quaternion& rotation)
@@ -1187,6 +1204,23 @@ void IKArmSolver::RotateShoulder(const Quaternion& rotation)
     const Vector3 shoulderPosition = shoulderSegment_.beginNode_->position_;
     shoulderSegment_.beginNode_->RotateAround(shoulderPosition, rotation);
     shoulderSegment_.endNode_->RotateAround(shoulderPosition, rotation);
+}
+
+ea::pair<Vector3, Vector3> IKArmSolver::CalculateBendDirections(
+    const Transform& frameOfReference, const Vector3& handTargetPosition) const
+{
+    IKNode& shoulderBone = *shoulderSegment_.beginNode_;
+
+    const float bendTargetWeight = bendTarget_ ? bendTargetWeight_ : 0.0f;
+    const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
+    const Vector3 bendTargetDirection = bendTargetPosition - Lerp(shoulderBone.position_, handTargetPosition, 0.5f);
+
+    const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
+    const Vector3 currentDirection0 = frameOfReference.rotation_ * local_.defaultDirection_;
+    const Vector3 currentDirection1 = bendTargetDirection.Normalized();
+    const Vector3 currentDirection = Lerp(currentDirection0, currentDirection1, bendTargetWeight);
+
+    return {originalDirection, currentDirection};
 }
 
 Quaternion IKArmSolver::CalculateMaxShoulderRotation(const Vector3& handTargetPosition) const

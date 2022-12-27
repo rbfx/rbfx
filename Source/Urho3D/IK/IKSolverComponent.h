@@ -139,7 +139,8 @@ private:
 
     void EnsureInitialized();
     Vector3 GetTargetPosition() const;
-    ea::pair<Vector3, Vector3> CalculateBendDirections(const Transform& frameOfReference) const;
+    ea::pair<Vector3, Vector3> CalculateBendDirections(
+        const Transform& frameOfReference, const Vector3& toeTargetPosition) const;
 
     ea::string firstBoneName_;
     ea::string secondBoneName_;
@@ -189,7 +190,8 @@ private:
 
     void EnsureInitialized();
     void UpdateHeelGroundOffset();
-    void UpdateToeGroundOffset();
+
+    void RotateFoot(const Vector3& toeToHeel);
 
     Vector3 GetTargetPosition() const;
     Plane GetGroundPlane() const;
@@ -207,7 +209,7 @@ private:
         const Transform& frameOfReference, const Vector3& toeTargetPosition, const Vector3& bendDirection);
     float CalculateTiptoeFactor(const Vector3& toeTargetPosition) const;
 
-    Vector3 CalculateToeToHeel(const Transform& frameOfReference,
+    Vector3 CalculateToeToHeel(const Transform& frameOfReference, float tiptoeFactor,
         const Vector3& toeTargetPosition, const Vector3& originalDirection, const Vector3& currentDirection) const;
     Vector3 CalculateToeToHeelBent(
         const Vector3& toeTargetPosition, const Vector3& approximateBendDirection) const;
@@ -232,7 +234,6 @@ private:
     Vector3 bendDirection_{Vector3::FORWARD};
 
     float heelGroundOffset_{-1.0f};
-    float toeGroundOffset_{-1.0f};
     /// @}
 
     /// IK nodes and effectors.
@@ -324,7 +325,11 @@ private:
     /// @}
 
     void EnsureInitialized();
+
     void RotateShoulder(const Quaternion& rotation);
+
+    ea::pair<Vector3, Vector3> CalculateBendDirections(
+        const Transform& frameOfReference, const Vector3& toeTargetPosition) const;
     Quaternion CalculateMaxShoulderRotation(const Vector3& handTargetPosition) const;
 
     /// Attributes.
@@ -335,7 +340,10 @@ private:
     ea::string handBoneName_;
 
     ea::string targetName_;
+    ea::string bendTargetName_;
 
+    float positionWeight_{1.0f};
+    float bendTargetWeight_{1.0f};
     float minElbowAngle_{0.0f};
     float maxElbowAngle_{180.0f};
     Vector2 shoulderWeight_{};
@@ -348,6 +356,7 @@ private:
     IKTrigonometricChain armChain_;
     IKNodeSegment shoulderSegment_;
     WeakPtr<Node> target_;
+    WeakPtr<Node> bendTarget_;
     /// @}
 
     struct LocalCache
