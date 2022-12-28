@@ -150,6 +150,7 @@ private:
     ea::string bendTargetName_;
 
     float positionWeight_{1.0f};
+    float rotationWeight_{0.0f};
     float bendTargetWeight_{1.0f};
     float minAngle_{0.0f};
     float maxAngle_{180.0f};
