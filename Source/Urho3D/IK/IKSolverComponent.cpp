@@ -423,6 +423,7 @@ void IKLimbSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Bend Target Name", ea::string, bendTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 180.0f, AM_DEFAULT);
@@ -488,6 +489,7 @@ void IKLimbSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 void IKLimbSolver::EnsureInitialized()
 {
     positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
+    rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
     bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
     minAngle_ = Clamp(minAngle_, 0.0f, 180.0f);
     maxAngle_ = Clamp(maxAngle_, minAngle_, 180.0f);
@@ -517,6 +519,10 @@ void IKLimbSolver::SolveInternal(const Transform& frameOfReference, const IKSett
     firstBone.rotation_ = firstBoneRotation.Slerp(firstBone.rotation_, positionWeight_);
     secondBone.rotation_ = secondBoneRotation.Slerp(secondBone.rotation_, positionWeight_);
     thirdBone.rotation_ = thirdBoneRotation.Slerp(thirdBone.rotation_, positionWeight_);
+
+    // Apply rotation weight if needed
+    if (rotationWeight_ > 0.0f)
+        thirdBone.rotation_ = thirdBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
 }
 
 Vector3 IKLimbSolver::GetTargetPosition() const
