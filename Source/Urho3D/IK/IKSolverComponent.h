@@ -288,6 +288,8 @@ protected:
     /// @}
 
 private:
+    void EnsureInitialized();
+
     void SetOriginalTransforms(const Transform& frameOfReference);
     float GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const;
 
@@ -296,7 +298,8 @@ private:
     ea::string targetName_;
 
     float positionWeight_{1.0f};
-    float rotationWeight_{1.0f};
+    float rotationWeight_{0.0f};
+    float twistWeight_{1.0f};
     float maxAngle_{90.0f};
 
     IKSpineChain chain_;
