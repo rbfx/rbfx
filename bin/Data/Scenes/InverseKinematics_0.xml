@@ -3087,7 +3087,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="74">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="32">
@@ -3100,7 +3100,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="90">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="74">
@@ -3139,7 +3139,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="177">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="51">
@@ -3152,7 +3152,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="179">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="126">
@@ -3178,7 +3178,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="398">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -3954,7 +3954,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="502">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="160">
@@ -3967,7 +3967,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="506">
 						<attribute name="Model" value="Model;Models/Plane.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 					<node id="152">
 						<attribute name="Is Enabled" value="true" />
@@ -4187,7 +4187,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="457">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16778944">
@@ -5596,7 +5596,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="38">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="177">
@@ -5609,7 +5609,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="567">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16777343">
@@ -6272,7 +6272,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/TrigonomertySolver_Targets.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LimbSolver_Targets.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -6356,7 +6356,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="310">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="88">
@@ -6369,7 +6369,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="306">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -7033,7 +7033,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/TrigonomertySolver_PositionWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LimbSolver_PositionWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -7119,7 +7119,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="543">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="170">
@@ -7132,7 +7132,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="544">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -7796,7 +7796,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/TrigonomertySolver_RotationWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LimbSolver_RotationWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -7880,7 +7880,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="1039">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="312">
@@ -7893,7 +7893,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="1040">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -8557,7 +8557,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/TrigonomertySolver_MaxAngle.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LimbSolver_MaxAngle.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -8641,7 +8641,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="562">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="176">
@@ -8654,7 +8654,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="563">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -9318,7 +9318,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/TrigonomertySolver_BendTarget.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LimbSolver_BendTarget.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -9396,7 +9396,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="581">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="181">
@@ -9417,7 +9417,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="579">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="183">
@@ -9430,7 +9430,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="580">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -10094,7 +10094,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/TrigonomertySolver_BendTargetWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LimbSolver_BendTargetWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -10174,7 +10174,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="605">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="189">
@@ -10195,7 +10195,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="606">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="191">
@@ -10208,7 +10208,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="607">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -10922,7 +10922,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="41">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="193">
@@ -10935,7 +10935,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="620">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="192">
@@ -11672,7 +11672,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="335">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="100">
@@ -11685,7 +11685,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="336">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16778432">
@@ -12436,7 +12436,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="323">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="93">
@@ -12449,7 +12449,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="322">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -13201,7 +13201,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="671">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="200">
@@ -13214,7 +13214,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="672">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -13966,7 +13966,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="1067">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="318">
@@ -13979,7 +13979,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="1068">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -14731,7 +14731,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="687">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="206">
@@ -14744,7 +14744,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="688">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -15498,7 +15498,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="697">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="212">
@@ -15511,7 +15511,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="698">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -16101,7 +16101,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="718">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 		</node>
@@ -16278,7 +16278,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="707">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="218">
@@ -16291,7 +16291,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="708">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -16881,7 +16881,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="719">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 		</node>
@@ -17056,7 +17056,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="743">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="226">
@@ -17069,7 +17069,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="744">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -17825,7 +17825,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="754">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="233">
@@ -17838,7 +17838,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="755">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -18436,7 +18436,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="763">
 						<attribute name="Model" value="Model;Models/Plane.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 					<node id="236">
 						<attribute name="Is Enabled" value="true" />
@@ -18591,7 +18591,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="220">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16777984">
@@ -19321,7 +19321,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="354">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="103">
@@ -19334,7 +19334,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="351">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16778496">
@@ -20069,7 +20069,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="800">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="242">
@@ -20082,7 +20082,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="799">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -20818,7 +20818,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="819">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="249">
@@ -20831,7 +20831,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="820">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -21567,7 +21567,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="1087">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="323">
@@ -21580,7 +21580,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="1088">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -22316,7 +22316,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="836">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="254">
@@ -22329,7 +22329,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="837">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -23067,7 +23067,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="847">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="259">
@@ -23080,7 +23080,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="848">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -23670,7 +23670,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="849">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 		</node>
@@ -23831,7 +23831,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="880">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="265">
@@ -23844,7 +23844,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="881">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -24434,7 +24434,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="882">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 		</node>
@@ -24593,7 +24593,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="892">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 				<node id="271">
@@ -24606,7 +24606,7 @@
 					<attribute name="Variables" />
 					<component type="StaticModel" id="893">
 						<attribute name="Model" value="Model;Models/Box.mdl" />
-						<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					</component>
 				</node>
 			</node>
@@ -25321,7 +25321,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="286">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="81">
@@ -26070,7 +26070,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="367">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16778560">
@@ -26790,7 +26790,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="131">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16777728">
@@ -27523,7 +27523,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="919">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16780096">
@@ -28256,7 +28256,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="929">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16780160">
@@ -28989,7 +28989,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="939">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16780224">
@@ -29722,7 +29722,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="952">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16780288">
@@ -30446,7 +30446,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="381">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="290">
@@ -31179,7 +31179,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="440">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="16778880">
@@ -31896,7 +31896,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="408">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="124">
@@ -32626,7 +32626,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="975">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="294">
@@ -33355,7 +33355,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="988">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="298">
@@ -34084,7 +34084,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="998">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="302">
@@ -34814,7 +34814,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="1008">
 					<attribute name="Model" value="Model;Models/Box.mdl" />
-					<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 				</component>
 			</node>
 			<node id="306">
