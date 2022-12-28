@@ -520,7 +520,7 @@ void IKLimbSolver::SolveInternal(const Transform& frameOfReference, const IKSett
     secondBone.rotation_ = secondBoneRotation.Slerp(secondBone.rotation_, positionWeight_);
     thirdBone.rotation_ = thirdBoneRotation.Slerp(thirdBone.rotation_, positionWeight_);
 
-    // Apply rotation weight if needed
+    // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
         thirdBone.rotation_ = thirdBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
 }
@@ -926,7 +926,7 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     heelBone.rotation_ = heelBoneRotation.Slerp(heelBone.rotation_, positionWeight_);
     toeBone.rotation_ = toeBoneRotation.Slerp(toeBone.rotation_, positionWeight_);
 
-    // Apply rotation weight if needed
+    // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
         toeBone.rotation_ = toeBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
 }
@@ -965,7 +965,8 @@ void IKSpineSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Twist Target Weight", float, twistWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 90.0f, AM_DEFAULT);
 }
 
@@ -1049,8 +1050,18 @@ void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)
     }
 }
 
+void IKSpineSolver::EnsureInitialized()
+{
+    positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
+    rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
+    twistWeight_ = Clamp(twistWeight_, 0.0f, 1.0f);
+    maxAngle_ = Clamp(maxAngle_, 0.0f, 180.0f);
+}
+
 void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep)
 {
+    EnsureInitialized();
+
     auto& bones = chain_.GetNodes();
     if (bones.size() < 2)
         return;
@@ -1071,7 +1082,14 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
 
     // Solve rotations for partial solver weight for twist target
     const float twistAngle = twistTarget_ ? GetTwistAngle(chain_.GetSegments().back(), twistTarget_) : 0.0f;
-    chain_.Twist(twistAngle * rotationWeight_, settings);
+    chain_.Twist(twistAngle * twistWeight_, settings);
+
+    // Apply target rotation if needed
+    if (rotationWeight_ > 0.0f)
+    {
+        IKNode& lastBone = *bones.back();
+        lastBone.rotation_ = lastBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+    }
 }
 
 float IKSpineSolver::GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const
@@ -1234,7 +1252,7 @@ void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     forearmBone.rotation_ = forearmBoneRotation.Slerp(forearmBone.rotation_, positionWeight_);
     handBone.rotation_ = handBoneRotation.Slerp(handBone.rotation_, positionWeight_);
 
-    // Apply rotation weight if needed
+    // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
         handBone.rotation_ = handBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
 }
