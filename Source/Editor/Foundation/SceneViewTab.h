@@ -197,6 +197,10 @@ public:
     void CreateNodeInSelection(Scene* scene, SceneSelection& selection);
     void CreateComponentInSelection(Scene* scene, SceneSelection& selection, StringHash componentType);
     void FocusSelection(SceneSelection& selection);
+    void MoveSelectionToLatest(SceneSelection& selection);
+    void MoveSelectionPositionToLatest(SceneSelection& selection);
+    void MoveSelectionRotationToLatest(SceneSelection& selection);
+    void MoveSelectionScaleToLatest(SceneSelection& selection);
 
     void CutSelection();
     void CopySelection();
@@ -207,6 +211,10 @@ public:
     void CreateNodeNextToSelection();
     void CreateNodeInSelection();
     void FocusSelection();
+    void MoveSelectionToLatest();
+    void MoveSelectionPositionToLatest();
+    void MoveSelectionRotationToLatest();
+    void MoveSelectionScaleToLatest();
     /// @}
 
     /// ResourceEditorTab implementation

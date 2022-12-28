@@ -61,6 +61,10 @@ const auto Hotkey_Delete = EditorHotkey{"SceneViewTab.Delete"}.Press(KEY_DELETE)
 const auto Hotkey_Duplicate = EditorHotkey{"SceneViewTab.Duplicate"}.Ctrl().Press(KEY_D);
 
 const auto Hotkey_Focus = EditorHotkey{"SceneViewTab.Focus"}.Press(KEY_F);
+const auto Hotkey_MoveToLatest = EditorHotkey{"SceneViewTab.MoveToLatest"};
+const auto Hotkey_MovePositionToLatest = EditorHotkey{"SceneViewTab.MovePositionToLatest"};
+const auto Hotkey_MoveRotationToLatest = EditorHotkey{"SceneViewTab.MoveRotationToLatest"};
+const auto Hotkey_MoveScaleToLatest = EditorHotkey{"SceneViewTab.MoveScaleToLatest"};
 
 const auto Hotkey_CreateSiblingNode = EditorHotkey{"SceneViewTab.CreateSiblingNode"}.Ctrl().Press(KEY_N);
 const auto Hotkey_CreateChildNode = EditorHotkey{"SceneViewTab.CreateChildNode"}.Ctrl().Shift().Press(KEY_N);
@@ -199,6 +203,10 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_Delete, &SceneViewTab::DeleteSelection);
     BindHotkey(Hotkey_Duplicate, &SceneViewTab::DuplicateSelection);
     BindHotkey(Hotkey_Focus, &SceneViewTab::FocusSelection);
+    BindHotkey(Hotkey_MoveToLatest, &SceneViewTab::MoveSelectionToLatest);
+    BindHotkey(Hotkey_MovePositionToLatest, &SceneViewTab::MoveSelectionPositionToLatest);
+    BindHotkey(Hotkey_MoveRotationToLatest, &SceneViewTab::MoveSelectionRotationToLatest);
+    BindHotkey(Hotkey_MoveScaleToLatest, &SceneViewTab::MoveSelectionScaleToLatest);
     BindHotkey(Hotkey_CreateSiblingNode, &SceneViewTab::CreateNodeNextToSelection);
     BindHotkey(Hotkey_CreateChildNode, &SceneViewTab::CreateNodeInSelection);
 }
@@ -256,6 +264,19 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 
     if (ui::MenuItem("Focus", GetHotkeyLabel(Hotkey_Focus).c_str(), false, hasSelection))
         FocusSelection(selection);
+
+    if (ui::MenuItem("Move to Latest", GetHotkeyLabel(Hotkey_MoveToLatest).c_str(), false, hasSelection))
+        MoveSelectionToLatest(selection);
+    if (ui::BeginMenu("Move Attribute to Latest...", hasSelection))
+    {
+        if (ui::MenuItem("Position", GetHotkeyLabel(Hotkey_MovePositionToLatest).c_str(), false, hasSelection))
+            MoveSelectionPositionToLatest(selection);
+        if (ui::MenuItem("Rotation", GetHotkeyLabel(Hotkey_MoveRotationToLatest).c_str(), false, hasSelection))
+            MoveSelectionRotationToLatest(selection);
+        if (ui::MenuItem("Scale", GetHotkeyLabel(Hotkey_MoveScaleToLatest).c_str(), false, hasSelection))
+            MoveSelectionScaleToLatest(selection);
+        ui::EndMenu();
+    }
 
     if (SceneViewPage* activePage = GetActivePage())
     {
@@ -522,6 +543,62 @@ void SceneViewTab::FocusSelection(SceneSelection& selection)
     }
 }
 
+void SceneViewTab::MoveSelectionToLatest(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        const Matrix3x4 worldTransform = activeNode->GetWorldTransform();
+
+        for (Node* node : selection.GetNodes())
+        {
+            if (node && node != activeNode)
+                node->SetWorldTransform(worldTransform);
+        }
+    }
+}
+
+void SceneViewTab::MoveSelectionPositionToLatest(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        const Vector3 worldPosition = activeNode->GetWorldPosition();
+
+        for (Node* node : selection.GetNodes())
+        {
+            if (node && node != activeNode)
+                node->SetWorldPosition(worldPosition);
+        }
+    }
+}
+
+void SceneViewTab::MoveSelectionRotationToLatest(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        const Quaternion worldRotation = activeNode->GetWorldRotation();
+
+        for (Node* node : selection.GetNodes())
+        {
+            if (node && node != activeNode)
+                node->SetWorldRotation(worldRotation);
+        }
+    }
+}
+
+void SceneViewTab::MoveSelectionScaleToLatest(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        const Vector3 worldScale = activeNode->GetWorldScale();
+
+        for (Node* node : selection.GetNodes())
+        {
+            if (node && node != activeNode)
+                node->SetWorldScale(worldScale);
+        }
+    }
+}
+
 void SceneViewTab::CutSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
@@ -574,6 +651,30 @@ void SceneViewTab::FocusSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
         FocusSelection(activePage->selection_);
+}
+
+void SceneViewTab::MoveSelectionToLatest()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MoveSelectionToLatest(activePage->selection_);
+}
+
+void SceneViewTab::MoveSelectionPositionToLatest()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MoveSelectionPositionToLatest(activePage->selection_);
+}
+
+void SceneViewTab::MoveSelectionRotationToLatest()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MoveSelectionRotationToLatest(activePage->selection_);
+}
+
+void SceneViewTab::MoveSelectionScaleToLatest()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MoveSelectionScaleToLatest(activePage->selection_);
 }
 
 void SceneViewTab::RenderMenu()
