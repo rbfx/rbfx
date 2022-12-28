@@ -577,6 +577,7 @@ void IKLegSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Ground Target Name", ea::string, groundTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
@@ -728,6 +729,7 @@ void IKLegSolver::EnsureInitialized()
         UpdateHeelGroundOffset();
 
     positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
+    rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
     bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
     minKneeAngle_ = Clamp(minKneeAngle_, 0.0f, 180.0f);
     maxKneeAngle_ = Clamp(maxKneeAngle_, 0.0f, 180.0f);
@@ -923,6 +925,10 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     calfBone.rotation_ = calfBoneRotation.Slerp(calfBone.rotation_, positionWeight_);
     heelBone.rotation_ = heelBoneRotation.Slerp(heelBone.rotation_, positionWeight_);
     toeBone.rotation_ = toeBoneRotation.Slerp(toeBone.rotation_, positionWeight_);
+
+    // Apply rotation weight if needed
+    if (rotationWeight_ > 0.0f)
+        toeBone.rotation_ = toeBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
 }
 
 void IKLegSolver::RotateFoot(const Vector3& toeToHeel)
@@ -1100,6 +1106,7 @@ void IKArmSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Bend Target Name", ea::string, bendTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minElbowAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxElbowAngle_, 180.0f, AM_DEFAULT);
@@ -1181,6 +1188,9 @@ void IKArmSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 
 void IKArmSolver::EnsureInitialized()
 {
+    positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
+    rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
+    bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
     minElbowAngle_ = Clamp(minElbowAngle_, 0.0f, 180.0f);
     maxElbowAngle_ = Clamp(maxElbowAngle_, 0.0f, 180.0f);
     shoulderWeight_ = VectorClamp(shoulderWeight_, Vector2::ZERO, Vector2::ONE);
@@ -1223,6 +1233,10 @@ void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     armBone.rotation_ = armBoneRotation.Slerp(armBone.rotation_, positionWeight_);
     forearmBone.rotation_ = forearmBoneRotation.Slerp(forearmBone.rotation_, positionWeight_);
     handBone.rotation_ = handBoneRotation.Slerp(handBone.rotation_, positionWeight_);
+
+    // Apply rotation weight if needed
+    if (rotationWeight_ > 0.0f)
+        handBone.rotation_ = handBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
 }
 
 void IKArmSolver::RotateShoulder(const Quaternion& rotation)
