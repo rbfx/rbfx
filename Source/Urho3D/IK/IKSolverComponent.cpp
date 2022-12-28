@@ -1294,18 +1294,18 @@ Quaternion IKArmSolver::CalculateMaxShoulderRotation(const Vector3& handTargetPo
     return Quaternion{originalShoulderToArm, maxShoulderToArm};
 }
 
-IKLookAtSolver::IKLookAtSolver(Context* context)
+IKHeadSolver::IKHeadSolver(Context* context)
     : IKSolverComponent(context)
 {
 }
 
-IKLookAtSolver::~IKLookAtSolver()
+IKHeadSolver::~IKHeadSolver()
 {
 }
 
-void IKLookAtSolver::RegisterObject(Context* context)
+void IKHeadSolver::RegisterObject(Context* context)
 {
-    context->AddFactoryReflection<IKLookAtSolver>(Category_IK);
+    context->AddFactoryReflection<IKHeadSolver>(Category_IK);
 
     URHO3D_ATTRIBUTE_EX("Neck Bone Name", ea::string, neckBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Head Bone Name", ea::string, headBoneName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
@@ -1320,7 +1320,7 @@ void IKLookAtSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Neck Weight", float, neckWeight_, OnTreeDirty, 0.5f, AM_DEFAULT);
 }
 
-void IKLookAtSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+void IKHeadSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     IKNode* neckBone = neckSegment_.beginNode_;
     IKNode* headBone = neckSegment_.endNode_;
@@ -1340,13 +1340,13 @@ void IKLookAtSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         DrawIKTarget(debug, lookAtTarget_, false);
 }
 
-bool IKLookAtSolver::InitializeNodes(IKNodeCache& nodeCache)
+bool IKHeadSolver::InitializeNodes(IKNodeCache& nodeCache)
 {
     headTarget_ = AddCheckedNode(nodeCache, headTargetName_);
     lookAtTarget_ = AddCheckedNode(nodeCache, lookAtTargetName_);
     if (!headTarget_ && !lookAtTarget_)
     {
-        URHO3D_LOGERROR("IKLookAtSolver: Either head or look at target must be specified");
+        URHO3D_LOGERROR("IKHeadSolver: Either head or look at target must be specified");
         return false;
     }
 
@@ -1365,7 +1365,7 @@ bool IKLookAtSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKLookAtSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKHeadSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     neckSegment_.UpdateLength();
 
@@ -1381,7 +1381,7 @@ void IKLookAtSolver::UpdateChainLengths(const Transform& inverseFrameOfReference
     headChain_.SetWorldEyeTransform(eyeOffset, eyeDirection);
 }
 
-void IKLookAtSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep)
+void IKHeadSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep)
 {
     EnsureInitialized();
 
@@ -1431,14 +1431,14 @@ void IKLookAtSolver::SolveInternal(const Transform& frameOfReference, const IKSe
     headBone.rotation_ = headBoneRotation.Slerp(headBone.rotation_, rotationWeight_);
 }
 
-void IKLookAtSolver::EnsureInitialized()
+void IKHeadSolver::EnsureInitialized()
 {
     lookAtWeight_ = Clamp(lookAtWeight_, 0.0f, 1.0f);
     rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
     neckWeight_ = Clamp(neckWeight_, 0.0f, 1.0f);
 }
 
-Ray IKLookAtSolver::GetEyeRay() const
+Ray IKHeadSolver::GetEyeRay() const
 {
     const IKNode& headBone = *neckSegment_.endNode_;
     const Vector3 origin = headBone.position_ + headBone.rotation_ * headChain_.GetLocalEyeOffset();

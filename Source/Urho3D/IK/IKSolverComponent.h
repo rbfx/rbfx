@@ -414,13 +414,13 @@ private:
     WeakPtr<Node> target_;
 };
 
-class IKLookAtSolver : public IKSolverComponent
+class IKHeadSolver : public IKSolverComponent
 {
-    URHO3D_OBJECT(IKLookAtSolver, IKSolverComponent);
+    URHO3D_OBJECT(IKHeadSolver, IKSolverComponent);
 
 public:
-    explicit IKLookAtSolver(Context* context);
-    ~IKLookAtSolver() override;
+    explicit IKHeadSolver(Context* context);
+    ~IKHeadSolver() override;
     static void RegisterObject(Context* context);
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;

@@ -42,7 +42,7 @@ void RegisterIKLibrary(Context* context)
     IKSpineSolver::RegisterObject(context);
     IKArmSolver::RegisterObject(context);
     IKChainSolver::RegisterObject(context);
-    IKLookAtSolver::RegisterObject(context);
+    IKHeadSolver::RegisterObject(context);
 
     IKTargetExtractor::RegisterObject(context);
 }
