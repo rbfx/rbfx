@@ -1615,7 +1615,7 @@
 					<attribute name="Shoulder Weight" value="0.4 0.1" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
-				<component type="IKLookAtSolver" id="416">
+				<component type="IKHeadSolver" id="416">
 					<attribute name="Neck Bone Name" value="Neck" />
 					<attribute name="Head Bone Name" value="Head" />
 					<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -2457,7 +2457,7 @@
 				<attribute name="Shoulder Weight" value="0.4 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
-			<component type="IKLookAtSolver" id="397">
+			<component type="IKHeadSolver" id="397">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -3336,7 +3336,7 @@
 				<attribute name="Shoulder Weight" value="0.4 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
-			<component type="IKLookAtSolver" id="492">
+			<component type="IKHeadSolver" id="492">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -31051,7 +31051,7 @@
 	</node>
 	<node id="111">
 		<attribute name="Is Enabled" value="true" />
-		<attribute name="Name" value="Look At Solver" />
+		<attribute name="Name" value="Head Solver" />
 		<attribute name="Tags" />
 		<attribute name="Position" value="-8 0 12" />
 		<attribute name="Rotation" value="1 0 0 0" />
@@ -31059,7 +31059,7 @@
 		<attribute name="Variables" />
 		<node id="112">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Look At Solver" />
+			<attribute name="Name" value="Head Solver" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="0 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -31145,7 +31145,7 @@
 			<component type="IKSolver" id="379">
 				<attribute name="Solve when Paused" value="true" />
 			</component>
-			<component type="IKLookAtSolver" id="314">
+			<component type="IKHeadSolver" id="314">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -31163,7 +31163,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="380">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
-					<attribute name="Text" value="Look At Solver" />
+					<attribute name="Text" value="Head Solver" />
 					<attribute name="Width" value="504" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />
@@ -31774,7 +31774,7 @@
 		</node>
 		<node id="137">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Look At Solver [Complex]" />
+			<attribute name="Name" value="Head Solver [Complex]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="2 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -31865,7 +31865,7 @@
 				<attribute name="Target Name" value="Hips_Target" />
 				<attribute name="Rotation Offset" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
 			</component>
-			<component type="IKLookAtSolver" id="437">
+			<component type="IKHeadSolver" id="437">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -32494,7 +32494,7 @@
 		</node>
 		<node id="122">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Look At Solver [Look At Target]" />
+			<attribute name="Name" value="Head Solver [Look At Target]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="4 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -32575,7 +32575,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LookAtSolver_LookAtTarget.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/HeadSolver_LookAtTarget.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -32595,7 +32595,7 @@
 			<component type="IKSolver" id="404">
 				<attribute name="Solve when Paused" value="true" />
 			</component>
-			<component type="IKLookAtSolver" id="405">
+			<component type="IKHeadSolver" id="405">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -33224,7 +33224,7 @@
 		</node>
 		<node id="291">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Look At Solver [Look At Weight]" />
+			<attribute name="Name" value="Head Solver [Look At Weight]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="6 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -33305,7 +33305,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LookAtSolver_LookAtWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/HeadSolver_LookAtWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -33325,7 +33325,7 @@
 			<component type="IKSolver" id="972">
 				<attribute name="Solve when Paused" value="true" />
 			</component>
-			<component type="IKLookAtSolver" id="973">
+			<component type="IKHeadSolver" id="973">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -33954,7 +33954,7 @@
 		</node>
 		<node id="295">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Look At Solver [Rotation Target]" />
+			<attribute name="Name" value="Head Solver [Rotation Target]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="8 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -34035,7 +34035,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LookAtSolver_RotationTarget.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/HeadSolver_RotationTarget.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -34055,7 +34055,7 @@
 			<component type="IKSolver" id="985">
 				<attribute name="Solve when Paused" value="true" />
 			</component>
-			<component type="IKLookAtSolver" id="986">
+			<component type="IKHeadSolver" id="986">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -34683,7 +34683,7 @@
 		</node>
 		<node id="299">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Look At Solver [Rotation Weight]" />
+			<attribute name="Name" value="Head Solver [Rotation Weight]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="10 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -34764,7 +34764,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LookAtSolver_RotationWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/HeadSolver_RotationWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -34784,7 +34784,7 @@
 			<component type="IKSolver" id="995">
 				<attribute name="Solve when Paused" value="true" />
 			</component>
-			<component type="IKLookAtSolver" id="996">
+			<component type="IKHeadSolver" id="996">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />
@@ -35412,7 +35412,7 @@
 		</node>
 		<node id="303">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Look At Solver [Neck Weight]" />
+			<attribute name="Name" value="Head Solver [Neck Weight]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="12 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -35493,7 +35493,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LookAtSolver_NeckWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/HeadSolver_NeckWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -35513,7 +35513,7 @@
 			<component type="IKSolver" id="1005">
 				<attribute name="Solve when Paused" value="true" />
 			</component>
-			<component type="IKLookAtSolver" id="1006">
+			<component type="IKHeadSolver" id="1006">
 				<attribute name="Neck Bone Name" value="Neck" />
 				<attribute name="Head Bone Name" value="Head" />
 				<attribute name="Look At Target Name" value="LookAt_Target" />

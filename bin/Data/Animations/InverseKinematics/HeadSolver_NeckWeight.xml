@@ -1,5 +1,5 @@
 <animation length="4.0">
-    <variant name="@IKLookAtSolver/Neck Weight" type="Float" interpolation="linear">
+    <variant name="@IKHeadSolver/Neck Weight" type="Float" interpolation="linear">
         <keyframe time="0.0" value="0.5"/>
         <keyframe time="0.5" value="0.0"/>
         <keyframe time="1.5" value="1.0"/>
