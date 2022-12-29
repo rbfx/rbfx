@@ -290,6 +290,8 @@ protected:
 private:
     void EnsureInitialized();
 
+    float WeightFunction(float x) const;
+
     void SetOriginalTransforms(const Transform& frameOfReference);
     float GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const;
 
@@ -301,6 +303,7 @@ private:
     float rotationWeight_{0.0f};
     float twistWeight_{1.0f};
     float maxAngle_{90.0f};
+    float bendTweak_{0.0f};
 
     IKSpineChain chain_;
     WeakPtr<Node> target_;

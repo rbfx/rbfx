@@ -26,6 +26,7 @@
 #include "../Math/Vector3.h"
 #include "../Math/Quaternion.h"
 
+#include <EASTL/functional.h>
 #include <EASTL/span.h>
 
 namespace Urho3D
@@ -184,11 +185,15 @@ protected:
 class URHO3D_API IKSpineChain : public IKChain
 {
 public:
-    void Solve(const Vector3& target, const Vector3& baseDirection, float maxRotation, const IKSettings& settings);
+    using WeightFunction = ea::function<float(float)>;
+    static float DefaultWeightFunction(float x) { return 1.0f; }
+
+    void Solve(const Vector3& target, const Vector3& baseDirection,
+        float maxRotation, const IKSettings& settings, const WeightFunction& weightFun = DefaultWeightFunction);
     void Twist(float angle, const IKSettings& settings);
 
 private:
-    void UpdateSegmentWeights();
+    void UpdateSegmentWeights(const WeightFunction& weightFun);
 
     template <class T>
     void EnumerateProjectedPositions(float totalRotation, const T& callback) const;
