@@ -435,15 +435,23 @@ protected:
 
 private:
     void EnsureInitialized();
+
+    void SolvePosition();
+    void SolveRotation();
+    void SolveDirection();
+    void SolveLookAt(const Transform& frameOfReference, const IKSettings& settings);
+
     Ray GetEyeRay() const;
 
     ea::string neckBoneName_;
     ea::string headBoneName_;
-    ea::string headTargetName_;
+    ea::string targetName_;
     ea::string lookAtTargetName_;
 
+    float positionWeight_{1.0f};
+    float rotationWeight_{0.0f};
+    float directionWeight_{1.0f};
     float lookAtWeight_{0.0f};
-    float rotationWeight_{1.0f};
     Vector3 eyeDirection_{Vector3::FORWARD};
     Vector3 eyeOffset_;
     float neckWeight_{0.5f};
@@ -452,7 +460,7 @@ private:
     IKEyeChain neckChain_;
     IKEyeChain headChain_;
 
-    WeakPtr<Node> headTarget_;
+    WeakPtr<Node> target_;
     WeakPtr<Node> lookAtTarget_;
 
     struct LocalCache
