@@ -82,14 +82,14 @@ void SceneDragAndDropMaterial::UpdateDragDrop(DragDropPayload* payload)
     if (!currentPage_ || !material_)
         return;
 
-    const auto [drawable, subObject] = QueryHoveredGeometry(currentPage_->scene_, currentPage_->cameraRay_);
-    if (temporaryAssignment_.drawable_ == drawable && temporaryAssignment_.subObject_ == subObject)
+    const auto [drawable, materialIndex] = QueryHoveredGeometry(currentPage_->scene_, currentPage_->cameraRay_);
+    if (temporaryAssignment_.drawable_ == drawable && temporaryAssignment_.materialIndex_ == materialIndex)
         return;
 
     if (temporaryAssignment_.drawable_)
         ClearAssignment();
     if (drawable)
-        CreateAssignment(drawable, subObject);
+        CreateAssignment(drawable, materialIndex);
 }
 
 void SceneDragAndDropMaterial::CompleteDragDrop(DragDropPayload* payload)
@@ -123,19 +123,19 @@ void SceneDragAndDropMaterial::ClearAssignment()
     }
 }
 
-void SceneDragAndDropMaterial::CreateAssignment(Drawable* drawable, unsigned subObject)
+void SceneDragAndDropMaterial::CreateAssignment(Drawable* drawable, unsigned materialIndex)
 {
     const ResourceRef materialRef{Material::GetTypeStatic(), material_->GetName()};
 
     temporaryAssignment_.drawable_ = drawable;
-    temporaryAssignment_.subObject_ = subObject;
+    temporaryAssignment_.materialIndex_ = materialIndex;
     temporaryAssignment_.oldMaterial_ = drawable->GetAttribute(MaterialAttr);
 
     if (temporaryAssignment_.oldMaterial_.GetType() == VAR_RESOURCEREFLIST)
     {
         ResourceRefList list = temporaryAssignment_.oldMaterial_.GetResourceRefList();
-        if (subObject < list.names_.size())
-            list.names_[subObject] = materialRef.name_;
+        if (materialIndex < list.names_.size())
+            list.names_[materialIndex] = materialRef.name_;
         temporaryAssignment_.newMaterial_ = list;
     }
     else
@@ -154,30 +154,18 @@ ea::pair<Drawable*, unsigned> SceneDragAndDropMaterial::QueryHoveredGeometry(Sce
     {
         Drawable* drawable = results[0].drawable_;
         const Variant& material = drawable->GetAttribute(MaterialAttr);
-        if (material.GetType() == VAR_RESOURCEREF || material.GetType() == VAR_RESOURCEREFLIST)
-            return {drawable, results[0].subObject_};
+
+        if (material.GetType() == VAR_RESOURCEREF)
+            return {drawable, 0u};
+        else if (material.GetType() == VAR_RESOURCEREFLIST)
+        {
+            // TODO: This is a hack
+            const unsigned numMaterials = material.GetResourceRefList().names_.size();
+            const unsigned materialIndex = ea::min(results[0].subObject_, ea::max(numMaterials, 1u) - 1u);
+            return {drawable, materialIndex};
+        }
     }
     return {nullptr, 0};
 }
-
-#if 0
-void SceneDragAndDropMaterial::AssignMaterialToDrawable(
-    SceneViewPage& scenePage, const ResourceFileDescriptor& desc, const RayQueryResult& result) const
-{
-    ResourceCache* cache = owner_->GetContext()->GetSubsystem<ResourceCache>();
-    if (Material* material = cache->GetResource<Material>(desc.resourceName_))
-    {
-        if (StaticModel* model = result.drawable_->Cast<StaticModel>())
-        {
-            StringVector sv;
-            for (int i = 0; i < model->GetNumGeometries(); i++)
-                sv.push_back(desc.resourceName_);
-
-            const ResourceRefList materialsAttr(Material::GetTypeStatic(), sv);
-            model->SetMaterialsAttr(materialsAttr);
-        }
-    }
-}
-#endif
 
 } // namespace Urho3D
