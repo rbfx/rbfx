@@ -52,13 +52,13 @@ private:
     struct MaterialAssignment
     {
         WeakPtr<Drawable> drawable_;
-        unsigned subObject_{};
+        unsigned materialIndex_{};
         Variant oldMaterial_;
         Variant newMaterial_;
     };
 
     void ClearAssignment();
-    void CreateAssignment(Drawable* drawable, unsigned subObject);
+    void CreateAssignment(Drawable* drawable, unsigned materialIndex);
 
     ea::pair<Drawable*, unsigned> QueryHoveredGeometry(Scene* scene, const Ray& cameraRay);
 
