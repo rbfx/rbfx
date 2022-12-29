@@ -104,9 +104,6 @@
 #endif
 #include "44_RibbonTrailDemo/RibbonTrailDemo.h"
 #if URHO3D_PHYSICS
-#if URHO3D_IK
-#include "45_InverseKinematics/InverseKinematics.h"
-#endif
 #include "46_RaycastVehicle/RaycastVehicleDemo.h"
 #endif
 #include "47_Typography/Typography.h"
