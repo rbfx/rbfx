@@ -958,6 +958,7 @@ void IKSpineSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Twist Target Weight", float, twistWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 90.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Tweak", float, bendTweak_, 0.0f, AM_DEFAULT);
 }
 
 void IKSpineSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -1048,6 +1049,26 @@ void IKSpineSolver::EnsureInitialized()
     maxAngle_ = Clamp(maxAngle_, 0.0f, 180.0f);
 }
 
+float IKSpineSolver::WeightFunction(float x) const
+{
+    if (bendTweak_ == 0.0f)
+        return 1.0f;
+    else if (bendTweak_ > 0.0f)
+    {
+        if (bendTweak_ < 1.0f)
+            return Lerp(1.0f - bendTweak_, 1.0f, x);
+        else
+            return Pow(x, bendTweak_);
+    }
+    else
+    {
+        if (bendTweak_ > -1.0f)
+            return Lerp(1.0f - (-bendTweak_), 1.0f, 1.0f - x);
+        else
+            return Pow(1.0f - x, -bendTweak_);
+    }
+}
+
 void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep)
 {
     EnsureInitialized();
@@ -1064,7 +1085,8 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
     // Solve rotations for full solver weight for position target
     SetOriginalTransforms(frameOfReference);
     const Vector3 baseDirection = frameOfReference.rotation_ * local_.baseDirection_;
-    chain_.Solve(target_->GetWorldPosition(), baseDirection, maxAngle_, settings);
+    const auto weightFunction = [this](float x) { return WeightFunction(x); };
+    chain_.Solve(target_->GetWorldPosition(), baseDirection, maxAngle_, settings, weightFunction);
 
     // Interpolate rotation to apply solver weight
     for (size_t i = 0; i < bones.size(); ++i)
