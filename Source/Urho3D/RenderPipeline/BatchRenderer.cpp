@@ -562,9 +562,11 @@ private:
             return;
 
         const Color ambientColorGamma = camera_.GetEffectiveAmbientColor() * camera_.GetEffectiveAmbientBrightness();
+        const Color& fogColorGamma = camera_.GetEffectiveFogColor();
         drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
             settings_.linearSpaceLighting_ ? ambientColorGamma.GammaToLinear() : ambientColorGamma);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor, camera_.GetEffectiveFogColor());
+        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor,
+            settings_.linearSpaceLighting_ ? fogColorGamma.GammaToLinear() : fogColorGamma);
         drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, GetFogParameter(camera_));
     }
 
