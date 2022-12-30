@@ -368,8 +368,8 @@ void NodeComponentInspector::RenderMenu()
 void NodeComponentInspector::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
     // TODO: Fix me. It's currently too annoying to deal with text edit hotkeys.
-    if (inspectedTab_)
-        ; //inspectedTab_->ApplyHotkeys(hotkeyManager);
+    // if (inspectedTab_)
+    //     inspectedTab_->ApplyHotkeys(hotkeyManager);
 }
 
 }

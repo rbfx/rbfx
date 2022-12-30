@@ -99,6 +99,17 @@ public:
 
     void UpdateProperties();
 
+    /// Attributes.
+    /// @{
+    void SetBoneName(const ea::string& name) { boneName_ = name; OnTreeDirty(); }
+    const ea::string& GetBoneName() const { return boneName_; }
+    void SetTargetName(const ea::string& name) { targetName_ = name; OnTreeDirty(); }
+    const ea::string& GetTargetName() const { return targetName_; }
+
+    void SetRotationOffset(const Quaternion& rotation) { rotationOffset_ = rotation; }
+    const Quaternion& GetRotationOffset() const { return rotationOffset_; }
+    /// @}
+
 private:
     /// Implement IKSolverComponent
     /// @{
@@ -129,6 +140,34 @@ public:
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
+    /// Attributes.
+    /// @{
+    void SetFirstBoneName(const ea::string& name) { firstBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetFirstBoneName() const { return firstBoneName_; }
+    void SetSecondBoneName(const ea::string& name) { secondBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetSecondBoneName() const { return secondBoneName_; }
+    void SetThirdBoneName(const ea::string& name) { thirdBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetThirdBoneName() const { return thirdBoneName_; }
+
+    void SetTargetName(const ea::string& name) { targetName_ = name; OnTreeDirty(); }
+    const ea::string& GetTargetName() const { return targetName_; }
+    void SetBendTargetName(const ea::string& name) { bendTargetName_ = name; OnTreeDirty(); }
+    const ea::string& GetBendTargetName() const { return bendTargetName_; }
+
+    void SetPositionWeight(float weight) { positionWeight_ = weight; }
+    float GetPositionWeight() const { return positionWeight_; }
+    void SetRotationWeight(float weight) { rotationWeight_ = weight; }
+    float GetRotationWeight() const { return rotationWeight_; }
+    void SetBendWeight(float weight) { bendWeight_ = weight; }
+    float GetBendWeight() const { return bendWeight_; }
+    void SetMinAngle(float angle) { minAngle_ = angle; }
+    float GetMinAngle() const { return minAngle_; }
+    void SetMaxAngle(float angle) { maxAngle_ = angle; }
+    float GetMaxAngle() const { return maxAngle_; }
+    void SetBendDirection(const Vector3& direction) { bendDirection_ = direction; }
+    const Vector3& GetBendDirection() const { return bendDirection_; }
+    /// @}
+
 private:
     /// Implement IKSolverComponent
     /// @{
@@ -151,7 +190,7 @@ private:
 
     float positionWeight_{1.0f};
     float rotationWeight_{0.0f};
-    float bendTargetWeight_{1.0f};
+    float bendWeight_{1.0f};
     float minAngle_{0.0f};
     float maxAngle_{180.0f};
     Vector3 bendDirection_{Vector3::FORWARD};
@@ -180,6 +219,45 @@ public:
     void UpdateProperties();
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    /// Attributes.
+    /// @{
+    void SetThighBoneName(const ea::string& name) { thighBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetThighBoneName() const { return thighBoneName_; }
+    void SetCalfBoneName(const ea::string& name) { calfBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetCalfBoneName() const { return calfBoneName_; }
+    void SetHeelBoneName(const ea::string& name) { heelBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetHeelBoneName() const { return heelBoneName_; }
+    void SetToeBoneName(const ea::string& name) { toeBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetToeBoneName() const { return toeBoneName_; }
+
+    void SetTargetName(const ea::string& name) { targetName_ = name; OnTreeDirty(); }
+    const ea::string& GetTargetName() const { return targetName_; }
+    void SetBendTargetName(const ea::string& name) { bendTargetName_ = name; OnTreeDirty(); }
+    const ea::string& GetBendTargetName() const { return bendTargetName_; }
+    void SetGroundTargetName(const ea::string& name) { groundTargetName_ = name; OnTreeDirty(); }
+    const ea::string& GetGroundTargetName() const { return groundTargetName_; }
+
+    void SetPositionWeight(float weight) { positionWeight_ = weight; }
+    float GetPositionWeight() const { return positionWeight_; }
+    void SetRotationWeight(float weight) { rotationWeight_ = weight; }
+    float GetRotationWeight() const { return rotationWeight_; }
+    void SetBendWeight(float weight) { bendWeight_ = weight; }
+    float GetBendWeight() const { return bendWeight_; }
+    void SetMinAngle(float angle) { minKneeAngle_ = angle; }
+    float GetMinAngle() const { return minKneeAngle_; }
+    void SetMaxAngle(float angle) { maxKneeAngle_ = angle; }
+    float GetMaxAngle() const { return maxKneeAngle_; }
+    void SetBaseTiptoe(const Vector2& value) { baseTiptoe_ = value; }
+    const Vector2& GetBaseTiptoe() const { return baseTiptoe_; }
+    void SetGroundTiptoeTweaks(const Vector4& value) { groundTiptoeTweaks_ = value; }
+    const Vector4& GetGroundTiptoeTweaks() const { return groundTiptoeTweaks_; }
+    void SetBendDirection(const Vector3& direction) { bendDirection_ = direction; }
+    const Vector3& GetBendDirection() const { return bendDirection_; }
+
+    void SetHeelGroundOffset(float offset) { heelGroundOffset_ = offset; }
+    float GetHeelGroundOffset() const { return heelGroundOffset_; }
+    /// @}
 
 private:
     /// Implement IKSolverComponent
@@ -228,7 +306,7 @@ private:
 
     float positionWeight_{1.0f};
     float rotationWeight_{0.0f};
-    float bendTargetWeight_{1.0f};
+    float bendWeight_{1.0f};
     float minKneeAngle_{0.0f};
     float maxKneeAngle_{180.0f};
     Vector2 baseTiptoe_{0.5f, 0.0f};
@@ -274,10 +352,26 @@ public:
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
-    /// Return the bone names.
+    /// Attributes.
+    /// @{
+    void SetBoneNames(const StringVector& names) { boneNames_ = names; OnTreeDirty(); }
     const StringVector& GetBoneNames() const { return boneNames_; }
-    /// Return the target name.
+    void SetTargetName(const ea::string& name) { targetName_ = name; OnTreeDirty(); }
     const ea::string& GetTargetName() const { return targetName_; }
+    void SetTwistTargetName(const ea::string& name) { twistTargetName_ = name; OnTreeDirty(); }
+    const ea::string& GetTwistTargetName() const { return twistTargetName_; }
+
+    void SetPositionWeight(float weight) { positionWeight_ = weight; }
+    float GetPositionWeight() const { return positionWeight_; }
+    void SetRotationWeight(float weight) { rotationWeight_ = weight; }
+    float GetRotationWeight() const { return rotationWeight_; }
+    void SetTwistWeight(float weight) { twistWeight_ = weight; }
+    float GetTwistWeight() const { return twistWeight_; }
+    void SetMaxAngle(float angle) { maxAngle_ = angle; }
+    float GetMaxAngle() const { return maxAngle_; }
+    void SetBendTweak(float tweak) { bendTweak_ = tweak; }
+    float GetBendTweak() const { return bendTweak_; }
+    /// @}
 
 protected:
     /// Implement IKSolverComponent
@@ -330,6 +424,40 @@ public:
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
+    /// Attributes.
+    /// @{
+    void SetShoulderBoneName(const ea::string& name) { shoulderBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetShoulderBoneName() const { return shoulderBoneName_; }
+    void SetArmBoneName(const ea::string& name) { armBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetArmBoneName() const { return armBoneName_; }
+    void SetForearmBoneName(const ea::string& name) { forearmBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetForearmBoneName() const { return forearmBoneName_; }
+    void SetHandBoneName(const ea::string& name) { handBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetHandBoneName() const { return handBoneName_; }
+
+    void SetTargetName(const ea::string& name) { targetName_ = name; OnTreeDirty(); }
+    const ea::string& GetTargetName() const { return targetName_; }
+    void SetBendTargetName(const ea::string& name) { bendTargetName_ = name; OnTreeDirty(); }
+    const ea::string& GetBendTargetName() const { return bendTargetName_; }
+
+    void SetPositionWeight(float weight) { positionWeight_ = weight; }
+    float GetPositionWeight() const { return positionWeight_; }
+    void SetRotationWeight(float weight) { rotationWeight_ = weight; }
+    float GetRotationWeight() const { return rotationWeight_; }
+    void SetBendWeight(float weight) { bendWeight_ = weight; }
+    float GetBendWeight() const { return bendWeight_; }
+    void SetMinAngle(float angle) { minElbowAngle_ = angle; }
+    float GetMinAngle() const { return minElbowAngle_; }
+    void SetMaxAngle(float angle) { maxElbowAngle_ = angle; }
+    float GetMaxAngle() const { return maxElbowAngle_; }
+    void SetShoulderWeight(const Vector2& weight) { shoulderWeight_ = weight; }
+    const Vector2& GetShoulderWeight() const { return shoulderWeight_; }
+    void SetBendDirection(const Vector3& direction) { bendDirection_ = direction; }
+    const Vector3& GetBendDirection() const { return bendDirection_; }
+    void SetUpDirection(const Vector3& direction) { upDirection_ = direction; }
+    const Vector3& GetUpDirection() const { return upDirection_; }
+    /// @}
+
 private:
     /// Implement IKSolverComponent
     /// @{
@@ -358,7 +486,7 @@ private:
 
     float positionWeight_{1.0f};
     float rotationWeight_{0.0f};
-    float bendTargetWeight_{1.0f};
+    float bendWeight_{1.0f};
     float minElbowAngle_{0.0f};
     float maxElbowAngle_{180.0f};
     Vector2 shoulderWeight_{};
@@ -396,10 +524,13 @@ public:
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
-    /// Return the bone names.
+    /// Attributes.
+    /// @{
+    void SetBoneNames(const StringVector& names) { boneNames_ = names; OnTreeDirty(); }
     const StringVector& GetBoneNames() const { return boneNames_; }
-    /// Return the target name.
+    void SetTargetName(const ea::string& name) { targetName_ = name; OnTreeDirty(); }
     const ea::string& GetTargetName() const { return targetName_; }
+    /// @}
 
 protected:
     /// Implement IKSolverComponent
@@ -427,6 +558,34 @@ public:
     static void RegisterObject(Context* context);
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    /// Attributes.
+    /// @{
+    void SetNeckBoneName(const ea::string& name) { neckBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetNeckBoneName() const { return neckBoneName_; }
+    void SetHeadBoneName(const ea::string& name) { headBoneName_ = name; OnTreeDirty(); }
+    const ea::string& GetHeadBoneName() const { return headBoneName_; }
+
+    void SetTargetName(const ea::string& name) { targetName_ = name; OnTreeDirty(); }
+    const ea::string& GetTargetName() const { return targetName_; }
+    void SetLookAtTargetName(const ea::string& name) { lookAtTargetName_ = name; OnTreeDirty(); }
+    const ea::string& GetLookAtTargetName() const { return lookAtTargetName_; }
+
+    void SetPositionWeight(float weight) { positionWeight_ = weight; }
+    float GetPositionWeight() const { return positionWeight_; }
+    void SetRotationWeight(float weight) { rotationWeight_ = weight; }
+    float GetRotationWeight() const { return rotationWeight_; }
+    void SetDirectionWeight(float weight) { directionWeight_ = weight; }
+    float GetDirectionWeight() const { return directionWeight_; }
+    void SetLookAtWeight(float weight) { lookAtWeight_ = weight; }
+    float GetLookAtWeight() const { return lookAtWeight_; }
+    void SetEyeDirection(const Vector3& direction) { eyeDirection_ = direction; }
+    const Vector3& GetEyeDirection() const { return eyeDirection_; }
+    void SetEyeOffset(const Vector3& offset) { eyeOffset_ = offset; }
+    const Vector3& GetEyeOffset() const { return eyeOffset_; }
+    void SetNeckWeight(float weight) { neckWeight_ = weight; }
+    float GetNeckWeight() const { return neckWeight_; }
+    /// @}
 
 protected:
     /// Implement IKSolverComponent

@@ -46,6 +46,14 @@ public:
     void PostUpdate(float timeStep) override;
     StringHash GetPostUpdateEvent() const override { return E_SCENEDRAWABLEUPDATEFINISHED; }
 
+    /// Attributes.
+    /// @{
+    void SetSolveWhenPaused(bool value) { solveWhenPaused_ = value; }
+    bool IsSolveWhenPaused() const { return solveWhenPaused_; }
+    void SetContinuousRotation(bool value) { settings_.continuousRotations_ = value; }
+    bool IsContinuousRotation() const { return settings_.continuousRotations_; }
+    /// @}
+
 private:
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
 

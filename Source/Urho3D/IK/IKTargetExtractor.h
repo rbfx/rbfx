@@ -45,7 +45,7 @@ public:
 
     bool IsApplicable(const AssetTransformerInput& input) override;
     bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers) override;
-    bool IsExecutedOnOutput() { return true; }
+    bool IsExecutedOnOutput() override { return true; }
 
 private:
     void ExtractAnimation(Animation* sourceAnimation, Animation* destAnimation, Model* model) const;
