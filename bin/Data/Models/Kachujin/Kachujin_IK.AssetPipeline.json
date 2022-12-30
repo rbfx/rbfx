@@ -4,6 +4,16 @@
 			"_Class": "IKTargetExtractor",
 			"attributes": [
 				{
+					"name": "Extract to Existing File",
+					"type": "Bool",
+					"value": false
+				},
+				{
+					"name": "Extract to New File",
+					"type": "Bool",
+					"value": false
+				},
+				{
 					"name": "New File Name",
 					"type": "String",
 					"value": "*_IK_Only.ani"

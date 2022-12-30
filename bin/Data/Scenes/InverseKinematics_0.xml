@@ -10013,7 +10013,7 @@
 		</node>
 		<node id="185">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Limb Solver [Bend Target Weight]" />
+			<attribute name="Name" value="Limb Solver [Bend Weight]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="14 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -10094,7 +10094,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LimbSolver_BendTargetWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LimbSolver_BendWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -10125,7 +10125,7 @@
 				<attribute name="Bone 2 Name" value="LeftFoot" />
 				<attribute name="Target Name" value="LeftFoot_Target" />
 				<attribute name="Bend Target Name" value="BendTarget" />
-				<attribute name="Bend Target Weight" value="0.691915" />
+				<attribute name="Bend Weight" value="0.691915" />
 			</component>
 			<component type="IKLimbSolver" id="602">
 				<attribute name="Bone 0 Name" value="RightUpLeg" />
@@ -10133,7 +10133,7 @@
 				<attribute name="Bone 2 Name" value="RightFoot" />
 				<attribute name="Target Name" value="RightFoot_Target" />
 				<attribute name="Bend Target Name" value="BendTarget" />
-				<attribute name="Bend Target Weight" value="0.691915" />
+				<attribute name="Bend Weight" value="0.691915" />
 			</component>
 			<node id="186">
 				<attribute name="Is Enabled" value="true" />
@@ -10145,7 +10145,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="603">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
-					<attribute name="Text" value="[Bend Target Weight]" />
+					<attribute name="Text" value="[Bend Weight]" />
 					<attribute name="Width" value="720" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />
@@ -16107,7 +16107,7 @@
 		</node>
 		<node id="213">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Leg Solver [Bend Target Weight]" />
+			<attribute name="Name" value="Leg Solver [Bend Weight]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="14 0 -2.38419e-07" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -16188,7 +16188,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LegSolver_BendTargetWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LegSolver_BendWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -16241,7 +16241,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="705">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
-					<attribute name="Text" value="[Bend Target Weight]" />
+					<attribute name="Text" value="[Bend Weight]" />
 					<attribute name="Width" value="720" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />
@@ -23676,7 +23676,7 @@
 		</node>
 		<node id="261">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Arm Solver [Bend Target Weight]" />
+			<attribute name="Name" value="Arm Solver [Bend Weight]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="14 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -23757,7 +23757,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/ArmSolver_BendTargetWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/ArmSolver_BendWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -23807,7 +23807,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="879">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
-					<attribute name="Text" value="[Bend Target Weight]" />
+					<attribute name="Text" value="[Bend Weight]" />
 					<attribute name="Width" value="720" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />
@@ -30317,7 +30317,7 @@
 		</node>
 		<node id="286">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Spine Solver [Twist Target Weight]" />
+			<attribute name="Name" value="Spine Solver [Twist Weight]" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="14 0 0" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
@@ -30398,7 +30398,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/SpineSolver_TwistTargetWeight.xml" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/SpineSolver_TwistWeight.xml" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -30439,7 +30439,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="951">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
-					<attribute name="Text" value="[Twist Target Weight]" />
+					<attribute name="Text" value="[Twist Weight]" />
 					<attribute name="Width" value="756" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />

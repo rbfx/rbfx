@@ -414,7 +414,7 @@ void IKLimbSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Weight", float, bendWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Direction", Vector3, bendDirection_, Vector3::FORWARD, AM_DEFAULT);
@@ -480,7 +480,7 @@ void IKLimbSolver::EnsureInitialized()
 {
     positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
     rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
-    bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
+    bendWeight_ = Clamp(bendWeight_, 0.0f, 1.0f);
     minAngle_ = Clamp(minAngle_, 0.0f, 180.0f);
     maxAngle_ = Clamp(maxAngle_, minAngle_, 180.0f);
 }
@@ -531,7 +531,7 @@ ea::pair<Vector3, Vector3> IKLimbSolver::CalculateBendDirections(
 {
     IKNode& firstBone = *chain_.GetBeginNode();
 
-    const float bendTargetWeight = bendTarget_ ? bendTargetWeight_ : 0.0f;
+    const float bendTargetWeight = bendTarget_ ? bendWeight_ : 0.0f;
     const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
     const Vector3 bendTargetDirection =
         bendTargetPosition - Lerp(firstBone.position_, toeTargetPosition, 0.5f);
@@ -568,7 +568,7 @@ void IKLegSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Weight", float, bendWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Base Tiptoe", Vector2, baseTiptoe_, Vector2(0.5f, 0.0f), AM_DEFAULT);
@@ -720,7 +720,7 @@ void IKLegSolver::EnsureInitialized()
 
     positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
     rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
-    bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
+    bendWeight_ = Clamp(bendWeight_, 0.0f, 1.0f);
     minKneeAngle_ = Clamp(minKneeAngle_, 0.0f, 180.0f);
     maxKneeAngle_ = Clamp(maxKneeAngle_, 0.0f, 180.0f);
     baseTiptoe_ = VectorClamp(baseTiptoe_, Vector2::ZERO, Vector2::ONE);
@@ -817,7 +817,7 @@ ea::pair<Vector3, Vector3> IKLegSolver::CalculateBendDirections(
 {
     IKNode& thighBone = *legChain_.GetBeginNode();
 
-    const float bendTargetWeight = bendTarget_ ? bendTargetWeight_ : 0.0f;
+    const float bendTargetWeight = bendTarget_ ? bendWeight_ : 0.0f;
     const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
     const Vector3 bendTargetDirection = bendTargetPosition - Lerp(thighBone.position_, toeTargetPosition, 0.5f);
 
@@ -951,12 +951,12 @@ void IKSpineSolver::RegisterObject(Context* context)
     context->AddFactoryReflection<IKSpineSolver>(Category_IK);
 
     URHO3D_ATTRIBUTE_EX("Bone Names", StringVector, boneNames_, OnTreeDirty, Variant::emptyStringVector, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Twist Target Name", ea::string, twistTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Target Name", ea::string, targetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Twist Target Name", ea::string, twistTargetName_, OnTreeDirty, EMPTY_STRING, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Twist Target Weight", float, twistWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Twist Weight", float, twistWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 90.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Tweak", float, bendTweak_, 0.0f, AM_DEFAULT);
 }
@@ -1137,7 +1137,7 @@ void IKArmSolver::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Position Weight", float, positionWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bend Target Weight", float, bendTargetWeight_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Bend Weight", float, bendWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minElbowAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxElbowAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Shoulder Weight", Vector2, shoulderWeight_, Vector2::ZERO, AM_DEFAULT);
@@ -1220,7 +1220,7 @@ void IKArmSolver::EnsureInitialized()
 {
     positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
     rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
-    bendTargetWeight_ = Clamp(bendTargetWeight_, 0.0f, 1.0f);
+    bendWeight_ = Clamp(bendWeight_, 0.0f, 1.0f);
     minElbowAngle_ = Clamp(minElbowAngle_, 0.0f, 180.0f);
     maxElbowAngle_ = Clamp(maxElbowAngle_, 0.0f, 180.0f);
     shoulderWeight_ = VectorClamp(shoulderWeight_, Vector2::ZERO, Vector2::ONE);
@@ -1281,7 +1281,7 @@ ea::pair<Vector3, Vector3> IKArmSolver::CalculateBendDirections(
 {
     IKNode& shoulderBone = *shoulderSegment_.beginNode_;
 
-    const float bendTargetWeight = bendTarget_ ? bendTargetWeight_ : 0.0f;
+    const float bendTargetWeight = bendTarget_ ? bendWeight_ : 0.0f;
     const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
     const Vector3 bendTargetDirection = bendTargetPosition - Lerp(shoulderBone.position_, handTargetPosition, 0.5f);
 
