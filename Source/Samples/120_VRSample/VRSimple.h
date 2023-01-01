@@ -32,7 +32,7 @@ class Scene;
 
 }
 
-/// Simple VR 
+/// Simple VR
 /// This sample demonstrates:
 ///     - Initializing XR
 ///     - Displaying XR with a StereoRenderPipeline

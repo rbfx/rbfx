@@ -237,7 +237,7 @@ namespace Urho3D
         /// Viewport rectangle for right eye, required for multipass single-RT.
         IntRect GetRightEyeRect() const { return useSingleTexture_ ? IntRect(eyeTexWidth_, 0, eyeTexWidth_ * 2, eyeTexHeight_) : IntRect(0, 0, eyeTexWidth_, eyeTexHeight_); }
 
-        /// Return the classification of VR runtime being used, 
+        /// Return the classification of VR runtime being used,
         virtual VRRuntime GetRuntime() const = 0;
         /// Return a string name for the runtime, spaces are not allowed as this will be passed along to shaders.
         virtual const char* GetRuntimeName() const = 0;
@@ -251,9 +251,9 @@ namespace Urho3D
         void UpdateRig(Node* vrRig, float nearDist, float farDist, bool forSinglePass);
         /// Detailed rig update with explicit parameters for non-standardized rig setup.
         void UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* rightEye, float nearDist, float farDist, bool forSinglePass);
-        
+
         /// Called by ConfigureRig to setup hands. Responsible for models and transforms
-        virtual void UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* rightHand) = 0; 
+        virtual void UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* rightHand) = 0;
 
         /// Initializes the VR system providing a manifest.
         virtual bool Initialize(const ea::string& manifestPath) = 0;

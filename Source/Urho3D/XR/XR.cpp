@@ -51,10 +51,6 @@
 
 #include <iostream>
 
-#ifdef URHO3D_D3D9
-    #error D3D9 is not supported for openXR
-#endif
-
 #ifdef URHO3D_D3D11
     #include "../Graphics/Direct3D11/D3D11GraphicsImpl.h"
     #include <d3d11.h>
@@ -347,7 +343,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 #endif
     };
 
-    OpenXR::OpenXR(Context* ctx) : 
+    OpenXR::OpenXR(Context* ctx) :
         BaseClassName(ctx),
         instance_(0),
         session_(0),
@@ -379,7 +375,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         for (auto& x : extensions)
             x = { XR_TYPE_EXTENSION_PROPERTIES };
         xrEnumerateInstanceExtensionProperties(nullptr, extensions.size(), &extCt, extensions.data());
-        
+
         for (auto e : extensions)
             extensions_.push_back(ea::string(e.extensionName));
     }
@@ -416,9 +412,9 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 #elif defined(URHO3D_OPENGL)
     #ifdef GL_ES_VERSION_2_0
             activeExt.push_back(XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME);
-    #else   
+    #else
             activeExt.push_back(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
-    #endif  
+    #endif
 #endif
 
         bool supportsDebug = false;
@@ -646,7 +642,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
 #if URHO3D_D3D11
         XrGraphicsBindingD3D11KHR binding = { XR_TYPE_GRAPHICS_BINDING_D3D11_KHR };
-        binding.device = graphics->GetImpl()->GetDevice();        
+        binding.device = graphics->GetImpl()->GetDevice();
         sessionCreateInfo.next = &binding;
 
         XrGraphicsRequirementsD3D11KHR requisite = { XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR };
@@ -663,12 +659,12 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
         binding.hDC = wglGetCurrentDC();
         binding.hGLRC = wglGetCurrentContext();
-            
+
         sessionCreateInfo.next = &binding;
     #else
         #error Incomplete OpenXR intialization, require Linux/Android+GLES
     #endif
-#endif        
+#endif
 
         errCode = xrCreateSession(instance_, &sessionCreateInfo, &session_);
         XR_COMMON_ER("session");
@@ -696,7 +692,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         viewSpaceInfo.poseInReferenceSpace.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
         viewSpaceInfo.poseInReferenceSpace.position = { 0.0f, 0.0f, 0.0f };
         errCode = xrCreateReferenceSpace(session_, &viewSpaceInfo, &viewSpace_);
-        XR_COMMON_ER("view reference space");        
+        XR_COMMON_ER("view reference space");
 
         if (manifest_)
             BindActions(manifest_);
@@ -1064,7 +1060,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         if (IsLive())
         {
 #define CHECKVIEW(EYE) (views_[EYE].fov.angleLeft == 0 || views_[EYE].fov.angleRight == 0 || views_[EYE].fov.angleUp == 0 || views_[EYE].fov.angleDown == 0)
-            
+
             XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
             xrReleaseSwapchainImage(swapChain_, &releaseInfo);
             if (depthChain_)
@@ -1156,7 +1152,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             ea::string setLocalName = GetSubsystem<Localization>()->Get(setName);
             strncpy(setCreateInfo.actionSetName, setName.c_str(), XR_MAX_ACTION_SET_NAME_SIZE);
             strncpy(setCreateInfo.localizedActionSetName, setLocalName.c_str(), XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
-            
+
             XrActionSet createSet = { };
             auto errCode = xrCreateActionSet(instance_, &setCreateInfo, &createSet);
             if (errCode != XR_SUCCESS)
@@ -1310,7 +1306,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     xrStringToPath(instance_, bindStr.c_str(), &bindPath);
 
                     XrActionSuggestedBinding b = { };
-                    
+
                     for (auto found : actionSet->bindings_)
                     {
                         if (found->path_.comparei(action) == 0)
@@ -1521,7 +1517,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 mask.vertices = nullptr;
                 mask.indexCountOutput = 0;
                 mask.vertexCountOutput = 0;
-                
+
                 xrGetVisibilityMaskKHR(session_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
 
                 ea::vector<XrVector2f> verts;
@@ -1752,7 +1748,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 }
                 else
                     bone = node->GetChild(wandModels_[hand].properties_[i].nodeName, true);
-                
+
                 if (bone != nullptr)
                 {
                     // we have a 1,1,-1 scale at the root to flip gltf coordinate system to ours,
@@ -1824,7 +1820,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         auto v = uxrGetVec(handAims_[hand]->location_.pose.position);
         return Ray(v, (q * Vector3(0, 0, 1)).Normalized());
     }
-    
+
     void OpenXR::GetHandVelocity(VRHand hand, Vector3* linear, Vector3* angular) const
     {
         if (hand == VR_HAND_NONE)
@@ -1832,7 +1828,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
         if (!handGrips_[hand])
             return;
-        
+
         if (linear && handGrips_[hand]->velocity_.velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT)
             *linear = uxrGetVec(handGrips_[hand]->velocity_.linearVelocity);
         if (angular && handGrips_[hand]->velocity_.velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT)
@@ -2149,7 +2145,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             tex->SetData(&image, true);
             return tex;
         }
-        
+
         return nullptr;
     }
 

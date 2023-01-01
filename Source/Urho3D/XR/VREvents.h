@@ -26,7 +26,7 @@
 
 namespace Urho3D
 {
- 
+
 /// VR session has started.
 URHO3D_EVENT(E_VRSESSIONSTART, VRSessionStart)
 {
@@ -97,5 +97,5 @@ URHO3D_EVENT(E_VRHITWALL, VRHitwall)
     URHO3D_PARAM(P_BODY, Body);         // RigidBody pointer
     URHO3D_PARAM(P_NORMAL, Normal);     // Vector3
 }
-    
+
 }

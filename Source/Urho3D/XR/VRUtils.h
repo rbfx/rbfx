@@ -26,7 +26,7 @@
 
 namespace Urho3D
 {
-    
+
     /// Calculates a motion vector based on the head. Optionally locked to XZ plane or normalized (which means no diagonal turbo speed).
     URHO3D_API Vector3 SmoothLocomotionHead(Node* rigNode, SharedPtr<XRBinding> joystickBinding, float deadZone, bool xzPlanar = true, bool normalized = true);
 
@@ -44,7 +44,7 @@ namespace Urho3D
     /// Wraps treating the joystick as a D-PAD, ie. such as to do snap turning or constant rate turning.
     /// Same return value conventions as TrackpadAsDPad without a Center.
     URHO3D_API int JoystickAsDPad(SharedPtr<XRBinding> joystickPosition, float centerDeadzone);
-    
+
     /// Wraps treating the trackpad as 2 buttons, Up and Inside are used unless upDownMode in which case Up and Down are used. Much the same as DPAD but eliminates checking for left vs right.
     URHO3D_API int TrackpadAsTwoButton(SharedPtr<XRBinding> trackpadPosition, SharedPtr<XRBinding> trackpadClick, float centerDeadZoneRadius, VRHand hand, bool upDownMode = false, bool* trackPadDown = nullptr);
 
@@ -65,7 +65,7 @@ namespace Urho3D
     URHO3D_API bool ButtonLongPress(int targetCode, int* currentCode, float* time, bool* alreadyDone, int nextCode, float deltaTime, float holdForDuration, float* fraction = nullptr);
 
     /// Similar button held but if the code changes before the time passes it will return 1, and 2 if the duration has elapsed.
-    /// Returns 1 on a short press and 2 on a long press. 
+    /// Returns 1 on a short press and 2 on a long press.
     /// Optional output to detect if inside long-press (ie. for UI purposes float fraction = (time - shortPressWindow) / (holdForDuration - shortPressWindow)).
     /// Optional output to fraction within the span between the shortPressWindow and holdForDuration.
     /// If short press window is > 0 then that will be the time duration after which short press is no longer possible.
@@ -144,14 +144,14 @@ namespace Urho3D
         }
 
         /// Check for a long press.
-        bool CheckLongPress(int newCode, float deltaTime) 
-        { 
+        bool CheckLongPress(int newCode, float deltaTime)
+        {
             return ButtonLongPress(targetCode_, &currentCode_, &time_, &alreadyDone_, newCode, deltaTime, holdDuration_, &fraction_);
         }
 
         /// Check for a dual input that is short or long pressed.
-        int CheckShortOrLongPress(int newCode, float deltaTime) 
-        { 
+        int CheckShortOrLongPress(int newCode, float deltaTime)
+        {
             return ButtonShortOrLongPress(targetCode_, &currentCode_, &time_, &alreadyDone_, newCode, deltaTime, holdDuration_, shortPressWindow_, nullptr, &fraction_);
         }
 

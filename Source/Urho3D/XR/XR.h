@@ -145,7 +145,7 @@ protected:
     unsigned depthImgCount_{ };
 
     // Pointless head-space.
-    XrSpace headSpace_ = { };   
+    XrSpace headSpace_ = { };
     XrSpace viewSpace_ = { };
     /// Location tracking of the head.
     XrSpaceLocation headLoc_ = { XR_TYPE_SPACE_LOCATION };

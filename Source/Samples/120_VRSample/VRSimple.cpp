@@ -219,7 +219,7 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
         XMLFile file(GetContext());
         auto rootElem = file.GetOrCreateRoot("scene");
         scene_->SaveXML(rootElem);
-        
+
         file.SaveFile(AddTrailingSlash(fs->GetProgramDir()) + "vrsimple_scene.xml");
     }
 
@@ -243,7 +243,7 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
                 xr->UpdateHands(scene_, rig, rig->GetChild("Left_Hand"), rig->GetChild("Right_Hand"));
 
                 auto dbg = scene_->GetOrCreateComponent<DebugRenderer>();
-                
+
                 // this should show where the tracking volume centroid is
                 dbg->AddNode(rig, 1.0f, false);
 
@@ -289,7 +289,7 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
                     if (rightTrigger->IsChanged()) // would work that anyways because of power * rightHandTrigger
                         xr->SetVignette(rightTrigger->GetFloat() > 0.5f, Color(25.0f, 0.0f, 0.0f, 0.0f), Color(0.25f, 0.0f, 0.0f, 1.0f), rightTrigger->GetFloat());
                 }
-            }            
+            }
         }
     }
 }

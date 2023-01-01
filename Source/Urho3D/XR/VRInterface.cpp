@@ -136,10 +136,10 @@ void VRInterface::PrepareRig(Node* headRoot)
 {
     headRoot->SetWorldPosition(Vector3(0, 0, 0));
     headRoot->SetWorldRotation(Quaternion::IDENTITY);
-    auto head = headRoot->CreateChild("Head", LOCAL);
+    auto head = headRoot->CreateChild("Head");
 
-    auto leftEye = head->CreateChild("Left_Eye", LOCAL);
-    auto rightEye = head->CreateChild("Right_Eye", LOCAL);
+    auto leftEye = head->CreateChild("Left_Eye");
+    auto rightEye = head->CreateChild("Right_Eye");
 
     auto leftCam = leftEye->GetOrCreateComponent<Camera>();
     auto rightCam = rightEye->GetOrCreateComponent<Camera>();
@@ -148,8 +148,8 @@ void VRInterface::PrepareRig(Node* headRoot)
     rightCam->SetFlipVertical(true);
 #endif
 
-    auto leftHand = headRoot->CreateChild("Left_Hand", LOCAL);
-    auto rightHand = headRoot->CreateChild("Right_Hand", LOCAL);
+    auto leftHand = headRoot->CreateChild("Left_Hand");
+    auto rightHand = headRoot->CreateChild("Right_Hand");
 }
 
 void VRInterface::UpdateRig(Node* vrRig, float nearDist, float farDist, bool forSinglePass)
@@ -186,8 +186,8 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
 
     if (head == nullptr)
     {
-        auto headRoot = scene->CreateChild("VRRig", LOCAL);
-        head = headRoot->CreateChild("Head", LOCAL);
+        auto headRoot = scene->CreateChild("VRRig");
+        head = headRoot->CreateChild("Head");
     }
 
     // no textures? create them now?
@@ -199,9 +199,9 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
     head->SetTransform(GetHeadTransform());
 
     if (leftEye == nullptr)
-        leftEye = head->CreateChild("Left_Eye", LOCAL);
+        leftEye = head->CreateChild("Left_Eye");
     if (rightEye == nullptr)
-        rightEye = head->CreateChild("Right_Eye", LOCAL);
+        rightEye = head->CreateChild("Right_Eye");
 
     auto leftCam = leftEye->GetOrCreateComponent<Camera>();
     auto rightCam = rightEye->GetOrCreateComponent<Camera>();

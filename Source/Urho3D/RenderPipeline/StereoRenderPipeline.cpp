@@ -69,7 +69,7 @@ public:
         inter = Max(inter, frustums_[1].IsInside(box));
         return inter;
     }
-    
+
     virtual void TestDrawables(Drawable** start, Drawable** end, bool inside)
     {
         while (start != end)
@@ -331,7 +331,7 @@ void StereoRenderPipelineView::SetSettings(const RenderPipelineSettings& setting
     settings_.Validate();
     settings_.AdjustToSupported(context_);
     settings_.PropagateImpliedSettings();
-    
+
     settingsHash_ = settings_.CalculatePipelineStateHash();
     settingsDirty_ = true;
 }
@@ -516,7 +516,7 @@ void StereoRenderPipelineView::Render()
     const Color effectiveFogColor = settings_.sceneProcessor_.linearSpaceLighting_
         ? fogColorInGammaSpace.GammaToLinear()
         : fogColorInGammaSpace;
-    
+
     renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
 
     // JS: doesn't work because it's explicitly setting the output target because it's not what it expected
@@ -596,7 +596,7 @@ void StereoRenderPipelineView::Render()
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
     if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())
     {
-        renderBufferManager_->SetOutputRenderTargers();
+        renderBufferManager_->SetOutputRenderTargets();
         for (int i = 0; i < 2; ++i)
         {
             graphics_->SetViewport(i == 0 ? IntRect(0, 0, outSize.x_ / 2, outSize.y_) : IntRect(outSize.x_ / 2, 0, outSize.x_, outSize.y_));

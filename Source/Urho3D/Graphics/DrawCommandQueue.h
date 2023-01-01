@@ -301,10 +301,6 @@ public:
         currentDrawCommand_.baseVertexIndex_ = 0;
         currentDrawCommand_.instanceStart_ = instanceStart;
         currentDrawCommand_.instanceCount_ = instanceCount;
-#ifdef URHO3D_D3D9
-        currentDrawCommand_.vertexStart_ = vertexStart;
-        currentDrawCommand_.vertexCount_ = vertexCount;
-#endif
         drawCommands_.push_back(currentDrawCommand_);
     }
 
