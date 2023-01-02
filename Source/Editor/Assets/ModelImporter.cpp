@@ -176,8 +176,9 @@ bool ModelImporter::ImportFBX(const ea::string& fileName,
     auto fs = context_->GetSubsystem<FileSystem>();
     const auto toolManager = GetToolManager();
 
-    const ea::string tempGltfFile = input.tempPath_ + "model.gltf";
+    const ea::string tempGltfFile = input.tempPath_ + "model.glb";
     const StringVector arguments{
+        "--binary",
         "--input",
         fileName,
         "--output",

@@ -614,8 +614,6 @@ void Project::Render()
     if (areGlobalHotkeysEnabled_)
         hotkeyManager_->InvokeFor(this);
 
-    assetManager_->Update();
-
     dockspaceId_ = ui::GetID("Root");
     ui::DockSpace(dockspaceId_);
 
@@ -627,6 +625,8 @@ void Project::Render()
         assetManagerInitialized_ = true;
         assetManager_->Initialize();
     }
+
+    assetManager_->Update();
 
     bool initialFocusPending = false;
     if (!initialized_ && initializationGuard_.expired())
