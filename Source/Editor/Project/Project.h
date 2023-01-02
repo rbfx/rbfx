@@ -233,6 +233,7 @@ private:
 
     /// Project properties
     /// @{
+    const bool isHeadless_{};
     const unsigned saveDelayMs_{3000};
 
     const ea::string projectPath_;

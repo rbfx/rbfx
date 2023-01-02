@@ -169,6 +169,7 @@ ImFont* Project::GetMonoFont()
 
 Project::Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath)
     : Object(context)
+    , isHeadless_(context->GetSubsystem<Engine>()->IsHeadless())
     , projectPath_(GetSanitizedPath(projectPath + "/"))
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
@@ -199,7 +200,8 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     context_->RemoveSubsystem<PluginManager>();
     context_->RegisterSubsystem(pluginManager_);
 
-    ui::GetIO().IniFilename = uiIniPath_.c_str();
+    if (!isHeadless_)
+        ui::GetIO().IniFilename = uiIniPath_.c_str();
 
     InitializeHotkeys();
     EnsureDirectoryInitialized();
@@ -609,16 +611,19 @@ void Project::Render()
         {ImGuiCol_TabUnfocusedActive, ImVec4(0.26f, 0.26f + tint, 0.26f, 1.00f)},
     }, isHighlightEnabled_};
 
-    hotkeyManager_->Update();
-    hotkeyManager_->InvokeFor(hotkeyManager_);
-    if (areGlobalHotkeysEnabled_)
-        hotkeyManager_->InvokeFor(this);
+    if (!isHeadless_)
+    {
+        hotkeyManager_->Update();
+        hotkeyManager_->InvokeFor(hotkeyManager_);
+        if (areGlobalHotkeysEnabled_)
+            hotkeyManager_->InvokeFor(this);
 
-    dockspaceId_ = ui::GetID("Root");
-    ui::DockSpace(dockspaceId_);
+        dockspaceId_ = ui::GetID("Root");
+        ui::DockSpace(dockspaceId_);
 
-    if (pendingResetLayout_)
-        ResetLayout();
+        if (pendingResetLayout_)
+            ResetLayout();
+    }
 
     if (!assetManagerInitialized_ && !pluginManager_->IsReloadPending())
     {
@@ -637,23 +642,26 @@ void Project::Render()
         OnInitialized(this);
     }
 
-    for (EditorTab* tab : tabs_)
-        tab->PreRenderUpdate();
-    for (EditorTab* tab : tabs_)
-        tab->Render();
-    if (focusedTab_)
-        focusedTab_->ApplyHotkeys(hotkeyManager_);
-    for (EditorTab* tab : tabs_)
-        tab->PostRenderUpdate();
-
-    closeDialog_->Render();
-
-    if (initialFocusPending)
+    if (!isHeadless_)
     {
         for (EditorTab* tab : tabs_)
+            tab->PreRenderUpdate();
+        for (EditorTab* tab : tabs_)
+            tab->Render();
+        if (focusedTab_)
+            focusedTab_->ApplyHotkeys(hotkeyManager_);
+        for (EditorTab* tab : tabs_)
+            tab->PostRenderUpdate();
+
+        closeDialog_->Render();
+
+        if (initialFocusPending)
         {
-            if (tab->IsOpen() && tab->GetFlags().Test(EditorTabFlag::FocusOnStart))
-                tab->Focus(true);
+            for (EditorTab* tab : tabs_)
+            {
+                if (tab->IsOpen() && tab->GetFlags().Test(EditorTabFlag::FocusOnStart))
+                    tab->Focus(true);
+            }
         }
     }
 

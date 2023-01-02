@@ -215,6 +215,8 @@ void Editor::Start()
     auto input = GetSubsystem<Input>();
     auto fs = GetSubsystem<FileSystem>();
 
+    const bool isHeadless = engine_->IsHeadless();
+
     tempJsonPath_ = engine_->GetAppPreferencesDir() + "Temp.json";
     settingsJsonPath_ = engine_->GetAppPreferencesDir() + "Settings.json";
 
@@ -231,27 +233,30 @@ void Editor::Start()
     engine_->SetAutoExit(false);
 
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
-    auto console = engine_->CreateConsole();
-    console->SetAutoVisibleOnError(false);
+    if (auto console = engine_->CreateConsole())
+        console->SetAutoVisibleOnError(false);
     fs->SetExecuteConsoleCommands(false);
 
     // Hud will be rendered manually.
-    auto debugHud = engine_->CreateDebugHud();
-    debugHud->SetMode(DEBUGHUD_SHOW_NONE);
+    if (auto debugHud = engine_->CreateDebugHud())
+        debugHud->SetMode(DEBUGHUD_SHOW_NONE);
 
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { Render(); });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateProjectStatus(); });
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
     SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
 
-    InitializeUI();
+    if (!isHeadless)
+    {
+        InitializeUI();
+
+        // Avoid creating imgui.ini if project with its own imgui.ini is about to be opened.
+        if (!pendingOpenProject_.empty())
+            ui::GetIO().IniFilename = nullptr;
+    }
 
     if (!pendingOpenProject_.empty())
-    {
-        // Avoid creating imgui.ini
-        ui::GetIO().IniFilename = nullptr;
         OpenProject(pendingOpenProject_);
-    }
 }
 
 void Editor::Stop()
@@ -308,6 +313,24 @@ ea::string Editor::GetWindowTitle() const
 
 void Editor::Render()
 {
+    auto engine = GetSubsystem<Engine>();
+    const bool isHeadless = engine->IsHeadless();
+    if (isHeadless)
+    {
+        // Exit immediately if requested.
+        if (exiting_)
+        {
+            context_->GetSubsystem<WorkQueue>()->Complete(0);
+            engine_->Exit();
+        }
+
+        // In headless mode only run Project::Render which acts as main loop.
+        if (project_)
+            project_->Render();
+
+        return;
+    }
+
     ImGuiContext& g = *GImGui;
 
     const bool hasToolbar = project_ != nullptr;
@@ -552,6 +575,9 @@ void Editor::RenderAboutDialog()
 
 void Editor::UpdateProjectStatus()
 {
+    auto engine = GetSubsystem<Engine>();
+    const bool isHeadless = engine->IsHeadless();
+
     if (pendingCloseProject_)
     {
         if (project_)
@@ -584,7 +610,8 @@ void Editor::UpdateProjectStatus()
         CloseProject();
 
         // Reset SystemUI so that imgui loads it's config proper.
-        InitializeUI();
+        if (!isHeadless)
+            InitializeUI();
 
         project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_);
         project_->OnShallowSaved.Subscribe(this, &Editor::SaveTempJson);
