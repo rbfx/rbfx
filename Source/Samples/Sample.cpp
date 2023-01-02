@@ -63,7 +63,7 @@ void Sample::Start()
 {
     auto* input = context_->GetSubsystem<Input>();
 
-    if (GetPlatform() == "Android" || GetPlatform() == "iOS")
+    if (GetPlatform() == PlatformId::Android || GetPlatform() == PlatformId::iOS)
         // On mobile platform, enable touch by adding a screen joystick
         InitTouchInput();
     else if (GetSubsystem<Input>()->GetNumJoysticks() == 0)

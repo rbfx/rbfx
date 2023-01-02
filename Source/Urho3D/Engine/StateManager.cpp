@@ -261,7 +261,7 @@ void ApplicationState::InitMouseMode()
 {
     Input* input = GetSubsystem<Input>();
 
-    if (GetPlatform() != "Web")
+    if (GetPlatform() != PlatformId::Web)
     {
         input->SetMouseMode(mouseMode_);
 

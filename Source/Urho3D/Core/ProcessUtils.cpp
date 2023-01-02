@@ -432,27 +432,60 @@ ea::string GetConsoleInput()
 #endif
 }
 
-ea::string GetPlatform()
+PlatformId GetPlatform()
 {
 #if defined(__ANDROID__)
-    return "Android";
+    return PlatformId::Android;
 #elif defined(IOS)
-    return "iOS";
+    return PlatformId::iOS;
 #elif defined(TVOS)
-    return "tvOS";
+    return PlatformId::tvOS;
 #elif defined(__APPLE__)
-    return "macOS";
+    return PlatformId::MacOS;
+#elif UWP
+    return PlatformId::UWP;
 #elif defined(_WIN32)
-    return "Windows";
+    return PlatformId::Windows;
 #elif defined(RPI)
-    return "Raspberry Pi";
+    return PlatformId::RaspberryPi;
 #elif defined(__EMSCRIPTEN__)
-    return "Web";
+    return PlatformId::Web;
 #elif defined(__linux__)
-    return "Linux";
+    return PlatformId::Linux;
 #else
-    return "(?)";
+    return PlatformId::Unknown;
 #endif
+}
+
+ea::string GetPlatformName()
+{
+    switch (GetPlatform())
+    {
+    case PlatformId::Windows:
+        return "Windows";
+    case PlatformId::UWP:
+        return "UWP";
+
+    case PlatformId::Linux:
+        return "Linux";
+    case PlatformId::Android:
+        return "Android";
+    case PlatformId::RaspberryPi:
+        return "Raspberry Pi";
+
+    case PlatformId::MacOS:
+        return "macOS";
+    case PlatformId::iOS:
+        return "iOS";
+    case PlatformId::tvOS:
+        return "tvOS";
+
+    case PlatformId::Web:
+        return "Web";
+
+    default:
+        return "(?)";
+    }
 }
 
 unsigned GetNumPhysicalCPUs()
