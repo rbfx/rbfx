@@ -23,7 +23,6 @@
 #pragma once
 
 #include <Urho3D/Engine/Application.h>
-#include <Urho3D/Engine/ApplicationSettings.h>
 
 namespace Urho3D
 {
@@ -40,10 +39,6 @@ public:
     void Start() override;
     void Stop() override;
     /// @}
-
-protected:
-    /// Application settings for all platforms.
-    SharedPtr<ApplicationSettings> settings_;
 };
 
 }

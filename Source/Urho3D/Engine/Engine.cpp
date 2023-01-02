@@ -39,6 +39,7 @@
 #include "../Engine/EngineDefs.h"
 #include "../Engine/StateManager.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/FreeFlyController.h"
@@ -99,7 +100,6 @@
 #include "../Core/CommandLine.h"
 
 #include "../DebugNew.h"
-#include "Urho3D/IO/ConfigFile.h"
 
 #if defined(_MSC_VER) && defined(_DEBUG)
 // From dbgint.h
@@ -120,17 +120,6 @@ typedef struct _CrtMemBlockHeader
 
 namespace Urho3D
 {
-Engine::EngineParameterDesc& Engine::EngineParameterDesc::SetDefault(Variant value)
-{
-    defaultValue_ = ea::move(value);
-    return *this;
-}
-
-Engine::EngineParameterDesc& Engine::EngineParameterDesc::OverrideInConfig()
-{
-    configOverride_ = true;
-    return *this;
-}
 
 extern const char* logLevelNames[];
 
@@ -158,6 +147,7 @@ Engine::Engine(Context* context) :
     audioPaused_(false)
 {
     PopulateDefaultParameters();
+
     // Register self as a subsystem
     context_->RegisterSubsystem(this);
 
@@ -225,7 +215,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
     URHO3D_PROFILE("InitEngine");
 
-    parameters_ = parameters;
+    engineParameters_->DefineVariables(parameters);
     auto* fileSystem = GetSubsystem<FileSystem>();
 
     // Start logging
@@ -239,13 +229,17 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     }
 
     // Initialize app preferences directory
-    appPreferencesDir_ = fileSystem->GetAppPreferencesDir(
-        GetParameter(EP_ORGANIZATION_NAME).GetString(), GetParameter(EP_APPLICATION_NAME).GetString());
+    appPreferencesDir_ = GetParameter(EP_APPLICATION_PREFERENCES_DIR).GetString();
+    if (appPreferencesDir_.empty())
+    {
+        const ea::string& organizationName = GetParameter(EP_ORGANIZATION_NAME).GetString();
+        const ea::string& applicationName = GetParameter(EP_APPLICATION_NAME).GetString();
+        appPreferencesDir_ = fileSystem->GetAppPreferencesDir(organizationName, applicationName);
+    }
     if (!appPreferencesDir_.empty())
         fileSystem->CreateDir(appPreferencesDir_);
-    parameterDesc_[EP_SHADER_CACHE_DIR].SetDefault(appPreferencesDir_);
 
-    // Initialize 
+    // Initialize
     auto* vfs = GetSubsystem<VirtualFileSystem>();
     vfs->UnmountAll();
     vfs->MountDefault();
@@ -327,6 +321,17 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
         graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
 
+        SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& eventData)
+        {
+            using namespace ScreenMode;
+
+            SetParameter(EP_WINDOW_WIDTH, eventData[P_WIDTH].GetInt());
+            SetParameter(EP_WINDOW_HEIGHT, eventData[P_HEIGHT].GetInt());
+            SetParameter(EP_FULL_SCREEN, eventData[P_FULLSCREEN].GetBool());
+            SetParameter(EP_BORDERLESS, eventData[P_BORDERLESS].GetBool());
+            SetParameter(EP_MONITOR, eventData[P_MONITOR].GetInt());
+        });
+
 #ifdef URHO3D_OPENGL
         if (HasParameter(EP_FORCE_GL2))
             graphics->SetForceGL2(GetParameter(EP_FORCE_GL2).GetBool());
@@ -355,7 +360,8 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         if (HasParameter(EP_WINDOW_MAXIMIZE) && GetParameter(EP_WINDOW_MAXIMIZE).GetBool())
             graphics->Maximize();
 
-        graphics->SetShaderCacheDir(GetParameter(EP_SHADER_CACHE_DIR).GetString() + "shadercache/");
+        const ea::string shaderCacheDir = appPreferencesDir_ + GetParameter(EP_SHADER_CACHE_DIR).GetString();
+        graphics->SetShaderCacheDir(shaderCacheDir);
 
         if (HasParameter(EP_DUMP_SHADERS))
             graphics->BeginDumpShaders(GetParameter(EP_DUMP_SHADERS).GetString());
@@ -698,15 +704,12 @@ void Engine::SetNextTimeStep(float seconds)
 
 void Engine::SetParameter(const ea::string& name, const Variant& value)
 {
-    if (!value.IsEmpty())
-        parameters_[name] = value;
-    else
-        parameters_.erase(name);
+    engineParameters_->SetVariable(name, value);
 }
 
 bool Engine::HasParameter(const ea::string& name) const
 {
-    return parameters_.contains(name);
+    return engineParameters_->HasVariable(name);
 }
 
 void Engine::Exit()
@@ -1082,17 +1085,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
 
 const Variant& Engine::GetParameter(const ea::string& name) const
 {
-    const auto iter = parameters_.find(name);
-    if (iter != parameters_.end() && !iter->second.IsEmpty())
-        return iter->second;
-    const auto descIter = parameterDesc_.find(name);
-    return descIter != parameterDesc_.end() ? descIter->second.defaultValue_ : Variant::EMPTY;
-}
-
-const Variant& Engine::GetParameter(const StringVariantMap& parameters, const ea::string& name, const Variant& defaultValue)
-{
-    const auto iter = parameters.find(name);
-    return iter != parameters.end() ? iter->second : defaultValue;
+    return engineParameters_->GetVariable(name);
 }
 
 void Engine::LoadConfigFiles()
@@ -1101,28 +1094,8 @@ void Engine::LoadConfigFiles()
     if (configName.empty())
         return;
 
-    const auto* vfs = GetSubsystem<VirtualFileSystem>();
-
-    // Populate default values in config file
-    ConfigFile mergedConfig(context_);
-    for (auto& keyValue : parameterDesc_)
-    {
-        if (keyValue.second.configOverride_)
-        {
-            mergedConfig.SetDefaultValue(keyValue.first, keyValue.second.defaultValue_);
-            if (HasParameter(keyValue.first))
-                mergedConfig.SetValue(keyValue.first, GetParameter(keyValue.first));
-        }
-    }
-
-    // Merge with values from config files.
-    mergedConfig.MergeFile(configName);
-
-    // Set parameters from merged values.
-    for (auto& keyValue : mergedConfig.GetValues())
-    {
-        parameters_[keyValue.first] = keyValue.second;
-    }
+    engineParameters_->LoadDefaults(configName, ApplicationFlavor::Platform);
+    engineParameters_->LoadOverrides("conf://" + configName);
 }
 
 void Engine::SaveConfigFile()
@@ -1131,79 +1104,71 @@ void Engine::SaveConfigFile()
     if (configName.empty())
         return;
 
-    // Populate values in config file
-    ConfigFile config(context_);
-    for (auto& keyValue : parameterDesc_)
-    {
-        if (keyValue.second.configOverride_)
-        {
-            config.SetDefaultValue(keyValue.first, keyValue.second.defaultValue_);
-            config.SetValue(keyValue.first, GetParameter(keyValue.first));
-        }
-    }
-
-    config.SaveDiffFile(configName);
+    engineParameters_->SaveOverrides("conf://" + configName, ApplicationFlavor::Platform);
 }
 
 void Engine::PopulateDefaultParameters()
 {
-    parameterDesc_[EP_APPLICATION_NAME].SetDefault("Unspecified Application");
-    parameterDesc_[EP_AUTOLOAD_PATHS].SetDefault("Autoload");
-    parameterDesc_[EP_CONFIG_NAME].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_BORDERLESS].SetDefault(false);
-    parameterDesc_[EP_DUMP_SHADERS].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_ENGINE_AUTO_LOAD_SCRIPTS].SetDefault(false);
-    parameterDesc_[EP_ENGINE_CLI_PARAMETERS].SetDefault(true);
-    parameterDesc_[EP_EXTERNAL_WINDOW].SetDefault(static_cast<void*>(nullptr));
-    parameterDesc_[EP_FLUSH_GPU].SetDefault(false);
-    parameterDesc_[EP_FORCE_GL2].SetDefault(false);
-    parameterDesc_[EP_FRAME_LIMITER].SetDefault(true).OverrideInConfig();
-    parameterDesc_[EP_FULL_SCREEN].SetDefault(true).OverrideInConfig();
-    parameterDesc_[EP_GPU_DEBUG].SetDefault(false);
-    parameterDesc_[EP_HEADLESS].SetDefault(false);
-    parameterDesc_[EP_HIGH_DPI].SetDefault(true);
-    parameterDesc_[EP_LOG_LEVEL].SetDefault(LOG_TRACE);
-    parameterDesc_[EP_LOG_NAME].SetDefault("Urho3D.log");
-    parameterDesc_[EP_LOG_QUIET].SetDefault(false);
-    parameterDesc_[EP_LOW_QUALITY_SHADOWS].SetDefault(false).OverrideInConfig();
-    parameterDesc_[EP_MAIN_PLUGIN].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_MATERIAL_QUALITY].SetDefault(QUALITY_HIGH).OverrideInConfig();
-    parameterDesc_[EP_MONITOR].SetDefault(0).OverrideInConfig();
-    parameterDesc_[EP_MULTI_SAMPLE].SetDefault(1);
-    parameterDesc_[EP_ORGANIZATION_NAME].SetDefault("Urho3D Rebel Fork");
-    parameterDesc_[EP_ORIENTATIONS].SetDefault("LandscapeLeft LandscapeRight");
-    parameterDesc_[EP_PACKAGE_CACHE_DIR].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_PLUGINS].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_REFRESH_RATE].SetDefault(0);
-    parameterDesc_[EP_RENDER_PATH].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_RESOURCE_PACKAGES].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_RESOURCE_PATHS].SetDefault("Data;CoreData");
-    parameterDesc_[EP_RESOURCE_PREFIX_PATHS].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_SHADER_CACHE_DIR].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_SHADOWS].SetDefault(true).OverrideInConfig();
-    parameterDesc_[EP_SOUND].SetDefault(true);
-    parameterDesc_[EP_SOUND_BUFFER].SetDefault(100);
-    parameterDesc_[EP_SOUND_INTERPOLATION].SetDefault(true);
-    parameterDesc_[EP_SOUND_MIX_RATE].SetDefault(44100);
-    parameterDesc_[EP_SOUND_MODE].SetDefault(SpeakerMode::SPK_AUTO);
-    parameterDesc_[EP_SYSTEMUI_FLAGS].SetDefault(0u);
-    parameterDesc_[EP_TEXTURE_ANISOTROPY].SetDefault(4).OverrideInConfig();
-    parameterDesc_[EP_TEXTURE_FILTER_MODE].SetDefault(FILTER_TRILINEAR).OverrideInConfig();
-    parameterDesc_[EP_TEXTURE_QUALITY].SetDefault(QUALITY_HIGH).OverrideInConfig();
-    parameterDesc_[EP_TIME_OUT].SetDefault(0);
-    parameterDesc_[EP_TOUCH_EMULATION].SetDefault(false);
-    parameterDesc_[EP_TRIPLE_BUFFER].SetDefault(false);
-    parameterDesc_[EP_VALIDATE_SHADERS].SetDefault(false);
-    parameterDesc_[EP_VSYNC].SetDefault(false).OverrideInConfig();
-    parameterDesc_[EP_WINDOW_HEIGHT].SetDefault(0).OverrideInConfig();
-    parameterDesc_[EP_WINDOW_ICON].SetDefault(EMPTY_STRING);
-    parameterDesc_[EP_WINDOW_MAXIMIZE].SetDefault(true).OverrideInConfig();
-    parameterDesc_[EP_WINDOW_POSITION_X].SetDefault(0);
-    parameterDesc_[EP_WINDOW_POSITION_Y].SetDefault(0);
-    parameterDesc_[EP_WINDOW_RESIZABLE].SetDefault(false);
-    parameterDesc_[EP_WINDOW_TITLE].SetDefault("Urho3D");
-    parameterDesc_[EP_WINDOW_WIDTH].SetDefault(0).OverrideInConfig();
-    parameterDesc_[EP_WORKER_THREADS].SetDefault(true);
+    engineParameters_ = MakeShared<ConfigFile>(context_);
+
+    engineParameters_->DefineVariable(EP_APPLICATION_NAME, "Unspecified Application");
+    engineParameters_->DefineVariable(EP_APPLICATION_PREFERENCES_DIR, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_AUTOLOAD_PATHS, "Autoload");
+    engineParameters_->DefineVariable(EP_CONFIG_NAME, "EngineParameters.json");
+    engineParameters_->DefineVariable(EP_BORDERLESS, false).Overridable();
+    engineParameters_->DefineVariable(EP_DUMP_SHADERS, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_ENGINE_AUTO_LOAD_SCRIPTS, false);
+    engineParameters_->DefineVariable(EP_ENGINE_CLI_PARAMETERS, true);
+    engineParameters_->DefineVariable(EP_EXTERNAL_WINDOW, static_cast<void*>(nullptr));
+    engineParameters_->DefineVariable(EP_FLUSH_GPU, false);
+    engineParameters_->DefineVariable(EP_FORCE_GL2, false);
+    engineParameters_->DefineVariable(EP_FRAME_LIMITER, true).Overridable();
+    engineParameters_->DefineVariable(EP_FULL_SCREEN, true).Overridable();
+    engineParameters_->DefineVariable(EP_GPU_DEBUG, false);
+    engineParameters_->DefineVariable(EP_HEADLESS, false);
+    engineParameters_->DefineVariable(EP_HIGH_DPI, true);
+    engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE);
+    engineParameters_->DefineVariable(EP_LOG_NAME, "Urho3D.log");
+    engineParameters_->DefineVariable(EP_LOG_QUIET, false);
+    engineParameters_->DefineVariable(EP_LOW_QUALITY_SHADOWS, false).Overridable();
+    engineParameters_->DefineVariable(EP_MAIN_PLUGIN, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_MATERIAL_QUALITY, QUALITY_HIGH).Overridable();
+    engineParameters_->DefineVariable(EP_MONITOR, 0).Overridable();
+    engineParameters_->DefineVariable(EP_MULTI_SAMPLE, 1);
+    engineParameters_->DefineVariable(EP_ORGANIZATION_NAME, "Urho3D Rebel Fork");
+    engineParameters_->DefineVariable(EP_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    engineParameters_->DefineVariable(EP_PACKAGE_CACHE_DIR, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
+    engineParameters_->DefineVariable(EP_RENDER_PATH, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
+    engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "ShaderCache");
+    engineParameters_->DefineVariable(EP_SHADOWS, true).Overridable();
+    engineParameters_->DefineVariable(EP_SOUND, true);
+    engineParameters_->DefineVariable(EP_SOUND_BUFFER, 100);
+    engineParameters_->DefineVariable(EP_SOUND_INTERPOLATION, true);
+    engineParameters_->DefineVariable(EP_SOUND_MIX_RATE, 44100);
+    engineParameters_->DefineVariable(EP_SOUND_MODE, SpeakerMode::SPK_AUTO);
+    engineParameters_->DefineVariable(EP_SYSTEMUI_FLAGS, 0u);
+    engineParameters_->DefineVariable(EP_TEXTURE_ANISOTROPY, 4).Overridable();
+    engineParameters_->DefineVariable(EP_TEXTURE_FILTER_MODE, FILTER_TRILINEAR).Overridable();
+    engineParameters_->DefineVariable(EP_TEXTURE_QUALITY, QUALITY_HIGH).Overridable();
+    engineParameters_->DefineVariable(EP_TIME_OUT, 0);
+    engineParameters_->DefineVariable(EP_TOUCH_EMULATION, false);
+    engineParameters_->DefineVariable(EP_TRIPLE_BUFFER, false);
+    engineParameters_->DefineVariable(EP_VALIDATE_SHADERS, false);
+    engineParameters_->DefineVariable(EP_VSYNC, false).Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0).Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_ICON, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_WINDOW_MAXIMIZE, true).Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_POSITION_X, 0);
+    engineParameters_->DefineVariable(EP_WINDOW_POSITION_Y, 0);
+    engineParameters_->DefineVariable(EP_WINDOW_RESIZABLE, false);
+    engineParameters_->DefineVariable(EP_WINDOW_TITLE, "Urho3D");
+    engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0).Overridable();
+    engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
