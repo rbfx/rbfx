@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/ProcessUtils.h"
 #include "../Engine/ApplicationFlavor.h"
 #include "../IO/Log.h"
 
@@ -90,10 +91,45 @@ ea::optional<unsigned> GetDistanceFromPattern(ea::string_view line, ea::string_v
     }
 }
 
+ea::string GetPlatformFlavor()
+{
+    switch (GetPlatform())
+    {
+    case PlatformId::Windows:
+        return "platform=desktop,windows";
+    case PlatformId::UniversalWindowsPlatform:
+        return "platform=console,uwp";
+
+    case PlatformId::Linux:
+        return "platform=desktop,linux";
+    case PlatformId::Android:
+        return "platform=mobile,android";
+    case PlatformId::RaspberryPi:
+        return "platform=console,rpi";
+
+    case PlatformId::MacOS:
+        return "platform=desktop,macos";
+    case PlatformId::iOS:
+        return "platform=mobile,ios";
+    case PlatformId::tvOS:
+        return "platform=console,tvos";
+
+    case PlatformId::Web:
+        return "platform=web"; // TODO: Try to detect browser type?
+
+    case PlatformId::Unknown:
+        return "";
+
+    default:
+        break;
+    }
+}
+
 }
 
 ApplicationFlavor ApplicationFlavor::Universal{{"*", {"*"}}};
 ApplicationFlavor ApplicationFlavor::Empty;
+ApplicationFlavor ApplicationFlavor::Platform{GetPlatformFlavor()};
 
 ApplicationFlavorPattern::ApplicationFlavorPattern(const ea::string& str)
     : components_(ParseString(str))

@@ -533,9 +533,6 @@ public:
 %include "Urho3D/Scene/TrackedComponent.h"
 %include "Urho3D/Scene/PrefabReference.h"
 
-// --------------------------------------- Config files ---------------------------------------
-%include "Urho3D/IO/ConfigFile.h"
-
 // --------------------------------------- Extra components ---------------------------------------
 %include "Urho3D/Input/FreeFlyController.h"
 

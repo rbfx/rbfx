@@ -24,6 +24,7 @@
 
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
+#include "../Engine/ConfigFile.h"
 
 namespace CLI
 {
@@ -85,7 +86,6 @@ public:
     bool HasParameter(const ea::string& name) const;
     /// Return engine parameter or default value.
     const Variant& GetParameter(const ea::string& name) const;
-    static const Variant& GetParameter(const StringVariantMap& parameters, const ea::string& name, const Variant& defaultValue = Variant::EMPTY);
     /// Close the graphics window and set the exit flag. No-op on iOS/tvOS, as an iOS/tvOS application can not legally exit.
     void Exit();
     /// Dump profiling information to the log.
@@ -163,20 +163,8 @@ private:
     /// Actually perform the exit actions.
     void DoExit();
 
-    /// Engine parameter description.
-    struct EngineParameterDesc
-    {
-        EngineParameterDesc& SetDefault(Variant value);
-        EngineParameterDesc& OverrideInConfig();
-
-        /// Read parameter from config file.
-        bool configOverride_ {};
-        /// Engine parameter default value. Also defines type.
-        Variant defaultValue_ {};
-    };
-
-    /// Engine parameter map.
-    ea::unordered_map<ea::string, EngineParameterDesc> parameterDesc_;
+    /// Engine parameters (default and current values).
+    SharedPtr<ConfigFile> engineParameters_;
 
     /// App preference directory.
     ea::string appPreferencesDir_;
@@ -204,8 +192,6 @@ private:
     bool autoExit_;
     /// Initialized flag.
     bool initialized_;
-    /// Engine parameters used for initialization.
-    StringVariantMap parameters_;
     /// Whether the exit is required by operating system.
     bool exitRequired_{};
     /// Whether the exiting is in progress.
