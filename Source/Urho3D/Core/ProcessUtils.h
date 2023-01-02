@@ -42,7 +42,7 @@ static const char* DYN_LIB_SUFFIX = ".so";
 enum class PlatformId
 {
     Windows,
-    UWP,
+    UniversalWindowsPlatform,
 
     Linux,
     Android,

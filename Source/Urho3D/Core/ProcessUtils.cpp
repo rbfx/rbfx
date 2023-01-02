@@ -443,7 +443,7 @@ PlatformId GetPlatform()
 #elif defined(__APPLE__)
     return PlatformId::MacOS;
 #elif UWP
-    return PlatformId::UWP;
+    return PlatformId::UniversalWindowsPlatform;
 #elif defined(_WIN32)
     return PlatformId::Windows;
 #elif defined(RPI)
@@ -463,7 +463,7 @@ ea::string GetPlatformName()
     {
     case PlatformId::Windows:
         return "Windows";
-    case PlatformId::UWP:
+    case PlatformId::UniversalWindowsPlatform:
         return "UWP";
 
     case PlatformId::Linux:
