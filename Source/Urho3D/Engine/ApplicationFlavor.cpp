@@ -22,9 +22,13 @@
 
 #include "../Precompiled.h"
 
-#include "../Core/ProcessUtils.h"
 #include "../Engine/ApplicationFlavor.h"
+
+#include "../Core/ProcessUtils.h"
 #include "../IO/Log.h"
+
+#include <EASTL/map.h>
+#include <EASTL/set.h>
 
 #include <regex>
 
@@ -203,6 +207,27 @@ ea::optional<unsigned> ApplicationFlavor::Matches(const ApplicationFlavorPattern
     }
 
     return distance;
+}
+
+ea::string ApplicationFlavor::ToString() const
+{
+    ea::string result;
+
+    const ea::map<ea::string, ApplicationFlavorComponent> sortedComponents(components_.begin(), components_.end());
+    for (const auto& [key, tags] : sortedComponents)
+    {
+        if (!result.empty())
+            result += ";";
+
+        result += key + "=";
+
+        StringVector sortedTags(tags.begin(), tags.end());
+        ea::sort(sortedTags.begin(), sortedTags.end());
+
+        result += ea::string::joined(sortedTags, ",");
+    }
+
+    return result;
 }
 
 }

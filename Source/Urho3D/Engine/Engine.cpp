@@ -239,10 +239,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     if (!appPreferencesDir_.empty())
         fileSystem->CreateDir(appPreferencesDir_);
 
-    // Initialize
-    auto* vfs = GetSubsystem<VirtualFileSystem>();
-    vfs->UnmountAll();
-    vfs->MountDefault();
+    InitializeVirtualFileSystem();
 
     // Read and merge configs
     LoadConfigFiles();
@@ -418,6 +415,31 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     initialized_ = true;
     SendEvent(E_ENGINEINITIALIZED);
     return true;
+}
+
+void Engine::InitializeVirtualFileSystem()
+{
+    auto fileSystem = GetSubsystem<FileSystem>();
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+
+    const StringVector prefixPaths = GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString().split(';');
+    const StringVector paths = GetParameter(EP_RESOURCE_PATHS).GetString().split(';');
+    const StringVector packages = GetParameter(EP_RESOURCE_PACKAGES).GetString().split(';');
+    // TODO: Implement autoload
+    //const StringVector autoloadPaths = engine->GetParameter(EP_AUTOLOAD_PATHS).GetString().split(';');
+
+    const ea::string& programDir = fileSystem->GetProgramDir();
+    StringVector absolutePrefixPaths = GetAbsolutePaths(prefixPaths, programDir, true);
+    if (!absolutePrefixPaths.contains(programDir))
+        absolutePrefixPaths.push_back(programDir);
+
+    vfs->UnmountAll();
+    vfs->MountExistingDirectoriesOrPackages(absolutePrefixPaths, paths);
+    vfs->MountExistingPackages(absolutePrefixPaths, packages);
+
+#ifndef __EMSCRIPTEN__
+    vfs->MountDir("conf", GetAppPreferencesDir());
+#endif
 }
 
 bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool removeOld /*= true*/)

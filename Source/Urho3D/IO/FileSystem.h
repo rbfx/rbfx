@@ -213,6 +213,10 @@ URHO3D_API ea::string GetSanitizedName(const ea::string& name);
 /// Returns false if either path isn't absolute, or if they are unrelated
 URHO3D_API bool GetRelativePath(const ea::string& fromPath, const ea::string& toPath, ea::string& output);
 /// Convert relative path to full path.
+/// TODO: This function is weird.
 URHO3D_API ea::string GetAbsolutePath(const ea::string& path);
+/// Convert relative or absolute path to absolute path.
+URHO3D_API ea::string GetAbsolutePath(const ea::string& path, const ea::string& currentPath, bool addTrailingSlash = false);
+URHO3D_API StringVector GetAbsolutePaths(const StringVector& paths, const ea::string& currentPath, bool addTrailingSlash = false);
 
 }

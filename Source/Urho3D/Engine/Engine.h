@@ -52,6 +52,8 @@ public:
 
     /// Initialize engine using parameters given and show the application window. Return true if successful.
     bool Initialize(const StringVariantMap& parameters);
+    /// Initialize virtual filesystem. Implicitly called by Initialize.
+    void InitializeVirtualFileSystem();
     /// Reinitialize resource cache subsystem using parameters given. Implicitly called by Initialize. Return true if successful.
     bool InitializeResourceCache(const StringVariantMap& parameters, bool removeOld = true);
     /// Run one frame.

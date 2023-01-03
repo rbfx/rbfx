@@ -64,6 +64,8 @@ struct URHO3D_API ApplicationFlavor
 
     /// Returns distance (smaller is better) if flavor matches the pattern. Returns none if doesn't match.
     ea::optional<unsigned> Matches(const ApplicationFlavorPattern& pattern) const;
+    /// Returns string representation of flavor.
+    ea::string ToString() const;
 
     ApplicationFlavorMap components_;
 };

@@ -1619,4 +1619,18 @@ ea::string GetAbsolutePath(const ea::string& path)
     return ea::string::joined(parts, "/");
 }
 
+ea::string GetAbsolutePath(const ea::string& path, const ea::string& currentPath, bool addTrailingSlash)
+{
+    const ea::string absolutePath = IsAbsolutePath(path) ? path : currentPath + path;
+    return addTrailingSlash ? AddTrailingSlash(absolutePath) : absolutePath;
+}
+
+StringVector GetAbsolutePaths(const StringVector& paths, const ea::string& currentPath, bool addTrailingSlash)
+{
+    StringVector result;
+    for (const ea::string& path : paths)
+        result.push_back(GetAbsolutePath(path, currentPath, addTrailingSlash));
+    return result;
+}
+
 }

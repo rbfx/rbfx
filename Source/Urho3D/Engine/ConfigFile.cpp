@@ -98,7 +98,10 @@ bool ConfigFile::LoadDefaults(const ea::string& fileName, const ApplicationFlavo
 
     // If file does not exist, it is not an error.
     if (!file)
+    {
+        URHO3D_LOGINFO("ConfigFile '{}' is not found", fileName);
         return false;
+    }
 
     JSONFile jsonFile(context_);
     if (!jsonFile.Load(*file))
@@ -117,6 +120,7 @@ bool ConfigFile::LoadDefaults(const ea::string& fileName, const ApplicationFlavo
     for (const auto& [name, value] : flavorVariables)
         SetVariable(name, value);
 
+    URHO3D_LOGINFO("ConfigFile '{}' is loaded with flavor '{}'", fileName, flavor.ToString());
     return true;
 }
 
@@ -127,7 +131,10 @@ bool ConfigFile::LoadOverrides(const ea::string& fileName)
 
     // If file does not exist, it is not an error.
     if (!file)
+    {
+        URHO3D_LOGINFO("ConfigFile overrides '{}' are not found", fileName);
         return false;
+    }
 
     JSONFile jsonFile(context_);
     if (!jsonFile.Load(*file))
@@ -159,6 +166,8 @@ bool ConfigFile::LoadOverrides(const ea::string& fileName)
 
         SetVariable(name, value);
     }
+
+    URHO3D_LOGINFO("ConfigFile overrides '{}' are loaded", fileName);
     return true;
 }
 
