@@ -383,6 +383,9 @@ bool Project::IsFileNameIgnored(const ea::string& fileName) const
 
 void Project::AddTab(SharedPtr<EditorTab> tab)
 {
+    if (isHeadless_)
+        return;
+
     tabs_.push_back(tab);
     sortedTabs_[tab->GetTitle()] = tab;
 }
