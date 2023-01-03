@@ -60,41 +60,6 @@ ApplicationFlavorMap ParseString(const ea::string& str)
     return result;
 }
 
-unsigned GetStringWeight(ea::string_view str)
-{
-    return ea::count(str.begin(), str.end(), '.');
-}
-
-ea::optional<unsigned> GetDistanceFromPattern(ea::string_view line, ea::string_view pattern)
-{
-    if (pattern == "*")
-        return GetStringWeight(line);
-    else if (pattern.starts_with("*"))
-    {
-        const ea::string_view suffix = pattern.substr(1);
-
-        if (!line.ends_with(suffix))
-            return ea::nullopt;
-
-        return GetStringWeight(line) - GetStringWeight(suffix);
-    }
-    else if (pattern.ends_with("*"))
-    {
-        const ea::string_view prefix = pattern.substr(0, pattern.length() - 1);
-
-        if (!line.starts_with(prefix))
-            return ea::nullopt;
-
-        return GetStringWeight(line) - GetStringWeight(prefix);
-    }
-    else
-    {
-        if (line != pattern)
-            return ea::nullopt;
-        return 0;
-    }
-}
-
 ea::string GetPlatformFlavor()
 {
     switch (GetPlatform())
