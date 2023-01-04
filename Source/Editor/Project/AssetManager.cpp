@@ -65,10 +65,21 @@ AssetManager::AssetManager(Context* context)
 {
     dataWatcher_->StartWatching(project_->GetDataPath(), true);
     context_->OnReflectionRemoved.Subscribe(this, &AssetManager::OnReflectionRemoved);
+    SetProcessCallback(nullptr);
 }
 
 AssetManager::~AssetManager()
 {
+}
+
+void AssetManager::SetProcessCallback(const OnProcessAssetQueued& callback, unsigned maxConcurrency)
+{
+    const auto defaultCallback = [this](const AssetTransformerInput& input, const OnProcessAssetCompleted& callback)
+    {
+        ProcessAssetInternal(input, callback);
+    };
+    processCallback_ = callback ? callback : defaultCallback;
+    maxConcurrentRequests_ = ea::max(maxConcurrency, 1u);
 }
 
 void AssetManager::Initialize(bool readOnly)
@@ -95,9 +106,8 @@ void AssetManager::Update()
 {
     if (!requestQueue_.empty())
     {
-        // TODO(editor): Be smarter about this.
-        ProcessAsset(requestQueue_.back());
-        requestQueue_.pop_back();
+        if (numOngoingRequests_ < maxConcurrentRequests_)
+            ConsumeAssetQueue();
         return;
     }
 
@@ -113,6 +123,26 @@ void AssetManager::Update()
     {
         EnsureAssetsAndCacheValid();
         ScanAndQueueAssetProcessing();
+    }
+}
+
+void AssetManager::ConsumeAssetQueue()
+{
+    ea::vector<AssetTransformerInput> queue;
+    while (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
+    {
+        ++numOngoingRequests_;
+        queue.push_back(requestQueue_.back());
+        requestQueue_.pop_back();
+    }
+
+    for (const AssetTransformerInput& input : queue)
+    {
+        processCallback_(input,
+            [this](const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)
+        {
+            CompleteAssetProcessing(input, output, message);
+        });
     }
 }
 
@@ -528,7 +558,7 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
     return true;
 }
 
-void AssetManager::ProcessAsset(const AssetTransformerInput& input)
+void AssetManager::ProcessAssetInternal(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const
 {
     auto fs = GetSubsystem<FileSystem>();
 
@@ -538,19 +568,40 @@ void AssetManager::ProcessAsset(const AssetTransformerInput& input)
 
     AssetTransformerOutput output;
     if (AssetTransformer::ExecuteTransformersAndStore(input, cachePath, output, transformers))
+        callback(input, ea::move(output), EMPTY_STRING);
+    else
+        callback(input, ea::nullopt, EMPTY_STRING);
+}
+
+void AssetManager::CompleteAssetProcessing(
+    const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)
+{
+    if (numOngoingRequests_ > 0)
+        --numOngoingRequests_;
+    else
+        URHO3D_ASSERTLOG(false, "AssetManager::CompleteAssetProcessing() called with no ongoing requests");
+
+    if (output)
     {
         AssetDesc& assetDesc = assets_[input.resourceName_];
         assetDesc.resourceName_ = input.resourceName_;
         assetDesc.modificationTime_ = input.inputFileTime_;
-        assetDesc.outputs_ = output.outputResourceNames_;
-        assetDesc.transformers_ = output.appliedTransformers_;
+        assetDesc.outputs_ = output->outputResourceNames_;
+        assetDesc.transformers_ = output->appliedTransformers_;
 
-        if (output.sourceModified_)
+        if (output->sourceModified_)
             ignoredAssetUpdates_.insert(input.resourceName_);
 
         URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated{})",
             input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size(),
-            output.sourceModified_ ? ", source modified" : "");
+            output->sourceModified_ ? ", source modified" : "");
+
+        if (!message.empty())
+            URHO3D_LOGWARNING("{}", message);
+    }
+    else
+    {
+        URHO3D_LOGWARNING("Asset {} was not processed: {}", input.resourceName_, message.empty() ? "unknown error" : message);
     }
 }
 

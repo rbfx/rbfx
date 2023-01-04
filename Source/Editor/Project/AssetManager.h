@@ -29,6 +29,7 @@
 #include <Urho3D/Utility/AssetPipeline.h>
 #include <Urho3D/Utility/AssetTransformerHierarchy.h>
 
+#include <EASTL/functional.h>
 #include <EASTL/map.h>
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
@@ -47,8 +48,16 @@ class AssetManager : public Object
 public:
     Signal<void()> OnInitialized;
 
+    using OnProcessAssetCompleted = ea::function<
+        void(const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)>;
+    using OnProcessAssetQueued = ea::function<
+        void(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback)>;
+
     explicit AssetManager(Context* context);
     ~AssetManager() override;
+
+    /// Override asset processing.
+    void SetProcessCallback(const OnProcessAssetQueued& callback, unsigned maxConcurrency = 1);
 
     /// Initialize asset manager.
     /// Should be called after the manager configuration is loaded from file *and* plugins are initialized.
@@ -139,12 +148,19 @@ private:
 
     void ScanAssetsInPath(const ea::string& resourcePath, Stats& stats);
     bool QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor);
-    void ProcessAsset(const AssetTransformerInput& input);
+    void ConsumeAssetQueue();
+
+    void ProcessAssetInternal(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const;
+    void CompleteAssetProcessing(
+        const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message);
 
     void OnReflectionRemoved(ObjectReflection* reflection);
 
     const WeakPtr<Project> project_;
     SharedPtr<FileWatcher> dataWatcher_;
+
+    OnProcessAssetQueued processCallback_;
+    unsigned maxConcurrentRequests_{};
 
     ApplicationFlavor defaultFlavor_; // TODO(editor): Make configurable
 
@@ -161,6 +177,7 @@ private:
     ea::unordered_set<ea::string> ignoredAssetUpdates_;
 
     ea::vector<AssetTransformerInput> requestQueue_;
+    unsigned numOngoingRequests_{};
 };
 
 }
