@@ -68,7 +68,7 @@ struct URHO3D_API AssetTransformerOutput
 
     /// Whether the source file was modified.
     bool sourceModified_{};
-    /// Resource names of the output files. Do not add it source files here!
+    /// Resource names of the output files. Do not add source files here!
     ea::vector<ea::string> outputResourceNames_;
     /// Types of transformers that were applied to the asset.
     ea::unordered_set<ea::string> appliedTransformers_;

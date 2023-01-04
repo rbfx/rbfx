@@ -58,6 +58,8 @@ public:
 
     /// Override asset processing.
     void SetProcessCallback(const OnProcessAssetQueued& callback, unsigned maxConcurrency = 1);
+    /// Process asset without affecting internal state of AssetManager.
+    void ProcessAsset(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const;
 
     /// Initialize asset manager.
     /// Should be called after the manager configuration is loaded from file *and* plugins are initialized.
@@ -150,7 +152,6 @@ private:
     bool QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor);
     void ConsumeAssetQueue();
 
-    void ProcessAssetInternal(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const;
     void CompleteAssetProcessing(
         const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message);
 

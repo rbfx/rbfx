@@ -76,7 +76,7 @@ void AssetManager::SetProcessCallback(const OnProcessAssetQueued& callback, unsi
 {
     const auto defaultCallback = [this](const AssetTransformerInput& input, const OnProcessAssetCompleted& callback)
     {
-        ProcessAssetInternal(input, callback);
+        ProcessAsset(input, callback);
     };
     processCallback_ = callback ? callback : defaultCallback;
     maxConcurrentRequests_ = ea::max(maxConcurrency, 1u);
@@ -558,7 +558,7 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
     return true;
 }
 
-void AssetManager::ProcessAssetInternal(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const
+void AssetManager::ProcessAsset(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const
 {
     auto fs = GetSubsystem<FileSystem>();
 

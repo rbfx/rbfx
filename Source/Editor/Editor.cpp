@@ -25,6 +25,7 @@
 #include "Assets/ModelImporter.h"
 #include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConsoleTab.h"
+#include "Foundation/ConcurrentAssetProcessing.h"
 #include "Foundation/GameViewTab.h"
 #include "Foundation/Glue/ProjectGlue.h"
 #include "Foundation/Glue/ResourceBrowserGlue.h"
@@ -97,6 +98,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Assets.ModelImporter", &Assets_ModelImporter);
 
     editorPluginManager_->AddPlugin("Foundation.StandardFileTypes", &Foundation_StandardFileTypes);
+    editorPluginManager_->AddPlugin("Foundation.ConcurrentAssetProcessing", &Foundation_ConcurrentAssetProcessing);
 
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);

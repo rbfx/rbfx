@@ -796,7 +796,7 @@ void Project::ProcessCommand(const ea::string& command, bool exitOnCompletion)
         OnCommand(this, name, args, processed);
 
         if (!processed)
-            URHO3D_LOGWARNING("Unknown command: {}", command);
+            URHO3D_LOGWARNING("Cannot process command: {}", command);
     }
 
     if (exitOnCompletion)
