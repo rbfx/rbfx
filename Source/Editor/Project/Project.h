@@ -102,10 +102,15 @@ public:
     Signal<void()> OnRenderProjectMenu;
     Signal<void()> OnRenderProjectToolbar;
     Signal<void(ProjectRequest*)> OnRequest;
+    Signal<void(const ea::string& command, const ea::string& args, bool& processed)> OnCommand;
 
     Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, bool isReadOnly);
     ~Project() override;
     void SerializeInBlock(Archive& archive) override;
+
+    /// Execute the command line in the context of the project.
+    /// Execution will be postponed until the project is initialized.
+    void ExecuteCommand(const ea::string& command, bool exitOnCompletion = false);
 
     /// Called right before destructor.
     /// Perform all complicated stuff here because Project is still available for plugins as subsystem.
@@ -230,6 +235,7 @@ private:
     void SaveGitIgnore();
     void ProcessPendingRequests();
     void ProcessDelayedSaves(bool forceSave = false);
+    void ProcessCommand(const ea::string& command, bool exitOnCompletion);
 
     /// Project properties
     /// @{
@@ -273,6 +279,9 @@ private:
     ea::set<ea::string> ignoredFileNames_;
     ea::vector<std::regex> ignoredFileNameRegexes_;
     ea::vector<AnalyzeFileCallback> analyzeFileCallbacks_;
+
+    /// Commands to be executed after initialization.
+    ea::vector<ea::pair<ea::string, bool>> pendingCommands_;
 
     /// Global requests to be processed.
     ea::vector<PendingRequest> pendingRequests_;

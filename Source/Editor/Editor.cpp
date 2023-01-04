@@ -186,6 +186,8 @@ void Editor::Setup()
     // Define custom command line parameters here
     auto& cmd = GetCommandLineParser();
     cmd.add_flag("--read-only", readOnly_, "Prevents Editor from modifying any project files, unless it is explicitly done via executed command.");
+    cmd.add_option("--command", command_, "Command to execute on startup.")->set_custom_option("command");
+    cmd.add_flag("--exit", exitAfterCommand_, "Forces Editor to exit after command execution.");
     cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->set_custom_option("dir");
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
@@ -258,6 +260,8 @@ void Editor::Start()
 
     if (!pendingOpenProject_.empty())
         OpenProject(pendingOpenProject_);
+    else
+        command_.clear(); // Execute commands only if the project is opened too.
 }
 
 void Editor::Stop()
@@ -621,6 +625,12 @@ void Editor::UpdateProjectStatus()
         recentProjects_.push_front(pendingOpenProject_);
 
         pendingOpenProject_.clear();
+
+        if (!command_.empty())
+        {
+            project_->ExecuteCommand(command_, exitAfterCommand_);
+            command_.clear();
+        }
     }
 }
 

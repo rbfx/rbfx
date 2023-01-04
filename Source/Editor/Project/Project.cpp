@@ -122,6 +122,21 @@ void CreateAssetPipeline(Context* context, const ea::string& fileName)
     jsonFile.SaveFile(fileName);
 }
 
+ea::pair<ea::string, ea::string> ParseCommand(const ea::string& command)
+{
+    ea::string commandName;
+    ea::string commandArgs;
+    const unsigned spacePos = command.find(' ');
+    if (spacePos != ea::string::npos)
+    {
+        commandName = command.substr(0, spacePos).trimmed();
+        commandArgs = command.substr(spacePos + 1).trimmed();
+    }
+    else
+        commandName = command.trimmed();
+    return {commandName, commandArgs};
+}
+
 }
 
 ResourceCacheGuard::ResourceCacheGuard(Context* context)
@@ -236,6 +251,20 @@ void Project::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "LaunchManager", *launchManager_, AlwaysSerialize{});
 }
 
+void Project::ExecuteCommand(const ea::string& command, bool exitOnCompletion)
+{
+    if (command.trimmed().empty())
+    {
+        URHO3D_LOGWARNING("Empty command is ignored");
+        return;
+    }
+
+    if (initialized_)
+        ProcessCommand(command, exitOnCompletion);
+    else
+        pendingCommands_.emplace_back(command, exitOnCompletion);
+}
+
 void Project::Destroy()
 {
     // Always save shallow data on close
@@ -252,7 +281,8 @@ Project::~Project()
     --numActiveProjects;
     URHO3D_ASSERT(numActiveProjects == 0);
 
-    ui::GetIO().IniFilename = nullptr;
+    if (!isHeadless_)
+        ui::GetIO().IniFilename = nullptr;
 }
 
 CloseProjectResult Project::CloseGracefully()
@@ -644,6 +674,10 @@ void Project::Render()
         initialFocusPending = true;
 
         OnInitialized(this);
+
+        for (const auto& [command, exitOnCompletion] : pendingCommands_)
+            ProcessCommand(command, exitOnCompletion);
+        pendingCommands_.clear();
     }
 
     if (!isHeadless_)
@@ -715,6 +749,26 @@ void Project::ProcessDelayedSaves(bool forceSave)
     }
 
     ea::erase_if(delayedFileSaves_, [](const auto& pair) { return pair.second.IsEmpty(); });
+}
+
+void Project::ProcessCommand(const ea::string& command, bool exitOnCompletion)
+{
+    const auto [name, args] = ParseCommand(command);
+
+    if (name != "Idle")
+    {
+        bool processed = false;
+        OnCommand(this, name, args, processed);
+
+        if (!processed)
+            URHO3D_LOGWARNING("Unknown command: {}", command);
+    }
+
+    if (exitOnCompletion)
+    {
+        closeProjectResult_ = CloseProjectResult::Closed;
+        SendEvent(E_EXITREQUESTED);
+    }
 }
 
 void Project::RenderToolbar()
