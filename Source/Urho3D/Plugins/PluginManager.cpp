@@ -247,7 +247,7 @@ PluginManager::PluginManager(Context* context)
     AddDynamicPlugin(scriptBundlePlugin);
 #endif
 
-    SubscribeToEvent(E_ENDFRAMEPRIVATE, [this](StringHash, VariantMap&) { Update(); });
+    SubscribeToEvent(E_ENDFRAMEPRIVATE, [this](StringHash, VariantMap&) { Update(false); });
 }
 
 PluginManager::~PluginManager()
@@ -257,7 +257,7 @@ PluginManager::~PluginManager()
 
     // Could have called PerformUnload() above,
     // but this way we get a consistent log message informing that module was unloaded.
-    Update();
+    Update(true);
 }
 
 void PluginManager::SerializeInBlock(Archive& archive)
@@ -424,7 +424,7 @@ void PluginManager::RestoreStack()
     SendEvent(E_ENDPLUGINRELOAD);
 }
 
-void PluginManager::Update()
+void PluginManager::Update(bool exiting)
 {
     if (stopPending_)
     {
@@ -446,12 +446,15 @@ void PluginManager::Update()
 
     for (const auto& [name, plugin] : dynamicPlugins_)
         UpdatePlugin(plugin, checkOutOfDate);
+    forceReload_ = false;
 
     ea::erase_if(dynamicPlugins_, [&](const auto& item) { return CheckAndRemoveUnloadedPlugin(item.second); });
 
+    if (exiting)
+        return;
+
     if (!pluginStack_)
         RestoreStack();
-    forceReload_ = false;
 
     if (startPending_)
     {

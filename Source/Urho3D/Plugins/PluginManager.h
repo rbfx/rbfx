@@ -131,7 +131,7 @@ private:
     void DisposeStack();
     void RestoreStack();
 
-    void Update();
+    void Update(bool exiting);
     void UpdatePlugin(Plugin* plugin, bool checkOutOfDate);
 
     void PerformPluginUnload(Plugin* plugin);
