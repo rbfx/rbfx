@@ -29,6 +29,7 @@
 
 #include <EASTL/map.h>
 #include <EASTL/set.h>
+#include <EASTL/sort.h>
 
 #include <regex>
 
