@@ -360,10 +360,6 @@ const ea::vector<ea::string>& GetArguments()
 ea::string GetConsoleInput()
 {
     ea::string ret;
-#ifdef URHO3D_TESTING
-    // When we are running automated tests, reading the console may block. Just return empty in that case
-    return ret;
-#else
 #if defined(UWP)
     // ...
 #elif defined(_WIN32)
@@ -429,7 +425,6 @@ ea::string GetConsoleInput()
 #endif
 
     return ret;
-#endif
 }
 
 PlatformId GetPlatform()

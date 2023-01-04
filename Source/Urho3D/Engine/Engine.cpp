@@ -92,7 +92,7 @@
 #include "../Utility/AssetTransformer.h"
 #include "../Utility/SceneViewerApplication.h"
 
-#if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
+#ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
 
@@ -137,9 +137,7 @@ Engine::Engine(Context* context) :
     maxInactiveFps_(60),
     pauseMinimized_(false),
 #endif
-#ifdef URHO3D_TESTING
     timeOut_(0),
-#endif
     autoExit_(true),
     initialized_(false),
     exiting_(false),
@@ -397,10 +395,9 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         GetSubsystem<Network>()->SetPackageCacheDir(GetParameter(EP_PACKAGE_CACHE_DIR).GetString());
 #endif
 
-#ifdef URHO3D_TESTING
     if (HasParameter(EP_TIME_OUT))
         timeOut_ = GetParameter(EP_TIME_OUT).GetInt() * 1000000LL;
-#endif
+
     if (!headless_)
     {
 #ifdef URHO3D_SYSTEMUI
@@ -915,14 +912,13 @@ void Engine::ApplyFrameLimit()
 #endif
 
     elapsed = frameTimer_.GetUSec(true);
-#ifdef URHO3D_TESTING
+
     if (timeOut_ > 0)
     {
         timeOut_ -= elapsed;
         if (timeOut_ <= 0)
             Exit();
     }
-#endif
 
     // If FPS lower than minimum, clamp elapsed time
     if (minFps_)
@@ -1097,9 +1093,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
         return false;
     })->set_custom_option("int");
     addFlag("--touch", EP_TOUCH_EMULATION, true, "Enable touch emulation");
-#ifdef URHO3D_TESTING
     addOptionInt("--timeout", EP_TIME_OUT, "Quit application after specified time");
-#endif
     addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->set_custom_option("plugin1;plugin2;...");
     addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->set_custom_option("plugin");
 }
@@ -1220,8 +1214,9 @@ void Engine::DoExit()
     SaveConfigFile();
 
     exiting_ = true;
-#if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
-    emscripten_force_exit(EXIT_SUCCESS);    // Some how this is required to signal emrun to stop
+#if defined(__EMSCRIPTEN__)
+    // TODO: Revisit this place
+    // emscripten_force_exit(EXIT_SUCCESS);    // Some how this is required to signal emrun to stop
 #endif
 }
 
