@@ -35,7 +35,7 @@ namespace Urho3DNet.Tests
                              * new Matrix3(angles.Z, new Vector3(0, 0, 1));
             Matrix3 expected = new Quaternion(angles).RotationMatrix;
 
-            matrix.ApproximatelyEquivalent(expected);
+            Assert.Equal(expected, matrix, Matrix3.ApproximateEqualityComparer);
         }
 
         [Fact]
@@ -50,8 +50,8 @@ namespace Urho3DNet.Tests
                 Vector3 actualAngles = actualQuaternion.EulerAngles;
                 Matrix3 actualMatrix = actualQuaternion.RotationMatrix;
 
-                Assert.True(expectedMatrix.ApproximatelyEquivalent(actualMatrix, 1e-6f));
-                Assert.True(expected.Equals(actualAngles));
+                Assert.Equal(expectedMatrix, actualMatrix, Matrix3.ApproximateEqualityComparer);
+                Assert.Equal(expected, actualAngles, Vector3.ApproximateEqualityComparer);
             }
             {
                 Vector3 expected = new Vector3(-90, -10, 0);
@@ -61,8 +61,8 @@ namespace Urho3DNet.Tests
                 Vector3 actualAngles = actualQuaternion.EulerAngles;
                 Matrix3 actualMatrix = actualQuaternion.RotationMatrix;
 
-                Assert.True(expectedMatrix.ApproximatelyEquivalent(actualMatrix, 1e-6f));
-                Assert.True(expected.Equals(actualAngles));
+                Assert.Equal(expectedMatrix, actualMatrix, Matrix3.ApproximateEqualityComparer);
+                Assert.Equal(expected, actualAngles, Vector3.ApproximateEqualityComparer);
             }
         }
     }

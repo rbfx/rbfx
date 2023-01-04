@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,10 @@ namespace Urho3DNet
 {
     /// 3x3 matrix for rotation and scaling.
     [StructLayout(LayoutKind.Sequential)]
-    public struct Matrix3 : IEquatable<Matrix3>
+    public struct Matrix3 : IEquatable<Matrix3>, IApproximateEquatable<Matrix3>
     {
+        public static IEqualityComparer<Matrix3> ApproximateEqualityComparer => ApproximateEqualityComparer<Matrix3>.Default;
+
         /// Construct from values or identity matrix by default.
         public Matrix3(float v00 = 1, float v01 = 0, float v02 = 0,
             float v10 = 0, float v11 = 1, float v12 = 0,
