@@ -111,6 +111,8 @@ public:
     /// Execute the command line in the context of the project.
     /// Execution will be postponed until the project is initialized.
     void ExecuteCommand(const ea::string& command, bool exitOnCompletion = false);
+    /// Execute the command line in another process.
+    bool ExecuteRemoteCommand(const ea::string& command, ea::string* output = nullptr);
 
     /// Called right before destructor.
     /// Perform all complicated stuff here because Project is still available for plugins as subsystem.

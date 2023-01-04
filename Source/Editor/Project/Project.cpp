@@ -30,10 +30,12 @@
 #include "../Project/CreateDefaultScene.h"
 #include "../Project/ResourceEditorTab.h"
 
-#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Core/ProcessUtils.h>
-#include <Urho3D/IO/VirtualFileSystem.h>
+#include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/File.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -263,6 +265,39 @@ void Project::ExecuteCommand(const ea::string& command, bool exitOnCompletion)
         ProcessCommand(command, exitOnCompletion);
     else
         pendingCommands_.emplace_back(command, exitOnCompletion);
+}
+
+bool Project::ExecuteRemoteCommand(const ea::string& command, ea::string* output)
+{
+    auto fileSystem = context_->GetSubsystem<FileSystem>();
+    auto engine = context_->GetSubsystem<Engine>();
+
+    const StringVector arguments = {
+        "--quiet",
+        "--log",
+        "ERROR",
+        "--headless",
+        "--exit",
+        "--read-only",
+        "--command",
+        command,
+        "--prefix-paths",
+        engine->GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString(),
+        projectPath_,
+    };
+
+    ea::string tempOutput;
+    ea::string& effectiveOutput = output ? *output : tempOutput;
+
+    effectiveOutput.clear();
+    const int exitCode = fileSystem->SystemRun(fileSystem->GetProgramFileName(), arguments, effectiveOutput);
+    if (exitCode != 0)
+    {
+        URHO3D_LOGERROR("Failed to execute remote command \"{}\" with exit code {}: {}",
+            command, exitCode, effectiveOutput);
+        return false;
+    }
+    return true;
 }
 
 void Project::Destroy()
