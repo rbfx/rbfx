@@ -378,17 +378,23 @@ namespace Urho3DNet
                 // Order of rotations: Z first, then X, then Y
                 float check = 2.0f * (-Y * Z + W * X);
 
-                if (check < -0.995f)
+                // More on singularity handling here:
+                // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+                const float singularityThreshold = 0.999999f;
+                float unit = W * W + X * X + Y * Y + Z * Z;
+
+                if (check < -singularityThreshold * unit)
                 {
-                    return new Vector3(-90.0f, 0.0f,
-                        MathDefs.RadiansToDegrees(-(float) Math.Atan2(2.0f * (X * Z - W * Y),
-                            1.0f - 2.0f * (Y * Y + Z * Z))));
+                    return new Vector3(
+                        -90.0f,
+                        MathDefs.RadiansToDegrees(-(float) Math.Atan2(2.0f * (X * Z - W * Y), 1.0f - 2.0f * (Y * Y + Z * Z)))
+                        , 0.0f);
                 }
-                else if (check > 0.995f)
+                else if (check > singularityThreshold * unit)
                 {
-                    return new Vector3(90.0f, 0.0f,
-                        MathDefs.RadiansToDegrees((float) Math.Atan2(2.0f * (X * Z - W * Y),
-                            1.0f - 2.0f * (Y * Y + Z * Z))));
+                    return new Vector3(90.0f,
+                        MathDefs.RadiansToDegrees(-(float) Math.Atan2(2.0f * (X * Z - W * Y), 1.0f - 2.0f * (Y * Y + Z * Z)))
+                        , 0.0f);
                 }
                 else
                 {

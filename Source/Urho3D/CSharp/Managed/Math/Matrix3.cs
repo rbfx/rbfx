@@ -62,6 +62,28 @@ namespace Urho3DNet
             M22 = data[8];
         }
 
+        /// <summary>
+        /// Construct from an angle (in degrees) and axis.
+        /// </summary>
+        public Matrix3(float angle, Vector3 axis)
+        {
+            Vector3 normAxis = axis.Normalized;
+            float sinAngle = 0.0f;
+            float cosAngle = 0.0f;
+            Urho3D.SinCos(angle, ref sinAngle, ref cosAngle);
+            float _cosAngle = 1.0f - cosAngle;
+
+            M00 = cosAngle + normAxis.X * normAxis.X * _cosAngle;
+            M10 = normAxis.Y * normAxis.X * _cosAngle + normAxis.Z * sinAngle;
+            M20 = normAxis.Z * normAxis.X * _cosAngle - normAxis.Y * sinAngle;
+            M01 = normAxis.X * normAxis.Y * _cosAngle - normAxis.Z * sinAngle;
+            M11 = cosAngle + normAxis.Y * normAxis.Y * _cosAngle;
+            M21 = normAxis.Z * normAxis.Y * _cosAngle + normAxis.X * sinAngle;
+            M02 = normAxis.X * normAxis.Z * _cosAngle + normAxis.Y * sinAngle;
+            M12 = normAxis.Y * normAxis.Z * _cosAngle - normAxis.X * sinAngle;
+            M22 = cosAngle + normAxis.Z * normAxis.Z * _cosAngle;
+        }
+
         /// Test for equality with another matrix without epsilon.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(in Matrix3 lhs, in Matrix3 rhs)
@@ -224,7 +246,22 @@ namespace Urho3DNet
             );
         }
 
+        /// <summary>
         /// Test for equality with another matrix with epsilon.
+        /// </summary>
+        public bool ApproximatelyEquivalent(Matrix3 rhs, float epsilon = MathDefs.Epsilon)
+        {
+            return MathDefs.ApproximatelyEquivalent(M00, rhs.M00, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M01, rhs.M01, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M02, rhs.M02, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M10, rhs.M10, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M11, rhs.M11, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M12, rhs.M12, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M20, rhs.M20, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M21, rhs.M21, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M22, rhs.M22, epsilon);
+        }
+
         public bool Equals(Matrix3 rhs)
         {
             return this == rhs;
@@ -232,7 +269,7 @@ namespace Urho3DNet
 
         public override bool Equals(object obj)
         {
-            return obj is Matrix3 other && Equals(other);
+            return obj is Matrix3 other && this == other;
         }
 
         /// Return inverse.
