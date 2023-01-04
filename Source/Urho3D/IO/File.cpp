@@ -33,6 +33,10 @@
 #include <SDL_rwops.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
 #include <cstdio>
 #include <LZ4/lz4.h>
 
@@ -406,6 +410,19 @@ void File::Close()
         size_ = 0;
         offset_ = 0;
         checksum_ = 0;
+
+#ifdef __EMSCRIPTEN__
+        if (mode_ & FILE_WRITE)
+        {
+            MAIN_THREAD_EM_ASM(
+                FS.syncfs(function (err) {
+                    if (err) {
+                        console.error(err);
+                    }
+                });
+            );
+        }
+#endif
     }
 }
 

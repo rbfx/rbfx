@@ -186,10 +186,8 @@ private:
     unsigned maxInactiveFps_;
     /// Pause when minimized flag.
     bool pauseMinimized_;
-#ifdef URHO3D_TESTING
     /// Time out counter for testing.
     long long timeOut_;
-#endif
     /// Auto-exit flag.
     bool autoExit_;
     /// Initialized flag.
