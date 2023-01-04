@@ -71,12 +71,18 @@ AssetManager::~AssetManager()
 {
 }
 
-void AssetManager::Initialize()
+void AssetManager::Initialize(bool readOnly)
 {
+    autoProcessAssets_ = !readOnly;
+
     InitializeAssetPipelines();
     InvalidateOutdatedAssetsInPath("");
-    EnsureAssetsAndCacheValid();
-    ScanAndQueueAssetProcessing();
+
+    if (autoProcessAssets_)
+    {
+        EnsureAssetsAndCacheValid();
+        ScanAndQueueAssetProcessing();
+    }
 
     if (requestQueue_.empty())
     {
@@ -102,8 +108,12 @@ void AssetManager::Update()
     }
 
     ProcessFileSystemUpdates();
-    EnsureAssetsAndCacheValid();
-    ScanAndQueueAssetProcessing();
+
+    if (autoProcessAssets_)
+    {
+        EnsureAssetsAndCacheValid();
+        ScanAndQueueAssetProcessing();
+    }
 }
 
 void AssetManager::MarkCacheDirty(const ea::string& resourcePath)

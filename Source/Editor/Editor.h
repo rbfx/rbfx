@@ -89,6 +89,8 @@ protected:
     /// Currently loaded project.
     SharedPtr<Project> project_;
 
+    /// Whether the editor is launched in read-only mode.
+    bool readOnly_{};
     /// UI state
     /// @{
     ea::string pendingOpenProject_;

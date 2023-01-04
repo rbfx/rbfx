@@ -103,7 +103,7 @@ public:
     Signal<void()> OnRenderProjectToolbar;
     Signal<void(ProjectRequest*)> OnRequest;
 
-    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath);
+    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, bool isReadOnly);
     ~Project() override;
     void SerializeInBlock(Archive& archive) override;
 
@@ -234,6 +234,7 @@ private:
     /// Project properties
     /// @{
     const bool isHeadless_{};
+    const bool isReadOnly_{};
     const unsigned saveDelayMs_{3000};
 
     const ea::string projectPath_;

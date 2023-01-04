@@ -167,9 +167,10 @@ ImFont* Project::GetMonoFont()
     return monoFont;
 }
 
-Project::Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath)
+Project::Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, bool isReadOnly)
     : Object(context)
     , isHeadless_(context->GetSubsystem<Engine>()->IsHeadless())
+    , isReadOnly_(isReadOnly)
     , projectPath_(GetSanitizedPath(projectPath + "/"))
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
@@ -200,7 +201,7 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     context_->RemoveSubsystem<PluginManager>();
     context_->RegisterSubsystem(pluginManager_);
 
-    if (!isHeadless_)
+    if (!isHeadless_ && !isReadOnly_)
         ui::GetIO().IniFilename = uiIniPath_.c_str();
 
     InitializeHotkeys();
@@ -631,7 +632,7 @@ void Project::Render()
     if (!assetManagerInitialized_ && !pluginManager_->IsReloadPending())
     {
         assetManagerInitialized_ = true;
-        assetManager_->Initialize();
+        assetManager_->Initialize(isReadOnly_);
     }
 
     assetManager_->Update();
@@ -765,6 +766,9 @@ void Project::RenderMainMenu()
 
 void Project::SaveShallowOnly()
 {
+    if (isReadOnly_)
+        return;
+
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     settingsManager_->SaveFile(settingsJsonPath_);
     assetManager_->SaveFile(cacheJsonPath_);

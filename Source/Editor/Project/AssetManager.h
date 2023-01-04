@@ -52,7 +52,7 @@ public:
 
     /// Initialize asset manager.
     /// Should be called after the manager configuration is loaded from file *and* plugins are initialized.
-    void Initialize();
+    void Initialize(bool readOnly);
     void Update();
     void MarkCacheDirty(const ea::string& resourcePath);
 
@@ -149,6 +149,7 @@ private:
     ApplicationFlavor defaultFlavor_; // TODO(editor): Make configurable
 
     bool initialized_{};
+    bool autoProcessAssets_{};
     bool reloadAssetPipelines_{};
     bool hasInvalidAssets_{};
     bool scanAssets_{};

@@ -185,6 +185,7 @@ void Editor::Setup()
 
     // Define custom command line parameters here
     auto& cmd = GetCommandLineParser();
+    cmd.add_flag("--read-only", readOnly_, "Prevents Editor from modifying any project files, unless it is explicitly done via executed command.");
     cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->set_custom_option("dir");
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
@@ -613,7 +614,7 @@ void Editor::UpdateProjectStatus()
         if (!isHeadless)
             InitializeUI();
 
-        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_);
+        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_, readOnly_);
         project_->OnShallowSaved.Subscribe(this, &Editor::SaveTempJson);
 
         recentProjects_.erase_first(pendingOpenProject_);
