@@ -436,6 +436,8 @@ void Engine::InitializeVirtualFileSystem()
 
 #ifndef __EMSCRIPTEN__
     vfs->MountDir("conf", GetAppPreferencesDir());
+#else
+    vfs->MountDir("conf", "/IndexedDB/");
 #endif
 }
 
