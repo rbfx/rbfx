@@ -489,16 +489,16 @@ namespace Urho3DNet
         [SuppressMessage("ReSharper", "CompareOfFloatsByEqualityOperator")]
         public static bool Equals(float a, float b, float epsilon=Epsilon)
         {
-            const float floatNormal = (1 << 23) * float.Epsilon;
-            float absA = Math.Abs(a);
-            float absB = Math.Abs(b);
-            float diff = Math.Abs(a - b);
-
             if (a == b)
             {
                 // Shortcut, handles infinities
                 return true;
             }
+
+            const float floatNormal = (1 << 23) * float.Epsilon;
+            float absA = Math.Abs(a);
+            float absB = Math.Abs(b);
+            float diff = Math.Abs(a - b);
 
             if (a == 0.0f || b == 0.0f || diff < floatNormal)
             {

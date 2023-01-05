@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@ namespace Urho3DNet
 
 /// 4x4 matrix for arbitrary linear transforms including projection.
 [StructLayout(LayoutKind.Sequential)]
-public struct Matrix4 : IEquatable<Matrix4>
+public struct Matrix4 : IEquatable<Matrix4>, IApproximateEquatable<Matrix4>
 {
     public override bool Equals(object obj)
     {
@@ -359,6 +359,29 @@ public struct Matrix4 : IEquatable<Matrix4>
     public bool Equals(Matrix4 rhs)
     {
         return this == rhs;
+    }
+
+    /// <summary>
+    /// Test for equality with another matrix with epsilon.
+    /// </summary>
+    public bool ApproximatelyEquivalent(Matrix4 rhs, float epsilon = MathDefs.Epsilon)
+    {
+        return MathDefs.ApproximatelyEquivalent(M00, rhs.M00, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M01, rhs.M01, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M02, rhs.M02, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M03, rhs.M03, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M10, rhs.M10, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M11, rhs.M11, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M12, rhs.M12, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M13, rhs.M13, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M20, rhs.M20, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M21, rhs.M21, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M22, rhs.M22, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M23, rhs.M23, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M30, rhs.M30, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M31, rhs.M31, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M32, rhs.M32, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M33, rhs.M33, epsilon);
     }
 
     public override int GetHashCode()
