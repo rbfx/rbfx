@@ -69,21 +69,7 @@ namespace Urho3DNet
         /// </summary>
         public Matrix3(float angle, Vector3 axis)
         {
-            Vector3 normAxis = axis.Normalized;
-            float sinAngle = 0.0f;
-            float cosAngle = 0.0f;
-            Urho3D.SinCos(angle, ref sinAngle, ref cosAngle);
-            float _cosAngle = 1.0f - cosAngle;
-
-            M00 = cosAngle + normAxis.X * normAxis.X * _cosAngle;
-            M10 = normAxis.Y * normAxis.X * _cosAngle + normAxis.Z * sinAngle;
-            M20 = normAxis.Z * normAxis.X * _cosAngle - normAxis.Y * sinAngle;
-            M01 = normAxis.X * normAxis.Y * _cosAngle - normAxis.Z * sinAngle;
-            M11 = cosAngle + normAxis.Y * normAxis.Y * _cosAngle;
-            M21 = normAxis.Z * normAxis.Y * _cosAngle + normAxis.X * sinAngle;
-            M02 = normAxis.X * normAxis.Z * _cosAngle + normAxis.Y * sinAngle;
-            M12 = normAxis.Y * normAxis.Z * _cosAngle - normAxis.X * sinAngle;
-            M22 = cosAngle + normAxis.Z * normAxis.Z * _cosAngle;
+            this = new Quaternion(angle, axis).RotationMatrix;
         }
 
         /// Test for equality with another matrix without epsilon.
