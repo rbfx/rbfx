@@ -24,6 +24,7 @@
 
 #include "../Project/AssetManager.h"
 
+#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Resource/JSONFile.h>
 
 namespace Urho3D
@@ -40,11 +41,11 @@ void RequestProcessAsset(Project* project, const AssetTransformerInput& input,
     auto context = project->GetContext();
     auto assetManager = project->GetAssetManager();
 
-    TemporaryDir tempDir = project->CreateTemporaryDir();
+    auto tempDir = ea::make_shared<TemporaryDir>(project->CreateTemporaryDir());
 
     // Strip the base path to avoid having spaces in the path passed to the command
     const ea::string projectPath = project->GetProjectPath();
-    const ea::string relativeTempPath = tempDir.GetPath().substr(projectPath.size());
+    const ea::string relativeTempPath = tempDir->GetPath().substr(projectPath.size());
 
     const ea::string inputPath = relativeTempPath + "input.json";
     const ea::string outputPath = relativeTempPath + "output.json";
@@ -63,28 +64,31 @@ void RequestProcessAsset(Project* project, const AssetTransformerInput& input,
     }
 
     const ea::string command = Format("{} {} {}", commandName, inputPath, outputPath);
-    ea::string commandOutput;
-    if (!project->ExecuteRemoteCommand(command, &commandOutput))
+    project->ExecuteRemoteCommandAsync(command,
+        [=, tempDir2 = tempDir](bool success, const ea::string& commandOutput)
     {
-        callback(input, ea::nullopt, commandOutput);
-        return;
-    }
+        if (!success)
+        {
+            callback(input, ea::nullopt, commandOutput);
+            return;
+        }
 
-    JSONFile outputFile(context);
-    if (!outputFile.LoadFile(projectPath + outputPath))
-    {
-        callback(input, ea::nullopt, "Cannot load output pipe");
-        return;
-    }
+        JSONFile outputFile(context);
+        if (!outputFile.LoadFile(projectPath + outputPath))
+        {
+            callback(input, ea::nullopt, "Cannot load output pipe");
+            return;
+        }
 
-    AssetTransformerOutput output;
-    if (!outputFile.LoadObject("output", output))
-    {
-        callback(input, ea::nullopt, "Cannot deserialize output pipe");
-        return;
-    }
+        AssetTransformerOutput output;
+        if (!outputFile.LoadObject("output", output))
+        {
+            callback(input, ea::nullopt, "Cannot deserialize output pipe");
+            return;
+        }
 
-    callback(input, output, commandOutput);
+        callback(input, output, commandOutput);
+    });
 }
 
 bool ProcessAsset(Project* project, const ea::string& inputName, const ea::string& outputName)
@@ -148,7 +152,7 @@ void Foundation_ConcurrentAssetProcessing(Context* context, Project* project)
         RequestProcessAsset(project, input, callback);
     };
 
-    assetManager->SetProcessCallback(requestProcessAsset, 1);
+    assetManager->SetProcessCallback(requestProcessAsset, GetNumLogicalCPUs());
     project->OnCommand.Subscribe(project,
         [=](const ea::string& command, const ea::string& args, bool& processed)
     {

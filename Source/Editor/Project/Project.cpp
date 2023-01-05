@@ -300,6 +300,19 @@ bool Project::ExecuteRemoteCommand(const ea::string& command, ea::string* output
     return true;
 }
 
+void Project::ExecuteRemoteCommandAsync(const ea::string& command, CommandExecutedCallback callback)
+{
+    PendingRemoteCommand remoteCommand;
+    remoteCommand.callback_ = ea::move(callback);
+    remoteCommand.result_ = std::async([=]()
+    {
+        ea::string output;
+        const bool success = ExecuteRemoteCommand(command, &output);
+        return ea::make_pair(success, output);
+    });
+    pendingRemoteCommands_.push_back(ea::move(remoteCommand));
+}
+
 void Project::Destroy()
 {
     // Always save shallow data on close
@@ -740,6 +753,7 @@ void Project::Render()
 
     ProcessDelayedSaves();
     ProcessPendingRequests();
+    ProcessPendingRemoteCommands();
 }
 
 void Project::ProcessPendingRequests()
@@ -804,6 +818,22 @@ void Project::ProcessCommand(const ea::string& command, bool exitOnCompletion)
         closeProjectResult_ = CloseProjectResult::Closed;
         SendEvent(E_EXITREQUESTED);
     }
+}
+
+void Project::ProcessPendingRemoteCommands()
+{
+    for (PendingRemoteCommand& command : pendingRemoteCommands_)
+    {
+        if (command.result_.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+        {
+            const auto [success, output] = command.result_.get();
+            command.callback_(success, output);
+            command.callback_ = nullptr;
+        }
+    }
+
+    const auto isDone = [](const PendingRemoteCommand& command) { return command.callback_ == nullptr; };
+    ea::erase_if(pendingRemoteCommands_, isDone);
 }
 
 void Project::RenderToolbar()

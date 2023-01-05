@@ -95,7 +95,7 @@ void AssetManager::Initialize(bool readOnly)
         ScanAndQueueAssetProcessing();
     }
 
-    if (requestQueue_.empty())
+    if (requestQueue_.empty() && numOngoingRequests_ == 0)
     {
         initialized_ = true;
         OnInitialized(this);
@@ -104,9 +104,9 @@ void AssetManager::Initialize(bool readOnly)
 
 void AssetManager::Update()
 {
-    if (!requestQueue_.empty())
+    if (!requestQueue_.empty() || numOngoingRequests_ != 0)
     {
-        if (numOngoingRequests_ < maxConcurrentRequests_)
+        if (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
             ConsumeAssetQueue();
         return;
     }
@@ -543,14 +543,13 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
     const ea::string fileName = GetFileName(resourceName);
     const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName);
 
+    AssetDesc& assetDesc = assets_[resourceName];
+    assetDesc.resourceName_ = resourceName;
+    assetDesc.modificationTime_ = assetModifiedTime;
+
     const AssetTransformerInput input{flavor, resourceName, fileName, assetModifiedTime};
     if (!AssetTransformer::IsApplicable(input, transformers))
-    {
-        AssetDesc& assetDesc = assets_[resourceName];
-        assetDesc.resourceName_ = resourceName;
-        assetDesc.modificationTime_ = assetModifiedTime;
         return false;
-    }
 
     const ea::string tempPath = project_->GetRandomTemporaryPath();
     const ea::string outputFileName = tempPath + resourceName;

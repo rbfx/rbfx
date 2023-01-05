@@ -39,6 +39,7 @@
 #include <EASTL/functional.h>
 #include <EASTL/set.h>
 
+#include <future>
 #include <regex>
 
 struct ImFont;
@@ -96,6 +97,7 @@ class Project : public Object
 
 public:
     using AnalyzeFileCallback = ea::function<void(ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)>;
+    using CommandExecutedCallback = ea::function<void(bool success, const ea::string& output)>;
 
     Signal<void()> OnInitialized;
     Signal<void()> OnShallowSaved;
@@ -113,6 +115,8 @@ public:
     void ExecuteCommand(const ea::string& command, bool exitOnCompletion = false);
     /// Execute the command line in another process.
     bool ExecuteRemoteCommand(const ea::string& command, ea::string* output = nullptr);
+    /// Execute the command line in another process asynchronously.
+    void ExecuteRemoteCommandAsync(const ea::string& command, CommandExecutedCallback callback);
 
     /// Called right before destructor.
     /// Perform all complicated stuff here because Project is still available for plugins as subsystem.
@@ -227,6 +231,11 @@ private:
         void Clear() { bytes_ = nullptr; resource_ = nullptr; }
         bool IsEmpty() const { return !bytes_ && !resource_; }
     };
+    struct PendingRemoteCommand
+    {
+        CommandExecutedCallback callback_;
+        std::future<ea::pair<bool, ea::string>> result_;
+    };
 
     void InitializeHotkeys();
     void EnsureDirectoryInitialized();
@@ -238,6 +247,7 @@ private:
     void ProcessPendingRequests();
     void ProcessDelayedSaves(bool forceSave = false);
     void ProcessCommand(const ea::string& command, bool exitOnCompletion);
+    void ProcessPendingRemoteCommands();
 
     /// Project properties
     /// @{
@@ -290,6 +300,9 @@ private:
 
     /// File save requests to be processed.
     ea::unordered_map<ea::string, PendingFileSave> delayedFileSaves_;
+
+    /// Ongoing remote commands.
+    ea::vector<PendingRemoteCommand> pendingRemoteCommands_;
 
     /// Close popup handling
     /// @{
