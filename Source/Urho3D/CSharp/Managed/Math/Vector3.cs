@@ -308,15 +308,11 @@ namespace Urho3DNet
             return $"{X} {Y} {Z}";
         }
 
-        /// Return hash value for HashSet & HashMap.
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            uint hash = 37;
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(X);
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(Y);
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(Z);
-
-            return (int) hash;
+            return HashCode.Combine(X, Y, Z);
         }
 
         /// Per-component linear interpolation between two 3-vectors.

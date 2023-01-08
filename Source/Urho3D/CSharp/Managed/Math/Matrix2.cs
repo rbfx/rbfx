@@ -242,16 +242,11 @@ namespace Urho3DNet
             return obj is Matrix2 other && Equals(other);
         }
 
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = M00.GetHashCode();
-                hashCode = (hashCode * 397) ^ M01.GetHashCode();
-                hashCode = (hashCode * 397) ^ M10.GetHashCode();
-                hashCode = (hashCode * 397) ^ M11.GetHashCode();
-                return hashCode;
-            }
+            return HashCode.Combine(M00, M01, M10, M11);
         }
     };
 }
