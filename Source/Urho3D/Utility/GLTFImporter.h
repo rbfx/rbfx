@@ -34,7 +34,10 @@ namespace Urho3D
 
 struct GLTFImporterSettings
 {
+    bool mirrorX_{};
     float scale_{1.0f};
+    Quaternion rotation_;
+
     float offsetMatrixError_{ 0.00002f };
     float keyFrameTimeError_{ M_EPSILON };
     bool repairLooping_{false};

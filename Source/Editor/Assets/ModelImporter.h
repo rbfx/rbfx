@@ -51,7 +51,9 @@ private:
 
     ToolManager* GetToolManager() const;
 
+    bool mirrorX_{};
     float scale_{1.0f};
+    Quaternion rotation_;
     bool repairLooping_{false};
 };
 

@@ -101,7 +101,35 @@ Matrix3x4 MirrorX(Matrix3x4 mat)
     return mat;
 }
 
-static auto transformMirrorX = [](const auto& value) { return MirrorX(value); };
+template <class T>
+T ConditionalMirrorX(const T& value, bool mirror)
+{
+    return mirror ? MirrorX(value) : value;
+}
+
+/// Inline transformation applied to the scene at the lowest level.
+struct InlineTransform
+{
+    bool mirrorX_{};
+    float scale_{1.0f};
+
+    Vector3 ApplyToPosition(const Vector3& vec) const
+    {
+        return scale_ * ConditionalMirrorX(vec, mirrorX_);
+    }
+
+    Quaternion ApplyToRotation(const Quaternion& quat) const
+    {
+        return ConditionalMirrorX(quat, mirrorX_);
+    }
+
+    Matrix3x4 ApplyToInverseBindMatrix(const Matrix3x4& mat) const
+    {
+        return Matrix3x4::FromScale(scale_)
+            * ConditionalMirrorX(mat, mirrorX_)
+            * Matrix3x4::FromScale(1.0f / scale_);
+    }
+};
 
 /// Raw imported input, parameters and generic output layout.
 class GLTFImporterBase : public NonCopyable
@@ -559,6 +587,9 @@ public:
         , bufferReader_(bufferReader)
         , model_(base_.GetModel())
     {
+        inlineTransform_.mirrorX_ = base.GetSettings().mirrorX_;
+        inlineTransform_.scale_ = base.GetSettings().scale_;
+
         ProcessMeshMorphs();
         InitializeParents();
         InitializeTrees();
@@ -573,7 +604,7 @@ public:
         ImportAnimations();
     }
 
-    bool IsDeepMirrored() const { return isDeepMirrored_; }
+    const InlineTransform& GetInlineTransform() const { return inlineTransform_; }
 
     const GLTFNode& GetNode(int nodeIndex) const
     {
@@ -741,9 +772,17 @@ private:
 
     void ConvertToLeftHandedCoordinates()
     {
-        isDeepMirrored_ = HasMirroredMeshes(rootNodes_, true);
-        if (!isDeepMirrored_)
+        // If most of geometry is mirrored, we need to undo that by mirroring the scene root nodes
+        const bool isMostlyMirrored = HasMostlyMirroredGeometry();
+        const bool needDeepMirror = isMostlyMirrored == inlineTransform_.mirrorX_;
+        const bool needShallowMirror = isMostlyMirrored;
+
+        inlineTransform_.mirrorX_ = needDeepMirror;
+
+        if (needShallowMirror)
         {
+            // If the scene already had negative scale and we reverted it, no need to do deep mirroring.
+            // Mirror only root nodes.
             for (const GLTFNodePtr& node : rootNodes_)
             {
                 node->position_ = MirrorX(node->position_);
@@ -751,37 +790,52 @@ private:
                 node->scale_ = MirrorX(node->scale_);
             }
         }
-        else
-        {
-            for (const GLTFNodePtr& node : rootNodes_)
-                DeepMirror(*node);
-        }
+
+        // Apply inline transforms on the lowest level
+        for (const GLTFNodePtr& node : rootNodes_)
+            ApplyInlineTransform(*node);
     }
 
-    bool HasMirroredMeshes(const ea::vector<GLTFNodePtr>& nodes, bool isParentMirrored) const
+    /// Return true if source model is has a lot of mirrored meshes.
+    bool HasMostlyMirroredGeometry() const
     {
-        return ea::any_of(nodes.begin(), nodes.end(),
-            [&](const GLTFNodePtr& node) { return HasMirroredMeshes(*node, isParentMirrored); });
+        unsigned totalMeshes = 0;
+        unsigned mirroredMeshes = 0;
+        CountMirroredMeshes(rootNodes_, false, totalMeshes, mirroredMeshes);
+        return mirroredMeshes > 0 && mirroredMeshes > totalMeshes / 2;
     }
 
-    bool HasMirroredMeshes(GLTFNode& node, bool isParentMirrored) const
+    void CountMirroredMeshes(const ea::vector<GLTFNodePtr>& nodes, bool isParentMirrored,
+        unsigned& totalMeshes, unsigned& mirroredMeshes) const
+    {
+        for (const GLTFNodePtr& node : nodes)
+            CountMirroredMeshes(*node, isParentMirrored, totalMeshes, mirroredMeshes);
+    }
+
+    void CountMirroredMeshes(const GLTFNode& node, bool isParentMirrored,
+        unsigned& totalMeshes, unsigned& mirroredMeshes) const
     {
         const tg::Node& sourceNode = model_.nodes[node.index_];
         const bool hasMesh = sourceNode.mesh >= 0;
         const bool isMirroredLocal = IsNegativeScale(node.scale_);
         const bool isMirroredWorld = (isParentMirrored != isMirroredLocal);
-        if (isMirroredWorld && hasMesh)
-            return true;
 
-        return HasMirroredMeshes(node.children_, isMirroredWorld);
+        if (hasMesh)
+        {
+            ++totalMeshes;
+            if (isMirroredWorld)
+                ++mirroredMeshes;
+        }
+
+        CountMirroredMeshes(node.children_, isMirroredWorld, totalMeshes, mirroredMeshes);
     }
 
-    void DeepMirror(GLTFNode& node) const
+    void ApplyInlineTransform(GLTFNode& node) const
     {
-        node.position_ = MirrorX(node.position_);
-        node.rotation_ = MirrorX(node.rotation_);
+        node.position_ = inlineTransform_.ApplyToPosition(node.position_);
+        node.rotation_ = inlineTransform_.ApplyToRotation(node.rotation_);
         for (const GLTFNodePtr& node : node.children_)
-            DeepMirror(*node);
+            ApplyInlineTransform(*node);
     }
 
     void PreProcessSkins()
@@ -1025,7 +1079,7 @@ private:
 
             for (unsigned i = 0; i < sourceSkin.joints.size(); ++i)
                 skin.inverseBindMatrices_[i] = Matrix3x4{ sourceBindMatrices[i].Transpose() };
-            MirrorIfNecessary(skin.inverseBindMatrices_);
+            ApplyInlineTransformToInverseBindMatrix(skin.inverseBindMatrices_);
         }
 
         // Generate skeleton bones
@@ -1245,7 +1299,7 @@ private:
                 {
                     track.positionKeys_ = channelKeys;
                     track.positionValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-                    MirrorIfNecessary(track.positionValues_);
+                    ApplyInlineTransformToPosition(track.positionValues_);
 
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
                         track.positionValues_ = ReadVericalSlice(track.positionValues_, 1, 3);
@@ -1257,7 +1311,7 @@ private:
                 {
                     track.rotationKeys_ = channelKeys;
                     track.rotationValues_ = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
-                    MirrorIfNecessary(track.rotationValues_);
+                    ApplyInlineTransformToRotation(track.rotationValues_);
 
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
                         track.rotationValues_ = ReadVericalSlice(track.rotationValues_, 1, 3);
@@ -1293,13 +1347,13 @@ private:
                 if (newChannel == CHANNEL_POSITION)
                 {
                     auto positionValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-                    MirrorIfNecessary(positionValues);
+                    ApplyInlineTransformToPosition(positionValues);
                     ea::copy(positionValues.begin(), positionValues.end(), ea::back_inserter(track.values_));
                 }
                 else if (newChannel == CHANNEL_ROTATION)
                 {
                     auto rotationValues = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
-                    MirrorIfNecessary(rotationValues);
+                    ApplyInlineTransformToRotation(rotationValues);
                     ea::copy(rotationValues.begin(), rotationValues.end(), ea::back_inserter(track.values_));
                 }
                 else if (newChannel == CHANNEL_SCALE)
@@ -1380,11 +1434,22 @@ private:
         return pathString;
     }
 
-    template <class T>
-    void MirrorIfNecessary(ea::vector<T>& vec) const
+    void ApplyInlineTransformToPosition(ea::vector<Vector3>& vec) const
     {
-        if (isDeepMirrored_)
-            ea::transform(vec.begin(), vec.end(), vec.begin(), transformMirrorX);
+        ea::transform(vec.begin(), vec.end(), vec.begin(),
+            [&](const auto& value) { return inlineTransform_.ApplyToPosition(value); });
+    }
+
+    void ApplyInlineTransformToRotation(ea::vector<Quaternion>& vec) const
+    {
+        ea::transform(vec.begin(), vec.end(), vec.begin(),
+            [&](const auto& value) { return inlineTransform_.ApplyToRotation(value); });
+    }
+
+    void ApplyInlineTransformToInverseBindMatrix(ea::vector<Matrix3x4>& vec) const
+    {
+        ea::transform(vec.begin(), vec.end(), vec.begin(),
+            [&](const auto& value) { return inlineTransform_.ApplyToInverseBindMatrix(value); });
     }
 
     unsigned GetChildIndex(const GLTFNode& node) const
@@ -1606,7 +1671,8 @@ private:
 
     ea::vector<GLTFNodePtr> rootNodes_;
     ea::vector<GLTFNode*> nodeByIndex_;
-    bool isDeepMirrored_{};
+
+    InlineTransform inlineTransform_;
 
     ea::vector<GLTFNode*> skinToRootNode_;
     ea::vector<unsigned> skinToSkeleton_;
@@ -2480,8 +2546,11 @@ private:
             }
         }
 
-        if (hierarchyAnalyzer_.IsDeepMirrored())
+        const InlineTransform& transform = hierarchyAnalyzer_.GetInlineTransform();
+        if (transform.mirrorX_)
             modelView->MirrorGeometriesX();
+        if (transform.scale_ != 1.0f)
+            modelView->ScaleGeometries(transform.scale_);
 
         modelView->CalculateMissingNormals(true);
         modelView->CalculateMissingTangents();
@@ -3013,7 +3082,7 @@ private:
         }
 
         Node* rootNode = scene->CreateChild("Imported Scene");
-        rootNode->SetScale(base_.GetSettings().scale_);
+        rootNode->SetRotation(base_.GetSettings().rotation_);
 
         if (animationImporter_.HasSceneAnimations())
             InitializeAnimationController(*rootNode, ea::nullopt);

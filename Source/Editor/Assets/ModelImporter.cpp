@@ -64,7 +64,9 @@ void ModelImporter::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<ModelImporter>(Category_Transformer);
 
+    URHO3D_ATTRIBUTE("Mirror X", bool, mirrorX_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Scale", float, scale_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation", Quaternion, rotation_, Quaternion::IDENTITY, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
 }
 
@@ -132,7 +134,9 @@ bool ModelImporter::ImportGLTF(const ea::string& fileName,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     GLTFImporterSettings importerSettings;
+    importerSettings.mirrorX_ = mirrorX_;
     importerSettings.scale_ = scale_;
+    importerSettings.rotation_ = rotation_;
     importerSettings.repairLooping_ = repairLooping_;
     auto importer = MakeShared<GLTFImporter>(context_, importerSettings);
 
