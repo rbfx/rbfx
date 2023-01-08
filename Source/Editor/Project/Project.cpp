@@ -606,34 +606,34 @@ void Project::ResetLayout()
 {
     pendingResetLayout_ = false;
 
-    ImGui::DockBuilderRemoveNode(dockspaceId_);
-    ImGui::DockBuilderAddNode(dockspaceId_, 0);
-    ImGui::DockBuilderSetNodeSize(dockspaceId_, ui::GetMainViewport()->Size);
+    ui::DockBuilderRemoveNode(dockspaceId_);
+    ui::DockBuilderAddNode(dockspaceId_, 0);
+    ui::DockBuilderSetNodeSize(dockspaceId_, ui::GetMainViewport()->Size);
 
     ImGuiID dockCenter = dockspaceId_;
-    ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockCenter, ImGuiDir_Left, 0.20f, nullptr, &dockCenter);
-    ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockCenter, ImGuiDir_Right, 0.30f, nullptr, &dockCenter);
-    ImGuiID dockBottom = ImGui::DockBuilderSplitNode(dockCenter, ImGuiDir_Down, 0.30f, nullptr, &dockCenter);
+    ImGuiID dockLeft = ui::DockBuilderSplitNode(dockCenter, ImGuiDir_Left, 0.20f, nullptr, &dockCenter);
+    ImGuiID dockRight = ui::DockBuilderSplitNode(dockCenter, ImGuiDir_Right, 0.30f, nullptr, &dockCenter);
+    ImGuiID dockBottom = ui::DockBuilderSplitNode(dockCenter, ImGuiDir_Down, 0.30f, nullptr, &dockCenter);
 
     for (EditorTab* tab : tabs_)
     {
         switch (tab->GetPlacement())
         {
         case EditorTabPlacement::DockCenter:
-            ImGui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockCenter);
+            ui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockCenter);
             break;
         case EditorTabPlacement::DockLeft:
-            ImGui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockLeft);
+            ui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockLeft);
             break;
         case EditorTabPlacement::DockRight:
-            ImGui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockRight);
+            ui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockRight);
             break;
         case EditorTabPlacement::DockBottom:
-            ImGui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockBottom);
+            ui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockBottom);
             break;
         }
     }
-    ImGui::DockBuilderFinish(dockspaceId_);
+    ui::DockBuilderFinish(dockspaceId_);
 
     for (EditorTab* tab : tabs_)
     {

@@ -350,16 +350,16 @@ void Editor::Render()
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_MenuBar;
     flags |= ImGuiWindowFlags_NoDocking;
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos + ImVec2(0, toolbarEffectiveHeight));
-    ImGui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight));
-    ImGui::SetNextWindowViewport(viewport->ID);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGuiViewport* viewport = ui::GetMainViewport();
+    ui::SetNextWindowPos(viewport->Pos + ImVec2(0, toolbarEffectiveHeight));
+    ui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight));
+    ui::SetNextWindowViewport(viewport->ID);
+    ui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
     flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace", nullptr, flags);
-    ImGui::PopStyleVar();
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ui::Begin("DockSpace", nullptr, flags);
+    ui::PopStyleVar();
 
     RenderMenuBar();
     RenderAboutDialog();
@@ -421,7 +421,7 @@ void Editor::Render()
     const float menuBarHeight = ui::GetCurrentWindow()->MenuBarHeight();
 
     ui::End();
-    ImGui::PopStyleVar();
+    ui::PopStyleVar();
 
     // TODO(editor): Refactor this function
     if (hasToolbar)
@@ -715,7 +715,7 @@ void Editor::InitializeImGuiConfig()
 
 void Editor::InitializeImGuiStyle()
 {
-    auto& style = ImGui::GetStyleTemplate();
+    auto& style = ui::GetStyleTemplate();
 
     // TODO: Make configurable.
     style.WindowRounding = 3;
