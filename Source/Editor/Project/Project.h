@@ -248,6 +248,7 @@ private:
     void ProcessDelayedSaves(bool forceSave = false);
     void ProcessCommand(const ea::string& command, bool exitOnCompletion);
     void ProcessPendingRemoteCommands();
+    void RenderAssetsToolbar();
 
     /// Project properties
     /// @{

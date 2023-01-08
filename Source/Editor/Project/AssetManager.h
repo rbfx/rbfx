@@ -48,6 +48,9 @@ class AssetManager : public Object
 public:
     Signal<void()> OnInitialized;
 
+    /// Number of processed assets and total number of assets in the current queue.
+    using ProgressInfo = ea::pair<unsigned, unsigned>;
+
     using OnProcessAssetCompleted = ea::function<
         void(const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)>;
     using OnProcessAssetQueued = ea::function<
@@ -66,6 +69,9 @@ public:
     void Initialize(bool readOnly);
     void Update();
     void MarkCacheDirty(const ea::string& resourcePath);
+
+    /// Return current progress of asset processing:
+    ProgressInfo GetProgress() const { return progress_; }
 
     /// Serialize
     /// @{
@@ -179,6 +185,8 @@ private:
 
     ea::vector<AssetTransformerInput> requestQueue_;
     unsigned numOngoingRequests_{};
+
+    ProgressInfo progress_;
 };
 
 }

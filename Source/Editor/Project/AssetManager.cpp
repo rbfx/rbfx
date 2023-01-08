@@ -117,6 +117,9 @@ void AssetManager::Update()
         OnInitialized(this);
     }
 
+    // Reset progress
+    progress_ = {};
+
     ProcessFileSystemUpdates();
 
     if (autoProcessAssets_)
@@ -132,6 +135,7 @@ void AssetManager::ConsumeAssetQueue()
     while (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
     {
         ++numOngoingRequests_;
+        ++progress_.second;
         queue.push_back(requestQueue_.back());
         requestQueue_.pop_back();
     }
@@ -579,6 +583,8 @@ void AssetManager::CompleteAssetProcessing(
         --numOngoingRequests_;
     else
         URHO3D_ASSERTLOG(false, "AssetManager::CompleteAssetProcessing() called with no ongoing requests");
+
+    ++progress_.first;
 
     if (output)
     {

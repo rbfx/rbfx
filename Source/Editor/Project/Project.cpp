@@ -846,6 +846,21 @@ void Project::RenderToolbar()
 
     if (focusedRootTab_)
         focusedRootTab_->RenderToolbar();
+
+    RenderAssetsToolbar();
+}
+
+void Project::RenderAssetsToolbar()
+{
+    const auto [numAssetsCooked, numAssetsTotal] = assetManager_->GetProgress();
+
+    if (numAssetsTotal == 0)
+        return;
+
+    Widgets::ToolbarSeparator();
+    const float ratio = static_cast<float>(numAssetsCooked) / numAssetsTotal;
+    const ea::string text = Format("Assets cooked {}/{}", numAssetsCooked, numAssetsTotal);
+    ui::ProgressBar(ratio, ImVec2{200.0f, 0.0f}, text.c_str());
 }
 
 void Project::RenderProjectMenu()
