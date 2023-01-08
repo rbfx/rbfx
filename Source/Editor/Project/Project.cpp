@@ -865,7 +865,10 @@ void Project::RenderAssetsToolbar()
     Widgets::ToolbarSeparator();
     const float ratio = static_cast<float>(numAssetsCooked) / numAssetsTotal;
     const ea::string text = Format("Assets cooked {}/{}", numAssetsCooked, numAssetsTotal);
-    ui::ProgressBar(ratio, ImVec2{200.0f, 0.0f}, text.c_str());
+
+    // Show some small progress from the start for better visibility
+    const float progress = Lerp(0.05f, 1.0f, ratio);
+    ui::ProgressBar(progress, ImVec2{200.0f, 0.0f}, text.c_str());
 }
 
 void Project::RenderProjectMenu()
