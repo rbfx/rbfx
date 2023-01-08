@@ -73,8 +73,8 @@ enum NetworkMessageId : uint16_t
     /// Message IDs starting from MSG_USER are reserved for the end user.
     MSG_USER = 512,
 
-    /// Max message ID value. Last two bytes are reserved for a packet type.
-    MSG_MAX = std::numeric_limits<uint16_t>::max() >> 1,
+    /// Max message ID value.
+    MSG_MAX = 0xFFFF,
 };
 
 /// Package file fragment size.

@@ -78,11 +78,11 @@ ea::string URL::ToString() const
     }
     if (!user_.empty())
     {
-        url += user_;
+        url += Encode(user_);
         if (!password_.empty())
         {
             url += ":";
-            url += user_;
+            url += Encode(password_);
         }
         url += "@";
     }
@@ -91,18 +91,19 @@ ea::string URL::ToString() const
         url += Format(":{}", port_);
     if (!path_.empty())
     {
-        url += "/";
+        if (path_[0] != '/')
+            url += "/";
         url += path_;
     }
     if (!query_.empty())
     {
         url += "?";
-        url += query_;
+        url += query_;  // Query parts assumed to be encoded by the user
     }
     if (!hash_.empty())
     {
         url += "#";
-        url += hash_;
+        url += hash_;   // Assumed to be encoded by the user
     }
     return url;
 }
@@ -117,6 +118,34 @@ URL::operator bool() const
         !path_.empty() ||
         !query_.empty() ||
         !hash_.empty();
+}
+
+ea::string URL::Encode(ea::string_view string)
+{
+    ea::string result;
+    for (char c : string)
+    {
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') // rfc3986, 2.3. Unreserved Characters
+            result.append(1, c);
+        else
+            result.append_sprintf("%%%02X", c);
+    }
+    return result;
+}
+
+ea::string URL::Decode(ea::string_view string)
+{
+    ea::string result;
+    for (const char* p = string.begin(); p < string.end();)
+    {
+        int c = 0;
+        if (*p == '%')
+            p += sscanf(p, "%02X", &c);
+        else
+            c = *p++;
+        result.append(1, static_cast<char>(c));
+    }
+    return result;
 }
 
 }

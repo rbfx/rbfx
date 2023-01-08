@@ -32,13 +32,18 @@ class URHO3D_API URL
 public:
     URL() = default;
     URL(unsigned short port) { port_ = port; }
-    URL(ea::string url) { ParseURL(url); }
     URL(ea::string_view url) { ParseURL(url); }
     URL& operator=(ea::string_view url) { ParseURL(url); return *this; }
     /// Returns false if URL fails to parse.
     operator bool() const;
     /// Format an url after modifications were applied. No validation is done! Invalid input will result in invalid URL!
     ea::string ToString() const;
+
+    /// Encode strings for inclusion in URLs, or decode them when obtained from URLs.
+    /// @{
+    static ea::string Encode(ea::string_view string);
+    static ea::string Decode(ea::string_view string);
+    /// @}
 
     /// @{
     ea::string scheme_;

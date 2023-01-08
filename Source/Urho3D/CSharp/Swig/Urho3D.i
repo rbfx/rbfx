@@ -427,6 +427,8 @@ public:
 
 %include "generated/Urho3D/_pre_io.i"
 %interface_custom("%s", "I%s", Urho3D::Serializer);
+%ignore Urho3D::Serializer::WriteString(ea::string_view value);
+%ignore Urho3D::WriteString(std::string_view value);
 %include "Urho3D/IO/Serializer.h"
 %interface_custom("%s", "I%s", Urho3D::Deserializer);
 %include "Urho3D/IO/Deserializer.h"

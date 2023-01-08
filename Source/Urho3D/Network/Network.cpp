@@ -73,7 +73,7 @@ Network::~Network()
 {
     assert(clientConnections_.empty());
     assert(!IsServerRunning());
-    assert(!serverConnection_);
+    assert(!connectionToServer_);
 }
 
 void Network::OnClientConnected(Connection* connection)
@@ -115,42 +115,46 @@ bool Network::Connect(const URL& url, Scene* scene, const VariantMap& identity)
 {
     URHO3D_PROFILE("Connect");
 
-    if (!serverConnection_)
+    if (!connectionToServer_)
     {
         URHO3D_LOGINFO("Connecting to server {}", url.ToString());
         DataChannelConnection* transportConnection = new DataChannelConnection(context_);
-        serverConnection_ = new Connection(context_, transportConnection);
-        serverConnection_->SetScene(scene);
-        serverConnection_->SetIdentity(identity);
-        serverConnection_->SetConnectPending(true);
-        serverConnection_->SetIsClient(false);
+        connectionToServer_ = new Connection(context_, transportConnection);
+        connectionToServer_->SetScene(scene);
+        connectionToServer_->SetIdentity(identity);
+        connectionToServer_->SetConnectPending(true);
+        connectionToServer_->SetIsClient(false);
 
-        WorkQueue* queue = GetSubsystem<WorkQueue>();
+        WeakPtr<WorkQueue> queue(GetSubsystem<WorkQueue>());
         transportConnection->onConnected_ = [this, queue]()
         {
+            if (!queue)
+                return;
             queue->CallFromMainThread([this](int)
             {
-                OnServerConnected(serverConnection_);
+                OnConnectedToServer(connectionToServer_);
             });
         };
         transportConnection->onDisconnected_ = transportConnection->onError_ = [this, queue]()
         {
+            if (!queue)
+                return;
             queue->CallFromMainThread([this](int)
             {
-                OnServerDisconnected(serverConnection_);
+                OnDisconnectedFromServer(connectionToServer_);
             });
         };
 
         transportConnection->Connect(url);
         return true;
     }
-    else if (serverConnection_->IsConnected())
+    else if (connectionToServer_->IsConnected())
     {
         URHO3D_LOGWARNING("Already connected to server!");
         SendEvent(E_CONNECTIONINPROGRESS);  // TODO: This is not used by the engine/samples and naming is weird. Torch it?
         return false;
     }
-    else if (serverConnection_->IsConnectPending())
+    else if (connectionToServer_->IsConnectPending())
     {
         URHO3D_LOGWARNING("Connection attempt already in progress!");
         SendEvent(E_CONNECTIONINPROGRESS);
@@ -166,14 +170,14 @@ bool Network::Connect(const URL& url, Scene* scene, const VariantMap& identity)
 
 void Network::Disconnect(int waitMSec)
 {
-    if (!serverConnection_)
+    if (!connectionToServer_)
         return;
 
     URHO3D_PROFILE("Disconnect");
-    serverConnection_->Disconnect();
+    connectionToServer_->Disconnect();
 }
 
-void Network::OnServerConnected(Connection* connection)
+void Network::OnConnectedToServer(Connection* connection)
 {
     connection->Initialize();
     connection->SetConnectPending(false);
@@ -188,12 +192,12 @@ void Network::OnServerConnected(Connection* connection)
     SendEvent(E_SERVERCONNECTED);
 }
 
-void Network::OnServerDisconnected(Connection* connection)
+void Network::OnDisconnectedFromServer(Connection* connection)
 {
     // Differentiate between failed connection, and disconnection
-    assert(serverConnection_ == connection);
-    bool failedConnect = serverConnection_ && serverConnection_->IsConnectPending();
-    serverConnection_.Reset();
+    assert(connectionToServer_ == connection);
+    bool failedConnect = connectionToServer_ && connectionToServer_->IsConnectPending();
+    connectionToServer_.Reset();
 
     if (!failedConnect)
     {
@@ -219,23 +223,22 @@ bool Network::StartServer(const URL& url, unsigned int maxConnections)
     transportServer_->onConnected_ = [this, queue](NetworkConnection* wtConnection)
     {
         // Hold on to DataChannelConnection reference until callback executes.
-        SharedPtr<DataChannelConnection> dataChannel(reinterpret_cast<DataChannelConnection*>(wtConnection));
-        queue->CallFromMainThread([this, dataChannel](int)
+        SharedPtr<NetworkConnection> conn(wtConnection);
+        queue->CallFromMainThread([this, conn](int)
         {
-            OnClientConnected(new Connection(context_, dataChannel));
+            OnClientConnected(new Connection(context_, conn));
         });
     };
     transportServer_->onDisconnected_ = [this, queue](NetworkConnection* wtConnection)
     {
         // Similarly, ensure that dataChannel reference is kept until callback finishes executing.
-        SharedPtr<DataChannelConnection> dataChannel(reinterpret_cast<DataChannelConnection*>(wtConnection));
-        queue->CallFromMainThread([this, dataChannel](int)
+        SharedPtr<NetworkConnection> conn(wtConnection);
+        queue->CallFromMainThread([this, conn](int)
         {
-            auto it = clientConnections_.find(WeakPtr(dataChannel.Get()));
+            auto it = clientConnections_.find(WeakPtr(conn.Get()));
             if (it != clientConnections_.end())
                 OnClientDisconnected(it->second);
         });
-
     };
     transportServer_->Listen(url);
     URHO3D_LOGINFO("Server is listening on {}.", url.ToString());
@@ -249,7 +252,7 @@ void Network::StopServer()
         pair.second->Disconnect();
     clientConnections_.clear();
 
-    if (!transportServer_)
+    if (!IsServerRunning())
         return;
 
     URHO3D_PROFILE("StopServer");
@@ -266,7 +269,7 @@ void Network::BroadcastMessage(NetworkMessageId msgID, const VectorBuffer& msg, 
 
 void Network::BroadcastMessage(NetworkMessageId msgID, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
 {
-    if (!transportServer_)
+    if (!IsServerRunning())
     {
         URHO3D_LOGERROR("Server not running, can not broadcast messages");
         return;
@@ -393,7 +396,7 @@ void Network::BanAddress(const ea::string& address)
 
 Connection* Network::GetServerConnection() const
 {
-    return serverConnection_;
+    return connectionToServer_;
 }
 
 ea::vector<SharedPtr<Connection>> Network::GetClientConnections() const
@@ -523,7 +526,7 @@ ea::string Network::GetDebugInfo() const
     //    }
     //    else
     //    {
-    //        OnServerDisconnected(packet->systemAddress);
+    //        OnDisconnectedFromServer(packet->systemAddress);
     //    }
     //    packetHandled = true;
     //}
@@ -535,7 +538,7 @@ ea::string Network::GetDebugInfo() const
     //    }
     //    else
     //    {
-    //        OnServerDisconnected(packet->systemAddress);
+    //        OnDisconnectedFromServer(packet->systemAddress);
     //    }
     //    packetHandled = true;
     //}
@@ -549,7 +552,7 @@ ea::string Network::GetDebugInfo() const
     //
     //        if (!isServer)
     //        {
-    //            OnServerDisconnected(packet->systemAddress);
+    //            OnDisconnectedFromServer(packet->systemAddress);
     //        }
     //    }
     //    packetHandled = true;
@@ -638,7 +641,7 @@ ea::string Network::GetDebugInfo() const
     //    else
     //    {
     //        MemoryBuffer buffer(packet->data + dataStart, packet->length - dataStart);
-    //        bool processed = serverConnection_ && serverConnection_->ProcessMessage(messageID, buffer);
+    //        bool processed = connectionToServer_ && connectionToServer_->ProcessMessage(messageID, buffer);
     //        if (!processed)
     //        {
     //            HandleMessage(packet->systemAddress, 0, messageID, (const char*)(packet->data + dataStart), packet->length - dataStart);
@@ -700,25 +703,25 @@ void Network::PostUpdate(float timeStep)
 
     // Always update on the client
     SendNetworkUpdateEvent(E_NETWORKUPDATE, false);
-    if (serverConnection_)
+    if (connectionToServer_)
     {
-        serverConnection_->SendRemoteEvents();
-        serverConnection_->SendAllBuffers();
-        serverConnection_->ProcessPackets();
+        connectionToServer_->SendRemoteEvents();
+        connectionToServer_->SendAllBuffers();
+        connectionToServer_->ProcessPackets();
     }
     SendNetworkUpdateEvent(E_NETWORKUPDATESENT, false);
 }
 
 void Network::HandleApplicationExit(StringHash eventType, VariantMap& eventData)
 {
-    if (serverConnection_)
-        serverConnection_->Disconnect();
+    if (connectionToServer_)
+        connectionToServer_->Disconnect();
     StopServer();
 
     // Connection shutdown is triggered. Wait until MsQuic callbacks receive shutdown events and deinitialize all streams and connections.
     // This will result in eventual deletion of Connection objects.
     auto queue = GetSubsystem<WorkQueue>();
-    while (serverConnection_ || !clientConnections_.empty())
+    while (connectionToServer_ || !clientConnections_.empty())
     {
         // Since we block main thread until all connections close, we must manually invoke queued callbacks, because MsQuic connection and
         // stream callbacks depend on WorkQueue::CallFromMainThread to do object deinitialization (which also sends events) in main thread.

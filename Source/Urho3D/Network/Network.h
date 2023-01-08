@@ -138,16 +138,20 @@ public:
     /// Send outgoing messages after frame logic. Called by HandleRenderUpdate.
     void PostUpdate(float timeStep);
 
+    /// Event handlers.
+    /// @{
+    void OnClientConnected(Connection* connection);
+    void OnClientDisconnected(Connection* connection);
+    void OnConnectedToServer(Connection* connection);
+    void OnDisconnectedFromServer(Connection* connection);
+    /// @}
+
 private:
     /// Event handlers.
     /// @{
     void HandleApplicationExit(StringHash eventType, VariantMap& eventData);
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
-    void OnClientConnected(Connection* connection);
-    void OnClientDisconnected(Connection* connection);
-    void OnServerConnected(Connection* connection);
-    void OnServerDisconnected(Connection* connection);
     /// @}
 
     /// Reconfigure network simulator parameters on all existing connections.
@@ -171,7 +175,7 @@ private:
     /// @}
 
     /// Client's server connection.
-    SharedPtr<Connection> serverConnection_;
+    SharedPtr<Connection> connectionToServer_;
     /// Server's client connections.
     ea::unordered_map<WeakPtr<NetworkConnection>, SharedPtr<Connection>> clientConnections_;
     /// Allowed remote events.
