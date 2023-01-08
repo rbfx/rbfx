@@ -75,11 +75,15 @@ void CloseDialog::Render()
         }
         ui::EndChild();
 
+        ui::BeginDisabled(!saveEnabled_);
         if (ui::Button(ICON_FA_FLOPPY_DISK " Save & Close"))
         {
+            URHO3D_ASSERT(saveEnabled_);
+
             CloseDialogSave();
             ui::CloseCurrentPopup();
         }
+        ui::EndDisabled();
 
         ui::SameLine();
 

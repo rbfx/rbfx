@@ -348,9 +348,13 @@ CloseProjectResult Project::CloseGracefully()
         return CloseProjectResult::Undefined;
 
     // Collect unsaved items
+    const bool hasUnsavedCookedAssets = assetManager_->IsProcessing();
+
     ea::vector<ea::string> unsavedItems;
     if (hasUnsavedChanges_)
         unsavedItems.push_back("[Project]");
+    if (hasUnsavedCookedAssets)
+        unsavedItems.push_back("[Cooked Assets]");
     for (EditorTab* tab : tabs_)
         tab->EnumerateUnsavedItems(unsavedItems);
 
@@ -374,6 +378,7 @@ CloseProjectResult Project::CloseGracefully()
     {
         closeProjectResult_ = CloseProjectResult::Canceled;
     };
+    closeDialog_->SetSaveEnabled(!hasUnsavedCookedAssets);
     closeDialog_->RequestClose(ea::move(request));
     return CloseProjectResult::Undefined;
 }
