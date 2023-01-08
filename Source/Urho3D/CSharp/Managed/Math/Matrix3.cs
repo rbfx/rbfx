@@ -371,21 +371,22 @@ namespace Urho3DNet
             0, 1, 0,
             0, 0, 1);
 
+
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = M00.GetHashCode();
-                hashCode = (hashCode * 397) ^ M01.GetHashCode();
-                hashCode = (hashCode * 397) ^ M02.GetHashCode();
-                hashCode = (hashCode * 397) ^ M10.GetHashCode();
-                hashCode = (hashCode * 397) ^ M11.GetHashCode();
-                hashCode = (hashCode * 397) ^ M12.GetHashCode();
-                hashCode = (hashCode * 397) ^ M20.GetHashCode();
-                hashCode = (hashCode * 397) ^ M21.GetHashCode();
-                hashCode = (hashCode * 397) ^ M22.GetHashCode();
-                return hashCode;
-            }
+            var hashCode = new HashCode();
+            hashCode.Add(M00);
+            hashCode.Add(M01);
+            hashCode.Add(M02);
+            hashCode.Add(M10);
+            hashCode.Add(M11);
+            hashCode.Add(M12);
+            hashCode.Add(M20);
+            hashCode.Add(M21);
+            hashCode.Add(M22);
+            return hashCode.ToHashCode();
         }
     };
 }

@@ -646,6 +646,7 @@ public:
 %include "Urho3D/Graphics/GraphicsDefs.h"
 %interface_custom("%s", "I%s", Urho3D::GPUObject);
 %include "Urho3D/Graphics/GPUObject.h"
+%include "Urho3D/Graphics/PipelineStateTracker.h"
 %include "Urho3D/Graphics/IndexBuffer.h"
 %include "Urho3D/Graphics/VertexBuffer.h"
 %include "Urho3D/Graphics/Geometry.h"

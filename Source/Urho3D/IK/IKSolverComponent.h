@@ -33,7 +33,7 @@ namespace Urho3D
 using IKNodeCache = ea::unordered_map<WeakPtr<Node>, IKNode>;
 
 /// Base component for all IK solvers.
-class IKSolverComponent : public Component
+class URHO3D_API IKSolverComponent : public Component
 {
     URHO3D_OBJECT(IKSolverComponent, Component);
 
@@ -86,7 +86,7 @@ private:
     WeakPtr<Node> frameOfReferenceNode_;
 };
 
-class IKIdentitySolver : public IKSolverComponent
+class URHO3D_API IKIdentitySolver : public IKSolverComponent
 {
     URHO3D_OBJECT(IKIdentitySolver, IKSolverComponent);
 
@@ -129,7 +129,7 @@ private:
     WeakPtr<Node> target_;
 };
 
-class IKLimbSolver : public IKSolverComponent
+class URHO3D_API IKLimbSolver : public IKSolverComponent
 {
     URHO3D_OBJECT(IKLimbSolver, IKSolverComponent);
 
@@ -207,7 +207,7 @@ private:
     Vector3 latestTargetPosition_;
 };
 
-class IKLegSolver : public IKSolverComponent
+class URHO3D_API IKLegSolver : public IKSolverComponent
 {
     URHO3D_OBJECT(IKLegSolver, IKSolverComponent);
 
@@ -341,7 +341,7 @@ private:
     float latestTiptoeFactor_{};
 };
 
-class IKSpineSolver : public IKSolverComponent
+class URHO3D_API IKSpineSolver : public IKSolverComponent
 {
     URHO3D_OBJECT(IKSpineSolver, IKSolverComponent);
 
@@ -413,7 +413,7 @@ private:
     ea::vector<Quaternion> originalBoneRotations_;
 };
 
-class IKArmSolver : public IKSolverComponent
+class URHO3D_API IKArmSolver : public IKSolverComponent
 {
     URHO3D_OBJECT(IKArmSolver, IKSolverComponent);
 
@@ -513,7 +513,7 @@ private:
     } local_;
 };
 
-class IKChainSolver : public IKSolverComponent
+class URHO3D_API IKChainSolver : public IKSolverComponent
 {
     URHO3D_OBJECT(IKChainSolver, IKSolverComponent);
 
@@ -548,7 +548,7 @@ private:
     WeakPtr<Node> target_;
 };
 
-class IKHeadSolver : public IKSolverComponent
+class URHO3D_API IKHeadSolver : public IKSolverComponent
 {
     URHO3D_OBJECT(IKHeadSolver, IKSolverComponent);
 
