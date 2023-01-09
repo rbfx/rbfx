@@ -27,11 +27,17 @@ namespace Urho3DNet.Tests
     public class AxisAdapterTests
     {
         [Fact]
-        public void AxisAdapter_T()
+        public void AxisAdapter_SimpleTransform()
         {
             using AxisAdapter adapter = new AxisAdapter();
 
             Assert.Equal(1.0f, adapter.Transform(1.0f), 1e-6f);
+            Assert.Equal(-1.0f, adapter.Transform(-1.0f), 1e-6f);
+
+            adapter.IsInverted = true;
+
+            Assert.Equal(-1.0f, adapter.Transform(1.0f), 1e-6f);
+            Assert.Equal(1.0f, adapter.Transform(-1.0f), 1e-6f);
         }
     }
 }

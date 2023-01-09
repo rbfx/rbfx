@@ -181,16 +181,17 @@ FreeFlyController::Movement FreeFlyController::HandleWheel(const JoystickState* 
     if (numAxes > 1)
     {
         AxisAdapter pedalAdapter = axisAdapter_;
-        pedalAdapter.SetNeutralValue(1.0f);
+        pedalAdapter.SetInverted(true);
+        pedalAdapter.SetNeutralValue(-1.0f);
         if (state->HasAxisPosition(1))
         {
-            const float value = (1.0f - pedalAdapter.Transform(state->GetAxisPosition(1))) * 0.5f;
+            const float value = pedalAdapter.Transform(state->GetAxisPosition(1));
             movement.translation_.z_ += value * speed * timeStep;
         }
         // Brake
         if (state->HasAxisPosition(2))
         {
-            const float value = (1.f - pedalAdapter.Transform(state->GetAxisPosition(2))) * 0.5f;
+            const float value = pedalAdapter.Transform(state->GetAxisPosition(2));
             movement.translation_.z_ -= value * speed * timeStep;
         }
     }
@@ -222,8 +223,9 @@ FreeFlyController::Movement FreeFlyController::HandleFlightStick(const JoystickS
     if (state->HasAxisPosition(2))
     {
         AxisAdapter pedalAdapter = axisAdapter_;
-        pedalAdapter.SetNeutralValue(1.0f);
-        const float value = (1.0f - pedalAdapter.Transform(state->GetAxisPosition(2))) * 0.5f;
+        pedalAdapter.SetInverted(true);
+        pedalAdapter.SetNeutralValue(-1.0f);
+        const float value = pedalAdapter.Transform(state->GetAxisPosition(2));
         movement.translation_.z_ += value * speed * timeStep;
     }
     // Rocker
@@ -239,15 +241,13 @@ FreeFlyController::Movement FreeFlyController::HandleController(const JoystickSt
 {
     Movement movement;
 
-    const unsigned numAxes = state->GetNumAxes();
     float speed = speed_;
     // Apply acceleration
     if (state->HasAxisPosition(CONTROLLER_AXIS_TRIGGERLEFT))
     {
         AxisAdapter triggerAdapter = axisAdapter_;
         triggerAdapter.SetNeutralValue(-1.0f);
-        const float value =
-            (1.0f + axisAdapter_.Transform(state->GetAxisPosition(CONTROLLER_AXIS_TRIGGERLEFT))) * 0.5f;
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(CONTROLLER_AXIS_TRIGGERLEFT));
         speed = Lerp(speed_, acceleratedSpeed_, Clamp(value, 0.0f, 1.0f));
     }
     {

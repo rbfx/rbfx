@@ -31,8 +31,6 @@ TEST_CASE("Axis adapter linear transform")
 {
     AxisAdapter adapter;
     adapter.SetDeadZone(0.5f);
-    adapter.SetMinValue(-1.0f);
-    adapter.SetMaxValue(1.0f);
     adapter.SetInverted(false);
 
     CHECK(Equals(0.0f, adapter.Transform(0.0f)));
@@ -46,13 +44,18 @@ TEST_CASE("Axis adapter linear transform")
     //Test values beyond range
     CHECK(Equals(1.0f, adapter.Transform(2.0f)));
     CHECK(Equals(-1.0f, adapter.Transform(-2.0f)));
+
+    adapter.SetDeadZone(0.0f);
+    adapter.SetNeutralValue(0.5f);
+    CHECK(Equals(0.5f, adapter.Transform(0.75f)));
+    CHECK(Equals(-0.5f, adapter.Transform(-0.25f)));
 }
 
 TEST_CASE("Axis adapter sensitivity")
 {
     AxisAdapter adapter;
     adapter.SetDeadZone(0.0f);
-    adapter.SetSensitivity(2.0f);
+    adapter.SetSensitivity(1.0f);
 
     CHECK(Equals(0.0f, adapter.Transform(0.0f)));
     CHECK(Equals(1.0f, adapter.Transform(1.0f)));
@@ -62,7 +65,7 @@ TEST_CASE("Axis adapter sensitivity")
     CHECK(Equals(-0.0625f, adapter.Transform(-0.25f)));
     CHECK(Equals(-0.5625f, adapter.Transform(-0.75f)));
 
-    adapter.SetSensitivity(0.5f);
+    adapter.SetSensitivity(-1.0f);
 
     CHECK(Equals(0.5f, adapter.Transform(0.25f)));
     CHECK(Equals(0.866025388f, adapter.Transform(0.75f)));
@@ -81,22 +84,38 @@ TEST_CASE("Axis adapter inverted")
 
     adapter.SetNeutralValue(0.5f);
 
-    CHECK(Equals(0.0f, adapter.Transform(1.0f)));
-    CHECK(Equals(2.0f, adapter.Transform(-1.0f)));
+    CHECK(Equals(-1.0f, adapter.Transform(1.0f)));
+    CHECK(Equals(1.0f, adapter.Transform(-1.0f)));
 }
 
-TEST_CASE("Pedal axis adapter")
+TEST_CASE("Pedal axis adapter with neutral 1.0")
 {
     AxisAdapter adapter;
     adapter.SetDeadZone(0.0f);
     adapter.SetNeutralValue(1.0f);
 
-    CHECK(Equals(1.0f, adapter.Transform(1.0f)));
-    CHECK(Equals(0.0f, adapter.Transform(0.0f)));
+    CHECK(Equals(0.0f, adapter.Transform(1.0f)));
+    CHECK(Equals(-0.5f, adapter.Transform(0.0f)));
     CHECK(Equals(-1.0f, adapter.Transform(-1.0f)));
 
-    adapter.SetSensitivity(0.5f);
-    CHECK(Equals(1.0f, adapter.Transform(1.0f)));
-    CHECK(Equals(-0.414213538f, adapter.Transform(0.0f)));
+    adapter.SetSensitivity(-1.0f);
+    CHECK(Equals(0.0f, adapter.Transform(1.0f)));
+    CHECK(Equals(-0.70710678f, adapter.Transform(0.0f)));
     CHECK(Equals(-1.0f, adapter.Transform(-1.0f)));
+}
+
+TEST_CASE("Pedal axis adapter with neutral -1.0")
+{
+    AxisAdapter adapter;
+    adapter.SetDeadZone(0.0f);
+    adapter.SetNeutralValue(-1.0f);
+
+    CHECK(Equals(1.0f, adapter.Transform(1.0f)));
+    CHECK(Equals(0.5f, adapter.Transform(0.0f)));
+    CHECK(Equals(0.0f, adapter.Transform(-1.0f)));
+
+    adapter.SetSensitivity(-1.0f);
+    CHECK(Equals(1.0f, adapter.Transform(1.0f)));
+    CHECK(Equals(0.70710678f, adapter.Transform(0.0f)));
+    CHECK(Equals(0.0f, adapter.Transform(-1.0f)));
 }

@@ -33,19 +33,19 @@ void AxisAdapter::SetDeadZone(float deadZone)
     deadZone_ = Urho3D::Max(deadZone, 0.0f);
 }
 
-void AxisAdapter::SetMinValue(float value)
-{
-    minValue_ = value;
-}
-
-void AxisAdapter::SetMaxValue(float value)
-{
-    maxValue_ = value;
-}
-
 void AxisAdapter::SetSensitivity(float value)
 {
-    sensitivity_ = value;
+    posSensitivity_ = negSensitivity_ = value;
+}
+
+void AxisAdapter::SetPositiveSensitivity(float value)
+{
+    posSensitivity_ = value;
+}
+
+void AxisAdapter::SetNegativeSensitivity(float value)
+{
+    negSensitivity_ = value;
 }
 
 void AxisAdapter::SetNeutralValue(float value)
@@ -63,62 +63,51 @@ void AxisAdapter::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "deadZone", deadZone_, DefaultDeadZone);
     SerializeOptionalValue(archive, "inverted", inverted_, false);
     SerializeOptionalValue(archive, "neutral", neutral_, 0.0f);
-    SerializeOptionalValue(archive, "sensitivity", sensitivity_, 1.0f);
-    SerializeOptionalValue(archive, "min", minValue_, -1.0f);
-    SerializeOptionalValue(archive, "max", maxValue_, 1.0f);
+    SerializeOptionalValue(archive, "posSensitivity", posSensitivity_, 0.0f);
+    SerializeOptionalValue(archive, "negSensitivity", negSensitivity_, 0.0f);
 }
+
 
 float AxisAdapter::Transform(float value) const
 {
-    const float result = TransformImpl(value);
+    if (inverted_)
+        value = -value;
 
-    if (!inverted_)
-        return result;
-
-    if (value > neutral_)
-    {
-        return neutral_ - (value - neutral_);
-    }
-    return neutral_ + (neutral_ - value);
-}
-
-/// Transform axis value expect inversion.
-float AxisAdapter::TransformImpl(float value) const
-{
-    // Ensure that max value is always bigger then min value.
-    float max = maxValue_;
-    float min = minValue_;
-    if (max < min)
-        ea::swap(max, min);
-
-    // Apply dead zone
-    if (value >= neutral_ - deadZone_ && value <= neutral_ + deadZone_)
-        return neutral_;
+    // Apply dead zone. Neutral position is mapped to 0.0.
+    if (value >= neutral_ - deadZone_ - Epsilon && value <= neutral_ + deadZone_ + Epsilon)
+        return 0.0f;
 
     // Clamp the result.
-    if (value >= max)
-        return max;
-    if (value <= min)
-        return min;
+    if (value >= 1.0f - Epsilon)
+        return 1.0f;
+    if (value <= -1.0f + Epsilon)
+        return -1.0f;
 
     if (value > neutral_)
     {
         const float rangeMin = neutral_ + deadZone_;
-        const float srcRange = max - rangeMin;
-        const float dstRange = max - neutral_;
+        const float srcRange = 1.0f - rangeMin;
         const float normalized = (value - rangeMin) / srcRange;
-        const float transformed = Pow(normalized, sensitivity_);
-        return neutral_ + transformed * dstRange;
+        const float exp = GetExponent(posSensitivity_);
+        const float transformed = Pow(normalized, exp);
+        return transformed;
     }
     {
         const float rangeMax = neutral_ - deadZone_;
-        const float srcRange = rangeMax - min;
-        const float dstRange = neutral_ - min;
+        const float srcRange = rangeMax + 1.0f;
         const float normalized = (rangeMax - value) / srcRange;
-        const float transformed = Pow(normalized, sensitivity_);
-        return neutral_ - transformed * dstRange;
+        const float exp = GetExponent(negSensitivity_);
+        const float transformed = Pow(normalized, exp);
+        return -transformed;
     }
 }
 
+/// Convert sensitivity to exponent.
+float AxisAdapter::GetExponent(float sensitivity) const
+{
+    if (sensitivity > 0)
+        return 1.0f + sensitivity;
+    return 1.0f/(1.0f - sensitivity);
+}
 
 } // namespace Urho3D

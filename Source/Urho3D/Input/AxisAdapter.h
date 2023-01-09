@@ -31,30 +31,27 @@ class URHO3D_API AxisAdapter
 {
 public:
     static constexpr float DefaultDeadZone = 0.1f;
+    static constexpr float Epsilon = 1.0f/32767.f;
 
     /// Set dead zone half-width to mitigate axis drift.
     void SetDeadZone(float deadZone);
     /// Get dead zone half-width.
     float GetDeadZone() const { return deadZone_; }
 
-    /// Set minimum valid value.
-    void SetMinValue(float value);
-    /// Get minimum valid value.
-    float GetMinValue() const { return minValue_; }
-
-    /// Set maximum valid value.
-    void SetMaxValue(float value);
-    /// Get maximum valid value.
-    float GetMaxValue() const { return maxValue_; }
-
-    /// Set sensitivity value. Basically it is an exponent applied to input value.
+    /// Set both sensitivity values. 0.0 represent linear input mapping.
     void SetSensitivity(float value);
-    /// Get reactivity value.
-    float GetSensitivity() const { return sensitivity_; }
+    /// Set positive sensitivity value. 0.0 represent linear input mapping.
+    void SetPositiveSensitivity(float value);
+    /// Set negative sensitivity value. 0.0 represent linear input mapping.
+    void SetNegativeSensitivity(float value);
+    /// Get positive sensitivity value.
+    float GetPositiveSensitivity() const { return posSensitivity_; }
+    /// Get negative sensitivity value.
+    float GetNegativeSensitivity() const { return negSensitivity_; }
 
-    /// Set neutral value.
+    /// Set neutral value. Neutral value is transformed into 0.0f.
     void SetNeutralValue(float value);
-    /// Get neutral value.
+    /// Get neutral value. Neutral value is transformed into 0.0f.
     float GetNeutralValue() const { return neutral_; }
 
     /// Set inverted flag.
@@ -65,20 +62,18 @@ public:
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive);
 
-    /// Transform axis value.
+    /// Transform axis value. The output is normalized around neutral position into range -1..1.
     float Transform(float value) const;
 
 private:
-    /// Transform axis value expect inversion.
-    float TransformImpl(float value) const;
+    /// Convert sensitivity to exponent.
+    float GetExponent(float sensitivity) const;
     /// Joystick dead zone half-width.
     float deadZone_{DefaultDeadZone};
-    /// Minimum valid value.
-    float minValue_{-1.0f};
-    /// Maximum valid value.
-    float maxValue_{+1.0f};
-    /// Sensitivity value.
-    float sensitivity_{1.0f};
+    /// Positive sensitivity value.
+    float posSensitivity_{0.0f};
+    /// Negative sensitivity value.
+    float negSensitivity_{0.0f};
     /// Neutral value.
     float neutral_{0.0f};
     /// Is axis inverted.
