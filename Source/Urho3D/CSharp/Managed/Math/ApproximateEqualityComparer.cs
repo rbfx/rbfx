@@ -26,7 +26,7 @@ namespace Urho3DNet
 {
     public class ApproximateEqualityComparer<T> : IEqualityComparer<T> where T : IApproximateEquatable<T>
     {
-        public new static readonly ApproximateEqualityComparer<T> Default = new ApproximateEqualityComparer<T>();
+        public static readonly ApproximateEqualityComparer<T> Default = new ApproximateEqualityComparer<T>();
 
         private readonly float _epsilon;
 

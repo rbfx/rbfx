@@ -246,11 +246,11 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
         view->SetGlobalShaderParameters();
 
     // Set camera & viewport shader parameters
-    auto cameraHash = (unsigned)(size_t)camera;
+    auto cameraHash = static_cast<unsigned>(reinterpret_cast<size_t>(camera));
     IntRect viewport = graphics->GetViewport();
     IntVector2 viewSize = IntVector2(viewport.Width(), viewport.Height());
-    auto viewportHash = (unsigned)viewSize.x_ | (unsigned)viewSize.y_ << 16u;
-    if (graphics->NeedParameterUpdate(SP_CAMERA, reinterpret_cast<const void*>(cameraHash + viewportHash)))
+    auto viewportHash = static_cast<unsigned>(viewSize.x_) | static_cast<unsigned>(viewSize.y_) << 16u;
+    if (graphics->NeedParameterUpdate(SP_CAMERA, reinterpret_cast<const void*>(static_cast<size_t>(cameraHash + viewportHash))))
     {
         view->SetCameraShaderParameters(camera);
         // During renderpath commands the G-Buffer or viewport texture is assumed to always be viewport-sized
@@ -288,10 +288,10 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     BlendMode blend = graphics->GetBlendMode();
     // If the pass is additive, override fog color to black so that shaders do not need a separate additive path
     bool overrideFogColorToBlack = blend == BLEND_ADD || blend == BLEND_ADDALPHA;
-    auto zoneHash = (unsigned)(size_t)zone_;
+    auto zoneHash = static_cast<unsigned>(reinterpret_cast<size_t>(zone_));
     if (overrideFogColorToBlack)
         zoneHash += 0x80000000;
-    if (zone_ && graphics->NeedParameterUpdate(SP_ZONE, reinterpret_cast<const void*>(zoneHash)))
+    if (zone_ && graphics->NeedParameterUpdate(SP_ZONE, reinterpret_cast<const void*>(static_cast<size_t>(zoneHash))))
     {
         graphics->SetShaderParameter(VSP_AMBIENTSTARTCOLOR, zone_->GetAmbientStartColor());
         graphics->SetShaderParameter(VSP_AMBIENTENDCOLOR,
@@ -620,7 +620,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     // Set material-specific shader parameters and textures
     if (material_)
     {
-        if (graphics->NeedParameterUpdate(SP_MATERIAL, reinterpret_cast<const void*>(material_->GetShaderParameterHash())))
+        if (graphics->NeedParameterUpdate(SP_MATERIAL, reinterpret_cast<const void*>(static_cast<size_t>(material_->GetShaderParameterHash()))))
         {
             const ea::unordered_map<StringHash, MaterialShaderParameter>& parameters = material_->GetShaderParameters();
             for (auto i = parameters.begin(); i !=

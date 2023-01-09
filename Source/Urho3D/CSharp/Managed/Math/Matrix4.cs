@@ -384,28 +384,28 @@ public struct Matrix4 : IEquatable<Matrix4>, IApproximateEquatable<Matrix4>
                MathDefs.ApproximatelyEquivalent(M33, rhs.M33, epsilon);
     }
 
+    /// <summary>Returns the hash code for this instance.</summary>
+    /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
     public override int GetHashCode()
     {
-        unchecked
-        {
-            var hashCode = M00.GetHashCode();
-            hashCode = (hashCode * 397) ^ M01.GetHashCode();
-            hashCode = (hashCode * 397) ^ M02.GetHashCode();
-            hashCode = (hashCode * 397) ^ M03.GetHashCode();
-            hashCode = (hashCode * 397) ^ M10.GetHashCode();
-            hashCode = (hashCode * 397) ^ M11.GetHashCode();
-            hashCode = (hashCode * 397) ^ M12.GetHashCode();
-            hashCode = (hashCode * 397) ^ M13.GetHashCode();
-            hashCode = (hashCode * 397) ^ M20.GetHashCode();
-            hashCode = (hashCode * 397) ^ M21.GetHashCode();
-            hashCode = (hashCode * 397) ^ M22.GetHashCode();
-            hashCode = (hashCode * 397) ^ M23.GetHashCode();
-            hashCode = (hashCode * 397) ^ M30.GetHashCode();
-            hashCode = (hashCode * 397) ^ M31.GetHashCode();
-            hashCode = (hashCode * 397) ^ M32.GetHashCode();
-            hashCode = (hashCode * 397) ^ M33.GetHashCode();
-            return hashCode;
-        }
+        var hashCode = new HashCode();
+        hashCode.Add(M00);
+        hashCode.Add(M01);
+        hashCode.Add(M02);
+        hashCode.Add(M03);
+        hashCode.Add(M10);
+        hashCode.Add(M11);
+        hashCode.Add(M12);
+        hashCode.Add(M13);
+        hashCode.Add(M20);
+        hashCode.Add(M21);
+        hashCode.Add(M22);
+        hashCode.Add(M23);
+        hashCode.Add(M30);
+        hashCode.Add(M31);
+        hashCode.Add(M32);
+        hashCode.Add(M33);
+        return hashCode.ToHashCode();
     }
 
     /// Return decomposition to translation, rotation and scale.

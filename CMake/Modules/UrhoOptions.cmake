@@ -129,8 +129,9 @@ if (NOT MINI_URHO)
     set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
 endif ()
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
-set(URHO3D_NETFX netstandard2.0 CACHE STRING "TargetFramework value for .NET libraries")
-set_property(CACHE URHO3D_NETFX PROPERTY STRINGS netstandard2.0 netstandard2.1)
+# At the moment only netstandard2.1 supported
+set(URHO3D_NETFX netstandard2.1 CACHE STRING "TargetFramework value for .NET libraries")
+set_property(CACHE URHO3D_NETFX PROPERTY STRINGS netstandard2.1)
 set(URHO3D_NETFX_RUNTIME_VERSION OFF CACHE STRING "Version of runtime to use.")
 option                (URHO3D_DEBUG_ASSERT       "Enable Urho3D assert macros"                           ${URHO3D_ENABLE_ALL}                                    )
 cmake_dependent_option(URHO3D_FILEWATCHER        "Watch filesystem for resource changes"                 ${URHO3D_ENABLE_ALL} "URHO3D_THREADING;NOT UWP"      OFF)

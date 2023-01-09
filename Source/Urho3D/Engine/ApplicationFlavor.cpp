@@ -88,11 +88,12 @@ ea::string GetPlatformFlavor()
         return "platform=web"; // TODO: Try to detect browser type?
 
     case PlatformId::Unknown:
-        return "";
+        return EMPTY_STRING;
 
     default:
         break;
     }
+    return EMPTY_STRING;
 }
 
 }
