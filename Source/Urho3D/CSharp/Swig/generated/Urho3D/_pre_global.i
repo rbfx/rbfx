@@ -492,6 +492,16 @@
 %csconstvalue("1073742112") SDLK_SOFTRIGHT;
 %csconstvalue("1073742113") SDLK_CALL;
 %csconstvalue("1073742114") SDLK_ENDCALL;
+%csconstvalue("0") SDL_JOYSTICK_TYPE_UNKNOWN;
+%csconstvalue("1") SDL_JOYSTICK_TYPE_GAMECONTROLLER;
+%csconstvalue("2") SDL_JOYSTICK_TYPE_WHEEL;
+%csconstvalue("3") SDL_JOYSTICK_TYPE_ARCADE_STICK;
+%csconstvalue("4") SDL_JOYSTICK_TYPE_FLIGHT_STICK;
+%csconstvalue("5") SDL_JOYSTICK_TYPE_DANCE_PAD;
+%csconstvalue("6") SDL_JOYSTICK_TYPE_GUITAR;
+%csconstvalue("7") SDL_JOYSTICK_TYPE_DRUM_KIT;
+%csconstvalue("8") SDL_JOYSTICK_TYPE_ARCADE_PAD;
+%csconstvalue("9") SDL_JOYSTICK_TYPE_THROTTLE;
 %csconstvalue("0") KMOD_NONE;
 %csconstvalue("1") KMOD_LSHIFT;
 %csconstvalue("2") KMOD_RSHIFT;
