@@ -80,6 +80,20 @@ struct URHO3D_API TouchState
     WeakPtr<UIElement> touchedElement_;
 };
 
+enum JoystickDeviceType: unsigned
+{
+    JOYSTICK_TYPE_UNKNOWN = SDL_JOYSTICK_TYPE_UNKNOWN,
+    JOYSTICK_TYPE_GAMECONTROLLER = SDL_JOYSTICK_TYPE_GAMECONTROLLER,
+    JOYSTICK_TYPE_WHEEL = SDL_JOYSTICK_TYPE_WHEEL,
+    JOYSTICK_TYPE_ARCADE_STICK = SDL_JOYSTICK_TYPE_ARCADE_STICK,
+    JOYSTICK_TYPE_FLIGHT_STICK = SDL_JOYSTICK_TYPE_FLIGHT_STICK,
+    JOYSTICK_TYPE_DANCE_PAD = SDL_JOYSTICK_TYPE_DANCE_PAD,
+    JOYSTICK_TYPE_GUITAR = SDL_JOYSTICK_TYPE_GUITAR,
+    JOYSTICK_TYPE_DRUM_KIT = SDL_JOYSTICK_TYPE_DRUM_KIT,
+    JOYSTICK_TYPE_ARCADE_PAD = SDL_JOYSTICK_TYPE_ARCADE_PAD,
+    JOYSTICK_TYPE_THROTTLE = SDL_JOYSTICK_TYPE_THROTTLE
+};
+
 /// %Input state for a joystick.
 /// @nocount
 struct URHO3D_API JoystickState
@@ -117,12 +131,18 @@ struct URHO3D_API JoystickState
     /// @property
     float GetAxisPosition(unsigned index) const { return index < axes_.size() ? axes_[index] : 0.0f; }
 
+    /// Returns true if has valid axis position.
+    /// @property
+    bool HasAxisPosition(unsigned index) const { return index < validAxis_.size() ? validAxis_[index] : 0.0f; }
+
     /// Return hat position.
     /// @property
     int GetHatPosition(unsigned index) const { return index < hats_.size() ? hats_[index] : int(HAT_CENTER); }
 
     /// SDL joystick.
     SDL_Joystick* joystick_{};
+    /// Joystick device type.
+    JoystickDeviceType type_{JOYSTICK_TYPE_UNKNOWN};
     /// SDL joystick instance ID.
     SDL_JoystickID joystickID_{};
     /// SDL game controller.
@@ -137,6 +157,8 @@ struct URHO3D_API JoystickState
     ea::vector<bool> buttonPress_;
     /// Axis position from -1 to 1.
     ea::vector<float> axes_;
+    /// Valid axis position.
+    ea::vector<bool> validAxis_;
     /// POV hat bits.
     ea::vector<int> hats_;
 };
