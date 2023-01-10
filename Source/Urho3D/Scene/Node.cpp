@@ -46,7 +46,7 @@ namespace Urho3D
 {
 
 Node::Node(Context* context) :
-    Animatable(context),
+    Serializable(context),
     worldTransform_(Matrix3x4::IDENTITY),
     dirty_(false),
     enabled_(true),
@@ -127,7 +127,7 @@ void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
     }
 
     // Serialize base class
-    Animatable::SerializeInBlock(archive);
+    Serializable::SerializeInBlock(archive);
 
     // Serialize components
     const unsigned numComponentsToWrite = loading ? 0 : GetNumPersistentComponents();
@@ -229,7 +229,7 @@ bool Node::Save(Serializer& dest) const
         return false;
 
     // Write attributes
-    if (!Animatable::Save(dest))
+    if (!Serializable::Save(dest))
         return false;
 
     // Write components
@@ -308,7 +308,7 @@ bool Node::SaveXML(XMLElement& dest) const
         return false;
 
     // Write attributes
-    if (!Animatable::SaveXML(dest))
+    if (!Serializable::SaveXML(dest))
         return false;
 
     // Write components
@@ -344,7 +344,7 @@ bool Node::SaveJSON(JSONValue& dest) const
     dest.Set("id", id_);
 
     // Write attributes
-    if (!Animatable::SaveJSON(dest))
+    if (!Serializable::SaveJSON(dest))
         return false;
 
     // Write components
@@ -1669,7 +1669,7 @@ bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren
     RemoveAllComponents();
 
     // ID has been read at the parent level
-    if (!Animatable::Load(source))
+    if (!Serializable::Load(source))
         return false;
 
     unsigned numComponents = source.ReadVLE();
@@ -1713,7 +1713,7 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     if (removeComponents)
         RemoveAllComponents();
 
-    if (!Animatable::LoadXML(source))
+    if (!Serializable::LoadXML(source))
         return false;
 
     XMLElement compElem = source.GetChild("component");
@@ -1758,7 +1758,7 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
     RemoveAllChildren();
     RemoveAllComponents();
 
-    if (!Animatable::LoadJSON(source))
+    if (!Serializable::LoadJSON(source))
         return false;
 
     const JSONArray& componentsArray = source.Get("components").GetArray();
@@ -1891,99 +1891,6 @@ void Node::SetTransformSilent(const Vector3& position, const Quaternion& rotatio
 void Node::SetTransformSilent(const Matrix3x4& matrix)
 {
     SetTransformSilent(matrix.Translation(), matrix.Rotation(), matrix.Scale());
-}
-
-void Node::OnAttributeAnimationAdded()
-{
-    if (attributeAnimationInfos_.size() == 1)
-        SubscribeToEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE, URHO3D_HANDLER(Node, HandleAttributeAnimationUpdate));
-}
-
-void Node::OnAttributeAnimationRemoved()
-{
-    if (attributeAnimationInfos_.empty())
-        UnsubscribeFromEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE);
-}
-
-Animatable* Node::FindAttributeAnimationTarget(const ea::string& name, ea::string& outName)
-{
-    ea::vector<ea::string> names = name.split('/');
-    // Only attribute name
-    if (names.size() == 1)
-    {
-        outName = name;
-        return this;
-    }
-    else
-    {
-        // Name must in following format: "#0/#1/@component#0/attribute"
-        Node* node = this;
-        unsigned i = 0;
-        for (; i < names.size() - 1; ++i)
-        {
-            if (names[i].front() != '#')
-                break;
-
-            ea::string name = names[i].substr(1, names[i].length() - 1);
-            char s = name.front();
-            if (s >= '0' && s <= '9')
-            {
-                unsigned index = ToUInt(name);
-                node = node->GetChild(index);
-            }
-            else
-            {
-                node = node->GetChild(name, true);
-            }
-
-            if (!node)
-            {
-                URHO3D_LOGERROR("Could not find node by name " + name);
-                return nullptr;
-            }
-        }
-
-        if (i == names.size() - 1)
-        {
-            outName = names.back();
-            return node;
-        }
-
-        if (i != names.size() - 2 || names[i].front() != '@')
-        {
-            URHO3D_LOGERROR("Invalid name " + name);
-            return nullptr;
-        }
-
-        ea::string componentName = names[i].substr(1, names[i].length() - 1);
-        ea::vector<ea::string> componentNames = componentName.split('#');
-        if (componentNames.size() == 1)
-        {
-            Component* component = node->GetComponent(StringHash(componentNames.front()));
-            if (!component)
-            {
-                URHO3D_LOGERROR("Could not find component by name " + name);
-                return nullptr;
-            }
-
-            outName = names.back();
-            return component;
-        }
-        else
-        {
-            unsigned index = ToUInt(componentNames[1]);
-            ea::vector<Component*> components;
-            node->GetComponents(components, StringHash(componentNames.front()));
-            if (index >= components.size())
-            {
-                URHO3D_LOGERROR("Could not find component by name " + name);
-                return nullptr;
-            }
-
-            outName = names.back();
-            return components[index];
-        }
-    }
 }
 
 void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
@@ -2248,13 +2155,6 @@ void Node::RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i)
         scene_->ComponentRemoved(i->Get());
     (*i)->SetNode(nullptr);
     components_.erase(i);
-}
-
-void Node::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace AttributeAnimationUpdate;
-
-    UpdateAttributeAnimations(eventData[P_TIMESTEP].GetFloat());
 }
 
 }

@@ -27,8 +27,8 @@
 #include "../IO/VectorBuffer.h"
 #include "../Math/Matrix3x4.h"
 #include "../Math/Transform.h"
-#include "../Scene/Animatable.h"
 #include "../Scene/Component.h"
+#include "../Scene/Serializable.h"
 
 #include <EASTL/type_traits.h>
 
@@ -73,9 +73,9 @@ struct URHO3D_API NodeImpl
 };
 
 /// %Scene node that may contain components and child nodes.
-class URHO3D_API Node : public Animatable
+class URHO3D_API Node : public Serializable
 {
-    URHO3D_OBJECT(Node, Animatable);
+    URHO3D_OBJECT(Node, Serializable);
 
     friend class Connection;
 
@@ -704,14 +704,6 @@ public:
     /// Set local transform silently without marking the node & child nodes dirty. Used by animation code.
     void SetTransformSilent(const Matrix3x4& matrix);
 
-protected:
-    /// Handle attribute animation added.
-    void OnAttributeAnimationAdded() override;
-    /// Handle attribute animation removed.
-    void OnAttributeAnimationRemoved() override;
-    /// Find target of an attribute animation from object hierarchy by name.
-    Animatable* FindAttributeAnimationTarget(const ea::string& name, ea::string& outName) override;
-
 private:
     /// Set enabled/disabled state with optional recursion. Optionally affect the remembered enable state.
     void SetEnabled(bool enable, bool recursive, bool storeSelf);
@@ -733,8 +725,6 @@ private:
     Node* CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mode);
     /// Remove a component from this node with the specified iterator.
     void RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i);
-    /// Handle attribute animation update event.
-    void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
     /// Find child node by index if name is an integer starting with "#" (like "#12" or "#0").
     /// Find child by name otherwise. Empty name is considered invalid.
     Node* GetChildByNameOrIndex(ea::string_view name) const;
