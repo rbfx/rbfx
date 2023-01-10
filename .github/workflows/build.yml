@@ -50,7 +50,8 @@ jobs:
     name: Discord Commits
     runs-on: ubuntu-20.04
     continue-on-error: true
-    if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
+    # TODO: Fix Discord notifications
+    if: false && github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
     steps:
       - name: Discord Commits
         uses: dearimgui/github_discord_notifier@latest
