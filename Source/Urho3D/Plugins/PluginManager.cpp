@@ -319,6 +319,7 @@ bool PluginManager::IsPluginLoaded(const ea::string& name)
 
 bool PluginManager::AddDynamicPlugin(Plugin* plugin)
 {
+#if URHO3D_PLUGINS && !URHO3D_STATIC
     const ea::string& name = plugin->GetName();
     if (dynamicPlugins_.contains(name) || staticPlugins_.contains(name))
     {
@@ -346,6 +347,9 @@ bool PluginManager::AddDynamicPlugin(Plugin* plugin)
 
     URHO3D_LOGINFO("Loaded plugin '{}' version {}", name, plugin->GetVersion());
     return true;
+#else
+    return false;
+#endif
 }
 
 bool PluginManager::AddStaticPlugin(PluginApplication* pluginApplication)
@@ -365,6 +369,7 @@ bool PluginManager::AddStaticPlugin(PluginApplication* pluginApplication)
 
 Plugin* PluginManager::GetDynamicPlugin(const ea::string& name, bool ignoreUnloaded)
 {
+#if URHO3D_PLUGINS && !URHO3D_STATIC
     const auto iter = dynamicPlugins_.find(name);
     if (iter != dynamicPlugins_.end())
         return iter->second;
@@ -377,6 +382,9 @@ Plugin* PluginManager::GetDynamicPlugin(const ea::string& name, bool ignoreUnloa
         return nullptr;
 
     return plugin;
+#else
+    return nullptr;
+#endif
 }
 
 PluginApplication* PluginManager::GetPluginApplication(const ea::string& name, bool ignoreUnloaded, unsigned* version)
