@@ -38,9 +38,11 @@ struct GLTFImporterSettings
     float scale_{1.0f};
     Quaternion rotation_;
 
+    bool cleanupBoneNames_{true};
+    bool repairLooping_{false};
+
     float offsetMatrixError_{ 0.00002f };
     float keyFrameTimeError_{ M_EPSILON };
-    bool repairLooping_{false};
 
     /// Settings that affect only preview scene.
     struct PreviewSettings

@@ -55,11 +55,13 @@
 
 #include <tiny_gltf.h>
 
+#include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
 #include <EASTL/unordered_map.h>
 
+#include <cctype>
 #include <exception>
 
 #include "../DebugNew.h"
@@ -81,6 +83,55 @@ ea::array<T, N> ToArray(const U& vec)
     if (vec.size() >= N)
         ea::transform(vec.begin(), vec.begin() + N, result.begin(), StaticCaster<T>{});
     return result;
+}
+
+bool IsWordBorder(unsigned char first, unsigned char second)
+{
+    // Blanks and punctuation is always considered to be a word border
+    if (std::isblank(first) || std::ispunct(first))
+        return true;
+
+    // If symbol class changed, it is the word border
+    if (std::isalpha(first) != std::isalpha(second))
+        return true;
+
+    // If was lower case and became upper case, it is the word border
+    if (std::islower(first) && std::isupper(second))
+        return true;
+
+    return false;
+}
+
+unsigned FindCommonPrefixWord(const ea::string& lhs, const ea::string& rhs,
+    bool preserveNonEmptyLeft = true, bool preserveNonEmptyRight = true)
+{
+    if (lhs.empty() || rhs.empty())
+        return 0;
+
+    const unsigned minLength = ea::min(
+        lhs.size() - (preserveNonEmptyLeft ? 1 : 0),
+        rhs.size() - (preserveNonEmptyRight ? 1 : 0));
+    auto [iter, iter2] = ea::mismatch(lhs.begin(), ea::next(lhs.begin(), minLength), rhs.begin());
+
+    while (iter != lhs.begin())
+    {
+        const auto prev = ea::prev(iter);
+        if (IsWordBorder(*prev, *iter))
+            break;
+        --iter;
+    }
+    return static_cast<unsigned>(iter - lhs.begin());
+}
+
+unsigned FindCommonPrefixWord(const StringVector& strings)
+{
+    if (strings.size() <= 1)
+        return 0;
+
+    ea::string prefix = strings[0].substr(0, FindCommonPrefixWord(strings[0], strings[1]));
+    for (unsigned i = 2; i < strings.size(); ++i)
+        prefix = prefix.substr(0, FindCommonPrefixWord(prefix, strings[i], false));
+    return prefix.size();
 }
 
 bool IsNegativeScale(const Vector3& scale) { return scale.x_ * scale.y_ * scale.y_ < 0.0f; }
@@ -959,6 +1010,8 @@ private:
             skeleton.index_ = skeletonIndex;
             InitializeSkeletonRootNode(skeleton);
             AssignSkeletonBoneNames(skeleton);
+            if (base_.GetSettings().cleanupBoneNames_)
+                CleanupSkeletonBoneNames(skeleton);
         }
     }
 
@@ -1020,6 +1073,24 @@ private:
             if (!success)
                 throw RuntimeException("Failed to assign name to bone");
         });
+    }
+
+    void CleanupSkeletonBoneNames(GLTFSkeleton& skeleton)
+    {
+        const StringVector boneNames = skeleton.boneNameToNode_.keys();
+        const unsigned commonPrefix = FindCommonPrefixWord(boneNames);
+
+        ea::unordered_map<ea::string, GLTFNode*> newBoneNameToNode;
+        for (const auto& [oldBoneName, boneNode] : skeleton.boneNameToNode_)
+        {
+            const ea::string newBoneName = oldBoneName.substr(commonPrefix);
+            URHO3D_ASSERT(!newBoneName.empty());
+
+            newBoneNameToNode.emplace(newBoneName, boneNode);
+            boneNode->uniqueBoneName_ = newBoneName;
+        }
+
+        skeleton.boneNameToNode_ = ea::move(newBoneNameToNode);
     }
 
     void InitializeSkins()
@@ -3383,10 +3454,16 @@ private:
 void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
+
+    SerializeValue(archive, "mirrorX", value.mirrorX_);
     SerializeValue(archive, "scale", value.scale_);
+    SerializeValue(archive, "rotation", value.rotation_);
+
+    SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
+    SerializeValue(archive, "repairLooping", value.repairLooping_);
+
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
-    SerializeValue(archive, "repairLooping", value.repairLooping_);
 
     SerializeValue(archive, "addLights", value.preview_.addLights_);
     SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);

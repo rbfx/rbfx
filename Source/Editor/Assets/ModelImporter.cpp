@@ -23,7 +23,6 @@
 #include "../Assets/ModelImporter.h"
 
 #include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/Utility/GLTFImporter.h>
 
 namespace Urho3D
 {
@@ -64,10 +63,11 @@ void ModelImporter::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<ModelImporter>(Category_Transformer);
 
-    URHO3D_ATTRIBUTE("Mirror X", bool, mirrorX_, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Scale", float, scale_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Rotation", Quaternion, rotation_, Quaternion::IDENTITY, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Mirror X", bool, settings_.mirrorX_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Scale", float, settings_.scale_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation", Quaternion, settings_.rotation_, Quaternion::IDENTITY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Cleanup Bone Names", bool, settings_.cleanupBoneNames_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Repair Looping", bool, settings_.repairLooping_, false, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -133,12 +133,7 @@ bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformer
 bool ModelImporter::ImportGLTF(const ea::string& fileName,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
-    GLTFImporterSettings importerSettings;
-    importerSettings.mirrorX_ = mirrorX_;
-    importerSettings.scale_ = scale_;
-    importerSettings.rotation_ = rotation_;
-    importerSettings.repairLooping_ = repairLooping_;
-    auto importer = MakeShared<GLTFImporter>(context_, importerSettings);
+    auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
     if (!importer->LoadFile(fileName, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
     {
