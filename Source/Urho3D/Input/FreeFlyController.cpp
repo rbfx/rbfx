@@ -31,7 +31,7 @@
 #include "../Input/InputEvents.h"
 #include "../Scene/Node.h"
 #include "../UI/UI.h"
-#include "Urho3D/Engine/StateManager.h"
+#include "../Engine/StateManager.h"
 
 namespace Urho3D
 {
