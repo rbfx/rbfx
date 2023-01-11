@@ -74,7 +74,7 @@ void SceneHierarchy::WriteIniSettings(ImGuiTextBuffer& output)
 
 void SceneHierarchy::ReadIniSettings(const char* line)
 {
-    SceneHierarchySettings settings;
+    SceneHierarchySettings settings = widget_->GetSettings();
     if (const auto value = ReadIntFromIni(line, "SceneHierarchy.ShowComponents"))
         settings.showComponents_ = *value != 0;
     if (const auto value = ReadIntFromIni(line, "SceneHierarchy.ShowTemporary"))

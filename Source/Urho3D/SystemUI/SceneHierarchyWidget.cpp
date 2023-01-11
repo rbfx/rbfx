@@ -71,6 +71,52 @@ bool CanBeDroppedTo(Node* parentNode, NodeComponentDragDropPayload& payload)
     return !anyLoops && !containsScene;
 }
 
+enum class HierarchyItemFlag
+{
+    Node = 1 << 0,
+    Component = 1 << 1,
+    Enabled = 1 << 2,
+    Temporary = 1 << 3,
+    Subsystem = 1 << 4,
+};
+URHO3D_FLAGSET(HierarchyItemFlag, HierarchyItemFlags);
+
+ImVec4 GetItemColor(const HierarchyItemFlags& flags)
+{
+    const bool enabled = flags.Test(HierarchyItemFlag::Enabled);
+    const bool temporary = flags.Test(HierarchyItemFlag::Temporary);
+    if (flags.Test(HierarchyItemFlag::Component))
+    {
+        if (temporary)
+        {
+            return enabled
+                ? ImVec4(0.65f, 0.65f, 1.00f, 1.00f)
+                : ImVec4(0.25f, 0.25f, 0.50f, 1.00f);
+        }
+        else
+        {
+            return enabled
+                ? ImVec4(1.00f, 1.00f, 0.35f, 1.00f)
+                : ImVec4(0.50f, 0.50f, 0.00f, 1.00f);
+        }
+    }
+    else
+    {
+        if (temporary)
+        {
+            return enabled
+                ? ImVec4(0.65f, 0.65f, 1.00f, 1.00f)
+                : ImVec4(0.25f, 0.25f, 0.50f, 1.00f);
+        }
+        else
+        {
+            return enabled
+                ? ImVec4(1.00f, 1.00f, 1.00f, 1.00f)
+                : ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        }
+    }
+}
+
 }
 
 SceneHierarchyWidget::SceneHierarchyWidget(Context* context)
@@ -143,12 +189,19 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
         flags |= ImGuiTreeNodeFlags_Selected;
     if (isEmpty)
         flags |= ImGuiTreeNodeFlags_Leaf;
+    HierarchyItemFlags itemFlags = HierarchyItemFlag::Node;
+    if (node->IsTemporaryEffective())
+        itemFlags |= HierarchyItemFlag::Temporary;
+    if (node->IsEnabled())
+        itemFlags |= HierarchyItemFlag::Enabled;
 
     if (pathToActiveObject_.contains(node))
         ui::SetNextItemOpen(true);
 
     const IdScopeGuard guard(static_cast<void*>(node));
+    ui::PushStyleColor(ImGuiCol_Text, GetItemColor(itemFlags));
     const bool opened = ui::TreeNodeEx(GetNodeTitle(node).c_str(), flags);
+    ui::PopStyleColor();
     const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
     const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
 
@@ -225,9 +278,16 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
         | ImGuiTreeNodeFlags_Leaf;
     if (selection.IsSelected(component))
         flags |= ImGuiTreeNodeFlags_Selected;
+    HierarchyItemFlags itemFlags = HierarchyItemFlag::Component;
+    if (component->IsTemporary() || component->GetNode()->IsTemporaryEffective())
+        itemFlags |= HierarchyItemFlag::Temporary;
+    if (component->IsEnabledEffective())
+        itemFlags |= HierarchyItemFlag::Enabled;
 
     const IdScopeGuard guard(static_cast<void*>(component));
+    ui::PushStyleColor(ImGuiCol_Text, GetItemColor(itemFlags));
     const bool opened = ui::TreeNodeEx(component->GetTypeName().c_str(), flags);
+    ui::PopStyleColor();
     const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
     const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
 

@@ -25,6 +25,7 @@
 #include "../Project/Project.h"
 
 #include <Urho3D/Utility/AssetTransformer.h>
+#include <Urho3D/Utility/GLTFImporter.h>
 
 namespace Urho3D
 {
@@ -51,8 +52,7 @@ private:
 
     ToolManager* GetToolManager() const;
 
-    float scale_{1.0f};
-    bool repairLooping_{false};
+    GLTFImporterSettings settings_;
 };
 
 }
