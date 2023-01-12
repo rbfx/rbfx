@@ -20,12 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include <Urho3D/Precompiled.h>
 
-#include "../Scene/TrackedComponent.h"
-
-#include "../Core/Assert.h"
-#include "../IO/Log.h"
+#include <Urho3D/Core/Assert.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Scene/TrackedComponent.h>
 
 namespace Urho3D
 {
@@ -38,7 +37,7 @@ constexpr unsigned maxVersion = 0xff;
 constexpr unsigned indexOffset = 0;
 constexpr unsigned versionOffset = 24;
 
-}
+} // namespace
 
 TrackedComponentRegistryBase::TrackedComponentRegistryBase(Context* context, StringHash componentType)
     : Component(context)
@@ -160,7 +159,7 @@ ea::pair<unsigned, unsigned> DeconstructComponentReference(ComponentReference co
 ea::string ToString(ComponentReference value)
 {
     const auto [index, version] = DeconstructComponentReference(value);
-    return value == InvalidComponentReference ? "(null)" : Format("{}:{}", index, version);
+    return value == ComponentReference::None ? "(null)" : Format("{}:{}", index, version);
 }
 
 ReferencedComponentRegistryBase::ReferencedComponentRegistryBase(Context* context, StringHash componentType)
@@ -168,7 +167,8 @@ ReferencedComponentRegistryBase::ReferencedComponentRegistryBase(Context* contex
 {
 }
 
-ReferencedComponentBase* ReferencedComponentRegistryBase::GetTrackedComponentByReference(ComponentReference id, bool checkVersion) const
+ReferencedComponentBase* ReferencedComponentRegistryBase::GetTrackedComponentByReference(
+    ComponentReference id, bool checkVersion) const
 {
     const auto [index, version] = DeconstructComponentReference(id);
     if (index >= referenceIndexToEntry_.size())
@@ -189,7 +189,7 @@ void ReferencedComponentRegistryBase::OnComponentAdded(TrackedComponentBase* bas
     ComponentReference reference = component->GetReference();
 
     // Try to reuse existing ID if possible
-    if (reference != InvalidComponentReference)
+    if (reference != ComponentReference::None)
     {
         if (GetTrackedComponentByReference(reference) == component)
         {
@@ -202,7 +202,7 @@ void ReferencedComponentRegistryBase::OnComponentAdded(TrackedComponentBase* bas
         if (otherComponent)
         {
             URHO3D_LOGWARNING("Another component is already tracked as {}");
-            reference = InvalidComponentReference;
+            reference = ComponentReference::None;
         }
         else
         {
@@ -212,7 +212,7 @@ void ReferencedComponentRegistryBase::OnComponentAdded(TrackedComponentBase* bas
     }
 
     // Allocate new ID if needed
-    if (reference == InvalidComponentReference)
+    if (reference == ComponentReference::None)
     {
         const unsigned index = AllocateReferenceIndex();
         reference = ConstructComponentReference(index, referenceIndexToEntry_[index].version_);
@@ -231,7 +231,7 @@ void ReferencedComponentRegistryBase::OnComponentRemoved(TrackedComponentBase* b
     auto component = static_cast<ReferencedComponentBase*>(baseComponent);
     const ComponentReference reference = component->GetReference();
 
-    if (reference == InvalidComponentReference)
+    if (reference == ComponentReference::None)
     {
         URHO3D_ASSERTLOG(0, "Component is not tracked");
         return;
@@ -242,7 +242,7 @@ void ReferencedComponentRegistryBase::OnComponentRemoved(TrackedComponentBase* b
         return;
     }
 
-    component->SetReference(InvalidComponentReference);
+    component->SetReference(ComponentReference::None);
 
     const auto [index, version] = DeconstructComponentReference(reference);
 
@@ -275,4 +275,4 @@ void ReferencedComponentRegistryBase::EnsureIndex(unsigned index)
         referenceIndexToEntry_.resize(index + 1);
 }
 
-}
+} // namespace Urho3D
