@@ -105,20 +105,12 @@ EaEqualsMatcher<T, AllocComp, AllocMatch> EaEquals(ea::vector<T, AllocComp> cons
     return EaEqualsMatcher<T, AllocComp, AllocMatch>(comparator);
 }
 
-void PrepareStateReflections(Context* context)
-{
-    if (!context->IsReflected<State1>())
-        context->AddFactoryReflection<State1>();
-    if (!context->IsReflected<State2>())
-        context->AddFactoryReflection<State2>();
-}
-
 }
 
 TEST_CASE("StateManager: Enque state, step and reset")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    PrepareStateReflections(context);
+    auto guard = Tests::MakeScopedReflection<State1, State2>(context);
 
     auto* stateManager = context->GetSubsystem<StateManager>();
     stateManager->Reset();
@@ -158,7 +150,7 @@ TEST_CASE("StateManager: Enque state, step and reset")
 TEST_CASE("StateManager: Enque two states")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    PrepareStateReflections(context);
+    auto guard = Tests::MakeScopedReflection<State1, State2>(context);
 
     auto* stateManager = context->GetSubsystem<StateManager>();
     stateManager->Reset();
@@ -192,7 +184,7 @@ TEST_CASE("StateManager: Enque two states")
 TEST_CASE("StateManager: Skip unknown state")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    PrepareStateReflections(context);
+    auto guard = Tests::MakeScopedReflection<State1, State2>(context);
 
     auto* stateManager = context->GetSubsystem<StateManager>();
     stateManager->Reset();
@@ -226,7 +218,7 @@ TEST_CASE("StateManager: Skip unknown state")
 TEST_CASE("StateManager: Last state is unknown")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    PrepareStateReflections(context);
+    auto guard = Tests::MakeScopedReflection<State1, State2>(context);
 
     auto* stateManager = context->GetSubsystem<StateManager>();
     stateManager->Reset();

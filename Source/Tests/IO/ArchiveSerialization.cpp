@@ -313,9 +313,6 @@ SharedPtr<Scene> CreateTestScene(Context* context, int numObjects)
 
 void PrepareContext(Context* context)
 {
-    if (!context->IsReflected<SerializableObject>())
-        context->AddFactoryReflection<SerializableObject>();
-
     auto cache = context->GetSubsystem<ResourceCache>();
     if (!cache->GetResource<Material>(testResourceName))
     {
@@ -330,6 +327,7 @@ void PrepareContext(Context* context)
 TEST_CASE("Test structure is serialized to archive")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto guard = Tests::MakeScopedReflection<SerializableObject>(context);
     PrepareContext(context);
 
     const SerializationTestStruct sourceObject = CreateTestStruct(context);
@@ -378,6 +376,7 @@ TEST_CASE("Test structure is serialized to archive")
 TEST_CASE("Test structure is serialized as part of the file")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto guard = Tests::MakeScopedReflection<SerializableObject>(context);
     PrepareContext(context);
 
     SerializationTestStruct sourceObject = CreateTestStruct(context);

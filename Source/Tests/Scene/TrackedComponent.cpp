@@ -51,11 +51,7 @@ TestComponentRegistry::TestComponentRegistry(Context* context)
 TEST_CASE("Tracked components are indexed in the registry")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-
-    if (!context->IsReflected<TestComponentRegistry>())
-        context->AddFactoryReflection<TestComponentRegistry>();
-    if (!context->IsReflected<TestTrackedComponent>())
-        context->AddFactoryReflection<TestTrackedComponent>();
+    auto guard = Tests::MakeScopedReflection<TestComponentRegistry, TestTrackedComponent>(context);
 
     auto scene = MakeShared<Scene>(context);
     auto registry = scene->CreateComponent<TestComponentRegistry>();
