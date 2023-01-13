@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+using System.ComponentModel;
+
 namespace Urho3DNet
 {
     public partial class Node
@@ -43,22 +45,32 @@ namespace Urho3DNet
         /// Get first occurrence of a component type
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
+        /// <returns>Found component or null.</returns>
         public T GetComponent<T>() where T: Component
         {
             return (T)GetComponent(typeof(T).Name);
         }
 
         /// <summary>
-        /// get all components of a type
+        /// Get all components of a type
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
+        /// <returns>List of found components.</returns>
         public ComponentList GetComponents<T>(bool recursive = false) where T: Component
         {
             ComponentList componentList = new ComponentList();
             GetComponents(componentList, typeof(T).Name, recursive);
             return componentList;
+        }
+
+        /// <summary>
+        /// Return component in parent node. If there are several, returns the first. May optional traverse up to the root node.
+        /// </summary>
+        /// <typeparam name="T">Type of the component.</typeparam>
+        /// <returns>Found component or null.</returns>
+        public T GetParentComponent<T>(bool fullTraversal = false) where T : Component
+        {
+            return (T)GetParentComponent(typeof(T).Name, fullTraversal);
         }
     }
 }

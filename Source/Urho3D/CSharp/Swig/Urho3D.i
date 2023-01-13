@@ -702,6 +702,7 @@ public:
 %include "Urho3D/Graphics/Zone.h"
 %include "Urho3D/Graphics/Renderer.h"
 %include "Urho3D/Graphics/Graphics.h"
+%include "Urho3D/Graphics/OutlineGroup.h"
 
 // ------------------------------------- RenderPipeline -------------------------------------
 %include "generated/Urho3D/_pre_renderpipeline.i"
