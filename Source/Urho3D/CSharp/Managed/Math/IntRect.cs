@@ -190,17 +190,11 @@ namespace Urho3DNet
             return obj is IntRect && Equals((IntRect) obj);
         }
 
-        /// Returns hash code.
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = Left;
-                hashCode = (hashCode * 397) ^ Top;
-                hashCode = (hashCode * 397) ^ Right;
-                hashCode = (hashCode * 397) ^ Bottom;
-                return hashCode;
-            }
+            return HashCode.Combine(Left, Top, Right, Bottom);
         }
     }
 }

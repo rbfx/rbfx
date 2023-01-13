@@ -104,9 +104,6 @@
 #endif
 #include "44_RibbonTrailDemo/RibbonTrailDemo.h"
 #if URHO3D_PHYSICS
-#if URHO3D_IK
-#include "45_InverseKinematics/InverseKinematics.h"
-#endif
 #include "46_RaycastVehicle/RaycastVehicleDemo.h"
 #endif
 #include "47_Typography/Typography.h"
@@ -173,7 +170,6 @@ void SamplesManager::Setup()
     engineParameters_[EP_SOUND]        = true;
     engineParameters_[EP_HIGH_DPI]     = true;
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
-    engineParameters_[EP_CONFIG_NAME] = "configs/engineparams.json";
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
@@ -351,7 +347,7 @@ void SamplesManager::Start()
     RegisterSample<RibbonTrailDemo>();
 #if URHO3D_PHYSICS
 #if URHO3D_IK
-    RegisterSample<InverseKinematics>();
+    //RegisterSample<InverseKinematics>();
 #endif
     RegisterSample<RaycastVehicleDemo>();
 #endif

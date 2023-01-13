@@ -52,7 +52,7 @@ const char* autoRemoveModeNames[] = {
 };
 
 Component::Component(Context* context) :
-    Animatable(context),
+    Serializable(context),
     node_(nullptr),
     id_(0),
     networkUpdate_(false),
@@ -71,7 +71,7 @@ bool Component::Save(Serializer& dest) const
         return false;
 
     // Write attributes
-    return Animatable::Save(dest);
+    return Serializable::Save(dest);
 }
 
 bool Component::SaveXML(XMLElement& dest) const
@@ -83,7 +83,7 @@ bool Component::SaveXML(XMLElement& dest) const
         return false;
 
     // Write attributes
-    return Animatable::SaveXML(dest);
+    return Serializable::SaveXML(dest);
 }
 
 bool Component::SaveJSON(JSONValue& dest) const
@@ -93,7 +93,7 @@ bool Component::SaveJSON(JSONValue& dest) const
     dest.Set("id", id_);
 
     // Write attributes
-    return Animatable::SaveJSON(dest);
+    return Serializable::SaveJSON(dest);
 }
 
 void Component::GetDependencyNodes(ea::vector<Node*>& dest)
@@ -141,18 +141,6 @@ bool Component::IsReplicated() const
 Scene* Component::GetScene() const
 {
     return node_ ? node_->GetScene() : nullptr;
-}
-
-void Component::OnAttributeAnimationAdded()
-{
-    if (attributeAnimationInfos_.size() == 1)
-        SubscribeToEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE, URHO3D_HANDLER(Component, HandleAttributeAnimationUpdate));
-}
-
-void Component::OnAttributeAnimationRemoved()
-{
-    if (attributeAnimationInfos_.empty())
-        UnsubscribeFromEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE);
 }
 
 void Component::OnNodeSet(Node* previousNode, Node* currentNode)
@@ -203,13 +191,6 @@ ea::string Component::GetFullNameDebug() const
 unsigned Component::GetIndexInParent() const
 {
     return node_ ? node_->GetComponentIndex(this) : M_MAX_UNSIGNED;
-}
-
-void Component::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace AttributeAnimationUpdate;
-
-    UpdateAttributeAnimations(eventData[P_TIMESTEP].GetFloat());
 }
 
 Component* Component::GetFixedUpdateSource()

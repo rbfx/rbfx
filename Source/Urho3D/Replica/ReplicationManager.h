@@ -42,7 +42,7 @@ namespace Urho3D
 class Connection;
 class Network;
 class NetworkObject;
-class NetworkSetting;
+struct NetworkSetting;
 
 /// Part of ReplicationManager used by both client and server, and referenced by components.
 class URHO3D_API NetworkObjectRegistry : public ReferencedComponentRegistryBase

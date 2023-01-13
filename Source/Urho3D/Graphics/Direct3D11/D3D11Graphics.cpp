@@ -1132,19 +1132,19 @@ bool Graphics::HasTextureUnit(TextureUnit unit)
 
 void Graphics::ClearParameterSource(ShaderParameterGroup group)
 {
-    shaderParameterSources_[group] = (const void*)M_MAX_UNSIGNED;
+    shaderParameterSources_[group] = reinterpret_cast<const void*>(M_MAX_UNSIGNED);
 }
 
 void Graphics::ClearParameterSources()
 {
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-        shaderParameterSources_[i] = (const void*)M_MAX_UNSIGNED;
+        shaderParameterSources_[i] = reinterpret_cast<const void*>(M_MAX_UNSIGNED);
 }
 
 void Graphics::ClearTransformSources()
 {
-    shaderParameterSources_[SP_CAMERA] = (const void*)M_MAX_UNSIGNED;
-    shaderParameterSources_[SP_OBJECT] = (const void*)M_MAX_UNSIGNED;
+    shaderParameterSources_[SP_CAMERA] = reinterpret_cast<const void*>(M_MAX_UNSIGNED);
+    shaderParameterSources_[SP_OBJECT] = reinterpret_cast<const void*>(M_MAX_UNSIGNED);
 }
 
 void Graphics::SetTexture(unsigned index, Texture* texture)

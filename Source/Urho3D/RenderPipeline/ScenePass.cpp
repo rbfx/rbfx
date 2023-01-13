@@ -108,22 +108,34 @@ void BackToFrontScenePass::OnBatchesReady()
     // When rendering back-to-front, it's still important to render batches for each object in order:
     // - Base batch;
     // - Additive light batches;
-    // - Substractive light batches.
+    // - Subtractive light batches.
     // Multiply distance by some factor close to 1 if distance is greater than 0, ignore otherwise.
 
-    const unsigned substractiveLightBatchesBegin = sortedBatches_.size() - negativeLightBatches_.Size();
-    const unsigned substractiveLightBatchesEnd = sortedBatches_.size();
-    const unsigned additiveLightBatchesBegin = substractiveLightBatchesBegin - lightBatches_.Size();
-    const unsigned additiveLightBatchesEnd = substractiveLightBatchesBegin;
+    const unsigned subtractiveLightBatchesBegin = sortedBatches_.size() - negativeLightBatches_.Size();
+    const unsigned subtractiveLightBatchesEnd = sortedBatches_.size();
+    const unsigned additiveLightBatchesBegin = subtractiveLightBatchesBegin - lightBatches_.Size();
+    const unsigned additiveLightBatchesEnd = subtractiveLightBatchesBegin;
 
     static const float additiveDistanceFactor = 1 - M_EPSILON;
-    static const float substractiveDistanceFactor = 1 - 2 * M_EPSILON;
+    static const float subtractiveDistanceFactor = 1 - 2 * M_EPSILON;
+
+    // Validate distances before sorting, NaN may corrupt ea::sort
+    for (PipelineBatchBackToFront& sortedBatch : sortedBatches_)
+    {
+        if (std::isfinite(sortedBatch.distance_))
+            continue;
+
+        const PipelineBatch& batch = *sortedBatch.pipelineBatch_;
+        URHO3D_LOGERROR("Drawable batch [{}].{} has NaN distance",
+            batch.drawable_->GetFullNameDebug(), batch.sourceBatchIndex_);
+        sortedBatch.distance_ = M_LARGE_VALUE;
+    }
 
     for (unsigned i = additiveLightBatchesBegin; i < additiveLightBatchesEnd; ++i)
         sortedBatches_[i].distance_ *= additiveDistanceFactor;
 
-    for (unsigned i = substractiveLightBatchesBegin; i < substractiveLightBatchesEnd; ++i)
-        sortedBatches_[i].distance_ *= substractiveDistanceFactor;
+    for (unsigned i = subtractiveLightBatchesBegin; i < subtractiveLightBatchesEnd; ++i)
+        sortedBatches_[i].distance_ *= subtractiveDistanceFactor;
 
     ea::sort(sortedBatches_.begin(), sortedBatches_.end());
 

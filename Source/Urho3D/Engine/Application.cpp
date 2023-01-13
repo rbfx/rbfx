@@ -59,9 +59,10 @@ void RunFrame(void* data)
 static CLI::App commandLine_{};
 #endif
 
-Application::Application(Context* context) :
-    Object(context),
-    exitCode_(EXIT_SUCCESS)
+Application::Application(Context* context)
+    : Object(context)
+    , engineParameters_{{EP_ENGINE_CLI_PARAMETERS, true}}
+    , exitCode_(EXIT_SUCCESS)
 {
     // Create the Engine, but do not initialize it yet. Subsystems except Graphics & Renderer are registered at this point
     engine_ = new Engine(context);
@@ -82,7 +83,7 @@ int Application::Run()
         Setup();
 
 #if DESKTOP
-        if (Engine::GetParameter(engineParameters_, EP_ENGINE_CLI_PARAMETERS, true).GetBool())
+        if (engineParameters_[EP_ENGINE_CLI_PARAMETERS].GetBool())
         {
             // Register engine command line arguments
             Engine::DefineParameters(commandLine_, engineParameters_);

@@ -34,6 +34,7 @@
 
 #include <EASTL/set.h>
 #include <EASTL/unique_ptr.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {

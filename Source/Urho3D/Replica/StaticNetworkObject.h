@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Replica/NetworkObject.h"
+#include <Urho3D/Replica/NetworkObject.h>
 
 namespace Urho3D
 {
@@ -67,7 +67,7 @@ protected:
 private:
     SharedPtr<XMLFile> clientPrefab_;
 
-    NetworkId latestSentParentObject_{InvalidNetworkId};
+    NetworkId latestSentParentObject_{NetworkId::None};
 };
 
-};
+}; // namespace Urho3D

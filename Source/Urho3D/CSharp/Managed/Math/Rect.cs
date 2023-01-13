@@ -212,13 +212,11 @@ namespace Urho3DNet
             return obj is Rect other && Equals(other);
         }
 
-        /// Returns hashcode.
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                return (Min.GetHashCode() * 397) ^ Max.GetHashCode();
-            }
+            return HashCode.Combine(Min, Max);
         }
 
         /// Return as string.

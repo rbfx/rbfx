@@ -21,193 +21,156 @@
 //
 
 #include "../CommonUtils.h"
-#include "Urho3D/IO/VectorBuffer.h"
-#include "Urho3D/IO/VirtualFileSystem.h"
-#include "Urho3D/Resource/ResourceCache.h"
 
-#include <Urho3D/IO/ConfigFile.h>
+#include <Urho3D/Engine/ConfigFile.h>
 #include <Urho3D/IO/MemoryBuffer.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Resource/JSONFile.h>
 
 namespace
 {
-class ConfigMountPoint : public MountPoint
+
+// TODO: Extract to common place?
+class MountedExternalMemory : public MountPoint
 {
-    URHO3D_OBJECT(ConfigMountPoint, MountPoint);
+    URHO3D_OBJECT(MountedExternalMemory, MountPoint);
 
 public:
-    explicit ConfigMountPoint(Context* context, AbstractFilePtr file)
-        : BaseClassName(context)
-        , file_(file)
+    explicit MountedExternalMemory(Context* context) : MountPoint(context) {}
+
+    void AddFile(const ea::string& fileName, MemoryBuffer memory)
     {
+        files_.emplace(fileName, memory);
     }
 
-    ~ConfigMountPoint() override = default;
+    void RemoveFile(const ea::string& fileName)
+    {
+        files_.erase(fileName);
+    }
 
-    bool AcceptsScheme(const ea::string& scheme) const override { return scheme == "conf"; }
+    /// Implement MountPoint.
+    /// @{
+    bool AcceptsScheme(const ea::string& scheme) const override { return scheme == "memory"; }
 
-    bool Exists(const FileIdentifier& fileName) const override { return AcceptsScheme(fileName.scheme_) && fileName.fileName_ == file_->GetName(); }
+    bool Exists(const FileIdentifier& fileName) const override
+    {
+        return AcceptsScheme(fileName.scheme_) && files_.contains(fileName.fileName_);
+    }
 
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override
     {
-        if (fileName.fileName_ == file_->GetName())
-            return file_;
-        return nullptr;
+        if (mode & FILE_WRITE)
+            return nullptr;
+
+        const auto iter = files_.find(fileName.fileName_);
+        if (iter == files_.end())
+            return nullptr;
+
+        return AbstractFilePtr(&iter->second, this);
     }
 
     ea::string GetFileName(const FileIdentifier& fileName) const override { return EMPTY_STRING; }
+    /// @}
 
-    AbstractFilePtr file_;
+private:
+    ea::unordered_map<ea::string, MemoryBuffer> files_{};
 };
-}
 
-TEST_CASE("Load malformed file returns false")
+class TestFileSystem
 {
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto* vfs = context->GetSubsystem<VirtualFileSystem>();
-    MemoryBuffer buffer(R"({"key0": -3-})");
-    buffer.SetName("file.json");
-    const auto refCounted = MakeShared<File>(context);
-    const auto config = MakeShared<ConfigMountPoint>(context, AbstractFilePtr(&buffer, refCounted.Get()));
-    vfs->Mount(config);
-    ConfigFile configFile(context);
-    CHECK(!configFile.Load(buffer.GetName()));
-    vfs->Unmount(config);
-}
-
-TEST_CASE("Load config from file")
-{
-    MemoryBuffer buffer(R"([
+public:
+    TestFileSystem(Context* context)
+        : fileSystem_(context->GetSubsystem<VirtualFileSystem>())
+        , mountPoint_(MakeShared<MountedExternalMemory>(context))
     {
-		"key": "key0",
-		"type": "Int",
-		"value": 3
+        fileSystem_->Mount(mountPoint_);
     }
-])");
 
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto* vfs = context->GetSubsystem<VirtualFileSystem>();
-    buffer.SetName("file.json");
-    const auto refCounted = MakeShared<File>(context);
-    const auto config = MakeShared<ConfigMountPoint>(context, AbstractFilePtr(&buffer, refCounted.Get()));
-    vfs->Mount(config);
-    ConfigFile configFile(context);
-    configFile.SetDefaultValue("key0", 1);
-    CHECK(configFile.Load(buffer.GetName()));
-    CHECK(configFile.GetValue("key0").GetInt() == 3);
-    vfs->Unmount(config);
-}
-
-TEST_CASE("Load config file from JSON")
-{
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-
-    JSONFile jsonFile(context);
-    MemoryBuffer buffer(R"([
+    ~TestFileSystem()
     {
-		"key": "key0",
-		"type": "Int",
-		"value": 3
-    },
-    {
-		"key": "key2",
-		"type": "Int",
-		"value": 6
+        fileSystem_->Unmount(mountPoint_);
     }
-])");
-    CHECK(jsonFile.Load(buffer));
 
-    ConfigFile configFile(context);
-    configFile.SetDefaultValue("key0", 1);
-    configFile.SetDefaultValue("key1", 2);
-    CHECK(configFile.LoadJSON(jsonFile.GetRoot()));
+    void AddFile(const ea::string& fileName, MemoryBuffer memory)
+    {
+        mountPoint_->AddFile(fileName, memory);
+    }
 
-    CHECK(configFile.GetValue("key0").GetInt() == 3);
-    CHECK(configFile.GetValue("key1").GetInt() == 2);
-    CHECK(configFile.GetValue("key2").GetInt() == 0);
+    void AddFile(const ea::string& fileName, const ea::string& content)
+    {
+        mountPoint_->AddFile(fileName, MemoryBuffer{content.data(), content.size()});
+    }
+
+private:
+    WeakPtr<VirtualFileSystem> fileSystem_;
+    SharedPtr<MountedExternalMemory> mountPoint_;
+};
+
+const ea::string configDefaults = R"({
+    "Default": [
+        {
+            "Flavor": [],
+            "Variables": [
+                {
+                    "key": "FullScreen",
+                    "type": "Bool",
+                    "value": true
+                },
+                {
+                    "key": "Plugins",
+                    "type": "String",
+                    "value": "SampleProject;TestPlugin"
+                },
+                {
+                    "key": "MainPlugin",
+                    "type": "String",
+                    "value": "SampleProject"
+                }
+            ]
+        }
+    ]
+})";
+
+const ea::string configOverrides = R"({
+    "FullScreen": {
+        "type": "Bool",
+        "value": false
+    }
+})";
+
 }
 
-TEST_CASE("Save config file to JSON")
+TEST_CASE("ConfigFile is loaded from JSON with optional overrides")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    ConfigFile configFile(context);
-    configFile.SetDefaultValue("key0", 1);
-    configFile.SetDefaultValue("key1", 2);
-    CHECK(configFile.SetValue("key0", 3));
-    CHECK(!configFile.SetValue("key2", 6));
-    JSONValue value;
-    CHECK(configFile.SaveJSON(value));
+    TestFileSystem fileSystem{context};
 
-    configFile.Clear();
-    CHECK(configFile.LoadJSON(value));
-    CHECK(configFile.GetValue("key0").GetInt() == 3);
-    CHECK(configFile.GetValue("key1").GetInt() == 2);
-    CHECK(configFile.GetValue("key2").GetInt() == 0);
-}
-
-
-TEST_CASE("Load config file from XML")
-{
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-
-    XMLFile xmlFile(context);
-    MemoryBuffer buffer(R"(<?xml version="1.0"?>
-	<Settings>
-		<Value key="key0" type="Int" value="3" />
-		<Value key="key2" type="Int" value="6" />
-	</Settings>)");
-    CHECK(xmlFile.Load(buffer));
+    fileSystem.AddFile("ConfigDefaults.json", configDefaults);
+    fileSystem.AddFile("ConfigOverrides.json", configOverrides);
 
     ConfigFile configFile(context);
-    configFile.SetDefaultValue("key0", 1);
-    configFile.SetDefaultValue("key1", 2);
-    CHECK(configFile.LoadXML(xmlFile.GetRoot()));
+    configFile.DefineVariable("FullScreen", true).Overridable();
 
-    CHECK(configFile.GetValue("key0").GetInt() == 3);
-    CHECK(configFile.GetValue("key1").GetInt() == 2);
-    CHECK(configFile.GetValue("key2").GetInt() == 0);
-}
+    CHECK(configFile.GetVariable("FullScreen") == Variant{true});
+    CHECK(configFile.GetVariable("Plugins") == Variant::EMPTY);
+    CHECK(configFile.GetVariable("MainPlugin") == Variant::EMPTY);
 
-TEST_CASE("Save config file to XML")
-{
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    REQUIRE(configFile.LoadDefaults("memory://ConfigDefaults.json", ApplicationFlavor::Universal));
 
-    XMLFile xmlFile(context);
+    CHECK(configFile.GetVariable("FullScreen") == Variant{true});
+    CHECK(configFile.GetVariable("Plugins") == Variant{"SampleProject;TestPlugin"});
+    CHECK(configFile.GetVariable("MainPlugin") == Variant{"SampleProject"});
 
-    ConfigFile configFile(context);
-    configFile.SetDefaultValue("key0", 1);
-    configFile.SetDefaultValue("key1", 2);
-    CHECK(configFile.SetValue("key0", 3));
-    CHECK(!configFile.SetValue("key2", 6));
-    auto rootElement = xmlFile.CreateRoot("Settings");
-    CHECK(configFile.SaveXML(rootElement));
+    REQUIRE(configFile.LoadOverrides("memory://ConfigOverrides.json"));
 
-    configFile.Clear();
-    CHECK(configFile.LoadXML(xmlFile.GetRoot()));
-    CHECK(configFile.GetValue("key0").GetInt() == 3);
-    CHECK(configFile.GetValue("key1").GetInt() == 2);
-    CHECK(configFile.GetValue("key2").GetInt() == 0);
-}
+    CHECK(configFile.GetVariable("FullScreen") == Variant{false});
+    CHECK(configFile.GetVariable("Plugins") == Variant{"SampleProject;TestPlugin"});
+    CHECK(configFile.GetVariable("MainPlugin") == Variant{"SampleProject"});
 
-TEST_CASE("Save config file to binarry")
-{
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    const auto overrides = configFile.GetChangedVariables(ApplicationFlavor::Universal);
 
-    VectorBuffer buffer;
-
-    ConfigFile configFile(context);
-    configFile.SetDefaultValue("key0", 1);
-    configFile.SetDefaultValue("key1", 2);
-    CHECK(configFile.SetValue("key0", 3));
-    CHECK(!configFile.SetValue("key2", 6));
-    CHECK(configFile.Save(buffer));
-
-    configFile.Clear();
-    buffer.Seek(0);
-
-    CHECK(configFile.Load(buffer));
-    CHECK(configFile.GetValue("key0").GetInt() == 3);
-    CHECK(configFile.GetValue("key1").GetInt() == 2);
-    CHECK(configFile.GetValue("key2").GetInt() == 0);
+    REQUIRE(overrides.size() == 1);
+    CHECK(overrides.begin()->first == "FullScreen");
+    CHECK(overrides.begin()->second == Variant{false});
 }

@@ -124,9 +124,11 @@ namespace Urho3DNet
             return $"{X} {Y} {Z}";
         }
 
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            return (int) ((uint) X * 31 * 31 + (uint) Y * 31 + (uint) Z);
+            return HashCode.Combine(X, Y, Z);
         }
 
         /// Return length.

@@ -20,17 +20,20 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include <Urho3D/Precompiled.h>
 
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Replica/NetworkObject.h"
-#include "../Scene/Scene.h"
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Replica/NetworkObject.h>
+#include <Urho3D/Scene/Scene.h>
 
 namespace Urho3D
 {
 
-NetworkObject::NetworkObject(Context* context) : TrackedComponent<ReferencedComponentBase, NetworkObjectRegistry>(context) {}
+NetworkObject::NetworkObject(Context* context)
+    : TrackedComponent<ReferencedComponentBase, NetworkObjectRegistry>(context)
+{
+}
 
 NetworkObject::~NetworkObject() = default;
 
@@ -64,8 +67,16 @@ void NetworkObject::UpdateObjectHierarchy()
             parentNetworkObject_->AddChildNetworkObject(this);
     }
 
+    // Remove expired children
+    ea::erase_if(childrenNetworkObjects_, [](const WeakPtr<NetworkObject>& child) { return !child; });
+
     if (IsServer())
         UpdateTransformOnServer();
+}
+
+NetworkId NetworkObject::GetParentNetworkId() const
+{
+    return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : NetworkId::None;
 }
 
 void NetworkObject::OnNodeSet(Node* previousNode, Node* currentNode)
@@ -100,7 +111,7 @@ NetworkObject* NetworkObject::GetOtherNetworkObject(NetworkId networkId) const
 
 void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
 {
-    if (parentNetworkId != InvalidNetworkId)
+    if (parentNetworkId != NetworkId::None)
     {
         if (auto parentNetworkObject = GetOtherNetworkObject(parentNetworkId))
         {
@@ -140,4 +151,4 @@ void NetworkObject::PrepareToRemove()
         node_->Remove();
 }
 
-}
+} // namespace Urho3D

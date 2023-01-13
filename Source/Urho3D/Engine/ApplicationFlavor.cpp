@@ -23,7 +23,13 @@
 #include "../Precompiled.h"
 
 #include "../Engine/ApplicationFlavor.h"
+
+#include "../Core/ProcessUtils.h"
 #include "../IO/Log.h"
+
+#include <EASTL/map.h>
+#include <EASTL/set.h>
+#include <EASTL/sort.h>
 
 #include <regex>
 
@@ -55,45 +61,46 @@ ApplicationFlavorMap ParseString(const ea::string& str)
     return result;
 }
 
-unsigned GetStringWeight(ea::string_view str)
+ea::string GetPlatformFlavor()
 {
-    return ea::count(str.begin(), str.end(), '.');
-}
-
-ea::optional<unsigned> GetDistanceFromPattern(ea::string_view line, ea::string_view pattern)
-{
-    if (pattern == "*")
-        return GetStringWeight(line);
-    else if (pattern.starts_with("*"))
+    switch (GetPlatform())
     {
-        const ea::string_view suffix = pattern.substr(1);
+    case PlatformId::Windows:
+        return "platform=desktop,windows";
+    case PlatformId::UniversalWindowsPlatform:
+        return "platform=console,uwp";
 
-        if (!line.ends_with(suffix))
-            return ea::nullopt;
+    case PlatformId::Linux:
+        return "platform=desktop,linux";
+    case PlatformId::Android:
+        return "platform=mobile,android";
+    case PlatformId::RaspberryPi:
+        return "platform=console,rpi";
 
-        return GetStringWeight(line) - GetStringWeight(suffix);
+    case PlatformId::MacOS:
+        return "platform=desktop,macos";
+    case PlatformId::iOS:
+        return "platform=mobile,ios";
+    case PlatformId::tvOS:
+        return "platform=console,tvos";
+
+    case PlatformId::Web:
+        return "platform=web"; // TODO: Try to detect browser type?
+
+    case PlatformId::Unknown:
+        return EMPTY_STRING;
+
+    default:
+        break;
     }
-    else if (pattern.ends_with("*"))
-    {
-        const ea::string_view prefix = pattern.substr(0, pattern.length() - 1);
-
-        if (!line.starts_with(prefix))
-            return ea::nullopt;
-
-        return GetStringWeight(line) - GetStringWeight(prefix);
-    }
-    else
-    {
-        if (line != pattern)
-            return ea::nullopt;
-        return 0;
-    }
+    return EMPTY_STRING;
 }
 
 }
 
 ApplicationFlavor ApplicationFlavor::Universal{{"*", {"*"}}};
 ApplicationFlavor ApplicationFlavor::Empty;
+ApplicationFlavor ApplicationFlavor::Platform{GetPlatformFlavor()};
 
 ApplicationFlavorPattern::ApplicationFlavorPattern(const ea::string& str)
     : components_(ParseString(str))
@@ -167,6 +174,27 @@ ea::optional<unsigned> ApplicationFlavor::Matches(const ApplicationFlavorPattern
     }
 
     return distance;
+}
+
+ea::string ApplicationFlavor::ToString() const
+{
+    ea::string result;
+
+    const ea::map<ea::string, ApplicationFlavorComponent> sortedComponents(components_.begin(), components_.end());
+    for (const auto& [key, tags] : sortedComponents)
+    {
+        if (!result.empty())
+            result += ";";
+
+        result += key + "=";
+
+        StringVector sortedTags(tags.begin(), tags.end());
+        ea::sort(sortedTags.begin(), sortedTags.end());
+
+        result += ea::string::joined(sortedTags, ",");
+    }
+
+    return result;
 }
 
 }

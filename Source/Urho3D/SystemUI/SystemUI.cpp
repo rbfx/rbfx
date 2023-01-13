@@ -382,7 +382,7 @@ ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const char
 void SystemUI::ReallocateFontTexture()
 {
     ImGuiIO& io = ui::GetIO();
-    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+    ImGuiPlatformIO& platform_io = ui::GetPlatformIO();
 
     // Store main atlas, imgui expects it.
     io.Fonts->TexID = AllocateFontTexture(io.Fonts);

@@ -456,8 +456,8 @@ void DefaultRenderPipelineView::Render()
         debug->Render();
     }
 
-    SendViewEvent(E_ENDVIEWRENDER);
     OnRenderEnd(this, frameInfo_);
+    SendViewEvent(E_ENDVIEWRENDER);
     graphics_->SetColorWrite(true);
 
     // Update statistics

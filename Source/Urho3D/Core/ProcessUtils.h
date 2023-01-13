@@ -39,6 +39,24 @@ static const char* DYN_LIB_SUFFIX = ".dylib";
 static const char* DYN_LIB_SUFFIX = ".so";
 #endif
 
+enum class PlatformId
+{
+    Windows,
+    UniversalWindowsPlatform,
+
+    Linux,
+    Android,
+    RaspberryPi,
+
+    MacOS,
+    iOS,
+    tvOS,
+
+    Web,
+
+    Unknown
+};
+
 /// Initialize the FPU to round-to-nearest, single precision mode.
 URHO3D_API void InitFPU();
 /// Display an error dialog with the specified title and message.
@@ -69,8 +87,10 @@ URHO3D_API const ea::vector<ea::string>& ParseArguments(int argc, char** argv);
 URHO3D_API const ea::vector<ea::string>& GetArguments();
 /// Read input from the console window. Return empty if no input.
 URHO3D_API ea::string GetConsoleInput();
-/// Return the runtime platform identifier, or (?) if not identified.
-URHO3D_API ea::string GetPlatform();
+/// Return the runtime platform.
+URHO3D_API PlatformId GetPlatform();
+/// Return the runtime platform as string, or (?) if not identified.
+URHO3D_API ea::string GetPlatformName();
 /// Return the number of physical CPU cores.
 URHO3D_API unsigned GetNumPhysicalCPUs();
 /// Return the number of logical CPUs (different from physical if hyperthreading is used).

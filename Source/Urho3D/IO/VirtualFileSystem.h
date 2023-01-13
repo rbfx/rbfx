@@ -43,10 +43,10 @@ public:
     void MountDir(const ea::string& path);
     /// Mount real folder into virtual file system under the scheme.
     void MountDir(const ea::string& scheme, const ea::string& path);
+    /// Mount package file into virtual file system.
+    void MountPackageFile(const ea::string& path);
     /// Mount virtual or real folder into virtual file system.
     void Mount(MountPoint* mountPoint);
-    /// Mount default mount points. Does not unmount previously mounted points.
-    void MountDefault();
     /// Remove mount point from the virtual file system.
     void Unmount(MountPoint* mountPoint);
     /// Remove all mount points.
@@ -55,6 +55,12 @@ public:
     unsigned NumMountPoints() const { return mountPoints_.size(); }
     /// Get mount point by index.
     MountPoint* GetMountPoint(unsigned index) const;
+
+    /// Mount all existing packages for each combination of prefix path and relative path.
+    void MountExistingPackages(const StringVector& prefixPaths, const StringVector& relativePaths);
+    /// Mount all existing directories and packages for each combination of prefix path and relative path.
+    /// Package is preferred over directory if both exist.
+    void MountExistingDirectoriesOrPackages(const StringVector& prefixPaths, const StringVector& relativePaths);
 
     /// Check if a file exists in the virtual file system.
     bool Exists(const FileIdentifier& fileName) const;

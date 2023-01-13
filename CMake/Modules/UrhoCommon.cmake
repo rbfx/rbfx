@@ -302,7 +302,7 @@ function (web_executable TARGET)
     # Use this macro on targets that should compile for web platform, possibly right after add_executable().
     if (WEB)
         set_target_properties (${TARGET} PROPERTIES SUFFIX .html)
-        target_link_libraries(${TARGET} PRIVATE -sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1 -sASSERTIONS=0)
+        target_link_libraries(${TARGET} PRIVATE -sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1 -sASSERTIONS=0 -lidbfs.js)
         if (BUILD_SHARED_LIBS)
             target_link_libraries(${TARGET} PRIVATE -sMAIN_MODULE=1)
         endif ()

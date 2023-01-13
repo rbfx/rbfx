@@ -39,6 +39,7 @@
 #include <EASTL/functional.h>
 #include <EASTL/set.h>
 
+#include <future>
 #include <regex>
 
 struct ImFont;
@@ -96,16 +97,26 @@ class Project : public Object
 
 public:
     using AnalyzeFileCallback = ea::function<void(ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)>;
+    using CommandExecutedCallback = ea::function<void(bool success, const ea::string& output)>;
 
     Signal<void()> OnInitialized;
     Signal<void()> OnShallowSaved;
     Signal<void()> OnRenderProjectMenu;
     Signal<void()> OnRenderProjectToolbar;
     Signal<void(ProjectRequest*)> OnRequest;
+    Signal<void(const ea::string& command, const ea::string& args, bool& processed)> OnCommand;
 
-    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath);
+    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, bool isReadOnly);
     ~Project() override;
     void SerializeInBlock(Archive& archive) override;
+
+    /// Execute the command line in the context of the project.
+    /// Execution will be postponed until the project is initialized.
+    void ExecuteCommand(const ea::string& command, bool exitOnCompletion = false);
+    /// Execute the command line in another process.
+    bool ExecuteRemoteCommand(const ea::string& command, ea::string* output = nullptr);
+    /// Execute the command line in another process asynchronously.
+    void ExecuteRemoteCommandAsync(const ea::string& command, CommandExecutedCallback callback);
 
     /// Called right before destructor.
     /// Perform all complicated stuff here because Project is still available for plugins as subsystem.
@@ -220,6 +231,11 @@ private:
         void Clear() { bytes_ = nullptr; resource_ = nullptr; }
         bool IsEmpty() const { return !bytes_ && !resource_; }
     };
+    struct PendingRemoteCommand
+    {
+        CommandExecutedCallback callback_;
+        std::future<ea::pair<bool, ea::string>> result_;
+    };
 
     void InitializeHotkeys();
     void EnsureDirectoryInitialized();
@@ -230,9 +246,14 @@ private:
     void SaveGitIgnore();
     void ProcessPendingRequests();
     void ProcessDelayedSaves(bool forceSave = false);
+    void ProcessCommand(const ea::string& command, bool exitOnCompletion);
+    void ProcessPendingRemoteCommands();
+    void RenderAssetsToolbar();
 
     /// Project properties
     /// @{
+    const bool isHeadless_{};
+    const bool isReadOnly_{};
     const unsigned saveDelayMs_{3000};
 
     const ea::string projectPath_;
@@ -272,11 +293,17 @@ private:
     ea::vector<std::regex> ignoredFileNameRegexes_;
     ea::vector<AnalyzeFileCallback> analyzeFileCallbacks_;
 
+    /// Commands to be executed after initialization.
+    ea::vector<ea::pair<ea::string, bool>> pendingCommands_;
+
     /// Global requests to be processed.
     ea::vector<PendingRequest> pendingRequests_;
 
     /// File save requests to be processed.
     ea::unordered_map<ea::string, PendingFileSave> delayedFileSaves_;
+
+    /// Ongoing remote commands.
+    ea::vector<PendingRemoteCommand> pendingRemoteCommands_;
 
     /// Close popup handling
     /// @{

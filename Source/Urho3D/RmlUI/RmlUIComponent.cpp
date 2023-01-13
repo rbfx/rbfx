@@ -62,7 +62,7 @@ RmlUIComponent::~RmlUIComponent()
 void RmlUIComponent::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<RmlUIComponent>(Category_RmlUI);
-    URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
+
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Resource", GetResource, SetResource, ResourceRef, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Use Normalized Coordinates", bool, useNormalized_, false, AM_DEFAULT);

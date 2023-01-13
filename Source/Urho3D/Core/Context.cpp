@@ -46,10 +46,6 @@
 
 #ifndef MINI_URHO
 #include <SDL.h>
-#ifdef URHO3D_IK
-#include <ik/log.h>
-#include <ik/memory.h>
-#endif
 #endif
 
 #include "../DebugNew.h"
@@ -60,15 +56,6 @@ namespace Urho3D
 #ifndef MINI_URHO
 // Keeps track of how many times SDL was initialised so we know when to call SDL_Quit().
 static int sdlInitCounter = 0;
-
-// Keeps track of how many times IK was initialised
-static int ikInitCounter = 0;
-
-// Reroute all messages from the ik library to the Urho3D log
-static void HandleIKLog(const char* msg)
-{
-    URHO3D_LOGINFOF("[IK] %s", msg);
-}
 #endif
 
 // Global context instance. Set in Context constructor.
@@ -277,39 +264,6 @@ void Context::ReleaseSDL()
     if (sdlInitCounter < 0)
         URHO3D_LOGERROR("Too many calls to Context::ReleaseSDL()!");
 }
-
-#ifdef URHO3D_IK
-void Context::RequireIK()
-{
-    // Always increment, the caller must match with ReleaseIK(), regardless of
-    // what happens.
-    ++ikInitCounter;
-
-    if (ikInitCounter == 1)
-    {
-        URHO3D_LOGDEBUG("Initialising Inverse Kinematics library");
-        ik_memory_init();
-        ik_log_init(IK_LOG_NONE);
-        ik_log_register_listener(HandleIKLog);
-    }
-}
-
-void Context::ReleaseIK()
-{
-    --ikInitCounter;
-
-    if (ikInitCounter == 0)
-    {
-        URHO3D_LOGDEBUG("De-initialising Inverse Kinematics library");
-        ik_log_unregister_listener(HandleIKLog);
-        ik_log_deinit();
-        ik_memory_deinit();
-    }
-
-    if (ikInitCounter < 0)
-        URHO3D_LOGERROR("Too many calls to Context::ReleaseIK()");
-}
-#endif // ifdef URHO3D_IK
 #endif // ifndef MINI_URHO
 
 Object* Context::GetSubsystem(StringHash type) const

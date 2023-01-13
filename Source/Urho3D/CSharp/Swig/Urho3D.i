@@ -533,9 +533,6 @@ public:
 %include "Urho3D/Scene/TrackedComponent.h"
 %include "Urho3D/Scene/PrefabReference.h"
 
-// --------------------------------------- Config files ---------------------------------------
-%include "Urho3D/IO/ConfigFile.h"
-
 // --------------------------------------- Extra components ---------------------------------------
 %include "Urho3D/Input/FreeFlyController.h"
 
@@ -580,13 +577,11 @@ public:
 
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)
-%{ using Algorithm = Urho3D::IKSolver::Algorithm; %}
+%ignore Urho3D::IKSolverComponent::Initialize;
 
 %include "generated/Urho3D/_pre_ik.i"
-%include "Urho3D/IK/IKConstraint.h"
-%include "Urho3D/IK/IKEffector.h"
-%include "Urho3D/IK/IK.h"
 %include "Urho3D/IK/IKSolver.h"
+%include "Urho3D/IK/IKSolverComponent.h"
 #endif
 // --------------------------------------- Graphics ---------------------------------------
 %ignore Urho3D::FrustumOctreeQuery::TestDrawables;
@@ -674,6 +669,7 @@ public:
 %include "Urho3D/Graphics/GraphicsDefs.h"
 %interface_custom("%s", "I%s", Urho3D::GPUObject);
 %include "Urho3D/Graphics/GPUObject.h"
+%include "Urho3D/Graphics/PipelineStateTracker.h"
 %include "Urho3D/Graphics/IndexBuffer.h"
 %include "Urho3D/Graphics/VertexBuffer.h"
 %include "Urho3D/Graphics/Geometry.h"

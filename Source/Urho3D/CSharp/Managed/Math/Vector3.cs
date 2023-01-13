@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,10 @@ namespace Urho3DNet
 {
     /// Three-dimensional vector.
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector3 : IEquatable<Vector3>
+    public struct Vector3 : IEquatable<Vector3>, IApproximateEquatable<Vector3>
     {
+        public static IEqualityComparer<Vector3> ApproximateEqualityComparer => ApproximateEqualityComparer<Vector3>.Default;
+
         ///ruct from a two-dimensional vector and the Z coordinate.
         public Vector3(in Vector2 vector, float z = 0)
         {
@@ -238,10 +240,19 @@ namespace Urho3DNet
             return this * (1.0f - t) + rhs * t;
         }
 
-        /// Test for equality with another vector with epsilon.
+        /// Test for equality with another vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector3 rhs)
         {
-            return MathDefs.Equals(X, rhs.X) && MathDefs.Equals(Y, rhs.Y) && MathDefs.Equals(Z, rhs.Z);
+            return X == rhs.X && Y == rhs.Y && Z == rhs.Z;
+        }
+
+        /// Test for equality with another vector with epsilon.
+        public bool ApproximatelyEquivalent(Vector3 rhs, float epsilon = MathDefs.Epsilon)
+        {
+            return MathDefs.ApproximatelyEquivalent(X, rhs.X, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(Y, rhs.Y, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(Z, rhs.Z, epsilon);
         }
 
         /// Test for equality with another vector with epsilon.
@@ -297,15 +308,11 @@ namespace Urho3DNet
             return $"{X} {Y} {Z}";
         }
 
-        /// Return hash value for HashSet & HashMap.
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            uint hash = 37;
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(X);
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(Y);
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(Z);
-
-            return (int) hash;
+            return HashCode.Combine(X, Y, Z);
         }
 
         /// Per-component linear interpolation between two 3-vectors.

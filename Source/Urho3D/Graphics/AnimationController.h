@@ -187,6 +187,9 @@ public:
     float GetSpeed(const ea::string& name) const;
     /// @}
 
+    bool IsSkeletonReset() const { return resetSkeleton_; }
+    void SetSkeletonReset(bool resetSkeleton) { resetSkeleton_ = resetSkeleton; }
+
     /// Set animation parameters attribute.
     void SetAnimationsAttr(const VariantVector& value);
     /// Return animation parameters attribute.

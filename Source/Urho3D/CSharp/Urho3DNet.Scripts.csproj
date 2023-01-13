@@ -13,4 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="Urho3DNet.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Managed\Math\" />
+  </ItemGroup>
 </Project>

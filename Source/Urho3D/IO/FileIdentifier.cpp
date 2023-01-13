@@ -41,7 +41,7 @@ FileIdentifier::FileIdentifier(const ea::string& url)
     {
         scheme_ = url.substr(0, schemePos);
         schemePos += schemeSeparator.size();
-        // Skip up to two forward slashes to accomodate common http:// or file:/// url patterns.
+        // Skip up to two forward slashes to accommodate common http:// or file:/// url patterns.
         if (schemePos < url.size() && url[schemePos] == '/')
             ++schemePos;
         if (schemePos < url.size() && url[schemePos] == '/')

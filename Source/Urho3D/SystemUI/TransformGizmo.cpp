@@ -39,10 +39,10 @@ namespace
 Rect GetMainViewportRect()
 {
 #ifdef IMGUI_HAS_VIEWPORT
-    const ImVec2 pos = ImGui::GetMainViewport()->Pos;
-    const ImVec2 size = ImGui::GetMainViewport()->Size;
+    const ImVec2 pos = ui::GetMainViewport()->Pos;
+    const ImVec2 size = ui::GetMainViewport()->Size;
 #else
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO& io = ui::GetIO();
     const ImVec2 pos = ImVec2(0, 0);
     const ImVec2 size = io.DisplaySize;
 #endif

@@ -56,7 +56,7 @@ ResourceEditorTab::~ResourceEditorTab()
 
 void ResourceEditorTab::SaveCurrentResource()
 {
-    SaveResource(activeResourceName_);
+    SaveResource(activeResourceName_, true);
 }
 
 void ResourceEditorTab::CloseCurrentResource()

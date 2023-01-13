@@ -78,6 +78,8 @@ ea::string AssetTransformerInput::ToBase64() const
 
 void AssetTransformerOutput::SerializeInBlock(Archive& archive)
 {
+    SerializeValue(archive, "SourceModified", sourceModified_);
+    SerializeValue(archive, "OutputResourceNames", outputResourceNames_);
     SerializeValue(archive, "AppliedTransformers", appliedTransformers_);
 }
 

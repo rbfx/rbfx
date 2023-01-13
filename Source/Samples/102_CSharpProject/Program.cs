@@ -117,11 +117,11 @@ namespace DemoApplication
         {
             // This is required for loading and compiling *.cs scripts from resource path.
             Context.SetRuntimeApi(new CompiledScriptRuntimeApiImpl());
-            using (var context = new Context())
+            using (SharedPtr<Context> context = new Context())
             {
-                using (var application = new DemoApplication(context))
+                using (SharedPtr<DemoApplication> application = new DemoApplication(context))
                 {
-                    Environment.ExitCode = application.Run();
+                    Environment.ExitCode = application.Ptr.Run();
                 }
             }
         }

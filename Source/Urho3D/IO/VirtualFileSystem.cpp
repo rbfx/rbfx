@@ -53,6 +53,13 @@ void VirtualFileSystem::MountDir(const ea::string& scheme, const ea::string& pat
     Mount(MakeShared<MountedDirectory>(context_, path, scheme));
 }
 
+void VirtualFileSystem::MountPackageFile(const ea::string& path)
+{
+    auto packageFile = MakeShared<PackageFile>(context_);
+    if (packageFile->Open(path, 0u))
+        Mount(packageFile);
+}
+
 void VirtualFileSystem::Mount(MountPoint* mountPoint)
 {
     MutexLock lock(mountMutex_);
@@ -65,63 +72,39 @@ void VirtualFileSystem::Mount(MountPoint* mountPoint)
     mountPoints_.push_back(pointPtr);
 }
 
-void VirtualFileSystem::MountDefault()
+void VirtualFileSystem::MountExistingPackages(
+    const StringVector& prefixPaths, const StringVector& relativePaths)
 {
-    const auto engine = context_->GetSubsystem<Engine>();
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
 
-    const ea::string& prefixPaths = engine->GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString();
-    const ea::string& packages = engine->GetParameter(EP_RESOURCE_PACKAGES).GetString();
-    const ea::string& paths = engine->GetParameter(EP_RESOURCE_PATHS).GetString();
-    const ea::string& autoloadPaths = engine->GetParameter(EP_AUTOLOAD_PATHS).GetString();
-        
-
-    // Converts paths to absolute
-    ea::vector<ea::string> resourcePrefixPaths = prefixPaths.split(';', true);
-    const auto& programDir = fileSystem->GetProgramDir();
-    bool hasProgramDir = false;
-    for (unsigned i = 0; i < resourcePrefixPaths.size(); ++i)
+    for (const ea::string& prefixPath : prefixPaths)
     {
-        hasProgramDir |= resourcePrefixPaths[i].empty() || resourcePrefixPaths[i] == programDir;
-        resourcePrefixPaths[i] = AddTrailingSlash(IsAbsolutePath(resourcePrefixPaths[i])
-                ? resourcePrefixPaths[i] : programDir + resourcePrefixPaths[i]);
-    }
-
-    // Append program dir as default fall-back option
-    if (!hasProgramDir)
-        resourcePrefixPaths.push_back(programDir);
-
-    // Combine resource paths and autoload paths. Autoload appended last to have most priority.
-    ea::vector<ea::string> resourcePaths = paths.split(';');
-    resourcePaths.append(autoloadPaths.split(';'));
-
-    // Split package names.
-    ea::vector<ea::string> resourcePackages = packages.split(';');
-
-    ea::vector<SharedPtr<MountedDirectory>> directories;
-    for (auto& resourcePrefixPath : resourcePrefixPaths)
-    {
-        for (auto& resourcePackage: resourcePackages)
+        for (const ea::string& relativePath : relativePaths)
         {
-            auto packagePath = resourcePrefixPath + resourcePackage;
+            const ea::string packagePath = prefixPath + relativePath;
             if (fileSystem->FileExists(packagePath))
-            {
-                Mount(MakeShared<PackageFile>(context_, packagePath, 0));
-            }
-        }
-        for (auto& resourcePath : resourcePaths)
-        {
-            auto dirPath = resourcePrefixPath + resourcePath;
-            if (fileSystem->DirExists(dirPath))
-            {
-                directories.push_back(MakeShared<MountedDirectory>(context_, dirPath));
-            }
+                MountPackageFile(packagePath);
         }
     }
-    for (auto& dir : directories)
-        Mount(dir);
+}
 
-    MountDir("conf", engine->GetAppPreferencesDir());
+void VirtualFileSystem::MountExistingDirectoriesOrPackages(
+    const StringVector& prefixPaths, const StringVector& relativePaths)
+{
+    const auto fileSystem = context_->GetSubsystem<FileSystem>();
+
+    for (const ea::string& prefixPath : prefixPaths)
+    {
+        for (const ea::string& relativePath : relativePaths)
+        {
+            const ea::string packagePath = prefixPath + relativePath + ".pak";
+            const ea::string directoryPath = prefixPath + relativePath;
+            if (fileSystem->FileExists(packagePath))
+                MountPackageFile(packagePath);
+            else if (fileSystem->DirExists(directoryPath))
+                MountDir(directoryPath);
+        }
+    }
 }
 
 void VirtualFileSystem::Unmount(MountPoint* mountPoint)

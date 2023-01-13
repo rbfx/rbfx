@@ -79,24 +79,24 @@ const ea::string& SystemMessageBox::GetMessage() const
 void SystemMessageBox::RenderFrame(StringHash eventType, VariantMap& eventData)
 {
     using namespace MessageACK;
-    ImGui::SetNextWindowPos(windowPosition_, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize_, ImGuiCond_Always);
-    if (ImGui::Begin(titleText_.c_str(), &isOpen_, ImGuiWindowFlags_NoCollapse|
+    ui::SetNextWindowPos(windowPosition_, ImGuiCond_FirstUseEver);
+    ui::SetNextWindowSize(windowSize_, ImGuiCond_Always);
+    if (ui::Begin(titleText_.c_str(), &isOpen_, ImGuiWindowFlags_NoCollapse|
                      ImGuiWindowFlags_NoSavedSettings))
     {
-        ImGui::TextUnformatted(messageText_.c_str());
-        auto region = ImGui::GetContentRegionAvail();
-        ImGui::SetCursorPos(ImVec2(region.x - 100 + 20, region.y + 20));
+        ui::TextUnformatted(messageText_.c_str());
+        auto region = ui::GetContentRegionAvail();
+        ui::SetCursorPos(ImVec2(region.x - 100 + 20, region.y + 20));
 
         bool closeWindow = false;
         bool status = false;
-        if (ImGui::Button("Ok"))
+        if (ui::Button("Ok"))
         {
             closeWindow = true;
             status = true;
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel") || !isOpen_)
+        ui::SameLine();
+        if (ui::Button("Cancel") || !isOpen_)
         {
             closeWindow = true;
             status = false;
@@ -108,7 +108,7 @@ void SystemMessageBox::RenderFrame(StringHash eventType, VariantMap& eventData)
             isOpen_ = false;
         }
     }
-    ImGui::End();
+    ui::End();
 }
 
 }

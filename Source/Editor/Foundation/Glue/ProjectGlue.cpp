@@ -36,14 +36,21 @@ namespace
 
 const auto Hotkey_Play = EditorHotkey{"Global.Launch"}.Ctrl().Press(KEY_P);
 
-class InternalState
+struct InternalStateContext
+{
+    WeakPtr<Project> project_;
+    WeakPtr<GameViewTab> gameViewTab_;
+    WeakPtr<SceneViewTab> sceneViewTab_;
+
+    operator bool() const { return project_ && gameViewTab_ && sceneViewTab_; }
+};
+
+class InternalState : public InternalStateContext
 {
 public:
-    explicit InternalState(Project* project)
-        : project_{project}
-        , gameViewTab_{project->FindTab<GameViewTab>()}
-        , sceneViewTab_{project->FindTab<SceneViewTab>()}
-        , engine_{project->GetSubsystem<Engine>()}
+    explicit InternalState(const InternalStateContext& ctx)
+        : InternalStateContext{ctx}
+        , engine_{project_->GetSubsystem<Engine>()}
     {
     }
 
@@ -81,10 +88,6 @@ public:
     }
 
 private:
-    const WeakPtr<Project> project_;
-    const WeakPtr<GameViewTab> gameViewTab_;
-    const WeakPtr<SceneViewTab> sceneViewTab_;
-
     const WeakPtr<Engine> engine_;
 
     WeakPtr<EditorTab> tabToFocusAfter_;
@@ -96,7 +99,14 @@ void Foundation_ProjectGlue(Context* context, Project* project)
 {
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
 
-    const auto state = ea::make_shared<InternalState>(project);
+    InternalStateContext ctx;
+    ctx.project_ = project;
+    ctx.gameViewTab_ = project->FindTab<GameViewTab>();
+    ctx.sceneViewTab_ = project->FindTab<SceneViewTab>();
+    if (!ctx)
+        return;
+
+    const auto state = ea::make_shared<InternalState>(ctx);
 
     hotkeyManager->BindHotkey(hotkeyManager, Hotkey_Play, [state] { state->TogglePlayedDefault(); });
 

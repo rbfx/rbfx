@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,10 @@ namespace Urho3DNet
 {
     /// Two-dimensional vector.
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector2 : IEquatable<Vector2>
+    public struct Vector2 : IEquatable<Vector2>, IApproximateEquatable<Vector2>
     {
+        public static IEqualityComparer<Vector2> ApproximateEqualityComparer => ApproximateEqualityComparer<Vector2>.Default;
+
         /// Construct from an IntVector2.
         public Vector2(in IntVector2 vector)
         {
@@ -208,11 +210,18 @@ namespace Urho3DNet
             return this * (1.0f - t) + rhs * t;
         }
 
-        /// Test for equality with another vector with epsilon.
+        /// Test for equality with another vector.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector2 rhs)
         {
-            return MathDefs.Equals(X, rhs.X) && MathDefs.Equals(Y, rhs.Y);
+            return X == rhs.X && Y == rhs.Y;
+        }
+
+        /// Test for equality with another vector with epsilon.
+        public bool ApproximatelyEquivalent(Vector2 rhs, float epsilon = MathDefs.Epsilon)
+        {
+            return MathDefs.ApproximatelyEquivalent(X, rhs.X, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(Y, rhs.Y, epsilon);
         }
 
         /// Return whether is NaN.
@@ -256,13 +265,11 @@ namespace Urho3DNet
             return $"{X} {Y}";
         }
 
-        /// Return hash value for HashSet & HashMap.
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                return (X.GetHashCode() * 31) ^ Y.GetHashCode();
-            }
+            return HashCode.Combine(X, Y);
         }
 
         /// Per-component linear interpolation between two 2-vectors.

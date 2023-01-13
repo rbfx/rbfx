@@ -53,7 +53,6 @@
 %inheritable(Urho3D, PluginApplication);
 %inheritable(Urho3D, Drawable);
 %inheritable(Urho3D, Drawable2D);
-%inheritable(Urho3D, ConfigFileBase);
 //%inheritable(Urho3D::Actions, FiniteTimeAction);
 //%inheritable(Urho3D::Actions, FiniteTimeActionState);
 

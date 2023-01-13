@@ -23,6 +23,7 @@
 #pragma once
 
 #include <EASTL/unique_ptr.h>
+#include <EASTL/unordered_set.h>
 
 #include "../Core/Object.h"
 #include "../Graphics/Batch.h"

@@ -106,7 +106,7 @@ public:
     /// Save the scene.
     void SaveScene(bool initial);
     /// Create a background 2D sprite, optionally rotated by a ValueAnimation object.
-    void CreateBackgroundSprite(const TileMapInfo2D& info, float scale, const ea::string& texture, bool animate);
+    void CreateBackgroundSprite(const TileMapInfo2D& info, float scale, const ea::string& texture);
     /// Create a particle emitter attached to the given node.
     void SpawnEffect(Node* node);
     /// Play a non-looping sound effect.

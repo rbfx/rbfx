@@ -189,6 +189,7 @@ void SceneReplication::CreateScene()
     // when a client connects
     scene_->CreateComponent<Octree>(LOCAL);
     scene_->CreateComponent<PhysicsWorld>(LOCAL);
+    scene_->CreateComponent<ReplicationManager>(LOCAL);
 
     // All static scene content and the camera are also created as local, so that they are unaffected by scene replication and are
     // not removed from the client upon connection. Create a Zone component first for ambient lighting & fog control.

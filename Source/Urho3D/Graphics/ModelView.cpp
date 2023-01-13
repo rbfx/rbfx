@@ -1349,6 +1349,24 @@ void ModelView::MirrorGeometriesX()
     }
 }
 
+void ModelView::ScaleGeometries(float scale)
+{
+    for (GeometryView& geometryView : geometries_)
+    {
+        for (GeometryLODView& lodView : geometryView.lods_)
+        {
+            for (ModelVertex& vertex : lodView.vertices_)
+                vertex.position_ = Vector4{scale * vertex.GetPosition(), vertex.position_.w_};
+
+            for (auto& [morphIndex, morphVector] : lodView.morphs_)
+            {
+                for (ModelVertexMorph& vertexMorph : morphVector)
+                    vertexMorph.positionDelta_ *= scale;
+            }
+        }
+    }
+}
+
 void ModelView::CalculateMissingNormals(bool flatNormals)
 {
     for (GeometryView& geometryView : geometries_)

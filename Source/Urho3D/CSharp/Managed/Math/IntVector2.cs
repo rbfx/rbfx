@@ -164,13 +164,11 @@ namespace Urho3DNet
             return $"{X} {Y}";
         }
 
-        /// Return hash value for HashSet & HashMap.
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                return (int) ((uint) X * 31 + Y);
-            }
+            return HashCode.Combine(X, Y);
         }
 
         /// Return length.

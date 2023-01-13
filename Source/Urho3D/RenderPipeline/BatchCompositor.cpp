@@ -347,8 +347,9 @@ void BatchCompositor::BeginShadowBatchesComposition(unsigned lightIndex, ShadowS
         for (unsigned j = 0; j < sourceBatches.size(); ++j)
         {
             const SourceBatch& sourceBatch = sourceBatches[j];
-            if (!sourceBatch.geometry_)
+            if (!sourceBatch.geometry_ || sourceBatch.numWorldTransforms_ == 0)
                 continue;
+
             Material* material = sourceBatch.material_ ? sourceBatch.material_ : defaultMaterial_;
             Technique* tech = material->FindTechnique(drawable, shadowMaterialQuality_);
             if (!tech)

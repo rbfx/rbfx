@@ -52,6 +52,11 @@ struct URHO3D_API ApplicationFlavor
     static ApplicationFlavor Universal;
     /// Empty flavor matches only empty patterns.
     static ApplicationFlavor Empty;
+    /// Flavor of current platform.
+    /// There's one component "platform" which consists of:
+    /// - Platform name (if known): windows|uwp|linux|android|rpi|macos|ios|tvos|web
+    /// - Platform type (if known and not web): desktop|mobile|console
+    static ApplicationFlavor Platform;
 
     ApplicationFlavor() = default;
     explicit ApplicationFlavor(const ea::string& str);
@@ -59,6 +64,8 @@ struct URHO3D_API ApplicationFlavor
 
     /// Returns distance (smaller is better) if flavor matches the pattern. Returns none if doesn't match.
     ea::optional<unsigned> Matches(const ApplicationFlavorPattern& pattern) const;
+    /// Returns string representation of flavor.
+    ea::string ToString() const;
 
     ApplicationFlavorMap components_;
 };

@@ -97,6 +97,10 @@ struct URHO3D_API ModelVertex
 
     /// Return position as 3-vector.
     Vector3 GetPosition() const { return static_cast<Vector3>(position_); }
+    /// Return normal as 3-vector.
+    Vector3 GetNormal() const { return static_cast<Vector3>(normal_); }
+    /// Return tangent as 3-vector.
+    Vector3 GetTangent() const { return static_cast<Vector3>(tangent_); }
     /// Return color from given channel.
     Color GetColor(unsigned i = 0) const { return static_cast<Color>(color_[i]); }
     /// Return blend indices as integers.
@@ -304,8 +308,11 @@ public:
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
     /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
-    /// Note: Does not mirror bones!
+    /// Note: Does not affect bones!
     void MirrorGeometriesX();
+    /// Scale geometries. Useful for conversion between units.
+    /// Note: Does not affect bones!
+    void ScaleGeometries(float scale);
     /// Calculate normals for geometries without normals in vertex format. Resets tangents for affected geometries.
     void CalculateMissingNormals(bool flatNormals = false);
     /// Calculate tangents for geometries without tangents in vertex format.

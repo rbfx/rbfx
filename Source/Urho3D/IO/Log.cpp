@@ -362,6 +362,8 @@ Log::Log(Context* context) :
     formatPattern_("[%H:%M:%S] [%l] [%n] : %v"),
     defaultLogger_(GetOrCreateLogger("main"))
 {
+    impl_->platformSink_->set_pattern(formatPattern_.c_str());
+
 #if !__EMSCRIPTEN__
     spdlog::flush_every(std::chrono::seconds(5));
 #endif

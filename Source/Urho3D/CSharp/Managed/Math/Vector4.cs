@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,10 @@ namespace Urho3DNet
 {
     /// Four-dimensional vector.
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector4 : IEquatable<Vector4>
+    public struct Vector4 : IEquatable<Vector4>, IApproximateEquatable<Vector4>
     {
+        public static IEqualityComparer<Vector4> ApproximateEqualityComparer => ApproximateEqualityComparer<Vector4>.Default;
+
         /// Construct from a 3-dimensional vector and the W coordinate.
         public Vector4(in Vector3 vector, float w)
         {
@@ -170,10 +172,19 @@ namespace Urho3DNet
         }
 
         /// Test for equality with another vector with epsilon.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector4 rhs)
         {
-            return MathDefs.Equals(X, rhs.X) && MathDefs.Equals(Y, rhs.Y) && MathDefs.Equals(Z, rhs.Z) &&
-                   MathDefs.Equals(W, rhs.W);
+            return X == rhs.X && Y == rhs.Y && Z == rhs.Z && W == rhs.W;
+        }
+
+        /// Test for equality with another quaternion with epsilon.
+        public bool ApproximatelyEquivalent(Vector4 rhs, float epsilon = MathDefs.Epsilon)
+        {
+            return MathDefs.ApproximatelyEquivalent(X, rhs.X, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(Y, rhs.Y, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(Z, rhs.Z, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(W, rhs.W, epsilon);
         }
 
         public override bool Equals(object obj)
@@ -193,16 +204,11 @@ namespace Urho3DNet
             return $"{X} {Y} {Z} {W}";
         }
 
-        /// Return hash value for HashSet & HashMap.
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            uint hash = 37;
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(X);
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(Y);
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(Z);
-            hash = 37 * hash + MathDefs.FloatToRawIntBits(W);
-
-            return (int) hash;
+            return HashCode.Combine(X, Y, Z, W);
         }
 
         /// Multiply Vector4 with a scalar.

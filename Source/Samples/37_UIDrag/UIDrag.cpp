@@ -42,8 +42,7 @@ void UIDrag::Start()
     Sample::Start();
 
     // Set mouse visible
-    ea::string platform = GetPlatform();
-    if (platform != "Android" && platform != "iOS")
+    if (GetPlatform() != PlatformId::Android && GetPlatform() != PlatformId::iOS)
         GetSubsystem<Input>()->SetMouseVisible(true);
 
     // Create the UI content
