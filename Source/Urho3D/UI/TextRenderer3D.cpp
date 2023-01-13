@@ -68,7 +68,7 @@ void TextRenderer3D::DelayedStart()
     Scene* scene = node_->GetScene();
     containerNode_ = scene->GetChild(containerNodeName);
     if (!containerNode_)
-        containerNode_ = scene->CreateChild(containerNodeName, LOCAL, 0, true);
+        containerNode_ = scene->CreateChild(containerNodeName, 0, true);
 }
 
 void TextRenderer3D::PostUpdate(float timeStep)

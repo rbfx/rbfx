@@ -79,9 +79,6 @@ public:
     /// Return ID.
     /// @property{get_id}
     unsigned GetID() const { return id_; }
-    /// Return whether the component is replicated or local to a scene.
-    /// @property
-    bool IsReplicated() const;
 
     /// Return scene node.
     /// @property

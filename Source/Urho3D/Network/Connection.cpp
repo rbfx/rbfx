@@ -159,32 +159,6 @@ void Connection::SendRemoteEvent(StringHash eventType, bool inOrder, const Varia
     remoteEvents_.push_back(queuedEvent);
 }
 
-void Connection::SendRemoteEvent(Node* node, StringHash eventType, bool inOrder, const VariantMap& eventData)
-{
-    if (!node)
-    {
-        URHO3D_LOGERROR("Null sender node for remote node event");
-        return;
-    }
-    if (node->GetScene() != scene_)
-    {
-        URHO3D_LOGERROR("Sender node is not in the connection's scene, can not send remote node event");
-        return;
-    }
-    if (!node->IsReplicated())
-    {
-        URHO3D_LOGERROR("Sender node has a local ID, can not send remote node event");
-        return;
-    }
-
-    RemoteEvent queuedEvent;
-    queuedEvent.senderID_ = node->GetID();
-    queuedEvent.eventType_ = eventType;
-    queuedEvent.eventData_ = eventData;
-    queuedEvent.inOrder_ = inOrder;
-    remoteEvents_.push_back(queuedEvent);
-}
-
 void Connection::SetScene(Scene* newScene)
 {
     if (scene_)
@@ -204,7 +178,7 @@ void Connection::SetScene(Scene* newScene)
 
     if (isClient_)
     {
-        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
+        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
         if (!replicationManager_->IsServer())
             replicationManager_->StartServer();
 
@@ -908,7 +882,7 @@ void Connection::SetPacketSizeLimit(int limit)
 
 void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
 {
-    replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
+    replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
     replicationManager_->StartClient(this);
     sceneLoaded_ = true;
 
@@ -1048,7 +1022,7 @@ void Connection::OnPackagesReady()
 
     if (sceneFileName_.empty())
     {
-        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
+        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
         replicationManager_->StartClient(this);
         sceneLoaded_ = true;
 

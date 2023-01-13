@@ -83,7 +83,7 @@ void RenderMeshInstance::Init(ParticleGraphNode* node, ParticleGraphLayerInstanc
     auto graphNode = static_cast<RenderMesh*>(node_);
     sceneNode_ = MakeShared<Node>(GetContext());
     drawable_ = MakeShared<RenderMeshDrawable>(GetContext());
-    sceneNode_->AddComponent(drawable_, 0, LOCAL);
+    sceneNode_->AddComponent(drawable_, 0);
     drawable_->SetModelAttr(graphNode->GetModel());
     drawable_->SetMaterialsAttr(graphNode->GetMaterial());
     OnSceneSet(GetScene());

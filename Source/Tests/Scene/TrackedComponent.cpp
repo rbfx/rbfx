@@ -152,7 +152,7 @@ TEST_CASE("Tracked components are indexed in the registry")
     auto node4 = scene->CreateChild("Node 4");
     auto component4 = MakeShared<TestTrackedComponent>(context);
     component4->SetEnabled(false);
-    node4->AddComponent(component4, 0, LOCAL);
+    node4->AddComponent(component4, 0);
 
     REQUIRE(registry->GetNumTrackedComponents() == 2);
     REQUIRE(registry->GetTrackedComponentByIndex(0) == component3);

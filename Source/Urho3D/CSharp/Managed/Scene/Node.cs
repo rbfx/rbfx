@@ -26,9 +26,9 @@ namespace Urho3DNet
 {
     public partial class Node
     {
-        public T CreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T: Component
+        public T CreateComponent<T>(uint id = 0) where T: Component
         {
-            return (T)CreateComponent(typeof(T).Name, mode, id);
+            return (T)CreateComponent(typeof(T).Name, id);
         }
 
         public T GetComponent<T>(bool recursive) where T: Component
@@ -36,9 +36,9 @@ namespace Urho3DNet
             return (T)GetComponent(typeof(T).Name, recursive);
         }
 
-        public T GetOrCreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T: Component
+        public T GetOrCreateComponent<T>(uint id = 0) where T: Component
         {
-            return (T)GetOrCreateComponent(typeof(T).Name, mode, id);
+            return (T)GetOrCreateComponent(typeof(T).Name, id);
         }
 
         /// <summary>

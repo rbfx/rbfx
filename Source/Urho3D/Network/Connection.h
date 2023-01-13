@@ -134,8 +134,6 @@ public:
     PacketType GetPacketType(bool reliable, bool inOrder);
     /// Send a remote event.
     void SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
-    /// Send a remote event with the specified node as sender.
-    void SendRemoteEvent(Node* node, StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Assign scene. On the server, this will cause the client to load it.
     /// @property
     void SetScene(Scene* newScene);

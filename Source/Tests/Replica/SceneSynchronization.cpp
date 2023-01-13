@@ -96,8 +96,8 @@ TEST_CASE("Scene is synchronized between client and server")
 
     {
         for (Scene* clientScene : clientScenes)
-            clientScene->CreateChild("Client Only Node", LOCAL);
-        auto serverOnlyNode = serverScene->CreateChild("Server Only Node", LOCAL);
+            clientScene->CreateChild("Client Only Node");
+        auto serverOnlyNode = serverScene->CreateChild("Server Only Node");
 
         auto replicatedNodeA = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Replicated Node A");
         replicatedNodeA->SetScale(2.0f);
@@ -115,7 +115,7 @@ TEST_CASE("Scene is synchronized between client and server")
         replicatedNodeChild2->SetRotation({ 90.0f, Vector3::UP });
         transformReplicatedNodeChild2 = replicatedNodeChild2->GetWorldTransform();
 
-        auto serverOnlyChild3 = replicatedNodeB->CreateChild("Server Only Child 3", LOCAL);
+        auto serverOnlyChild3 = replicatedNodeB->CreateChild("Server Only Child 3");
         serverOnlyChild3->SetPosition({ -1.0f, 0.0f, 0.0f });
 
         auto replicatedNodeChild4 = Tests::SpawnOnServer<BehaviorNetworkObject>(serverOnlyChild3, prefab, "Replicated Node Child 4");
