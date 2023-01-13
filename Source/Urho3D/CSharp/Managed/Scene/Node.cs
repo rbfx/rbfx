@@ -55,7 +55,7 @@ namespace Urho3DNet
         /// Get all components of a type
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <returns>List of found component or null.</returns>
+        /// <returns>List of found components.</returns>
         public ComponentList GetComponents<T>(bool recursive = false) where T: Component
         {
             ComponentList componentList = new ComponentList();
