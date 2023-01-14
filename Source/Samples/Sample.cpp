@@ -26,6 +26,8 @@
 
 #include "Sample.h"
 #include "SamplesManager.h"
+#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/Model.h>
 
 Sample::Sample(Context* context) :
     ApplicationState(context),
@@ -96,6 +98,16 @@ void Sample::Stop()
         input->RemoveScreenJoystick((SDL_JoystickID)screenJoystickIndex_);
         screenJoystickIndex_ = M_MAX_UNSIGNED;
     }
+}
+
+void Sample::CreateDefaultSkybox(Scene* scene)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+
+    auto skyboxNode = scene->CreateChild("skybox");
+    auto skybox = skyboxNode->CreateComponent<StaticModel>();
+    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
 }
 
 void Sample::InitTouchInput()

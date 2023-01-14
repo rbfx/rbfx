@@ -117,6 +117,7 @@
 #include "53_LANDiscovery/LANDiscovery.h"
 #endif
 #include "54_WindowSettingsDemo/WindowSettingsDemo.h"
+#include "99_RayCast/RayCastSample.h"
 #if URHO3D_SYSTEMUI
 #include "100_HelloSystemUI/HelloSystemUI.h"
 #endif
@@ -359,6 +360,7 @@ void SamplesManager::Start()
     RegisterSample<LANDiscovery>();
 #endif
     RegisterSample<WindowSettingsDemo>();
+    RegisterSample<RayCastSample>();
 #if URHO3D_SYSTEMUI
     RegisterSample<HelloSystemUi>();
 #endif
