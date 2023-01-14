@@ -229,7 +229,7 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
     frameInfo_.octree_ = frameInfo_.scene_
         ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
     frameInfo_.reflectionProbeManager_ = frameInfo_.octree_
-        ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>(LOCAL) : nullptr;
+        ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>() : nullptr;
 
     return frameInfo_.octree_ && frameInfo_.camera_;
 }

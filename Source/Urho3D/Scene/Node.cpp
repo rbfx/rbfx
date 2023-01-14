@@ -113,7 +113,7 @@ void Node::SerializeInBlock(Archive& archive)
 }
 
 void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
-    bool serializeChildren /*= true*/, bool rewriteIDs /*= false*/, CreateMode mode /*= REPLICATED*/)
+    bool serializeChildren /*= true*/, bool rewriteIDs /*= false*/)
 {
     // Resolver must be present if loading
     const bool loading = archive.IsInput();
@@ -153,8 +153,7 @@ void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
             // Create component if loading
             if (loading)
             {
-                const bool isReplicated = mode == REPLICATED && Scene::IsReplicatedID(componentID);
-                component = SafeCreateComponent(EMPTY_STRING, componentType, isReplicated ? REPLICATED : LOCAL, componentID);
+                component = SafeCreateComponent(EMPTY_STRING, componentType, componentID);
 
                 // Add component to resolver
                 resolver->AddComponent(componentID, component);
@@ -190,15 +189,14 @@ void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
             // Create child if loading
             if (loading)
             {
-                const bool isReplicated = mode == REPLICATED && Scene::IsReplicatedID(nodeID);
-                child = CreateChild(rewriteIDs ? 0 : nodeID, isReplicated ? REPLICATED : LOCAL);
+                child = CreateChild(rewriteIDs ? 0 : nodeID);
 
                 // Add child node to resolver
                 resolver->AddNode(nodeID, child);
             }
 
             // Serialize child
-            child->SerializeInBlock(archive, resolver, serializeChildren, rewriteIDs, mode);
+            child->SerializeInBlock(archive, resolver, serializeChildren, rewriteIDs);
         }
     });
 }
@@ -885,16 +883,16 @@ void Node::MarkDirty()
     }
 }
 
-Node* Node::CreateChild(const ea::string& name, CreateMode mode, unsigned id, bool temporary)
+Node* Node::CreateChild(const ea::string& name, unsigned id, bool temporary)
 {
-    Node* newNode = CreateChild(id, mode, temporary);
+    Node* newNode = CreateChild(id, temporary);
     newNode->SetName(name);
     return newNode;
 }
 
-Node* Node::CreateTemporaryChild(const ea::string& name, CreateMode mode, unsigned id)
+Node* Node::CreateTemporaryChild(const ea::string& name, unsigned id)
 {
-    return CreateChild(name, mode, id, true);
+    return CreateChild(name, id, true);
 }
 
 void Node::AddChild(Node* node, unsigned index)
@@ -987,13 +985,8 @@ void Node::RemoveChildren(bool recursive)
     }
 }
 
-Component* Node::CreateComponent(StringHash type, CreateMode mode, unsigned id)
+Component* Node::CreateComponent(StringHash type, unsigned id)
 {
-    // Do not attempt to create replicated components to local nodes, as that may lead to component ID overwrite
-    // as replicated components are synced over
-    if (mode == REPLICATED && !IsReplicated())
-        mode = LOCAL;
-
     // Check that creation succeeds and that the object in fact is a component
     SharedPtr<Component> newComponent = DynamicCast<Component>(context_->CreateObject(type));
     if (!newComponent)
@@ -1002,17 +995,17 @@ Component* Node::CreateComponent(StringHash type, CreateMode mode, unsigned id)
         return nullptr;
     }
 
-    AddComponent(newComponent, id, mode);
+    AddComponent(newComponent, id);
     return newComponent;
 }
 
-Component* Node::GetOrCreateComponent(StringHash type, CreateMode mode, unsigned id)
+Component* Node::GetOrCreateComponent(StringHash type, unsigned id)
 {
     Component* oldComponent = GetComponent(type);
     if (oldComponent)
         return oldComponent;
     else
-        return CreateComponent(type, mode, id);
+        return CreateComponent(type, id);
 }
 
 Component* Node::CloneComponent(Component* component, unsigned id)
@@ -1023,18 +1016,7 @@ Component* Node::CloneComponent(Component* component, unsigned id)
         return nullptr;
     }
 
-    return CloneComponent(component, component->IsReplicated() ? REPLICATED : LOCAL, id);
-}
-
-Component* Node::CloneComponent(Component* component, CreateMode mode, unsigned id)
-{
-    if (!component)
-    {
-        URHO3D_LOGERROR("Null source component given for CloneComponent");
-        return nullptr;
-    }
-
-    Component* cloneComponent = SafeCreateComponent(component->GetTypeName(), component->GetType(), mode, 0);
+    Component* cloneComponent = SafeCreateComponent(component->GetTypeName(), component->GetType(), 0);
     if (!cloneComponent)
     {
         URHO3D_LOGERROR("Could not clone component " + component->GetTypeName());
@@ -1150,7 +1132,7 @@ void Node::ReorderComponent(Component* component, unsigned index)
     components_.insert_at(index, componentShared);
 }
 
-Node* Node::Clone(Node* parent, CreateMode mode)
+Node* Node::Clone(Node* parent)
 {
     Node* destination = parent ? parent : parent_;
 
@@ -1164,7 +1146,7 @@ Node* Node::Clone(Node* parent, CreateMode mode)
     URHO3D_PROFILE("CloneNode");
 
     SceneResolver resolver;
-    Node* clone = CloneRecursive(destination, resolver, mode);
+    Node* clone = CloneRecursive(destination, resolver);
     resolver.Resolve();
     clone->ApplyAttributes();
     return clone;
@@ -1477,18 +1459,6 @@ ea::pair<Serializable*, unsigned> Node::FindComponentAttribute(ea::string_view p
     return { serializable, attributeIndex };
 }
 
-unsigned Node::GetNumNetworkComponents() const
-{
-    unsigned num = 0;
-    for (auto i = components_.begin(); i != components_.end(); ++i)
-    {
-        if ((*i)->IsReplicated())
-            ++num;
-    }
-
-    return num;
-}
-
 void Node::GetComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const
 {
     dest.clear();
@@ -1519,11 +1489,6 @@ bool Node::HasComponent(StringHash type) const
             return true;
     }
     return false;
-}
-
-bool Node::IsReplicated() const
-{
-    return Scene::IsReplicatedID(id_);
 }
 
 ea::string Node::GetFullNameDebug() const
@@ -1662,7 +1627,7 @@ void Node::ResetScene()
     SetScene(nullptr);
 }
 
-bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode)
+bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs)
 {
     // Remove all children and components first in case this is not a fresh load
     RemoveAllChildren();
@@ -1679,8 +1644,7 @@ bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren
         StringHash compType = compBuffer.ReadStringHash();
         unsigned compID = compBuffer.ReadUInt();
 
-        Component* newComponent = SafeCreateComponent(EMPTY_STRING, compType,
-            (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
+        Component* newComponent = SafeCreateComponent(EMPTY_STRING, compType, rewriteIDs ? 0 : compID);
         if (newComponent)
         {
             resolver.AddComponent(compID, newComponent);
@@ -1696,17 +1660,16 @@ bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren
     for (unsigned i = 0; i < numChildren; ++i)
     {
         unsigned nodeID = source.ReadUInt();
-        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID, (mode == REPLICATED && Scene::IsReplicatedID(nodeID)) ? REPLICATED :
-            LOCAL);
+        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID);
         resolver.AddNode(nodeID, newNode);
-        if (!newNode->Load(source, resolver, loadChildren, rewriteIDs, mode))
+        if (!newNode->Load(source, resolver, loadChildren, rewriteIDs))
             return false;
     }
 
     return true;
 }
 
-bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode, bool removeComponents)
+bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, bool removeComponents)
 {
     // Remove all children and components first in case this is not a fresh load
     RemoveAllChildren();
@@ -1721,8 +1684,7 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     {
         ea::string typeName = compElem.GetAttribute("type");
         unsigned compID = compElem.GetUInt("id");
-        Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
-            (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
+        Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName), rewriteIDs ? 0 : compID);
         if (newComponent)
         {
             resolver.AddComponent(compID, newComponent);
@@ -1740,10 +1702,9 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     while (childElem)
     {
         unsigned nodeID = childElem.GetUInt("id");
-        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID, (mode == REPLICATED && Scene::IsReplicatedID(nodeID)) ? REPLICATED :
-            LOCAL);
+        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID);
         resolver.AddNode(nodeID, newNode);
-        if (!newNode->LoadXML(childElem, resolver, loadChildren, rewriteIDs, mode))
+        if (!newNode->LoadXML(childElem, resolver, loadChildren, rewriteIDs))
             return false;
 
         childElem = childElem.GetNext("node");
@@ -1752,7 +1713,7 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     return true;
 }
 
-bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode)
+bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs)
 {
     // Remove all children and components first in case this is not a fresh load
     RemoveAllChildren();
@@ -1768,8 +1729,7 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
         const JSONValue& compVal = componentsArray.at(i);
         ea::string typeName = compVal.Get("type").GetString();
         unsigned compID = compVal.Get("id").GetUInt();
-        Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
-            (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
+        Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName), rewriteIDs ? 0 : compID);
         if (newComponent)
         {
             resolver.AddComponent(compID, newComponent);
@@ -1787,17 +1747,16 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
         const JSONValue& childVal = childrenArray.at(i);
 
         unsigned nodeID = childVal.Get("id").GetUInt();
-        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID, (mode == REPLICATED && Scene::IsReplicatedID(nodeID)) ? REPLICATED :
-            LOCAL);
+        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID);
         resolver.AddNode(nodeID, newNode);
-        if (!newNode->LoadJSON(childVal, resolver, loadChildren, rewriteIDs, mode))
+        if (!newNode->LoadJSON(childVal, resolver, loadChildren, rewriteIDs))
             return false;
     }
 
     return true;
 }
 
-Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
+Node* Node::CreateChild(unsigned id, bool temporary)
 {
     SharedPtr<Node> newNode(MakeShared<Node>(context_));
     newNode->SetTemporary(temporary);
@@ -1806,7 +1765,7 @@ Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
     if (scene_)
     {
         if (!id || scene_->GetNode(id))
-            id = scene_->GetFreeNodeID(mode);
+            id = scene_->GetFreeNodeID();
         newNode->SetID(id);
     }
     else
@@ -1816,7 +1775,7 @@ Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
     return newNode;
 }
 
-void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
+void Node::AddComponent(Component* component, unsigned id)
 {
     if (!component)
         return;
@@ -1832,7 +1791,7 @@ void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
     if (scene_)
     {
         if (!id || scene_->GetComponent(id))
-            id = scene_->GetFreeComponentID(mode);
+            id = scene_->GetFreeComponentID();
         component->SetID(id);
         scene_->ComponentAdded(component);
     }
@@ -1960,22 +1919,17 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
     }
 }
 
-Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type, CreateMode mode, unsigned id)
+Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type, unsigned id)
 {
-    // Do not attempt to create replicated components to local nodes, as that may lead to component ID overwrite
-    // as replicated components are synced over
-    if (mode == REPLICATED && !IsReplicated())
-        mode = LOCAL;
-
     // First check if factory for type exists
     if (!context_->GetTypeName(type).empty())
-        return CreateComponent(type, mode, id);
+        return CreateComponent(type, id);
     else
     {
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
         SharedPtr<UnknownComponent> newComponent(MakeShared<UnknownComponent>(context_));
-        AddComponent(newComponent, id, mode);
+        AddComponent(newComponent, id);
         return newComponent;
     }
 }
@@ -2073,10 +2027,10 @@ void Node::GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string
     }
 }
 
-Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mode)
+Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver)
 {
     // Create clone node
-    Node* cloneNode = parent->CreateChild(0, (mode == REPLICATED && IsReplicated()) ? REPLICATED : LOCAL);
+    Node* cloneNode = parent->CreateChild(0);
     resolver.AddNode(id_, cloneNode);
 
     // Copy attributes
@@ -2100,8 +2054,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
         if (component->IsTemporary())
             continue;
 
-        Component* cloneComponent = cloneNode->CloneComponent(component,
-            (mode == REPLICATED && component->IsReplicated()) ? REPLICATED : LOCAL, 0);
+        Component* cloneComponent = cloneNode->CloneComponent(component, 0);
         if (cloneComponent)
             resolver.AddComponent(component->GetID(), cloneComponent);
     }
@@ -2113,7 +2066,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
         if (node->IsTemporary())
             continue;
 
-        node->CloneRecursive(cloneNode, resolver, mode);
+        node->CloneRecursive(cloneNode, resolver);
     }
 
     if (scene_)

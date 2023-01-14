@@ -142,7 +142,7 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
 {
     network_->SetSimulateServerEvents(true);
     network_->SetSimulateClientEvents(true);
-    serverReplicationManager_ = serverScene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
+    serverReplicationManager_ = serverScene_->GetOrCreateComponent<ReplicationManager>();
     serverReplicationManager_->StartServer();
 }
 
@@ -156,7 +156,7 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
 {
     PerClient data;
     data.clientScene_ = clientScene;
-    data.clientReplicationManager_ = clientScene->GetOrCreateComponent<ReplicationManager>(LOCAL);
+    data.clientReplicationManager_ = clientScene->GetOrCreateComponent<ReplicationManager>();
     data.clientToServer_ = MakeShared<ManualConnection>(context_, serverReplicationManager_, random_.GetUInt());
     data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientReplicationManager_, random_.GetUInt());
 
@@ -258,7 +258,7 @@ AbstractConnection* NetworkSimulator::GetServerToClientConnection(Scene* clientS
 Node* SpawnOnServer(Node* parent, StringHash objectType, XMLFile* prefab, const ea::string& name,
     const Vector3& position, const Quaternion& rotation)
 {
-    Node* node = parent->GetScene()->InstantiateXML(prefab->GetRoot(), position, rotation, LOCAL);
+    Node* node = parent->GetScene()->InstantiateXML(prefab->GetRoot(), position, rotation);
     node->SetParent(parent);
     node->SetName(name);
 

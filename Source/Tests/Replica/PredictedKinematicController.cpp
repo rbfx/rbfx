@@ -45,7 +45,7 @@ SharedPtr<Scene> CreateTestScene(Context* context)
     auto physicsWorld = serverScene->CreateComponent<PhysicsWorld>();
     physicsWorld->SetFps(Tests::NetworkSimulator::FramesInSecond * 2);
 
-    Node* floorNode = serverScene->CreateChild("Floor", LOCAL);
+    Node* floorNode = serverScene->CreateChild("Floor");
 
     auto floorShape = floorNode->CreateComponent<CollisionShape>();
     floorShape->SetStaticPlane();
@@ -261,7 +261,7 @@ TEST_CASE("PredictedKinematicController works standalone")
     auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/PredictedKinematicController/TestPrefab.xml", CreateTestPrefab);
 
     auto standaloneScene = CreateTestScene(context);
-    standaloneScene->CreateComponent<ReplicationManager>(LOCAL);
+    standaloneScene->CreateComponent<ReplicationManager>();
 
     Node* standaloneNode = Tests::SpawnOnServer<BehaviorNetworkObject>(standaloneScene, prefab, "Player", {0.0f, 0.96f, 0.0f});
     auto standaloneObject = standaloneNode->GetComponent<PredictedKinematicController>();

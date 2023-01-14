@@ -50,7 +50,7 @@ TEST_CASE("Prefab reference")
 
     cache->AddManualResource(xmlFile);
 
-    SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>(CreateMode::REPLICATED)};
+    SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>()};
     prefabRef->SetPrefab(xmlFile);
 
     // Setting prefab to enabled node makes component to create temporary node attached to the component's node.
@@ -67,7 +67,7 @@ TEST_CASE("Prefab reference")
     CHECK(prefabRoot->GetParent() == nullptr);
 
     // Moving component to another node makes prefab root attached
-    node1->AddComponent(prefabRef, prefabRef->GetID(), CreateMode::REPLICATED);
+    node1->AddComponent(prefabRef, prefabRef->GetID());
     CHECK(prefabRoot->GetParent() == node1);
 
     // Reload the prefab on file change
@@ -115,10 +115,10 @@ TEST_CASE("Prefab with node reference")
     rigidBody3Element.SetAttribute("type", "RigidBody");
     auto staticModel3Element = nodeElement3.CreateChild("component");
     staticModel3Element.SetAttribute("type", "StaticModel");
-    
+
     cache->AddManualResource(xmlFile);
 
-    SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>(CreateMode::REPLICATED)};
+    SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>()};
     {
         prefabRef->SetPrefab(xmlFile);
 
@@ -134,7 +134,7 @@ TEST_CASE("Prefab with node reference")
         REQUIRE(otherNode);
         REQUIRE(constraint->GetOtherBody() == otherNode->GetComponent<RigidBody>());
     }
-    SharedPtr<PrefabReference> prefabRef2{node1->CreateComponent<PrefabReference>(CreateMode::REPLICATED)};
+    SharedPtr<PrefabReference> prefabRef2{node1->CreateComponent<PrefabReference>()};
     {
         prefabRef2->SetPrefab(xmlFile);
 

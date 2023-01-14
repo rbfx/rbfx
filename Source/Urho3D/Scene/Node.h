@@ -42,13 +42,6 @@ class Node;
 class Scene;
 class SceneResolver;
 
-/// Component and child node creation mode for networking.
-enum CreateMode
-{
-    REPLICATED = 0,
-    LOCAL = 1
-};
-
 /// Transform space for translations and rotations.
 enum TransformSpace
 {
@@ -92,7 +85,7 @@ public:
     void SerializeInBlock(Archive& archive) override;
     /// Serialize content from/to archive, with additional properties. May throw ArchiveException.
     void SerializeInBlock(Archive& archive, SceneResolver* resolver,
-        bool serializeChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED);
+        bool serializeChildren = true, bool rewriteIDs = false);
 
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;
@@ -308,9 +301,9 @@ public:
     /// Mark node and child nodes to need world transform recalculation. Notify listener components.
     void MarkDirty();
     /// Create a child scene node (with specified ID if provided).
-    Node* CreateChild(const ea::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0, bool temporary = false);
+    Node* CreateChild(const ea::string& name = EMPTY_STRING, unsigned id = 0, bool temporary = false);
     /// Create a temporary child scene node (with specified ID if provided).
-    Node* CreateTemporaryChild(const ea::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0);
+    Node* CreateTemporaryChild(const ea::string& name = EMPTY_STRING, unsigned id = 0);
     /// Add a child scene node at a specific index. If index is not explicitly specified or is greater than current children size, append the new child at the end.
     void AddChild(Node* node, unsigned index = M_MAX_UNSIGNED);
     /// Remove a child scene node.
@@ -320,13 +313,11 @@ public:
     /// Remove child scene nodes that match criteria.
     void RemoveChildren(bool recursive);
     /// Create a component to this node (with specified ID if provided).
-    Component* CreateComponent(StringHash type, CreateMode mode = REPLICATED, unsigned id = 0);
+    Component* CreateComponent(StringHash type, unsigned id = 0);
     /// Create a component to this node if it does not exist already.
-    Component* GetOrCreateComponent(StringHash type, CreateMode mode = REPLICATED, unsigned id = 0);
+    Component* GetOrCreateComponent(StringHash type, unsigned id = 0);
     /// Clone a component from another node using its create mode. Return the clone if successful or null on failure.
     Component* CloneComponent(Component* component, unsigned id = 0);
-    /// Clone a component from another node and specify the create mode. Return the clone if successful or null on failure.
-    Component* CloneComponent(Component* component, CreateMode mode, unsigned id = 0);
     /// Remove a component from this node.
     void RemoveComponent(Component* component);
     /// Remove the first component of specific type from this node.
@@ -342,7 +333,7 @@ public:
     /// Adjust index order of an existing component in this node.
     void ReorderComponent(Component* component, unsigned index);
     /// Clone scene node, components and child nodes. Return the clone.
-    Node* Clone(Node* parent = nullptr, CreateMode mode = REPLICATED);
+    Node* Clone(Node* parent = nullptr);
     /// Remove from the parent node. If no other shared pointer references exist, causes immediate deletion.
     void Remove();
     /// Assign to a new parent scene node. Retains the world transform.
@@ -356,9 +347,9 @@ public:
     /// Remove listener component.
     void RemoveListener(Component* component);
     /// Template version of creating a component.
-    template <class T> T* CreateComponent(CreateMode mode = REPLICATED, unsigned id = 0);
+    template <class T> T* CreateComponent(unsigned id = 0);
     /// Template version of getting or creating a component.
-    template <class T> T* GetOrCreateComponent(CreateMode mode = REPLICATED, unsigned id = 0);
+    template <class T> T* GetOrCreateComponent(unsigned id = 0);
     /// Template version of removing a component.
     template <class T> void RemoveComponent();
     /// Template version of removing all components of specific type.
@@ -367,9 +358,6 @@ public:
     /// Return ID.
     /// @property{get_id}
     unsigned GetID() const { return id_; }
-    /// Return whether the node is replicated or local to a scene.
-    /// @property
-    bool IsReplicated() const;
 
     /// Return name.
     /// @property
@@ -614,9 +602,6 @@ public:
     /// @property
     unsigned GetNumComponents() const { return components_.size(); }
 
-    /// Return number of non-local components.
-    unsigned GetNumNetworkComponents() const;
-
     /// Return all components.
     const ea::vector<SharedPtr<Component> >& GetComponents() const { return components_; }
 
@@ -669,21 +654,19 @@ public:
     /// Reset scene, ID and owner. Called by Scene.
     void ResetScene();
     /// Load components and optionally load child nodes.
-    bool Load(Deserializer& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED);
+    bool Load(Deserializer& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false);
     /// Load components from XML data and optionally load child nodes.
     bool LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED, bool removeComponents = true);
+        bool removeComponents = true);
     /// Load components from XML data and optionally load child nodes.
-    bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED);
+    bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false);
     /// Return the depended on nodes to order network updates.
     const ea::vector<Node*>& GetDependencyNodes() const { return impl_->dependencyNodes_; }
 
     /// Create a child node with specific ID.
-    Node* CreateChild(unsigned id, CreateMode mode, bool temporary = false);
+    Node* CreateChild(unsigned id, bool temporary = false);
     /// Add a pre-created component. Using this function from application code is discouraged, as component operation without an owner node may not be well-defined in all cases. Prefer CreateComponent() instead.
-    void AddComponent(Component* component, unsigned id, CreateMode mode);
+    void AddComponent(Component* component, unsigned id);
     /// Calculate number of non-temporary child nodes.
     unsigned GetNumPersistentChildren() const;
     /// Calculate number of non-temporary components.
@@ -708,7 +691,7 @@ private:
     /// Set enabled/disabled state with optional recursion. Optionally affect the remembered enable state.
     void SetEnabled(bool enable, bool recursive, bool storeSelf);
     /// Create component, allowing UnknownComponent if actual type is not supported. Leave typeName empty if not known.
-    Component* SafeCreateComponent(const ea::string& typeName, StringHash type, CreateMode mode, unsigned id);
+    Component* SafeCreateComponent(const ea::string& typeName, StringHash type, unsigned id);
     /// Recalculate the world transform.
     void UpdateWorldTransform() const;
     /// Remove child node by iterator.
@@ -722,7 +705,7 @@ private:
     /// Return specific components recursively.
     void GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const;
     /// Clone node recursively.
-    Node* CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mode);
+    Node* CloneRecursive(Node* parent, SceneResolver& resolver);
     /// Remove a component from this node with the specified iterator.
     void RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i);
     /// Find child node by index if name is an integer starting with "#" (like "#12" or "#0").
@@ -769,14 +752,14 @@ protected:
     StringVariantMap vars_;
 };
 
-template <class T> T* Node::CreateComponent(CreateMode mode, unsigned id)
+template <class T> T* Node::CreateComponent(unsigned id)
 {
-    return static_cast<T*>(CreateComponent(T::GetTypeStatic(), mode, id));
+    return static_cast<T*>(CreateComponent(T::GetTypeStatic(), id));
 }
 
-template <class T> T* Node::GetOrCreateComponent(CreateMode mode, unsigned id)
+template <class T> T* Node::GetOrCreateComponent(unsigned id)
 {
-    return static_cast<T*>(GetOrCreateComponent(T::GetTypeStatic(), mode, id));
+    return static_cast<T*>(GetOrCreateComponent(T::GetTypeStatic(), id));
 }
 
 template <class T> void Node::RemoveComponent() { RemoveComponent(T::GetTypeStatic()); }

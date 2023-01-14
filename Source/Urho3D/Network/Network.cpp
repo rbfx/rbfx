@@ -513,27 +513,6 @@ void Network::BroadcastRemoteEvent(Scene* scene, StringHash eventType, bool inOr
     }
 }
 
-void Network::BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrder, const VariantMap& eventData)
-{
-    if (!node)
-    {
-        URHO3D_LOGERROR("Null sender node for remote node event");
-        return;
-    }
-    if (!node->IsReplicated())
-    {
-        URHO3D_LOGERROR("Sender node has a local ID, can not send remote node event");
-        return;
-    }
-
-    Scene* scene = node->GetScene();
-    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-    {
-        if (i->second->GetScene() == scene)
-            i->second->SendRemoteEvent(node, eventType, inOrder, eventData);
-    }
-}
-
 void Network::SetUpdateFps(unsigned fps)
 {
     if (IsServerRunning())

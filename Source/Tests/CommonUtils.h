@@ -22,15 +22,16 @@
 
 #pragma once
 
+#include <Urho3D/Container/Ptr.h>
 #include <Urho3D/Core/Assert.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Variant.h>
-#include <Urho3D/Container/Ptr.h>
 #include <Urho3D/Input/Input.h>
+
+#include <catch2/catch_amalgamated.hpp>
 
 #include <EASTL/optional.h>
 
-#include <catch2/catch_amalgamated.hpp>
 #include <ostream>
 
 using namespace Urho3D;
@@ -46,7 +47,7 @@ namespace Tests
 {
 
 /// Callback used to create context.
-using CreateContextCallback = SharedPtr<Context>(*)();
+using CreateContextCallback = SharedPtr<Context> (*)();
 
 /// Get or create test context.
 SharedPtr<Context> GetOrCreateContext(CreateContextCallback callback);
@@ -95,8 +96,7 @@ public:
 
     unsigned GetNumFrames() const { return recordedFrames_.size(); }
 
-    template <class T>
-    void SkipFramesUntil(T callback)
+    template <class T> void SkipFramesUntil(T callback)
     {
         const auto iter = ea::find_if(recordedFrames_.begin(), recordedFrames_.end(), callback);
         recordedFrames_.erase(recordedFrames_.begin(), iter);
@@ -130,8 +130,7 @@ public:
 
     void Track(Serializable* serializable, const ea::string& attributeName);
 
-    template <class T>
-    void SkipUntil(T callback)
+    template <class T> void SkipUntil(T callback)
     {
         const auto iter = ea::find_if(recordedValues_.begin(), recordedValues_.end(), callback);
         recordedValues_.erase(recordedValues_.begin(), iter);
@@ -139,7 +138,8 @@ public:
 
     void SkipUntilChanged()
     {
-        const auto iter = ea::adjacent_find(recordedValues_.begin(), recordedValues_.end(), ea::not_equal_to<Variant>());
+        const auto iter =
+            ea::adjacent_find(recordedValues_.begin(), recordedValues_.end(), ea::not_equal_to<Variant>());
         recordedValues_.erase(recordedValues_.begin(), iter);
     }
 
@@ -152,7 +152,60 @@ private:
     ea::vector<Variant> recordedValues_;
 };
 
+/// Tag to mark object that should be fully registered via T::RegisterObject.
+template <class T> struct RegisterObject
+{
+};
+
+/// Helper class to register and unregister object from context.
+class ScopedReflection : public MovableNonCopyable
+{
+public:
+    template <class... Ts>
+    ScopedReflection(Context* context, Ts*...)
+        : context_(context)
+    {
+        RegisterTypes<Ts...>();
+    }
+
+    ~ScopedReflection()
+    {
+        for (auto type : registeredTypes_)
+            context_->RemoveReflection(type);
+    }
+
+private:
+    template <class T, class... Ts> void RegisterTypes()
+    {
+        DispatchRegister(static_cast<T*>(nullptr));
+        if constexpr (sizeof...(Ts) > 0)
+            RegisterTypes<Ts...>();
+    }
+
+    template <class T> void DispatchRegister(T*)
+    {
+        URHO3D_ASSERT(!context_->IsReflected<T>());
+        context_->RegisterFactory<T>();
+        registeredTypes_.push_back(T::GetTypeStatic());
+    }
+
+    template <class T> void DispatchRegister(RegisterObject<T>*)
+    {
+        URHO3D_ASSERT(!context_->IsReflected<T>());
+        T::RegisterObject(context_);
+        registeredTypes_.push_back(T::GetTypeStatic());
+    }
+
+    Context* context_{};
+    ea::vector<StringHash> registeredTypes_;
+};
+
+template <class... Ts> ScopedReflection MakeScopedReflection(Context* context)
+{
+    return ScopedReflection(context, static_cast<Ts*>(nullptr)...);
 }
+
+} // namespace Tests
 
 /// Convert common types to strings
 /// @{
@@ -160,7 +213,7 @@ namespace Catch
 {
 
 #define DEFINE_STRING_MAKER(type, expr) \
-    template<> struct StringMaker<type> \
+    template <> struct StringMaker<type> \
     { \
         static std::string convert(const type& value) \
         { \
@@ -173,10 +226,11 @@ DEFINE_STRING_MAKER(Vector2, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector3, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector4, value.ToString().c_str());
 DEFINE_STRING_MAKER(Quaternion, value.ToString().c_str());
+DEFINE_STRING_MAKER(StringHash, value.ToString().c_str());
 
 #undef DEFINE_STRING_MAKER
 
-template<class T> struct StringMaker<ea::optional<T>>
+template <class T> struct StringMaker<ea::optional<T>>
 {
     static std::string convert(const ea::optional<T>& value)
     {
@@ -184,5 +238,5 @@ template<class T> struct StringMaker<ea::optional<T>>
     }
 };
 
-}
+} // namespace Catch
 /// @}

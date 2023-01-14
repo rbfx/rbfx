@@ -322,8 +322,8 @@ NetworkObject* ClientReplica::CreateNetworkObject(NetworkId networkId, StringHas
         RemoveNetworkObject(WeakPtr<NetworkObject>(oldNetworkObject));
     }
 
-    Node* newNode = scene_->CreateChild(EMPTY_STRING, LOCAL);
-    newNode->AddComponent(networkObject, 0, LOCAL);
+    Node* newNode = scene_->CreateChild(EMPTY_STRING);
+    newNode->AddComponent(networkObject, 0);
     return networkObject;
 }
 
