@@ -128,10 +128,8 @@ public:
     bool WriteVariantMap(const VariantMap& value);
     /// Write a string variant map.
     bool WriteStringVariantMap(const StringVariantMap& value);
-    /// Write a variable-length encoded unsigned integer, which can use 29 bits maximum.
+    /// Write a variable-length encoded unsigned integer.
     bool WriteVLE(unsigned value);
-    /// Write a 24-bit network object ID.
-    bool WriteNetID(unsigned value);
     /// Write a text line. Char codes 13 & 10 will be automatically appended.
     bool WriteLine(const ea::string& value);
 };

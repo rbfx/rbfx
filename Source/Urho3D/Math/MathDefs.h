@@ -32,6 +32,9 @@
 
 #include "../Math/Random.h"
 
+#include <EASTL/span.h>
+
+#include <cstdint>
 #include <cstdlib>
 #include <cmath>
 #include <limits>
@@ -400,6 +403,40 @@ template<typename T> inline T Wrap(T value, T min, T max)
 
 /// Calculate both sine and cosine, with angle in degrees.
 URHO3D_API void SinCos(float angle, float& sin, float& cos);
+
+/// Return max number of bytes taken by a variable-length encoded integer of the given type.
+template <class T>
+constexpr size_t MaxVariableLengthBytes = (sizeof(T) * 8 + 6) / 7; // 7 bits per byte used, rounded up
+
+static_assert(MaxVariableLengthBytes<uint32_t> == 5, "MaxVariableLengthBytes<unsigned> must be 5");
+static_assert(MaxVariableLengthBytes<uint64_t> == 10, "MaxVariableLengthBytes<unsigned long long> must be 10");
+
+/// Convert integer to variable-length encoded byte array.
+/// Returns the number of bytes written.
+template <class T>
+unsigned EncodeVariableLength(T value, ea::span<unsigned char, MaxVariableLengthBytes<T>> dest)
+{
+    const unsigned maxBytes = MaxVariableLengthBytes<T>;
+    for (unsigned i = 0; i < maxBytes; ++i)
+    {
+        dest[i] = static_cast<unsigned char>(value & 0x7f);
+        value >>= 7;
+        if (!value)
+            return i + 1;
+        dest[i] |= 0x80;
+    }
+    return maxBytes;
+}
+
+/// Decode variable-length encoded integer (one step).
+/// Return true if the value is complete.
+template <class T>
+bool DecodeVariableLength(T& value, unsigned& offset, unsigned char byte)
+{
+    value |= static_cast<T>(byte & 0x7f) << offset;
+    offset += 7;
+    return !(byte & 0x80);
+}
 
 }
 

@@ -56,8 +56,6 @@ class PackageFile;
 /// Queued remote event.
 struct RemoteEvent
 {
-    /// Remote sender node ID (0 if not a remote node event).
-    unsigned senderID_;
     /// Event type.
     StringHash eventType_;
     /// Event data.

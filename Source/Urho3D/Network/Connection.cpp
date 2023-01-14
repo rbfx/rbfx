@@ -152,7 +152,6 @@ void Connection::SendMessageInternal(NetworkMessageId messageId, bool reliable, 
 void Connection::SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData)
 {
     RemoteEvent queuedEvent;
-    queuedEvent.senderID_ = 0;
     queuedEvent.eventType_ = eventType;
     queuedEvent.eventData_ = eventData;
     queuedEvent.inOrder_ = inOrder;
@@ -256,19 +255,9 @@ void Connection::SendRemoteEvents()
     for (auto i = remoteEvents_.begin(); i != remoteEvents_.end(); ++i)
     {
         msg_.Clear();
-        if (!i->senderID_)
-        {
-            msg_.WriteStringHash(i->eventType_);
-            msg_.WriteVariantMap(i->eventData_);
-            SendMessage(MSG_REMOTEEVENT, true, i->inOrder_, msg_);
-        }
-        else
-        {
-            msg_.WriteNetID(i->senderID_);
-            msg_.WriteStringHash(i->eventType_);
-            msg_.WriteVariantMap(i->eventData_);
-            SendMessage(MSG_REMOTENODEEVENT, true, i->inOrder_, msg_);
-        }
+        msg_.WriteStringHash(i->eventType_);
+        msg_.WriteVariantMap(i->eventData_);
+        SendMessage(MSG_REMOTEEVENT, true, i->inOrder_, msg_);
     }
 
     remoteEvents_.clear();
@@ -391,7 +380,6 @@ bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
                 break;
 
             case MSG_REMOTEEVENT:
-            case MSG_REMOTENODEEVENT:
                 ProcessRemoteEvent(msgID, msg);
                 break;
 
@@ -688,45 +676,16 @@ void Connection::ProcessRemoteEvent(int msgID, MemoryBuffer& msg)
 {
     using namespace RemoteEventData;
 
-    if (msgID == MSG_REMOTEEVENT)
+    StringHash eventType = msg.ReadStringHash();
+    if (!GetSubsystem<Network>()->CheckRemoteEvent(eventType))
     {
-        StringHash eventType = msg.ReadStringHash();
-        if (!GetSubsystem<Network>()->CheckRemoteEvent(eventType))
-        {
-            URHO3D_LOGWARNING("Discarding not allowed remote event " + eventType.ToString());
-            return;
-        }
-
-        VariantMap eventData = msg.ReadVariantMap();
-        eventData[P_CONNECTION] = this;
-        SendEvent(eventType, eventData);
+        URHO3D_LOGWARNING("Discarding not allowed remote event " + eventType.ToString());
+        return;
     }
-    else
-    {
-        if (!scene_)
-        {
-            URHO3D_LOGERROR("Can not receive remote node event without an assigned scene");
-            return;
-        }
 
-        unsigned nodeID = msg.ReadNetID();
-        StringHash eventType = msg.ReadStringHash();
-        if (!GetSubsystem<Network>()->CheckRemoteEvent(eventType))
-        {
-            URHO3D_LOGWARNING("Discarding not allowed remote event " + eventType.ToString());
-            return;
-        }
-
-        VariantMap eventData = msg.ReadVariantMap();
-        Node* sender = scene_->GetNode(nodeID);
-        if (!sender)
-        {
-            URHO3D_LOGWARNING("Missing sender for remote node event, discarding");
-            return;
-        }
-        eventData[P_CONNECTION] = this;
-        sender->SendEvent(eventType, eventData);
-    }
+    VariantMap eventData = msg.ReadVariantMap();
+    eventData[P_CONNECTION] = this;
+    SendEvent(eventType, eventData);
 }
 
 Scene* Connection::GetScene() const
