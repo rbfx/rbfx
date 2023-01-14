@@ -76,7 +76,11 @@ void RayCastSample::Update(float timeStep)
 
     switch (typeOfRayCast_->GetSelection())
     {
-        case 0: PhysicalRayCast(ray);
+        case 0: PhysicalRayCast(ray); break;
+        case 1: DrawableRayCast(ray, RAY_TRIANGLE); break;
+        case 2: DrawableRayCast(ray, RAY_TRIANGLE_UV); break;
+        case 3: DrawableRayCast(ray, RAY_OBB); break;
+        case 4: DrawableRayCast(ray, RAY_AABB); break;
     }
 }
 
@@ -89,22 +93,13 @@ void RayCastSample::CreateScene()
     hitMarker_ = hitMarkerNode_->CreateComponent<StaticModel>();
     hitMarker_->SetModel(cache->GetResource<Model>("Models/Plane.mdl"));
     hitMarker_->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
+    hitMarker_->SetViewMask(2);
 
     scene_ = new Scene(context_);
 
-    CreateDefaultSkybox(scene_);
-
-    // Create the Octree component to the scene. This is required before adding any drawable components, or else nothing will
-    // show up. The default octree volume will be from (-1000, -1000, -1000) to (1000, 1000, 1000) in world coordinates; it
-    // is also legal to place objects outside the volume but their visibility can then not be checked in a hierarchically
-    // optimizing manner
-    auto octree = scene_->CreateComponent<Octree>();
-    octree->AddManualDrawable(hitMarker_);
-    
+    scene_->CreateComponent<Octree>();
     scene_->CreateComponent<PhysicsWorld>();
-
-
-
+    SetDefaultSkybox(scene_);
 
     // Create a directional light to the world so that we can see something. The light scene node's orientation controls the
     // light direction; we will use the SetDirection() function which calculates the orientation from a forward direction vector.
@@ -114,19 +109,11 @@ void RayCastSample::CreateScene()
     auto* light = lightNode->CreateComponent<Light>();
     light->SetLightType(LIGHT_DIRECTIONAL);
 
-    // Create more StaticModel objects to the scene, randomly positioned, rotated and scaled. For rotation, we construct a
-    // quaternion from Euler angles where the Y angle (rotation about the Y axis) is randomized. The mushroom model contains
-    // LOD levels, so the StaticModel component will automatically select the LOD level according to the view distance (you'll
-    // see the model get simpler as it moves further away). Finally, rendering a large number of the same object with the
-    // same material allows instancing to be used, if the GPU supports it. This reduces the amount of CPU work in rendering the
-    // scene.
-    const unsigned NUM_MUSHROOMS = 200;
-    XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
-    for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
     {
+        XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
         Node* objectNode = scene_->CreateChild("Mushroom");
-        objectNode->SetPosition(Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f));
-        objectNode->SetRotation(Quaternion(0.0f, Random(360.0f), 0.0f));
+        objectNode->SetPosition(Vector3(0, 0, 10));
+        objectNode->SetRotation(Quaternion(30, 50, 20));
         objectNode->SetScale(2.0f + Random(5.0f));
         auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
         prefabReference->SetPrefab(mushroomPrefab);
@@ -140,6 +127,7 @@ void RayCastSample::CreateScene()
 
     // Set an initial position for the camera scene node above the plane
     cameraNode_->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
+    cameraNode_->LookAt(Vector3(0, 0, 10));
 }
 
 void RayCastSample::CreateInstructions()
@@ -161,18 +149,24 @@ void RayCastSample::CreateInstructions()
     instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 
     typeOfRayCast_ = root->CreateChild<DropDownList>();
+    typeOfRayCast_->SetStyleAuto();
+    ea::array<const char*, 5> items{
+        "Physics", "Drawable Triangle", "Drawable Triangle+UV", "Drawable OBB", "Drawable AABB"};
 
-    ea::array<const char*, 2> items{"Physics RayCast", "Drawable RayCast"};
-
+    int minWidth = 10;
     for (unsigned i = 0; i < items.size(); ++i)
-    {^
+    {
         SharedPtr<Text> item(MakeShared<Text>(context_));
         typeOfRayCast_->AddItem(item);
         item->SetText(items[i]);
         item->SetStyleAuto();
         item->SetMinWidth(item->GetRowWidth(0) + 10);
+        minWidth = Max(minWidth, item->GetMinWidth());
     }
-    typeOfRayCast_->SetPosition(0, GetUIRoot()->GetHeight() / 2);
+    typeOfRayCast_->SetMinSize(IntVector2(minWidth, 16));
+    typeOfRayCast_->UpdateLayout();
+    typeOfRayCast_->SetAlignment(HA_LEFT, VA_TOP);
+    typeOfRayCast_->SetPosition(150, 10);
 }
 
 void RayCastSample::SetupViewport()
@@ -192,12 +186,24 @@ void RayCastSample::PlaceHitMarker(const Vector3& position, const Vector3& norma
     Quaternion rot;
     rot.FromRotationTo(Vector3::UP, normal);
     hitMarkerNode_->SetRotation(rot);
-     //hitMarkerNode_->SetEnabled(true);
+    hitMarkerNode_->SetEnabled(true);
+
+    if (!isVisible_)
+    {
+        auto octree = scene_->GetComponent<Octree>();
+        octree->AddManualDrawable(hitMarker_);
+        isVisible_ = true;
+    }
 }
 
 void RayCastSample::RemoveHitMarker()
 {
-    //hitMarkerNode_->SetEnabled(false);
+    if (isVisible_)
+    {
+        auto octree = scene_->GetComponent<Octree>();
+        octree->RemoveManualDrawable(hitMarker_);
+        isVisible_ = false;
+    }
 }
 
 void RayCastSample::PhysicalRayCast(const Ray& ray)
@@ -216,5 +222,19 @@ void RayCastSample::PhysicalRayCast(const Ray& ray)
     }
 }
 
+void RayCastSample::DrawableRayCast(const Ray& ray, RayQueryLevel level)
+{
+    auto octree = scene_->GetComponent<Octree>();
+    RayOctreeQuery query{ray, level, 100.0f, DRAWABLE_GEOMETRY, 1};
+    octree->RaycastSingle(query);
+    if (!query.result_.empty())
+    {
+        PlaceHitMarker(query.result_[0].position_, query.result_[0].normal_);
+    }
+    else
+    {
+        RemoveHitMarker();
+    }
+}
 
 

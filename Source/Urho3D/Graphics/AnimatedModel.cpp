@@ -180,7 +180,8 @@ void AnimatedModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const Bou
         {
             // Do an initial crude test using the bone's AABB
             const BoundingBox& box = bone.boundingBox_;
-            distance = query.ray_.HitDistance(box.Transformed(transform));
+            const auto distanceAndNormal = query.ray_.HitDistanceAndNormal(box.Transformed(transform));
+            distance = distanceAndNormal.distance_;
             if (distance >= query.maxDistance_)
                 continue;
             if (level != RAY_AABB)

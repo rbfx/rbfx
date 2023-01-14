@@ -32,7 +32,7 @@ namespace Urho3D
 
 class Node;
 class Scene;
-
+enum RayQueryLevel;
 }
 
 /// Static 3D scene example.
@@ -64,10 +64,12 @@ private:
     void PlaceHitMarker(const Vector3& position, const Vector3& normal);
     void RemoveHitMarker();
     void PhysicalRayCast(const Ray& ray);
+    void DrawableRayCast(const Ray& ray, RayQueryLevel level);
 
     /// Hit marker.
     SharedPtr<Node> hitMarkerNode_;
     SharedPtr<StaticModel> hitMarker_;
+    bool isVisible_{};
 
     /// Drop down selection of ray cast type.
     SharedPtr<DropDownList> typeOfRayCast_;

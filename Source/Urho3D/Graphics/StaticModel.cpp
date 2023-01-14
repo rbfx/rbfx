@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -95,8 +96,9 @@ void StaticModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const Bound
     case RAY_TRIANGLE_UV:
         Matrix3x4 inverse(worldTransform.Inverse());
         Ray localRay = query.ray_.Transformed(inverse);
-        float distance = localRay.HitDistance(boundingBox_);
-        Vector3 normal = -query.ray_.direction_;
+        const auto distanceAndNormal = localRay.HitDistanceAndNormal(boundingBox_);
+        float distance = distanceAndNormal.distance_;
+        Vector3 normal = worldTransform * Vector4(distanceAndNormal.normal_,0.0f);
         Vector2 geometryUV;
         unsigned hitBatch = M_MAX_UNSIGNED;
 

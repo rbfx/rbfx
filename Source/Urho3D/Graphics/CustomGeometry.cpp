@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -88,10 +89,12 @@ void CustomGeometry::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<Ray
     case RAY_OBB:
     case RAY_TRIANGLE:
     {
-        Matrix3x4 inverse(node_->GetWorldTransform().Inverse());
-        Ray localRay = query.ray_.Transformed(inverse);
-        float distance = localRay.HitDistance(boundingBox_);
-        Vector3 normal = -query.ray_.direction_;
+        const Matrix3x4 worldTransform = node_->GetWorldTransform();
+        const Matrix3x4 inverse(worldTransform.Inverse());
+        const Ray localRay = query.ray_.Transformed(inverse);
+        const auto distanceAndNormal = localRay.HitDistanceAndNormal(boundingBox_);
+        float distance = distanceAndNormal.distance_;
+        Vector3 normal = worldTransform * Vector4(distanceAndNormal.normal_, 0.0f);
 
         if (level == RAY_TRIANGLE && distance < query.maxDistance_)
         {
@@ -103,7 +106,7 @@ void CustomGeometry::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<Ray
                 if (geometry)
                 {
                     Vector3 geometryNormal;
-                    float geometryDistance = geometry->GetHitDistance(localRay, &geometryNormal);
+                    const float geometryDistance = geometry->GetHitDistance(localRay, &geometryNormal);
                     if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                     {
                         distance = geometryDistance;

@@ -26,7 +26,7 @@
 
 #include "Sample.h"
 #include "SamplesManager.h"
-#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/Skybox.h>
 #include <Urho3D/Graphics/Model.h>
 
 Sample::Sample(Context* context) :
@@ -100,12 +100,11 @@ void Sample::Stop()
     }
 }
 
-void Sample::CreateDefaultSkybox(Scene* scene)
+void Sample::SetDefaultSkybox(Scene* scene)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
 
-    auto skyboxNode = scene->CreateChild("skybox");
-    auto skybox = skyboxNode->CreateComponent<StaticModel>();
+    const auto skybox = scene->CreateComponent<Skybox>();
     skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
     skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
 }
