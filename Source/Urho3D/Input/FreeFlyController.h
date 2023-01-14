@@ -63,6 +63,10 @@ public:
     float GetSpeed() const { return speed_; }
     void SetAcceleratedSpeed(float value) { acceleratedSpeed_ = value; }
     float GetAcceleratedSpeed() const { return acceleratedSpeed_; }
+    float GetMinPitch() const { return minPitch_; }
+    void SetMinPitch(float value) { minPitch_ = value; }
+    float GetMaxPitch() const { return maxPitch_; }
+    void SetMaxPitch(float value) { maxPitch_ = value; }
     /// @}
 
 private:
@@ -110,6 +114,9 @@ private:
     float touchSensitivity_{1.0f};
     /// Axis sensitivity
     float axisSensitivity_{100.0f};
+    /// Pitch range
+    float minPitch_{-90.0f};
+    float maxPitch_{90.0f};
     /// Gamepad default axis adapter
     AxisAdapter axisAdapter_{};
     /// Is subscribed to update

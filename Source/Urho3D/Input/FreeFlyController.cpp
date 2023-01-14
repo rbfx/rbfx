@@ -35,14 +35,6 @@
 
 namespace Urho3D
 {
-namespace
-{
-float ClampPitch(float pitch)
-{
-    return Clamp(pitch, -90.0f, 90.0f);
-}
-
-}
 
 FreeFlyController::FreeFlyController(Context* context)
     : Component(context)
@@ -134,6 +126,8 @@ void FreeFlyController::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Speed", float, speed_, 20.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Accelerated Speed", float, acceleratedSpeed_, 100.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Min Pitch", float, minPitch_, -90.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Max Pitch", float, maxPitch_, 90.0f, AM_DEFAULT);
 }
 
 void FreeFlyController::SetCameraRotation(Quaternion quaternion)
@@ -147,7 +141,7 @@ void FreeFlyController::SetCameraRotation(Quaternion quaternion)
 
 void FreeFlyController::SetCameraAngles(Vector3 eulerAngles)
 {
-    eulerAngles.x_ = ClampPitch(eulerAngles.x_);
+    eulerAngles.x_ = Clamp(eulerAngles.x_, minPitch_, maxPitch_);
     lastKnownEulerAngles_ = eulerAngles;
     lastKnownCameraRotation_ = Quaternion(eulerAngles);
 
@@ -415,7 +409,7 @@ void FreeFlyController::HandleKeyboardMouseAndJoysticks(float timeStep)
     else
     {
         Vector3 eulerAngles = lastKnownEulerAngles_ + worldMovement.rotation_;
-        eulerAngles.x_ = ClampPitch(eulerAngles.x_);
+        eulerAngles.x_ = Clamp(eulerAngles.x_, minPitch_, maxPitch_);
         SetCameraRotation(Quaternion(eulerAngles) * Quaternion(localMovement.rotation_));
     }
 

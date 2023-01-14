@@ -92,14 +92,12 @@ float AxisAdapter::Transform(float value) const
         const float transformed = Pow(normalized, exp);
         return transformed;
     }
-    {
-        const float rangeMax = neutral_ - deadZone_;
-        const float srcRange = rangeMax + 1.0f;
-        const float normalized = (rangeMax - value) / srcRange;
-        const float exp = GetExponent(negSensitivity_);
-        const float transformed = Pow(normalized, exp);
-        return -transformed;
-    }
+    const float rangeMax = neutral_ - deadZone_;
+    const float srcRange = rangeMax + 1.0f;
+    const float normalized = (rangeMax - value) / srcRange;
+    const float exp = GetExponent(negSensitivity_);
+    const float transformed = Pow(normalized, exp);
+    return -transformed;
 }
 
 /// Convert sensitivity to exponent.
