@@ -149,8 +149,17 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
-    /// Return 2D vector (z component is ignored).
-    IntVector2 ToVector2() const { return { x_, y_ }; }
+    /// Return IntVector2 vector (z component is ignored).
+    IntVector2 ToIntVector2() const { return {x_, y_}; }
+
+    /// Return Vector2 vector (z component is ignored).
+    Vector2 ToVector2() const { return {static_cast<float>(x_), static_cast<float>(y_)}; }
+
+    /// Return Vector3 vector.
+    Vector3 ToVector3() const;
+
+    /// Return Vector4 vector.
+    Vector4 ToVector4(float w = 0.0f) const;
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return (unsigned)x_ * 31 * 31 + (unsigned)y_ * 31 + (unsigned)z_; }
@@ -197,30 +206,6 @@ public:
 
     /// Copy-construct from another vector.
     Vector3(const Vector3& vector) noexcept = default;
-
-    /// Construct from a two-dimensional vector and the Z coordinate.
-    Vector3(const Vector2& vector, float z) noexcept :
-        x_(vector.x_),
-        y_(vector.y_),
-        z_(z)
-    {
-    }
-
-    /// Construct from a two-dimensional vector (for Urho2D).
-    explicit Vector3(const Vector2& vector) noexcept :
-        x_(vector.x_),
-        y_(vector.y_),
-        z_(0.0f)
-    {
-    }
-
-    /// Construct from an IntVector3.
-    explicit Vector3(const IntVector3& vector) noexcept :
-        x_((float)vector.x_),
-        y_((float)vector.y_),
-        z_((float)vector.z_)
-    {
-    }
 
     /// Construct from coordinates.
     Vector3(float x, float y, float z) noexcept :
@@ -489,8 +474,17 @@ public:
         return hash;
     }
 
-    /// Return 2D vector (z component is ignored).
-    Vector2 ToVector2() const { return { x_, y_ }; }
+    /// Return IntVector2 vector (z component is ignored).
+    IntVector2 ToIntVector2() const { return {static_cast<int>(x_), static_cast<int>(y_)}; }
+
+    /// Return Vector2 vector (z component is ignored).
+    Vector2 ToVector2() const { return {x_, y_}; }
+
+    /// Return IntVector3 vector.
+    IntVector3 ToIntVector3() const { return {static_cast<int>(x_), static_cast<int>(y_), static_cast<int>(z_)}; }
+
+    /// Return Vector4 vector.
+    Vector4 ToVector4(float w = 0.0f) const;
 
     /// Return x and z components as 2D vector (y component is ignored).
     Vector2 ToXZ() const { return { x_, z_ }; }
@@ -570,5 +564,21 @@ inline IntVector3 VectorAbs(const IntVector3& vec) { return IntVector3(Abs(vec.x
 
 /// Return a random value from [0, 1) from 3-vector seed.
 inline float StableRandom(const Vector3& seed) { return StableRandom(Vector2(StableRandom(Vector2(seed.x_, seed.y_)), seed.z_)); }
+
+
+/// Return IntVector3 vector.
+inline IntVector3 IntVector2::ToIntVector3(int z) const { return { x_, y_, z }; }
+
+/// Return IntVector3 vector.
+inline IntVector3 Vector2::ToIntVector3(int z) const { return { static_cast<int>(x_), static_cast<int>(y_), z }; }
+
+/// Return Vector3 vector.
+inline Vector3 IntVector2::ToVector3(float z) const { return { static_cast<float>(x_), static_cast<float>(y_), z }; }
+
+/// Return Vector3 vector.
+inline Vector3 Vector2::ToVector3(float z) const { return { x_, y_, z }; }
+
+/// Return Vector3 vector.
+inline Vector3 IntVector3::ToVector3() const { return { static_cast<float>(x_), static_cast<float>(y_), static_cast<float>(z_) }; }
 
 }
