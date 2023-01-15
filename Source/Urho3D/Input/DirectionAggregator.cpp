@@ -135,7 +135,7 @@ void DirectionAggregator::SetTouchEnabled(bool enabled)
 void DirectionAggregator::SetUIElement(UIElement* element) { uiElement_ = element; }
 
 /// Set dead zone to mitigate axis drift.
-void DirectionAggregator::SetDeadZone(float deadZone) { axisDeadZone_ = deadZone; }
+void DirectionAggregator::SetDeadZone(float deadZone) { axisAdapter_.SetDeadZone(deadZone); }
 
 void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
 {
@@ -382,9 +382,7 @@ void DirectionAggregator::HandleTouchEnd(StringHash eventType, VariantMap& args)
 void DirectionAggregator::UpdateAxis(ea::fixed_vector<AxisState, 4>& activeStates, AxisState state)
 {
     // Apply dead zone
-    const float absValue = Abs(state.value_);
-    const float adjustedValue =
-        (absValue < axisDeadZone_) ? 0.0f : (Sign(state.value_) * (absValue - axisDeadZone_) / (1.0f - axisDeadZone_));
+    const float adjustedValue = axisAdapter_.Transform(state.value_);
 
     // Find and replace value
     for (AxisState& activeState : activeStates)
