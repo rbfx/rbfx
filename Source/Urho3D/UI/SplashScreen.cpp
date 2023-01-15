@@ -54,7 +54,7 @@ void UpdateSizeAndPosition(IntVector2 screenSize, Sprite* sprite, bool stretch)
     sprite->SetSize(static_cast<int>(scale * imageSize.x_), static_cast<int>(scale * imageSize.y_));
     Vector2 pos = Vector2((screenSize.x_ - sprite->GetWidth()) / 2.0f, (screenSize.y_ - sprite->GetHeight()) / 2.0f);
     UIElement* parent = sprite->GetParent();
-    sprite->SetPosition(pos - Vector2(parent->GetScreenPosition()));
+    sprite->SetPosition(pos - parent->GetScreenPosition().ToVector2());
 }
 
 }
@@ -163,7 +163,7 @@ void SplashScreen::UpdateLayout(float ratio)
     }
     progressBar_->SetPosition(
         Vector2((screenSize.x_ - progressBarAreaSize.x_) * 0.5, screenSize.y_ - progressBarAreaSize.y_)
-        - Vector2(foreground_->GetScreenPosition()));
+        - foreground_->GetScreenPosition().ToVector2());
     progressBar_->SetSize(progressBarAreaSize.x_ * ratio, progressBarAreaSize.y_);
 }
 

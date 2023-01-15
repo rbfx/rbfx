@@ -196,7 +196,7 @@ void SetRenderSurfaces(Graphics* graphics, const RenderSurfaceArray& renderSurfa
 
 Vector4 CalculateViewportOffsetAndScale(const IntVector2& textureSize, const IntRect& viewportRect)
 {
-    const Vector2 halfViewportScale = 0.5f * static_cast<Vector2>(viewportRect.Size()) / static_cast<Vector2>(textureSize);
+    const Vector2 halfViewportScale = 0.5f * viewportRect.Size().ToVector2() / textureSize.ToVector2();
     const float xOffset = static_cast<float>(viewportRect.left_) / textureSize.x_ + halfViewportScale.x_;
     const float yOffset = static_cast<float>(viewportRect.top_) / textureSize.y_ + halfViewportScale.y_;
 #ifdef URHO3D_OPENGL
@@ -651,7 +651,7 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Textur
     else
         callParams.pipelineState_ = copyLinearToGammaTexturePipelineState_;
 
-    callParams.invInputSize_ = Vector2::ONE / static_cast<Vector2>(sourceTexture->GetSize());
+    callParams.invInputSize_ = Vector2::ONE / sourceTexture->GetSize().ToVector2();
 
     const IntRect effectiveSourceRect = sourceRect != IntRect::ZERO ? sourceRect : sourceTexture->GetRect();
     callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(sourceTexture->GetSize(), effectiveSourceRect);

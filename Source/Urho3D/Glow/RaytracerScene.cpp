@@ -207,7 +207,7 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice, const Ra
     bool errorReported = false;
     for (unsigned i = 0; i < numVertices; ++i)
     {
-        const Vector3 localPosition = static_cast<Vector3>(sourceVertices[i].position_);
+        const Vector3 localPosition = sourceVertices[i].position_.ToVector3();
         const Vector3 worldPosition = params.worldTransform_ * localPosition;
 
         vertices[i * 3 + 0] = worldPosition.x_;
@@ -216,7 +216,7 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice, const Ra
 
         if (lightmapUVs)
         {
-            const Vector2 lightmapUV = static_cast<Vector2>(sourceVertices[i].uv_[params.lightmapping_.lightmapUVChannel_]);
+            const Vector2 lightmapUV = sourceVertices[i].uv_[params.lightmapping_.lightmapUVChannel_].ToVector2();
             const Vector2 lightmapUVScaled = params.lightmapping_.ConvertUV(lightmapUV);
             const Vector2 lightmapUVClamped = VectorMax(Vector2::ZERO, VectorMin(lightmapUVScaled, Vector2::ONE));
 
@@ -232,7 +232,7 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice, const Ra
 
         if (smoothNormals)
         {
-            const Vector3 localNormal = static_cast<Vector3>(sourceVertices[i].normal_);
+            const Vector3 localNormal = sourceVertices[i].normal_.ToVector3();
             const Vector3 worldNormal = params.worldRotation_ * localNormal;
 
             smoothNormals[i * 3 + 0] = worldNormal.x_;
@@ -242,7 +242,7 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice, const Ra
 
         if (uvs)
         {
-            const Vector2 uv = static_cast<Vector2>(sourceVertices[i].uv_[0]);
+            const Vector2 uv = sourceVertices[i].uv_[0].ToVector2();
             const Vector2 uvScaled = params.material_.ConvertUV(uv);
             const Vector2 uvClamped = VectorMax(Vector2::ZERO, VectorMin(uvScaled, Vector2::ONE));
 

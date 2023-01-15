@@ -52,6 +52,15 @@ public:
     {
     }
 
+    /// Construct from vector and scalar.
+    Vector4(const Vector3& v1, float w) noexcept
+        : x_(v1.x_)
+        , y_(v1.y_)
+        , z_(v1.z_)
+        , w_(w)
+    {
+    }
+
     /// Construct from coordinates.
     Vector4(float x, float y, float z, float w) noexcept :
         x_(x),

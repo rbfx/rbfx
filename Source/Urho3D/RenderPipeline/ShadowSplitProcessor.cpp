@@ -300,7 +300,7 @@ void ShadowSplitProcessor::AdjustDirectionalLightCamera(const BoundingBox& light
 
     // Center shadow camera to the light space
     const Quaternion lightRotation(shadowCameraNode_->GetWorldRotation());
-    shadowCameraNode_->Translate(lightRotation * Vector3(center), TS_WORLD);
+    shadowCameraNode_->Translate(lightRotation * center.ToVector3(), TS_WORLD);
 
     // If the shadow map viewport is known, snap to whole texels
     if (shadowMapSize > 0.0f)

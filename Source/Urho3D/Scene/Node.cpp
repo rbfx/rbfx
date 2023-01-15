@@ -1241,7 +1241,7 @@ Vector3 Node::LocalToWorld(const Vector4& vector) const
 
 Vector2 Node::LocalToWorld2D(const Vector2& vector) const
 {
-    Vector3 result = LocalToWorld(Vector3(vector));
+    Vector3 result = LocalToWorld(vector.ToVector3());
     return Vector2(result.x_, result.y_);
 }
 
@@ -1257,7 +1257,7 @@ Vector3 Node::WorldToLocal(const Vector4& vector) const
 
 Vector2 Node::WorldToLocal2D(const Vector2& vector) const
 {
-    Vector3 result = WorldToLocal(Vector3(vector));
+    Vector3 result = WorldToLocal(vector.ToVector3());
     return Vector2(result.x_, result.y_);
 }
 

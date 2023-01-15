@@ -114,7 +114,7 @@ public:
     Plane Transformed(const Matrix4& transform) const;
 
     /// Return as a vector.
-    Vector4 ToVector4() const { return Vector4(normal_, d_); }
+    Vector4 ToVector4() const {return normal_.ToVector4(d_); }
 
     /// Plane normal.
     Vector3 normal_;

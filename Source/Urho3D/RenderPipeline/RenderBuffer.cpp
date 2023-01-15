@@ -52,7 +52,7 @@ IntVector2 CalculateRenderTargetSize(const IntRect& viewportRect,
     if (explicitSize != IntVector2::ZERO)
         return explicitSize;
     const IntVector2 viewportSize = viewportRect.Size();
-    return VectorMax(IntVector2::ONE, VectorRoundToInt(static_cast<Vector2>(viewportSize) * sizeMultiplier));
+    return VectorMax(IntVector2::ONE, VectorRoundToInt(viewportSize.ToVector2() * sizeMultiplier));
 }
 
 RenderSurface* GetRenderSurfaceFromTexture(Texture* texture, CubeMapFace face = FACE_POSITIVE_X)
