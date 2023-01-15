@@ -2309,9 +2309,11 @@ static SDL_bool SDL_IsJoystickProductArcadeStick(Uint32 vidpid)
 static SDL_bool SDL_IsJoystickProductFlightStick(Uint32 vidpid)
 {
     static Uint32 flightstick_joysticks[] = {
-        MAKE_VIDPID(0x044f, 0x0402),    /* HOTAS Warthog Joystick */
         MAKE_VIDPID(0x0738, 0x2221),    /* Saitek Pro Flight X-56 Rhino Stick */
+        MAKE_VIDPID(0x044f, 0x0402),    /* ThrustMaster, Inc. HOTAS Warthog Joystick */
+        MAKE_VIDPID(0x044f, 0xb108),    /* ThrustMaster, Inc. T.Flight Hotas X Joystick */
         MAKE_VIDPID(0x044f, 0xb10a),    /* ThrustMaster, Inc. T.16000M Joystick */
+        MAKE_VIDPID(0x11c0, 0x5603),    /* Defender COBRA M5 USB Joystick */
     };
     int i;
 

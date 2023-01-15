@@ -117,12 +117,18 @@ struct URHO3D_API JoystickState
     /// @property
     float GetAxisPosition(unsigned index) const { return index < axes_.size() ? axes_[index] : 0.0f; }
 
+    /// Returns true if has valid axis position.
+    /// @property
+    bool HasAxisPosition(unsigned index) const { return index < validAxis_.size() ? validAxis_[index] : 0.0f; }
+
     /// Return hat position.
     /// @property
     int GetHatPosition(unsigned index) const { return index < hats_.size() ? hats_[index] : int(HAT_CENTER); }
 
     /// SDL joystick.
     SDL_Joystick* joystick_{};
+    /// Joystick device type.
+    JoystickDeviceType type_{JOYSTICK_TYPE_UNKNOWN};
     /// SDL joystick instance ID.
     SDL_JoystickID joystickID_{};
     /// SDL game controller.
@@ -137,6 +143,8 @@ struct URHO3D_API JoystickState
     ea::vector<bool> buttonPress_;
     /// Axis position from -1 to 1.
     ea::vector<float> axes_;
+    /// Valid axis position.
+    ea::vector<bool> validAxis_;
     /// POV hat bits.
     ea::vector<int> hats_;
 };

@@ -31,20 +31,10 @@
 #include "../Input/InputEvents.h"
 #include "../Scene/Node.h"
 #include "../UI/UI.h"
+#include "../Engine/StateManager.h"
 
 namespace Urho3D
 {
-namespace
-{
-
-float ApplyDeadZone(float value, float deadZone)
-{
-    if (value >= -deadZone && value <= deadZone)
-        return 0.0f;
-    return (value - Sign(value) * deadZone) / (1.0f - deadZone);
-}
-
-}
 
 FreeFlyController::FreeFlyController(Context* context)
     : Component(context)
@@ -136,11 +126,22 @@ void FreeFlyController::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Speed", float, speed_, 20.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Accelerated Speed", float, acceleratedSpeed_, 100.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Min Pitch", float, minPitch_, -90.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Max Pitch", float, maxPitch_, 90.0f, AM_DEFAULT);
+}
+
+void FreeFlyController::SetCameraRotation(Quaternion quaternion)
+{
+    lastKnownEulerAngles_ = quaternion.EulerAngles();
+    lastKnownCameraRotation_ = quaternion;
+
+    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
+    node_->SetRotation(lastKnownCameraRotation_.value());
 }
 
 void FreeFlyController::SetCameraAngles(Vector3 eulerAngles)
 {
-    eulerAngles.x_ = Clamp(eulerAngles.x_, -84.0f, 84.0f);
+    eulerAngles.x_ = Clamp(eulerAngles.x_, minPitch_, maxPitch_);
     lastKnownEulerAngles_ = eulerAngles;
     lastKnownCameraRotation_ = Quaternion(eulerAngles);
 
@@ -155,96 +156,268 @@ void FreeFlyController::UpdateCameraAngles()
     {
         lastKnownCameraRotation_ = rotation;
         lastKnownEulerAngles_ = rotation.EulerAngles();
-        // Detect gimbal lock and restore from it.
-        if (Abs(lastKnownEulerAngles_.x_) > 89.999f && Abs(lastKnownEulerAngles_.y_) < 0.001f)
-        {
-            ea::swap(lastKnownEulerAngles_.y_, lastKnownEulerAngles_.z_);
-        }
     }
 }
 
-void FreeFlyController::HandleKeyboardAndMouse(float timeStep)
+FreeFlyController::Movement FreeFlyController::HandleWheel(const JoystickState* state, float timeStep)
+{
+    Movement movement;
+
+    const unsigned numAxes = state->GetNumAxes();
+    float speed = speed_;
+
+    // Wheel
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(0));
+        movement.rotation_.y_ += value * timeStep * axisSensitivity_;
+    }
+    // Acceleration
+    if (numAxes > 1)
+    {
+        AxisAdapter pedalAdapter = axisAdapter_;
+        pedalAdapter.SetInverted(true);
+        pedalAdapter.SetNeutralValue(-1.0f);
+        if (state->HasAxisPosition(1))
+        {
+            const float value = pedalAdapter.Transform(state->GetAxisPosition(1));
+            movement.translation_.z_ += value * speed * timeStep;
+        }
+        // Brake
+        if (state->HasAxisPosition(2))
+        {
+            const float value = pedalAdapter.Transform(state->GetAxisPosition(2));
+            movement.translation_.z_ -= value * speed * timeStep;
+        }
+    }
+    return movement;
+}
+
+FreeFlyController::Movement FreeFlyController::HandleFlightStick(const JoystickState* state, float timeStep)
+{
+    Movement movement;
+
+    const unsigned numAxes = state->GetNumAxes();
+    float speed = speed_;
+    // Roll
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(0));
+        movement.rotation_.z_ -= value * timeStep * axisSensitivity_;
+    }
+    // Pitch
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(1));
+        movement.rotation_.x_ -= value * timeStep * axisSensitivity_;
+    }
+    // Yaw
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(3));
+        movement.rotation_.y_ += value * timeStep * axisSensitivity_;
+    }
+    // Throttle
+    if (state->HasAxisPosition(2))
+    {
+        AxisAdapter pedalAdapter = axisAdapter_;
+        pedalAdapter.SetInverted(true);
+        pedalAdapter.SetNeutralValue(-1.0f);
+        const float value = pedalAdapter.Transform(state->GetAxisPosition(2));
+        movement.translation_.z_ += value * speed * timeStep;
+    }
+    // Rocker
+    if (state->HasAxisPosition(4))
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(4));
+        movement.translation_.x_ += value * speed * timeStep;
+    }
+    return movement;
+}
+
+FreeFlyController::Movement FreeFlyController::HandleController(const JoystickState* state, float timeStep)
+{
+    Movement movement;
+
+    float speed = speed_;
+    // Apply acceleration
+    if (state->HasAxisPosition(CONTROLLER_AXIS_TRIGGERLEFT))
+    {
+        AxisAdapter triggerAdapter = axisAdapter_;
+        triggerAdapter.SetNeutralValue(-1.0f);
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(CONTROLLER_AXIS_TRIGGERLEFT));
+        speed = Lerp(speed_, acceleratedSpeed_, Clamp(value, 0.0f, 1.0f));
+    }
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(CONTROLLER_AXIS_LEFTX));
+        movement.translation_.x_ += value * speed * timeStep;
+    }
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(CONTROLLER_AXIS_LEFTY));
+        movement.translation_.z_ -= value * speed * timeStep;
+    }
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(CONTROLLER_AXIS_RIGHTX));
+        movement.rotation_.y_ += value * timeStep * axisSensitivity_;
+    }
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(CONTROLLER_AXIS_RIGHTY));
+        movement.rotation_.x_ += value * timeStep * axisSensitivity_;
+    }
+
+    const unsigned numHats = state->GetNumHats();
+    if (numHats > 0)
+    {
+        const int value = state->GetHatPosition(0);
+        if (0 != (value & HAT_UP))
+            movement.translation_.z_ += speed * timeStep;
+        if (0 != (value & HAT_DOWN))
+            movement.translation_.z_ -= speed * timeStep;
+        if (0 != (value & HAT_LEFT))
+            movement.translation_.x_ -= speed * timeStep;
+        if (0 != (value & HAT_RIGHT))
+            movement.translation_.x_ += speed * timeStep;
+    }
+
+    return movement;
+}
+
+FreeFlyController::Movement FreeFlyController::HandleGenericJoystick(const JoystickState* state, float timeStep)
+{
+    Movement movement;
+
+    const unsigned numAxes = state->GetNumAxes();
+    float speed = speed_;
+    // Apply acceleration
+    if (state->HasAxisPosition(4))
+    {
+        AxisAdapter triggerAdapter = axisAdapter_;
+        triggerAdapter.SetNeutralValue(-1.0f);
+        const float value = (1.0f + axisAdapter_.Transform(state->GetAxisPosition(4))) * 0.5f;
+        speed = Lerp(speed_, acceleratedSpeed_, Clamp(value, 0.0f, 1.0f));
+    }
+
+    if (state->HasAxisPosition(0))
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(0));
+        if (value != 0)
+        {
+            movement.translation_.x_ += value * speed * timeStep;
+        }
+    }
+    if (state->HasAxisPosition(1))
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(1));
+        movement.translation_.z_ -= value * speed * timeStep;
+    }
+    if (state->HasAxisPosition(2))
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(2));
+        movement.rotation_.y_ += value * timeStep * axisSensitivity_;
+    }
+    if (state->HasAxisPosition(3))
+    {
+        const float value = axisAdapter_.Transform(state->GetAxisPosition(3));
+        movement.rotation_.x_ += value * timeStep * axisSensitivity_;
+    }
+
+    const unsigned numHats = state->GetNumHats();
+    if (numHats > 0)
+    {
+        const int value = state->GetHatPosition(0);
+        if (0 != (value & HAT_UP))
+            movement.translation_.z_ += speed * timeStep;
+        if (0 != (value & HAT_DOWN))
+            movement.translation_.z_ -= speed * timeStep;
+        if (0 != (value & HAT_LEFT))
+            movement.translation_.x_ -= speed * timeStep;
+        if (0 != (value & HAT_RIGHT))
+            movement.translation_.x_ += speed * timeStep;
+    }
+
+    return movement;
+}
+FreeFlyController::Movement FreeFlyController::HandleMouse() const
+{
+    const auto* input = GetSubsystem<Input>();
+    const IntVector2 mouseMove = input->GetMouseMove();
+    Movement movement;
+    movement.rotation_.y_ += mouseSensitivity_ * mouseMove.x_;
+    movement.rotation_.x_ += mouseSensitivity_ * mouseMove.y_;
+    return movement;
+}
+
+FreeFlyController::Movement FreeFlyController::HandleKeyboard(float timeStep) const
+{
+    Movement movement{};
+    const auto* input = GetSubsystem<Input>();
+
+    const float speed = input->GetKeyDown(KEY_SHIFT) ? acceleratedSpeed_ : speed_;
+    if (input->GetScancodeDown(SCANCODE_W))
+        movement.translation_.z_ += speed * timeStep;
+    if (input->GetScancodeDown(SCANCODE_S))
+        movement.translation_.z_ -= speed * timeStep;
+    if (input->GetScancodeDown(SCANCODE_A))
+        movement.translation_.x_ -= speed * timeStep;
+    if (input->GetScancodeDown(SCANCODE_D))
+        movement.translation_.x_ += speed * timeStep;
+    if (input->GetScancodeDown(SCANCODE_Q))
+        movement.translation_.y_ -= speed * timeStep;
+    if (input->GetScancodeDown(SCANCODE_E))
+        movement.translation_.y_ += speed * timeStep;
+
+    return movement;
+}
+
+void FreeFlyController::HandleKeyboardMouseAndJoysticks(float timeStep)
 {
     auto* input = GetSubsystem<Input>();
 
     // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
     UpdateCameraAngles();
-    Vector3 eulerAngles = lastKnownEulerAngles_;
-    IntVector2 mouseMove = input->GetMouseMove();
-    eulerAngles.y_ += mouseSensitivity_ * mouseMove.x_;
-    eulerAngles.x_ += mouseSensitivity_ * mouseMove.y_;
 
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    // Use the Translate() function (default local space) to move relative to the node's orientation.
-    {
-        float speed = input->GetKeyDown(KEY_SHIFT) ? acceleratedSpeed_ : speed_;
-        if (input->GetScancodeDown(SCANCODE_W))
-            node_->Translate(Vector3::FORWARD * speed * timeStep);
-        if (input->GetScancodeDown(SCANCODE_S))
-            node_->Translate(Vector3::BACK * speed * timeStep);
-        if (input->GetScancodeDown(SCANCODE_A))
-            node_->Translate(Vector3::LEFT * speed * timeStep);
-        if (input->GetScancodeDown(SCANCODE_D))
-            node_->Translate(Vector3::RIGHT * speed * timeStep);
-        if (input->GetScancodeDown(SCANCODE_Q))
-            node_->Translate(Vector3::DOWN * speed * timeStep);
-        if (input->GetScancodeDown(SCANCODE_E))
-            node_->Translate(Vector3::UP * speed * timeStep);
-    }
+    // World space rotation (first person shooter)
+    Movement worldMovement{};
+    // Local space rotation (flight sim)
+    Movement localMovement{};
 
-    if (input->GetNumJoysticks() > 0)
+    worldMovement += HandleMouse();
+    worldMovement += HandleKeyboard(timeStep);
+
+    const unsigned numJoysticks = input->GetNumJoysticks();
+    for (unsigned joystickIndex = 0; joystickIndex < numJoysticks; ++joystickIndex)
     {
-        auto state = input->GetJoystickByIndex(0);
+        const auto state = input->GetJoystickByIndex(joystickIndex);
         if (state)
         {
-            unsigned numAxes = state->GetNumAxes();
-
-            float speed = speed_;
-            // Apply acceleration
-            if (numAxes > 4)
+            switch (state->type_)
             {
-                float value = ApplyDeadZone(state->GetAxisPosition(4), axisDeadZone_);
-                speed = Lerp(speed_, acceleratedSpeed_, value);
-            }
-
-            if (numAxes > 0)
-            {
-                float value = ApplyDeadZone(state->GetAxisPosition(0), axisDeadZone_);
-                node_->Translate(Vector3::RIGHT * speed * timeStep * value);
-            }
-            if (numAxes > 1)
-            {
-                float value =  ApplyDeadZone(-state->GetAxisPosition(1), axisDeadZone_);
-                node_->Translate(Vector3::FORWARD * speed * timeStep * value);
-            }
-            if (numAxes > 2)
-            {
-                float value = ApplyDeadZone(state->GetAxisPosition(2), axisDeadZone_);
-                eulerAngles.y_ += value * timeStep * axisSensitivity_;
-            }
-            if (numAxes > 3)
-            {
-                float value = ApplyDeadZone(state->GetAxisPosition(3), axisDeadZone_);
-                eulerAngles.x_ += value * timeStep * axisSensitivity_;
-            }
-
-            unsigned numHats = state->GetNumHats();
-            if (numHats > 0)
-            {
-                int value = state->GetHatPosition(0);
-                if (0 != (value & HAT_UP))
-                    node_->Translate(Vector3::FORWARD * speed * timeStep);
-                if (0 != (value & HAT_DOWN))
-                    node_->Translate(Vector3::BACK * speed * timeStep);
-                if (0 != (value & HAT_LEFT))
-                    node_->Translate(Vector3::LEFT * speed * timeStep);
-                if (0 != (value & HAT_RIGHT))
-                    node_->Translate(Vector3::RIGHT * speed * timeStep);
+            // Ignore odd devices
+            case JOYSTICK_TYPE_GUITAR: break;
+            case JOYSTICK_TYPE_DRUM_KIT: break;
+            case JOYSTICK_TYPE_THROTTLE: break;
+            // Handle known devices
+            case JOYSTICK_TYPE_WHEEL: worldMovement += HandleWheel(state, timeStep); break;
+            case JOYSTICK_TYPE_FLIGHT_STICK: localMovement += HandleFlightStick(state, timeStep); break;
+            case JOYSTICK_TYPE_GAMECONTROLLER: worldMovement += HandleController(state, timeStep); break;
+            default: worldMovement += HandleGenericJoystick(state, timeStep); break;
             }
         }
     }
 
-    SetCameraAngles(eulerAngles);
+    if (localMovement.rotation_ == Vector3::ZERO)
+    {
+        Vector3 eulerAngles = lastKnownEulerAngles_ + worldMovement.rotation_;
+        SetCameraAngles(eulerAngles);
+    }
+    else
+    {
+        Vector3 eulerAngles = lastKnownEulerAngles_ + worldMovement.rotation_;
+        eulerAngles.x_ = Clamp(eulerAngles.x_, minPitch_, maxPitch_);
+        SetCameraRotation(Quaternion(eulerAngles) * Quaternion(localMovement.rotation_));
+    }
+
+    const Vector3 translation = localMovement.translation_ + worldMovement.translation_;
+    if (!translation.Equals(Vector3::ZERO))
+    {
+        node_->Translate(translation, TS_LOCAL);
+    }
 }
 
 void FreeFlyController::Update(float timeStep)
@@ -273,12 +446,12 @@ void FreeFlyController::Update(float timeStep)
 
         if (isActive_)
         {
-            HandleKeyboardAndMouse(timeStep);
+            HandleKeyboardMouseAndJoysticks(timeStep);
         }
     }
     else
     {
-        HandleKeyboardAndMouse(timeStep);
+        HandleKeyboardMouseAndJoysticks(timeStep);
     }
 }
 
