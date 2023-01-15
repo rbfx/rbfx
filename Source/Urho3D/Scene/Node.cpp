@@ -653,7 +653,7 @@ void Node::Translate(const Vector3& delta, TransformSpace space)
         break;
 
     case TS_WORLD:
-        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
+        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * delta.ToVector4(0.0f);
         break;
     }
 

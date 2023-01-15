@@ -90,7 +90,7 @@ void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQu
             {
                 Vector3 geometryNormal;
                 distance = geometry_->GetHitDistance(localRay, &geometryNormal);
-                normal = (node_->GetWorldTransform() * Vector4(geometryNormal, 0.0f)).Normalized();
+                normal = (node_->GetWorldTransform() * geometryNormal.ToVector4(0.0f)).Normalized();
             }
 
             if (distance < query.maxDistance_)

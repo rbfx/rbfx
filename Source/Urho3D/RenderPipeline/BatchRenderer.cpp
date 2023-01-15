@@ -103,7 +103,7 @@ Vector4 GetAmbientLighting(const BatchRendererSettings& settings, const LightAcc
 {
     const Vector3 ambient = lightAccumulator.sphericalHarmonics_.EvaluateAverage();
     if (settings.linearSpaceLighting_)
-        return Vector4(ambient, 1.0f);
+        return ambient.ToVector4(1.0f);
     else
         return Color(ambient).LinearToGamma().ToVector4();
 }
@@ -145,7 +145,7 @@ public:
         {
             const Vector3 ambient = lightAccumulator.sphericalHarmonics_.EvaluateAverage();
             if (linearSpaceLighting_)
-                ambientValueFlat_ = Vector4(ambient, 1.0f);
+                ambientValueFlat_ = ambient.ToVector4(1.0f);
             else
                 ambientValueFlat_ = Color(ambient).LinearToGamma().ToVector4();
         }
@@ -360,9 +360,9 @@ private:
                 ? lights_[current_.vertexLights_[i]]->GetParams() : nullVertexLight;
             const Vector3& color = params.GetColor(settings_.linearSpaceLighting_);
 
-            current_.vertexLightsData_[i * VertexLightStride] = { color, params.inverseRange_ };
-            current_.vertexLightsData_[i * VertexLightStride + 1] = { params.direction_, params.spotCutoff_ };
-            current_.vertexLightsData_[i * VertexLightStride + 2] = { params.position_, params.inverseSpotCutoff_ };
+            current_.vertexLightsData_[i * VertexLightStride] = color.ToVector4(params.inverseRange_);
+            current_.vertexLightsData_[i * VertexLightStride + 1] = params.direction_.ToVector4(params.spotCutoff_);
+            current_.vertexLightsData_[i * VertexLightStride + 2] = params.position_.ToVector4(params.inverseSpotCutoff_);
         }
     }
 
@@ -580,9 +580,9 @@ private:
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter0,
                 current_.reflectionProbes_[0]->cubemapCenter_);
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin0,
-                Vector4(current_.reflectionProbes_[0]->projectionBox_.min_, 0.0));
+                current_.reflectionProbes_[0]->projectionBox_.min_.ToVector4(0.0));
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax0,
-                Vector4(current_.reflectionProbes_[0]->projectionBox_.max_, 0.0));
+                current_.reflectionProbes_[0]->projectionBox_.max_.ToVector4(0.0));
         }
 
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor0,
@@ -594,9 +594,9 @@ private:
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter1,
                 current_.reflectionProbes_[1]->cubemapCenter_);
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin1,
-                Vector4(current_.reflectionProbes_[1]->projectionBox_.min_, 0.0));
+                current_.reflectionProbes_[1]->projectionBox_.min_.ToVector4(0.0));
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax1,
-                Vector4(current_.reflectionProbes_[1]->projectionBox_.max_, 0.0));
+                current_.reflectionProbes_[1]->projectionBox_.max_.ToVector4(0.0));
         }
 
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor1,
@@ -616,14 +616,14 @@ private:
     {
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightDir, params.direction_);
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightPos,
-            Vector4{ params.position_, params.inverseRange_ });
+            params.position_.ToVector4(params.inverseRange_));
 
         // Shadow maps need only light position and direction for normal bias
         if (!enabled_.colorOutput_)
             return;
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightColor,
-            Vector4{ params.GetColor(settings_.linearSpaceLighting_), params.effectiveSpecularIntensity_ });
+            params.GetColor(settings_.linearSpaceLighting_).ToVector4(params.effectiveSpecularIntensity_));
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightRad, params.volumetricRadius_);
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightLength, params.volumetricLength_);

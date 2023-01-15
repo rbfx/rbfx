@@ -580,7 +580,7 @@ void ModelVertex::Repair()
                 const Vector3 normal3 = tangent_.ToVector3();
                 const Vector3 tangent3 = normal_.ToVector3();
                 const Vector3 binormal3 = tangent_.w_ * normal3.CrossProduct(tangent3);
-                binormal_ = { binormal3.Normalized(), 0};
+                binormal_ = binormal3.Normalized().ToVector4(0);
             }
             else if (hasBinormal && !hasTangentBinormalCombined)
             {
@@ -743,9 +743,9 @@ void GeometryLODView::RecalculateFlatNormals()
         const auto p2 = v2.position_.ToVector3();
         const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0).Normalized();
 
-        v0.normal_ = Vector4(normal, 0.0f);
-        v1.normal_ = Vector4(normal, 0.0f);
-        v2.normal_ = Vector4(normal, 0.0f);
+        v0.normal_ = normal.ToVector4(0.0f);
+        v1.normal_ = normal.ToVector4(0.0f);
+        v2.normal_ = normal.ToVector4(0.0f);
 
         const unsigned newIndex = newVertices.size();
         newVertices.push_back(v0);
@@ -802,13 +802,13 @@ void GeometryLODView::RecalculateSmoothNormals()
         const auto p2 = v2.position_.ToVector3();
         const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0).Normalized();
 
-        v0.normal_ += Vector4(normal, 0.0f);
-        v1.normal_ += Vector4(normal, 0.0f);
-        v2.normal_ += Vector4(normal, 0.0f);
+        v0.normal_ += normal.ToVector4(0.0f);
+        v1.normal_ += normal.ToVector4(0.0f);
+        v2.normal_ += normal.ToVector4(0.0f);
     });
 
     for (ModelVertex& vertex : vertices_)
-        vertex.normal_ = Vector4(vertex.normal_.ToVector3().Normalized(), 0.0f);
+        vertex.normal_ = vertex.normal_.ToVector3().Normalized().ToVector4(0.0f);
 }
 
 void GeometryLODView::RecalculateTangents()
@@ -1356,7 +1356,7 @@ void ModelView::ScaleGeometries(float scale)
         for (GeometryLODView& lodView : geometryView.lods_)
         {
             for (ModelVertex& vertex : lodView.vertices_)
-                vertex.position_ = Vector4{scale * vertex.GetPosition(), vertex.position_.w_};
+                vertex.position_ = (scale * vertex.GetPosition()).ToVector4(vertex.position_.w_);
 
             for (auto& [morphIndex, morphVector] : lodView.morphs_)
             {

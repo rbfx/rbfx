@@ -371,7 +371,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     Matrix3x4 frustumTransform = targetTransform * Matrix3x4(adjustedWorldPosition, worldRotation, 1.0f);
     decalFrustum.DefineOrtho(size, aspectRatio, 1.0, 0.0f, depth, frustumTransform);
 
-    Vector3 decalNormal = (targetTransform * Vector4(worldRotation * Vector3::BACK, 0.0f)).Normalized();
+    Vector3 decalNormal = (targetTransform * (worldRotation * Vector3::BACK).ToVector4(0.0f)).Normalized();
 
     decals_.resize(decals_.size() + 1);
     Decal& newDecal = decals_.back();
@@ -971,7 +971,7 @@ void DecalSet::TransformVertices(Decal& decal, const Matrix3x4& transform)
     for (auto i = decal.vertices_.begin(); i != decal.vertices_.end(); ++i)
     {
         i->position_ = transform * i->position_;
-        i->normal_ = (transform * Vector4(i->normal_, 0.0f)).Normalized();
+        i->normal_ = (transform * i->normal_.ToVector4(0.0f)).Normalized();
     }
 }
 

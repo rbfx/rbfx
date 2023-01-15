@@ -764,7 +764,7 @@ void Text3D::CalculateFixedScreenSize(const FrameInfo& frame)
 
     if (fixedScreenSize_)
     {
-        Vector4 projPos = frame.camera_->GetViewProj() * Vector4(worldPosition, 1.0f);
+        Vector4 projPos = frame.camera_->GetViewProj() * worldPosition.ToVector4(1.0f);
 
         float textScaling = 2.0f / TEXT_SCALING / frame.viewSize_.y_;
         float halfViewWorldSize = frame.camera_->GetHalfViewSize();

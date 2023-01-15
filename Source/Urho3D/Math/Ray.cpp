@@ -491,7 +491,7 @@ Ray Ray::Transformed(const Matrix3x4& transform) const
 {
     Ray ret;
     ret.origin_ = transform * origin_;
-    ret.direction_ = transform * Vector4(direction_, 0.0f);
+    ret.direction_ = transform * direction_.ToVector4(0.0f);
     return ret;
 }
 

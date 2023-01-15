@@ -115,7 +115,7 @@ void StaticModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const Bound
                     if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                     {
                         distance = geometryDistance;
-                        normal = (worldTransform * Vector4(geometryNormal, 0.0f)).Normalized();
+                        normal = (worldTransform * geometryNormal.ToVector4(0.0f)).Normalized();
                         hitBatch = i;
                     }
                 }
