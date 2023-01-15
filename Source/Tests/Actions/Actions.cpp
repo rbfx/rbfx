@@ -411,7 +411,7 @@ TEST_CASE("RemoveSelf action deletes node")
     auto actionManager = context->GetSubsystem<ActionManager>();
     
     auto scene = MakeShared<Scene>(context);
-    WeakPtr<Node> weakNode = WeakPtr<Node>(scene->CreateChild("", REPLICATED, 0, false));
+    WeakPtr<Node> weakNode = WeakPtr<Node>(scene->CreateChild("", false));
 
     auto action = ActionBuilder(context).RemoveSelf().DelayTime(10).Build();
     actionManager->AddAction(action, weakNode);
