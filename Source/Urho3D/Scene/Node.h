@@ -28,6 +28,7 @@
 #include "../Math/Matrix3x4.h"
 #include "../Math/Transform.h"
 #include "../Scene/Component.h"
+#include "../Scene/PrefabTypes.h"
 #include "../Scene/Serializable.h"
 
 #include <EASTL/type_traits.h>
@@ -39,8 +40,11 @@ namespace Urho3D
 
 class Connection;
 class Node;
+class PrefabReader;
+class PrefabWriter;
 class Scene;
 class SceneResolver;
+class SerializablePrefab;
 
 /// Transform space for translations and rotations.
 enum TransformSpace
@@ -88,9 +92,16 @@ public:
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
-    /// Serialize content from/to archive, with additional properties. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive, SceneResolver* resolver,
-        bool serializeChildren = true, bool rewriteIDs = false);
+
+    /// Load from prefab without resolving IDs and applying attributes. May throw ArchiveException.
+    void LoadInternal(const SerializablePrefab& nodePrefab, PrefabReader& reader, SceneResolver& resolver,
+        PrefabLoadFlags flags = {});
+    /// Load from prefab. Return true on success. Discard PrefabReader after calling this.
+    bool Load(PrefabReader& reader, PrefabLoadFlags flags = {});
+    /// Write to prefab. May throw ArchiveException.
+    void SaveInternal(PrefabWriter& writer) const;
+    /// Write to prefab. Return true on success. Discard PrefabWriter after calling this.
+    bool Save(PrefabWriter& writer) const;
 
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;
