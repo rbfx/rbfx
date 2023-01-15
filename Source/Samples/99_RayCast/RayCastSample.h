@@ -25,6 +25,7 @@
 #include "Sample.h"
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/OctreeQuery.h>
 #include <Urho3D/UI/DropDownList.h>
 
 namespace Urho3D
@@ -32,17 +33,14 @@ namespace Urho3D
 
 class Node;
 class Scene;
-enum RayQueryLevel;
+
 }
 
-/// Static 3D scene example.
-/// This sample demonstrates:
-///     - Creating a 3D scene with static content
-///     - Displaying the scene using the Renderer subsystem
-///     - Handling keyboard and mouse input to move a freelook camera
+/// Ray cast sample.
+/// This sample demonstrates how to run a ray cast and what results it produces.
 class RayCastSample : public Sample
 {
-    URHO3D_OBJECT(RayCastSample, Sample);
+    URHO3D_OBJECT(RayCastSample, Sample)
 
 public:
     /// Construct.
