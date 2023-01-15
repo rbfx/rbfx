@@ -98,7 +98,7 @@ void StaticModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const Bound
         Ray localRay = query.ray_.Transformed(inverse);
         const auto distanceAndNormal = localRay.HitDistanceAndNormal(boundingBox_);
         float distance = distanceAndNormal.distance_;
-        Vector3 normal = worldTransform * Vector4(distanceAndNormal.normal_,0.0f);
+        Vector3 normal = (worldTransform * Vector4(distanceAndNormal.normal_,0.0f)).Normalized();
         Vector2 geometryUV;
         unsigned hitBatch = M_MAX_UNSIGNED;
 
