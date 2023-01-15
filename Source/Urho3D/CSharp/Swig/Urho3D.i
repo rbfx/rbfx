@@ -397,6 +397,7 @@ namespace SDL
 %include "Urho3D/Input/Controls.h"
 %include "Urho3D/Input/Input.h"
 %include "Urho3D/Input/MultitouchAdapter.h"
+%include "Urho3D/Input/AxisAdapter.h"
 %include "Urho3D/Input/DirectionalPadAdapter.h"
 %include "Urho3D/Input/DirectionAggregator.h"
 
@@ -725,6 +726,7 @@ public:
 %include "Urho3D/Graphics/Zone.h"
 %include "Urho3D/Graphics/Renderer.h"
 %include "Urho3D/Graphics/Graphics.h"
+%include "Urho3D/Graphics/OutlineGroup.h"
 
 %include "Urho3D/Particles/ParticleGraphPin.h"
 %include "Urho3D/Particles/ParticleGraphNode.h"

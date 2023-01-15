@@ -149,14 +149,19 @@ void OutlineGroup::ClearDrawables()
     drawables_.clear();
 }
 
-void OutlineGroup::AddDrawable(Drawable* drawable)
+bool OutlineGroup::HasDrawable(Drawable* drawable) const
 {
-    drawables_.emplace(drawable);
+    return drawables_.contains(WeakPtr<Drawable>(drawable));
 }
 
-void OutlineGroup::RemoveDrawable(Drawable* drawable)
+bool OutlineGroup::AddDrawable(Drawable* drawable)
 {
-    drawables_.erase(WeakPtr<Drawable>(drawable));
+    return drawables_.emplace(drawable).second;
+}
+
+bool OutlineGroup::RemoveDrawable(Drawable* drawable)
+{
+    return drawables_.erase(WeakPtr<Drawable>(drawable)) > 0;
 }
 
 Material* OutlineGroup::GetOutlineMaterial(Material* referenceMaterial)

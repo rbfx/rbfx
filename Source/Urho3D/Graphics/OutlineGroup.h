@@ -63,8 +63,12 @@ public:
     bool HasDrawables() const { return !drawables_.empty(); }
     bool ContainsDrawable(Drawable* drawable) const { return drawables_.find_as(drawable) != drawables_.end(); }
     void ClearDrawables();
-    void AddDrawable(Drawable* drawable);
-    void RemoveDrawable(Drawable* drawable);
+    /// Check if Drawable is present in group.
+    bool HasDrawable(Drawable* drawable) const;
+    /// Add drawable. Returns true if drawable added.
+    bool AddDrawable(Drawable* drawable);
+    /// Remove drawable. Returns true if drawable was removed.
+    bool RemoveDrawable(Drawable* drawable);
     /// @}
 
 private:

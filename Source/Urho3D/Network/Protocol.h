@@ -45,8 +45,6 @@ enum NetworkMessageId
 
     /// Client->server and server->client: remote event.
     MSG_REMOTEEVENT = 0x96,
-    /// Client->server and server->client: remote node event.
-    MSG_REMOTENODEEVENT = 0x97,
     /// Server->client: info about package.
     MSG_PACKAGEINFO = 0x98,
 

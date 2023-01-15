@@ -52,7 +52,7 @@ Node* PackedNodeData::SpawnExact(Scene* scene) const
     if (parent == nullptr)
         return nullptr;
 
-    Node* node = parent->CreateChild(name_, id_ < FIRST_LOCAL_ID ? REPLICATED : LOCAL, id_);
+    Node* node = parent->CreateChild(name_, id_);
     if (node->GetID() != id_)
     {
         node->Remove();
@@ -72,7 +72,7 @@ Node* PackedNodeData::SpawnExact(Scene* scene) const
 
 Node* PackedNodeData::SpawnCopy(Node* parent) const
 {
-    Node* node = parent->CreateChild(name_, id_ < FIRST_LOCAL_ID ? REPLICATED : LOCAL);
+    Node* node = parent->CreateChild(name_);
 
     ConsumeArchiveException([&]
     {
@@ -103,7 +103,7 @@ Component* PackedComponentData::SpawnExact(Scene* scene) const
     if (node == nullptr)
         return nullptr;
 
-    Component* component = node->CreateComponent(type_, id_ < FIRST_LOCAL_ID ? REPLICATED : LOCAL, id_);
+    Component* component = node->CreateComponent(type_, id_);
     if (component == nullptr)
         return nullptr;
 
@@ -126,7 +126,7 @@ Component* PackedComponentData::SpawnExact(Scene* scene) const
 
 Component* PackedComponentData::SpawnCopy(Node* node) const
 {
-    Component* component = node->CreateComponent(type_, id_ < FIRST_LOCAL_ID ? REPLICATED : LOCAL, id_);
+    Component* component = node->CreateComponent(type_, id_);
     if (component == nullptr)
         return nullptr;
 

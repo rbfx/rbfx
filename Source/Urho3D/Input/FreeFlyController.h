@@ -24,6 +24,7 @@
 #include "../Scene/Component.h"
 #include "../Input/Input.h"
 #include "../Input/MultitouchAdapter.h"
+#include "../Input/AxisAdapter.h"
 
 namespace Urho3D
 {
@@ -31,6 +32,18 @@ namespace Urho3D
 class URHO3D_API FreeFlyController : public Component
 {
     URHO3D_OBJECT(FreeFlyController, Component)
+private:
+    struct Movement
+    {
+        Vector3 rotation_{Vector3::ZERO};
+        Vector3 translation_{Vector3::ZERO};
+        Movement& operator+=(const Movement& rhs)
+        {
+            rotation_ += rhs.rotation_;
+            translation_ += rhs.translation_;
+            return *this;
+        }
+    };
 
 public:
     /// Construct.
@@ -50,6 +63,10 @@ public:
     float GetSpeed() const { return speed_; }
     void SetAcceleratedSpeed(float value) { acceleratedSpeed_ = value; }
     float GetAcceleratedSpeed() const { return acceleratedSpeed_; }
+    float GetMinPitch() const { return minPitch_; }
+    void SetMinPitch(float value) { minPitch_ = value; }
+    float GetMaxPitch() const { return maxPitch_; }
+    void SetMaxPitch(float value) { maxPitch_ = value; }
     /// @}
 
 private:
@@ -63,12 +80,26 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle scene update. Called by LogicComponent base class.
     void Update(float timeStep);
+    /// Handle mouse input.
+    Movement HandleMouse() const;
+    /// Handle keyboard input.
+    Movement HandleKeyboard(float timeStep) const;
+    /// Handle controller input.
+    Movement HandleController(const JoystickState* state, float timeStep);
+    /// Handle controller input.
+    Movement HandleGenericJoystick(const JoystickState* state, float timeStep);
+    /// Handle wheel input.
+    Movement HandleWheel(const JoystickState* state, float timeStep);
+    /// Handle flight stick input.
+    Movement HandleFlightStick(const JoystickState* state, float timeStep);
     /// Handle keyboard and mouse input.
-    void HandleKeyboardAndMouse(float timeStep);
+    void HandleKeyboardMouseAndJoysticks(float timeStep);
     /// Handle multitouch input event.
     void HandleMultitouch(StringHash eventType, VariantMap& eventData);
     /// Detect camera angles if camera has changed.
     void UpdateCameraAngles();
+    /// Set camera rotation.
+    void SetCameraRotation(Quaternion quaternion);
     /// Update camera rotation.
     void SetCameraAngles(Vector3 eulerAngles);
 
@@ -83,8 +114,11 @@ private:
     float touchSensitivity_{1.0f};
     /// Axis sensitivity
     float axisSensitivity_{100.0f};
-    /// Gamepad axis dead zone
-    float axisDeadZone_{0.1f};
+    /// Pitch range
+    float minPitch_{-90.0f};
+    float maxPitch_{90.0f};
+    /// Gamepad default axis adapter
+    AxisAdapter axisAdapter_{};
     /// Is subscribed to update
     bool subscribed_{false};
     /// Multitouch input adapter

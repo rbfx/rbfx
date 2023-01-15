@@ -53,8 +53,6 @@ Scene::Scene(Context* context) :
     Node(context),
     replicatedNodeID_(FIRST_REPLICATED_ID),
     replicatedComponentID_(FIRST_REPLICATED_ID),
-    localNodeID_(FIRST_LOCAL_ID),
-    localComponentID_(FIRST_LOCAL_ID),
     checksum_(0),
     asyncLoadingMs_(5),
     timeScale_(1.0f),
@@ -65,7 +63,7 @@ Scene::Scene(Context* context) :
     lightmaps_(Texture2D::GetTypeStatic())
 {
     // Assign an ID to self so that nodes can refer to this node as a parent
-    SetID(GetFreeNodeID(REPLICATED));
+    SetID(GetFreeNodeID());
     NodeAdded(this);
 
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Scene, HandleUpdate));
@@ -82,8 +80,6 @@ Scene::~Scene()
     // Remove scene reference and owner from all nodes that still exist
     for (auto i = replicatedNodes_.begin(); i != replicatedNodes_.end(); ++i)
         i->second->ResetScene();
-    for (auto i = localNodes_.begin(); i != localNodes_.end(); ++i)
-        i->second->ResetScene();
 }
 
 void Scene::RegisterObject(Context* context)
@@ -93,10 +89,8 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Elapsed Time", GetElapsedTime, SetElapsedTime, float, 0.0f, AM_FILE);
-    URHO3D_ATTRIBUTE("Next Replicated Node ID", unsigned, replicatedNodeID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE("Next Replicated Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE("Next Local Node ID", unsigned, localNodeID_, FIRST_LOCAL_ID, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE("Next Local Component ID", unsigned, localComponentID_, FIRST_LOCAL_ID, AM_FILE | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Next Node ID", unsigned, replicatedNodeID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Next Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_FILE); // Network replication of vars uses custom data
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE_EX("Lightmaps", ResourceRefList, lightmaps_, ReloadLightmaps, ResourceRefList(Texture2D::GetTypeStatic()), AM_DEFAULT);
@@ -553,16 +547,16 @@ void Scene::StopAsyncLoading()
     resolver_.Reset();
 }
 
-Node* Scene::Instantiate(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
+Node* Scene::Instantiate(Deserializer& source, const Vector3& position, const Quaternion& rotation)
 {
     URHO3D_PROFILE("Instantiate");
 
     SceneResolver resolver;
     unsigned nodeID = source.ReadUInt();
     // Rewrite IDs when instantiating
-    Node* node = CreateChild(0, mode);
+    Node* node = CreateChild(0);
     resolver.AddNode(nodeID, node);
-    if (node->Load(source, resolver, true, true, mode))
+    if (node->Load(source, resolver, true, true))
     {
         resolver.Resolve();
         node->SetTransform(position, rotation);
@@ -576,16 +570,16 @@ Node* Scene::Instantiate(Deserializer& source, const Vector3& position, const Qu
     }
 }
 
-Node* Scene::InstantiateXML(const XMLElement& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
+Node* Scene::InstantiateXML(const XMLElement& source, const Vector3& position, const Quaternion& rotation)
 {
     URHO3D_PROFILE("InstantiateXML");
 
     SceneResolver resolver;
     unsigned nodeID = source.GetUInt("id");
     // Rewrite IDs when instantiating
-    Node* node = CreateChild(0, mode);
+    Node* node = CreateChild(0);
     resolver.AddNode(nodeID, node);
-    if (node->LoadXML(source, resolver, true, true, mode))
+    if (node->LoadXML(source, resolver, true, true))
     {
         resolver.Resolve();
         node->SetTransform(position, rotation);
@@ -599,16 +593,16 @@ Node* Scene::InstantiateXML(const XMLElement& source, const Vector3& position, c
     }
 }
 
-Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
+Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, const Quaternion& rotation)
 {
     URHO3D_PROFILE("InstantiateJSON");
 
     SceneResolver resolver;
     unsigned nodeID = source.Get("id").GetUInt();
     // Rewrite IDs when instantiating
-    Node* node = CreateChild(0, mode);
+    Node* node = CreateChild(0);
     resolver.AddNode(nodeID, node);
-    if (node->LoadJSON(source, resolver, true, true, mode))
+    if (node->LoadJSON(source, resolver, true, true))
     {
         resolver.Resolve();
         node->SetTransform(position, rotation);
@@ -622,22 +616,22 @@ Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, c
     }
 }
 
-Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
+Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation)
 {
     SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
     if (!xml->Load(source))
         return nullptr;
 
-    return InstantiateXML(xml->GetRoot(), position, rotation, mode);
+    return InstantiateXML(xml->GetRoot(), position, rotation);
 }
 
-Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
+Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation)
 {
     SharedPtr<JSONFile> json(MakeShared<JSONFile>(context_));
     if (!json->Load(source))
         return nullptr;
 
-    return InstantiateJSON(json->GetRoot(), position, rotation, mode);
+    return InstantiateJSON(json->GetRoot(), position, rotation);
 }
 
 void Scene::Clear()
@@ -655,8 +649,6 @@ void Scene::Clear()
     // Reset ID generators
     replicatedNodeID_ = FIRST_REPLICATED_ID;
     replicatedComponentID_ = FIRST_REPLICATED_ID;
-    localNodeID_ = FIRST_LOCAL_ID;
-    localComponentID_ = FIRST_LOCAL_ID;
 }
 
 void Scene::SetUpdateEnabled(bool enable)
@@ -710,23 +702,15 @@ void Scene::UnregisterAllVars()
 
 bool Scene::IsEmpty(bool ignoreComponents) const
 {
-    const bool noNodesExceptSelf = replicatedNodes_.size() == 1 && localNodes_.size() == 0;
-    const bool noComponents = replicatedComponents_.size() == 0 && localComponents_.size() == 0;
+    const bool noNodesExceptSelf = replicatedNodes_.size() == 1;
+    const bool noComponents = replicatedComponents_.size() == 0;
     return noNodesExceptSelf && (noComponents || ignoreComponents);
 }
 
 Node* Scene::GetNode(unsigned id) const
 {
-    if (IsReplicatedID(id))
-    {
-        auto i = replicatedNodes_.find(id);
-        return i != replicatedNodes_.end() ? i->second : nullptr;
-    }
-    else
-    {
-        auto i = localNodes_.find(id);
-        return i != localNodes_.end() ? i->second : nullptr;
-    }
+    auto i = replicatedNodes_.find(id);
+    return i != replicatedNodes_.end() ? i->second : nullptr;
 }
 
 bool Scene::GetNodesWithTag(ea::vector<Node*>& dest, const ea::string& tag) const
@@ -744,16 +728,8 @@ bool Scene::GetNodesWithTag(ea::vector<Node*>& dest, const ea::string& tag) cons
 
 Component* Scene::GetComponent(unsigned id) const
 {
-    if (IsReplicatedID(id))
-    {
-        auto i = replicatedComponents_.find(id);
-        return i != replicatedComponents_.end() ? i->second : nullptr;
-    }
-    else
-    {
-        auto i = localComponents_.find(id);
-        return i != localComponents_.end() ? i->second : nullptr;
-    }
+    auto i = replicatedComponents_.find(id);
+    return i != replicatedComponents_.end() ? i->second : nullptr;
 }
 
 float Scene::GetAsyncProgress() const
@@ -838,67 +814,33 @@ void Scene::DelayedMarkedDirty(Component* component)
     delayedDirtyComponents_.push_back(component);
 }
 
-unsigned Scene::GetFreeNodeID(CreateMode mode)
+unsigned Scene::GetFreeNodeID()
 {
-    if (mode == REPLICATED)
+    for (;;)
     {
-        for (;;)
-        {
-            unsigned ret = replicatedNodeID_;
-            if (replicatedNodeID_ < LAST_REPLICATED_ID)
-                ++replicatedNodeID_;
-            else
-                replicatedNodeID_ = FIRST_REPLICATED_ID;
+        unsigned ret = replicatedNodeID_;
+        if (replicatedNodeID_ < LAST_REPLICATED_ID)
+            ++replicatedNodeID_;
+        else
+            replicatedNodeID_ = FIRST_REPLICATED_ID;
 
-            if (!replicatedNodes_.contains(ret))
-                return ret;
-        }
-    }
-    else
-    {
-        for (;;)
-        {
-            unsigned ret = localNodeID_;
-            if (localNodeID_ < LAST_LOCAL_ID)
-                ++localNodeID_;
-            else
-                localNodeID_ = FIRST_LOCAL_ID;
-
-            if (!localNodes_.contains(ret))
-                return ret;
-        }
+        if (!replicatedNodes_.contains(ret))
+            return ret;
     }
 }
 
-unsigned Scene::GetFreeComponentID(CreateMode mode)
+unsigned Scene::GetFreeComponentID()
 {
-    if (mode == REPLICATED)
+    for (;;)
     {
-        for (;;)
-        {
-            unsigned ret = replicatedComponentID_;
-            if (replicatedComponentID_ < LAST_REPLICATED_ID)
-                ++replicatedComponentID_;
-            else
-                replicatedComponentID_ = FIRST_REPLICATED_ID;
+        unsigned ret = replicatedComponentID_;
+        if (replicatedComponentID_ < LAST_REPLICATED_ID)
+            ++replicatedComponentID_;
+        else
+            replicatedComponentID_ = FIRST_REPLICATED_ID;
 
-            if (!replicatedComponents_.contains(ret))
-                return ret;
-        }
-    }
-    else
-    {
-        for (;;)
-        {
-            unsigned ret = localComponentID_;
-            if (localComponentID_ < LAST_LOCAL_ID)
-                ++localComponentID_;
-            else
-                localComponentID_ = FIRST_LOCAL_ID;
-
-            if (!localComponents_.contains(ret))
-                return ret;
-        }
+        if (!replicatedComponents_.contains(ret))
+            return ret;
     }
 }
 
@@ -918,32 +860,19 @@ void Scene::NodeAdded(Node* node)
     unsigned id = node->GetID();
     if (!id)
     {
-        id = GetFreeNodeID(REPLICATED);
+        id = GetFreeNodeID();
         node->SetID(id);
     }
 
     // If node with same ID exists, remove the scene reference from it and overwrite with the new node
-    if (IsReplicatedID(id))
+    auto i = replicatedNodes_.find(id);
+    if (i != replicatedNodes_.end() && i->second != node)
     {
-        auto i = replicatedNodes_.find(id);
-        if (i != replicatedNodes_.end() && i->second != node)
-        {
-            URHO3D_LOGWARNING("Overwriting node with ID " + ea::to_string(id));
-            NodeRemoved(i->second);
-        }
+        URHO3D_LOGWARNING("Overwriting node with ID " + ea::to_string(id));
+        NodeRemoved(i->second);
+    }
 
-        replicatedNodes_[id] = node;
-    }
-    else
-    {
-        auto i = localNodes_.find(id);
-        if (i != localNodes_.end() && i->second != node)
-        {
-            URHO3D_LOGWARNING("Overwriting node with ID " + ea::to_string(id));
-            NodeRemoved(i->second);
-        }
-        localNodes_[id] = node;
-    }
+    replicatedNodes_[id] = node;
 
     // Cache tag if already tagged.
     if (!node->GetTags().empty())
@@ -978,10 +907,7 @@ void Scene::NodeRemoved(Node* node)
         return;
 
     unsigned id = node->GetID();
-    if (Scene::IsReplicatedID(id))
-        replicatedNodes_.erase(id);
-    else
-        localNodes_.erase(id);
+    replicatedNodes_.erase(id);
 
     node->ResetScene();
 
@@ -1012,32 +938,18 @@ void Scene::ComponentAdded(Component* component)
     // If the new component has an ID of zero (default), assign a replicated ID now
     if (!id)
     {
-        id = GetFreeComponentID(REPLICATED);
+        id = GetFreeComponentID();
         component->SetID(id);
     }
 
-    if (IsReplicatedID(id))
+    auto i = replicatedComponents_.find(id);
+    if (i != replicatedComponents_.end() && i->second != component)
     {
-        auto i = replicatedComponents_.find(id);
-        if (i != replicatedComponents_.end() && i->second != component)
-        {
-            URHO3D_LOGWARNING("Overwriting component with ID " + ea::to_string(id));
-            ComponentRemoved(i->second);
-        }
-
-        replicatedComponents_[id] = component;
+        URHO3D_LOGWARNING("Overwriting component with ID " + ea::to_string(id));
+        ComponentRemoved(i->second);
     }
-    else
-    {
-        auto i = localComponents_.find(id);
-        if (i != localComponents_.end() && i->second != component)
-        {
-            URHO3D_LOGWARNING("Overwriting component with ID " + ea::to_string(id));
-            ComponentRemoved(i->second);
-        }
 
-        localComponents_[id] = component;
-    }
+    replicatedComponents_[id] = component;
 
     component->OnSceneSet(this);
 
@@ -1054,10 +966,7 @@ void Scene::ComponentRemoved(Component* component)
         index->erase(component);
 
     unsigned id = component->GetID();
-    if (Scene::IsReplicatedID(id))
-        replicatedComponents_.erase(id);
-    else
-        localComponents_.erase(id);
+    replicatedComponents_.erase(id);
 
     component->SetID(0);
     component->OnSceneSet(nullptr);
@@ -1135,7 +1044,7 @@ void Scene::UpdateAsyncLoading()
         if (asyncProgress_.xmlFile_)
         {
             unsigned nodeID = asyncProgress_.xmlElement_.GetUInt("id");
-            Node* newNode = CreateChild(nodeID, IsReplicatedID(nodeID) ? REPLICATED : LOCAL);
+            Node* newNode = CreateChild(nodeID);
             resolver_.AddNode(nodeID, newNode);
             newNode->LoadXML(asyncProgress_.xmlElement_, resolver_);
             asyncProgress_.xmlElement_ = asyncProgress_.xmlElement_.GetNext("node");
@@ -1146,7 +1055,7 @@ void Scene::UpdateAsyncLoading()
                 asyncProgress_.jsonIndex_);
 
             unsigned nodeID =childValue.Get("id").GetUInt();
-            Node* newNode = CreateChild(nodeID, IsReplicatedID(nodeID) ? REPLICATED : LOCAL);
+            Node* newNode = CreateChild(nodeID);
             resolver_.AddNode(nodeID, newNode);
             newNode->LoadJSON(childValue, resolver_);
             ++asyncProgress_.jsonIndex_;
@@ -1154,7 +1063,7 @@ void Scene::UpdateAsyncLoading()
         else // Load from binary
         {
             unsigned nodeID = asyncProgress_.file_->ReadUInt();
-            Node* newNode = CreateChild(nodeID, IsReplicatedID(nodeID) ? REPLICATED : LOCAL);
+            Node* newNode = CreateChild(nodeID);
             resolver_.AddNode(nodeID, newNode);
             newNode->Load(*asyncProgress_.file_, resolver_);
         }

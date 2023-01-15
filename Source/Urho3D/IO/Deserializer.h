@@ -148,10 +148,8 @@ public:
     VariantMap ReadVariantMap();
     /// Read a string variant map.
     StringVariantMap ReadStringVariantMap();
-    /// Read a variable-length encoded unsigned integer, which can use 29 bits maximum.
+    /// Read a variable-length encoded unsigned integer.
     unsigned ReadVLE();
-    /// Read a 24-bit network object ID.
-    unsigned ReadNetID();
     /// Read a text line.
     ea::string ReadLine();
 

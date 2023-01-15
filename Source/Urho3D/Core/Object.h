@@ -28,6 +28,7 @@
 #include "../Core/Profiler.h"
 #include "../Core/StringHashRegister.h"
 #include "../Core/SubsystemCache.h"
+#include "../Core/TypeInfo.h"
 #include "../Core/Variant.h"
 
 #include <EASTL/functional.h>
@@ -40,39 +41,6 @@ class Archive;
 class ArchiveBlock;
 class Context;
 class EventHandler;
-
-/// Type info.
-/// @nobind
-class URHO3D_API TypeInfo
-{
-public:
-    /// Construct.
-    TypeInfo(const char* typeName, const TypeInfo* baseTypeInfo);
-    /// Destruct.
-    ~TypeInfo();
-
-    /// Check current type is type of specified type.
-    bool IsTypeOf(StringHash type) const;
-    /// Check current type is type of specified type.
-    bool IsTypeOf(const TypeInfo* typeInfo) const;
-    /// Check current type is type of specified class type.
-    template<typename T> bool IsTypeOf() const { return IsTypeOf(T::GetTypeInfoStatic()); }
-
-    /// Return type.
-    StringHash GetType() const { return type_; }
-    /// Return type name.
-    const ea::string& GetTypeName() const { return typeName_;}
-    /// Return base type info.
-    const TypeInfo* GetBaseTypeInfo() const { return baseTypeInfo_; }
-
-private:
-    /// Type.
-    StringHash type_;
-    /// Type name.
-    ea::string typeName_;
-    /// Base class type info.
-    const TypeInfo* baseTypeInfo_;
-};
 
 #define URHO3D_OBJECT(typeName, baseTypeName) \
     public: \

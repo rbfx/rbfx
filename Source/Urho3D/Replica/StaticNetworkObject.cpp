@@ -107,7 +107,7 @@ void StaticNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deserialize
         unsigned nodeID = prefabRootElement.GetUInt("id");
         resolver.AddNode(nodeID, node_);
 
-        node_->LoadXML(prefabRootElement, resolver, true, true, LOCAL, false);
+        node_->LoadXML(prefabRootElement, resolver, true, true, false);
         node_->ApplyAttributes();
     }
 

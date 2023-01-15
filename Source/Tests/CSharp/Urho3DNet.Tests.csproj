@@ -10,7 +10,7 @@
     <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/Urho3D/</GeneratedCodePath>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <Compile Include="**/*.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />

@@ -152,6 +152,55 @@ Variant& Variant::operator =(const Variant& rhs)
     return *this;
 }
 
+Variant& Variant::operator =(Variant&& rhs)
+{
+    // Clear current value
+    SetType(VAR_NONE);
+
+    // Handle custom types separately
+    if (rhs.GetType() == VAR_CUSTOM)
+    {
+        SetCustomVariantValue(ea::move(*rhs.GetCustomVariantValuePtr()));
+        return *this;
+    }
+
+    // Similar to SetType()
+    // Call move-ctor for non-POD objects stored inplace.
+    // Bitwise copy POD objects and objects stored by pointer.
+    type_ = rhs.type_;
+
+    const auto moveConstruct = [&](auto& lhs, auto& rhs)
+    {
+        using Type = ea::decay_t<decltype(lhs)>;
+        new (&lhs) Type(ea::move(rhs));
+    };
+
+    switch (type_)
+    {
+    case VAR_STRING: moveConstruct(value_.string_, rhs.value_.string_); break;
+
+    case VAR_BUFFER: moveConstruct(value_.buffer_, rhs.value_.buffer_); break;
+
+    case VAR_RESOURCEREF: moveConstruct(value_.resourceRef_, rhs.value_.resourceRef_); break;
+
+    case VAR_RESOURCEREFLIST: moveConstruct(value_.resourceRefList_, rhs.value_.resourceRefList_); break;
+
+    case VAR_VARIANTVECTOR: moveConstruct(value_.variantVector_, rhs.value_.variantVector_); break;
+
+    case VAR_STRINGVECTOR: moveConstruct(value_.stringVector_, rhs.value_.stringVector_); break;
+
+    case VAR_PTR: moveConstruct(value_.weakPtr_, rhs.value_.weakPtr_); break;
+
+    default:
+        // Clear the moved object so it doesn't call destructor for its value.
+        memcpy(&value_, &rhs.value_, sizeof(VariantValue)); // NOLINT(bugprone-undefined-memory-manipulation)
+        rhs.type_ = VAR_NONE;
+        break;
+    }
+
+    return *this;
+}
+
 Variant& Variant::operator =(const VectorBuffer& rhs)
 {
     SetType(VAR_BUFFER);
@@ -537,7 +586,7 @@ void Variant::SetBuffer(const void* data, unsigned size)
 
 void Variant::SetCustomVariantValue(const CustomVariantValue& value)
 {
-    assert(value.GetSize() <= VARIANT_VALUE_SIZE);
+    URHO3D_ASSERT(value.GetSize() <= VARIANT_VALUE_SIZE);
 
     // Assign value if destination is already initialized
     if (CustomVariantValue* thisValueWrapped = GetCustomVariantValuePtr())
@@ -549,6 +598,22 @@ void Variant::SetCustomVariantValue(const CustomVariantValue& value)
     SetType(VAR_CUSTOM);
     value_.AsCustomValue().~CustomVariantValue();
     value.CloneTo(value_.storage_);
+}
+
+void Variant::SetCustomVariantValue(CustomVariantValue&& value)
+{
+    URHO3D_ASSERT(value.GetSize() <= VARIANT_VALUE_SIZE);
+
+    // Assign value if destination is already initialized
+    if (CustomVariantValue* thisValueWrapped = GetCustomVariantValuePtr())
+    {
+        if (value.MoveTo(*thisValueWrapped))
+            return;
+    }
+
+    SetType(VAR_CUSTOM);
+    value_.AsCustomValue().~CustomVariantValue();
+    value.RelocateTo(value_.storage_);
 }
 
 VectorBuffer Variant::GetVectorBuffer() const

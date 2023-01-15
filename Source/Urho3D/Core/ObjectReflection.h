@@ -24,6 +24,7 @@
 
 #include "../Core/Attribute.h"
 #include "../Core/Signal.h"
+#include "../Core/TypeInfo.h"
 #include "../Container/Ptr.h"
 
 #include <EASTL/functional.h>

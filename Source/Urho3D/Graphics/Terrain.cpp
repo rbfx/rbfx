@@ -1051,7 +1051,7 @@ void Terrain::CreateGeometry()
                     {
                         // Create the patch scene node as local and temporary so that it is not unnecessarily serialized to either
                         // file or replicated over the network
-                        patchNode = node_->CreateTemporaryChild(nodeName, LOCAL);
+                        patchNode = node_->CreateTemporaryChild(nodeName);
                     }
 
                     patchNode->SetPosition(Vector3(patchWorldOrigin_.x_ + (float)x * patchWorldSize_.x_, 0.0f,

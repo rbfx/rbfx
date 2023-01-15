@@ -133,11 +133,6 @@ void Component::Remove()
         node_->RemoveComponent(this);
 }
 
-bool Component::IsReplicated() const
-{
-    return Scene::IsReplicatedID(id_);
-}
-
 Scene* Component::GetScene() const
 {
     return node_ ? node_->GetScene() : nullptr;

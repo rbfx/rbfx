@@ -41,10 +41,9 @@ class File;
 class PackageFile;
 class Texture2D;
 
+/// TODO: Get rid of "replicated" word in the code. It is not used in the networking code anymore.
 static const unsigned FIRST_REPLICATED_ID = 0x1;
 static const unsigned LAST_REPLICATED_ID = 0xffffff;
-static const unsigned FIRST_LOCAL_ID = 0x01000000;
-static const unsigned LAST_LOCAL_ID = 0xffffffff;
 
 /// Asynchronous scene loading mode.
 enum LoadMode
@@ -158,19 +157,19 @@ public:
     /// Stop asynchronous loading.
     void StopAsyncLoading();
     /// Instantiate scene content from binary data. Return root node if successful.
-    Node* Instantiate(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED);
+    Node* Instantiate(Deserializer& source, const Vector3& position, const Quaternion& rotation);
     /// Instantiate scene content from XML data. Return root node if successful.
     Node* InstantiateXML
-        (const XMLElement& source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED);
+        (const XMLElement& source, const Vector3& position, const Quaternion& rotation);
     /// Instantiate scene content from XML data. Return root node if successful.
-    Node* InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED);
+    Node* InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation);
     /// Instantiate scene content from JSON data. Return root node if successful.
     Node* InstantiateJSON
-        (const JSONValue& source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED);
+        (const JSONValue& source, const Vector3& position, const Quaternion& rotation);
     /// Instantiate scene content from JSON data. Return root node if successful.
-    Node* InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED);
+    Node* InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation);
 
-    /// Clear scene completely of either replicated, local or all nodes and components.
+    /// Clear scene completely.
     void Clear();
     /// Enable or disable scene update.
     /// @property
@@ -262,12 +261,10 @@ public:
     /// Return threaded update flag.
     bool IsThreadedUpdate() const { return threadedUpdate_; }
 
-    /// Get free node ID, either non-local or local.
-    unsigned GetFreeNodeID(CreateMode mode);
-    /// Get free component ID, either non-local or local.
-    unsigned GetFreeComponentID(CreateMode mode);
-    /// Return whether the specified id is a replicated id.
-    static bool IsReplicatedID(unsigned id) { return id < FIRST_LOCAL_ID; }
+    /// Get free node ID.
+    unsigned GetFreeNodeID();
+    /// Get free component ID.
+    unsigned GetFreeComponentID();
 
     /// Cache node by tag if tag not zero, no checking if already added. Used internaly in Node::AddTag.
     void NodeTagAdded(Node* node, const ea::string& tag);
@@ -318,12 +315,8 @@ private:
 
     /// Replicated scene nodes by ID.
     ea::unordered_map<unsigned, Node*> replicatedNodes_;
-    /// Local scene nodes by ID.
-    ea::unordered_map<unsigned, Node*> localNodes_;
     /// Replicated components by ID.
     ea::unordered_map<unsigned, Component*> replicatedComponents_;
-    /// Local components by ID.
-    ea::unordered_map<unsigned, Component*> localComponents_;
     /// Cached tagged nodes by tag.
     ea::unordered_map<StringHash, ea::vector<Node*> > taggedNodes_;
     /// Asynchronous loading progress.
@@ -344,10 +337,6 @@ private:
     unsigned replicatedNodeID_;
     /// Next free non-local component ID.
     unsigned replicatedComponentID_;
-    /// Next free local node ID.
-    unsigned localNodeID_;
-    /// Next free local component ID.
-    unsigned localComponentID_;
     /// Scene source file checksum.
     mutable unsigned checksum_;
     /// Maximum milliseconds per frame to spend on async scene loading.
