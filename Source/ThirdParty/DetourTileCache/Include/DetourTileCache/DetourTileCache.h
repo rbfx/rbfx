@@ -2,7 +2,6 @@
 #define DETOURTILECACHE_H
 
 // Modified by Lasse Oorni for Urho3D
-// Updated 12/2022 by WyrdanGames for U3D
 
 #include "DetourStatus.h"
 

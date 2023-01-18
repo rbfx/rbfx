@@ -17,7 +17,6 @@
 //
 
 // Modified by cosmy1 for Urho3D
-// Updated 12/2022 by WyrdanGames for U3D
 
 #include "DetourObstacleAvoidance.h"
 #include "DetourCommon.h"
