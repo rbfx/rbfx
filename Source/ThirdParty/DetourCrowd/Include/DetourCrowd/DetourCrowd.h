@@ -68,7 +68,7 @@ enum CrowdAgentState
 {
 	DT_CROWDAGENT_STATE_INVALID,		///< The agent is not in a valid state.
 	DT_CROWDAGENT_STATE_WALKING,		///< The agent is traversing a normal navigation mesh polygon.
-	DT_CROWDAGENT_STATE_OFFMESH,		///< The agent is traversing an off-mesh connection.
+	DT_CROWDAGENT_STATE_OFFMESH 		///< The agent is traversing an off-mesh connection.
 };
 
 /// Configuration parameters for a crowd agent.
@@ -110,7 +110,7 @@ enum MoveRequestState
 	DT_CROWDAGENT_TARGET_REQUESTING,
 	DT_CROWDAGENT_TARGET_WAITING_FOR_QUEUE,
 	DT_CROWDAGENT_TARGET_WAITING_FOR_PATH,
-	DT_CROWDAGENT_TARGET_VELOCITY,
+	DT_CROWDAGENT_TARGET_VELOCITY
 };
 
 /// Represents an agent managed by a #dtCrowd object.
@@ -190,7 +190,7 @@ enum UpdateFlags
 	DT_CROWD_OBSTACLE_AVOIDANCE = 2,
 	DT_CROWD_SEPARATION = 4,
 	DT_CROWD_OPTIMIZE_VIS = 8,			///< Use #dtPathCorridor::optimizePathVisibility() to optimize the agent path.
-	DT_CROWD_OPTIMIZE_TOPO = 16,		///< Use dtPathCorridor::optimizePathTopology() to optimize the agent path.
+	DT_CROWD_OPTIMIZE_TOPO = 16 		///< Use dtPathCorridor::optimizePathTopology() to optimize the agent path.
 };
 
 struct dtCrowdAgentDebugInfo
@@ -208,7 +208,7 @@ typedef void (*dtUpdateCallback)(bool positionUpdate, dtCrowdAgent* agent, float
 /// @ingroup crowd
 class dtCrowd
 {
-    dtUpdateCallback m_updateCallback; // Urho3D
+	dtUpdateCallback m_updateCallback; // Urho3D
 	int m_maxAgents;
 	dtCrowdAgent* m_agents;
 	dtCrowdAgent** m_activeAgents;
@@ -247,13 +247,12 @@ class dtCrowd
 public:
 	dtCrowd();
 	~dtCrowd();
-
+	
 	// Urho3D: Add update callback support
 	/// Initializes the crowd.  
 	///  @param[in]		maxAgents		The maximum number of agents the crowd can manage. [Limit: >= 1]
 	///  @param[in]		maxAgentRadius	The maximum radius of any agent that will be added to the crowd. [Limit: > 0]
 	///  @param[in]		nav				The navigation mesh to use for planning.
-	///  @param[in]		cb				The update callback.
 	/// @return True if the initialization succeeded.
 	bool init(const int maxAgents, const float maxAgentRadius, dtNavMesh* nav, dtUpdateCallback cb = 0);
 	
@@ -281,7 +280,7 @@ public:
 	/// The maximum number of agents that can be managed by the object.
 	/// @return The maximum number of agents.
 	int getAgentCount() const;
-
+	
 	// Urho3D: Add missing getter
 	/// The maximum radius of any agent that will be added to the crowd.
 	/// @return The maximum radius of any agent.

@@ -17,6 +17,7 @@
 //
 
 // Modified by cosmy1 for Urho3D
+// Updated 12/2022 by WyrdanGames for U3D
 
 #include "DetourObstacleAvoidance.h"
 #include "DetourCommon.h"
@@ -219,7 +220,7 @@ dtObstacleAvoidanceQuery::dtObstacleAvoidanceQuery() :
 	m_segments(0),
 	m_nsegments(0)
 {
-    memset(&m_params, 0, sizeof(m_params)); // Urho3D
+	memset(&m_params, 0, sizeof(m_params)); // Urho3D
 }
 
 dtObstacleAvoidanceQuery::~dtObstacleAvoidanceQuery()

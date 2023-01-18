@@ -2,19 +2,17 @@
 #define DETOURTILECACHE_H
 
 // Modified by Lasse Oorni for Urho3D
+// Updated 12/2022 by WyrdanGames for U3D
 
 #include "DetourStatus.h"
 
-
-
 typedef unsigned int dtObstacleRef;
-
 typedef unsigned int dtCompressedTileRef;
 
 /// Flags for addTile
 enum dtCompressedTileFlags
 {
-	DT_COMPRESSEDTILE_FREE_DATA = 0x01,					///< Navmesh owns the tile memory and should free it.
+	DT_COMPRESSEDTILE_FREE_DATA = 0x01	///< Navmesh owns the tile memory and should free it.
 };
 
 struct dtCompressedTile
@@ -34,14 +32,14 @@ enum ObstacleState
 	DT_OBSTACLE_EMPTY,
 	DT_OBSTACLE_PROCESSING,
 	DT_OBSTACLE_PROCESSED,
-	DT_OBSTACLE_REMOVING,
+	DT_OBSTACLE_REMOVING
 };
 
 enum ObstacleType
 {
 	DT_OBSTACLE_CYLINDER,
 	DT_OBSTACLE_BOX, // AABB
-	DT_OBSTACLE_ORIENTED_BOX, // OBB
+	DT_OBSTACLE_ORIENTED_BOX // OBB
 };
 
 struct dtObstacleCylinder
@@ -99,12 +97,9 @@ struct dtTileCacheParams
 
 struct dtTileCacheMeshProcess
 {
-	virtual ~dtTileCacheMeshProcess() { }
-
-	virtual void process(struct dtNavMeshCreateParams* params,
-						 unsigned char* polyAreas, unsigned short* polyFlags) = 0;
+	virtual ~dtTileCacheMeshProcess();
+	virtual void process(struct dtNavMeshCreateParams* params, unsigned char* polyAreas, unsigned short* polyFlags) = 0;
 };
-
 
 class dtTileCache
 {
@@ -170,10 +165,10 @@ public:
 	void calcTightTileBounds(const struct dtTileCacheLayerHeader* header, float* bmin, float* bmax) const;
 	
 	void getObstacleBounds(const struct dtTileCacheObstacle* ob, float* bmin, float* bmax) const;
-
+	
 	// Urho3D: added function to know when we have too many obstacle requests without update
 	bool isObstacleQueueFull() const { return m_nreqs >= MAX_REQUESTS; }
-
+	
 	/// Encodes a tile id.
 	inline dtCompressedTileRef encodeTileId(unsigned int salt, unsigned int it) const
 	{
@@ -223,7 +218,7 @@ private:
 	enum ObstacleRequestAction
 	{
 		REQUEST_ADD,
-		REQUEST_REMOVE,
+		REQUEST_REMOVE
 	};
 	
 	struct ObstacleRequest

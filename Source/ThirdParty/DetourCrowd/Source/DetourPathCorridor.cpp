@@ -17,6 +17,7 @@
 //
 
 // Modified by cosmy1 for Urho3D
+// Updated 12/2022 by WyrdanGames for U3D
 
 #include <string.h>
 #include "DetourPathCorridor.h"
