@@ -81,6 +81,11 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// For given set of components, return all nodes they belong to.
+    static ea::vector<Node*> GetNodes(const ea::vector<Component*>& components);
+    /// For given set of nodes, exclude all children nodes and return all "root" nodes only.
+    static ea::vector<Node*> GetParentNodes(const ea::vector<Node*>& nodes);
+
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
     /// Serialize content from/to archive, with additional properties. May throw ArchiveException.

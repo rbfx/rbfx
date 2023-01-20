@@ -86,7 +86,8 @@ void AnimatedModel::RegisterObject(Context* context)
     URHO3D_ACTION_STATIC_LABEL("Reset Bones!", ResetBones, "Reset bone transforms to the bind pose");
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT)
+        .SetScopeHint(AttributeScopeHint::Node);
     URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterialsAttr, SetMaterialsAttr, ResourceRefList, ResourceRefList(Material::GetTypeStatic()),
         AM_DEFAULT);
     URHO3D_ATTRIBUTE("Is Occluder", bool, occluder_, false, AM_DEFAULT);
