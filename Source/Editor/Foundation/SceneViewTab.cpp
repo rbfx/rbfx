@@ -38,6 +38,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/Widgets.h>
@@ -744,7 +745,7 @@ void SceneViewTab::RenderToolbar()
 
 bool SceneViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 {
-    return desc.HasObjectType<Scene>();
+    return desc.HasObjectType<Scene>() || desc.HasObjectType<PrefabResource>();
 }
 
 void SceneViewTab::WriteIniSettings(ImGuiTextBuffer& output)

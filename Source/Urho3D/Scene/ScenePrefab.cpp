@@ -168,6 +168,7 @@ void SerializablePrefab::Import(const Serializable* serializable, PrefabSaveFlag
 
     typeName_ = reflection->GetTypeName();
     typeNameHash_ = reflection->GetTypeNameHash();
+    temporary_ = serializable->IsTemporary();
 
     attributes_.clear();
     attributes_.reserve(numObjectAttributes);
@@ -214,6 +215,9 @@ void SerializablePrefab::Export(Serializable* serializable, PrefabLoadFlags flag
             !typeName_.empty() ? typeName_ : typeNameHash_.ToString());
         return;
     }
+
+    if (!flags.Test(PrefabLoadFlag::KeepTemporaryState))
+        serializable->SetTemporary(temporary_);
 
     const auto& objectAttributes = reflection->GetAttributes();
     const unsigned numObjectAttributes = objectAttributes.size();
@@ -291,6 +295,12 @@ void SerializablePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags f
     if (archive.IsInput() && !typeName_.empty())
         typeNameHash_ = StringHash{typeName_};
 
+    // Serialize temporary
+    if (flags.Test(PrefabArchiveFlag::SerializeTemporary))
+        SerializeOptionalValue(archive, "_temporary", temporary_, false);
+    else if (archive.IsInput())
+        temporary_ = false;
+
     // Serialize attributes
     SerializeOptionalValue(archive, "attributes", attributes_, {},
         [&](Archive& archive, const char* name, auto& value)
@@ -314,6 +324,8 @@ void SerializeValue(
     value.SerializeInBlock(archive, flags, compactSave);
 }
 
+const ScenePrefab ScenePrefab::Empty;
+
 void ScenePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags flags, bool compactSave)
 {
     node_.SerializeInBlock(archive, ToNodeFlags(flags));
@@ -333,6 +345,11 @@ void ScenePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags flags, b
             [=](Archive& archive, const char* name, ScenePrefab& value)
             { SerializeValue(archive, name, value, flags, compactSave); });
     });
+}
+
+bool ScenePrefab::IsEmpty() const
+{
+    return node_.GetAttributes().empty() && components_.empty() && children_.empty();
 }
 
 bool ScenePrefab::operator==(const ScenePrefab& rhs) const

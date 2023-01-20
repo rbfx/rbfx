@@ -33,6 +33,7 @@
 #include <Urho3D/Resource/BinaryFile.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/Utility/AssetPipeline.h>
@@ -122,6 +123,14 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
         if (desc.HasExtension({".sdf", ".ttf"}))
         {
             desc.AddObjectType<Font>();
+        }
+    });
+
+    project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
+    {
+        if (desc.HasExtension({".prefab"}))
+        {
+            desc.AddObjectType<PrefabResource>();
         }
     });
 }

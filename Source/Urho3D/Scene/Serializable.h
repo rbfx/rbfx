@@ -60,6 +60,7 @@ public:
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
+    void SerializeInBlock(Archive& archive, bool serializeTemporary);
 
     /// Load from binary data. Return true if successful.
     virtual bool Load(Deserializer& source);

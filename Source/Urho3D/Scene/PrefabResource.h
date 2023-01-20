@@ -30,15 +30,23 @@ namespace Urho3D
 
 /// Prefab resource.
 /// Constains representation of nodes and components with attributes, ready to be instantiated.
-class URHO3D_API PrefabResource : public Resource
+class URHO3D_API PrefabResource : public SimpleResource
 {
-    URHO3D_OBJECT(PrefabResource, Resource)
+    URHO3D_OBJECT(PrefabResource, SimpleResource)
 
 public:
     explicit PrefabResource(Context* context);
     ~PrefabResource() override;
 
+    static void RegisterObject(Context* context);
+
+    void SerializeInBlock(Archive& archive) override;
+
+    const ScenePrefab& GetPrefab() const { return prefab_; }
+    ScenePrefab& GetMutablePrefab() { return prefab_; }
+
 private:
+    ScenePrefab prefab_;
 };
 
 } // namespace Urho3D

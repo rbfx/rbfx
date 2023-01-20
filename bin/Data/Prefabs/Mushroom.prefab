@@ -1,0 +1,147 @@
+{
+	"_id": 1,
+	"attributes": [
+		{
+			"name": "Next Node ID",
+			"type": "Int",
+			"value": 5
+		},
+		{
+			"name": "Next Component ID",
+			"type": "Int",
+			"value": 4
+		}
+	],
+	"components": [
+		{
+			"_id": 1,
+			"_typeName": "Octree"
+		}
+	],
+	"nodes": [
+		{
+			"_id": 3,
+			"components": [
+				{
+					"_id": 6,
+					"_typeName": "StaticModel",
+					"attributes": [
+						{
+							"name": "Model",
+							"type": "ResourceRef",
+							"value": "Model;Models/Mushroom.mdl"
+						},
+						{
+							"name": "Material",
+							"type": "ResourceRefList",
+							"value": "Material;Materials/PBRMushroom.xml"
+						},
+						{
+							"name": "Cast Shadows",
+							"type": "Bool",
+							"value": true
+						}
+					]
+				},
+				{
+					"_id": 7,
+					"_typeName": "CollisionShape",
+					"attributes": [
+						{
+							"name": "Shape Type",
+							"type": "String",
+							"value": "TriangleMesh"
+						},
+						{
+							"name": "Model",
+							"type": "ResourceRef",
+							"value": "Model;Models/Mushroom.mdl"
+						}
+					]
+				},
+				{
+					"_id": 9,
+					"_typeName": "RigidBody",
+					"attributes": [
+						{
+							"name": "Collision Layer",
+							"type": "Int",
+							"value": 2
+						}
+					]
+				}
+			]
+		},
+		{
+			"_id": 3,
+			"attributes": [
+				{
+					"name": "Name",
+					"type": "String",
+					"value": "Default Skybox"
+				}
+			],
+			"components": [
+				{
+					"_id": 2,
+					"_typeName": "Skybox",
+					"attributes": [
+						{
+							"name": "Model",
+							"type": "ResourceRef",
+							"value": "Model;Models/Box.mdl"
+						},
+						{
+							"name": "Material",
+							"type": "ResourceRefList",
+							"value": "Material;Materials/DefaultSkybox.xml"
+						}
+					]
+				}
+			]
+		},
+		{
+			"_id": 4,
+			"attributes": [
+				{
+					"name": "Name",
+					"type": "String",
+					"value": "Default Zone"
+				}
+			],
+			"components": [
+				{
+					"_id": 3,
+					"_typeName": "Zone",
+					"attributes": [
+						{
+							"name": "Bounding Box Min",
+							"type": "Vector3",
+							"value": "-1000 -1000 -1000"
+						},
+						{
+							"name": "Bounding Box Max",
+							"type": "Vector3",
+							"value": "1000 1000 1000"
+						},
+						{
+							"name": "Ambient Color",
+							"type": "Color",
+							"value": "0 0 0 1"
+						},
+						{
+							"name": "Background Brightness",
+							"type": "Float",
+							"value": 1.0
+						},
+						{
+							"name": "Zone Texture",
+							"type": "ResourceRef",
+							"value": "TextureCube;Textures/DefaultSkybox.xml"
+						}
+					]
+				}
+			]
+		}
+	]
+}

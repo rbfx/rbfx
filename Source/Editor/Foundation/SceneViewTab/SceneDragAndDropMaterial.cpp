@@ -24,14 +24,9 @@
 
 #include "../../Project/Project.h"
 
-#include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/Material.h>
-#include <Urho3D/Graphics/Model.h>
-#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Resource/XMLFile.h>
-#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/Scene/Scene.h>
 
 namespace Urho3D

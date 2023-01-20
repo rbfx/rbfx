@@ -29,6 +29,8 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/PackedSceneData.h>
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
@@ -240,7 +242,7 @@ private:
 class ReparentNodeAction : public EditorAction
 {
 public:
-    ReparentNodeAction(Node* node, Node* oldParent);
+    ReparentNodeAction(Node* node, Node* newParent);
 
     /// Implement EditorAction.
     /// @{
@@ -251,11 +253,12 @@ public:
     /// @}
 
 private:
-    void Reparent(unsigned parentId) const;
+    void Reparent(unsigned parentId, ea::optional<unsigned> index) const;
 
     const WeakPtr<Scene> scene_;
     const unsigned nodeId_{};
     const unsigned oldParentId_{};
+    const unsigned oldIndex_{};
     unsigned newParentId_{};
 };
 

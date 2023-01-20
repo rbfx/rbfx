@@ -66,6 +66,7 @@ enum class AttributeScopeHint
     /// Attribute change may affect other attributes, components or children nodes in the owner node.
     Node,
     /// Attribute change may affect anything in the scene.
+    /// \warning It is not fully supported by the Editor yet!
     Scene,
 };
 

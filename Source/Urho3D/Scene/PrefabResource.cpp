@@ -29,12 +29,27 @@ namespace Urho3D
 {
 
 PrefabResource::PrefabResource(Context* context)
-    : Resource(context)
+    : SimpleResource(context)
 {
 }
 
 PrefabResource::~PrefabResource()
 {
+}
+
+void PrefabResource::RegisterObject(Context* context)
+{
+    context->AddFactoryReflection<PrefabResource>();
+}
+
+void PrefabResource::SerializeInBlock(Archive& archive)
+{
+    // For prefabs, we keep as much information as possible, because prefabs shouldn't be too heavy.
+    // Can always turn on "compactSave" later.
+    const bool compactSave = false;
+    const auto flags = PrefabArchiveFlag::None;
+
+    prefab_.SerializeInBlock(archive, flags, compactSave);
 }
 
 } // namespace Urho3D

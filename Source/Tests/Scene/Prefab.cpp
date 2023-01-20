@@ -790,146 +790,146 @@ TEST_CASE("PrefabWriter iterates over nodes and components")
     }
 }
 
-TEST_CASE("Prefab reference")
+TEST_CASE("PrefabResource is serialized")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto cache = context->GetSubsystem<ResourceCache>();
+    auto guard = Tests::MakeScopedReflection<Tests::RegisterObject<TestComponent>>(context);
+
+    auto resource = MakeShared<PrefabResource>(context);
+    resource->GetMutablePrefab() = MakeTestPrefab();
+
+    {
+        VectorBuffer buffer;
+        CHECK(resource->Save(buffer, InternalResourceFormat::Binary));
+        CHECK(buffer.GetData()[0] == '\0');
+
+        buffer.Seek(0);
+
+        auto loadedResource = MakeShared<PrefabResource>(context);
+        CHECK(loadedResource->Load(buffer));
+    }
+
+    {
+        VectorBuffer buffer;
+        CHECK(resource->Save(buffer, InternalResourceFormat::Json));
+        CHECK(buffer.GetData()[0] == '{');
+
+        buffer.Seek(0);
+
+        auto loadedResource = MakeShared<PrefabResource>(context);
+        CHECK(loadedResource->Load(buffer));
+    }
+
+    {
+        VectorBuffer buffer;
+        CHECK(resource->Save(buffer, InternalResourceFormat::Xml));
+        CHECK(buffer.GetData()[0] == '<');
+
+        buffer.Seek(0);
+
+        auto loadedResource = MakeShared<PrefabResource>(context);
+        CHECK(loadedResource->Load(buffer));
+    }
+}
+
+TEST_CASE("Prefab reference is instantiated")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto guard = Tests::MakeScopedReflection<Tests::RegisterObject<TestComponent>>(context);
+
+    auto prefabResource = MakeShared<PrefabResource>(context);
+    prefabResource->GetMutablePrefab().GetMutableChildren().push_back(MakeTestPrefab());
+
     auto scene = MakeShared<Scene>(context);
 
-    auto node0 = scene->CreateChild();
-    auto node1 = scene->CreateChild();
+    auto node = scene->CreateChild();
 
-    auto xmlFile = new XMLFile(context);
-    xmlFile->SetName("Objects/Obj0.xml");
-    auto nodeElement = xmlFile->GetOrCreateRoot("node");
-    auto componentElement = nodeElement.CreateChild("component");
-    componentElement.SetAttribute("type", "StaticModel");
+    auto prefabRef = node->CreateComponent<PrefabReference>();
+    prefabRef->SetPrefab(prefabResource);
 
-    cache->AddManualResource(xmlFile);
+    REQUIRE(node->GetNumComponents() == 3);
+    {
+        CHECK_FALSE(node->GetComponents()[0]->IsTemporary());
+        CHECK(node->GetComponents()[0] == prefabRef);
+        CHECK(node->GetComponents()[1]->IsTemporary());
+        CHECK(node->GetComponents()[2]->IsTemporary());
 
-    SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>()};
-    prefabRef->SetPrefab(xmlFile);
+        REQUIRE(node->GetComponent<TestComponent>() == node->GetComponents()[1]);
+        CHECK(node->GetComponent<TestComponent>()->enum_ == TestEnum::Blue);
+    }
+    REQUIRE(node->GetNumChildren() == 4);
+    {
+        CHECK(node->GetChildren()[0]->IsTemporary());
+        CHECK(node->GetChildren()[0]->GetName() == "Worm");
+        CHECK(node->GetChildren()[0]->GetNumComponents() == 2);
+        CHECK(node->GetChildren()[0]->GetNumChildren() == 0);
+    }
 
-    // Setting prefab to enabled node makes component to create temporary node attached to the component's node.
-    // Make it shared ptr to ensure that new node won't be allocated at the same address.
-    SharedPtr<Node> prefabRoot{prefabRef->GetRootNode()};
-    REQUIRE(prefabRoot != nullptr);
-    CHECK(prefabRoot->IsTemporary());
-    CHECK(prefabRoot->GetParent() == node0);
-    CHECK(prefabRoot->GetNumChildren() == 0);
+    node->SetEnabled(false);
 
-    // Component should preserve the node but detach it from the parent
+    REQUIRE(node->GetNumComponents() == 1);
+    CHECK_FALSE(node->GetComponents()[0]->IsTemporary());
+    CHECK(node->GetComponents()[0] == prefabRef);
+    REQUIRE(node->GetNumChildren() == 0);
+
+    node->SetEnabled(true);
+
+    REQUIRE(node->GetNumComponents() == 3);
+    REQUIRE(node->GetNumChildren() == 4);
+
+    prefabRef->SetPrefab(nullptr);
+
+    REQUIRE(node->GetNumComponents() == 1);
+    REQUIRE(node->GetNumChildren() == 0);
+
+    prefabRef->SetPrefab(prefabResource);
     prefabRef->Remove();
-    REQUIRE(prefabRef->GetRootNode() == prefabRoot);
-    CHECK(prefabRoot->GetParent() == nullptr);
 
-    // Moving component to another node makes prefab root attached
-    node1->AddComponent(prefabRef, prefabRef->GetID());
-    CHECK(prefabRoot->GetParent() == node1);
-
-    // Reload the prefab on file change
-    nodeElement.CreateChild("node");
-    {
-        using namespace ReloadFinished;
-        VariantMap data;
-        xmlFile->SendEvent(E_RELOADFINISHED, data);
-    }
-    CHECK(prefabRef->GetRootNode() != prefabRoot);
-    prefabRoot = prefabRef->GetRootNode();
-    CHECK(prefabRoot->GetNumChildren() == 1);
-
-    prefabRef->Inline();
-    CHECK(prefabRef->GetNode() == nullptr);
-    CHECK(!prefabRoot->IsTemporary());
+    REQUIRE(node->GetNumComponents() == 0);
+    REQUIRE(node->GetNumChildren() == 0);
 }
 
-TEST_CASE("Prefab with node reference")
+TEST_CASE("Prefab reference is reloaded")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto cache = context->GetSubsystem<ResourceCache>();
+    auto guard = Tests::MakeScopedReflection<Tests::RegisterObject<TestComponent>>(context);
+
+    auto prefabResource = MakeShared<PrefabResource>(context);
+    prefabResource->GetMutablePrefab().GetMutableChildren().push_back(MakeTestPrefab());
+    auto& prefabData = prefabResource->GetMutablePrefab().GetMutableChildren()[0];
+
     auto scene = MakeShared<Scene>(context);
 
-    auto node0 = scene->CreateChild();
-    auto node1 = scene->CreateChild();
+    auto node = scene->CreateChild();
 
-    auto xmlFile = new XMLFile(context);
-    xmlFile->SetName("Objects/Obj1.xml");
+    auto prefabRef = node->CreateComponent<PrefabReference>();
+    prefabRef->SetPrefab(prefabResource);
 
-    auto nodeElement1 = xmlFile->GetOrCreateRoot("node");
-    nodeElement1.SetAttribute("id", "1");
-    auto nodeElement2 = nodeElement1.CreateChild("node");
-    nodeElement2.SetAttribute("id", "2");
-    auto rigidBody2Element = nodeElement2.CreateChild("component");
-    rigidBody2Element.SetAttribute("type", "RigidBody");
-    auto constraint2Element = nodeElement2.CreateChild("component");
-    constraint2Element.SetAttribute("type", "Constraint");
-    auto constraint2Attr = constraint2Element.CreateChild("attribute");
-    constraint2Attr.SetAttribute("name", "Other Body NodeID");
-    constraint2Attr.SetAttribute("value", "3");
-    auto nodeElement3 = nodeElement1.CreateChild("node");
-    nodeElement3.SetAttribute("id", "3");
-    auto rigidBody3Element = nodeElement3.CreateChild("component");
-    rigidBody3Element.SetAttribute("type", "RigidBody");
-    auto staticModel3Element = nodeElement3.CreateChild("component");
-    staticModel3Element.SetAttribute("type", "StaticModel");
+    REQUIRE(node->GetNumComponents() == 3);
+    CHECK_FALSE(node->GetComponents()[0]->IsTemporary());
+    CHECK(node->GetComponents()[1]->IsTemporary());
+    CHECK(node->GetComponents()[2]->IsTemporary());
+    REQUIRE(node->GetNumChildren() == 4);
+    REQUIRE(node->GetChild(0u)->GetNumComponents() == 2);
+    REQUIRE(node->GetChild(0u)->GetNumChildren() == 0);
+    REQUIRE(node->GetChild(1u)->GetNumComponents() == 0);
+    REQUIRE(node->GetChild(1u)->GetNumChildren() == 0);
+    REQUIRE(node->GetChild(2u)->GetNumComponents() == 2);
+    REQUIRE(node->GetChild(2u)->GetNumChildren() == 0);
+    REQUIRE(node->GetChild(3u)->GetNumComponents() == 0);
+    REQUIRE(node->GetChild(3u)->GetNumChildren() == 1);
 
-    cache->AddManualResource(xmlFile);
+    prefabData.GetMutableChildren().erase_at(1);
+    prefabData.GetMutableComponents().clear();
+    prefabResource->SendEvent(E_RELOADFINISHED);
 
-    SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>()};
-    {
-        prefabRef->SetPrefab(xmlFile);
-
-        auto* prefabRoot = prefabRef->GetRootNode();
-        REQUIRE(prefabRoot);
-        auto* constraint = prefabRoot->GetComponent<Constraint>(true);
-        REQUIRE(constraint);
-        auto* constraintNode = constraint->GetNode();
-        REQUIRE(constraintNode);
-        auto* staticModel = prefabRoot->GetComponent<StaticModel>(true);
-        REQUIRE(staticModel);
-        auto* otherNode = staticModel->GetNode();
-        REQUIRE(otherNode);
-        REQUIRE(constraint->GetOtherBody() == otherNode->GetComponent<RigidBody>());
-    }
-    SharedPtr<PrefabReference> prefabRef2{node1->CreateComponent<PrefabReference>()};
-    {
-        prefabRef2->SetPrefab(xmlFile);
-
-        auto* prefabRoot = prefabRef2->GetRootNode();
-        REQUIRE(prefabRoot);
-        auto* constraint = prefabRoot->GetComponent<Constraint>(true);
-        REQUIRE(constraint);
-        auto* constraintNode = constraint->GetNode();
-        REQUIRE(constraintNode);
-        auto* staticModel = prefabRoot->GetComponent<StaticModel>(true);
-        REQUIRE(staticModel);
-        auto* otherNode = staticModel->GetNode();
-        REQUIRE(otherNode);
-        REQUIRE(constraint->GetOtherBody() == otherNode->GetComponent<RigidBody>());
-    }
+    REQUIRE(node->GetNumComponents() == 1);
+    CHECK_FALSE(node->GetComponents()[0]->IsTemporary());
+    REQUIRE(node->GetNumChildren() == 3);
+    REQUIRE(node->GetChild(0u)->GetNumComponents() == 2);
+    REQUIRE(node->GetChild(0u)->GetNumChildren() == 0);
+    REQUIRE(node->GetChild(1u)->GetNumComponents() == 2);
+    REQUIRE(node->GetChild(1u)->GetNumChildren() == 0);
+    REQUIRE(node->GetChild(2u)->GetNumComponents() == 0);
+    REQUIRE(node->GetChild(2u)->GetNumChildren() == 1);
 }
-
-TEST_CASE("Load prefab from scene file")
-{
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto scene = MakeShared<Scene>(context);
-
-    auto child = scene->CreateChild("Child");
-    auto prefab = child->CreateComponent<PrefabReference>();
-
-    auto file = MakeShared<XMLFile>(context);
-    auto sceneElement = file->GetOrCreateRoot("scene");
-    auto nodeElement = sceneElement.CreateChild("node");
-    auto constraint2Attr = nodeElement.CreateChild("attribute");
-    constraint2Attr.SetAttribute("name", "Name");
-    constraint2Attr.SetAttribute("value", "NodeName");
-    auto componentElement = nodeElement.CreateChild("component");
-    componentElement.SetAttribute("type", "StaticModel");
-
-    prefab->SetPrefab(file);
-    auto root = prefab->GetRootNode();
-
-    REQUIRE(root);
-    CHECK(root->GetName() == "NodeName");
-    CHECK(root->GetComponent<StaticModel>());
-};
