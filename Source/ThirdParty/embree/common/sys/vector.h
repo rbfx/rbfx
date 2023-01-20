@@ -134,7 +134,7 @@ namespace embree
       {
         /* destroy elements */
         for (size_t i=0; i<size_active; i++)
-          alloc.destroy(&items[i]);
+          items[i].~T();
         
         /* free memory */
         alloc.deallocate(items,size_alloced); 
@@ -179,7 +179,7 @@ namespace embree
         if (new_active < size_active) 
         {
           for (size_t i=new_active; i<size_active; i++)
-            alloc.destroy(&items[i]);
+            items[i].~T();
           size_active = new_active;
         }
 
@@ -195,7 +195,7 @@ namespace embree
         items = alloc.allocate(new_alloced);
         for (size_t i=0; i<size_active; i++) {
           ::new (&items[i]) T(std::move(old_items[i]));
-          alloc.destroy(&old_items[i]);
+          old_items[i].~T();
         }
 
         for (size_t i=size_active; i<new_active; i++) {
