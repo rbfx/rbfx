@@ -89,8 +89,15 @@ void Node::RegisterObject(Context* context)
 
 void Node::SerializeInBlock(Archive& archive)
 {
+    SerializeInBlock(archive, false);
+}
+
+void Node::SerializeInBlock(Archive& archive, bool serializeTemporary)
+{
     const bool compactSave = !archive.IsHumanReadable();
-    const PrefabArchiveFlags archiveFlags = compactSave ? PrefabArchiveFlag::CompactTypeNames : PrefabArchiveFlag::None;
+    const PrefabArchiveFlags archiveFlags =
+        (compactSave ? PrefabArchiveFlag::CompactTypeNames : PrefabArchiveFlag::None)
+        | (serializeTemporary ? PrefabArchiveFlag::SerializeTemporary : PrefabArchiveFlag::None);
     const PrefabSaveFlags saveFlags =
         compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
     const PrefabLoadFlags loadFlags = PrefabLoadFlag::None;
@@ -121,7 +128,8 @@ void Node::LoadInternal(
         RemoveAllChildren();
 
     // Load self
-    nodePrefab.Export(this, flags);
+    if (!flags.Test(PrefabLoadFlag::IgnoreRootAttributes))
+        nodePrefab.Export(this, flags);
 
     const unsigned oldId = static_cast<unsigned>(nodePrefab.GetId());
     resolver.AddNode(oldId, this);
@@ -137,11 +145,12 @@ void Node::LoadInternal(
         const unsigned oldComponentId = static_cast<unsigned>(componentPrefab->GetId());
         Component* component = SafeCreateComponent(
             componentPrefab->GetTypeName(), componentPrefab->GetTypeNameHash(), discardIds ? 0 : oldComponentId);
-        if (loadAsTemporary)
-            component->SetTemporary(true);
 
         resolver.AddComponent(oldComponentId, component);
         componentPrefab->Export(component, flags);
+
+        if (loadAsTemporary)
+            component->SetTemporary(true);
     }
 
     // Load children
@@ -156,11 +165,13 @@ void Node::LoadInternal(
 
             const unsigned oldChildId = static_cast<unsigned>(childPrefab->GetId());
             Node* child = CreateChild(discardIds ? 0 : oldChildId);
+
+            const PrefabLoadFlags childFlags =
+                flags & ~PrefabLoadFlag::LoadAsTemporary & ~PrefabLoadFlag::IgnoreRootAttributes;
+            child->LoadInternal(*childPrefab, reader, resolver, childFlags);
+
             if (loadAsTemporary)
                 child->SetTemporary(true);
-
-            const PrefabLoadFlags childFlags = flags & ~PrefabLoadFlag::LoadAsTemporary;
-            child->LoadInternal(*childPrefab, reader, resolver, childFlags);
         }
         reader.EndChild();
     }

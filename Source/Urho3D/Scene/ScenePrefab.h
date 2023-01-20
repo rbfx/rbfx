@@ -109,6 +109,7 @@ private:
     StringHash typeNameHash_;
 
     SerializableId id_{};
+    bool temporary_{};
 
     ea::vector<AttributePrefab> attributes_;
 };
@@ -121,6 +122,8 @@ URHO3D_API void SerializeValue(Archive& archive, const char* name, SerializableP
 class URHO3D_API ScenePrefab
 {
 public:
+    static const ScenePrefab Empty;
+
     void SerializeInBlock(Archive& archive, PrefabArchiveFlags flags = {}, bool compactSave = false);
 
     const SerializablePrefab& GetNode() const { return node_; }
@@ -129,6 +132,8 @@ public:
     ea::vector<SerializablePrefab>& GetMutableComponents() { return components_; }
     const ea::vector<ScenePrefab>& GetChildren() const { return children_; }
     ea::vector<ScenePrefab>& GetMutableChildren() { return children_; }
+
+    bool IsEmpty() const;
 
     bool operator==(const ScenePrefab& rhs) const;
     bool operator!=(const ScenePrefab& rhs) const { return !(*this == rhs); }

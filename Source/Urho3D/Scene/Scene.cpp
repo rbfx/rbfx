@@ -43,6 +43,7 @@
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
 #include "../Scene/PrefabReference.h"
+#include "../Scene/PrefabResource.h"
 
 #include "../DebugNew.h"
 
@@ -117,12 +118,17 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
     return emptyIndex;
 }
 
-void Scene::SerializeInBlock(Archive& archive)
+void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary)
 {
-    Node::SerializeInBlock(archive);
+    Node::SerializeInBlock(archive, serializeTemporary);
 
     fileName_ = archive.GetName();
     checksum_ = archive.GetChecksum();
+}
+
+void Scene::SerializeInBlock(Archive& archive)
+{
+    SerializeInBlock(archive, false);
 }
 
 bool Scene::Load(Deserializer& source)
@@ -1385,6 +1391,7 @@ void RegisterSceneLibrary(Context* context)
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
     PrefabReference::RegisterObject(context);
+    PrefabResource::RegisterObject(context);
 }
 
 }

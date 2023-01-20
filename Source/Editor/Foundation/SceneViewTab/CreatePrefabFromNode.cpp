@@ -29,8 +29,8 @@
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/PrefabWriter.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
@@ -44,7 +44,56 @@ void Foundation_CreatePrefabFromNode(Context* context, SceneViewTab* sceneViewTa
 
 PrefabFromNodeFactory::PrefabFromNodeFactory(Context* context)
     : BaseResourceFactory(context, 0, "Prefab from Node")
+    , prefab_(MakeShared<PrefabResource>(context))
 {
+    prefab_->GetMutablePrefab() = CreatePrefabBase();
+}
+
+ScenePrefab PrefabFromNodeFactory::CreatePrefabBase() const
+{
+    auto cache = GetSubsystem<ResourceCache>();
+    auto scene = MakeShared<Scene>(context_);
+
+    scene->CreateComponent<Octree>();
+
+    auto prefabNode = scene->CreateChild();
+
+    auto skyboxNode = scene->CreateChild("Default Skybox");
+    auto skybox = skyboxNode->CreateComponent<Skybox>();
+    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
+
+    auto zoneNode = scene->CreateChild("Default Zone");
+    auto zone = zoneNode->CreateComponent<Zone>();
+    zone->SetBoundingBox(BoundingBox{-1000.0f, 1000.0f});
+    zone->SetAmbientColor(Color::BLACK);
+    zone->SetBackgroundBrightness(1.0f);
+    zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml"));
+
+    ScenePrefab result;
+    PrefabWriterToMemory writer{result, PrefabSaveFlag::EnumsAsStrings};
+    scene->Save(writer);
+    return result;
+}
+
+ScenePrefab PrefabFromNodeFactory::CreatePrefabFromNode(Node* node) const
+{
+    ScenePrefab result;
+    PrefabWriterToMemory writer{result, PrefabSaveFlag::EnumsAsStrings};
+    node->Save(writer);
+
+    // Discard enabled flag, position, rotation and name of the root node.
+    // Keep the scale and the rest.
+    auto& nodeAttributes = result.GetMutableNode().GetMutableAttributes();
+    ea::erase_if(nodeAttributes,
+        [](const AttributePrefab& attribute)
+    {
+        const StringHash nameHash = attribute.GetNameHash();
+        return nameHash == StringHash("Is Enabled") || nameHash == StringHash("Position")
+            || nameHash == StringHash("Rotation") || nameHash == StringHash("Name");
+    });
+
+    return result;
 }
 
 void PrefabFromNodeFactory::SetNodes(const WeakNodeVector& nodes)
@@ -61,8 +110,8 @@ ea::string PrefabFromNodeFactory::GetDefaultFileName() const
 
     const ea::string& name = nodes_[0]->GetName();
     if (name.empty())
-        return "Prefab.xml";
-    return Format("{}.xml", name);
+        return "Prefab.prefab";
+    return Format("{}.prefab", name);
 }
 
 bool PrefabFromNodeFactory::IsFileNameEditable() const
@@ -108,7 +157,7 @@ ea::string PrefabFromNodeFactory::FindBestFileName(Node* node, const ea::string&
     const auto getAvailableFileName = [&](const ea::string& prefabName) -> ea::optional<ea::string>
     {
         auto fs = GetSubsystem<FileSystem>();
-        const ea::string& fileName = filePath + prefabName + ".xml";
+        const ea::string& fileName = filePath + prefabName + ".prefab";
         if (fs->FileExists(fileName) || fs->DirExists(fileName))
             return ea::nullopt;
 
@@ -135,35 +184,9 @@ ea::string PrefabFromNodeFactory::FindBestFileName(Node* node, const ea::string&
 
 void PrefabFromNodeFactory::SaveNodeAsPrefab(Node* node, const ea::string& fileName)
 {
-    auto scene = MakeShared<Scene>(context_);
-
-    SetupPrefabScene(scene, node);
-
-    auto xmlFile = MakeShared<XMLFile>(context_);
-    XMLElement rootElement = xmlFile->CreateRoot("scene");
-    if (scene->SaveXML(rootElement))
-        xmlFile->SaveFile(fileName);
-}
-
-void PrefabFromNodeFactory::SetupPrefabScene(Scene* scene, Node* node)
-{
-    auto cache = GetSubsystem<ResourceCache>();
-
-    scene->CreateComponent<Octree>();
-
-    auto prefabNode = node->Clone(scene);
-
-    auto skyboxNode = scene->CreateChild("Default Skybox");
-    auto skybox = skyboxNode->CreateComponent<Skybox>();
-    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
-    skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
-
-    auto zoneNode = scene->CreateChild("Default Zone");
-    auto zone = zoneNode->CreateComponent<Zone>();
-    zone->SetBoundingBox(BoundingBox{-1000.0f, 1000.0f});
-    zone->SetAmbientColor(Color::BLACK);
-    zone->SetBackgroundBrightness(1.0f);
-    zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml"));
+    ScenePrefab& nodePrefab = prefab_->GetMutablePrefab().GetMutableChildren()[0];
+    nodePrefab = CreatePrefabFromNode(node);
+    prefab_->SaveFile(fileName);
 }
 
 CreatePrefabFromNode::CreatePrefabFromNode(SceneViewTab* owner)

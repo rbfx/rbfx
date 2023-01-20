@@ -25,6 +25,8 @@
 #include "../../Foundation/SceneViewTab.h"
 #include "../../Project/ResourceFactory.h"
 
+#include <Urho3D/Scene/PrefabResource.h>
+
 namespace Urho3D
 {
 
@@ -50,11 +52,14 @@ public:
     /// @}
 
 private:
+    ScenePrefab CreatePrefabBase() const;
+    ScenePrefab CreatePrefabFromNode(Node* node) const;
+
     ea::string FindBestFileName(Node* node, const ea::string& filePath) const;
     void SaveNodeAsPrefab(Node* node, const ea::string& fileName);
-    void SetupPrefabScene(Scene* scene, Node* node);
 
     WeakNodeVector nodes_;
+    SharedPtr<PrefabResource> prefab_;
 };
 
 /// Addon to manage scene selection with mouse and render debug geometry.

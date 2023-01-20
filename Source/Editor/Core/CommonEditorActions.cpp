@@ -386,11 +386,12 @@ bool ReorderComponentAction::MergeWith(const EditorAction& other)
     return true;
 }
 
-ReparentNodeAction::ReparentNodeAction(Node* node, Node* oldParent)
+ReparentNodeAction::ReparentNodeAction(Node* node, Node* newParent)
     : scene_(node->GetScene())
     , nodeId_(node->GetID())
-    , oldParentId_(oldParent->GetID())
-    , newParentId_(node->GetParent()->GetID())
+    , oldParentId_(node->GetParent()->GetID())
+    , oldIndex_(node->GetIndexInParent())
+    , newParentId_(newParent->GetID())
 {
 }
 
@@ -401,15 +402,15 @@ bool ReparentNodeAction::CanUndoRedo() const
 
 void ReparentNodeAction::Redo() const
 {
-    Reparent(newParentId_);
+    Reparent(newParentId_, ea::nullopt);
 }
 
 void ReparentNodeAction::Undo() const
 {
-    Reparent(oldParentId_);
+    Reparent(oldParentId_, oldIndex_);
 }
 
-void ReparentNodeAction::Reparent(unsigned parentId) const
+void ReparentNodeAction::Reparent(unsigned parentId, ea::optional<unsigned> index) const
 {
     Node* node = scene_->GetNode(nodeId_);
     Node* parent = scene_->GetNode(parentId);
@@ -418,7 +419,11 @@ void ReparentNodeAction::Reparent(unsigned parentId) const
     else if (!parent)
         throw UndoException("Cannot find parent node with id {}", parentId);
     else
+    {
         node->SetParent(parent);
+        if (index)
+            parent->ReorderChild(node, *index);
+    }
 }
 
 bool ReparentNodeAction::MergeWith(const EditorAction& other)

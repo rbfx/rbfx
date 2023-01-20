@@ -397,17 +397,26 @@ bool Serializable::LoadFile(const ea::string& resourceName)
 
 void Serializable::SerializeInBlock(Archive& archive)
 {
+    SerializeInBlock(archive, false);
+}
+
+void Serializable::SerializeInBlock(Archive& archive, bool serializeTemporary)
+{
     const bool compactSave = !archive.IsHumanReadable();
+    const PrefabArchiveFlags flags = PrefabArchiveFlag::IgnoreSerializableId
+        | (serializeTemporary ? PrefabArchiveFlag::SerializeTemporary : PrefabArchiveFlag::None);
 
     SerializablePrefab prefab;
 
     if (!archive.IsInput())
         prefab.Import(this);
 
-    prefab.SerializeInBlock(archive, PrefabArchiveFlag::IgnoreSerializableId, compactSave);
+    prefab.SerializeInBlock(archive, flags, compactSave);
 
     if (archive.IsInput())
         prefab.Export(this);
+
+    ApplyAttributes();
 }
 
 bool Serializable::SetAttribute(unsigned index, const Variant& value)

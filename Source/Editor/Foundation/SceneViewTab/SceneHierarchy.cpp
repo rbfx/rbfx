@@ -164,9 +164,8 @@ void SceneHierarchy::ReorderComponent(Component* component, unsigned oldIndex, u
 
 void SceneHierarchy::ReparentNode(Node* parentNode, Node* childNode)
 {
-    Node* oldParent = childNode->GetParent();
+    owner_->PushAction<ReparentNodeAction>(childNode, parentNode);
     childNode->SetParent(parentNode);
-    owner_->PushAction<ReparentNodeAction>(childNode, oldParent);
 }
 
 }
