@@ -119,7 +119,7 @@ void ProfilerTab::RenderContent()
         ui::SameLine();
         bool connect = ui::InputText("", &connectTo_, ImGuiInputTextFlags_EnterReturnsTrue);
         ui::SameLine();
-        connect |= ui::Button((const char*)(ICON_FA_WIFI " Connect"));
+        connect |= ui::Button(ICON_FA_WIFI " Connect");
         if (connect)
             view_ = std::make_unique<tracy::View>(&QueueProfilerCallback, connectTo_.c_str(), port_);
     }
