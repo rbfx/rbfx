@@ -31,6 +31,7 @@
 #include "../Resource/JSONValue.h"
 
 #include <EASTL/array.h>
+#include <EASTL/optional.h>
 
 namespace Urho3D
 {
@@ -187,6 +188,9 @@ protected:
     virtual const char* GetRootBlockName() const { return "resource"; }
     /// Default internal resource format on save.
     virtual InternalResourceFormat GetDefaultInternalFormat() const { return InternalResourceFormat::Json; }
+
+private:
+    ea::optional<InternalResourceFormat> loadFormat_;
 };
 
 /// Base class for resources that support arbitrary metadata stored. Metadata serialization shall be implemented in derived classes.

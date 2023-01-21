@@ -279,6 +279,8 @@ bool SimpleResource::BeginLoad(Deserializer& source)
 
             JSONInputArchive archive{context_, jsonFile.GetRoot(), &jsonFile};
             SerializeValue(archive, GetRootBlockName(), *this);
+
+            loadFormat_ = format;
             return true;
         }
         case InternalResourceFormat::Xml:
@@ -289,6 +291,8 @@ bool SimpleResource::BeginLoad(Deserializer& source)
 
             XMLInputArchive archive{context_, xmlFile.GetRoot(), &xmlFile};
             SerializeValue(archive, GetRootBlockName(), *this);
+
+            loadFormat_ = format;
             return true;
         }
         case InternalResourceFormat::Binary:
@@ -297,6 +301,8 @@ bool SimpleResource::BeginLoad(Deserializer& source)
 
             BinaryInputArchive archive{context_, source};
             SerializeValue(archive, GetRootBlockName(), *this);
+
+            loadFormat_ = format;
             return true;
         }
         default:
@@ -320,12 +326,12 @@ bool SimpleResource::EndLoad()
 
 bool SimpleResource::Save(Serializer& dest) const
 {
-    return Save(dest, GetDefaultInternalFormat());
+    return Save(dest, loadFormat_.value_or(GetDefaultInternalFormat()));
 }
 
 bool SimpleResource::SaveFile(const ea::string& fileName) const
 {
-    return SaveFile(fileName, GetDefaultInternalFormat());
+    return SaveFile(fileName, loadFormat_.value_or(GetDefaultInternalFormat()));
 }
 
 void ResourceWithMetadata::AddMetadata(const ea::string& name, const Variant& value)
