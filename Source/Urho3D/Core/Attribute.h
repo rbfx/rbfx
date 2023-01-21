@@ -55,6 +55,20 @@ enum AttributeMode
 };
 URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
 
+/// Attribute scope hint.
+/// Indicates the scope of changes caused by an attribute. Used for undo/redo in the Editor.
+enum class AttributeScopeHint
+{
+    /// Attribute change doesn't affect any other attributes.
+    Attribute,
+    /// Attribute change may affect other attributes in the same object (node or component).
+    Serializable,
+    /// Attribute change may affect other attributes, components or children nodes in the owner node.
+    Node,
+    /// Attribute change may affect anything in the scene.
+    Scene,
+};
+
 class Serializable;
 
 /// Abstract base class for invoking attribute accessors.
@@ -151,6 +165,8 @@ struct AttributeInfo
     AttributeModeFlags mode_ = AM_DEFAULT;
     /// Attribute metadata.
     VariantMap metadata_;
+    /// Scope hint.
+    AttributeScopeHint scopeHint_{};
 
 private:
     static StringVector ToVector(const char* const* strings)
@@ -172,7 +188,13 @@ struct AttributeHandle
     friend class ObjectReflection;
 
 public:
-    /// Set metadata.
+    AttributeHandle& SetScopeHint(AttributeScopeHint scopeHint)
+    {
+        if (attributeInfo_)
+            attributeInfo_->scopeHint_ = scopeHint;
+        return *this;
+    }
+
     AttributeHandle& SetMetadata(StringHash key, const Variant& value)
     {
         if (attributeInfo_)
@@ -181,7 +203,6 @@ public:
     }
 
 private:
-    /// Attribute info.
     AttributeInfo* attributeInfo_ = nullptr;
 };
 

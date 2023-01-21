@@ -72,6 +72,7 @@ public:
 
     /// Return component ID.
     unsigned GetId() const { return id_; }
+    StringHash GetType() const { return type_; }
 
 private:
     unsigned id_{};

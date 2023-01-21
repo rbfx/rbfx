@@ -2110,4 +2110,29 @@ void Node::RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i)
     components_.erase(i);
 }
 
+ea::vector<Node*> Node::GetNodes(const ea::vector<Component*>& components)
+{
+    ea::vector<Node*> result;
+    for (Component* component : components)
+    {
+        Node* node = component->GetNode();
+        if (!result.contains(node))
+            result.push_back(node);
+    }
+    return result;
+}
+
+ea::vector<Node*> Node::GetParentNodes(const ea::vector<Node*>& nodes)
+{
+    ea::vector<Node*> result;
+    for (Node* candidate : nodes)
+    {
+        const auto isChildOf = [candidate](Node* node) { return candidate->IsChildOf(node); };
+        const bool isChildOfAny = ea::any_of(nodes.begin(), nodes.end(), isChildOf);
+        if (!isChildOfAny)
+            result.push_back(candidate);
+    }
+    return result;
+}
+
 }

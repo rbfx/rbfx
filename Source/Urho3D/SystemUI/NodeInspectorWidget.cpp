@@ -124,10 +124,11 @@ void NodeInspectorWidget::RenderContent()
 
     for (Component* component : pendingRemoveComponents_)
     {
-        if (component)
+        if (WeakPtr<Component> weakComponent{component})
         {
             OnComponentRemoved(this, component);
-            component->Remove();
+            if (weakComponent)
+                weakComponent->Remove();
         }
     }
 }
