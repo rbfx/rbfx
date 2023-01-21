@@ -43,6 +43,15 @@ public:
     /// Copy-construct from another vector.
     Vector4(const Vector4& vector) noexcept = default;
 
+    /// Construct from 3-dimensional vector and a scalar.
+    Vector4(const Vector3& v1, float w) noexcept
+        : x_(v1.x_)
+        , y_(v1.y_)
+        , z_(v1.z_)
+        , w_(w)
+    {
+    }
+
     /// Construct from two 2-dimensional vectors.
     Vector4(const Vector2& v1, const Vector2& v2) noexcept :
         x_(v1.x_),

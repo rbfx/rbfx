@@ -360,9 +360,9 @@ private:
                 ? lights_[current_.vertexLights_[i]]->GetParams() : nullVertexLight;
             const Vector3& color = params.GetColor(settings_.linearSpaceLighting_);
 
-            current_.vertexLightsData_[i * VertexLightStride] = color.ToVector4(params.inverseRange_);
-            current_.vertexLightsData_[i * VertexLightStride + 1] = params.direction_.ToVector4(params.spotCutoff_);
-            current_.vertexLightsData_[i * VertexLightStride + 2] = params.position_.ToVector4(params.inverseSpotCutoff_);
+            current_.vertexLightsData_[i * VertexLightStride] = {color, params.inverseRange_};
+            current_.vertexLightsData_[i * VertexLightStride + 1] = {params.direction_, params.spotCutoff_};
+            current_.vertexLightsData_[i * VertexLightStride + 2] = {params.position_, params.inverseSpotCutoff_};
         }
     }
 
@@ -615,15 +615,14 @@ private:
     void AddPixelLightConstants(const CookedLightParams& params)
     {
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightDir, params.direction_);
-        drawQueue_.AddShaderParameter(ShaderConsts::Light_LightPos,
-            params.position_.ToVector4(params.inverseRange_));
+        drawQueue_.AddShaderParameter(ShaderConsts::Light_LightPos, Vector4{params.position_, params.inverseRange_});
 
         // Shadow maps need only light position and direction for normal bias
         if (!enabled_.colorOutput_)
             return;
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightColor,
-            params.GetColor(settings_.linearSpaceLighting_).ToVector4(params.effectiveSpecularIntensity_));
+            Vector4{params.GetColor(settings_.linearSpaceLighting_), params.effectiveSpecularIntensity_});
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightRad, params.volumetricRadius_);
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightLength, params.volumetricLength_);

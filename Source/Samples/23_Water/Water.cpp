@@ -244,8 +244,8 @@ void Water::MoveCamera(float timeStep)
     const Vector3 planeNormal = Vector3::UP;
     const Vector3 planeRight = cameraNode_->GetWorldRight();
     const Vector3 planeForward = planeRight.CrossProduct(planeNormal).Normalized();
-    waterMaterial_->SetShaderParameter("ReflectionPlaneX", distortionStrength * planeRight.ToVector4(0.0));
-    waterMaterial_->SetShaderParameter("ReflectionPlaneY", distortionStrength * planeForward.ToVector4(distortionBias));
+    waterMaterial_->SetShaderParameter("ReflectionPlaneX", Vector4(distortionStrength * planeRight, 0.0));
+    waterMaterial_->SetShaderParameter("ReflectionPlaneY", Vector4(distortionStrength * planeForward, distortionBias));
 
     // In case resolution has changed, adjust the reflection camera aspect ratio
     auto* graphics = GetSubsystem<Graphics>();
