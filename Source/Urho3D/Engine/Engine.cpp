@@ -360,8 +360,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
         if (HasParameter(EP_DUMP_SHADERS))
             graphics->BeginDumpShaders(GetParameter(EP_DUMP_SHADERS).GetString());
-        if (HasParameter(EP_RENDER_PATH))
-            renderer->SetDefaultRenderPath(cache->GetResource<XMLFile>(GetParameter(EP_RENDER_PATH).GetString()));
 
         renderer->SetDrawShadows(GetParameter(EP_SHADOWS).GetBool());
         if (renderer->GetDrawShadows() && GetParameter(EP_LOW_QUALITY_SHADOWS).GetBool())
@@ -972,14 +970,6 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
         return addFlagInternal(name, description, fun);
     };
 
-    auto addOptionSetString = [&](const char* name, const ea::string& param, const ea::string& value, const char* description) {
-        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
-            engineParameters[param] = value;
-            return true;
-        };
-        return addFlagInternal(name, description, fun);
-    };
-
     auto addOptionString = [&](const char* name, const ea::string& param, const char* description) {
         CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             engineParameters[param] = res[0].c_str();
@@ -987,6 +977,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
         };
         auto* opt = addFlagInternal(name, description, fun);
         opt->type_name("string");
+        opt->type_size(1);
         return opt;
     };
 
@@ -1002,6 +993,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
         };
         auto* opt = addFlagInternal(name, description, fun);
         opt->type_name("int");
+        opt->type_size(1);
         return opt;
     };
 
@@ -1022,10 +1014,6 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--nosound", EP_SOUND, false, "Disable sound");
     addFlag("--noip", EP_SOUND_INTERPOLATION, false, "Disable sound interpolation");
     addOptionInt("--speakermode", EP_SOUND_MODE, "Force sound speaker output mode (default is automatic)");
-    auto* optRenderpath = addOptionString("--renderpath", EP_RENDER_PATH, "Use custom renderpath");
-    auto* optPrepass = addOptionSetString("--prepass", EP_RENDER_PATH, "RenderPaths/Prepass.xml", "Use prepass renderpath")->excludes(optRenderpath);
-    auto* optDeferred = addOptionSetString("--deferred", EP_RENDER_PATH, "RenderPaths/Deferred.xml", "Use deferred renderpath")->excludes(optRenderpath);
-    optRenderpath->excludes(optPrepass)->excludes(optDeferred);
     auto* optNoShadows = addFlag("--noshadows", EP_SHADOWS, false, "Disable shadows");
     auto optLowQualityShadows = addFlag("--lqshadows", EP_LOW_QUALITY_SHADOWS, true, "Use low quality shadows")->excludes(optNoShadows);
     optNoShadows->excludes(optLowQualityShadows);
@@ -1158,7 +1146,6 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_PACKAGE_CACHE_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
-    engineParameters_->DefineVariable(EP_RENDER_PATH, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);
