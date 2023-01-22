@@ -28,6 +28,7 @@
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/PrefabReader.h>
 #include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabWriter.h>
 
 namespace Urho3D
 {
@@ -49,6 +50,7 @@ void PrefabReference::RegisterObject(Context* context)
 
     URHO3D_ACTION_STATIC_LABEL("Inline", InlineConservative, "Convert prefab reference to nodes and components");
     URHO3D_ACTION_STATIC_LABEL("Inline+", InlineAggressive, "Same as Inline. Also converts all temporary objects to persistent");
+    URHO3D_ACTION_STATIC_LABEL("Commit", CommitChanges, "Commit changes in this instance to the prefab resource");
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Prefab", GetPrefabAttr, SetPrefabAttr, ResourceRef, ResourceRef(PrefabResource::GetTypeStatic()), AM_DEFAULT)
         .SetScopeHint(AttributeScopeHint::Node);
@@ -335,6 +337,49 @@ void PrefabReference::Inline(PrefabInlineFlags flags)
         for (const auto& child : node->GetChildren())
             child->SetTemporary(false);
     }
+}
+
+void PrefabReference::CommitChanges()
+{
+    if (!node_ || !prefab_)
+        return;
+
+    const ScenePrefab& originalNodePrefab = GetNodePrefab();
+    ScenePrefab newNodePrefab;
+    {
+        const PrefabSaveFlags flags =
+            PrefabSaveFlag::EnumsAsStrings | PrefabSaveFlag::Prefab | PrefabSaveFlag::SaveTemporary;
+        PrefabWriterToMemory writer{newNodePrefab, flags};
+        node_->Save(writer);
+    }
+
+    // Don't change Node attributes, they are considered external
+    newNodePrefab.GetMutableNode().GetMutableAttributes() = originalNodePrefab.GetNode().GetAttributes();
+
+    // Prune persistent components and children
+    const auto& components = node_->GetComponents();
+    const int numComponents = static_cast<int>(node_->GetNumComponents());
+    for (int i = numComponents - 1; i >= 0; --i)
+    {
+        Component* component = components[i];
+        if (!component->IsTemporary())
+            newNodePrefab.GetMutableComponents().erase_at(i);
+    }
+
+    const auto& children = node_->GetChildren();
+    const int numChildren = static_cast<int>(node_->GetNumChildren());
+    for (int i = numChildren - 1; i >= 0; --i)
+    {
+        Node* child = children[i];
+        if (!child->IsTemporary())
+            newNodePrefab.GetMutableChildren().erase_at(i);
+    }
+
+    // Create and save resource
+    auto newResource = MakeShared<PrefabResource>(context_);
+    newResource->GetMutableScenePrefab() = prefab_->GetScenePrefab();
+    newResource->GetMutableNodePrefab() = newNodePrefab;
+    newResource->SaveFile(prefab_->GetAbsoluteFileName());
 }
 
 void PrefabReference::OnSetEnabled()

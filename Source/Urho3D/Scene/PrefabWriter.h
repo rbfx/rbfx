@@ -48,6 +48,7 @@ public:
     virtual void BeginChild() = 0;
     virtual void EndChild() = 0;
     virtual bool IsEOF() const = 0;
+    virtual PrefabSaveFlags GetFlags() const = 0;
 };
 
 /// Utility class to write prefab data to ScenePrefab.
@@ -63,6 +64,7 @@ public:
     void BeginChild() override;
     void EndChild() override;
     bool IsEOF() const override { return stack_.empty(); }
+    PrefabSaveFlags GetFlags() const override { return flags_; }
 
 private:
     ScenePrefab& CurrentNode() const;
@@ -91,6 +93,7 @@ public:
     void BeginChild() override;
     void EndChild() override;
     bool IsEOF() const override { return eof_; }
+    PrefabSaveFlags GetFlags() const override { return saveFlags_; }
 
 private:
     void NextSerializable();

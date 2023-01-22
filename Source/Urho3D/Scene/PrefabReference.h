@@ -64,6 +64,9 @@ public:
     void InlineConservative() { Inline(PrefabInlineFlag::None); }
     void InlineAggressive() { Inline(PrefabInlineFlag::KeepOtherTemporary); }
 
+    /// Commit prefab changes to the resource.
+    void CommitChanges();
+
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
 
