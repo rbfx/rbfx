@@ -580,9 +580,9 @@ private:
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter0,
                 current_.reflectionProbes_[0]->cubemapCenter_);
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin0,
-                current_.reflectionProbes_[0]->projectionBox_.min_.ToVector4(0.0));
+                current_.reflectionProbes_[0]->projectionBox_.min_.ToVector4());
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax0,
-                current_.reflectionProbes_[0]->projectionBox_.max_.ToVector4(0.0));
+                current_.reflectionProbes_[0]->projectionBox_.max_.ToVector4());
         }
 
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor0,
@@ -594,9 +594,9 @@ private:
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter1,
                 current_.reflectionProbes_[1]->cubemapCenter_);
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin1,
-                current_.reflectionProbes_[1]->projectionBox_.min_.ToVector4(0.0));
+                current_.reflectionProbes_[1]->projectionBox_.min_.ToVector4());
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax1,
-                current_.reflectionProbes_[1]->projectionBox_.max_.ToVector4(0.0));
+                current_.reflectionProbes_[1]->projectionBox_.max_.ToVector4());
         }
 
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor1,

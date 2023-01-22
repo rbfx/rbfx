@@ -304,7 +304,7 @@ struct RayGeneratorForDirectLight
     {
         const Vector2 randomOffset = RandomCircleOffset() * maxRayDistance_ * halfAngleTan_;
         rayOffset = maxRayDistance_ * lightDirection_;
-        rayOffset += randomOffset.ToVector3(0.0f);
+        rayOffset += randomOffset.ToVector3();
         lightIntensity = lightColor_.ToVector3();
         lightIncomingDirection = -lightDirection_;
         return true;
@@ -329,7 +329,7 @@ struct RayGeneratorForPointLight
     {
         const Vector2 randomOffset = RandomCircleOffset() * lightRadius_;
         rayOffset = position - lightPosition_;
-        rayOffset += Quaternion(Vector3::FORWARD, rayOffset) * randomOffset.ToVector3(0.0f);
+        rayOffset += Quaternion(Vector3::FORWARD, rayOffset) * randomOffset.ToVector3();
 
         const float distance = rayOffset.Length();
         const float distanceAttenuation = ea::max(0.0f, 1.0f - (distance - lightRadius_) / (lightDistance_ - lightRadius_));
@@ -364,7 +364,7 @@ struct RayGeneratorForSpotLight
     {
         const Vector2 randomOffset = RandomCircleOffset() * lightRadius_;
         rayOffset = position - lightPosition_;
-        rayOffset += lightRotation_ * randomOffset.ToVector3(0.0f);
+        rayOffset += lightRotation_ * randomOffset.ToVector3();
 
         const float distance = rayOffset.Length();
 

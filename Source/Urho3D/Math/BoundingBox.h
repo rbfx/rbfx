@@ -60,8 +60,8 @@ public:
 
     /// Construct from a rect, with the Z dimension left zero.
     explicit BoundingBox(const Rect& rect) noexcept :
-        min_(rect.min_.ToVector3(0.0f)),
-        max_(rect.max_.ToVector3(0.0f))
+        min_(rect.min_.ToVector3()),
+        max_(rect.max_.ToVector3())
     {
     }
 
@@ -131,7 +131,7 @@ public:
     /// Assign from a Rect, with the Z dimension left zero.
     BoundingBox& operator =(const Rect& rhs) noexcept
     {
-        min_ = rhs.min_.ToVector3(0.0f);
+        min_ = rhs.min_.ToVector3();
         max_ = rhs.max_.ToVector3( 0.0f);
         return *this;
     }
@@ -151,7 +151,7 @@ public:
     /// Define from a Rect.
     void Define(const Rect& rect)
     {
-        Define(rect.min_.ToVector3(0.0f), rect.max_.ToVector3(0.0f));
+        Define(rect.min_.ToVector3(), rect.max_.ToVector3());
     }
 
     /// Define from minimum and maximum vectors.

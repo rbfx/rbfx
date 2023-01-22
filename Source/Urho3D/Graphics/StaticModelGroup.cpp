@@ -143,7 +143,7 @@ void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<R
                         if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                         {
                             distance = geometryDistance;
-                            normal = (worldTransforms_[i] * geometryNormal.ToVector4(0.0f)).Normalized();
+                            normal = (worldTransforms_[i] * geometryNormal.ToVector4()).Normalized();
                         }
                     }
                 }

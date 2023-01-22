@@ -257,9 +257,9 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
                         continue;
 
                     // Skip if belong to the same line: AB x AC = AB x AD = 0
-                    const Vector3 edgeUvDelta{ (edgeUv1 - edgeUv0).ToVector3(0.0f) };
-                    const Vector3 delta00{ (candidateUv0 - edgeUv0).ToVector3(0.0f) };
-                    const Vector3 delta01{ (candidateUv1 - edgeUv0).ToVector3(0.0f) };
+                    const Vector3 edgeUvDelta{ (edgeUv1 - edgeUv0).ToVector3() };
+                    const Vector3 delta00{ (candidateUv0 - edgeUv0).ToVector3() };
+                    const Vector3 delta01{ (candidateUv1 - edgeUv0).ToVector3() };
                     const bool collinear00 = edgeUvDelta.CrossProduct(delta00).LengthSquared() < uvEpsilonSquared;
                     const bool collinear01 = edgeUvDelta.CrossProduct(delta01).LengthSquared() < uvEpsilonSquared;
                     if (collinear00 && collinear01)

@@ -91,7 +91,7 @@ struct URHO3D_API ModelVertex
     /// Set position from 3-vector.
     void SetPosition(const Vector3& position) {position_ = position.ToVector4(1.0f); }
     /// Set normal from 3-vector.
-    void SetNormal(const Vector3& normal) {normal_ = normal.ToVector4(0.0f); }
+    void SetNormal(const Vector3& normal) {normal_ = normal.ToVector4(); }
     /// Set color for given channel.
     void SetColor(unsigned i, const Color& color) { color_[i] = color.ToVector4(); }
 

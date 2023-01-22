@@ -580,7 +580,7 @@ void ModelVertex::Repair()
                 const Vector3 normal3 = tangent_.ToVector3();
                 const Vector3 tangent3 = normal_.ToVector3();
                 const Vector3 binormal3 = tangent_.w_ * normal3.CrossProduct(tangent3);
-                binormal_ = binormal3.Normalized().ToVector4(0);
+                binormal_ = binormal3.Normalized().ToVector4();
             }
             else if (hasBinormal && !hasTangentBinormalCombined)
             {
@@ -743,9 +743,9 @@ void GeometryLODView::RecalculateFlatNormals()
         const auto p2 = v2.position_.ToVector3();
         const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0).Normalized();
 
-        v0.normal_ = normal.ToVector4(0.0f);
-        v1.normal_ = normal.ToVector4(0.0f);
-        v2.normal_ = normal.ToVector4(0.0f);
+        v0.normal_ = normal.ToVector4();
+        v1.normal_ = normal.ToVector4();
+        v2.normal_ = normal.ToVector4();
 
         const unsigned newIndex = newVertices.size();
         newVertices.push_back(v0);
@@ -802,13 +802,13 @@ void GeometryLODView::RecalculateSmoothNormals()
         const auto p2 = v2.position_.ToVector3();
         const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0).Normalized();
 
-        v0.normal_ += normal.ToVector4(0.0f);
-        v1.normal_ += normal.ToVector4(0.0f);
-        v2.normal_ += normal.ToVector4(0.0f);
+        v0.normal_ += normal.ToVector4();
+        v1.normal_ += normal.ToVector4();
+        v2.normal_ += normal.ToVector4();
     });
 
     for (ModelVertex& vertex : vertices_)
-        vertex.normal_ = vertex.normal_.ToVector3().Normalized().ToVector4(0.0f);
+        vertex.normal_ = vertex.normal_.ToVector3().Normalized().ToVector4();
 }
 
 void GeometryLODView::RecalculateTangents()
