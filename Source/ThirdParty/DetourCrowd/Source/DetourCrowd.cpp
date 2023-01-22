@@ -570,7 +570,7 @@ int dtCrowd::addAgent(const float* pos, const dtCrowdAgentParams* params)
 	ag->targetState = DT_CROWDAGENT_TARGET_NONE;
 	
 	ag->active = true;
-	
+
 	// Urho3D: added to fix illegal memory access when ncorners is queried before the agent has updated
 	ag->ncorners = 0;
 
@@ -1269,8 +1269,8 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 		// Set the desired velocity.
 		dtVcopy(ag->dvel, dvel);
 	}
-
-	// Velocity planning.
+	
+	// Velocity planning.	
 	for (int i = 0; i < nagents; ++i)
 	{
 		dtCrowdAgent* ag = agents[i];
@@ -1382,7 +1382,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 				}
 				
 				// Urho3D: Avoid tremble when another agent can not move away
-				if (ag->params.separationWeight < 0.0001f) 
+				if (ag->params.separationWeight < 0.0001f)
 					continue;
 				
 				dtVmad(ag->disp, ag->disp, diff, pen);			
@@ -1424,19 +1424,21 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 			ag->corridor.reset(ag->corridor.getFirstPoly(), ag->npos);
 			ag->partial = false;
 		}
-
+		
 		// Urho3D: Update position callback support
 		if (m_updateCallback)
 			m_updateCallback(true, ag, ag->npos, dt);
 	}
-
+	
 	// Update agents using off-mesh connection.
-	for (int i = 0; i < m_maxAgents; ++i)
+	for (int i = 0; i < nagents; ++i)
 	{
-		dtCrowdAgentAnimation* anim = &m_agentAnims[i];
+		dtCrowdAgent* ag = agents[i];
+		const int idx = (int)(ag - m_agents);
+		dtCrowdAgentAnimation* anim = &m_agentAnims[idx];
 		if (!anim->active)
 			continue;
-		dtCrowdAgent* ag = agents[i];
+		
 
 		anim->t += dt;
 		if (anim->t > anim->tmax)

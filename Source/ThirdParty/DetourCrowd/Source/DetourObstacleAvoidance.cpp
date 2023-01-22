@@ -219,7 +219,7 @@ dtObstacleAvoidanceQuery::dtObstacleAvoidanceQuery() :
 	m_segments(0),
 	m_nsegments(0)
 {
-    memset(&m_params, 0, sizeof(m_params)); // Urho3D
+	memset(&m_params, 0, sizeof(m_params)); // Urho3D
 }
 
 dtObstacleAvoidanceQuery::~dtObstacleAvoidanceQuery()

@@ -99,7 +99,6 @@ dtTileCache::~dtTileCache()
 			}
 		}
 	}
-
 	dtFree(m_obstacles);
 	m_obstacles = 0;
 	dtFree(m_posLookup);
@@ -247,6 +246,11 @@ const dtTileCacheObstacle* dtTileCache::getObstacleByRef(dtObstacleRef ref)
 	if (ob->salt != salt)
 		return 0;
 	return ob;
+}
+
+dtTileCacheMeshProcess::~dtTileCacheMeshProcess()
+{
+	// Defined out of line to fix the weak v-tables warning
 }
 
 dtStatus dtTileCache::addTile(unsigned char* data, const int dataSize, unsigned char flags, dtCompressedTileRef* result)
