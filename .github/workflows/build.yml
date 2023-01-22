@@ -51,10 +51,10 @@ jobs:
     runs-on: ubuntu-20.04
     continue-on-error: true
     # TODO: Fix Discord notifications
-    if: false && github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
+    if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
     steps:
       - name: Discord Commits
-        uses: dearimgui/github_discord_notifier@latest
+        uses: rbfx/github_discord_notifier@latest
         with:
           discord-webhook: ${{ secrets.DISCORD_WEBHOOK_COMMITS }}
           github-token: ${{ github.token }}

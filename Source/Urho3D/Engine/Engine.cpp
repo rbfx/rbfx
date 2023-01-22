@@ -1033,7 +1033,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return false;
         engineParameters[EP_LOG_LEVEL] = logLevel;
         return true;
-    })->type_name(createOptions("string in {%s}", logLevelNames).c_str());
+    })->type_name(createOptions("string in {%s}", logLevelNames).c_str())->type_size(1);
     addOptionString("--log-file", EP_LOG_NAME, "Log output file");
     addOptionInt("-x,--width", EP_WINDOW_WIDTH, "Window width");
     addOptionInt("-y,--height", EP_WINDOW_HEIGHT, "Window height");
@@ -1055,7 +1055,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return true;
         }
         return false;
-    })->type_name(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str());
+    })->type_name(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str())->type_size(1);
     addFlagInternal("--tq", "Texture quality", [&](CLI::results_t res) {
         unsigned value = 0;
         if (CLI::detail::lexical_cast(res[0], value) && value >= QUALITY_LOW && value <= QUALITY_MAX)
@@ -1064,14 +1064,14 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return true;
         }
         return false;
-    })->type_name(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str());
+    })->type_name(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str())->type_size(1);
     addFlagInternal("--tf", "Texture filter mode", [&](CLI::results_t res) {
         unsigned mode = GetStringListIndex(ea::string(res[0].c_str()).to_upper().replaced('-', '_').c_str(), textureFilterModeNames, M_MAX_UNSIGNED);
         if (mode == M_MAX_UNSIGNED)
             return false;
         engineParameters[EP_TEXTURE_FILTER_MODE] = mode;
         return true;
-    })->type_name(createOptions("string in {%s}", textureFilterModeNames).c_str());
+    })->type_name(createOptions("string in {%s}", textureFilterModeNames).c_str())->type_size(1);
     addFlagInternal("--af", "Use anisotropic filtering", [&](CLI::results_t res) {
         int value = 0;
         if (CLI::detail::lexical_cast(res[0], value) && value >= 1)
@@ -1081,7 +1081,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return true;
         }
         return false;
-    })->type_name("int");
+    })->type_name("int")->type_size(1);
     addFlag("--touch", EP_TOUCH_EMULATION, true, "Enable touch emulation");
     addOptionInt("--timeout", EP_TIME_OUT, "Quit application after specified time");
     addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->type_name("plugin1;plugin2;...");
