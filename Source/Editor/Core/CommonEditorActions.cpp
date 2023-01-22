@@ -22,6 +22,8 @@
 
 #include "../Core/CommonEditorActions.h"
 
+#include <EASTL/bonus/adaptors.h>
+
 namespace Urho3D
 {
 
@@ -34,6 +36,61 @@ AttributeScopeHint GetScopeHint(Context* context, const StringHash& componentTyp
     return reflection ? reflection->GetEffectiveScopeHint() : AttributeScopeHint::Serializable;
 }
 
+AttributeScopeHint GetScopeHint(Context* context, Node* node, const AttributeInfo& attr)
+{
+    // For nodes, "Is Enabled" is special because it effectively propagates to children components.
+    // Other attributes always have the smallest scope.
+    if (attr.name_ != "Is Enabled")
+        return AttributeScopeHint::Attribute;
+
+    AttributeScopeHint result = AttributeScopeHint::Attribute;
+    for (Component* component : node->GetComponents())
+        result = ea::max(result, GetScopeHint(context, component->GetType()));
+    return result;
+}
+
+AttributeScopeHint GetScopeHint(Context* context, const ea::vector<Node*>& nodes, const AttributeInfo& attr)
+{
+    AttributeScopeHint result = AttributeScopeHint::Attribute;
+    for (Node* node : nodes)
+        result = ea::max(result, GetScopeHint(context, node, attr));
+    return result;
+}
+
+template <class T>
+ea::vector<WeakPtr<T>> ToWeakPtr(const ea::vector<T*>& source)
+{
+    ea::vector<WeakPtr<T>> result;
+    result.reserve(source.size());
+    for (T* item : source)
+        result.emplace_back(item);
+    return result;
+}
+
+}
+
+bool CompositeEditorAction::CanRedo() const
+{
+    const auto canRedo = [](const SharedPtr<EditorAction>& action) { return action->CanRedo(); };
+    return ea::all_of(actions_.begin(), actions_.end(), canRedo);
+}
+
+bool CompositeEditorAction::CanUndo() const
+{
+    const auto canUndo = [](const SharedPtr<EditorAction>& action) { return action->CanUndo(); };
+    return ea::all_of(actions_.begin(), actions_.end(), canUndo);
+}
+
+void CompositeEditorAction::Redo() const
+{
+    for (const auto& action : actions_)
+        action->Redo();
+}
+
+void CompositeEditorAction::Undo() const
+{
+    for (const auto& action : ea::reverse(actions_))
+        action->Undo();
 }
 
 CreateRemoveNodeAction::CreateRemoveNodeAction(Node* node, bool removed)
@@ -632,6 +689,156 @@ SharedPtr<EditorAction> RemoveComponentActionFactory::Cook() const
     {
         return MakeShared<ChangeSceneAction>(scene_, oldSceneData_);
     }
+    default: return nullptr;
+    }
+}
+
+ChangeNodeAttributesActionFactory::ChangeNodeAttributesActionFactory(
+    ChangeAttributeBuffer& buffer, Scene* scene, const ea::vector<Node*>& nodes, const AttributeInfo& attr)
+    : buffer_(buffer)
+    , scene_(scene)
+    , attributeName_(attr.name_)
+    , scopeHint_(GetScopeHint(scene_->GetContext(), nodes, attr))
+    , nodes_(scopeHint_ <= AttributeScopeHint::Serializable ? ToWeakPtr(nodes) : ToWeakPtr(Node::GetParentNodes(nodes)))
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    {
+        buffer_.oldValues_.clear();
+        for (Node* node : nodes)
+            buffer_.oldValues_.push_back(node->GetAttribute(attributeName_));
+        break;
+    }
+    case AttributeScopeHint::Node:
+    {
+        buffer_.oldNodes_.clear();
+        for (Node* node : nodes)
+            buffer_.oldNodes_.emplace_back(node);
+        break;
+    }
+    case AttributeScopeHint::Scene:
+    {
+        buffer_.oldScene_.FromScene(scene_);
+        break;
+    }
+    default: break;
+    };
+}
+
+SharedPtr<EditorAction> ChangeNodeAttributesActionFactory::Cook() const
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    {
+        buffer_.newValues_.clear();
+        for (Node* node : nodes_)
+            buffer_.newValues_.push_back(node->GetAttribute(attributeName_));
+
+        return MakeShared<ChangeNodeAttributesAction>(
+            scene_, attributeName_, nodes_, buffer_.oldValues_, buffer_.newValues_);
+    }
+    case AttributeScopeHint::Node:
+    {
+        buffer_.newNodes_.clear();
+        for (Node* node : nodes_)
+            buffer_.newNodes_.emplace_back(node);
+
+        auto compositeAction = MakeShared<CompositeEditorAction>();
+        for (unsigned index = 0; index < nodes_.size(); ++index)
+        {
+            compositeAction->EmplaceAction<ChangeNodeSubtreeAction>(
+                scene_, buffer_.oldNodes_[index], buffer_.newNodes_[index]);
+        }
+        return compositeAction;
+    }
+    case AttributeScopeHint::Scene:
+    {
+        buffer_.newScene_.FromScene(scene_);
+        return MakeShared<ChangeSceneAction>(scene_, buffer_.oldScene_, buffer_.newScene_);
+    }
+    default: return nullptr;
+    }
+}
+
+ChangeComponentAttributesActionFactory::ChangeComponentAttributesActionFactory(
+    ChangeAttributeBuffer& buffer, Scene* scene, const ea::vector<Component*>& components, const AttributeInfo& attr)
+    : buffer_(buffer)
+    , scene_(scene)
+    , attributeName_(attr.name_)
+    , scopeHint_(attr.scopeHint_)
+    , components_(ToWeakPtr(components))
+    , nodes_(ToWeakPtr(Node::GetParentNodes(Node::GetNodes(components))))
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    {
+        buffer_.oldValues_.clear();
+        for (Component* component : components)
+            buffer_.oldValues_.push_back(component->GetAttribute(attributeName_));
+        break;
+    }
+
+    case AttributeScopeHint::Serializable:
+    case AttributeScopeHint::Node:
+    {
+        buffer_.oldNodes_.clear();
+        for (Node* node : nodes_)
+            buffer_.oldNodes_.emplace_back(node);
+        break;
+    }
+
+    case AttributeScopeHint::Scene:
+    {
+        buffer_.oldScene_.FromScene(scene_);
+        break;
+    }
+
+    default: break;
+    }
+}
+
+SharedPtr<EditorAction> ChangeComponentAttributesActionFactory::Cook() const
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    {
+        buffer_.newValues_.clear();
+        for (Component* component : components_)
+            buffer_.newValues_.push_back(component->GetAttribute(attributeName_));
+
+        return MakeShared<ChangeComponentAttributesAction>(
+            scene_, attributeName_, components_, buffer_.oldValues_, buffer_.newValues_);
+    }
+
+    case AttributeScopeHint::Serializable:
+    case AttributeScopeHint::Node:
+    {
+        buffer_.newNodes_.clear();
+        for (Node* node : nodes_)
+            buffer_.newNodes_.emplace_back(node);
+
+        auto compositeAction = MakeShared<CompositeEditorAction>();
+        for (unsigned index = 0; index < nodes_.size(); ++index)
+        {
+            compositeAction->EmplaceAction<ChangeNodeSubtreeAction>(
+                scene_, buffer_.oldNodes_[index], buffer_.newNodes_[index]);
+        }
+        return compositeAction;
+    }
+
+    case AttributeScopeHint::Scene:
+    {
+        buffer_.newScene_.FromScene(scene_);
+
+        return MakeShared<ChangeSceneAction>(scene_, buffer_.oldScene_, buffer_.newScene_);
+    }
+
     default: return nullptr;
     }
 }
