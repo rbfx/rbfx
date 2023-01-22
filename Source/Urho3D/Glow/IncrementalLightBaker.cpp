@@ -371,7 +371,7 @@ struct IncrementalLightBaker::Impl
                 for (unsigned i = 0; i < bakedLightmap.lightmap_.size(); ++i)
                 {
                     const Vector3 directLight = static_cast<Vector3>(directFilterBuffer[i]);
-                    const Vector3 indirectLight = static_cast<Vector3>(indirectFilterBuffer[i]);
+                    const Vector3 indirectLight = indirectFilterBuffer[i].ToVector3();
                     bakedLightmap.lightmap_[i] = VectorMax(Vector3::ZERO, directLight);
                     bakedLightmap.lightmap_[i] += VectorMax(Vector3::ZERO, indirectLight);
                 }
@@ -458,7 +458,7 @@ struct IncrementalLightBaker::Impl
                     const unsigned y = i / geometryBuffer.lightmapSize_;
 
                     static const float multiplier = 1.0f / 2.0f;
-                    Color color = static_cast<Color>(static_cast<Vector3>(buffer[i])).LinearToGamma();
+                    Color color = static_cast<Color>(buffer[i].ToVector3()).LinearToGamma();
                     color.r_ *= multiplier;
                     color.g_ *= multiplier;
                     color.b_ *= multiplier;

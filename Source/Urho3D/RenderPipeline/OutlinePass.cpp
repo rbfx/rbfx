@@ -182,7 +182,7 @@ void OutlinePass::Execute(Camera* camera)
         return;
 
     auto texture = outlineBuffer_->GetTexture();
-    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(texture->GetSize());
+    const Vector2 inputInvSize = Vector2::ONE / texture->GetSize().ToVector2();
 
     const ShaderParameterDesc result[] = {{"InputInvSize", inputInvSize}};
     const ShaderResourceDesc shaderResources[] = {{TU_DIFFUSE, texture}};

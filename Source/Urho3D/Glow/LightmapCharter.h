@@ -48,8 +48,8 @@ struct LightmapChartRegion
         : chartIndex_(index)
         , rectTexels_(position, position + size)
     {
-        rectUV_.min_ = static_cast<Vector2>(rectTexels_.Min()) / static_cast<float>(maxSize);
-        rectUV_.max_ = static_cast<Vector2>(rectTexels_.Max()) / static_cast<float>(maxSize);
+        rectUV_.min_ = rectTexels_.Min().ToVector2() / static_cast<float>(maxSize);
+        rectUV_.max_ = rectTexels_.Max().ToVector2() / static_cast<float>(maxSize);
     }
     /// Return lightmap scale of the region.
     Vector2 GetScale() const { return rectUV_.Size(); }

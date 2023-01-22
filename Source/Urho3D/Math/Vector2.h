@@ -27,6 +27,11 @@
 
 namespace Urho3D
 {
+class Vector2;
+class Vector3;
+class Vector4;
+class IntVector2;
+class IntVector3;
 
 /// Two-dimensional vector with integer values.
 class URHO3D_API IntVector2
@@ -152,6 +157,18 @@ public:
     /// Return length.
     float Length() const { return sqrtf((float)(x_ * x_ + y_ * y_)); }
 
+    /// Return Vector2 vector.
+    Vector2 ToVector2() const;
+
+    /// Return IntVector3 vector.
+    IntVector3 ToIntVector3(int z = 0) const;
+
+    /// Return Vector3 vector.
+    Vector3 ToVector3(float z = 0.0f) const;
+
+    /// Return Vector4 vector.
+    Vector4 ToVector4(float z = 0.0f, float w = 0.0f) const;
+
     /// X coordinate.
     int x_;
     /// Y coordinate.
@@ -184,13 +201,6 @@ public:
 
     /// Copy-construct from another vector.
     Vector2(const Vector2& vector) noexcept = default;
-
-    /// Construct from an IntVector2.
-    explicit Vector2(const IntVector2& vector) noexcept :
-        x_((float)vector.x_),
-        y_((float)vector.y_)
-    {
-    }
 
     /// Construct from coordinates.
     Vector2(float x, float y) noexcept :
@@ -378,6 +388,18 @@ public:
     /// Return float data.
     const float* Data() const { return &x_; }
 
+    /// Return IntVector2 vector.
+    IntVector2 ToIntVector2() const { return {static_cast<int>(x_), static_cast<int>(y_)}; }
+
+    /// Return IntVector3 vector.
+    IntVector3 ToIntVector3(int z = 0) const;
+
+    /// Return Vector3 vector.
+    Vector3 ToVector3(float z = 0.0f) const;
+
+    /// Return Vector4 vector.
+    Vector4 ToVector4(float z = 0.0f, float w = 0.0f) const;
+
     /// Return as string.
     ea::string ToString() const;
 
@@ -464,5 +486,8 @@ inline float StableRandom(const Vector2& seed) { return Fract(Sin(seed.DotProduc
 
 /// Return a random value from [0, 1) from scalar seed.
 inline float StableRandom(float seed) { return StableRandom(Vector2(seed, seed)); }
+
+/// Return Vector2 vector.
+inline Vector2 IntVector2::ToVector2() const { return { static_cast<float>(x_), static_cast<float>(y_) }; }
 
 }

@@ -846,7 +846,7 @@ void BillboardSet::CalculateFixedScreenSize(const FrameInfo& frame)
 
         for (unsigned i = 0; i < billboards_.size(); ++i)
         {
-            Vector4 projPos(viewProj * Vector4(billboardTransform * billboards_[i].position_, 1.0f));
+            Vector4 projPos(viewProj * billboardTransform * billboards_[i].position_.ToVector4(1.0f));
             float newScaleFactor = invViewHeight * halfViewWorldSize * projPos.w_;
             if (newScaleFactor != billboards_[i].screenScaleFactor_)
             {

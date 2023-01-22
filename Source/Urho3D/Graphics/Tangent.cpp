@@ -120,7 +120,7 @@ void GenerateTangents(void* vertexData, unsigned vertexSize, const void* indexDa
         w = n.CrossProduct(t).DotProduct(tan2[i]) < 0.0f ? -1.0f : 1.0f;
 
         Vector4& tangent = *((Vector4*)(vertices + i * vertexSize + tangentOffset));
-        tangent = Vector4(xyz, w);
+        tangent = xyz.ToVector4(w);
     }
 
     delete[] tan1;

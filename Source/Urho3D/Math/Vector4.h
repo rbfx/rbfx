@@ -43,12 +43,12 @@ public:
     /// Copy-construct from another vector.
     Vector4(const Vector4& vector) noexcept = default;
 
-    /// Construct from a 3-dimensional vector and the W coordinate.
-    Vector4(const Vector3& vector, float w) noexcept :
-        x_(vector.x_),
-        y_(vector.y_),
-        z_(vector.z_),
-        w_(w)
+    /// Construct from 3-dimensional vector and a scalar.
+    Vector4(const Vector3& v1, float w) noexcept
+        : x_(v1.x_)
+        , y_(v1.y_)
+        , z_(v1.z_)
+        , w_(w)
     {
     }
 
@@ -194,7 +194,7 @@ public:
     }
 
     /// Project vector onto axis.
-    float ProjectOntoAxis(const Vector3& axis) const { return DotProduct(Vector4(axis.Normalized(), 0.0f)); }
+    float ProjectOntoAxis(const Vector3& axis) const { return DotProduct(axis.Normalized().ToVector4()); }
 
     /// Return absolute vector.
     Vector4 Abs() const { return Vector4(Urho3D::Abs(x_), Urho3D::Abs(y_), Urho3D::Abs(z_), Urho3D::Abs(w_)); }
@@ -214,11 +214,18 @@ public:
     /// Return whether any component is Inf.
     bool IsInf() const { return Urho3D::IsInf(x_) || Urho3D::IsInf(y_) || Urho3D::IsInf(z_) || Urho3D::IsInf(w_); }
 
-    /// Convert to Vector2.
-    explicit operator Vector2() const { return { x_, y_ }; }
 
-    /// Convert to Vector3.
-    explicit operator Vector3() const { return { x_, y_, z_ }; }
+    /// Return IntVector2 vector (z, w components are ignored).
+    IntVector2 ToIntVector2() const { return {static_cast<int>(x_), static_cast<int>(y_)}; }
+
+    /// Return Vector2 vector (z, w components are ignored).
+    Vector2 ToVector2() const { return {x_, y_}; }
+
+    /// Return IntVector3 vector (w component is ignored).
+    IntVector3 ToIntVector3() const { return {static_cast<int>(x_), static_cast<int>(y_), static_cast<int>(z_)}; }
+
+    /// Return Vector3 vector (w component is ignored).
+    Vector3 ToVector3() const { return {x_, y_, z_}; }
 
     /// Return float data.
     const float* Data() const { return &x_; }
@@ -274,4 +281,15 @@ inline Vector4 VectorRound(const Vector4& vec) { return Vector4(Round(vec.x_), R
 /// Per-component ceil of 4-vector.
 inline Vector4 VectorCeil(const Vector4& vec) { return Vector4(Ceil(vec.x_), Ceil(vec.y_), Ceil(vec.z_), Ceil(vec.w_)); }
 
+/// Return Vector4 vector.
+inline Vector4 IntVector2::ToVector4(float z, float w) const { return { static_cast<float>(x_), static_cast<float>(y_), z, w }; }
+
+/// Return Vector4 vector.
+inline Vector4 Vector2::ToVector4(float z, float w) const { return { x_, y_, z, w }; }
+
+/// Return Vector4 vector.
+inline Vector4 IntVector3::ToVector4(float w) const { return { static_cast<float>(x_), static_cast<float>(y_), static_cast<float>(z_), w }; }
+
+/// Return Vector4 vector.
+inline Vector4 Vector3::ToVector4(float w) const { return { x_, y_, z_, w }; }
 }
