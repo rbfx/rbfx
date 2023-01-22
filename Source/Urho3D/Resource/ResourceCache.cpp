@@ -619,7 +619,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& 
 
     StringHash nameHash(sanitatedName);
 
-    const SharedPtr<Resource>& existing = type == StringHash::Empty ? FindResource(type, nameHash) : FindResource(nameHash);
+    const SharedPtr<Resource>& existing = type != StringHash::Empty ? FindResource(type, nameHash) : FindResource(nameHash);
     return existing;
 }
 
