@@ -104,15 +104,20 @@ void SerializeValue(Archive& archive, const char* name, SceneViewPage& page, con
 void Foundation_SceneViewTab(Context* context, Project* project)
 {
     project->AddTab(MakeShared<SceneViewTab>(context));
+
+    if (!context->IsReflected<SceneResourceForEditor>())
+        context->AddFactoryReflection<SceneResourceForEditor>();
 }
 
-SceneViewPage::SceneViewPage(Resource* resource, Scene* scene)
-    : Object(scene->GetContext())
+SceneViewPage::SceneViewPage(SceneResource* resource)
+    : Object(resource->GetContext())
     , resource_(resource)
-    , scene_(scene)
+    , scene_(resource->GetScene())
     , renderer_(MakeShared<SceneRendererToTexture>(scene_))
-    , cfgFileName_(scene_->GetFileName() + ".user.json")
+    , cfgFileName_(resource_->GetAbsoluteFileName() + ".user.json")
 {
+    scene_->SetFileName(resource_->GetAbsoluteFileName());
+    scene_->SetUpdateEnabled(false);
 }
 
 SceneViewPage::~SceneViewPage()
@@ -821,16 +826,16 @@ void SceneViewTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    auto xmlFile = cache->GetResource<XMLFile>(resourceName);
+    auto sceneResource = cache->GetResource<SceneResourceForEditor>(resourceName);
 
-    if (!xmlFile)
+    if (!sceneResource)
     {
         URHO3D_LOGERROR("Cannot load scene file '%s'", resourceName);
         return;
     }
 
     const bool isActive = resourceName == GetActiveResourceName();
-    scenes_[resourceName] = CreatePage(xmlFile, isActive);
+    scenes_[resourceName] = CreatePage(sceneResource, isActive);
 }
 
 void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
@@ -874,22 +879,35 @@ void SceneViewTab::OnResourceShallowSaved(const ea::string& resourceName)
 
 void SceneViewTab::SavePageScene(SceneViewPage& page) const
 {
-    XMLFile xmlFile(context_);
-    XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+    const bool isLegacyScene = page.resource_->GetName().ends_with(".xml");
 
     page.scene_->SetUpdateEnabled(false);
-    page.scene_->SaveXML(rootElement);
 
     VectorBuffer buffer;
-    xmlFile.Save(buffer);
+    if (isLegacyScene)
+    {
+        XMLFile xmlFile(context_);
+        XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+        page.scene_->SaveXML(rootElement);
+        xmlFile.Save(buffer);
+    }
+    else
+    {
+        page.resource_->Save(buffer);
+    }
 
     auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
 
     auto project = GetProject();
-    project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer);
-
-    auto cache = GetSubsystem<ResourceCache>();
-    cache->ReleaseResource(page.resource_->GetName(), true);
+    project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer,
+        [this](const ea::string& _, const ea::string& resourceName)
+    {
+        // This is a hack to reload existing prefabs, but not the scenes, on scene save.
+        // TODO: Do something better?
+        auto cache = GetSubsystem<ResourceCache>();
+        auto prefabResource = cache->GetExistingResource<PrefabResource>(resourceName);
+        cache->ReloadResource(prefabResource);
+    });
 }
 
 void SceneViewTab::SavePagePreview(SceneViewPage& page) const
@@ -1052,29 +1070,33 @@ SceneViewPage* SceneViewTab::GetActivePage()
     return GetPage(GetActiveResourceName());
 }
 
-SharedPtr<SceneViewPage> SceneViewTab::CreatePage(XMLFile* xmlFile, bool isActive)
+SharedPtr<SceneViewPage> SceneViewTab::CreatePage(SceneResource* sceneResource, bool isActive)
 {
-    auto scene = MakeShared<Scene>(context_);
-    scene->LoadXML(xmlFile->GetRoot());
-    scene->SetFileName(xmlFile->GetAbsoluteFileName());
-    scene->SetUpdateEnabled(false);
+    auto page = MakeShared<SceneViewPage>(sceneResource);
 
-    auto page = MakeShared<SceneViewPage>(xmlFile, scene);
-
-    WeakPtr<SceneViewPage> weakPage{page};
-    page->SubscribeToEvent(xmlFile, E_RELOADFINISHED, [this, weakPage](StringHash, VariantMap&)
+    sceneResource->OnReloadBegin.Subscribe(page.Get(), [this](SceneViewPage* page, bool& cancelReload)
     {
-        if (weakPage && !IsResourceUnsaved(weakPage->resource_->GetName()))
+        if (IsResourceUnsaved(page->resource_->GetName()))
         {
-            const PackedSceneSelection selection = weakPage->selection_.Pack();
-            auto xmlFile = static_cast<XMLFile*>(weakPage->resource_.Get());
-            weakPage->scene_->LoadXML(xmlFile->GetRoot());
-            weakPage->selection_.Load(weakPage->scene_, selection);
+            cancelReload = true;
+            return;
+        }
+
+        page->loadingSelection_ = page->selection_.Pack();
+    });
+
+    sceneResource->OnReloadEnd.Subscribe(page.Get(), [this](SceneViewPage* page, bool success)
+    {
+        if (success && page->loadingSelection_)
+        {
+            page->selection_.Load(page->scene_, *page->loadingSelection_);
+            page->loadingSelection_ = ea::nullopt;
         }
     });
 
     page->renderer_->SetActive(isActive);
 
+    WeakPtr<SceneViewPage> weakPage{page};
     page->selection_.OnChanged.Subscribe(this, [weakPage](SceneViewTab* self)
     {
         if (weakPage)

@@ -438,14 +438,16 @@ ResourceFileDescriptor Project::GetResourceDescriptor(const ea::string& resource
     return result;
 }
 
-void Project::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes)
+void Project::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes,
+    const FileSavedCallback& onSaved)
 {
-    delayedFileSaves_[resourceName] = PendingFileSave{fileName, bytes};
+    delayedFileSaves_[resourceName] = PendingFileSave{fileName, bytes, onSaved};
 }
 
-void Project::SaveFileDelayed(Resource* resource)
+void Project::SaveFileDelayed(Resource* resource, const FileSavedCallback& onSaved)
 {
-    delayedFileSaves_[resource->GetName()] = PendingFileSave{resource->GetAbsoluteFileName(), nullptr, SharedPtr<Resource>(resource)};
+    delayedFileSaves_[resource->GetName()] =
+        PendingFileSave{resource->GetAbsoluteFileName(), nullptr, onSaved, SharedPtr<Resource>(resource)};
 }
 
 void Project::IgnoreFileNamePattern(const ea::string& pattern)
@@ -798,6 +800,9 @@ void Project::ProcessDelayedSaves(bool forceSave)
 
         if (fileExists)
             cache->IgnoreResourceReload(resourceName);
+
+        if (delayedSave.onSaved_)
+            delayedSave.onSaved_(delayedSave.fileName_, resourceName);
 
         delayedSave.Clear();
     }

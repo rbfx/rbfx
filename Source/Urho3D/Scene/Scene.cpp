@@ -39,6 +39,7 @@
 #include "../Scene/ObjectAnimation.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
+#include "../Scene/SceneResource.h"
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
@@ -1388,6 +1389,7 @@ void RegisterSceneLibrary(Context* context)
     ObjectAnimation::RegisterObject(context);
     Node::RegisterObject(context);
     Scene::RegisterObject(context);
+    SceneResource::RegisterObject(context);
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
     PrefabReference::RegisterObject(context);

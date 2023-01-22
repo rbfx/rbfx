@@ -29,6 +29,7 @@
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/OctreeQuery.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/SceneResource.h>
 #include <Urho3D/Utility/SceneRendererToTexture.h>
 #include <Urho3D/Utility/SceneSelection.h>
 #include <Urho3D/Utility/PackedSceneData.h>
@@ -45,19 +46,28 @@ class SceneViewAddon;
 class SceneViewTab;
 class SimulateSceneAction;
 
+/// Declare Editor-only type to avoid interference with user code.
+class SceneResourceForEditor : public SceneResource
+{
+    URHO3D_OBJECT(SceneResourceForEditor, SceneResource);
+
+public:
+    using SceneResource::SceneResource;
+};
+
 /// Single page of SceneViewTab.
 class SceneViewPage : public Object
 {
     URHO3D_OBJECT(SceneViewPage, Object);
 
 public:
-    SceneViewPage(Resource* resource, Scene* scene);
+    explicit SceneViewPage(SceneResource* resource);
     ~SceneViewPage() override;
 
     ea::any& GetAddonData(const SceneViewAddon& addon);
 
 public:
-    const SharedPtr<Resource> resource_;
+    const SharedPtr<SceneResource> resource_;
     const SharedPtr<Scene> scene_;
     const SharedPtr<SceneRendererToTexture> renderer_;
     const ea::string cfgFileName_;
@@ -67,6 +77,8 @@ public:
     SceneSelection selection_;
     PackedSceneSelection oldSelection_;
     PackedSceneSelection newSelection_;
+
+    ea::optional<PackedSceneSelection> loadingSelection_;
 
     SharedPtr<SimulateSceneAction> currentSimulationAction_;
 
@@ -262,7 +274,7 @@ protected:
 private:
     /// Manage pages
     /// @{
-    SharedPtr<SceneViewPage> CreatePage(XMLFile* xmlFile, bool isActive);
+    SharedPtr<SceneViewPage> CreatePage(SceneResource* sceneResource, bool isActive);
     void SavePageScene(SceneViewPage& page) const;
 
     void SavePageConfig(const SceneViewPage& page) const;
