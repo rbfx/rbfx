@@ -90,11 +90,11 @@ void Scene::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Elapsed Time", GetElapsedTime, SetElapsedTime, float, 0.0f, AM_FILE);
-    URHO3D_ATTRIBUTE("Next Node ID", unsigned, replicatedNodeID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE("Next Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_FILE); // Network replication of vars uses custom data
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Elapsed Time", GetElapsedTime, SetElapsedTime, float, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Next Node ID", unsigned, replicatedNodeID_, FIRST_REPLICATED_ID, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Next Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT); // Network replication of vars uses custom data
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE_EX("Lightmaps", ResourceRefList, lightmaps_, ReloadLightmaps, ResourceRefList(Texture2D::GetTypeStatic()), AM_DEFAULT);
 }
 

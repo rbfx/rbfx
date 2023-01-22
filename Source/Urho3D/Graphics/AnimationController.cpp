@@ -371,7 +371,7 @@ void AnimationController::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Reset Skeleton", bool, resetSkeleton_, false, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT)
         .SetMetadata(AttributeMetadata::VectorStructElements, animationParametersNames);
 }
 

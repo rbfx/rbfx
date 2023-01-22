@@ -147,8 +147,8 @@ void Terrain::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Occlusion LOD level", GetOcclusionLodLevel, SetOcclusionLodLevelAttr, unsigned, M_MAX_UNSIGNED, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bake Lightmap", bool, bakeLightmap_, MarkTerrainDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Scale in Lightmap", float, scaleInLightmap_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdatePatchesLightmaps, 0, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdatePatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_FILE | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdatePatchesLightmaps, 0, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdatePatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_DEFAULT | AM_NOEDIT);
 }
 
 void Terrain::ApplyAttributes()

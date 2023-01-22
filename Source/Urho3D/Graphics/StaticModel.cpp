@@ -71,8 +71,8 @@ void StaticModel::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Occlusion LOD Level", int, occlusionLodLevel_, M_MAX_UNSIGNED, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bake Lightmap", bool, bakeLightmap_, UpdateBatchesLightmaps, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Scale in Lightmap", float, scaleInLightmap_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdateBatchesLightmaps, 0, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdateBatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_FILE | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdateBatchesLightmaps, 0, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdateBatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_DEFAULT | AM_NOEDIT);
 }
 
 void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
