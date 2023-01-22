@@ -142,6 +142,7 @@
 #if URHO3D_RMLUI
 #include "114_AdvancedUI/AdvancedUI.h"
 #endif
+#include "115_RayCast/RayCastSample.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -384,6 +385,7 @@ void SamplesManager::Start()
 #if URHO3D_RMLUI
     RegisterSample<AdvancedUI>();
 #endif
+    RegisterSample<RayCastSample>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

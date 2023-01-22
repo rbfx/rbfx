@@ -96,6 +96,8 @@ public:
     virtual bool IsEscapeEnabled() { return true; }
 
 protected:
+    /// Create or update skybox with default model and material.
+    void SetDefaultSkybox(Scene* scene);
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
     virtual ea::string GetScreenJoystickPatchString() const { return EMPTY_STRING; }
     /// Initialize touch input on mobile platform.

@@ -1,10 +1,12 @@
 %constant const char* EpApplicationName = "ApplicationName";
 %ignore Urho3D::EP_APPLICATION_NAME;
+%constant const char* EpApplicationPreferencesDir = "ApplicationPreferencesDir";
+%ignore Urho3D::EP_APPLICATION_PREFERENCES_DIR;
 %constant const char* EpAutoloadPaths = "AutoloadPaths";
 %ignore Urho3D::EP_AUTOLOAD_PATHS;
 %constant const char* EpBorderless = "Borderless";
 %ignore Urho3D::EP_BORDERLESS;
-%constant const char* EpConfigName = "EngineConfigName";
+%constant const char* EpConfigName = "ConfigName";
 %ignore Urho3D::EP_CONFIG_NAME;
 %constant const char* EpDumpShaders = "DumpShaders";
 %ignore Urho3D::EP_DUMP_SHADERS;
@@ -118,6 +120,9 @@
 %ignore Urho3D::Param_ScenePosition;
 %constant const char* ParamScenerotation = "SceneRotation";
 %ignore Urho3D::Param_SceneRotation;
+%csattribute(Urho3D::ConfigFile, %arg(Urho3D::ConfigFile::ConfigFlavorVector), VariablesPerFlavor, GetVariablesPerFlavor);
+%csattribute(Urho3D::ConfigFile, %arg(Urho3D::ConfigFile::ConfigVariableDefinitionMap), VariableDefinitions, GetVariableDefinitions);
+%csattribute(Urho3D::ConfigFile, %arg(Urho3D::StringVariantMap), Variables, GetVariables);
 %csattribute(Urho3D::Engine, %arg(ea::string), AppPreferencesDir, GetAppPreferencesDir);
 %csattribute(Urho3D::Engine, %arg(float), NextTimeStep, GetNextTimeStep, SetNextTimeStep);
 %csattribute(Urho3D::Engine, %arg(int), MinFps, GetMinFps, SetMinFps);
@@ -129,8 +134,6 @@
 %csattribute(Urho3D::Engine, %arg(bool), IsInitialized, IsInitialized);
 %csattribute(Urho3D::Engine, %arg(bool), IsExiting, IsExiting);
 %csattribute(Urho3D::Engine, %arg(bool), IsHeadless, IsHeadless);
-%csattribute(Urho3D::ApplicationSettings, %arg(Urho3D::StringVariantMap), ParametersForCurrentFlavor, GetParametersForCurrentFlavor);
-%csattribute(Urho3D::ApplicationSettings, %arg(Urho3D::ApplicationSettings::FlavoredSettingsVector), ParametersPerFlavor, GetParametersPerFlavor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsActive, IsActive);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::Cursor *), Cursor, GetCursor, SetCursor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseVisible, IsMouseVisible, SetMouseVisible);
@@ -187,13 +190,6 @@ public static partial class E
         public static implicit operator StringHash(EndPluginReloadEvent e) { return e._event; }
     }
     public static EndPluginReloadEvent EndPluginReload = new EndPluginReloadEvent();
-    public class EnqueueApplicationStateEvent {
-        private StringHash _event = new StringHash("EnqueueApplicationState");
-        public StringHash State = new StringHash("State");
-        public EnqueueApplicationStateEvent() { }
-        public static implicit operator StringHash(EnqueueApplicationStateEvent e) { return e._event; }
-    }
-    public static EnqueueApplicationStateEvent EnqueueApplicationState = new EnqueueApplicationStateEvent();
     public class StateTransitionStartedEvent {
         private StringHash _event = new StringHash("StateTransitionStarted");
         public StringHash From = new StringHash("From");
