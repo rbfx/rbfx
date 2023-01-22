@@ -901,15 +901,26 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
 
     auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
 
+    const WeakPtr<SceneViewPage> weakPage{&page};
+
     auto project = GetProject();
     project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer,
-        [this](const ea::string& _, const ea::string& resourceName)
+        [this, weakPage](const ea::string& _, const ea::string& resourceName, bool& needReload)
     {
-        // This is a hack to reload existing prefabs, but not the scenes, on scene save.
-        // TODO: Do something better?
+        if (SceneViewPage* page = weakPage)
+        {
+            // Force reload of the scene and/or prefabs, but ignore it in SceneViewTab
+            page->ignoreNextReload_ = true;
+            needReload = true;
+        }
+
+        // Sadly, ResourceCache can only reload one resource type for each name. Force reload here.
+        // TODO: Fix resource cache
         auto cache = GetSubsystem<ResourceCache>();
-        auto prefabResource = cache->GetExistingResource<PrefabResource>(resourceName);
-        cache->ReloadResource(prefabResource);
+        if (auto prefabResource = cache->GetExistingResource<PrefabResource>(resourceName))
+            cache->ReloadResource(prefabResource);
+        if (auto sceneResource = cache->GetExistingResource<SceneResource>(resourceName))
+            cache->ReloadResource(sceneResource);
     });
 }
 
@@ -1079,8 +1090,9 @@ SharedPtr<SceneViewPage> SceneViewTab::CreatePage(SceneResource* sceneResource, 
 
     sceneResource->OnReloadBegin.Subscribe(page.Get(), [this](SceneViewPage* page, bool& cancelReload)
     {
-        if (IsResourceUnsaved(page->resource_->GetName()))
+        if (page->ignoreNextReload_ || IsResourceUnsaved(page->resource_->GetName()))
         {
+            page->ignoreNextReload_ = false;
             cancelReload = true;
             return;
         }
