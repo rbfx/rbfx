@@ -46,6 +46,29 @@ public:
     /// @}
 };
 
+/// Composite action.
+class CompositeEditorAction : public EditorAction
+{
+public:
+    /// Add action to composite.
+    void AddAction(const SharedPtr<EditorAction>& action) { actions_.push_back(action); }
+    template <class T, class... Args> void EmplaceAction(Args&&... args)
+    {
+        actions_.push_back(MakeShared<T>(ea::forward<Args>(args)...));
+    }
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanRedo() const override;
+    bool CanUndo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    /// @}
+
+private:
+    ea::vector<SharedPtr<EditorAction>> actions_;
+};
+
 /// Create or remove node.
 class CreateRemoveNodeAction : public EditorAction
 {
@@ -309,8 +332,10 @@ private:
     PackedSceneData newData_;
 };
 
-/// Helper class to create "create component" action based on the component scope.
-/// This class should be created before the component is created, and cooked after.
+/// Helper factory classes to create actions.
+/// These classes should be created before the action is started, and cooked after the action is finished.
+/// @{
+
 class CreateComponentActionFactory
 {
 public:
@@ -326,8 +351,6 @@ private:
     PackedSceneData oldSceneData_;
 };
 
-/// Helper class to create "remove component" action based on the component scope.
-/// This class should be created before the component is removed, and cooked after.
 class RemoveComponentActionFactory
 {
 public:
@@ -344,5 +367,84 @@ private:
     PackedNodeData oldNodeData_;
     PackedSceneData oldSceneData_;
 };
+
+struct ChangeAttributeBuffer
+{
+    VariantVector oldValues_;
+    VariantVector newValues_;
+
+    ea::vector<PackedNodeData> oldNodes_;
+    ea::vector<PackedNodeData> newNodes_;
+
+    PackedSceneData oldScene_;
+    PackedSceneData newScene_;
+};
+
+class ChangeNodeAttributesActionFactory
+{
+public:
+    ChangeNodeAttributesActionFactory(ChangeAttributeBuffer& buffer, Scene* scene,
+        const ea::vector<Node*>& nodes, const AttributeInfo& attr);
+
+    template <class T>
+    ChangeNodeAttributesActionFactory(
+        ChangeAttributeBuffer& buffer, Scene* scene, const T& nodes, const AttributeInfo& attr)
+        : ChangeNodeAttributesActionFactory(buffer, scene, ToNodeVector(nodes), attr)
+    {
+    }
+
+    SharedPtr<EditorAction> Cook() const;
+
+private:
+    template <class T>
+    static ea::vector<Node*> ToNodeVector(const T& components)
+    {
+        using namespace ea;
+        return {begin(components), end(components)};
+    }
+
+    ChangeAttributeBuffer& buffer_;
+    const WeakPtr<Scene> scene_;
+
+    const ea::string attributeName_;
+    const AttributeScopeHint scopeHint_;
+
+    const ea::vector<WeakPtr<Node>> nodes_;
+};
+
+class ChangeComponentAttributesActionFactory
+{
+public:
+    ChangeComponentAttributesActionFactory(ChangeAttributeBuffer& buffer, Scene* scene,
+        const ea::vector<Component*>& components, const AttributeInfo& attr);
+
+    template <class T>
+    ChangeComponentAttributesActionFactory(
+        ChangeAttributeBuffer& buffer, Scene* scene, const T& components, const AttributeInfo& attr)
+        : ChangeComponentAttributesActionFactory(buffer, scene, ToComponentsVector(components), attr)
+    {
+    }
+
+    SharedPtr<EditorAction> Cook() const;
+
+private:
+    template <class T>
+    static ea::vector<Component*> ToComponentsVector(const T& components)
+    {
+        using namespace ea;
+        return {begin(components), end(components)};
+    }
+
+    ChangeAttributeBuffer& buffer_;
+    const WeakPtr<Scene> scene_;
+
+    const ea::string attributeName_;
+    const AttributeScopeHint scopeHint_;
+
+    const ea::vector<WeakPtr<Component>> components_;
+    const ea::vector<WeakPtr<Node>> nodes_;
+};
+
+/// @}
 
 }

@@ -96,9 +96,9 @@ private:
     SharedPtr<SerializableInspectorWidget> componentWidget_;
     ea::map<ea::string, unsigned> componentSummary_;
 
-    AttributeScopeHint scopeHint_{};
-    AttributeSnapshot oldState_;
-    AttributeSnapshot newState_;
+    ChangeAttributeBuffer actionBuffer_;
+    ea::unique_ptr<ChangeNodeAttributesActionFactory> nodeActionFactory_;
+    ea::unique_ptr<ChangeComponentAttributesActionFactory> componentActionFactory_;
 
     NodeVector changedNodes_;
     ea::vector<PackedNodeData> oldData_;
