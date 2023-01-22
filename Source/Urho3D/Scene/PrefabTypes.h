@@ -72,6 +72,8 @@ enum class PrefabSaveFlag
     EnumsAsStrings = 1 << 1,
     /// Whether to save default attribute values.
     SaveDefaultValues = 1 << 2,
+    /// Whether the prefab is saved. Attributes without AM_PREFAB flag will be ignored.
+    Prefab = 1 << 3,
 };
 URHO3D_FLAGSET(PrefabSaveFlag, PrefabSaveFlags);
 

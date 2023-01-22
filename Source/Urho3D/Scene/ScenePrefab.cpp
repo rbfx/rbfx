@@ -178,6 +178,9 @@ void SerializablePrefab::Import(const Serializable* serializable, PrefabSaveFlag
         if (!attr.ShouldSave())
             continue;
 
+        if (!(attr.mode_ & AM_PREFAB) && flags.Test(PrefabSaveFlag::Prefab))
+            continue;
+
         Variant value;
         serializable->OnGetAttribute(attr, value);
 
@@ -345,6 +348,13 @@ void ScenePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags flags, b
             [=](Archive& archive, const char* name, ScenePrefab& value)
             { SerializeValue(archive, name, value, flags, compactSave); });
     });
+}
+
+void ScenePrefab::Clear()
+{
+    node_ = {};
+    components_.clear();
+    children_.clear();
 }
 
 bool ScenePrefab::IsEmpty() const

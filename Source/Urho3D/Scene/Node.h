@@ -93,7 +93,7 @@ public:
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
-    void SerializeInBlock(Archive& archive, bool serializeTemporary);
+    void SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags);
 
     /// Load from prefab without resolving IDs and applying attributes. May throw ArchiveException.
     void LoadInternal(const SerializablePrefab& nodePrefab, PrefabReader& reader, SceneResolver& resolver,
@@ -107,6 +107,9 @@ public:
 
     /// Instantiate scene content from prefab. Return root node if successful.
     Node* InstantiatePrefab(const ScenePrefab& prefab, const Vector3& position, const Quaternion& rotation);
+    /// Generate prefab from scene content.
+    void GeneratePrefab(ScenePrefab& prefab) const;
+    ScenePrefab GeneratePrefab() const;
 
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;

@@ -70,17 +70,12 @@ ScenePrefab PrefabFromNodeFactory::CreatePrefabBase() const
     zone->SetBackgroundBrightness(1.0f);
     zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml"));
 
-    ScenePrefab result;
-    PrefabWriterToMemory writer{result, PrefabSaveFlag::EnumsAsStrings};
-    scene->Save(writer);
-    return result;
+    return scene->GeneratePrefab();
 }
 
 ScenePrefab PrefabFromNodeFactory::CreatePrefabFromNode(Node* node) const
 {
-    ScenePrefab result;
-    PrefabWriterToMemory writer{result, PrefabSaveFlag::EnumsAsStrings};
-    node->Save(writer);
+    ScenePrefab result = node->GeneratePrefab();
 
     // Discard enabled flag, position, rotation and name of the root node.
     // Keep the scale and the rest.

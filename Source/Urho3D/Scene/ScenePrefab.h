@@ -133,6 +133,7 @@ public:
     const ea::vector<ScenePrefab>& GetChildren() const { return children_; }
     ea::vector<ScenePrefab>& GetMutableChildren() { return children_; }
 
+    void Clear();
     bool IsEmpty() const;
 
     bool operator==(const ScenePrefab& rhs) const;

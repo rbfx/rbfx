@@ -44,7 +44,7 @@ PackedNodeData::PackedNodeData(Node* node)
         BinaryOutputArchive archive{node->GetContext(), data_};
 
         ArchiveBlock block = archive.OpenUnorderedBlock("node");
-        node->SerializeInBlock(archive, true /* serialize temporary */);
+        node->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 }
 
@@ -67,7 +67,7 @@ Node* PackedNodeData::SpawnExact(Scene* scene) const
         BinaryInputArchive archive{scene->GetContext(), view};
 
         ArchiveBlock block = archive.OpenUnorderedBlock("node");
-        node->SerializeInBlock(archive, true /* serialize temporary */);
+        node->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 
     parent->ReorderChild(node, indexInParent_);
@@ -84,7 +84,7 @@ Node* PackedNodeData::SpawnCopy(Node* parent) const
         BinaryInputArchive archive{parent->GetContext(), view};
 
         ArchiveBlock block = archive.OpenUnorderedBlock("node");
-        node->SerializeInBlock(archive, true /* serialize temporary */);
+        node->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 
     return node;
@@ -160,7 +160,7 @@ void PackedSceneData::ToScene(Scene* scene) const
         BinaryInputArchive archive{scene->GetContext(), view};
 
         ArchiveBlock block = archive.OpenUnorderedBlock("scene");
-        scene->SerializeInBlock(archive, true /* serialize temporary */);
+        scene->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 }
 
@@ -173,7 +173,7 @@ PackedSceneData PackedSceneData::FromScene(Scene* scene)
         BinaryOutputArchive archive{scene->GetContext(), result.sceneData_};
 
         ArchiveBlock block = archive.OpenUnorderedBlock("scene");
-        scene->SerializeInBlock(archive, true /* serialize temporary */);
+        scene->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 
     return result;

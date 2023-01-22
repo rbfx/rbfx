@@ -834,6 +834,9 @@ void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
         return;
     }
 
+    if (resourceName.ends_with(".prefab"))
+        sceneResource->SetPrefab(true);
+
     const bool isActive = resourceName == GetActiveResourceName();
     scenes_[resourceName] = CreatePage(sceneResource, isActive);
 }

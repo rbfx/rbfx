@@ -41,10 +41,7 @@ void SerializeAndDeserializeScene(Scene* scene)
 SharedPtr<PrefabResource> ConvertNodeToPrefab(Node* node)
 {
     auto prefab = MakeShared<PrefabResource>(node->GetContext());
-
-    PrefabWriterToMemory writer{prefab->GetMutableNodePrefab()};
-    node->Save(writer);
-
+    prefab->GetMutableNodePrefab() = node->GeneratePrefab();
     return prefab;
 }
 
