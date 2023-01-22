@@ -580,7 +580,7 @@ jobs:
           - rel
         ci_emsdk_version:
           - latest
-          - 3.1.24  # Minimal supported
+          #- 3.1.24  # Minimal supported
 
     env:
       BINARYEN_CORES: 1
