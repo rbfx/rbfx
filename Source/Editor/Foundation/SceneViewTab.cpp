@@ -410,12 +410,14 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
         {
             for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
             {
+                const CreateComponentActionFactory factory(selectedNode, packedComponent.GetType());
                 Component* newComponent = packedComponent.SpawnCopy(selectedNode);
+                PushAction(factory.Cook(newComponent));
+
                 if (componentSelection_)
                     selection.SetSelected(newComponent, true);
                 else
                     selection.SetSelected(selectedNode, true);
-                PushAction<CreateRemoveComponentAction>(newComponent, false);
             }
         }
     }
@@ -439,8 +441,9 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     {
         if (component)
         {
-            PushAction<CreateRemoveComponentAction>(component, true);
+            const RemoveComponentActionFactory factory(component);
             component->Remove();
+            PushAction(factory.Cook());
         }
     }
 
@@ -478,8 +481,11 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
             URHO3D_ASSERT(node);
 
             const auto data = PackedComponentData{component};
+
+            const CreateComponentActionFactory factory(node, data.GetType());
             Component* newComponent = data.SpawnCopy(node);
-            PushAction<CreateRemoveComponentAction>(newComponent, false);
+            PushAction(factory.Cook(newComponent));
+
             if (componentSelection_)
                 selection.SetSelected(newComponent, true);
             else
@@ -525,12 +531,14 @@ void SceneViewTab::CreateComponentInSelection(Scene* scene, SceneSelection& sele
     selection.Clear();
     for (Node* selectedNode : parentNodes)
     {
+        const CreateComponentActionFactory factory(selectedNode, componentType);
         Component* newComponent = selectedNode->CreateComponent(componentType);
+        PushAction(factory.Cook(newComponent));
+
         if (componentSelection_)
             selection.SetSelected(newComponent, true);
         else
             selection.SetSelected(selectedNode, true);
-        PushAction<CreateRemoveComponentAction>(newComponent, false);
     }
 }
 

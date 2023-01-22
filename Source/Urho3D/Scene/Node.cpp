@@ -653,7 +653,7 @@ void Node::Translate(const Vector3& delta, TransformSpace space)
         break;
 
     case TS_WORLD:
-        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
+        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * delta.ToVector4();
         break;
     }
 
@@ -1241,7 +1241,7 @@ Vector3 Node::LocalToWorld(const Vector4& vector) const
 
 Vector2 Node::LocalToWorld2D(const Vector2& vector) const
 {
-    Vector3 result = LocalToWorld(Vector3(vector));
+    Vector3 result = LocalToWorld(vector.ToVector3());
     return Vector2(result.x_, result.y_);
 }
 
@@ -1257,7 +1257,7 @@ Vector3 Node::WorldToLocal(const Vector4& vector) const
 
 Vector2 Node::WorldToLocal2D(const Vector2& vector) const
 {
-    Vector3 result = WorldToLocal(Vector3(vector));
+    Vector3 result = WorldToLocal(vector.ToVector3());
     return Vector2(result.x_, result.y_);
 }
 
@@ -2108,6 +2108,31 @@ void Node::RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i)
         scene_->ComponentRemoved(i->Get());
     (*i)->SetNode(nullptr);
     components_.erase(i);
+}
+
+ea::vector<Node*> Node::GetNodes(const ea::vector<Component*>& components)
+{
+    ea::vector<Node*> result;
+    for (Component* component : components)
+    {
+        Node* node = component->GetNode();
+        if (!result.contains(node))
+            result.push_back(node);
+    }
+    return result;
+}
+
+ea::vector<Node*> Node::GetParentNodes(const ea::vector<Node*>& nodes)
+{
+    ea::vector<Node*> result;
+    for (Node* candidate : nodes)
+    {
+        const auto isChildOf = [candidate](Node* node) { return candidate->IsChildOf(node); };
+        const bool isChildOfAny = ea::any_of(nodes.begin(), nodes.end(), isChildOf);
+        if (!isChildOfAny)
+            result.push_back(candidate);
+    }
+    return result;
 }
 
 }

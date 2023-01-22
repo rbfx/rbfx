@@ -89,9 +89,22 @@ public:
 protected:
     /// Data model facade
     /// @{
-    bool IsVariableDirty(const ea::string& variableName) { return dataModel_.IsVariableDirty(variableName); }
-    void DirtyVariable(const ea::string& variableName) { dataModel_.DirtyVariable(variableName); }
-    void DirtyAllVariables() { dataModel_.DirtyAllVariables(); }
+    bool IsVariableDirty(const ea::string& variableName)
+    {
+        if (!dataModel_)
+            return false;
+        return dataModel_.IsVariableDirty(variableName);
+    }
+    void DirtyVariable(const ea::string& variableName)
+    {
+        if (dataModel_)
+            dataModel_.DirtyVariable(variableName);
+    }
+    void DirtyAllVariables()
+    {
+        if (dataModel_)
+            dataModel_.DirtyAllVariables();
+    }
     /// @}
 
     /// Wrap data event callback.

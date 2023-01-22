@@ -2725,7 +2725,7 @@ private:
 
                 const auto colors = bufferReader_.ReadAccessorChecked<Vector3>(accessor);
                 for (unsigned i = 0; i < accessor.count; ++i)
-                    vertices[i].color_[semanticsIndex] = { colors[i], 1.0f };
+                    vertices[i].color_[semanticsIndex] = {colors[i], 1.0f};
             }
             else if (accessor.type == TINYGLTF_TYPE_VEC4)
             {

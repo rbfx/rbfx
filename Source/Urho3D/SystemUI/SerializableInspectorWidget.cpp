@@ -178,7 +178,7 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 {
     const SerializableHookFunction& hook = GetHook(SerializableHookKey{objects_[0]->GetTypeName(), info.name_});
 
-    if (!hook && info.GetMetadata(AttributeMetadata::P_IS_ACTION).GetBool())
+    if (!hook && info.GetMetadata(AttributeMetadata::IsAction).GetBool())
     {
         RenderAction(info);
         return;
@@ -212,7 +212,7 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 
     if (info.type_ == VAR_VARIANTVECTOR)
     {
-        if (const StringVector& structElements = info.GetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS).GetStringVector(); !structElements.empty())
+        if (const StringVector& structElements = info.GetMetadata(AttributeMetadata::VectorStructElements).GetStringVector(); !structElements.empty())
             options = options.SizedStructVector(structElements);
         else
             options = options.AllowResize().AllowTypeChange();

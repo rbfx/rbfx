@@ -577,17 +577,17 @@ void ModelVertex::Repair()
             if (hasTangentBinormalCombined && !hasBinormal)
             {
                 // Repair binormal from tangent and normal
-                const Vector3 normal3 = static_cast<Vector3>(tangent_);
-                const Vector3 tangent3 = static_cast<Vector3>(normal_);
+                const Vector3 normal3 = tangent_.ToVector3();
+                const Vector3 tangent3 = normal_.ToVector3();
                 const Vector3 binormal3 = tangent_.w_ * normal3.CrossProduct(tangent3);
-                binormal_ = { binormal3.Normalized(), 0};
+                binormal_ = binormal3.Normalized().ToVector4();
             }
             else if (hasBinormal && !hasTangentBinormalCombined)
             {
                 // Repair tangent W component from binormal, tangent and normal
-                const Vector3 normal3 = static_cast<Vector3>(tangent_);
-                const Vector3 tangent3 = static_cast<Vector3>(normal_);
-                const Vector3 binormal3 = static_cast<Vector3>(binormal_);
+                const Vector3 normal3 = tangent_.ToVector3();
+                const Vector3 tangent3 = normal_.ToVector3();
+                const Vector3 binormal3 = binormal_.ToVector3();
                 const Vector3 crossBinormal = normal3.CrossProduct(tangent3);
                 tangent_.w_ = crossBinormal.DotProduct(binormal3) >= 0 ? 1.0f : -1.0f;
             }
@@ -675,7 +675,7 @@ Vector3 GeometryLODView::CalculateCenter() const
 {
     Vector3 center;
     for (const ModelVertex& vertex : vertices_)
-        center += static_cast<Vector3>(vertex.position_);
+        center += vertex.position_.ToVector3();
     return vertices_.empty() ? Vector3::ZERO : center / static_cast<float>(vertices_.size());
 }
 
@@ -738,14 +738,14 @@ void GeometryLODView::RecalculateFlatNormals()
         ModelVertex v1 = vertices_[i1];
         ModelVertex v2 = vertices_[i2];
 
-        const auto p0 = static_cast<Vector3>(v0.position_);
-        const auto p1 = static_cast<Vector3>(v1.position_);
-        const auto p2 = static_cast<Vector3>(v2.position_);
+        const auto p0 = v0.position_.ToVector3();
+        const auto p1 = v1.position_.ToVector3();
+        const auto p2 = v2.position_.ToVector3();
         const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0).Normalized();
 
-        v0.normal_ = Vector4(normal, 0.0f);
-        v1.normal_ = Vector4(normal, 0.0f);
-        v2.normal_ = Vector4(normal, 0.0f);
+        v0.normal_ = normal.ToVector4();
+        v1.normal_ = normal.ToVector4();
+        v2.normal_ = normal.ToVector4();
 
         const unsigned newIndex = newVertices.size();
         newVertices.push_back(v0);
@@ -797,18 +797,18 @@ void GeometryLODView::RecalculateSmoothNormals()
         ModelVertex& v1 = vertices_[i1];
         ModelVertex& v2 = vertices_[i2];
 
-        const auto p0 = static_cast<Vector3>(v0.position_);
-        const auto p1 = static_cast<Vector3>(v1.position_);
-        const auto p2 = static_cast<Vector3>(v2.position_);
+        const auto p0 = v0.position_.ToVector3();
+        const auto p1 = v1.position_.ToVector3();
+        const auto p2 = v2.position_.ToVector3();
         const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0).Normalized();
 
-        v0.normal_ += Vector4(normal, 0.0f);
-        v1.normal_ += Vector4(normal, 0.0f);
-        v2.normal_ += Vector4(normal, 0.0f);
+        v0.normal_ += normal.ToVector4();
+        v1.normal_ += normal.ToVector4();
+        v2.normal_ += normal.ToVector4();
     });
 
     for (ModelVertex& vertex : vertices_)
-        vertex.normal_ = Vector4(static_cast<Vector3>(vertex.normal_).Normalized(), 0.0f);
+        vertex.normal_ = vertex.normal_.ToVector3().Normalized().ToVector4();
 }
 
 void GeometryLODView::RecalculateTangents()
@@ -1279,7 +1279,7 @@ BoundingBox ModelView::CalculateBoundingBox() const
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
             for (const ModelVertex& vertex : sourceGeometryLod.vertices_)
-                boundingBox.Merge(static_cast<Vector3>(vertex.position_));
+                boundingBox.Merge(vertex.position_.ToVector3());
         }
     }
     return boundingBox;
@@ -1356,7 +1356,7 @@ void ModelView::ScaleGeometries(float scale)
         for (GeometryLODView& lodView : geometryView.lods_)
         {
             for (ModelVertex& vertex : lodView.vertices_)
-                vertex.position_ = Vector4{scale * vertex.GetPosition(), vertex.position_.w_};
+                vertex.position_ = (scale * vertex.GetPosition()).ToVector4(vertex.position_.w_);
 
             for (auto& [morphIndex, morphVector] : lodView.morphs_)
             {

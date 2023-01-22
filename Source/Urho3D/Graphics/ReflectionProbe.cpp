@@ -774,7 +774,7 @@ void ReflectionProbe::UpdateProbeBoxData()
     }
 
     const Vector3 position = node_->GetWorldPosition();
-    data_.cubemapCenter_ = Vector4(position, 1.0);
+    data_.cubemapCenter_ = position.ToVector4(1.0);
     data_.projectionBox_.min_ = position + projectionBox_.min_;
     data_.projectionBox_.max_ = position + projectionBox_.max_;
 }

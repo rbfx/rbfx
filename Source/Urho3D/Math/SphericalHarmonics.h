@@ -223,7 +223,7 @@ struct SphericalHarmonicsDot9
         result.x_ += Br_.DotProduct(b);
         result.y_ += Bg_.DotProduct(b);
         result.z_ += Bb_.DotProduct(b);
-        result += static_cast<Vector3>(C_) * c;
+        result += C_.ToVector3() * c;
         return result;
     }
 

@@ -60,7 +60,7 @@ void StaticModelGroup::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
     URHO3D_ACCESSOR_ATTRIBUTE("Instance Nodes", GetNodeIDsAttr, SetNodeIDsAttr,
         VariantVector, Variant::emptyVariantVector, AM_DEFAULT | AM_NODEIDVECTOR)
-        .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, instanceNodesStructureElementNames);
+        .SetMetadata(AttributeMetadata::VectorStructElements, instanceNodesStructureElementNames);
 }
 
 void StaticModelGroup::ApplyAttributes()
@@ -143,7 +143,7 @@ void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<R
                         if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                         {
                             distance = geometryDistance;
-                            normal = (worldTransforms_[i] * Vector4(geometryNormal, 0.0f)).Normalized();
+                            normal = (worldTransforms_[i] * geometryNormal.ToVector4()).Normalized();
                         }
                     }
                 }

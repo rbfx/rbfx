@@ -760,12 +760,12 @@ UIElement* UI::GetElementAt(int x, int y, bool enabledOnly)
 
 IntVector2 UI::ConvertSystemToUI(const IntVector2& systemPos) const
 {
-    return VectorFloorToInt(static_cast<Vector2>(systemPos) / GetScale());
+    return VectorFloorToInt(systemPos.ToVector2() / GetScale());
 }
 
 IntVector2 UI::ConvertUIToSystem(const IntVector2& uiPos) const
 {
-    return VectorFloorToInt(static_cast<Vector2>(uiPos) * GetScale());
+    return VectorFloorToInt(uiPos.ToVector2() * GetScale());
 }
 
 UIElement* UI::GetFrontElement() const
