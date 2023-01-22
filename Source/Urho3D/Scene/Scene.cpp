@@ -119,9 +119,9 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
     return emptyIndex;
 }
 
-void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary)
+void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
 {
-    Node::SerializeInBlock(archive, serializeTemporary);
+    Node::SerializeInBlock(archive, serializeTemporary, saveFlags);
 
     fileName_ = archive.GetName();
     checksum_ = archive.GetChecksum();
@@ -129,7 +129,11 @@ void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary)
 
 void Scene::SerializeInBlock(Archive& archive)
 {
-    SerializeInBlock(archive, false);
+    const bool compactSave = !archive.IsHumanReadable();
+    const PrefabSaveFlags saveFlags =
+        compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
+
+    SerializeInBlock(archive, false, saveFlags);
 }
 
 bool Scene::Load(Deserializer& source)

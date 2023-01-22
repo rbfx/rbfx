@@ -49,8 +49,10 @@ public:
 
     static void RegisterObject(Context* context);
 
-    bool Save(Serializer& dest, InternalResourceFormat format) const;
-    bool SaveFile(const ea::string& fileName, InternalResourceFormat format) const;
+    void SetPrefab(bool value) { isPrefab_ = value; }
+
+    bool Save(Serializer& dest, InternalResourceFormat format, bool asPrefab = false) const;
+    bool SaveFile(const ea::string& fileName, InternalResourceFormat format, bool asPrefab = false) const;
 
     /// Implement Resource.
     /// @{
@@ -65,7 +67,9 @@ public:
 
 private:
     SharedPtr<Scene> scene_;
+
     ea::optional<InternalResourceFormat> loadFormat_;
+    bool isPrefab_{};
 
     SharedPtr<BinaryFile> loadBinaryFile_;
     SharedPtr<JSONFile> loadJsonFile_;

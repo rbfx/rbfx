@@ -34,8 +34,7 @@ PrefabWriterToMemory::PrefabWriterToMemory(ScenePrefab& scenePrefab, PrefabSaveF
     , flags_(flags)
     , stack_{{nullptr, 0u}}
 {
-    scenePrefab_.GetMutableComponents().clear();
-    scenePrefab_.GetMutableChildren().clear();
+    scenePrefab_.Clear();
 }
 
 void PrefabWriterToMemory::WriteNode(unsigned id, const Serializable* node)

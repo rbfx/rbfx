@@ -89,17 +89,19 @@ void Node::RegisterObject(Context* context)
 
 void Node::SerializeInBlock(Archive& archive)
 {
-    SerializeInBlock(archive, false);
+    const bool compactSave = !archive.IsHumanReadable();
+    const PrefabSaveFlags saveFlags =
+        compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
+
+    SerializeInBlock(archive, false, saveFlags);
 }
 
-void Node::SerializeInBlock(Archive& archive, bool serializeTemporary)
+void Node::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
 {
     const bool compactSave = !archive.IsHumanReadable();
     const PrefabArchiveFlags archiveFlags =
         (compactSave ? PrefabArchiveFlag::CompactTypeNames : PrefabArchiveFlag::None)
         | (serializeTemporary ? PrefabArchiveFlag::SerializeTemporary : PrefabArchiveFlag::None);
-    const PrefabSaveFlags saveFlags =
-        compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
     const PrefabLoadFlags loadFlags = PrefabLoadFlag::None;
 
     if (archive.IsInput())
@@ -253,6 +255,20 @@ Node* Node::InstantiatePrefab(const ScenePrefab& prefab, const Vector3& position
     childNode->SetPosition(position);
     childNode->SetRotation(rotation);
     return childNode;
+}
+
+void Node::GeneratePrefab(ScenePrefab& prefab) const
+{
+    const PrefabSaveFlags flags = PrefabSaveFlag::EnumsAsStrings | PrefabSaveFlag::Prefab;
+    PrefabWriterToMemory writer{prefab, flags};
+    Save(writer);
+}
+
+ScenePrefab Node::GeneratePrefab() const
+{
+    ScenePrefab prefab;
+    GeneratePrefab(prefab);
+    return prefab;
 }
 
 bool Node::Load(Deserializer& source)

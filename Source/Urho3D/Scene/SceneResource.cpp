@@ -60,24 +60,31 @@ void SceneResource::RegisterObject(Context* context)
     context->AddFactoryReflection<SceneResource>();
 }
 
-bool SceneResource::Save(Serializer& dest, InternalResourceFormat format) const
+bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool asPrefab) const
 {
     try
     {
+        const PrefabSaveFlags flags = asPrefab ? PrefabSaveFlag::Prefab : PrefabSaveFlag::None;
         switch (format)
         {
         case InternalResourceFormat::Json:
         {
             JSONFile jsonFile(context_);
             JSONOutputArchive archive{context_, jsonFile.GetRoot(), &jsonFile};
-            SerializeValue(archive, rootBlockName, *scene_);
+            {
+                ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
+                scene_->SerializeInBlock(archive, false, flags | PrefabSaveFlag::EnumsAsStrings);
+            }
             return jsonFile.Save(dest);
         }
         case InternalResourceFormat::Xml:
         {
             XMLFile xmlFile(context_);
             XMLOutputArchive archive{context_, xmlFile.GetOrCreateRoot(rootBlockName), &xmlFile};
-            SerializeValue(archive, rootBlockName, *scene_);
+            {
+                ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
+                scene_->SerializeInBlock(archive, false, flags | PrefabSaveFlag::EnumsAsStrings);
+            }
             return xmlFile.Save(dest);
         }
         case InternalResourceFormat::Binary:
@@ -85,7 +92,10 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format) const
             dest.Write(DefaultBinaryMagic.data(), BinaryMagicSize);
 
             BinaryOutputArchive archive{context_, dest};
-            SerializeValue(archive, rootBlockName, *scene_);
+            {
+                ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
+                scene_->SerializeInBlock(archive, false, flags | PrefabSaveFlag::CompactAttributeNames);
+            }
             return true;
         }
         default:
@@ -102,7 +112,7 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format) const
     }
 }
 
-bool SceneResource::SaveFile(const ea::string& fileName, InternalResourceFormat format) const
+bool SceneResource::SaveFile(const ea::string& fileName, InternalResourceFormat format, bool asPrefab) const
 {
     auto fs = GetSubsystem<FileSystem>();
     if (!fs->CreateDirsRecursive(GetPath(fileName)))
@@ -112,7 +122,7 @@ bool SceneResource::SaveFile(const ea::string& fileName, InternalResourceFormat 
     if (!file.Open(fileName, FILE_WRITE))
         return false;
 
-    return Save(file, format);
+    return Save(file, format, asPrefab);
 }
 
 bool SceneResource::BeginLoad(Deserializer& source)
@@ -176,7 +186,8 @@ bool SceneResource::EndLoad()
             case InternalResourceFormat::Json:
             {
                 JSONInputArchive archive{context_, loadJsonFile_->GetRoot(), loadJsonFile_};
-                SerializeValue(archive, rootBlockName, *scene_);
+                ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None);
                 break;
             }
             case InternalResourceFormat::Xml:
@@ -185,7 +196,8 @@ bool SceneResource::EndLoad()
                 if (xmlRoot.GetName() == rootBlockName)
                 {
                     XMLInputArchive archive{context_, xmlRoot, loadXmlFile_};
-                    SerializeValue(archive, rootBlockName, *scene_);
+                    ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
+                    scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None);
                 }
                 else
                 {
@@ -200,7 +212,8 @@ bool SceneResource::EndLoad()
                 readBuffer.SeekRelative(BinaryMagicSize);
 
                 BinaryInputArchive archive{GetContext(), readBuffer};
-                SerializeValue(archive, rootBlockName, *scene_);
+                ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None);
 
                 break;
             }
@@ -228,12 +241,12 @@ bool SceneResource::EndLoad()
 
 bool SceneResource::Save(Serializer& dest) const
 {
-    return Save(dest, loadFormat_.value_or(InternalResourceFormat::Json));
+    return Save(dest, loadFormat_.value_or(InternalResourceFormat::Json), isPrefab_);
 }
 
 bool SceneResource::SaveFile(const ea::string& fileName) const
 {
-    return SaveFile(fileName, loadFormat_.value_or(InternalResourceFormat::Json));
+    return SaveFile(fileName, loadFormat_.value_or(InternalResourceFormat::Json), isPrefab_);
 }
 
 } // namespace Urho3D

@@ -120,7 +120,7 @@ public:
 
     /// Serialize object. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
-    void SerializeInBlock(Archive& archive, bool serializeTemporary);
+    void SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags);
 
     /// Load from binary data. Removes all existing child nodes and components first. Return true if successful.
     bool Load(Deserializer& source) override;
