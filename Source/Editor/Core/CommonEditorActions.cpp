@@ -25,6 +25,17 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+AttributeScopeHint GetScopeHint(Context* context, const StringHash& componentType)
+{
+    ObjectReflection* reflection = context->GetReflection(componentType);
+    return reflection ? reflection->GetEffectiveScopeHint() : AttributeScopeHint::Serializable;
+}
+
+}
+
 CreateRemoveNodeAction::CreateRemoveNodeAction(Node* node, bool removed)
     : removed_(removed)
     , scene_(node->GetScene())
@@ -431,6 +442,15 @@ ChangeNodeSubtreeAction::ChangeNodeSubtreeAction(Scene* scene, const PackedNodeD
 {
 }
 
+ChangeNodeSubtreeAction::ChangeNodeSubtreeAction(
+    Scene* scene, const PackedNodeData& oldData, const PackedNodeData& newData)
+    : scene_(scene)
+    , oldData_(oldData)
+    , newData_(newData)
+    , newRemoved_(false)
+{
+}
+
 bool ChangeNodeSubtreeAction::CanUndoRedo() const
 {
     return scene_;
@@ -466,6 +486,149 @@ bool ChangeNodeSubtreeAction::MergeWith(const EditorAction& other)
     newData_ = otherAction->newData_;
     newRemoved_ = otherAction->newRemoved_;
     return true;
+}
+
+ChangeSceneAction::ChangeSceneAction(Scene* scene, const PackedSceneData& oldData)
+    : scene_(scene)
+    , oldData_(oldData)
+{
+    newData_.FromScene(scene);
+}
+
+ChangeSceneAction::ChangeSceneAction(Scene* scene, const PackedSceneData& oldData, const PackedSceneData& newData)
+    : scene_(scene)
+    , oldData_(oldData)
+    , newData_(newData)
+{
+}
+
+bool ChangeSceneAction::CanUndoRedo() const
+{
+    return scene_;
+}
+
+void ChangeSceneAction::Redo() const
+{
+    UpdateScene(newData_);
+}
+
+void ChangeSceneAction::Undo() const
+{
+    UpdateScene(oldData_);
+}
+
+void ChangeSceneAction::UpdateScene(const PackedSceneData& data) const
+{
+    data.ToScene(scene_);
+}
+
+bool ChangeSceneAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ChangeSceneAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_)
+        return false;
+
+    newData_ = otherAction->newData_;
+    return true;
+}
+
+CreateComponentActionFactory::CreateComponentActionFactory(Node* node, StringHash componentType)
+    : scene_(node->GetScene())
+    , scopeHint_(GetScopeHint(scene_->GetContext(), componentType))
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    {
+        // No need to prepare
+        break;
+    }
+    case AttributeScopeHint::Node:
+    {
+        oldNodeData_ = PackedNodeData{node};
+        break;
+    }
+    case AttributeScopeHint::Scene:
+    {
+        oldSceneData_.FromScene(scene_);
+        break;
+    }
+    };
+}
+
+SharedPtr<EditorAction> CreateComponentActionFactory::Cook(Component* component) const
+{
+    URHO3D_ASSERTLOG(scopeHint_ == GetScopeHint(scene_->GetContext(), component->GetType()));
+
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    {
+        return MakeShared<CreateRemoveComponentAction>(component, false);
+    }
+    case AttributeScopeHint::Node:
+    {
+        Node* node = component->GetNode();
+        return MakeShared<ChangeNodeSubtreeAction>(scene_, oldNodeData_, node);
+    }
+    case AttributeScopeHint::Scene:
+    {
+        return MakeShared<ChangeSceneAction>(scene_, oldSceneData_);
+    }
+    default: return nullptr;
+    }
+}
+
+RemoveComponentActionFactory::RemoveComponentActionFactory(Component* component)
+    : scene_(component->GetScene())
+    , node_(component->GetNode())
+    , scopeHint_(GetScopeHint(scene_->GetContext(), component->GetType()))
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    {
+        action_ = MakeShared<CreateRemoveComponentAction>(component, true);
+        break;
+    }
+    case AttributeScopeHint::Node:
+    {
+        oldNodeData_ = PackedNodeData{node_};
+        break;
+    }
+    case AttributeScopeHint::Scene:
+    {
+        oldSceneData_.FromScene(scene_);
+        break;
+    }
+    };
+}
+
+SharedPtr<EditorAction> RemoveComponentActionFactory::Cook() const
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    {
+        return action_;
+    }
+    case AttributeScopeHint::Node:
+    {
+        return MakeShared<ChangeNodeSubtreeAction>(scene_, oldNodeData_, node_);
+    }
+    case AttributeScopeHint::Scene:
+    {
+        return MakeShared<ChangeSceneAction>(scene_, oldSceneData_);
+    }
+    default: return nullptr;
+    }
 }
 
 }

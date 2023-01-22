@@ -264,6 +264,7 @@ class ChangeNodeSubtreeAction : public EditorAction
 {
 public:
     ChangeNodeSubtreeAction(Scene* scene, const PackedNodeData& oldData, Node* newData);
+    ChangeNodeSubtreeAction(Scene* scene, const PackedNodeData& oldData, const PackedNodeData& newData);
 
     /// Implement EditorAction.
     /// @{
@@ -280,6 +281,65 @@ private:
     const PackedNodeData oldData_;
     PackedNodeData newData_;
     bool newRemoved_{};
+};
+
+/// Change entire scene.
+class ChangeSceneAction : public EditorAction
+{
+public:
+    ChangeSceneAction(Scene* scene, const PackedSceneData& oldData);
+    ChangeSceneAction(Scene* scene, const PackedSceneData& oldData, const PackedSceneData& newData);
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void UpdateScene(const PackedSceneData& data) const;
+
+    const WeakPtr<Scene> scene_;
+    const PackedSceneData oldData_;
+    PackedSceneData newData_;
+};
+
+/// Helper class to create "create component" action based on the component scope.
+/// This class should be created before the component is created, and cooked after.
+class CreateComponentActionFactory
+{
+public:
+    explicit CreateComponentActionFactory(Node* node, StringHash componentType);
+
+    SharedPtr<EditorAction> Cook(Component* component) const;
+
+private:
+    const WeakPtr<Scene> scene_;
+    const AttributeScopeHint scopeHint_;
+
+    PackedNodeData oldNodeData_;
+    PackedSceneData oldSceneData_;
+};
+
+/// Helper class to create "remove component" action based on the component scope.
+/// This class should be created before the component is removed, and cooked after.
+class RemoveComponentActionFactory
+{
+public:
+    explicit RemoveComponentActionFactory(Component* component);
+
+    SharedPtr<EditorAction> Cook() const;
+
+private:
+    const WeakPtr<Scene> scene_;
+    const WeakPtr<Node> node_;
+    const AttributeScopeHint scopeHint_;
+
+    SharedPtr<EditorAction> action_;
+    PackedNodeData oldNodeData_;
+    PackedSceneData oldSceneData_;
 };
 
 }

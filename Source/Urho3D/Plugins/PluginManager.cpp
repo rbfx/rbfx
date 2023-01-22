@@ -148,12 +148,12 @@ void PluginStack::StartApplication(const ea::string& mainPlugin)
         return;
     }
 
-    const PluginApplication* mainApplication = FindMainPlugin(mainPlugin);
+    mainApplication_ = FindMainPlugin(mainPlugin);
 
     for (const PluginInfo& info : applications_)
     {
         if (info.application_)
-            info.application_->StartApplication(info.application_ == mainApplication);
+            info.application_->StartApplication(info.application_ == mainApplication_);
     }
     isStarted_ = true;
 }
@@ -222,6 +222,11 @@ void PluginStack::StopApplication()
         if (info.application_)
             info.application_->StopApplication();
     }
+}
+
+PluginApplication* PluginStack::GetMainPlugin() const
+{
+    return mainApplication_;
 }
 
 void PluginManager::RegisterPluginApplication(const ea::string& name, PluginApplicationFactory factory)
@@ -405,6 +410,13 @@ PluginApplication* PluginManager::GetPluginApplication(const ea::string& name, b
             return application;
     }
 
+    return nullptr;
+}
+
+PluginApplication* PluginManager::GetMainPlugin() const
+{
+    if (pluginStack_)
+        return pluginStack_->GetMainPlugin();
     return nullptr;
 }
 

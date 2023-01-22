@@ -81,6 +81,11 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// For given set of components, return all nodes they belong to.
+    static ea::vector<Node*> GetNodes(const ea::vector<Component*>& components);
+    /// For given set of nodes, exclude all children nodes and return all "root" nodes only.
+    static ea::vector<Node*> GetParentNodes(const ea::vector<Node*>& nodes);
+
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
     /// Serialize content from/to archive, with additional properties. May throw ArchiveException.
@@ -132,7 +137,7 @@ public:
 
     /// Set position in parent space (for Urho2D).
     /// @property
-    void SetPosition2D(const Vector2& position) { SetPosition(Vector3(position)); }
+    void SetPosition2D(const Vector2& position) {SetPosition(position.ToVector3()); }
 
     /// Set position in parent space (for Urho2D).
     void SetPosition2D(float x, float y) { SetPosition(Vector3(x, y, 0.0f)); }
@@ -156,7 +161,7 @@ public:
 
     /// Set scale in parent space (for Urho2D).
     /// @property
-    void SetScale2D(const Vector2& scale) { SetScale(Vector3(scale, 1.0f)); }
+    void SetScale2D(const Vector2& scale) {SetScale(scale.ToVector3(1.0f)); }
 
     /// Set scale in parent space (for Urho2D).
     void SetScale2D(float x, float y) { SetScale(Vector3(x, y, 1.0f)); }
@@ -173,18 +178,21 @@ public:
     void SetTransform(const Transform& transform);
 
     /// Set both position and rotation in parent space as an atomic operation (for Urho2D).
-    void SetTransform2D(const Vector2& position, float rotation) { SetTransform(Vector3(position), Quaternion(rotation)); }
+    void SetTransform2D(const Vector2& position, float rotation)
+    {
+        SetTransform(position.ToVector3(), Quaternion(rotation));
+    }
 
     /// Set position, rotation, and uniform scale in parent space as an atomic operation (for Urho2D).
     void SetTransform2D(const Vector2& position, float rotation, float scale)
     {
-        SetTransform(Vector3(position), Quaternion(rotation), scale);
+        SetTransform(position.ToVector3(), Quaternion(rotation), scale);
     }
 
     /// Set position, rotation, and scale in parent space as an atomic operation (for Urho2D).
     void SetTransform2D(const Vector2& position, float rotation, const Vector2& scale)
     {
-        SetTransform(Vector3(position), Quaternion(rotation), Vector3(scale, 1.0f));
+        SetTransform(position.ToVector3(), Quaternion(rotation), scale.ToVector3(1.0f));
     }
 
     /// Set position in world space.
@@ -193,7 +201,7 @@ public:
 
     /// Set position in world space (for Urho2D).
     /// @property
-    void SetWorldPosition2D(const Vector2& position) { SetWorldPosition(Vector3(position)); }
+    void SetWorldPosition2D(const Vector2& position) {SetWorldPosition(position.ToVector3()); }
 
     /// Set position in world space (for Urho2D).
     void SetWorldPosition2D(float x, float y) { SetWorldPosition(Vector3(x, y, 0.0f)); }
@@ -217,7 +225,7 @@ public:
 
     /// Set scale in world space (for Urho2D).
     /// @property
-    void SetWorldScale2D(const Vector2& scale) { SetWorldScale(Vector3(scale, 1.0f)); }
+    void SetWorldScale2D(const Vector2& scale) {SetWorldScale(scale.ToVector3(1.0f)); }
 
     /// Set scale in world space (for Urho2D).
     void SetWorldScale2D(float x, float y) { SetWorldScale(Vector3(x, y, 1.0f)); }
@@ -234,26 +242,26 @@ public:
     /// Set both position and rotation in world space as an atomic operation (for Urho2D).
     void SetWorldTransform2D(const Vector2& position, float rotation)
     {
-        SetWorldTransform(Vector3(position), Quaternion(rotation));
+        SetWorldTransform(position.ToVector3(), Quaternion(rotation));
     }
 
     /// Set position, rotation, and uniform scale in world space as an atomic operation (for Urho2D).
     void SetWorldTransform2D(const Vector2& position, float rotation, float scale)
     {
-        SetWorldTransform(Vector3(position), Quaternion(rotation), scale);
+        SetWorldTransform(position.ToVector3(), Quaternion(rotation), scale);
     }
 
     /// Set position, rotation, and scale in world space as an atomic opration (for Urho2D).
     void SetWorldTransform2D(const Vector2& position, float rotation, const Vector2& scale)
     {
-        SetWorldTransform(Vector3(position), Quaternion(rotation), Vector3(scale, 1.0f));
+        SetWorldTransform(position.ToVector3(), Quaternion(rotation), scale.ToVector3(1.0f));
     }
 
     /// Move the scene node in the chosen transform space.
     void Translate(const Vector3& delta, TransformSpace space = TS_LOCAL);
 
     /// Move the scene node in the chosen transform space (for Urho2D).
-    void Translate2D(const Vector2& delta, TransformSpace space = TS_LOCAL) { Translate(Vector3(delta), space); }
+    void Translate2D(const Vector2& delta, TransformSpace space = TS_LOCAL) {Translate(delta.ToVector3(), space); }
 
     /// Rotate the scene node in the chosen transform space.
     void Rotate(const Quaternion& delta, TransformSpace space = TS_LOCAL);
@@ -267,7 +275,7 @@ public:
     /// Rotate around a point in the chosen transform space (for Urho2D).
     void RotateAround2D(const Vector2& point, float delta, TransformSpace space = TS_LOCAL)
     {
-        RotateAround(Vector3(point), Quaternion(delta), space);
+        RotateAround(point.ToVector3(), Quaternion(delta), space);
     }
 
     /// Rotate around the X axis.
@@ -287,7 +295,7 @@ public:
     void ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space = TS_LOCAL);
 
     /// Modify scale in parent space (for Urho2D).
-    void Scale2D(const Vector2& scale) { Scale(Vector3(scale, 1.0f)); }
+    void Scale2D(const Vector2& scale) {Scale(scale.ToVector3(1.0f)); }
 
     /// Set enabled/disabled state without recursion. Components in a disabled node become effectively disabled regardless of their own enable/disable state.
     /// @property

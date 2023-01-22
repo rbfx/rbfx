@@ -722,8 +722,8 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
             {
             case TE_SHADOW:
             {
-                const Vector2 textureSize = texture ? static_cast<Vector2>(texture->GetSize()) : Vector2::ONE * 128;
-                const Vector2 shadowOffset = 0.5f * static_cast<Vector2>(text_.shadowOffset_) / textureSize;
+                const Vector2 textureSize = texture ? texture->GetSize().ToVector2() : Vector2::ONE * 128;
+                const Vector2 shadowOffset = 0.5f * text_.shadowOffset_.ToVector2() / textureSize;
                 material->SetShaderParameter("ShadowOffset", shadowOffset);
                 material->SetShaderParameter("ShadowColor", GetEffectColor());
                 break;
@@ -764,7 +764,7 @@ void Text3D::CalculateFixedScreenSize(const FrameInfo& frame)
 
     if (fixedScreenSize_)
     {
-        Vector4 projPos = frame.camera_->GetViewProj() * Vector4(worldPosition, 1.0f);
+        Vector4 projPos = frame.camera_->GetViewProj() * worldPosition.ToVector4(1.0f);
 
         float textScaling = 2.0f / TEXT_SCALING / frame.viewSize_.y_;
         float halfViewWorldSize = frame.camera_->GetHalfViewSize();
@@ -776,7 +776,7 @@ void Text3D::CalculateFixedScreenSize(const FrameInfo& frame)
             // Convert XY from [-1, 1] to [0, 1], snap to pixels, convert back
             projPos.x_ = (SnapRound(projPos.x_ / projPos.w_ * 0.5f + 0.5f, 1.0f / frame.viewSize_.x_) * 2.0f - 1.0f) * projPos.w_;
             projPos.y_ = (SnapRound(projPos.y_ / projPos.w_ * 0.5f + 0.5f, 1.0f / frame.viewSize_.y_) * 2.0f - 1.0f) * projPos.w_;
-            worldPosition = static_cast<Vector3>(frame.camera_->GetInverseViewProj() * projPos);
+            worldPosition = (frame.camera_->GetInverseViewProj() * projPos).ToVector3();
         }
     }
 

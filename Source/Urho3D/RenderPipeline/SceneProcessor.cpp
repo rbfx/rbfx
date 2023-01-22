@@ -156,7 +156,7 @@ BoundingBox GetViewSpaceLightBoundingBox(Light* light, Camera* camera)
 
 float GetLightSizeInPixels(Light* light, const FrameInfo& frameInfo)
 {
-    const auto viewSize = static_cast<Vector2>(frameInfo.viewSize_);
+    const auto viewSize = frameInfo.viewSize_.ToVector2();
     const LightType lightType = light->GetLightType();
     if (lightType == LIGHT_DIRECTIONAL)
         return ea::max(viewSize.x_, viewSize.y_);

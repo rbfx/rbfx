@@ -110,7 +110,7 @@ void CustomGeometry::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<Ray
                     if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                     {
                         distance = geometryDistance;
-                        normal = (node_->GetWorldTransform() * Vector4(geometryNormal, 0.0f)).Normalized();
+                        normal = (node_->GetWorldTransform() * geometryNormal.ToVector4()).Normalized();
                     }
                 }
             }

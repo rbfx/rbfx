@@ -91,7 +91,7 @@ ea::vector<SharedPtr<Material>> GenerateSceneFromImage(Scene* scene, Image* sour
     CreateCommonObjects(scene);
 
     auto image = GetDownScaledImage(sourceImage, maxSize);
-    const IntVector2 imageSize = image->GetSize().ToVector2();
+    const IntVector2 imageSize = image->GetSize().ToIntVector2();
 
     auto mainNode = scene->CreateChild("Pixel Art");
     mainNode->SetScale(scale);

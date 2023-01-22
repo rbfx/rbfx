@@ -325,10 +325,10 @@ float Ray::HitDistance(const void* vertexData, unsigned vertexStride, const void
 {
     float nearest = M_INFINITY;
     const auto* vertices = (const unsigned char*)vertexData;
-    
+
     Vector3 tempNormal;
     Vector3* tempNormalPtr = outNormal ? &tempNormal : nullptr;
-    
+
     Vector3 barycentric;
     Vector3 tempBarycentric;
     Vector3* tempBarycentricPtr = outUV ? &tempBarycentric : nullptr;
@@ -516,7 +516,7 @@ Ray Ray::Transformed(const Matrix3x4& transform) const
 {
     Ray ret;
     ret.origin_ = transform * origin_;
-    ret.direction_ = transform * Vector4(direction_, 0.0f);
+    ret.direction_ = transform * direction_.ToVector4();
     return ret;
 }
 

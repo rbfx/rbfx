@@ -446,7 +446,7 @@ Vector2 Camera::WorldToScreenPoint(const Vector3& worldPos) const
 Vector3 Camera::ScreenToWorldPoint(const Vector3& screenPos) const
 {
     Ray ray = GetScreenRay(screenPos.x_, screenPos.y_);
-    Vector3 viewSpaceDir = (GetView() * Vector4(ray.direction_, 0.0f));
+    Vector3 viewSpaceDir = GetView() * ray.direction_.ToVector4();
     float rayDistance = (Max(screenPos.z_ - GetNearClip(), 0.0f) / viewSpaceDir.z_);
     return ray.origin_ + ray.direction_ * rayDistance;
 }

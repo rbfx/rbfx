@@ -120,7 +120,7 @@ void DefaultBakedSceneCollector::LockScene(Scene* scene, const Vector3& chunkSiz
     for (Node* node : children)
     {
         const Vector3 position = node->GetWorldPosition();
-        const Vector3 index = (position - boundingBox_.min_) / boundingBox_.Size() * Vector3(chunkGridDimension_);
+        const Vector3 index = (position - boundingBox_.min_) / boundingBox_.Size() * chunkGridDimension_.ToVector3();
         const IntVector3 chunk = VectorMin(VectorMax(IntVector3::ZERO, VectorFloorToInt(index)), maxChunk);
         ChunkData& chunkData = chunks_[chunk];
 

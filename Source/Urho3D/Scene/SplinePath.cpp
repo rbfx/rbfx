@@ -63,7 +63,7 @@ void SplinePath::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Controlled", GetControlledIdAttr, SetControlledIdAttr, unsigned, 0, AM_FILE | AM_NODEID);
     URHO3D_ACCESSOR_ATTRIBUTE("Control Points", GetControlPointIdsAttr, SetControlPointIdsAttr,
         VariantVector, Variant::emptyVariantVector, AM_FILE | AM_NODEIDVECTOR)
-        .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, controlPointsStructureElementNames);
+        .SetMetadata(AttributeMetadata::VectorStructElements, controlPointsStructureElementNames);
 }
 
 void SplinePath::ApplyAttributes()

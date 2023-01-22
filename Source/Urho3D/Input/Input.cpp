@@ -1463,7 +1463,7 @@ Vector2 Input::GetRelativeMousePosition() const
 {
     const IntVector2 backbufferSize = GetBackbufferSize();
     const IntVector2 localPosition = GetMousePosition();
-    return static_cast<Vector2>(localPosition) / static_cast<Vector2>(backbufferSize);
+    return localPosition.ToVector2() / backbufferSize.ToVector2();
 }
 
 IntVector2 Input::GetMouseMove() const
@@ -2560,7 +2560,7 @@ void Input::HandleScreenMode(StringHash eventType, VariantMap& eventData)
     IntVector2 windowSize;
     SDL_GetWindowSize(window, &windowSize.x_, &windowSize.y_);
     if (windowSize != IntVector2::ZERO && backbufferSize != IntVector2::ZERO)
-        systemToBackbufferScale_ = static_cast<Vector2>(backbufferSize) / static_cast<Vector2>(windowSize);
+        systemToBackbufferScale_ = backbufferSize.ToVector2() / windowSize.ToVector2();
     else
         systemToBackbufferScale_ = Vector2::ONE;
 }
@@ -2726,12 +2726,12 @@ void Input::HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventDat
 
 IntVector2 Input::SystemToBackbuffer(const IntVector2& value) const
 {
-    return VectorRoundToInt(static_cast<Vector2>(value) * systemToBackbufferScale_);
+    return VectorRoundToInt(value.ToVector2() * systemToBackbufferScale_);
 }
 
 IntVector2 Input::BackbufferToSystem(const IntVector2& value) const
 {
-    return VectorRoundToInt(static_cast<Vector2>(value) / systemToBackbufferScale_);
+    return VectorRoundToInt(value.ToVector2() / systemToBackbufferScale_);
 }
 
 IntVector2 Input::GetGlobalWindowPosition() const
