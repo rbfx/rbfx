@@ -337,7 +337,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
             Node* lightNode = light->GetNode();
             float atten = 1.0f / Max(light->GetRange(), M_EPSILON);
             Vector3 lightDir(lightNode->GetWorldRotation() * Vector3::BACK);
-            Vector4 lightPos(lightNode->GetWorldPosition().ToVector4(atten));
+            Vector4 lightPos(lightNode->GetWorldPosition(), atten);
 
             graphics->SetShaderParameter(VSP_LIGHTDIR, lightDir);
             graphics->SetShaderParameter(VSP_LIGHTPOS, lightPos);
@@ -597,10 +597,10 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                 vertexLights[i * 3] = Vector4(color.r_, color.g_, color.b_, invRange);
 
                 // Direction
-                vertexLights[i * 3 + 1] = (-(vertexLightNode->GetWorldDirection())).ToVector4(cutoff);
+                vertexLights[i * 3 + 1] = Vector4(-(vertexLightNode->GetWorldDirection()), cutoff);
 
                 // Position
-                vertexLights[i * 3 + 2] = vertexLightNode->GetWorldPosition().ToVector4(invCutoff);
+                vertexLights[i * 3 + 2] = Vector4(vertexLightNode->GetWorldPosition(), invCutoff);
             }
 
             graphics->SetShaderParameter(VSP_VERTEXLIGHTS, vertexLights[0].Data(), lights.size() * 3 * 4);

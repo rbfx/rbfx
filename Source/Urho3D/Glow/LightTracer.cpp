@@ -710,7 +710,7 @@ struct ChartIndirectTracingKernel
             const SphericalHarmonicsDot9 sh = lightProbesMesh_->Sample(
                 lightProbesData_->sphericalHarmonics_, currentPosition_, lightProbesMeshHint_);
             const Vector3 indirectLightValue = VectorMax(Vector3::ZERO, sh.Evaluate(currentSmoothNormal_));
-            bakedIndirect_->light_[elementIndex] += indirectLightValue.ToVector4(1.0f);
+            bakedIndirect_->light_[elementIndex] += Vector4{indirectLightValue, 1.0f};
             return false;
         }
 
@@ -736,7 +736,7 @@ struct ChartIndirectTracingKernel
     /// End sample.
     void EndSample(const Vector3& light)
     {
-        accumulatedIndirectLight_ += light.ToVector4(1.0f);
+        accumulatedIndirectLight_ += Vector4{light, 1.0f};
     }
 
     /// End tracing element.

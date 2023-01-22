@@ -448,7 +448,7 @@ struct IncrementalLightBaker::Impl
                 else
                 {
                     for (unsigned i = 0; i < numTexels; ++i)
-                        buffer[i] = bakedLightmap->lightmap_[i].ToVector4(1.0f);
+                        buffer[i] = Vector4(bakedLightmap->lightmap_[i], 1.0f);
                 }
 
                 // Generate image

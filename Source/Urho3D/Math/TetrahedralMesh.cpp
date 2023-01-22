@@ -254,7 +254,7 @@ Vector4 TetrahedralMesh::GetOuterBarycentricCoords(unsigned tetIndex, const Vect
     const Vector3 t2 = p2 + t * hullNormals_[tetrahedron.indices_[1]];
     const Vector3 t3 = p3 + t * hullNormals_[tetrahedron.indices_[2]];
     const Vector3 coords = GetTriangleBarycentricCoords(position, t1, t2, t3);
-    return coords.ToVector4(0.0f);
+    return { coords, 0.0f };
 }
 
 Vector4 TetrahedralMesh::GetBarycentricCoords(unsigned tetIndex, const Vector3& position) const

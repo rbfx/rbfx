@@ -103,7 +103,7 @@ Vector4 GetAmbientLighting(const BatchRendererSettings& settings, const LightAcc
 {
     const Vector3 ambient = lightAccumulator.sphericalHarmonics_.EvaluateAverage();
     if (settings.linearSpaceLighting_)
-        return ambient.ToVector4(1.0f);
+        return Vector4(ambient, 1.0f);
     else
         return Color(ambient).LinearToGamma().ToVector4();
 }
@@ -145,7 +145,7 @@ public:
         {
             const Vector3 ambient = lightAccumulator.sphericalHarmonics_.EvaluateAverage();
             if (linearSpaceLighting_)
-                ambientValueFlat_ = ambient.ToVector4(1.0f);
+                ambientValueFlat_ = Vector4(ambient, 1.0f);
             else
                 ambientValueFlat_ = Color(ambient).LinearToGamma().ToVector4();
         }

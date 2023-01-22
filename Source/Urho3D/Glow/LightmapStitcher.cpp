@@ -277,7 +277,7 @@ void StitchLightmapSeams(LightmapStitchingContext& stitchingContext,
     const LightmapStitchingSettings& settings, Model* seamsModel)
 {
     for (unsigned i = 0; i < inputBuffer.size(); ++i)
-        outputBuffer[i] = inputBuffer[i].ToVector4(1.0f);
+        outputBuffer[i] = Vector4(inputBuffer[i], 1.0f);
 
     StitchTextureSeams(stitchingContext, outputBuffer, settings, seamsModel);
 }

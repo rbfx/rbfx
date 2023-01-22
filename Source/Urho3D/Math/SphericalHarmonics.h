@@ -206,13 +206,13 @@ struct SphericalHarmonicsDot9
         Bb_ = Vector4(sh.values_[4].z_, sh.values_[5].z_, sh.values_[6].z_, sh.values_[7].z_);
 
         // Nx*Nx - Ny*Ny
-        C_ = sh.values_[8].ToVector4(1.0f);
+        C_ = Vector4(sh.values_[8], 1.0f);
     }
 
     /// Evaluate at given direction.
     Vector3 Evaluate(const Vector3& dir) const
     {
-        const Vector4 a{ dir.ToVector4(1.0f) };
+        const Vector4 a{ dir, 1.0f };
         const Vector4 b{ dir.x_ * dir.y_, dir.y_ * dir.z_, dir.z_ * dir.z_, dir.z_ * dir.x_ };
         const float c = dir.x_ * dir.x_ - dir.y_ * dir.y_;
 
