@@ -35,11 +35,12 @@
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/Input/FreeFlyController.h>
 #include <Urho3D/UI/DropDownList.h>
+#include <Urho3D/Physics/PhysicsWorld.h>
+#include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabResource.h>
 
 #include "RayCastSample.h"
 
-#include "Urho3D/Physics/PhysicsWorld.h"
-#include "Urho3D/Scene/PrefabReference.h"
 
 #include <Urho3D/DebugNew.h>
 
@@ -110,7 +111,7 @@ void RayCastSample::CreateScene()
     light->SetLightType(LIGHT_DIRECTIONAL);
 
     {
-        XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
+        auto* mushroomPrefab = cache->GetResource<PrefabResource>("Prefabs/Mushroom.prefab");
         Node* objectNode = scene_->CreateChild("Mushroom");
         objectNode->SetPosition(Vector3(0, 0, 10));
         objectNode->SetRotation(Quaternion(30, 50, 20));
