@@ -34,7 +34,7 @@
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
 #include <Urho3D/Replica/PredictedKinematicController.h>
 #include <Urho3D/Replica/ReplicatedTransform.h>
-#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/PrefabResource.h>
 
 namespace
 {
@@ -54,7 +54,7 @@ SharedPtr<Scene> CreateTestScene(Context* context)
     return serverScene;
 }
 
-SharedPtr<XMLFile> CreateTestPrefab(Context* context)
+SharedPtr<PrefabResource> CreateTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
 
@@ -65,10 +65,7 @@ SharedPtr<XMLFile> CreateTestPrefab(Context* context)
     node->CreateComponent<ReplicatedTransform>();
     node->CreateComponent<PredictedKinematicController>();
 
-    auto prefab = MakeShared<XMLFile>(context);
-    XMLElement prefabRootElement = prefab->CreateRoot("node");
-    node->SaveXML(prefabRootElement);
-    return prefab;
+    return Tests::ConvertNodeToPrefab(node);
 }
 
 }
@@ -101,7 +98,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/PredictedKinematicController/TestPrefab.xml", CreateTestPrefab);
+    auto prefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/PredictedKinematicController/Test.prefab", CreateTestPrefab);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
@@ -186,7 +183,7 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/PredictedKinematicController/TestPrefab.xml", CreateTestPrefab);
+    auto prefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/PredictedKinematicController/Test.prefab", CreateTestPrefab);
 
     // Setup scenes
     const unsigned seed = GENERATE(0, 1, 2);
@@ -258,7 +255,7 @@ TEST_CASE("PredictedKinematicController works standalone")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/PredictedKinematicController/TestPrefab.xml", CreateTestPrefab);
+    auto prefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/PredictedKinematicController/Test.prefab", CreateTestPrefab);
 
     auto standaloneScene = CreateTestScene(context);
     standaloneScene->CreateComponent<ReplicationManager>();

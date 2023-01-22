@@ -30,6 +30,7 @@
 #include <Urho3D/Network/NetworkEvents.h>
 #include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
@@ -37,12 +38,11 @@
 #include <Urho3D/Replica/NetworkObject.h>
 #include <Urho3D/Replica/NetworkValue.h>
 #include <Urho3D/Replica/ReplicatedTransform.h>
-#include <Urho3D/Resource/XMLFile.h>
 
 namespace
 {
 
-SharedPtr<XMLFile> CreateComplexTestPrefab(Context* context)
+SharedPtr<PrefabResource> CreateComplexTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedTransform>();
@@ -59,7 +59,7 @@ SharedPtr<XMLFile> CreateComplexTestPrefab(Context* context)
     return Tests::ConvertNodeToPrefab(node);
 }
 
-SharedPtr<XMLFile> CreateSimpleTestPrefab(Context* context)
+SharedPtr<PrefabResource> CreateSimpleTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedTransform>();
@@ -76,7 +76,7 @@ TEST_CASE("Scene is synchronized between client and server")
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
     const float syncDelay = 0.25f;
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/SceneSynchronization/SimpleTestPrefab.xml", CreateSimpleTestPrefab);
+    auto prefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/SceneSynchronization/SimpleTest.prefab", CreateSimpleTestPrefab);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
@@ -290,7 +290,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/SceneSynchronization/SimpleTestPrefab.xml", CreateSimpleTestPrefab);
+    auto prefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/SceneSynchronization/SimpleTest.prefab", CreateSimpleTestPrefab);
 
     // Setup scenes
     const auto interpolationQuality = Tests::ConnectionQuality{0.08f, 0.12f, 0.20f, 0, 0};
@@ -376,7 +376,7 @@ TEST_CASE("Prefabs are replicated on clients")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/SceneSynchronization/ComplexTestPrefab.xml", CreateComplexTestPrefab);
+    auto prefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/SceneSynchronization/ComplexTest.prefab", CreateComplexTestPrefab);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
@@ -445,7 +445,7 @@ TEST_CASE("Ownership is consistent on server and on clients")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/SceneSynchronization/SimpleTestPrefab.xml", CreateSimpleTestPrefab);
+    auto prefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/SceneSynchronization/SimpleTest.prefab", CreateSimpleTestPrefab);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };

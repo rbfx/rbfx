@@ -123,9 +123,9 @@ void SceneDragAndDropPrefab::CreateNodeFromPrefab(Scene* scene, const ResourceFi
     auto prefabReference = temporaryNode_->CreateComponent<PrefabReference>();
     prefabReference->SetPrefab(prefabFile);
 
-    const auto& nodePrefab = prefabFile->GetPrefab().GetChildren();
-    if (!nodePrefab.empty())
-        nodePrefab[0].GetNode().Export(temporaryNode_);
+    const auto& nodePrefab = prefabFile->GetNodePrefab();
+    if (!nodePrefab.IsEmpty())
+        nodePrefab.GetNode().Export(temporaryNode_);
 }
 
 void SceneDragAndDropPrefab::CreateNodeFromModel(Scene* scene, const ResourceFileDescriptor& desc)

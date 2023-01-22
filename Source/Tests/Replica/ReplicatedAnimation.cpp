@@ -25,26 +25,12 @@
 #include "../NetworkUtils.h"
 #include "../SceneUtils.h"
 
-#if 0
-#include <Urho3D/Graphics/Light.h>
-#include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/Network/NetworkEvents.h>
-#include <Urho3D/Physics/PhysicsEvents.h>
-#include <Urho3D/Physics/PhysicsWorld.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Scene/SceneEvents.h>
-#include <Urho3D/Replica/BehaviorNetworkObject.h>
-#include <Urho3D/Replica/ReplicationManager.h>
-#include <Urho3D/Replica/NetworkObject.h>
-#include <Urho3D/Replica/NetworkValue.h>
-#include <Urho3D/Replica/ReplicatedTransform.h>
-#endif
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Network/Network.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Replica/ReplicatedAnimation.h>
-#include <Urho3D/Resource/XMLFile.h>
 
 namespace
 {
@@ -59,7 +45,7 @@ SharedPtr<Animation> CreateTestAnimation2(Context* context)
     return Tests::CreateLoopedTranslationAnimation(context, "", "", {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 2.0f}, 2.0f);
 }
 
-SharedPtr<XMLFile> CreateTestPrefab(Context* context)
+SharedPtr<PrefabResource> CreateTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<AnimationController>();
@@ -75,7 +61,7 @@ TEST_CASE("Animation is synchronized between client and server")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@Tests/ReplicatedAnimation/TestPrefab.xml", CreateTestPrefab);
+    auto prefab = Tests::GetOrCreateResource<PrefabResource>(context, "@Tests/ReplicatedAnimation/Test.prefab", CreateTestPrefab);
     auto animation1 = Tests::GetOrCreateResource<Animation>(context, "@Tests/ReplicatedAnimation/Animation1.ani", CreateTestAnimation1);
     auto animation2 = Tests::GetOrCreateResource<Animation>(context, "@Tests/ReplicatedAnimation/Animation2.ani", CreateTestAnimation2);
 

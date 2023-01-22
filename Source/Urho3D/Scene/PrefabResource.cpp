@@ -52,4 +52,17 @@ void PrefabResource::SerializeInBlock(Archive& archive)
     prefab_.SerializeInBlock(archive, flags, compactSave);
 }
 
+const ScenePrefab& PrefabResource::GetNodePrefab() const
+{
+    return !prefab_.GetChildren().empty() ? prefab_.GetChildren()[0] : ScenePrefab::Empty;
+}
+
+ScenePrefab& PrefabResource::GetMutableNodePrefab()
+{
+    auto& children = prefab_.GetMutableChildren();
+    if (children.empty())
+        children.emplace_back();
+    return children[0];
+}
+
 } // namespace Urho3D

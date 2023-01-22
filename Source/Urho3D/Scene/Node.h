@@ -43,6 +43,7 @@ class Node;
 class PrefabReader;
 class PrefabWriter;
 class Scene;
+class ScenePrefab;
 class SceneResolver;
 class SerializablePrefab;
 
@@ -103,6 +104,9 @@ public:
     void SaveInternal(PrefabWriter& writer) const;
     /// Write to prefab. Return true on success. Discard PrefabWriter after calling this.
     bool Save(PrefabWriter& writer) const;
+
+    /// Instantiate scene content from prefab. Return root node if successful.
+    Node* InstantiatePrefab(const ScenePrefab& prefab, const Vector3& position, const Quaternion& rotation);
 
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;

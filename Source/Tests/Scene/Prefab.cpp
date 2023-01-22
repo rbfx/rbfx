@@ -796,7 +796,7 @@ TEST_CASE("PrefabResource is serialized")
     auto guard = Tests::MakeScopedReflection<Tests::RegisterObject<TestComponent>>(context);
 
     auto resource = MakeShared<PrefabResource>(context);
-    resource->GetMutablePrefab() = MakeTestPrefab();
+    resource->GetMutableScenePrefab() = MakeTestPrefab();
 
     {
         VectorBuffer buffer;
@@ -838,7 +838,7 @@ TEST_CASE("Prefab reference is instantiated")
     auto guard = Tests::MakeScopedReflection<Tests::RegisterObject<TestComponent>>(context);
 
     auto prefabResource = MakeShared<PrefabResource>(context);
-    prefabResource->GetMutablePrefab().GetMutableChildren().push_back(MakeTestPrefab());
+    prefabResource->GetMutableScenePrefab().GetMutableChildren().push_back(MakeTestPrefab());
 
     auto scene = MakeShared<Scene>(context);
 
@@ -895,8 +895,8 @@ TEST_CASE("Prefab reference is reloaded")
     auto guard = Tests::MakeScopedReflection<Tests::RegisterObject<TestComponent>>(context);
 
     auto prefabResource = MakeShared<PrefabResource>(context);
-    prefabResource->GetMutablePrefab().GetMutableChildren().push_back(MakeTestPrefab());
-    auto& prefabData = prefabResource->GetMutablePrefab().GetMutableChildren()[0];
+    prefabResource->GetMutableScenePrefab().GetMutableChildren().push_back(MakeTestPrefab());
+    auto& prefabData = prefabResource->GetMutableScenePrefab().GetMutableChildren()[0];
 
     auto scene = MakeShared<Scene>(context);
 

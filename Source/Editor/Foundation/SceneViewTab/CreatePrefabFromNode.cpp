@@ -46,7 +46,7 @@ PrefabFromNodeFactory::PrefabFromNodeFactory(Context* context)
     : BaseResourceFactory(context, 0, "Prefab from Node")
     , prefab_(MakeShared<PrefabResource>(context))
 {
-    prefab_->GetMutablePrefab() = CreatePrefabBase();
+    prefab_->GetMutableScenePrefab() = CreatePrefabBase();
 }
 
 ScenePrefab PrefabFromNodeFactory::CreatePrefabBase() const
@@ -184,7 +184,7 @@ ea::string PrefabFromNodeFactory::FindBestFileName(Node* node, const ea::string&
 
 void PrefabFromNodeFactory::SaveNodeAsPrefab(Node* node, const ea::string& fileName)
 {
-    ScenePrefab& nodePrefab = prefab_->GetMutablePrefab().GetMutableChildren()[0];
+    ScenePrefab& nodePrefab = prefab_->GetMutableScenePrefab().GetMutableChildren()[0];
     nodePrefab = CreatePrefabFromNode(node);
     prefab_->SaveFile(fileName);
 }
