@@ -798,11 +798,12 @@ void Project::ProcessDelayedSaves(bool forceSave)
             delayedSave.resource_->SaveFile(delayedSave.fileName_);
         }
 
-        if (fileExists)
-            cache->IgnoreResourceReload(resourceName);
-
+        bool needReload = !fileExists;
         if (delayedSave.onSaved_)
-            delayedSave.onSaved_(delayedSave.fileName_, resourceName);
+            delayedSave.onSaved_(delayedSave.fileName_, resourceName, needReload);
+
+        if (!needReload)
+            cache->IgnoreResourceReload(resourceName);
 
         delayedSave.Clear();
     }

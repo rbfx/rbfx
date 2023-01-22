@@ -78,6 +78,7 @@ public:
     PackedSceneSelection oldSelection_;
     PackedSceneSelection newSelection_;
 
+    bool ignoreNextReload_{};
     ea::optional<PackedSceneSelection> loadingSelection_;
 
     SharedPtr<SimulateSceneAction> currentSimulationAction_;

@@ -98,7 +98,8 @@ class Project : public Object
 public:
     using AnalyzeFileCallback = ea::function<void(ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)>;
     using CommandExecutedCallback = ea::function<void(bool success, const ea::string& output)>;
-    using FileSavedCallback = ea::function<void(const ea::string& fileName, const ea::string& resourceName)>;
+    using FileSavedCallback =
+        ea::function<void(const ea::string& fileName, const ea::string& resourceName, bool& needReload)>;
 
     Signal<void()> OnInitialized;
     Signal<void()> OnShallowSaved;
