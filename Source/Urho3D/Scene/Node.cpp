@@ -205,21 +205,23 @@ bool Node::Load(PrefabReader& reader, PrefabLoadFlags flags)
 
 void Node::SaveInternal(PrefabWriter& writer) const
 {
+    const bool saveTemporary = writer.GetFlags().Test(PrefabSaveFlag::SaveTemporary);
+
     writer.WriteNode(GetID(), this);
 
-    const unsigned numComponents = GetNumPersistentComponents();
+    const unsigned numComponents = saveTemporary ? GetNumComponents() : GetNumPersistentComponents();
     writer.WriteNumComponents(numComponents);
     for (Component* component : components_)
     {
-        if (component && !component->IsTemporary())
+        if (component && (saveTemporary || !component->IsTemporary()))
             writer.WriteComponent(component->GetID(), component);
     }
 
-    const unsigned numChildren = GetNumPersistentChildren();
+    const unsigned numChildren = saveTemporary ? GetNumChildren() : GetNumPersistentChildren();
     writer.WriteNumChildren(numChildren);
     for (Node* child : children_)
     {
-        if (child && !child->IsTemporary())
+        if (child && (saveTemporary || !child->IsTemporary()))
         {
             writer.BeginChild();
             child->SaveInternal(writer);
