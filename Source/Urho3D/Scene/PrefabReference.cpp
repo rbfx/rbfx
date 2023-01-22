@@ -322,10 +322,10 @@ void PrefabReference::Inline(PrefabInlineFlags flags)
         const auto& components = node->GetComponents();
         const auto& children = node->GetChildren();
 
-        for (unsigned index = 0; index < ea::min(numInstanceComponents_, components.size()); ++index)
+        for (unsigned index = 0; index < ea::min<unsigned>(numInstanceComponents_, components.size()); ++index)
             components[index]->SetTemporary(false);
 
-        for (unsigned index = 0; index < ea::min(numInstanceChildren_, children.size()); ++index)
+        for (unsigned index = 0; index < ea::min<unsigned>(numInstanceChildren_, children.size()); ++index)
             children[index]->SetTemporary(false);
     }
     else

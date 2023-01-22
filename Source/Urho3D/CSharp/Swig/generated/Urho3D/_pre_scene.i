@@ -69,7 +69,7 @@ using UpdateEventFlags = Urho3D::UpdateEvent;
 %csattribute(Urho3D::LogicComponent, %arg(Urho3D::UpdateEventFlags), UpdateEventMask, GetUpdateEventMask, SetUpdateEventMask);
 %csattribute(Urho3D::LogicComponent, %arg(bool), IsDelayedStartCalled, IsDelayedStartCalled);
 %csattribute(Urho3D::ObjectAnimation, %arg(ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo>>), AttributeAnimationInfos, GetAttributeAnimationInfos);
-%csattribute(Urho3D::PrefabReference, %arg(Urho3D::XMLFile *), Prefab, GetPrefab, SetPrefab);
+%csattribute(Urho3D::PrefabReference, %arg(Urho3D::PrefabResource *), Prefab, GetPrefab, SetPrefab);
 %csattribute(Urho3D::PrefabReference, %arg(Urho3D::ResourceRef), PrefabAttr, GetPrefabAttr, SetPrefabAttr);
 %csattribute(Urho3D::Scene, %arg(unsigned int), NumLightmaps, GetNumLightmaps);
 %csattribute(Urho3D::Scene, %arg(bool), IsUpdateEnabled, IsUpdateEnabled, SetUpdateEnabled);
