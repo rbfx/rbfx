@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 
 using namespace Urho3D;
@@ -33,7 +34,7 @@ namespace Tests
 void SerializeAndDeserializeScene(Scene* scene);
 
 /// Convert Node to prefab.
-SharedPtr<XMLFile> ConvertNodeToPrefab(Node* node);
+SharedPtr<PrefabResource> ConvertNodeToPrefab(Node* node);
 
 /// Return attribute value as variant.
 Variant GetAttributeValue(const ea::pair<Serializable*, unsigned>& ref);

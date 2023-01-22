@@ -26,18 +26,18 @@
 
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Network/NetworkEvents.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
 #include <Urho3D/Replica/FilteredByDistance.h>
 #include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Replica/ReplicatedTransform.h>
-#include <Urho3D/Resource/XMLFile.h>
 
 namespace
 {
 
-SharedPtr<XMLFile> CreateFilteredTestPrefab(Context* context)
+SharedPtr<PrefabResource> CreateFilteredTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedTransform>();
@@ -49,7 +49,7 @@ SharedPtr<XMLFile> CreateFilteredTestPrefab(Context* context)
     return Tests::ConvertNodeToPrefab(node);
 }
 
-SharedPtr<XMLFile> CreateUnfilteredTestPrefab(Context* context)
+SharedPtr<PrefabResource> CreateUnfilteredTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedTransform>();
@@ -64,8 +64,8 @@ TEST_CASE("FilteredByDistance handles object hierarchies")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto filteredPrefab = Tests::GetOrCreateResource<XMLFile>(context, "@/FilteredByDistance/FilteredTestPrefab.xml", CreateFilteredTestPrefab);
-    auto unfilteredPrefab = Tests::GetOrCreateResource<XMLFile>(context, "@/FilteredByDistance/UnfilteredTestPrefab.xml", CreateUnfilteredTestPrefab);
+    auto filteredPrefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/FilteredByDistance/FilteredTest.prefab", CreateFilteredTestPrefab);
+    auto unfilteredPrefab = Tests::GetOrCreateResource<PrefabResource>(context, "@/FilteredByDistance/UnfilteredTest.prefab", CreateUnfilteredTestPrefab);
 
     // Create scenes
     auto serverScene = MakeShared<Scene>(context);

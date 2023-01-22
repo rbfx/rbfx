@@ -42,8 +42,11 @@ public:
 
     void SerializeInBlock(Archive& archive) override;
 
-    const ScenePrefab& GetPrefab() const { return prefab_; }
-    ScenePrefab& GetMutablePrefab() { return prefab_; }
+    const ScenePrefab& GetScenePrefab() const { return prefab_; }
+    ScenePrefab& GetMutableScenePrefab() { return prefab_; }
+
+    const ScenePrefab& GetNodePrefab() const;
+    ScenePrefab& GetMutableNodePrefab();
 
 private:
     ScenePrefab prefab_;

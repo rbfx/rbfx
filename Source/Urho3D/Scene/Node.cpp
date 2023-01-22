@@ -240,6 +240,21 @@ bool Node::Save(PrefabWriter& writer) const
     }
 }
 
+Node* Node::InstantiatePrefab(const ScenePrefab& prefab, const Vector3& position, const Quaternion& rotation)
+{
+    Node* childNode = CreateChild();
+    PrefabReaderFromMemory reader{prefab};
+    if (!childNode->Load(reader, PrefabLoadFlag::None))
+    {
+        childNode->Remove();
+        return nullptr;
+    }
+
+    childNode->SetPosition(position);
+    childNode->SetRotation(rotation);
+    return childNode;
+}
+
 bool Node::Load(Deserializer& source)
 {
     SceneResolver resolver;

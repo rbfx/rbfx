@@ -65,8 +65,8 @@ void PrefabReference::ApplyAttributes()
 
 const ScenePrefab& PrefabReference::GetNodePrefab() const
 {
-    if (node_ && prefab_ && !prefab_->GetPrefab().GetChildren().empty())
-        return prefab_->GetPrefab().GetChildren()[0];
+    if (node_ && prefab_)
+        return prefab_->GetNodePrefab();
     return ScenePrefab::Empty;
 }
 
