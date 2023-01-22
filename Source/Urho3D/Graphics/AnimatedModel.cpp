@@ -100,7 +100,7 @@ void AnimatedModel::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Animation LOD Bias", GetAnimationLodBias, SetAnimationLodBias, float, 1.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Bone Animation Enabled", GetBonesEnabledAttr, SetBonesEnabledAttr, VariantVector,
-        Variant::emptyVariantVector, AM_FILE | AM_NOEDIT);
+        Variant::emptyVariantVector, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Morphs", GetMorphsAttr, SetMorphsAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
         AM_DEFAULT);
 }

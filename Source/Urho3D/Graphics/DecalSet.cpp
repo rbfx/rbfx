@@ -189,7 +189,7 @@ void DecalSet::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Decals", GetDecalsAttr, SetDecalsAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
-        AM_FILE | AM_NOEDIT);
+        AM_DEFAULT | AM_NOEDIT);
 }
 
 void DecalSet::ApplyAttributes()
