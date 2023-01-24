@@ -62,6 +62,14 @@ Component::Component(Context* context) :
 
 Component::~Component() = default;
 
+AttributeScopeHint Component::GetEffectiveScopeHint() const
+{
+    // Don't use Serializable::GetReflection() to avoid effect from overrides.
+    // GetEffectiveScopeHint() should not depend on the state of the Component
+    const ObjectReflection* reflection = context_->GetReflection(GetType());
+    return reflection ? reflection->GetEffectiveScopeHint() : AttributeScopeHint::Attribute;
+}
+
 bool Component::Save(Serializer& dest) const
 {
     // Write type and ID

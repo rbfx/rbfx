@@ -273,6 +273,16 @@ ScenePrefab Node::GeneratePrefab() const
     return prefab;
 }
 
+AttributeScopeHint Node::GetEffectiveScopeHint() const
+{
+    AttributeScopeHint result = AttributeScopeHint::Serializable;
+    for (Component* component : GetComponents())
+        result = ea::max(result, component->GetEffectiveScopeHint());
+    for (Node* child : GetChildren())
+        result = ea::max(result, child->GetEffectiveScopeHint());
+    return result;
+}
+
 bool Node::Load(Deserializer& source)
 {
     SceneResolver resolver;

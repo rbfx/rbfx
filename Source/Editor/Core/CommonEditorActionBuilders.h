@@ -36,10 +36,39 @@ namespace Urho3D
 /// These classes should be created before the action is started, and cooked after the action is finished.
 /// @{
 
+class CreateNodeActionBuilder
+{
+public:
+    CreateNodeActionBuilder(Scene* scene, AttributeScopeHint scopeHint);
+
+    SharedPtr<EditorAction> Build(Node* node) const;
+
+private:
+    const WeakPtr<Scene> scene_;
+    const AttributeScopeHint scopeHint_;
+
+    PackedSceneData oldSceneData_;
+};
+
+class RemoveNodeActionBuilder
+{
+public:
+    explicit RemoveNodeActionBuilder(Node* node);
+
+    SharedPtr<EditorAction> Build() const;
+
+private:
+    const WeakPtr<Scene> scene_;
+    const AttributeScopeHint scopeHint_;
+
+    SharedPtr<EditorAction> action_;
+    PackedSceneData oldSceneData_;
+};
+
 class CreateComponentActionBuilder
 {
 public:
-    explicit CreateComponentActionBuilder(Node* node, StringHash componentType);
+    CreateComponentActionBuilder(Node* node, StringHash componentType);
 
     SharedPtr<EditorAction> Build(Component* component) const;
 

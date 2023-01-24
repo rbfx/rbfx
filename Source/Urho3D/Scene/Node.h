@@ -111,6 +111,11 @@ public:
     void GeneratePrefab(ScenePrefab& prefab) const;
     ScenePrefab GeneratePrefab() const;
 
+    /// Evaluate effective attribute scope.
+    /// It is a hint for the Editor to know what is affected by the node addition/removal
+    /// so it can generate optimal undo/redo actions.
+    AttributeScopeHint GetEffectiveScopeHint() const;
+
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;
     /// Load from XML data. Return true if successful.

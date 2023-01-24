@@ -314,6 +314,15 @@ void SerializablePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags f
     });
 }
 
+AttributeScopeHint SerializablePrefab::GetEffectiveScopeHint(Context* context) const
+{
+    if (typeNameHash_ == StringHash::Empty)
+        return AttributeScopeHint::Attribute;
+
+    const ObjectReflection* reflection = context->GetReflection(typeNameHash_);
+    return reflection ? reflection->GetEffectiveScopeHint() : AttributeScopeHint::Attribute;
+}
+
 bool SerializablePrefab::operator==(const SerializablePrefab& rhs) const
 {
     return ea::tie(id_, typeNameHash_, typeName_, attributes_)
@@ -348,6 +357,16 @@ void ScenePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags flags, b
             [=](Archive& archive, const char* name, ScenePrefab& value)
             { SerializeValue(archive, name, value, flags, compactSave); });
     });
+}
+
+AttributeScopeHint ScenePrefab::GetEffectiveScopeHint(Context* context) const
+{
+    AttributeScopeHint result = AttributeScopeHint::Attribute;
+    for (const SerializablePrefab& component : components_)
+        result = ea::max(result, component.GetEffectiveScopeHint(context));
+    for (const ScenePrefab& child : children_)
+        result = ea::max(result, child.GetEffectiveScopeHint(context));
+    return result;
 }
 
 void ScenePrefab::Clear()

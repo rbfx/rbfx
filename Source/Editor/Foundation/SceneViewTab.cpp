@@ -378,9 +378,12 @@ void SceneViewTab::PasteNextToSelection(Scene* scene, SceneSelection& selection)
         selection.Clear();
         for (const PackedNodeData& packedNode : clipboard_.GetNodes())
         {
+            const CreateNodeActionBuilder builder{scene, packedNode.GetEffectiveScopeHint()};
+
             Node* newNode = packedNode.SpawnCopy(parentNode);
             selection.SetSelected(newNode, true);
-            PushAction<CreateRemoveNodeAction>(newNode, false);
+
+            PushAction(builder.Build(newNode));
         }
     }
     else if (clipboard_.HasComponents())
@@ -403,9 +406,12 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
         {
             for (const PackedNodeData& packedNode : clipboard_.GetNodes())
             {
+                const CreateNodeActionBuilder builder{scene, packedNode.GetEffectiveScopeHint()};
+
                 Node* newNode = packedNode.SpawnCopy(selectedNode);
                 selection.SetSelected(newNode, true);
-                PushAction<CreateRemoveNodeAction>(newNode, false);
+
+                PushAction(builder.Build(newNode));
             }
         }
     }
@@ -416,9 +422,9 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
         {
             for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
             {
-                const CreateComponentActionBuilder factory(selectedNode, packedComponent.GetType());
+                const CreateComponentActionBuilder builder(selectedNode, packedComponent.GetType());
                 Component* newComponent = packedComponent.SpawnCopy(selectedNode);
-                PushAction(factory.Build(newComponent));
+                PushAction(builder.Build(newComponent));
 
                 if (componentSelection_)
                     selection.SetSelected(newComponent, true);
@@ -438,8 +444,11 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     {
         if (node && node->GetParent() != nullptr)
         {
-            PushAction<CreateRemoveNodeAction>(node, true);
+            const RemoveNodeActionBuilder builder(node);
+
             node->Remove();
+
+            PushAction(builder.Build());
         }
     }
 
@@ -447,9 +456,9 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     {
         if (component)
         {
-            const RemoveComponentActionBuilder factory(component);
+            const RemoveComponentActionBuilder builder(component);
             component->Remove();
-            PushAction(factory.Build());
+            PushAction(builder.Build());
         }
     }
 
@@ -468,11 +477,14 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
         {
             Node* parent = node->GetParent();
             URHO3D_ASSERT(parent);
-
             const auto data = PackedNodeData{node};
+
+            const CreateNodeActionBuilder builder{parent->GetScene(), data.GetEffectiveScopeHint()};
+
             Node* newNode = data.SpawnCopy(parent);
-            PushAction<CreateRemoveNodeAction>(newNode, false);
             selection.SetSelected(newNode, true);
+
+            PushAction(builder.Build(newNode));
         }
     }
     else if (!selection.GetComponents().empty())
@@ -488,9 +500,9 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
 
             const auto data = PackedComponentData{component};
 
-            const CreateComponentActionBuilder factory(node, data.GetType());
+            const CreateComponentActionBuilder builder(node, data.GetType());
             Component* newComponent = data.SpawnCopy(node);
-            PushAction(factory.Build(newComponent));
+            PushAction(builder.Build(newComponent));
 
             if (componentSelection_)
                 selection.SetSelected(newComponent, true);
@@ -505,10 +517,13 @@ void SceneViewTab::CreateNodeNextToSelection(Scene* scene, SceneSelection& selec
     Node* siblingNode = selection.GetActiveNodeOrScene();
     Node* parentNode = siblingNode && siblingNode->GetParent() ? siblingNode->GetParent() : scene;
 
+    const CreateNodeActionBuilder builder{scene, AttributeScopeHint::Attribute};
+
     Node* newNode = parentNode->CreateChild();
     selection.Clear();
     selection.SetSelected(newNode, true);
-    PushAction<CreateRemoveNodeAction>(newNode, false);
+
+    PushAction(builder.Build(newNode));
 }
 
 void SceneViewTab::CreateNodeInSelection(Scene* scene, SceneSelection& selection)
@@ -521,9 +536,12 @@ void SceneViewTab::CreateNodeInSelection(Scene* scene, SceneSelection& selection
     selection.Clear();
     for (Node* selectedNode : parentNodes)
     {
+        const CreateNodeActionBuilder builder{scene, AttributeScopeHint::Attribute};
+
         Node* newNode = selectedNode->CreateChild();
         selection.SetSelected(newNode, true);
-        PushAction<CreateRemoveNodeAction>(newNode, false);
+
+        PushAction(builder.Build(newNode));
     }
 }
 
@@ -537,9 +555,9 @@ void SceneViewTab::CreateComponentInSelection(Scene* scene, SceneSelection& sele
     selection.Clear();
     for (Node* selectedNode : parentNodes)
     {
-        const CreateComponentActionBuilder factory(selectedNode, componentType);
+        const CreateComponentActionBuilder builder(selectedNode, componentType);
         Component* newComponent = selectedNode->CreateComponent(componentType);
-        PushAction(factory.Build(newComponent));
+        PushAction(builder.Build(newComponent));
 
         if (componentSelection_)
             selection.SetSelected(newComponent, true);
