@@ -216,7 +216,7 @@ void NodeComponentInspector::BeginEditNodeAttribute(
     URHO3D_ASSERT(!nodeActionFactory_);
 
     const auto nodes = CastVectorTo<Node*>(objects);
-    nodeActionFactory_ = ea::make_unique<ChangeNodeAttributesActionFactory>(actionBuffer_, scene_, nodes, *attribute);
+    nodeActionFactory_ = ea::make_unique<ChangeNodeAttributesActionBuilder>(actionBuffer_, scene_, nodes, *attribute);
 }
 
 void NodeComponentInspector::EndEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
@@ -226,7 +226,7 @@ void NodeComponentInspector::EndEditNodeAttribute(const WeakSerializableVector& 
 
     URHO3D_ASSERT(nodeActionFactory_);
 
-    inspectedTab_->PushAction(nodeActionFactory_->Cook());
+    inspectedTab_->PushAction(nodeActionFactory_->Build());
     nodeActionFactory_ = nullptr;
 }
 
@@ -240,7 +240,7 @@ void NodeComponentInspector::BeginEditComponentAttribute(
 
     const auto components = CastVectorTo<Component*>(objects);
     componentActionFactory_ =
-        ea::make_unique<ChangeComponentAttributesActionFactory>(actionBuffer_, scene_, components, *attribute);
+        ea::make_unique<ChangeComponentAttributesActionBuilder>(actionBuffer_, scene_, components, *attribute);
 }
 
 void NodeComponentInspector::EndEditComponentAttribute(
@@ -251,7 +251,7 @@ void NodeComponentInspector::EndEditComponentAttribute(
 
     URHO3D_ASSERT(componentActionFactory_);
 
-    inspectedTab_->PushAction(componentActionFactory_->Cook());
+    inspectedTab_->PushAction(componentActionFactory_->Build());
     componentActionFactory_ = nullptr;
 }
 
@@ -288,17 +288,17 @@ void NodeComponentInspector::AddComponentToNodes(StringHash componentType)
 
     for (Node* node : nodeWidget_->GetNodes())
     {
-        const CreateComponentActionFactory factory(node, componentType);
+        const CreateComponentActionBuilder factory(node, componentType);
         if (auto component = node->CreateComponent(componentType))
-            inspectedTab_->PushAction(factory.Cook(component));
+            inspectedTab_->PushAction(factory.Build(component));
     }
 }
 
 void NodeComponentInspector::RemoveComponent(Component* component)
 {
-    const RemoveComponentActionFactory factory(component);
+    const RemoveComponentActionBuilder factory(component);
     component->Remove();
-    inspectedTab_->PushAction(factory.Cook());
+    inspectedTab_->PushAction(factory.Build());
 }
 
 void NodeComponentInspector::RenderContent()
