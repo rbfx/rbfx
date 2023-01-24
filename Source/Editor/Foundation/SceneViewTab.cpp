@@ -416,9 +416,9 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
         {
             for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
             {
-                const CreateComponentActionFactory factory(selectedNode, packedComponent.GetType());
+                const CreateComponentActionBuilder factory(selectedNode, packedComponent.GetType());
                 Component* newComponent = packedComponent.SpawnCopy(selectedNode);
-                PushAction(factory.Cook(newComponent));
+                PushAction(factory.Build(newComponent));
 
                 if (componentSelection_)
                     selection.SetSelected(newComponent, true);
@@ -447,9 +447,9 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     {
         if (component)
         {
-            const RemoveComponentActionFactory factory(component);
+            const RemoveComponentActionBuilder factory(component);
             component->Remove();
-            PushAction(factory.Cook());
+            PushAction(factory.Build());
         }
     }
 
@@ -488,9 +488,9 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
 
             const auto data = PackedComponentData{component};
 
-            const CreateComponentActionFactory factory(node, data.GetType());
+            const CreateComponentActionBuilder factory(node, data.GetType());
             Component* newComponent = data.SpawnCopy(node);
-            PushAction(factory.Cook(newComponent));
+            PushAction(factory.Build(newComponent));
 
             if (componentSelection_)
                 selection.SetSelected(newComponent, true);
@@ -537,9 +537,9 @@ void SceneViewTab::CreateComponentInSelection(Scene* scene, SceneSelection& sele
     selection.Clear();
     for (Node* selectedNode : parentNodes)
     {
-        const CreateComponentActionFactory factory(selectedNode, componentType);
+        const CreateComponentActionBuilder factory(selectedNode, componentType);
         Component* newComponent = selectedNode->CreateComponent(componentType);
-        PushAction(factory.Cook(newComponent));
+        PushAction(factory.Build(newComponent));
 
         if (componentSelection_)
             selection.SetSelected(newComponent, true);

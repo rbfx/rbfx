@@ -97,8 +97,8 @@ private:
     ea::map<ea::string, unsigned> componentSummary_;
 
     ChangeAttributeBuffer actionBuffer_;
-    ea::unique_ptr<ChangeNodeAttributesActionFactory> nodeActionFactory_;
-    ea::unique_ptr<ChangeComponentAttributesActionFactory> componentActionFactory_;
+    ea::unique_ptr<ChangeNodeAttributesActionBuilder> nodeActionFactory_;
+    ea::unique_ptr<ChangeComponentAttributesActionBuilder> componentActionFactory_;
 
     NodeVector changedNodes_;
     ea::vector<PackedNodeData> oldData_;

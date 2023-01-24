@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/CommonEditorActionBuilders.h"
 #include "../Core/UndoManager.h"
 
 #include <Urho3D/Scene/Component.h>
@@ -331,120 +332,5 @@ private:
     const PackedSceneData oldData_;
     PackedSceneData newData_;
 };
-
-/// Helper factory classes to create actions.
-/// These classes should be created before the action is started, and cooked after the action is finished.
-/// @{
-
-class CreateComponentActionFactory
-{
-public:
-    explicit CreateComponentActionFactory(Node* node, StringHash componentType);
-
-    SharedPtr<EditorAction> Cook(Component* component) const;
-
-private:
-    const WeakPtr<Scene> scene_;
-    const AttributeScopeHint scopeHint_;
-
-    PackedNodeData oldNodeData_;
-    PackedSceneData oldSceneData_;
-};
-
-class RemoveComponentActionFactory
-{
-public:
-    explicit RemoveComponentActionFactory(Component* component);
-
-    SharedPtr<EditorAction> Cook() const;
-
-private:
-    const WeakPtr<Scene> scene_;
-    const WeakPtr<Node> node_;
-    const AttributeScopeHint scopeHint_;
-
-    SharedPtr<EditorAction> action_;
-    PackedNodeData oldNodeData_;
-    PackedSceneData oldSceneData_;
-};
-
-struct ChangeAttributeBuffer
-{
-    VariantVector oldValues_;
-    VariantVector newValues_;
-
-    ea::vector<PackedNodeData> oldNodes_;
-    ea::vector<PackedNodeData> newNodes_;
-
-    PackedSceneData oldScene_;
-    PackedSceneData newScene_;
-};
-
-class ChangeNodeAttributesActionFactory
-{
-public:
-    ChangeNodeAttributesActionFactory(ChangeAttributeBuffer& buffer, Scene* scene,
-        const ea::vector<Node*>& nodes, const AttributeInfo& attr);
-
-    template <class T>
-    ChangeNodeAttributesActionFactory(
-        ChangeAttributeBuffer& buffer, Scene* scene, const T& nodes, const AttributeInfo& attr)
-        : ChangeNodeAttributesActionFactory(buffer, scene, ToNodeVector(nodes), attr)
-    {
-    }
-
-    SharedPtr<EditorAction> Cook() const;
-
-private:
-    template <class T>
-    static ea::vector<Node*> ToNodeVector(const T& components)
-    {
-        using namespace ea;
-        return {begin(components), end(components)};
-    }
-
-    ChangeAttributeBuffer& buffer_;
-    const WeakPtr<Scene> scene_;
-
-    const ea::string attributeName_;
-    const AttributeScopeHint scopeHint_;
-
-    const ea::vector<WeakPtr<Node>> nodes_;
-};
-
-class ChangeComponentAttributesActionFactory
-{
-public:
-    ChangeComponentAttributesActionFactory(ChangeAttributeBuffer& buffer, Scene* scene,
-        const ea::vector<Component*>& components, const AttributeInfo& attr);
-
-    template <class T>
-    ChangeComponentAttributesActionFactory(
-        ChangeAttributeBuffer& buffer, Scene* scene, const T& components, const AttributeInfo& attr)
-        : ChangeComponentAttributesActionFactory(buffer, scene, ToComponentsVector(components), attr)
-    {
-    }
-
-    SharedPtr<EditorAction> Cook() const;
-
-private:
-    template <class T>
-    static ea::vector<Component*> ToComponentsVector(const T& components)
-    {
-        using namespace ea;
-        return {begin(components), end(components)};
-    }
-
-    ChangeAttributeBuffer& buffer_;
-    const WeakPtr<Scene> scene_;
-
-    const ea::string attributeName_;
-    const AttributeScopeHint scopeHint_;
-
-    const ea::vector<WeakPtr<Component>> components_;
-    const ea::vector<WeakPtr<Node>> nodes_;
-};
-
-/// @}
 
 }
