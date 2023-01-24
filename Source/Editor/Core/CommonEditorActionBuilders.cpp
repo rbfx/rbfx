@@ -45,7 +45,7 @@ AttributeScopeHint GetScopeHint(Context* context, Node* node, const AttributeInf
 
     AttributeScopeHint result = AttributeScopeHint::Attribute;
     for (Component* component : node->GetComponents())
-        result = ea::max(result, GetScopeHint(context, component->GetType()));
+        result = ea::max(result, component->GetEffectiveScopeHint());
     return result;
 }
 
@@ -67,6 +67,84 @@ ea::vector<WeakPtr<T>> ToWeakPtr(const ea::vector<T*>& source)
     return result;
 }
 
+}
+
+CreateNodeActionBuilder::CreateNodeActionBuilder(Scene* scene, AttributeScopeHint scopeHint)
+    : scene_(scene)
+    , scopeHint_(scopeHint)
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    case AttributeScopeHint::Node:
+    {
+        // No need to prepare
+        break;
+    }
+    case AttributeScopeHint::Scene:
+    {
+        oldSceneData_.FromScene(scene);
+        break;
+    }
+    };
+}
+
+SharedPtr<EditorAction> CreateNodeActionBuilder::Build(Node* node) const
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    case AttributeScopeHint::Node:
+    {
+        return MakeShared<CreateRemoveNodeAction>(node, false);
+    }
+    case AttributeScopeHint::Scene:
+    {
+        return MakeShared<ChangeSceneAction>(scene_, oldSceneData_);
+    }
+    default: return nullptr;
+    }
+}
+
+RemoveNodeActionBuilder::RemoveNodeActionBuilder(Node* node)
+    : scene_(node->GetScene())
+    , scopeHint_(node->GetEffectiveScopeHint())
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    case AttributeScopeHint::Node:
+    {
+        action_ = MakeShared<CreateRemoveNodeAction>(node, true);
+        break;
+    }
+    case AttributeScopeHint::Scene:
+    {
+        oldSceneData_.FromScene(scene_);
+        break;
+    }
+    };
+}
+
+SharedPtr<EditorAction> RemoveNodeActionBuilder::Build() const
+{
+    switch (scopeHint_)
+    {
+    case AttributeScopeHint::Attribute:
+    case AttributeScopeHint::Serializable:
+    case AttributeScopeHint::Node:
+    {
+        return action_;
+    }
+    case AttributeScopeHint::Scene:
+    {
+        return MakeShared<ChangeSceneAction>(scene_, oldSceneData_);
+    }
+    default: return nullptr;
+    }
 }
 
 CreateComponentActionBuilder::CreateComponentActionBuilder(Node* node, StringHash componentType)

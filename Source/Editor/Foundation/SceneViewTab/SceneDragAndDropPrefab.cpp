@@ -100,7 +100,9 @@ void SceneDragAndDropPrefab::CompleteDragDrop(DragDropPayload* payload)
         currentPage_->selection_.SetSelected(temporaryNode_, true);
     }
 
-    owner_->PushAction<CreateRemoveNodeAction>(temporaryNode_, false);
+    owner_->PushAction(nodeActionBuilder_->Build(temporaryNode_));
+
+    nodeActionBuilder_ = nullptr;
     temporaryNode_ = nullptr;
 }
 
@@ -108,6 +110,7 @@ void SceneDragAndDropPrefab::CancelDragDrop()
 {
     if (temporaryNode_)
         temporaryNode_->Remove();
+    nodeActionBuilder_ = nullptr;
     temporaryNode_ = nullptr;
 }
 
@@ -118,12 +121,14 @@ void SceneDragAndDropPrefab::CreateNodeFromPrefab(Scene* scene, const ResourceFi
     if (!prefabFile)
         return;
 
+    const ScenePrefab& nodePrefab = prefabFile->GetNodePrefab();
+
+    nodeActionBuilder_ = ea::make_unique<CreateNodeActionBuilder>(scene, nodePrefab.GetEffectiveScopeHint(context_));
     temporaryNode_ = scene->CreateChild(GetFileName(desc.localName_));
 
     auto prefabReference = temporaryNode_->CreateComponent<PrefabReference>();
     prefabReference->SetPrefab(prefabFile);
 
-    const auto& nodePrefab = prefabFile->GetNodePrefab();
     if (!nodePrefab.IsEmpty())
         nodePrefab.GetNode().Export(temporaryNode_);
 }
@@ -136,6 +141,7 @@ void SceneDragAndDropPrefab::CreateNodeFromModel(Scene* scene, const ResourceFil
     if (!model)
         return;
 
+    nodeActionBuilder_ = ea::make_unique<CreateNodeActionBuilder>(scene, AttributeScopeHint::Attribute);
     temporaryNode_ = scene->CreateChild(GetFileName(desc.localName_));
 
     StaticModel* staticModel = nullptr;

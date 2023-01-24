@@ -45,6 +45,7 @@ PackedNodeData::PackedNodeData(Node* node)
 
         ArchiveBlock block = archive.OpenUnorderedBlock("node");
         node->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
+        scopeHint_ = node->GetEffectiveScopeHint();
     });
 }
 

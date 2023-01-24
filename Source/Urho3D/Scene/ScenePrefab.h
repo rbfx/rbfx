@@ -95,6 +95,8 @@ public:
 
     void SerializeInBlock(Archive& archive, PrefabArchiveFlags flags = {}, bool compactSave = false);
 
+    AttributeScopeHint GetEffectiveScopeHint(Context* context) const;
+
     const ea::string& GetTypeName() const { return typeName_; }
     StringHash GetTypeNameHash() const { return typeNameHash_; }
     SerializableId GetId() const { return id_; }
@@ -125,6 +127,8 @@ public:
     static const ScenePrefab Empty;
 
     void SerializeInBlock(Archive& archive, PrefabArchiveFlags flags = {}, bool compactSave = false);
+
+    AttributeScopeHint GetEffectiveScopeHint(Context* context) const;
 
     const SerializablePrefab& GetNode() const { return node_; }
     SerializablePrefab& GetMutableNode() { return node_; }

@@ -213,10 +213,10 @@ void NodeComponentInspector::BeginEditNodeAttribute(
     if (objects.empty())
         return;
 
-    URHO3D_ASSERT(!nodeActionFactory_);
+    URHO3D_ASSERT(!nodeActionBuilder_);
 
     const auto nodes = CastVectorTo<Node*>(objects);
-    nodeActionFactory_ = ea::make_unique<ChangeNodeAttributesActionBuilder>(actionBuffer_, scene_, nodes, *attribute);
+    nodeActionBuilder_ = ea::make_unique<ChangeNodeAttributesActionBuilder>(actionBuffer_, scene_, nodes, *attribute);
 }
 
 void NodeComponentInspector::EndEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
@@ -224,10 +224,10 @@ void NodeComponentInspector::EndEditNodeAttribute(const WeakSerializableVector& 
     if (objects.empty())
         return;
 
-    URHO3D_ASSERT(nodeActionFactory_);
+    URHO3D_ASSERT(nodeActionBuilder_);
 
-    inspectedTab_->PushAction(nodeActionFactory_->Build());
-    nodeActionFactory_ = nullptr;
+    inspectedTab_->PushAction(nodeActionBuilder_->Build());
+    nodeActionBuilder_ = nullptr;
 }
 
 void NodeComponentInspector::BeginEditComponentAttribute(
@@ -236,10 +236,10 @@ void NodeComponentInspector::BeginEditComponentAttribute(
     if (objects.empty())
         return;
 
-    URHO3D_ASSERT(!componentActionFactory_);
+    URHO3D_ASSERT(!componentActionBuilder_);
 
     const auto components = CastVectorTo<Component*>(objects);
-    componentActionFactory_ =
+    componentActionBuilder_ =
         ea::make_unique<ChangeComponentAttributesActionBuilder>(actionBuffer_, scene_, components, *attribute);
 }
 
@@ -249,10 +249,10 @@ void NodeComponentInspector::EndEditComponentAttribute(
     if (objects.empty())
         return;
 
-    URHO3D_ASSERT(componentActionFactory_);
+    URHO3D_ASSERT(componentActionBuilder_);
 
-    inspectedTab_->PushAction(componentActionFactory_->Build());
-    componentActionFactory_ = nullptr;
+    inspectedTab_->PushAction(componentActionBuilder_->Build());
+    componentActionBuilder_ = nullptr;
 }
 
 void NodeComponentInspector::BeginAction(const WeakSerializableVector& objects)
@@ -288,17 +288,17 @@ void NodeComponentInspector::AddComponentToNodes(StringHash componentType)
 
     for (Node* node : nodeWidget_->GetNodes())
     {
-        const CreateComponentActionBuilder factory(node, componentType);
+        const CreateComponentActionBuilder builder(node, componentType);
         if (auto component = node->CreateComponent(componentType))
-            inspectedTab_->PushAction(factory.Build(component));
+            inspectedTab_->PushAction(builder.Build(component));
     }
 }
 
 void NodeComponentInspector::RemoveComponent(Component* component)
 {
-    const RemoveComponentActionBuilder factory(component);
+    const RemoveComponentActionBuilder builder(component);
     component->Remove();
-    inspectedTab_->PushAction(factory.Build());
+    inspectedTab_->PushAction(builder.Build());
 }
 
 void NodeComponentInspector::RenderContent()
