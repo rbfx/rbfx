@@ -226,7 +226,7 @@ void Chat::HandleConnect(StringHash /*eventType*/, VariantMap& eventData)
     // Connect to server, do not specify a client scene as we are not using scene replication, just messages.
     // At connect time we could also send identity parameters (such as username) in a VariantMap, but in this
     // case we skip it for simplicity
-    network->Connect(Format("{}:{}", address, CHAT_SERVER_PORT), nullptr);
+    network->Connect(URL(Format("{}:{}", address, CHAT_SERVER_PORT)), nullptr);
 
     UpdateButtons();
 }

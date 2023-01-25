@@ -138,11 +138,13 @@ ea::string URL::Decode(ea::string_view string)
     ea::string result;
     for (const char* p = string.begin(); p < string.end();)
     {
-        int c = 0;
-        if (*p == '%')
-            p += sscanf(p, "%02X", &c);
-        else
-            c = *p++;
+        int c = *p++;
+        if (c == '%')
+        {
+            char* end = nullptr;
+            c = strtol(p, &end, 16);
+            p = end;
+        }
         result.append(1, static_cast<char>(c));
     }
     return result;

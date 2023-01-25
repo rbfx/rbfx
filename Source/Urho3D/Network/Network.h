@@ -78,10 +78,6 @@ public:
     void SetClockBufferSize(unsigned size);
     /// Set number of ping samples used.
     void SetPingBufferSize(unsigned size);
-    /// Test only. Set whether to send events as server.
-    void SetSimulateServerEvents(bool enable) { simulateServerEvents_ = enable; }
-    /// Test only. Set whether to send events as client.
-    void SetSimulateClientEvents(bool enable) { simulateClientEvents_ = enable; }
     /// Register a remote event as allowed to be received. There is also a fixed blacklist of events that can not be allowed in any case, such as ConsoleCommand.
     void RegisterRemoteEvent(StringHash eventType);
     /// Unregister a remote event as allowed to received.
@@ -95,8 +91,6 @@ public:
     void SendPackageToClients(Scene* scene, PackageFile* package);
     /// Perform an HTTP request to the specified URL. Empty verb defaults to a GET request. Return a request object which can be used to read the response data.
     SharedPtr<HttpRequest> MakeHttpRequest(const ea::string& url, const ea::string& verb = EMPTY_STRING, const ea::vector<ea::string>& headers = ea::vector<ea::string>(), const ea::string& postData = EMPTY_STRING);
-    /// Ban specific IP addresses.
-    void BanAddress(const ea::string& address);
     /// Return network update FPS.
     /// @property
     unsigned GetUpdateFps() const { return updateFps_; }
@@ -154,16 +148,8 @@ private:
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// @}
 
-    /// Reconfigure network simulator parameters on all existing connections.
-    void ConfigureNetworkSimulator();
     ///
     void SendNetworkUpdateEvent(StringHash eventType, bool isServer);
-
-    /// Used for testing only
-    /// @{
-    bool simulateServerEvents_{};
-    bool simulateClientEvents_{};
-    /// @}
 
     /// Properties that need connection reset to apply
     /// @{

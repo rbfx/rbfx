@@ -389,11 +389,6 @@ SharedPtr<HttpRequest> Network::MakeHttpRequest(const ea::string& url, const ea:
     return request;
 }
 
-void Network::BanAddress(const ea::string& address)
-{
-    //rakPeer_->AddToBanList(address.c_str(), 0);
-}
-
 Connection* Network::GetServerConnection() const
 {
     return connectionToServer_;
@@ -463,200 +458,6 @@ ea::string Network::GetDebugInfo() const
     return result;
 }
 
-//void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
-//{
-    //unsigned char packetID = packet->data[0];
-    //bool packetHandled = false;
-    //
-    //// Deal with timestamped backents
-    //unsigned dataStart = sizeof(char);
-    //if (packetID == ID_TIMESTAMP)
-    //{
-    //    dataStart += sizeof(SLNet::Time);
-    //    packetID = packet->data[dataStart];
-    //    dataStart += sizeof(char);
-    //}
-    //
-    //if (packetID == ID_NEW_INCOMING_CONNECTION)
-    //{
-    //    if (isServer)
-    //    {
-    //        OnClientConnected(packet->systemAddress);
-    //        packetHandled = true;
-    //    }
-    //}
-    //else if (packetID == ID_ALREADY_CONNECTED)
-    //{
-    //    if (natPunchServerAddress_ && packet->systemAddress == *natPunchServerAddress_) {
-    //        URHO3D_LOGINFO("Already connected to NAT server! ");
-    //        if (!isServer)
-    //        {
-    //            natPunchthroughClient_->OpenNAT(*remoteGUID_, *natPunchServerAddress_);
-    //        }
-    //    }
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_CONNECTION_REQUEST_ACCEPTED) // We're a client, our connection as been accepted
-    //{
-    //    if(natPunchServerAddress_ && packet->systemAddress == *natPunchServerAddress_) {
-    //        URHO3D_LOGINFO("Succesfully connected to NAT punchtrough server! ");
-    //        SendEvent(E_NATMASTERCONNECTIONSUCCEEDED);
-    //        if (!isServer)
-    //        {
-    //            natPunchthroughClient_->OpenNAT(*remoteGUID_, *natPunchServerAddress_);
-    //        }
-    //    } else {
-    //        if (!isServer)
-    //        {
-    //            OnServerConnected(packet->systemAddress);
-    //        }
-    //    }
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_NAT_TARGET_NOT_CONNECTED)
-    //{
-    //    URHO3D_LOGERROR("Target server not connected to NAT master server!");
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_CONNECTION_LOST) // We've lost connectivity with the packet source
-    //{
-    //    if (isServer)
-    //    {
-    //        ClientDisconnected(packet->systemAddress);
-    //    }
-    //    else
-    //    {
-    //        OnDisconnectedFromServer(packet->systemAddress);
-    //    }
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_DISCONNECTION_NOTIFICATION) // We've lost connection with the other side
-    //{
-    //    if (isServer)
-    //    {
-    //        ClientDisconnected(packet->systemAddress);
-    //    }
-    //    else
-    //    {
-    //        OnDisconnectedFromServer(packet->systemAddress);
-    //    }
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_CONNECTION_ATTEMPT_FAILED) // We've failed to connect to the server/peer
-    //{
-    //    if (natPunchServerAddress_ && packet->systemAddress == *natPunchServerAddress_) {
-    //        URHO3D_LOGERROR("Connection to NAT punchtrough server failed!");
-    //        SendEvent(E_NATMASTERCONNECTIONFAILED);
-    //
-    //    } else {
-    //
-    //        if (!isServer)
-    //        {
-    //            OnDisconnectedFromServer(packet->systemAddress);
-    //        }
-    //    }
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_NAT_PUNCHTHROUGH_SUCCEEDED)
-    //{
-    //    SLNet::SystemAddress remotePeer = packet->systemAddress;
-    //    URHO3D_LOGINFO("NAT punchtrough succeeded! Remote peer: " + ea::string(remotePeer.ToString()));
-    //    if (!isServer)
-    //    {
-    //        using namespace NetworkNatPunchtroughSucceeded;
-    //        VariantMap eventMap;
-    //        eventMap[P_ADDRESS] = remotePeer.ToString(false);
-    //        eventMap[P_PORT] = remotePeer.GetPort();
-    //        SendEvent(E_NETWORKNATPUNCHTROUGHSUCCEEDED, eventMap);
-    //        URHO3D_LOGINFO("Connecting to server behind NAT: " + ea::string(remotePeer.ToString()));
-    //        Connect(ea::string(remotePeer.ToString(false)), remotePeer.GetPort(), scene_, identity_);
-    //    }
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_NAT_PUNCHTHROUGH_FAILED)
-    //{
-    //    URHO3D_LOGERROR("NAT punchtrough failed!");
-    //    SLNet::SystemAddress remotePeer = packet->systemAddress;
-    //    using namespace NetworkNatPunchtroughFailed;
-    //    VariantMap eventMap;
-    //    eventMap[P_ADDRESS] = remotePeer.ToString(false);
-    //    eventMap[P_PORT] = remotePeer.GetPort();
-    //    SendEvent(E_NETWORKNATPUNCHTROUGHFAILED, eventMap);
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_CONNECTION_BANNED) // We're a client and we're on the ban list
-    //{
-    //    URHO3D_LOGERROR("Connection failed, you're banned!");
-    //    SendEvent(E_NETWORKBANNED);
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_INVALID_PASSWORD) // We're a client, and we gave an invalid password
-    //{
-    //    URHO3D_LOGERROR("Invalid password provided for connection!");
-    //    SendEvent(E_NETWORKINVALIDPASSWORD);
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_DOWNLOAD_PROGRESS) // Part of a file transfer
-    //{
-    //    //URHO3D_LOGINFO("101010");
-    //}
-    //else if (packetID == ID_UNCONNECTED_PING)
-    //{
-    //    packetHandled = true;
-    //}
-    //else if (packetID == ID_UNCONNECTED_PONG) // Host discovery response
-    //{
-    //    if (!isServer)
-    //    {
-    //        using namespace NetworkHostDiscovered;
-    //
-    //        dataStart += sizeof(SLNet::TimeMS);
-    //        VariantMap& eventMap = context_->GetEventDataMap();
-    //        if (packet->length > packet->length - dataStart) {
-    //            VectorBuffer buffer(packet->data + dataStart, packet->length - dataStart);
-    //            VariantMap srcData = buffer.ReadVariantMap();
-    //            eventMap[P_BEACON] = srcData;
-    //        }
-    //        else {
-    //            eventMap[P_BEACON] = VariantMap();
-    //        }
-    //
-    //        eventMap[P_ADDRESS] = ea::string(packet->systemAddress.ToString(false));
-    //        eventMap[P_PORT] = (int)packet->systemAddress.GetPort();
-    //        SendEvent(E_NETWORKHOSTDISCOVERED, eventMap);
-    //    }
-    //    packetHandled = true;
-    //}
-    //
-    //// Urho3D messages
-    //if (packetID >= ID_USER_PACKET_ENUM)
-    //{
-    //    unsigned int messageID = *(unsigned int*)(packet->data + dataStart);
-    //    dataStart += sizeof(unsigned int);
-    //
-    //    if (isServer)
-    //    {
-    //        HandleMessage(packet->systemAddress, 0, messageID, (const char*)(packet->data + dataStart), packet->length - dataStart);
-    //    }
-    //    else
-    //    {
-    //        MemoryBuffer buffer(packet->data + dataStart, packet->length - dataStart);
-    //        bool processed = connectionToServer_ && connectionToServer_->ProcessMessage(messageID, buffer);
-    //        if (!processed)
-    //        {
-    //            HandleMessage(packet->systemAddress, 0, messageID, (const char*)(packet->data + dataStart), packet->length - dataStart);
-    //        }
-    //    }
-    //    packetHandled = true;
-    //}
-    //
-    //if (!packetHandled && packetID < ea::size(RAKNET_MESSAGEID_STRINGS))
-    //    URHO3D_LOGERROR("Unhandled network packet: " + ea::string(RAKNET_MESSAGEID_STRINGS[packetID]));
-    //else if (!packetHandled)
-    //    URHO3D_LOGERRORF("Unhandled network packet: %i", packetID);
-//
-//}
-
 void Network::Update(float timeStep)
 {
     URHO3D_PROFILE("UpdateNetwork");
@@ -680,24 +481,18 @@ void Network::PostUpdate(float timeStep)
     URHO3D_PROFILE("PostUpdateNetwork");
 
     // Update periodically on the server
-    if (updateNow_ && (IsServerRunning() || simulateServerEvents_))
+    if (updateNow_)
     {
         SendNetworkUpdateEvent(E_NETWORKUPDATE, true);
-
-        if (IsServerRunning())
+        URHO3D_PROFILE("SendServerUpdate");
+        // Then send server updates for each client connection
+        for (auto& pair : clientConnections_)
         {
-            URHO3D_PROFILE("SendServerUpdate");
-
-            // Then send server updates for each client connection
-            for (auto& pair : clientConnections_)
-            {
-                pair.second->SendRemoteEvents();
-                pair.second->SendPackages();
-                pair.second->SendAllBuffers();
-                pair.second->ProcessPackets();
-            }
+            pair.second->SendRemoteEvents();
+            pair.second->SendPackages();
+            pair.second->SendAllBuffers();
+            pair.second->ProcessPackets();
         }
-
         SendNetworkUpdateEvent(E_NETWORKUPDATESENT, true);
     }
 
