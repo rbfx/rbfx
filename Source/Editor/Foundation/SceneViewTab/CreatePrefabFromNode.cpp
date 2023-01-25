@@ -22,6 +22,9 @@
 
 #include "../../Foundation/SceneViewTab/CreatePrefabFromNode.h"
 
+#include "../../Core/CommonEditorActions.h"
+#include "../../Core/CommonEditorActionBuilders.h"
+
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
@@ -30,6 +33,7 @@
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/Scene/PrefabWriter.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
@@ -91,8 +95,9 @@ ScenePrefab PrefabFromNodeFactory::CreatePrefabFromNode(Node* node) const
     return result;
 }
 
-void PrefabFromNodeFactory::SetNodes(const WeakNodeVector& nodes)
+void PrefabFromNodeFactory::Setup(SceneViewTab* tab, const WeakNodeVector& nodes)
 {
+    tab_ = tab;
     nodes_ = nodes;
 }
 
@@ -124,13 +129,20 @@ void PrefabFromNodeFactory::Render(const FileNameChecker& checker, bool& canComm
         shouldCommit = true;
 }
 
+void PrefabFromNodeFactory::RenderAuxilary()
+{
+    ui::Checkbox("Replace with PrefabReference", &replaceWithReference_);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Replace node contents with PrefabReference component that references created prefab.");
+}
+
 void PrefabFromNodeFactory::CommitAndClose()
 {
     BaseClassName::CommitAndClose();
 
     if (nodes_.size() == 1 && nodes_[0])
     {
-        SaveNodeAsPrefab(nodes_[0], GetFinalFileName());
+        SaveNodeAsPrefab(nodes_[0], GetFinalResourceName(), GetFinalFileName());
     }
     else
     {
@@ -142,7 +154,10 @@ void PrefabFromNodeFactory::CommitAndClose()
 
             const ea::string fileName = FindBestFileName(node, filePath);
             if (!fileName.empty())
-                SaveNodeAsPrefab(node, fileName);
+            {
+                const ea::string resourceName = GetFinalResourcePath() + fileName.substr(filePath.size());
+                SaveNodeAsPrefab(node, resourceName, fileName);
+            }
         }
     }
 }
@@ -177,11 +192,46 @@ ea::string PrefabFromNodeFactory::FindBestFileName(Node* node, const ea::string&
     return "";
 }
 
-void PrefabFromNodeFactory::SaveNodeAsPrefab(Node* node, const ea::string& fileName)
+void PrefabFromNodeFactory::SaveNodeAsPrefab(Node* node, const ea::string& resourceName, const ea::string& fileName)
 {
     ScenePrefab& nodePrefab = prefab_->GetMutableScenePrefab().GetMutableChildren()[0];
     nodePrefab = CreatePrefabFromNode(node);
     prefab_->SaveFile(fileName);
+
+    if (replaceWithReference_ && tab_ && node != node->GetScene())
+    {
+        Scene* scene = node->GetScene();
+        Node* parentNode = node->GetParent();
+        const unsigned nodeId = node->GetID();
+        const unsigned indexInParent = node->GetIndexInParent();
+        const AttributeScopeHint scopeHint = node->GetEffectiveScopeHint();
+
+        SerializablePrefab nodeAttributes;
+        nodeAttributes.Import(node);
+
+        {
+            const RemoveNodeActionBuilder builder{node};
+
+            node->Remove();
+
+            tab_->PushAction(builder.Build());
+        }
+
+        {
+            const CreateNodeActionBuilder builder{scene, scopeHint};
+
+            Node* newNode = parentNode->CreateChild(nodeId);
+            parentNode->ReorderChild(newNode, indexInParent);
+
+            nodeAttributes.Export(newNode);
+
+            auto prefabReference = newNode->CreateComponent<PrefabReference>();
+            prefabReference->SetPrefabAttr({PrefabResource::GetTypeStatic(), resourceName});
+            prefabReference->ApplyAttributes();
+
+            tab_->PushAction(builder.Build(newNode));
+        }
+    }
 }
 
 CreatePrefabFromNode::CreatePrefabFromNode(SceneViewTab* owner)
@@ -212,7 +262,7 @@ void CreatePrefabFromNode::CreatePrefabs(const SceneSelection& selection)
     }
     ea::erase(nodes, nullptr);
 
-    factory_->SetNodes(nodes);
+    factory_->Setup(owner_, nodes);
 
     auto project = owner_->GetProject();
     auto request = MakeShared<CreateResourceRequest>(factory_);

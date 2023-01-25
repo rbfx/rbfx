@@ -41,13 +41,14 @@ public:
     using WeakNodeVector = ea::vector<WeakPtr<Node>>;
 
     explicit PrefabFromNodeFactory(Context* context);
-    void SetNodes(const WeakNodeVector& nodes);
+    void Setup(SceneViewTab* tab, const WeakNodeVector& nodes);
 
     /// Implement ResourceFactory.
     /// @{
     ea::string GetDefaultFileName() const override;
     bool IsFileNameEditable() const override;
     void Render(const FileNameChecker& checker, bool& canCommit, bool& shouldCommit) override;
+    void RenderAuxilary() override;
     void CommitAndClose() override;
     /// @}
 
@@ -56,10 +57,12 @@ private:
     ScenePrefab CreatePrefabFromNode(Node* node) const;
 
     ea::string FindBestFileName(Node* node, const ea::string& filePath) const;
-    void SaveNodeAsPrefab(Node* node, const ea::string& fileName);
+    void SaveNodeAsPrefab(Node* node, const ea::string& resourceName, const ea::string& fileName);
 
+    WeakPtr<SceneViewTab> tab_;
     WeakNodeVector nodes_;
     SharedPtr<PrefabResource> prefab_;
+    bool replaceWithReference_{true};
 };
 
 /// Addon to manage scene selection with mouse and render debug geometry.
