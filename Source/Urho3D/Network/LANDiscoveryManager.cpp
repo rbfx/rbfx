@@ -25,10 +25,19 @@
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Core/CoreEvents.h>
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#endif
 #include <fcntl.h>
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
 
 namespace Urho3D
 {
@@ -89,11 +98,20 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
         si_me.sin_port = htons(port);
         si_me.sin_addr.s_addr = htonl((mode & LANDiscoveryMode::LAN) ? INADDR_ANY : INADDR_LOOPBACK);
 
+#ifdef _WIN32
+        u_long noblock = 1;
+        ioctlsocket(socket_, FIONBIO, &noblock);
+#else
         fcntl(socket_, F_SETFL, fcntl(socket_, F_GETFL) | O_NONBLOCK);
+#endif
         if (bind(socket_, (struct sockaddr*)&si_me, sizeof(si_me)) == -1)
         {
             Log::GetLogger("LANDiscovery").Error("Failed to bind to port {}: error {}", port, GetLastNetworkError());
+#ifdef _WIN32
+            closesocket(socket_);
+#else
             close(socket_);
+#endif
             socket_ = -1;
             return false;
         }
@@ -106,14 +124,22 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
 
             timer_.Reset();
             struct sockaddr_in addr = {};
+#ifdef _WIN32
+            int addrLen = sizeof(addr);
+#else
             socklen_t addrLen = sizeof(addr);
-            int result = recvfrom(socket_, (void*)buffer_.GetData(), buffer_.GetSize(), 0, (sockaddr*)&addr, &addrLen);
+#endif
+            int result = recvfrom(socket_, (char*)buffer_.GetData(), buffer_.GetSize(), 0, (sockaddr*)&addr, &addrLen);
             if (result > 0)
             {
                 using namespace NetworkHostDiscovered;
                 VariantMap& args = GetEventDataMap();
                 char ipv4[16];
+#ifdef _WIN32
+                InetNtopA(AF_INET, &addr.sin_addr, ipv4, sizeof(ipv4));
+#else
                 inet_ntop(AF_INET, &addr.sin_addr, ipv4, sizeof(ipv4));
+#endif
                 args[P_ADDRESS] = ipv4;
                 args[P_PORT] = ntohs(addr.sin_port);
 
@@ -125,7 +151,11 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
             }
             else if (result < 0)
             {
+#ifdef _WIN32
+                if (GetLastNetworkError() == WSAEWOULDBLOCK)
+#else
                 if (GetLastNetworkError() == EAGAIN)
+#endif
                 {
                     // Noop
                 }
@@ -162,7 +192,7 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
                 if (!address)
                     continue;
                 addr.sin_addr.s_addr = htonl(address);
-                int result = sendto(socket_, buffer_.GetData(), buffer_.GetSize(), MSG_NOSIGNAL, (sockaddr*)&addr, sizeof(addr));
+                int result = sendto(socket_, (char*)buffer_.GetData(), buffer_.GetSize(), MSG_NOSIGNAL, (sockaddr*)&addr, sizeof(addr));
                 if (result < 0)
                 {
                     Log::GetLogger("LANDiscovery").Error("Failed to broadcast: result = {}, error = {}", result, GetLastNetworkError());
@@ -176,7 +206,11 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
 
 void LANDiscoveryManager::Stop()
 {
+#ifdef _WIN32
+    closesocket(socket_);
+#else
     close(socket_);
+#endif
     socket_ = -1;
     UnsubscribeFromAllEvents();
 }
