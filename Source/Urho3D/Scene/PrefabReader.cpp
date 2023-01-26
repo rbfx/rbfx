@@ -29,8 +29,8 @@
 namespace Urho3D
 {
 
-PrefabReaderFromMemory::PrefabReaderFromMemory(const ScenePrefab& scenePrefab)
-    : scenePrefab_(scenePrefab)
+PrefabReaderFromMemory::PrefabReaderFromMemory(const NodePrefab& nodePrefab)
+    : nodePrefab_(nodePrefab)
     , stack_{{nullptr, 0u}}
 {
 }
@@ -87,10 +87,10 @@ void PrefabReaderFromMemory::EndChild()
     UpdateEOF();
 }
 
-const ScenePrefab& PrefabReaderFromMemory::CurrentNode() const
+const NodePrefab& PrefabReaderFromMemory::CurrentNode() const
 {
     const auto& [parentNode, childIndex] = stack_.back();
-    return parentNode ? parentNode->GetChildren()[childIndex] : scenePrefab_;
+    return parentNode ? parentNode->GetChildren()[childIndex] : nodePrefab_;
 }
 
 void PrefabReaderFromMemory::StartChildren()

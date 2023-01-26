@@ -53,8 +53,8 @@ public:
     /// @}
 
 private:
-    ScenePrefab CreatePrefabBase() const;
-    ScenePrefab CreatePrefabFromNode(Node* node) const;
+    NodePrefab CreatePrefabBase() const;
+    NodePrefab CreatePrefabFromNode(Node* node) const;
 
     ea::string FindBestFileName(Node* node, const ea::string& filePath) const;
     void SaveNodeAsPrefab(Node* node, const ea::string& resourceName, const ea::string& fileName);

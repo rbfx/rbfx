@@ -121,10 +121,10 @@ URHO3D_API void SerializeValue(Archive& archive, const char* name, SerializableP
 
 /// Scene prefab.
 /// Contains node attributes, components and child nodes.
-class URHO3D_API ScenePrefab
+class URHO3D_API NodePrefab
 {
 public:
-    static const ScenePrefab Empty;
+    static const NodePrefab Empty;
 
     void SerializeInBlock(Archive& archive, PrefabArchiveFlags flags = {}, bool compactSave = false);
 
@@ -134,22 +134,22 @@ public:
     SerializablePrefab& GetMutableNode() { return node_; }
     const ea::vector<SerializablePrefab>& GetComponents() const { return components_; }
     ea::vector<SerializablePrefab>& GetMutableComponents() { return components_; }
-    const ea::vector<ScenePrefab>& GetChildren() const { return children_; }
-    ea::vector<ScenePrefab>& GetMutableChildren() { return children_; }
+    const ea::vector<NodePrefab>& GetChildren() const { return children_; }
+    ea::vector<NodePrefab>& GetMutableChildren() { return children_; }
 
     void Clear();
     bool IsEmpty() const;
 
-    bool operator==(const ScenePrefab& rhs) const;
-    bool operator!=(const ScenePrefab& rhs) const { return !(*this == rhs); }
+    bool operator==(const NodePrefab& rhs) const;
+    bool operator!=(const NodePrefab& rhs) const { return !(*this == rhs); }
 
 private:
     SerializablePrefab node_;
     ea::vector<SerializablePrefab> components_;
-    ea::vector<ScenePrefab> children_;
+    ea::vector<NodePrefab> children_;
 };
 
 URHO3D_API void SerializeValue(
-    Archive& archive, const char* name, ScenePrefab& value, PrefabArchiveFlags flags = {}, bool compactSave = false);
+    Archive& archive, const char* name, NodePrefab& value, PrefabArchiveFlags flags = {}, bool compactSave = false);
 
 } // namespace Urho3D

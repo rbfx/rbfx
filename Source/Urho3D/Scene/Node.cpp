@@ -244,7 +244,7 @@ bool Node::Save(PrefabWriter& writer) const
     }
 }
 
-Node* Node::InstantiatePrefab(const ScenePrefab& prefab, const Vector3& position, const Quaternion& rotation)
+Node* Node::InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation)
 {
     Node* childNode = CreateChild();
     PrefabReaderFromMemory reader{prefab};
@@ -259,16 +259,16 @@ Node* Node::InstantiatePrefab(const ScenePrefab& prefab, const Vector3& position
     return childNode;
 }
 
-void Node::GeneratePrefab(ScenePrefab& prefab) const
+void Node::GeneratePrefab(NodePrefab& prefab) const
 {
     const PrefabSaveFlags flags = PrefabSaveFlag::EnumsAsStrings | PrefabSaveFlag::Prefab;
     PrefabWriterToMemory writer{prefab, flags};
     Save(writer);
 }
 
-ScenePrefab Node::GeneratePrefab() const
+NodePrefab Node::GeneratePrefab() const
 {
-    ScenePrefab prefab;
+    NodePrefab prefab;
     GeneratePrefab(prefab);
     return prefab;
 }

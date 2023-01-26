@@ -25,7 +25,7 @@
 #include <Urho3D/Core/ObjectReflection.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/Log.h>
-#include <Urho3D/Scene/ScenePrefab.h>
+#include <Urho3D/Scene/NodePrefab.h>
 
 namespace Urho3D
 {
@@ -336,9 +336,9 @@ void SerializeValue(
     value.SerializeInBlock(archive, flags, compactSave);
 }
 
-const ScenePrefab ScenePrefab::Empty;
+const NodePrefab NodePrefab::Empty;
 
-void ScenePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags flags, bool compactSave)
+void NodePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags flags, bool compactSave)
 {
     node_.SerializeInBlock(archive, ToNodeFlags(flags));
 
@@ -354,39 +354,39 @@ void ScenePrefab::SerializeInBlock(Archive& archive, PrefabArchiveFlags flags, b
         [&](Archive& archive, const char* name, auto& value)
     {
         SerializeVectorAsObjects(archive, name, value, "node",
-            [=](Archive& archive, const char* name, ScenePrefab& value)
+            [=](Archive& archive, const char* name, NodePrefab& value)
             { SerializeValue(archive, name, value, flags, compactSave); });
     });
 }
 
-AttributeScopeHint ScenePrefab::GetEffectiveScopeHint(Context* context) const
+AttributeScopeHint NodePrefab::GetEffectiveScopeHint(Context* context) const
 {
     AttributeScopeHint result = AttributeScopeHint::Attribute;
     for (const SerializablePrefab& component : components_)
         result = ea::max(result, component.GetEffectiveScopeHint(context));
-    for (const ScenePrefab& child : children_)
+    for (const NodePrefab& child : children_)
         result = ea::max(result, child.GetEffectiveScopeHint(context));
     return result;
 }
 
-void ScenePrefab::Clear()
+void NodePrefab::Clear()
 {
     node_ = {};
     components_.clear();
     children_.clear();
 }
 
-bool ScenePrefab::IsEmpty() const
+bool NodePrefab::IsEmpty() const
 {
     return node_.GetAttributes().empty() && components_.empty() && children_.empty();
 }
 
-bool ScenePrefab::operator==(const ScenePrefab& rhs) const
+bool NodePrefab::operator==(const NodePrefab& rhs) const
 {
     return ea::tie(node_, components_, children_) == ea::tie(rhs.node_, rhs.components_, rhs.children_);
 }
 
-void SerializeValue(Archive& archive, const char* name, ScenePrefab& value, PrefabArchiveFlags flags, bool compactSave)
+void SerializeValue(Archive& archive, const char* name, NodePrefab& value, PrefabArchiveFlags flags, bool compactSave)
 {
     ArchiveBlock block = archive.OpenUnorderedBlock(name);
     value.SerializeInBlock(archive, flags, compactSave);

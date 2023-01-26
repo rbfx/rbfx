@@ -29,12 +29,12 @@
 namespace Urho3D
 {
 
-PrefabWriterToMemory::PrefabWriterToMemory(ScenePrefab& scenePrefab, PrefabSaveFlags flags)
-    : scenePrefab_(scenePrefab)
+PrefabWriterToMemory::PrefabWriterToMemory(NodePrefab& nodePrefab, PrefabSaveFlags flags)
+    : nodePrefab_(nodePrefab)
     , flags_(flags)
     , stack_{{nullptr, 0u}}
 {
-    scenePrefab_.Clear();
+    nodePrefab_.Clear();
 }
 
 void PrefabWriterToMemory::WriteNode(unsigned id, const Serializable* node)
@@ -95,10 +95,10 @@ void PrefabWriterToMemory::EndChild()
     CheckEOF();
 }
 
-ScenePrefab& PrefabWriterToMemory::CurrentNode() const
+NodePrefab& PrefabWriterToMemory::CurrentNode() const
 {
     auto& [parentNode, childIndex] = stack_.back();
-    return parentNode ? parentNode->GetMutableChildren()[childIndex] : scenePrefab_;
+    return parentNode ? parentNode->GetMutableChildren()[childIndex] : nodePrefab_;
 }
 
 void PrefabWriterToMemory::StartChildren()

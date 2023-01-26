@@ -73,9 +73,9 @@ public:
     ea::string unchangedString_{"default"};
 };
 
-ScenePrefab MakeTestPrefab()
+NodePrefab MakeTestPrefab()
 {
-    ScenePrefab source;
+    NodePrefab source;
 
     {
         auto& node = source.GetMutableNode();
@@ -98,7 +98,7 @@ ScenePrefab MakeTestPrefab()
     }
 
     unsigned componentIndex = 301;
-    for (ScenePrefab* parentNode : {&source, &source.GetMutableChildren()[0], &source.GetMutableChildren()[2]})
+    for (NodePrefab* parentNode : {&source, &source.GetMutableChildren()[0], &source.GetMutableChildren()[2]})
     {
         auto& components = parentNode->GetMutableComponents();
         for (unsigned i = 0; i < 2; ++i)
@@ -540,10 +540,10 @@ TEST_CASE("Scene prefab is serialized")
 
     JSONFile file(context);
 
-    const ScenePrefab source = MakeTestPrefab();
+    const NodePrefab source = MakeTestPrefab();
     CHECK(file.SaveObject("scene", source));
 
-    ScenePrefab dest;
+    NodePrefab dest;
     CHECK(file.LoadObject("scene", dest));
 
     CHECK(dest == source);
@@ -553,7 +553,7 @@ TEST_CASE("PrefabReader iterates over nodes and components")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    const ScenePrefab source = MakeTestPrefab();
+    const NodePrefab source = MakeTestPrefab();
 
     BinaryFile binaryFile(context);
     binaryFile.SaveObject("scene", source);
@@ -641,7 +641,7 @@ TEST_CASE("Prefab is loaded to Node")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto guard = Tests::MakeScopedReflection<Tests::RegisterObject<TestComponent>>(context);
 
-    const ScenePrefab source = MakeTestPrefab();
+    const NodePrefab source = MakeTestPrefab();
 
     auto scene = MakeShared<Scene>(context);
     auto node = scene->CreateChild();
@@ -684,7 +684,7 @@ TEST_CASE("PrefabWriter iterates over nodes and components")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto guard = Tests::MakeScopedReflection<Tests::RegisterObject<TestComponent>>(context);
 
-    const ScenePrefab source = MakeTestPrefab();
+    const NodePrefab source = MakeTestPrefab();
 
     auto scene = MakeShared<Scene>(context);
     auto node = scene->CreateChild(EMPTY_STRING, static_cast<unsigned>(source.GetNode().GetId()));
@@ -694,7 +694,7 @@ TEST_CASE("PrefabWriter iterates over nodes and components")
         REQUIRE(node->Load(reader));
     }
 
-    ScenePrefab destPrefab;
+    NodePrefab destPrefab;
 
     BinaryFile destBinaryFile(context);
     BinaryOutputArchive destBinaryArchive{context, destBinaryFile.AsSerializer()};

@@ -53,7 +53,7 @@ PrefabFromNodeFactory::PrefabFromNodeFactory(Context* context)
     prefab_->GetMutableScenePrefab() = CreatePrefabBase();
 }
 
-ScenePrefab PrefabFromNodeFactory::CreatePrefabBase() const
+NodePrefab PrefabFromNodeFactory::CreatePrefabBase() const
 {
     auto cache = GetSubsystem<ResourceCache>();
     auto scene = MakeShared<Scene>(context_);
@@ -77,9 +77,9 @@ ScenePrefab PrefabFromNodeFactory::CreatePrefabBase() const
     return scene->GeneratePrefab();
 }
 
-ScenePrefab PrefabFromNodeFactory::CreatePrefabFromNode(Node* node) const
+NodePrefab PrefabFromNodeFactory::CreatePrefabFromNode(Node* node) const
 {
-    ScenePrefab result = node->GeneratePrefab();
+    NodePrefab result = node->GeneratePrefab();
 
     // Discard enabled flag, position, rotation and name of the root node.
     // Keep the scale and the rest.
@@ -194,7 +194,7 @@ ea::string PrefabFromNodeFactory::FindBestFileName(Node* node, const ea::string&
 
 void PrefabFromNodeFactory::SaveNodeAsPrefab(Node* node, const ea::string& resourceName, const ea::string& fileName)
 {
-    ScenePrefab& nodePrefab = prefab_->GetMutableScenePrefab().GetMutableChildren()[0];
+    NodePrefab& nodePrefab = prefab_->GetMutableScenePrefab().GetMutableChildren()[0];
     nodePrefab = CreatePrefabFromNode(node);
     prefab_->SaveFile(fileName);
 

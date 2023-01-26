@@ -121,7 +121,7 @@ void SceneDragAndDropPrefab::CreateNodeFromPrefab(Scene* scene, const ResourceFi
     if (!prefabFile)
         return;
 
-    const ScenePrefab& nodePrefab = prefabFile->GetNodePrefab();
+    const NodePrefab& nodePrefab = prefabFile->GetNodePrefab();
 
     nodeActionBuilder_ = ea::make_unique<CreateNodeActionBuilder>(scene, nodePrefab.GetEffectiveScopeHint(context_));
     temporaryNode_ = scene->CreateChild(GetFileName(desc.localName_));

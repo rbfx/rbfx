@@ -43,7 +43,7 @@ class Node;
 class PrefabReader;
 class PrefabWriter;
 class Scene;
-class ScenePrefab;
+class NodePrefab;
 class SceneResolver;
 class SerializablePrefab;
 
@@ -106,10 +106,10 @@ public:
     bool Save(PrefabWriter& writer) const;
 
     /// Instantiate scene content from prefab. Return root node if successful.
-    Node* InstantiatePrefab(const ScenePrefab& prefab, const Vector3& position, const Quaternion& rotation);
+    Node* InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation);
     /// Generate prefab from scene content.
-    void GeneratePrefab(ScenePrefab& prefab) const;
-    ScenePrefab GeneratePrefab() const;
+    void GeneratePrefab(NodePrefab& prefab) const;
+    NodePrefab GeneratePrefab() const;
 
     /// Evaluate effective attribute scope.
     /// It is a hint for the Editor to know what is affected by the node addition/removal
