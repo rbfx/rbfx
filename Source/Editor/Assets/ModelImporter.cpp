@@ -133,6 +133,7 @@ bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformer
 bool ModelImporter::ImportGLTF(const ea::string& fileName,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
+    settings_.assetName_ = GetFileName(input.originalInputFileName_);
     auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
     if (!importer->LoadFile(fileName, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
