@@ -326,6 +326,9 @@ void Project::Destroy()
 
 Project::~Project()
 {
+    auto cache = GetSubsystem<ResourceCache>();
+    cache->ReleaseAllResources(true);
+
     --numActiveProjects;
     URHO3D_ASSERT(numActiveProjects == 0);
 
