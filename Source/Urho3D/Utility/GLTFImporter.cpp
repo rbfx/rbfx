@@ -3164,6 +3164,20 @@ private:
                 scene->CreateChild("Disabled Node Placeholder");
         }
 
+        if (settings.cleanupRootNodes_)
+        {
+            Node* newRootNode = rootNode;
+            while (newRootNode->GetNumChildren() == 1 && newRootNode->GetNumComponents() == 0)
+                newRootNode = newRootNode->GetChild(0u);
+
+            if (newRootNode != rootNode)
+            {
+                newRootNode->SetParent(scene);
+                newRootNode->SetName(rootNode->GetName());
+                rootNode->Remove();
+            }
+        }
+
         InitializeDefaultSceneContent(importedScene);
 
         importedScene.prefab_ = MakeShared<PrefabResource>(base_.GetContext());
@@ -3464,6 +3478,7 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "rotation", value.rotation_);
 
     SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
+    SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
     SerializeValue(archive, "repairLooping", value.repairLooping_);
 
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
