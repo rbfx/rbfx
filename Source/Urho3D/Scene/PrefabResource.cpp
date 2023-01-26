@@ -52,12 +52,12 @@ void PrefabResource::SerializeInBlock(Archive& archive)
     prefab_.SerializeInBlock(archive, flags, compactSave);
 }
 
-const ScenePrefab& PrefabResource::GetNodePrefab() const
+const NodePrefab& PrefabResource::GetNodePrefab() const
 {
-    return !prefab_.GetChildren().empty() ? prefab_.GetChildren()[0] : ScenePrefab::Empty;
+    return !prefab_.GetChildren().empty() ? prefab_.GetChildren()[0] : NodePrefab::Empty;
 }
 
-ScenePrefab& PrefabResource::GetMutableNodePrefab()
+NodePrefab& PrefabResource::GetMutableNodePrefab()
 {
     auto& children = prefab_.GetMutableChildren();
     if (children.empty())

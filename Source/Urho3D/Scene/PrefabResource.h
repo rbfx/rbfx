@@ -23,7 +23,7 @@
 #pragma once
 
 #include <Urho3D/Resource/Resource.h>
-#include <Urho3D/Scene/ScenePrefab.h>
+#include <Urho3D/Scene/NodePrefab.h>
 
 namespace Urho3D
 {
@@ -42,14 +42,14 @@ public:
 
     void SerializeInBlock(Archive& archive) override;
 
-    const ScenePrefab& GetScenePrefab() const { return prefab_; }
-    ScenePrefab& GetMutableScenePrefab() { return prefab_; }
+    const NodePrefab& GetScenePrefab() const { return prefab_; }
+    NodePrefab& GetMutableScenePrefab() { return prefab_; }
 
-    const ScenePrefab& GetNodePrefab() const;
-    ScenePrefab& GetMutableNodePrefab();
+    const NodePrefab& GetNodePrefab() const;
+    NodePrefab& GetMutableNodePrefab();
 
 private:
-    ScenePrefab prefab_;
+    NodePrefab prefab_;
 };
 
 } // namespace Urho3D

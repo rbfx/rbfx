@@ -71,20 +71,20 @@ public:
     void OnSetEnabled() override;
 
 private:
-    const ScenePrefab& GetNodePrefab() const;
+    const NodePrefab& GetNodePrefab() const;
 
-    bool IsInstanceMatching(const Node* node, const ScenePrefab& nodePrefab, bool temporaryOnly) const;
+    bool IsInstanceMatching(const Node* node, const NodePrefab& nodePrefab, bool temporaryOnly) const;
     bool AreComponentsMatching(
         const Node* node, const ea::vector<SerializablePrefab>& componentPrefabs, bool temporaryOnly) const;
-    bool AreChildrenMatching(const Node* node, const ea::vector<ScenePrefab>& childPrefabs, bool temporaryOnly) const;
+    bool AreChildrenMatching(const Node* node, const ea::vector<NodePrefab>& childPrefabs, bool temporaryOnly) const;
 
-    void ExportInstance(Node* node, const ScenePrefab& nodePrefab, bool temporaryOnly) const;
+    void ExportInstance(Node* node, const NodePrefab& nodePrefab, bool temporaryOnly) const;
     void ExportComponents(Node* node, const ea::vector<SerializablePrefab>& componentPrefabs, bool temporaryOnly) const;
-    void ExportChildren(Node* node, const ea::vector<ScenePrefab>& childPrefabs, bool temporaryOnly) const;
+    void ExportChildren(Node* node, const ea::vector<NodePrefab>& childPrefabs, bool temporaryOnly) const;
 
     void RemoveTemporaryComponents(Node* node) const;
     void RemoveTemporaryChildren(Node* node) const;
-    void InstantiatePrefab(const ScenePrefab& nodePrefab);
+    void InstantiatePrefab(const NodePrefab& nodePrefab);
 
     /// Try to create instance without spawning any new nodes or components.
     /// It may cause some nodes or components to remain if prefab is different.

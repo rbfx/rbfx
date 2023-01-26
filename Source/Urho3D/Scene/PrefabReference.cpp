@@ -65,14 +65,14 @@ void PrefabReference::ApplyAttributes()
     }
 }
 
-const ScenePrefab& PrefabReference::GetNodePrefab() const
+const NodePrefab& PrefabReference::GetNodePrefab() const
 {
     if (node_ && prefab_)
         return prefab_->GetNodePrefab();
-    return ScenePrefab::Empty;
+    return NodePrefab::Empty;
 }
 
-bool PrefabReference::IsInstanceMatching(const Node* node, const ScenePrefab& nodePrefab, bool temporaryOnly) const
+bool PrefabReference::IsInstanceMatching(const Node* node, const NodePrefab& nodePrefab, bool temporaryOnly) const
 {
     if (!AreComponentsMatching(node, nodePrefab.GetComponents(), temporaryOnly))
         return false;
@@ -105,7 +105,7 @@ bool PrefabReference::AreComponentsMatching(
     return index >= componentPrefabs.size();
 }
 
-bool PrefabReference::AreChildrenMatching(const Node* node, const ea::vector<ScenePrefab>& childPrefabs, bool temporaryOnly) const
+bool PrefabReference::AreChildrenMatching(const Node* node, const ea::vector<NodePrefab>& childPrefabs, bool temporaryOnly) const
 {
     unsigned index = 0;
     for (const Node* child : node->GetChildren())
@@ -126,7 +126,7 @@ bool PrefabReference::AreChildrenMatching(const Node* node, const ea::vector<Sce
     return index >= childPrefabs.size();
 }
 
-void PrefabReference::ExportInstance(Node* node, const ScenePrefab& nodePrefab, bool temporaryOnly) const
+void PrefabReference::ExportInstance(Node* node, const NodePrefab& nodePrefab, bool temporaryOnly) const
 {
     ExportComponents(node, nodePrefab.GetComponents(), temporaryOnly);
     ExportChildren(node, nodePrefab.GetChildren(), temporaryOnly);
@@ -151,7 +151,7 @@ void PrefabReference::ExportComponents(
     }
 }
 
-void PrefabReference::ExportChildren(Node* node, const ea::vector<ScenePrefab>& childPrefabs, bool temporaryOnly) const
+void PrefabReference::ExportChildren(Node* node, const ea::vector<NodePrefab>& childPrefabs, bool temporaryOnly) const
 {
     unsigned index = 0;
     for (Node* child : node->GetChildren())
@@ -171,7 +171,7 @@ void PrefabReference::ExportChildren(Node* node, const ea::vector<ScenePrefab>& 
 
 bool PrefabReference::TryCreateInplace()
 {
-    const ScenePrefab& nodePrefab = GetNodePrefab();
+    const NodePrefab& nodePrefab = GetNodePrefab();
 
     if (nodePrefab.IsEmpty())
         return false;
@@ -228,7 +228,7 @@ void PrefabReference::RemoveInstance()
     instanceNode_ = nullptr;
 }
 
-void PrefabReference::InstantiatePrefab(const ScenePrefab& nodePrefab)
+void PrefabReference::InstantiatePrefab(const NodePrefab& nodePrefab)
 {
     const auto flags = PrefabLoadFlag::KeepExistingComponents | PrefabLoadFlag::KeepExistingChildren
         | PrefabLoadFlag::LoadAsTemporary | PrefabLoadFlag::IgnoreRootAttributes;
@@ -246,7 +246,7 @@ void PrefabReference::CreateInstance(bool tryInplace)
     if (!node_)
         return;
 
-    const ScenePrefab& nodePrefab = GetNodePrefab();
+    const NodePrefab& nodePrefab = GetNodePrefab();
     instanceNode_ = node_;
     numInstanceComponents_ = nodePrefab.GetComponents().size();
     numInstanceChildren_ = nodePrefab.GetChildren().size();
@@ -344,8 +344,8 @@ void PrefabReference::CommitChanges()
     if (!node_ || !prefab_)
         return;
 
-    const ScenePrefab& originalNodePrefab = GetNodePrefab();
-    ScenePrefab newNodePrefab;
+    const NodePrefab& originalNodePrefab = GetNodePrefab();
+    NodePrefab newNodePrefab;
     {
         const PrefabSaveFlags flags =
             PrefabSaveFlag::EnumsAsStrings | PrefabSaveFlag::Prefab | PrefabSaveFlag::SaveTemporary;

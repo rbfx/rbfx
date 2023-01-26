@@ -35,7 +35,7 @@
 #include "../Resource/JSONValue.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/SceneEvents.h"
-#include "../Scene/ScenePrefab.h"
+#include "../Scene/NodePrefab.h"
 #include "../Scene/Serializable.h"
 
 #include <EASTL/fixed_vector.h>

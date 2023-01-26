@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <Urho3D/Scene/ScenePrefab.h>
+#include <Urho3D/Scene/NodePrefab.h>
 
 namespace Urho3D
 {
@@ -51,11 +51,11 @@ public:
     virtual bool IsEOF() const = 0;
 };
 
-/// Utility class to read prefab data from ScenePrefab.
+/// Utility class to read prefab data from NodePrefab.
 class URHO3D_API PrefabReaderFromMemory : public PrefabReader
 {
 public:
-    explicit PrefabReaderFromMemory(const ScenePrefab& scenePrefab);
+    explicit PrefabReaderFromMemory(const NodePrefab& nodePrefab);
 
     const SerializablePrefab* ReadNode() override;
     unsigned ReadNumComponents() override;
@@ -66,14 +66,14 @@ public:
     bool IsEOF() const override { return stack_.empty(); }
 
 private:
-    const ScenePrefab& CurrentNode() const;
+    const NodePrefab& CurrentNode() const;
     void StartChildren();
     void NextNode();
     void UpdateEOF();
 
-    const ScenePrefab& scenePrefab_;
+    const NodePrefab& nodePrefab_;
 
-    ea::vector<ea::pair<const ScenePrefab*, unsigned>> stack_;
+    ea::vector<ea::pair<const NodePrefab*, unsigned>> stack_;
     unsigned componentIndex_{};
 };
 
