@@ -50,6 +50,7 @@
 #include "../Resource/Image.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "../Scene/PrefabResource.h"
 #include "../Scene/Scene.h"
 #include "../Utility/GLTFImporter.h"
 
@@ -258,14 +259,6 @@ public:
             throw RuntimeException("Cannot save imported resource");
         resource->SetAbsoluteFileName(fileName);
         resource->SaveFile(fileName);
-    }
-
-    void SaveResource(Scene* scene)
-    {
-        XMLFile xmlFile(scene->GetContext());
-        XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
-        scene->SaveXML(rootElement);
-        xmlFile.SaveFile(scene->GetFileName());
     }
 
     const tg::Model& GetModel() const { return model_; }
@@ -3107,7 +3100,7 @@ public:
     void SaveResources()
     {
         for (const ImportedScene& scene : scenes_)
-            base_.SaveResource(scene.scene_);
+            base_.SaveResource(scene.prefab_);
     }
 
 private:
@@ -3115,6 +3108,7 @@ private:
     {
         unsigned index_{};
         SharedPtr<Scene> scene_;
+        SharedPtr<PrefabResource> prefab_;
         ea::unordered_map<Node*, unsigned> nodeToIndex_;
         ea::unordered_map<unsigned, Node*> indexToNode_;
     };
@@ -3129,31 +3123,34 @@ private:
             ImportedScene& scene = scenes_[sceneIndex];
             scene.index_ = sceneIndex;
             scene.scene_ = MakeShared<Scene>(base_.GetContext());
-            ImportScene(scene);
+
+            const ea::string sceneName = numScenes == 1 ? "Prefab" : sourceScene.name.c_str();
+            const ea::string sceneFolder = numScenes == 1 ? "" : "Prefabs/";
+            ImportScene(scene, sceneName, sceneFolder);
         }
     }
 
-    void ImportScene(ImportedScene& importedScene)
+    void ImportScene(ImportedScene& importedScene, const ea::string& sceneName, const ea::string& prefix)
     {
+        const GLTFImporterSettings& settings = base_.GetSettings();
         const tg::Scene& sourceScene = model_.scenes[importedScene.index_];
         auto scene = importedScene.scene_;
 
-        const ea::string sceneName = base_.GetResourceName(sourceScene.name.c_str(), "", "Scene", ".xml");
-        scene->SetFileName(base_.GetAbsoluteFileName(sceneName));
+        const ea::string prefabName = base_.GetResourceName(sceneName, prefix, "Prefab", ".prefab");
         scene->CreateComponent<Octree>();
 
         auto renderPipeline = scene->CreateComponent<RenderPipeline>();
-        if (base_.GetSettings().preview_.highRenderQuality_)
+        if (settings.preview_.highRenderQuality_)
         {
-            auto settings = renderPipeline->GetSettings();
-            settings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
-            settings.sceneProcessor_.pcfKernelSize_ = 5;
-            settings.antialiasing_ = PostProcessAntialiasing::FXAA3;
-            renderPipeline->SetSettings(settings);
+            auto pipelineSettings = renderPipeline->GetSettings();
+            pipelineSettings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
+            pipelineSettings.sceneProcessor_.pcfKernelSize_ = 5;
+            pipelineSettings.antialiasing_ = PostProcessAntialiasing::FXAA3;
+            renderPipeline->SetSettings(pipelineSettings);
         }
 
-        Node* rootNode = scene->CreateChild("Imported Scene");
-        rootNode->SetRotation(base_.GetSettings().rotation_);
+        Node* rootNode = scene->CreateChild(settings.assetName_);
+        rootNode->SetRotation(settings.rotation_);
 
         if (animationImporter_.HasSceneAnimations())
             InitializeAnimationController(*rootNode, ea::nullopt);
@@ -3168,6 +3165,11 @@ private:
         }
 
         InitializeDefaultSceneContent(importedScene);
+
+        importedScene.prefab_ = MakeShared<PrefabResource>(base_.GetContext());
+        importedScene.prefab_->GetMutableScenePrefab() = scene->GeneratePrefab();
+        importedScene.prefab_->SetName(prefabName);
+        base_.AddToResourceCache(importedScene.prefab_);
     }
 
     void ImportNode(ImportedScene& importedScene, Node& parent, const GLTFNode& sourceNode)
@@ -3454,6 +3456,8 @@ private:
 void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
+
+    SerializeValue(archive, "assetName", value.assetName_);
 
     SerializeValue(archive, "mirrorX", value.mirrorX_);
     SerializeValue(archive, "scale", value.scale_);
