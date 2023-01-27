@@ -268,6 +268,7 @@ Graphics::Graphics(Context* context) :
     SetTextureUnitMappings();
     ResetCachedState();
 
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
     context_->RequireSDL(SDL_INIT_VIDEO);
 }
 
@@ -343,7 +344,6 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
         return true;
 
     SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
-    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
 
     if (!window_)
     {
