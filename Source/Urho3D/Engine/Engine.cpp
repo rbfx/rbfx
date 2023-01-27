@@ -320,10 +320,12 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         {
             using namespace ScreenMode;
 
-            SetParameter(EP_WINDOW_WIDTH, eventData[P_WIDTH].GetInt());
-            SetParameter(EP_WINDOW_HEIGHT, eventData[P_HEIGHT].GetInt());
+            const bool isBorderless = eventData[P_BORDERLESS].GetBool();
+
+            SetParameter(EP_WINDOW_WIDTH, isBorderless ? 0 : eventData[P_WIDTH].GetInt());
+            SetParameter(EP_WINDOW_HEIGHT, isBorderless ? 0 : eventData[P_HEIGHT].GetInt());
             SetParameter(EP_FULL_SCREEN, eventData[P_FULLSCREEN].GetBool());
-            SetParameter(EP_BORDERLESS, eventData[P_BORDERLESS].GetBool());
+            SetParameter(EP_BORDERLESS, isBorderless);
             SetParameter(EP_MONITOR, eventData[P_MONITOR].GetInt());
         });
 
@@ -1121,7 +1123,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_APPLICATION_PREFERENCES_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_AUTOLOAD_PATHS, "Autoload");
     engineParameters_->DefineVariable(EP_CONFIG_NAME, "EngineParameters.json");
-    engineParameters_->DefineVariable(EP_BORDERLESS, false).Overridable();
+    engineParameters_->DefineVariable(EP_BORDERLESS, true).Overridable();
     engineParameters_->DefineVariable(EP_DUMP_SHADERS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_ENGINE_AUTO_LOAD_SCRIPTS, false);
     engineParameters_->DefineVariable(EP_ENGINE_CLI_PARAMETERS, true);
@@ -1129,7 +1131,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_FLUSH_GPU, false);
     engineParameters_->DefineVariable(EP_FORCE_GL2, false);
     engineParameters_->DefineVariable(EP_FRAME_LIMITER, true).Overridable();
-    engineParameters_->DefineVariable(EP_FULL_SCREEN, true).Overridable();
+    engineParameters_->DefineVariable(EP_FULL_SCREEN, false).Overridable();
     engineParameters_->DefineVariable(EP_GPU_DEBUG, false);
     engineParameters_->DefineVariable(EP_HEADLESS, false);
     engineParameters_->DefineVariable(EP_HIGH_DPI, true);
