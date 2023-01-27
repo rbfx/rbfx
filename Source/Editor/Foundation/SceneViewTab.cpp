@@ -38,6 +38,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/Widgets.h>
@@ -103,15 +104,20 @@ void SerializeValue(Archive& archive, const char* name, SceneViewPage& page, con
 void Foundation_SceneViewTab(Context* context, Project* project)
 {
     project->AddTab(MakeShared<SceneViewTab>(context));
+
+    if (!context->IsReflected<SceneResourceForEditor>())
+        context->AddFactoryReflection<SceneResourceForEditor>();
 }
 
-SceneViewPage::SceneViewPage(Resource* resource, Scene* scene)
-    : Object(scene->GetContext())
+SceneViewPage::SceneViewPage(SceneResource* resource)
+    : Object(resource->GetContext())
     , resource_(resource)
-    , scene_(scene)
+    , scene_(resource->GetScene())
     , renderer_(MakeShared<SceneRendererToTexture>(scene_))
-    , cfgFileName_(scene_->GetFileName() + ".user.json")
+    , cfgFileName_(resource_->GetAbsoluteFileName() + ".user.json")
 {
+    scene_->SetFileName(resource_->GetAbsoluteFileName());
+    scene_->SetUpdateEnabled(false);
 }
 
 SceneViewPage::~SceneViewPage()
@@ -372,9 +378,12 @@ void SceneViewTab::PasteNextToSelection(Scene* scene, SceneSelection& selection)
         selection.Clear();
         for (const PackedNodeData& packedNode : clipboard_.GetNodes())
         {
+            const CreateNodeActionBuilder builder{scene, packedNode.GetEffectiveScopeHint()};
+
             Node* newNode = packedNode.SpawnCopy(parentNode);
             selection.SetSelected(newNode, true);
-            PushAction<CreateRemoveNodeAction>(newNode, false);
+
+            PushAction(builder.Build(newNode));
         }
     }
     else if (clipboard_.HasComponents())
@@ -397,9 +406,12 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
         {
             for (const PackedNodeData& packedNode : clipboard_.GetNodes())
             {
+                const CreateNodeActionBuilder builder{scene, packedNode.GetEffectiveScopeHint()};
+
                 Node* newNode = packedNode.SpawnCopy(selectedNode);
                 selection.SetSelected(newNode, true);
-                PushAction<CreateRemoveNodeAction>(newNode, false);
+
+                PushAction(builder.Build(newNode));
             }
         }
     }
@@ -410,12 +422,14 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
         {
             for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
             {
+                const CreateComponentActionBuilder builder(selectedNode, packedComponent.GetType());
                 Component* newComponent = packedComponent.SpawnCopy(selectedNode);
+                PushAction(builder.Build(newComponent));
+
                 if (componentSelection_)
                     selection.SetSelected(newComponent, true);
                 else
                     selection.SetSelected(selectedNode, true);
-                PushAction<CreateRemoveComponentAction>(newComponent, false);
             }
         }
     }
@@ -430,8 +444,11 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     {
         if (node && node->GetParent() != nullptr)
         {
-            PushAction<CreateRemoveNodeAction>(node, true);
+            const RemoveNodeActionBuilder builder(node);
+
             node->Remove();
+
+            PushAction(builder.Build());
         }
     }
 
@@ -439,8 +456,9 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     {
         if (component)
         {
-            PushAction<CreateRemoveComponentAction>(component, true);
+            const RemoveComponentActionBuilder builder(component);
             component->Remove();
+            PushAction(builder.Build());
         }
     }
 
@@ -459,11 +477,14 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
         {
             Node* parent = node->GetParent();
             URHO3D_ASSERT(parent);
-
             const auto data = PackedNodeData{node};
+
+            const CreateNodeActionBuilder builder{parent->GetScene(), data.GetEffectiveScopeHint()};
+
             Node* newNode = data.SpawnCopy(parent);
-            PushAction<CreateRemoveNodeAction>(newNode, false);
             selection.SetSelected(newNode, true);
+
+            PushAction(builder.Build(newNode));
         }
     }
     else if (!selection.GetComponents().empty())
@@ -478,8 +499,11 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
             URHO3D_ASSERT(node);
 
             const auto data = PackedComponentData{component};
+
+            const CreateComponentActionBuilder builder(node, data.GetType());
             Component* newComponent = data.SpawnCopy(node);
-            PushAction<CreateRemoveComponentAction>(newComponent, false);
+            PushAction(builder.Build(newComponent));
+
             if (componentSelection_)
                 selection.SetSelected(newComponent, true);
             else
@@ -493,10 +517,13 @@ void SceneViewTab::CreateNodeNextToSelection(Scene* scene, SceneSelection& selec
     Node* siblingNode = selection.GetActiveNodeOrScene();
     Node* parentNode = siblingNode && siblingNode->GetParent() ? siblingNode->GetParent() : scene;
 
+    const CreateNodeActionBuilder builder{scene, AttributeScopeHint::Attribute};
+
     Node* newNode = parentNode->CreateChild();
     selection.Clear();
     selection.SetSelected(newNode, true);
-    PushAction<CreateRemoveNodeAction>(newNode, false);
+
+    PushAction(builder.Build(newNode));
 }
 
 void SceneViewTab::CreateNodeInSelection(Scene* scene, SceneSelection& selection)
@@ -509,9 +536,12 @@ void SceneViewTab::CreateNodeInSelection(Scene* scene, SceneSelection& selection
     selection.Clear();
     for (Node* selectedNode : parentNodes)
     {
+        const CreateNodeActionBuilder builder{scene, AttributeScopeHint::Attribute};
+
         Node* newNode = selectedNode->CreateChild();
         selection.SetSelected(newNode, true);
-        PushAction<CreateRemoveNodeAction>(newNode, false);
+
+        PushAction(builder.Build(newNode));
     }
 }
 
@@ -525,12 +555,14 @@ void SceneViewTab::CreateComponentInSelection(Scene* scene, SceneSelection& sele
     selection.Clear();
     for (Node* selectedNode : parentNodes)
     {
+        const CreateComponentActionBuilder builder(selectedNode, componentType);
         Component* newComponent = selectedNode->CreateComponent(componentType);
+        PushAction(builder.Build(newComponent));
+
         if (componentSelection_)
             selection.SetSelected(newComponent, true);
         else
             selection.SetSelected(selectedNode, true);
-        PushAction<CreateRemoveComponentAction>(newComponent, false);
     }
 }
 
@@ -736,7 +768,7 @@ void SceneViewTab::RenderToolbar()
 
 bool SceneViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 {
-    return desc.HasObjectType<Scene>();
+    return desc.HasObjectType<Scene>() || desc.HasObjectType<PrefabResource>();
 }
 
 void SceneViewTab::WriteIniSettings(ImGuiTextBuffer& output)
@@ -812,16 +844,19 @@ void SceneViewTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    auto xmlFile = cache->GetResource<XMLFile>(resourceName);
+    auto sceneResource = cache->GetResource<SceneResourceForEditor>(resourceName);
 
-    if (!xmlFile)
+    if (!sceneResource)
     {
         URHO3D_LOGERROR("Cannot load scene file '%s'", resourceName);
         return;
     }
 
+    if (resourceName.ends_with(".prefab"))
+        sceneResource->SetPrefab(true);
+
     const bool isActive = resourceName == GetActiveResourceName();
-    scenes_[resourceName] = CreatePage(xmlFile, isActive);
+    scenes_[resourceName] = CreatePage(sceneResource, isActive);
 }
 
 void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
@@ -865,22 +900,46 @@ void SceneViewTab::OnResourceShallowSaved(const ea::string& resourceName)
 
 void SceneViewTab::SavePageScene(SceneViewPage& page) const
 {
-    XMLFile xmlFile(context_);
-    XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+    const bool isLegacyScene = page.resource_->GetName().ends_with(".xml");
 
     page.scene_->SetUpdateEnabled(false);
-    page.scene_->SaveXML(rootElement);
 
     VectorBuffer buffer;
-    xmlFile.Save(buffer);
+    if (isLegacyScene)
+    {
+        XMLFile xmlFile(context_);
+        XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+        page.scene_->SaveXML(rootElement);
+        xmlFile.Save(buffer);
+    }
+    else
+    {
+        page.resource_->Save(buffer);
+    }
 
     auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
 
-    auto project = GetProject();
-    project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer);
+    const WeakPtr<SceneViewPage> weakPage{&page};
 
-    auto cache = GetSubsystem<ResourceCache>();
-    cache->ReleaseResource(page.resource_->GetName(), true);
+    auto project = GetProject();
+    project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer,
+        [this, weakPage](const ea::string& _, const ea::string& resourceName, bool& needReload)
+    {
+        if (SceneViewPage* page = weakPage)
+        {
+            // Force reload of the scene and/or prefabs, but ignore it in SceneViewTab
+            page->ignoreNextReload_ = true;
+            needReload = true;
+        }
+
+        // Sadly, ResourceCache can only reload one resource type for each name. Force reload here.
+        // TODO: Fix resource cache
+        auto cache = GetSubsystem<ResourceCache>();
+        if (auto prefabResource = cache->GetExistingResource<PrefabResource>(resourceName))
+            cache->ReloadResource(prefabResource);
+        if (auto sceneResource = cache->GetExistingResource<SceneResource>(resourceName))
+            cache->ReloadResource(sceneResource);
+    });
 }
 
 void SceneViewTab::SavePagePreview(SceneViewPage& page) const
@@ -1043,29 +1102,34 @@ SceneViewPage* SceneViewTab::GetActivePage()
     return GetPage(GetActiveResourceName());
 }
 
-SharedPtr<SceneViewPage> SceneViewTab::CreatePage(XMLFile* xmlFile, bool isActive)
+SharedPtr<SceneViewPage> SceneViewTab::CreatePage(SceneResource* sceneResource, bool isActive)
 {
-    auto scene = MakeShared<Scene>(context_);
-    scene->LoadXML(xmlFile->GetRoot());
-    scene->SetFileName(xmlFile->GetAbsoluteFileName());
-    scene->SetUpdateEnabled(false);
+    auto page = MakeShared<SceneViewPage>(sceneResource);
 
-    auto page = MakeShared<SceneViewPage>(xmlFile, scene);
-
-    WeakPtr<SceneViewPage> weakPage{page};
-    page->SubscribeToEvent(xmlFile, E_RELOADFINISHED, [this, weakPage](StringHash, VariantMap&)
+    sceneResource->OnReloadBegin.Subscribe(page.Get(), [this](SceneViewPage* page, bool& cancelReload)
     {
-        if (weakPage && !IsResourceUnsaved(weakPage->resource_->GetName()))
+        if (page->ignoreNextReload_ || IsResourceUnsaved(page->resource_->GetName()))
         {
-            const PackedSceneSelection selection = weakPage->selection_.Pack();
-            auto xmlFile = static_cast<XMLFile*>(weakPage->resource_.Get());
-            weakPage->scene_->LoadXML(xmlFile->GetRoot());
-            weakPage->selection_.Load(weakPage->scene_, selection);
+            page->ignoreNextReload_ = false;
+            cancelReload = true;
+            return;
+        }
+
+        page->loadingSelection_ = page->selection_.Pack();
+    });
+
+    sceneResource->OnReloadEnd.Subscribe(page.Get(), [this](SceneViewPage* page, bool success)
+    {
+        if (success && page->loadingSelection_)
+        {
+            page->selection_.Load(page->scene_, *page->loadingSelection_);
+            page->loadingSelection_ = ea::nullopt;
         }
     });
 
     page->renderer_->SetActive(isActive);
 
+    WeakPtr<SceneViewPage> weakPage{page};
     page->selection_.OnChanged.Subscribe(this, [weakPage](SceneViewTab* self)
     {
         if (weakPage)

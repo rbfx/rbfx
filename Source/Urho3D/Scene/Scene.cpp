@@ -39,10 +39,12 @@
 #include "../Scene/ObjectAnimation.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
+#include "../Scene/SceneResource.h"
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
 #include "../Scene/PrefabReference.h"
+#include "../Scene/PrefabResource.h"
 
 #include "../DebugNew.h"
 
@@ -88,11 +90,11 @@ void Scene::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Elapsed Time", GetElapsedTime, SetElapsedTime, float, 0.0f, AM_FILE);
-    URHO3D_ATTRIBUTE("Next Node ID", unsigned, replicatedNodeID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE("Next Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_FILE); // Network replication of vars uses custom data
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Elapsed Time", GetElapsedTime, SetElapsedTime, float, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Next Node ID", unsigned, replicatedNodeID_, FIRST_REPLICATED_ID, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Next Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT); // Network replication of vars uses custom data
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE_EX("Lightmaps", ResourceRefList, lightmaps_, ReloadLightmaps, ResourceRefList(Texture2D::GetTypeStatic()), AM_DEFAULT);
 }
 
@@ -117,12 +119,21 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
     return emptyIndex;
 }
 
-void Scene::SerializeInBlock(Archive& archive)
+void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
 {
-    Node::SerializeInBlock(archive);
+    Node::SerializeInBlock(archive, serializeTemporary, saveFlags);
 
     fileName_ = archive.GetName();
     checksum_ = archive.GetChecksum();
+}
+
+void Scene::SerializeInBlock(Archive& archive)
+{
+    const bool compactSave = !archive.IsHumanReadable();
+    const PrefabSaveFlags saveFlags =
+        compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
+
+    SerializeInBlock(archive, false, saveFlags);
 }
 
 bool Scene::Load(Deserializer& source)
@@ -1382,9 +1393,11 @@ void RegisterSceneLibrary(Context* context)
     ObjectAnimation::RegisterObject(context);
     Node::RegisterObject(context);
     Scene::RegisterObject(context);
+    SceneResource::RegisterObject(context);
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
     PrefabReference::RegisterObject(context);
+    PrefabResource::RegisterObject(context);
 }
 
 }

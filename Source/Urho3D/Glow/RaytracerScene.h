@@ -71,8 +71,8 @@ struct RaytracingGeometryMaterial
     /// Return transformed UV coordinates.
     Vector2 ConvertUV(const Vector2& uv) const
     {
-        const float u = uv.DotProduct(static_cast<Vector2>(uOffset_)) + uOffset_.w_;
-        const float v = uv.DotProduct(static_cast<Vector2>(vOffset_)) + vOffset_.w_;
+        const float u = uv.DotProduct(uOffset_.ToVector2()) + uOffset_.w_;
+        const float v = uv.DotProduct(vOffset_.ToVector2()) + vOffset_.w_;
         return { u, v };
     }
 

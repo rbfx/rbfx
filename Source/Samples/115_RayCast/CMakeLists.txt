@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2022 the Urho3D project.
+# Copyright (c) 2023-2023 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,6 @@
 # THE SOFTWARE.
 #
 
-# Find Secret Rabbit Code development library
-#
-#  SECRETRABBITCODE_FOUND
-#  SECRETRABBITCODE_INCLUDE_DIRS
-#  SECRETRABBITCODE_LIBRARIES
-#
-
-find_path (SECRETRABBITCODE_INCLUDE_DIRS NAMES samplerate.h DOC "SecretRabbitCode include directory")
-find_library (SECRETRABBITCODE_LIBRARIES NAMES samplerate DOC "SecretRabbitCode library")
-
-include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (SecretRabbitCode REQUIRED_VARS SECRETRABBITCODE_LIBRARIES SECRETRABBITCODE_INCLUDE_DIRS FAIL_MESSAGE "Could NOT find Secret Rabbit Code (aka libsamplerate) development library")
-
-mark_as_advanced (SECRETRABBITCODE_INCLUDE_DIRS SECRETRABBITCODE_LIBRARIES)
+file (GLOB SAMPLE_CODE *.h *.cpp)
+list (APPEND SOURCE_CODE ${SAMPLE_CODE})
+set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)

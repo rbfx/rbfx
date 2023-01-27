@@ -95,11 +95,10 @@ class URHO3D_API Scene : public Node
     URHO3D_OBJECT(Scene, Node);
 
 public:
-    /// @manualbind
     using Node::GetComponent;
-    /// @manualbind
+    using Node::Load;
+    using Node::Save;
     using Node::SaveXML;
-    /// @manualbind
     using Node::SaveJSON;
 
     /// Construct.
@@ -121,6 +120,7 @@ public:
 
     /// Serialize object. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
+    void SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags);
 
     /// Load from binary data. Removes all existing child nodes and components first. Return true if successful.
     bool Load(Deserializer& source) override;

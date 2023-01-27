@@ -59,6 +59,11 @@ public:
     /// Handle enabled/disabled state change.
     virtual void OnSetEnabled() { }
 
+    /// Evaluate effective attribute scope.
+    /// It is a hint for the Editor to know what is affected by the component addition/removal
+    /// so it can generate optimal undo/redo actions.
+    AttributeScopeHint GetEffectiveScopeHint() const;
+
     /// Save as binary data. Return true if successful.
     bool Save(Serializer& dest) const override;
     /// Save as XML data. Return true if successful.

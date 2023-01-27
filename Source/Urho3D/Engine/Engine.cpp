@@ -323,10 +323,12 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         {
             using namespace ScreenMode;
 
-            SetParameter(EP_WINDOW_WIDTH, eventData[P_WIDTH].GetInt());
-            SetParameter(EP_WINDOW_HEIGHT, eventData[P_HEIGHT].GetInt());
+            const bool isBorderless = eventData[P_BORDERLESS].GetBool();
+
+            SetParameter(EP_WINDOW_WIDTH, isBorderless ? 0 : eventData[P_WIDTH].GetInt());
+            SetParameter(EP_WINDOW_HEIGHT, isBorderless ? 0 : eventData[P_HEIGHT].GetInt());
             SetParameter(EP_FULL_SCREEN, eventData[P_FULLSCREEN].GetBool());
-            SetParameter(EP_BORDERLESS, eventData[P_BORDERLESS].GetBool());
+            SetParameter(EP_BORDERLESS, isBorderless);
             SetParameter(EP_MONITOR, eventData[P_MONITOR].GetInt());
         });
 
@@ -363,8 +365,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
         if (HasParameter(EP_DUMP_SHADERS))
             graphics->BeginDumpShaders(GetParameter(EP_DUMP_SHADERS).GetString());
-        if (HasParameter(EP_RENDER_PATH))
-            renderer->SetDefaultRenderPath(cache->GetResource<XMLFile>(GetParameter(EP_RENDER_PATH).GetString()));
 
         renderer->SetDrawShadows(GetParameter(EP_SHADOWS).GetBool());
         if (renderer->GetDrawShadows() && GetParameter(EP_LOW_QUALITY_SHADOWS).GetBool())
@@ -955,7 +955,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
         CLI::Option *opt = commandLine.add_option(name, fun, description, false);
         if(opt->get_positional())
             throw CLI::IncorrectConstruction::PositionalFlag(name);
-        opt->set_custom_option("", 0);
+        opt->type_size(0);
         return opt;
     };
 
@@ -975,21 +975,14 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
         return addFlagInternal(name, description, fun);
     };
 
-    auto addOptionSetString = [&](const char* name, const ea::string& param, const ea::string& value, const char* description) {
-        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
-            engineParameters[param] = value;
-            return true;
-        };
-        return addFlagInternal(name, description, fun);
-    };
-
     auto addOptionString = [&](const char* name, const ea::string& param, const char* description) {
         CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             engineParameters[param] = res[0].c_str();
             return true;
         };
         auto* opt = addFlagInternal(name, description, fun);
-        opt->set_custom_option("string");
+        opt->type_name("string");
+        opt->type_size(1);
         return opt;
     };
 
@@ -1004,7 +997,8 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return false;
         };
         auto* opt = addFlagInternal(name, description, fun);
-        opt->set_custom_option("int");
+        opt->type_name("int");
+        opt->type_size(1);
         return opt;
     };
 
@@ -1025,10 +1019,6 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--nosound", EP_SOUND, false, "Disable sound");
     addFlag("--noip", EP_SOUND_INTERPOLATION, false, "Disable sound interpolation");
     addOptionInt("--speakermode", EP_SOUND_MODE, "Force sound speaker output mode (default is automatic)");
-    auto* optRenderpath = addOptionString("--renderpath", EP_RENDER_PATH, "Use custom renderpath");
-    auto* optPrepass = addOptionSetString("--prepass", EP_RENDER_PATH, "RenderPaths/Prepass.xml", "Use prepass renderpath")->excludes(optRenderpath);
-    auto* optDeferred = addOptionSetString("--deferred", EP_RENDER_PATH, "RenderPaths/Deferred.xml", "Use deferred renderpath")->excludes(optRenderpath);
-    optRenderpath->excludes(optPrepass)->excludes(optDeferred);
     auto* optNoShadows = addFlag("--noshadows", EP_SHADOWS, false, "Disable shadows");
     auto optLowQualityShadows = addFlag("--lqshadows", EP_LOW_QUALITY_SHADOWS, true, "Use low quality shadows")->excludes(optNoShadows);
     optNoShadows->excludes(optLowQualityShadows);
@@ -1048,7 +1038,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return false;
         engineParameters[EP_LOG_LEVEL] = logLevel;
         return true;
-    })->set_custom_option(createOptions("string in {%s}", logLevelNames).c_str());
+    })->type_name(createOptions("string in {%s}", logLevelNames).c_str())->type_size(1);
     addOptionString("--log-file", EP_LOG_NAME, "Log output file");
     addOptionInt("-x,--width", EP_WINDOW_WIDTH, "Window width");
     addOptionInt("-y,--height", EP_WINDOW_HEIGHT, "Window height");
@@ -1057,11 +1047,11 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addOptionInt("-m,--multisample", EP_MULTI_SAMPLE, "Multisampling samples");
     addOptionInt("-b,--sound-buffer", EP_SOUND_BUFFER, "Sound buffer size");
     addOptionInt("-r,--mix-rate", EP_SOUND_MIX_RATE, "Sound mixing rate");
-    addOptionString("--pp,--prefix-paths", EP_RESOURCE_PREFIX_PATHS, "Resource prefix paths")->envname("URHO3D_PREFIX_PATH")->set_custom_option("path1;path2;...");
-    addOptionString("--pr,--resource-paths", EP_RESOURCE_PATHS, "Resource paths")->set_custom_option("path1;path2;...");
-    addOptionString("--pf,--resource-packages", EP_RESOURCE_PACKAGES, "Resource packages")->set_custom_option("path1;path2;...");
-    addOptionString("--ap,--autoload-paths", EP_AUTOLOAD_PATHS, "Resource autoload paths")->set_custom_option("path1;path2;...");
-    addOptionString("--ds,--dump-shaders", EP_DUMP_SHADERS, "Dump shaders")->set_custom_option("filename");
+    addOptionString("--pp,--prefix-paths", EP_RESOURCE_PREFIX_PATHS, "Resource prefix paths")->envname("URHO3D_PREFIX_PATH")->type_name("path1;path2;...");
+    addOptionString("--pr,--resource-paths", EP_RESOURCE_PATHS, "Resource paths")->type_name("path1;path2;...");
+    addOptionString("--pf,--resource-packages", EP_RESOURCE_PACKAGES, "Resource packages")->type_name("path1;path2;...");
+    addOptionString("--ap,--autoload-paths", EP_AUTOLOAD_PATHS, "Resource autoload paths")->type_name("path1;path2;...");
+    addOptionString("--ds,--dump-shaders", EP_DUMP_SHADERS, "Dump shaders")->type_name("filename");
     addFlagInternal("--mq,--material-quality", "Material quality", [&](CLI::results_t res) {
         unsigned value = 0;
         if (CLI::detail::lexical_cast(res[0], value) && value >= QUALITY_LOW && value <= QUALITY_MAX)
@@ -1070,7 +1060,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return true;
         }
         return false;
-    })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str());
+    })->type_name(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str())->type_size(1);
     addFlagInternal("--tq", "Texture quality", [&](CLI::results_t res) {
         unsigned value = 0;
         if (CLI::detail::lexical_cast(res[0], value) && value >= QUALITY_LOW && value <= QUALITY_MAX)
@@ -1079,14 +1069,14 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return true;
         }
         return false;
-    })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str());
+    })->type_name(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str())->type_size(1);
     addFlagInternal("--tf", "Texture filter mode", [&](CLI::results_t res) {
         unsigned mode = GetStringListIndex(ea::string(res[0].c_str()).to_upper().replaced('-', '_').c_str(), textureFilterModeNames, M_MAX_UNSIGNED);
         if (mode == M_MAX_UNSIGNED)
             return false;
         engineParameters[EP_TEXTURE_FILTER_MODE] = mode;
         return true;
-    })->set_custom_option(createOptions("string in {%s}", textureFilterModeNames).c_str());
+    })->type_name(createOptions("string in {%s}", textureFilterModeNames).c_str())->type_size(1);
     addFlagInternal("--af", "Use anisotropic filtering", [&](CLI::results_t res) {
         int value = 0;
         if (CLI::detail::lexical_cast(res[0], value) && value >= 1)
@@ -1096,11 +1086,11 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
             return true;
         }
         return false;
-    })->set_custom_option("int");
+    })->type_name("int")->type_size(1);
     addFlag("--touch", EP_TOUCH_EMULATION, true, "Enable touch emulation");
     addOptionInt("--timeout", EP_TIME_OUT, "Quit application after specified time");
-    addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->set_custom_option("plugin1;plugin2;...");
-    addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->set_custom_option("plugin");
+    addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->type_name("plugin1;plugin2;...");
+    addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->type_name("plugin");
 }
 #endif
 
@@ -1136,7 +1126,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_APPLICATION_PREFERENCES_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_AUTOLOAD_PATHS, "Autoload");
     engineParameters_->DefineVariable(EP_CONFIG_NAME, "EngineParameters.json");
-    engineParameters_->DefineVariable(EP_BORDERLESS, false).Overridable();
+    engineParameters_->DefineVariable(EP_BORDERLESS, true).Overridable();
     engineParameters_->DefineVariable(EP_DUMP_SHADERS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_ENGINE_AUTO_LOAD_SCRIPTS, false);
     engineParameters_->DefineVariable(EP_ENGINE_CLI_PARAMETERS, true);
@@ -1144,7 +1134,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_FLUSH_GPU, false);
     engineParameters_->DefineVariable(EP_FORCE_GL2, false);
     engineParameters_->DefineVariable(EP_FRAME_LIMITER, true).Overridable();
-    engineParameters_->DefineVariable(EP_FULL_SCREEN, true).Overridable();
+    engineParameters_->DefineVariable(EP_FULL_SCREEN, false).Overridable();
     engineParameters_->DefineVariable(EP_GPU_DEBUG, false);
     engineParameters_->DefineVariable(EP_HEADLESS, false);
     engineParameters_->DefineVariable(EP_HIGH_DPI, true);
@@ -1161,7 +1151,6 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_PACKAGE_CACHE_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
-    engineParameters_->DefineVariable(EP_RENDER_PATH, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);

@@ -188,14 +188,15 @@ void Editor::Setup()
     // Define custom command line parameters here
     auto& cmd = GetCommandLineParser();
     cmd.add_flag("--read-only", readOnly_, "Prevents Editor from modifying any project files, unless it is explicitly done via executed command.");
-    cmd.add_option("--command", command_, "Command to execute on startup.")->set_custom_option("command");
+    cmd.add_option("--command", command_, "Command to execute on startup.")->type_name("command");
     cmd.add_flag("--exit", exitAfterCommand_, "Forces Editor to exit after command execution.");
-    cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->set_custom_option("dir");
+    cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->type_name("dir");
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_APPLICATION_NAME] = GetWindowTitle();
     engineParameters_[EP_HEADLESS] = false;
     engineParameters_[EP_FULL_SCREEN] = false;
+    engineParameters_[EP_BORDERLESS] = false;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
     engineParameters_[EP_AUTOLOAD_PATHS] = "";

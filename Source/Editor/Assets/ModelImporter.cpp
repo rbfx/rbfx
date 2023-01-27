@@ -67,6 +67,7 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Scale", float, settings_.scale_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Rotation", Quaternion, settings_.rotation_, Quaternion::IDENTITY, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Cleanup Bone Names", bool, settings_.cleanupBoneNames_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Cleanup Root Nodes", bool, settings_.cleanupRootNodes_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, settings_.repairLooping_, false, AM_DEFAULT);
 }
 
@@ -133,6 +134,7 @@ bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformer
 bool ModelImporter::ImportGLTF(const ea::string& fileName,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
+    settings_.assetName_ = GetFileName(input.originalInputFileName_);
     auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
     if (!importer->LoadFile(fileName, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))

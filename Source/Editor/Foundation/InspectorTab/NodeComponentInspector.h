@@ -60,6 +60,13 @@ public:
 private:
     using NodeVector = NodeInspectorWidget::NodeVector;
 
+    struct AttributeSnapshot
+    {
+        VariantVector values_;
+        ea::vector<PackedNodeData> nodes_;
+        PackedSceneData scene_;
+    };
+
     void OnProjectRequest(RefCounted* senderTab, ProjectRequest* request);
 
     NodeVector CollectNodes() const;
@@ -89,8 +96,9 @@ private:
     SharedPtr<SerializableInspectorWidget> componentWidget_;
     ea::map<ea::string, unsigned> componentSummary_;
 
-    VariantVector oldValues_;
-    VariantVector newValues_;
+    ChangeAttributeBuffer actionBuffer_;
+    ea::unique_ptr<ChangeNodeAttributesActionBuilder> nodeActionBuilder_;
+    ea::unique_ptr<ChangeComponentAttributesActionBuilder> componentActionBuilder_;
 
     NodeVector changedNodes_;
     ea::vector<PackedNodeData> oldData_;

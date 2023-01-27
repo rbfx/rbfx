@@ -207,7 +207,7 @@ void LightProbeGroup::ArrangeLightProbesInVolume()
     }
 
     // Fill volume with probes
-    const Vector3 gridStep = Vector3::ONE / static_cast<Vector3>(gridSize - IntVector3::ONE);
+    const Vector3 gridStep = Vector3::ONE / (gridSize - IntVector3::ONE).ToVector3();
     IntVector3 index;
     for (index.z_ = 0; index.z_ < gridSize.z_; ++index.z_)
     {
@@ -215,7 +215,7 @@ void LightProbeGroup::ArrangeLightProbesInVolume()
         {
             for (index.x_ = 0; index.x_ < gridSize.x_; ++index.x_)
             {
-                const Vector3 localPosition = -Vector3::ONE / 2 + static_cast<Vector3>(index) * gridStep;
+                const Vector3 localPosition = -Vector3::ONE / 2 + index.ToVector3() * gridStep;
                 lightProbes_.push_back(LightProbe{ localPosition });
             }
         }

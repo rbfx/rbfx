@@ -97,7 +97,8 @@ public:
     const IntRect& GetRect() const { return rect_; }
 
     /// Return effective view rectangle.
-    IntRect GetEffectiveRect(RenderSurface* renderTarget) const;
+    /// By default, this function compensates for render target flip on OpenGL. It may be disabled.
+    IntRect GetEffectiveRect(RenderSurface* renderTarget, bool compensateRenderTargetFlip = true) const;
 
     /// Return rendering path.
     /// @property

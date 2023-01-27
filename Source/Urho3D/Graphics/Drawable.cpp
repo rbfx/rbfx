@@ -1,6 +1,6 @@
 //
-
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -128,13 +128,14 @@ void Drawable::OnSetEnabled()
 
 void Drawable::ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox, ea::vector<RayQueryResult>& results)
 {
-    float distance = query.ray_.HitDistance(worldBoundingBox);
-    if (distance < query.maxDistance_)
+    const auto distanceAndNormal = query.ray_.HitDistanceAndNormal(worldBoundingBox);
+    if (distanceAndNormal.distance_ < query.maxDistance_)
     {
         RayQueryResult result;
-        result.position_ = query.ray_.origin_ + distance * query.ray_.direction_;
-        result.normal_ = -query.ray_.direction_;
-        result.distance_ = distance;
+        result.position_ = query.ray_.origin_ + distanceAndNormal.distance_ * query.ray_.direction_;
+        // For the worldBoundingBox the normal is in world space.
+        result.normal_ = distanceAndNormal.normal_;
+        result.distance_ = distanceAndNormal.distance_;
         result.drawable_ = this;
         result.node_ = GetNode();
         result.subObject_ = M_MAX_UNSIGNED;

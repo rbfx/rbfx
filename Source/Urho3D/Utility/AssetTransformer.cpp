@@ -36,6 +36,7 @@ namespace Urho3D
 
 AssetTransformerInput::AssetTransformerInput(const ApplicationFlavor& flavor, const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime)
     : flavor_(flavor)
+    , originalInputFileName_(inputFileName)
     , resourceName_(resourceName)
     , inputFileName_(inputFileName)
     , inputFileTime_(inputFileTime)
@@ -51,50 +52,51 @@ AssetTransformerInput::AssetTransformerInput(const AssetTransformerInput& other,
 
 void AssetTransformerInput::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "Flavor", flavor_.components_);
-    SerializeValue(archive, "ResourceName", resourceName_);
+    SerializeValue(archive, "flavor", flavor_.components_);
+    SerializeValue(archive, "originalInputFileName", originalInputFileName_);
+    SerializeValue(archive, "resourceName", resourceName_);
 
-    SerializeValue(archive, "InputFileName", inputFileName_);
-    SerializeValue(archive, "InputFileTime", inputFileTime_);
+    SerializeValue(archive, "inputFileName", inputFileName_);
+    SerializeValue(archive, "inputFileTime", inputFileTime_);
 
-    SerializeValue(archive, "TempPath", tempPath_);
-    SerializeValue(archive, "OutputFileName", outputFileName_);
+    SerializeValue(archive, "tempPath", tempPath_);
+    SerializeValue(archive, "outputFileName", outputFileName_);
 }
 
 AssetTransformerInput AssetTransformerInput::FromBase64(const ea::string& base64)
 {
     Base64InputArchive archive(nullptr, base64);
     AssetTransformerInput result;
-    SerializeValue(archive, "Input", result);
+    SerializeValue(archive, "input", result);
     return result;
 }
 
 ea::string AssetTransformerInput::ToBase64() const
 {
     Base64OutputArchive archive(nullptr);
-    SerializeValue(archive, "Input", const_cast<AssetTransformerInput&>(*this));
+    SerializeValue(archive, "input", const_cast<AssetTransformerInput&>(*this));
     return archive.GetBase64();
 }
 
 void AssetTransformerOutput::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "SourceModified", sourceModified_);
-    SerializeValue(archive, "OutputResourceNames", outputResourceNames_);
-    SerializeValue(archive, "AppliedTransformers", appliedTransformers_);
+    SerializeValue(archive, "sourceModified", sourceModified_);
+    SerializeValue(archive, "outputResourceNames", outputResourceNames_);
+    SerializeValue(archive, "appliedTransformers", appliedTransformers_);
 }
 
 AssetTransformerOutput AssetTransformerOutput::FromBase64(const ea::string& base64)
 {
     Base64InputArchive archive(nullptr, base64);
     AssetTransformerOutput result;
-    SerializeValue(archive, "Output", result);
+    SerializeValue(archive, "output", result);
     return result;
 }
 
 ea::string AssetTransformerOutput::ToBase64() const
 {
     Base64OutputArchive archive(nullptr);
-    SerializeValue(archive, "Output", const_cast<AssetTransformerOutput&>(*this));
+    SerializeValue(archive, "output", const_cast<AssetTransformerOutput&>(*this));
     return archive.GetBase64();
 }
 

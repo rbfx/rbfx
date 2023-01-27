@@ -20,69 +20,93 @@
 // THE SOFTWARE.
 //
 
-#include "../Scene/Component.h"
-#include "../Resource/XMLFile.h"
+#include <Urho3D/Scene/Component.h>
+#include <Urho3D/Scene/PrefabResource.h>
 
 namespace Urho3D
 {
-/// %Prefab resource.
+
+enum class PrefabInlineFlag
+{
+    None = 0,
+    /// Whether to keep *other* components and children temporary.
+    /// Components and children that are part of the prefab are always converted to persistent.
+    /// This flag controls how to handle temporary components and children that may have been created after prefab
+    /// instantiation.
+    KeepOtherTemporary = 1 << 0,
+};
+URHO3D_FLAGSET(PrefabInlineFlag, PrefabInlineFlags);
+
+/// Component that instantiates prefab resource into the parent Node.
 class URHO3D_API PrefabReference : public Component
 {
     URHO3D_OBJECT(PrefabReference, Component)
 
 public:
-    /// Construct empty.
     explicit PrefabReference(Context* context);
-    /// Destruct.
     ~PrefabReference() override;
-    /// Register object factory.
-    /// @nobind
+
     static void RegisterObject(Context* context);
 
-    /// Set prefab resource.
-    void SetPrefab(XMLFile* prefab);
-    /// Get prefab resource.
-    XMLFile* GetPrefab() const;
+    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
+    void ApplyAttributes() override;
 
-    /// Set flag to preserve prefab root node transform.
-    void SetPreserveTransfrom(bool preserve);
-    /// Get preserve prefab root node transform flag state.
-    bool GetPreserveTransfrom() const { return preserveTransform_; }
-
-    /// Set reference to prefab resource.
+    /// Attributes.
+    /// @{
+    void SetPrefab(PrefabResource* prefab, bool createInstance = true);
+    PrefabResource* GetPrefab() const { return prefab_; }
     void SetPrefabAttr(ResourceRef prefab);
-    /// Get reference to prefab resource.
-    ResourceRef GetPrefabAttr() const;
+    ResourceRef GetPrefabAttr() const { return prefabRef_; }
+    /// @}
 
     /// Make all prefab nodes not temporary and remove component.
-    void Inline();
+    void Inline(PrefabInlineFlags flags);
+    void InlineConservative() { Inline(PrefabInlineFlag::None); }
+    void InlineAggressive() { Inline(PrefabInlineFlag::KeepOtherTemporary); }
+
+    /// Commit prefab changes to the resource.
+    void CommitChanges();
 
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
 
-    /// Get prefab instance root node if created.
-    /// The node may not be yet created if the component is disabled or is not attached to a Node.
-    Node* GetRootNode() const;
-
-protected:
-    /// Handle scene node being assigned at creation.
-    void OnNodeSet(Node* previousNode, Node* currentNode) override;
 private:
-    /// Handle prefab reloaded.
-    void HandlePrefabReloaded(StringHash eventType, VariantMap& map);
-    /// Create or remove prefab based on current environment.
-    void ToggleNode(bool forceReload = false);
-    /// Create prefab instance.
-    Node* CreateInstance() const;
+    const NodePrefab& GetNodePrefab() const;
 
-    /// Prefab root node.
-    SharedPtr<Node> node_;
-    /// Prefab resource.
-    SharedPtr<XMLFile> prefab_;
-    /// Reference to prefab resource.
+    bool IsInstanceMatching(const Node* node, const NodePrefab& nodePrefab, bool temporaryOnly) const;
+    bool AreComponentsMatching(
+        const Node* node, const ea::vector<SerializablePrefab>& componentPrefabs, bool temporaryOnly) const;
+    bool AreChildrenMatching(const Node* node, const ea::vector<NodePrefab>& childPrefabs, bool temporaryOnly) const;
+
+    void ExportInstance(Node* node, const NodePrefab& nodePrefab, bool temporaryOnly) const;
+    void ExportComponents(Node* node, const ea::vector<SerializablePrefab>& componentPrefabs, bool temporaryOnly) const;
+    void ExportChildren(Node* node, const ea::vector<NodePrefab>& childPrefabs, bool temporaryOnly) const;
+
+    void RemoveTemporaryComponents(Node* node) const;
+    void RemoveTemporaryChildren(Node* node) const;
+    void InstantiatePrefab(const NodePrefab& nodePrefab);
+
+    /// Try to create instance without spawning any new nodes or components.
+    /// It may cause some nodes or components to remain if prefab is different.
+    /// So, this method is not completely reliable, but it's the best we can do.
+    /// It's the Editor only issue anyway.
+    bool TryCreateInplace();
+    /// Remove prefab instance. Removes all children and components except this PrefabReference.
+    void RemoveInstance();
+    /// Create prefab instance. Spawns all nodes and components in the prefab.
+    /// Removes all existing children and components except this PrefabReference.
+    void CreateInstance(bool tryInplace = false);
+
+    SharedPtr<PrefabResource> prefab_;
     ResourceRef prefabRef_;
-    /// Preserve prefab root node transform.
-    bool preserveTransform_{false};
+
+    bool prefabDirty_{};
+
+    /// Node that is used to instance prefab.
+    /// It is usually the same as the parent node, but can be different if PrefabReference is moved between nodes.
+    WeakPtr<Node> instanceNode_;
+    unsigned numInstanceComponents_{};
+    unsigned numInstanceChildren_{};
 };
 
 } // namespace Urho3D

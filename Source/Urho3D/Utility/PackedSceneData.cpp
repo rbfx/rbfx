@@ -42,7 +42,10 @@ PackedNodeData::PackedNodeData(Node* node)
     ConsumeArchiveException([&]
     {
         BinaryOutputArchive archive{node->GetContext(), data_};
-        SerializeValue(archive, "Node", *node);
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("node");
+        node->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
+        scopeHint_ = node->GetEffectiveScopeHint();
     });
 }
 
@@ -63,7 +66,9 @@ Node* PackedNodeData::SpawnExact(Scene* scene) const
     {
         MemoryBuffer view{data_.GetBuffer()};
         BinaryInputArchive archive{scene->GetContext(), view};
-        SerializeValue(archive, "Node", *node);
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("node");
+        node->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 
     parent->ReorderChild(node, indexInParent_);
@@ -78,7 +83,9 @@ Node* PackedNodeData::SpawnCopy(Node* parent) const
     {
         MemoryBuffer view{data_.GetBuffer()};
         BinaryInputArchive archive{parent->GetContext(), view};
-        SerializeValue(archive, "Node", *node);
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("node");
+        node->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 
     return node;
@@ -93,7 +100,9 @@ PackedComponentData::PackedComponentData(Component* component)
     ConsumeArchiveException([&]
     {
         BinaryOutputArchive archive{component->GetContext(), data_};
-        SerializeValue(archive, "Component", *component);
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("component");
+        component->SerializeInBlock(archive, true /* serialize temporary */);
     });
 }
 
@@ -117,7 +126,9 @@ Component* PackedComponentData::SpawnExact(Scene* scene) const
     {
         MemoryBuffer view{data_.GetBuffer()};
         BinaryInputArchive archive{scene->GetContext(), view};
-        SerializeValue(archive, "Component", *component);
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("component");
+        component->SerializeInBlock(archive, true /* serialize temporary */);
     });
 
     node->ReorderComponent(component, indexInParent_);
@@ -134,7 +145,9 @@ Component* PackedComponentData::SpawnCopy(Node* node) const
     {
         MemoryBuffer view{data_.GetBuffer()};
         BinaryInputArchive archive{node->GetContext(), view};
-        SerializeValue(archive, "Component", *component);
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("component");
+        component->SerializeInBlock(archive, true /* serialize temporary */);
     });
 
     return component;
@@ -146,7 +159,9 @@ void PackedSceneData::ToScene(Scene* scene) const
     {
         MemoryBuffer view{sceneData_.GetBuffer()};
         BinaryInputArchive archive{scene->GetContext(), view};
-        SerializeValue(archive, "Scene", *scene);
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("scene");
+        scene->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 }
 
@@ -157,7 +172,9 @@ PackedSceneData PackedSceneData::FromScene(Scene* scene)
     ConsumeArchiveException([&]
     {
         BinaryOutputArchive archive{scene->GetContext(), result.sceneData_};
-        SerializeValue(archive, "Scene", *scene);
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("scene");
+        scene->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
     });
 
     return result;

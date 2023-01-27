@@ -35,6 +35,7 @@
 #include "../Resource/JSONValue.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/SceneEvents.h"
+#include "../Scene/NodePrefab.h"
 #include "../Scene/Serializable.h"
 
 #include <EASTL/fixed_vector.h>
@@ -396,111 +397,26 @@ bool Serializable::LoadFile(const ea::string& resourceName)
 
 void Serializable::SerializeInBlock(Archive& archive)
 {
-    const ObjectReflection* reflection = GetReflection();
-    if (!reflection)
-    {
-        throw ArchiveException(
-            "Serializable '{}' is not reflected and cannot be serialized", reflection->GetTypeName());
-    }
+    SerializeInBlock(archive, false);
+}
 
-    ea::fixed_vector<ea::pair<unsigned, Variant>, MAX_STACK_ATTRIBUTE_COUNT> serializedAttributes;
-    const unsigned numAttributes = reflection->GetNumAttributes();
-    const auto& attributes = reflection->GetAttributes();
-    const bool enumsAsStrings = archive.IsHumanReadable();
+void Serializable::SerializeInBlock(Archive& archive, bool serializeTemporary)
+{
+    const bool compactSave = !archive.IsHumanReadable();
+    const PrefabArchiveFlags flags = PrefabArchiveFlag::IgnoreSerializableId
+        | (serializeTemporary ? PrefabArchiveFlag::SerializeTemporary : PrefabArchiveFlag::None);
 
-    // If saving, write attributes
+    SerializablePrefab prefab;
+
     if (!archive.IsInput())
-    {
-        const bool saveDefaults = !archive.IsHumanReadable();
-        for (unsigned attributeIndex = 0; attributeIndex < numAttributes; ++attributeIndex)
-        {
-            const AttributeInfo& attr = attributes[attributeIndex];
-            if (!attr.ShouldSave())
-                continue;
+        prefab.Import(this);
 
-            auto& [index, value] = serializedAttributes.emplace_back();
-            index = attributeIndex;
-            OnGetAttribute(attr, value);
+    prefab.SerializeInBlock(archive, flags, compactSave);
 
-            // Skip defaults if allowed
-            if (!saveDefaults && !SaveDefaultAttributes(attr))
-            {
-                const Variant defaultValue = GetAttributeDefault(attributeIndex);
-                if (value == defaultValue)
-                {
-                    serializedAttributes.pop_back();
-                    continue;
-                }
-            }
-
-            if (enumsAsStrings && !attr.enumNames_.empty())
-                value = attr.ConvertEnumToString(value.GetUInt());
-        }
-    }
-
-    // Serialize attributes
-    unsigned attributeIndexHint = 0;
-    SerializeOptionalValue(archive, "attributes", serializedAttributes, {},
-        [&](Archive& archive, const char* name, auto& value)
-    {
-        SerializeVectorAsObjects(archive, name, value, "attribute",
-            [&](Archive& archive, const char* name, ea::pair<unsigned, Variant>& value)
-        {
-            auto block = archive.OpenUnorderedBlock(name);
-
-            if (archive.IsInput())
-            {
-                // Find attribute by name hash if loading
-                StringHash nameHash;
-                SerializeStringHash(archive, "name", nameHash, ea::string_view{});
-                value.first = reflection->GetAttributeIndex(nameHash, attributeIndexHint);
-                if (value.first != M_MAX_UNSIGNED)
-                    attributeIndexHint = value.first + 1;
-                else
-                {
-                    URHO3D_LOGWARNING("Attribute {} of Serializable '{}' is not found in reflection",
-                        nameHash.ToDebugString(), reflection->GetTypeName());
-                }
-            }
-            else
-            {
-                // Write attribute name or name hash if saving
-                const AttributeInfo& attr = attributes[value.first];
-                StringHash nameHash = attr.nameHash_;
-                SerializeStringHash(archive, "name", nameHash, attr.name_);
-            }
-
-            SerializeVariantInBlock(archive, value.second);
-        });
-    });
-
-    // If loading, read attributes
     if (archive.IsInput())
-    {
-        for (const auto& [attributeIndex, value] : serializedAttributes)
-        {
-            if (attributeIndex == M_MAX_UNSIGNED)
-                continue;
+        prefab.Export(this);
 
-            const AttributeInfo& attr = attributes[attributeIndex];
-            if (!attr.ShouldLoad())
-                continue;
-
-            if (enumsAsStrings && !attr.enumNames_.empty())
-            {
-                const unsigned enumValue = attr.ConvertEnumToUInt(value.GetString());
-                if (enumValue != M_MAX_UNSIGNED)
-                    OnSetAttribute(attr, enumValue);
-                else
-                {
-                    URHO3D_LOGWARNING("Attribute '{}' of Serializable '{}' has unknown enum value '{}'",
-                        attr.name_, reflection->GetTypeName(), value.GetString());
-                }
-            }
-            else
-                OnSetAttribute(attr, value);
-        }
-    }
+    ApplyAttributes();
 }
 
 bool Serializable::SetAttribute(unsigned index, const Variant& value)

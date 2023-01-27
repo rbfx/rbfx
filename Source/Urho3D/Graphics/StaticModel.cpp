@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -70,8 +71,8 @@ void StaticModel::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Occlusion LOD Level", int, occlusionLodLevel_, M_MAX_UNSIGNED, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bake Lightmap", bool, bakeLightmap_, UpdateBatchesLightmaps, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Scale in Lightmap", float, scaleInLightmap_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdateBatchesLightmaps, 0, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdateBatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_FILE | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdateBatchesLightmaps, 0, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdateBatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_DEFAULT | AM_NOEDIT);
 }
 
 void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
@@ -95,8 +96,9 @@ void StaticModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const Bound
     case RAY_TRIANGLE_UV:
         Matrix3x4 inverse(worldTransform.Inverse());
         Ray localRay = query.ray_.Transformed(inverse);
-        float distance = localRay.HitDistance(boundingBox_);
-        Vector3 normal = -query.ray_.direction_;
+        const auto distanceAndNormal = localRay.HitDistanceAndNormal(boundingBox_);
+        float distance = distanceAndNormal.distance_;
+        Vector3 normal = (worldTransform * Vector4(distanceAndNormal.normal_,0.0f)).Normalized();
         Vector2 geometryUV;
         unsigned hitBatch = M_MAX_UNSIGNED;
 
@@ -115,7 +117,7 @@ void StaticModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const Bound
                     if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                     {
                         distance = geometryDistance;
-                        normal = (worldTransform * Vector4(geometryNormal, 0.0f)).Normalized();
+                        normal = (worldTransform * geometryNormal.ToVector4()).Normalized();
                         hitBatch = i;
                     }
                 }

@@ -83,7 +83,7 @@ unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
 {
     Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
     const IntVector2 inputSize = viewportTexture->GetSize();
-    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(inputSize);
+    const Vector2 inputInvSize = Vector2::ONE / inputSize.ToVector2();
 
     const ShaderResourceDesc shaderResources[] = { { TU_DIFFUSE, viewportTexture } };
     const auto shaderParameters = GetShaderParameters(inputInvSize);
@@ -105,7 +105,7 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
     ShaderResourceDesc shaderResources[1];
     shaderResources[0].unit_ = TU_DIFFUSE;
 
-    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(final->GetTexture2D()->GetSize());
+    const Vector2 inputInvSize = Vector2::ONE / final->GetTexture2D()->GetSize().ToVector2();
     const auto shaderParameters = GetShaderParameters(inputInvSize);
 
     DrawQuadParams drawParams;

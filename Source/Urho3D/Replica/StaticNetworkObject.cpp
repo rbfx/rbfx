@@ -24,10 +24,11 @@
 
 #include "../Core/Context.h"
 #include "../Scene/Node.h"
+#include "../Scene/PrefabReader.h"
+#include "../Scene/PrefabResource.h"
 #include "../Scene/SceneResolver.h"
 #include "../Replica/StaticNetworkObject.h"
 #include "../Resource/ResourceCache.h"
-#include "../Resource/XMLFile.h"
 
 namespace Urho3D
 {
@@ -40,10 +41,10 @@ void StaticNetworkObject::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<StaticNetworkObject>(Category_Network);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Client Prefab", GetClientPrefabAttr, SetClientPrefabAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Client Prefab", GetClientPrefabAttr, SetClientPrefabAttr, ResourceRef, ResourceRef(PrefabResource::GetTypeStatic()), AM_DEFAULT);
 }
 
-void StaticNetworkObject::SetClientPrefab(XMLFile* prefab)
+void StaticNetworkObject::SetClientPrefab(PrefabResource* prefab)
 {
     if (prefab && prefab->GetName().empty())
     {
@@ -97,18 +98,13 @@ void StaticNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deserialize
     SetParentNetworkObject(parentNetworkId);
 
     const ea::string clientPrefabName = src.ReadString();
-    SetClientPrefabAttr(ResourceRef{XMLFile::GetTypeStatic(), clientPrefabName});
+    SetClientPrefabAttr(ResourceRef{PrefabResource::GetTypeStatic(), clientPrefabName});
 
     if (clientPrefab_)
     {
-        const XMLElement& prefabRootElement = clientPrefab_->GetRoot();
-
-        SceneResolver resolver;
-        unsigned nodeID = prefabRootElement.GetUInt("id");
-        resolver.AddNode(nodeID, node_);
-
-        node_->LoadXML(prefabRootElement, resolver, true, true, false);
-        node_->ApplyAttributes();
+        const auto flags = PrefabLoadFlag::KeepExistingComponents;
+        PrefabReaderFromMemory reader{clientPrefab_->GetNodePrefab()};
+        node_->Load(reader, flags);
     }
 
     node_->SetName(src.ReadString());
@@ -131,13 +127,13 @@ void StaticNetworkObject::ReadReliableDelta(NetworkFrame frame, Deserializer& sr
 
 ResourceRef StaticNetworkObject::GetClientPrefabAttr() const
 {
-    return GetResourceRef(clientPrefab_, XMLFile::GetTypeStatic());
+    return GetResourceRef(clientPrefab_, PrefabResource::GetTypeStatic());
 }
 
 void StaticNetworkObject::SetClientPrefabAttr(const ResourceRef& value)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    SetClientPrefab(cache->GetResource<XMLFile>(value.name_));
+    SetClientPrefab(cache->GetResource<PrefabResource>(value.name_));
 }
 
 }

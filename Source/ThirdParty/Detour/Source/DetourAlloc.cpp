@@ -26,7 +26,7 @@ static void *dtAllocDefault(size_t size, dtAllocHint)
 
 static void dtFreeDefault(void *ptr)
 {
-	free(ptr);
+    free(ptr);
 }
 
 static dtAllocFunc* sAllocFunc = dtAllocDefault;

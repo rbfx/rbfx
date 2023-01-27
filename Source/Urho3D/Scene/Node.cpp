@@ -32,6 +32,8 @@
 #include "../Resource/JSONFile.h"
 #include "../Scene/Component.h"
 #include "../Scene/ObjectAnimation.h"
+#include "../Scene/PrefabReader.h"
+#include "../Scene/PrefabWriter.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/UnknownComponent.h"
@@ -79,126 +81,206 @@ void Node::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Tags", GetTags, SetTags, StringVector, Variant::emptyStringVector, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_FILE);
-    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE);
+    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_FILE); // Network replication of vars uses custom data
+    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT);
 }
 
 void Node::SerializeInBlock(Archive& archive)
 {
-    // TODO: Handle exceptions
+    const bool compactSave = !archive.IsHumanReadable();
+    const PrefabSaveFlags saveFlags =
+        compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
+
+    SerializeInBlock(archive, false, saveFlags);
+}
+
+void Node::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
+{
+    const bool compactSave = !archive.IsHumanReadable();
+    const PrefabArchiveFlags archiveFlags =
+        (compactSave ? PrefabArchiveFlag::CompactTypeNames : PrefabArchiveFlag::None)
+        | (serializeTemporary ? PrefabArchiveFlag::SerializeTemporary : PrefabArchiveFlag::None);
+    const PrefabLoadFlags loadFlags = PrefabLoadFlag::None;
+
     if (archive.IsInput())
     {
+        PrefabReaderFromArchive reader{archive, nullptr, archiveFlags};
+        if (!Load(reader, loadFlags))
+            throw ArchiveException("Failed to load node hierarchy from archive");
+    }
+    else
+    {
+        PrefabWriterToArchive writer{archive, nullptr, saveFlags, archiveFlags};
+        if (!Save(writer))
+            throw ArchiveException("Failed to save node hierarchy to archive");
+    }
+}
+
+void Node::LoadInternal(
+    const SerializablePrefab& nodePrefab, PrefabReader& reader, SceneResolver& resolver, PrefabLoadFlags flags)
+{
+    const bool discardIds = flags.Test(PrefabLoadFlag::DiscardIds);
+    const bool loadAsTemporary = flags.Test(PrefabLoadFlag::LoadAsTemporary);
+
+    if (!flags.Test(PrefabLoadFlag::KeepExistingComponents))
+        RemoveAllComponents();
+    if (!flags.Test(PrefabLoadFlag::KeepExistingChildren))
+        RemoveAllChildren();
+
+    // Load self
+    if (!flags.Test(PrefabLoadFlag::IgnoreRootAttributes))
+        nodePrefab.Export(this, flags);
+
+    const unsigned oldId = static_cast<unsigned>(nodePrefab.GetId());
+    resolver.AddNode(oldId, this);
+
+    // Load components
+    const unsigned numComponents = reader.ReadNumComponents();
+    for (unsigned index = 0; index < numComponents; ++index)
+    {
+        const SerializablePrefab* componentPrefab = reader.ReadComponent();
+        if (!componentPrefab)
+            throw ArchiveException("Failed to read component prefab");
+
+        const unsigned oldComponentId = static_cast<unsigned>(componentPrefab->GetId());
+        Component* component = SafeCreateComponent(
+            componentPrefab->GetTypeName(), componentPrefab->GetTypeNameHash(), discardIds ? 0 : oldComponentId);
+
+        resolver.AddComponent(oldComponentId, component);
+        componentPrefab->Export(component, flags);
+
+        if (loadAsTemporary)
+            component->SetTemporary(true);
+    }
+
+    // Load children
+    const unsigned numChildren = reader.ReadNumChildren();
+    for (unsigned index = 0; index < numChildren; ++index)
+    {
+        reader.BeginChild();
+        {
+            const SerializablePrefab* childPrefab = reader.ReadNode();
+            if (!childPrefab)
+                throw ArchiveException("Failed to read child prefab");
+
+            const unsigned oldChildId = static_cast<unsigned>(childPrefab->GetId());
+            Node* child = CreateChild(discardIds ? 0 : oldChildId);
+
+            const PrefabLoadFlags childFlags =
+                flags & ~PrefabLoadFlag::LoadAsTemporary & ~PrefabLoadFlag::IgnoreRootAttributes;
+            child->LoadInternal(*childPrefab, reader, resolver, childFlags);
+
+            if (loadAsTemporary)
+                child->SetTemporary(true);
+        }
+        reader.EndChild();
+    }
+}
+
+bool Node::Load(PrefabReader& reader, PrefabLoadFlags flags)
+{
+    try
+    {
+        const SerializablePrefab* nodePrefab = reader.ReadNode();
+        if (!nodePrefab)
+            throw ArchiveException("Failed to read node prefab");
+
         SceneResolver resolver;
-
-        // Load this node ID for resolver
-        unsigned nodeID{};
-        Urho3D::SerializeValue(archive, "id", nodeID);
-        resolver.AddNode(nodeID, this);
-
-        // Load node content
-        SerializeInBlock(archive, &resolver);
+        LoadInternal(*nodePrefab, reader, resolver, flags);
 
         // Resolve IDs and apply attributes
         resolver.Resolve();
         ApplyAttributes();
+
+        return true;
     }
-    else
+    catch (const ArchiveException& e)
     {
-        // Save node ID and content
-        Urho3D::SerializeValue(archive, "id", id_);
-        SerializeInBlock(archive, nullptr);
+        URHO3D_LOGERROR(e.what());
+        return false;
     }
 }
 
-void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
-    bool serializeChildren /*= true*/, bool rewriteIDs /*= false*/)
+void Node::SaveInternal(PrefabWriter& writer) const
 {
-    // Resolver must be present if loading
-    const bool loading = archive.IsInput();
-    assert(loading == !!resolver);
+    const bool saveTemporary = writer.GetFlags().Test(PrefabSaveFlag::SaveTemporary);
 
-    // Remove all children and components first in case this is not a fresh load
-    if (loading)
+    writer.WriteNode(GetID(), this);
+
+    const unsigned numComponents = saveTemporary ? GetNumComponents() : GetNumPersistentComponents();
+    writer.WriteNumComponents(numComponents);
+    for (Component* component : components_)
     {
-        RemoveAllChildren();
-        RemoveAllComponents();
+        if (component && (saveTemporary || !component->IsTemporary()))
+            writer.WriteComponent(component->GetID(), component);
     }
 
-    // Serialize base class
-    Serializable::SerializeInBlock(archive);
-
-    // Serialize components
-    const unsigned numComponentsToWrite = loading ? 0 : GetNumPersistentComponents();
-    SerializeCustomVector(archive, "components", numComponentsToWrite, components_,
-        [&](unsigned /*index*/, SharedPtr<Component> component, bool loading)
+    const unsigned numChildren = saveTemporary ? GetNumChildren() : GetNumPersistentChildren();
+    writer.WriteNumChildren(numChildren);
+    for (Node* child : children_)
     {
-        assert(loading || component);
-
-        // Skip temporary components
-        if (component && component->IsTemporary())
-            return;
-
-        // Serialize component
-        if (ArchiveBlock componentBlock = archive.OpenSafeUnorderedBlock("component"))
+        if (child && (saveTemporary || !child->IsTemporary()))
         {
-            // Serialize component ID and type
-            unsigned componentID = component ? component->GetID() : 0;
-            StringHash componentType = component ? component->GetType() : StringHash::Empty;
-            const ea::string& componentTypeName = component ? component->GetTypeName() : EMPTY_STRING;
-            SerializeValue(archive, "id", componentID);
-            SerializeStringHash(archive, "type", componentType, componentTypeName);
-
-            // Create component if loading
-            if (loading)
-            {
-                component = SafeCreateComponent(EMPTY_STRING, componentType, componentID);
-
-                // Add component to resolver
-                resolver->AddComponent(componentID, component);
-            }
-
-            // Serialize component.
-            component->SerializeInBlock(archive);
+            writer.BeginChild();
+            child->SaveInternal(writer);
+            writer.EndChild();
         }
-    });
+    }
+}
 
-    // Skip children
-    if (!serializeChildren)
-        return;
-
-    // Serialize children
-    const unsigned numChildrenToWrite = loading ? 0 : GetNumPersistentChildren();
-    SerializeCustomVector(archive, "children", numChildrenToWrite, children_,
-        [&](unsigned /*index*/, SharedPtr<Node> child, bool loading)
+bool Node::Save(PrefabWriter& writer) const
+{
+    try
     {
-        assert(loading || child);
+        SaveInternal(writer);
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        URHO3D_LOGERROR(e.what());
+        return false;
+    }
+}
 
-        // Skip temporary children
-        if (child && child->IsTemporary())
-            return;
+Node* Node::InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation)
+{
+    Node* childNode = CreateChild();
+    PrefabReaderFromMemory reader{prefab};
+    if (!childNode->Load(reader, PrefabLoadFlag::None))
+    {
+        childNode->Remove();
+        return nullptr;
+    }
 
-        // Serialize child
-        if (ArchiveBlock childBlock = archive.OpenUnorderedBlock("child"))
-        {
-            // Serialize node ID
-            unsigned nodeID = child ? child->GetID() : 0;
-            SerializeValue(archive, "id", nodeID);
+    childNode->SetPosition(position);
+    childNode->SetRotation(rotation);
+    return childNode;
+}
 
-            // Create child if loading
-            if (loading)
-            {
-                child = CreateChild(rewriteIDs ? 0 : nodeID);
+void Node::GeneratePrefab(NodePrefab& prefab) const
+{
+    const PrefabSaveFlags flags = PrefabSaveFlag::EnumsAsStrings | PrefabSaveFlag::Prefab;
+    PrefabWriterToMemory writer{prefab, flags};
+    Save(writer);
+}
 
-                // Add child node to resolver
-                resolver->AddNode(nodeID, child);
-            }
+NodePrefab Node::GeneratePrefab() const
+{
+    NodePrefab prefab;
+    GeneratePrefab(prefab);
+    return prefab;
+}
 
-            // Serialize child
-            child->SerializeInBlock(archive, resolver, serializeChildren, rewriteIDs);
-        }
-    });
+AttributeScopeHint Node::GetEffectiveScopeHint() const
+{
+    AttributeScopeHint result = AttributeScopeHint::Serializable;
+    for (Component* component : GetComponents())
+        result = ea::max(result, component->GetEffectiveScopeHint());
+    for (Node* child : GetChildren())
+        result = ea::max(result, child->GetEffectiveScopeHint());
+    return result;
 }
 
 bool Node::Load(Deserializer& source)
@@ -653,7 +735,7 @@ void Node::Translate(const Vector3& delta, TransformSpace space)
         break;
 
     case TS_WORLD:
-        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
+        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * delta.ToVector4();
         break;
     }
 
@@ -1241,7 +1323,7 @@ Vector3 Node::LocalToWorld(const Vector4& vector) const
 
 Vector2 Node::LocalToWorld2D(const Vector2& vector) const
 {
-    Vector3 result = LocalToWorld(Vector3(vector));
+    Vector3 result = LocalToWorld(vector.ToVector3());
     return Vector2(result.x_, result.y_);
 }
 
@@ -1257,7 +1339,7 @@ Vector3 Node::WorldToLocal(const Vector4& vector) const
 
 Vector2 Node::WorldToLocal2D(const Vector2& vector) const
 {
-    Vector3 result = WorldToLocal(Vector3(vector));
+    Vector3 result = WorldToLocal(vector.ToVector3());
     return Vector2(result.x_, result.y_);
 }
 
@@ -1923,15 +2005,16 @@ Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type
 {
     // First check if factory for type exists
     if (!context_->GetTypeName(type).empty())
-        return CreateComponent(type, id);
-    else
     {
-        URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
-        // Else create as UnknownComponent
-        SharedPtr<UnknownComponent> newComponent(MakeShared<UnknownComponent>(context_));
-        AddComponent(newComponent, id);
-        return newComponent;
+        if (Component* component = CreateComponent(type, id))
+            return component;
     }
+
+    URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
+    // Else create as UnknownComponent
+    SharedPtr<UnknownComponent> newComponent(MakeShared<UnknownComponent>(context_));
+    AddComponent(newComponent, id);
+    return newComponent;
 }
 
 void Node::UpdateWorldTransform() const
@@ -2108,6 +2191,31 @@ void Node::RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i)
         scene_->ComponentRemoved(i->Get());
     (*i)->SetNode(nullptr);
     components_.erase(i);
+}
+
+ea::vector<Node*> Node::GetNodes(const ea::vector<Component*>& components)
+{
+    ea::vector<Node*> result;
+    for (Component* component : components)
+    {
+        Node* node = component->GetNode();
+        if (!result.contains(node))
+            result.push_back(node);
+    }
+    return result;
+}
+
+ea::vector<Node*> Node::GetParentNodes(const ea::vector<Node*>& nodes)
+{
+    ea::vector<Node*> result;
+    for (Node* candidate : nodes)
+    {
+        const auto isChildOf = [candidate](Node* node) { return candidate->IsChildOf(node); };
+        const bool isChildOfAny = ea::any_of(nodes.begin(), nodes.end(), isChildOf);
+        if (!isChildOfAny)
+            result.push_back(candidate);
+    }
+    return result;
 }
 
 }

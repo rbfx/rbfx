@@ -49,11 +49,28 @@ enum AttributeMode
     AM_NODEIDVECTOR = 1 << 4,
     /// Attribute is readonly. Can't be used with binary serialized objects.
     AM_READONLY = 1 << 5,
+    /// Attribute should be saved in prefab.
+    AM_PREFAB = 1 << 6,
 
-    /// Default mode, same as AM_FILE.
-    AM_DEFAULT = 1 << 0,
+    /// Default mode, same as AM_FILE and AM_PREFAB.
+    AM_DEFAULT = 1 << 0 | 1 << 6,
 };
 URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
+
+/// Attribute scope hint.
+/// Indicates the scope of changes caused by an attribute. Used for undo/redo in the Editor.
+enum class AttributeScopeHint
+{
+    /// Attribute change doesn't affect any other attributes.
+    Attribute,
+    /// Attribute change may affect other attributes in the same object (node or component).
+    Serializable,
+    /// Attribute change may affect other attributes, components or children nodes in the owner node.
+    Node,
+    /// Attribute change may affect anything in the scene.
+    /// \warning It is not fully supported by the Editor yet!
+    Scene,
+};
 
 class Serializable;
 
@@ -151,6 +168,8 @@ struct AttributeInfo
     AttributeModeFlags mode_ = AM_DEFAULT;
     /// Attribute metadata.
     VariantMap metadata_;
+    /// Scope hint.
+    AttributeScopeHint scopeHint_{};
 
 private:
     static StringVector ToVector(const char* const* strings)
@@ -172,7 +191,13 @@ struct AttributeHandle
     friend class ObjectReflection;
 
 public:
-    /// Set metadata.
+    AttributeHandle& SetScopeHint(AttributeScopeHint scopeHint)
+    {
+        if (attributeInfo_)
+            attributeInfo_->scopeHint_ = scopeHint;
+        return *this;
+    }
+
     AttributeHandle& SetMetadata(StringHash key, const Variant& value)
     {
         if (attributeInfo_)
@@ -181,7 +206,6 @@ public:
     }
 
 private:
-    /// Attribute info.
     AttributeInfo* attributeInfo_ = nullptr;
 };
 

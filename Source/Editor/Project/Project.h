@@ -98,6 +98,8 @@ class Project : public Object
 public:
     using AnalyzeFileCallback = ea::function<void(ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)>;
     using CommandExecutedCallback = ea::function<void(bool success, const ea::string& output)>;
+    using FileSavedCallback =
+        ea::function<void(const ea::string& fileName, const ea::string& resourceName, bool& needReload)>;
 
     Signal<void()> OnInitialized;
     Signal<void()> OnShallowSaved;
@@ -143,8 +145,9 @@ public:
     void RenderMainMenu();
 
     /// Save file after delay and ignore reload event.
-    void SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes);
-    void SaveFileDelayed(Resource* resource);
+    void SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes,
+        const FileSavedCallback& onSaved = {});
+    void SaveFileDelayed(Resource* resource, const FileSavedCallback& onSaved = {});
     /// Mark files with specified name pattern as internal and ignore them in UI.
     void IgnoreFileNamePattern(const ea::string& pattern);
     /// Return whether the file name is ignored.
@@ -225,6 +228,7 @@ private:
     {
         ea::string fileName_;
         SharedByteVector bytes_;
+        FileSavedCallback onSaved_;
         SharedPtr<Resource> resource_;
         Timer timer_;
 

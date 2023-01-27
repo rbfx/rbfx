@@ -69,10 +69,10 @@ Variant BlendAdditive(const Variant& oldValue, const Variant& newValue, const Va
         return oldValue.GetColor() + (newValue.GetColor() - baseValue.GetColor()) * weight;
 
     case VAR_INTVECTOR2:
-        return oldValue.GetIntVector2() + VectorRoundToInt(static_cast<Vector2>(newValue.GetIntVector2() - baseValue.GetIntVector2()) * weight);
+        return oldValue.GetIntVector2() + VectorRoundToInt((newValue.GetIntVector2() - baseValue.GetIntVector2()).ToVector2() * weight);
 
     case VAR_INTVECTOR3:
-        return oldValue.GetIntVector3() + VectorRoundToInt(static_cast<Vector3>(newValue.GetIntVector3() - baseValue.GetIntVector3()) * weight);
+        return oldValue.GetIntVector3() + VectorRoundToInt((newValue.GetIntVector3() - baseValue.GetIntVector3()).ToVector3() * weight);
 
     default:
         return oldValue;

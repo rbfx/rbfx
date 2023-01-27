@@ -54,7 +54,7 @@ IntVector2 CalculateModelLightmapSize(float texelDensity, float minObjectScale,
         return defaultChartSize;
     }
 
-    const auto modelLightmapSize = static_cast<Vector2>(modelLightmapSizeVar.GetIntVector2());
+    const auto modelLightmapSize = modelLightmapSizeVar.GetIntVector2().ToVector2();
     const float modelLightmapDensity = modelLightmapDensityVar.GetFloat();
 
     const float nodeScale = ea::max({ scale.x_, scale.y_, scale.z_ });
@@ -72,7 +72,7 @@ IntVector2 AdjustRegionSize(const IntVector2& desiredSize, int maxSize)
         return desiredSize;
 
     const float scale = static_cast<float>(maxSize) / desiredDimensions;
-    const Vector2 newSize = static_cast<Vector2>(desiredSize) * scale;
+    const Vector2 newSize = desiredSize.ToVector2() * scale;
     return VectorMax(IntVector2::ONE, VectorMin(VectorCeilToInt(newSize), IntVector2::ONE * maxSize));
 };
 
@@ -126,7 +126,7 @@ IntVector2 CalculateTerrainLightmapSize(Terrain* terrain, const LightmapCharting
     Node* node = terrain->GetNode();
     const Vector3 spacing = terrain->GetSpacing();
     const Vector3 worldScale = node->GetWorldScale();
-    const Vector2 size = static_cast<Vector2>(terrain->GetNumPatches()) * static_cast<float>(terrain->GetPatchSize());
+    const Vector2 size = terrain->GetNumPatches().ToVector2() * static_cast<float>(terrain->GetPatchSize());
     const Vector2 dimensions = size * Vector2{ worldScale.x_, worldScale.z_ } * Vector2{ spacing.x_, spacing.z_ };
     const float scaleInLightmap = terrain->GetScaleInLightmap();
     return VectorCeilToInt(dimensions * settings.texelDensity_ * scaleInLightmap);

@@ -152,7 +152,7 @@ Camera* Viewport::GetCamera() const
     return camera_;
 }
 
-IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget) const
+IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateRenderTargetFlip) const
 {
     const IntVector2 renderTargetSize = RenderSurface::GetSize(GetSubsystem<Graphics>(), renderTarget);
 
@@ -169,6 +169,18 @@ IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget) const
         rect.top_ = Clamp(rect_.top_, 0, renderTargetSize.y_ - 1);
         rect.right_ = Clamp(rect_.right_, rect.left_ + 1, renderTargetSize.x_);
         rect.bottom_ = Clamp(rect_.bottom_, rect.top_ + 1, renderTargetSize.y_);
+
+#ifdef URHO3D_OPENGL
+        if (renderTarget && compensateRenderTargetFlip)
+        {
+            // On OpenGL the render to texture is flipped vertically.
+            // Flip the viewport rectangle to compensate.
+            rect.top_ = renderTargetSize.y_ - rect.top_;
+            rect.bottom_ = renderTargetSize.y_ - rect.bottom_;
+            ea::swap(rect.top_, rect.bottom_);
+        }
+#endif
+
         return rect;
     }
 }

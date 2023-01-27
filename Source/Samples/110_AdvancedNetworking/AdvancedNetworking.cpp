@@ -51,6 +51,7 @@
 #include <Urho3D/Replica/TrackedAnimatedModel.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
@@ -389,11 +390,11 @@ void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& r
 Node* AdvancedNetworking::CreateControllableObject(Connection* owner)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    auto prefab = cache->GetResource<XMLFile>("Objects/AdvancedNetworkingPlayer.xml");
+    auto prefab = cache->GetResource<PrefabResource>("Prefabs/AdvancedNetworkingPlayer.prefab");
 
     // Instantiate most of the components from prefab so they will be replicated on the client.
     const Vector3 position{Random(20.0f) - 10.0f, 5.0f, Random(20.0f) - 10.0f};
-    Node* playerNode = scene_->InstantiateXML(prefab->GetRoot(), position, Quaternion::IDENTITY);
+    Node* playerNode = scene_->InstantiatePrefab(prefab->GetNodePrefab(), position, Quaternion::IDENTITY);
 
     // NetworkObject should never be a part of client prefab
     auto networkObject = playerNode->CreateComponent<BehaviorNetworkObject>();

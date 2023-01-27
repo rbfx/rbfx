@@ -2195,12 +2195,12 @@ void Renderer::UpdateMousePositionsForMainViewports()
         if (!viewport || !viewport->GetCamera())
             continue;
 
-        const IntRect rect = viewport->GetEffectiveRect(nullptr);
+        const IntRect rect = viewport->GetEffectiveRect(backbufferSurface_, false);
         const IntVector2 mousePosition = ui->GetSystemCursorPosition();
 
-        const auto rectPos = static_cast<Vector2>(rect.Min());
-        const auto rectSizeMinusOne = static_cast<Vector2>(rect.Size() - IntVector2::ONE);
-        const auto mousePositionNormalized = (static_cast<Vector2>(mousePosition) - rectPos) / rectSizeMinusOne;
+        const auto rectPos = rect.Min().ToVector2();
+        const auto rectSizeMinusOne = (rect.Size() - IntVector2::ONE).ToVector2();
+        const auto mousePositionNormalized = (mousePosition.ToVector2() - rectPos) / rectSizeMinusOne;
 
         Camera* camera = viewport->GetCamera();
         camera->SetMousePosition(mousePositionNormalized);

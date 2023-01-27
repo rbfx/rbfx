@@ -95,7 +95,11 @@ void NodeInspectorWidget::RenderContent()
 
     for (SerializableInspectorWidget* componentInspector : componentInspectors_)
     {
-        const auto typeInfo = componentInspector->GetObjects().front()->GetTypeInfo();
+        Serializable* firstComponent = componentInspector->GetObjects().front();
+        if (!firstComponent)
+            continue;
+
+        const auto typeInfo = firstComponent->GetTypeInfo();
         const IdScopeGuard guard{typeInfo->GetTypeName().c_str()};
 
         if (ui::Button(ICON_FA_TRASH_CAN "##RemoveComponent"))
@@ -124,10 +128,11 @@ void NodeInspectorWidget::RenderContent()
 
     for (Component* component : pendingRemoveComponents_)
     {
-        if (component)
+        if (WeakPtr<Component> weakComponent{component})
         {
             OnComponentRemoved(this, component);
-            component->Remove();
+            if (weakComponent)
+                weakComponent->Remove();
         }
     }
 }

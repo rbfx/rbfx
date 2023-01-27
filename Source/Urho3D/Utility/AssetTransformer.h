@@ -47,6 +47,9 @@ struct URHO3D_API AssetTransformerInput
 
     /// Flavor of the transformer.
     ApplicationFlavor flavor_;
+    /// Original absolute file name. May be different from file name for nested transformers.
+    ea::string originalInputFileName_;
+
     /// Resource name that can be used to access resource via cache.
     ea::string resourceName_;
     /// Absolute file name of the asset.

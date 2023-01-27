@@ -27,6 +27,7 @@
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Replica/StaticNetworkObject.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Resource/XMLFile.h>
 
@@ -255,11 +256,10 @@ AbstractConnection* NetworkSimulator::GetServerToClientConnection(Scene* clientS
     return iter != clients_.end() ? iter->serverToClient_ : nullptr;
 }
 
-Node* SpawnOnServer(Node* parent, StringHash objectType, XMLFile* prefab, const ea::string& name,
+Node* SpawnOnServer(Node* parent, StringHash objectType, PrefabResource* prefab, const ea::string& name,
     const Vector3& position, const Quaternion& rotation)
 {
-    Node* node = parent->GetScene()->InstantiateXML(prefab->GetRoot(), position, rotation);
-    node->SetParent(parent);
+    Node* node = parent->InstantiatePrefab(prefab->GetNodePrefab(), position, rotation);
     node->SetName(name);
 
     auto networkObject = dynamic_cast<StaticNetworkObject*>(node->CreateComponent(objectType));

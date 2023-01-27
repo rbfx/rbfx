@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -146,14 +147,14 @@ void RibbonTrail::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQue
         Vector3 scale = width_ * Vector3::ONE;
         // Tail should be represented in cylinder shape, but we don't have this yet on Urho,
         // so this implementation will use bounding box instead (hopefully only temporarily)
-        float distance = query.ray_.HitDistance(BoundingBox(center - scale, center + scale));
-        if (distance < query.maxDistance_)
+        const auto distanceAndNormal = query.ray_.HitDistanceAndNormal(BoundingBox(center - scale, center + scale));
+        if (distanceAndNormal.distance_ < query.maxDistance_)
         {
             // If the code reaches here then we have a hit
             RayQueryResult result;
-            result.position_ = query.ray_.origin_ + distance * query.ray_.direction_;
-            result.normal_ = -query.ray_.direction_;
-            result.distance_ = distance;
+            result.position_ = query.ray_.origin_ + distanceAndNormal.distance_ * query.ray_.direction_;
+            result.normal_ = distanceAndNormal.normal_;
+            result.distance_ = distanceAndNormal.distance_;
             result.drawable_ = this;
             result.node_ = node_;
             result.subObject_ = i;

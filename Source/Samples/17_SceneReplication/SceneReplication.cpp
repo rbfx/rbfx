@@ -45,6 +45,7 @@
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
 #include <Urho3D/Replica/ClientReplica.h>
 #include <Urho3D/Replica/ReplicationManager.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/Font.h>
@@ -365,11 +366,11 @@ void SceneReplication::UpdateButtons()
 Node* SceneReplication::CreateControllableObject(Connection* owner)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    auto prefab = cache->GetResource<XMLFile>("Objects/SceneReplicationPlayer.xml");
+    auto prefab = cache->GetResource<PrefabResource>("Prefabs/SceneReplicationPlayer.prefab");
 
     // Instantiate common components from prefab so they will be replicated on the client.
     const Vector3 position{Vector3(Random(40.0f) - 20.0f, 5.0f, Random(40.0f) - 20.0f)};
-    Node* playerNode = scene_->InstantiateXML(prefab->GetRoot(), position, Quaternion::IDENTITY);
+    Node* playerNode = scene_->InstantiatePrefab(prefab->GetNodePrefab(), position, Quaternion::IDENTITY);
     playerNode->SetName("Ball");
 
     // NetworkObject should never be a part of client prefab

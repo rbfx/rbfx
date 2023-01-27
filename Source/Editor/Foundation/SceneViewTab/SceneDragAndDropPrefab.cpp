@@ -30,8 +30,8 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 
 namespace Urho3D
@@ -54,7 +54,7 @@ bool SceneDragAndDropPrefab::IsDragDropPayloadSupported(SceneViewPage& page, Dra
         return false;
 
     const ResourceFileDescriptor& desc = resourcePayload->resources_[0];
-    return desc.HasObjectType<Scene>() || desc.HasObjectType<Model>();
+    return desc.HasObjectType<PrefabResource>() || desc.HasObjectType<Model>();
 }
 
 void SceneDragAndDropPrefab::BeginDragDrop(SceneViewPage& page, DragDropPayload* payload)
@@ -64,7 +64,7 @@ void SceneDragAndDropPrefab::BeginDragDrop(SceneViewPage& page, DragDropPayload*
 
     const ResourceFileDescriptor& desc = resourcePayload->resources_[0];
 
-    if (desc.HasObjectType<Scene>())
+    if (desc.HasObjectType<PrefabResource>())
         CreateNodeFromPrefab(page.scene_, desc);
     else if (desc.HasObjectType<Model>())
         CreateNodeFromModel(page.scene_, desc);
@@ -91,13 +91,18 @@ void SceneDragAndDropPrefab::UpdateDragDrop(DragDropPayload* payload)
 
 void SceneDragAndDropPrefab::CompleteDragDrop(DragDropPayload* payload)
 {
+    if (!temporaryNode_)
+        return;
+
     if (currentPage_)
     {
         currentPage_->selection_.Clear();
         currentPage_->selection_.SetSelected(temporaryNode_, true);
     }
 
-    owner_->PushAction<CreateRemoveNodeAction>(temporaryNode_, false);
+    owner_->PushAction(nodeActionBuilder_->Build(temporaryNode_));
+
+    nodeActionBuilder_ = nullptr;
     temporaryNode_ = nullptr;
 }
 
@@ -105,20 +110,27 @@ void SceneDragAndDropPrefab::CancelDragDrop()
 {
     if (temporaryNode_)
         temporaryNode_->Remove();
+    nodeActionBuilder_ = nullptr;
     temporaryNode_ = nullptr;
 }
 
 void SceneDragAndDropPrefab::CreateNodeFromPrefab(Scene* scene, const ResourceFileDescriptor& desc)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    auto prefabFile = cache->GetResource<XMLFile>(desc.resourceName_);
+    auto prefabFile = cache->GetResource<PrefabResource>(desc.resourceName_);
     if (!prefabFile)
         return;
 
+    const NodePrefab& nodePrefab = prefabFile->GetNodePrefab();
+
+    nodeActionBuilder_ = ea::make_unique<CreateNodeActionBuilder>(scene, nodePrefab.GetEffectiveScopeHint(context_));
     temporaryNode_ = scene->CreateChild(GetFileName(desc.localName_));
 
     auto prefabReference = temporaryNode_->CreateComponent<PrefabReference>();
     prefabReference->SetPrefab(prefabFile);
+
+    if (!nodePrefab.IsEmpty())
+        nodePrefab.GetNode().Export(temporaryNode_);
 }
 
 void SceneDragAndDropPrefab::CreateNodeFromModel(Scene* scene, const ResourceFileDescriptor& desc)
@@ -129,6 +141,7 @@ void SceneDragAndDropPrefab::CreateNodeFromModel(Scene* scene, const ResourceFil
     if (!model)
         return;
 
+    nodeActionBuilder_ = ea::make_unique<CreateNodeActionBuilder>(scene, AttributeScopeHint::Attribute);
     temporaryNode_ = scene->CreateChild(GetFileName(desc.localName_));
 
     StaticModel* staticModel = nullptr;

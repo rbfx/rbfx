@@ -261,14 +261,14 @@ void AggregatedInput::Update(float timeStep)
     const auto center = Vector2(widthQuater * 2.0f, screenSize.y_ / 2);
     {
         const auto d = aggregatedInput_.GetDirection();
-        analogPivot_->SetPosition(center - Vector2(analogPivot_->GetSize()) * 0.5f);
-        analogMarker_->SetPosition(center + Vector2(unit, unit) * d * 0.6f - Vector2(analogMarker_->GetSize()) * 0.5f);
+        analogPivot_->SetPosition(center - analogPivot_->GetSize().ToVector2() * 0.5f);
+        analogMarker_->SetPosition(center + Vector2(unit, unit) * d * 0.6f - analogMarker_->GetSize().ToVector2() * 0.5f);
     }
     {
-        downMarker_->SetPosition(center + Vector2(0, unit) - Vector2(downMarker_->GetSize()) * 0.5f);
-        upMarker_->SetPosition(center + Vector2(0, -unit) - Vector2(upMarker_->GetSize()) * 0.5f);
-        rightMarker_->SetPosition(center + Vector2(unit, 0) - Vector2(rightMarker_->GetSize()) * 0.5f);
-        leftMarker_->SetPosition(center + Vector2(-unit, 0) - Vector2(leftMarker_->GetSize()) * 0.5f);
+        downMarker_->SetPosition(center + Vector2(0, unit) - downMarker_->GetSize().ToVector2() * 0.5f);
+        upMarker_->SetPosition(center + Vector2(0, -unit) - upMarker_->GetSize().ToVector2() * 0.5f);
+        rightMarker_->SetPosition(center + Vector2(unit, 0) - rightMarker_->GetSize().ToVector2() * 0.5f);
+        leftMarker_->SetPosition(center + Vector2(-unit, 0) - leftMarker_->GetSize().ToVector2() * 0.5f);
     }
 
     downMarker_->SetVisible(dpadInput_.GetScancodeDown(SCANCODE_DOWN));

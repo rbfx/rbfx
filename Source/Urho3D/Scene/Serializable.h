@@ -60,6 +60,7 @@ public:
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
+    void SerializeInBlock(Archive& archive, bool serializeTemporary);
 
     /// Load from binary data. Return true if successful.
     virtual bool Load(Deserializer& source);
@@ -221,9 +222,9 @@ SharedPtr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFuncti
 namespace AttributeMetadata
 {
     /// Names of vector struct elements. StringVector.
-    static const StringHash P_VECTOR_STRUCT_ELEMENTS = "VectorStructElements";
+    URHO3D_GLOBAL_CONSTANT(ConstString VectorStructElements{"VectorStructElements"});
     /// Flag that indicates that attribute is an action.
-    static const StringHash P_IS_ACTION = "Action";
+    URHO3D_GLOBAL_CONSTANT(ConstString IsAction{"IsAction"});
 }
 
 // The following macros need to be used within a class member function such as ClassName::RegisterObject().
@@ -269,10 +270,10 @@ namespace AttributeMetadata
 
 /// Define an action as fake attribute with static label.
 #define URHO3D_ACTION_STATIC_LABEL(name, action, label) context->Reflect<ClassName>()->AddAttribute(Urho3D::AttributeInfo( \
-    Urho3D::VAR_BOOL, name, URHO3D_MAKE_ACTION_LABEL_ACCESSOR(self.action(), label), nullptr, false, AM_EDIT)).SetMetadata(Urho3D::AttributeMetadata::P_IS_ACTION, true)
+    Urho3D::VAR_BOOL, name, URHO3D_MAKE_ACTION_LABEL_ACCESSOR(self.action(), label), nullptr, false, AM_EDIT)).SetMetadata(Urho3D::AttributeMetadata::IsAction, true)
 /// Define an action as fake attribute with dynamic label.
 #define URHO3D_ACTION_DYNAMIC_LABEL(name, action, label) context->Reflect<ClassName>()->AddAttribute(Urho3D::AttributeInfo( \
-    Urho3D::VAR_BOOL, name, URHO3D_MAKE_ACTION_LABEL_ACCESSOR(self.action(), self.label()), nullptr, false, AM_EDIT)).SetMetadata(Urho3D::AttributeMetadata::P_IS_ACTION, true)
+    Urho3D::VAR_BOOL, name, URHO3D_MAKE_ACTION_LABEL_ACCESSOR(self.action(), self.label()), nullptr, false, AM_EDIT)).SetMetadata(Urho3D::AttributeMetadata::IsAction, true)
 
 /// Deprecated. Use URHO3D_ACCESSOR_ATTRIBUTE instead.
 #define URHO3D_MIXED_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) URHO3D_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode)

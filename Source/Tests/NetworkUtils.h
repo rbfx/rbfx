@@ -36,7 +36,7 @@ namespace Urho3D
 {
 
 class Node;
-class XMLFile;
+class PrefabResource;
 
 }
 
@@ -158,11 +158,11 @@ private:
 };
 
 /// Spawn networked object on server.
-Node* SpawnOnServer(Node* parent, StringHash objectType, XMLFile* prefab, const ea::string& name,
+Node* SpawnOnServer(Node* parent, StringHash objectType, PrefabResource* prefab, const ea::string& name,
     const Vector3& position = Vector3::ZERO, const Quaternion& rotation = Quaternion::IDENTITY);
 
 template <class T>
-Node* SpawnOnServer(Node* parent, XMLFile* prefab, const ea::string& name, const Vector3& position = Vector3::ZERO,
+Node* SpawnOnServer(Node* parent, PrefabResource* prefab, const ea::string& name, const Vector3& position = Vector3::ZERO,
     const Quaternion& rotation = Quaternion::IDENTITY)
 {
     return SpawnOnServer(parent, T::GetTypeStatic(), prefab, name, position, rotation);

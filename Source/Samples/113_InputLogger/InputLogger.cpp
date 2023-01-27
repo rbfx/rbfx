@@ -53,6 +53,24 @@ void InputLogger::Unload()
 {
 }
 
+InputLogger::ViewportData InputLogger::CreateViewport(const Color& color, const IntRect& rect) const
+{
+    auto scene = MakeShared<Scene>(context_);
+    scene->CreateComponent<Octree>();
+
+    // Create zone
+    Node* zoneNode = scene->CreateChild("Zone");
+    auto zone = zoneNode->CreateComponent<Zone>();
+    zone->SetFogColor(color);
+
+    // Create camera
+    Node* cameraNode = scene->CreateChild("Camera");
+    auto camera = cameraNode->CreateComponent<Camera>();
+
+    auto viewport = MakeShared<Viewport>(context_, scene, camera, rect);
+    return {viewport, scene, camera};
+}
+
 void InputLogger::Start(bool isMain)
 {
     if (!isMain)
@@ -63,18 +81,9 @@ void InputLogger::Start(bool isMain)
     auto renderer = GetSubsystem<Renderer>();
     auto ui = GetSubsystem<UI>();
 
-    // Create scene
-    scene_ = MakeShared<Scene>(context_);
-    scene_->CreateComponent<Octree>();
-
-    // Create zone
-    Node* zoneNode = scene_->CreateChild("Zone");
-    auto zone = zoneNode->CreateComponent<Zone>();
-    zone->SetFogColor(0x0047ab_rgb);
-
-    // Create camera
-    Node* cameraNode = scene_->CreateChild("Camera");
-    auto camera = cameraNode->CreateComponent<Camera>();
+    // Create viewports
+    viewports_[0] = CreateViewport(0x0047ab_rgb, IntRect::ZERO);
+    viewports_[1] = CreateViewport(0x001167_rgb, IntRect{350, 50, 450, 100});
 
     // Create UI
     auto uiRoot = ui->GetRoot();
@@ -86,9 +95,9 @@ void InputLogger::Start(bool isMain)
     text_->SetVerticalAlignment(VA_TOP);
 
     // Setup engine state
-    viewport_ = MakeShared<Viewport>(context_, scene_, camera);
-    renderer->SetNumViewports(1);
-    renderer->SetViewport(0, viewport_);
+    renderer->SetNumViewports(2);
+    renderer->SetViewport(0, viewports_[0].viewport_);
+    renderer->SetViewport(1, viewports_[1].viewport_);
     input->SetMouseVisible(true);
     input->SetMouseMode(MM_FREE);
     //input->SetMouseMode(MM_WRAP);
@@ -246,6 +255,13 @@ void InputLogger::UpdateText()
     text += Format("Mouse Position: {} {} / {} {}\n",
         mousePosition.x_, mousePosition.y_, backbufferSize.x_, backbufferSize.y_);
 
+    for (int index : {0, 1})
+    {
+        const Vector2 position = viewports_[index].camera_->GetMousePosition();
+        const bool isInside = Rect::POSITIVE.IsInside(position) != OUTSIDE;
+        text += Format("- relative to Viewport #{}: ({}) {}\n", index, isInside ? "in" : "out", position.ToString());
+    }
+
     text += "\n";
 
     for (const LoggedEvent& event : eventLog_)
@@ -279,8 +295,7 @@ void InputLogger::Stop()
     auto renderer = GetSubsystem<Renderer>();
     renderer->SetNumViewports(0);
 
-    viewport_ = nullptr;
-    scene_ = nullptr;
+    viewports_ = {};
 }
 
 }

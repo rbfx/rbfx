@@ -171,6 +171,14 @@ const AttributeInfo* ObjectReflection::GetAttribute(StringHash nameHash) const
     return index < attributeNames_.size() ? &attributes_[index] : nullptr;
 }
 
+AttributeScopeHint ObjectReflection::GetEffectiveScopeHint() const
+{
+    AttributeScopeHint result = scopeHint_;
+    for (const AttributeInfo& attr : attributes_)
+        result = ea::max(result, attr.scopeHint_);
+    return result;
+}
+
 ObjectReflectionRegistry::ObjectReflectionRegistry(Context* context)
     : context_(context)
 {
