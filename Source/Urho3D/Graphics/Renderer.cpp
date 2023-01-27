@@ -2195,7 +2195,7 @@ void Renderer::UpdateMousePositionsForMainViewports()
         if (!viewport || !viewport->GetCamera())
             continue;
 
-        const IntRect rect = viewport->GetEffectiveRect(nullptr);
+        const IntRect rect = viewport->GetEffectiveRect(backbufferSurface_, false);
         const IntVector2 mousePosition = ui->GetSystemCursorPosition();
 
         const auto rectPos = rect.Min().ToVector2();
