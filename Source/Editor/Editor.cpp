@@ -196,6 +196,7 @@ void Editor::Setup()
     engineParameters_[EP_APPLICATION_NAME] = GetWindowTitle();
     engineParameters_[EP_HEADLESS] = false;
     engineParameters_[EP_FULL_SCREEN] = false;
+    engineParameters_[EP_BORDERLESS] = false;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
