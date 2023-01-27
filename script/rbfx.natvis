@@ -110,7 +110,7 @@
     <DisplayString Condition="type_==Urho3D::VAR_RESOURCEREF">(resref) {value_.resourceRef_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_RESOURCEREFLIST">(resref) {value_.resourceRefList_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_VARIANTVECTOR">(vector) {value_.variantVector_}</DisplayString>
-    <DisplayString Condition="type_==Urho3D::VAR_VARIANTMAP">(map) {value_.variantMap_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_VARIANTMAP">(hashmap) {value_.variantMap_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_INTRECT">(irect) {value_.intRect_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_INTVECTOR2">(ivec2) {value_.intVector2_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_PTR">(pointer) {value_.weakPtr_}</DisplayString>
@@ -122,8 +122,9 @@
     <DisplayString Condition="type_==Urho3D::VAR_RECT">(rect) {value_.rect_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_INTVECTOR3">(ivec3) {value_.intVector3_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_INT64">(int64) {value_.int64_}</DisplayString>
-    <!-- Add new types here -->
     <DisplayString Condition="type_==Urho3D::VAR_CUSTOM">(custom) {(*(Urho3D::CustomVariantValue*)value_.storage_)}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_VARIANTCURVE">(curve) {value_.variantCurve_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_STRINGVARIANTMAP">(stringmap) {value_.stringVariantMap_}</DisplayString>
     <Expand>
       <Item Name="[value]" Condition="type_==Urho3D::VAR_INT">value_.int_</Item>
       <Item Name="[value]" Condition="type_==Urho3D::VAR_BOOL">value_.bool_</Item>
@@ -151,8 +152,9 @@
       <ExpandedItem Condition="type_==Urho3D::VAR_RECT">value_.rect_</ExpandedItem>
       <ExpandedItem Condition="type_==Urho3D::VAR_INTVECTOR3">value_.intVector3_</ExpandedItem>
       <Item Name="[value]" Condition="type_==Urho3D::VAR_INT64">value_.int64_</Item>
-      <!-- Add new types here -->
       <ExpandedItem Condition="type_==Urho3D::VAR_CUSTOM">(*(Urho3D::CustomVariantValue*)value_.storage_)</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_VARIANTCURVE">*value_.variantCurve_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_STRINGVARIANTMAP">*value_.stringVariantMap_</ExpandedItem>
     </Expand>
   </Type>
 
@@ -165,13 +167,24 @@
   </Type>
 
   <!-- Urho3D::SharedPtr<> -->
-  <Type Name = "Urho3D::SharedPtr&lt;*&gt;">
+  <Type Name = "Urho3D::SharedPtr&lt;*,*&gt;">
     <DisplayString>{ptr_}</DisplayString>
     <Expand>
       <Synthetic Condition="!ptr_" Name="[empty]"/>
-      <Item Condition="ptr_" Name="[strong]">ptr_->refCount_->refs_</Item>
-      <Item Condition="ptr_" Name="[weak]">ptr_->refCount_->weakRefs_</Item>
+      <Item Condition="ptr_" Name="[strong]">refCounted_->refCount_->refs_</Item>
+      <Item Condition="ptr_" Name="[weak]">refCounted_->refCount_->weakRefs_</Item>
       <Item Condition="ptr_" Name="[ptr]">ptr_</Item>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::SharedPtr<> -->
+  <Type Name = "Urho3D::SharedPtr&lt;*,*&gt;">
+    <DisplayString>{refCounted_}</DisplayString>
+    <Expand>
+      <Synthetic Condition="!refCounted_" Name="[empty]"/>
+      <Item Condition="refCounted_" Name="[strong]">refCounted_->refCount_->refs_</Item>
+      <Item Condition="refCounted_" Name="[weak]">refCounted_->refCount_->weakRefs_</Item>
+      <Item Condition="refCounted_" Name="[ptr]">refCounted_</Item>
     </Expand>
   </Type>
 
