@@ -615,6 +615,8 @@ using SubscriptionFlags = Urho3D::DirectionalPadAdapterDetail::SubscriptionMask;
 %csattribute(Urho3D::MultitouchAdapter, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
 %csattribute(Urho3D::FreeFlyController, %arg(float), Speed, GetSpeed, SetSpeed);
 %csattribute(Urho3D::FreeFlyController, %arg(float), AcceleratedSpeed, GetAcceleratedSpeed, SetAcceleratedSpeed);
+%csattribute(Urho3D::FreeFlyController, %arg(float), MinPitch, GetMinPitch, SetMinPitch);
+%csattribute(Urho3D::FreeFlyController, %arg(float), MaxPitch, GetMaxPitch, SetMaxPitch);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
