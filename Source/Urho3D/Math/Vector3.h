@@ -565,7 +565,6 @@ inline IntVector3 VectorAbs(const IntVector3& vec) { return IntVector3(Abs(vec.x
 /// Return a random value from [0, 1) from 3-vector seed.
 inline float StableRandom(const Vector3& seed) { return StableRandom(Vector2(StableRandom(Vector2(seed.x_, seed.y_)), seed.z_)); }
 
-
 /// Return IntVector3 vector.
 inline IntVector3 IntVector2::ToIntVector3(int z) const { return { x_, y_, z }; }
 

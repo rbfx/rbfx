@@ -153,7 +153,7 @@ public:
     {
         if (triggered_)
             return;
-        triggered_ = true; 
+        triggered_ = true;
         value = value.GetVector3() + positionDelta_;
     }
 };
@@ -176,7 +176,7 @@ public:
         if (triggered_)
             return;
         triggered_ = true;
-        const auto res = Vector3(value.GetIntVector3()) + positionDelta_;
+        const auto res = value.GetIntVector3().ToVector3() + positionDelta_;
         value = res.ToIntVector3();
     }
 };
