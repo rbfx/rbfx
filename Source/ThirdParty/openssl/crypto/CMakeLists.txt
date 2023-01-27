@@ -71,5 +71,6 @@ target_include_directories(crypto
            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/>)
 
 if (WIN32)
-    target_compile_definitions(crypto PRIVATE -DWIN32_LEAN_AND_MEAN=1)
+    target_compile_definitions(crypto PRIVATE -DWIN32_LEAN_AND_MEAN=1 -D_WINSOCK_DEPRECATED_NO_WARNINGS=1)
 endif ()
+target_compile_definitions(crypto PRIVATE -DOPENSSL_NO_ASYNC=1 -DOPENSSL_SYS_WIN_CORE=1)

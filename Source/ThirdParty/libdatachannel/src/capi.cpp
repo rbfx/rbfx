@@ -753,7 +753,7 @@ int rtcSendMessage(int id, const char *data, int size) {
 			throw std::invalid_argument("Unexpected null pointer for data");
 
 		if (size >= 0) {
-			auto b = reinterpret_cast<const byte *>(data);
+			auto b = reinterpret_cast<const std::byte *>(data);
 			channel->send(binary(b, b + size));
 		} else {
 			channel->send(string(data));
