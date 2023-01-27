@@ -38,14 +38,9 @@ concurrency:
 jobs:
   CheckSkipCI:
     runs-on: ubuntu-20.04
-    # Skip CI if either is true:
-    # - commit message or pull request title contains '[skip ci]' or '[skip-ci]'
+    # Skip CI if:
     # - pull request is from rbfx/rbfx repository branch
     if: |
-      !contains(github.event.head_commit.message, '[skip ci]') &&
-      !contains(github.event.pull_request.title, '[skip ci]') &&
-      !contains(github.event.head_commit.message, '[skip-ci]') &&
-      !contains(github.event.pull_request.title, '[skip-ci]') &&
       !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx')
     steps:
       - run: exit 0
