@@ -98,13 +98,13 @@ jobs:
                     }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
@@ -112,7 +112,7 @@ jobs:
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
@@ -120,7 +120,7 @@ jobs:
       - name: Setup cmake
         # FIXME: CMake installed by this action fails with MinGW because it can find 'C:/Program Files/Git/usr/bin/sh.exe' on PATH.
         if: matrix.ci_compiler != 'mingw'
-        uses: jwlawson/actions-setup-cmake@v1.8
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -150,7 +150,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
@@ -195,13 +195,13 @@ jobs:
                     }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
@@ -209,13 +209,13 @@ jobs:
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.8
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -235,7 +235,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
@@ -280,13 +280,13 @@ jobs:
                     }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
@@ -294,13 +294,13 @@ jobs:
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.8
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -324,7 +324,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
@@ -368,13 +368,13 @@ jobs:
                     }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
@@ -386,13 +386,13 @@ jobs:
         run: brew install bash
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.8
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -412,7 +412,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
@@ -445,13 +445,13 @@ jobs:
                     }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_build_type }}-${{ github.sha }}
@@ -459,13 +459,13 @@ jobs:
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_build_type }}
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.8
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -481,7 +481,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build-android
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ github.sha }}'
@@ -517,13 +517,13 @@ jobs:
                     }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
@@ -531,13 +531,13 @@ jobs:
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.8
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -557,7 +557,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ github.sha }}'
@@ -596,17 +596,17 @@ jobs:
                     }}
 
     steps:
-      - uses: mymindstorm/setup-emsdk@v11
+      - uses: mymindstorm/setup-emsdk@v12
         with:
           version: ${{ matrix.ci_emsdk_version }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
@@ -614,7 +614,7 @@ jobs:
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.8
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -634,7 +634,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ github.sha }}'
@@ -652,16 +652,16 @@ jobs:
       - Web
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: source-code
           fetch-depth: 1
 
       - name: Get short SHA
         id: vars
-        run: echo "::set-output name=sha_short::$(echo ${GITHUB_SHA} | cut -c1-7)"
+        run: echo "sha_short=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           path: source-code/packaging/nuget/
 
