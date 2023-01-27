@@ -4,6 +4,7 @@
 %csattribute(Urho3D::FileSystemReflection, %arg(Urho3D::FileSystemEntry), Root, GetRoot);
 %csattribute(Urho3D::GLTFImporter, %arg(Urho3D::GLTFImporter::ResourceToFileNameMap), SavedResources, GetSavedResources);
 %csattribute(Urho3D::PackedNodeData, %arg(unsigned int), Id, GetId);
+%csattribute(Urho3D::PackedNodeData, %arg(Urho3D::AttributeScopeHint), EffectiveScopeHint, GetEffectiveScopeHint);
 %csattribute(Urho3D::PackedComponentData, %arg(unsigned int), Id, GetId);
 %csattribute(Urho3D::PackedNodeComponentData, %arg(ea::vector<PackedNodeData>), Nodes, GetNodes);
 %csattribute(Urho3D::PackedNodeComponentData, %arg(ea::vector<PackedComponentData>), Components, GetComponents);
