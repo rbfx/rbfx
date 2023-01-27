@@ -63,9 +63,6 @@ using CachedSubsystemList = ea::tuple<
 #endif
     , class PluginManager
     , class StateManager
-#if URHO3D_ACTIONS
-    , class ActionManager
-#endif
 >;
 
 class Object;

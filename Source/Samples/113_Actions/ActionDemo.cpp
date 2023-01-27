@@ -144,7 +144,7 @@ void ActionDemo::HandleMouseClick(StringHash eventType, VariantMap& eventData)
     {
         if (element.element_ == clicked)
         {
-            ActionManager* am = context_->GetSubsystem<ActionManager>();
+            ActionManager* am = GetActionManager();
             am->AddAction(element.action_, clicked);
         }
     }

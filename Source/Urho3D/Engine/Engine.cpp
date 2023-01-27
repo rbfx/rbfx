@@ -273,10 +273,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     context_->RegisterSubsystem(new ParticleGraphSystem(context_));
 #endif
 
-#ifdef URHO3D_ACTIONS
-    context_->RegisterSubsystem(new ActionManager(context_, true));
-#endif
-
 #ifdef URHO3D_URHO2D
     // 2D graphics library is dependent on 3D graphics library
     RegisterUrho2DLibrary(context_);
