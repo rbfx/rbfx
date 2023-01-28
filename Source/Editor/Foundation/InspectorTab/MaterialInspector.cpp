@@ -77,6 +77,10 @@ void MaterialInspector::InspectResources()
             materials.emplace_back(material);
     }
 
+    resourceNames_.clear();
+    for (Material* material : materials)
+        resourceNames_.emplace_back(material->GetName());
+
     if (materials.empty())
     {
         widget_ = nullptr;

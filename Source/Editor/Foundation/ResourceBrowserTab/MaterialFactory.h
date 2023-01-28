@@ -39,7 +39,7 @@ public:
 
     /// Implement BaseResourceFactory.
     /// @{
-    ea::string GetDefaultFileName() const override { return "Material.xml"; }
+    ea::string GetDefaultFileName() const override { return "Material.material"; }
     void RenderAuxilary() override;
     void CommitAndClose() override;
     /// @}
