@@ -107,6 +107,8 @@ using AttributeModeFlags = Urho3D::AttributeMode;
 %csattribute(Urho3D::ObjectReflection, %arg(Urho3D::StringHash), TypeNameHash, GetTypeNameHash);
 %csattribute(Urho3D::ObjectReflection, %arg(ea::vector<AttributeInfo>), Attributes, GetAttributes);
 %csattribute(Urho3D::ObjectReflection, %arg(unsigned int), NumAttributes, GetNumAttributes);
+%csattribute(Urho3D::ObjectReflection, %arg(Urho3D::AttributeScopeHint), ScopeHint, GetScopeHint, SetScopeHint);
+%csattribute(Urho3D::ObjectReflection, %arg(Urho3D::AttributeScopeHint), EffectiveScopeHint, GetEffectiveScopeHint);
 %csattribute(Urho3D::Context, %arg(Urho3D::VariantMap), EventDataMap, GetEventDataMap);
 %csattribute(Urho3D::Context, %arg(Urho3D::VariantMap), GlobalVars, GetGlobalVars);
 %csattribute(Urho3D::Context, %arg(Urho3D::SubsystemCache), Subsystems, GetSubsystems);

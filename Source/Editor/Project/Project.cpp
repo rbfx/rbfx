@@ -577,7 +577,7 @@ void Project::InitializeDefaultProject()
     launchManager_->AddConfiguration(LaunchConfiguration{configName, SceneViewerApplication::GetStaticPluginName()});
     currentLaunchConfiguration_ = configName;
 
-    const ea::string defaultSceneName = "Scenes/DefaultScene.xml";
+    const ea::string defaultSceneName = "Scenes/Default.scene";
     DefaultSceneParameters params;
     params.highQuality_ = true;
     params.createObjects_ = true;

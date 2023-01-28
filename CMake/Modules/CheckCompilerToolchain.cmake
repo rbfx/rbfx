@@ -210,7 +210,7 @@ else ()
     check_native_define (__MIPSEL__ MIPS)
     check_native_define ("__(ppc|PPC|powerpc|POWERPC)(64)*__" POWERPC)
     # For now we only support Emscripten compiler toolchain when targeting Web platform
-    check_native_define (__EMSCRIPTEN__ WEB)
+    check_native_define (__EMSCRIPTEN__ EMSCRIPTEN)
     # Compiler should emit __x86_64__, __i686__, or __i386__, etc when targeting archs using Intel or AMD processors
     check_native_define ("__(i.86|x86_64)__" X86)
     # MCST lcc compiler only emits __e2k__ when targeting arch using MCST Elbrus 2000 processor

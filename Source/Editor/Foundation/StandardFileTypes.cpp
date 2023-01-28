@@ -60,13 +60,13 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (ctx.HasXMLRoot("scene"))
+        if (desc.HasExtension({".scene"}) || ctx.HasXMLRoot("scene"))
             desc.AddObjectType<Scene>();
     });
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (ctx.HasXMLRoot("material"))
+        if (desc.HasExtension({".material"}) || ctx.HasXMLRoot("material"))
             desc.AddObjectType<Material>();
     });
 

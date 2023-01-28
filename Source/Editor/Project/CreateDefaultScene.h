@@ -34,6 +34,7 @@ struct DefaultSceneParameters
 {
     bool highQuality_{};
     bool createObjects_{};
+    bool isPrefab_{};
 };
 
 /// Create default scene.

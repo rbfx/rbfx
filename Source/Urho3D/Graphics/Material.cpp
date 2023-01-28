@@ -197,25 +197,16 @@ bool Material::BeginLoad(Deserializer& source)
     if (!graphics)
         return true;
 
-    ea::string extension = GetExtension(source.GetName());
+    const InternalResourceFormat format = PeekResourceFormat(source);
 
-    bool success = false;
-    if (extension == ".xml")
+    if (format == InternalResourceFormat::Xml)
     {
-        success = BeginLoadXML(source);
-        if (!success)
-            success = BeginLoadJSON(source);
-
-        if (success)
+        if (BeginLoadXML(source))
             return true;
     }
-    else // Load JSON file
+    else if (format == InternalResourceFormat::Json)
     {
-        success = BeginLoadJSON(source);
-        if (!success)
-            success = BeginLoadXML(source);
-
-        if (success)
+        if (BeginLoadJSON(source))
             return true;
     }
 

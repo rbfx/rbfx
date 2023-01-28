@@ -56,8 +56,6 @@
 %ignore Urho3D::EP_PLUGINS;
 %constant const char* EpRefreshRate = "RefreshRate";
 %ignore Urho3D::EP_REFRESH_RATE;
-%constant const char* EpRenderPath = "RenderPath";
-%ignore Urho3D::EP_RENDER_PATH;
 %constant const char* EpResourcePackages = "ResourcePackages";
 %ignore Urho3D::EP_RESOURCE_PACKAGES;
 %constant const char* EpResourcePaths = "ResourcePaths";

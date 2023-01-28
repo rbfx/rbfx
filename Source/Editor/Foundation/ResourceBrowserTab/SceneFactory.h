@@ -35,16 +35,17 @@ class SceneFactory : public BaseResourceFactory
     URHO3D_OBJECT(SceneFactory, BaseResourceFactory);
 
 public:
-    explicit SceneFactory(Context* context);
+    SceneFactory(Context* context, bool isPrefab);
 
     /// Implement BaseResourceFactory.
     /// @{
-    ea::string GetDefaultFileName() const override { return "Scene.xml"; }
+    ea::string GetDefaultFileName() const override { return isPrefab_ ? "Prefab.prefab" : "Scene.scene"; }
     void RenderAuxilary() override;
     void CommitAndClose() override;
     /// @}
 
 private:
+    const bool isPrefab_{};
     bool highQuality_{true};
     bool defaultObjects_{true};
 };

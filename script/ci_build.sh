@@ -47,7 +47,7 @@ declare -A android_types=(
 
 generators_windows_mingw=('-G' 'MinGW Makefiles')
 generators_windows=('-G' 'Visual Studio 17 2022')
-generators_uwp=('-G' 'Visual Studio 17 2022' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0')
+generators_uwp=('-G' 'Visual Studio 17 2022' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' '-DURHO3D_PACKAGING=ON')
 generators_linux=('-G' 'Ninja')
 generators_web=('-G' 'Ninja')
 generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
@@ -59,7 +59,7 @@ toolchains_ios=(
     '-DDEPLOYMENT_TARGET=11'
 )
 toolchains_web=(
-    '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake'
+    "-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
     "-DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/"
     '-DURHO3D_PROFILING=OFF'
 )

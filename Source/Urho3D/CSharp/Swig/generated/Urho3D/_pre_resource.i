@@ -1,3 +1,7 @@
+%constant unsigned int BinaryMagicSize = Urho3D::BinaryMagicSize;
+%ignore Urho3D::BinaryMagicSize;
+%constant Urho3D::BinaryMagic DefaultBinaryMagic = Urho3D::DefaultBinaryMagic;
+%ignore Urho3D::DefaultBinaryMagic;
 %ignore Urho3D::COLOR_LUT_SIZE;
 %csconst(1) Urho3D::COLOR_LUT_SIZE;
 %constant int ColorLutSize = 16;
