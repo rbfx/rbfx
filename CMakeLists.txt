@@ -216,7 +216,7 @@ endif ()
 # Configure for web
 if (WEB)
     # Emscripten-specific setup
-    if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 1.31.3)
+    if (EMSCRIPTEN_VERSION VERSION_LESS 3.1.24)
         message(FATAL_ERROR "Unsupported compiler version")
     endif ()
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-warn-absolute-paths -Wno-unknown-warning-option -Wno-deprecated-builtins")
