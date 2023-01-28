@@ -199,6 +199,10 @@ Engine::Engine(Context* context) :
     RegisterNavigationLibrary(context_);
 #endif
 
+#ifdef URHO3D_ACTIONS
+    context_->RegisterSubsystem<ActionManager>();
+#endif
+
     SceneViewerApplication::RegisterObject();
     context_->AddFactoryReflection<AssetPipeline>();
     context_->AddFactoryReflection<AssetTransformer>();
