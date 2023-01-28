@@ -24,6 +24,7 @@
 #include <rtc/peerconnection.hpp>
 #include <rtc/description.hpp>
 #include <rtc/candidate.hpp>
+#include <Urho3D/Core/Context.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
 #include <Urho3D/Network/AbstractConnection.h>
@@ -34,6 +35,11 @@ namespace Urho3D
 DataChannelConnection::DataChannelConnection(Context* context)
     : NetworkConnection(context)
 {
+}
+
+void DataChannelConnection::RegisterObject(Context* context)
+{
+    context->AddAbstractReflection<DataChannelConnection>(Category_Network);
 }
 
 bool DataChannelConnection::Connect(const URL& url)

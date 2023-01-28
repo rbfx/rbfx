@@ -23,10 +23,10 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Core/Object.h"
-#include "../Core/Timer.h"
-#include "../SystemUI/SystemUI.h"
+#include <Urho3D/Container/FlagSet.h>
+#include <Urho3D/Core/Object.h>
+#include <Urho3D/Core/Timer.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 
 #include <EASTL/map.h>
 

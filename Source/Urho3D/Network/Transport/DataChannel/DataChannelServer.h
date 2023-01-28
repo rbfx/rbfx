@@ -47,6 +47,7 @@ class URHO3D_API DataChannelServer : public NetworkServer
     URHO3D_OBJECT(DataChannelServer, NetworkServer);
 public:
     explicit DataChannelServer(Context* context);
+    static void RegisterObject(Context* context);
     /// Supports "ws" and "wss" schemes. "wss" scheme requires calling %SetTLSCertificate before calling %Listen.
     bool Listen(const URL& url) override;
     void Stop() override;

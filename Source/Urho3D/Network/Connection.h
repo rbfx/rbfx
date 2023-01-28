@@ -90,20 +90,6 @@ struct PackageUpload
     unsigned totalFragments_;
 };
 
-/// Tracks number of sent and received packets.
-struct PacketCounter
-{
-    int incoming_ = 0;
-    int outgoing_ = 0;
-
-    /// Set packet counts to 0.
-    void Reset()
-    {
-        incoming_ = 0;
-        outgoing_ = 0;
-    }
-};
-
 class Connection;
 
 /// %Connection to a remote network host.
@@ -201,10 +187,6 @@ public:
     /// @property
     unsigned short GetPort() const;
 
-    /// Return the connection's round trip time in milliseconds.
-    /// @property
-    float GetRoundTripTime() const;
-
     /// Return bytes received per second.
     /// @property
     unsigned long long GetBytesInPerSec() const;
@@ -275,12 +257,11 @@ private:
 
     /// Packet handling.
     /// @{
-    /// Temporary variable to hold packet count in the next second.
-    PacketCounter tempPacketCounter_;
     /// Packet count in the last second.
-    PacketCounter packetCounter_;
-    /// Packet count timer which resets every 1s.
-    Timer packetCounterTimer_;
+    mutable TimedCounter packetCounterIncoming_{10, 1000};
+    mutable TimedCounter packetCounterOutgoing_{10, 1000};
+    mutable TimedCounter bytesCounterIncoming_{10, 1000};
+    mutable TimedCounter bytesCounterOutgoing_{10, 1000};
     /// Statistics timer.
     Timer statsTimer_;
     /// Outgoing packet buffer which can contain multiple messages.

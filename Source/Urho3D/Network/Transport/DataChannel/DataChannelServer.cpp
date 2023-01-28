@@ -24,8 +24,9 @@
 #include <rtc/websocketserver.hpp>
 #endif
 
-#include "DataChannelServer.h"
-#include "DataChannelConnection.h"
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
+#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
 
 namespace Urho3D
 {
@@ -33,6 +34,11 @@ namespace Urho3D
 DataChannelServer::DataChannelServer(Context* context)
     : NetworkServer(context)
 {
+}
+
+void DataChannelServer::RegisterObject(Context* context)
+{
+    context->AddAbstractReflection<DataChannelServer>(Category_Network);
 }
 
 bool DataChannelServer::Listen(const URL& url)

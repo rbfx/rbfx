@@ -415,7 +415,6 @@ bool Network::CheckRemoteEvent(StringHash eventType) const
 ea::string Network::GetDebugInfo() const
 {
     ea::string result;
-    /*
     ea::hash_set<ReplicationManager*> replicationManagers;
 
     const unsigned localTime = Time::GetSystemTime();
@@ -453,7 +452,6 @@ ea::string Network::GetDebugInfo() const
 
     for (ReplicationManager* replicationManager : replicationManagers)
         result += replicationManager->GetDebugInfo();
-    */
 
     return result;
 }
@@ -566,8 +564,8 @@ void RegisterNetworkLibrary(Context* context)
 #endif
 
     Connection::RegisterObject(context);
-    //DataChannelConnection::RegisterObject(context);
-    //DataChannelServer::RegisterObject(context);
+    DataChannelConnection::RegisterObject(context);
+    DataChannelServer::RegisterObject(context);
 }
 
 }

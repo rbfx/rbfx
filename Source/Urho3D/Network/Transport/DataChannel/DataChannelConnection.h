@@ -47,6 +47,7 @@ class URHO3D_API DataChannelConnection : public NetworkConnection
     URHO3D_OBJECT(DataChannelConnection, NetworkConnection);
 public:
     explicit DataChannelConnection(Context* context);
+    static void RegisterObject(Context* context);
     /// Address may be a full URL and port may be set to 0. Otherwise, port is appended to address.
     bool Connect(const URL& url) override;
     void Disconnect() override;

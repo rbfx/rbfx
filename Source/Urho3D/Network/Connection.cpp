@@ -202,7 +202,7 @@ void Connection::SendRemoteEvents()
     {
         statsTimer_.Reset();
         char statsBuffer[256];
-        sprintf(statsBuffer, "RTT %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s", GetRoundTripTime(),
+        sprintf(statsBuffer, "PING %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s", GetPing() / 1000.0f,
             GetPacketsInPerSec(),
             GetPacketsOutPerSec(),
             (float)GetBytesInPerSec(),
@@ -210,13 +210,6 @@ void Connection::SendRemoteEvents()
         URHO3D_LOGINFO(statsBuffer);
     }
 #endif
-
-    if (packetCounterTimer_.GetMSec(false) > 1000)
-    {
-        packetCounterTimer_.Reset();
-        packetCounter_ = tempPacketCounter_;
-        tempPacketCounter_.Reset();
-    }
 
     if (remoteEvents_.empty())
         return;
@@ -270,7 +263,11 @@ void Connection::SendBuffer(PacketTypeFlags type, VectorBuffer& buffer)
         return;
 
     if (transportConnection_)
+    {
+        packetCounterOutgoing_.AddSample(1);
+        bytesCounterOutgoing_.AddSample(buffer.GetSize());
         transportConnection_->SendMessage({(const char*)buffer.GetData(), buffer.GetSize()}, type);
+    }
     buffer.Clear();
 }
 
@@ -305,7 +302,8 @@ void Connection::SendAllBuffers()
 bool Connection::ProcessMessage(MemoryBuffer& buffer)
 {
     int msgID;
-    tempPacketCounter_.incoming_++;
+    packetCounterIncoming_.AddSample(1);
+    bytesCounterIncoming_.AddSample(buffer.GetSize());
 
     if (buffer.GetSize() < sizeof(msgID))
     {
@@ -672,47 +670,24 @@ bool Connection::IsConnected() const
     return transportConnection_->GetState() == NetworkConnection::State::Connected;
 }
 
-float Connection::GetRoundTripTime() const
-{
-    //if (peer_)
-    {
-        //SLNet::RakNetStatistics stats{};
-        //if (peer_->GetStatistics(address_->systemAddress, &stats))
-        //    return (float)peer_->GetAveragePing(*address_);
-    }
-    return 0.0f;
-}
-
 unsigned long long Connection::GetBytesInPerSec() const
 {
-    //if (peer_)
-    {
-        //SLNet::RakNetStatistics stats{};
-        //if (peer_->GetStatistics(address_->systemAddress, &stats))
-        //    return stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_RECEIVED];
-    }
-    return 0;
+    return static_cast<int>(bytesCounterIncoming_.GetLast());
 }
 
 unsigned long long Connection::GetBytesOutPerSec() const
 {
-    //if (peer_)
-    {
-        //SLNet::RakNetStatistics stats{};
-        //if (peer_->GetStatistics(address_->systemAddress, &stats))
-        //    return stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_SENT];
-    }
-    return 0;
+    return static_cast<int>(bytesCounterOutgoing_.GetLast());
 }
 
 int Connection::GetPacketsInPerSec() const
 {
-    return packetCounter_.incoming_;
+    return static_cast<int>(packetCounterIncoming_.GetLast());
 }
 
 int Connection::GetPacketsOutPerSec() const
 {
-    return packetCounter_.outgoing_;
+    return static_cast<int>(packetCounterOutgoing_.GetLast());
 }
 
 ea::string Connection::ToString() const
