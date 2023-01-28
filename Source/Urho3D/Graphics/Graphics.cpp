@@ -531,6 +531,10 @@ void Graphics::AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams&
     if (params.monitor_ >= numMonitors || params.monitor_ < 0)
         params.monitor_ = 0; // this monitor is not present, use first monitor
 
+    // Borderless windows make no sense unless they are full-screen.
+    if (!params.fullscreen_)
+        params.borderless_ = false;
+
     // Fullscreen or Borderless can not be resizable and cannot be maximized
     if (params.fullscreen_ || params.borderless_)
     {
