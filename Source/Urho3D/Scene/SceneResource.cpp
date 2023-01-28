@@ -241,12 +241,12 @@ bool SceneResource::EndLoad()
 
 bool SceneResource::Save(Serializer& dest) const
 {
-    return Save(dest, loadFormat_.value_or(InternalResourceFormat::Json), isPrefab_);
+    return Save(dest, loadFormat_.value_or(InternalResourceFormat::Xml), isPrefab_);
 }
 
 bool SceneResource::SaveFile(const ea::string& fileName) const
 {
-    return SaveFile(fileName, loadFormat_.value_or(InternalResourceFormat::Json), isPrefab_);
+    return SaveFile(fileName, loadFormat_.value_or(InternalResourceFormat::Xml), isPrefab_);
 }
 
 } // namespace Urho3D
