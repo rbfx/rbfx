@@ -41,7 +41,7 @@ endif ()
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules)
 
-if (WEB AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
+if (EMSCRIPTEN AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     # Workaround for following error:
     #   The install of the Samples target requires changing an RPATH from the build
     #   tree, but this is not supported with the Ninja generator unless on an
