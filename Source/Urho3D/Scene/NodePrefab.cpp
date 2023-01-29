@@ -26,6 +26,7 @@
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Scene/NodePrefab.h>
+#include <Urho3D/Scene/Scene.h>
 
 namespace Urho3D
 {
@@ -369,6 +370,13 @@ AttributeScopeHint NodePrefab::GetEffectiveScopeHint(Context* context) const
     return result;
 }
 
+void NodePrefab::NormalizeIds(Context* context)
+{
+    PrefabNormalizer normalizer{context};
+    normalizer.ScanNode(*this);
+    normalizer.RemapAndPrune(*this);
+}
+
 void NodePrefab::Clear()
 {
     node_ = {};
@@ -390,6 +398,154 @@ void SerializeValue(Archive& archive, const char* name, NodePrefab& value, Prefa
 {
     ArchiveBlock block = archive.OpenUnorderedBlock(name);
     value.SerializeInBlock(archive, flags, compactSave);
+}
+
+PrefabNormalizer::PrefabNormalizer(Context* context)
+    : context_(context)
+{
+}
+
+void PrefabNormalizer::ScanNode(NodePrefab& node)
+{
+    ScanSerializable(node.GetMutableNode());
+
+    for (SerializablePrefab& component : node.GetMutableComponents())
+        ScanSerializable(component);
+
+    for (NodePrefab& child : node.GetMutableChildren())
+        ScanNode(child);
+}
+
+void PrefabNormalizer::ScanSerializable(SerializablePrefab& prefab)
+{
+    const StringHash typeHash = prefab.GetTypeNameHash();
+    if (typeHash == StringHash::Empty)
+    {
+        // Node or Scene, try both
+        const ObjectReflection* nodeReflection = context_->GetReflection(Node::GetTypeStatic());
+        const ObjectReflection* sceneReflection = context_->GetReflection(Scene::GetTypeStatic());
+
+        for (AttributePrefab& attributePrefab : prefab.GetMutableAttributes())
+        {
+            if (const AttributeInfo* attr = nodeReflection->GetAttribute(attributePrefab.GetNameHash()))
+                ScanAttribute(attributePrefab, *attr);
+            else if (const AttributeInfo* attr = sceneReflection->GetAttribute(attributePrefab.GetNameHash()))
+                ScanAttribute(attributePrefab, *attr);
+        }
+    }
+    else
+    {
+        const ObjectReflection* reflection = context_->GetReflection(typeHash);
+        if (!reflection)
+            return;
+
+        for (AttributePrefab& attributePrefab : prefab.GetMutableAttributes())
+        {
+            if (const AttributeInfo* attr = reflection->GetAttribute(attributePrefab.GetNameHash()))
+                ScanAttribute(attributePrefab, *attr);
+        }
+    }
+}
+
+void PrefabNormalizer::ScanAttribute(AttributePrefab& attributePrefab, const AttributeInfo& attr)
+{
+    const Variant& value = attributePrefab.GetValue();
+    if ((attr.mode_ & AM_NODEID) && value.GetType() == VAR_INT)
+    {
+        nodeIdAttributes_.push_back(&attributePrefab);
+        referencedNodeIds_.push_back(static_cast<SerializableId>(value.GetUInt()));
+    }
+    else if ((attr.mode_ & AM_NODEIDVECTOR) && value.GetType() == VAR_VARIANTVECTOR)
+    {
+        nodeIdAttributes_.push_back(&attributePrefab);
+        for (const Variant& element : value.GetVariantVector())
+            referencedNodeIds_.push_back(static_cast<SerializableId>(element.GetUInt()));
+    }
+    else if ((attr.mode_ & AM_COMPONENTID) && value.GetType() == VAR_INT)
+    {
+        componentIdAttributes_.push_back(&attributePrefab);
+        referencedComponentIds_.push_back(static_cast<SerializableId>(value.GetUInt()));
+    }
+}
+
+void PrefabNormalizer::RemapAndPrune(NodePrefab& node)
+{
+    RemapReferencedIds();
+    PatchAttributes();
+    PruneUnreferencedIds(node);
+}
+
+void PrefabNormalizer::RemapReferencedIds()
+{
+    unsigned nextNodeId = 1;
+    unsigned nextComponentId = 1;
+
+    for (SerializableId nodeId : referencedNodeIds_)
+    {
+        if (nodeIdRemap_.find(nodeId) == nodeIdRemap_.end())
+            nodeIdRemap_[nodeId] = static_cast<SerializableId>(nextNodeId++);
+    }
+
+    for (SerializableId componentId : referencedComponentIds_)
+    {
+        if (componentIdRemap_.find(componentId) == componentIdRemap_.end())
+            componentIdRemap_[componentId] = static_cast<SerializableId>(nextComponentId++);
+    }
+}
+
+void PrefabNormalizer::PatchAttributes()
+{
+    for (AttributePrefab* attributePrefab : nodeIdAttributes_)
+    {
+        const Variant& oldValue = attributePrefab->GetValue();
+        if (oldValue.GetType() == VAR_INT)
+        {
+            const SerializableId oldNodeId = static_cast<SerializableId>(oldValue.GetUInt());
+            URHO3D_ASSERT(nodeIdRemap_.contains(oldNodeId));
+            attributePrefab->SetValue(Variant(static_cast<unsigned>(nodeIdRemap_[oldNodeId])));
+        }
+        else if (oldValue.GetType() == VAR_VARIANTVECTOR)
+        {
+            VariantVector newValue;
+            for (const Variant& element : oldValue.GetVariantVector())
+            {
+                const SerializableId oldNodeId = static_cast<SerializableId>(element.GetUInt());
+                URHO3D_ASSERT(nodeIdRemap_.contains(oldNodeId));
+                newValue.push_back(Variant(static_cast<unsigned>(nodeIdRemap_[oldNodeId])));
+            }
+            attributePrefab->SetValue(newValue);
+        }
+    }
+
+    for (AttributePrefab* attributePrefab : componentIdAttributes_)
+    {
+        const Variant& oldValue = attributePrefab->GetValue();
+        if (oldValue.GetType() == VAR_INT)
+        {
+            const SerializableId oldComponentId = static_cast<SerializableId>(oldValue.GetUInt());
+            URHO3D_ASSERT(componentIdRemap_.contains(oldComponentId));
+            attributePrefab->SetValue(Variant(static_cast<unsigned>(componentIdRemap_[oldComponentId])));
+        }
+    }
+}
+
+void PrefabNormalizer::PruneUnreferencedIds(NodePrefab& node)
+{
+    PruneUnreferencedId(node.GetMutableNode(), true);
+    for (SerializablePrefab& component : node.GetMutableComponents())
+        PruneUnreferencedId(component, false);
+    for (NodePrefab& child : node.GetMutableChildren())
+        PruneUnreferencedIds(child);
+}
+
+void PrefabNormalizer::PruneUnreferencedId(SerializablePrefab& prefab, bool isNode)
+{
+    const auto& remap = isNode ? nodeIdRemap_ : componentIdRemap_;
+    const auto iter = remap.find(prefab.GetId());
+    if (iter != remap.end())
+        prefab.SetId(iter->second);
+    else
+        prefab.SetId(SerializableId::None);
 }
 
 } // namespace Urho3D

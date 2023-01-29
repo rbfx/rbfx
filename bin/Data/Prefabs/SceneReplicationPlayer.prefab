@@ -1,38 +1,34 @@
 <?xml version="1.0"?>
-<resource _id="1">
-	<attributes>
-		<attribute name="Next Node ID" type="Int" value="3" />
-		<attribute name="Next Component ID" type="Int" value="11" />
-	</attributes>
+<resource>
 	<components>
-		<component _id="1" _typeName="Octree" />
-		<component _id="9" _typeName="RenderPipeline" />
-		<component _id="10" _typeName="ReflectionProbeManager" />
+		<component _typeName="Octree" />
+		<component _typeName="RenderPipeline" />
+		<component _typeName="ReflectionProbeManager" />
 	</components>
 	<nodes>
-		<node _id="2">
+		<node>
 			<attributes>
 				<attribute name="Name" type="String" value="Character" />
 				<attribute name="Scale" type="Vector3" value="0.5 0.5 0.5" />
 			</attributes>
 			<components>
-				<component _id="2" _typeName="StaticModel">
+				<component _typeName="StaticModel">
 					<attributes>
 						<attribute name="Model" type="ResourceRef" value="Model;Models/Sphere.mdl" />
 						<attribute name="Material" type="ResourceRefList" value="Material;Materials/StoneSmall.xml" />
 					</attributes>
 				</component>
-				<component _id="3" _typeName="Light">
+				<component _typeName="Light">
 					<attributes>
 						<attribute name="Range" type="Float" value="3.000000" />
 					</attributes>
 				</component>
-				<component _id="4" _typeName="ReplicatedTransform">
+				<component _typeName="ReplicatedTransform">
 					<attributes>
 						<attribute name="Replicate Owner" type="Bool" value="true" />
 					</attributes>
 				</component>
-				<component _id="11" _typeName="SceneReplicationPlayer" />
+				<component _typeName="SceneReplicationPlayer" />
 			</components>
 		</node>
 	</nodes>

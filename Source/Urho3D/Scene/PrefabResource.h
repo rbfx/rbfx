@@ -40,6 +40,8 @@ public:
 
     static void RegisterObject(Context* context);
 
+    void NormalizeIds();
+
     void SerializeInBlock(Archive& archive) override;
 
     const NodePrefab& GetScenePrefab() const { return prefab_; }

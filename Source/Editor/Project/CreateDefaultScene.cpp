@@ -112,6 +112,7 @@ void CreateDefaultScene(Context* context, const ea::string& fileName, const Defa
     {
         auto prefabResource = MakeShared<PrefabResource>(context);
         prefabResource->GetMutableScenePrefab() = scene->GeneratePrefab();
+        prefabResource->NormalizeIds();
         prefabResource->SaveFile(fileName);
     }
     else if (fileName.ends_with(".xml", false))

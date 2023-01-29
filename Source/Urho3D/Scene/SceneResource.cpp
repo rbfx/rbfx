@@ -27,6 +27,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/MemoryBuffer.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/SceneResource.h>
 #include <Urho3D/Resource/BinaryFile.h>
 #include <Urho3D/Resource/JSONArchive.h>
@@ -62,9 +63,17 @@ void SceneResource::RegisterObject(Context* context)
 
 bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool asPrefab) const
 {
+    if (asPrefab)
+    {
+        // Save as prefab is rare, we can afford to be suboptimal here.
+        PrefabResource prefab(context_);
+        scene_->GeneratePrefab(prefab.GetMutableScenePrefab());
+        prefab.NormalizeIds();
+        return prefab.Save(dest, format);
+    }
+
     try
     {
-        const PrefabSaveFlags flags = asPrefab ? PrefabSaveFlag::Prefab : PrefabSaveFlag::None;
         switch (format)
         {
         case InternalResourceFormat::Json:
@@ -73,7 +82,7 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool a
             JSONOutputArchive archive{context_, jsonFile.GetRoot(), &jsonFile};
             {
                 ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
-                scene_->SerializeInBlock(archive, false, flags | PrefabSaveFlag::EnumsAsStrings);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::EnumsAsStrings);
             }
             return jsonFile.Save(dest);
         }
@@ -83,7 +92,7 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool a
             XMLOutputArchive archive{context_, xmlFile.GetOrCreateRoot(rootBlockName), &xmlFile};
             {
                 ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
-                scene_->SerializeInBlock(archive, false, flags | PrefabSaveFlag::EnumsAsStrings);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::EnumsAsStrings);
             }
             return xmlFile.Save(dest);
         }
@@ -94,7 +103,7 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool a
             BinaryOutputArchive archive{context_, dest};
             {
                 ArchiveBlock block = archive.OpenUnorderedBlock(rootBlockName);
-                scene_->SerializeInBlock(archive, false, flags | PrefabSaveFlag::CompactAttributeNames);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::CompactAttributeNames);
             }
             return true;
         }

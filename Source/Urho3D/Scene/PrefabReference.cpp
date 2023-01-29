@@ -379,6 +379,7 @@ void PrefabReference::CommitChanges()
     auto newResource = MakeShared<PrefabResource>(context_);
     newResource->GetMutableScenePrefab() = prefab_->GetScenePrefab();
     newResource->GetMutableNodePrefab() = newNodePrefab;
+    newResource->NormalizeIds();
     newResource->SaveFile(prefab_->GetAbsoluteFileName());
 }
 

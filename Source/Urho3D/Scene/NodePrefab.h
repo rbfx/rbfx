@@ -25,6 +25,9 @@
 #include <Urho3D/Scene/PrefabTypes.h>
 #include <Urho3D/Scene/Serializable.h>
 
+#include <EASTL/unordered_map.h>
+#include <EASTL/vector.h>
+
 namespace Urho3D
 {
 
@@ -130,6 +133,8 @@ public:
 
     AttributeScopeHint GetEffectiveScopeHint(Context* context) const;
 
+    void NormalizeIds(Context* context);
+
     const SerializablePrefab& GetNode() const { return node_; }
     SerializablePrefab& GetMutableNode() { return node_; }
     const ea::vector<SerializablePrefab>& GetComponents() const { return components_; }
@@ -151,5 +156,33 @@ private:
 
 URHO3D_API void SerializeValue(
     Archive& archive, const char* name, NodePrefab& value, PrefabArchiveFlags flags = {}, bool compactSave = false);
+
+/// Utility class to remap and resolve prefab IDs. Similar to SceneResolver.
+class PrefabNormalizer
+{
+public:
+    explicit PrefabNormalizer(Context* context);
+
+    void ScanNode(NodePrefab& node);
+    void RemapAndPrune(NodePrefab& node);
+
+private:
+    void ScanSerializable(SerializablePrefab& prefab);
+    void ScanAttribute(AttributePrefab& attributePrefab, const AttributeInfo& attr);
+
+    void RemapReferencedIds();
+    void PatchAttributes();
+    void PruneUnreferencedIds(NodePrefab& node);
+    void PruneUnreferencedId(SerializablePrefab& prefab, bool isNode);
+
+    Context* context_{};
+
+    ea::vector<AttributePrefab*> nodeIdAttributes_;
+    ea::vector<AttributePrefab*> componentIdAttributes_;
+    ea::vector<SerializableId> referencedNodeIds_;
+    ea::vector<SerializableId> referencedComponentIds_;
+    ea::unordered_map<SerializableId, SerializableId> nodeIdRemap_;
+    ea::unordered_map<SerializableId, SerializableId> componentIdRemap_;
+};
 
 } // namespace Urho3D

@@ -32,7 +32,7 @@ if (URHO3D_SDK)
 endif ()
 
 if (EMSCRIPTEN)
-    set (WEB 1)
+    set (WEB ON CACHE BOOL "" FORCE)
     set (EMPACKAGER python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
     set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map --source-map-base=. -fdebug-compilation-dir='.' -gseparate-dwarf)
 endif ()
