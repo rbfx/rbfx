@@ -39,6 +39,13 @@ if (NOT MINI_URHO)
     endforeach()
 endif ()
 
+# TODO: This also is done in UrhoCommon, which is a more proper place. However, we need this variable here. Also, users
+#  include UrhoCommon.cmake in their own projects, but they do not do this for UrhoOptions as options. This file is
+#  mainly intended for engine parameters/config so anything useful to the users should be moved out.
+if (EMSCRIPTEN)
+    set (WEB ON CACHE BOOL "" FORCE)
+endif ()
+
 # https://cmake.org/cmake/help/v3.18/policy/CMP0077.html
 # Note that cmake_minimum_required() + project() resets policies, so dependencies using lower CMake version would not
 # properly accept options before we add_subdirectory() them without setting this policy to NEW __in their build script__.
