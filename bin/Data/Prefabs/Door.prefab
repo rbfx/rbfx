@@ -1,26 +1,20 @@
 {
-	"_id": 1,
-	"attributes": [
-		{
-			"name": "Next Node ID",
-			"type": "Int",
-			"value": 5
-		},
-		{
-			"name": "Next Component ID",
-			"type": "Int",
-			"value": 4
-		}
-	],
 	"components": [
 		{
-			"_id": 1,
 			"_typeName": "Octree"
+		},
+		{
+			"_typeName": "PhysicsWorld"
+		},
+		{
+			"_typeName": "RenderPipeline"
+		},
+		{
+			"_typeName": "ReflectionProbeManager"
 		}
 	],
 	"nodes": [
 		{
-			"_id": 6,
 			"attributes": [
 				{
 					"name": "Tags",
@@ -32,7 +26,6 @@
 			],
 			"nodes": [
 				{
-					"_id": 2,
 					"attributes": [
 						{
 							"name": "Name",
@@ -59,7 +52,6 @@
 					],
 					"components": [
 						{
-							"_id": 12,
 							"_typeName": "CollisionShape",
 							"attributes": [
 								{
@@ -70,7 +62,6 @@
 							]
 						},
 						{
-							"_id": 4,
 							"_typeName": "RigidBody",
 							"attributes": [
 								{
@@ -86,7 +77,6 @@
 							]
 						},
 						{
-							"_id": 13,
 							"_typeName": "StaticModel",
 							"attributes": [
 								{
@@ -107,7 +97,6 @@
 							]
 						},
 						{
-							"_id": 14,
 							"_typeName": "Constraint",
 							"attributes": [
 								{
@@ -133,7 +122,7 @@
 								{
 									"name": "Other Body NodeID",
 									"type": "Int",
-									"value": 7
+									"value": 1
 								},
 								{
 									"name": "High Limit",
@@ -155,7 +144,7 @@
 					]
 				},
 				{
-					"_id": 7,
+					"_id": 1,
 					"attributes": [
 						{
 							"name": "Name",
@@ -177,7 +166,6 @@
 					],
 					"components": [
 						{
-							"_id": 7,
 							"_typeName": "RigidBody",
 							"attributes": [
 								{
@@ -192,7 +180,6 @@
 			]
 		},
 		{
-			"_id": 3,
 			"attributes": [
 				{
 					"name": "Name",
@@ -202,7 +189,6 @@
 			],
 			"components": [
 				{
-					"_id": 2,
 					"_typeName": "Skybox",
 					"attributes": [
 						{
@@ -220,7 +206,6 @@
 			]
 		},
 		{
-			"_id": 4,
 			"attributes": [
 				{
 					"name": "Name",
@@ -230,7 +215,6 @@
 			],
 			"components": [
 				{
-					"_id": 3,
 					"_typeName": "Zone",
 					"attributes": [
 						{

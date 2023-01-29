@@ -194,8 +194,9 @@ ea::string PrefabFromNodeFactory::FindBestFileName(Node* node, const ea::string&
 
 void PrefabFromNodeFactory::SaveNodeAsPrefab(Node* node, const ea::string& resourceName, const ea::string& fileName)
 {
-    NodePrefab& nodePrefab = prefab_->GetMutableScenePrefab().GetMutableChildren()[0];
+    NodePrefab& nodePrefab = prefab_->GetMutableNodePrefab();
     nodePrefab = CreatePrefabFromNode(node);
+    prefab_->NormalizeIds();
     prefab_->SaveFile(fileName);
 
     if (replaceWithReference_ && tab_ && node != node->GetScene())

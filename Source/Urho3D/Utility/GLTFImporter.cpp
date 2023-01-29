@@ -3182,6 +3182,7 @@ private:
 
         importedScene.prefab_ = MakeShared<PrefabResource>(base_.GetContext());
         importedScene.prefab_->GetMutableScenePrefab() = scene->GeneratePrefab();
+        importedScene.prefab_->NormalizeIds();
         importedScene.prefab_->SetName(prefabName);
         base_.AddToResourceCache(importedScene.prefab_);
     }

@@ -42,6 +42,7 @@ SharedPtr<PrefabResource> ConvertNodeToPrefab(Node* node)
 {
     auto prefab = MakeShared<PrefabResource>(node->GetContext());
     prefab->GetMutableNodePrefab() = node->GeneratePrefab();
+    prefab->NormalizeIds();
     return prefab;
 }
 

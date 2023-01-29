@@ -1,29 +1,22 @@
 {
-	"_id": 1,
-	"attributes": [
-		{
-			"name": "Next Node ID",
-			"type": "Int",
-			"value": 5
-		},
-		{
-			"name": "Next Component ID",
-			"type": "Int",
-			"value": 4
-		}
-	],
 	"components": [
 		{
-			"_id": 1,
 			"_typeName": "Octree"
+		},
+		{
+			"_typeName": "PhysicsWorld"
+		},
+		{
+			"_typeName": "RenderPipeline"
+		},
+		{
+			"_typeName": "ReflectionProbeManager"
 		}
 	],
 	"nodes": [
 		{
-			"_id": 3,
 			"components": [
 				{
-					"_id": 6,
 					"_typeName": "StaticModel",
 					"attributes": [
 						{
@@ -44,7 +37,6 @@
 					]
 				},
 				{
-					"_id": 7,
 					"_typeName": "CollisionShape",
 					"attributes": [
 						{
@@ -60,7 +52,6 @@
 					]
 				},
 				{
-					"_id": 9,
 					"_typeName": "RigidBody",
 					"attributes": [
 						{
@@ -73,7 +64,6 @@
 			]
 		},
 		{
-			"_id": 3,
 			"attributes": [
 				{
 					"name": "Name",
@@ -83,7 +73,6 @@
 			],
 			"components": [
 				{
-					"_id": 2,
 					"_typeName": "Skybox",
 					"attributes": [
 						{
@@ -101,7 +90,6 @@
 			]
 		},
 		{
-			"_id": 4,
 			"attributes": [
 				{
 					"name": "Name",
@@ -111,7 +99,6 @@
 			],
 			"components": [
 				{
-					"_id": 3,
 					"_typeName": "Zone",
 					"attributes": [
 						{

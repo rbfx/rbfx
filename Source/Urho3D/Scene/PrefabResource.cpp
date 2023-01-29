@@ -25,6 +25,8 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Scene/PrefabResource.h>
 
+#include <EASTL/unordered_set.h>
+
 namespace Urho3D
 {
 
@@ -40,6 +42,16 @@ PrefabResource::~PrefabResource()
 void PrefabResource::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<PrefabResource>();
+}
+
+void PrefabResource::NormalizeIds()
+{
+    prefab_.NormalizeIds(context_);
+
+    auto& sceneAttributes = prefab_.GetMutableNode().GetMutableAttributes();
+    static const ea::unordered_set<StringHash> idAttributes{"Next Node ID", "Next Component ID"};
+    const auto isIdAttribute = [](const AttributePrefab& attr) { return idAttributes.contains(attr.GetNameHash()); };
+    ea::erase_if(sceneAttributes, isIdAttribute);
 }
 
 void PrefabResource::SerializeInBlock(Archive& archive)
