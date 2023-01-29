@@ -133,6 +133,7 @@ cmake_dependent_option(URHO3D_PLUGINS            "Enable plugins"               
 cmake_dependent_option(URHO3D_THREADING          "Enable multithreading"                                 ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 option                (URHO3D_WEBP               "WEBP support enabled"                                  ${URHO3D_ENABLE_ALL}                                    )
 cmake_dependent_option(URHO3D_TESTING            "Enable unit tests"                                     OFF                  "NOT WEB;NOT MOBILE;NOT UWP"    OFF)
+option                (URHO3D_PACKAGING          "Enable *.pak file creation"                            OFF                                                     )
 # Web
 cmake_dependent_option(EMSCRIPTEN_WASM           "Use wasm instead of asm.js"                            ON                   "WEB"                           OFF)
 set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to 0 for dynamic growth. Must be multiple of 64KB.")
