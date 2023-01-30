@@ -100,7 +100,7 @@ void NodeInspectorWidget::RenderContent()
             continue;
 
         const auto typeInfo = firstComponent->GetTypeInfo();
-        const IdScopeGuard guard{typeInfo->GetTypeName().c_str()};
+        const IdScopeGuard guard{static_cast<void*>(firstComponent)};
 
         if (ui::Button(ICON_FA_TRASH_CAN "##RemoveComponent"))
         {
