@@ -225,7 +225,8 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector files;
-    fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
+    fs->ScanDirAdd(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
+    fs->ScanDirAdd(files, project_->GetDataPath(), "*.assetpipeline", SCAN_FILES, true);
 
     ea::erase_if(files, [&](const ea::string& resourceName) { return !AssetPipeline::CheckExtension(resourceName); });
 
