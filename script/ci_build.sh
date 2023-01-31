@@ -274,7 +274,7 @@ function action-install() {
             $ci_sdk_dir/bin/Resources.js        \
             $ci_sdk_dir/bin/Resources.js.data   \
             $ci_sdk_dir/bin/Samples.js          \
-            $ci_sdk_dir/bin/Samples.js.wasm     \
+            $ci_sdk_dir/bin/Samples.wasm        \
             $ci_sdk_dir/bin/Samples.html        \
             $ci_sdk_dir/deploy
     fi
