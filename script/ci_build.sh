@@ -265,6 +265,19 @@ function action-build-android() {
 
 function action-install() {
     cmake --install $ci_build_dir --config "${types[$ci_build_type]}"
+
+    # Create deploy directory on Web.
+    if [[ "$ci_platform" == "web" ]];
+    then
+        mkdir $ci_sdk_dir/deploy
+        cp -r \
+            $ci_sdk_dir/Resources.js        \
+            $ci_sdk_dir/Resources.js.data   \
+            $ci_sdk_dir/Samples.js          \
+            $ci_sdk_dir/Samples.js.wasm     \
+            $ci_sdk_dir/Samples.html        \
+            $ci_sdk_dir/deploy
+    fi
 }
 
 function action-test() {
