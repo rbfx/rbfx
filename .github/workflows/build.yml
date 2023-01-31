@@ -635,7 +635,7 @@ jobs:
         run: ${{ env.ci_build_script }} install
 
       - name: Deploy
-        if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
+        if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' && matrix.ci_build_type =='rel'
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}

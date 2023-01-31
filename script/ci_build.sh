@@ -271,11 +271,11 @@ function action-install() {
     then
         mkdir $ci_sdk_dir/deploy
         cp -r \
-            $ci_sdk_dir/Resources.js        \
-            $ci_sdk_dir/Resources.js.data   \
-            $ci_sdk_dir/Samples.js          \
-            $ci_sdk_dir/Samples.js.wasm     \
-            $ci_sdk_dir/Samples.html        \
+            $ci_sdk_dir/bin/Resources.js        \
+            $ci_sdk_dir/bin/Resources.js.data   \
+            $ci_sdk_dir/bin/Samples.js          \
+            $ci_sdk_dir/bin/Samples.js.wasm     \
+            $ci_sdk_dir/bin/Samples.html        \
             $ci_sdk_dir/deploy
     fi
 }
