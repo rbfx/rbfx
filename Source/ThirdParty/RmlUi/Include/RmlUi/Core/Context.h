@@ -249,7 +249,7 @@ public:
 	/// The returned constructor can be used to bind data variables. Elements can bind to the model using the attribute 'data-model="name"'.
 	/// @param[in] name The name of the data model.
 	/// @return A constructor for the data model, or empty if it could not be created.
-	DataModelConstructor CreateDataModel(const String& name);
+	DataModelConstructor CreateDataModel(const String& name, DataTypeRegister* data_type_register = nullptr);
 
 	/// Retrieves the constructor for an existing data model.
 	/// The returned constructor can be used to add additional bindings to an existing model.
@@ -347,7 +347,7 @@ private:
 	using DataModels = UnorderedMap<String, UniquePtr<DataModel>>;
 	DataModels data_models;
 
-	UniquePtr<DataTypeRegister> data_type_register;
+	UniquePtr<DataTypeRegister> default_data_type_register;
 
 	// Internal callback for when an element is detached or removed from the hierarchy.
 	void OnElementDetach(Element* element);

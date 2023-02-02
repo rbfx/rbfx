@@ -179,6 +179,8 @@ private:
     /// Component which holds RmlUI instance containing UI managed by this component. May be null if UI is rendered into default RmlUI subsystem.
     WeakPtr<RmlCanvasComponent> canvasComponent_;
 
+    /// Type registry for the data model.
+    Rml::DataTypeRegister typeRegister_;
     /// Data model for the document.
     Rml::DataModelHandle dataModel_;
     /// Name of the data model.
