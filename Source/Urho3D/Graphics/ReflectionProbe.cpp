@@ -498,7 +498,7 @@ void ReflectionProbeManager::QueryDynamicProbes(const BoundingBox& worldBounding
 void ReflectionProbeManager::QueryStaticProbes(const BoundingBox& worldBoundingBox,
     ea::span<ReflectionProbeReference, 2> probes, float& cacheDistanceSquared) const
 {
-    static thread_local ea::vector<const ReflectionProbeBVH*> tempIntersectedProbes;
+    thread_local ea::vector<const ReflectionProbeBVH*> tempIntersectedProbes;
     auto& intersectedProbes = tempIntersectedProbes;
     intersectedProbes.clear();
 

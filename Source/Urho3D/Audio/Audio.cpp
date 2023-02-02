@@ -51,7 +51,7 @@ static const StringHash SOUND_MASTER_HASH("Master");
 
 static void SDLAudioCallback(void* userdata, Uint8* stream, int len);
 
-static int AUDIO_NUM_CHANNELS[] = {
+static const int AUDIO_NUM_CHANNELS[] = {
     6, // Auto, just aim for 5.1
     1, // mono
     2, // stereo
@@ -60,7 +60,7 @@ static int AUDIO_NUM_CHANNELS[] = {
 };
 
 // SM_AUTO is BAD!
-static SpeakerMode CHANNELS_TO_MODE[] = {
+static const SpeakerMode CHANNELS_TO_MODE[] = {
     SPK_AUTO, // invalid actually,
     SPK_MONO, // 1
     SPK_STEREO, // 2
@@ -72,7 +72,7 @@ static SpeakerMode CHANNELS_TO_MODE[] = {
     SPK_AUTO, // 8
 };
 
-static SpeakerMode AUDIO_MODE_DOWNGRADE[] = {
+static const SpeakerMode AUDIO_MODE_DOWNGRADE[] = {
     SPK_QUADROPHONIC, // Auto, it does 5.1
     SPK_MONO, // Mono can't go lower
     SPK_MONO, // stereo -> mono
@@ -133,7 +133,7 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, SpeakerMode speakerMode, 
         // Intentionally disallow format change so that the obtained format will always be the desired format, even though that format
     // is not matching the device format, however in doing it will enable the SDL's internal audio stream with audio conversion
 
-    static auto TryOpenAudioDevice = [](const SDL_AudioSpec& desired, SDL_AudioSpec& obtained, bool canChangeChannels) -> unsigned {
+    auto TryOpenAudioDevice = [](const SDL_AudioSpec& desired, SDL_AudioSpec& obtained, bool canChangeChannels) -> unsigned {
         int allowedChanges = SDL_AUDIO_ALLOW_ANY_CHANGE & ~SDL_AUDIO_ALLOW_FORMAT_CHANGE;
         if (!canChangeChannels)
             allowedChanges &= ~SDL_AUDIO_ALLOW_CHANNELS_CHANGE;

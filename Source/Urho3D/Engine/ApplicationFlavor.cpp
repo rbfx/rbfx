@@ -98,9 +98,9 @@ ea::string GetPlatformFlavor()
 
 }
 
-ApplicationFlavor ApplicationFlavor::Universal{{"*", {"*"}}};
-ApplicationFlavor ApplicationFlavor::Empty;
-ApplicationFlavor ApplicationFlavor::Platform{GetPlatformFlavor()};
+const ApplicationFlavor ApplicationFlavor::Universal{{"*", {"*"}}};
+const ApplicationFlavor ApplicationFlavor::Empty;
+const ApplicationFlavor ApplicationFlavor::Platform{GetPlatformFlavor()};
 
 ApplicationFlavorPattern::ApplicationFlavorPattern(const ea::string& str)
     : components_(ParseString(str))

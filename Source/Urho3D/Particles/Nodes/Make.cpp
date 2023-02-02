@@ -41,7 +41,7 @@ void Make::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> MakePatterns{
+static const ea::vector<NodePattern> MakePatterns{
     MakePattern(
         MakeInstance<float, float, Vector2>()
         , ParticleGraphTypedPin<float>("x")

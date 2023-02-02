@@ -52,7 +52,7 @@ void GlobalIllumination::RegisterObject(Context* context)
 
 void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    static thread_local ea::vector<ea::pair<unsigned, unsigned>> edges;
+    thread_local ea::vector<ea::pair<unsigned, unsigned>> edges;
     lightProbesMesh_.CollectEdges(edges);
 
     for (const auto& edge : edges)

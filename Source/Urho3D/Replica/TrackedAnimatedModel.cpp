@@ -136,7 +136,7 @@ void TrackedAnimatedModel::ProcessTemporalRayQuery(const NetworkTime& time, cons
     const auto bonePositions = bonePositionsTrace_.SampleValid(time);
     const auto boneRotations = boneRotationsTrace_.SampleValid(time);
 
-    static thread_local ea::vector<Matrix3x4> boneTransformsStorage;
+    thread_local ea::vector<Matrix3x4> boneTransformsStorage;
     auto& boneTransforms = boneTransformsStorage;
     auto boneTransforms11 = boneTransformsStorage;
     boneTransforms.resize(numBones);
