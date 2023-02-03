@@ -214,11 +214,14 @@ ea::optional<Vector3> AnimationVelocityExtractor::EvaluateVelocity(const Positio
             ++groupLengths[*groupIndex];
     }
     const unsigned longestGroupIndex = ea::max_element(groupLengths.begin(), groupLengths.end()) - groupLengths.begin();
+    const unsigned longestGroupLength = groupLengths[longestGroupIndex];
+    if (longestGroupLength < 2)
+        return ea::nullopt;
 
     // Find the delta position
     const Vector3& firstGroundPosition = track[groups[longestGroupIndex].first];
     const Vector3& lastGroundPosition = track[groups[longestGroupIndex].second];
-    const float groundTime = groupLengths[longestGroupIndex] / sampleRate;
+    const float groundTime = (longestGroupLength - 1) / sampleRate;
 
     // Tracks are relative to the moving object, while we need velocity relative to the ground. Invert result.
     return -(lastGroundPosition - firstGroundPosition) / groundTime;
