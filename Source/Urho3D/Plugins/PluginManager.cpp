@@ -460,7 +460,7 @@ void PluginManager::Update(bool exiting)
         DisposeStack();
     }
 
-    const bool checkOutOfDate = enableAutoReload_ && (reloadTimer_.GetMSec(false) >= reloadIntervalMs_);
+    const bool checkOutOfDate = !exiting && enableAutoReload_ && (reloadTimer_.GetMSec(false) >= reloadIntervalMs_);
     if (checkOutOfDate)
         reloadTimer_.Reset();
 

@@ -151,6 +151,9 @@ Context::~Context()
     if (auto* cache = GetSubsystem<ResourceCache>())
         cache->Clear();
 #endif
+    // Destroy PluginManager last because it may unload DLLs and make some classes destructors unavailable.
+    SharedPtr<Object> pluginManager{GetSubsystem("PluginManager")};
+
     // Remove subsystems that use SDL in reverse order of construction, so that Graphics can shut down SDL last
     /// \todo Context should not need to know about subsystems
     RemoveSubsystem("PluginManager");
@@ -165,6 +168,7 @@ Context::~Context()
     RemoveSubsystem("StateManager");
 
     subsystems_.Clear();
+    pluginManager = nullptr;
 
     // Delete allocated event data maps
     for (auto i = eventDataMaps_.begin(); i != eventDataMaps_.end(); ++i)
