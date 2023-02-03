@@ -146,7 +146,7 @@ void ShadowSplitProcessor::ProcessDirectionalShadowCasters(
     sortedShadowBatches_.clear();
 
     // Skip split if outside of the scene
-    if (!drawableProcessor->GetSceneZRange().Interset(cascadeZRange_))
+    if (!drawableProcessor->GetSceneZRange().Intersect(cascadeZRange_))
         return;
 
     // Query shadow casters
@@ -241,7 +241,7 @@ BoundingBox ShadowSplitProcessor::GetLitGeometriesBoundingBox(
     for (Drawable* drawable : litGeometries)
     {
         const FloatRange& geometryZRange = drawableProcessor->GetGeometryZRange(drawable->GetDrawableIndex());
-        if (geometryZRange.Interset(cascadeZRange_))
+        if (geometryZRange.Intersect(cascadeZRange_))
             litGeometriesBox.Merge(drawable->GetWorldBoundingBox());
     }
     return litGeometriesBox;
