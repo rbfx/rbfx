@@ -403,7 +403,7 @@ void Serializable::SerializeInBlock(Archive& archive)
 void Serializable::SerializeInBlock(Archive& archive, bool serializeTemporary)
 {
     const bool compactSave = !archive.IsHumanReadable();
-    const PrefabArchiveFlags flags = PrefabArchiveFlag::IgnoreSerializableId
+    const PrefabArchiveFlags flags = PrefabArchiveFlag::IgnoreSerializableId | PrefabArchiveFlag::IgnoreSerializableType
         | (serializeTemporary ? PrefabArchiveFlag::SerializeTemporary : PrefabArchiveFlag::None);
 
     SerializablePrefab prefab;
