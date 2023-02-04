@@ -66,6 +66,9 @@ public:
     /// @{
     ea::string GetUniqueName() const override { return "SelectionRenderer"; }
     void Render(SceneViewPage& scenePage) override;
+    bool RenderTabContextMenu() override;
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
+    void ReadIniSettings(const char* line) override;
     /// @}
 
 private:
@@ -79,6 +82,7 @@ private:
     void DrawComponentSelection(Scene* scene, Component* component);
 
     const WeakPtr<SettingsPage> settings_;
+    bool drawDebugGeometry_{true};
 };
 
 }
