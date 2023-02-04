@@ -352,6 +352,8 @@ public:
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
+    void UpdateProperties();
+
     /// Attributes.
     /// @{
     void SetBoneNames(const StringVector& names) { boneNames_ = names; OnTreeDirty(); }
@@ -383,11 +385,12 @@ protected:
 
 private:
     void EnsureInitialized();
+    void UpdateTwistRotationOffset();
 
     float WeightFunction(float x) const;
 
     void SetOriginalTransforms(const Transform& frameOfReference);
-    float GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const;
+    float GetTwistAngle(const Transform& frameOfReference, const IKNodeSegment& segment, Node* targetNode) const;
 
     StringVector boneNames_;
     ea::string twistTargetName_;
@@ -398,6 +401,7 @@ private:
     float twistWeight_{1.0f};
     float maxAngle_{90.0f};
     float bendTweak_{0.0f};
+    Quaternion twistRotationOffset_{Quaternion::ZERO};
 
     IKSpineChain chain_;
     WeakPtr<Node> target_;

@@ -4,7 +4,7 @@
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
 	<attribute name="Next Node ID" value="2" />
-	<attribute name="Next Component ID" value="13" />
+	<attribute name="Next Component ID" value="19" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -148,15 +148,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779593">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -449,15 +449,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779617">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -930,15 +930,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779641">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -1428,15 +1428,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779665">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -1730,15 +1730,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779449">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -2031,15 +2031,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779353">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -2512,15 +2512,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779377">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -3010,15 +3010,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779473">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -3312,15 +3312,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779497">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -3613,15 +3613,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779521">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -4094,15 +4094,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779545">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -4592,15 +4592,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779569">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
