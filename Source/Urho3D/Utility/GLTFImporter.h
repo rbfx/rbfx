@@ -42,6 +42,7 @@ struct GLTFImporterSettings
 
     bool cleanupBoneNames_{true};
     bool cleanupRootNodes_{true};
+    bool combineLODs_{true};
     bool repairLooping_{false};
 
     float offsetMatrixError_{ 0.00002f };
