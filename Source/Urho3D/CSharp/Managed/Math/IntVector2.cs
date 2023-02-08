@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2008-2019 the Urho3D project.
 // Copyright (c) 2017-2020 the rbfx project.
 //
@@ -186,6 +186,27 @@ namespace Urho3DNet
         public static IntVector2 Max(in IntVector2 lhs, in IntVector2 rhs)
         {
             return new IntVector2(Math.Max(lhs.X, rhs.X), Math.Max(lhs.Y, rhs.Y));
+        }
+
+        /// Return 3D vector (z component set to 0).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector3 ToVector3()
+        {
+            return new Vector3(X, Y, 0);
+        }
+
+        /// Return 2D vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector2 ToVector2()
+        {
+            return new Vector2((int)X, (int)Y);
+        }
+
+        /// Return 3D int vector. (z component set to 0).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IntVector3 ToIntVector3()
+        {
+            return new IntVector3((int)X, (int)Y, 0);
         }
 
         /// X coordinate.

@@ -25,6 +25,15 @@
 
 using namespace Urho3D;
 
+TEST_CASE("Vector3 conversion")
+{
+    const Vector3 value{1, 2, 3};
+
+    CHECK(value.ToVector2().Equals(Vector2(1, 2)));
+    CHECK(value.ToIntVector2() == IntVector2(1, 2));
+    CHECK(value.ToIntVector3() == IntVector3(1, 2, 3));
+}
+
 TEST_CASE("Signed angle between vectors is consistent with quaternion rotation")
 {
     const Vector3 axis{0, 0, 1};

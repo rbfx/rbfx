@@ -26,6 +26,9 @@
 #include "../Input/Input.h"
 #include "../Graphics/Viewport.h"
 #include "Urho3D/UI/Window.h"
+#if URHO3D_ACTIONS
+#include "../Actions/ActionManager.h"
+#endif
 
 #include <EASTL/queue.h>
 
@@ -50,8 +53,14 @@ public:
     /// Activate game state. Executed by StateManager.
     virtual void Activate(StringVariantMap& bundle);
 
+    /// Transition into the state complete. Executed by StateManager.
+    virtual void TransitionComplete();
+
     /// Return true if state is ready to be deactivated. Executed by StateManager.
     virtual bool CanLeaveState() const;
+
+    /// Transition out of the state started. Executed by StateManager.
+    virtual void TransitionStarted();
 
     /// Deactivate game state. Executed by StateManager.
     virtual void Deactivate();
@@ -115,6 +124,14 @@ public:
     /// Get default zone fog color.
     const Color& GetDefaultFogColor() const { return fogColor_; }
 
+#if URHO3D_ACTIONS
+    /// Return application state's action manager.
+    ActionManager* GetActionManager() const { return actionManager_; }
+
+    /// Add action to the state's action manager.
+    Actions::ActionState* AddAction(Actions::BaseAction* action, Object* target, bool paused = false);
+#endif
+
 private:
     /// Initialize mouse mode on non-web platform.
     void InitMouseMode();
@@ -154,6 +171,10 @@ private:
     Color fogColor_{0.0f, 0.0f, 0.0f};
     /// Saved fog color to be restored at deactivation.
     Color savedFogColor_{};
+#if URHO3D_ACTIONS
+    /// Local action manager.
+    SharedPtr<ActionManager> actionManager_;
+#endif
 };
 
 class URHO3D_API StateManager: public Object
@@ -230,6 +251,12 @@ private:
 
     /// Update fade overlay size and transparency.
     void UpdateFadeOverlay(float t);
+
+    /// Start transition out of the current state.
+    void StartTransition();
+
+    /// Complete transition into the current state.
+    void CompleteTransition();
 
     /// Deactivate state.
     void DeactivateState();

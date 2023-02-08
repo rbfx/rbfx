@@ -351,6 +351,27 @@ namespace Urho3DNet
             return StableRandom(new Vector2(seed, seed));
         }
 
+        /// Return 3D vector (z component set to 0).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector3 ToVector3()
+        {
+            return new Vector3(X, Y, 0);
+        }
+
+        /// Return 2D int vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IntVector2 ToIntVector2()
+        {
+            return new IntVector2((int)X, (int)Y);
+        }
+
+        /// Return 3D int vector. (z component set to 0).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IntVector3 ToIntVector3()
+        {
+            return new IntVector3((int)X, (int)Y, 0);
+        }
+
         /// X coordinate.
         public float X;
 

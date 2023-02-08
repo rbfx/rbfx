@@ -392,6 +392,20 @@ namespace Urho3DNet
             return new Vector2(X, Y);
         }
 
+        /// Return 2D int vector (z component is ignored).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IntVector2 ToIntVector2()
+        {
+            return new IntVector2((int)X, (int)Y);
+        }
+
+        /// Return 3D int vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IntVector3 ToIntVector3()
+        {
+            return new IntVector3((int)X, (int)Y, (int)Z);
+        }
+
         /// Return x and z components as 2D vector (y component is ignored).
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector2 ToXZ()

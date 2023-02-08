@@ -554,6 +554,29 @@ public:
 %include "Urho3D/Audio/SoundSource.h"
 %include "Urho3D/Audio/SoundSource3D.h"
 
+// --------------------------------------- Actions ---------------------------------------
+
+%include "Urho3D/Actions/BaseAction.h"
+%include "Urho3D/Actions/ActionSet.h"
+%include "Urho3D/Actions/ActionBuilder.h"
+%include "Urho3D/Actions/ActionState.h"
+%include "Urho3D/Actions/ActionManager.h"
+%include "Urho3D/Actions/FiniteTimeAction.h"
+%include "Urho3D/Actions/FiniteTimeActionState.h"
+%include "Urho3D/Actions/ActionInstant.h"
+%include "Urho3D/Actions/ActionInstantState.h"
+%include "Urho3D/Actions/AttributeAction.h"
+%include "Urho3D/Actions/AttributeActionState.h"
+%include "Urho3D/Actions/Attribute.h"
+%include "Urho3D/Actions/CallFunc.h"
+%include "Urho3D/Actions/Move.h"
+%include "Urho3D/Actions/Ease.h"
+%include "Urho3D/Actions/Parallel.h"
+%include "Urho3D/Actions/Sequence.h"
+%include "Urho3D/Actions/Misc.h"
+%include "Urho3D/Actions/Repeat.h"
+%include "Urho3D/Actions/ShaderParameter.h"
+
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)
 %ignore Urho3D::IKSolverComponent::Initialize;
@@ -705,6 +728,13 @@ public:
 %include "Urho3D/Graphics/Renderer.h"
 %include "Urho3D/Graphics/Graphics.h"
 %include "Urho3D/Graphics/OutlineGroup.h"
+
+%include "Urho3D/Particles/ParticleGraphPin.h"
+%include "Urho3D/Particles/ParticleGraphNode.h"
+%include "Urho3D/Particles/ParticleGraphSystem.h"
+%include "Urho3D/Particles/ParticleGraphLayer.h"
+%include "Urho3D/Particles/ParticleGraphEffect.h"
+%include "Urho3D/Particles/ParticleGraphEmitter.h"
 
 // ------------------------------------- RenderPipeline -------------------------------------
 %include "generated/Urho3D/_pre_renderpipeline.i"

@@ -41,6 +41,9 @@ namespace Urho3D
 ApplicationState::ApplicationState(Context* context)
     : Object(context)
     , rootElement_(MakeShared<UIElement>(context))
+#if URHO3D_ACTIONS
+    , actionManager_(MakeShared<ActionManager>(context, false))
+#endif
 {
 }
 
@@ -93,6 +96,17 @@ void ApplicationState::Activate(StringVariantMap& bundle)
             }
         }
     }
+}
+
+
+/// Transition into the state complete. Executed by StateManager.
+void ApplicationState::TransitionComplete()
+{
+}
+
+/// Transition out of the state started. Executed by StateManager.
+void ApplicationState::TransitionStarted()
+{
 }
 
 /// Return true if state is ready to be deactivated. Executed by StateManager.
@@ -257,6 +271,14 @@ Viewport* ApplicationState::GetViewportForScene(Scene* scene, unsigned index) co
     return nullptr;
 }
 
+#if URHO3D_ACTIONS
+/// Add action to the state's action manager.
+Actions::ActionState* ApplicationState::AddAction(Actions::BaseAction* action, Object* target, bool paused)
+{
+    return actionManager_->AddAction(action, target, paused);
+}
+#endif
+
 void ApplicationState::InitMouseMode()
 {
     Input* input = GetSubsystem<Input>();
@@ -318,6 +340,10 @@ void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
     // Take the frame time step, which is stored as a float
     float timeStep = eventData[P_TIMESTEP].GetFloat();
 
+#if URHO3D_ACTIONS
+    actionManager_->Update(timeStep);
+#endif
+
     // Move the camera, scale movement with time step
     Update(timeStep);
 }
@@ -333,6 +359,30 @@ StateManager::StateManager(Context* context)
 StateManager::~StateManager()
 {
     Reset();
+}
+/// Start transition out of current state.
+void StateManager::StartTransition()
+{
+    if (activeState_)
+    {
+        originState_ = activeState_->GetType();
+        activeState_->TransitionStarted();
+    }
+    else
+    {
+        originState_ = StringHash::Empty;
+    }
+    Notify(E_STATETRANSITIONSTARTED);
+}
+
+/// Complete transition into the current state.
+void StateManager::CompleteTransition()
+{
+    if (activeState_)
+    {
+        activeState_->TransitionComplete();
+    }
+    Notify(E_STATETRANSITIONCOMPLETE);
 }
 
 /// Deactivate state.
@@ -353,9 +403,8 @@ void StateManager::Reset()
     const bool hasState = activeState_;
     if (hasState)
     {
-        originState_ = activeState_->GetType();
         destinationState_ = StringHash::Empty;
-        Notify(E_STATETRANSITIONSTARTED);
+        StartTransition();
         DeactivateState();
     }
     ea::queue<QueueItem> emptyQueue;
@@ -364,7 +413,7 @@ void StateManager::Reset()
     SetTransitionState(TransitionState::Sustain);
     if (hasState)
     {
-        Notify(E_STATETRANSITIONCOMPLETE);
+        CompleteTransition();
     }
 }
 
@@ -453,12 +502,7 @@ void StateManager::SetTransitionState(TransitionState state)
         else
             destinationState_ = stateQueue_.front().stateType_;
 
-        if (!activeState_)
-            originState_ = StringHash::Empty;
-        else
-            originState_ = activeState_->GetType();
-
-        Notify(E_STATETRANSITIONSTARTED);
+        StartTransition();
     }
 }
 
@@ -589,7 +633,7 @@ void StateManager::Update(float timeStep)
             if (fadeTime_ >= fadeInDuration_)
             {
                 timeStep = fadeTime_ - fadeInDuration_;
-                Notify(E_STATETRANSITIONCOMPLETE);
+                CompleteTransition();
 
                 if (stateQueue_.empty())
                     SetTransitionState(TransitionState::Sustain);
@@ -652,12 +696,12 @@ void StateManager::CreateNextState()
         }
         destinationState_ = nextState->GetType();
         stateCache_[destinationState_] = nextState;
-        activeState_ = nextState;
 
         if (originState_ == StringHash::Empty)
         {
-            Notify(E_STATETRANSITIONSTARTED);
+            StartTransition();
         }
+        activeState_ = nextState;
         Notify(E_ENTERINGAPPLICATIONSTATE);
 
         SetTransitionState(TransitionState::FadeIn);
@@ -667,7 +711,7 @@ void StateManager::CreateNextState()
     }
     destinationState_ = StringHash::Empty;
     SetTransitionState(TransitionState::Sustain);
-    Notify(E_STATETRANSITIONCOMPLETE);
+    CompleteTransition();
 }
 
 

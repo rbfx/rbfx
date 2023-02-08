@@ -92,6 +92,9 @@
 #include "../Utility/AssetPipeline.h"
 #include "../Utility/AssetTransformer.h"
 #include "../Utility/SceneViewerApplication.h"
+#ifdef URHO3D_ACTIONS
+#include "../Actions/ActionManager.h"
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -195,6 +198,10 @@ Engine::Engine(Context* context) :
 
 #ifdef URHO3D_NAVIGATION
     RegisterNavigationLibrary(context_);
+#endif
+
+#ifdef URHO3D_ACTIONS
+    context_->RegisterSubsystem<ActionManager>();
 #endif
 
     SceneViewerApplication::RegisterObject();

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022-2022 the rbfx project.
+// Copyright (c) 2021 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,23 +20,44 @@
 // THE SOFTWARE.
 //
 
-using System.Threading.Tasks;
-using Xunit;
+#pragma once
 
-namespace Urho3DNet.Tests
+#include "BaseAction.h"
+#include "../Resource/Resource.h"
+#include "../IO/Archive.h"
+
+namespace Urho3D
 {
-    public class SharedPtrTests
-    {
-        [Fact]
-        public async Task CreateAndDestroyObject()
-        {
-            await ApplicationRunner.RunAsync(app =>
-            {
-                using (var file = SharedPtr.MakeShared<Viewport>(app.Context))
-                {
-                    Assert.NotNull(file.Ptr);
-                }
-            });
-        }
-    }
-}
+
+class XMLFile;
+
+/// Action as resource
+class URHO3D_API ActionSet : public Resource
+{
+    URHO3D_OBJECT(ActionSet, Resource)
+
+public:
+    /// Construct.
+    explicit ActionSet(Context* context);
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+    /// Load resource from stream. May be called from a worker thread. Return true if successful.
+    bool BeginLoad(Deserializer& source) override;
+
+    /// Save resource. Return true if successful.
+    bool Save(Serializer& dest) const override;
+    /// Serialize from/to archive. Return true if successful.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Get action
+    Actions::BaseAction* GetDefaultAction() const { return defaultAction_; }
+    /// Set action
+    void SetDefaultAction(Actions::BaseAction* action);
+
+private:
+    /// Root action.
+    SharedPtr<Actions::BaseAction> defaultAction_;
+};
+
+} // namespace Urho3D
