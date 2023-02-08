@@ -2634,7 +2634,7 @@ private:
             {
                 if (lods.contains(*otherModel.lodDistance_))
                 {
-                    URHO3D_LOGERRORF("Multiple LODs with the same distance {} for model {}", *otherModel.lodDistance_,
+                    URHO3D_LOGERROR("Multiple LODs with the same distance {} for model {}", *otherModel.lodDistance_,
                         otherModel.meshName_);
                     continue;
                 }
