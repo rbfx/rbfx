@@ -1,0 +1,44 @@
+{
+	"Transformers": [
+		{
+			"_Class": "ModelImporter",
+			"attributes": [
+				{
+					"name": "Scale",
+					"type": "Float",
+					"value": 0.009999999776482582
+				}
+			]
+		},
+		{
+			"_Class": "AnimationVelocityExtractor",
+			"attributes": [
+				{
+					"name": "Target Bones",
+					"type": "StringVector",
+					"value": [
+						"b_LeftFoot02_018",
+						"b_RightFoot02_022",
+						"b_LeftHand_011",
+						"b_RightHand_08"
+					]
+				},
+				{
+					"name": "Ground Threshold",
+					"type": "Float",
+					"value": 0.009999999776482582
+				}
+			]
+		},
+		{
+			"_Class": "IKTargetExtractor",
+			"attributes": [
+				{
+					"name": "New File Name",
+					"type": "String",
+					"value": "*_IK_Only.ani"
+				}
+			]
+		}
+	]
+}

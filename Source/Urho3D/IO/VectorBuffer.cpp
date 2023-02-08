@@ -29,7 +29,7 @@
 namespace Urho3D
 {
 
-static ea::string vectorBufferName{"VectorBuffer"};
+static const ea::string vectorBufferName{"VectorBuffer"};
 
 VectorBuffer::VectorBuffer() = default;
 

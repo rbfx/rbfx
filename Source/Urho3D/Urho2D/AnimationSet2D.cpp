@@ -42,7 +42,7 @@
 #include <spine/extension.h>
 
 // Current animation set
-static Urho3D::AnimationSet2D* currentAnimationSet = 0;
+static thread_local Urho3D::AnimationSet2D* currentAnimationSet = 0;
 
 void _spAtlasPage_createTexture(spAtlasPage* self, const char* path)
 {

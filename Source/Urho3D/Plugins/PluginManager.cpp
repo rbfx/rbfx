@@ -46,7 +46,7 @@ namespace Urho3D
 namespace
 {
 
-auto& getRegistry()
+auto& GetRegistry()
 {
     static ea::unordered_map<ea::string, PluginApplicationFactory> registry;
     return registry;
@@ -231,7 +231,7 @@ PluginApplication* PluginStack::GetMainPlugin() const
 
 void PluginManager::RegisterPluginApplication(const ea::string& name, PluginApplicationFactory factory)
 {
-    getRegistry().emplace(name, factory);
+    GetRegistry().emplace(name, factory);
 }
 
 PluginManager::PluginManager(Context* context)
@@ -239,7 +239,7 @@ PluginManager::PluginManager(Context* context)
     , enableAutoReload_(!context_->GetSubsystem<Engine>()->IsHeadless())
     , pluginStack_(MakeShared<PluginStack>(this, loadedPlugins_))
 {
-    for (const auto& [name, factory] : getRegistry())
+    for (const auto& [name, factory] : GetRegistry())
     {
         const auto application = factory(context_);
         application->SetPluginName(name);
@@ -460,7 +460,7 @@ void PluginManager::Update(bool exiting)
         DisposeStack();
     }
 
-    const bool checkOutOfDate = enableAutoReload_ && (reloadTimer_.GetMSec(false) >= reloadIntervalMs_);
+    const bool checkOutOfDate = !exiting && enableAutoReload_ && (reloadTimer_.GetMSec(false) >= reloadIntervalMs_);
     if (checkOutOfDate)
         reloadTimer_.Reset();
 

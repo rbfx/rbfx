@@ -46,7 +46,7 @@ AssetPipeline::AssetPipeline(Context* context)
 
 bool AssetPipeline::CheckExtension(const ea::string& fileName)
 {
-    return fileName.ends_with(".AssetPipeline.json", false);
+    return fileName.ends_with(".assetpipeline", false) || fileName.ends_with(".AssetPipeline.json", false);
 }
 
 void AssetPipeline::AddTransformer(AssetTransformer* transformer)

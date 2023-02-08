@@ -41,7 +41,7 @@ void Add::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> AddPatterns{
+static const ea::vector<NodePattern> AddPatterns{
     MakePattern(
         AddInstance<float, float, float>()
         , ParticleGraphTypedPin<float>("x")

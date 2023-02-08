@@ -3,10 +3,8 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="300" />
-	<attribute name="Next Replicated Component ID" value="852" />
-	<attribute name="Next Local Node ID" value="16779688" />
-	<attribute name="Next Local Component ID" value="16777217" />
+	<attribute name="Next Node ID" value="2" />
+	<attribute name="Next Component ID" value="19" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -92,7 +90,7 @@
 			<attribute name="Tags" />
 			<attribute name="Position" value="-1 0 8.74228e-08" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-			<attribute name="Scale" value="0.01 0.01 0.01" />
+			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="817">
 				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -150,15 +148,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779593">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -166,7 +164,7 @@
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Hip_01" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 26.7484 42.9382" />
+						<attribute name="Position" value="-0 0.267484 0.429382" />
 						<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -174,7 +172,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Spine01_02" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-12.8506 0 0" />
+							<attribute name="Position" value="-0.128506 0 0" />
 							<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -182,7 +180,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine02_03" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-21.6558 -0.000118256 0" />
+								<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 								<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -190,7 +188,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Neck_04" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-25.6491 0 0" />
+									<attribute name="Position" value="-0.256491 0 0" />
 									<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -198,7 +196,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Head_05" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-13.377 0 0" />
+										<attribute name="Position" value="-0.13377 0 0" />
 										<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -208,7 +206,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightUpperArm_06" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+									<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 									<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -216,7 +214,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightForeArm_07" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -224,7 +222,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightHand_08" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.145987 0" />
+											<attribute name="Position" value="-0.193501 -0.00145987 0" />
 											<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -235,7 +233,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftUpperArm_09" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+									<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 									<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -243,7 +241,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftForeArm_010" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -251,7 +249,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftHand_011" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.14599 0" />
+											<attribute name="Position" value="-0.193501 -0.0014599 0" />
 											<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -264,7 +262,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Tail01_012" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.26038 15.9588 0" />
+							<attribute name="Position" value="-0.0426038 0.159588 0" />
 							<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -272,7 +270,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail02_013" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.4119 0 0" />
+								<attribute name="Position" value="-0.124119 0 0" />
 								<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -280,7 +278,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail03_014" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-24.2403 0 0" />
+									<attribute name="Position" value="-0.242403 0 0" />
 									<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -291,7 +289,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_LeftLeg01_015" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+							<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 							<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -299,7 +297,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg02_016" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -307,7 +305,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftFoot01_017" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -315,7 +313,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot02_018" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -327,7 +325,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_RightLeg01_019" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+							<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 							<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -335,7 +333,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg02_020" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -343,7 +341,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightFoot01_021" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -351,7 +349,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot02_022" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -393,7 +391,7 @@
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-				<attribute name="Scale" value="0.01 0.01 0.01" />
+				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="820">
 					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -451,15 +449,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779617">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -467,7 +465,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Hip_01" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-0 26.7484 42.9382" />
+							<attribute name="Position" value="-0 0.267484 0.429382" />
 							<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -475,7 +473,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine01_02" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.8506 0 0" />
+								<attribute name="Position" value="-0.128506 0 0" />
 								<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -483,7 +481,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Spine02_03" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-21.6558 -0.000118256 0" />
+									<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 									<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -491,7 +489,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Neck_04" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-25.6491 0 0" />
+										<attribute name="Position" value="-0.256491 0 0" />
 										<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -499,7 +497,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_Head_05" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-13.377 0 0" />
+											<attribute name="Position" value="-0.13377 0 0" />
 											<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -509,7 +507,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightUpperArm_06" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+										<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 										<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -517,7 +515,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightForeArm_07" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -525,7 +523,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_RightHand_08" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.145987 0" />
+												<attribute name="Position" value="-0.193501 -0.00145987 0" />
 												<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -536,7 +534,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftUpperArm_09" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+										<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 										<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -544,7 +542,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftForeArm_010" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -552,7 +550,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_LeftHand_011" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.14599 0" />
+												<attribute name="Position" value="-0.193501 -0.0014599 0" />
 												<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -565,7 +563,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail01_012" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.26038 15.9588 0" />
+								<attribute name="Position" value="-0.0426038 0.159588 0" />
 								<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -573,7 +571,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail02_013" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-12.4119 0 0" />
+									<attribute name="Position" value="-0.124119 0 0" />
 									<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -581,7 +579,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Tail03_014" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-24.2403 0 0" />
+										<attribute name="Position" value="-0.242403 0 0" />
 										<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -592,7 +590,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg01_015" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+								<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 								<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -600,7 +598,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftLeg02_016" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -608,7 +606,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot01_017" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -616,7 +614,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftFoot02_018" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -628,7 +626,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg01_019" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+								<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 								<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -636,7 +634,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightLeg02_020" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -644,7 +642,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot01_021" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -652,7 +650,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightFoot02_022" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -670,7 +668,7 @@
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-				<attribute name="Scale" value="0.01 0.01 0.01" />
+				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="822">
 					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -754,8 +752,8 @@
 						<string value="b_Spine02_03" />
 						<string value="b_Neck_04" />
 					</attribute>
-					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Target Name" value="b_Neck_04_Target" />
+					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Max Angle" value="60.000000" />
 				</component>
 				<component type="IKSpineSolver" id="829">
@@ -932,15 +930,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779641">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -948,7 +946,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Hip_01" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-0 26.7484 42.9382" />
+							<attribute name="Position" value="-0 0.267484 0.429382" />
 							<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -956,7 +954,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine01_02" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.8506 0 0" />
+								<attribute name="Position" value="-0.128506 0 0" />
 								<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -964,7 +962,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Spine02_03" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-21.6558 -0.000118256 0" />
+									<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 									<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -972,7 +970,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Neck_04" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-25.6491 0 0" />
+										<attribute name="Position" value="-0.256491 0 0" />
 										<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -980,7 +978,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_Head_05" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-13.377 0 0" />
+											<attribute name="Position" value="-0.13377 0 0" />
 											<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -990,7 +988,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightUpperArm_06" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+										<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 										<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -998,7 +996,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightForeArm_07" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -1006,7 +1004,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_RightHand_08" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.145987 0" />
+												<attribute name="Position" value="-0.193501 -0.00145987 0" />
 												<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -1017,7 +1015,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftUpperArm_09" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+										<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 										<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1025,7 +1023,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftForeArm_010" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -1033,7 +1031,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_LeftHand_011" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.14599 0" />
+												<attribute name="Position" value="-0.193501 -0.0014599 0" />
 												<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -1046,7 +1044,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail01_012" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.26038 15.9588 0" />
+								<attribute name="Position" value="-0.0426038 0.159588 0" />
 								<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1054,7 +1052,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail02_013" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-12.4119 0 0" />
+									<attribute name="Position" value="-0.124119 0 0" />
 									<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1062,7 +1060,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Tail03_014" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-24.2403 0 0" />
+										<attribute name="Position" value="-0.242403 0 0" />
 										<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1073,7 +1071,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg01_015" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+								<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 								<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1081,7 +1079,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftLeg02_016" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1089,7 +1087,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot01_017" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1097,7 +1095,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftFoot02_018" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -1109,7 +1107,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg01_019" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+								<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 								<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1117,7 +1115,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightLeg02_020" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1125,7 +1123,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot01_021" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1133,7 +1131,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightFoot02_022" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -1168,7 +1166,7 @@
 			<attribute name="Tags" />
 			<attribute name="Position" value="1 0 -8.74228e-08" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-			<attribute name="Scale" value="0.01 0.01 0.01" />
+			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="834">
 				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -1252,8 +1250,8 @@
 					<string value="b_Spine02_03" />
 					<string value="b_Neck_04" />
 				</attribute>
-				<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 				<attribute name="Target Name" value="b_Neck_04_Target" />
+				<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 				<attribute name="Max Angle" value="60.000000" />
 			</component>
 			<component type="IKSpineSolver" id="841">
@@ -1430,15 +1428,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779665">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -1446,7 +1444,7 @@
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Hip_01" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 26.7484 42.9382" />
+						<attribute name="Position" value="-0 0.267484 0.429382" />
 						<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -1454,7 +1452,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Spine01_02" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-12.8506 0 0" />
+							<attribute name="Position" value="-0.128506 0 0" />
 							<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1462,7 +1460,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine02_03" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-21.6558 -0.000118256 0" />
+								<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 								<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1470,7 +1468,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Neck_04" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-25.6491 0 0" />
+									<attribute name="Position" value="-0.256491 0 0" />
 									<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1478,7 +1476,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Head_05" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-13.377 0 0" />
+										<attribute name="Position" value="-0.13377 0 0" />
 										<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1488,7 +1486,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightUpperArm_06" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+									<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 									<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1496,7 +1494,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightForeArm_07" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1504,7 +1502,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightHand_08" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.145987 0" />
+											<attribute name="Position" value="-0.193501 -0.00145987 0" />
 											<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -1515,7 +1513,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftUpperArm_09" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+									<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 									<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1523,7 +1521,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftForeArm_010" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1531,7 +1529,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftHand_011" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.14599 0" />
+											<attribute name="Position" value="-0.193501 -0.0014599 0" />
 											<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -1544,7 +1542,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Tail01_012" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.26038 15.9588 0" />
+							<attribute name="Position" value="-0.0426038 0.159588 0" />
 							<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1552,7 +1550,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail02_013" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.4119 0 0" />
+								<attribute name="Position" value="-0.124119 0 0" />
 								<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1560,7 +1558,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail03_014" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-24.2403 0 0" />
+									<attribute name="Position" value="-0.242403 0 0" />
 									<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1571,7 +1569,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_LeftLeg01_015" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+							<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 							<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1579,7 +1577,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg02_016" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1587,7 +1585,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftFoot01_017" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1595,7 +1593,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot02_018" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1607,7 +1605,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_RightLeg01_019" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+							<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 							<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1615,7 +1613,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg02_020" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1623,7 +1621,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightFoot01_021" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1631,7 +1629,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot02_022" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1674,7 +1672,7 @@
 			<attribute name="Tags" />
 			<attribute name="Position" value="-1 0 8.74228e-08" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-			<attribute name="Scale" value="0.01 0.01 0.01" />
+			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="764">
 				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -1732,15 +1730,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779449">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -1748,7 +1746,7 @@
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Hip_01" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 26.7484 42.9382" />
+						<attribute name="Position" value="-0 0.267484 0.429382" />
 						<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -1756,7 +1754,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Spine01_02" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-12.8506 0 0" />
+							<attribute name="Position" value="-0.128506 0 0" />
 							<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1764,7 +1762,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine02_03" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-21.6558 -0.000118256 0" />
+								<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 								<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1772,7 +1770,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Neck_04" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-25.6491 0 0" />
+									<attribute name="Position" value="-0.256491 0 0" />
 									<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1780,7 +1778,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Head_05" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-13.377 0 0" />
+										<attribute name="Position" value="-0.13377 0 0" />
 										<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1790,7 +1788,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightUpperArm_06" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+									<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 									<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1798,7 +1796,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightForeArm_07" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1806,7 +1804,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightHand_08" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.145987 0" />
+											<attribute name="Position" value="-0.193501 -0.00145987 0" />
 											<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -1817,7 +1815,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftUpperArm_09" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+									<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 									<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1825,7 +1823,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftForeArm_010" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1833,7 +1831,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftHand_011" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.14599 0" />
+											<attribute name="Position" value="-0.193501 -0.0014599 0" />
 											<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -1846,7 +1844,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Tail01_012" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.26038 15.9588 0" />
+							<attribute name="Position" value="-0.0426038 0.159588 0" />
 							<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1854,7 +1852,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail02_013" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.4119 0 0" />
+								<attribute name="Position" value="-0.124119 0 0" />
 								<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1862,7 +1860,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail03_014" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-24.2403 0 0" />
+									<attribute name="Position" value="-0.242403 0 0" />
 									<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1873,7 +1871,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_LeftLeg01_015" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+							<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 							<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1881,7 +1879,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg02_016" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1889,7 +1887,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftFoot01_017" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1897,7 +1895,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot02_018" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1909,7 +1907,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_RightLeg01_019" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+							<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 							<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -1917,7 +1915,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg02_020" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -1925,7 +1923,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightFoot01_021" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -1933,7 +1931,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot02_022" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -1975,7 +1973,7 @@
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-				<attribute name="Scale" value="0.01 0.01 0.01" />
+				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="252">
 					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -2033,15 +2031,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779353">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -2049,7 +2047,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Hip_01" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-0 26.7484 42.9382" />
+							<attribute name="Position" value="-0 0.267484 0.429382" />
 							<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -2057,7 +2055,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine01_02" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.8506 0 0" />
+								<attribute name="Position" value="-0.128506 0 0" />
 								<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -2065,7 +2063,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Spine02_03" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-21.6558 -0.000118256 0" />
+									<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 									<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -2073,7 +2071,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Neck_04" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-25.6491 0 0" />
+										<attribute name="Position" value="-0.256491 0 0" />
 										<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2081,7 +2079,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_Head_05" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-13.377 0 0" />
+											<attribute name="Position" value="-0.13377 0 0" />
 											<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2091,7 +2089,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightUpperArm_06" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+										<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 										<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2099,7 +2097,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightForeArm_07" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2107,7 +2105,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_RightHand_08" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.145987 0" />
+												<attribute name="Position" value="-0.193501 -0.00145987 0" />
 												<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -2118,7 +2116,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftUpperArm_09" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+										<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 										<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2126,7 +2124,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftForeArm_010" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2134,7 +2132,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_LeftHand_011" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.14599 0" />
+												<attribute name="Position" value="-0.193501 -0.0014599 0" />
 												<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -2147,7 +2145,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail01_012" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.26038 15.9588 0" />
+								<attribute name="Position" value="-0.0426038 0.159588 0" />
 								<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -2155,7 +2153,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail02_013" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-12.4119 0 0" />
+									<attribute name="Position" value="-0.124119 0 0" />
 									<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -2163,7 +2161,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Tail03_014" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-24.2403 0 0" />
+										<attribute name="Position" value="-0.242403 0 0" />
 										<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2174,7 +2172,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg01_015" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+								<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 								<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -2182,7 +2180,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftLeg02_016" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -2190,7 +2188,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot01_017" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2198,7 +2196,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftFoot02_018" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2210,7 +2208,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg01_019" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+								<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 								<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -2218,7 +2216,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightLeg02_020" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -2226,7 +2224,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot01_021" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2234,7 +2232,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightFoot02_022" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2252,7 +2250,7 @@
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-				<attribute name="Scale" value="0.01 0.01 0.01" />
+				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="236">
 					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -2336,8 +2334,8 @@
 						<string value="b_Spine02_03" />
 						<string value="b_Neck_04" />
 					</attribute>
-					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Target Name" value="b_Neck_04_Target" />
+					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Max Angle" value="60.000000" />
 				</component>
 				<component type="IKSpineSolver" id="733">
@@ -2514,15 +2512,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779377">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -2530,7 +2528,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Hip_01" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-0 26.7484 42.9382" />
+							<attribute name="Position" value="-0 0.267484 0.429382" />
 							<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -2538,7 +2536,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine01_02" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.8506 0 0" />
+								<attribute name="Position" value="-0.128506 0 0" />
 								<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -2546,7 +2544,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Spine02_03" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-21.6558 -0.000118256 0" />
+									<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 									<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -2554,7 +2552,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Neck_04" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-25.6491 0 0" />
+										<attribute name="Position" value="-0.256491 0 0" />
 										<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2562,7 +2560,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_Head_05" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-13.377 0 0" />
+											<attribute name="Position" value="-0.13377 0 0" />
 											<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2572,7 +2570,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightUpperArm_06" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+										<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 										<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2580,7 +2578,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightForeArm_07" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2588,7 +2586,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_RightHand_08" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.145987 0" />
+												<attribute name="Position" value="-0.193501 -0.00145987 0" />
 												<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -2599,7 +2597,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftUpperArm_09" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+										<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 										<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2607,7 +2605,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftForeArm_010" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2615,7 +2613,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_LeftHand_011" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.14599 0" />
+												<attribute name="Position" value="-0.193501 -0.0014599 0" />
 												<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -2628,7 +2626,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail01_012" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.26038 15.9588 0" />
+								<attribute name="Position" value="-0.0426038 0.159588 0" />
 								<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -2636,7 +2634,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail02_013" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-12.4119 0 0" />
+									<attribute name="Position" value="-0.124119 0 0" />
 									<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -2644,7 +2642,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Tail03_014" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-24.2403 0 0" />
+										<attribute name="Position" value="-0.242403 0 0" />
 										<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2655,7 +2653,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg01_015" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+								<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 								<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -2663,7 +2661,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftLeg02_016" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -2671,7 +2669,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot01_017" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2679,7 +2677,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftFoot02_018" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2691,7 +2689,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg01_019" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+								<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 								<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -2699,7 +2697,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightLeg02_020" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -2707,7 +2705,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot01_021" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -2715,7 +2713,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightFoot02_022" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -2750,7 +2748,7 @@
 			<attribute name="Tags" />
 			<attribute name="Position" value="1 0 -8.74228e-08" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-			<attribute name="Scale" value="0.01 0.01 0.01" />
+			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="766">
 				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -2834,8 +2832,8 @@
 					<string value="b_Spine02_03" />
 					<string value="b_Neck_04" />
 				</attribute>
-				<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 				<attribute name="Target Name" value="b_Neck_04_Target" />
+				<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 				<attribute name="Max Angle" value="60.000000" />
 			</component>
 			<component type="IKSpineSolver" id="773">
@@ -3012,15 +3010,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779473">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -3028,7 +3026,7 @@
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Hip_01" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 26.7484 42.9382" />
+						<attribute name="Position" value="-0 0.267484 0.429382" />
 						<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -3036,7 +3034,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Spine01_02" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-12.8506 0 0" />
+							<attribute name="Position" value="-0.128506 0 0" />
 							<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3044,7 +3042,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine02_03" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-21.6558 -0.000118256 0" />
+								<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 								<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3052,7 +3050,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Neck_04" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-25.6491 0 0" />
+									<attribute name="Position" value="-0.256491 0 0" />
 									<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3060,7 +3058,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Head_05" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-13.377 0 0" />
+										<attribute name="Position" value="-0.13377 0 0" />
 										<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3070,7 +3068,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightUpperArm_06" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+									<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 									<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3078,7 +3076,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightForeArm_07" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3086,7 +3084,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightHand_08" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.145987 0" />
+											<attribute name="Position" value="-0.193501 -0.00145987 0" />
 											<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3097,7 +3095,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftUpperArm_09" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+									<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 									<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3105,7 +3103,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftForeArm_010" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3113,7 +3111,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftHand_011" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.14599 0" />
+											<attribute name="Position" value="-0.193501 -0.0014599 0" />
 											<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3126,7 +3124,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Tail01_012" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.26038 15.9588 0" />
+							<attribute name="Position" value="-0.0426038 0.159588 0" />
 							<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3134,7 +3132,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail02_013" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.4119 0 0" />
+								<attribute name="Position" value="-0.124119 0 0" />
 								<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3142,7 +3140,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail03_014" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-24.2403 0 0" />
+									<attribute name="Position" value="-0.242403 0 0" />
 									<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3153,7 +3151,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_LeftLeg01_015" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+							<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 							<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3161,7 +3159,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg02_016" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3169,7 +3167,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftFoot01_017" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3177,7 +3175,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot02_018" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3189,7 +3187,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_RightLeg01_019" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+							<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 							<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3197,7 +3195,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg02_020" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3205,7 +3203,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightFoot01_021" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3213,7 +3211,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot02_022" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3256,7 +3254,7 @@
 			<attribute name="Tags" />
 			<attribute name="Position" value="-1 0 8.74228e-08" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-			<attribute name="Scale" value="0.01 0.01 0.01" />
+			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="788">
 				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -3314,15 +3312,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779497">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -3330,7 +3328,7 @@
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Hip_01" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 26.7484 42.9382" />
+						<attribute name="Position" value="-0 0.267484 0.429382" />
 						<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -3338,7 +3336,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Spine01_02" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-12.8506 0 0" />
+							<attribute name="Position" value="-0.128506 0 0" />
 							<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3346,7 +3344,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine02_03" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-21.6558 -0.000118256 0" />
+								<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 								<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3354,7 +3352,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Neck_04" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-25.6491 0 0" />
+									<attribute name="Position" value="-0.256491 0 0" />
 									<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3362,7 +3360,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Head_05" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-13.377 0 0" />
+										<attribute name="Position" value="-0.13377 0 0" />
 										<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3372,7 +3370,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightUpperArm_06" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+									<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 									<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3380,7 +3378,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightForeArm_07" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3388,7 +3386,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightHand_08" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.145987 0" />
+											<attribute name="Position" value="-0.193501 -0.00145987 0" />
 											<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3399,7 +3397,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftUpperArm_09" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+									<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 									<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3407,7 +3405,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftForeArm_010" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3415,7 +3413,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftHand_011" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.14599 0" />
+											<attribute name="Position" value="-0.193501 -0.0014599 0" />
 											<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3428,7 +3426,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Tail01_012" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.26038 15.9588 0" />
+							<attribute name="Position" value="-0.0426038 0.159588 0" />
 							<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3436,7 +3434,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail02_013" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.4119 0 0" />
+								<attribute name="Position" value="-0.124119 0 0" />
 								<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3444,7 +3442,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail03_014" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-24.2403 0 0" />
+									<attribute name="Position" value="-0.242403 0 0" />
 									<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3455,7 +3453,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_LeftLeg01_015" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+							<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 							<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3463,7 +3461,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg02_016" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3471,7 +3469,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftFoot01_017" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3479,7 +3477,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot02_018" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3491,7 +3489,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_RightLeg01_019" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+							<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 							<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3499,7 +3497,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg02_020" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3507,7 +3505,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightFoot01_021" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3515,7 +3513,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot02_022" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3557,7 +3555,7 @@
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-				<attribute name="Scale" value="0.01 0.01 0.01" />
+				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="791">
 					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -3615,15 +3613,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779521">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -3631,7 +3629,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Hip_01" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-0 26.7484 42.9382" />
+							<attribute name="Position" value="-0 0.267484 0.429382" />
 							<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -3639,7 +3637,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine01_02" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.8506 0 0" />
+								<attribute name="Position" value="-0.128506 0 0" />
 								<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3647,7 +3645,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Spine02_03" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-21.6558 -0.000118256 0" />
+									<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 									<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3655,7 +3653,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Neck_04" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-25.6491 0 0" />
+										<attribute name="Position" value="-0.256491 0 0" />
 										<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3663,7 +3661,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_Head_05" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-13.377 0 0" />
+											<attribute name="Position" value="-0.13377 0 0" />
 											<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3673,7 +3671,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightUpperArm_06" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+										<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 										<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3681,7 +3679,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightForeArm_07" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3689,7 +3687,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_RightHand_08" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.145987 0" />
+												<attribute name="Position" value="-0.193501 -0.00145987 0" />
 												<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -3700,7 +3698,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftUpperArm_09" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+										<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 										<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3708,7 +3706,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftForeArm_010" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3716,7 +3714,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_LeftHand_011" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.14599 0" />
+												<attribute name="Position" value="-0.193501 -0.0014599 0" />
 												<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -3729,7 +3727,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail01_012" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.26038 15.9588 0" />
+								<attribute name="Position" value="-0.0426038 0.159588 0" />
 								<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3737,7 +3735,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail02_013" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-12.4119 0 0" />
+									<attribute name="Position" value="-0.124119 0 0" />
 									<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3745,7 +3743,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Tail03_014" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-24.2403 0 0" />
+										<attribute name="Position" value="-0.242403 0 0" />
 										<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3756,7 +3754,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg01_015" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+								<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 								<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3764,7 +3762,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftLeg02_016" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3772,7 +3770,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot01_017" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3780,7 +3778,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftFoot02_018" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3792,7 +3790,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg01_019" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+								<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 								<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -3800,7 +3798,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightLeg02_020" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -3808,7 +3806,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot01_021" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -3816,7 +3814,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightFoot02_022" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -3834,7 +3832,7 @@
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-				<attribute name="Scale" value="0.01 0.01 0.01" />
+				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="793">
 					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -3918,8 +3916,8 @@
 						<string value="b_Spine02_03" />
 						<string value="b_Neck_04" />
 					</attribute>
-					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Target Name" value="b_Neck_04_Target" />
+					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Max Angle" value="60.000000" />
 				</component>
 				<component type="IKSpineSolver" id="800">
@@ -4096,15 +4094,15 @@
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="_rootJoint" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
-					<attribute name="Rotation" value="1 0 -0 -0" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16779545">
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Root_00" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 0 0" />
+						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -4112,7 +4110,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Hip_01" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-0 26.7484 42.9382" />
+							<attribute name="Position" value="-0 0.267484 0.429382" />
 							<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -4120,7 +4118,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine01_02" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.8506 0 0" />
+								<attribute name="Position" value="-0.128506 0 0" />
 								<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -4128,7 +4126,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Spine02_03" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-21.6558 -0.000118256 0" />
+									<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 									<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4136,7 +4134,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Neck_04" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-25.6491 0 0" />
+										<attribute name="Position" value="-0.256491 0 0" />
 										<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4144,7 +4142,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_Head_05" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-13.377 0 0" />
+											<attribute name="Position" value="-0.13377 0 0" />
 											<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -4154,7 +4152,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightUpperArm_06" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+										<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 										<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4162,7 +4160,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightForeArm_07" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -4170,7 +4168,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_RightHand_08" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.145987 0" />
+												<attribute name="Position" value="-0.193501 -0.00145987 0" />
 												<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -4181,7 +4179,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftUpperArm_09" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+										<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 										<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4189,7 +4187,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftForeArm_010" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-23.0451 0 0" />
+											<attribute name="Position" value="-0.230451 0 0" />
 											<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -4197,7 +4195,7 @@
 												<attribute name="Is Enabled" value="true" />
 												<attribute name="Name" value="b_LeftHand_011" />
 												<attribute name="Tags" />
-												<attribute name="Position" value="-19.3501 -0.14599 0" />
+												<attribute name="Position" value="-0.193501 -0.0014599 0" />
 												<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 												<attribute name="Scale" value="1 1 1" />
 												<attribute name="Variables" />
@@ -4210,7 +4208,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail01_012" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.26038 15.9588 0" />
+								<attribute name="Position" value="-0.0426038 0.159588 0" />
 								<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -4218,7 +4216,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail02_013" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-12.4119 0 0" />
+									<attribute name="Position" value="-0.124119 0 0" />
 									<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4226,7 +4224,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Tail03_014" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-24.2403 0 0" />
+										<attribute name="Position" value="-0.242403 0 0" />
 										<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4237,7 +4235,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg01_015" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+								<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 								<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -4245,7 +4243,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftLeg02_016" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4253,7 +4251,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot01_017" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4261,7 +4259,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftFoot02_018" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -4273,7 +4271,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg01_019" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+								<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 								<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -4281,7 +4279,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightLeg02_020" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.9442 0 0" />
+									<attribute name="Position" value="-0.189442 0 0" />
 									<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4289,7 +4287,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot01_021" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-17.9428 0 0" />
+										<attribute name="Position" value="-0.179428 0 0" />
 										<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4297,7 +4295,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightFoot02_022" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-15.7799 0 0" />
+											<attribute name="Position" value="-0.157799 0 0" />
 											<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -4332,7 +4330,7 @@
 			<attribute name="Tags" />
 			<attribute name="Position" value="1 0 -8.74228e-08" />
 			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
-			<attribute name="Scale" value="0.01 0.01 0.01" />
+			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="805">
 				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
@@ -4416,8 +4414,8 @@
 					<string value="b_Spine02_03" />
 					<string value="b_Neck_04" />
 				</attribute>
-				<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 				<attribute name="Target Name" value="b_Neck_04_Target" />
+				<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 				<attribute name="Max Angle" value="60.000000" />
 			</component>
 			<component type="IKSpineSolver" id="812">
@@ -4594,15 +4592,15 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="_rootJoint" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-0 0 0" />
-				<attribute name="Rotation" value="1 0 -0 -0" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<node id="16779569">
 					<attribute name="Is Enabled" value="true" />
 					<attribute name="Name" value="b_Root_00" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="-0 0 0" />
+					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="0.707105 -0.707108 -0 -0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
@@ -4610,7 +4608,7 @@
 						<attribute name="Is Enabled" value="true" />
 						<attribute name="Name" value="b_Hip_01" />
 						<attribute name="Tags" />
-						<attribute name="Position" value="-0 26.7484 42.9382" />
+						<attribute name="Position" value="-0 0.267484 0.429382" />
 						<attribute name="Rotation" value="0.695482 0.127691 0.695482 0.12769" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
@@ -4618,7 +4616,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Spine01_02" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-12.8506 0 0" />
+							<attribute name="Position" value="-0.128506 0 0" />
 							<attribute name="Rotation" value="0.807099 0 -0 0.590416" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -4626,7 +4624,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Spine02_03" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-21.6558 -0.000118256 0" />
+								<attribute name="Position" value="-0.216558 -1.18256e-06 0" />
 								<attribute name="Rotation" value="0.999848 0 -0 -0.017412" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -4634,7 +4632,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Neck_04" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-25.6491 0 0" />
+									<attribute name="Position" value="-0.256491 0 0" />
 									<attribute name="Rotation" value="0.95287 0 -0 -0.303379" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4642,7 +4640,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_Head_05" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-13.377 0 0" />
+										<attribute name="Position" value="-0.13377 0 0" />
 										<attribute name="Rotation" value="0.916391 0 -0 0.400285" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4652,7 +4650,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightUpperArm_06" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 6.96758" />
+									<attribute name="Position" value="-0.186779 -0.0429734 0.0696758" />
 									<attribute name="Rotation" value="0.701997 0.000467327 0.000446148 0.712179" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4660,7 +4658,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightForeArm_07" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4668,7 +4666,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_RightHand_08" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.145987 0" />
+											<attribute name="Position" value="-0.193501 -0.00145987 0" />
 											<attribute name="Rotation" value="0.887511 -0.0120374 0.00782221 -0.460562" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -4679,7 +4677,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftUpperArm_09" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-18.6779 -4.29734 -6.96799" />
+									<attribute name="Position" value="-0.186779 -0.0429734 -0.0696799" />
 									<attribute name="Rotation" value="0.70209 0.000497262 0.000882192 0.712088" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4687,7 +4685,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftForeArm_010" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-23.0451 0 0" />
+										<attribute name="Position" value="-0.230451 0 0" />
 										<attribute name="Rotation" value="0.999311 0 -0 -0.0371259" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4695,7 +4693,7 @@
 											<attribute name="Is Enabled" value="true" />
 											<attribute name="Name" value="b_LeftHand_011" />
 											<attribute name="Tags" />
-											<attribute name="Position" value="-19.3501 -0.14599 0" />
+											<attribute name="Position" value="-0.193501 -0.0014599 0" />
 											<attribute name="Rotation" value="0.887616 0.0165179 -0.0140137 -0.460076" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
@@ -4708,7 +4706,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_Tail01_012" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.26038 15.9588 0" />
+							<attribute name="Position" value="-0.0426038 0.159588 0" />
 							<attribute name="Rotation" value="0.189437 0 -0 -0.981893" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -4716,7 +4714,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_Tail02_013" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-12.4119 0 0" />
+								<attribute name="Position" value="-0.124119 0 0" />
 								<attribute name="Rotation" value="0.997574 0 -0 0.0696172" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -4724,7 +4722,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_Tail03_014" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-24.2403 0 0" />
+									<attribute name="Position" value="-0.242403 0 0" />
 									<attribute name="Rotation" value="0.99855 0 -0 0.0538327" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4735,7 +4733,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_LeftLeg01_015" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81377 5.15402 -6.96801" />
+							<attribute name="Position" value="-0.0481377 0.0515402 -0.0696801" />
 							<attribute name="Rotation" value="-0.243041 0 0.000171752 -0.970016" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -4743,7 +4741,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_LeftLeg02_016" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -4751,7 +4749,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_LeftFoot01_017" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888703 0.000248411 -0 -0.458484" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4759,7 +4757,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_LeftFoot02_018" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
@@ -4771,7 +4769,7 @@
 							<attribute name="Is Enabled" value="true" />
 							<attribute name="Name" value="b_RightLeg01_019" />
 							<attribute name="Tags" />
-							<attribute name="Position" value="-4.81378 5.15403 6.96756" />
+							<attribute name="Position" value="-0.0481378 0.0515403 0.0696756" />
 							<attribute name="Rotation" value="-0.24327 0 -0 -0.969959" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
@@ -4779,7 +4777,7 @@
 								<attribute name="Is Enabled" value="true" />
 								<attribute name="Name" value="b_RightLeg02_020" />
 								<attribute name="Tags" />
-								<attribute name="Position" value="-18.9442 0 0" />
+								<attribute name="Position" value="-0.189442 0 0" />
 								<attribute name="Rotation" value="0.929808 0 -0 0.368044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
@@ -4787,7 +4785,7 @@
 									<attribute name="Is Enabled" value="true" />
 									<attribute name="Name" value="b_RightFoot01_021" />
 									<attribute name="Tags" />
-									<attribute name="Position" value="-17.9428 0 0" />
+									<attribute name="Position" value="-0.179428 0 0" />
 									<attribute name="Rotation" value="0.888999 -0.000153455 -0 -0.457909" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
@@ -4795,7 +4793,7 @@
 										<attribute name="Is Enabled" value="true" />
 										<attribute name="Name" value="b_RightFoot02_022" />
 										<attribute name="Tags" />
-										<attribute name="Position" value="-15.7799 0 0" />
+										<attribute name="Position" value="-0.157799 0 0" />
 										<attribute name="Rotation" value="0.836944 0 -0 -0.547288" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />

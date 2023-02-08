@@ -41,7 +41,7 @@ void Negate::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> NegatePatterns{
+static const ea::vector<NodePattern> NegatePatterns{
     MakePattern(
         NegateInstance<float, float>()
         , ParticleGraphTypedPin<float>("x")

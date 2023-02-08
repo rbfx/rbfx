@@ -341,7 +341,7 @@ Rml::DataModelConstructor RmlUIComponent::CreateDataModel()
     Rml::Context* context = ui->GetRmlContext();
 
     dataModelName_ = GetDataModelName();
-    Rml::DataModelConstructor constructor = context->CreateDataModel(dataModelName_);
+    Rml::DataModelConstructor constructor = context->CreateDataModel(dataModelName_, &typeRegister_);
 
     constructor.BindFunc("navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
     constructor.BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);

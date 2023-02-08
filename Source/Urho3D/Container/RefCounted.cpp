@@ -48,11 +48,6 @@ void RefCount::Free(RefCount* instance)
     EASTLFree(*ea::get_default_allocator((Allocator*)nullptr), instance, sizeof(RefCount));
 }
 
-#if !URHO3D_CSHARP
-void* RefCounted::scriptObject_{};
-bool RefCounted::isScriptStrongRef_{};
-#endif
-
 RefCounted::RefCounted()
     : refCount_(RefCount::Allocate())
 {

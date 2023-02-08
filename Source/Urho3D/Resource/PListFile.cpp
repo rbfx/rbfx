@@ -35,9 +35,9 @@
 namespace Urho3D
 {
 
-static PListValue EMPTY_VALUE;
-static PListValueMap EMPTY_VALUEMAP;
-static PListValueVector EMPTY_VALUEVECTOR;
+static const PListValue EMPTY_VALUE;
+static const PListValueMap EMPTY_VALUEMAP;
+static const PListValueVector EMPTY_VALUEVECTOR;
 
 PListValue::PListValue() :                                  // NOLINT(hicpp-member-init)
     type_(PLVT_NONE)

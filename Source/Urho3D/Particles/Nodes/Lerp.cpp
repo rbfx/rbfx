@@ -41,7 +41,7 @@ void Lerp::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> LerpPatterns{
+static const ea::vector<NodePattern> LerpPatterns{
     MakePattern(
         LerpInstance<float, float, float, float>()
         , ParticleGraphTypedPin<float>("x")

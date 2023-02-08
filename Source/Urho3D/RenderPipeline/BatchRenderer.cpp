@@ -259,7 +259,7 @@ public:
         , objectParameterBuilder_(settings_, flags)
         , instanceIndex_(startInstance)
     {
-        static thread_local ea::vector<const ea::pair<const StringHash, MaterialShaderParameter>*> customMaterialParameters;
+        thread_local ea::vector<const ea::pair<const StringHash, MaterialShaderParameter>*> customMaterialParameters;
         customMaterialParameters_ = &customMaterialParameters;
     }
 

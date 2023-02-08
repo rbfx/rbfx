@@ -634,6 +634,17 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
+      - name: Deploy
+        if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' && matrix.ci_build_type =='rel'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
+          external_repository: rbfx/rbfx.github.io
+          destination_dir: samples
+          cname: rebelfork.io
+          publish_dir: ${{ env.ci_sdk_dir }}/deploy
+          publish_branch: master
+
       - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:

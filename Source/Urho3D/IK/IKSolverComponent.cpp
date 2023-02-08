@@ -959,6 +959,9 @@ void IKSpineSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Twist Weight", float, twistWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxAngle_, 90.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Tweak", float, bendTweak_, 0.0f, AM_DEFAULT);
+
+    URHO3D_ACTION_STATIC_LABEL("Update Properties", UpdateProperties, "Set properties below from current bone positions");
+    URHO3D_ATTRIBUTE("Twist Rotation Offset", Quaternion, twistRotationOffset_, Quaternion::ZERO, AM_DEFAULT);
 }
 
 void IKSpineSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -977,6 +980,11 @@ void IKSpineSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         DrawIKTarget(debug, twistTarget_, true);
     if (target_)
         DrawIKTarget(debug, target_, false);
+}
+
+void IKSpineSolver::UpdateProperties()
+{
+    UpdateTwistRotationOffset();
 }
 
 bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
@@ -1043,10 +1051,24 @@ void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)
 
 void IKSpineSolver::EnsureInitialized()
 {
+    if (twistRotationOffset_ == Quaternion::ZERO)
+        UpdateTwistRotationOffset();
+
     positionWeight_ = Clamp(positionWeight_, 0.0f, 1.0f);
     rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
     twistWeight_ = Clamp(twistWeight_, 0.0f, 1.0f);
     maxAngle_ = Clamp(maxAngle_, 0.0f, 180.0f);
+}
+
+void IKSpineSolver::UpdateTwistRotationOffset()
+{
+    if (boneNames_.size() >= 2)
+    {
+        const ea::string& twistBoneName = boneNames_[boneNames_.size() - 2];
+        Node* boneNode = node_->GetChild(twistBoneName, true);
+        if (boneNode)
+            twistRotationOffset_ = node_->GetWorldRotation().Inverse() * boneNode->GetWorldRotation();
+    }
 }
 
 float IKSpineSolver::WeightFunction(float x) const
@@ -1093,7 +1115,8 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
         bones[i]->rotation_ = originalBoneRotations_[i].Slerp(bones[i]->rotation_, positionWeight_);
 
     // Solve rotations for partial solver weight for twist target
-    const float twistAngle = twistTarget_ ? GetTwistAngle(chain_.GetSegments().back(), twistTarget_) : 0.0f;
+    const float twistAngle =
+        twistTarget_ ? GetTwistAngle(frameOfReference, chain_.GetSegments().back(), twistTarget_) : 0.0f;
     chain_.Twist(twistAngle * twistWeight_, settings);
 
     // Apply target rotation if needed
@@ -1104,9 +1127,11 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
     }
 }
 
-float IKSpineSolver::GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const
+float IKSpineSolver::GetTwistAngle(
+    const Transform& frameOfReference, const IKNodeSegment& segment, Node* targetNode) const
 {
-    const Quaternion targetRotation = node_->GetWorldRotation().Inverse() * targetNode->GetWorldRotation();
+    const Quaternion targetRotation =
+        frameOfReference.rotation_.Inverse() * targetNode->GetWorldRotation() * twistRotationOffset_;
     const Vector3 direction = (segment.endNode_->position_ - segment.beginNode_->position_).Normalized();
     const auto [_, twist] = targetRotation.ToSwingTwist(direction);
     const float angle = twist.Angle();

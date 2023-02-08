@@ -114,7 +114,7 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, const ea::string& filename)
     return type;
 }
 
-static TechniqueEntry noEntry;
+static const TechniqueEntry noEntry;
 
 TechniqueEntry::TechniqueEntry() noexcept :
     qualityLevel_(QUALITY_LOW),

@@ -112,7 +112,7 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (desc.HasExtension({".AssetPipeline.json"}))
+        if (desc.HasExtension({".assetpipeline", ".AssetPipeline.json"}))
         {
             desc.AddObjectType<AssetPipeline>();
         }

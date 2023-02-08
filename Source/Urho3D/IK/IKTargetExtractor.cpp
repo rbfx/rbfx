@@ -149,9 +149,9 @@ bool IKTargetExtractor::Execute(const AssetTransformerInput& input, AssetTransfo
             return false;
         }
 
-        auto targetAnimation = MakeShared<Animation>(context_);
-        targetAnimation->SetName(GetNewFileName(sourceAnimation->GetName()));
+        auto targetAnimation = sourceAnimation->Clone(GetNewFileName(sourceAnimation->GetName()));
         targetAnimation->SetAbsoluteFileName(GetNewFileName(input.tempPath_ + sourceAnimation->GetName()));
+        targetAnimation->RemoveAllTracks();
 
         ExtractAnimation(sourceAnimation, targetAnimation, model);
 
@@ -205,12 +205,6 @@ void IKTargetExtractor::ExtractAnimation(Animation* sourceAnimation, Animation* 
 
     const float animationLength = sourceAnimation->GetLength();
     const float animationFrameRate = sourceAnimation->GetMetadata("FrameRate").GetFloat();
-
-    if (sourceAnimation != destAnimation)
-    {
-        destAnimation->SetAnimationName(sourceAnimation->GetAnimationName());
-        destAnimation->SetLength(animationLength);
-    }
 
     const float sampleRate = sampleRate_ != 0 ? sampleRate_ : animationFrameRate != 0.0f ? animationFrameRate : 30.0f;
     const float numFramesEstimate = animationLength * sampleRate;

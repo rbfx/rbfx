@@ -57,6 +57,9 @@ const char* verticalAlignments[] =
     nullptr
 };
 
+namespace
+{
+
 static const char* focusModes[] =
 {
     "NotFocusable",
@@ -88,7 +91,9 @@ static bool CompareUIElements(const UIElement* lhs, const UIElement* rhs)
     return lhs->GetPriority() < rhs->GetPriority();
 }
 
-XPathQuery UIElement::styleXPathQuery_("/elements/element[@type=$typeName]", "typeName:String");
+thread_local XPathQuery styleXPathQuery("/elements/element[@type=$typeName]", "typeName:String");
+
+}
 
 UIElement::UIElement(Context* context) :
     Animatable(context),
@@ -514,9 +519,9 @@ bool UIElement::FilterAttributes(XMLElement& dest) const
         ea::string style = dest.GetAttribute("style");
         if (!style.empty() && style != "none")
         {
-            if (styleXPathQuery_.SetVariable("typeName", style))
+            if (styleXPathQuery.SetVariable("typeName", style))
             {
-                XMLElement styleElem = GetDefaultStyle()->GetRoot().SelectSinglePrepared(styleXPathQuery_);
+                XMLElement styleElem = GetDefaultStyle()->GetRoot().SelectSinglePrepared(styleXPathQuery);
                 if (styleElem && !FilterUIStyleAttributes(dest, styleElem))
                     return false;
             }
@@ -1038,8 +1043,8 @@ bool UIElement::SetStyle(const ea::string& styleName, XMLFile* file)
     // Remember the effectively applied style file, either custom or default
     appliedStyleFile_ = file;
 
-    styleXPathQuery_.SetVariable("typeName", actualStyleName);
-    XMLElement styleElem = file->GetRoot().SelectSinglePrepared(styleXPathQuery_);
+    styleXPathQuery.SetVariable("typeName", actualStyleName);
+    XMLElement styleElem = file->GetRoot().SelectSinglePrepared(styleXPathQuery);
     return styleElem && SetStyle(styleElem);
 }
 
@@ -1985,7 +1990,7 @@ void UIElement::MarkDirty()
 
 bool UIElement::RemoveChildXML(XMLElement& parent, const ea::string& name) const
 {
-    static XPathQuery matchXPathQuery("./attribute[@name=$attributeName]", "attributeName:String");
+    thread_local XPathQuery matchXPathQuery("./attribute[@name=$attributeName]", "attributeName:String");
 
     if (!matchXPathQuery.SetVariable("attributeName", name))
         return false;
@@ -1996,7 +2001,7 @@ bool UIElement::RemoveChildXML(XMLElement& parent, const ea::string& name) const
 
 bool UIElement::RemoveChildXML(XMLElement& parent, const ea::string& name, const ea::string& value) const
 {
-    static XPathQuery matchXPathQuery
+    thread_local XPathQuery matchXPathQuery
         ("./attribute[@name=$attributeName and @value=$attributeValue]", "attributeName:String, attributeValue:String");
 
     if (!matchXPathQuery.SetVariable("attributeName", name))

@@ -41,7 +41,7 @@ void Subtract::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> SubtractPatterns{
+static const ea::vector<NodePattern> SubtractPatterns{
     MakePattern(
         SubtractInstance<float, float, float>()
         , ParticleGraphTypedPin<float>("x")

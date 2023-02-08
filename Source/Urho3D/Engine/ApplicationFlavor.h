@@ -49,14 +49,14 @@ struct URHO3D_API ApplicationFlavorPattern
 struct URHO3D_API ApplicationFlavor
 {
     /// Universal flavor matches any pattern.
-    static ApplicationFlavor Universal;
+    static const ApplicationFlavor Universal;
     /// Empty flavor matches only empty patterns.
-    static ApplicationFlavor Empty;
+    static const ApplicationFlavor Empty;
     /// Flavor of current platform.
     /// There's one component "platform" which consists of:
     /// - Platform name (if known): windows|uwp|linux|android|rpi|macos|ios|tvos|web
     /// - Platform type (if known and not web): desktop|mobile|console
-    static ApplicationFlavor Platform;
+    static const ApplicationFlavor Platform;
 
     ApplicationFlavor() = default;
     explicit ApplicationFlavor(const ea::string& str);

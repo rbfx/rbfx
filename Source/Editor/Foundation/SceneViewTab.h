@@ -85,6 +85,9 @@ public:
 
     Ray cameraRay_;
 
+    PackedSceneData archivedScene_;
+    PackedSceneSelection archivedSelection_;
+
     /// UI state
     /// @{
     Rect contentArea_;
@@ -288,6 +291,9 @@ private:
     void UpdateCameraRay();
     bool UpdateDropToScene();
     void InspectSelection(SceneViewPage& page);
+
+    void BeginPluginReload();
+    void EndPluginReload();
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
     AddonSetByInputPriority addonsByInputPriority_;

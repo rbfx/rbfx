@@ -552,7 +552,7 @@ void Project::EnsureDirectoryInitialized()
     if (fs->DirExists(projectPath_ + "Resources/"))
         dataPath_ = projectPath_ + "Resources/";
     if (fs->FileExists(dataPath_ + "AssetPipeline.json"))
-        fs->Rename(dataPath_ + "AssetPipeline.json", dataPath_ + "Default.AssetPipeline.json");
+        fs->Rename(dataPath_ + "AssetPipeline.json", dataPath_ + "Default.assetpipeline");
 
     if (!fs->DirExists(dataPath_))
     {
@@ -586,7 +586,7 @@ void Project::InitializeDefaultProject()
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
     ProcessRequest(request, nullptr);
 
-    const ea::string defaultAssetPipeline = "Default.AssetPipeline.json";
+    const ea::string defaultAssetPipeline = "Default.assetpipeline";
     CreateAssetPipeline(context_, dataPath_ + defaultAssetPipeline);
 
     Save();

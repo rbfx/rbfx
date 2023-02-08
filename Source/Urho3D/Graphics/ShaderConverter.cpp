@@ -136,7 +136,7 @@ bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDef
     outputShader = {};
 
     // Prepare defines
-    static thread_local ea::string shaderCode;
+    thread_local ea::string shaderCode;
     shaderCode.clear();
     shaderCode += "#version 450\n";
     for (const auto& define : shaderDefines)

@@ -57,7 +57,7 @@ enum LogLevel
     MAX_LOGLEVELS,
 };
 
-static Color LOG_LEVEL_COLORS[] = {
+static const Color LOG_LEVEL_COLORS[] = {
     Color(0.529f, 0.529f, 0.529f),
     Color(0.784f, 0.784f, 0.784f),
     Color(1.f, 1.f, 1.f),

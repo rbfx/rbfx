@@ -41,7 +41,7 @@ void Cast::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> CastPatterns{
+static const ea::vector<NodePattern> CastPatterns{
     MakePattern(
         CastInstance<float, int>()
         , ParticleGraphTypedPin<float>("x")

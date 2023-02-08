@@ -3,10 +3,8 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="340" />
-	<attribute name="Next Replicated Component ID" value="1180" />
-	<attribute name="Next Local Node ID" value="16781056" />
-	<attribute name="Next Local Component ID" value="16777217" />
+	<attribute name="Next Node ID" value="2" />
+	<attribute name="Next Component ID" value="22" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -1593,8 +1591,8 @@
 						<string value="Spine2" />
 						<string value="Neck" />
 					</attribute>
-					<attribute name="Twist Target Name" value="Spine2_Target" />
 					<attribute name="Target Name" value="Neck_Target" />
+					<attribute name="Twist Target Name" value="Spine2_Target" />
 					<attribute name="Max Angle" value="60.000000" />
 				</component>
 				<component type="IKArmSolver" id="412">
@@ -2435,8 +2433,8 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="Spine2_Target" />
 				<attribute name="Target Name" value="Neck_Target" />
+				<attribute name="Twist Target Name" value="Spine2_Target" />
 				<attribute name="Max Angle" value="60.000000" />
 			</component>
 			<component type="IKArmSolver" id="175">
@@ -3314,8 +3312,8 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="Spine2_Target" />
 				<attribute name="Target Name" value="Neck_Target" />
+				<attribute name="Twist Target Name" value="Spine2_Target" />
 				<attribute name="Max Angle" value="60.000000" />
 			</component>
 			<component type="IKArmSolver" id="490">
@@ -4182,7 +4180,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0.30562 1.41058 0.351157" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="457">
@@ -4890,7 +4888,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 1.2 0" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.6 0.6 0.6" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="100">
@@ -5591,7 +5589,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0.5 0.5" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="38">
@@ -5604,7 +5602,7 @@
 				<attribute name="Name" value="BendTarget" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 1 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="567">
@@ -9391,7 +9389,7 @@
 				<attribute name="Name" value="BendTarget" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-1.1489 1 0.905234" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="581">
@@ -10146,7 +10144,7 @@
 				<component type="Text3D" id="603">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
 					<attribute name="Text" value="[Bend Weight]" />
-					<attribute name="Width" value="720" />
+					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />
 				</component>
@@ -10169,7 +10167,7 @@
 				<attribute name="Name" value="BendTarget" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 1 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="605">
@@ -10917,7 +10915,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-3.36269e-08 0.562084 0.884648" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="41">
@@ -10930,7 +10928,7 @@
 				<attribute name="Name" value="BendTarget" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 1 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="620">
@@ -11667,7 +11665,7 @@
 				<attribute name="Name" value="LeftFoot_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.6 0.4 0.2" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="335">
@@ -11680,7 +11678,7 @@
 				<attribute name="Name" value="RightFoot_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0.6 0.4 0.2" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="336">
@@ -16096,7 +16094,7 @@
 				<attribute name="Name" value="BendTarget" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-1.1489 1 0.905234" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="718">
@@ -16242,7 +16240,7 @@
 				<component type="Text3D" id="705">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
 					<attribute name="Text" value="[Bend Weight]" />
-					<attribute name="Width" value="720" />
+					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />
 				</component>
@@ -16876,7 +16874,7 @@
 				<attribute name="Name" value="BendTarget" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 1 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="719">
@@ -18586,7 +18584,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0.3 1.4 0.3" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="220">
@@ -19316,7 +19314,7 @@
 				<attribute name="Name" value="LeftHand_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.293148 1.32479 0.799616" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="354">
@@ -19329,7 +19327,7 @@
 				<attribute name="Name" value="RightHand_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0.110211 1.11748 0.936445" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="351">
@@ -19400,7 +19398,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.923828 0.240507 0.286709 0.0806464" />
+									<attribute name="Rotation" value="0.923827 0.240507 0.286709 0.0806464" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16778504">
@@ -19408,7 +19406,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.672806 0.106532 -0.0014762 0.732107" />
+										<attribute name="Rotation" value="0.672806 0.106532 -0.00147618 0.732107" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16778505">
@@ -22404,7 +22402,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384536 0.122191 -0.00808746 0.914951" />
+										<attribute name="Rotation" value="0.384536 0.122191 -0.00808738 0.914951" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779849">
@@ -22412,7 +22410,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452319 -0.0925619 0.0209561" />
+											<attribute name="Rotation" value="0.995476 0.00452312 -0.0925619 0.0209561" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779850">
@@ -23155,7 +23153,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384538 0.122191 -0.00808743 0.91495" />
+										<attribute name="Rotation" value="0.384538 0.122191 -0.00808746 0.914951" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779913">
@@ -23163,7 +23161,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452311 -0.0925618 0.0209561" />
+											<attribute name="Rotation" value="0.995476 0.00452305 -0.0925619 0.0209561" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779914">
@@ -23665,7 +23663,7 @@
 				<attribute name="Name" value="BendTarget" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 1 -0.747188" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="849">
@@ -23808,7 +23806,7 @@
 				<component type="Text3D" id="879">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
 					<attribute name="Text" value="[Bend Weight]" />
-					<attribute name="Width" value="720" />
+					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />
 				</component>
@@ -23919,7 +23917,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384538 0.122192 -0.00808674 0.91495" />
+										<attribute name="Rotation" value="0.384538 0.122192 -0.00808673 0.91495" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779977">
@@ -23927,7 +23925,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452295 -0.0925619 0.020956" />
+											<attribute name="Rotation" value="0.995476 0.00452301 -0.0925619 0.020956" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779978">
@@ -24429,7 +24427,7 @@
 				<attribute name="Name" value="BendTarget" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0.941437 1 -0.747188" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="882">
@@ -25291,9 +25289,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Target Name" value="Target" />
+				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="1.52315e-05 -0.000259726 -0.998295 0.058376" />
 			</component>
 			<node id="79">
 				<attribute name="Is Enabled" value="true" />
@@ -25316,7 +25315,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-5.93597e-08 1.7 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="286">
@@ -25350,7 +25349,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.990893 -0.0934546 0.0965313 -0.00882854" />
+					<attribute name="Rotation" value="0.990201 -0.0933912 0.103391 -0.0094755" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16778178">
@@ -25358,7 +25357,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.978804 -0.165307 0.109109 -0.0520709" />
+						<attribute name="Rotation" value="0.97791 -0.164135 0.116852 -0.055656" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778179">
@@ -25366,7 +25365,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.97322 -0.166902 0.122184 -0.100289" />
+							<attribute name="Rotation" value="0.972093 -0.16291 0.130844 -0.106652" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778180">
@@ -25374,7 +25373,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.52141e-05 -0.000259742" />
+								<attribute name="Rotation" value="0.998295 -0.058376 -1.52662e-05 -0.000259742" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778181">
@@ -26014,9 +26013,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="Spine_TwistTarget" />
 				<attribute name="Target Name" value="Spine_Target" />
+				<attribute name="Twist Target Name" value="Spine_TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="-0.126649 -0.100515 -0.840015 -0.517905" />
 			</component>
 			<node id="107">
 				<attribute name="Is Enabled" value="true" />
@@ -26065,7 +26065,7 @@
 				<attribute name="Name" value="Spine_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0.0359277 1.89664 0.623943" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="367">
@@ -26086,7 +26086,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.981151 0.139001 -0.126093 -0.0460586" />
+					<attribute name="Rotation" value="0.978687 0.138137 -0.143974 -0.0485872" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16778562">
@@ -26094,7 +26094,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.983796 0.0773235 -0.146681 -0.0681983" />
+						<attribute name="Rotation" value="0.980524 0.0732875 -0.167163 -0.0725183" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778563">
@@ -26102,7 +26102,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.979519 0.0589607 -0.164621 -0.0998268" />
+							<attribute name="Rotation" value="0.975388 0.0485252 -0.187553 -0.105295" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778564">
@@ -26110,7 +26110,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.5242e-05 -0.000259742" />
+								<attribute name="Rotation" value="0.998295 -0.058376 -1.51563e-05 -0.000259802" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778565">
@@ -26760,9 +26760,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Target Name" value="Target" />
+				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="1.52315e-05 -0.000259726 -0.998295 0.058376" />
 			</component>
 			<node id="39">
 				<attribute name="Is Enabled" value="true" />
@@ -26785,7 +26786,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.5 1.7 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="131">
@@ -26806,7 +26807,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994748 -0.0792809 0.00377365 -0.0646271" />
+					<attribute name="Rotation" value="0.994705 -0.0788749 0.00999817 -0.065122" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16777730">
@@ -26814,7 +26815,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984867 -0.15663 6.70552e-08 -0.0741934" />
+						<attribute name="Rotation" value="0.984841 -0.155141 0.00704321 -0.0772592" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777731">
@@ -26822,7 +26823,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.98086 -0.175971 4.28408e-07 -0.0833552" />
+							<attribute name="Rotation" value="0.980828 -0.172959 0.0078917 -0.0894381" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777732">
@@ -26830,7 +26831,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.51843e-05 -0.000259725" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51768e-05 -0.000259773" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16777733">
@@ -27493,9 +27494,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Target Name" value="Target" />
+				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="1.52315e-05 -0.000259726 -0.998295 0.058376" />
 			</component>
 			<node id="275">
 				<attribute name="Is Enabled" value="true" />
@@ -27518,7 +27520,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.5 1.7 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="919">
@@ -27539,7 +27541,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994748 -0.0792809 0.00377349 -0.0646267" />
+					<attribute name="Rotation" value="0.994705 -0.078875 0.00999802 -0.0651215" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780098">
@@ -27547,7 +27549,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984867 -0.15663 3.3062e-07 -0.0741937" />
+						<attribute name="Rotation" value="0.984841 -0.155141 0.00704347 -0.0772595" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780099">
@@ -27555,7 +27557,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.98086 -0.175971 6.74278e-07 -0.0833548" />
+							<attribute name="Rotation" value="0.980828 -0.172959 0.00789193 -0.0894378" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780100">
@@ -27563,7 +27565,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51992e-05 -0.00025971" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51768e-05 -0.000259771" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780101">
@@ -28226,9 +28228,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Target Name" value="Target" />
+				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="1.52315e-05 -0.000259726 -0.998295 0.058376" />
 			</component>
 			<node id="325">
 				<attribute name="Is Enabled" value="true" />
@@ -28272,7 +28275,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994748 -0.0792809 0.00377352 -0.0646268" />
+					<attribute name="Rotation" value="0.994705 -0.078875 0.00999804 -0.0651216" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780802">
@@ -28280,7 +28283,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984867 -0.15663 2.31899e-07 -0.0741935" />
+						<attribute name="Rotation" value="0.984841 -0.155141 0.00704338 -0.0772593" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780803">
@@ -28288,7 +28291,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.98086 -0.175971 7.22706e-07 -0.0833553" />
+							<attribute name="Rotation" value="0.980828 -0.172959 0.007892 -0.0894382" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780804">
@@ -28296,7 +28299,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51917e-05 -0.000259757" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51768e-05 -0.000259784" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780805">
@@ -28959,9 +28962,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Target Name" value="Target" />
+				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="1.52315e-05 -0.000259726 -0.998295 0.058376" />
 			</component>
 			<node id="279">
 				<attribute name="Is Enabled" value="true" />
@@ -28984,7 +28988,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.5 1.7 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="929">
@@ -29005,7 +29009,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994748 -0.0792809 0.00377365 -0.0646271" />
+					<attribute name="Rotation" value="0.994705 -0.0788749 0.00999817 -0.065122" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780162">
@@ -29013,7 +29017,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984867 -0.15663 6.70552e-08 -0.0741934" />
+						<attribute name="Rotation" value="0.984841 -0.155141 0.00704321 -0.0772592" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780163">
@@ -29021,7 +29025,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.98086 -0.175971 4.28408e-07 -0.0833552" />
+							<attribute name="Rotation" value="0.980828 -0.172959 0.0078917 -0.0894381" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780164">
@@ -29029,7 +29033,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.51843e-05 -0.000259725" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51768e-05 -0.000259773" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780165">
@@ -29692,9 +29696,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Target Name" value="Target" />
+				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="1.52315e-05 -0.000259726 -0.998295 0.058376" />
 			</component>
 			<node id="283">
 				<attribute name="Is Enabled" value="true" />
@@ -29717,7 +29722,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.5 1.7 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="939">
@@ -29738,7 +29743,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994748 -0.0792809 0.00377334 -0.0646262" />
+					<attribute name="Rotation" value="0.994705 -0.078875 0.00999786 -0.065121" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780226">
@@ -29746,7 +29751,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984866 -0.15663 3.35276e-07 -0.0741957" />
+						<attribute name="Rotation" value="0.984841 -0.155141 0.00704348 -0.0772615" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780227">
@@ -29754,7 +29759,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.98086 -0.175971 3.94881e-07 -0.0833522" />
+							<attribute name="Rotation" value="0.980828 -0.172959 0.00789168 -0.0894352" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780228">
@@ -29762,7 +29767,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51917e-05 -0.000259747" />
+								<attribute name="Rotation" value="0.998295 -0.0583762 -1.51917e-05 -0.000259777" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780229">
@@ -30425,9 +30430,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Target Name" value="Target" />
+				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="1.52315e-05 -0.000259726 -0.998295 0.058376" />
 			</component>
 			<node id="287">
 				<attribute name="Is Enabled" value="true" />
@@ -30440,7 +30446,7 @@
 				<component type="Text3D" id="951">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
 					<attribute name="Text" value="[Twist Weight]" />
-					<attribute name="Width" value="756" />
+					<attribute name="Width" value="504" />
 					<attribute name="Horiz Alignment" value="Center" />
 					<attribute name="Vert Alignment" value="Center" />
 				</component>
@@ -30450,7 +30456,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.5 1.7 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="952">
@@ -30471,7 +30477,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.989835 -0.0727426 0.0988133 -0.0719066" />
+					<attribute name="Rotation" value="0.988602 -0.07189 0.110474 -0.0727591" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780290">
@@ -30479,7 +30485,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.978981 -0.127616 0.107508 -0.117269" />
+						<attribute name="Rotation" value="0.977444 -0.123185 0.120686 -0.121916" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780291">
@@ -30487,7 +30493,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.973444 -0.109176 0.120391 -0.161226" />
+							<attribute name="Rotation" value="0.971507 -0.0983598 0.13513 -0.168043" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780292">
@@ -30495,7 +30501,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.5147e-05 -0.000259735" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51992e-05 -0.000259809" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780293">
@@ -31158,9 +31164,10 @@
 					<string value="Spine2" />
 					<string value="Neck" />
 				</attribute>
-				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Target Name" value="Target" />
+				<attribute name="Twist Target Name" value="TwistTarget" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="1.52315e-05 -0.000259726 -0.998295 0.058376" />
 			</component>
 			<node id="337">
 				<attribute name="Is Enabled" value="true" />
@@ -31183,7 +31190,7 @@
 				<attribute name="Name" value="Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.5 1.7 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="1178">
@@ -31204,7 +31211,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994748 -0.079281 0.00377293 -0.064628" />
+					<attribute name="Rotation" value="0.994705 -0.0788749 0.00999848 -0.0651229" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780994">
@@ -31212,7 +31219,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984867 -0.15663 1.05146e-06 -0.0741924" />
+						<attribute name="Rotation" value="0.984842 -0.155141 0.00704318 -0.0772585" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780995">
@@ -31220,7 +31227,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.98086 -0.175971 1.14739e-06 -0.0833568" />
+							<attribute name="Rotation" value="0.980828 -0.172959 0.00789143 -0.0894367" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780996">
@@ -31228,7 +31235,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.51843e-05 -0.000259735" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51694e-05 -0.000259798" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780997">
@@ -31920,7 +31927,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2.5 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="381">
@@ -32640,7 +32647,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="440">
@@ -32693,7 +32700,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.626839 0.542878 -0.558889 -4.10713e-06" />
+									<attribute name="Rotation" value="0.626839 0.542878 -0.558889 -4.1388e-06" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -33370,7 +33377,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2.5 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="988">
@@ -33415,7 +33422,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.983415 -0.177057 0.000177016 0.000249098" />
+								<attribute name="Rotation" value="0.984005 -0.176967 0.000177499 0.000249877" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780421">
@@ -33423,7 +33430,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.99366 0.119538 -0.000193413 -1.89243e-06" />
+									<attribute name="Rotation" value="0.993071 0.119272 -0.000193616 -2.32034e-06" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -34100,7 +34107,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2.5 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="1138">
@@ -34145,7 +34152,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.949648 -0.16193 -0.0807381 -0.254852" />
+								<attribute name="Rotation" value="0.949715 -0.161919 -0.0807355 -0.254841" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780869">
@@ -34153,7 +34160,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.992043 0.0854535 0.0911202 0.000922534" />
+									<attribute name="Rotation" value="0.992347 0.0855 0.0911008 0.00131589" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -34830,7 +34837,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2.5 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="998">
@@ -34875,7 +34882,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.98302 -0.177134 0.000177154 0.000249219" />
+								<attribute name="Rotation" value="0.984 -0.176978 0.000177164 0.000248966" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780485">
@@ -34883,7 +34890,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="1.00101 7.15852e-05 -1.22745e-08 1.62549e-07" />
+									<attribute name="Rotation" value="1.00021 1.44243e-05 -2.01544e-09 -1.23091e-08" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -35560,7 +35567,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2.5 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="1160">
@@ -35605,7 +35612,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.98302 -0.177134 0.000177181 0.000249244" />
+								<attribute name="Rotation" value="0.984 -0.176978 0.000177027 0.000248659" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780933">
@@ -35613,7 +35620,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="1.00099 7.1533e-05 -1.68075e-08 1.74043e-07" />
+									<attribute name="Rotation" value="1.00019 1.35079e-05 -2.74304e-09 1.47011e-08" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -36290,7 +36297,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2.5 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="408">
@@ -37020,7 +37027,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2.5 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="975">
@@ -37750,7 +37757,7 @@
 				<attribute name="Name" value="LookAt_Target" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="-0.4 2.5 1" />
-				<attribute name="Rotation" value="1 -0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="0.1 0.1 0.1" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="1008">

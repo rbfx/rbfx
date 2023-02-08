@@ -41,7 +41,7 @@ void Divide::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> DividePatterns{
+static const ea::vector<NodePattern> DividePatterns{
     MakePattern(
         DivideInstance<float, float, float>()
         , ParticleGraphTypedPin<float>("x")

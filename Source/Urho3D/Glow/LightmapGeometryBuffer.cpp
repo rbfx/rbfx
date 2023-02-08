@@ -448,7 +448,7 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
     Graphics* graphics = context->GetSubsystem<Graphics>();
     Renderer* renderer = context->GetSubsystem<Renderer>();
 
-    static thread_local ea::vector<Vector4> buffer;
+    thread_local ea::vector<Vector4> buffer;
 
     if (!graphics->BeginFrame())
     {

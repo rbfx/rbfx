@@ -41,7 +41,7 @@ void TimeStepScale::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> TimeStepScalePatterns{
+static const ea::vector<NodePattern> TimeStepScalePatterns{
     MakePattern(
         TimeStepScaleInstance<float, float>()
         , ParticleGraphTypedPin<float>("x")
