@@ -35,6 +35,8 @@
 #include "../Scene/Scene.h"
 
 #include "../DebugNew.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Renderer.h"
 
 namespace Urho3D
 {
@@ -73,6 +75,8 @@ void RmlUIComponent::RegisterObject(Context* context)
 
 void RmlUIComponent::Update(float timeStep)
 {
+    UpdateIsSceneActive();
+
     navigationManager_->Update();
     // There should be only a few of RmlUIComponent enabled at a time, so this is not a performance issue.
     UpdateConnectedCanvas();
@@ -360,9 +364,32 @@ void RmlUIComponent::RemoveDataModel()
     dataModelName_.clear();
 }
 
+void RmlUIComponent::UpdateIsSceneActive()
+{
+    auto* renderer = GetSubsystem<Renderer>();
+    if (renderer)
+    {
+        bool isSceneActive = false;
+        for (unsigned viewportIndex = 0; viewportIndex < renderer->GetNumViewports(); ++viewportIndex)
+        {
+            const auto* viewport = renderer->GetViewport(viewportIndex);
+            if (viewport)
+            {
+                isSceneActive = viewport->GetScene() == GetScene();
+                break;
+            }
+        }
+        if (isSceneActive_ != isSceneActive)
+        {
+            isSceneActive_ = isSceneActive;
+            UpdateDocumentOpen();
+        }
+    }
+}
+
 void RmlUIComponent::UpdateDocumentOpen()
 {
-    const bool shouldBeOpen = IsEnabledEffective() && !resource_.name_.empty();
+    const bool shouldBeOpen = isSceneActive_ && IsEnabledEffective() && !resource_.name_.empty();
     const bool isOpen = document_ != nullptr;
 
     if (shouldBeOpen && !isOpen)

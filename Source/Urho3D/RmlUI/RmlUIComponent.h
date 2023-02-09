@@ -156,6 +156,7 @@ private:
     void UpdateDocumentOpen();
     void UpdateConnectedCanvas();
 
+    void UpdateIsSceneActive();
     Rml::DataModelConstructor CreateDataModel();
     void RemoveDataModel();
 
@@ -185,6 +186,8 @@ private:
     Rml::DataModelHandle dataModel_;
     /// Name of the data model.
     ea::string dataModelName_;
+    /// On last update was the component's scene active or not.
+    bool isSceneActive_{true};
 };
 
 }
