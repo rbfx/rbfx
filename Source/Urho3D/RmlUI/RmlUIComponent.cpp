@@ -26,6 +26,7 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Material.h"
+#include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
 #include "../Resource/BinaryFile.h"
 #include "../RmlUI/RmlCanvasComponent.h"
@@ -35,8 +36,6 @@
 #include "../Scene/Scene.h"
 
 #include "../DebugNew.h"
-#include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/Graphics/Renderer.h"
 
 namespace Urho3D
 {
