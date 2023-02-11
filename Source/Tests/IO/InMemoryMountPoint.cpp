@@ -22,7 +22,13 @@
 
 #include "InMemoryMountPoint.h"
 
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+
+#include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/IO/FileSystem.h>
+
+#include <utility>
 
 Urho3D::InMemoryMountPoint::InMemoryMountPoint(Context* context)
     : MountPoint(context)
@@ -35,9 +41,30 @@ Urho3D::InMemoryMountPoint::InMemoryMountPoint(Context* context, const ea::strin
 {
 }
 
-void Urho3D::InMemoryMountPoint::AddFile(const ea::string& fileName, MemoryBuffer memory)
+void Urho3D::InMemoryMountPoint::SetFile(const ea::string& fileName, MemoryBuffer memory)
 {
-    files_.emplace(fileName, memory);
+    auto it = files_.find(fileName);
+    if (it == files_.end())
+    {
+        files_.emplace(fileName, memory);
+    }
+    else
+    {
+        it->second = memory;
+        if (IsWatching())
+        {
+            using namespace FileChanged;
+            VariantMap& eventData = GetEventDataMap();
+            eventData[P_FILENAME] = fileName;
+            eventData[P_RESOURCENAME] = fileName;
+            SendEvent(E_FILECHANGED, eventData);
+        }
+    }
+}
+
+void Urho3D::InMemoryMountPoint::SetFile(const ea::string& fileName, ea::string_view content)
+{
+    SetFile(fileName, MemoryBuffer(content));
 }
 
 void Urho3D::InMemoryMountPoint::RemoveFile(const ea::string& fileName)
@@ -64,6 +91,7 @@ Urho3D::AbstractFilePtr Urho3D::InMemoryMountPoint::OpenFile(const FileIdentifie
     if (iter == files_.end())
         return nullptr;
 
+    iter->second.Seek(0);
     return AbstractFilePtr(&iter->second, this);
 }
 
@@ -101,4 +129,15 @@ void Urho3D::InMemoryMountPoint::Scan(ea::vector<ea::string>& result, const ea::
             result.push_back(fileName);
         }
     }
+}
+
+Urho3D::InMemoryMountPointPtr::InMemoryMountPointPtr(Context* context)
+    : ptr_(MakeShared<InMemoryMountPoint>(context))
+{
+    context->GetSubsystem<VirtualFileSystem>()->Mount(ptr_);
+}
+
+Urho3D::InMemoryMountPointPtr::~InMemoryMountPointPtr()
+{
+    ptr_->GetContext()->GetSubsystem<VirtualFileSystem>()->Unmount(ptr_);
 }

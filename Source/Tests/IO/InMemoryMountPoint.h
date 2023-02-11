@@ -40,7 +40,9 @@ public:
 
     explicit InMemoryMountPoint(Context* context, const ea::string& scheme);
 
-    void AddFile(const ea::string& fileName, MemoryBuffer memory);
+    void SetFile(const ea::string& fileName, MemoryBuffer memory);
+
+    void SetFile(const ea::string& fileName, ea::string_view content);
 
     void RemoveFile(const ea::string& fileName);
 
@@ -59,6 +61,21 @@ public:
 private:
     ea::string scheme_;
     ea::unordered_map<ea::string, MemoryBuffer> files_{};
+};
+
+class InMemoryMountPointPtr
+{
+public:
+    explicit InMemoryMountPointPtr(Context* context);
+    InMemoryMountPointPtr(const InMemoryMountPointPtr& other) = delete;
+    InMemoryMountPointPtr(InMemoryMountPointPtr&& other) = delete;
+    ~InMemoryMountPointPtr();
+
+    void operator=(InMemoryMountPointPtr const& x) = delete;
+    InMemoryMountPoint* operator->() const noexcept { return ptr_; }
+
+private:
+    SharedPtr<InMemoryMountPoint> ptr_{};
 };
 
 } // namespace Urho3D

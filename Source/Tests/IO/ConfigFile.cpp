@@ -49,12 +49,12 @@ public:
 
     void AddFile(const ea::string& fileName, MemoryBuffer memory)
     {
-        mountPoint_->AddFile(fileName, memory);
+        mountPoint_->SetFile(fileName, memory);
     }
 
-    void AddFile(const ea::string& fileName, const ea::string& content)
+    void AddFile(const ea::string& fileName, ea::string_view content)
     {
-        mountPoint_->AddFile(fileName, MemoryBuffer{content.data(), content.size()});
+        mountPoint_->SetFile(fileName, content);
     }
 
 private:
