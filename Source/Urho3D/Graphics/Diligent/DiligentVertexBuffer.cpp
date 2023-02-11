@@ -60,12 +60,15 @@ void VertexBuffer::Release()
         }
     }
 
-    URHO3D_SAFE_RELEASE(object_.ptr_);
+    assert(0);
+    /*URHO3D_SAFE_RELEASE(object_.ptr_);*/
 }
 
 bool VertexBuffer::SetData(const void* data)
 {
-    if (!vertexCount_)
+    assert(0);
+    return false;
+    /*if (!vertexCount_)
     {
         return true;
     }
@@ -112,12 +115,14 @@ bool VertexBuffer::SetData(const void* data)
         }
     }
 
-    return true;
+    return true;*/
 }
 
 bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count, bool discard)
 {
-    if (start == 0 && count == vertexCount_)
+    assert(0);
+    return false;
+    /*if (start == 0 && count == vertexCount_)
         return SetData(data);
 
     if (!data)
@@ -171,51 +176,53 @@ bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count
         }
     }
 
-    return true;
+    return true;*/
 }
 
 void* VertexBuffer::Lock(unsigned start, unsigned count, bool discard)
 {
-    if (lockState_ != LOCK_NONE)
-    {
-        URHO3D_LOGERROR("Vertex buffer already locked");
-        return nullptr;
-    }
+    assert(0);
+    return nullptr;
+    //if (lockState_ != LOCK_NONE)
+    //{
+    //    URHO3D_LOGERROR("Vertex buffer already locked");
+    //    return nullptr;
+    //}
 
-    if (!vertexSize_)
-    {
-        URHO3D_LOGERROR("Vertex elements not defined, can not lock vertex buffer");
-        return nullptr;
-    }
+    //if (!vertexSize_)
+    //{
+    //    URHO3D_LOGERROR("Vertex elements not defined, can not lock vertex buffer");
+    //    return nullptr;
+    //}
 
-    if (start + count > vertexCount_)
-    {
-        URHO3D_LOGERROR("Illegal range for locking vertex buffer");
-        return nullptr;
-    }
+    //if (start + count > vertexCount_)
+    //{
+    //    URHO3D_LOGERROR("Illegal range for locking vertex buffer");
+    //    return nullptr;
+    //}
 
-    if (!count)
-        return nullptr;
+    //if (!count)
+    //    return nullptr;
 
-    lockStart_ = start;
-    lockCount_ = count;
+    //lockStart_ = start;
+    //lockCount_ = count;
 
-    // Because shadow data must be kept in sync, can only lock hardware buffer if not shadowed
-    if (object_.ptr_ && !shadowData_ && dynamic_)
-        return MapBuffer(start, count, discard);
-    else if (shadowData_)
-    {
-        lockState_ = LOCK_SHADOW;
-        return shadowData_.get() + start * vertexSize_;
-    }
-    else if (graphics_)
-    {
-        lockState_ = LOCK_SCRATCH;
-        lockScratchData_ = graphics_->ReserveScratchBuffer(count * vertexSize_);
-        return lockScratchData_;
-    }
-    else
-        return nullptr;
+    //// Because shadow data must be kept in sync, can only lock hardware buffer if not shadowed
+    //if (object_.ptr_ && !shadowData_ && dynamic_)
+    //    return MapBuffer(start, count, discard);
+    //else if (shadowData_)
+    //{
+    //    lockState_ = LOCK_SHADOW;
+    //    return shadowData_.get() + start * vertexSize_;
+    //}
+    //else if (graphics_)
+    //{
+    //    lockState_ = LOCK_SCRATCH;
+    //    lockScratchData_ = graphics_->ReserveScratchBuffer(count * vertexSize_);
+    //    return lockScratchData_;
+    //}
+    //else
+    //    return nullptr;
 }
 
 void VertexBuffer::Unlock()
@@ -247,7 +254,9 @@ bool VertexBuffer::Create()
 {
     Release();
 
-    if (!vertexCount_ || (!elementMask_ && elements_.empty()))
+    assert(0);
+    return false;
+    /*if (!vertexCount_ || (!elementMask_ && elements_.empty()))
         return true;
 
     if (graphics_)
@@ -271,20 +280,24 @@ bool VertexBuffer::Create()
         }
     }
 
-    return true;
+    return true;*/
 }
 
 bool VertexBuffer::UpdateToGPU()
 {
-    if (object_.ptr_ && shadowData_)
+    assert(0);
+    return false;
+    /*if (object_.ptr_ && shadowData_)
         return SetData(shadowData_.get());
     else
-        return false;
+        return false;*/
 }
 
 void* VertexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
 {
-    void* hwData = nullptr;
+    assert(0);
+    return nullptr;
+    /*void* hwData = nullptr;
 
     if (object_.ptr_)
     {
@@ -302,16 +315,17 @@ void* VertexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
         }
     }
 
-    return hwData;
+    return hwData;*/
 }
 
 void VertexBuffer::UnmapBuffer()
 {
-    if (object_.ptr_ && lockState_ == LOCK_HARDWARE)
+    assert(0);
+    /*if (object_.ptr_ && lockState_ == LOCK_HARDWARE)
     {
         graphics_->GetImpl()->GetDeviceContext()->Unmap((ID3D11Buffer*)object_.ptr_, 0);
         lockState_ = LOCK_NONE;
-    }
+    }*/
 }
 
 }

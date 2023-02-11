@@ -72,9 +72,10 @@ void Texture2DArray::Release()
     if (renderSurface_)
         renderSurface_->Release();
 
-    URHO3D_SAFE_RELEASE(object_.ptr_);
+    assert(0);
+    /*URHO3D_SAFE_RELEASE(object_.ptr_);
     URHO3D_SAFE_RELEASE(shaderResourceView_);
-    URHO3D_SAFE_RELEASE(sampler_);
+    URHO3D_SAFE_RELEASE(sampler_);*/
 
     levelsDirty_ = false;
 }

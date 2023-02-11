@@ -39,7 +39,8 @@ void ConstantBuffer::OnDeviceReset()
 
 void ConstantBuffer::Release()
 {
-    URHO3D_SAFE_RELEASE(object_.ptr_);
+    assert(0);
+    //URHO3D_SAFE_RELEASE(object_.ptr_);
 
     size_ = 0;
 }
@@ -47,47 +48,49 @@ void ConstantBuffer::Release()
 bool ConstantBuffer::SetSize(unsigned size)
 {
     Release();
+    assert(0);
+    return false;
+    //if (!size)
+    //{
+    //    URHO3D_LOGERROR("Can not create zero-sized constant buffer");
+    //    return false;
+    //}
 
-    if (!size)
-    {
-        URHO3D_LOGERROR("Can not create zero-sized constant buffer");
-        return false;
-    }
+    //// Round up to next 16 bytes
+    //size += 15;
+    //size &= 0xfffffff0;
 
-    // Round up to next 16 bytes
-    size += 15;
-    size &= 0xfffffff0;
+    //size_ = size;
 
-    size_ = size;
+    //if (graphics_)
+    //{
+    //    D3D11_BUFFER_DESC bufferDesc;
+    //    memset(&bufferDesc, 0, sizeof bufferDesc);
 
-    if (graphics_)
-    {
-        D3D11_BUFFER_DESC bufferDesc;
-        memset(&bufferDesc, 0, sizeof bufferDesc);
+    //    bufferDesc.ByteWidth = size_;
+    //    bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //    bufferDesc.CPUAccessFlags = 0;
+    //    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
 
-        bufferDesc.ByteWidth = size_;
-        bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        bufferDesc.CPUAccessFlags = 0;
-        bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+    //    HRESULT hr = graphics_->GetImpl()->GetDevice()->CreateBuffer(&bufferDesc, 0, (ID3D11Buffer**)&object_.ptr_);
+    //    if (FAILED(hr))
+    //    {
+    //        URHO3D_SAFE_RELEASE(object_.ptr_);
+    //        URHO3D_LOGD3DERROR("Failed to create constant buffer", hr);
+    //        return false;
+    //    }
+    //}
 
-        HRESULT hr = graphics_->GetImpl()->GetDevice()->CreateBuffer(&bufferDesc, 0, (ID3D11Buffer**)&object_.ptr_);
-        if (FAILED(hr))
-        {
-            URHO3D_SAFE_RELEASE(object_.ptr_);
-            URHO3D_LOGD3DERROR("Failed to create constant buffer", hr);
-            return false;
-        }
-    }
-
-    return true;
+    //return true;
 }
 
 void ConstantBuffer::Update(const void* data)
 {
-    if (object_.ptr_)
+    assert(0);
+    /*if (object_.ptr_)
     {
         graphics_->GetImpl()->GetDeviceContext()->UpdateSubresource((ID3D11Buffer*)object_.ptr_, 0, 0, data, 0, 0);
-    }
+    }*/
 }
 
 }

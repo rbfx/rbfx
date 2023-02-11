@@ -32,8 +32,11 @@ namespace Urho3D
 
 GraphicsImpl::GraphicsImpl() :
     device_(nullptr),
+    diligentDevice_(nullptr),
+    diligentDeviceContext_(nullptr),
     deviceContext_(nullptr),
     swapChain_(nullptr),
+    diligentSwapChain_(nullptr),
     defaultRenderTargetView_(nullptr),
     defaultDepthTexture_(nullptr),
     defaultDepthStencilView_(nullptr),
@@ -41,7 +44,8 @@ GraphicsImpl::GraphicsImpl() :
     resolveTexture_(nullptr),
     shaderProgram_(nullptr)
 {
-    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+    assert(0);
+    /*for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         renderTargetViews_[i] = nullptr;
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
@@ -59,34 +63,53 @@ GraphicsImpl::GraphicsImpl() :
 
     ea::fill(ea::begin(constantBuffers_), ea::end(constantBuffers_), nullptr);
     ea::fill(ea::begin(constantBuffersStartSlots_), ea::end(constantBuffersStartSlots_), 0u);
-    ea::fill(ea::begin(constantBuffersNumSlots_), ea::end(constantBuffersNumSlots_), 0u);
+    ea::fill(ea::begin(constantBuffersNumSlots_), ea::end(constantBuffersNumSlots_), 0u);*/
 }
 
-bool GraphicsImpl::CheckMultiSampleSupport(DXGI_FORMAT format, unsigned sampleCount) const
+bool GraphicsImpl::CheckMultiSampleSupport(Diligent::TEXTURE_FORMAT format, unsigned sampleCount) const
 {
+    using namespace Diligent;
     if (sampleCount < 2)
         return true; // Not multisampled
 
-    UINT numLevels = 0;
-    if (FAILED(device_->CheckMultisampleQualityLevels(format, sampleCount, &numLevels)))
-        return false;
-    else
-        return numLevels > 0;
+    const TextureFormatInfoExt& colorFmtInfo = diligentDevice_->GetTextureFormatInfoExt(format);
+    return colorFmtInfo.SampleCounts > 0;
 }
 
-unsigned GraphicsImpl::GetMultiSampleQuality(DXGI_FORMAT format, unsigned sampleCount) const
+unsigned GraphicsImpl::GetMultiSampleQuality(Diligent::TEXTURE_FORMAT format, unsigned sampleCount) const
 {
-    if (sampleCount < 2)
-        return 0; // Not multisampled, should use quality 0
+    using namespace Diligent;
+    if(sampleCount < 2)
+        return 0;
 
-    if (device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_10_1)
-        return 0xffffffff; // D3D10.1+ standard level
+    const TextureFormatInfoExt& colorFmtInfo = diligentDevice_->GetTextureFormatInfoExt(format);
+    if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_64)
+        return 64;
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_32)
+        return 32;
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_16)
+        return 16;
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_8)
+        return 8;
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_4)
+        return 4;
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_2)
+        return 2;
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_1)
+        return 1;
+    return 0;
 
-    UINT numLevels = 0;
-    if (FAILED(device_->CheckMultisampleQualityLevels(format, sampleCount, &numLevels)) || !numLevels)
-        return 0; // Errored or sample count not supported
-    else
-        return numLevels - 1; // D3D10.0 and below: use the best quality
+    //if (sampleCount < 2)
+    //    return 0; // Not multisampled, should use quality 0
+
+    //if (device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_10_1)
+    //    return 0xffffffff; // D3D10.1+ standard level
+
+    //UINT numLevels = 0;
+    //if (FAILED(device_->CheckMultisampleQualityLevels(format, sampleCount, &numLevels)) || !numLevels)
+    //    return 0; // Errored or sample count not supported
+    //else
+    //    return numLevels - 1; // D3D10.0 and below: use the best quality
 }
 
 }

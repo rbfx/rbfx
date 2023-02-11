@@ -31,6 +31,10 @@
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
 
+#include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
+
 namespace Urho3D
 {
 
@@ -64,21 +68,26 @@ public:
     ID3D11RenderTargetView* GetDefaultRenderTargetView() const { return defaultRenderTargetView_; }
 
     /// Return whether multisampling is supported for a given texture format and sample count.
-    bool CheckMultiSampleSupport(DXGI_FORMAT format, unsigned sampleCount) const;
+    bool CheckMultiSampleSupport(Diligent::TEXTURE_FORMAT format, unsigned sampleCount) const;
 
     /// Return multisample quality level for a given texture format and sample count. The sample count must be supported. On D3D feature level 10.1+, uses the standard level. Below that uses the best quality.
-    unsigned GetMultiSampleQuality(DXGI_FORMAT format, unsigned sampleCount) const;
+    unsigned GetMultiSampleQuality(Diligent::TEXTURE_FORMAT format, unsigned sampleCount) const;
 
     /// Mark render targets as dirty. Must be called if render targets were set using DX11 device directly.
     void MarkRenderTargetsDirty() { renderTargetsDirty_ = true; }
 
+    Diligent::IRenderDevice* GetRenderDevice() const { return diligentDevice_; }
+    Diligent::IDeviceContext* GetDiligentDeviceContext() const { return diligentDeviceContext_; }
 private:
     /// Graphics device.
     ID3D11Device* device_;
+    Diligent::IRenderDevice* diligentDevice_;
+    Diligent::IDeviceContext* diligentDeviceContext_;
     /// Immediate device context.
     ID3D11DeviceContext1* deviceContext_;
     /// Swap chain.
     IDXGISwapChain1* swapChain_;
+    Diligent::ISwapChain* diligentSwapChain_;
     /// Default (backbuffer) rendertarget view.
     ID3D11RenderTargetView* defaultRenderTargetView_;
     /// Default depth-stencil texture.

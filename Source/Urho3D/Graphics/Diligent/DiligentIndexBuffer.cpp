@@ -55,7 +55,8 @@ void IndexBuffer::Release()
     if (graphics_ && graphics_->GetIndexBuffer() == this)
         graphics_->SetIndexBuffer(nullptr);
 
-    URHO3D_SAFE_RELEASE(object_.ptr_);
+    assert(0);
+    //URHO3D_SAFE_RELEASE(object_.ptr_);
 }
 
 bool IndexBuffer::SetData(const void* data)
@@ -75,7 +76,8 @@ bool IndexBuffer::SetData(const void* data)
     if (shadowData_ && data != shadowData_.get())
         memcpy(shadowData_.get(), data, indexCount_ * indexSize_);
 
-    if (object_.ptr_)
+    assert(0);
+    /*if (object_.ptr_)
     {
         if (dynamic_)
         {
@@ -100,7 +102,7 @@ bool IndexBuffer::SetData(const void* data)
 
             graphics_->GetImpl()->GetDeviceContext()->UpdateSubresource((ID3D11Buffer*)object_.ptr_, 0, &destBox, data, 0, 0);
         }
-    }
+    }*/
 
     return true;
 }
@@ -134,7 +136,8 @@ bool IndexBuffer::SetDataRange(const void* data, unsigned start, unsigned count,
     if (shadowData_ && shadowData_.get() + start * indexSize_ != data)
         memcpy(shadowData_.get() + start * indexSize_, data, count * indexSize_);
 
-    if (object_.ptr_)
+    assert(0);
+    /*if (object_.ptr_)
     {
         if (dynamic_)
         {
@@ -161,7 +164,7 @@ bool IndexBuffer::SetDataRange(const void* data, unsigned start, unsigned count,
         }
     }
 
-    return true;
+    return true;*/
 }
 
 void* IndexBuffer::Lock(unsigned start, unsigned count, bool discard)
@@ -236,8 +239,9 @@ void IndexBuffer::Unlock()
 bool IndexBuffer::Create()
 {
     Release();
-
-    if (!indexCount_)
+    assert(0);
+    return false;
+    /*if (!indexCount_)
         return true;
 
     if (graphics_)
@@ -261,7 +265,7 @@ bool IndexBuffer::Create()
         }
     }
 
-    return true;
+    return true;*/
 }
 
 bool IndexBuffer::UpdateToGPU()
@@ -274,7 +278,8 @@ bool IndexBuffer::UpdateToGPU()
 
 void* IndexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
 {
-    void* hwData = nullptr;
+    return nullptr;
+    /*void* hwData = nullptr;
 
     if (object_.ptr_)
     {
@@ -292,16 +297,17 @@ void* IndexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
         }
     }
 
-    return hwData;
+    return hwData;*/
 }
 
 void IndexBuffer::UnmapBuffer()
 {
-    if (object_.ptr_ && lockState_ == LOCK_HARDWARE)
+    assert(0);
+    /*if (object_.ptr_ && lockState_ == LOCK_HARDWARE)
     {
         graphics_->GetImpl()->GetDeviceContext()->Unmap((ID3D11Buffer*)object_.ptr_, 0);
         lockState_ = LOCK_NONE;
-    }
+    }*/
 }
 
 }

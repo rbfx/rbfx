@@ -43,6 +43,12 @@
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
 
+#include <Diligent/Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
+#include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
+#include <Diligent/Graphics/GraphicsEngineD3D11/interface/DeviceContextD3D11.h>
+#include <Diligent/Graphics/GraphicsEngineD3D11/interface/SwapChainD3D11.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
+
 #if UWP
 #include <wrl/client.h>
 #include <windows.ui.xaml.media.dxinterop.h>
@@ -74,19 +80,20 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 namespace Urho3D
 {
+    using namespace Diligent;
 
-static const D3D11_COMPARISON_FUNC d3dCmpFunc[] =
+static const COMPARISON_FUNCTION sCmpFunc[] =
 {
-    D3D11_COMPARISON_ALWAYS,
-    D3D11_COMPARISON_EQUAL,
-    D3D11_COMPARISON_NOT_EQUAL,
-    D3D11_COMPARISON_LESS,
-    D3D11_COMPARISON_LESS_EQUAL,
-    D3D11_COMPARISON_GREATER,
-    D3D11_COMPARISON_GREATER_EQUAL
+    COMPARISON_FUNC_ALWAYS,
+    COMPARISON_FUNC_EQUAL,
+    COMPARISON_FUNC_NOT_EQUAL,
+    COMPARISON_FUNC_LESS,
+    COMPARISON_FUNC_LESS_EQUAL,
+    COMPARISON_FUNC_GREATER,
+    COMPARISON_FUNC_GREATER_EQUAL
 };
 
-static const DWORD d3dBlendEnable[] =
+static const DWORD sBlendEnable[] =
 {
     FALSE,  // BLEND_REPLACE
     TRUE,   // BLEND_ADD
@@ -99,104 +106,104 @@ static const DWORD d3dBlendEnable[] =
     TRUE,   // BLEND_SUBTRACTALPHA
     TRUE,   // BLEND_DEFERRED_DECAL
 };
-static_assert(sizeof(d3dBlendEnable) / sizeof(d3dBlendEnable[0]) == MAX_BLENDMODES, "");
+static_assert(sizeof(sBlendEnable) / sizeof(sBlendEnable[0]) == MAX_BLENDMODES, "");
 
-static const D3D11_BLEND d3dSrcBlend[] =
+static const BLEND_FACTOR sSrcBlend[] =
 {
-    D3D11_BLEND_ONE,            // BLEND_REPLACE
-    D3D11_BLEND_ONE,            // BLEND_ADD
-    D3D11_BLEND_DEST_COLOR,     // BLEND_MULTIPLY
-    D3D11_BLEND_SRC_ALPHA,      // BLEND_ALPHA
-    D3D11_BLEND_SRC_ALPHA,      // BLEND_ADDALPHA
-    D3D11_BLEND_ONE,            // BLEND_PREMULALPHA
-    D3D11_BLEND_INV_DEST_ALPHA, // BLEND_INVDESTALPHA
-    D3D11_BLEND_ONE,            // BLEND_SUBTRACT
-    D3D11_BLEND_SRC_ALPHA,      // BLEND_SUBTRACTALPHA
-    D3D11_BLEND_SRC_ALPHA,      // BLEND_DEFERRED_DECAL
+    BLEND_FACTOR_ONE,            // BLEND_REPLACE
+    BLEND_FACTOR_ONE,            // BLEND_ADD
+    BLEND_FACTOR_DEST_COLOR,     // BLEND_MULTIPLY
+    BLEND_FACTOR_SRC_ALPHA,      // BLEND_ALPHA
+    BLEND_FACTOR_SRC_ALPHA,      // BLEND_ADDALPHA
+    BLEND_FACTOR_ONE,            // BLEND_PREMULALPHA
+    BLEND_FACTOR_INV_DEST_ALPHA, // BLEND_INVDESTALPHA
+    BLEND_FACTOR_ONE,            // BLEND_SUBTRACT
+    BLEND_FACTOR_SRC_ALPHA,      // BLEND_SUBTRACTALPHA
+    BLEND_FACTOR_SRC_ALPHA,      // BLEND_DEFERRED_DECAL
 };
-static_assert(sizeof(d3dSrcBlend) / sizeof(d3dSrcBlend[0]) == MAX_BLENDMODES, "");
+static_assert(sizeof(sSrcBlend) / sizeof(sSrcBlend[0]) == MAX_BLENDMODES, "");
 
-static const D3D11_BLEND d3dDestBlend[] =
+static const BLEND_FACTOR sDestBlend[] =
 {
-    D3D11_BLEND_ZERO,          // BLEND_REPLACE
-    D3D11_BLEND_ONE,           // BLEND_ADD
-    D3D11_BLEND_ZERO,          // BLEND_MULTIPLY
-    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_ALPHA
-    D3D11_BLEND_ONE,           // BLEND_ADDALPHA
-    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_PREMULALPHA
-    D3D11_BLEND_DEST_ALPHA,    // BLEND_INVDESTALPHA
-    D3D11_BLEND_ONE,           // BLEND_SUBTRACT
-    D3D11_BLEND_ONE,           // BLEND_SUBTRACTALPHA
-    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_DEFERRED_DECAL
+    BLEND_FACTOR_ZERO,          // BLEND_REPLACE
+    BLEND_FACTOR_ONE,           // BLEND_ADD
+    BLEND_FACTOR_ZERO,          // BLEND_MULTIPLY
+    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_ALPHA
+    BLEND_FACTOR_ONE,           // BLEND_ADDALPHA
+    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_PREMULALPHA
+    BLEND_FACTOR_DEST_ALPHA,    // BLEND_INVDESTALPHA
+    BLEND_FACTOR_ONE,           // BLEND_SUBTRACT
+    BLEND_FACTOR_ONE,           // BLEND_SUBTRACTALPHA
+    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_DEFERRED_DECAL
 };
-static_assert(sizeof(d3dDestBlend) / sizeof(d3dDestBlend[0]) == MAX_BLENDMODES, "");
+static_assert(sizeof(sDestBlend) / sizeof(sDestBlend[0]) == MAX_BLENDMODES, "");
 
-static const D3D11_BLEND d3dSrcAlphaBlend[] =
+static const BLEND_FACTOR sSrcAlphaBlend[] =
 {
-    D3D11_BLEND_ONE,            // BLEND_REPLACE
-    D3D11_BLEND_ONE,            // BLEND_ADD
-    D3D11_BLEND_DEST_COLOR,     // BLEND_MULTIPLY
-    D3D11_BLEND_SRC_ALPHA,      // BLEND_ALPHA
-    D3D11_BLEND_SRC_ALPHA,      // BLEND_ADDALPHA
-    D3D11_BLEND_ONE,            // BLEND_PREMULALPHA
-    D3D11_BLEND_INV_DEST_ALPHA, // BLEND_INVDESTALPHA
-    D3D11_BLEND_ONE,            // BLEND_SUBTRACT
-    D3D11_BLEND_SRC_ALPHA,      // BLEND_SUBTRACTALPHA
-    D3D11_BLEND_ZERO,           // BLEND_DEFERRED_DECAL
+    BLEND_FACTOR_ONE,            // BLEND_REPLACE
+    BLEND_FACTOR_ONE,            // BLEND_ADD
+    BLEND_FACTOR_DEST_COLOR,     // BLEND_MULTIPLY
+    BLEND_FACTOR_SRC_ALPHA,      // BLEND_ALPHA
+    BLEND_FACTOR_SRC_ALPHA,      // BLEND_ADDALPHA
+    BLEND_FACTOR_ONE,            // BLEND_PREMULALPHA
+    BLEND_FACTOR_INV_DEST_ALPHA, // BLEND_INVDESTALPHA
+    BLEND_FACTOR_ONE,            // BLEND_SUBTRACT
+    BLEND_FACTOR_SRC_ALPHA,      // BLEND_SUBTRACTALPHA
+    BLEND_FACTOR_ZERO,           // BLEND_DEFERRED_DECAL
 };
-static_assert(sizeof(d3dSrcAlphaBlend) / sizeof(d3dSrcAlphaBlend[0]) == MAX_BLENDMODES, "");
+static_assert(sizeof(sSrcAlphaBlend) / sizeof(sSrcAlphaBlend[0]) == MAX_BLENDMODES, "");
 
-static const D3D11_BLEND d3dDestAlphaBlend[] =
+static const BLEND_FACTOR sDestAlphaBlend[] =
 {
-    D3D11_BLEND_ZERO,          // BLEND_REPLACE
-    D3D11_BLEND_ONE,           // BLEND_ADD
-    D3D11_BLEND_ZERO,          // BLEND_MULTIPLY
-    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_ALPHA
-    D3D11_BLEND_ONE,           // BLEND_ADDALPHA
-    D3D11_BLEND_INV_SRC_ALPHA, // BLEND_PREMULALPHA
-    D3D11_BLEND_DEST_ALPHA,    // BLEND_INVDESTALPHA
-    D3D11_BLEND_ONE,           // BLEND_SUBTRACT
-    D3D11_BLEND_ONE,           // BLEND_SUBTRACTALPHA
-    D3D11_BLEND_ONE,           // BLEND_DEFERRED_DECAL
+    BLEND_FACTOR_ZERO,          // BLEND_REPLACE
+    BLEND_FACTOR_ONE,           // BLEND_ADD
+    BLEND_FACTOR_ZERO,          // BLEND_MULTIPLY
+    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_ALPHA
+    BLEND_FACTOR_ONE,           // BLEND_ADDALPHA
+    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_PREMULALPHA
+    BLEND_FACTOR_DEST_ALPHA,    // BLEND_INVDESTALPHA
+    BLEND_FACTOR_ONE,           // BLEND_SUBTRACT
+    BLEND_FACTOR_ONE,           // BLEND_SUBTRACTALPHA
+    BLEND_FACTOR_ONE,           // BLEND_DEFERRED_DECAL
 };
-static_assert(sizeof(d3dDestAlphaBlend) / sizeof(d3dDestAlphaBlend[0]) == MAX_BLENDMODES, "");
+static_assert(sizeof(sDestAlphaBlend) / sizeof(sDestAlphaBlend[0]) == MAX_BLENDMODES, "");
 
-static const D3D11_BLEND_OP d3dBlendOp[] =
+static const BLEND_OPERATION sBlendOp[] =
 {
-    D3D11_BLEND_OP_ADD,          // BLEND_REPLACE
-    D3D11_BLEND_OP_ADD,          // BLEND_ADD
-    D3D11_BLEND_OP_ADD,          // BLEND_MULTIPLY
-    D3D11_BLEND_OP_ADD,          // BLEND_ALPHA
-    D3D11_BLEND_OP_ADD,          // BLEND_ADDALPHA
-    D3D11_BLEND_OP_ADD,          // BLEND_PREMULALPHA
-    D3D11_BLEND_OP_ADD,          // BLEND_INVDESTALPHA
-    D3D11_BLEND_OP_REV_SUBTRACT, // BLEND_SUBTRACT
-    D3D11_BLEND_OP_REV_SUBTRACT, // BLEND_SUBTRACTALPHA
-    D3D11_BLEND_OP_ADD,          // BLEND_DEFERRED_DECAL
+    BLEND_OPERATION_ADD,          // BLEND_REPLACE
+    BLEND_OPERATION_ADD,          // BLEND_ADD
+    BLEND_OPERATION_ADD,          // BLEND_MULTIPLY
+    BLEND_OPERATION_ADD,          // BLEND_ALPHA
+    BLEND_OPERATION_ADD,          // BLEND_ADDALPHA
+    BLEND_OPERATION_ADD,          // BLEND_PREMULALPHA
+    BLEND_OPERATION_ADD,          // BLEND_INVDESTALPHA
+    BLEND_OPERATION_REV_SUBTRACT, // BLEND_SUBTRACT
+    BLEND_OPERATION_REV_SUBTRACT, // BLEND_SUBTRACTALPHA
+    BLEND_OPERATION_ADD,          // BLEND_DEFERRED_DECAL
 };
-static_assert(sizeof(d3dBlendOp) / sizeof(d3dBlendOp[0]) == MAX_BLENDMODES, "");
+static_assert(sizeof(sBlendOp) / sizeof(sBlendOp[0]) == MAX_BLENDMODES, "");
 
-static const D3D11_STENCIL_OP d3dStencilOp[] =
-{
-    D3D11_STENCIL_OP_KEEP,
-    D3D11_STENCIL_OP_ZERO,
-    D3D11_STENCIL_OP_REPLACE,
-    D3D11_STENCIL_OP_INCR,
-    D3D11_STENCIL_OP_DECR
-};
-
-static const D3D11_CULL_MODE d3dCullMode[] =
-{
-    D3D11_CULL_NONE,
-    D3D11_CULL_BACK,
-    D3D11_CULL_FRONT
+static const STENCIL_OP sStencilOp[] = {
+    STENCIL_OP_KEEP,
+    STENCIL_OP_ZERO,
+    STENCIL_OP_REPLACE,
+    STENCIL_OP_INCR_WRAP,
+    STENCIL_OP_DECR_WRAP
 };
 
-static const D3D11_FILL_MODE d3dFillMode[] =
+static const CULL_MODE sCullMode[] = {
+    CULL_MODE_NONE,
+    CULL_MODE_BACK,
+    CULL_MODE_FRONT
+};
+
+static const FILL_MODE sFillMode[] =
 {
-    D3D11_FILL_SOLID,
-    D3D11_FILL_WIREFRAME,
-    D3D11_FILL_WIREFRAME // Point fill mode not supported
+
+    FILL_MODE_SOLID,
+    FILL_MODE_WIREFRAME,
+    FILL_MODE_WIREFRAME,
+    // Point fill mode not supported
 };
 
 struct ClearFramebufferConstantBuffer
@@ -205,40 +212,40 @@ struct ClearFramebufferConstantBuffer
     Vector4 color_;
 };
 
-static void GetD3DPrimitiveType(unsigned elementCount, PrimitiveType type, unsigned& primitiveCount,
-    D3D_PRIMITIVE_TOPOLOGY& d3dPrimitiveType)
+static void GetPrimitiveType(unsigned elementCount, PrimitiveType type, unsigned& primitiveCount,
+    Diligent::PRIMITIVE_TOPOLOGY& primitiveTopology)
 {
     switch (type)
     {
     case TRIANGLE_LIST:
         primitiveCount = elementCount / 3;
-        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        primitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         break;
 
     case LINE_LIST:
         primitiveCount = elementCount / 2;
-        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+        primitiveTopology = PRIMITIVE_TOPOLOGY_LINE_LIST;
         break;
 
     case POINT_LIST:
         primitiveCount = elementCount;
-        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+        primitiveTopology = PRIMITIVE_TOPOLOGY_POINT_LIST;
         break;
 
     case TRIANGLE_STRIP:
         primitiveCount = elementCount - 2;
-        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+        primitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
         break;
 
     case LINE_STRIP:
         primitiveCount = elementCount - 1;
-        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+        primitiveTopology = PRIMITIVE_TOPOLOGY_LINE_STRIP;
         break;
 
     case TRIANGLE_FAN:
         // Triangle fan is not supported on D3D11
         primitiveCount = 0;
-        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+        primitiveTopology = PRIMITIVE_TOPOLOGY_UNDEFINED;
         break;
     }
 }
@@ -263,7 +270,7 @@ Graphics::Graphics(Context* context) :
     shaderPath_("Shaders/HLSL/"),
     shaderExtension_(".hlsl"),
     orientations_("LandscapeLeft LandscapeRight"),
-    apiName_("D3D11")
+    apiName_("Diligent")
 {
     SetTextureUnitMappings();
     ResetCachedState();
@@ -274,44 +281,44 @@ Graphics::Graphics(Context* context) :
 
 Graphics::~Graphics()
 {
-    {
-        MutexLock lock(gpuObjectMutex_);
+    //{
+    //    MutexLock lock(gpuObjectMutex_);
 
-        // Release all GPU objects that still exist
-        for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
-            (*i)->Release();
-        gpuObjects_.clear();
-    }
+    //    // Release all GPU objects that still exist
+    //    for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
+    //        (*i)->Release();
+    //    gpuObjects_.clear();
+    //}
 
-    impl_->vertexDeclarations_.clear();
-    impl_->allConstantBuffers_.clear();
+    //impl_->vertexDeclarations_.clear();
+    //impl_->allConstantBuffers_.clear();
 
-    for (auto i = impl_->blendStates_.begin(); i != impl_->blendStates_.end(); ++i)
-    {
-        URHO3D_SAFE_RELEASE(i->second);
-    }
-    impl_->blendStates_.clear();
+    //for (auto i = impl_->blendStates_.begin(); i != impl_->blendStates_.end(); ++i)
+    //{
+    //    URHO3D_SAFE_RELEASE(i->second);
+    //}
+    //impl_->blendStates_.clear();
 
-    for (auto i = impl_->depthStates_.begin(); i != impl_->depthStates_.end(); ++i)
-    {
-        URHO3D_SAFE_RELEASE(i->second);
-    }
-    impl_->depthStates_.clear();
+    //for (auto i = impl_->depthStates_.begin(); i != impl_->depthStates_.end(); ++i)
+    //{
+    //    URHO3D_SAFE_RELEASE(i->second);
+    //}
+    //impl_->depthStates_.clear();
 
-    for (auto i = impl_->rasterizerStates_.begin();
-         i != impl_->rasterizerStates_.end(); ++i)
-    {
-        URHO3D_SAFE_RELEASE(i->second);
-    }
-    impl_->rasterizerStates_.clear();
+    //for (auto i = impl_->rasterizerStates_.begin();
+    //     i != impl_->rasterizerStates_.end(); ++i)
+    //{
+    //    URHO3D_SAFE_RELEASE(i->second);
+    //}
+    //impl_->rasterizerStates_.clear();
 
-    URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
-    URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilView_);
-    URHO3D_SAFE_RELEASE(impl_->defaultDepthTexture_);
-    URHO3D_SAFE_RELEASE(impl_->resolveTexture_);
-    URHO3D_SAFE_RELEASE(impl_->swapChain_);
-    URHO3D_SAFE_RELEASE(impl_->deviceContext_);
-    URHO3D_SAFE_RELEASE(impl_->device_);
+    //URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
+    //URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilView_);
+    //URHO3D_SAFE_RELEASE(impl_->defaultDepthTexture_);
+    //URHO3D_SAFE_RELEASE(impl_->resolveTexture_);
+    //URHO3D_SAFE_RELEASE(impl_->swapChain_);
+    //URHO3D_SAFE_RELEASE(impl_->deviceContext_);
+    //URHO3D_SAFE_RELEASE(impl_->device_);
 
     if (window_)
     {
@@ -331,62 +338,62 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
     URHO3D_PROFILE("SetScreenMode");
 
     // Ensure that parameters are properly filled
-    ScreenModeParams newParams = params;
-    AdjustScreenMode(width, height, newParams, maximize);
+    //ScreenModeParams newParams = params;
+    //AdjustScreenMode(width, height, newParams, maximize);
 
-    // Find out the full screen mode display format (match desktop color depth)
-    SDL_DisplayMode mode;
-    SDL_GetDesktopDisplayMode(newParams.monitor_, &mode);
-    const DXGI_FORMAT fullscreenFormat = SDL_BITSPERPIXEL(mode.format) == 16 ? DXGI_FORMAT_B5G6R5_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
+    //// Find out the full screen mode display format (match desktop color depth)
+    //SDL_DisplayMode mode;
+    //SDL_GetDesktopDisplayMode(newParams.monitor_, &mode);
+    //const DXGI_FORMAT fullscreenFormat = SDL_BITSPERPIXEL(mode.format) == 16 ? DXGI_FORMAT_B5G6R5_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
 
-    // If nothing changes, do not reset the device
-    if (width == width_ && height == height_ && newParams == screenParams_)
-        return true;
+    //// If nothing changes, do not reset the device
+    //if (width == width_ && height == height_ && newParams == screenParams_)
+    //    return true;
 
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
+    //SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
 
-    if (!window_)
-    {
-        if (!OpenWindow(width, height, newParams.resizable_, newParams.borderless_))
-            return false;
-    }
+    //if (!window_)
+    //{
+    //    if (!OpenWindow(width, height, newParams.resizable_, newParams.borderless_))
+    //        return false;
+    //}
 
-    AdjustWindow(width, height, newParams.fullscreen_, newParams.borderless_, newParams.monitor_);
+    //AdjustWindow(width, height, newParams.fullscreen_, newParams.borderless_, newParams.monitor_);
 
-    if (maximize)
-    {
-        Maximize();
-        SDL_GetWindowSize(window_, &width, &height);
-    }
+    //if (maximize)
+    //{
+    //    Maximize();
+    //    SDL_GetWindowSize(window_, &width, &height);
+    //}
 
-    const int oldMultiSample = screenParams_.multiSample_;
-    screenParams_ = newParams;
+    //const int oldMultiSample = screenParams_.multiSample_;
+    //screenParams_ = newParams;
 
-    if (!impl_->device_ || screenParams_.multiSample_ != oldMultiSample)
-        CreateDevice(width, height);
-    UpdateSwapChain(width, height);
+    //if (!impl_->device_ || screenParams_.multiSample_ != oldMultiSample)
+    //    CreateDevice(width, height);
+    //UpdateSwapChain(width, height);
 
-    // Clear the initial window contents to black
-    Clear(CLEAR_COLOR);
-    impl_->swapChain_->Present(0, 0);
+    //// Clear the initial window contents to black
+    //Clear(CLEAR_COLOR);
+    //impl_->swapChain_->Present(0, 0);
 
-    OnScreenModeChanged();
+    //OnScreenModeChanged();
     return true;
 }
 
 void Graphics::SetSRGB(bool enable)
 {
-    bool newEnable = enable && sRGBWriteSupport_;
-    if (newEnable != sRGB_)
-    {
-        sRGB_ = newEnable;
-        if (impl_->swapChain_)
-        {
-            // Recreate swap chain for the new backbuffer format
-            CreateDevice(width_, height_);
-            UpdateSwapChain(width_, height_);
-        }
-    }
+    //bool newEnable = enable && sRGBWriteSupport_;
+    //if (newEnable != sRGB_)
+    //{
+    //    sRGB_ = newEnable;
+    //    if (impl_->swapChain_)
+    //    {
+    //        // Recreate swap chain for the new backbuffer format
+    //        CreateDevice(width_, height_);
+    //        UpdateSwapChain(width_, height_);
+    //    }
+    //}
 }
 
 void Graphics::SetDither(bool enable)
@@ -398,7 +405,7 @@ void Graphics::SetFlushGPU(bool enable)
 {
     flushGPU_ = enable;
 
-    if (impl_->device_)
+    /*if (impl_->device_)
     {
         IDXGIDevice1* dxgiDevice;
         impl_->device_->QueryInterface(IID_IDXGIDevice1, (void**)&dxgiDevice);
@@ -407,7 +414,7 @@ void Graphics::SetFlushGPU(bool enable)
             dxgiDevice->SetMaximumFrameLatency(enable ? 1 : 3);
             dxgiDevice->Release();
         }
-    }
+    }*/
 }
 
 void Graphics::SetForceGL2(bool enable)
@@ -429,80 +436,84 @@ bool Graphics::TakeScreenShot(Image& destImage)
 {
     URHO3D_PROFILE("TakeScreenShot");
 
-    if (!impl_->device_)
+    if (!IsInitialized())
         return false;
 
-    D3D11_TEXTURE2D_DESC textureDesc;
-    memset(&textureDesc, 0, sizeof textureDesc);
-    textureDesc.Width = (UINT)width_;
-    textureDesc.Height = (UINT)height_;
-    textureDesc.MipLevels = 1;
-    textureDesc.ArraySize = 1;
-    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    textureDesc.SampleDesc.Count = 1;
-    textureDesc.SampleDesc.Quality = 0;
-    textureDesc.Usage = D3D11_USAGE_STAGING;
-    textureDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    return false;
+    //if (!impl_->device_)
+    //    return false;
 
-    ID3D11Texture2D* stagingTexture = nullptr;
-    HRESULT hr = impl_->device_->CreateTexture2D(&textureDesc, nullptr, &stagingTexture);
-    if (FAILED(hr))
-    {
-        URHO3D_SAFE_RELEASE(stagingTexture);
-        URHO3D_LOGD3DERROR("Could not create staging texture for screenshot", hr);
-        return false;
-    }
+    //D3D11_TEXTURE2D_DESC textureDesc;
+    //memset(&textureDesc, 0, sizeof textureDesc);
+    //textureDesc.Width = (UINT)width_;
+    //textureDesc.Height = (UINT)height_;
+    //textureDesc.MipLevels = 1;
+    //textureDesc.ArraySize = 1;
+    //textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    //textureDesc.SampleDesc.Count = 1;
+    //textureDesc.SampleDesc.Quality = 0;
+    //textureDesc.Usage = D3D11_USAGE_STAGING;
+    //textureDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
 
-    ID3D11Resource* source = nullptr;
-    impl_->defaultRenderTargetView_->GetResource(&source);
+    //ID3D11Texture2D* stagingTexture = nullptr;
+    //HRESULT hr = impl_->device_->CreateTexture2D(&textureDesc, nullptr, &stagingTexture);
+    //if (FAILED(hr))
+    //{
+    //    URHO3D_SAFE_RELEASE(stagingTexture);
+    //    URHO3D_LOGD3DERROR("Could not create staging texture for screenshot", hr);
+    //    return false;
+    //}
 
-    if (screenParams_.multiSample_ > 1)
-    {
-        // If backbuffer is multisampled, need another DEFAULT usage texture to resolve the data to first
-        CreateResolveTexture();
+    //ID3D11Resource* source = nullptr;
+    //impl_->defaultRenderTargetView_->GetResource(&source);
 
-        if (!impl_->resolveTexture_)
-        {
-            stagingTexture->Release();
-            source->Release();
-            return false;
-        }
+    //if (screenParams_.multiSample_ > 1)
+    //{
+    //    // If backbuffer is multisampled, need another DEFAULT usage texture to resolve the data to first
+    //    CreateResolveTexture();
 
-        impl_->deviceContext_->ResolveSubresource(impl_->resolveTexture_, 0, source, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
-        impl_->deviceContext_->CopyResource(stagingTexture, impl_->resolveTexture_);
-    }
-    else
-        impl_->deviceContext_->CopyResource(stagingTexture, source);
+    //    if (!impl_->resolveTexture_)
+    //    {
+    //        stagingTexture->Release();
+    //        source->Release();
+    //        return false;
+    //    }
 
-    source->Release();
+    //    impl_->deviceContext_->ResolveSubresource(impl_->resolveTexture_, 0, source, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+    //    impl_->deviceContext_->CopyResource(stagingTexture, impl_->resolveTexture_);
+    //}
+    //else
+    //    impl_->deviceContext_->CopyResource(stagingTexture, source);
 
-    D3D11_MAPPED_SUBRESOURCE mappedData;
-    mappedData.pData = nullptr;
-    hr = impl_->deviceContext_->Map(stagingTexture, 0, D3D11_MAP_READ, 0, &mappedData);
-    if (FAILED(hr) || !mappedData.pData)
-    {
-        URHO3D_LOGD3DERROR("Could not map staging texture for screenshot", hr);
-        stagingTexture->Release();
-        return false;
-    }
+    //source->Release();
 
-    destImage.SetSize(width_, height_, 3);
-    unsigned char* destData = destImage.GetData();
-    for (int y = 0; y < height_; ++y)
-    {
-        unsigned char* src = (unsigned char*)mappedData.pData + y * mappedData.RowPitch;
-        for (int x = 0; x < width_; ++x)
-        {
-            *destData++ = *src++;
-            *destData++ = *src++;
-            *destData++ = *src++;
-            ++src;
-        }
-    }
+    //D3D11_MAPPED_SUBRESOURCE mappedData;
+    //mappedData.pData = nullptr;
+    //hr = impl_->deviceContext_->Map(stagingTexture, 0, D3D11_MAP_READ, 0, &mappedData);
+    //if (FAILED(hr) || !mappedData.pData)
+    //{
+    //    URHO3D_LOGD3DERROR("Could not map staging texture for screenshot", hr);
+    //    stagingTexture->Release();
+    //    return false;
+    //}
 
-    impl_->deviceContext_->Unmap(stagingTexture, 0);
-    stagingTexture->Release();
-    return true;
+    //destImage.SetSize(width_, height_, 3);
+    //unsigned char* destData = destImage.GetData();
+    //for (int y = 0; y < height_; ++y)
+    //{
+    //    unsigned char* src = (unsigned char*)mappedData.pData + y * mappedData.RowPitch;
+    //    for (int x = 0; x < width_; ++x)
+    //    {
+    //        *destData++ = *src++;
+    //        *destData++ = *src++;
+    //        *destData++ = *src++;
+    //        ++src;
+    //    }
+    //}
+
+    //impl_->deviceContext_->Unmap(stagingTexture, 0);
+    //stagingTexture->Release();
+    //return true;
 }
 
 bool Graphics::BeginFrame()
@@ -541,7 +552,7 @@ void Graphics::EndFrame()
         URHO3D_PROFILE("Present");
 
         SendEvent(E_ENDRENDERING);
-        impl_->swapChain_->Present(screenParams_.vsync_ ? 1 : 0, 0);
+        impl_->diligentSwapChain_->Present(screenParams_.vsync_ ? 1 : 0);
     }
 
     // Clean up too large scratch buffers
@@ -560,74 +571,77 @@ void Graphics::EndFrame()
 
 void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)
 {
-    IntVector2 rtSize = GetRenderTargetDimensions();
+    assert(0);
+    //IntVector2 rtSize = GetRenderTargetDimensions();
 
-    bool oldColorWrite = colorWrite_;
-    bool oldDepthWrite = depthWrite_;
+    //bool oldColorWrite = colorWrite_;
+    //bool oldDepthWrite = depthWrite_;
 
-    // D3D11 clear always clears the whole target regardless of viewport or scissor test settings
-    // Emulate partial clear by rendering a quad
-    if (!viewport_.left_ && !viewport_.top_ && viewport_.right_ == rtSize.x_ && viewport_.bottom_ == rtSize.y_)
-    {
-        // Make sure we use the read-write version of the depth stencil
-        SetDepthWrite(true);
-        PrepareDraw();
+    //// D3D11 clear always clears the whole target regardless of viewport or scissor test settings
+    //// Emulate partial clear by rendering a quad
+    //if (!viewport_.left_ && !viewport_.top_ && viewport_.right_ == rtSize.x_ && viewport_.bottom_ == rtSize.y_)
+    //{
+    //    // Make sure we use the read-write version of the depth stencil
+    //    SetDepthWrite(true);
+    //    PrepareDraw();
 
-        if ((flags & CLEAR_COLOR) && impl_->renderTargetViews_[0])
-            impl_->deviceContext_->ClearRenderTargetView(impl_->renderTargetViews_[0], color.Data());
+    //    if ((flags & CLEAR_COLOR) && impl_->renderTargetViews_[0])
+    //        impl_->deviceContext_->ClearRenderTargetView(impl_->renderTargetViews_[0], color.Data());
 
-        if ((flags & (CLEAR_DEPTH | CLEAR_STENCIL)) && impl_->depthStencilView_)
-        {
-            unsigned depthClearFlags = 0;
-            if (flags & CLEAR_DEPTH)
-                depthClearFlags |= D3D11_CLEAR_DEPTH;
-            if (flags & CLEAR_STENCIL)
-                depthClearFlags |= D3D11_CLEAR_STENCIL;
-            impl_->deviceContext_->ClearDepthStencilView(impl_->depthStencilView_, depthClearFlags, depth, (UINT8)stencil);
-        }
-    }
-    else
-    {
-        Renderer* renderer = GetSubsystem<Renderer>();
-        if (!renderer)
-            return;
+    //    if ((flags & (CLEAR_DEPTH | CLEAR_STENCIL)) && impl_->depthStencilView_)
+    //    {
+    //        unsigned depthClearFlags = 0;
+    //        if (flags & CLEAR_DEPTH)
+    //            depthClearFlags |= D3D11_CLEAR_DEPTH;
+    //        if (flags & CLEAR_STENCIL)
+    //            depthClearFlags |= D3D11_CLEAR_STENCIL;
+    //        impl_->deviceContext_->ClearDepthStencilView(impl_->depthStencilView_, depthClearFlags, depth, (UINT8)stencil);
+    //    }
+    //}
+    //else
+    //{
+    //    Renderer* renderer = GetSubsystem<Renderer>();
+    //    if (!renderer)
+    //        return;
 
-        Geometry* geometry = renderer->GetQuadGeometry();
+    //    Geometry* geometry = renderer->GetQuadGeometry();
 
-        ClearFramebufferConstantBuffer bufferData;
-        bufferData.matrix_.m23_ = Clamp(depth, 0.0f, 1.0f);
-        bufferData.color_ = color.ToVector4();
+    //    ClearFramebufferConstantBuffer bufferData;
+    //    bufferData.matrix_.m23_ = Clamp(depth, 0.0f, 1.0f);
+    //    bufferData.color_ = color.ToVector4();
 
-        ConstantBufferRange buffers[MAX_SHADER_PARAMETER_GROUPS];
-        buffers[0].constantBuffer_ = GetOrCreateConstantBuffer(VS, 0, sizeof(bufferData));
-        buffers[0].constantBuffer_->Update(&bufferData);
-        buffers[0].size_ = sizeof(bufferData);
+    //    ConstantBufferRange buffers[MAX_SHADER_PARAMETER_GROUPS];
+    //    buffers[0].constantBuffer_ = GetOrCreateConstantBuffer(VS, 0, sizeof(bufferData));
+    //    buffers[0].constantBuffer_->Update(&bufferData);
+    //    buffers[0].size_ = sizeof(bufferData);
 
-        SetBlendMode(BLEND_REPLACE);
-        SetColorWrite(flags & CLEAR_COLOR);
-        SetCullMode(CULL_NONE);
-        SetDepthTest(CMP_ALWAYS);
-        SetDepthWrite(flags & CLEAR_DEPTH);
-        SetFillMode(FILL_SOLID);
-        SetScissorTest(false);
-        SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
-        SetShaders(GetShader(VS, "ClearFramebuffer"), GetShader(PS, "ClearFramebuffer"));
-        SetShaderConstantBuffers(buffers);
+    //    SetBlendMode(BLEND_REPLACE);
+    //    SetColorWrite(flags & CLEAR_COLOR);
+    //    SetCullMode(CULL_NONE);
+    //    SetDepthTest(CMP_ALWAYS);
+    //    SetDepthWrite(flags & CLEAR_DEPTH);
+    //    SetFillMode(FILL_SOLID);
+    //    SetScissorTest(false);
+    //    SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
+    //    SetShaders(GetShader(VS, "ClearFramebuffer"), GetShader(PS, "ClearFramebuffer"));
+    //    SetShaderConstantBuffers(buffers);
 
-        geometry->Draw(this);
+    //    geometry->Draw(this);
 
-        SetStencilTest(false);
-        ClearParameterSources();
-    }
+    //    SetStencilTest(false);
+    //    ClearParameterSources();
+    //}
 
-    // Restore color & depth write state now
-    SetColorWrite(oldColorWrite);
-    SetDepthWrite(oldDepthWrite);
+    //// Restore color & depth write state now
+    //SetColorWrite(oldColorWrite);
+    //SetDepthWrite(oldDepthWrite);
 }
 
 bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
 {
-    if (!destination || !destination->GetRenderSurface())
+    assert(0);
+    return false;
+    /*if (!destination || !destination->GetRenderSurface())
         return false;
 
     URHO3D_PROFILE("ResolveToTexture");
@@ -678,12 +692,14 @@ bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
 
     source->Release();
 
-    return true;
+    return true;*/
 }
 
 bool Graphics::ResolveToTexture(Texture2D* texture)
 {
-    if (!texture)
+    assert(0);
+    return false;
+    /*if (!texture)
         return false;
     RenderSurface* surface = texture->GetRenderSurface();
     if (!surface)
@@ -697,39 +713,42 @@ bool Graphics::ResolveToTexture(Texture2D* texture)
         return false;
 
     impl_->deviceContext_->ResolveSubresource(dest, 0, source, 0, (DXGI_FORMAT)texture->GetFormat());
-    return true;
+    return true;*/
 }
 
 bool Graphics::ResolveToTexture(TextureCube* texture)
 {
-    if (!texture)
-        return false;
+    assert(0);
+    return 0;
+    //if (!texture)
+    //    return false;
 
-    texture->SetResolveDirty(false);
-    ID3D11Resource* source = (ID3D11Resource*)texture->GetGPUObject();
-    ID3D11Resource* dest = (ID3D11Resource*)texture->GetResolveTexture();
-    if (!source || !dest)
-        return false;
+    //texture->SetResolveDirty(false);
+    //ID3D11Resource* source = (ID3D11Resource*)texture->GetGPUObject();
+    //ID3D11Resource* dest = (ID3D11Resource*)texture->GetResolveTexture();
+    //if (!source || !dest)
+    //    return false;
 
-    for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-    {
-        // Resolve only the surface(s) that were actually rendered to
-        RenderSurface* surface = texture->GetRenderSurface((CubeMapFace)i);
-        if (!surface->IsResolveDirty())
-            continue;
+    //for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
+    //{
+    //    // Resolve only the surface(s) that were actually rendered to
+    //    RenderSurface* surface = texture->GetRenderSurface((CubeMapFace)i);
+    //    if (!surface->IsResolveDirty())
+    //        continue;
 
-        surface->SetResolveDirty(false);
-        unsigned subResource = D3D11CalcSubresource(0, i, texture->GetLevels());
-        impl_->deviceContext_->ResolveSubresource(dest, subResource, source, subResource, (DXGI_FORMAT)texture->GetFormat());
-    }
+    //    surface->SetResolveDirty(false);
+    //    unsigned subResource = D3D11CalcSubresource(0, i, texture->GetLevels());
+    //    impl_->deviceContext_->ResolveSubresource(dest, subResource, source, subResource, (DXGI_FORMAT)texture->GetFormat());
+    //}
 
-    return true;
+    //return true;
 }
 
 
 void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCount)
 {
-    if (!vertexCount || !impl_->shaderProgram_)
+    assert(0);
+    /*if (!vertexCount || !impl_->shaderProgram_)
         return;
 
     PrepareDraw();
@@ -740,7 +759,7 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
     if (fillMode_ == FILL_POINT)
         type = POINT_LIST;
 
-    GetD3DPrimitiveType(vertexCount, type, primitiveCount, d3dPrimitiveType);
+    GetPrimitiveType(vertexCount, type, primitiveCount, d3dPrimitiveType);
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -749,12 +768,13 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
     impl_->deviceContext_->Draw(vertexCount, vertexStart);
 
     numPrimitives_ += primitiveCount;
-    ++numBatches_;
+    ++numBatches_;*/
 }
 
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount)
 {
-    if (!impl_->shaderProgram_)
+    assert(0);
+    /*if (!impl_->shaderProgram_)
         return;
 
     PrepareDraw();
@@ -765,7 +785,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     if (fillMode_ == FILL_POINT)
         type = POINT_LIST;
 
-    GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+    GetPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -774,12 +794,13 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     impl_->deviceContext_->DrawIndexed(indexCount, indexStart, 0);
 
     numPrimitives_ += primitiveCount;
-    ++numBatches_;
+    ++numBatches_;*/
 }
 
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertex, unsigned vertexCount)
 {
-    if (!impl_->shaderProgram_)
+    assert(0);
+    /*if (!impl_->shaderProgram_)
         return;
 
     PrepareDraw();
@@ -790,7 +811,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     if (fillMode_ == FILL_POINT)
         type = POINT_LIST;
 
-    GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+    GetPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -799,13 +820,14 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     impl_->deviceContext_->DrawIndexed(indexCount, indexStart, baseVertexIndex);
 
     numPrimitives_ += primitiveCount;
-    ++numBatches_;
+    ++numBatches_;*/
 }
 
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,
     unsigned instanceCount)
 {
-    if (!indexCount || !instanceCount || !impl_->shaderProgram_)
+    assert(0);
+    /*if (!indexCount || !instanceCount || !impl_->shaderProgram_)
         return;
 
     PrepareDraw();
@@ -816,7 +838,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     if (fillMode_ == FILL_POINT)
         type = POINT_LIST;
 
-    GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+    GetPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -825,13 +847,14 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     impl_->deviceContext_->DrawIndexedInstanced(indexCount, instanceCount, indexStart, 0, 0);
 
     numPrimitives_ += instanceCount * primitiveCount;
-    ++numBatches_;
+    ++numBatches_;*/
 }
 
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertex, unsigned vertexCount,
     unsigned instanceCount)
 {
-    if (!indexCount || !instanceCount || !impl_->shaderProgram_)
+    assert(0);
+    /*if (!indexCount || !instanceCount || !impl_->shaderProgram_)
         return;
 
     PrepareDraw();
@@ -842,7 +865,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     if (fillMode_ == FILL_POINT)
         type = POINT_LIST;
 
-    GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+    GetPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -851,87 +874,93 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     impl_->deviceContext_->DrawIndexedInstanced(indexCount, instanceCount, indexStart, baseVertexIndex, 0);
 
     numPrimitives_ += instanceCount * primitiveCount;
-    ++numBatches_;
+    ++numBatches_;*/
 }
 
 void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 {
+    assert(0);
     // Note: this is not multi-instance safe
-    static ea::vector<VertexBuffer*> vertexBuffers(1);
+    /*static ea::vector<VertexBuffer*> vertexBuffers(1);
     vertexBuffers[0] = buffer;
-    SetVertexBuffers(vertexBuffers);
+    SetVertexBuffers(vertexBuffers);*/
 }
 
 bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
 {
-    if (buffers.size() > MAX_VERTEX_STREAMS)
-    {
-        URHO3D_LOGERROR("Too many vertex buffers");
-        return false;
-    }
+    assert(0);
+    return false;
+    //if (buffers.size() > MAX_VERTEX_STREAMS)
+    //{
+    //    URHO3D_LOGERROR("Too many vertex buffers");
+    //    return false;
+    //}
 
-    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
-    {
-        VertexBuffer* buffer = nullptr;
-        bool changed = false;
+    //for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
+    //{
+    //    VertexBuffer* buffer = nullptr;
+    //    bool changed = false;
 
-        buffer = i < buffers.size() ? buffers[i] : nullptr;
-        if (buffer)
-        {
-            const ea::vector<VertexElement>& elements = buffer->GetElements();
-            // Check if buffer has per-instance data
-            bool hasInstanceData = elements.size() && elements[0].perInstance_;
-            unsigned offset = hasInstanceData ? instanceOffset * buffer->GetVertexSize() : 0;
+    //    buffer = i < buffers.size() ? buffers[i] : nullptr;
+    //    if (buffer)
+    //    {
+    //        const ea::vector<VertexElement>& elements = buffer->GetElements();
+    //        // Check if buffer has per-instance data
+    //        bool hasInstanceData = elements.size() && elements[0].perInstance_;
+    //        unsigned offset = hasInstanceData ? instanceOffset * buffer->GetVertexSize() : 0;
 
-            if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
-            {
-                vertexBuffers_[i] = buffer;
-                impl_->vertexBuffers_[i] = (ID3D11Buffer*)buffer->GetGPUObject();
-                impl_->vertexSizes_[i] = buffer->GetVertexSize();
-                impl_->vertexOffsets_[i] = offset;
-                changed = true;
-            }
-        }
-        else if (vertexBuffers_[i])
-        {
-            vertexBuffers_[i] = nullptr;
-            impl_->vertexBuffers_[i] = nullptr;
-            impl_->vertexSizes_[i] = 0;
-            impl_->vertexOffsets_[i] = 0;
-            changed = true;
-        }
+    //        if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
+    //        {
+    //            vertexBuffers_[i] = buffer;
+    //            impl_->vertexBuffers_[i] = (ID3D11Buffer*)buffer->GetGPUObject();
+    //            impl_->vertexSizes_[i] = buffer->GetVertexSize();
+    //            impl_->vertexOffsets_[i] = offset;
+    //            changed = true;
+    //        }
+    //    }
+    //    else if (vertexBuffers_[i])
+    //    {
+    //        vertexBuffers_[i] = nullptr;
+    //        impl_->vertexBuffers_[i] = nullptr;
+    //        impl_->vertexSizes_[i] = 0;
+    //        impl_->vertexOffsets_[i] = 0;
+    //        changed = true;
+    //    }
 
-        if (changed)
-        {
-            impl_->vertexDeclarationDirty_ = true;
+    //    if (changed)
+    //    {
+    //        impl_->vertexDeclarationDirty_ = true;
 
-            if (impl_->firstDirtyVB_ == M_MAX_UNSIGNED)
-                impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = i;
-            else
-            {
-                if (i < impl_->firstDirtyVB_)
-                    impl_->firstDirtyVB_ = i;
-                if (i > impl_->lastDirtyVB_)
-                    impl_->lastDirtyVB_ = i;
-            }
-        }
-    }
+    //        if (impl_->firstDirtyVB_ == M_MAX_UNSIGNED)
+    //            impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = i;
+    //        else
+    //        {
+    //            if (i < impl_->firstDirtyVB_)
+    //                impl_->firstDirtyVB_ = i;
+    //            if (i > impl_->lastDirtyVB_)
+    //                impl_->lastDirtyVB_ = i;
+    //        }
+    //    }
+    //}
 
-    return true;
+    //return true;
 }
 
 bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    ea::vector<VertexBuffer*> bufferPointers;
+    assert(0);
+    return false;
+    /*ea::vector<VertexBuffer*> bufferPointers;
     bufferPointers.reserve(buffers.size());
     for (auto& buffer : buffers)
         bufferPointers.push_back(buffer.Get());
-    return SetVertexBuffers(bufferPointers, instanceOffset);
+    return SetVertexBuffers(bufferPointers, instanceOffset);*/
 }
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 {
-    if (buffer != indexBuffer_)
+    assert(0);
+    /*if (buffer != indexBuffer_)
     {
         if (buffer)
             impl_->deviceContext_->IASetIndexBuffer((ID3D11Buffer*)buffer->GetGPUObject(),
@@ -940,7 +969,7 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
             impl_->deviceContext_->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
 
         indexBuffer_ = buffer;
-    }
+    }*/
 }
 
 ShaderProgramLayout* Graphics::GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps)
@@ -961,101 +990,101 @@ ShaderProgramLayout* Graphics::GetShaderProgramLayout(ShaderVariation* vs, Shade
 
 void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 {
-    if (vs == vertexShader_ && ps == pixelShader_)
-        return;
+    //if (vs == vertexShader_ && ps == pixelShader_)
+    //    return;
 
-    if (vs != vertexShader_)
-    {
-        // Create the shader now if not yet created. If already attempted, do not retry
-        if (vs && !vs->GetGPUObject())
-        {
-            if (vs->GetCompilerOutput().empty())
-            {
-                URHO3D_PROFILE("CompileVertexShader");
+    //if (vs != vertexShader_)
+    //{
+    //    // Create the shader now if not yet created. If already attempted, do not retry
+    //    if (vs && !vs->GetGPUObject())
+    //    {
+    //        if (vs->GetCompilerOutput().empty())
+    //        {
+    //            URHO3D_PROFILE("CompileVertexShader");
 
-                bool success = vs->Create();
-                if (!success)
-                {
-                    URHO3D_LOGERROR("Failed to compile vertex shader " + vs->GetFullName() + ":\n" + vs->GetCompilerOutput());
-                    vs = nullptr;
-                }
-            }
-            else
-                vs = nullptr;
-        }
+    //            bool success = vs->Create();
+    //            if (!success)
+    //            {
+    //                URHO3D_LOGERROR("Failed to compile vertex shader " + vs->GetFullName() + ":\n" + vs->GetCompilerOutput());
+    //                vs = nullptr;
+    //            }
+    //        }
+    //        else
+    //            vs = nullptr;
+    //    }
 
-        impl_->deviceContext_->VSSetShader((ID3D11VertexShader*)(vs ? vs->GetGPUObject() : nullptr), nullptr, 0);
-        vertexShader_ = vs;
-        impl_->vertexDeclarationDirty_ = true;
-    }
+    //    impl_->deviceContext_->VSSetShader((ID3D11VertexShader*)(vs ? vs->GetGPUObject() : nullptr), nullptr, 0);
+    //    vertexShader_ = vs;
+    //    impl_->vertexDeclarationDirty_ = true;
+    //}
 
-    if (ps != pixelShader_)
-    {
-        if (ps && !ps->GetGPUObject())
-        {
-            if (ps->GetCompilerOutput().empty())
-            {
-                URHO3D_PROFILE("CompilePixelShader");
+    //if (ps != pixelShader_)
+    //{
+    //    if (ps && !ps->GetGPUObject())
+    //    {
+    //        if (ps->GetCompilerOutput().empty())
+    //        {
+    //            URHO3D_PROFILE("CompilePixelShader");
 
-                bool success = ps->Create();
-                if (!success)
-                {
-                    URHO3D_LOGERROR("Failed to compile pixel shader " + ps->GetFullName() + ":\n" + ps->GetCompilerOutput());
-                    ps = nullptr;
-                }
-            }
-            else
-                ps = nullptr;
-        }
+    //            bool success = ps->Create();
+    //            if (!success)
+    //            {
+    //                URHO3D_LOGERROR("Failed to compile pixel shader " + ps->GetFullName() + ":\n" + ps->GetCompilerOutput());
+    //                ps = nullptr;
+    //            }
+    //        }
+    //        else
+    //            ps = nullptr;
+    //    }
 
-        impl_->deviceContext_->PSSetShader((ID3D11PixelShader*)(ps ? ps->GetGPUObject() : nullptr), nullptr, 0);
-        pixelShader_ = ps;
-    }
+    //    impl_->deviceContext_->PSSetShader((ID3D11PixelShader*)(ps ? ps->GetGPUObject() : nullptr), nullptr, 0);
+    //    pixelShader_ = ps;
+    //}
 
-    // Update current shader parameters & constant buffers
-    if (vertexShader_ && pixelShader_)
-    {
-        ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
-        auto i = impl_->shaderPrograms_.find(key);
-        if (i != impl_->shaderPrograms_.end())
-            impl_->shaderProgram_ = i->second.Get();
-        else
-        {
-            ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_);
-            impl_->shaderProgram_ = newProgram;
-        }
-    }
-    else
-        impl_->shaderProgram_ = nullptr;
+    //// Update current shader parameters & constant buffers
+    //if (vertexShader_ && pixelShader_)
+    //{
+    //    ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
+    //    auto i = impl_->shaderPrograms_.find(key);
+    //    if (i != impl_->shaderPrograms_.end())
+    //        impl_->shaderProgram_ = i->second.Get();
+    //    else
+    //    {
+    //        ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_);
+    //        impl_->shaderProgram_ = newProgram;
+    //    }
+    //}
+    //else
+    //    impl_->shaderProgram_ = nullptr;
 
-    // Store shader combination if shader dumping in progress
-    if (shaderPrecache_)
-        shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
+    //// Store shader combination if shader dumping in progress
+    //if (shaderPrecache_)
+    //    shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
 }
 
 void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
 {
-    bool buffersDirty = false;
-    for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-    {
-        const ConstantBufferRange& range = constantBuffers[i];
-        if (range != constantBuffers_[i])
-        {
-            buffersDirty = true;
-            impl_->constantBuffers_[i] = reinterpret_cast<ID3D11Buffer*>(range.constantBuffer_->GetGPUObject());
-            impl_->constantBuffersStartSlots_[i] = range.offset_ / 16;
-            impl_->constantBuffersNumSlots_[i] = (range.size_ / 16 + 15) / 16 * 16;
-        }
-    }
+    //bool buffersDirty = false;
+    //for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+    //{
+    //    const ConstantBufferRange& range = constantBuffers[i];
+    //    if (range != constantBuffers_[i])
+    //    {
+    //        buffersDirty = true;
+    //        impl_->constantBuffers_[i] = reinterpret_cast<ID3D11Buffer*>(range.constantBuffer_->GetGPUObject());
+    //        impl_->constantBuffersStartSlots_[i] = range.offset_ / 16;
+    //        impl_->constantBuffersNumSlots_[i] = (range.size_ / 16 + 15) / 16 * 16;
+    //    }
+    //}
 
-    if (buffersDirty)
-    {
-        // TODO: Optimize unused buffers
-        impl_->deviceContext_->VSSetConstantBuffers1(0, MAX_SHADER_PARAMETER_GROUPS,
-            impl_->constantBuffers_, impl_->constantBuffersStartSlots_, impl_->constantBuffersNumSlots_);
-        impl_->deviceContext_->PSSetConstantBuffers1(0, MAX_SHADER_PARAMETER_GROUPS,
-            impl_->constantBuffers_, impl_->constantBuffersStartSlots_, impl_->constantBuffersNumSlots_);
-    }
+    //if (buffersDirty)
+    //{
+    //    // TODO: Optimize unused buffers
+    //    impl_->deviceContext_->VSSetConstantBuffers1(0, MAX_SHADER_PARAMETER_GROUPS,
+    //        impl_->constantBuffers_, impl_->constantBuffersStartSlots_, impl_->constantBuffersNumSlots_);
+    //    impl_->deviceContext_->PSSetConstantBuffers1(0, MAX_SHADER_PARAMETER_GROUPS,
+    //        impl_->constantBuffers_, impl_->constantBuffersStartSlots_, impl_->constantBuffersNumSlots_);
+    //}
 }
 
 void Graphics::SetShaderParameter(StringHash param, const float data[], unsigned count)
@@ -1149,53 +1178,54 @@ void Graphics::ClearTransformSources()
 
 void Graphics::SetTexture(unsigned index, Texture* texture)
 {
-    if (index >= MAX_TEXTURE_UNITS)
-        return;
+    assert(0);
+    //if (index >= MAX_TEXTURE_UNITS)
+    //    return;
 
-    // Check if texture is currently bound as a rendertarget. In that case, use its backup texture, or blank if not defined
-    if (texture)
-    {
-        if (renderTargets_[0] && renderTargets_[0]->GetParentTexture() == texture)
-            texture = texture->GetBackupTexture();
-        else
-        {
-            // Resolve multisampled texture now as necessary
-            if (texture->GetMultiSample() > 1 && texture->GetAutoResolve() && texture->IsResolveDirty())
-            {
-                if (texture->GetType() == Texture2D::GetTypeStatic())
-                    ResolveToTexture(static_cast<Texture2D*>(texture));
-                if (texture->GetType() == TextureCube::GetTypeStatic())
-                    ResolveToTexture(static_cast<TextureCube*>(texture));
-            }
-        }
+    //// Check if texture is currently bound as a rendertarget. In that case, use its backup texture, or blank if not defined
+    //if (texture)
+    //{
+    //    if (renderTargets_[0] && renderTargets_[0]->GetParentTexture() == texture)
+    //        texture = texture->GetBackupTexture();
+    //    else
+    //    {
+    //        // Resolve multisampled texture now as necessary
+    //        if (texture->GetMultiSample() > 1 && texture->GetAutoResolve() && texture->IsResolveDirty())
+    //        {
+    //            if (texture->GetType() == Texture2D::GetTypeStatic())
+    //                ResolveToTexture(static_cast<Texture2D*>(texture));
+    //            if (texture->GetType() == TextureCube::GetTypeStatic())
+    //                ResolveToTexture(static_cast<TextureCube*>(texture));
+    //        }
+    //    }
 
-        if (texture && texture->GetLevelsDirty())
-            texture->RegenerateLevels();
-    }
+    //    if (texture && texture->GetLevelsDirty())
+    //        texture->RegenerateLevels();
+    //}
 
-    if (texture && texture->GetParametersDirty())
-    {
-        texture->UpdateParameters();
-        textures_[index] = nullptr; // Force reassign
-    }
+    //if (texture && texture->GetParametersDirty())
+    //{
+    //    texture->UpdateParameters();
+    //    textures_[index] = nullptr; // Force reassign
+    //}
 
-    if (texture != textures_[index])
-    {
-        if (impl_->firstDirtyTexture_ == M_MAX_UNSIGNED)
-            impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = index;
-        else
-        {
-            if (index < impl_->firstDirtyTexture_)
-                impl_->firstDirtyTexture_ = index;
-            if (index > impl_->lastDirtyTexture_)
-                impl_->lastDirtyTexture_ = index;
-        }
+    //if (texture != textures_[index])
+    //{
+    //    if (impl_->firstDirtyTexture_ == M_MAX_UNSIGNED)
+    //        impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = index;
+    //    else
+    //    {
+    //        if (index < impl_->firstDirtyTexture_)
+    //            impl_->firstDirtyTexture_ = index;
+    //        if (index > impl_->lastDirtyTexture_)
+    //            impl_->lastDirtyTexture_ = index;
+    //    }
 
-        textures_[index] = texture;
-        impl_->shaderResourceViews_[index] = texture ? (ID3D11ShaderResourceView*)texture->GetShaderResourceView() : nullptr;
-        impl_->samplers_[index] = texture ? (ID3D11SamplerState*)texture->GetSampler() : nullptr;
-        impl_->texturesDirty_ = true;
-    }
+    //    textures_[index] = texture;
+    //    impl_->shaderResourceViews_[index] = texture ? (ID3D11ShaderResourceView*)texture->GetShaderResourceView() : nullptr;
+    //    impl_->samplers_[index] = texture ? (ID3D11SamplerState*)texture->GetSampler() : nullptr;
+    //    impl_->texturesDirty_ = true;
+    //}
 }
 
 void SetTextureForUpdate(Texture* texture)
@@ -1260,37 +1290,38 @@ void Graphics::ResetDepthStencil()
 
 void Graphics::SetRenderTarget(unsigned index, RenderSurface* renderTarget)
 {
-    if (index >= MAX_RENDERTARGETS)
-        return;
+    assert(0);
+    //if (index >= MAX_RENDERTARGETS)
+    //    return;
 
-    if (renderTarget != renderTargets_[index])
-    {
-        renderTargets_[index] = renderTarget;
-        impl_->renderTargetsDirty_ = true;
+    //if (renderTarget != renderTargets_[index])
+    //{
+    //    renderTargets_[index] = renderTarget;
+    //    impl_->renderTargetsDirty_ = true;
 
-        // If the rendertarget is also bound as a texture, replace with backup texture or null
-        if (renderTarget)
-        {
-            Texture* parentTexture = renderTarget->GetParentTexture();
+    //    // If the rendertarget is also bound as a texture, replace with backup texture or null
+    //    if (renderTarget)
+    //    {
+    //        Texture* parentTexture = renderTarget->GetParentTexture();
 
-            for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-            {
-                if (textures_[i] == parentTexture)
-                    SetTexture(i, textures_[i]->GetBackupTexture());
-            }
+    //        for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+    //        {
+    //            if (textures_[i] == parentTexture)
+    //                SetTexture(i, textures_[i]->GetBackupTexture());
+    //        }
 
-            // If multisampled, mark the texture & surface needing resolve
-            if (parentTexture->GetMultiSample() > 1 && parentTexture->GetAutoResolve())
-            {
-                parentTexture->SetResolveDirty(true);
-                renderTarget->SetResolveDirty(true);
-            }
+    //        // If multisampled, mark the texture & surface needing resolve
+    //        if (parentTexture->GetMultiSample() > 1 && parentTexture->GetAutoResolve())
+    //        {
+    //            parentTexture->SetResolveDirty(true);
+    //            renderTarget->SetResolveDirty(true);
+    //        }
 
-            // If mipmapped, mark the levels needing regeneration
-            if (parentTexture->GetLevels() > 1)
-                parentTexture->SetLevelsDirty();
-        }
-    }
+    //        // If mipmapped, mark the levels needing regeneration
+    //        if (parentTexture->GetLevels() > 1)
+    //            parentTexture->SetLevelsDirty();
+    //    }
+    //}
 }
 
 void Graphics::SetRenderTarget(unsigned index, Texture2D* texture)
@@ -1304,136 +1335,147 @@ void Graphics::SetRenderTarget(unsigned index, Texture2D* texture)
 
 void Graphics::SetDepthStencil(RenderSurface* depthStencil)
 {
-    if (depthStencil != depthStencil_)
+    assert(0);
+    /*if (depthStencil != depthStencil_)
     {
         depthStencil_ = depthStencil;
         impl_->renderTargetsDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetDepthStencil(Texture2D* texture)
 {
-    RenderSurface* depthStencil = nullptr;
-    if (texture)
-        depthStencil = texture->GetRenderSurface();
+    assert(0);
+    //RenderSurface* depthStencil = nullptr;
+    //if (texture)
+    //    depthStencil = texture->GetRenderSurface();
 
-    SetDepthStencil(depthStencil);
-    // Constant depth bias depends on the bitdepth
-    impl_->rasterizerStateDirty_ = true;
+    //SetDepthStencil(depthStencil);
+    //// Constant depth bias depends on the bitdepth
+    //impl_->rasterizerStateDirty_ = true;
 }
 
 void Graphics::SetViewport(const IntRect& rect)
 {
-    IntVector2 size = GetRenderTargetDimensions();
+    //IntVector2 size = GetRenderTargetDimensions();
 
-    IntRect rectCopy = rect;
+    //IntRect rectCopy = rect;
 
-    if (rectCopy.right_ <= rectCopy.left_)
-        rectCopy.right_ = rectCopy.left_ + 1;
-    if (rectCopy.bottom_ <= rectCopy.top_)
-        rectCopy.bottom_ = rectCopy.top_ + 1;
-    rectCopy.left_ = Clamp(rectCopy.left_, 0, size.x_);
-    rectCopy.top_ = Clamp(rectCopy.top_, 0, size.y_);
-    rectCopy.right_ = Clamp(rectCopy.right_, 0, size.x_);
-    rectCopy.bottom_ = Clamp(rectCopy.bottom_, 0, size.y_);
+    //if (rectCopy.right_ <= rectCopy.left_)
+    //    rectCopy.right_ = rectCopy.left_ + 1;
+    //if (rectCopy.bottom_ <= rectCopy.top_)
+    //    rectCopy.bottom_ = rectCopy.top_ + 1;
+    //rectCopy.left_ = Clamp(rectCopy.left_, 0, size.x_);
+    //rectCopy.top_ = Clamp(rectCopy.top_, 0, size.y_);
+    //rectCopy.right_ = Clamp(rectCopy.right_, 0, size.x_);
+    //rectCopy.bottom_ = Clamp(rectCopy.bottom_, 0, size.y_);
 
-    static D3D11_VIEWPORT d3dViewport;
-    d3dViewport.TopLeftX = (float)rectCopy.left_;
-    d3dViewport.TopLeftY = (float)rectCopy.top_;
-    d3dViewport.Width = (float)(rectCopy.right_ - rectCopy.left_);
-    d3dViewport.Height = (float)(rectCopy.bottom_ - rectCopy.top_);
-    d3dViewport.MinDepth = 0.0f;
-    d3dViewport.MaxDepth = 1.0f;
+    //static D3D11_VIEWPORT d3dViewport;
+    //d3dViewport.TopLeftX = (float)rectCopy.left_;
+    //d3dViewport.TopLeftY = (float)rectCopy.top_;
+    //d3dViewport.Width = (float)(rectCopy.right_ - rectCopy.left_);
+    //d3dViewport.Height = (float)(rectCopy.bottom_ - rectCopy.top_);
+    //d3dViewport.MinDepth = 0.0f;
+    //d3dViewport.MaxDepth = 1.0f;
 
-    impl_->deviceContext_->RSSetViewports(1, &d3dViewport);
+    //impl_->deviceContext_->RSSetViewports(1, &d3dViewport);
 
-    viewport_ = rectCopy;
+    //viewport_ = rectCopy;
 
-    // Disable scissor test, needs to be re-enabled by the user
-    SetScissorTest(false);
+    //// Disable scissor test, needs to be re-enabled by the user
+    //SetScissorTest(false);
 }
 
 void Graphics::SetBlendMode(BlendMode mode, bool alphaToCoverage)
 {
-    if (mode != blendMode_ || alphaToCoverage != alphaToCoverage_)
+    assert(0);
+    /*if (mode != blendMode_ || alphaToCoverage != alphaToCoverage_)
     {
         blendMode_ = mode;
         alphaToCoverage_ = alphaToCoverage;
         impl_->blendStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetColorWrite(bool enable)
 {
-    if (enable != colorWrite_)
+    assert(0);
+    /*if (enable != colorWrite_)
     {
         colorWrite_ = enable;
         impl_->blendStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetCullMode(CullMode mode)
 {
-    if (mode != cullMode_)
+    assert(0);
+    /*if (mode != cullMode_)
     {
         cullMode_ = mode;
         impl_->rasterizerStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetDepthBias(float constantBias, float slopeScaledBias)
 {
-    if (constantBias != constantDepthBias_ || slopeScaledBias != slopeScaledDepthBias_)
+    assert(0);
+    /*if (constantBias != constantDepthBias_ || slopeScaledBias != slopeScaledDepthBias_)
     {
         constantDepthBias_ = constantBias;
         slopeScaledDepthBias_ = slopeScaledBias;
         impl_->rasterizerStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetDepthTest(CompareMode mode)
 {
-    if (mode != depthTestMode_)
+    assert(0);
+    /*if (mode != depthTestMode_)
     {
         depthTestMode_ = mode;
         impl_->depthStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetDepthWrite(bool enable)
 {
-    if (enable != depthWrite_)
-    {
-        depthWrite_ = enable;
-        impl_->depthStateDirty_ = true;
-        // Also affects whether a read-only version of depth-stencil should be bound, to allow sampling
-        impl_->renderTargetsDirty_ = true;
-    }
+    assert(0);
+    //if (enable != depthWrite_)
+    //{
+    //    depthWrite_ = enable;
+    //    impl_->depthStateDirty_ = true;
+    //    // Also affects whether a read-only version of depth-stencil should be bound, to allow sampling
+    //    impl_->renderTargetsDirty_ = true;
+    //}
 }
 
 void Graphics::SetFillMode(FillMode mode)
 {
-    if (mode != fillMode_)
+    assert(0);
+    /*if (mode != fillMode_)
     {
         fillMode_ = mode;
         impl_->rasterizerStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetLineAntiAlias(bool enable)
 {
-    if (enable != lineAntiAlias_)
+    assert(0);
+    /*if (enable != lineAntiAlias_)
     {
         lineAntiAlias_ = enable;
         impl_->rasterizerStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetScissorTest(bool enable, const Rect& rect, bool borderInclusive)
 {
+    assert(0);
     // During some light rendering loops, a full rect is toggled on/off repeatedly.
     // Disable scissor in that case to reduce state changes
-    if (rect.min_.x_ <= 0.0f && rect.min_.y_ <= 0.0f && rect.max_.x_ >= 1.0f && rect.max_.y_ >= 1.0f)
+    /*if (rect.min_.x_ <= 0.0f && rect.min_.y_ <= 0.0f && rect.max_.x_ >= 1.0f && rect.max_.y_ >= 1.0f)
         enable = false;
 
     if (enable)
@@ -1468,12 +1510,13 @@ void Graphics::SetScissorTest(bool enable, const Rect& rect, bool borderInclusiv
     {
         scissorTest_ = enable;
         impl_->rasterizerStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetScissorTest(bool enable, const IntRect& rect)
 {
-    IntVector2 rtSize(GetRenderTargetDimensions());
+    assert(0);
+    /*IntVector2 rtSize(GetRenderTargetDimensions());
     IntVector2 viewPos(viewport_.left_, viewport_.top_);
 
     if (enable)
@@ -1503,13 +1546,14 @@ void Graphics::SetScissorTest(bool enable, const IntRect& rect)
     {
         scissorTest_ = enable;
         impl_->rasterizerStateDirty_ = true;
-    }
+    }*/
 }
 
 void Graphics::SetStencilTest(bool enable, CompareMode mode, StencilOp pass, StencilOp fail, StencilOp zFail, unsigned stencilRef,
     unsigned compareMask, unsigned writeMask)
 {
-    if (enable != stencilTest_)
+    assert(0);
+    /*if (enable != stencilTest_)
     {
         stencilTest_ = enable;
         impl_->depthStateDirty_ = true;
@@ -1553,7 +1597,7 @@ void Graphics::SetStencilTest(bool enable, CompareMode mode, StencilOp pass, Ste
             impl_->stencilRefDirty_ = true;
             impl_->depthStateDirty_ = true;
         }
-    }
+    }*/
 }
 
 void Graphics::SetClipPlane(bool enable, const Plane& clipPlane, const Matrix3x4& view, const Matrix4& projection)
@@ -1564,22 +1608,39 @@ void Graphics::SetClipPlane(bool enable, const Plane& clipPlane, const Matrix3x4
 
 bool Graphics::IsInitialized() const
 {
-    return window_ != nullptr && impl_->GetDevice() != nullptr;
+    return window_ != nullptr && impl_->diligentDevice_ != nullptr;
 }
 
 ea::vector<int> Graphics::GetMultiSampleLevels() const
 {
+    using namespace Diligent;
     ea::vector<int> ret;
     ret.emplace_back(1);
 
-    if (impl_->device_)
+    /*if (impl_->device_)
     {
         for (unsigned i = 2; i <= 16; ++i)
         {
-            if (impl_->CheckMultiSampleSupport(sRGB_ ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM, i))
+            if(impl_->CheckMultiSampleSupport(sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM, i))
                 ret.emplace_back(i);
         }
-    }
+    }*/
+
+    if (!impl_->diligentDevice_)
+        return ret;
+    const TextureFormatInfoExt& colorFmtInfo = impl_->diligentDevice_->GetTextureFormatInfoExt(sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM);
+    if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_64)
+        ret.emplace_back(64);
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_32)
+        ret.emplace_back(32);
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_16)
+        ret.emplace_back(16);
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_8)
+        ret.emplace_back(8);
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_4)
+        ret.emplace_back(4);
+    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_2)
+        ret.emplace_back(2);
 
     return ret;
 }
@@ -1589,16 +1650,16 @@ unsigned Graphics::GetFormat(CompressedFormat format) const
     switch (format)
     {
     case CF_RGBA:
-        return DXGI_FORMAT_R8G8B8A8_UNORM;
+        return TEX_FORMAT_RGBA8_UNORM;
 
     case CF_DXT1:
-        return DXGI_FORMAT_BC1_UNORM;
+        return TEX_FORMAT_BC1_UNORM;
 
     case CF_DXT3:
-        return DXGI_FORMAT_BC2_UNORM;
+        return TEX_FORMAT_BC2_UNORM;
 
     case CF_DXT5:
-        return DXGI_FORMAT_BC3_UNORM;
+        return TEX_FORMAT_BC3_UNORM;
 
     default:
         return 0;
@@ -1647,7 +1708,9 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
 
 VertexBuffer* Graphics::GetVertexBuffer(unsigned index) const
 {
-    return index < MAX_VERTEX_STREAMS ? vertexBuffers_[index] : nullptr;
+    assert(0);
+    return nullptr;
+    //return index < MAX_VERTEX_STREAMS ? vertexBuffers_[index] : nullptr;
 }
 
 ShaderProgram* Graphics::GetShaderProgram() const
@@ -2034,263 +2097,210 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, bool& newFullscreen, 
 
 bool Graphics::CreateDevice(int width, int height)
 {
+    using namespace Diligent;
     // Device needs only to be created once
     if (!impl_->device_)
     {
-        UINT deviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-        if (screenParams_.gpuDebug_)
-        {
-            // Enable the debug layer if requested.
-            deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-        }
-        ID3D11DeviceContext* deviceContext = nullptr;
-        const D3D_FEATURE_LEVEL featureLevels[] =
-        {
-            D3D_FEATURE_LEVEL_11_1,
-            //D3D_FEATURE_LEVEL_11_0,
-            D3D_FEATURE_LEVEL_10_1,
-            //D3D_FEATURE_LEVEL_10_0,
-        };
-        HRESULT hr = D3D11CreateDevice(
-            nullptr,
-            D3D_DRIVER_TYPE_HARDWARE,
-            nullptr,
-            deviceFlags,
-            featureLevels,
-            ARRAYSIZE(featureLevels),
-            D3D11_SDK_VERSION,
-            &impl_->device_,
-            nullptr,
-            &deviceContext
-        );
+        //UINT deviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+        //if (screenParams_.gpuDebug_)
+        //{
+        //    // Enable the debug layer if requested.
+        //    deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+        //}
+        //ID3D11DeviceContext* deviceContext = nullptr;
+        //const D3D_FEATURE_LEVEL featureLevels[] =
+        //{
+        //    D3D_FEATURE_LEVEL_11_1,
+        //    //D3D_FEATURE_LEVEL_11_0,
+        //    D3D_FEATURE_LEVEL_10_1,
+        //    //D3D_FEATURE_LEVEL_10_0,
+        //};
+        //HRESULT hr = D3D11CreateDevice(
+        //    nullptr,
+        //    D3D_DRIVER_TYPE_HARDWARE,
+        //    nullptr,
+        //    deviceFlags,
+        //    featureLevels,
+        //    ARRAYSIZE(featureLevels),
+        //    D3D11_SDK_VERSION,
+        //    &impl_->device_,
+        //    nullptr,
+        //    &deviceContext
+        //);
 
-        if (FAILED(hr))
-        {
-            URHO3D_SAFE_RELEASE(impl_->device_);
-            URHO3D_SAFE_RELEASE(deviceContext);
-            URHO3D_LOGD3DERROR("Failed to create D3D11 device", hr);
+        //if (FAILED(hr))
+        //{
+        //    URHO3D_SAFE_RELEASE(impl_->device_);
+        //    URHO3D_SAFE_RELEASE(deviceContext);
+        //    URHO3D_LOGD3DERROR("Failed to create D3D11 device", hr);
+        //    return false;
+        //}
+        
+        //deviceContext->QueryInterface(IID_ID3D11DeviceContext1, reinterpret_cast<void**>(&impl_->deviceContext_));
+
+        EngineD3D11CreateInfo engineCI;
+        IEngineFactoryD3D11* factory = GetEngineFactoryD3D11();
+
+        factory->CreateDeviceAndContextsD3D11(engineCI, &impl_->diligentDevice_, &impl_->diligentDeviceContext_);
+        CheckFeatureSupport();
+
+        impl_->device_ = static_cast<IRenderDeviceD3D11*>(impl_->diligentDevice_)->GetD3D11Device();
+        impl_->deviceContext_ = static_cast<ID3D11DeviceContext1*>(static_cast<IDeviceContextD3D11*>(impl_->diligentDeviceContext_)->GetD3D11DeviceContext());
+
+        if (!impl_->device_ || impl_->deviceContext_) {
+            URHO3D_LOGERROR("Failed to Initialize D3D11 device.");
             return false;
         }
 
-        deviceContext->QueryInterface(IID_ID3D11DeviceContext1, reinterpret_cast<void**>(&impl_->deviceContext_));
-
-        CheckFeatureSupport();
-        // Set the flush mode now as the device has been created
-        SetFlushGPU(flushGPU_);
+        ea::string adapterDesc = "Adapter used " + ea::string(impl_->diligentDevice_->GetAdapterInfo().Description);
+        URHO3D_LOGINFO(adapterDesc);
     }
+
+    if (impl_->diligentSwapChain_) {
+        impl_->diligentSwapChain_->Release();
+        impl_->diligentSwapChain_ = nullptr;
+    }
+
+    Win32NativeWindow wnd;
+#ifndef  UWP
+    wnd.hWnd = GetWindowHandle(window_);
+#else
+    // Not implemented.
+    assert(0);
+#endif
+
+    SwapChainDesc swapChainDesc;
+    swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
+    swapChainDesc.DepthBufferFormat = TEX_FORMAT_UNKNOWN; // Don't create depth stencil
+    FullScreenModeDesc fullscreenDesc;
+    fullscreenDesc.Fullscreen = false;
 
     // Check that multisample level is supported
     ea::vector<int> multiSampleLevels = GetMultiSampleLevels();
     if (!multiSampleLevels.contains(screenParams_.multiSample_))
         screenParams_.multiSample_ = 1;
 
-    // Create swap chain. Release old if necessary
-    if (impl_->swapChain_)
-    {
-        impl_->swapChain_->Release();
-        impl_->swapChain_ = nullptr;
-    }
+    GetEngineFactoryD3D11()->CreateSwapChainD3D11(
+        impl_->diligentDevice_,
+        impl_->diligentDeviceContext_,
+        swapChainDesc,
+        fullscreenDesc,
+        wnd,
+        &impl_->diligentSwapChain_
+    );
 
-    IDXGIDevice* dxgiDevice = nullptr;
-    if (FAILED(impl_->device_->QueryInterface(IID_PPV_ARGS(&dxgiDevice))))
-        return false;
-    IDXGIAdapter* dxgiAdapter = nullptr;
-    if (FAILED(dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter))))
-    {
-        dxgiDevice->Release();
-        return false;
-    }
-    IDXGIFactory2* dxgiFactory = nullptr;
-    if (FAILED(dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory))))
-    {
-        dxgiAdapter->Release();
-        dxgiDevice->Release();
-        return false;
-    }
-
-#ifndef UWP
-    DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullScreenDesc{};
-    swapChainFullScreenDesc.Windowed = TRUE;
-    IDXGIOutput* dxgiOutput = nullptr;
-    UINT numModes = 0;
-    dxgiAdapter->EnumOutputs(screenParams_.monitor_, &dxgiOutput);
-    dxgiOutput->GetDisplayModeList(sRGB_ ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM, 0, &numModes, 0);
-
-    // find the best matching refresh rate with the specified resolution
-    if (numModes > 0)
-    {
-        DXGI_MODE_DESC* modes = new DXGI_MODE_DESC[numModes];
-        dxgiOutput->GetDisplayModeList(sRGB_ ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM, 0, &numModes, modes);
-        unsigned bestMatchingRateIndex = -1;
-        unsigned bestError = M_MAX_UNSIGNED;
-        for (unsigned i = 0; i < numModes; ++i)
-        {
-            if (width != modes[i].Width || height != modes[i].Height)
-                continue;
-
-            float rate = (float)modes[i].RefreshRate.Numerator / modes[i].RefreshRate.Denominator;
-            unsigned error = (unsigned)(Abs(rate - screenParams_.refreshRate_));
-            if (error < bestError)
-            {
-                bestMatchingRateIndex = i;
-                bestError = error;
-            }
-        }
-        if (bestMatchingRateIndex != -1)
-        {
-            swapChainFullScreenDesc.RefreshRate.Numerator = modes[bestMatchingRateIndex].RefreshRate.Numerator;
-            swapChainFullScreenDesc.RefreshRate.Denominator = modes[bestMatchingRateIndex].RefreshRate.Denominator;
-        }
-        delete[] modes;
-    }
-
-    dxgiOutput->Release();
-#endif
-
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
-    swapChainDesc.Width = (UINT)width;
-    swapChainDesc.Height = (UINT)height;
-    swapChainDesc.Format = sRGB_ ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.SampleDesc.Count = static_cast<UINT>(screenParams_.multiSample_);
-    swapChainDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(swapChainDesc.Format, screenParams_.multiSample_);
-    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-    swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
-    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-    swapChainDesc.Stereo = false;
-#if UWP
-    swapChainDesc.BufferCount = 2;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-    Windows::UI::Core::CoreWindow^ coreWindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
-    HRESULT hr = dxgiFactory->CreateSwapChainForCoreWindow(impl_->device_, reinterpret_cast<IUnknown*>(coreWindow), &swapChainDesc, nullptr, &impl_->swapChain_);
-#else
-    swapChainDesc.BufferCount = 1;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
-    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(impl_->device_, GetWindowHandle(window_), &swapChainDesc, &swapChainFullScreenDesc, nullptr, &impl_->swapChain_);
-    // After creating the swap chain, disable automatic Alt-Enter fullscreen/windowed switching
-    // (the application will switch manually if it wants to)
-    dxgiFactory->MakeWindowAssociation(GetWindowHandle(window_), DXGI_MWA_NO_ALT_ENTER);
-#endif
-
-#ifdef URHO3D_LOGGING
-    DXGI_ADAPTER_DESC desc;
-    dxgiAdapter->GetDesc(&desc);
-    ea::string adapterDesc = WideToMultiByte(desc.Description);
-    URHO3D_LOGINFO("Adapter used " + adapterDesc);
-#endif
-
-    dxgiFactory->Release();
-    dxgiAdapter->Release();
-    dxgiDevice->Release();
-
-    if (FAILED(hr))
+    if (!impl_->swapChain_)
     {
         URHO3D_SAFE_RELEASE(impl_->swapChain_);
-        URHO3D_LOGD3DERROR("Failed to create D3D11 swap chain", hr);
+        URHO3D_LOGERROR("Failed to create swap chain");
         return false;
     }
+
+    impl_->swapChain_ = static_cast<IDXGISwapChain1*>(static_cast<ISwapChainD3D11*>(impl_->diligentSwapChain_)->GetDXGISwapChain());
 
     return true;
 }
 
 bool Graphics::UpdateSwapChain(int width, int height)
 {
-    bool success = true;
-
-    ID3D11RenderTargetView* nullView = nullptr;
-    impl_->deviceContext_->OMSetRenderTargets(1, &nullView, nullptr);
-    if (impl_->defaultRenderTargetView_)
-    {
-        impl_->defaultRenderTargetView_->Release();
-        impl_->defaultRenderTargetView_ = nullptr;
-    }
-    if (impl_->defaultDepthStencilView_)
-    {
-        impl_->defaultDepthStencilView_->Release();
-        impl_->defaultDepthStencilView_ = nullptr;
-    }
-    if (impl_->defaultDepthTexture_)
-    {
-        impl_->defaultDepthTexture_->Release();
-        impl_->defaultDepthTexture_ = nullptr;
-    }
-    if (impl_->resolveTexture_)
-    {
-        impl_->resolveTexture_->Release();
-        impl_->resolveTexture_ = nullptr;
-    }
-
-    impl_->depthStencilView_ = nullptr;
-    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-        impl_->renderTargetViews_[i] = nullptr;
-    impl_->renderTargetsDirty_ = true;
-
-#if UWP
-    int bufferCount = 2;
-#else
-    int bufferCount = 1;
-#endif
-    impl_->swapChain_->ResizeBuffers(bufferCount, (UINT)width, (UINT)height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
-
-    // Create default rendertarget view representing the backbuffer
-    ID3D11Texture2D* backbufferTexture;
-    HRESULT hr = impl_->swapChain_->GetBuffer(0, IID_ID3D11Texture2D, (void**)&backbufferTexture);
-    if (FAILED(hr))
-    {
-        URHO3D_SAFE_RELEASE(backbufferTexture);
-        URHO3D_LOGD3DERROR("Failed to get backbuffer texture", hr);
-        success = false;
-    }
-    else
-    {
-        hr = impl_->device_->CreateRenderTargetView(backbufferTexture, nullptr, &impl_->defaultRenderTargetView_);
-        backbufferTexture->Release();
-        if (FAILED(hr))
-        {
-            URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
-            URHO3D_LOGD3DERROR("Failed to create backbuffer rendertarget view", hr);
-            success = false;
-        }
-    }
-
-    // Create default depth-stencil texture and view
-    D3D11_TEXTURE2D_DESC depthDesc;
-    memset(&depthDesc, 0, sizeof depthDesc);
-    depthDesc.Width = (UINT)width;
-    depthDesc.Height = (UINT)height;
-    depthDesc.MipLevels = 1;
-    depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = static_cast<UINT>(screenParams_.multiSample_);
-    depthDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(depthDesc.Format, screenParams_.multiSample_);
-    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    depthDesc.CPUAccessFlags = 0;
-    depthDesc.MiscFlags = 0;
-    hr = impl_->device_->CreateTexture2D(&depthDesc, nullptr, &impl_->defaultDepthTexture_);
-    if (FAILED(hr))
-    {
-        URHO3D_SAFE_RELEASE(impl_->defaultDepthTexture_);
-        URHO3D_LOGD3DERROR("Failed to create backbuffer depth-stencil texture", hr);
-        success = false;
-    }
-    else
-    {
-        hr = impl_->device_->CreateDepthStencilView(impl_->defaultDepthTexture_, nullptr, &impl_->defaultDepthStencilView_);
-        if (FAILED(hr))
-        {
-            URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilView_);
-            URHO3D_LOGD3DERROR("Failed to create backbuffer depth-stencil view", hr);
-            success = false;
-        }
-    }
-
-    // Update internally held backbuffer size
-    width_ = width;
-    height_ = height;
-
-    ResetRenderTargets();
-    return success;
+    assert(0);
+    return false;
+//    bool success = true;
+//
+//    ID3D11RenderTargetView* nullView = nullptr;
+//    impl_->deviceContext_->OMSetRenderTargets(1, &nullView, nullptr);
+//    if (impl_->defaultRenderTargetView_)
+//    {
+//        impl_->defaultRenderTargetView_->Release();
+//        impl_->defaultRenderTargetView_ = nullptr;
+//    }
+//    if (impl_->defaultDepthStencilView_)
+//    {
+//        impl_->defaultDepthStencilView_->Release();
+//        impl_->defaultDepthStencilView_ = nullptr;
+//    }
+//    if (impl_->defaultDepthTexture_)
+//    {
+//        impl_->defaultDepthTexture_->Release();
+//        impl_->defaultDepthTexture_ = nullptr;
+//    }
+//    if (impl_->resolveTexture_)
+//    {
+//        impl_->resolveTexture_->Release();
+//        impl_->resolveTexture_ = nullptr;
+//    }
+//
+//    impl_->depthStencilView_ = nullptr;
+//    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+//        impl_->renderTargetViews_[i] = nullptr;
+//    impl_->renderTargetsDirty_ = true;
+//
+//#if UWP
+//    int bufferCount = 2;
+//#else
+//    int bufferCount = 1;
+//#endif
+//    impl_->swapChain_->ResizeBuffers(bufferCount, (UINT)width, (UINT)height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+//
+//    // Create default rendertarget view representing the backbuffer
+//    ID3D11Texture2D* backbufferTexture;
+//    HRESULT hr = impl_->swapChain_->GetBuffer(0, IID_ID3D11Texture2D, (void**)&backbufferTexture);
+//    if (FAILED(hr))
+//    {
+//        URHO3D_SAFE_RELEASE(backbufferTexture);
+//        URHO3D_LOGD3DERROR("Failed to get backbuffer texture", hr);
+//        success = false;
+//    }
+//    else
+//    {
+//        hr = impl_->device_->CreateRenderTargetView(backbufferTexture, nullptr, &impl_->defaultRenderTargetView_);
+//        backbufferTexture->Release();
+//        if (FAILED(hr))
+//        {
+//            URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
+//            URHO3D_LOGD3DERROR("Failed to create backbuffer rendertarget view", hr);
+//            success = false;
+//        }
+//    }
+//
+//    // Create default depth-stencil texture and view
+//    D3D11_TEXTURE2D_DESC depthDesc;
+//    memset(&depthDesc, 0, sizeof depthDesc);
+//    depthDesc.Width = (UINT)width;
+//    depthDesc.Height = (UINT)height;
+//    depthDesc.MipLevels = 1;
+//    depthDesc.ArraySize = 1;
+//    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+//    depthDesc.SampleDesc.Count = static_cast<UINT>(screenParams_.multiSample_);
+//    depthDesc.SampleDesc.Quality = 1;
+//    depthDesc.Usage = D3D11_USAGE_DEFAULT;
+//    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+//    depthDesc.CPUAccessFlags = 0;
+//    depthDesc.MiscFlags = 0;
+//    hr = impl_->device_->CreateTexture2D(&depthDesc, nullptr, &impl_->defaultDepthTexture_);
+//    if (FAILED(hr))
+//    {
+//        URHO3D_SAFE_RELEASE(impl_->defaultDepthTexture_);
+//        URHO3D_LOGD3DERROR("Failed to create backbuffer depth-stencil texture", hr);
+//        success = false;
+//    }
+//    else
+//    {
+//        hr = impl_->device_->CreateDepthStencilView(impl_->defaultDepthTexture_, nullptr, &impl_->defaultDepthStencilView_);
+//        if (FAILED(hr))
+//        {
+//            URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilView_);
+//            URHO3D_LOGD3DERROR("Failed to create backbuffer depth-stencil view", hr);
+//            success = false;
+//        }
+//    }
+//
+//    // Update internally held backbuffer size
+//    width_ = width;
+//    height_ = height;
+//
+//    ResetRenderTargets();
+//    return success;
 }
 
 void Graphics::CheckFeatureSupport()
@@ -2398,237 +2408,238 @@ void Graphics::ResetCachedState()
 
 void Graphics::PrepareDraw()
 {
-    if (impl_->renderTargetsDirty_)
-    {
-        impl_->depthStencilView_ =
-            (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL) ?
-                (ID3D11DepthStencilView*)depthStencil_->GetRenderTargetView() : impl_->defaultDepthStencilView_;
+    //if (impl_->renderTargetsDirty_)
+    //{
+    //    impl_->depthStencilView_ =
+    //        (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL) ?
+    //            (ID3D11DepthStencilView*)depthStencil_->GetRenderTargetView() : impl_->defaultDepthStencilView_;
 
-        // If possible, bind a read-only depth stencil view to allow reading depth in shader
-        if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
-            impl_->depthStencilView_ = (ID3D11DepthStencilView*)depthStencil_->GetReadOnlyView();
+    //    // If possible, bind a read-only depth stencil view to allow reading depth in shader
+    //    if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
+    //        impl_->depthStencilView_ = (ID3D11DepthStencilView*)depthStencil_->GetReadOnlyView();
 
-        for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-            impl_->renderTargetViews_[i] =
-                (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET) ?
-                    (ID3D11RenderTargetView*)renderTargets_[i]->GetRenderTargetView() : nullptr;
-        // If rendertarget 0 is null and not doing depth-only rendering, render to the backbuffer
-        // Special case: if rendertarget 0 is null and depth stencil has same size as backbuffer, assume the intention is to do
-        // backbuffer rendering with a custom depth stencil
-        if (!renderTargets_[0] &&
-            (!depthStencil_ || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
-            impl_->renderTargetViews_[0] = impl_->defaultRenderTargetView_;
+    //    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+    //        impl_->renderTargetViews_[i] =
+    //            (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET) ?
+    //                (ID3D11RenderTargetView*)renderTargets_[i]->GetRenderTargetView() : nullptr;
+    //    // If rendertarget 0 is null and not doing depth-only rendering, render to the backbuffer
+    //    // Special case: if rendertarget 0 is null and depth stencil has same size as backbuffer, assume the intention is to do
+    //    // backbuffer rendering with a custom depth stencil
+    //    if (!renderTargets_[0] &&
+    //        (!depthStencil_ || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
+    //        impl_->renderTargetViews_[0] = impl_->defaultRenderTargetView_;
 
-        impl_->deviceContext_->OMSetRenderTargets(MAX_RENDERTARGETS, &impl_->renderTargetViews_[0], impl_->depthStencilView_);
-        impl_->renderTargetsDirty_ = false;
-    }
+    //    impl_->deviceContext_->OMSetRenderTargets(MAX_RENDERTARGETS, &impl_->renderTargetViews_[0], impl_->depthStencilView_);
+    //    impl_->renderTargetsDirty_ = false;
+    //}
 
-    if (impl_->texturesDirty_ && impl_->firstDirtyTexture_ < M_MAX_UNSIGNED)
-    {
-        // Set also VS textures to enable vertex texture fetch to work the same way as on OpenGL
-        impl_->deviceContext_->VSSetShaderResources(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
-            &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
-        impl_->deviceContext_->VSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
-            &impl_->samplers_[impl_->firstDirtyTexture_]);
-        impl_->deviceContext_->PSSetShaderResources(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
-            &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
-        impl_->deviceContext_->PSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
-            &impl_->samplers_[impl_->firstDirtyTexture_]);
+    //if (impl_->texturesDirty_ && impl_->firstDirtyTexture_ < M_MAX_UNSIGNED)
+    //{
+    //    // Set also VS textures to enable vertex texture fetch to work the same way as on OpenGL
+    //    impl_->deviceContext_->VSSetShaderResources(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+    //        &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
+    //    impl_->deviceContext_->VSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+    //        &impl_->samplers_[impl_->firstDirtyTexture_]);
+    //    impl_->deviceContext_->PSSetShaderResources(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+    //        &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
+    //    impl_->deviceContext_->PSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+    //        &impl_->samplers_[impl_->firstDirtyTexture_]);
 
-        impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = M_MAX_UNSIGNED;
-        impl_->texturesDirty_ = false;
-    }
+    //    impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = M_MAX_UNSIGNED;
+    //    impl_->texturesDirty_ = false;
+    //}
 
-    if (impl_->vertexDeclarationDirty_ && vertexShader_ && vertexShader_->GetByteCode().size())
-    {
-        if (impl_->firstDirtyVB_ < M_MAX_UNSIGNED)
-        {
-            impl_->deviceContext_->IASetVertexBuffers(impl_->firstDirtyVB_, impl_->lastDirtyVB_ - impl_->firstDirtyVB_ + 1,
-                &impl_->vertexBuffers_[impl_->firstDirtyVB_], &impl_->vertexSizes_[impl_->firstDirtyVB_], &impl_->vertexOffsets_[impl_->firstDirtyVB_]);
+    //if (impl_->vertexDeclarationDirty_ && vertexShader_ && vertexShader_->GetByteCode().size())
+    //{
+    //    if (impl_->firstDirtyVB_ < M_MAX_UNSIGNED)
+    //    {
+    //        impl_->deviceContext_->IASetVertexBuffers(impl_->firstDirtyVB_, impl_->lastDirtyVB_ - impl_->firstDirtyVB_ + 1,
+    //            &impl_->vertexBuffers_[impl_->firstDirtyVB_], &impl_->vertexSizes_[impl_->firstDirtyVB_], &impl_->vertexOffsets_[impl_->firstDirtyVB_]);
 
-            impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
-        }
+    //        impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
+    //    }
 
-        unsigned long long newVertexDeclarationHash = 0;
-        for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
-        {
-            if (vertexBuffers_[i])
-                newVertexDeclarationHash |= vertexBuffers_[i]->GetBufferHash(i);
-        }
-        // Do not create input layout if no vertex buffers / elements
-        if (newVertexDeclarationHash)
-        {
-            /// \todo Using a 64bit total hash for vertex shader and vertex buffer elements hash may not guarantee uniqueness
-            newVertexDeclarationHash += vertexShader_->GetElementHash();
-            if (newVertexDeclarationHash != vertexDeclarationHash_)
-            {
-                auto i = impl_->vertexDeclarations_.find(newVertexDeclarationHash);
-                if (i == impl_->vertexDeclarations_.end())
-                {
-                    SharedPtr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
-                    i = impl_->vertexDeclarations_.insert(ea::make_pair(newVertexDeclarationHash, newVertexDeclaration)).first;
-                }
-                impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second->GetInputLayout());
-                vertexDeclarationHash_ = newVertexDeclarationHash;
-            }
-        }
+    //    unsigned long long newVertexDeclarationHash = 0;
+    //    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
+    //    {
+    //        if (vertexBuffers_[i])
+    //            newVertexDeclarationHash |= vertexBuffers_[i]->GetBufferHash(i);
+    //    }
+    //    // Do not create input layout if no vertex buffers / elements
+    //    if (newVertexDeclarationHash)
+    //    {
+    //        /// \todo Using a 64bit total hash for vertex shader and vertex buffer elements hash may not guarantee uniqueness
+    //        newVertexDeclarationHash += vertexShader_->GetElementHash();
+    //        if (newVertexDeclarationHash != vertexDeclarationHash_)
+    //        {
+    //            auto i = impl_->vertexDeclarations_.find(newVertexDeclarationHash);
+    //            if (i == impl_->vertexDeclarations_.end())
+    //            {
+    //                SharedPtr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
+    //                i = impl_->vertexDeclarations_.insert(ea::make_pair(newVertexDeclarationHash, newVertexDeclaration)).first;
+    //            }
+    //            impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second->GetInputLayout());
+    //            vertexDeclarationHash_ = newVertexDeclarationHash;
+    //        }
+    //    }
 
-        impl_->vertexDeclarationDirty_ = false;
-    }
+    //    impl_->vertexDeclarationDirty_ = false;
+    //}
 
-    if (impl_->blendStateDirty_)
-    {
-        unsigned newBlendStateHash = (unsigned)((colorWrite_ ? 1 : 0) | (alphaToCoverage_ ? 2 : 0) | (blendMode_ << 2));
-        if (newBlendStateHash != impl_->blendStateHash_)
-        {
-            auto i = impl_->blendStates_.find(newBlendStateHash);
-            if (i == impl_->blendStates_.end())
-            {
-                URHO3D_PROFILE("CreateBlendState");
+    //if (impl_->blendStateDirty_)
+    //{
+    //    unsigned newBlendStateHash = (unsigned)((colorWrite_ ? 1 : 0) | (alphaToCoverage_ ? 2 : 0) | (blendMode_ << 2));
+    //    if (newBlendStateHash != impl_->blendStateHash_)
+    //    {
+    //        auto i = impl_->blendStates_.find(newBlendStateHash);
+    //        if (i == impl_->blendStates_.end())
+    //        {
+    //            URHO3D_PROFILE("CreateBlendState");
 
-                D3D11_BLEND_DESC stateDesc;
-                memset(&stateDesc, 0, sizeof stateDesc);
-                stateDesc.AlphaToCoverageEnable = alphaToCoverage_ ? TRUE : FALSE;
-                stateDesc.IndependentBlendEnable = false;
-                stateDesc.RenderTarget[0].BlendEnable = d3dBlendEnable[blendMode_];
-                stateDesc.RenderTarget[0].SrcBlend = d3dSrcBlend[blendMode_];
-                stateDesc.RenderTarget[0].DestBlend = d3dDestBlend[blendMode_];
-                stateDesc.RenderTarget[0].BlendOp = d3dBlendOp[blendMode_];
-                stateDesc.RenderTarget[0].SrcBlendAlpha = d3dSrcAlphaBlend[blendMode_];
-                stateDesc.RenderTarget[0].DestBlendAlpha = d3dDestAlphaBlend[blendMode_];
-                stateDesc.RenderTarget[0].BlendOpAlpha = d3dBlendOp[blendMode_];
-                stateDesc.RenderTarget[0].RenderTargetWriteMask = colorWrite_ ? D3D11_COLOR_WRITE_ENABLE_ALL : 0x0;
+    //            D3D11_BLEND_DESC stateDesc;
+    //            memset(&stateDesc, 0, sizeof stateDesc);
+    //            stateDesc.AlphaToCoverageEnable = alphaToCoverage_ ? TRUE : FALSE;
+    //            stateDesc.IndependentBlendEnable = false;
+    //            stateDesc.RenderTarget[0].BlendEnable = sBlendEnable[blendMode_];
+    //            stateDesc.RenderTarget[0].SrcBlend = sSrcBlend[blendMode_];
+    //            stateDesc.RenderTarget[0].DestBlend = sDestBlend[blendMode_];
+    //            stateDesc.RenderTarget[0].BlendOp = sBlendOp[blendMode_];
+    //            stateDesc.RenderTarget[0].SrcBlendAlpha = sSrcAlphaBlend[blendMode_];
+    //            stateDesc.RenderTarget[0].DestBlendAlpha = sDestAlphaBlend[blendMode_];
+    //            stateDesc.RenderTarget[0].BlendOpAlpha = sBlendOp[blendMode_];
+    //            stateDesc.RenderTarget[0].RenderTargetWriteMask = colorWrite_ ? D3D11_COLOR_WRITE_ENABLE_ALL : 0x0;
 
-                ID3D11BlendState* newBlendState = nullptr;
-                HRESULT hr = impl_->device_->CreateBlendState(&stateDesc, &newBlendState);
-                if (FAILED(hr))
-                {
-                    URHO3D_SAFE_RELEASE(newBlendState);
-                    URHO3D_LOGD3DERROR("Failed to create blend state", hr);
-                }
+    //            ID3D11BlendState* newBlendState = nullptr;
+    //            HRESULT hr = impl_->device_->CreateBlendState(&stateDesc, &newBlendState);
+    //            if (FAILED(hr))
+    //            {
+    //                URHO3D_SAFE_RELEASE(newBlendState);
+    //                URHO3D_LOGD3DERROR("Failed to create blend state", hr);
+    //            }
 
-                i = impl_->blendStates_.insert(ea::make_pair(newBlendStateHash, newBlendState)).first;
-            }
+    //            i = impl_->blendStates_.insert(ea::make_pair(newBlendStateHash, newBlendState)).first;
+    //        }
 
-            impl_->deviceContext_->OMSetBlendState(i->second, nullptr, M_MAX_UNSIGNED);
-            impl_->blendStateHash_ = newBlendStateHash;
-        }
+    //        impl_->deviceContext_->OMSetBlendState(i->second, nullptr, M_MAX_UNSIGNED);
+    //        impl_->blendStateHash_ = newBlendStateHash;
+    //    }
 
-        impl_->blendStateDirty_ = false;
-    }
+    //    impl_->blendStateDirty_ = false;
+    //}
 
-    if (impl_->depthStateDirty_)
-    {
-        unsigned newDepthStateHash =
-            (depthWrite_ ? 1 : 0) | (stencilTest_ ? 2 : 0) | (depthTestMode_ << 2) | ((stencilCompareMask_ & 0xff) << 5) |
-            ((stencilWriteMask_ & 0xff) << 13) | (stencilTestMode_ << 21) |
-            ((stencilFail_ + stencilZFail_ * 5 + stencilPass_ * 25) << 24);
-        if (newDepthStateHash != impl_->depthStateHash_ || impl_->stencilRefDirty_)
-        {
-            auto i = impl_->depthStates_.find(newDepthStateHash);
-            if (i == impl_->depthStates_.end())
-            {
-                URHO3D_PROFILE("CreateDepthState");
+    //if (impl_->depthStateDirty_)
+    //{
+    //    unsigned newDepthStateHash =
+    //        (depthWrite_ ? 1 : 0) | (stencilTest_ ? 2 : 0) | (depthTestMode_ << 2) | ((stencilCompareMask_ & 0xff) << 5) |
+    //        ((stencilWriteMask_ & 0xff) << 13) | (stencilTestMode_ << 21) |
+    //        ((stencilFail_ + stencilZFail_ * 5 + stencilPass_ * 25) << 24);
+    //    if (newDepthStateHash != impl_->depthStateHash_ || impl_->stencilRefDirty_)
+    //    {
+    //        auto i = impl_->depthStates_.find(newDepthStateHash);
+    //        if (i == impl_->depthStates_.end())
+    //        {
+    //            URHO3D_PROFILE("CreateDepthState");
 
-                D3D11_DEPTH_STENCIL_DESC stateDesc;
-                memset(&stateDesc, 0, sizeof stateDesc);
-                stateDesc.DepthEnable = TRUE;
-                stateDesc.DepthWriteMask = depthWrite_ ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-                stateDesc.DepthFunc = d3dCmpFunc[depthTestMode_];
-                stateDesc.StencilEnable = stencilTest_ ? TRUE : FALSE;
-                stateDesc.StencilReadMask = (unsigned char)stencilCompareMask_;
-                stateDesc.StencilWriteMask = (unsigned char)stencilWriteMask_;
-                stateDesc.FrontFace.StencilFailOp = d3dStencilOp[stencilFail_];
-                stateDesc.FrontFace.StencilDepthFailOp = d3dStencilOp[stencilZFail_];
-                stateDesc.FrontFace.StencilPassOp = d3dStencilOp[stencilPass_];
-                stateDesc.FrontFace.StencilFunc = d3dCmpFunc[stencilTestMode_];
-                stateDesc.BackFace.StencilFailOp = d3dStencilOp[stencilFail_];
-                stateDesc.BackFace.StencilDepthFailOp = d3dStencilOp[stencilZFail_];
-                stateDesc.BackFace.StencilPassOp = d3dStencilOp[stencilPass_];
-                stateDesc.BackFace.StencilFunc = d3dCmpFunc[stencilTestMode_];
+    //            D3D11_DEPTH_STENCIL_DESC stateDesc;
+    //            memset(&stateDesc, 0, sizeof stateDesc);
+    //            stateDesc.DepthEnable = TRUE;
+    //            stateDesc.DepthWriteMask = depthWrite_ ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+    //            stateDesc.DepthFunc = sCmpFunc[depthTestMode_];
+    //            stateDesc.StencilEnable = stencilTest_ ? TRUE : FALSE;
+    //            stateDesc.StencilReadMask = (unsigned char)stencilCompareMask_;
+    //            stateDesc.StencilWriteMask = (unsigned char)stencilWriteMask_;
+    //            stateDesc.FrontFace.StencilFailOp = d3dStencilOp[stencilFail_];
+    //            stateDesc.FrontFace.StencilDepthFailOp = d3dStencilOp[stencilZFail_];
+    //            stateDesc.FrontFace.StencilPassOp = d3dStencilOp[stencilPass_];
+    //            stateDesc.FrontFace.StencilFunc = sCmpFunc[stencilTestMode_];
+    //            stateDesc.BackFace.StencilFailOp = d3dStencilOp[stencilFail_];
+    //            stateDesc.BackFace.StencilDepthFailOp = d3dStencilOp[stencilZFail_];
+    //            stateDesc.BackFace.StencilPassOp = d3dStencilOp[stencilPass_];
+    //            stateDesc.BackFace.StencilFunc = sCmpFunc[stencilTestMode_];
 
-                ID3D11DepthStencilState* newDepthState = nullptr;
-                HRESULT hr = impl_->device_->CreateDepthStencilState(&stateDesc, &newDepthState);
-                if (FAILED(hr))
-                {
-                    URHO3D_SAFE_RELEASE(newDepthState);
-                    URHO3D_LOGD3DERROR("Failed to create depth state", hr);
-                }
+    //            ID3D11DepthStencilState* newDepthState = nullptr;
+    //            HRESULT hr = impl_->device_->CreateDepthStencilState(&stateDesc, &newDepthState);
+    //            if (FAILED(hr))
+    //            {
+    //                URHO3D_SAFE_RELEASE(newDepthState);
+    //                URHO3D_LOGD3DERROR("Failed to create depth state", hr);
+    //            }
 
-                i = impl_->depthStates_.insert(ea::make_pair(newDepthStateHash, newDepthState)).first;
-            }
+    //            i = impl_->depthStates_.insert(ea::make_pair(newDepthStateHash, newDepthState)).first;
+    //        }
 
-            impl_->deviceContext_->OMSetDepthStencilState(i->second, stencilRef_);
-            impl_->depthStateHash_ = newDepthStateHash;
-        }
+    //        impl_->deviceContext_->OMSetDepthStencilState(i->second, stencilRef_);
+    //        impl_->depthStateHash_ = newDepthStateHash;
+    //    }
 
-        impl_->depthStateDirty_ = false;
-        impl_->stencilRefDirty_ = false;
-    }
+    //    impl_->depthStateDirty_ = false;
+    //    impl_->stencilRefDirty_ = false;
+    //}
 
-    if (impl_->rasterizerStateDirty_)
-    {
-        unsigned depthBits = 24;
-        if (depthStencil_ && depthStencil_->GetParentTexture()->GetFormat() == DXGI_FORMAT_R16_TYPELESS)
-            depthBits = 16;
-        int scaledDepthBias = (int)(constantDepthBias_ * (1 << depthBits));
+    //if (impl_->rasterizerStateDirty_)
+    //{
+    //    unsigned depthBits = 24;
+    //    if (depthStencil_ && depthStencil_->GetParentTexture()->GetFormat() == DXGI_FORMAT_R16_TYPELESS)
+    //        depthBits = 16;
+    //    int scaledDepthBias = (int)(constantDepthBias_ * (1 << depthBits));
 
-        unsigned newRasterizerStateHash =
-            (scissorTest_ ? 1 : 0) | (lineAntiAlias_ ? 2 : 0) | (fillMode_ << 2) | (cullMode_ << 4) |
-            ((scaledDepthBias & 0x1fff) << 6) | (((int)(slopeScaledDepthBias_ * 100.0f) & 0x1fff) << 19);
-        if (newRasterizerStateHash != impl_->rasterizerStateHash_)
-        {
-            auto i = impl_->rasterizerStates_.find(newRasterizerStateHash);
-            if (i == impl_->rasterizerStates_.end())
-            {
-                URHO3D_PROFILE("CreateRasterizerState");
+    //    unsigned newRasterizerStateHash =
+    //        (scissorTest_ ? 1 : 0) | (lineAntiAlias_ ? 2 : 0) | (fillMode_ << 2) | (cullMode_ << 4) |
+    //        ((scaledDepthBias & 0x1fff) << 6) | (((int)(slopeScaledDepthBias_ * 100.0f) & 0x1fff) << 19);
+    //    if (newRasterizerStateHash != impl_->rasterizerStateHash_)
+    //    {
+    //        auto i = impl_->rasterizerStates_.find(newRasterizerStateHash);
+    //        if (i == impl_->rasterizerStates_.end())
+    //        {
+    //            URHO3D_PROFILE("CreateRasterizerState");
 
-                D3D11_RASTERIZER_DESC stateDesc;
-                memset(&stateDesc, 0, sizeof stateDesc);
-                stateDesc.FillMode = d3dFillMode[fillMode_];
-                stateDesc.CullMode = d3dCullMode[cullMode_];
-                stateDesc.FrontCounterClockwise = FALSE;
-                stateDesc.DepthBias = scaledDepthBias;
-                stateDesc.DepthBiasClamp = M_INFINITY;
-                stateDesc.SlopeScaledDepthBias = slopeScaledDepthBias_;
-                stateDesc.DepthClipEnable = TRUE;
-                stateDesc.ScissorEnable = scissorTest_ ? TRUE : FALSE;
-                stateDesc.MultisampleEnable = lineAntiAlias_ ? FALSE : TRUE;
-                stateDesc.AntialiasedLineEnable = lineAntiAlias_ ? TRUE : FALSE;
+    //            D3D11_RASTERIZER_DESC stateDesc;
+    //            memset(&stateDesc, 0, sizeof stateDesc);
+    //            stateDesc.FillMode = sFillMode[fillMode_];
+    //            stateDesc.CullMode = d3dCullMode[cullMode_];
+    //            stateDesc.FrontCounterClockwise = FALSE;
+    //            stateDesc.DepthBias = scaledDepthBias;
+    //            stateDesc.DepthBiasClamp = M_INFINITY;
+    //            stateDesc.SlopeScaledDepthBias = slopeScaledDepthBias_;
+    //            stateDesc.DepthClipEnable = TRUE;
+    //            stateDesc.ScissorEnable = scissorTest_ ? TRUE : FALSE;
+    //            stateDesc.MultisampleEnable = lineAntiAlias_ ? FALSE : TRUE;
+    //            stateDesc.AntialiasedLineEnable = lineAntiAlias_ ? TRUE : FALSE;
 
-                ID3D11RasterizerState* newRasterizerState = nullptr;
-                HRESULT hr = impl_->device_->CreateRasterizerState(&stateDesc, &newRasterizerState);
-                if (FAILED(hr))
-                {
-                    URHO3D_SAFE_RELEASE(newRasterizerState);
-                    URHO3D_LOGD3DERROR("Failed to create rasterizer state", hr);
-                }
+    //            ID3D11RasterizerState* newRasterizerState = nullptr;
+    //            HRESULT hr = impl_->device_->CreateRasterizerState(&stateDesc, &newRasterizerState);
+    //            if (FAILED(hr))
+    //            {
+    //                URHO3D_SAFE_RELEASE(newRasterizerState);
+    //                URHO3D_LOGD3DERROR("Failed to create rasterizer state", hr);
+    //            }
 
-                i = impl_->rasterizerStates_.insert(ea::make_pair(newRasterizerStateHash, newRasterizerState)).first;
-            }
+    //            i = impl_->rasterizerStates_.insert(ea::make_pair(newRasterizerStateHash, newRasterizerState)).first;
+    //        }
 
-            impl_->deviceContext_->RSSetState(i->second);
-            impl_->rasterizerStateHash_ = newRasterizerStateHash;
-        }
+    //        impl_->deviceContext_->RSSetState(i->second);
+    //        impl_->rasterizerStateHash_ = newRasterizerStateHash;
+    //    }
 
-        impl_->rasterizerStateDirty_ = false;
-    }
+    //    impl_->rasterizerStateDirty_ = false;
+    //}
 
-    if (impl_->scissorRectDirty_)
-    {
-        D3D11_RECT d3dRect;
-        d3dRect.left = scissorRect_.left_;
-        d3dRect.top = scissorRect_.top_;
-        d3dRect.right = scissorRect_.right_;
-        d3dRect.bottom = scissorRect_.bottom_;
-        impl_->deviceContext_->RSSetScissorRects(1, &d3dRect);
-        impl_->scissorRectDirty_ = false;
-    }
+    //if (impl_->scissorRectDirty_)
+    //{
+    //    D3D11_RECT d3dRect;
+    //    d3dRect.left = scissorRect_.left_;
+    //    d3dRect.top = scissorRect_.top_;
+    //    d3dRect.right = scissorRect_.right_;
+    //    d3dRect.bottom = scissorRect_.bottom_;
+    //    impl_->deviceContext_->RSSetScissorRects(1, &d3dRect);
+    //    impl_->scissorRectDirty_ = false;
+    //}
 }
 
 void Graphics::CreateResolveTexture()
 {
-    if (impl_->resolveTexture_)
+    assert(0);
+    /*if (impl_->resolveTexture_)
         return;
 
     D3D11_TEXTURE2D_DESC textureDesc;
@@ -2648,7 +2659,7 @@ void Graphics::CreateResolveTexture()
     {
         URHO3D_SAFE_RELEASE(impl_->resolveTexture_);
         URHO3D_LOGD3DERROR("Could not create resolve texture", hr);
-    }
+    }*/
 }
 
 void Graphics::SetTextureUnitMappings()
