@@ -188,6 +188,8 @@ protected:
     virtual const char* GetRootBlockName() const { return "resource"; }
     /// Default internal resource format on save.
     virtual InternalResourceFormat GetDefaultInternalFormat() const { return InternalResourceFormat::Json; }
+    /// Try to load legacy XML format, whatever it is.
+    virtual bool LoadLegacyXML(const XMLElement& source) { return false; }
 
 private:
     ea::optional<InternalResourceFormat> loadFormat_;

@@ -289,8 +289,17 @@ bool SimpleResource::BeginLoad(Deserializer& source)
             if (!xmlFile.Load(source))
                 return false;
 
-            XMLInputArchive archive{context_, xmlFile.GetRoot(), &xmlFile};
-            SerializeValue(archive, GetRootBlockName(), *this);
+            XMLElement xmlRoot = xmlFile.GetRoot();
+            if (xmlRoot.GetName() == GetRootBlockName())
+            {
+                XMLInputArchive archive{context_, xmlFile.GetRoot(), &xmlFile};
+                SerializeValue(archive, GetRootBlockName(), *this);
+            }
+            else
+            {
+                if (!LoadLegacyXML(xmlRoot))
+                    return false;
+            }
 
             loadFormat_ = format;
             return true;

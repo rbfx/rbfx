@@ -51,6 +51,8 @@ public:
     NodePrefab& GetMutableNodePrefab();
 
 private:
+    bool LoadLegacyXML(const XMLElement& source) override;
+
     NodePrefab prefab_;
 };
 
