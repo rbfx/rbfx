@@ -46,9 +46,9 @@
 namespace Urho3D
 {
 
-static int const UICOMPONENT_DEFAULT_TEXTURE_SIZE = 512;
-static int const UICOMPONENT_MIN_TEXTURE_SIZE = 64;
-static int const UICOMPONENT_MAX_TEXTURE_SIZE = 4096;
+static const int UICOMPONENT_DEFAULT_TEXTURE_SIZE = 512;
+static const int UICOMPONENT_MIN_TEXTURE_SIZE = 64;
+static const int UICOMPONENT_MAX_TEXTURE_SIZE = 4096;
 
 class UIElement3D : public UIElement
 {

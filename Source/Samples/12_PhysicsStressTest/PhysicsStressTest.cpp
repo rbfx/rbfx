@@ -41,6 +41,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
@@ -130,7 +131,7 @@ void PhysicsStressTest::CreateScene()
     {
         // Create static mushrooms with triangle mesh collision
         const unsigned NUM_MUSHROOMS = 50;
-        XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
+        auto* mushroomPrefab = cache->GetResource<PrefabResource>("Prefabs/Mushroom.prefab");
         for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
         {
             Node* mushroomNode = scene_->CreateChild("Mushroom");

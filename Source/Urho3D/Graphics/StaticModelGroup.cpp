@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +61,7 @@ void StaticModelGroup::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
     URHO3D_ACCESSOR_ATTRIBUTE("Instance Nodes", GetNodeIDsAttr, SetNodeIDsAttr,
         VariantVector, Variant::emptyVariantVector, AM_DEFAULT | AM_NODEIDVECTOR)
-        .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, instanceNodesStructureElementNames);
+        .SetMetadata(AttributeMetadata::VectorStructElements, instanceNodesStructureElementNames);
 }
 
 void StaticModelGroup::ApplyAttributes()
@@ -119,8 +120,9 @@ void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<R
     for (unsigned i = 0; i < numWorldTransforms_; ++i)
     {
         // Initial test using AABB
-        float distance = query.ray_.HitDistance(boundingBox_.Transformed(worldTransforms_[i]));
-        Vector3 normal = -query.ray_.direction_;
+        const auto distanceAndNormal = query.ray_.HitDistanceAndNormal(boundingBox_.Transformed(worldTransforms_[i]));
+        float distance = distanceAndNormal.distance_;
+        Vector3 normal =  distanceAndNormal.normal_;
 
         // Then proceed to OBB and triangle-level tests if necessary
         if (level >= RAY_OBB && distance < query.maxDistance_)
@@ -139,11 +141,11 @@ void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<R
                     if (geometry)
                     {
                         Vector3 geometryNormal;
-                        float geometryDistance = geometry->GetHitDistance(localRay, &geometryNormal);
+                        const float geometryDistance = geometry->GetHitDistance(localRay, &geometryNormal);
                         if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                         {
                             distance = geometryDistance;
-                            normal = (worldTransforms_[i] * Vector4(geometryNormal, 0.0f)).Normalized();
+                            normal = (worldTransforms_[i] * geometryNormal.ToVector4()).Normalized();
                         }
                     }
                 }

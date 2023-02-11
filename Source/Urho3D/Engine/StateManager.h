@@ -26,6 +26,9 @@
 #include "../Input/Input.h"
 #include "../Graphics/Viewport.h"
 #include "Urho3D/UI/Window.h"
+#if URHO3D_ACTIONS
+#include "../Actions/ActionManager.h"
+#endif
 
 #include <EASTL/queue.h>
 
@@ -48,10 +51,16 @@ public:
     static void RegisterObject(Context* context);
 
     /// Activate game state. Executed by StateManager.
-    virtual void Activate(VariantMap& bundle);
+    virtual void Activate(StringVariantMap& bundle);
+
+    /// Transition into the state complete. Executed by StateManager.
+    virtual void TransitionComplete();
 
     /// Return true if state is ready to be deactivated. Executed by StateManager.
     virtual bool CanLeaveState() const;
+
+    /// Transition out of the state started. Executed by StateManager.
+    virtual void TransitionStarted();
 
     /// Deactivate game state. Executed by StateManager.
     virtual void Deactivate();
@@ -115,6 +124,14 @@ public:
     /// Get default zone fog color.
     const Color& GetDefaultFogColor() const { return fogColor_; }
 
+#if URHO3D_ACTIONS
+    /// Return application state's action manager.
+    ActionManager* GetActionManager() const { return actionManager_; }
+
+    /// Add action to the state's action manager.
+    Actions::ActionState* AddAction(Actions::BaseAction* action, Object* target, bool paused = false);
+#endif
+
 private:
     /// Initialize mouse mode on non-web platform.
     void InitMouseMode();
@@ -154,6 +171,10 @@ private:
     Color fogColor_{0.0f, 0.0f, 0.0f};
     /// Saved fog color to be restored at deactivation.
     Color savedFogColor_{};
+#if URHO3D_ACTIONS
+    /// Local action manager.
+    SharedPtr<ActionManager> actionManager_;
+#endif
 };
 
 class URHO3D_API StateManager: public Object
@@ -168,7 +189,7 @@ class URHO3D_API StateManager: public Object
         /// Target state if set by type StringHash.
         StringHash stateType_;
         /// Target state arguments.
-        VariantMap bundle_;
+        StringVariantMap bundle_;
     };
 
     enum class TransitionState
@@ -188,24 +209,18 @@ public:
 
     /// Hard reset of state manager. Current state will be set to nullptr and the queue is purged.
     void Reset();
+    /// Update state manager. This is called automatically by the engine every frame.
+    void Update(float timeStep);
 
     /// Transition to the application state.
-    void EnqueueState(ApplicationState* gameScreen, VariantMap& bundle);
-
-    /// Transition to the application state.
+    /// @{
+    void EnqueueState(ApplicationState* gameScreen, StringVariantMap& bundle);
     void EnqueueState(ApplicationState* gameScreen);
-
-    /// Transition to the application state.
-    void EnqueueState(StringHash type, VariantMap& bundle);
-
-    /// Transition to the application state.
+    void EnqueueState(StringHash type, StringVariantMap& bundle);
     void EnqueueState(StringHash type);
-
-    /// Set current application state.
-    template <typename T> void EnqueueState(VariantMap& bundle);
-
-    /// Set current application state.
+    template <typename T> void EnqueueState(StringVariantMap& bundle);
     template <typename T> void EnqueueState();
+    /// @}
 
     /// Get current application state.
     ApplicationState* GetState() const;
@@ -228,9 +243,6 @@ private:
     /// Initiate state transition if necessary.
     void InitiateTransition();
 
-    /// Handle SetApplicationState event and add the state to the queue.
-    void HandleSetApplicationState(StringHash eventName, VariantMap& args);
-
     /// Handle update event to animate state transitions.
     void HandleUpdate(StringHash eventName, VariantMap& args);
 
@@ -239,6 +251,12 @@ private:
 
     /// Update fade overlay size and transparency.
     void UpdateFadeOverlay(float t);
+
+    /// Start transition out of the current state.
+    void StartTransition();
+
+    /// Complete transition into the current state.
+    void CompleteTransition();
 
     /// Deactivate state.
     void DeactivateState();
@@ -278,13 +296,14 @@ private:
     TransitionState transitionState_{TransitionState::Sustain};
 };
 
-template <class T> void StateManager::EnqueueState(VariantMap& bundle) {
-    SetState(T::GetTypeStatic(), bundle);
+template <class T> void StateManager::EnqueueState(StringVariantMap& bundle)
+{
+    EnqueueState(T::GetTypeStatic(), bundle);
 }
 
 template <class T> void StateManager::EnqueueState()
 {
-    VariantMap bundle;
+    StringVariantMap bundle;
     EnqueueState<T>(bundle);
 }
 

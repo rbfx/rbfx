@@ -50,15 +50,6 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
-    /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive) override;
-
-    /// Load from binary data. Return true if successful.
-    bool Load(Deserializer& source) override;
-    /// Load from XML data. Return true if successful.
-    bool LoadXML(const XMLElement& source) override;
-    /// Load from JSON data. Return true if successful.
-    bool LoadJSON(const JSONValue& source) override;
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     void ApplyAttributes() override;
 
@@ -98,6 +89,8 @@ public:
     void SetMorphWeight(StringHash nameHash, float weight);
     /// Reset all vertex morphs to zero.
     void ResetMorphWeights();
+    /// Reset node transforms of skeleton bones.
+    void ResetBones();
     /// Apply all animation states to nodes.
     void ApplyAnimation();
     /// Connect to AnimationStateSource that provides animation states.
@@ -249,8 +242,6 @@ private:
     unsigned numSoftwareSkinningBones_{ 4 };
     /// Master model flag.
     bool isMaster_;
-    /// Loading flag. During loading bone nodes are not created, as they will be serialized as child nodes.
-    bool loading_;
     /// Bone nodes assignment pending flag.
     bool assignBonesPending_;
     /// Force animation update after becoming visible flag.

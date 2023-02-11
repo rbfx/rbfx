@@ -1,0 +1,250 @@
+{
+	"components": [
+		{
+			"_typeName": "Octree"
+		},
+		{
+			"_typeName": "PhysicsWorld"
+		},
+		{
+			"_typeName": "RenderPipeline"
+		},
+		{
+			"_typeName": "ReflectionProbeManager"
+		}
+	],
+	"nodes": [
+		{
+			"attributes": [
+				{
+					"name": "Tags",
+					"type": "StringVector",
+					"value": [
+						"Untagged"
+					]
+				}
+			],
+			"nodes": [
+				{
+					"attributes": [
+						{
+							"name": "Name",
+							"type": "String",
+							"value": "Door"
+						},
+						{
+							"name": "Tags",
+							"type": "StringVector",
+							"value": [
+								"Untagged"
+							]
+						},
+						{
+							"name": "Position",
+							"type": "Vector3",
+							"value": "0.5 0.1 0"
+						},
+						{
+							"name": "Scale",
+							"type": "Vector3",
+							"value": "1 2 0.1"
+						}
+					],
+					"components": [
+						{
+							"_typeName": "CollisionShape",
+							"attributes": [
+								{
+									"name": "Collision Margin",
+									"type": "Float",
+									"value": 0.009999999776482582
+								}
+							]
+						},
+						{
+							"_typeName": "RigidBody",
+							"attributes": [
+								{
+									"name": "Mass",
+									"type": "Float",
+									"value": 1.0
+								},
+								{
+									"name": "Contact Threshold",
+									"type": "Float",
+									"value": 0.10000000149011612
+								}
+							]
+						},
+						{
+							"_typeName": "StaticModel",
+							"attributes": [
+								{
+									"name": "Model",
+									"type": "ResourceRef",
+									"value": "Model;Models/Box.mdl"
+								},
+								{
+									"name": "Material",
+									"type": "ResourceRefList",
+									"value": "Material;Materials/DefaultGrey.xml"
+								},
+								{
+									"name": "Cast Shadows",
+									"type": "Bool",
+									"value": true
+								}
+							]
+						},
+						{
+							"_typeName": "Constraint",
+							"attributes": [
+								{
+									"name": "Constraint Type",
+									"type": "String",
+									"value": "Hinge"
+								},
+								{
+									"name": "Position",
+									"type": "Vector3",
+									"value": "-0.5 0 0"
+								},
+								{
+									"name": "Rotation",
+									"type": "Quaternion",
+									"value": "0.707107 0.707107 0 0"
+								},
+								{
+									"name": "Other Body Rotation",
+									"type": "Quaternion",
+									"value": "0.707107 0.707107 0 0"
+								},
+								{
+									"name": "Other Body NodeID",
+									"type": "Int",
+									"value": 1
+								},
+								{
+									"name": "High Limit",
+									"type": "Vector2",
+									"value": "90 0"
+								},
+								{
+									"name": "Low Limit",
+									"type": "Vector2",
+									"value": "-90 0"
+								},
+								{
+									"name": "Disable Collision",
+									"type": "Bool",
+									"value": true
+								}
+							]
+						}
+					]
+				},
+				{
+					"_id": 1,
+					"attributes": [
+						{
+							"name": "Name",
+							"type": "String",
+							"value": "DoorFrame"
+						},
+						{
+							"name": "Tags",
+							"type": "StringVector",
+							"value": [
+								"Untagged"
+							]
+						},
+						{
+							"name": "Position",
+							"type": "Vector3",
+							"value": "0 0.5 0"
+						}
+					],
+					"components": [
+						{
+							"_typeName": "RigidBody",
+							"attributes": [
+								{
+									"name": "Contact Threshold",
+									"type": "Float",
+									"value": 0.10000000149011612
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"attributes": [
+				{
+					"name": "Name",
+					"type": "String",
+					"value": "Default Skybox"
+				}
+			],
+			"components": [
+				{
+					"_typeName": "Skybox",
+					"attributes": [
+						{
+							"name": "Model",
+							"type": "ResourceRef",
+							"value": "Model;Models/Box.mdl"
+						},
+						{
+							"name": "Material",
+							"type": "ResourceRefList",
+							"value": "Material;Materials/DefaultSkybox.xml"
+						}
+					]
+				}
+			]
+		},
+		{
+			"attributes": [
+				{
+					"name": "Name",
+					"type": "String",
+					"value": "Default Zone"
+				}
+			],
+			"components": [
+				{
+					"_typeName": "Zone",
+					"attributes": [
+						{
+							"name": "Bounding Box Min",
+							"type": "Vector3",
+							"value": "-1000 -1000 -1000"
+						},
+						{
+							"name": "Bounding Box Max",
+							"type": "Vector3",
+							"value": "1000 1000 1000"
+						},
+						{
+							"name": "Ambient Color",
+							"type": "Color",
+							"value": "0 0 0 1"
+						},
+						{
+							"name": "Background Brightness",
+							"type": "Float",
+							"value": 1.0
+						},
+						{
+							"name": "Zone Texture",
+							"type": "ResourceRef",
+							"value": "TextureCube;Textures/DefaultSkybox.xml"
+						}
+					]
+				}
+			]
+		}
+	]
+}

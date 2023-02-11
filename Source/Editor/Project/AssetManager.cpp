@@ -65,20 +65,37 @@ AssetManager::AssetManager(Context* context)
 {
     dataWatcher_->StartWatching(project_->GetDataPath(), true);
     context_->OnReflectionRemoved.Subscribe(this, &AssetManager::OnReflectionRemoved);
+    SetProcessCallback(nullptr);
 }
 
 AssetManager::~AssetManager()
 {
 }
 
-void AssetManager::Initialize()
+void AssetManager::SetProcessCallback(const OnProcessAssetQueued& callback, unsigned maxConcurrency)
 {
+    const auto defaultCallback = [this](const AssetTransformerInput& input, const OnProcessAssetCompleted& callback)
+    {
+        ProcessAsset(input, callback);
+    };
+    processCallback_ = callback ? callback : defaultCallback;
+    maxConcurrentRequests_ = ea::max(maxConcurrency, 1u);
+}
+
+void AssetManager::Initialize(bool readOnly)
+{
+    autoProcessAssets_ = !readOnly;
+
     InitializeAssetPipelines();
     InvalidateOutdatedAssetsInPath("");
-    EnsureAssetsAndCacheValid();
-    ScanAndQueueAssetProcessing();
 
-    if (requestQueue_.empty())
+    if (autoProcessAssets_)
+    {
+        EnsureAssetsAndCacheValid();
+        ScanAndQueueAssetProcessing();
+    }
+
+    if (requestQueue_.empty() && numOngoingRequests_ == 0)
     {
         initialized_ = true;
         OnInitialized(this);
@@ -87,11 +104,10 @@ void AssetManager::Initialize()
 
 void AssetManager::Update()
 {
-    if (!requestQueue_.empty())
+    if (!requestQueue_.empty() || numOngoingRequests_ != 0)
     {
-        // TODO(editor): Be smarter about this.
-        ProcessAsset(requestQueue_.back());
-        requestQueue_.pop_back();
+        if (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
+            ConsumeAssetQueue();
         return;
     }
 
@@ -101,9 +117,37 @@ void AssetManager::Update()
         OnInitialized(this);
     }
 
+    // Reset progress
+    progress_ = {};
+
     ProcessFileSystemUpdates();
-    EnsureAssetsAndCacheValid();
-    ScanAndQueueAssetProcessing();
+
+    if (autoProcessAssets_)
+    {
+        EnsureAssetsAndCacheValid();
+        ScanAndQueueAssetProcessing();
+    }
+}
+
+void AssetManager::ConsumeAssetQueue()
+{
+    ea::vector<AssetTransformerInput> queue;
+    while (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
+    {
+        ++numOngoingRequests_;
+        ++progress_.second;
+        queue.push_back(requestQueue_.back());
+        requestQueue_.pop_back();
+    }
+
+    for (const AssetTransformerInput& input : queue)
+    {
+        processCallback_(input,
+            [this](const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)
+        {
+            CompleteAssetProcessing(input, output, message);
+        });
+    }
 }
 
 void AssetManager::MarkCacheDirty(const ea::string& resourcePath)
@@ -181,7 +225,8 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector files;
-    fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
+    fs->ScanDirAdd(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
+    fs->ScanDirAdd(files, project_->GetDataPath(), "*.assetpipeline", SCAN_FILES, true);
 
     ea::erase_if(files, [&](const ea::string& resourceName) { return !AssetPipeline::CheckExtension(resourceName); });
 
@@ -258,7 +303,7 @@ ea::string AssetManager::GetFileName(const ea::string& resourceName) const
     return project_->GetDataPath() + resourceName;
 }
 
-bool AssetManager::IsAssetUpToDate(const AssetDesc& assetDesc) const
+bool AssetManager::IsAssetUpToDate(AssetDesc& assetDesc)
 {
     auto fs = GetSubsystem<FileSystem>();
 
@@ -268,8 +313,16 @@ bool AssetManager::IsAssetUpToDate(const AssetDesc& assetDesc) const
         return false;
 
     // Check if the asset has not been modified
+    const FileTime assetModificationTime = fs->GetLastModifiedTime(fileName, true);
     if (assetDesc.modificationTime_ != fs->GetLastModifiedTime(fileName))
-        return false;
+    {
+        if (!ignoredAssetUpdates_.contains(assetDesc.resourceName_))
+            return false;
+
+        // Ignore the update once if it was requested
+        ignoredAssetUpdates_.erase(assetDesc.resourceName_);
+        assetDesc.modificationTime_ = assetModificationTime;
+    }
 
     // Check if outputs are present, don't check modification times for simplicity
     for (const ea::string& outputResourceName : assetDesc.outputs_)
@@ -495,14 +548,13 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
     const ea::string fileName = GetFileName(resourceName);
     const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName);
 
+    AssetDesc& assetDesc = assets_[resourceName];
+    assetDesc.resourceName_ = resourceName;
+    assetDesc.modificationTime_ = assetModifiedTime;
+
     const AssetTransformerInput input{flavor, resourceName, fileName, assetModifiedTime};
     if (!AssetTransformer::IsApplicable(input, transformers))
-    {
-        AssetDesc& assetDesc = assets_[resourceName];
-        assetDesc.resourceName_ = resourceName;
-        assetDesc.modificationTime_ = assetModifiedTime;
         return false;
-    }
 
     const ea::string tempPath = project_->GetRandomTemporaryPath();
     const ea::string outputFileName = tempPath + resourceName;
@@ -510,7 +562,7 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
     return true;
 }
 
-void AssetManager::ProcessAsset(const AssetTransformerInput& input)
+void AssetManager::ProcessAsset(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const
 {
     auto fs = GetSubsystem<FileSystem>();
 
@@ -520,15 +572,42 @@ void AssetManager::ProcessAsset(const AssetTransformerInput& input)
 
     AssetTransformerOutput output;
     if (AssetTransformer::ExecuteTransformersAndStore(input, cachePath, output, transformers))
+        callback(input, ea::move(output), EMPTY_STRING);
+    else
+        callback(input, ea::nullopt, EMPTY_STRING);
+}
+
+void AssetManager::CompleteAssetProcessing(
+    const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)
+{
+    if (numOngoingRequests_ > 0)
+        --numOngoingRequests_;
+    else
+        URHO3D_ASSERTLOG(false, "AssetManager::CompleteAssetProcessing() called with no ongoing requests");
+
+    ++progress_.first;
+
+    if (output)
     {
         AssetDesc& assetDesc = assets_[input.resourceName_];
         assetDesc.resourceName_ = input.resourceName_;
         assetDesc.modificationTime_ = input.inputFileTime_;
-        assetDesc.outputs_ = output.outputResourceNames_;
-        assetDesc.transformers_ = output.appliedTransformers_;
+        assetDesc.outputs_ = output->outputResourceNames_;
+        assetDesc.transformers_ = output->appliedTransformers_;
 
-        URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated)",
-            input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size());
+        if (output->sourceModified_)
+            ignoredAssetUpdates_.insert(input.resourceName_);
+
+        URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated{})",
+            input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size(),
+            output->sourceModified_ ? ", source modified" : "");
+
+        if (!message.empty())
+            URHO3D_LOGWARNING("{}", message);
+    }
+    else
+    {
+        URHO3D_LOGWARNING("Asset {} was not processed: {}", input.resourceName_, message.empty() ? "unknown error" : message);
     }
 }
 

@@ -41,7 +41,7 @@ void Normalized::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> NormalizedPatterns{
+static const ea::vector<NodePattern> NormalizedPatterns{
     MakePattern(
         NormalizedInstance<Vector3, Vector3>()
         , ParticleGraphTypedPin<Vector3>("x")

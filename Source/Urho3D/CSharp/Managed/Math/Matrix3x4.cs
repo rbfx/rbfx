@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@ namespace Urho3DNet
 {
 
 /// 3x4 matrix for scene node transform calculations.
-public struct Matrix3x4
+public struct Matrix3x4 : IEquatable<Matrix3x4>, IApproximateEquatable<Matrix3x4>
 {
 
     /// Copy-construct from a 3x3 matrix and set the extra elements to identity.
@@ -264,8 +264,8 @@ public struct Matrix3x4
     public static Matrix3x4 operator *(float lhs, in Matrix3x4 rhs) { return rhs * lhs; }
 
     /// Set translation elements.
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-public void SetTranslation(in Vector3 translation)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetTranslation(in Vector3 translation)
     {
         M03 = translation.X;
         M13 = translation.Y;
@@ -306,10 +306,10 @@ public void SetTranslation(in Vector3 translation)
     }
 
     /// Return the combined rotation and scaling matrix.
-    public Matrix3 Matrix3 => new Matrix3(M00, M01,M02,M10,M11,M12,M20,M21,M22);
+    public Matrix3 Matrix3 => new Matrix3(M00, M01, M02, M10, M11, M12, M20, M21, M22);
 
     /// Convert to a 4x4 matrix by filling in an identity last row.
-    public Matrix4 Matrix4 => new Matrix4(M00,M01,M02,M03,M10,M11,M12,M13,M20,M21,M22,M23,0.0f,0.0f,0.0f,1.0f);
+    public Matrix4 Matrix4 => new Matrix4(M00, M01, M02, M03, M10, M11, M12, M13, M20, M21, M22, M23, 0.0f, 0.0f, 0.0f, 1.0f);
 
     /// Return the rotation matrix with scaling removed.
     public Matrix3 RotationMatrix
@@ -327,13 +327,13 @@ public void SetTranslation(in Vector3 translation)
     }
 
     /// Return the translation part.
-    public Vector3 Translation => new Vector3(M03,M13,M23);
+    public Vector3 Translation => new Vector3(M03, M13, M23);
 
     /// Return the rotation part.
     public Quaternion Rotation => new Quaternion(RotationMatrix);
 
     /// Return the scaling part.
-    public Vector3 Scale=>new Vector3(
+    public Vector3 Scale => new Vector3(
             (float)Math.Sqrt(M00 * M00 + M10 * M10 + M20 * M20),
             (float)Math.Sqrt(M01 * M01 + M11 * M11 + M21 * M21),
             (float)Math.Sqrt(M02 * M02 + M12 * M12 + M22 * M22)
@@ -352,22 +352,59 @@ public void SetTranslation(in Vector3 translation)
     /// Test for equality with another matrix with epsilon.
     public bool Equals(Matrix3x4 rhs)
     {
-        return M00 == rhs.M00 &&
-               M01 == rhs.M01 &&
-               M02 == rhs.M02 &&
-               M03 == rhs.M03 &&
-               M10 == rhs.M10 &&
-               M11 == rhs.M11 &&
-               M12 == rhs.M12 &&
-               M13 == rhs.M13 &&
-               M20 == rhs.M20 &&
-               M21 == rhs.M21 &&
-               M22 == rhs.M22 &&
-               M23 == rhs.M23;
+        return this == rhs;
+    }
+
+    /// <summary>
+    /// Test for equality with another matrix with epsilon.
+    /// </summary>
+    public bool ApproximatelyEquivalent(Matrix3x4 rhs, float epsilon = MathDefs.Epsilon)
+    {
+        return MathDefs.ApproximatelyEquivalent(M00, rhs.M00, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M01, rhs.M01, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M02, rhs.M02, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M03, rhs.M03, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M10, rhs.M10, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M11, rhs.M11, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M12, rhs.M12, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M13, rhs.M13, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M20, rhs.M20, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M21, rhs.M21, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M22, rhs.M22, epsilon) &&
+               MathDefs.ApproximatelyEquivalent(M23, rhs.M23, epsilon);
+    }
+
+    /// Test for equality with another matrix with epsilon.
+    public override bool Equals(object rhs)
+    {
+        if (rhs == null)
+            return false;
+        if (rhs.GetType() != GetType())
+            return false;
+        return this == (Matrix3x4)rhs;
+    }
+
+    /// Returns hash code of this matrix.
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        hashCode.Add(M00);
+        hashCode.Add(M01);
+        hashCode.Add(M02);
+        hashCode.Add(M03);
+        hashCode.Add(M10);
+        hashCode.Add(M11);
+        hashCode.Add(M12);
+        hashCode.Add(M13);
+        hashCode.Add(M20);
+        hashCode.Add(M21);
+        hashCode.Add(M22);
+        hashCode.Add(M23);
+        return hashCode.ToHashCode();
     }
 
     /// Return decomposition to translation, rotation and scale.
-   public  void Decompose(out Vector3 translation, out Quaternion rotation, out Vector3 scale)
+    public void Decompose(out Vector3 translation, out Quaternion rotation, out Vector3 scale)
     {
         translation.X = M03;
         translation.Y = M13;
@@ -411,7 +448,7 @@ public void SetTranslation(in Vector3 translation)
     }
 
     /// Return float data.
-    public float[] Data => new []{M00, M01, M02, M03, M10, M11, M12, M13, M20, M21, M22, M23};
+    public float[] Data => new[] { M00, M01, M02, M03, M10, M11, M12, M13, M20, M21, M22, M23 };
 
     /// Return matrix element.
     public float this[int i, int j]

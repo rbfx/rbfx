@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "../../Core/IniHelpers.h"
 #include "../../Foundation/SceneViewTab/SceneSelectionRenderer.h"
 
 #include <Urho3D/Graphics/DebugRenderer.h>
@@ -87,6 +88,24 @@ void SceneSelectionRenderer::Render(SceneViewPage& scenePage)
         if (component)
             DrawComponentSelection(scene, component);
     }
+}
+
+bool SceneSelectionRenderer::RenderTabContextMenu()
+{
+    if (ui::MenuItem("Draw Debug Geometry", nullptr, drawDebugGeometry_))
+        drawDebugGeometry_ = !drawDebugGeometry_;
+    return true;
+}
+
+void SceneSelectionRenderer::WriteIniSettings(ImGuiTextBuffer& output)
+{
+    WriteIntToIni(output, "SceneSelectionRenderer.DrawDebugGeometry", drawDebugGeometry_);
+}
+
+void SceneSelectionRenderer::ReadIniSettings(const char* line)
+{
+    if (const auto value = ReadIntFromIni(line, "SceneSelectionRenderer.DrawDebugGeometry"))
+        drawDebugGeometry_ = *value != 0;
 }
 
 SceneSelectionRenderer::PageState& SceneSelectionRenderer::GetOrInitializeState(SceneViewPage& scenePage) const
@@ -187,6 +206,8 @@ void SceneSelectionRenderer::DrawNodeSelection(Scene* scene, Node* node, bool re
 
 void SceneSelectionRenderer::DrawComponentSelection(Scene* scene, Component* component)
 {
+    if (!drawDebugGeometry_)
+        return;
     auto debugRenderer = scene->GetComponent<DebugRenderer>();
     component->DrawDebugGeometry(debugRenderer, true);
 }

@@ -31,7 +31,11 @@
 #include "../Project/ResourceEditorTab.h"
 
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/File.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -120,6 +124,21 @@ void CreateAssetPipeline(Context* context, const ea::string& fileName)
     jsonFile.SaveFile(fileName);
 }
 
+ea::pair<ea::string, ea::string> ParseCommand(const ea::string& command)
+{
+    ea::string commandName;
+    ea::string commandArgs;
+    const unsigned spacePos = command.find(' ');
+    if (spacePos != ea::string::npos)
+    {
+        commandName = command.substr(0, spacePos).trimmed();
+        commandArgs = command.substr(spacePos + 1).trimmed();
+    }
+    else
+        commandName = command.trimmed();
+    return {commandName, commandArgs};
+}
+
 }
 
 ResourceCacheGuard::ResourceCacheGuard(Context* context)
@@ -165,8 +184,10 @@ ImFont* Project::GetMonoFont()
     return monoFont;
 }
 
-Project::Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath)
+Project::Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, bool isReadOnly)
     : Object(context)
+    , isHeadless_(context->GetSubsystem<Engine>()->IsHeadless())
+    , isReadOnly_(isReadOnly)
     , projectPath_(GetSanitizedPath(projectPath + "/"))
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
@@ -197,7 +218,8 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     context_->RemoveSubsystem<PluginManager>();
     context_->RegisterSubsystem(pluginManager_);
 
-    ui::GetIO().IniFilename = uiIniPath_.c_str();
+    if (!isHeadless_ && !isReadOnly_)
+        ui::GetIO().IniFilename = uiIniPath_.c_str();
 
     InitializeHotkeys();
     EnsureDirectoryInitialized();
@@ -231,6 +253,66 @@ void Project::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "LaunchManager", *launchManager_, AlwaysSerialize{});
 }
 
+void Project::ExecuteCommand(const ea::string& command, bool exitOnCompletion)
+{
+    if (command.trimmed().empty())
+    {
+        URHO3D_LOGWARNING("Empty command is ignored");
+        return;
+    }
+
+    if (initialized_)
+        ProcessCommand(command, exitOnCompletion);
+    else
+        pendingCommands_.emplace_back(command, exitOnCompletion);
+}
+
+bool Project::ExecuteRemoteCommand(const ea::string& command, ea::string* output)
+{
+    auto fileSystem = context_->GetSubsystem<FileSystem>();
+    auto engine = context_->GetSubsystem<Engine>();
+
+    const StringVector arguments = {
+        "--quiet",
+        "--log",
+        "ERROR",
+        "--headless",
+        "--exit",
+        "--read-only",
+        "--command",
+        command,
+        "--prefix-paths",
+        engine->GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString(),
+        projectPath_,
+    };
+
+    ea::string tempOutput;
+    ea::string& effectiveOutput = output ? *output : tempOutput;
+
+    effectiveOutput.clear();
+    const int exitCode = fileSystem->SystemRun(fileSystem->GetProgramFileName(), arguments, effectiveOutput);
+    if (exitCode != 0)
+    {
+        URHO3D_LOGERROR("Failed to execute remote command \"{}\" with exit code {}: {}",
+            command, exitCode, effectiveOutput);
+        return false;
+    }
+    return true;
+}
+
+void Project::ExecuteRemoteCommandAsync(const ea::string& command, CommandExecutedCallback callback)
+{
+    PendingRemoteCommand remoteCommand;
+    remoteCommand.callback_ = ea::move(callback);
+    remoteCommand.result_ = std::async([=]()
+    {
+        ea::string output;
+        const bool success = ExecuteRemoteCommand(command, &output);
+        return ea::make_pair(success, output);
+    });
+    pendingRemoteCommands_.push_back(ea::move(remoteCommand));
+}
+
 void Project::Destroy()
 {
     // Always save shallow data on close
@@ -244,10 +326,14 @@ void Project::Destroy()
 
 Project::~Project()
 {
+    auto cache = GetSubsystem<ResourceCache>();
+    cache->ReleaseAllResources(true);
+
     --numActiveProjects;
     URHO3D_ASSERT(numActiveProjects == 0);
 
-    ui::GetIO().IniFilename = nullptr;
+    if (!isHeadless_)
+        ui::GetIO().IniFilename = nullptr;
 }
 
 CloseProjectResult Project::CloseGracefully()
@@ -265,9 +351,13 @@ CloseProjectResult Project::CloseGracefully()
         return CloseProjectResult::Undefined;
 
     // Collect unsaved items
+    const bool hasUnsavedCookedAssets = assetManager_->IsProcessing();
+
     ea::vector<ea::string> unsavedItems;
     if (hasUnsavedChanges_)
         unsavedItems.push_back("[Project]");
+    if (hasUnsavedCookedAssets)
+        unsavedItems.push_back("[Cooked Assets]");
     for (EditorTab* tab : tabs_)
         tab->EnumerateUnsavedItems(unsavedItems);
 
@@ -291,6 +381,7 @@ CloseProjectResult Project::CloseGracefully()
     {
         closeProjectResult_ = CloseProjectResult::Canceled;
     };
+    closeDialog_->SetSaveEnabled(!hasUnsavedCookedAssets);
     closeDialog_->RequestClose(ea::move(request));
     return CloseProjectResult::Undefined;
 }
@@ -350,14 +441,16 @@ ResourceFileDescriptor Project::GetResourceDescriptor(const ea::string& resource
     return result;
 }
 
-void Project::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes)
+void Project::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes,
+    const FileSavedCallback& onSaved)
 {
-    delayedFileSaves_[resourceName] = PendingFileSave{fileName, bytes};
+    delayedFileSaves_[resourceName] = PendingFileSave{fileName, bytes, onSaved};
 }
 
-void Project::SaveFileDelayed(Resource* resource)
+void Project::SaveFileDelayed(Resource* resource, const FileSavedCallback& onSaved)
 {
-    delayedFileSaves_[resource->GetName()] = PendingFileSave{resource->GetAbsoluteFileName(), nullptr, SharedPtr<Resource>(resource)};
+    delayedFileSaves_[resource->GetName()] =
+        PendingFileSave{resource->GetAbsoluteFileName(), nullptr, onSaved, SharedPtr<Resource>(resource)};
 }
 
 void Project::IgnoreFileNamePattern(const ea::string& pattern)
@@ -379,6 +472,9 @@ bool Project::IsFileNameIgnored(const ea::string& fileName) const
 
 void Project::AddTab(SharedPtr<EditorTab> tab)
 {
+    if (isHeadless_)
+        return;
+
     tabs_.push_back(tab);
     sortedTabs_[tab->GetTitle()] = tab;
 }
@@ -456,7 +552,7 @@ void Project::EnsureDirectoryInitialized()
     if (fs->DirExists(projectPath_ + "Resources/"))
         dataPath_ = projectPath_ + "Resources/";
     if (fs->FileExists(dataPath_ + "AssetPipeline.json"))
-        fs->Rename(dataPath_ + "AssetPipeline.json", dataPath_ + "Default.AssetPipeline.json");
+        fs->Rename(dataPath_ + "AssetPipeline.json", dataPath_ + "Default.assetpipeline");
 
     if (!fs->DirExists(dataPath_))
     {
@@ -481,7 +577,7 @@ void Project::InitializeDefaultProject()
     launchManager_->AddConfiguration(LaunchConfiguration{configName, SceneViewerApplication::GetStaticPluginName()});
     currentLaunchConfiguration_ = configName;
 
-    const ea::string defaultSceneName = "Scenes/DefaultScene.xml";
+    const ea::string defaultSceneName = "Scenes/Default.scene";
     DefaultSceneParameters params;
     params.highQuality_ = true;
     params.createObjects_ = true;
@@ -490,7 +586,7 @@ void Project::InitializeDefaultProject()
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
     ProcessRequest(request, nullptr);
 
-    const ea::string defaultAssetPipeline = "Default.AssetPipeline.json";
+    const ea::string defaultAssetPipeline = "Default.assetpipeline";
     CreateAssetPipeline(context_, dataPath_ + defaultAssetPipeline);
 
     Save();
@@ -498,47 +594,56 @@ void Project::InitializeDefaultProject()
 
 void Project::InitializeResourceCache()
 {
-    auto cache = GetSubsystem<ResourceCache>();
+    const auto engine = GetSubsystem<Engine>();
+    const auto cache = GetSubsystem<ResourceCache>();
     cache->ReleaseAllResources(true);
     cache->RemoveAllResourceDirs();
     cache->AddResourceDir(dataPath_);
     cache->AddResourceDir(coreDataPath_);
     cache->AddResourceDir(cachePath_);
     cache->AddResourceDir(oldCacheState_.GetEditorData());
+
+    const auto vfs = GetSubsystem<VirtualFileSystem>();
+    vfs->UnmountAll();
+    vfs->MountDir(oldCacheState_.GetEditorData());
+    vfs->MountDir(coreDataPath_);
+    vfs->MountDir(dataPath_);
+    vfs->MountDir(cachePath_);
+    vfs->MountDir("conf" , engine->GetAppPreferencesDir());
 }
 
 void Project::ResetLayout()
 {
     pendingResetLayout_ = false;
 
-    ImGui::DockBuilderRemoveNode(dockspaceId_);
-    ImGui::DockBuilderAddNode(dockspaceId_, 0);
-    ImGui::DockBuilderSetNodeSize(dockspaceId_, ui::GetMainViewport()->Size);
+    ui::DockBuilderRemoveNode(dockspaceId_);
+    ui::DockBuilderAddNode(dockspaceId_, 0);
+    ui::DockBuilderSetNodeSize(dockspaceId_, ui::GetMainViewport()->Size);
 
     ImGuiID dockCenter = dockspaceId_;
-    ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockCenter, ImGuiDir_Left, 0.20f, nullptr, &dockCenter);
-    ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockCenter, ImGuiDir_Right, 0.30f, nullptr, &dockCenter);
-    ImGuiID dockBottom = ImGui::DockBuilderSplitNode(dockCenter, ImGuiDir_Down, 0.30f, nullptr, &dockCenter);
+    ImGuiID dockLeft = ui::DockBuilderSplitNode(dockCenter, ImGuiDir_Left, 0.20f, nullptr, &dockCenter);
+    ImGuiID dockRight = ui::DockBuilderSplitNode(dockCenter, ImGuiDir_Right, 0.30f, nullptr, &dockCenter);
+    ImGuiID dockBottom = ui::DockBuilderSplitNode(dockCenter, ImGuiDir_Down, 0.30f, nullptr, &dockCenter);
 
     for (EditorTab* tab : tabs_)
     {
         switch (tab->GetPlacement())
         {
         case EditorTabPlacement::DockCenter:
-            ImGui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockCenter);
+            ui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockCenter);
             break;
         case EditorTabPlacement::DockLeft:
-            ImGui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockLeft);
+            ui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockLeft);
             break;
         case EditorTabPlacement::DockRight:
-            ImGui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockRight);
+            ui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockRight);
             break;
         case EditorTabPlacement::DockBottom:
-            ImGui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockBottom);
+            ui::DockBuilderDockWindow(tab->GetUniqueId().c_str(), dockBottom);
             break;
         }
     }
-    ImGui::DockBuilderFinish(dockspaceId_);
+    ui::DockBuilderFinish(dockspaceId_);
 
     for (EditorTab* tab : tabs_)
     {
@@ -598,24 +703,27 @@ void Project::Render()
         {ImGuiCol_TabUnfocusedActive, ImVec4(0.26f, 0.26f + tint, 0.26f, 1.00f)},
     }, isHighlightEnabled_};
 
-    hotkeyManager_->Update();
-    hotkeyManager_->InvokeFor(hotkeyManager_);
-    if (areGlobalHotkeysEnabled_)
-        hotkeyManager_->InvokeFor(this);
+    if (!isHeadless_)
+    {
+        hotkeyManager_->Update();
+        hotkeyManager_->InvokeFor(hotkeyManager_);
+        if (areGlobalHotkeysEnabled_)
+            hotkeyManager_->InvokeFor(this);
 
-    assetManager_->Update();
+        dockspaceId_ = ui::GetID("Root");
+        ui::DockSpace(dockspaceId_);
 
-    dockspaceId_ = ui::GetID("Root");
-    ui::DockSpace(dockspaceId_);
-
-    if (pendingResetLayout_)
-        ResetLayout();
+        if (pendingResetLayout_)
+            ResetLayout();
+    }
 
     if (!assetManagerInitialized_ && !pluginManager_->IsReloadPending())
     {
         assetManagerInitialized_ = true;
-        assetManager_->Initialize();
+        assetManager_->Initialize(isReadOnly_);
     }
+
+    assetManager_->Update();
 
     bool initialFocusPending = false;
     if (!initialized_ && initializationGuard_.expired())
@@ -624,30 +732,38 @@ void Project::Render()
         initialFocusPending = true;
 
         OnInitialized(this);
+
+        for (const auto& [command, exitOnCompletion] : pendingCommands_)
+            ProcessCommand(command, exitOnCompletion);
+        pendingCommands_.clear();
     }
 
-    for (EditorTab* tab : tabs_)
-        tab->PreRenderUpdate();
-    for (EditorTab* tab : tabs_)
-        tab->Render();
-    if (focusedTab_)
-        focusedTab_->ApplyHotkeys(hotkeyManager_);
-    for (EditorTab* tab : tabs_)
-        tab->PostRenderUpdate();
-
-    closeDialog_->Render();
-
-    if (initialFocusPending)
+    if (!isHeadless_)
     {
         for (EditorTab* tab : tabs_)
+            tab->PreRenderUpdate();
+        for (EditorTab* tab : tabs_)
+            tab->Render();
+        if (focusedTab_)
+            focusedTab_->ApplyHotkeys(hotkeyManager_);
+        for (EditorTab* tab : tabs_)
+            tab->PostRenderUpdate();
+
+        closeDialog_->Render();
+
+        if (initialFocusPending)
         {
-            if (tab->IsOpen() && tab->GetFlags().Test(EditorTabFlag::FocusOnStart))
-                tab->Focus(true);
+            for (EditorTab* tab : tabs_)
+            {
+                if (tab->IsOpen() && tab->GetFlags().Test(EditorTabFlag::FocusOnStart))
+                    tab->Focus(true);
+            }
         }
     }
 
     ProcessDelayedSaves();
     ProcessPendingRequests();
+    ProcessPendingRemoteCommands();
 }
 
 void Project::ProcessPendingRequests()
@@ -685,13 +801,53 @@ void Project::ProcessDelayedSaves(bool forceSave)
             delayedSave.resource_->SaveFile(delayedSave.fileName_);
         }
 
-        if (fileExists)
+        bool needReload = !fileExists;
+        if (delayedSave.onSaved_)
+            delayedSave.onSaved_(delayedSave.fileName_, resourceName, needReload);
+
+        if (!needReload)
             cache->IgnoreResourceReload(resourceName);
 
         delayedSave.Clear();
     }
 
     ea::erase_if(delayedFileSaves_, [](const auto& pair) { return pair.second.IsEmpty(); });
+}
+
+void Project::ProcessCommand(const ea::string& command, bool exitOnCompletion)
+{
+    const auto [name, args] = ParseCommand(command);
+
+    if (name != "Idle")
+    {
+        bool processed = false;
+        OnCommand(this, name, args, processed);
+
+        if (!processed)
+            URHO3D_LOGWARNING("Cannot process command: {}", command);
+    }
+
+    if (exitOnCompletion)
+    {
+        closeProjectResult_ = CloseProjectResult::Closed;
+        SendEvent(E_EXITREQUESTED);
+    }
+}
+
+void Project::ProcessPendingRemoteCommands()
+{
+    for (PendingRemoteCommand& command : pendingRemoteCommands_)
+    {
+        if (command.result_.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+        {
+            const auto [success, output] = command.result_.get();
+            command.callback_(success, output);
+            command.callback_ = nullptr;
+        }
+    }
+
+    const auto isDone = [](const PendingRemoteCommand& command) { return command.callback_ == nullptr; };
+    ea::erase_if(pendingRemoteCommands_, isDone);
 }
 
 void Project::RenderToolbar()
@@ -704,6 +860,24 @@ void Project::RenderToolbar()
 
     if (focusedRootTab_)
         focusedRootTab_->RenderToolbar();
+
+    RenderAssetsToolbar();
+}
+
+void Project::RenderAssetsToolbar()
+{
+    const auto [numAssetsCooked, numAssetsTotal] = assetManager_->GetProgress();
+
+    if (numAssetsTotal == 0)
+        return;
+
+    Widgets::ToolbarSeparator();
+    const float ratio = static_cast<float>(numAssetsCooked) / numAssetsTotal;
+    const ea::string text = Format("Assets cooked {}/{}", numAssetsCooked, numAssetsTotal);
+
+    // Show some small progress from the start for better visibility
+    const float progress = Lerp(0.05f, 1.0f, ratio);
+    ui::ProgressBar(progress, ImVec2{200.0f, 0.0f}, text.c_str());
 }
 
 void Project::RenderProjectMenu()
@@ -743,6 +917,9 @@ void Project::RenderMainMenu()
 
 void Project::SaveShallowOnly()
 {
+    if (isReadOnly_)
+        return;
+
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     settingsManager_->SaveFile(settingsJsonPath_);
     assetManager_->SaveFile(cacheJsonPath_);
@@ -776,8 +953,9 @@ void Project::SaveResourcesOnly()
     for (EditorTab* tab : tabs_)
     {
         if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
-            resourceTab->SaveAllResources();
+            resourceTab->SaveAllResources(true);
     }
+    ProcessDelayedSaves(true);
 }
 
 void Project::Save()

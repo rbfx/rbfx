@@ -89,9 +89,22 @@ public:
 protected:
     /// Data model facade
     /// @{
-    bool IsVariableDirty(const ea::string& variableName) { return dataModel_.IsVariableDirty(variableName); }
-    void DirtyVariable(const ea::string& variableName) { dataModel_.DirtyVariable(variableName); }
-    void DirtyAllVariables() { dataModel_.DirtyAllVariables(); }
+    bool IsVariableDirty(const ea::string& variableName)
+    {
+        if (!dataModel_)
+            return false;
+        return dataModel_.IsVariableDirty(variableName);
+    }
+    void DirtyVariable(const ea::string& variableName)
+    {
+        if (dataModel_)
+            dataModel_.DirtyVariable(variableName);
+    }
+    void DirtyAllVariables()
+    {
+        if (dataModel_)
+            dataModel_.DirtyAllVariables();
+    }
     /// @}
 
     /// Wrap data event callback.
@@ -166,6 +179,8 @@ private:
     /// Component which holds RmlUI instance containing UI managed by this component. May be null if UI is rendered into default RmlUI subsystem.
     WeakPtr<RmlCanvasComponent> canvasComponent_;
 
+    /// Type registry for the data model.
+    Rml::DataTypeRegister typeRegister_;
     /// Data model for the document.
     Rml::DataModelHandle dataModel_;
     /// Name of the data model.

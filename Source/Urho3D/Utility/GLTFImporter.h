@@ -34,10 +34,19 @@ namespace Urho3D
 
 struct GLTFImporterSettings
 {
+    ea::string assetName_{"Asset"};
+
+    bool mirrorX_{};
     float scale_{1.0f};
+    Quaternion rotation_;
+
+    bool cleanupBoneNames_{true};
+    bool cleanupRootNodes_{true};
+    bool combineLODs_{true};
+    bool repairLooping_{false};
+
     float offsetMatrixError_{ 0.00002f };
     float keyFrameTimeError_{ M_EPSILON };
-    bool repairLooping_{false};
 
     /// Settings that affect only preview scene.
     struct PreviewSettings

@@ -27,8 +27,9 @@
 #include "../IO/VectorBuffer.h"
 #include "../Math/Matrix3x4.h"
 #include "../Math/Transform.h"
-#include "../Scene/Animatable.h"
 #include "../Scene/Component.h"
+#include "../Scene/PrefabTypes.h"
+#include "../Scene/Serializable.h"
 
 #include <EASTL/type_traits.h>
 
@@ -39,15 +40,12 @@ namespace Urho3D
 
 class Connection;
 class Node;
+class PrefabReader;
+class PrefabWriter;
 class Scene;
+class NodePrefab;
 class SceneResolver;
-
-/// Component and child node creation mode for networking.
-enum CreateMode
-{
-    REPLICATED = 0,
-    LOCAL = 1
-};
+class SerializablePrefab;
 
 /// Transform space for translations and rotations.
 enum TransformSpace
@@ -73,9 +71,9 @@ struct URHO3D_API NodeImpl
 };
 
 /// %Scene node that may contain components and child nodes.
-class URHO3D_API Node : public Animatable
+class URHO3D_API Node : public Serializable
 {
-    URHO3D_OBJECT(Node, Animatable);
+    URHO3D_OBJECT(Node, Serializable);
 
     friend class Connection;
 
@@ -88,11 +86,35 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// For given set of components, return all nodes they belong to.
+    static ea::vector<Node*> GetNodes(const ea::vector<Component*>& components);
+    /// For given set of nodes, exclude all children nodes and return all "root" nodes only.
+    static ea::vector<Node*> GetParentNodes(const ea::vector<Node*>& nodes);
+
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
-    /// Serialize content from/to archive, with additional properties. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive, SceneResolver* resolver,
-        bool serializeChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED);
+    void SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags);
+
+    /// Load from prefab without resolving IDs and applying attributes. May throw ArchiveException.
+    void LoadInternal(const SerializablePrefab& nodePrefab, PrefabReader& reader, SceneResolver& resolver,
+        PrefabLoadFlags flags = {});
+    /// Load from prefab. Return true on success. Discard PrefabReader after calling this.
+    bool Load(PrefabReader& reader, PrefabLoadFlags flags = {});
+    /// Write to prefab. May throw ArchiveException.
+    void SaveInternal(PrefabWriter& writer) const;
+    /// Write to prefab. Return true on success. Discard PrefabWriter after calling this.
+    bool Save(PrefabWriter& writer) const;
+
+    /// Instantiate scene content from prefab. Return root node if successful.
+    Node* InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation);
+    /// Generate prefab from scene content.
+    void GeneratePrefab(NodePrefab& prefab) const;
+    NodePrefab GeneratePrefab() const;
+
+    /// Evaluate effective attribute scope.
+    /// It is a hint for the Editor to know what is affected by the node addition/removal
+    /// so it can generate optimal undo/redo actions.
+    AttributeScopeHint GetEffectiveScopeHint() const;
 
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;
@@ -139,7 +161,7 @@ public:
 
     /// Set position in parent space (for Urho2D).
     /// @property
-    void SetPosition2D(const Vector2& position) { SetPosition(Vector3(position)); }
+    void SetPosition2D(const Vector2& position) {SetPosition(position.ToVector3()); }
 
     /// Set position in parent space (for Urho2D).
     void SetPosition2D(float x, float y) { SetPosition(Vector3(x, y, 0.0f)); }
@@ -163,7 +185,7 @@ public:
 
     /// Set scale in parent space (for Urho2D).
     /// @property
-    void SetScale2D(const Vector2& scale) { SetScale(Vector3(scale, 1.0f)); }
+    void SetScale2D(const Vector2& scale) {SetScale(scale.ToVector3(1.0f)); }
 
     /// Set scale in parent space (for Urho2D).
     void SetScale2D(float x, float y) { SetScale(Vector3(x, y, 1.0f)); }
@@ -180,18 +202,21 @@ public:
     void SetTransform(const Transform& transform);
 
     /// Set both position and rotation in parent space as an atomic operation (for Urho2D).
-    void SetTransform2D(const Vector2& position, float rotation) { SetTransform(Vector3(position), Quaternion(rotation)); }
+    void SetTransform2D(const Vector2& position, float rotation)
+    {
+        SetTransform(position.ToVector3(), Quaternion(rotation));
+    }
 
     /// Set position, rotation, and uniform scale in parent space as an atomic operation (for Urho2D).
     void SetTransform2D(const Vector2& position, float rotation, float scale)
     {
-        SetTransform(Vector3(position), Quaternion(rotation), scale);
+        SetTransform(position.ToVector3(), Quaternion(rotation), scale);
     }
 
     /// Set position, rotation, and scale in parent space as an atomic operation (for Urho2D).
     void SetTransform2D(const Vector2& position, float rotation, const Vector2& scale)
     {
-        SetTransform(Vector3(position), Quaternion(rotation), Vector3(scale, 1.0f));
+        SetTransform(position.ToVector3(), Quaternion(rotation), scale.ToVector3(1.0f));
     }
 
     /// Set position in world space.
@@ -200,7 +225,7 @@ public:
 
     /// Set position in world space (for Urho2D).
     /// @property
-    void SetWorldPosition2D(const Vector2& position) { SetWorldPosition(Vector3(position)); }
+    void SetWorldPosition2D(const Vector2& position) {SetWorldPosition(position.ToVector3()); }
 
     /// Set position in world space (for Urho2D).
     void SetWorldPosition2D(float x, float y) { SetWorldPosition(Vector3(x, y, 0.0f)); }
@@ -224,7 +249,7 @@ public:
 
     /// Set scale in world space (for Urho2D).
     /// @property
-    void SetWorldScale2D(const Vector2& scale) { SetWorldScale(Vector3(scale, 1.0f)); }
+    void SetWorldScale2D(const Vector2& scale) {SetWorldScale(scale.ToVector3(1.0f)); }
 
     /// Set scale in world space (for Urho2D).
     void SetWorldScale2D(float x, float y) { SetWorldScale(Vector3(x, y, 1.0f)); }
@@ -241,26 +266,26 @@ public:
     /// Set both position and rotation in world space as an atomic operation (for Urho2D).
     void SetWorldTransform2D(const Vector2& position, float rotation)
     {
-        SetWorldTransform(Vector3(position), Quaternion(rotation));
+        SetWorldTransform(position.ToVector3(), Quaternion(rotation));
     }
 
     /// Set position, rotation, and uniform scale in world space as an atomic operation (for Urho2D).
     void SetWorldTransform2D(const Vector2& position, float rotation, float scale)
     {
-        SetWorldTransform(Vector3(position), Quaternion(rotation), scale);
+        SetWorldTransform(position.ToVector3(), Quaternion(rotation), scale);
     }
 
     /// Set position, rotation, and scale in world space as an atomic opration (for Urho2D).
     void SetWorldTransform2D(const Vector2& position, float rotation, const Vector2& scale)
     {
-        SetWorldTransform(Vector3(position), Quaternion(rotation), Vector3(scale, 1.0f));
+        SetWorldTransform(position.ToVector3(), Quaternion(rotation), scale.ToVector3(1.0f));
     }
 
     /// Move the scene node in the chosen transform space.
     void Translate(const Vector3& delta, TransformSpace space = TS_LOCAL);
 
     /// Move the scene node in the chosen transform space (for Urho2D).
-    void Translate2D(const Vector2& delta, TransformSpace space = TS_LOCAL) { Translate(Vector3(delta), space); }
+    void Translate2D(const Vector2& delta, TransformSpace space = TS_LOCAL) {Translate(delta.ToVector3(), space); }
 
     /// Rotate the scene node in the chosen transform space.
     void Rotate(const Quaternion& delta, TransformSpace space = TS_LOCAL);
@@ -274,7 +299,7 @@ public:
     /// Rotate around a point in the chosen transform space (for Urho2D).
     void RotateAround2D(const Vector2& point, float delta, TransformSpace space = TS_LOCAL)
     {
-        RotateAround(Vector3(point), Quaternion(delta), space);
+        RotateAround(point.ToVector3(), Quaternion(delta), space);
     }
 
     /// Rotate around the X axis.
@@ -294,7 +319,7 @@ public:
     void ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space = TS_LOCAL);
 
     /// Modify scale in parent space (for Urho2D).
-    void Scale2D(const Vector2& scale) { Scale(Vector3(scale, 1.0f)); }
+    void Scale2D(const Vector2& scale) {Scale(scale.ToVector3(1.0f)); }
 
     /// Set enabled/disabled state without recursion. Components in a disabled node become effectively disabled regardless of their own enable/disable state.
     /// @property
@@ -308,9 +333,9 @@ public:
     /// Mark node and child nodes to need world transform recalculation. Notify listener components.
     void MarkDirty();
     /// Create a child scene node (with specified ID if provided).
-    Node* CreateChild(const ea::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0, bool temporary = false);
+    Node* CreateChild(const ea::string& name = EMPTY_STRING, unsigned id = 0, bool temporary = false);
     /// Create a temporary child scene node (with specified ID if provided).
-    Node* CreateTemporaryChild(const ea::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0);
+    Node* CreateTemporaryChild(const ea::string& name = EMPTY_STRING, unsigned id = 0);
     /// Add a child scene node at a specific index. If index is not explicitly specified or is greater than current children size, append the new child at the end.
     void AddChild(Node* node, unsigned index = M_MAX_UNSIGNED);
     /// Remove a child scene node.
@@ -320,13 +345,11 @@ public:
     /// Remove child scene nodes that match criteria.
     void RemoveChildren(bool recursive);
     /// Create a component to this node (with specified ID if provided).
-    Component* CreateComponent(StringHash type, CreateMode mode = REPLICATED, unsigned id = 0);
+    Component* CreateComponent(StringHash type, unsigned id = 0);
     /// Create a component to this node if it does not exist already.
-    Component* GetOrCreateComponent(StringHash type, CreateMode mode = REPLICATED, unsigned id = 0);
+    Component* GetOrCreateComponent(StringHash type, unsigned id = 0);
     /// Clone a component from another node using its create mode. Return the clone if successful or null on failure.
     Component* CloneComponent(Component* component, unsigned id = 0);
-    /// Clone a component from another node and specify the create mode. Return the clone if successful or null on failure.
-    Component* CloneComponent(Component* component, CreateMode mode, unsigned id = 0);
     /// Remove a component from this node.
     void RemoveComponent(Component* component);
     /// Remove the first component of specific type from this node.
@@ -342,7 +365,7 @@ public:
     /// Adjust index order of an existing component in this node.
     void ReorderComponent(Component* component, unsigned index);
     /// Clone scene node, components and child nodes. Return the clone.
-    Node* Clone(Node* parent = nullptr, CreateMode mode = REPLICATED);
+    Node* Clone(Node* parent = nullptr);
     /// Remove from the parent node. If no other shared pointer references exist, causes immediate deletion.
     void Remove();
     /// Assign to a new parent scene node. Retains the world transform.
@@ -356,9 +379,9 @@ public:
     /// Remove listener component.
     void RemoveListener(Component* component);
     /// Template version of creating a component.
-    template <class T> T* CreateComponent(CreateMode mode = REPLICATED, unsigned id = 0);
+    template <class T> T* CreateComponent(unsigned id = 0);
     /// Template version of getting or creating a component.
-    template <class T> T* GetOrCreateComponent(CreateMode mode = REPLICATED, unsigned id = 0);
+    template <class T> T* GetOrCreateComponent(unsigned id = 0);
     /// Template version of removing a component.
     template <class T> void RemoveComponent();
     /// Template version of removing all components of specific type.
@@ -367,9 +390,6 @@ public:
     /// Return ID.
     /// @property{get_id}
     unsigned GetID() const { return id_; }
-    /// Return whether the node is replicated or local to a scene.
-    /// @property
-    bool IsReplicated() const;
 
     /// Return name.
     /// @property
@@ -614,9 +634,6 @@ public:
     /// @property
     unsigned GetNumComponents() const { return components_.size(); }
 
-    /// Return number of non-local components.
-    unsigned GetNumNetworkComponents() const;
-
     /// Return all components.
     const ea::vector<SharedPtr<Component> >& GetComponents() const { return components_; }
 
@@ -669,21 +686,19 @@ public:
     /// Reset scene, ID and owner. Called by Scene.
     void ResetScene();
     /// Load components and optionally load child nodes.
-    bool Load(Deserializer& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED);
+    bool Load(Deserializer& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false);
     /// Load components from XML data and optionally load child nodes.
     bool LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED, bool removeComponents = true);
+        bool removeComponents = true);
     /// Load components from XML data and optionally load child nodes.
-    bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED);
+    bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false);
     /// Return the depended on nodes to order network updates.
     const ea::vector<Node*>& GetDependencyNodes() const { return impl_->dependencyNodes_; }
 
     /// Create a child node with specific ID.
-    Node* CreateChild(unsigned id, CreateMode mode, bool temporary = false);
+    Node* CreateChild(unsigned id, bool temporary = false);
     /// Add a pre-created component. Using this function from application code is discouraged, as component operation without an owner node may not be well-defined in all cases. Prefer CreateComponent() instead.
-    void AddComponent(Component* component, unsigned id, CreateMode mode);
+    void AddComponent(Component* component, unsigned id);
     /// Calculate number of non-temporary child nodes.
     unsigned GetNumPersistentChildren() const;
     /// Calculate number of non-temporary components.
@@ -704,19 +719,11 @@ public:
     /// Set local transform silently without marking the node & child nodes dirty. Used by animation code.
     void SetTransformSilent(const Matrix3x4& matrix);
 
-protected:
-    /// Handle attribute animation added.
-    void OnAttributeAnimationAdded() override;
-    /// Handle attribute animation removed.
-    void OnAttributeAnimationRemoved() override;
-    /// Find target of an attribute animation from object hierarchy by name.
-    Animatable* FindAttributeAnimationTarget(const ea::string& name, ea::string& outName) override;
-
 private:
     /// Set enabled/disabled state with optional recursion. Optionally affect the remembered enable state.
     void SetEnabled(bool enable, bool recursive, bool storeSelf);
     /// Create component, allowing UnknownComponent if actual type is not supported. Leave typeName empty if not known.
-    Component* SafeCreateComponent(const ea::string& typeName, StringHash type, CreateMode mode, unsigned id);
+    Component* SafeCreateComponent(const ea::string& typeName, StringHash type, unsigned id);
     /// Recalculate the world transform.
     void UpdateWorldTransform() const;
     /// Remove child node by iterator.
@@ -730,11 +737,9 @@ private:
     /// Return specific components recursively.
     void GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const;
     /// Clone node recursively.
-    Node* CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mode);
+    Node* CloneRecursive(Node* parent, SceneResolver& resolver);
     /// Remove a component from this node with the specified iterator.
     void RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i);
-    /// Handle attribute animation update event.
-    void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
     /// Find child node by index if name is an integer starting with "#" (like "#12" or "#0").
     /// Find child by name otherwise. Empty name is considered invalid.
     Node* GetChildByNameOrIndex(ea::string_view name) const;
@@ -779,14 +784,14 @@ protected:
     StringVariantMap vars_;
 };
 
-template <class T> T* Node::CreateComponent(CreateMode mode, unsigned id)
+template <class T> T* Node::CreateComponent(unsigned id)
 {
-    return static_cast<T*>(CreateComponent(T::GetTypeStatic(), mode, id));
+    return static_cast<T*>(CreateComponent(T::GetTypeStatic(), id));
 }
 
-template <class T> T* Node::GetOrCreateComponent(CreateMode mode, unsigned id)
+template <class T> T* Node::GetOrCreateComponent(unsigned id)
 {
-    return static_cast<T*>(GetOrCreateComponent(T::GetTypeStatic(), mode, id));
+    return static_cast<T*>(GetOrCreateComponent(T::GetTypeStatic(), id));
 }
 
 template <class T> void Node::RemoveComponent() { RemoveComponent(T::GetTypeStatic()); }

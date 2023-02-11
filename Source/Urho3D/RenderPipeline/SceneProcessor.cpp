@@ -156,7 +156,7 @@ BoundingBox GetViewSpaceLightBoundingBox(Light* light, Camera* camera)
 
 float GetLightSizeInPixels(Light* light, const FrameInfo& frameInfo)
 {
-    const auto viewSize = static_cast<Vector2>(frameInfo.viewSize_);
+    const auto viewSize = frameInfo.viewSize_.ToVector2();
     const LightType lightType = light->GetLightType();
     if (lightType == LIGHT_DIRECTIONAL)
         return ea::max(viewSize.x_, viewSize.y_);
@@ -229,7 +229,7 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
     frameInfo_.octree_ = frameInfo_.scene_
         ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
     frameInfo_.reflectionProbeManager_ = frameInfo_.octree_
-        ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>(LOCAL) : nullptr;
+        ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>() : nullptr;
 
     return frameInfo_.octree_ && frameInfo_.camera_;
 }

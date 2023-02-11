@@ -24,6 +24,7 @@
 
 #include "../Core/Attribute.h"
 #include "../Core/Signal.h"
+#include "../Core/TypeInfo.h"
 #include "../Container/Ptr.h"
 
 #include <EASTL/functional.h>
@@ -88,6 +89,20 @@ public:
     unsigned GetNumAttributes() const { return attributes_.size(); }
     /// @}
 
+    /// @name Metadata
+    /// @{
+    void SetMetadata(const StringHash& key, const Variant& value) { metadata_[key] = value; }
+    const Variant& GetMetadata(const StringHash& key) const
+    {
+        auto elem = metadata_.find(key);
+        return elem != metadata_.end() ? elem->second : Variant::EMPTY;
+    }
+    template <class T> T GetMetadata(const StringHash& key) const { return GetMetadata(key).Get<T>(); }
+    void SetScopeHint(AttributeScopeHint hint) { scopeHint_ = hint; }
+    AttributeScopeHint GetScopeHint() const { return scopeHint_; }
+    AttributeScopeHint GetEffectiveScopeHint() const;
+    /// @}
+
 private:
     Context* context_{};
 
@@ -97,6 +112,11 @@ private:
     ObjectFactoryCallback createObject_{};
     /// Category of the object.
     ea::string category_;
+
+    /// Reflection metadata.
+    ea::unordered_map<StringHash, Variant> metadata_;
+    /// Scope hint for the entire object.
+    AttributeScopeHint scopeHint_{};
 
     /// Attributes of the Serializable.
     ea::vector<AttributeInfo> attributes_;

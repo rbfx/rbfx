@@ -25,6 +25,7 @@
 #include "../Container/Functors.h"
 #include "../Core/Context.h"
 #include "../Core/Exception.h"
+#include "../Core/StringUtils.h"
 #include "../Graphics/AnimatedModel.h"
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
@@ -50,17 +51,21 @@
 #include "../Resource/Image.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "../Scene/PrefabResource.h"
 #include "../Scene/Scene.h"
 #include "../Utility/GLTFImporter.h"
 
 #include <tiny_gltf.h>
 
+#include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
 #include <EASTL/unordered_map.h>
 
+#include <cctype>
 #include <exception>
+#include <regex>
 
 #include "../DebugNew.h"
 
@@ -83,6 +88,55 @@ ea::array<T, N> ToArray(const U& vec)
     return result;
 }
 
+bool IsWordBorder(unsigned char first, unsigned char second)
+{
+    // Blanks and punctuation is always considered to be a word border
+    if (std::isblank(first) || std::ispunct(first))
+        return true;
+
+    // If symbol class changed, it is the word border
+    if (std::isalpha(first) != std::isalpha(second))
+        return true;
+
+    // If was lower case and became upper case, it is the word border
+    if (std::islower(first) && std::isupper(second))
+        return true;
+
+    return false;
+}
+
+unsigned FindCommonPrefixWord(const ea::string& lhs, const ea::string& rhs,
+    bool preserveNonEmptyLeft = true, bool preserveNonEmptyRight = true)
+{
+    if (lhs.empty() || rhs.empty())
+        return 0;
+
+    const unsigned minLength = ea::min(
+        lhs.size() - (preserveNonEmptyLeft ? 1 : 0),
+        rhs.size() - (preserveNonEmptyRight ? 1 : 0));
+    auto [iter, iter2] = ea::mismatch(lhs.begin(), ea::next(lhs.begin(), minLength), rhs.begin());
+
+    while (iter != lhs.begin())
+    {
+        const auto prev = ea::prev(iter);
+        if (IsWordBorder(*prev, *iter))
+            break;
+        --iter;
+    }
+    return static_cast<unsigned>(iter - lhs.begin());
+}
+
+unsigned FindCommonPrefixWord(const StringVector& strings)
+{
+    if (strings.size() <= 1)
+        return 0;
+
+    ea::string prefix = strings[0].substr(0, FindCommonPrefixWord(strings[0], strings[1]));
+    for (unsigned i = 2; i < strings.size(); ++i)
+        prefix = prefix.substr(0, FindCommonPrefixWord(prefix, strings[i], false));
+    return prefix.size();
+}
+
 bool IsNegativeScale(const Vector3& scale) { return scale.x_ * scale.y_ * scale.y_ < 0.0f; }
 
 Vector3 MirrorX(const Vector3& vec) { return { -vec.x_, vec.y_, vec.z_ }; }
@@ -101,7 +155,35 @@ Matrix3x4 MirrorX(Matrix3x4 mat)
     return mat;
 }
 
-static auto transformMirrorX = [](const auto& value) { return MirrorX(value); };
+template <class T>
+T ConditionalMirrorX(const T& value, bool mirror)
+{
+    return mirror ? MirrorX(value) : value;
+}
+
+/// Inline transformation applied to the scene at the lowest level.
+struct InlineTransform
+{
+    bool mirrorX_{};
+    float scale_{1.0f};
+
+    Vector3 ApplyToPosition(const Vector3& vec) const
+    {
+        return scale_ * ConditionalMirrorX(vec, mirrorX_);
+    }
+
+    Quaternion ApplyToRotation(const Quaternion& quat) const
+    {
+        return ConditionalMirrorX(quat, mirrorX_);
+    }
+
+    Matrix3x4 ApplyToInverseBindMatrix(const Matrix3x4& mat) const
+    {
+        return Matrix3x4::FromScale(scale_)
+            * ConditionalMirrorX(mat, mirrorX_)
+            * Matrix3x4::FromScale(1.0f / scale_);
+    }
+};
 
 /// Raw imported input, parameters and generic output layout.
 class GLTFImporterBase : public NonCopyable
@@ -169,6 +251,7 @@ public:
         auto cache = context_->GetSubsystem<ResourceCache>();
         cache->AddManualResource(resource);
         manualResources_.emplace_back(resource->GetType(), resource->GetName());
+        resource->SetAbsoluteFileName(GetAbsoluteFileName(resource->GetName()));
     }
 
     void SaveResource(Resource* resource)
@@ -178,14 +261,6 @@ public:
             throw RuntimeException("Cannot save imported resource");
         resource->SetAbsoluteFileName(fileName);
         resource->SaveFile(fileName);
-    }
-
-    void SaveResource(Scene* scene)
-    {
-        XMLFile xmlFile(scene->GetContext());
-        XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
-        scene->SaveXML(rootElement);
-        xmlFile.SaveFile(scene->GetFileName());
     }
 
     const tg::Model& GetModel() const { return model_; }
@@ -558,6 +633,9 @@ public:
         , bufferReader_(bufferReader)
         , model_(base_.GetModel())
     {
+        inlineTransform_.mirrorX_ = base.GetSettings().mirrorX_;
+        inlineTransform_.scale_ = base.GetSettings().scale_;
+
         ProcessMeshMorphs();
         InitializeParents();
         InitializeTrees();
@@ -572,7 +650,7 @@ public:
         ImportAnimations();
     }
 
-    bool IsDeepMirrored() const { return isDeepMirrored_; }
+    const InlineTransform& GetInlineTransform() const { return inlineTransform_; }
 
     const GLTFNode& GetNode(int nodeIndex) const
     {
@@ -740,9 +818,17 @@ private:
 
     void ConvertToLeftHandedCoordinates()
     {
-        isDeepMirrored_ = HasMirroredMeshes(rootNodes_, true);
-        if (!isDeepMirrored_)
+        // If most of geometry is mirrored, we need to undo that by mirroring the scene root nodes
+        const bool isMostlyMirrored = HasMostlyMirroredGeometry();
+        const bool needDeepMirror = isMostlyMirrored == inlineTransform_.mirrorX_;
+        const bool needShallowMirror = isMostlyMirrored;
+
+        inlineTransform_.mirrorX_ = needDeepMirror;
+
+        if (needShallowMirror)
         {
+            // If the scene already had negative scale and we reverted it, no need to do deep mirroring.
+            // Mirror only root nodes.
             for (const GLTFNodePtr& node : rootNodes_)
             {
                 node->position_ = MirrorX(node->position_);
@@ -750,37 +836,52 @@ private:
                 node->scale_ = MirrorX(node->scale_);
             }
         }
-        else
-        {
-            for (const GLTFNodePtr& node : rootNodes_)
-                DeepMirror(*node);
-        }
+
+        // Apply inline transforms on the lowest level
+        for (const GLTFNodePtr& node : rootNodes_)
+            ApplyInlineTransform(*node);
     }
 
-    bool HasMirroredMeshes(const ea::vector<GLTFNodePtr>& nodes, bool isParentMirrored) const
+    /// Return true if source model is has a lot of mirrored meshes.
+    bool HasMostlyMirroredGeometry() const
     {
-        return ea::any_of(nodes.begin(), nodes.end(),
-            [&](const GLTFNodePtr& node) { return HasMirroredMeshes(*node, isParentMirrored); });
+        unsigned totalMeshes = 0;
+        unsigned mirroredMeshes = 0;
+        CountMirroredMeshes(rootNodes_, false, totalMeshes, mirroredMeshes);
+        return mirroredMeshes > 0 && mirroredMeshes > totalMeshes / 2;
     }
 
-    bool HasMirroredMeshes(GLTFNode& node, bool isParentMirrored) const
+    void CountMirroredMeshes(const ea::vector<GLTFNodePtr>& nodes, bool isParentMirrored,
+        unsigned& totalMeshes, unsigned& mirroredMeshes) const
+    {
+        for (const GLTFNodePtr& node : nodes)
+            CountMirroredMeshes(*node, isParentMirrored, totalMeshes, mirroredMeshes);
+    }
+
+    void CountMirroredMeshes(const GLTFNode& node, bool isParentMirrored,
+        unsigned& totalMeshes, unsigned& mirroredMeshes) const
     {
         const tg::Node& sourceNode = model_.nodes[node.index_];
         const bool hasMesh = sourceNode.mesh >= 0;
         const bool isMirroredLocal = IsNegativeScale(node.scale_);
         const bool isMirroredWorld = (isParentMirrored != isMirroredLocal);
-        if (isMirroredWorld && hasMesh)
-            return true;
 
-        return HasMirroredMeshes(node.children_, isMirroredWorld);
+        if (hasMesh)
+        {
+            ++totalMeshes;
+            if (isMirroredWorld)
+                ++mirroredMeshes;
+        }
+
+        CountMirroredMeshes(node.children_, isMirroredWorld, totalMeshes, mirroredMeshes);
     }
 
-    void DeepMirror(GLTFNode& node) const
+    void ApplyInlineTransform(GLTFNode& node) const
     {
-        node.position_ = MirrorX(node.position_);
-        node.rotation_ = MirrorX(node.rotation_);
+        node.position_ = inlineTransform_.ApplyToPosition(node.position_);
+        node.rotation_ = inlineTransform_.ApplyToRotation(node.rotation_);
         for (const GLTFNodePtr& node : node.children_)
-            DeepMirror(*node);
+            ApplyInlineTransform(*node);
     }
 
     void PreProcessSkins()
@@ -904,6 +1005,8 @@ private:
             skeleton.index_ = skeletonIndex;
             InitializeSkeletonRootNode(skeleton);
             AssignSkeletonBoneNames(skeleton);
+            if (base_.GetSettings().cleanupBoneNames_)
+                CleanupSkeletonBoneNames(skeleton);
         }
     }
 
@@ -967,6 +1070,24 @@ private:
         });
     }
 
+    void CleanupSkeletonBoneNames(GLTFSkeleton& skeleton)
+    {
+        const StringVector boneNames = skeleton.boneNameToNode_.keys();
+        const unsigned commonPrefix = FindCommonPrefixWord(boneNames);
+
+        ea::unordered_map<ea::string, GLTFNode*> newBoneNameToNode;
+        for (const auto& [oldBoneName, boneNode] : skeleton.boneNameToNode_)
+        {
+            const ea::string newBoneName = oldBoneName.substr(commonPrefix);
+            URHO3D_ASSERT(!newBoneName.empty());
+
+            newBoneNameToNode.emplace(newBoneName, boneNode);
+            boneNode->uniqueBoneName_ = newBoneName;
+        }
+
+        skeleton.boneNameToNode_ = ea::move(newBoneNameToNode);
+    }
+
     void InitializeSkins()
     {
         const unsigned numSkins = model_.skins.size();
@@ -1024,7 +1145,7 @@ private:
 
             for (unsigned i = 0; i < sourceSkin.joints.size(); ++i)
                 skin.inverseBindMatrices_[i] = Matrix3x4{ sourceBindMatrices[i].Transpose() };
-            MirrorIfNecessary(skin.inverseBindMatrices_);
+            ApplyInlineTransformToInverseBindMatrix(skin.inverseBindMatrices_);
         }
 
         // Generate skeleton bones
@@ -1244,7 +1365,7 @@ private:
                 {
                     track.positionKeys_ = channelKeys;
                     track.positionValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-                    MirrorIfNecessary(track.positionValues_);
+                    ApplyInlineTransformToPosition(track.positionValues_);
 
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
                         track.positionValues_ = ReadVericalSlice(track.positionValues_, 1, 3);
@@ -1256,7 +1377,7 @@ private:
                 {
                     track.rotationKeys_ = channelKeys;
                     track.rotationValues_ = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
-                    MirrorIfNecessary(track.rotationValues_);
+                    ApplyInlineTransformToRotation(track.rotationValues_);
 
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
                         track.rotationValues_ = ReadVericalSlice(track.rotationValues_, 1, 3);
@@ -1292,13 +1413,13 @@ private:
                 if (newChannel == CHANNEL_POSITION)
                 {
                     auto positionValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-                    MirrorIfNecessary(positionValues);
+                    ApplyInlineTransformToPosition(positionValues);
                     ea::copy(positionValues.begin(), positionValues.end(), ea::back_inserter(track.values_));
                 }
                 else if (newChannel == CHANNEL_ROTATION)
                 {
                     auto rotationValues = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
-                    MirrorIfNecessary(rotationValues);
+                    ApplyInlineTransformToRotation(rotationValues);
                     ea::copy(rotationValues.begin(), rotationValues.end(), ea::back_inserter(track.values_));
                 }
                 else if (newChannel == CHANNEL_SCALE)
@@ -1379,11 +1500,22 @@ private:
         return pathString;
     }
 
-    template <class T>
-    void MirrorIfNecessary(ea::vector<T>& vec) const
+    void ApplyInlineTransformToPosition(ea::vector<Vector3>& vec) const
     {
-        if (isDeepMirrored_)
-            ea::transform(vec.begin(), vec.end(), vec.begin(), transformMirrorX);
+        ea::transform(vec.begin(), vec.end(), vec.begin(),
+            [&](const auto& value) { return inlineTransform_.ApplyToPosition(value); });
+    }
+
+    void ApplyInlineTransformToRotation(ea::vector<Quaternion>& vec) const
+    {
+        ea::transform(vec.begin(), vec.end(), vec.begin(),
+            [&](const auto& value) { return inlineTransform_.ApplyToRotation(value); });
+    }
+
+    void ApplyInlineTransformToInverseBindMatrix(ea::vector<Matrix3x4>& vec) const
+    {
+        ea::transform(vec.begin(), vec.end(), vec.begin(),
+            [&](const auto& value) { return inlineTransform_.ApplyToInverseBindMatrix(value); });
     }
 
     unsigned GetChildIndex(const GLTFNode& node) const
@@ -1605,7 +1737,8 @@ private:
 
     ea::vector<GLTFNodePtr> rootNodes_;
     ea::vector<GLTFNode*> nodeByIndex_;
-    bool isDeepMirrored_{};
+
+    InlineTransform inlineTransform_;
 
     ea::vector<GLTFNode*> skinToRootNode_;
     ea::vector<unsigned> skinToSkeleton_;
@@ -1746,7 +1879,11 @@ public:
     static bool LoadImageData(tg::Image* image, const int imageIndex, std::string*, std::string*,
         int reqWidth, int reqHeight, const unsigned char* bytes, int size, void*)
     {
-        image->name = GetFileName(image->uri.c_str()).c_str();
+        if (image->name.empty())
+            image->name = GetFileName(image->uri.c_str()).c_str();
+        else
+            image->name = GetFileName(image->name.c_str()).c_str();
+
         image->as_is = true;
         image->image.resize(size);
         ea::copy_n(bytes, size, image->image.begin());
@@ -1973,15 +2110,15 @@ private:
 
         const IntVector3 metallicRoughnessImageSize = metallicRoughnessImage ? metallicRoughnessImage->GetSize() : IntVector3::ZERO;
         const IntVector3 occlusionImageSize = occlusionImage ? occlusionImage->GetSize() : IntVector3::ZERO;
-        const IntVector2 repackedImageSize = VectorMax(metallicRoughnessImageSize.ToVector2(), occlusionImageSize.ToVector2());
+        const IntVector2 repackedImageSize = VectorMax(metallicRoughnessImageSize.ToIntVector2(), occlusionImageSize.ToIntVector2());
 
         if (repackedImageSize.x_ <= 0 || repackedImageSize.y_ <= 0)
             throw RuntimeException("Repacked metallic-roughness-occlusion texture has invalid size");
 
-        if (metallicRoughnessImage && metallicRoughnessImageSize.ToVector2() != repackedImageSize)
+        if (metallicRoughnessImage && metallicRoughnessImageSize.ToIntVector2() != repackedImageSize)
             metallicRoughnessImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
 
-        if (occlusionImage && occlusionImageSize.ToVector2() != repackedImageSize)
+        if (occlusionImage && occlusionImageSize.ToIntVector2() != repackedImageSize)
             occlusionImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
 
         auto finalImage = MakeShared<Image>(base_.GetContext());
@@ -2356,6 +2493,9 @@ public:
         , materialImporter_(materialImporter)
     {
         InitializeModels();
+        if (base_.GetSettings().combineLODs_)
+            CombineLODs();
+        CookModels();
     }
 
     void SaveResources()
@@ -2377,12 +2517,17 @@ public:
 private:
     struct ImportedModel
     {
-        GLTFNodePtr skeleton_;
+        ea::string meshName_;
+        ea::optional<unsigned> skin_;
+        ea::string baseMeshName_;
+        ea::optional<float> lodDistance_;
+
         SharedPtr<ModelView> modelView_;
         SharedPtr<Model> model_;
         StringVector materials_;
+
+        bool alreadyProcessedAsLOD_{};
     };
-    using ImportedModelPtr = ea::shared_ptr<ImportedModel>;
 
     void InitializeModels()
     {
@@ -2390,13 +2535,131 @@ private:
         {
             const tg::Mesh& sourceMesh = model_.meshes[pair->mesh_];
 
-            ImportedModel model;
+            ImportedModel& model = models_.emplace_back();
+            model.meshName_ = sourceMesh.name.c_str();
+            model.skin_ = pair->skin_;
+
+            const auto [baseName, distance] = ParseLodDistance(model.meshName_);
+            model.baseMeshName_ = baseName;
+            model.lodDistance_ = distance;
+
             model.modelView_ = ImportModelView(sourceMesh, hierarchyAnalyzer_.GetSkinBones(pair->skin_));
-            model.model_ = model.modelView_->ExportModel();
-            model.materials_ = model.modelView_->ExportMaterialList();
-            base_.AddToResourceCache(model.model_);
-            models_.push_back(model);
         }
+    }
+
+    void CombineLODs()
+    {
+        for (ImportedModel& importedModel : models_)
+        {
+            if (!importedModel.lodDistance_ || importedModel.alreadyProcessedAsLOD_)
+                continue;
+
+            const auto lods = FindLods(importedModel);
+            URHO3D_ASSERT(!lods.empty());
+
+            auto finalModelView = lods[0]->modelView_;
+            auto& finalGeometries = finalModelView->GetGeometries();
+
+            // Set LOD distance for the first LOD
+            for (GeometryView& geometryView : finalGeometries)
+            {
+                if (geometryView.lods_.empty())
+                    continue;
+
+                if (geometryView.lods_.size() > 1)
+                    geometryView.lods_.resize(1);
+                geometryView.lods_[0].lodDistance_ = *lods[0]->lodDistance_;
+            }
+
+            // Append other LODs
+            // TODO: Handle materials more gracefully
+            for (unsigned lodIndex = 1; lodIndex < lods.size(); ++lodIndex)
+            {
+                const auto& otherModelView = lods[lodIndex]->modelView_;
+                const auto& otherGeometries = otherModelView->GetGeometries();
+                const float lodDistance = *lods[lodIndex]->lodDistance_;
+
+                const unsigned numOtherGeometries = otherGeometries.size();
+                if (numOtherGeometries > finalGeometries.size())
+                    finalGeometries.resize(numOtherGeometries);
+
+                for (size_t geometryIndex = 0; geometryIndex < numOtherGeometries; ++geometryIndex)
+                {
+                    const auto& otherGeometryView = otherGeometries[geometryIndex];
+                    auto& geometryView = finalGeometries[geometryIndex];
+
+                    geometryView.lods_.push_back(otherGeometryView.lods_[0]);
+                    geometryView.lods_.back().lodDistance_ = lodDistance;
+                }
+            }
+
+            for (ImportedModel* otherImportedModel : lods)
+            {
+                otherImportedModel->modelView_ = finalModelView;
+                otherImportedModel->alreadyProcessedAsLOD_ = true;
+            }
+        }
+    }
+
+    void CookModels()
+    {
+        ea::unordered_map<SharedPtr<ModelView>, SharedPtr<Model>> viewToModel;
+        for (ImportedModel& importedModel : models_)
+        {
+            importedModel.materials_ = importedModel.modelView_->ExportMaterialList();
+
+            SharedPtr<Model>& model = viewToModel[importedModel.modelView_];
+            if (!model)
+            {
+                const ea::string modelName =
+                    base_.GetResourceName(importedModel.baseMeshName_, "Models/", "Model", ".mdl");
+                importedModel.modelView_->SetName(modelName);
+
+                model = importedModel.modelView_->ExportModel();
+                base_.AddToResourceCache(model);
+                modelsToSave_.push_back(model);
+            }
+
+            importedModel.model_ = model;
+        }
+    }
+
+    ea::vector<ImportedModel*> FindLods(const ImportedModel& importedModel)
+    {
+        ea::map<float, ImportedModel*> lods;
+        for (ImportedModel& otherModel : models_)
+        {
+            if (otherModel.baseMeshName_ == importedModel.baseMeshName_ && otherModel.lodDistance_
+                && otherModel.skin_ == importedModel.skin_)
+            {
+                if (lods.contains(*otherModel.lodDistance_))
+                {
+                    URHO3D_LOGERROR("Multiple LODs with the same distance {} for model {}", *otherModel.lodDistance_,
+                        otherModel.meshName_);
+                    continue;
+                }
+
+                lods.emplace(*otherModel.lodDistance_, &otherModel);
+            }
+        }
+
+        ea::vector<ImportedModel*> result;
+        const auto takeSecond = [](const auto& pair) { return pair.second; };
+        ea::transform(lods.begin(), lods.end(), ea::back_inserter(result), takeSecond);
+        return result;
+    }
+
+    static ea::pair<ea::string, ea::optional<float>> ParseLodDistance(const ea::string& name)
+    {
+        static const std::regex r{R"(^(.*)_LOD(\d+(\.\d+)?)$)"};
+        std::cmatch match;
+        if (std::regex_match(name.c_str(), match, r))
+        {
+            const ea::string baseName{match[1].first, match[1].second};
+            const float distance = ToFloat(ea::string{match[2].first, match[2].second});
+            return {baseName, distance};
+        }
+        return {name, ea::nullopt};
     }
 
     const ImportedModel& GetImportedModel(int meshIndex, int skinIndex) const
@@ -2407,10 +2670,7 @@ private:
 
     SharedPtr<ModelView> ImportModelView(const tg::Mesh& sourceMesh, const ea::vector<BoneView>& bones)
     {
-        const ea::string modelName = base_.GetResourceName(sourceMesh.name.c_str(), "Models/", "Model", ".mdl");
-
         auto modelView = MakeShared<ModelView>(base_.GetContext());
-        modelView->SetName(modelName);
         modelView->SetBones(bones);
 
         const unsigned numMorphWeights = sourceMesh.weights.size();
@@ -2475,8 +2735,11 @@ private:
             }
         }
 
-        if (hierarchyAnalyzer_.IsDeepMirrored())
+        const InlineTransform& transform = hierarchyAnalyzer_.GetInlineTransform();
+        if (transform.mirrorX_)
             modelView->MirrorGeometriesX();
+        if (transform.scale_ != 1.0f)
+            modelView->ScaleGeometries(transform.scale_);
 
         modelView->CalculateMissingNormals(true);
         modelView->CalculateMissingTangents();
@@ -2580,7 +2843,7 @@ private:
 
                 const auto colors = bufferReader_.ReadAccessorChecked<Vector3>(accessor);
                 for (unsigned i = 0; i < accessor.count; ++i)
-                    vertices[i].color_[semanticsIndex] = { colors[i], 1.0f };
+                    vertices[i].color_[semanticsIndex] = {colors[i], 1.0f};
             }
             else if (accessor.type == TINYGLTF_TYPE_VEC4)
             {
@@ -2660,6 +2923,7 @@ private:
     GLTFMaterialImporter& materialImporter_;
 
     ea::vector<ImportedModel> models_;
+    ea::vector<SharedPtr<Model>> modelsToSave_;
 };
 
 /// Utility to import animations.
@@ -2962,7 +3226,7 @@ public:
     void SaveResources()
     {
         for (const ImportedScene& scene : scenes_)
-            base_.SaveResource(scene.scene_);
+            base_.SaveResource(scene.prefab_);
     }
 
 private:
@@ -2970,6 +3234,7 @@ private:
     {
         unsigned index_{};
         SharedPtr<Scene> scene_;
+        SharedPtr<PrefabResource> prefab_;
         ea::unordered_map<Node*, unsigned> nodeToIndex_;
         ea::unordered_map<unsigned, Node*> indexToNode_;
     };
@@ -2984,31 +3249,34 @@ private:
             ImportedScene& scene = scenes_[sceneIndex];
             scene.index_ = sceneIndex;
             scene.scene_ = MakeShared<Scene>(base_.GetContext());
-            ImportScene(scene);
+
+            const ea::string sceneName = numScenes == 1 ? "Prefab" : sourceScene.name.c_str();
+            const ea::string sceneFolder = numScenes == 1 ? "" : "Prefabs/";
+            ImportScene(scene, sceneName, sceneFolder);
         }
     }
 
-    void ImportScene(ImportedScene& importedScene)
+    void ImportScene(ImportedScene& importedScene, const ea::string& sceneName, const ea::string& prefix)
     {
+        const GLTFImporterSettings& settings = base_.GetSettings();
         const tg::Scene& sourceScene = model_.scenes[importedScene.index_];
         auto scene = importedScene.scene_;
 
-        const ea::string sceneName = base_.GetResourceName(sourceScene.name.c_str(), "", "Scene", ".xml");
-        scene->SetFileName(base_.GetAbsoluteFileName(sceneName));
+        const ea::string prefabName = base_.GetResourceName(sceneName, prefix, "Prefab", ".prefab");
         scene->CreateComponent<Octree>();
 
         auto renderPipeline = scene->CreateComponent<RenderPipeline>();
-        if (base_.GetSettings().preview_.highRenderQuality_)
+        if (settings.preview_.highRenderQuality_)
         {
-            auto settings = renderPipeline->GetSettings();
-            settings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
-            settings.sceneProcessor_.pcfKernelSize_ = 5;
-            settings.antialiasing_ = PostProcessAntialiasing::FXAA3;
-            renderPipeline->SetSettings(settings);
+            auto pipelineSettings = renderPipeline->GetSettings();
+            pipelineSettings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
+            pipelineSettings.sceneProcessor_.pcfKernelSize_ = 5;
+            pipelineSettings.antialiasing_ = PostProcessAntialiasing::FXAA3;
+            renderPipeline->SetSettings(pipelineSettings);
         }
 
-        Node* rootNode = scene->CreateChild("Imported Scene");
-        rootNode->SetScale(base_.GetSettings().scale_);
+        Node* rootNode = scene->CreateChild(settings.assetName_);
+        rootNode->SetRotation(settings.rotation_);
 
         if (animationImporter_.HasSceneAnimations())
             InitializeAnimationController(*rootNode, ea::nullopt);
@@ -3022,7 +3290,27 @@ private:
                 scene->CreateChild("Disabled Node Placeholder");
         }
 
+        if (settings.cleanupRootNodes_)
+        {
+            Node* newRootNode = rootNode;
+            while (newRootNode->GetNumChildren() == 1 && newRootNode->GetNumComponents() == 0)
+                newRootNode = newRootNode->GetChild(0u);
+
+            if (newRootNode != rootNode)
+            {
+                newRootNode->SetParent(scene);
+                newRootNode->SetName(rootNode->GetName());
+                rootNode->Remove();
+            }
+        }
+
         InitializeDefaultSceneContent(importedScene);
+
+        importedScene.prefab_ = MakeShared<PrefabResource>(base_.GetContext());
+        importedScene.prefab_->GetMutableScenePrefab() = scene->GeneratePrefab();
+        importedScene.prefab_->NormalizeIds();
+        importedScene.prefab_->SetName(prefabName);
+        base_.AddToResourceCache(importedScene.prefab_);
     }
 
     void ImportNode(ImportedScene& importedScene, Node& parent, const GLTFNode& sourceNode)
@@ -3309,10 +3597,20 @@ private:
 void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
+
+    SerializeValue(archive, "assetName", value.assetName_);
+
+    SerializeValue(archive, "mirrorX", value.mirrorX_);
     SerializeValue(archive, "scale", value.scale_);
+    SerializeValue(archive, "rotation", value.rotation_);
+
+    SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
+    SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
+    SerializeValue(archive, "combineLODs", value.combineLODs_);
+    SerializeValue(archive, "repairLooping", value.repairLooping_);
+
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
-    SerializeValue(archive, "repairLooping", value.repairLooping_);
 
     SerializeValue(archive, "addLights", value.preview_.addLights_);
     SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);

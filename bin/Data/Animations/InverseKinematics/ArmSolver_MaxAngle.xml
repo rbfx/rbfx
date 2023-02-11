@@ -1,0 +1,12 @@
+<animation length="4.0">
+    <variant name="@IKArmSolver#0/Max Angle" type="Float" interpolation="spline" tension="0.7">
+        <keyframe time="0.0" value="180.0"/>
+        <keyframe time="1.0" value="30.0"/>
+        <keyframe time="2.0" value="180.0"/>
+    </variant>
+    <variant name="@IKArmSolver#1/Max Angle" type="Float" interpolation="spline" tension="0.7">
+        <keyframe time="0.0" value="180.0"/>
+        <keyframe time="1.0" value="30.0"/>
+        <keyframe time="2.0" value="180.0"/>
+    </variant>
+</animation>

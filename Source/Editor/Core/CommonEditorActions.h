@@ -22,12 +22,15 @@
 
 #pragma once
 
+#include "../Core/CommonEditorActionBuilders.h"
 #include "../Core/UndoManager.h"
 
 #include <Urho3D/Scene/Component.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/PackedSceneData.h>
+
+#include <EASTL/optional.h>
 
 namespace Urho3D
 {
@@ -42,6 +45,29 @@ public:
     void Redo() const override {}
     void Undo() const override {}
     /// @}
+};
+
+/// Composite action.
+class CompositeEditorAction : public EditorAction
+{
+public:
+    /// Add action to composite.
+    void AddAction(const SharedPtr<EditorAction>& action) { actions_.push_back(action); }
+    template <class T, class... Args> void EmplaceAction(Args&&... args)
+    {
+        actions_.push_back(MakeShared<T>(ea::forward<Args>(args)...));
+    }
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanRedo() const override;
+    bool CanUndo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    /// @}
+
+private:
+    ea::vector<SharedPtr<EditorAction>> actions_;
 };
 
 /// Create or remove node.
@@ -240,7 +266,7 @@ private:
 class ReparentNodeAction : public EditorAction
 {
 public:
-    ReparentNodeAction(Node* node, Node* oldParent);
+    ReparentNodeAction(Node* node, Node* newParent);
 
     /// Implement EditorAction.
     /// @{
@@ -251,11 +277,12 @@ public:
     /// @}
 
 private:
-    void Reparent(unsigned parentId) const;
+    void Reparent(unsigned parentId, ea::optional<unsigned> index) const;
 
     const WeakPtr<Scene> scene_;
     const unsigned nodeId_{};
     const unsigned oldParentId_{};
+    const unsigned oldIndex_{};
     unsigned newParentId_{};
 };
 
@@ -264,6 +291,7 @@ class ChangeNodeSubtreeAction : public EditorAction
 {
 public:
     ChangeNodeSubtreeAction(Scene* scene, const PackedNodeData& oldData, Node* newData);
+    ChangeNodeSubtreeAction(Scene* scene, const PackedNodeData& oldData, const PackedNodeData& newData);
 
     /// Implement EditorAction.
     /// @{
@@ -280,6 +308,29 @@ private:
     const PackedNodeData oldData_;
     PackedNodeData newData_;
     bool newRemoved_{};
+};
+
+/// Change entire scene.
+class ChangeSceneAction : public EditorAction
+{
+public:
+    ChangeSceneAction(Scene* scene, const PackedSceneData& oldData);
+    ChangeSceneAction(Scene* scene, const PackedSceneData& oldData, const PackedSceneData& newData);
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void UpdateScene(const PackedSceneData& data) const;
+
+    const WeakPtr<Scene> scene_;
+    const PackedSceneData oldData_;
+    PackedSceneData newData_;
 };
 
 }

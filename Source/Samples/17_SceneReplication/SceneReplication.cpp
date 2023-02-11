@@ -45,6 +45,7 @@
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
 #include <Urho3D/Replica/ClientReplica.h>
 #include <Urho3D/Replica/ReplicationManager.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/Font.h>
@@ -187,12 +188,13 @@ void SceneReplication::CreateScene()
 
     // Create octree and physics world with default settings. Create them as local so that they are not needlessly replicated
     // when a client connects
-    scene_->CreateComponent<Octree>(LOCAL);
-    scene_->CreateComponent<PhysicsWorld>(LOCAL);
+    scene_->CreateComponent<Octree>();
+    scene_->CreateComponent<PhysicsWorld>();
+    scene_->CreateComponent<ReplicationManager>();
 
     // All static scene content and the camera are also created as local, so that they are unaffected by scene replication and are
     // not removed from the client upon connection. Create a Zone component first for ambient lighting & fog control.
-    Node* zoneNode = scene_->CreateChild("Zone", LOCAL);
+    Node* zoneNode = scene_->CreateChild("Zone");
     auto* zone = zoneNode->CreateComponent<Zone>();
     zone->SetBoundingBox(BoundingBox(-1000.0f, 1000.0f));
     zone->SetAmbientColor(Color(0.1f, 0.1f, 0.1f));
@@ -200,7 +202,7 @@ void SceneReplication::CreateScene()
     zone->SetFogEnd(300.0f);
 
     // Create a directional light without shadows
-    Node* lightNode = scene_->CreateChild("DirectionalLight", LOCAL);
+    Node* lightNode = scene_->CreateChild("DirectionalLight");
     lightNode->SetDirection(Vector3(0.5f, -1.0f, 0.5f));
     auto* light = lightNode->CreateComponent<Light>();
     light->SetLightType(LIGHT_DIRECTIONAL);
@@ -212,7 +214,7 @@ void SceneReplication::CreateScene()
     {
         for (int x = -20; x <= 20; ++x)
         {
-            Node* floorNode = scene_->CreateChild("FloorTile", LOCAL);
+            Node* floorNode = scene_->CreateChild("FloorTile");
             floorNode->SetPosition(Vector3(x * 20.2f, -0.5f, y * 20.2f));
             floorNode->SetScale(Vector3(20.0f, 1.0f, 20.0f));
             auto* floorObject = floorNode->CreateComponent<StaticModel>();
@@ -231,7 +233,7 @@ void SceneReplication::CreateScene()
     // network messages. Furthermore, because the client removes all replicated scene nodes when connecting to a server scene,
     // the screen would become blank if the camera node was replicated (as only the locally created camera is assigned to a
     // viewport in SetupViewports() below)
-    cameraNode_ = scene_->CreateChild("Camera", LOCAL);
+    cameraNode_ = scene_->CreateChild("Camera");
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 
@@ -364,11 +366,11 @@ void SceneReplication::UpdateButtons()
 Node* SceneReplication::CreateControllableObject(Connection* owner)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    auto prefab = cache->GetResource<XMLFile>("Objects/SceneReplicationPlayer.xml");
+    auto prefab = cache->GetResource<PrefabResource>("Prefabs/SceneReplicationPlayer.prefab");
 
     // Instantiate common components from prefab so they will be replicated on the client.
     const Vector3 position{Vector3(Random(40.0f) - 20.0f, 5.0f, Random(40.0f) - 20.0f)};
-    Node* playerNode = scene_->InstantiateXML(prefab->GetRoot(), position, Quaternion::IDENTITY, LOCAL);
+    Node* playerNode = scene_->InstantiatePrefab(prefab->GetNodePrefab(), position, Quaternion::IDENTITY);
     playerNode->SetName("Ball");
 
     // NetworkObject should never be a part of client prefab

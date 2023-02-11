@@ -480,33 +480,15 @@ StringVariantMap Deserializer::ReadStringVariantMap()
 
 unsigned Deserializer::ReadVLE()
 {
-    unsigned ret;
-    unsigned char byte;
+    unsigned ret{};
+    unsigned offset{};
 
-    byte = ReadUByte();
-    ret = (unsigned)(byte & 0x7fu);
-    if (byte < 0x80)
-        return ret;
+    for (unsigned i = 0; i < MaxVariableLengthBytes<unsigned>; ++i)
+    {
+        if (DecodeVariableLength(ret, offset, ReadUByte()))
+            break;
+    }
 
-    byte = ReadUByte();
-    ret |= ((unsigned)(byte & 0x7fu)) << 7u;
-    if (byte < 0x80)
-        return ret;
-
-    byte = ReadUByte();
-    ret |= ((unsigned)(byte & 0x7fu)) << 14u;
-    if (byte < 0x80)
-        return ret;
-
-    byte = ReadUByte();
-    ret |= ((unsigned)byte) << 21u;
-    return ret;
-}
-
-unsigned Deserializer::ReadNetID()
-{
-    unsigned ret = 0;
-    Read(&ret, 3);
     return ret;
 }
 

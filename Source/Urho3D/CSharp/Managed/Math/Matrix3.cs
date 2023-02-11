@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,10 @@ namespace Urho3DNet
 {
     /// 3x3 matrix for rotation and scaling.
     [StructLayout(LayoutKind.Sequential)]
-    public struct Matrix3 : IEquatable<Matrix3>
+    public struct Matrix3 : IEquatable<Matrix3>, IApproximateEquatable<Matrix3>
     {
+        public static IEqualityComparer<Matrix3> ApproximateEqualityComparer => ApproximateEqualityComparer<Matrix3>.Default;
+
         /// Construct from values or identity matrix by default.
         public Matrix3(float v00 = 1, float v01 = 0, float v02 = 0,
             float v10 = 0, float v11 = 1, float v12 = 0,
@@ -60,6 +62,14 @@ namespace Urho3DNet
             M20 = data[6];
             M21 = data[7];
             M22 = data[8];
+        }
+
+        /// <summary>
+        /// Construct from an angle (in degrees) and axis.
+        /// </summary>
+        public Matrix3(float angle, Vector3 axis)
+        {
+            this = new Quaternion(angle, axis).RotationMatrix;
         }
 
         /// Test for equality with another matrix without epsilon.
@@ -224,7 +234,22 @@ namespace Urho3DNet
             );
         }
 
+        /// <summary>
         /// Test for equality with another matrix with epsilon.
+        /// </summary>
+        public bool ApproximatelyEquivalent(Matrix3 rhs, float epsilon = MathDefs.Epsilon)
+        {
+            return MathDefs.ApproximatelyEquivalent(M00, rhs.M00, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M01, rhs.M01, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M02, rhs.M02, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M10, rhs.M10, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M11, rhs.M11, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M12, rhs.M12, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M20, rhs.M20, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M21, rhs.M21, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M22, rhs.M22, epsilon);
+        }
+
         public bool Equals(Matrix3 rhs)
         {
             return this == rhs;
@@ -232,7 +257,7 @@ namespace Urho3DNet
 
         public override bool Equals(object obj)
         {
-            return obj is Matrix3 other && Equals(other);
+            return obj is Matrix3 other && this == other;
         }
 
         /// Return inverse.
@@ -346,21 +371,22 @@ namespace Urho3DNet
             0, 1, 0,
             0, 0, 1);
 
+
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = M00.GetHashCode();
-                hashCode = (hashCode * 397) ^ M01.GetHashCode();
-                hashCode = (hashCode * 397) ^ M02.GetHashCode();
-                hashCode = (hashCode * 397) ^ M10.GetHashCode();
-                hashCode = (hashCode * 397) ^ M11.GetHashCode();
-                hashCode = (hashCode * 397) ^ M12.GetHashCode();
-                hashCode = (hashCode * 397) ^ M20.GetHashCode();
-                hashCode = (hashCode * 397) ^ M21.GetHashCode();
-                hashCode = (hashCode * 397) ^ M22.GetHashCode();
-                return hashCode;
-            }
+            var hashCode = new HashCode();
+            hashCode.Add(M00);
+            hashCode.Add(M01);
+            hashCode.Add(M02);
+            hashCode.Add(M10);
+            hashCode.Add(M11);
+            hashCode.Add(M12);
+            hashCode.Add(M20);
+            hashCode.Add(M21);
+            hashCode.Add(M22);
+            return hashCode.ToHashCode();
         }
     };
 }

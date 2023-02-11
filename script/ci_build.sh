@@ -47,7 +47,7 @@ declare -A android_types=(
 
 generators_windows_mingw=('-G' 'MinGW Makefiles')
 generators_windows=('-G' 'Visual Studio 17 2022')
-generators_uwp=('-G' 'Visual Studio 17 2022' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0')
+generators_uwp=('-G' 'Visual Studio 17 2022' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' '-DURHO3D_PACKAGING=ON')
 generators_linux=('-G' 'Ninja')
 generators_web=('-G' 'Ninja')
 generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
@@ -59,7 +59,7 @@ toolchains_ios=(
     '-DDEPLOYMENT_TARGET=11'
 )
 toolchains_web=(
-    '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake'
+    "-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
     "-DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/"
     '-DURHO3D_PROFILING=OFF'
 )
@@ -208,6 +208,7 @@ function action-generate() {
     ci_cmake_params+=(
         "-DCMAKE_BUILD_TYPE=${types[$ci_build_type]}"
         "-DCMAKE_INSTALL_PREFIX=$ci_sdk_dir"
+        "-DURHO3D_NETFX=net$DOTNET_VERSION"
     )
 
     if [[ "$ci_compiler" != "msvc" ]];
@@ -264,11 +265,29 @@ function action-build-android() {
 
 function action-install() {
     cmake --install $ci_build_dir --config "${types[$ci_build_type]}"
+
+    # Create deploy directory on Web.
+    if [[ "$ci_platform" == "web" ]];
+    then
+        mkdir $ci_sdk_dir/deploy
+        cp -r \
+            $ci_sdk_dir/bin/Resources.js        \
+            $ci_sdk_dir/bin/Resources.js.data   \
+            $ci_sdk_dir/bin/Samples.js          \
+            $ci_sdk_dir/bin/Samples.wasm        \
+            $ci_sdk_dir/bin/Samples.html        \
+            $ci_sdk_dir/deploy
+    fi
 }
 
 function action-test() {
     cd $ci_build_dir
     ctest --output-on-failure -C "${types[$ci_build_type]}"
+}
+
+function action-cstest() {
+    cd "$ci_build_dir/bin/${types[$ci_build_type]}"
+    dotnet test Urho3DNet.Tests.dll
 }
 
 # Invoke requested action.

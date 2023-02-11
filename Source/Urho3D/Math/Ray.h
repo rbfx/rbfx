@@ -33,6 +33,12 @@ class Frustum;
 class Plane;
 class Sphere;
 
+struct DistanceAndNormal
+{
+    Vector3 normal_{Vector3::UP};
+    float distance_{M_INFINITY};
+};
+
 /// Infinite straight line in three-dimensional space.
 /// @allfloats
 class URHO3D_API Ray
@@ -86,7 +92,10 @@ public:
     float HitDistance(const Plane& plane) const;
     /// Return hit distance to a bounding box, or infinity if no hit.
     float HitDistance(const BoundingBox& box) const;
-    /// Return hit distance to a frustum, or infinity if no hit. If solidInside parameter is true (default) rays originating from inside return zero distance, otherwise the distance to the closest plane.
+    /// Return hit distance to a bounding box with normal, or infinity if no hit.
+    DistanceAndNormal HitDistanceAndNormal(const BoundingBox& box) const;
+    /// Return hit distance to a frustum, or infinity if no hit. If solidInside parameter is true (default) rays
+    /// originating from inside return zero distance, otherwise the distance to the closest plane.
     float HitDistance(const Frustum& frustum, bool solidInside = true) const;
     /// Return hit distance to a sphere, or infinity if no hit.
     float HitDistance(const Sphere& sphere) const;

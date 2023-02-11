@@ -20,76 +20,247 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include <Urho3D/Precompiled.h>
 
-#include "../Scene/PrefabReference.h"
-
-#include "Node.h"
-#include "Urho3D/Resource/ResourceCache.h"
-#include "Urho3D/Resource/ResourceEvents.h"
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/PrefabReader.h>
+#include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabWriter.h>
 
 namespace Urho3D
 {
 
-namespace
-{
-void SetTemporaryFlag(Node* node, bool isTemporary)
-{
-    if (!node)
-    {
-        return;
-    }
-
-    node->SetTemporary(isTemporary);
-
-    ea::vector<PrefabReference*> refs;
-    node->GetComponents<PrefabReference>(refs, false);
-
-    for (auto& component : node->GetComponents())
-    {
-        component->SetTemporary(isTemporary);
-    }
-
-    for (auto& child : node->GetChildren())
-    {
-        bool isPrefabRoot = false;
-        for (auto* prefabRef: refs)
-        {
-            //Skip inner prefabs
-            if (child == prefabRef->GetRootNode())
-            {
-                isPrefabRoot = true;
-                break;;
-            }
-        }
-        if (!isPrefabRoot)
-        {
-            SetTemporaryFlag(child, isTemporary);
-        }
-    }
-}
-} // namespace
-
 PrefabReference::PrefabReference(Context* context)
     : BaseClassName(context)
-    , prefabRef_(XMLFile::GetTypeStatic())
+    , prefabRef_(PrefabReference::GetTypeStatic())
 {
 }
 
-PrefabReference::~PrefabReference() = default;
+PrefabReference::~PrefabReference()
+{
+    RemoveInstance();
+}
 
 void PrefabReference::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<PrefabReference>(Category_Scene);
 
-    URHO3D_ACTION_STATIC_LABEL("Inline", Inline, "Inline the prefab nodes");
+    URHO3D_ACTION_STATIC_LABEL("Inline", InlineConservative, "Convert prefab reference to nodes and components");
+    URHO3D_ACTION_STATIC_LABEL("Inline+", InlineAggressive, "Same as Inline. Also converts all temporary objects to persistent");
+    URHO3D_ACTION_STATIC_LABEL("Commit", CommitChanges, "Commit changes in this instance to the prefab resource");
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Preserve Transform", GetPreserveTransfrom, SetPreserveTransfrom, bool, false, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Prefab", GetPrefabAttr, SetPrefabAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Prefab", GetPrefabAttr, SetPrefabAttr, ResourceRef, ResourceRef(PrefabResource::GetTypeStatic()), AM_DEFAULT)
+        .SetScopeHint(AttributeScopeHint::Node);
 }
 
-/// Set prefab resource.
-void PrefabReference::SetPrefab(XMLFile* prefab)
+void PrefabReference::ApplyAttributes()
+{
+    if (prefabDirty_)
+    {
+        prefabDirty_ = false;
+        CreateInstance(true);
+    }
+}
+
+const NodePrefab& PrefabReference::GetNodePrefab() const
+{
+    if (node_ && prefab_)
+        return prefab_->GetNodePrefab();
+    return NodePrefab::Empty;
+}
+
+bool PrefabReference::IsInstanceMatching(const Node* node, const NodePrefab& nodePrefab, bool temporaryOnly) const
+{
+    if (!AreComponentsMatching(node, nodePrefab.GetComponents(), temporaryOnly))
+        return false;
+
+    if (!AreChildrenMatching(node, nodePrefab.GetChildren(), temporaryOnly))
+        return false;
+
+    return true;
+}
+
+bool PrefabReference::AreComponentsMatching(
+    const Node* node, const ea::vector<SerializablePrefab>& componentPrefabs, bool temporaryOnly) const
+{
+    unsigned index = 0;
+    for (const Component* component : node->GetComponents())
+    {
+        // Ignore extras, they may have been spawned by other components
+        if (index >= componentPrefabs.size())
+            return true;
+
+        if (temporaryOnly && !component->IsTemporary())
+            continue;
+
+        if (component->GetType() != componentPrefabs[index].GetTypeNameHash())
+            return false;
+
+        ++index;
+    }
+
+    return index >= componentPrefabs.size();
+}
+
+bool PrefabReference::AreChildrenMatching(const Node* node, const ea::vector<NodePrefab>& childPrefabs, bool temporaryOnly) const
+{
+    unsigned index = 0;
+    for (const Node* child : node->GetChildren())
+    {
+        // Ignore extras, they may have been spawned by other components
+        if (index >= childPrefabs.size())
+            return true;
+
+        if (temporaryOnly && !child->IsTemporary())
+            continue;
+
+        if (!IsInstanceMatching(child, childPrefabs[index], false /* ignore temporary flag */))
+            return false;
+
+        ++index;
+    }
+
+    return index >= childPrefabs.size();
+}
+
+void PrefabReference::ExportInstance(Node* node, const NodePrefab& nodePrefab, bool temporaryOnly) const
+{
+    ExportComponents(node, nodePrefab.GetComponents(), temporaryOnly);
+    ExportChildren(node, nodePrefab.GetChildren(), temporaryOnly);
+}
+
+void PrefabReference::ExportComponents(
+    Node* node, const ea::vector<SerializablePrefab>& componentPrefabs, bool temporaryOnly) const
+{
+    unsigned index = 0;
+    for (Component* component : node->GetComponents())
+    {
+        // Ignore extras, they may have been spawned by other components
+        if (index >= componentPrefabs.size())
+            return;
+
+        if (temporaryOnly && !component->IsTemporary())
+            continue;
+
+        componentPrefabs[index].Export(component, PrefabLoadFlag::KeepTemporaryState);
+
+        ++index;
+    }
+}
+
+void PrefabReference::ExportChildren(Node* node, const ea::vector<NodePrefab>& childPrefabs, bool temporaryOnly) const
+{
+    unsigned index = 0;
+    for (Node* child : node->GetChildren())
+    {
+        // Ignore extras, they may have been spawned by other components
+        if (index >= childPrefabs.size())
+            return;
+
+        if (temporaryOnly && !child->IsTemporary())
+            continue;
+
+        ExportInstance(child, childPrefabs[index], false /* ignore temporary flag */);
+
+        ++index;
+    }
+}
+
+bool PrefabReference::TryCreateInplace()
+{
+    const NodePrefab& nodePrefab = GetNodePrefab();
+
+    if (nodePrefab.IsEmpty())
+        return false;
+
+    if (!IsInstanceMatching(node_, nodePrefab, true /* temporary only */))
+        return false;
+
+    ExportInstance(node_, nodePrefab, true /* temporary only */);
+    return true;
+}
+
+void PrefabReference::RemoveTemporaryComponents(Node* node) const
+{
+    const auto& components = node->GetComponents();
+    const int numComponents = static_cast<int>(node->GetNumComponents());
+
+    for (int i = numComponents - 1; i >= 0; --i)
+    {
+        Component* component = components[i];
+        if (component->IsTemporary())
+        {
+            if (component != this)
+                node->RemoveComponent(component);
+            else
+            {
+                URHO3D_LOGWARNING("PrefabReference component should not be temporary");
+                component->SetTemporary(false);
+            }
+        }
+    }
+}
+
+void PrefabReference::RemoveTemporaryChildren(Node* node) const
+{
+    const auto& children = node->GetChildren();
+    const int numChildren = static_cast<int>(node->GetNumChildren());
+
+    for (int i = numChildren - 1; i >= 0; --i)
+    {
+        Node* child = children[i];
+        if (child->IsTemporary())
+            node->RemoveChild(child);
+    }
+}
+
+void PrefabReference::RemoveInstance()
+{
+    if (Node* instanceNode = instanceNode_)
+    {
+        RemoveTemporaryComponents(instanceNode);
+        RemoveTemporaryChildren(instanceNode);
+    }
+
+    instanceNode_ = nullptr;
+}
+
+void PrefabReference::InstantiatePrefab(const NodePrefab& nodePrefab)
+{
+    const auto flags = PrefabLoadFlag::KeepExistingComponents | PrefabLoadFlag::KeepExistingChildren
+        | PrefabLoadFlag::LoadAsTemporary | PrefabLoadFlag::IgnoreRootAttributes;
+    PrefabReaderFromMemory reader{nodePrefab};
+    node_->Load(reader, flags);
+}
+
+void PrefabReference::CreateInstance(bool tryInplace)
+{
+    // Remove existing instance if moved to another node
+    if (instanceNode_ && instanceNode_ != node_)
+        RemoveInstance();
+
+    // Cannot spawn instance without node
+    if (!node_)
+        return;
+
+    const NodePrefab& nodePrefab = GetNodePrefab();
+    instanceNode_ = node_;
+    numInstanceComponents_ = nodePrefab.GetComponents().size();
+    numInstanceChildren_ = nodePrefab.GetChildren().size();
+
+    // Try to create inplace first
+    if (tryInplace && TryCreateInplace())
+        return;
+
+    RemoveTemporaryComponents(node_);
+    RemoveTemporaryChildren(node_);
+    InstantiatePrefab(nodePrefab);
+}
+
+void PrefabReference::SetPrefab(PrefabResource* prefab, bool createInstance)
 {
     if (prefab == prefab_)
     {
@@ -105,165 +276,119 @@ void PrefabReference::SetPrefab(XMLFile* prefab)
 
     if (prefab_)
     {
-        SubscribeToEvent(prefab_, E_RELOADFINISHED, URHO3D_HANDLER(PrefabReference, HandlePrefabReloaded));
-        prefabRef_ = GetResourceRef(prefab_, XMLFile::GetTypeStatic());
+        SubscribeToEvent(prefab_, E_RELOADFINISHED, [this](StringHash, VariantMap&) { CreateInstance(); });
+        prefabRef_ = GetResourceRef(prefab_, PrefabResource::GetTypeStatic());
     }
     else
     {
-        prefabRef_ = ResourceRef(XMLFile::GetTypeStatic());
+        prefabRef_ = ResourceRef(PrefabResource::GetTypeStatic());
     }
 
-    ToggleNode(true);
+    if (createInstance)
+        CreateInstance();
 }
-
-/// Get prefab resource.
-XMLFile* PrefabReference::GetPrefab() const
-{
-    return prefab_;
-}
-
-/// Set flag to preserve prefab root node transform.
-void PrefabReference::SetPreserveTransfrom(bool preserve)
-{
-    if (preserve != preserveTransform_)
-    {
-        preserveTransform_ = preserve;
-        if (node_)
-        {
-            node_->Remove();
-            node_ = CreateInstance();
-        }
-    }
-}
-
 
 /// Set reference to prefab resource.
 void PrefabReference::SetPrefabAttr(ResourceRef prefab)
 {
     if (prefab.name_.empty())
     {
-        SetPrefab(nullptr);
+        SetPrefab(nullptr, false);
     }
     else
     {
-        SetPrefab(context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>(prefab.name_));
+        auto cache = context_->GetSubsystem<ResourceCache>();
+        SetPrefab(cache->GetResource<PrefabResource>(prefab.name_), false);
     }
+
     prefabRef_ = prefab;
+    prefabDirty_ = true;
 }
 
-/// Get reference to prefab resource.
-ResourceRef PrefabReference::GetPrefabAttr() const { return prefabRef_; }
-
-
-/// Create prefab instance.
-Node* PrefabReference::CreateInstance() const
+void PrefabReference::Inline(PrefabInlineFlags flags)
 {
-    if (!prefab_)
-    {
-        return nullptr;
-    }
+    if (!node_)
+        return;
 
-    auto* node = GetNode()->CreateTemporaryChild();
+    // Hold self until the end of the function
+    Node* node = node_;
+    instanceNode_ = nullptr;
 
-    // If we parsing a root file element and it is scene then parse the first node of the scene.
-    XMLElement rootElement = prefab_->GetRoot();
-    if (!rootElement)
-    {
-        return nullptr;
-    }
-
-    if (rootElement.GetName() == "scene")
-    {
-        const XMLElement firstNode = rootElement.GetChild("node");
-        const XMLElement nextNode = firstNode.GetNext("node");
-        if (!nextNode.IsNull())
-        {
-            // Disable spam
-            //URHO3D_LOGERROR("More than one root node in prefab");
-        }
-        rootElement = firstNode;
-    }
-
-    node->LoadXML(rootElement);
-
-    if (!preserveTransform_)
-    {
-        node->SetPosition(Vector3::ZERO);
-        node->SetRotation(Quaternion::IDENTITY);
-        node->SetScale(Vector3::ONE);
-    }
-    SetTemporaryFlag(node, true);
-    return node;
-}
-
-void PrefabReference::Inline()
-{
-    SetTemporaryFlag(node_, false);
-    node_.Reset();
+    SharedPtr<PrefabReference> self{this};
     Remove();
+
+    // Some temporary components and children are spawned by the prefab itself.
+    // Other temporary components and children may be spawned by the components in prefab.
+    if (flags.Test(PrefabInlineFlag::KeepOtherTemporary))
+    {
+        const auto& components = node->GetComponents();
+        const auto& children = node->GetChildren();
+
+        for (unsigned index = 0; index < ea::min<unsigned>(numInstanceComponents_, components.size()); ++index)
+            components[index]->SetTemporary(false);
+
+        for (unsigned index = 0; index < ea::min<unsigned>(numInstanceChildren_, children.size()); ++index)
+            children[index]->SetTemporary(false);
+    }
+    else
+    {
+        for (const auto& component : node->GetComponents())
+            component->SetTemporary(false);
+        for (const auto& child : node->GetChildren())
+            child->SetTemporary(false);
+    }
 }
 
-/// Handle enabled/disabled state change.
+void PrefabReference::CommitChanges()
+{
+    if (!node_ || !prefab_)
+        return;
+
+    const NodePrefab& originalNodePrefab = GetNodePrefab();
+    NodePrefab newNodePrefab;
+    {
+        const PrefabSaveFlags flags =
+            PrefabSaveFlag::EnumsAsStrings | PrefabSaveFlag::Prefab | PrefabSaveFlag::SaveTemporary;
+        PrefabWriterToMemory writer{newNodePrefab, flags};
+        node_->Save(writer);
+    }
+
+    // Don't change Node attributes, they are considered external
+    newNodePrefab.GetMutableNode().GetMutableAttributes() = originalNodePrefab.GetNode().GetAttributes();
+
+    // Prune persistent components and children
+    const auto& components = node_->GetComponents();
+    const int numComponents = static_cast<int>(node_->GetNumComponents());
+    for (int i = numComponents - 1; i >= 0; --i)
+    {
+        Component* component = components[i];
+        if (!component->IsTemporary())
+            newNodePrefab.GetMutableComponents().erase_at(i);
+    }
+
+    const auto& children = node_->GetChildren();
+    const int numChildren = static_cast<int>(node_->GetNumChildren());
+    for (int i = numChildren - 1; i >= 0; --i)
+    {
+        Node* child = children[i];
+        if (!child->IsTemporary())
+            newNodePrefab.GetMutableChildren().erase_at(i);
+    }
+
+    // Create and save resource
+    auto newResource = MakeShared<PrefabResource>(context_);
+    newResource->GetMutableScenePrefab() = prefab_->GetScenePrefab();
+    newResource->GetMutableNodePrefab() = newNodePrefab;
+    newResource->NormalizeIds();
+    newResource->SaveFile(prefab_->GetAbsoluteFileName());
+}
+
 void PrefabReference::OnSetEnabled()
 {
-    ToggleNode();
-}
-
-/// Handle scene node being assigned at creation.
-void PrefabReference::OnNodeSet(Node* previousNode, Node* currentNode)
-{
-    ToggleNode();
-}
-
-/// Create or remove prefab based on current environment.
-void PrefabReference::ToggleNode(bool forceReload)
-{
-    Node* node = GetNode();
-    const bool enabled = node?IsEnabledEffective():false;
-
-    if (!enabled)
-    {
-        if (node_ && node_->GetParent())
-        {
-            // Don't destroy the node as it may be enabled later.
-            node_->Remove();
-
-            // If reload is required then unload existing node so it will be reloaded when required.
-            if (forceReload)
-                node_.Reset();
-        }
-    }
-    else
-    {
-        // Reload node if necessary.
-        if (forceReload || !node_)
-        {
-            if (node_)
-            {
-                node_->Remove();
-                node_.Reset();
-            }
-            node_ = CreateInstance();
-        }
-
-        // Add it to the component's parent.
-        if (node_ && node != node_->GetParent())
-        {
-            node_->Remove();
-            node->AddChild(node_);
-        }
-    }
-}
-
-/// Get prefab instance root node.
-Node* PrefabReference::GetRootNode() const
-{
-    return node_;
-}
-
-void PrefabReference::HandlePrefabReloaded(StringHash eventType, VariantMap& map)
-{
-    ToggleNode(true);
+    if (!IsEnabledEffective())
+        RemoveInstance();
+    else if (instanceNode_ != node_)
+        CreateInstance(true);
 }
 
 }

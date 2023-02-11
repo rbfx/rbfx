@@ -86,7 +86,7 @@ void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextu
 
     const Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
     const IntVector2 inputSize = viewportTexture->GetSize();
-    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(inputSize);
+    const Vector2 inputInvSize = Vector2::ONE / inputSize.ToVector2();
 
 #ifdef URHO3D_OPENGL
     const bool invertY = camera->GetFlipVertical();
@@ -135,7 +135,7 @@ void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextu
         drawParams.pipelineState_ = pipelineStates_->ssaoForward_;
     }
     renderBufferManager_->DrawQuad("Apply SSAO", drawParams);
-    //renderBufferManager_->SetOutputRenderTargers();
+    //renderBufferManager_->SetOutputRenderTargets();
 
     ea::swap(textures_.currentTarget_, textures_.previousTarget_);
 }
@@ -143,7 +143,7 @@ void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextu
 void AmbientOcclusionPass::BlurTexture(const Matrix4& textureToViewSpace)
 {
     const IntVector2 textureSize = textures_.currentTarget_->GetTexture2D()->GetSize();
-    const Vector2 blurStep = Vector2::ONE / static_cast<Vector2>(textureSize);
+    const Vector2 blurStep = Vector2::ONE / textureSize.ToVector2();
 
     ShaderParameterDesc shaderParameters[] = {
         {"BlurStep", blurStep},
@@ -187,7 +187,7 @@ void AmbientOcclusionPass::BlurTexture(const Matrix4& textureToViewSpace)
 
 void AmbientOcclusionPass::Blit(PipelineState* state)
 {
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
 
     const ShaderResourceDesc shaderResources[] = {
         {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()}};

@@ -60,6 +60,9 @@ public:
     /// Return number of loaded plugins.
     unsigned GetNumPlugins() const { return applications_.size(); }
 
+    /// Return main plugin. The result is valid after StartApplication.
+    PluginApplication* GetMainPlugin() const;
+
 private:
     struct PluginInfo
     {
@@ -74,7 +77,7 @@ private:
 
     ea::vector<PluginInfo> applications_;
     ea::vector<PluginInfo> mainApplications_;
-
+    WeakPtr<PluginApplication> mainApplication_;
     bool isStarted_{};
 };
 
@@ -121,7 +124,8 @@ public:
     Plugin* GetDynamicPlugin(const ea::string& name, bool ignoreUnloaded);
     /// Find or load plugin application by name.
     PluginApplication* GetPluginApplication(const ea::string& name, bool ignoreUnloaded, unsigned* version = nullptr);
-
+    /// Return main plugin. The result is valid after plugin application started.
+    PluginApplication* GetMainPlugin() const;
     /// Enumerate dynamic modules available to load.
     StringVector ScanAvailableModules();
     /// Enumerate already loaded dynamic modules and static plugins.
@@ -131,7 +135,7 @@ private:
     void DisposeStack();
     void RestoreStack();
 
-    void Update();
+    void Update(bool exiting);
     void UpdatePlugin(Plugin* plugin, bool checkOutOfDate);
 
     void PerformPluginUnload(Plugin* plugin);

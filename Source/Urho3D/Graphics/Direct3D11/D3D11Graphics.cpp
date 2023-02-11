@@ -254,7 +254,6 @@ static HWND GetWindowHandle(SDL_Window* window)
 }
 #endif
 
-const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
 
 Graphics::Graphics(Context* context) :
@@ -269,6 +268,7 @@ Graphics::Graphics(Context* context) :
     SetTextureUnitMappings();
     ResetCachedState();
 
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
     context_->RequireSDL(SDL_INIT_VIDEO);
 }
 
@@ -344,7 +344,6 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
         return true;
 
     SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
-    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
 
     if (!window_)
     {
@@ -1133,19 +1132,19 @@ bool Graphics::HasTextureUnit(TextureUnit unit)
 
 void Graphics::ClearParameterSource(ShaderParameterGroup group)
 {
-    shaderParameterSources_[group] = (const void*)M_MAX_UNSIGNED;
+    shaderParameterSources_[group] = reinterpret_cast<const void*>(M_MAX_UNSIGNED);
 }
 
 void Graphics::ClearParameterSources()
 {
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-        shaderParameterSources_[i] = (const void*)M_MAX_UNSIGNED;
+        shaderParameterSources_[i] = reinterpret_cast<const void*>(M_MAX_UNSIGNED);
 }
 
 void Graphics::ClearTransformSources()
 {
-    shaderParameterSources_[SP_CAMERA] = (const void*)M_MAX_UNSIGNED;
-    shaderParameterSources_[SP_OBJECT] = (const void*)M_MAX_UNSIGNED;
+    shaderParameterSources_[SP_CAMERA] = reinterpret_cast<const void*>(M_MAX_UNSIGNED);
+    shaderParameterSources_[SP_OBJECT] = reinterpret_cast<const void*>(M_MAX_UNSIGNED);
 }
 
 void Graphics::SetTexture(unsigned index, Texture* texture)

@@ -89,9 +89,24 @@ public:
     RefCount* RefCountPtr() const { return refCount_; }
 
     /// Return true if script runtime object wrapping this native object exists.
-    bool HasScriptObject() const { return scriptObject_ != nullptr; }
+    bool HasScriptObject() const
+    {
+#if URHO3D_CSHARP
+        return scriptObject_ != nullptr;
+#else
+        return false;
+#endif
+    }
+
     /// Return true if script reference is strong.
-    bool IsScriptStrongRef() const { return isScriptStrongRef_; }
+    bool IsScriptStrongRef() const
+    {
+#if URHO3D_CSHARP
+        return isScriptStrongRef_;
+#else
+        return false;
+#endif
+    }
 
 protected:
 #if URHO3D_CSHARP
@@ -112,10 +127,6 @@ private:
     void* scriptObject_{};
     /// GC Handle type (strong vs weak).
     bool isScriptStrongRef_{};
-#else
-    /// Placeholders set to 0
-    static void* scriptObject_;
-    static bool isScriptStrongRef_;
 #endif
 };
 

@@ -187,12 +187,17 @@ void AssetPipelineInspector::RenderContent()
 
     EnsureInitialized();
 
+    auto assetManager = project_->GetAssetManager();
+
     ui::Text("%s", resourceName_.c_str());
 
     if (ui::Button(ICON_FA_ARROWS_ROTATE " Update Assets"))
-        project_->GetAssetManager()->MarkCacheDirty(GetPath(resource_->GetName()));
+        assetManager->MarkCacheDirty(GetPath(resource_->GetName()));
     if (ui::IsItemHovered())
         ui::SetTooltip("Re-import all assets potentially affected by this pipeline");
+
+    ui::SameLine();
+    ui::Text(assetManager->IsProcessing() ? ICON_FA_TRIANGLE_EXCLAMATION " Assets are cooking now" : "");
 
     pendingRemoves_.clear();
     pendingAdds_.clear();

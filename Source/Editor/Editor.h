@@ -89,6 +89,13 @@ protected:
     /// Currently loaded project.
     SharedPtr<Project> project_;
 
+    /// Whether the editor is launched in read-only mode.
+    bool readOnly_{};
+    /// Launch command and command line parameters.
+    ea::string command_;
+    /// Whether to exit the editor after executing the command.
+    bool exitAfterCommand_{};
+
     /// UI state
     /// @{
     ea::string pendingOpenProject_;

@@ -259,7 +259,7 @@ public:
         , objectParameterBuilder_(settings_, flags)
         , instanceIndex_(startInstance)
     {
-        static thread_local ea::vector<const ea::pair<const StringHash, MaterialShaderParameter>*> customMaterialParameters;
+        thread_local ea::vector<const ea::pair<const StringHash, MaterialShaderParameter>*> customMaterialParameters;
         customMaterialParameters_ = &customMaterialParameters;
     }
 
@@ -360,9 +360,9 @@ private:
                 ? lights_[current_.vertexLights_[i]]->GetParams() : nullVertexLight;
             const Vector3& color = params.GetColor(settings_.linearSpaceLighting_);
 
-            current_.vertexLightsData_[i * VertexLightStride] = { color, params.inverseRange_ };
-            current_.vertexLightsData_[i * VertexLightStride + 1] = { params.direction_, params.spotCutoff_ };
-            current_.vertexLightsData_[i * VertexLightStride + 2] = { params.position_, params.inverseSpotCutoff_ };
+            current_.vertexLightsData_[i * VertexLightStride] = {color, params.inverseRange_};
+            current_.vertexLightsData_[i * VertexLightStride + 1] = {params.direction_, params.spotCutoff_};
+            current_.vertexLightsData_[i * VertexLightStride + 2] = {params.position_, params.inverseSpotCutoff_};
         }
     }
 
@@ -562,9 +562,11 @@ private:
             return;
 
         const Color ambientColorGamma = camera_.GetEffectiveAmbientColor() * camera_.GetEffectiveAmbientBrightness();
+        const Color& fogColorGamma = camera_.GetEffectiveFogColor();
         drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
             settings_.linearSpaceLighting_ ? ambientColorGamma.GammaToLinear() : ambientColorGamma);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor, camera_.GetEffectiveFogColor());
+        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor,
+            settings_.linearSpaceLighting_ ? fogColorGamma.GammaToLinear() : fogColorGamma);
         drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, GetFogParameter(camera_));
     }
 
@@ -578,9 +580,9 @@ private:
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter0,
                 current_.reflectionProbes_[0]->cubemapCenter_);
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin0,
-                Vector4(current_.reflectionProbes_[0]->projectionBox_.min_, 0.0));
+                current_.reflectionProbes_[0]->projectionBox_.min_.ToVector4());
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax0,
-                Vector4(current_.reflectionProbes_[0]->projectionBox_.max_, 0.0));
+                current_.reflectionProbes_[0]->projectionBox_.max_.ToVector4());
         }
 
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor0,
@@ -592,9 +594,9 @@ private:
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter1,
                 current_.reflectionProbes_[1]->cubemapCenter_);
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin1,
-                Vector4(current_.reflectionProbes_[1]->projectionBox_.min_, 0.0));
+                current_.reflectionProbes_[1]->projectionBox_.min_.ToVector4());
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax1,
-                Vector4(current_.reflectionProbes_[1]->projectionBox_.max_, 0.0));
+                current_.reflectionProbes_[1]->projectionBox_.max_.ToVector4());
         }
 
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor1,
@@ -613,15 +615,14 @@ private:
     void AddPixelLightConstants(const CookedLightParams& params)
     {
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightDir, params.direction_);
-        drawQueue_.AddShaderParameter(ShaderConsts::Light_LightPos,
-            Vector4{ params.position_, params.inverseRange_ });
+        drawQueue_.AddShaderParameter(ShaderConsts::Light_LightPos, Vector4{params.position_, params.inverseRange_});
 
         // Shadow maps need only light position and direction for normal bias
         if (!enabled_.colorOutput_)
             return;
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightColor,
-            Vector4{ params.GetColor(settings_.linearSpaceLighting_), params.effectiveSpecularIntensity_ });
+            Vector4{params.GetColor(settings_.linearSpaceLighting_), params.effectiveSpecularIntensity_});
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightRad, params.volumetricRadius_);
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightLength, params.volumetricLength_);

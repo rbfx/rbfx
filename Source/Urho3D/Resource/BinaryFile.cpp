@@ -116,4 +116,20 @@ const ByteVector& BinaryFile::GetData() const
     return buffer_.GetBuffer();
 }
 
+ea::string_view BinaryFile::GetText() const
+{
+    const unsigned char* data = buffer_.GetData();
+    const unsigned size = buffer_.GetSize();
+    return {reinterpret_cast<const char*>(data), size};
+}
+
+StringVector BinaryFile::ReadLines() const
+{
+    StringVector result;
+    MemoryBuffer readBuffer{buffer_.GetBuffer()};
+    while (!readBuffer.IsEof())
+        result.push_back(readBuffer.ReadLine());
+    return result;
+}
+
 }

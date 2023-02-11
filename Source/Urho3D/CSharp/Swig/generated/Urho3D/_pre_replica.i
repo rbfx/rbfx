@@ -1,5 +1,3 @@
-//%constant Urho3D::NetworkId InvalidNetworkId = Urho3D::InvalidNetworkId;
-//%ignore Urho3D::InvalidNetworkId;
 %constant Urho3D::NetworkSetting InternalProtocolVersion = Urho3D::NetworkSettings::InternalProtocolVersion;
 %ignore Urho3D::NetworkSettings::InternalProtocolVersion;
 %constant Urho3D::NetworkSetting UpdateFrequency = Urho3D::NetworkSettings::UpdateFrequency;

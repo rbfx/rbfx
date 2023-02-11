@@ -22,8 +22,11 @@
 
 #pragma once
 
+#include "../../Core/CommonEditorActionBuilders.h"
 #include "../../Core/SettingsManager.h"
 #include "../../Foundation/SceneViewTab.h"
+
+#include <EASTL/unique_ptr.h>
 
 namespace Urho3D
 {
@@ -66,6 +69,7 @@ private:
 
     SharedPtr<Node> temporaryNode_;
     WeakPtr<SceneViewPage> currentPage_;
+    ea::unique_ptr<CreateNodeActionBuilder> nodeActionBuilder_;
 };
 
 } // namespace Urho3D

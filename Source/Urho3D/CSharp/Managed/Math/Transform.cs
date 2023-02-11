@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2022 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,16 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct Transform : IEquatable<Transform>
+    public struct Transform : IEquatable<Transform>, IApproximateEquatable<Transform>
     {
+        public static IEqualityComparer<Transform> ApproximateEqualityComparer => ApproximateEqualityComparer<Transform>.Default;
+
         public Vector3 Position;
         public Quaternion Rotation;
         public Vector3 Scale;
@@ -60,6 +63,21 @@ namespace Urho3DNet
                    Rotation.Equals(other.Rotation) &&
                    Scale.Equals(other.Scale);
         }
+        public override bool Equals(object obj)
+        {
+            return obj is Transform other && Equals(other);
+        }
 
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Position, Rotation, Scale);
+        }
+
+        public bool ApproximatelyEquivalent(Transform other, float epsilon = MathDefs.Epsilon)
+        {
+            return Position.ApproximatelyEquivalent(other.Position, epsilon) &&
+                   Rotation.ApproximatelyEquivalent(other.Rotation, epsilon) &&
+                   Scale.ApproximatelyEquivalent(other.Scale, epsilon);
+        }
     }
 }

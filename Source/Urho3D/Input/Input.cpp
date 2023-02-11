@@ -111,8 +111,6 @@ public:
 
     /// Static callback method for Pointer Lock API. Handles change in Pointer Lock state and sends events for mouse mode change.
     static EM_BOOL HandlePointerLockChange(int eventType, const EmscriptenPointerlockChangeEvent* keyEvent, void* userData);
-    /// Static callback method for tracking focus change events.
-    static EM_BOOL HandleFocusChange(int eventType, const EmscriptenFocusEvent* keyEvent, void* userData);
     /// Static callback method for suppressing mouse jump.
     static EM_BOOL HandleMouseJump(int eventType, const EmscriptenMouseEvent * mouseEvent, void* userData);
 
@@ -156,10 +154,6 @@ EmscriptenInput::EmscriptenInput(Input* inputInst) :
     // Handle mouse events to prevent mouse jumps
     emscripten_set_mousedown_callback(NULL, vInputInst, true, EmscriptenInput::HandleMouseJump);
     emscripten_set_mousemove_callback(NULL, vInputInst, true, EmscriptenInput::HandleMouseJump);
-
-    // Handle focus changes
-    emscripten_set_focusout_callback(NULL, vInputInst, false, EmscriptenInput::HandleFocusChange);
-    emscripten_set_focus_callback(NULL, vInputInst, false, EmscriptenInput::HandleFocusChange);
 
     // Handle SDL events
     SDL_AddEventWatch(EmscriptenInput::HandleSDLEvents, vInputInst);
@@ -256,20 +250,6 @@ EM_BOOL EmscriptenInput::HandlePointerLockChange(int eventType, const Emscripten
     return EM_TRUE;
 }
 
-EM_BOOL EmscriptenInput::HandleFocusChange(int eventType, const EmscriptenFocusEvent* keyEvent, void* userData)
-{
-    auto* const inputInst = (Input*)userData;
-
-    inputInst->SuppressNextMouseMove();
-
-    if (eventType == EMSCRIPTEN_EVENT_FOCUSOUT)
-        inputInst->LoseFocus();
-    else if (eventType == EMSCRIPTEN_EVENT_FOCUS)
-        inputInst->GainFocus();
-
-    return EM_TRUE;
-}
-
 EM_BOOL EmscriptenInput::HandleMouseJump(int eventType, const EmscriptenMouseEvent * mouseEvent, void* userData)
 {
     // Suppress mouse jump on pointer-lock change
@@ -342,6 +322,7 @@ void JoystickState::Initialize(unsigned numButtons, unsigned numAxes, unsigned n
     buttons_.resize(numButtons);
     buttonPress_.resize(numButtons);
     axes_.resize(numAxes);
+    validAxis_.resize(numAxes);
     hats_.resize(numHats);
 
     Reset();
@@ -355,7 +336,22 @@ void JoystickState::Reset()
         buttonPress_[i] = false;
     }
     for (unsigned i = 0; i < axes_.size(); ++i)
-        axes_[i] = 0.0f;
+    {
+        if (joystick_ && !controller_)
+        {
+            Sint16 state {0};
+            if (SDL_JoystickGetAxisInitialState(joystick_, static_cast<int>(i), &state))
+            {
+                axes_[i] = Clamp(static_cast<float>(state) / 32767.0f, -1.0f, 1.0f);
+                validAxis_[i] = true;
+            }
+        }
+        else
+        {
+            axes_[i] = 0.0f;
+            validAxis_[i] = false;
+        }
+    }
     for (unsigned i = 0; i < hats_.size(); ++i)
         hats_[i] = HAT_CENTER;
 }
@@ -1299,6 +1295,7 @@ SDL_JoystickID Input::OpenJoystick(unsigned index)
     int joystickID = SDL_JoystickInstanceID(joystick);
     JoystickState& state = joysticks_[joystickID];
     state.joystick_ = joystick;
+    state.type_ = static_cast<JoystickDeviceType>(SDL_JoystickGetDeviceType(index));
     state.joystickID_ = joystickID;
     state.name_ = SDL_JoystickName(joystick);
     if (SDL_IsGameController(index))
@@ -1466,7 +1463,7 @@ Vector2 Input::GetRelativeMousePosition() const
 {
     const IntVector2 backbufferSize = GetBackbufferSize();
     const IntVector2 localPosition = GetMousePosition();
-    return static_cast<Vector2>(localPosition) / static_cast<Vector2>(backbufferSize);
+    return localPosition.ToVector2() / backbufferSize.ToVector2();
 }
 
 IntVector2 Input::GetMouseMove() const
@@ -1584,15 +1581,7 @@ void Input::Initialize()
 
     // Set the initial activation
     initialized_ = true;
-#ifndef __EMSCRIPTEN__
     GainFocus();
-#else
-    // Note: Page visibility and focus are slightly different, however we can't query last focus with Emscripten (1.29.0)
-    if (emscriptenInput_->IsVisible())
-        GainFocus();
-    else
-        LoseFocus();
-#endif
 
     ResetJoysticks();
     ResetState();
@@ -1947,19 +1936,6 @@ void Input::OnSDLRawInput(SDL_Event& evt, bool& consumed)
     consumed = eventData[P_CONSUMED].GetBool();
 }
 
-void Input::OnUserAction()
-{
-#ifdef __EMSCRIPTEN__
-    static bool audioRefreshed = false;
-    if (!audioRefreshed)
-    {
-        audioRefreshed = true;
-        auto audio = GetSubsystem<Audio>();
-        audio->RefreshMode();
-    }
-#endif
-}
-
 void Input::HandleSDLEvent(void* sdlEvent)
 {
     SDL_Event& evt = *static_cast<SDL_Event*>(sdlEvent);
@@ -2072,7 +2048,6 @@ void Input::HandleSDLEvent(void* sdlEvent)
     case SDL_MOUSEBUTTONDOWN:
         if (!touchEmulation_)
         {
-            OnUserAction();
             const auto mouseButton = static_cast<MouseButton>(1u << (evt.button.button - 1u));  // NOLINT(misc-misplaced-widening-cast)
             SetMouseButton(mouseButton, true, evt.button.clicks);
         }
@@ -2183,7 +2158,6 @@ void Input::HandleSDLEvent(void* sdlEvent)
         break;
 
     case SDL_FINGERDOWN:
-        OnUserAction();
         if (evt.tfinger.touchId != SDL_TOUCH_MOUSEID)
         {
             int touchID = GetTouchIndexFromID(evt.tfinger.fingerId & 0x7ffffffu);
@@ -2386,14 +2360,17 @@ void Input::HandleSDLEvent(void* sdlEvent)
                 VariantMap& eventData = GetEventDataMap();
                 eventData[P_JOYSTICKID] = joystickID;
                 eventData[P_AXIS] = evt.jaxis.axis;
-                eventData[P_POSITION] = Clamp((float)evt.jaxis.value / 32767.0f, -1.0f, 1.0f);
+                eventData[P_POSITION] = Clamp(static_cast<float>(evt.jaxis.value) / 32767.0f, -1.0f, 1.0f);
 
                 if (evt.jaxis.axis < state.axes_.size())
                 {
                     // If the joystick is a controller, only use the controller axis mappings
                     // (we'll also get the controller event)
                     if (!state.controller_)
+                    {
                         state.axes_[evt.jaxis.axis] = eventData[P_POSITION].GetFloat();
+                        state.validAxis_[evt.jaxis.axis] = true;
+                    }
                     SendEvent(E_JOYSTICKAXISMOVE, eventData);
                 }
             }
@@ -2471,11 +2448,12 @@ void Input::HandleSDLEvent(void* sdlEvent)
             VariantMap& eventData = GetEventDataMap();
             eventData[P_JOYSTICKID] = joystickID;
             eventData[P_AXIS] = evt.caxis.axis;
-            eventData[P_POSITION] = Clamp((float)evt.caxis.value / 32767.0f, -1.0f, 1.0f);
+            eventData[P_POSITION] = Clamp(static_cast<float>(evt.caxis.value) / 32767.0f, -1.0f, 1.0f);
 
             if (evt.caxis.axis < state.axes_.size())
             {
                 state.axes_[evt.caxis.axis] = eventData[P_POSITION].GetFloat();
+                state.validAxis_[evt.caxis.axis] = true;
                 SendEvent(E_JOYSTICKAXISMOVE, eventData);
             }
         }
@@ -2530,7 +2508,8 @@ void Input::HandleSDLEvent(void* sdlEvent)
             if (evt.adevice.iscapture == SDL_FALSE)
             {
                 auto audio = GetSubsystem<Audio>();
-                audio->RefreshMode();
+                if (audio && audio->IsInitialized())
+                    audio->RefreshMode();
             }
         }
         break;
@@ -2581,7 +2560,7 @@ void Input::HandleScreenMode(StringHash eventType, VariantMap& eventData)
     IntVector2 windowSize;
     SDL_GetWindowSize(window, &windowSize.x_, &windowSize.y_);
     if (windowSize != IntVector2::ZERO && backbufferSize != IntVector2::ZERO)
-        systemToBackbufferScale_ = static_cast<Vector2>(backbufferSize) / static_cast<Vector2>(windowSize);
+        systemToBackbufferScale_ = backbufferSize.ToVector2() / windowSize.ToVector2();
     else
         systemToBackbufferScale_ = Vector2::ONE;
 }
@@ -2747,12 +2726,12 @@ void Input::HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventDat
 
 IntVector2 Input::SystemToBackbuffer(const IntVector2& value) const
 {
-    return VectorRoundToInt(static_cast<Vector2>(value) * systemToBackbufferScale_);
+    return VectorRoundToInt(value.ToVector2() * systemToBackbufferScale_);
 }
 
 IntVector2 Input::BackbufferToSystem(const IntVector2& value) const
 {
-    return VectorRoundToInt(static_cast<Vector2>(value) / systemToBackbufferScale_);
+    return VectorRoundToInt(value.ToVector2() / systemToBackbufferScale_);
 }
 
 IntVector2 Input::GetGlobalWindowPosition() const

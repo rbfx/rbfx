@@ -22,10 +22,13 @@
 
 #pragma once
 
+#include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Viewport.h>
 #include <Urho3D/Plugins/PluginApplication.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Text.h>
+
+#include <EASTL/array.h>
 
 namespace Urho3D
 {
@@ -56,6 +59,15 @@ private:
         unsigned timeStamp_{};
     };
 
+    struct ViewportData
+    {
+        SharedPtr<Viewport> viewport_;
+        SharedPtr<Scene> scene_;
+        Camera* camera_;
+    };
+
+    ViewportData CreateViewport(const Color& color, const IntRect& rect) const;
+
     void OnInputEvent(StringHash eventType, VariantMap& eventData);
     LoggedEvent DecodeEvent(StringHash eventType, VariantMap& eventData) const;
     bool MergeEvent(const LoggedEvent& event);
@@ -65,8 +77,7 @@ private:
     void Update();
     void UpdateText();
 
-    SharedPtr<Viewport> viewport_;
-    SharedPtr<Scene> scene_;
+    ea::array<ViewportData, 2> viewports_;
     SharedPtr<Text> text_;
 
     ea::vector<LoggedEvent> eventLog_;

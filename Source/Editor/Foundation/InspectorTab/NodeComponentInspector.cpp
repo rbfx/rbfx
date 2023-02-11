@@ -207,15 +207,16 @@ void NodeComponentInspector::InspectObjects()
     }
 }
 
-void NodeComponentInspector::BeginEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::BeginEditNodeAttribute(
+    const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
 
+    URHO3D_ASSERT(!nodeActionBuilder_);
+
     const auto nodes = CastVectorTo<Node*>(objects);
-    oldValues_.clear();
-    for (Node* node : nodes)
-        oldValues_.push_back(node->GetAttribute(attribute->name_));
+    nodeActionBuilder_ = ea::make_unique<ChangeNodeAttributesActionBuilder>(actionBuffer_, scene_, nodes, *attribute);
 }
 
 void NodeComponentInspector::EndEditNodeAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
@@ -223,36 +224,35 @@ void NodeComponentInspector::EndEditNodeAttribute(const WeakSerializableVector& 
     if (objects.empty())
         return;
 
-    const auto nodes = CastVectorTo<Node*>(objects);
-    newValues_.clear();
-    for (Node* node : nodes)
-        newValues_.push_back(node->GetAttribute(attribute->name_));
+    URHO3D_ASSERT(nodeActionBuilder_);
 
-    inspectedTab_->PushAction<ChangeNodeAttributesAction>(scene_, attribute->name_, nodes, oldValues_, newValues_);
+    inspectedTab_->PushAction(nodeActionBuilder_->Build());
+    nodeActionBuilder_ = nullptr;
 }
 
-void NodeComponentInspector::BeginEditComponentAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::BeginEditComponentAttribute(
+    const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
 
+    URHO3D_ASSERT(!componentActionBuilder_);
+
     const auto components = CastVectorTo<Component*>(objects);
-    oldValues_.clear();
-    for (Component* component : components)
-        oldValues_.push_back(component->GetAttribute(attribute->name_));
+    componentActionBuilder_ =
+        ea::make_unique<ChangeComponentAttributesActionBuilder>(actionBuffer_, scene_, components, *attribute);
 }
 
-void NodeComponentInspector::EndEditComponentAttribute(const WeakSerializableVector& objects, const AttributeInfo* attribute)
+void NodeComponentInspector::EndEditComponentAttribute(
+    const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
     if (objects.empty())
         return;
 
-    const auto components = CastVectorTo<Component*>(objects);
-    newValues_.clear();
-    for (Component* component : components)
-        newValues_.push_back(component->GetAttribute(attribute->name_));
+    URHO3D_ASSERT(componentActionBuilder_);
 
-    inspectedTab_->PushAction<ChangeComponentAttributesAction>(scene_, attribute->name_, components, oldValues_, newValues_);
+    inspectedTab_->PushAction(componentActionBuilder_->Build());
+    componentActionBuilder_ = nullptr;
 }
 
 void NodeComponentInspector::BeginAction(const WeakSerializableVector& objects)
@@ -288,14 +288,17 @@ void NodeComponentInspector::AddComponentToNodes(StringHash componentType)
 
     for (Node* node : nodeWidget_->GetNodes())
     {
+        const CreateComponentActionBuilder builder(node, componentType);
         if (auto component = node->CreateComponent(componentType))
-            inspectedTab_->PushAction<CreateRemoveComponentAction>(component, false);
+            inspectedTab_->PushAction(builder.Build(component));
     }
 }
 
 void NodeComponentInspector::RemoveComponent(Component* component)
 {
-    inspectedTab_->PushAction<CreateRemoveComponentAction>(component, true);
+    const RemoveComponentActionBuilder builder(component);
+    component->Remove();
+    inspectedTab_->PushAction(builder.Build());
 }
 
 void NodeComponentInspector::RenderContent()
@@ -361,10 +364,15 @@ void NodeComponentInspector::RenderContextMenuItems()
 
 void NodeComponentInspector::RenderMenu()
 {
+    if (inspectedTab_)
+        inspectedTab_->RenderMenu();
 }
 
 void NodeComponentInspector::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
+    // TODO: Fix me. It's currently too annoying to deal with text edit hotkeys.
+    // if (inspectedTab_)
+    //     inspectedTab_->ApplyHotkeys(hotkeyManager);
 }
 
 }

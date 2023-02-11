@@ -79,7 +79,7 @@ void ToneMappingPass::Execute(Camera* camera)
 
     renderBufferManager_->SwapColorBuffers(false);
 
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
     renderBufferManager_->DrawFeedbackViewportQuad("Apply tone mapping", toneMappingState_, {}, {});
 }
 

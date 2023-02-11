@@ -172,7 +172,7 @@ ea::optional<float> InternalReflectionProbeData::GetIntersectionVolume(const Bou
     const BoundingBox localBoundingBox = worldBoundingBox.Transformed(worldToLocal_);
     const BoundingBox clippedBoundingBox = localBoundingBox.Clipped(localBoundingBox_);
     if (clippedBoundingBox.Defined())
-        return clippedBoundingBox.Volume() / localBoundingBox.Volume();
+        return clippedBoundingBox.Volume() / ea::max(localBoundingBox.Volume(), M_EPSILON);
     return ea::nullopt;
 }
 
@@ -498,7 +498,7 @@ void ReflectionProbeManager::QueryDynamicProbes(const BoundingBox& worldBounding
 void ReflectionProbeManager::QueryStaticProbes(const BoundingBox& worldBoundingBox,
     ea::span<ReflectionProbeReference, 2> probes, float& cacheDistanceSquared) const
 {
-    static thread_local ea::vector<const ReflectionProbeBVH*> tempIntersectedProbes;
+    thread_local ea::vector<const ReflectionProbeBVH*> tempIntersectedProbes;
     auto& intersectedProbes = tempIntersectedProbes;
     intersectedProbes.clear();
 
@@ -774,7 +774,7 @@ void ReflectionProbe::UpdateProbeBoxData()
     }
 
     const Vector3 position = node_->GetWorldPosition();
-    data_.cubemapCenter_ = Vector4(position, 1.0);
+    data_.cubemapCenter_ = position.ToVector4(1.0);
     data_.projectionBox_.min_ = position + projectionBox_.min_;
     data_.projectionBox_.max_ = position + projectionBox_.max_;
 }

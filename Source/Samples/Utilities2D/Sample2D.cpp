@@ -496,7 +496,7 @@ void Sample2D::SaveScene(bool initial)
     scene_->SaveXML(saveFile);
 }
 
-void Sample2D::CreateBackgroundSprite(const TileMapInfo2D& info, float scale, const ea::string& texture, bool animate)
+void Sample2D::CreateBackgroundSprite(const TileMapInfo2D& info, float scale, const ea::string& texture)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     Node* node = scene_->CreateChild("Background");
@@ -507,16 +507,6 @@ void Sample2D::CreateBackgroundSprite(const TileMapInfo2D& info, float scale, co
     SetRandomSeed(Time::GetSystemTime()); // Randomize from system clock
     sprite->SetColor(Color(Random(0.0f, 1.0f), Random(0.0f, 1.0f), Random(0.0f, 1.0f), 1.0f));
     sprite->SetLayer(-99);
-
-    // Create rotation animation
-    if (animate)
-    {
-        SharedPtr<ValueAnimation> animation(new ValueAnimation(context_));
-        animation->SetKeyFrame(0, Variant(Quaternion(0.0f, 0.0f, 0.0f)));
-        animation->SetKeyFrame(1, Variant(Quaternion(0.0f, 0.0f, 180.0f)));
-        animation->SetKeyFrame(2, Variant(Quaternion(0.0f, 0.0f, 0.0f)));
-        node->SetAttributeAnimation("Rotation", animation, WM_LOOP, 0.05f);
-    }
 }
 
 void Sample2D::SpawnEffect(Node* node)

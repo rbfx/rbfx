@@ -188,12 +188,7 @@ void ShadowMapAllocator::AllocatePage()
     newShadowMap->SetFilterMode(FILTER_BILINEAR);
     newShadowMap->SetShadowCompare(isDepthTexture);
 #endif
-#ifndef URHO3D_OPENGL
-    // Direct3D9: when shadow compare must be done manually, use nearest filtering so that the filtering of point lights
-    // and other shadowed lights matches
-    newShadowMap->SetFilterMode(graphics_->GetHardwareShadowSupport() ? FILTER_BILINEAR : FILTER_NEAREST);
-#endif
-    // Create dummy color texture for the shadow map if necessary: Direct3D9, or OpenGL when working around an OS X +
+    // Create dummy color texture for the shadow map if necessary: on OpenGL when working around an OS X +
     // Intel driver bug
     if (isDepthTexture && dummyColorFormat)
     {

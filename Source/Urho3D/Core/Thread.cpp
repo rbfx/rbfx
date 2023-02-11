@@ -46,7 +46,7 @@ namespace Urho3D
 
 #if !defined(UWP)
 typedef HRESULT (WINAPI *pfnSetThreadDescription)(HANDLE, PCWSTR);
-static auto pSetThreadDescription = (pfnSetThreadDescription) GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetThreadDescription");
+static const auto pSetThreadDescription = (pfnSetThreadDescription) GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetThreadDescription");
 #endif
 
 #pragma pack(push,8)

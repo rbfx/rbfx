@@ -61,7 +61,6 @@ AnimatedModel::AnimatedModel(Context* context) :
     animationLodDistance_(0.0f),
     updateInvisible_(false),
     isMaster_(true),
-    loading_(false),
     assignBonesPending_(false),
     forceAnimationUpdate_(false)
 {
@@ -84,8 +83,11 @@ void AnimatedModel::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<AnimatedModel>(Category_Geometry);
 
+    URHO3D_ACTION_STATIC_LABEL("Reset Bones!", ResetBones, "Reset bone transforms to the bind pose");
+
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT)
+        .SetScopeHint(AttributeScopeHint::Node);
     URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterialsAttr, SetMaterialsAttr, ResourceRefList, ResourceRefList(Material::GetTypeStatic()),
         AM_DEFAULT);
     URHO3D_ATTRIBUTE("Is Occluder", bool, occluder_, false, AM_DEFAULT);
@@ -98,43 +100,9 @@ void AnimatedModel::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Animation LOD Bias", GetAnimationLodBias, SetAnimationLodBias, float, 1.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Bone Animation Enabled", GetBonesEnabledAttr, SetBonesEnabledAttr, VariantVector,
-        Variant::emptyVariantVector, AM_FILE | AM_NOEDIT);
+        Variant::emptyVariantVector, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Morphs", GetMorphsAttr, SetMorphsAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
         AM_DEFAULT);
-}
-
-void AnimatedModel::SerializeInBlock(Archive& archive)
-{
-    loading_ = true;
-    BaseClassName::SerializeInBlock(archive);
-    loading_ = false;
-}
-
-bool AnimatedModel::Load(Deserializer& source)
-{
-    loading_ = true;
-    bool success = Component::Load(source);
-    loading_ = false;
-
-    return success;
-}
-
-bool AnimatedModel::LoadXML(const XMLElement& source)
-{
-    loading_ = true;
-    bool success = Component::LoadXML(source);
-    loading_ = false;
-
-    return success;
-}
-
-bool AnimatedModel::LoadJSON(const JSONValue& source)
-{
-    loading_ = true;
-    bool success = Component::LoadJSON(source);
-    loading_ = false;
-
-    return success;
 }
 
 void AnimatedModel::ApplyAttributes()
@@ -178,7 +146,8 @@ void AnimatedModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const Bou
         {
             // Do an initial crude test using the bone's AABB
             const BoundingBox& box = bone.boundingBox_;
-            distance = query.ray_.HitDistance(box.Transformed(transform));
+            const auto distanceAndNormal = query.ray_.HitDistanceAndNormal(box.Transformed(transform));
+            distance = distanceAndNormal.distance_;
             if (distance >= query.maxDistance_)
                 continue;
             if (level != RAY_AABB)
@@ -413,7 +382,7 @@ void AnimatedModel::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     if (debug && IsEnabledEffective())
     {
         debug->AddBoundingBox(GetWorldBoundingBox(), Color::GREEN, depthTest);
-        debug->AddSkeleton(skeleton_, Color(0.75f, 0.75f, 0.75f), depthTest);
+        debug->AddSkeleton(skeleton_, Color(0.75f, 0.75f, 0.75f), false);
     }
 }
 
@@ -519,6 +488,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
         geometryBoneMappings_.clear();
         modelAnimator_ = nullptr;
         morphs_.clear();
+        skeletonData_.clear();
         SetBoundingBox(BoundingBox());
         SetSkeleton(Skeleton(), false);
     }
@@ -611,6 +581,11 @@ void AnimatedModel::ResetMorphWeights()
     MarkMorphsDirty();
 }
 
+void AnimatedModel::ResetBones()
+{
+    skeleton_.Reset();
+}
+
 const ea::vector<SharedPtr<VertexBuffer> >& AnimatedModel::GetMorphVertexBuffers() const
 {
     static const ea::vector<SharedPtr<VertexBuffer>> empty;
@@ -696,14 +671,14 @@ void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
         // Merge bounding boxes from non-master models
         FinalizeBoneBoundingBoxes();
 
-        ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
         // Create scene nodes for the bones
         if (createBones)
         {
+            ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
             for (auto i = bones.begin(); i != bones.end(); ++i)
             {
                 // Create bones as local, as they are never to be directly synchronized over the network
-                Node* boneNode = node_->CreateChild(i->name_, LOCAL);
+                Node* boneNode = node_->CreateChild(i->name_);
                 boneNode->AddListener(this);
                 boneNode->SetTransform(i->initialPosition_, i->initialRotation_, i->initialScale_);
                 // Copy the model component's temporary status
@@ -754,8 +729,8 @@ void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
 void AnimatedModel::SetModelAttr(const ResourceRef& value)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    // When loading a scene, set model without creating the bone nodes (will be assigned later during post-load)
-    SetModel(cache->GetResource<Model>(value.name_), !loading_);
+    // Bones will be created on demand in ApplyAttributes()
+    SetModel(cache->GetResource<Model>(value.name_), false);
 }
 
 void AnimatedModel::SetBonesEnabledAttr(const VariantVector& value)
@@ -881,22 +856,24 @@ void AnimatedModel::AssignBoneNodes()
         return;
 
     // Find the bone nodes from the node hierarchy and add listeners
-    ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
-    bool boneFound = false;
-    for (auto i = bones.begin(); i != bones.end(); ++i)
+    bool allBonesFound = true;
+    for (Bone& bone : skeleton_.GetModifiableBones())
     {
-        Node* boneNode = node_->GetChild(i->name_, true);
-        if (boneNode)
+        if (Node* boneNode = node_->GetChild(bone.name_, true))
         {
-            boneFound = true;
             boneNode->AddListener(this);
+            bone.node_ = boneNode;
         }
-        i->node_ = boneNode;
+        else
+        {
+            allBonesFound = false;
+            break;
+        }
     }
 
     // If no bones found, this may be a prefab where the bone information was left out.
     // In that case reassign the skeleton now if possible
-    if (!boneFound && model_)
+    if (!allBonesFound && model_)
         SetSkeleton(model_->GetSkeleton(), true);
 
     // Notify AnimationStateSource so it can reconnect to new bone nodes

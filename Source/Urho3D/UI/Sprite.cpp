@@ -273,7 +273,7 @@ const Matrix3x4& Sprite::GetTransform() const
         Matrix3x4 hotspotAdjust(Matrix3x4::IDENTITY);
         hotspotAdjust.SetTranslation(Vector3((float)-hotSpot_.x_, (float)-hotSpot_.y_, 0.0f));
 
-        Matrix3x4 mainTransform(Vector3(pos, 0.0f), Quaternion(rotation_, Vector3::FORWARD), Vector3(scale_, 1.0f));
+        Matrix3x4 mainTransform(pos.ToVector3(), Quaternion(rotation_, Vector3::FORWARD), scale_.ToVector3(1.0f));
 
         transform_ = parentTransform * mainTransform * hotspotAdjust;
         positionDirty_ = false;

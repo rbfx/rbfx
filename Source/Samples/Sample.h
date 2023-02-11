@@ -80,7 +80,7 @@ public:
     explicit Sample(Context* context);
 
     /// Activate game state. Executed by StateManager.
-    virtual void Activate(VariantMap& bundle) override;
+    virtual void Activate(StringVariantMap& bundle) override;
 
     /// Deactivate game state. Executed by StateManager.
     virtual void Deactivate() override;
@@ -96,6 +96,8 @@ public:
     virtual bool IsEscapeEnabled() { return true; }
 
 protected:
+    /// Create or update skybox with default model and material.
+    void SetDefaultSkybox(Scene* scene);
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
     virtual ea::string GetScreenJoystickPatchString() const { return EMPTY_STRING; }
     /// Initialize touch input on mobile platform.

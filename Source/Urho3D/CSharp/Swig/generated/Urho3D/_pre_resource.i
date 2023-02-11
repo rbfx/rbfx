@@ -1,3 +1,7 @@
+%constant unsigned int BinaryMagicSize = Urho3D::BinaryMagicSize;
+%ignore Urho3D::BinaryMagicSize;
+%constant Urho3D::BinaryMagic DefaultBinaryMagic = Urho3D::DefaultBinaryMagic;
+%ignore Urho3D::DefaultBinaryMagic;
 %ignore Urho3D::COLOR_LUT_SIZE;
 %csconst(1) Urho3D::COLOR_LUT_SIZE;
 %constant int ColorLutSize = 16;
@@ -61,6 +65,7 @@
 %csattribute(Urho3D::XMLFile, %arg(pugi::xml_document *), Document, GetDocument);
 %csattribute(Urho3D::BackgroundLoader, %arg(unsigned int), NumQueuedResources, GetNumQueuedResources);
 %csattribute(Urho3D::BinaryFile, %arg(Urho3D::ByteVector), Data, GetData, SetData);
+%csattribute(Urho3D::BinaryFile, %arg(ea::string_view), Text, GetText);
 %csattribute(Urho3D::Graph, %arg(unsigned int), NumNodes, GetNumNodes);
 %csattribute(Urho3D::GraphPin, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::GraphInPin, %arg(bool), IsConnected, IsConnected);

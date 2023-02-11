@@ -55,7 +55,7 @@ float CompareImages(const Image& lhs, const Image& rhs, bool compareAlpha, float
 {
     REQUIRE(lhs.GetSize() == rhs.GetSize());
     double errorSum = 0.0;
-    const IntVector2 size = lhs.GetSize().ToVector2();
+    const IntVector2 size = lhs.GetSize().ToIntVector2();
     for (const IntVector2 index : IntRect(IntVector2::ZERO, size))
     {
         const Color& lhsColor = lhs.GetPixel(index.x_, index.y_);

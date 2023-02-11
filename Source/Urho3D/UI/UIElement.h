@@ -926,8 +926,6 @@ private:
     TraversalMode traversalMode_{TM_BREADTH_FIRST};
     /// Flag whether node should send child added / removed events by itself.
     bool elementEventSender_{};
-    /// XPath query for selecting UI-style.
-    static XPathQuery styleXPathQuery_;
     /// Tag list.
     StringVector tags_;
 };

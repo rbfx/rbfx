@@ -149,7 +149,7 @@ void SoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Low Frequency Effect", bool, lowFrequency_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Playing", IsPlaying, SetPlayingAttr, bool, false, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Autoremove Mode", autoRemove_, autoRemoveModeNames, REMOVE_DISABLED, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Play Position", GetPositionAttr, SetPositionAttr, int, 0, AM_FILE);
+    URHO3D_ACCESSOR_ATTRIBUTE("Play Position", GetPositionAttr, SetPositionAttr, int, 0, AM_DEFAULT);
 }
 
 void SoundSource::Seek(float seekTime)

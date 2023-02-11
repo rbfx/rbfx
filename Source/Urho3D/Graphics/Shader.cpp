@@ -222,6 +222,9 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
     case CS:
         variations = &csVariations_;
         break;
+    default:
+        URHO3D_ASSERT(false);
+        return nullptr;
     }
 
     if (variations == nullptr)
@@ -303,7 +306,7 @@ void Shader::ProcessSource(ea::string& code, Deserializer& source)
             ea::string includeFileName = GetPath(source.GetName()) + line.substr(9).replaced("\"", "").trimmed();
 
             // Add included code or error directive
-            SharedPtr<File> includeFile = cache->GetFile(includeFileName);
+            AbstractFilePtr includeFile = cache->GetFile(includeFileName);
             if (includeFile)
                 ProcessSource(code, *includeFile);
             else

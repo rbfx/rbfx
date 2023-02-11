@@ -36,6 +36,7 @@ AllowAllConstructorInitializersOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: All
@@ -94,6 +95,8 @@ IncludeCategories:
   # 1. Precompiled header
   - Regex: '".*\/Precompiled\..*"'
     Priority: -1
+  - Regex: '<Urho3D\/Precompiled\..*>'
+    Priority: -1
   # 6. DebugNew goes last
   - Regex: '.*\/DebugNew\.h.*'
     Priority: 10000
@@ -110,7 +113,7 @@ IncludeCategories:
   # 3. Includes for this target
   - Regex: '".*"'
     Priority: 1
-IncludeIsMainRegex: ''
+IncludeIsMainRegex: '$'
 IncludeIsMainSourceRegex: ''
 IndentCaseLabels: false
 IndentGotoLabels: true
@@ -120,7 +123,7 @@ IndentWrappedFunctionNames: false
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: true
-#LambdaBodyIndentation: OuterScope # TODO: Uncomment when supported
+LambdaBodyIndentation: OuterScope
 MacroBlockBegin: ''
 MacroBlockEnd: ''
 MaxEmptyLinesToKeep: 1

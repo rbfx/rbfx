@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<resource>
+	<components>
+		<component _typeName="Octree" />
+		<component _typeName="RenderPipeline" />
+		<component _typeName="ReflectionProbeManager" />
+	</components>
+	<nodes>
+		<node>
+			<attributes>
+				<attribute name="Name" type="String" value="Character" />
+				<attribute name="Scale" type="Vector3" value="0.5 0.5 0.5" />
+			</attributes>
+			<components>
+				<component _typeName="StaticModel">
+					<attributes>
+						<attribute name="Model" type="ResourceRef" value="Model;Models/Sphere.mdl" />
+						<attribute name="Material" type="ResourceRefList" value="Material;Materials/StoneSmall.xml" />
+					</attributes>
+				</component>
+				<component _typeName="Light">
+					<attributes>
+						<attribute name="Range" type="Float" value="3.000000" />
+					</attributes>
+				</component>
+				<component _typeName="ReplicatedTransform">
+					<attributes>
+						<attribute name="Replicate Owner" type="Bool" value="true" />
+					</attributes>
+				</component>
+				<component _typeName="SceneReplicationPlayer" />
+			</components>
+		</node>
+	</nodes>
+</resource>

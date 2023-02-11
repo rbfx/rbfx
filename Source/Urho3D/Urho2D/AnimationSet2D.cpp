@@ -42,7 +42,7 @@
 #include <spine/extension.h>
 
 // Current animation set
-static Urho3D::AnimationSet2D* currentAnimationSet = 0;
+static thread_local Urho3D::AnimationSet2D* currentAnimationSet = 0;
 
 void _spAtlasPage_createTexture(spAtlasPage* self, const char* path)
 {
@@ -80,7 +80,7 @@ char* _spUtil_readFile(const char* path, int* length)
         return 0;
 
     ResourceCache* cache = currentAnimationSet->GetSubsystem<ResourceCache>();
-    SharedPtr<File> file = cache->GetFile(path);
+    AbstractFilePtr file = cache->GetFile(path);
     if (!file)
         return 0;
 

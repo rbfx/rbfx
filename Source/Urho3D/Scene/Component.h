@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Scene/Animatable.h"
+#include "../Scene/Serializable.h"
 
 namespace Urho3D
 {
@@ -43,9 +43,9 @@ enum AutoRemoveMode
 
 /// Base class for components. Components can be created to scene nodes.
 /// @templateversion
-class URHO3D_API Component : public Animatable
+class URHO3D_API Component : public Serializable
 {
-    URHO3D_OBJECT(Component, Animatable);
+    URHO3D_OBJECT(Component, Serializable);
 
     friend class Node;
     friend class Scene;
@@ -58,6 +58,11 @@ public:
 
     /// Handle enabled/disabled state change.
     virtual void OnSetEnabled() { }
+
+    /// Evaluate effective attribute scope.
+    /// It is a hint for the Editor to know what is affected by the component addition/removal
+    /// so it can generate optimal undo/redo actions.
+    AttributeScopeHint GetEffectiveScopeHint() const;
 
     /// Save as binary data. Return true if successful.
     bool Save(Serializer& dest) const override;
@@ -79,9 +84,6 @@ public:
     /// Return ID.
     /// @property{get_id}
     unsigned GetID() const { return id_; }
-    /// Return whether the component is replicated or local to a scene.
-    /// @property
-    bool IsReplicated() const;
 
     /// Return scene node.
     /// @property
@@ -108,10 +110,6 @@ public:
     unsigned GetIndexInParent() const;
 
 protected:
-    /// Handle attribute animation added.
-    void OnAttributeAnimationAdded() override;
-    /// Handle attribute animation removed.
-    void OnAttributeAnimationRemoved() override;
     /// Handle scene node being assigned at creation.
     virtual void OnNodeSet(Node* previousNode, Node* currentNode);
     /// Handle scene being assigned. This may happen several times during the component's lifetime. Scene-wide subsystems and events are subscribed to here.
@@ -125,8 +123,6 @@ protected:
     void SetID(unsigned id);
     /// Set scene node. Called by Node when creating the component.
     void SetNode(Node* node);
-    /// Handle scene attribute animation update event.
-    void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
     /// Return a component from the scene root that sends out fixed update events (either PhysicsWorld or PhysicsWorld2D). Return null if neither exists.
     Component* GetFixedUpdateSource();
     /// Perform autoremove. Called by subclasses. Caller should keep a weak pointer to itself to check whether was actually removed, and return immediately without further member operations in that case.

@@ -22,8 +22,34 @@
 
 #include "../Core/CommonEditorActions.h"
 
+#include <EASTL/bonus/adaptors.h>
+
 namespace Urho3D
 {
+
+bool CompositeEditorAction::CanRedo() const
+{
+    const auto canRedo = [](const SharedPtr<EditorAction>& action) { return action->CanRedo(); };
+    return ea::all_of(actions_.begin(), actions_.end(), canRedo);
+}
+
+bool CompositeEditorAction::CanUndo() const
+{
+    const auto canUndo = [](const SharedPtr<EditorAction>& action) { return action->CanUndo(); };
+    return ea::all_of(actions_.begin(), actions_.end(), canUndo);
+}
+
+void CompositeEditorAction::Redo() const
+{
+    for (const auto& action : actions_)
+        action->Redo();
+}
+
+void CompositeEditorAction::Undo() const
+{
+    for (const auto& action : ea::reverse(actions_))
+        action->Undo();
+}
 
 CreateRemoveNodeAction::CreateRemoveNodeAction(Node* node, bool removed)
     : removed_(removed)
@@ -375,11 +401,12 @@ bool ReorderComponentAction::MergeWith(const EditorAction& other)
     return true;
 }
 
-ReparentNodeAction::ReparentNodeAction(Node* node, Node* oldParent)
+ReparentNodeAction::ReparentNodeAction(Node* node, Node* newParent)
     : scene_(node->GetScene())
     , nodeId_(node->GetID())
-    , oldParentId_(oldParent->GetID())
-    , newParentId_(node->GetParent()->GetID())
+    , oldParentId_(node->GetParent()->GetID())
+    , oldIndex_(node->GetIndexInParent())
+    , newParentId_(newParent->GetID())
 {
 }
 
@@ -390,15 +417,15 @@ bool ReparentNodeAction::CanUndoRedo() const
 
 void ReparentNodeAction::Redo() const
 {
-    Reparent(newParentId_);
+    Reparent(newParentId_, ea::nullopt);
 }
 
 void ReparentNodeAction::Undo() const
 {
-    Reparent(oldParentId_);
+    Reparent(oldParentId_, oldIndex_);
 }
 
-void ReparentNodeAction::Reparent(unsigned parentId) const
+void ReparentNodeAction::Reparent(unsigned parentId, ea::optional<unsigned> index) const
 {
     Node* node = scene_->GetNode(nodeId_);
     Node* parent = scene_->GetNode(parentId);
@@ -407,7 +434,11 @@ void ReparentNodeAction::Reparent(unsigned parentId) const
     else if (!parent)
         throw UndoException("Cannot find parent node with id {}", parentId);
     else
+    {
         node->SetParent(parent);
+        if (index)
+            parent->ReorderChild(node, *index);
+    }
 }
 
 bool ReparentNodeAction::MergeWith(const EditorAction& other)
@@ -428,6 +459,15 @@ ChangeNodeSubtreeAction::ChangeNodeSubtreeAction(Scene* scene, const PackedNodeD
     , oldData_(oldData)
     , newData_(newData ? PackedNodeData{newData} : PackedNodeData{})
     , newRemoved_(newData == nullptr)
+{
+}
+
+ChangeNodeSubtreeAction::ChangeNodeSubtreeAction(
+    Scene* scene, const PackedNodeData& oldData, const PackedNodeData& newData)
+    : scene_(scene)
+    , oldData_(oldData)
+    , newData_(newData)
+    , newRemoved_(false)
 {
 }
 
@@ -465,6 +505,53 @@ bool ChangeNodeSubtreeAction::MergeWith(const EditorAction& other)
 
     newData_ = otherAction->newData_;
     newRemoved_ = otherAction->newRemoved_;
+    return true;
+}
+
+ChangeSceneAction::ChangeSceneAction(Scene* scene, const PackedSceneData& oldData)
+    : scene_(scene)
+    , oldData_(oldData)
+{
+    newData_.FromScene(scene);
+}
+
+ChangeSceneAction::ChangeSceneAction(Scene* scene, const PackedSceneData& oldData, const PackedSceneData& newData)
+    : scene_(scene)
+    , oldData_(oldData)
+    , newData_(newData)
+{
+}
+
+bool ChangeSceneAction::CanUndoRedo() const
+{
+    return scene_;
+}
+
+void ChangeSceneAction::Redo() const
+{
+    UpdateScene(newData_);
+}
+
+void ChangeSceneAction::Undo() const
+{
+    UpdateScene(oldData_);
+}
+
+void ChangeSceneAction::UpdateScene(const PackedSceneData& data) const
+{
+    data.ToScene(scene_);
+}
+
+bool ChangeSceneAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ChangeSceneAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_)
+        return false;
+
+    newData_ = otherAction->newData_;
     return true;
 }
 

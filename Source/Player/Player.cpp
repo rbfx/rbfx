@@ -24,8 +24,10 @@
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Plugins/PluginApplication.h>
 #include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #if URHO3D_SYSTEMUI
@@ -54,10 +56,6 @@ void Player::Setup()
 #endif
     engineParameters_[EP_PLUGINS] = ea::string::joined(PluginApplication::GetStaticPlugins(), ";");
 
-    settings_ = ApplicationSettings::LoadForCurrentApplication(context_);
-    for (const auto& [name, value] : settings_->GetParametersForCurrentFlavor())
-        engineParameters_[name] = value;
-
     PluginApplication::RegisterStaticPlugins();
 }
 
@@ -79,7 +77,8 @@ void Player::Start()
         ui->LoadFont(Format("Fonts/{}", font));
 #endif
 
-    const StringVector loadedPlugins = engineParameters_[EP_PLUGINS].GetString().split(';');
+    auto engine = GetSubsystem<Engine>();
+    const StringVector loadedPlugins = engine->GetParameter(EP_PLUGINS).GetString().split(';');
 
     auto pluginManager = GetSubsystem<PluginManager>();
     pluginManager->SetPluginsLoaded(loadedPlugins);
@@ -90,6 +89,9 @@ void Player::Stop()
 {
     auto pluginManager = GetSubsystem<PluginManager>();
     pluginManager->StopApplication();
+
+    auto stateManager = GetSubsystem<StateManager>();
+    stateManager->Reset();
 }
 
 }

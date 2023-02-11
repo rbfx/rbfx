@@ -76,14 +76,14 @@ void BloomPass::InitializeStates()
     pipelineStates_->bright_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BRIGHT");
     pipelineStates_->blurH_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURH");
     pipelineStates_->blurV_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURV");
-    pipelineStates_->bloom_ = renderBufferManager_->CreateQuadPipelineState(BLEND_PREMULALPHA, "v2/P_Bloom", "COMBINE");
+    pipelineStates_->bloom_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ADD, "v2/P_Bloom", "COMBINE");
 }
 
 unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
 {
     Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
     const IntVector2 inputSize = viewportTexture->GetSize();
-    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(inputSize);
+    const Vector2 inputInvSize = Vector2::ONE / inputSize.ToVector2();
 
     const ShaderResourceDesc shaderResources[] = { { TU_DIFFUSE, viewportTexture } };
     const auto shaderParameters = GetShaderParameters(inputInvSize);
@@ -105,7 +105,7 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
     ShaderResourceDesc shaderResources[1];
     shaderResources[0].unit_ = TU_DIFFUSE;
 
-    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(final->GetTexture2D()->GetSize());
+    const Vector2 inputInvSize = Vector2::ONE / final->GetTexture2D()->GetSize().ToVector2();
     const auto shaderParameters = GetShaderParameters(inputInvSize);
 
     DrawQuadParams drawParams;
@@ -171,7 +171,7 @@ void BloomPass::Execute(Camera* camera)
         intensityMultipliers_[i] *= settings_.intensity_ / totalIntensity;
 
     renderBufferManager_->SwapColorBuffers(false);
-    renderBufferManager_->SetOutputRenderTargers();
+    renderBufferManager_->SetOutputRenderTargets();
     for (unsigned i = 0; i < numIterations; ++i)
         ApplyBloom(textures_[i].final_, intensityMultipliers_[i]);
 }

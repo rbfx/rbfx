@@ -65,6 +65,16 @@
 %csattribute(Urho3D::AreaAllocator, %arg(int), Height, GetHeight);
 %csattribute(Urho3D::AreaAllocator, %arg(bool), FastMode, GetFastMode);
 %csattribute(Urho3D::Circle, %arg(bool), IsValid, IsValid);
+%csattribute(Urho3D::IKTrigonometricChain, %arg(Urho3D::IKNode *), BeginNode, GetBeginNode);
+%csattribute(Urho3D::IKTrigonometricChain, %arg(Urho3D::IKNode *), MiddleNode, GetMiddleNode);
+%csattribute(Urho3D::IKTrigonometricChain, %arg(Urho3D::IKNode *), EndNode, GetEndNode);
+%csattribute(Urho3D::IKTrigonometricChain, %arg(float), FirstLength, GetFirstLength);
+%csattribute(Urho3D::IKTrigonometricChain, %arg(float), SecondLength, GetSecondLength);
+%csattribute(Urho3D::IKTrigonometricChain, %arg(Urho3D::Quaternion), CurrentChainRotation, GetCurrentChainRotation);
+%csattribute(Urho3D::IKEyeChain, %arg(Urho3D::Vector3), LocalEyeOffset, GetLocalEyeOffset);
+%csattribute(Urho3D::IKEyeChain, %arg(Urho3D::Vector3), LocalEyeDirection, GetLocalEyeDirection);
+%csattribute(Urho3D::IKChain, %arg(ea::vector<IKNodeSegment>), Segments, GetSegments);
+%csattribute(Urho3D::IKChain, %arg(ea::vector<IKNode *>), Nodes, GetNodes);
 %csattribute(Urho3D::Matrix2, %arg(bool), IsNaN, IsNaN);
 %csattribute(Urho3D::Matrix2, %arg(bool), IsInf, IsInf);
 %csattribute(Urho3D::RandomEngine, %arg(ea::pair<float, float>), StandardNormalFloatPair, GetStandardNormalFloatPair);

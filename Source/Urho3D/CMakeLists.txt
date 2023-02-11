@@ -34,8 +34,6 @@ macro (define_engine_source_files)
             Urho3D.h
             Graphics/Direct3D11/D3D11GraphicsImpl.cpp
             Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/Direct3D9/D3D9GraphicsImpl.cpp
-            Graphics/Direct3D9/D3D9GraphicsImpl.h
             Graphics/GraphicsImpl.h
             Graphics/OpenGL/OGLGraphicsImpl.h
             IK/IKConverters.h
@@ -61,8 +59,6 @@ if (NOT MINI_URHO)
         define_engine_source_files (Graphics/OpenGL)
     elseif (URHO3D_D3D11)
         define_engine_source_files (Graphics/Direct3D11)
-    elseif (URHO3D_D3D9)
-        define_engine_source_files (Graphics/Direct3D9)
     endif ()
 else ()
     # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
@@ -108,6 +104,10 @@ endif ()
 
 if (URHO3D_SYSTEMUI)
     define_engine_source_files (SystemUI)
+endif ()
+
+if (URHO3D_ACTIONS)
+    define_engine_source_files (Actions)
 endif ()
 
 # Remove compute source files as needed
@@ -188,7 +188,6 @@ set (THIRD_PARTY_DEPENDENCIES
     IconFontCppHeaders
     Civetweb
     SLikeNet
-    ik
     Detour
     DetourCrowd
     DetourTileCache
@@ -198,7 +197,6 @@ set (THIRD_PARTY_DEPENDENCIES
     ImGui
     LibCpuId
     GLEW
-    MojoShader
     nativefiledialog
     CLI11
     fmt
@@ -349,38 +347,26 @@ if (NOT MINI_URHO)
             target_link_libraries (Urho3D PUBLIC GL)
         endif ()
     else ()
-        if (URHO3D_D3D9)
-            find_package(DirectX REQUIRED D3D9)
-        else ()
-            find_package(DirectX REQUIRED D3D11)
-        endif ()
+        find_package(DirectX REQUIRED D3D11)
         target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
     endif ()
 endif ()
 
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")
-    target_compile_options(Urho3D PRIVATE -Wno-warn-absolute-paths -Wno-unknown-warning-option)
     if (URHO3D_THREADING)
         target_compile_options(Urho3D PRIVATE "-s USE_PTHREADS=1")
     endif ()
     set_target_properties(Urho3D PROPERTIES COMPILE_OPTIONS $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:-O3>)
-    set_target_properties(Urho3D PROPERTIES LINK_FLAGS_RELEASE "-s AGGRESSIVE_VARIABLE_ELIMINATION=1")
+    set_target_properties(Urho3D PROPERTIES LINK_FLAGS_RELEASE -sAGGRESSIVE_VARIABLE_ELIMINATION=1)
     target_compile_options(Urho3D PUBLIC $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:${EMCC_WITH_SOURCE_MAPS_FLAG}>)
-    target_link_libraries(Urho3D PUBLIC "-s DISABLE_EXCEPTION_CATCHING=1" "-s FORCE_FILESYSTEM=1" "-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
-    if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 2.0.18)
-        set (EXTRA_ "EXTRA_")
-    endif ()
+    target_link_libraries(Urho3D PUBLIC -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -lidbfs.js)
     target_link_libraries(Urho3D PUBLIC "-s ${EXTRA_}EXPORTED_RUNTIME_METHODS=['Pointer_stringify']" --bind)
     if (NOT EMSCRIPTEN_TOTAL_MEMORY OR "${EMSCRIPTEN_TOTAL_MEMORY}" STREQUAL "0")
         target_link_libraries(Urho3D PUBLIC "-s ALLOW_MEMORY_GROWTH=1" --no-heap-copy)
     else ()
         math(EXPR EMSCRIPTEN_TOTAL_MEMORY_BYTES "${EMSCRIPTEN_TOTAL_MEMORY} * 1024 * 1024")
-        if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 1.39.9)
-            target_link_libraries(Urho3D PUBLIC "-s TOTAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
-        else ()
-            target_link_libraries(Urho3D PUBLIC "-s INITIAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
-        endif ()
+        target_link_libraries(Urho3D PUBLIC "-s INITIAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
     endif ()
 endif ()
 
@@ -547,7 +533,7 @@ list (REMOVE_DUPLICATES URHO3D_ENGINE_CONFIG)
 list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
 # Give defines without value a value "1".
 string (REPLACE ";" "=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")                   # Append =1 to all defines
-string (REGEX REPLACE "([0-9]|>|\")=1" "\\1" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")   # Clear =1 from defines that already had a value
+string (REGEX REPLACE "(\=[0-9]+)+;" "\\1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")   # Clear =1 from defines that already had a value
 # Turn list into c++ preprocessor code
 string (REGEX REPLACE "([^=]+)=([^;]+);" "#ifndef \\1\n#   define \\1 \\2\n#endif\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
 # This will be commented out line in the header.

@@ -117,7 +117,7 @@ void RmlRenderer::BeginRendering()
     isRenderSurfaceSRGB_ = RenderSurface::GetSRGB(graphics, renderSurface_);
     viewportSize_ = graphics->GetViewport().Size();
 
-    const Vector2 invScreenSize = Vector2::ONE / static_cast<Vector2>(viewportSize_);
+    const Vector2 invScreenSize = Vector2::ONE / viewportSize_.ToVector2();
     Vector2 scale(2.0f * invScreenSize.x_, -2.0f * invScreenSize.y_);
     Vector2 offset(-1.0f, 1.0f);
     if (renderSurface_)
@@ -249,7 +249,7 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
         drawQueue_->CommitShaderParameterGroup(SP_OBJECT);
     }
 
-    drawQueue_->DrawIndexedLegacy(firstIndex, num_indices, firstVertex, num_vertices);
+    drawQueue_->DrawIndexed(firstIndex, num_indices);
 }
 
 void RmlRenderer::EnableScissorRegion(bool enable)

@@ -20,18 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include <Urho3D/Precompiled.h>
 
-#include "../Core/Context.h"
-#include "../Core/Exception.h"
-#include "../IO/Log.h"
-#include "../Network/Connection.h"
-#include "../Network/Network.h"
-#include "../Replica/NetworkObject.h"
-#include "../Replica/ReplicationManager.h"
-#include "../Replica/NetworkSettingsConsts.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/Exception.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Network/Connection.h>
+#include <Urho3D/Network/Network.h>
+#include <Urho3D/Replica/NetworkObject.h>
+#include <Urho3D/Replica/NetworkSettingsConsts.h>
+#include <Urho3D/Replica/ReplicationManager.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/SceneEvents.h>
 
 namespace Urho3D
 {
@@ -69,6 +69,12 @@ void NetworkObjectRegistry::OnComponentRemoved(TrackedComponentBase* baseCompone
     auto networkObject = static_cast<NetworkObject*>(baseComponent);
 
     const NetworkId networkId = networkObject->GetNetworkId();
+
+    if (NetworkObject* parentObject = networkObject->GetParentNetworkObject())
+    {
+        if (parentObject->GetNetworkId() != NetworkId::None)
+            QueueNetworkObjectUpdate(parentObject);
+    }
 
     OnNetworkObjectRemoved(this, networkObject);
 
@@ -119,6 +125,7 @@ void NetworkObjectRegistry::UpdateNetworkObjects()
             networkObject->UpdateObjectHierarchy();
             networkObject->GetNode()->GetWorldTransform();
         }
+        networkObjectsDirty_[index] = false;
     }
 }
 
@@ -184,8 +191,6 @@ void ReplicationManager::OnSceneSet(Scene* scene)
 
     if (scene)
     {
-        URHO3D_ASSERT(!IsReplicated(), "ReplicationManager shall never be replicated component");
-
         SubscribeToEvent(scene, E_SCENEUPDATE,
             [this](StringHash, VariantMap& eventData)
         {
@@ -194,11 +199,8 @@ void ReplicationManager::OnSceneSet(Scene* scene)
             OnSceneUpdate(timeStep);
         });
 
-        SubscribeToEvent(scene, E_SCENEPOSTUPDATE,
-            [this](StringHash, VariantMap& eventData)
-        {
-            UpdateNetworkObjects();
-        });
+        SubscribeToEvent(
+            scene, E_SCENEPOSTUPDATE, [this](StringHash, VariantMap& eventData) { UpdateNetworkObjects(); });
     }
     else
     {
@@ -257,8 +259,7 @@ void ReplicationManager::OnSceneUpdate(float timeStep)
         break;
     }
 
-    default:
-        break;
+    default: break;
     }
 }
 
@@ -354,7 +355,8 @@ const Variant& ReplicationManager::GetSetting(const NetworkSetting& setting) con
         return Variant::EMPTY;
 }
 
-bool ReplicationManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+bool ReplicationManager::ProcessMessage(
+    AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     if (client_)
     {
@@ -407,8 +409,8 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     // If ready, initialize
     if (connection->IsClockSynchronized() && client_->IsReadyToInitialize())
     {
-        client_->replica_ = MakeShared<ClientReplica>(
-            GetScene(), connection, *client_->initialClock_, *client_->serverSettings_);
+        client_->replica_ =
+            MakeShared<ClientReplica>(GetScene(), connection, *client_->initialClock_, *client_->serverSettings_);
 
         connection->SendSerializedMessage(
             MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, PT_RELIABLE_UNORDERED);
@@ -430,4 +432,4 @@ ea::string ReplicationManager::GetUninitializedClientDebugInfo() const
     return Format("Connecting... Waiting for {}...", ea::string::joined(waitList, ", "));
 }
 
-}
+} // namespace Urho3D

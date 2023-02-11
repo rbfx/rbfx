@@ -39,7 +39,7 @@ public:
 
     /// Implement BaseResourceFactory.
     /// @{
-    ea::string GetDefaultFileName() const override { return "Default.AssetPipeline.json"; }
+    ea::string GetDefaultFileName() const override { return "Default.assetpipeline"; }
     void RenderAuxilary() override;
     void CommitAndClose() override;
     /// @}

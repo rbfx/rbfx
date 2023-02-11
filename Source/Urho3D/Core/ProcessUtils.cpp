@@ -360,10 +360,6 @@ const ea::vector<ea::string>& GetArguments()
 ea::string GetConsoleInput()
 {
     ea::string ret;
-#ifdef URHO3D_TESTING
-    // When we are running automated tests, reading the console may block. Just return empty in that case
-    return ret;
-#else
 #if defined(UWP)
     // ...
 #elif defined(_WIN32)
@@ -429,30 +425,62 @@ ea::string GetConsoleInput()
 #endif
 
     return ret;
+}
+
+PlatformId GetPlatform()
+{
+#if defined(__ANDROID__)
+    return PlatformId::Android;
+#elif defined(IOS)
+    return PlatformId::iOS;
+#elif defined(TVOS)
+    return PlatformId::tvOS;
+#elif defined(__APPLE__)
+    return PlatformId::MacOS;
+#elif UWP
+    return PlatformId::UniversalWindowsPlatform;
+#elif defined(_WIN32)
+    return PlatformId::Windows;
+#elif defined(RPI)
+    return PlatformId::RaspberryPi;
+#elif defined(__EMSCRIPTEN__)
+    return PlatformId::Web;
+#elif defined(__linux__)
+    return PlatformId::Linux;
+#else
+    return PlatformId::Unknown;
 #endif
 }
 
-ea::string GetPlatform()
+ea::string GetPlatformName()
 {
-#if defined(__ANDROID__)
-    return "Android";
-#elif defined(IOS)
-    return "iOS";
-#elif defined(TVOS)
-    return "tvOS";
-#elif defined(__APPLE__)
-    return "macOS";
-#elif defined(_WIN32)
-    return "Windows";
-#elif defined(RPI)
-    return "Raspberry Pi";
-#elif defined(__EMSCRIPTEN__)
-    return "Web";
-#elif defined(__linux__)
-    return "Linux";
-#else
-    return "(?)";
-#endif
+    switch (GetPlatform())
+    {
+    case PlatformId::Windows:
+        return "Windows";
+    case PlatformId::UniversalWindowsPlatform:
+        return "UWP";
+
+    case PlatformId::Linux:
+        return "Linux";
+    case PlatformId::Android:
+        return "Android";
+    case PlatformId::RaspberryPi:
+        return "Raspberry Pi";
+
+    case PlatformId::MacOS:
+        return "macOS";
+    case PlatformId::iOS:
+        return "iOS";
+    case PlatformId::tvOS:
+        return "tvOS";
+
+    case PlatformId::Web:
+        return "Web";
+
+    default:
+        return "(?)";
+    }
 }
 
 unsigned GetNumPhysicalCPUs()

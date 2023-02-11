@@ -24,12 +24,12 @@
 
 #pragma once
 
-#include "../Core/Assert.h"
-#include "../Container/FlagSet.h"
-#include "../Scene/Component.h"
-#include "../Network/AbstractConnection.h"
-#include "../Replica/NetworkCallbacks.h"
-#include "../Replica/ReplicationManager.h"
+#include <Urho3D/Container/FlagSet.h>
+#include <Urho3D/Core/Assert.h>
+#include <Urho3D/Network/AbstractConnection.h>
+#include <Urho3D/Replica/NetworkCallbacks.h>
+#include <Urho3D/Replica/ReplicationManager.h>
+#include <Urho3D/Scene/Component.h>
 
 #include <EASTL/fixed_vector.h>
 #include <EASTL/optional.h>
@@ -82,10 +82,10 @@ public:
     void SetNetworkMode(NetworkObjectMode mode) { networkMode_ = mode; }
     /// @}
 
-    /// Return current or last NetworkId. Return InvalidNetworkId if not registered.
+    /// Return current or last NetworkId. Return NetworkId::None if not registered.
     NetworkId GetNetworkId() const { return GetReference(); }
     ReplicationManager* GetReplicationManager() const { return static_cast<ReplicationManager*>(GetRegistry()); }
-    NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
+    NetworkId GetParentNetworkId() const;
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
     const ea::vector<WeakPtr<NetworkObject>>& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
@@ -132,4 +132,4 @@ private:
     /// @}
 };
 
-}
+} // namespace Urho3D

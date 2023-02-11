@@ -41,7 +41,7 @@ void Break::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> BreakPatterns{
+static const ea::vector<NodePattern> BreakPatterns{
     MakePattern(
         BreakInstance<Vector3, float, float, float>()
         , ParticleGraphTypedPin<Vector3>("vec")

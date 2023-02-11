@@ -32,7 +32,7 @@ namespace Urho3D
 void ArchiveBase::ReadBytesFromHexString(
     ea::string_view elementName, const ea::string& string, void* bytes, unsigned size)
 {
-    static thread_local ByteVector tempBuffer;
+    thread_local ByteVector tempBuffer;
 
     if (!HexStringToBuffer(tempBuffer, string))
         throw UnexpectedElementValueException(elementName);

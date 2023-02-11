@@ -81,7 +81,9 @@ enum VariantType : unsigned char
     VAR_VARIANTCURVE,
     VAR_STRINGVARIANTMAP,
     // Add new types here
-    MAX_VAR_TYPES
+    MAX_VAR_TYPES,
+    /// There should be at most 64 variant types.
+    MAX_VAR_MASK = 0b00111111,
 };
 
 class Variant;
@@ -231,8 +233,12 @@ public:
 
     /// Assign value to destination.
     virtual bool CopyTo(CustomVariantValue& dest) const { return false; }
+    /// Move-assign value to destination.
+    virtual bool MoveTo(CustomVariantValue& dest) { return false; }
     /// Clone object over destination.
     virtual void CloneTo(void* dest) const { }
+    /// Move object over destination.
+    virtual void RelocateTo(void* dest) { }
     /// Get size.
     virtual unsigned GetSize() const { return sizeof(CustomVariantValue); }
 
@@ -261,6 +267,11 @@ template <class T> struct CustomVariantValueTraits
     static void Copy(T& dest, const T& src)
     {
         dest = src;
+    }
+    /// Move value.
+    static void Move(T& dest, T& src)
+    {
+        dest = std::move(src);
     }
     /// Compare values.
     static bool Compare(const T& lhs, const T& rhs)
@@ -323,6 +334,8 @@ template <class T> struct CustomVariantValueTraits<ea::unique_ptr<T>>
 {
     /// Copy value.
     static void Copy(ea::unique_ptr<T>& dest, const ea::unique_ptr<T>& src) { dest = ea::make_unique<T>(*src); }
+    /// Move value.
+    static void Move(ea::unique_ptr<T>& dest, ea::unique_ptr<T>& src) { dest = std::move(src); }
     /// Compare types.
     static bool Compare(const ea::unique_ptr<T>& lhs, const ea::unique_ptr<T>& rhs) { return CustomVariantValueTraits<T>::Compare(*lhs, *rhs); }
     /// Check whether the value is zero.
@@ -339,20 +352,29 @@ template <class T> class CustomVariantValueImpl final : public CustomVariantValu
 public:
     /// This class name.
     using ClassName = CustomVariantValueImpl<T>;
-    /// Type traits.
+    /// Type traits for the type.
     using Traits = CustomVariantValueTraits<T>;
+
     /// Construct from value.
     explicit CustomVariantValueImpl(const T& value)
         : CustomVariantValue(typeid(T))
     {
         Traits::Copy(value_, value);
     }
+    /// Move-construct from value.
+    explicit CustomVariantValueImpl(T&& value)
+        : CustomVariantValue(typeid(T))
+    {
+        Traits::Move(value_, value);
+    }
+
     /// Get value.
     T& GetValue() { return value_; }
     /// Get const value.
     const T& GetValue() const { return value_; }
 
-    /// Assign value to destination.
+    /// Implement CustomVariantValue.
+    /// @{
     bool CopyTo(CustomVariantValue& dest) const override
     {
         if (T* destValue = dest.GetValuePtr<T>())
@@ -362,23 +384,35 @@ public:
         }
         return false;
     }
-    /// Clone object over destination.
+
+    bool MoveTo(CustomVariantValue& dest) override
+    {
+        if (T* destValue = dest.GetValuePtr<T>())
+        {
+            Traits::Move(*destValue, value_);
+            return true;
+        }
+        return false;
+    }
+
     void CloneTo(void* dest) const override { new (dest) ClassName(value_); }
-    /// Get size.
+
+    void RelocateTo(void* dest) override { new (dest) ClassName(std::move(value_)); }
+
     unsigned GetSize() const override { return sizeof(ClassName); }
 
-    /// Compare to another custom value.
     bool Compare(const CustomVariantValue& rhs) const override
     {
         const T* rhsValue = rhs.GetValuePtr<T>();
         return rhsValue && Traits::Compare(value_, *rhsValue);
     }
-    /// Compare to zero.
-    bool IsZero() const override { return Traits::IsZero(value_);}
-    /// Convert custom value to string.
+
+    bool IsZero() const override { return Traits::IsZero(value_); }
+
     ea::string ToString() const override { return Traits::ToString(value_); }
-    /// Serialize to Archive.
+
     void Serialize(Archive& archive, const char* name) override { Traits::Serialize(archive, name, value_); }
+    /// @}
 
 private:
     /// Value.
@@ -678,6 +712,12 @@ public:
         *this = value;
     }
 
+    /// Move-construct from another variant.
+    Variant(Variant&& value)
+    {
+        *this = ea::move(value);
+    }
+
     /// Destruct.
     ~Variant()
     {
@@ -692,6 +732,9 @@ public:
 
     /// Assign from another variant.
     Variant& operator =(const Variant& rhs);
+
+    /// Move-assign from another variant.
+    Variant& operator =(Variant&& rhs);
 
     /// Assign from an integer.
     Variant& operator =(int rhs)
@@ -1226,6 +1269,8 @@ public:
     void SetBuffer(const void* data, unsigned size);
     /// Set custom value.
     void SetCustomVariantValue(const CustomVariantValue& value);
+    /// Set custom value without copying.
+    void SetCustomVariantValue(CustomVariantValue&& value);
     /// Set custom value.
     template <class T> void SetCustom(T value)
     {
@@ -1596,10 +1641,10 @@ private:
 };
 
 /// Make custom variant value.
-template <typename T> Variant MakeCustomValue(const T& value)
+template <typename T> Variant MakeCustomValue(T&& value)
 {
     Variant var;
-    var.SetCustom(value);
+    var.SetCustom(ea::forward<T>(value));
     return var;
 }
 

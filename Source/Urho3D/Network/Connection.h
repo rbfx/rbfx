@@ -56,8 +56,6 @@ class PackageFile;
 /// Queued remote event.
 struct RemoteEvent
 {
-    /// Remote sender node ID (0 if not a remote node event).
-    unsigned senderID_;
     /// Event type.
     StringHash eventType_;
     /// Event data.
@@ -73,7 +71,7 @@ struct PackageDownload
     PackageDownload();
 
     /// Destination file.
-    SharedPtr<File> file_;
+    AbstractFilePtr file_;
     /// Already received fragments.
     ea::hash_set<unsigned> receivedFragments_;
     /// Package name.
@@ -93,7 +91,7 @@ struct PackageUpload
     PackageUpload();
 
     /// Source file.
-    SharedPtr<File> file_;
+    AbstractFilePtr file_;
     /// Current fragment index.
     unsigned fragment_;
     /// Total number of fragments.
@@ -134,8 +132,6 @@ public:
     PacketType GetPacketType(bool reliable, bool inOrder);
     /// Send a remote event.
     void SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
-    /// Send a remote event with the specified node as sender.
-    void SendRemoteEvent(Node* node, StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Assign scene. On the server, this will cause the client to load it.
     /// @property
     void SetScene(Scene* newScene);

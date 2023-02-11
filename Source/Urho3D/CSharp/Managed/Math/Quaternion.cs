@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,8 +29,10 @@ namespace Urho3DNet
 {
     /// Rotation represented as a four-dimensional normalized vector.
     [StructLayout(LayoutKind.Sequential)]
-    public struct Quaternion : IEquatable<Quaternion>
+    public struct Quaternion : IEquatable<Quaternion>, IApproximateEquatable<Quaternion>
     {
+        public static IEqualityComparer<Quaternion> ApproximateEqualityComparer => ApproximateEqualityComparer<Quaternion>.Default;
+
         /// Construct from values, or identity quaternion by default.
         public Quaternion(float w = 1, float x = 0, float y = 0, float z = 0)
         {
@@ -356,11 +358,22 @@ namespace Urho3DNet
             return W * rhs.W + X * rhs.X + Y * rhs.Y + Z * rhs.Z;
         }
 
-        /// Test for equality with another quaternion with epsilon.
+        /// <summary>Indicates whether the current object is equal to another object of the same type.</summary>
+        /// <param name="rhs">An object to compare with this object.</param>
+        /// <returns>
+        /// <see langword="true" /> if the current object is equal to the <paramref name="rhs" /> parameter; otherwise, <see langword="false" />.</returns>
         public bool Equals(Quaternion rhs)
         {
-            return MathDefs.Equals(W, rhs.W) && MathDefs.Equals(X, rhs.X) && MathDefs.Equals(Y, rhs.Y) &&
-                   MathDefs.Equals(Z, rhs.Z);
+            return W == rhs.W && X == rhs.X && Y == rhs.Y && Z == rhs.Z;
+        }
+
+        /// Test for equality with another quaternion with epsilon.
+        public bool ApproximatelyEquivalent(Quaternion rhs, float epsilon = MathDefs.Epsilon)
+        {
+            return MathDefs.ApproximatelyEquivalent(W, rhs.W, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(X, rhs.X, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(Y, rhs.Y, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(Z, rhs.Z, epsilon);
         }
 
         /// Return whether is NaN.
@@ -378,17 +391,23 @@ namespace Urho3DNet
                 // Order of rotations: Z first, then X, then Y
                 float check = 2.0f * (-Y * Z + W * X);
 
-                if (check < -0.995f)
+                // More on singularity handling here:
+                // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+                const float singularityThreshold = 0.999999f;
+                float unit = W * W + X * X + Y * Y + Z * Z;
+
+                if (check < -singularityThreshold * unit)
                 {
-                    return new Vector3(-90.0f, 0.0f,
-                        MathDefs.RadiansToDegrees(-(float) Math.Atan2(2.0f * (X * Z - W * Y),
-                            1.0f - 2.0f * (Y * Y + Z * Z))));
+                    return new Vector3(
+                        -90.0f,
+                        MathDefs.RadiansToDegrees(-(float) Math.Atan2(2.0f * (X * Z - W * Y), 1.0f - 2.0f * (Y * Y + Z * Z)))
+                        , 0.0f);
                 }
-                else if (check > 0.995f)
+                else if (check > singularityThreshold * unit)
                 {
-                    return new Vector3(90.0f, 0.0f,
-                        MathDefs.RadiansToDegrees((float) Math.Atan2(2.0f * (X * Z - W * Y),
-                            1.0f - 2.0f * (Y * Y + Z * Z))));
+                    return new Vector3(90.0f,
+                        MathDefs.RadiansToDegrees(-(float) Math.Atan2(2.0f * (X * Z - W * Y), 1.0f - 2.0f * (Y * Y + Z * Z)))
+                        , 0.0f);
                 }
                 else
                 {
@@ -507,16 +526,11 @@ namespace Urho3DNet
             return obj is Quaternion other && Equals(other);
         }
 
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = W.GetHashCode();
-                hashCode = (hashCode * 397) ^ X.GetHashCode();
-                hashCode = (hashCode * 397) ^ Y.GetHashCode();
-                hashCode = (hashCode * 397) ^ Z.GetHashCode();
-                return hashCode;
-            }
+            return HashCode.Combine(W, X, Y, Z);
         }
     }
 }

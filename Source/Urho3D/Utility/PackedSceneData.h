@@ -48,6 +48,9 @@ public:
 
     /// Return node ID.
     unsigned GetId() const { return id_; }
+    /// Return whether the node spawn would affect the entire scene.
+    /// Used to correctly handle undo/redo of node creation.
+    AttributeScopeHint GetEffectiveScopeHint() const { return scopeHint_; }
 
 private:
     unsigned id_{};
@@ -55,6 +58,7 @@ private:
     unsigned indexInParent_{};
     ea::string name_;
     VectorBuffer data_;
+    AttributeScopeHint scopeHint_{};
 };
 
 /// Packed component data.
@@ -72,6 +76,7 @@ public:
 
     /// Return component ID.
     unsigned GetId() const { return id_; }
+    StringHash GetType() const { return type_; }
 
 private:
     unsigned id_{};

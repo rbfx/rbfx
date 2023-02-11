@@ -147,8 +147,8 @@ void Terrain::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Occlusion LOD level", GetOcclusionLodLevel, SetOcclusionLodLevelAttr, unsigned, M_MAX_UNSIGNED, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bake Lightmap", bool, bakeLightmap_, MarkTerrainDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Scale in Lightmap", float, scaleInLightmap_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdatePatchesLightmaps, 0, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdatePatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_FILE | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdatePatchesLightmaps, 0, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdatePatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_DEFAULT | AM_NOEDIT);
 }
 
 void Terrain::ApplyAttributes()
@@ -1051,7 +1051,7 @@ void Terrain::CreateGeometry()
                     {
                         // Create the patch scene node as local and temporary so that it is not unnecessarily serialized to either
                         // file or replicated over the network
-                        patchNode = node_->CreateTemporaryChild(nodeName, LOCAL);
+                        patchNode = node_->CreateTemporaryChild(nodeName);
                     }
 
                     patchNode->SetPosition(Vector3(patchWorldOrigin_.x_ + (float)x * patchWorldSize_.x_, 0.0f,

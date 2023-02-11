@@ -24,12 +24,12 @@
 
 #pragma once
 
-#include "../Replica/NetworkObject.h"
+#include <Urho3D/Replica/NetworkObject.h>
 
 namespace Urho3D
 {
 
-class XMLFile;
+class PrefabResource;
 
 /// NetworkObject that is replicated on the client from prefab and is not updated afterwards.
 /// Note: object position in the hierarchy of NetworkObject-s is still maintained.
@@ -45,7 +45,7 @@ public:
 
     /// Attribute modification. Don't do that after replication!
     /// @{
-    void SetClientPrefab(XMLFile* prefab);
+    void SetClientPrefab(PrefabResource* prefab);
     /// @}
 
     /// Implement NetworkObject
@@ -65,9 +65,9 @@ protected:
     void SetClientPrefabAttr(const ResourceRef& value);
 
 private:
-    SharedPtr<XMLFile> clientPrefab_;
+    SharedPtr<PrefabResource> clientPrefab_;
 
-    NetworkId latestSentParentObject_{InvalidNetworkId};
+    NetworkId latestSentParentObject_{NetworkId::None};
 };
 
-};
+}; // namespace Urho3D

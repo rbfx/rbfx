@@ -118,10 +118,6 @@ if (NOT MINI_URHO)
         add_subdirectory (SLikeNet)
     endif ()
 
-    if (URHO3D_IK)
-        add_subdirectory (ik)
-    endif ()
-
     if (URHO3D_NAVIGATION)
         add_subdirectory (Detour)
         add_subdirectory (DetourCrowd)
@@ -149,10 +145,13 @@ if (NOT MINI_URHO)
     if (NOT ANDROID AND NOT ARM AND NOT WEB)
         if (DESKTOP)
             add_subdirectory (GLEW)
+<<<<<<< HEAD
             add_library(GLEW::glew ALIAS GLEW)  # For Diligent
         endif ()
         if (URHO3D_D3D9)
             add_subdirectory (MojoShader)
+=======
+>>>>>>> ef3e056e9f66c411127025a5b9c38d729dba713b
         endif ()
     endif ()
 

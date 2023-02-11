@@ -70,81 +70,106 @@ float Ray::HitDistance(const Plane& plane) const
 
 float Ray::HitDistance(const BoundingBox& box) const
 {
+    return HitDistanceAndNormal(box).distance_;
+}
+
+DistanceAndNormal Ray::HitDistanceAndNormal(const BoundingBox& box) const
+{
     // If undefined, no hit (infinite distance)
     if (!box.Defined())
-        return M_INFINITY;
+        return {};
 
     // Check for ray origin being inside the box
     if (box.IsInside(origin_))
-        return 0.0f;
+        return {-direction_, 0.0f};
 
-    float dist = M_INFINITY;
-
+    DistanceAndNormal result;
+    
     // Check for intersecting in the X-direction
     if (origin_.x_ < box.min_.x_ && direction_.x_ > 0.0f)
     {
         float x = (box.min_.x_ - origin_.x_) / direction_.x_;
-        if (x < dist)
+        if (x < result.distance_)
         {
             Vector3 point = origin_ + x * direction_;
-            if (point.y_ >= box.min_.y_ && point.y_ <= box.max_.y_ && point.z_ >= box.min_.z_ && point.z_ <= box.max_.z_)
-                dist = x;
+            if (point.y_ >= box.min_.y_ && point.y_ <= box.max_.y_ && point.z_ >= box.min_.z_
+                && point.z_ <= box.max_.z_)
+            {
+                result.distance_ = x;
+                result.normal_ = Vector3(-1.0f, 0.0f, 0.0f);
+            }
         }
     }
     if (origin_.x_ > box.max_.x_ && direction_.x_ < 0.0f)
     {
         float x = (box.max_.x_ - origin_.x_) / direction_.x_;
-        if (x < dist)
+        if (x < result.distance_)
         {
             Vector3 point = origin_ + x * direction_;
             if (point.y_ >= box.min_.y_ && point.y_ <= box.max_.y_ && point.z_ >= box.min_.z_ && point.z_ <= box.max_.z_)
-                dist = x;
+            {
+                result.distance_ = x;
+                result.normal_ = Vector3(1.0f, 0.0f, 0.0f);
+            }
         }
     }
     // Check for intersecting in the Y-direction
     if (origin_.y_ < box.min_.y_ && direction_.y_ > 0.0f)
     {
         float x = (box.min_.y_ - origin_.y_) / direction_.y_;
-        if (x < dist)
+        if (x < result.distance_)
         {
             Vector3 point = origin_ + x * direction_;
             if (point.x_ >= box.min_.x_ && point.x_ <= box.max_.x_ && point.z_ >= box.min_.z_ && point.z_ <= box.max_.z_)
-                dist = x;
+            {
+                result.distance_ = x;
+                result.normal_ = Vector3(0.0f, -1.0f, 0.0f);
+            }
         }
     }
     if (origin_.y_ > box.max_.y_ && direction_.y_ < 0.0f)
     {
         float x = (box.max_.y_ - origin_.y_) / direction_.y_;
-        if (x < dist)
+        if (x < result.distance_)
         {
             Vector3 point = origin_ + x * direction_;
             if (point.x_ >= box.min_.x_ && point.x_ <= box.max_.x_ && point.z_ >= box.min_.z_ && point.z_ <= box.max_.z_)
-                dist = x;
+            {
+                result.distance_ = x;
+                result.normal_ = Vector3(0.0f, 1.0f, 0.0f);
+            }
         }
     }
     // Check for intersecting in the Z-direction
     if (origin_.z_ < box.min_.z_ && direction_.z_ > 0.0f)
     {
         float x = (box.min_.z_ - origin_.z_) / direction_.z_;
-        if (x < dist)
+        if (x < result.distance_)
         {
             Vector3 point = origin_ + x * direction_;
             if (point.x_ >= box.min_.x_ && point.x_ <= box.max_.x_ && point.y_ >= box.min_.y_ && point.y_ <= box.max_.y_)
-                dist = x;
+            {
+                result.distance_ = x;
+                result.normal_ = Vector3(0.0f, 0.0f, -1.0f);
+            }
         }
     }
     if (origin_.z_ > box.max_.z_ && direction_.z_ < 0.0f)
     {
         float x = (box.max_.z_ - origin_.z_) / direction_.z_;
-        if (x < dist)
+        if (x < result.distance_)
         {
             Vector3 point = origin_ + x * direction_;
             if (point.x_ >= box.min_.x_ && point.x_ <= box.max_.x_ && point.y_ >= box.min_.y_ && point.y_ <= box.max_.y_)
-                dist = x;
+            {
+                result.distance_ = x;
+                result.normal_ = Vector3(0.0f, 0.0f, 1.0f);
+            }
+
         }
     }
 
-    return dist;
+    return result;
 }
 
 float Ray::HitDistance(const Frustum& frustum, bool solidInside) const
@@ -300,10 +325,10 @@ float Ray::HitDistance(const void* vertexData, unsigned vertexStride, const void
 {
     float nearest = M_INFINITY;
     const auto* vertices = (const unsigned char*)vertexData;
-    
+
     Vector3 tempNormal;
     Vector3* tempNormalPtr = outNormal ? &tempNormal : nullptr;
-    
+
     Vector3 barycentric;
     Vector3 tempBarycentric;
     Vector3* tempBarycentricPtr = outUV ? &tempBarycentric : nullptr;
@@ -491,7 +516,7 @@ Ray Ray::Transformed(const Matrix3x4& transform) const
 {
     Ray ret;
     ret.origin_ = transform * origin_;
-    ret.direction_ = transform * Vector4(direction_, 0.0f);
+    ret.direction_ = transform * direction_.ToVector4();
     return ret;
 }
 

@@ -393,36 +393,9 @@ bool Serializer::WriteStringVariantMap(const StringVariantMap& value)
 
 bool Serializer::WriteVLE(unsigned value)
 {
-    unsigned char data[4];
-
-    if (value < 0x80)
-        return WriteUByte((unsigned char)value);
-    else if (value < 0x4000)
-    {
-        data[0] = (unsigned char)(value | 0x80u);
-        data[1] = (unsigned char)(value >> 7u);
-        return Write(data, 2) == 2;
-    }
-    else if (value < 0x200000)
-    {
-        data[0] = (unsigned char)(value | 0x80u);
-        data[1] = (unsigned char)(value >> 7u | 0x80u);
-        data[2] = (unsigned char)(value >> 14u);
-        return Write(data, 3) == 3;
-    }
-    else
-    {
-        data[0] = (unsigned char)(value | 0x80u);
-        data[1] = (unsigned char)(value >> 7u | 0x80u);
-        data[2] = (unsigned char)(value >> 14u | 0x80u);
-        data[3] = (unsigned char)(value >> 21u);
-        return Write(data, 4) == 4;
-    }
-}
-
-bool Serializer::WriteNetID(unsigned value)
-{
-    return Write(&value, 3) == 3;
+    unsigned char data[MaxVariableLengthBytes<unsigned>];
+    const unsigned numBytes = EncodeVariableLength(value, data);
+    return Write(data, numBytes) == numBytes;
 }
 
 bool Serializer::WriteLine(const ea::string& value)

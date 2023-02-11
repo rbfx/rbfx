@@ -356,7 +356,6 @@ static void GetGLPrimitiveType(unsigned elementCount, PrimitiveType type, unsign
     }
 }
 
-const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
 
 Graphics::Graphics(Context* context) :
@@ -372,6 +371,7 @@ Graphics::Graphics(Context* context) :
     SetTextureUnitMappings();
     ResetCachedState();
 
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
     context_->RequireSDL(SDL_INIT_VIDEO);
 
 #ifdef __EMSCRIPTEN__
@@ -482,7 +482,6 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
 #endif
 
         SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
-        SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
 
         // Try 24-bit depth first, fallback to 16-bit
         for (const int depthSize : { 24, 16 })

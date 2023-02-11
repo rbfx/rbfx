@@ -41,7 +41,7 @@ void Clamp::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> ClampPatterns{
+static const ea::vector<NodePattern> ClampPatterns{
     MakePattern(
         ClampInstance<float, float>()
         , ParticleGraphTypedPin<float>("x")

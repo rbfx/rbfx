@@ -413,12 +413,11 @@ namespace Urho3DNet
             return obj is Sphere other && Equals(other);
         }
 
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                return (Center.GetHashCode() * 397) ^ Radius.GetHashCode();
-            }
+            return HashCode.Combine(Center, Radius);
         }
     }
 }

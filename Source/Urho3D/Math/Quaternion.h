@@ -470,6 +470,8 @@ public:
     Quaternion Slerp(const Quaternion& rhs, float t) const;
     /// Normalized linear interpolation with another quaternion.
     Quaternion Nlerp(const Quaternion& rhs, float t, bool shortestPath = false) const;
+    /// Decompose quaternion to swing and twist components. swing * twist is the original quaternion.
+    ea::pair<Quaternion, Quaternion> ToSwingTwist(const Vector3& twistAxis) const;
 
     /// Return float data.
     const float* Data() const { return &w_; }

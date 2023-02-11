@@ -127,8 +127,8 @@ void BillboardSet::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Shadow Distance", GetShadowDistance, SetShadowDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Animation LOD Bias", GetAnimationLodBias, SetAnimationLodBias, float, 1.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Billboards", GetBillboardsAttr, SetBillboardsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)
-        .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, billboardsStructureElementNames);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Billboards", GetBillboardsAttr, SetBillboardsAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT)
+        .SetMetadata(AttributeMetadata::VectorStructElements, billboardsStructureElementNames);
 }
 
 void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
@@ -846,7 +846,7 @@ void BillboardSet::CalculateFixedScreenSize(const FrameInfo& frame)
 
         for (unsigned i = 0; i < billboards_.size(); ++i)
         {
-            Vector4 projPos(viewProj * Vector4(billboardTransform * billboards_[i].position_, 1.0f));
+            Vector4 projPos(viewProj * billboardTransform * billboards_[i].position_.ToVector4(1.0f));
             float newScaleFactor = invViewHeight * halfViewWorldSize * projPos.w_;
             if (newScaleFactor != billboards_[i].screenScaleFactor_)
             {

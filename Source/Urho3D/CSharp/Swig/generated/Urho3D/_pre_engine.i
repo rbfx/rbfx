@@ -1,9 +1,13 @@
 %constant const char* EpApplicationName = "ApplicationName";
 %ignore Urho3D::EP_APPLICATION_NAME;
+%constant const char* EpApplicationPreferencesDir = "ApplicationPreferencesDir";
+%ignore Urho3D::EP_APPLICATION_PREFERENCES_DIR;
 %constant const char* EpAutoloadPaths = "AutoloadPaths";
 %ignore Urho3D::EP_AUTOLOAD_PATHS;
 %constant const char* EpBorderless = "Borderless";
 %ignore Urho3D::EP_BORDERLESS;
+%constant const char* EpConfigName = "ConfigName";
+%ignore Urho3D::EP_CONFIG_NAME;
 %constant const char* EpDumpShaders = "DumpShaders";
 %ignore Urho3D::EP_DUMP_SHADERS;
 %constant const char* EpEngineAutoLoadScripts = "EngineAutoLoadScripts";
@@ -52,8 +56,6 @@
 %ignore Urho3D::EP_PLUGINS;
 %constant const char* EpRefreshRate = "RefreshRate";
 %ignore Urho3D::EP_REFRESH_RATE;
-%constant const char* EpRenderPath = "RenderPath";
-%ignore Urho3D::EP_RENDER_PATH;
 %constant const char* EpResourcePackages = "ResourcePackages";
 %ignore Urho3D::EP_RESOURCE_PACKAGES;
 %constant const char* EpResourcePaths = "ResourcePaths";
@@ -64,8 +66,6 @@
 %ignore Urho3D::EP_SHADER_CACHE_DIR;
 %constant const char* EpShadows = "Shadows";
 %ignore Urho3D::EP_SHADOWS;
-%constant const char* EpSound = "Sound";
-%ignore Urho3D::EP_SOUND;
 %constant const char* EpSoundBuffer = "SoundBuffer";
 %ignore Urho3D::EP_SOUND_BUFFER;
 %constant const char* EpSoundInterpolation = "SoundInterpolation";
@@ -74,6 +74,8 @@
 %ignore Urho3D::EP_SOUND_MIX_RATE;
 %constant const char* EpSoundMode = "SoundMode";
 %ignore Urho3D::EP_SOUND_MODE;
+%constant const char* EpSound = "Sound";
+%ignore Urho3D::EP_SOUND;
 %constant const char* EpSystemuiFlags = "SystemUIFlags";
 %ignore Urho3D::EP_SYSTEMUI_FLAGS;
 %constant const char* EpTextureAnisotropy = "TextureAnisotropy";
@@ -116,6 +118,9 @@
 %ignore Urho3D::Param_ScenePosition;
 %constant const char* ParamScenerotation = "SceneRotation";
 %ignore Urho3D::Param_SceneRotation;
+%csattribute(Urho3D::ConfigFile, %arg(Urho3D::ConfigFile::ConfigFlavorVector), VariablesPerFlavor, GetVariablesPerFlavor);
+%csattribute(Urho3D::ConfigFile, %arg(Urho3D::ConfigFile::ConfigVariableDefinitionMap), VariableDefinitions, GetVariableDefinitions);
+%csattribute(Urho3D::ConfigFile, %arg(Urho3D::StringVariantMap), Variables, GetVariables);
 %csattribute(Urho3D::Engine, %arg(ea::string), AppPreferencesDir, GetAppPreferencesDir);
 %csattribute(Urho3D::Engine, %arg(float), NextTimeStep, GetNextTimeStep, SetNextTimeStep);
 %csattribute(Urho3D::Engine, %arg(int), MinFps, GetMinFps, SetMinFps);
@@ -127,8 +132,6 @@
 %csattribute(Urho3D::Engine, %arg(bool), IsInitialized, IsInitialized);
 %csattribute(Urho3D::Engine, %arg(bool), IsExiting, IsExiting);
 %csattribute(Urho3D::Engine, %arg(bool), IsHeadless, IsHeadless);
-%csattribute(Urho3D::ApplicationSettings, %arg(Urho3D::StringVariantMap), ParametersForCurrentFlavor, GetParametersForCurrentFlavor);
-%csattribute(Urho3D::ApplicationSettings, %arg(Urho3D::ApplicationSettings::FlavoredSettingsVector), ParametersPerFlavor, GetParametersPerFlavor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsActive, IsActive);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::Cursor *), Cursor, GetCursor, SetCursor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseVisible, IsMouseVisible, SetMouseVisible);
@@ -137,6 +140,7 @@
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::UIElement *), UIRoot, GetUIRoot);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::IntVector2), UICustomSize, GetUICustomSize, SetUICustomSize);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::Color), DefaultFogColor, GetDefaultFogColor, SetDefaultFogColor);
+%csattribute(Urho3D::ApplicationState, %arg(Urho3D::ActionManager *), ActionManager, GetActionManager);
 %csattribute(Urho3D::StateManager, %arg(Urho3D::ApplicationState *), State, GetState);
 %csattribute(Urho3D::StateManager, %arg(Urho3D::StringHash), TargetState, GetTargetState);
 %csattribute(Urho3D::StateManager, %arg(Urho3D::Window *), FadeOverlay, GetFadeOverlay);
@@ -185,13 +189,6 @@ public static partial class E
         public static implicit operator StringHash(EndPluginReloadEvent e) { return e._event; }
     }
     public static EndPluginReloadEvent EndPluginReload = new EndPluginReloadEvent();
-    public class EnqueueApplicationStateEvent {
-        private StringHash _event = new StringHash("EnqueueApplicationState");
-        public StringHash State = new StringHash("State");
-        public EnqueueApplicationStateEvent() { }
-        public static implicit operator StringHash(EnqueueApplicationStateEvent e) { return e._event; }
-    }
-    public static EnqueueApplicationStateEvent EnqueueApplicationState = new EnqueueApplicationStateEvent();
     public class StateTransitionStartedEvent {
         private StringHash _event = new StringHash("StateTransitionStarted");
         public StringHash From = new StringHash("From");

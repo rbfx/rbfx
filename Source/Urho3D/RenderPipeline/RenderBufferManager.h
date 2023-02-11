@@ -87,8 +87,8 @@ public:
     void SetRenderTargets(RenderBuffer* depthStencilBuffer,
         std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
 
-    void SetOutputRenderTargersRect(const IntRect& viewportRect);
-    void SetOutputRenderTargers();
+    void SetOutputRenderTargetsRect(const IntRect& viewportRect);
+    void SetOutputRenderTargets();
     /// @}
 
     /// Clear color, depth and/or stencil render target(s).
@@ -152,7 +152,7 @@ public:
 
     /// Return size of output region (not size of output texture itself).
     IntVector2 GetOutputSize() const { return viewportRect_.Size(); }
-    Vector2 GetInvOutputSize() const { return Vector2::ONE / static_cast<Vector2>(GetOutputSize()); }
+    Vector2 GetInvOutputSize() const { return Vector2::ONE / GetOutputSize().ToVector2(); }
     /// Return identity offset and scale used to convert clip space to UV space.
     Vector4 GetDefaultClipToUVSpaceOffsetAndScale() const;
     const RenderBufferManagerSettings& GetSettings() const { return settings_; }

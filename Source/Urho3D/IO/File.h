@@ -50,14 +50,6 @@ static const char* APK = "/apk/";
 static const char* APK = "";
 #endif
 
-/// File open mode.
-enum FileMode
-{
-    FILE_READ = 0,
-    FILE_WRITE,
-    FILE_READWRITE
-};
-
 class PackageFile;
 
 /// %File opened either through the filesystem or from within a package file.
@@ -83,7 +75,7 @@ public:
     unsigned Write(const void* data, unsigned size) override;
 
     /// Return absolute file name in file system.
-    const ea::string& GetAbsoluteName() const { return absoluteFileName_; }
+    const ea::string& GetAbsoluteName() const override;
 
     /// Return a checksum of the file contents using the SDBM hash algorithm.
     unsigned GetChecksum() override;
@@ -93,7 +85,7 @@ public:
     /// Open from within a package file. Return true if successful.
     bool Open(PackageFile* package, const ea::string& fileName);
     /// Close the file.
-    void Close();
+    void Close() override;
     /// Flush any buffered output to the file.
     void Flush();
 
@@ -103,7 +95,7 @@ public:
 
     /// Return whether is open.
     /// @property
-    bool IsOpen() const;
+    bool IsOpen() const override;
 
     /// Return the file handle.
     void* GetHandle() const { return handle_; }

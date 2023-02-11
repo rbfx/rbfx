@@ -24,6 +24,7 @@
 
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Component.h>
+#include <Urho3D/Scene/PrefabWriter.h>
 
 namespace Tests
 {
@@ -37,11 +38,11 @@ void SerializeAndDeserializeScene(Scene* scene)
     scene->LoadXML(xmlRoot);
 }
 
-SharedPtr<XMLFile> ConvertNodeToPrefab(Node* node)
+SharedPtr<PrefabResource> ConvertNodeToPrefab(Node* node)
 {
-    auto prefab = MakeShared<XMLFile>(node->GetContext());
-    XMLElement prefabRootElement = prefab->CreateRoot("node");
-    node->SaveXML(prefabRootElement);
+    auto prefab = MakeShared<PrefabResource>(node->GetContext());
+    prefab->GetMutableNodePrefab() = node->GeneratePrefab();
+    prefab->NormalizeIds();
     return prefab;
 }
 

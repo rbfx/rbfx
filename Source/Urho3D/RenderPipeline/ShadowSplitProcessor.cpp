@@ -146,7 +146,7 @@ void ShadowSplitProcessor::ProcessDirectionalShadowCasters(
     sortedShadowBatches_.clear();
 
     // Skip split if outside of the scene
-    if (!drawableProcessor->GetSceneZRange().Interset(cascadeZRange_))
+    if (!drawableProcessor->GetSceneZRange().Intersect(cascadeZRange_))
         return;
 
     // Query shadow casters
@@ -241,7 +241,7 @@ BoundingBox ShadowSplitProcessor::GetLitGeometriesBoundingBox(
     for (Drawable* drawable : litGeometries)
     {
         const FloatRange& geometryZRange = drawableProcessor->GetGeometryZRange(drawable->GetDrawableIndex());
-        if (geometryZRange.Interset(cascadeZRange_))
+        if (geometryZRange.Intersect(cascadeZRange_))
             litGeometriesBox.Merge(drawable->GetWorldBoundingBox());
     }
     return litGeometriesBox;
@@ -300,7 +300,7 @@ void ShadowSplitProcessor::AdjustDirectionalLightCamera(const BoundingBox& light
 
     // Center shadow camera to the light space
     const Quaternion lightRotation(shadowCameraNode_->GetWorldRotation());
-    shadowCameraNode_->Translate(lightRotation * Vector3(center), TS_WORLD);
+    shadowCameraNode_->Translate(lightRotation * center.ToVector3(), TS_WORLD);
 
     // If the shadow map viewport is known, snap to whole texels
     if (shadowMapSize > 0.0f)
@@ -339,7 +339,6 @@ Matrix4 ShadowSplitProcessor::GetWorldToShadowSpaceMatrix(float subPixelOffset) 
     offset.y_ += scale.y_;
 
     // Apply GAPI-specific transforms
-    assert(Graphics::GetPixelUVOffset() == Vector2::ZERO);
 #ifdef URHO3D_OPENGL
     offset.z_ = 0.5f;
     scale.z_ = 0.5f;

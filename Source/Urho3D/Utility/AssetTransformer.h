@@ -47,6 +47,9 @@ struct URHO3D_API AssetTransformerInput
 
     /// Flavor of the transformer.
     ApplicationFlavor flavor_;
+    /// Original absolute file name. May be different from file name for nested transformers.
+    ea::string originalInputFileName_;
+
     /// Resource name that can be used to access resource via cache.
     ea::string resourceName_;
     /// Absolute file name of the asset.
@@ -66,7 +69,9 @@ struct URHO3D_API AssetTransformerOutput
     static AssetTransformerOutput FromBase64(const ea::string& base64);
     ea::string ToBase64() const;
 
-    /// Resource names of the output files.
+    /// Whether the source file was modified.
+    bool sourceModified_{};
+    /// Resource names of the output files. Do not add source files here!
     ea::vector<ea::string> outputResourceNames_;
     /// Types of transformers that were applied to the asset.
     ea::unordered_set<ea::string> appliedTransformers_;

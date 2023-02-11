@@ -62,7 +62,7 @@ RmlUIComponent::~RmlUIComponent()
 void RmlUIComponent::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<RmlUIComponent>(Category_RmlUI);
-    URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
+
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Resource", GetResource, SetResource, ResourceRef, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Use Normalized Coordinates", bool, useNormalized_, false, AM_DEFAULT);
@@ -341,7 +341,7 @@ Rml::DataModelConstructor RmlUIComponent::CreateDataModel()
     Rml::Context* context = ui->GetRmlContext();
 
     dataModelName_ = GetDataModelName();
-    Rml::DataModelConstructor constructor = context->CreateDataModel(dataModelName_);
+    Rml::DataModelConstructor constructor = context->CreateDataModel(dataModelName_, &typeRegister_);
 
     constructor.BindFunc("navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
     constructor.BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);

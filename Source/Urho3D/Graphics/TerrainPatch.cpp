@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -81,16 +82,18 @@ void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQu
     case RAY_OBB:
     case RAY_TRIANGLE:
         {
-            Matrix3x4 inverse(node_->GetWorldTransform().Inverse());
-            Ray localRay = query.ray_.Transformed(inverse);
-            float distance = localRay.HitDistance(boundingBox_);
-            Vector3 normal = -query.ray_.direction_;
+            const auto worldTransform = node_->GetWorldTransform();
+            const Matrix3x4 inverse(node_->GetWorldTransform().Inverse());
+            const Ray localRay = query.ray_.Transformed(inverse);
+            const auto distanceAndNormal = localRay.HitDistanceAndNormal(boundingBox_);
+            float distance = distanceAndNormal.distance_;
+            Vector3 normal = (worldTransform * Vector4(distanceAndNormal.normal_, 0.0f)).Normalized();
 
             if (level == RAY_TRIANGLE && distance < query.maxDistance_)
             {
                 Vector3 geometryNormal;
                 distance = geometry_->GetHitDistance(localRay, &geometryNormal);
-                normal = (node_->GetWorldTransform() * Vector4(geometryNormal, 0.0f)).Normalized();
+                normal = (node_->GetWorldTransform() * geometryNormal.ToVector4()).Normalized();
             }
 
             if (distance < query.maxDistance_)

@@ -49,6 +49,9 @@ public:
     explicit CloseDialog(Context* context);
     ~CloseDialog() override;
 
+    /// Set whether "Save & Close" option is enabled.
+    void SetSaveEnabled(bool enabled) { saveEnabled_ = enabled; }
+
     /// Process close request.
     void RequestClose(CloseResourceRequest request);
     /// Return whether the dialog is currently open or will be open on this frame.
@@ -62,6 +65,7 @@ private:
     void CloseDialogDiscard();
     void CloseDialogCancel();
 
+    bool saveEnabled_{true};
     ea::vector<CloseResourceRequest> requests_;
 
     bool isOpen_{};

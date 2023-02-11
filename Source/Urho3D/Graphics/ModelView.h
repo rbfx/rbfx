@@ -89,14 +89,18 @@ struct URHO3D_API ModelVertex
     Vector4 uv_[MaxUVs];
 
     /// Set position from 3-vector.
-    void SetPosition(const Vector3& position) { position_ = Vector4(position, 1.0f); }
+    void SetPosition(const Vector3& position) {position_ = position.ToVector4(1.0f); }
     /// Set normal from 3-vector.
-    void SetNormal(const Vector3& normal) { normal_ = Vector4(normal, 0.0f); }
+    void SetNormal(const Vector3& normal) {normal_ = normal.ToVector4(); }
     /// Set color for given channel.
     void SetColor(unsigned i, const Color& color) { color_[i] = color.ToVector4(); }
 
     /// Return position as 3-vector.
-    Vector3 GetPosition() const { return static_cast<Vector3>(position_); }
+    Vector3 GetPosition() const {return position_.ToVector3(); }
+    /// Return normal as 3-vector.
+    Vector3 GetNormal() const { return normal_.ToVector3(); }
+    /// Return tangent as 3-vector.
+    Vector3 GetTangent() const { return tangent_.ToVector3(); }
     /// Return color from given channel.
     Color GetColor(unsigned i = 0) const { return static_cast<Color>(color_[i]); }
     /// Return blend indices as integers.
@@ -304,8 +308,11 @@ public:
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
     /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
-    /// Note: Does not mirror bones!
+    /// Note: Does not affect bones!
     void MirrorGeometriesX();
+    /// Scale geometries. Useful for conversion between units.
+    /// Note: Does not affect bones!
+    void ScaleGeometries(float scale);
     /// Calculate normals for geometries without normals in vertex format. Resets tangents for affected geometries.
     void CalculateMissingNormals(bool flatNormals = false);
     /// Calculate tangents for geometries without tangents in vertex format.

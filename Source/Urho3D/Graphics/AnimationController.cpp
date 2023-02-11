@@ -371,8 +371,8 @@ void AnimationController::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Reset Skeleton", bool, resetSkeleton_, false, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)
-        .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, animationParametersNames);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT)
+        .SetMetadata(AttributeMetadata::VectorStructElements, animationParametersNames);
 }
 
 void AnimationController::ApplyAttributes()
@@ -892,7 +892,7 @@ void AnimationController::SetAnimationsAttr(const VariantVector& value)
     if (value.empty() || value[0].GetType() != VAR_INT)
         return;
 
-    const unsigned numAnimations = value[0].GetUInt();
+    const auto numAnimations = static_cast<unsigned>(ea::max(0, value[0].GetInt()));
     const unsigned numAnimationsSet = (value.size() - 1) / AnimationParameters::NumVariants;
     const unsigned numLoadedAnimations = ea::min(numAnimations, numAnimationsSet);
 

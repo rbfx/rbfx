@@ -533,6 +533,16 @@ using QualifierFlags = Urho3D::Qualifier;
 %csconstvalue("3") Urho3D::CONTROLLER_AXIS_RIGHTY;
 %csconstvalue("4") Urho3D::CONTROLLER_AXIS_TRIGGERLEFT;
 %csconstvalue("5") Urho3D::CONTROLLER_AXIS_TRIGGERRIGHT;
+%csconstvalue("0") Urho3D::JOYSTICK_TYPE_UNKNOWN;
+%csconstvalue("1") Urho3D::JOYSTICK_TYPE_GAMECONTROLLER;
+%csconstvalue("2") Urho3D::JOYSTICK_TYPE_WHEEL;
+%csconstvalue("3") Urho3D::JOYSTICK_TYPE_ARCADE_STICK;
+%csconstvalue("4") Urho3D::JOYSTICK_TYPE_FLIGHT_STICK;
+%csconstvalue("5") Urho3D::JOYSTICK_TYPE_DANCE_PAD;
+%csconstvalue("6") Urho3D::JOYSTICK_TYPE_GUITAR;
+%csconstvalue("7") Urho3D::JOYSTICK_TYPE_DRUM_KIT;
+%csconstvalue("8") Urho3D::JOYSTICK_TYPE_ARCADE_PAD;
+%csconstvalue("9") Urho3D::JOYSTICK_TYPE_THROTTLE;
 %csconstvalue("0") Urho3D::MM_ABSOLUTE;
 %csconstvalue("0") Urho3D::DirectionAggregatorDetail::SubscriptionMask::None;
 %csconstvalue("1") Urho3D::DirectionAggregatorDetail::SubscriptionMask::Keyboard;
@@ -584,6 +594,11 @@ using SubscriptionFlags = Urho3D::DirectionalPadAdapterDetail::SubscriptionMask;
 %csattribute(Urho3D::Input, %arg(Urho3D::IntVector2), GlobalWindowPosition, GetGlobalWindowPosition);
 %csattribute(Urho3D::Input, %arg(Urho3D::IntVector2), GlobalWindowSize, GetGlobalWindowSize);
 %csattribute(Urho3D::Input, %arg(Urho3D::IntVector2), BackbufferSize, GetBackbufferSize);
+%csattribute(Urho3D::AxisAdapter, %arg(float), DeadZone, GetDeadZone, SetDeadZone);
+%csattribute(Urho3D::AxisAdapter, %arg(float), PositiveSensitivity, GetPositiveSensitivity, SetPositiveSensitivity);
+%csattribute(Urho3D::AxisAdapter, %arg(float), NegativeSensitivity, GetNegativeSensitivity, SetNegativeSensitivity);
+%csattribute(Urho3D::AxisAdapter, %arg(float), NeutralValue, GetNeutralValue, SetNeutralValue);
+%csattribute(Urho3D::AxisAdapter, %arg(bool), IsInverted, IsInverted, SetInverted);
 %csattribute(Urho3D::DirectionAggregator, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
 %csattribute(Urho3D::DirectionAggregator, %arg(bool), IsKeyboardEnabled, IsKeyboardEnabled, SetKeyboardEnabled);
 %csattribute(Urho3D::DirectionAggregator, %arg(Urho3D::UIElement *), UIElement, GetUIElement, SetUIElement);
@@ -600,6 +615,8 @@ using SubscriptionFlags = Urho3D::DirectionalPadAdapterDetail::SubscriptionMask;
 %csattribute(Urho3D::MultitouchAdapter, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
 %csattribute(Urho3D::FreeFlyController, %arg(float), Speed, GetSpeed, SetSpeed);
 %csattribute(Urho3D::FreeFlyController, %arg(float), AcceleratedSpeed, GetAcceleratedSpeed, SetAcceleratedSpeed);
+%csattribute(Urho3D::FreeFlyController, %arg(float), MinPitch, GetMinPitch, SetMinPitch);
+%csattribute(Urho3D::FreeFlyController, %arg(float), MaxPitch, GetMaxPitch, SetMaxPitch);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {

@@ -104,9 +104,6 @@
 #endif
 #include "44_RibbonTrailDemo/RibbonTrailDemo.h"
 #if URHO3D_PHYSICS
-#if URHO3D_IK
-#include "45_InverseKinematics/InverseKinematics.h"
-#endif
 #include "46_RaycastVehicle/RaycastVehicleDemo.h"
 #endif
 #include "47_Typography/Typography.h"
@@ -142,9 +139,13 @@
 #endif
 #include "111_SplashScreen/SplashScreenDemo.h"
 #include "112_AggregatedInput/AggregatedInput.h"
+#if URHO3D_ACTIONS
+#include "113_Actions/ActionDemo.h"
+#endif
 #if URHO3D_RMLUI
 #include "114_AdvancedUI/AdvancedUI.h"
 #endif
+#include "115_RayCast/RayCastSample.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -175,7 +176,6 @@ void SamplesManager::Setup()
 #endif
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
-
 #if DESKTOP
     GetCommandLineParser().add_option("--sample", commandLineArgsTemp_);
 #endif
@@ -189,7 +189,7 @@ SampleSelectionScreen::SampleSelectionScreen(Context* context)
     SetMouseVisible(true);
 }
 
-void SampleSelectionScreen::Activate(VariantMap& bundle)
+void SampleSelectionScreen::Activate(StringVariantMap& bundle)
 {
     ApplicationState::Activate(bundle);
     dpadAdapter_.SetEnabled(true);
@@ -348,7 +348,7 @@ void SamplesManager::Start()
     RegisterSample<RibbonTrailDemo>();
 #if URHO3D_PHYSICS
 #if URHO3D_IK
-    RegisterSample<InverseKinematics>();
+    //RegisterSample<InverseKinematics>();
 #endif
     RegisterSample<RaycastVehicleDemo>();
 #endif
@@ -385,9 +385,13 @@ void SamplesManager::Start()
 #endif
     RegisterSample<SplashScreenDemo>();
     RegisterSample<AggregatedInput>();
+#if URHO3D_ACTIONS
+    RegisterSample<ActionDemo>();
+#endif	
 #if URHO3D_RMLUI
     RegisterSample<AdvancedUI>();
 #endif
+    RegisterSample<RayCastSample>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
@@ -419,7 +423,7 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    VariantMap args;
+    StringVariantMap args;
     args["Args"] = GetArgs();
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleType, args);
 }

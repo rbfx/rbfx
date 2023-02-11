@@ -51,6 +51,7 @@
 #include <Urho3D/Replica/TrackedAnimatedModel.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
@@ -119,13 +120,13 @@ void AdvancedNetworking::CreateScene()
 
     // Create octree and physics world with default settings. Create them as local so that they are not needlessly replicated
     // when a client connects
-    scene_->CreateComponent<Octree>(LOCAL);
-    scene_->CreateComponent<PhysicsWorld>(LOCAL);
-    scene_->CreateComponent<ReplicationManager>(LOCAL);
+    scene_->CreateComponent<Octree>();
+    scene_->CreateComponent<PhysicsWorld>();
+    scene_->CreateComponent<ReplicationManager>();
 
     // All static scene content and the camera are also created as local, so that they are unaffected by scene replication and are
     // not removed from the client upon connection. Create a Zone component first for ambient lighting & fog control.
-    Node* zoneNode = scene_->CreateChild("Zone", LOCAL);
+    Node* zoneNode = scene_->CreateChild("Zone");
     auto* zone = zoneNode->CreateComponent<Zone>();
     zone->SetBoundingBox(BoundingBox(-1000.0f, 1000.0f));
     zone->SetAmbientColor(Color::GRAY);
@@ -136,14 +137,14 @@ void AdvancedNetworking::CreateScene()
     zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/Skybox.xml"));
 
     // Create skybox.
-    Node* skyNode = scene_->CreateChild("Sky", LOCAL);
+    Node* skyNode = scene_->CreateChild("Sky");
     skyNode->SetScale(500.0f); // The scale actually does not matter
     auto* skybox = skyNode->CreateComponent<Skybox>();
     skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
     skybox->SetMaterial(cache->GetResource<Material>("Materials/Skybox.xml"));
 
     // Create a directional light without shadows
-    Node* lightNode = scene_->CreateChild("DirectionalLight", LOCAL);
+    Node* lightNode = scene_->CreateChild("DirectionalLight");
     lightNode->SetDirection(Vector3(0.5f, -1.0f, -0.5f));
     auto* light = lightNode->CreateComponent<Light>();
     light->SetLightType(LIGHT_DIRECTIONAL);
@@ -152,14 +153,14 @@ void AdvancedNetworking::CreateScene()
     light->SetShadowCascade(CascadeParameters{10.0f, 23.0f, 45.0f, 70.0f, 50.0f});
 
     // Create collection of hit markers
-    hitMarkers_ = scene_->CreateChild("Hit Markers", LOCAL);
+    hitMarkers_ = scene_->CreateChild("Hit Markers");
 
     // Create a "floor" consisting of several tiles. Make the tiles physical but leave small cracks between them
     for (int y = -20; y <= 20; ++y)
     {
         for (int x = -20; x <= 20; ++x)
         {
-            Node* floorNode = scene_->CreateChild("FloorTile", LOCAL);
+            Node* floorNode = scene_->CreateChild("FloorTile");
             floorNode->SetPosition(Vector3(x * 20.2f, -0.5f, y * 20.2f));
             floorNode->SetScale(Vector3(20.0f, 1.0f, 20.0f));
 
@@ -180,7 +181,7 @@ void AdvancedNetworking::CreateScene()
     const unsigned NUM_OBJECTS = 200;
     for (unsigned i = 0; i < NUM_OBJECTS; ++i)
     {
-        Node* obstacleNode = scene_->CreateChild("Box", LOCAL);
+        Node* obstacleNode = scene_->CreateChild("Box");
         const float scale = re.GetFloat(1.5f, 4.0f);
         obstacleNode->SetPosition(re.GetVector3({-45.0f, scale / 2, -45.0f }, {45.0f, scale / 2, 45.0f }));
         obstacleNode->SetRotation(Quaternion(Vector3::UP, re.GetVector3({-0.4f, 1.0f, -0.4f}, {0.4f, 1.0f, 0.4f})));
@@ -203,7 +204,7 @@ void AdvancedNetworking::CreateScene()
     // network messages. Furthermore, because the client removes all replicated scene nodes when connecting to a server scene,
     // the screen would become blank if the camera node was replicated (as only the locally created camera is assigned to a
     // viewport in SetupViewports() below)
-    cameraNode_ = scene_->CreateChild("Camera", LOCAL);
+    cameraNode_ = scene_->CreateChild("Camera");
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 
@@ -213,7 +214,7 @@ void AdvancedNetworking::CreateScene()
 
 void AdvancedNetworking::CreateUI()
 {
-    Node* node = scene_->CreateChild("UI", LOCAL);
+    Node* node = scene_->CreateChild("UI");
     ui_ = node->CreateComponent<AdvancedNetworkingUI>();
 
     if (GetSubsystem<Engine>()->IsHeadless())
@@ -389,11 +390,11 @@ void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& r
 Node* AdvancedNetworking::CreateControllableObject(Connection* owner)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    auto prefab = cache->GetResource<XMLFile>("Objects/AdvancedNetworkingPlayer.xml");
+    auto prefab = cache->GetResource<PrefabResource>("Prefabs/AdvancedNetworkingPlayer.prefab");
 
     // Instantiate most of the components from prefab so they will be replicated on the client.
     const Vector3 position{Random(20.0f) - 10.0f, 5.0f, Random(20.0f) - 10.0f};
-    Node* playerNode = scene_->InstantiateXML(prefab->GetRoot(), position, Quaternion::IDENTITY, LOCAL);
+    Node* playerNode = scene_->InstantiatePrefab(prefab->GetNodePrefab(), position, Quaternion::IDENTITY);
 
     // NetworkObject should never be a part of client prefab
     auto networkObject = playerNode->CreateComponent<BehaviorNetworkObject>();
@@ -586,7 +587,7 @@ void AdvancedNetworking::AddHitMarker(const Vector3& position, bool isConfirmed)
         hitMarkers_->GetChild(0u)->Remove();
 
     // Add new marker: red sphere for client hits, green cube for server confirmations
-    Node* markerNode = hitMarkers_->CreateChild("Client Hit", LOCAL);
+    Node* markerNode = hitMarkers_->CreateChild("Client Hit");
     markerNode->SetPosition(position);
 
     auto markerModel = markerNode->CreateComponent<StaticModel>();

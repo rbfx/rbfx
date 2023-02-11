@@ -355,7 +355,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
     viewSize_ = viewRect_.Size();
     rtSize_ = IntVector2(rtWidth, rtHeight);
 
-    // On OpenGL flip the viewport if rendering to a texture for consistent UV addressing with Direct3D9
+    // On OpenGL flip the viewport if rendering to a texture for consistent UV addressing with DirectX 11
 #ifdef URHO3D_OPENGL
     if (renderTarget_)
     {
@@ -640,7 +640,7 @@ void View::Render()
     if (renderTarget_)
     {
         // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the same way
-        // as a render texture produced on Direct3D9
+        // as a render texture produced on DirectX 11
         // Note that the state of the FlipVertical mode is toggled here rather than enabled
         // The reason for this is that we want the mode to be the opposite of what the user has currently set for the
         // camera when rendering to texture for OpenGL
@@ -808,7 +808,7 @@ void View::SetGBufferShaderParameters(const IntVector2& texSize, const IntRect& 
     Vector4 bufferUVOffset(((float)viewRect.left_) / texWidth + widthRange,
         1.0f - (((float)viewRect.top_) / texHeight + heightRange), widthRange, heightRange);
 #else
-    const Vector2& pixelUVOffset = Graphics::GetPixelUVOffset();
+    const Vector2& pixelUVOffset = Vector2::ZERO;
     Vector4 bufferUVOffset((pixelUVOffset.x_ + (float)viewRect.left_) / texWidth + widthRange,
         (pixelUVOffset.y_ + (float)viewRect.top_) / texHeight + heightRange, widthRange, heightRange);
 #endif
@@ -1967,7 +1967,7 @@ void View::RenderQuad(RenderPathCommand& command)
         auto width = (float)renderTargets_[nameHash]->GetWidth();
         auto height = (float)renderTargets_[nameHash]->GetHeight();
 
-        const Vector2& pixelUVOffset = Graphics::GetPixelUVOffset();
+        const Vector2& pixelUVOffset = Vector2::ZERO;
         graphics_->SetShaderParameter(invSizeName, Vector2(1.0f / width, 1.0f / height));
         graphics_->SetShaderParameter(offsetsName, Vector2(pixelUVOffset.x_ / width, pixelUVOffset.y_ / height));
     }

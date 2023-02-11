@@ -24,6 +24,7 @@
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
 #include "../UI/UIElement.h"
+#include "../Input/AxisAdapter.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D
@@ -110,7 +111,7 @@ public:
     /// Get UI element to filter touch events.
     UIElement* GetUIElement() const { return uiElement_; }
     /// Get dead zone.
-    float GetDeadZone() const { return axisDeadZone_; }
+    float GetDeadZone() const { return axisAdapter_.GetDeadZone(); }
 
     /// Get aggregated direction vector with X pointing right and Y pointing down (similar to gamepad axis).
     Vector2 GetDirection() const;
@@ -142,8 +143,8 @@ private:
     InputVector verticalAxis_;
     /// Collection of active horizontal axis inputs
     InputVector horizontalAxis_;
-    /// Joystick dead zone value
-    float axisDeadZone_{0.1f};
+    /// Joystick axis adapter
+    AxisAdapter axisAdapter_{};
     /// Joystick to ignore (SDL gyroscope virtual joystick)
     unsigned ignoreJoystickId_{ea::numeric_limits<unsigned>::max()};
     /// UI element to filter touch events

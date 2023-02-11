@@ -177,7 +177,7 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
                 for (const unsigned index : { edge.first, edge.second })
                 {
                     const ModelVertex& vertex = vertices[index];
-                    const Vector3& position = static_cast<Vector3>(vertex.position_);
+                    const Vector3& position = vertex.position_.ToVector3();
                     const IntVector3 hashPosition = computeHash(position);
                     geometryEdgesHash[hashPosition].push_back(edge);
                 }
@@ -192,7 +192,7 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
                 for (const unsigned index : { edge.first, edge.second })
                 {
                     const ModelVertex& vertex = vertices[index];
-                    const Vector3& position = static_cast<Vector3>(vertex.position_);
+                    const Vector3& position = vertex.position_.ToVector3();
                     const IntVector3 hashPosition = computeHash(position);
 
                     IntVector3 hashOffset;
@@ -215,12 +215,12 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
                 candidatesBuffer.erase(ea::unique(candidatesBuffer.begin(), candidatesBuffer.end()), candidatesBuffer.end());
 
                 // Check for seams
-                const Vector3 edgePos0 = static_cast<Vector3>(vertices[edge.first].position_);
-                const Vector3 edgePos1 = static_cast<Vector3>(vertices[edge.second].position_);
-                const Vector3 edgeNormal0 = static_cast<Vector3>(vertices[edge.first].normal_);
-                const Vector3 edgeNormal1 = static_cast<Vector3>(vertices[edge.second].normal_);
-                const Vector2 edgeUv0 = static_cast<Vector2>(vertices[edge.first].uv_[uvChannel]);
-                const Vector2 edgeUv1 = static_cast<Vector2>(vertices[edge.second].uv_[uvChannel]);
+                const Vector3 edgePos0 = vertices[edge.first].position_.ToVector3();
+                const Vector3 edgePos1 = vertices[edge.second].position_.ToVector3();
+                const Vector3 edgeNormal0 = vertices[edge.first].normal_.ToVector3();
+                const Vector3 edgeNormal1 = vertices[edge.second].normal_.ToVector3();
+                const Vector2 edgeUv0 = vertices[edge.first].uv_[uvChannel].ToVector2();
+                const Vector2 edgeUv1 = vertices[edge.second].uv_[uvChannel].ToVector2();
 
                 for (OrderedIndexPair candidate : candidatesBuffer)
                 {
@@ -230,17 +230,17 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
 
                     // Swap candidate vertices if needed
                     {
-                        const Vector3 candidatePos0 = static_cast<Vector3>(vertices[candidate.first].position_);
+                        const Vector3 candidatePos0 = vertices[candidate.first].position_.ToVector3();
                         if ((candidatePos0 - edgePos1).LengthSquared() < positionEpsilonSquared)
                             ea::swap(candidate.first, candidate.second);
                     }
 
-                    const Vector3 candidatePos0 = static_cast<Vector3>(vertices[candidate.first].position_);
-                    const Vector3 candidatePos1 = static_cast<Vector3>(vertices[candidate.second].position_);
-                    const Vector3 candidateNormal0 = static_cast<Vector3>(vertices[candidate.first].normal_);
-                    const Vector3 candidateNormal1 = static_cast<Vector3>(vertices[candidate.second].normal_);
-                    const Vector2 candidateUv0 = static_cast<Vector2>(vertices[candidate.first].uv_[uvChannel]);
-                    const Vector2 candidateUv1 = static_cast<Vector2>(vertices[candidate.second].uv_[uvChannel]);
+                    const Vector3 candidatePos0 = vertices[candidate.first].position_.ToVector3();
+                    const Vector3 candidatePos1 = vertices[candidate.second].position_.ToVector3();
+                    const Vector3 candidateNormal0 = vertices[candidate.first].normal_.ToVector3();
+                    const Vector3 candidateNormal1 = vertices[candidate.second].normal_.ToVector3();
+                    const Vector2 candidateUv0 = vertices[candidate.first].uv_[uvChannel].ToVector2();
+                    const Vector2 candidateUv1 = vertices[candidate.second].uv_[uvChannel].ToVector2();
 
                     // Skip if edge geometry is different
                     const bool samePos0 = (edgePos0 - candidatePos0).LengthSquared() < positionEpsilonSquared;
@@ -257,9 +257,9 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
                         continue;
 
                     // Skip if belong to the same line: AB x AC = AB x AD = 0
-                    const Vector3 edgeUvDelta{ edgeUv1 - edgeUv0, 0.0f };
-                    const Vector3 delta00{ candidateUv0 - edgeUv0, 0.0f };
-                    const Vector3 delta01{ candidateUv1 - edgeUv0, 0.0f };
+                    const Vector3 edgeUvDelta{ (edgeUv1 - edgeUv0).ToVector3() };
+                    const Vector3 delta00{ (candidateUv0 - edgeUv0).ToVector3() };
+                    const Vector3 delta01{ (candidateUv1 - edgeUv0).ToVector3() };
                     const bool collinear00 = edgeUvDelta.CrossProduct(delta00).LengthSquared() < uvEpsilonSquared;
                     const bool collinear01 = edgeUvDelta.CrossProduct(delta01).LengthSquared() < uvEpsilonSquared;
                     if (collinear00 && collinear01)
@@ -448,7 +448,7 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
     Graphics* graphics = context->GetSubsystem<Graphics>();
     Renderer* renderer = context->GetSubsystem<Renderer>();
 
-    static thread_local ea::vector<Vector4> buffer;
+    thread_local ea::vector<Vector4> buffer;
 
     if (!graphics->BeginFrame())
     {

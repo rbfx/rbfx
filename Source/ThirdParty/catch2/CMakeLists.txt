@@ -22,6 +22,7 @@
 
 add_library(catch2 STATIC catch2/catch_amalgamated.cpp)
 target_include_directories(catch2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>)
+target_compile_definitions(catch2 PRIVATE -DCATCH_AMALGAMATED_CUSTOM_MAIN=1)
 
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.hpp)
 if (NOT URHO3D_MERGE_STATIC_LIBS)

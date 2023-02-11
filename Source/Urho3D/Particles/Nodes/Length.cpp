@@ -41,7 +41,7 @@ void Length::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> LengthPatterns{
+static const ea::vector<NodePattern> LengthPatterns{
     MakePattern(
         LengthInstance<Vector3, float>()
         , ParticleGraphTypedPin<Vector3>("x")

@@ -47,14 +47,6 @@
 namespace Urho3D
 {
 
-namespace
-{
-
-/// Unused vector of drawables.
-static ea::vector<Drawable*> unusedDrawablesVector;
-
-}
-
 static const float DEFAULT_OCTREE_SIZE = 1000.0f;
 static const int DEFAULT_OCTREE_LEVELS = 8;
 

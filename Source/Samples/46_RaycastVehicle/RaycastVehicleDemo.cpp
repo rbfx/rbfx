@@ -43,6 +43,7 @@
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabResource.h>
 
 #include "RaycastVehicleDemo.h"
 #include "Vehicle.h"
@@ -126,7 +127,7 @@ void RaycastVehicleDemo::CreateScene()
     shape->SetTerrain();
     // Create 1000 mushrooms in the terrain. Always face outward along the terrain normal
     const unsigned NUM_MUSHROOMS = 1000;
-    XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
+    auto* mushroomPrefab = cache->GetResource<PrefabResource>("Prefabs/Mushroom.prefab");
     for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
     {
         Node* objectNode = scene_->CreateChild("Mushroom");

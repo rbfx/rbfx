@@ -25,6 +25,7 @@
 #include "Assets/ModelImporter.h"
 #include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConsoleTab.h"
+#include "Foundation/ConcurrentAssetProcessing.h"
 #include "Foundation/GameViewTab.h"
 #include "Foundation/Glue/ProjectGlue.h"
 #include "Foundation/Glue/ResourceBrowserGlue.h"
@@ -56,6 +57,7 @@
 #include "Foundation/SceneViewTab/TransformManipulator.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
+#include "Foundation/SceneViewTab/SceneDebugInfo.h"
 #include "Foundation/SettingsTab.h"
 #include "Foundation/SettingsTab/KeyBindingsPage.h"
 #include "Foundation/SettingsTab/LaunchPage.h"
@@ -96,6 +98,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Assets.ModelImporter", &Assets_ModelImporter);
 
     editorPluginManager_->AddPlugin("Foundation.StandardFileTypes", &Foundation_StandardFileTypes);
+    editorPluginManager_->AddPlugin("Foundation.ConcurrentAssetProcessing", &Foundation_ConcurrentAssetProcessing);
 
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);
@@ -122,6 +125,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefab", &Foundation_SceneDragAndDropPrefab);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.SceneDebugInfo", &Foundation_SceneDebugInfo);
 
     editorPluginManager_->AddPlugin("Foundation.Inspector.Empty", &Foundation_EmptyInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.AssetPipeline", &Foundation_AssetPipelineInspector);
@@ -183,12 +187,16 @@ void Editor::Setup()
 
     // Define custom command line parameters here
     auto& cmd = GetCommandLineParser();
-    cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->set_custom_option("dir");
+    cmd.add_flag("--read-only", readOnly_, "Prevents Editor from modifying any project files, unless it is explicitly done via executed command.");
+    cmd.add_option("--command", command_, "Command to execute on startup.")->type_name("command");
+    cmd.add_flag("--exit", exitAfterCommand_, "Forces Editor to exit after command execution.");
+    cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->type_name("dir");
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_APPLICATION_NAME] = GetWindowTitle();
     engineParameters_[EP_HEADLESS] = false;
     engineParameters_[EP_FULL_SCREEN] = false;
+    engineParameters_[EP_BORDERLESS] = false;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
@@ -213,6 +221,8 @@ void Editor::Start()
     auto input = GetSubsystem<Input>();
     auto fs = GetSubsystem<FileSystem>();
 
+    const bool isHeadless = engine_->IsHeadless();
+
     tempJsonPath_ = engine_->GetAppPreferencesDir() + "Temp.json";
     settingsJsonPath_ = engine_->GetAppPreferencesDir() + "Settings.json";
 
@@ -229,27 +239,32 @@ void Editor::Start()
     engine_->SetAutoExit(false);
 
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
-    auto console = engine_->CreateConsole();
-    console->SetAutoVisibleOnError(false);
+    if (auto console = engine_->CreateConsole())
+        console->SetAutoVisibleOnError(false);
     fs->SetExecuteConsoleCommands(false);
 
     // Hud will be rendered manually.
-    auto debugHud = engine_->CreateDebugHud();
-    debugHud->SetMode(DEBUGHUD_SHOW_NONE);
+    if (auto debugHud = engine_->CreateDebugHud())
+        debugHud->SetMode(DEBUGHUD_SHOW_NONE);
 
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { Render(); });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateProjectStatus(); });
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
     SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
 
-    InitializeUI();
+    if (!isHeadless)
+    {
+        InitializeUI();
+
+        // Avoid creating imgui.ini if project with its own imgui.ini is about to be opened.
+        if (!pendingOpenProject_.empty())
+            ui::GetIO().IniFilename = nullptr;
+    }
 
     if (!pendingOpenProject_.empty())
-    {
-        // Avoid creating imgui.ini
-        ui::GetIO().IniFilename = nullptr;
         OpenProject(pendingOpenProject_);
-    }
+    else
+        command_.clear(); // Execute commands only if the project is opened too.
 }
 
 void Editor::Stop()
@@ -306,6 +321,24 @@ ea::string Editor::GetWindowTitle() const
 
 void Editor::Render()
 {
+    auto engine = GetSubsystem<Engine>();
+    const bool isHeadless = engine->IsHeadless();
+    if (isHeadless)
+    {
+        // Exit immediately if requested.
+        if (exiting_)
+        {
+            context_->GetSubsystem<WorkQueue>()->Complete(0);
+            engine_->Exit();
+        }
+
+        // In headless mode only run Project::Render which acts as main loop.
+        if (project_)
+            project_->Render();
+
+        return;
+    }
+
     ImGuiContext& g = *GImGui;
 
     const bool hasToolbar = project_ != nullptr;
@@ -318,16 +351,16 @@ void Editor::Render()
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_MenuBar;
     flags |= ImGuiWindowFlags_NoDocking;
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos + ImVec2(0, toolbarEffectiveHeight));
-    ImGui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight));
-    ImGui::SetNextWindowViewport(viewport->ID);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGuiViewport* viewport = ui::GetMainViewport();
+    ui::SetNextWindowPos(viewport->Pos + ImVec2(0, toolbarEffectiveHeight));
+    ui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight));
+    ui::SetNextWindowViewport(viewport->ID);
+    ui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
     flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace", nullptr, flags);
-    ImGui::PopStyleVar();
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ui::Begin("DockSpace", nullptr, flags);
+    ui::PopStyleVar();
 
     RenderMenuBar();
     RenderAboutDialog();
@@ -389,7 +422,7 @@ void Editor::Render()
     const float menuBarHeight = ui::GetCurrentWindow()->MenuBarHeight();
 
     ui::End();
-    ImGui::PopStyleVar();
+    ui::PopStyleVar();
 
     // TODO(editor): Refactor this function
     if (hasToolbar)
@@ -550,6 +583,9 @@ void Editor::RenderAboutDialog()
 
 void Editor::UpdateProjectStatus()
 {
+    auto engine = GetSubsystem<Engine>();
+    const bool isHeadless = engine->IsHeadless();
+
     if (pendingCloseProject_)
     {
         if (project_)
@@ -582,15 +618,22 @@ void Editor::UpdateProjectStatus()
         CloseProject();
 
         // Reset SystemUI so that imgui loads it's config proper.
-        InitializeUI();
+        if (!isHeadless)
+            InitializeUI();
 
-        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_);
+        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_, readOnly_);
         project_->OnShallowSaved.Subscribe(this, &Editor::SaveTempJson);
 
         recentProjects_.erase_first(pendingOpenProject_);
         recentProjects_.push_front(pendingOpenProject_);
 
         pendingOpenProject_.clear();
+
+        if (!command_.empty())
+        {
+            project_->ExecuteCommand(command_, exitAfterCommand_);
+            command_.clear();
+        }
     }
 }
 
@@ -673,7 +716,7 @@ void Editor::InitializeImGuiConfig()
 
 void Editor::InitializeImGuiStyle()
 {
-    auto& style = ImGui::GetStyleTemplate();
+    auto& style = ui::GetStyleTemplate();
 
     // TODO: Make configurable.
     style.WindowRounding = 3;

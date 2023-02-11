@@ -74,7 +74,7 @@ void SceneHierarchy::WriteIniSettings(ImGuiTextBuffer& output)
 
 void SceneHierarchy::ReadIniSettings(const char* line)
 {
-    SceneHierarchySettings settings;
+    SceneHierarchySettings settings = widget_->GetSettings();
     if (const auto value = ReadIntFromIni(line, "SceneHierarchy.ShowComponents"))
         settings.showComponents_ = *value != 0;
     if (const auto value = ReadIntFromIni(line, "SceneHierarchy.ShowTemporary"))
@@ -164,9 +164,8 @@ void SceneHierarchy::ReorderComponent(Component* component, unsigned oldIndex, u
 
 void SceneHierarchy::ReparentNode(Node* parentNode, Node* childNode)
 {
-    Node* oldParent = childNode->GetParent();
+    owner_->PushAction<ReparentNodeAction>(childNode, parentNode);
     childNode->SetParent(parentNode);
-    owner_->PushAction<ReparentNodeAction>(childNode, oldParent);
 }
 
 }

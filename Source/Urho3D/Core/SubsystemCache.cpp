@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "../Core/SubsystemCache.h"
 
+#include "../IO/VirtualFileSystem.h"
 #include "../Audio/Audio.h"
 #include "../Engine/Engine.h"
 #include "../Core/WorkQueue.h"
@@ -51,6 +52,9 @@
 #include "../SystemUI/SystemUI.h"
 #endif
 #include "../Engine/StateManager.h"
+#if URHO3D_ACTIONS
+#include "../Actions/ActionManager.h"
+#endif
 
 #include "../DebugNew.h"
 

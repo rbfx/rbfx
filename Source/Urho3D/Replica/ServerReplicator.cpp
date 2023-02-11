@@ -2,7 +2,7 @@
 // Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
+// of this software and associated documentation files (the <Urho3Dftware"), to dea>
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
@@ -20,23 +20,23 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include <Urho3D/Precompiled.h>
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Exception.h"
-#include "../Core/Timer.h"
-#include "../IO/Log.h"
-#include "../Math/RandomEngine.h"
-#include "../Network/Connection.h"
-#include "../Network/Network.h"
-#include "../Network/NetworkEvents.h"
-#include "../Replica/NetworkObject.h"
-#include "../Replica/ReplicationManager.h"
-#include "../Replica/NetworkSettingsConsts.h"
-#include "../Replica/ServerReplicator.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/Exception.h>
+#include <Urho3D/Core/Timer.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Math/RandomEngine.h>
+#include <Urho3D/Network/Connection.h>
+#include <Urho3D/Network/Network.h>
+#include <Urho3D/Network/NetworkEvents.h>
+#include <Urho3D/Replica/NetworkObject.h>
+#include <Urho3D/Replica/NetworkSettingsConsts.h>
+#include <Urho3D/Replica/ReplicationManager.h>
+#include <Urho3D/Replica/ServerReplicator.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/SceneEvents.h>
 
 #include <EASTL/numeric.h>
 
@@ -51,7 +51,7 @@ unsigned GetIndex(NetworkId networkId)
     return DeconstructComponentReference(networkId).first;
 }
 
-}
+} // namespace
 
 SharedReplicationState::SharedReplicationState(NetworkObjectRegistry* objectRegistry)
     : objectRegistry_(objectRegistry)
@@ -89,6 +89,7 @@ void SharedReplicationState::PrepareForUpdate()
     ResetFrameBuffers();
     InitializeNewObjects();
 
+    objectRegistry_->UpdateNetworkObjects();
     objectRegistry_->GetSortedNetworkObjects(sortedNetworkObjects_);
 }
 
@@ -175,7 +176,8 @@ unsigned SharedReplicationState::GetIndexUpperBound() const
     return objectRegistry_->GetNetworkIndexUpperBound();
 }
 
-const ea::unordered_set<NetworkObject*>& SharedReplicationState::GetOwnedObjectsByConnection(AbstractConnection* connection) const
+const ea::unordered_set<NetworkObject*>& SharedReplicationState::GetOwnedObjectsByConnection(
+    AbstractConnection* connection) const
 {
     static const ea::unordered_set<NetworkObject*> emptyCollection;
     const auto iter = ownedObjectsByConnection_.find(connection);
@@ -301,8 +303,7 @@ bool ClientSynchronizationState::ProcessMessage(NetworkMessageId messageId, Memo
         ProcessSynchronized(msg);
         return true;
     }
-    default:
-        return false;
+    default: return false;
     }
 }
 
@@ -348,8 +349,7 @@ bool ClientReplicationState::ProcessMessage(NetworkMessageId messageId, MemoryBu
         ProcessObjectsFeedbackUnreliable(messageData);
         return true;
 
-    default:
-        return false;
+    default: return false;
     }
 }
 
@@ -372,8 +372,8 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
         NetworkObject* networkObject = objectRegistry_->GetNetworkObject(networkId);
         if (!networkObject)
         {
-            URHO3D_LOGWARNING("Connection {}: Received feedback for unknown NetworkObject {}",
-                connection_->ToString(), ToString(networkId));
+            URHO3D_LOGWARNING("Connection {}: Received feedback for unknown NetworkObject {}", connection_->ToString(),
+                ToString(networkId));
             continue;
         }
 
@@ -483,7 +483,8 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
     });
 }
 
-void ClientReplicationState::SendUpdateObjectsUnreliable(NetworkFrame currentFrame, const SharedReplicationState& sharedState)
+void ClientReplicationState::SendUpdateObjectsUnreliable(
+    NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
     connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, PT_UNRELIABLE_UNORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
@@ -563,17 +564,18 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
         const unsigned index = GetIndex(networkId);
 
         const bool wasRelevant = objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant;
-        const bool isParentRelevant = parentNetworkId == InvalidNetworkId
+        const bool isParentRelevant = parentNetworkId == NetworkId::None
             || objectsRelevance_[GetIndex(parentNetworkId)] != NetworkObjectRelevance::Irrelevant;
 
         if (!wasRelevant && isParentRelevant)
         {
             // Begin replication of the object if both the object and its parent are relevant
-            objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates);
+            objectsRelevance_[index] =
+                networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates);
             if (objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
             {
                 objectsRelevanceTimeouts_[index] = relevanceTimeout;
-                pendingUpdatedObjects_.push_back({ networkObject, true });
+                pendingUpdatedObjects_.push_back({networkObject, true});
             }
         }
         else if (wasRelevant)
@@ -598,7 +600,7 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
 
             // Queue non-snapshot update
             sharedState.QueueDeltaUpdate(networkObject);
-            pendingUpdatedObjects_.push_back({ networkObject, false });
+            pendingUpdatedObjects_.push_back({networkObject, false});
         }
     }
 }
@@ -615,7 +617,8 @@ ServerReplicator::ServerReplicator(Scene* scene)
     SetDefaultNetworkSetting(settings_, NetworkSettings::InternalProtocolVersion);
     SetNetworkSetting(settings_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
-    SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
+    SubscribeToEvent(E_INPUTREADY,
+        [this](StringHash, VariantMap& eventData)
     {
         using namespace InputReady;
         const float timeStep = eventData[P_TIMESTEP].GetFloat();
@@ -625,7 +628,8 @@ ServerReplicator::ServerReplicator(Scene* scene)
         OnInputReady(timeStep, isUpdateNow, overtime);
     });
 
-    SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap& eventData)
+    SubscribeToEvent(network_, E_NETWORKUPDATE,
+        [this](StringHash, VariantMap& eventData)
     {
         using namespace NetworkUpdate;
         const bool isServer = eventData[P_ISSERVER].GetBool();
@@ -684,8 +688,8 @@ void ServerReplicator::AddConnection(AbstractConnection* connection)
     }
 
     connections_.erase(connection);
-    const auto& [iter, insterted] = connections_.emplace(
-        connection, MakeShared<ClientReplicationState>(objectRegistry_, connection, settings_));
+    const auto& [iter, insterted] =
+        connections_.emplace(connection, MakeShared<ClientReplicationState>(objectRegistry_, connection, settings_));
 
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
@@ -702,7 +706,8 @@ void ServerReplicator::RemoveConnection(AbstractConnection* connection)
     URHO3D_LOGINFO("Connection {} is removed", connection->ToString());
 }
 
-bool ServerReplicator::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+bool ServerReplicator::ProcessMessage(
+    AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     if (ClientReplicationState* clientState = GetClientState(connection))
         return clientState->ProcessMessage(messageId, messageData);
@@ -745,14 +750,13 @@ ea::string ServerReplicator::GetDebugInfo() const
 {
     ea::string result;
 
-    result += Format("Scene '{}': Time #{}\n",
-        !scene_->GetName().empty() ? scene_->GetName() : "Unnamed",
-        currentFrame_);
+    result +=
+        Format("Scene '{}': Time #{}\n", !scene_->GetName().empty() ? scene_->GetName() : "Unnamed", currentFrame_);
 
     for (const auto& [connection, clientState] : connections_)
     {
-        result += Format("Connection {}: Ping {}ms, InDelay {}+{} frames, InLoss {}%\n",
-            connection->ToString(), connection->GetPing(), clientState->GetInputDelay(), clientState->GetInputBufferSize(),
+        result += Format("Connection {}: Ping {}ms, InDelay {}+{} frames, InLoss {}%\n", connection->ToString(),
+            connection->GetPing(), clientState->GetInputDelay(), clientState->GetInputBufferSize(),
             CeilToInt(clientState->GetReportedInputLoss() * 100.0f));
     }
 
@@ -770,7 +774,8 @@ unsigned ServerReplicator::GetFeedbackDelay(AbstractConnection* connection) cons
     return iter != connections_.end() ? iter->second->GetInputDelay() + iter->second->GetInputBufferSize() : 0;
 }
 
-const ea::unordered_set<NetworkObject*>& ServerReplicator::GetNetworkObjectsOwnedByConnection(AbstractConnection* connection) const
+const ea::unordered_set<NetworkObject*>& ServerReplicator::GetNetworkObjectsOwnedByConnection(
+    AbstractConnection* connection) const
 {
     return sharedState_->GetOwnedObjectsByConnection(connection);
 }
@@ -781,4 +786,4 @@ NetworkObject* ServerReplicator::GetNetworkObjectOwnedByConnection(AbstractConne
     return ownedObjects.size() == 1 ? *ownedObjects.begin() : nullptr;
 }
 
-}
+} // namespace Urho3D

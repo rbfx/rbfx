@@ -51,7 +51,7 @@ public:
     /// Construct.
     explicit SampleSelectionScreen(Context* context);
 
-    void Activate(VariantMap& bundle) override;
+    void Activate(StringVariantMap& bundle) override;
 
     void Deactivate() override;
 

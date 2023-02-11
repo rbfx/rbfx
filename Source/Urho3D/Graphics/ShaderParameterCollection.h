@@ -110,7 +110,7 @@ public:
     /// Add new Vector3 parameter.
     void AddParameter(StringHash name, const Vector3& value)
     {
-        const Vector4 data{ value, 0.0f };
+        const Vector4 data{ value.ToVector4() };
         AllocateParameter(name, VAR_VECTOR4, 1, data.Data(), 4);
     }
 

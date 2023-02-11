@@ -23,7 +23,6 @@
 #include "../Assets/ModelImporter.h"
 
 #include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/Utility/GLTFImporter.h>
 
 namespace Urho3D
 {
@@ -64,8 +63,13 @@ void ModelImporter::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<ModelImporter>(Category_Transformer);
 
-    URHO3D_ATTRIBUTE("Scale", float, scale_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Mirror X", bool, settings_.mirrorX_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Scale", float, settings_.scale_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation", Quaternion, settings_.rotation_, Quaternion::IDENTITY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Cleanup Bone Names", bool, settings_.cleanupBoneNames_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Cleanup Root Nodes", bool, settings_.cleanupRootNodes_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Combine LODs", bool, settings_.combineLODs_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Repair Looping", bool, settings_.repairLooping_, false, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -131,10 +135,8 @@ bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformer
 bool ModelImporter::ImportGLTF(const ea::string& fileName,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
-    GLTFImporterSettings importerSettings;
-    importerSettings.scale_ = scale_;
-    importerSettings.repairLooping_ = repairLooping_;
-    auto importer = MakeShared<GLTFImporter>(context_, importerSettings);
+    settings_.assetName_ = GetFileName(input.originalInputFileName_);
+    auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
     if (!importer->LoadFile(fileName, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
     {
@@ -154,17 +156,19 @@ bool ModelImporter::ImportGLTF(const ea::string& fileName,
 
     for (const auto& [resourceName, fileName] : importer->GetSavedResources())
     {
+        AssetTransformerOutput nestedOutput;
         AssetTransformerInput nestedInput = input;
         nestedInput.resourceName_ = resourceName;
         nestedInput.inputFileName_ = fileName;
         nestedInput.outputFileName_ = fileName;
-        if (!AssetTransformer::ExecuteTransformers(nestedInput, output, transformers, true))
+        if (!AssetTransformer::ExecuteTransformers(nestedInput, nestedOutput, transformers, true))
         {
             URHO3D_LOGERROR("Failed to apply nested transformer for asset {}", resourceName);
             return false;
         }
-    }
 
+        output.appliedTransformers_.insert(nestedOutput.appliedTransformers_.begin(), nestedOutput.appliedTransformers_.end());
+    }
     return true;
 }
 
@@ -174,8 +178,9 @@ bool ModelImporter::ImportFBX(const ea::string& fileName,
     auto fs = context_->GetSubsystem<FileSystem>();
     const auto toolManager = GetToolManager();
 
-    const ea::string tempGltfFile = input.tempPath_ + "model.gltf";
+    const ea::string tempGltfFile = input.tempPath_ + "model.glb";
     const StringVector arguments{
+        "--binary",
         "--input",
         fileName,
         "--output",

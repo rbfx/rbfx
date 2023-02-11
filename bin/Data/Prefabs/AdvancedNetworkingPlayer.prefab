@@ -1,0 +1,376 @@
+<?xml version="1.0"?>
+<resource>
+	<components>
+		<component _typeName="Octree" />
+		<component _typeName="PhysicsWorld" />
+		<component _typeName="RenderPipeline" />
+		<component _typeName="ReflectionProbeManager" />
+	</components>
+	<nodes>
+		<node>
+			<attributes>
+				<attribute name="Name" type="String" value="Character" />
+			</attributes>
+			<components>
+				<component _typeName="KinematicCharacterController" />
+				<component _typeName="ReplicatedTransform">
+					<attributes>
+						<attribute name="Synchronize Rotation" type="String" value="None" />
+					</attributes>
+				</component>
+				<component _typeName="PredictedKinematicController" />
+				<component _typeName="FilteredByDistance" />
+				<component _typeName="FilteredByDistance">
+					<attributes>
+						<attribute name="Update Period" type="Int" value="4" />
+						<attribute name="Distance" type="Float" value="60.000000" />
+					</attributes>
+				</component>
+				<component _typeName="FilteredByDistance">
+					<attributes>
+						<attribute name="Update Period" type="Int" value="2" />
+						<attribute name="Distance" type="Float" value="30.000000" />
+					</attributes>
+				</component>
+			</components>
+			<nodes>
+				<node>
+					<attributes>
+						<attribute name="Name" type="String" value="Model" />
+						<attribute name="Rotation" type="Quaternion" value="0 0 1 0" />
+					</attributes>
+					<components>
+						<component _typeName="AnimatedModel">
+							<attributes>
+								<attribute name="Model" type="ResourceRef" value="Model;Models/Mutant/Mutant.mdl" />
+								<attribute name="Material" type="ResourceRefList" value="Material;Models/Mutant/Materials/mutant_M.xml" />
+								<attribute name="Cast Shadows" type="Bool" value="true" />
+								<attribute name="Bone Animation Enabled" type="VariantVector">
+									<value>
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+										<element type="Bool" value="true" />
+									</value>
+								</attribute>
+							</attributes>
+						</component>
+						<component _typeName="AnimationController">
+							<attributes>
+								<attribute name="Animations" type="VariantVector">
+									<value>
+										<element type="Int" value="0" />
+									</value>
+								</attribute>
+							</attributes>
+						</component>
+						<component _typeName="ReplicatedAnimation" />
+						<component _typeName="TrackedAnimatedModel" />
+						<component _typeName="ReplicatedTransform">
+							<attributes>
+								<attribute name="Synchronize Position" type="Bool" value="false" />
+							</attributes>
+						</component>
+						<component _typeName="AdvancedNetworkingPlayer" />
+					</components>
+					<nodes>
+						<node>
+							<attributes>
+								<attribute name="Name" type="String" value="Mutant:Hips" />
+								<attribute name="Position" type="Vector3" value="4.16877e-09 0.924499 0.003297" />
+								<attribute name="Scale" type="Vector3" value="0.01 0.01 0.01" />
+							</attributes>
+							<nodes>
+								<node>
+									<attributes>
+										<attribute name="Name" type="String" value="Mutant:Spine" />
+										<attribute name="Position" type="Vector3" value="-2.9976e-15 10.763858 -1.243517" />
+									</attributes>
+									<nodes>
+										<node>
+											<attributes>
+												<attribute name="Name" type="String" value="Mutant:Spine1" />
+												<attribute name="Position" type="Vector3" value="-0.018927 13.061344 -0.227481" />
+											</attributes>
+											<nodes>
+												<node>
+													<attributes>
+														<attribute name="Name" type="String" value="Mutant:Spine2" />
+														<attribute name="Position" type="Vector3" value="-0.02163 12.988213 0.916687" />
+													</attributes>
+													<nodes>
+														<node>
+															<attributes>
+																<attribute name="Name" type="String" value="Mutant:Neck" />
+																<attribute name="Position" type="Vector3" value="-0.011927 24.67066 -2.028101" />
+															</attributes>
+															<nodes>
+																<node>
+																	<attributes>
+																		<attribute name="Name" type="String" value="Mutant:Head" />
+																		<attribute name="Position" type="Vector3" value="-2.57757e-09 8.817325 -6.102616" />
+																	</attributes>
+																</node>
+															</nodes>
+														</node>
+														<node>
+															<attributes>
+																<attribute name="Name" type="String" value="Mutant:LeftShoulder" />
+																<attribute name="Position" type="Vector3" value="9.553568 16.065386 5.227832" />
+															</attributes>
+															<nodes>
+																<node>
+																	<attributes>
+																		<attribute name="Name" type="String" value="Mutant:LeftArm" />
+																		<attribute name="Position" type="Vector3" value="17.89299 2.06608 0.922929" />
+																		<attribute name="Rotation" type="Quaternion" value="0.999618 -1.37025e-07 0.027629 2.40868e-06" />
+																	</attributes>
+																	<nodes>
+																		<node>
+																			<attributes>
+																				<attribute name="Name" type="String" value="Mutant:LeftForeArm" />
+																				<attribute name="Position" type="Vector3" value="26.374767 -0.000102 1.459064" />
+																				<attribute name="Rotation" type="Quaternion" value="0.999618 4.72676e-07 -0.027629 -9.35905e-06" />
+																			</attributes>
+																		</node>
+																	</nodes>
+																</node>
+															</nodes>
+														</node>
+														<node>
+															<attributes>
+																<attribute name="Name" type="String" value="Mutant:RightShoulder" />
+																<attribute name="Position" type="Vector3" value="-9.553568 16.065386 5.227832" />
+															</attributes>
+															<nodes>
+																<node>
+																	<attributes>
+																		<attribute name="Name" type="String" value="Mutant:RightArm" />
+																		<attribute name="Position" type="Vector3" value="-17.811876 2.06608 0.922929" />
+																		<attribute name="Rotation" type="Quaternion" value="0.999618 -1.09775e-07 -0.027629 -2.50144e-06" />
+																	</attributes>
+																	<nodes>
+																		<node>
+																			<attributes>
+																				<attribute name="Name" type="String" value="Mutant:RightForeArm" />
+																				<attribute name="Position" type="Vector3" value="-26.374767 -0.000102 1.459064" />
+																				<attribute name="Rotation" type="Quaternion" value="0.999618 4.72676e-07 0.027629 9.35905e-06" />
+																			</attributes>
+																			<nodes>
+																				<node>
+																					<attributes>
+																						<attribute name="Name" type="String" value="Mutant:RightHand" />
+																						<attribute name="Position" type="Vector3" value="-26.753433 0.000357 -1.605e-05" />
+																						<attribute name="Rotation" type="Quaternion" value="0.974317 -0.046727 0.218659 0.026678" />
+																					</attributes>
+																					<nodes>
+																						<node>
+																							<attributes>
+																								<attribute name="Name" type="String" value="Mutant:RightHandThumb1" />
+																								<attribute name="Position" type="Vector3" value="-2.492348 -4.446348 -6.163476" />
+																								<attribute name="Rotation" type="Quaternion" value="0.996327 0.043971 -0.073378 0.003806" />
+																							</attributes>
+																							<nodes>
+																								<node>
+																									<attributes>
+																										<attribute name="Name" type="String" value="Mutant:RightHandThumb2" />
+																										<attribute name="Position" type="Vector3" value="-6.602643 -4.314004 -6.890449" />
+																										<attribute name="Rotation" type="Quaternion" value="0.99246 0.013876 -0.108754 0.054793" />
+																									</attributes>
+																									<nodes>
+																										<node>
+																											<attributes>
+																												<attribute name="Name" type="String" value="Mutant:RightHandThumb3" />
+																												<attribute name="Position" type="Vector3" value="-6.784767 -2.9669 -4.170527" />
+																												<attribute name="Rotation" type="Quaternion" value="0.996368 -0.0046 -0.06557 0.05413" />
+																											</attributes>
+																											<nodes>
+																												<node>
+																													<attributes>
+																														<attribute name="Name" type="String" value="Mutant:RightHandThumb4" />
+																														<attribute name="Position" type="Vector3" value="-7.130654 -2.033751 -3.069635" />
+																														<attribute name="Scale" type="Vector3" value="0.01 0.01 0.01" />
+																													</attributes>
+																												</node>
+																											</nodes>
+																										</node>
+																									</nodes>
+																								</node>
+																							</nodes>
+																						</node>
+																						<node>
+																							<attributes>
+																								<attribute name="Name" type="String" value="Mutant:RightHandIndex1" />
+																								<attribute name="Position" type="Vector3" value="-18.447754 1.47989 -8.654249" />
+																								<attribute name="Rotation" type="Quaternion" value="0.975437 -2.3392e-08 -0.217129 -0.03713" />
+																							</attributes>
+																							<nodes>
+																								<node>
+																									<attributes>
+																										<attribute name="Name" type="String" value="Mutant:RightHandIndex2" />
+																										<attribute name="Position" type="Vector3" value="-7.51438 7.94918e-09 1.83943e-10" />
+																									</attributes>
+																									<nodes>
+																										<node>
+																											<attributes>
+																												<attribute name="Name" type="String" value="Mutant:RightHandIndex3" />
+																												<attribute name="Position" type="Vector3" value="-7.489388 6.8506e-09 -8.88178e-16" />
+																												<attribute name="Rotation" type="Quaternion" value="0.998858 -3.20217e-08 0.015247 -0.04529" />
+																											</attributes>
+																										</node>
+																									</nodes>
+																								</node>
+																							</nodes>
+																						</node>
+																						<node>
+																							<attributes>
+																								<attribute name="Name" type="String" value="Mutant:RightHandPinky1" />
+																								<attribute name="Position" type="Vector3" value="-17.507765 -0.477745 10.00308" />
+																								<attribute name="Rotation" type="Quaternion" value="0.975437 -3.72362e-08 -0.217129 -0.03713" />
+																							</attributes>
+																							<nodes>
+																								<node>
+																									<attributes>
+																										<attribute name="Name" type="String" value="Mutant:RightHandPinky2" />
+																										<attribute name="Position" type="Vector3" value="-7.044222 7.94896e-09 1.83922e-10" />
+																									</attributes>
+																									<nodes>
+																										<node>
+																											<attributes>
+																												<attribute name="Name" type="String" value="Mutant:RightHandPinky3" />
+																												<attribute name="Position" type="Vector3" value="-7.078903 4.11814e-09 -0" />
+																											</attributes>
+																										</node>
+																									</nodes>
+																								</node>
+																							</nodes>
+																						</node>
+																					</nodes>
+																				</node>
+																			</nodes>
+																		</node>
+																	</nodes>
+																</node>
+															</nodes>
+														</node>
+													</nodes>
+												</node>
+											</nodes>
+										</node>
+									</nodes>
+								</node>
+								<node>
+									<attributes>
+										<attribute name="Name" type="String" value="Mutant:LeftUpLeg" />
+										<attribute name="Position" type="Vector3" value="13.655973 -7.135242 -0.129696" />
+										<attribute name="Rotation" type="Quaternion" value="1 -0.000575 -1.56174e-11 2.71493e-08" />
+									</attributes>
+									<nodes>
+										<node>
+											<attributes>
+												<attribute name="Name" type="String" value="Mutant:LeftLeg" />
+												<attribute name="Position" type="Vector3" value="2.6874e-05 -35.919125 -1.48144" />
+												<attribute name="Rotation" type="Quaternion" value="0.999872 -0.016013 1.50455e-08 2.40954e-10" />
+											</attributes>
+											<nodes>
+												<node>
+													<attributes>
+														<attribute name="Name" type="String" value="Mutant:LeftFoot" />
+														<attribute name="Position" type="Vector3" value="6.21725e-14 -34.307396 2.646744" />
+														<attribute name="Rotation" type="Quaternion" value="0.999862 0.016588 0 0" />
+													</attributes>
+													<nodes>
+														<node>
+															<attributes>
+																<attribute name="Name" type="String" value="Mutant:LeftToeBase" />
+																<attribute name="Position" type="Vector3" value="4.79616e-14 -15.1931 -14.911814" />
+															</attributes>
+														</node>
+													</nodes>
+												</node>
+											</nodes>
+										</node>
+									</nodes>
+								</node>
+								<node>
+									<attributes>
+										<attribute name="Name" type="String" value="Mutant:RightUpLeg" />
+										<attribute name="Position" type="Vector3" value="-13.655973 -7.135242 -0.129696" />
+										<attribute name="Rotation" type="Quaternion" value="1 -0.000575 -1.57532e-11 2.73822e-08" />
+									</attributes>
+									<nodes>
+										<node>
+											<attributes>
+												<attribute name="Name" type="String" value="Mutant:RightLeg" />
+												<attribute name="Position" type="Vector3" value="-2.6874e-05 -35.919125 -1.48144" />
+												<attribute name="Rotation" type="Quaternion" value="0.999872 -0.016014 -1.4399e-08 -2.30613e-10" />
+											</attributes>
+											<nodes>
+												<node>
+													<attributes>
+														<attribute name="Name" type="String" value="Mutant:RightFoot" />
+														<attribute name="Position" type="Vector3" value="-4.26326e-14 -34.307396 2.646744" />
+														<attribute name="Rotation" type="Quaternion" value="0.999862 0.016589 0 0" />
+													</attributes>
+													<nodes>
+														<node>
+															<attributes>
+																<attribute name="Name" type="String" value="Mutant:RightToeBase" />
+																<attribute name="Position" type="Vector3" value="-6.57252e-14 -15.1931 -14.911814" />
+															</attributes>
+														</node>
+													</nodes>
+												</node>
+											</nodes>
+										</node>
+									</nodes>
+								</node>
+							</nodes>
+						</node>
+					</nodes>
+				</node>
+				<node>
+					<attributes>
+						<attribute name="Name" type="String" value="Light" />
+						<attribute name="Position" type="Vector3" value="0 2.5 0" />
+					</attributes>
+					<components>
+						<component _typeName="Light">
+							<attributes>
+								<attribute name="Color" type="Color" value="1 1 0 1" />
+								<attribute name="Brightness Multiplier" type="Float" value="0.500000" />
+							</attributes>
+						</component>
+					</components>
+				</node>
+			</nodes>
+		</node>
+	</nodes>
+</resource>

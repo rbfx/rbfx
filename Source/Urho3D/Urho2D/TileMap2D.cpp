@@ -73,25 +73,25 @@ void TileMap2D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     case O_ORTHOGONAL:
     case O_STAGGERED:
     case O_HEXAGONAL:
-        debug->AddLine(Vector3(TransformNode2D(transform, Vector2(0.0f, 0.0f))),
-            Vector3(TransformNode2D(transform, Vector2(mapW, 0.0f))), color);
-        debug->AddLine(Vector3(TransformNode2D(transform, Vector2(mapW, 0.0f))),
-            Vector3(TransformNode2D(transform, Vector2(mapW, mapH))), color);
-        debug->AddLine(Vector3(TransformNode2D(transform, Vector2(mapW, mapH))),
-            Vector3(TransformNode2D(transform, Vector2(0.0f, mapH))), color);
-        debug->AddLine(Vector3(TransformNode2D(transform, Vector2(0.0f, mapH))),
-            Vector3(TransformNode2D(transform, Vector2(0.0f, 0.0f))), color);
+        debug->AddLine(TransformNode2D(transform, Vector2(0.0f, 0.0f)).ToVector3(),
+            TransformNode2D(transform, Vector2(mapW, 0.0f)).ToVector3(), color);
+        debug->AddLine(TransformNode2D(transform, Vector2(mapW, 0.0f)).ToVector3(),
+            TransformNode2D(transform, Vector2(mapW, mapH)).ToVector3(), color);
+        debug->AddLine(TransformNode2D(transform, Vector2(mapW, mapH)).ToVector3(),
+            TransformNode2D(transform, Vector2(0.0f, mapH)).ToVector3(), color);
+        debug->AddLine(TransformNode2D(transform, Vector2(0.0f, mapH)).ToVector3(),
+            TransformNode2D(transform, Vector2(0.0f, 0.0f)).ToVector3(), color);
         break;
 
     case O_ISOMETRIC:
-        debug->AddLine(Vector3(TransformNode2D(transform, Vector2(0.0f, mapH * 0.5f))),
-            Vector3(TransformNode2D(transform, Vector2(mapW * 0.5f, 0.0f))), color);
-        debug->AddLine(Vector3(TransformNode2D(transform, Vector2(mapW * 0.5f, 0.0f))),
-            Vector3(TransformNode2D(transform, Vector2(mapW, mapH * 0.5f))), color);
-        debug->AddLine(Vector3(TransformNode2D(transform, Vector2(mapW, mapH * 0.5f))),
-            Vector3(TransformNode2D(transform, Vector2(mapW * 0.5f, mapH))), color);
-        debug->AddLine(Vector3(TransformNode2D(transform, Vector2(mapW * 0.5f, mapH))),
-            Vector3(TransformNode2D(transform, Vector2(0.0f, mapH * 0.5f))), color);
+        debug->AddLine(TransformNode2D(transform, Vector2(0.0f, mapH * 0.5f)).ToVector3(),
+            TransformNode2D(transform, Vector2(mapW * 0.5f, 0.0f)).ToVector3(), color);
+        debug->AddLine(TransformNode2D(transform, Vector2(mapW * 0.5f, 0.0f)).ToVector3(),
+            TransformNode2D(transform, Vector2(mapW, mapH * 0.5f)).ToVector3(), color);
+        debug->AddLine(TransformNode2D(transform, Vector2(mapW, mapH * 0.5f)).ToVector3(),
+            (TransformNode2D(transform, Vector2(mapW * 0.5f, mapH)).ToVector3()), color);
+        debug->AddLine(TransformNode2D(transform, Vector2(mapW * 0.5f, mapH)).ToVector3(),
+            TransformNode2D(transform, Vector2(0.0f, mapH * 0.5f)).ToVector3(), color);
         break;
     }
 
@@ -130,7 +130,7 @@ void TileMap2D::SetTmxFile(TmxFile2D* tmxFile)
 
     if (!rootNode_)
     {
-        rootNode_ = GetNode()->CreateTemporaryChild("_root_", LOCAL);
+        rootNode_ = GetNode()->CreateTemporaryChild("_root_");
     }
 
     unsigned numLayers = tmxFile_->GetNumLayers();
@@ -140,7 +140,7 @@ void TileMap2D::SetTmxFile(TmxFile2D* tmxFile)
     {
         const TmxLayer2D* tmxLayer = tmxFile_->GetLayer(i);
 
-        Node* layerNode(rootNode_->CreateTemporaryChild(tmxLayer->GetName(), LOCAL));
+        Node* layerNode(rootNode_->CreateTemporaryChild(tmxLayer->GetName()));
 
         auto* layer = layerNode->CreateComponent<TileMapLayer2D>();
         layer->Initialize(this, tmxLayer);

@@ -32,6 +32,8 @@
 #include "../Resource/JSONFile.h"
 #include "../Scene/Component.h"
 #include "../Scene/ObjectAnimation.h"
+#include "../Scene/PrefabReader.h"
+#include "../Scene/PrefabWriter.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/UnknownComponent.h"
@@ -46,7 +48,7 @@ namespace Urho3D
 {
 
 Node::Node(Context* context) :
-    Animatable(context),
+    Serializable(context),
     worldTransform_(Matrix3x4::IDENTITY),
     dirty_(false),
     enabled_(true),
@@ -79,128 +81,206 @@ void Node::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Tags", GetTags, SetTags, StringVector, Variant::emptyStringVector, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_FILE);
-    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE);
+    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_FILE); // Network replication of vars uses custom data
+    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT);
 }
 
 void Node::SerializeInBlock(Archive& archive)
 {
-    // TODO: Handle exceptions
+    const bool compactSave = !archive.IsHumanReadable();
+    const PrefabSaveFlags saveFlags =
+        compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
+
+    SerializeInBlock(archive, false, saveFlags);
+}
+
+void Node::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
+{
+    const bool compactSave = !archive.IsHumanReadable();
+    const PrefabArchiveFlags archiveFlags =
+        (compactSave ? PrefabArchiveFlag::CompactTypeNames : PrefabArchiveFlag::None)
+        | (serializeTemporary ? PrefabArchiveFlag::SerializeTemporary : PrefabArchiveFlag::None);
+    const PrefabLoadFlags loadFlags = PrefabLoadFlag::None;
+
     if (archive.IsInput())
     {
+        PrefabReaderFromArchive reader{archive, nullptr, archiveFlags};
+        if (!Load(reader, loadFlags))
+            throw ArchiveException("Failed to load node hierarchy from archive");
+    }
+    else
+    {
+        PrefabWriterToArchive writer{archive, nullptr, saveFlags, archiveFlags};
+        if (!Save(writer))
+            throw ArchiveException("Failed to save node hierarchy to archive");
+    }
+}
+
+void Node::LoadInternal(
+    const SerializablePrefab& nodePrefab, PrefabReader& reader, SceneResolver& resolver, PrefabLoadFlags flags)
+{
+    const bool discardIds = flags.Test(PrefabLoadFlag::DiscardIds);
+    const bool loadAsTemporary = flags.Test(PrefabLoadFlag::LoadAsTemporary);
+
+    if (!flags.Test(PrefabLoadFlag::KeepExistingComponents))
+        RemoveAllComponents();
+    if (!flags.Test(PrefabLoadFlag::KeepExistingChildren))
+        RemoveAllChildren();
+
+    // Load self
+    if (!flags.Test(PrefabLoadFlag::IgnoreRootAttributes))
+        nodePrefab.Export(this, flags);
+
+    const unsigned oldId = static_cast<unsigned>(nodePrefab.GetId());
+    resolver.AddNode(oldId, this);
+
+    // Load components
+    const unsigned numComponents = reader.ReadNumComponents();
+    for (unsigned index = 0; index < numComponents; ++index)
+    {
+        const SerializablePrefab* componentPrefab = reader.ReadComponent();
+        if (!componentPrefab)
+            throw ArchiveException("Failed to read component prefab");
+
+        const unsigned oldComponentId = static_cast<unsigned>(componentPrefab->GetId());
+        Component* component = SafeCreateComponent(
+            componentPrefab->GetTypeName(), componentPrefab->GetTypeNameHash(), discardIds ? 0 : oldComponentId);
+
+        resolver.AddComponent(oldComponentId, component);
+        componentPrefab->Export(component, flags);
+
+        if (loadAsTemporary)
+            component->SetTemporary(true);
+    }
+
+    // Load children
+    const unsigned numChildren = reader.ReadNumChildren();
+    for (unsigned index = 0; index < numChildren; ++index)
+    {
+        reader.BeginChild();
+        {
+            const SerializablePrefab* childPrefab = reader.ReadNode();
+            if (!childPrefab)
+                throw ArchiveException("Failed to read child prefab");
+
+            const unsigned oldChildId = static_cast<unsigned>(childPrefab->GetId());
+            Node* child = CreateChild(discardIds ? 0 : oldChildId);
+
+            const PrefabLoadFlags childFlags =
+                flags & ~PrefabLoadFlag::LoadAsTemporary & ~PrefabLoadFlag::IgnoreRootAttributes;
+            child->LoadInternal(*childPrefab, reader, resolver, childFlags);
+
+            if (loadAsTemporary)
+                child->SetTemporary(true);
+        }
+        reader.EndChild();
+    }
+}
+
+bool Node::Load(PrefabReader& reader, PrefabLoadFlags flags)
+{
+    try
+    {
+        const SerializablePrefab* nodePrefab = reader.ReadNode();
+        if (!nodePrefab)
+            throw ArchiveException("Failed to read node prefab");
+
         SceneResolver resolver;
-
-        // Load this node ID for resolver
-        unsigned nodeID{};
-        Urho3D::SerializeValue(archive, "id", nodeID);
-        resolver.AddNode(nodeID, this);
-
-        // Load node content
-        SerializeInBlock(archive, &resolver);
+        LoadInternal(*nodePrefab, reader, resolver, flags);
 
         // Resolve IDs and apply attributes
         resolver.Resolve();
         ApplyAttributes();
+
+        return true;
     }
-    else
+    catch (const ArchiveException& e)
     {
-        // Save node ID and content
-        Urho3D::SerializeValue(archive, "id", id_);
-        SerializeInBlock(archive, nullptr);
+        URHO3D_LOGERROR(e.what());
+        return false;
     }
 }
 
-void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
-    bool serializeChildren /*= true*/, bool rewriteIDs /*= false*/, CreateMode mode /*= REPLICATED*/)
+void Node::SaveInternal(PrefabWriter& writer) const
 {
-    // Resolver must be present if loading
-    const bool loading = archive.IsInput();
-    assert(loading == !!resolver);
+    const bool saveTemporary = writer.GetFlags().Test(PrefabSaveFlag::SaveTemporary);
 
-    // Remove all children and components first in case this is not a fresh load
-    if (loading)
+    writer.WriteNode(GetID(), this);
+
+    const unsigned numComponents = saveTemporary ? GetNumComponents() : GetNumPersistentComponents();
+    writer.WriteNumComponents(numComponents);
+    for (Component* component : components_)
     {
-        RemoveAllChildren();
-        RemoveAllComponents();
+        if (component && (saveTemporary || !component->IsTemporary()))
+            writer.WriteComponent(component->GetID(), component);
     }
 
-    // Serialize base class
-    Animatable::SerializeInBlock(archive);
-
-    // Serialize components
-    const unsigned numComponentsToWrite = loading ? 0 : GetNumPersistentComponents();
-    SerializeCustomVector(archive, "components", numComponentsToWrite, components_,
-        [&](unsigned /*index*/, SharedPtr<Component> component, bool loading)
+    const unsigned numChildren = saveTemporary ? GetNumChildren() : GetNumPersistentChildren();
+    writer.WriteNumChildren(numChildren);
+    for (Node* child : children_)
     {
-        assert(loading || component);
-
-        // Skip temporary components
-        if (component && component->IsTemporary())
-            return;
-
-        // Serialize component
-        if (ArchiveBlock componentBlock = archive.OpenSafeUnorderedBlock("component"))
+        if (child && (saveTemporary || !child->IsTemporary()))
         {
-            // Serialize component ID and type
-            unsigned componentID = component ? component->GetID() : 0;
-            StringHash componentType = component ? component->GetType() : StringHash::Empty;
-            const ea::string& componentTypeName = component ? component->GetTypeName() : EMPTY_STRING;
-            SerializeValue(archive, "id", componentID);
-            SerializeStringHash(archive, "type", componentType, componentTypeName);
-
-            // Create component if loading
-            if (loading)
-            {
-                const bool isReplicated = mode == REPLICATED && Scene::IsReplicatedID(componentID);
-                component = SafeCreateComponent(EMPTY_STRING, componentType, isReplicated ? REPLICATED : LOCAL, componentID);
-
-                // Add component to resolver
-                resolver->AddComponent(componentID, component);
-            }
-
-            // Serialize component.
-            component->SerializeInBlock(archive);
+            writer.BeginChild();
+            child->SaveInternal(writer);
+            writer.EndChild();
         }
-    });
+    }
+}
 
-    // Skip children
-    if (!serializeChildren)
-        return;
-
-    // Serialize children
-    const unsigned numChildrenToWrite = loading ? 0 : GetNumPersistentChildren();
-    SerializeCustomVector(archive, "children", numChildrenToWrite, children_,
-        [&](unsigned /*index*/, SharedPtr<Node> child, bool loading)
+bool Node::Save(PrefabWriter& writer) const
+{
+    try
     {
-        assert(loading || child);
+        SaveInternal(writer);
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        URHO3D_LOGERROR(e.what());
+        return false;
+    }
+}
 
-        // Skip temporary children
-        if (child && child->IsTemporary())
-            return;
+Node* Node::InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation)
+{
+    Node* childNode = CreateChild();
+    PrefabReaderFromMemory reader{prefab};
+    if (!childNode->Load(reader, PrefabLoadFlag::None))
+    {
+        childNode->Remove();
+        return nullptr;
+    }
 
-        // Serialize child
-        if (ArchiveBlock childBlock = archive.OpenUnorderedBlock("child"))
-        {
-            // Serialize node ID
-            unsigned nodeID = child ? child->GetID() : 0;
-            SerializeValue(archive, "id", nodeID);
+    childNode->SetPosition(position);
+    childNode->SetRotation(rotation);
+    return childNode;
+}
 
-            // Create child if loading
-            if (loading)
-            {
-                const bool isReplicated = mode == REPLICATED && Scene::IsReplicatedID(nodeID);
-                child = CreateChild(rewriteIDs ? 0 : nodeID, isReplicated ? REPLICATED : LOCAL);
+void Node::GeneratePrefab(NodePrefab& prefab) const
+{
+    const PrefabSaveFlags flags = PrefabSaveFlag::EnumsAsStrings | PrefabSaveFlag::Prefab;
+    PrefabWriterToMemory writer{prefab, flags};
+    Save(writer);
+}
 
-                // Add child node to resolver
-                resolver->AddNode(nodeID, child);
-            }
+NodePrefab Node::GeneratePrefab() const
+{
+    NodePrefab prefab;
+    GeneratePrefab(prefab);
+    return prefab;
+}
 
-            // Serialize child
-            child->SerializeInBlock(archive, resolver, serializeChildren, rewriteIDs, mode);
-        }
-    });
+AttributeScopeHint Node::GetEffectiveScopeHint() const
+{
+    AttributeScopeHint result = AttributeScopeHint::Serializable;
+    for (Component* component : GetComponents())
+        result = ea::max(result, component->GetEffectiveScopeHint());
+    for (Node* child : GetChildren())
+        result = ea::max(result, child->GetEffectiveScopeHint());
+    return result;
 }
 
 bool Node::Load(Deserializer& source)
@@ -229,7 +309,7 @@ bool Node::Save(Serializer& dest) const
         return false;
 
     // Write attributes
-    if (!Animatable::Save(dest))
+    if (!Serializable::Save(dest))
         return false;
 
     // Write components
@@ -308,7 +388,7 @@ bool Node::SaveXML(XMLElement& dest) const
         return false;
 
     // Write attributes
-    if (!Animatable::SaveXML(dest))
+    if (!Serializable::SaveXML(dest))
         return false;
 
     // Write components
@@ -344,7 +424,7 @@ bool Node::SaveJSON(JSONValue& dest) const
     dest.Set("id", id_);
 
     // Write attributes
-    if (!Animatable::SaveJSON(dest))
+    if (!Serializable::SaveJSON(dest))
         return false;
 
     // Write components
@@ -655,7 +735,7 @@ void Node::Translate(const Vector3& delta, TransformSpace space)
         break;
 
     case TS_WORLD:
-        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
+        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * delta.ToVector4();
         break;
     }
 
@@ -885,16 +965,16 @@ void Node::MarkDirty()
     }
 }
 
-Node* Node::CreateChild(const ea::string& name, CreateMode mode, unsigned id, bool temporary)
+Node* Node::CreateChild(const ea::string& name, unsigned id, bool temporary)
 {
-    Node* newNode = CreateChild(id, mode, temporary);
+    Node* newNode = CreateChild(id, temporary);
     newNode->SetName(name);
     return newNode;
 }
 
-Node* Node::CreateTemporaryChild(const ea::string& name, CreateMode mode, unsigned id)
+Node* Node::CreateTemporaryChild(const ea::string& name, unsigned id)
 {
-    return CreateChild(name, mode, id, true);
+    return CreateChild(name, id, true);
 }
 
 void Node::AddChild(Node* node, unsigned index)
@@ -987,13 +1067,8 @@ void Node::RemoveChildren(bool recursive)
     }
 }
 
-Component* Node::CreateComponent(StringHash type, CreateMode mode, unsigned id)
+Component* Node::CreateComponent(StringHash type, unsigned id)
 {
-    // Do not attempt to create replicated components to local nodes, as that may lead to component ID overwrite
-    // as replicated components are synced over
-    if (mode == REPLICATED && !IsReplicated())
-        mode = LOCAL;
-
     // Check that creation succeeds and that the object in fact is a component
     SharedPtr<Component> newComponent = DynamicCast<Component>(context_->CreateObject(type));
     if (!newComponent)
@@ -1002,17 +1077,17 @@ Component* Node::CreateComponent(StringHash type, CreateMode mode, unsigned id)
         return nullptr;
     }
 
-    AddComponent(newComponent, id, mode);
+    AddComponent(newComponent, id);
     return newComponent;
 }
 
-Component* Node::GetOrCreateComponent(StringHash type, CreateMode mode, unsigned id)
+Component* Node::GetOrCreateComponent(StringHash type, unsigned id)
 {
     Component* oldComponent = GetComponent(type);
     if (oldComponent)
         return oldComponent;
     else
-        return CreateComponent(type, mode, id);
+        return CreateComponent(type, id);
 }
 
 Component* Node::CloneComponent(Component* component, unsigned id)
@@ -1023,18 +1098,7 @@ Component* Node::CloneComponent(Component* component, unsigned id)
         return nullptr;
     }
 
-    return CloneComponent(component, component->IsReplicated() ? REPLICATED : LOCAL, id);
-}
-
-Component* Node::CloneComponent(Component* component, CreateMode mode, unsigned id)
-{
-    if (!component)
-    {
-        URHO3D_LOGERROR("Null source component given for CloneComponent");
-        return nullptr;
-    }
-
-    Component* cloneComponent = SafeCreateComponent(component->GetTypeName(), component->GetType(), mode, 0);
+    Component* cloneComponent = SafeCreateComponent(component->GetTypeName(), component->GetType(), 0);
     if (!cloneComponent)
     {
         URHO3D_LOGERROR("Could not clone component " + component->GetTypeName());
@@ -1150,7 +1214,7 @@ void Node::ReorderComponent(Component* component, unsigned index)
     components_.insert_at(index, componentShared);
 }
 
-Node* Node::Clone(Node* parent, CreateMode mode)
+Node* Node::Clone(Node* parent)
 {
     Node* destination = parent ? parent : parent_;
 
@@ -1164,7 +1228,7 @@ Node* Node::Clone(Node* parent, CreateMode mode)
     URHO3D_PROFILE("CloneNode");
 
     SceneResolver resolver;
-    Node* clone = CloneRecursive(destination, resolver, mode);
+    Node* clone = CloneRecursive(destination, resolver);
     resolver.Resolve();
     clone->ApplyAttributes();
     return clone;
@@ -1259,7 +1323,7 @@ Vector3 Node::LocalToWorld(const Vector4& vector) const
 
 Vector2 Node::LocalToWorld2D(const Vector2& vector) const
 {
-    Vector3 result = LocalToWorld(Vector3(vector));
+    Vector3 result = LocalToWorld(vector.ToVector3());
     return Vector2(result.x_, result.y_);
 }
 
@@ -1275,7 +1339,7 @@ Vector3 Node::WorldToLocal(const Vector4& vector) const
 
 Vector2 Node::WorldToLocal2D(const Vector2& vector) const
 {
-    Vector3 result = WorldToLocal(Vector3(vector));
+    Vector3 result = WorldToLocal(vector.ToVector3());
     return Vector2(result.x_, result.y_);
 }
 
@@ -1477,18 +1541,6 @@ ea::pair<Serializable*, unsigned> Node::FindComponentAttribute(ea::string_view p
     return { serializable, attributeIndex };
 }
 
-unsigned Node::GetNumNetworkComponents() const
-{
-    unsigned num = 0;
-    for (auto i = components_.begin(); i != components_.end(); ++i)
-    {
-        if ((*i)->IsReplicated())
-            ++num;
-    }
-
-    return num;
-}
-
 void Node::GetComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const
 {
     dest.clear();
@@ -1519,11 +1571,6 @@ bool Node::HasComponent(StringHash type) const
             return true;
     }
     return false;
-}
-
-bool Node::IsReplicated() const
-{
-    return Scene::IsReplicatedID(id_);
 }
 
 ea::string Node::GetFullNameDebug() const
@@ -1662,14 +1709,14 @@ void Node::ResetScene()
     SetScene(nullptr);
 }
 
-bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode)
+bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs)
 {
     // Remove all children and components first in case this is not a fresh load
     RemoveAllChildren();
     RemoveAllComponents();
 
     // ID has been read at the parent level
-    if (!Animatable::Load(source))
+    if (!Serializable::Load(source))
         return false;
 
     unsigned numComponents = source.ReadVLE();
@@ -1679,8 +1726,7 @@ bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren
         StringHash compType = compBuffer.ReadStringHash();
         unsigned compID = compBuffer.ReadUInt();
 
-        Component* newComponent = SafeCreateComponent(EMPTY_STRING, compType,
-            (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
+        Component* newComponent = SafeCreateComponent(EMPTY_STRING, compType, rewriteIDs ? 0 : compID);
         if (newComponent)
         {
             resolver.AddComponent(compID, newComponent);
@@ -1696,24 +1742,23 @@ bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren
     for (unsigned i = 0; i < numChildren; ++i)
     {
         unsigned nodeID = source.ReadUInt();
-        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID, (mode == REPLICATED && Scene::IsReplicatedID(nodeID)) ? REPLICATED :
-            LOCAL);
+        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID);
         resolver.AddNode(nodeID, newNode);
-        if (!newNode->Load(source, resolver, loadChildren, rewriteIDs, mode))
+        if (!newNode->Load(source, resolver, loadChildren, rewriteIDs))
             return false;
     }
 
     return true;
 }
 
-bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode, bool removeComponents)
+bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, bool removeComponents)
 {
     // Remove all children and components first in case this is not a fresh load
     RemoveAllChildren();
     if (removeComponents)
         RemoveAllComponents();
 
-    if (!Animatable::LoadXML(source))
+    if (!Serializable::LoadXML(source))
         return false;
 
     XMLElement compElem = source.GetChild("component");
@@ -1721,8 +1766,7 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     {
         ea::string typeName = compElem.GetAttribute("type");
         unsigned compID = compElem.GetUInt("id");
-        Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
-            (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
+        Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName), rewriteIDs ? 0 : compID);
         if (newComponent)
         {
             resolver.AddComponent(compID, newComponent);
@@ -1740,10 +1784,9 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     while (childElem)
     {
         unsigned nodeID = childElem.GetUInt("id");
-        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID, (mode == REPLICATED && Scene::IsReplicatedID(nodeID)) ? REPLICATED :
-            LOCAL);
+        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID);
         resolver.AddNode(nodeID, newNode);
-        if (!newNode->LoadXML(childElem, resolver, loadChildren, rewriteIDs, mode))
+        if (!newNode->LoadXML(childElem, resolver, loadChildren, rewriteIDs))
             return false;
 
         childElem = childElem.GetNext("node");
@@ -1752,13 +1795,13 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     return true;
 }
 
-bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode)
+bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs)
 {
     // Remove all children and components first in case this is not a fresh load
     RemoveAllChildren();
     RemoveAllComponents();
 
-    if (!Animatable::LoadJSON(source))
+    if (!Serializable::LoadJSON(source))
         return false;
 
     const JSONArray& componentsArray = source.Get("components").GetArray();
@@ -1768,8 +1811,7 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
         const JSONValue& compVal = componentsArray.at(i);
         ea::string typeName = compVal.Get("type").GetString();
         unsigned compID = compVal.Get("id").GetUInt();
-        Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
-            (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
+        Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName), rewriteIDs ? 0 : compID);
         if (newComponent)
         {
             resolver.AddComponent(compID, newComponent);
@@ -1787,17 +1829,16 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
         const JSONValue& childVal = childrenArray.at(i);
 
         unsigned nodeID = childVal.Get("id").GetUInt();
-        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID, (mode == REPLICATED && Scene::IsReplicatedID(nodeID)) ? REPLICATED :
-            LOCAL);
+        Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID);
         resolver.AddNode(nodeID, newNode);
-        if (!newNode->LoadJSON(childVal, resolver, loadChildren, rewriteIDs, mode))
+        if (!newNode->LoadJSON(childVal, resolver, loadChildren, rewriteIDs))
             return false;
     }
 
     return true;
 }
 
-Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
+Node* Node::CreateChild(unsigned id, bool temporary)
 {
     SharedPtr<Node> newNode(MakeShared<Node>(context_));
     newNode->SetTemporary(temporary);
@@ -1806,7 +1847,7 @@ Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
     if (scene_)
     {
         if (!id || scene_->GetNode(id))
-            id = scene_->GetFreeNodeID(mode);
+            id = scene_->GetFreeNodeID();
         newNode->SetID(id);
     }
     else
@@ -1816,7 +1857,7 @@ Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
     return newNode;
 }
 
-void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
+void Node::AddComponent(Component* component, unsigned id)
 {
     if (!component)
         return;
@@ -1832,7 +1873,7 @@ void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
     if (scene_)
     {
         if (!id || scene_->GetComponent(id))
-            id = scene_->GetFreeComponentID(mode);
+            id = scene_->GetFreeComponentID();
         component->SetID(id);
         scene_->ComponentAdded(component);
     }
@@ -1891,99 +1932,6 @@ void Node::SetTransformSilent(const Vector3& position, const Quaternion& rotatio
 void Node::SetTransformSilent(const Matrix3x4& matrix)
 {
     SetTransformSilent(matrix.Translation(), matrix.Rotation(), matrix.Scale());
-}
-
-void Node::OnAttributeAnimationAdded()
-{
-    if (attributeAnimationInfos_.size() == 1)
-        SubscribeToEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE, URHO3D_HANDLER(Node, HandleAttributeAnimationUpdate));
-}
-
-void Node::OnAttributeAnimationRemoved()
-{
-    if (attributeAnimationInfos_.empty())
-        UnsubscribeFromEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE);
-}
-
-Animatable* Node::FindAttributeAnimationTarget(const ea::string& name, ea::string& outName)
-{
-    ea::vector<ea::string> names = name.split('/');
-    // Only attribute name
-    if (names.size() == 1)
-    {
-        outName = name;
-        return this;
-    }
-    else
-    {
-        // Name must in following format: "#0/#1/@component#0/attribute"
-        Node* node = this;
-        unsigned i = 0;
-        for (; i < names.size() - 1; ++i)
-        {
-            if (names[i].front() != '#')
-                break;
-
-            ea::string name = names[i].substr(1, names[i].length() - 1);
-            char s = name.front();
-            if (s >= '0' && s <= '9')
-            {
-                unsigned index = ToUInt(name);
-                node = node->GetChild(index);
-            }
-            else
-            {
-                node = node->GetChild(name, true);
-            }
-
-            if (!node)
-            {
-                URHO3D_LOGERROR("Could not find node by name " + name);
-                return nullptr;
-            }
-        }
-
-        if (i == names.size() - 1)
-        {
-            outName = names.back();
-            return node;
-        }
-
-        if (i != names.size() - 2 || names[i].front() != '@')
-        {
-            URHO3D_LOGERROR("Invalid name " + name);
-            return nullptr;
-        }
-
-        ea::string componentName = names[i].substr(1, names[i].length() - 1);
-        ea::vector<ea::string> componentNames = componentName.split('#');
-        if (componentNames.size() == 1)
-        {
-            Component* component = node->GetComponent(StringHash(componentNames.front()));
-            if (!component)
-            {
-                URHO3D_LOGERROR("Could not find component by name " + name);
-                return nullptr;
-            }
-
-            outName = names.back();
-            return component;
-        }
-        else
-        {
-            unsigned index = ToUInt(componentNames[1]);
-            ea::vector<Component*> components;
-            node->GetComponents(components, StringHash(componentNames.front()));
-            if (index >= components.size())
-            {
-                URHO3D_LOGERROR("Could not find component by name " + name);
-                return nullptr;
-            }
-
-            outName = names.back();
-            return components[index];
-        }
-    }
 }
 
 void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
@@ -2053,24 +2001,20 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
     }
 }
 
-Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type, CreateMode mode, unsigned id)
+Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type, unsigned id)
 {
-    // Do not attempt to create replicated components to local nodes, as that may lead to component ID overwrite
-    // as replicated components are synced over
-    if (mode == REPLICATED && !IsReplicated())
-        mode = LOCAL;
-
     // First check if factory for type exists
     if (!context_->GetTypeName(type).empty())
-        return CreateComponent(type, mode, id);
-    else
     {
-        URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
-        // Else create as UnknownComponent
-        SharedPtr<UnknownComponent> newComponent(MakeShared<UnknownComponent>(context_));
-        AddComponent(newComponent, id, mode);
-        return newComponent;
+        if (Component* component = CreateComponent(type, id))
+            return component;
     }
+
+    URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
+    // Else create as UnknownComponent
+    SharedPtr<UnknownComponent> newComponent(MakeShared<UnknownComponent>(context_));
+    AddComponent(newComponent, id);
+    return newComponent;
 }
 
 void Node::UpdateWorldTransform() const
@@ -2166,10 +2110,10 @@ void Node::GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string
     }
 }
 
-Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mode)
+Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver)
 {
     // Create clone node
-    Node* cloneNode = parent->CreateChild(0, (mode == REPLICATED && IsReplicated()) ? REPLICATED : LOCAL);
+    Node* cloneNode = parent->CreateChild(0);
     resolver.AddNode(id_, cloneNode);
 
     // Copy attributes
@@ -2193,8 +2137,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
         if (component->IsTemporary())
             continue;
 
-        Component* cloneComponent = cloneNode->CloneComponent(component,
-            (mode == REPLICATED && component->IsReplicated()) ? REPLICATED : LOCAL, 0);
+        Component* cloneComponent = cloneNode->CloneComponent(component, 0);
         if (cloneComponent)
             resolver.AddComponent(component->GetID(), cloneComponent);
     }
@@ -2206,7 +2149,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
         if (node->IsTemporary())
             continue;
 
-        node->CloneRecursive(cloneNode, resolver, mode);
+        node->CloneRecursive(cloneNode, resolver);
     }
 
     if (scene_)
@@ -2250,11 +2193,29 @@ void Node::RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i)
     components_.erase(i);
 }
 
-void Node::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData)
+ea::vector<Node*> Node::GetNodes(const ea::vector<Component*>& components)
 {
-    using namespace AttributeAnimationUpdate;
+    ea::vector<Node*> result;
+    for (Component* component : components)
+    {
+        Node* node = component->GetNode();
+        if (!result.contains(node))
+            result.push_back(node);
+    }
+    return result;
+}
 
-    UpdateAttributeAnimations(eventData[P_TIMESTEP].GetFloat());
+ea::vector<Node*> Node::GetParentNodes(const ea::vector<Node*>& nodes)
+{
+    ea::vector<Node*> result;
+    for (Node* candidate : nodes)
+    {
+        const auto isChildOf = [candidate](Node* node) { return candidate->IsChildOf(node); };
+        const bool isChildOfAny = ea::any_of(nodes.begin(), nodes.end(), isChildOf);
+        if (!isChildOfAny)
+            result.push_back(candidate);
+    }
+    return result;
 }
 
 }

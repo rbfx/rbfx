@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2008-2019 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,10 @@ namespace Urho3DNet
 {
     /// 2x2 matrix for rotation and scaling.
     [StructLayout(LayoutKind.Sequential)]
-    public struct Matrix2 : IEquatable<Matrix2>
+    public struct Matrix2 : IEquatable<Matrix2>, IApproximateEquatable<Matrix2>
     {
+        public static IEqualityComparer<Matrix2> ApproximateEqualityComparer => ApproximateEqualityComparer<Matrix2>.Default;
+
         /// Construct from values.
         public Matrix2(float v00 = 1, float v01 = 0,
             float v10 = 0, float v11 = 1)
@@ -173,10 +175,18 @@ namespace Urho3DNet
         /// Test for equality with another matrix with epsilon.
         public bool Equals(Matrix2 rhs)
         {
-            return MathDefs.Equals(M00, rhs.M00) &&
-                   MathDefs.Equals(M01, rhs.M01) &&
-                   MathDefs.Equals(M10, rhs.M10) &&
-                   MathDefs.Equals(M11, rhs.M11);
+            return this == rhs;
+        }
+
+        /// <summary>
+        /// Test for equality with another matrix with epsilon.
+        /// </summary>
+        public bool ApproximatelyEquivalent(Matrix2 rhs, float epsilon = MathDefs.Epsilon)
+        {
+            return MathDefs.ApproximatelyEquivalent(M00, rhs.M00, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M01, rhs.M01, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M10, rhs.M10, epsilon) &&
+                   MathDefs.ApproximatelyEquivalent(M11, rhs.M11, epsilon);
         }
 
         /// Return inverse.
@@ -232,16 +242,11 @@ namespace Urho3DNet
             return obj is Matrix2 other && Equals(other);
         }
 
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = M00.GetHashCode();
-                hashCode = (hashCode * 397) ^ M01.GetHashCode();
-                hashCode = (hashCode * 397) ^ M10.GetHashCode();
-                hashCode = (hashCode * 397) ^ M11.GetHashCode();
-                return hashCode;
-            }
+            return HashCode.Combine(M00, M01, M10, M11);
         }
     };
 }

@@ -27,6 +27,8 @@
 #include "../Scene/SceneResolver.h"
 #include "../Scene/Node.h"
 
+#include <EASTL/unordered_set.h>
+
 #include "../DebugNew.h"
 
 namespace Urho3D

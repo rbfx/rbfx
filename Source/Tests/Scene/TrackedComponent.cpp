@@ -51,11 +51,7 @@ TestComponentRegistry::TestComponentRegistry(Context* context)
 TEST_CASE("Tracked components are indexed in the registry")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-
-    if (!context->IsReflected<TestComponentRegistry>())
-        context->AddFactoryReflection<TestComponentRegistry>();
-    if (!context->IsReflected<TestTrackedComponent>())
-        context->AddFactoryReflection<TestTrackedComponent>();
+    auto guard = Tests::MakeScopedReflection<TestComponentRegistry, TestTrackedComponent>(context);
 
     auto scene = MakeShared<Scene>(context);
     auto registry = scene->CreateComponent<TestComponentRegistry>();
@@ -81,7 +77,7 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component2->GetIndexInArray() == 1);
     REQUIRE(component3->GetIndexInArray() == 2);
 
-    REQUIRE(registry->GetTrackedComponentByReference(InvalidComponentReference) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByReference(ComponentReference::None) == nullptr);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000001}) == component1);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000002}) == component2);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000003}) == component3);
@@ -102,12 +98,12 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component3->GetIndexInArray() == 1);
     REQUIRE(component2->GetIndexInArray() == M_MAX_UNSIGNED);
 
-    REQUIRE(registry->GetTrackedComponentByReference(InvalidComponentReference) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByReference(ComponentReference::None) == nullptr);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000001}) == component1);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000003}) == component3);
 
     REQUIRE(component1->GetReference() == ComponentReference{0x00000001});
-    REQUIRE(component2->GetReference() == InvalidComponentReference);
+    REQUIRE(component2->GetReference() == ComponentReference::None);
     REQUIRE(component3->GetReference() == ComponentReference{0x00000003});
 
     shaderNode2 = nullptr;
@@ -124,10 +120,10 @@ TEST_CASE("Tracked components are indexed in the registry")
 
     REQUIRE(component1->GetIndexInArray() == M_MAX_UNSIGNED);
 
-    REQUIRE(registry->GetTrackedComponentByReference(InvalidComponentReference) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByReference(ComponentReference::None) == nullptr);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000003}) == component3);
 
-    REQUIRE(component1->GetReference() == InvalidComponentReference);
+    REQUIRE(component1->GetReference() == ComponentReference::None);
     REQUIRE(component3->GetReference() == ComponentReference{0x00000003});
 
     // Enable tracked component
@@ -141,7 +137,7 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component3->GetIndexInArray() == 0);
     REQUIRE(component1->GetIndexInArray() == 1);
 
-    REQUIRE(registry->GetTrackedComponentByReference(InvalidComponentReference) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByReference(ComponentReference::None) == nullptr);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000001}) == component1);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000003}) == component3);
 
@@ -152,7 +148,7 @@ TEST_CASE("Tracked components are indexed in the registry")
     auto node4 = scene->CreateChild("Node 4");
     auto component4 = MakeShared<TestTrackedComponent>(context);
     component4->SetEnabled(false);
-    node4->AddComponent(component4, 0, LOCAL);
+    node4->AddComponent(component4, 0);
 
     REQUIRE(registry->GetNumTrackedComponents() == 2);
     REQUIRE(registry->GetTrackedComponentByIndex(0) == component3);
@@ -162,7 +158,7 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component1->GetIndexInArray() == 1);
     REQUIRE(component4->GetIndexInArray() == M_MAX_UNSIGNED);
 
-    REQUIRE(registry->GetTrackedComponentByReference(InvalidComponentReference) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByReference(ComponentReference::None) == nullptr);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000001}) == component1);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000003}) == component3);
 
@@ -176,9 +172,9 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component1->GetIndexInArray() == M_MAX_UNSIGNED);
     REQUIRE(component4->GetIndexInArray() == M_MAX_UNSIGNED);
 
-    REQUIRE(component3->GetReference() == InvalidComponentReference);
-    REQUIRE(component1->GetReference() == InvalidComponentReference);
-    REQUIRE(component4->GetReference() == InvalidComponentReference);
+    REQUIRE(component3->GetReference() == ComponentReference::None);
+    REQUIRE(component1->GetReference() == ComponentReference::None);
+    REQUIRE(component4->GetReference() == ComponentReference::None);
 
     // Add registry
     registry = scene->CreateComponent<TestComponentRegistry>();
@@ -187,13 +183,13 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component3->GetIndexInArray() == 1);
     REQUIRE(component4->GetIndexInArray() == M_MAX_UNSIGNED);
 
-    REQUIRE(registry->GetTrackedComponentByReference(InvalidComponentReference) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByReference(ComponentReference::None) == nullptr);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000001}) == component1);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000002}) == component3);
 
     REQUIRE(component1->GetReference() == ComponentReference{0x00000001});
     REQUIRE(component3->GetReference() == ComponentReference{0x00000002});
-    REQUIRE(component4->GetReference() == InvalidComponentReference);
+    REQUIRE(component4->GetReference() == ComponentReference::None);
 
     // Remove disabled tracked component
     node4->Remove();
@@ -205,13 +201,13 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component1->GetIndexInArray() == 0);
     REQUIRE(component3->GetIndexInArray() == 1);
 
-    REQUIRE(registry->GetTrackedComponentByReference(InvalidComponentReference) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByReference(ComponentReference::None) == nullptr);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000001}) == component1);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000002}) == component3);
 
     REQUIRE(component1->GetReference() == ComponentReference{0x00000001});
     REQUIRE(component3->GetReference() == ComponentReference{0x00000002});
-    REQUIRE(component4->GetReference() == InvalidComponentReference);
+    REQUIRE(component4->GetReference() == ComponentReference::None);
 
     // Disable and enable tracked component
     component1->SetEnabled(false);
@@ -227,11 +223,11 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component3->GetIndexInArray() == 0);
     REQUIRE(component1->GetIndexInArray() == 1);
 
-    REQUIRE(registry->GetTrackedComponentByReference(InvalidComponentReference) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByReference(ComponentReference::None) == nullptr);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x01000001}) == component1);
     REQUIRE(registry->GetTrackedComponentByReference(ComponentReference{0x00000002}) == component3);
 
     REQUIRE(component1->GetReference() == ComponentReference{0x01000001});
     REQUIRE(component3->GetReference() == ComponentReference{0x00000002});
-    REQUIRE(component4->GetReference() == InvalidComponentReference);
+    REQUIRE(component4->GetReference() == ComponentReference::None);
 }

@@ -91,6 +91,8 @@ public:
     bool IsRendering() const { return isRendering_; }
     /// Return true if input is captured by UI.
     bool IsInputCaptured() const;
+    /// Returns true if any window of this UI context is hovered by mouse.
+    bool IsHovered() const;
     /// Update the UI logic. Called by HandlePostUpdate().
     void Update(float timeStep);
     /// Render UI.
@@ -110,8 +112,6 @@ public:
 private:
     /// Returns a size that this UI screen will cover.
     IntVector2 GetDesiredCanvasSize() const;
-    /// Returns true if any window of this UI context is hovered by mouse.
-    bool IsHovered() const;
     /// Return true if input is captured by this instance of RmlUI.
     bool IsInputCapturedInternal() const;
     /// Signal that document belonging to this subsystem was closed.

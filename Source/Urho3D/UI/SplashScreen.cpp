@@ -32,7 +32,7 @@
 namespace Urho3D
 {
 
-namespace 
+namespace
 {
 void UpdateSizeAndPosition(IntVector2 screenSize, Sprite* sprite, bool stretch)
 {
@@ -54,7 +54,7 @@ void UpdateSizeAndPosition(IntVector2 screenSize, Sprite* sprite, bool stretch)
     sprite->SetSize(static_cast<int>(scale * imageSize.x_), static_cast<int>(scale * imageSize.y_));
     Vector2 pos = Vector2((screenSize.x_ - sprite->GetWidth()) / 2.0f, (screenSize.y_ - sprite->GetHeight()) / 2.0f);
     UIElement* parent = sprite->GetParent();
-    sprite->SetPosition(pos - Vector2(parent->GetScreenPosition()));
+    sprite->SetPosition(pos - parent->GetScreenPosition().ToVector2());
 }
 
 }
@@ -73,7 +73,7 @@ SplashScreen::SplashScreen(Context* context)
     soundSource_ = scene_->CreateComponent<SoundSource>();
 }
 
-void SplashScreen::Activate(VariantMap& bundle)
+void SplashScreen::Activate(StringVariantMap& bundle)
 {
     ApplicationState::Activate(bundle);
     auto* input = context_->GetSubsystem<Input>();
@@ -152,7 +152,7 @@ void SplashScreen::UpdateLayout(float ratio)
 
     UpdateSizeAndPosition(screenSize, background_, true);
     UpdateSizeAndPosition(screenSize, foreground_, false);
-    
+
     IntVector2 progressBarAreaSize = IntVector2(screenSize.x_, screenSize.y_ / 10);
     const Texture* barTexture = progressBar_->GetTexture();
     if (barTexture)
@@ -163,7 +163,7 @@ void SplashScreen::UpdateLayout(float ratio)
     }
     progressBar_->SetPosition(
         Vector2((screenSize.x_ - progressBarAreaSize.x_) * 0.5, screenSize.y_ - progressBarAreaSize.y_)
-        - Vector2(foreground_->GetScreenPosition()));
+        - foreground_->GetScreenPosition().ToVector2());
     progressBar_->SetSize(progressBarAreaSize.x_ * ratio, progressBarAreaSize.y_);
 }
 
@@ -248,7 +248,7 @@ bool SplashScreen::QueueSceneResourcesAsync(const ea::string& fileName)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     scene_ = MakeShared<Scene>(context_);
-    SharedPtr<File> file = cache->GetFile(fileName);
+    AbstractFilePtr file = cache->GetFile(fileName);
     if (file)
     {
         ea::string extension = GetExtension(fileName);

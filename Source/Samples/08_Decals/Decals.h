@@ -89,7 +89,7 @@ private:
     /// Utility function to raycast to the cursor position. Return true if hit
     bool Raycast(float maxDistance, Vector3& hitPos, Drawable*& hitDrawable);
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
     /// Handle the post-render update event.
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 

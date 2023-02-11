@@ -41,7 +41,7 @@ void Multiply::RegisterObject(ParticleGraphSystem* context)
 }
 
 namespace {
-static ea::vector<NodePattern> MultiplyPatterns{
+static const ea::vector<NodePattern> MultiplyPatterns{
     MakePattern(
         MultiplyInstance<float, float, float>()
         , ParticleGraphTypedPin<float>("x")

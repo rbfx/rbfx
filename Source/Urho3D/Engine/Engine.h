@@ -24,6 +24,7 @@
 
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
+#include "../Engine/ConfigFile.h"
 
 namespace CLI
 {
@@ -51,6 +52,8 @@ public:
 
     /// Initialize engine using parameters given and show the application window. Return true if successful.
     bool Initialize(const StringVariantMap& parameters);
+    /// Initialize virtual filesystem. Implicitly called by Initialize.
+    void InitializeVirtualFileSystem();
     /// Reinitialize resource cache subsystem using parameters given. Implicitly called by Initialize. Return true if successful.
     bool InitializeResourceCache(const StringVariantMap& parameters, bool removeOld = true);
     /// Run one frame.
@@ -84,8 +87,7 @@ public:
     /// Return whether engine parameters contains a specific parameter.
     bool HasParameter(const ea::string& name) const;
     /// Return engine parameter or default value.
-    const Variant& GetParameter(const ea::string& name, const Variant& defaultValue = Variant::EMPTY) const;
-    static const Variant& GetParameter(const StringVariantMap& parameters, const ea::string& name, const Variant& defaultValue = Variant::EMPTY);
+    const Variant& GetParameter(const ea::string& name) const;
     /// Close the graphics window and set the exit flag. No-op on iOS/tvOS, as an iOS/tvOS application can not legally exit.
     void Exit();
     /// Dump profiling information to the log.
@@ -150,12 +152,21 @@ public:
 #endif
 
 private:
+    /// Load and merge config files.
+    void LoadConfigFiles();
+    /// Save config file.
+    void SaveConfigFile();
+    /// Populate default parameter values.
+    void PopulateDefaultParameters();
     /// Set flag indicating that exit request has to be handled.
     void HandleExitRequested(StringHash eventType, VariantMap& eventData);
     /// Do housekeeping tasks at the end of frame. Actually handles exit requested event. Auto-exit if enabled.
     void HandleEndFrame(StringHash eventType, VariantMap& eventData);
     /// Actually perform the exit actions.
     void DoExit();
+
+    /// Engine parameters (default and current values).
+    SharedPtr<ConfigFile> engineParameters_;
 
     /// App preference directory.
     ea::string appPreferencesDir_;
@@ -175,16 +186,12 @@ private:
     unsigned maxInactiveFps_;
     /// Pause when minimized flag.
     bool pauseMinimized_;
-#ifdef URHO3D_TESTING
     /// Time out counter for testing.
     long long timeOut_;
-#endif
     /// Auto-exit flag.
     bool autoExit_;
     /// Initialized flag.
     bool initialized_;
-    /// Engine parameters used for initialization.
-    StringVariantMap parameters_;
     /// Whether the exit is required by operating system.
     bool exitRequired_{};
     /// Whether the exiting is in progress.

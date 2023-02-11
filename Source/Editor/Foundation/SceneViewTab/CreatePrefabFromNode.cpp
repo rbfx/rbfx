@@ -22,6 +22,9 @@
 
 #include "../../Foundation/SceneViewTab/CreatePrefabFromNode.h"
 
+#include "../../Core/CommonEditorActions.h"
+#include "../../Core/CommonEditorActionBuilders.h"
+
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
@@ -29,8 +32,9 @@
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabWriter.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
@@ -44,11 +48,56 @@ void Foundation_CreatePrefabFromNode(Context* context, SceneViewTab* sceneViewTa
 
 PrefabFromNodeFactory::PrefabFromNodeFactory(Context* context)
     : BaseResourceFactory(context, 0, "Prefab from Node")
+    , prefab_(MakeShared<PrefabResource>(context))
 {
+    prefab_->GetMutableScenePrefab() = CreatePrefabBase();
 }
 
-void PrefabFromNodeFactory::SetNodes(const WeakNodeVector& nodes)
+NodePrefab PrefabFromNodeFactory::CreatePrefabBase() const
 {
+    auto cache = GetSubsystem<ResourceCache>();
+    auto scene = MakeShared<Scene>(context_);
+
+    scene->CreateComponent<Octree>();
+
+    auto prefabNode = scene->CreateChild();
+
+    auto skyboxNode = scene->CreateChild("Default Skybox");
+    auto skybox = skyboxNode->CreateComponent<Skybox>();
+    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
+
+    auto zoneNode = scene->CreateChild("Default Zone");
+    auto zone = zoneNode->CreateComponent<Zone>();
+    zone->SetBoundingBox(BoundingBox{-1000.0f, 1000.0f});
+    zone->SetAmbientColor(Color::BLACK);
+    zone->SetBackgroundBrightness(1.0f);
+    zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml"));
+
+    return scene->GeneratePrefab();
+}
+
+NodePrefab PrefabFromNodeFactory::CreatePrefabFromNode(Node* node) const
+{
+    NodePrefab result = node->GeneratePrefab();
+
+    // Discard enabled flag, position, rotation and name of the root node.
+    // Keep the scale and the rest.
+    auto& nodeAttributes = result.GetMutableNode().GetMutableAttributes();
+    ea::erase_if(nodeAttributes,
+        [](const AttributePrefab& attribute)
+    {
+        const StringHash nameHash = attribute.GetNameHash();
+        return nameHash == StringHash("Is Enabled") || nameHash == StringHash("Position")
+            || nameHash == StringHash("Rotation") || nameHash == StringHash("Name");
+    });
+
+    return result;
+}
+
+void PrefabFromNodeFactory::Setup(SceneViewTab* tab, const WeakNodeVector& nodes)
+{
+    tab_ = tab;
     nodes_ = nodes;
 }
 
@@ -61,8 +110,8 @@ ea::string PrefabFromNodeFactory::GetDefaultFileName() const
 
     const ea::string& name = nodes_[0]->GetName();
     if (name.empty())
-        return "Prefab.xml";
-    return Format("{}.xml", name);
+        return "Prefab.prefab";
+    return Format("{}.prefab", name);
 }
 
 bool PrefabFromNodeFactory::IsFileNameEditable() const
@@ -80,13 +129,20 @@ void PrefabFromNodeFactory::Render(const FileNameChecker& checker, bool& canComm
         shouldCommit = true;
 }
 
+void PrefabFromNodeFactory::RenderAuxilary()
+{
+    ui::Checkbox("Replace with PrefabReference", &replaceWithReference_);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Replace node contents with PrefabReference component that references created prefab.");
+}
+
 void PrefabFromNodeFactory::CommitAndClose()
 {
     BaseClassName::CommitAndClose();
 
     if (nodes_.size() == 1 && nodes_[0])
     {
-        SaveNodeAsPrefab(nodes_[0], GetFinalFileName());
+        SaveNodeAsPrefab(nodes_[0], GetFinalResourceName(), GetFinalFileName());
     }
     else
     {
@@ -98,7 +154,10 @@ void PrefabFromNodeFactory::CommitAndClose()
 
             const ea::string fileName = FindBestFileName(node, filePath);
             if (!fileName.empty())
-                SaveNodeAsPrefab(node, fileName);
+            {
+                const ea::string resourceName = GetFinalResourcePath() + fileName.substr(filePath.size());
+                SaveNodeAsPrefab(node, resourceName, fileName);
+            }
         }
     }
 }
@@ -108,7 +167,7 @@ ea::string PrefabFromNodeFactory::FindBestFileName(Node* node, const ea::string&
     const auto getAvailableFileName = [&](const ea::string& prefabName) -> ea::optional<ea::string>
     {
         auto fs = GetSubsystem<FileSystem>();
-        const ea::string& fileName = filePath + prefabName + ".xml";
+        const ea::string& fileName = filePath + prefabName + ".prefab";
         if (fs->FileExists(fileName) || fs->DirExists(fileName))
             return ea::nullopt;
 
@@ -133,37 +192,47 @@ ea::string PrefabFromNodeFactory::FindBestFileName(Node* node, const ea::string&
     return "";
 }
 
-void PrefabFromNodeFactory::SaveNodeAsPrefab(Node* node, const ea::string& fileName)
+void PrefabFromNodeFactory::SaveNodeAsPrefab(Node* node, const ea::string& resourceName, const ea::string& fileName)
 {
-    auto scene = MakeShared<Scene>(context_);
+    NodePrefab& nodePrefab = prefab_->GetMutableNodePrefab();
+    nodePrefab = CreatePrefabFromNode(node);
+    prefab_->NormalizeIds();
+    prefab_->SaveFile(fileName);
 
-    SetupPrefabScene(scene, node);
+    if (replaceWithReference_ && tab_ && node != node->GetScene())
+    {
+        Scene* scene = node->GetScene();
+        Node* parentNode = node->GetParent();
+        const unsigned nodeId = node->GetID();
+        const unsigned indexInParent = node->GetIndexInParent();
+        const AttributeScopeHint scopeHint = node->GetEffectiveScopeHint();
 
-    auto xmlFile = MakeShared<XMLFile>(context_);
-    XMLElement rootElement = xmlFile->CreateRoot("scene");
-    if (scene->SaveXML(rootElement))
-        xmlFile->SaveFile(fileName);
-}
+        SerializablePrefab nodeAttributes;
+        nodeAttributes.Import(node);
 
-void PrefabFromNodeFactory::SetupPrefabScene(Scene* scene, Node* node)
-{
-    auto cache = GetSubsystem<ResourceCache>();
+        {
+            const RemoveNodeActionBuilder builder{node};
 
-    scene->CreateComponent<Octree>();
+            node->Remove();
 
-    auto prefabNode = node->Clone(scene);
+            tab_->PushAction(builder.Build());
+        }
 
-    auto skyboxNode = scene->CreateChild("Default Skybox");
-    auto skybox = skyboxNode->CreateComponent<Skybox>();
-    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
-    skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
+        {
+            const CreateNodeActionBuilder builder{scene, scopeHint};
 
-    auto zoneNode = scene->CreateChild("Default Zone");
-    auto zone = zoneNode->CreateComponent<Zone>();
-    zone->SetBoundingBox(BoundingBox{-1000.0f, 1000.0f});
-    zone->SetAmbientColor(Color::BLACK);
-    zone->SetBackgroundBrightness(1.0f);
-    zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml"));
+            Node* newNode = parentNode->CreateChild(nodeId);
+            parentNode->ReorderChild(newNode, indexInParent);
+
+            nodeAttributes.Export(newNode);
+
+            auto prefabReference = newNode->CreateComponent<PrefabReference>();
+            prefabReference->SetPrefabAttr({PrefabResource::GetTypeStatic(), resourceName});
+            prefabReference->ApplyAttributes();
+
+            tab_->PushAction(builder.Build(newNode));
+        }
+    }
 }
 
 CreatePrefabFromNode::CreatePrefabFromNode(SceneViewTab* owner)
@@ -194,7 +263,7 @@ void CreatePrefabFromNode::CreatePrefabs(const SceneSelection& selection)
     }
     ea::erase(nodes, nullptr);
 
-    factory_->SetNodes(nodes);
+    factory_->Setup(owner_, nodes);
 
     auto project = owner_->GetProject();
     auto request = MakeShared<CreateResourceRequest>(factory_);

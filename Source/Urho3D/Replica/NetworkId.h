@@ -24,14 +24,13 @@
 
 #pragma once
 
-#include "../Scene/TrackedComponent.h"
+#include <Urho3D/Scene/TrackedComponent.h>
 
 namespace Urho3D
 {
 
 /// ID used to identify unique NetworkObject within Scene.
 using NetworkId = ComponentReference;
-static constexpr NetworkId InvalidNetworkId = NetworkId{};
 
 /// Relevance of the NetworkObject.
 /// If greater than 0, indicates the period of unreliable updates of the NetworkObject.
@@ -82,4 +81,4 @@ inline NetworkFrame operator-(NetworkFrame lhs, long long rhs)
     return static_cast<NetworkFrame>(static_cast<long long>(lhs) - rhs);
 }
 
-}
+} // namespace Urho3D

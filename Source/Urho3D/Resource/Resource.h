@@ -30,12 +30,39 @@
 #include "../IO/ArchiveSerialization.h"
 #include "../Resource/JSONValue.h"
 
+#include <EASTL/array.h>
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
 class Deserializer;
 class Serializer;
 class XMLElement;
+
+/// Internal file format of Resource.
+enum class InternalResourceFormat
+{
+    /// Resource uses custom serialization logic. Format is unknown.
+    Unknown,
+    /// Resource is serialized as JSON or JSON Archive.
+    Json,
+    /// Resource is serialized as XML or XML Archive.
+    Xml,
+    /// Resource is serialized as binary Archive.
+    Binary
+};
+
+/// Size of the magic number for binary resources.
+static constexpr unsigned BinaryMagicSize = 4;
+using BinaryMagic = ea::array<unsigned char, BinaryMagicSize>;
+URHO3D_API extern const BinaryMagic DefaultBinaryMagic;
+
+/// Peek into resource file and determine its internal format.
+/// It's optimized for the case when the file is either Binary, JSON or XML.
+/// Deserializer is left in the same state as it was before the call.
+URHO3D_API InternalResourceFormat PeekResourceFormat(
+    Deserializer& source, BinaryMagic binaryMagic = DefaultBinaryMagic);
 
 /// Asynchronous loading state of a resource.
 enum AsyncLoadState
@@ -127,6 +154,43 @@ private:
     unsigned memoryUse_;
     /// Asynchronous loading state.
     AsyncLoadState asyncLoadState_;
+};
+
+/// Base class for simple resource that uses Archive serialization.
+class URHO3D_API SimpleResource : public Resource
+{
+    URHO3D_OBJECT(SimpleResource, Resource);
+
+public:
+    /// Construct.
+    explicit SimpleResource(Context* context);
+
+    /// Force override of SerializeInBlock.
+    void SerializeInBlock(Archive& archive) override = 0;
+
+    /// Save resource in specified internal format.
+    bool Save(Serializer& dest, InternalResourceFormat format) const;
+    /// Save file with specified internal format.
+    bool SaveFile(const ea::string& fileName, InternalResourceFormat format) const;
+
+    /// Implement Resource.
+    /// @{
+    bool BeginLoad(Deserializer& source) override;
+    bool EndLoad() override;
+    bool Save(Serializer& dest) const override;
+    bool SaveFile(const ea::string& fileName) const override;
+    /// @}
+
+protected:
+    /// Binary archive magic word. Should be 4 bytes.
+    virtual BinaryMagic GetBinaryMagic() const { return DefaultBinaryMagic; }
+    /// Root block name. Used for XML serialization only.
+    virtual const char* GetRootBlockName() const { return "resource"; }
+    /// Default internal resource format on save.
+    virtual InternalResourceFormat GetDefaultInternalFormat() const { return InternalResourceFormat::Json; }
+
+private:
+    ea::optional<InternalResourceFormat> loadFormat_;
 };
 
 /// Base class for resources that support arbitrary metadata stored. Metadata serialization shall be implemented in derived classes.

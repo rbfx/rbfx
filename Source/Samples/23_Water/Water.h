@@ -58,7 +58,7 @@ private:
     /// Read input and moves the camera.
     void MoveCamera(float timeStep);
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
 
     /// Reflection camera scene node.
     SharedPtr<Node> reflectionCameraNode_;

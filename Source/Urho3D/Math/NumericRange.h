@@ -30,26 +30,32 @@ namespace Urho3D
 {
 
 /// Numerical range (pair of min and max value). Invalid if flipped.
-template <class T>
-struct NumericRange : ea::pair<T, T>
+template <class T> struct NumericRange : ea::pair<T, T>
 {
     /// Construct invalid.
-    NumericRange() : ea::pair<T, T>(ea::numeric_limits<T>::max(), ea::numeric_limits<T>::lowest()) {};
+    NumericRange()
+        : ea::pair<T, T>(ea::numeric_limits<T>::max(), ea::numeric_limits<T>::lowest()){};
 
     /// Construct valid.
-    NumericRange(const T& minValue, const T& maxValue) : ea::pair<T, T>(minValue, maxValue) { }
+    NumericRange(const T& minValue, const T& maxValue)
+        : ea::pair<T, T>(minValue, maxValue)
+    {
+    }
 
     /// Return whether the range is valid.
     bool IsValid() const { return this->first <= this->second; }
 
     /// Return whether the range intersects another.
-    bool Interset(const NumericRange& rhs) const
-    {
-        return this->first <= rhs.second && rhs.first <= this->second;
-    }
+    bool Intersect(const NumericRange& rhs) const { return this->first <= rhs.second && rhs.first <= this->second; }
+
+    /// Return whether the range contains a value (including borders).
+    bool ContainsInclusive(const T& value) const { return this->first <= value && value <= this->second; }
+
+    /// Return whether the range contains a value (excluding borders).
+    bool ContainsExclusive(const T& value) const { return this->first < value && value < this->second; }
 
     /// Accumulate range.
-    NumericRange<T>& operator |= (const NumericRange& rhs)
+    NumericRange<T>& operator|=(const NumericRange& rhs)
     {
         this->first = ea::min(this->first, rhs.first);
         this->second = ea::max(this->second, rhs.second);
@@ -57,7 +63,7 @@ struct NumericRange : ea::pair<T, T>
     }
 
     /// Accumulate range.
-    NumericRange<T> operator | (const NumericRange& rhs) const
+    NumericRange<T> operator|(const NumericRange& rhs) const
     {
         auto lhs = *this;
         lhs |= rhs;
@@ -65,7 +71,7 @@ struct NumericRange : ea::pair<T, T>
     }
 
     /// Trim range.
-    NumericRange<T>& operator &= (const NumericRange& rhs)
+    NumericRange<T>& operator&=(const NumericRange& rhs)
     {
         this->first = ea::max(this->first, rhs.first);
         this->second = ea::min(this->second, rhs.second);
@@ -73,7 +79,7 @@ struct NumericRange : ea::pair<T, T>
     }
 
     /// Trim range.
-    NumericRange<T> operator & (const NumericRange& rhs) const
+    NumericRange<T> operator&(const NumericRange& rhs) const
     {
         auto lhs = *this;
         lhs &= rhs;
@@ -87,4 +93,4 @@ using FloatRange = NumericRange<float>;
 /// Unsigned integer numerical range.
 using UintRange = NumericRange<unsigned>;
 
-}
+} // namespace Urho3D

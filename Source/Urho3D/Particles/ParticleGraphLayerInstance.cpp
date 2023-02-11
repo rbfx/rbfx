@@ -160,7 +160,7 @@ unsigned ParticleGraphLayerInstance::GetUniformIndex(const StringHash& string_ha
 Variant& ParticleGraphLayerInstance::GetUniform(unsigned index)
 {
     //TODO: Make a collection of uniforms.
-    static Variant v;
+    thread_local Variant v;
     return v;
 }
 

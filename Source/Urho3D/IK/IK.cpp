@@ -23,9 +23,9 @@
 #include "../Precompiled.h"
 
 #include "../IK/IK.h"
-#include "../IK/IKConstraint.h"
-#include "../IK/IKEffector.h"
 #include "../IK/IKSolver.h"
+#include "../IK/IKSolverComponent.h"
+#include "../IK/IKTargetExtractor.h"
 
 namespace Urho3D
 {
@@ -33,9 +33,18 @@ namespace Urho3D
 // ----------------------------------------------------------------------------
 void RegisterIKLibrary(Context* context)
 {
-    //IKConstraint::RegisterObject(context);
-    IKEffector::RegisterObject(context);
     IKSolver::RegisterObject(context);
+    IKSolverComponent::RegisterObject(context);
+
+    IKIdentitySolver::RegisterObject(context);
+    IKLegSolver::RegisterObject(context);
+    IKLimbSolver::RegisterObject(context);
+    IKSpineSolver::RegisterObject(context);
+    IKArmSolver::RegisterObject(context);
+    IKChainSolver::RegisterObject(context);
+    IKHeadSolver::RegisterObject(context);
+
+    IKTargetExtractor::RegisterObject(context);
 }
 
 } // namespace Urho3D

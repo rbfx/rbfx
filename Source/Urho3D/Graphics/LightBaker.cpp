@@ -278,7 +278,7 @@ const ea::string& LightBaker::GetBakeLabel() const
     if (taskData_)
     {
         const IncrementalLightBakerStatus& status = taskData_->baker_.GetStatus();
-        static thread_local ea::string statusText;
+        thread_local ea::string statusText;
         statusText = status.ToString();
         return statusText;
     }

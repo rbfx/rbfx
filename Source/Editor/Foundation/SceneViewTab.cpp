@@ -27,6 +27,7 @@
 
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Texture2D.h>
@@ -38,6 +39,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/Widgets.h>
@@ -61,6 +63,10 @@ const auto Hotkey_Delete = EditorHotkey{"SceneViewTab.Delete"}.Press(KEY_DELETE)
 const auto Hotkey_Duplicate = EditorHotkey{"SceneViewTab.Duplicate"}.Ctrl().Press(KEY_D);
 
 const auto Hotkey_Focus = EditorHotkey{"SceneViewTab.Focus"}.Press(KEY_F);
+const auto Hotkey_MoveToLatest = EditorHotkey{"SceneViewTab.MoveToLatest"};
+const auto Hotkey_MovePositionToLatest = EditorHotkey{"SceneViewTab.MovePositionToLatest"};
+const auto Hotkey_MoveRotationToLatest = EditorHotkey{"SceneViewTab.MoveRotationToLatest"};
+const auto Hotkey_MoveScaleToLatest = EditorHotkey{"SceneViewTab.MoveScaleToLatest"};
 
 const auto Hotkey_CreateSiblingNode = EditorHotkey{"SceneViewTab.CreateSiblingNode"}.Ctrl().Press(KEY_N);
 const auto Hotkey_CreateChildNode = EditorHotkey{"SceneViewTab.CreateChildNode"}.Ctrl().Shift().Press(KEY_N);
@@ -99,15 +105,20 @@ void SerializeValue(Archive& archive, const char* name, SceneViewPage& page, con
 void Foundation_SceneViewTab(Context* context, Project* project)
 {
     project->AddTab(MakeShared<SceneViewTab>(context));
+
+    if (!context->IsReflected<SceneResourceForEditor>())
+        context->AddFactoryReflection<SceneResourceForEditor>();
 }
 
-SceneViewPage::SceneViewPage(Resource* resource, Scene* scene)
-    : Object(scene->GetContext())
+SceneViewPage::SceneViewPage(SceneResource* resource)
+    : Object(resource->GetContext())
     , resource_(resource)
-    , scene_(scene)
+    , scene_(resource->GetScene())
     , renderer_(MakeShared<SceneRendererToTexture>(scene_))
-    , cfgFileName_(scene_->GetFileName() + ".user.json")
+    , cfgFileName_(resource_->GetAbsoluteFileName() + ".user.json")
 {
+    scene_->SetFileName(resource_->GetAbsoluteFileName());
+    scene_->SetUpdateEnabled(false);
 }
 
 SceneViewPage::~SceneViewPage()
@@ -199,8 +210,15 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_Delete, &SceneViewTab::DeleteSelection);
     BindHotkey(Hotkey_Duplicate, &SceneViewTab::DuplicateSelection);
     BindHotkey(Hotkey_Focus, &SceneViewTab::FocusSelection);
+    BindHotkey(Hotkey_MoveToLatest, &SceneViewTab::MoveSelectionToLatest);
+    BindHotkey(Hotkey_MovePositionToLatest, &SceneViewTab::MoveSelectionPositionToLatest);
+    BindHotkey(Hotkey_MoveRotationToLatest, &SceneViewTab::MoveSelectionRotationToLatest);
+    BindHotkey(Hotkey_MoveScaleToLatest, &SceneViewTab::MoveSelectionScaleToLatest);
     BindHotkey(Hotkey_CreateSiblingNode, &SceneViewTab::CreateNodeNextToSelection);
     BindHotkey(Hotkey_CreateChildNode, &SceneViewTab::CreateNodeInSelection);
+
+    SubscribeToEvent(E_BEGINPLUGINRELOAD, [this](StringHash, VariantMap&) { BeginPluginReload(); });
+    SubscribeToEvent(E_ENDPLUGINRELOAD, [this](StringHash, VariantMap&) { EndPluginReload(); });
 }
 
 SceneViewTab::~SceneViewTab()
@@ -256,6 +274,19 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 
     if (ui::MenuItem("Focus", GetHotkeyLabel(Hotkey_Focus).c_str(), false, hasSelection))
         FocusSelection(selection);
+
+    if (ui::MenuItem("Move to Latest", GetHotkeyLabel(Hotkey_MoveToLatest).c_str(), false, hasSelection))
+        MoveSelectionToLatest(selection);
+    if (ui::BeginMenu("Move Attribute to Latest...", hasSelection))
+    {
+        if (ui::MenuItem("Position", GetHotkeyLabel(Hotkey_MovePositionToLatest).c_str(), false, hasSelection))
+            MoveSelectionPositionToLatest(selection);
+        if (ui::MenuItem("Rotation", GetHotkeyLabel(Hotkey_MoveRotationToLatest).c_str(), false, hasSelection))
+            MoveSelectionRotationToLatest(selection);
+        if (ui::MenuItem("Scale", GetHotkeyLabel(Hotkey_MoveScaleToLatest).c_str(), false, hasSelection))
+            MoveSelectionScaleToLatest(selection);
+        ui::EndMenu();
+    }
 
     if (SceneViewPage* activePage = GetActivePage())
     {
@@ -351,9 +382,12 @@ void SceneViewTab::PasteNextToSelection(Scene* scene, SceneSelection& selection)
         selection.Clear();
         for (const PackedNodeData& packedNode : clipboard_.GetNodes())
         {
+            const CreateNodeActionBuilder builder{scene, packedNode.GetEffectiveScopeHint()};
+
             Node* newNode = packedNode.SpawnCopy(parentNode);
             selection.SetSelected(newNode, true);
-            PushAction<CreateRemoveNodeAction>(newNode, false);
+
+            PushAction(builder.Build(newNode));
         }
     }
     else if (clipboard_.HasComponents())
@@ -376,9 +410,12 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
         {
             for (const PackedNodeData& packedNode : clipboard_.GetNodes())
             {
+                const CreateNodeActionBuilder builder{scene, packedNode.GetEffectiveScopeHint()};
+
                 Node* newNode = packedNode.SpawnCopy(selectedNode);
                 selection.SetSelected(newNode, true);
-                PushAction<CreateRemoveNodeAction>(newNode, false);
+
+                PushAction(builder.Build(newNode));
             }
         }
     }
@@ -389,12 +426,14 @@ void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
         {
             for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
             {
+                const CreateComponentActionBuilder builder(selectedNode, packedComponent.GetType());
                 Component* newComponent = packedComponent.SpawnCopy(selectedNode);
+                PushAction(builder.Build(newComponent));
+
                 if (componentSelection_)
                     selection.SetSelected(newComponent, true);
                 else
                     selection.SetSelected(selectedNode, true);
-                PushAction<CreateRemoveComponentAction>(newComponent, false);
             }
         }
     }
@@ -409,8 +448,11 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     {
         if (node && node->GetParent() != nullptr)
         {
-            PushAction<CreateRemoveNodeAction>(node, true);
+            const RemoveNodeActionBuilder builder(node);
+
             node->Remove();
+
+            PushAction(builder.Build());
         }
     }
 
@@ -418,8 +460,9 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     {
         if (component)
         {
-            PushAction<CreateRemoveComponentAction>(component, true);
+            const RemoveComponentActionBuilder builder(component);
             component->Remove();
+            PushAction(builder.Build());
         }
     }
 
@@ -438,11 +481,14 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
         {
             Node* parent = node->GetParent();
             URHO3D_ASSERT(parent);
-
             const auto data = PackedNodeData{node};
+
+            const CreateNodeActionBuilder builder{parent->GetScene(), data.GetEffectiveScopeHint()};
+
             Node* newNode = data.SpawnCopy(parent);
-            PushAction<CreateRemoveNodeAction>(newNode, false);
             selection.SetSelected(newNode, true);
+
+            PushAction(builder.Build(newNode));
         }
     }
     else if (!selection.GetComponents().empty())
@@ -457,8 +503,11 @@ void SceneViewTab::DuplicateSelection(SceneSelection& selection)
             URHO3D_ASSERT(node);
 
             const auto data = PackedComponentData{component};
+
+            const CreateComponentActionBuilder builder(node, data.GetType());
             Component* newComponent = data.SpawnCopy(node);
-            PushAction<CreateRemoveComponentAction>(newComponent, false);
+            PushAction(builder.Build(newComponent));
+
             if (componentSelection_)
                 selection.SetSelected(newComponent, true);
             else
@@ -472,10 +521,13 @@ void SceneViewTab::CreateNodeNextToSelection(Scene* scene, SceneSelection& selec
     Node* siblingNode = selection.GetActiveNodeOrScene();
     Node* parentNode = siblingNode && siblingNode->GetParent() ? siblingNode->GetParent() : scene;
 
+    const CreateNodeActionBuilder builder{scene, AttributeScopeHint::Attribute};
+
     Node* newNode = parentNode->CreateChild();
     selection.Clear();
     selection.SetSelected(newNode, true);
-    PushAction<CreateRemoveNodeAction>(newNode, false);
+
+    PushAction(builder.Build(newNode));
 }
 
 void SceneViewTab::CreateNodeInSelection(Scene* scene, SceneSelection& selection)
@@ -488,9 +540,12 @@ void SceneViewTab::CreateNodeInSelection(Scene* scene, SceneSelection& selection
     selection.Clear();
     for (Node* selectedNode : parentNodes)
     {
+        const CreateNodeActionBuilder builder{scene, AttributeScopeHint::Attribute};
+
         Node* newNode = selectedNode->CreateChild();
         selection.SetSelected(newNode, true);
-        PushAction<CreateRemoveNodeAction>(newNode, false);
+
+        PushAction(builder.Build(newNode));
     }
 }
 
@@ -504,12 +559,14 @@ void SceneViewTab::CreateComponentInSelection(Scene* scene, SceneSelection& sele
     selection.Clear();
     for (Node* selectedNode : parentNodes)
     {
+        const CreateComponentActionBuilder builder(selectedNode, componentType);
         Component* newComponent = selectedNode->CreateComponent(componentType);
+        PushAction(builder.Build(newComponent));
+
         if (componentSelection_)
             selection.SetSelected(newComponent, true);
         else
             selection.SetSelected(selectedNode, true);
-        PushAction<CreateRemoveComponentAction>(newComponent, false);
     }
 }
 
@@ -519,6 +576,62 @@ void SceneViewTab::FocusSelection(SceneSelection& selection)
     {
         if (SceneViewPage* page = GetPage(activeNode->GetScene()))
             OnLookAt(this, *page, activeNode->GetWorldPosition());
+    }
+}
+
+void SceneViewTab::MoveSelectionToLatest(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        const Matrix3x4 worldTransform = activeNode->GetWorldTransform();
+
+        for (Node* node : selection.GetNodes())
+        {
+            if (node && node != activeNode)
+                node->SetWorldTransform(worldTransform);
+        }
+    }
+}
+
+void SceneViewTab::MoveSelectionPositionToLatest(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        const Vector3 worldPosition = activeNode->GetWorldPosition();
+
+        for (Node* node : selection.GetNodes())
+        {
+            if (node && node != activeNode)
+                node->SetWorldPosition(worldPosition);
+        }
+    }
+}
+
+void SceneViewTab::MoveSelectionRotationToLatest(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        const Quaternion worldRotation = activeNode->GetWorldRotation();
+
+        for (Node* node : selection.GetNodes())
+        {
+            if (node && node != activeNode)
+                node->SetWorldRotation(worldRotation);
+        }
+    }
+}
+
+void SceneViewTab::MoveSelectionScaleToLatest(SceneSelection& selection)
+{
+    if (Node* activeNode = selection.GetActiveNode())
+    {
+        const Vector3 worldScale = activeNode->GetWorldScale();
+
+        for (Node* node : selection.GetNodes())
+        {
+            if (node && node != activeNode)
+                node->SetWorldScale(worldScale);
+        }
     }
 }
 
@@ -574,6 +687,30 @@ void SceneViewTab::FocusSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
         FocusSelection(activePage->selection_);
+}
+
+void SceneViewTab::MoveSelectionToLatest()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MoveSelectionToLatest(activePage->selection_);
+}
+
+void SceneViewTab::MoveSelectionPositionToLatest()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MoveSelectionPositionToLatest(activePage->selection_);
+}
+
+void SceneViewTab::MoveSelectionRotationToLatest()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MoveSelectionRotationToLatest(activePage->selection_);
+}
+
+void SceneViewTab::MoveSelectionScaleToLatest()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MoveSelectionScaleToLatest(activePage->selection_);
 }
 
 void SceneViewTab::RenderMenu()
@@ -635,7 +772,7 @@ void SceneViewTab::RenderToolbar()
 
 bool SceneViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 {
-    return desc.HasObjectType<Scene>();
+    return desc.HasObjectType<Scene>() || desc.HasObjectType<PrefabResource>();
 }
 
 void SceneViewTab::WriteIniSettings(ImGuiTextBuffer& output)
@@ -711,16 +848,19 @@ void SceneViewTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    auto xmlFile = cache->GetResource<XMLFile>(resourceName);
+    auto sceneResource = cache->GetResource<SceneResourceForEditor>(resourceName);
 
-    if (!xmlFile)
+    if (!sceneResource)
     {
         URHO3D_LOGERROR("Cannot load scene file '%s'", resourceName);
         return;
     }
 
+    if (resourceName.ends_with(".prefab"))
+        sceneResource->SetPrefab(true);
+
     const bool isActive = resourceName == GetActiveResourceName();
-    scenes_[resourceName] = CreatePage(xmlFile, isActive);
+    scenes_[resourceName] = CreatePage(sceneResource, isActive);
 }
 
 void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
@@ -764,19 +904,46 @@ void SceneViewTab::OnResourceShallowSaved(const ea::string& resourceName)
 
 void SceneViewTab::SavePageScene(SceneViewPage& page) const
 {
-    XMLFile xmlFile(context_);
-    XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+    const bool isLegacyScene = page.resource_->GetName().ends_with(".xml");
 
     page.scene_->SetUpdateEnabled(false);
-    page.scene_->SaveXML(rootElement);
 
     VectorBuffer buffer;
-    xmlFile.Save(buffer);
+    if (isLegacyScene)
+    {
+        XMLFile xmlFile(context_);
+        XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+        page.scene_->SaveXML(rootElement);
+        xmlFile.Save(buffer);
+    }
+    else
+    {
+        page.resource_->Save(buffer);
+    }
 
     auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
 
+    const WeakPtr<SceneViewPage> weakPage{&page};
+
     auto project = GetProject();
-    project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer);
+    project->SaveFileDelayed(page.resource_->GetAbsoluteFileName(), page.resource_->GetName(), sharedBuffer,
+        [this, weakPage](const ea::string& _, const ea::string& resourceName, bool& needReload)
+    {
+        if (SceneViewPage* page = weakPage)
+        {
+            // Force reload of the scene and/or prefabs, but ignore it in SceneViewTab
+            page->ignoreNextReload_ = true;
+            needReload = true;
+        }
+
+        // Sadly, ResourceCache can only reload one resource type for each name. Force reload here.
+        // TODO: Fix resource cache
+        auto cache = GetSubsystem<ResourceCache>();
+        if (auto prefabResource = cache->GetExistingResource<PrefabResource>(resourceName))
+            cache->ReloadResource(prefabResource);
+        if (auto sceneResource = cache->GetExistingResource<SceneResource>(resourceName))
+            cache->ReloadResource(sceneResource);
+    });
 }
 
 void SceneViewTab::SavePagePreview(SceneViewPage& page) const
@@ -939,29 +1106,34 @@ SceneViewPage* SceneViewTab::GetActivePage()
     return GetPage(GetActiveResourceName());
 }
 
-SharedPtr<SceneViewPage> SceneViewTab::CreatePage(XMLFile* xmlFile, bool isActive)
+SharedPtr<SceneViewPage> SceneViewTab::CreatePage(SceneResource* sceneResource, bool isActive)
 {
-    auto scene = MakeShared<Scene>(context_);
-    scene->LoadXML(xmlFile->GetRoot());
-    scene->SetFileName(xmlFile->GetAbsoluteFileName());
-    scene->SetUpdateEnabled(false);
+    auto page = MakeShared<SceneViewPage>(sceneResource);
 
-    auto page = MakeShared<SceneViewPage>(xmlFile, scene);
-
-    WeakPtr<SceneViewPage> weakPage{page};
-    page->SubscribeToEvent(xmlFile, E_RELOADFINISHED, [this, weakPage](StringHash, VariantMap&)
+    sceneResource->OnReloadBegin.Subscribe(page.Get(), [this](SceneViewPage* page, bool& cancelReload)
     {
-        if (weakPage && !IsResourceUnsaved(weakPage->resource_->GetName()))
+        if (page->ignoreNextReload_ || IsResourceUnsaved(page->resource_->GetName()))
         {
-            const PackedSceneSelection selection = weakPage->selection_.Pack();
-            auto xmlFile = static_cast<XMLFile*>(weakPage->resource_.Get());
-            weakPage->scene_->LoadXML(xmlFile->GetRoot());
-            weakPage->selection_.Load(weakPage->scene_, selection);
+            page->ignoreNextReload_ = false;
+            cancelReload = true;
+            return;
+        }
+
+        page->loadingSelection_ = page->selection_.Pack();
+    });
+
+    sceneResource->OnReloadEnd.Subscribe(page.Get(), [this](SceneViewPage* page, bool success)
+    {
+        if (success && page->loadingSelection_)
+        {
+            page->selection_.Load(page->scene_, *page->loadingSelection_);
+            page->loadingSelection_ = ea::nullopt;
         }
     });
 
     page->renderer_->SetActive(isActive);
 
+    WeakPtr<SceneViewPage> weakPage{page};
     page->selection_.OnChanged.Subscribe(this, [weakPage](SceneViewTab* self)
     {
         if (weakPage)
@@ -989,6 +1161,26 @@ void SceneViewTab::LoadPageConfig(SceneViewPage& page) const
     {
         if (jsonFile->LoadFile(page.cfgFileName_))
             jsonFile->LoadObject("Scene", page, this);
+    }
+}
+
+void SceneViewTab::BeginPluginReload()
+{
+    for (const auto& [_, page] : scenes_)
+    {
+        page->archivedScene_ = PackedSceneData::FromScene(page->scene_);
+        page->archivedSelection_ = page->selection_.Pack();
+        page->scene_->Clear();
+    }
+}
+
+void SceneViewTab::EndPluginReload()
+{
+    for (const auto& [_, page] : scenes_)
+    {
+        page->scene_->Clear();
+        page->archivedScene_.ToScene(page->scene_);
+        page->selection_.Load(page->scene_, page->archivedSelection_);
     }
 }
 
@@ -1121,7 +1313,8 @@ ea::vector<RayQueryResult> QueryGeometriesFromScene(Scene* scene, const Ray& ray
 {
     ea::vector<RayQueryResult> results;
     RayOctreeQuery query(results, ray, level, maxDistance, DRAWABLE_GEOMETRY, viewMask);
-    scene->GetComponent<Octree>()->Raycast(query);
+    if (auto octree = scene->GetComponent<Octree>())
+        octree->Raycast(query);
     return results;
 }
 

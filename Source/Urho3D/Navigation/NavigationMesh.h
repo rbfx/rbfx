@@ -25,6 +25,7 @@
 #pragma once
 
 #include <EASTL/unique_ptr.h>
+#include <EASTL/unordered_set.h>
 
 #include "../Math/BoundingBox.h"
 #include "../Math/Matrix3x4.h"

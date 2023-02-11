@@ -31,12 +31,10 @@ if (URHO3D_SDK)
     set (SWIG_EXECUTABLE "${URHO3D_SDK}/bin/swig")
 endif ()
 
-if (WEB)
-    if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 2.0.17)
-        set (EMCC_WITH_SOURCE_MAPS_FLAG -g4)
-    else ()
-        set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map)
-    endif ()
+if (EMSCRIPTEN)
+    set (WEB ON CACHE BOOL "" FORCE)
+    set (EMPACKAGER python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
+    set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map --source-map-base=. -fdebug-compilation-dir='.' -gseparate-dwarf)
 endif ()
 
 # Prevent use of undefined build type, default to Debug. Done here instead of UrhoOptions.cmake so that user projects
@@ -302,9 +300,9 @@ function (web_executable TARGET)
     # Use this macro on targets that should compile for web platform, possibly right after add_executable().
     if (WEB)
         set_target_properties (${TARGET} PROPERTIES SUFFIX .html)
-        target_link_libraries(${TARGET} PRIVATE "-s NO_EXIT_RUNTIME=1" "-s FORCE_FILESYSTEM=1")
+        target_link_libraries(${TARGET} PRIVATE -sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1 -sASSERTIONS=0 -lidbfs.js)
         if (BUILD_SHARED_LIBS)
-            target_link_libraries(${TARGET} PRIVATE "-s MAIN_MODULE=1")
+            target_link_libraries(${TARGET} PRIVATE -sMAIN_MODULE=1)
         endif ()
     endif ()
 endfunction ()
@@ -331,11 +329,6 @@ function (package_resources_web)
         set (PRELOAD_FILES ${PRELOAD_FILES} ${file}@${rel_file})
     endforeach ()
 
-    # TODO: Do we need it? It breaks debug build.
-    # See https://github.com/emscripten-core/emscripten/issues/10555
-    #if (CMAKE_BUILD_TYPE STREQUAL Debug AND EMSCRIPTEN_EMCC_VERSION VERSION_GREATER 1.32.2)
-    #    set (SEPARATE_METADATA --separate-metadata)
-    #endif ()
     get_filename_component(LOADER_DIR "${PAK_OUTPUT}" DIRECTORY)
     add_custom_target("${PAK_OUTPUT}"
         COMMAND ${EMPACKAGER} ${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data --preload ${PRELOAD_FILES} --js-output=${PAK_RELATIVE_DIR}${PAK_OUTPUT} --use-preload-cache ${SEPARATE_METADATA}
@@ -400,4 +393,3 @@ function (link_static_plugins TARGET PLUGIN_LIBRARIES)
     target_link_libraries (${TARGET}_StaticPlugins PRIVATE Urho3D ${PLUGIN_LIBRARIES})
     target_link_libraries (${TARGET} PRIVATE ${TARGET}_StaticPlugins)
 endfunction()
-

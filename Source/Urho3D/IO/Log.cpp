@@ -58,6 +58,92 @@ extern "C" void SDL_IOS_LogMessage(const char* message);
 namespace Urho3D
 {
 
+namespace
+{
+
+class DuplicateFilterSink : public spdlog::sinks::dist_sink_mt
+{
+public:
+    using BaseClass = spdlog::sinks::dist_sink_mt;
+
+    template <class Rep, class Period>
+    DuplicateFilterSink(std::chrono::duration<Rep, Period> maxSkipDuration,
+        spdlog::level::level_enum minLevel, unsigned ringBufferSize)
+        : maxSkipDuration_{maxSkipDuration}
+        , minLevel_{minLevel}
+    {
+        lastMessages_.resize(ringBufferSize);
+    }
+
+private:
+    struct MessageInfo
+    {
+        size_t hash_{};
+        spdlog::log_clock::time_point lastMessageTime_;
+    };
+
+    void sink_it_(const spdlog::details::log_msg& msg) override
+    {
+        // Filter message if necessary
+        if (msg.level >= minLevel_ && isDuplicateMessage(msg))
+        {
+            ++skipCounter_;
+            return;
+        }
+
+        // Log the "skipped.." message
+        if (skipCounter_ > 0)
+        {
+            char buf[64];
+            const auto msgSize = ::snprintf(buf, sizeof(buf), "Skipped %u duplicate messages..", static_cast<unsigned>(skipCounter_));
+            if (msgSize > 0 && static_cast<size_t>(msgSize) < sizeof(buf))
+            {
+                const spdlog::details::log_msg skipped_msg{msg.logger_name, spdlog::level::debug,
+                    spdlog::string_view_t{buf, static_cast<size_t>(msgSize)}};
+                BaseClass::sink_it_(skipped_msg);
+            }
+
+            skipCounter_ = 0;
+        }
+
+        BaseClass::sink_it_(msg);
+    }
+
+    size_t calculateMessageHash(const spdlog::details::log_msg& msg)
+    {
+        const ea::string_view view{msg.payload.data(), msg.payload.size()};
+        return ea::hash<ea::string_view>{}(view);
+    }
+
+    bool isDuplicateMessage(const spdlog::details::log_msg& msg)
+    {
+        const size_t messageHash = calculateMessageHash(msg);
+        const auto sameHash = [&](const MessageInfo& info) { return info.hash_ == messageHash; };
+        const auto iter = ea::find_if(lastMessages_.begin(), lastMessages_.end(), sameHash);
+        if (iter == lastMessages_.end() || msg.time - iter->lastMessageTime_ > maxSkipDuration_)
+        {
+            MessageInfo& info = lastMessages_.back();
+            info.hash_ = messageHash;
+            info.lastMessageTime_ = msg.time;
+
+            ea::rotate(lastMessages_.begin(), lastMessages_.end() - 1, lastMessages_.end());
+            return false;
+        }
+
+        ea::rotate(lastMessages_.begin(), iter, iter + 1);
+        return true;
+    }
+
+    const std::chrono::microseconds maxSkipDuration_;
+    const spdlog::level::level_enum minLevel_;
+
+    spdlog::log_clock::time_point lastMessageTime_;
+    size_t skipCounter_{};
+    ea::vector<MessageInfo> lastMessages_;
+};
+
+}
+
 static Log* GetLog()
 {
     auto* context = Context::GetInstance();
@@ -218,7 +304,7 @@ class LogImpl : public Object
 public:
     explicit LogImpl(Context* context) : Object(context)
     {
-        sinkProxy_ = std::make_shared<spdlog::sinks::dist_sink_mt>();
+        distributorSink_ = std::make_shared<spdlog::sinks::dist_sink_mt>();
 #if defined(__ANDROID__)
         platformSink_ = std::make_shared<spdlog::sinks::android_sink_mt>("Urho3D");
 #elif defined(IOS) || defined(TVOS)
@@ -232,8 +318,14 @@ public:
 #else   // Non-desktop platforms like WEB/UWP.
         platformSink_ = std::make_shared<spdlog::sinks::stdout_sink_mt>();
 #endif
-        sinkProxy_->add_sink(platformSink_);
-        sinkProxy_->add_sink(std::make_shared<MessageForwarderSink_mt>());
+        distributorSink_->add_sink(platformSink_);
+        distributorSink_->add_sink(std::make_shared<MessageForwarderSink_mt>());
+
+        dupFilterSink_ = std::make_shared<DuplicateFilterSink>(
+            std::chrono::seconds(5), spdlog::level::err, 10);
+        dupFilterSink_->add_sink(distributorSink_);
+
+        mainSink_ = dupFilterSink_;
     }
 
 #ifdef __ANDROID__
@@ -254,8 +346,14 @@ public:
 #else   // Non-desktop platforms like WEB/UWP.
     std::shared_ptr<spdlog::sinks::stdout_sink_mt> platformSink_;
 #endif  // defined(IOS) || defined(TVOS)
+
     /// Sink that forwards messages to all other sinks.
-    std::shared_ptr<spdlog::sinks::dist_sink_mt> sinkProxy_;
+    std::shared_ptr<spdlog::sinks::dist_sink_mt> distributorSink_;
+    /// Sink that filters out duplicate messages.
+    std::shared_ptr<DuplicateFilterSink> dupFilterSink_;
+
+    /// Sink that should be used for logging.
+    std::shared_ptr<spdlog::sinks::sink> mainSink_;
 };
 
 Log::Log(Context* context) :
@@ -264,6 +362,8 @@ Log::Log(Context* context) :
     formatPattern_("[%H:%M:%S] [%l] [%n] : %v"),
     defaultLogger_(GetOrCreateLogger("main"))
 {
+    impl_->platformSink_->set_pattern(formatPattern_.c_str());
+
 #if !__EMSCRIPTEN__
     spdlog::flush_every(std::chrono::seconds(5));
 #endif
@@ -288,7 +388,7 @@ void Log::Open(const ea::string& fileName)
 
     impl_->fileSink_ = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName.c_str());
     impl_->fileSink_->set_pattern(formatPattern_.c_str());
-    impl_->sinkProxy_->add_sink(impl_->fileSink_);
+    impl_->distributorSink_->add_sink(impl_->fileSink_);
 #endif
 }
 
@@ -297,7 +397,7 @@ void Log::Close()
 #if defined(DESKTOP)
     if (impl_->fileSink_)
     {
-        impl_->sinkProxy_->remove_sink(impl_->fileSink_);
+        impl_->distributorSink_->remove_sink(impl_->fileSink_);
         impl_->fileSink_ = nullptr;
     }
 #endif
@@ -354,7 +454,7 @@ Logger Log::GetOrCreateLogger(const ea::string& name)
 
     if (!logger)
     {
-        logger = std::make_shared<spdlog::logger>(name.c_str(), impl_->sinkProxy_);
+        logger = std::make_shared<spdlog::logger>(name.c_str(), impl_->mainSink_);
         logger->set_level(ConvertLogLevel(level_));
         spdlog::register_logger(logger);
     }

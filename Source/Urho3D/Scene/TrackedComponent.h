@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include "../Core/TupleUtils.h"
-#include "../Container/IndexAllocator.h"
-#include "../Scene/Component.h"
-#include "../Scene/Scene.h"
+#include <Urho3D/Container/IndexAllocator.h>
+#include <Urho3D/Core/TupleUtils.h>
+#include <Urho3D/Scene/Component.h>
+#include <Urho3D/Scene/Scene.h>
 
 namespace Urho3D
 {
@@ -38,7 +38,10 @@ class URHO3D_API TrackedComponentBase : public Component
     URHO3D_OBJECT(TrackedComponentBase, Component);
 
 public:
-    explicit TrackedComponentBase(Context* context) : Component(context) {}
+    explicit TrackedComponentBase(Context* context)
+        : Component(context)
+    {
+    }
 
     /// Manage index of the component in the registry.
     /// @{
@@ -92,8 +95,10 @@ private:
 };
 
 /// Strongly typed component ID. Default value is considered invalid.
-enum ComponentReference : unsigned;
-static constexpr ComponentReference InvalidComponentReference = ComponentReference{};
+enum class ComponentReference : unsigned
+{
+    None
+};
 URHO3D_API ComponentReference ConstructComponentReference(unsigned index, unsigned version);
 URHO3D_API ea::pair<unsigned, unsigned> DeconstructComponentReference(ComponentReference componentId);
 URHO3D_API ea::string ToString(ComponentReference value);
@@ -104,7 +109,10 @@ class URHO3D_API ReferencedComponentBase : public TrackedComponentBase
     URHO3D_OBJECT(ReferencedComponentBase, TrackedComponentBase);
 
 public:
-    explicit ReferencedComponentBase(Context* context) : TrackedComponentBase(context) {}
+    explicit ReferencedComponentBase(Context* context)
+        : TrackedComponentBase(context)
+    {
+    }
 
     /// Manage reference to this component.
     /// @{
@@ -148,16 +156,20 @@ private:
 };
 
 /// Template base of any TrackedComponent that automatically registers itself in registry.
-template <class ComponentType, class RegistryComponentType>
-class TrackedComponent : public ComponentType
+template <class ComponentType, class RegistryComponentType> class TrackedComponent : public ComponentType
 {
 public:
     static_assert(ea::is_base_of_v<ReferencedComponentRegistryBase, RegistryComponentType>
-        == ea::is_base_of_v<ReferencedComponentBase, ComponentType>,
-        "Component inherited from ReferencedComponentBase should use registry inherited from ReferencedComponentRegistryBase, "
-        "Component inherited from TrackedComponentBase should use registry inherited from TrackedComponentRegistryBase");
+            == ea::is_base_of_v<ReferencedComponentBase, ComponentType>,
+        "Component inherited from ReferencedComponentBase should use registry inherited from "
+        "ReferencedComponentRegistryBase, "
+        "Component inherited from TrackedComponentBase should use registry inherited from "
+        "TrackedComponentRegistryBase");
 
-    explicit TrackedComponent(Context* context) : ComponentType(context) {}
+    explicit TrackedComponent(Context* context)
+        : ComponentType(context)
+    {
+    }
 
     RegistryComponentType* GetRegistry() const { return registry_; }
 
@@ -211,4 +223,4 @@ private:
     WeakPtr<RegistryComponentType> registry_;
 };
 
-}
+} // namespace Urho3D
