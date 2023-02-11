@@ -165,7 +165,8 @@ const PackageEntry* PackageFile::GetEntry(const ea::string& fileName) const
     return nullptr;
 }
 
-void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const
+void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
+    unsigned flags, bool recursive) const
 {
     result.clear();
 
@@ -235,13 +236,6 @@ AbstractFilePtr PackageFile::OpenFile(const FileIdentifier& fileName, FileMode m
 
     auto file = MakeShared<File>(context_, this, fileName.fileName_);
     return file;
-}
-
-/// Get full path to a file if it exists in a mount point.
-ea::string PackageFile::GetFileName(const FileIdentifier& fileName) const
-{
-    // Can't make path to a file within the PAK.
-    return ea::string();
 }
 
 }

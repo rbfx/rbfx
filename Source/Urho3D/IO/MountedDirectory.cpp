@@ -23,10 +23,12 @@
 
 #include "MountedDirectory.h"
 
-#include "File.h"
-#include "FileSystem.h"
-#include "Log.h"
-#include "Urho3D/Core/Context.h"
+#include "../IO/File.h"
+#include "../IO/FileSystem.h"
+#include "../IO/Log.h"
+#include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
+#include "../Resource/ResourceEvents.h"
 
 namespace Urho3D
 {
@@ -60,6 +62,45 @@ ea::string MountedDirectory::SanitizeDirName(const ea::string& name) const
     fixedPath.trim();
     return fixedPath;
 }
+
+void MountedDirectory::StartWatching()
+{
+    if (!fileWatcher_)
+        fileWatcher_ = MakeShared<FileWatcher>(context_);
+
+    fileWatcher_->StartWatching(directory_, true);
+
+    // Subscribe BeginFrame for handling directory watcher
+    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(MountedDirectory, HandleBeginFrame));
+}
+
+void MountedDirectory::StopWatching()
+{
+    if (fileWatcher_)
+        fileWatcher_->StopWatching();
+
+    UnsubscribeFromEvent(E_BEGINFRAME);
+}
+
+
+void MountedDirectory::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+{
+    if (!fileWatcher_)
+        return;
+
+    FileChange change;
+    while (fileWatcher_->GetNextChange(change))
+    {
+        // Finally send a general file changed event even if the file was not a tracked resource
+        using namespace FileChanged;
+
+        VariantMap& eventData = GetEventDataMap();
+        eventData[P_FILENAME] = fileWatcher_->GetPath() + change.fileName_;
+        eventData[P_RESOURCENAME] = change.fileName_;
+        SendEvent(E_FILECHANGED, eventData);
+    }
+}
+
 
 /// Checks if mount point accepts scheme.
 bool MountedDirectory::AcceptsScheme(const ea::string& scheme) const
@@ -123,4 +164,18 @@ ea::string MountedDirectory::GetFileName(const FileIdentifier& fileName) const
     return EMPTY_STRING;
 }
 
+FileIdentifier MountedDirectory::GetResourceName(const ea::string& fileFullPath) const
+{
+    if (fileFullPath.starts_with(directory_))
+        return FileIdentifier{scheme_, fileFullPath.substr(directory_.length())};
+
+    return EMPTY_FILEID;
+}
+
+void MountedDirectory::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
+    unsigned flags, bool recursive) const
+{
+    const auto fileSystem = context_->GetSubsystem<FileSystem>();
+    fileSystem->ScanDir(result, directory_ + pathName, filter, flags, recursive);
+}
 } // namespace Urho3D

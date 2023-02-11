@@ -43,6 +43,7 @@
 #include "../Math/TetrahedralMesh.h"
 #include "../Resource/Image.h"
 #include "../Resource/ResourceCache.h"
+#include "../IO/VirtualFileSystem.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
@@ -53,18 +54,6 @@ namespace Urho3D
 
 namespace
 {
-
-/// Get resource name from file name.
-ea::string GetResourceName(ResourceCache* cache, const ea::string& fileName)
-{
-    for (unsigned i = 0; i < cache->GetNumResourceDirs(); ++i)
-    {
-        const ea::string& resourceDir = cache->GetResourceDir(i);
-        if (fileName.starts_with(resourceDir))
-            return fileName.substr(resourceDir.length());
-    }
-    return {};
-}
 
 /// Per-component min for 3D integer vector.
 IntVector3 MinIntVector3(const IntVector3& lhs, const IntVector3& rhs) { return VectorMin(lhs, rhs); }
@@ -171,7 +160,8 @@ struct IncrementalLightBaker::Impl
             URHO3D_LOGERROR("Cannot allocate GI data file at '{}'", giFileName);
             return false;
         }
-        gi->SetFileRef({ BinaryFile::GetTypeStatic(), GetResourceName(context_->GetSubsystem<ResourceCache>(), giFileName) });
+        gi->SetFileRef({BinaryFile::GetTypeStatic(),
+            context_->GetSubsystem<VirtualFileSystem>()->GetResourceName(EMPTY_STRING, giFileName).fileName_});
 
         return true;
     }
@@ -180,6 +170,7 @@ struct IncrementalLightBaker::Impl
     void GenerateChartsAndUpdateScene()
     {
         auto cache = context_->GetSubsystem<ResourceCache>();
+        auto vfs = context_->GetSubsystem<VirtualFileSystem>();
         auto fileSystem = context_->GetSubsystem<FileSystem>();
 
         numLightmapCharts_ = 0;
@@ -204,7 +195,7 @@ struct IncrementalLightBaker::Impl
             {
                 LightProbeGroup* group = uniqueLightProbes[i];
                 const ea::string fileName = GetLightProbeBakedDataFileName(chunk, i);
-                const ea::string resourceName = GetResourceName(cache, fileName);
+                const ea::string resourceName = vfs->GetResourceName(EMPTY_STRING, fileName).fileName_;
                 fileSystem->CreateDirsRecursive(GetPath(fileName));
                 group->SetBakedDataFileRef({ BinaryFile::GetTypeStatic(), resourceName });
             }
@@ -218,7 +209,7 @@ struct IncrementalLightBaker::Impl
         for (unsigned i = 0; i < numLightmapCharts_; ++i)
         {
             const ea::string fileName = GetLightmapFileName(i);
-            const ea::string resourceName = GetResourceName(cache, fileName);
+            const ea::string resourceName = vfs->GetResourceName(EMPTY_STRING, fileName).fileName_;
 
             fileSystem->CreateDirsRecursive(GetPath(fileName));
             if (!fileSystem->FileExists(fileName))

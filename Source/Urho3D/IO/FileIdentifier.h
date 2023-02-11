@@ -41,8 +41,8 @@ struct URHO3D_API FileIdentifier
     /// URL-like path to the file.
     ea::string fileName_;
 
-    operator bool() const { return scheme_.empty() && fileName_.empty(); }
-    bool operator!() const { return !(scheme_.empty() && fileName_.empty()); }
+    operator bool() const { return !(scheme_.empty() && fileName_.empty()); }
+    bool operator!() const { return scheme_.empty() && fileName_.empty(); }
 
     /// Test for less than with another file locator.
     bool operator<(const FileIdentifier& rhs) const noexcept
@@ -64,5 +64,7 @@ struct URHO3D_API FileIdentifier
 
     static ea::string SanitizeFileName(const ea::string& fileName);
 };
+
+URHO3D_API extern const FileIdentifier EMPTY_FILEID;
 
 } // namespace Urho3D

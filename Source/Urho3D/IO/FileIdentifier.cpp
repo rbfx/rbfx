@@ -24,6 +24,7 @@
 
 namespace Urho3D
 {
+const FileIdentifier EMPTY_FILEID{};
 
 FileIdentifier::FileIdentifier()
 {

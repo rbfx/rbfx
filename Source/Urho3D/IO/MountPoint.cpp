@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022-2022 the Urho3D project.
+// Copyright (c) 2022-2023 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,7 @@
 //
 
 #include "../IO/MountPoint.h"
+#include "../IO/FileSystem.h"
 
 namespace Urho3D
 {
@@ -31,5 +32,35 @@ MountPoint::MountPoint(Context* context)
 }
 
 MountPoint::~MountPoint() = default;
+
+ea::string MountPoint::GetFileName(const FileIdentifier& fileName) const
+{
+    return EMPTY_STRING;
+}
+
+FileIdentifier MountPoint::GetResourceName(const ea::string& fileFullPath) const
+{
+    return FileIdentifier();
+}
+
+void MountPoint::SetWatching(bool enable)
+{
+    if (isWatching_ != enable)
+    {
+        isWatching_ = enable;
+        if (isWatching_)
+            StartWatching();
+        else
+            StopWatching();
+    }
+}
+
+void MountPoint::StartWatching()
+{
+}
+
+void MountPoint::StopWatching()
+{
+}
 
 } // namespace Urho3D

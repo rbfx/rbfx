@@ -26,6 +26,7 @@
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Input/InputEvents.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/RenderPipeline/RenderPipeline.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #if URHO3D_RMLUI
@@ -204,7 +205,8 @@ void SampleSelectionScreen::Deactivate()
 void SamplesManager::Start()
 {
     ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
-    cache->SetAutoReloadResources(true);
+    VirtualFileSystem* vfs = context_->GetSubsystem<VirtualFileSystem>();
+    vfs->SetWatching(true);
 
     UI* ui = context_->GetSubsystem<UI>();
 

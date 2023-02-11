@@ -23,6 +23,11 @@
 
 #include <Urho3D/IO/VirtualFileSystem.h>
 
+TEST_CASE("FileIdentifier tests")
+{
+    REQUIRE(!EMPTY_FILEID);
+}
+
 TEST_CASE("VirtualFileSystem has mount points")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);

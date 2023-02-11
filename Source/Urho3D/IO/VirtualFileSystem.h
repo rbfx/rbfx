@@ -68,12 +68,27 @@ public:
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) const;
     /// Return full absolute file name of the file if possible, or empty if not found.
     ea::string GetFileName(const FileIdentifier& name);
+    /// Return relative file name of the file, or empty if not found.
+    FileIdentifier GetResourceName(const ea::string& fileFullPath);
+    /// Return relative file name of the file, or empty if not found.
+    FileIdentifier GetResourceName(const ea::string& scheme, const ea::string& fileFullPath);
+
+    /// Enable or disable file watchers.
+    void SetWatching(bool enable);
+
+    /// Returns true if the file watchers are enabled.
+    bool IsWatching() const { return isWatching_; }
+
+    /// Scan for specified files.
+    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
 
 private:
     /// Mutex for thread-safe access to the mount points.
     mutable Mutex mountMutex_;
     /// File system mount points. It is expected to have small number of mount points.
     ea::vector<SharedPtr<MountPoint>> mountPoints_;
+    /// Are file watchers enabled.
+    bool isWatching_{};
 };
 
 }

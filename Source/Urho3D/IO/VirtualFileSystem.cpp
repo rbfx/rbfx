@@ -22,16 +22,14 @@
 
 #include "../Precompiled.h"
 
-#include "../IO/VirtualFileSystem.h"
-
-#include "PackageFile.h"
-#include "../IO/Log.h"
+#include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
 #include "../IO/FileSystem.h"
+#include "../IO/Log.h"
 #include "../IO/MountedDirectory.h"
 #include "../IO/MountPoint.h"
-#include "../Core/Context.h"
-#include "../Engine/EngineDefs.h"
-#include "../Engine/Engine.h"
+#include "../IO/PackageFile.h"
+#include "../IO/VirtualFileSystem.h"
 
 namespace Urho3D
 {
@@ -55,7 +53,7 @@ void VirtualFileSystem::MountDir(const ea::string& scheme, const ea::string& pat
 
 void VirtualFileSystem::MountPackageFile(const ea::string& path)
 {
-    auto packageFile = MakeShared<PackageFile>(context_);
+    const auto packageFile = MakeShared<PackageFile>(context_);
     if (packageFile->Open(path, 0u))
         Mount(packageFile);
 }
@@ -70,6 +68,8 @@ void VirtualFileSystem::Mount(MountPoint* mountPoint)
         return;
     }
     mountPoints_.push_back(pointPtr);
+
+    mountPoint->SetWatching(isWatching_);
 }
 
 void VirtualFileSystem::MountExistingPackages(
@@ -144,6 +144,7 @@ AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, File
         if (AbstractFilePtr result = (*i)->OpenFile(fileName, mode))
             return result;
     }
+
     return AbstractFilePtr();
 }
 
@@ -166,7 +167,66 @@ ea::string VirtualFileSystem::GetFileName(const FileIdentifier& fileName)
             return fileName.fileName_;
     }
 
-    return ea::string();
+    return EMPTY_STRING;
+}
+
+FileIdentifier VirtualFileSystem::GetResourceName(const ea::string& fileFullPath)
+{
+    MutexLock lock(mountMutex_);
+
+    for (auto i = mountPoints_.rbegin(); i != mountPoints_.rend(); ++i)
+    {
+        auto result = (*i)->GetResourceName(fileFullPath);
+        if (result)
+            return result;
+    }
+    
+    return EMPTY_FILEID;
+}
+
+FileIdentifier VirtualFileSystem::GetResourceName(const ea::string& scheme, const ea::string& fileFullPath)
+{
+    MutexLock lock(mountMutex_);
+
+    for (auto i = mountPoints_.rbegin(); i != mountPoints_.rend(); ++i)
+    {
+        if (!(*i)->AcceptsScheme(scheme))
+            continue;
+
+        auto result = (*i)->GetResourceName(fileFullPath);
+        if (result)
+            return result;
+    }
+
+    return EMPTY_FILEID;
+}
+
+void VirtualFileSystem::SetWatching(bool enable)
+{
+    if (isWatching_ != enable)
+    {
+        MutexLock lock(mountMutex_);
+
+        isWatching_ = enable;
+        for (auto i = mountPoints_.rbegin(); i != mountPoints_.rend(); ++i)
+        {
+            (*i)->SetWatching(isWatching_);
+        }
+    }
+}
+
+void VirtualFileSystem::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
+    unsigned flags, bool recursive) const
+{
+    MutexLock lock(mountMutex_);
+
+    ea::vector<ea::string> interimResult;
+
+    for (auto i = mountPoints_.rbegin(); i != mountPoints_.rend(); ++i)
+    {
+        (*i)->Scan(interimResult, pathName, filter, flags, recursive);
+        result.insert(result.end(), interimResult.begin(), interimResult.end());
+    }
 }
 
 /// Check if a file exists in the virtual file system.

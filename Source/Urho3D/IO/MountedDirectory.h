@@ -54,14 +54,35 @@ public:
     /// Return full absolute file name of the file if possible, or empty if not found.
     ea::string GetFileName(const FileIdentifier& fileName) const override;
 
+    /// Return relative file name of the file if full path belongs to the mount point, or empty if not found.
+    FileIdentifier GetResourceName(const ea::string& fileFullPath) const override;
+
+    /// Scan for specified files.
+    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
+        unsigned flags, bool recursive) const override;
+
+    /// Get mounted directory path.
+    const ea::string& GetDirectory() const { return directory_; }
+
 protected:
     ea::string SanitizeDirName(const ea::string& name) const;
+
+    /// Start file watcher.
+    void StartWatching() override;
+    /// Stop file watcher.
+    void StopWatching() override;
+
+private:
+    /// Handle begin frame event. Automatic resource reloads are processed here.
+    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
 
 private:
     /// Expected file locator scheme.
     ea::string scheme_;
     /// Target directory.
     ea::string directory_;
+    /// File watcher for resource directory, if automatic reloading enabled.
+    SharedPtr<FileWatcher> fileWatcher_;
 };
 
 } // namespace Urho3D

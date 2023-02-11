@@ -104,7 +104,8 @@ public:
     }
 
     /// Scan package for specified files.
-    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
+    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
+        unsigned flags, bool recursive) const override;
 
     /// Checks if mount point accepts scheme.
     bool AcceptsScheme(const ea::string& scheme) const override;
@@ -114,9 +115,6 @@ public:
 
     /// Open package file. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
-
-    /// Get full path to a file if it exists in a mount point.
-    ea::string GetFileName(const FileIdentifier& fileName) const override;
 
 private:
     /// File entries.

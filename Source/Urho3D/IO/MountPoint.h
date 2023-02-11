@@ -52,7 +52,30 @@ public:
     virtual AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) = 0;
 
     /// Get full path to a file if it exists in a mount point.
-    virtual ea::string GetFileName(const FileIdentifier& fileName) const = 0;
+    virtual ea::string GetFileName(const FileIdentifier& fileName) const;
+
+    /// Return relative file name of the file if full path belongs to the mount point, or empty if not found.
+    virtual FileIdentifier GetResourceName(const ea::string& fileFullPath) const;
+
+    /// Enable or disable file watcher on the mount point.
+    void SetWatching(bool enable);
+
+    /// Returns true if the file watcher enabled.
+    bool IsWatching() const { return isWatching_; }
+
+    /// Scan for specified files.
+    virtual void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
+        unsigned flags,
+        bool recursive) const = 0;
+
+protected:
+    /// Start file watcher.
+    virtual void StartWatching();
+    /// Stop file watcher.
+    virtual void StopWatching();
+
+private:
+    bool isWatching_{};
 };
 
 } // namespace Urho3D

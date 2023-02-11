@@ -30,6 +30,7 @@
 #include "../Project/CreateDefaultScene.h"
 #include "../Project/ResourceEditorTab.h"
 
+#include <Urho3D/IO/MountedDirectory.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
@@ -144,23 +145,31 @@ ea::pair<ea::string, ea::string> ParseCommand(const ea::string& command)
 ResourceCacheGuard::ResourceCacheGuard(Context* context)
     : context_(context)
 {
-    auto cache = context_->GetSubsystem<ResourceCache>();
-    oldResourceDirs_ = cache->GetResourceDirs();
-    for (const ea::string& resourceDir : oldResourceDirs_)
+    const auto vfs = context_->GetSubsystem<VirtualFileSystem>();
+    for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
     {
-        if (oldCoreData_.empty() && resourceDir.ends_with("/CoreData/"))
-            oldCoreData_ = resourceDir;
-        if (oldEditorData_.empty() && resourceDir.ends_with("/EditorData/"))
-            oldEditorData_ = resourceDir;
+        SharedPtr<MountPoint> mountPoint{vfs->GetMountPoint(i)};
+        oldResourceDirs_.push_back(mountPoint);
+        auto* dir = dynamic_cast<MountedDirectory*>(mountPoint.Get());
+        if (dir)
+        {
+            const auto& resourceDir = dir->GetDirectory();
+            if (oldCoreData_.empty() && resourceDir.ends_with("/CoreData/"))
+                oldCoreData_ = resourceDir;
+            if (oldEditorData_.empty() && resourceDir.ends_with("/EditorData/"))
+                oldEditorData_ = resourceDir;
+        }
     }
 }
 
 ResourceCacheGuard::~ResourceCacheGuard()
 {
-    auto cache = context_->GetSubsystem<ResourceCache>();
-    cache->RemoveAllResourceDirs();
-    for (const ea::string& resourceDir : oldResourceDirs_)
-        cache->AddResourceDir(resourceDir);
+    auto vfs = context_->GetSubsystem<VirtualFileSystem>();
+    vfs->UnmountAll();
+    for (const auto& mountPoint : oldResourceDirs_)
+    {
+        vfs->Mount(mountPoint);
+    }
 }
 
 bool AnalyzeFileContext::HasXMLRoot(ea::string_view root) const
@@ -597,11 +606,6 @@ void Project::InitializeResourceCache()
     const auto engine = GetSubsystem<Engine>();
     const auto cache = GetSubsystem<ResourceCache>();
     cache->ReleaseAllResources(true);
-    cache->RemoveAllResourceDirs();
-    cache->AddResourceDir(dataPath_);
-    cache->AddResourceDir(coreDataPath_);
-    cache->AddResourceDir(cachePath_);
-    cache->AddResourceDir(oldCacheState_.GetEditorData());
 
     const auto vfs = GetSubsystem<VirtualFileSystem>();
     vfs->UnmountAll();
