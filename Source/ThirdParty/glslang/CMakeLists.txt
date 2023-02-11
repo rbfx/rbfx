@@ -336,11 +336,7 @@ endif()
 add_subdirectory(SPIRV)
 #if(ENABLE_HLSL)
 #    add_subdirectory(hlsl)
-<<<<<<< HEAD
-#endif()
-=======
 #endif(ENABLE_HLSL)
->>>>>>> ef3e056e9f66c411127025a5b9c38d729dba713b
 if(ENABLE_CTEST)
     add_subdirectory(gtests)
 endif()

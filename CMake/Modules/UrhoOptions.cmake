@@ -176,13 +176,8 @@ if (URHO3D_GLES2 OR URHO3D_GLES3)
     set (URHO3D_OPENGL ON)
 endif ()
 
-<<<<<<< HEAD
-set(URHO3D_SPIRV ON)    # TODO: Remove
-# Whether to use legacy renderer. DX11 doesn't support legacy renderer. DX9 supports only legacy renderer.
-=======
 cmake_dependent_option(URHO3D_SPIRV "Enable universal GLSL shaders for other GAPIs via glslang and SpirV" ON "URHO3D_D3D11" OFF)
 # Whether to use legacy renderer. Only OpenGL support legacy renderer.
->>>>>>> ef3e056e9f66c411127025a5b9c38d729dba713b
 cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)
 if (URHO3D_D3D9)
     set (URHO3D_LEGACY_RENDERER ON)
