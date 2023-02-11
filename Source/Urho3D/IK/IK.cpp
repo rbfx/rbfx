@@ -44,6 +44,8 @@ void RegisterIKLibrary(Context* context)
     IKChainSolver::RegisterObject(context);
     IKHeadSolver::RegisterObject(context);
 
+    IKStickTargets::RegisterObject(context);
+
     IKTargetExtractor::RegisterObject(context);
 }
 

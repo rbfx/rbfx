@@ -39,6 +39,13 @@ struct Transform
 
     Matrix3x4 ToMatrix3x4() const { return Matrix3x4(position_, rotation_, scale_); };
 
+    /// Interpolate between two transforms.
+    Transform Lerp(const Transform& rhs, float t) const
+    {
+        return Transform{
+            position_.Lerp(rhs.position_, t), rotation_.Slerp(rhs.rotation_, t), scale_.Lerp(rhs.scale_, t)};
+    }
+
     /// Return inverse transform. It is not precise for non-uniform scale.
     Transform Inverse() const
     {
