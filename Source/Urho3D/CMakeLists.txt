@@ -36,6 +36,8 @@ macro (define_engine_source_files)
             Graphics/Direct3D11/D3D11GraphicsImpl.h
             Graphics/GraphicsImpl.h
             Graphics/OpenGL/OGLGraphicsImpl.h
+            Graphics/Diligent/DiligentGraphicsImpl.cpp
+            Graphics/Diligent/DiligentGraphicsImpl.h
             IK/IKConverters.h
         )
         list (APPEND HEADER_FILES ${_files})
@@ -59,6 +61,8 @@ if (NOT MINI_URHO)
         define_engine_source_files (Graphics/OpenGL)
     elseif (URHO3D_D3D11)
         define_engine_source_files (Graphics/Direct3D11)
+    elseif (URHO3D_DILIGENT)
+        define_engine_source_files (Graphics/Diligent)
     endif ()
 else ()
     # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.

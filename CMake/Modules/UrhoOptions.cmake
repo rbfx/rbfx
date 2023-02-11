@@ -162,11 +162,11 @@ option(URHO3D_SSL                               "Enable OpenSSL support"        
 
 if (WIN32)
     set(URHO3D_GRAPHICS_API D3D11 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D9 D3D11 OpenGL)
+    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D9 D3D11 OpenGL Diligent)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
 elseif (IOS OR ANDROID)
     set(URHO3D_GRAPHICS_API GLES2 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS GLES2 GLES3)
+    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS GLES2 GLES3 Diligent)
 else ()
     set(URHO3D_GRAPHICS_API OpenGL)
 endif ()
