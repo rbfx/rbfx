@@ -40,6 +40,8 @@ const char* GetCompilerDefines()
     "#define URHO3D_OPENGL\n"
 #elif defined(URHO3D_D3D11)
     "#define URHO3D_D3D11\n"
+#elif defined(URHO3D_DILIGENT)
+    "#define URHO3D_D3D11\n#define URHO3D_DILIGENT\n"
 #endif
 #ifdef URHO3D_SSE
     "#define URHO3D_SSE\n"

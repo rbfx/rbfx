@@ -31,6 +31,8 @@
 
 #ifdef URHO3D_D3D11
 #include <dxgi1_2.h>
+#elif URHO3D_DILIGENT
+#include <dxgi1_2.h>
 #endif
 
 #include "../DebugNew.h"
@@ -46,6 +48,9 @@ unsigned GetViewportTextureFormat()
 #ifdef URHO3D_D3D11
     // DX11 doesn't have RGB texture format and we don't want ImGUI to use alpha
     return DXGI_FORMAT_B8G8R8X8_UNORM;
+#elif URHO3D_DILIGENT
+    assert(0);
+    return 0;
 #else
     return Graphics::GetRGBFormat();
 #endif

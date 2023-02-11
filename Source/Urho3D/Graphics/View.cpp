@@ -75,7 +75,7 @@ static void UpdateBatchAmbient(Batch& destBatch, GlobalIllumination* gi, Drawabl
 #if URHO3D_SPHERICAL_HARMONICS
         destBatch.shaderParameters_.ambient_ = gi->SampleAmbientSH(samplePosition, hint);
 #else
-        destBatch.shaderParameters_.ambient_ = gi->SampleAverageAmbient(samplePosition, hint);
+        destBatch.shaderParameters_.ambient_ = gi->SampleAverageAmbient(samplePosition, hint).ToVector4();
 #endif
     }
 }
@@ -1841,7 +1841,7 @@ void View::SetRenderTargets(RenderPathCommand& command)
             {
                 useColorWrite = false;
                 useCustomDepth = true;
-#if !defined(URHO3D_OPENGL) && !defined(URHO3D_D3D11)
+#if !defined(URHO3D_OPENGL) && !defined(URHO3D_D3D11) && !defined(URHO3D_DILIGENT)
                 // On D3D9 actual depth-only rendering is illegal, we need a color rendertarget
                 if (!depthOnlyDummyTexture_)
                 {

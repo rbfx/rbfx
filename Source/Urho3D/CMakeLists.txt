@@ -119,6 +119,8 @@ if (NOT URHO3D_COMPUTE)
     list(REMOVE_ITEM SOURCE_FILES
         Graphics/Direct3D11/D3D11ComputeBuffer.cpp
         Graphics/Direct3D11/D3D11ComputeDevice.cpp
+        Graphics/Diligent/DiligentComputeBuffer.cpp
+        Graphics/Diligent/DiligentComputeDevice.cpp
         Graphics/OpenGL/OGLComputeBuffer.cpp
         Graphics/OpenGL/OGLComputeDevice.cpp
         Graphics/ComputeBuffer.cpp

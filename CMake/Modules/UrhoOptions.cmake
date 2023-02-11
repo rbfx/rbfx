@@ -176,7 +176,7 @@ if (URHO3D_GLES2 OR URHO3D_GLES3)
     set (URHO3D_OPENGL ON)
 endif ()
 
-cmake_dependent_option(URHO3D_SPIRV "Enable universal GLSL shaders for other GAPIs via glslang and SpirV" ON "URHO3D_D3D11" OFF)
+cmake_dependent_option(URHO3D_SPIRV "Enable universal GLSL shaders for other GAPIs via glslang and SpirV" ON "URHO3D_D3D11 OR URHO3D_DILIGENT" OFF)
 # Whether to use legacy renderer. Only OpenGL support legacy renderer.
 cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)
 if (URHO3D_D3D9)

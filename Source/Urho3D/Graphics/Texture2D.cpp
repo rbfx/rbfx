@@ -176,6 +176,8 @@ bool Texture2D::GetImage(Image& image) const
         }
         return true;
     }
+#elif URHO3D_DILIGENT
+    assert(0);
 #endif
 
     if (format_ != Graphics::GetRGBAFormat() && format_ != Graphics::GetRGBFormat())

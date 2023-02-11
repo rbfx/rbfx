@@ -37,7 +37,7 @@ ComputeBuffer::ComputeBuffer(Context* context) :
     Object(context),
     GPUObject(GetSubsystem<Graphics>())
 {
-#if defined(URHO3D_D3D11)
+#if defined(URHO3D_D3D11 OR URHO3D_DILIGENT)
     uav_ = nullptr;
 #endif
 }
