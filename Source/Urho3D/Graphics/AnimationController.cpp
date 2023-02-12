@@ -87,6 +87,17 @@ enum class AnimationParameterMask
 };
 URHO3D_FLAGSET(AnimationParameterMask, AnimationParameterFlags);
 
+bool MatchesQuery(const AnimationParameters& params, Animation* animation, unsigned layer)
+{
+    if (animation && params.animation_ != animation)
+        return false;
+
+    if (layer != M_MAX_UNSIGNED && params.layer_ != layer)
+        return false;
+
+    return true;
+}
+
 }
 
 AnimationParameters::AnimationParameters(Animation* animation)
@@ -626,16 +637,16 @@ ea::vector<AnimationParameters> AnimationController::GetAnimationParameters() co
     return params;
 }
 
-unsigned AnimationController::FindLastAnimation(Animation* animation) const
+unsigned AnimationController::FindLastAnimation(Animation* animation, unsigned layer) const
 {
     const auto iter = ea::find_if(animations_.rbegin(), animations_.rend(),
-        [&](const AnimationInstance& value) { return value.params_.animation_ == animation; });
+        [&](const AnimationInstance& value) { return MatchesQuery(value.params_, animation, layer); });
     return iter != animations_.rend() ? (iter.base() - animations_.begin()) - 1 : M_MAX_UNSIGNED;
 }
 
-const AnimationParameters* AnimationController::GetLastAnimationParameters(Animation* animation) const
+const AnimationParameters* AnimationController::GetLastAnimationParameters(Animation* animation, unsigned layer) const
 {
-    const unsigned index = FindLastAnimation(animation);
+    const unsigned index = FindLastAnimation(animation, layer);
     return index != M_MAX_UNSIGNED ? &animations_[index].params_ : nullptr;
 }
 
