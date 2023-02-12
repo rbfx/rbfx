@@ -43,6 +43,10 @@ public:
     void MountDir(const ea::string& path);
     /// Mount real folder into virtual file system under the scheme.
     void MountDir(const ea::string& scheme, const ea::string& path);
+    /// Mount subfolders and pak files from real folder into virtual file system.
+    void AutomountDir(const ea::string& path);
+    ///Mount subfolders and pak files from real folder into virtual file system under the scheme.
+    void AutomountDir(const ea::string& scheme, const ea::string& path);
     /// Mount package file into virtual file system.
     void MountPackageFile(const ea::string& path);
     /// Mount virtual or real folder into virtual file system.

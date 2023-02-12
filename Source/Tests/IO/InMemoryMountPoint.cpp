@@ -95,6 +95,11 @@ Urho3D::AbstractFilePtr Urho3D::InMemoryMountPoint::OpenFile(const FileIdentifie
     return AbstractFilePtr(&iter->second, this);
 }
 
+const ea::string& Urho3D::InMemoryMountPoint::GetName() const
+{
+    return EMPTY_STRING;
+}
+
 void Urho3D::InMemoryMountPoint::Scan(ea::vector<ea::string>& result, const ea::string& pathName,
     const ea::string& filter, unsigned flags, bool recursive) const
 {

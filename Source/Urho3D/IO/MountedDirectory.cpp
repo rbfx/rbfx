@@ -43,6 +43,7 @@ MountedDirectory::MountedDirectory(
     : MountPoint(context)
     , scheme_(std::move(scheme))
     , directory_(SanitizeDirName(directory))
+    , name_(scheme_.empty() ? directory_ : (scheme_ + "://" + directory_))
 {
 }
 

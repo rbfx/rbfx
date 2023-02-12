@@ -51,6 +51,9 @@ public:
     /// The file name may be be case-insensitive on Windows and case-sensitive on other platforms.
     virtual AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) = 0;
 
+    /// Returns human-readable name of the mount point.
+    virtual const ea::string& GetName() const = 0;
+	
     /// Get full path to a file if it exists in a mount point.
     virtual ea::string GetFileName(const FileIdentifier& fileName) const;
 

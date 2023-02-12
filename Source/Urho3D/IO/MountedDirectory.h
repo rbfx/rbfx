@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022-2022 the Urho3D project.
+// Copyright (c) 2022-2023 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,24 +42,21 @@ public:
     /// Destruct.
     ~MountedDirectory() override;
 
-    /// Checks if mount point accepts scheme.
+    /// Implement MountPoint.
+    /// @{
     bool AcceptsScheme(const ea::string& scheme) const override;
-
-    /// Check if a file exists within the mount point.
     bool Exists(const FileIdentifier& fileName) const override;
-
-    /// Open file in a virtual file system. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
-
-    /// Return full absolute file name of the file if possible, or empty if not found.
     ea::string GetFileName(const FileIdentifier& fileName) const override;
-
-    /// Return relative file name of the file if full path belongs to the mount point, or empty if not found.
+	
+    const ea::string& GetName() const override { return name_; }
+	
     FileIdentifier GetResourceName(const ea::string& fileFullPath) const override;
 
-    /// Scan for specified files.
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
         unsigned flags, bool recursive) const override;
+    /// @}
+
 
     /// Get mounted directory path.
     const ea::string& GetDirectory() const { return directory_; }
@@ -78,11 +75,13 @@ private:
 
 private:
     /// Expected file locator scheme.
-    ea::string scheme_;
+    const ea::string scheme_;
     /// Target directory.
-    ea::string directory_;
+    const ea::string directory_;
+    /// Name of the mount point.
+    const ea::string name_;
     /// File watcher for resource directory, if automatic reloading enabled.
-    SharedPtr<FileWatcher> fileWatcher_;
+    SharedPtr<FileWatcher> fileWatcher_;	
 };
 
 } // namespace Urho3D

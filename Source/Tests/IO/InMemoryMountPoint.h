@@ -54,6 +54,8 @@ public:
 
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
 
+    const ea::string& GetName() const override;
+
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags,
         bool recursive) const override;
     /// @}
