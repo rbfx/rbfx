@@ -45,12 +45,51 @@ VirtualFileSystem::~VirtualFileSystem() = default;
 
 void VirtualFileSystem::MountDir(const ea::string& path)
 {
-    Mount(MakeShared<MountedDirectory>(context_, path, EMPTY_STRING));
+    MountDir(EMPTY_STRING, path);
 }
 
 void VirtualFileSystem::MountDir(const ea::string& scheme, const ea::string& path)
 {
     Mount(MakeShared<MountedDirectory>(context_, path, scheme));
+}
+
+void VirtualFileSystem::AutomountDir(const ea::string& path)
+{
+    AutomountDir(EMPTY_STRING, path);
+}
+
+void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string& path)
+{
+    auto c = path.c_str();
+    auto fileSystem = GetSubsystem<FileSystem>();
+    if (!fileSystem->DirExists(path))
+        return;
+
+    // Add all the subdirs (non-recursive) as resource directory
+    ea::vector<ea::string> subdirs;
+    fileSystem->ScanDir(subdirs, path, "*", SCAN_DIRS, false);
+    for (unsigned y = 0; y < subdirs.size(); ++y)
+    {
+        ea::string dir = subdirs[y];
+        if (dir.starts_with("."))
+            continue;
+
+        ea::string autoResourceDir = AddTrailingSlash(path) + dir;
+        MountDir(scheme, autoResourceDir);
+    }
+
+    // Add all the found package files (non-recursive)
+    ea::vector<ea::string> paks;
+    fileSystem->ScanDir(paks, path, "*.pak", SCAN_FILES, false);
+    for (unsigned y = 0; y < paks.size(); ++y)
+    {
+        ea::string pak = paks[y];
+        if (pak.starts_with("."))
+            continue;
+
+        ea::string autoPackageName = AddTrailingSlash(path) + pak;
+        MountPackageFile(autoPackageName);
+    }
 }
 
 void VirtualFileSystem::MountPackageFile(const ea::string& path)

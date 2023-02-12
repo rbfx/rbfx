@@ -54,6 +54,12 @@ public:
     /// Return full absolute file name of the file if possible, or empty if not found.
     ea::string GetFileName(const FileIdentifier& fileName) const override;
 
+    /// Get scheme.
+    const ea::string& GetScheme() const { return scheme_; }
+
+    /// Get mounted directory path.
+    const ea::string& GetDirectory() const { return directory_; }
+
 protected:
     ea::string SanitizeDirName(const ea::string& name) const;
 

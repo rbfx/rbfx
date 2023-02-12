@@ -422,8 +422,7 @@ void Engine::InitializeVirtualFileSystem()
     const StringVector prefixPaths = GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString().split(';');
     const StringVector paths = GetParameter(EP_RESOURCE_PATHS).GetString().split(';');
     const StringVector packages = GetParameter(EP_RESOURCE_PACKAGES).GetString().split(';');
-    // TODO: Implement autoload
-    //const StringVector autoloadPaths = engine->GetParameter(EP_AUTOLOAD_PATHS).GetString().split(';');
+    const StringVector autoLoadPaths = GetParameter(EP_AUTOLOAD_PATHS).GetString().split(';');
 
     const ea::string& programDir = fileSystem->GetProgramDir();
     StringVector absolutePrefixPaths = GetAbsolutePaths(prefixPaths, programDir, true);
@@ -433,6 +432,23 @@ void Engine::InitializeVirtualFileSystem()
     vfs->UnmountAll();
     vfs->MountExistingDirectoriesOrPackages(absolutePrefixPaths, paths);
     vfs->MountExistingPackages(absolutePrefixPaths, packages);
+
+     // Add auto load folders. Prioritize these (if exist) before the default folders
+    for (unsigned i = 0; i < autoLoadPaths.size(); ++i)
+    {
+        ea::string autoLoadPath(autoLoadPaths[i]);
+        if (IsAbsolutePath(autoLoadPath))
+        {
+            vfs->AutomountDir(autoLoadPath);
+        }
+        else
+        {
+            for (unsigned j = 0; j < prefixPaths.size(); ++j)
+            {
+                vfs->AutomountDir(AddTrailingSlash(absolutePrefixPaths[j]) + autoLoadPath);
+            }
+        }
+    }
 
 #ifndef __EMSCRIPTEN__
     vfs->MountDir("conf", GetAppPreferencesDir());
