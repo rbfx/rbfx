@@ -35,8 +35,8 @@
 
 #include <Urho3D/DebugNew.h>
 
-VFSSample::VFSSample(Context* context) :
-    Sample(context)
+VFSSample::VFSSample(Context* context)
+    : Sample(context)
 {
     // Set the mouse mode to use in the sample
     SetMouseMode(MM_FREE);
@@ -60,33 +60,22 @@ void VFSSample::CreateText()
     // Construct new Text object
     SharedPtr<Text> helloText(new Text(context_));
     ea::string message;
-    for (unsigned i=0; i<vfs->NumMountPoints(); ++i)
+
+    message += "  MountPoints:\n";
+    for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
     {
         auto mountPoint = vfs->GetMountPoint(i);
-        if (auto packFile = dynamic_cast<PackageFile*>(mountPoint))
-        {
-            message += packFile->GetName();
-        }
-        else if (auto dir = dynamic_cast<MountedDirectory*>(mountPoint))
-        {
-            if (!dir->GetScheme().empty())
-                message += dir->GetScheme() + "://";
-            message += dir->GetDirectory();
-        }
-        else
-        {
-            message += "???";
-        }
+        message += mountPoint->GetName();
         message += "\n";
     }
 
-    message += "ResourceDirs:\n";
-    for (auto& resDir: cache->GetResourceDirs())
+    message += "\n  ResourceDirs:\n";
+    for (auto& resDir : cache->GetResourceDirs())
     {
         message += resDir + "\n";
     }
 
-    message += "PackageFiles:\n";
+    message += "\n  PackageFiles:\n";
     for (auto& pakFile : cache->GetPackageFiles())
     {
         message += pakFile->GetName() + "\n";

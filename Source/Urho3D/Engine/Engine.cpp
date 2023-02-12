@@ -433,19 +433,18 @@ void Engine::InitializeVirtualFileSystem()
     vfs->MountExistingDirectoriesOrPackages(absolutePrefixPaths, paths);
     vfs->MountExistingPackages(absolutePrefixPaths, packages);
 
-     // Add auto load folders. Prioritize these (if exist) before the default folders
-    for (unsigned i = 0; i < autoLoadPaths.size(); ++i)
+    // Add auto load folders. Prioritize these (if exist) before the default folders
+    for (const ea::string& autoLoadPath : autoLoadPaths)
     {
-        ea::string autoLoadPath(autoLoadPaths[i]);
         if (IsAbsolutePath(autoLoadPath))
         {
             vfs->AutomountDir(autoLoadPath);
         }
         else
         {
-            for (unsigned j = 0; j < prefixPaths.size(); ++j)
+            for (const ea::string& prefixPath : absolutePrefixPaths)
             {
-                vfs->AutomountDir(AddTrailingSlash(absolutePrefixPaths[j]) + autoLoadPath);
+                vfs->AutomountDir(AddTrailingSlash(prefixPath) + autoLoadPath);
             }
         }
     }
