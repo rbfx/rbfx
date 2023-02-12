@@ -146,6 +146,7 @@
 #include "114_AdvancedUI/AdvancedUI.h"
 #endif
 #include "115_RayCast/RayCastSample.h"
+#include "116_VirtualFileSystem/VFSSample.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -176,6 +177,7 @@ void SamplesManager::Setup()
 #endif
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+    engineParameters_[EP_AUTOLOAD_PATHS] = "Autoload";
 #if DESKTOP
     GetCommandLineParser().add_option("--sample", commandLineArgsTemp_);
 #endif
@@ -392,6 +394,7 @@ void SamplesManager::Start()
     RegisterSample<AdvancedUI>();
 #endif
     RegisterSample<RayCastSample>();
+    RegisterSample<VFSSample>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

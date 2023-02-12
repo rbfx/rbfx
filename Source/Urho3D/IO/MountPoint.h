@@ -53,6 +53,9 @@ public:
 
     /// Get full path to a file if it exists in a mount point.
     virtual ea::string GetFileName(const FileIdentifier& fileName) const = 0;
+
+    /// Returns human-readable name of the mount point.
+    virtual const ea::string& GetName() const = 0;
 };
 
 } // namespace Urho3D

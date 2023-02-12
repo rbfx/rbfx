@@ -70,6 +70,8 @@ public:
     }
 
     ea::string GetFileName(const FileIdentifier& fileName) const override { return EMPTY_STRING; }
+
+    const ea::string& GetName() const override { return EMPTY_STRING; }
     /// @}
 
 private:

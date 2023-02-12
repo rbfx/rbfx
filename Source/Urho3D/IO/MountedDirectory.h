@@ -42,26 +42,31 @@ public:
     /// Destruct.
     ~MountedDirectory() override;
 
-    /// Checks if mount point accepts scheme.
+    /// Implement MountPoint.
+    /// @{
     bool AcceptsScheme(const ea::string& scheme) const override;
-
-    /// Check if a file exists within the mount point.
     bool Exists(const FileIdentifier& fileName) const override;
-
-    /// Open file in a virtual file system. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
-
-    /// Return full absolute file name of the file if possible, or empty if not found.
     ea::string GetFileName(const FileIdentifier& fileName) const override;
+    const ea::string& GetName() const override { return name_; }
+    /// @}
+
+    /// Get scheme.
+    const ea::string& GetScheme() const { return scheme_; }
+
+    /// Get mounted directory path.
+    const ea::string& GetDirectory() const { return directory_; }
 
 protected:
     ea::string SanitizeDirName(const ea::string& name) const;
 
 private:
     /// Expected file locator scheme.
-    ea::string scheme_;
+    const ea::string scheme_;
     /// Target directory.
-    ea::string directory_;
+    const ea::string directory_;
+    /// Name of the mount point.
+    const ea::string name_;
 };
 
 } // namespace Urho3D
