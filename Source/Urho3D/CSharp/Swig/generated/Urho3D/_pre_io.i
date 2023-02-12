@@ -2,6 +2,8 @@
 %ignore Urho3D::NULL_DEVICE;
 %constant char * Apk = Urho3D::APK;
 %ignore Urho3D::APK;
+%constant Urho3D::FileIdentifier EmptyFileid = Urho3D::EMPTY_FILEID;
+%ignore Urho3D::EMPTY_FILEID;
 %constant unsigned int ScanFiles = Urho3D::SCAN_FILES;
 %ignore Urho3D::SCAN_FILES;
 %constant unsigned int ScanDirs = Urho3D::SCAN_DIRS;
@@ -26,7 +28,6 @@
 %csattribute(Urho3D::BinaryInputArchiveBlock, %arg(unsigned int), NextElementPosition, GetNextElementPosition);
 %csattribute(Urho3D::BinaryInputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
 %csattribute(Urho3D::Base64OutputArchive, %arg(ea::string), Base64, GetBase64);
-%csattribute(Urho3D::File, %arg(ea::string), AbsoluteName, GetAbsoluteName);
 %csattribute(Urho3D::File, %arg(Urho3D::FileMode), Mode, GetMode);
 %csattribute(Urho3D::File, %arg(void *), Handle, GetHandle);
 %csattribute(Urho3D::File, %arg(bool), IsPackaged, IsPackaged);
@@ -41,10 +42,12 @@
 %csattribute(Urho3D::FileWatcher, %arg(float), Delay, GetDelay, SetDelay);
 %csattribute(Urho3D::MemoryBuffer, %arg(unsigned char *), Data, GetData);
 %csattribute(Urho3D::MemoryBuffer, %arg(bool), IsReadOnly, IsReadOnly);
+%csattribute(Urho3D::MountPoint, %arg(bool), IsWatching, IsWatching, SetWatching);
+%csattribute(Urho3D::MountedDirectory, %arg(ea::string), Name, GetName);
+%csattribute(Urho3D::MountedDirectory, %arg(ea::string), Directory, GetDirectory);
 %csattribute(Urho3D::MultiFileWatcher, %arg(float), Delay, GetDelay, SetDelay);
 %csattribute(Urho3D::NamedPipe, %arg(bool), IsServer, IsServer);
 %csattribute(Urho3D::PackageFile, %arg(ea::unordered_map<ea::string, PackageEntry>), Entries, GetEntries);
-%csattribute(Urho3D::PackageFile, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::PackageFile, %arg(Urho3D::StringHash), NameHash, GetNameHash);
 %csattribute(Urho3D::PackageFile, %arg(unsigned int), NumFiles, GetNumFiles);
 %csattribute(Urho3D::PackageFile, %arg(unsigned int), TotalSize, GetTotalSize);
@@ -52,6 +55,8 @@
 %csattribute(Urho3D::PackageFile, %arg(unsigned int), Checksum, GetChecksum);
 %csattribute(Urho3D::PackageFile, %arg(bool), IsCompressed, IsCompressed);
 %csattribute(Urho3D::PackageFile, %arg(ea::vector<ea::string>), EntryNames, GetEntryNames);
+%csattribute(Urho3D::PackageFile, %arg(ea::string), Name, GetName);
+%csattribute(Urho3D::VirtualFileSystem, %arg(bool), IsWatching, IsWatching, SetWatching);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
