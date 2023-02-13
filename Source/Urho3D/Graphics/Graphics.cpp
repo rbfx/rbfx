@@ -400,9 +400,6 @@ void Graphics::SetGlobalShaderDefines(const ea::string& globalShaderDefines)
 void Graphics::SetShaderCacheDir(const FileIdentifier& path)
 {
     shaderCacheDir_ = path;
-    shaderCacheDir_.fileName_.trim();
-    if (shaderCacheDir_.fileName_.length())
-        shaderCacheDir_.fileName_ = AddTrailingSlash(shaderCacheDir_.fileName_);
 }
 
 void Graphics::AddGPUObject(GPUObject* object)

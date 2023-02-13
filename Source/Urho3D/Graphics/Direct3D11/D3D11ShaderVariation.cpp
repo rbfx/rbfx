@@ -87,8 +87,7 @@ bool ShaderVariation::Create()
     extension = ShaderVariation_shaderExtensions[type_];
 
     auto& cacheDir = graphics_->GetShaderCacheDir();
-    FileIdentifier binaryShaderName{
-        cacheDir.scheme_, cacheDir.fileName_ + name + "_" + StringHash(defines_).ToString() + extension};
+    const FileIdentifier binaryShaderName = cacheDir + (name + "_" + StringHash(defines_).ToString() + extension);
 
     if (!LoadByteCode(binaryShaderName))
     {
@@ -195,7 +194,7 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
     const AbstractFilePtr file = vfs->OpenFile(binaryShaderName, FILE_READ);
     if (!file || file->ReadFileID() != "USHD")
     {
-        URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
+        URHO3D_LOGERROR(binaryShaderName.fileName_ + " is not a valid shader bytecode file");
         return false;
     }
 
@@ -244,7 +243,7 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
     }
     else
     {
-        URHO3D_LOGERROR(binaryShaderName + " has zero length bytecode");
+        URHO3D_LOGERROR(binaryShaderName.fileName_ + " has zero length bytecode");
         return false;
     }
 }

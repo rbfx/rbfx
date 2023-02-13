@@ -24,7 +24,7 @@
 
 #include <Urho3D/IO/FileIdentifier.h>
 
-TEST_CASE("FileLocator")
+TEST_CASE("FileIdentifier from string")
 {
     FileIdentifier singleForwardSlash("file:/FileName");
     CHECK(singleForwardSlash.scheme_ == "file");
@@ -49,4 +49,30 @@ TEST_CASE("FileLocator")
     FileIdentifier backSlash("Dir\\SubDir\\FileName");
     CHECK(backSlash.scheme_ == "");
     CHECK(backSlash.fileName_ == "Dir/SubDir/FileName");
+}
+
+TEST_CASE("FileIdentifier append")
+{
+    {
+        FileIdentifier identifier = FileIdentifier{"", ""} + "";
+        CHECK(identifier.scheme_.empty());
+        CHECK(identifier.fileName_.empty());
+    }
+    {
+        FileIdentifier identifier = FileIdentifier("sc", "") + "bla";
+        CHECK(identifier.scheme_ == "sc");
+        CHECK(identifier.fileName_ == "bla");
+    }
+    {
+        FileIdentifier identifier = FileIdentifier("", "bla") + "";
+        CHECK(identifier.fileName_ == "bla");
+    }
+    {
+        FileIdentifier identifier = FileIdentifier("", "bla") + "fla";
+        CHECK(identifier.fileName_ == "bla/fla");
+    }
+    {
+        FileIdentifier identifier = FileIdentifier("", "bla/") + "fla";
+        CHECK(identifier.fileName_ == "bla/fla");
+    }
 }

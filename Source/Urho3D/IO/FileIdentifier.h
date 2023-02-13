@@ -62,6 +62,20 @@ struct URHO3D_API FileIdentifier
         return scheme_ != rhs.scheme_ || fileName_ != rhs.fileName_;
     }
 
+    FileIdentifier& operator+=(const ea::string_view& rhs);
+
+    friend FileIdentifier operator+(FileIdentifier lhs, const ea::string& rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
+
+    friend FileIdentifier operator+(FileIdentifier lhs, const char* rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
+
     static ea::string SanitizeFileName(const ea::string& fileName);
 };
 

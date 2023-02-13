@@ -21,6 +21,7 @@
 //
 
 #include "../IO/FileIdentifier.h"
+#include "../IO/FileSystem.h"
 
 namespace Urho3D
 {
@@ -57,6 +58,23 @@ FileIdentifier::FileIdentifier(const ea::string& scheme, const ea::string& fileN
 {
 }
 
+FileIdentifier& FileIdentifier::operator+=(const ea::string_view& rhs)
+{
+    if (!rhs.empty())
+    {
+        if (fileName_.empty())
+        {
+            fileName_ = rhs;
+        }
+        else
+        {
+            if (!(fileName_[fileName_.length() - 1] == '/'))
+                fileName_.append("/");
+            fileName_.append(rhs.data(), rhs.length());
+        }
+    }
+    return *this;
+}
 ea::string FileIdentifier::SanitizeFileName(const ea::string& fileName)
 {
     ea::string sanitizedName = fileName;
