@@ -25,4 +25,5 @@
 %csattribute(Urho3D::RmlUI, %arg(Rml::Context *), RmlContext, GetRmlContext);
 %csattribute(Urho3D::RmlUI, %arg(bool), IsRendering, IsRendering, SetRendering);
 %csattribute(Urho3D::RmlUI, %arg(bool), IsInputCaptured, IsInputCaptured);
+%csattribute(Urho3D::RmlUI, %arg(bool), IsHovered, IsHovered);
 %csattribute(Urho3D::Detail::RmlContext, %arg(Urho3D::RmlUI *), OwnerSubsystem, GetOwnerSubsystem, SetOwnerSubsystem);
