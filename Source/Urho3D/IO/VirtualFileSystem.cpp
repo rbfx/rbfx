@@ -186,7 +186,7 @@ AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, File
     return AbstractFilePtr();
 }
 
-ea::string VirtualFileSystem::GetFileName(const FileIdentifier& fileName)
+ea::string VirtualFileSystem::GetFileName(const FileIdentifier& fileName) const
 {
     MutexLock lock(mountMutex_);
 

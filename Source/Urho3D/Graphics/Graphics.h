@@ -34,6 +34,7 @@
 #include "../Math/Plane.h"
 #include "../Math/Rect.h"
 #include "../Resource/Image.h"
+#include "../IO/FileIdentifier.h"
 
 struct SDL_Window;
 
@@ -358,7 +359,7 @@ public:
     void PrecacheShaders(Deserializer& source);
     /// Set shader cache directory, Direct3D only. This can either be an absolute path or a path within the resource system.
     /// @property
-    void SetShaderCacheDir(const ea::string& path);
+    void SetShaderCacheDir(const FileIdentifier& path);
     /// Set global shader defines.
     void SetGlobalShaderDefines(const ea::string& globalShaderDefines);
 
@@ -648,7 +649,7 @@ public:
 
     /// Return shader cache directory, Direct3D only.
     /// @property
-    const ea::string& GetShaderCacheDir() const { return shaderCacheDir_; }
+    const FileIdentifier& GetShaderCacheDir() const { return shaderCacheDir_; }
 
     /// Return global shader defines.
     const ea::string& GetGlobalShaderDefines() const { return globalShaderDefines_; }
@@ -947,7 +948,7 @@ private:
     /// Format string for universal shaders.
     ea::string universalShaderPath_{ "Shaders/GLSL/{}.glsl" };
     /// Cache directory for Direct3D binary shaders.
-    ea::string shaderCacheDir_;
+    FileIdentifier shaderCacheDir_;
     /// File extension for shaders.
     ea::string shaderExtension_;
     /// Last used shader in shader variation query.

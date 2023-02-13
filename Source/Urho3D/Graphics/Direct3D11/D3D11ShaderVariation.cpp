@@ -36,6 +36,7 @@
 #include <d3dcompiler.h>
 
 #include "../../DebugNew.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
 
 namespace Urho3D
 {
@@ -85,7 +86,9 @@ bool ShaderVariation::Create()
     SplitPath(owner_->GetName(), path, name, extension);
     extension = ShaderVariation_shaderExtensions[type_];
 
-    ea::string binaryShaderName = graphics_->GetShaderCacheDir() + name + "_" + StringHash(defines_).ToString() + extension;
+    auto& cacheDir = graphics_->GetShaderCacheDir();
+    FileIdentifier binaryShaderName{
+        cacheDir.scheme_, cacheDir.fileName_ + name + "_" + StringHash(defines_).ToString() + extension};
 
     if (!LoadByteCode(binaryShaderName))
     {
@@ -172,20 +175,24 @@ void ShaderVariation::SetDefines(const ea::string& defines)
     defines_ = defines;
 }
 
-bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
+bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
 {
-    ResourceCache* cache = owner_->GetSubsystem<ResourceCache>();
-    if (!cache->Exists(binaryShaderName))
+    const VirtualFileSystem* vfs = owner_->GetSubsystem<VirtualFileSystem>();
+    if (!vfs->Exists(binaryShaderName))
         return false;
 
     const FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
     const unsigned sourceTimeStamp = owner_->GetTimeStamp();
     // If source code is loaded from a package, its timestamp will be zero. Else check that binary is not older
     // than source
-    if (sourceTimeStamp && fileSystem->GetLastModifiedTime(cache->GetResourceFileName(binaryShaderName)) < sourceTimeStamp)
-        return false;
+    if (sourceTimeStamp)
+    {
+        ea::string fullPath = vfs->GetFileName(binaryShaderName);
+        if (!fullPath.empty() && fileSystem->GetLastModifiedTime(fullPath) < sourceTimeStamp)
+            return false;
+    }
 
-    const AbstractFilePtr file = cache->GetFile(binaryShaderName);
+    const AbstractFilePtr file = vfs->OpenFile(binaryShaderName, FILE_READ);
     if (!file || file->ReadFileID() != "USHD")
     {
         URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
@@ -436,27 +443,12 @@ void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
     reflection->Release();
 }
 
-void ShaderVariation::SaveByteCode(const ea::string& binaryShaderName)
+void ShaderVariation::SaveByteCode(const FileIdentifier& binaryShaderName)
 {
-    ResourceCache* cache = owner_->GetSubsystem<ResourceCache>();
-    FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
+    VirtualFileSystem* vfs = owner_->GetSubsystem<VirtualFileSystem>();
 
-    // Filename may or may not be inside the resource system
-    ea::string fullName = binaryShaderName;
-    if (!IsAbsolutePath(fullName))
-    {
-        // If not absolute, use the resource dir of the shader
-        ea::string shaderFileName = cache->GetResourceFileName(owner_->GetName());
-        if (shaderFileName.empty())
-            return;
-        fullName = shaderFileName.substr(0, shaderFileName.find(owner_->GetName())) + binaryShaderName;
-    }
-    ea::string path = GetPath(fullName);
-    if (!fileSystem->DirExists(path))
-        fileSystem->CreateDir(path);
-
-    auto file = MakeShared<File>(owner_->GetContext(), fullName, FILE_WRITE);
-    if (!file->IsOpen())
+    auto file = vfs->OpenFile(binaryShaderName, FILE_WRITE);
+    if (!file || !file->IsOpen())
         return;
 
     file->WriteFileID("USHD");

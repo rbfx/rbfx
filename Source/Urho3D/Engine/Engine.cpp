@@ -362,8 +362,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         if (HasParameter(EP_WINDOW_MAXIMIZE) && GetParameter(EP_WINDOW_MAXIMIZE).GetBool())
             graphics->Maximize();
 
-        const ea::string shaderCacheDir = appPreferencesDir_ + GetParameter(EP_SHADER_CACHE_DIR).GetString();
-        graphics->SetShaderCacheDir(shaderCacheDir);
+        graphics->SetShaderCacheDir(FileIdentifier("conf", GetParameter(EP_SHADER_CACHE_DIR).GetString()));
 
         if (HasParameter(EP_DUMP_SHADERS))
             graphics->BeginDumpShaders(GetParameter(EP_DUMP_SHADERS).GetString());

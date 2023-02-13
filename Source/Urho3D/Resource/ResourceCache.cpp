@@ -412,7 +412,7 @@ AbstractFilePtr ResourceCache::GetFile(const ea::string& name, bool sendEventOnF
     const FileIdentifier fileId{EMPTY_STRING, sanitatedName};
     auto file = vfs->OpenFile(fileId, FILE_READ);
 
-    // Fallback to absolute path resolution, similar to ResouceCache behaviour.
+    // Fallback to absolute path resolution.
     if (!file)
     {
         const auto* fileSystem = GetSubsystem<FileSystem>();
