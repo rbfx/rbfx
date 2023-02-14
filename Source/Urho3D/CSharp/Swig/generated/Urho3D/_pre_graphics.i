@@ -681,7 +681,7 @@ using BoneCollisionShapeFlags = Urho3D::BoneCollisionShape;
 %csattribute(Urho3D::Graphics, %arg(unsigned int), StencilCompareMask, GetStencilCompareMask);
 %csattribute(Urho3D::Graphics, %arg(unsigned int), StencilWriteMask, GetStencilWriteMask);
 %csattribute(Urho3D::Graphics, %arg(bool), UseClipPlane, GetUseClipPlane);
-%csattribute(Urho3D::Graphics, %arg(ea::string), ShaderCacheDir, GetShaderCacheDir, SetShaderCacheDir);
+%csattribute(Urho3D::Graphics, %arg(Urho3D::FileIdentifier), ShaderCacheDir, GetShaderCacheDir, SetShaderCacheDir);
 %csattribute(Urho3D::Graphics, %arg(ea::string), GlobalShaderDefines, GetGlobalShaderDefines, SetGlobalShaderDefines);
 %csattribute(Urho3D::Graphics, %arg(Urho3D::StringHash), GlobalShaderDefinesHash, GetGlobalShaderDefinesHash);
 %csattribute(Urho3D::Graphics, %arg(Urho3D::IntVector2), RenderTargetDimensions, GetRenderTargetDimensions);
