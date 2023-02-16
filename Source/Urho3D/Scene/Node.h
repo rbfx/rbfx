@@ -670,6 +670,8 @@ public:
     template <class T> void GetChildrenWithComponent(ea::vector<Node*>& dest, bool recursive = false) const;
     /// Template version of returning a component by type.
     template <class T> T* GetComponent(bool recursive = false) const;
+    /// Return N-th component of given type.
+    template <class T> T* GetNthComponent(unsigned index) const;
     /// Template version of returning a parent's component by type.
     template <class T> T* GetParentComponent(bool fullTraversal = false) const;
     /// Template version of returning all components of type.
@@ -804,6 +806,8 @@ template <class T> void Node::GetChildrenWithComponent(ea::vector<Node*>& dest, 
 }
 
 template <class T> T* Node::GetComponent(bool recursive) const { return static_cast<T*>(GetComponent(T::GetTypeStatic(), recursive)); }
+
+template <class T> T* Node::GetNthComponent(unsigned index) const { return static_cast<T*>(GetNthComponent(T::GetTypeStatic(), index)); }
 
 template <class T> T* Node::GetParentComponent(bool fullTraversal) const { return static_cast<T*>(GetParentComponent(T::GetTypeStatic(), fullTraversal)); }
 
