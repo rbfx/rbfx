@@ -34,6 +34,7 @@
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/Buffer.h>
 
 namespace Urho3D
 {
@@ -46,6 +47,8 @@ using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVari
 using VertexDeclarationMap = ea::unordered_map<unsigned long long, SharedPtr<VertexDeclaration> >;
 using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer> >;
 
+class DiligentConstantBufferManager;
+class DiligentCommonPipelines;
 /// %Graphics implementation. Holds API-specific objects.
 class URHO3D_API GraphicsImpl
 {
@@ -55,17 +58,17 @@ public:
     /// Construct.
     GraphicsImpl();
 
-    /// Return Direct3D device.
-    ID3D11Device* GetDevice() const { return device_; }
+    /// Return Diligent device.
+    Diligent::IRenderDevice* GetDevice() const { return device_; }
 
-    /// Return Direct3D immediate device context.
-    ID3D11DeviceContext1* GetDeviceContext() const { return deviceContext_; }
+    /// Return Diligent immediate device context.
+    Diligent::IDeviceContext* GetDeviceContext() const { return deviceContext_; }
 
     /// Return swapchain.
-    IDXGISwapChain* GetSwapChain() const { return swapChain_; }
+    Diligent::ISwapChain* GetSwapChain() const { return swapChain_; }
 
     /// Return default render target view.
-    ID3D11RenderTargetView* GetDefaultRenderTargetView() const { return defaultRenderTargetView_; }
+    Diligent::ITextureView* GetDefaultRenderTargetView() const { return swapChain_->GetCurrentBackBufferRTV(); }
 
     /// Return whether multisampling is supported for a given texture format and sample count.
     bool CheckMultiSampleSupport(Diligent::TEXTURE_FORMAT format, unsigned sampleCount) const;
@@ -76,28 +79,24 @@ public:
     /// Mark render targets as dirty. Must be called if render targets were set using DX11 device directly.
     void MarkRenderTargetsDirty() { renderTargetsDirty_ = true; }
 
-    Diligent::IRenderDevice* GetRenderDevice() const { return diligentDevice_; }
-    Diligent::IDeviceContext* GetDiligentDeviceContext() const { return diligentDeviceContext_; }
+    DiligentConstantBufferManager* GetConstantBufferManager() { return constantBufferManager_; }
 private:
     /// Graphics device.
-    ID3D11Device* device_;
-    Diligent::IRenderDevice* diligentDevice_;
-    Diligent::IDeviceContext* diligentDeviceContext_;
+    Diligent::IRenderDevice* device_;
     /// Immediate device context.
-    ID3D11DeviceContext1* deviceContext_;
+    Diligent::IDeviceContext* deviceContext_;
     /// Swap chain.
-    IDXGISwapChain1* swapChain_;
-    Diligent::ISwapChain* diligentSwapChain_;
-    /// Default (backbuffer) rendertarget view.
+    Diligent::ISwapChain* swapChain_;
+    /*/// Default (backbuffer) rendertarget view.
     ID3D11RenderTargetView* defaultRenderTargetView_;
     /// Default depth-stencil texture.
     ID3D11Texture2D* defaultDepthTexture_;
     /// Default depth-stencil view.
-    ID3D11DepthStencilView* defaultDepthStencilView_;
+    ID3D11DepthStencilView* defaultDepthStencilView_;*/
     /// Current color rendertarget views.
-    ID3D11RenderTargetView* renderTargetViews_[MAX_RENDERTARGETS];
+    Diligent::ITextureView* renderTargetViews_[MAX_RENDERTARGETS];
     /// Current depth-stencil view.
-    ID3D11DepthStencilView* depthStencilView_;
+    //Diligent::ITextureView* depthStencilView_;
     /// Created blend state objects.
     ea::unordered_map<unsigned, ID3D11BlendState*> blendStates_;
     /// Created depth state objects.
@@ -105,15 +104,15 @@ private:
     /// Created rasterizer state objects.
     ea::unordered_map<unsigned, ID3D11RasterizerState*> rasterizerStates_;
     /// Intermediate texture for multisampled screenshots and less than whole viewport multisampled resolve, created on demand.
-    ID3D11Texture2D* resolveTexture_;
+    Diligent::ITexture* resolveTexture_;
     /// Bound shader resource views.
-    ID3D11ShaderResourceView* shaderResourceViews_[MAX_TEXTURE_UNITS];
+    Diligent::ITextureView* shaderResourceViews_[MAX_TEXTURE_UNITS];
     /// Bound sampler state objects.
     ID3D11SamplerState* samplers_[MAX_TEXTURE_UNITS];
     /// Bound vertex buffers.
-    ID3D11Buffer* vertexBuffers_[MAX_VERTEX_STREAMS];
+    Diligent::IBuffer* vertexBuffers_[MAX_VERTEX_STREAMS];
     /// Bound constant buffers.
-    ID3D11Buffer* constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
+    Diligent::IBuffer* constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Bound constant buffers start slots.
     UINT constantBuffersStartSlots_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Bound constant buffers start slots.
@@ -160,6 +159,10 @@ private:
     ShaderProgramMap shaderPrograms_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_;
+
+    DiligentConstantBufferManager* constantBufferManager_;
+
+    DiligentCommonPipelines* commonPipelines_;
 };
 
 }

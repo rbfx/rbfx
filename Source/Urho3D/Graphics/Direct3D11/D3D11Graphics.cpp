@@ -146,7 +146,7 @@ static const D3D11_BLEND d3dSrcAlphaBlend[] =
 };
 static_assert(sizeof(d3dSrcAlphaBlend) / sizeof(d3dSrcAlphaBlend[0]) == MAX_BLENDMODES, "");
 
-static const D3D11_BLEND d3dDestAlphaBlend[] =
+static const D3D11_BLEND DiligentDestAlphaBlend[] =
 {
     D3D11_BLEND_ZERO,          // BLEND_REPLACE
     D3D11_BLEND_ONE,           // BLEND_ADD
@@ -159,7 +159,7 @@ static const D3D11_BLEND d3dDestAlphaBlend[] =
     D3D11_BLEND_ONE,           // BLEND_SUBTRACTALPHA
     D3D11_BLEND_ONE,           // BLEND_DEFERRED_DECAL
 };
-static_assert(sizeof(d3dDestAlphaBlend) / sizeof(d3dDestAlphaBlend[0]) == MAX_BLENDMODES, "");
+static_assert(sizeof(DiligentDestAlphaBlend) / sizeof(DiligentDestAlphaBlend[0]) == MAX_BLENDMODES, "");
 
 static const D3D11_BLEND_OP d3dBlendOp[] =
 {

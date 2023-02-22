@@ -55,12 +55,12 @@ void IndexBuffer::Release()
     if (graphics_ && graphics_->GetIndexBuffer() == this)
         graphics_->SetIndexBuffer(nullptr);
 
-    assert(0);
-    //URHO3D_SAFE_RELEASE(object_.ptr_);
+    URHO3D_SAFE_RELEASE(object_.ptr_);
 }
 
 bool IndexBuffer::SetData(const void* data)
 {
+    using namespace Diligent;
     if (!data)
     {
         URHO3D_LOGERROR("Null pointer for index buffer data");
@@ -76,8 +76,7 @@ bool IndexBuffer::SetData(const void* data)
     if (shadowData_ && data != shadowData_.get())
         memcpy(shadowData_.get(), data, indexCount_ * indexSize_);
 
-    assert(0);
-    /*if (object_.ptr_)
+    if (object_.ptr_)
     {
         if (dynamic_)
         {
@@ -92,17 +91,15 @@ bool IndexBuffer::SetData(const void* data)
         }
         else
         {
-            D3D11_BOX destBox;
-            destBox.left = 0;
-            destBox.right = indexCount_ * indexSize_;
-            destBox.top = 0;
-            destBox.bottom = 1;
-            destBox.front = 0;
-            destBox.back = 1;
-
-            graphics_->GetImpl()->GetDeviceContext()->UpdateSubresource((ID3D11Buffer*)object_.ptr_, 0, &destBox, data, 0, 0);
+            graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer(
+                (IBuffer*)object_.ptr_,
+                0,
+                indexCount_ * indexSize_,
+                data,
+                RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+            );
         }
-    }*/
+    }
 
     return true;
 }
@@ -238,34 +235,30 @@ void IndexBuffer::Unlock()
 
 bool IndexBuffer::Create()
 {
+    using namespace Diligent;
     Release();
-    assert(0);
-    return false;
-    /*if (!indexCount_)
+    if (!indexCount_)
         return true;
 
     if (graphics_)
     {
-        D3D11_BUFFER_DESC bufferDesc;
-        memset(&bufferDesc, 0, sizeof bufferDesc);
-        bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        BufferDesc bufferDesc;
+        bufferDesc.BindFlags = BIND_INDEX_BUFFER;
         if (!dynamic_ && graphics_->GetComputeSupport())
-            bufferDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+            bufferDesc.BindFlags |= BIND_UNORDERED_ACCESS;
 
-        bufferDesc.CPUAccessFlags = dynamic_ ? D3D11_CPU_ACCESS_WRITE : 0;
-        bufferDesc.Usage = dynamic_ ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
-        bufferDesc.ByteWidth = (UINT)(indexCount_ * indexSize_);
+        bufferDesc.CPUAccessFlags = dynamic_ ? CPU_ACCESS_WRITE : CPU_ACCESS_NONE;
+        bufferDesc.Usage = dynamic_ ? USAGE_DYNAMIC : USAGE_DEFAULT;
+        bufferDesc.Size = indexCount_ * indexSize_;
 
-        HRESULT hr = graphics_->GetImpl()->GetDevice()->CreateBuffer(&bufferDesc, nullptr, (ID3D11Buffer**)&object_.ptr_);
-        if (FAILED(hr))
-        {
-            URHO3D_SAFE_RELEASE(object_.ptr_);
-            URHO3D_LOGD3DERROR("Failed to create index buffer", hr);
+        graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, (IBuffer**)&object_.ptr_);
+        if (!object_.ptr_) {
+            URHO3D_LOGERROR("Failed to create index buffer.");
             return false;
         }
     }
 
-    return true;*/
+    return true;
 }
 
 bool IndexBuffer::UpdateToGPU()
@@ -278,6 +271,7 @@ bool IndexBuffer::UpdateToGPU()
 
 void* IndexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
 {
+    assert(0);
     return nullptr;
     /*void* hwData = nullptr;
 

@@ -48,7 +48,11 @@
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/DeviceContextD3D11.h>
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/SwapChainD3D11.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
+#include <Diligent/Graphics/GraphicsTools/interface/MapHelper.hpp>
 
+#include "DiligentLookupSettings.h"
+#include "DiligentConstantBufferManager.h"
+#include "DiligentCommonPipelines.h"
 #if UWP
 #include <wrl/client.h>
 #include <windows.ui.xaml.media.dxinterop.h>
@@ -81,130 +85,6 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 namespace Urho3D
 {
     using namespace Diligent;
-
-static const COMPARISON_FUNCTION sCmpFunc[] =
-{
-    COMPARISON_FUNC_ALWAYS,
-    COMPARISON_FUNC_EQUAL,
-    COMPARISON_FUNC_NOT_EQUAL,
-    COMPARISON_FUNC_LESS,
-    COMPARISON_FUNC_LESS_EQUAL,
-    COMPARISON_FUNC_GREATER,
-    COMPARISON_FUNC_GREATER_EQUAL
-};
-
-static const DWORD sBlendEnable[] =
-{
-    FALSE,  // BLEND_REPLACE
-    TRUE,   // BLEND_ADD
-    TRUE,   // BLEND_MULTIPLY
-    TRUE,   // BLEND_ALPHA
-    TRUE,   // BLEND_ADDALPHA
-    TRUE,   // BLEND_PREMULALPHA
-    TRUE,   // BLEND_INVDESTALPHA
-    TRUE,   // BLEND_SUBTRACT
-    TRUE,   // BLEND_SUBTRACTALPHA
-    TRUE,   // BLEND_DEFERRED_DECAL
-};
-static_assert(sizeof(sBlendEnable) / sizeof(sBlendEnable[0]) == MAX_BLENDMODES, "");
-
-static const BLEND_FACTOR sSrcBlend[] =
-{
-    BLEND_FACTOR_ONE,            // BLEND_REPLACE
-    BLEND_FACTOR_ONE,            // BLEND_ADD
-    BLEND_FACTOR_DEST_COLOR,     // BLEND_MULTIPLY
-    BLEND_FACTOR_SRC_ALPHA,      // BLEND_ALPHA
-    BLEND_FACTOR_SRC_ALPHA,      // BLEND_ADDALPHA
-    BLEND_FACTOR_ONE,            // BLEND_PREMULALPHA
-    BLEND_FACTOR_INV_DEST_ALPHA, // BLEND_INVDESTALPHA
-    BLEND_FACTOR_ONE,            // BLEND_SUBTRACT
-    BLEND_FACTOR_SRC_ALPHA,      // BLEND_SUBTRACTALPHA
-    BLEND_FACTOR_SRC_ALPHA,      // BLEND_DEFERRED_DECAL
-};
-static_assert(sizeof(sSrcBlend) / sizeof(sSrcBlend[0]) == MAX_BLENDMODES, "");
-
-static const BLEND_FACTOR sDestBlend[] =
-{
-    BLEND_FACTOR_ZERO,          // BLEND_REPLACE
-    BLEND_FACTOR_ONE,           // BLEND_ADD
-    BLEND_FACTOR_ZERO,          // BLEND_MULTIPLY
-    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_ALPHA
-    BLEND_FACTOR_ONE,           // BLEND_ADDALPHA
-    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_PREMULALPHA
-    BLEND_FACTOR_DEST_ALPHA,    // BLEND_INVDESTALPHA
-    BLEND_FACTOR_ONE,           // BLEND_SUBTRACT
-    BLEND_FACTOR_ONE,           // BLEND_SUBTRACTALPHA
-    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_DEFERRED_DECAL
-};
-static_assert(sizeof(sDestBlend) / sizeof(sDestBlend[0]) == MAX_BLENDMODES, "");
-
-static const BLEND_FACTOR sSrcAlphaBlend[] =
-{
-    BLEND_FACTOR_ONE,            // BLEND_REPLACE
-    BLEND_FACTOR_ONE,            // BLEND_ADD
-    BLEND_FACTOR_DEST_COLOR,     // BLEND_MULTIPLY
-    BLEND_FACTOR_SRC_ALPHA,      // BLEND_ALPHA
-    BLEND_FACTOR_SRC_ALPHA,      // BLEND_ADDALPHA
-    BLEND_FACTOR_ONE,            // BLEND_PREMULALPHA
-    BLEND_FACTOR_INV_DEST_ALPHA, // BLEND_INVDESTALPHA
-    BLEND_FACTOR_ONE,            // BLEND_SUBTRACT
-    BLEND_FACTOR_SRC_ALPHA,      // BLEND_SUBTRACTALPHA
-    BLEND_FACTOR_ZERO,           // BLEND_DEFERRED_DECAL
-};
-static_assert(sizeof(sSrcAlphaBlend) / sizeof(sSrcAlphaBlend[0]) == MAX_BLENDMODES, "");
-
-static const BLEND_FACTOR sDestAlphaBlend[] =
-{
-    BLEND_FACTOR_ZERO,          // BLEND_REPLACE
-    BLEND_FACTOR_ONE,           // BLEND_ADD
-    BLEND_FACTOR_ZERO,          // BLEND_MULTIPLY
-    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_ALPHA
-    BLEND_FACTOR_ONE,           // BLEND_ADDALPHA
-    BLEND_FACTOR_INV_SRC_ALPHA, // BLEND_PREMULALPHA
-    BLEND_FACTOR_DEST_ALPHA,    // BLEND_INVDESTALPHA
-    BLEND_FACTOR_ONE,           // BLEND_SUBTRACT
-    BLEND_FACTOR_ONE,           // BLEND_SUBTRACTALPHA
-    BLEND_FACTOR_ONE,           // BLEND_DEFERRED_DECAL
-};
-static_assert(sizeof(sDestAlphaBlend) / sizeof(sDestAlphaBlend[0]) == MAX_BLENDMODES, "");
-
-static const BLEND_OPERATION sBlendOp[] =
-{
-    BLEND_OPERATION_ADD,          // BLEND_REPLACE
-    BLEND_OPERATION_ADD,          // BLEND_ADD
-    BLEND_OPERATION_ADD,          // BLEND_MULTIPLY
-    BLEND_OPERATION_ADD,          // BLEND_ALPHA
-    BLEND_OPERATION_ADD,          // BLEND_ADDALPHA
-    BLEND_OPERATION_ADD,          // BLEND_PREMULALPHA
-    BLEND_OPERATION_ADD,          // BLEND_INVDESTALPHA
-    BLEND_OPERATION_REV_SUBTRACT, // BLEND_SUBTRACT
-    BLEND_OPERATION_REV_SUBTRACT, // BLEND_SUBTRACTALPHA
-    BLEND_OPERATION_ADD,          // BLEND_DEFERRED_DECAL
-};
-static_assert(sizeof(sBlendOp) / sizeof(sBlendOp[0]) == MAX_BLENDMODES, "");
-
-static const STENCIL_OP sStencilOp[] = {
-    STENCIL_OP_KEEP,
-    STENCIL_OP_ZERO,
-    STENCIL_OP_REPLACE,
-    STENCIL_OP_INCR_WRAP,
-    STENCIL_OP_DECR_WRAP
-};
-
-static const CULL_MODE sCullMode[] = {
-    CULL_MODE_NONE,
-    CULL_MODE_BACK,
-    CULL_MODE_FRONT
-};
-
-static const FILL_MODE sFillMode[] =
-{
-
-    FILL_MODE_SOLID,
-    FILL_MODE_WIREFRAME,
-    FILL_MODE_WIREFRAME,
-    // Point fill mode not supported
-};
 
 struct ClearFramebufferConstantBuffer
 {
@@ -281,6 +161,18 @@ Graphics::Graphics(Context* context) :
 
 Graphics::~Graphics()
 {
+    if (impl_->device_) {
+        impl_->device_->IdleGPU();
+
+        impl_->constantBufferManager_->Release();
+        delete impl_->constantBufferManager_;
+
+        if(impl_->swapChain_)
+            impl_->swapChain_->Release();
+
+        impl_->deviceContext_->Release();
+        impl_->device_->Release();
+    }
     //{
     //    MutexLock lock(gpuObjectMutex_);
 
@@ -336,53 +228,53 @@ Graphics::~Graphics()
 bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& params, bool maximize)
 {
     URHO3D_PROFILE("SetScreenMode");
-
     // Ensure that parameters are properly filled
-    //ScreenModeParams newParams = params;
-    //AdjustScreenMode(width, height, newParams, maximize);
+    ScreenModeParams newParams = params;
+    AdjustScreenMode(width, height, newParams, maximize);
 
     //// Find out the full screen mode display format (match desktop color depth)
-    //SDL_DisplayMode mode;
-    //SDL_GetDesktopDisplayMode(newParams.monitor_, &mode);
-    //const DXGI_FORMAT fullscreenFormat = SDL_BITSPERPIXEL(mode.format) == 16 ? DXGI_FORMAT_B5G6R5_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
+    SDL_DisplayMode mode;
+    SDL_GetDesktopDisplayMode(newParams.monitor_, &mode);
+    const TEXTURE_FORMAT fullscreenFormat = SDL_BITSPERPIXEL(mode.format) == 16 ? TEX_FORMAT_B5G6R5_UNORM : TEX_FORMAT_RGBA8_UNORM;
 
     //// If nothing changes, do not reset the device
-    //if (width == width_ && height == height_ && newParams == screenParams_)
-    //    return true;
+    if (width == width_ && height == height_ && newParams == screenParams_)
+        return true;
 
-    //SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
 
-    //if (!window_)
-    //{
-    //    if (!OpenWindow(width, height, newParams.resizable_, newParams.borderless_))
-    //        return false;
-    //}
+    if (!window_)
+    {
+        if (!OpenWindow(width, height, newParams.resizable_, newParams.borderless_))
+            return false;
+    }
 
-    //AdjustWindow(width, height, newParams.fullscreen_, newParams.borderless_, newParams.monitor_);
+    AdjustWindow(width, height, newParams.fullscreen_, newParams.borderless_, newParams.monitor_);
 
-    //if (maximize)
-    //{
-    //    Maximize();
-    //    SDL_GetWindowSize(window_, &width, &height);
-    //}
+    if (maximize)
+    {
+        Maximize();
+        SDL_GetWindowSize(window_, &width, &height);
+    }
 
-    //const int oldMultiSample = screenParams_.multiSample_;
-    //screenParams_ = newParams;
+    const int oldMultiSample = screenParams_.multiSample_;
+    screenParams_ = newParams;
 
-    //if (!impl_->device_ || screenParams_.multiSample_ != oldMultiSample)
-    //    CreateDevice(width, height);
-    //UpdateSwapChain(width, height);
+    if (!impl_->device_ || screenParams_.multiSample_ != oldMultiSample)
+        CreateDevice(width, height);
+    UpdateSwapChain(width, height);
 
     //// Clear the initial window contents to black
-    //Clear(CLEAR_COLOR);
-    //impl_->swapChain_->Present(0, 0);
+    Clear(CLEAR_COLOR);
+    impl_->swapChain_->Present(0);
 
-    //OnScreenModeChanged();
+    OnScreenModeChanged();
     return true;
 }
 
 void Graphics::SetSRGB(bool enable)
 {
+    assert(0);
     //bool newEnable = enable && sRGBWriteSupport_;
     //if (newEnable != sRGB_)
     //{
@@ -435,10 +327,10 @@ void Graphics::Close()
 bool Graphics::TakeScreenShot(Image& destImage)
 {
     URHO3D_PROFILE("TakeScreenShot");
-
     if (!IsInitialized())
         return false;
 
+    assert(0);
     return false;
     //if (!impl_->device_)
     //    return false;
@@ -552,7 +444,7 @@ void Graphics::EndFrame()
         URHO3D_PROFILE("Present");
 
         SendEvent(E_ENDRENDERING);
-        impl_->diligentSwapChain_->Present(screenParams_.vsync_ ? 1 : 0);
+        impl_->swapChain_->Present(screenParams_.vsync_ ? 1 : 0);
     }
 
     // Clean up too large scratch buffers
@@ -571,14 +463,49 @@ void Graphics::EndFrame()
 
 void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)
 {
-    assert(0);
-    //IntVector2 rtSize = GetRenderTargetDimensions();
+    IntVector2 rtSize = GetRenderTargetDimensions();
+    // Clear always clears the whole target regardless of viewport or scissor test settings
+    // Emulate partial clear by rendering a quad
+    if (!viewport_.left_ && !viewport_.top_ && viewport_.right_ == rtSize.x_ && viewport_.bottom_ == rtSize.y_) {
+        PrepareDraw();
 
-    //bool oldColorWrite = colorWrite_;
-    //bool oldDepthWrite = depthWrite_;
+        if (flags & CLEAR_COLOR && impl_->renderTargetViews_[0])
+            impl_->deviceContext_->ClearRenderTarget(impl_->renderTargetViews_[0], color.Data(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        if (flags & (CLEAR_DEPTH | CLEAR_STENCIL)) {
+            CLEAR_DEPTH_STENCIL_FLAGS clearFlags = CLEAR_DEPTH_FLAG_NONE;
+            if (flags & CLEAR_DEPTH)
+                clearFlags = CLEAR_DEPTH_FLAG;
+            if (flags & CLEAR_STENCIL)
+                clearFlags = CLEAR_STENCIL_FLAG;
+            impl_->deviceContext_->ClearDepthStencil(impl_->swapChain_->GetDepthBufferDSV(), clearFlags, depth, (Uint8)stencil, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        }
+    }
+    else {
+        ClearPipelineDesc clearDesc;
+        clearDesc.rtTexture_ = impl_->swapChain_->GetDesc().ColorBufferFormat;
+        clearDesc.colorWrite_ = flags & CLEAR_COLOR;
+        clearDesc.depthWrite_ = flags & CLEAR_DEPTH;
+        clearDesc.clearStencil_ = flags & CLEAR_STENCIL;
+        //SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
+        IBuffer* frameCB = impl_->constantBufferManager_->GetOrCreateBuffer(ShaderParameterGroup::SP_FRAME);
+        auto* pipelineHolder = impl_->commonPipelines_->GetOrCreateClearPipeline(clearDesc);
 
-    //// D3D11 clear always clears the whole target regardless of viewport or scissor test settings
-    //// Emulate partial clear by rendering a quad
+        {
+            MapHelper<Color> clearColor(impl_->deviceContext_, frameCB, MAP_WRITE, MAP_FLAG_DISCARD);
+            *clearColor = color;
+        }
+        impl_->deviceContext_->SetPipelineState(pipelineHolder->GetPipeline());
+        impl_->deviceContext_->SetStencilRef(stencil);
+
+        impl_->deviceContext_->CommitShaderResources(pipelineHolder->GetShaderResourceBinding(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+        DrawAttribs drawAttribs;
+        drawAttribs.NumVertices = 4;
+        impl_->deviceContext_->Draw(drawAttribs);
+    }
+    /*bool oldColorWrite = colorWrite_;
+    bool oldDepthWrite = depthWrite_;*/
+
     //if (!viewport_.left_ && !viewport_.top_ && viewport_.right_ == rtSize.x_ && viewport_.bottom_ == rtSize.y_)
     //{
     //    // Make sure we use the read-write version of the depth stencil
@@ -610,10 +537,10 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
     //    bufferData.matrix_.m23_ = Clamp(depth, 0.0f, 1.0f);
     //    bufferData.color_ = color.ToVector4();
 
-    //    ConstantBufferRange buffers[MAX_SHADER_PARAMETER_GROUPS];
-    //    buffers[0].constantBuffer_ = GetOrCreateConstantBuffer(VS, 0, sizeof(bufferData));
-    //    buffers[0].constantBuffer_->Update(&bufferData);
-    //    buffers[0].size_ = sizeof(bufferData);
+    /*ConstantBufferRange buffers[MAX_SHADER_PARAMETER_GROUPS];
+    buffers[0].constantBuffer_ = GetOrCreateConstantBuffer(VS, 0, sizeof(bufferData));
+    buffers[0].constantBuffer_->Update(&bufferData);
+    buffers[0].size_ = sizeof(bufferData);*/
 
     //    SetBlendMode(BLEND_REPLACE);
     //    SetColorWrite(flags & CLEAR_COLOR);
@@ -624,7 +551,8 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
     //    SetScissorTest(false);
     //    SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
     //    SetShaders(GetShader(VS, "ClearFramebuffer"), GetShader(PS, "ClearFramebuffer"));
-    //    SetShaderConstantBuffers(buffers);
+
+    //SetShaderConstantBuffers(buffers);
 
     //    geometry->Draw(this);
 
@@ -633,8 +561,8 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
     //}
 
     //// Restore color & depth write state now
-    //SetColorWrite(oldColorWrite);
-    //SetDepthWrite(oldDepthWrite);
+    /*SetColorWrite(oldColorWrite);
+    SetDepthWrite(oldDepthWrite);*/
 }
 
 bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
@@ -1178,54 +1106,53 @@ void Graphics::ClearTransformSources()
 
 void Graphics::SetTexture(unsigned index, Texture* texture)
 {
-    assert(0);
-    //if (index >= MAX_TEXTURE_UNITS)
-    //    return;
+    if (index >= MAX_TEXTURE_UNITS)
+        return;
 
-    //// Check if texture is currently bound as a rendertarget. In that case, use its backup texture, or blank if not defined
-    //if (texture)
-    //{
-    //    if (renderTargets_[0] && renderTargets_[0]->GetParentTexture() == texture)
-    //        texture = texture->GetBackupTexture();
-    //    else
-    //    {
-    //        // Resolve multisampled texture now as necessary
-    //        if (texture->GetMultiSample() > 1 && texture->GetAutoResolve() && texture->IsResolveDirty())
-    //        {
-    //            if (texture->GetType() == Texture2D::GetTypeStatic())
-    //                ResolveToTexture(static_cast<Texture2D*>(texture));
-    //            if (texture->GetType() == TextureCube::GetTypeStatic())
-    //                ResolveToTexture(static_cast<TextureCube*>(texture));
-    //        }
-    //    }
+    // Check if texture is currently bound as a rendertarget. In that case, use its backup texture, or blank if not defined
+    if (texture)
+    {
+        if (renderTargets_[0] && renderTargets_[0]->GetParentTexture() == texture)
+            texture = texture->GetBackupTexture();
+        else
+        {
+            // Resolve multisampled texture now as necessary
+            if (texture->GetMultiSample() > 1 && texture->GetAutoResolve() && texture->IsResolveDirty())
+            {
+                if (texture->GetType() == Texture2D::GetTypeStatic())
+                    ResolveToTexture(static_cast<Texture2D*>(texture));
+                if (texture->GetType() == TextureCube::GetTypeStatic())
+                    ResolveToTexture(static_cast<TextureCube*>(texture));
+            }
+        }
 
-    //    if (texture && texture->GetLevelsDirty())
-    //        texture->RegenerateLevels();
-    //}
+        if (texture && texture->GetLevelsDirty())
+            texture->RegenerateLevels();
+    }
 
-    //if (texture && texture->GetParametersDirty())
-    //{
-    //    texture->UpdateParameters();
-    //    textures_[index] = nullptr; // Force reassign
-    //}
+    if (texture && texture->GetParametersDirty())
+    {
+        texture->UpdateParameters();
+        textures_[index] = nullptr; // Force reassign
+    }
 
-    //if (texture != textures_[index])
-    //{
-    //    if (impl_->firstDirtyTexture_ == M_MAX_UNSIGNED)
-    //        impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = index;
-    //    else
-    //    {
-    //        if (index < impl_->firstDirtyTexture_)
-    //            impl_->firstDirtyTexture_ = index;
-    //        if (index > impl_->lastDirtyTexture_)
-    //            impl_->lastDirtyTexture_ = index;
-    //    }
+    if (texture != textures_[index])
+    {
+        if (impl_->firstDirtyTexture_ == M_MAX_UNSIGNED)
+            impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = index;
+        else
+        {
+            if (index < impl_->firstDirtyTexture_)
+                impl_->firstDirtyTexture_ = index;
+            if (index > impl_->lastDirtyTexture_)
+                impl_->lastDirtyTexture_ = index;
+        }
 
-    //    textures_[index] = texture;
-    //    impl_->shaderResourceViews_[index] = texture ? (ID3D11ShaderResourceView*)texture->GetShaderResourceView() : nullptr;
-    //    impl_->samplers_[index] = texture ? (ID3D11SamplerState*)texture->GetSampler() : nullptr;
-    //    impl_->texturesDirty_ = true;
-    //}
+        textures_[index] = texture;
+        //impl_->shaderResourceViews_[index] = texture ? (ID3D11ShaderResourceView*)texture->GetShaderResourceView() : nullptr;
+        //impl_->samplers_[index] = texture ? (ID3D11SamplerState*)texture->GetSampler() : nullptr;
+        impl_->texturesDirty_ = true;
+    }
 }
 
 void SetTextureForUpdate(Texture* texture)
@@ -1290,38 +1217,37 @@ void Graphics::ResetDepthStencil()
 
 void Graphics::SetRenderTarget(unsigned index, RenderSurface* renderTarget)
 {
-    assert(0);
-    //if (index >= MAX_RENDERTARGETS)
-    //    return;
+    if (index >= MAX_RENDERTARGETS)
+        return;
 
-    //if (renderTarget != renderTargets_[index])
-    //{
-    //    renderTargets_[index] = renderTarget;
-    //    impl_->renderTargetsDirty_ = true;
+    if (renderTarget != renderTargets_[index])
+    {
+        renderTargets_[index] = renderTarget;
+        impl_->renderTargetsDirty_ = true;
 
-    //    // If the rendertarget is also bound as a texture, replace with backup texture or null
-    //    if (renderTarget)
-    //    {
-    //        Texture* parentTexture = renderTarget->GetParentTexture();
+        // If the rendertarget is also bound as a texture, replace with backup texture or null
+        if (renderTarget)
+        {
+            Texture* parentTexture = renderTarget->GetParentTexture();
 
-    //        for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-    //        {
-    //            if (textures_[i] == parentTexture)
-    //                SetTexture(i, textures_[i]->GetBackupTexture());
-    //        }
+            for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+            {
+                if (textures_[i] == parentTexture)
+                    SetTexture(i, textures_[i]->GetBackupTexture());
+            }
 
-    //        // If multisampled, mark the texture & surface needing resolve
-    //        if (parentTexture->GetMultiSample() > 1 && parentTexture->GetAutoResolve())
-    //        {
-    //            parentTexture->SetResolveDirty(true);
-    //            renderTarget->SetResolveDirty(true);
-    //        }
+            // If multisampled, mark the texture & surface needing resolve
+            if (parentTexture->GetMultiSample() > 1 && parentTexture->GetAutoResolve())
+            {
+                parentTexture->SetResolveDirty(true);
+                renderTarget->SetResolveDirty(true);
+            }
 
-    //        // If mipmapped, mark the levels needing regeneration
-    //        if (parentTexture->GetLevels() > 1)
-    //            parentTexture->SetLevelsDirty();
-    //    }
-    //}
+            // If mipmapped, mark the levels needing regeneration
+            if (parentTexture->GetLevels() > 1)
+                parentTexture->SetLevelsDirty();
+        }
+    }
 }
 
 void Graphics::SetRenderTarget(unsigned index, Texture2D* texture)
@@ -1335,147 +1261,138 @@ void Graphics::SetRenderTarget(unsigned index, Texture2D* texture)
 
 void Graphics::SetDepthStencil(RenderSurface* depthStencil)
 {
-    assert(0);
-    /*if (depthStencil != depthStencil_)
+    if (depthStencil != depthStencil_)
     {
         depthStencil_ = depthStencil;
         impl_->renderTargetsDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetDepthStencil(Texture2D* texture)
 {
     assert(0);
-    //RenderSurface* depthStencil = nullptr;
-    //if (texture)
-    //    depthStencil = texture->GetRenderSurface();
+    RenderSurface* depthStencil = nullptr;
+    if (texture)
+        depthStencil = texture->GetRenderSurface();
 
-    //SetDepthStencil(depthStencil);
-    //// Constant depth bias depends on the bitdepth
-    //impl_->rasterizerStateDirty_ = true;
+    SetDepthStencil(depthStencil);
+    // Constant depth bias depends on the bitdepth
+    impl_->rasterizerStateDirty_ = true;
 }
 
 void Graphics::SetViewport(const IntRect& rect)
 {
-    //IntVector2 size = GetRenderTargetDimensions();
+    IntVector2 size = GetRenderTargetDimensions();
 
-    //IntRect rectCopy = rect;
+    IntRect rectCopy = rect;
 
-    //if (rectCopy.right_ <= rectCopy.left_)
-    //    rectCopy.right_ = rectCopy.left_ + 1;
-    //if (rectCopy.bottom_ <= rectCopy.top_)
-    //    rectCopy.bottom_ = rectCopy.top_ + 1;
-    //rectCopy.left_ = Clamp(rectCopy.left_, 0, size.x_);
-    //rectCopy.top_ = Clamp(rectCopy.top_, 0, size.y_);
-    //rectCopy.right_ = Clamp(rectCopy.right_, 0, size.x_);
-    //rectCopy.bottom_ = Clamp(rectCopy.bottom_, 0, size.y_);
+    if (rectCopy.right_ <= rectCopy.left_)
+        rectCopy.right_ = rectCopy.left_ + 1;
+    if (rectCopy.bottom_ <= rectCopy.top_)
+        rectCopy.bottom_ = rectCopy.top_ + 1;
+    rectCopy.left_ = Clamp(rectCopy.left_, 0, size.x_);
+    rectCopy.top_ = Clamp(rectCopy.top_, 0, size.y_);
+    rectCopy.right_ = Clamp(rectCopy.right_, 0, size.x_);
+    rectCopy.bottom_ = Clamp(rectCopy.bottom_, 0, size.y_);
 
-    //static D3D11_VIEWPORT d3dViewport;
-    //d3dViewport.TopLeftX = (float)rectCopy.left_;
-    //d3dViewport.TopLeftY = (float)rectCopy.top_;
-    //d3dViewport.Width = (float)(rectCopy.right_ - rectCopy.left_);
-    //d3dViewport.Height = (float)(rectCopy.bottom_ - rectCopy.top_);
-    //d3dViewport.MinDepth = 0.0f;
-    //d3dViewport.MaxDepth = 1.0f;
+    Diligent::Viewport viewport;
+    viewport.TopLeftX = rectCopy.left_;
+    viewport.TopLeftY = rectCopy.top_;
+    viewport.Width = (rectCopy.right_ - rectCopy.left_);
+    viewport.Height = (rectCopy.bottom_ - rectCopy.top_);
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
 
-    //impl_->deviceContext_->RSSetViewports(1, &d3dViewport);
+    auto swapChainDesc = impl_->GetSwapChain()->GetDesc();
+    impl_->GetDeviceContext()->SetViewports(1, &viewport, swapChainDesc.Width, swapChainDesc.Height);
 
-    //viewport_ = rectCopy;
+    viewport_ = rectCopy;
 
-    //// Disable scissor test, needs to be re-enabled by the user
-    //SetScissorTest(false);
+    // Disable scissor test, needs to be re-enabled by the user
+    SetScissorTest(false);
 }
 
 void Graphics::SetBlendMode(BlendMode mode, bool alphaToCoverage)
 {
-    assert(0);
-    /*if (mode != blendMode_ || alphaToCoverage != alphaToCoverage_)
+    if (mode != blendMode_ || alphaToCoverage != alphaToCoverage_)
     {
         blendMode_ = mode;
         alphaToCoverage_ = alphaToCoverage;
         impl_->blendStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetColorWrite(bool enable)
 {
-    assert(0);
-    /*if (enable != colorWrite_)
+    if (enable != colorWrite_)
     {
         colorWrite_ = enable;
         impl_->blendStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetCullMode(CullMode mode)
 {
-    assert(0);
-    /*if (mode != cullMode_)
+    if (mode != cullMode_)
     {
         cullMode_ = mode;
         impl_->rasterizerStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetDepthBias(float constantBias, float slopeScaledBias)
 {
-    assert(0);
-    /*if (constantBias != constantDepthBias_ || slopeScaledBias != slopeScaledDepthBias_)
+    if (constantBias != constantDepthBias_ || slopeScaledBias != slopeScaledDepthBias_)
     {
         constantDepthBias_ = constantBias;
         slopeScaledDepthBias_ = slopeScaledBias;
         impl_->rasterizerStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetDepthTest(CompareMode mode)
 {
-    assert(0);
-    /*if (mode != depthTestMode_)
+    if (mode != depthTestMode_)
     {
         depthTestMode_ = mode;
         impl_->depthStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetDepthWrite(bool enable)
 {
-    assert(0);
-    //if (enable != depthWrite_)
-    //{
-    //    depthWrite_ = enable;
-    //    impl_->depthStateDirty_ = true;
-    //    // Also affects whether a read-only version of depth-stencil should be bound, to allow sampling
-    //    impl_->renderTargetsDirty_ = true;
-    //}
+    if (enable != depthWrite_)
+    {
+        depthWrite_ = enable;
+        impl_->depthStateDirty_ = true;
+        // Also affects whether a read-only version of depth-stencil should be bound, to allow sampling
+        impl_->renderTargetsDirty_ = true;
+    }
 }
 
 void Graphics::SetFillMode(FillMode mode)
 {
-    assert(0);
-    /*if (mode != fillMode_)
+    if (mode != fillMode_)
     {
         fillMode_ = mode;
         impl_->rasterizerStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetLineAntiAlias(bool enable)
 {
-    assert(0);
-    /*if (enable != lineAntiAlias_)
+    if (enable != lineAntiAlias_)
     {
         lineAntiAlias_ = enable;
         impl_->rasterizerStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetScissorTest(bool enable, const Rect& rect, bool borderInclusive)
 {
-    assert(0);
     // During some light rendering loops, a full rect is toggled on/off repeatedly.
     // Disable scissor in that case to reduce state changes
-    /*if (rect.min_.x_ <= 0.0f && rect.min_.y_ <= 0.0f && rect.max_.x_ >= 1.0f && rect.max_.y_ >= 1.0f)
+    if (rect.min_.x_ <= 0.0f && rect.min_.y_ <= 0.0f && rect.max_.x_ >= 1.0f && rect.max_.y_ >= 1.0f)
         enable = false;
 
     if (enable)
@@ -1510,13 +1427,12 @@ void Graphics::SetScissorTest(bool enable, const Rect& rect, bool borderInclusiv
     {
         scissorTest_ = enable;
         impl_->rasterizerStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetScissorTest(bool enable, const IntRect& rect)
 {
-    assert(0);
-    /*IntVector2 rtSize(GetRenderTargetDimensions());
+    IntVector2 rtSize(GetRenderTargetDimensions());
     IntVector2 viewPos(viewport_.left_, viewport_.top_);
 
     if (enable)
@@ -1546,14 +1462,13 @@ void Graphics::SetScissorTest(bool enable, const IntRect& rect)
     {
         scissorTest_ = enable;
         impl_->rasterizerStateDirty_ = true;
-    }*/
+    }
 }
 
 void Graphics::SetStencilTest(bool enable, CompareMode mode, StencilOp pass, StencilOp fail, StencilOp zFail, unsigned stencilRef,
     unsigned compareMask, unsigned writeMask)
 {
-    assert(0);
-    /*if (enable != stencilTest_)
+    if (enable != stencilTest_)
     {
         stencilTest_ = enable;
         impl_->depthStateDirty_ = true;
@@ -1597,7 +1512,7 @@ void Graphics::SetStencilTest(bool enable, CompareMode mode, StencilOp pass, Ste
             impl_->stencilRefDirty_ = true;
             impl_->depthStateDirty_ = true;
         }
-    }*/
+    }
 }
 
 void Graphics::SetClipPlane(bool enable, const Plane& clipPlane, const Matrix3x4& view, const Matrix4& projection)
@@ -1608,7 +1523,7 @@ void Graphics::SetClipPlane(bool enable, const Plane& clipPlane, const Matrix3x4
 
 bool Graphics::IsInitialized() const
 {
-    return window_ != nullptr && impl_->diligentDevice_ != nullptr;
+    return window_ != nullptr && impl_->device_ != nullptr;
 }
 
 ea::vector<int> Graphics::GetMultiSampleLevels() const
@@ -1617,18 +1532,9 @@ ea::vector<int> Graphics::GetMultiSampleLevels() const
     ea::vector<int> ret;
     ret.emplace_back(1);
 
-    /*if (impl_->device_)
-    {
-        for (unsigned i = 2; i <= 16; ++i)
-        {
-            if(impl_->CheckMultiSampleSupport(sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM, i))
-                ret.emplace_back(i);
-        }
-    }*/
-
-    if (!impl_->diligentDevice_)
+    if (!impl_->device_)
         return ret;
-    const TextureFormatInfoExt& colorFmtInfo = impl_->diligentDevice_->GetTextureFormatInfoExt(sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM);
+    const TextureFormatInfoExt& colorFmtInfo = impl_->device_->GetTextureFormatInfoExt(sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM);
     if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_64)
         ret.emplace_back(64);
     else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_32)
@@ -1708,9 +1614,7 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
 
 VertexBuffer* Graphics::GetVertexBuffer(unsigned index) const
 {
-    assert(0);
-    return nullptr;
-    //return index < MAX_VERTEX_STREAMS ? vertexBuffers_[index] : nullptr;
+    return index < MAX_VERTEX_STREAMS ? vertexBuffers_[index] : nullptr;
 }
 
 ShaderProgram* Graphics::GetShaderProgram() const
@@ -2141,24 +2045,27 @@ bool Graphics::CreateDevice(int width, int height)
         EngineD3D11CreateInfo engineCI;
         IEngineFactoryD3D11* factory = GetEngineFactoryD3D11();
 
-        factory->CreateDeviceAndContextsD3D11(engineCI, &impl_->diligentDevice_, &impl_->diligentDeviceContext_);
+        factory->CreateDeviceAndContextsD3D11(engineCI, &impl_->device_, &impl_->deviceContext_);
         CheckFeatureSupport();
 
-        impl_->device_ = static_cast<IRenderDeviceD3D11*>(impl_->diligentDevice_)->GetD3D11Device();
-        impl_->deviceContext_ = static_cast<ID3D11DeviceContext1*>(static_cast<IDeviceContextD3D11*>(impl_->diligentDeviceContext_)->GetD3D11DeviceContext());
 
-        if (!impl_->device_ || impl_->deviceContext_) {
+        if (!impl_->device_ || !impl_->deviceContext_) {
             URHO3D_LOGERROR("Failed to Initialize D3D11 device.");
             return false;
         }
 
-        ea::string adapterDesc = "Adapter used " + ea::string(impl_->diligentDevice_->GetAdapterInfo().Description);
+        ea::string adapterDesc = "Adapter used " + ea::string(impl_->device_->GetAdapterInfo().Description);
         URHO3D_LOGINFO(adapterDesc);
+
+        //init requred objects from graphics impl.
+        impl_->constantBufferManager_ = new DiligentConstantBufferManager(this);
+        impl_->commonPipelines_ = new DiligentCommonPipelines(this);
     }
 
-    if (impl_->diligentSwapChain_) {
-        impl_->diligentSwapChain_->Release();
-        impl_->diligentSwapChain_ = nullptr;
+    // Discard old swapchain has been created.
+    if (impl_->swapChain_) {
+        impl_->swapChain_->Release();
+        impl_->swapChain_ = nullptr;
     }
 
     Win32NativeWindow wnd;
@@ -2171,7 +2078,7 @@ bool Graphics::CreateDevice(int width, int height)
 
     SwapChainDesc swapChainDesc;
     swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
-    swapChainDesc.DepthBufferFormat = TEX_FORMAT_UNKNOWN; // Don't create depth stencil
+    swapChainDesc.DepthBufferFormat = TEX_FORMAT_D24_UNORM_S8_UINT;
     FullScreenModeDesc fullscreenDesc;
     fullscreenDesc.Fullscreen = false;
 
@@ -2181,12 +2088,12 @@ bool Graphics::CreateDevice(int width, int height)
         screenParams_.multiSample_ = 1;
 
     GetEngineFactoryD3D11()->CreateSwapChainD3D11(
-        impl_->diligentDevice_,
-        impl_->diligentDeviceContext_,
+        impl_->device_,
+        impl_->deviceContext_,
         swapChainDesc,
         fullscreenDesc,
         wnd,
-        &impl_->diligentSwapChain_
+        &impl_->swapChain_
     );
 
     if (!impl_->swapChain_)
@@ -2196,15 +2103,28 @@ bool Graphics::CreateDevice(int width, int height)
         return false;
     }
 
-    impl_->swapChain_ = static_cast<IDXGISwapChain1*>(static_cast<ISwapChainD3D11*>(impl_->diligentSwapChain_)->GetDXGISwapChain());
-
     return true;
 }
 
 bool Graphics::UpdateSwapChain(int width, int height)
 {
-    assert(0);
-    return false;
+    // Don't update swapchain if width and height has the same size.
+    if (width_ == width || height_ == height)
+        return true;
+    // If swapchain has been recent created, size of this will be the same as arguments
+    // In this case, we don't update swapchain and only update width and height properties.
+    if (impl_->swapChain_->GetDesc().Width == width || impl_->swapChain_->GetDesc().Height == height) {
+        width_ = width;
+        height_ = height;
+        return true;
+    }
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+        impl_->renderTargetViews_[i] = nullptr;
+    impl_->renderTargetsDirty_ = true;
+
+    impl_->swapChain_->Resize(width, height);
+    ResetRenderTargets();
+    return true;
 //    bool success = true;
 //
 //    ID3D11RenderTargetView* nullView = nullptr;
@@ -2361,7 +2281,7 @@ void Graphics::ResetCachedState()
     ea::fill(ea::begin(impl_->constantBuffersNumSlots_), ea::end(impl_->constantBuffersNumSlots_), 0u);
 
     depthStencil_ = nullptr;
-    impl_->depthStencilView_ = nullptr;
+    //impl_->depthStencilView_ = nullptr;
     viewport_ = IntRect(0, 0, width_, height_);
 
     indexBuffer_ = nullptr;

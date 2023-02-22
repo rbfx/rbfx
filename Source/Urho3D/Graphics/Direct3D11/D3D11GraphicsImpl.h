@@ -31,10 +31,12 @@
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
 
+#include <Diligent/Graphics/GraphicsEngine/interface/DeviceObject.h>
+
 namespace Urho3D
 {
 
-#define URHO3D_SAFE_RELEASE(p) if (p) { ((IUnknown*)p)->Release();  p = 0; }
+#define URHO3D_SAFE_RELEASE(p) if (p) { ((Diligent::IDeviceObject*)p)->Release();  p = 0; }
 
 #define URHO3D_LOGD3DERROR(msg, hr) URHO3D_LOGERRORF("%s (HRESULT %x)", msg, (unsigned)hr)
 

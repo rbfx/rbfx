@@ -32,26 +32,22 @@ namespace Urho3D
 
 GraphicsImpl::GraphicsImpl() :
     device_(nullptr),
-    diligentDevice_(nullptr),
-    diligentDeviceContext_(nullptr),
     deviceContext_(nullptr),
     swapChain_(nullptr),
-    diligentSwapChain_(nullptr),
-    defaultRenderTargetView_(nullptr),
+    /*defaultRenderTargetView_(nullptr),
     defaultDepthTexture_(nullptr),
     defaultDepthStencilView_(nullptr),
-    depthStencilView_(nullptr),
+    depthStencilView_(nullptr),*/
     resolveTexture_(nullptr),
     shaderProgram_(nullptr)
 {
-    assert(0);
-    /*for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         renderTargetViews_[i] = nullptr;
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
     {
         shaderResourceViews_[i] = nullptr;
-        samplers_[i] = nullptr;
+        /*samplers_[i] = nullptr;*/
     }
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
@@ -63,7 +59,7 @@ GraphicsImpl::GraphicsImpl() :
 
     ea::fill(ea::begin(constantBuffers_), ea::end(constantBuffers_), nullptr);
     ea::fill(ea::begin(constantBuffersStartSlots_), ea::end(constantBuffersStartSlots_), 0u);
-    ea::fill(ea::begin(constantBuffersNumSlots_), ea::end(constantBuffersNumSlots_), 0u);*/
+    ea::fill(ea::begin(constantBuffersNumSlots_), ea::end(constantBuffersNumSlots_), 0u);
 }
 
 bool GraphicsImpl::CheckMultiSampleSupport(Diligent::TEXTURE_FORMAT format, unsigned sampleCount) const
@@ -72,7 +68,7 @@ bool GraphicsImpl::CheckMultiSampleSupport(Diligent::TEXTURE_FORMAT format, unsi
     if (sampleCount < 2)
         return true; // Not multisampled
 
-    const TextureFormatInfoExt& colorFmtInfo = diligentDevice_->GetTextureFormatInfoExt(format);
+    const TextureFormatInfoExt& colorFmtInfo = device_->GetTextureFormatInfoExt(format);
     return colorFmtInfo.SampleCounts > 0;
 }
 
@@ -82,7 +78,7 @@ unsigned GraphicsImpl::GetMultiSampleQuality(Diligent::TEXTURE_FORMAT format, un
     if(sampleCount < 2)
         return 0;
 
-    const TextureFormatInfoExt& colorFmtInfo = diligentDevice_->GetTextureFormatInfoExt(format);
+    const TextureFormatInfoExt& colorFmtInfo = device_->GetTextureFormatInfoExt(format);
     if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_64)
         return 64;
     else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_32)
