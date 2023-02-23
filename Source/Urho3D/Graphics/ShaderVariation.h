@@ -23,6 +23,9 @@
 #pragma once
 
 #include <EASTL/unordered_map.h>
+#ifdef URHO3D_DILIGENT
+#include <vector>
+#endif
 
 #include "../Container/Ptr.h"
 #include "../Graphics/GPUObject.h"
@@ -138,8 +141,12 @@ private:
     bool LoadByteCode(const ea::string& binaryShaderName);
     /// Compile from source. Return true if successful.
     bool Compile();
+#ifdef URHO3D_DILIGENT
+    void ParseParameters(std::vector<unsigned> byteCode);
+#else
     /// Inspect the constant parameters and input layout (if applicable) from the shader bytecode.
     void ParseParameters(unsigned char* bufData, unsigned bufSize);
+#endif
     /// Save bytecode to a file.
     void SaveByteCode(const ea::string& binaryShaderName);
     /// Calculate constant buffer sizes from parameters.

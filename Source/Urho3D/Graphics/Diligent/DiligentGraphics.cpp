@@ -918,80 +918,81 @@ ShaderProgramLayout* Graphics::GetShaderProgramLayout(ShaderVariation* vs, Shade
 
 void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 {
-    //if (vs == vertexShader_ && ps == pixelShader_)
-    //    return;
+    if (vs == vertexShader_ && ps == pixelShader_)
+        return;
 
-    //if (vs != vertexShader_)
-    //{
-    //    // Create the shader now if not yet created. If already attempted, do not retry
-    //    if (vs && !vs->GetGPUObject())
-    //    {
-    //        if (vs->GetCompilerOutput().empty())
-    //        {
-    //            URHO3D_PROFILE("CompileVertexShader");
+    if (vs != vertexShader_)
+    {
+        // Create the shader now if not yet created. If already attempted, do not retry
+        if (vs && !vs->GetGPUObject())
+        {
+            if (vs->GetCompilerOutput().empty())
+            {
+                URHO3D_PROFILE("CompileVertexShader");
 
-    //            bool success = vs->Create();
-    //            if (!success)
-    //            {
-    //                URHO3D_LOGERROR("Failed to compile vertex shader " + vs->GetFullName() + ":\n" + vs->GetCompilerOutput());
-    //                vs = nullptr;
-    //            }
-    //        }
-    //        else
-    //            vs = nullptr;
-    //    }
+                bool success = vs->Create();
+                if (!success)
+                {
+                    URHO3D_LOGERROR("Failed to compile vertex shader " + vs->GetFullName() + ":\n" + vs->GetCompilerOutput());
+                    vs = nullptr;
+                }
+            }
+            else
+                vs = nullptr;
+        }
 
-    //    impl_->deviceContext_->VSSetShader((ID3D11VertexShader*)(vs ? vs->GetGPUObject() : nullptr), nullptr, 0);
-    //    vertexShader_ = vs;
-    //    impl_->vertexDeclarationDirty_ = true;
-    //}
+        //impl_->deviceContext_->VSSetShader((ID3D11VertexShader*)(vs ? vs->GetGPUObject() : nullptr), nullptr, 0);
+        vertexShader_ = vs;
+        impl_->vertexDeclarationDirty_ = true;
+    }
 
-    //if (ps != pixelShader_)
-    //{
-    //    if (ps && !ps->GetGPUObject())
-    //    {
-    //        if (ps->GetCompilerOutput().empty())
-    //        {
-    //            URHO3D_PROFILE("CompilePixelShader");
+    if (ps != pixelShader_)
+    {
+        if (ps && !ps->GetGPUObject())
+        {
+            if (ps->GetCompilerOutput().empty())
+            {
+                URHO3D_PROFILE("CompilePixelShader");
 
-    //            bool success = ps->Create();
-    //            if (!success)
-    //            {
-    //                URHO3D_LOGERROR("Failed to compile pixel shader " + ps->GetFullName() + ":\n" + ps->GetCompilerOutput());
-    //                ps = nullptr;
-    //            }
-    //        }
-    //        else
-    //            ps = nullptr;
-    //    }
+                bool success = ps->Create();
+                if (!success)
+                {
+                    URHO3D_LOGERROR("Failed to compile pixel shader " + ps->GetFullName() + ":\n" + ps->GetCompilerOutput());
+                    ps = nullptr;
+                }
+            }
+            else
+                ps = nullptr;
+        }
 
-    //    impl_->deviceContext_->PSSetShader((ID3D11PixelShader*)(ps ? ps->GetGPUObject() : nullptr), nullptr, 0);
-    //    pixelShader_ = ps;
-    //}
+        //impl_->deviceContext_->PSSetShader((ID3D11PixelShader*)(ps ? ps->GetGPUObject() : nullptr), nullptr, 0);
+        pixelShader_ = ps;
+    }
 
-    //// Update current shader parameters & constant buffers
-    //if (vertexShader_ && pixelShader_)
-    //{
-    //    ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
-    //    auto i = impl_->shaderPrograms_.find(key);
-    //    if (i != impl_->shaderPrograms_.end())
-    //        impl_->shaderProgram_ = i->second.Get();
-    //    else
-    //    {
-    //        ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_);
-    //        impl_->shaderProgram_ = newProgram;
-    //    }
-    //}
-    //else
-    //    impl_->shaderProgram_ = nullptr;
+    // Update current shader parameters & constant buffers
+    if (vertexShader_ && pixelShader_)
+    {
+        ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
+        auto i = impl_->shaderPrograms_.find(key);
+        if (i != impl_->shaderPrograms_.end())
+            impl_->shaderProgram_ = i->second.Get();
+        else
+        {
+            ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_);
+            impl_->shaderProgram_ = newProgram;
+        }
+    }
+    else
+        impl_->shaderProgram_ = nullptr;
 
-    //// Store shader combination if shader dumping in progress
-    //if (shaderPrecache_)
-    //    shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
+    // Store shader combination if shader dumping in progress
+    if (shaderPrecache_)
+        shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
 }
 
 void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
 {
+    assert(0);
     //bool buffersDirty = false;
     //for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
     //{

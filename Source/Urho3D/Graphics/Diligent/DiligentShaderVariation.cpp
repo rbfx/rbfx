@@ -33,20 +33,21 @@
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
 
-#include <d3dcompiler.h>
-
+#include <Diligent/Graphics/ShaderTools/include/GLSLangUtils.hpp>
+#include <Diligent/Graphics/GraphicsTools/interface/ShaderMacroHelper.hpp>
+#include <Diligent/Common/interface/DataBlobImpl.hpp>
 #include "../../DebugNew.h"
 
 namespace Urho3D
 {
 
 const char* ShaderVariation_shaderExtensions[] = {
-    ".vs4",
-    ".ps4",
-    ".gs4",
-    ".hs5",
-    ".ds5",
-    ".cs5"
+    ".vs.spv",
+    ".ps.spv",
+    ".gs.spv",
+    ".hs.spv",
+    ".ds.spv",
+    ".cs.spv"
 };
 
 const char* ShaderVariation::elementSemanticNames[] =
@@ -69,35 +70,33 @@ void ShaderVariation::OnDeviceLost()
 
 bool ShaderVariation::Create()
 {
-    Release();
+    if (!graphics_)
+        return false;
+
+    if (!owner_)
+    {
+        compilerOutput_ = "Owner shader has expired";
+        return false;
+    }
+
+    // Check for up-to-date bytecode on disk
+    ea::string path, name, extension;
+    SplitPath(owner_->GetName(), path, name, extension);
+    extension = ShaderVariation_shaderExtensions[type_];
+
+    ea::string binaryShaderName = graphics_->GetShaderCacheDir() + name + "_" + StringHash(defines_).ToString() + extension;
+
+    if (!LoadByteCode(binaryShaderName))
+    {
+        // Compile shader if don't have valid bytecode
+        if (!Compile())
+            return false;
+        // Save the bytecode after successful compile, but not if the source is from a package
+        if (owner_->GetTimeStamp())
+            SaveByteCode(binaryShaderName);
+    }
     assert(0);
-    return false;
-//    if (!graphics_)
-//        return false;
-//
-//    if (!owner_)
-//    {
-//        compilerOutput_ = "Owner shader has expired";
-//        return false;
-//    }
-//
-//    // Check for up-to-date bytecode on disk
-//    ea::string path, name, extension;
-//    SplitPath(owner_->GetName(), path, name, extension);
-//    extension = ShaderVariation_shaderExtensions[type_];
-//
-//    ea::string binaryShaderName = graphics_->GetShaderCacheDir() + name + "_" + StringHash(defines_).ToString() + extension;
-//
-//    if (!LoadByteCode(binaryShaderName))
-//    {
-//        // Compile shader if don't have valid bytecode
-//        if (!Compile())
-//            return false;
-//        // Save the bytecode after successful compile, but not if the source is from a package
-//        if (owner_->GetTimeStamp())
-//            SaveByteCode(binaryShaderName);
-//    }
-//
+
 //#define CREATE_SHADER(TYPEENUM, SHADERTYPE, PRINTNAME) \
 //    if (device && byteCode_.size()) { \
 //        HRESULT hr = device->Create ## SHADERTYPE (&byteCode_[0], byteCode_.size(), nullptr, (ID3D11 ## SHADERTYPE **)&object_.ptr_); \
@@ -126,8 +125,8 @@ bool ShaderVariation::Create()
 //    }
 //
 //#undef CREATE_SHADER
-//
-//    return object_.ptr_ != nullptr;
+
+    return object_.ptr_ != nullptr;
 }
 
 void ShaderVariation::Release()
@@ -180,109 +179,137 @@ bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
     if (!cache->Exists(binaryShaderName))
         return false;
 
-    const FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
-    const unsigned sourceTimeStamp = owner_->GetTimeStamp();
-    // If source code is loaded from a package, its timestamp will be zero. Else check that binary is not older
-    // than source
-    if (sourceTimeStamp && fileSystem->GetLastModifiedTime(cache->GetResourceFileName(binaryShaderName)) < sourceTimeStamp)
-        return false;
+    assert(0);
+    //const FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
+    //const unsigned sourceTimeStamp = owner_->GetTimeStamp();
+    //// If source code is loaded from a package, its timestamp will be zero. Else check that binary is not older
+    //// than source
+    //if (sourceTimeStamp && fileSystem->GetLastModifiedTime(cache->GetResourceFileName(binaryShaderName)) < sourceTimeStamp)
+    //    return false;
 
-    const AbstractFilePtr file = cache->GetFile(binaryShaderName);
-    if (!file || file->ReadFileID() != "USHD")
-    {
-        URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
-        return false;
-    }
+    //const AbstractFilePtr file = cache->GetFile(binaryShaderName);
+    //if (!file || file->ReadFileID() != "USHD")
+    //{
+    //    URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
+    //    return false;
+    //}
 
-    /// \todo Check that shader type and model match
-    /*unsigned short shaderType = */file->ReadUShort();
-    /*unsigned short shaderModel = */file->ReadUShort();
-    elementHash_ = file->ReadUInt();
-    elementHash_ <<= 32;
+    ///// \todo Check that shader type and model match
+    ///*unsigned short shaderType = */file->ReadUShort();
+    ///*unsigned short shaderModel = */file->ReadUShort();
+    //elementHash_ = file->ReadUInt();
+    //elementHash_ <<= 32;
 
-    unsigned numParameters = file->ReadUInt();
-    for (unsigned i = 0; i < numParameters; ++i)
-    {
-        ea::string name = file->ReadString();
-        unsigned buffer = file->ReadUByte();
-        unsigned offset = file->ReadUInt();
-        unsigned size = file->ReadUInt();
+    //unsigned numParameters = file->ReadUInt();
+    //for (unsigned i = 0; i < numParameters; ++i)
+    //{
+    //    ea::string name = file->ReadString();
+    //    unsigned buffer = file->ReadUByte();
+    //    unsigned offset = file->ReadUInt();
+    //    unsigned size = file->ReadUInt();
 
-        parameters_[StringHash(name)] = ShaderParameter{type_, name, offset, size, buffer};
-    }
+    //    parameters_[StringHash(name)] = ShaderParameter{type_, name, offset, size, buffer};
+    //}
 
-    unsigned numTextureUnits = file->ReadUInt();
-    for (unsigned i = 0; i < numTextureUnits; ++i)
-    {
-        /*String unitName = */file->ReadString();
-        unsigned reg = file->ReadUByte();
+    //unsigned numTextureUnits = file->ReadUInt();
+    //for (unsigned i = 0; i < numTextureUnits; ++i)
+    //{
+    //    /*String unitName = */file->ReadString();
+    //    unsigned reg = file->ReadUByte();
 
-        if (reg < MAX_TEXTURE_UNITS)
-            useTextureUnits_[reg] = true;
-    }
+    //    if (reg < MAX_TEXTURE_UNITS)
+    //        useTextureUnits_[reg] = true;
+    //}
 
-    unsigned byteCodeSize = file->ReadUInt();
-    if (byteCodeSize)
-    {
-        byteCode_.resize(byteCodeSize);
-        file->Read(&byteCode_[0], byteCodeSize);
+    //unsigned byteCodeSize = file->ReadUInt();
+    //if (byteCodeSize)
+    //{
+    //    byteCode_.resize(byteCodeSize);
+    //    file->Read(&byteCode_[0], byteCodeSize);
 
-        if (type_ == VS)
-            URHO3D_LOGDEBUG("Loaded cached vertex shader " + GetFullName());
-        else if (type_ == CS)
-            URHO3D_LOGDEBUG("Loaded cached compute shader " + GetFullName());
-        else
-            URHO3D_LOGDEBUG("Loaded cached pixel shader " + GetFullName());
+    //    if (type_ == VS)
+    //        URHO3D_LOGDEBUG("Loaded cached vertex shader " + GetFullName());
+    //    else if (type_ == CS)
+    //        URHO3D_LOGDEBUG("Loaded cached compute shader " + GetFullName());
+    //    else
+    //        URHO3D_LOGDEBUG("Loaded cached pixel shader " + GetFullName());
 
-        CalculateConstantBufferSizes();
-        return true;
-    }
-    else
-    {
-        URHO3D_LOGERROR(binaryShaderName + " has zero length bytecode");
-        return false;
-    }
+    //    CalculateConstantBufferSizes();
+    //    return true;
+    //}
+    //else
+    //{
+    //    URHO3D_LOGERROR(binaryShaderName + " has zero length bytecode");
+    //    return false;
+    //}
 }
 
 bool ShaderVariation::Compile()
 {
-    assert(0);
-    return false;
-//    // Set the code, defines, entrypoint, profile and flags according to the shader being compiled
-//    const ea::string* sourceCode = nullptr;
-//    const char* entryPoint = nullptr;
-//    const char* profile = nullptr;
-//    unsigned flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
-//    ShaderDefineArray defines{ defines_ };
-//    ea::vector<D3D_SHADER_MACRO> macros;
-//
-//    if (type_ == VS)
-//    {
-//        entryPoint = "VS";
-//        defines.Append("COMPILEVS");
-//        profile = "vs_4_0";
-//    }
-//    else if (type_ == CS)
-//    {
-//        entryPoint = "CS";
-//        defines.Append("COMPILECS");
-//        profile = "cs_5_0";
-//    }
-//    else
-//    {
-//        entryPoint = "PS";
-//        defines.Append("COMPILEPS");
-//        profile = "ps_4_0";
-//        flags |= D3DCOMPILE_PREFER_FLOW_CONTROL;
-//    }
-//
-//    defines.Append("MAXBONES", ea::to_string(Graphics::GetMaxBones()));
-//    defines.Append("D3D11");
-//
-//    // Convert shader source code if GLSL
-//    static thread_local ea::string convertedShaderSourceCode;
-//    if (owner_->IsGLSL())
-//    {
+    using namespace Diligent;
+    // Set the code, defines, entrypoint, profile and flags according to the shader being compiled
+    const ea::string* sourceCode = nullptr;
+    const char* entryPoint = nullptr;
+    ShaderType shaderType = ShaderType::MAX_SHADER_TYPES;
+    //const char* profile = nullptr;
+    //unsigned flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
+    //ShaderDefineArray defines{ defines_ };
+    ShaderMacroHelper macros;
+
+
+    switch (type_)
+    {
+    case Urho3D::VS:
+    {
+        entryPoint = "VS";
+        macros.AddShaderMacro("COMPILEVS", true);
+        //defines.Append("COMPILEVS");
+        shaderType = ShaderType::VS;
+    }
+        break;
+    case Urho3D::PS:
+    {
+        entryPoint = "PS";
+        macros.AddShaderMacro("COMPILEPS", true);
+        //defines.Append("COMPILEPS");
+        shaderType = ShaderType::PS;
+    }
+        break;
+    case Urho3D::GS:
+        entryPoint = "GS";
+        macros.AddShaderMacro("COMPILEGS", true);
+        //defines.Append("COMPILEGS");
+        shaderType = ShaderType::GS;
+        break;
+    case Urho3D::HS:
+        entryPoint = "HS";
+        macros.AddShaderMacro("COMPILEHS", true);
+        //defines.Append("COMPILEHS");
+        shaderType = ShaderType::HS;
+        break;
+    case Urho3D::DS:
+        entryPoint = "DS";
+        macros.AddShaderMacro("COMPILEDS", true);
+        //defines.Append("COMPILEDS");
+        shaderType = ShaderType::DS;
+        break;
+    case Urho3D::CS:
+        entryPoint = "CS";
+        macros.AddShaderMacro("COMPILECS", true);
+        //defines.Append("COMPILECS");
+        shaderType = ShaderType::CS;
+        break;
+    }
+
+    macros.AddShaderMacro("MAXBONES", Graphics::GetMaxBones());
+    macros.AddShaderMacro("D3D11", true);
+    macros.AddShaderMacro("DILIGENT", true);
+
+    // Convert shader source code if GLSL
+    static thread_local ea::string convertedShaderSourceCode;
+    if (owner_->IsGLSL())
+    {
+        assert(0);
 //        defines.Append("DESKTOP_GRAPHICS");
 //        defines.Append("GL3");
 //
@@ -303,16 +330,18 @@ bool ShaderVariation::Compile()
 //
 //        sourceCode = &convertedShaderSourceCode;
 //        entryPoint = "main";
-//    }
-//    else
-//    {
-//        const ea::string& nativeSourceCode = owner_->GetSourceCode(type_);
-//        sourceCode = &nativeSourceCode;
-//
-//        macros.reserve(defines.Size());
+    }
+    else
+    {
+        const ea::string& nativeSourceCode = owner_->GetSourceCode(type_);
+        sourceCode = &nativeSourceCode;
+
 //        for (const auto& define : defines)
 //        {
-//            macros.push_back({ define.first.c_str(), define.second.c_str() });
+//            if (define.second.empty())
+//                macros.AddShaderMacro(define.first.c_str(), true);
+//            else
+//                macros.AddShaderMacro(define.first.c_str(), define.second.c_str());
 //
 //            // In debug mode, check that all defines are referenced by the shader code
 //#ifdef _DEBUG
@@ -321,7 +350,57 @@ bool ShaderVariation::Compile()
 //                URHO3D_LOGWARNING("Shader {} does not use the define(s): {}", GetFullName(), ea::string::joined(unusedDefines, ", "));
 //#endif
 //        }
-//    }
+    }
+
+    ShaderCreateInfo shaderCI;
+    shaderCI.Desc.Name = name_.c_str();
+    shaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
+    shaderCI.EntryPoint = entryPoint;
+    shaderCI.Source = sourceCode->c_str();
+    shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    shaderCI.UseCombinedTextureSamplers = true;
+
+    shaderCI.Macros = macros;
+
+    auto compilerOutput = DataBlobImpl::Create();
+    auto shaderSrcOutput = DataBlobImpl::Create();
+
+    compilerOutput->Resize(sourceCode->size());
+    IDataBlob* compilerOutputs[] = {compilerOutput, shaderSrcOutput};
+    auto byteCode = Diligent::GLSLangUtils::HLSLtoSPIRV(shaderCI, GLSLangUtils::SpirvVersion::Vk120, nullptr, compilerOutputs);
+
+    compilerOutput_ = ea::string(static_cast<const char*>(compilerOutput->GetConstDataPtr()), compilerOutput->GetSize());
+    ea::string shaderCode(static_cast<const char*>(shaderSrcOutput->GetConstDataPtr()), shaderSrcOutput->GetSize());
+
+    if (!compilerOutput_.empty()) {
+        URHO3D_LOGERROR("Failed to compile shader " + GetFullName());
+        return false;
+    }
+
+    switch (type_)
+    {
+    case Urho3D::VS:
+        URHO3D_LOGDEBUG("Compiled vertex shader " + GetFullName());
+        break;
+    case Urho3D::PS:
+        URHO3D_LOGDEBUG("Compiled pixel shader " + GetFullName());
+        break;
+    case Urho3D::GS:
+        URHO3D_LOGDEBUG("Compiled geometry shader " + GetFullName());
+        break;
+    case Urho3D::HS:
+        URHO3D_LOGDEBUG("Compiled hull shader " + GetFullName());
+        break;
+    case Urho3D::DS:
+        URHO3D_LOGDEBUG("Compiled domain shader " + GetFullName());
+        break;
+    case Urho3D::CS:
+        URHO3D_LOGDEBUG("Compiled compute shader " + GetFullName());
+        break;
+    }
+
+    ParseParameters(byteCode);
+    return false;
 //
 //    D3D_SHADER_MACRO endMacro;
 //    endMacro.Name = nullptr;
@@ -369,8 +448,9 @@ bool ShaderVariation::Compile()
 //    return !byteCode_.empty();
 }
 
-void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
+void ShaderVariation::ParseParameters(std::vector<unsigned> byteCode)
 {
+    spirv_cross::CompilerReflection compiler(byteCode);
     assert(0);
     //ID3D11ShaderReflection* reflection = nullptr;
     //D3D11_SHADER_DESC shaderDesc;

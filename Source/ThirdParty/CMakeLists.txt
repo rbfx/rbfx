@@ -109,6 +109,10 @@ if (NOT MINI_URHO)
         add_subdirectory(SPIRV-Cross)
     endif ()
 
+    if (URHO3D_DILIGENT)
+        add_subdirectory(SPIRV-Reflect)
+    endif ()
+
     if (URHO3D_SYSTEMUI)
         add_subdirectory(imgui)
     endif ()
