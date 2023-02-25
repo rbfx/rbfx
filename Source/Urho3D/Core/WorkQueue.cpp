@@ -121,13 +121,22 @@ void WorkQueue::CreateThreads(unsigned numThreads)
 
 void WorkQueue::CallFromMainThread(WorkFunction workFunction)
 {
-    if (GetThreadIndex() == 0)
+    const unsigned threadIndex = GetThreadIndex();
+    if (threadIndex == 0)
     {
         workFunction(0);
         return;
     }
 
-    mainThreadTasks_.Insert(ea::move(workFunction));
+    if (threadIndex == M_MAX_UNSIGNED)
+    {
+        MutexLock lock(mainThreadTasksAuxMutex_);
+        mainThreadTasksAux_.push_back(ea::move(workFunction));
+    }
+    else
+    {
+        mainThreadTasks_.PushBack(threadIndex, ea::move(workFunction));
+    }
 }
 
 SharedPtr<WorkItem> WorkQueue::GetFreeItem()
@@ -355,9 +364,17 @@ bool WorkQueue::IsCompleted(unsigned priority) const
 
 void WorkQueue::ProcessMainThreadTasks()
 {
+    {
+        MutexLock lock(mainThreadTasksAuxMutex_);
+        ea::swap(mainThreadTasksAux_, mainThreadTasksAuxSwap_);
+    }
+
     for (const auto& callback : mainThreadTasks_)
         callback(0);
+    for (const auto& callback : mainThreadTasksAuxSwap_)
+        callback(0);
     mainThreadTasks_.Clear();
+    mainThreadTasksAuxSwap_.clear();
 }
 
 void WorkQueue::ProcessItems(unsigned threadIndex)

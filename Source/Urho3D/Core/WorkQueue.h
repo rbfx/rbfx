@@ -168,6 +168,9 @@ private:
     ea::vector<SharedPtr<WorkerThread> > threads_;
     /// Tasks to be invoked from main thread.
     WorkQueueVector<WorkFunction> mainThreadTasks_;
+    ea::vector<WorkFunction> mainThreadTasksAux_;
+    ea::vector<WorkFunction> mainThreadTasksAuxSwap_;
+    Mutex mainThreadTasksAuxMutex_;
     /// Work item pool for reuse to cut down on allocation. The bool is a flag for item pooling and whether it is available or not.
     ea::list<SharedPtr<WorkItem> > poolItems_;
     /// Work item collection. Accessed only by the main thread.

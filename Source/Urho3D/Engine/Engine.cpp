@@ -54,6 +54,9 @@
 #ifdef URHO3D_IK
 #include "../IK/IK.h"
 #endif
+#ifdef URHO3D_MONETIZATION
+#include "Urho3D/Monetization/BillingManager.h"
+#endif
 #ifdef URHO3D_NAVIGATION
 #include "../Navigation/NavigationMesh.h"
 #endif
@@ -277,6 +280,14 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     context_->RegisterSubsystem(new StateManager(context_));
 #ifdef URHO3D_PARTICLE_GRAPH
     context_->RegisterSubsystem(new ParticleGraphSystem(context_));
+#endif
+
+#ifdef URHO3D_MONETIZATION
+    #if UWP
+        context_->RegisterSubsystem(new Platform::BillingManagerUWP(context_));
+    #else
+        context_->RegisterSubsystem(new Platform::BillingManagerNull(context_));
+    #endif
 #endif
 
 #ifdef URHO3D_URHO2D

@@ -81,6 +81,10 @@ if (URHO3D_IK)
     define_engine_source_files (IK)
 endif ()
 
+if (URHO3D_MONETIZATION)
+    define_engine_source_files (Monetization)
+endif ()
+
 if (URHO3D_NAVIGATION)
     define_engine_source_files (Navigation)
 endif ()
