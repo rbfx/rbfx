@@ -1467,7 +1467,7 @@ Node* Node::GetChild(StringHash nameHash, bool recursive) const
     return nullptr;
 }
 
-Node* Node::GetChildByNameOrIndex(ea::string_view name) const
+Node* Node::GetChildByNameOrIndex(ea::string_view name, bool recursive) const
 {
     if (name.empty())
         return nullptr;
@@ -1479,7 +1479,7 @@ Node* Node::GetChildByNameOrIndex(ea::string_view name) const
             return GetChild(index);
     }
 
-    return GetChild(StringHash(name));
+    return GetChild(StringHash(name), recursive);
 }
 
 Serializable* Node::GetSerializableByName(ea::string_view name) const
@@ -1498,7 +1498,7 @@ Serializable* Node::GetSerializableByName(ea::string_view name) const
     return GetNthComponent(StringHash(name), index);
 }
 
-Node* Node::FindChild(ea::string_view path) const
+Node* Node::FindChild(ea::string_view path, bool firstRecursive) const
 {
     const auto sep = path.find('/');
     const bool isLast = sep == ea::string_view::npos;
@@ -1506,8 +1506,12 @@ Node* Node::FindChild(ea::string_view path) const
     if (childName.empty())
         return nullptr;
 
-    Node* child = GetChildByNameOrIndex(childName);
-    return child && !isLast ? child->FindChild(path.substr(sep + 1)) : child;
+    const ea::string_view subPath = isLast ? ea::string_view() : path.substr(sep + 1);
+    if (childName == "**")
+        return FindChild(subPath, true);
+
+    Node* child = GetChildByNameOrIndex(childName, firstRecursive);
+    return child && !isLast ? child->FindChild(subPath) : child;
 }
 
 ea::pair<Serializable*, unsigned> Node::FindComponentAttribute(ea::string_view path) const
