@@ -110,4 +110,14 @@ BillingManager::~BillingManager()
 {
 }
 
+void BillingManager::ConnectAsync(bool enablePendingPurchases, const OnConnected& callback)
+{
+    callback(true);
+}
+
+void BillingManager::DisconnectAsync(const OnDisconnected& callback)
+{
+    callback();
+}
+
 } // namespace Urho3D
