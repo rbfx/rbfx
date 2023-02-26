@@ -53,6 +53,7 @@
 #include "DiligentLookupSettings.h"
 #include "DiligentConstantBufferManager.h"
 #include "DiligentCommonPipelines.h"
+#include "DiligentResourceMappingCache.h"
 #if UWP
 #include <wrl/client.h>
 #include <windows.ui.xaml.media.dxinterop.h>
@@ -165,7 +166,14 @@ Graphics::~Graphics()
         impl_->device_->IdleGPU();
 
         impl_->constantBufferManager_->Release();
+        impl_->commonPipelines_->Release();
         delete impl_->constantBufferManager_;
+        delete impl_->commonPipelines_;
+        delete impl_->resourceMappingCache_;
+
+        impl_->constantBufferManager_ = nullptr;
+        impl_->commonPipelines_ = nullptr;
+        impl_->resourceMappingCache_ = nullptr;
 
         if(impl_->swapChain_)
             impl_->swapChain_->Release();
@@ -701,11 +709,12 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
 
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount)
 {
-    assert(0);
-    /*if (!impl_->shaderProgram_)
+    if (!impl_->shaderProgram_)
         return;
-
     PrepareDraw();
+    assert(0);
+    /*
+
 
     unsigned primitiveCount;
     D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
@@ -727,11 +736,12 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertex, unsigned vertexCount)
 {
-    assert(0);
-    /*if (!impl_->shaderProgram_)
+    if (!impl_->shaderProgram_)
         return;
 
     PrepareDraw();
+    assert(0);
+    /*
 
     unsigned primitiveCount;
     D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
@@ -816,62 +826,60 @@ void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 
 bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
 {
-    assert(0);
-    return false;
-    //if (buffers.size() > MAX_VERTEX_STREAMS)
-    //{
-    //    URHO3D_LOGERROR("Too many vertex buffers");
-    //    return false;
-    //}
+    if (buffers.size() > MAX_VERTEX_STREAMS)
+    {
+        URHO3D_LOGERROR("Too many vertex buffers");
+        return false;
+    }
 
-    //for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
-    //{
-    //    VertexBuffer* buffer = nullptr;
-    //    bool changed = false;
+    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
+    {
+        VertexBuffer* buffer = nullptr;
+        bool changed = false;
 
-    //    buffer = i < buffers.size() ? buffers[i] : nullptr;
-    //    if (buffer)
-    //    {
-    //        const ea::vector<VertexElement>& elements = buffer->GetElements();
-    //        // Check if buffer has per-instance data
-    //        bool hasInstanceData = elements.size() && elements[0].perInstance_;
-    //        unsigned offset = hasInstanceData ? instanceOffset * buffer->GetVertexSize() : 0;
+        buffer = i < buffers.size() ? buffers[i] : nullptr;
+        if (buffer)
+        {
+            const ea::vector<VertexElement>& elements = buffer->GetElements();
+            // Check if buffer has per-instance data
+            bool hasInstanceData = elements.size() && elements[0].perInstance_;
+            unsigned offset = hasInstanceData ? instanceOffset * buffer->GetVertexSize() : 0;
 
-    //        if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
-    //        {
-    //            vertexBuffers_[i] = buffer;
-    //            impl_->vertexBuffers_[i] = (ID3D11Buffer*)buffer->GetGPUObject();
-    //            impl_->vertexSizes_[i] = buffer->GetVertexSize();
-    //            impl_->vertexOffsets_[i] = offset;
-    //            changed = true;
-    //        }
-    //    }
-    //    else if (vertexBuffers_[i])
-    //    {
-    //        vertexBuffers_[i] = nullptr;
-    //        impl_->vertexBuffers_[i] = nullptr;
-    //        impl_->vertexSizes_[i] = 0;
-    //        impl_->vertexOffsets_[i] = 0;
-    //        changed = true;
-    //    }
+            if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
+            {
+                vertexBuffers_[i] = buffer;
+                impl_->vertexBuffers_[i] = (IBuffer*)buffer->GetGPUObject();
+                impl_->vertexSizes_[i] = buffer->GetVertexSize();
+                impl_->vertexOffsets_[i] = offset;
+                changed = true;
+            }
+        }
+        else if (vertexBuffers_[i])
+        {
+            vertexBuffers_[i] = nullptr;
+            impl_->vertexBuffers_[i] = nullptr;
+            impl_->vertexSizes_[i] = 0;
+            impl_->vertexOffsets_[i] = 0;
+            changed = true;
+        }
 
-    //    if (changed)
-    //    {
-    //        impl_->vertexDeclarationDirty_ = true;
+        if (changed)
+        {
+            impl_->vertexDeclarationDirty_ = true;
 
-    //        if (impl_->firstDirtyVB_ == M_MAX_UNSIGNED)
-    //            impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = i;
-    //        else
-    //        {
-    //            if (i < impl_->firstDirtyVB_)
-    //                impl_->firstDirtyVB_ = i;
-    //            if (i > impl_->lastDirtyVB_)
-    //                impl_->lastDirtyVB_ = i;
-    //        }
-    //    }
-    //}
+            if (impl_->firstDirtyVB_ == M_MAX_UNSIGNED)
+                impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = i;
+            else
+            {
+                if (i < impl_->firstDirtyVB_)
+                    impl_->firstDirtyVB_ = i;
+                if (i > impl_->lastDirtyVB_)
+                    impl_->lastDirtyVB_ = i;
+            }
+        }
+    }
 
-    //return true;
+    return true;
 }
 
 bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
@@ -992,28 +1000,24 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
 void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
 {
-    assert(0);
-    //bool buffersDirty = false;
-    //for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-    //{
-    //    const ConstantBufferRange& range = constantBuffers[i];
-    //    if (range != constantBuffers_[i])
-    //    {
-    //        buffersDirty = true;
-    //        impl_->constantBuffers_[i] = reinterpret_cast<ID3D11Buffer*>(range.constantBuffer_->GetGPUObject());
-    //        impl_->constantBuffersStartSlots_[i] = range.offset_ / 16;
-    //        impl_->constantBuffersNumSlots_[i] = (range.size_ / 16 + 15) / 16 * 16;
-    //    }
-    //}
+    bool buffersDirty = false;
+    ea::vector<ResourceMappingEntry> entries;
 
-    //if (buffersDirty)
-    //{
-    //    // TODO: Optimize unused buffers
-    //    impl_->deviceContext_->VSSetConstantBuffers1(0, MAX_SHADER_PARAMETER_GROUPS,
-    //        impl_->constantBuffers_, impl_->constantBuffersStartSlots_, impl_->constantBuffersNumSlots_);
-    //    impl_->deviceContext_->PSSetConstantBuffers1(0, MAX_SHADER_PARAMETER_GROUPS,
-    //        impl_->constantBuffers_, impl_->constantBuffersStartSlots_, impl_->constantBuffersNumSlots_);
-    //}
+    for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+    {
+        const ConstantBufferRange& range = constantBuffers[i];
+        if (range != constantBuffers_[i])
+        {
+            buffersDirty = true;
+            ResourceMappingEntry entry;
+            entry.Name = shaderParameterGroupNames[i];
+            entry.pObject = static_cast<IBuffer*>(range.constantBuffer_->GetGPUObject());
+            entries.push_back(entry);
+        }
+    }
+
+    if (buffersDirty)
+        impl_->constantBufferResMapping_ = impl_->resourceMappingCache_->CreateOrGetResourceMap(entries);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const float data[], unsigned count)
@@ -1150,8 +1154,8 @@ void Graphics::SetTexture(unsigned index, Texture* texture)
         }
 
         textures_[index] = texture;
-        //impl_->shaderResourceViews_[index] = texture ? (ID3D11ShaderResourceView*)texture->GetShaderResourceView() : nullptr;
-        //impl_->samplers_[index] = texture ? (ID3D11SamplerState*)texture->GetSampler() : nullptr;
+        impl_->shaderResourceViews_[index] = texture ? (ITextureView*)texture->GetShaderResourceView() : nullptr;
+        impl_->samplers_[index] = texture ? (ISampler*)texture->GetSampler() : nullptr;
         impl_->texturesDirty_ = true;
     }
 }
@@ -2061,6 +2065,7 @@ bool Graphics::CreateDevice(int width, int height)
         //init requred objects from graphics impl.
         impl_->constantBufferManager_ = new DiligentConstantBufferManager(this);
         impl_->commonPipelines_ = new DiligentCommonPipelines(this);
+        impl_->resourceMappingCache_ = new DiligentResourceMappingCache(this);
     }
 
     // Discard old swapchain has been created.
@@ -2329,30 +2334,26 @@ void Graphics::ResetCachedState()
 
 void Graphics::PrepareDraw()
 {
-    //if (impl_->renderTargetsDirty_)
-    //{
-    //    impl_->depthStencilView_ =
-    //        (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL) ?
-    //            (ID3D11DepthStencilView*)depthStencil_->GetRenderTargetView() : impl_->defaultDepthStencilView_;
+    if (impl_->renderTargetsDirty_)
+    {
+        impl_->depthStencilView_ = (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL) ? (ITextureView*)depthStencil_->GetRenderTargetView() : impl_->swapChain_->GetDepthBufferDSV();
 
-    //    // If possible, bind a read-only depth stencil view to allow reading depth in shader
-    //    if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
-    //        impl_->depthStencilView_ = (ID3D11DepthStencilView*)depthStencil_->GetReadOnlyView();
+        // If possible, bind a read-only depth stencil view to allow reading depth in shader
+        if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
+            impl_->depthStencilView_ = (ITextureView*)depthStencil_->GetReadOnlyView();
 
-    //    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-    //        impl_->renderTargetViews_[i] =
-    //            (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET) ?
-    //                (ID3D11RenderTargetView*)renderTargets_[i]->GetRenderTargetView() : nullptr;
-    //    // If rendertarget 0 is null and not doing depth-only rendering, render to the backbuffer
-    //    // Special case: if rendertarget 0 is null and depth stencil has same size as backbuffer, assume the intention is to do
-    //    // backbuffer rendering with a custom depth stencil
-    //    if (!renderTargets_[0] &&
-    //        (!depthStencil_ || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
-    //        impl_->renderTargetViews_[0] = impl_->defaultRenderTargetView_;
+        for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+            impl_->renderTargetViews_[i] = (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET) ? (ITextureView*)renderTargets_[i]->GetRenderTargetView() : nullptr;
+        // If rendertarget 0 is null and not doing depth-only rendering, render to the backbuffer
+        // Special case: if rendertarget 0 is null and depth stencil has same size as backbuffer, assume the intention is to do
+        // backbuffer rendering with a custom depth stencil
+        if (!renderTargets_[0] &&
+            (!depthStencil_ || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
+            impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
 
-    //    impl_->deviceContext_->OMSetRenderTargets(MAX_RENDERTARGETS, &impl_->renderTargetViews_[0], impl_->depthStencilView_);
-    //    impl_->renderTargetsDirty_ = false;
-    //}
+        impl_->deviceContext_->SetRenderTargets(MAX_RENDERTARGETS, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        impl_->renderTargetsDirty_ = false;
+    }
 
     //if (impl_->texturesDirty_ && impl_->firstDirtyTexture_ < M_MAX_UNSIGNED)
     //{

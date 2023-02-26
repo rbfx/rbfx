@@ -345,6 +345,16 @@ enum ShaderParameterGroup
     SP_CUSTOM,
     MAX_SHADER_PARAMETER_GROUPS
 };
+static const char* shaderParameterGroupNames[] = {
+    "Frame",
+    "Camera",
+    "Zone",
+    "Light",
+    "Material",
+    "Object",
+    "Custom",
+    nullptr,
+};
 
 /// Texture units.
 /// @manualbind

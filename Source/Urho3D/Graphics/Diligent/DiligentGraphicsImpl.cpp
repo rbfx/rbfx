@@ -34,12 +34,17 @@ GraphicsImpl::GraphicsImpl() :
     device_(nullptr),
     deviceContext_(nullptr),
     swapChain_(nullptr),
+    depthStencilView_(nullptr),
     /*defaultRenderTargetView_(nullptr),
     defaultDepthTexture_(nullptr),
     defaultDepthStencilView_(nullptr),
-    depthStencilView_(nullptr),*/
+    */
     resolveTexture_(nullptr),
-    shaderProgram_(nullptr)
+    shaderProgram_(nullptr),
+    constantBufferResMapping_(nullptr),
+    constantBufferManager_(nullptr),
+    commonPipelines_(nullptr),
+    resourceMappingCache_(nullptr)
 {
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         renderTargetViews_[i] = nullptr;
@@ -47,7 +52,7 @@ GraphicsImpl::GraphicsImpl() :
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
     {
         shaderResourceViews_[i] = nullptr;
-        /*samplers_[i] = nullptr;*/
+        samplers_[i] = nullptr;
     }
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)

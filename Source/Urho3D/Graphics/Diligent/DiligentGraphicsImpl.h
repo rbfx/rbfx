@@ -35,6 +35,7 @@
 #include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/Buffer.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/ResourceMapping.h>
 
 namespace Urho3D
 {
@@ -49,6 +50,7 @@ using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer> 
 
 class DiligentConstantBufferManager;
 class DiligentCommonPipelines;
+class DiligentResourceMappingCache;
 /// %Graphics implementation. Holds API-specific objects.
 class URHO3D_API GraphicsImpl
 {
@@ -96,7 +98,7 @@ private:
     /// Current color rendertarget views.
     Diligent::ITextureView* renderTargetViews_[MAX_RENDERTARGETS];
     /// Current depth-stencil view.
-    //Diligent::ITextureView* depthStencilView_;
+    Diligent::ITextureView* depthStencilView_;
     /// Created blend state objects.
     ea::unordered_map<unsigned, ID3D11BlendState*> blendStates_;
     /// Created depth state objects.
@@ -108,7 +110,7 @@ private:
     /// Bound shader resource views.
     Diligent::ITextureView* shaderResourceViews_[MAX_TEXTURE_UNITS];
     /// Bound sampler state objects.
-    ID3D11SamplerState* samplers_[MAX_TEXTURE_UNITS];
+    Diligent::ISampler* samplers_[MAX_TEXTURE_UNITS];
     /// Bound vertex buffers.
     Diligent::IBuffer* vertexBuffers_[MAX_VERTEX_STREAMS];
     /// Bound constant buffers.
@@ -159,10 +161,14 @@ private:
     ShaderProgramMap shaderPrograms_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_;
+    /// Constant Buffer Resource Mapping in use.
+    Diligent::IResourceMapping* constantBufferResMapping_;
 
     DiligentConstantBufferManager* constantBufferManager_;
 
     DiligentCommonPipelines* commonPipelines_;
+
+    DiligentResourceMappingCache* resourceMappingCache_;
 };
 
 }

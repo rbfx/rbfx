@@ -36,27 +36,36 @@
 namespace Urho3D
 {
     using namespace Diligent;
-static const D3D11_FILTER sFilterMode[] =
-{
-    D3D11_FILTER_MIN_MAG_MIP_POINT,
-    D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT,
-    D3D11_FILTER_MIN_MAG_MIP_LINEAR,
-    D3D11_FILTER_ANISOTROPIC,
-    D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR,
-    D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
-    D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
-    D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
-    D3D11_FILTER_COMPARISON_ANISOTROPIC,
-    D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR
-};
-
-static const TEXTURE_ADDRESS_MODE d3dAddressMode[] =
-{
-    TEXTURE_ADDRESS_WRAP,
-    TEXTURE_ADDRESS_MIRROR,
-    TEXTURE_ADDRESS_CLAMP,
-    TEXTURE_ADDRESS_BORDER
-};
+    static const FILTER_TYPE sMinMagFilterModes[] = {
+        FILTER_TYPE_POINT,
+        FILTER_TYPE_LINEAR,
+        FILTER_TYPE_LINEAR,
+        FILTER_TYPE_ANISOTROPIC,
+        FILTER_TYPE_POINT,
+        FILTER_TYPE_COMPARISON_POINT,
+        FILTER_TYPE_COMPARISON_LINEAR,
+        FILTER_TYPE_COMPARISON_LINEAR,
+        FILTER_TYPE_COMPARISON_ANISOTROPIC,
+        FILTER_TYPE_COMPARISON_POINT
+    };
+    static const FILTER_TYPE sMipFilterModes[] = {
+        FILTER_TYPE_POINT,
+        FILTER_TYPE_POINT,
+        FILTER_TYPE_LINEAR,
+        FILTER_TYPE_ANISOTROPIC,
+        FILTER_TYPE_LINEAR,
+        FILTER_TYPE_COMPARISON_POINT,
+        FILTER_TYPE_COMPARISON_POINT,
+        FILTER_TYPE_COMPARISON_LINEAR,
+        FILTER_TYPE_COMPARISON_ANISOTROPIC,
+        FILTER_TYPE_COMPARISON_LINEAR
+    };
+    static const Diligent::TEXTURE_ADDRESS_MODE sAddressModes[] = {
+        TEXTURE_ADDRESS_WRAP,
+        TEXTURE_ADDRESS_MIRROR,
+        TEXTURE_ADDRESS_CLAMP,
+        TEXTURE_ADDRESS_BORDER
+    };
 
 void Texture::SetSRGB(bool enable)
 {
@@ -134,36 +143,32 @@ unsigned Texture::GetRowDataSize(int width) const
 
 void Texture::UpdateParameters()
 {
-    assert(0);
-    //if ((!parametersDirty_ && sampler_) || !object_.ptr_)
-    //    return;
+    if ((!parametersDirty_ && sampler_) || !object_.ptr_)
+        return;
 
-    //// Release old sampler
-    //URHO3D_SAFE_RELEASE(sampler_);
+    unsigned filterModeIndex = filterMode_ != FILTER_DEFAULT ? filterMode_ : graphics_->GetDefaultTextureFilterMode();
+    if (shadowCompare_)
+        filterModeIndex += 5;
 
-    //D3D11_SAMPLER_DESC samplerDesc;
-    //memset(&samplerDesc, 0, sizeof samplerDesc);
-    //unsigned filterModeIndex = filterMode_ != FILTER_DEFAULT ? filterMode_ : graphics_->GetDefaultTextureFilterMode();
-    //if (shadowCompare_)
-    //    filterModeIndex += 5;
-    //samplerDesc.Filter = sFilterMode[filterModeIndex];
-    //samplerDesc.AddressU = d3dAddressMode[addressModes_[0]];
-    //samplerDesc.AddressV = d3dAddressMode[addressModes_[1]];
-    //samplerDesc.AddressW = d3dAddressMode[addressModes_[2]];
-    //samplerDesc.MaxAnisotropy = anisotropy_ ? anisotropy_ : graphics_->GetDefaultTextureAnisotropy();
-    //samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-    //samplerDesc.MinLOD = -M_INFINITY;
-    //samplerDesc.MaxLOD = M_INFINITY;
-    //memcpy(&samplerDesc.BorderColor, borderColor_.Data(), 4 * sizeof(float));
+    SamplerDesc samplerDesc;
+    samplerDesc.Name = GetName().c_str();
+    samplerDesc.MinFilter = samplerDesc.MagFilter = sMinMagFilterModes[filterModeIndex];
+    samplerDesc.MipFilter = sMipFilterModes[filterModeIndex];
+    samplerDesc.AddressU = sAddressModes[addressModes_[0]];
+    samplerDesc.AddressV = sAddressModes[addressModes_[1]];
+    samplerDesc.AddressW = sAddressModes[addressModes_[2]];
+    samplerDesc.MaxAnisotropy = anisotropy_ ? anisotropy_ : graphics_->GetDefaultTextureAnisotropy();
+    samplerDesc.ComparisonFunc = COMPARISON_FUNC_LESS_EQUAL;
+    samplerDesc.MinLOD = -M_INFINITY;
+    samplerDesc.MaxLOD = M_INFINITY;
+    memcpy(&samplerDesc.BorderColor, borderColor_.Data(), 4 * sizeof(float));
 
-    //HRESULT hr = graphics_->GetImpl()->GetDevice()->CreateSamplerState(&samplerDesc, (ID3D11SamplerState**)&sampler_);
-    //if (FAILED(hr))
-    //{
-    //    URHO3D_SAFE_RELEASE(sampler_);
-    //    URHO3D_LOGD3DERROR("Failed to create sampler state", hr);
-    //}
+    graphics_->GetImpl()->GetDevice()->CreateSampler(samplerDesc, (ISampler**)&sampler_);
+    if (sampler_ == nullptr) {
+        URHO3D_LOGERROR("Failed to create sampler state");
+    }
 
-    //parametersDirty_ = false;
+    parametersDirty_ = false;
 }
 
 unsigned Texture::GetSRVFormat(unsigned format)

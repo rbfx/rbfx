@@ -340,7 +340,7 @@ bool ShaderVariation::Compile()
     // Set the code, defines, entrypoint, profile and flags according to the shader being compiled
     const ea::string* sourceCode = nullptr;
     const char* entryPoint = nullptr;
-    ShaderType shaderType = ShaderType::MAX_SHADER_TYPES;
+    SHADER_TYPE shaderType = SHADER_TYPE_UNKNOWN;
     //const char* profile = nullptr;
     //unsigned flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
     //ShaderDefineArray defines{ defines_ };
@@ -354,7 +354,7 @@ bool ShaderVariation::Compile()
         entryPoint = "VS";
         macros.AddShaderMacro("COMPILEVS", true);
         //defines.Append("COMPILEVS");
-        shaderType = ShaderType::VS;
+        shaderType = SHADER_TYPE_VERTEX;
     }
         break;
     case Urho3D::PS:
@@ -362,32 +362,32 @@ bool ShaderVariation::Compile()
         entryPoint = "PS";
         macros.AddShaderMacro("COMPILEPS", true);
         //defines.Append("COMPILEPS");
-        shaderType = ShaderType::PS;
+        shaderType = SHADER_TYPE_PIXEL;
     }
         break;
     case Urho3D::GS:
         entryPoint = "GS";
         macros.AddShaderMacro("COMPILEGS", true);
         //defines.Append("COMPILEGS");
-        shaderType = ShaderType::GS;
+        shaderType = SHADER_TYPE_GEOMETRY;
         break;
     case Urho3D::HS:
         entryPoint = "HS";
         macros.AddShaderMacro("COMPILEHS", true);
         //defines.Append("COMPILEHS");
-        shaderType = ShaderType::HS;
+        shaderType = SHADER_TYPE_HULL;
         break;
     case Urho3D::DS:
         entryPoint = "DS";
         macros.AddShaderMacro("COMPILEDS", true);
         //defines.Append("COMPILEDS");
-        shaderType = ShaderType::DS;
+        shaderType = SHADER_TYPE_DOMAIN;
         break;
     case Urho3D::CS:
         entryPoint = "CS";
         macros.AddShaderMacro("COMPILECS", true);
         //defines.Append("COMPILECS");
-        shaderType = ShaderType::CS;
+        shaderType = SHADER_TYPE_COMPUTE;
         break;
     }
 
@@ -456,7 +456,7 @@ bool ShaderVariation::Compile()
 
     ShaderCreateInfo shaderCI;
     shaderCI.Desc.Name = name_.c_str();
-    shaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
+    shaderCI.Desc.ShaderType = shaderType;
     shaderCI.EntryPoint = entryPoint;
     shaderCI.Source = sourceCode->c_str();
     shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
@@ -609,8 +609,8 @@ void ShaderVariation::ParseParameters(std::vector<unsigned>& byteCode)
             SpvReflectDescriptorBinding* binding = *descBindingIt;
 
             if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-                assert(binding->name);
-                ea::string bindingName(binding->name);
+                assert(binding->type_description->type_name != nullptr);
+                ea::string bindingName(binding->type_description->type_name);
                 ShaderVariation_SanitizeCBName(bindingName);
 
                 auto cBufferLookupValue = sConstantBuffersLookup.find(bindingName);
