@@ -142,7 +142,7 @@ private:
     /// Compile from source. Return true if successful.
     bool Compile();
 #ifdef URHO3D_DILIGENT
-    void ParseParameters(std::vector<unsigned> byteCode);
+    void ParseParameters(std::vector<unsigned>& byteCode);
 #else
     /// Inspect the constant parameters and input layout (if applicable) from the shader bytecode.
     void ParseParameters(unsigned char* bufData, unsigned bufSize);

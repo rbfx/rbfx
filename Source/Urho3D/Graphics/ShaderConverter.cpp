@@ -35,268 +35,278 @@
 #include <spirv_hlsl.hpp>
 #endif
 
+#ifdef URHO3D_DILIGENT
+#include <spirv_hlsl.hpp>
+#endif
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shaderCode)
-{
-    const unsigned start = shaderCode.find("#version");
-    if (start == ea::string::npos)
-        return ea::nullopt;
+    ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shaderCode)
+    {
+        const unsigned start = shaderCode.find("#version");
+        if (start == ea::string::npos)
+            return ea::nullopt;
 
-    const unsigned end = shaderCode.find('\n', start);
-    if (end == ea::string::npos)
-        return ea::make_pair(start, static_cast<unsigned>(shaderCode.size()));
-    return ea::make_pair(start, end);
-}
+        const unsigned end = shaderCode.find('\n', start);
+        if (end == ea::string::npos)
+            return ea::make_pair(start, static_cast<unsigned>(shaderCode.size()));
+        return ea::make_pair(start, end);
+    }
 
 #ifdef URHO3D_SPIRV
 
-namespace
-{
-
-/// Utility to de/initialize glslang library.
-struct GlslangGuardian
-{
-    GlslangGuardian() { glslang::InitializeProcess(); }
-    ~GlslangGuardian() { glslang::FinalizeProcess(); }
-};
-static const GlslangGuardian glslangGuardian;
-
-/// Vertex element semantics and index.
-using VertexElementSemanticIndex = ea::pair<VertexElementSemantic, unsigned>;
-
-EShLanguage ConvertShaderType(ShaderType shaderType)
-{
-    switch (shaderType)
+    namespace
     {
-    default:
-    case VS: return EShLangVertex;
-    case PS: return EShLangFragment;
-    case GS: return EShLangGeometry;
-    case HS: return EShLangTessControl;
-    case DS: return EShLangTessEvaluation;
-    case CS: return EShLangCompute;
-    }
-}
 
-/// Return vertex element semantics.
-VertexElementSemanticIndex ParseVertexElement(ea::string_view name)
-{
-    const auto firstDigit = ea::find_if(name.begin(), name.end(), [](char ch) { return isdigit(ch); });
-    const unsigned index = firstDigit != name.end() ? ToUInt(ea::string{ firstDigit, name.end() }) : 0;
-    static const ea::unordered_map<ea::string, VertexElementSemantic> semanticsMapping = {
-        { "iPos", SEM_POSITION },
-        { "iNormal", SEM_NORMAL },
-        { "iColor", SEM_COLOR },
-        { "iTexCoord", SEM_TEXCOORD },
-        { "iTangent", SEM_TANGENT },
-        { "iBlendWeights", SEM_BLENDWEIGHTS },
-        { "iBlendIndices", SEM_BLENDINDICES },
-        { "iObjectIndex", SEM_OBJECTINDEX }
-    };
-    const ea::string_view sematicName = firstDigit != name.end() ? name.substr(0, firstDigit - name.begin()) : name;
-    const auto semanticIter = semanticsMapping.find_as(sematicName);
-    const VertexElementSemantic semantic = semanticIter != semanticsMapping.end()
-        ? semanticIter->second
-        : MAX_VERTEX_ELEMENT_SEMANTICS;
-    return { semantic , index };
-}
-
-/// SpirV shader data.
-struct SpirVShader
-{
-    /// Shader bytecode.
-    std::vector<unsigned> bytecode_;
-    /// Input layout.
-    //ea::vector<VertexElementSemanticIndex> inputLayout_;
-};
-
-void AppendWithoutVersion(ea::string& dest, ea::string_view source)
-{
-    const auto versionTag = FindVersionTag(source);
-    if (!versionTag)
-    {
-        dest.append(source.begin(), source.end());
-        return;
-    }
-
-    const auto versionIter = ea::next(source.begin(), versionTag->first);
-    dest.append(source.begin(), versionIter);
-    dest.append("//");
-    dest.append(versionIter, source.end());
-}
-
-/// Compile SpirV shader.
-bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDefineArray& shaderDefines,
-    SpirVShader& outputShader, ea::string& errorMessage)
-{
-    outputShader = {};
-
-    // Prepare defines
-    thread_local ea::string shaderCode;
-    shaderCode.clear();
-    shaderCode += "#version 450\n";
-    for (const auto& define : shaderDefines)
-        shaderCode += Format("#define {} {}\n", define.first, define.second);
-    AppendWithoutVersion(shaderCode, sourceCode);
-
-    const char* inputStrings[] = { shaderCode.data() };
-    const int inputLengths[] = { static_cast<int>(shaderCode.length()) };
-
-    // Setup glslang shader
-    glslang::TShader shader(stage);
-    shader.setStringsWithLengths(inputStrings, inputLengths, 1);
-    shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientOpenGL, 100);
-    shader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
-    shader.setEnvTarget(glslang::EshTargetSpv, glslang::EShTargetSpv_1_0);
-    shader.setAutoMapLocations(true);
-
-    // Parse input shader
-    if (!shader.parse(&glslang::DefaultTBuiltInResource, 100, false, EShMsgDefault))
-    {
-        errorMessage = shader.getInfoLog();
-        return false;
-    }
-
-    // Link into fake program
-    glslang::TProgram program;
-    program.addShader(&shader);
-    if (!program.link(EShMsgDefault))
-    {
-        errorMessage = program.getInfoLog();
-        return false;
-    }
-    if (!program.mapIO())
-    {
-        errorMessage = program.getInfoLog();
-        return false;
-    }
-
-    // Parse input layout
-    /*program.buildReflection(EShReflectionAllBlockVariables);
-    for (int i = 0; i < program.getNumLiveAttributes(); ++i)
-    {
-        const char* name = program.getAttributeName(i);
-        const auto element = ParseVertexElement(name);
-        if (element.first == MAX_VERTEX_ELEMENT_SEMANTICS)
+        /// Utility to de/initialize glslang library.
+        struct GlslangGuardian
         {
-            errorMessage = Format("Unknown vertex element '{}'", name);
-            return false;
-        }
-        outputShader.inputLayout_.push_back(element);
-    }*/
+            GlslangGuardian() { glslang::InitializeProcess(); }
+            ~GlslangGuardian() { glslang::FinalizeProcess(); }
+        };
+        static const GlslangGuardian glslangGuardian;
 
-    // Convert intermediate representation to SPIRV
-    const glslang::TIntermediate* im = program.getIntermediate(stage);
-    assert(im);
-    spv::SpvBuildLogger spvLogger;
-    glslang::SpvOptions spvOptions;
-    spvOptions.generateDebugInfo = true;
-    spvOptions.disableOptimizer = true;
-    spvOptions.optimizeSize = false;
-    glslang::GlslangToSpv(*im, outputShader.bytecode_, &spvLogger, &spvOptions);
-    const std::string spirvLog = spvLogger.getAllMessages();
-    if (!spirvLog.empty())
-    {
-        errorMessage = spirvLog.c_str();
-    }
+        /// Vertex element semantics and index.
+        using VertexElementSemanticIndex = ea::pair<VertexElementSemantic, unsigned>;
 
-    return true;
-}
-
-/// Remapping HLSL compiler.
-class RemappingCompilerHLSL : public spirv_cross::CompilerHLSL
-{
-public:
-    RemappingCompilerHLSL(std::vector<unsigned> spirv) : spirv_cross::CompilerHLSL(spirv)
-    {
-    }
-
-    bool RemapInputLayout(ea::string& errorMessage)
-    {
-        unsigned location = 0;
-        unsigned numErrors = 0;
-
-        const auto& execution = get_entry_point();
-        if (execution.model == spv::ExecutionModelVertex)
+        EShLanguage ConvertShaderType(ShaderType shaderType)
         {
-            // Output Uniform Constants (values, samplers, images, etc).
-            ir.for_each_typed_id<spirv_cross::SPIRVariable>([&](uint32_t, spirv_cross::SPIRVariable &var)
+            switch (shaderType)
             {
-                auto& type = this->get<spirv_cross::SPIRType>(var.basetype);
-                auto& m = ir.meta[var.self].decoration;
-                if (type.storage == spv::StorageClassInput && !is_builtin_variable(var))
-                {
-                    m.decoration_flags.set(spv::DecorationLocation);
-                    m.location = location++;
-                    const VertexElementSemanticIndex vertexElement = ParseVertexElement(m.alias.c_str());
-                    if (vertexElement.first == MAX_VERTEX_ELEMENT_SEMANTICS)
-                    {
-                        ++numErrors;
-                        errorMessage += Format("Unknown input vertex element: '{}'\n", m.alias.c_str());
-                        return;
-                    }
-
-                    const VertexElementSemantic semantic = vertexElement.first;
-                    const unsigned index = vertexElement.second;
-                    const ea::string name = Format("{}{}", ShaderVariation::elementSemanticNames[semantic], index);
-                    add_vertex_attribute_remap({ m.location, name.c_str() });
-                }
-            });
+            default:
+            case VS: return EShLangVertex;
+            case PS: return EShLangFragment;
+            case GS: return EShLangGeometry;
+            case HS: return EShLangTessControl;
+            case DS: return EShLangTessEvaluation;
+            case CS: return EShLangCompute;
+            }
         }
 
-        return numErrors == 0;
+        /// Return vertex element semantics.
+        VertexElementSemanticIndex ParseVertexElement(ea::string_view name)
+        {
+            const auto firstDigit = ea::find_if(name.begin(), name.end(), [](char ch) { return isdigit(ch); });
+            const unsigned index = firstDigit != name.end() ? ToUInt(ea::string{ firstDigit, name.end() }) : 0;
+            static const ea::unordered_map<ea::string, VertexElementSemantic> semanticsMapping = {
+                { "iPos", SEM_POSITION },
+                { "iNormal", SEM_NORMAL },
+                { "iColor", SEM_COLOR },
+                { "iTexCoord", SEM_TEXCOORD },
+                { "iTangent", SEM_TANGENT },
+                { "iBlendWeights", SEM_BLENDWEIGHTS },
+                { "iBlendIndices", SEM_BLENDINDICES },
+                { "iObjectIndex", SEM_OBJECTINDEX }
+            };
+            const ea::string_view sematicName = firstDigit != name.end() ? name.substr(0, firstDigit - name.begin()) : name;
+            const auto semanticIter = semanticsMapping.find_as(sematicName);
+            const VertexElementSemantic semantic = semanticIter != semanticsMapping.end()
+                ? semanticIter->second
+                : MAX_VERTEX_ELEMENT_SEMANTICS;
+            return { semantic , index };
+        }
+
+        /// SpirV shader data.
+        struct SpirVShader
+        {
+            /// Shader bytecode.
+            std::vector<unsigned> bytecode_;
+            /// Input layout.
+            //ea::vector<VertexElementSemanticIndex> inputLayout_;
+        };
+
+        void AppendWithoutVersion(ea::string& dest, ea::string_view source)
+        {
+            const auto versionTag = FindVersionTag(source);
+            if (!versionTag)
+            {
+                dest.append(source.begin(), source.end());
+                return;
+            }
+
+            const auto versionIter = ea::next(source.begin(), versionTag->first);
+            dest.append(source.begin(), versionIter);
+            dest.append("//");
+            dest.append(versionIter, source.end());
+        }
+
+        /// Compile SpirV shader.
+        bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDefineArray& shaderDefines,
+            SpirVShader& outputShader, ea::string& errorMessage)
+        {
+            outputShader = {};
+
+            // Prepare defines
+            thread_local ea::string shaderCode;
+            shaderCode.clear();
+            shaderCode += "#version 450\n";
+            for (const auto& define : shaderDefines)
+                shaderCode += Format("#define {} {}\n", define.first, define.second);
+            AppendWithoutVersion(shaderCode, sourceCode);
+
+            const char* inputStrings[] = { shaderCode.data() };
+            const int inputLengths[] = { static_cast<int>(shaderCode.length()) };
+
+            // Setup glslang shader
+            glslang::TShader shader(stage);
+            shader.setStringsWithLengths(inputStrings, inputLengths, 1);
+            shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientOpenGL, 100);
+            shader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
+            shader.setEnvTarget(glslang::EshTargetSpv, glslang::EShTargetSpv_1_0);
+            shader.setAutoMapLocations(true);
+
+            // Parse input shader
+            if (!shader.parse(&glslang::DefaultTBuiltInResource, 100, false, EShMsgDefault))
+            {
+                errorMessage = shader.getInfoLog();
+                return false;
+            }
+
+            // Link into fake program
+            glslang::TProgram program;
+            program.addShader(&shader);
+            if (!program.link(EShMsgDefault))
+            {
+                errorMessage = program.getInfoLog();
+                return false;
+            }
+            if (!program.mapIO())
+            {
+                errorMessage = program.getInfoLog();
+                return false;
+            }
+
+            // Parse input layout
+            /*program.buildReflection(EShReflectionAllBlockVariables);
+            for (int i = 0; i < program.getNumLiveAttributes(); ++i)
+            {
+                const char* name = program.getAttributeName(i);
+                const auto element = ParseVertexElement(name);
+                if (element.first == MAX_VERTEX_ELEMENT_SEMANTICS)
+                {
+                    errorMessage = Format("Unknown vertex element '{}'", name);
+                    return false;
+                }
+                outputShader.inputLayout_.push_back(element);
+            }*/
+
+            // Convert intermediate representation to SPIRV
+            const glslang::TIntermediate* im = program.getIntermediate(stage);
+            assert(im);
+            spv::SpvBuildLogger spvLogger;
+            glslang::SpvOptions spvOptions;
+            spvOptions.generateDebugInfo = true;
+            spvOptions.disableOptimizer = true;
+            spvOptions.optimizeSize = false;
+            glslang::GlslangToSpv(*im, outputShader.bytecode_, &spvLogger, &spvOptions);
+            const std::string spirvLog = spvLogger.getAllMessages();
+            if (!spirvLog.empty())
+            {
+                errorMessage = spirvLog.c_str();
+            }
+
+            return true;
+        }
+
+        /// Remapping HLSL compiler.
+        class RemappingCompilerHLSL : public spirv_cross::CompilerHLSL
+        {
+        public:
+            RemappingCompilerHLSL(std::vector<unsigned> spirv) : spirv_cross::CompilerHLSL(spirv)
+            {
+            }
+
+            bool RemapInputLayout(ea::string& errorMessage)
+            {
+                unsigned location = 0;
+                unsigned numErrors = 0;
+
+                const auto& execution = get_entry_point();
+                if (execution.model == spv::ExecutionModelVertex)
+                {
+                    // Output Uniform Constants (values, samplers, images, etc).
+                    ir.for_each_typed_id<spirv_cross::SPIRVariable>([&](uint32_t, spirv_cross::SPIRVariable& var)
+                        {
+                            auto& type = this->get<spirv_cross::SPIRType>(var.basetype);
+                            auto& m = ir.meta[var.self].decoration;
+                            if (type.storage == spv::StorageClassInput && !is_builtin_variable(var))
+                            {
+                                m.decoration_flags.set(spv::DecorationLocation);
+                                m.location = location++;
+                                const VertexElementSemanticIndex vertexElement = ParseVertexElement(m.alias.c_str());
+                                if (vertexElement.first == MAX_VERTEX_ELEMENT_SEMANTICS)
+                                {
+                                    ++numErrors;
+                                    errorMessage += Format("Unknown input vertex element: '{}'\n", m.alias.c_str());
+                                    return;
+                                }
+
+                                const VertexElementSemantic semantic = vertexElement.first;
+                                const unsigned index = vertexElement.second;
+                                const ea::string name = Format("{}{}", ShaderVariation::elementSemanticNames[semantic], index);
+                                add_vertex_attribute_remap({ m.location, name.c_str() });
+                            }
+                        });
+                }
+
+                return numErrors == 0;
+            }
+        };
+
+        /// Convert SpirV to HLSL5
+        bool ConvertToHLSL5(const SpirVShader& shader, ea::string& outputShader, ea::string& errorMessage)
+        {
+            errorMessage.clear();
+            outputShader.clear();
+
+            RemappingCompilerHLSL compiler(shader.bytecode_);
+            if (!compiler.RemapInputLayout(errorMessage))
+                return false;
+
+            spirv_cross::CompilerGLSL::Options commonOptions;
+            commonOptions.emit_line_directives = true;
+            compiler.set_common_options(commonOptions);
+            spirv_cross::CompilerHLSL::Options hlslOptions;
+            hlslOptions.shader_model = 50;
+            hlslOptions.point_size_compat = true;
+            compiler.set_hlsl_options(hlslOptions);
+            const std::string src = compiler.compile();
+            if (src.empty())
+            {
+                errorMessage = "Unknown error";
+                return false;
+            }
+
+            outputShader = src.c_str();
+            return true;
+        }
+
     }
-};
 
-/// Convert SpirV to HLSL5
-bool ConvertToHLSL5(const SpirVShader& shader, ea::string& outputShader, ea::string& errorMessage)
-{
-    errorMessage.clear();
-    outputShader.clear();
-
-    RemappingCompilerHLSL compiler(shader.bytecode_);
-    if (!compiler.RemapInputLayout(errorMessage))
-        return false;
-
-    spirv_cross::CompilerGLSL::Options commonOptions;
-    commonOptions.emit_line_directives = true;
-    compiler.set_common_options(commonOptions);
-    spirv_cross::CompilerHLSL::Options hlslOptions;
-    hlslOptions.shader_model = 50;
-    hlslOptions.point_size_compat = true;
-    compiler.set_hlsl_options(hlslOptions);
-    const std::string src = compiler.compile();
-    if (src.empty())
+    bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
+        ea::string& outputShaderCode, ea::string& errorMessage)
     {
-        errorMessage = "Unknown error";
-        return false;
+        SpirVShader shader;
+        if (!CompileSpirV(ConvertShaderType(shaderType), sourceCode, shaderDefines, shader, errorMessage))
+            return false;
+
+        if (!ConvertToHLSL5(shader, outputShaderCode, errorMessage))
+            return false;
+
+        return true;
     }
-
-    outputShader = src.c_str();
-    return true;
+    bool CompileSpirvToHLSL(const Urho3D::ByteVector& byteCode, ea::string& outputShaderCode) {
+        SpirVShader shader;
+        shader.bytecode_.resize(byteCode.size() / sizeof(unsigned int));
+        memcpy_s(shader.bytecode_.data(), byteCode.size(), byteCode.data(), byteCode.size());
+        ea::string err;
+        if (!ConvertToHLSL5(shader, outputShaderCode, err))
+            return false;
+        return true;
+    }
 }
-
-}
-
-bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
-    ea::string& outputShaderCode, ea::string& errorMessage)
-{
-    SpirVShader shader;
-    if (!CompileSpirV(ConvertShaderType(shaderType), sourceCode, shaderDefines, shader, errorMessage))
-        return false;
-
-    if (!ConvertToHLSL5(shader, outputShaderCode, errorMessage))
-        return false;
-
-    return true;
-}
-
-}
-
 namespace glslang
 {
 
@@ -406,6 +416,16 @@ const TBuiltInResource DefaultTBuiltInResource = {
         /* .generalVariableIndexing = */ 1,
         /* .generalConstantMatrixVectorIndexing = */ 1,
     }};
+#endif
 
+#ifdef URHO3D_DILIGENT
+    namespace
+    {
+        class DefaultHlslCompiler : public spirv_cross::CompilerHLSL {
+        public:
+            DefaultHlslCompiler(std::vector<unsigned> byteCode) : spirv_cross::CompilerHLSL(byteCode){}
+        };
+
+    }
 #endif
 }

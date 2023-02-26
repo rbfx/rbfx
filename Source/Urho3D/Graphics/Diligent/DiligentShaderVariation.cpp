@@ -36,18 +36,19 @@
 #include <Diligent/Graphics/ShaderTools/include/GLSLangUtils.hpp>
 #include <Diligent/Graphics/GraphicsTools/interface/ShaderMacroHelper.hpp>
 #include <Diligent/Common/interface/DataBlobImpl.hpp>
+#include <SPIRV-Reflect/spirv_reflect.h>
 #include "../../DebugNew.h"
 
 namespace Urho3D
 {
 
 const char* ShaderVariation_shaderExtensions[] = {
-    ".vs.spv",
-    ".ps.spv",
-    ".gs.spv",
-    ".hs.spv",
-    ".ds.spv",
-    ".cs.spv"
+    ".vsbin",
+    ".psbin",
+    ".gsbin",
+    ".hsbin",
+    ".dsbin",
+    ".csbin"
 };
 
 const char* ShaderVariation::elementSemanticNames[] =
@@ -62,6 +63,46 @@ const char* ShaderVariation::elementSemanticNames[] =
     "BLENDINDICES",
     "OBJECTINDEX"
 };
+
+static ea::unordered_map<ea::string,TextureUnit> sTextureUnitLookup = {
+    { "DiffMap", TextureUnit::TU_DIFFUSE },
+    { "DiffCubeMap", TextureUnit::TU_DIFFUSE },
+    { "NormalMap", TextureUnit::TU_NORMAL },
+    { "NormalCubeMap", TextureUnit::TU_NORMAL },
+    { "SpecMap", TextureUnit::TU_SPECULAR },
+    { "EmissiveMap", TextureUnit::TU_EMISSIVE },
+    { "EnvMap", TextureUnit::TU_ENVIRONMENT },
+    { "EnvCubeMap", TextureUnit::TU_ENVIRONMENT },
+    { "LightRampMap", TextureUnit::TU_LIGHTRAMP },
+    { "LightSpotMap", TextureUnit::TU_LIGHTSHAPE },
+    { "LightMap", TextureUnit::TU_LIGHTBUFFER },
+    { "ShadowMap", TextureUnit::TU_SHADOWMAP },
+    { "VolumeMap", TextureUnit::TU_VOLUMEMAP },
+    { "DepthBuffer", TextureUnit::TU_DEPTHBUFFER },
+    { "ZoneBuffer", TextureUnit::TU_ZONE },
+    { "ZoneCubeMap", TextureUnit::TU_ZONE},
+    { "ZoneVolumeMap", TextureUnit::TU_VOLUMEMAP },
+    { "Custom1Map", TextureUnit::TU_CUSTOM1 },
+    { "Custom2Map", TextureUnit::TU_CUSTOM2 },
+    { "FaceSelectMap", TextureUnit::TU_FACESELECT },
+    { "IndirectionMap", TextureUnit::TU_INDIRECTION }
+};
+static ea::unordered_map<ea::string, ShaderParameterGroup> sConstantBuffersLookup = {
+    { "Frame", ShaderParameterGroup::SP_FRAME },
+    { "Camera", ShaderParameterGroup::SP_CAMERA },
+    { "Zone", ShaderParameterGroup::SP_ZONE },
+    { "Light", ShaderParameterGroup::SP_MATERIAL },
+    { "Object", ShaderParameterGroup::SP_OBJECT },
+    { "Custom", ShaderParameterGroup::SP_CUSTOM }
+};
+static ea::string sConstantBufferSuffixes[] = {
+    "VS", "PS", "GS", "HS", "DS", "CS"
+};
+// Remove Shader Type Suffixes from Constant Buffer Name
+static void ShaderVariation_SanitizeCBName(ea::string& cbName) {
+    for (unsigned i = 0; i < MAX_SHADER_TYPES; ++i)
+        cbName.replace(sConstantBufferSuffixes[i], "");
+}
 
 void ShaderVariation::OnDeviceLost()
 {
@@ -95,8 +136,40 @@ bool ShaderVariation::Create()
         if (owner_->GetTimeStamp())
             SaveByteCode(binaryShaderName);
     }
-    assert(0);
 
+    ea::string srcCode;
+    assert(CompileSpirvToHLSL(byteCode_, srcCode));
+    Diligent::ShaderCreateInfo ci;
+    ci.Desc.Name = name_.c_str();
+    ci.Source = srcCode.c_str();
+    ci.SourceLength = srcCode.size();
+    ci.CombinedSamplerSuffix = false;
+    ci.SourceLanguage = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
+    ci.EntryPoint = "main";
+
+    switch (type_)
+    {
+    case Urho3D::VS:
+        ci.Desc.ShaderType = Diligent::SHADER_TYPE_VERTEX;
+        break;
+    case Urho3D::PS:
+        ci.Desc.ShaderType = Diligent::SHADER_TYPE_PIXEL;
+        break;
+    case Urho3D::GS:
+        ci.Desc.ShaderType = Diligent::SHADER_TYPE_GEOMETRY;
+        break;
+    case Urho3D::HS:
+        ci.Desc.ShaderType = Diligent::SHADER_TYPE_HULL;
+        break;
+    case Urho3D::DS:
+        ci.Desc.ShaderType = Diligent::SHADER_TYPE_DOMAIN;
+        break;
+    case Urho3D::CS:
+        ci.Desc.ShaderType = Diligent::SHADER_TYPE_COMPUTE;
+        break;
+    }
+
+    graphics_->GetImpl()->GetDevice()->CreateShader(ci, (Diligent::IShader**)&object_.ptr_);
 //#define CREATE_SHADER(TYPEENUM, SHADERTYPE, PRINTNAME) \
 //    if (device && byteCode_.size()) { \
 //        HRESULT hr = device->Create ## SHADERTYPE (&byteCode_[0], byteCode_.size(), nullptr, (ID3D11 ## SHADERTYPE **)&object_.ptr_); \
@@ -179,69 +252,86 @@ bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
     if (!cache->Exists(binaryShaderName))
         return false;
 
-    assert(0);
-    //const FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
-    //const unsigned sourceTimeStamp = owner_->GetTimeStamp();
-    //// If source code is loaded from a package, its timestamp will be zero. Else check that binary is not older
-    //// than source
-    //if (sourceTimeStamp && fileSystem->GetLastModifiedTime(cache->GetResourceFileName(binaryShaderName)) < sourceTimeStamp)
-    //    return false;
+    const FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
+    const unsigned sourceTimeStamp = owner_->GetTimeStamp();
+    // If source code is loaded from a package, its timestamp will be zero. Else check that binary is not older
+    // than source
+    if (sourceTimeStamp && fileSystem->GetLastModifiedTime(cache->GetResourceFileName(binaryShaderName)) < sourceTimeStamp)
+        return false;
 
-    //const AbstractFilePtr file = cache->GetFile(binaryShaderName);
-    //if (!file || file->ReadFileID() != "USHD")
-    //{
-    //    URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
-    //    return false;
-    //}
+    const AbstractFilePtr file = cache->GetFile(binaryShaderName);
+    if (!file || file->ReadFileID() != "UDSHD")
+    {
+        URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
+        return false;
+    }
 
-    ///// \todo Check that shader type and model match
-    ///*unsigned short shaderType = */file->ReadUShort();
-    ///*unsigned short shaderModel = */file->ReadUShort();
-    //elementHash_ = file->ReadUInt();
-    //elementHash_ <<= 32;
+    ShaderType shaderType = (ShaderType)file->ReadUShort();
+    assert(shaderType == type_);
 
-    //unsigned numParameters = file->ReadUInt();
-    //for (unsigned i = 0; i < numParameters; ++i)
-    //{
-    //    ea::string name = file->ReadString();
-    //    unsigned buffer = file->ReadUByte();
-    //    unsigned offset = file->ReadUInt();
-    //    unsigned size = file->ReadUInt();
+    elementHash_ = file->ReadUInt();
+    elementHash_ <<= 32;
 
-    //    parameters_[StringHash(name)] = ShaderParameter{type_, name, offset, size, buffer};
-    //}
+    unsigned numParameters = file->ReadUInt();
+    for (unsigned i = 0; i < numParameters; ++i)
+    {
+        ea::string name = file->ReadString();
+        unsigned buffer = file->ReadUByte();
+        unsigned offset = file->ReadUInt();
+        unsigned size = file->ReadUInt();
 
-    //unsigned numTextureUnits = file->ReadUInt();
-    //for (unsigned i = 0; i < numTextureUnits; ++i)
-    //{
-    //    /*String unitName = */file->ReadString();
-    //    unsigned reg = file->ReadUByte();
+        parameters_[StringHash(name)] = ShaderParameter{type_, name, offset, size, buffer};
+    }
 
-    //    if (reg < MAX_TEXTURE_UNITS)
-    //        useTextureUnits_[reg] = true;
-    //}
+    unsigned numTextureUnits = file->ReadUInt();
+    for (unsigned i = 0; i < numTextureUnits; ++i)
+    {
+        /*String unitName = */file->ReadString();
+        unsigned reg = file->ReadUByte();
 
-    //unsigned byteCodeSize = file->ReadUInt();
-    //if (byteCodeSize)
-    //{
-    //    byteCode_.resize(byteCodeSize);
-    //    file->Read(&byteCode_[0], byteCodeSize);
+        if (reg < MAX_TEXTURE_UNITS)
+            useTextureUnits_[reg] = true;
+    }
 
-    //    if (type_ == VS)
-    //        URHO3D_LOGDEBUG("Loaded cached vertex shader " + GetFullName());
-    //    else if (type_ == CS)
-    //        URHO3D_LOGDEBUG("Loaded cached compute shader " + GetFullName());
-    //    else
-    //        URHO3D_LOGDEBUG("Loaded cached pixel shader " + GetFullName());
+    unsigned byteCodeSize = file->ReadUInt();
+    if (byteCodeSize)
+    {
+        byteCode_.resize(byteCodeSize);
+        file->Read(&byteCode_[0], byteCodeSize);
 
-    //    CalculateConstantBufferSizes();
-    //    return true;
-    //}
-    //else
-    //{
-    //    URHO3D_LOGERROR(binaryShaderName + " has zero length bytecode");
-    //    return false;
-    //}
+        switch (type_)
+        {
+        case Urho3D::VS:
+            URHO3D_LOGDEBUG("Loaded cached vertex shader " + GetFullName());
+            break;
+        case Urho3D::PS:
+            URHO3D_LOGDEBUG("Loaded cached pixel shader " + GetFullName());
+            break;
+        case Urho3D::GS:
+            URHO3D_LOGDEBUG("Loaded cached geometry shader " + GetFullName());
+            break;
+        case Urho3D::HS:
+            URHO3D_LOGDEBUG("Loaded cached hull shader " + GetFullName());
+            break;
+        case Urho3D::DS:
+            URHO3D_LOGDEBUG("Loaded cached domain shader " + GetFullName());
+            break;
+        case Urho3D::CS:
+            URHO3D_LOGDEBUG("Loaded cached compute shader " + GetFullName());
+            break;
+        default:
+            URHO3D_LOGERROR(binaryShaderName + " has invalid shader type");
+            return false;
+        }
+
+        CalculateConstantBufferSizes();
+        return true;
+    }
+    else
+    {
+        URHO3D_LOGERROR(binaryShaderName + " has zero length bytecode");
+        return false;
+    }
 }
 
 bool ShaderVariation::Compile()
@@ -305,6 +395,18 @@ bool ShaderVariation::Compile()
     macros.AddShaderMacro("D3D11", true);
     macros.AddShaderMacro("DILIGENT", true);
 
+    // Include Variant defines into macros
+    {
+        auto defineParts = defines_.split(' ');
+        for (auto part = defineParts.begin(); part != defineParts.end(); ++part) {
+            auto define = part->split('=');
+            if (define.size() == 2)
+                macros.AddShaderMacro(define[0].c_str(), define[1].c_str());
+            else
+                macros.AddShaderMacro(define[0].c_str(), true);
+        }
+    }
+
     // Convert shader source code if GLSL
     static thread_local ea::string convertedShaderSourceCode;
     if (owner_->IsGLSL())
@@ -362,15 +464,14 @@ bool ShaderVariation::Compile()
 
     shaderCI.Macros = macros;
 
-    auto compilerOutput = DataBlobImpl::Create();
+    auto compilerOutputBlob = DataBlobImpl::Create();
     auto shaderSrcOutput = DataBlobImpl::Create();
 
-    compilerOutput->Resize(sourceCode->size());
-    IDataBlob* compilerOutputs[] = {compilerOutput, shaderSrcOutput};
+    compilerOutputBlob->Resize(sourceCode->size());
+    IDataBlob* compilerOutputs[] = {compilerOutputBlob, shaderSrcOutput};
     auto byteCode = Diligent::GLSLangUtils::HLSLtoSPIRV(shaderCI, GLSLangUtils::SpirvVersion::Vk120, nullptr, compilerOutputs);
 
-    compilerOutput_ = ea::string(static_cast<const char*>(compilerOutput->GetConstDataPtr()), compilerOutput->GetSize());
-    ea::string shaderCode(static_cast<const char*>(shaderSrcOutput->GetConstDataPtr()), shaderSrcOutput->GetSize());
+    compilerOutput_ = ea::string(static_cast<const char*>(compilerOutputBlob->GetConstDataPtr()));
 
     if (!compilerOutput_.empty()) {
         URHO3D_LOGERROR("Failed to compile shader " + GetFullName());
@@ -400,7 +501,12 @@ bool ShaderVariation::Compile()
     }
 
     ParseParameters(byteCode);
-    return false;
+    CalculateConstantBufferSizes();
+
+    size_t byteCodeLength = byteCode.size() * sizeof(unsigned int);
+    byteCode_.resize(byteCodeLength);
+    memcpy(byteCode_.data(), byteCode.data(), byteCodeLength);
+    return true;
 //
 //    D3D_SHADER_MACRO endMacro;
 //    endMacro.Name = nullptr;
@@ -448,10 +554,100 @@ bool ShaderVariation::Compile()
 //    return !byteCode_.empty();
 }
 
-void ShaderVariation::ParseParameters(std::vector<unsigned> byteCode)
+void ShaderVariation::ParseParameters(std::vector<unsigned>& byteCode)
 {
-    spirv_cross::CompilerReflection compiler(byteCode);
-    assert(0);
+    SpvReflectShaderModule module = {};
+    SpvReflectResult result = spvReflectCreateShaderModule(byteCode.size() * sizeof(byteCode[0]), byteCode.data(), &module);
+    assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+
+    // Collect Vertex Elements from Shader Reflection and create hash
+    if (type_ == VS) {
+        unsigned varCount = 0;
+        result = spvReflectEnumerateInputVariables(&module, &varCount, nullptr);
+        assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+        ea::vector<SpvReflectInterfaceVariable*> inputVars(varCount);
+        result = spvReflectEnumerateInputVariables(&module, &varCount, inputVars.data());
+        assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+        unsigned elementHash = 0;
+        for (auto it = inputVars.begin(); it != inputVars.end(); ++it) {
+            ea::string semanticName((*it)->semantic);
+            // Remove Digits from Semantic Name
+            while (isdigit(semanticName.at(semanticName.size() - 1)))
+                semanticName = semanticName.substr(0, semanticName.size() - 1);
+            VertexElementSemantic semantic = (VertexElementSemantic)GetStringListIndex(semanticName.c_str(), elementSemanticNames, MAX_VERTEX_ELEMENT_SEMANTICS, true);
+            if (semantic != MAX_VERTEX_ELEMENT_SEMANTICS) {
+                CombineHash(elementHash, semantic);
+                CombineHash(elementHash, (*it)->location);
+            }
+        }
+        elementHash_ = elementHash;
+        elementHash_ <<= 32;
+    }
+
+    {
+        // Collect used Constant Buffers
+        // This step is too simple, we just follow rules above
+        // 1. Collect Constant Buffers
+        // 1.1 Lookup Shader Parameter Group by the Constant Buffer Name
+        // 1.2 Extract Struct Members, Size and Offsets to Build Shader Parameters, and use ShaderParameterGroup to build ShaderParameter
+        // 2. Collect Samplers(Textures)
+        // 2.1 Normalize Sampler name by removing your suffixes from parameter.
+        // 2.2 After a full sampler name normalization, then we lookup TextureUnit by the sampler name and turn on flag
+        unsigned bindingCount = 0;
+        result = spvReflectEnumerateDescriptorBindings(&module, &bindingCount, nullptr);
+        assert(result == SPV_REFLECT_RESULT_SUCCESS);
+        ea::vector<SpvReflectDescriptorBinding*> descriptorBindings(bindingCount);
+        result = spvReflectEnumerateDescriptorBindings(&module, &bindingCount, descriptorBindings.data());
+        assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+        ea::unordered_map<ea::string, unsigned> cbRegisterMap;
+
+        for (auto descBindingIt = descriptorBindings.begin(); descBindingIt != descriptorBindings.end(); descBindingIt++) {
+            SpvReflectDescriptorBinding* binding = *descBindingIt;
+
+            if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+                assert(binding->name);
+                ea::string bindingName(binding->name);
+                ShaderVariation_SanitizeCBName(bindingName);
+
+                auto cBufferLookupValue = sConstantBuffersLookup.find(bindingName);
+                if (cBufferLookupValue == sConstantBuffersLookup.end()) {
+                    spvReflectDestroyShaderModule(&module);
+                    URHO3D_LOGERRORF("Failed to reflect shader constant buffer. Invalid constant buffer name: %s", bindingName);
+                    return;
+                }
+
+                unsigned membersCount = binding->block.member_count;
+                // Extract CBuffer variable parameters and build shader parameters
+                while (membersCount--) {
+                    const SpvReflectBlockVariable& variable = binding->block.members[membersCount];
+                    ea::string varName(variable.name);
+                    const auto nameStart = varName.find('c');
+                    if (nameStart != ea::string::npos)
+                        varName = varName.substr(nameStart + 1);
+                    parameters_[varName] = ShaderParameter { type_ ,varName, variable.offset, variable.size, (unsigned)cBufferLookupValue->second };
+                }
+            }
+            else if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
+                assert(binding->name);
+                ea::string name(binding->name);
+                if (name.at(0) == 't')
+                    name = name.substr(1, name.size());
+                auto texUnitLookupVal = sTextureUnitLookup.find(name);
+                if (texUnitLookupVal == sTextureUnitLookup.end()) {
+                    URHO3D_LOGERRORF("Failed to reflect shader texture samplers. Invalid texture sampler name: %s", name);
+                    spvReflectDestroyShaderModule(&module);
+                    return;
+                }
+                useTextureUnits_[texUnitLookupVal->second] = true;
+            }
+        }
+    }
+
+    spvReflectDestroyShaderModule(&module);
     //ID3D11ShaderReflection* reflection = nullptr;
     //D3D11_SHADER_DESC shaderDesc;
 
@@ -544,13 +740,9 @@ void ShaderVariation::SaveByteCode(const ea::string& binaryShaderName)
     if (!file->IsOpen())
         return;
 
-    file->WriteFileID("USHD");
-    file->WriteShort((unsigned short)type_);
-    // Shader Model, CS/HS/DS use SM5
-    if (type_ == CS)
-        file->WriteShort(5);
-    else
-        file->WriteShort(4);
+    // FileID: Urho Diligent Shader
+    file->WriteFileID("UDSHD");
+    file->WriteUShort((unsigned short)type_);
 
     file->WriteUInt(elementHash_ >> 32);
 

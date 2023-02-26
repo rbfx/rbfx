@@ -223,6 +223,7 @@ set (THIRD_PARTY_DEPENDENCIES
     Diligent-GraphicsEngineD3D12-static
     Diligent-GraphicsEngineOpenGL-static
     Diligent-GraphicsEngineVk-static
+    SPIRV-Reflect
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)

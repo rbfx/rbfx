@@ -26,6 +26,7 @@
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/ShaderDefineArray.h"
+#include "../Container/ByteVector.h"
 
 #include <EASTL/optional.h>
 
@@ -41,5 +42,7 @@ bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, c
     ea::string& outputShaderCode, ea::string& errorMessage);
 
 #endif
-
+#ifdef URHO3D_DILIGENT
+bool CompileSpirvToHLSL(const ByteVector& byteCode, ea::string& outputShaderCode);
+#endif
 }
