@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +56,14 @@
 #include "../IK/IK.h"
 #endif
 #ifdef URHO3D_MONETIZATION
-#include "Urho3D/Monetization/BillingManager.h"
+#include "../Monetization/BillingManager.h"
+#if UWP
+#include "../Monetization/WindowsStore/BillingManager.h"
+#elif ANDROID
+#include "../Monetization/Android/BillingManager.h"
+#else
+#include "../Monetization/Mock/BillingManager.h"
+#endif
 #endif
 #ifdef URHO3D_NAVIGATION
 #include "../Navigation/NavigationMesh.h"
@@ -285,6 +293,8 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 #ifdef URHO3D_MONETIZATION
     #if UWP
         context_->RegisterSubsystem(new Platform::BillingManagerUWP(context_));
+    #elif ANDROID
+        context_->RegisterSubsystem(new Platform::BillingManagerAndroid(context_));
     #else
         context_->RegisterSubsystem(new Platform::BillingManagerNull(context_));
     #endif

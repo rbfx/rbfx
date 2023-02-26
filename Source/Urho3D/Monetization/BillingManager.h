@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2015 Xamarin Inc.
-// Copyright (c) 2022 the rbfx project.
+// Copyright (c) 2017 James Montemagno / Refractored LLC
+// Copyright (c) 2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -123,52 +123,5 @@ public:
 
 private:
 };
-
-namespace Platform
-{
-
-/// No-op implementation of BillingManager.
-class URHO3D_API BillingManagerNull : public BillingManager
-{
-public:
-    /// Implement BillingManager.
-    /// @{
-    void SetSimulatorEnabled(bool enabled) override {}
-    bool IsSupported() const override { return false; }
-
-    void GetProductsAsync(const ea::vector<ea::string>& productIds, const OnProductsReceived& callback) override;
-    void GetPurchasesAsync(const OnPurchasesReceived& callback) override;
-    void PurchaseAsync(const ea::string& productId, const OnPurchaseProcessed& callback) override;
-    void ConsumeAsync(
-        const ea::string& productId, const ea::string& transactionId, const OnPurchaseConsumed& callback) override;
-    /// @}
-};
-
-#if UWP
-/// UWP implementation of BillingManager.
-class URHO3D_API BillingManagerUWP : public BillingManager
-{
-public:
-    BillingManagerUWP(Context* context);
-    ~BillingManagerUWP() override;
-
-    /// Implement BillingManager.
-    /// @{
-    void SetSimulatorEnabled(bool enabled) override { simulatorEnabled_ = enabled; }
-    bool IsSupported() const { return true; }
-
-    void GetProductsAsync(const ea::vector<ea::string>& productIds, const OnProductsReceived& callback) override;
-    void GetPurchasesAsync(const OnPurchasesReceived& callback) override;
-    void PurchaseAsync(const ea::string& productId, const OnPurchaseProcessed& callback) override;
-    void ConsumeAsync(
-        const ea::string& productId, const ea::string& transactionId, const OnPurchaseConsumed& callback) override;
-    /// @}
-
-private:
-    bool simulatorEnabled_{true};
-};
-#endif
-
-} // namespace Platform
 
 } // namespace Urho3D
