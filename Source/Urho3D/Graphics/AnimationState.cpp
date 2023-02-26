@@ -141,7 +141,7 @@ void AnimationState::Update(bool looped, float time, float weight)
 
 bool AnimationState::AreTracksDirty() const
 {
-    return tracksDirty_;
+    return tracksDirty_ || (animation_ && animation_->GetRevision() != animationRevision_);
 }
 
 void AnimationState::MarkTracksDirty()
@@ -174,6 +174,7 @@ void AnimationState::AddAttributeTrack(const AttributeAnimationStateTrack& track
 void AnimationState::OnTracksReady()
 {
     tracksDirty_ = false;
+    animationRevision_ = animation_ ? animation_->GetRevision() : ObjectRevisionTracker::InvalidRevision;
     if (model_)
         model_->MarkAnimationDirty();
 }
@@ -246,7 +247,7 @@ void AnimationState::CalculateModelTracks(ea::vector<ModelAnimationOutput>& outp
         ModelAnimationOutput& trackOutput = output[stateTrack.boneIndex_];
 
         unsigned keyFrame = stateTrack.keyFrame_;
-        CalulcateTransformTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
+        CalculateTransformTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
         stateTrack.keyFrame_ = keyFrame;
     }
 }
@@ -261,7 +262,7 @@ void AnimationState::CalculateNodeTracks(ea::unordered_map<Node*, NodeAnimationO
         NodeAnimationOutput& trackOutput = output[stateTrack.node_.Get()];
 
         unsigned keyFrame = stateTrack.keyFrame_;
-        CalulcateTransformTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
+        CalculateTransformTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
         stateTrack.keyFrame_ = keyFrame;
     }
 }
@@ -276,12 +277,12 @@ void AnimationState::CalculateAttributeTracks(ea::unordered_map<AnimatedAttribut
         Variant& trackOutput = output[stateTrack.attribute_];
 
         unsigned keyFrame = stateTrack.keyFrame_;
-        CalulcateAttributeTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
+        CalculateAttributeTrack(trackOutput, *stateTrack.track_, keyFrame, weight_);
         stateTrack.keyFrame_ = keyFrame;
     }
 }
 
-void AnimationState::CalulcateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const
+void AnimationState::CalculateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const
 {
     if (track.keyFrames_.empty())
         return;
@@ -354,7 +355,7 @@ void AnimationState::CalulcateTransformTrack(NodeAnimationOutput& output, const 
     }
 }
 
-void AnimationState::CalulcateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const
+void AnimationState::CalculateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const
 {
     if (track.keyFrames_.empty())
         return;
