@@ -13,28 +13,27 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.2.1'
+        classpath 'com.android.tools.build:gradle:7.4.1'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
 }
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
     defaultConfig {
         applicationId 'io.urho3d'
         versionCode 1
         versionName '1.0.0'
         minSdkVersion 17
-        targetSdkVersion 32
+        targetSdkVersion 33
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
         }
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21', '-DANDROID=1',
-                          '-DANDROID_ARM_MODE=arm', '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON',
-                          '-DURHO3D_PLAYER=OFF'
+                          '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON', '-DURHO3D_PLAYER=OFF'
             }
         }
     }
