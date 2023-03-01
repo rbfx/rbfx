@@ -102,8 +102,6 @@ public:
     using OnPurchasesReceived = ea::function<void(const ea::optional<BillingPurchaseVector>& purchases)>;
     using OnPurchaseProcessed = ea::function<void(const ea::optional<BillingPurchase>& purchase)>;
     using OnPurchaseConsumed = ea::function<void(ea::optional<BillingError> error)>;
-    using OnConnected = ea::function<void(bool connected)>;
-    using OnDisconnected = ea::function<void()>;
 
     BillingManager(Context* context);
     ~BillingManager() override;
@@ -112,11 +110,6 @@ public:
     virtual void SetSimulatorEnabled(bool enabled) = 0;
     /// Return whether in-app purchases are supported.
     virtual bool IsSupported() const = 0;
-
-    /// Connect to billing service (asynchronously).
-    virtual void ConnectAsync(bool enablePendingPurchases, const OnConnected& callback);
-    /// Disconnect from the billing service (asynchronously).
-    virtual void DisconnectAsync(const OnDisconnected& callback);
 
     /// Return product information (asynchronously).
     virtual void GetProductsAsync(const ea::vector<ea::string>& productIds, const OnProductsReceived& callback) = 0;

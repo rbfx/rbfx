@@ -99,8 +99,6 @@ auto ForEachChild(const XMLElement& element, const char* name)
 
 }
 
-
-
 BillingManager::BillingManager(Context* context)
     : Object(context)
 {
@@ -108,16 +106,6 @@ BillingManager::BillingManager(Context* context)
 
 BillingManager::~BillingManager()
 {
-}
-
-void BillingManager::ConnectAsync(bool enablePendingPurchases, const OnConnected& callback)
-{
-    callback(true);
-}
-
-void BillingManager::DisconnectAsync(const OnDisconnected& callback)
-{
-    callback();
 }
 
 } // namespace Urho3D

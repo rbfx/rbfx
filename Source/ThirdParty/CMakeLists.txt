@@ -166,4 +166,8 @@ if (DESKTOP AND NOT LINUX)
     add_subdirectory (LibCpuId)
 endif ()
 
+if (ANDROID)
+    add_subdirectory (jni.hpp)
+endif ()
+
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)

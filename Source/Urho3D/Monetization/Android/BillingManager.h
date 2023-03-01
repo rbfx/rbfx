@@ -24,6 +24,7 @@
 #pragma once
 
 #include "../../Monetization/BillingManager.h"
+#include "../../Monetization/Android/BillingResult.h"
 
 #include <EASTL/string.h>
 
@@ -42,15 +43,21 @@ namespace Platform
         void SetSimulatorEnabled(bool enabled) override {}
         bool IsSupported() const override { return false; }
 
-        void ConnectAsync(bool enablePendingPurchases, const OnConnected& callback) override;
-        void DisconnectAsync(const OnDisconnected& callback) override;
-
         void GetProductsAsync(const ea::vector<ea::string>& productIds, const OnProductsReceived& callback) override;
         void GetPurchasesAsync(const OnPurchasesReceived& callback) override;
         void PurchaseAsync(const ea::string& productId, const OnPurchaseProcessed& callback) override;
         void ConsumeAsync(
                 const ea::string& productId, const ea::string& transactionId, const OnPurchaseConsumed& callback) override;
         /// @}
+
+        // Executed from BillingClientStateListener.
+        void BillingServiceDisconnected();
+        void BillingSetupFinished(BillingResultCode code, const ea::string& debugMessage);
+
+        private:
+        void ConnectAsync(bool enablePendingPurchases);
+        void DisconnectAsync();
+
     };
 
 } // namespace Platform

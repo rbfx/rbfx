@@ -227,6 +227,10 @@ set (THIRD_PARTY_DEPENDENCIES
     tinygltf
 )
 
+if (ANDROID)
+    list (APPEND THIRD_PARTY_DEPENDENCIES jnihpp)
+endif ()
+
 if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
 elseif (TARGET Bullet)
