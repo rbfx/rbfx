@@ -25,6 +25,7 @@
 
 #include "../../Monetization/BillingManager.h"
 #include "../../Monetization/Android/BillingResult.h"
+#include "../../Monetization/Android/BillingClient.h"
 
 #include <EASTL/string.h>
 
@@ -58,6 +59,7 @@ namespace Platform
         void ConnectAsync(bool enablePendingPurchases);
         void DisconnectAsync();
 
+        jni::Global<jni::Object<BillingClient> > billingClient_;
     };
 
 } // namespace Platform

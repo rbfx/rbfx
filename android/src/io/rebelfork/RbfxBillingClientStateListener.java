@@ -25,6 +25,7 @@ package io.rebelfork;
 import java.util.*;
 import com.android.billingclient.api.*;
 
+// BillingClientStateListener implementation for rbfx.
 public class RbfxBillingClientStateListener implements BillingClientStateListener
 {
     public RbfxBillingClientStateListener(long ptr)
@@ -36,7 +37,21 @@ public class RbfxBillingClientStateListener implements BillingClientStateListene
 
     @Override public native void onBillingSetupFinished(BillingResult billingResult);
 
+
     public long getPtr() { return ptr_; }
+
+    // Destroy user data in c++ code.
+    private native void disposePtr(long ptr);
+
+    // Handle java object destruction
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+             disposePtr(ptr_);
+        } finally {
+            super.finalize();
+        }
+    }
 
     // Private native data pointer.
     private long ptr_;

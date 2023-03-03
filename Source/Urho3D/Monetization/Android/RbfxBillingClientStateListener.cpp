@@ -23,6 +23,11 @@
 #include "../../Monetization/Android/RbfxBillingClientStateListener.h"
 #include "../../Monetization/Android/BillingManager.h"
 #include "../../Monetization/Android/BillingResult.h"
+#include <jni.h>
+
+extern "C"
+JNIEXPORT void JNICALL Java_io_rebelfork_RbfxBillingClientStateListener_disposePtr(JNIEnv* env, jobject obj, jlong ptr) {
+}
 
 extern "C"
 JNIEXPORT void JNICALL Java_io_rebelfork_RbfxBillingClientStateListener_onBillingServiceDisconnected(JNIEnv *envPtr, jobject obj)

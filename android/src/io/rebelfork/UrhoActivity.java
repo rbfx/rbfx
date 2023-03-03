@@ -21,7 +21,7 @@
 // THE SOFTWARE.
 //
 
-package io.urho3d;
+package io.rebelfork;
 
 import org.libsdl.app.SDLActivity;
 

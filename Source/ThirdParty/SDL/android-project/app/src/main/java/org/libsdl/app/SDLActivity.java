@@ -60,7 +60,7 @@ import java.util.Hashtable;
 import java.util.Locale;
 import java.util.List;
 
-import io.urho3d.UrhoActivity;
+import io.rebelfork.UrhoActivity;
 
 
 /**

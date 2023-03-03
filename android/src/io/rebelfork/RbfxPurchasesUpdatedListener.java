@@ -25,6 +25,7 @@ package io.rebelfork;
 import java.util.*;
 import com.android.billingclient.api.*;
 
+// PurchasesUpdatedListener implementation for rbfx.
 public class RbfxPurchasesUpdatedListener implements PurchasesUpdatedListener
 {
     public RbfxPurchasesUpdatedListener(long ptr)
@@ -34,6 +35,17 @@ public class RbfxPurchasesUpdatedListener implements PurchasesUpdatedListener
     @Override public native void onPurchasesUpdated(BillingResult billingResult, List<Purchase> purchases);
 
     public long getPtr() { return ptr_; }
+
+    private native void disposePtr(long ptr);
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            disposePtr(ptr_);
+        } finally {
+            super.finalize();
+        }
+    }
 
     // Private native data pointer.
     private long ptr_;
