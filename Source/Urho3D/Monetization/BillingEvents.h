@@ -30,11 +30,13 @@ namespace Urho3D
 /// Billing service connected.
 URHO3D_EVENT(E_BILLINGCONNECTED, BillingConnected)
 {
+    URHO3D_PARAM(P_MESSAGE, Message); // string
 }
 
 /// Billing service disconnected.
 URHO3D_EVENT(E_BILLINGDISCONNECTED, BillingDisconnected)
 {
+    URHO3D_PARAM(P_MESSAGE, Message); // string
 }
 
 }

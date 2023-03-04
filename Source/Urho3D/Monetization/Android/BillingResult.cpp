@@ -27,12 +27,14 @@ namespace Urho3D
 {
 namespace Platform
 {
+ea::string GetJavaStringValue(jni::JNIEnv& env, const jni::String& src);
+
 ea::string BillingResult::GetDebugMessage(jni::JNIEnv &env, const jni::Object <BillingResult>& thisObject)
 {
     static auto &thisClass = jni::Class<BillingResult>::Singleton(env);
     static auto method = thisClass.GetMethod<jni::String()>(env, "getDebugMessage");
     auto str = thisObject.Call(env, method);
-    return jstringToEaString(env, str);
+    return GetJavaStringValue(env, str);
 }
 
 BillingResultCode BillingResult::GetResponseCode(jni::JNIEnv &env, const jni::Object <BillingResult>& thisObject)

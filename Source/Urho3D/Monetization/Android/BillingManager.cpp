@@ -22,6 +22,7 @@
 //
 
 #include "../../Monetization/Android/BillingManager.h"
+#include "../../Monetization/BillingEvents.h"
 
 #include "../../Core/WorkQueue.h"
 #include "../../Resource/XMLFile.h"
@@ -43,6 +44,16 @@ namespace Urho3D
 {
 namespace Platform
 {
+
+ea::string GetJavaStringValue(jni::JNIEnv& env, const jni::String& src)
+{
+    jni::UniqueStringUTFChars str;
+    bool success;
+    std::tie(str, success) = jni::GetStringUTFChars(env, *src);
+    if (!success)
+        return EMPTY_STRING;
+    return ea::string(str.get());
+}
 
 BillingManagerAndroid::BillingManagerAndroid(Context* context)
     :BillingManager(context)
@@ -86,14 +97,40 @@ void BillingManagerAndroid::DisconnectAsync()
 
 void BillingManagerAndroid::BillingServiceDisconnected()
 {
+    context_->GetSubsystem<WorkQueue>()->CallFromMainThread(
+            [=](unsigned threadId)
+            {
+                using namespace BillingDisconnected;
+                auto& eventData = GetEventDataMap();
+                eventData[P_MESSAGE] = "Disconnected";
+                SendEvent(E_BILLINGDISCONNECTED, eventData);
+            });
 }
 
 void BillingManagerAndroid::BillingSetupFinished(BillingResultCode code, const ea::string& debugMessage)
 {
-    if (code != BillingResultCode::OK)
-        URHO3D_LOGERROR("BillingSetupFinished with error, code {}, message {}", code, debugMessage);
-    else
-        URHO3D_LOGDEBUG("BillingSetupFinished, code {}, message {}", code, debugMessage);
+    if (code != BillingResultCode::OK) {
+        context_->GetSubsystem<WorkQueue>()->CallFromMainThread(
+                [=](unsigned threadId)
+                {
+                    URHO3D_LOGERROR(Format("BillingSetupFinished with error, code {}, message {}", code, debugMessage));
+                    using namespace BillingDisconnected;
+                    auto& eventData = GetEventDataMap();
+                    eventData[P_MESSAGE] = debugMessage;
+                    SendEvent(E_BILLINGDISCONNECTED, eventData);
+                });
+    }
+    else {
+        context_->GetSubsystem<WorkQueue>()->CallFromMainThread(
+                [=](unsigned threadId)
+                {
+                    URHO3D_LOGINFO(Format("BillingSetupFinished"));
+                    using namespace BillingConnected;
+                    auto& eventData = GetEventDataMap();
+                    eventData[P_MESSAGE] = debugMessage;
+                    SendEvent(E_BILLINGCONNECTED, eventData);
+                });
+    }
 }
 
 

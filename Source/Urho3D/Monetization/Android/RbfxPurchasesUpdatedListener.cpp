@@ -23,7 +23,7 @@
 #include "../../Monetization/Android/RbfxPurchasesUpdatedListener.h"
 
 extern "C"
-JNIEXPORT void JNICALL Java_io_rebelfork_RbfxBillingClientStateListener_disposePtr(JNIEnv* env, jobject obj, jlong ptr) {
+JNIEXPORT void JNICALL Java_io_rebelfork_RbfxPurchasesUpdatedListener_disposePtr(JNIEnv* env, jobject obj, jlong ptr) {
 }
 
 extern "C"

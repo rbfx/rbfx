@@ -22,6 +22,7 @@
 //
 
 #include "../../Monetization/Mock/BillingManager.h"
+#include "../../Monetization/BillingEvents.h"
 
 #include "../../Core/WorkQueue.h"
 #include "../../Resource/XMLFile.h"
