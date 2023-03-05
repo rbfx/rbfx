@@ -43,7 +43,7 @@ struct RbfxBillingClient {
 
     static void ConnectAsync(jni::JNIEnv &env, const jni::Object<RbfxBillingClient>& thiz, const ea::function<OnBillingSetupFinished>& billingSetupFinished);
 
-    static void PurchaseAsync(jni::JNIEnv &env, const jni::Object<RbfxBillingClient>& thiz, const ea::string& productId, const ea::string& productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const jni::Object<RbfxLambdaContainer>& callback);
+    static void PurchaseAsync(jni::JNIEnv &env, const jni::Object<RbfxBillingClient>& thiz, const ea::string& productId, const ea::string& productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId);
 };
 
 }

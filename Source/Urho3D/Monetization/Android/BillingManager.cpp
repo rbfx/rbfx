@@ -112,9 +112,7 @@ void BillingManagerAndroid::BillingSetupFinished(BillingResultCode code, const e
                     SendEvent(E_BILLINGCONNECTED, eventData);
                 });
 
-        PurchaseAsync("android.test.purchased", BillingProductType::Durable, "", "", [=](const ea::optional<BillingPurchase>& products){
-
-        });
+        PurchaseAsync("android.test.purchased", BillingProductType::Durable, "", "");
     }
 }
 
@@ -128,7 +126,7 @@ void BillingManagerAndroid::GetPurchasesAsync(const OnPurchasesReceived& callbac
     callback(ea::nullopt);
 }
 
-void BillingManagerAndroid::PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const OnPurchaseProcessed& callback)
+void BillingManagerAndroid::PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId)
 {
     JNIEnv& env = *(JNIEnv*)SDL_AndroidGetJNIEnv();
 
@@ -142,9 +140,7 @@ void BillingManagerAndroid::PurchaseAsync(const ea::string& productId, BillingPr
             type = "subs"; //BillingClient.ProductType.SUBS
             break;
     }
-    RbfxBillingClient::PurchaseAsync(env, billingClient_, productId, type, obfuscatedAccountId, obfuscatedProfileId, RbfxLambdaContainer::Create<NOP>(env, [=](){
-        //callback(nullptr);
-    }));
+    RbfxBillingClient::PurchaseAsync(env, billingClient_, productId, type, obfuscatedAccountId, obfuscatedProfileId);
 }
 
 void BillingManagerAndroid::ConsumeAsync(

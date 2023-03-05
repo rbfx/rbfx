@@ -21,16 +21,20 @@
 //
 
 #include "../../Monetization/Android/RbfxBillingClient.h"
+#include "../../Monetization/Android/Purchase.h"
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_rebelfork_RbfxBillingClient_onPurchasesUpdated(JNIEnv *envPtr, jobject thiz, jobject billing_result, jobject list, jobject purchases_updated)
+Java_io_rebelfork_RbfxBillingClient_onPurchasesUpdated(JNIEnv *envPtr, jobject thiz, jobject billingResult, jobject purchase, jobject purchases_updated)
 {
 using namespace Urho3D;
 using namespace Urho3D::Platform;
 jni::JNIEnv& env = *envPtr;
 
 static auto &thisClass = jni::Class<RbfxBillingClient>::Singleton(env);
+
+auto localBillingResult = jni::Local<jni::Object<BillingResult>>(env, jni::Wrap<jni::jobject*>(env.NewLocalRef(billingResult)));
+auto localPurchase = jni::Local<jni::Object<Purchase>>(env, jni::Wrap<jni::jobject*>(env.NewLocalRef(purchase)));
 
 }
 
@@ -68,11 +72,11 @@ void RbfxBillingClient::ConnectAsync(jni::JNIEnv &env, const jni::Object<RbfxBil
     thiz.Call(env, method, RbfxLambdaContainer::Create(env, billingSetupFinished));
 }
 
-void RbfxBillingClient::PurchaseAsync(jni::JNIEnv &env, const jni::Object<RbfxBillingClient>& thiz, const ea::string& productId, const ea::string& productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const jni::Object<RbfxLambdaContainer>& callback)
+void RbfxBillingClient::PurchaseAsync(jni::JNIEnv &env, const jni::Object<RbfxBillingClient>& thiz, const ea::string& productId, const ea::string& productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId)
 {
     static auto &thisClass = jni::Class<RbfxBillingClient>::Singleton(env);
-    static auto method = thisClass.GetMethod<void(jni::String, jni::String, jni::String, jni::String, jni::Object<RbfxLambdaContainer>)>(env, "PurchaseAsync");
-    thiz.Call(env, method, MakeJavaString(env, productId), MakeJavaString(env, productType), MakeJavaString(env, obfuscatedAccountId), MakeJavaString(env, obfuscatedProfileId), callback);
+    static auto method = thisClass.GetMethod<void(jni::String, jni::String, jni::String, jni::String)>(env, "PurchaseAsync");
+    thiz.Call(env, method, MakeJavaString(env, productId), MakeJavaString(env, productType), MakeJavaString(env, obfuscatedAccountId), MakeJavaString(env, obfuscatedProfileId));
 }
 
 

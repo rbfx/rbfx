@@ -100,7 +100,6 @@ class URHO3D_API BillingManager
 public:
     using OnProductsReceived = ea::function<void(const ea::optional<BillingProductVector>& products)>;
     using OnPurchasesReceived = ea::function<void(const ea::optional<BillingPurchaseVector>& purchases)>;
-    using OnPurchaseProcessed = ea::function<void(const ea::optional<BillingPurchase>& purchase)>;
     using OnPurchaseConsumed = ea::function<void(ea::optional<BillingError> error)>;
 
     BillingManager(Context* context);
@@ -116,7 +115,7 @@ public:
     /// Return purchase information (asynchronously).
     virtual void GetPurchasesAsync(const OnPurchasesReceived& callback) = 0;
     /// Purchase a product.
-    virtual void PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const OnPurchaseProcessed& callback) = 0;
+    virtual void PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId) = 0;
     /// Consume a purchase.
     virtual void ConsumeAsync(
         const ea::string& productId, const ea::string& transactionId, const OnPurchaseConsumed& callback) = 0;

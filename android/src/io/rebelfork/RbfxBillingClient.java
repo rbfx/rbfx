@@ -58,7 +58,7 @@ public class RbfxBillingClient implements PurchasesUpdatedListener
         billingClient_.endConnection();
     }
 
-    public void PurchaseAsync(String productSku, String itemType, String obfuscatedAccountId, String obfuscatedProfileId, RbfxLambdaContainer callback)
+    public void PurchaseAsync(String productSku, String itemType, String obfuscatedAccountId, String obfuscatedProfileId)
     {
         List<QueryProductDetailsParams.Product> productList = new ArrayList<>();
 
@@ -94,10 +94,14 @@ public class RbfxBillingClient implements PurchasesUpdatedListener
 
     @Override
     public void onPurchasesUpdated(BillingResult billingResult, List<Purchase> list) {
-        RbfxBillingClient.this.onPurchasesUpdated(billingResult, list, purchasesUpdated_);
+        if (list != null) {
+            for (Purchase purchase : list) {
+                RbfxBillingClient.this.onPurchasesUpdated(billingResult, purchase, purchasesUpdated_);
+            }
+        }
     }
 
-    private native void onPurchasesUpdated(BillingResult billingResult, List<Purchase> list, RbfxLambdaContainer purchasesUpdated);
+    private native void onPurchasesUpdated(BillingResult billingResult, Purchase list, RbfxLambdaContainer purchasesUpdated);
     private native void onBillingSetupFinished(BillingResult billingResult, RbfxLambdaContainer billingSetupFinished);
 
     // Billing client instance.

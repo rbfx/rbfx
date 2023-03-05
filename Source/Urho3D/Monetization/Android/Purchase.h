@@ -20,32 +20,30 @@
 // THE SOFTWARE.
 //
 
-#include "../../Monetization/Android/BillingResult.h"
-#include "../../Core/Context.h"
+#pragma once
+
+#include <jni/jni.hpp>
 
 namespace Urho3D
 {
 namespace Platform
 {
 
-ea::string GetJavaStringValue(jni::JNIEnv& env, const jni::String& src);
+/// JNI.HPP wrapper for the Activity java class.
+struct Purchase {
+    static constexpr auto Name() { return "com/android/billingclient/api/Purchase"; }
 
-ea::string BillingResult::GetDebugMessage(jni::JNIEnv &env, const jni::Object <BillingResult>& thisObject)
-{
-    static auto &thisClass = jni::Class<BillingResult>::Singleton(env);
-    static auto method = thisClass.GetMethod<jni::String()>(env, "getDebugMessage");
-    auto str = thisObject.Call(env, method);
-    return GetJavaStringValue(env, str);
-}
+    static void registerNative(jni::JNIEnv &env) { jni::Class<Purchase>::Singleton(env); }
 
-BillingResultCode BillingResult::GetResponseCode(jni::JNIEnv &env, const jni::Object <BillingResult>& thisObject)
-{
-    static auto &thisClass = jni::Class<BillingResult>::Singleton(env);
-    static auto method = thisClass.GetMethod<jni::jint()>(env, "getResponseCode");
-    jni::jint code = thisObject.Call(env, method);
-    return static_cast<BillingResultCode>(code);
-}
+    static ea::string getDeveloperPayload(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+    static ea::string getOrderId(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+    static ea::string getOriginalJson(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+    static ea::string getPackageName(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+    static int getPurchaseState(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+    static long getPurchaseTim(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+    static ea::string getPurchaseToken(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+    static int getQuantity(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+};
 
 }
 }
-

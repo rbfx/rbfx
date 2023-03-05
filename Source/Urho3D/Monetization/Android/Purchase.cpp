@@ -20,31 +20,35 @@
 // THE SOFTWARE.
 //
 
-#include "../../Monetization/Android/BillingResult.h"
-#include "../../Core/Context.h"
+#include "../../Monetization/Android/Activity.h"
+#include "../../Monetization/Android/AppContext.h"
 
 namespace Urho3D
 {
 namespace Platform
 {
-
 ea::string GetJavaStringValue(jni::JNIEnv& env, const jni::String& src);
 
-ea::string BillingResult::GetDebugMessage(jni::JNIEnv &env, const jni::Object <BillingResult>& thisObject)
+ea::string Purchase::getDeveloperPayload(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+ea::string Purchase::getOrderId(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+ea::string Purchase::getOriginalJson(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+ea::string Purchase::getPackageName(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+int Purchase::getPurchaseState(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+long Purchase::getPurchaseTim(jni::JNIEnv &env, const jni::Object<Purchase>& thiz);
+ea::string Purchase::getPurchaseToken(jni::JNIEnv &env, const jni::Object<Purchase>& thiz)
 {
-    static auto &thisClass = jni::Class<BillingResult>::Singleton(env);
-    static auto method = thisClass.GetMethod<jni::String()>(env, "getDebugMessage");
-    auto str = thisObject.Call(env, method);
-    return GetJavaStringValue(env, str);
+    static auto &thisClass = jni::Class<Purchase>::Singleton(env);
+    static auto method = thisClass.GetMethod<jni::String()>(env, "getPurchaseToken");
+    return GetJavaStringValue(thiz.Call(env, method));
 }
 
-BillingResultCode BillingResult::GetResponseCode(jni::JNIEnv &env, const jni::Object <BillingResult>& thisObject)
+int Purchase::getQuantity(jni::JNIEnv &env, const jni::Object<Purchase>& thiz)
 {
-    static auto &thisClass = jni::Class<BillingResult>::Singleton(env);
-    static auto method = thisClass.GetMethod<jni::jint()>(env, "getResponseCode");
-    jni::jint code = thisObject.Call(env, method);
-    return static_cast<BillingResultCode>(code);
+    static auto &thisClass = jni::Class<Purchase>::Singleton(env);
+    static auto method = thisClass.GetMethod<jni::jint()>(env, "getQuantity");
+    return thiz.Call(env, method);
 }
+
 
 }
 }

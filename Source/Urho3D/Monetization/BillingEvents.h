@@ -39,4 +39,10 @@ URHO3D_EVENT(E_BILLINGDISCONNECTED, BillingDisconnected)
     URHO3D_PARAM(P_MESSAGE, Message); // string
 }
 
+/// Billing purchase update.
+URHO3D_EVENT(E_BILLINGPURCHASEUPDATE, BillingPurchaseUpdate)
+{
+    URHO3D_PARAM(P_MESSAGE, Message); // string
+}
+
 }

@@ -46,7 +46,7 @@ public:
 
     void GetProductsAsync(const ea::vector<ea::string>& productIds, const OnProductsReceived& callback) override;
     void GetPurchasesAsync(const OnPurchasesReceived& callback) override;
-    void PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const OnPurchaseProcessed& callback) override;
+    void PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId) override;
     void ConsumeAsync(
         const ea::string& productId, const ea::string& transactionId, const OnPurchaseConsumed& callback) override;
     /// @}
