@@ -25,7 +25,7 @@
 
 #include "../../Monetization/BillingManager.h"
 #include "../../Monetization/Android/BillingResult.h"
-#include "../../Monetization/Android/BillingClient.h"
+#include "../../Monetization/Android/RbfxBillingClient.h"
 
 #include <EASTL/string.h>
 
@@ -46,7 +46,7 @@ namespace Platform
 
         void GetProductsAsync(const ea::vector<ea::string>& productIds, const OnProductsReceived& callback) override;
         void GetPurchasesAsync(const OnPurchasesReceived& callback) override;
-        void PurchaseAsync(const ea::string& productId, const OnPurchaseProcessed& callback) override;
+        void PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const OnPurchaseProcessed& callback) override;
         void ConsumeAsync(
                 const ea::string& productId, const ea::string& transactionId, const OnPurchaseConsumed& callback) override;
         /// @}
@@ -56,10 +56,8 @@ namespace Platform
         void BillingSetupFinished(BillingResultCode code, const ea::string& debugMessage);
 
         private:
-        void ConnectAsync(bool enablePendingPurchases);
-        void DisconnectAsync();
 
-        jni::Global<jni::Object<BillingClient> > billingClient_;
+        jni::Global<jni::Object<RbfxBillingClient> > billingClient_;
     };
 
 } // namespace Platform

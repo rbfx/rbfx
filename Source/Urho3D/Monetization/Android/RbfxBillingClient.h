@@ -22,19 +22,28 @@
 
 #pragma once
 
+#include "../../Monetization/Android/Activity.h"
+#include "../../Monetization/Android/RbfxLambdaContainer.h"
+#include "../../Monetization/Android/BillingResult.h"
+
 #include <jni/jni.hpp>
 
 namespace Urho3D
 {
 namespace Platform
 {
-class BillingManagerAndroid;
+typedef void OnBillingSetupFinished(jni::JNIEnv &env, const jni::Object<BillingResult>& billingResult);
+/// JNI.HPP wrapper for the RbfxBillingClient java class.
+struct RbfxBillingClient {
+    static constexpr auto Name() { return "io/rebelfork/RbfxBillingClient"; }
 
-/// JNI.HPP wrapper for the RbfxBillingClientStateListener java class.
-struct RbfxBillingClientStateListener {
-    static constexpr auto Name() { return "io/rebelfork/RbfxBillingClientStateListener"; }
+    static void registerNative(jni::JNIEnv &env) { jni::Class<RbfxBillingClient>::Singleton(env); }
 
-    static jni::Local <jni::Object<RbfxBillingClientStateListener> > Create(jni::JNIEnv &env, BillingManagerAndroid* userData);
+    static jni::Local<jni::Object<RbfxBillingClient> > Create(jni::JNIEnv &env, const jni::Object<Activity>& activity, const jni::Object<RbfxLambdaContainer>& purchasesUpdated);
+
+    static void ConnectAsync(jni::JNIEnv &env, const jni::Object<RbfxBillingClient>& thiz, const ea::function<OnBillingSetupFinished>& billingSetupFinished);
+
+    static void PurchaseAsync(jni::JNIEnv &env, const jni::Object<RbfxBillingClient>& thiz, const ea::string& productId, const ea::string& productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const jni::Object<RbfxLambdaContainer>& callback);
 };
 
 }

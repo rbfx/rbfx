@@ -287,7 +287,7 @@ void BillingManagerUWP::GetPurchasesAsync(const OnPurchasesReceived& callback)
     });
 }
 
-void BillingManagerUWP::PurchaseAsync(const ea::string& productId, const OnPurchaseProcessed& callback)
+void BillingManagerUWP::PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const OnPurchaseProcessed& callback)
 {
     const auto wrappedProductId = ref new ::Platform::String(MultiByteToWide(productId).c_str());
     auto task = RequestProductPurchaseAsync(simulatorEnabled_, wrappedProductId);

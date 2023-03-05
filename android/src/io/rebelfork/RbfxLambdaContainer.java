@@ -20,28 +20,33 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+package io.rebelfork;
 
-#include <jni/jni.hpp>
+import java.util.*;
 
-namespace Urho3D
+// Helper class for BillingClient.
+public class RbfxLambdaContainer
 {
-namespace Platform
-{
-struct AppContext;
-struct BillingClientBuilder;
-struct BillingClientStateListener;
+    // Lambda container constructor. Executed from native code with a pointer to lambda container native object as argument.
+    public RbfxLambdaContainer(long ptr)
+    {
+        lambdaPtr_ = ptr;
+    }
 
-/// JNI.HPP wrapper for the BillingClient java class.
-struct BillingClient
-{
-    static constexpr auto Name() { return "com/android/billingclient/api/BillingClient"; }
+    // Finalizer to destroy the lambda container native object.
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            disposePtr(lambdaPtr_);
+        } finally {
+            super.finalize();
+        }
+    }
 
-    static void registerNative(jni::JNIEnv &env) { jni::Class<BillingClient>::Singleton(env); }
+    // Native method to destroy native lambda container object.
+    private native void disposePtr(long ptr);
 
-    static jni::Local <jni::Object<BillingClientBuilder> > NewBuilder(jni::JNIEnv &env, const jni::Object <AppContext>& context);
 
-    static void StartConnection(jni::JNIEnv &env, const jni::Object <BillingClient>& thisObject, const jni::Object <BillingClientStateListener>& listener);
-};
-}
+    // Pointer to a native abstract class.
+    private long lambdaPtr_;
 }

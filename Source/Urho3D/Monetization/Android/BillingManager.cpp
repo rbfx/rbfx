@@ -29,12 +29,7 @@
 
 #include "../../Monetization/Android/Activity.h"
 #include "../../Monetization/Android/AppContext.h"
-#include "../../Monetization/Android/BillingClient.h"
-#include "../../Monetization/Android/BillingClientBuilder.h"
-#include "../../Monetization/Android/BillingClientStateListener.h"
-#include "../../Monetization/Android/PurchasesUpdatedListener.h"
-#include "../../Monetization/Android/RbfxBillingClientStateListener.h"
-#include "../../Monetization/Android/RbfxPurchasesUpdatedListener.h"
+#include "../../Monetization/Android/RbfxBillingClient.h"
 
 #include <EASTL/functional.h>
 #include <SDL_system.h>
@@ -44,6 +39,7 @@ namespace Urho3D
 {
 namespace Platform
 {
+typedef void NOP();
 
 ea::string GetJavaStringValue(jni::JNIEnv& env, const jni::String& src)
 {
@@ -55,44 +51,29 @@ ea::string GetJavaStringValue(jni::JNIEnv& env, const jni::String& src)
     return ea::string(str.get());
 }
 
-BillingManagerAndroid::BillingManagerAndroid(Context* context)
-    :BillingManager(context)
+jni::Local<jni::String> MakeJavaString(jni::JNIEnv& env, const ea::string& src)
 {
-    ConnectAsync(true);
+    jni::jstring& newStr = jni::NewStringUTF(env, src.c_str());
+    return jni::Local<jni::String>(env, &newStr);
 }
 
-void BillingManagerAndroid::ConnectAsync(bool enablePendingPurchases)
+BillingManagerAndroid::BillingManagerAndroid(Context* context)
+    :BillingManager(context)
 {
     JNIEnv& env = *(JNIEnv*)SDL_AndroidGetJNIEnv();
 
     // Get a reference to the Activity class
     static auto& activityClass = jni::Class<Activity>::Singleton(env);
-    static auto& rbfxPurchasesUpdatedListenerClass = jni::Class<RbfxPurchasesUpdatedListener>::Singleton(env);
-    static auto& rbfxBillingClientStateListenerClass = jni::Class<RbfxBillingClientStateListener>::Singleton(env);
-    static auto& billingClientStateListenerClass = jni::Class<BillingClientStateListener>::Singleton(env);
-    static auto& purchasesUpdatedListenerClass = jni::Class<PurchasesUpdatedListener>::Singleton(env);
+    static auto& rbfxBillingClientClass = jni::Class<RbfxBillingClient>::Singleton(env);
 
-    // Get the Context object from the current activity
+    // Get the current activity
     auto currentActivity = jni::Local<jni::Object<Activity>>(env, jni::Wrap<jni::jobject*>(env.NewLocalRef((jobject)SDL_AndroidGetActivity())));
-    auto contextObject = Activity::GetApplicationContext(env, currentActivity);
+    auto billingClient = RbfxBillingClient::Create(env, currentActivity, RbfxLambdaContainer::Create<NOP>(env, [=](){}));
+    billingClient_ = jni::NewGlobal(env, billingClient);
 
-    // Create a new instance of RbfxPurchasesUpdatedListener
-    auto rbfxPurchasesUpdatedListener = RbfxPurchasesUpdatedListener::Create(env, this);
-
-    // Build the BillingClient object
-    auto builder = BillingClient::NewBuilder(env, contextObject);
-    builder = BillingClientBuilder::SetListener(env, builder, jni::Cast(env, purchasesUpdatedListenerClass, rbfxPurchasesUpdatedListener));
-    builder = BillingClientBuilder::EnablePendingPurchases(env, builder);
-    auto billingClientObject = BillingClientBuilder::Build(env, builder);
-
-    // Create a new instance of RbfxPurchasesUpdatedListener
-    auto rbfxBillingClientStateListener = RbfxBillingClientStateListener::Create(env, this);
-
-    BillingClient::StartConnection(env, billingClientObject, jni::Cast(env, billingClientStateListenerClass, rbfxBillingClientStateListener));
-}
-
-void BillingManagerAndroid::DisconnectAsync()
-{
+    RbfxBillingClient::ConnectAsync(env, billingClient_, [=](jni::JNIEnv &env, const jni::Object<BillingResult>& billingResult){
+        this->BillingSetupFinished(BillingResult::GetResponseCode(env, billingResult), BillingResult::GetDebugMessage(env, billingResult));
+    });
 }
 
 void BillingManagerAndroid::BillingServiceDisconnected()
@@ -110,10 +91,10 @@ void BillingManagerAndroid::BillingServiceDisconnected()
 void BillingManagerAndroid::BillingSetupFinished(BillingResultCode code, const ea::string& debugMessage)
 {
     if (code != BillingResultCode::OK) {
+        URHO3D_LOGERROR(Format("BillingSetupFinished with error, code {}, message {}", code, debugMessage));
         context_->GetSubsystem<WorkQueue>()->CallFromMainThread(
                 [=](unsigned threadId)
                 {
-                    URHO3D_LOGERROR(Format("BillingSetupFinished with error, code {}, message {}", code, debugMessage));
                     using namespace BillingDisconnected;
                     auto& eventData = GetEventDataMap();
                     eventData[P_MESSAGE] = debugMessage;
@@ -121,18 +102,21 @@ void BillingManagerAndroid::BillingSetupFinished(BillingResultCode code, const e
                 });
     }
     else {
+        URHO3D_LOGINFO("BillingSetupFinished");
         context_->GetSubsystem<WorkQueue>()->CallFromMainThread(
                 [=](unsigned threadId)
                 {
-                    URHO3D_LOGINFO(Format("BillingSetupFinished"));
                     using namespace BillingConnected;
                     auto& eventData = GetEventDataMap();
                     eventData[P_MESSAGE] = debugMessage;
                     SendEvent(E_BILLINGCONNECTED, eventData);
                 });
+
+        PurchaseAsync("android.test.purchased", BillingProductType::Durable, "", "", [=](const ea::optional<BillingPurchase>& products){
+
+        });
     }
 }
-
 
 void BillingManagerAndroid::GetProductsAsync(const ea::vector<ea::string>& productIds, const OnProductsReceived& callback)
 {
@@ -144,14 +128,30 @@ void BillingManagerAndroid::GetPurchasesAsync(const OnPurchasesReceived& callbac
     callback(ea::nullopt);
 }
 
-void BillingManagerAndroid::PurchaseAsync(const ea::string& productId, const OnPurchaseProcessed& callback)
+void BillingManagerAndroid::PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const OnPurchaseProcessed& callback)
 {
-    callback(ea::nullopt);
+    JNIEnv& env = *(JNIEnv*)SDL_AndroidGetJNIEnv();
+
+    ea::string type;
+    switch (productType)
+    {
+        default:
+            type = "inapp"; //BillingClient.ProductType.INAPP
+            break;
+        case BillingProductType::Subscription:
+            type = "subs"; //BillingClient.ProductType.SUBS
+            break;
+    }
+    RbfxBillingClient::PurchaseAsync(env, billingClient_, productId, type, obfuscatedAccountId, obfuscatedProfileId, RbfxLambdaContainer::Create<NOP>(env, [=](){
+        //callback(nullptr);
+    }));
 }
 
 void BillingManagerAndroid::ConsumeAsync(
         const ea::string& purchaseId, const ea::string& transactionId, const OnPurchaseConsumed& callback)
 {
+    JNIEnv& env = *(JNIEnv*)SDL_AndroidGetJNIEnv();
+
     callback(BillingError::UnspecifiedError);
 }
 

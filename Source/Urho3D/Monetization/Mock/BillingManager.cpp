@@ -49,7 +49,7 @@ void BillingManagerNull::GetPurchasesAsync(const OnPurchasesReceived& callback)
     callback(ea::nullopt);
 }
 
-void BillingManagerNull::PurchaseAsync(const ea::string& productId, const OnPurchaseProcessed& callback)
+void BillingManagerNull::PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const OnPurchaseProcessed& callback)
 {
     callback(ea::nullopt);
 }

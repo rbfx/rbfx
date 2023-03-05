@@ -116,7 +116,7 @@ public:
     /// Return purchase information (asynchronously).
     virtual void GetPurchasesAsync(const OnPurchasesReceived& callback) = 0;
     /// Purchase a product.
-    virtual void PurchaseAsync(const ea::string& productId, const OnPurchaseProcessed& callback) = 0;
+    virtual void PurchaseAsync(const ea::string& productId, BillingProductType productType, const ea::string& obfuscatedAccountId, const ea::string& obfuscatedProfileId, const OnPurchaseProcessed& callback) = 0;
     /// Consume a purchase.
     virtual void ConsumeAsync(
         const ea::string& productId, const ea::string& transactionId, const OnPurchaseConsumed& callback) = 0;
