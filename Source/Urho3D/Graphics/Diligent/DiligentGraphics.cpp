@@ -2431,6 +2431,9 @@ void Graphics::PrepareDraw()
         impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
     }
 
+    static const float blendFactors[] = {1.f, 1.f, 1.f, 1.f};
+    impl_->deviceContext_->SetBlendFactors(blendFactors);
+
     //if (impl_->texturesDirty_ && impl_->firstDirtyTexture_ < M_MAX_UNSIGNED)
     //{
     //    // Set also VS textures to enable vertex texture fetch to work the same way as on OpenGL
