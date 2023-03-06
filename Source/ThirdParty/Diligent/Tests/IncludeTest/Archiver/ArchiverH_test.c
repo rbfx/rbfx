@@ -30,6 +30,13 @@ void TestArchiver_CInterface(IArchiver* pArchiver)
 {
     IArchiver_SerializeToBlob(pArchiver, (IDataBlob**)NULL);
     IArchiver_SerializeToStream(pArchiver, (IFileStream*)NULL);
+    IArchiver_AddShader(pArchiver, (IShader*)NULL);
     IArchiver_AddPipelineState(pArchiver, (IPipelineState*)NULL);
     IArchiver_AddPipelineResourceSignature(pArchiver, (IPipelineResourceSignature*)NULL);
+    IShader* pShader = IArchiver_GetShader(pArchiver, "Name");
+    (void)pShader;
+    IPipelineState* pPSO = IArchiver_GetPipelineState(pArchiver, PIPELINE_TYPE_GRAPHICS, "Name");
+    (void)pPSO;
+    IPipelineResourceSignature* pPRS = IArchiver_GetPipelineResourceSignature(pArchiver, "Name");
+    (void)pPRS;
 }

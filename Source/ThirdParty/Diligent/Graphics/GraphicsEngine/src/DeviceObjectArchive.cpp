@@ -37,6 +37,29 @@
 namespace Diligent
 {
 
+DeviceObjectArchive::DeviceType RenderDeviceTypeToArchiveDeviceType(RENDER_DEVICE_TYPE Type)
+{
+    static_assert(RENDER_DEVICE_TYPE_COUNT == 7, "Did you add a new render device type? Please handle it here.");
+    switch (Type)
+    {
+        // clang-format off
+        case RENDER_DEVICE_TYPE_D3D11:  return DeviceObjectArchive::DeviceType::Direct3D11;
+        case RENDER_DEVICE_TYPE_D3D12:  return DeviceObjectArchive::DeviceType::Direct3D12;
+        case RENDER_DEVICE_TYPE_GL:     return DeviceObjectArchive::DeviceType::OpenGL;
+        case RENDER_DEVICE_TYPE_GLES:   return DeviceObjectArchive::DeviceType::OpenGL;
+        case RENDER_DEVICE_TYPE_VULKAN: return DeviceObjectArchive::DeviceType::Vulkan;
+#if PLATFORM_MACOS
+        case RENDER_DEVICE_TYPE_METAL:  return DeviceObjectArchive::DeviceType::Metal_MacOS;
+#elif PLATFORM_IOS || PLATFORM_TVOS
+        case RENDER_DEVICE_TYPE_METAL:  return DeviceObjectArchive::DeviceType::Metal_iOS;
+#endif
+        // clang-format on
+        default:
+            UNEXPECTED("Unexpected device type");
+            return DeviceObjectArchive::DeviceType::Count;
+    }
+}
+
 DeviceObjectArchive::ArchiveHeader::ArchiveHeader() noexcept
 {
 #ifdef DILIGENT_CORE_COMMIT_HASH
@@ -166,7 +189,11 @@ void DeviceObjectArchive::Deserialize(const void* pData, size_t Size) noexcept(f
 
 void DeviceObjectArchive::Serialize(IDataBlob** ppDataBlob) const
 {
-    DEV_CHECK_ERR(ppDataBlob != nullptr, "Pointer to the data blob object must not be null");
+    if (ppDataBlob == nullptr)
+    {
+        DEV_ERROR("Pointer to the data blob object must not be null");
+        return;
+    }
     DEV_CHECK_ERR(*ppDataBlob == nullptr, "Data blob object must be null");
 
     auto SerializeThis = [this](auto& Ser) {
@@ -238,11 +265,12 @@ const char* ArchiveDeviceTypeToString(Uint32 dev)
 const char* ResourceTypeToString(DeviceObjectArchive::ResourceType Type)
 {
     using ResourceType = DeviceObjectArchive::ResourceType;
-    static_assert(static_cast<size_t>(ResourceType::Count) == 7, "Please handle the new chunk type below");
+    static_assert(static_cast<size_t>(ResourceType::Count) == 8, "Please handle the new chunk type below");
     switch (Type)
     {
         // clang-format off
         case ResourceType::Undefined:          return "Undefined";
+        case ResourceType::StandaloneShader:   return "Standalone Shaders";
         case ResourceType::ResourceSignature:  return "Resource Signatures";
         case ResourceType::GraphicsPipeline:   return "Graphics Pipelines";
         case ResourceType::ComputePipeline:    return "Compute Pipelines";
@@ -399,9 +427,9 @@ std::string DeviceObjectArchive::ToString() const
         if (HasShaders)
         {
             Output << SeparatorLine
-                   << "Shaders\n";
+                   << "Compiled Shaders\n";
             // ------------------
-            // Shaders
+            // Compiled Shaders
 
             for (Uint32 dev = 0; dev < m_DeviceShaders.size(); ++dev)
             {
@@ -469,7 +497,7 @@ void DeviceObjectArchive::AppendDeviceData(const DeviceObjectArchive& Src, Devic
 
         const auto& SrcData{src_res_it->second.DeviceSpecific[static_cast<size_t>(Dev)]};
         // Always copy src data even if it is empty
-        dst_res_it.second.DeviceSpecific[static_cast<size_t>(Dev)] = SrcData.MakeCopy(Allocator);
+        DstData = SrcData.MakeCopy(Allocator);
     }
 
     // Copy all shaders to make sure PSO shader indices are correct
@@ -478,6 +506,107 @@ void DeviceObjectArchive::AppendDeviceData(const DeviceObjectArchive& Src, Devic
     DstShaders.clear();
     for (const auto& SrcShader : SrcShaders)
         DstShaders.emplace_back(SrcShader.MakeCopy(Allocator));
+}
+
+void DeviceObjectArchive::Merge(const DeviceObjectArchive& Src) noexcept(false)
+{
+    static_assert(static_cast<size_t>(ResourceType::Count) == 8, "Did you add a new resource type? You may need to handle it here.");
+
+    auto&                  Allocator = GetRawAllocator();
+    DynamicLinearAllocator DynAllocator{Allocator, 512};
+
+    // Copy shaders
+    std::array<Uint32, static_cast<size_t>(DeviceType::Count)> ShaderBaseIndices{};
+    for (size_t i = 0; i < m_DeviceShaders.size(); ++i)
+    {
+        const auto& SrcShaders = Src.m_DeviceShaders[i];
+        auto&       DstShaders = m_DeviceShaders[i];
+        ShaderBaseIndices[i]   = static_cast<Uint32>(DstShaders.size());
+        if (SrcShaders.empty())
+            continue;
+        DstShaders.reserve(DstShaders.size() + SrcShaders.size());
+        for (const auto& SrcShader : SrcShaders)
+            DstShaders.emplace_back(SrcShader.MakeCopy(Allocator));
+    }
+
+    // Copy named resources
+    for (auto& src_res_it : Src.m_NamedResources)
+    {
+        const auto  ResType     = src_res_it.first.GetType();
+        const auto* ResName     = src_res_it.first.GetName();
+        auto        it_inserted = m_NamedResources.emplace(NamedResourceKey{ResType, ResName, /*CopyName = */ true}, src_res_it.second.MakeCopy(Allocator));
+
+        if (!it_inserted.second)
+        {
+            LOG_WARNING_MESSAGE("Failed to copy resource '", ResName, "': resource with the same name already exists.");
+            continue;
+        }
+
+        const auto IsStandaloneShader = (ResType == ResourceType::StandaloneShader);
+        const auto IsPipeline =
+            (ResType == ResourceType::GraphicsPipeline ||
+             ResType == ResourceType::ComputePipeline ||
+             ResType == ResourceType::RayTracingPipeline ||
+             ResType == ResourceType::TilePipeline);
+
+        // Update shader indices
+        if (IsStandaloneShader || IsPipeline)
+        {
+            for (size_t i = 0; i < static_cast<size_t>(DeviceType::Count); ++i)
+            {
+                const auto BaseIdx = ShaderBaseIndices[i];
+
+                auto& DeviceData = it_inserted.first->second.DeviceSpecific[i];
+                if (!DeviceData)
+                    continue;
+
+                if (IsStandaloneShader)
+                {
+                    // For shaders, device-specific data is the serialized shader bytecode index
+                    Uint32 ShaderIndex = 0;
+                    {
+                        Serializer<SerializerMode::Read> Ser{DeviceData};
+                        if (!Ser(ShaderIndex))
+                            LOG_ERROR_AND_THROW("Failed to deserialize standalone shader index. Archive file may be corrupted or invalid.");
+                        VERIFY(Ser.IsEnded(), "No other data besides the shader index is expected");
+                    }
+
+                    ShaderIndex += BaseIdx;
+
+                    {
+                        Serializer<SerializerMode::Write> Ser{DeviceData};
+                        Ser(ShaderIndex);
+                        VERIFY_EXPR(Ser.IsEnded());
+                    }
+                }
+                else if (IsPipeline)
+                {
+                    // For pipelines, device-specific data is the shader index array
+                    ShaderIndexArray ShaderIndices;
+                    {
+                        Serializer<SerializerMode::Read> Ser{DeviceData};
+                        if (!PSOSerializer<SerializerMode::Read>::SerializeShaderIndices(Ser, ShaderIndices, &DynAllocator))
+                            LOG_ERROR_AND_THROW("Failed to deserialize PSO shader indices. Archive file may be corrupted or invalid.");
+                        VERIFY(Ser.IsEnded(), "No other data besides shader indices is expected");
+                    }
+
+                    std::vector<Uint32> NewIndices{ShaderIndices.pIndices, ShaderIndices.pIndices + ShaderIndices.Count};
+                    for (auto& Idx : NewIndices)
+                        Idx += BaseIdx;
+
+                    {
+                        Serializer<SerializerMode::Write> Ser{DeviceData};
+                        PSOSerializer<SerializerMode::Write>::SerializeShaderIndices(Ser, ShaderIndexArray{NewIndices.data(), ShaderIndices.Count}, nullptr);
+                        VERIFY_EXPR(Ser.IsEnded());
+                    }
+                }
+                else
+                {
+                    UNEXPECTED("Unexpected resource type");
+                }
+            }
+        }
+    }
 }
 
 void DeviceObjectArchive::Serialize(IFileStream* pStream) const

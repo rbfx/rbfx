@@ -33,27 +33,31 @@
 #include "DebugUtilities.hpp"
 #include "DataBlobImpl.hpp"
 #include "StringDataBlobImpl.hpp"
+#include "GraphicsAccessories.hpp"
+#include "ParsingTools.hpp"
 
 namespace Diligent
 {
 
+using namespace Parsing;
+
 namespace
 {
 
-const ShaderMacro VSMacros[]  = {{"VERTEX_SHADER", "1"}, {}};
-const ShaderMacro PSMacros[]  = {{"FRAGMENT_SHADER", "1"}, {"PIXEL_SHADER", "1"}, {}};
-const ShaderMacro GSMacros[]  = {{"GEOMETRY_SHADER", "1"}, {}};
-const ShaderMacro HSMacros[]  = {{"TESS_CONTROL_SHADER", "1"}, {"HULL_SHADER", "1"}, {}};
-const ShaderMacro DSMacros[]  = {{"TESS_EVALUATION_SHADER", "1"}, {"DOMAIN_SHADER", "1"}, {}};
-const ShaderMacro CSMacros[]  = {{"COMPUTE_SHADER", "1"}, {}};
-const ShaderMacro ASMacros[]  = {{"TASK_SHADER", "1"}, {"AMPLIFICATION_SHADER", "1"}, {}};
-const ShaderMacro MSMacros[]  = {{"MESH_SHADER", "1"}, {}};
-const ShaderMacro RGMacros[]  = {{"RAY_GEN_SHADER", "1"}, {}};
-const ShaderMacro RMMacros[]  = {{"RAY_MISS_SHADER", "1"}, {}};
-const ShaderMacro RCHMacros[] = {{"RAY_CLOSEST_HIT_SHADER", "1"}, {}};
-const ShaderMacro RAHMacros[] = {{"RAY_ANY_HIT_SHADER", "1"}, {}};
-const ShaderMacro RIMacros[]  = {{"RAY_INTERSECTION_SHADER", "1"}, {}};
-const ShaderMacro RCMacros[]  = {{"RAY_CALLABLE_SHADER", "1"}, {}};
+constexpr ShaderMacro VSMacros[]  = {{"VERTEX_SHADER", "1"}, {}};
+constexpr ShaderMacro PSMacros[]  = {{"FRAGMENT_SHADER", "1"}, {"PIXEL_SHADER", "1"}, {}};
+constexpr ShaderMacro GSMacros[]  = {{"GEOMETRY_SHADER", "1"}, {}};
+constexpr ShaderMacro HSMacros[]  = {{"TESS_CONTROL_SHADER", "1"}, {"HULL_SHADER", "1"}, {}};
+constexpr ShaderMacro DSMacros[]  = {{"TESS_EVALUATION_SHADER", "1"}, {"DOMAIN_SHADER", "1"}, {}};
+constexpr ShaderMacro CSMacros[]  = {{"COMPUTE_SHADER", "1"}, {}};
+constexpr ShaderMacro ASMacros[]  = {{"TASK_SHADER", "1"}, {"AMPLIFICATION_SHADER", "1"}, {}};
+constexpr ShaderMacro MSMacros[]  = {{"MESH_SHADER", "1"}, {}};
+constexpr ShaderMacro RGMacros[]  = {{"RAY_GEN_SHADER", "1"}, {}};
+constexpr ShaderMacro RMMacros[]  = {{"RAY_MISS_SHADER", "1"}, {}};
+constexpr ShaderMacro RCHMacros[] = {{"RAY_CLOSEST_HIT_SHADER", "1"}, {}};
+constexpr ShaderMacro RAHMacros[] = {{"RAY_ANY_HIT_SHADER", "1"}, {}};
+constexpr ShaderMacro RIMacros[]  = {{"RAY_INTERSECTION_SHADER", "1"}, {}};
+constexpr ShaderMacro RCMacros[]  = {{"RAY_CALLABLE_SHADER", "1"}, {}};
 
 } // namespace
 
@@ -108,6 +112,88 @@ void AppendShaderTypeDefinitions(std::string& Source, SHADER_TYPE Type)
 }
 
 
+static const std::string ShaderSourceLanguageKey = "$SHADER_SOURCE_LANGUAGE";
+
+void AppendShaderSourceLanguageDefinition(std::string& Source, SHADER_SOURCE_LANGUAGE Language)
+{
+    Source += "/*";
+    Source += ShaderSourceLanguageKey;
+    Source += '=';
+    Source += std::to_string(static_cast<Uint32>(Language));
+    Source += "*/";
+}
+
+SHADER_SOURCE_LANGUAGE ParseShaderSourceLanguageDefinition(const std::string& Source)
+{
+    //  /*$SHADER_SOURCE_LANGUAGE=1*/
+    //                               ^
+    auto it = Source.end();
+    if (it == Source.begin())
+        return SHADER_SOURCE_LANGUAGE_DEFAULT;
+
+    --it;
+    //  /*$SHADER_SOURCE_LANGUAGE=1*/
+    //                              ^
+    if (it == Source.begin() || *it != '/')
+        return SHADER_SOURCE_LANGUAGE_DEFAULT;
+
+    --it;
+    //  /*$SHADER_SOURCE_LANGUAGE=1*/
+    //                             ^
+    if (it == Source.begin() || *it != '*')
+        return SHADER_SOURCE_LANGUAGE_DEFAULT;
+
+    --it;
+    while (true)
+    {
+        if (it == Source.begin())
+            return SHADER_SOURCE_LANGUAGE_DEFAULT;
+
+        if (*it == '*')
+        {
+            //  /*$SHADER_SOURCE_LANGUAGE=1*/
+            //   ^
+            --it;
+            if (*it == '/')
+                break;
+        }
+        else
+        {
+            --it;
+        }
+    }
+
+    //  /*$SHADER_SOURCE_LANGUAGE=1*/
+    //  ^
+    const auto KeyPos = Source.find(ShaderSourceLanguageKey, it - Source.begin() + 2);
+    if (KeyPos == std::string::npos)
+        return SHADER_SOURCE_LANGUAGE_DEFAULT;
+
+    it = Source.begin() + KeyPos + ShaderSourceLanguageKey.length();
+    while (it != Source.end() && *it == ' ')
+        ++it;
+
+    //  /*$SHADER_SOURCE_LANGUAGE=1*/
+    //                           ^
+    if (it == Source.end() || *it != '=')
+        return SHADER_SOURCE_LANGUAGE_DEFAULT;
+
+    ++it;
+    while (it != Source.end() && *it == ' ')
+        ++it;
+
+    if (it == Source.end() || !IsNum(*it))
+        return SHADER_SOURCE_LANGUAGE_DEFAULT;
+
+    Uint32 Lang = 0;
+    for (; it != Source.end() && IsNum(*it); ++it)
+        Lang = Lang * 10 + (*it - '0');
+
+    return Lang >= 0 && Lang < SHADER_SOURCE_LANGUAGE_COUNT ?
+        static_cast<SHADER_SOURCE_LANGUAGE>(Lang) :
+        SHADER_SOURCE_LANGUAGE_DEFAULT;
+}
+
 ShaderSourceFileData ReadShaderSourceFile(const char*                      SourceCode,
                                           size_t                           SourceLength,
                                           IShaderSourceInputStreamFactory* pShaderSourceStreamFactory,
@@ -157,7 +243,7 @@ void AppendShaderSourceCode(std::string& Source, const ShaderCreateInfo& ShaderC
     Source.append(SourceData.Source, SourceData.SourceLength);
 }
 
-static String ParserErrorMessage(const char* Message, const Char* pBuffer, const char* pCurrPos)
+static String ParserErrorMessage(const char* Message, const Char* pBuffer, const Char* pBufferEnd, const char* pCurrPos)
 {
     size_t      Line       = 0;
     const auto* pLineStart = pBuffer;
@@ -172,7 +258,8 @@ static String ParserErrorMessage(const char* Message, const Char* pBuffer, const
     size_t LineOffset = pCurrPos - pLineStart;
 
     std::stringstream Stream;
-    Stream << "[" << Line << "," << LineOffset << "]: " << Message;
+    Stream << "[" << Line << "," << LineOffset << "]: " << Message << std::endl
+           << GetContext(pBuffer, pBufferEnd, pCurrPos, 1);
     return Stream.str();
 }
 
@@ -184,162 +271,100 @@ bool FindIncludes(const char* pBuffer, size_t BufferSize, HandlerType&& IncludeH
     if (BufferSize == 0)
         return true;
 
-    enum State
-    {
-        None,
-        AfterHash,
-        AfterInclude,
-        InsideIncludeAngleBrackets,
-        InsideIncludeQuotes
-    } PreprocessorState = None;
-
-    constexpr const Char* MissingEndComment     = "missing end comment.";
-    constexpr const Char* MissingOpeningSymbol  = "missing opening quote or angle bracket after the include directive.";
-    constexpr const Char* MissingClosingQuote   = "missing closing quote in the include directive.";
-    constexpr const Char* MissingClosingBracket = "missing closing angle bracket in the include directive.";
-
-    // Find positions of the first hash and slash
-    const Char* NextHash  = static_cast<const char*>(memchr(pBuffer, '#', BufferSize));
-    const Char* NextSlash = static_cast<const char*>(memchr(pBuffer, '/', BufferSize));
-    size_t      Start     = 0;
-
-    // We iterate over the characters of the buffer
     const auto*       pCurrPos   = pBuffer;
     const auto* const pBufferEnd = pBuffer + BufferSize;
-    while (pCurrPos < pBufferEnd)
+
+    using ErrorType = std::pair<const char*, const char*>;
+    try
     {
-        switch (PreprocessorState)
+        while (pCurrPos < pBufferEnd)
         {
-            case None:
+            pCurrPos = SkipDelimitersAndComments(pCurrPos, pBufferEnd); // May throw
+            if (pCurrPos == pBufferEnd)
+                return true;
+
+            if (*pCurrPos != '#')
             {
-                // Find a hash character if the current position is greater NextHash
-                if (NextHash && NextHash < pCurrPos)
-                    NextHash = static_cast<const Char*>(memchr(pCurrPos, '#', pBufferEnd - pCurrPos));
-
-                // Exit from the function if a hash is not found in the buffer
-                if (NextHash == nullptr)
-                    return true;
-
-                // Find a slash character if the current position is greater NextSlash
-                if (NextSlash && NextSlash < pCurrPos)
-                    NextSlash = static_cast<const Char*>(memchr(pCurrPos, '/', pBufferEnd - pCurrPos));
-
-                if (NextSlash && NextSlash < NextHash)
-                {
-                    // Skip all characters if the slash character is before the hash character in the buffer
-                    pCurrPos = NextSlash;
-                    if (pCurrPos[+1] == '/')
-                    {
-                        pCurrPos = static_cast<const Char*>(memchr(pCurrPos, '\n', pBufferEnd - pCurrPos));
-                    }
-                    else if (pCurrPos[+1] == '*')
-                    {
-                        do
-                        {
-                            const char* EndSlash = static_cast<const Char*>(memchr(pCurrPos + 1, '/', pBufferEnd - pCurrPos - 1));
-                            if (!EndSlash)
-                            {
-                                ErrorHandler(ParserErrorMessage(MissingEndComment, pBuffer, pCurrPos));
-                                return false;
-                            }
-
-                            pCurrPos = EndSlash;
-                        } while (pCurrPos[-1] != '*');
-                    }
-                }
-                else
-                {
-                    // Move the current position to the position after the hash
-                    pCurrPos          = NextHash;
-                    PreprocessorState = AfterHash;
-                }
+                ++pCurrPos;
+                continue;
             }
-            break;
-            case AfterHash:
-                // Try to find the 'include' substring in the buffer if the current position is after the hash
-                if (!isspace(*pCurrPos))
-                {
-                    static constexpr auto Len = 7;
-                    if (strncmp(pCurrPos, "include", Len) == 0)
-                    {
-                        PreprocessorState = AfterInclude;
-                        pCurrPos += Len;
-                    }
-                    else
-                    {
-                        PreprocessorState = None;
-                    }
-                }
-                break;
-            case AfterInclude:
-                // Try to find the opening quotes character after the 'include' substring
-                if (!isspace(*pCurrPos))
-                {
-                    if (*pCurrPos == '"')
-                    {
-                        Start             = pCurrPos - pBuffer + 1;
-                        PreprocessorState = InsideIncludeQuotes;
-                    }
-                    else if (*pCurrPos == '<')
-                    {
-                        Start             = pCurrPos - pBuffer + 1;
-                        PreprocessorState = InsideIncludeAngleBrackets;
-                    }
-                    else
-                    {
-                        ErrorHandler(ParserErrorMessage(MissingOpeningSymbol, pBuffer, pCurrPos));
-                        return false;
-                    }
-                }
-                break;
-            case InsideIncludeQuotes:
-                // Try to find the closing quotes after the opening quotes and extract the substring for IncludeHandler(...)
-                switch (*pCurrPos)
-                {
-                    case '\n':
-                        ErrorHandler(ParserErrorMessage(MissingClosingQuote, pBuffer, pCurrPos));
-                        return false;
-                    case '"':
-                        IncludeHandler(std::string{pBuffer + Start, pCurrPos}, NextHash - pBuffer, pCurrPos - pBuffer + 1);
-                        PreprocessorState = None;
-                        break;
-                }
-                break;
-            case InsideIncludeAngleBrackets:
-                // Try to find the closing quotes after the opening quotes and extract the substring for IncludeHandler(...)
-                switch (*pCurrPos)
-                {
-                    case '\n':
-                        ErrorHandler(ParserErrorMessage(MissingClosingBracket, pBuffer, pCurrPos));
-                        return false;
-                    case '>':
-                        IncludeHandler(std::string{pBuffer + Start, pCurrPos}, NextHash - pBuffer, pCurrPos - pBuffer + 1);
-                        PreprocessorState = None;
-                        break;
-                }
-                break;
+
+            const auto pIncludeStart = pCurrPos;
+            // # /* ... */ include <File.h>
+            // ^
+
+            auto pLineEnd = SkipLine(pCurrPos, pBufferEnd);
+
+            pCurrPos = SkipDelimitersAndComments(pIncludeStart + 1, pBufferEnd, " \t", SKIP_COMMENT_FLAG_MULTILINE); // May throw
+            if (pCurrPos == pBufferEnd)
+                return true;
+
+            if (pCurrPos >= pLineEnd)
+                continue;
+
+            // # /* ... */ include <File.h>
+            //             ^
+
+            static constexpr auto IncludeStrLen                 = 7;
+            static constexpr char IncludeStr[IncludeStrLen + 1] = "include";
+
+            if (strncmp(pCurrPos, IncludeStr, IncludeStrLen) != 0)
+            {
+                // #define MACRO
+                //  ^
+                pCurrPos = pLineEnd;
+                continue;
+            }
+
+            pCurrPos += IncludeStrLen;
+
+
+            // # /* ... */ include <File.h>
+            //                    ^
+            auto pOpenQuoteOrAngleBracket = SkipDelimitersAndComments(pCurrPos, pBufferEnd, " \t", SKIP_COMMENT_FLAG_MULTILINE); // May throw
+            if (pOpenQuoteOrAngleBracket == pBufferEnd)
+                throw ErrorType{pCurrPos, "Unexpected end of file."};
+
+            if (pOpenQuoteOrAngleBracket >= pLineEnd)
+                throw ErrorType{pLineEnd, "New line in the include directive."};
+
+            pCurrPos = pOpenQuoteOrAngleBracket;
+            // # /* ... */ include <File.h>
+            //                     ^
+
+            if (pCurrPos < pBufferEnd && *pCurrPos != '<' && *pCurrPos != '"')
+                throw ErrorType{pCurrPos, "\'<\' or \'\"\' is expected"};
+
+            auto ClosingChar = *pCurrPos == '<' ? '>' : '"';
+            ++pCurrPos;
+            while (pCurrPos < pBufferEnd && *pCurrPos != ClosingChar)
+                ++pCurrPos;
+
+            if (pCurrPos == pBufferEnd)
+                throw ErrorType{pOpenQuoteOrAngleBracket, (ClosingChar == '>' ? "Unable to find the matching angle bracket" : "Unable to find the matching closing quote")};
+
+            if (pCurrPos >= pLineEnd)
+                throw ErrorType{pLineEnd, "New line in the file name."};
+
+            IncludeHandler(std::string{pOpenQuoteOrAngleBracket + 1, pCurrPos}, pIncludeStart - pBuffer, pCurrPos - pBuffer + 1);
+
+            ++pCurrPos;
         }
-        ++pCurrPos;
+    }
+    catch (const std::pair<const char*, const char*>& err)
+    {
+        const auto* pos = err.first;
+        const auto* msg = err.second;
+        ErrorHandler(ParserErrorMessage(msg, pBuffer, pBufferEnd, pos));
+        return false;
+    }
+    catch (...)
+    {
+        ErrorHandler("Unknown error");
+        return false;
     }
 
-    switch (PreprocessorState)
-    {
-        case None:
-        case AfterHash:
-            return true;
-        case AfterInclude:
-            ErrorHandler(ParserErrorMessage(MissingOpeningSymbol, pBuffer, pCurrPos));
-            return false;
-        case InsideIncludeQuotes:
-            ErrorHandler(ParserErrorMessage(MissingClosingQuote, pBuffer, pCurrPos));
-            return false;
-        case InsideIncludeAngleBrackets:
-            ErrorHandler(ParserErrorMessage(MissingClosingBracket, pBuffer, pCurrPos));
-            return false;
-        default:
-            UNEXPECTED("Unknown preprocessor state");
-            return false;
-    }
+    return true;
 }
 
 static void ProcessIncludeErrorHandler(const ShaderCreateInfo& ShaderCI, const std::string& Error) noexcept(false)
@@ -389,7 +414,7 @@ void ProcessShaderIncludesImpl(const ShaderCreateInfo& ShaderCI, std::unordered_
         IncludeHandler(FileInfo);
 }
 
-bool ProcessShaderIncludes(const ShaderCreateInfo& ShaderCI, std::function<void(const ShaderIncludePreprocessInfo&)> IncludeHandler)
+bool ProcessShaderIncludes(const ShaderCreateInfo& ShaderCI, std::function<void(const ShaderIncludePreprocessInfo&)> IncludeHandler) noexcept
 {
     try
     {
@@ -458,14 +483,66 @@ std::string UnrollShaderIncludes(const ShaderCreateInfo& ShaderCI) noexcept(fals
     }
     catch (const std::pair<std::string, std::string>& ErrInfo)
     {
-        LOG_ERROR_MESSAGE("Failed to unroll includes in ", ErrInfo.first, ": ", ErrInfo.second);
+        LOG_ERROR_AND_THROW("Failed to unroll includes in ", ErrInfo.first, ": ", ErrInfo.second);
         return "";
     }
-    catch (...)
+    // Let other exceptions (e.g. 'Failed to load shader source file...') pass through
+}
+
+std::string GetShaderCodeTypeName(SHADER_CODE_BASIC_TYPE     BasicType,
+                                  SHADER_CODE_VARIABLE_CLASS Class,
+                                  Uint32                     NumRows,
+                                  Uint32                     NumCols,
+                                  SHADER_SOURCE_LANGUAGE     Lang)
+{
+    if (Class == SHADER_CODE_VARIABLE_CLASS_STRUCT)
+        return "struct";
+
+    std::string BasicTypeStr = GetShaderCodeBasicTypeString(BasicType);
+
+    std::string Suffix;
+    if (Class == SHADER_CODE_VARIABLE_CLASS_VECTOR)
     {
-        LOG_ERROR_MESSAGE("Failed to unroll includes in shader '", (ShaderCI.Desc.Name != nullptr ? ShaderCI.Desc.Name : ""), "'.");
-        return "";
+        Uint32 Dim = 0;
+        if (Lang == SHADER_SOURCE_LANGUAGE_GLSL ||
+            Lang == SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM)
+        {
+            Dim = NumRows;
+            switch (BasicType)
+            {
+                // clang-format off
+                case SHADER_CODE_BASIC_TYPE_FLOAT: BasicTypeStr ="vec"; break;
+                case SHADER_CODE_BASIC_TYPE_INT:   BasicTypeStr ="ivec";break;
+                case SHADER_CODE_BASIC_TYPE_UINT:  BasicTypeStr ="uvec";break;
+                case SHADER_CODE_BASIC_TYPE_BOOL:  BasicTypeStr ="bvec";break;
+                // clang-format on
+                default:
+                    UNEXPECTED("Unexpected vector basic type");
+            }
+        }
+        else
+        {
+            Dim = NumCols;
+        }
+
+        Suffix = std::to_string(Dim);
     }
+    else if (Class == SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS ||
+             Class == SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS)
+    {
+        if (Lang == SHADER_SOURCE_LANGUAGE_GLSL ||
+            Lang == SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM)
+        {
+            BasicTypeStr = "mat";
+            Suffix       = std::to_string(NumCols) + "x" + std::to_string(NumRows);
+        }
+        else
+        {
+            Suffix = std::to_string(NumRows) + "x" + std::to_string(NumCols);
+        }
+    }
+
+    return BasicTypeStr + Suffix;
 }
 
 } // namespace Diligent

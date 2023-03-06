@@ -46,9 +46,27 @@ struct CompiledShaderVk : SerializedShaderImpl::CompiledShader
 
     CompiledShaderVk(IReferenceCounters*             pRefCounters,
                      const ShaderCreateInfo&         ShaderCI,
-                     const ShaderVkImpl::CreateInfo& VkShaderCI) :
-        ShaderVk{pRefCounters, nullptr, ShaderCI, VkShaderCI, true}
+                     const ShaderVkImpl::CreateInfo& VkShaderCI,
+                     IRenderDevice*                  pRenderDeviceVk) :
+        ShaderVk{pRefCounters, ClassPtrCast<RenderDeviceVkImpl>(pRenderDeviceVk), ShaderCI, VkShaderCI, true}
     {}
+
+    virtual SerializedData Serialize(ShaderCreateInfo ShaderCI) const override final
+    {
+        const auto& SPIRV = ShaderVk.GetSPIRV();
+
+        ShaderCI.Source       = nullptr;
+        ShaderCI.FilePath     = nullptr;
+        ShaderCI.Macros       = nullptr;
+        ShaderCI.ByteCode     = SPIRV.data();
+        ShaderCI.ByteCodeSize = SPIRV.size() * sizeof(SPIRV[0]);
+        return SerializedShaderImpl::SerializeCreateInfo(ShaderCI);
+    }
+
+    virtual IShader* GetDeviceShader() override final
+    {
+        return &ShaderVk;
+    }
 };
 
 inline const ShaderVkImpl* GetShaderVk(const SerializedShaderImpl* pShader)
@@ -163,6 +181,7 @@ void SerializedPipelineStateImpl::PatchShadersVk(const CreateInfoType& CreateInf
             auto        ShaderCI  = ShaderStages[j].Serialized[i]->GetCreateInfo();
             ShaderCI.Source       = nullptr;
             ShaderCI.FilePath     = nullptr;
+            ShaderCI.Macros       = nullptr;
             ShaderCI.ByteCode     = SPIRV.data();
             ShaderCI.ByteCodeSize = SPIRV.size() * sizeof(SPIRV[0]);
             SerializeShaderCreateInfo(DeviceType::Vulkan, ShaderCI);
@@ -175,9 +194,10 @@ INSTANTIATE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureVkImpl)
 
 void SerializedShaderImpl::CreateShaderVk(IReferenceCounters* pRefCounters, const ShaderCreateInfo& ShaderCI)
 {
-    const auto& VkProps     = m_pDevice->GetVkProperties();
-    const auto& DeviceInfo  = m_pDevice->GetDeviceInfo();
-    const auto& AdapterInfo = m_pDevice->GetAdapterInfo();
+    const auto& VkProps         = m_pDevice->GetVkProperties();
+    const auto& DeviceInfo      = m_pDevice->GetDeviceInfo();
+    const auto& AdapterInfo     = m_pDevice->GetAdapterInfo();
+    auto*       pRenderDeviceVk = m_pDevice->GetRenderDevice(RENDER_DEVICE_TYPE_VULKAN);
 
     const ShaderVkImpl::CreateInfo VkShaderCI{
         VkProps.pDxCompiler,
@@ -186,7 +206,7 @@ void SerializedShaderImpl::CreateShaderVk(IReferenceCounters* pRefCounters, cons
         VkProps.VkVersion,
         VkProps.SupportsSpirv14 //
     };
-    CreateShader<CompiledShaderVk>(DeviceType::Vulkan, pRefCounters, ShaderCI, VkShaderCI);
+    CreateShader<CompiledShaderVk>(DeviceType::Vulkan, pRefCounters, ShaderCI, VkShaderCI, pRenderDeviceVk);
 }
 
 void SerializationDeviceImpl::GetPipelineResourceBindingsVk(const PipelineResourceBindingAttribs& Info,

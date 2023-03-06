@@ -43,9 +43,12 @@ using namespace Diligent;
 namespace Diligent
 {
 
+constexpr INTERFACE_ID ShaderGLImpl::IID_InternalImpl;
+
 ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
                            RenderDeviceGLImpl*     pDeviceGL,
                            const ShaderCreateInfo& ShaderCI,
+                           const CreateInfo&       GLShaderCI,
                            bool                    bIsDeviceInternal) :
     // clang-format off
     TShaderBase
@@ -53,19 +56,51 @@ ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
         pRefCounters,
         pDeviceGL,
         ShaderCI.Desc,
-        pDeviceGL->GetDeviceInfo(),
-        pDeviceGL->GetAdapterInfo(),
+        GLShaderCI.DeviceInfo,
+        GLShaderCI.AdapterInfo,
         bIsDeviceInternal
     },
     m_SourceLanguage{ShaderCI.SourceLanguage},
-    m_GLShaderObj{true, GLObjectWrappers::GLShaderObjCreateReleaseHelper{GetGLShaderType(m_Desc.ShaderType)}}
+    m_GLShaderObj{pDeviceGL != nullptr, GLObjectWrappers::GLShaderObjCreateReleaseHelper{GetGLShaderType(m_Desc.ShaderType)}}
 // clang-format on
 {
     DEV_CHECK_ERR(ShaderCI.ByteCode == nullptr, "'ByteCode' must be null when shader is created from the source code or a file");
     DEV_CHECK_ERR(ShaderCI.ShaderCompiler == SHADER_COMPILER_DEFAULT, "only default compiler is supported in OpenGL");
 
-    const auto& DeviceInfo  = pDeviceGL->GetDeviceInfo();
-    const auto& AdapterInfo = pDeviceGL->GetAdapterInfo();
+    const auto& DeviceInfo  = GLShaderCI.DeviceInfo;
+    const auto& AdapterInfo = GLShaderCI.AdapterInfo;
+
+    ShaderSourceFileData SourceData;
+    if (ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM)
+    {
+        if (ShaderCI.Macros != nullptr)
+        {
+            LOG_WARNING_MESSAGE("Shader macros are ignored when compiling GLSL verbatim in OpenGL backend");
+        }
+
+        // Read the source file directly and use it as is
+        SourceData         = ReadShaderSourceFile(ShaderCI);
+        m_GLSLSourceString = std::string{SourceData.Source, SourceData.SourceLength};
+
+        auto SourceLang = ParseShaderSourceLanguageDefinition(m_GLSLSourceString);
+        if (SourceLang != SHADER_SOURCE_LANGUAGE_DEFAULT)
+            m_SourceLanguage = SourceLang;
+    }
+    else
+    {
+        static constexpr char NDCDefine[] = "#define _NDC_ZERO_TO_ONE 1\n";
+
+        // Build the full source code string that will contain GLSL version declaration,
+        // platform definitions, user-provided shader macros, etc.
+        m_GLSLSourceString = BuildGLSLSourceString(
+            ShaderCI, DeviceInfo, AdapterInfo, TargetGLSLCompiler::driver,
+            (DeviceInfo.NDC.MinZ >= 0 ? NDCDefine : nullptr));
+
+        AppendShaderSourceLanguageDefinition(m_GLSLSourceString, ShaderCI.SourceLanguage);
+    }
+
+    if (pDeviceGL == nullptr)
+        return;
 
     // Note: there is a simpler way to create the program:
     //m_uiShaderSeparateProg = glCreateShaderProgramv(GL_VERTEX_SHADER, _countof(ShaderStrings), ShaderStrings);
@@ -84,33 +119,8 @@ ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
     std::array<const char*, 1> ShaderStrings = {};
     std::array<GLint, 1>       Lengths       = {};
 
-    ShaderSourceFileData SourceData;
-    std::string          GLSLSourceString;
-    if (ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM)
-    {
-        if (ShaderCI.Macros != nullptr)
-        {
-            LOG_WARNING_MESSAGE("Shader macros are ignored when compiling GLSL verbatim in OpenGL backend");
-        }
-
-        // Read the source file directly and use it as is
-        SourceData       = ReadShaderSourceFile(ShaderCI);
-        ShaderStrings[0] = SourceData.Source;
-        Lengths[0]       = StaticCast<GLint>(SourceData.SourceLength);
-    }
-    else
-    {
-        static constexpr char NDCDefine[] = "#define _NDC_ZERO_TO_ONE 1\n";
-
-        // Build the full source code string that will contain GLSL version declaration,
-        // platform definitions, user-provided shader macros, etc.
-        GLSLSourceString = BuildGLSLSourceString(
-            ShaderCI, DeviceInfo, AdapterInfo, TargetGLSLCompiler::driver,
-            (pDeviceGL->GetDeviceInfo().NDC.MinZ >= 0 ? NDCDefine : nullptr));
-        ShaderStrings[0] = GLSLSourceString.c_str();
-        Lengths[0]       = static_cast<GLint>(GLSLSourceString.length());
-    }
-
+    ShaderStrings[0] = m_GLSLSourceString.c_str();
+    Lengths[0]       = static_cast<GLint>(m_GLSLSourceString.length());
 
     // Provide source strings (the strings will be saved in internal OpenGL memory)
     glShaderSource(m_GLShaderObj, static_cast<GLsizei>(ShaderStrings.size()), ShaderStrings.data(), Lengths.data());
@@ -175,12 +185,16 @@ ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
         VERIFY_EXPR(pImmediateCtx);
         auto& GLState = pImmediateCtx->GetContextState();
 
-        std::unique_ptr<ShaderResourcesGL> pResources{new ShaderResourcesGL{}};
-        pResources->LoadUniforms(m_Desc.ShaderType,
-                                 m_SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL ?
-                                     PIPELINE_RESOURCE_FLAG_NONE :            // Reflect samplers as separate for consistency with other backends
-                                     PIPELINE_RESOURCE_FLAG_COMBINED_SAMPLER, // Reflect samplers as combined
-                                 Program, GLState);
+        auto pResources = std::make_unique<ShaderResourcesGL>();
+
+        pResources->LoadUniforms({m_Desc.ShaderType,
+                                  m_SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL ?
+                                      PIPELINE_RESOURCE_FLAG_NONE :            // Reflect samplers as separate for consistency with other backends
+                                      PIPELINE_RESOURCE_FLAG_COMBINED_SAMPLER, // Reflect samplers as combined
+                                  Program,
+                                  GLState,
+                                  ShaderCI.LoadConstantBufferReflection,
+                                  m_SourceLanguage});
         m_pShaderResources.reset(pResources.release());
     }
 }
@@ -189,7 +203,7 @@ ShaderGLImpl::~ShaderGLImpl()
 {
 }
 
-IMPLEMENT_QUERY_INTERFACE(ShaderGLImpl, IID_ShaderGL, TShaderBase)
+IMPLEMENT_QUERY_INTERFACE2(ShaderGLImpl, IID_ShaderGL, IID_InternalImpl, TShaderBase)
 
 
 GLObjectWrappers::GLProgramObj ShaderGLImpl::LinkProgram(ShaderGLImpl* const* ppShaders, Uint32 NumShaders, bool IsSeparableProgram)
@@ -275,6 +289,27 @@ void ShaderGLImpl::GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDes
     else
     {
         LOG_WARNING_MESSAGE("Shader resource queries are not available when separate shader objects are unsupported");
+    }
+}
+
+
+const ShaderCodeBufferDesc* ShaderGLImpl::GetConstantBufferDesc(Uint32 Index) const
+{
+    if (m_pDevice->GetFeatures().SeparablePrograms)
+    {
+        if (Index >= GetResourceCount())
+        {
+            UNEXPECTED("Constant buffer index (", Index, ") is out of range");
+            return nullptr;
+        }
+
+        // Uniform buffers always go first in the list of resources
+        return m_pShaderResources->GetUniformBufferDesc(Index);
+    }
+    else
+    {
+        LOG_WARNING_MESSAGE("Shader resource queries are not available when separate shader objects are unsupported");
+        return nullptr;
     }
 }
 

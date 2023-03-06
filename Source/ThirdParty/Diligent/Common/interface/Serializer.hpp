@@ -75,8 +75,8 @@ public:
 
     explicit operator bool() const { return m_Ptr != nullptr; }
 
-    bool operator==(const SerializedData& Rhs) const;
-    bool operator!=(const SerializedData& Rhs) const
+    bool operator==(const SerializedData& Rhs) const noexcept;
+    bool operator!=(const SerializedData& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }

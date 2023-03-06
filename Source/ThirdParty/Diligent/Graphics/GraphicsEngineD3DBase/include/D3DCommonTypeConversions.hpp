@@ -37,4 +37,8 @@ namespace Diligent
 
 RESOURCE_DIMENSION D3DSrvDimensionToResourceDimension(D3D_SRV_DIMENSION SrvDim);
 
+SHADER_CODE_BASIC_TYPE D3DShaderVariableTypeToShaderCodeBasicType(D3D_SHADER_VARIABLE_TYPE D3DVarType);
+
+SHADER_CODE_VARIABLE_CLASS D3DShaderVariableClassToShaderCodeVaraibleClass(D3D_SHADER_VARIABLE_CLASS D3DVariableClass);
+
 } // namespace Diligent

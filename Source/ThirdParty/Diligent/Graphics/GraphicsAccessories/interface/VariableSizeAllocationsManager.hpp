@@ -175,7 +175,7 @@ public:
             return UnalignedOffset != InvalidAllocation().UnalignedOffset;
         }
 
-        bool operator==(const Allocation& rhs) const
+        bool operator==(const Allocation& rhs) const noexcept
         {
             return UnalignedOffset == rhs.UnalignedOffset &&
                 Size == rhs.Size;
@@ -238,7 +238,7 @@ public:
             }
             else
             {
-                m_CurrAlignment = std::min(m_CurrAlignment, Alignment);
+                m_CurrAlignment = (std::min)(m_CurrAlignment, Alignment);
             }
         }
 

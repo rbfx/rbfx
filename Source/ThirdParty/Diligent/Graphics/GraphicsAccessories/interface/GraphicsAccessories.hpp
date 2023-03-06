@@ -130,6 +130,15 @@ template <> struct VALUE_TYPE2CType<VT_FLOAT32>
     typedef Float32 CType;
 };
 
+/// VALUE_TYPE2CType<> template specialization for double-precision 64-bit floating-point value type.
+
+/// Usage example:
+///
+///     VALUE_TYPE2CType<VT_FLOAT64>::CType MyFloat64Var;
+template <> struct VALUE_TYPE2CType<VT_FLOAT64>
+{
+    typedef Float64 CType;
+};
 
 static const Uint32 ValueTypeToSizeMap[] =
     // clang-format off
@@ -142,10 +151,11 @@ static const Uint32 ValueTypeToSizeMap[] =
     sizeof(VALUE_TYPE2CType<VT_UINT16>  :: CType),
     sizeof(VALUE_TYPE2CType<VT_UINT32>  :: CType),
     sizeof(VALUE_TYPE2CType<VT_FLOAT16> :: CType),
-    sizeof(VALUE_TYPE2CType<VT_FLOAT32> :: CType)
+    sizeof(VALUE_TYPE2CType<VT_FLOAT32> :: CType),
+    sizeof(VALUE_TYPE2CType<VT_FLOAT64> :: CType),
 };
 // clang-format on
-static_assert(VT_NUM_TYPES == VT_FLOAT32 + 1, "Not all value type sizes initialized.");
+static_assert(VT_NUM_TYPES == 10, "Not all value type sizes initialized.");
 
 /// Returns the size of the specified value type
 inline Uint32 GetValueSize(VALUE_TYPE Val)
@@ -348,6 +358,9 @@ const Char* GetBufferModeString(BUFFER_MODE Mode);
 /// Returns the string containing the buffer description
 String GetBufferDescString(const BufferDesc& Desc);
 
+/// Returns the string containing the shader description
+String GetShaderDescString(const ShaderDesc& Desc);
+
 /// Returns the string containing the buffer mode description
 const Char* GetResourceStateFlagString(RESOURCE_STATE State);
 String      GetResourceStateString(RESOURCE_STATE State);
@@ -363,6 +376,11 @@ template <typename TObjectDescType>
 String GetObjectDescString(const TObjectDescType&)
 {
     return "";
+}
+
+inline String GetAttachmentReferenceString(const AttachmentReference& Attachment)
+{
+    return std::to_string(Attachment.AttachmentIndex) + ", " + GetResourceStateString(Attachment.State);
 }
 
 /// Template specialization for texture description
@@ -395,11 +413,27 @@ const char* GetArchiveDeviceDataFlagString(ARCHIVE_DEVICE_DATA_FLAGS Flag, bool 
 
 const char* GetDeviceFeatureStateString(DEVICE_FEATURE_STATE State, bool bGetFullName = false);
 
-const char* GetRenderDeviceTypeString(RENDER_DEVICE_TYPE DeviceType, bool bGetEnumString = false);
+/// Returns the render device type string (e.g. "RENDER_DEVICE_TYPE_D3D11" when GetEnumString is true,
+/// or "Direct3D11" when GetEnumString is false).
+const char* GetRenderDeviceTypeString(RENDER_DEVICE_TYPE DeviceType, bool GetEnumString = false);
+
+/// Returns the render device type short string (e.g. "D3D11" when Capital is true,
+/// or "d3d11" when Capital is false).
+const char* GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE DeviceType, bool Capital = false);
 
 const char* GetAdapterTypeString(ADAPTER_TYPE AdapterType, bool bGetEnumString = false);
 
 String GetPipelineResourceFlagsString(PIPELINE_RESOURCE_FLAGS Flags, bool GetFullName = false, const char* DelimiterString = "|");
+
+const char* GetShaderCodeVariableClassString(SHADER_CODE_VARIABLE_CLASS Class);
+
+const char* GetShaderCodeBasicTypeString(SHADER_CODE_BASIC_TYPE Type);
+
+/// Returns the string containing the shader buffer description.
+String GetShaderCodeBufferDescString(const ShaderCodeBufferDesc& Desc, size_t GlobalIdent = 0, size_t MemberIdent = 2);
+
+/// Returns the string containing the shader code variable description.
+String GetShaderCodeVariableDescString(const ShaderCodeVariableDesc& Desc, size_t GlobalIdent = 0, size_t MemberIdent = 2);
 
 PIPELINE_RESOURCE_FLAGS GetValidPipelineResourceFlags(SHADER_RESOURCE_TYPE ResourceType);
 
@@ -716,5 +750,8 @@ inline uint3 GetNumSparseTilesInMipLevel(const TextureDesc& Desc,
     const auto MipProps = GetMipLevelProperties(Desc, MipLevel);
     return GetNumSparseTilesInBox(Box{0, MipProps.StorageWidth, 0, MipProps.StorageHeight, 0, MipProps.Depth}, TileSize);
 }
+
+/// Returns true if the Mapping defines an identity texture component swizzle
+bool IsIdentityComponentMapping(const TextureComponentMapping& Mapping);
 
 } // namespace Diligent

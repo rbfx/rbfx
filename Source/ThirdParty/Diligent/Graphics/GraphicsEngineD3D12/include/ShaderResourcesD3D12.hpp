@@ -43,7 +43,8 @@ public:
     ShaderResourcesD3D12(ID3DBlob*          pShaderBytecode,
                          const ShaderDesc&  ShdrDesc,
                          const char*        CombinedSamplerSuffix,
-                         class IDXCompiler* pDXCompiler);
+                         class IDXCompiler* pDXCompiler,
+                         bool               LoadConstantBufferReflection);
 
     // clang-format off
     ShaderResourcesD3D12             (const ShaderResourcesD3D12&)  = delete;

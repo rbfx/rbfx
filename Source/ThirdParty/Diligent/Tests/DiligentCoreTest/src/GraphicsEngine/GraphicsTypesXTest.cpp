@@ -768,4 +768,128 @@ TEST(GraphicsTypesXTest, RayTracingPipelineStateCreateInfoX)
 #undef PROC_HIT_SHADER_3
 }
 
+
+TEST(GraphicsTypesXTest, RenderDeviceX)
+{
+    constexpr bool Execute = false;
+    if (Execute)
+    {
+        RenderDeviceX<> Device{nullptr};
+        {
+            auto pBuffer = Device.CreateBuffer(BufferDesc{});
+            pBuffer.Release();
+        }
+        {
+            auto pBuffer = Device.CreateBuffer("Name", 1024);
+            pBuffer.Release();
+        }
+        {
+            auto pTex = Device.CreateTexture(TextureDesc{});
+            pTex.Release();
+        }
+        {
+            auto pShader = Device.CreateShader(ShaderCreateInfo{});
+            pShader.Release();
+        }
+        {
+            auto pSampler = Device.CreateSampler(SamplerDesc{});
+            pSampler.Release();
+        }
+        {
+            auto pResMapping = Device.CreateResourceMapping(ResourceMappingDesc{});
+            pResMapping.Release();
+        }
+        {
+            auto pPSO = Device.CreateGraphicsPipelineState(GraphicsPipelineStateCreateInfo{});
+            pPSO.Release();
+            pPSO = Device.CreatePipelineState(GraphicsPipelineStateCreateInfo{});
+            pPSO.Release();
+        }
+        {
+            auto pPSO = Device.CreateComputePipelineState(ComputePipelineStateCreateInfo{});
+            pPSO.Release();
+            pPSO = Device.CreatePipelineState(ComputePipelineStateCreateInfo{});
+            pPSO.Release();
+        }
+        {
+            auto pPSO = Device.CreateRayTracingPipelineState(RayTracingPipelineStateCreateInfo{});
+            pPSO.Release();
+            pPSO = Device.CreatePipelineState(RayTracingPipelineStateCreateInfo{});
+            pPSO.Release();
+        }
+        {
+            auto pPSO = Device.CreateTilePipelineState(TilePipelineStateCreateInfo{});
+            pPSO.Release();
+            pPSO = Device.CreatePipelineState(TilePipelineStateCreateInfo{});
+            pPSO.Release();
+        }
+        {
+            auto pFence = Device.CreateFence(FenceDesc{});
+            pFence.Release();
+        }
+        {
+            auto pQuery = Device.CreateQuery(QueryDesc{});
+            pQuery.Release();
+        }
+        {
+            auto pRenderPass = Device.CreateRenderPass(RenderPassDesc{});
+            pRenderPass.Release();
+        }
+        {
+            auto pFramebuffer = Device.CreateFramebuffer(FramebufferDesc{});
+            pFramebuffer.Release();
+        }
+        {
+            auto pBLAS = Device.CreateBLAS(BottomLevelASDesc{});
+            pBLAS.Release();
+        }
+        {
+            auto pTLAS = Device.CreateTLAS(TopLevelASDesc{});
+            pTLAS.Release();
+        }
+        {
+            auto pSBT = Device.CreateSBT(ShaderBindingTableDesc{});
+            pSBT.Release();
+        }
+        {
+            auto pPRS = Device.CreatePipelineResourceSignature(PipelineResourceSignatureDesc{});
+            pPRS.Release();
+        }
+        {
+            auto pMem = Device.CreateDeviceMemory(DeviceMemoryCreateInfo{});
+            pMem.Release();
+        }
+        {
+            auto pPsoCache = Device.CreatePipelineStateCache(PipelineStateCacheCreateInfo{});
+            pPsoCache.Release();
+        }
+        {
+            const auto& DeviceInfo = Device.GetDeviceInfo();
+            (void)DeviceInfo;
+        }
+        {
+            const auto& AdapterInfo = Device.GetAdapterInfo();
+            (void)AdapterInfo;
+        }
+        {
+            const auto& TexFmtInfo = Device.GetTextureFormatInfo(TEX_FORMAT_UNKNOWN);
+            (void)TexFmtInfo;
+        }
+        {
+            const auto& TexFmtInfoEx = Device.GetTextureFormatInfoExt(TEX_FORMAT_UNKNOWN);
+            (void)TexFmtInfoEx;
+        }
+        {
+            auto SparseInfo = Device.GetSparseTextureFormatInfo(TEX_FORMAT_UNKNOWN, RESOURCE_DIM_BUFFER, 0);
+            (void)SparseInfo;
+        }
+        Device.ReleaseStaleResources();
+        Device.IdleGPU();
+        {
+            auto* pFactory = Device.GetEngineFactory();
+            (void)pFactory;
+        }
+    }
+}
+
 } // namespace

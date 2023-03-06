@@ -58,7 +58,9 @@ DILIGENT_TYPED_ENUM(UAV_ACCESS_FLAG, Uint8)
     UAV_ACCESS_FLAG_WRITE  = 0x02,
 
     /// Allow read and write operations on the UAV
-    UAV_ACCESS_FLAG_READ_WRITE = UAV_ACCESS_FLAG_READ | UAV_ACCESS_FLAG_WRITE
+    UAV_ACCESS_FLAG_READ_WRITE = UAV_ACCESS_FLAG_READ | UAV_ACCESS_FLAG_WRITE,
+
+    UAV_ACCESS_FLAG_LAST = UAV_ACCESS_FLAG_READ_WRITE
 };
 DEFINE_FLAG_ENUM_OPERATORS(UAV_ACCESS_FLAG)
 
@@ -71,9 +73,91 @@ DILIGENT_TYPED_ENUM(TEXTURE_VIEW_FLAGS, Uint8)
     /// Allow automatic mipmap generation for this view.
     /// This flag is only allowed for TEXTURE_VIEW_SHADER_RESOURCE view type.
     /// The texture must be created with MISC_TEXTURE_FLAG_GENERATE_MIPS flag.
-    TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION = 1u << 0
+    TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION = 1u << 0,
+
+    TEXTURE_VIEW_FLAG_LAST = TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION
 };
 DEFINE_FLAG_ENUM_OPERATORS(TEXTURE_VIEW_FLAGS)
+
+
+/// Texture component swizzle
+DILIGENT_TYPED_ENUM(TEXTURE_COMPONENT_SWIZZLE, Uint8)
+{
+    /// Identity swizzle (e.g. R->R, G->G, B->B, A->A).
+    TEXTURE_COMPONENT_SWIZZLE_IDENTITY = 0,
+
+    /// The component is set to zero.
+    TEXTURE_COMPONENT_SWIZZLE_ZERO,
+
+    /// The component is set to one.
+    TEXTURE_COMPONENT_SWIZZLE_ONE,
+
+    /// The component is set to the value of the red channel of the texture.
+    TEXTURE_COMPONENT_SWIZZLE_R,
+
+    /// The component is set to the value of the green channel of the texture.
+    TEXTURE_COMPONENT_SWIZZLE_G,
+
+    /// The component is set to the value of the blue channel of the texture.
+    TEXTURE_COMPONENT_SWIZZLE_B,
+
+    /// The component is set to the value of the alpha channel of the texture.
+    TEXTURE_COMPONENT_SWIZZLE_A,
+
+    TEXTURE_COMPONENT_SWIZZLE_COUNT
+};
+
+
+/// Defines the per-channel texutre component mapping.
+struct TextureComponentMapping
+{
+    /// Defines the component placed in the red component of the output vector.
+    TEXTURE_COMPONENT_SWIZZLE R DEFAULT_INITIALIZER(TEXTURE_COMPONENT_SWIZZLE_IDENTITY);
+
+    /// Defines the component placed in the green component of the output vector.
+    TEXTURE_COMPONENT_SWIZZLE G DEFAULT_INITIALIZER(TEXTURE_COMPONENT_SWIZZLE_IDENTITY);
+
+    /// Defines the component placed in the blue component of the output vector.
+    TEXTURE_COMPONENT_SWIZZLE B DEFAULT_INITIALIZER(TEXTURE_COMPONENT_SWIZZLE_IDENTITY);
+
+    /// Defines the component placed in the alpha component of the output vector.
+    TEXTURE_COMPONENT_SWIZZLE A DEFAULT_INITIALIZER(TEXTURE_COMPONENT_SWIZZLE_IDENTITY);
+
+#if DILIGENT_CPP_INTERFACE
+    constexpr TextureComponentMapping() noexcept {}
+
+    constexpr TextureComponentMapping(TEXTURE_COMPONENT_SWIZZLE _R,
+                                      TEXTURE_COMPONENT_SWIZZLE _G,
+                                      TEXTURE_COMPONENT_SWIZZLE _B,
+                                      TEXTURE_COMPONENT_SWIZZLE _A) noexcept :
+        R{_R},
+        G{_G},
+        B{_B},
+        A{_A}
+    {}
+
+    constexpr Uint32 AsUint32() const
+    {
+        return (static_cast<Uint32>(R) <<  0u) |
+               (static_cast<Uint32>(G) <<  8u) |
+               (static_cast<Uint32>(B) << 16u) |
+               (static_cast<Uint32>(A) << 24u);
+    }
+
+    constexpr bool operator==(const TextureComponentMapping& RHS) const
+    {
+        return R == RHS.R &&
+               G == RHS.G && 
+               B == RHS.B &&
+               A == RHS.A;
+    }
+    constexpr bool operator!=(const TextureComponentMapping& RHS) const
+    {
+        return !(*this == RHS);
+    }
+#endif
+};
+typedef struct TextureComponentMapping TextureComponentMapping;
 
 
 /// Texture view description
@@ -130,6 +214,9 @@ struct TextureViewDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     /// Texture view flags, see Diligent::TEXTURE_VIEW_FLAGS.
     TEXTURE_VIEW_FLAGS Flags       DEFAULT_INITIALIZER(TEXTURE_VIEW_FLAG_NONE);
 
+    /// Texture component swizzle, see Diligent::TextureComponentMapping.
+    TextureComponentMapping Swizzle;
+
     // 
     // NB: when adding new members, don't forget to update std::hash<Diligent::TextureViewDesc>
     //
@@ -163,25 +250,33 @@ struct TextureViewDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     constexpr Uint32 FirstArrayOrDepthSlice() const { return FirstArraySlice; }
     constexpr Uint32 NumArrayOrDepthSlices()  const { return NumArraySlices; }
 
-    /// Tests if two structures are equivalent
+    /// Tests if two texture view descriptions are equal.
 
-    /// \param [in] RHS - reference to the structure to perform comparison with
-    /// \return
-    /// - True if all members of the two structures are equal.
-    /// - False otherwise
+    /// \param [in] RHS - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the texture view properties.
     constexpr bool operator==(const TextureViewDesc& RHS) const
     {
-        // Name is primarily used for debug purposes and does not affect the view.
-        // It is ignored in comparison operation.
+        // Ignore Name. This is consistent with the hasher (HashCombiner<HasherType, TextureViewDesc>).
         return //strcmp(Name, RHS.Name) == 0            &&
-            ViewType == RHS.ViewType &&
-            TextureDim == RHS.TextureDim &&
-            Format == RHS.Format &&
-            MostDetailedMip == RHS.MostDetailedMip &&
-            NumMipLevels == RHS.NumMipLevels &&
+            ViewType                 == RHS.ViewType                 &&
+            TextureDim               == RHS.TextureDim               &&
+            Format                   == RHS.Format                   &&
+            MostDetailedMip          == RHS.MostDetailedMip          &&
+            NumMipLevels             == RHS.NumMipLevels             &&
             FirstArrayOrDepthSlice() == RHS.FirstArrayOrDepthSlice() &&
-            NumArrayOrDepthSlices() == RHS.NumArrayOrDepthSlices() &&
-            AccessFlags == RHS.AccessFlags;
+            NumArrayOrDepthSlices()  == RHS.NumArrayOrDepthSlices()  &&
+            AccessFlags              == RHS.AccessFlags              &&
+            Flags                    == RHS.Flags                    &&
+            Swizzle                  == RHS.Swizzle;
+    }
+    constexpr bool operator!=(const TextureViewDesc& RHS) const
+    {
+        return !(*this == RHS);
     }
 #else
 

@@ -46,4 +46,6 @@ void TestPipelineResourceSignature(struct IPipelineResourceSignature* pSign)
     (void)Comp;
 
     IPipelineResourceSignature_InitializeStaticSRBResources(pSign, (struct IShaderResourceBinding*)NULL);
+
+    IPipelineResourceSignature_CopyStaticResources(pSign, (struct IPipelineResourceSignature*)NULL);
 }

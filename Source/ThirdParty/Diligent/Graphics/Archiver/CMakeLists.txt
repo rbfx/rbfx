@@ -18,6 +18,7 @@ set(INTERFACE
     interface/ArchiverFactoryLoader.h
     interface/SerializationDevice.h
     interface/SerializedPipelineState.h
+    interface/SerializedShader.h
 )
 
 set(SOURCE
@@ -40,11 +41,18 @@ endif()
 if(VULKAN_SUPPORTED)
     list(APPEND SOURCE src/Archiver_Vk.cpp)
 endif()
-if(GL_SUPPORTED)
+if(GL_SUPPORTED OR GLES_SUPPORTED)
     list(APPEND SOURCE src/Archiver_GL.cpp)
 endif()
 if(METAL_SUPPORTED)
-    list(APPEND SOURCE src/Archiver_Mtl.mm)
+    set(MTL_SOURCE src/Archiver_Mtl.mm)
+    list(APPEND SOURCE ${MTL_SOURCE})
+    
+    set_property(SOURCE ${MTL_SOURCE} APPEND_STRING PROPERTY
+        # Disable Metal API deprecation warnings such as
+        #   'MTLArgumentType' is deprecated: first deprecated in macOS 13.0
+        COMPILE_FLAGS " -Wno-deprecated-declarations"
+    )
 endif()
 
 set(DLL_SOURCE
@@ -61,13 +69,13 @@ add_library(Diligent-Archiver-static STATIC
     ${SOURCE} ${INTERFACE} ${INCLUDE}
     readme.md
 )
-add_library(Diligent-Archiver-shared SHARED
-    readme.md
-)
-
-if(MSVC)
-    target_sources(Diligent-Archiver-shared PRIVATE ${DLL_SOURCE})
-endif()
+#add_library(Diligent-Archiver-shared SHARED
+#    readme.md
+#)
+#
+#if(MSVC)
+#    target_sources(Diligent-Archiver-shared PRIVATE ${DLL_SOURCE})
+#endif()
 
 target_include_directories(Diligent-Archiver-static
 PRIVATE
@@ -86,7 +94,7 @@ if(DEFINED DILIGENT_CORE_COMMIT_HASH)
     target_compile_definitions(Diligent-Archiver-static PRIVATE DILIGENT_CORE_COMMIT_HASH="${DILIGENT_CORE_COMMIT_HASH}")
 endif()
 
-target_compile_definitions(Diligent-Archiver-shared PUBLIC ENGINE_DLL=1)
+#target_compile_definitions(Diligent-Archiver-shared PUBLIC ENGINE_DLL=1)
 
 
 target_link_libraries(Diligent-Archiver-static
@@ -128,6 +136,8 @@ if(GL_SUPPORTED OR GLES_SUPPORTED)
     elseif(PLATFORM_MACOS)
         find_package(OpenGL REQUIRED)
         target_link_libraries(Diligent-Archiver-static PRIVATE GLEW::glew ${OPENGL_LIBRARY})
+    elseif(PLATFORM_ANDROID)
+        target_link_libraries(Diligent-Archiver-static PRIVATE GLESv3 EGL)
     else()
         message(FATAL_ERROR "Unsupported platform")
     endif()
@@ -145,33 +155,33 @@ if(METAL_SUPPORTED)
 endif()
 
 
-target_link_libraries(Diligent-Archiver-shared
-PUBLIC
-    Diligent-ArchiverInterface
-PRIVATE
-    Diligent-BuildSettings
-    ${WHOLE_ARCHIVE_FLAG} Diligent-Archiver-static ${NO_WHOLE_ARCHIVE_FLAG}
-)
+#target_link_libraries(Diligent-Archiver-shared
+#PUBLIC
+#    Diligent-ArchiverInterface
+#PRIVATE
+#    Diligent-BuildSettings
+#    ${WHOLE_ARCHIVE_FLAG} Diligent-Archiver-static ${NO_WHOLE_ARCHIVE_FLAG}
+#)
+#
+#if(PLATFORM_WIN32)
+#    # Do not add 'lib' prefix when building with MinGW
+#    set_target_properties(Diligent-Archiver-shared PROPERTIES PREFIX "")
+#
+#    # Set output name to Archiver{32|64}{r|d}
+#    set_dll_output_name(Diligent-Archiver-shared Archiver)
+#else()
+#    set_target_properties(Diligent-Archiver-shared PROPERTIES
+#        OUTPUT_NAME Archiver
+#    )
+#endif()
 
-if(PLATFORM_WIN32)
-    # Do not add 'lib' prefix when building with MinGW
-    set_target_properties(Diligent-Archiver-shared PROPERTIES PREFIX "")
-
-    # Set output name to Archiver{32|64}{r|d}
-    set_dll_output_name(Diligent-Archiver-shared Archiver)
-else()
-    set_target_properties(Diligent-Archiver-shared PROPERTIES
-        OUTPUT_NAME Archiver
-    )
-endif()
-
-if (MINGW_BUILD)
-    # Restrict export to GetArchiverFactory
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/export.map
-        "{ global: *GetArchiverFactory*; local: *; };"
-    )
-    target_link_options(Diligent-Archiver-shared PRIVATE LINKER:--version-script=export.map)
-endif()
+#if (MINGW_BUILD)
+#    # Restrict export to GetArchiverFactory
+#    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/export.map
+#        "{ global: *GetArchiverFactory*; local: *; };"
+#    )
+#    target_link_options(Diligent-Archiver-shared PRIVATE LINKER:--version-script=export.map)
+#endif()
 
 source_group("src" FILES ${SOURCE})
 source_group("include" FILES ${INCLUDE})
@@ -182,14 +192,14 @@ set_source_files_properties(
     readme.md PROPERTIES HEADER_FILE_ONLY TRUE
 )
 
-set_target_properties(Diligent-Archiver-static Diligent-Archiver-shared PROPERTIES
-    FOLDER DiligentCore/Graphics
-)
+#set_target_properties(Diligent-Archiver-static Diligent-Archiver-shared PROPERTIES
+#    FOLDER DiligentCore/Graphics
+#)
 
 set_common_target_properties(Diligent-Archiver-static)
-set_common_target_properties(Diligent-Archiver-shared)
+#set_common_target_properties(Diligent-Archiver-shared)
 
 if(DILIGENT_INSTALL_CORE)
-    install_core_lib(Diligent-Archiver-shared)
+#    install_core_lib(Diligent-Archiver-shared)
     install_core_lib(Diligent-Archiver-static)
 endif()

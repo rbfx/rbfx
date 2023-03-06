@@ -152,6 +152,8 @@ public:
     void InitSRBResourceCache(ShaderResourceCacheD3D12& ResourceCache);
 
     void CopyStaticResources(ShaderResourceCacheD3D12& ResourceCache) const;
+    // Make the base class method visible
+    using TPipelineResourceSignatureBase::CopyStaticResources;
 
     struct CommitCacheResourcesAttribs
     {

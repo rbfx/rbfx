@@ -135,7 +135,7 @@ DILIGENT_BEGIN_INTERFACE(IShaderBindingTable, IDeviceObject)
     ///       The function does not modify the data used by IDeviceContext::TraceRays() and
     ///       IDeviceContext::TraceRaysIndirect() commands, so they can run in parallel.
     VIRTUAL void METHOD(BindRayGenShader)(THIS_
-                                          const char* pShaderGroupName,
+                                          const Char* pShaderGroupName,
                                           const void* pData            DEFAULT_INITIALIZER(nullptr),
                                           Uint32      DataSize         DEFAULT_INITIALIZER(0)) PURE;
 
@@ -154,7 +154,7 @@ DILIGENT_BEGIN_INTERFACE(IShaderBindingTable, IDeviceObject)
     ///       The function does not modify the data used by IDeviceContext::TraceRays() and
     ///       IDeviceContext::TraceRaysIndirect() commands, so they can run in parallel.
     VIRTUAL void METHOD(BindMissShader)(THIS_
-                                        const char* pShaderGroupName,
+                                        const Char* pShaderGroupName,
                                         Uint32      MissIndex,
                                         const void* pData            DEFAULT_INITIALIZER(nullptr),
                                         Uint32      DataSize         DEFAULT_INITIALIZER(0)) PURE;
@@ -185,10 +185,10 @@ DILIGENT_BEGIN_INTERFACE(IShaderBindingTable, IDeviceObject)
     ///       Access to the BLAS that was used in the TLAS instance with name pInstanceName must be externally synchronized.
     VIRTUAL void METHOD(BindHitGroupForGeometry)(THIS_
                                                  ITopLevelAS* pTLAS,
-                                                 const char*  pInstanceName,
-                                                 const char*  pGeometryName,
+                                                 const Char*  pInstanceName,
+                                                 const Char*  pGeometryName,
                                                  Uint32       RayOffsetInHitGroupIndex,
-                                                 const char*  pShaderGroupName,
+                                                 const Char*  pShaderGroupName,
                                                  const void*  pData            DEFAULT_INITIALIZER(nullptr),
                                                  Uint32       DataSize         DEFAULT_INITIALIZER(0)) PURE;
 
@@ -210,7 +210,7 @@ DILIGENT_BEGIN_INTERFACE(IShaderBindingTable, IDeviceObject)
     ///             ITopLevelAS::GetInstanceDesc().ContributionToHitGroupIndex to calculate the binding index.
     VIRTUAL void METHOD(BindHitGroupByIndex)(THIS_
                                              Uint32      BindingIndex,
-                                             const char* pShaderGroupName,
+                                             const Char* pShaderGroupName,
                                              const void* pData            DEFAULT_INITIALIZER(nullptr),
                                              Uint32      DataSize         DEFAULT_INITIALIZER(0)) PURE;
 
@@ -235,9 +235,9 @@ DILIGENT_BEGIN_INTERFACE(IShaderBindingTable, IDeviceObject)
     ///       IDeviceContext::TraceRaysIndirect() commands, so they can run in parallel.
     VIRTUAL void METHOD(BindHitGroupForInstance)(THIS_
                                                  ITopLevelAS* pTLAS,
-                                                 const char*  pInstanceName,
+                                                 const Char*  pInstanceName,
                                                  Uint32       RayOffsetInHitGroupIndex,
-                                                 const char*  pShaderGroupName,
+                                                 const Char*  pShaderGroupName,
                                                  const void*  pData            DEFAULT_INITIALIZER(nullptr),
                                                  Uint32       DataSize         DEFAULT_INITIALIZER(0)) PURE;
 
@@ -261,7 +261,7 @@ DILIGENT_BEGIN_INTERFACE(IShaderBindingTable, IDeviceObject)
     VIRTUAL void METHOD(BindHitGroupForTLAS)(THIS_
                                              ITopLevelAS* pTLAS,
                                              Uint32       RayOffsetInHitGroupIndex,
-                                             const char*  pShaderGroupName,
+                                             const Char*  pShaderGroupName,
                                              const void*  pData            DEFAULT_INITIALIZER(nullptr),
                                              Uint32       DataSize         DEFAULT_INITIALIZER(0)) PURE;
 
@@ -280,7 +280,7 @@ DILIGENT_BEGIN_INTERFACE(IShaderBindingTable, IDeviceObject)
     ///       The function does not modify the data used by IDeviceContext::TraceRays() and
     ///       IDeviceContext::TraceRaysIndirect() commands, so they can run in parallel.
     VIRTUAL void METHOD(BindCallableShader)(THIS_
-                                            const char* pShaderGroupName,
+                                            const Char* pShaderGroupName,
                                             Uint32      CallableIndex,
                                             const void* pData           DEFAULT_INITIALIZER(nullptr),
                                             Uint32      DataSize        DEFAULT_INITIALIZER(0)) PURE;

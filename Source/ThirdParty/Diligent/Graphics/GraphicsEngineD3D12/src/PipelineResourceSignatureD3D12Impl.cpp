@@ -394,14 +394,14 @@ void PipelineResourceSignatureD3D12Impl::CopyStaticResources(ShaderResourceCache
         return;
 
     // SrcResourceCache contains only static resources.
-    // DstResourceCache contains static, mutable and dynamic resources.
+    // In case of SRB, DstResourceCache contains static, mutable and dynamic resources.
+    // In case of Signature, DstResourceCache contains only static resources.
     const auto& SrcResourceCache = *m_pStaticResCache;
     const auto  ResIdxRange      = GetResourceIndexRange(SHADER_RESOURCE_VARIABLE_TYPE_STATIC);
     auto* const d3d12Device      = GetDevice()->GetD3D12Device();
     const auto  SrcCacheType     = SrcResourceCache.GetContentType();
     const auto  DstCacheType     = DstResourceCache.GetContentType();
     VERIFY_EXPR(SrcCacheType == ResourceCacheContentType::Signature);
-    VERIFY_EXPR(DstCacheType == ResourceCacheContentType::SRB);
 
     for (Uint32 r = ResIdxRange.first; r < ResIdxRange.second; ++r)
     {
@@ -431,7 +431,11 @@ void PipelineResourceSignatureD3D12Impl::CopyStaticResources(ShaderResourceCache
         {
             const auto& SrcRes = SrcRootTable.GetResource(SrcCacheOffset);
             if (!SrcRes.pObject)
-                LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+            {
+                if (DstCacheType == ResourceCacheContentType::SRB)
+                    LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                continue;
+            }
 
             const auto& DstRes = DstRootTable.GetResource(DstCacheOffset);
             if (DstRes.pObject != SrcRes.pObject)

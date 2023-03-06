@@ -357,16 +357,14 @@ def makeGenOpts(args):
     # the extension blocks.
     betaRequireExtensions = [
         'VK_KHR_portability_subset',
-        'VK_KHR_video_queue',
-        'VK_KHR_video_decode_queue',
         'VK_KHR_video_encode_queue',
-        'VK_EXT_video_decode_h264',
-        'VK_EXT_video_decode_h265',
         'VK_EXT_video_encode_h264',
         'VK_EXT_video_encode_h265',
     ]
 
-    betaSuppressExtensions = []
+    betaSuppressExtensions = [
+        'VK_KHR_video_queue'
+    ]
 
     platforms = [
         [ 'vulkan_android.h',     [ 'VK_KHR_android_surface',
@@ -384,7 +382,7 @@ def makeGenOpts(args):
         [ 'vulkan_macos.h',       [ 'VK_MVK_macos_surface'        ], commonSuppressExtensions ],
         [ 'vulkan_vi.h',          [ 'VK_NN_vi_surface'            ], commonSuppressExtensions ],
         [ 'vulkan_wayland.h',     [ 'VK_KHR_wayland_surface'      ], commonSuppressExtensions ],
-        [ 'vulkan_win32.h',       [ 'VK_.*_win32(|_.*)', 'VK_EXT_full_screen_exclusive' ],
+        [ 'vulkan_win32.h',       [ 'VK_.*_win32(|_.*)', 'VK_.*_winrt(|_.*)', 'VK_EXT_full_screen_exclusive' ],
                                                                      commonSuppressExtensions +
                                                                      [ 'VK_KHR_external_semaphore',
                                                                        'VK_KHR_external_memory_capabilities',
@@ -550,8 +548,8 @@ def makeGenOpts(args):
     # These are not Vulkan extensions, or a part of the Vulkan API at all,
     # but are treated in a similar fashion for generation purposes.
     #
-    # Each element of the videoStd[] array is an 'extension' name defining
-    # an interface, and is also the basis for the generated header file name.
+    # Each element of the videoStd[] array is an extension name defining an
+    # interface, and is also the basis for the generated header file name.
 
     videoStd = [
         'vulkan_video_codecs_common',

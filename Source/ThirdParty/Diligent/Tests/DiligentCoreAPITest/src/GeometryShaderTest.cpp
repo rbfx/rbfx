@@ -153,36 +153,32 @@ TEST(GeometryShaderTest, DrawTriangles)
     GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Geometry shader test - VS";
-        ShaderCI.Source          = HLSL::GSTest_VS.c_str();
+        ShaderCI.Desc       = {"Geometry shader test - VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::GSTest_VS.c_str();
         pDevice->CreateShader(ShaderCI, &pVS);
         ASSERT_NE(pVS, nullptr);
     }
 
     RefCntAutoPtr<IShader> pGS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_GEOMETRY;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Geometry shader test - GS";
-        ShaderCI.Source          = HLSL::GSTest_GS.c_str();
+        ShaderCI.Desc       = {"Geometry shader test - GS", SHADER_TYPE_GEOMETRY, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::GSTest_GS.c_str();
         pDevice->CreateShader(ShaderCI, &pGS);
         ASSERT_NE(pGS, nullptr);
     }
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Geometry shader test - PS";
-        ShaderCI.Source          = HLSL::GSTest_PS.c_str();
+        ShaderCI.Desc       = {"Geometry shader test - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::GSTest_PS.c_str();
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
     }

@@ -48,12 +48,15 @@ class PipelineStateD3D12Impl final : public PipelineStateBase<EngineD3D12ImplTra
 public:
     using TPipelineStateBase = PipelineStateBase<EngineD3D12ImplTraits>;
 
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0x9007f2a7, 0x3852, 0x4718, {0x84, 0xce, 0xfd, 0xc, 0xe1, 0xe9, 0xd3, 0x65}};
+
     PipelineStateD3D12Impl(IReferenceCounters* pRefCounters, RenderDeviceD3D12Impl* pDeviceD3D12, const GraphicsPipelineStateCreateInfo& CreateInfo);
     PipelineStateD3D12Impl(IReferenceCounters* pRefCounters, RenderDeviceD3D12Impl* pDeviceD3D12, const ComputePipelineStateCreateInfo& CreateInfo);
     PipelineStateD3D12Impl(IReferenceCounters* pRefCounters, RenderDeviceD3D12Impl* pDeviceD3D12, const RayTracingPipelineStateCreateInfo& CreateInfo);
     ~PipelineStateD3D12Impl();
 
-    IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_PipelineStateD3D12, TPipelineStateBase)
+    IMPLEMENT_QUERY_INTERFACE2_IN_PLACE(IID_PipelineStateD3D12, IID_InternalImpl, TPipelineStateBase)
 
     /// Implementation of IPipelineState::IsCompatibleWith() in Direct3D12 backend.
     virtual bool DILIGENT_CALL_TYPE IsCompatibleWith(const IPipelineState* pPSO) const override final;

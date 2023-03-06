@@ -41,6 +41,8 @@
 namespace Diligent
 {
 
+constexpr INTERFACE_ID PipelineStateGLImpl::IID_InternalImpl;
+
 static void VerifyResourceMerge(const PipelineStateDesc&                    PSODesc,
                                 const ShaderResourcesGL::GLResourceAttribs& ExistingRes,
                                 const ShaderResourcesGL::GLResourceAttribs& NewResAttribs)
@@ -142,7 +144,7 @@ PipelineResourceSignatureDescWrapper PipelineStateGLImpl::GetDefaultSignatureDes
         VERIFY_EXPR(m_GLPrograms[0] != 0);
 
         const auto SamplerResFlag = GetSamplerResourceFlag(ShaderStages, true /*SilenceWarning*/);
-        ProgramResources.LoadUniforms(ActiveStages, SamplerResFlag, m_GLPrograms[0], pImmediateCtx->GetContextState());
+        ProgramResources.LoadUniforms({ActiveStages, SamplerResFlag, m_GLPrograms[0], pImmediateCtx->GetContextState()});
         ProgramResources.ProcessConstResources(HandleResource, HandleResource, HandleResource, HandleResource);
 
         if (ResourceLayout.NumImmutableSamplers > 0)
@@ -200,7 +202,7 @@ void PipelineStateGLImpl::InitResourceLayout(PSO_CREATE_INTERNAL_FLAGS InternalF
         const auto SamplerResFlag = GetSamplerResourceFlag(ShaderStages, false /*SilenceWarning*/);
 
         auto pResources = std::make_shared<ShaderResourcesGL>();
-        pResources->LoadUniforms(ActiveStages, GetSamplerResourceFlag(ShaderStages, SamplerResFlag), m_GLPrograms[0], pImmediateCtx->GetContextState());
+        pResources->LoadUniforms({ActiveStages, GetSamplerResourceFlag(ShaderStages, SamplerResFlag), m_GLPrograms[0], pImmediateCtx->GetContextState()});
         ProgResources[0] = pResources;
         ValidateShaderResources(std::move(pResources), m_Desc.Name, ActiveStages);
     }
@@ -383,7 +385,7 @@ void PipelineStateGLImpl::Destruct()
     TPipelineStateBase::Destruct();
 }
 
-IMPLEMENT_QUERY_INTERFACE(PipelineStateGLImpl, IID_PipelineStateGL, TPipelineStateBase)
+IMPLEMENT_QUERY_INTERFACE2(PipelineStateGLImpl, IID_PipelineStateGL, IID_InternalImpl, TPipelineStateBase)
 
 SHADER_TYPE PipelineStateGLImpl::GetShaderStageType(Uint32 Index) const
 {

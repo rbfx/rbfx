@@ -224,6 +224,29 @@ RenderDeviceGLImpl::RenderDeviceGLImpl(IReferenceCounters*       pRefCounters,
     }
 #endif
 
+#if PLATFORM_WIN32 || PLATFORM_LINUX || PLATFORM_MACOS
+    if (m_DeviceInfo.APIVersion >= Version{4, 6} || CheckExtension("GL_ARB_ES3_compatibility"))
+    {
+        glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+        if (glGetError() != GL_NO_ERROR)
+            LOG_ERROR_MESSAGE("Failed to enable primitive restart fixed index");
+    }
+    else
+    {
+        glEnable(GL_PRIMITIVE_RESTART);
+        if (glGetError() == GL_NO_ERROR)
+        {
+            glPrimitiveRestartIndex(0xFFFFFFFFu);
+            if (glGetError() != GL_NO_ERROR)
+                LOG_ERROR_MESSAGE("Failed to set the primitive restart index");
+        }
+        else
+        {
+            LOG_ERROR_MESSAGE("Failed to enable primitive restart");
+        }
+    }
+#endif
+
     InitAdapterInfo();
 
     // Enable requested device features
@@ -279,7 +302,7 @@ IMPLEMENT_QUERY_INTERFACE(RenderDeviceGLImpl, IID_RenderDeviceGL, TRenderDeviceB
 
 void RenderDeviceGLImpl::InitTexRegionRender()
 {
-    m_pTexRegionRender.reset(new TexRegionRender(this));
+    m_pTexRegionRender = std::make_unique<TexRegionRender>(this);
 }
 
 void RenderDeviceGLImpl::CreateBuffer(const BufferDesc& BuffDesc, const BufferData* pBuffData, IBuffer** ppBuffer, bool bIsDeviceInternal)
@@ -305,7 +328,11 @@ void RenderDeviceGLImpl::CreateBufferFromGLHandle(Uint32 GLHandle, const BufferD
 
 void RenderDeviceGLImpl::CreateShader(const ShaderCreateInfo& ShaderCreateInfo, IShader** ppShader, bool bIsDeviceInternal)
 {
-    CreateShaderImpl(ppShader, ShaderCreateInfo, bIsDeviceInternal);
+    const ShaderGLImpl::CreateInfo GLShaderCI{
+        GetDeviceInfo(),
+        GetAdapterInfo() //
+    };
+    CreateShaderImpl(ppShader, ShaderCreateInfo, GLShaderCI, bIsDeviceInternal);
 }
 
 void RenderDeviceGLImpl::CreateShader(const ShaderCreateInfo& ShaderCreateInfo, IShader** ppShader)
@@ -696,6 +723,7 @@ void RenderDeviceGLImpl::InitAdapterInfo()
         Features.NativeFence                = DEVICE_FEATURE_STATE_DISABLED;
         Features.TileShaders                = DEVICE_FEATURE_STATE_DISABLED;
         Features.SubpassFramebufferFetch    = DEVICE_FEATURE_STATE_DISABLED;
+        Features.TextureComponentSwizzle    = DEVICE_FEATURE_STATE_DISABLED;
 
         {
             bool WireframeFillSupported = (glPolygonMode != nullptr);
@@ -768,6 +796,7 @@ void RenderDeviceGLImpl::InitAdapterInfo()
             ENABLE_FEATURE(ShaderInt8,                    CheckExtension("GL_EXT_shader_explicit_arithmetic_types_int8"));
             ENABLE_FEATURE(ResourceBuffer8BitAccess,      CheckExtension("GL_EXT_shader_8bit_storage"));
             ENABLE_FEATURE(UniformBuffer8BitAccess,       CheckExtension("GL_EXT_shader_8bit_storage"));
+            ENABLE_FEATURE(TextureComponentSwizzle,       IsGL46OrAbove || CheckExtension("GL_ARB_texture_swizzle"));
             // clang-format on
 
             TexProps.MaxTexture1DDimension      = MaxTextureSize;
@@ -834,6 +863,7 @@ void RenderDeviceGLImpl::InitAdapterInfo()
             ENABLE_FEATURE(ShaderInt8,                strstr(Extensions, "shader_explicit_arithmetic_types_int8"));
             ENABLE_FEATURE(ResourceBuffer8BitAccess,  strstr(Extensions, "shader_8bit_storage"));
             ENABLE_FEATURE(UniformBuffer8BitAccess,   strstr(Extensions, "shader_8bit_storage"));
+            ENABLE_FEATURE(TextureComponentSwizzle,   true);
             // clang-format on
 
             TexProps.MaxTexture1DDimension      = 0; // Not supported in GLES 3.2
@@ -993,7 +1023,7 @@ void RenderDeviceGLImpl::InitAdapterInfo()
         m_AdapterInfo.Queues[0].TextureCopyGranularity[2] = 1;
     }
 
-    ASSERT_SIZEOF(DeviceFeatures, 40, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+    ASSERT_SIZEOF(DeviceFeatures, 41, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 }
 
 void RenderDeviceGLImpl::FlagSupportedTexFormats()

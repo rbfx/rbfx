@@ -119,7 +119,7 @@ DILIGENT_BEGIN_INTERFACE(IResourceMapping, IObject)
     VIRTUAL void METHOD(AddResource)(THIS_
                                      const Char*    Name,
                                      IDeviceObject* pObject,
-                                     bool           bIsUnique) PURE;
+                                     Bool           bIsUnique) PURE;
 
 
     /// Adds resource array to the mapping.
@@ -139,7 +139,7 @@ DILIGENT_BEGIN_INTERFACE(IResourceMapping, IObject)
                                           Uint32                StartIndex,
                                           IDeviceObject* const* ppObjects,
                                           Uint32                NumElements,
-                                          bool                  bIsUnique) PURE;
+                                          Bool                  bIsUnique) PURE;
 
 
     /// Removes a resource from the mapping using its literal name.

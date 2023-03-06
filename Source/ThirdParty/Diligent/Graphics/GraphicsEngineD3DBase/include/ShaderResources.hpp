@@ -331,6 +331,23 @@ public:
 
     HLSLShaderResourceDesc GetHLSLShaderResourceDesc(Uint32 Index) const;
 
+    const ShaderCodeBufferDesc* GetConstantBufferDesc(Uint32 Index) const
+    {
+        if (Index >= GetNumCBs())
+        {
+            UNEXPECTED("Constant buffer index (", Index, ") is out of range.");
+            return nullptr;
+        }
+
+        if (!m_CBReflectionBuffer)
+        {
+            UNEXPECTED("Constant buffer reflection information is not loaded. Please set the LoadConstantBufferReflection flag when creating the shader.");
+            return nullptr;
+        }
+
+        return reinterpret_cast<const ShaderCodeBufferDesc*>(m_CBReflectionBuffer.get()) + Index;
+    }
+
     template <typename THandleCB,
               typename THandleSampler,
               typename THandleTexSRV,
@@ -416,14 +433,14 @@ public:
     }
 
 protected:
-    template <typename D3D_SHADER_DESC,
-              typename D3D_SHADER_INPUT_BIND_DESC,
+    template <typename TD3DReflectionTraits,
               typename TShaderReflection,
               typename TNewResourceHandler>
     void Initialize(TShaderReflection*  pShaderReflection,
                     TNewResourceHandler NewResHandler,
                     const Char*         ShaderName,
-                    const Char*         SamplerSuffix);
+                    const Char*         SamplerSuffix,
+                    bool                LoadConstantBufferReflection);
 
 
     __forceinline D3DShaderResourceAttribs& GetResAttribs(Uint32 n, Uint32 NumResources, Uint32 Offset) noexcept
@@ -463,6 +480,7 @@ private:
     //
 
     std::unique_ptr<void, STDDeleterRawMem<void>> m_MemoryBuffer;
+    std::unique_ptr<void, STDDeleterRawMem<void>> m_CBReflectionBuffer;
 
     const char* m_SamplerSuffix = nullptr; // The suffix and the shader name
     const char* m_ShaderName    = nullptr; // are put into the Resource Names section
@@ -483,22 +501,27 @@ private:
 };
 
 
-template <typename D3D_SHADER_DESC,
-          typename D3D_SHADER_INPUT_BIND_DESC,
+template <typename TD3DReflectionTraits,
           typename TShaderReflection,
           typename TNewResourceHandler>
 void ShaderResources::Initialize(TShaderReflection*  pShaderReflection,
                                  TNewResourceHandler NewResHandler,
                                  const Char*         ShaderName,
-                                 const Char*         CombinedSamplerSuffix)
+                                 const Char*         CombinedSamplerSuffix,
+                                 bool                LoadConstantBufferReflection)
 {
+    using D3D_SHADER_DESC = TD3DReflectionTraits::D3D_SHADER_DESC;
+
     Uint32 CurrCB = 0, CurrTexSRV = 0, CurrTexUAV = 0, CurrBufSRV = 0, CurrBufUAV = 0, CurrSampler = 0, CurrAS = 0;
 
     // Resource names pool is only needed to facilitate string allocation.
     StringPool ResourceNamesPool;
 
-    LoadD3DShaderResources<D3D_SHADER_DESC, D3D_SHADER_INPUT_BIND_DESC>(
-        pShaderReflection,
+    // Constant buffer reflections
+    std::vector<ShaderCodeBufferDescX> CBReflections;
+
+    LoadD3DShaderResources<TD3DReflectionTraits>(
+        pShaderReflection, LoadConstantBufferReflection,
 
         [&](const D3D_SHADER_DESC& d3dShaderDesc) //
         {
@@ -516,11 +539,13 @@ void ShaderResources::Initialize(TShaderReflection*  pShaderReflection,
             AllocateMemory(GetRawAllocator(), ResCounters, ResourceNamesPoolSize, ResourceNamesPool);
         },
 
-        [&](const D3DShaderResourceAttribs& CBAttribs) //
+        [&](const D3DShaderResourceAttribs& CBAttribs, ShaderCodeBufferDescX&& CBReflection) //
         {
             VERIFY_EXPR(CBAttribs.GetInputType() == D3D_SIT_CBUFFER);
             auto* pNewCB = new (&GetCB(CurrCB++)) D3DShaderResourceAttribs{ResourceNamesPool, CBAttribs};
             NewResHandler.OnNewCB(*pNewCB);
+            if (LoadConstantBufferReflection)
+                CBReflections.emplace_back(std::move(CBReflection));
         },
 
         [&](const D3DShaderResourceAttribs& TexUAV) //
@@ -600,6 +625,13 @@ void ShaderResources::Initialize(TShaderReflection*  pShaderReflection,
     VERIFY(CurrSampler == GetNumSamplers(),     "Not all Samplers are initialized which will cause a crash when ~D3DShaderResourceAttribs() is called" );
     VERIFY(CurrAS      == GetNumAccelStructs(), "Not all Accel Structs are initialized which will cause a crash when ~D3DShaderResourceAttribs() is called" );
     // clang-format on
+
+    if (!CBReflections.empty())
+    {
+        VERIFY_EXPR(LoadConstantBufferReflection);
+        VERIFY_EXPR(CBReflections.size() == GetNumCBs());
+        m_CBReflectionBuffer = ShaderCodeBufferDescX::PackArray(CBReflections.cbegin(), CBReflections.cend(), GetRawAllocator());
+    }
 }
 
 } // namespace Diligent

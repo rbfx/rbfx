@@ -46,6 +46,8 @@ enum class SpirvVersion
 
     GL,   // SPIRV 1.0
     GLES, // SPIRV 1.0
+
+    Count
 };
 
 void InitializeGlslang();

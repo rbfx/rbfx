@@ -78,7 +78,7 @@ public:
 
     struct Hasher
     {
-        size_t operator()(const IndexWrapper& Idx) const
+        size_t operator()(const IndexWrapper& Idx) const noexcept
         {
             return size_t{Idx.m_Value};
         }

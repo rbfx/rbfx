@@ -30,7 +30,7 @@
 #   | Item                      | Section in the right pane             |
 #   | ------------------------- | ------------------------------------- |
 #   | OS, VM                    | Set up job                            |
-#   | git repo, commit hash     | Run actions/checkout@v2               |
+#   | git repo, commit hash     | Run actions/checkout@v3               |
 #   | gcc, tools                | Environment info                      |
 #
 # - To fail earlier, order of tests in the same job are roughly sorted by
@@ -102,7 +102,7 @@ jobs:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
     steps:
-    - uses: actions/checkout@v2 # https://github.com/actions/checkout
+    - uses: actions/checkout@v3 # https://github.com/actions/checkout
 
     - name: apt-get install
       run: |
@@ -171,7 +171,7 @@ jobs:
     name: Linux x64 check results consistency
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2 # https://github.com/actions/checkout
+    - uses: actions/checkout@v3 # https://github.com/actions/checkout
 
     - name: Environment info
       run: |
@@ -210,7 +210,7 @@ jobs:
     name: Linux x64 misc tests
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2 # https://github.com/actions/checkout
+    - uses: actions/checkout@v3 # https://github.com/actions/checkout
 
     - name: apt-get install
       run: |
@@ -253,7 +253,7 @@ jobs:
     name: Linux x64 cmake unofficial build test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2 # https://github.com/actions/checkout
+    - uses: actions/checkout@v3 # https://github.com/actions/checkout
 
     - name: Environment info
       run: |
@@ -350,7 +350,7 @@ jobs:
       XCC: ${{ matrix.xcc }}
       XEMU: ${{ matrix.xemu }}
     steps:
-    - uses: actions/checkout@v2 # https://github.com/actions/checkout
+    - uses: actions/checkout@v3 # https://github.com/actions/checkout
     - name: apt update & install (1)
       run: |
         sudo apt-get update
@@ -378,11 +378,16 @@ jobs:
         CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
         CPPFLAGS="-DXXH_VECTOR=XXH_NEON" CFLAGS="-O3 -march=armv7-a -fPIC -mfloat-abi=softfp -mfpu=neon-vfpv4" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
 
-    - name: ARM64 (XXH_VECTOR=[ scalar, NEON ])
+    - name: ARM64 (XXH_VECTOR=[ scalar, NEON, SVE ])
       if: ${{ matrix.name == 'ARM64' }}
       run: |
         CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
         CPPFLAGS="-DXXH_VECTOR=XXH_NEON" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=off,sve512=off,sve1024=off,sve2048=off" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=off,sve1024=off,sve2048=off" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=off,sve2048=off" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=on,sve2048=off" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=on,sve2048=on" make clean check
 
     - name: ${{ matrix.name }} (XXH_VECTOR=[ scalar, VSX ])
       if: ${{ startsWith(matrix.name, 'PPC64') }}
@@ -407,7 +412,7 @@ jobs:
         LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
 
 
-  # macOS, { 10.15, 11 }
+  # macOS, { 11 }
 
   macos-general:
     name: ${{ matrix.system.os }}
@@ -417,10 +422,9 @@ jobs:
       matrix:
         system: [
           { os: macos-11    },
-          { os: macos-10.15 },
         ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Environment info
       run: |
@@ -460,7 +464,7 @@ jobs:
         ]
         arch: [ x64, Win32, ARM, ARM64 ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Build ${{ matrix.system.os }}, ${{ matrix.arch }}
       run: |
@@ -513,7 +517,7 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v2  # https://github.com/actions/checkout
+      - uses: actions/checkout@v3  # https://github.com/actions/checkout
       - uses: msys2/setup-msys2@v2 # https://github.com/msys2/setup-msys2
         with:
           msystem: MSYS
@@ -554,8 +558,15 @@ jobs:
       HOME: /root
 
     steps:
-      - uses: actions/checkout@v2
-      - run: mkdir -p ~/.tipi
+      - uses: actions/checkout@v3
+        # FIX: we currently need a full clone
+        with:
+          fetch-depth: '0'
+      - run: |
+          mkdir -p /usr/local/share/.tipi
+          # FIX: Hack for github action
+          git config --global --add safe.directory /usr/local/share/.tipi
+          git config --global --add safe.directory /__w/xxHash/xxHash/
 
       # checking if the xxHash project builds and passes tests
       - name: Build as project target linux-cxx17 (run test multiInclude)
@@ -568,8 +579,21 @@ jobs:
         run: rm -r ./build
 
       # trying if pulling the dependency with tipi works properly
+      #
+      # note: the xxhashsum sources include xxhash using a #include "../xxhash.h" 
+      # this defeats the purpose of this test AND becase a bug post tipi v0.0.35 
+      # because of source mirroring (not) supporting relative include to locations
+      # outside of the project tree. 
+      #
+      # because of this we create a copy of the ./cli and apply some sed magic 
+      # to make the includes proper 'library' includes to simulate what someone
+      # consuming xxHash would do
+      #
+      # e.g. turning #include "../xxhash.h" => #include <xxhash.h>
       - name: Build as dependency
         run: |
-          cd ./cli
+          cp -a ./cli ./cli-tipi
+          cd ./cli-tipi
+          find ./ -type f -iname "*.c" | xargs sed -i 's;"../xxhash.h";<xxhash.h>;g'
           tipi . --dont-upgrade --verbose -t linux-cxx17
           ./build/linux-cxx17/bin/xsum_os_specific

@@ -108,16 +108,14 @@ TEST(TileShaderTest, DrawQuad)
         GraphicsPipeline.DepthStencilDesc.DepthEnable = True;
 
         ShaderCreateInfo ShaderCI;
-        ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_MSL;
-        ShaderCI.ShaderCompiler             = SHADER_COMPILER_DEFAULT;
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_MSL;
+        ShaderCI.ShaderCompiler = SHADER_COMPILER_DEFAULT;
 
         RefCntAutoPtr<IShader> pVS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "VSmain";
-            ShaderCI.Desc.Name       = "Tile shader test - VS";
-            ShaderCI.Source          = MSL::TileShaderTest1.c_str();
+            ShaderCI.Desc       = {"Tile shader test - VS", SHADER_TYPE_VERTEX, true};
+            ShaderCI.EntryPoint = "VSmain";
+            ShaderCI.Source     = MSL::TileShaderTest1.c_str();
 
             pDevice->CreateShader(ShaderCI, &pVS);
             ASSERT_NE(pVS, nullptr);
@@ -125,10 +123,9 @@ TEST(TileShaderTest, DrawQuad)
 
         RefCntAutoPtr<IShader> pPS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-            ShaderCI.EntryPoint      = "PSmain";
-            ShaderCI.Desc.Name       = "Tile shader test - PS";
-            ShaderCI.Source          = MSL::TileShaderTest1.c_str();
+            ShaderCI.Desc       = {"Tile shader test - PS", SHADER_TYPE_PIXEL, true};
+            ShaderCI.EntryPoint = "PSmain";
+            ShaderCI.Source     = MSL::TileShaderTest1.c_str();
 
             pDevice->CreateShader(ShaderCI, &pPS);
             ASSERT_NE(pPS, nullptr);
@@ -154,16 +151,14 @@ TEST(TileShaderTest, DrawQuad)
         TilePipeline.RTVFormats[0]    = SCDesc.ColorBufferFormat;
 
         ShaderCreateInfo ShaderCI;
-        ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_MSL;
-        ShaderCI.ShaderCompiler             = SHADER_COMPILER_DEFAULT;
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_MSL;
+        ShaderCI.ShaderCompiler = SHADER_COMPILER_DEFAULT;
 
         RefCntAutoPtr<IShader> pTS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_TILE;
-            ShaderCI.EntryPoint      = "TLSmain";
-            ShaderCI.Desc.Name       = "Tile shader test - TLS";
-            ShaderCI.Source          = MSL::TileShaderTest1.c_str();
+            ShaderCI.Desc       = {"Tile shader test - TLS", SHADER_TYPE_TILE, true};
+            ShaderCI.EntryPoint = "TLSmain";
+            ShaderCI.Source     = MSL::TileShaderTest1.c_str();
 
             pDevice->CreateShader(ShaderCI, &pTS);
             ASSERT_NE(pTS, nullptr);

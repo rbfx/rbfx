@@ -67,7 +67,7 @@ float4 VerifyResources()
 
 #endif
 
-	return AllCorrect;
+    return AllCorrect;
 }
 
 void VSMain(in  uint    VertId    : SV_VertexID,

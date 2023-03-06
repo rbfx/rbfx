@@ -36,7 +36,7 @@ vec4 VerifyResources()
     AllCorrect *= CheckValue(textureLod(g_Tex2DArr_Dyn[1], UV, 0.0), Tex2DArr_Dyn_Ref1);
     AllCorrect *= CheckValue(textureLod(g_Tex2DArr_Dyn[2], UV, 0.0), Tex2DArr_Dyn_Ref2);
 
-	return AllCorrect;
+    return AllCorrect;
 }
 
 

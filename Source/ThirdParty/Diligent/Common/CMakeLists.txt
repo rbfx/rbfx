@@ -62,7 +62,7 @@ target_include_directories(Diligent-Common
 PRIVATE
     include
 PUBLIC
-    interface
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
 )
 
 target_link_libraries(Diligent-Common

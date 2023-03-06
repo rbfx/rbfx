@@ -33,6 +33,7 @@
 #include <sstream>
 
 #include "../../Primitives/interface/BasicTypes.h"
+#include "../../Primitives/interface/FlagEnum.h"
 #include "../../Platforms/Basic/interface/DebugUtilities.hpp"
 #include "StringTools.h"
 
@@ -98,10 +99,29 @@ InteratorType SkipLine(const InteratorType& Start, const InteratorType& End, boo
 }
 
 
+/// Flags controlling what kind of comments the SkipComment function should skip.
+enum SKIP_COMMENT_FLAGS : Uint32
+{
+    /// Skip no comments
+    SKIP_COMMENT_FLAG_NONE = 0u,
+
+    /// Skip single-line comment
+    SKIP_COMMENT_FLAG_SINGLE_LINE = 1u << 0u,
+
+    /// Skip multi-line comment
+    SKIP_COMMENT_FLAG_MULTILINE = 1u << 1u,
+
+    /// Skip all kinds of comments
+    SKIP_COMMENT_FLAG_ALL = SKIP_COMMENT_FLAG_SINGLE_LINE | SKIP_COMMENT_FLAG_MULTILINE
+};
+DEFINE_FLAG_ENUM_OPERATORS(SKIP_COMMENT_FLAGS)
+
+
 /// Skips single-line and multi-line comments starting from the given position.
 
 /// \param[inout] Start - starting position.
 /// \param[in]    End   - end of the input string.
+/// \param[in]    Flags - flags controlling what kind of comments to skip.
 ///
 /// \return     if the comment is found, the position immediately following
 ///             the end of the comment; starting position otherwise.
@@ -111,7 +131,7 @@ InteratorType SkipLine(const InteratorType& Start, const InteratorType& End, boo
 ///             std::pair<InteratorType, const char*>, where first is the position
 ///             of the error, and second is the error description.
 template <typename InteratorType>
-InteratorType SkipComment(const InteratorType& Start, const InteratorType& End) noexcept(false)
+InteratorType SkipComment(const InteratorType& Start, const InteratorType& End, SKIP_COMMENT_FLAGS Flags = SKIP_COMMENT_FLAG_ALL) noexcept(false)
 {
     auto Pos = Start;
     if (Pos == End || *Pos == '\0')
@@ -127,7 +147,9 @@ InteratorType SkipComment(const InteratorType& Start, const InteratorType& End) 
     //  // Comment       /* Comment
     //   ^                ^
     //   Pos              Pos
-    if (Pos == End || !(*Pos == '/' || *Pos == '*'))
+    if (Pos == End ||
+        !((*Pos == '/' && (Flags & SKIP_COMMENT_FLAG_SINGLE_LINE) != 0) ||
+          (*Pos == '*' && (Flags & SKIP_COMMENT_FLAG_MULTILINE) != 0)))
         return Start;
 
     if (*Pos == '/')
@@ -182,27 +204,37 @@ InteratorType SkipComment(const InteratorType& Start, const InteratorType& End) 
     // Unreachable
 }
 
-
 /// Skips all delimiters starting from the given position.
 
-/// \param[inout] Pos - starting position.
-/// \param[in]    End - end of the input string.
+/// \param[inout] Pos        - starting position.
+/// \param[in]    End        - end of the input string.
+/// \param[in]    Delimiters - optional string containing custom delimiters.
 ///
 /// \return       position of the first non-delimiter character.
 template <typename InteratorType>
-InteratorType SkipDelimiters(const InteratorType& Start, const InteratorType& End) noexcept
+InteratorType SkipDelimiters(const InteratorType& Start, const InteratorType& End, const char* Delimiters = nullptr) noexcept
 {
     auto Pos = Start;
-    while (Pos != End && IsDelimiter(*Pos))
-        ++Pos;
+    if (Delimiters != nullptr)
+    {
+        while (Pos != End && strchr(Delimiters, *Pos))
+            ++Pos;
+    }
+    else
+    {
+        while (Pos != End && IsDelimiter(*Pos))
+            ++Pos;
+    }
     return Pos;
 }
 
 
 /// Skips all comments and all delimiters starting from the given position.
 
-/// \param[inout] Pos - starting position.
-/// \param[in]    End - end of the input string.
+/// \param[inout] Pos          - starting position.
+/// \param[in]    End          - end of the input string.
+/// \param[in]    Delimiters   - optional string containing custom delimiters.
+/// \param[in]    CommentFlags - optional flags controlling what kind of comments to skip.
 ///
 /// \return true  position of the first non-comment non-delimiter character.
 ///
@@ -211,15 +243,18 @@ InteratorType SkipDelimiters(const InteratorType& Start, const InteratorType& En
 ///             of type std::pair<InteratorType, const char*>, where first is the position
 ///             of the error, and second is the error description.
 template <typename IteratorType>
-IteratorType SkipDelimitersAndComments(const IteratorType& Start, const IteratorType& End) noexcept(false)
+IteratorType SkipDelimitersAndComments(const IteratorType& Start,
+                                       const IteratorType& End,
+                                       const char*         Delimiters   = nullptr,
+                                       SKIP_COMMENT_FLAGS  CommentFlags = SKIP_COMMENT_FLAG_ALL) noexcept(false)
 {
     auto Pos = Start;
     while (Pos != End && *Pos != '\0')
     {
         const auto BlockStart = Pos;
 
-        Pos = SkipDelimiters(Pos, End);
-        Pos = SkipComment(Pos, End); // May throw
+        Pos = SkipDelimiters(Pos, End, Delimiters);
+        Pos = SkipComment(Pos, End, CommentFlags); // May throw
         if (Pos == BlockStart)
             break;
     };

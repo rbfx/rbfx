@@ -173,14 +173,15 @@ struct TextureDesc DILIGENT_DERIVE(DeviceObjectAttribs)
 
     constexpr Uint32 ArraySizeOrDepth() const { return ArraySize; }
 
-    /// Tests if two structures are equivalent
+    /// Tests if two texture descriptions are equal.
 
-    /// \param [in] RHS - reference to the structure to perform comparison with
-    /// \return
-    /// - True if all members of the two structures except for the Name are equal.
-    /// - False otherwise.
-    /// The operator ignores DeviceObjectAttribs::Name field as it does not affect
-    /// the texture description state.
+    /// \param [in] RHS - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the texture properties.
     constexpr bool operator ==(const TextureDesc& RHS)const
     {
                 // Name is primarily used for debug purposes and does not affect the state.

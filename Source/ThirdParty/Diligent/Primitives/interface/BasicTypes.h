@@ -30,17 +30,16 @@
 #include "CommonDefinitions.h"
 
 #if DILIGENT_C_INTERFACE
-#    include <stdint.h>
 #    include <stdbool.h>
 #    include <stddef.h>
 #else
-#    include <cstdint>
 #    include <string>
 #endif
 
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
-typedef float Float32; ///< 32-bit float
+typedef float  Float32; ///< 32-bit float
+typedef double Float64; ///< 64-bit float
 
 typedef int64_t Int64; ///< 64-bit signed integer
 typedef int32_t Int32; ///< 32-bit signed integer

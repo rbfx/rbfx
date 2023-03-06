@@ -79,27 +79,16 @@ bool VerifyRenderPassUnpackInfo(const RenderPassUnpackInfo& DeArchiveInfo, IRend
     return true;
 }
 
-DeviceObjectArchive::DeviceType RenderDeviceTypeToArchiveDeviceType(RENDER_DEVICE_TYPE Type)
+bool VerifShaderUnpackInfo(const ShaderUnpackInfo& DeArchiveInfo, IShader** ppShader)
 {
-    static_assert(RENDER_DEVICE_TYPE_COUNT == 7, "Did you add a new render device type? Please handle it here.");
-    switch (Type)
-    {
-        // clang-format off
-        case RENDER_DEVICE_TYPE_D3D11:  return DeviceObjectArchive::DeviceType::Direct3D11;
-        case RENDER_DEVICE_TYPE_D3D12:  return DeviceObjectArchive::DeviceType::Direct3D12;
-        case RENDER_DEVICE_TYPE_GL:     return DeviceObjectArchive::DeviceType::OpenGL;
-        case RENDER_DEVICE_TYPE_GLES:   return DeviceObjectArchive::DeviceType::OpenGL;
-        case RENDER_DEVICE_TYPE_VULKAN: return DeviceObjectArchive::DeviceType::Vulkan;
-#if PLATFORM_MACOS
-        case RENDER_DEVICE_TYPE_METAL:  return DeviceObjectArchive::DeviceType::Metal_MacOS;
-#elif PLATFORM_IOS || PLATFORM_TVOS
-        case RENDER_DEVICE_TYPE_METAL:  return DeviceObjectArchive::DeviceType::Metal_iOS;
-#endif
-        // clang-format on
-        default:
-            UNEXPECTED("Unexpected device type");
-            return DeviceObjectArchive::DeviceType::Count;
-    }
+#define CHECK_UNPACK_RENDER_PASS_PARAM(Expr, ...) CHECK_UNPACK_PARAMATER("Invalid shader unpack parameter: ", ##__VA_ARGS__)
+    CHECK_UNPACK_RENDER_PASS_PARAM(ppShader != nullptr, "ppShader must not be null");
+    CHECK_UNPACK_RENDER_PASS_PARAM(DeArchiveInfo.pArchive != nullptr, "pArchive must not be null");
+    CHECK_UNPACK_RENDER_PASS_PARAM(DeArchiveInfo.Name != nullptr, "Name must not be null");
+    CHECK_UNPACK_RENDER_PASS_PARAM(DeArchiveInfo.pDevice != nullptr, "pDevice must not be null");
+#undef CHECK_UNPACK_RENDER_PASS_PARAM
+
+    return true;
 }
 
 } // namespace
@@ -437,7 +426,7 @@ bool DearchiverBase::UnpackPSOShaders(ArchiveData&             Archive,
             LOG_ERROR_MESSAGE("Failed to deserialize PSO shader indices. Archive file may be corrupted or invalid.");
             return false;
         }
-        VERIFY_EXPR(Ser.IsEnded());
+        VERIFY(Ser.IsEnded(), "No other data besides shader indices is expected");
     }
 
     auto& ShaderCache = Archive.CachedShaders[static_cast<size_t>(DevType)];
@@ -494,6 +483,25 @@ bool DearchiverBase::UnpackPSOShaders(ArchiveData&             Archive,
     }
 
     return true;
+}
+
+DearchiverBase::ArchiveData* DearchiverBase::FindArchive(ResourceType ResType, const char* ResName)
+{
+    VERIFY_EXPR(ResType != ResourceType::Undefined);
+    VERIFY_EXPR(ResName != nullptr);
+
+    const auto archive_idx_it = m_ResNameToArchiveIdx.find(NamedResourceKey{ResType, ResName});
+    if (archive_idx_it == m_ResNameToArchiveIdx.end())
+        return nullptr;
+
+    auto& Archive = m_Archives[archive_idx_it->second];
+    if (!Archive.pObjArchive)
+    {
+        UNEXPECTED("Null object archives should never be added to the list. This is a bug.");
+        return nullptr;
+    }
+
+    return &Archive;
 }
 
 template <typename PSOCreateInfoType>
@@ -599,19 +607,12 @@ void DearchiverBase::UnpackPipelineStateImpl(const PipelineStateUnpackInfo& Unpa
     }
 
     // Find the archive that contains this PSO
-    const auto archive_idx_it = m_ResNameToArchiveIdx.find(NamedResourceKey{ResType, UnpackInfo.Name});
-    if (archive_idx_it == m_ResNameToArchiveIdx.end())
+    auto* pArchiveData = FindArchive(ResType, UnpackInfo.Name);
+    if (pArchiveData == nullptr)
         return;
-
-    auto& Archive = m_Archives[archive_idx_it->second];
-    if (!Archive.pObjArchive)
-    {
-        UNEXPECTED("Null object archives should never be added to the list. This is a bug.");
-        return;
-    }
 
     PSOData<CreateInfoType> PSO{GetRawAllocator()};
-    if (!Archive.pObjArchive->LoadResourceCommonData(ResType, UnpackInfo.Name, PSO))
+    if (!pArchiveData->pObjArchive->LoadResourceCommonData(ResType, UnpackInfo.Name, PSO))
         return;
 
 #ifdef DILIGENT_DEVELOPMENT
@@ -629,7 +630,7 @@ void DearchiverBase::UnpackPipelineStateImpl(const PipelineStateUnpackInfo& Unpa
     if (!UnpackPSOSignatures(PSO, UnpackInfo.pDevice))
         return;
 
-    if (!UnpackPSOShaders(Archive, PSO, UnpackInfo.pDevice))
+    if (!UnpackPSOShaders(*pArchiveData, PSO, UnpackInfo.pDevice))
         return;
 
     PSO.AssignShaders();
@@ -724,6 +725,84 @@ void DearchiverBase::UnpackPipelineState(const PipelineStateUnpackInfo& UnpackIn
     }
 }
 
+static bool ModifyShaderDesc(ShaderDesc&             Desc,
+                             const ShaderUnpackInfo& UnpackInfo)
+{
+    if (UnpackInfo.ModifyShaderDesc == nullptr)
+        return true;
+
+    const auto ShaderType = Desc.ShaderType;
+
+    UnpackInfo.ModifyShaderDesc(Desc, UnpackInfo.pUserData);
+
+    if (ShaderType != Desc.ShaderType)
+    {
+        LOG_ERROR_MESSAGE("Modifying shader type is not allowed");
+        return false;
+    }
+
+    return true;
+}
+
+void DearchiverBase::UnpackShader(const ShaderUnpackInfo& UnpackInfo,
+                                  IShader**               ppShader)
+{
+    if (!VerifShaderUnpackInfo(UnpackInfo, ppShader))
+        return;
+
+    *ppShader = nullptr;
+
+    constexpr auto ResType = ResourceType::StandaloneShader;
+
+    // Find the archive that contains this shader.
+    auto* pArchiveData = FindArchive(ResType, UnpackInfo.Name);
+    if (pArchiveData == nullptr)
+        return;
+
+    const auto& pObjArchive = pArchiveData->pObjArchive;
+    VERIFY_EXPR(pObjArchive);
+
+    const auto  DevType       = GetArchiveDeviceType(UnpackInfo.pDevice);
+    const auto& ShaderIdxData = pObjArchive->GetDeviceSpecificData(ResType, UnpackInfo.Name, DevType);
+    if (!ShaderIdxData)
+        return;
+
+    Uint32 Idx = 0;
+    {
+        Serializer<SerializerMode::Read> Ser{ShaderIdxData};
+        if (!Ser(Idx))
+        {
+            LOG_ERROR_MESSAGE("Failed to deserialize compiled shader index. Archive file may be corrupted or invalid.");
+            return;
+        }
+        VERIFY_EXPR(Ser.IsEnded());
+    }
+
+    const auto& SerializedShader = pObjArchive->GetSerializedShader(DevType, Idx);
+    if (!SerializedShader)
+        return;
+
+    ShaderCreateInfo ShaderCI;
+    {
+        Serializer<SerializerMode::Read> Ser{SerializedShader};
+        if (!ShaderSerializer<SerializerMode::Read>::SerializeCI(Ser, ShaderCI))
+        {
+            LOG_ERROR_MESSAGE("Failed to deserialize shader create info. Archive file may be corrupted or invalid.");
+            return;
+        }
+        VERIFY_EXPR(Ser.IsEnded());
+    }
+
+    if (!ModifyShaderDesc(ShaderCI.Desc, UnpackInfo))
+        return;
+
+    auto pShader = UnpackShader(ShaderCI, UnpackInfo.pDevice);
+    if (!pShader)
+        return;
+
+    pShader->QueryInterface(IID_Shader, reinterpret_cast<IObject**>(ppShader));
+}
+
 void DearchiverBase::UnpackResourceSignature(const ResourceSignatureUnpackInfo& DeArchiveInfo,
                                              IPipelineResourceSignature**       ppSignature)
 {
@@ -754,19 +833,15 @@ void DearchiverBase::UnpackRenderPass(const RenderPassUnpackInfo& UnpackInfo, IR
     }
 
     // Find the archive that contains this render pass.
-    auto archive_idx_it = m_ResNameToArchiveIdx.find(NamedResourceKey{RPData::ArchiveResType, UnpackInfo.Name});
-    if (archive_idx_it == m_ResNameToArchiveIdx.end())
+    auto* pArchiveData = FindArchive(RPData::ArchiveResType, UnpackInfo.Name);
+    if (pArchiveData == nullptr)
         return;
 
-    const auto& pObjArchive = m_Archives[archive_idx_it->second].pObjArchive;
-    if (!pObjArchive)
-    {
-        UNEXPECTED("Null object archives should never be added to the list. This is a bug.");
-        return;
-    }
+    const auto& pObjArchive = pArchiveData->pObjArchive;
+    VERIFY_EXPR(pObjArchive);
 
     RPData RP{GetRawAllocator()};
-    if (!pObjArchive->LoadResourceCommonData(RPData::ArchiveResType, UnpackInfo.Name, RP))
+    if (!pArchiveData->pObjArchive->LoadResourceCommonData(RPData::ArchiveResType, UnpackInfo.Name, RP))
         return;
 
     if (UnpackInfo.ModifyRenderPassDesc != nullptr)
@@ -776,6 +851,34 @@ void DearchiverBase::UnpackRenderPass(const RenderPassUnpackInfo& UnpackInfo, IR
 
     if (UnpackInfo.ModifyRenderPassDesc == nullptr)
         m_Cache.RenderPass.Set(RPData::ArchiveResType, UnpackInfo.Name, *ppRP);
+}
+
+bool DearchiverBase::Store(IDataBlob** ppArchive) const
+{
+    if (ppArchive == nullptr)
+    {
+        DEV_ERROR("ppArchive must not be null");
+        return false;
+    }
+    DEV_CHECK_ERR(*ppArchive == nullptr, "*ppArchive must be null - make sure you are not overwriting "
+                                         "reference to an existing object as this will cause memory leaks.");
+
+    try
+    {
+        DeviceObjectArchive MergedArchive;
+        for (const auto& Archive : m_Archives)
+        {
+            if (Archive.pObjArchive)
+                MergedArchive.Merge(*Archive.pObjArchive);
+        }
+
+        MergedArchive.Serialize(ppArchive);
+        return *ppArchive != nullptr;
+    }
+    catch (...)
+    {
+        return false;
+    }
 }
 
 void DearchiverBase::Reset()

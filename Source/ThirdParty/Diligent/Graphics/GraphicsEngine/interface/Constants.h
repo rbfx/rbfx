@@ -50,6 +50,12 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 /// The maximum number of queues in graphics adapter description.
 #define DILIGENT_MAX_ADAPTER_QUEUES 16
 
+/// Special constant for the default adapter index.
+#define DILIGENT_DEFAULT_ADAPTER_ID 0xFFFFFFFFU
+
+/// Special constant for the default queue index.
+#define DILIGENT_DEFAULT_QUEUE_ID 0xFF
+
 /// The maximum number of shading rate modes.
 #define DILIGENT_MAX_SHADING_RATES 9
 
@@ -61,8 +67,8 @@ static const Uint32 MAX_RENDER_TARGETS      = DILIGENT_MAX_RENDER_TARGETS;
 static const Uint32 MAX_VIEWPORTS           = DILIGENT_MAX_VIEWPORTS;
 static const Uint32 MAX_RESOURCE_SIGNATURES = DILIGENT_MAX_RESOURCE_SIGNATURES;
 static const Uint32 MAX_ADAPTER_QUEUES      = DILIGENT_MAX_ADAPTER_QUEUES;
-static const Uint32 DEFAULT_ADAPTER_ID      = 0xFFFFFFFFU;
-static const Uint8  DEFAULT_QUEUE_ID        = 0xFF;
+static const Uint32 DEFAULT_ADAPTER_ID      = DILIGENT_DEFAULT_ADAPTER_ID;
+static const Uint8  DEFAULT_QUEUE_ID        = DILIGENT_DEFAULT_QUEUE_ID;
 static const Uint32 MAX_SHADING_RATES       = DILIGENT_MAX_SHADING_RATES;
 static const Uint32 SHADING_RATE_X_SHIFT    = DILIGENT_SHADING_RATE_X_SHIFT;
 

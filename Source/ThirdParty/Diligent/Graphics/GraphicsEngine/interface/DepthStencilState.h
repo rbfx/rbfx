@@ -134,17 +134,17 @@ struct StencilOpDesc
     {}
 
     /// Tests if two structures are equivalent
-
-    /// \param [in] rhs - reference to the structure to perform comparison with
-    /// \return
-    /// - True if all members of the two structures are equal.
-    /// - False otherwise
     constexpr bool operator== (const StencilOpDesc& rhs) const
     {
         return StencilFailOp      == rhs.StencilFailOp      &&
                StencilDepthFailOp == rhs.StencilDepthFailOp &&
                StencilPassOp      == rhs.StencilPassOp      &&
                StencilFunc        == rhs.StencilFunc;
+        static_assert(sizeof(*this) == 4, "Did you add new members to StencilOpDesc? Please handle them here.");
+    }
+    constexpr bool operator!= (const StencilOpDesc& rhs) const
+    {
+        return !(*this == rhs);
     }
 #endif
 };
@@ -218,12 +218,7 @@ struct DepthStencilStateDesc
     {}
 
     /// Tests if two structures are equivalent
-
-    /// \param [in] rhs - reference to the structure to perform comparison with
-    /// \return
-    /// - True if all members of the two structures are equal.
-    /// - False otherwise
-    bool operator== (const DepthStencilStateDesc& rhs) const
+    constexpr bool operator== (const DepthStencilStateDesc& rhs) const
     {
         return  DepthEnable      == rhs.DepthEnable      &&
                 DepthWriteEnable == rhs.DepthWriteEnable &&
@@ -233,6 +228,11 @@ struct DepthStencilStateDesc
                 StencilWriteMask == rhs.StencilWriteMask &&
                 FrontFace        == rhs.FrontFace        &&
                 BackFace         == rhs.BackFace;
+        static_assert(sizeof(*this) == 14, "Did you add new members to DepthStencilStateDesc? Please handle them here.");
+    }
+    constexpr bool operator != (const DepthStencilStateDesc& rhs) const
+    {
+        return !(*this == rhs);
     }
 #endif
 };

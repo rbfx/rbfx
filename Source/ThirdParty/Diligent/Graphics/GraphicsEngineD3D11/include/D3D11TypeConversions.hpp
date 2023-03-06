@@ -38,7 +38,7 @@ namespace Diligent
 
 inline UINT BindFlagsToD3D11BindFlags(BIND_FLAGS BindFlags)
 {
-    static_assert(BIND_FLAGS_LAST == 2048, "Did you add a new bind flag? Please handle it here.");
+    static_assert(BIND_FLAG_LAST == 2048, "Did you add a new bind flag? Please handle it here.");
     // clang-format off
     UINT D3D11BindFlags = 0;
     D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_VERTEX_BUFFER)     ? D3D11_BIND_VERTEX_BUFFER    : 0);
@@ -56,7 +56,7 @@ inline UINT BindFlagsToD3D11BindFlags(BIND_FLAGS BindFlags)
 
 inline BIND_FLAGS D3D11BindFlagsToBindFlags(UINT D3D11BindFlags)
 {
-    static_assert(BIND_FLAGS_LAST == 2048, "Did you add a new bind flag? Please handle it here.");
+    static_assert(BIND_FLAG_LAST == 2048, "Did you add a new bind flag? Please handle it here.");
     BIND_FLAGS BindFlags = BIND_NONE;
     // clang-format off
     BindFlags = BindFlags | ((D3D11BindFlags & D3D11_BIND_VERTEX_BUFFER)     ? BIND_VERTEX_BUFFER    : BIND_NONE);

@@ -399,11 +399,12 @@ void PipelineResourceSignatureGLImpl::CopyStaticResources(ShaderResourceCacheGL&
         return;
 
     // SrcResourceCache contains only static resources.
-    // DstResourceCache contains static, mutable and dynamic resources.
+    // In case of SRB, DstResourceCache contains static, mutable and dynamic resources.
+    // In case of Signature, DstResourceCache contains only static resources.
     const auto& SrcResourceCache = *m_pStaticResCache;
 
     VERIFY_EXPR(SrcResourceCache.GetContentType() == ResourceCacheContentType::Signature);
-    VERIFY_EXPR(DstResourceCache.GetContentType() == ResourceCacheContentType::SRB);
+    const auto DstCacheType = DstResourceCache.GetContentType();
 
     const auto StaticResIdxRange = GetResourceIndexRange(SHADER_RESOURCE_VARIABLE_TYPE_STATIC);
     for (Uint32 r = StaticResIdxRange.first; r < StaticResIdxRange.second; ++r)
@@ -423,7 +424,11 @@ void PipelineResourceSignatureGLImpl::CopyStaticResources(ShaderResourceCacheGL&
                 {
                     const auto& SrcCachedRes = SrcResourceCache.GetConstUB(ResAttr.CacheOffset + ArrInd);
                     if (!SrcCachedRes.pBuffer)
-                        LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    {
+                        if (DstCacheType == ResourceCacheContentType::SRB)
+                            LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                        continue;
+                    }
 
                     DstResourceCache.SetUniformBuffer(ResAttr.CacheOffset + ArrInd,
                                                       RefCntAutoPtr<BufferGLImpl>{SrcCachedRes.pBuffer},
@@ -435,7 +440,11 @@ void PipelineResourceSignatureGLImpl::CopyStaticResources(ShaderResourceCacheGL&
                 {
                     const auto& SrcCachedRes = SrcResourceCache.GetConstSSBO(ResAttr.CacheOffset + ArrInd);
                     if (!SrcCachedRes.pBufferView)
-                        LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    {
+                        if (DstCacheType == ResourceCacheContentType::SRB)
+                            LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                        continue;
+                    }
 
                     DstResourceCache.SetSSBO(ResAttr.CacheOffset + ArrInd, RefCntAutoPtr<BufferViewGLImpl>{SrcCachedRes.pBufferView});
                 }
@@ -445,7 +454,11 @@ void PipelineResourceSignatureGLImpl::CopyStaticResources(ShaderResourceCacheGL&
                 {
                     const auto& SrcCachedRes = SrcResourceCache.GetConstTexture(ResAttr.CacheOffset + ArrInd);
                     if (!SrcCachedRes.pView)
-                        LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    {
+                        if (DstCacheType == ResourceCacheContentType::SRB)
+                            LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                        continue;
+                    }
 
                     if (ResDesc.ResourceType == SHADER_RESOURCE_TYPE_TEXTURE_SRV ||
                         ResDesc.ResourceType == SHADER_RESOURCE_TYPE_INPUT_ATTACHMENT)
@@ -454,7 +467,7 @@ void PipelineResourceSignatureGLImpl::CopyStaticResources(ShaderResourceCacheGL&
 
                         RefCntAutoPtr<TextureViewGLImpl> pTexViewGl{SrcCachedRes.pView.RawPtr<TextureViewGLImpl>()};
                         DstResourceCache.SetTexture(ResAttr.CacheOffset + ArrInd, std::move(pTexViewGl), !HasImmutableSampler);
-                        if (HasImmutableSampler)
+                        if (HasImmutableSampler && DstCacheType == ResourceCacheContentType::SRB)
                         {
                             VERIFY(DstResourceCache.GetConstTexture(ResAttr.CacheOffset + ArrInd).pSampler, "Immutable sampler is not initialized in the cache. This is a bug.");
                         }
@@ -475,7 +488,11 @@ void PipelineResourceSignatureGLImpl::CopyStaticResources(ShaderResourceCacheGL&
                 {
                     const auto& SrcCachedRes = SrcResourceCache.GetConstImage(ResAttr.CacheOffset + ArrInd);
                     if (!SrcCachedRes.pView)
-                        LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    {
+                        if (DstCacheType == ResourceCacheContentType::SRB)
+                            LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                        continue;
+                    }
 
                     if (ResDesc.ResourceType == SHADER_RESOURCE_TYPE_TEXTURE_UAV)
                     {
@@ -500,7 +517,8 @@ void PipelineResourceSignatureGLImpl::CopyStaticResources(ShaderResourceCacheGL&
     }
 
 #ifdef DILIGENT_DEVELOPMENT
-    DstResourceCache.SetStaticResourcesInitialized();
+    if (DstCacheType == ResourceCacheContentType::SRB)
+        DstResourceCache.SetStaticResourcesInitialized();
 #endif
 #ifdef DILIGENT_DEBUG
     DstResourceCache.DbgVerifyDynamicBufferMasks();

@@ -155,6 +155,8 @@ public:
 
     // Copies static resources from the static resource cache to the destination cache
     void CopyStaticResources(ShaderResourceCacheVk& ResourceCache) const;
+    // Make the base class method visible
+    using TPipelineResourceSignatureBase::CopyStaticResources;
 
     // Commits dynamic resources from ResourceCache to vkDynamicDescriptorSet
     void CommitDynamicResources(const ShaderResourceCacheVk& ResourceCache,

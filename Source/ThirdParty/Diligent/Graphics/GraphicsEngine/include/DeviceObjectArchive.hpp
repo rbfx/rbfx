@@ -116,6 +116,7 @@ public:
     enum class ResourceType : Uint32
     {
         Undefined = 0,
+        StandaloneShader,
         ResourceSignature,
         GraphicsPipeline,
         ComputePipeline,
@@ -126,7 +127,7 @@ public:
     };
 
     static constexpr Uint32 HeaderMagicNumber = 0xDE00000A;
-    static constexpr Uint32 ArchiveVersion    = 3;
+    static constexpr Uint32 ArchiveVersion    = 4;
 
     struct ArchiveHeader
     {
@@ -145,6 +146,15 @@ public:
 
         // Device-specific data (e.g. device-specific resource signature data, PSO shader index array, etc.)
         std::array<SerializedData, static_cast<size_t>(DeviceType::Count)> DeviceSpecific;
+
+        ResourceData MakeCopy(IMemoryAllocator& Allocator) const
+        {
+            ResourceData DataCopy;
+            DataCopy.Common = Common.MakeCopy(Allocator);
+            for (size_t i = 0; i < DeviceSpecific.size(); ++i)
+                DataCopy.DeviceSpecific[i] = DeviceSpecific[i].MakeCopy(Allocator);
+            return DataCopy;
+        }
     };
 
     struct NamedResourceKey
@@ -158,23 +168,23 @@ public:
 
         struct Hasher
         {
-            size_t operator()(const NamedResourceKey& Key) const
+            size_t operator()(const NamedResourceKey& Key) const noexcept
             {
                 return ComputeHash(static_cast<size_t>(Key.Type), Key.Name.GetHash());
             }
         };
 
-        bool operator==(const NamedResourceKey& Key) const
+        constexpr bool operator==(const NamedResourceKey& Key) const
         {
             return Type == Key.Type && Name == Key.Name;
         }
 
-        const char* GetName() const
+        const char* GetName() const noexcept
         {
             return Name.GetStr();
         }
 
-        ResourceType GetType() const
+        ResourceType GetType() const noexcept
         {
             return Type;
         }
@@ -198,6 +208,7 @@ public:
 
     void RemoveDeviceData(DeviceType Dev) noexcept(false);
     void AppendDeviceData(const DeviceObjectArchive& Src, DeviceType Dev) noexcept(false);
+    void Merge(const DeviceObjectArchive& Src) noexcept(false);
 
     void Deserialize(const void* pData, size_t Size) noexcept(false);
     void Serialize(IFileStream* pStream) const;
@@ -268,5 +279,7 @@ private:
     // Resources will not make copies and reference this data.
     RefCntAutoPtr<IDataBlob> m_pArchiveData;
 };
+
+DeviceObjectArchive::DeviceType RenderDeviceTypeToArchiveDeviceType(RENDER_DEVICE_TYPE Type);
 
 } // namespace Diligent

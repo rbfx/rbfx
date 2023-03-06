@@ -68,7 +68,7 @@ struct FunctionStubHashKey
     }
     // clang-format on
 
-    bool operator==(const FunctionStubHashKey& rhs) const
+    bool operator==(const FunctionStubHashKey& rhs) const noexcept
     {
         return Object == rhs.Object &&
             Function == rhs.Function &&
@@ -81,7 +81,7 @@ struct FunctionStubHashKey
 
     struct Hasher
     {
-        size_t operator()(const FunctionStubHashKey& Key) const
+        size_t operator()(const FunctionStubHashKey& Key) const noexcept
         {
             return ComputeHash(Key.Object.GetHash(), Key.Function.GetHash(), Key.NumArguments);
         }

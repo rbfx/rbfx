@@ -102,7 +102,6 @@ TEST(ShaderResourceLayout, VariableAccess)
     pDevice->GetEngineFactory()->CreateDefaultShaderSourceStreamFactory("shaders", &pShaderSourceFactory);
     ShaderCI.pShaderSourceStreamFactory = pShaderSourceFactory;
     ShaderCI.EntryPoint                 = "main";
-    ShaderCI.UseCombinedTextureSamplers = true;
 
     RefCntAutoPtr<ISampler> pSamplers[2];
     IDeviceObject*          pSams[2] = {};
@@ -237,8 +236,7 @@ TEST(ShaderResourceLayout, VariableAccess)
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.Name       = "Shader variable access test VS";
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
+        ShaderCI.Desc = {"Shader variable access test VS", SHADER_TYPE_VERTEX, true};
         if (DeviceInfo.IsD3DDevice())
         {
             ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
@@ -255,11 +253,7 @@ TEST(ShaderResourceLayout, VariableAccess)
         ASSERT_NE(pVS, nullptr);
         TestShaderCInterface(pVS);
 
-        if (!DeviceInfo.IsMetalDevice())
-        {
-            // Resource queries from shader are not supported in Metal
-            Diligent::Testing::PrintShaderResources(pVS);
-        }
+        Diligent::Testing::PrintShaderResources(pVS);
     }
 
     // clang-format off
@@ -320,8 +314,7 @@ TEST(ShaderResourceLayout, VariableAccess)
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.Name       = "Shader variable access test PS";
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
+        ShaderCI.Desc = {"Shader variable access test PS", SHADER_TYPE_PIXEL, true};
         if (DeviceInfo.IsD3DDevice())
         {
             ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
@@ -336,11 +329,7 @@ TEST(ShaderResourceLayout, VariableAccess)
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
 
-        if (!DeviceInfo.IsMetalDevice())
-        {
-            // Resource queries from shader are not supported in Metal
-            Diligent::Testing::PrintShaderResources(pPS);
-        }
+        Diligent::Testing::PrintShaderResources(pPS);
     }
 
 
@@ -1268,21 +1257,18 @@ float4 main() : SV_Target
 }
 )";
     ShaderCreateInfo ShaderCI;
-    ShaderCI.EntryPoint                 = "main";
-    ShaderCI.UseCombinedTextureSamplers = true;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.EntryPoint     = "main";
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
 
     RefCntAutoPtr<IShader> pVS;
-    ShaderCI.Desc.Name       = "DummyVS";
-    ShaderCI.Source          = DummyVS;
-    ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
+    ShaderCI.Desc   = {"DummyVS", SHADER_TYPE_VERTEX, true};
+    ShaderCI.Source = DummyVS;
     pDevice->CreateShader(ShaderCI, &pVS);
     ASSERT_NE(pVS, nullptr);
 
     RefCntAutoPtr<IShader> pPS;
-    ShaderCI.Desc.Name       = "DummyPS";
-    ShaderCI.Source          = DummyPS;
-    ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
+    ShaderCI.Desc   = {"DummyPS", SHADER_TYPE_PIXEL, true};
+    ShaderCI.Source = DummyPS;
     pDevice->CreateShader(ShaderCI, &pPS);
     ASSERT_NE(pPS, nullptr);
 

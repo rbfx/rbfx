@@ -25,3 +25,18 @@
  */
 
 #include "DiligentCore/Graphics/GraphicsTools/interface/BytecodeCache.h"
+
+void TestBytecodeCacheCInterface()
+{
+    BytecodeCacheCreateInfo CI;
+    CI.DeviceType = RENDER_DEVICE_TYPE_D3D11;
+
+    IBytecodeCache* pCache = NULL;
+    Diligent_CreateBytecodeCache(&CI, &pCache);
+    IBytecodeCache_Load(pCache, (IDataBlob*)NULL);
+    IBytecodeCache_GetBytecode(pCache, (ShaderCreateInfo*)NULL, (IDataBlob**)NULL);
+    IBytecodeCache_AddBytecode(pCache, (ShaderCreateInfo*)NULL, (IDataBlob*)NULL);
+    IBytecodeCache_RemoveBytecode(pCache, (ShaderCreateInfo*)NULL);
+    IBytecodeCache_Store(pCache, (IDataBlob**)NULL);
+    IBytecodeCache_Clear(pCache);
+}

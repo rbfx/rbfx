@@ -51,6 +51,9 @@
 #if GTEST_OS_CYGWIN || GTEST_OS_LINUX || GTEST_OS_MAC
 #include <unistd.h>  // NOLINT
 #endif
+#if GTEST_OS_QURT
+#include <qurt_event.h>
+#endif
 
 // Silence C4800 (C4800: 'int *const ': forcing value
 // to bool 'true' or 'false') for MSVC 15
@@ -406,8 +409,15 @@ bool UntypedFunctionMockerBase::VerifyAndClearExpectationsLocked()
     } else if (!untyped_expectation->IsSatisfied()) {
       expectations_met = false;
       ::std::stringstream ss;
-      ss << "Actual function call count doesn't match "
-         << untyped_expectation->source_text() << "...\n";
+
+      const ::std::string& expectation_name =
+          untyped_expectation->GetDescription();
+      ss << "Actual function ";
+      if (!expectation_name.empty()) {
+        ss << "\"" << expectation_name << "\" ";
+      }
+      ss << "call count doesn't match " << untyped_expectation->source_text()
+         << "...\n";
       // No need to show the source file location of the expectation
       // in the description, as the Expect() call that follows already
       // takes care of it.
@@ -519,8 +529,12 @@ class MockObjectRegistry {
       // RUN_ALL_TESTS() has already returned when this destructor is
       // called.  Therefore we cannot use the normal Google Test
       // failure reporting mechanism.
+#if GTEST_OS_QURT
+      qurt_exception_raise_fatal();
+#else
       _exit(1);  // We cannot call exit() as it is not reentrant and
                  // may already have been called.
+#endif
     }
   }
 

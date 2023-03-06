@@ -89,12 +89,12 @@ public:
         // Dynamic offset in bytes
         Uint32 DynamicOffset = 0;
 
-        explicit operator bool() const
+        explicit operator bool() const noexcept
         {
             return pBuff;
         }
 
-        bool operator==(const CachedCB& rhs) const
+        bool operator==(const CachedCB& rhs) const noexcept
         {
             // clang-format off
             return pBuff         == rhs.pBuff      &&
@@ -154,7 +154,7 @@ public:
             return pSampler;
         }
 
-        bool operator==(const CachedSampler& rhs) const
+        bool operator==(const CachedSampler& rhs) const noexcept
         {
             return pSampler == rhs.pSampler;
         }
@@ -201,7 +201,7 @@ public:
             return pView;
         }
 
-        bool operator==(const CachedResource& rhs) const
+        bool operator==(const CachedResource& rhs) const noexcept
         {
             // clang-format off
             return pView          == rhs.pView    &&
@@ -767,13 +767,17 @@ bool ShaderResourceCacheD3D11::CopyResource(const ShaderResourceCacheD3D11& SrcC
         const Uint32 Binding = BindPoints[ShaderInd];
         VERIFY(Binding < GetResourceCount<ResRange>(ShaderInd), "Index is out of range");
         VERIFY(Binding < SrcCache.GetResourceCount<ResRange>(ShaderInd), "Index is out of range");
-        if (!SrcResArrays.first[Binding])
+        if (SrcResArrays.first[Binding])
+        {
+            DstResArrays.first[Binding]  = SrcResArrays.first[Binding];
+            DstResArrays.second[Binding] = SrcResArrays.second[Binding];
+
+            UpdateDynamicCBOffsetFlag<ResRange>(DstResArrays.first[Binding], ShaderInd, Binding);
+        }
+        else if (!DstResArrays.first[Binding])
+        {
             IsBound = false;
-
-        DstResArrays.first[Binding]  = SrcResArrays.first[Binding];
-        DstResArrays.second[Binding] = SrcResArrays.second[Binding];
-
-        UpdateDynamicCBOffsetFlag<ResRange>(DstResArrays.first[Binding], ShaderInd, Binding);
+        }
     }
 
     this->UpdateRevision();

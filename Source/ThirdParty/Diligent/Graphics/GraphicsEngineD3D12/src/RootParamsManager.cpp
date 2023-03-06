@@ -91,7 +91,7 @@ RootParameter::RootParameter(Uint32                      _RootIndex,
 #endif
 }
 
-bool RootParameter::operator==(const RootParameter& rhs) const
+bool RootParameter::operator==(const RootParameter& rhs) const noexcept
 {
     // clang-format off
     return Group          == rhs.Group     &&
@@ -147,7 +147,7 @@ RootParamsManager::~RootParamsManager()
     static_assert(std::is_trivially_destructible<RootParameter>::value, "Destructors for m_pRootTables and m_pRootViews are required");
 }
 
-bool RootParamsManager::operator==(const RootParamsManager& RootParams) const
+bool RootParamsManager::operator==(const RootParamsManager& RootParams) const noexcept
 {
     if (m_NumRootTables != RootParams.m_NumRootTables ||
         m_NumRootViews != RootParams.m_NumRootViews)

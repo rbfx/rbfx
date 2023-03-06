@@ -75,7 +75,7 @@ public:
             return width == 0 || height == 0;
         }
 
-        bool operator==(const Region& rhs) const
+        constexpr bool operator==(const Region& rhs) const
         {
             // clang-format off
             return x      == rhs.x     &&
@@ -84,7 +84,7 @@ public:
                    height == rhs.height;
             // clang-format on
         }
-        bool operator!=(const Region& rhs) const
+        constexpr bool operator!=(const Region& rhs) const
         {
             return !(*this == rhs);
         }

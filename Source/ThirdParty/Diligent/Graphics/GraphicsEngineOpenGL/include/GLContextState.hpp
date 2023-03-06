@@ -219,12 +219,12 @@ private:
             DISABLED
         };
 
-        bool operator==(bool bEnabled) const
+        constexpr bool operator==(bool bEnabled) const
         {
             return (bEnabled && m_EnableState == ENABLE_STATE::ENABLED) ||
                 (!bEnabled && m_EnableState == ENABLE_STATE::DISABLED);
         }
-        bool operator!=(bool bEnabled) const
+        constexpr bool operator!=(bool bEnabled) const
         {
             return !(*this == bEnabled);
         }

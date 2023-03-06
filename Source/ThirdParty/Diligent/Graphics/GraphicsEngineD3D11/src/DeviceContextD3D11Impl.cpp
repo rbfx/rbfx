@@ -78,15 +78,16 @@ void DeviceContextD3D11Impl::Begin(Uint32 ImmediateContextId)
 
 void DeviceContextD3D11Impl::SetPipelineState(IPipelineState* pPipelineState)
 {
-    auto* pPipelineStateD3D11 = ClassPtrCast<PipelineStateD3D11Impl>(pPipelineState);
+    RefCntAutoPtr<PipelineStateD3D11Impl> pPipelineStateD3D11{pPipelineState, PipelineStateD3D11Impl::IID_InternalImpl};
+    VERIFY(pPipelineState == nullptr || pPipelineStateD3D11 != nullptr, "Unknown pipeline state object implementation");
     if (PipelineStateD3D11Impl::IsSameObject(m_pPipelineState, pPipelineStateD3D11))
         return;
 
-    TDeviceContextBase::SetPipelineState(pPipelineStateD3D11, 0 /*Dummy*/);
-    const auto& Desc = pPipelineStateD3D11->GetDesc();
+    TDeviceContextBase::SetPipelineState(std::move(pPipelineStateD3D11), 0 /*Dummy*/);
+    const auto& Desc = m_pPipelineState->GetDesc();
     if (Desc.PipelineType == PIPELINE_TYPE_COMPUTE)
     {
-        auto* pd3d11CS = pPipelineStateD3D11->GetD3D11ComputeShader();
+        auto* pd3d11CS = m_pPipelineState->GetD3D11ComputeShader();
         if (pd3d11CS == nullptr)
         {
             LOG_ERROR("Compute shader is not set in the pipeline");
@@ -96,7 +97,7 @@ void DeviceContextD3D11Impl::SetPipelineState(IPipelineState* pPipelineState)
 #define COMMIT_SHADER(SN, ShaderName)                                       \
     do                                                                      \
     {                                                                       \
-        auto* pd3d11Shader = pPipelineStateD3D11->GetD3D11##ShaderName();   \
+        auto* pd3d11Shader = m_pPipelineState->GetD3D11##ShaderName();      \
         if (m_CommittedD3DShaders[SN##Ind] != pd3d11Shader)                 \
         {                                                                   \
             m_CommittedD3DShaders[SN##Ind] = pd3d11Shader;                  \
@@ -115,13 +116,13 @@ void DeviceContextD3D11Impl::SetPipelineState(IPipelineState* pPipelineState)
         COMMIT_SHADER(DS, DomainShader);
 #undef COMMIT_SHADER
 
-        const auto& GraphicsPipeline = pPipelineStateD3D11->GetGraphicsPipelineDesc();
+        const auto& GraphicsPipeline = m_pPipelineState->GetGraphicsPipelineDesc();
 
-        m_pd3d11DeviceContext->OMSetBlendState(pPipelineStateD3D11->GetD3D11BlendState(), m_BlendFactors, GraphicsPipeline.SampleMask);
-        m_pd3d11DeviceContext->RSSetState(pPipelineStateD3D11->GetD3D11RasterizerState());
-        m_pd3d11DeviceContext->OMSetDepthStencilState(pPipelineStateD3D11->GetD3D11DepthStencilState(), m_StencilRef);
+        m_pd3d11DeviceContext->OMSetBlendState(m_pPipelineState->GetD3D11BlendState(), m_BlendFactors, GraphicsPipeline.SampleMask);
+        m_pd3d11DeviceContext->RSSetState(m_pPipelineState->GetD3D11RasterizerState());
+        m_pd3d11DeviceContext->OMSetDepthStencilState(m_pPipelineState->GetD3D11DepthStencilState(), m_StencilRef);
 
-        auto* pd3d11InputLayout = pPipelineStateD3D11->GetD3D11InputLayout();
+        auto* pd3d11InputLayout = m_pPipelineState->GetD3D11InputLayout();
         // It is safe to perform raw pointer comparison as the device context
         // keeps bound input layout alive
         if (m_CommittedD3D11InputLayout != pd3d11InputLayout)

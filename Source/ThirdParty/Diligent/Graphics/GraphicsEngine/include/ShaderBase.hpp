@@ -31,6 +31,7 @@
 /// Implementation of the Diligent::ShaderBase template class
 
 #include <vector>
+#include <memory>
 
 #include "Shader.h"
 #include "DeviceObjectBase.hpp"
@@ -41,6 +42,51 @@
 
 namespace Diligent
 {
+
+class ShaderCreateInfoWrapper
+{
+public:
+    ShaderCreateInfoWrapper() = default;
+
+    ShaderCreateInfoWrapper(const ShaderCreateInfoWrapper&) = delete;
+    ShaderCreateInfoWrapper& operator=(const ShaderCreateInfoWrapper&) = delete;
+
+    ShaderCreateInfoWrapper(ShaderCreateInfoWrapper&& rhs) noexcept :
+        m_CreateInfo{rhs.m_CreateInfo},
+        m_SourceFactory{std::move(rhs.m_SourceFactory)},
+        m_pRawMemory{std::move(rhs.m_pRawMemory)}
+    {
+        rhs.m_CreateInfo = {};
+    }
+
+    ShaderCreateInfoWrapper& operator=(ShaderCreateInfoWrapper&& rhs) noexcept
+    {
+        m_CreateInfo    = rhs.m_CreateInfo;
+        m_SourceFactory = std::move(rhs.m_SourceFactory);
+        m_pRawMemory    = std::move(rhs.m_pRawMemory);
+
+        rhs.m_CreateInfo = {};
+
+        return *this;
+    }
+
+    ShaderCreateInfoWrapper(const ShaderCreateInfo& CI, IMemoryAllocator& RawAllocator) noexcept(false);
+
+    const ShaderCreateInfo& Get() const
+    {
+        return m_CreateInfo;
+    }
+
+    operator const ShaderCreateInfo&() const
+    {
+        return m_CreateInfo;
+    }
+
+private:
+    ShaderCreateInfo                               m_CreateInfo;
+    RefCntAutoPtr<IShaderSourceInputStreamFactory> m_SourceFactory;
+    std::unique_ptr<void, STDDeleterRawMem<void>>  m_pRawMemory;
+};
 
 /// Template class implementing base functionality of the shader object
 
@@ -57,44 +103,52 @@ public:
 
     using TDeviceObjectBase = DeviceObjectBase<BaseInterface, RenderDeviceImplType, ShaderDesc>;
 
-    /// \param pRefCounters      - Reference counters object that controls the lifetime of this shader.
-    /// \param pDevice           - Pointer to the device.
-    /// \param ShdrDesc          - Shader description.
+    /// \param pRefCounters - Reference counters object that controls the lifetime of this shader.
+    /// \param pDevice      - Pointer to the device.
+    /// \param Desc         - Shader description.
+    /// \param DeviceInfo   - Render device info, see Diligent::RenderDeviceInfo.
+    /// \param AdapterInfo  - Graphic adapter info, see Diligent::GraphicsAdapterInfo.
     /// \param bIsDeviceInternal - Flag indicating if the shader is an internal device object and
     ///							   must not keep a strong reference to the device.
     ShaderBase(IReferenceCounters*        pRefCounters,
                RenderDeviceImplType*      pDevice,
-               const ShaderDesc&          ShdrDesc,
+               const ShaderDesc&          Desc,
                const RenderDeviceInfo&    DeviceInfo,
                const GraphicsAdapterInfo& AdapterInfo,
                bool                       bIsDeviceInternal = false) :
-        TDeviceObjectBase{pRefCounters, pDevice, ShdrDesc, bIsDeviceInternal}
+        TDeviceObjectBase{pRefCounters, pDevice, Desc, bIsDeviceInternal},
+        m_CombinedSamplerSuffix{Desc.CombinedSamplerSuffix != nullptr ? Desc.CombinedSamplerSuffix : ShaderDesc{}.CombinedSamplerSuffix}
     {
+        this->m_Desc.CombinedSamplerSuffix = m_CombinedSamplerSuffix.c_str();
+
         const auto& deviceFeatures = DeviceInfo.Features;
-        if (ShdrDesc.ShaderType == SHADER_TYPE_GEOMETRY && !deviceFeatures.GeometryShaders)
+        if (Desc.ShaderType == SHADER_TYPE_GEOMETRY && !deviceFeatures.GeometryShaders)
             LOG_ERROR_AND_THROW("Geometry shaders are not supported by this device.");
 
-        if ((ShdrDesc.ShaderType == SHADER_TYPE_DOMAIN || ShdrDesc.ShaderType == SHADER_TYPE_HULL) && !deviceFeatures.Tessellation)
+        if ((Desc.ShaderType == SHADER_TYPE_DOMAIN || Desc.ShaderType == SHADER_TYPE_HULL) && !deviceFeatures.Tessellation)
             LOG_ERROR_AND_THROW("Tessellation shaders are not supported by this device.");
 
-        if (ShdrDesc.ShaderType == SHADER_TYPE_COMPUTE && !deviceFeatures.ComputeShaders)
+        if (Desc.ShaderType == SHADER_TYPE_COMPUTE && !deviceFeatures.ComputeShaders)
             LOG_ERROR_AND_THROW("Compute shaders are not supported by this device.");
 
-        if ((ShdrDesc.ShaderType == SHADER_TYPE_AMPLIFICATION || ShdrDesc.ShaderType == SHADER_TYPE_MESH) && !deviceFeatures.MeshShaders)
+        if ((Desc.ShaderType == SHADER_TYPE_AMPLIFICATION || Desc.ShaderType == SHADER_TYPE_MESH) && !deviceFeatures.MeshShaders)
             LOG_ERROR_AND_THROW("Mesh shaders are not supported by this device.");
 
-        if ((ShdrDesc.ShaderType & SHADER_TYPE_ALL_RAY_TRACING) != 0)
+        if ((Desc.ShaderType & SHADER_TYPE_ALL_RAY_TRACING) != 0)
         {
             const auto RTCaps = AdapterInfo.RayTracing.CapFlags;
             if (!deviceFeatures.RayTracing || (RTCaps & RAY_TRACING_CAP_FLAG_STANDALONE_SHADERS) == 0)
                 LOG_ERROR_AND_THROW("Standalone ray tracing shaders are not supported by this device.");
         }
 
-        if (ShdrDesc.ShaderType == SHADER_TYPE_TILE && !deviceFeatures.TileShaders)
+        if (Desc.ShaderType == SHADER_TYPE_TILE && !deviceFeatures.TileShaders)
             LOG_ERROR_AND_THROW("Tile shaders are not supported by this device.");
     }
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_Shader, TDeviceObjectBase)
+
+private:
+    const std::string m_CombinedSamplerSuffix;
 };
 
 } // namespace Diligent

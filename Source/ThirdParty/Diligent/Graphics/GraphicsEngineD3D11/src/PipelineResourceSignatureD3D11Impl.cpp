@@ -292,10 +292,11 @@ void PipelineResourceSignatureD3D11Impl::CopyStaticResources(ShaderResourceCache
         return;
 
     // SrcResourceCache contains only static resources.
-    // DstResourceCache contains static, mutable and dynamic resources.
+    // In case of SRB, DstResourceCache contains static, mutable and dynamic resources.
+    // In case of Signature, DstResourceCache contains only static resources.
     const auto& SrcResourceCache = *m_pStaticResCache;
     VERIFY_EXPR(SrcResourceCache.GetContentType() == ResourceCacheContentType::Signature);
-    VERIFY_EXPR(DstResourceCache.GetContentType() == ResourceCacheContentType::SRB);
+    const auto DstCacheType = DstResourceCache.GetContentType();
 
     const auto ResIdxRange = GetResourceIndexRange(SHADER_RESOURCE_VARIABLE_TYPE_STATIC);
     for (Uint32 r = ResIdxRange.first; r < ResIdxRange.second; ++r)
@@ -311,14 +312,20 @@ void PipelineResourceSignatureD3D11Impl::CopyStaticResources(ShaderResourceCache
                 for (Uint32 ArrInd = 0; ArrInd < ResDesc.ArraySize; ++ArrInd)
                 {
                     if (!DstResourceCache.CopyResource<D3D11_RESOURCE_RANGE_CBV>(SrcResourceCache, ResAttr.BindPoints + ArrInd))
-                        LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    {
+                        if (DstCacheType == ResourceCacheContentType::SRB)
+                            LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    }
                 }
                 break;
             case D3D11_RESOURCE_RANGE_SRV:
                 for (Uint32 ArrInd = 0; ArrInd < ResDesc.ArraySize; ++ArrInd)
                 {
                     if (!DstResourceCache.CopyResource<D3D11_RESOURCE_RANGE_SRV>(SrcResourceCache, ResAttr.BindPoints + ArrInd))
-                        LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    {
+                        if (DstCacheType == ResourceCacheContentType::SRB)
+                            LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    }
                 }
                 break;
             case D3D11_RESOURCE_RANGE_SAMPLER:
@@ -327,11 +334,14 @@ void PipelineResourceSignatureD3D11Impl::CopyStaticResources(ShaderResourceCache
                     for (Uint32 ArrInd = 0; ArrInd < ResDesc.ArraySize; ++ArrInd)
                     {
                         if (!DstResourceCache.CopyResource<D3D11_RESOURCE_RANGE_SAMPLER>(SrcResourceCache, ResAttr.BindPoints + ArrInd))
-                            LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                        {
+                            if (DstCacheType == ResourceCacheContentType::SRB)
+                                LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                        }
                     }
                 }
 #ifdef DILIGENT_DEBUG
-                else
+                else if (DstCacheType == ResourceCacheContentType::SRB)
                 {
                     for (Uint32 ArrInd = 0; ArrInd < ResDesc.ArraySize; ++ArrInd)
                     {
@@ -345,7 +355,10 @@ void PipelineResourceSignatureD3D11Impl::CopyStaticResources(ShaderResourceCache
                 for (Uint32 ArrInd = 0; ArrInd < ResDesc.ArraySize; ++ArrInd)
                 {
                     if (!DstResourceCache.CopyResource<D3D11_RESOURCE_RANGE_UAV>(SrcResourceCache, ResAttr.BindPoints + ArrInd))
-                        LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    {
+                        if (DstCacheType == ResourceCacheContentType::SRB)
+                            LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                    }
                 }
                 break;
             default:

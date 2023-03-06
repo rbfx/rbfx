@@ -71,7 +71,7 @@ struct DeviceContextDesc
 {
     /// Device context name. This name is what was specified in
     /// ImmediateContextCreateInfo::Name when the engine was initialized.
-    const char*  Name            DEFAULT_INITIALIZER(nullptr);
+    const Char*  Name            DEFAULT_INITIALIZER(nullptr);
 
     /// Command queue type that this context uses.
 
@@ -120,7 +120,7 @@ struct DeviceContextDesc
     constexpr DeviceContextDesc() noexcept {}
 
     /// Initializes the structure with user-specified values.
-    constexpr DeviceContextDesc(const char*        _Name,
+    constexpr DeviceContextDesc(const Char*        _Name,
                                 COMMAND_QUEUE_TYPE _QueueType,
                                 Bool               _IsDeferred,
                                 Uint32             _ContextId,
@@ -1054,7 +1054,7 @@ DILIGENT_TYPED_ENUM(RAYTRACING_INSTANCE_FLAGS, Uint8)
     /// geometries referenced by this instance. This behavior can be overridden in the shader with ray flags.
     RAYTRACING_INSTANCE_FORCE_NO_OPAQUE = 0x08,
 
-    RAYTRACING_INSTANCE_FLAGS_LAST = RAYTRACING_INSTANCE_FORCE_NO_OPAQUE
+    RAYTRACING_INSTANCE_FLAG_LAST = RAYTRACING_INSTANCE_FORCE_NO_OPAQUE
 };
 DEFINE_FLAG_ENUM_OPERATORS(RAYTRACING_INSTANCE_FLAGS)
 
@@ -1090,7 +1090,7 @@ DILIGENT_TYPED_ENUM(RAYTRACING_GEOMETRY_FLAGS, Uint8)
     /// If this bit is absent an implementation may invoke the any-hit shader more than once for this geometry.
     RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANY_HIT_INVOCATION = 0x02,
 
-    RAYTRACING_GEOMETRY_FLAGS_LAST = RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANY_HIT_INVOCATION
+    RAYTRACING_GEOMETRY_FLAG_LAST = RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANY_HIT_INVOCATION
 };
 DEFINE_FLAG_ENUM_OPERATORS(RAYTRACING_GEOMETRY_FLAGS)
 
@@ -1100,7 +1100,7 @@ struct BLASBuildTriangleData
 {
     /// Geometry name used to map a geometry to a hit group in the shader binding table.
     /// Add geometry data to the geometry that is allocated by BLASTriangleDesc with the same name.
-    const char* GeometryName          DEFAULT_INITIALIZER(nullptr);
+    const Char* GeometryName          DEFAULT_INITIALIZER(nullptr);
 
     /// Triangle vertices data source.
     /// Triangles are considered "inactive" if the x component of each vertex is NaN.
@@ -1168,7 +1168,7 @@ struct BLASBuildBoundingBoxData
 {
     /// Geometry name used to map geometry to hit group in shader binding table.
     /// Put geometry data to geometry that allocated by BLASBoundingBoxDesc with the same name.
-    const char* GeometryName DEFAULT_INITIALIZER(nullptr);
+    const Char* GeometryName DEFAULT_INITIALIZER(nullptr);
 
     /// AABB data source.
     /// Each AABB defined as { float3 Min; float3 Max } structure.
@@ -1264,7 +1264,10 @@ typedef struct BuildBLASAttribs BuildBLASAttribs;
 ///         Instance.ContributionToHitGroupIndex = InstanceOffset;
 ///         if (BindingMode == HIT_GROUP_BINDING_MODE_PER_GEOMETRY) InstanceOffset += Instance.pBLAS->GeometryCount() * HitGroupStride;
 ///         if (BindingMode == HIT_GROUP_BINDING_MODE_PER_INSTANCE) InstanceOffset += HitGroupStride;
-static const Uint32 TLAS_INSTANCE_OFFSET_AUTO = ~0u;
+
+#define DILIGENT_TLAS_INSTANCE_OFFSET_AUTO 0xFFFFFFFFU
+
+static const Uint32 TLAS_INSTANCE_OFFSET_AUTO = DILIGENT_TLAS_INSTANCE_OFFSET_AUTO;
 
 
 /// Row-major matrix
@@ -1318,7 +1321,7 @@ typedef struct InstanceMatrix InstanceMatrix;
 struct TLASBuildInstanceData
 {
     /// Instance name that is used to map an instance to a hit group in shader binding table.
-    const char*               InstanceName    DEFAULT_INITIALIZER(nullptr);
+    const Char*               InstanceName    DEFAULT_INITIALIZER(nullptr);
 
     /// Bottom-level AS that represents instance geometry.
     /// Once built, TLAS will hold strong reference to pBLAS until next build or copy operation.
@@ -1354,7 +1357,10 @@ typedef struct TLASBuildInstanceData TLASBuildInstanceData;
 
 /// Top-level AS instance size in bytes in GPU side.
 /// Used to calculate size of BuildTLASAttribs::pInstanceBuffer.
-static const Uint32 TLAS_INSTANCE_DATA_SIZE = 64;
+
+#define DILIGENT_TLAS_INSTANCE_DATA_SIZE 64
+
+static const Uint32 TLAS_INSTANCE_DATA_SIZE = DILIGENT_TLAS_INSTANCE_DATA_SIZE;
 
 
 /// This structure is used by IDeviceContext::BuildTLAS().
@@ -1861,9 +1867,14 @@ struct BindSparseResourceMemoryAttribs
 };
 typedef struct BindSparseResourceMemoryAttribs BindSparseResourceMemoryAttribs;
 
+/// Special constant for all remaining mipmap levels.
+#define DILIGENT_REMAINING_MIP_LEVELS 0xFFFFFFFFU
 
-static const Uint32 REMAINING_MIP_LEVELS   = ~0u;
-static const Uint32 REMAINING_ARRAY_SLICES = ~0u;
+/// Special constant for all remaining array slices.
+#define DILIGENT_REMAINING_ARRAY_SLICES 0xFFFFFFFFU
+
+static const Uint32 REMAINING_MIP_LEVELS   = DILIGENT_REMAINING_MIP_LEVELS;
+static const Uint32 REMAINING_ARRAY_SLICES = DILIGENT_REMAINING_ARRAY_SLICES;
 
 /// Resource state transition flags.
 DILIGENT_TYPED_ENUM(STATE_TRANSITION_FLAGS, Uint8)
@@ -2188,7 +2199,7 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
                                           IBuffer**                      ppBuffers,
                                           const Uint64*                  pOffsets,
                                           RESOURCE_STATE_TRANSITION_MODE StateTransitionMode,
-                                          SET_VERTEX_BUFFERS_FLAGS       Flags) PURE;
+                                          SET_VERTEX_BUFFERS_FLAGS       Flags DEFAULT_VALUE(SET_VERTEX_BUFFERS_FLAG_NONE)) PURE;
 
 
     /// Invalidates the cached context state.

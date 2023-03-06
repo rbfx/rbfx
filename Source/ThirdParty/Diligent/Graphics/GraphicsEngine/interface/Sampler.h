@@ -176,18 +176,19 @@ struct SamplerDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     {
         BorderColor[0] = BorderColor[1] = BorderColor[2] = BorderColor[3] = 0;
     }
-    /// Tests if two structures are equivalent
 
-    /// \param [in] RHS - reference to the structure to perform comparison with
-    /// \return
-    /// - True if all members of the two structures are equal.
-    /// - False otherwise.
-    /// The operator ignores DeviceObjectAttribs::Name field as it does not affect
-    /// the sampler state.
+    /// Tests if two sampler descriptions are equal.
+
+    /// \param [in] RHS - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the sampler properties.
     constexpr bool operator == (const SamplerDesc& RHS)const
     {
-                // Name is primarily used for debug purposes and does not affect the state.
-                // It is ignored in comparison operation.
+                // Ignore Name. This is consistent with the hasher (HashCombiner<HasherType, SamplerDesc>).
         return  // strcmp(Name, RHS.Name) == 0          &&
                 MinFilter          == RHS.MinFilter          &&
                 MagFilter          == RHS.MagFilter          &&

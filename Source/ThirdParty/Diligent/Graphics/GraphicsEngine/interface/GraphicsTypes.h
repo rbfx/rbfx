@@ -60,6 +60,7 @@ DILIGENT_TYPED_ENUM(VALUE_TYPE, Uint8)
     VT_UINT32,        ///< Unsigned 32-bit integer
     VT_FLOAT16,       ///< Half-precision 16-bit floating point
     VT_FLOAT32,       ///< Full-precision 32-bit floating point
+    VT_FLOAT64,       ///< Double-precision 64-bit floating point
     VT_NUM_TYPES      ///< Helper value storing total number of types in the enumeration
 };
 
@@ -136,8 +137,6 @@ DILIGENT_TYPED_ENUM(BIND_FLAGS, Uint32)
     BIND_UNIFORM_BUFFER      = 1u << 2u,
 
     /// A buffer or a texture can be bound as a shader resource.
-    //
-    /// \warning This flag cannot be used with MAP_WRITE_NO_OVERWRITE flag.
     BIND_SHADER_RESOURCE     = 1u << 3u,
 
     /// A buffer can be bound as a target for stream output stage.
@@ -165,7 +164,7 @@ DILIGENT_TYPED_ENUM(BIND_FLAGS, Uint32)
     ///< A texture can be used as shading rate texture.
     BIND_SHADING_RATE        = 1u << 11u,
 
-    BIND_FLAGS_LAST          = BIND_SHADING_RATE
+    BIND_FLAG_LAST           = BIND_SHADING_RATE
 };
 DEFINE_FLAG_ENUM_OPERATORS(BIND_FLAGS)
 
@@ -1477,7 +1476,7 @@ struct SwapChainDesc
 
     /// Indicates if this is a primary swap chain. When Present() is called
     /// for the primary swap chain, the engine releases stale resources.
-    bool  IsPrimary                     DEFAULT_INITIALIZER(true);
+    Bool  IsPrimary                     DEFAULT_INITIALIZER(true);
 
 #if DILIGENT_CPP_INTERFACE
     constexpr SwapChainDesc() noexcept
@@ -1496,7 +1495,7 @@ struct SwapChainDesc
                             Uint32         _BufferCount         = SwapChainDesc{}.BufferCount,
                             Float32        _DefaultDepthValue   = SwapChainDesc{}.DefaultDepthValue,
                             Uint8          _DefaultStencilValue = SwapChainDesc{}.DefaultStencilValue,
-                            bool           _IsPrimary           = SwapChainDesc{}.IsPrimary) :
+                            Bool           _IsPrimary           = SwapChainDesc{}.IsPrimary) :
         Width               {_Width              },
         Height              {_Height             },
         ColorBufferFormat   {_ColorBufferFormat  },
@@ -1769,6 +1768,9 @@ struct DeviceFeatures
     ///             encoder.
     DEVICE_FEATURE_STATE SubpassFramebufferFetch DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
 
+    /// Indicates if device supports texture component swizzle.
+    DEVICE_FEATURE_STATE TextureComponentSwizzle DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
+
 #if DILIGENT_CPP_INTERFACE
     constexpr DeviceFeatures() noexcept {}
 
@@ -1812,11 +1814,12 @@ struct DeviceFeatures
     Handler(TransferQueueTimestampQueries)     \
     Handler(VariableRateShading)               \
     Handler(SparseResources)                   \
-    Handler(SubpassFramebufferFetch)
+    Handler(SubpassFramebufferFetch)           \
+    Handler(TextureComponentSwizzle)
 
     explicit constexpr DeviceFeatures(DEVICE_FEATURE_STATE State) noexcept
     {
-        static_assert(sizeof(*this) == 40, "Did you add a new feature to DeviceFeatures? Please add it to ENUMERATE_DEVICE_FEATURES.");
+        static_assert(sizeof(*this) == 41, "Did you add a new feature to DeviceFeatures? Please add it to ENUMERATE_DEVICE_FEATURES.");
     #define INIT_FEATURE(Feature) Feature = State;
         ENUMERATE_DEVICE_FEATURES(INIT_FEATURE)
     #undef INIT_FEATURE
@@ -1907,6 +1910,10 @@ struct Version
     constexpr bool operator==(const Version& rhs) const
     {
         return Major == rhs.Major && Minor == rhs.Minor;
+    }
+    constexpr bool operator!=(const Version& rhs) const
+    {
+        return !(*this == rhs);
     }
 
     constexpr bool operator>(const Version& rhs) const
@@ -2831,7 +2838,7 @@ struct ShadingRateProperties
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    bool operator==(const ShadingRateProperties& RHS) const
+    bool operator==(const ShadingRateProperties& RHS) const noexcept
     {
         return NumShadingRates          == RHS.NumShadingRates          &&
                CapFlags                 == RHS.CapFlags                 &&
@@ -3103,7 +3110,7 @@ struct CommandQueueInfo
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    bool operator==(const CommandQueueInfo& RHS) const 
+    bool operator==(const CommandQueueInfo& RHS) const noexcept
     {
         return QueueType         == RHS.QueueType         &&
                MaxDeviceContexts == RHS.MaxDeviceContexts &&
@@ -3119,7 +3126,7 @@ typedef struct CommandQueueInfo CommandQueueInfo;
 struct GraphicsAdapterInfo
 {
     /// A string that contains the adapter description.
-    char Description[128]   DEFAULT_INITIALIZER({});
+    Char Description[128]   DEFAULT_INITIALIZER({});
 
     /// Adapter type, see Diligent::ADAPTER_TYPE.
     ADAPTER_TYPE   Type     DEFAULT_INITIALIZER(ADAPTER_TYPE_UNKNOWN);
@@ -3190,7 +3197,7 @@ struct GraphicsAdapterInfo
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    bool operator==(const GraphicsAdapterInfo& RHS) const
+    bool operator==(const GraphicsAdapterInfo& RHS) const noexcept
     {
         if (NumQueues != RHS.NumQueues)
             return false;
@@ -3228,7 +3235,7 @@ typedef struct GraphicsAdapterInfo GraphicsAdapterInfo;
 struct ImmediateContextCreateInfo
 {
     /// Context name.
-    const char*    Name         DEFAULT_INITIALIZER(nullptr);
+    const Char*    Name         DEFAULT_INITIALIZER(nullptr);
 
     /// Queue index in GraphicsAdapterInfo::Queues.
 
@@ -3248,7 +3255,7 @@ struct ImmediateContextCreateInfo
 #if DILIGENT_CPP_INTERFACE
     constexpr ImmediateContextCreateInfo() noexcept {}
 
-    constexpr ImmediateContextCreateInfo(const char*    _Name,
+    constexpr ImmediateContextCreateInfo(const Char*    _Name,
                                          Uint8          _QueueId,
                                          QUEUE_PRIORITY _Priority = ImmediateContextCreateInfo{}.Priority) noexcept :
         Name    {_Name},
@@ -3321,7 +3328,7 @@ struct EngineCreateInfo
     /// debug layer, enable Vulkan validation layers, create debug OpenGL context, etc.).
     /// The validation is enabled by default in Debug/Development builds and disabled
     /// in release builds.
-    bool                EnableValidation            DEFAULT_INITIALIZER(false);
+    Bool                EnableValidation            DEFAULT_INITIALIZER(false);
 
     /// Validation options, see Diligent::VALIDATION_FLAGS.
     VALIDATION_FLAGS    ValidationFlags             DEFAULT_INITIALIZER(VALIDATION_FLAG_NONE);
@@ -3361,7 +3368,7 @@ struct EngineGLCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 
     /// Enable 0..1 normalized-device Z range, if required extension is supported; -1..+1 otherwise.
     /// Use IRenderDevice::GetDeviceInfo().NDC to get current NDC.
-    bool         ZeroToOneNDZ DEFAULT_INITIALIZER(false);
+    Bool         ZeroToOneNDZ DEFAULT_INITIALIZER(false);
 
 #if DILIGENT_CPP_INTERFACE
     EngineGLCreateInfo() noexcept : EngineGLCreateInfo{EngineCreateInfo{}}
@@ -3459,7 +3466,7 @@ DEFINE_FLAG_ENUM_OPERATORS(D3D12_VALIDATION_FLAGS)
 struct EngineD3D12CreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 
     /// Name of the D3D12 DLL to load. Ignored on UWP.
-    const char* D3D12DllName       DEFAULT_INITIALIZER("d3d12.dll");
+    const Char* D3D12DllName       DEFAULT_INITIALIZER("d3d12.dll");
     /// Direct3D12-specific validation options, see Diligent::D3D12_VALIDATION_FLAGS.
     D3D12_VALIDATION_FLAGS D3D12ValidationFlags DEFAULT_INITIALIZER(D3D12_VALIDATION_FLAG_BREAK_ON_CORRUPTION);
 
@@ -3563,7 +3570,7 @@ struct EngineD3D12CreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 
     /// Path to DirectX Shader Compiler, which is required to use Shader Model 6.0+ features.
     /// By default, the engine will search for "dxcompiler.dll".
-    const char* pDxCompilerPath DEFAULT_INITIALIZER(nullptr);
+    const Char* pDxCompilerPath DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
     EngineD3D12CreateInfo() noexcept :
@@ -3651,22 +3658,22 @@ typedef struct VulkanDescriptorPoolSize VulkanDescriptorPoolSize;
 struct EngineVkCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 
     /// The number of Vulkan instance layers in ppInstanceLayerNames array.
-    Uint32             IntanceLayerCount        DEFAULT_INITIALIZER(0);
+    Uint32             InstanceLayerCount       DEFAULT_INITIALIZER(0);
 
     /// A list of additional Vulkan instance layers to enable.
-    const char* const* ppInstanceLayerNames     DEFAULT_INITIALIZER(nullptr);
+    const Char* const* ppInstanceLayerNames     DEFAULT_INITIALIZER(nullptr);
 
     /// The number of Vulkan instance extensions in ppInstanceExtensionNames array.
     Uint32             InstanceExtensionCount   DEFAULT_INITIALIZER(0);
 
     /// A list of additional Vulkan instance extensions to enable.
-    const char* const* ppInstanceExtensionNames DEFAULT_INITIALIZER(nullptr);
+    const Char* const* ppInstanceExtensionNames DEFAULT_INITIALIZER(nullptr);
 
     /// Number of Vulkan device extensions in ppDeviceExtensionNames array.
     Uint32             DeviceExtensionCount     DEFAULT_INITIALIZER(0);
 
     /// A list of additional Vulkan device extensions to enable.
-    const char* const* ppDeviceExtensionNames   DEFAULT_INITIALIZER(nullptr);
+    const Char* const* ppDeviceExtensionNames   DEFAULT_INITIALIZER(nullptr);
 
     /// Pointer to Vulkan device extension features.
     /// Will be added to VkDeviceCreateInfo::pNext.
@@ -3679,7 +3686,7 @@ struct EngineVkCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
     Uint32             IgnoreDebugMessageCount  DEFAULT_INITIALIZER(0);
 
     /// An optional list of IgnoreDebugMessageCount Vulkan validation message names to ignore.
-    const char* const* ppIgnoreDebugMessageNames DEFAULT_INITIALIZER(nullptr);
+    const Char* const* ppIgnoreDebugMessageNames DEFAULT_INITIALIZER(nullptr);
 
     /// Size of the main descriptor pool that is used to allocate descriptor sets
     /// for static and mutable variables. If allocation from the current pool fails,
@@ -3750,7 +3757,7 @@ struct EngineVkCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 
     /// Path to DirectX Shader Compiler, which is required to use Shader Model 6.0+
     /// features when compiling shaders from HLSL.
-    const char* pDxCompilerPath DEFAULT_INITIALIZER(nullptr);
+    const Char* pDxCompilerPath DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
     EngineVkCreateInfo() noexcept :
@@ -3912,7 +3919,7 @@ struct TextureFormatAttribs
     COMPONENT_TYPE ComponentType DEFAULT_INITIALIZER(COMPONENT_TYPE_UNDEFINED);
 
     /// Bool flag indicating if the format is a typeless format
-    bool IsTypeless              DEFAULT_INITIALIZER(false);
+    Bool IsTypeless              DEFAULT_INITIALIZER(false);
 
     /// For block-compressed formats, compression block width
     Uint8 BlockWidth             DEFAULT_INITIALIZER(0);
@@ -3960,10 +3967,10 @@ typedef struct TextureFormatAttribs TextureFormatAttribs;
 struct TextureFormatInfo DILIGENT_DERIVE(TextureFormatAttribs)
 
     /// Indicates if the format is supported by the device
-    bool Supported  DEFAULT_INITIALIZER(false);
+    Bool Supported  DEFAULT_INITIALIZER(false);
 
     // Explicitly pad the structure to 8-byte boundary
-    bool Padding[7] DEFAULT_INITIALIZER({});
+    Bool Padding[7] DEFAULT_INITIALIZER({});
 };
 typedef struct TextureFormatInfo TextureFormatInfo;
 

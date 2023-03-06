@@ -49,14 +49,14 @@ RefCntAutoPtr<IShader> CreateTestShader(const char*                  FileName,
     RefCntAutoPtr<IShaderSourceInputStreamFactory> pShaderSourceFactory;
     pDevice->GetEngineFactory()->CreateDefaultShaderSourceStreamFactory("shaders/HLSL2GLSLConverter", &pShaderSourceFactory);
 
-    ShaderCI.FilePath                   = FileName;
-    ShaderCI.EntryPoint                 = EntryPoint;
-    ShaderCI.pShaderSourceStreamFactory = pShaderSourceFactory;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.Desc.Name                  = "Test converted shader";
-    ShaderCI.Desc.ShaderType            = ShaderType;
-    ShaderCI.UseCombinedTextureSamplers = pDevice->GetDeviceInfo().IsGLDevice();
-    ShaderCI.ppConversionStream         = ppConversionStream;
+    ShaderCI.FilePath                        = FileName;
+    ShaderCI.EntryPoint                      = EntryPoint;
+    ShaderCI.pShaderSourceStreamFactory      = pShaderSourceFactory;
+    ShaderCI.SourceLanguage                  = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.Desc.Name                       = "Test converted shader";
+    ShaderCI.Desc.ShaderType                 = ShaderType;
+    ShaderCI.Desc.UseCombinedTextureSamplers = pDevice->GetDeviceInfo().IsGLDevice();
+    ShaderCI.ppConversionStream              = ppConversionStream;
 
     RefCntAutoPtr<IShader> pShader;
     pDevice->CreateShader(ShaderCI, &pShader);

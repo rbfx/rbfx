@@ -82,12 +82,12 @@ private:
 
         mutable size_t Hash = 0;
 
-        bool operator==(const FBOCacheKey& Key) const;
+        bool operator==(const FBOCacheKey& Key) const noexcept;
     };
 
     struct FBOCacheKeyHashFunc
     {
-        std::size_t operator()(const FBOCacheKey& Key) const;
+        std::size_t operator()(const FBOCacheKey& Key) const noexcept;
     };
 
 

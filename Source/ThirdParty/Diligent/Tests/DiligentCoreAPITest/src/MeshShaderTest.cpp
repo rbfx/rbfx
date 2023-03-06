@@ -127,16 +127,14 @@ TEST(MeshShaderTest, DrawTriangle)
     GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = SHADER_COMPILER_DXC;
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = SHADER_COMPILER_DXC;
 
     RefCntAutoPtr<IShader> pMS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_MESH;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Mesh shader test - MS";
-        ShaderCI.Source          = HLSL::MeshShaderTest_MS.c_str();
+        ShaderCI.Desc       = {"Mesh shader test - MS", SHADER_TYPE_MESH, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::MeshShaderTest_MS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pMS);
         ASSERT_NE(pMS, nullptr);
@@ -144,10 +142,9 @@ TEST(MeshShaderTest, DrawTriangle)
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Mesh shader test - PS";
-        ShaderCI.Source          = HLSL::MeshShaderTest_PS.c_str();
+        ShaderCI.Desc       = {"Mesh shader test - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::MeshShaderTest_PS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
@@ -240,16 +237,14 @@ TEST(MeshShaderTest, DrawTriangleIndirect)
     GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = SHADER_COMPILER_DXC;
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = SHADER_COMPILER_DXC;
 
     RefCntAutoPtr<IShader> pMS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_MESH;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Mesh shader test - MS";
-        ShaderCI.Source          = HLSL::MeshShaderTest_MS.c_str();
+        ShaderCI.Desc       = {"Mesh shader test - MS", SHADER_TYPE_MESH, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::MeshShaderTest_MS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pMS);
         ASSERT_NE(pMS, nullptr);
@@ -257,10 +252,9 @@ TEST(MeshShaderTest, DrawTriangleIndirect)
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Mesh shader test - PS";
-        ShaderCI.Source          = HLSL::MeshShaderTest_PS.c_str();
+        ShaderCI.Desc       = {"Mesh shader test - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::MeshShaderTest_PS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
@@ -388,16 +382,14 @@ TEST(MeshShaderTest, DrawTriangleIndirectCount)
     GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = SHADER_COMPILER_DXC;
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = SHADER_COMPILER_DXC;
 
     RefCntAutoPtr<IShader> pMS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_MESH;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Mesh shader test - MS";
-        ShaderCI.Source          = HLSL::MeshShaderTest_MS.c_str();
+        ShaderCI.Desc       = {"Mesh shader test - MS", SHADER_TYPE_MESH, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::MeshShaderTest_MS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pMS);
         ASSERT_NE(pMS, nullptr);
@@ -405,10 +397,9 @@ TEST(MeshShaderTest, DrawTriangleIndirectCount)
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Mesh shader test - PS";
-        ShaderCI.Source          = HLSL::MeshShaderTest_PS.c_str();
+        ShaderCI.Desc       = {"Mesh shader test - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::MeshShaderTest_PS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
@@ -538,16 +529,14 @@ TEST(MeshShaderTest, DrawTrisWithAmplificationShader)
     GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = SHADER_COMPILER_DXC;
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = SHADER_COMPILER_DXC;
 
     RefCntAutoPtr<IShader> pAS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_AMPLIFICATION;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Amplification shader test - AS";
-        ShaderCI.Source          = HLSL::AmplificationShaderTest_AS.c_str();
+        ShaderCI.Desc       = {"Amplification shader test - AS", SHADER_TYPE_AMPLIFICATION, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::AmplificationShaderTest_AS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pAS);
         ASSERT_NE(pAS, nullptr);
@@ -555,10 +544,9 @@ TEST(MeshShaderTest, DrawTrisWithAmplificationShader)
 
     RefCntAutoPtr<IShader> pMS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_MESH;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Amplification shader test - MS";
-        ShaderCI.Source          = HLSL::AmplificationShaderTest_MS.c_str();
+        ShaderCI.Desc       = {"Amplification shader test - MS", SHADER_TYPE_MESH, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::AmplificationShaderTest_MS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pMS);
         ASSERT_NE(pMS, nullptr);
@@ -566,10 +554,9 @@ TEST(MeshShaderTest, DrawTrisWithAmplificationShader)
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Amplification shader test - PS";
-        ShaderCI.Source          = HLSL::AmplificationShaderTest_PS.c_str();
+        ShaderCI.Desc       = {"Amplification shader test - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::AmplificationShaderTest_PS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);

@@ -42,12 +42,16 @@ struct INTERFACE_ID
     Uint8  Data4[8];
 
 #if DILIGENT_CPP_INTERFACE
-    bool operator==(const INTERFACE_ID& rhs) const
+    bool operator==(const INTERFACE_ID& rhs) const noexcept
     {
         return Data1 == rhs.Data1 &&
             Data2 == rhs.Data2 &&
             Data3 == rhs.Data3 &&
             memcmp(Data4, rhs.Data4, sizeof(Data4)) == 0;
+    }
+    bool operator!=(const INTERFACE_ID& rhs) const noexcept
+    {
+        return !(*this == rhs);
     }
 #endif
 };

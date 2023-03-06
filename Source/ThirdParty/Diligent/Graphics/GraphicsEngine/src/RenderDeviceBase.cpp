@@ -112,10 +112,11 @@ DeviceFeatures EnableDeviceFeatures(const DeviceFeatures& SupportedFeatures,
     ENABLE_FEATURE(VariableRateShading,               "Variable shading rate is");
     ENABLE_FEATURE(SparseResources,                   "Sparse resources are");
     ENABLE_FEATURE(SubpassFramebufferFetch,           "Subpass framebuffer fetch is");
+    ENABLE_FEATURE(TextureComponentSwizzle,           "Texture component swizzle is");
     // clang-format on
 #undef ENABLE_FEATURE
 
-    ASSERT_SIZEOF(Diligent::DeviceFeatures, 40, "Did you add a new feature to DeviceFeatures? Please handle its status here (if necessary).");
+    ASSERT_SIZEOF(Diligent::DeviceFeatures, 41, "Did you add a new feature to DeviceFeatures? Please handle its status here (if necessary).");
 
     return EnabledFeatures;
 }

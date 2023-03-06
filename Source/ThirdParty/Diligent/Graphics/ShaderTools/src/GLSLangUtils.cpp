@@ -250,6 +250,7 @@ std::vector<unsigned int> CompileShaderInternal(::glslang::TShader&           Sh
                                                 IDataBlob**                   ppCompilerOutput)
 {
     Shader.setAutoMapBindings(true);
+    Shader.setAutoMapLocations(true);
     TBuiltInResource Resources = InitResources();
 
     auto ParseResult = pIncluder != nullptr ?
@@ -377,14 +378,14 @@ void SetupWithSpirvVersion(::glslang::TShader&  Shader,
             Shader.setEnvInput(ShSource, ShLang, ::glslang::EShClientOpenGL, 450);
             Shader.setEnvClient(::glslang::EShClientOpenGL, ::glslang::EShTargetOpenGL_450);
             Shader.setEnvTarget(::glslang::EShTargetSpv, ::glslang::EShTargetSpv_1_0);
-            spvTarget = SPV_ENV_VULKAN_1_0;
+            spvTarget = SPV_ENV_OPENGL_4_5;
             shProfile = EProfile::ECoreProfile;
             break;
         case SpirvVersion::GLES:
             Shader.setEnvInput(ShSource, ShLang, ::glslang::EShClientOpenGL, 450);
             Shader.setEnvClient(::glslang::EShClientOpenGL, ::glslang::EShTargetOpenGL_450);
             Shader.setEnvTarget(::glslang::EShTargetSpv, ::glslang::EShTargetSpv_1_0);
-            spvTarget = SPV_ENV_VULKAN_1_0;
+            spvTarget = SPV_ENV_OPENGL_4_5;
             shProfile = EProfile::EEsProfile;
             break;
 
@@ -475,7 +476,10 @@ std::vector<unsigned int> GLSLtoSPIRV(const GLSLtoSPIRVAttribs& Attribs)
 
     SetupWithSpirvVersion(Shader, spvTarget, shProfile, ShLang, Attribs.Version, ::glslang::EShSourceGlsl);
 
-    EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+    EShMessages messages = EShMsgSpvRules;
+    static_assert(static_cast<int>(SpirvVersion::Count) == 6, "Did you add a new member to SpirvVersion? You may need to handle it here.");
+    if (Attribs.Version != SpirvVersion::GL && Attribs.Version != SpirvVersion::GLES)
+        messages = static_cast<EShMessages>(messages | EShMsgVulkanRules);
 
     const char* ShaderStrings[] = {Attribs.ShaderSource};
     int         Lengths[]       = {Attribs.SourceCodeLen};
@@ -483,10 +487,8 @@ std::vector<unsigned int> GLSLtoSPIRV(const GLSLtoSPIRVAttribs& Attribs)
 
     std::string Defines{"#define GLSLANG\n\n"};
     if (Attribs.Macros != nullptr)
-    {
         AppendShaderMacros(Defines, Attribs.Macros);
-        Shader.setPreamble(Defines.c_str());
-    }
+    Shader.setPreamble(Defines.c_str());
 
     IncluderImpl Includer{Attribs.pShaderSourceStreamFactory};
 

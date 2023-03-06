@@ -32,6 +32,7 @@
 
 #include "Object.h"
 #include "EngineFactory.h"
+#include "DataBlobImpl.hpp"
 #include "DefaultShaderSourceStreamFactory.h"
 #include "Dearchiver.h"
 #include "DummyReferenceCounters.hpp"
@@ -96,6 +97,12 @@ public:
     virtual const APIInfo& DILIGENT_CALL_TYPE GetAPIInfo() const override final
     {
         return Diligent::GetAPIInfo();
+    }
+
+    virtual void DILIGENT_CALL_TYPE CreateDataBlob(size_t InitialSize, const void* pData, IDataBlob** ppDataBlob) const override final
+    {
+        if (auto pDataBlob = DataBlobImpl::Create(InitialSize, pData))
+            pDataBlob->QueryInterface(IID_DataBlob, reinterpret_cast<IObject**>(ppDataBlob));
     }
 
     virtual void DILIGENT_CALL_TYPE CreateDefaultShaderSourceStreamFactory(const Char*                       SearchDirectories,

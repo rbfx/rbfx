@@ -72,22 +72,27 @@ if __name__ == "__main__":
 	instance_commands = set()
 
 	for feature in spec.findall('feature'):
+		api = feature.get('api')
+		if 'vulkan' not in api.split(','):
+			continue
 		key = defined(feature.get('name'))
 		cmdrefs = feature.findall('require/command')
 		command_groups[key] = [cmdref.get('name') for cmdref in cmdrefs]
 
 	for ext in sorted(spec.findall('extensions/extension'), key=lambda ext: ext.get('name')):
 		supported = ext.get('supported')
-		if supported == 'disabled':
+		if 'vulkan' not in supported.split(','):
 			continue
 		name = ext.get('name')
 		type = ext.get('type')
 		for req in ext.findall('require'):
 			key = defined(name)
 			if req.get('feature'):
-				key += ' && ' + defined(req.get('feature'))
+				for i in req.get('feature').split(','):
+					key += ' && ' + defined(i)
 			if req.get('extension'):
-				key += ' && ' + defined(req.get('extension'))
+				for i in req.get('extension').split(','):
+					key += ' && ' + defined(i)
 			cmdrefs = req.findall('command')
 			command_groups.setdefault(key, []).extend([cmdref.get('name') for cmdref in cmdrefs])
 			if type == 'instance':
@@ -167,3 +172,5 @@ if __name__ == "__main__":
 	patch_file('volk.h', blocks)
 	patch_file('volk.c', blocks)
 	patch_file('CMakeLists.txt', blocks)
+
+	print(version.find('name').tail.strip())

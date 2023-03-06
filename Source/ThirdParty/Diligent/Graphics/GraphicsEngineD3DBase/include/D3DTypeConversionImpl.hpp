@@ -418,6 +418,10 @@ D3D_FILTER FilterTypeToD3DFilter(FILTER_TYPE MinFilter, FILTER_TYPE MagFilter, F
 {
     switch (MinFilter)
     {
+        case FILTER_TYPE_UNKNOWN:
+            DEV_ERROR("Filter type is not defined");
+            break;
+
         // Regular filters
         case FILTER_TYPE_POINT:
             if (MagFilter == FILTER_TYPE_POINT)
@@ -586,6 +590,10 @@ D3D_FILTER FilterTypeToD3DFilter(FILTER_TYPE MinFilter, FILTER_TYPE MagFilter, F
             VERIFY(MagFilter == FILTER_TYPE_MAXIMUM_ANISOTROPIC && MipFilter == FILTER_TYPE_MAXIMUM_ANISOTROPIC,
                    "For maximum anisotropic filtering, all filters must be anisotropic");
             return D3D_FILTER_MAXIMUM_ANISOTROPIC;
+            break;
+
+        case FILTER_TYPE_NUM_FILTERS:
+            UNEXPECTED("This value does not define a valid filter type");
             break;
     }
 

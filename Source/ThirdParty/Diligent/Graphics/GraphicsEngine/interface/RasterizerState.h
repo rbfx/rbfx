@@ -165,11 +165,6 @@ struct RasterizerStateDesc
     }
 
     /// Tests if two structures are equivalent
-
-    /// \param [in] RHS - reference to the structure to perform comparison with
-    /// \return
-    /// - True if all members of the two structures are equal.
-    /// - False otherwise
     constexpr bool operator == (const RasterizerStateDesc& RHS)const
     {
         return  FillMode              == RHS.FillMode              &&
@@ -181,6 +176,11 @@ struct RasterizerStateDesc
                 DepthClipEnable       == RHS.DepthClipEnable       &&
                 ScissorEnable         == RHS.ScissorEnable         &&
                 AntialiasedLineEnable == RHS.AntialiasedLineEnable;
+        static_assert(sizeof(*this) == 20, "Did you add new members to RasterizerStateDesc? Please handle them here.");
+    }
+    constexpr bool operator != (const RasterizerStateDesc& RHS)const
+    {
+        return !(*this == RHS);
     }
 #endif
 };

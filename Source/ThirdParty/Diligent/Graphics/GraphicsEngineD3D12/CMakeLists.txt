@@ -163,7 +163,7 @@ set_source_files_properties(${COMPILED_SHADERS} PROPERTIES GENERATED TRUE)
 
 add_library(Diligent-GraphicsEngineD3D12Interface INTERFACE)
 target_link_libraries     (Diligent-GraphicsEngineD3D12Interface INTERFACE Diligent-GraphicsEngineD3DBaseInterface)
-target_include_directories(Diligent-GraphicsEngineD3D12Interface INTERFACE interface)
+target_include_directories(Diligent-GraphicsEngineD3D12Interface INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>)
 
 
 add_library(Diligent-GraphicsEngineD3D12-static STATIC
@@ -175,10 +175,10 @@ add_library(Diligent-GraphicsEngineD3D12-static STATIC
     ${COMPILED_SHADERS}
 )
 
-add_library(Diligent-GraphicsEngineD3D12-shared SHARED
-    ${DLL_SRC}
-    readme.md
-)
+#add_library(Diligent-GraphicsEngineD3D12-shared SHARED
+#    ${DLL_SRC}
+#    readme.md
+#)
 
 target_include_directories(Diligent-GraphicsEngineD3D12-static
 PRIVATE
@@ -206,14 +206,14 @@ if(NOT ${USE_D3D12_LOADER})
     target_link_libraries(Diligent-GraphicsEngineD3D12-static PRIVATE d3d12.lib)
 endif()
 
-target_link_libraries(Diligent-GraphicsEngineD3D12-shared
-PRIVATE
-    Diligent-BuildSettings
-    Diligent-GraphicsEngineD3D12-static
-PUBLIC
-    Diligent-GraphicsEngineD3D12Interface
-)
-target_compile_definitions(Diligent-GraphicsEngineD3D12-shared PUBLIC ENGINE_DLL=1)
+#target_link_libraries(Diligent-GraphicsEngineD3D12-shared
+#PRIVATE
+#    Diligent-BuildSettings
+#    Diligent-GraphicsEngineD3D12-static
+#PUBLIC
+#    Diligent-GraphicsEngineD3D12Interface
+#)
+#target_compile_definitions(Diligent-GraphicsEngineD3D12-shared PUBLIC ENGINE_DLL=1)
 
 if("${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}" VERSION_GREATER_EQUAL "10.0.19041.0")
     set(D3D12_H_HAS_MESH_SHADER ON CACHE INTERNAL "D3D12 headers support mesh shaders" FORCE)
@@ -221,9 +221,9 @@ if("${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}" VERSION_GREATER_EQUAL "10.0.190
 endif()
 
 # Set output name to GraphicsEngineD3D12_{32|64}{r|d}
-set_dll_output_name(Diligent-GraphicsEngineD3D12-shared GraphicsEngineD3D12)
+#set_dll_output_name(Diligent-GraphicsEngineD3D12-shared GraphicsEngineD3D12)
 
-set_common_target_properties(Diligent-GraphicsEngineD3D12-shared)
+#set_common_target_properties(Diligent-GraphicsEngineD3D12-shared)
 set_common_target_properties(Diligent-GraphicsEngineD3D12-static)
 
 source_group("src" FILES ${SRC})
@@ -287,15 +287,15 @@ endif()
 set_target_properties(Diligent-GraphicsEngineD3D12-static PROPERTIES
     FOLDER DiligentCore/Graphics
 )
-set_target_properties(Diligent-GraphicsEngineD3D12-shared PROPERTIES
-    FOLDER DiligentCore/Graphics
-)
+#set_target_properties(Diligent-GraphicsEngineD3D12-shared PROPERTIES
+#    FOLDER DiligentCore/Graphics
+#)
 
 set_source_files_properties(
     readme.md PROPERTIES HEADER_FILE_ONLY TRUE
 )
 
 if(DILIGENT_INSTALL_CORE)
-    install_core_lib(Diligent-GraphicsEngineD3D12-shared)
+#    install_core_lib(Diligent-GraphicsEngineD3D12-shared)
     install_core_lib(Diligent-GraphicsEngineD3D12-static)
 endif()

@@ -70,11 +70,18 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
 #    endif
 #elif PLATFORM_MACOS
     if (TargetCompiler == TargetGLSLCompiler::glslang)
+    {
         GLSLSource.append("#version 430 core\n");
+    }
     else if (TargetCompiler == TargetGLSLCompiler::driver)
-        GLSLSource.append("#version 410 core\n");
+    {
+        GLSLSource.append("#version 410 core\n"
+                          "#extension GL_ARB_shading_language_420pack : enable\n");
+    }
     else
+    {
         UNEXPECTED("Unexpected target GLSL compiler");
+    }
 
     GLSLSource.append(
         "#define DESKTOP_GL 1\n"
@@ -255,13 +262,6 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
     GLSLSource.append(
         "layout(std140) uniform;\n");
 
-    if (ShaderType == SHADER_TYPE_VERTEX && TargetCompiler == TargetGLSLCompiler::glslang)
-    {
-        // https://github.com/KhronosGroup/GLSL/blob/master/extensions/khr/GL_KHR_vulkan_glsl.txt
-        GLSLSource.append("#define gl_VertexID gl_VertexIndex\n"
-                          "#define gl_InstanceID gl_InstanceIndex\n");
-    }
-
     AppendShaderTypeDefinitions(GLSLSource, ShaderType);
 
     if (ExtraDefinitions != nullptr)
@@ -278,7 +278,7 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
 #if DILIGENT_NO_HLSL
         LOG_ERROR_AND_THROW("Unable to convert HLSL source to GLSL: HLSL support is disabled");
 #else
-        if (!ShaderCI.UseCombinedTextureSamplers)
+        if (!ShaderCI.Desc.UseCombinedTextureSamplers)
         {
             LOG_ERROR_AND_THROW("Combined texture samplers are required to convert HLSL source to GLSL");
         }
@@ -294,7 +294,9 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
         Attribs.ShaderType           = ShaderCI.Desc.ShaderType;
         Attribs.IncludeDefinitions   = true;
         Attribs.InputFileName        = ShaderCI.FilePath;
-        Attribs.SamplerSuffix        = ShaderCI.CombinedSamplerSuffix;
+        Attribs.SamplerSuffix        = ShaderCI.Desc.CombinedSamplerSuffix != nullptr ?
+            ShaderCI.Desc.CombinedSamplerSuffix :
+            ShaderDesc{}.CombinedSamplerSuffix;
         // Separate shader objects extension also allows input/output layout qualifiers for
         // all shader stages.
         // https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_separate_shader_objects.txt

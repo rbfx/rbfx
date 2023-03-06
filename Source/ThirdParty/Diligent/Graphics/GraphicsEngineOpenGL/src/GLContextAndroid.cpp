@@ -226,6 +226,10 @@ void GLContext::InitGLES()
     if (glGetError() != GL_NO_ERROR)
         LOG_ERROR_MESSAGE("Failed to enable SRGB framebuffers");
 
+    glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+    if (glGetError() != GL_NO_ERROR)
+        LOG_ERROR_MESSAGE("Failed to enable primitive restart fixed index");
+
     gles_initialized_ = true;
 }
 

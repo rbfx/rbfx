@@ -41,9 +41,19 @@ class ShaderGLImpl final : public ShaderBase<EngineGLImplTraits>
 public:
     using TShaderBase = ShaderBase<EngineGLImplTraits>;
 
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0xa62b7e6a, 0x566b, 0x4c8d, {0xbd, 0xe0, 0x2f, 0x63, 0xcf, 0xca, 0x78, 0xc8}};
+
+    struct CreateInfo
+    {
+        const RenderDeviceInfo&    DeviceInfo;
+        const GraphicsAdapterInfo& AdapterInfo;
+    };
+
     ShaderGLImpl(IReferenceCounters*     pRefCounters,
                  RenderDeviceGLImpl*     pDeviceGL,
                  const ShaderCreateInfo& ShaderCI,
+                 const CreateInfo&       GLShaderCI,
                  bool                    bIsDeviceInternal = false);
     ~ShaderGLImpl();
 
@@ -55,14 +65,25 @@ public:
     /// Implementation of IShader::GetResource() in OpenGL backend.
     virtual void DILIGENT_CALL_TYPE GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDesc) const override final;
 
+    /// Implementation of IShader::GetConstantBufferDesc() in OpenGL backend.
+    virtual const ShaderCodeBufferDesc* DILIGENT_CALL_TYPE GetConstantBufferDesc(Uint32 Index) const override final;
+
     static GLObjectWrappers::GLProgramObj LinkProgram(ShaderGLImpl* const* ppShaders, Uint32 NumShaders, bool IsSeparableProgram);
 
     const std::shared_ptr<const ShaderResourcesGL>& GetShaderResources() const { return m_pShaderResources; }
 
     SHADER_SOURCE_LANGUAGE GetSourceLanguage() const { return m_SourceLanguage; }
 
+    virtual void DILIGENT_CALL_TYPE GetBytecode(const void** ppData,
+                                                Uint64&      DataSize) const override final
+    {
+        *ppData  = !m_GLSLSourceString.empty() ? m_GLSLSourceString.c_str() : nullptr;
+        DataSize = m_GLSLSourceString.length();
+    }
+
 private:
-    const SHADER_SOURCE_LANGUAGE             m_SourceLanguage;
+    SHADER_SOURCE_LANGUAGE                   m_SourceLanguage = SHADER_SOURCE_LANGUAGE_DEFAULT;
+    std::string                              m_GLSLSourceString;
     GLObjectWrappers::GLShaderObj            m_GLShaderObj;
     std::shared_ptr<const ShaderResourcesGL> m_pShaderResources;
 };

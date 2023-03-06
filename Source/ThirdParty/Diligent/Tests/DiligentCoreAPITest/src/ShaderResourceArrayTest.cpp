@@ -47,24 +47,21 @@ TEST(ShaderResourceLayout, ResourceArray)
     pDevice->GetEngineFactory()->CreateDefaultShaderSourceStreamFactory("shaders", &pShaderSourceFactory);
     ShaderCreateInfo ShaderCI;
     ShaderCI.pShaderSourceStreamFactory = pShaderSourceFactory;
-    ShaderCI.UseCombinedTextureSamplers = true;
     ShaderCI.HLSLVersion                = ShaderVersion{5, 0};
 
     RefCntAutoPtr<IShader> pVS, pPS;
     {
-        ShaderCI.Desc.Name       = "ShaderResourceArrayTest: VS";
-        ShaderCI.FilePath        = "ShaderResourceArrayTest.vsh";
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.SourceLanguage  = SHADER_SOURCE_LANGUAGE_HLSL;
+        ShaderCI.Desc           = {"ShaderResourceArrayTest: VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.FilePath       = "ShaderResourceArrayTest.vsh";
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
         pDevice->CreateShader(ShaderCI, &pVS);
         ASSERT_NE(pVS, nullptr);
     }
 
     {
-        ShaderCI.Desc.Name       = "ShaderResourceArrayTest: PS";
-        ShaderCI.FilePath        = "ShaderResourceArrayTest.psh";
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.SourceLanguage  = SHADER_SOURCE_LANGUAGE_HLSL;
+        ShaderCI.Desc           = {"ShaderResourceArrayTest: PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.FilePath       = "ShaderResourceArrayTest.psh";
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
     }

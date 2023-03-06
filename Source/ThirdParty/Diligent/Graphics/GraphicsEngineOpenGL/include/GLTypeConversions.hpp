@@ -64,6 +64,23 @@ inline GLenum PrimitiveTopologyToGLTopology(PRIMITIVE_TOPOLOGY PrimTopology)
 
 inline GLenum TypeToGLType(VALUE_TYPE Value)
 {
+    static_assert(VT_NUM_TYPES == 10, "Did you add a new VALUE_TYPE enum value? You may need to handle it here.");
+
+#define CHECK_VALUE_TYPE_ENUM_VALUE(EnumElement, ExpectedValue) static_assert(EnumElement == ExpectedValue, "TypeToGLType function assumes that " #EnumElement " equals " #ExpectedValue ": fix TypeToGLTypeMap array and update this assertion.")
+    // clang-format off
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_UNDEFINED, 0);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_INT8,      1);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_INT16,     2);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_INT32,     3);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_UINT8,     4);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_UINT16,    5);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_UINT32,    6);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_FLOAT16,   7);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_FLOAT32,   8);
+    CHECK_VALUE_TYPE_ENUM_VALUE(VT_FLOAT64,   9);
+    // clang-format on
+#undef CHECK_VALUE_TYPE_ENUM_VALUE
+
     // clang-format off
     static constexpr GLenum TypeToGLTypeMap[] =
     {
@@ -75,7 +92,8 @@ inline GLenum TypeToGLType(VALUE_TYPE Value)
         GL_UNSIGNED_SHORT,  // VT_UINT16
         GL_UNSIGNED_INT,    // VT_UINT32
         GL_HALF_FLOAT,      // VT_FLOAT16
-        GL_FLOAT            // VT_FLOAT32
+        GL_FLOAT,           // VT_FLOAT32
+        GL_DOUBLE,          // VT_FLOAT64
     };
     // clang-format on
 
@@ -430,5 +448,9 @@ inline GLenum ShaderTypeToGLShaderBit(SHADER_TYPE ShaderType)
 SHADER_TYPE GLShaderBitsToShaderTypes(GLenum ShaderBits);
 
 WAVE_FEATURE GLSubgroupFeatureBitsToWaveFeatures(GLenum FeatureBits);
+
+ShaderCodeVariableDesc GLDataTypeToShaderCodeVariableDesc(GLenum glDataType);
+
+GLint TextureComponentSwizzleToGLTextureSwizzle(TEXTURE_COMPONENT_SWIZZLE Swizzle, GLint IdentitySwizzle);
 
 } // namespace Diligent

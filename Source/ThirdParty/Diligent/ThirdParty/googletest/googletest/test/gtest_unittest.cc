@@ -61,6 +61,7 @@ TEST(CommandLineFlagsTest, CanBeAccessedInCodeOnceGTestHIsIncluded) {
 #include <cstdint>
 #include <map>
 #include <ostream>
+#include <set>
 #include <string>
 #include <type_traits>
 #include <unordered_set>
@@ -6634,6 +6635,9 @@ TEST(ColoredOutputTest, UsesColorsWhenTermSupportsColors) {
   EXPECT_TRUE(ShouldUseColor(true));  // Stdout is a TTY.
 
   SetEnv("TERM", "xterm-color");      // TERM supports colors.
+  EXPECT_TRUE(ShouldUseColor(true));  // Stdout is a TTY.
+
+  SetEnv("TERM", "xterm-kitty");      // TERM supports colors.
   EXPECT_TRUE(ShouldUseColor(true));  // Stdout is a TTY.
 
   SetEnv("TERM", "xterm-256color");   // TERM supports colors.

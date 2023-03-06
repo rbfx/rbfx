@@ -75,7 +75,9 @@ DILIGENT_TYPED_ENUM(ARCHIVE_DEVICE_DATA_FLAGS, Uint32)
     /// Metal device data for iOS will be serialized.
     ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS   = 2u << RENDER_DEVICE_TYPE_METAL,
 
-    ARCHIVE_DEVICE_DATA_FLAG_LAST        = ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS
+    ARCHIVE_DEVICE_DATA_FLAG_LAST        = ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS,
+
+    ARCHIVE_DEVICE_DATA_FLAG_ALL         = ARCHIVE_DEVICE_DATA_FLAG_LAST * 2 - 1
 };
 DEFINE_FLAG_ENUM_OPERATORS(ARCHIVE_DEVICE_DATA_FLAGS)
 
@@ -97,11 +99,29 @@ DILIGENT_BEGIN_INTERFACE(IArchiver, IObject)
     VIRTUAL Bool METHOD(SerializeToStream)(THIS_
                                            IFileStream* pStream) PURE;
 
+    /// Adds a shader to the archive.
+
+    /// \param [in] pShader - a pointer to the shader to add to the archive.
+    ///
+    /// \return     true if the shader was added successfully, and false otherwise.
+    ///
+    /// \note
+    ///     Shader object pointed to by pShader must have been created by the serialization device.
+    ///
+    ///     Multiple shaders may be packed into the same archive as long as they use unique names.
+    ///
+    ///     The method is thread-safe and may be called from multiple threads simultaneously.
+    VIRTUAL Bool METHOD(AddShader)(THIS_
+                                   IShader* pShader) PURE;
 
     /// Adds a pipeline state to the archive.
 
+    /// \param [in] pPSO - a pointer to the pipeline state to add to the archive.
+    ///
+    /// \return     true if the pipeline state was added successfully, and false otherwise.
+    ///
     /// \note
-    ///     Pipeline state must have been created by the serialization device.
+    ///     Pipeline state object pointed to by pPSO must have been created by the serialization device.
     ///
     ///     Multiple pipeline states may be packed into the same archive as long as they use unique names.
     ///     All dependent objects (render pass, resource signatures, shaders) will be added to the archive
@@ -114,8 +134,12 @@ DILIGENT_BEGIN_INTERFACE(IArchiver, IObject)
 
     /// Adds a pipeline resource signature to the archive.
 
+    /// \param [in] pSignature - a pointer to the resource signature to add to the archive.
+    ///
+    /// \return     true if the signature was added successfully, and false otherwise.
+    ///
     /// \note
-    ///     Pipeline resource signature must have been created by the serialization device.
+    ///     Pipeline resource signature pointed to by pSignature must have been created by the serialization device.
     ///
     ///     Multiple PSOs and signatures may be packed into the same archive as long as they use distinct names.
     ///
@@ -125,6 +149,38 @@ DILIGENT_BEGIN_INTERFACE(IArchiver, IObject)
 
     /// Resets the archiver to default state and removes all added resources.
     VIRTUAL void METHOD(Reset)(THIS) PURE;
+
+    /// Returns a pointer to the shader object previously added by the AddShader() method.
+
+    /// \param [in] ShaderName - Name of the shader object to retrieve.
+    /// \return     A pointer to the shader object, or null if the object with that name was not added.
+    ///
+    /// \ note      The method does *not* increment the reference counter of the returned object,
+    ///             so the application must not call Release() unless it also explcitily calls AddRef().
+    VIRTUAL IShader* METHOD(GetShader)(THIS_
+                                       const char* ShaderName) PURE;
+
+    /// Returns a pointer to the pipeline state object previously added by the AddPipelineState() method.
+
+    /// \param [in] PSOType - Type of the pipeline state to retrieve.
+    /// \param [in] PSOName - Name of the pipeline state to retrieve.
+    /// \return     A pointer to the pipeline state object, or null if the object with that name was not added.
+    ///
+    /// \ note      The method does *not* increment the reference counter of the returned object,
+    ///             so the application must not call Release() unless it also explcitily calls AddRef().
+    VIRTUAL IPipelineState* METHOD(GetPipelineState)(THIS_
+                                                     PIPELINE_TYPE PSOType,
+                                                     const char*   PSOName) PURE;
+
+    /// Returns a pointer to the pipeline resource signature previously added by the AddPipelineResourceSignature() method.
+
+    /// \param [in] PRSName - Name of the pipeline resource signature to retrieve.
+    /// \return     A pointer to the the pipeline resource signature object, or null if the object with that name was not added.
+    ///
+    /// \ note      The method does *not* increment the reference counter of the returned object,
+    ///             so the application must not call Release() unless it also explcitily calls AddRef().
+    VIRTUAL IPipelineResourceSignature* METHOD(GetPipelineResourceSignature)(THIS_
+                                                                             const char* PRSName) PURE;
 };
 DILIGENT_END_INTERFACE
 
@@ -134,8 +190,12 @@ DILIGENT_END_INTERFACE
 
 #    define IArchiver_SerializeToBlob(This, ...)              CALL_IFACE_METHOD(Archiver, SerializeToBlob,              This, __VA_ARGS__)
 #    define IArchiver_SerializeToStream(This, ...)            CALL_IFACE_METHOD(Archiver, SerializeToStream,            This, __VA_ARGS__)
+#    define IArchiver_AddShader(This, ...)                    CALL_IFACE_METHOD(Archiver, AddShader,                    This, __VA_ARGS__)
 #    define IArchiver_AddPipelineState(This, ...)             CALL_IFACE_METHOD(Archiver, AddPipelineState,             This, __VA_ARGS__)
 #    define IArchiver_AddPipelineResourceSignature(This, ...) CALL_IFACE_METHOD(Archiver, AddPipelineResourceSignature, This, __VA_ARGS__)
+#    define IArchiver_GetShader(This, ...)                    CALL_IFACE_METHOD(Archiver, GetShader,                    This, __VA_ARGS__)
+#    define IArchiver_GetPipelineState(This, ...)             CALL_IFACE_METHOD(Archiver, GetPipelineState,             This, __VA_ARGS__)
+#    define IArchiver_GetPipelineResourceSignature(This, ...) CALL_IFACE_METHOD(Archiver, GetPipelineResourceSignature, This, __VA_ARGS__)
 
 #endif
 

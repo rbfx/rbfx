@@ -36,7 +36,7 @@ set_common_target_properties(Diligent-HLSL2GLSLConverterLib)
 
 target_include_directories(Diligent-HLSL2GLSLConverterLib
 PUBLIC
-    interface
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
 PRIVATE
     include
 )

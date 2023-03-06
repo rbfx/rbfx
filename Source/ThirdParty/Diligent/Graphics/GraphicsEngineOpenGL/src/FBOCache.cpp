@@ -35,7 +35,7 @@
 namespace Diligent
 {
 
-bool FBOCache::FBOCacheKey::operator==(const FBOCacheKey& Key) const
+bool FBOCache::FBOCacheKey::operator==(const FBOCacheKey& Key) const noexcept
 {
     if (Hash != 0 && Key.Hash != 0 && Hash != Key.Hash)
         return false;
@@ -62,7 +62,7 @@ bool FBOCache::FBOCacheKey::operator==(const FBOCacheKey& Key) const
     return true;
 }
 
-std::size_t FBOCache::FBOCacheKeyHashFunc::operator()(const FBOCacheKey& Key) const
+std::size_t FBOCache::FBOCacheKeyHashFunc::operator()(const FBOCacheKey& Key) const noexcept
 {
     if (Key.Hash == 0)
     {

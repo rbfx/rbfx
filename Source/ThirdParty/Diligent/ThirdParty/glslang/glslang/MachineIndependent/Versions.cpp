@@ -166,7 +166,8 @@ void TParseVersions::initializeExtensionBehavior()
     } extensionData;
 
     const extensionData exts[] = { {E_GL_EXT_ray_tracing, EShTargetSpv_1_4},
-                                   {E_GL_NV_ray_tracing_motion_blur, EShTargetSpv_1_4}
+                                   {E_GL_NV_ray_tracing_motion_blur, EShTargetSpv_1_4},
+                                   {E_GL_EXT_mesh_shader, EShTargetSpv_1_4}
                                  };
 
     for (size_t ii = 0; ii < sizeof(exts) / sizeof(exts[0]); ii++) {
@@ -226,6 +227,7 @@ void TParseVersions::initializeExtensionBehavior()
     extensionBehavior[E_GL_ARB_texture_query_lod]            = EBhDisable;
     extensionBehavior[E_GL_ARB_vertex_attrib_64bit]          = EBhDisable;
     extensionBehavior[E_GL_ARB_draw_instanced]               = EBhDisable;
+    extensionBehavior[E_GL_ARB_bindless_texture]             = EBhDisable;
     extensionBehavior[E_GL_ARB_fragment_coord_conventions]   = EBhDisable;
 
 
@@ -300,6 +302,11 @@ void TParseVersions::initializeExtensionBehavior()
     extensionBehavior[E_GL_NV_shader_sm_builtins]                    = EBhDisable;
     extensionBehavior[E_GL_NV_integer_cooperative_matrix]            = EBhDisable;
 
+    extensionBehavior[E_GL_NV_shader_invocation_reorder]             = EBhDisable;
+
+    // ARM
+    extensionBehavior[E_GL_ARM_shader_core_builtins]                 = EBhDisable;
+
     // AEP
     extensionBehavior[E_GL_ANDROID_extension_pack_es31a]             = EBhDisable;
     extensionBehavior[E_GL_KHR_blend_equation_advanced]              = EBhDisable;
@@ -341,10 +348,12 @@ void TParseVersions::initializeExtensionBehavior()
     extensionBehavior[E_GL_EXT_blend_func_extended]         = EBhDisable;
     extensionBehavior[E_GL_EXT_shader_implicit_conversions] = EBhDisable;
     extensionBehavior[E_GL_EXT_fragment_shading_rate]       = EBhDisable;
-    extensionBehavior[E_GL_EXT_shader_image_int64]   = EBhDisable;
+    extensionBehavior[E_GL_EXT_shader_image_int64]          = EBhDisable;
     extensionBehavior[E_GL_EXT_terminate_invocation]        = EBhDisable;
     extensionBehavior[E_GL_EXT_shared_memory_block]         = EBhDisable;
     extensionBehavior[E_GL_EXT_spirv_intrinsics]            = EBhDisable;
+    extensionBehavior[E_GL_EXT_mesh_shader]                 = EBhDisable;
+    extensionBehavior[E_GL_EXT_opacity_micromap]            = EBhDisable;
 
     // OVR extensions
     extensionBehavior[E_GL_OVR_multiview]                = EBhDisable;
@@ -367,6 +376,9 @@ void TParseVersions::initializeExtensionBehavior()
     extensionBehavior[E_GL_EXT_shader_subgroup_extended_types_float16] = EBhDisable;
     extensionBehavior[E_GL_EXT_shader_atomic_float]                    = EBhDisable;
     extensionBehavior[E_GL_EXT_shader_atomic_float2]                   = EBhDisable;
+
+    // Record extensions not for spv.
+    spvUnsupportedExt.push_back(E_GL_ARB_bindless_texture);
 }
 
 #endif // GLSLANG_WEB
@@ -434,7 +446,6 @@ void TParseVersions::getPreamble(std::string& preamble)
 
     } else { // !isEsProfile()
         preamble =
-            "#define GL_FRAGMENT_PRECISION_HIGH 1\n"
             "#define GL_ARB_texture_rectangle 1\n"
             "#define GL_ARB_shading_language_420pack 1\n"
             "#define GL_ARB_texture_gather 1\n"
@@ -474,6 +485,7 @@ void TParseVersions::getPreamble(std::string& preamble)
             "#define GL_ARB_vertex_attrib_64bit 1\n"
             "#define GL_ARB_draw_instanced 1\n"
             "#define GL_ARB_fragment_coord_conventions 1\n"
+            "#define GL_ARB_bindless_texture 1\n"
             "#define GL_EXT_shader_non_constant_global_initializers 1\n"
             "#define GL_EXT_shader_image_load_formatted 1\n"
             "#define GL_EXT_post_depth_coverage 1\n"
@@ -511,6 +523,7 @@ void TParseVersions::getPreamble(std::string& preamble)
             "#define GL_EXT_ray_flags_primitive_culling 1\n"
             "#define GL_EXT_ray_cull_mask 1\n"
             "#define GL_EXT_spirv_intrinsics 1\n"
+            "#define GL_EXT_mesh_shader 1\n"
 
             "#define GL_AMD_shader_ballot 1\n"
             "#define GL_AMD_shader_trinary_minmax 1\n"
@@ -540,6 +553,7 @@ void TParseVersions::getPreamble(std::string& preamble)
             "#define GL_NV_mesh_shader 1\n"
             "#define GL_NV_cooperative_matrix 1\n"
             "#define GL_NV_integer_cooperative_matrix 1\n"
+            "#define GL_NV_shader_execution_reorder 1\n"
 
             "#define GL_EXT_shader_explicit_arithmetic_types 1\n"
             "#define GL_EXT_shader_explicit_arithmetic_types_int8 1\n"
@@ -572,6 +586,10 @@ void TParseVersions::getPreamble(std::string& preamble)
             preamble += "#define GL_EXT_null_initializer 1\n";
             preamble += "#define GL_EXT_subgroup_uniform_control_flow 1\n";
         }
+        if (version >= 130) {
+            preamble +="#define GL_FRAGMENT_PRECISION_HIGH 1\n";
+        }
+
 #endif // GLSLANG_WEB
     }
 
@@ -641,8 +659,8 @@ void TParseVersions::getPreamble(std::string& preamble)
         case EShLangClosestHit:     preamble += "#define GL_CLOSEST_HIT_SHADER_EXT 1 \n";           break;
         case EShLangMiss:           preamble += "#define GL_MISS_SHADER_EXT 1 \n";                  break;
         case EShLangCallable:       preamble += "#define GL_CALLABLE_SHADER_EXT 1 \n";              break;
-        case EShLangTaskNV:         preamble += "#define GL_TASK_SHADER_NV 1 \n";                   break;
-        case EShLangMeshNV:         preamble += "#define GL_MESH_SHADER_NV 1 \n";                   break;
+        case EShLangTask:           preamble += "#define GL_TASK_SHADER_NV 1 \n";                   break;
+        case EShLangMesh:           preamble += "#define GL_MESH_SHADER_NV 1 \n";                   break;
         default:                                                                                    break;
         }
     }
@@ -668,8 +686,8 @@ const char* StageName(EShLanguage stage)
     case EShLangClosestHit:     return "closest-hit";
     case EShLangMiss:           return "miss";
     case EShLangCallable:       return "callable";
-    case EShLangMeshNV:         return "mesh";
-    case EShLangTaskNV:         return "task";
+    case EShLangMesh:           return "mesh";
+    case EShLangTask:           return "task";
 #endif
     default:                    return "unknown stage";
     }
@@ -1060,10 +1078,22 @@ void TParseVersions::checkExtensionStage(const TSourceLoc& loc, const char * con
 {
     // GL_NV_mesh_shader extension is only allowed in task/mesh shaders
     if (strcmp(extension, "GL_NV_mesh_shader") == 0) {
-        requireStage(loc, (EShLanguageMask)(EShLangTaskNVMask | EShLangMeshNVMask | EShLangFragmentMask),
+        requireStage(loc, (EShLanguageMask)(EShLangTaskMask | EShLangMeshMask | EShLangFragmentMask),
                      "#extension GL_NV_mesh_shader");
-        profileRequires(loc, ECoreProfile, 450, 0, "#extension GL_NV_mesh_shader");
-        profileRequires(loc, EEsProfile, 320, 0, "#extension GL_NV_mesh_shader");
+        profileRequires(loc, ECoreProfile, 450, nullptr, "#extension GL_NV_mesh_shader");
+        profileRequires(loc, EEsProfile, 320, nullptr, "#extension GL_NV_mesh_shader");
+        if (extensionTurnedOn(E_GL_EXT_mesh_shader)) {
+            error(loc, "GL_EXT_mesh_shader is already turned on, and not allowed with", "#extension", extension);
+        }
+    }
+    else if (strcmp(extension, "GL_EXT_mesh_shader") == 0) {
+        requireStage(loc, (EShLanguageMask)(EShLangTaskMask | EShLangMeshMask | EShLangFragmentMask),
+                     "#extension GL_EXT_mesh_shader");
+        profileRequires(loc, ECoreProfile, 450, nullptr, "#extension GL_EXT_mesh_shader");
+        profileRequires(loc, EEsProfile, 320, nullptr, "#extension GL_EXT_mesh_shader");
+        if (extensionTurnedOn(E_GL_NV_mesh_shader)) {
+            error(loc, "GL_NV_mesh_shader is already turned on, and not allowed with", "#extension", extension);
+        }
     }
 }
 
@@ -1082,6 +1112,13 @@ void TParseVersions::extensionRequires(const TSourceLoc &loc, const char * const
         if (iter != extensionMinSpv.end())
             minSpvVersion = iter->second;
         requireSpv(loc, extension, minSpvVersion);
+    }
+
+    if (spvVersion.spv != 0){
+        for (auto ext : spvUnsupportedExt){
+            if (strcmp(extension, ext.c_str()) == 0)
+                error(loc, "not allowed when using generating SPIR-V codes", extension, "");
+        }
     }
 }
 

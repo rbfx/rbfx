@@ -351,8 +351,7 @@ TextureBaseGL::~TextureBaseGL()
 
 IMPLEMENT_QUERY_INTERFACE(TextureBaseGL, IID_TextureGL, TTextureBase)
 
-
-void TextureBaseGL::CreateViewInternal(const struct TextureViewDesc& OrigViewDesc, ITextureView** ppView, bool bIsDefaultView)
+void TextureBaseGL::CreateViewInternal(const TextureViewDesc& OrigViewDesc, ITextureView** ppView, bool bIsDefaultView)
 {
     VERIFY(ppView != nullptr, "Null pointer provided");
     if (!ppView) return;
@@ -384,7 +383,8 @@ void TextureBaseGL::CreateViewInternal(const struct TextureViewDesc& OrigViewDes
                 ViewDesc.MostDetailedMip          == 0 &&
                 ViewDesc.NumMipLevels             == m_Desc.MipLevels &&
                 ViewDesc.FirstArrayOrDepthSlice() == 0 &&
-                ViewDesc.NumArrayOrDepthSlices()  == m_Desc.ArraySizeOrDepth();
+                ViewDesc.NumArrayOrDepthSlices()  == m_Desc.ArraySizeOrDepth() &&
+                IsIdentityComponentMapping(ViewDesc.Swizzle);
             // clang-format on
 
             pViewOGL = NEW_RC_OBJ(TexViewAllocator, "TextureViewGLImpl instance", TextureViewGLImpl, bIsDefaultView ? this : nullptr)(
@@ -452,6 +452,24 @@ void TextureBaseGL::CreateViewInternal(const struct TextureViewDesc& OrigViewDes
                 glTextureView(pViewOGL->GetHandle(), GLViewTarget, m_GlTexture, GLViewFormat, ViewDesc.MostDetailedMip, ViewDesc.NumMipLevels, ViewDesc.FirstArraySlice, NumLayers);
                 CHECK_GL_ERROR_AND_THROW("Failed to create texture view");
                 pViewOGL->SetBindTarget(GLViewTarget);
+
+                if (!IsIdentityComponentMapping(ViewDesc.Swizzle))
+                {
+                    auto pDeviceContext = pDeviceGLImpl->GetImmediateContext(0);
+                    VERIFY(pDeviceContext, "Immediate device context has been destroyed");
+                    auto& GLState = pDeviceContext->GetContextState();
+
+                    GLState.BindTexture(-1, GLViewTarget, pViewOGL->GetHandle());
+                    glTexParameteri(GLViewTarget, GL_TEXTURE_SWIZZLE_R, TextureComponentSwizzleToGLTextureSwizzle(ViewDesc.Swizzle.R, GL_RED));
+                    CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
+                    glTexParameteri(GLViewTarget, GL_TEXTURE_SWIZZLE_G, TextureComponentSwizzleToGLTextureSwizzle(ViewDesc.Swizzle.G, GL_GREEN));
+                    CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
+                    glTexParameteri(GLViewTarget, GL_TEXTURE_SWIZZLE_B, TextureComponentSwizzleToGLTextureSwizzle(ViewDesc.Swizzle.B, GL_BLUE));
+                    CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
+                    glTexParameteri(GLViewTarget, GL_TEXTURE_SWIZZLE_A, TextureComponentSwizzleToGLTextureSwizzle(ViewDesc.Swizzle.A, GL_ALPHA));
+                    CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
+                    GLState.BindTexture(-1, GLViewTarget, GLObjectWrappers::GLTextureObj::Null());
+                }
             }
         }
         else if (ViewDesc.ViewType == TEXTURE_VIEW_UNORDERED_ACCESS)
@@ -685,19 +703,27 @@ void TextureBaseGL::SetDefaultGLParameters()
     {
         // We need to do channel swizzling since TEX_FORMAT_A8_UNORM
         // is actually implemented using GL_RED
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ZERO);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ZERO);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ZERO);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+        glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_R, GL_ZERO);
+        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
+        glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_G, GL_ZERO);
+        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
+        glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_B, GL_ZERO);
+        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
+        glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_A, GL_RED);
+        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
     }
     else if (m_Desc.Format == TEX_FORMAT_BGRA8_UNORM)
     {
         // We need to do channel swizzling since TEX_FORMAT_BGRA8_UNORM
         // is actually implemented using GL_RGBA
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
+        glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
+        glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
+        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
+        glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_B, GL_RED);
+        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
+        glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
+        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
     }
 
     if (m_BindTarget != GL_TEXTURE_2D_MULTISAMPLE &&

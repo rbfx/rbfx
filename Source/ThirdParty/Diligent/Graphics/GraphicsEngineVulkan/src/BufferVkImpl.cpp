@@ -73,7 +73,7 @@ BufferVkImpl::BufferVkImpl(IReferenceCounters*        pRefCounters,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | // The buffer can be used as the source of a transfer command
         VK_BUFFER_USAGE_TRANSFER_DST_BIT;  // The buffer can be used as the destination of a transfer command
 
-    static_assert(BIND_FLAGS_LAST == 0x800, "Please update this function to handle the new bind flags");
+    static_assert(BIND_FLAG_LAST == 0x800, "Please update this function to handle the new bind flags");
 
     for (auto BindFlags = m_Desc.BindFlags; BindFlags != 0;)
     {

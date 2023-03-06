@@ -560,7 +560,8 @@ void PipelineResourceSignatureVkImpl::CopyStaticResources(ShaderResourceCacheVk&
         return;
 
     // SrcResourceCache contains only static resources.
-    // DstResourceCache contains static, mutable and dynamic resources.
+    // In case of SRB, DstResourceCache contains static, mutable and dynamic resources.
+    // In case of Signature, DstResourceCache contains only static resources.
     const auto& SrcResourceCache = *m_pStaticResCache;
     const auto  StaticSetIdx     = GetDescriptorSetIndex<DESCRIPTOR_SET_ID_STATIC_MUTABLE>();
     const auto& SrcDescrSet      = SrcResourceCache.GetDescriptorSet(StaticSetIdx);
@@ -583,8 +584,12 @@ void PipelineResourceSignatureVkImpl::CopyStaticResources(ShaderResourceCacheVk&
             const auto     SrcCacheOffset = Attr.CacheOffset(SrcCacheType) + ArrInd;
             const auto&    SrcCachedRes   = SrcDescrSet.GetResource(SrcCacheOffset);
             IDeviceObject* pObject        = SrcCachedRes.pObject.RawPtr<IDeviceObject>();
-            if (!pObject)
-                LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+            if (pObject == nullptr)
+            {
+                if (DstCacheType == ResourceCacheContentType::SRB)
+                    LOG_ERROR_MESSAGE("No resource is assigned to static shader variable '", GetShaderResourcePrintName(ResDesc, ArrInd), "' in pipeline resource signature '", m_Desc.Name, "'.");
+                continue;
+            }
 
             const auto  DstCacheOffset = Attr.CacheOffset(DstCacheType) + ArrInd;
             const auto& DstCachedRes   = DstDescrSet.GetResource(DstCacheOffset);
@@ -593,7 +598,7 @@ void PipelineResourceSignatureVkImpl::CopyStaticResources(ShaderResourceCacheVk&
             const IDeviceObject* pCachedResource = DstCachedRes.pObject;
             if (pCachedResource != pObject)
             {
-                VERIFY(pCachedResource == nullptr, "Static resource has already been initialized, and the new resource does not match previously assigned resource");
+                DEV_CHECK_ERR(pCachedResource == nullptr, "Static resource has already been initialized, and the new resource does not match previously assigned resource");
                 DstResourceCache.SetResource(&GetDevice()->GetLogicalDevice(),
                                              StaticSetIdx,
                                              DstCacheOffset,

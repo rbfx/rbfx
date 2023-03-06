@@ -47,6 +47,9 @@ class PipelineStateGLImpl final : public PipelineStateBase<EngineGLImplTraits>
 public:
     using TPipelineStateBase = PipelineStateBase<EngineGLImplTraits>;
 
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0xdbac0281, 0x36de, 0x4550, {0x80, 0x2d, 0xa3, 0x8c, 0x6e, 0xfb, 0x92, 0x57}};
+
     PipelineStateGLImpl(IReferenceCounters*                    pRefCounters,
                         RenderDeviceGLImpl*                    pDeviceGL,
                         const GraphicsPipelineStateCreateInfo& CreateInfo,

@@ -1089,6 +1089,27 @@ TEST(GraphicsAccessories_GraphicsAccessories, GetRenderDeviceTypeString)
     EXPECT_STREQ(GetRenderDeviceTypeString(RENDER_DEVICE_TYPE_METAL, true), "RENDER_DEVICE_TYPE_METAL");
 }
 
+TEST(GraphicsAccessories_GraphicsAccessories, GetRenderDeviceTypeShortString)
+{
+    static_assert(RENDER_DEVICE_TYPE_COUNT == 7, "Please add the new device type to the test");
+
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_UNDEFINED), "undefined");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_D3D11), "d3d11");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_D3D12), "d3d12");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_GL), "gl");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_GLES), "gles");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_VULKAN), "vk");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_METAL), "mtl");
+
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_UNDEFINED, true), "UNDEFINED");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_D3D11, true), "D3D11");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_D3D12, true), "D3D12");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_GL, true), "GL");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_GLES, true), "GLES");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_VULKAN, true), "VK");
+    EXPECT_STREQ(GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE_METAL, true), "MTL");
+}
+
 TEST(GraphicsAccessories_GraphicsAccessories, GetAdapterTypeString)
 {
     static_assert(ADAPTER_TYPE_COUNT == 4, "Please add the new adapter type to the test");

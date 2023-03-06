@@ -589,7 +589,7 @@ private:
         Uint32 const         MipLevel;
         Uint32 const         ArraySlice;
 
-        bool operator==(const MappedTextureKey& rhs) const
+        constexpr bool operator==(const MappedTextureKey& rhs) const
         {
             return Texture == rhs.Texture &&
                 MipLevel == rhs.MipLevel &&
@@ -597,7 +597,7 @@ private:
         }
         struct Hasher
         {
-            size_t operator()(const MappedTextureKey& Key) const
+            size_t operator()(const MappedTextureKey& Key) const noexcept
             {
                 return ComputeHash(Key.Texture, Key.MipLevel, Key.ArraySlice);
             }

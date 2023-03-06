@@ -33,6 +33,7 @@
 #include "GraphicsAccessories.hpp"
 #include "StringTools.hpp"
 #include "Align.hpp"
+#include "ShaderToolsCommon.hpp"
 
 namespace Diligent
 {
@@ -260,20 +261,120 @@ const std::string& GetUBName(diligent_spirv_cross::Compiler&               Compi
     return (IRSource.hlsl && !instance_name.empty()) ? instance_name : UB.name;
 }
 
+static SHADER_CODE_BASIC_TYPE SpirvBaseTypeToShaderCodeBasicType(diligent_spirv_cross::SPIRType::BaseType SpvBaseType)
+{
+    switch (SpvBaseType)
+    {
+        // clang-format off
+        case diligent_spirv_cross::SPIRType::Unknown:               return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+        case diligent_spirv_cross::SPIRType::Void:                  return SHADER_CODE_BASIC_TYPE_VOID;
+        case diligent_spirv_cross::SPIRType::Boolean:               return SHADER_CODE_BASIC_TYPE_BOOL;
+        case diligent_spirv_cross::SPIRType::SByte:                 return SHADER_CODE_BASIC_TYPE_INT8;
+        case diligent_spirv_cross::SPIRType::UByte:                 return SHADER_CODE_BASIC_TYPE_UINT8;
+        case diligent_spirv_cross::SPIRType::Short:                 return SHADER_CODE_BASIC_TYPE_INT16;
+        case diligent_spirv_cross::SPIRType::UShort:                return SHADER_CODE_BASIC_TYPE_UINT16;
+        case diligent_spirv_cross::SPIRType::Int:                   return SHADER_CODE_BASIC_TYPE_INT;
+        case diligent_spirv_cross::SPIRType::UInt:                  return SHADER_CODE_BASIC_TYPE_UINT;
+        case diligent_spirv_cross::SPIRType::Int64:                 return SHADER_CODE_BASIC_TYPE_INT64;
+        case diligent_spirv_cross::SPIRType::UInt64:                return SHADER_CODE_BASIC_TYPE_UINT64;
+        case diligent_spirv_cross::SPIRType::AtomicCounter:         return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+        case diligent_spirv_cross::SPIRType::Half:                  return SHADER_CODE_BASIC_TYPE_FLOAT16;
+        case diligent_spirv_cross::SPIRType::Float:                 return SHADER_CODE_BASIC_TYPE_FLOAT;
+        case diligent_spirv_cross::SPIRType::Double:                return SHADER_CODE_BASIC_TYPE_DOUBLE;
+        case diligent_spirv_cross::SPIRType::Struct:                return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+        case diligent_spirv_cross::SPIRType::Image:                 return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+        case diligent_spirv_cross::SPIRType::SampledImage:          return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+        case diligent_spirv_cross::SPIRType::Sampler:               return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+        case diligent_spirv_cross::SPIRType::AccelerationStructure: return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+        case diligent_spirv_cross::SPIRType::RayQuery:              return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+        // clang-format on
+        default:
+            UNEXPECTED("Unknown SPIRV base type");
+            return SHADER_CODE_BASIC_TYPE_UNKNOWN;
+    }
+}
+
+void LoadShaderCodeVariableDesc(const diligent_spirv_cross::Compiler& Compiler, const diligent_spirv_cross::TypeID& TypeID, bool IsHLSLSource, ShaderCodeVariableDescX& TypeDesc)
+{
+    const auto& SpvType = Compiler.get_type(TypeID);
+    if (SpvType.basetype == diligent_spirv_cross::SPIRType::Struct)
+        TypeDesc.Class = SHADER_CODE_VARIABLE_CLASS_STRUCT;
+    else if (SpvType.vecsize > 1 && SpvType.columns > 1)
+        TypeDesc.Class = SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS;
+    else if (SpvType.vecsize > 1)
+        TypeDesc.Class = SHADER_CODE_VARIABLE_CLASS_VECTOR;
+    else
+        TypeDesc.Class = SHADER_CODE_VARIABLE_CLASS_SCALAR;
+
+    if (TypeDesc.Class != SHADER_CODE_VARIABLE_CLASS_STRUCT)
+    {
+        TypeDesc.BasicType  = SpirvBaseTypeToShaderCodeBasicType(SpvType.basetype);
+        TypeDesc.NumRows    = StaticCast<decltype(TypeDesc.NumRows)>(SpvType.vecsize);
+        TypeDesc.NumColumns = StaticCast<decltype(TypeDesc.NumColumns)>(SpvType.columns);
+        if (IsHLSLSource)
+            std::swap(TypeDesc.NumRows, TypeDesc.NumColumns);
+    }
+
+    TypeDesc.SetTypeName(Compiler.get_name(TypeID));
+    if (TypeDesc.TypeName == nullptr || TypeDesc.TypeName[0] == '\0')
+        TypeDesc.SetTypeName(Compiler.get_name(SpvType.parent_type));
+    if (TypeDesc.TypeName == nullptr || TypeDesc.TypeName[0] == '\0')
+        TypeDesc.SetDefaultTypeName(IsHLSLSource ? SHADER_SOURCE_LANGUAGE_HLSL : SHADER_SOURCE_LANGUAGE_GLSL);
+
+    TypeDesc.ArraySize = SpvType.array[0];
+
+    for (uint32_t i = 0; i < SpvType.member_types.size(); ++i)
+    {
+        ShaderCodeVariableDesc VarDesc;
+        VarDesc.Name = Compiler.get_member_name(TypeID, i).c_str();
+        if (VarDesc.Name[0] == '\0')
+            VarDesc.Name = Compiler.get_member_name(SpvType.parent_type, i).c_str();
+
+        VarDesc.Offset = Compiler.type_struct_member_offset(SpvType, i);
+
+        auto idx = TypeDesc.AddMember(VarDesc);
+        VERIFY_EXPR(idx == i);
+        LoadShaderCodeVariableDesc(Compiler, SpvType.member_types[i], IsHLSLSource, TypeDesc.GetMember(i));
+    }
+}
+
+ShaderCodeBufferDescX LoadUBReflection(const diligent_spirv_cross::Compiler& Compiler, const diligent_spirv_cross::Resource& UB, bool IsHLSLSource)
+{
+    const auto& SpvType = Compiler.get_type(UB.type_id);
+    const auto  Size    = Compiler.get_declared_struct_size(SpvType);
+
+    ShaderCodeBufferDescX UBDesc;
+    UBDesc.Size = StaticCast<decltype(UBDesc.Size)>(Size);
+    for (uint32_t i = 0; i < SpvType.member_types.size(); ++i)
+    {
+        ShaderCodeVariableDesc VarDesc;
+        VarDesc.Name   = Compiler.get_member_name(UB.base_type_id, i).c_str();
+        VarDesc.Offset = Compiler.type_struct_member_offset(SpvType, i);
+
+        auto idx = UBDesc.AddVariable(VarDesc);
+        VERIFY_EXPR(idx == i);
+        LoadShaderCodeVariableDesc(Compiler, SpvType.member_types[i], IsHLSLSource, UBDesc.GetVariable(idx));
+    }
+
+    return UBDesc;
+}
+
+
 SPIRVShaderResources::SPIRVShaderResources(IMemoryAllocator&     Allocator,
                                            std::vector<uint32_t> spirv_binary,
                                            const ShaderDesc&     shaderDesc,
                                            const char*           CombinedSamplerSuffix,
                                            bool                  LoadShaderStageInputs,
+                                           bool                  LoadUniformBufferReflection,
                                            std::string&          EntryPoint) :
     m_ShaderType{shaderDesc.ShaderType}
 {
     // https://github.com/KhronosGroup/SPIRV-Cross/wiki/Reflection-API-user-guide
-    diligent_spirv_cross::Parser parser(move(spirv_binary));
+    diligent_spirv_cross::Parser parser{std::move(spirv_binary)};
     parser.parse();
     const auto ParsedIRSource = parser.get_parsed_ir().source;
     m_IsHLSLSource            = ParsedIRSource.hlsl;
-    diligent_spirv_cross::Compiler Compiler(std::move(parser.get_parsed_ir()));
+    diligent_spirv_cross::Compiler Compiler{std::move(parser.get_parsed_ir())};
 
     spv::ExecutionModel ExecutionModel = ShaderTypeToSpvExecutionModel(shaderDesc.ShaderType);
     auto                EntryPoints    = Compiler.get_entry_points_and_stages();
@@ -389,6 +490,9 @@ SPIRVShaderResources::SPIRVShaderResources(IMemoryAllocator&     Allocator,
     StringPool ResourceNamesPool;
     Initialize(Allocator, ResCounters, NumShaderStageInputs, ResourceNamesPoolSize, ResourceNamesPool);
 
+    // Uniform buffer reflections
+    std::vector<ShaderCodeBufferDescX> UBReflections;
+
     {
         Uint32 CurrUB = 0;
         for (const auto& UB : resources.uniform_buffers)
@@ -404,6 +508,11 @@ SPIRVShaderResources::SPIRVShaderResources(IMemoryAllocator&     Allocator,
                     SPIRVShaderResourceAttribs::ResourceType::UniformBuffer,
                     static_cast<Uint32>(Size) //
                 };
+
+            if (LoadUniformBufferReflection)
+            {
+                UBReflections.emplace_back(LoadUBReflection(Compiler, UB, m_IsHLSLSource));
+            }
         }
         VERIFY_EXPR(CurrUB == GetNumUBs());
     }
@@ -586,6 +695,12 @@ SPIRVShaderResources::SPIRVShaderResources(IMemoryAllocator&     Allocator,
             m_ComputeGroupSize[i] = Compiler.get_execution_mode_argument(spv::ExecutionModeLocalSize, i);
     }
 
+    if (!UBReflections.empty())
+    {
+        VERIFY_EXPR(LoadUniformBufferReflection);
+        VERIFY_EXPR(UBReflections.size() == GetNumUBs());
+        m_UBReflectionBuffer = ShaderCodeBufferDescX::PackArray(UBReflections.cbegin(), UBReflections.cend(), GetRawAllocator());
+    }
     //LOG_INFO_MESSAGE(DumpResources());
 }
 

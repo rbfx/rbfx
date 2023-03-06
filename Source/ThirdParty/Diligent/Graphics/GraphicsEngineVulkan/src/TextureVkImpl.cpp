@@ -646,21 +646,26 @@ VulkanUtilities::ImageViewWrapper TextureVkImpl::CreateImageView(TextureViewDesc
     ImageViewCI.format = TexFormatToVkFormat(CorrectedViewFormat);
     if (ViewDesc.Format == TEX_FORMAT_A8_UNORM)
     {
+        auto GetA8Swizzle = [](TEXTURE_COMPONENT_SWIZZLE Component, TEXTURE_COMPONENT_SWIZZLE Swizzle) {
+            if (Swizzle == TEXTURE_COMPONENT_SWIZZLE_ZERO || Swizzle == TEXTURE_COMPONENT_SWIZZLE_ONE)
+                return TextureComponentSwizzleToVkComponentSwizzle(Swizzle);
+
+            if (Swizzle == TEXTURE_COMPONENT_SWIZZLE_A || (Component == TEXTURE_COMPONENT_SWIZZLE_A && Swizzle == TEXTURE_COMPONENT_SWIZZLE_IDENTITY))
+                return VK_COMPONENT_SWIZZLE_R;
+
+            return VK_COMPONENT_SWIZZLE_ZERO;
+        };
+
         ImageViewCI.components = {
-            VK_COMPONENT_SWIZZLE_ZERO,
-            VK_COMPONENT_SWIZZLE_ZERO,
-            VK_COMPONENT_SWIZZLE_ZERO,
-            VK_COMPONENT_SWIZZLE_R //
+            GetA8Swizzle(TEXTURE_COMPONENT_SWIZZLE_R, ViewDesc.Swizzle.R),
+            GetA8Swizzle(TEXTURE_COMPONENT_SWIZZLE_G, ViewDesc.Swizzle.G),
+            GetA8Swizzle(TEXTURE_COMPONENT_SWIZZLE_B, ViewDesc.Swizzle.B),
+            GetA8Swizzle(TEXTURE_COMPONENT_SWIZZLE_A, ViewDesc.Swizzle.A) //
         };
     }
     else
     {
-        ImageViewCI.components = {
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY //
-        };
+        ImageViewCI.components = TextureComponentMappingToVkComponentMapping(ViewDesc.Swizzle);
     }
 
     ImageViewCI.subresourceRange.baseMipLevel = ViewDesc.MostDetailedMip;

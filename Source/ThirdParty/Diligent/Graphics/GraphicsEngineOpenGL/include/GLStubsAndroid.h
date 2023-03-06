@@ -1076,6 +1076,61 @@
 #endif
 
 
+/* ------------------------------ GL_ARB_gpu_shader_fp64 ----------------------------- */
+
+#ifndef GL_DOUBLE
+#    define GL_DOUBLE 0x140A
+#endif
+
+#ifndef GL_DOUBLE_MAT2
+#    define GL_DOUBLE_MAT2 0x8F46
+#endif
+
+#ifndef GL_DOUBLE_MAT3
+#    define GL_DOUBLE_MAT3 0x8F47
+#endif
+
+#ifndef GL_DOUBLE_MAT4
+#    define GL_DOUBLE_MAT4 0x8F48
+#endif
+
+#ifndef GL_DOUBLE_MAT2x3
+#    define GL_DOUBLE_MAT2x3 0x8F49
+#endif
+
+#ifndef GL_DOUBLE_MAT2x4
+#    define GL_DOUBLE_MAT2x4 0x8F4A
+#endif
+
+#ifndef GL_DOUBLE_MAT3x2
+#    define GL_DOUBLE_MAT3x2 0x8F4B
+#endif
+
+#ifndef GL_DOUBLE_MAT3x4
+#    define GL_DOUBLE_MAT3x4 0x8F4C
+#endif
+
+#ifndef GL_DOUBLE_MAT4x2
+#    define GL_DOUBLE_MAT4x2 0x8F4D
+#endif
+
+#ifndef GL_DOUBLE_MAT4x3
+#    define GL_DOUBLE_MAT4x3 0x8F4E
+#endif
+
+#ifndef GL_DOUBLE_VEC2
+#    define GL_DOUBLE_VEC2 0x8FFC
+#endif
+
+#ifndef GL_DOUBLE_VEC3
+#    define GL_DOUBLE_VEC3 0x8FFD
+#endif
+
+#ifndef GL_DOUBLE_VEC4
+#    define GL_DOUBLE_VEC4 0x8FFE
+#endif
+
+
 // Define unsupported GL function stubs
 template<typename T>
 void UnsupportedGLFunctionStub( const T &Name )

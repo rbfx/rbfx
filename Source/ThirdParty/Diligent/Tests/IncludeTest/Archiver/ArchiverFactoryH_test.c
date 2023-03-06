@@ -33,6 +33,7 @@ void TestArchiverFactory_CInterface(IArchiverFactory* pArchiverFactory)
     IArchiverFactory_CreateDefaultShaderSourceStreamFactory(pArchiverFactory, (const Char*)NULL, (IShaderSourceInputStreamFactory**)NULL);
     IArchiverFactory_RemoveDeviceData(pArchiverFactory, (IDataBlob*)NULL, ARCHIVE_DEVICE_DATA_FLAG_NONE, (IDataBlob**)NULL);
     IArchiverFactory_AppendDeviceData(pArchiverFactory, (IDataBlob*)NULL, ARCHIVE_DEVICE_DATA_FLAG_NONE, (IDataBlob*)NULL, (IDataBlob**)NULL);
+    IArchiverFactory_MergeArchives(pArchiverFactory, (const IDataBlob**)NULL, 0, (IDataBlob**)NULL);
     IArchiverFactory_PrintArchiveContent(pArchiverFactory, (IDataBlob*)NULL);
     IArchiverFactory_SetMessageCallback(pArchiverFactory, (DebugMessageCallbackType)NULL);
 }

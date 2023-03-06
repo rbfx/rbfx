@@ -56,35 +56,40 @@ public:
 
     virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override;
 
+    void CreateBuffer(const BufferDesc& BuffDesc,
+                      const BufferData* pBuffData,
+                      IBuffer**         ppBuffer,
+                      bool              bIsDeviceInternal);
+
     /// Implementation of IRenderDevice::CreateBuffer() in OpenGL backend.
-    void                            CreateBuffer(const BufferDesc& BuffDesc,
-                                                 const BufferData* pBuffData,
-                                                 IBuffer**         ppBuffer,
-                                                 bool              bIsDeviceInternal);
     virtual void DILIGENT_CALL_TYPE CreateBuffer(const BufferDesc& BuffDesc,
                                                  const BufferData* BuffData,
                                                  IBuffer**         ppBuffer) override final;
 
+    // Special version used to create internal shaders (e.g. used by TexRegionRender)
+    void CreateShader(const ShaderCreateInfo& ShaderCreateInfo,
+                      IShader**               ppShader,
+                      bool                    bIsDeviceInternal);
+
     /// Implementation of IRenderDevice::CreateShader() in OpenGL backend.
-    void                            CreateShader(const ShaderCreateInfo& ShaderCreateInfo,
-                                                 IShader**               ppShader,
-                                                 bool                    bIsDeviceInternal);
     virtual void DILIGENT_CALL_TYPE CreateShader(const ShaderCreateInfo& ShaderCreateInfo,
                                                  IShader**               ppShader) override final;
 
+    void CreateTexture(const TextureDesc& TexDesc,
+                       const TextureData* pData,
+                       ITexture**         ppTexture,
+                       bool               bIsDeviceInternal);
+
     /// Implementation of IRenderDevice::CreateTexture() in OpenGL backend.
-    void                            CreateTexture(const TextureDesc& TexDesc,
-                                                  const TextureData* pData,
-                                                  ITexture**         ppTexture,
-                                                  bool               bIsDeviceInternal);
     virtual void DILIGENT_CALL_TYPE CreateTexture(const TextureDesc& TexDesc,
                                                   const TextureData* Data,
                                                   ITexture**         ppTexture) override final;
 
+    void CreateSampler(const SamplerDesc& SamplerDesc,
+                       ISampler**         ppSampler,
+                       bool               bIsDeviceInternal);
+
     /// Implementation of IRenderDevice::CreateSampler() in OpenGL backend.
-    void                            CreateSampler(const SamplerDesc& SamplerDesc,
-                                                  ISampler**         ppSampler,
-                                                  bool               bIsDeviceInternal);
     virtual void DILIGENT_CALL_TYPE CreateSampler(const SamplerDesc& SamplerDesc,
                                                   ISampler**         ppSampler) override final;
 

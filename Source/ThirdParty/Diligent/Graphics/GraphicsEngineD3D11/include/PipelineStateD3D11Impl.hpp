@@ -45,6 +45,9 @@ class PipelineStateD3D11Impl final : public PipelineStateBase<EngineD3D11ImplTra
 public:
     using TPipelineStateBase = PipelineStateBase<EngineD3D11ImplTraits>;
 
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0xe432f9ec, 0xe60e, 0x4e14, {0xbc, 0xe0, 0x18, 0x81, 0x2f, 0x52, 0x32, 0x43}};
+
     PipelineStateD3D11Impl(IReferenceCounters*                    pRefCounters,
                            class RenderDeviceD3D11Impl*           pDeviceD3D11,
                            const GraphicsPipelineStateCreateInfo& CreateInfo);

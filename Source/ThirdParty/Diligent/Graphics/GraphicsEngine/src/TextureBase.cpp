@@ -676,8 +676,11 @@ void ValidatedAndCorrectTextureViewDesc(const TextureDesc& TexDesc, TextureViewD
     if (ViewDesc.ViewType == TEXTURE_VIEW_SHADING_RATE)
     {
         if ((TexDesc.BindFlags & BIND_SHADING_RATE) == 0)
-            TEX_VIEW_VALIDATION_ERROR("To create TEXTURE_VIEW_SHADING_RATE, the texture must be created with BIND_SHADING_RATE flag");
+            TEX_VIEW_VALIDATION_ERROR("To create TEXTURE_VIEW_SHADING_RATE, the texture must be created with BIND_SHADING_RATE flag.");
     }
+
+    if (ViewDesc.ViewType != TEXTURE_VIEW_SHADER_RESOURCE && !IsIdentityComponentMapping(ViewDesc.Swizzle))
+        TEX_VIEW_VALIDATION_ERROR("Non-identity texture component swizzle is only supported for shader resource views.");
 
 #undef TEX_VIEW_VALIDATION_ERROR
 

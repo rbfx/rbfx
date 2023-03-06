@@ -123,9 +123,11 @@ void DefaultShaderSourceStreamFactory::CreateInputStream2(const Char*           
 void CreateDefaultShaderSourceStreamFactory(const Char*                       SearchDirectories,
                                             IShaderSourceInputStreamFactory** ppShaderSourceStreamFactory)
 {
+    DEV_CHECK_ERR(ppShaderSourceStreamFactory != nullptr, "ppShaderSourceStreamFactory must not be null.");
+    DEV_CHECK_ERR(*ppShaderSourceStreamFactory == nullptr, "*ppShaderSourceStreamFactory is not null. Make sure the pointer is null to avoid memory leaks.");
 
-    auto&                             Allocator = GetRawAllocator();
-    DefaultShaderSourceStreamFactory* pStreamFactory =
+    auto& Allocator = GetRawAllocator();
+    auto* pStreamFactory =
         NEW_RC_OBJ(Allocator, "DefaultShaderSourceStreamFactory instance", DefaultShaderSourceStreamFactory)(SearchDirectories);
     pStreamFactory->QueryInterface(IID_IShaderSourceInputStreamFactory, reinterpret_cast<IObject**>(ppShaderSourceStreamFactory));
 }

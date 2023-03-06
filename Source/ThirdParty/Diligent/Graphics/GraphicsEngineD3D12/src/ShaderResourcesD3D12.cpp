@@ -48,7 +48,8 @@ static Uint32 GetRegisterSpace(const D3D12_SHADER_INPUT_BIND_DESC& BindingDesc)
 ShaderResourcesD3D12::ShaderResourcesD3D12(ID3DBlob*         pShaderBytecode,
                                            const ShaderDesc& ShdrDesc,
                                            const char*       CombinedSamplerSuffix,
-                                           IDXCompiler*      pDXCompiler) :
+                                           IDXCompiler*      pDXCompiler,
+                                           bool              LoadConstantBufferReflection) :
     ShaderResources{ShdrDesc.ShaderType}
 {
     CComPtr<ID3D12ShaderReflection> pShaderReflection;
@@ -81,11 +82,20 @@ ShaderResourcesD3D12::ShaderResourcesD3D12(ID3DBlob*         pShaderBytecode,
         void OnNewAccelStruct(const D3DShaderResourceAttribs& ASAttribs)     {}
         // clang-format on
     };
-    Initialize<D3D12_SHADER_DESC, D3D12_SHADER_INPUT_BIND_DESC, ID3D12ShaderReflection>(
+    struct D3D12ReflectionTraits
+    {
+        using D3D_SHADER_DESC            = D3D12_SHADER_DESC;
+        using D3D_SHADER_INPUT_BIND_DESC = D3D12_SHADER_INPUT_BIND_DESC;
+        using D3D_SHADER_BUFFER_DESC     = D3D12_SHADER_BUFFER_DESC;
+        using D3D_SHADER_VARIABLE_DESC   = D3D12_SHADER_VARIABLE_DESC;
+        using D3D_SHADER_TYPE_DESC       = D3D12_SHADER_TYPE_DESC;
+    };
+    Initialize<D3D12ReflectionTraits, ID3D12ShaderReflection>(
         pShaderReflection,
         NewResourceHandler{},
         ShdrDesc.Name,
-        CombinedSamplerSuffix);
+        CombinedSamplerSuffix,
+        LoadConstantBufferReflection);
 }
 
 } // namespace Diligent

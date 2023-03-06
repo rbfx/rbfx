@@ -1,5 +1,5 @@
-# Copyright (C) 2018-2019 The ANGLE Project Authors.
-# Copyright (C) 2019 LunarG, Inc.
+# Copyright (C) 2018-2023 The ANGLE Project Authors.
+# Copyright (C) 2019-2023 LunarG, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,12 +51,17 @@ source_set("vulkan_headers") {
     "include/vulkan/vk_icd.h",
     "include/vulkan/vk_layer.h",
     "include/vulkan/vk_platform.h",
-    "include/vulkan/vk_sdk_platform.h",
     "include/vulkan/vulkan.h",
     "include/vulkan/vulkan.hpp",
     "include/vulkan/vulkan_core.h",
     "include/vulkan/vulkan_screen.h",
+    "include/vk_video/vulkan_video_codec_h264std_decode.h",
+    "include/vk_video/vulkan_video_codec_h264std_encode.h",
+    "include/vk_video/vulkan_video_codec_h264std.h",
+    "include/vk_video/vulkan_video_codec_h265std_decode.h",
+    "include/vk_video/vulkan_video_codec_h265std_encode.h",
+    "include/vk_video/vulkan_video_codec_h265std.h",
+    "include/vk_video/vulkan_video_codecs_common.h",
   ]
   public_configs = [ ":vulkan_headers_config" ]
 }
-

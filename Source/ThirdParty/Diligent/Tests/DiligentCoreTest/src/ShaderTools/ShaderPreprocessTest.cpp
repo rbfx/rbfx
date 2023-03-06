@@ -141,7 +141,7 @@ TEST(ShaderPreprocessTest, InvalidInclude)
     CreateDefaultShaderSourceStreamFactory("shaders/ShaderPreprocessor", &pShaderSourceFactory);
     ASSERT_NE(pShaderSourceFactory, nullptr);
 
-    constexpr size_t TestCount = 8;
+    constexpr size_t TestCount = 12;
     for (size_t TestId = 0; TestId < TestCount; ++TestId)
     {
         String FilePath = "IncludeInvalidCase" + std::to_string(TestId) + ".hlsl";
@@ -175,6 +175,7 @@ TEST(ShaderPreprocessTest, UnrollIncludes)
             "// Start InlineIncludeShaderCommon1.hlsl\n"
             "// #include \"InlineIncludeShaderCommon0.hlsl\"\n"
             "\n"
+            "#define MACRO\n"
             "// End InlineIncludeShaderCommon1.hlsl\n"
             "\n"
             "// Start InlineIncludeShaderCommon2.hlsl\n"
@@ -190,6 +191,50 @@ TEST(ShaderPreprocessTest, UnrollIncludes)
 
         auto UnrolledStr = UnrollShaderIncludes(ShaderCI);
         ASSERT_EQ(RefString, UnrolledStr);
+    }
+}
+
+TEST(ShaderPreprocessTest, ShaderSourceLanguageDefiniton)
+{
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition(""), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("abc"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("**/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("abc*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("*abc*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*abc*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/**/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/****/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANG*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANG=1*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE   */"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGEx*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE   x*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE=*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE=   */"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE   =*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE=X*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE = X*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE  =   2*/"), SHADER_SOURCE_LANGUAGE_GLSL);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*  $SHADER_SOURCE_LANGUAGE  =   2  */"), SHADER_SOURCE_LANGUAGE_GLSL);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/**$SHADER_SOURCE_LANGUAGE  =   3**/"), SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/***$SHADER_SOURCE_LANGUAGE  =   3***/"), SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE=9*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+    EXPECT_EQ(ParseShaderSourceLanguageDefinition("/*$SHADER_SOURCE_LANGUAGE=11*/"), SHADER_SOURCE_LANGUAGE_DEFAULT);
+
+    for (Uint32 lang = SHADER_SOURCE_LANGUAGE_DEFAULT; lang < SHADER_SOURCE_LANGUAGE_COUNT; ++lang)
+    {
+        const auto Lang = static_cast<SHADER_SOURCE_LANGUAGE>(lang);
+        {
+            std::string Source;
+            AppendShaderSourceLanguageDefinition(Source, Lang);
+            EXPECT_EQ(ParseShaderSourceLanguageDefinition(Source), Lang);
+        }
     }
 }
 

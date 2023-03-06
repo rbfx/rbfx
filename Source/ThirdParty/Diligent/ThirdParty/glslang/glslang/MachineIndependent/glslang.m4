@@ -211,6 +211,7 @@ GLSLANG_WEB_EXCLUDE_ON
 %token <lex> ACCSTRUCTEXT
 %token <lex> RAYQUERYEXT
 %token <lex> FCOOPMATNV ICOOPMATNV UCOOPMATNV
+%token <lex> HITOBJECTNV HITOBJECTATTRNV
 
 // combined image/sampler
 %token <lex> SAMPLERCUBEARRAY SAMPLERCUBEARRAYSHADOW
@@ -310,12 +311,12 @@ GLSLANG_WEB_EXCLUDE_ON
 %token <lex> DOUBLECONSTANT INT16CONSTANT UINT16CONSTANT FLOAT16CONSTANT INT32CONSTANT UINT32CONSTANT
 %token <lex> INT64CONSTANT UINT64CONSTANT
 %token <lex> SUBROUTINE DEMOTE
-%token <lex> PAYLOADNV PAYLOADINNV HITATTRNV CALLDATANV CALLDATAINNV
+%token <lex> PAYLOADNV PAYLOADINNV HITATTRNV CALLDATANV CALLDATAINNV 
 %token <lex> PAYLOADEXT PAYLOADINEXT HITATTREXT CALLDATAEXT CALLDATAINEXT
 %token <lex> PATCH SAMPLE NONUNIFORM
 %token <lex> COHERENT VOLATILE RESTRICT READONLY WRITEONLY DEVICECOHERENT QUEUEFAMILYCOHERENT WORKGROUPCOHERENT
 %token <lex> SUBGROUPCOHERENT NONPRIVATE SHADERCALLCOHERENT
-%token <lex> NOPERSPECTIVE EXPLICITINTERPAMD PERVERTEXEXT PERVERTEXNV PERPRIMITIVENV PERVIEWNV PERTASKNV
+%token <lex> NOPERSPECTIVE EXPLICITINTERPAMD PERVERTEXEXT PERVERTEXNV PERPRIMITIVENV PERVIEWNV PERTASKNV PERPRIMITIVEEXT TASKPAYLOADWORKGROUPEXT
 %token <lex> PRECISE
 GLSLANG_WEB_EXCLUDE_OFF
 
@@ -1218,7 +1219,7 @@ fully_specified_type
         parseContext.precisionQualifierCheck($$.loc, $$.basicType, $$.qualifier);
     }
     | type_qualifier type_specifier  {
-        parseContext.globalQualifierFixCheck($1.loc, $1.qualifier);
+        parseContext.globalQualifierFixCheck($1.loc, $1.qualifier, false, &$2);
         parseContext.globalQualifierTypeCheck($1.loc, $1.qualifier, $2);
 
         if ($2.arraySizes) {
@@ -1301,24 +1302,34 @@ GLSLANG_WEB_EXCLUDE_ON
     | PERPRIMITIVENV {
         // No need for profile version or extension check. Shader stage already checks both.
         parseContext.globalCheck($1.loc, "perprimitiveNV");
-        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangFragmentMask | EShLangMeshNVMask), "perprimitiveNV");
+        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangFragmentMask | EShLangMeshMask), "perprimitiveNV");
         // Fragment shader stage doesn't check for extension. So we explicitly add below extension check.
         if (parseContext.language == EShLangFragment)
             parseContext.requireExtensions($1.loc, 1, &E_GL_NV_mesh_shader, "perprimitiveNV");
         $$.init($1.loc);
         $$.qualifier.perPrimitiveNV = true;
     }
+    | PERPRIMITIVEEXT {
+        // No need for profile version or extension check. Shader stage already checks both.
+        parseContext.globalCheck($1.loc, "perprimitiveEXT");
+        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangFragmentMask | EShLangMeshMask), "perprimitiveEXT");
+        // Fragment shader stage doesn't check for extension. So we explicitly add below extension check.
+        if (parseContext.language == EShLangFragment)
+            parseContext.requireExtensions($1.loc, 1, &E_GL_EXT_mesh_shader, "perprimitiveEXT");
+        $$.init($1.loc);
+        $$.qualifier.perPrimitiveNV = true;
+    }
     | PERVIEWNV {
         // No need for profile version or extension check. Shader stage already checks both.
         parseContext.globalCheck($1.loc, "perviewNV");
-        parseContext.requireStage($1.loc, EShLangMeshNV, "perviewNV");
+        parseContext.requireStage($1.loc, EShLangMesh, "perviewNV");
         $$.init($1.loc);
         $$.qualifier.perViewNV = true;
     }
     | PERTASKNV {
         // No need for profile version or extension check. Shader stage already checks both.
         parseContext.globalCheck($1.loc, "taskNV");
-        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangTaskNVMask | EShLangMeshNVMask), "taskNV");
+        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangTaskMask | EShLangMeshMask), "taskNV");
         $$.init($1.loc);
         $$.qualifier.perTaskNV = true;
     }
@@ -1469,7 +1480,7 @@ storage_qualifier
         parseContext.globalCheck($1.loc, "shared");
         parseContext.profileRequires($1.loc, ECoreProfile | ECompatibilityProfile, 430, E_GL_ARB_compute_shader, "shared");
         parseContext.profileRequires($1.loc, EEsProfile, 310, 0, "shared");
-        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangComputeMask | EShLangMeshNVMask | EShLangTaskNVMask), "shared");
+        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangComputeMask | EShLangMeshMask | EShLangTaskMask), "shared");
         $$.init($1.loc);
         $$.qualifier.storage = EvqShared;
     }
@@ -1524,6 +1535,14 @@ GLSLANG_WEB_EXCLUDE_ON
         $$.init($1.loc);
         $$.qualifier.storage = EvqHitAttr;
     }
+	| HITOBJECTATTRNV {
+        parseContext.globalCheck($1.loc, "hitAttributeNV");
+        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangRayGenMask | EShLangClosestHitMask
+            | EShLangMissMask), "hitObjectAttributeNV");
+        parseContext.profileRequires($1.loc, ECoreProfile, 460, E_GL_NV_shader_invocation_reorder, "hitObjectAttributeNV");
+        $$.init($1.loc);
+        $$.qualifier.storage = EvqHitObjectAttrNV;
+	}
     | HITATTREXT {
         parseContext.globalCheck($1.loc, "hitAttributeEXT");
         parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangIntersectMask | EShLangClosestHitMask
@@ -1655,6 +1674,13 @@ GLSLANG_WEB_EXCLUDE_ON
         parseContext.globalCheck($1.loc, "subroutine");
         parseContext.unimplemented($1.loc, "subroutine");
         $$.init($1.loc);
+    }
+    | TASKPAYLOADWORKGROUPEXT {
+        // No need for profile version or extension check. Shader stage already checks both.
+        parseContext.globalCheck($1.loc, "taskPayloadSharedEXT");
+        parseContext.requireStage($1.loc, (EShLanguageMask)(EShLangTaskMask | EShLangMeshMask), "taskPayloadSharedEXT  ");
+        $$.init($1.loc);
+        $$.qualifier.storage = EvqtaskPayloadSharedEXT;
     }
 GLSLANG_WEB_EXCLUDE_OFF
     ;
@@ -3492,6 +3518,10 @@ GLSLANG_WEB_EXCLUDE_ON
         parseContext.requireExtensions($1.loc, 1, &E_GL_EXT_spirv_intrinsics, "SPIR-V type specifier");
         $$ = $1;
     }
+	| HITOBJECTNV {
+       $$.init($1.loc, parseContext.symbolTable.atGlobalLevel());
+       $$.basicType = EbtHitObjectNV;
+	}
 GLSLANG_WEB_EXCLUDE_OFF
     | struct_specifier {
         $$ = $1;
@@ -3726,7 +3756,7 @@ compound_statement
     }
       RIGHT_BRACE {
         if ($3 && $3->getAsAggregate())
-            $3->getAsAggregate()->setOperator(EOpSequence);
+            $3->getAsAggregate()->setOperator(parseContext.intermediate.getDebugInfo() ? EOpScope : EOpSequence);
         $$ = $3;
     }
     ;

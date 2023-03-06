@@ -45,6 +45,8 @@ void TestPipelineState_CInterface(IPipelineState* pPSO)
 
     IPipelineState_CreateShaderResourceBinding(pPSO, (IShaderResourceBinding**)NULL, true);
 
+    IPipelineState_CopyStaticResources(pPSO, (IPipelineState*)NULL);
+
     bool Compatible = IPipelineState_IsCompatibleWith(pPSO, (IPipelineState*)NULL);
     (void)Compatible;
 

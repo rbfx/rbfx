@@ -144,7 +144,7 @@ bool PSOSerializer<Mode>::SerializeCreateInfo(
             return false;
     }
 
-    ASSERT_SIZEOF64(ShaderResourceVariableDesc, 24, "Did you add a new member to ShaderResourceVariableDesc? Please add serialization here.");
+    ASSERT_SIZEOF64(ShaderResourceVariableDesc, 16, "Did you add a new member to ShaderResourceVariableDesc? Please add serialization here.");
     ASSERT_SIZEOF64(PipelineStateCreateInfo, 96, "Did you add a new member to PipelineStateCreateInfo? Please add serialization here.");
 
     return true;
@@ -463,7 +463,7 @@ template <SerializerMode Mode>
 bool ShaderSerializer<Mode>::SerializeBytecodeOrSource(Serializer<Mode>&            Ser,
                                                        ConstQual<ShaderCreateInfo>& CI)
 {
-    VERIFY((CI.Source != nullptr) ^ (CI.ByteCode != nullptr), "Only one of Source or Bytecode must not be null");
+    VERIFY(CI.Source == nullptr || CI.ByteCode == nullptr, "Only one of Source or Bytecode can be non-null");
     const Uint8 UseBytecode = CI.ByteCode != nullptr ? 1 : 0;
 
     if (!Ser(UseBytecode))
@@ -502,11 +502,11 @@ bool ShaderSerializer<Mode>::SerializeCI(Serializer<Mode>&            Ser,
 {
     if (!Ser(CI.Desc.Name,
              CI.Desc.ShaderType,
+             CI.Desc.UseCombinedTextureSamplers,
+             CI.Desc.CombinedSamplerSuffix,
              CI.EntryPoint,
              CI.SourceLanguage,
-             CI.ShaderCompiler,
-             CI.UseCombinedTextureSamplers,
-             CI.CombinedSamplerSuffix))
+             CI.ShaderCompiler))
         return false;
 
     return SerializeBytecodeOrSource(Ser, CI);

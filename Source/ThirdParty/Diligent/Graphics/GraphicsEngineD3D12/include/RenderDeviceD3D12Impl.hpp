@@ -197,6 +197,12 @@ public:
                                                               RESOURCE_STATE        InitialState,
                                                               ITopLevelAS**         ppTLAS) override final;
 
+    /// Implementation of IRenderDeviceD3D12::GetMaxShaderVersion().
+    virtual const ShaderVersion& DILIGENT_CALL_TYPE GetMaxShaderVersion() const override final
+    {
+        return m_MaxShaderVersion;
+    }
+
     void CreateRootSignature(const RefCntAutoPtr<class PipelineResourceSignatureD3D12Impl>* ppSignatures, Uint32 SignatureCount, size_t Hash, RootSignatureD3D12** ppRootSig);
 
     RootSignatureCacheD3D12& GetRootSignatureCache() { return m_RootSignatureCache; }
@@ -261,11 +267,6 @@ public:
     GET_D3D12_DEVICE(4)
     GET_D3D12_DEVICE(5)
 #undef GET_D3D12_DEVICE
-
-    const ShaderVersion& GetMaxShaderVersion() const
-    {
-        return m_MaxShaderVersion;
-    }
 
     QueryManagerD3D12& GetQueryMgr(SoftwareQueueIndex CmdQueueInd)
     {

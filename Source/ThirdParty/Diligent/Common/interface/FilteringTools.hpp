@@ -77,12 +77,12 @@ struct LinearTexFilterSampleInfo
     {
     }
 
-    bool operator==(const LinearTexFilterSampleInfo& rhs) const
+    constexpr bool operator==(const LinearTexFilterSampleInfo& rhs) const
     {
         return i0 == rhs.i0 && i1 == rhs.i1 && w == rhs.w;
     }
 
-    bool operator!=(const LinearTexFilterSampleInfo& rhs) const
+    constexpr bool operator!=(const LinearTexFilterSampleInfo& rhs) const
     {
         return !(*this == rhs);
     }

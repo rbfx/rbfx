@@ -103,13 +103,13 @@ add_library(Diligent-ShaderTools STATIC ${SOURCE} ${INCLUDE} ${DXBC_CHECKSUM_SOU
 
 target_include_directories(Diligent-ShaderTools
 PUBLIC
-    include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 PRIVATE
     ../GraphicsEngine/include
 )
 
 if (DXC_SUPPORTED)
-    target_include_directories(Diligent-ShaderTools PUBLIC ../../ThirdParty/DirectXShaderCompiler)
+    target_include_directories(Diligent-ShaderTools PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../ThirdParty/DirectXShaderCompiler>)
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(Diligent-ShaderTools PRIVATE -fms-extensions)

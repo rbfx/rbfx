@@ -69,7 +69,7 @@ DILIGENT_BEGIN_INTERFACE(IEngineFactoryD3D12, IEngineFactory)
     ///          load the DLL if it has not be loaded already.
     ///
     ///          This method has no effect on UWP.
-    VIRTUAL bool METHOD(LoadD3D12)(THIS_
+    VIRTUAL Bool METHOD(LoadD3D12)(THIS_
                                    const char* DllName DEFAULT_VALUE("d3d12.dll")) PURE;
 
     /// Creates a render device and device contexts for Direct3D12-based engine implementation.

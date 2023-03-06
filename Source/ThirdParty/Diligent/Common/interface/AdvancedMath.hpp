@@ -203,22 +203,22 @@ struct BoundBox
 
         v0 = right * Min.x;
         v1 = right * Max.x;
-        NewBB.Min += std::min(v0, v1);
-        NewBB.Max += std::max(v0, v1);
+        NewBB.Min += (std::min)(v0, v1);
+        NewBB.Max += (std::max)(v0, v1);
 
         float3 up = float3::MakeVector(m[1]);
 
         v0 = up * Min.y;
         v1 = up * Max.y;
-        NewBB.Min += std::min(v0, v1);
-        NewBB.Max += std::max(v0, v1);
+        NewBB.Min += (std::min)(v0, v1);
+        NewBB.Max += (std::max)(v0, v1);
 
         float3 back = float3::MakeVector(m[2]);
 
         v0 = back * Min.z;
         v1 = back * Max.z;
-        NewBB.Min += std::min(v0, v1);
-        NewBB.Max += std::max(v0, v1);
+        NewBB.Min += (std::min)(v0, v1);
+        NewBB.Max += (std::max)(v0, v1);
 
         return NewBB;
     }
@@ -439,13 +439,13 @@ inline float GetPointToBoxDistance(const BoundBox& BndBox, const float3& Pos)
     return length(RangeVec);
 }
 
-inline bool operator==(const Plane3D& p1, const Plane3D& p2)
+inline bool operator==(const Plane3D& p1, const Plane3D& p2) noexcept
 {
     return p1.Normal == p2.Normal &&
         p1.Distance == p2.Distance;
 }
 
-inline bool operator==(const ViewFrustum& f1, const ViewFrustum& f2)
+inline bool operator==(const ViewFrustum& f1, const ViewFrustum& f2) noexcept
 {
     // clang-format off
     return f1.LeftPlane   == f2.LeftPlane   &&
@@ -457,7 +457,7 @@ inline bool operator==(const ViewFrustum& f1, const ViewFrustum& f2)
     // clang-format on
 }
 
-inline bool operator==(const ViewFrustumExt& f1, const ViewFrustumExt& f2)
+inline bool operator==(const ViewFrustumExt& f1, const ViewFrustumExt& f2) noexcept
 {
     if (!(static_cast<const ViewFrustum&>(f1) == static_cast<const ViewFrustum&>(f2)))
         return false;
@@ -535,8 +535,8 @@ inline bool IntersectRayBox3D(const float3& RayOrigin,
             AbsRayDir.z > Epsilon ? BoxMax.z / RayDirection.z : -FLT_MAX //
         };
 
-    EnterDist = max(std::min(t_min.x, t_max.x), std::min(t_min.y, t_max.y), std::min(t_min.z, t_max.z));
-    ExitDist  = min(std::max(t_min.x, t_max.x), std::max(t_min.y, t_max.y), std::max(t_min.z, t_max.z));
+    EnterDist = (max)((std::min)(t_min.x, t_max.x), (std::min)(t_min.y, t_max.y), (std::min)(t_min.z, t_max.z));
+    ExitDist  = (min)((std::max)(t_min.x, t_max.x), (std::max)(t_min.y, t_max.y), (std::max)(t_min.z, t_max.z));
 
     // if ExitDist < 0, the ray intersects AABB, but the whole AABB is behind it
     // if EnterDist > ExitDist, the ray doesn't intersect AABB
@@ -580,8 +580,8 @@ inline bool IntersectRayBox2D(const float2& RayOrigin,
             AbsRayDir.y > Epsilon ? BoxMax.y / RayDirection.y : -FLT_MAX //
         };
 
-    EnterDist = std::max(std::min(t_min.x, t_max.x), std::min(t_min.y, t_max.y));
-    ExitDist  = std::min(std::max(t_min.x, t_max.x), std::max(t_min.y, t_max.y));
+    EnterDist = (std::max)((std::min)(t_min.x, t_max.x), (std::min)(t_min.y, t_max.y));
+    ExitDist  = (std::min)((std::max)(t_min.x, t_max.x), (std::max)(t_min.y, t_max.y));
 
     // if ExitDist < 0, the ray intersects AABB, but the whole AABB is behind it
     // if EnterDist > ExitDist, the ray doesn't intersect AABB
@@ -689,8 +689,8 @@ void TraceLineThroughGrid(float2    f2Start,
     float EnterDist, ExitDist;
     if (IntersectRayBox2D(f2Start, f2Direction, float2{0, 0}, f2GridSize, EnterDist, ExitDist))
     {
-        f2End   = f2Start + f2Direction * std::min(ExitDist, 1.f);
-        f2Start = f2Start + f2Direction * std::max(EnterDist, 0.f);
+        f2End   = f2Start + f2Direction * (std::min)(ExitDist, 1.f);
+        f2Start = f2Start + f2Direction * (std::max)(EnterDist, 0.f);
         // Clamp start and end points to avoid FP precision issues
         f2Start = clamp(f2Start, float2{0, 0}, f2GridSize);
         f2End   = clamp(f2End, float2{0, 0}, f2GridSize);
@@ -874,8 +874,8 @@ void RasterizeTriangle(Vector2<T> V0,
 
     if (iStartRow == iEndRow)
     {
-        auto iStartCol = static_cast<int>(FastCeil(min(V0.x, V1.x, V2.x)));
-        auto iEndCol   = static_cast<int>(FastFloor(max(V0.x, V1.x, V2.x)));
+        auto iStartCol = static_cast<int>(FastCeil((min)(V0.x, V1.x, V2.x)));
+        auto iEndCol   = static_cast<int>(FastFloor((max)(V0.x, V1.x, V2.x)));
         for (int iCol = iStartCol; iCol <= iEndCol; ++iCol)
         {
             Callback(int2{iCol, iStartRow});

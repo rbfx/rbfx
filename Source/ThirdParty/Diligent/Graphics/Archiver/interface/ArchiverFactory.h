@@ -81,11 +81,11 @@ struct SerializationDeviceD3D12Info
 
 #if DILIGENT_CPP_INTERFACE
     /// Tests if two structures are equivalent
-    bool operator==(const SerializationDeviceD3D12Info& RHS) const
+    bool operator==(const SerializationDeviceD3D12Info& RHS) const noexcept
     {
         return ShaderVersion == RHS.ShaderVersion && SafeStrEqual(DxCompilerPath, RHS.DxCompilerPath);
     }
-    bool operator!=(const SerializationDeviceD3D12Info& RHS) const
+    bool operator!=(const SerializationDeviceD3D12Info& RHS) const noexcept
     {
         return !(*this == RHS);
     }
@@ -109,13 +109,13 @@ struct SerializationDeviceVkInfo
 
 #if DILIGENT_CPP_INTERFACE
     /// Tests if two structures are equivalent
-    bool operator==(const SerializationDeviceVkInfo& RHS) const 
+    bool operator==(const SerializationDeviceVkInfo& RHS) const noexcept
     {
         return ApiVersion      == RHS.ApiVersion &&
                SupportsSpirv14 == RHS.SupportsSpirv14 &&
                SafeStrEqual(DxCompilerPath, RHS.DxCompilerPath);
     }
-    bool operator!=(const SerializationDeviceVkInfo& RHS) const
+    bool operator!=(const SerializationDeviceVkInfo& RHS) const noexcept
     {
         return !(*this == RHS);
     }
@@ -142,13 +142,13 @@ struct SerializationDeviceMtlInfo
 
 #if DILIGENT_CPP_INTERFACE
     /// Tests if two structures are equivalent
-    bool operator==(const SerializationDeviceMtlInfo& RHS) const 
+    bool operator==(const SerializationDeviceMtlInfo& RHS) const noexcept
     {
         return SafeStrEqual(CompileOptionsMacOS, RHS.CompileOptionsMacOS) &&
                SafeStrEqual(CompileOptionsiOS,   RHS.CompileOptionsiOS)   &&
                SafeStrEqual(MslPreprocessorCmd,  RHS.MslPreprocessorCmd);
     }
-    bool operator!=(const SerializationDeviceMtlInfo& RHS) const
+    bool operator!=(const SerializationDeviceMtlInfo& RHS) const noexcept
     {
         return !(*this == RHS);
     }
@@ -232,6 +232,7 @@ DILIGENT_BEGIN_INTERFACE(IArchiverFactory, IObject)
     /// \param [in]  pSrcArchive  - Source archive from which device specific-data will be removed.
     /// \param [in]  DeviceFlags  - Combination of device types that will be removed.
     /// \param [out] ppDstArchive - Memory address where a pointer to the new archive will be written.
+    /// \return     true if the device-specific data was successfully removed, and false otherwise.
     VIRTUAL Bool METHOD(RemoveDeviceData)(THIS_
                                           const IDataBlob*          pSrcArchive,
                                           ARCHIVE_DEVICE_DATA_FLAGS DeviceFlags,
@@ -244,11 +245,25 @@ DILIGENT_BEGIN_INTERFACE(IArchiverFactory, IObject)
     /// \param [in]  DeviceFlags    - Combination of device types that will be copied.
     /// \param [in]  pDeviceArchive - Archive that contains the same common data and additional device-specific data.
     /// \param [out] ppDstArchive   - Memory address where a pointer to the new archive will be written.
+    /// \return     true if the device-specific data was successfully added, and false otherwise.
     VIRTUAL Bool METHOD(AppendDeviceData)(THIS_
                                           const IDataBlob*          pSrcArchive,
                                           ARCHIVE_DEVICE_DATA_FLAGS DeviceFlags,
                                           const IDataBlob*          pDeviceArchive,
                                           IDataBlob**               ppDstArchive) CONST PURE;
+
+
+    /// Merges multiple archives into one.
+
+    /// \param [in]  ppSrcArchives   - An array of pointers to the source archives.
+    /// \param [in]  NumSrcArchives  - The number of elements in ppArchives array.
+    /// \param [out] ppDstArchive    - Memory address where a pointer to the merged archive will be written.
+    /// \return     true if the archives were successfully merged, and false otherwise.
+    VIRTUAL Bool METHOD(MergeArchives)(THIS_
+                                       const IDataBlob* ppSrcArchives[],
+                                       Uint32           NumSrcArchives,
+                                       IDataBlob**      ppDstArchive) CONST PURE;
+
 
     /// Prints archive content for debugging and validation.
     VIRTUAL Bool METHOD(PrintArchiveContent)(THIS_
@@ -271,6 +286,7 @@ DILIGENT_END_INTERFACE
 #    define IArchiverFactory_CreateDefaultShaderSourceStreamFactory(This, ...)  CALL_IFACE_METHOD(ArchiverFactory, CreateDefaultShaderSourceStreamFactory, This, __VA_ARGS__)
 #    define IArchiverFactory_RemoveDeviceData(This, ...)                        CALL_IFACE_METHOD(ArchiverFactory, RemoveDeviceData,                       This, __VA_ARGS__)
 #    define IArchiverFactory_AppendDeviceData(This, ...)                        CALL_IFACE_METHOD(ArchiverFactory, AppendDeviceData,                       This, __VA_ARGS__)
+#    define IArchiverFactory_MergeArchives(This, ...)                           CALL_IFACE_METHOD(ArchiverFactory, MergeArchives,                          This, __VA_ARGS__)
 #    define IArchiverFactory_PrintArchiveContent(This, ...)                     CALL_IFACE_METHOD(ArchiverFactory, PrintArchiveContent,                    This, __VA_ARGS__)
 #    define IArchiverFactory_SetMessageCallback(This, ...)                      CALL_IFACE_METHOD(ArchiverFactory, SetMessageCallback,                     This, __VA_ARGS__)
 

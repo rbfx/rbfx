@@ -76,11 +76,14 @@ struct SampleDesc
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    bool operator==(const SampleDesc& RHS) const
+    constexpr bool operator==(const SampleDesc& RHS) const
     {
         return Count == RHS.Count && Quality == RHS.Quality;
     }
-
+    constexpr bool operator!=(const SampleDesc& RHS) const
+    {
+        return !(*this == RHS);
+    }
 #endif
 };
 typedef struct SampleDesc SampleDesc;
@@ -115,13 +118,13 @@ DEFINE_FLAG_ENUM_OPERATORS(SHADER_VARIABLE_FLAGS);
 /// Describes shader variable
 struct ShaderResourceVariableDesc
 {
+    /// Shader variable name
+    const Char*                   Name         DEFAULT_INITIALIZER(nullptr);
+
     /// Shader stages this resources variable applies to. If more than one shader stage is specified,
     /// the variable will be shared between these stages. Shader stages used by different variables
     /// with the same name must not overlap.
     SHADER_TYPE                   ShaderStages DEFAULT_INITIALIZER(SHADER_TYPE_UNKNOWN);
-
-    /// Shader variable name
-    const Char*                   Name         DEFAULT_INITIALIZER(nullptr);
 
     /// Shader variable type. See Diligent::SHADER_RESOURCE_VARIABLE_TYPE for a list of allowed types
     SHADER_RESOURCE_VARIABLE_TYPE Type         DEFAULT_INITIALIZER(SHADER_RESOURCE_VARIABLE_TYPE_STATIC);
@@ -135,8 +138,8 @@ struct ShaderResourceVariableDesc
                                          const Char*                   _Name,
                                          SHADER_RESOURCE_VARIABLE_TYPE _Type,
                                          SHADER_VARIABLE_FLAGS         _Flags = SHADER_VARIABLE_FLAG_NONE) noexcept :
-        ShaderStages{_ShaderStages},
         Name        {_Name        },
+        ShaderStages{_ShaderStages},
         Type        {_Type        },
         Flags       {_Flags       }
     {}
@@ -147,7 +150,7 @@ struct ShaderResourceVariableDesc
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    bool operator==(const ShaderResourceVariableDesc& RHS) const
+    bool operator==(const ShaderResourceVariableDesc& RHS) const noexcept
     {
         return ShaderStages == RHS.ShaderStages && 
                Type         == RHS.Type         &&
@@ -155,7 +158,7 @@ struct ShaderResourceVariableDesc
                SafeStrEqual(Name, RHS.Name);
     }
 
-    bool operator!=(const ShaderResourceVariableDesc& RHS) const
+    bool operator!=(const ShaderResourceVariableDesc& RHS) const noexcept
     {
         return !(*this == RHS);
     }
@@ -248,11 +251,11 @@ struct PipelineResourceLayoutDesc
     }
 
     /// Comparison operator tests if two structures are equivalent
-    bool operator==(const PipelineResourceLayoutDesc& RHS) const
+    bool operator==(const PipelineResourceLayoutDesc& RHS) const noexcept
     {
         return IsEqual(*this, RHS);
     }
-    bool operator!=(const PipelineResourceLayoutDesc& RHS) const
+    bool operator!=(const PipelineResourceLayoutDesc& RHS) const noexcept
     {
         return !(*this == RHS);
     }
@@ -324,7 +327,7 @@ struct GraphicsPipelineDesc
     Uint32 NodeMask DEFAULT_INITIALIZER(0);
 
 #if DILIGENT_CPP_INTERFACE
-    bool operator==(const GraphicsPipelineDesc& Rhs) const
+    bool operator==(const GraphicsPipelineDesc& Rhs) const noexcept
     {
         if (!(BlendDesc         == Rhs.BlendDesc         &&
               SampleMask        == Rhs.SampleMask        &&
@@ -337,8 +340,8 @@ struct GraphicsPipelineDesc
               SubpassIndex      == Rhs.SubpassIndex      &&
               ShadingRateFlags  == Rhs.ShadingRateFlags  &&
               DSVFormat         == Rhs.DSVFormat         &&
-              SmplDesc.Count    == Rhs.SmplDesc.Count    &&
-              SmplDesc.Quality  == Rhs.SmplDesc.Quality))
+              SmplDesc          == Rhs.SmplDesc          &&
+              NodeMask          == Rhs.NodeMask))
             return false;
 
         for (Uint32 i = 0; i < NumRenderTargets; ++i)
@@ -347,18 +350,17 @@ struct GraphicsPipelineDesc
                 return false;
         }
 
-        // AZ TODO: check render pass compatibility
         if ((pRenderPass != nullptr) != (Rhs.pRenderPass != nullptr))
             return false;
 
-        if (pRenderPass)
+        if (pRenderPass != nullptr)
         {
             if (!(pRenderPass->GetDesc() == Rhs.pRenderPass->GetDesc()))
                 return false;
         }
         return true;
     }
-    bool operator!=(const GraphicsPipelineDesc& Rhs) const
+    bool operator!=(const GraphicsPipelineDesc& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -371,7 +373,7 @@ typedef struct GraphicsPipelineDesc GraphicsPipelineDesc;
 struct RayTracingGeneralShaderGroup
 {
     /// Unique group name.
-    const char* Name    DEFAULT_INITIALIZER(nullptr);
+    const Char* Name    DEFAULT_INITIALIZER(nullptr);
 
     /// Shader type must be SHADER_TYPE_RAY_GEN, SHADER_TYPE_RAY_MISS or SHADER_TYPE_CALLABLE.
     IShader*    pShader DEFAULT_INITIALIZER(nullptr);
@@ -380,17 +382,17 @@ struct RayTracingGeneralShaderGroup
     constexpr RayTracingGeneralShaderGroup() noexcept
     {}
 
-    constexpr RayTracingGeneralShaderGroup(const char* _Name,
+    constexpr RayTracingGeneralShaderGroup(const Char* _Name,
                                            IShader*    _pShader) noexcept:
         Name   {_Name   },
         pShader{_pShader}
     {}
 
-    bool operator==(const RayTracingGeneralShaderGroup& Rhs) const
+    bool operator==(const RayTracingGeneralShaderGroup& Rhs) const noexcept
     {
         return SafeStrEqual(Name, Rhs.Name) && pShader == Rhs.pShader;
     }
-    bool operator!=(const RayTracingGeneralShaderGroup& Rhs) const
+    bool operator!=(const RayTracingGeneralShaderGroup& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -402,7 +404,7 @@ typedef struct RayTracingGeneralShaderGroup RayTracingGeneralShaderGroup;
 struct RayTracingTriangleHitShaderGroup
 {
     /// Unique group name.
-    const char* Name              DEFAULT_INITIALIZER(nullptr);
+    const Char* Name              DEFAULT_INITIALIZER(nullptr);
 
     /// Closest hit shader.
     /// The shader type must be SHADER_TYPE_RAY_CLOSEST_HIT.
@@ -416,7 +418,7 @@ struct RayTracingTriangleHitShaderGroup
     constexpr RayTracingTriangleHitShaderGroup() noexcept
     {}
 
-    constexpr RayTracingTriangleHitShaderGroup(const char* _Name,
+    constexpr RayTracingTriangleHitShaderGroup(const Char* _Name,
                                                IShader*    _pClosestHitShader,
                                                IShader*    _pAnyHitShader    = nullptr) noexcept:
         Name             {_Name             },
@@ -424,13 +426,13 @@ struct RayTracingTriangleHitShaderGroup
         pAnyHitShader    {_pAnyHitShader    }
     {}
 
-    bool operator==(const RayTracingTriangleHitShaderGroup& Rhs) const
+    bool operator==(const RayTracingTriangleHitShaderGroup& Rhs) const noexcept
     {
         return SafeStrEqual(Name, Rhs.Name) &&
             pClosestHitShader == Rhs.pClosestHitShader &&
             pAnyHitShader     == Rhs.pAnyHitShader;
     }
-    bool operator!=(const RayTracingTriangleHitShaderGroup& Rhs) const
+    bool operator!=(const RayTracingTriangleHitShaderGroup& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -442,7 +444,7 @@ typedef struct RayTracingTriangleHitShaderGroup RayTracingTriangleHitShaderGroup
 struct RayTracingProceduralHitShaderGroup
 {
     /// Unique group name.
-    const char* Name                DEFAULT_INITIALIZER(nullptr);
+    const Char* Name                DEFAULT_INITIALIZER(nullptr);
 
     /// Intersection shader.
     /// The shader type must be SHADER_TYPE_RAY_INTERSECTION.
@@ -460,7 +462,7 @@ struct RayTracingProceduralHitShaderGroup
     constexpr RayTracingProceduralHitShaderGroup() noexcept
     {}
 
-    constexpr RayTracingProceduralHitShaderGroup(const char* _Name,
+    constexpr RayTracingProceduralHitShaderGroup(const Char* _Name,
                                                  IShader*    _pIntersectionShader,
                                                  IShader*    _pClosestHitShader  = nullptr,
                                                  IShader*    _pAnyHitShader      = nullptr) noexcept:
@@ -470,14 +472,14 @@ struct RayTracingProceduralHitShaderGroup
         pAnyHitShader      {_pAnyHitShader      }
     {}
 
-    bool operator==(const RayTracingProceduralHitShaderGroup& Rhs) const
+    bool operator==(const RayTracingProceduralHitShaderGroup& Rhs) const noexcept
     {
         return SafeStrEqual(Name, Rhs.Name) &&
             pIntersectionShader == Rhs.pIntersectionShader &&
             pClosestHitShader   == Rhs.pClosestHitShader   &&
             pAnyHitShader       == Rhs.pAnyHitShader;
     }
-    bool operator!=(const RayTracingProceduralHitShaderGroup& Rhs) const
+    bool operator!=(const RayTracingProceduralHitShaderGroup& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -569,16 +571,24 @@ struct PipelineStateDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     PipelineResourceLayoutDesc ResourceLayout;
 
 #if DILIGENT_CPP_INTERFACE
-    /// Comparison operator tests if two structures are equivalent
-    bool operator==(const PipelineStateDesc& RHS) const
+    /// Tests if two pipeline state descriptions are equal.
+
+    /// \param [in] RHS - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the pipeline state properties.
+    bool operator==(const PipelineStateDesc& RHS) const noexcept
     {
+        // Ignore Name. This is consistent with the hasher (HashCombiner<HasherType, PipelineStateDesc>).
         return PipelineType             == RHS.PipelineType             &&
                SRBAllocationGranularity == RHS.SRBAllocationGranularity &&
                ImmediateContextMask     == RHS.ImmediateContextMask     &&
-               ResourceLayout           == RHS.ResourceLayout           &&
-               SafeStrEqual(Name, RHS.Name);
+               ResourceLayout           == RHS.ResourceLayout;
     }
-    bool operator!=(const PipelineStateDesc& RHS) const
+    bool operator!=(const PipelineStateDesc& RHS) const noexcept
     {
         return !(*this == RHS);
     }
@@ -662,7 +672,7 @@ struct PipelineStateCreateInfo
 #endif
 
 #if DILIGENT_CPP_INTERFACE
-    bool operator==(const PipelineStateCreateInfo& RHS) const
+    bool operator==(const PipelineStateCreateInfo& RHS) const noexcept
     {
         if (PSODesc                 != RHS.PSODesc ||
             Flags                   != RHS.Flags   ||
@@ -693,7 +703,7 @@ struct PipelineStateCreateInfo
 
         return true;
     }
-    bool operator!=(const PipelineStateCreateInfo& RHS) const
+    bool operator!=(const PipelineStateCreateInfo& RHS) const noexcept
     {
         return !(*this == RHS);
     }
@@ -730,7 +740,7 @@ struct GraphicsPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
     IShader* pMS DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
-    bool operator==(const GraphicsPipelineStateCreateInfo& Rhs) const
+    bool operator==(const GraphicsPipelineStateCreateInfo& Rhs) const noexcept
     {
         if (static_cast<const PipelineStateCreateInfo&>(*this) != static_cast<const PipelineStateCreateInfo&>(Rhs))
             return false;
@@ -746,7 +756,7 @@ struct GraphicsPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
                 pAS == Rhs.pAS &&
                 pMS == Rhs.pMS);
     }
-    bool operator!=(const GraphicsPipelineStateCreateInfo& Rhs) const
+    bool operator!=(const GraphicsPipelineStateCreateInfo& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -767,14 +777,14 @@ struct ComputePipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
         PSODesc.PipelineType = PIPELINE_TYPE_COMPUTE;
     }
 
-    bool operator==(const ComputePipelineStateCreateInfo& Rhs) const
+    bool operator==(const ComputePipelineStateCreateInfo& Rhs) const noexcept
     {
         if (static_cast<const PipelineStateCreateInfo&>(*this) != static_cast<const PipelineStateCreateInfo&>(Rhs))
             return false;
 
         return pCS == Rhs.pCS;
     }
-    bool operator!=(const ComputePipelineStateCreateInfo& Rhs) const
+    bool operator!=(const ComputePipelineStateCreateInfo& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -812,7 +822,7 @@ struct RayTracingPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo
     /// Direct3D12 only: the name of the constant buffer that will be used by the local root signature.
     /// Ignored if RayTracingPipelineDesc::ShaderRecordSize is zero.
     /// In Vulkan backend in HLSL add [[vk::shader_record_ext]] attribute to the constant buffer, in GLSL add shaderRecord layout to buffer.
-    const char*                               pShaderRecordName        DEFAULT_INITIALIZER(nullptr);
+    const Char*                               pShaderRecordName        DEFAULT_INITIALIZER(nullptr);
 
     /// Direct3D12 only: the maximum hit shader attribute size in bytes.
     /// If zero then maximum allowed size will be used.
@@ -828,7 +838,7 @@ struct RayTracingPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo
         PSODesc.PipelineType = PIPELINE_TYPE_RAY_TRACING;
     }
 
-    bool operator==(const RayTracingPipelineStateCreateInfo& RHS)const
+    bool operator==(const RayTracingPipelineStateCreateInfo& RHS)const noexcept
     {
         if (static_cast<const PipelineStateCreateInfo&>(*this) != static_cast<const PipelineStateCreateInfo&>(RHS))
             return false;
@@ -862,7 +872,7 @@ struct RayTracingPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo
 
         return true;
     }
-    bool operator!=(const RayTracingPipelineStateCreateInfo& RHS)const
+    bool operator!=(const RayTracingPipelineStateCreateInfo& RHS)const noexcept
     {
         return !(*this == RHS);
     }
@@ -920,7 +930,7 @@ struct TilePipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
     {
         PSODesc.PipelineType = PIPELINE_TYPE_TILE;
     }
-    bool operator==(const TilePipelineStateCreateInfo& Rhs) const
+    bool operator==(const TilePipelineStateCreateInfo& Rhs) const noexcept
     {
         if (static_cast<const PipelineStateCreateInfo&>(*this) != static_cast<const PipelineStateCreateInfo&>(Rhs))
             return false;
@@ -930,7 +940,7 @@ struct TilePipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
 
         return pTS == Rhs.pTS;
     }
-    bool operator!=(const TilePipelineStateCreateInfo& Rhs) const
+    bool operator!=(const TilePipelineStateCreateInfo& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -1058,7 +1068,7 @@ DILIGENT_BEGIN_INTERFACE(IPipelineState, IDeviceObject)
     ///             IPipelineResourceSignature::CreateShaderResourceBinding() method.
     VIRTUAL void METHOD(CreateShaderResourceBinding)(THIS_
                                                      IShaderResourceBinding** ppShaderResourceBinding,
-                                                     bool                     InitStaticResources DEFAULT_VALUE(false)) PURE;
+                                                     Bool                     InitStaticResources DEFAULT_VALUE(false)) PURE;
 
 
 
@@ -1082,6 +1092,20 @@ DILIGENT_BEGIN_INTERFACE(IPipelineState, IDeviceObject)
     ///             IPipelineResourceSignature::InitializeStaticSRBResources() method.
     VIRTUAL void METHOD(InitializeStaticSRBResources)(THIS_
                                                       struct IShaderResourceBinding* pShaderResourceBinding) CONST PURE;
+
+
+    /// Copies static resource bindings to the destination pipeline.
+
+    /// \param [in] pDstPipeline - Destination pipeline state.
+    ///
+    /// \note   Destination pipeline state must be compatible with this pipeline.
+    ///
+    /// \remarks    This method is only allowed for pipelines that use implicit resource signature
+    ///             (e.g. shader resources are defined through ResourceLayout member of the pipeline desc).
+    ///             For pipelines that use explicit resource signatures, use
+    ///             IPipelineResourceSignature::CopyStaticResources() method.
+    VIRTUAL void METHOD(CopyStaticResources)(THIS_
+                                             IPipelineState* pDstPipeline) CONST PURE;
 
 
     /// Checks if this pipeline state object is compatible with another PSO
@@ -1145,6 +1169,7 @@ DILIGENT_END_INTERFACE
 #    define IPipelineState_GetStaticVariableByIndex(This, ...)     CALL_IFACE_METHOD(PipelineState, GetStaticVariableByIndex,     This, __VA_ARGS__)
 #    define IPipelineState_CreateShaderResourceBinding(This, ...)  CALL_IFACE_METHOD(PipelineState, CreateShaderResourceBinding,  This, __VA_ARGS__)
 #    define IPipelineState_InitializeStaticSRBResources(This, ...) CALL_IFACE_METHOD(PipelineState, InitializeStaticSRBResources, This, __VA_ARGS__)
+#    define IPipelineState_CopyStaticResources(This, ...)          CALL_IFACE_METHOD(PipelineState, CopyStaticResources,          This, __VA_ARGS__)
 #    define IPipelineState_IsCompatibleWith(This, ...)             CALL_IFACE_METHOD(PipelineState, IsCompatibleWith,             This, __VA_ARGS__)
 #    define IPipelineState_GetResourceSignatureCount(This)         CALL_IFACE_METHOD(PipelineState, GetResourceSignatureCount,    This)
 #    define IPipelineState_GetResourceSignature(This, ...)         CALL_IFACE_METHOD(PipelineState, GetResourceSignature,         This, __VA_ARGS__)

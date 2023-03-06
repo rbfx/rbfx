@@ -108,12 +108,10 @@ protected:
             pContext->TransitionResourceStates(1, &Barrier);
 
             ShaderCreateInfo ShaderCI;
-            ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-            ShaderCI.UseCombinedTextureSamplers = true;
-            ShaderCI.Desc.ShaderType            = SHADER_TYPE_COMPUTE;
-            ShaderCI.EntryPoint                 = "main";
-            ShaderCI.Desc.Name                  = "Fill buffer CS";
-            ShaderCI.Source                     = HLSL::FillBuffer_CS.c_str();
+            ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+            ShaderCI.Desc           = {"Fill buffer CS", SHADER_TYPE_COMPUTE, true};
+            ShaderCI.EntryPoint     = "main";
+            ShaderCI.Source         = HLSL::FillBuffer_CS.c_str();
             RefCntAutoPtr<IShader> pCS;
             pDevice->CreateShader(ShaderCI, &pCS);
             ASSERT_NE(pCS, nullptr);
@@ -220,12 +218,10 @@ protected:
             ASSERT_NE(sm_pFillTexture3DParams, nullptr);
 
             ShaderCreateInfo ShaderCI;
-            ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-            ShaderCI.UseCombinedTextureSamplers = true;
-            ShaderCI.Desc.ShaderType            = SHADER_TYPE_COMPUTE;
-            ShaderCI.EntryPoint                 = "main";
-            ShaderCI.Desc.Name                  = "Fill texture 3D CS";
-            ShaderCI.Source                     = HLSL::FillTexture3D_CS.c_str();
+            ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+            ShaderCI.Desc           = {"Fill texture 3D CS", SHADER_TYPE_COMPUTE, true};
+            ShaderCI.EntryPoint     = "main";
+            ShaderCI.Source         = HLSL::FillTexture3D_CS.c_str();
             RefCntAutoPtr<IShader> pCS;
             pDevice->CreateShader(ShaderCI, &pCS);
             ASSERT_NE(pCS, nullptr);
@@ -693,7 +689,6 @@ protected:
         GraphicsPipeline.DepthStencilDesc.DepthEnable         = False;
 
         ShaderCreateInfo ShaderCI;
-        ShaderCI.UseCombinedTextureSamplers = true;
 
         if (pDevice->GetDeviceInfo().IsVulkanDevice())
             ShaderCI.ShaderCompiler = SHADER_COMPILER_DXC; // glslang does not support sparse residency status
@@ -707,11 +702,10 @@ protected:
 
         RefCntAutoPtr<IShader> pVS;
         {
-            ShaderCI.SourceLanguage  = SHADER_SOURCE_LANGUAGE_HLSL;
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Sparse resource test - VS";
-            ShaderCI.Source          = HLSL::SparseResTest_VS.c_str();
+            ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+            ShaderCI.Desc           = {"Sparse resource test - VS", SHADER_TYPE_VERTEX, true};
+            ShaderCI.EntryPoint     = "main";
+            ShaderCI.Source         = HLSL::SparseResTest_VS.c_str();
 
             pDevice->CreateShader(ShaderCI, &pVS);
             if (pVS == nullptr)
@@ -720,11 +714,10 @@ protected:
 
         RefCntAutoPtr<IShader> pPS;
         {
-            ShaderCI.SourceLanguage  = IsMSL ? SHADER_SOURCE_LANGUAGE_MSL : SHADER_SOURCE_LANGUAGE_HLSL;
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-            ShaderCI.EntryPoint      = "PSmain";
-            ShaderCI.Desc.Name       = "Sparse resource test - PS";
-            ShaderCI.Source          = PSSource.c_str();
+            ShaderCI.SourceLanguage = IsMSL ? SHADER_SOURCE_LANGUAGE_MSL : SHADER_SOURCE_LANGUAGE_HLSL;
+            ShaderCI.Desc           = {"Sparse resource test - PS", SHADER_TYPE_PIXEL, true};
+            ShaderCI.EntryPoint     = "PSmain";
+            ShaderCI.Source         = PSSource.c_str();
             if (IsMSL)
             {
                 // We need to disable reflection as defines in the shader function

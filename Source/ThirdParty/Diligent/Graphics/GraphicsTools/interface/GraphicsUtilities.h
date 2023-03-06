@@ -141,4 +141,12 @@ typedef struct ComputeMipLevelAttribs ComputeMipLevelAttribs;
 
 void DILIGENT_GLOBAL_FUNCTION(ComputeMipLevel)(const ComputeMipLevelAttribs REF Attribs);
 
+/// For a Direct3D12 render device, returns the maximum supported shader version. For any other device type, returns 0.
+
+/// \param [in]  pDevice - a pointer to the render device object.
+/// \param [out] Version - maximum shader version supported by this device.
+///
+/// \return     true if the maximum shader version was determined successfully, and false otherwise.
+bool DILIGENT_GLOBAL_FUNCTION(GetRenderDeviceD3D12MaxShaderVersion)(IRenderDevice* pDevice, ShaderVersion REF Version);
+
 DILIGENT_END_NAMESPACE // namespace Diligent

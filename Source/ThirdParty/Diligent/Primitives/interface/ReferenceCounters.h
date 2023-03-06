@@ -34,7 +34,7 @@
 
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
-typedef long ReferenceCounterValueType;
+typedef Int32 ReferenceCounterValueType;
 
 #if DILIGENT_CPP_INTERFACE
 

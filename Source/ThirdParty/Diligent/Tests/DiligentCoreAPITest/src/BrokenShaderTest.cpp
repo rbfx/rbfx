@@ -76,13 +76,11 @@ void TestBrokenShader(const char* Source, const char* Name, SHADER_SOURCE_LANGUA
     GPUTestingEnvironment::ScopedReset EnvironmentAutoReset;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.Source                     = Source;
-    ShaderCI.EntryPoint                 = "VSMain";
-    ShaderCI.Desc.ShaderType            = SHADER_TYPE_VERTEX;
-    ShaderCI.Desc.Name                  = Name;
-    ShaderCI.SourceLanguage             = SourceLanguage;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.Source         = Source;
+    ShaderCI.EntryPoint     = "VSMain";
+    ShaderCI.Desc           = {Name, SHADER_TYPE_VERTEX, true};
+    ShaderCI.SourceLanguage = SourceLanguage;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
     ShaderMacro Macros[] = {{"TEST", "MACRO"}, {}};
     ShaderCI.Macros      = Macros;

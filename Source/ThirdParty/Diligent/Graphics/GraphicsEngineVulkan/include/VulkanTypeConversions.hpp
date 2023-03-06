@@ -120,4 +120,7 @@ SAMPLE_COUNT VkSampleCountFlagsToSampleCount(VkSampleCountFlags Flags);
 
 void GetAllowedStagesAndAccessMask(BIND_FLAGS Flags, VkPipelineStageFlags& StageMask, VkAccessFlags& AccessMask);
 
+VkComponentSwizzle TextureComponentSwizzleToVkComponentSwizzle(TEXTURE_COMPONENT_SWIZZLE Swizzle);
+VkComponentMapping TextureComponentMappingToVkComponentMapping(const TextureComponentMapping& Mapping);
+
 } // namespace Diligent

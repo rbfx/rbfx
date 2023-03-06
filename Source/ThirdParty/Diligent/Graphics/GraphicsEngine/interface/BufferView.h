@@ -119,18 +119,18 @@ struct BufferViewDesc DILIGENT_DERIVE(DeviceObjectAttribs)
         ByteWidth           {_ByteWidth }
     {}
 
-    /// Comparison operator tests if two structures are equivalent
+    /// Tests if two buffer view descriptions are equal.
 
-    /// \param [in] RHS - reference to the structure to perform comparison with
-    /// \return
-    /// - True if all members of the two structures are equal.
-    /// - False otherwise
-    /// \remarks
-    /// The operator ignores DeviceObjectAttribs::Name field.
+    /// \param [in] RHS - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the buffer view properties.
     constexpr bool operator==(const BufferViewDesc& RHS) const
     {
-               // Name is primarily used for debug purposes and does not affect the view.
-               // It is ignored in comparison operation.
+               // Ignore name.
         return //strcmp(Name, RHS.Name) == 0 &&
                ViewType  == RHS.ViewType   &&
                ByteOffset== RHS.ByteOffset &&

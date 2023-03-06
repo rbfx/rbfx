@@ -152,7 +152,7 @@ struct ShaderResourceHashKey : public HashMapStringKey
         Key.ShaderStages = SHADER_TYPE_UNKNOWN;
     }
 
-    bool operator==(const ShaderResourceHashKey& rhs) const
+    bool operator==(const ShaderResourceHashKey& rhs) const noexcept
     {
         return ShaderStages == rhs.ShaderStages &&
             static_cast<const HashMapStringKey&>(*this) == static_cast<const HashMapStringKey&>(rhs);
@@ -160,7 +160,7 @@ struct ShaderResourceHashKey : public HashMapStringKey
 
     struct Hasher
     {
-        size_t operator()(const ShaderResourceHashKey& Key) const
+        size_t operator()(const ShaderResourceHashKey& Key) const noexcept
         {
             return Key.GetHash();
         }
@@ -460,6 +460,31 @@ public:
         return this->GetResourceSignature(0)->InitializeStaticSRBResources(pSRB);
     }
 
+    virtual void DILIGENT_CALL_TYPE CopyStaticResources(IPipelineState* pDstPipeline) const override final
+    {
+        if (pDstPipeline == nullptr)
+        {
+            DEV_ERROR("Destination pipeline must not be null");
+            return;
+        }
+
+        if (pDstPipeline == this)
+        {
+            DEV_ERROR("Source and destination pipelines must be different");
+            return;
+        }
+
+        if (!m_UsingImplicitSignature)
+        {
+            LOG_ERROR_MESSAGE("IPipelineState::CopyStaticResources is not allowed for pipelines that use explicit "
+                              "resource signatures. Use IPipelineResourceSignature::CopyStaticResources instead.");
+            return;
+        }
+
+        auto* pDstSign = static_cast<PipelineStateImplType*>(pDstPipeline)->GetResourceSignature(0);
+        return this->GetResourceSignature(0)->CopyStaticResources(pDstSign);
+    }
+
     /// Implementation of IPipelineState::GetResourceSignatureCount().
     virtual Uint32 DILIGENT_CALL_TYPE GetResourceSignatureCount() const override final
     {
@@ -481,8 +506,11 @@ public:
         if (pPSO == this)
             return true;
 
+        RefCntAutoPtr<PipelineStateImplType> pPSOImpl{const_cast<IPipelineState*>(pPSO), PipelineStateImplType::IID_InternalImpl};
+        VERIFY(pPSOImpl, "Unknown PSO implementation type");
+
         const auto& lhs = *static_cast<const PipelineStateImplType*>(this);
-        const auto& rhs = *ClassPtrCast<const PipelineStateImplType>(pPSO);
+        const auto& rhs = *pPSOImpl;
 
         const auto SignCount = lhs.GetResourceSignatureCount();
         if (SignCount != rhs.GetResourceSignatureCount())
@@ -589,7 +617,9 @@ public:
         auto AddShaderStage = [&](IShader* pShader) {
             if (pShader != nullptr)
             {
-                ShaderStages.emplace_back(ClassPtrCast<ShaderImplType>(pShader));
+                RefCntAutoPtr<ShaderImplType> pShaderImpl{pShader, ShaderImplType::IID_InternalImpl};
+                VERIFY(pShaderImpl, "Unexpected shader object implementation");
+                ShaderStages.emplace_back(pShaderImpl);
                 const auto ShaderType = pShader->GetDesc().ShaderType;
                 VERIFY((ActiveShaderStages & ShaderType) == 0,
                        "Shader stage ", GetShaderTypeLiteralName(ShaderType), " has already been initialized in PSO.");
@@ -643,7 +673,9 @@ public:
         VERIFY_EXPR(CreateInfo.pCS != nullptr);
         VERIFY_EXPR(CreateInfo.pCS->GetDesc().ShaderType == SHADER_TYPE_COMPUTE);
 
-        ShaderStages.emplace_back(ClassPtrCast<ShaderImplType>(CreateInfo.pCS));
+        RefCntAutoPtr<ShaderImplType> pShaderImpl{CreateInfo.pCS, ShaderImplType::IID_InternalImpl};
+        VERIFY(pShaderImpl, "Unexpected shader object implementation");
+        ShaderStages.emplace_back(pShaderImpl);
         ActiveShaderStages = SHADER_TYPE_COMPUTE;
 
         VERIFY_EXPR(!ShaderStages.empty());
@@ -665,7 +697,9 @@ public:
                 const auto StageInd   = GetShaderTypePipelineIndex(ShaderType, PIPELINE_TYPE_RAY_TRACING);
                 auto&      Stage      = ShaderStages[StageInd];
                 ActiveShaderStages |= ShaderType;
-                Stage.Append(ClassPtrCast<ShaderImplType>(pShader));
+                RefCntAutoPtr<ShaderImplType> pShaderImpl{pShader, ShaderImplType::IID_InternalImpl};
+                VERIFY(pShaderImpl, "Unexpected shader object implementation");
+                Stage.Append(pShaderImpl);
             }
         };
 
@@ -720,7 +754,9 @@ public:
         VERIFY_EXPR(CreateInfo.pTS != nullptr);
         VERIFY_EXPR(CreateInfo.pTS->GetDesc().ShaderType == SHADER_TYPE_TILE);
 
-        ShaderStages.emplace_back(ClassPtrCast<ShaderImplType>(CreateInfo.pTS));
+        RefCntAutoPtr<ShaderImplType> pShaderImpl{CreateInfo.pTS, ShaderImplType::IID_InternalImpl};
+        VERIFY(pShaderImpl, "Unexpected shader object implementation");
+        ShaderStages.emplace_back(pShaderImpl);
         ActiveShaderStages = SHADER_TYPE_TILE;
 
         VERIFY_EXPR(!ShaderStages.empty());

@@ -142,13 +142,11 @@ protected:
         sm_HasRayTracing = pEnv->SupportsRayTracing();
 
         ShaderCreateInfo ShaderCI;
-        ShaderCI.Source                     = g_TrivialVSSource;
-        ShaderCI.EntryPoint                 = "main";
-        ShaderCI.Desc.ShaderType            = SHADER_TYPE_VERTEX;
-        ShaderCI.Desc.Name                  = "TrivialVS (PSOCreationFailureTest)";
-        ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-        ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.Source         = g_TrivialVSSource;
+        ShaderCI.EntryPoint     = "main";
+        ShaderCI.Desc           = {"TrivialVS (PSOCreationFailureTest)", SHADER_TYPE_VERTEX, true};
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
         pDevice->CreateShader(ShaderCI, &sm_pTrivialVS);
         ASSERT_TRUE(sm_pTrivialVS);
 
@@ -1348,12 +1346,10 @@ TEST_F(PSOCreationFailureTest, InvalidArraySize)
     auto* const pDevice = pEnv->GetDevice();
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.Source                     = PSSource;
-    ShaderCI.Desc.ShaderType            = SHADER_TYPE_PIXEL;
-    ShaderCI.Desc.Name                  = "Invalid Array Size (PSOCreationFailureTest)";
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.Source         = PSSource;
+    ShaderCI.Desc           = {"Invalid Array Size (PSOCreationFailureTest)", SHADER_TYPE_PIXEL, true};
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
     RefCntAutoPtr<IShader> pPS;
     pDevice->CreateShader(ShaderCI, &pPS);
 
@@ -1429,9 +1425,8 @@ TEST_F(PSOCreationFailureTest, InvalidRunTimeArray)
     )";
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-    ShaderCI.Desc.Name       = "Invalid Run-Time Array (PSOCreationFailureTest)";
-    ShaderCI.ShaderCompiler  = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
+    ShaderCI.Desc           = {"Invalid Run-Time Array (PSOCreationFailureTest)", SHADER_TYPE_PIXEL, true};
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
     if (DeviceInfo.IsD3DDevice())
     {
         ShaderCI.Source         = PSSource_HLSL;
@@ -1442,8 +1437,7 @@ TEST_F(PSOCreationFailureTest, InvalidRunTimeArray)
         ShaderCI.Source         = PSSource_GLSL;
         ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM;
     }
-    ShaderCI.UseCombinedTextureSamplers = true;
-    ShaderCI.CompileFlags               = SHADER_COMPILE_FLAG_ENABLE_UNBOUNDED_ARRAYS;
+    ShaderCI.CompileFlags = SHADER_COMPILE_FLAG_ENABLE_UNBOUNDED_ARRAYS;
     RefCntAutoPtr<IShader> pPS;
     pDevice->CreateShader(ShaderCI, &pPS);
 
@@ -1548,23 +1542,20 @@ TEST_F(PSOCreationFailureTest, MissingCombinedImageSampler)
     )";
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_GLSL;
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL;
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.Desc.Name       = "Missing combined image sampler (PSOCreationFailureTest) VS";
-        ShaderCI.Source          = VSSource_GLSL;
+        ShaderCI.Desc   = {"Missing combined image sampler (PSOCreationFailureTest) VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.Source = VSSource_GLSL;
         pDevice->CreateShader(ShaderCI, &pVS);
         ASSERT_TRUE(pVS);
     }
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.Desc.Name       = "Missing combined image sampler (PSOCreationFailureTest) PS";
-        ShaderCI.Source          = PSSource_GLSL;
+        ShaderCI.Desc   = {"Missing combined image sampler (PSOCreationFailureTest) PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.Source = PSSource_GLSL;
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_TRUE(pPS);
     }

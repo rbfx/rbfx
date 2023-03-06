@@ -85,7 +85,7 @@ D3D12_HEAP_FLAGS GetD3D12HeapFlags(ID3D12Device*   pd3d12Device,
     Uint32 UsingNVApiCount    = 0;
     Uint32 NotUsingNVApiCount = 0;
 
-    static_assert(BIND_FLAGS_LAST == 1u << 11u, "Did you add a new bind flag? You may need to update the logic below.");
+    static_assert(BIND_FLAG_LAST == 1u << 11u, "Did you add a new bind flag? You may need to update the logic below.");
     for (Uint32 res = 0; res < NumResources; ++res)
     {
         auto* pResource = ppResources[res];

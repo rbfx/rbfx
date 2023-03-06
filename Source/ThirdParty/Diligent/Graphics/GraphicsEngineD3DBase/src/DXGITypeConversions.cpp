@@ -259,7 +259,6 @@ DXGI_FORMAT CorrectDXGIFormat(DXGI_FORMAT DXGIFormat, Uint32 BindFlags)
 
             case DXGI_FORMAT_R24G8_TYPELESS:
             case DXGI_FORMAT_D24_UNORM_S8_UINT:
-            case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
                 DXGIFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
                 break;
 

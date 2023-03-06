@@ -23,17 +23,17 @@ namespace spvtools {
 namespace val {
 
 spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
-  const SpvOp opcode = inst->opcode();
+  const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
 
   switch (opcode) {
-    case SpvOpTraceRayKHR: {
+    case spv::Op::OpTraceRayKHR: {
       _.function(inst->function()->id())
           ->RegisterExecutionModelLimitation(
-              [](SpvExecutionModel model, std::string* message) {
-                if (model != SpvExecutionModelRayGenerationKHR &&
-                    model != SpvExecutionModelClosestHitKHR &&
-                    model != SpvExecutionModelMissKHR) {
+              [](spv::ExecutionModel model, std::string* message) {
+                if (model != spv::ExecutionModel::RayGenerationKHR &&
+                    model != spv::ExecutionModel::ClosestHitKHR &&
+                    model != spv::ExecutionModel::MissKHR) {
                   if (message) {
                     *message =
                         "OpTraceRayKHR requires RayGenerationKHR, "
@@ -45,7 +45,7 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
               });
 
       if (_.GetIdOpcode(_.GetOperandTypeId(inst, 0)) !=
-          SpvOpTypeAccelerationStructureKHR) {
+          spv::Op::OpTypeAccelerationStructureKHR) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected Acceleration Structure to be of type "
                   "OpTypeAccelerationStructureKHR";
@@ -109,11 +109,13 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const Instruction* payload = _.FindDef(inst->GetOperandAs<uint32_t>(10));
-      if (payload->opcode() != SpvOpVariable) {
+      if (payload->opcode() != spv::Op::OpVariable) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Payload must be the result of a OpVariable";
-      } else if (payload->word(3) != SpvStorageClassRayPayloadKHR &&
-                 payload->word(3) != SpvStorageClassIncomingRayPayloadKHR) {
+      } else if (payload->GetOperandAs<spv::StorageClass>(2) !=
+                     spv::StorageClass::RayPayloadKHR &&
+                 payload->GetOperandAs<spv::StorageClass>(2) !=
+                     spv::StorageClass::IncomingRayPayloadKHR) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Payload must have storage class RayPayloadKHR or "
                   "IncomingRayPayloadKHR";
@@ -121,11 +123,11 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
 
-    case SpvOpReportIntersectionKHR: {
+    case spv::Op::OpReportIntersectionKHR: {
       _.function(inst->function()->id())
           ->RegisterExecutionModelLimitation(
-              [](SpvExecutionModel model, std::string* message) {
-                if (model != SpvExecutionModelIntersectionKHR) {
+              [](spv::ExecutionModel model, std::string* message) {
+                if (model != spv::ExecutionModel::IntersectionKHR) {
                   if (message) {
                     *message =
                         "OpReportIntersectionKHR requires IntersectionKHR "
@@ -156,14 +158,14 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
 
-    case SpvOpExecuteCallableKHR: {
+    case spv::Op::OpExecuteCallableKHR: {
       _.function(inst->function()->id())
-          ->RegisterExecutionModelLimitation([](SpvExecutionModel model,
+          ->RegisterExecutionModelLimitation([](spv::ExecutionModel model,
                                                 std::string* message) {
-            if (model != SpvExecutionModelRayGenerationKHR &&
-                model != SpvExecutionModelClosestHitKHR &&
-                model != SpvExecutionModelMissKHR &&
-                model != SpvExecutionModelCallableKHR) {
+            if (model != spv::ExecutionModel::RayGenerationKHR &&
+                model != spv::ExecutionModel::ClosestHitKHR &&
+                model != spv::ExecutionModel::MissKHR &&
+                model != spv::ExecutionModel::CallableKHR) {
               if (message) {
                 *message =
                     "OpExecuteCallableKHR requires RayGenerationKHR, "
@@ -174,13 +176,21 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
             return true;
           });
 
+      const uint32_t sbt_index = _.GetOperandTypeId(inst, 0);
+      if (!_.IsUnsignedIntScalarType(sbt_index) ||
+          _.GetBitWidth(sbt_index) != 32) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "SBT Index must be a 32-bit unsigned int scalar";
+      }
+
       const auto callable_data = _.FindDef(inst->GetOperandAs<uint32_t>(1));
-      if (callable_data->opcode() != SpvOpVariable) {
+      if (callable_data->opcode() != spv::Op::OpVariable) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Callable Data must be the result of a OpVariable";
-      } else if (callable_data->word(3) != SpvStorageClassCallableDataKHR &&
-                 callable_data->word(3) !=
-                     SpvStorageClassIncomingCallableDataKHR) {
+      } else if (callable_data->GetOperandAs<spv::StorageClass>(2) !=
+                     spv::StorageClass::CallableDataKHR &&
+                 callable_data->GetOperandAs<spv::StorageClass>(2) !=
+                     spv::StorageClass::IncomingCallableDataKHR) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Callable Data must have storage class CallableDataKHR or "
                   "IncomingCallableDataKHR";

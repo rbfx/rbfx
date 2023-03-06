@@ -87,7 +87,7 @@ public:
         TEXTURE_FORMAT DSVFormat                      = TEX_FORMAT_UNKNOWN;
         TEXTURE_FORMAT RTVFormats[MAX_RENDER_TARGETS] = {};
 
-        bool operator==(const RenderPassCacheKey& rhs) const
+        bool operator==(const RenderPassCacheKey& rhs) const noexcept
         {
             // clang-format off
             if (GetHash()        != rhs.GetHash()        ||
@@ -107,7 +107,7 @@ public:
             return true;
         }
 
-        size_t GetHash() const
+        size_t GetHash() const noexcept
         {
             if (Hash == 0)
             {

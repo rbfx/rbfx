@@ -119,15 +119,13 @@ protected:
 
         ShaderCreateInfo ShaderCI;
         ShaderCI.pShaderSourceStreamFactory = pShaderSourceFactory;
-        ShaderCI.UseCombinedTextureSamplers = deviceCaps.IsGLDevice();
 
-        ShaderCI.FilePath        = FileName;
-        ShaderCI.Desc.Name       = ShaderName;
-        ShaderCI.EntryPoint      = EntryPoint;
-        ShaderCI.Desc.ShaderType = ShaderType;
-        ShaderCI.SourceLanguage  = SrcLang;
-        ShaderCI.Macros          = Macros;
-        ShaderCI.ShaderCompiler  = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
+        ShaderCI.FilePath       = FileName;
+        ShaderCI.Desc           = {ShaderName, ShaderType, deviceCaps.IsGLDevice()};
+        ShaderCI.EntryPoint     = EntryPoint;
+        ShaderCI.SourceLanguage = SrcLang;
+        ShaderCI.Macros         = Macros;
+        ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
         ModifyShaderCI(ShaderCI);
 
@@ -352,7 +350,7 @@ void ShaderResourceLayoutTest::TestTexturesAndImtblSamplers(bool TestImtblSample
         {
             if (TestImtblSamplers)
             {
-                ShaderCI.UseCombinedTextureSamplers = true;
+                ShaderCI.Desc.UseCombinedTextureSamplers = true;
                 // Immutable sampler arrays are not allowed in 5.1, and DXC only supports 6.0+
                 ShaderCI.ShaderCompiler = SHADER_COMPILER_DEFAULT;
                 ShaderCI.HLSLVersion    = ShaderVersion{5, 0};
@@ -367,7 +365,7 @@ void ShaderResourceLayoutTest::TestTexturesAndImtblSamplers(bool TestImtblSample
         }
         else if (ShaderLang == SHADER_SOURCE_LANGUAGE_GLSL)
         {
-            ShaderCI.UseCombinedTextureSamplers = true;
+            ShaderCI.Desc.UseCombinedTextureSamplers = true;
         }
         else
         {
@@ -1595,7 +1593,7 @@ TEST_F(ShaderResourceLayoutTest, MergedVarStages)
     // clang-format on
 
     auto ModifyShaderCI = [](ShaderCreateInfo& ShaderCI) {
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.Desc.UseCombinedTextureSamplers = true;
     };
     auto pVS = CreateShader("ShaderResourceLayoutTest.MergedVarStages - VS",
                             "MergedVarStages.hlsl",
@@ -1657,6 +1655,286 @@ TEST_F(ShaderResourceLayoutTest, MergedVarStages)
 
     DrawAttribs DrawAttrs{6, DRAW_FLAG_VERIFY_ALL};
     pContext->Draw(DrawAttrs);
+
+    pSwapChain->Present();
+}
+
+
+TEST_F(ShaderResourceLayoutTest, CopyStaticResources)
+{
+    GPUTestingEnvironment::ScopedReset EnvironmentAutoReset;
+
+    auto* pEnv       = GPUTestingEnvironment::GetInstance();
+    auto* pDevice    = pEnv->GetDevice();
+    auto* pSwapChain = pEnv->GetSwapChain();
+
+    const auto& DeviceProps = pDevice->GetDeviceInfo();
+
+    float ClearColor[] = {0.25, 0.125, 0.875, 0.5};
+    RenderDrawCommandReference(pSwapChain, ClearColor);
+
+    // Prepare buffers and textures with reference values
+    ReferenceBuffers RefUniformBuffers{
+        3,
+        USAGE_DEFAULT,
+        BIND_UNIFORM_BUFFER //
+    };
+    ReferenceBuffers RefFmtBuffers{
+        3,
+        USAGE_DEFAULT,
+        BIND_SHADER_RESOURCE,
+        BUFFER_VIEW_SHADER_RESOURCE,
+        BUFFER_MODE_FORMATTED //
+    };
+    ReferenceTextures RefTextures{
+        4,
+        128, 128,
+        USAGE_DEFAULT,
+        BIND_SHADER_RESOURCE,
+        TEXTURE_VIEW_SHADER_RESOURCE //
+    };
+
+    ShaderMacroHelper Macros;
+
+    // Add macros that define reference colors
+    Macros.AddShaderMacro("UniformBuff_0_Ref", RefUniformBuffers.GetValue(0));
+    Macros.AddShaderMacro("UniformBuff_1_Ref", RefUniformBuffers.GetValue(1));
+    Macros.AddShaderMacro("UniformBuff_2_Ref", RefUniformBuffers.GetValue(2));
+
+    Macros.AddShaderMacro("FmtBuff_0_Ref", RefFmtBuffers.GetValue(0));
+    Macros.AddShaderMacro("FmtBuff_1_Ref", RefFmtBuffers.GetValue(1));
+    Macros.AddShaderMacro("FmtBuff_2_Ref", RefFmtBuffers.GetValue(2));
+
+    Macros.AddShaderMacro("Tex2D_0_Ref", RefTextures.GetColor(0));
+    Macros.AddShaderMacro("Tex2D_1_Ref", RefTextures.GetColor(1));
+    Macros.AddShaderMacro("Tex2D_2_Ref", RefTextures.GetColor(2));
+    Macros.AddShaderMacro("Tex2D_3_Ref", RefTextures.GetColor(3));
+
+
+    // clang-format off
+    std::vector<ShaderResourceDesc> Resources =
+    {
+        ShaderResourceDesc{"g_Tex2D_0", SHADER_RESOURCE_TYPE_TEXTURE_SRV, 1},
+        ShaderResourceDesc{"g_Tex2D_1", SHADER_RESOURCE_TYPE_TEXTURE_SRV, 1},
+        ShaderResourceDesc{"g_Tex2D_2", SHADER_RESOURCE_TYPE_TEXTURE_SRV, 1},
+        ShaderResourceDesc{"g_Tex2D_3", SHADER_RESOURCE_TYPE_TEXTURE_SRV, 1},
+        ShaderResourceDesc{"UniformBuff_0", SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, 1},
+        ShaderResourceDesc{"UniformBuff_1", SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, 1},
+        ShaderResourceDesc{"UniformBuff_2", SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, 1},
+        ShaderResourceDesc{"g_FmtBuff_0", SHADER_RESOURCE_TYPE_BUFFER_SRV, 1},
+        ShaderResourceDesc{"g_FmtBuff_1", SHADER_RESOURCE_TYPE_BUFFER_SRV, 1},
+        ShaderResourceDesc{"g_FmtBuff_2", SHADER_RESOURCE_TYPE_BUFFER_SRV, 1}
+    };
+    if (!DeviceProps.IsGLDevice())
+    {
+        Resources.emplace_back("g_Tex2D_0_sampler", SHADER_RESOURCE_TYPE_SAMPLER, 1);
+        Resources.emplace_back("g_Tex2D_1_sampler", SHADER_RESOURCE_TYPE_SAMPLER, 1);
+        Resources.emplace_back("g_Tex2D_2_sampler", SHADER_RESOURCE_TYPE_SAMPLER, 1);
+        Resources.emplace_back("g_Tex2D_3_sampler", SHADER_RESOURCE_TYPE_SAMPLER, 1);
+    }
+    // clang-format on
+    constexpr ImmutableSamplerDesc ImmutableSamplers[] =
+        {
+            {SHADER_TYPE_VERTEX | SHADER_TYPE_PIXEL, "g_Tex2D_1", SamplerDesc{}},
+            {SHADER_TYPE_VERTEX | SHADER_TYPE_PIXEL, "g_Tex2D_3", SamplerDesc{}},
+        };
+
+    RefCntAutoPtr<ISampler> pSampler;
+    pDevice->CreateSampler(SamplerDesc{}, &pSampler);
+    RefTextures.GetView(0)->SetSampler(pSampler);
+    RefTextures.GetView(2)->SetSampler(pSampler);
+
+    auto ModifyShaderCI = [](ShaderCreateInfo& ShaderCI) {
+        ShaderCI.Desc.UseCombinedTextureSamplers = true;
+    };
+    auto pVS = CreateShader("ShaderResourceLayoutTest.CopyStaticResources - VS",
+                            "CopyStaticResources.hlsl",
+                            "VSMain",
+                            SHADER_TYPE_VERTEX, SHADER_SOURCE_LANGUAGE_HLSL, Macros,
+                            Resources.data(), static_cast<Uint32>(Resources.size()), ModifyShaderCI);
+    auto pPS = CreateShader("ShaderResourceLayoutTest.CopyStaticResources - PS",
+                            "CopyStaticResources.hlsl",
+                            "PSMain",
+                            SHADER_TYPE_PIXEL, SHADER_SOURCE_LANGUAGE_HLSL, Macros,
+                            Resources.data(), static_cast<Uint32>(Resources.size()), ModifyShaderCI);
+    ASSERT_NE(pVS, nullptr);
+    ASSERT_NE(pPS, nullptr);
+
+    PipelineResourceLayoutDesc ResourceLayout;
+    ResourceLayout.DefaultVariableType        = SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+    ResourceLayout.DefaultVariableMergeStages = SHADER_TYPE_VERTEX | SHADER_TYPE_PIXEL;
+    ResourceLayout.ImmutableSamplers          = ImmutableSamplers;
+    ResourceLayout.NumImmutableSamplers       = _countof(ImmutableSamplers);
+
+    RefCntAutoPtr<IPipelineState>         pPSO1;
+    RefCntAutoPtr<IShaderResourceBinding> pSRB1;
+    CreateGraphicsPSO(pVS, pPS, ResourceLayout, pPSO1, pSRB1);
+    ASSERT_NE(pPSO1, nullptr);
+    ASSERT_NE(pSRB1, nullptr);
+
+    SET_STATIC_VAR(pPSO1, SHADER_TYPE_VERTEX, "UniformBuff_0", Set, RefUniformBuffers.GetBuffer(0));
+    SET_STATIC_VAR(pPSO1, SHADER_TYPE_VERTEX, "g_FmtBuff_0", Set, RefFmtBuffers.GetView(0));
+
+    SET_STATIC_VAR(pPSO1, SHADER_TYPE_VERTEX, "g_Tex2D_0", Set, RefTextures.GetView(0));
+    SET_STATIC_VAR(pPSO1, SHADER_TYPE_VERTEX, "g_Tex2D_1", Set, RefTextures.GetView(1));
+
+
+    RefCntAutoPtr<IPipelineState>         pPSO2;
+    RefCntAutoPtr<IShaderResourceBinding> pSRB2;
+    CreateGraphicsPSO(pVS, pPS, ResourceLayout, pPSO2, pSRB2);
+    ASSERT_NE(pPSO2, nullptr);
+    ASSERT_NE(pSRB2, nullptr);
+
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_VERTEX, "UniformBuff_1", Set, RefUniformBuffers.GetBuffer(1));
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_VERTEX, "g_FmtBuff_1", Set, RefFmtBuffers.GetView(1));
+
+    pPSO1->CopyStaticResources(pPSO2);
+
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_VERTEX, "UniformBuff_2", Set, RefUniformBuffers.GetBuffer(2));
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_VERTEX, "g_FmtBuff_2", Set, RefFmtBuffers.GetView(2));
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_VERTEX, "g_Tex2D_2", Set, RefTextures.GetView(2));
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_VERTEX, "g_Tex2D_3", Set, RefTextures.GetView(3));
+
+    pPSO2->InitializeStaticSRBResources(pSRB2);
+
+    auto* pContext = pEnv->GetDeviceContext();
+
+    ITextureView* ppRTVs[] = {pSwapChain->GetCurrentBackBufferRTV()};
+    pContext->SetRenderTargets(1, ppRTVs, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    pContext->ClearRenderTarget(ppRTVs[0], ClearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    pContext->SetPipelineState(pPSO2);
+    pContext->CommitShaderResources(pSRB2, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    DrawAttribs DrawAttrs{6, DRAW_FLAG_VERIFY_ALL};
+    pContext->Draw(DrawAttrs);
+
+    pSwapChain->Present();
+}
+
+TEST_F(ShaderResourceLayoutTest, CopyStaticResourcesCS)
+{
+    GPUTestingEnvironment::ScopedReset EnvironmentAutoReset;
+
+    auto* const pEnv       = GPUTestingEnvironment::GetInstance();
+    auto* const pDevice    = pEnv->GetDevice();
+    auto* const pSwapChain = pEnv->GetSwapChain();
+    auto* const pContext   = pEnv->GetDeviceContext();
+
+    ComputeShaderReference(pSwapChain);
+
+    const auto& DeviceInfo = pDevice->GetDeviceInfo();
+
+    // Prepare buffers with reference values
+    ReferenceBuffers RefBuffers{
+        3,
+        USAGE_DEFAULT,
+        BIND_UNORDERED_ACCESS,
+        BUFFER_VIEW_UNORDERED_ACCESS,
+        BUFFER_MODE_STRUCTURED //
+    };
+
+    ReferenceTextures RefTextures{
+        3,
+        128, 128,
+        USAGE_DEFAULT,
+        BIND_UNORDERED_ACCESS,
+        TEXTURE_VIEW_UNORDERED_ACCESS //
+    };
+
+    // clang-format off
+    ShaderResourceDesc Resources[] =
+    {
+        {"g_tex2DUAV",  SHADER_RESOURCE_TYPE_TEXTURE_UAV, 1},
+        {"g_RWTex2D_0", SHADER_RESOURCE_TYPE_TEXTURE_UAV, 1},
+        {"g_RWTex2D_1", SHADER_RESOURCE_TYPE_TEXTURE_UAV, 1},
+        {"g_RWTex2D_2", SHADER_RESOURCE_TYPE_TEXTURE_UAV, 1},
+        {"g_RWBuff_0",  SHADER_RESOURCE_TYPE_BUFFER_UAV,  1},
+        {"g_RWBuff_1",  SHADER_RESOURCE_TYPE_BUFFER_UAV,  1},
+        {"g_RWBuff_2",  SHADER_RESOURCE_TYPE_BUFFER_UAV,  1}
+    };
+    // clang-format on
+
+    const char*            ShaderFileName = nullptr;
+    SHADER_SOURCE_LANGUAGE SrcLang        = SHADER_SOURCE_LANGUAGE_DEFAULT;
+    if (pDevice->GetDeviceInfo().IsD3DDevice())
+    {
+        ShaderFileName = "CopyStaticResourcesCS.hlsl";
+        SrcLang        = SHADER_SOURCE_LANGUAGE_HLSL;
+    }
+    else if (DeviceInfo.IsVulkanDevice() || DeviceInfo.IsGLDevice() || DeviceInfo.IsMetalDevice())
+    {
+        ShaderFileName = "CopyStaticResourcesCS.glsl";
+        SrcLang        = SHADER_SOURCE_LANGUAGE_GLSL;
+    }
+    else
+    {
+        GTEST_FAIL() << "Unexpected device type";
+    }
+
+    ShaderMacroHelper Macros;
+    if (SrcLang == SHADER_SOURCE_LANGUAGE_GLSL)
+        Macros.AddShaderMacro("float4", "vec4");
+
+    // Add macros that define reference colors
+    Macros.AddShaderMacro("Buff_0_Ref", RefBuffers.GetValue(0));
+    Macros.AddShaderMacro("Buff_1_Ref", RefBuffers.GetValue(1));
+    Macros.AddShaderMacro("Buff_2_Ref", RefBuffers.GetValue(2));
+    Macros.AddShaderMacro("RWTex2D_0_Ref", RefTextures.GetColor(0));
+    Macros.AddShaderMacro("RWTex2D_1_Ref", RefTextures.GetColor(1));
+    Macros.AddShaderMacro("RWTex2D_2_Ref", RefTextures.GetColor(2));
+
+    auto ModifyShaderCI = [pEnv](ShaderCreateInfo& ShaderCI) {
+        if (pEnv->NeedWARPResourceArrayIndexingBugWorkaround())
+        {
+            // Due to bug in D3D12 WARP, we have to use SM5.0 with old compiler
+            ShaderCI.ShaderCompiler = SHADER_COMPILER_DEFAULT;
+            ShaderCI.HLSLVersion    = ShaderVersion{5, 0};
+        }
+    };
+
+    auto pCS = CreateShader("ShaderResourceLayoutTest.CopyStaticResourcesCS",
+                            ShaderFileName, "main",
+                            SHADER_TYPE_COMPUTE, SrcLang, Macros,
+                            Resources, _countof(Resources), ModifyShaderCI);
+    ASSERT_NE(pCS, nullptr);
+
+    PipelineResourceLayoutDesc ResourceLayout;
+    ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+
+    RefCntAutoPtr<IPipelineState>         pPSO1;
+    RefCntAutoPtr<IShaderResourceBinding> pSRB1;
+    CreateComputePSO(pCS, ResourceLayout, pPSO1, pSRB1);
+    ASSERT_NE(pPSO1, nullptr);
+    ASSERT_NE(pSRB1, nullptr);
+
+    RefCntAutoPtr<ITestingSwapChain> pTestingSwapChain{pSwapChain, IID_TestingSwapChain};
+    ASSERT_TRUE(pTestingSwapChain);
+    SET_STATIC_VAR(pPSO1, SHADER_TYPE_COMPUTE, "g_tex2DUAV", Set, pTestingSwapChain->GetCurrentBackBufferUAV());
+    SET_STATIC_VAR(pPSO1, SHADER_TYPE_COMPUTE, "g_RWBuff_0", Set, RefBuffers.GetView(0));
+    SET_STATIC_VAR(pPSO1, SHADER_TYPE_COMPUTE, "g_RWTex2D_0", Set, RefTextures.GetView(0));
+
+    RefCntAutoPtr<IPipelineState>         pPSO2;
+    RefCntAutoPtr<IShaderResourceBinding> pSRB2;
+    CreateComputePSO(pCS, ResourceLayout, pPSO2, pSRB2);
+    ASSERT_NE(pPSO2, nullptr);
+    ASSERT_NE(pSRB2, nullptr);
+
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_COMPUTE, "g_RWBuff_1", Set, RefBuffers.GetView(1));
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_COMPUTE, "g_RWTex2D_1", Set, RefTextures.GetView(1));
+    pPSO1->CopyStaticResources(pPSO2);
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_COMPUTE, "g_RWBuff_2", Set, RefBuffers.GetView(2));
+    SET_STATIC_VAR(pPSO2, SHADER_TYPE_COMPUTE, "g_RWTex2D_2", Set, RefTextures.GetView(2));
+
+    pPSO2->InitializeStaticSRBResources(pSRB2);
+
+    pContext->SetPipelineState(pPSO2);
+    pContext->CommitShaderResources(pSRB2, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    const auto&            SCDesc = pSwapChain->GetDesc();
+    DispatchComputeAttribs DispatchAttribs((SCDesc.Width + 15) / 16, (SCDesc.Height + 15) / 16, 1);
+    pContext->CommitShaderResources(pSRB2, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    pContext->DispatchCompute(DispatchAttribs);
 
     pSwapChain->Present();
 }

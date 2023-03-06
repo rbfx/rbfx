@@ -41,7 +41,7 @@ float4 VerifyResources()
     AllCorrect *= CheckValue(g_BuffArr_Dyn[0][0].data, BuffArr_Dyn_Ref0);
     AllCorrect *= CheckValue(g_BuffArr_Dyn[1][0].data, BuffArr_Dyn_Ref1);
 
-	return AllCorrect;
+    return AllCorrect;
 }
 
 void VSMain(in  uint    VertId    : SV_VertexID,

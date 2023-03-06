@@ -90,6 +90,9 @@ void TextureBaseD3D11::CreateViewInternal(const TextureViewDesc& ViewDesc, IText
         {
             case TEXTURE_VIEW_SHADER_RESOURCE:
             {
+                if (!IsIdentityComponentMapping(ViewDesc.Swizzle))
+                    LOG_ERROR_AND_THROW("Direct3D11 does not support texture component swizzle");
+
                 VERIFY(m_Desc.BindFlags & BIND_SHADER_RESOURCE, "BIND_SHADER_RESOURCE flag is not set");
                 ID3D11ShaderResourceView* pSRV = nullptr;
                 CreateSRV(UpdatedViewDesc, &pSRV);

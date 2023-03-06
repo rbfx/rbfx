@@ -393,23 +393,26 @@ const ShaderResourceCacheD3D12::Resource& ShaderResourceCacheD3D12::CopyResource
 {
     const auto& DstRes = SetResource(RootIndex, OffsetFromTableStart, Resource{SrcRes});
 
-    auto& Tbl = GetRootTable(RootIndex);
-    if (!Tbl.IsRootView())
+    if (m_ContentType == ResourceCacheContentType::SRB)
     {
-        const auto HeapType = DstRes.Type == SHADER_RESOURCE_TYPE_SAMPLER ? D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER : D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        auto& Tbl = GetRootTable(RootIndex);
+        if (!Tbl.IsRootView())
+        {
+            const auto HeapType = DstRes.Type == SHADER_RESOURCE_TYPE_SAMPLER ? D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER : D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 
-        auto DstDescrHandle = GetDescriptorTableHandle<D3D12_CPU_DESCRIPTOR_HANDLE>(
-            HeapType, ROOT_PARAMETER_GROUP_STATIC_MUTABLE, RootIndex, OffsetFromTableStart);
-        if (DstRes.CPUDescriptorHandle.ptr != 0)
-        {
-            pd3d12Device->CopyDescriptorsSimple(1, DstDescrHandle, SrcRes.CPUDescriptorHandle, HeapType);
-        }
-        else
-        {
-            VERIFY(DstRes.Type == SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, "Null CPU descriptor is only allowed for constant buffers");
-            const auto* pBuffer = DstRes.pObject.RawPtr<const BufferD3D12Impl>();
-            VERIFY(DstRes.BufferRangeSize < pBuffer->GetDesc().Size, "Null CPU descriptor is only allowed for partial views of constant buffers");
-            pBuffer->CreateCBV(DstDescrHandle, DstRes.BufferBaseOffset, DstRes.BufferRangeSize);
+            auto DstDescrHandle = GetDescriptorTableHandle<D3D12_CPU_DESCRIPTOR_HANDLE>(
+                HeapType, ROOT_PARAMETER_GROUP_STATIC_MUTABLE, RootIndex, OffsetFromTableStart);
+            if (DstRes.CPUDescriptorHandle.ptr != 0)
+            {
+                pd3d12Device->CopyDescriptorsSimple(1, DstDescrHandle, SrcRes.CPUDescriptorHandle, HeapType);
+            }
+            else
+            {
+                VERIFY(DstRes.Type == SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, "Null CPU descriptor is only allowed for constant buffers");
+                const auto* pBuffer = DstRes.pObject.RawPtr<const BufferD3D12Impl>();
+                VERIFY(DstRes.BufferRangeSize < pBuffer->GetDesc().Size, "Null CPU descriptor is only allowed for partial views of constant buffers");
+                pBuffer->CreateCBV(DstDescrHandle, DstRes.BufferBaseOffset, DstRes.BufferRangeSize);
+            }
         }
     }
 

@@ -233,13 +233,11 @@ void MultithreadedResourceCreationTest::WorkerThreadFunc(MultithreadedResourceCr
             RefCntAutoPtr<IPipelineState> pPSO;
             {
                 ShaderCreateInfo Attrs;
-                Attrs.Source                     = g_ShaderSource;
-                Attrs.EntryPoint                 = "VSMain";
-                Attrs.Desc.ShaderType            = SHADER_TYPE_VERTEX;
-                Attrs.Desc.Name                  = "TrivialVS (MTResourceCreationTest)";
-                Attrs.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-                Attrs.ShaderCompiler             = pEnv->GetDefaultCompiler(Attrs.SourceLanguage);
-                Attrs.UseCombinedTextureSamplers = true;
+                Attrs.Source         = g_ShaderSource;
+                Attrs.EntryPoint     = "VSMain";
+                Attrs.Desc           = {"TrivialVS (MTResourceCreationTest)", SHADER_TYPE_VERTEX, true};
+                Attrs.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+                Attrs.ShaderCompiler = pEnv->GetDefaultCompiler(Attrs.SourceLanguage);
                 pDevice->CreateShader(Attrs, &pTrivialVS);
                 if (!pTrivialVS)
                 {

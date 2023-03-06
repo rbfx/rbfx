@@ -945,6 +945,8 @@ class Registry:
         if alias is None:
             name = elem.get('name')
             typeinfo = self.lookupElementInfo(name, dict)
+            if not typeinfo:
+                self.gen.logMsg('error', name, 'is not a known name')
             alias = typeinfo.elem.get('alias')
 
         return alias
@@ -996,6 +998,11 @@ class Registry:
 
                 # Determine the required extension or version needed for a require block
                 # Assumes that only one of these is specified
+                # 'extension', and therefore 'required_key', may be a boolean
+                # expression of extension names.
+                # 'required_key' is used only as a dictionary key at
+                # present, and passed through to the script generators, so
+                # they must be prepared to parse that expression.
                 required_key = require.get('feature')
                 if required_key is None:
                     required_key = require.get('extension')

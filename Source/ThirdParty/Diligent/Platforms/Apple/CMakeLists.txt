@@ -25,14 +25,14 @@ set(SOURCE
     ../Linux/src/LinuxFileSystem.cpp
 )
 
-add_library(Diligent-ApplePlatform ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
+add_library(Diligent-ApplePlatform STATIC ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
 set_common_target_properties(Diligent-ApplePlatform)
 
 target_include_directories(Diligent-ApplePlatform
 PRIVATE
     ../Linux/interface/
 PUBLIC
-    interface
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
 )
 
 target_link_libraries(Diligent-ApplePlatform

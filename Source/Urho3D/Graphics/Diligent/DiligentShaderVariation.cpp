@@ -129,7 +129,6 @@ bool ShaderVariation::Create()
     ci.Desc.Name = name_.c_str();
     ci.Source = srcCode.c_str();
     ci.SourceLength = srcCode.size();
-    ci.CombinedSamplerSuffix = false;
     ci.SourceLanguage = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
     ci.EntryPoint = "main";
 
@@ -446,7 +445,6 @@ bool ShaderVariation::Compile()
     shaderCI.EntryPoint = entryPoint;
     shaderCI.Source = sourceCode->c_str();
     shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
-    shaderCI.UseCombinedTextureSamplers = true;
 
     shaderCI.Macros = macros;
 

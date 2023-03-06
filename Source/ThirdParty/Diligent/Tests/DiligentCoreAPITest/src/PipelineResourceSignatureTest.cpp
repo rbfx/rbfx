@@ -117,14 +117,13 @@ protected:
         ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
         ShaderCI.FilePath                   = File;
         ShaderCI.Macros                     = Macros;
-        ShaderCI.Desc.Name                  = Name;
+        ShaderCI.Desc                       = {Name, ShaderType, false};
         ShaderCI.EntryPoint                 = EntryPoint;
         ShaderCI.Desc.ShaderType            = ShaderType;
-        ShaderCI.UseCombinedTextureSamplers = false;
         ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
         if (pDevice->GetDeviceInfo().IsGLDevice())
-            ShaderCI.UseCombinedTextureSamplers = true;
+            ShaderCI.Desc.UseCombinedTextureSamplers = true;
 
         ModifyCIHandler(ShaderCI);
         RefCntAutoPtr<IShader> pShader;
@@ -791,7 +790,7 @@ TEST_F(PipelineResourceSignatureTest, ImmutableSamplers2)
     Macros.AddShaderMacro("Buff_Ref", RefBuffers.GetValue(0));
 
     auto SetUseCombinedSamplers = [](ShaderCreateInfo& ShaderCI) {
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.Desc.UseCombinedTextureSamplers = true;
     };
     auto pVS = CreateShaderFromFile(SHADER_TYPE_VERTEX, "ImmutableSamplers2.hlsl", "VSMain", "PRS static samplers test: VS", Macros, SetUseCombinedSamplers);
     auto pPS = CreateShaderFromFile(SHADER_TYPE_PIXEL, "ImmutableSamplers2.hlsl", "PSMain", "PRS static samplers test: PS", Macros, SetUseCombinedSamplers);
@@ -1352,27 +1351,24 @@ void PipelineResourceSignatureTest::TestCombinedImageSamplers(SHADER_SOURCE_LANG
     ShaderCreateInfo ShaderCI;
     ShaderCI.pShaderSourceStreamFactory = pShaderSourceFactory;
     ShaderCI.SourceLanguage             = ShaderLang;
-    ShaderCI.UseCombinedTextureSamplers = true;
     ShaderCI.Macros                     = Macros;
     ShaderCI.ShaderCompiler             = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? SHADER_COMPILER_DEFAULT : pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
     ShaderCI.HLSLVersion                = {5, 0};
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.FilePath        = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? "CombinedImageSamplers.hlsl" : "CombinedImageSamplersGL.vsh";
-        ShaderCI.EntryPoint      = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? "VSMain" : "main";
-        ShaderCI.Desc.Name       = "CombinedImageSamplers - VS";
+        ShaderCI.Desc       = {"CombinedImageSamplers - VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.FilePath   = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? "CombinedImageSamplers.hlsl" : "CombinedImageSamplersGL.vsh";
+        ShaderCI.EntryPoint = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? "VSMain" : "main";
         pDevice->CreateShader(ShaderCI, &pVS);
     }
     ASSERT_NE(pVS, nullptr);
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.FilePath        = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? "CombinedImageSamplers.hlsl" : "CombinedImageSamplersGL.psh";
-        ShaderCI.EntryPoint      = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? "PSMain" : "main";
-        ShaderCI.Desc.Name       = "CombinedImageSamplers - PS";
+        ShaderCI.Desc       = {"CombinedImageSamplers - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.FilePath   = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? "CombinedImageSamplers.hlsl" : "CombinedImageSamplersGL.psh";
+        ShaderCI.EntryPoint = ShaderLang == SHADER_SOURCE_LANGUAGE_HLSL ? "PSMain" : "main";
         pDevice->CreateShader(ShaderCI, &pPS);
     }
     ASSERT_NE(pPS, nullptr);
@@ -1927,26 +1923,23 @@ TEST_F(PipelineResourceSignatureTest, UnusedNullResources)
     RenderDrawCommandReference(pSwapChain, ClearColor);
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Triangle VS";
-        ShaderCI.Source          = HLSL::DrawTest_ProceduralTriangleVS.c_str();
+        ShaderCI.Desc       = {"Triangle VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::DrawTest_ProceduralTriangleVS.c_str();
         pDevice->CreateShader(ShaderCI, &pVS);
         ASSERT_NE(pVS, nullptr);
     }
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Triangle PS";
-        ShaderCI.Source          = HLSL::DrawTest_PS.c_str();
+        ShaderCI.Desc       = {"Triangle PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::DrawTest_PS.c_str();
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
     }

@@ -127,6 +127,23 @@ TEST(Common_ParsingTools, SkipComment)
          "/* abc **\r\n"
          "/****** ***** ***\r"
          " /* **/Correct");
+
+    auto TestFlags = [](const char* Str, SKIP_COMMENT_FLAGS Flags, const char* Expected) {
+        const auto* StrEnd = Str + strlen(Str);
+        const auto* Pos    = SkipComment(Str, StrEnd, Flags);
+        EXPECT_STREQ(Pos, Expected);
+    };
+    TestFlags("/*\n"
+              "/* abc **\r\n*/"
+              "//Correct",
+              SKIP_COMMENT_FLAG_MULTILINE, "//Correct");
+    TestFlags("// abc /* def */\n"
+              "/*Correct*/",
+              SKIP_COMMENT_FLAG_SINGLE_LINE, "/*Correct*/");
+    TestFlags("//Correct",
+              SKIP_COMMENT_FLAG_MULTILINE, "//Correct");
+    TestFlags("/*Correct*/",
+              SKIP_COMMENT_FLAG_SINGLE_LINE, "/*Correct*/");
 }
 
 
@@ -188,6 +205,15 @@ TEST(Common_ParsingTools, SkipDelimiters)
     Test("\rCorrect");
     Test("\nCorrect");
     Test("\t \r \n Correct");
+
+    auto TestCustomDelimiters = [](const char* Str, const char* Delimiters, const char* Expected) {
+        const auto* StrEnd = Str + strlen(Str);
+        const auto* Pos    = SkipDelimiters(Str, StrEnd, Delimiters);
+        EXPECT_STREQ(Pos, Expected);
+    };
+    TestCustomDelimiters(" \t \r \n Correct", " ", "\t \r \n Correct");
+    TestCustomDelimiters(" \t \r \n Correct", " \t", "\r \n Correct");
+    TestCustomDelimiters(" \t \r \n Correct", " \t\r", "\n Correct");
 }
 
 TEST(Common_ParsingTools, SkipDelimitersAndComments)
@@ -237,6 +263,33 @@ TEST(Common_ParsingTools, SkipDelimitersAndComments)
          " \n //\r\n"
          " \t \r \n"
          "Correct");
+
+    auto TestCustom = [](const char* Str, const char* Delimiters, SKIP_COMMENT_FLAGS CommentFlags, const char* Expected) {
+        const auto* StrEnd = Str + strlen(Str);
+        const auto* Pos    = SkipDelimitersAndComments(Str, StrEnd, Delimiters, CommentFlags);
+        EXPECT_STREQ(Pos, Expected);
+    };
+
+    TestCustom(" \t // Comment 1\n"
+               " \t \r \n"
+               " /* Correct */",
+               nullptr, SKIP_COMMENT_FLAG_SINGLE_LINE, "/* Correct */");
+    TestCustom(" /* Comment 2 \n"
+               "Comment 3 /* /* **** \r"
+               "Comment 4*/ // Correct",
+               nullptr, SKIP_COMMENT_FLAG_MULTILINE, "// Correct");
+    TestCustom(" \t // Comment 1\n"
+               " /* Comment 2 \n"
+               "\t Comment 3 /* /* **** \r"
+               "Comment 4*/\n"
+               " // Correct",
+               " \t", SKIP_COMMENT_FLAG_ALL, "\n // Correct");
+    TestCustom(" \t // Comment 1\n"
+               " /* Comment 2 \n"
+               "\t Comment 3 /* /* **** \r"
+               "Comment 4*/\r"
+               " /* Correct */",
+               " \t\n", SKIP_COMMENT_FLAG_ALL, "\r /* Correct */");
 }
 
 TEST(Common_ParsingTools, SkipIdentifier)

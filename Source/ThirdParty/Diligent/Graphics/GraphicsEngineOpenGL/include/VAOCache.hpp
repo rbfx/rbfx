@@ -106,11 +106,11 @@ private:
 
         size_t Hash = 0;
 
-        bool operator==(const VAOHashKey& Key) const;
+        bool operator==(const VAOHashKey& Key) const noexcept;
 
         struct Hasher
         {
-            std::size_t operator()(const VAOHashKey& Key) const
+            std::size_t operator()(const VAOHashKey& Key) const noexcept
             {
                 return Key.Hash;
             }

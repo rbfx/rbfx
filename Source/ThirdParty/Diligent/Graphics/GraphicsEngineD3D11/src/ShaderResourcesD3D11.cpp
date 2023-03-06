@@ -45,7 +45,8 @@ static constexpr Uint32 GetRegisterSpace(const D3D11_SHADER_INPUT_BIND_DESC&)
 
 ShaderResourcesD3D11::ShaderResourcesD3D11(ID3DBlob*         pShaderBytecode,
                                            const ShaderDesc& ShdrDesc,
-                                           const char*       CombinedSamplerSuffix) :
+                                           const char*       CombinedSamplerSuffix,
+                                           bool              LoadConstantBufferReflection) :
     ShaderResources{ShdrDesc.ShaderType}
 {
     class NewResourceHandler
@@ -117,11 +118,20 @@ ShaderResourcesD3D11::ShaderResourcesD3D11(ID3DBlob*         pShaderBytecode,
     CHECK_D3D_RESULT_THROW(hr, "Failed to get the shader reflection");
 
 
-    Initialize<D3D11_SHADER_DESC, D3D11_SHADER_INPUT_BIND_DESC>(
+    struct D3D11ReflectionTraits
+    {
+        using D3D_SHADER_DESC            = D3D11_SHADER_DESC;
+        using D3D_SHADER_INPUT_BIND_DESC = D3D11_SHADER_INPUT_BIND_DESC;
+        using D3D_SHADER_BUFFER_DESC     = D3D11_SHADER_BUFFER_DESC;
+        using D3D_SHADER_VARIABLE_DESC   = D3D11_SHADER_VARIABLE_DESC;
+        using D3D_SHADER_TYPE_DESC       = D3D11_SHADER_TYPE_DESC;
+    };
+    Initialize<D3D11ReflectionTraits>(
         static_cast<ID3D11ShaderReflection*>(pShaderReflection),
         NewResourceHandler{ShdrDesc, CombinedSamplerSuffix, *this},
         ShdrDesc.Name,
-        CombinedSamplerSuffix);
+        CombinedSamplerSuffix,
+        LoadConstantBufferReflection);
 }
 
 

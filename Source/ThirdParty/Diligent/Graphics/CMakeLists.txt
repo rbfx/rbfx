@@ -6,7 +6,7 @@ set(DLL_DBG_SUFFIX _${ARCH}d)
 add_library(Diligent-GraphicsEngineInterface INTERFACE)
 target_include_directories(Diligent-GraphicsEngineInterface
 INTERFACE
-    GraphicsEngine/interface
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/GraphicsEngine/interface>
 )
 target_link_libraries(Diligent-GraphicsEngineInterface
 INTERFACE

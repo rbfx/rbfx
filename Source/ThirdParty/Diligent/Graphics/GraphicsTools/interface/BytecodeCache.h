@@ -48,24 +48,61 @@ static const INTERFACE_ID IID_BytecodeCache = {0xD1F8295F, 0xF9D7, 0x4CD4, {0x9D
 
 #define IBytecodeCacheInclusiveMethods \
     IObjectInclusiveMethods;           \
-    IBytecodeCache BytecodeCache
+    IBytecodeCacheMethods BytecodeCache
 
 // clang-format off
 
+/// Byte code cache interface
 DILIGENT_BEGIN_INTERFACE(IBytecodeCache, IObject)
 {
-    VIRTUAL bool METHOD(Load)(THIS_ IDataBlob* pData) PURE;
+    /// Loads the cache data from the binary blob
+    ///
+    /// \param [in] pData - A pointer to the cache data.
+    /// \return     true if the data was loaded successfully, and false otherwise.
+    VIRTUAL bool METHOD(Load)(THIS_
+                              IDataBlob* pData) PURE;
 
-    VIRTUAL void METHOD(GetBytecode)(THIS_ const ShaderCreateInfo REF ShaderCI,
-                                     IDataBlob**                      ppByteCode) PURE;
+    /// Returns the byte code for the requested shader create parameters.
 
-    VIRTUAL void METHOD(AddBytecode)(THIS_ const ShaderCreateInfo REF ShaderCI,
-                                     IDataBlob*                       pByteCode) PURE;
+    /// \param [in]  ShaderCI   - Shader create info to find the byte code for.
+    /// \param [out] ppByteCode - Address of the memory location where a pointer to the
+    ///                           data blob containing the byte code will be written.
+    ///                           The function calls AddRef(), so that the new object will have
+    ///                           one reference.
+    VIRTUAL void METHOD(GetBytecode)(THIS_
+                                     const ShaderCreateInfo REF ShaderCI,
+                                     IDataBlob**                ppByteCode) PURE;
 
-    VIRTUAL void METHOD(RemoveBytecode)(THIS_ const ShaderCreateInfo REF ShaderCI) PURE;
+    /// Adds the byte code to the cache.
 
-    VIRTUAL void METHOD(Store)(THIS_ IDataBlob** ppDataBlob) PURE;
+    /// \param [in] ShaderCI  - Shader create parameters for the byte code to add.
+    /// \param [in] pByteCode - A pointer to the byte code to add to the cache.
+    ///
+    /// \remarks    If the byte code for the given shader create parameters is already present
+    ///             in the cache, it is replaced.
+    VIRTUAL void METHOD(AddBytecode)(THIS_ 
+                                     const ShaderCreateInfo REF ShaderCI,
+                                     IDataBlob*                 pByteCode) PURE;
 
+    /// Removes the byte code from the cache.
+
+    /// \param [in] ShaderCI - Shader create information for the byte code to remove.
+    VIRTUAL void METHOD(RemoveBytecode)(THIS_ 
+                                        const ShaderCreateInfo REF ShaderCI) PURE;
+
+    /// Writes the cache data to the binary data blob.
+
+    /// \param [out] ppDataBlob - Address of the memory location where a pointer to the
+    ///                           data blob containing the cache data will be written.
+    ///                           The function calls AddRef(), so that the new object will have
+    ///                           one reference.
+    ///
+    /// \remarks    The data produced by this method is intended to be used by the Load method.
+    VIRTUAL void METHOD(Store)(THIS_
+                               IDataBlob** ppDataBlob) PURE;
+
+
+    /// Clears the cache and resets it to default state.
     VIRTUAL void METHOD(Clear)(THIS) PURE;
 };
 DILIGENT_END_INTERFACE

@@ -252,4 +252,28 @@ TEST(Common_StringTools, NarrowString)
     EXPECT_EQ(NarrowString(std::wstring{L"abc"}), std::string{"abc"});
 }
 
+TEST(Common_StringTools, GetPrintWidth)
+{
+    EXPECT_EQ(GetPrintWidth(0), size_t{1});
+    EXPECT_EQ(GetPrintWidth(1), size_t{1});
+    EXPECT_EQ(GetPrintWidth(9), size_t{1});
+    EXPECT_EQ(GetPrintWidth(10), size_t{2});
+    EXPECT_EQ(GetPrintWidth(99), size_t{2});
+    EXPECT_EQ(GetPrintWidth(100), size_t{3});
+
+    EXPECT_EQ(GetPrintWidth(0u), size_t{1});
+    EXPECT_EQ(GetPrintWidth(1u), size_t{1});
+    EXPECT_EQ(GetPrintWidth(9u), size_t{1});
+    EXPECT_EQ(GetPrintWidth(10u), size_t{2});
+    EXPECT_EQ(GetPrintWidth(99u), size_t{2});
+    EXPECT_EQ(GetPrintWidth(100u), size_t{3});
+
+    EXPECT_EQ(GetPrintWidth(-1), size_t{2});
+    EXPECT_EQ(GetPrintWidth(-9), size_t{2});
+    EXPECT_EQ(GetPrintWidth(-10), size_t{3});
+    EXPECT_EQ(GetPrintWidth(-99), size_t{3});
+    EXPECT_EQ(GetPrintWidth(-100), size_t{4});
+    EXPECT_EQ(GetPrintWidth(-999), size_t{4});
+}
+
 } // namespace

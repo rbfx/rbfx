@@ -125,26 +125,23 @@ protected:
         GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
         ShaderCreateInfo ShaderCI;
-        ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-        ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
         RefCntAutoPtr<IShader> pVS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Query test vertex shader";
-            ShaderCI.Source          = QueryTest_ProceduralQuadVS.c_str();
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Desc       = {"Query test vertex shader", SHADER_TYPE_VERTEX, true};
+            ShaderCI.Source     = QueryTest_ProceduralQuadVS.c_str();
             pDevice->CreateShader(ShaderCI, &pVS);
             ASSERT_NE(pVS, nullptr);
         }
 
         RefCntAutoPtr<IShader> pPS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Query test pixel shader";
-            ShaderCI.Source          = QueryTest_PS.c_str();
+            ShaderCI.Desc       = {"Query test pixel shader", SHADER_TYPE_PIXEL, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = QueryTest_PS.c_str();
             pDevice->CreateShader(ShaderCI, &pPS);
             ASSERT_NE(pVS, nullptr);
         }

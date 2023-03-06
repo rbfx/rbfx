@@ -55,6 +55,12 @@ if(METAL_SUPPORTED)
     file(GLOB MTL_INCLUDE LIST_DIRECTORIES false include/Metal/*)
     list(APPEND INCLUDE ${MTL_INCLUDE})
     list(APPEND SOURCE ${MTL_SOURCE})
+    
+    set_property(SOURCE ${MTL_SOURCE} APPEND_STRING PROPERTY
+        # Disable Metal API deprecation warnings such as
+        #   'MTLArgumentType' is deprecated: first deprecated in macOS 13.0
+        COMPILE_FLAGS " -Wno-deprecated-declarations"
+    )
 endif()
 
 if(GL_SUPPORTED OR GLES_SUPPORTED)

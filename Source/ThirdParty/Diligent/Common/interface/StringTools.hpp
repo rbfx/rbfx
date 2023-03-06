@@ -78,6 +78,16 @@ inline std::wstring WidenString(const char* Str, size_t Len = 0)
     return WideStr;
 }
 
+inline size_t StrLen(const char* Str)
+{
+    return Str != nullptr ? strlen(Str) : 0;
+}
+
+inline size_t StrLen(const wchar_t* Str)
+{
+    return Str != nullptr ? wcslen(Str) : 0;
+}
+
 inline std::wstring WidenString(const std::string& Str)
 {
     return WidenString(Str.c_str(), Str.length());
@@ -263,6 +273,24 @@ std::vector<std::string> SplitString(IterType Start, IterType End, const char* D
                     Strings.emplace_back(Start, End);
                 });
     return Strings;
+}
+
+
+/// Returns the print width of a number Num
+template <typename Type>
+size_t GetPrintWidth(Type Num, Type Base = 10)
+{
+    if (Num == 0)
+        return 1;
+
+    size_t W = Num < 0 ? 1 : 0;
+    while (Num != 0)
+    {
+        ++W;
+        Num /= Base;
+    }
+
+    return W;
 }
 
 } // namespace Diligent

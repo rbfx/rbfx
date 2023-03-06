@@ -126,6 +126,8 @@ public:
 
     // Copies static resources from the static resource cache to the destination cache
     void CopyStaticResources(ShaderResourceCacheD3D11& ResourceCache) const;
+    // Make the base class method visible
+    using TPipelineResourceSignatureBase::CopyStaticResources;
 
     PipelineResourceSignatureInternalDataD3D11 GetInternalData() const;
 

@@ -156,27 +156,29 @@ if(PLATFORM_WIN32)
 
     set(GL_SUPPORTED       TRUE CACHE INTERNAL "OpenGL is supported on Win32 platform")
 	set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Win32 platform")
-    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Win32 platform")
+    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Win32 platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_WIN32=1)
 elseif(PLATFORM_UNIVERSAL_WINDOWS)
     set(D3D11_SUPPORTED TRUE CACHE INTERNAL "D3D11 is supported on Universal Windows platform")
 	if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
 		set(D3D12_SUPPORTED TRUE CACHE INTERNAL "D3D12 is supported on Universal Windows platform")
 	endif()
+    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Universal Windows platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_UNIVERSAL_WINDOWS=1)
 elseif(PLATFORM_ANDROID)
-    set(GLES_SUPPORTED   TRUE CACHE INTERNAL "OpenGLES is supported on Android platform")
-    set(VULKAN_SUPPORTED TRUE CACHE INTERNAL "Vulkan is supported on Android platform")
+    set(GLES_SUPPORTED     TRUE CACHE INTERNAL "OpenGLES is supported on Android platform")
+    set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Android platform")
+    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Android platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_ANDROID=1)
 elseif(PLATFORM_LINUX)
     set(GL_SUPPORTED       TRUE CACHE INTERNAL "OpenGL is supported on Linux platform")
     set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Linux platform")
-    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Linux platform")
+    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Linux platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_LINUX=1)
 elseif(PLATFORM_MACOS)
     set(GL_SUPPORTED       TRUE CACHE INTERNAL "OpenGL is supported on MacOS platform")
     set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is enabled through MoltenVK on MacOS platform")
-    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on MacOS platform")
+    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on MacOS platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_MACOS=1)
 elseif(PLATFORM_IOS)
     set(GLES_SUPPORTED TRUE CACHE INTERNAL "OpenGLES is supported on iOS platform")
@@ -263,7 +265,7 @@ option(DILIGENT_NO_DIRECT3D12        "Disable Direct3D12 backend" OFF)
 option(DILIGENT_NO_OPENGL            "Disable OpenGL/GLES backend" OFF)
 option(DILIGENT_NO_VULKAN            "Disable Vulkan backend" OFF)
 option(DILIGENT_NO_METAL             "Disable Metal backend" OFF)
-option(DILIGENT_NO_ARCHIVER          "Do not build archiver" OFF)
+option(DILIGENT_NO_ARCHIVER          "Do not build archiver" ON)
 if(${DILIGENT_NO_DIRECT3D11})
     set(D3D11_SUPPORTED FALSE CACHE INTERNAL "D3D11 backend is forcibly disabled")
 endif()
@@ -501,22 +503,65 @@ add_subdirectory(Primitives)
 add_subdirectory(Platforms)
 add_subdirectory(Common)
 add_subdirectory(Graphics)
-add_subdirectory(Tests)
+#add_subdirectory(Tests)
 
 
 # Installation instructions
-if(DILIGENT_INSTALL_CORE)
-
-    install_combined_static_lib(
-        "${CMAKE_STATIC_LIBRARY_PREFIX}DiligentCore${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        "${DILIGENT_CORE_INSTALL_LIBS_LIST}"
-        DiligentCore-static                     # Custom target name
-        DiligentCore                            # Folder
-        "${CMAKE_INSTALL_LIBDIR}/${DILIGENT_CORE_DIR}/$<CONFIG>"    # Install destination
-    )
-
-    install(FILES License.txt DESTINATION "Licenses" RENAME DiligentEngine-License.txt)
-endif(DILIGENT_INSTALL_CORE)
+#if(DILIGENT_INSTALL_CORE)
+#
+#    install_combined_static_lib(
+#        "${CMAKE_STATIC_LIBRARY_PREFIX}DiligentCore${CMAKE_STATIC_LIBRARY_SUFFIX}"
+#        "${DILIGENT_CORE_INSTALL_LIBS_LIST}"
+#        DiligentCore-static                     # Custom target name
+#        DiligentCore                            # Folder
+#        "${CMAKE_INSTALL_LIBDIR}/${DILIGENT_CORE_DIR}/$<CONFIG>"    # Install destination
+#    )
+#
+#    install(FILES License.txt DESTINATION "Licenses" RENAME DiligentEngine-License.txt)
+#endif(DILIGENT_INSTALL_CORE)
 
 # Create a custom target to run source code formatting validation command
-add_format_validation_target(DiligentCore "${CMAKE_CURRENT_SOURCE_DIR}" DiligentCore/BuildTools)
+#add_format_validation_target(DiligentCore "${CMAKE_CURRENT_SOURCE_DIR}" DiligentCore/BuildTools)
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    foreach (TARGET Diligent-Archiver-static
+                    Diligent-ArchiverInterface
+                    Diligent-BuildSettings
+                    Diligent-PlatformInterface
+                    Diligent-Common
+                    Diligent-GraphicsAccessories
+                    Diligent-GraphicsEngineInterface
+                    Diligent-PublicBuildSettings
+                    Diligent-GraphicsEngineNextGenBase
+                    Diligent-ShaderTools
+                    SPIRV-Tools-opt
+                    volk_headers
+                    Diligent-GraphicsEngineVkInterface
+                    Diligent-Win32Platform
+                    Diligent-GraphicsEngine
+                    Diligent-HLSL2GLSLConverterLib
+                    Diligent-GraphicsEngineOpenGLInterface
+                    Diligent-GraphicsEngineVk-static
+                    Vulkan-Headers
+                    Diligent-GraphicsEngineOpenGL-static
+                    Diligent-GraphicsEngineD3D11-shared
+                    Diligent-GraphicsEngineD3D12-shared
+                    Diligent-Primitives
+                    SPIRV-Tools-static
+                    Diligent-BasicPlatform
+                    Diligent-LinuxPlatform
+                    Diligent-EmscriptenPlatform
+                    Diligent-ApplePlatform
+                    Diligent-AndroidPlatform
+                    Diligent-UniversalWindowsPlatform
+                    Diligent-GraphicsEngineD3D11-static
+                    Diligent-GraphicsEngineD3D12-static
+                    Diligent-GraphicsEngineD3DBase
+                    Diligent-GraphicsEngineD3DBaseInterface
+                    Diligent-GraphicsEngineD3D11Interface
+                    Diligent-GraphicsEngineD3D12Interface)
+        if (TARGET ${TARGET})
+            install(TARGETS ${TARGET} EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+        endif ()
+    endforeach ()
+endif ()

@@ -121,7 +121,7 @@ DILIGENT_BEGIN_INTERFACE(IShaderResourceBinding, IObject)
     ///        recommended to store and reuse the pointer as it never changes.
     VIRTUAL IShaderResourceVariable* METHOD(GetVariableByName)(THIS_
                                                                SHADER_TYPE ShaderType,
-                                                               const char* Name) PURE;
+                                                               const Char* Name) PURE;
 
 
     /// Returns the total variable count for the specific shader stage.
@@ -150,7 +150,7 @@ DILIGENT_BEGIN_INTERFACE(IShaderResourceBinding, IObject)
                                                                 Uint32      Index) PURE;
 
     /// Returns true if static resources have been initialized in this SRB.
-    VIRTUAL bool METHOD(StaticResourcesInitialized)(THIS) CONST PURE;
+    VIRTUAL Bool METHOD(StaticResourcesInitialized)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 

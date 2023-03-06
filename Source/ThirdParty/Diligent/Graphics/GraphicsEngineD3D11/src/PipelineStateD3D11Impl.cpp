@@ -47,6 +47,8 @@
 namespace Diligent
 {
 
+constexpr INTERFACE_ID PipelineStateD3D11Impl::IID_InternalImpl;
+
 __forceinline SHADER_TYPE GetShaderStageType(const ShaderD3D11Impl* pShader)
 {
     return pShader->GetDesc().ShaderType;
@@ -120,7 +122,7 @@ void PipelineStateD3D11Impl::RemapOrVerifyShaderResources(const TShaderStages&  
     {
         auto* const pShader    = Shaders[s];
         auto const  ShaderType = pShader->GetDesc().ShaderType;
-        auto* const pBytecode  = Shaders[s]->GetBytecode();
+        auto* const pBytecode  = Shaders[s]->GetD3DBytecode();
 
         ResourceBinding::TMap ResourceMap;
         for (Uint32 sign = 0; sign < SignatureCount; ++sign)
@@ -255,7 +257,7 @@ void PipelineStateD3D11Impl::InitResourceLayouts(const PipelineStateCreateInfo& 
             VERIFY_EXPR(m_ppd3d11Shaders[s]);
 
             if (pShader->GetDesc().ShaderType == SHADER_TYPE_VERTEX)
-                pVSByteCode = pShader->GetBytecode();
+                pVSByteCode = pShader->GetD3DBytecode();
         }
     }
 }
@@ -380,7 +382,7 @@ void PipelineStateD3D11Impl::Destruct()
     TPipelineStateBase::Destruct();
 }
 
-IMPLEMENT_QUERY_INTERFACE(PipelineStateD3D11Impl, IID_PipelineStateD3D11, TPipelineStateBase)
+IMPLEMENT_QUERY_INTERFACE2(PipelineStateD3D11Impl, IID_PipelineStateD3D11, IID_InternalImpl, TPipelineStateBase)
 
 
 bool PipelineStateD3D11Impl::IsCompatibleWith(const IPipelineState* pPSO) const
@@ -388,7 +390,10 @@ bool PipelineStateD3D11Impl::IsCompatibleWith(const IPipelineState* pPSO) const
     if (!TPipelineStateBase::IsCompatibleWith(pPSO))
         return false;
 
-    const auto& rhs = *ClassPtrCast<const PipelineStateD3D11Impl>(pPSO);
+    RefCntAutoPtr<PipelineStateD3D11Impl> pPSOImpl{const_cast<IPipelineState*>(pPSO), PipelineStateImplType::IID_InternalImpl};
+    VERIFY(pPSOImpl, "Unknown PSO implementation type");
+
+    const auto& rhs = *pPSOImpl;
     if (m_ActiveShaderStages != rhs.m_ActiveShaderStages)
         return false;
 

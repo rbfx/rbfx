@@ -131,6 +131,7 @@ struct RenderPassAttachmentDesc
     /// - False otherwise
     constexpr bool operator == (const RenderPassAttachmentDesc& RHS) const
     {
+        static_assert(sizeof(*this)==16, "Did you add new members? Please handle them here");
         return  Format          == RHS.Format         &&
                 SampleCount     == RHS.SampleCount    &&
                 LoadOp          == RHS.LoadOp         &&
@@ -140,11 +141,18 @@ struct RenderPassAttachmentDesc
                 InitialState    == RHS.InitialState   &&
                 FinalState      == RHS.FinalState;
     }
+    constexpr bool operator != (const RenderPassAttachmentDesc& RHS) const
+    {
+        return !(*this == RHS);
+    }
 #endif
 };
 typedef struct RenderPassAttachmentDesc RenderPassAttachmentDesc;
 
-#define ATTACHMENT_UNUSED (~0U)
+/// Special constant indicating that the render pass attachment is not used.
+#define DILIGENT_ATTACHMENT_UNUSED 0xFFFFFFFFU
+
+static const Uint32 ATTACHMENT_UNUSED = DILIGENT_ATTACHMENT_UNUSED;
 
 /// Attachment reference description.
 struct AttachmentReference
@@ -173,6 +181,7 @@ struct AttachmentReference
     /// - False otherwise
     constexpr bool operator == (const AttachmentReference& RHS) const
     {
+        static_assert(sizeof(*this)==8, "Did you add new members? Please handle them here");
         return  AttachmentIndex == RHS.AttachmentIndex &&
                 State           == RHS.State;
     }
@@ -209,6 +218,7 @@ struct ShadingRateAttachment
 
     constexpr bool operator == (const ShadingRateAttachment& RHS) const
     {
+        static_assert(sizeof(*this)==16, "Did you add new members? Please handle them here");
         return  Attachment  == RHS.Attachment  &&
                 TileSize[0] == RHS.TileSize[0] &&
                 TileSize[1] == RHS.TileSize[1];
@@ -336,12 +346,19 @@ struct SubpassDesc
 
         return true;
     }
+
+    constexpr bool operator != (const SubpassDesc& RHS) const
+    {
+        return !(*this== RHS);
+    }
 #endif
 };
 typedef struct SubpassDesc SubpassDesc;
 
+/// Special subpass index value expanding synchronization scope outside a subpass.
+#define DILIGENT_SUBPASS_EXTERNAL 0xFFFFFFFFU
 
-#define SUBPASS_EXTERNAL (~0U)
+static const Uint32 SUBPASS_EXTERNAL = DILIGENT_SUBPASS_EXTERNAL;
 
 /// Subpass dependency description
 struct SubpassDependencyDesc
@@ -373,6 +390,7 @@ struct SubpassDependencyDesc
     /// - False otherwise
     constexpr bool operator == (const SubpassDependencyDesc& RHS) const
     {
+        static_assert(sizeof(*this)==24, "Did you add new members? Please handle them here");
         return  SrcSubpass    == RHS.SrcSubpass    &&
                 DstSubpass    == RHS.DstSubpass    &&
                 SrcStageMask  == RHS.SrcStageMask  &&
@@ -411,8 +429,18 @@ struct RenderPassDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     const SubpassDependencyDesc*     pDependencies      DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
-    bool operator==(const RenderPassDesc& Rhs) const
+    /// Tests if two render pass descriptions are equal.
+
+    /// \param [in] Rhs - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the render pass properties.
+    bool operator==(const RenderPassDesc& Rhs) const noexcept
     {
+        // Ignore Name. This is consistent with the hasher (HashCombiner<HasherType, RenderPassDesc>).
         if (AttachmentCount != Rhs.AttachmentCount ||
             SubpassCount    != Rhs.SubpassCount    ||
             DependencyCount != Rhs.DependencyCount)
@@ -442,6 +470,10 @@ struct RenderPassDesc DILIGENT_DERIVE(DeviceObjectAttribs)
                 return false;
         }
         return true;
+    }
+    bool operator!=(const RenderPassDesc& Rhs) const noexcept
+    {
+        return !(*this == Rhs);
     }
 #endif
 };

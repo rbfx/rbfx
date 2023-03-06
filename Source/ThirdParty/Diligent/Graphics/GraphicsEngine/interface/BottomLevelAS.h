@@ -44,8 +44,9 @@ static const INTERFACE_ID IID_BottomLevelAS =
 
 // clang-format off
 
-static const Uint32 INVALID_INDEX = ~0u;
+#define DILIGENT_INVALID_INDEX 0xFFFFFFFFU
 
+static const Uint32 INVALID_INDEX = DILIGENT_INVALID_INDEX;
 
 /// Defines bottom level acceleration structure triangles description.
 
@@ -54,7 +55,7 @@ struct BLASTriangleDesc
 {
     /// Geometry name.
     /// The name is used to map triangle data (BLASBuildTriangleData) to this geometry.
-    const char*               GeometryName          DEFAULT_INITIALIZER(nullptr);
+    const Char*               GeometryName          DEFAULT_INITIALIZER(nullptr);
 
     /// The maximum vertex count in this geometry.
     /// Current number of vertices is defined in BLASBuildTriangleData::VertexCount.
@@ -110,7 +111,7 @@ struct BLASBoundingBoxDesc
 {
     /// Geometry name.
     /// The name is used to map AABB data (BLASBuildBoundingBoxData) to this geometry.
-    const char*               GeometryName  DEFAULT_INITIALIZER(nullptr);
+    const Char*               GeometryName  DEFAULT_INITIALIZER(nullptr);
 
     /// The maximum AABB count.
     /// Current number of AABBs is defined in BLASBuildBoundingBoxData::BoxCount.
@@ -119,7 +120,7 @@ struct BLASBoundingBoxDesc
 #if DILIGENT_CPP_INTERFACE
     constexpr BLASBoundingBoxDesc() noexcept {}
 
-    constexpr BLASBoundingBoxDesc(const char* _GeometryName,
+    constexpr BLASBoundingBoxDesc(const Char* _GeometryName,
                                   Uint32      _MaxBoxCount) noexcept :
         GeometryName{_GeometryName},
         MaxBoxCount {_MaxBoxCount }
@@ -164,7 +165,7 @@ DILIGENT_TYPED_ENUM(RAYTRACING_BUILD_AS_FLAGS, Uint8)
     /// result build, potentially at the expense of build time or trace performance.
     RAYTRACING_BUILD_AS_LOW_MEMORY        = 0x10,
 
-    RAYTRACING_BUILD_AS_FLAGS_LAST        = RAYTRACING_BUILD_AS_LOW_MEMORY
+    RAYTRACING_BUILD_AS_FLAG_LAST         = RAYTRACING_BUILD_AS_LOW_MEMORY
 };
 DEFINE_FLAG_ENUM_OPERATORS(RAYTRACING_BUILD_AS_FLAGS)
 
@@ -203,6 +204,15 @@ struct BottomLevelASDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     Uint64                     ImmediateContextMask    DEFAULT_INITIALIZER(1);
 
 #if DILIGENT_CPP_INTERFACE
+    /// Tests if two BLAS descriptions are equal.
+
+    /// \param [in] RHS - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the BLAS properties.
     bool operator == (const BottomLevelASDesc& rhs) const
     {
         if (TriangleCount        != rhs.TriangleCount ||
@@ -282,7 +292,7 @@ DILIGENT_BEGIN_INTERFACE(IBottomLevelAS, IDeviceObject)
     ///
     /// \note Access to the BLAS must be externally synchronized.
     VIRTUAL Uint32 METHOD(GetGeometryDescIndex)(THIS_
-                                                const char* Name) CONST PURE;
+                                                const Char* Name) CONST PURE;
 
 
     /// Returns the geometry index that can be used in a shader binding table.
@@ -292,7 +302,7 @@ DILIGENT_BEGIN_INTERFACE(IBottomLevelAS, IDeviceObject)
     ///
     /// \note Access to the BLAS must be externally synchronized.
     VIRTUAL Uint32 METHOD(GetGeometryIndex)(THIS_
-                                            const char* Name) CONST PURE;
+                                            const Char* Name) CONST PURE;
 
 
     /// Returns the geometry count that was used to build AS.

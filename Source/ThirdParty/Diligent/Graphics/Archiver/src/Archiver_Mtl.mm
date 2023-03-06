@@ -155,7 +155,7 @@ bool SaveMslToFile(const std::string& MslSource, const std::string& MetalFile)
 }
 
 // Runs a custom MSL processing command
-bool PreprocessMsl(const std::string& MslPreprocessorCmd, const std::string& MetalFile)
+bool RunPreprocessMslCmd(const std::string& MslPreprocessorCmd, const std::string& MetalFile)
 {
     auto cmd{MslPreprocessorCmd};
     cmd += " \"";
@@ -236,54 +236,80 @@ RefCntAutoPtr<DataBlobImpl> ReadFile(const char* FilePath)
 
 #undef LOG_ERRNO_MESSAGE
 
+void PreprocessMslSource(const std::string& MslPreprocessorCmd, const char* ShaderName, std::string& MslSource) noexcept(false)
+{
+    if (MslPreprocessorCmd.empty())
+        return;
+    
+    VERIFY_EXPR(ShaderName != nullptr);
+    
+    const auto TmpFolder = GetTmpFolder();
+    filesystem::create_directories(TmpFolder);
+    TmpDirRemover DirRemover{TmpFolder};
+
+    const auto MetalFile = TmpFolder + ShaderName + ".metal";
+
+    // Save MSL source to a file
+    if (!SaveMslToFile(MslSource, MetalFile))
+        LOG_ERROR_AND_THROW("Failed to save MSL source to a temp file for shader '", ShaderName,"'.");
+
+    // Run the preprocessor
+    if (!RunPreprocessMslCmd(MslPreprocessorCmd, MetalFile))
+        LOG_ERROR_AND_THROW("Failed to preprocess MSL source for shader '", ShaderName,"'.");
+
+    // Read processed MSL source back
+    auto pProcessedMsl = ReadFile(MetalFile.c_str());
+    if (!pProcessedMsl)
+        LOG_ERROR_AND_THROW("Failed to read preprocessed MSL source for shader '", ShaderName,"'.");
+
+    const auto* pMslStr = pProcessedMsl->GetConstDataPtr<char>();
+    MslSource = {pMslStr, pMslStr + pProcessedMsl->GetSize()};
+}
 
 struct CompiledShaderMtl final : SerializedShaderImpl::CompiledShader
 {
+    ShaderMtlImpl ShaderMtl;
+
     CompiledShaderMtl(
-        IReferenceCounters*                           pRefCounters,
-        const ShaderCreateInfo&                       ShaderCI,
-        const RenderDeviceInfo&                       DeviceInfo,
-        const GraphicsAdapterInfo&                    AdapterInfo,
-        const SerializationDeviceImpl::MtlProperties& MtlProps)
-    {
-        MSLData = ShaderMtlImpl::PrepareMSLData(ShaderCI, DeviceInfo, AdapterInfo); // may throw exception
-
-        if (!MtlProps.MslPreprocessorCmd.empty())
+        IReferenceCounters*              pRefCounters,
+        const ShaderCreateInfo&          ShaderCI,
+        const ShaderMtlImpl::CreateInfo& MtlShaderCI,
+        IRenderDevice*                   pRenderDeviceMtl):
+        ShaderMtl
         {
-            const auto TmpFolder = GetTmpFolder();
-            filesystem::create_directories(TmpFolder);
-            TmpDirRemover DirRemover{TmpFolder};
-
-            const auto MetalFile = TmpFolder + ShaderCI.Desc.Name + ".metal";
-
-            // Save MSL source to a file
-            if (!SaveMslToFile(MSLData.Source, MetalFile))
-                LOG_ERROR_AND_THROW("Failed to save MSL source to a temp file for shader '", ShaderCI.Desc.Name,"'.");
-
-            // Run the preprocessor
-            if (!PreprocessMsl(MtlProps.MslPreprocessorCmd, MetalFile))
-                LOG_ERROR_AND_THROW("Failed to preprocess MSL source for shader '", ShaderCI.Desc.Name,"'.");
-
-            // Read processed MSL source back
-            auto pProcessedMsl = ReadFile(MetalFile.c_str());
-            if (!pProcessedMsl)
-                LOG_ERROR_AND_THROW("Failed to read preprocessed MSL source for shader '", ShaderCI.Desc.Name,"'.");
-
-            const auto* pMslStr = pProcessedMsl->GetConstDataPtr<char>();
-            MSLData.Source = {pMslStr, pMslStr + pProcessedMsl->GetSize()};
+            pRefCounters,
+            static_cast<RenderDeviceMtlImpl*>(pRenderDeviceMtl),
+            ShaderCI,
+            MtlShaderCI,
+            true
         }
-
-        ParsedMsl = ShaderMtlImpl::ParseMSL(MSLData);
+    {
     }
 
-    MSLParseData  MSLData;
-    ParsedMSLInfo ParsedMsl;
+    virtual SerializedData Serialize(ShaderCreateInfo ShaderCI) const override final
+    {
+        const auto& Source = ShaderMtl.GetMslData().Source;
+        
+        ShaderCI.FilePath       = nullptr;
+        ShaderCI.ByteCode       = nullptr;
+        ShaderCI.Macros         = nullptr;
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_MSL_VERBATIM;
+        ShaderCI.Source         = Source.c_str();
+        ShaderCI.SourceLength   = Source.length();
+        
+        return SerializedShaderImpl::SerializeCreateInfo(ShaderCI);
+    }
+    
+    virtual IShader* GetDeviceShader() override final
+    {
+        return &ShaderMtl;
+    }
 };
 
 inline const ParsedMSLInfo* GetParsedMsl(const SerializedShaderImpl* pShader, SerializedShaderImpl::DeviceType Type)
 {
     const auto* pCompiledShaderMtl = pShader->GetShader<const CompiledShaderMtl>(Type);
-    return pCompiledShaderMtl != nullptr ? &pCompiledShaderMtl->ParsedMsl : nullptr;
+    return pCompiledShaderMtl != nullptr ? &pCompiledShaderMtl->ShaderMtl.GetParsedMsl() : nullptr;
 }
 
 
@@ -336,8 +362,8 @@ SerializedData CompileMtlShader(const CompileMtlShaderAttribs& Attribs) noexcept
 
     const auto* pCompiledShader = Attribs.pSerializedShader->GetShader<const CompiledShaderMtl>(Attribs.DevType);
 
-    const auto& MslData   = pCompiledShader->MSLData;
-    const auto& ParsedMsl = pCompiledShader->ParsedMsl;
+    const auto& MslData   = pCompiledShader->ShaderMtl.GetMslData();
+    const auto& ParsedMsl = pCompiledShader->ShaderMtl.GetParsedMsl();
 
 #define LOG_PATCH_SHADER_ERROR_AND_THROW(...)\
     LOG_ERROR_AND_THROW("Failed to patch shader '", ShaderName, "' for PSO '", PSOName, "': ", ##__VA_ARGS__)
@@ -517,6 +543,7 @@ void SerializedPipelineStateImpl::PatchShadersMtl(const CreateInfoType& CreateIn
             auto ShaderCI           = Stage.pShader->GetCreateInfo();
             ShaderCI.Source         = nullptr;
             ShaderCI.FilePath       = nullptr;
+            ShaderCI.Macros         = nullptr;
             ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_MTLB;
             ShaderCI.ByteCode       = ShaderData.Ptr();
             ShaderCI.ByteCodeSize   = ShaderData.Size();
@@ -529,12 +556,27 @@ void SerializedPipelineStateImpl::PatchShadersMtl(const CreateInfoType& CreateIn
 INSTANTIATE_PATCH_SHADER_METHODS(PatchShadersMtl, DeviceType DevType, const std::string& DumpDir)
 INSTANTIATE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureMtlImpl)
 
-void SerializedShaderImpl::CreateShaderMtl(const ShaderCreateInfo& ShaderCI, DeviceType Type) noexcept(false)
+void SerializedShaderImpl::CreateShaderMtl(IReferenceCounters* pRefCounters, const ShaderCreateInfo& ShaderCI, DeviceType Type) noexcept(false)
 {
-    const auto& DeviceInfo  = m_pDevice->GetDeviceInfo();
-    const auto& AdapterInfo = m_pDevice->GetAdapterInfo();
-    const auto& MtlProps    = m_pDevice->GetMtlProperties();
-    CreateShader<CompiledShaderMtl>(Type, nullptr, ShaderCI, DeviceInfo, AdapterInfo, MtlProps);
+    const auto& DeviceInfo       = m_pDevice->GetDeviceInfo();
+    const auto& AdapterInfo      = m_pDevice->GetAdapterInfo();
+    const auto& MtlProps         = m_pDevice->GetMtlProperties();
+    auto*       pRenderDeviceMtl = m_pDevice->GetRenderDevice(RENDER_DEVICE_TYPE_METAL);
+        
+    ShaderMtlImpl::CreateInfo MtlShaderCI
+    {
+        DeviceInfo,
+        AdapterInfo,
+        nullptr, // pDearchiveData
+        std::function<void(std::string&)>{
+            [&](std::string& MslSource)
+            {
+                PreprocessMslSource(MtlProps.MslPreprocessorCmd, ShaderCI.Desc.Name, MslSource);
+            }
+        }
+    };
+    
+    CreateShader<CompiledShaderMtl>(Type, pRefCounters, ShaderCI, MtlShaderCI, pRenderDeviceMtl);
 }
 
 void SerializationDeviceImpl::GetPipelineResourceBindingsMtl(const PipelineResourceBindingAttribs& Info,

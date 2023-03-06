@@ -117,22 +117,6 @@ SerializedResourceSignatureImpl::~SerializedResourceSignatureImpl()
 {
 }
 
-void DILIGENT_CALL_TYPE SerializedResourceSignatureImpl::QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface)
-{
-    if (ppInterface == nullptr)
-        return;
-    if (IID == IID_SerializedResourceSignature || IID == IID_PipelineResourceSignature)
-    {
-        *ppInterface = this;
-        (*ppInterface)->AddRef();
-    }
-    else
-    {
-        TBase::QueryInterface(IID, ppInterface);
-    }
-}
-
-
 const PipelineResourceSignatureDesc& SerializedResourceSignatureImpl::GetDesc() const
 {
     if (m_pDesc != nullptr)
@@ -184,7 +168,7 @@ bool SerializedResourceSignatureImpl::IsCompatible(const SerializedResourceSigna
     return true;
 }
 
-bool SerializedResourceSignatureImpl::operator==(const SerializedResourceSignatureImpl& Rhs) const
+bool SerializedResourceSignatureImpl::operator==(const SerializedResourceSignatureImpl& Rhs) const noexcept
 {
     if (GetCommonData() != Rhs.GetCommonData())
         return false;

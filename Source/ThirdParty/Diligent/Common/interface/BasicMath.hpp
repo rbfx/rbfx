@@ -57,10 +57,6 @@
 #ifdef _MSC_VER
 #    pragma warning(push)
 #    pragma warning(disable : 4201) // nonstandard extension used: nameless struct/union
-
-#    if defined(min) || defined(max)
-#        error One of Windows headers leaks min/max macros, which will result in odd errors. Define NOMINMAX before including any Windows headers to fix this.
-#    endif
 #endif
 
 namespace Diligent
@@ -1745,27 +1741,27 @@ constexpr auto length(const VectorType& a) -> decltype(dot(a, a))
 
 
 template <class T>
-constexpr Vector3<T> min(const Vector3<T>& a, const Vector3<T>& b)
+constexpr Vector3<T>(min)(const Vector3<T>& a, const Vector3<T>& b)
 {
-    return Vector3<T>(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z));
+    return Vector3<T>((std::min)(a.x, b.x), (std::min)(a.y, b.y), (std::min)(a.z, b.z));
 }
 
 template <class T>
-constexpr Vector4<T> min(const Vector4<T>& a, const Vector4<T>& b)
+constexpr Vector4<T>(min)(const Vector4<T>& a, const Vector4<T>& b)
 {
-    return Vector4<T>(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z), std::min(a.w, b.w));
+    return Vector4<T>((std::min)(a.x, b.x), (std::min)(a.y, b.y), (std::min)(a.z, b.z), (std::min)(a.w, b.w));
 }
 
 template <class T>
-constexpr Vector3<T> max(const Vector3<T>& a, const Vector3<T>& b)
+constexpr Vector3<T>(max)(const Vector3<T>& a, const Vector3<T>& b)
 {
-    return Vector3<T>(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z));
+    return Vector3<T>((std::max)(a.x, b.x), (std::max)(a.y, b.y), (std::max)(a.z, b.z));
 }
 
 template <class T>
-constexpr Vector4<T> max(const Vector4<T>& a, const Vector4<T>& b)
+constexpr Vector4<T>(max)(const Vector4<T>& a, const Vector4<T>& b)
 {
-    return Vector4<T>(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z), std::max(a.w, b.w));
+    return Vector4<T>((std::max)(a.x, b.x), (std::max)(a.y, b.y), (std::max)(a.z, b.z), (std::max)(a.w, b.w));
 }
 
 template <class T>
@@ -2395,58 +2391,58 @@ inline std::ostream& operator<<(std::ostream& os, const uint2& vec)
 namespace std
 {
 template <typename T>
-constexpr Diligent::Vector2<T> max(const Diligent::Vector2<T>& Left, const Diligent::Vector2<T>& Right)
+constexpr Diligent::Vector2<T>(max)(const Diligent::Vector2<T>& Left, const Diligent::Vector2<T>& Right)
 {
     return Diligent::Vector2<T>(
-        std::max(Left.x, Right.x),
-        std::max(Left.y, Right.y));
+        (std::max)(Left.x, Right.x),
+        (std::max)(Left.y, Right.y));
 }
 
 template <typename T>
-constexpr Diligent::Vector3<T> max(const Diligent::Vector3<T>& Left, const Diligent::Vector3<T>& Right)
+constexpr Diligent::Vector3<T>(max)(const Diligent::Vector3<T>& Left, const Diligent::Vector3<T>& Right)
 {
     return Diligent::Vector3<T>(
-        std::max(Left.x, Right.x),
-        std::max(Left.y, Right.y),
-        std::max(Left.z, Right.z));
+        (std::max)(Left.x, Right.x),
+        (std::max)(Left.y, Right.y),
+        (std::max)(Left.z, Right.z));
 }
 
 template <typename T>
-constexpr Diligent::Vector4<T> max(const Diligent::Vector4<T>& Left, const Diligent::Vector4<T>& Right)
+constexpr Diligent::Vector4<T>(max)(const Diligent::Vector4<T>& Left, const Diligent::Vector4<T>& Right)
 {
     return Diligent::Vector4<T>(
-        std::max(Left.x, Right.x),
-        std::max(Left.y, Right.y),
-        std::max(Left.z, Right.z),
-        std::max(Left.w, Right.w));
+        (std::max)(Left.x, Right.x),
+        (std::max)(Left.y, Right.y),
+        (std::max)(Left.z, Right.z),
+        (std::max)(Left.w, Right.w));
 }
 
 
 template <typename T>
-constexpr Diligent::Vector2<T> min(const Diligent::Vector2<T>& Left, const Diligent::Vector2<T>& Right)
+constexpr Diligent::Vector2<T>(min)(const Diligent::Vector2<T>& Left, const Diligent::Vector2<T>& Right)
 {
     return Diligent::Vector2<T>(
-        std::min(Left.x, Right.x),
-        std::min(Left.y, Right.y));
+        (std::min)(Left.x, Right.x),
+        (std::min)(Left.y, Right.y));
 }
 
 template <typename T>
-constexpr Diligent::Vector3<T> min(const Diligent::Vector3<T>& Left, const Diligent::Vector3<T>& Right)
+constexpr Diligent::Vector3<T>(min)(const Diligent::Vector3<T>& Left, const Diligent::Vector3<T>& Right)
 {
     return Diligent::Vector3<T>(
-        std::min(Left.x, Right.x),
-        std::min(Left.y, Right.y),
-        std::min(Left.z, Right.z));
+        (std::min)(Left.x, Right.x),
+        (std::min)(Left.y, Right.y),
+        (std::min)(Left.z, Right.z));
 }
 
 template <typename T>
-constexpr Diligent::Vector4<T> min(const Diligent::Vector4<T>& Left, const Diligent::Vector4<T>& Right)
+constexpr Diligent::Vector4<T>(min)(const Diligent::Vector4<T>& Left, const Diligent::Vector4<T>& Right)
 {
     return Diligent::Vector4<T>(
-        std::min(Left.x, Right.x),
-        std::min(Left.y, Right.y),
-        std::min(Left.z, Right.z),
-        std::min(Left.w, Right.w));
+        (std::min)(Left.x, Right.x),
+        (std::min)(Left.y, Right.y),
+        (std::min)(Left.z, Right.z),
+        (std::min)(Left.w, Right.w));
 }
 
 template <typename T>
@@ -2583,35 +2579,35 @@ constexpr Type Frac(const Type& val)
 template <typename T>
 constexpr T max_n(const T& x, const T& y)
 {
-    return std::max(x, y);
+    return (std::max)(x, y);
 }
 
 template <typename T, typename... RestArgsType>
 constexpr T max_n(const T& x, const RestArgsType&... RestArgs)
 {
-    return std::max(x, max_n(RestArgs...));
+    return (std::max)(x, max_n(RestArgs...));
 }
 
 template <typename T>
 constexpr T min_n(const T& x, const T& y)
 {
-    return std::min(x, y);
+    return (std::min)(x, y);
 }
 
 template <typename T, typename... RestArgsType>
 constexpr T min_n(const T& x, const RestArgsType&... RestArgs)
 {
-    return std::min(x, min_n(RestArgs...));
+    return (std::min)(x, min_n(RestArgs...));
 }
 
 template <typename T, typename... RestArgsType>
-constexpr T max(const T& x, const T& y, const T& z, const RestArgsType&... RestArgs)
+constexpr T(max)(const T& x, const T& y, const T& z, const RestArgsType&... RestArgs)
 {
     return max_n(x, y, z, RestArgs...);
 }
 
 template <typename T, typename... RestArgsType>
-constexpr T min(const T& x, const T& y, const T& z, const RestArgsType&... RestArgs)
+constexpr T(min)(const T& x, const T& y, const T& z, const RestArgsType&... RestArgs)
 {
     return min_n(x, y, z, RestArgs...);
 }

@@ -24,6 +24,11 @@ BUILD_ROOT=$PWD
 SRC=$PWD/github/SPIRV-Tools
 BUILD_TYPE=$1
 
+# This is required to run any git command in the docker since owner will
+# have changed between the clone environment, and the docker container.
+# Marking the root of the repo as safe for ownership changes.
+git config --global --add safe.directory $SRC
+
 # Get NINJA.
 wget -q https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-mac.zip
 unzip -q ninja-mac.zip
@@ -31,23 +36,16 @@ chmod +x ninja
 export PATH="$PWD:$PATH"
 
 cd $SRC
-git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
-git clone https://github.com/google/googletest          external/googletest
-cd external && cd googletest && git reset --hard 1fb1bb23bb8418dc73a5a9a82bbed31dc610fec7 && cd .. && cd ..
-git clone --depth=1 https://github.com/google/effcee              external/effcee
-git clone --depth=1 https://github.com/google/re2                 external/re2
-git clone --depth=1 --branch v3.13.0.1 https://github.com/protocolbuffers/protobuf external/protobuf
+python3 utils/git-sync-deps --treeless
 
 mkdir build && cd $SRC/build
 
 # Invoke the build.
 BUILD_SHA=${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
 echo $(date): Starting build...
-# We need Python 3.  At the moment python3.7 is the newest Python on Kokoro.
 cmake \
   -GNinja \
   -DCMAKE_INSTALL_PREFIX=$KOKORO_ARTIFACTS_DIR/install \
-  -DPYTHON_EXECUTABLE:FILEPATH=/usr/local/bin/python3.7 \
   -DCMAKE_C_COMPILER=clang \
   -DCMAKE_CXX_COMPILER=clang++ \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \

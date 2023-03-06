@@ -54,7 +54,7 @@ const Char* GetD3D12DescriptorHeapTypeLiteralName(D3D12_DESCRIPTOR_HEAP_TYPE Typ
 }
 
 
-bool operator==(const D3D12_ROOT_DESCRIPTOR_TABLE& Tbl0, const D3D12_ROOT_DESCRIPTOR_TABLE& Tbl1)
+bool operator==(const D3D12_ROOT_DESCRIPTOR_TABLE& Tbl0, const D3D12_ROOT_DESCRIPTOR_TABLE& Tbl1) noexcept
 {
     if (Tbl0.NumDescriptorRanges != Tbl1.NumDescriptorRanges)
         return false;
@@ -62,7 +62,7 @@ bool operator==(const D3D12_ROOT_DESCRIPTOR_TABLE& Tbl0, const D3D12_ROOT_DESCRI
     return memcmp(Tbl0.pDescriptorRanges, Tbl1.pDescriptorRanges, Tbl0.NumDescriptorRanges * sizeof(D3D12_DESCRIPTOR_RANGE)) == 0;
 }
 
-bool operator==(const D3D12_ROOT_CONSTANTS& Const0, const D3D12_ROOT_CONSTANTS& Const1)
+bool operator==(const D3D12_ROOT_CONSTANTS& Const0, const D3D12_ROOT_CONSTANTS& Const1) noexcept
 {
     // clang-format off
     return Const0.ShaderRegister == Const1.ShaderRegister &&
@@ -71,7 +71,7 @@ bool operator==(const D3D12_ROOT_CONSTANTS& Const0, const D3D12_ROOT_CONSTANTS& 
     // clang-format on
 }
 
-bool operator==(const D3D12_ROOT_DESCRIPTOR& Descr0, const D3D12_ROOT_DESCRIPTOR& Descr1)
+bool operator==(const D3D12_ROOT_DESCRIPTOR& Descr0, const D3D12_ROOT_DESCRIPTOR& Descr1) noexcept
 {
     // clang-format off
     return Descr0.ShaderRegister == Descr1.ShaderRegister &&
@@ -79,7 +79,7 @@ bool operator==(const D3D12_ROOT_DESCRIPTOR& Descr0, const D3D12_ROOT_DESCRIPTOR
     // clang-format on
 }
 
-bool operator==(const D3D12_ROOT_PARAMETER& Param0, const D3D12_ROOT_PARAMETER& Param1)
+bool operator==(const D3D12_ROOT_PARAMETER& Param0, const D3D12_ROOT_PARAMETER& Param1) noexcept
 {
     if (Param0.ParameterType != Param1.ParameterType ||
         Param0.ShaderVisibility != Param1.ShaderVisibility)

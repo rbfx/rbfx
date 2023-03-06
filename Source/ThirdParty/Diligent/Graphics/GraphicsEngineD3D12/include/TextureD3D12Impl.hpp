@@ -92,7 +92,6 @@ public:
 
 protected:
     void CreateViewInternal(const struct TextureViewDesc& ViewDesc, ITextureView** ppView, bool bIsDefaultView) override final;
-    //void PrepareD3D12InitData(const TextureData &InitData, Uint32 NumSubresources, std::vector<D3D12_SUBRESOURCE_DATA> &D3D12InitData);
 
     void CreateSRV(const TextureViewDesc& SRVDesc, D3D12_CPU_DESCRIPTOR_HANDLE SRVHandle);
     void CreateRTV(const TextureViewDesc& RTVDesc, D3D12_CPU_DESCRIPTOR_HANDLE RTVHandle);

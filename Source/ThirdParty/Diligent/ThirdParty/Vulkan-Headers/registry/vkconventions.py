@@ -123,7 +123,7 @@ class VulkanConventions(ConventionsBase):
     @property
     def file_suffix(self):
         """Return suffix of generated Asciidoctor files"""
-        return '.txt'
+        return '.adoc'
 
     def api_name(self, spectype='api'):
         """Return API or specification name for citations in ref pages.ref
@@ -178,7 +178,7 @@ class VulkanConventions(ConventionsBase):
            instead. N.b. this may need to change on a per-refpage basis if
            there are multiple documents involved.
         """
-        return 'https://www.khronos.org/registry/vulkan/specs/1.3-extensions/html/vkspec.html'
+        return 'https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html'
 
     @property
     def xml_api_name(self):
@@ -200,11 +200,6 @@ class VulkanConventions(ConventionsBase):
         """Return asciidoctor anchor name in the API Specification of the
         section describing extension special uses in detail."""
         return 'extendingvulkan-compatibility-specialuse'
-
-    @property
-    def extra_refpage_headers(self):
-        """Return any extra text to add to refpage headers."""
-        return 'include::{config}/attribs.txt[]'
 
     @property
     def extension_index_prefixes(self):
@@ -269,3 +264,14 @@ class VulkanConventions(ConventionsBase):
            cause Vk*FlagBits values with bit 31 set to result in a 64 bit
            enumerated type, so disallows such flags."""
         return bitpos >= 0 and bitpos < 31
+
+    @property
+    def extra_refpage_headers(self):
+        """Return any extra text to add to refpage headers."""
+        return 'include::{config}/attribs.adoc[]'
+
+    @property
+    def extra_refpage_body(self):
+        """Return any extra text (following the title) for generated
+           reference pages."""
+        return 'include::{generated}/specattribs.adoc[]'

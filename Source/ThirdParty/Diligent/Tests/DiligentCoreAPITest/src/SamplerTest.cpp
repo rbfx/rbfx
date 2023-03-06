@@ -387,24 +387,21 @@ TEST(SamplerTest, Correctness)
     ShaderCreateInfo ShaderCI;
     ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
     ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
     ShaderCI.pShaderSourceStreamFactory = pShaderSourceFactory;
     ShaderCI.FilePath                   = "SamplerCorrectness.hlsl";
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.EntryPoint      = "VSMain";
-        ShaderCI.Desc.Name       = "Sampler correctness test - VS";
+        ShaderCI.Desc       = {"Sampler correctness test - VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.EntryPoint = "VSMain";
         pDevice->CreateShader(ShaderCI, &pVS);
         ASSERT_NE(pVS, nullptr);
     }
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "PSMain";
-        ShaderCI.Desc.Name       = "Sampler correctness test - PS";
+        ShaderCI.Desc       = {"Sampler correctness test - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "PSMain";
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
     }

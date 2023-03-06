@@ -105,7 +105,7 @@ private:
         ResMappingHashKey& operator = ( ResMappingHashKey&& )      = delete;
         // clang-format on
 
-        bool operator==(const ResMappingHashKey& RHS) const
+        bool operator==(const ResMappingHashKey& RHS) const noexcept
         {
             if (ArrayIndex != RHS.ArrayIndex)
             {

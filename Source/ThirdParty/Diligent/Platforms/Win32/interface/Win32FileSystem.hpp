@@ -61,6 +61,7 @@ public:
     static std::string FileDialog(const FileDialogAttribs& DialogAttribs);
 
     static std::string GetCurrentDirectory();
+    static std::string GetLocalAppDataDirectory(const char* AppName = nullptr, bool Create = true);
 };
 
 } // namespace Diligent

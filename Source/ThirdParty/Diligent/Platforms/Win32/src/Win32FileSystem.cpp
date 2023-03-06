@@ -59,11 +59,19 @@ std::string WindowsFileSystem::GetCurrentDirectory()
     return GetCurrentDirectoryImpl();
 }
 
+static std::string GetLocalAppDataDirectoryImpl(const char* AppName, bool Create);
+
+std::string WindowsFileSystem::GetLocalAppDataDirectory(const char* AppName, bool Create)
+{
+    return GetLocalAppDataDirectoryImpl(AppName, Create);
+}
+
 } // namespace Diligent
 
 #include <Windows.h>
 #include <Shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
+#include <shlobj.h>
 
 namespace Diligent
 {
@@ -230,8 +238,6 @@ WindowsFile::WindowsFile(const FileOpenAttribs& OpenAttribs) :
                  err == EMFILE)   // Too many open files
         {
             // No more file descriptors are available: we have to wait
-            //g_SystemMetricsStream << "Failed to open file " << FileName;
-            //g_SystemMetricsStream << "\nWaiting 50 ms...\n";
             Sleep(50);
             continue;
         }
@@ -523,6 +529,34 @@ bool WindowsFileSystem::IsDirectory(const Char* strPath)
 std::string GetCurrentDirectoryImpl()
 {
     return WindowsPathHelper::GetCurrentDirectory_();
+}
+
+
+std::string GetLocalAppDataDirectoryImpl(const char* AppName, bool Create)
+{
+    std::string AppDataDir;
+    PWSTR       Path = nullptr;
+    auto        hr   = SHGetKnownFolderPath(FOLDERID_LocalAppData, KF_FLAG_CREATE, NULL, &Path);
+    if (SUCCEEDED(hr))
+    {
+        VERIFY_EXPR(Path != nullptr);
+        AppDataDir = NarrowString(Path);
+        if (AppName != nullptr)
+        {
+            if (!WindowsFileSystem::IsSlash(AppDataDir.back()))
+                AppDataDir.push_back(WindowsFileSystem::SlashSymbol);
+            AppDataDir.append(AppName);
+            if (Create && !WindowsFileSystem::PathExists(AppDataDir.c_str()))
+                CreateDirectoryImpl(AppDataDir.c_str());
+        }
+    }
+
+    if (Path != nullptr)
+    {
+        CoTaskMemFree(Path);
+    }
+
+    return AppDataDir;
 }
 
 } // namespace Diligent

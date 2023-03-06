@@ -155,14 +155,15 @@ struct BufferDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     {
     }
 
-    /// Tests if two structures are equivalent
+    /// Tests if two buffer descriptions are equal.
 
-    /// \param [in] RHS - reference to the structure to perform comparison with
-    /// \return
-    /// - True if all members of the two structures except for the Name are equal.
-    /// - False otherwise.
-    /// The operator ignores DeviceObjectAttribs::Name field as it does not affect
-    /// the buffer description.
+    /// \param [in] RHS - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the buffer properties.
     constexpr bool operator == (const BufferDesc& RHS)const
     {
                 // Name is primarily used for debug purposes and does not affect the state.

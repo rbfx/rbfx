@@ -11,12 +11,20 @@ assignees: ''
 
 Vulkan-Headers exists as a publishing mechanism for headers and related material sourced from multiple other repositories. If you have a problem with that material, it should *not* be reported here, but in the appropriate repository:
 
-- https://github.com/KhronosGroup/Vulkan-Docs - C headers, XML, validusage.json, and generation scripts
--  https://github.com/KhronosGroup/Vulkan-Hpp - C++ headers
-- This repository - Repository structure, management, and build system *only*
+This repository is responsible for the following files
 
-See the repository README for more details.
-
+* BUILD.gn
+* BUILD.md
+* cmake/
+* CMakeLists.txt
+* tests/*
+* CODE_OF_CONDUCT.md
+* INTEGRATION.md
+* LICENSE.txt
+* README.md
+* Non-API headers
+  * include/vulkan/vk_icd.h
+  * include/vulkan/vk_layer.h
 
 **Describe the bug**
 
@@ -30,3 +38,17 @@ If applicable, add screenshots to help explain your problem.
 
 **Additional context**
 Add any other context about the problem here.
+
+**Code**
+
+<details>
+<summary>code or terminal output</summary>
+
+```cpp
+int main()
+{
+    return 0;
+}
+```
+
+</details>

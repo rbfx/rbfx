@@ -33,6 +33,8 @@
 namespace Diligent
 {
 
+constexpr INTERFACE_ID ShaderD3D11Impl::IID_InternalImpl;
+
 static const ShaderVersion HLSLValidateShaderVersion(const ShaderVersion& Version, const ShaderVersion& MaxVersion)
 {
     ShaderVersion ModelVer;
@@ -106,13 +108,13 @@ ShaderD3D11Impl::ShaderD3D11Impl(IReferenceCounters*     pRefCounters,
     {
         auto& Allocator  = GetRawAllocator();
         auto* pRawMem    = ALLOCATE(Allocator, "Allocator for ShaderResources", ShaderResourcesD3D11, 1);
-        auto* pResources = new (pRawMem) ShaderResourcesD3D11{m_pShaderByteCode, m_Desc, ShaderCI.UseCombinedTextureSamplers ? ShaderCI.CombinedSamplerSuffix : nullptr};
+        auto* pResources = new (pRawMem) ShaderResourcesD3D11{
+            m_pShaderByteCode,
+            m_Desc,
+            m_Desc.UseCombinedTextureSamplers ? m_Desc.CombinedSamplerSuffix : nullptr,
+            ShaderCI.LoadConstantBufferReflection};
         m_pShaderResources.reset(pResources, STDDeleterRawMem<ShaderResourcesD3D11>(Allocator));
     }
-
-    // Add shader to the cache
-    if (HasDevice())
-        m_d3dDefaultShader = GetD3D11Shader(m_pShaderByteCode);
 }
 
 ShaderD3D11Impl::~ShaderD3D11Impl()
@@ -123,7 +125,7 @@ void ShaderD3D11Impl::QueryInterface(const INTERFACE_ID& IID, IObject** ppInterf
 {
     if (ppInterface == nullptr)
         return;
-    if (IID == IID_ShaderD3D || IID == IID_ShaderD3D11)
+    if (IID == IID_ShaderD3D || IID == IID_ShaderD3D11 || IID == IID_InternalImpl)
     {
         *ppInterface = this;
         (*ppInterface)->AddRef();
@@ -146,7 +148,7 @@ ID3D11DeviceChild* ShaderD3D11Impl::GetD3D11Shader(ID3DBlob* pBlob) noexcept(fal
         return it->second;
     }
 
-    VERIFY(pBlob->GetBufferSize() == m_pShaderByteCode->GetBufferSize(), "The byte code size does not match the size of original byte code");
+    VERIFY(pBlob->GetBufferSize() == m_pShaderByteCode->GetBufferSize(), "The byte code size does not match the size of the original byte code");
 
     auto* pd3d11Device = GetDevice()->GetD3D11Device();
 

@@ -51,6 +51,9 @@ class ShaderD3D11Impl final : public ShaderBase<EngineD3D11ImplTraits>, public S
 public:
     using TShaderBase = ShaderBase<EngineD3D11ImplTraits>;
 
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0xc6e1e44d, 0xb9d7, 0x4793, {0xb3, 0x8f, 0x4c, 0x2e, 0xb3, 0x9f, 0x20, 0xb0}};
+
     struct CreateInfo
     {
         const RenderDeviceInfo&    DeviceInfo;
@@ -79,6 +82,15 @@ public:
             ResourceDesc = m_pShaderResources->GetHLSLShaderResourceDesc(Index);
     }
 
+    /// Implementation of IShader::GetConstantBufferDesc() in Direct3D11 backend.
+    virtual const ShaderCodeBufferDesc* DILIGENT_CALL_TYPE GetConstantBufferDesc(Uint32 Index) const override final
+    {
+        return m_pShaderResources ?
+            // Constant buffers always go first in the list of resources
+            m_pShaderResources->GetConstantBufferDesc(Index) :
+            nullptr;
+    }
+
     /// Implementation of IShaderD3D::GetHLSLResource() method.
     virtual void DILIGENT_CALL_TYPE GetHLSLResource(Uint32 Index, HLSLShaderResourceDesc& ResourceDesc) const override final
     {
@@ -89,10 +101,14 @@ public:
     /// Implementation of IShaderD3D11::GetD3D11Shader() method.
     virtual ID3D11DeviceChild* DILIGENT_CALL_TYPE GetD3D11Shader() override final
     {
-        return m_d3dDefaultShader;
+        return GetD3D11Shader(m_pShaderByteCode);
     }
 
-    ID3DBlob* GetBytecode() { return m_pShaderByteCode; }
+    virtual void DILIGENT_CALL_TYPE GetBytecode(const void** ppBytecode,
+                                                Uint64&      Size) const override final
+    {
+        ShaderD3DBase::GetBytecode(ppBytecode, Size);
+    }
 
     const std::shared_ptr<const ShaderResourcesD3D11>& GetShaderResources() const { return m_pShaderResources; }
 
@@ -111,13 +127,13 @@ private:
 
         struct Hasher
         {
-            size_t operator()(const BlobHashKey& Key) const
+            size_t operator()(const BlobHashKey& Key) const noexcept
             {
                 return Key.Hash;
             }
         };
 
-        bool operator==(const BlobHashKey& rhs) const
+        bool operator==(const BlobHashKey& rhs) const noexcept
         {
             if (Hash != rhs.Hash)
                 return false;
@@ -147,8 +163,6 @@ private:
 
     std::mutex                                                                       m_d3dShaderCacheMtx;
     std::unordered_map<BlobHashKey, CComPtr<ID3D11DeviceChild>, BlobHashKey::Hasher> m_d3dShaderCache;
-
-    CComPtr<ID3D11DeviceChild> m_d3dDefaultShader;
 
     // ShaderResources class instance must be referenced through the shared pointer, because
     // it is referenced by ShaderResourceLayoutD3D11 class instances

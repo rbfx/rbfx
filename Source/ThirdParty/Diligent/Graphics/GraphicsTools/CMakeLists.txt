@@ -30,6 +30,10 @@ set(SOURCE
     src/DynamicTextureArray.cpp
     src/DynamicTextureAtlas.cpp
     src/GraphicsUtilities.cpp
+    src/GraphicsUtilitiesD3D11.cpp
+    src/GraphicsUtilitiesD3D12.cpp
+    src/GraphicsUtilitiesGL.cpp
+    src/GraphicsUtilitiesVk.cpp
     src/ScopedQueryHelper.cpp
     src/ScreenCapture.cpp
     src/TextureUploader.cpp
@@ -37,12 +41,30 @@ set(SOURCE
     src/BytecodeCache.cpp
 )
 
+if(ARCHIVER_SUPPORTED)
+    list(APPEND INTERFACE
+        interface/RenderStateCache.h
+        interface/RenderStateCache.hpp
+    )
+    list(APPEND SOURCE
+        src/RenderStateCache.cpp
+    )
+endif()
+
 set(DEPENDENCIES)
 
 if(D3D11_SUPPORTED)
     list(APPEND SOURCE src/TextureUploaderD3D11.cpp)
     list(APPEND INTERFACE interface/TextureUploaderD3D11.hpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineD3D11Interface)
+endif()
+
+if(D3D12_SUPPORTED)
+    list(APPEND DEPENDENCIES Diligent-GraphicsEngineD3D12Interface)
+endif()
+
+if(VULKAN_SUPPORTED)
+    list(APPEND DEPENDENCIES Diligent-GraphicsEngineVkInterface Vulkan::Headers)
 endif()
 
 if(D3D12_SUPPORTED OR VULKAN_SUPPORTED)
@@ -60,7 +82,7 @@ add_library(Diligent-GraphicsTools STATIC ${SOURCE} ${INTERFACE})
 
 target_include_directories(Diligent-GraphicsTools
 PUBLIC
-    interface
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
 PRIVATE
     ../GraphicsEngineD3DBase/include
 )
@@ -72,11 +94,19 @@ PRIVATE
     Diligent-PlatformInterface
     Diligent-GraphicsAccessories
     Diligent-ShaderTools
+    Diligent-GraphicsEngine
     xxHash::xxhash
     ${DEPENDENCIES}
 PUBLIC
     Diligent-GraphicsEngineInterface
 )
+
+if(ARCHIVER_SUPPORTED)
+    target_link_libraries(Diligent-GraphicsTools
+    PRIVATE
+        Diligent-Archiver-static
+    )
+endif()
 
 if(D3D11_SUPPORTED OR D3D12_SUPPORTED)
     target_link_libraries(Diligent-GraphicsTools

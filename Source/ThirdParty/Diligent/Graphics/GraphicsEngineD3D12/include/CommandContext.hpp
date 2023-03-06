@@ -157,11 +157,11 @@ public:
             pSrvCbvUavHeap{_pSrvCbvUavHeap},
             pSamplerHeap{_pSamplerHeap}
         {}
-        bool operator==(const ShaderDescriptorHeaps& rhs) const
+        constexpr bool operator==(const ShaderDescriptorHeaps& rhs) const
         {
             return pSrvCbvUavHeap == rhs.pSrvCbvUavHeap && pSamplerHeap == rhs.pSamplerHeap;
         }
-        bool operator!=(const ShaderDescriptorHeaps& rhs) const
+        constexpr bool operator!=(const ShaderDescriptorHeaps& rhs) const
         {
             return !(*this == rhs);
         }

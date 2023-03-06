@@ -42,7 +42,7 @@ float4 VerifyResources()
     AllCorrect *= CheckValue(g_Data_Mut,  Buff_Mut_Ref);
     AllCorrect *= CheckValue(g_Data_Dyn,  Buff_Dyn_Ref);
 
-	return AllCorrect;
+    return AllCorrect;
 }
 
 void VSMain(in  uint    VertId    : SV_VertexID,

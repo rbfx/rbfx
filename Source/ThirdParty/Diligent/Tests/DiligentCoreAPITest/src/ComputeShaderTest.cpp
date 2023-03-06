@@ -144,13 +144,11 @@ TEST(ComputeShaderTest, FillTexture)
     ComputeShaderReference(pSwapChain);
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
-    ShaderCI.Desc.ShaderType            = SHADER_TYPE_COMPUTE;
-    ShaderCI.EntryPoint                 = "main";
-    ShaderCI.Desc.Name                  = "Compute shader test";
-    ShaderCI.Source                     = HLSL::FillTextureCS.c_str();
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
+    ShaderCI.Desc           = {"Compute shader test", SHADER_TYPE_COMPUTE, true};
+    ShaderCI.EntryPoint     = "main";
+    ShaderCI.Source         = HLSL::FillTextureCS.c_str();
     RefCntAutoPtr<IShader> pCS;
     pDevice->CreateShader(ShaderCI, &pCS);
     ASSERT_NE(pCS, nullptr);
@@ -211,13 +209,11 @@ TEST(ComputeShaderTest, GenerateMips_CSInterference)
     ComputeShaderReference(pSwapChain);
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
-    ShaderCI.Desc.ShaderType            = SHADER_TYPE_COMPUTE;
-    ShaderCI.EntryPoint                 = "main";
-    ShaderCI.Desc.Name                  = "Compute shader test";
-    ShaderCI.Source                     = HLSL::FillTextureCS2.c_str();
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
+    ShaderCI.Desc           = {"Compute shader test", SHADER_TYPE_COMPUTE, true};
+    ShaderCI.EntryPoint     = "main";
+    ShaderCI.Source         = HLSL::FillTextureCS2.c_str();
     RefCntAutoPtr<IShader> pCS;
     pDevice->CreateShader(ShaderCI, &pCS);
     ASSERT_NE(pCS, nullptr);

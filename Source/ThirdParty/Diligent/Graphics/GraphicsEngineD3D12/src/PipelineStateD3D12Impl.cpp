@@ -58,6 +58,8 @@
 namespace Diligent
 {
 
+constexpr INTERFACE_ID PipelineStateD3D12Impl::IID_InternalImpl;
+
 namespace
 {
 #ifdef _MSC_VER
@@ -149,12 +151,13 @@ void BuildRTPipelineDescription(const RayTracingPipelineStateCreateInfo& CreateI
             auto&       ShaderIndex = ShaderIndices[StageIdx];
 
             // shaders must be in same order as in ExtractShaders()
-            VERIFY_EXPR(Stage.Shaders[ShaderIndex] == pShader);
+            RefCntAutoPtr<ShaderD3D12Impl> pShaderD3D12{pShader, ShaderD3D12Impl::IID_InternalImpl};
+            VERIFY(pShaderD3D12, "Unexpected shader object implementation");
+            VERIFY_EXPR(Stage.Shaders[ShaderIndex] == pShaderD3D12);
 
-            auto&       LibDesc      = *TempPool.Construct<D3D12_DXIL_LIBRARY_DESC>();
-            auto&       ExportDesc   = *TempPool.Construct<D3D12_EXPORT_DESC>();
-            const auto* pShaderD3D12 = ClassPtrCast<ShaderD3D12Impl>(pShader);
-            const auto& pBlob        = Stage.ByteCodes[ShaderIndex];
+            auto&       LibDesc    = *TempPool.Construct<D3D12_DXIL_LIBRARY_DESC>();
+            auto&       ExportDesc = *TempPool.Construct<D3D12_EXPORT_DESC>();
+            const auto& pBlob      = Stage.ByteCodes[ShaderIndex];
             ++ShaderIndex;
 
             LibDesc.DXILLibrary.BytecodeLength  = pBlob->GetBufferSize();
@@ -302,7 +305,7 @@ void GetShaderIdentifiers(ID3D12DeviceChild*                       pSO,
 PipelineStateD3D12Impl::ShaderStageInfo::ShaderStageInfo(const ShaderD3D12Impl* _pShader) :
     Type{_pShader->GetDesc().ShaderType},
     Shaders{_pShader},
-    ByteCodes{_pShader->GetShaderByteCode()}
+    ByteCodes{_pShader->GetD3DBytecode()}
 {
 }
 
@@ -326,7 +329,7 @@ void PipelineStateD3D12Impl::ShaderStageInfo::Append(const ShaderD3D12Impl* pSha
     }
 
     Shaders.push_back(pShader);
-    ByteCodes.push_back(pShader->GetShaderByteCode());
+    ByteCodes.push_back(pShader->GetD3DBytecode());
 }
 
 size_t PipelineStateD3D12Impl::ShaderStageInfo::Count() const
@@ -736,7 +739,12 @@ PipelineStateD3D12Impl::PipelineStateD3D12Impl(IReferenceCounters*              
                 d3d12PSODesc.InputLayout.pInputElementDescs = nullptr;
             }
 
-            d3d12PSODesc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
+            d3d12PSODesc.IBStripCutValue = (GraphicsPipeline.PrimitiveTopology == PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ||
+                                            GraphicsPipeline.PrimitiveTopology == PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ ||
+                                            GraphicsPipeline.PrimitiveTopology == PRIMITIVE_TOPOLOGY_LINE_STRIP ||
+                                            GraphicsPipeline.PrimitiveTopology == PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ) ?
+                D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFFFFFF :
+                D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
             static const PrimitiveTopology_To_D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimTopologyToD3D12TopologyType;
             d3d12PSODesc.PrimitiveTopologyType = PrimTopologyToD3D12TopologyType[GraphicsPipeline.PrimitiveTopology];
 
@@ -1014,7 +1022,10 @@ bool PipelineStateD3D12Impl::IsCompatibleWith(const IPipelineState* pPSO) const
     if (pPSO == this)
         return true;
 
-    bool IsCompatible = (m_RootSig == ClassPtrCast<const PipelineStateD3D12Impl>(pPSO)->m_RootSig);
+    RefCntAutoPtr<PipelineStateD3D12Impl> pPSOImpl{const_cast<IPipelineState*>(pPSO), PipelineStateImplType::IID_InternalImpl};
+    VERIFY(pPSOImpl, "Unknown PSO implementation type");
+
+    bool IsCompatible = (m_RootSig == pPSOImpl->m_RootSig);
     VERIFY_EXPR(IsCompatible == TPipelineStateBase::IsCompatibleWith(pPSO));
     return IsCompatible;
 }

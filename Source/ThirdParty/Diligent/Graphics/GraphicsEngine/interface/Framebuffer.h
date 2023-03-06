@@ -66,8 +66,18 @@ struct FramebufferDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     Uint32               NumArraySlices  DEFAULT_INITIALIZER(0);
 
 #if DILIGENT_CPP_INTERFACE
+    /// Tests if two framebuffer descriptions are equal.
+
+    /// \param [in] RHS - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the framebuffer properties.
     constexpr bool operator == (const FramebufferDesc& RHS) const
     {
+        // Ignore Name.
         if (pRenderPass     != RHS.pRenderPass     ||
             AttachmentCount != RHS.AttachmentCount ||
             Width           != RHS.Width           ||

@@ -36,13 +36,21 @@
 
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
+/// The maximum number of layout elements.
+#define DILIGENT_MAX_LAYOUT_ELEMENTS 16
 
-static const Uint32 MAX_LAYOUT_ELEMENTS        = 16;
-static const Uint32 LAYOUT_ELEMENT_AUTO_OFFSET = 0xFFFFFFFF;
-static const Uint32 LAYOUT_ELEMENT_AUTO_STRIDE = 0xFFFFFFFF;
+/// Compute layout element offset automatically, see Diligent::LayoutElement::RelativeOffset for details.
+#define DILIGENT_LAYOUT_ELEMENT_AUTO_OFFSET 0xFFFFFFFFU
+
+/// Compute layout element stride automatically, see Diligen::LayoutElement::Stride for details.
+#define DILIGENT_LAYOUT_ELEMENT_AUTO_STRIDE 0xFFFFFFFFU
+
+static const Uint32 MAX_LAYOUT_ELEMENTS        = DILIGENT_MAX_LAYOUT_ELEMENTS;
+static const Uint32 LAYOUT_ELEMENT_AUTO_OFFSET = DILIGENT_LAYOUT_ELEMENT_AUTO_OFFSET;
+static const Uint32 LAYOUT_ELEMENT_AUTO_STRIDE = DILIGENT_LAYOUT_ELEMENT_AUTO_STRIDE;
 
 /// Input frequency
-enum INPUT_ELEMENT_FREQUENCY
+DILIGENT_TYPED_ENUM(INPUT_ELEMENT_FREQUENCY, Uint8)
 {
     /// Frequency is undefined.
     INPUT_ELEMENT_FREQUENCY_UNDEFINED = 0,
@@ -64,7 +72,7 @@ struct LayoutElement
     /// to GLSL and used in OpenGL backend as well as compiled to SPIRV and used
     /// in Vulkan backend.
     /// Any value other than default will only work in Direct3D11 and Direct3D12 backends.
-    const char* HLSLSemantic DEFAULT_INITIALIZER("ATTRIB");
+    const Char* HLSLSemantic DEFAULT_INITIALIZER("ATTRIB");
 
     /// Input index of the element that is specified in the vertex shader.
     /// In Direct3D11 and Direct3D12 backends this is the semantic index.
@@ -98,7 +106,7 @@ struct LayoutElement
     /// they all must specify the same stride or use LAYOUT_ELEMENT_AUTO_STRIDE value.
     Uint32 Stride            DEFAULT_INITIALIZER(LAYOUT_ELEMENT_AUTO_STRIDE);
 
-    enum INPUT_ELEMENT_FREQUENCY Frequency DEFAULT_INITIALIZER(INPUT_ELEMENT_FREQUENCY_PER_VERTEX);
+    INPUT_ELEMENT_FREQUENCY Frequency DEFAULT_INITIALIZER(INPUT_ELEMENT_FREQUENCY_PER_VERTEX);
 
     /// The number of instances to draw using the same per-instance data before advancing
     /// in the buffer by one element.
@@ -131,7 +139,7 @@ struct LayoutElement
     {}
 
     /// Initializes the structure
-    constexpr LayoutElement(const char*               _HLSLSemantic,
+    constexpr LayoutElement(const Char*               _HLSLSemantic,
                             Uint32                    _InputIndex,
                             Uint32                    _BufferSlot,
                             Uint32                    _NumComponents,

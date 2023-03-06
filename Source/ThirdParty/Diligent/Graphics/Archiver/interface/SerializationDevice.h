@@ -248,6 +248,36 @@ DILIGENT_BEGIN_INTERFACE(ISerializationDevice, IRenderDevice)
 
     /// Returns a combination of supported device flags, see Diligent::ARCHIVE_DEVICE_DATA_FLAGS.
     VIRTUAL ARCHIVE_DEVICE_DATA_FLAGS METHOD(GetSupportedDeviceFlags)(THIS) CONST PURE;
+
+    /// Adds a optional render device that will be used to initialize device-specific objects that
+    /// may be used for rendering (e.g. shaders).
+    /// For example, a shader object retrieved with ISerializedShader::GetDeviceShader() will be
+    /// suitable for rendering.
+    VIRTUAL void METHOD(AddRenderDevice)(THIS_
+                                         IRenderDevice* pDevice) PURE;
+
+#if DILIGENT_CPP_INTERFACE
+    /// Overloaded alias for CreateGraphicsPipelineState.
+    void CreatePipelineState(const GraphicsPipelineStateCreateInfo& CI, const PipelineStateArchiveInfo& ArchiveInfo, IPipelineState** ppPipelineState)
+    {
+        CreateGraphicsPipelineState(CI, ArchiveInfo, ppPipelineState);
+    }
+    /// Overloaded alias for CreateComputePipelineState.
+    void CreatePipelineState(const ComputePipelineStateCreateInfo& CI, const PipelineStateArchiveInfo& ArchiveInfo, IPipelineState** ppPipelineState)
+    {
+        CreateComputePipelineState(CI, ArchiveInfo, ppPipelineState);
+    }
+    /// Overloaded alias for CreateRayTracingPipelineState.
+    void CreatePipelineState(const RayTracingPipelineStateCreateInfo& CI, const PipelineStateArchiveInfo& ArchiveInfo, IPipelineState** ppPipelineState)
+    {
+        CreateRayTracingPipelineState(CI, ArchiveInfo, ppPipelineState);
+    }
+    /// Overloaded alias for CreateTilePipelineState.
+    void CreatePipelineState(const TilePipelineStateCreateInfo& CI, const PipelineStateArchiveInfo& ArchiveInfo, IPipelineState** ppPipelineState)
+    {
+        CreateTilePipelineState(CI, ArchiveInfo, ppPipelineState);
+    }
+#endif
 };
 DILIGENT_END_INTERFACE
 

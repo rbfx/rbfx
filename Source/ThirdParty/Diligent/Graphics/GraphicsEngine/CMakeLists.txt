@@ -105,6 +105,7 @@ set(SOURCE
     src/RenderPassBase.cpp
     src/ShaderBindingTableBase.cpp
     src/SamplerBase.cpp
+    src/ShaderBase.cpp
     src/TextureBase.cpp
     src/TopLevelASBase.cpp
 )
@@ -114,8 +115,8 @@ set_common_target_properties(Diligent-GraphicsEngine)
 
 target_include_directories(Diligent-GraphicsEngine 
 PUBLIC
-    include
-    interface
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
 )
 
 target_link_libraries(Diligent-GraphicsEngine 

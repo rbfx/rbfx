@@ -53,24 +53,9 @@ SerializedRenderPassImpl::SerializedRenderPassImpl(IReferenceCounters*      pRef
 SerializedRenderPassImpl::~SerializedRenderPassImpl()
 {}
 
-bool SerializedRenderPassImpl::operator==(const SerializedRenderPassImpl& Rhs) const
+bool SerializedRenderPassImpl::operator==(const SerializedRenderPassImpl& Rhs) const noexcept
 {
     return GetCommonData() == Rhs.GetCommonData();
-}
-
-void DILIGENT_CALL_TYPE SerializedRenderPassImpl::QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface)
-{
-    if (ppInterface == nullptr)
-        return;
-    if (IID == IID_SerializedRenderPass || IID == IID_RenderPass)
-    {
-        *ppInterface = this;
-        (*ppInterface)->AddRef();
-    }
-    else
-    {
-        TBase::QueryInterface(IID, ppInterface);
-    }
 }
 
 } // namespace Diligent

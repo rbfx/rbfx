@@ -125,13 +125,13 @@ int TestRenderDeviceCInterface_CreateShader(struct IRenderDevice* pRenderDevice)
     int num_errors = 0;
 
     memset(&ShaderCI, 0, sizeof(ShaderCI));
-    ShaderCI.Desc._DeviceObjectAttribs.Name = "Test shader";
-    ShaderCI.Desc.ShaderType                = SHADER_TYPE_PIXEL;
+    ShaderCI.Desc._DeviceObjectAttribs.Name  = "Test shader";
+    ShaderCI.Desc.ShaderType                 = SHADER_TYPE_PIXEL;
+    ShaderCI.Desc.UseCombinedTextureSamplers = true;
 
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.UseCombinedTextureSamplers = true;
-    ShaderCI.EntryPoint                 = "main";
-    ShaderCI.Source                     = ShaderSource;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.EntryPoint     = "main";
+    ShaderCI.Source         = ShaderSource;
 
     IRenderDevice_CreateShader(pRenderDevice, &ShaderCI, &pShader);
     if (pShader != NULL)

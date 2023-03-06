@@ -41,7 +41,7 @@ if(POLICY CMP0054)
   cmake_policy(SET CMP0054 NEW)
 endif()
 
-project(glslang LANGUAGES CXX)
+project(glslang)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -192,10 +192,10 @@ elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND NOT MSVC)
         # Error if there's symbols that are not found at link time.
         # add_link_options() was added in CMake 3.13 - if using an earlier
         # version don't set this - it should be caught by presubmits anyway.
-        if (WIN32)
-            add_link_options("-Wl,--no-undefined")
-        else()
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
             add_link_options("-Wl,-undefined,error")
+        else()
+            add_link_options("-Wl,--no-undefined")
         endif()
     endif()
 elseif(MSVC)
@@ -355,9 +355,9 @@ if(ENABLE_CTEST AND BUILD_TESTING)
     endif()
 
     if (CMAKE_CONFIGURATION_TYPES)
-        set(RESULTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/localResults)
-        set(VALIDATOR_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/$<CONFIGURATION>/glslangValidator)
-        set(REMAP_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/$<CONFIGURATION>/spirv-remap)
+        set(RESULTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/localResults)
+        set(VALIDATOR_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/$<CONFIG>/glslangValidator)
+        set(REMAP_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/$<CONFIG>/spirv-remap)
     else()
         set(RESULTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/localResults)
         set(VALIDATOR_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/glslangValidator)
@@ -375,13 +375,13 @@ if(ENABLE_GLSLANG_INSTALL)
         include("@PACKAGE_PATH_EXPORT_TARGETS@")
     ]=])
     
-    set(PATH_EXPORT_TARGETS "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/glslang-targets.cmake")
+    set(PATH_EXPORT_TARGETS "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/glslang-targets.cmake")
     configure_package_config_file(
         "${CMAKE_CURRENT_BINARY_DIR}/glslang-config.cmake.in"
         "${CMAKE_CURRENT_BINARY_DIR}/glslang-config.cmake"
         PATH_VARS
             PATH_EXPORT_TARGETS
-        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
     )
     
     write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/glslang-config-version.cmake"
@@ -392,7 +392,7 @@ if(ENABLE_GLSLANG_INSTALL)
     install(
         EXPORT      glslang-targets
         NAMESPACE   "glslang::"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
     )
     
     install(
@@ -400,6 +400,6 @@ if(ENABLE_GLSLANG_INSTALL)
             "${CMAKE_CURRENT_BINARY_DIR}/glslang-config.cmake"
             "${CMAKE_CURRENT_BINARY_DIR}/glslang-config-version.cmake"
         DESTINATION
-            "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}"
+            "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
     )
 endif()

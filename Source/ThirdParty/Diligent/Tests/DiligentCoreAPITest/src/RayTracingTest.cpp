@@ -1482,11 +1482,11 @@ TEST(RayTracingTest, ResourceBinding)
     PSOCreateInfo.PSODesc.PipelineType = PIPELINE_TYPE_RAY_TRACING;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.UseCombinedTextureSamplers = true;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = SHADER_COMPILER_DXC;
-    ShaderCI.HLSLVersion                = {6, 3};
-    ShaderCI.EntryPoint                 = "main";
+    ShaderCI.Desc.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage                  = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler                  = SHADER_COMPILER_DXC;
+    ShaderCI.HLSLVersion                     = {6, 3};
+    ShaderCI.EntryPoint                      = "main";
 
     // Create ray generation shader.
     RefCntAutoPtr<IShader> pRG;

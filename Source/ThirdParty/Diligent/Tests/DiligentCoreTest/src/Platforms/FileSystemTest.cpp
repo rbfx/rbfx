@@ -35,6 +35,7 @@
 #include "TempDirectory.hpp"
 #include "FileWrapper.hpp"
 #include "FastRand.hpp"
+#include "DataBlobImpl.hpp"
 
 using namespace Diligent;
 using namespace Diligent::Testing;
@@ -543,6 +544,42 @@ TEST(Platforms_FileSystem, Search)
     FileSystem::ClearDirectory(TmpDirPath.c_str(), true);
     SearchRes = FileSystem::Search(SearchPattern.c_str());
     EXPECT_TRUE(SearchRes.empty());
+}
+
+TEST(Platforms_FileSystem, GetLocalAppDataDirectory)
+{
+    const auto AppDataDir = FileSystem::GetLocalAppDataDirectory("DiligentTests");
+    ASSERT_TRUE(FileSystem::PathExists(AppDataDir.c_str()));
+    const Uint32 TestData[] = {0, 1, 2, 3};
+
+    const auto TestFilePath = AppDataDir + FileSystem::SlashSymbol + "Test.bin";
+
+    {
+        FileWrapper File(TestFilePath.c_str(), EFileAccessMode::Overwrite);
+        EXPECT_TRUE(File);
+        if (File)
+        {
+            EXPECT_TRUE(File->Write(TestData, sizeof(TestData)));
+        }
+    }
+
+    {
+        FileWrapper File(TestFilePath.c_str(), EFileAccessMode::Read);
+        EXPECT_TRUE(File);
+        if (File)
+        {
+            auto pData = DataBlobImpl::Create();
+            File->Read(pData);
+            EXPECT_EQ(pData->GetSize(), sizeof(TestData));
+            if (pData->GetSize() == sizeof(TestData))
+            {
+                EXPECT_EQ(memcmp(pData->GetConstDataPtr(), TestData, sizeof(TestData)), 0);
+            }
+        }
+    }
+
+    FileSystem::DeleteDirectory(AppDataDir.c_str());
+    EXPECT_FALSE(FileSystem::PathExists(AppDataDir.c_str()));
 }
 
 } // namespace

@@ -54,18 +54,15 @@ void PSOTestBase::InitResources()
     auto* pDevice = pEnv->GetDevice();
 
     ShaderCreateInfo Attrs;
-    Attrs.Source                     = g_ShaderSource;
-    Attrs.EntryPoint                 = "VSMain";
-    Attrs.Desc.ShaderType            = SHADER_TYPE_VERTEX;
-    Attrs.Desc.Name                  = "TrivialVS (TestPipelineStateBase)";
-    Attrs.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    Attrs.ShaderCompiler             = pEnv->GetDefaultCompiler(Attrs.SourceLanguage);
-    Attrs.UseCombinedTextureSamplers = true;
+    Attrs.Source         = g_ShaderSource;
+    Attrs.EntryPoint     = "VSMain";
+    Attrs.Desc           = {"TrivialVS (TestPipelineStateBase)", SHADER_TYPE_VERTEX, true};
+    Attrs.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    Attrs.ShaderCompiler = pEnv->GetDefaultCompiler(Attrs.SourceLanguage);
     pDevice->CreateShader(Attrs, &sm_Resources.pTrivialVS);
 
-    Attrs.EntryPoint      = "PSMain";
-    Attrs.Desc.ShaderType = SHADER_TYPE_PIXEL;
-    Attrs.Desc.Name       = "TrivialPS (TestPipelineStateBase)";
+    Attrs.EntryPoint = "PSMain";
+    Attrs.Desc       = {"TrivialPS (TestPipelineStateBase)", SHADER_TYPE_PIXEL, true};
     pDevice->CreateShader(Attrs, &sm_Resources.pTrivialPS);
 
     auto& PSOCreateInfo = sm_Resources.PSOCreateInfo;

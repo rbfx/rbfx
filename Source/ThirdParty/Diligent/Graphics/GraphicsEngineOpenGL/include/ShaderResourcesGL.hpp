@@ -45,6 +45,7 @@
 #include "StringPool.hpp"
 #include "HashUtils.hpp"
 #include "ShaderResourceVariableBase.hpp"
+#include "STDAllocator.hpp"
 
 namespace Diligent
 {
@@ -62,11 +63,17 @@ public:
     ShaderResourcesGL& operator = (      ShaderResourcesGL&&) = delete;
     // clang-format on
 
+    struct LoadUniformsAttribs
+    {
+        const SHADER_TYPE                     ShaderStages;
+        const PIPELINE_RESOURCE_FLAGS         SamplerResourceFlag;
+        const GLObjectWrappers::GLProgramObj& GLProgram;
+        class GLContextState&                 State;
+        const bool                            LoadUniformBufferReflection = false;
+        const SHADER_SOURCE_LANGUAGE          SourceLang                  = SHADER_SOURCE_LANGUAGE_DEFAULT;
+    };
     /// Loads program uniforms and assigns bindings
-    void LoadUniforms(SHADER_TYPE                           ShaderStages,
-                      PIPELINE_RESOURCE_FLAGS               SamplerResourceFlag,
-                      const GLObjectWrappers::GLProgramObj& GLProgram,
-                      class GLContextState&                 State);
+    void LoadUniforms(const LoadUniformsAttribs& Attribs);
 
     struct GLResourceAttribs
     {
@@ -325,6 +332,24 @@ public:
 
     ShaderResourceDesc GetResourceDesc(Uint32 Index) const;
 
+    const ShaderCodeBufferDesc* GetUniformBufferDesc(Uint32 Index) const
+    {
+        if (Index >= GetNumUniformBuffers())
+        {
+            UNEXPECTED("Uniform buffer index (", Index, ") is out of range.");
+            return nullptr;
+        }
+
+        if (!m_UBReflectionBuffer)
+        {
+            UNEXPECTED("Uniform buffer reflection information is not loaded. Please set the LoadConstantBufferReflection flag when creating the shader.");
+            return nullptr;
+        }
+
+        return reinterpret_cast<const ShaderCodeBufferDesc*>(m_UBReflectionBuffer.get()) + Index;
+    }
+
+
     SHADER_TYPE GetShaderStages() const { return m_ShaderStages; }
 
     template <typename THandleUB,
@@ -428,6 +453,9 @@ private:
     Uint32              m_NumImages         = 0;
     Uint32              m_NumStorageBlocks  = 0;
     // clang-format on
+
+    std::unique_ptr<void, STDDeleterRawMem<void>> m_UBReflectionBuffer;
+
     // When adding new member DO NOT FORGET TO UPDATE ShaderResourcesGL( ShaderResourcesGL&& ProgramResources )!!!
 };
 

@@ -49,6 +49,8 @@
 namespace Diligent
 {
 
+constexpr INTERFACE_ID ShaderVkImpl::IID_InternalImpl;
+
 namespace
 {
 
@@ -194,7 +196,7 @@ ShaderVkImpl::ShaderVkImpl(IReferenceCounters*     pRefCounters,
 
         if (m_SPIRV.empty())
         {
-            LOG_ERROR_AND_THROW("Failed to compile shader '", ShaderCI.Desc.Name, '\'');
+            LOG_ERROR_AND_THROW("Failed to compile shader '", m_Desc.Name, '\'');
         }
     }
     else if (ShaderCI.ByteCode != nullptr)
@@ -223,8 +225,9 @@ ShaderVkImpl::ShaderVkImpl(IReferenceCounters*     pRefCounters,
                 Allocator,
                 m_SPIRV,
                 m_Desc,
-                ShaderCI.UseCombinedTextureSamplers ? ShaderCI.CombinedSamplerSuffix : nullptr,
+                m_Desc.UseCombinedTextureSamplers ? m_Desc.CombinedSamplerSuffix : nullptr,
                 LoadShaderInputs,
+                ShaderCI.LoadConstantBufferReflection,
                 m_EntryPoint //
             };
         VERIFY_EXPR(ShaderCI.ByteCode != nullptr || m_EntryPoint == ShaderCI.EntryPoint);
@@ -285,6 +288,19 @@ void ShaderVkImpl::GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDes
         const auto& SPIRVResource = m_pShaderResources->GetResource(Index);
         ResourceDesc              = SPIRVResource.GetResourceDesc();
     }
+}
+
+const ShaderCodeBufferDesc* ShaderVkImpl::GetConstantBufferDesc(Uint32 Index) const
+{
+    auto ResCount = GetResourceCount();
+    if (Index >= ResCount)
+    {
+        UNEXPECTED("Resource index (", Index, ") is out of range");
+        return nullptr;
+    }
+
+    // Uniform buffers always go first in the list of resources
+    return m_pShaderResources->GetUniformBufferDesc(Index);
 }
 
 } // namespace Diligent

@@ -186,7 +186,7 @@ VAOCache::VAOHashKey::VAOHashKey(const VAOAttribs& Attribs) :
     HashCombine(Hash, UsedSlotsMask);
 }
 
-bool VAOCache::VAOHashKey::operator==(const VAOHashKey& Key) const
+bool VAOCache::VAOHashKey::operator==(const VAOHashKey& Key) const noexcept
 {
     if (Hash != Key.Hash)
         return false;

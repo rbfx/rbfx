@@ -100,8 +100,8 @@ public:
         return d3d12LastRange.OffsetInDescriptorsFromTableStart + d3d12LastRange.NumDescriptors;
     }
 
-    bool operator==(const RootParameter& rhs) const;
-    bool operator!=(const RootParameter& rhs) const { return !(*this == rhs); }
+    bool operator==(const RootParameter& rhs) const noexcept;
+    bool operator!=(const RootParameter& rhs) const noexcept { return !(*this == rhs); }
 
     size_t GetHash() const;
 };
@@ -158,7 +158,7 @@ public:
         return m_ParameterGroupSizes[d3d12HeapType][Group];
     }
 
-    bool operator==(const RootParamsManager& RootParams) const;
+    bool operator==(const RootParamsManager& RootParams) const noexcept;
 
 #ifdef DILIGENT_DEBUG
     void Validate() const;

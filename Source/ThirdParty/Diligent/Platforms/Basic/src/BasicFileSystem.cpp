@@ -225,13 +225,13 @@ std::string BasicFileSystem::SimplifyPath(const Char* Path, Char Slash)
             End{_End}
         {}
 
-        bool operator==(const char* Str) const
+        bool operator==(const char* Str) const noexcept
         {
             const auto Len = End - Start;
             return strncmp(Str, Start, Len) == 0 && Str[Len] == '\0';
         }
 
-        bool operator!=(const char* str) const
+        bool operator!=(const char* str) const noexcept
         {
             return !(*this == str);
         }

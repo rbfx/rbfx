@@ -76,62 +76,60 @@ Bool ArchiverImpl::SerializeToBlob(IDataBlob** ppBlob)
 
     DeviceObjectArchive Archive;
 
-    // Add pipelines and shaders
+    // A hash map that maps shader byte code to the index in the archive, for each device type
+    std::array<std::unordered_map<size_t, Uint32>, static_cast<size_t>(DeviceType::Count)> BytecodeHashToIdx;
+
+    // Add pipelines and patched shaders
+    for (const auto& pso_it : m_Pipelines)
     {
-        // A hash map that maps shader byte code to the index in the archive, for each device type
-        std::array<std::unordered_map<size_t, Uint32>, static_cast<size_t>(DeviceType::Count)> BytecodeHashToIdx;
+        const auto* Name    = pso_it.first.GetName();
+        const auto  ResType = pso_it.first.GetType();
+        const auto& SrcPSO  = *pso_it.second;
+        const auto& SrcData = SrcPSO.GetData();
+        VERIFY_EXPR(SafeStrEqual(Name, SrcPSO.GetDesc().Name));
+        VERIFY_EXPR(ResType == PipelineTypeToArchiveResourceType(SrcPSO.GetDesc().PipelineType));
 
-        for (const auto& pso_it : m_Pipelines)
+        auto& DstData = Archive.GetResourceData(ResType, Name);
+        // Add PSO common data
+        // NB: since the Archive object is temporary, we do not need to copy the data
+        DstData.Common = SerializedData{SrcData.Common.Ptr(), SrcData.Common.Size()};
+
+        // Add shaders for each device type, if present
+        for (size_t device_type = 0; device_type < SrcData.Shaders.size(); ++device_type)
         {
-            const auto* Name    = pso_it.first.GetName();
-            const auto  ResType = pso_it.first.GetType();
-            const auto& SrcPSO  = *pso_it.second;
-            const auto& SrcData = SrcPSO.GetData();
-            VERIFY_EXPR(SafeStrEqual(Name, SrcPSO.GetDesc().Name));
-            VERIFY_EXPR(ResType == PipelineTypeToArchiveResourceType(SrcPSO.GetDesc().PipelineType));
+            const auto& SrcShaders = SrcData.Shaders[device_type];
+            if (SrcShaders.empty())
+                continue; // No shaders for this device type
 
-            auto& DstData = Archive.GetResourceData(ResType, Name);
-            // Add PSO common data
-            // NB: since the Archive object is temporary, we do not need to copy the data
-            DstData.Common = SerializedData{SrcData.Common.Ptr(), SrcData.Common.Size()};
+            auto& DstShaders = Archive.GetDeviceShaders(static_cast<DeviceType>(device_type));
 
-            // Add shaders for each device type, if present
-            for (size_t device_type = 0; device_type < SrcData.Shaders.size(); ++device_type)
+            std::vector<Uint32> ShaderIndices;
+            ShaderIndices.reserve(SrcShaders.size());
+            for (const auto& SrcShader : SrcShaders)
             {
-                const auto& SrcShaders = SrcData.Shaders[device_type];
-                if (SrcShaders.empty())
-                    continue; // No shaders for this device type
+                VERIFY_EXPR(SrcShader.Data);
 
-                auto& DstShaders = Archive.GetDeviceShaders(static_cast<DeviceType>(device_type));
-
-                std::vector<Uint32> ShaderIndices;
-                ShaderIndices.reserve(SrcShaders.size());
-                for (const auto& SrcShader : SrcShaders)
+                auto it_inserted = BytecodeHashToIdx[device_type].emplace(SrcShader.Hash, StaticCast<Uint32>(DstShaders.size()));
+                if (it_inserted.second)
                 {
-                    VERIFY_EXPR(SrcShader.Data);
-
-                    auto it_inserted = BytecodeHashToIdx[device_type].emplace(SrcShader.Hash, StaticCast<Uint32>(DstShaders.size()));
-                    if (it_inserted.second)
-                    {
-                        // New byte code - add it
-                        DstShaders.emplace_back(SrcShader.Data.Ptr(), SrcShader.Data.Size());
-                    }
-                    ShaderIndices.emplace_back(it_inserted.first->second);
+                    // New byte code - add it
+                    DstShaders.emplace_back(SrcShader.Data.Ptr(), SrcShader.Data.Size());
                 }
-
-                DeviceObjectArchive::ShaderIndexArray Indices{ShaderIndices.data(), StaticCast<Uint32>(ShaderIndices.size())};
-
-                // For pipelines, device specific data is the shader indices
-                auto& SerializedIndices = DstData.DeviceSpecific[device_type];
-
-                Serializer<SerializerMode::Measure> MeasureSer;
-                PSOSerializer<SerializerMode::Measure>::SerializeShaderIndices(MeasureSer, Indices, nullptr);
-                SerializedIndices = MeasureSer.AllocateData(GetRawAllocator());
-
-                Serializer<SerializerMode::Write> Ser{SerializedIndices};
-                PSOSerializer<SerializerMode::Write>::SerializeShaderIndices(Ser, Indices, nullptr);
-                VERIFY_EXPR(Ser.IsEnded());
+                ShaderIndices.emplace_back(it_inserted.first->second);
             }
+
+            DeviceObjectArchive::ShaderIndexArray Indices{ShaderIndices.data(), StaticCast<Uint32>(ShaderIndices.size())};
+
+            // For pipelines, device-specific data is the shader indices
+            auto& SerializedIndices = DstData.DeviceSpecific[device_type];
+
+            Serializer<SerializerMode::Measure> MeasureSer;
+            PSOSerializer<SerializerMode::Measure>::SerializeShaderIndices(MeasureSer, Indices, nullptr);
+            SerializedIndices = MeasureSer.AllocateData(GetRawAllocator());
+
+            Serializer<SerializerMode::Write> Ser{SerializedIndices};
+            PSOSerializer<SerializerMode::Write>::SerializeShaderIndices(Ser, Indices, nullptr);
+            VERIFY_EXPR(Ser.IsEnded());
         }
     }
 
@@ -166,6 +164,44 @@ Bool ArchiverImpl::SerializeToBlob(IDataBlob** ppBlob)
         DstData.Common = SerializedData{SrcData.Ptr(), SrcData.Size()};
     }
 
+    // Add standalone shaders
+    for (const auto& shader_it : m_Shaders)
+    {
+        const auto* Name      = shader_it.first.GetStr();
+        const auto& SrcShader = *shader_it.second;
+        VERIFY_EXPR(SafeStrEqual(Name, SrcShader.GetDesc().Name));
+
+        auto& DstData  = Archive.GetResourceData(ResourceType::StandaloneShader, Name);
+        DstData.Common = SrcShader.GetCommonData();
+
+        for (size_t device_type = 0; device_type < static_cast<size_t>(DeviceType::Count); ++device_type)
+        {
+            auto DeviceData = SrcShader.GetDeviceData(static_cast<DeviceType>(device_type));
+            if (!DeviceData)
+                continue;
+
+            auto& DstShaders  = Archive.GetDeviceShaders(static_cast<DeviceType>(device_type));
+            auto  it_inserted = BytecodeHashToIdx[device_type].emplace(DeviceData.GetHash(), StaticCast<Uint32>(DstShaders.size()));
+            if (it_inserted.second)
+            {
+                // New byte code
+                DstShaders.emplace_back(std::move(DeviceData));
+            }
+            const Uint32 Index = it_inserted.first->second;
+
+            // For shaders, device-specific data is the serialized shader bytecode index
+            auto& SerializedIndex = DstData.DeviceSpecific[device_type];
+
+            Serializer<SerializerMode::Measure> MeasureSer;
+            MeasureSer(Index);
+            SerializedIndex = MeasureSer.AllocateData(GetRawAllocator());
+
+            Serializer<SerializerMode::Write> Ser{SerializedIndex};
+            Ser(Index);
+            VERIFY_EXPR(Ser.IsEnded());
+        }
+    }
+
     Archive.Serialize(ppBlob);
 
     return *ppBlob != nullptr;
@@ -185,63 +221,54 @@ Bool ArchiverImpl::SerializeToStream(IFileStream* pStream)
     return pStream->Write(pDataBlob->GetConstDataPtr(), pDataBlob->GetSize());
 }
 
-
-bool ArchiverImpl::AddPipelineResourceSignature(IPipelineResourceSignature* pPRS)
+template <typename ObjectImplType,
+          typename IfaceType>
+bool AddObjectToArchive(IfaceType*                                                           pObject,
+                        const char*                                                          ObjectTypeStr,
+                        const INTERFACE_ID&                                                  SerializedObjIID,
+                        std::mutex&                                                          Mtx,
+                        std::unordered_map<HashMapStringKey, RefCntAutoPtr<ObjectImplType>>& Objects)
 {
-    DEV_CHECK_ERR(pPRS != nullptr, "Pipeline resource signature must not be null");
-    if (pPRS == nullptr)
+    DEV_CHECK_ERR(pObject != nullptr, ObjectTypeStr, " must not be null");
+    if (pObject == nullptr)
         return false;
 
-    RefCntAutoPtr<SerializedResourceSignatureImpl> pSerializedPRS{pPRS, IID_SerializedResourceSignature};
-    if (!pSerializedPRS)
+    RefCntAutoPtr<ObjectImplType> pSerializedObj{pObject, SerializedObjIID};
+    if (!pSerializedObj)
     {
-        UNEXPECTED("Resource signature '", pPRS->GetDesc().Name, "' was not created by a serialization device.");
+        UNEXPECTED(ObjectTypeStr, " '", pObject->GetDesc().Name, "' was not created by a serialization device.");
         return false;
     }
-    const auto* Name = pSerializedPRS->GetName();
+    const auto* Name = pSerializedObj->GetDesc().Name;
 
-    std::lock_guard<std::mutex> Lock{m_SignaturesMtx};
+    std::lock_guard<std::mutex> Guard{Mtx};
 
-    auto it_inserted = m_Signatures.emplace(HashMapStringKey{Name, true}, pSerializedPRS);
-    if (!it_inserted.second && it_inserted.first->second != pSerializedPRS)
+    auto it_inserted = Objects.emplace(HashMapStringKey{Name, true}, pSerializedObj);
+    if (!it_inserted.second && it_inserted.first->second != pSerializedObj)
     {
-        if (*it_inserted.first->second != *pSerializedPRS)
+        if (*it_inserted.first->second != *pSerializedObj)
         {
-            LOG_ERROR_MESSAGE("Pipeline resource signature with name '", Name, "' is already present in the archive. All signatures must have unique names.");
+            LOG_ERROR_MESSAGE(ObjectTypeStr, " with name '", Name, "' is already present in the archive. All objects must use distinct names.");
             return false;
         }
     }
+
     return true;
 }
 
+Bool ArchiverImpl::AddShader(IShader* pShader)
+{
+    return AddObjectToArchive<SerializedShaderImpl>(pShader, "Shader", IID_SerializedShader, m_ShadersMtx, m_Shaders);
+}
+
+bool ArchiverImpl::AddPipelineResourceSignature(IPipelineResourceSignature* pPRS)
+{
+    return AddObjectToArchive<SerializedResourceSignatureImpl>(pPRS, "Pipeline resource signature", IID_SerializedResourceSignature, m_SignaturesMtx, m_Signatures);
+}
 
 bool ArchiverImpl::AddRenderPass(IRenderPass* pRP)
 {
-    DEV_CHECK_ERR(pRP != nullptr, "Render pass must not be null");
-    if (pRP == nullptr)
-        return false;
-
-    RefCntAutoPtr<SerializedRenderPassImpl> pSerializedRP{pRP, IID_SerializedRenderPass};
-    if (!pSerializedRP)
-    {
-        UNEXPECTED("Render pass'", pRP->GetDesc().Name, "' was not created by a serialization device.");
-        return false;
-    }
-
-    const auto* Name = pSerializedRP->GetDesc().Name;
-
-    std::lock_guard<std::mutex> Lock{m_RenderPassesMtx};
-
-    auto it_inserted = m_RenderPasses.emplace(HashMapStringKey{Name, true}, pSerializedRP);
-    if (!it_inserted.second && it_inserted.first->second != pSerializedRP)
-    {
-        if (*it_inserted.first->second != *pSerializedRP)
-        {
-            LOG_ERROR_MESSAGE("Render pass with name '", Name, "' is already present in the archive. All render passes must have unique names.");
-            return false;
-        }
-    }
-    return true;
+    return AddObjectToArchive<SerializedRenderPassImpl>(pRP, "Render pass", IID_SerializedRenderPass, m_RenderPassesMtx, m_RenderPasses);
 }
 
 Bool ArchiverImpl::AddPipelineState(IPipelineState* pPSO)
@@ -263,7 +290,7 @@ Bool ArchiverImpl::AddPipelineState(IPipelineState* pPSO)
     const auto ArchiveResType = PipelineTypeToArchiveResourceType(Desc.PipelineType);
 
     {
-        std::lock_guard<std::mutex> Lock{m_PipelinesMtx};
+        std::lock_guard<std::mutex> Guard{m_PipelinesMtx};
 
         auto it_inserted = m_Pipelines.emplace(NamedResourceKey{ArchiveResType, Name, true}, pSerializedPSO);
         if (!it_inserted.second)
@@ -296,19 +323,81 @@ Bool ArchiverImpl::AddPipelineState(IPipelineState* pPSO)
 void ArchiverImpl::Reset()
 {
     {
-        std::lock_guard<std::mutex> Lock{m_SignaturesMtx};
+        std::lock_guard<std::mutex> Guard{m_SignaturesMtx};
         m_Signatures.clear();
     }
 
     {
-        std::lock_guard<std::mutex> Lock{m_RenderPassesMtx};
+        std::lock_guard<std::mutex> Guard{m_RenderPassesMtx};
         m_RenderPasses.clear();
     }
 
     {
-        std::lock_guard<std::mutex> Lock{m_PipelinesMtx};
+        std::lock_guard<std::mutex> Guard{m_PipelinesMtx};
         m_Pipelines.clear();
     }
+
+    {
+        std::lock_guard<std::mutex> Guard{m_ShadersMtx};
+        m_Shaders.clear();
+    }
+}
+
+IShader* ArchiverImpl::GetShader(const char* Name)
+{
+    std::lock_guard<std::mutex> Guard{m_ShadersMtx};
+
+    auto it = m_Shaders.find(Name);
+    return it != m_Shaders.end() ? it->second.RawPtr() : nullptr;
+}
+
+static DeviceObjectArchive::ResourceType PiplineTypeToArchiveResourceType(PIPELINE_TYPE Type)
+{
+    using ResourceType = DeviceObjectArchive::ResourceType;
+
+    static_assert(PIPELINE_TYPE_COUNT == 5, "Did you add a new pipeline type? Please handle it here.");
+    switch (Type)
+    {
+        case PIPELINE_TYPE_GRAPHICS:
+        case PIPELINE_TYPE_MESH:
+            return ResourceType::GraphicsPipeline;
+
+        case PIPELINE_TYPE_COMPUTE:
+            return ResourceType::ComputePipeline;
+
+        case PIPELINE_TYPE_RAY_TRACING:
+            return ResourceType::RayTracingPipeline;
+
+        case PIPELINE_TYPE_TILE:
+            return ResourceType::TilePipeline;
+
+        default:
+            return ResourceType::Undefined;
+    }
+}
+
+IPipelineState* ArchiverImpl::GetPipelineState(PIPELINE_TYPE PSOType,
+                                               const char*   PSOName)
+{
+    std::lock_guard<std::mutex> Guard{m_PipelinesMtx};
+
+    const auto ResType = PiplineTypeToArchiveResourceType(PSOType);
+    if (ResType == ResourceType::Undefined)
+    {
+        UNEXPECTED("Unexpected pipline type");
+        return nullptr;
+    }
+
+    auto it = m_Pipelines.find(NamedResourceKey{ResType, PSOName});
+    return it != m_Pipelines.end() ? it->second.RawPtr() : nullptr;
+}
+
+IPipelineResourceSignature* ArchiverImpl::GetPipelineResourceSignature(const char* PRSName)
+{
+    std::lock_guard<std::mutex> Guard{m_SignaturesMtx};
+
+    auto it = m_Signatures.find(PRSName);
+    return it != m_Signatures.end() ? it->second.RawPtr() : nullptr;
 }
 
 } // namespace Diligent

@@ -1,5 +1,20 @@
-# Current progress
+## Current progress
 
+* Added texture component swizzle (API253002)
+  * Added `TEXTURE_COMPONENT_SWIZZLE` enum and `TextureComponentMapping` struct
+  * Added `Swizzle` member to `TextureViewDesc` struct
+  * Added `TextureComponentSwizzle` member to `DeviceFeatures` struct
+* Added shader constant buffer reflection API (API253001)
+  * Added `SHADER_CODE_BASIC_TYPE` and `SHADER_CODE_VARIABLE_CLASS` enums
+  * Added `ShaderCodeVariableDesc` and `ShaderCodeBufferDesc` structs
+  * Added `IShader::GetConstantBufferDesc` method
+
+## v2.5.3
+
+* Added `RENDER_STATE_CACHE_LOG_LEVEL` enum, replaced `EnableLogging` member of `RenderStateCacheCreateInfo` struct with `LoggingLevel` (API252009)
+* Added `IPipelineResourceSignature::CopyStaticResources` and `IPipelineState::CopyStaticResources` methods (API252008)
+* Added render state cache (`IRenderStateCache` interface and related data types) (API252007)
+* Moved `UseCombinedTextureSamplers` and `CombinedSamplerSuffix` members from `ShaderCreateInfo` to `ShaderDesc` (API252006)
 * Added `IntanceLayerCount` and `ppInstanceLayerNames` members to EngineVkCreateInfo struct (API252005)
 * Added `IgnoreDebugMessageCount` and `ppIgnoreDebugMessageNames` to `EngineVkCreateInfo` struct (API252004)
 * Refactored archiver API (removed `IDeviceObjectArchive` and `IArchive`; enabled dearchiver

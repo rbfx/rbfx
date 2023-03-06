@@ -58,7 +58,7 @@ public:
 
     ~SerializedPipelineStateImpl() override;
 
-    virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final;
+    IMPLEMENT_QUERY_INTERFACE2_IN_PLACE(IID_SerializedPipelineState, IID_PipelineState, TBase)
 
     virtual const PipelineStateDesc& DILIGENT_CALL_TYPE GetDesc() const override final
     {
@@ -82,6 +82,7 @@ public:
 
     UNSUPPORTED_METHOD      (void, CreateShaderResourceBinding,  IShaderResourceBinding** ppShaderResourceBinding, bool InitStaticResources)
     UNSUPPORTED_CONST_METHOD(void, InitializeStaticSRBResources, IShaderResourceBinding* pShaderResourceBinding)
+    UNSUPPORTED_CONST_METHOD(void, CopyStaticResources,          IPipelineState* pPSO)
     UNSUPPORTED_CONST_METHOD(bool, IsCompatibleWith,             const IPipelineState* pPSO)
 
     UNSUPPORTED_CONST_METHOD(Uint32,                      GetResourceSignatureCount)

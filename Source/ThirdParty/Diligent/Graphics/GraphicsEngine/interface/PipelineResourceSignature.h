@@ -71,13 +71,13 @@ struct ImmutableSamplerDesc
         Desc                {_Desc                }
     {}
 
-    bool operator==(const ImmutableSamplerDesc& Rhs) const
+    bool operator==(const ImmutableSamplerDesc& Rhs) const noexcept
     {
         return ShaderStages == Rhs.ShaderStages &&
                Desc         == Rhs.Desc &&
                SafeStrEqual(SamplerOrTextureName, Rhs.SamplerOrTextureName);
     }
-    bool operator!=(const ImmutableSamplerDesc& Rhs) const
+    bool operator!=(const ImmutableSamplerDesc& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -138,7 +138,7 @@ DEFINE_FLAG_ENUM_OPERATORS(PIPELINE_RESOURCE_FLAGS);
 struct PipelineResourceDesc
 {
     /// Resource name in the shader
-    const char*                    Name          DEFAULT_INITIALIZER(nullptr);
+    const Char*                    Name          DEFAULT_INITIALIZER(nullptr);
 
     /// Shader stages that this resource applies to. When multiple shader stages are specified,
     /// all stages will share the same resource.
@@ -163,7 +163,7 @@ struct PipelineResourceDesc
     constexpr PipelineResourceDesc() noexcept {}
 
     constexpr PipelineResourceDesc(SHADER_TYPE                   _ShaderStages,
-                                   const char*                   _Name,
+                                   const Char*                   _Name,
                                    Uint32                        _ArraySize,
                                    SHADER_RESOURCE_TYPE          _ResourceType,
                                    SHADER_RESOURCE_VARIABLE_TYPE _VarType = SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE,
@@ -176,7 +176,7 @@ struct PipelineResourceDesc
         Flags       {_Flags       }
     {}
 
-    bool operator==(const PipelineResourceDesc& Rhs) const
+    bool operator==(const PipelineResourceDesc& Rhs) const noexcept
     {
         return ShaderStages == Rhs.ShaderStages &&
                ArraySize    == Rhs.ArraySize    &&
@@ -185,7 +185,7 @@ struct PipelineResourceDesc
                Flags        == Rhs.Flags        &&
                SafeStrEqual(Name, Rhs.Name);
     }
-    bool operator!=(const PipelineResourceDesc& Rhs) const
+    bool operator!=(const PipelineResourceDesc& Rhs) const noexcept
     {
         return !(*this == Rhs);
     }
@@ -223,7 +223,7 @@ struct PipelineResourceSignatureDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     /// the sampler assigned to the shader resource view is automatically set when
     /// the view is bound. Otherwise samplers need to be explicitly set similar to other
     /// shader variables.
-    bool UseCombinedTextureSamplers DEFAULT_INITIALIZER(false);
+    Bool UseCombinedTextureSamplers DEFAULT_INITIALIZER(false);
 
     /// If UseCombinedTextureSamplers is true, defines the suffix added to the
     /// texture variable name to get corresponding sampler name.  For example,
@@ -240,8 +240,18 @@ struct PipelineResourceSignatureDesc DILIGENT_DERIVE(DeviceObjectAttribs)
 
 #if DILIGENT_CPP_INTERFACE
 
-    bool operator==(const PipelineResourceSignatureDesc& Rhs) const
+    /// Tests if two pipeline resource signature descriptions are equal.
+
+    /// \param [in] Rhs - reference to the structure to compare with.
+    ///
+    /// \return     true if all members of the two structures *except for the Name* are equal,
+    ///             and false otherwise.
+    ///
+    /// \note   The operator ignores the Name field as it is used for debug purposes and
+    ///         doesn't affect the pipeline resource signature properties.
+    bool operator==(const PipelineResourceSignatureDesc& Rhs) const noexcept
     {
+        // Ignore Name. This is consistent with the hasher (HashCombiner<HasherType, PipelineResourceSignatureDesc>).
         if (NumResources               != Rhs.NumResources         ||
             NumImmutableSamplers       != Rhs.NumImmutableSamplers ||
             BindingIndex               != Rhs.BindingIndex         ||
@@ -306,7 +316,7 @@ DILIGENT_BEGIN_INTERFACE(IPipelineResourceSignature, IDeviceObject)
     ///                                        IPipelineResourceSignature::InitializeStaticSRBResources().
     VIRTUAL void METHOD(CreateShaderResourceBinding)(THIS_
                                                      IShaderResourceBinding** ppShaderResourceBinding,
-                                                     bool                     InitStaticResources DEFAULT_VALUE(false)) PURE;
+                                                     Bool                     InitStaticResources DEFAULT_VALUE(false)) PURE;
 
 
     /// Binds static resources for the specified shader stages in the pipeline resource signature.
@@ -398,11 +408,19 @@ DILIGENT_BEGIN_INTERFACE(IPipelineResourceSignature, IDeviceObject)
     VIRTUAL void METHOD(InitializeStaticSRBResources)(THIS_
                                                       struct IShaderResourceBinding* pShaderResourceBinding) CONST PURE;
 
+    /// Copies static resource bindings to the destination signature.
+
+    /// \param [in] pDstSignature - Destination pipeline resource signature.
+    ///
+    /// \note   Destination signature must be compatible with this signature.
+    VIRTUAL void METHOD(CopyStaticResources)(THIS_
+                                             IPipelineResourceSignature* pDstSignature) CONST PURE;
+
     /// Returns true if the signature is compatible with another one.
 
     /// \remarks    Two signatures are compatible if they contain identical resources and immutabke samplers,
     ///             defined in the same order disregarding their names.
-    VIRTUAL bool METHOD(IsCompatibleWith)(THIS_
+    VIRTUAL Bool METHOD(IsCompatibleWith)(THIS_
                                           const struct IPipelineResourceSignature* pPRS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
@@ -421,6 +439,7 @@ DILIGENT_END_INTERFACE
 #    define IPipelineResourceSignature_GetStaticVariableByIndex(This, ...)     CALL_IFACE_METHOD(PipelineResourceSignature, GetStaticVariableByIndex,    This, __VA_ARGS__)
 #    define IPipelineResourceSignature_GetStaticVariableCount(This, ...)       CALL_IFACE_METHOD(PipelineResourceSignature, GetStaticVariableCount,      This, __VA_ARGS__)
 #    define IPipelineResourceSignature_InitializeStaticSRBResources(This, ...) CALL_IFACE_METHOD(PipelineResourceSignature, InitializeStaticSRBResources,This, __VA_ARGS__)
+#    define IPipelineResourceSignature_CopyStaticResources(This, ...)          CALL_IFACE_METHOD(PipelineResourceSignature, CopyStaticResources,         This, __VA_ARGS__)
 #    define IPipelineResourceSignature_IsCompatibleWith(This, ...)             CALL_IFACE_METHOD(PipelineResourceSignature, IsCompatibleWith,            This, __VA_ARGS__)
 
 // clang-format on

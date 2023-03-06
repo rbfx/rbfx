@@ -89,24 +89,21 @@ protected:
         auto* pDevice = pEnv->GetDevice();
 
         ShaderCreateInfo ShaderCI;
-        ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-        ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Render pass test vertex shader";
-            ShaderCI.Source          = HLSL::DrawTest_ProceduralTriangleVS.c_str();
+            ShaderCI.Desc       = {"Render pass test vertex shader", SHADER_TYPE_VERTEX, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = HLSL::DrawTest_ProceduralTriangleVS.c_str();
             pDevice->CreateShader(ShaderCI, &sm_pVS);
             ASSERT_NE(sm_pVS, nullptr);
         }
 
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Render pass test pixel shader";
-            ShaderCI.Source          = HLSL::DrawTest_PS.c_str();
+            ShaderCI.Desc       = {"Render pass test pixel shader", SHADER_TYPE_PIXEL, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = HLSL::DrawTest_PS.c_str();
             pDevice->CreateShader(ShaderCI, &sm_pPS);
             ASSERT_NE(sm_pPS, nullptr);
         }
@@ -884,14 +881,12 @@ void RenderPassTest::TestInputAttachment(bool UseSignature, bool UseMemoryless)
             SHADER_SOURCE_LANGUAGE_HLSL;
         ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
-        ShaderCI.UseCombinedTextureSamplers = true;
 
         RefCntAutoPtr<IShader> pVS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Input attachment test VS";
-            ShaderCI.Source          = UseGLSL ?
+            ShaderCI.Desc       = {"Input attachment test VS", SHADER_TYPE_VERTEX, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = UseGLSL ?
                 GLSL::DrawTest_ProceduralTriangleVS.c_str() :
                 HLSL::DrawTest_ProceduralTriangleVS.c_str();
             pDevice->CreateShader(ShaderCI, &pVS);
@@ -900,10 +895,9 @@ void RenderPassTest::TestInputAttachment(bool UseSignature, bool UseMemoryless)
 
         RefCntAutoPtr<IShader> pPS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Input attachment test PS";
-            ShaderCI.Source          = UseGLSL ?
+            ShaderCI.Desc       = {"Input attachment test PS", SHADER_TYPE_PIXEL, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = UseGLSL ?
                 GLSL::InputAttachmentTest_FS.c_str() :
                 HLSL::InputAttachmentTest_PS.c_str();
             pDevice->CreateShader(ShaderCI, &pPS);
@@ -1163,24 +1157,20 @@ void RenderPassTest::TestInputAttachmentGeneralLayout(bool UseSignature)
         ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM;
         ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
-        ShaderCI.UseCombinedTextureSamplers = true;
-
         RefCntAutoPtr<IShader> pVS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Input attachment test VS";
-            ShaderCI.Source          = GLSL::DrawTest_ProceduralTriangleVS.c_str();
+            ShaderCI.Desc       = {"Input attachment test VS", SHADER_TYPE_VERTEX, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = GLSL::DrawTest_ProceduralTriangleVS.c_str();
             pDevice->CreateShader(ShaderCI, &pVS);
             ASSERT_NE(pVS, nullptr);
         }
 
         RefCntAutoPtr<IShader> pPS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Input attachment test PS";
-            ShaderCI.Source          = GLSL::InputAttachmentTest_FS.c_str();
+            ShaderCI.Desc       = {"Input attachment test PS", SHADER_TYPE_PIXEL, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = GLSL::InputAttachmentTest_FS.c_str();
             pDevice->CreateShader(ShaderCI, &pPS);
             ASSERT_NE(pPS, nullptr);
         }

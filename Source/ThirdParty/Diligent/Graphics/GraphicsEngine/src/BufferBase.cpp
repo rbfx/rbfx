@@ -48,7 +48,7 @@ void ValidateBufferDesc(const BufferDesc& Desc, const IRenderDevice* pDevice) no
     const auto& MemoryInfo = pDevice->GetAdapterInfo().Memory;
     const auto& Features   = pDevice->GetDeviceInfo().Features;
 
-    static_assert(BIND_FLAGS_LAST == 0x800L, "Please update this function to handle the new bind flags");
+    static_assert(BIND_FLAG_LAST == 0x800L, "Please update this function to handle the new bind flags");
 
     constexpr Uint32 AllowedBindFlags =
         BIND_VERTEX_BUFFER |

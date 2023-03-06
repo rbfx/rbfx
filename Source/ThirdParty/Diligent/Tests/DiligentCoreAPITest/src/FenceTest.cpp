@@ -73,16 +73,14 @@ protected:
         ComputePipelineStateCreateInfo PSOCreateInfo;
 
         ShaderCreateInfo ShaderCI;
-        ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-        ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
         RefCntAutoPtr<IShader> pCS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_COMPUTE;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Fence test - CS";
-            ShaderCI.Source          = FenceTest_CS.c_str();
+            ShaderCI.Desc       = {"Fence test - CS", SHADER_TYPE_COMPUTE, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = FenceTest_CS.c_str();
             pDevice->CreateShader(ShaderCI, &pCS);
             ASSERT_NE(pCS, nullptr);
         }

@@ -55,11 +55,11 @@ enum DEBUG_MESSAGE_SEVERITY
 /// \param [in] Function - Name of the function or nullptr
 /// \param [in] Function - File name or nullptr
 /// \param [in] Line - Line number
-typedef void (*DebugMessageCallbackType)(enum DEBUG_MESSAGE_SEVERITY Severity,
-                                         const Char*                 Message,
-                                         const Char*                 Function,
-                                         const Char*                 File,
-                                         int                         Line);
+typedef void(DILIGENT_CALL_TYPE* DebugMessageCallbackType)(enum DEBUG_MESSAGE_SEVERITY Severity,
+                                                           const Char*                 Message,
+                                                           const Char*                 Function,
+                                                           const Char*                 File,
+                                                           int                         Line);
 extern DebugMessageCallbackType DebugMessageCallback;
 
 

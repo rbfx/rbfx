@@ -217,25 +217,23 @@ RefCntAutoPtr<IPipelineState> CreateGraphicsPSO(GPUTestingEnvironment* pEnv, con
     GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
     ShaderCreateInfo CreationAttrs;
-    CreationAttrs.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    CreationAttrs.ShaderCompiler             = pEnv->GetDefaultCompiler(CreationAttrs.SourceLanguage);
-    CreationAttrs.UseCombinedTextureSamplers = true;
+    CreationAttrs.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    CreationAttrs.ShaderCompiler = pEnv->GetDefaultCompiler(CreationAttrs.SourceLanguage);
+
     RefCntAutoPtr<IShader> pVS;
     {
-        CreationAttrs.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        CreationAttrs.EntryPoint      = "main";
-        CreationAttrs.Desc.Name       = "PSO Compatibility test VS";
-        CreationAttrs.Source          = VSSource;
+        CreationAttrs.Desc       = {"PSO Compatibility test VS", SHADER_TYPE_VERTEX, true};
+        CreationAttrs.EntryPoint = "main";
+        CreationAttrs.Source     = VSSource;
         pDevice->CreateShader(CreationAttrs, &pVS);
         VERIFY_EXPR(pVS != nullptr);
     }
 
     RefCntAutoPtr<IShader> pPS;
     {
-        CreationAttrs.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        CreationAttrs.EntryPoint      = "main";
-        CreationAttrs.Desc.Name       = "PSO Compatibility test PS";
-        CreationAttrs.Source          = PSSource;
+        CreationAttrs.Desc       = {"PSO Compatibility test PS", SHADER_TYPE_PIXEL, true};
+        CreationAttrs.EntryPoint = "main";
+        CreationAttrs.Source     = PSSource;
         pDevice->CreateShader(CreationAttrs, &pPS);
         VERIFY_EXPR(pPS != nullptr);
     }
@@ -257,15 +255,14 @@ RefCntAutoPtr<IPipelineState> CreateComputePSO(GPUTestingEnvironment* pEnv, cons
 
     PSOCreateInfo.PSODesc.PipelineType = PIPELINE_TYPE_COMPUTE;
     ShaderCreateInfo CreationAttrs;
-    CreationAttrs.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    CreationAttrs.ShaderCompiler             = pEnv->GetDefaultCompiler(CreationAttrs.SourceLanguage);
-    CreationAttrs.UseCombinedTextureSamplers = true;
+    CreationAttrs.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    CreationAttrs.ShaderCompiler = pEnv->GetDefaultCompiler(CreationAttrs.SourceLanguage);
+
     RefCntAutoPtr<IShader> pCS;
     {
-        CreationAttrs.Desc.ShaderType = SHADER_TYPE_COMPUTE;
-        CreationAttrs.EntryPoint      = "main";
-        CreationAttrs.Desc.Name       = "PSO Compatibility test CS";
-        CreationAttrs.Source          = CSSource;
+        CreationAttrs.Desc       = {"PSO Compatibility test CS", SHADER_TYPE_COMPUTE, true};
+        CreationAttrs.EntryPoint = "main";
+        CreationAttrs.Source     = CSSource;
         pDevice->CreateShader(CreationAttrs, &pCS);
         VERIFY_EXPR(pCS != nullptr);
     }

@@ -44,6 +44,9 @@ class ShaderVkImpl final : public ShaderBase<EngineVkImplTraits>
 public:
     using TShaderBase = ShaderBase<EngineVkImplTraits>;
 
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0x17523656, 0x19a6, 0x4874, {0x8c, 0x48, 0x74, 0xf5, 0xb7, 0x2, 0x31, 0x1}};
+
     struct CreateInfo
     {
         IDXCompiler* const         pDXCompiler;
@@ -59,7 +62,7 @@ public:
                  bool                    IsDeviceInternal = false);
     ~ShaderVkImpl();
 
-    IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_ShaderVk, TShaderBase)
+    IMPLEMENT_QUERY_INTERFACE2_IN_PLACE(IID_ShaderVk, IID_InternalImpl, TShaderBase)
 
     /// Implementation of IShader::GetResourceCount() in Vulkan backend.
     virtual Uint32 DILIGENT_CALL_TYPE GetResourceCount() const override final
@@ -70,6 +73,9 @@ public:
     /// Implementation of IShader::GetResource() in Vulkan backend.
     virtual void DILIGENT_CALL_TYPE GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDesc) const override final;
 
+    /// Implementation of IShader::GetConstantBufferDesc() in Vulkan backend.
+    virtual const ShaderCodeBufferDesc* DILIGENT_CALL_TYPE GetConstantBufferDesc(Uint32 Index) const override final;
+
     /// Implementation of IShaderVk::GetSPIRV().
     virtual const std::vector<uint32_t>& DILIGENT_CALL_TYPE GetSPIRV() const override final
     {
@@ -79,6 +85,13 @@ public:
     const std::shared_ptr<const SPIRVShaderResources>& GetShaderResources() const { return m_pShaderResources; }
 
     const char* GetEntryPoint() const { return m_EntryPoint.c_str(); }
+
+    virtual void DILIGENT_CALL_TYPE GetBytecode(const void** ppBytecode,
+                                                Uint64&      Size) const override final
+    {
+        *ppBytecode = !m_SPIRV.empty() ? m_SPIRV.data() : nullptr;
+        Size        = m_SPIRV.size() * sizeof(m_SPIRV[0]);
+    }
 
 private:
     void MapHLSLVertexShaderInputs();

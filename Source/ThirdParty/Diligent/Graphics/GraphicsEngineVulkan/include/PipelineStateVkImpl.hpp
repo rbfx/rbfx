@@ -55,12 +55,15 @@ class PipelineStateVkImpl final : public PipelineStateBase<EngineVkImplTraits>
 public:
     using TPipelineStateBase = PipelineStateBase<EngineVkImplTraits>;
 
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0xdbac0281, 0x36de, 0x4550, {0x80, 0x2d, 0xa3, 0x8c, 0x6e, 0xfb, 0x92, 0x57}};
+
     PipelineStateVkImpl(IReferenceCounters* pRefCounters, RenderDeviceVkImpl* pDeviceVk, const GraphicsPipelineStateCreateInfo& CreateInfo);
     PipelineStateVkImpl(IReferenceCounters* pRefCounters, RenderDeviceVkImpl* pDeviceVk, const ComputePipelineStateCreateInfo& CreateInfo);
     PipelineStateVkImpl(IReferenceCounters* pRefCounters, RenderDeviceVkImpl* pDeviceVk, const RayTracingPipelineStateCreateInfo& CreateInfo);
     ~PipelineStateVkImpl();
 
-    IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_PipelineStateVk, TPipelineStateBase)
+    IMPLEMENT_QUERY_INTERFACE2_IN_PLACE(IID_PipelineStateVk, IID_InternalImpl, TPipelineStateBase)
 
     /// Implementation of IPipelineStateVk::GetRenderPass().
     virtual IRenderPassVk* DILIGENT_CALL_TYPE GetRenderPass() const override final { return GetRenderPassPtr().RawPtr<IRenderPassVk>(); }

@@ -67,6 +67,7 @@ struct D3D11ResourceBindPoints
     }
 
     D3D11ResourceBindPoints(const D3D11ResourceBindPoints&) noexcept = default;
+    D3D11ResourceBindPoints& operator=(const D3D11ResourceBindPoints&) = default;
 
     SHADER_TYPE GetActiveStages() const
     {
@@ -100,7 +101,7 @@ struct D3D11ResourceBindPoints
         return Hash;
     }
 
-    bool operator==(const D3D11ResourceBindPoints& rhs) const
+    bool operator==(const D3D11ResourceBindPoints& rhs) const noexcept
     {
         return Bindings == rhs.Bindings;
     }
@@ -201,7 +202,7 @@ struct D3D11ResourceRangeCounters
         return *this;
     }
 
-    bool operator==(const D3D11ResourceRangeCounters& rhs) const
+    bool operator==(const D3D11ResourceRangeCounters& rhs) const noexcept
     {
         return PackedCounters == rhs.PackedCounters;
     }

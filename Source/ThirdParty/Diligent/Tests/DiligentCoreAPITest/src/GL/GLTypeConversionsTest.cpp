@@ -72,21 +72,7 @@ TEST(GLTypeConversionsTest, PrimitiveTopologyToGLTopology)
 
 TEST(GLTypeConversionsTest, TypeToGLType)
 {
-#define CHECK_VALUE_TYPE_ENUM_VALUE(EnumElement, ExpectedValue) static_assert(EnumElement == ExpectedValue, "TypeToGLType function assumes that " #EnumElement " equals " #ExpectedValue ": fix TypeToGLTypeMap array and update this assertion.")
-    // clang-format off
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_UNDEFINED, 0);
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_INT8,      1);
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_INT16,     2);
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_INT32,     3);
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_UINT8,     4);
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_UINT16,    5);
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_UINT32,    6);
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_FLOAT16,   7);
-    CHECK_VALUE_TYPE_ENUM_VALUE(VT_FLOAT32,   8);
-    // clang-format on
-    static_assert(VT_NUM_TYPES == 9, "Did you add a new VALUE_TYPE enum value? Please update TypeToGLType function.");
-#undef CHECK_VALUE_TYPE_ENUM_VALUE
-
+    static_assert(VT_NUM_TYPES == 10, "Did you add a new VALUE_TYPE enum value? Please update the tests.");
     // clang-format off
     EXPECT_EQ(TypeToGLType(VT_UNDEFINED), GLenum{0});
     EXPECT_EQ(TypeToGLType(VT_INT8),      GLenum{GL_BYTE});
@@ -97,6 +83,7 @@ TEST(GLTypeConversionsTest, TypeToGLType)
     EXPECT_EQ(TypeToGLType(VT_UINT32),    GLenum{GL_UNSIGNED_INT});
     EXPECT_EQ(TypeToGLType(VT_FLOAT16),   GLenum{GL_HALF_FLOAT});
     EXPECT_EQ(TypeToGLType(VT_FLOAT32),   GLenum{GL_FLOAT});
+    EXPECT_EQ(TypeToGLType(VT_FLOAT64),   GLenum{GL_DOUBLE});
     // clang-format on
 }
 
@@ -146,13 +133,13 @@ TEST(GLTypeConversionsTest, CompareFuncToGLCompareFunc)
     // clang-format off
     EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_UNKNOWN),       GLenum{0});
     EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_NEVER),         GLenum{GL_NEVER});
-	EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_LESS),          GLenum{GL_LESS});
-	EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_EQUAL),         GLenum{GL_EQUAL});
-	EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_LESS_EQUAL),    GLenum{GL_LEQUAL});
-	EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_GREATER),       GLenum{GL_GREATER});
-	EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_NOT_EQUAL),     GLenum{GL_NOTEQUAL});
-	EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_GREATER_EQUAL), GLenum{GL_GEQUAL});
-	EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_ALWAYS),        GLenum{GL_ALWAYS});
+    EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_LESS),          GLenum{GL_LESS});
+    EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_EQUAL),         GLenum{GL_EQUAL});
+    EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_LESS_EQUAL),    GLenum{GL_LEQUAL});
+    EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_GREATER),       GLenum{GL_GREATER});
+    EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_NOT_EQUAL),     GLenum{GL_NOTEQUAL});
+    EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_GREATER_EQUAL), GLenum{GL_GEQUAL});
+    EXPECT_EQ(CompareFuncToGLCompareFunc(COMPARISON_FUNC_ALWAYS),        GLenum{GL_ALWAYS});
     // clang-format on
 }
 
@@ -276,6 +263,58 @@ TEST(GLTypeConversionsTest, BlendOperation2GLBlendOp)
     EXPECT_EQ(BlendOperation2GLBlendOp(BLEND_OPERATION_REV_SUBTRACT), GLenum{GL_FUNC_REVERSE_SUBTRACT});
     EXPECT_EQ(BlendOperation2GLBlendOp(BLEND_OPERATION_MIN),          GLenum{GL_MIN});
     EXPECT_EQ(BlendOperation2GLBlendOp(BLEND_OPERATION_MAX),          GLenum{GL_MAX});
+    // clang-format on
+}
+
+
+TEST(GLTypeConversionsTest, GLDataTypeToShaderCodeVariableDesc)
+{
+    // clang-format off
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT),        ShaderCodeVariableDesc(nullptr, "float",  SHADER_CODE_BASIC_TYPE_FLOAT,  0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_INT),          ShaderCodeVariableDesc(nullptr, "int",    SHADER_CODE_BASIC_TYPE_INT,    0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_UNSIGNED_INT), ShaderCodeVariableDesc(nullptr, "uint",   SHADER_CODE_BASIC_TYPE_UINT,   0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_BOOL),         ShaderCodeVariableDesc(nullptr, "bool",   SHADER_CODE_BASIC_TYPE_BOOL,   0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE),       ShaderCodeVariableDesc(nullptr, "double", SHADER_CODE_BASIC_TYPE_DOUBLE, 0));
+
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_VEC2), ShaderCodeVariableDesc(nullptr, "vec2", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 2, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_VEC3), ShaderCodeVariableDesc(nullptr, "vec3", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 3, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_VEC4), ShaderCodeVariableDesc(nullptr, "vec4", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 1, 0));
+
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_INT_VEC2), ShaderCodeVariableDesc(nullptr, "ivec2", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_INT, 2, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_INT_VEC3), ShaderCodeVariableDesc(nullptr, "ivec3", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_INT, 3, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_INT_VEC4), ShaderCodeVariableDesc(nullptr, "ivec4", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_INT, 4, 1, 0));
+
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_UNSIGNED_INT_VEC2), ShaderCodeVariableDesc(nullptr, "uvec2", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_UINT, 2, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_UNSIGNED_INT_VEC3), ShaderCodeVariableDesc(nullptr, "uvec3", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_UINT, 3, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_UNSIGNED_INT_VEC4), ShaderCodeVariableDesc(nullptr, "uvec4", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_UINT, 4, 1, 0));
+
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_BOOL_VEC2), ShaderCodeVariableDesc(nullptr, "bvec2", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_BOOL, 2, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_BOOL_VEC3), ShaderCodeVariableDesc(nullptr, "bvec3", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_BOOL, 3, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_BOOL_VEC4), ShaderCodeVariableDesc(nullptr, "bvec4", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_BOOL, 4, 1, 0));
+
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_VEC2), ShaderCodeVariableDesc(nullptr, "dvec2", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_DOUBLE, 2, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_VEC3), ShaderCodeVariableDesc(nullptr, "dvec3", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_DOUBLE, 3, 1, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_VEC4), ShaderCodeVariableDesc(nullptr, "dvec4", SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_DOUBLE, 4, 1, 0));
+
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT2),   ShaderCodeVariableDesc(nullptr, "mat2x2", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 2, 2, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT3),   ShaderCodeVariableDesc(nullptr, "mat3x3", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 3, 3, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT4),   ShaderCodeVariableDesc(nullptr, "mat4x4", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 4, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT2x3), ShaderCodeVariableDesc(nullptr, "mat2x3", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 3, 2, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT2x4), ShaderCodeVariableDesc(nullptr, "mat2x4", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 2, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT3x2), ShaderCodeVariableDesc(nullptr, "mat3x2", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 2, 3, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT3x4), ShaderCodeVariableDesc(nullptr, "mat3x4", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 3, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT4x2), ShaderCodeVariableDesc(nullptr, "mat4x2", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 2, 4, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_FLOAT_MAT4x3), ShaderCodeVariableDesc(nullptr, "mat4x3", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_FLOAT, 3, 4, 0));
+
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT2),   ShaderCodeVariableDesc(nullptr, "dmat2",   SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 2, 2, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT3),   ShaderCodeVariableDesc(nullptr, "dmat3",   SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 3, 3, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT4),   ShaderCodeVariableDesc(nullptr, "dmat4",   SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 4, 4, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT2x3), ShaderCodeVariableDesc(nullptr, "dmat2x3", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 3, 2, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT2x4), ShaderCodeVariableDesc(nullptr, "dmat2x4", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 4, 2, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT3x2), ShaderCodeVariableDesc(nullptr, "dmat3x2", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 2, 3, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT3x4), ShaderCodeVariableDesc(nullptr, "dmat3x4", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 4, 3, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT4x2), ShaderCodeVariableDesc(nullptr, "dmat4x2", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 2, 4, 0));
+    EXPECT_EQ(GLDataTypeToShaderCodeVariableDesc(GL_DOUBLE_MAT4x3), ShaderCodeVariableDesc(nullptr, "dmat4x3", SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS, SHADER_CODE_BASIC_TYPE_DOUBLE, 3, 4, 0));
     // clang-format on
 }
 

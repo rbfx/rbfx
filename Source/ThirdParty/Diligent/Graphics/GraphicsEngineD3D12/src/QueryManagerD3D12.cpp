@@ -50,11 +50,9 @@ static Uint32 GetQueryDataSize(QUERY_TYPE QueryType)
         case QUERY_TYPE_TIMESTAMP:
         case QUERY_TYPE_DURATION:
             return sizeof(Uint64);
-            break;
 
         case QUERY_TYPE_PIPELINE_STATISTICS:
             return sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS);
-            break;
 
         static_assert(QUERY_TYPE_NUM_TYPES == 6, "Not all QUERY_TYPE enum values are tested");
 

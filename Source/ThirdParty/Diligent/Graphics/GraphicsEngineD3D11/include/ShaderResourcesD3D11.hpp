@@ -42,7 +42,8 @@ public:
     // Loads shader resources from the compiled shader bytecode
     ShaderResourcesD3D11(ID3DBlob*         pShaderBytecode,
                          const ShaderDesc& ShdrDesc,
-                         const char*       CombinedSamplerSuffix);
+                         const char*       CombinedSamplerSuffix,
+                         bool              LoadConstantBufferReflection);
     ~ShaderResourcesD3D11();
 
     // clang-format off

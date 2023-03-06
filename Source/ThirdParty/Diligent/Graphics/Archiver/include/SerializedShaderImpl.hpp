@@ -26,12 +26,11 @@
 
 #pragma once
 
-#include <memory>
 #include <array>
 
-#include "Shader.h"
+#include "SerializedShader.h"
 #include "SerializationEngineImplTraits.hpp"
-#include "ObjectBase.hpp"
+#include "ShaderBase.hpp"
 #include "RefCntAutoPtr.hpp"
 #include "STDAllocator.hpp"
 #include "Serializer.hpp"
@@ -40,15 +39,14 @@
 namespace Diligent
 {
 
-// {53A9A017-6A34-4AE9-AA23-C8E587023F9E}
-static const INTERFACE_ID IID_SerializedShader =
-    {0x53a9a017, 0x6a34, 0x4ae9, {0xaa, 0x23, 0xc8, 0xe5, 0x87, 0x2, 0x3f, 0x9e}};
-
-class SerializedShaderImpl final : public ObjectBase<IShader>
+class SerializedShaderImpl final : public ObjectBase<ISerializedShader>
 {
 public:
-    using TBase      = ObjectBase<IShader>;
+    using TBase      = ObjectBase<ISerializedShader>;
     using DeviceType = DeviceObjectArchive::DeviceType;
+
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0x949bcae1, 0xb92c, 0x4f31, {0x88, 0x13, 0xec, 0x83, 0xa7, 0xe3, 0x89, 0x3}};
 
     SerializedShaderImpl(IReferenceCounters*      pRefCounters,
                          SerializationDeviceImpl* pDevice,
@@ -58,17 +56,24 @@ public:
 
     virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final;
 
-    virtual const ShaderDesc& DILIGENT_CALL_TYPE GetDesc() const override final { return m_CreateInfo.Desc; }
+    virtual const ShaderDesc& DILIGENT_CALL_TYPE GetDesc() const override final { return m_CreateInfo.Get().Desc; }
 
     UNSUPPORTED_CONST_METHOD(Uint32, GetResourceCount)
     UNSUPPORTED_CONST_METHOD(void, GetResourceDesc, Uint32 Index, ShaderResourceDesc& ResourceDesc)
+    UNSUPPORTED_CONST_METHOD(const ShaderCodeBufferDesc*, GetConstantBufferDesc, Uint32 Index)
     UNSUPPORTED_CONST_METHOD(Int32, GetUniqueID)
     UNSUPPORTED_METHOD(void, SetUserData, IObject* pUserData)
     UNSUPPORTED_CONST_METHOD(IObject*, GetUserData)
+    UNSUPPORTED_CONST_METHOD(void, GetBytecode, const void** ppBytecode, Uint64& Size);
+
+    virtual IShader* DILIGENT_CALL_TYPE GetDeviceShader(RENDER_DEVICE_TYPE Type) const override final;
 
     struct CompiledShader
     {
         virtual ~CompiledShader() {}
+        virtual SerializedData Serialize(ShaderCreateInfo ShaderCI) const = 0;
+
+        virtual IShader* GetDeviceShader() = 0;
     };
 
     template <typename CompiledShaderType>
@@ -77,18 +82,25 @@ public:
         return static_cast<CompiledShaderType*>(m_Shaders[static_cast<size_t>(Type)].get());
     }
 
+    SerializedData GetCommonData() const { return SerializedData{}; }
+    SerializedData GetDeviceData(DeviceType Type) const;
+
     const ShaderCreateInfo& GetCreateInfo() const
     {
         return m_CreateInfo;
     }
 
-private:
-    void CopyShaderCreateInfo(const ShaderCreateInfo& ShaderCI) noexcept(false);
+    static SerializedData SerializeCreateInfo(const ShaderCreateInfo& CI);
 
-    SerializationDeviceImpl*                       m_pDevice;
-    RefCntAutoPtr<IShaderSourceInputStreamFactory> m_pShaderSourceFactory;
-    ShaderCreateInfo                               m_CreateInfo;
-    std::unique_ptr<void, STDDeleterRawMem<void>>  m_pRawMemory;
+    bool operator==(const SerializedShaderImpl& Rhs) const noexcept;
+    bool operator!=(const SerializedShaderImpl& Rhs) const noexcept
+    {
+        return !(*this == Rhs);
+    }
+
+private:
+    SerializationDeviceImpl* m_pDevice;
+    ShaderCreateInfoWrapper  m_CreateInfo;
 
     std::array<std::unique_ptr<CompiledShader>, static_cast<size_t>(DeviceType::Count)> m_Shaders;
 
@@ -115,7 +127,7 @@ private:
 #endif
 
 #if METAL_SUPPORTED
-    void CreateShaderMtl(const ShaderCreateInfo& ShaderCI, DeviceType Type) noexcept(false);
+    void CreateShaderMtl(IReferenceCounters* pRefCounters, const ShaderCreateInfo& ShaderCI, DeviceType Type) noexcept(false);
 #endif
 };
 

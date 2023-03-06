@@ -274,7 +274,8 @@ inline void DeviceContextVkImpl::DisposeCurrentCmdBuffer(SoftwareQueueIndex CmdQ
 
 void DeviceContextVkImpl::SetPipelineState(IPipelineState* pPipelineState)
 {
-    auto* pPipelineStateVk = ClassPtrCast<PipelineStateVkImpl>(pPipelineState);
+    RefCntAutoPtr<PipelineStateVkImpl> pPipelineStateVk{pPipelineState, PipelineStateVkImpl::IID_InternalImpl};
+    VERIFY(pPipelineState == nullptr || pPipelineStateVk != nullptr, "Unknown pipeline state object implementation");
     if (PipelineStateVkImpl::IsSameObject(m_pPipelineState, pPipelineStateVk))
         return;
 
@@ -302,10 +303,10 @@ void DeviceContextVkImpl::SetPipelineState(IPipelineState* pPipelineState)
             CommitScissor = !m_pPipelineState->GetGraphicsPipelineDesc().RasterizerDesc.ScissorEnable;
     }
 
-    TDeviceContextBase::SetPipelineState(pPipelineStateVk, 0 /*Dummy*/);
+    TDeviceContextBase::SetPipelineState(std::move(pPipelineStateVk), 0 /*Dummy*/);
     EnsureVkCmdBuffer();
 
-    auto vkPipeline = pPipelineStateVk->GetVkPipeline();
+    auto vkPipeline = m_pPipelineState->GetVkPipeline();
 
     static_assert(PIPELINE_TYPE_LAST == 4, "Please update the switch below to handle the new pipeline type");
     switch (PSODesc.PipelineType)
@@ -313,7 +314,7 @@ void DeviceContextVkImpl::SetPipelineState(IPipelineState* pPipelineState)
         case PIPELINE_TYPE_GRAPHICS:
         case PIPELINE_TYPE_MESH:
         {
-            auto& GraphicsPipeline = pPipelineStateVk->GetGraphicsPipelineDesc();
+            auto& GraphicsPipeline = m_pPipelineState->GetGraphicsPipelineDesc();
             m_CommandBuffer.BindGraphicsPipeline(vkPipeline);
 
             if (CommitStates)
@@ -349,8 +350,8 @@ void DeviceContextVkImpl::SetPipelineState(IPipelineState* pPipelineState)
             UNEXPECTED("unknown pipeline type");
     }
 
-    const auto& Layout    = pPipelineStateVk->GetPipelineLayout();
-    const auto  SignCount = pPipelineStateVk->GetResourceSignatureCount();
+    const auto& Layout    = m_pPipelineState->GetPipelineLayout();
+    const auto  SignCount = m_pPipelineState->GetResourceSignatureCount();
     auto&       BindInfo  = GetBindInfo(PSODesc.PipelineType);
 
     Uint32 DvpCompatibleSRBCount = 0;
@@ -370,7 +371,7 @@ void DeviceContextVkImpl::SetPipelineState(IPipelineState* pPipelineState)
     {
         auto& SetInfo = BindInfo.SetInfo[i];
 
-        auto* pSignature = pPipelineStateVk->GetResourceSignature(i);
+        auto* pSignature = m_pPipelineState->GetResourceSignature(i);
         if (pSignature == nullptr || pSignature->GetNumDescriptorSets() == 0)
         {
             SetInfo = {};
@@ -3167,7 +3168,7 @@ void DeviceContextVkImpl::AliasingBarrier(IDeviceObject* pResourceBefore, IDevic
         }
         else
         {
-            constexpr auto BindAll = static_cast<BIND_FLAGS>((Uint32{BIND_FLAGS_LAST} << 1) - 1);
+            constexpr auto BindAll = static_cast<BIND_FLAGS>((Uint32{BIND_FLAG_LAST} << 1) - 1);
             return BindAll;
         }
     };

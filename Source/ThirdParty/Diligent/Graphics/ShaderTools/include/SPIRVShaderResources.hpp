@@ -152,6 +152,7 @@ public:
                          const ShaderDesc&     shaderDesc,
                          const char*           CombinedSamplerSuffix,
                          bool                  LoadShaderStageInputs,
+                         bool                  LoadUniformBufferReflection,
                          std::string&          EntryPoint);
 
     // clang-format off
@@ -195,6 +196,23 @@ public:
         VERIFY(n < m_NumShaderStageInputs, "Shader stage input index (", n, ") is out of range. Total input count: ", m_NumShaderStageInputs);
         auto* ResourceMemoryEnd = reinterpret_cast<const SPIRVShaderResourceAttribs*>(m_MemoryBuffer.get()) + m_TotalResources;
         return reinterpret_cast<const SPIRVShaderStageInputAttribs*>(ResourceMemoryEnd)[n];
+    }
+
+    const ShaderCodeBufferDesc* GetUniformBufferDesc(Uint32 Index) const
+    {
+        if (Index >= GetNumUBs())
+        {
+            UNEXPECTED("Uniform buffer index (", Index, ") is out of range.");
+            return nullptr;
+        }
+
+        if (!m_UBReflectionBuffer)
+        {
+            UNEXPECTED("Uniform buffer reflection information is not loaded. Please set the LoadConstantBufferReflection flag when creating the shader.");
+            return nullptr;
+        }
+
+        return reinterpret_cast<const ShaderCodeBufferDesc*>(m_UBReflectionBuffer.get()) + Index;
     }
 
     struct ResourceCounters
@@ -360,6 +378,7 @@ private:
     // Memory buffer that holds all resources as continuous chunk of memory:
     // |  UBs  |  SBs  |  StrgImgs  |  SmplImgs  |  ACs  |  SepSamplers  |  SepImgs  | Stage Inputs | Resource Names |
     std::unique_ptr<void, STDDeleterRawMem<void>> m_MemoryBuffer;
+    std::unique_ptr<void, STDDeleterRawMem<void>> m_UBReflectionBuffer;
 
     const char* m_CombinedSamplerSuffix = nullptr;
     const char* m_ShaderName            = nullptr;

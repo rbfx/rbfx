@@ -431,6 +431,12 @@ struct BlendStateDesc
         return bRTsEqual &&
             AlphaToCoverageEnable == RHS.AlphaToCoverageEnable &&
             IndependentBlendEnable == RHS.IndependentBlendEnable;
+
+        static_assert(sizeof(*this) == 82, "Did you add new members to BlendStateDesc? Please handle them here.");
+    }
+    constexpr bool operator!=(const BlendStateDesc& RHS) const
+    {
+        return !(*this == RHS);
     }
 #endif
 };

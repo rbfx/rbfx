@@ -65,6 +65,7 @@ enum TBasicType {
     EbtAccStruct,
     EbtReference,
     EbtRayQuery,
+    EbtHitObjectNV,
 #ifndef GLSLANG_WEB
     // SPIR-V type defined by spirv_type
     EbtSpirvType,
@@ -104,6 +105,9 @@ enum TStorageQualifier {
     EvqHitAttr,
     EvqCallableData,
     EvqCallableDataIn,
+    EvqHitObjectAttrNV,
+
+    EvqtaskPayloadSharedEXT,
 
     // parameters
     EvqIn,            // also, for 'in' in the grammar before we know if it's a pipeline input or an 'in' parameter
@@ -287,6 +291,11 @@ enum TBuiltInVariable {
     EbvLayerPerViewNV,
     EbvMeshViewCountNV,
     EbvMeshViewIndicesNV,
+    //GL_EXT_mesh_shader
+    EbvPrimitivePointIndicesEXT,
+    EbvPrimitiveLineIndicesEXT,
+    EbvPrimitiveTriangleIndicesEXT,
+    EbvCullPrimitiveEXT,
 
     // sm builtins
     EbvWarpsPerSM,
@@ -308,6 +317,13 @@ enum TBuiltInVariable {
     EbvStructuredBuffer,
     EbvByteAddressBuffer,
     EbvRWByteAddressBuffer,
+
+    // ARM specific core builtins
+    EbvCoreCountARM,
+    EbvCoreIDARM,
+    EbvCoreMaxIDARM,
+    EbvWarpIDARM,
+    EbvWarpMaxIDARM,
 
     EbvLast
 };
@@ -360,6 +376,8 @@ __inline const char* GetStorageQualifierString(TStorageQualifier q)
     case EvqHitAttr:        return "hitAttributeNV";   break;
     case EvqCallableData:   return "callableDataNV";   break;
     case EvqCallableDataIn: return "callableDataInNV"; break;
+    case EvqtaskPayloadSharedEXT: return "taskPayloadSharedEXT"; break;
+    case EvqHitObjectAttrNV:return "hitObjectAttributeNV"; break;
     default:                return "unknown qualifier";
     }
 }
@@ -496,6 +514,11 @@ __inline const char* GetBuiltInVariableString(TBuiltInVariable v)
     case EbvLayerPerViewNV:             return "LayerPerViewNV";
     case EbvMeshViewCountNV:            return "MeshViewCountNV";
     case EbvMeshViewIndicesNV:          return "MeshViewIndicesNV";
+    // GL_EXT_mesh_shader
+    case EbvPrimitivePointIndicesEXT:    return "PrimitivePointIndicesEXT";
+    case EbvPrimitiveLineIndicesEXT:     return "PrimitiveLineIndicesEXT";
+    case EbvPrimitiveTriangleIndicesEXT: return "PrimitiveTriangleIndicesEXT";
+    case EbvCullPrimitiveEXT:            return "CullPrimitiveEXT";
 
     case EbvWarpsPerSM:                 return "WarpsPerSMNV";
     case EbvSMCount:                    return "SMCountNV";

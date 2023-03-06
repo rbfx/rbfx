@@ -61,6 +61,7 @@ public:
     static int   pclose(FILE* stream);
 
     static std::string GetCurrentDirectory();
+    static std::string GetLocalAppDataDirectory(const char* AppName = nullptr, bool Create = true);
 };
 
 } // namespace Diligent

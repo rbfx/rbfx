@@ -438,7 +438,7 @@ GraphicsAdapterInfo EngineFactoryD3D11Impl::GetGraphicsAdapterInfo(void*        
         }
         Features.ShaderFloat16 = ShaderFloat16Supported ? DEVICE_FEATURE_STATE_ENABLED : DEVICE_FEATURE_STATE_DISABLED;
     }
-    ASSERT_SIZEOF(Features, 40, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+    ASSERT_SIZEOF(Features, 41, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 
     // Texture properties
     {

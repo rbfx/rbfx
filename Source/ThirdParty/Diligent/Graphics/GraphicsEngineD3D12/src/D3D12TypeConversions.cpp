@@ -151,13 +151,41 @@ D3D12_PRIMITIVE_TOPOLOGY TopologyToD3D12Topology(PRIMITIVE_TOPOLOGY Topology)
 }
 
 
+UINT TextureComponentSwizzleToD3D12ShaderComponentMapping(TEXTURE_COMPONENT_SWIZZLE Swizzle, UINT IdentityComponent)
+{
+    static_assert(TEXTURE_COMPONENT_SWIZZLE_COUNT == 7, "Did you add a new swizzle mode? Please handle it here.");
+    switch (Swizzle)
+    {
+        // clang-format off
+        case TEXTURE_COMPONENT_SWIZZLE_IDENTITY: return IdentityComponent;
+        case TEXTURE_COMPONENT_SWIZZLE_ZERO:     return D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0;
+        case TEXTURE_COMPONENT_SWIZZLE_ONE:      return D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1;
+        case TEXTURE_COMPONENT_SWIZZLE_R:        return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0;
+        case TEXTURE_COMPONENT_SWIZZLE_G:        return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1;
+        case TEXTURE_COMPONENT_SWIZZLE_B:        return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2;
+        case TEXTURE_COMPONENT_SWIZZLE_A:        return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3;
+        // clang-format on
+        default:
+            UNEXPECTED("Unknown swizzle");
+            return IdentityComponent;
+    }
+}
+
+UINT TextureComponentMappingToD3D12Shader4ComponentMapping(const TextureComponentMapping& Mapping)
+{
+    return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+        TextureComponentSwizzleToD3D12ShaderComponentMapping(Mapping.R, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0),
+        TextureComponentSwizzleToD3D12ShaderComponentMapping(Mapping.G, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1),
+        TextureComponentSwizzleToD3D12ShaderComponentMapping(Mapping.B, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2),
+        TextureComponentSwizzleToD3D12ShaderComponentMapping(Mapping.A, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3));
+}
 
 void TextureViewDesc_to_D3D12_SRV_DESC(const TextureViewDesc&           SRVDesc,
                                        D3D12_SHADER_RESOURCE_VIEW_DESC& D3D12SRVDesc,
                                        Uint32                           SampleCount)
 {
     TextureViewDesc_to_D3D_SRV_DESC(SRVDesc, D3D12SRVDesc, SampleCount);
-    D3D12SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    D3D12SRVDesc.Shader4ComponentMapping = TextureComponentMappingToD3D12Shader4ComponentMapping(SRVDesc.Swizzle);
     switch (SRVDesc.TextureDim)
     {
         case RESOURCE_DIM_TEX_1D:
@@ -670,7 +698,7 @@ DXGI_FORMAT ValueTypeToIndexType(VALUE_TYPE IndexType)
 
 D3D12_RAYTRACING_GEOMETRY_FLAGS GeometryFlagsToD3D12RTGeometryFlags(RAYTRACING_GEOMETRY_FLAGS Flags)
 {
-    static_assert(RAYTRACING_GEOMETRY_FLAGS_LAST == RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANY_HIT_INVOCATION,
+    static_assert(RAYTRACING_GEOMETRY_FLAG_LAST == RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANY_HIT_INVOCATION,
                   "Please update the switch below to handle the new ray tracing geometry flag");
 
     D3D12_RAYTRACING_GEOMETRY_FLAGS Result = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
@@ -692,7 +720,7 @@ D3D12_RAYTRACING_GEOMETRY_FLAGS GeometryFlagsToD3D12RTGeometryFlags(RAYTRACING_G
 
 D3D12_RAYTRACING_INSTANCE_FLAGS InstanceFlagsToD3D12RTInstanceFlags(RAYTRACING_INSTANCE_FLAGS Flags)
 {
-    static_assert(RAYTRACING_INSTANCE_FLAGS_LAST == RAYTRACING_INSTANCE_FORCE_NO_OPAQUE,
+    static_assert(RAYTRACING_INSTANCE_FLAG_LAST == RAYTRACING_INSTANCE_FORCE_NO_OPAQUE,
                   "Please update the switch below to handle the new ray tracing instance flag");
 
     D3D12_RAYTRACING_INSTANCE_FLAGS Result = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
@@ -716,7 +744,7 @@ D3D12_RAYTRACING_INSTANCE_FLAGS InstanceFlagsToD3D12RTInstanceFlags(RAYTRACING_I
 
 D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS BuildASFlagsToD3D12ASBuildFlags(RAYTRACING_BUILD_AS_FLAGS Flags)
 {
-    static_assert(RAYTRACING_BUILD_AS_FLAGS_LAST == RAYTRACING_BUILD_AS_LOW_MEMORY,
+    static_assert(RAYTRACING_BUILD_AS_FLAG_LAST == RAYTRACING_BUILD_AS_LOW_MEMORY,
                   "Please update the switch below to handle the new acceleration structure build flag");
 
     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS Result = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;

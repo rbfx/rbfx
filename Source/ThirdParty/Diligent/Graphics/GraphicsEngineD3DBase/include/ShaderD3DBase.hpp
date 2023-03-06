@@ -45,6 +45,23 @@ class ShaderD3DBase
 public:
     ShaderD3DBase(const ShaderCreateInfo& ShaderCI, ShaderVersion ShaderModel, class IDXCompiler* DxCompiler);
 
+    void GetBytecode(const void** ppBytecode,
+                     Uint64&      Size) const
+    {
+        if (m_pShaderByteCode)
+        {
+            *ppBytecode = m_pShaderByteCode->GetBufferPointer();
+            Size        = m_pShaderByteCode->GetBufferSize();
+        }
+        else
+        {
+            *ppBytecode = nullptr;
+            Size        = 0;
+        }
+    }
+
+    ID3DBlob* GetD3DBytecode() const { return m_pShaderByteCode; }
+
 protected:
     CComPtr<ID3DBlob> m_pShaderByteCode;
 };

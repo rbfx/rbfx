@@ -33,6 +33,8 @@
 
 #include "Shader.h"
 #include "StringTools.hpp"
+#include "ShaderToolsCommon.hpp"
+#include "D3DCommonTypeConversions.hpp"
 
 /// \file
 /// D3D shader resource loading
@@ -51,9 +53,88 @@ struct D3DShaderResourceCounters
     Uint32 NumAccelStructs = 0;
 };
 
-template <typename D3D_SHADER_DESC,
-          typename D3D_SHADER_INPUT_BIND_DESC,
+template <typename TReflectionTraits,
+          typename TD3DShaderReflectionType>
+void LoadShaderCodeVariableDesc(TD3DShaderReflectionType* pd3dReflecionType, ShaderCodeVariableDescX& TypeDesc)
+{
+    using D3D_SHADER_TYPE_DESC = typename TReflectionTraits::D3D_SHADER_TYPE_DESC;
 
+    if (pd3dReflecionType == nullptr)
+    {
+        UNEXPECTED("Reflection type is null");
+        return;
+    }
+
+    D3D_SHADER_TYPE_DESC d3dTypeDesc = {};
+    pd3dReflecionType->GetDesc(&d3dTypeDesc);
+
+    TypeDesc.Class = D3DShaderVariableClassToShaderCodeVaraibleClass(d3dTypeDesc.Class);
+    if (d3dTypeDesc.Class != D3D_SVC_STRUCT)
+    {
+        TypeDesc.BasicType = D3DShaderVariableTypeToShaderCodeBasicType(d3dTypeDesc.Type);
+        // Number of rows in a matrix. Otherwise a numeric type returns 1, any other type returns 0.
+        TypeDesc.NumRows = StaticCast<decltype(TypeDesc.NumRows)>(d3dTypeDesc.Rows);
+        // Number of columns in a matrix. Otherwise a numeric type returns 1, any other type returns 0.
+        TypeDesc.NumColumns = StaticCast<decltype(TypeDesc.NumRows)>(d3dTypeDesc.Columns);
+    }
+
+    TypeDesc.SetTypeName(d3dTypeDesc.Name);
+    if (TypeDesc.TypeName == nullptr)
+        TypeDesc.SetDefaultTypeName(SHADER_SOURCE_LANGUAGE_HLSL);
+    if (d3dTypeDesc.Type == D3D_SVT_UINT && strcmp(TypeDesc.TypeName, "dword") == 0)
+        TypeDesc.SetTypeName("uint");
+
+    // Number of elements in an array; otherwise 0.
+    TypeDesc.ArraySize = d3dTypeDesc.Elements;
+    // Offset, in bytes, between the start of the parent structure and this variable. Can be 0 if not a structure member.
+    TypeDesc.Offset += d3dTypeDesc.Offset;
+
+    for (Uint32 m = 0; m < d3dTypeDesc.Members; ++m)
+    {
+        ShaderCodeVariableDesc MemberDesc;
+        MemberDesc.Name = pd3dReflecionType->GetMemberTypeName(m);
+
+        auto idx = TypeDesc.AddMember(MemberDesc);
+        VERIFY_EXPR(idx == m);
+        auto* pd3dMemberType = pd3dReflecionType->GetMemberTypeByIndex(m);
+        VERIFY_EXPR(pd3dMemberType != nullptr);
+        LoadShaderCodeVariableDesc<TReflectionTraits>(pd3dMemberType, TypeDesc.GetMember(idx));
+    }
+}
+
+template <typename TReflectionTraits,
+          typename TShaderReflection>
+void LoadD3DShaderConstantBufferReflection(TShaderReflection* pBuffReflection, ShaderCodeBufferDescX& BufferDesc, Uint32 NumVariables)
+{
+    using D3D_SHADER_VARIABLE_DESC = typename TReflectionTraits::D3D_SHADER_VARIABLE_DESC;
+
+    for (Uint32 var = 0; var < NumVariables; ++var)
+    {
+        if (auto* pVaribable = pBuffReflection->GetVariableByIndex(var))
+        {
+            D3D_SHADER_VARIABLE_DESC d3dShaderVarDesc = {};
+            pVaribable->GetDesc(&d3dShaderVarDesc);
+
+            ShaderCodeVariableDesc VarDesc;
+            VarDesc.Name   = d3dShaderVarDesc.Name;        // The variable name.
+            VarDesc.Offset = d3dShaderVarDesc.StartOffset; // Offset from the start of the parent structure to the beginning of the variable.
+
+            auto idx = BufferDesc.AddVariable(VarDesc);
+            VERIFY_EXPR(idx == var);
+
+            auto* pd3dReflecionType = pVaribable->GetType();
+            VERIFY_EXPR(pd3dReflecionType != nullptr);
+            LoadShaderCodeVariableDesc<TReflectionTraits>(pd3dReflecionType, BufferDesc.GetVariable(idx));
+        }
+        else
+        {
+            UNEXPECTED("Failed to get constant buffer variable reflection information.");
+        }
+    }
+}
+
+
+template <typename TReflectionTraits,
           typename TShaderReflection,
           typename THandleShaderDesc,
           typename TOnResourcesCounted,
@@ -65,6 +146,7 @@ template <typename D3D_SHADER_DESC,
           typename TOnNewTexSRV,
           typename TOnNewAccelStruct>
 void LoadD3DShaderResources(TShaderReflection*  pShaderReflection,
+                            bool                LoadConstantBufferReflection,
                             THandleShaderDesc   HandleShaderDesc,
                             TOnResourcesCounted OnResourcesCounted,
                             TOnNewCB            OnNewCB,
@@ -75,6 +157,10 @@ void LoadD3DShaderResources(TShaderReflection*  pShaderReflection,
                             TOnNewTexSRV        OnNewTexSRV,
                             TOnNewAccelStruct   OnNewAccelStruct)
 {
+    using D3D_SHADER_DESC            = typename TReflectionTraits::D3D_SHADER_DESC;
+    using D3D_SHADER_INPUT_BIND_DESC = typename TReflectionTraits::D3D_SHADER_INPUT_BIND_DESC;
+    using D3D_SHADER_BUFFER_DESC     = typename TReflectionTraits::D3D_SHADER_BUFFER_DESC;
+
     D3D_SHADER_DESC shaderDesc = {};
     pShaderReflection->GetDesc(&shaderDesc);
 
@@ -97,7 +183,7 @@ void LoadD3DShaderResources(TShaderReflection*  pShaderReflection,
         if (BindingDesc.BindPoint == UINT32_MAX)
             BindingDesc.BindPoint = D3DShaderResourceAttribs::InvalidBindPoint;
 
-        std::string Name(BindingDesc.Name);
+        std::string Name{BindingDesc.Name};
 
         SkipCount = 1;
 
@@ -224,7 +310,26 @@ void LoadD3DShaderResources(TShaderReflection*  pShaderReflection,
         {
             case D3D_SIT_CBUFFER:
             {
-                OnNewCB(Res);
+                ShaderCodeBufferDescX BufferDesc;
+                if (LoadConstantBufferReflection)
+                {
+                    if (auto* pBuffReflection = pShaderReflection->GetConstantBufferByName(Res.Name))
+                    {
+                        D3D_SHADER_BUFFER_DESC ShaderBuffDesc = {};
+                        pBuffReflection->GetDesc(&ShaderBuffDesc);
+                        VERIFY_EXPR(strcmp(Res.Name, ShaderBuffDesc.Name) == 0);
+                        VERIFY_EXPR(ShaderBuffDesc.Type == D3D_CT_CBUFFER);
+
+                        BufferDesc.Size = ShaderBuffDesc.Size;
+                        LoadD3DShaderConstantBufferReflection<TReflectionTraits>(pBuffReflection, BufferDesc, ShaderBuffDesc.Variables);
+                    }
+                    else
+                    {
+                        UNEXPECTED("Failed to get constant buffer reflection information.");
+                    }
+                }
+
+                OnNewCB(Res, std::move(BufferDesc));
                 break;
             }
 

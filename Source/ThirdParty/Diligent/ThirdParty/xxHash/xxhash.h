@@ -1840,6 +1840,12 @@ static void* XXH_memcpy(void* dest, const void* src, size_t size)
 #  define XXH_COMPILER_GUARD(var) ((void)0)
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#  define XXH_COMPILER_GUARD_W(var) __asm__ __volatile__("" : "+w" (var))
+#else
+#  define XXH_COMPILER_GUARD_W(var) ((void)0)
+#endif
+
 /* *************************************
 *  Basic Types
 ***************************************/
@@ -2288,41 +2294,41 @@ XXH32_finalize(xxh_u32 hash, const xxh_u8* ptr, size_t len, XXH_alignment align)
     } else {
          switch(len&15) /* or switch(bEnd - p) */ {
            case 12:      XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 8:       XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 4:       XXH_PROCESS4;
                          return XXH32_avalanche(hash);
 
            case 13:      XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 9:       XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 5:       XXH_PROCESS4;
                          XXH_PROCESS1;
                          return XXH32_avalanche(hash);
 
            case 14:      XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 10:      XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 6:       XXH_PROCESS4;
                          XXH_PROCESS1;
                          XXH_PROCESS1;
                          return XXH32_avalanche(hash);
 
            case 15:      XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 11:      XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 7:       XXH_PROCESS4;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 3:       XXH_PROCESS1;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 2:       XXH_PROCESS1;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 1:       XXH_PROCESS1;
-                         XXH_FALLTHROUGH;
+                         XXH_FALLTHROUGH;  /* fallthrough */
            case 0:       return XXH32_avalanche(hash);
         }
         XXH_ASSERT(0);
@@ -2998,7 +3004,9 @@ XXH_PUBLIC_API XXH64_hash_t XXH64_hashFromCanonical(const XXH64_canonical_t* src
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#  if defined(__ARM_NEON__) || defined(__ARM_NEON) \
+#  if defined(__ARM_FEATURE_SVE)
+#    include <arm_sve.h>
+#  elif defined(__ARM_NEON__) || defined(__ARM_NEON) \
    || defined(__aarch64__)  || defined(_M_ARM) \
    || defined(_M_ARM64)     || defined(_M_ARM64EC)
 #    define inline __inline__  /* circumvent a clang bug */
@@ -3125,12 +3133,13 @@ enum XXH_VECTOR_TYPE /* fake enum */ {
     XXH_AVX512 = 3,  /*!< AVX512 for Skylake and Icelake */
     XXH_NEON   = 4,  /*!< NEON for most ARMv7-A and all AArch64 */
     XXH_VSX    = 5,  /*!< VSX and ZVector for POWER8/z13 (64-bit) */
+    XXH_SVE    = 6,  /*!< SVE for some ARMv8-A and ARMv9-A */
 };
 /*!
  * @ingroup tuning
  * @brief Selects the minimum alignment for XXH3's accumulators.
  *
- * When using SIMD, this should match the alignment reqired for said vector
+ * When using SIMD, this should match the alignment required for said vector
  * type, so, for example, 32 for AVX2.
  *
  * Default: Auto detected.
@@ -3146,10 +3155,13 @@ enum XXH_VECTOR_TYPE /* fake enum */ {
 #  define XXH_AVX512 3
 #  define XXH_NEON   4
 #  define XXH_VSX    5
+#  define XXH_SVE    6
 #endif
 
 #ifndef XXH_VECTOR    /* can be defined on command line */
-#  if ( \
+#  if defined(__ARM_FEATURE_SVE)
+#    define XXH_VECTOR XXH_SVE
+#  elif ( \
         defined(__ARM_NEON__) || defined(__ARM_NEON) /* gcc */ \
      || defined(_M_ARM) || defined(_M_ARM64) || defined(_M_ARM64EC) /* msvc */ \
    ) && ( \
@@ -3172,6 +3184,17 @@ enum XXH_VECTOR_TYPE /* fake enum */ {
 #  endif
 #endif
 
+/* __ARM_FEATURE_SVE is only supported by GCC & Clang. */
+#if (XXH_VECTOR == XXH_SVE) && !defined(__ARM_FEATURE_SVE)
+#  ifdef _MSC_VER
+#    pragma warning(once : 4606)
+#  else
+#    warning "__ARM_FEATURE_SVE isn't supported. Use SCALAR instead."
+#  endif
+#  undef XXH_VECTOR
+#  define XXH_VECTOR XXH_SCALAR
+#endif
+
 /*
  * Controls the alignment of the accumulator,
  * for compatibility with aligned vector loads, which are usually faster.
@@ -3191,11 +3214,15 @@ enum XXH_VECTOR_TYPE /* fake enum */ {
 #     define XXH_ACC_ALIGN 16
 #  elif XXH_VECTOR == XXH_AVX512  /* avx512 */
 #     define XXH_ACC_ALIGN 64
+#  elif XXH_VECTOR == XXH_SVE   /* sve */
+#     define XXH_ACC_ALIGN 64
 #  endif
 #endif
 
 #if defined(XXH_X86DISPATCH) || XXH_VECTOR == XXH_SSE2 \
     || XXH_VECTOR == XXH_AVX2 || XXH_VECTOR == XXH_AVX512
+#  define XXH_SEC_ALIGN XXH_ACC_ALIGN
+#elif XXH_VECTOR == XXH_SVE
 #  define XXH_SEC_ALIGN XXH_ACC_ALIGN
 #else
 #  define XXH_SEC_ALIGN 8
@@ -3360,7 +3387,8 @@ XXH_FORCE_INLINE uint64x2_t XXH_vld1q_u64(void const* ptr)
  * @brief Controls the NEON to scalar ratio for XXH3
  *
  * On AArch64 when not optimizing for size, XXH3 will run 6 lanes using NEON and
- * 2 lanes on scalar by default.
+ * 2 lanes on scalar by default (except on Apple platforms, as Apple CPUs benefit
+ * from only using NEON).
  *
  * This can be set to 2, 4, 6, or 8. ARMv7 will default to all 8 NEON lanes, as the
  * emulated 64-bit arithmetic is too slow.
@@ -3371,7 +3399,7 @@ XXH_FORCE_INLINE uint64x2_t XXH_vld1q_u64(void const* ptr)
  * have more than 2 NEON (F0/F1) micro-ops. If you are only using NEON instructions,
  * you are only using 2/3 of the CPU bandwidth.
  *
- * This is even more noticable on the more advanced cores like the A76 which
+ * This is even more noticeable on the more advanced cores like the A76 which
  * can dispatch 8 micro-ops per cycle, but still only 2 NEON micro-ops at once.
  *
  * Therefore, @ref XXH3_NEON_LANES lanes will be processed using NEON, and the
@@ -3380,13 +3408,14 @@ XXH_FORCE_INLINE uint64x2_t XXH_vld1q_u64(void const* ptr)
  * counters and pointers.
  *
  * This change benefits CPUs with large micro-op buffers without negatively affecting
- * other CPUs:
+ * most other CPUs:
  *
  *  | Chipset               | Dispatch type       | NEON only | 6:2 hybrid | Diff. |
  *  |:----------------------|:--------------------|----------:|-----------:|------:|
  *  | Snapdragon 730 (A76)  | 2 NEON/8 micro-ops  |  8.8 GB/s |  10.1 GB/s |  ~16% |
  *  | Snapdragon 835 (A73)  | 2 NEON/3 micro-ops  |  5.1 GB/s |   5.3 GB/s |   ~5% |
  *  | Marvell PXA1928 (A53) | In-order dual-issue |  1.9 GB/s |   1.9 GB/s |    0% |
+ *  | Apple M1              | 4 NEON/8 micro-ops  | 37.3 GB/s |  36.1 GB/s |  ~-3% |
  *
  * It also seems to fix some bad codegen on GCC, making it almost as fast as clang.
  *
@@ -3394,7 +3423,7 @@ XXH_FORCE_INLINE uint64x2_t XXH_vld1q_u64(void const* ptr)
  */
 # ifndef XXH3_NEON_LANES
 #  if (defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64) || defined(_M_ARM64EC)) \
-   && XXH_SIZE_OPT <= 0
+   && !defined(__APPLE__) && XXH_SIZE_OPT <= 0
 #   define XXH3_NEON_LANES 6
 #  else
 #   define XXH3_NEON_LANES XXH_ACC_NB
@@ -3515,6 +3544,20 @@ XXH_FORCE_INLINE xxh_u64x2 XXH_vec_mule(xxh_u32x4 a, xxh_u32x4 b)
 }
 # endif /* XXH_vec_mulo, XXH_vec_mule */
 #endif /* XXH_VECTOR == XXH_VSX */
+
+#if XXH_VECTOR == XXH_SVE
+#define ACCRND(acc, offset) \
+do { \
+    svuint64_t input_vec = svld1_u64(mask, xinput + offset);         \
+    svuint64_t secret_vec = svld1_u64(mask, xsecret + offset);       \
+    svuint64_t mixed = sveor_u64_x(mask, secret_vec, input_vec);     \
+    svuint64_t swapped = svtbl_u64(input_vec, kSwap);                \
+    svuint64_t mixed_lo = svextw_u64_x(mask, mixed);                 \
+    svuint64_t mixed_hi = svlsr_n_u64_x(mask, mixed, 32);            \
+    svuint64_t mul = svmad_u64_x(mask, mixed_lo, mixed_hi, swapped); \
+    acc = svadd_u64_x(mask, acc, mul);                               \
+} while (0)
+#endif /* XXH_VECTOR == XXH_SVE */
 
 
 /* prefetch
@@ -4047,6 +4090,47 @@ XXH3_len_129to240_64b(const xxh_u8* XXH_RESTRICT input, size_t len,
 #  define ACC_NB XXH_ACC_NB
 #endif
 
+#ifndef XXH_PREFETCH_DIST
+#  ifdef __clang__
+#    define XXH_PREFETCH_DIST 320
+#  else
+#    if (XXH_VECTOR == XXH_AVX512)
+#      define XXH_PREFETCH_DIST 512
+#    else
+#      define XXH_PREFETCH_DIST 384
+#    endif
+#  endif  /* __clang__ */
+#endif  /* XXH_PREFETCH_DIST */
+
+/*
+ * These macros are to generate an XXH3_accumulate() function.
+ * The two arguments select the name suffix and target attribute.
+ *
+ * The name of this symbol is XXH3_accumulate_<name>() and it calls
+ * XXH3_accumulate_512_<name>().
+ *
+ * It may be useful to hand implement this function if the compiler fails to
+ * optimize the inline function.
+ */
+#define XXH3_ACCUMULATE_TEMPLATE(name)                      \
+void                                                        \
+XXH3_accumulate_##name(xxh_u64* XXH_RESTRICT acc,           \
+                       const xxh_u8* XXH_RESTRICT input,    \
+                       const xxh_u8* XXH_RESTRICT secret,   \
+                       size_t nbStripes)                    \
+{                                                           \
+    size_t n;                                               \
+    for (n = 0; n < nbStripes; n++ ) {                      \
+        const xxh_u8* const in = input + n*XXH_STRIPE_LEN;  \
+        XXH_PREFETCH(in + XXH_PREFETCH_DIST);               \
+        XXH3_accumulate_512_##name(                         \
+                 acc,                                       \
+                 in,                                        \
+                 secret + n*XXH_SECRET_CONSUME_RATE);       \
+    }                                                       \
+}
+
+
 XXH_FORCE_INLINE void XXH_writeLE64(void* dst, xxh_u64 v64)
 {
     if (!XXH_CPU_LITTLE_ENDIAN) v64 = XXH_swap64(v64);
@@ -4125,6 +4209,7 @@ XXH3_accumulate_512_avx512(void* XXH_RESTRICT acc,
         *xacc = _mm512_add_epi64(product, sum);
     }
 }
+XXH_FORCE_INLINE XXH_TARGET_AVX512 XXH3_ACCUMULATE_TEMPLATE(avx512)
 
 /*
  * XXH3_scrambleAcc: Scrambles the accumulators to improve mixing.
@@ -4234,6 +4319,7 @@ XXH3_accumulate_512_avx2( void* XXH_RESTRICT acc,
             xacc[i] = _mm256_add_epi64(product, sum);
     }   }
 }
+XXH_FORCE_INLINE XXH_TARGET_AVX2 XXH3_ACCUMULATE_TEMPLATE(avx2)
 
 XXH_FORCE_INLINE XXH_TARGET_AVX2 void
 XXH3_scrambleAcc_avx2(void* XXH_RESTRICT acc, const void* XXH_RESTRICT secret)
@@ -4340,6 +4426,7 @@ XXH3_accumulate_512_sse2( void* XXH_RESTRICT acc,
             xacc[i] = _mm_add_epi64(product, sum);
     }   }
 }
+XXH_FORCE_INLINE XXH_TARGET_SSE2 XXH3_ACCUMULATE_TEMPLATE(sse2)
 
 XXH_FORCE_INLINE XXH_TARGET_SSE2 void
 XXH3_scrambleAcc_sse2(void* XXH_RESTRICT acc, const void* XXH_RESTRICT secret)
@@ -4444,7 +4531,49 @@ XXH3_accumulate_512_neon( void* XXH_RESTRICT acc,
         for (i = XXH3_NEON_LANES; i < XXH_ACC_NB; i++) {
             XXH3_scalarRound(acc, input, secret, i);
         }
-        for (i=0; i < XXH3_NEON_LANES / 2; i++) {
+        i = 0;
+        for (; i+1 < XXH3_NEON_LANES / 2; i+=2) {
+            uint64x2_t acc_vec1 = xacc[i];
+            /* data_vec = xinput[i]; */
+            uint64x2_t data_vec1 = XXH_vld1q_u64(xinput  + (i * 16));
+            /* key_vec  = xsecret[i];  */
+            uint64x2_t key_vec1  = XXH_vld1q_u64(xsecret + (i * 16));
+            /* acc_vec_2 = swap(data_vec) */
+            uint64x2_t acc_vec_21 = vextq_u64(data_vec1, data_vec1, 1);
+            /* data_key = data_vec ^ key_vec; */
+            uint64x2_t data_key1 = veorq_u64(data_vec1, key_vec1);
+
+            uint64x2_t acc_vec2 = xacc[i+1];
+            /* data_vec = xinput[i]; */
+            uint64x2_t data_vec2 = XXH_vld1q_u64(xinput  + ((i+1) * 16));
+            /* key_vec  = xsecret[i];  */
+            uint64x2_t key_vec2  = XXH_vld1q_u64(xsecret + ((i+1) * 16));
+            /* acc_vec_2 = swap(data_vec) */
+            uint64x2_t acc_vec_22 = vextq_u64(data_vec2, data_vec2, 1);
+            /* data_key = data_vec ^ key_vec; */
+            uint64x2_t data_key2 = veorq_u64(data_vec2, key_vec2);
+
+            /* data_key_lo = {(data_key1 & 0xFFFFFFFF), (data_key2 & 0xFFFFFFFF)};
+             * data_key_hi = {(data_key1 >> 32), (data_key2 >> 32)};
+             */
+            uint32x4x2_t zipped = vuzpq_u32(vreinterpretq_u32_u64(data_key1), vreinterpretq_u32_u64(data_key2));
+            uint32x4_t data_key_lo = zipped.val[0];
+            uint32x4_t data_key_hi = zipped.val[1];
+
+            /* acc_vec_2 += (uint64x2_t) data_key_lo * (uint64x2_t) data_key_hi; */
+            acc_vec_21 = vmlal_u32 (acc_vec_21, vget_low_u32(data_key_lo), vget_low_u32(data_key_hi));
+            XXH_COMPILER_GUARD_W(acc_vec_21);
+            /* xacc[i] += acc_vec_2; */
+            acc_vec1 = vaddq_u64 (acc_vec1, acc_vec_21);
+            xacc[i] = acc_vec1;
+            /* acc_vec_2 += (uint64x2_t) data_key_lo * (uint64x2_t) data_key_hi; */
+            acc_vec_22 = vmlal_u32 (acc_vec_22, vget_high_u32(data_key_lo), vget_high_u32(data_key_hi));
+            XXH_COMPILER_GUARD_W(acc_vec_22);
+            /* xacc[i] += acc_vec_2; */
+            acc_vec2 = vaddq_u64 (acc_vec2, acc_vec_22);
+            xacc[i+1] = acc_vec2;
+        }
+        for (; i < XXH3_NEON_LANES / 2; i++) {
             uint64x2_t acc_vec = xacc[i];
             /* data_vec = xinput[i]; */
             uint64x2_t data_vec = XXH_vld1q_u64(xinput  + (i * 16));
@@ -4462,6 +4591,7 @@ XXH3_accumulate_512_neon( void* XXH_RESTRICT acc,
             XXH_SPLIT_IN_PLACE(data_key, data_key_lo, data_key_hi);
             /* acc_vec_2 += (uint64x2_t) data_key_lo * (uint64x2_t) data_key_hi; */
             acc_vec_2 = vmlal_u32 (acc_vec_2, data_key_lo, data_key_hi);
+            XXH_COMPILER_GUARD_W(acc_vec_2);
             /* xacc[i] += acc_vec_2; */
             acc_vec = vaddq_u64 (acc_vec, acc_vec_2);
             xacc[i] = acc_vec;
@@ -4469,6 +4599,7 @@ XXH3_accumulate_512_neon( void* XXH_RESTRICT acc,
 
     }
 }
+XXH_FORCE_INLINE XXH3_ACCUMULATE_TEMPLATE(neon)
 
 XXH_FORCE_INLINE void
 XXH3_scrambleAcc_neon(void* XXH_RESTRICT acc, const void* XXH_RESTRICT secret)
@@ -4567,6 +4698,7 @@ XXH3_accumulate_512_vsx(  void* XXH_RESTRICT acc,
         vec_xst((xxh_u32x4)acc_vec, 0, xacc + 4 * i);
     }
 }
+XXH_FORCE_INLINE XXH3_ACCUMULATE_TEMPLATE(vsx)
 
 XXH_FORCE_INLINE void
 XXH3_scrambleAcc_vsx(void* XXH_RESTRICT acc, const void* XXH_RESTRICT secret)
@@ -4596,6 +4728,115 @@ XXH3_scrambleAcc_vsx(void* XXH_RESTRICT acc, const void* XXH_RESTRICT secret)
             xxh_u64x2 const prod_odd  = XXH_vec_mulo((xxh_u32x4)data_key, prime);
             xacc[i] = prod_odd + (prod_even << v32);
     }   }
+}
+
+#endif
+
+#if (XXH_VECTOR == XXH_SVE)
+
+XXH_FORCE_INLINE void
+XXH3_accumulate_512_sve( void* XXH_RESTRICT acc,
+                   const void* XXH_RESTRICT input,
+                   const void* XXH_RESTRICT secret)
+{
+    uint64_t *xacc = (uint64_t *)acc;
+    const uint64_t *xinput = (const uint64_t *)(const void *)input;
+    const uint64_t *xsecret = (const uint64_t *)(const void *)secret;
+    svuint64_t kSwap = sveor_n_u64_z(svptrue_b64(), svindex_u64(0, 1), 1);
+    uint64_t element_count = svcntd();
+    if (element_count >= 8) {
+        svbool_t mask = svptrue_pat_b64(SV_VL8);
+        svuint64_t vacc = svld1_u64(mask, xacc);
+        ACCRND(vacc, 0);
+        svst1_u64(mask, xacc, vacc);
+    } else if (element_count == 2) {   /* sve128 */
+        svbool_t mask = svptrue_pat_b64(SV_VL2);
+        svuint64_t acc0 = svld1_u64(mask, xacc + 0);
+        svuint64_t acc1 = svld1_u64(mask, xacc + 2);
+        svuint64_t acc2 = svld1_u64(mask, xacc + 4);
+        svuint64_t acc3 = svld1_u64(mask, xacc + 6);
+        ACCRND(acc0, 0);
+        ACCRND(acc1, 2);
+        ACCRND(acc2, 4);
+        ACCRND(acc3, 6);
+        svst1_u64(mask, xacc + 0, acc0);
+        svst1_u64(mask, xacc + 2, acc1);
+        svst1_u64(mask, xacc + 4, acc2);
+        svst1_u64(mask, xacc + 6, acc3);
+    } else {
+        svbool_t mask = svptrue_pat_b64(SV_VL4);
+        svuint64_t acc0 = svld1_u64(mask, xacc + 0);
+        svuint64_t acc1 = svld1_u64(mask, xacc + 4);
+        ACCRND(acc0, 0);
+        ACCRND(acc1, 4);
+        svst1_u64(mask, xacc + 0, acc0);
+        svst1_u64(mask, xacc + 4, acc1);
+    }
+}
+
+XXH_FORCE_INLINE void
+XXH3_accumulate_sve(xxh_u64* XXH_RESTRICT acc,
+               const xxh_u8* XXH_RESTRICT input,
+               const xxh_u8* XXH_RESTRICT secret,
+               size_t nbStripes)
+{
+    if (nbStripes != 0) {
+        uint64_t *xacc = (uint64_t *)acc;
+        const uint64_t *xinput = (const uint64_t *)(const void *)input;
+        const uint64_t *xsecret = (const uint64_t *)(const void *)secret;
+        svuint64_t kSwap = sveor_n_u64_z(svptrue_b64(), svindex_u64(0, 1), 1);
+        uint64_t element_count = svcntd();
+        if (element_count >= 8) {
+            svbool_t mask = svptrue_pat_b64(SV_VL8);
+            svuint64_t vacc = svld1_u64(mask, xacc + 0);
+            do {
+                /* svprfd(svbool_t, void *, enum svfprop); */
+                svprfd(mask, xinput + 128, SV_PLDL1STRM);
+                ACCRND(vacc, 0);
+                xinput += 8;
+                xsecret += 1;
+                nbStripes--;
+           } while (nbStripes != 0);
+
+           svst1_u64(mask, xacc + 0, vacc);
+        } else if (element_count == 2) { /* sve128 */
+            svbool_t mask = svptrue_pat_b64(SV_VL2);
+            svuint64_t acc0 = svld1_u64(mask, xacc + 0);
+            svuint64_t acc1 = svld1_u64(mask, xacc + 2);
+            svuint64_t acc2 = svld1_u64(mask, xacc + 4);
+            svuint64_t acc3 = svld1_u64(mask, xacc + 6);
+            do {
+                svprfd(mask, xinput + 128, SV_PLDL1STRM);
+                ACCRND(acc0, 0);
+                ACCRND(acc1, 2);
+                ACCRND(acc2, 4);
+                ACCRND(acc3, 6);
+                xinput += 8;
+                xsecret += 1;
+                nbStripes--;
+           } while (nbStripes != 0);
+
+           svst1_u64(mask, xacc + 0, acc0);
+           svst1_u64(mask, xacc + 2, acc1);
+           svst1_u64(mask, xacc + 4, acc2);
+           svst1_u64(mask, xacc + 6, acc3);
+        } else {
+            svbool_t mask = svptrue_pat_b64(SV_VL4);
+            svuint64_t acc0 = svld1_u64(mask, xacc + 0);
+            svuint64_t acc1 = svld1_u64(mask, xacc + 4);
+            do {
+                svprfd(mask, xinput + 128, SV_PLDL1STRM);
+                ACCRND(acc0, 0);
+                ACCRND(acc1, 4);
+                xinput += 8;
+                xsecret += 1;
+                nbStripes--;
+           } while (nbStripes != 0);
+
+           svst1_u64(mask, xacc + 0, acc0);
+           svst1_u64(mask, xacc + 4, acc1);
+       }
+    }
 }
 
 #endif
@@ -4649,6 +4890,7 @@ XXH3_accumulate_512_scalar(void* XXH_RESTRICT acc,
         XXH3_scalarRound(acc, input, secret, i);
     }
 }
+XXH_FORCE_INLINE XXH3_ACCUMULATE_TEMPLATE(scalar)
 
 /*!
  * @internal
@@ -4758,7 +5000,7 @@ XXH3_initCustomSecret_scalar(void* XXH_RESTRICT customSecret, xxh_u64 seed64)
 }
 
 
-typedef void (*XXH3_f_accumulate_512)(void* XXH_RESTRICT, const void*, const void*);
+typedef void (*XXH3_f_accumulate)(xxh_u64* XXH_RESTRICT, const xxh_u8* XXH_RESTRICT, const xxh_u8* XXH_RESTRICT, size_t);
 typedef void (*XXH3_f_scrambleAcc)(void* XXH_RESTRICT, const void*);
 typedef void (*XXH3_f_initCustomSecret)(void* XXH_RESTRICT, xxh_u64);
 
@@ -4766,36 +5008,48 @@ typedef void (*XXH3_f_initCustomSecret)(void* XXH_RESTRICT, xxh_u64);
 #if (XXH_VECTOR == XXH_AVX512)
 
 #define XXH3_accumulate_512 XXH3_accumulate_512_avx512
+#define XXH3_accumulate     XXH3_accumulate_avx512
 #define XXH3_scrambleAcc    XXH3_scrambleAcc_avx512
 #define XXH3_initCustomSecret XXH3_initCustomSecret_avx512
 
 #elif (XXH_VECTOR == XXH_AVX2)
 
 #define XXH3_accumulate_512 XXH3_accumulate_512_avx2
+#define XXH3_accumulate     XXH3_accumulate_avx2
 #define XXH3_scrambleAcc    XXH3_scrambleAcc_avx2
 #define XXH3_initCustomSecret XXH3_initCustomSecret_avx2
 
 #elif (XXH_VECTOR == XXH_SSE2)
 
 #define XXH3_accumulate_512 XXH3_accumulate_512_sse2
+#define XXH3_accumulate     XXH3_accumulate_sse2
 #define XXH3_scrambleAcc    XXH3_scrambleAcc_sse2
 #define XXH3_initCustomSecret XXH3_initCustomSecret_sse2
 
 #elif (XXH_VECTOR == XXH_NEON)
 
 #define XXH3_accumulate_512 XXH3_accumulate_512_neon
+#define XXH3_accumulate     XXH3_accumulate_neon
 #define XXH3_scrambleAcc    XXH3_scrambleAcc_neon
 #define XXH3_initCustomSecret XXH3_initCustomSecret_scalar
 
 #elif (XXH_VECTOR == XXH_VSX)
 
 #define XXH3_accumulate_512 XXH3_accumulate_512_vsx
+#define XXH3_accumulate     XXH3_accumulate_vsx
 #define XXH3_scrambleAcc    XXH3_scrambleAcc_vsx
+#define XXH3_initCustomSecret XXH3_initCustomSecret_scalar
+
+#elif (XXH_VECTOR == XXH_SVE)
+#define XXH3_accumulate_512 XXH3_accumulate_512_sve
+#define XXH3_accumulate     XXH3_accumulate_sve
+#define XXH3_scrambleAcc    XXH3_scrambleAcc_scalar
 #define XXH3_initCustomSecret XXH3_initCustomSecret_scalar
 
 #else /* scalar */
 
 #define XXH3_accumulate_512 XXH3_accumulate_512_scalar
+#define XXH3_accumulate     XXH3_accumulate_scalar
 #define XXH3_scrambleAcc    XXH3_scrambleAcc_scalar
 #define XXH3_initCustomSecret XXH3_initCustomSecret_scalar
 
@@ -4806,45 +5060,11 @@ typedef void (*XXH3_f_initCustomSecret)(void* XXH_RESTRICT, xxh_u64);
 #  define XXH3_initCustomSecret XXH3_initCustomSecret_scalar
 #endif
 
-#ifndef XXH_PREFETCH_DIST
-#  ifdef __clang__
-#    define XXH_PREFETCH_DIST 320
-#  else
-#    if (XXH_VECTOR == XXH_AVX512)
-#      define XXH_PREFETCH_DIST 512
-#    else
-#      define XXH_PREFETCH_DIST 384
-#    endif
-#  endif  /* __clang__ */
-#endif  /* XXH_PREFETCH_DIST */
-
-/*
- * XXH3_accumulate()
- * Loops over XXH3_accumulate_512().
- * Assumption: nbStripes will not overflow the secret size
- */
-XXH_FORCE_INLINE void
-XXH3_accumulate(     xxh_u64* XXH_RESTRICT acc,
-                const xxh_u8* XXH_RESTRICT input,
-                const xxh_u8* XXH_RESTRICT secret,
-                      size_t nbStripes,
-                      XXH3_f_accumulate_512 f_acc512)
-{
-    size_t n;
-    for (n = 0; n < nbStripes; n++ ) {
-        const xxh_u8* const in = input + n*XXH_STRIPE_LEN;
-        XXH_PREFETCH(in + XXH_PREFETCH_DIST);
-        f_acc512(acc,
-                 in,
-                 secret + n*XXH_SECRET_CONSUME_RATE);
-    }
-}
-
 XXH_FORCE_INLINE void
 XXH3_hashLong_internal_loop(xxh_u64* XXH_RESTRICT acc,
                       const xxh_u8* XXH_RESTRICT input, size_t len,
                       const xxh_u8* XXH_RESTRICT secret, size_t secretSize,
-                            XXH3_f_accumulate_512 f_acc512,
+                            XXH3_f_accumulate f_acc,
                             XXH3_f_scrambleAcc f_scramble)
 {
     size_t const nbStripesPerBlock = (secretSize - XXH_STRIPE_LEN) / XXH_SECRET_CONSUME_RATE;
@@ -4856,7 +5076,7 @@ XXH3_hashLong_internal_loop(xxh_u64* XXH_RESTRICT acc,
     XXH_ASSERT(secretSize >= XXH3_SECRET_SIZE_MIN);
 
     for (n = 0; n < nb_blocks; n++) {
-        XXH3_accumulate(acc, input + n*block_len, secret, nbStripesPerBlock, f_acc512);
+        f_acc(acc, input + n*block_len, secret, nbStripesPerBlock);
         f_scramble(acc, secret + secretSize - XXH_STRIPE_LEN);
     }
 
@@ -4864,12 +5084,12 @@ XXH3_hashLong_internal_loop(xxh_u64* XXH_RESTRICT acc,
     XXH_ASSERT(len > XXH_STRIPE_LEN);
     {   size_t const nbStripes = ((len - 1) - (block_len * nb_blocks)) / XXH_STRIPE_LEN;
         XXH_ASSERT(nbStripes <= (secretSize / XXH_SECRET_CONSUME_RATE));
-        XXH3_accumulate(acc, input + nb_blocks*block_len, secret, nbStripes, f_acc512);
+        f_acc(acc, input + nb_blocks*block_len, secret, nbStripes);
 
         /* last stripe */
         {   const xxh_u8* const p = input + len - XXH_STRIPE_LEN;
 #define XXH_SECRET_LASTACC_START 7  /* not aligned on 8, last secret is different from acc & scrambler */
-            f_acc512(acc, p, secret + secretSize - XXH_STRIPE_LEN - XXH_SECRET_LASTACC_START);
+            XXH3_accumulate_512(acc, p, secret + secretSize - XXH_STRIPE_LEN - XXH_SECRET_LASTACC_START);
     }   }
 }
 
@@ -4914,12 +5134,12 @@ XXH3_mergeAccs(const xxh_u64* XXH_RESTRICT acc, const xxh_u8* XXH_RESTRICT secre
 XXH_FORCE_INLINE XXH64_hash_t
 XXH3_hashLong_64b_internal(const void* XXH_RESTRICT input, size_t len,
                            const void* XXH_RESTRICT secret, size_t secretSize,
-                           XXH3_f_accumulate_512 f_acc512,
+                           XXH3_f_accumulate f_acc,
                            XXH3_f_scrambleAcc f_scramble)
 {
     XXH_ALIGN(XXH_ACC_ALIGN) xxh_u64 acc[XXH_ACC_NB] = XXH3_INIT_ACC;
 
-    XXH3_hashLong_internal_loop(acc, (const xxh_u8*)input, len, (const xxh_u8*)secret, secretSize, f_acc512, f_scramble);
+    XXH3_hashLong_internal_loop(acc, (const xxh_u8*)input, len, (const xxh_u8*)secret, secretSize, f_acc, f_scramble);
 
     /* converge into final hash */
     XXH_STATIC_ASSERT(sizeof(acc) == 64);
@@ -4939,7 +5159,7 @@ XXH3_hashLong_64b_withSecret(const void* XXH_RESTRICT input, size_t len,
                              XXH64_hash_t seed64, const xxh_u8* XXH_RESTRICT secret, size_t secretLen)
 {
     (void)seed64;
-    return XXH3_hashLong_64b_internal(input, len, secret, secretLen, XXH3_accumulate_512, XXH3_scrambleAcc);
+    return XXH3_hashLong_64b_internal(input, len, secret, secretLen, XXH3_accumulate, XXH3_scrambleAcc);
 }
 
 /*
@@ -4953,7 +5173,7 @@ XXH3_hashLong_64b_default(const void* XXH_RESTRICT input, size_t len,
                           XXH64_hash_t seed64, const xxh_u8* XXH_RESTRICT secret, size_t secretLen)
 {
     (void)seed64; (void)secret; (void)secretLen;
-    return XXH3_hashLong_64b_internal(input, len, XXH3_kSecret, sizeof(XXH3_kSecret), XXH3_accumulate_512, XXH3_scrambleAcc);
+    return XXH3_hashLong_64b_internal(input, len, XXH3_kSecret, sizeof(XXH3_kSecret), XXH3_accumulate, XXH3_scrambleAcc);
 }
 
 /*
@@ -4970,7 +5190,7 @@ XXH3_hashLong_64b_default(const void* XXH_RESTRICT input, size_t len,
 XXH_FORCE_INLINE XXH64_hash_t
 XXH3_hashLong_64b_withSeed_internal(const void* input, size_t len,
                                     XXH64_hash_t seed,
-                                    XXH3_f_accumulate_512 f_acc512,
+                                    XXH3_f_accumulate f_acc,
                                     XXH3_f_scrambleAcc f_scramble,
                                     XXH3_f_initCustomSecret f_initSec)
 {
@@ -4978,12 +5198,12 @@ XXH3_hashLong_64b_withSeed_internal(const void* input, size_t len,
     if (seed == 0)
         return XXH3_hashLong_64b_internal(input, len,
                                           XXH3_kSecret, sizeof(XXH3_kSecret),
-                                          f_acc512, f_scramble);
+                                          f_acc, f_scramble);
 #endif
     {   XXH_ALIGN(XXH_SEC_ALIGN) xxh_u8 secret[XXH_SECRET_DEFAULT_SIZE];
         f_initSec(secret, seed);
         return XXH3_hashLong_64b_internal(input, len, secret, sizeof(secret),
-                                          f_acc512, f_scramble);
+                                          f_acc, f_scramble);
     }
 }
 
@@ -4996,7 +5216,7 @@ XXH3_hashLong_64b_withSeed(const void* XXH_RESTRICT input, size_t len,
 {
     (void)secret; (void)secretLen;
     return XXH3_hashLong_64b_withSeed_internal(input, len, seed,
-                XXH3_accumulate_512, XXH3_scrambleAcc, XXH3_initCustomSecret);
+                XXH3_accumulate, XXH3_scrambleAcc, XXH3_initCustomSecret);
 }
 
 
@@ -5226,7 +5446,7 @@ XXH3_consumeStripes(xxh_u64* XXH_RESTRICT acc,
                     size_t* XXH_RESTRICT nbStripesSoFarPtr, size_t nbStripesPerBlock,
                     const xxh_u8* XXH_RESTRICT input, size_t nbStripes,
                     const xxh_u8* XXH_RESTRICT secret, size_t secretLimit,
-                    XXH3_f_accumulate_512 f_acc512,
+                    XXH3_f_accumulate f_acc,
                     XXH3_f_scrambleAcc f_scramble)
 {
     XXH_ASSERT(nbStripes <= nbStripesPerBlock);  /* can handle max 1 scramble per invocation */
@@ -5235,12 +5455,12 @@ XXH3_consumeStripes(xxh_u64* XXH_RESTRICT acc,
         /* need a scrambling operation */
         size_t const nbStripesToEndofBlock = nbStripesPerBlock - *nbStripesSoFarPtr;
         size_t const nbStripesAfterBlock = nbStripes - nbStripesToEndofBlock;
-        XXH3_accumulate(acc, input, secret + nbStripesSoFarPtr[0] * XXH_SECRET_CONSUME_RATE, nbStripesToEndofBlock, f_acc512);
+        f_acc(acc, input, secret + nbStripesSoFarPtr[0] * XXH_SECRET_CONSUME_RATE, nbStripesToEndofBlock);
         f_scramble(acc, secret + secretLimit);
-        XXH3_accumulate(acc, input + nbStripesToEndofBlock * XXH_STRIPE_LEN, secret, nbStripesAfterBlock, f_acc512);
+        f_acc(acc, input + nbStripesToEndofBlock * XXH_STRIPE_LEN, secret, nbStripesAfterBlock);
         *nbStripesSoFarPtr = nbStripesAfterBlock;
     } else {
-        XXH3_accumulate(acc, input, secret + nbStripesSoFarPtr[0] * XXH_SECRET_CONSUME_RATE, nbStripes, f_acc512);
+        f_acc(acc, input, secret + nbStripesSoFarPtr[0] * XXH_SECRET_CONSUME_RATE, nbStripes);
         *nbStripesSoFarPtr += nbStripes;
     }
 }
@@ -5256,7 +5476,7 @@ XXH3_consumeStripes(xxh_u64* XXH_RESTRICT acc,
 XXH_FORCE_INLINE XXH_errorcode
 XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
             const xxh_u8* XXH_RESTRICT input, size_t len,
-            XXH3_f_accumulate_512 f_acc512,
+            XXH3_f_accumulate f_acc,
             XXH3_f_scrambleAcc f_scramble)
 {
     if (input==NULL) {
@@ -5302,7 +5522,7 @@ XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
                                &state->nbStripesSoFar, state->nbStripesPerBlock,
                                 state->buffer, XXH3_INTERNALBUFFER_STRIPES,
                                 secret, state->secretLimit,
-                                f_acc512, f_scramble);
+                                f_acc, f_scramble);
             state->bufferedSize = 0;
         }
         XXH_ASSERT(input < bEnd);
@@ -5314,7 +5534,7 @@ XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
             /* join to current block's end */
             {   size_t const nbStripesToEnd = state->nbStripesPerBlock - state->nbStripesSoFar;
                 XXH_ASSERT(nbStripesToEnd <= nbStripes);
-                XXH3_accumulate(acc, input, secret + state->nbStripesSoFar * XXH_SECRET_CONSUME_RATE, nbStripesToEnd, f_acc512);
+                f_acc(acc, input, secret + state->nbStripesSoFar * XXH_SECRET_CONSUME_RATE, nbStripesToEnd);
                 f_scramble(acc, secret + state->secretLimit);
                 state->nbStripesSoFar = 0;
                 input += nbStripesToEnd * XXH_STRIPE_LEN;
@@ -5322,13 +5542,13 @@ XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
             }
             /* consume per entire blocks */
             while(nbStripes >= state->nbStripesPerBlock) {
-                XXH3_accumulate(acc, input, secret, state->nbStripesPerBlock, f_acc512);
+                f_acc(acc, input, secret, state->nbStripesPerBlock);
                 f_scramble(acc, secret + state->secretLimit);
                 input += state->nbStripesPerBlock * XXH_STRIPE_LEN;
                 nbStripes -= state->nbStripesPerBlock;
             }
             /* consume last partial block */
-            XXH3_accumulate(acc, input, secret, nbStripes, f_acc512);
+            f_acc(acc, input, secret, nbStripes);
             input += nbStripes * XXH_STRIPE_LEN;
             XXH_ASSERT(input < bEnd);  /* at least some bytes left */
             state->nbStripesSoFar = nbStripes;
@@ -5345,7 +5565,7 @@ XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
                                        &state->nbStripesSoFar, state->nbStripesPerBlock,
                                         input, XXH3_INTERNALBUFFER_STRIPES,
                                         secret, state->secretLimit,
-                                        f_acc512, f_scramble);
+                                        f_acc, f_scramble);
                     input += XXH3_INTERNALBUFFER_SIZE;
                 } while (input<limit);
                 /* buffer predecessor of last partial stripe */
@@ -5373,7 +5593,7 @@ XXH_PUBLIC_API XXH_errorcode
 XXH3_64bits_update(XXH3_state_t* state, const void* input, size_t len)
 {
     return XXH3_update(state, (const xxh_u8*)input, len,
-                       XXH3_accumulate_512, XXH3_scrambleAcc);
+                       XXH3_accumulate, XXH3_scrambleAcc);
 }
 
 
@@ -5394,7 +5614,7 @@ XXH3_digest_long (XXH64_hash_t* acc,
                            &nbStripesSoFar, state->nbStripesPerBlock,
                             state->buffer, nbStripes,
                             secret, state->secretLimit,
-                            XXH3_accumulate_512, XXH3_scrambleAcc);
+                            XXH3_accumulate, XXH3_scrambleAcc);
         /* last stripe */
         XXH3_accumulate_512(acc,
                             state->buffer + state->bufferedSize - XXH_STRIPE_LEN,
@@ -5706,12 +5926,12 @@ XXH3_len_129to240_128b(const xxh_u8* XXH_RESTRICT input, size_t len,
 XXH_FORCE_INLINE XXH128_hash_t
 XXH3_hashLong_128b_internal(const void* XXH_RESTRICT input, size_t len,
                             const xxh_u8* XXH_RESTRICT secret, size_t secretSize,
-                            XXH3_f_accumulate_512 f_acc512,
+                            XXH3_f_accumulate f_acc,
                             XXH3_f_scrambleAcc f_scramble)
 {
     XXH_ALIGN(XXH_ACC_ALIGN) xxh_u64 acc[XXH_ACC_NB] = XXH3_INIT_ACC;
 
-    XXH3_hashLong_internal_loop(acc, (const xxh_u8*)input, len, secret, secretSize, f_acc512, f_scramble);
+    XXH3_hashLong_internal_loop(acc, (const xxh_u8*)input, len, secret, secretSize, f_acc, f_scramble);
 
     /* converge into final hash */
     XXH_STATIC_ASSERT(sizeof(acc) == 64);
@@ -5738,7 +5958,7 @@ XXH3_hashLong_128b_default(const void* XXH_RESTRICT input, size_t len,
 {
     (void)seed64; (void)secret; (void)secretLen;
     return XXH3_hashLong_128b_internal(input, len, XXH3_kSecret, sizeof(XXH3_kSecret),
-                                       XXH3_accumulate_512, XXH3_scrambleAcc);
+                                       XXH3_accumulate, XXH3_scrambleAcc);
 }
 
 /*
@@ -5752,24 +5972,24 @@ XXH3_hashLong_128b_withSecret(const void* XXH_RESTRICT input, size_t len,
 {
     (void)seed64;
     return XXH3_hashLong_128b_internal(input, len, (const xxh_u8*)secret, secretLen,
-                                       XXH3_accumulate_512, XXH3_scrambleAcc);
+                                       XXH3_accumulate, XXH3_scrambleAcc);
 }
 
 XXH_FORCE_INLINE XXH128_hash_t
 XXH3_hashLong_128b_withSeed_internal(const void* XXH_RESTRICT input, size_t len,
                                 XXH64_hash_t seed64,
-                                XXH3_f_accumulate_512 f_acc512,
+                                XXH3_f_accumulate f_acc,
                                 XXH3_f_scrambleAcc f_scramble,
                                 XXH3_f_initCustomSecret f_initSec)
 {
     if (seed64 == 0)
         return XXH3_hashLong_128b_internal(input, len,
                                            XXH3_kSecret, sizeof(XXH3_kSecret),
-                                           f_acc512, f_scramble);
+                                           f_acc, f_scramble);
     {   XXH_ALIGN(XXH_SEC_ALIGN) xxh_u8 secret[XXH_SECRET_DEFAULT_SIZE];
         f_initSec(secret, seed64);
         return XXH3_hashLong_128b_internal(input, len, (const xxh_u8*)secret, sizeof(secret),
-                                           f_acc512, f_scramble);
+                                           f_acc, f_scramble);
     }
 }
 
@@ -5782,7 +6002,7 @@ XXH3_hashLong_128b_withSeed(const void* input, size_t len,
 {
     (void)secret; (void)secretLen;
     return XXH3_hashLong_128b_withSeed_internal(input, len, seed64,
-                XXH3_accumulate_512, XXH3_scrambleAcc, XXH3_initCustomSecret);
+                XXH3_accumulate, XXH3_scrambleAcc, XXH3_initCustomSecret);
 }
 
 typedef XXH128_hash_t (*XXH3_hashLong128_f)(const void* XXH_RESTRICT, size_t,
@@ -5895,7 +6115,7 @@ XXH_PUBLIC_API XXH_errorcode
 XXH3_128bits_update(XXH3_state_t* state, const void* input, size_t len)
 {
     return XXH3_update(state, (const xxh_u8*)input, len,
-                       XXH3_accumulate_512, XXH3_scrambleAcc);
+                       XXH3_accumulate, XXH3_scrambleAcc);
 }
 
 /*! @ingroup XXH3_family */

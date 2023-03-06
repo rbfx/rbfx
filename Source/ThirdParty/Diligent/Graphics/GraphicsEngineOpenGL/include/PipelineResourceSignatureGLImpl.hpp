@@ -124,6 +124,8 @@ public:
 
     // Copies static resources from the static resource cache to the destination cache
     void CopyStaticResources(ShaderResourceCacheGL& ResourceCache) const;
+    // Make the base class method visible
+    using TPipelineResourceSignatureBase::CopyStaticResources;
 
     Uint32 GetImmutableSamplerIdx(const ResourceAttribs& Res) const
     {

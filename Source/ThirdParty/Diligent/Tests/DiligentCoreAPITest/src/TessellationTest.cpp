@@ -156,16 +156,14 @@ TEST(TessellationTest, DrawQuad)
     GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Tessellation test - VS";
-        ShaderCI.Source          = HLSL::TessTest_VS.c_str();
+        ShaderCI.Desc       = {"Tessellation test - VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::TessTest_VS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pVS);
         ASSERT_NE(pVS, nullptr);
@@ -173,10 +171,9 @@ TEST(TessellationTest, DrawQuad)
 
     RefCntAutoPtr<IShader> pHS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_HULL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Tessellation test - HS";
-        ShaderCI.Source          = HLSL::TessTest_HS.c_str();
+        ShaderCI.Desc       = {"Tessellation test - HS", SHADER_TYPE_HULL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::TessTest_HS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pHS);
         ASSERT_NE(pHS, nullptr);
@@ -184,10 +181,9 @@ TEST(TessellationTest, DrawQuad)
 
     RefCntAutoPtr<IShader> pDS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_DOMAIN;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Tessellation test - DS";
-        ShaderCI.Source          = HLSL::TessTest_DS.c_str();
+        ShaderCI.Desc       = {"Tessellation test - DS", SHADER_TYPE_DOMAIN, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::TessTest_DS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pDS);
         ASSERT_NE(pDS, nullptr);
@@ -195,10 +191,9 @@ TEST(TessellationTest, DrawQuad)
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Tessellation test - PS";
-        ShaderCI.Source          = HLSL::TessTest_PS.c_str();
+        ShaderCI.Desc       = {"Tessellation test - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::TessTest_PS.c_str();
 
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);

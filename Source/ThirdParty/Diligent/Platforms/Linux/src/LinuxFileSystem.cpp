@@ -33,6 +33,7 @@
 #include <ftw.h>
 #include <glob.h>
 #include <mutex>
+#include <pwd.h>
 
 #include "LinuxFileSystem.hpp"
 #include "Errors.hpp"
@@ -223,6 +224,28 @@ std::string LinuxFileSystem::GetCurrentDirectory()
         free(cwd);
     }
     return CurrDir;
+}
+
+std::string LinuxFileSystem::GetLocalAppDataDirectory(const char* AppName, bool Create)
+{
+    const auto* pwuid = getpwuid(getuid());
+    std::string AppDataDir{pwuid->pw_dir};
+    if (!IsSlash(AppDataDir.back()))
+        AppDataDir += SlashSymbol;
+#if PLATFORM_MACOS
+    AppDataDir += "Library/Caches";
+#else
+    AppDataDir += ".cache";
+#endif
+
+    if (AppName != nullptr)
+    {
+        AppDataDir += SlashSymbol;
+        AppDataDir += AppName;
+        if (Create && !PathExists(AppDataDir.c_str()))
+            CreateDirectory(AppDataDir.c_str());
+    }
+    return AppDataDir;
 }
 
 } // namespace Diligent

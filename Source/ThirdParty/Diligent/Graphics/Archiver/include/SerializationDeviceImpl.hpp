@@ -29,6 +29,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <array>
 
 #include "ArchiverFactory.h"
 
@@ -48,7 +49,7 @@ public:
     SerializationDeviceImpl(IReferenceCounters* pRefCounters, const SerializationDeviceCreateInfo& CreateInfo);
     ~SerializationDeviceImpl();
 
-    virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final;
+    IMPLEMENT_QUERY_INTERFACE2_IN_PLACE(IID_SerializationDevice, IID_RenderDevice, TBase)
 
     // clang-format off
     UNSUPPORTED_METHOD(void, CreateGraphicsPipelineState,   const GraphicsPipelineStateCreateInfo&   PSOCreateInfo, IPipelineState** ppPipelineState)
@@ -111,6 +112,9 @@ public:
                                                             const PipelineStateArchiveInfo&    ArchiveInfo,
                                                             IPipelineState**                   ppPipelineState) override final;
 
+    /// Implementation of ISerializationDevice::AddRenderDevice().
+    virtual void DILIGENT_CALL_TYPE AddRenderDevice(IRenderDevice* pDevice) override final;
+
     void CreateSerializedResourceSignature(const PipelineResourceSignatureDesc& Desc,
                                            const ResourceSignatureArchiveInfo&  ArchiveInfo,
                                            SHADER_TYPE                          ShaderStages,
@@ -160,6 +164,11 @@ public:
     const VkProperties&    GetVkProperties() const { return m_VkProps; }
     const MtlProperties&   GetMtlProperties() const { return m_MtlProps; }
 
+    IRenderDevice* GetRenderDevice(RENDER_DEVICE_TYPE Type)
+    {
+        return m_RenderDevices[Type];
+    }
+
 protected:
     static PipelineResourceBinding ResDescToPipelineResBinding(const PipelineResourceDesc& ResDesc, SHADER_TYPE Stages, Uint32 Register, Uint32 Space);
 
@@ -192,6 +201,8 @@ private:
     MtlProperties   m_MtlProps;
 
     std::vector<PipelineResourceBinding> m_ResourceBindings;
+
+    std::array<RefCntAutoPtr<IRenderDevice>, RENDER_DEVICE_TYPE_COUNT> m_RenderDevices;
 };
 
 } // namespace Diligent

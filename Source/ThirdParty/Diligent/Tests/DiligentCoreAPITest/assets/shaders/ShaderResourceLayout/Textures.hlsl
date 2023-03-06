@@ -37,7 +37,7 @@ float4 VerifyResources()
     AllCorrect *= CheckValue(g_Tex2DArr_Dyn[1].SampleLevel(g_Sampler,  UV.xy, 0.0), Tex2DArr_Dyn_Ref1);
     AllCorrect *= CheckValue(g_Tex2DArr_Dyn[2].SampleLevel(g_Sampler,  UV.xy, 0.0), Tex2DArr_Dyn_Ref2);
 
-	return AllCorrect;
+    return AllCorrect;
 }
 
 void VSMain(in  uint    VertId    : SV_VertexID,

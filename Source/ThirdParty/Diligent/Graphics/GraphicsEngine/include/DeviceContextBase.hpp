@@ -451,7 +451,7 @@ protected:
 
     inline bool SetStencilRef(Uint32 StencilRef, int Dummy);
 
-    inline void SetPipelineState(PipelineStateImplType* pPipelineState, int /*Dummy*/);
+    inline void SetPipelineState(RefCntAutoPtr<PipelineStateImplType> pPipelineState, int /*Dummy*/);
 
     /// Clears all cached resources
     inline void ClearStateCache();
@@ -754,14 +754,14 @@ inline void DeviceContextBase<ImplementationTraits>::SetVertexBuffers(
 
 template <typename ImplementationTraits>
 inline void DeviceContextBase<ImplementationTraits>::SetPipelineState(
-    PipelineStateImplType* pPipelineState,
+    RefCntAutoPtr<PipelineStateImplType> pPipelineState,
     int /*Dummy*/)
 {
     DVP_CHECK_QUEUE_TYPE_COMPATIBILITY(COMMAND_QUEUE_TYPE_COMPUTE, "SetPipelineState");
     DEV_CHECK_ERR((pPipelineState->GetDesc().ImmediateContextMask & (Uint64{1} << GetExecutionCtxId())) != 0,
                   "PSO '", pPipelineState->GetDesc().Name, "' can't be used in device context '", m_Desc.Name, "'.");
 
-    m_pPipelineState = pPipelineState;
+    m_pPipelineState = std::move(pPipelineState);
 }
 
 template <typename ImplementationTraits>

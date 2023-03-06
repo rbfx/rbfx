@@ -172,7 +172,7 @@ DILIGENT_BEGIN_INTERFACE(ITopLevelAS, IDeviceObject)
     ///
     /// \note Access to the TLAS must be externally synchronized.
     VIRTUAL TLASInstanceDesc METHOD(GetInstanceDesc)(THIS_
-                                                     const char* Name) CONST PURE;
+                                                     const Char* Name) CONST PURE;
 
 
     /// Returns TLAS state after the last build or update operation.

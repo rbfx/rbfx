@@ -44,6 +44,9 @@ class ShaderD3D12Impl final : public ShaderBase<EngineD3D12ImplTraits>, public S
 public:
     using TShaderBase = ShaderBase<EngineD3D12ImplTraits>;
 
+    static constexpr INTERFACE_ID IID_InternalImpl =
+        {0x98a800f1, 0x673, 0x4a39, {0xaf, 0x28, 0xa4, 0xa5, 0xd6, 0x3e, 0x84, 0xa2}};
+
     struct CreateInfo
     {
         IDXCompiler* const         pDXCompiler;
@@ -73,6 +76,15 @@ public:
             ResourceDesc = m_pShaderResources->GetHLSLShaderResourceDesc(Index);
     }
 
+    /// Implementation of IShader::GetConstantBufferDesc() in Direct3D12 backend.
+    virtual const ShaderCodeBufferDesc* DILIGENT_CALL_TYPE GetConstantBufferDesc(Uint32 Index) const override final
+    {
+        return m_pShaderResources ?
+            // Constant buffers always go first in the list of resources
+            m_pShaderResources->GetConstantBufferDesc(Index) :
+            nullptr;
+    }
+
     /// Implementation of IShaderD3D::GetHLSLResource() in Direct3D12 backend.
     virtual void DILIGENT_CALL_TYPE GetHLSLResource(Uint32 Index, HLSLShaderResourceDesc& ResourceDesc) const override final
     {
@@ -80,7 +92,12 @@ public:
             ResourceDesc = m_pShaderResources->GetHLSLShaderResourceDesc(Index);
     }
 
-    ID3DBlob*   GetShaderByteCode() const { return m_pShaderByteCode; }
+    virtual void DILIGENT_CALL_TYPE GetBytecode(const void** ppBytecode,
+                                                Uint64&      Size) const override final
+    {
+        ShaderD3DBase::GetBytecode(ppBytecode, Size);
+    }
+
     const Char* GetEntryPoint() const { return m_EntryPoint.c_str(); }
 
     const std::shared_ptr<const ShaderResourcesD3D12>& GetShaderResources() const { return m_pShaderResources; }

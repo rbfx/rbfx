@@ -43,6 +43,24 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // clang-format off
 
+/// Shader unpack parameters
+struct ShaderUnpackInfo
+{
+    struct IRenderDevice* pDevice DEFAULT_INITIALIZER(nullptr);
+
+    /// Name of the shader to unpack.
+    const Char* Name DEFAULT_INITIALIZER(nullptr);
+
+    /// An optional function to be called by the dearchiver to let the application modify
+    /// the shader description.
+    void (*ModifyShaderDesc)(ShaderDesc REF Desc, void* pUserData) DEFAULT_INITIALIZER(nullptr);
+
+    /// A pointer to the user data to pass to the ModifyShaderDesc function.
+    void* pUserData DEFAULT_INITIALIZER(nullptr);
+};
+typedef struct ShaderUnpackInfo ShaderUnpackInfo;
+
+
 /// Resource signature unpack parameters
 struct ResourceSignatureUnpackInfo
 {
@@ -50,7 +68,7 @@ struct ResourceSignatureUnpackInfo
 
     /// Name of the signature to unpack. If there is only
     /// one signature in the archive, the name may be null.
-    const char* Name DEFAULT_INITIALIZER(nullptr);
+    const Char* Name DEFAULT_INITIALIZER(nullptr);
 
     /// Shader resource binding allocation granularity.
 
@@ -109,7 +127,7 @@ struct PipelineStateUnpackInfo
 
     /// Name of the PSO to unpack. If there is only
     /// one PSO in the archive, the name may be null.
-    const char* Name DEFAULT_INITIALIZER(nullptr);
+    const Char* Name DEFAULT_INITIALIZER(nullptr);
 
     /// The type of the pipeline state to unpack, see Diligent::PIPELINE_TYPE.
     PIPELINE_TYPE PipelineType DEFAULT_INITIALIZER(PIPELINE_TYPE_INVALID);
@@ -169,7 +187,7 @@ struct RenderPassUnpackInfo
     struct IRenderDevice* pDevice DEFAULT_INITIALIZER(nullptr);
 
     /// Name of the render pass to unpack.
-    const char* Name DEFAULT_INITIALIZER(nullptr);
+    const Char* Name DEFAULT_INITIALIZER(nullptr);
 
     /// An optional function to be called by the dearchiver to let the application modify
     /// the render pass description.
@@ -218,9 +236,22 @@ DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
     /// 
     /// \warning    This method is not thread-safe and must not be called simultaneously
     ///             with other methods.
-    VIRTUAL bool METHOD(LoadArchive)(THIS_
+    VIRTUAL Bool METHOD(LoadArchive)(THIS_
                                      const IDataBlob* pArchive,
-                                     bool             MakeCopy DEFAULT_VALUE(false)) PURE;
+                                     Bool             MakeCopy DEFAULT_VALUE(false)) PURE;
+
+    /// Unpacks a shader from the device object archive.
+
+    /// \param [in]  UnpackInfo - Shader unpack info, see Diligent::ShaderUnpackInfo.
+    /// \param [out] ppShader   - Address of the memory location where a pointer to the
+    ///                           unpacked shader object will be stored.
+    ///                           The function calls AddRef(), so that the shader object will have
+    ///                           one reference.
+    ///
+    /// \note   This method is thread-safe.
+    VIRTUAL void METHOD(UnpackShader)(THIS_
+                                      const ShaderUnpackInfo REF UnpackInfo,
+                                      IShader**                  ppShader) PURE;
 
     /// Unpacks a pipeline state object from the device object archive.
 
@@ -263,6 +294,18 @@ DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
                                           const RenderPassUnpackInfo REF UnpackInfo,
                                           IRenderPass**                  ppRP) PURE;
 
+    /// Writes archive data to the data blob.
+
+    /// \param [in] ppArchive - Memory location where a pointer to the archive data blob will be written.
+    /// \return     true if the archive data was written successfully, and false otherwise.
+    ///
+    /// \note       This method combines all archives loaded by the dearchiver into a single archive.
+    ///
+    /// \warning    This method is not thread-safe and must not be called simultaneously
+    ///             with other methods.
+    VIRTUAL Bool METHOD(Store)(THIS_
+                               IDataBlob** ppArchive) CONST PURE;
+
     /// Resets the dearchiver state and releases all loaded objects.
     ///
     /// \warning    This method is not thread-safe and must not be called simultaneously
@@ -276,9 +319,12 @@ DILIGENT_END_INTERFACE
 #if DILIGENT_C_INTERFACE
 
 #    define IDearchiver_LoadArchive(This, ...)             CALL_IFACE_METHOD(Dearchiver, LoadArchive,             This, __VA_ARGS__)
+#    define IDearchiver_UnpackShader(This, ...)            CALL_IFACE_METHOD(Dearchiver, UnpackShader,            This, __VA_ARGS__)
 #    define IDearchiver_UnpackPipelineState(This, ...)     CALL_IFACE_METHOD(Dearchiver, UnpackPipelineState,     This, __VA_ARGS__)
 #    define IDearchiver_UnpackResourceSignature(This, ...) CALL_IFACE_METHOD(Dearchiver, UnpackResourceSignature, This, __VA_ARGS__)
 #    define IDearchiver_UnpackRenderPass(This, ...)        CALL_IFACE_METHOD(Dearchiver, UnpackRenderPass,        This, __VA_ARGS__)
+#    define IDearchiver_Store(This, ...)                   CALL_IFACE_METHOD(Dearchiver, Store,                   This, __VA_ARGS__)
+#    define IDearchiver_Reset(This)                        CALL_IFACE_METHOD(Dearchiver, Reset,                   This)
 
 #endif
 

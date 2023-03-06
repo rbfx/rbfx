@@ -52,7 +52,7 @@ else()
     target_link_libraries(OSDependent Threads::Threads)
 endif()
 
-if(ENABLE_GLSLANG_INSTALL)
+if(ENABLE_GLSLANG_INSTALL AND NOT BUILD_SHARED_LIBS)
     install(TARGETS OSDependent EXPORT glslang-targets)
 
     # Backward compatibility
@@ -60,7 +60,7 @@ if(ENABLE_GLSLANG_INSTALL)
         message(WARNING \"Using `OSDependentTargets.cmake` is deprecated: use `find_package(glslang)` to find glslang CMake targets.\")
 
         if (NOT TARGET glslang::OSDependent)
-            include(\"\${CMAKE_CURRENT_LIST_DIR}/../../${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/glslang-targets.cmake\")
+            include(\"\${CMAKE_CURRENT_LIST_DIR}/../../${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/glslang-targets.cmake\")
         endif()
 
         add_library(OSDependent ALIAS glslang::OSDependent)

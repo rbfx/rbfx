@@ -61,7 +61,7 @@ struct QueryDataBinaryOcclusion
 
     /// Indicates if at least one sample passed depth and stencil testing in between
     /// IDeviceContext::BeginQuery and IDeviceContext::EndQuery.
-    bool AnySamplePassed DEFAULT_INITIALIZER(0);
+    Bool AnySamplePassed DEFAULT_INITIALIZER(0);
 };
 typedef struct QueryDataBinaryOcclusion QueryDataBinaryOcclusion;
 
@@ -201,10 +201,10 @@ DILIGENT_BEGIN_INTERFACE(IQuery, IDeviceObject)
     ///
     ///             If AutoInvalidate is set to true, and the data have been retrieved, an application
     ///             must not call GetData() until it begins and ends the query again.
-    VIRTUAL bool METHOD(GetData)(THIS_
+    VIRTUAL Bool METHOD(GetData)(THIS_
                                  void*   pData,
                                  Uint32  DataSize,
-                                 bool    AutoInvalidate DEFAULT_VALUE(true)) PURE;
+                                 Bool    AutoInvalidate DEFAULT_VALUE(true)) PURE;
 
     /// Invalidates the query and releases associated resources.
     VIRTUAL void METHOD(Invalidate)(THIS) PURE;

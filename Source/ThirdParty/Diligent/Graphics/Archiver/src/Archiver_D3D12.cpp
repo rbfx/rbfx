@@ -40,13 +40,33 @@ namespace Diligent
 namespace
 {
 
-struct CompiledShaderD3D12 : SerializedShaderImpl::CompiledShader
+struct CompiledShaderD3D12 final : SerializedShaderImpl::CompiledShader
 {
     ShaderD3D12Impl ShaderD3D12;
 
-    CompiledShaderD3D12(IReferenceCounters* pRefCounters, const ShaderCreateInfo& ShaderCI, const ShaderD3D12Impl::CreateInfo& D3D12ShaderCI) :
-        ShaderD3D12{pRefCounters, nullptr, ShaderCI, D3D12ShaderCI, true}
+    CompiledShaderD3D12(IReferenceCounters*                pRefCounters,
+                        const ShaderCreateInfo&            ShaderCI,
+                        const ShaderD3D12Impl::CreateInfo& D3D12ShaderCI,
+                        IRenderDevice*                     pRenderDeviceD3D12) :
+        ShaderD3D12{pRefCounters, ClassPtrCast<RenderDeviceD3D12Impl>(pRenderDeviceD3D12), ShaderCI, D3D12ShaderCI, true}
     {}
+
+    virtual SerializedData Serialize(ShaderCreateInfo ShaderCI) const override final
+    {
+        const auto& pBytecode = ShaderD3D12.GetD3DBytecode();
+
+        ShaderCI.Source       = nullptr;
+        ShaderCI.FilePath     = nullptr;
+        ShaderCI.Macros       = nullptr;
+        ShaderCI.ByteCode     = pBytecode->GetBufferPointer();
+        ShaderCI.ByteCodeSize = pBytecode->GetBufferSize();
+        return SerializedShaderImpl::SerializeCreateInfo(ShaderCI);
+    }
+
+    virtual IShader* GetDeviceShader() override final
+    {
+        return &ShaderD3D12;
+    }
 };
 
 inline const ShaderD3D12Impl* GetShaderD3D12(const SerializedShaderImpl* pShader)
@@ -138,6 +158,7 @@ void SerializedPipelineStateImpl::PatchShadersD3D12(const CreateInfoType& Create
             auto        ShaderCI  = ShaderStages[j].Serialized[i]->GetCreateInfo();
             ShaderCI.Source       = nullptr;
             ShaderCI.FilePath     = nullptr;
+            ShaderCI.Macros       = nullptr;
             ShaderCI.ByteCode     = pBytecode->GetBufferPointer();
             ShaderCI.ByteCodeSize = pBytecode->GetBufferSize();
             SerializeShaderCreateInfo(DeviceType::Direct3D12, ShaderCI);
@@ -151,9 +172,10 @@ INSTANTIATE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureD3D12Impl)
 
 void SerializedShaderImpl::CreateShaderD3D12(IReferenceCounters* pRefCounters, const ShaderCreateInfo& ShaderCI) noexcept(false)
 {
-    const auto& D3D12Props  = m_pDevice->GetD3D12Properties();
-    const auto& DeviceInfo  = m_pDevice->GetDeviceInfo();
-    const auto& AdapterInfo = m_pDevice->GetAdapterInfo();
+    const auto& D3D12Props         = m_pDevice->GetD3D12Properties();
+    const auto& DeviceInfo         = m_pDevice->GetDeviceInfo();
+    const auto& AdapterInfo        = m_pDevice->GetAdapterInfo();
+    auto*       pRenderDeviceD3D12 = m_pDevice->GetRenderDevice(RENDER_DEVICE_TYPE_D3D12);
 
     const ShaderD3D12Impl::CreateInfo D3D12ShaderCI{
         D3D12Props.pDxCompiler,
@@ -161,7 +183,7 @@ void SerializedShaderImpl::CreateShaderD3D12(IReferenceCounters* pRefCounters, c
         AdapterInfo,
         D3D12Props.ShaderVersion //
     };
-    CreateShader<CompiledShaderD3D12>(DeviceType::Direct3D12, pRefCounters, ShaderCI, D3D12ShaderCI);
+    CreateShader<CompiledShaderD3D12>(DeviceType::Direct3D12, pRefCounters, ShaderCI, D3D12ShaderCI, pRenderDeviceD3D12);
 }
 
 void SerializationDeviceImpl::GetPipelineResourceBindingsD3D12(const PipelineResourceBindingAttribs& Info,

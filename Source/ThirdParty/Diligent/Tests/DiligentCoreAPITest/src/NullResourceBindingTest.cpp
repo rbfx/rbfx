@@ -46,13 +46,11 @@ RefCntAutoPtr<IShader> CreateShader(const char*            Name,
                                     SHADER_SOURCE_LANGUAGE Language            = SHADER_SOURCE_LANGUAGE_HLSL)
 {
     ShaderCreateInfo ShaderCI;
-    ShaderCI.EntryPoint                 = "main";
-    ShaderCI.UseCombinedTextureSamplers = UseCombinedSamplers;
-    ShaderCI.SourceLanguage             = Language;
-    ShaderCI.Source                     = Source;
+    ShaderCI.EntryPoint     = "main";
+    ShaderCI.SourceLanguage = Language;
+    ShaderCI.Source         = Source;
 
-    ShaderCI.Desc.Name       = Name;
-    ShaderCI.Desc.ShaderType = ShaderType;
+    ShaderCI.Desc = {Name, ShaderType, UseCombinedSamplers};
 
     RefCntAutoPtr<IShader> pShader;
     GPUTestingEnvironment::GetInstance()->GetDevice()->CreateShader(ShaderCI, &pShader);

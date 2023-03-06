@@ -362,6 +362,11 @@ out gl_PerVertex
 };
 #endif
 
+#ifdef VULKAN
+#   define gl_VertexID gl_VertexIndex
+#   define gl_InstanceID gl_InstanceIndex
+#endif
+
 layout(location = 0)out vec3 out_Color;
 
 void main()
@@ -496,46 +501,41 @@ protected:
         GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
         ShaderCreateInfo ShaderCI;
-        ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-        ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-        ShaderCI.UseCombinedTextureSamplers = true;
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
         RefCntAutoPtr<IShader> pProceduralVS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Draw command test procedural vertex shader";
-            ShaderCI.Source          = HLSL::DrawTest_ProceduralTriangleVS.c_str();
+            ShaderCI.Desc       = {"Draw command test procedural vertex shader", SHADER_TYPE_VERTEX, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = HLSL::DrawTest_ProceduralTriangleVS.c_str();
             pDevice->CreateShader(ShaderCI, &pProceduralVS);
             ASSERT_NE(pProceduralVS, nullptr);
         }
 
         RefCntAutoPtr<IShader> pVS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Draw command test vertex shader";
-            ShaderCI.Source          = HLSL::DrawTest_VS.c_str();
+            ShaderCI.Desc       = {"Draw command test vertex shader", SHADER_TYPE_VERTEX, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = HLSL::DrawTest_VS.c_str();
             pDevice->CreateShader(ShaderCI, &pVS);
             ASSERT_NE(pVS, nullptr);
         }
 
         RefCntAutoPtr<IShader> pInstancedVS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Draw command test instanced vertex shader";
-            ShaderCI.Source          = HLSL::DrawTest_VSInstanced.c_str();
+            ShaderCI.Desc       = {"Draw command test instanced vertex shader", SHADER_TYPE_VERTEX, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = HLSL::DrawTest_VSInstanced.c_str();
             pDevice->CreateShader(ShaderCI, &pInstancedVS);
             ASSERT_NE(pInstancedVS, nullptr);
         }
 
         RefCntAutoPtr<IShader> pPS;
         {
-            ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-            ShaderCI.EntryPoint      = "main";
-            ShaderCI.Desc.Name       = "Draw command test pixel shader";
-            ShaderCI.Source          = HLSL::DrawTest_PS.c_str();
+            ShaderCI.Desc       = {"Draw command test pixel shader", SHADER_TYPE_PIXEL, true};
+            ShaderCI.EntryPoint = "main";
+            ShaderCI.Source     = HLSL::DrawTest_PS.c_str();
             pDevice->CreateShader(ShaderCI, &pPS);
             ASSERT_NE(pPS, nullptr);
         }
@@ -567,7 +567,15 @@ protected:
         ASSERT_NE(sm_pDrawPSO, nullptr);
 
 
+        PSODesc.Name = "Draw command test - tri strip";
+
+        GraphicsPipeline.PrimitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        pDevice->CreateGraphicsPipelineState(PSOCreateInfo, &sm_pDrawStripPSO);
+        ASSERT_NE(sm_pDrawStripPSO, nullptr);
+
         PSODesc.Name = "Draw command test - 2x VB stride";
+
+        GraphicsPipeline.PrimitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
         Elems[0].Stride = sizeof(Vertex) * 2;
         pDevice->CreateGraphicsPipelineState(PSOCreateInfo, &sm_pDraw_2xStride_PSO);
@@ -597,6 +605,7 @@ protected:
         sm_pDrawPSO.Release();
         sm_pDraw_2xStride_PSO.Release();
         sm_pDrawInstancedPSO.Release();
+        sm_pDrawStripPSO.Release();
 
         auto* pEnv = GPUTestingEnvironment::GetInstance();
         pEnv->Reset();
@@ -722,6 +731,7 @@ protected:
     static RefCntAutoPtr<IPipelineState> sm_pDrawPSO;
     static RefCntAutoPtr<IPipelineState> sm_pDraw_2xStride_PSO;
     static RefCntAutoPtr<IPipelineState> sm_pDrawInstancedPSO;
+    static RefCntAutoPtr<IPipelineState> sm_pDrawStripPSO;
     static FastRandFloat                 sm_Rnd;
 };
 
@@ -729,6 +739,7 @@ RefCntAutoPtr<IPipelineState> DrawCommandTest::sm_pDrawProceduralPSO;
 RefCntAutoPtr<IPipelineState> DrawCommandTest::sm_pDrawPSO;
 RefCntAutoPtr<IPipelineState> DrawCommandTest::sm_pDraw_2xStride_PSO;
 RefCntAutoPtr<IPipelineState> DrawCommandTest::sm_pDrawInstancedPSO;
+RefCntAutoPtr<IPipelineState> DrawCommandTest::sm_pDrawStripPSO;
 FastRandFloat                 DrawCommandTest::sm_Rnd{0, 0.f, 1.f};
 
 TEST_F(DrawCommandTest, DrawProcedural)
@@ -920,6 +931,39 @@ TEST_F(DrawCommandTest, DrawIndexed)
 
     Present();
 }
+
+
+TEST_F(DrawCommandTest, DrawIndexed_StripCut)
+{
+    auto* pEnv     = GPUTestingEnvironment::GetInstance();
+    auto* pContext = pEnv->GetDeviceContext();
+
+    SetRenderTargets(sm_pDrawStripPSO);
+
+    // clang-format off
+    const Vertex Triangles[] =
+    {
+        {}, {},
+        Vert[2], {}, Vert[0], {}, Vert[1],
+        Vert[3], {}, {}, Vert[4], {}, {}, Vert[5]
+    };
+    const Uint32 Indices[] = {2,4,6, 0xFFFFFFFFu, 7,10,13};
+    // clang-format on
+
+    auto pVB = CreateVertexBuffer(Triangles, sizeof(Triangles));
+    auto pIB = CreateIndexBuffer(Indices, _countof(Indices));
+
+    IBuffer*     pVBs[]    = {pVB};
+    const Uint64 Offsets[] = {0};
+    pContext->SetVertexBuffers(0, 1, pVBs, Offsets, RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_RESET);
+    pContext->SetIndexBuffer(pIB, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    DrawIndexedAttribs drawAttrs{7, VT_UINT32, DRAW_FLAG_VERIFY_ALL};
+    pContext->DrawIndexed(drawAttrs);
+
+    Present();
+}
+
 
 TEST_F(DrawCommandTest, DrawIndexed_IBOffset)
 {
@@ -1771,6 +1815,7 @@ TEST_F(DrawCommandTest, DrawIndexedInstancedIndirect_FirstInstance_BaseVertex_Fi
     Present();
 }
 
+
 TEST_F(DrawCommandTest, MultiDrawIndirect)
 {
     auto* const pEnv     = GPUTestingEnvironment::GetInstance();
@@ -2092,26 +2137,23 @@ TEST_F(DrawCommandTest, Draw_InstanceDataStepRate)
     GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
     RefCntAutoPtr<IShader> pInstancedVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Draw command test instanced vertex shader";
-        ShaderCI.Source          = HLSL::DrawTest_VSInstanced.c_str();
+        ShaderCI.Desc       = {"Draw command test instanced vertex shader", SHADER_TYPE_VERTEX, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::DrawTest_VSInstanced.c_str();
         pDevice->CreateShader(ShaderCI, &pInstancedVS);
         ASSERT_NE(pInstancedVS, nullptr);
     }
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Draw command test pixel shader";
-        ShaderCI.Source          = HLSL::DrawTest_PS.c_str();
+        ShaderCI.Desc       = {"Draw command test pixel shader", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::DrawTest_PS.c_str();
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
     }
@@ -2356,26 +2398,23 @@ TEST_F(DrawCommandTest, DynamicUniformBufferUpdates)
     auto* pDevice = pEnv->GetDevice();
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Draw command test dynamic buffer updates - VS";
-        ShaderCI.Source          = HLSL::DrawTest_DynamicBuffers.c_str();
+        ShaderCI.Desc       = {"Draw command test dynamic buffer updates - VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::DrawTest_DynamicBuffers.c_str();
         pDevice->CreateShader(ShaderCI, &pVS);
         ASSERT_NE(pVS, nullptr);
     }
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Draw command test dynamic buffer updates - PS";
-        ShaderCI.Source          = HLSL::DrawTest_PS.c_str();
+        ShaderCI.Desc       = {"Draw command test dynamic buffer updates - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::DrawTest_PS.c_str();
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
     }
@@ -2666,8 +2705,7 @@ void DrawCommandTest::TestStructuredOrFormattedBuffers(BUFFER_MODE BuffMode,
     const auto& DeviceInfo = pDevice->GetDeviceInfo();
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
 
     auto SelectShaderCompiler = [UseArray, pEnv](ShaderCreateInfo& ShaderCI) //
     {
@@ -2688,9 +2726,8 @@ void DrawCommandTest::TestStructuredOrFormattedBuffers(BUFFER_MODE BuffMode,
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Draw command test structured buffers - VS";
+        ShaderCI.Desc       = {"Draw command test structured buffers - VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.EntryPoint = "main";
         if (BuffMode == BUFFER_MODE_STRUCTURED)
         {
             if (DeviceInfo.IsD3DDevice())
@@ -2721,11 +2758,10 @@ void DrawCommandTest::TestStructuredOrFormattedBuffers(BUFFER_MODE BuffMode,
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.SourceLanguage  = SHADER_SOURCE_LANGUAGE_HLSL;
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Draw command test structured buffers - PS";
-        ShaderCI.Source          = HLSL::DrawTest_PS.c_str();
+        ShaderCI.Desc           = {"Draw command test structured buffers - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        ShaderCI.EntryPoint     = "main";
+        ShaderCI.Source         = HLSL::DrawTest_PS.c_str();
         SelectShaderCompiler(ShaderCI);
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
@@ -3045,26 +3081,23 @@ void DrawCommandTest::TestUniOrStructBufferOffsets(BUFFER_MODE BuffMode)
     auto* pDevice = pEnv->GetDevice();
 
     ShaderCreateInfo ShaderCI;
-    ShaderCI.SourceLanguage             = SHADER_SOURCE_LANGUAGE_HLSL;
-    ShaderCI.ShaderCompiler             = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
-    ShaderCI.UseCombinedTextureSamplers = true;
+    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.ShaderCompiler = pEnv->GetDefaultCompiler(ShaderCI.SourceLanguage);
 
     RefCntAutoPtr<IShader> pVS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Draw command test buffer offsets - VS";
-        ShaderCI.Source          = BuffMode == BUFFER_MODE_STRUCTURED ? HLSL::DrawTest_VSStructuredBuffers.c_str() : HLSL::DrawTest_VSUniformBuffers.c_str();
+        ShaderCI.Desc       = {"Draw command test buffer offsets - VS", SHADER_TYPE_VERTEX, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = BuffMode == BUFFER_MODE_STRUCTURED ? HLSL::DrawTest_VSStructuredBuffers.c_str() : HLSL::DrawTest_VSUniformBuffers.c_str();
         pDevice->CreateShader(ShaderCI, &pVS);
         ASSERT_NE(pVS, nullptr);
     }
 
     RefCntAutoPtr<IShader> pPS;
     {
-        ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
-        ShaderCI.EntryPoint      = "main";
-        ShaderCI.Desc.Name       = "Draw command test buffer offsets - PS";
-        ShaderCI.Source          = HLSL::DrawTest_PS.c_str();
+        ShaderCI.Desc       = {"Draw command test buffer offsets - PS", SHADER_TYPE_PIXEL, true};
+        ShaderCI.EntryPoint = "main";
+        ShaderCI.Source     = HLSL::DrawTest_PS.c_str();
         pDevice->CreateShader(ShaderCI, &pPS);
         ASSERT_NE(pPS, nullptr);
     }
