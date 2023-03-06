@@ -31,9 +31,11 @@ namespace Urho3D
 {
 
 DrawCommandQueue::DrawCommandQueue(Graphics* graphics)
-    : graphics_(graphics)
+    : graphics_(graphics),
+    currentCBufferTicket_(nullptr)
 {
     srbCache_ = MakeShared<ShaderResourceBindingCache>(graphics->GetContext());
+    cbufferManager_ = graphics->GetSubsystem<ConstantBufferManager>();
 }
 
 void DrawCommandQueue::Reset(bool preferConstantBuffers)
@@ -63,6 +65,10 @@ void DrawCommandQueue::Reset(bool preferConstantBuffers)
 
         currentDrawCommand_.shaderParameters_.fill({});
     }
+
+#ifdef URHO3D_DILIGENT
+    currentDrawCommand_.cbufferTicketIds_.fill(M_MAX_UNSIGNED);
+#endif
 
     // Clear arrays and draw commands
     shaderResources_.clear();
@@ -106,8 +112,10 @@ void DrawCommandQueue::Execute()
     PrimitiveType currentPrimitiveType{};
     unsigned currentScissorRect = M_MAX_UNSIGNED;
 #ifdef URHO3D_DILIGENT
-    ShaderResourceBindingCacheCreateInfo srbCacheCI;
-    ShaderResourceBinding* srb = nullptr;
+    //ShaderResourceBindingCacheCreateInfo srbCacheCI;
+    //ShaderResourceBinding* srb = nullptr;
+
+    cbufferManager_->PrepareBuffers();
 #endif
 
     // Temporary collections
@@ -153,43 +161,55 @@ void DrawCommandQueue::Execute()
 #ifdef URHO3D_DILIGENT
         // On Diligent backend, we need to create Shader Resource Binding and attach on device context.
         {
-            bool dirty = srb == nullptr;
-            if (cmd.pipelineState_ != srbCacheCI.pipeline_) {
-                dirty = true;
-                srbCacheCI.pipeline_ = cmd.pipelineState_;
-            }
-            // Set shader resources
-            if (cmd.shaderResources_ != currentShaderResources)
-            {
-                dirty = true;
-                srbCacheCI.ResetTextures();
-                for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
-                {
-                    const auto& unitAndResource = shaderResources_[i];
-                    srbCacheCI.textures_[unitAndResource.unit_] = unitAndResource.texture_;
-                }
-                currentShaderResources = cmd.shaderResources_;
+            //if (cmd.pipelineState_ != srbCacheCI.pipeline_) {
+            //    dirty = true;
+            //    srbCacheCI.pipeline_ = cmd.pipelineState_;
+            //}
+            //// Set shader resources
+            //if (cmd.shaderResources_ != currentShaderResources)
+            //{
+            //    dirty = true;
+            //    srbCacheCI.ResetTextures();
+            //    for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
+            //    {
+            //        const auto& unitAndResource = shaderResources_[i];
+            //        srbCacheCI.textures_[unitAndResource.unit_] = unitAndResource.texture_;
+            //    }
+            //    currentShaderResources = cmd.shaderResources_;
+            //}
+
+            //// Update used ranges for each group
+            //for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+            //{
+            //    // Check for constant buffer bindings
+            //    if (cmd.constantBuffers_[i].size_ == 0 && srbCacheCI.constantBuffers_[i]) {
+            //        dirty = true;
+            //        srbCacheCI.constantBuffers_[i] = nullptr;
+            //        continue;
+            //    }
+
+            //    ConstantBuffer* cbuffer = constantBuffers[cmd.constantBuffers_[i].index_];
+            //    if (cbuffer != srbCacheCI.constantBuffers_[i]) {
+            //        dirty = true;
+            //        srbCacheCI.constantBuffers_[i] = cbuffer;
+            //    }
+            //}
+            ShaderResourceBindingCacheCreateInfo ci;
+            ci.pipeline_ = cmd.pipelineState_;
+            for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i) {
+                const auto& unitAndResource = shaderResources_[i];
+                if (unitAndResource.texture_ != nullptr)
+                    ci.textures_[unitAndResource.unit_] = unitAndResource.texture_;
             }
 
-            // Update used ranges for each group
-            for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-            {
-                // Check for constant buffer bindings
-                if (cmd.constantBuffers_[i].size_ == 0 && srbCacheCI.constantBuffers_[i]) {
-                    dirty = true;
-                    srbCacheCI.constantBuffers_[i] = nullptr;
-                    continue;
-                }
-
-                ConstantBuffer* cbuffer = constantBuffers[cmd.constantBuffers_[i].index_];
-                if (cbuffer != srbCacheCI.constantBuffers_[i]) {
-                    dirty = true;
-                    srbCacheCI.constantBuffers_[i] = cbuffer;
-                }
+            for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i) {
+                WeakPtr<ConstantBuffer> cbuffer = cbufferManager_->GetCBuffer((ShaderParameterGroup)i);
+                if (cbuffer != nullptr)
+                    ci.constantBuffers_[i] = cbuffer;
+                cbufferManager_->Dispatch((ShaderParameterGroup)i, cmd.cbufferTicketIds_[i]);
             }
 
-            if (dirty)
-                srb = srbCache_->GetOrCreateSRB(srbCacheCI);
+            ShaderResourceBinding* srb = srbCache_->GetOrCreateSRB(ci);
             graphics_->CommitSRB(srb);
         }
 #else
@@ -278,6 +298,8 @@ void DrawCommandQueue::Execute()
             }
         }
     }
+
+    cbufferManager_->Finalize();
 }
 
 }

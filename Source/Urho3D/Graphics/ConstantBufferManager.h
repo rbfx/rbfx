@@ -10,7 +10,7 @@ namespace Urho3D
         ShaderParameterGroup group_{MAX_SHADER_PARAMETER_GROUPS};
     };
     struct ConstantBufferManagerData {
-        ea::vector<ConstantBufferManagerTicket> tickets_{};
+        ea::vector<ea::shared_ptr<ConstantBufferManagerTicket>> tickets_{};
         SharedPtr<ConstantBuffer> cbuffer_{};
         unsigned nextTicket_{ 0 };
         unsigned cbufferSize_{0};
@@ -50,6 +50,6 @@ namespace Urho3D
         void Dispatch(ShaderParameterGroup grp, unsigned ticketId);
         void Finalize();
     private:
-        ea::array<ConstantBufferManagerData*, MAX_SHADER_PARAMETER_GROUPS> data_;
+        ea::array<ea::shared_ptr<ConstantBufferManagerData>, MAX_SHADER_PARAMETER_GROUPS> data_;
     };
 }

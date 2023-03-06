@@ -95,6 +95,9 @@
 #ifdef URHO3D_ACTIONS
 #include "../Actions/ActionManager.h"
 #endif
+#ifdef URHO3D_DILIGENT
+#include "../Graphics/ConstantBufferManager.h"
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -278,7 +281,9 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 #ifdef URHO3D_PARTICLE_GRAPH
     context_->RegisterSubsystem(new ParticleGraphSystem(context_));
 #endif
-
+#ifdef URHO3D_DILIGENT
+    context_->RegisterSubsystem(new ConstantBufferManager(context_));
+#endif
 #ifdef URHO3D_URHO2D
     // 2D graphics library is dependent on 3D graphics library
     RegisterUrho2DLibrary(context_);
