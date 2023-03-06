@@ -210,6 +210,7 @@ RefCntAutoPtr<IPipelineState> CreateGraphicsPSO(GPUTestingEnvironment* pEnv, con
     auto& PSODesc          = PSOCreateInfo.PSODesc;
     auto& GraphicsPipeline = PSOCreateInfo.GraphicsPipeline;
 
+    PSODesc.Name                                  = "PSO Compatibility test";
     PSODesc.PipelineType                          = PIPELINE_TYPE_GRAPHICS;
     GraphicsPipeline.NumRenderTargets             = 1;
     GraphicsPipeline.RTVFormats[0]                = TEX_FORMAT_RGBA8_UNORM;

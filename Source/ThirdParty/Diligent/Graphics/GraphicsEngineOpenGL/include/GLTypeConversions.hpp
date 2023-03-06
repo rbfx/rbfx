@@ -33,16 +33,30 @@ namespace Diligent
 inline GLenum PrimitiveTopologyToGLTopology(PRIMITIVE_TOPOLOGY PrimTopology)
 {
     // clang-format off
-    static constexpr GLenum PrimTopologyToGLTopologyMap[] =
-    {
-        0,                 // PRIMITIVE_TOPOLOGY_UNDEFINED = 0
-        GL_TRIANGLES,      // PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
-        GL_TRIANGLE_STRIP, // PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-        GL_POINTS,         // PRIMITIVE_TOPOLOGY_POINT_LIST
-        GL_LINES,          // PRIMITIVE_TOPOLOGY_LINE_LIST
-        GL_LINE_STRIP      // PRIMITIVE_TOPOLOGY_LINE_STRIP
-    };
+    static_assert(PRIMITIVE_TOPOLOGY_NUM_TOPOLOGIES == 42, "Did you add a new primitive topology? Please handle it here.");
+    static_assert(PRIMITIVE_TOPOLOGY_TRIANGLE_LIST      == 1, "Unexpected value of PRIMITIVE_TOPOLOGY_TRIANGLE_LIST");
+    static_assert(PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP     == 2, "Unexpected value of PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP");
+    static_assert(PRIMITIVE_TOPOLOGY_POINT_LIST         == 3, "Unexpected value of PRIMITIVE_TOPOLOGY_POINT_LIST");
+    static_assert(PRIMITIVE_TOPOLOGY_LINE_LIST          == 4, "Unexpected value of PRIMITIVE_TOPOLOGY_LINE_LIST");
+    static_assert(PRIMITIVE_TOPOLOGY_LINE_STRIP         == 5, "Unexpected value of PRIMITIVE_TOPOLOGY_LINE_STRIP");
+    static_assert(PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ  == 6, "Unexpected value of PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ");
+    static_assert(PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ == 7, "Unexpected value of PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ");
+    static_assert(PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ      == 8, "Unexpected value of PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ");
+    static_assert(PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ     == 9, "Unexpected value of PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ");
     // clang-format on
+    static constexpr GLenum PrimTopologyToGLTopologyMap[] = //
+        {
+            0,                           // PRIMITIVE_TOPOLOGY_UNDEFINED = 0
+            GL_TRIANGLES,                // PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
+            GL_TRIANGLE_STRIP,           // PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+            GL_POINTS,                   // PRIMITIVE_TOPOLOGY_POINT_LIST
+            GL_LINES,                    // PRIMITIVE_TOPOLOGY_LINE_LIST
+            GL_LINE_STRIP,               // PRIMITIVE_TOPOLOGY_LINE_STRIP
+            GL_TRIANGLES_ADJACENCY,      // PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ
+            GL_TRIANGLE_STRIP_ADJACENCY, // PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ
+            GL_LINES_ADJACENCY,          // PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ
+            GL_LINE_STRIP_ADJACENCY      // PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ
+        };
 
     VERIFY_EXPR(PrimTopology < _countof(PrimTopologyToGLTopologyMap));
     return PrimTopologyToGLTopologyMap[PrimTopology];
@@ -299,7 +313,7 @@ inline GLenum AccessFlags2GLAccess(UAV_ACCESS_FLAG UAVAccessFlags)
     };
     // clang-format on
 
-    //VERIFY_EXPR(UAVAccessFlags < _countof(AccessFlags2GLAccessMap));
+    VERIFY_EXPR(UAVAccessFlags < _countof(AccessFlags2GLAccessMap));
     return AccessFlags2GLAccessMap[UAVAccessFlags];
 }
 

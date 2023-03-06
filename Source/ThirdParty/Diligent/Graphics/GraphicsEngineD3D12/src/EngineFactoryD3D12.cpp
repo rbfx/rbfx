@@ -67,11 +67,7 @@ public:
     using TBase = EngineFactoryD3DBase<IEngineFactoryD3D12, RENDER_DEVICE_TYPE_D3D12>;
 
     EngineFactoryD3D12Impl() :
-        TBase //
-        {
-            IID_EngineFactoryD3D12,
-            NEW_RC_OBJ(GetRawAllocator(), "DearchiverD3D12Impl instance", DearchiverD3D12Impl)() //
-        }
+        TBase{IID_EngineFactoryD3D12}
     {}
 
     bool DILIGENT_CALL_TYPE LoadD3D12(const char* DllName) override final;
@@ -113,6 +109,12 @@ public:
     virtual GraphicsAdapterInfo GetGraphicsAdapterInfo(void*          pd3dDevice,
                                                        IDXGIAdapter1* pDXIAdapter) const override final;
 
+
+    virtual void DILIGENT_CALL_TYPE CreateDearchiver(const DearchiverCreateInfo& CreateInfo,
+                                                     IDearchiver**               ppDearchiver) const override final
+    {
+        TBase::CreateDearchiver<DearchiverD3D12Impl>(CreateInfo, ppDearchiver);
+    }
 
 private:
 #if USE_D3D12_LOADER
@@ -252,7 +254,7 @@ void EngineFactoryD3D12Impl::CreateDeviceAndContextsD3D12(const EngineD3D12Creat
         return;
 
     *ppDevice = nullptr;
-    memset(ppContexts, 0, sizeof(*ppContexts) * (std::max(1u, EngineCI.NumImmediateContexts) + EngineCI.NumDeferredContexts));
+    memset(ppContexts, 0, sizeof(*ppContexts) * (size_t{std::max(1u, EngineCI.NumImmediateContexts)} + size_t{EngineCI.NumDeferredContexts}));
 
     std::vector<RefCntAutoPtr<CommandQueueD3D12Impl>> CmdQueueD3D12Refs;
     CComPtr<ID3D12Device>                             d3d12Device;
@@ -512,7 +514,7 @@ void EngineFactoryD3D12Impl::AttachToD3D12Device(void*                        pd
     VERIFY_EXPR(NumImmediateContexts == CommandQueueCount);
 
     *ppDevice = nullptr;
-    memset(ppContexts, 0, sizeof(*ppContexts) * (CommandQueueCount + EngineCI.NumDeferredContexts));
+    memset(ppContexts, 0, sizeof(*ppContexts) * (size_t{CommandQueueCount} + size_t{EngineCI.NumDeferredContexts}));
 
     if (EngineCI.NumImmediateContexts > 0)
     {
@@ -705,7 +707,7 @@ GraphicsAdapterInfo EngineFactoryD3D12Impl::GetGraphicsAdapterInfo(void*        
         D3D12_FEATURE_DATA_ARCHITECTURE DataArch = {};
         if (SUCCEEDED(d3d12Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &DataArch, sizeof(DataArch))))
         {
-            if (AdapterInfo.Type != ADAPTER_TYPE_SOFTWARE && DataArch.UMA)
+            if (AdapterInfo.Type != ADAPTER_TYPE_SOFTWARE && (DataArch.UMA || DataArch.CacheCoherentUMA))
                 AdapterInfo.Type = ADAPTER_TYPE_INTEGRATED;
         }
     }

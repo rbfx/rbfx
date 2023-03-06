@@ -107,7 +107,7 @@ void ShaderResourceCacheVk::InitializeResources(Uint32 Set, Uint32 Offset, Uint3
     {
         new (&DescrSet.GetResource(Offset + res)) Resource{Type, HasImmutableSampler};
 #ifdef DILIGENT_DEBUG
-        m_DbgInitializedResources[Set][Offset + res] = true;
+        m_DbgInitializedResources[Set][size_t{Offset} + res] = true;
 #endif
     }
 }
@@ -434,7 +434,10 @@ void ShaderResourceCacheVk::SetDynamicBufferOffset(Uint32 DescrSetIndex,
 }
 
 
-static RESOURCE_STATE DescriptorTypeToResourceState(DescriptorType Type)
+namespace
+{
+
+RESOURCE_STATE DescriptorTypeToResourceState(DescriptorType Type)
 {
     static_assert(static_cast<Uint32>(DescriptorType::Count) == 16, "Please update the switch below to handle the new descriptor type");
     switch (Type)
@@ -455,13 +458,195 @@ static RESOURCE_STATE DescriptorTypeToResourceState(DescriptorType Type)
         case DescriptorType::StorageBufferDynamic_ReadOnly: return RESOURCE_STATE_SHADER_RESOURCE;
         case DescriptorType::InputAttachment:               return RESOURCE_STATE_SHADER_RESOURCE;
         case DescriptorType::InputAttachment_General:       return RESOURCE_STATE_SHADER_RESOURCE;
-        case DescriptorType::AccelerationStructure:         return RESOURCE_STATE_SHADER_RESOURCE;
+        case DescriptorType::AccelerationStructure:         return RESOURCE_STATE_RAY_TRACING;
         // clang-format on
         default:
             UNEXPECTED("unknown descriptor type");
             return RESOURCE_STATE_UNKNOWN;
     }
 }
+
+template <bool VerifyOnly>
+inline void TransitionUniformBuffer(DeviceContextVkImpl* pCtxVkImpl,
+                                    BufferVkImpl*        pBufferVk,
+                                    DescriptorType       DescrType)
+{
+    if (pBufferVk == nullptr || !pBufferVk->IsInKnownState())
+        return;
+
+    constexpr RESOURCE_STATE RequiredState = RESOURCE_STATE_CONSTANT_BUFFER;
+    VERIFY_EXPR(DescriptorTypeToResourceState(DescrType) == RequiredState);
+    VERIFY_EXPR((ResourceStateFlagsToVkAccessFlags(RequiredState) & VK_ACCESS_UNIFORM_READ_BIT) == VK_ACCESS_UNIFORM_READ_BIT);
+    const bool IsInRequiredState = pBufferVk->CheckState(RequiredState);
+    if (VerifyOnly)
+    {
+        if (!IsInRequiredState)
+        {
+            LOG_ERROR_MESSAGE("State of buffer '", pBufferVk->GetDesc().Name, "' is incorrect. Required state: ",
+                              GetResourceStateString(RequiredState), ". Actual state: ",
+                              GetResourceStateString(pBufferVk->GetState()),
+                              ". Call IDeviceContext::TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION "
+                              "when calling IDeviceContext::CommitShaderResources() or explicitly transition the buffer state "
+                              "with IDeviceContext::TransitionResourceStates().");
+        }
+    }
+    else
+    {
+        if (!IsInRequiredState)
+        {
+            pCtxVkImpl->TransitionBufferState(*pBufferVk, RESOURCE_STATE_UNKNOWN, RequiredState, true);
+        }
+        VERIFY_EXPR(pBufferVk->CheckAccessFlags(VK_ACCESS_UNIFORM_READ_BIT));
+    }
+}
+
+template <bool VerifyOnly>
+inline void TransitionBufferView(DeviceContextVkImpl* pCtxVkImpl,
+                                 BufferViewVkImpl*    pBuffViewVk,
+                                 DescriptorType       DescrType)
+{
+    if (pBuffViewVk == nullptr)
+        return;
+
+    auto* pBufferVk = pBuffViewVk->GetBuffer<BufferVkImpl>();
+    if (!pBufferVk->IsInKnownState())
+        return;
+
+    const RESOURCE_STATE RequiredState = DescriptorTypeToResourceState(DescrType);
+#ifdef DILIGENT_DEBUG
+    const VkAccessFlags RequiredAccessFlags = (RequiredState == RESOURCE_STATE_SHADER_RESOURCE) ?
+        VK_ACCESS_SHADER_READ_BIT :
+        (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+    VERIFY_EXPR((ResourceStateFlagsToVkAccessFlags(RequiredState) & RequiredAccessFlags) == RequiredAccessFlags);
+#endif
+    const bool IsInRequiredState = pBufferVk->CheckState(RequiredState);
+
+    if (VerifyOnly)
+    {
+        if (!IsInRequiredState)
+        {
+            LOG_ERROR_MESSAGE("State of buffer '", pBufferVk->GetDesc().Name, "' is incorrect. Required state: ",
+                              GetResourceStateString(RequiredState), ". Actual state: ",
+                              GetResourceStateString(pBufferVk->GetState()),
+                              ". Call IDeviceContext::TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION "
+                              "when calling IDeviceContext::CommitShaderResources() or explicitly transition the buffer state "
+                              "with IDeviceContext::TransitionResourceStates().");
+        }
+    }
+    else
+    {
+        // When both old and new states are RESOURCE_STATE_UNORDERED_ACCESS, we need to execute UAV barrier
+        // to make sure that all UAV writes are complete and visible.
+        if (!IsInRequiredState || RequiredState == RESOURCE_STATE_UNORDERED_ACCESS)
+        {
+            pCtxVkImpl->TransitionBufferState(*pBufferVk, RESOURCE_STATE_UNKNOWN, RequiredState, true);
+        }
+        VERIFY_EXPR(pBufferVk->CheckAccessFlags(RequiredAccessFlags));
+    }
+}
+
+template <bool VerifyOnly>
+inline void TransitionTextureView(DeviceContextVkImpl* pCtxVkImpl,
+                                  TextureViewVkImpl*   pTextureViewVk,
+                                  DescriptorType       DescrType)
+{
+    if (pTextureViewVk == nullptr)
+        return;
+
+    auto* pTextureVk = pTextureViewVk->GetTexture<TextureVkImpl>();
+    if (!pTextureVk->IsInKnownState())
+        return;
+
+    // The image subresources for a storage image must be in the VK_IMAGE_LAYOUT_GENERAL layout in
+    // order to access its data in a shader (13.1.1)
+    // The image subresources for a sampled image or a combined image sampler must be in the
+    // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    // or VK_IMAGE_LAYOUT_GENERAL layout in order to access its data in a shader (13.1.3, 13.1.4).
+    RESOURCE_STATE RequiredState;
+    if (DescrType == DescriptorType::StorageImage)
+    {
+        RequiredState = RESOURCE_STATE_UNORDERED_ACCESS;
+        VERIFY_EXPR(ResourceStateToVkImageLayout(RequiredState) == VK_IMAGE_LAYOUT_GENERAL);
+    }
+    else
+    {
+        if (pTextureVk->GetDesc().BindFlags & BIND_DEPTH_STENCIL)
+        {
+            // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL must only be used as a read - only depth / stencil attachment
+            // in a VkFramebuffer and/or as a read - only image in a shader (which can be read as a sampled image, combined
+            // image / sampler and /or input attachment). This layout is valid only for image subresources of images created
+            // with the VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT usage bit enabled. (11.4)
+            RequiredState = RESOURCE_STATE_DEPTH_READ;
+            VERIFY_EXPR(ResourceStateToVkImageLayout(RequiredState) == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+        }
+        else
+        {
+            RequiredState = RESOURCE_STATE_SHADER_RESOURCE;
+            VERIFY_EXPR(ResourceStateToVkImageLayout(RequiredState) == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+    }
+    const bool IsInRequiredState = pTextureVk->CheckState(RequiredState);
+
+    if (VerifyOnly)
+    {
+        if (!IsInRequiredState)
+        {
+            LOG_ERROR_MESSAGE("State of texture '", pTextureVk->GetDesc().Name, "' is incorrect. Required state: ",
+                              GetResourceStateString(RequiredState), ". Actual state: ",
+                              GetResourceStateString(pTextureVk->GetState()),
+                              ". Call IDeviceContext::TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION "
+                              "when calling IDeviceContext::CommitShaderResources() or explicitly transition the texture state "
+                              "with IDeviceContext::TransitionResourceStates().");
+        }
+    }
+    else
+    {
+        // When both old and new states are RESOURCE_STATE_UNORDERED_ACCESS, we need to execute UAV barrier
+        // to make sure that all UAV writes are complete and visible.
+        if (!IsInRequiredState || RequiredState == RESOURCE_STATE_UNORDERED_ACCESS)
+        {
+            pCtxVkImpl->TransitionTextureState(*pTextureVk, RESOURCE_STATE_UNKNOWN, RequiredState, STATE_TRANSITION_FLAG_UPDATE_STATE);
+        }
+    }
+}
+
+template <bool VerifyOnly>
+inline void TransitionAccelStruct(DeviceContextVkImpl* pCtxVkImpl,
+                                  TopLevelASVkImpl*    pTLASVk,
+                                  DescriptorType       DescrType)
+{
+    if (pTLASVk == nullptr || !pTLASVk->IsInKnownState())
+        return;
+
+    constexpr auto RequiredState = RESOURCE_STATE_RAY_TRACING;
+    VERIFY_EXPR(DescriptorTypeToResourceState(DescrType) == RequiredState);
+    const bool IsInRequiredState = pTLASVk->CheckState(RequiredState);
+    if (VerifyOnly)
+    {
+        if (!IsInRequiredState)
+        {
+            LOG_ERROR_MESSAGE("State of TLAS '", pTLASVk->GetDesc().Name, "' is incorrect. Required state: ",
+                              GetResourceStateString(RequiredState), ". Actual state: ",
+                              GetResourceStateString(pTLASVk->GetState()),
+                              ". Call IDeviceContext::TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION "
+                              "when calling IDeviceContext::CommitShaderResources() or explicitly transition the TLAS state "
+                              "with IDeviceContext::TransitionResourceStates().");
+        }
+    }
+    else
+    {
+        if (!IsInRequiredState)
+        {
+            pCtxVkImpl->TransitionTLASState(*pTLASVk, RESOURCE_STATE_UNKNOWN, RequiredState, true);
+        }
+    }
+
+#ifdef DILIGENT_DEVELOPMENT
+    pTLASVk->ValidateContent();
+#endif
+}
+
+} // namespace
 
 template <bool VerifyOnly>
 void ShaderResourceCacheVk::TransitionResources(DeviceContextVkImpl* pCtxVkImpl)
@@ -476,36 +661,8 @@ void ShaderResourceCacheVk::TransitionResources(DeviceContextVkImpl* pCtxVkImpl)
         {
             case DescriptorType::UniformBuffer:
             case DescriptorType::UniformBufferDynamic:
-            {
-                auto* pBufferVk = Res.pObject.RawPtr<BufferVkImpl>();
-                if (pBufferVk != nullptr && pBufferVk->IsInKnownState())
-                {
-                    constexpr RESOURCE_STATE RequiredState = RESOURCE_STATE_CONSTANT_BUFFER;
-                    VERIFY_EXPR((ResourceStateFlagsToVkAccessFlags(RequiredState) & VK_ACCESS_UNIFORM_READ_BIT) == VK_ACCESS_UNIFORM_READ_BIT);
-                    const bool IsInRequiredState = pBufferVk->CheckState(RequiredState);
-                    if (VerifyOnly)
-                    {
-                        if (!IsInRequiredState)
-                        {
-                            LOG_ERROR_MESSAGE("State of buffer '", pBufferVk->GetDesc().Name, "' is incorrect. Required state: ",
-                                              GetResourceStateString(RequiredState), ". Actual state: ",
-                                              GetResourceStateString(pBufferVk->GetState()),
-                                              ". Call IDeviceContext::TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION "
-                                              "when calling IDeviceContext::CommitShaderResources() or explicitly transition the buffer state "
-                                              "with IDeviceContext::TransitionResourceStates().");
-                        }
-                    }
-                    else
-                    {
-                        if (!IsInRequiredState)
-                        {
-                            pCtxVkImpl->TransitionBufferState(*pBufferVk, RESOURCE_STATE_UNKNOWN, RequiredState, true);
-                        }
-                        VERIFY_EXPR(pBufferVk->CheckAccessFlags(VK_ACCESS_UNIFORM_READ_BIT));
-                    }
-                }
-            }
-            break;
+                TransitionUniformBuffer<VerifyOnly>(pCtxVkImpl, Res.pObject.RawPtr<BufferVkImpl>(), Res.Type);
+                break;
 
             case DescriptorType::StorageBuffer:
             case DescriptorType::StorageBufferDynamic:
@@ -514,157 +671,29 @@ void ShaderResourceCacheVk::TransitionResources(DeviceContextVkImpl* pCtxVkImpl)
             case DescriptorType::UniformTexelBuffer:
             case DescriptorType::StorageTexelBuffer:
             case DescriptorType::StorageTexelBuffer_ReadOnly:
-            {
-                auto* pBuffViewVk = Res.pObject.RawPtr<BufferViewVkImpl>();
-                auto* pBufferVk   = pBuffViewVk != nullptr ? pBuffViewVk->GetBuffer<BufferVkImpl>() : nullptr;
-                if (pBufferVk != nullptr && pBufferVk->IsInKnownState())
-                {
-                    const RESOURCE_STATE RequiredState = DescriptorTypeToResourceState(Res.Type);
-#ifdef DILIGENT_DEBUG
-                    const VkAccessFlags RequiredAccessFlags = (RequiredState == RESOURCE_STATE_SHADER_RESOURCE) ?
-                        VK_ACCESS_SHADER_READ_BIT :
-                        (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
-                    VERIFY_EXPR((ResourceStateFlagsToVkAccessFlags(RequiredState) & RequiredAccessFlags) == RequiredAccessFlags);
-#endif
-                    const bool IsInRequiredState = pBufferVk->CheckState(RequiredState);
-
-                    if (VerifyOnly)
-                    {
-                        if (!IsInRequiredState)
-                        {
-                            LOG_ERROR_MESSAGE("State of buffer '", pBufferVk->GetDesc().Name, "' is incorrect. Required state: ",
-                                              GetResourceStateString(RequiredState), ". Actual state: ",
-                                              GetResourceStateString(pBufferVk->GetState()),
-                                              ". Call IDeviceContext::TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION "
-                                              "when calling IDeviceContext::CommitShaderResources() or explicitly transition the buffer state "
-                                              "with IDeviceContext::TransitionResourceStates().");
-                        }
-                    }
-                    else
-                    {
-                        // When both old and new states are RESOURCE_STATE_UNORDERED_ACCESS, we need to execute UAV barrier
-                        // to make sure that all UAV writes are complete and visible.
-                        if (!IsInRequiredState || RequiredState == RESOURCE_STATE_UNORDERED_ACCESS)
-                        {
-                            pCtxVkImpl->TransitionBufferState(*pBufferVk, RESOURCE_STATE_UNKNOWN, RequiredState, true);
-                        }
-                        VERIFY_EXPR(pBufferVk->CheckAccessFlags(RequiredAccessFlags));
-                    }
-                }
-            }
-            break;
+                TransitionBufferView<VerifyOnly>(pCtxVkImpl, Res.pObject.RawPtr<BufferViewVkImpl>(), Res.Type);
+                break;
 
             case DescriptorType::CombinedImageSampler:
             case DescriptorType::SeparateImage:
             case DescriptorType::StorageImage:
-            {
-                auto* pTextureViewVk = Res.pObject.RawPtr<TextureViewVkImpl>();
-                auto* pTextureVk     = pTextureViewVk != nullptr ? pTextureViewVk->GetTexture<TextureVkImpl>() : nullptr;
-                if (pTextureVk != nullptr && pTextureVk->IsInKnownState())
-                {
-                    // The image subresources for a storage image must be in the VK_IMAGE_LAYOUT_GENERAL layout in
-                    // order to access its data in a shader (13.1.1)
-                    // The image subresources for a sampled image or a combined image sampler must be in the
-                    // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    // or VK_IMAGE_LAYOUT_GENERAL layout in order to access its data in a shader (13.1.3, 13.1.4).
-                    RESOURCE_STATE RequiredState;
-                    if (Res.Type == DescriptorType::StorageImage)
-                    {
-                        RequiredState = RESOURCE_STATE_UNORDERED_ACCESS;
-                        VERIFY_EXPR(ResourceStateToVkImageLayout(RequiredState) == VK_IMAGE_LAYOUT_GENERAL);
-                    }
-                    else
-                    {
-                        if (pTextureVk->GetDesc().BindFlags & BIND_DEPTH_STENCIL)
-                        {
-                            // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL must only be used as a read - only depth / stencil attachment
-                            // in a VkFramebuffer and/or as a read - only image in a shader (which can be read as a sampled image, combined
-                            // image / sampler and /or input attachment). This layout is valid only for image subresources of images created
-                            // with the VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT usage bit enabled. (11.4)
-                            RequiredState = RESOURCE_STATE_DEPTH_READ;
-                            VERIFY_EXPR(ResourceStateToVkImageLayout(RequiredState) == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
-                        }
-                        else
-                        {
-                            RequiredState = RESOURCE_STATE_SHADER_RESOURCE;
-                            VERIFY_EXPR(ResourceStateToVkImageLayout(RequiredState) == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                        }
-                    }
-                    const bool IsInRequiredState = pTextureVk->CheckState(RequiredState);
-
-                    if (VerifyOnly)
-                    {
-                        if (!IsInRequiredState)
-                        {
-                            LOG_ERROR_MESSAGE("State of texture '", pTextureVk->GetDesc().Name, "' is incorrect. Required state: ",
-                                              GetResourceStateString(RequiredState), ". Actual state: ",
-                                              GetResourceStateString(pTextureVk->GetState()),
-                                              ". Call IDeviceContext::TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION "
-                                              "when calling IDeviceContext::CommitShaderResources() or explicitly transition the texture state "
-                                              "with IDeviceContext::TransitionResourceStates().");
-                        }
-                    }
-                    else
-                    {
-                        // When both old and new states are RESOURCE_STATE_UNORDERED_ACCESS, we need to execute UAV barrier
-                        // to make sure that all UAV writes are complete and visible.
-                        if (!IsInRequiredState || RequiredState == RESOURCE_STATE_UNORDERED_ACCESS)
-                        {
-                            pCtxVkImpl->TransitionTextureState(*pTextureVk, RESOURCE_STATE_UNKNOWN, RequiredState, STATE_TRANSITION_FLAG_UPDATE_STATE);
-                        }
-                    }
-                }
-            }
-            break;
+                TransitionTextureView<VerifyOnly>(pCtxVkImpl, Res.pObject.RawPtr<TextureViewVkImpl>(), Res.Type);
+                break;
 
             case DescriptorType::Sampler:
-            {
                 // Nothing to do with samplers
-            }
-            break;
+                break;
 
             case DescriptorType::InputAttachment:
             case DescriptorType::InputAttachment_General:
-            {
                 // Nothing to do with input attachments - they are transitioned by the render pass.
                 // There is nothing we can validate here - a texture may be in different state at
                 // the beginning of the render pass before being transitioned to INPUT_ATTACHMENT state.
-            }
-            break;
+                break;
 
             case DescriptorType::AccelerationStructure:
-            {
-                auto* pTLASVk = Res.pObject.RawPtr<TopLevelASVkImpl>();
-                if (pTLASVk != nullptr && pTLASVk->IsInKnownState())
-                {
-                    constexpr auto RequiredState     = RESOURCE_STATE_RAY_TRACING;
-                    const bool     IsInRequiredState = pTLASVk->CheckState(RequiredState);
-                    if (VerifyOnly)
-                    {
-                        if (!IsInRequiredState)
-                        {
-                            LOG_ERROR_MESSAGE("State of TLAS '", pTLASVk->GetDesc().Name, "' is incorrect. Required state: ",
-                                              GetResourceStateString(RequiredState), ". Actual state: ",
-                                              GetResourceStateString(pTLASVk->GetState()),
-                                              ". Call IDeviceContext::TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION "
-                                              "when calling IDeviceContext::CommitShaderResources() or explicitly transition the TLAS state "
-                                              "with IDeviceContext::TransitionResourceStates().");
-                        }
-                    }
-                    else
-                    {
-                        if (!IsInRequiredState)
-                        {
-                            pCtxVkImpl->TransitionTLASState(*pTLASVk, RESOURCE_STATE_UNKNOWN, RequiredState, true);
-                        }
-                    }
-
-#ifdef DILIGENT_DEVELOPMENT
-                    pTLASVk->ValidateContent();
-#endif
-                }
-            }
-            break;
+                TransitionAccelStruct<VerifyOnly>(pCtxVkImpl, Res.pObject.RawPtr<TopLevelASVkImpl>(), Res.Type);
+                break;
 
             default: UNEXPECTED("Unexpected resource type");
         }

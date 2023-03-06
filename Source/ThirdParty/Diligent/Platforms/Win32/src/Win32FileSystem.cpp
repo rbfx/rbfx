@@ -78,15 +78,13 @@ public:
         //       As there is no reliable way to check if we will exceed the limit,
         //       always use the long path method.
 
-        const auto WndSlash = WindowsFileSystem::GetSlashSymbol();
-
         if (!WindowsFileSystem::IsPathAbsolute(Path))
         {
             m_Path = GetCurrentDirectory_();
-            m_Path.push_back(WndSlash);
+            m_Path.push_back(WindowsFileSystem::SlashSymbol);
         }
         m_Path += Path;
-        m_Path = WindowsFileSystem::SimplifyPath(m_Path.c_str(), WndSlash);
+        m_Path = WindowsFileSystem::SimplifyPath(m_Path.c_str());
 
         m_LongPathW = WidenString(m_Path);
 
@@ -177,7 +175,7 @@ public:
 
     std::string operator/(const char* Path) const
     {
-        const auto WndSlash = WindowsFileSystem::GetSlashSymbol();
+        const auto WndSlash = WindowsFileSystem::SlashSymbol;
 
         auto Res = m_Path;
         if (Res.back() != WndSlash)
@@ -215,7 +213,7 @@ private:
 
 
 WindowsFile::WindowsFile(const FileOpenAttribs& OpenAttribs) :
-    StandardFile{OpenAttribs, WindowsFileSystem::GetSlashSymbol()}
+    StandardFile{OpenAttribs}
 {
     VERIFY_EXPR(m_pFile == nullptr);
     const auto ModeStr = GetOpenModeStr();
@@ -286,8 +284,8 @@ static bool CreateDirectoryImpl(const Char* strPath)
     // Test all parent directories
     std::string            DirectoryPath = strPath;
     std::string::size_type SlashPos      = std::wstring::npos;
-    const auto             SlashSym      = WindowsFileSystem::GetSlashSymbol();
-    WindowsFileSystem::CorrectSlashes(DirectoryPath, SlashSym);
+    const auto             SlashSym      = WindowsFileSystem::SlashSymbol;
+    WindowsFileSystem::CorrectSlashes(DirectoryPath);
 
     do
     {
@@ -302,11 +300,30 @@ static bool CreateDirectoryImpl(const Char* strPath)
         {
             // If there is no directory, create it
             if (!ParentDir.CreateDirectory_())
-                return false;
+            {
+                // If multiple threads are trying to create the same directory, it is possible
+                // that the directory has been created by another thread, which is OK.
+                if (GetLastError() != ERROR_ALREADY_EXISTS)
+                    return false;
+
+                if ((ParentDir.GetFileAttributes_() & FILE_ATTRIBUTE_DIRECTORY) == 0)
+                    return false;
+            }
         }
     } while (SlashPos != std::string::npos);
 
     return true;
+}
+
+template <typename CharType>
+inline bool IsDot(const CharType Name[])
+{
+    return Name[0] == CharType{'.'} && Name[1] == 0;
+}
+template <typename CharType>
+inline bool IsDblDot(const CharType Name[])
+{
+    return Name[0] == CharType{'.'} && Name[1] == CharType{'.'} && Name[2] == 0;
 }
 
 void WindowsFileSystem::ClearDirectory(const Char* strPath, bool Recursive)
@@ -332,8 +349,8 @@ void WindowsFileSystem::ClearDirectory(const Char* strPath, bool Recursive)
         {
             if (Recursive)
             {
-                // Skip '.' and anything that begins with '..'
-                if (!((ffd.cFileName[0] == L'.' && ffd.cFileName[1] == 0) || (ffd.cFileName[0] == L'.' && ffd.cFileName[1] == L'.')))
+                // Skip '.' and '..'
+                if (!IsDot(ffd.cFileName) && !IsDblDot(ffd.cFileName))
                 {
                     auto SubDirName = Directory / NarrowString(ffd.cFileName);
                     ClearDirectory(SubDirName.c_str(), Recursive);
@@ -421,6 +438,10 @@ std::vector<std::unique_ptr<FindFileData>> WindowsFileSystem::Search(const Char*
     // List all the files in the directory
     do
     {
+        // Skip '.' and '..' that add no value
+        if (IsDot(ffd.cFileName) || IsDblDot(ffd.cFileName))
+            continue;
+
         SearchRes.emplace_back(std::make_unique<WndFindFileData>(ffd));
     } while (FindNextFileA(hFind, &ffd) != 0);
 
@@ -502,52 +523,6 @@ bool WindowsFileSystem::IsDirectory(const Char* strPath)
 std::string GetCurrentDirectoryImpl()
 {
     return WindowsPathHelper::GetCurrentDirectory_();
-}
-
-bool WindowsFileSystem::GetRelativePath(const Char*  _strPathFrom,
-                                        bool         IsFromDirectory,
-                                        const Char*  _strPathTo,
-                                        bool         IsToDirectory,
-                                        std::string& RelativePath)
-{
-    VERIFY(_strPathTo != nullptr, "Destination path must not be null");
-
-    const auto SlashSym = WindowsFileSystem::GetSlashSymbol();
-
-    std::string PathFrom;
-    if (_strPathFrom != nullptr)
-    {
-        PathFrom = _strPathFrom;
-        WindowsFileSystem::CorrectSlashes(PathFrom, SlashSym);
-    }
-    else
-    {
-        PathFrom        = GetCurrentDirectoryImpl();
-        IsFromDirectory = true;
-    }
-
-    std::string PathTo{_strPathTo};
-    WindowsFileSystem::CorrectSlashes(PathTo, SlashSym);
-
-    // https://docs.microsoft.com/en-us/windows/win32/api/shlwapi/nf-shlwapi-pathrelativepathtoa
-    char strRelativePath[MAX_PATH];
-
-    auto Res = PathRelativePathToA(strRelativePath,
-                                   PathFrom.c_str(),
-                                   IsFromDirectory ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL,
-                                   PathTo.c_str(),
-                                   IsToDirectory ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL);
-
-    if (Res != FALSE)
-    {
-        RelativePath = strRelativePath;
-    }
-    else
-    {
-        RelativePath = std::move(PathTo);
-    }
-
-    return Res != FALSE;
 }
 
 } // namespace Diligent

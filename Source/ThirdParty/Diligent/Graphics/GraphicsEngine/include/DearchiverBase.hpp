@@ -29,12 +29,25 @@
 /// \file
 /// Implementation of the Diligent::DearchiverBase class
 
+#include <memory>
+#include <vector>
+#include <unordered_map>
+#include <mutex>
+
 #include "Dearchiver.h"
+#include "RenderDevice.h"
+#include "Shader.h"
+
 #include "ObjectBase.hpp"
 #include "EngineMemory.h"
+#include "RefCntAutoPtr.hpp"
+#include "DeviceObjectArchive.hpp"
+#include "DynamicLinearAllocator.hpp"
 
 namespace Diligent
 {
+
+struct DearchiverCreateInfo;
 
 /// Class implementing base functionality of the dearchiver
 class DearchiverBase : public ObjectBase<IDearchiver>
@@ -42,100 +55,235 @@ class DearchiverBase : public ObjectBase<IDearchiver>
 public:
     using TObjectBase = ObjectBase<IDearchiver>;
 
-    explicit DearchiverBase(IReferenceCounters* pRefCounters) noexcept :
+    DearchiverBase(IReferenceCounters* pRefCounters, const DearchiverCreateInfo& CI) noexcept :
         TObjectBase{pRefCounters}
     {
     }
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_Dearchiver, TObjectBase)
 
+    /// Implementation of IDearchiver::LoadArchive().
+    virtual bool DILIGENT_CALL_TYPE LoadArchive(const IDataBlob* pArchiveData, bool MakeCopy) override final;
+
+    /// Implementation of IDearchiver::UnpackPipelineState().
+    virtual void DILIGENT_CALL_TYPE UnpackPipelineState(const PipelineStateUnpackInfo& DeArchiveInfo,
+                                                        IPipelineState**               ppPSO) override final;
+
+    /// Implementation of IDearchiver::UnpackResourceSignature().
+    virtual void DILIGENT_CALL_TYPE UnpackResourceSignature(const ResourceSignatureUnpackInfo& DeArchiveInfo,
+                                                            IPipelineResourceSignature**       ppSignature) override final;
+
+    /// Implementation of IDearchiver::UnpackRenderPass().
+    virtual void DILIGENT_CALL_TYPE UnpackRenderPass(const RenderPassUnpackInfo& DeArchiveInfo,
+                                                     IRenderPass**               ppRP) override final;
+
+    /// Implementation of IDearchiver::Reset().
+    virtual void DILIGENT_CALL_TYPE Reset() override final;
+
 protected:
-    template <typename DeviceObjectArchiveImplType>
-    void CreateDeviceObjectArchiveImpl(IArchive*              pSource,
-                                       IDeviceObjectArchive** ppArchive) const
+    template <typename RenderDeviceImplType, typename PRSSerializerType>
+    RefCntAutoPtr<IPipelineResourceSignature> UnpackResourceSignatureImpl(
+        const ResourceSignatureUnpackInfo& DeArchiveInfo,
+        bool                               IsImplicit);
+
+    virtual RefCntAutoPtr<IPipelineResourceSignature> UnpackResourceSignature(const ResourceSignatureUnpackInfo& DeArchiveInfo,
+                                                                              bool                               IsImplicit) = 0;
+
+    virtual RefCntAutoPtr<IShader> UnpackShader(const ShaderCreateInfo& ShaderCI,
+                                                IRenderDevice*          pDevice);
+
+protected:
+    using ResourceType         = DeviceObjectArchive::ResourceType;
+    using DeviceType           = DeviceObjectArchive::DeviceType;
+    using SerializedPSOAuxData = DeviceObjectArchive::SerializedPSOAuxData;
+    using TPRSNames            = DeviceObjectArchive::TPRSNames;
+    using ResourceKey          = DeviceObjectArchive::NamedResourceKey;
+
+    template <typename ResType>
+    class NamedResourceCache
     {
-        DEV_CHECK_ERR(ppArchive != nullptr, "ppArchive must not be null");
-        if (!ppArchive)
-            return;
+    public:
+        NamedResourceCache() noexcept {};
 
-        *ppArchive = nullptr;
-        try
-        {
-            auto& RawMemAllocator = GetRawAllocator();
-            auto* pArchiveImpl    = NEW_RC_OBJ(RawMemAllocator, "Device object archive instance", DeviceObjectArchiveImplType)(pSource);
-            pArchiveImpl->QueryInterface(IID_DeviceObjectArchive, reinterpret_cast<IObject**>(ppArchive));
-        }
-        catch (...)
-        {
-            LOG_ERROR("Failed to create the device object archive");
-        }
-    }
+        // clang-format off
+        NamedResourceCache           (const NamedResourceCache&) = delete;
+        NamedResourceCache& operator=(const NamedResourceCache&) = delete;
+        NamedResourceCache           (NamedResourceCache&&)      = default;
+        NamedResourceCache& operator=(NamedResourceCache&&)      = default;
+        // clang-format on
 
-    template <typename DeviceObjectArchiveImplType>
-    void UnpackPipelineStateImpl(const PipelineStateUnpackInfo& DeArchiveInfo, IPipelineState** ppPSO) const
+        bool Get(ResourceType Type, const char* Name, ResType** ppResource);
+        void Set(ResourceType Type, const char* Name, ResType* pResource);
+
+        void Clear() { m_Map.clear(); }
+
+    private:
+        std::mutex m_Mtx;
+        // Keep weak resource references in the cache
+        std::unordered_map<ResourceKey, RefCntWeakPtr<ResType>, ResourceKey::Hasher> m_Map;
+    };
+
+    struct ResourceCache
     {
-        if (!VerifyPipelineStateUnpackInfo(DeArchiveInfo, ppPSO))
-            return;
+        NamedResourceCache<IPipelineResourceSignature> Sign;
+        NamedResourceCache<IRenderPass>                RenderPass;
+        NamedResourceCache<IPipelineState>             PSO;
+    } m_Cache;
 
-        *ppPSO = nullptr;
-
-        auto* pArchiveImpl = ClassPtrCast<DeviceObjectArchiveImplType>(DeArchiveInfo.pArchive);
-        switch (DeArchiveInfo.PipelineType)
-        {
-            case PIPELINE_TYPE_GRAPHICS:
-            case PIPELINE_TYPE_MESH:
-                pArchiveImpl->UnpackGraphicsPSO(DeArchiveInfo, ppPSO);
-                break;
-
-            case PIPELINE_TYPE_COMPUTE:
-                pArchiveImpl->UnpackComputePSO(DeArchiveInfo, ppPSO);
-                break;
-
-            case PIPELINE_TYPE_RAY_TRACING:
-                pArchiveImpl->UnpackRayTracingPSO(DeArchiveInfo, ppPSO);
-                break;
-
-            case PIPELINE_TYPE_TILE:
-                pArchiveImpl->UnpackTilePSO(DeArchiveInfo, ppPSO);
-                break;
-
-            case PIPELINE_TYPE_INVALID:
-            default:
-                LOG_ERROR_MESSAGE("Unsupported pipeline type");
-                return;
-        }
-    }
-
-    template <typename DeviceObjectArchiveImplType>
-    void UnpackResourceSignatureImpl(const ResourceSignatureUnpackInfo& DeArchiveInfo,
-                                     IPipelineResourceSignature**       ppSignature) const
+    struct PRSData
     {
-        if (!VerifyResourceSignatureUnpackInfo(DeArchiveInfo, ppSignature))
-            return;
+        DynamicLinearAllocator        Allocator;
+        PipelineResourceSignatureDesc Desc;
 
-        *ppSignature = nullptr;
+        static constexpr ResourceType ArchiveResType = ResourceType::ResourceSignature;
 
-        auto* pArchiveImpl = ClassPtrCast<DeviceObjectArchiveImplType>(DeArchiveInfo.pArchive);
-        auto  pSignature   = pArchiveImpl->UnpackResourceSignature(DeArchiveInfo, false /*IsImplicit*/);
-        *ppSignature       = pSignature.Detach();
-    }
+        explicit PRSData(IMemoryAllocator& Allocator, Uint32 BlockSize = 1 << 10) :
+            Allocator{Allocator, BlockSize}
+        {}
 
-    template <typename DeviceObjectArchiveImplType>
-    void UnpackRenderPassImpl(const RenderPassUnpackInfo& DeArchiveInfo, IRenderPass** ppRP) const
+        bool Deserialize(const char* Name, Serializer<SerializerMode::Read>& Ser);
+    };
+
+    static DeviceType GetArchiveDeviceType(const IRenderDevice* pDevice);
+
+private:
+    template <typename CreateInfoType>
+    struct PSOData;
+
+    struct RPData;
+
+    struct ShaderCacheData
     {
-        if (!VerifyRenderPassUnpackInfo(DeArchiveInfo, ppRP))
-            return;
+        std::mutex Mtx;
 
-        *ppRP = nullptr;
+        std::vector<RefCntAutoPtr<IShader>> Shaders;
 
-        auto* pArchiveImpl = ClassPtrCast<DeviceObjectArchiveImplType>(DeArchiveInfo.pArchive);
-        pArchiveImpl->UnpackRenderPass(DeArchiveInfo, ppRP);
-    }
+        ShaderCacheData() = default;
+        ShaderCacheData(ShaderCacheData&& rhs) noexcept :
+            Shaders{std::move(rhs.Shaders)}
+        {}
+        // clang-format off
+        ShaderCacheData           (const ShaderCacheData&)  = delete;
+        ShaderCacheData& operator=(const ShaderCacheData&)  = delete;
+        ShaderCacheData& operator=(      ShaderCacheData&&) = delete;
+        // clang-format on
+    };
 
+    struct ArchiveData
+    {
+        ArchiveData(std::unique_ptr<DeviceObjectArchive>&& _pObjArchive) :
+            pObjArchive{std::move(_pObjArchive)}
+        {}
+        // clang-format off
+        ArchiveData           (const ArchiveData&)  = delete;
+        ArchiveData           (      ArchiveData&&) = default;
+        ArchiveData& operator=(const ArchiveData&)  = delete;
+        ArchiveData& operator=(      ArchiveData&&) = delete;
+        // clang-format on
 
-    bool VerifyPipelineStateUnpackInfo(const PipelineStateUnpackInfo& DeArchiveInfo, IPipelineState** ppPSO) const;
-    bool VerifyResourceSignatureUnpackInfo(const ResourceSignatureUnpackInfo& DeArchiveInfo, IPipelineResourceSignature** ppSignature) const;
-    bool VerifyRenderPassUnpackInfo(const RenderPassUnpackInfo& DeArchiveInfo, IRenderPass** ppRP) const;
+        std::unique_ptr<const DeviceObjectArchive> pObjArchive;
+
+        std::array<ShaderCacheData, static_cast<size_t>(DeviceType::Count)> CachedShaders;
+    };
+
+    template <typename CreateInfoType>
+    bool UnpackPSOSignatures(PSOData<CreateInfoType>& PSO, IRenderDevice* pDevice);
+
+    template <typename CreateInfoType>
+    bool UnpackPSORenderPass(PSOData<CreateInfoType>& PSO, IRenderDevice* pDevice) { return true; }
+
+    template <typename CreateInfoType>
+    bool UnpackPSOShaders(ArchiveData&             Archive,
+                          PSOData<CreateInfoType>& PSO,
+                          IRenderDevice*           pDevice);
+
+    template <typename CreateInfoType>
+    void UnpackPipelineStateImpl(const PipelineStateUnpackInfo& UnpackInfo, IPipelineState** ppPSO);
+
+private:
+    // Resource type and name -> archive index that contains this resource.
+    // Names must be unique for each resource type.
+    using NamedResourceKey = DeviceObjectArchive::NamedResourceKey;
+    std::unordered_map<NamedResourceKey, size_t, NamedResourceKey::Hasher> m_ResNameToArchiveIdx;
+
+    std::vector<ArchiveData> m_Archives;
 };
+
+
+template <typename RenderDeviceImplType, typename PRSSerializerType>
+RefCntAutoPtr<IPipelineResourceSignature> DearchiverBase::UnpackResourceSignatureImpl(
+    const ResourceSignatureUnpackInfo& DeArchiveInfo,
+    bool                               IsImplicit)
+{
+    RefCntAutoPtr<IPipelineResourceSignature> pSignature;
+    // Do not reuse implicit signatures
+    if (!IsImplicit)
+    {
+        // Since signature names must be unique, we use a single cache for all
+        // loaded archives.
+        if (m_Cache.Sign.Get(PRSData::ArchiveResType, DeArchiveInfo.Name, pSignature.RawDblPtr()))
+            return pSignature;
+    }
+
+    // Find the archive that contains this signature
+    auto archive_idx_it = m_ResNameToArchiveIdx.find(NamedResourceKey{PRSData::ArchiveResType, DeArchiveInfo.Name});
+    if (archive_idx_it == m_ResNameToArchiveIdx.end())
+        return {};
+
+    const auto& pObjArchive = m_Archives[archive_idx_it->second].pObjArchive;
+    if (!pObjArchive)
+    {
+        UNEXPECTED("Null object archives should never be added to the list. This is a bug.");
+        return {};
+    }
+
+    PRSData PRS{GetRawAllocator()};
+    if (!pObjArchive->LoadResourceCommonData(PRSData::ArchiveResType, DeArchiveInfo.Name, PRS))
+        return {};
+
+    PRS.Desc.SRBAllocationGranularity = DeArchiveInfo.SRBAllocationGranularity;
+
+    const auto  DevType = GetArchiveDeviceType(DeArchiveInfo.pDevice);
+    const auto& Data    = pObjArchive->GetDeviceSpecificData(PRSData::ArchiveResType, DeArchiveInfo.Name, DevType);
+    if (!Data)
+        return {};
+
+    Serializer<SerializerMode::Read> Ser{Data};
+
+    bool SpecialDesc = false;
+    if (!Ser(SpecialDesc))
+    {
+        LOG_ERROR_MESSAGE("Failed to deserialize SpecialDesc flag. Archive file may be corrupted or invalid.");
+        return {};
+    }
+
+    if (SpecialDesc)
+    {
+        // The signature uses a special description that differs from the common
+        const auto* Name = PRS.Desc.Name;
+        PRS.Desc         = {};
+        if (!PRS.Deserialize(Name, Ser))
+        {
+            LOG_ERROR_MESSAGE("Failed to deserialize PRS description. Archive file may be corrupted or invalid.");
+            return {};
+        }
+    }
+
+    typename PRSSerializerType::InternalDataType InternalData;
+    if (!PRSSerializerType::SerializeInternalData(Ser, InternalData, &PRS.Allocator))
+    {
+        LOG_ERROR_MESSAGE("Failed to deserialize PRS internal data. Archive file may be corrupted or invalid.");
+        return {};
+    }
+    VERIFY_EXPR(Ser.IsEnded());
+
+    auto* pRenderDevice = ClassPtrCast<RenderDeviceImplType>(DeArchiveInfo.pDevice);
+    pRenderDevice->CreatePipelineResourceSignature(PRS.Desc, InternalData, &pSignature);
+
+    if (!IsImplicit)
+        m_Cache.Sign.Set(PRSData::ArchiveResType, DeArchiveInfo.Name, pSignature.RawPtr());
+
+    return pSignature;
+}
 
 } // namespace Diligent

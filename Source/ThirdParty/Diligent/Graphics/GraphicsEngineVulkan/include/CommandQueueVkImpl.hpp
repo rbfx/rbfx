@@ -151,7 +151,7 @@ public:
 
     SyncPointVkPtr GetLastSyncPoint()
     {
-        ThreadingTools::LockHelper Lock{m_LastSyncPointGuard};
+        Threading::SpinLockGuard Guard{m_LastSyncPointLock};
         return m_LastSyncPoint;
     }
 
@@ -184,7 +184,7 @@ private:
     std::vector<VkSemaphore> m_TempSignalSemaphores;
 
     // Protects access to the m_LastSyncPoint
-    ThreadingTools::LockFlag m_LastSyncPointGuard;
+    Threading::SpinLock m_LastSyncPointLock;
 
     // Fence and semaphores which were signaled when the last submitted commands have been completed.
     SyncPointVkPtr m_LastSyncPoint;

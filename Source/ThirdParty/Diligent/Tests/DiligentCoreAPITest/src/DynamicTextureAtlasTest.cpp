@@ -327,11 +327,11 @@ TEST(DynamicTextureAtlas, AllocRace)
     RefCntAutoPtr<IDynamicTextureAtlas> pAtlas;
     CreateDynamicTextureAtlas(pDevice, CI, &pAtlas);
 
-    ThreadingTools::Signal AllocSignal;
-    ThreadingTools::Signal ReleaseSignal;
-    ThreadingTools::Signal AllocCompleteSignal;
-    ThreadingTools::Signal ReleaseCompleteSignal;
-    std::atomic<Uint32>    NumThreadsReady{0};
+    Threading::Signal   AllocSignal;
+    Threading::Signal   ReleaseSignal;
+    Threading::Signal   AllocCompleteSignal;
+    Threading::Signal   ReleaseCompleteSignal;
+    std::atomic<Uint32> NumThreadsReady{0};
 
     std::vector<std::thread> Threads(NumThreads);
     for (size_t t = 0; t < Threads.size(); ++t)
@@ -428,11 +428,11 @@ TEST(DynamicTextureAtlas, AllocFreeRace)
     RefCntAutoPtr<IDynamicTextureAtlas> pAtlas;
     CreateDynamicTextureAtlas(pDevice, CI, &pAtlas);
 
-    ThreadingTools::Signal AllocSignal;
-    ThreadingTools::Signal ReleaseSignal;
-    ThreadingTools::Signal AllocCompleteSignal;
-    ThreadingTools::Signal ReleaseCompleteSignal;
-    std::atomic<Uint32>    NumThreadsReady{0};
+    Threading::Signal   AllocSignal;
+    Threading::Signal   ReleaseSignal;
+    Threading::Signal   AllocCompleteSignal;
+    Threading::Signal   ReleaseCompleteSignal;
+    std::atomic<Uint32> NumThreadsReady{0};
 
     // Pre-populate half of the atlas
     const auto                                             PrePopulatedSliceCount = NumThreads / 2;

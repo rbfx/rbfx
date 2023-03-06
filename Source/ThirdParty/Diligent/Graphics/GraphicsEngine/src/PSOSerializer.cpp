@@ -30,158 +30,174 @@ namespace Diligent
 {
 
 template <SerializerMode Mode>
-void SerializeImmutableSampler(
+bool SerializeImmutableSampler(
     Serializer<Mode>&                                                    Ser,
     typename Serializer<Mode>::template ConstQual<ImmutableSamplerDesc>& SampDesc)
 {
-    Ser(SampDesc.SamplerOrTextureName,
-        SampDesc.ShaderStages,
-        SampDesc.Desc.Name,
-        SampDesc.Desc.MinFilter,
-        SampDesc.Desc.MagFilter,
-        SampDesc.Desc.MipFilter,
-        SampDesc.Desc.AddressU,
-        SampDesc.Desc.AddressV,
-        SampDesc.Desc.AddressW,
-        SampDesc.Desc.Flags,
-        SampDesc.Desc.MipLODBias,
-        SampDesc.Desc.MaxAnisotropy,
-        SampDesc.Desc.ComparisonFunc,
-        SampDesc.Desc.BorderColor,
-        SampDesc.Desc.MinLOD,
-        SampDesc.Desc.MaxLOD);
+    return Ser(SampDesc.SamplerOrTextureName,
+               SampDesc.ShaderStages,
+               SampDesc.Desc.Name,
+               SampDesc.Desc.MinFilter,
+               SampDesc.Desc.MagFilter,
+               SampDesc.Desc.MipFilter,
+               SampDesc.Desc.AddressU,
+               SampDesc.Desc.AddressV,
+               SampDesc.Desc.AddressW,
+               SampDesc.Desc.Flags,
+               SampDesc.Desc.UnnormalizedCoords,
+               SampDesc.Desc.MipLODBias,
+               SampDesc.Desc.MaxAnisotropy,
+               SampDesc.Desc.ComparisonFunc,
+               SampDesc.Desc.BorderColor,
+               SampDesc.Desc.MinLOD,
+               SampDesc.Desc.MaxLOD);
 
     ASSERT_SIZEOF64(ImmutableSamplerDesc, 72, "Did you add a new member to ImmutableSamplerDesc? Please add serialization here.");
 }
 
 template <SerializerMode Mode>
-void PRSSerializer<Mode>::SerializeDesc(
+bool PRSSerializer<Mode>::SerializeDesc(
     Serializer<Mode>&                         Ser,
     ConstQual<PipelineResourceSignatureDesc>& Desc,
     DynamicLinearAllocator*                   Allocator)
 {
     // Serialize PipelineResourceSignatureDesc
-    Ser(Desc.BindingIndex,
-        Desc.UseCombinedTextureSamplers,
-        Desc.CombinedSamplerSuffix);
+    if (!Ser(Desc.BindingIndex,
+             Desc.UseCombinedTextureSamplers,
+             Desc.CombinedSamplerSuffix))
+        return false;
     // skip Name
     // skip SRBAllocationGranularity
 
-    Ser.SerializeArray(Allocator, Desc.Resources, Desc.NumResources,
-                       [](Serializer<Mode>&                Ser,
-                          ConstQual<PipelineResourceDesc>& ResDesc) //
-                       {
-                           Ser(ResDesc.Name,
-                               ResDesc.ShaderStages,
-                               ResDesc.ArraySize,
-                               ResDesc.ResourceType,
-                               ResDesc.VarType,
-                               ResDesc.Flags);
-                       });
+    if (!Ser.SerializeArray(Allocator, Desc.Resources, Desc.NumResources,
+                            [](Serializer<Mode>&                Ser,
+                               ConstQual<PipelineResourceDesc>& ResDesc) //
+                            {
+                                return Ser(ResDesc.Name,
+                                           ResDesc.ShaderStages,
+                                           ResDesc.ArraySize,
+                                           ResDesc.ResourceType,
+                                           ResDesc.VarType,
+                                           ResDesc.Flags);
+                            }))
+        return false;
 
-    Ser.SerializeArray(Allocator, Desc.ImmutableSamplers, Desc.NumImmutableSamplers, SerializeImmutableSampler<Mode>);
+    return Ser.SerializeArray(Allocator, Desc.ImmutableSamplers, Desc.NumImmutableSamplers, SerializeImmutableSampler<Mode>);
 
     ASSERT_SIZEOF64(PipelineResourceSignatureDesc, 56, "Did you add a new member to PipelineResourceSignatureDesc? Please add serialization here.");
     ASSERT_SIZEOF64(PipelineResourceDesc, 24, "Did you add a new member to PipelineResourceDesc? Please add serialization here.");
 }
 
 template <SerializerMode Mode>
-void PRSSerializer<Mode>::SerializeInternalData(Serializer<Mode>&                                 Ser,
+bool PRSSerializer<Mode>::SerializeInternalData(Serializer<Mode>&                                 Ser,
                                                 ConstQual<PipelineResourceSignatureInternalData>& InternalData,
                                                 DynamicLinearAllocator*                           Allocator)
 {
-    Ser(InternalData.ShaderStages,
-        InternalData.StaticResShaderStages,
-        InternalData.PipelineType,
-        InternalData.StaticResStageIndex);
+    return Ser(InternalData.ShaderStages,
+               InternalData.StaticResShaderStages,
+               InternalData.PipelineType,
+               InternalData.StaticResStageIndex);
     ASSERT_SIZEOF(PipelineResourceSignatureInternalData, 16, "Did you add a new member to PipelineResourceSignatureInternalData? Please add serialization here.");
 }
 
 template <SerializerMode Mode>
-void PSOSerializer<Mode>::SerializeCreateInfo(
+bool PSOSerializer<Mode>::SerializeCreateInfo(
     Serializer<Mode>&                   Ser,
     ConstQual<PipelineStateCreateInfo>& CreateInfo,
     ConstQual<TPRSNames>&               PRSNames,
     DynamicLinearAllocator*             Allocator)
 {
     // Serialize PipelineStateCreateInfo
-    //   Serialize PipelineStateDesc
-    Ser(CreateInfo.PSODesc.PipelineType);
-    Ser(CreateInfo.ResourceSignaturesCount,
-        CreateInfo.Flags);
+    // Serialize PipelineStateDesc
+    if (!Ser(CreateInfo.PSODesc.PipelineType))
+        return false;
+
+    if (!Ser(CreateInfo.ResourceSignaturesCount,
+             CreateInfo.Flags))
+        return false;
     // skip SRBAllocationGranularity
     // skip ImmediateContextMask
     // skip pPSOCache
 
     auto& ResourceLayout = CreateInfo.PSODesc.ResourceLayout;
-    Ser(ResourceLayout.DefaultVariableType, ResourceLayout.DefaultVariableMergeStages);
-    Ser.SerializeArray(Allocator, ResourceLayout.Variables, ResourceLayout.NumVariables,
-                       [](Serializer<Mode>&                      Ser,
-                          ConstQual<ShaderResourceVariableDesc>& VarDesc) //
-                       {
-                           Ser(VarDesc.Name,
-                               VarDesc.ShaderStages,
-                               VarDesc.Type,
-                               VarDesc.Flags);
-                       });
+    if (!Ser(ResourceLayout.DefaultVariableType, ResourceLayout.DefaultVariableMergeStages))
+        return false;
 
-    Ser.SerializeArray(Allocator, ResourceLayout.ImmutableSamplers, ResourceLayout.NumImmutableSamplers, SerializeImmutableSampler<Mode>);
+    if (!Ser.SerializeArray(Allocator, ResourceLayout.Variables, ResourceLayout.NumVariables,
+                            [](Serializer<Mode>&                      Ser,
+                               ConstQual<ShaderResourceVariableDesc>& VarDesc) //
+                            {
+                                return Ser(VarDesc.Name,
+                                           VarDesc.ShaderStages,
+                                           VarDesc.Type,
+                                           VarDesc.Flags);
+                            }))
+        return false;
+
+    if (!Ser.SerializeArray(Allocator, ResourceLayout.ImmutableSamplers, ResourceLayout.NumImmutableSamplers, SerializeImmutableSampler<Mode>))
+        return false;
 
     // Instead of ppResourceSignatures
     for (Uint32 i = 0; i < std::max(CreateInfo.ResourceSignaturesCount, 1u); ++i)
     {
-        Ser(PRSNames[i]);
+        if (!Ser(PRSNames[i]))
+            return false;
     }
 
     ASSERT_SIZEOF64(ShaderResourceVariableDesc, 24, "Did you add a new member to ShaderResourceVariableDesc? Please add serialization here.");
     ASSERT_SIZEOF64(PipelineStateCreateInfo, 96, "Did you add a new member to PipelineStateCreateInfo? Please add serialization here.");
+
+    return true;
 }
 
 template <SerializerMode Mode>
-void PSOSerializer<Mode>::SerializeCreateInfo(
+bool PSOSerializer<Mode>::SerializeCreateInfo(
     Serializer<Mode>&                           Ser,
     ConstQual<GraphicsPipelineStateCreateInfo>& CreateInfo,
     ConstQual<TPRSNames>&                       PRSNames,
     DynamicLinearAllocator*                     Allocator,
     ConstQual<const char*>&                     RenderPassName)
 {
-    SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator);
+    if (!SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator))
+        return false;
 
     // Serialize GraphicsPipelineDesc
-    Ser(CreateInfo.GraphicsPipeline.BlendDesc,
-        CreateInfo.GraphicsPipeline.SampleMask,
-        CreateInfo.GraphicsPipeline.RasterizerDesc,
-        CreateInfo.GraphicsPipeline.DepthStencilDesc);
+    if (!Ser(CreateInfo.GraphicsPipeline.BlendDesc,
+             CreateInfo.GraphicsPipeline.SampleMask,
+             CreateInfo.GraphicsPipeline.RasterizerDesc,
+             CreateInfo.GraphicsPipeline.DepthStencilDesc))
+        return false;
 
     // Serialize InputLayoutDesc
     {
         auto& InputLayout = CreateInfo.GraphicsPipeline.InputLayout;
-        Ser.SerializeArray(Allocator, InputLayout.LayoutElements, InputLayout.NumElements,
-                           [](Serializer<Mode>&         Ser,
-                              ConstQual<LayoutElement>& Elem) //
-                           {
-                               Ser(Elem.HLSLSemantic,
-                                   Elem.InputIndex,
-                                   Elem.BufferSlot,
-                                   Elem.NumComponents,
-                                   Elem.ValueType,
-                                   Elem.IsNormalized,
-                                   Elem.RelativeOffset,
-                                   Elem.Stride,
-                                   Elem.Frequency,
-                                   Elem.InstanceDataStepRate);
-                           });
+        if (!Ser.SerializeArray(Allocator, InputLayout.LayoutElements, InputLayout.NumElements,
+                                [](Serializer<Mode>&         Ser,
+                                   ConstQual<LayoutElement>& Elem) //
+                                {
+                                    return Ser(Elem.HLSLSemantic,
+                                               Elem.InputIndex,
+                                               Elem.BufferSlot,
+                                               Elem.NumComponents,
+                                               Elem.ValueType,
+                                               Elem.IsNormalized,
+                                               Elem.RelativeOffset,
+                                               Elem.Stride,
+                                               Elem.Frequency,
+                                               Elem.InstanceDataStepRate);
+                                }))
+            return false;
     }
 
-    Ser(CreateInfo.GraphicsPipeline.PrimitiveTopology,
-        CreateInfo.GraphicsPipeline.NumViewports,
-        CreateInfo.GraphicsPipeline.NumRenderTargets,
-        CreateInfo.GraphicsPipeline.SubpassIndex,
-        CreateInfo.GraphicsPipeline.ShadingRateFlags,
-        CreateInfo.GraphicsPipeline.RTVFormats,
-        CreateInfo.GraphicsPipeline.DSVFormat,
-        CreateInfo.GraphicsPipeline.SmplDesc,
-        RenderPassName); // for CreateInfo.GraphicsPipeline.pRenderPass
+    return Ser(CreateInfo.GraphicsPipeline.PrimitiveTopology,
+               CreateInfo.GraphicsPipeline.NumViewports,
+               CreateInfo.GraphicsPipeline.NumRenderTargets,
+               CreateInfo.GraphicsPipeline.SubpassIndex,
+               CreateInfo.GraphicsPipeline.ShadingRateFlags,
+               CreateInfo.GraphicsPipeline.RTVFormats,
+               CreateInfo.GraphicsPipeline.DSVFormat,
+               CreateInfo.GraphicsPipeline.SmplDesc,
+               RenderPassName); // for CreateInfo.GraphicsPipeline.pRenderPass
 
     // Skip NodeMask
 
@@ -190,36 +206,37 @@ void PSOSerializer<Mode>::SerializeCreateInfo(
 }
 
 template <SerializerMode Mode>
-void PSOSerializer<Mode>::SerializeCreateInfo(
+bool PSOSerializer<Mode>::SerializeCreateInfo(
     Serializer<Mode>&                          Ser,
     ConstQual<ComputePipelineStateCreateInfo>& CreateInfo,
     ConstQual<TPRSNames>&                      PRSNames,
     DynamicLinearAllocator*                    Allocator)
 {
-    SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator);
+    return SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator);
 
     ASSERT_SIZEOF64(ComputePipelineStateCreateInfo, 104, "Did you add a new member to ComputePipelineStateCreateInfo? Please add serialization here.");
 }
 
 template <SerializerMode Mode>
-void PSOSerializer<Mode>::SerializeCreateInfo(
+bool PSOSerializer<Mode>::SerializeCreateInfo(
     Serializer<Mode>&                       Ser,
     ConstQual<TilePipelineStateCreateInfo>& CreateInfo,
     ConstQual<TPRSNames>&                   PRSNames,
     DynamicLinearAllocator*                 Allocator)
 {
-    SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator);
+    if (!SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator))
+        return false;
 
     // Serialize TilePipelineDesc
-    Ser(CreateInfo.TilePipeline.NumRenderTargets,
-        CreateInfo.TilePipeline.SampleCount,
-        CreateInfo.TilePipeline.RTVFormats);
+    return Ser(CreateInfo.TilePipeline.NumRenderTargets,
+               CreateInfo.TilePipeline.SampleCount,
+               CreateInfo.TilePipeline.RTVFormats);
 
     ASSERT_SIZEOF64(TilePipelineStateCreateInfo, 128, "Did you add a new member to TilePipelineStateCreateInfo? Please add serialization here.");
 }
 
 template <SerializerMode Mode>
-void PSOSerializer<Mode>::SerializeCreateInfo(
+bool PSOSerializer<Mode>::SerializeCreateInfo(
     Serializer<Mode>&                                         Ser,
     ConstQual<RayTracingPipelineStateCreateInfo>&             CreateInfo,
     ConstQual<TPRSNames>&                                     PRSNames,
@@ -229,79 +246,103 @@ void PSOSerializer<Mode>::SerializeCreateInfo(
     const bool IsReading = (Allocator != nullptr);
     const bool IsWriting = !IsReading;
 
-    SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator);
+    if (!SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator))
+        return false;
 
     // Serialize RayTracingPipelineDesc
-    Ser(CreateInfo.RayTracingPipeline.ShaderRecordSize,
-        CreateInfo.RayTracingPipeline.MaxRecursionDepth);
+    if (!Ser(CreateInfo.RayTracingPipeline.ShaderRecordSize,
+             CreateInfo.RayTracingPipeline.MaxRecursionDepth))
+        return false;
 
     // Serialize RayTracingPipelineStateCreateInfo
-    Ser(CreateInfo.pShaderRecordName,
-        CreateInfo.MaxAttributeSize,
-        CreateInfo.MaxPayloadSize);
+    if (!Ser(CreateInfo.pShaderRecordName,
+             CreateInfo.MaxAttributeSize,
+             CreateInfo.MaxPayloadSize))
+        return false;
 
     // Serialize RayTracingGeneralShaderGroup
-    Ser.SerializeArray(Allocator, CreateInfo.pGeneralShaders, CreateInfo.GeneralShaderCount,
-                       [&](Serializer<Mode>&                        Ser,
-                           ConstQual<RayTracingGeneralShaderGroup>& Group) //
-                       {
-                           Uint32 ShaderIndex = ~0u;
-                           if (IsWriting)
+    auto res =
+        Ser.SerializeArray(Allocator, CreateInfo.pGeneralShaders, CreateInfo.GeneralShaderCount,
+                           [&](Serializer<Mode>&                        Ser,
+                               ConstQual<RayTracingGeneralShaderGroup>& Group) //
                            {
-                               ShaderToIndex(ShaderIndex, Group.pShader);
-                           }
-                           Ser(Group.Name, ShaderIndex);
-                           VERIFY_EXPR(ShaderIndex != ~0u);
-                           if (IsReading)
-                           {
-                               ShaderToIndex(ShaderIndex, Group.pShader);
-                           }
-                       });
+                               Uint32 ShaderIndex = ~0u;
+                               if (IsWriting)
+                               {
+                                   ShaderToIndex(ShaderIndex, Group.pShader);
+                               }
+
+                               if (!Ser(Group.Name, ShaderIndex))
+                                   return false;
+
+                               VERIFY_EXPR(ShaderIndex != ~0u);
+                               if (IsReading)
+                               {
+                                   ShaderToIndex(ShaderIndex, Group.pShader);
+                               }
+
+                               return true;
+                           });
+    if (!res) return false;
 
     // Serialize RayTracingTriangleHitShaderGroup
-    Ser.SerializeArray(Allocator, CreateInfo.pTriangleHitShaders, CreateInfo.TriangleHitShaderCount,
-                       [&](Serializer<Mode>&                            Ser,
-                           ConstQual<RayTracingTriangleHitShaderGroup>& Group) //
-                       {
-                           Uint32 ClosestHitShaderIndex = ~0u;
-                           Uint32 AnyHitShaderIndex     = ~0u;
-                           if (IsWriting)
+    res =
+        Ser.SerializeArray(Allocator, CreateInfo.pTriangleHitShaders, CreateInfo.TriangleHitShaderCount,
+                           [&](Serializer<Mode>&                            Ser,
+                               ConstQual<RayTracingTriangleHitShaderGroup>& Group) //
                            {
-                               ShaderToIndex(ClosestHitShaderIndex, Group.pClosestHitShader);
-                               ShaderToIndex(AnyHitShaderIndex, Group.pAnyHitShader);
-                           }
-                           Ser(Group.Name, ClosestHitShaderIndex, AnyHitShaderIndex);
-                           VERIFY_EXPR(ClosestHitShaderIndex != ~0u);
-                           if (IsReading)
-                           {
-                               ShaderToIndex(ClosestHitShaderIndex, Group.pClosestHitShader);
-                               ShaderToIndex(AnyHitShaderIndex, Group.pAnyHitShader);
-                           }
-                       });
+                               Uint32 ClosestHitShaderIndex = ~0u;
+                               Uint32 AnyHitShaderIndex     = ~0u;
+                               if (IsWriting)
+                               {
+                                   ShaderToIndex(ClosestHitShaderIndex, Group.pClosestHitShader);
+                                   ShaderToIndex(AnyHitShaderIndex, Group.pAnyHitShader);
+                               }
+
+                               if (!Ser(Group.Name, ClosestHitShaderIndex, AnyHitShaderIndex))
+                                   return false;
+
+                               VERIFY_EXPR(ClosestHitShaderIndex != ~0u);
+                               if (IsReading)
+                               {
+                                   ShaderToIndex(ClosestHitShaderIndex, Group.pClosestHitShader);
+                                   ShaderToIndex(AnyHitShaderIndex, Group.pAnyHitShader);
+                               }
+
+                               return true;
+                           });
+    if (!res) return false;
 
     // Serialize RayTracingProceduralHitShaderGroup
-    Ser.SerializeArray(Allocator, CreateInfo.pProceduralHitShaders, CreateInfo.ProceduralHitShaderCount,
-                       [&](Serializer<Mode>&                              Ser,
-                           ConstQual<RayTracingProceduralHitShaderGroup>& Group) //
-                       {
-                           Uint32 IntersectionShaderIndex = ~0u;
-                           Uint32 ClosestHitShaderIndex   = ~0u;
-                           Uint32 AnyHitShaderIndex       = ~0u;
-                           if (IsWriting)
+    res =
+        Ser.SerializeArray(Allocator, CreateInfo.pProceduralHitShaders, CreateInfo.ProceduralHitShaderCount,
+                           [&](Serializer<Mode>&                              Ser,
+                               ConstQual<RayTracingProceduralHitShaderGroup>& Group) //
                            {
-                               ShaderToIndex(IntersectionShaderIndex, Group.pIntersectionShader);
-                               ShaderToIndex(ClosestHitShaderIndex, Group.pClosestHitShader);
-                               ShaderToIndex(AnyHitShaderIndex, Group.pAnyHitShader);
-                           }
-                           Ser(Group.Name, IntersectionShaderIndex, ClosestHitShaderIndex, AnyHitShaderIndex);
-                           VERIFY_EXPR(IntersectionShaderIndex != ~0u);
-                           if (IsReading)
-                           {
-                               ShaderToIndex(IntersectionShaderIndex, Group.pIntersectionShader);
-                               ShaderToIndex(ClosestHitShaderIndex, Group.pClosestHitShader);
-                               ShaderToIndex(AnyHitShaderIndex, Group.pAnyHitShader);
-                           }
-                       });
+                               Uint32 IntersectionShaderIndex = ~0u;
+                               Uint32 ClosestHitShaderIndex   = ~0u;
+                               Uint32 AnyHitShaderIndex       = ~0u;
+                               if (IsWriting)
+                               {
+                                   ShaderToIndex(IntersectionShaderIndex, Group.pIntersectionShader);
+                                   ShaderToIndex(ClosestHitShaderIndex, Group.pClosestHitShader);
+                                   ShaderToIndex(AnyHitShaderIndex, Group.pAnyHitShader);
+                               }
+
+                               if (!Ser(Group.Name, IntersectionShaderIndex, ClosestHitShaderIndex, AnyHitShaderIndex))
+                                   return false;
+
+                               VERIFY_EXPR(IntersectionShaderIndex != ~0u);
+                               if (IsReading)
+                               {
+                                   ShaderToIndex(IntersectionShaderIndex, Group.pIntersectionShader);
+                                   ShaderToIndex(ClosestHitShaderIndex, Group.pClosestHitShader);
+                                   ShaderToIndex(AnyHitShaderIndex, Group.pAnyHitShader);
+                               }
+
+                               return true;
+                           });
+    return res;
 
     ASSERT_SIZEOF64(RayTracingPipelineStateCreateInfo, 168, "Did you add a new member to RayTracingPipelineStateCreateInfo? Please add serialization here.");
     ASSERT_SIZEOF64(RayTracingGeneralShaderGroup, 16, "Did you add a new member to RayTracingGeneralShaderGroup? Please add serialization here.");
@@ -310,74 +351,87 @@ void PSOSerializer<Mode>::SerializeCreateInfo(
 }
 
 template <SerializerMode Mode>
-void RPSerializer<Mode>::SerializeDesc(
+bool RPSerializer<Mode>::SerializeDesc(
     Serializer<Mode>&          Ser,
     ConstQual<RenderPassDesc>& RPDesc,
     DynamicLinearAllocator*    Allocator)
 {
-    Ser.SerializeArray(Allocator, RPDesc.pAttachments, RPDesc.AttachmentCount,
-                       [](Serializer<Mode>&                    Ser,
-                          ConstQual<RenderPassAttachmentDesc>& Attachment) //
-                       {
-                           Ser(Attachment.Format,
-                               Attachment.SampleCount,
-                               Attachment.LoadOp,
-                               Attachment.StoreOp,
-                               Attachment.StencilLoadOp,
-                               Attachment.StencilStoreOp,
-                               Attachment.InitialState,
-                               Attachment.FinalState);
-                       });
-
-    Ser.SerializeArray(Allocator, RPDesc.pSubpasses, RPDesc.SubpassCount,
-                       [&Allocator](Serializer<Mode>&       Ser,
-                                    ConstQual<SubpassDesc>& Subpass) //
-                       {
-                           auto SerializeAttachmentRef = [](Serializer<Mode>&               Ser,
-                                                            ConstQual<AttachmentReference>& AttachRef) //
+    auto res =
+        Ser.SerializeArray(Allocator, RPDesc.pAttachments, RPDesc.AttachmentCount,
+                           [](Serializer<Mode>&                    Ser,
+                              ConstQual<RenderPassAttachmentDesc>& Attachment) //
                            {
-                               Ser(AttachRef.AttachmentIndex,
-                                   AttachRef.State);
-                           };
-                           Ser.SerializeArray(Allocator, Subpass.pInputAttachments, Subpass.InputAttachmentCount, SerializeAttachmentRef);
-                           Ser.SerializeArray(Allocator, Subpass.pRenderTargetAttachments, Subpass.RenderTargetAttachmentCount, SerializeAttachmentRef);
+                               return Ser(Attachment.Format,
+                                          Attachment.SampleCount,
+                                          Attachment.LoadOp,
+                                          Attachment.StoreOp,
+                                          Attachment.StencilLoadOp,
+                                          Attachment.StencilStoreOp,
+                                          Attachment.InitialState,
+                                          Attachment.FinalState);
+                           });
+    if (!res) return false;
 
-                           // Note: in Read mode, ResolveAttachCount, DepthStencilAttachCount, and ShadingRateAttachCount will be overwritten
-                           Uint32 ResolveAttachCount = Subpass.pResolveAttachments != nullptr ? Subpass.RenderTargetAttachmentCount : 0;
-                           Ser.SerializeArray(Allocator, Subpass.pResolveAttachments, ResolveAttachCount, SerializeAttachmentRef);
+    res =
+        Ser.SerializeArray(Allocator, RPDesc.pSubpasses, RPDesc.SubpassCount,
+                           [&Allocator](Serializer<Mode>&       Ser,
+                                        ConstQual<SubpassDesc>& Subpass) //
+                           {
+                               auto SerializeAttachmentRef = [](Serializer<Mode>&               Ser,
+                                                                ConstQual<AttachmentReference>& AttachRef) //
+                               {
+                                   return Ser(AttachRef.AttachmentIndex,
+                                              AttachRef.State);
+                               };
 
-                           Uint32 DepthStencilAttachCount = Subpass.pDepthStencilAttachment != nullptr ? 1 : 0;
-                           Ser.SerializeArray(Allocator, Subpass.pDepthStencilAttachment, DepthStencilAttachCount, SerializeAttachmentRef);
+                               if (!Ser.SerializeArray(Allocator, Subpass.pInputAttachments, Subpass.InputAttachmentCount, SerializeAttachmentRef))
+                                   return false;
+                               if (!Ser.SerializeArray(Allocator, Subpass.pRenderTargetAttachments, Subpass.RenderTargetAttachmentCount, SerializeAttachmentRef))
+                                   return false;
 
-                           Ser.SerializeArray(Allocator, Subpass.pPreserveAttachments, Subpass.PreserveAttachmentCount,
-                                              [](Serializer<Mode>&  Ser,
-                                                 ConstQual<Uint32>& Attach) //
-                                              {
-                                                  Ser(Attach);
-                                              });
+                               // Note: in Read mode, ResolveAttachCount, DepthStencilAttachCount, and ShadingRateAttachCount will be overwritten
+                               Uint32 ResolveAttachCount = Subpass.pResolveAttachments != nullptr ? Subpass.RenderTargetAttachmentCount : 0;
+                               if (!Ser.SerializeArray(Allocator, Subpass.pResolveAttachments, ResolveAttachCount, SerializeAttachmentRef))
+                                   return false;
 
-                           Uint32 ShadingRateAttachCount = Subpass.pShadingRateAttachment != nullptr ? 1 : 0;
-                           Ser.SerializeArray(Allocator, Subpass.pShadingRateAttachment, ShadingRateAttachCount,
-                                              [](Serializer<Mode>&                 Ser,
-                                                 ConstQual<ShadingRateAttachment>& SRAttachment) //
-                                              {
-                                                  Ser(SRAttachment.Attachment.AttachmentIndex,
-                                                      SRAttachment.Attachment.State,
-                                                      SRAttachment.TileSize);
-                                              });
-                       });
+                               Uint32 DepthStencilAttachCount = Subpass.pDepthStencilAttachment != nullptr ? 1 : 0;
+                               if (!Ser.SerializeArray(Allocator, Subpass.pDepthStencilAttachment, DepthStencilAttachCount, SerializeAttachmentRef))
+                                   return false;
 
-    Ser.SerializeArray(Allocator, RPDesc.pDependencies, RPDesc.DependencyCount,
-                       [](Serializer<Mode>&                 Ser,
-                          ConstQual<SubpassDependencyDesc>& Dep) //
-                       {
-                           Ser(Dep.SrcSubpass,
-                               Dep.DstSubpass,
-                               Dep.SrcStageMask,
-                               Dep.DstStageMask,
-                               Dep.SrcAccessMask,
-                               Dep.DstAccessMask);
-                       });
+
+                               if (!Ser.SerializeArray(Allocator, Subpass.pPreserveAttachments, Subpass.PreserveAttachmentCount,
+                                                       [](Serializer<Mode>&  Ser,
+                                                          ConstQual<Uint32>& Attach) //
+                                                       {
+                                                           return Ser(Attach);
+                                                       }))
+                                   return false;
+
+                               Uint32 ShadingRateAttachCount = Subpass.pShadingRateAttachment != nullptr ? 1 : 0;
+                               return Ser.SerializeArray(Allocator, Subpass.pShadingRateAttachment, ShadingRateAttachCount,
+                                                         [](Serializer<Mode>&                 Ser,
+                                                            ConstQual<ShadingRateAttachment>& SRAttachment) //
+                                                         {
+                                                             return Ser(SRAttachment.Attachment.AttachmentIndex,
+                                                                        SRAttachment.Attachment.State,
+                                                                        SRAttachment.TileSize);
+                                                         });
+                           });
+    if (!res) return false;
+
+    res =
+        Ser.SerializeArray(Allocator, RPDesc.pDependencies, RPDesc.DependencyCount,
+                           [](Serializer<Mode>&                 Ser,
+                              ConstQual<SubpassDependencyDesc>& Dep) //
+                           {
+                               return Ser(Dep.SrcSubpass,
+                                          Dep.DstSubpass,
+                                          Dep.SrcStageMask,
+                                          Dep.DstStageMask,
+                                          Dep.SrcAccessMask,
+                                          Dep.DstAccessMask);
+                           });
+    return res;
 
     ASSERT_SIZEOF64(RenderPassDesc, 56, "Did you add a new member to RenderPassDesc? Please add serialization here.");
     ASSERT_SIZEOF64(SubpassDesc, 72, "Did you add a new member to SubpassDesc? Please add serialization here.");
@@ -388,67 +442,74 @@ void RPSerializer<Mode>::SerializeDesc(
 }
 
 template <SerializerMode Mode>
-void PSOSerializer<Mode>::SerializeShaderIndices(
+bool PSOSerializer<Mode>::SerializeShaderIndices(
     Serializer<Mode>&            Ser,
     ConstQual<ShaderIndexArray>& Shaders,
     DynamicLinearAllocator*      Allocator)
 {
-    Ser.SerializeArrayRaw(Allocator, Shaders.pIndices, Shaders.Count);
+    return Ser.SerializeArrayRaw(Allocator, Shaders.pIndices, Shaders.Count);
 }
 
 template <SerializerMode Mode>
-void PSOSerializer<Mode>::SerializeAuxData(Serializer<Mode>&                Ser,
+bool PSOSerializer<Mode>::SerializeAuxData(Serializer<Mode>&                Ser,
                                            ConstQual<SerializedPSOAuxData>& AuxData,
                                            DynamicLinearAllocator*          Allocator)
 {
-    Ser(AuxData.NoShaderReflection);
+    return Ser(AuxData.NoShaderReflection);
     ASSERT_SIZEOF(SerializedPSOAuxData, 1, "Did you add a new member to SerializedPSOAuxData? Please add serialization here.");
 }
 
 template <SerializerMode Mode>
-void ShaderSerializer<Mode>::SerializeBytecodeOrSource(Serializer<Mode>&            Ser,
+bool ShaderSerializer<Mode>::SerializeBytecodeOrSource(Serializer<Mode>&            Ser,
                                                        ConstQual<ShaderCreateInfo>& CI)
 {
     VERIFY((CI.Source != nullptr) ^ (CI.ByteCode != nullptr), "Only one of Source or Bytecode must not be null");
     const Uint8 UseBytecode = CI.ByteCode != nullptr ? 1 : 0;
-    Ser(UseBytecode);
+
+    if (!Ser(UseBytecode))
+        return false;
+
     if (UseBytecode)
-        Ser.SerializeBytes(CI.ByteCode, CI.ByteCodeSize);
+        return Ser.SerializeBytes(CI.ByteCode, CI.ByteCodeSize);
     else
-        Ser.SerializeBytes(CI.Source, CI.SourceLength);
+        return Ser.SerializeBytes(CI.Source, CI.SourceLength);
 }
 
 template <>
-void ShaderSerializer<SerializerMode::Read>::SerializeBytecodeOrSource(Serializer<SerializerMode::Read>& Ser,
+bool ShaderSerializer<SerializerMode::Read>::SerializeBytecodeOrSource(Serializer<SerializerMode::Read>& Ser,
                                                                        ConstQual<ShaderCreateInfo>&      CI)
 {
     Uint8 UseBytecode = 0;
     Ser(UseBytecode);
     if (UseBytecode)
     {
-        Ser.SerializeBytes(CI.ByteCode, CI.ByteCodeSize);
+        return Ser.SerializeBytes(CI.ByteCode, CI.ByteCodeSize);
     }
     else
     {
         const void* pSource = nullptr;
-        Ser.SerializeBytes(pSource, CI.SourceLength);
+        if (!Ser.SerializeBytes(pSource, CI.SourceLength))
+            return false;
+
         CI.Source = reinterpret_cast<const char*>(pSource);
+        return true;
     }
 }
 
 template <SerializerMode Mode>
-void ShaderSerializer<Mode>::SerializeCI(Serializer<Mode>&            Ser,
+bool ShaderSerializer<Mode>::SerializeCI(Serializer<Mode>&            Ser,
                                          ConstQual<ShaderCreateInfo>& CI)
 {
-    Ser(CI.Desc.Name,
-        CI.Desc.ShaderType,
-        CI.EntryPoint,
-        CI.SourceLanguage,
-        CI.ShaderCompiler,
-        CI.UseCombinedTextureSamplers,
-        CI.CombinedSamplerSuffix);
+    if (!Ser(CI.Desc.Name,
+             CI.Desc.ShaderType,
+             CI.EntryPoint,
+             CI.SourceLanguage,
+             CI.ShaderCompiler,
+             CI.UseCombinedTextureSamplers,
+             CI.CombinedSamplerSuffix))
+        return false;
 
-    SerializeBytecodeOrSource(Ser, CI);
+    return SerializeBytecodeOrSource(Ser, CI);
 }
 
 template struct PSOSerializer<SerializerMode::Read>;

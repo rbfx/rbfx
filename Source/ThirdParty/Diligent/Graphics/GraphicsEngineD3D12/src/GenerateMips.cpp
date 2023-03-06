@@ -95,12 +95,15 @@ GenerateMipsHelper::GenerateMipsHelper(ID3D12Device* pd3d12Device)
     PSODesc.NodeMask       = 0;
     PSODesc.Flags          = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-#define CreatePSO(PSO, ShaderByteCode)                                                                                                                                  \
-    PSODesc.CS.pShaderBytecode = ShaderByteCode;                                                                                                                        \
-    PSODesc.CS.BytecodeLength  = sizeof(ShaderByteCode);                                                                                                                \
-    hr                         = pd3d12Device->CreateComputePipelineState(&PSODesc, __uuidof(PSO), reinterpret_cast<void**>(static_cast<ID3D12PipelineState**>(&PSO))); \
-    CHECK_D3D_RESULT_THROW(hr, "Failed to create Pipeline state for mipmap generation");                                                                                \
-    PSO->SetName(L"Generate mips PSO");
+#define CreatePSO(PSO, ShaderByteCode)                                                                                                                                      \
+    do                                                                                                                                                                      \
+    {                                                                                                                                                                       \
+        PSODesc.CS.pShaderBytecode = ShaderByteCode;                                                                                                                        \
+        PSODesc.CS.BytecodeLength  = sizeof(ShaderByteCode);                                                                                                                \
+        hr                         = pd3d12Device->CreateComputePipelineState(&PSODesc, __uuidof(PSO), reinterpret_cast<void**>(static_cast<ID3D12PipelineState**>(&PSO))); \
+        CHECK_D3D_RESULT_THROW(hr, "Failed to create Pipeline state for mipmap generation");                                                                                \
+        PSO->SetName(L"Generate mips PSO");                                                                                                                                 \
+    } while (false)
 
     CreatePSO(m_pGenerateMipsLinearPSO[0], g_pGenerateMipsLinearCS);
     CreatePSO(m_pGenerateMipsLinearPSO[1], g_pGenerateMipsLinearOddXCS);

@@ -939,7 +939,8 @@ struct OuterStruct
 struct VSInputSubStruct
 {
     float3 f3Normal : ATTRIB2;
-    uint VertexId : SV_VertexId;
+    uint VertexId   : SV_VertexId;
+    uint   uiAttrib : ATTRIB3;
 };
 
 struct VSInput
@@ -951,36 +952,40 @@ struct VSInput
 
 struct VSOutputSubStruct
 {
-    float4 f4Attrib : F4_ATTRIB2;
-    int iAttrib   : I_ATTRIB2;
+    sample          float  fAttrib  : F_ATTRIB2;
+                    float4 f4Attrib : F4_ATTRIB2;
+    nointerpolation int    iAttrib  : I_ATTRIB2;
 };
 struct VSOutput
 {
-    float2 f2Attrib : F2_ATTRIB;
-    float3 f3Attrib : F3_ATTRIB;
-    float4 f4Attrib : F4_ATTRIB;
-    uint uiAttrib   : UI_ATTRIB;
-    uint3 ui3Attrib : UI3_ATTRIB;
-    int iAttrib : I_ATTRIB;
-    float4 f4PosPS : SV_Position;
+                    float  fAttrib   : F_ATTRIB;
+    linear          float2 f2Attrib  : F2_ATTRIB;
+    centroid        float3 f3Attrib  : F3_ATTRIB;
+    noperspective   float4 f4Attrib  : F4_ATTRIB;
+    nointerpolation uint   uiAttrib  : UI_ATTRIB;
+                    uint3  ui3Attrib : UI3_ATTRIB;
+                    int    iAttrib   : I_ATTRIB;
+                    float4 f4PosPS   : SV_Position;
     VSOutputSubStruct SubStruct;
 };
 
-void TestVS  ( VSInput In,
-               in float3 f3UV  : ATTRIB3,
-               in uint InstID : SV_InstanceID,
-               out VSOutput Out,
-               out float  fAttrib : F_ATTRIB,
-               out int4 i4Attrib : I4_ATTRIB)
+void TestVS(VSInput In,
+            in  float3   f3UV   : ATTRIB4,
+            in  uint     InstID : SV_InstanceID,
+            out VSOutput Out,
+            linear out float  fAttrib  : F_ATTRIB3,
+            out nointerpolation int4 i4Attrib : I4_ATTRIB)
 {
     Out.f4PosPS = float4(1.0, 2.0, 3.0, 4.0);
     fAttrib = 1.0;
+    Out.fAttrib  = In.f2UV.x + In.f2UV.y;
     Out.f2Attrib = float2(5.0, 6.0) + In.f2UV;
     Out.f3Attrib = float3(7.0, 8.0, 9.0) + In.f3PosWS + f3UV + In.SubStruct.f3Normal;
     Out.f4Attrib = float4(10.0, 11.0, 12.0, 13.0);
 
+    Out.SubStruct.fAttrib  = In.f3PosWS.z;
     Out.SubStruct.f4Attrib = float4(10.0, 11.0, 12.0, 13.0);
-    Out.uiAttrib = 1u;
+    Out.uiAttrib = In.SubStruct.uiAttrib;
     Out.ui3Attrib = uint3(2u, 3u, 4u);
     Out.iAttrib   = 5;
     Out.SubStruct.iAttrib = 20;

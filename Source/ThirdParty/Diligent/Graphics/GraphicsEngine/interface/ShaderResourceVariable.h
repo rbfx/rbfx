@@ -125,9 +125,40 @@ DILIGENT_TYPED_ENUM(BIND_SHADER_RESOURCES_FLAGS, Uint32)
     /// \note Only these variables are verified that are being updated by setting
     ///       BIND_SHADER_RESOURCES_UPDATE_STATIC, BIND_SHADER_RESOURCES_UPDATE_MUTABLE, and
     ///       BIND_SHADER_RESOURCES_UPDATE_DYNAMIC flags.
-    BIND_SHADER_RESOURCES_VERIFY_ALL_RESOLVED = 0x10
+    BIND_SHADER_RESOURCES_VERIFY_ALL_RESOLVED = 0x10,
+
+    /// Allow overwriting static and mutable variables, see Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE.
+    BIND_SHADER_RESOURCES_ALLOW_OVERWRITE = 0x20
 };
 DEFINE_FLAG_ENUM_OPERATORS(BIND_SHADER_RESOURCES_FLAGS);
+
+
+/// Flags used by IShaderResourceVariable::Set, IShaderResourceVariable::SetArray,
+/// and IShaderResourceVariable::SetBufferRange methods.
+DILIGENT_TYPED_ENUM(SET_SHADER_RESOURCE_FLAGS, Uint32)
+{
+    /// No flags.
+    SET_SHADER_RESOURCE_FLAG_NONE = 0,
+
+    /// Allow overwriting static and mutable variable bindings.
+    ///
+    /// \remarks
+    ///         By default, static and mutable variables can't be changed once
+    ///         initialized to a non-null resource. This flag is required
+    ///         to explicitly allow overwriting the binding.
+    ///
+    ///         Overwriting static variables does not require synchronization
+    ///         with GPU and does not have effect on shader resource binding
+    ///         objects already created from the pipeline state or resource signature. 
+    ///
+    ///         When overwriting a mutable variable binding in Direct3D12 and Vulkan,
+    ///         an application must ensure that the GPU is not accessing the SRB.
+    ///         This can be achieved using syncrhonization tools such as fences.
+    ///         Synchronization with GPU is not required in OpenGL, Direct3D11,
+    ///         and Metal backends.
+    SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE = 1u << 0
+};
+DEFINE_FLAG_ENUM_OPERATORS(SET_SHADER_RESOURCE_FLAGS);
 
 // clang-format on
 
@@ -149,21 +180,24 @@ DILIGENT_BEGIN_INTERFACE(IShaderResourceVariable, IObject)
     ///         For instance, shader resource view cannot
     ///         be assigned to a constant buffer variable.
     VIRTUAL void METHOD(Set)(THIS_
-                             IDeviceObject* pObject) PURE;
+                             IDeviceObject*            pObject,
+                             SET_SHADER_RESOURCE_FLAGS Flags DEFAULT_VALUE(SET_SHADER_RESOURCE_FLAG_NONE)) PURE;
 
     /// Binds resource array to the variable
 
-    /// \param [in] ppObjects    - pointer to the array of objects.
+    /// \param [in] ppObjects    - a pointer to the array of objects.
     /// \param [in] FirstElement - first array element to set.
-    /// \param [in] NumElements  - number of objects in ppObjects array.
+    /// \param [in] NumElements  - the number of objects in ppObjects array.
+    /// \param [in] Flags        - flags, see Diligent::SET_SHADER_RESOURCE_FLAGS.
     ///
     /// \remark The method performs run-time correctness checks.
     ///         For instance, shader resource view cannot
     ///         be assigned to a constant buffer variable.
     VIRTUAL void METHOD(SetArray)(THIS_
-                                  IDeviceObject* const* ppObjects,
-                                  Uint32                FirstElement,
-                                  Uint32                NumElements) PURE;
+                                  IDeviceObject* const*     ppObjects,
+                                  Uint32                    FirstElement,
+                                  Uint32                    NumElements,
+                                  SET_SHADER_RESOURCE_FLAGS Flags DEFAULT_VALUE(SET_SHADER_RESOURCE_FLAG_NONE)) PURE;
 
     /// Binds the specified constant buffer range to the variable
 
@@ -171,6 +205,7 @@ DILIGENT_BEGIN_INTERFACE(IShaderResourceVariable, IObject)
     /// \param [in] Offset     - offset, in bytes, to the start of the buffer range to bind.
     /// \param [in] Size       - size, in bytes, of the buffer range to bind.
     /// \param [in] ArrayIndex - for array variables, index of the array element.
+    /// \param [in] Flags      - flags, see Diligent::SET_SHADER_RESOURCE_FLAGS.
     ///
     /// \remarks This method is only allowed for constant buffers. If dynamic offset is further set
     ///          by SetBufferOffset() method, it is added to the base offset set by this method.
@@ -180,10 +215,11 @@ DILIGENT_BEGIN_INTERFACE(IShaderResourceVariable, IObject)
     /// \warning The Offset must be an integer multiple of ConstantBufferOffsetAlignment member
     ///          specified by the device limits (see Diligent::DeviceLimits).
     VIRTUAL void METHOD(SetBufferRange)(THIS_
-                                        IDeviceObject* pObject,
-                                        Uint64         Offset,
-                                        Uint64         Size,
-                                        Uint32         ArrayIndex DEFAULT_VALUE(0)) PURE;
+                                        IDeviceObject*            pObject,
+                                        Uint64                    Offset,
+                                        Uint64                    Size,
+                                        Uint32                    ArrayIndex DEFAULT_VALUE(0),
+                                        SET_SHADER_RESOURCE_FLAGS Flags      DEFAULT_VALUE(SET_SHADER_RESOURCE_FLAG_NONE)) PURE;
 
 
     /// Sets the constant or structured buffer dynamic offset

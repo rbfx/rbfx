@@ -53,6 +53,7 @@ void TestingEnvironment::MessageCallback(DEBUG_MESSAGE_SEVERITY Severity,
                                          const char*            File,
                                          int                    Line)
 {
+    TextColor MsgColor = TextColor::Auto;
     if (Severity == DEBUG_MESSAGE_SEVERITY_ERROR || Severity == DEBUG_MESSAGE_SEVERITY_FATAL_ERROR)
     {
         if (m_NumAllowedErrors == 0)
@@ -73,9 +74,10 @@ void TestingEnvironment::MessageCallback(DEBUG_MESSAGE_SEVERITY Severity,
                 m_ExpectedErrorSubstrings.pop_back();
             }
         }
+        MsgColor = TextColor::DarkRed;
     }
 
-    PlatformDebug::OutputDebugMessage(Severity, Message, Function, File, Line);
+    PlatformDebug::OutputDebugMessage(Severity, Message, Function, File, Line, MsgColor);
 }
 
 void TestingEnvironment::SetErrorAllowance(int NumErrorsToAllow, const char* InfoMessage)
@@ -83,7 +85,7 @@ void TestingEnvironment::SetErrorAllowance(int NumErrorsToAllow, const char* Inf
     m_NumAllowedErrors = NumErrorsToAllow;
     if (InfoMessage != nullptr)
     {
-        std::cout << InfoMessage;
+        std::cout << TextColorCode::Cyan << InfoMessage << TextColorCode::Default;
     }
     if (m_NumAllowedErrors == 0)
     {

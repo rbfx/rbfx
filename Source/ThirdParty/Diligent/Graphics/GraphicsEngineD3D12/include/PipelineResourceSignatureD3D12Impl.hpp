@@ -155,11 +155,12 @@ public:
 
     struct CommitCacheResourcesAttribs
     {
-        const ShaderResourceCacheD3D12& ResourceCache;
+        ID3D12Device* const             pd3d12Device;
         CommandContext&                 Ctx;
-        DeviceContextIndex              DeviceCtxId;
-        bool                            IsCompute;
-        Uint32                          BaseRootIndex;
+        const DeviceContextIndex        DeviceCtxId;
+        const bool                      IsCompute;
+        const ShaderResourceCacheD3D12* pResourceCache = nullptr;
+        Uint32                          BaseRootIndex  = ~0u;
     };
     void CommitRootTables(const CommitCacheResourcesAttribs& CommitAttribs) const;
 

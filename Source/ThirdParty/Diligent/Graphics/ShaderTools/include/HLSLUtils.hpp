@@ -57,7 +57,7 @@ void HandleHLSLCompilerResult(bool               CompilationSucceeded,
     if (ppOutputLog != nullptr)
     {
         const auto ShaderSourceLen = ShaderSource.length();
-        auto*      pOutputLogBlob  = MakeNewRCObj<DataBlobImpl>{}(ShaderSourceLen + 1 + CompilerMsgLen + 1);
+        auto       pOutputLogBlob  = DataBlobImpl::Create(ShaderSourceLen + 1 + CompilerMsgLen + 1);
 
         auto* log = static_cast<char*>(pOutputLogBlob->GetDataPtr());
 

@@ -190,7 +190,7 @@ void DynamicBuffer::ResizeSparseBuffer(IDeviceContext* pContext)
     for (Uint32 i = 0; i < NumPages; ++i)
     {
         SparseBufferMemoryBindRange Range;
-        Range.BufferOffset = StartOffset + i * m_MemoryPageSize;
+        Range.BufferOffset = StartOffset + i * Uint64{m_MemoryPageSize};
         Range.MemorySize   = m_MemoryPageSize;
         Range.pMemory      = m_PendingSize > m_Desc.Size ? m_pMemory.RawPtr() : nullptr;
         Range.MemoryOffset = Range.pMemory != nullptr ? Range.BufferOffset : 0;

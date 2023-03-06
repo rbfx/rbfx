@@ -199,7 +199,7 @@ template <class ObjectType>
 bool UpdateBoundObjectsArr(std::vector<UniqueIdentifier>& BoundObjectIDs, Uint32 Index, const ObjectType& NewObject, GLuint& NewGLHandle)
 {
     if (Index >= BoundObjectIDs.size())
-        BoundObjectIDs.resize(Index + 1, -1);
+        BoundObjectIDs.resize(size_t{Index} + 1, -1);
 
     return UpdateBoundObject(BoundObjectIDs[Index], NewObject, NewGLHandle);
 }
@@ -269,7 +269,7 @@ void GLContextState::BindImage(Uint32             Index,
             Format //
         };
     if (Index >= m_BoundImages.size())
-        m_BoundImages.resize(Index + 1);
+        m_BoundImages.resize(size_t{Index} + 1);
     if (m_BoundImages[Index] != NewImageInfo)
     {
         m_BoundImages[Index] = NewImageInfo;
@@ -295,7 +295,7 @@ void GLContextState::BindImage(Uint32 Index, BufferViewGLImpl* pBuffView, GLenum
             Format //
         };
     if (Index >= m_BoundImages.size())
-        m_BoundImages.resize(Index + 1);
+        m_BoundImages.resize(size_t{Index} + 1);
     if (m_BoundImages[Index] != NewImageInfo)
     {
         m_BoundImages[Index] = NewImageInfo;
@@ -347,7 +347,7 @@ void GLContextState::BindUniformBuffer(Int32 Index, const GLObjectWrappers::GLBu
 
     BoundBufferInfo NewUBOInfo{Buff.GetUniqueID(), Offset, Size};
     if (Index >= static_cast<Int32>(m_BoundUniformBuffers.size()))
-        m_BoundUniformBuffers.resize(Index + 1);
+        m_BoundUniformBuffers.resize(static_cast<size_t>(Index) + 1);
 
     if (m_BoundUniformBuffers[Index] != NewUBOInfo)
     {
@@ -365,7 +365,7 @@ void GLContextState::BindStorageBlock(Int32 Index, const GLObjectWrappers::GLBuf
 #if GL_ARB_shader_storage_buffer_object
     BoundBufferInfo NewSSBOInfo{Buff.GetUniqueID(), Offset, Size};
     if (Index >= static_cast<Int32>(m_BoundStorageBlocks.size()))
-        m_BoundStorageBlocks.resize(Index + 1);
+        m_BoundStorageBlocks.resize(static_cast<size_t>(Index) + 1);
 
     if (m_BoundStorageBlocks[Index] != NewSSBOInfo)
     {

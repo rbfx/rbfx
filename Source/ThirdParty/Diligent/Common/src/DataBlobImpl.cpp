@@ -38,6 +38,14 @@ RefCntAutoPtr<DataBlobImpl> DataBlobImpl::Create(size_t InitialSize, const void*
     return RefCntAutoPtr<DataBlobImpl>{MakeNewRCObj<DataBlobImpl>()(InitialSize, pData)};
 }
 
+RefCntAutoPtr<DataBlobImpl> DataBlobImpl::MakeCopy(const IDataBlob* pDataBlob)
+{
+    if (pDataBlob == nullptr)
+        return {};
+
+    return Create(pDataBlob->GetSize(), pDataBlob->GetConstDataPtr());
+}
+
 DataBlobImpl::DataBlobImpl(IReferenceCounters* pRefCounters, size_t InitialSize, const void* pData) :
     TBase{pRefCounters},
     m_DataBuff(InitialSize)

@@ -58,6 +58,15 @@ static const INTERFACE_ID IID_EngineFactory =
 
 // clang-format off
 
+
+/// Dearchiver create information
+struct DearchiverCreateInfo
+{
+    void* pDummy DEFAULT_INITIALIZER(nullptr);
+};
+typedef struct DearchiverCreateInfo DearchiverCreateInfo;
+
+
 /// Engine factory base interface
 DILIGENT_BEGIN_INTERFACE(IEngineFactory, IObject)
 {
@@ -93,8 +102,16 @@ DILIGENT_BEGIN_INTERFACE(IEngineFactory, IObject)
                                            Uint32 REF           NumAdapters,
                                            GraphicsAdapterInfo* Adapters) CONST PURE;
 
-    /// Returns a pointer to the dearchiver object (see Diligent::IDearchiver).
-    VIRTUAL struct IDearchiver* METHOD(GetDearchiver)(THIS) CONST PURE;
+    /// Creates a dearchiver object.
+
+    /// \param [in]  CreateInfo   - Dearchiver create info, see Diligent::DearchiverCreateInfo for details.
+    /// \param [out] ppDearchiver - Address of the memory location where a pointer to IDearchiver
+    ///                             interface will be written.
+    ///                             The function calls AddRef(), so that the new object will have
+    ///                             one reference.
+    VIRTUAL void METHOD(CreateDearchiver)(THIS_
+                                          const DearchiverCreateInfo REF CreateInfo,
+                                          struct IDearchiver**           ppDearchiver) CONST PURE;
 
 
     /// Sets a user-provided debug message callback.
@@ -132,7 +149,7 @@ DILIGENT_END_INTERFACE
 #    define IEngineFactory_CreateDefaultShaderSourceStreamFactory(This, ...) CALL_IFACE_METHOD(EngineFactory, CreateDefaultShaderSourceStreamFactory, This, __VA_ARGS__)
 #    define IEngineFactory_EnumerateAdapters(This, ...)                      CALL_IFACE_METHOD(EngineFactory, EnumerateAdapters,                      This, __VA_ARGS__)
 #    define IEngineFactory_InitAndroidFileSystem(This, ...)                  CALL_IFACE_METHOD(EngineFactory, InitAndroidFileSystem,                  This, __VA_ARGS__)
-#    define IEngineFactory_GetDearchiver(This)                               CALL_IFACE_METHOD(EngineFactory, GetDearchiver,                          This)
+#    define IEngineFactory_CreateDearchiver(This, ...)                       CALL_IFACE_METHOD(EngineFactory, CreateDearchiver,                       This, __VA_ARGS__)
 #    define IEngineFactory_SetMessageCallback(This, ...)                     CALL_IFACE_METHOD(EngineFactory, SetMessageCallback,                     This, __VA_ARGS__)
 
 // clang-format on

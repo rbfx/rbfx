@@ -54,7 +54,7 @@ DILIGENT_BEGIN_INTERFACE(IRenderDeviceD3D12, IRenderDevice)
 
     /// The method does *NOT* increment the reference counter of the returned object,
     /// so Release() must not be called.
-    VIRTUAL ID3D12Device* METHOD(GetD3D12Device)(THIS) PURE;
+    VIRTUAL ID3D12Device* METHOD(GetD3D12Device)(THIS) CONST PURE;
 
     /// Creates a texture object from native d3d12 resource
 

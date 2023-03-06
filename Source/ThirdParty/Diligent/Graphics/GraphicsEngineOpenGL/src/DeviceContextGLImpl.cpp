@@ -781,7 +781,7 @@ void DeviceContextGLImpl::PrepareForIndexedDraw(VALUE_TYPE IndexType, Uint32 Fir
     VERIFY(GLIndexType == GL_UNSIGNED_BYTE || GLIndexType == GL_UNSIGNED_SHORT || GLIndexType == GL_UNSIGNED_INT,
            "Unsupported index type");
     VERIFY(m_pIndexBuffer, "Index Buffer is not bound to the pipeline");
-    FirstIndexByteOffset = StaticCast<size_t>(GetValueSize(IndexType) * FirstIndexLocation + m_IndexDataStartOffset);
+    FirstIndexByteOffset = StaticCast<size_t>(GetValueSize(IndexType) * Uint64{FirstIndexLocation} + m_IndexDataStartOffset);
 }
 
 void DeviceContextGLImpl::PostDraw()
@@ -938,7 +938,7 @@ void DeviceContextGLImpl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 #if GL_ARB_draw_indirect
             for (Uint32 draw = 0; draw < Attribs.DrawCount; ++draw)
             {
-                auto Offset = Attribs.DrawArgsOffset + draw * Attribs.DrawArgsStride;
+                auto Offset = Attribs.DrawArgsOffset + draw * Uint64{Attribs.DrawArgsStride};
                 //typedef  struct {
                 //   GLuint  count;
                 //   GLuint  instanceCount;
@@ -1017,7 +1017,7 @@ void DeviceContextGLImpl::DrawIndexedIndirect(const DrawIndexedIndirectAttribs& 
 #if GL_ARB_draw_indirect
             for (Uint32 draw = 0; draw < Attribs.DrawCount; ++draw)
             {
-                auto Offset = Attribs.DrawArgsOffset + draw * Attribs.DrawArgsStride;
+                auto Offset = Attribs.DrawArgsOffset + draw * Uint64{Attribs.DrawArgsStride};
                 //typedef  struct {
                 //    GLuint  count;
                 //    GLuint  instanceCount;

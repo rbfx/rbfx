@@ -44,7 +44,7 @@ namespace
 std::string FindResource(const std::string& FilePath)
 {
     std::string dir, name;
-    Diligent::BasicFileSystem::SplitFilePath(FilePath, &dir, &name);
+    Diligent::BasicFileSystem::GetPathComponents(FilePath, &dir, &name);
     auto        dotPos = name.find(".");
     std::string type   = (dotPos != std::string::npos) ? name.substr(dotPos + 1) : "";
     if (dotPos != std::string::npos)
@@ -82,7 +82,7 @@ AppleFile* AppleFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
 {
     // Try to find the file in the bundle first
     std::string path(OpenAttribs.strFilePath);
-    CorrectSlashes(path, AppleFileSystem::GetSlashSymbol());
+    CorrectSlashes(path);
     auto resource_path = FindResource(path);
 
     AppleFile* pFile = nullptr;
@@ -92,7 +92,7 @@ AppleFile* AppleFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
         {
             FileOpenAttribs BundleResourceOpenAttribs = OpenAttribs;
             BundleResourceOpenAttribs.strFilePath     = resource_path.c_str();
-            pFile                                     = new AppleFile(BundleResourceOpenAttribs, AppleFileSystem::GetSlashSymbol());
+            pFile                                     = new AppleFile{BundleResourceOpenAttribs};
         }
         catch (const std::runtime_error& err)
         {
@@ -103,7 +103,7 @@ AppleFile* AppleFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
     {
         try
         {
-            pFile = new AppleFile(OpenAttribs, AppleFileSystem::GetSlashSymbol());
+            pFile = new AppleFile{OpenAttribs};
         }
         catch (const std::runtime_error& err)
         {
@@ -114,15 +114,15 @@ AppleFile* AppleFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
 
 bool AppleFileSystem::FileExists(const Char* strFilePath)
 {
-    std::string path(strFilePath);
-    CorrectSlashes(path, AppleFileSystem::GetSlashSymbol());
-    auto resource_path = FindResource(path);
-
-    if (!FindResource(path).empty())
+    if (LinuxFileSystem::FileExists(strFilePath))
         return true;
 
-    auto res = access(path.c_str(), F_OK);
-    return res == 0;
+    // Try to find the file in bundle resources
+    std::string path{strFilePath};
+    CorrectSlashes(path);
+    const auto resource_path = FindResource(path);
+
+    return !resource_path.empty();
 }
 
 } // namespace Diligent

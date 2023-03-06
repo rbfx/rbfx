@@ -783,7 +783,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::InsertIncludes(String& GLSLSource
                 pSourceStreamFactory->CreateInputStream(IncludeName.c_str(), &pIncludeDataStream);
                 if (!pIncludeDataStream)
                     LOG_ERROR_AND_THROW("Failed to open include file ", IncludeName);
-                RefCntAutoPtr<IDataBlob> pIncludeData(MakeNewRCObj<DataBlobImpl>()(0));
+                auto pIncludeData = DataBlobImpl::Create();
                 pIncludeDataStream->ReadBlob(pIncludeData);
 
                 // Get include text
@@ -795,7 +795,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::InsertIncludes(String& GLSLSource
             }
         } while (true);
     }
-    catch (const std::pair<std::string::iterator, const char*> ErrInfo)
+    catch (const std::pair<std::string::iterator, const char*>& ErrInfo)
     {
         LOG_ERROR_AND_THROW("Unable to process includes: ", ErrInfo.second);
     }
@@ -2226,10 +2226,36 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessAtomics(const TokenListTyp
     }
 }
 
+bool HLSL2GLSLConverterImpl::ConversionStream ::ShaderParameterInfo::SetInterpolationQualifier(TokenType tokenType)
+{
+    switch (tokenType)
+    {
+        // clang-format off
+        case TokenType::kw_linear:          interpolationQualifier = ShaderParameterInfo::InterpolationQualifier::Linear;          return true;
+        case TokenType::kw_nointerpolation: interpolationQualifier = ShaderParameterInfo::InterpolationQualifier::Nointerpolation; return true;
+        case TokenType::kw_noperspective:   interpolationQualifier = ShaderParameterInfo::InterpolationQualifier::Noperspective;   return true;
+        case TokenType::kw_centroid:        interpolationQualifier = ShaderParameterInfo::InterpolationQualifier::Centroid;        return true;
+        case TokenType::kw_sample:          interpolationQualifier = ShaderParameterInfo::InterpolationQualifier::Sample;          return true;
+        // clang-format on
+        default:
+            return false;
+    }
+}
 
 void HLSL2GLSLConverterImpl::ConversionStream::ParseShaderParameter(TokenListType::iterator& Token, ShaderParameterInfo& ParamInfo)
 {
     VERIFY_PARSER_STATE(Token, Token != m_Tokens.end(), "Unexpected EOF while parsing argument list");
+
+    if (ParamInfo.SetInterpolationQualifier(Token->Type))
+    {
+        //          out noperspective float4 Color : SV_Target,
+        //              ^
+        Token = m_Tokens.erase(Token);
+        //          out float4 Color : SV_Target,
+        //              ^
+        VERIFY_PARSER_STATE(Token, Token != m_Tokens.end(), "Unexpected EOF while parsing argument list");
+    }
+
     VERIFY_PARSER_STATE(Token, Token->IsBuiltInType() || Token->Type == TokenType::Identifier,
                         "Missing argument type");
     auto TypeToken = Token;
@@ -2316,7 +2342,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ParseShaderParameter(TokenListTyp
             ShaderParameterInfo MemberInfo;
             MemberInfo.storageQualifier = ParamInfo.storageQualifier;
             ParseShaderParameter(TypeToken, MemberInfo);
-            ParamInfo.members.push_back(MemberInfo);
+            ParamInfo.members.emplace_back(std::move(MemberInfo));
             // struct VSOutput
             // {
             //     float4 f4Position;
@@ -2348,7 +2374,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessFunctionParameters(TokenLi
         RetParam.Type             = TypeToken->Literal;
         RetParam.Name             = FuncNameToken->Literal;
         RetParam.storageQualifier = ShaderParameterInfo::StorageQualifier::Ret;
-        Params.push_back(RetParam);
+        Params.emplace_back(std::move(RetParam));
     }
 
     ++Token;
@@ -2368,6 +2394,16 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessFunctionParameters(TokenLi
         while (Token != m_Tokens.end())
         {
             ShaderParameterInfo ParamInfo;
+
+            // Process interpolation qualifier
+            if (ParamInfo.SetInterpolationQualifier(Token->Type))
+            {
+                //          noperspective out float4 Color : SV_Target,
+                //          ^
+                Token = m_Tokens.erase(Token);
+                //          out float4 Color : SV_Target,
+                //          ^
+            }
 
             // Process in/out qualifier
             switch (Token->Type)
@@ -2407,6 +2443,15 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessFunctionParameters(TokenLi
                     break;
             }
 
+            // Process interpolation qualifier
+            if (ParamInfo.SetInterpolationQualifier(Token->Type))
+            {
+                //          out noperspective float4 Color : SV_Target,
+                //              ^
+                Token = m_Tokens.erase(Token);
+                //          out float4 Color : SV_Target,
+                //              ^
+            }
 
             // Process different GS/HS/DS attributes
             switch (Token->Type)
@@ -2541,7 +2586,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessFunctionParameters(TokenLi
             ParseShaderParameter(Token, ParamInfo);
 
             VERIFY_PARSER_STATE(Token, Token->Literal == "," || Token->Type == TokenType::ClosingParen, "\',\' or \')\' is expected after argument \"", ParamInfo.Name, '\"');
-            Params.push_back(ParamInfo);
+            Params.emplace_back(std::move(ParamInfo));
             if (Token->Type == TokenType::ClosingParen)
                 break;
             ++Token;
@@ -2608,16 +2653,25 @@ void InitVariable(const String& Name, const String& InitValue, std::stringstream
     OutSS << "    " << Name << " = " << InitValue << ";\n";
 }
 
-void DefineInterfaceVar(int location, const char* inout, const String& ParamType, const String& ParamName, std::stringstream& OutSS)
+void DefineInterfaceVar(int location, const char* interpolation, const char* inout, const String& ParamType, const String& ParamName, std::stringstream& OutSS)
 {
     if (location >= 0)
     {
         OutSS << "layout(location = " << location << ") ";
     }
+    if (interpolation != nullptr && interpolation[0] != '\0')
+    {
+        OutSS << interpolation << ' ';
+    }
     OutSS << inout << ' ' << ParamType << ' ' << ParamName << ";\n";
 }
 
-String HLSL2GLSLConverterImpl::ConversionStream::BuildParameterName(const std::vector<const ShaderParameterInfo*>& MemberStack, Char Separator, const Char* Prefix, const Char* SubstituteInstName, const Char* Index)
+String HLSL2GLSLConverterImpl::ConversionStream::BuildParameterName(
+    const std::vector<const ShaderParameterInfo*>& MemberStack,
+    Char                                           Separator,
+    const Char*                                    Prefix,
+    const Char*                                    SubstituteInstName,
+    const Char*                                    Index) const
 {
     String FullName(Prefix);
     auto   it = MemberStack.begin();
@@ -2675,7 +2729,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessShaderArgument(const Shade
                     GLSLVariable = VarIt->second;
             }
 
-            ArgHandler(MemberStack, CurrParam, move(GLSLVariable));
+            ArgHandler(MemberStack, CurrParam, std::move(GLSLVariable));
             MemberStack.pop_back();
             MemberItStack.pop_back();
         }
@@ -2700,21 +2754,35 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessShaderArgument(const Shade
     }
 }
 
-bool HLSL2GLSLConverterImpl::ConversionStream::RequiresFlatQualifier(const String& Type)
+const char* HLSL2GLSLConverterImpl::ConversionStream::GetInterpolationQualifier(const ShaderParameterInfo& ParamInfo) const
 {
-    auto keywordIt    = m_Converter.m_HLSLKeywords.find(Type.c_str());
-    bool RequiresFlat = false;
+    switch (ParamInfo.interpolationQualifier)
+    {
+        // clang-format off
+        case ShaderParameterInfo::InterpolationQualifier::Linear:          return "smooth";
+        case ShaderParameterInfo::InterpolationQualifier::Nointerpolation: return "flat";
+        case ShaderParameterInfo::InterpolationQualifier::Noperspective:   return "noperspective";
+        case ShaderParameterInfo::InterpolationQualifier::Centroid:        return "centroid";
+        case ShaderParameterInfo::InterpolationQualifier::Sample:          return "sample";
+        // clang-format on
+        default:
+            break; // To avoid clang/gcc error
+    }
+
+    auto keywordIt = m_Converter.m_HLSLKeywords.find(ParamInfo.Type.c_str());
     if (keywordIt != m_Converter.m_HLSLKeywords.end())
     {
-        VERIFY_EXPR(keywordIt->second.Literal == Type);
-        auto kw      = keywordIt->second.Type;
-        RequiresFlat = (kw >= TokenType::kw_int && kw <= TokenType::kw_int4x4) ||
+        VERIFY_EXPR(keywordIt->second.Literal == ParamInfo.Type);
+        auto kw = keywordIt->second.Type;
+        if ((kw >= TokenType::kw_int && kw <= TokenType::kw_int4x4) ||
             (kw >= TokenType::kw_uint && kw <= TokenType::kw_uint4x4) ||
             (kw >= TokenType::kw_min16int && kw <= TokenType::kw_min16int4x4) ||
             (kw >= TokenType::kw_min12int && kw <= TokenType::kw_min12int4x4) ||
-            (kw >= TokenType::kw_min16uint && kw <= TokenType::kw_min16uint4x4);
+            (kw >= TokenType::kw_min16uint && kw <= TokenType::kw_min16uint4x4))
+            return "flat";
     }
-    return RequiresFlat;
+
+    return "";
 }
 
 void HLSL2GLSLConverterImpl::ConversionStream::ProcessFragmentShaderArguments(std::vector<ShaderParameterInfo>& Params,
@@ -2739,7 +2807,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessFragmentShaderArguments(st
                     {
                         auto InputVarName = BuildParameterName(MemberStack, '_', m_bUseInOutLocationQualifiers ? "_psin_" : "_");
                         DefineInterfaceVar(m_bUseInOutLocationQualifiers ? InLocation++ : -1,
-                                           RequiresFlatQualifier(Param.Type) ? "flat in" : "in",
+                                           GetInterpolationQualifier(Param), "in",
                                            Param.Type, InputVarName, InterfaceVarsSS);
                         InitVariable(FullParamName, InputVarName, PrologueSS);
                     }
@@ -2780,7 +2848,9 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessFragmentShaderArguments(st
                         {
                             // Layout location qualifiers are allowed on FS outputs even in GLES3.0
                             String OutVarName = BuildParameterName(MemberStack, '_', "_psout_");
-                            DefineInterfaceVar(RTIndex, "out", Param.Type, OutVarName, GlobalVarsSS);
+                            // Fragment shader outputs can't have interpolation qualifiers
+                            const char* Interpolation = nullptr;
+                            DefineInterfaceVar(RTIndex, Interpolation, "out", Param.Type, OutVarName, GlobalVarsSS);
                             ReturnHandlerSS << OutVarName << " = " << FullParamName << ";\\\n";
                         }
                         else
@@ -2842,8 +2912,10 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessVertexShaderArguments(std:
                         }
                         LocationToSemantic[InputLocation] = Semantic.c_str();
                         auto InputVarName                 = BuildParameterName(MemberStack, '_', "_vsin_");
-                        // Layout location qualifiers are allowed on VS inputs even in GLES3.0
-                        DefineInterfaceVar(InputLocation, "in", Param.Type, InputVarName, GlobalVarsSS);
+                        // Interpolation qualifiers are not allowed on VS inputs.
+                        const char* Interpolation = nullptr;
+                        // Layout location qualifiers are allowed on VS inputs even in GLES3.0.
+                        DefineInterfaceVar(InputLocation, Interpolation, "in", Param.Type, InputVarName, GlobalVarsSS);
                         InitVariable(FullParamName, InputVarName, PrologueSS);
                         AutoInputLocation++;
                     }
@@ -2864,7 +2936,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessVertexShaderArguments(std:
                     {
                         auto OutputVarName = BuildParameterName(MemberStack, '_', m_bUseInOutLocationQualifiers ? "_vsout_" : "_");
                         DefineInterfaceVar(m_bUseInOutLocationQualifiers ? OutLocation++ : -1,
-                                           RequiresFlatQualifier(Param.Type) ? "flat out" : "out",
+                                           GetInterpolationQualifier(Param), "out",
                                            Param.Type, OutputVarName, InterfaceVarsSS);
                         ReturnHandlerSS << OutputVarName << " = " << FullParamName << ";\\\n";
                     }
@@ -2888,7 +2960,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessGeometryShaderArguments(To
     // void SelectArraySliceGS(triangle QuadVSOut In[3],
     // ^
 
-    std::unordered_map<HashMapStringKey, String, HashMapStringKey::Hasher> Attributes;
+    std::unordered_map<HashMapStringKey, String> Attributes;
     ProcessShaderAttributes(Token, Attributes);
     auto MaxVertexCountIt = Attributes.find("maxvertexcount");
     if (MaxVertexCountIt == Attributes.end())
@@ -2958,7 +3030,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessGeometryShaderArguments(To
                             auto VarName      = BuildParameterName(MemberStack, '_', m_bUseInOutLocationQualifiers ? "_gsin_" : "_");
                             auto InputVarName = VarName + "[i]";
                             DefineInterfaceVar(m_bUseInOutLocationQualifiers ? inLocation++ : -1,
-                                               RequiresFlatQualifier(Param.Type) ? "flat in" : "in",
+                                               GetInterpolationQualifier(Param), "in",
                                                Param.Type, VarName + "[]", InterfaceVarsInSS);
                             InitVariable(FullIndexedParamName, InputVarName, PrologueSS);
                         }
@@ -3002,7 +3074,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessGeometryShaderArguments(To
                         // Note that gl_Layer is available in fragment shader, but only starting with GL4.3+
                         auto OutputVarName = BuildParameterName(MemberStack, '_', m_bUseInOutLocationQualifiers ? "_gsout_" : "_");
                         DefineInterfaceVar(m_bUseInOutLocationQualifiers ? outLocation++ : -1,
-                                           RequiresFlatQualifier(Param.Type) ? "flat out" : "out",
+                                           GetInterpolationQualifier(Param), "out",
                                            Param.Type, OutputVarName, InterfaceVarsOutSS);
                         EmitVertexDefineSS << OutputVarName << " = " << MacroArgumentName << ";\\\n";
                     }
@@ -3116,7 +3188,11 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessComputeShaderArguments(Tok
 }
 
 template <typename THandler>
-void HLSL2GLSLConverterImpl::ConversionStream::ProcessScope(TokenListType::iterator& Token, TokenListType::iterator ScopeEnd, TokenType OpenParenType, TokenType ClosingParenType, THandler Handler)
+void HLSL2GLSLConverterImpl::ConversionStream::ProcessScope(TokenListType::iterator& Token,
+                                                            TokenListType::iterator  ScopeEnd,
+                                                            TokenType                OpenParenType,
+                                                            TokenType                ClosingParenType,
+                                                            THandler&&               Handler)
 {
     // The function can handle both global scope as well as local scope
     int StartScopeDepth = 0;
@@ -3277,8 +3353,8 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessHullShaderConstantFunction
     ProcessReturnStatements(Token, bIsVoid, EntryPoint, ReturnMacroName);
 }
 
-void HLSL2GLSLConverterImpl::ConversionStream::ProcessShaderAttributes(TokenListType::iterator&                                                Token,
-                                                                       std::unordered_map<HashMapStringKey, String, HashMapStringKey::Hasher>& Attributes)
+void HLSL2GLSLConverterImpl::ConversionStream::ProcessShaderAttributes(TokenListType::iterator&                      Token,
+                                                                       std::unordered_map<HashMapStringKey, String>& Attributes)
 {
     VERIFY_EXPR(Token->IsBuiltInType() || Token->Type == TokenType::Identifier);
     // [patchconstantfunc("ConstantHS")]
@@ -3320,7 +3396,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessShaderAttributes(TokenList
             } //
         );
         VERIFY_PARSER_STATE(TmpToken, TmpToken != m_Tokens.end() && TmpToken->Type == TokenType::ClosingParen, "\']\' expected");
-        Attributes.emplace(make_pair(HashMapStringKey(move(Attrib)), AttribValue));
+        Attributes.emplace(make_pair(HashMapStringKey(std::move(Attrib)), AttribValue));
 
         --Token;
         // [patchconstantfunc("ConstantHS")]
@@ -3372,7 +3448,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessHullShaderArguments(TokenL
         triangle_ccw
     } topology = OutputTopology::undefined;
 
-    std::unordered_map<HashMapStringKey, String, HashMapStringKey::Hasher> Attributes;
+    std::unordered_map<HashMapStringKey, String> Attributes;
     ProcessShaderAttributes(Token, Attributes);
 
     auto DomainIt = Attributes.find("domain");
@@ -3500,7 +3576,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessHullShaderArguments(TokenL
                         auto InputVarName = VarName + (IsPatch ? "[i]" : "");
                         // User-defined inputs can be declared as unbounded arrays
                         DefineInterfaceVar(m_bUseInOutLocationQualifiers ? inLocation++ : -1,
-                                           RequiresFlatQualifier(Param.Type) ? "flat in" : "in",
+                                           GetInterpolationQualifier(Param), "in",
                                            Param.Type, VarName + (IsPatch ? "[]" : ""), InterfaceVarsInSS);
                         InitVariable(FullIndexedParamName, InputVarName, PrologueSS);
                     }
@@ -3533,7 +3609,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessHullShaderArguments(TokenL
                         // Per-vertex outputs are aggregated into arrays.
                         // https://www.khronos.org/opengl/wiki/Tessellation_Control_Shader#Outputs
                         DefineInterfaceVar(m_bUseInOutLocationQualifiers ? outLocation++ : -1,
-                                           RequiresFlatQualifier(Param.Type) ? "flat out" : "out",
+                                           GetInterpolationQualifier(Param), "out",
                                            Param.Type, OutputVarName + "[]", InterfaceVarsOutSS);
                         // A TCS can only ever write to the per-vertex output variable that corresponds to their invocation,
                         // so writes to per-vertex outputs must be of the form vertexTexCoord[gl_InvocationID]
@@ -3548,7 +3624,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessHullShaderArguments(TokenL
     Globals  = GlobalsSS.str() + InterfaceVarsInSS.str() + InterfaceVarsOutSS.str();
 }
 
-void ParseAttributesInComment(const String& Comment, std::unordered_map<HashMapStringKey, String, HashMapStringKey::Hasher>& Attributes)
+void ParseAttributesInComment(const String& Comment, std::unordered_map<HashMapStringKey, String>& Attributes)
 {
     auto Pos = Comment.begin();
     //    /* partitioning = fractional_even, outputtopology = triangle_cw */
@@ -3602,7 +3678,7 @@ void ParseAttributesInComment(const String& Comment, std::unordered_map<HashMapS
         //    /* partitioning = fractional_even , outputtopology = triangle_cw */
         //                                     ^
         String Value(ValueStartPos, Pos);
-        Attributes.emplace(make_pair(HashMapStringKey(move(Attrib)), Value));
+        Attributes.emplace(make_pair(HashMapStringKey(std::move(Attrib)), Value));
 
         Pos = SkipDelimiters(Pos, Comment.end());
         if (Pos == Comment.end())
@@ -3628,7 +3704,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessDomainShaderArguments(Toke
     // DSOut main( HS_CONSTANT_DATA_OUTPUT input,
     // ^
 
-    std::unordered_map<HashMapStringKey, String, HashMapStringKey::Hasher> Attributes;
+    std::unordered_map<HashMapStringKey, String> Attributes;
     ParseAttributesInComment(TypeToken->Delimiter, Attributes);
     ProcessShaderAttributes(Token, Attributes);
 
@@ -3717,7 +3793,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessDomainShaderArguments(Toke
                         auto InputVarName = VarName + (IsPatch ? "[i]" : "");
                         // User-defined inputs can be declared as unbounded arrays
                         DefineInterfaceVar(m_bUseInOutLocationQualifiers ? inLocation++ : -1,
-                                           RequiresFlatQualifier(Param.Type) ? "flat in" : "in",
+                                           GetInterpolationQualifier(Param), "in",
                                            Param.Type, VarName + (IsPatch ? "[]" : ""), InterfaceVarsInSS);
                         InitVariable(FullIndexedParamName, InputVarName, PrologueSS);
                     }
@@ -3745,7 +3821,7 @@ void HLSL2GLSLConverterImpl::ConversionStream::ProcessDomainShaderArguments(Toke
                         // Per-vertex outputs are aggregated into arrays.
                         // https://www.khronos.org/opengl/wiki/Tessellation_Control_Shader#Outputs
                         DefineInterfaceVar(m_bUseInOutLocationQualifiers ? outLocation++ : -1,
-                                           RequiresFlatQualifier(Param.Type) ? "flat out" : "out",
+                                           GetInterpolationQualifier(Param), "out",
                                            Param.Type, OutputVarName, InterfaceVarsOutSS);
                         // A TCS can only ever write to the per-vertex output variable that corresponds to their invocation,
                         // so writes to per-vertex outputs must be of the form vertexTexCoord[gl_InvocationID]
@@ -4183,6 +4259,17 @@ String HLSL2GLSLConverterImpl::ConversionStream::BuildGLSLSource()
     String Output;
     for (const auto& Token : m_Tokens)
     {
+        if ((Token.Type == TokenType::kw_linear ||
+             Token.Type == TokenType::kw_nointerpolation ||
+             Token.Type == TokenType::kw_noperspective ||
+             Token.Type == TokenType::kw_centroid ||
+             Token.Type == TokenType::kw_sample))
+        {
+            // Skip interpolation qualifiers.
+            // We may get here if there are multiple shader functions in the same file.
+            continue;
+        }
+
         Output.append(Token.Delimiter);
         Output.append(Token.Literal);
     }
@@ -4217,7 +4304,7 @@ HLSL2GLSLConverterImpl::ConversionStream::ConversionStream(IReferenceCounters*  
         if (pSourceStream == nullptr)
             LOG_ERROR_AND_THROW("Failed to open shader source file ", InputFileName);
 
-        pFileData = MakeNewRCObj<DataBlobImpl>()(0);
+        pFileData = DataBlobImpl::Create();
         pSourceStream->ReadBlob(pFileData);
         HLSLSource = reinterpret_cast<char*>(pFileData->GetDataPtr());
         NumSymbols = pFileData->GetSize();

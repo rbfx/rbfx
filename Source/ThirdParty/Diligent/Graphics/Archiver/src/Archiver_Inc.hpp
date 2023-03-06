@@ -24,6 +24,8 @@
  *  of the possibility of such damages.
  */
 
+#pragma once
+
 #include <memory>
 #include <array>
 #include <unordered_map>

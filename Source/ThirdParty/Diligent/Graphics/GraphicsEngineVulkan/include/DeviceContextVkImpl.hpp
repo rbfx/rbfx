@@ -551,6 +551,9 @@ private:
     /// Memory to store dynamic buffer offsets for descriptor sets.
     std::vector<Uint32> m_DynamicBufferOffsets;
 
+    /// Temporary array used by CommitDescriptorSets
+    std::array<VkDescriptorSet, MAX_RESOURCE_SIGNATURES* MAX_DESCR_SET_PER_SIGNATURE> m_DescriptorSets = {};
+
     /// Render pass that matches currently bound render targets.
     /// This render pass may or may not be currently set in the command buffer
     VkRenderPass m_vkRenderPass = VK_NULL_HANDLE;

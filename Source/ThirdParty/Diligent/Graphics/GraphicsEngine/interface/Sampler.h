@@ -140,6 +140,9 @@ struct SamplerDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     /// Default value: +FLT_MAX.
     float MaxLOD                        DEFAULT_INITIALIZER(+3.402823466e+38F);
 
+    // 
+    // NB: when adding new members, don't forget to update std::hash<Diligent::SamplerDesc>
+    //
 
 #if DILIGENT_CPP_INTERFACE
     constexpr SamplerDesc() noexcept {}
@@ -203,6 +206,10 @@ struct SamplerDesc DILIGENT_DERIVE(DeviceObjectAttribs)
                 BorderColor[3]     == RHS.BorderColor[3]     &&
                 MinLOD             == RHS.MinLOD             &&
                 MaxLOD             == RHS.MaxLOD;
+    }
+    constexpr bool operator != (const SamplerDesc& RHS)const
+    {
+        return !(*this == RHS);
     }
 #endif
 };

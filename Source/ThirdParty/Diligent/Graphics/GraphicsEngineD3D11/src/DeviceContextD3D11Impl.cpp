@@ -716,7 +716,10 @@ void DeviceContextD3D11Impl::DrawIndirect(const DrawIndirectAttribs& Attribs)
     if (!NativeMultiDrawExecuted)
     {
         for (Uint32 draw = 0; draw < Attribs.DrawCount; ++draw)
-            m_pd3d11DeviceContext->DrawInstancedIndirect(pd3d11ArgsBuff, StaticCast<UINT>(Attribs.DrawArgsOffset + draw * Attribs.DrawArgsStride));
+        {
+            const auto ArgsOffset = Attribs.DrawArgsOffset + Uint64{draw} * Uint64{Attribs.DrawArgsStride};
+            m_pd3d11DeviceContext->DrawInstancedIndirect(pd3d11ArgsBuff, StaticCast<UINT>(ArgsOffset));
+        }
     }
 }
 
@@ -750,7 +753,10 @@ void DeviceContextD3D11Impl::DrawIndexedIndirect(const DrawIndexedIndirectAttrib
     if (!NativeMultiDrawExecuted)
     {
         for (Uint32 draw = 0; draw < Attribs.DrawCount; ++draw)
-            m_pd3d11DeviceContext->DrawIndexedInstancedIndirect(pd3d11ArgsBuff, StaticCast<UINT>(Attribs.DrawArgsOffset + draw * Attribs.DrawArgsStride));
+        {
+            const auto ArgsOffset = Attribs.DrawArgsOffset + Uint64{draw} * Uint64{Attribs.DrawArgsStride};
+            m_pd3d11DeviceContext->DrawIndexedInstancedIndirect(pd3d11ArgsBuff, StaticCast<UINT>(ArgsOffset));
+        }
     }
 }
 

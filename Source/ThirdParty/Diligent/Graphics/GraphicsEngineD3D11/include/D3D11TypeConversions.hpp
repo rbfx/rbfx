@@ -36,14 +36,16 @@
 namespace Diligent
 {
 
-inline UINT BindFlagsToD3D11BindFlags(Uint32 BindFlags)
+inline UINT BindFlagsToD3D11BindFlags(BIND_FLAGS BindFlags)
 {
+    static_assert(BIND_FLAGS_LAST == 2048, "Did you add a new bind flag? Please handle it here.");
     // clang-format off
     UINT D3D11BindFlags = 0;
     D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_VERTEX_BUFFER)     ? D3D11_BIND_VERTEX_BUFFER    : 0);
     D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_INDEX_BUFFER)      ? D3D11_BIND_INDEX_BUFFER     : 0);
     D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_UNIFORM_BUFFER)    ? D3D11_BIND_CONSTANT_BUFFER  : 0);
     D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_SHADER_RESOURCE)   ? D3D11_BIND_SHADER_RESOURCE  : 0);
+    D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_INPUT_ATTACHMENT)  ? D3D11_BIND_SHADER_RESOURCE  : 0);
     D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_STREAM_OUTPUT)     ? D3D11_BIND_STREAM_OUTPUT    : 0);
     D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_RENDER_TARGET)     ? D3D11_BIND_RENDER_TARGET    : 0);
     D3D11BindFlags = D3D11BindFlags | ((BindFlags & BIND_DEPTH_STENCIL)     ? D3D11_BIND_DEPTH_STENCIL    : 0);
@@ -54,6 +56,7 @@ inline UINT BindFlagsToD3D11BindFlags(Uint32 BindFlags)
 
 inline BIND_FLAGS D3D11BindFlagsToBindFlags(UINT D3D11BindFlags)
 {
+    static_assert(BIND_FLAGS_LAST == 2048, "Did you add a new bind flag? Please handle it here.");
     BIND_FLAGS BindFlags = BIND_NONE;
     // clang-format off
     BindFlags = BindFlags | ((D3D11BindFlags & D3D11_BIND_VERTEX_BUFFER)     ? BIND_VERTEX_BUFFER    : BIND_NONE);
@@ -64,11 +67,16 @@ inline BIND_FLAGS D3D11BindFlagsToBindFlags(UINT D3D11BindFlags)
     BindFlags = BindFlags | ((D3D11BindFlags & D3D11_BIND_RENDER_TARGET)     ? BIND_RENDER_TARGET    : BIND_NONE);
     BindFlags = BindFlags | ((D3D11BindFlags & D3D11_BIND_DEPTH_STENCIL)     ? BIND_DEPTH_STENCIL    : BIND_NONE);
     BindFlags = BindFlags | ((D3D11BindFlags & D3D11_BIND_UNORDERED_ACCESS)  ? BIND_UNORDERED_ACCESS : BIND_NONE);
-    VERIFY_EXPR( (D3D11BindFlags &
-                 (D3D11_BIND_VERTEX_BUFFER|D3D11_BIND_INDEX_BUFFER|D3D11_BIND_CONSTANT_BUFFER|
-                  D3D11_BIND_SHADER_RESOURCE|D3D11_BIND_STREAM_OUTPUT|D3D11_BIND_RENDER_TARGET|
-                  D3D11_BIND_DEPTH_STENCIL|D3D11_BIND_UNORDERED_ACCESS)) == BindFlagsToD3D11BindFlags(BindFlags));
     // clang-format on
+
+    if ((D3D11BindFlags & (D3D11_BIND_RENDER_TARGET | D3D11_BIND_DEPTH_STENCIL)) != 0 &&
+        (D3D11BindFlags & (D3D11_BIND_SHADER_RESOURCE)) != 0)
+        BindFlags = BindFlags | BIND_INPUT_ATTACHMENT;
+
+    VERIFY_EXPR((D3D11BindFlags &
+                 (D3D11_BIND_VERTEX_BUFFER | D3D11_BIND_INDEX_BUFFER | D3D11_BIND_CONSTANT_BUFFER |
+                  D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_STREAM_OUTPUT | D3D11_BIND_RENDER_TARGET |
+                  D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_UNORDERED_ACCESS)) == BindFlagsToD3D11BindFlags(BindFlags));
     return BindFlags;
 }
 

@@ -80,6 +80,18 @@ static const char stdinFileName[] = "stdin";
 typedef enum { algo_xxh32=0, algo_xxh64=1, algo_xxh128=2, algo_xxh3=3 } AlgoSelected;
 static AlgoSelected g_defaultAlgo = algo_xxh64;    /* required within main() & XSUM_usage() */
 
+typedef enum {
+    algo_bitmask_xxh32  = 1 << algo_xxh32,      /* 1 << 0 */
+    algo_bitmask_xxh64  = 1 << algo_xxh64,      /* 1 << 1 */
+    algo_bitmask_xxh128 = 1 << algo_xxh128,     /* 1 << 2 */
+    algo_bitmask_xxh3   = 1 << algo_xxh3,       /* 1 << 3 */
+    algo_bitmask_all    = algo_bitmask_xxh32    /* All algorithms */
+                        | algo_bitmask_xxh64
+                        | algo_bitmask_xxh128
+                        | algo_bitmask_xxh3
+} AlgoBitmask;
+
+
 /* <16 hex char> <SPC> <SPC> <filename> <'\0'>
  * '4096' is typical Linux PATH_MAX configuration. */
 #define DEFAULT_LINE_LENGTH (sizeof(XXH64_hash_t) * 2 + 2 + 4096 + 1)
@@ -88,6 +100,116 @@ static AlgoSelected g_defaultAlgo = algo_xxh64;    /* required within main() & X
 #define MAX_LINE_LENGTH (32 KB)
 
 static size_t XSUM_DEFAULT_SAMPLE_SIZE = 100 KB;
+
+
+/* ********************************************************
+*  Filename (un)escaping
+**********************************************************/
+static int XSUM_filenameNeedsEscape(const char* filename) {
+    return strchr(filename, '\\')
+        || strchr(filename, '\n')
+        || strchr(filename, '\r');
+}
+
+static int XSUM_lineNeedsUnescape(const char* line) {
+    /* Skip white-space characters */
+    while (*line == ' ' || *line == '\t') {
+        ++line;
+    }
+    /* Returns true if first non-white-space character is '\\' (0x5c) */
+    return *line == '\\';
+}
+
+static void XSUM_printFilename(const char* filename, int needsEscape) {
+    if (!needsEscape) {
+        XSUM_output("%s", filename);
+    } else {
+        const char* p;
+        for (p = filename; *p != '\0'; ++p) {
+            switch (*p)
+            {
+            case '\n':
+                XSUM_output("\\n");
+                break;
+            case '\r':
+                XSUM_output("\\r");
+                break;
+            case '\\':
+                XSUM_output("\\\\");
+                break;
+            default:
+                XSUM_output("%c", *p);
+                break;
+            }
+        }
+    }
+}
+
+/* Unescape filename in place.
+
+   - Replace '\\', 'n'  (0x5c, 0x6e) with '\n' (0x0a).
+   - Replace '\\', 'r'  (0x5c, 0x72) with '\r' (0x0d).
+   - Replace '\\', '\\' (0x5c, 0x5c) with '\\' (0x5c).
+   - filename may not contain other backslash sequences.
+   - filename may not ends with backslash.
+   - filename may not contain NUL (0x00).
+
+   Return filename if everything is okay.
+   Return NULL if something wrong.
+*/
+static char* XSUM_filenameUnescape(char* filename, size_t filenameLen) {
+    char *p = filename;
+    size_t i;
+    for (i = 0; i < filenameLen; ++i) {
+        switch (filename[i])
+        {
+        case '\\':
+            ++i;
+            if (i == filenameLen) {
+                return NULL; /* Don't accept '\\', <EOL> */
+            }
+            switch (filename[i])
+            {
+            case 'n':
+                *p++ = '\n';
+                break;
+            case 'r':
+                *p++ = '\r';
+                break;
+            case '\\':
+                *p++ = '\\';
+                break;
+            default:
+                return NULL; /* Don't accept any other backslash sequence */
+            }
+            break;
+        case '\0':
+            return NULL; /* Don't accept NUL (0x00) */
+        default:
+            *p++ = filename[i];
+            break;
+        }
+    }
+    if (p < filename + filenameLen) {
+        *p = '\0';
+    }
+    return filename;
+}
+
+
+/* ********************************************************
+*  Algorithm Bitmask
+**********************************************************/
+/* Compute AlgoBitmask (as a U32) from AlgoSelected */
+static XSUM_U32 XSUM_algoBitmask_ComputeAlgoBitmaskFromAlgoSelected(AlgoSelected algoSelected) {
+    return (XSUM_U32) (1U << algoSelected);
+}
+
+/* Returns true (!0) if algoBitmask contains (accepts) parsedLineAlgo */
+static int XSUM_algoBitmask_Accepts(XSUM_U32 algoBitmask, AlgoSelected parsedLineAlgo) {
+    const XSUM_U32 mask = XSUM_algoBitmask_ComputeAlgoBitmaskFromAlgoSelected(parsedLineAlgo);
+    return (algoBitmask & mask) != 0;
+}
 
 
 /* ********************************************************
@@ -204,7 +326,13 @@ static void XSUM_printLine_BSD_internal(const char* filename,
     assert(0 <= hashType && (size_t)hashType <= XSUM_TABLE_ELT_SIZE(XSUM_algoName));
     {   const char* const typeString = algoString[hashType];
         const size_t hashLength = XSUM_algoLength[hashType];
-        XSUM_output("%s (%s) = ", typeString, filename);
+        const int needsEscape = XSUM_filenameNeedsEscape(filename);
+        if (needsEscape) {
+            XSUM_output("%c", '\\');
+        }
+        XSUM_output("%s (", typeString);
+        XSUM_printFilename(filename, needsEscape);
+        XSUM_output(") = ");
         f_displayHash(canonicalHash, hashLength);
         XSUM_output("\n");
 }   }
@@ -225,8 +353,14 @@ static void XSUM_printLine_GNU_internal(const char* filename,
 {
     assert(0 <= hashType && (size_t)hashType <= XSUM_TABLE_ELT_SIZE(XSUM_algoName));
     {   const size_t hashLength = XSUM_algoLength[hashType];
+        const int needsEscape = XSUM_filenameNeedsEscape(filename);
+        if (needsEscape) {
+            XSUM_output("%c", '\\');
+        }
         f_displayHash(canonicalHash, hashLength);
-        XSUM_output("  %s\n", filename);
+        XSUM_output("  ");
+        XSUM_printFilename(filename, needsEscape);
+        XSUM_output("\n");
 }   }
 
 static void XSUM_printLine_GNU(const char* filename,
@@ -407,6 +541,7 @@ typedef struct {
     XSUM_U32        statusOnly;
     XSUM_U32        warn;
     XSUM_U32        quiet;
+    XSUM_U32        algoBitmask;
     ParseFileReport report;
 } ParseFileArg;
 
@@ -533,7 +668,7 @@ static CanonicalFromStringResult XSUM_canonicalFromString(unsigned char* dst,
  *
  *      <algorithm> <' ('> <filename> <') = '> <hexstring> <'\0'>
  */
-static ParseLineResult XSUM_parseLine(ParsedLine* parsedLine, char* line, int rev)
+static ParseLineResult XSUM_parseLine1(ParsedLine* parsedLine, char* line, int rev, int needsUnescape, XSUM_U32 algoBitmask)
 {
     char* const firstSpace = strchr(line, ' ');
     const char* hash_ptr;
@@ -562,6 +697,11 @@ static ParseLineResult XSUM_parseLine(ParsedLine* parsedLine, char* line, int re
         if (hash_len==8) parsedLine->algo = algo_xxh32;
         if (hash_len==16) parsedLine->algo = algo_xxh64;
         if (hash_len==32) parsedLine->algo = algo_xxh128;
+    }
+
+    /* Check current CLI accpets the algorithm or not */
+    if(! XSUM_algoBitmask_Accepts(algoBitmask, parsedLine->algo)) {
+        return ParseLine_invalidFormat;
     }
 
     switch (hash_len)
@@ -603,9 +743,28 @@ static ParseLineResult XSUM_parseLine(ParsedLine* parsedLine, char* line, int re
 
     /* note : skipping second separation character, which can be anything,
      * allowing insertion of custom markers such as '*' */
-    parsedLine->filename = firstSpace + 2;
+    {
+        char* const filename = firstSpace + 2;
+        const size_t filenameLen = strlen(filename);
+        if (needsUnescape) {
+            char* const result = XSUM_filenameUnescape(filename, filenameLen);
+            if (result == NULL) {
+                return ParseLine_invalidFormat;
+            }
+        }
+        parsedLine->filename = filename;
+    }
     return ParseLine_ok;
 }
+
+static ParseLineResult XSUM_parseLine(ParsedLine* parsedLine, char* line, int rev, XSUM_U32 algoBitmask) {
+    const int needsUnescape = XSUM_lineNeedsUnescape(line);
+    if (needsUnescape) {
+        ++line;
+    }
+    return XSUM_parseLine1(parsedLine, line, rev, needsUnescape, algoBitmask);
+}
+
 
 
 /*!
@@ -663,7 +822,7 @@ static void XSUM_parseFile1(ParseFileArg* XSUM_parseFileArg, int rev)
                 break;
         }   }
 
-        if (XSUM_parseLine(&parsedLine, XSUM_parseFileArg->lineBuf, rev) != ParseLine_ok) {
+        if (XSUM_parseLine(&parsedLine, XSUM_parseFileArg->lineBuf, rev, XSUM_parseFileArg->algoBitmask) != ParseLine_ok) {
             report->nImproperlyFormattedLines++;
             if (XSUM_parseFileArg->warn) {
                 XSUM_log("%s:%lu: Error: Improperly formatted checksum line.\n",
@@ -740,8 +899,12 @@ static void XSUM_parseFile1(ParseFileArg* XSUM_parseFileArg, int rev)
                 }
 
                 if (b && !XSUM_parseFileArg->statusOnly) {
-                    XSUM_output("%s: %s\n", parsedLine.filename
-                        , lineStatus == LineStatus_hashOk ? "OK" : "FAILED");
+                    const int needsEscape = XSUM_filenameNeedsEscape(parsedLine.filename);
+                    if (needsEscape) {
+                        XSUM_output("%c", '\\');
+                    }
+                    XSUM_printFilename(parsedLine.filename, needsEscape);
+                    XSUM_output(": %s\n", lineStatus == LineStatus_hashOk ? "OK" : "FAILED");
             }   }
             break;
         }
@@ -769,7 +932,8 @@ static int XSUM_checkFile(const char* inFileName,
                           XSUM_U32 strictMode,
                           XSUM_U32 statusOnly,
                           XSUM_U32 warn,
-                          XSUM_U32 quiet)
+                          XSUM_U32 quiet,
+                          XSUM_U32 algoBitmask)
 {
     int result = 0;
     FILE* inFile = NULL;
@@ -804,6 +968,7 @@ static int XSUM_checkFile(const char* inFileName,
     XSUM_parseFileArg->statusOnly  = statusOnly;
     XSUM_parseFileArg->warn        = warn;
     XSUM_parseFileArg->quiet       = quiet;
+    XSUM_parseFileArg->algoBitmask = algoBitmask;
 
     if ( (XSUM_parseFileArg->lineBuf == NULL)
       || (XSUM_parseFileArg->blockBuf == NULL) ) {
@@ -854,18 +1019,19 @@ static int XSUM_checkFiles(const char* fnList[], int fnTotal,
                            XSUM_U32 strictMode,
                            XSUM_U32 statusOnly,
                            XSUM_U32 warn,
-                           XSUM_U32 quiet)
+                           XSUM_U32 quiet,
+                           XSUM_U32 algoBitmask)
 {
     int ok = 1;
 
     /* Special case for stdinName "-",
      * note: stdinName is not a string.  It's special pointer. */
     if (fnTotal==0) {
-        ok &= XSUM_checkFile(stdinName, displayEndianess, strictMode, statusOnly, warn, quiet);
+        ok &= XSUM_checkFile(stdinName, displayEndianess, strictMode, statusOnly, warn, quiet, algoBitmask);
     } else {
         int fnNb;
         for (fnNb=0; fnNb<fnTotal; fnNb++)
-            ok &= XSUM_checkFile(fnList[fnNb], displayEndianess, strictMode, statusOnly, warn, quiet);
+            ok &= XSUM_checkFile(fnList[fnNb], displayEndianess, strictMode, statusOnly, warn, quiet, algoBitmask);
     }
     return ok ? 0 : 1;
 }
@@ -988,6 +1154,7 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
     XSUM_U32 strictMode    = 0;
     XSUM_U32 statusOnly    = 0;
     XSUM_U32 warn          = 0;
+    XSUM_U32 algoBitmask   = algo_bitmask_all;
     int explicitStdin = 0;
     XSUM_U32 selectBenchIDs= 0;  /* 0 == use default k_testIDs_default, kBenchAll == bench all */
     static const XSUM_U32 kBenchAll = 99;
@@ -998,9 +1165,9 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
     int nbIterations = NBLOOPS_DEFAULT;
 
     /* special case: xxhNNsum default to NN bits checksum */
-    if (strstr(exename,  "xxh32sum") != NULL) algo = g_defaultAlgo = algo_xxh32;
-    if (strstr(exename,  "xxh64sum") != NULL) algo = g_defaultAlgo = algo_xxh64;
-    if (strstr(exename, "xxh128sum") != NULL) algo = g_defaultAlgo = algo_xxh128;
+    if (strstr(exename,  "xxh32sum") != NULL) { algo = g_defaultAlgo = algo_xxh32;  algoBitmask = algo_bitmask_xxh32;  }
+    if (strstr(exename,  "xxh64sum") != NULL) { algo = g_defaultAlgo = algo_xxh64;  algoBitmask = algo_bitmask_xxh64;  }
+    if (strstr(exename, "xxh128sum") != NULL) { algo = g_defaultAlgo = algo_xxh128; algoBitmask = algo_bitmask_xxh128; }
 
     for (i=1; i<argc; i++) {
         const char* argument = argv[i];
@@ -1131,7 +1298,7 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
     if (filenamesStart==0) filenamesStart = argc;
     if (fileCheckMode) {
         return XSUM_checkFiles(argv+filenamesStart, argc-filenamesStart,
-                          displayEndianess, strictMode, statusOnly, warn, (XSUM_logLevel < 2) /*quiet*/);
+                          displayEndianess, strictMode, statusOnly, warn, (XSUM_logLevel < 2) /*quiet*/, algoBitmask);
     } else {
         return XSUM_hashFiles(argv+filenamesStart, argc-filenamesStart, algo, displayEndianess, convention);
     }

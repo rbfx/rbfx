@@ -33,7 +33,9 @@
 #if (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
 #    include <MoltenGLSLToSPIRVConverter/GLSLToSPIRVConverter.h>
 #else
-#    define ENABLE_HLSL
+#    ifndef ENABLE_HLSL
+#        define ENABLE_HLSL
+#    endif
 #    include "SPIRV/GlslangToSpv.h"
 #endif
 
@@ -43,8 +45,6 @@
 #include "RefCntAutoPtr.hpp"
 #include "ShaderToolsCommon.hpp"
 #include "SPIRVTools.hpp"
-
-#include "spirv-tools/optimizer.hpp"
 
 // clang-format off
 static constexpr char g_HLSLDefinitions[] =
@@ -232,7 +232,7 @@ void LogCompilerError(const char* DebugOutputMessage,
 
     if (ppCompilerOutput != nullptr)
     {
-        auto* pOutputDataBlob = MakeNewRCObj<DataBlobImpl>()(SourceCodeLen + 1 + ErrorLog.length() + 1);
+        auto  pOutputDataBlob = DataBlobImpl::Create(SourceCodeLen + 1 + ErrorLog.length() + 1);
         char* DataPtr         = reinterpret_cast<char*>(pOutputDataBlob->GetDataPtr());
         memcpy(DataPtr, ErrorLog.data(), ErrorLog.length() + 1);
         memcpy(DataPtr + ErrorLog.length() + 1, ShaderSource, SourceCodeLen + 1);
@@ -301,7 +301,7 @@ public:
             return nullptr;
         }
 
-        RefCntAutoPtr<IDataBlob> pFileData(MakeNewRCObj<DataBlobImpl>()(0));
+        auto pFileData = DataBlobImpl::Create();
         pSourceStream->ReadBlob(pFileData);
         auto* pNewInclude =
             new IncludeResult{
@@ -451,13 +451,9 @@ std::vector<unsigned int> HLSLtoSPIRV(const ShaderCreateInfo& ShaderCI,
         return SPIRV;
 
     // SPIR-V bytecode generated from HLSL must be legalized to
-    // turn it into a valid vulkan SPIR-V shader
-    spvtools::Optimizer SpirvOptimizer{spvTarget};
-    SpirvOptimizer.SetMessageConsumer(SpvOptimizerMessageConsumer);
-    SpirvOptimizer.RegisterLegalizationPasses();
-    SpirvOptimizer.RegisterPerformancePasses();
-    std::vector<uint32_t> LegalizedSPIRV;
-    if (SpirvOptimizer.Run(SPIRV.data(), SPIRV.size(), &LegalizedSPIRV))
+    // turn it into a valid vulkan SPIR-V shader.
+    auto LegalizedSPIRV = OptimizeSPIRV(SPIRV, spvTarget, SPIRV_OPTIMIZATION_FLAG_LEGALIZATION | SPIRV_OPTIMIZATION_FLAG_PERFORMANCE);
+    if (!LegalizedSPIRV.empty())
     {
         return LegalizedSPIRV;
     }
@@ -498,11 +494,8 @@ std::vector<unsigned int> GLSLtoSPIRV(const GLSLtoSPIRVAttribs& Attribs)
     if (SPIRV.empty())
         return SPIRV;
 
-    spvtools::Optimizer SpirvOptimizer(spvTarget);
-    SpirvOptimizer.SetMessageConsumer(SpvOptimizerMessageConsumer);
-    SpirvOptimizer.RegisterPerformancePasses();
-    std::vector<uint32_t> OptimizedSPIRV;
-    if (SpirvOptimizer.Run(SPIRV.data(), SPIRV.size(), &OptimizedSPIRV))
+    auto OptimizedSPIRV = OptimizeSPIRV(SPIRV, spvTarget, SPIRV_OPTIMIZATION_FLAG_PERFORMANCE);
+    if (!OptimizedSPIRV.empty())
     {
         return OptimizedSPIRV;
     }

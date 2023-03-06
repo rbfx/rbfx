@@ -38,7 +38,7 @@ namespace Diligent
 class StandardFile : public BasicFile
 {
 public:
-    StandardFile(const FileOpenAttribs& OpenAttribs, Char SlashSymbol);
+    StandardFile(const FileOpenAttribs& OpenAttribs);
     virtual ~StandardFile() override;
 
     bool Read(IDataBlob* pData);

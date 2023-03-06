@@ -497,7 +497,8 @@ void Loop::ComputeLoopStructuredOrder(
     // continue blocks that must be copied to retain the structured order.
     // The structured order will include these.
     std::list<BasicBlock*> order;
-    cfg.ComputeStructuredOrder(loop_header_->GetParent(), loop_header_, &order);
+    cfg.ComputeStructuredOrder(loop_header_->GetParent(), loop_header_,
+                               loop_merge_, &order);
     for (BasicBlock* bb : order) {
       if (bb == GetMergeBlock()) {
         break;
@@ -754,6 +755,10 @@ bool Loop::FindNumberOfIterations(const Instruction* induction,
 // |step_value| is NOT cleanly divisible then we add one to the sum.
 int64_t Loop::GetIterations(SpvOp condition, int64_t condition_value,
                             int64_t init_value, int64_t step_value) const {
+  if (step_value == 0) {
+    return 0;
+  }
+
   int64_t diff = 0;
 
   switch (condition) {

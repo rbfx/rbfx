@@ -32,8 +32,8 @@
 namespace Diligent
 {
 
-StandardFile::StandardFile(const FileOpenAttribs& OpenAttribs, Char SlashSymbol) :
-    BasicFile{OpenAttribs, SlashSymbol},
+StandardFile::StandardFile(const FileOpenAttribs& OpenAttribs) :
+    BasicFile{OpenAttribs},
     m_pFile{nullptr}
 {
 #if PLATFORM_LINUX || PLATFORM_MACOS || PLATFORM_IOS || PLATFORM_TVOS || PLATFORM_EMSCRIPTEN

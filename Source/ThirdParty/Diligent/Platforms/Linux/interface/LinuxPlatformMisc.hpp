@@ -41,11 +41,8 @@ struct LinuxMisc : public BasicPlatformMisc
 
         // Returns the number of leading 0-bits in x, starting at the
         // most significant bit position. If x is 0, the result is undefined.
-        int  LeadingZeros = __builtin_clz(Val);
-        auto MSB          = static_cast<Uint32>(31 - LeadingZeros);
-        VERIFY_EXPR(MSB == BasicPlatformMisc::GetMSB(Val));
-
-        return MSB;
+        int LeadingZeros = __builtin_clz(Val);
+        return static_cast<Uint32>(31 - LeadingZeros);
     }
 
     static Uint32 GetLSB(Uint32 Val)
@@ -55,10 +52,7 @@ struct LinuxMisc : public BasicPlatformMisc
         // Returns the number of trailing 0-bits in x, starting at the
         // least significant bit position. If x is 0, the result is undefined.
         auto TrailingZeros = __builtin_ctz(Val);
-        auto LSB           = static_cast<Uint32>(TrailingZeros);
-        VERIFY_EXPR(LSB == BasicPlatformMisc::GetLSB(Val));
-
-        return LSB;
+        return static_cast<Uint32>(TrailingZeros);
     }
 
     static Uint32 GetMSB(Uint64 Val)
@@ -67,11 +61,8 @@ struct LinuxMisc : public BasicPlatformMisc
 
         // Returns the number of leading 0-bits in x, starting at the
         // most significant bit position. If x is 0, the result is undefined.
-        int  LeadingZeros = __builtin_clzll(Val);
-        auto MSB          = static_cast<Uint32>(63 - LeadingZeros);
-        VERIFY_EXPR(MSB == BasicPlatformMisc::GetMSB(Val));
-
-        return MSB;
+        int LeadingZeros = __builtin_clzll(Val);
+        return static_cast<Uint32>(63 - LeadingZeros);
     }
 
     static Uint32 GetLSB(Uint64 Val)
@@ -81,27 +72,45 @@ struct LinuxMisc : public BasicPlatformMisc
         // Returns the number of trailing 0-bits in x, starting at the
         // least significant bit position. If x is 0, the result is undefined.
         auto TrailingZeros = __builtin_ctzll(Val);
-        auto LSB           = static_cast<Uint32>(TrailingZeros);
-        VERIFY_EXPR(LSB == BasicPlatformMisc::GetLSB(Val));
-
-        return LSB;
+        return static_cast<Uint32>(TrailingZeros);
     }
 
     static Uint32 CountOneBits(Uint32 Val)
     {
         // Returns the number of 1-bits in x.
-        auto bits = static_cast<Uint32>(__builtin_popcount(Val));
-        VERIFY_EXPR(bits == BasicPlatformMisc::CountOneBits(Val));
-        return bits;
+        return static_cast<Uint32>(__builtin_popcount(Val));
     }
 
     static Uint32 CountOneBits(Uint64 Val)
     {
         // Returns the number of 1-bits in x.
-        auto bits = static_cast<Uint32>(__builtin_popcountll(Val));
-        VERIFY_EXPR(bits == BasicPlatformMisc::CountOneBits(Val));
-        return bits;
+        return static_cast<Uint32>(__builtin_popcountll(Val));
     }
+
+    template <typename Type>
+    static typename std::enable_if<sizeof(Type) == 2, Type>::type SwapBytes(Type Val)
+    {
+        auto Swapped = __builtin_bswap16(reinterpret_cast<uint16_t&>(Val));
+        return reinterpret_cast<Type&>(Swapped);
+    }
+
+    template <typename Type>
+    static typename std::enable_if<sizeof(Type) == 4, Type>::type SwapBytes(Type Val)
+    {
+        auto Swapped = __builtin_bswap32(reinterpret_cast<uint32_t&>(Val));
+        return reinterpret_cast<Type&>(Swapped);
+    }
+
+    template <typename Type>
+    static typename std::enable_if<sizeof(Type) == 8, Type>::type SwapBytes(Type Val)
+    {
+        auto Swapped = __builtin_bswap64(reinterpret_cast<uint64_t&>(Val));
+        return reinterpret_cast<Type&>(Swapped);
+    }
+
+    /// Sets the current thread affinity mask and on success returns the previous mask.
+    /// On failure, returns 0.
+    static Uint64 SetCurrentThreadAffinity(Uint64 Mask);
 };
 
 } // namespace Diligent

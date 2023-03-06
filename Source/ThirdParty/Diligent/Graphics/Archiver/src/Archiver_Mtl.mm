@@ -69,7 +69,7 @@ std::string GetTmpFolder()
 {
     const auto ProcId   = getpid();
     const auto ThreadId = std::this_thread::get_id();
-    const auto Slash    = FileSystem::GetSlashSymbol();
+    const auto Slash    = FileSystem::SlashSymbol;
 
     std::string TmpDir{filesystem::temp_directory_path().c_str()};
     if (TmpDir.back() != Slash)
@@ -322,8 +322,8 @@ SerializedData CompileMtlShader(const CompileMtlShaderAttribs& Attribs) noexcept
                 return GetTmpFolder();
 
             auto Folder = Attribs.DumpFolder;
-            if (Folder.back() != FileSystem::GetSlashSymbol())
-                Folder += FileSystem::GetSlashSymbol();
+            if (Folder.back() != FileSystem::SlashSymbol)
+                Folder += FileSystem::SlashSymbol;
 
             return Folder;
         }();
@@ -551,7 +551,7 @@ void SerializationDeviceImpl::GetPipelineResourceBindingsMtl(const PipelineResou
         const auto* pSerPRS = ClassPtrCast<SerializedResourceSignatureImpl>(Info.ppResourceSignatures[i]);
         const auto& Desc    = pSerPRS->GetDesc();
 
-        Signatures[Desc.BindingIndex] = pSerPRS->GetDeviceSignature<PipelineResourceSignatureMtlImpl>(DeviceObjectArchiveBase::DeviceType::Metal_MacOS);
+        Signatures[Desc.BindingIndex] = pSerPRS->GetDeviceSignature<PipelineResourceSignatureMtlImpl>(DeviceObjectArchive::DeviceType::Metal_MacOS);
         SignaturesCount               = std::max(SignaturesCount, static_cast<Uint32>(Desc.BindingIndex) + 1);
     }
 

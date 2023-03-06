@@ -110,7 +110,7 @@ D3D12_RESOURCE_DESC TextureD3D12Impl::GetD3D12TextureDesc() const
         Desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
     if ((m_Desc.BindFlags & BIND_UNORDERED_ACCESS) || (m_Desc.MiscFlags & MISC_TEXTURE_FLAG_GENERATE_MIPS))
         Desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-    if ((m_Desc.BindFlags & BIND_SHADER_RESOURCE) == 0 && (m_Desc.BindFlags & BIND_DEPTH_STENCIL) != 0)
+    if ((m_Desc.BindFlags & (BIND_SHADER_RESOURCE | BIND_INPUT_ATTACHMENT)) == 0 && (m_Desc.BindFlags & BIND_DEPTH_STENCIL) != 0)
         Desc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
 
     auto Format = TexFormatToDXGI_Format(m_Desc.Format, m_Desc.BindFlags);
@@ -228,10 +228,18 @@ TextureD3D12Impl::TextureD3D12Impl(IReferenceCounters*        pRefCounters,
         auto InitialState = bInitializeTexture ? RESOURCE_STATE_COPY_DEST : RESOURCE_STATE_UNDEFINED;
         SetState(InitialState);
 
-        auto d3d12State = ResourceStateFlagsToD3D12ResourceStates(InitialState) & d3d12StateMask;
-        auto hr =
-            pd3d12Device->CreateCommittedResource(&HeapProps, D3D12_HEAP_FLAG_NONE, &d3d12TexDesc, d3d12State, pClearValue, __uuidof(m_pd3d12Resource),
-                                                  reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&m_pd3d12Resource)));
+        const auto d3d12State = ResourceStateFlagsToD3D12ResourceStates(InitialState) & d3d12StateMask;
+
+        // By default, committed resources and heaps are almost always zeroed upon creation.
+        // CREATE_NOT_ZEROED flag allows this to be elided in some scenarios to lower the overhead
+        // of creating the heap. No need to zero the resource if we initialize it.
+        const auto d3d12HeapFlags = bInitializeTexture ?
+            D3D12_HEAP_FLAG_CREATE_NOT_ZEROED :
+            D3D12_HEAP_FLAG_NONE;
+
+        auto hr = pd3d12Device->CreateCommittedResource(
+            &HeapProps, d3d12HeapFlags, &d3d12TexDesc, d3d12State, pClearValue, __uuidof(m_pd3d12Resource),
+            reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&m_pd3d12Resource)));
         if (FAILED(hr))
             LOG_ERROR_AND_THROW("Failed to create D3D12 texture");
 
@@ -254,24 +262,26 @@ TextureD3D12Impl::TextureD3D12Impl(IReferenceCounters*        pRefCounters,
             UploadHeapProps.CreationNodeMask     = 1;
             UploadHeapProps.VisibleNodeMask      = 1;
 
-            D3D12_RESOURCE_DESC BufferDesc{};
-            BufferDesc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
-            BufferDesc.Alignment          = 0;
-            BufferDesc.Width              = uploadBufferSize;
-            BufferDesc.Height             = 1;
-            BufferDesc.DepthOrArraySize   = 1;
-            BufferDesc.MipLevels          = 1;
-            BufferDesc.Format             = DXGI_FORMAT_UNKNOWN;
-            BufferDesc.SampleDesc.Count   = 1;
-            BufferDesc.SampleDesc.Quality = 0;
-            BufferDesc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-            BufferDesc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+            D3D12_RESOURCE_DESC UploadBuffDesc{};
+            UploadBuffDesc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+            UploadBuffDesc.Alignment          = 0;
+            UploadBuffDesc.Width              = uploadBufferSize;
+            UploadBuffDesc.Height             = 1;
+            UploadBuffDesc.DepthOrArraySize   = 1;
+            UploadBuffDesc.MipLevels          = 1;
+            UploadBuffDesc.Format             = DXGI_FORMAT_UNKNOWN;
+            UploadBuffDesc.SampleDesc.Count   = 1;
+            UploadBuffDesc.SampleDesc.Quality = 0;
+            UploadBuffDesc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            UploadBuffDesc.Flags              = D3D12_RESOURCE_FLAG_NONE;
 
             CComPtr<ID3D12Resource> UploadBuffer;
-            hr = pd3d12Device->CreateCommittedResource(&UploadHeapProps, D3D12_HEAP_FLAG_NONE,
-                                                       &BufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                       nullptr, __uuidof(UploadBuffer),
-                                                       reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&UploadBuffer)));
+            hr = pd3d12Device->CreateCommittedResource(
+                &UploadHeapProps,
+                D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, // Do not zero the heap
+                &UploadBuffDesc, D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr, __uuidof(UploadBuffer),
+                reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&UploadBuffer)));
             if (FAILED(hr))
                 LOG_ERROR_AND_THROW("Failed to create committed resource in an upload heap");
 
@@ -350,7 +360,7 @@ TextureD3D12Impl::TextureD3D12Impl(IReferenceCounters*        pRefCounters,
 
         UINT64 stagingBufferSize = 0;
         Uint32 NumSubresources   = Uint32{d3d12TexDesc.MipLevels} * (d3d12TexDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : Uint32{d3d12TexDesc.DepthOrArraySize});
-        m_StagingFootprints      = ALLOCATE(GetRawAllocator(), "Memory for staging footprints", D3D12_PLACED_SUBRESOURCE_FOOTPRINT, NumSubresources + 1);
+        m_StagingFootprints      = ALLOCATE(GetRawAllocator(), "Memory for staging footprints", D3D12_PLACED_SUBRESOURCE_FOOTPRINT, size_t{NumSubresources} + 1);
         pd3d12Device->GetCopyableFootprints(&d3d12TexDesc, 0, NumSubresources, 0, m_StagingFootprints, nullptr, nullptr, &stagingBufferSize);
         m_StagingFootprints[NumSubresources] = D3D12_PLACED_SUBRESOURCE_FOOTPRINT{stagingBufferSize};
 
@@ -422,42 +432,42 @@ TextureD3D12Impl::TextureD3D12Impl(IReferenceCounters*        pRefCounters,
 
 static TextureDesc InitTexDescFromD3D12Resource(ID3D12Resource* pTexture, const TextureDesc& SrcTexDesc)
 {
-    auto ResourceDesc = pTexture->GetDesc();
+    const auto d3d12Desc = pTexture->GetDesc();
 
     TextureDesc TexDesc = SrcTexDesc;
     if (TexDesc.Format == TEX_FORMAT_UNKNOWN)
-        TexDesc.Format = DXGI_FormatToTexFormat(ResourceDesc.Format);
+        TexDesc.Format = DXGI_FormatToTexFormat(d3d12Desc.Format);
     else
     {
-        auto RefFormat = DXGI_FormatToTexFormat(ResourceDesc.Format);
+        auto RefFormat = DXGI_FormatToTexFormat(d3d12Desc.Format);
         DEV_CHECK_ERR(RefFormat == TexDesc.Format, "The format specified by texture description (", GetTextureFormatAttribs(TexDesc.Format).Name,
                       ") does not match the D3D12 resource format (",
                       GetTextureFormatAttribs(RefFormat).Name, ")");
         (void)RefFormat;
     }
 
-    TexDesc.Width     = StaticCast<Uint32>(ResourceDesc.Width);
-    TexDesc.Height    = Uint32{ResourceDesc.Height};
-    TexDesc.ArraySize = Uint32{ResourceDesc.DepthOrArraySize};
-    TexDesc.MipLevels = Uint32{ResourceDesc.MipLevels};
-    switch (ResourceDesc.Dimension)
+    TexDesc.Width     = StaticCast<Uint32>(d3d12Desc.Width);
+    TexDesc.Height    = Uint32{d3d12Desc.Height};
+    TexDesc.ArraySize = Uint32{d3d12Desc.DepthOrArraySize};
+    TexDesc.MipLevels = Uint32{d3d12Desc.MipLevels};
+    switch (d3d12Desc.Dimension)
     {
         case D3D12_RESOURCE_DIMENSION_TEXTURE1D: TexDesc.Type = TexDesc.ArraySize == 1 ? RESOURCE_DIM_TEX_1D : RESOURCE_DIM_TEX_1D_ARRAY; break;
         case D3D12_RESOURCE_DIMENSION_TEXTURE2D: TexDesc.Type = TexDesc.ArraySize == 1 ? RESOURCE_DIM_TEX_2D : RESOURCE_DIM_TEX_2D_ARRAY; break;
         case D3D12_RESOURCE_DIMENSION_TEXTURE3D: TexDesc.Type = RESOURCE_DIM_TEX_3D; break;
     }
 
-    TexDesc.SampleCount = ResourceDesc.SampleDesc.Count;
+    TexDesc.SampleCount = d3d12Desc.SampleDesc.Count;
 
     TexDesc.Usage     = USAGE_DEFAULT;
     TexDesc.BindFlags = BIND_NONE;
-    if ((ResourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) != 0)
+    if ((d3d12Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) != 0)
         TexDesc.BindFlags |= BIND_RENDER_TARGET;
-    if ((ResourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0)
+    if ((d3d12Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0)
         TexDesc.BindFlags |= BIND_DEPTH_STENCIL;
-    if ((ResourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0)
+    if ((d3d12Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0)
         TexDesc.BindFlags |= BIND_UNORDERED_ACCESS;
-    if ((ResourceDesc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) == 0)
+    if ((d3d12Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) == 0)
     {
         const auto& FormatAttribs = GetTextureFormatAttribs(TexDesc.Format);
         if (FormatAttribs.IsTypeless ||
@@ -466,9 +476,11 @@ static TextureDesc InitTexDescFromD3D12Resource(ID3D12Resource* pTexture, const 
         {
             TexDesc.BindFlags |= BIND_SHADER_RESOURCE;
         }
+        if ((d3d12Desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0)
+            TexDesc.BindFlags |= BIND_INPUT_ATTACHMENT;
     }
 
-    if (ResourceDesc.Layout == D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE)
+    if (d3d12Desc.Layout == D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE)
     {
         TexDesc.Usage = USAGE_SPARSE;
         TexDesc.MiscFlags |= MISC_TEXTURE_FLAG_SPARSE_ALIASING;

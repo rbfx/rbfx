@@ -69,15 +69,16 @@ void PipelineLayoutVk::Create(RenderDeviceVkImpl* pDeviceVk, RefCntAutoPtr<Pipel
     Uint32 DynamicUniformBufferCount = 0;
     Uint32 DynamicStorageBufferCount = 0;
 
-    for (Uint32 i = 0; i < SignatureCount; ++i)
+    for (Uint32 BindInd = 0; BindInd < SignatureCount; ++BindInd)
     {
-        const auto& pSignature = ppSignatures[i];
+        // Signatures are arranged by binding index by PipelineStateBase::CopyResourceSignatures
+        const auto& pSignature = ppSignatures[BindInd];
         if (pSignature == nullptr)
             continue;
 
         VERIFY(DescSetLayoutCount <= std::numeric_limits<FirstDescrSetIndexArrayType::value_type>::max(),
                "Descriptor set layout count (", DescSetLayoutCount, ") exceeds the maximum representable value");
-        m_FirstDescrSetIndex[i] = static_cast<FirstDescrSetIndexArrayType::value_type>(DescSetLayoutCount);
+        m_FirstDescrSetIndex[BindInd] = static_cast<FirstDescrSetIndexArrayType::value_type>(DescSetLayoutCount);
 
         for (auto SetId : {PipelineResourceSignatureVkImpl::DESCRIPTOR_SET_ID_STATIC_MUTABLE, PipelineResourceSignatureVkImpl::DESCRIPTOR_SET_ID_DYNAMIC})
         {

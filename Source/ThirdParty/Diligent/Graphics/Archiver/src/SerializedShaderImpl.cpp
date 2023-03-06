@@ -50,7 +50,7 @@ SerializedShaderImpl::SerializedShaderImpl(IReferenceCounters*      pRefCounters
     }
 
     auto DeviceFlags = ArchiveInfo.DeviceFlags;
-    if ((DeviceFlags & m_pDevice->GetValidDeviceFlags()) != DeviceFlags)
+    if ((DeviceFlags & m_pDevice->GetSupportedDeviceFlags()) != DeviceFlags)
     {
         LOG_ERROR_AND_THROW("DeviceFlags contain unsupported device type");
     }
@@ -140,14 +140,14 @@ void SerializedShaderImpl::CopyShaderCreateInfo(const ShaderCreateInfo& ShaderCI
         LOG_ERROR_AND_THROW("Shader create info must contain Source, Bytecode or FilePath with pShaderSourceStreamFactory");
     }
 
-    Uint32 MacroCount = 0;
+    size_t MacroCount = 0;
     if (ShaderCI.Macros)
     {
         for (auto* Macro = ShaderCI.Macros; Macro->Name != nullptr && Macro->Definition != nullptr; ++Macro, ++MacroCount)
         {}
         Allocator.AddSpace<ShaderMacro>(MacroCount + 1);
 
-        for (Uint32 i = 0; i < MacroCount; ++i)
+        for (size_t i = 0; i < MacroCount; ++i)
         {
             Allocator.AddSpaceForString(ShaderCI.Macros[i].Name);
             Allocator.AddSpaceForString(ShaderCI.Macros[i].Definition);

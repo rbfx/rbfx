@@ -233,7 +233,7 @@ IteratorType SkipDelimitersAndComments(const IteratorType& Start, const Iterator
 /// \param[inout] Pos - starting position.
 /// \param[in]    End - end of the input string.
 ///
-/// \return     position immediatelly following the last character of identifier.
+/// \return     position immediately following the last character of identifier.
 template <typename IteratorType>
 IteratorType SkipIdentifier(const IteratorType& Start, const IteratorType& End) noexcept
 {
@@ -258,7 +258,7 @@ IteratorType SkipIdentifier(const IteratorType& Start, const IteratorType& End) 
 /// \param[inout] Pos - starting position.
 /// \param[in]    End - end of the input string.
 ///
-/// \return     position immediatelly following the last character of the number.
+/// \return     position immediately following the last character of the number.
 template <typename IteratorType>
 IteratorType SkipFloatNumber(const IteratorType& Start, const IteratorType& End) noexcept
 {
@@ -353,7 +353,7 @@ IteratorType SkipFloatNumber(const IteratorType& Start, const IteratorType& End)
 /// \param [in] Handler - user-provided handler to call for each chunk.
 ///
 /// \remarks    The function starts from the beginning of the strings
-///             and splits it into chunks seprated by comments and delimiters.
+///             and splits it into chunks separated by comments and delimiters.
 ///             For each chunk, it calls the user-provided handler and passes
 ///             the start of the preceding comments/delimiters part. The handler
 ///             must then process the text at the current position and move the pointer.
@@ -363,7 +363,7 @@ IteratorType SkipFloatNumber(const IteratorType& Start, const IteratorType& End)
 ///             of type std::pair<InteratorType, const char*>, where first is the position
 ///             of the error, and second is the error description.
 template <typename IteratorType, typename HandlerType>
-void SplitString(const IteratorType& Start, const IteratorType& End, HandlerType Handler) noexcept(false)
+void SplitString(const IteratorType& Start, const IteratorType& End, HandlerType&& Handler) noexcept(false)
 {
     auto Pos = Start;
     while (Pos != End)

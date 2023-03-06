@@ -111,4 +111,6 @@ DILIGENT_END_INTERFACE
 
 #endif
 
+void DILIGENT_GLOBAL_FUNCTION(CreateHLSL2GLSLConverter)(IHLSL2GLSLConverter** ppConverter);
+
 DILIGENT_END_NAMESPACE // namespace Diligent

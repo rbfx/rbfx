@@ -49,7 +49,7 @@ public:
     StringPool& operator=(const StringPool&) = delete;
     // clang-format on
 
-    StringPool(StringPool&& Pool) :
+    StringPool(StringPool&& Pool) noexcept :
         // clang-format off
         m_pBuffer     {Pool.m_pBuffer     },
         m_pCurrPtr    {Pool.m_pCurrPtr    },

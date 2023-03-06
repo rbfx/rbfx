@@ -83,7 +83,8 @@ Uint32 FindResource(const PipelineResourceDesc Resources[],
 
 /// Returns true if two pipeline resource signature descriptions are compatible, and false otherwise
 bool PipelineResourceSignaturesCompatible(const PipelineResourceSignatureDesc& Desc0,
-                                          const PipelineResourceSignatureDesc& Desc1) noexcept;
+                                          const PipelineResourceSignatureDesc& Desc1,
+                                          bool                                 IgnoreSamplerDescriptions = false) noexcept;
 
 /// Calculates hash of the pipeline resource signature description.
 size_t CalculatePipelineResourceSignatureDescHash(const PipelineResourceSignatureDesc& Desc) noexcept;
@@ -208,7 +209,7 @@ public:
     }
 
     template <class HandlerType>
-    void ProcessImmutableSamplers(HandlerType Handler)
+    void ProcessImmutableSamplers(HandlerType&& Handler)
     {
         for (auto& ImtblSam : m_ImmutableSamplers)
         {
@@ -220,7 +221,7 @@ public:
     }
 
     template <class HandlerType>
-    void ProcessResources(HandlerType Handler)
+    void ProcessResources(HandlerType&& Handler)
     {
         for (auto& Res : m_Resources)
         {
@@ -572,7 +573,7 @@ public:
 
     std::pair<Uint32, Uint32> GetResourceIndexRange(SHADER_RESOURCE_VARIABLE_TYPE VarType) const
     {
-        return std::pair<Uint32, Uint32>{m_ResourceOffsets[VarType], m_ResourceOffsets[VarType + 1]};
+        return std::pair<Uint32, Uint32>{m_ResourceOffsets[VarType], m_ResourceOffsets[size_t{VarType} + 1]};
     }
 
     // Returns the number of shader stages that have resources.
@@ -667,7 +668,7 @@ public:
     void ProcessResources(const SHADER_RESOURCE_VARIABLE_TYPE* AllowedVarTypes,
                           Uint32                               NumAllowedTypes,
                           SHADER_TYPE                          AllowedStages,
-                          HandlerType                          Handler) const
+                          HandlerType&&                        Handler) const
     {
         if (AllowedVarTypes == nullptr)
             NumAllowedTypes = 1;

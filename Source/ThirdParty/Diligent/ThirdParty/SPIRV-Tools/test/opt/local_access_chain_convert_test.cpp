@@ -1156,6 +1156,197 @@ TEST_F(LocalAccessChainConvertTest, AccessChainWithNoIndex) {
 
   SinglePassRunAndMatch<LocalAccessChainConvertPass>(before, true);
 }
+TEST_F(LocalAccessChainConvertTest, AccessChainWithLongIndex) {
+  // The access chain take a value that is larger than 32-bit.  The index cannot
+  // be encoded in an OpCompositeExtract, so nothing should be done.
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Int64
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main_0004f4d4_85b2f584"
+OpExecutionMode %2 OriginUpperLeft
+%ulong = OpTypeInt 64 0
+%ulong_8589934592 = OpConstant %ulong 8589934592
+%ulong_8589934591 = OpConstant %ulong 8589934591
+%_arr_ulong_ulong_8589934592 = OpTypeArray %ulong %ulong_8589934592
+%_ptr_Function__arr_ulong_ulong_8589934592 = OpTypePointer Function %_arr_ulong_ulong_8589934592
+%_ptr_Function_ulong = OpTypePointer Function %ulong
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%2 = OpFunction %void None %10
+%11 = OpLabel
+%12 = OpVariable %_ptr_Function__arr_ulong_ulong_8589934592 Function
+%13 = OpAccessChain %_ptr_Function_ulong %12 %ulong_8589934591
+%14 = OpLoad %ulong %13
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(before, before, false,
+                                                     true);
+}
+
+TEST_F(LocalAccessChainConvertTest, AccessChainWith32BitIndexInLong) {
+  // The access chain has a value that is 32-bits, but it is stored in a 64-bit
+  // variable.  This access change can be converted to an extract.
+  const std::string before =
+      R"(
+; CHECK: OpFunction
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[ld:%\w+]] = OpLoad {{%\w+}} [[var]]
+; CHECK: OpCompositeExtract %ulong [[ld]] 3
+               OpCapability Shader
+               OpCapability Int64
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main_0004f4d4_85b2f584"
+               OpExecutionMode %2 OriginUpperLeft
+      %ulong = OpTypeInt 64 0
+%ulong_8589934592 = OpConstant %ulong 8589934592
+%ulong_3 = OpConstant %ulong 3
+%_arr_ulong_ulong_8589934592 = OpTypeArray %ulong %ulong_8589934592
+%_ptr_Function__arr_ulong_ulong_8589934592 = OpTypePointer Function %_arr_ulong_ulong_8589934592
+%_ptr_Function_ulong = OpTypePointer Function %ulong
+       %void = OpTypeVoid
+         %10 = OpTypeFunction %void
+          %2 = OpFunction %void None %10
+         %11 = OpLabel
+         %12 = OpVariable %_ptr_Function__arr_ulong_ulong_8589934592 Function
+         %13 = OpAccessChain %_ptr_Function_ulong %12 %ulong_3
+         %14 = OpLoad %ulong %13
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<LocalAccessChainConvertPass>(before, true);
+}
+
+TEST_F(LocalAccessChainConvertTest, AccessChainWithVarIndex) {
+  // The access chain has a value that is not constant, so there should not be
+  // any changes.
+  const std::string before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main_0004f4d4_85b2f584"
+OpExecutionMode %2 OriginUpperLeft
+%uint = OpTypeInt 32 0
+%uint_5 = OpConstant %uint 5
+%_arr_uint_uint_5 = OpTypeArray %uint %uint_5
+%_ptr_Function__arr_uint_uint_5 = OpTypePointer Function %_arr_uint_uint_5
+%_ptr_Function_uint = OpTypePointer Function %uint
+%8 = OpUndef %uint
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%2 = OpFunction %void None %10
+%11 = OpLabel
+%12 = OpVariable %_ptr_Function__arr_uint_uint_5 Function
+%13 = OpAccessChain %_ptr_Function_uint %12 %8
+%14 = OpLoad %uint %13
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(before, before, false,
+                                                     true);
+}
+
+TEST_F(LocalAccessChainConvertTest, OutOfBoundsAccess) {
+  // The access chain indexes element 12 in an array of size 10.  Nothing should
+  // be done.
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main" %3
+OpExecutionMode %2 OriginUpperLeft
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_10 = OpConstant %int 10
+%_arr_int_int_10 = OpTypeArray %int %int_10
+%_ptr_Function_int = OpTypePointer Function %int
+%int_12 = OpConstant %int 12
+%_ptr_Output_int = OpTypePointer Output %int
+%3 = OpVariable %_ptr_Output_int Output
+%_ptr_Function__arr_int_int_10 = OpTypePointer Function %_arr_int_int_10
+%2 = OpFunction %void None %5
+%13 = OpLabel
+%14 = OpVariable %_ptr_Function__arr_int_int_10 Function
+%15 = OpAccessChain %_ptr_Function_int %14 %int_12
+%16 = OpLoad %int %15
+OpStore %3 %16
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(assembly, assembly, false,
+                                                     true);
+}
+
+TEST_F(LocalAccessChainConvertTest, OutOfBoundsAccessAtBoundary) {
+  // The access chain indexes element 10 in an array of size 10.  Nothing should
+  // be done.
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main" %3
+OpExecutionMode %2 OriginUpperLeft
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_10 = OpConstant %int 10
+%_arr_int_int_10 = OpTypeArray %int %int_10
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Output_int = OpTypePointer Output %int
+%3 = OpVariable %_ptr_Output_int Output
+%_ptr_Function__arr_int_int_10 = OpTypePointer Function %_arr_int_int_10
+%2 = OpFunction %void None %5
+%12 = OpLabel
+%13 = OpVariable %_ptr_Function__arr_int_int_10 Function
+%14 = OpAccessChain %_ptr_Function_int %13 %int_10
+%15 = OpLoad %int %14
+OpStore %3 %15
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(assembly, assembly, false,
+                                                     true);
+}
+
+TEST_F(LocalAccessChainConvertTest, NegativeIndex) {
+  // The access chain has a negative index and should not be converted because
+  // the extract instruction cannot hold a negative number.
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main"
+OpExecutionMode %2 OriginUpperLeft
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
+%uint_3808428041 = OpConstant %uint 3808428041
+%_arr_int_uint_3808428041 = OpTypeArray %int %uint_3808428041
+%_ptr_Function__arr_int_uint_3808428041 = OpTypePointer Function %_arr_int_uint_3808428041
+%_ptr_Function_int = OpTypePointer Function %int
+%int_n1272971256 = OpConstant %int -1272971256
+%2 = OpFunction %void None %4
+%12 = OpLabel
+%13 = OpVariable %_ptr_Function__arr_int_uint_3808428041 Function
+%14 = OpAccessChain %_ptr_Function_int %13 %int_n1272971256
+%15 = OpLoad %int %14
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(assembly, assembly, false,
+                                                     true);
+}
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //

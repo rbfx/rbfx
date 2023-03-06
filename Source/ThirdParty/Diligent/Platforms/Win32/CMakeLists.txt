@@ -3,7 +3,6 @@ cmake_minimum_required (VERSION 3.3)
 project(Diligent-Win32Platform CXX)
 
 set(INTERFACE
-    interface/Win32Atomics.hpp
     interface/Win32Debug.hpp
     interface/Win32FileSystem.hpp
     interface/Win32PlatformDefinitions.h
@@ -12,17 +11,17 @@ set(INTERFACE
 )
 
 set(SOURCE
-    src/Win32Atomics.cpp
     src/Win32Debug.cpp
     src/Win32FileSystem.cpp
+    src/Win32PlatformMisc.cpp
 )
 
-add_library(Diligent-Win32Platform STATIC ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
+add_library(Diligent-Win32Platform ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
 set_common_target_properties(Diligent-Win32Platform)
 
 target_include_directories(Diligent-Win32Platform
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-Win32Platform
@@ -31,7 +30,7 @@ PUBLIC
     Diligent-PlatformInterface
 PRIVATE
     Diligent-BuildSettings
-    shlwapi.lib
+    Shlwapi.lib
 )
 
 source_group("src" FILES ${SOURCE})

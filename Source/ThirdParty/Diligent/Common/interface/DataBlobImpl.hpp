@@ -46,7 +46,9 @@ class DataBlobImpl final : public Diligent::ObjectBase<IDataBlob>
 public:
     typedef ObjectBase<IDataBlob> TBase;
 
-    explicit DataBlobImpl(IReferenceCounters* pRefCounters, size_t InitialSize = 0, const void* pData = nullptr);
+    static RefCntAutoPtr<DataBlobImpl> Create(size_t InitialSize = 0, const void* pData = nullptr);
+    static RefCntAutoPtr<DataBlobImpl> MakeCopy(const IDataBlob* pDataBlob);
+
     ~DataBlobImpl() override;
 
     virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override;
@@ -63,8 +65,6 @@ public:
     /// Returns const pointer to the internal data buffer
     virtual const void* DILIGENT_CALL_TYPE GetConstDataPtr() const override;
 
-    static RefCntAutoPtr<DataBlobImpl> Create(size_t InitialSize = 0, const void* pData = nullptr);
-
     template <typename T>
     T* GetDataPtr()
     {
@@ -76,6 +76,12 @@ public:
     {
         return reinterpret_cast<const T*>(GetConstDataPtr());
     }
+
+private:
+    template <typename AllocatorType, typename ObjectType>
+    friend class MakeNewRCObj;
+
+    explicit DataBlobImpl(IReferenceCounters* pRefCounters, size_t InitialSize = 0, const void* pData = nullptr);
 
 private:
     std::vector<Uint8> m_DataBuff;

@@ -51,7 +51,7 @@ BottomLevelASVkImpl::BottomLevelASVkImpl(IReferenceCounters*      pRefCounters,
         VkAccelerationStructureBuildSizesInfoKHR        vkSizeInfo{};
         vkSizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 
-        vkGeometries.resize(Desc.TriangleCount + Desc.BoxCount);
+        vkGeometries.resize(size_t{Desc.TriangleCount} + size_t{Desc.BoxCount});
         MaxPrimitiveCounts.resize(vkGeometries.size());
 
         if (m_Desc.pTriangles != nullptr)

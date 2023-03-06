@@ -91,7 +91,7 @@ TEST(GraphicsTypesXTest, SubpassDescX)
 {
     constexpr AttachmentReference   Inputs[]        = {{2, RESOURCE_STATE_SHADER_RESOURCE}, {4, RESOURCE_STATE_SHADER_RESOURCE}};
     constexpr AttachmentReference   RenderTargets[] = {{1, RESOURCE_STATE_RENDER_TARGET}, {2, RESOURCE_STATE_RENDER_TARGET}};
-    constexpr AttachmentReference   Resovles[]      = {{3, RESOURCE_STATE_RESOLVE_DEST}, {4, RESOURCE_STATE_RESOLVE_DEST}};
+    constexpr AttachmentReference   Resolves[]      = {{3, RESOURCE_STATE_RESOLVE_DEST}, {4, RESOURCE_STATE_RESOLVE_DEST}};
     constexpr AttachmentReference   DepthStencil    = {5, RESOURCE_STATE_DEPTH_WRITE};
     constexpr Uint32                Preserves[]     = {1, 3, 5};
     constexpr ShadingRateAttachment ShadingRate     = {{6, RESOURCE_STATE_SHADING_RATE}, 128, 256};
@@ -105,7 +105,7 @@ TEST(GraphicsTypesXTest, SubpassDescX)
     Ref.pRenderTargetAttachments    = RenderTargets;
     TestCtorsAndAssignments<SubpassDescX>(Ref);
 
-    Ref.pResolveAttachments = Resovles;
+    Ref.pResolveAttachments = Resolves;
     TestCtorsAndAssignments<SubpassDescX>(Ref);
 
     Ref.PreserveAttachmentCount = _countof(Preserves);
@@ -121,8 +121,8 @@ TEST(GraphicsTypesXTest, SubpassDescX)
         DescX
             .AddInput(Inputs[0])
             .AddInput(Inputs[1])
-            .AddRenderTarget(RenderTargets[0], &Resovles[0])
-            .AddRenderTarget(RenderTargets[1], &Resovles[1])
+            .AddRenderTarget(RenderTargets[0], &Resolves[0])
+            .AddRenderTarget(RenderTargets[1], &Resolves[1])
             .SetDepthStencil(&DepthStencil)
             .SetShadingRate(&ShadingRate)
             .AddPreserve(Preserves[0])
@@ -143,12 +143,12 @@ TEST(GraphicsTypesXTest, SubpassDescX)
             .AddRenderTarget(RenderTargets[1]);
         EXPECT_EQ(DescX, Ref);
 
-        constexpr AttachmentReference Resovles2[] = {{ATTACHMENT_UNUSED, RESOURCE_STATE_UNKNOWN}, {4, RESOURCE_STATE_RESOLVE_DEST}};
-        Ref.pResolveAttachments                   = Resovles2;
+        constexpr AttachmentReference Resolves2[] = {{ATTACHMENT_UNUSED, RESOURCE_STATE_UNKNOWN}, {4, RESOURCE_STATE_RESOLVE_DEST}};
+        Ref.pResolveAttachments                   = Resolves2;
         DescX.ClearRenderTargets();
         DescX
             .AddRenderTarget(RenderTargets[0])
-            .AddRenderTarget(RenderTargets[1], &Resovles2[1]);
+            .AddRenderTarget(RenderTargets[1], &Resolves2[1]);
         EXPECT_EQ(DescX, Ref);
 
         DescX.ClearInputs();
@@ -173,7 +173,7 @@ TEST(GraphicsTypesXTest, SubpassDescX)
 
 TEST(GraphicsTypesXTest, RenderPassDescX)
 {
-    constexpr RenderPassAttachmentDesc Attachments[] =
+    const RenderPassAttachmentDesc Attachments[] =
         {
             {TEX_FORMAT_RGBA8_UNORM_SRGB, 2},
             {TEX_FORMAT_RGBA32_FLOAT},
@@ -203,14 +203,14 @@ TEST(GraphicsTypesXTest, RenderPassDescX)
     Ref.pSubpasses          = Subpasses;
     TestCtorsAndAssignments<RenderPassDescX>(Ref);
 
-    constexpr SubpassDependencyDesc Dependecies[] =
+    constexpr SubpassDependencyDesc Dependencies[] =
         {
             {0, 1, PIPELINE_STAGE_FLAG_DRAW_INDIRECT, PIPELINE_STAGE_FLAG_VERTEX_INPUT, ACCESS_FLAG_INDIRECT_COMMAND_READ, ACCESS_FLAG_INDEX_READ},
             {2, 3, PIPELINE_STAGE_FLAG_VERTEX_SHADER, PIPELINE_STAGE_FLAG_HULL_SHADER, ACCESS_FLAG_VERTEX_READ, ACCESS_FLAG_UNIFORM_READ},
             {4, 5, PIPELINE_STAGE_FLAG_DOMAIN_SHADER, PIPELINE_STAGE_FLAG_GEOMETRY_SHADER, ACCESS_FLAG_SHADER_READ, ACCESS_FLAG_SHADER_WRITE},
         };
-    Ref.DependencyCount = _countof(Dependecies);
-    Ref.pDependencies   = Dependecies;
+    Ref.DependencyCount = _countof(Dependencies);
+    Ref.pDependencies   = Dependencies;
     TestCtorsAndAssignments<RenderPassDescX>(Ref);
 
     {
@@ -222,9 +222,9 @@ TEST(GraphicsTypesXTest, RenderPassDescX)
             .AddAttachment(Attachments[3])
             .AddSubpass(Subpass0)
             .AddSubpass(Subpass1)
-            .AddDependency(Dependecies[0])
-            .AddDependency(Dependecies[1])
-            .AddDependency(Dependecies[2]);
+            .AddDependency(Dependencies[0])
+            .AddDependency(Dependencies[1])
+            .AddDependency(Dependencies[2]);
         EXPECT_EQ(DescX, Ref);
 
         DescX.ClearAttachments();
@@ -249,17 +249,17 @@ TEST(GraphicsTypesXTest, InputLayoutDescX)
 {
     // clang-format off
 
-#define ATTRIB1(POOL) {POOL("ATTRIB1"), 0, 0, 2, VT_FLOAT32}
-#define ATTRIB2(POOL) {POOL("ATTRIB2"), 1, 0, 2, VT_FLOAT32}
-#define ATTRIB3(POOL) {POOL("ATTRIB2"), 2, 0, 4, VT_UINT8, True}
+#define ATTRIB1(POOL) POOL("ATTRIB1"), 0u, 0u, 2u, VT_FLOAT32
+#define ATTRIB2(POOL) POOL("ATTRIB2"), 1u, 0u, 2u, VT_FLOAT32
+#define ATTRIB3(POOL) POOL("ATTRIB2"), 2u, 0u, 4u, VT_UINT8, True
 
     // clang-format on
 
     constexpr LayoutElement Elements[] =
         {
-            ATTRIB1(RawStr),
-            ATTRIB2(RawStr),
-            ATTRIB3(RawStr),
+            {ATTRIB1(RawStr)},
+            {ATTRIB2(RawStr)},
+            {ATTRIB3(RawStr)},
         };
 
     InputLayoutDesc Ref;
@@ -271,9 +271,9 @@ TEST(GraphicsTypesXTest, InputLayoutDescX)
         StringPool       Pool;
         InputLayoutDescX DescX;
         DescX
-            .Add(ATTRIB1(Pool))
+            .Add({ATTRIB1(Pool)})
             .Add(ATTRIB2(Pool))
-            .Add(ATTRIB3(Pool));
+            .Add({ATTRIB3(Pool)});
         Pool.Clear();
         EXPECT_EQ(DescX, Ref);
 
@@ -285,9 +285,9 @@ TEST(GraphicsTypesXTest, InputLayoutDescX)
         StringPool       Pool;
         InputLayoutDescX DescX{
             {
-                ATTRIB1(Pool),
-                ATTRIB2(Pool),
-                ATTRIB3(Pool),
+                {ATTRIB1(Pool)},
+                {ATTRIB2(Pool)},
+                {ATTRIB3(Pool)},
             } //
         };
         Pool.Clear();
@@ -347,19 +347,19 @@ TEST(GraphicsTypesXTest, PipelineResourceSignatureDescX)
 {
     // clang-format off
 
-#define RES1(POOL) {SHADER_TYPE_VERTEX,  POOL("g_Tex2D_1"),   1, SHADER_RESOURCE_TYPE_TEXTURE_SRV,     SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC}
-#define RES2(POOL) {SHADER_TYPE_PIXEL,   POOL("g_Tex2D_2"),   1, SHADER_RESOURCE_TYPE_TEXTURE_SRV,     SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE}
-#define RES3(POOL) {SHADER_TYPE_COMPUTE, POOL("ConstBuff_1"), 1, SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, SHADER_RESOURCE_VARIABLE_TYPE_STATIC}
+#define RES1(POOL) SHADER_TYPE_VERTEX,  POOL("g_Tex2D_1"),   1u, SHADER_RESOURCE_TYPE_TEXTURE_SRV,     SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC
+#define RES2(POOL) SHADER_TYPE_PIXEL,   POOL("g_Tex2D_2"),   1u, SHADER_RESOURCE_TYPE_TEXTURE_SRV,     SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE
+#define RES3(POOL) SHADER_TYPE_COMPUTE, POOL("ConstBuff_1"), 1u, SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, SHADER_RESOURCE_VARIABLE_TYPE_STATIC
 
-#define SAM1(POOL) {SHADER_TYPE_ALL_GRAPHICS, POOL("g_Sampler"),  SamplerDesc{FILTER_TYPE_POINT, FILTER_TYPE_POINT, FILTER_TYPE_POINT}}
-#define SAM2(POOL) {SHADER_TYPE_ALL_GRAPHICS, POOL("g_Sampler2"), SamplerDesc{FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR}}
+#define SAM1(POOL) SHADER_TYPE_ALL_GRAPHICS, POOL("g_Sampler"),  SamplerDesc{FILTER_TYPE_POINT,  FILTER_TYPE_POINT,  FILTER_TYPE_POINT}
+#define SAM2(POOL) SHADER_TYPE_ALL_GRAPHICS, POOL("g_Sampler2"), SamplerDesc{FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR}
 
     // clang-format on
     constexpr PipelineResourceDesc Resources[] =
         {
-            RES1(RawStr),
-            RES2(RawStr),
-            RES3(RawStr),
+            {RES1(RawStr)},
+            {RES2(RawStr)},
+            {RES3(RawStr)},
         };
 
     PipelineResourceSignatureDesc Ref;
@@ -373,8 +373,8 @@ TEST(GraphicsTypesXTest, PipelineResourceSignatureDescX)
 
     constexpr ImmutableSamplerDesc ImtblSamplers[] =
         {
-            SAM1(RawStr),
-            SAM2(RawStr),
+            {SAM1(RawStr)},
+            {SAM2(RawStr)},
         };
     Ref.NumImmutableSamplers = _countof(ImtblSamplers);
     Ref.ImmutableSamplers    = ImtblSamplers;
@@ -384,13 +384,13 @@ TEST(GraphicsTypesXTest, PipelineResourceSignatureDescX)
         StringPool                     Pool;
         PipelineResourceSignatureDescX DescX{
             {
-                RES1(Pool),
-                RES2(Pool),
-                RES3(Pool),
+                {RES1(Pool)},
+                {RES2(Pool)},
+                {RES3(Pool)},
             },
             {
-                SAM1(Pool),
-                SAM2(Pool),
+                {SAM1(Pool)},
+                {SAM2(Pool)},
             } //
         };
         Pool.Clear();
@@ -415,16 +415,16 @@ TEST(GraphicsTypesXTest, PipelineResourceSignatureDescX)
         DescX.BindingIndex               = 4;
         DescX.UseCombinedTextureSamplers = true;
         DescX
-            .AddResource(RES1(Pool))
+            .AddResource({RES1(Pool)})
             .AddResource(RES2(Pool))
-            .AddResource(RES3(Pool));
+            .AddResource({RES3(Pool)});
         Pool.Clear();
         EXPECT_EQ(DescX, Ref);
 
         Ref.NumImmutableSamplers = _countof(ImtblSamplers);
         Ref.ImmutableSamplers    = ImtblSamplers;
         DescX
-            .AddImmutableSampler(SAM1(Pool))
+            .AddImmutableSampler({SAM1(Pool)})
             .AddImmutableSampler(SAM2(Pool));
         Pool.Clear();
         EXPECT_EQ(DescX, Ref);
@@ -460,20 +460,20 @@ TEST(GraphicsTypesXTest, PipelineResourceLayoutDescX)
 {
     // clang-format off
 
-#define VAR1(POOL) {SHADER_TYPE_VERTEX,  POOL("g_Tex2D_1"), SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC}
-#define VAR2(POOL) {SHADER_TYPE_PIXEL,   POOL("g_Tex2D_2"), SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE}
-#define VAR3(POOL) {SHADER_TYPE_COMPUTE, POOL("ConstBuff_1"), SHADER_RESOURCE_VARIABLE_TYPE_STATIC}
+#define VAR1(POOL) SHADER_TYPE_VERTEX,  POOL("g_Tex2D_1"),   SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC
+#define VAR2(POOL) SHADER_TYPE_PIXEL,   POOL("g_Tex2D_2"),   SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE
+#define VAR3(POOL) SHADER_TYPE_COMPUTE, POOL("ConstBuff_1"), SHADER_RESOURCE_VARIABLE_TYPE_STATIC
 
-#define SAM1(POOL) {SHADER_TYPE_ALL_GRAPHICS, POOL("g_Sampler"),  SamplerDesc{FILTER_TYPE_POINT, FILTER_TYPE_POINT, FILTER_TYPE_POINT}}
-#define SAM2(POOL) {SHADER_TYPE_ALL_GRAPHICS, POOL("g_Sampler2"), SamplerDesc{FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR}}
+#define SAM1(POOL) SHADER_TYPE_ALL_GRAPHICS, POOL("g_Sampler"),  SamplerDesc{FILTER_TYPE_POINT,  FILTER_TYPE_POINT,  FILTER_TYPE_POINT}
+#define SAM2(POOL) SHADER_TYPE_ALL_GRAPHICS, POOL("g_Sampler2"), SamplerDesc{FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR}
 
     // clang-format on
 
     constexpr ShaderResourceVariableDesc Variables[] =
         {
-            VAR1(RawStr),
-            VAR2(RawStr),
-            VAR3(RawStr),
+            {VAR1(RawStr)},
+            {VAR2(RawStr)},
+            {VAR3(RawStr)},
         };
 
     PipelineResourceLayoutDesc Ref;
@@ -483,8 +483,8 @@ TEST(GraphicsTypesXTest, PipelineResourceLayoutDescX)
 
     constexpr ImmutableSamplerDesc ImtblSamplers[] =
         {
-            SAM1(RawStr),
-            SAM2(RawStr),
+            {SAM1(RawStr)},
+            {SAM2(RawStr)},
         };
     Ref.NumImmutableSamplers = _countof(ImtblSamplers);
     Ref.ImmutableSamplers    = ImtblSamplers;
@@ -494,13 +494,13 @@ TEST(GraphicsTypesXTest, PipelineResourceLayoutDescX)
         StringPool                  Pool;
         PipelineResourceLayoutDescX DescX{
             {
-                VAR1(Pool),
-                VAR2(Pool),
-                VAR3(Pool),
+                {VAR1(Pool)},
+                {VAR2(Pool)},
+                {VAR3(Pool)},
             },
             {
-                SAM1(Pool),
-                SAM2(Pool),
+                {SAM1(Pool)},
+                {SAM2(Pool)},
             } //
         };
         Pool.Clear();
@@ -514,16 +514,16 @@ TEST(GraphicsTypesXTest, PipelineResourceLayoutDescX)
         StringPool                  Pool;
         PipelineResourceLayoutDescX DescX;
         DescX
-            .AddVariable(VAR1(Pool))
+            .AddVariable({VAR1(Pool)})
             .AddVariable(VAR2(Pool))
-            .AddVariable(VAR3(Pool));
+            .AddVariable({VAR3(Pool)});
         Pool.Clear();
         EXPECT_EQ(DescX, Ref);
 
         Ref.NumImmutableSamplers = _countof(ImtblSamplers);
         Ref.ImmutableSamplers    = ImtblSamplers;
         DescX
-            .AddImmutableSampler(SAM1(Pool))
+            .AddImmutableSampler({SAM1(Pool)})
             .AddImmutableSampler(SAM2(Pool));
         Pool.Clear();
         EXPECT_EQ(DescX, Ref);
@@ -559,19 +559,19 @@ TEST(GraphicsTypesXTest, BottomLevelASDescX)
 {
     // clang-format off
 
-#define TRI1(POOL) {POOL("Tri1"), 10, VT_FLOAT32, 3, 100, VT_UINT16}
-#define TRI2(POOL) {POOL("Tri2"), 20, VT_FLOAT16, 2, 200, VT_UINT32}
-#define TRI3(POOL) {POOL("Tri3"), 30, VT_INT16,   4, 300, VT_UINT32}
+#define TRI1(POOL) POOL("Tri1"), 10u, VT_FLOAT32, Uint8{3}, 100u, VT_UINT16
+#define TRI2(POOL) POOL("Tri2"), 20u, VT_FLOAT16, Uint8{2}, 200u, VT_UINT32
+#define TRI3(POOL) POOL("Tri3"), 30u, VT_INT16,   Uint8{4}, 300u, VT_UINT32
 
-#define BOX1(POOL) {POOL("Box1"), 16}
-#define BOX2(POOL) {POOL("Box2"), 32}
+#define BOX1(POOL) POOL("Box1"), 16u
+#define BOX2(POOL) POOL("Box2"), 32u
 
     // clang-format on
 
-    constexpr BLASTriangleDesc Triangles[] = {
-        TRI1(RawStr),
-        TRI2(RawStr),
-        TRI3(RawStr),
+    const BLASTriangleDesc Triangles[] = {
+        {TRI1(RawStr)},
+        {TRI2(RawStr)},
+        {TRI3(RawStr)},
     };
 
     BottomLevelASDesc Ref;
@@ -580,9 +580,9 @@ TEST(GraphicsTypesXTest, BottomLevelASDescX)
     Ref.pTriangles    = Triangles;
     TestCtorsAndAssignments<BottomLevelASDescX>(Ref);
 
-    constexpr BLASBoundingBoxDesc Boxes[] = {
-        BOX1(RawStr),
-        BOX2(RawStr),
+    const BLASBoundingBoxDesc Boxes[] = {
+        {BOX1(RawStr)},
+        {BOX2(RawStr)},
     };
     Ref.BoxCount = _countof(Boxes);
     Ref.pBoxes   = Boxes;
@@ -592,13 +592,13 @@ TEST(GraphicsTypesXTest, BottomLevelASDescX)
         StringPool         Pool;
         BottomLevelASDescX DescX{
             {
-                TRI1(Pool),
-                TRI2(Pool),
-                TRI3(Pool),
+                {TRI1(Pool)},
+                {TRI2(Pool)},
+                {TRI3(Pool)},
             },
             {
-                BOX1(Pool),
-                BOX2(Pool),
+                {BOX1(Pool)},
+                {BOX2(Pool)},
             } //
         };
         Pool.Clear();
@@ -609,10 +609,10 @@ TEST(GraphicsTypesXTest, BottomLevelASDescX)
         StringPool         Pool;
         BottomLevelASDescX DescX;
         DescX
-            .AddTriangleGeomerty(TRI1(Pool))
+            .AddTriangleGeomerty({TRI1(Pool)})
             .AddTriangleGeomerty(TRI2(Pool))
-            .AddTriangleGeomerty(TRI3(Pool))
-            .AddBoxGeomerty(BOX1(Pool))
+            .AddTriangleGeomerty({TRI3(Pool)})
+            .AddBoxGeomerty({BOX1(Pool)})
             .AddBoxGeomerty(BOX2(Pool));
         Pool.Clear();
         EXPECT_EQ(DescX, Ref);
@@ -648,34 +648,34 @@ TEST(GraphicsTypesXTest, RayTracingPipelineStateCreateInfoX)
 {
     // clang-format off
 
-#define GENERAL_SHADER_1(POOL) {POOL("General Shader 1"), reinterpret_cast<IShader*>(uintptr_t{0x01})}
-#define GENERAL_SHADER_2(POOL) {POOL("General Shader 2"), reinterpret_cast<IShader*>(uintptr_t{0x02})}
+#define GENERAL_SHADER_1(POOL) POOL("General Shader 1"), reinterpret_cast<IShader*>(uintptr_t{0x01})
+#define GENERAL_SHADER_2(POOL) POOL("General Shader 2"), reinterpret_cast<IShader*>(uintptr_t{0x02})
 
-#define TRI_HIT_SHADER_1(POOL) {POOL("Tri Hit Shader 1"), reinterpret_cast<IShader*>(uintptr_t{0x04}), reinterpret_cast<IShader*>(uintptr_t{0x05})}
-#define TRI_HIT_SHADER_2(POOL) {POOL("Tri Hit Shader 2"), reinterpret_cast<IShader*>(uintptr_t{0x06}), reinterpret_cast<IShader*>(uintptr_t{0x07})}
-#define TRI_HIT_SHADER_3(POOL) {POOL("Tri Hit Shader 3"), reinterpret_cast<IShader*>(uintptr_t{0x08}), reinterpret_cast<IShader*>(uintptr_t{0x09})}
+#define TRI_HIT_SHADER_1(POOL) POOL("Tri Hit Shader 1"), reinterpret_cast<IShader*>(uintptr_t{0x04}), reinterpret_cast<IShader*>(uintptr_t{0x05})
+#define TRI_HIT_SHADER_2(POOL) POOL("Tri Hit Shader 2"), reinterpret_cast<IShader*>(uintptr_t{0x06}), reinterpret_cast<IShader*>(uintptr_t{0x07})
+#define TRI_HIT_SHADER_3(POOL) POOL("Tri Hit Shader 3"), reinterpret_cast<IShader*>(uintptr_t{0x08}), reinterpret_cast<IShader*>(uintptr_t{0x09})
 
-#define PROC_HIT_SHADER_1(POOL) {POOL("Proc Hit Shader 1"), reinterpret_cast<IShader*>(uintptr_t{0x10}), reinterpret_cast<IShader*>(uintptr_t{0x11}), reinterpret_cast<IShader*>(uintptr_t{0x12})}
-#define PROC_HIT_SHADER_2(POOL) {POOL("Proc Hit Shader 2"), reinterpret_cast<IShader*>(uintptr_t{0x13}), reinterpret_cast<IShader*>(uintptr_t{0x14}), reinterpret_cast<IShader*>(uintptr_t{0x15})}
-#define PROC_HIT_SHADER_3(POOL) {POOL("Proc Hit Shader 3"), reinterpret_cast<IShader*>(uintptr_t{0x16}), reinterpret_cast<IShader*>(uintptr_t{0x17}), reinterpret_cast<IShader*>(uintptr_t{0x18})}
+#define PROC_HIT_SHADER_1(POOL) POOL("Proc Hit Shader 1"), reinterpret_cast<IShader*>(uintptr_t{0x10}), reinterpret_cast<IShader*>(uintptr_t{0x11}), reinterpret_cast<IShader*>(uintptr_t{0x12})
+#define PROC_HIT_SHADER_2(POOL) POOL("Proc Hit Shader 2"), reinterpret_cast<IShader*>(uintptr_t{0x13}), reinterpret_cast<IShader*>(uintptr_t{0x14}), reinterpret_cast<IShader*>(uintptr_t{0x15})
+#define PROC_HIT_SHADER_3(POOL) POOL("Proc Hit Shader 3"), reinterpret_cast<IShader*>(uintptr_t{0x16}), reinterpret_cast<IShader*>(uintptr_t{0x17}), reinterpret_cast<IShader*>(uintptr_t{0x18})
 
     // clang-format on
 
     const RayTracingGeneralShaderGroup GeneralShaders[] = {
-        GENERAL_SHADER_1(RawStr),
-        GENERAL_SHADER_2(RawStr),
+        {GENERAL_SHADER_1(RawStr)},
+        {GENERAL_SHADER_2(RawStr)},
     };
 
     const RayTracingTriangleHitShaderGroup TriHitShaders[] = {
-        TRI_HIT_SHADER_1(RawStr),
-        TRI_HIT_SHADER_2(RawStr),
-        TRI_HIT_SHADER_3(RawStr),
+        {TRI_HIT_SHADER_1(RawStr)},
+        {TRI_HIT_SHADER_2(RawStr)},
+        {TRI_HIT_SHADER_3(RawStr)},
     };
 
     const RayTracingProceduralHitShaderGroup ProcHitShaders[] = {
-        PROC_HIT_SHADER_1(RawStr),
-        PROC_HIT_SHADER_2(RawStr),
-        PROC_HIT_SHADER_3(RawStr),
+        {PROC_HIT_SHADER_1(RawStr)},
+        {PROC_HIT_SHADER_2(RawStr)},
+        {PROC_HIT_SHADER_3(RawStr)},
     };
 
     RayTracingPipelineStateCreateInfo Ref;
@@ -695,18 +695,18 @@ TEST(GraphicsTypesXTest, RayTracingPipelineStateCreateInfoX)
         StringPool                         Pool;
         RayTracingPipelineStateCreateInfoX DescX{
             {
-                GENERAL_SHADER_1(Pool),
-                GENERAL_SHADER_2(Pool),
+                {GENERAL_SHADER_1(Pool)},
+                {GENERAL_SHADER_2(Pool)},
             },
             {
-                TRI_HIT_SHADER_1(Pool),
-                TRI_HIT_SHADER_2(Pool),
-                TRI_HIT_SHADER_3(Pool),
+                {TRI_HIT_SHADER_1(Pool)},
+                {TRI_HIT_SHADER_2(Pool)},
+                {TRI_HIT_SHADER_3(Pool)},
             },
             {
-                PROC_HIT_SHADER_1(Pool),
-                PROC_HIT_SHADER_2(Pool),
-                PROC_HIT_SHADER_3(Pool),
+                {PROC_HIT_SHADER_1(Pool)},
+                {PROC_HIT_SHADER_2(Pool)},
+                {PROC_HIT_SHADER_3(Pool)},
             } //
         };
         Pool.Clear();
@@ -717,14 +717,14 @@ TEST(GraphicsTypesXTest, RayTracingPipelineStateCreateInfoX)
         StringPool                         Pool;
         RayTracingPipelineStateCreateInfoX DescX;
         DescX
-            .AddGeneralShader(GENERAL_SHADER_1(Pool))
+            .AddGeneralShader({GENERAL_SHADER_1(Pool)})
             .AddGeneralShader(GENERAL_SHADER_2(Pool))
-            .AddTriangleHitShader(TRI_HIT_SHADER_1(Pool))
+            .AddTriangleHitShader({TRI_HIT_SHADER_1(Pool)})
             .AddTriangleHitShader(TRI_HIT_SHADER_2(Pool))
-            .AddTriangleHitShader(TRI_HIT_SHADER_3(Pool))
-            .AddProceduralHitShader(PROC_HIT_SHADER_1(Pool))
+            .AddTriangleHitShader({TRI_HIT_SHADER_3(Pool)})
+            .AddProceduralHitShader({PROC_HIT_SHADER_1(Pool)})
             .AddProceduralHitShader(PROC_HIT_SHADER_2(Pool))
-            .AddProceduralHitShader(PROC_HIT_SHADER_3(Pool));
+            .AddProceduralHitShader({PROC_HIT_SHADER_3(Pool)});
         Pool.Clear();
         EXPECT_EQ(DescX, Ref);
 

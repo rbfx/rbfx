@@ -32,6 +32,10 @@
 #    undef FindResource
 #endif
 
+#ifdef CreateDirectory
+#    undef CreateDirectory
+#endif
+
 #ifdef min
 #    undef min
 #endif

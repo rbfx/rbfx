@@ -1,0 +1,38 @@
+name: Android build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - name: "ARM32"
+            arch: "armeabi-v7a"
+
+          - name: "ARM64"
+            arch: "arm64-v8a"
+
+    name: Linux -> Android-${{ matrix.name }}
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Set up build environment
+      if: success()
+      uses: DiligentGraphics/github-action/setup-build-env@v1
+      with:
+        platform: Android
+
+    - name: Build with Gradle
+      env:
+        ANDROID_ARCH: ${{ matrix.arch }}
+      run: |
+        cd ./BuildTools/Android
+        chmod +x gradlew
+        ./gradlew buildCMakeDebug

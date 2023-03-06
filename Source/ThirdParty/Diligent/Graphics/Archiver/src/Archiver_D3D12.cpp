@@ -32,7 +32,7 @@
 #include "PipelineResourceSignatureD3D12Impl.hpp"
 #include "PipelineStateD3D12Impl.hpp"
 #include "ShaderD3D12Impl.hpp"
-#include "DeviceObjectArchiveD3D12Impl.hpp"
+#include "DeviceObjectArchiveD3D12.hpp"
 #include "SerializedPipelineStateImpl.hpp"
 
 namespace Diligent
@@ -51,7 +51,7 @@ struct CompiledShaderD3D12 : SerializedShaderImpl::CompiledShader
 
 inline const ShaderD3D12Impl* GetShaderD3D12(const SerializedShaderImpl* pShader)
 {
-    const auto* pCompiledShaderD3D12 = pShader->GetShader<const CompiledShaderD3D12>(DeviceObjectArchiveBase::DeviceType::Direct3D12);
+    const auto* pCompiledShaderD3D12 = pShader->GetShader<const CompiledShaderD3D12>(DeviceObjectArchive::DeviceType::Direct3D12);
     return pCompiledShaderD3D12 != nullptr ? &pCompiledShaderD3D12->ShaderD3D12 : nullptr;
 }
 

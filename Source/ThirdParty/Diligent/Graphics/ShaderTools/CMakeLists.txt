@@ -11,18 +11,24 @@ set(SOURCE
     src/ShaderToolsCommon.cpp
 )
 
+set(DXC_SUPPORTED FALSE)
+if((PLATFORM_WIN32 AND NOT MINGW_BUILD) OR PLATFORM_UNIVERSAL_WINDOWS OR PLATFORM_LINUX)
+    set(DXC_SUPPORTED TRUE)
+endif()
+
+set(ENABLE_GLSL FALSE)
 if(VULKAN_SUPPORTED OR GL_SUPPORTED OR GLES_SUPPORTED OR METAL_SUPPORTED)
     set(ENABLE_GLSL TRUE)
+endif()
+
+set(ENABLE_HLSL FALSE)
+if(D3D11_SUPPORTED OR D3D12_SUPPORTED OR VULKAN_SUPPORTED OR METAL_SUPPORTED OR DXC_SUPPORTED)
+    set(ENABLE_HLSL TRUE)
 endif()
 
 if(ENABLE_GLSL)
     list(APPEND SOURCE src/GLSLUtils.cpp)
     list(APPEND INCLUDE include/GLSLUtils.hpp)
-endif()
-
-
-if(D3D11_SUPPORTED OR D3D12_SUPPORTED OR VULKAN_SUPPORTED OR METAL_SUPPORTED)
-    set(ENABLE_HLSL TRUE)
 endif()
 
 if(ENABLE_HLSL)
@@ -38,10 +44,6 @@ if(D3D11_SUPPORTED OR D3D12_SUPPORTED)
     list(APPEND SOURCE src/DXBCUtils.cpp)
     list(APPEND INCLUDE include/DXBCUtils.hpp)
     list(APPEND INCLUDE include/ResourceBindingMap.hpp)
-endif()
-
-if((PLATFORM_WIN32 AND NOT MINGW_BUILD) OR PLATFORM_UNIVERSAL_WINDOWS OR PLATFORM_LINUX)
-    set(DXC_SUPPORTED TRUE)
 endif()
 
 if (DXC_SUPPORTED)
@@ -101,16 +103,20 @@ add_library(Diligent-ShaderTools STATIC ${SOURCE} ${INCLUDE} ${DXBC_CHECKSUM_SOU
 
 target_include_directories(Diligent-ShaderTools
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    include
 PRIVATE
     ../GraphicsEngine/include
 )
 
 if (DXC_SUPPORTED)
-    target_include_directories(Diligent-ShaderTools PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../ThirdParty/DirectXShaderCompiler>)
+    target_include_directories(Diligent-ShaderTools PUBLIC ../../ThirdParty/DirectXShaderCompiler)
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(Diligent-ShaderTools PRIVATE -fms-extensions)
+    endif()
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
+        CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         target_link_libraries(Diligent-ShaderTools PRIVATE dl)
     endif()
 endif()

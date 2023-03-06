@@ -1883,6 +1883,55 @@ TEST(Common_BasicMath, VectorInserters)
     }
 }
 
+TEST(Common_BasicMath, VectorAny)
+{
+    EXPECT_FALSE(any(bool2{false, false}));
+    EXPECT_TRUE(any(bool2{true, false}));
+    EXPECT_TRUE(any(bool2{false, true}));
+
+    EXPECT_FALSE(any(bool3{false, false, false}));
+    EXPECT_TRUE(any(bool3{true, false, false}));
+    EXPECT_TRUE(any(bool3{false, true, false}));
+    EXPECT_TRUE(any(bool3{false, false, true}));
+
+    EXPECT_FALSE(any(bool4{false, false, false, false}));
+    EXPECT_TRUE(any(bool4{true, false, false, false}));
+    EXPECT_TRUE(any(bool4{false, true, false, false}));
+    EXPECT_TRUE(any(bool4{false, false, true, false}));
+    EXPECT_TRUE(any(bool4{false, false, false, true}));
+
+    EXPECT_FALSE(any(int4{0, 0, 0, 0}));
+    EXPECT_TRUE(any(int4{1, 0, 0, 0}));
+    EXPECT_TRUE(any(uint4{0, 1, 0, 0}));
+    EXPECT_TRUE(any(float4{0, 0, 1, 0}));
+    EXPECT_TRUE(any(double4{0, 0, 0, 1}));
+}
+
+TEST(Common_BasicMath, VectorAll)
+{
+    EXPECT_TRUE(all(bool2{true, true}));
+    EXPECT_FALSE(all(bool2{false, true}));
+    EXPECT_FALSE(all(bool2{true, false}));
+
+
+    EXPECT_TRUE(all(bool3{true, true, true}));
+    EXPECT_FALSE(all(bool3{false, true, true}));
+    EXPECT_FALSE(all(bool3{true, false, true}));
+    EXPECT_FALSE(all(bool3{true, true, false}));
+
+    EXPECT_TRUE(all(bool4{true, true, true, true}));
+    EXPECT_FALSE(all(bool4{false, true, true, true}));
+    EXPECT_FALSE(all(bool4{true, false, true, true}));
+    EXPECT_FALSE(all(bool4{true, true, false, true}));
+    EXPECT_FALSE(all(bool4{true, true, true, false}));
+
+    EXPECT_TRUE(all(int4{1, 1, 1, 1}));
+    EXPECT_FALSE(all(int4{0, 1, 1, 1}));
+    EXPECT_FALSE(all(uint4{1, 0, 1, 1}));
+    EXPECT_FALSE(all(float4{1, 1, 0, 1}));
+    EXPECT_FALSE(all(double4{1, 1, 1, 0}));
+}
+
 TEST(Common_AdvancedMath, IsPointInsideTriangleF)
 {
     {

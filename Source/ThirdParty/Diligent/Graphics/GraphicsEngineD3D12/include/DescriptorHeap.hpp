@@ -164,7 +164,7 @@ public:
         VERIFY_EXPR(Offset >= 0 && Offset < m_NumHandles);
 
         D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle = m_FirstCpuHandle;
-        CPUHandle.ptr += m_DescriptorSize * Offset;
+        CPUHandle.ptr += SIZE_T{m_DescriptorSize} * SIZE_T{Offset};
 
         return CPUHandle;
     }
@@ -174,7 +174,7 @@ public:
     {
         VERIFY_EXPR(Offset >= 0 && Offset < m_NumHandles);
         D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle = m_FirstGpuHandle;
-        GPUHandle.ptr += m_DescriptorSize * Offset;
+        GPUHandle.ptr += SIZE_T{m_DescriptorSize} * SIZE_T{Offset};
 
         return GPUHandle;
     }

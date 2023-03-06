@@ -4,7 +4,6 @@ project(Diligent-Archiver CXX)
 
 set(INCLUDE
     include/ArchiverImpl.hpp
-    include/ArchiveRepacker.hpp
     include/SerializationDeviceImpl.hpp
     include/SerializedShaderImpl.hpp
     include/SerializedPipelineStateImpl.hpp
@@ -25,7 +24,6 @@ set(SOURCE
     src/ArchiverImpl.cpp
     src/Archiver_Inc.hpp
     src/ArchiverFactory.cpp
-    src/ArchiveRepacker.cpp
     src/SerializationDeviceImpl.cpp
     src/SerializedShaderImpl.cpp
     src/SerializedPipelineStateImpl.cpp
@@ -56,20 +54,20 @@ set(DLL_SOURCE
 
 add_library(Diligent-ArchiverInterface INTERFACE)
 target_link_libraries     (Diligent-ArchiverInterface INTERFACE Diligent-GraphicsEngineInterface)
-target_include_directories(Diligent-ArchiverInterface INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>)
+target_include_directories(Diligent-ArchiverInterface INTERFACE interface)
 target_compile_definitions(Diligent-ArchiverInterface INTERFACE ARCHIVER_SUPPORTED=1)
 
 add_library(Diligent-Archiver-static STATIC
     ${SOURCE} ${INTERFACE} ${INCLUDE}
     readme.md
 )
-#add_library(Diligent-Archiver-shared SHARED
-#    readme.md
-#)
-#
-#if(MSVC)
-#    target_sources(Diligent-Archiver-shared PRIVATE ${DLL_SOURCE})
-#endif()
+add_library(Diligent-Archiver-shared SHARED
+    readme.md
+)
+
+if(MSVC)
+    target_sources(Diligent-Archiver-shared PRIVATE ${DLL_SOURCE})
+endif()
 
 target_include_directories(Diligent-Archiver-static
 PRIVATE
@@ -88,7 +86,7 @@ if(DEFINED DILIGENT_CORE_COMMIT_HASH)
     target_compile_definitions(Diligent-Archiver-static PRIVATE DILIGENT_CORE_COMMIT_HASH="${DILIGENT_CORE_COMMIT_HASH}")
 endif()
 
-#target_compile_definitions(Diligent-Archiver-shared PUBLIC ENGINE_DLL=1)
+target_compile_definitions(Diligent-Archiver-shared PUBLIC ENGINE_DLL=1)
 
 
 target_link_libraries(Diligent-Archiver-static
@@ -147,35 +145,35 @@ if(METAL_SUPPORTED)
 endif()
 
 
-#target_link_libraries(Diligent-Archiver-shared
-#PUBLIC
-#    Diligent-ArchiverInterface
-#PRIVATE
-#    Diligent-BuildSettings
-#    ${WHOLE_ARCHIVE_FLAG} Diligent-Archiver-static ${NO_WHOLE_ARCHIVE_FLAG}
-#)
-#
-#if(PLATFORM_WIN32)
-#    # Do not add 'lib' prefix when building with MinGW
-#    set_target_properties(Diligent-Archiver-shared PROPERTIES PREFIX "")
-#
-#    # Set output name to Archiver{32|64}{r|d}
-#    set_dll_output_name(Diligent-Archiver-shared Archiver)
-#else()
-#    set_target_properties(Diligent-Archiver-shared PROPERTIES
-#        OUTPUT_NAME Archiver
-#    )
-#endif()
+target_link_libraries(Diligent-Archiver-shared
+PUBLIC
+    Diligent-ArchiverInterface
+PRIVATE
+    Diligent-BuildSettings
+    ${WHOLE_ARCHIVE_FLAG} Diligent-Archiver-static ${NO_WHOLE_ARCHIVE_FLAG}
+)
 
-#if (MINGW_BUILD)
-#    # Restrict export to GetArchiverFactory
-#    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/export.map
-#        "{ global: *GetArchiverFactory*; local: *; };"
-#    )
-#    target_link_options(Diligent-Archiver-shared PRIVATE LINKER:--version-script=export.map)
-#endif()
+if(PLATFORM_WIN32)
+    # Do not add 'lib' prefix when building with MinGW
+    set_target_properties(Diligent-Archiver-shared PROPERTIES PREFIX "")
 
-source_group("source" FILES ${SOURCE})
+    # Set output name to Archiver{32|64}{r|d}
+    set_dll_output_name(Diligent-Archiver-shared Archiver)
+else()
+    set_target_properties(Diligent-Archiver-shared PROPERTIES
+        OUTPUT_NAME Archiver
+    )
+endif()
+
+if (MINGW_BUILD)
+    # Restrict export to GetArchiverFactory
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/export.map
+        "{ global: *GetArchiverFactory*; local: *; };"
+    )
+    target_link_options(Diligent-Archiver-shared PRIVATE LINKER:--version-script=export.map)
+endif()
+
+source_group("src" FILES ${SOURCE})
 source_group("include" FILES ${INCLUDE})
 source_group("interface" FILES ${INTERFACE})
 source_group("dll" FILES ${DLL_SOURCE})
@@ -184,14 +182,14 @@ set_source_files_properties(
     readme.md PROPERTIES HEADER_FILE_ONLY TRUE
 )
 
-#set_target_properties(Diligent-Archiver-static Diligent-Archiver-shared PROPERTIES
-#    FOLDER DiligentCore/Graphics
-#)
+set_target_properties(Diligent-Archiver-static Diligent-Archiver-shared PROPERTIES
+    FOLDER DiligentCore/Graphics
+)
 
 set_common_target_properties(Diligent-Archiver-static)
-#set_common_target_properties(Diligent-Archiver-shared)
+set_common_target_properties(Diligent-Archiver-shared)
 
 if(DILIGENT_INSTALL_CORE)
-#    install_core_lib(Diligent-Archiver-shared)
+    install_core_lib(Diligent-Archiver-shared)
     install_core_lib(Diligent-Archiver-static)
 endif()

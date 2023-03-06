@@ -163,12 +163,12 @@ DescriptorHeapAllocationManager::DescriptorHeapAllocationManager(IMemoryAllocato
 // clang-format on
 {
     m_FirstCPUHandle = pd3d12DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    m_FirstCPUHandle.ptr += m_DescriptorSize * FirstDescriptor;
+    m_FirstCPUHandle.ptr += SIZE_T{m_DescriptorSize} * SIZE_T{FirstDescriptor};
 
     if (m_HeapDesc.Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE)
     {
         m_FirstGPUHandle = pd3d12DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-        m_FirstGPUHandle.ptr += m_DescriptorSize * FirstDescriptor;
+        m_FirstGPUHandle.ptr += SIZE_T{m_DescriptorSize} * SIZE_T{FirstDescriptor};
     }
 
 #ifdef DILIGENT_DEVELOPMENT
@@ -223,7 +223,7 @@ DescriptorHeapAllocation DescriptorHeapAllocationManager::Allocate(uint32_t Coun
         {
             auto NumDescrsToCopy = std::min(Count - FisrtDescr, InvalidDescriptorsCount);
             auto DstCPUHandle    = CPUHandle;
-            DstCPUHandle.ptr += FisrtDescr * m_DescriptorSize;
+            DstCPUHandle.ptr += SIZE_T{FisrtDescr} * SIZE_T{m_DescriptorSize};
             pd3d12Device->CopyDescriptorsSimple(NumDescrsToCopy, DstCPUHandle, InvalidCPUHandles, m_HeapDesc.Type);
         }
     }
@@ -543,7 +543,7 @@ DescriptorHeapAllocation DynamicSuballocationsManager::Allocate(Uint32 Count)
 
     // Check if there are no chunks or the last chunk does not have enough space
     if (m_Suballocations.empty() ||
-        m_CurrentSuballocationOffset + Count > m_Suballocations.back().GetNumHandles())
+        size_t{m_CurrentSuballocationOffset} + size_t{Count} > m_Suballocations.back().GetNumHandles())
     {
         // Request a new chunk from the parent GPU descriptor heap
         auto SuballocationSize       = std::max(m_DynamicChunkSize, Count);

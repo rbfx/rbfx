@@ -37,7 +37,7 @@
 namespace Diligent
 {
 
-DeviceObjectArchiveBase::DeviceType ArchiveDeviceDataFlagToArchiveDeviceType(ARCHIVE_DEVICE_DATA_FLAGS DataTypeFlag);
+DeviceObjectArchive::DeviceType ArchiveDeviceDataFlagToArchiveDeviceType(ARCHIVE_DEVICE_DATA_FLAGS DataTypeFlag);
 
 namespace
 {
@@ -162,14 +162,14 @@ std::string GetPSODumpFolder(const std::string& Root, const PipelineStateDesc& P
     if (DumpDir.empty())
         return DumpDir;
 
-    if (DumpDir.back() != FileSystem::GetSlashSymbol())
-        DumpDir += FileSystem::GetSlashSymbol();
+    if (DumpDir.back() != FileSystem::SlashSymbol)
+        DumpDir += FileSystem::SlashSymbol;
 
     // Note: the same directory structure is used by the render state packager
     DumpDir += GetArchiveDeviceDataFlagString(DeviceFlag);
-    DumpDir += FileSystem::GetSlashSymbol();
+    DumpDir += FileSystem::SlashSymbol;
     DumpDir += GetPipelineTypeString(PSODesc.PipelineType);
-    DumpDir += FileSystem::GetSlashSymbol();
+    DumpDir += FileSystem::SlashSymbol;
     DumpDir += PSODesc.Name;
 
     return DumpDir;
@@ -191,7 +191,7 @@ SerializedPipelineStateImpl::SerializedPipelineStateImpl(IReferenceCounters*    
         [this](PipelineStateDesc Desc) //
         {
             Desc.Name = m_Name.c_str();
-            // We don't need resource layout and we dont' copy variables and immutable samplers
+            // We don't need resource layout and we don't copy variables and immutable samplers
             Desc.ResourceLayout = {};
             return Desc;
         }(CreateInfo.PSODesc) //
@@ -201,7 +201,7 @@ SerializedPipelineStateImpl::SerializedPipelineStateImpl(IReferenceCounters*    
     if (CreateInfo.PSODesc.Name == nullptr || CreateInfo.PSODesc.Name[0] == '\0')
         LOG_ERROR_AND_THROW("Serialized pipeline state name can't be null or empty");
 
-    ValidatePipelineStateArchiveInfo(CreateInfo, ArchiveInfo, pDevice->GetValidDeviceFlags());
+    ValidatePipelineStateArchiveInfo(CreateInfo, ArchiveInfo, pDevice->GetSupportedDeviceFlags());
     ValidatePSOCreateInfo(pDevice, CreateInfo);
 
     auto DeviceBits = ArchiveInfo.DeviceFlags;
@@ -269,6 +269,10 @@ SerializedPipelineStateImpl::SerializedPipelineStateImpl(IReferenceCounters*    
                 PrepareDefaultSignatureGL(CreateInfo);
             }
 #endif
+        }
+        else
+        {
+            m_Data.DoNotPackSignatures = (ArchiveInfo.PSOFlags & PSO_ARCHIVE_FLAG_DO_NOT_PACK_SIGNATURES) != 0;
         }
 
         auto   SignaturesCount = CreateInfo.ResourceSignaturesCount;

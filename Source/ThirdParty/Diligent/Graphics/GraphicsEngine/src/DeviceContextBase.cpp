@@ -180,7 +180,7 @@ bool VerifyDrawMeshIndirectAttribs(const DrawMeshIndirectAttribs& Attribs, Uint3
     CHECK_DRAW_MESH_INDIRECT_ATTRIBS((ArgsBuffDesc.BindFlags & BIND_INDIRECT_DRAW_ARGS) != 0,
                                      "indirect draw arguments buffer '", ArgsBuffDesc.Name,
                                      "' was not created with BIND_INDIRECT_DRAW_ARGS flag.");
-    const auto ReqAttrBufSize = Attribs.DrawArgsOffset + IndirectCmdStride * Attribs.CommandCount;
+    const auto ReqAttrBufSize = Attribs.DrawArgsOffset + Uint64{IndirectCmdStride} * Uint64{Attribs.CommandCount};
     CHECK_DRAW_MESH_INDIRECT_ATTRIBS(ReqAttrBufSize <= ArgsBuffDesc.Size, "invalid DrawArgsOffset (", Attribs.DrawArgsOffset,
                                      ") or indirect draw arguments buffer '", ArgsBuffDesc.Name, "' size must be at least ", ReqAttrBufSize, " bytes");
 
@@ -527,11 +527,15 @@ bool VerifyStateTransitionDesc(const IRenderDevice*       pDevice,
     CHECK_STATE_TRANSITION_DESC((ImmediateContextMask & (Uint64{1} << Uint64{ExecutionCtxId})) != 0,
                                 "resource was created with ImmediateContextMask 0x", std::hex, ImmediateContextMask, " and can not be used in device context '", CtxDesc.Name, "'.");
 
+    if (OldState == RESOURCE_STATE_UNORDERED_ACCESS && Barrier.NewState == RESOURCE_STATE_UNORDERED_ACCESS)
+    {
+        CHECK_STATE_TRANSITION_DESC(Barrier.TransitionType == STATE_TRANSITION_TYPE_IMMEDIATE,
+                                    "for UAV barriers, transition type must be STATE_TRANSITION_TYPE_IMMEDIATE.");
+    }
+
     switch (Barrier.TransitionType)
     {
         case STATE_TRANSITION_TYPE_IMMEDIATE:
-            CHECK_STATE_TRANSITION_DESC(!(OldState == RESOURCE_STATE_UNORDERED_ACCESS && Barrier.NewState == RESOURCE_STATE_UNORDERED_ACCESS),
-                                        "for UAV barriers, transition type must be STATE_TRANSITION_TYPE_IMMEDIATE.");
             break;
 
         case STATE_TRANSITION_TYPE_BEGIN:
@@ -1260,7 +1264,7 @@ bool VerifyBindSparseResourceMemoryAttribs(const IRenderDevice* pDevice, const B
                 {
                     const uint3 TilesInBox = GetNumSparseTilesInBox(Region, TexSparseProps.TileSize);
                     const auto  NumBlocks  = TilesInBox.x * TilesInBox.y * TilesInBox.z;
-                    CHECK_BIND_SPARSE_ATTRIBS(NumBlocks * TexSparseProps.BlockSize == Range.MemorySize,
+                    CHECK_BIND_SPARSE_ATTRIBS(Uint64{NumBlocks} * Uint64{TexSparseProps.BlockSize} == Range.MemorySize,
                                               "pTextureBinds[", i, "].pRanges[", r, "].MemorySize (", Range.MemorySize, ") does not match the sparse memory blocks count (",
                                               NumBlocks, ") in the specified region");
                 }

@@ -44,7 +44,7 @@ VulkanMemoryPage::VulkanMemoryPage(VulkanMemoryManager&  ParentMemoryMgr,
                                    VkDeviceSize          PageSize,
                                    uint32_t              MemoryTypeIndex,
                                    bool                  IsHostVisible,
-                                   VkMemoryAllocateFlags AllocateFlags) noexcept :
+                                   VkMemoryAllocateFlags AllocateFlags) :
     // clang-format off
     m_ParentMemoryMgr{ParentMemoryMgr},
     m_AllocationMgr  {static_cast<AllocationsMgrOffsetType>(PageSize), ParentMemoryMgr.m_Allocator}

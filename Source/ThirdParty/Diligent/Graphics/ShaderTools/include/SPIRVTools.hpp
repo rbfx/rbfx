@@ -26,15 +26,27 @@
 
 #pragma once
 
+#include <vector>
+
+#include "FlagEnum.h"
+
 #include "spirv-tools/libspirv.h"
 
 namespace Diligent
 {
 
-void SpvOptimizerMessageConsumer(
-    spv_message_level_t   level,
-    const char*           source,
-    const spv_position_t& position,
-    const char*           message);
+enum SPIRV_OPTIMIZATION_FLAGS : Uint32
+{
+    SPIRV_OPTIMIZATION_FLAG_NONE             = 0u,
+    SPIRV_OPTIMIZATION_FLAG_LEGALIZATION     = 1u << 0u,
+    SPIRV_OPTIMIZATION_FLAG_PERFORMANCE      = 1u << 1u,
+    SPIRV_OPTIMIZATION_FLAG_STRIP_REFLECTION = 1u << 2u
+};
+DEFINE_FLAG_ENUM_OPERATORS(SPIRV_OPTIMIZATION_FLAGS);
+
+
+std::vector<uint32_t> OptimizeSPIRV(const std::vector<uint32_t>& SrcSPIRV,
+                                    spv_target_env               TargetEnv,
+                                    SPIRV_OPTIMIZATION_FLAGS     Passes);
 
 } // namespace Diligent

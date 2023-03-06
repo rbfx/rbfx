@@ -202,7 +202,7 @@ void RootParamsManager::Validate() const
             VERIFY_EXPR(D3D12DescriptorRangeTypeToD3D12HeapType(d3d12Range.RangeType) == d3d12HeapType);
             VERIFY_EXPR(d3d12Range.NumDescriptors > 0);
             const auto RangeStartOffset = TableOffset + d3d12Range.OffsetInDescriptorsFromTableStart;
-            VERIFY(RangeStartOffset + d3d12Range.NumDescriptors <= TableSlots.size(),
+            VERIFY(size_t{RangeStartOffset} + size_t{d3d12Range.NumDescriptors} <= TableSlots.size(),
                    "Descriptor range exceeds allocated descriptor table size");
             for (Uint32 slot = RangeStartOffset; slot < RangeStartOffset + d3d12Range.NumDescriptors; ++slot)
             {

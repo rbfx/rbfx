@@ -34,8 +34,8 @@
 #include "EngineFactory.h"
 #include "DefaultShaderSourceStreamFactory.h"
 #include "Dearchiver.h"
-#include "Atomics.hpp"
 #include "DummyReferenceCounters.hpp"
+#include "EngineMemory.h"
 #include "RefCntAutoPtr.hpp"
 
 namespace Diligent
@@ -55,11 +55,10 @@ template <class BaseInterface>
 class EngineFactoryBase : public BaseInterface
 {
 public:
-    EngineFactoryBase(const INTERFACE_ID& FactoryIID, IDearchiver* pDearchiver) noexcept :
+    EngineFactoryBase(const INTERFACE_ID& FactoryIID) noexcept :
         // clang-format off
         m_FactoryIID  {FactoryIID},
-        m_RefCounters {*this     },
-        m_pDearchiver {pDearchiver}
+        m_RefCounters {*this     }
     // clang-format on
     {
     }
@@ -105,21 +104,29 @@ public:
         Diligent::CreateDefaultShaderSourceStreamFactory(SearchDirectories, ppShaderSourceFactory);
     }
 
-    virtual IDearchiver* DILIGENT_CALL_TYPE GetDearchiver() const override final
-    {
-        return m_pDearchiver.RawPtr<IDearchiver>();
-    }
-
     virtual void DILIGENT_CALL_TYPE SetMessageCallback(DebugMessageCallbackType MessageCallback) const override final
     {
         SetDebugMessageCallback(MessageCallback);
     }
 
+protected:
+    template <typename DearchiverImplType>
+    void CreateDearchiver(const DearchiverCreateInfo& CreateInfo,
+                          IDearchiver**               ppDearchiver) const
+    {
+        if (ppDearchiver == nullptr)
+            return;
+
+        *ppDearchiver = nullptr;
+        RefCntAutoPtr<DearchiverImplType> pDearchiver{NEW_RC_OBJ(GetRawAllocator(), "Dearchiver instance", DearchiverImplType)(CreateInfo)};
+
+        if (pDearchiver)
+            pDearchiver->QueryInterface(IID_Dearchiver, reinterpret_cast<IObject**>(ppDearchiver));
+    }
+
 private:
     const INTERFACE_ID                        m_FactoryIID;
     DummyReferenceCounters<EngineFactoryBase> m_RefCounters;
-
-    RefCntAutoPtr<IDearchiver> m_pDearchiver;
 };
 
 } // namespace Diligent

@@ -30,6 +30,7 @@
 #include "SwapChainBase.hpp"
 #include "TextureViewGLImpl.hpp"
 #include "RenderDeviceGLImpl.hpp"
+#include "GraphicsAccessories.hpp"
 
 namespace Diligent
 {
@@ -100,7 +101,7 @@ protected:
         ColorBuffDesc.Width     = this->m_SwapChainDesc.Width;
         ColorBuffDesc.Height    = this->m_SwapChainDesc.Height;
         ColorBuffDesc.Format    = this->m_SwapChainDesc.ColorBufferFormat;
-        ColorBuffDesc.BindFlags = BIND_RENDER_TARGET;
+        ColorBuffDesc.BindFlags = SwapChainUsageFlagsToBindFlags(this->m_SwapChainDesc.Usage);
         RefCntAutoPtr<ITexture> pDummyColorBuffer;
         pRenderDeviceGL->CreateDummyTexture(ColorBuffDesc, RESOURCE_STATE_RENDER_TARGET, &pDummyColorBuffer);
         m_pRenderTargetView = ClassPtrCast<TextureViewGLImpl>(pDummyColorBuffer->GetDefaultView(TEXTURE_VIEW_RENDER_TARGET));

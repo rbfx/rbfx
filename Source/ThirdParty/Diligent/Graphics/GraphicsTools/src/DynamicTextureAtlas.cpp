@@ -75,7 +75,7 @@ public:
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_TextureAtlasSuballocation, TBase)
 
-    virtual Atomics::Long DILIGENT_CALL_TYPE Release() override final
+    virtual ReferenceCounterValueType DILIGENT_CALL_TYPE Release() override final
     {
         RefCntAutoPtr<DynamicTextureAtlasImpl> pAtlas;
         return TBase::Release(
@@ -149,23 +149,23 @@ public:
     ThreadSafeAtlasManager& operator=(      ThreadSafeAtlasManager&&) = delete;
     // clang-format on
 
-    class ManagerLock
+    class ManagerGuard
     {
     public:
-        ManagerLock() noexcept {}
+        ManagerGuard() noexcept {}
 
         // clang-format off
-        ManagerLock           (const ManagerLock&) = delete;
-        ManagerLock& operator=(const ManagerLock&) = delete;
+        ManagerGuard           (const ManagerGuard&) = delete;
+        ManagerGuard& operator=(const ManagerGuard&) = delete;
         // clang-format on
 
-        ManagerLock(ManagerLock&& Other) noexcept :
+        ManagerGuard(ManagerGuard&& Other) noexcept :
             pAtlasMgr{Other.pAtlasMgr}
         {
             Other.pAtlasMgr = nullptr;
         }
 
-        ManagerLock& operator=(ManagerLock&& Other) noexcept
+        ManagerGuard& operator=(ManagerGuard&& Other) noexcept
         {
             pAtlasMgr       = Other.pAtlasMgr;
             Other.pAtlasMgr = nullptr;
@@ -183,7 +183,7 @@ public:
             return UseCnt;
         }
 
-        ~ManagerLock()
+        ~ManagerGuard()
         {
             Release();
         }
@@ -197,7 +197,7 @@ public:
         {
             VERIFY_EXPR(pAtlasMgr != nullptr);
             VERIFY_EXPR(pAtlasMgr->UseCount > 0);
-            std::lock_guard<std::mutex> Lock{pAtlasMgr->Mtx};
+            std::lock_guard<std::mutex> Guard{pAtlasMgr->Mtx};
             return pAtlasMgr->Mgr.Allocate(Width, Height);
         }
 
@@ -206,7 +206,7 @@ public:
         {
             VERIFY_EXPR(pAtlasMgr != nullptr);
             VERIFY_EXPR(pAtlasMgr->UseCount > 0);
-            std::lock_guard<std::mutex> Lock{pAtlasMgr->Mtx};
+            std::lock_guard<std::mutex> Guard{pAtlasMgr->Mtx};
             pAtlasMgr->Mgr.Free(std::move(R));
             return pAtlasMgr->Mgr.IsEmpty();
         }
@@ -215,14 +215,14 @@ public:
         {
             VERIFY_EXPR(pAtlasMgr != nullptr);
             VERIFY_EXPR(pAtlasMgr->UseCount > 0);
-            std::lock_guard<std::mutex> Lock{pAtlasMgr->Mtx};
+            std::lock_guard<std::mutex> Guard{pAtlasMgr->Mtx};
             return pAtlasMgr->Mgr.IsEmpty();
         }
 
     private:
         friend class ThreadSafeAtlasManager;
 
-        explicit ManagerLock(ThreadSafeAtlasManager& AtlasMg) :
+        explicit ManagerGuard(ThreadSafeAtlasManager& AtlasMg) :
             pAtlasMgr{&AtlasMg}
         {
             AtlasMg.AddUse();
@@ -231,9 +231,9 @@ public:
         ThreadSafeAtlasManager* pAtlasMgr = nullptr;
     };
 
-    ManagerLock Lock()
+    ManagerGuard Lock()
     {
-        return ManagerLock{*this};
+        return ManagerGuard{*this};
     }
 
     int GetUseCount() const
@@ -242,7 +242,7 @@ public:
     }
 
 private:
-    friend ManagerLock;
+    friend ManagerGuard;
 
     int AddUse()
     {
@@ -284,18 +284,18 @@ struct SliceBatch
     SliceBatch& operator=(      SliceBatch&&) = delete;
     // clang-format on
 
-    ThreadSafeAtlasManager::ManagerLock LockSlice(Uint32 Slice)
+    ThreadSafeAtlasManager::ManagerGuard LockSlice(Uint32 Slice)
     {
-        std::lock_guard<std::mutex> Lock{m_Mtx};
+        std::lock_guard<std::mutex> Guard{m_Mtx};
 
         auto it = m_Slices.find(Slice);
         // NB: Lock() atomically increases the use count of the slice while we hold the mutex.
-        return it != m_Slices.end() ? it->second.Lock() : ThreadSafeAtlasManager::ManagerLock{};
+        return it != m_Slices.end() ? it->second.Lock() : ThreadSafeAtlasManager::ManagerGuard{};
     }
 
-    ThreadSafeAtlasManager::ManagerLock LockSliceAfter(Uint32& Slice)
+    ThreadSafeAtlasManager::ManagerGuard LockSliceAfter(Uint32& Slice)
     {
-        std::lock_guard<std::mutex> Lock{m_Mtx};
+        std::lock_guard<std::mutex> Guard{m_Mtx};
 
         auto it = m_Slices.lower_bound(Slice);
         if (it != m_Slices.end())
@@ -308,9 +308,9 @@ struct SliceBatch
         return {};
     }
 
-    ThreadSafeAtlasManager::ManagerLock AddSlice(Uint32 Slice)
+    ThreadSafeAtlasManager::ManagerGuard AddSlice(Uint32 Slice)
     {
-        std::lock_guard<std::mutex> Lock{m_Mtx};
+        std::lock_guard<std::mutex> Guard{m_Mtx};
 
         VERIFY(m_Slices.find(Slice) == m_Slices.end(), "Slice ", Slice, " already present in the batch.");
         auto it = m_Slices.emplace(Slice, m_AtlasDim).first;
@@ -320,41 +320,31 @@ struct SliceBatch
 
     bool Purge(Uint32 Slice)
     {
-        std::lock_guard<std::mutex> Lock{m_Mtx};
+        std::lock_guard<std::mutex> Guard{m_Mtx};
 
         auto it = m_Slices.find(Slice);
-        if (it != m_Slices.end())
-        {
-            // Use count may only be incremented under the mutex. If use count is zero,
-            // no other thread may be accessing this slice since we hold the mutex.
-            if (it->second.GetUseCount() == 0)
-            {
-                // Check that the slice is empty. It is very important to check this only
-                // after we checked the use count.
-                // If the slice is empty, but the use count is not zero, another thread may
-                // allocate from this slice after we checked if it is empty.
-                auto MgrLock = it->second.Lock();
-                VERIFY_EXPR(MgrLock);
-                // The slice could've been used by another thread and may not be empty anymore
-                if (MgrLock.IsEmpty())
-                {
-                    auto UseCnt = MgrLock.Release();
-                    VERIFY(UseCnt == 0, "There must be no other uses of this slice since we checked the use count already.");
-                    m_Slices.erase(it);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                return false;
-            }
-        }
+        if (it == m_Slices.end())
+            return false;
 
-        return false;
+        // Use count may only be incremented under the mutex. If the count is zero,
+        // no other thread may be accessing this slice since we hold the mutex.
+        if (it->second.GetUseCount() != 0)
+            return false;
+
+        // Check that the slice is empty. It is very important to check this only
+        // after we checked the use count.
+        // If the slice is empty, but the use count is not zero, another thread may
+        // allocate from this slice after we checked if it is empty.
+        auto SliceMgr = it->second.Lock();
+        VERIFY_EXPR(SliceMgr);
+        if (!SliceMgr.IsEmpty())
+            return false;
+
+        const auto UseCnt = SliceMgr.Release();
+        VERIFY(UseCnt == 0, "There must be no other uses of this slice since we checked the use count already.");
+        m_Slices.erase(it);
+
+        return true;
     }
 
 private:
@@ -518,20 +508,28 @@ public:
         while (Slice < m_MaxSliceCount)
         {
             // Lock the first available slice with index >= Slice
-            auto SliceLock = pBatch->LockSliceAfter(Slice);
-            if (!SliceLock)
+            auto SliceMgr = pBatch->LockSliceAfter(Slice);
+            if (!SliceMgr)
             {
-                Slice = GetNextAvailableSlice();
-                if (Slice == ~Uint32{0})
-                    break;
-
-                SliceLock = pBatch->AddSlice(Slice);
-                VERIFY_EXPR(SliceLock);
+                const auto NewSlice = GetNextAvailableSlice();
+                if (NewSlice != ~Uint32{0})
+                {
+                    Slice    = NewSlice;
+                    SliceMgr = pBatch->AddSlice(Slice);
+                    VERIFY_EXPR(SliceMgr);
+                }
+                else
+                {
+                    // It is possible that another thread added a new slice while this thread failed
+                    SliceMgr = pBatch->LockSliceAfter(Slice);
+                    if (!SliceMgr)
+                        break;
+                }
             }
 
-            if (SliceLock)
+            if (SliceMgr)
             {
-                Subregion = SliceLock.Allocate(AlignedWidth / Alignment, AlignedHeight / Alignment);
+                Subregion = SliceMgr.Allocate(AlignedWidth / Alignment, AlignedHeight / Alignment);
                 if (!Subregion.IsEmpty())
                     break;
             }
@@ -571,30 +569,63 @@ public:
 
     void Free(Uint32 Slice, Uint32 Alignment, DynamicAtlasManager::Region&& Subregion, Uint32 Width, Uint32 Height)
     {
-        m_AllocatedArea.fetch_add(-Int64{Width} * Int64{Height});
-        m_UsedArea.fetch_add(-Int64{Subregion.width * Alignment} * Int64{Subregion.height * Alignment});
-        m_AllocationCount.fetch_add(-1);
+        const auto AllocatedArea = Int64{Width} * Int64{Height};
+        const auto UsedArea      = (Int64{Subregion.width} * Int64{Alignment}) * (Int64{Subregion.height} * Int64{Alignment});
 
         auto* pBatch = GetSliceBatch(Alignment);
-        VERIFY(pBatch != nullptr,
-               "There are no slices with alignment ", Alignment,
-               ". This may only happen when double-freeing the allocation or "
-               "freeing an allocation that was not allocated from this atlas.");
-
-        bool DeleteSlice = false;
+        if (pBatch == nullptr)
         {
-            auto SliceLock = pBatch->LockSlice(Slice);
-            VERIFY(SliceLock, "Slice ", Slice, " is not found in the batch of slices with alignment ", Alignment);
-            DeleteSlice = SliceLock.Free(std::move(Subregion));
+            UNEXPECTED("There are no slices with alignment ", Alignment,
+                       ". This may only happen when double-freeing the allocation or "
+                       "freeing an allocation that was not allocated from this atlas.");
+            return;
         }
 
-        if (DeleteSlice)
+        if (auto SliceMgr = pBatch->LockSlice(Slice))
         {
-            if (pBatch->Purge(Slice))
-            {
-                RecycleSlice(Slice);
-            }
+            // NB: do not hold the slice batch mutex while releasing the region.
+            //     Different slices in the batch can be processed in parallel.
+            SliceMgr.Free(std::move(Subregion));
         }
+        else
+        {
+            UNEXPECTED("Slice ", Slice, " is not found in the batch of slices with alignment ", Alignment);
+            return;
+        }
+
+        // NB: we need to always purge the batch as the call to Free is not
+        //     protected by the slice batch mutex, so other threads may have
+        //     accessed and changed the same slice.
+        //
+        //           Thread 1                            |         Thread 2
+        //                                               |
+        //  SliceMgr = pBatch->LockSlice                 |
+        //  | UseCnt==1                                  |   SliceMgr = pBatch->LockSlice
+        //  | SliceMgr.Free                              |   | UseCnt==2
+        //  |   SliceMgr.IsEmpty==false                  |   | SliceMgr.Free
+        //  |                                            |   |   SliceMgr.IsEmpty==true
+        //  |                                            |   | SliceMgr.~ManagerGuard()
+        //  |                                            |   | UseCnt==1
+        //  |                                            |
+        //  |                                            |   pBatch->Purge
+        //  |                                            |   | UseCnt==1 -> No purge
+        //  |                                            |
+        //  | SliceMgr.~ManagerGuard()                   |
+        //  | UseCnt==0                                  |
+        //                                               |
+        //  pBatch->Purge                                |
+        //  | UseCnt==0, SliceMgr.IsEmpty==true -> Purge |
+        //
+        // Note that in the scenario above, Thread 1 purges the slice batch even though
+        // the slice was not empty after freeing the region.
+        if (pBatch->Purge(Slice))
+        {
+            RecycleSlice(Slice);
+        }
+
+        m_AllocatedArea.fetch_add(-AllocatedArea);
+        m_UsedArea.fetch_add(-UsedArea);
+        m_AllocationCount.fetch_add(-1);
     }
 
     virtual const TextureDesc& GetAtlasDesc() const override final
@@ -637,7 +668,7 @@ public:
 private:
     Uint32 GetNextAvailableSlice()
     {
-        std::lock_guard<std::mutex> Lock{m_AvailableSlicesMtx};
+        std::lock_guard<std::mutex> Guard{m_AvailableSlicesMtx};
         if (m_AvailableSlices.empty())
             return ~Uint32{0};
 
@@ -659,14 +690,14 @@ private:
 
     void RecycleSlice(Uint32 Slice)
     {
-        std::lock_guard<std::mutex> Lock{m_AvailableSlicesMtx};
+        std::lock_guard<std::mutex> Guard{m_AvailableSlicesMtx};
         VERIFY(m_AvailableSlices.find(Slice) == m_AvailableSlices.end(), "Slice ", Slice, " is already in the available slices list. This is a bug.");
         m_AvailableSlices.insert(Slice);
     }
 
     SliceBatch* GetSliceBatch(Uint32 Alignment, Uint32 AtlasWidth = 0, Uint32 AtlasHeight = 0)
     {
-        std::lock_guard<std::mutex> Lock{m_SliceBatchesByAlignmentMtx};
+        std::lock_guard<std::mutex> Guard{m_SliceBatchesByAlignmentMtx};
 
         // Get the list of slices for this alignment
         auto BatchIt = m_SliceBatchesByAlignment.find(Alignment);

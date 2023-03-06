@@ -125,20 +125,20 @@ void CopyBLASGeometryDesc(const BottomLevelASDesc& SrcDesc,
         // Copy strings
         for (Uint32 i = 0; i < SrcDesc.TriangleCount; ++i)
         {
-            const auto* SrcGeoName     = SrcDesc.pTriangles[i].GeometryName;
-            pTriangles[i].GeometryName = MemPool.CopyString(SrcGeoName);
+            const auto* GeoName        = MemPool.CopyString(SrcDesc.pTriangles[i].GeometryName);
+            pTriangles[i].GeometryName = GeoName;
 
             Uint32 ActualIndex = INVALID_INDEX;
             if (pSrcNameToIndex)
             {
-                auto iter = pSrcNameToIndex->find(SrcGeoName);
+                auto iter = pSrcNameToIndex->find(GeoName);
                 VERIFY_EXPR(iter != pSrcNameToIndex->end());
                 ActualIndex = iter->second.ActualIndex;
             }
 
-            bool IsUniqueName = DstNameToIndex.emplace(SrcGeoName, BLASGeomIndex{i, ActualIndex}).second;
+            bool IsUniqueName = DstNameToIndex.emplace(GeoName, BLASGeomIndex{i, ActualIndex}).second;
             if (!IsUniqueName)
-                LOG_ERROR_AND_THROW("Geometry name '", SrcGeoName, "' is not unique");
+                LOG_ERROR_AND_THROW("Geometry name '", GeoName, "' is not unique");
         }
 
         DstDesc.pTriangles    = pTriangles;
@@ -160,20 +160,20 @@ void CopyBLASGeometryDesc(const BottomLevelASDesc& SrcDesc,
         // Copy strings
         for (Uint32 i = 0; i < SrcDesc.BoxCount; ++i)
         {
-            const auto* SrcGeoName = SrcDesc.pBoxes[i].GeometryName;
-            pBoxes[i].GeometryName = MemPool.CopyString(SrcGeoName);
+            const auto* GeoName    = MemPool.CopyString(SrcDesc.pBoxes[i].GeometryName);
+            pBoxes[i].GeometryName = GeoName;
 
             Uint32 ActualIndex = INVALID_INDEX;
             if (pSrcNameToIndex)
             {
-                auto iter = pSrcNameToIndex->find(SrcGeoName);
+                auto iter = pSrcNameToIndex->find(GeoName);
                 VERIFY_EXPR(iter != pSrcNameToIndex->end());
                 ActualIndex = iter->second.ActualIndex;
             }
 
-            bool IsUniqueName = DstNameToIndex.emplace(SrcGeoName, BLASGeomIndex{i, ActualIndex}).second;
+            bool IsUniqueName = DstNameToIndex.emplace(GeoName, BLASGeomIndex{i, ActualIndex}).second;
             if (!IsUniqueName)
-                LOG_ERROR_AND_THROW("Geometry name '", SrcGeoName, "' is not unique");
+                LOG_ERROR_AND_THROW("Geometry name '", GeoName, "' is not unique");
         }
 
         DstDesc.pBoxes        = pBoxes;

@@ -29,6 +29,7 @@
 
 #include <vector>
 #include "../../../Primitives/interface/BasicTypes.h"
+#include "../../../Primitives/interface/FlagEnum.h"
 
 namespace Diligent
 {
@@ -37,7 +38,10 @@ enum class EFileAccessMode
 {
     Read,
     Overwrite,
-    Append
+    Append,
+    ReadUpdate,
+    OverwriteUpdate,
+    AppendUpdate
 };
 
 enum class FilePosOrigin
@@ -61,7 +65,7 @@ struct FileOpenAttribs
 class BasicFile
 {
 public:
-    BasicFile(const FileOpenAttribs& OpenAttribs, Char SlashSymbol);
+    BasicFile(const FileOpenAttribs& OpenAttribs);
     virtual ~BasicFile();
 
     const String& GetPath() { return m_Path; }
@@ -72,6 +76,60 @@ protected:
     const String          m_Path;
     const FileOpenAttribs m_OpenAttribs;
 };
+
+
+enum FILE_DIALOG_FLAGS : Uint32
+{
+    FILE_DIALOG_FLAG_NONE = 0x000,
+
+    /// Prevents the system from adding a link to the selected file in the file system
+    /// directory that contains the user's most recently used documents.
+    FILE_DIALOG_FLAG_DONT_ADD_TO_RECENT = 0x001,
+
+    /// Only existing files can be opened
+    FILE_DIALOG_FLAG_FILE_MUST_EXIST = 0x002,
+
+    /// Restores the current directory to its original value if the user changed the
+    /// directory while searching for files.
+    FILE_DIALOG_FLAG_NO_CHANGE_DIR = 0x004,
+
+    /// Causes the Save As dialog box to show a message box if the selected file already exists.
+    FILE_DIALOG_FLAG_OVERWRITE_PROMPT = 0x008
+};
+DEFINE_FLAG_ENUM_OPERATORS(FILE_DIALOG_FLAGS);
+
+enum FILE_DIALOG_TYPE : Uint32
+{
+    FILE_DIALOG_TYPE_OPEN,
+    FILE_DIALOG_TYPE_SAVE
+};
+
+struct FileDialogAttribs
+{
+    FILE_DIALOG_TYPE  Type  = FILE_DIALOG_TYPE_OPEN;
+    FILE_DIALOG_FLAGS Flags = FILE_DIALOG_FLAG_NONE;
+
+    const char* Title  = nullptr;
+    const char* Filter = nullptr;
+
+    FileDialogAttribs() noexcept {}
+
+    explicit FileDialogAttribs(FILE_DIALOG_TYPE _Type) noexcept :
+        Type{_Type}
+    {
+        switch (Type)
+        {
+            case FILE_DIALOG_TYPE_OPEN:
+                Flags = FILE_DIALOG_FLAG_DONT_ADD_TO_RECENT | FILE_DIALOG_FLAG_FILE_MUST_EXIST | FILE_DIALOG_FLAG_NO_CHANGE_DIR;
+                break;
+
+            case FILE_DIALOG_TYPE_SAVE:
+                Flags = FILE_DIALOG_FLAG_DONT_ADD_TO_RECENT | FILE_DIALOG_FLAG_OVERWRITE_PROMPT | FILE_DIALOG_FLAG_NO_CHANGE_DIR;
+                break;
+        }
+    }
+};
+
 
 struct FindFileData
 {
@@ -84,6 +142,12 @@ struct FindFileData
 struct BasicFileSystem
 {
 public:
+#if PLATFORM_WIN32 || PLATFORM_UNIVERSAL_WINDOWS
+    static constexpr Char SlashSymbol = '\\';
+#else
+    static constexpr Char SlashSymbol = '/';
+#endif
+
     static BasicFile* OpenFile(FileOpenAttribs& OpenAttribs);
     static void       ReleaseFile(BasicFile*);
 
@@ -93,16 +157,26 @@ public:
 
     static const String& GetWorkingDirectory() { return m_strWorkingDirectory; }
 
-    static Char GetSlashSymbol();
+    static bool IsSlash(Char c)
+    {
+        return c == '/' || c == '\\';
+    }
 
-    static void CorrectSlashes(String& Path, Char SlashSymbol);
+    static void CorrectSlashes(String& Path, Char Slash = 0);
 
-    static void SplitFilePath(const String& FullName,
-                              String*       Path,
-                              String*       Name);
+    static void GetPathComponents(const String& Path,
+                                  String*       Directory,
+                                  String*       FileName);
 
-    static bool IsPathAbsolute(const Char* strPath);
+    static bool IsPathAbsolute(const Char* Path);
 
+    /// Splits path into individual components optionally simplifying it.
+    ///
+    /// If Simplify is true:
+    ///     - Removes redundant slashes (a///b -> a/b)
+    ///     - Removes redundant . (a/./b -> a/b)
+    ///     - Collapses .. (a/b/../c -> a/c)
+    static std::vector<String> SplitPath(const Char* Path, bool Simplify);
 
     /// Simplifies the path.
 
@@ -111,8 +185,9 @@ public:
     /// - Removes redundant slashes (a///b -> a/b)
     /// - Removes redundant . (a/./b -> a/b)
     /// - Collapses .. (a/b/../c -> a/c)
-    /// - Removes leading and trailing slashes (/a/b/c/ -> a/b/c)
-    static std::string SimplifyPath(const Char* Path, Char SlashSymbol);
+    /// - Removes trailing slashes (/a/b/c/ -> /a/b/c)
+    /// - When 'Slash' is Windows slash ('\'), removes leading slashes (\a\b\c -> a\b\c)
+    static std::string SimplifyPath(const Char* Path, Char Slash = 0);
 
 
     /// Splits a list of paths separated by a given separator and calls a user callback for every individual path.
@@ -120,6 +195,9 @@ public:
     template <typename CallbackType>
     static void SplitPathList(const Char* PathList, CallbackType Callback, const char Separator = ';')
     {
+        if (PathList == nullptr)
+            return;
+
         const auto* Pos = PathList;
         while (*Pos != '\0')
         {
@@ -138,6 +216,24 @@ public:
             Pos = End;
         }
     }
+
+    /// Returns a relative path from one file or folder to another.
+
+    /// \param [in]  PathFrom        - Path that defines the start of the relative path.
+    ///                                Must not be null.
+    /// \param [in]  IsFromDirectory - Indicates if PathFrom is a directory.
+    /// \param [in]  PathTo          - Path that defines the endpoint of the relative path.
+    ///                                Must not be null.
+    /// \param [in]  IsToDirectory   - Indicates if PathTo is a directory.
+    ///
+    /// \return                        Relative path from PathFrom to PathTo.
+    ///                                If no relative path exists, PathFrom is returned.
+    static std::string GetRelativePath(const Char* PathFrom,
+                                       bool        IsFromDirectory,
+                                       const Char* PathTo,
+                                       bool        IsToDirectory);
+
+    static std::string FileDialog(const FileDialogAttribs& DialogAttribs);
 
 protected:
     static String m_strWorkingDirectory;

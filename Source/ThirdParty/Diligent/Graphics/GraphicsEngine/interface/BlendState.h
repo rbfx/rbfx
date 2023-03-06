@@ -387,6 +387,10 @@ struct BlendStateDesc
     /// states for render targets
     RenderTargetBlendDesc RenderTargets[DILIGENT_MAX_RENDER_TARGETS];
 
+    // 
+    // NB: when adding new members, don't forget to update std::hash<Diligent::BlendStateDesc>
+    //
+
 #if DILIGENT_CPP_INTERFACE
     // We have to explicitly define constructors because otherwise Apple's clang fails to compile the following legitimate code:
     //     BlendStateDesc{False, False}

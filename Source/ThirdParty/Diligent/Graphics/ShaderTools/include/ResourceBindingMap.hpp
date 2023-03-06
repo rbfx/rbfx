@@ -64,7 +64,7 @@ struct ResourceBinding
     };
 
     /// A mapping from the resource name to the binding (shader register, space, array size).
-    using TMap = std::unordered_map<HashMapStringKey, BindInfo, HashMapStringKey::Hasher>;
+    using TMap = std::unordered_map<HashMapStringKey, BindInfo>;
 };
 
 } // namespace Diligent

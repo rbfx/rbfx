@@ -55,28 +55,16 @@ private:
 DefaultShaderSourceStreamFactory::DefaultShaderSourceStreamFactory(IReferenceCounters* pRefCounters, const Char* SearchDirectories) :
     ObjectBase<IShaderSourceInputStreamFactory>(pRefCounters)
 {
-    while (SearchDirectories)
-    {
-        const char* Semicolon = strchr(SearchDirectories, ';');
-        String      SearchPath;
-        if (Semicolon == nullptr)
-        {
-            SearchPath        = SearchDirectories;
-            SearchDirectories = nullptr;
-        }
-        else
-        {
-            SearchPath        = String(SearchDirectories, Semicolon);
-            SearchDirectories = Semicolon + 1;
-        }
-
-        if (SearchPath.length() > 0)
-        {
-            if (SearchPath.back() != '\\' && SearchPath.back() != '/')
-                SearchPath.push_back(FileSystem::GetSlashSymbol());
-            m_SearchDirectories.push_back(SearchPath);
-        }
-    }
+    FileSystem::SplitPathList(SearchDirectories,
+                              [&](const char* Path, size_t Len) //
+                              {
+                                  String SearchPath{Path, Len};
+                                  VERIFY_EXPR(!SearchPath.empty());
+                                  if (!FileSystem::IsSlash(SearchPath.back()))
+                                      SearchPath.push_back(FileSystem::SlashSymbol);
+                                  m_SearchDirectories.emplace_back(std::move(SearchPath));
+                                  return true;
+                              });
     m_SearchDirectories.push_back("");
 }
 
@@ -92,7 +80,7 @@ void DefaultShaderSourceStreamFactory::CreateInputStream2(const Char*           
 {
     auto CreateFileStream = [](const char* Path) //
     {
-        Diligent::RefCntAutoPtr<BasicFileStream> pFileStream;
+        RefCntAutoPtr<BasicFileStream> pFileStream;
         if (FileSystem::FileExists(Path))
         {
             pFileStream = MakeNewRCObj<BasicFileStream>()(Path, EFileAccessMode::Read);
@@ -102,7 +90,7 @@ void DefaultShaderSourceStreamFactory::CreateInputStream2(const Char*           
         return pFileStream;
     };
 
-    Diligent::RefCntAutoPtr<BasicFileStream> pFileStream;
+    RefCntAutoPtr<BasicFileStream> pFileStream;
     if (FileSystem::IsPathAbsolute(Name))
     {
         pFileStream = CreateFileStream(Name);

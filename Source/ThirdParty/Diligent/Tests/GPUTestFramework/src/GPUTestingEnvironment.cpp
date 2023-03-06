@@ -119,8 +119,8 @@ Uint32 GPUTestingEnvironment::FindAdapter(const std::vector<GraphicsAdapterInfo>
     return AdapterId;
 }
 
-GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapChainDesc& SCDesc) :
-    m_DeviceType{CI.deviceType}
+GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& EnvCI, const SwapChainDesc& SCDesc) :
+    m_DeviceType{EnvCI.deviceType}
 {
     Uint32 NumDeferredCtx = 0;
 
@@ -128,7 +128,7 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
     std::vector<GraphicsAdapterInfo>        Adapters;
     std::vector<ImmediateContextCreateInfo> ContextCI;
 
-    auto EnumerateAdapters = [&Adapters](IEngineFactory* pFactory, Version MinVersion) //
+    auto EnumerateAdapters = [&Adapters](IEngineFactory* pFactory, Version MinVersion, auto EnumerateDisplayModes) //
     {
         Uint32 NumAdapters = 0;
         pFactory->EnumerateAdapters(MinVersion, NumAdapters, 0);
@@ -143,8 +143,35 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
                 VERIFY_EXPR(Adapter.NumQueues >= 1);
             }
         }
+
+        LOG_INFO_MESSAGE("Found ", Adapters.size(), " compatible ", (Adapters.size() == 1 ? "adapter" : "adapters"));
+        for (Uint32 i = 0; i < Adapters.size(); ++i)
+        {
+            const auto& AdapterInfo  = Adapters[i];
+            const auto  DisplayModes = EnumerateDisplayModes(AdapterInfo, i);
+
+            const char* AdapterTypeStr = nullptr;
+            switch (AdapterInfo.Type)
+            {
+                case ADAPTER_TYPE_DISCRETE:
+                case ADAPTER_TYPE_INTEGRATED: AdapterTypeStr = " (HW)"; break;
+                case ADAPTER_TYPE_SOFTWARE: AdapterTypeStr = " (SW)"; break;
+                default: AdapterTypeStr = "";
+            }
+            std::stringstream ss;
+            ss << "Adapter " << i << ": '" << AdapterInfo.Description << '\'' << AdapterTypeStr
+               << ", Local/Host-Visible/Unified Memory: "
+               << AdapterInfo.Memory.LocalMemory / (1 << 20) << " MB / "
+               << AdapterInfo.Memory.HostVisibleMemory / (1 << 20) << " MB / "
+               << AdapterInfo.Memory.UnifiedMemory / (1 << 20) << " MB";
+            if (!DisplayModes.empty())
+                ss << "; " << DisplayModes.size() << (DisplayModes.size() == 1 ? " display mode" : " display modes");
+
+            LOG_INFO_MESSAGE(ss.str());
+        }
     };
 
+#if D3D12_SUPPORTED || VULKAN_SUPPORTED || METAL_SUPPORTED
     auto AddContext = [&ContextCI, &Adapters](COMMAND_QUEUE_TYPE Type, const char* Name, Uint32 AdapterId) //
     {
         if (AdapterId >= Adapters.size())
@@ -171,27 +198,11 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
             }
         }
     };
-
-#if D3D11_SUPPORTED || D3D12_SUPPORTED
-    auto PrintAdapterInfo = [](Uint32 AdapterId, const GraphicsAdapterInfo& AdapterInfo, const std::vector<DisplayModeAttribs>& DisplayModes) //
-    {
-        const char* AdapterTypeStr = nullptr;
-        switch (AdapterInfo.Type)
-        {
-            case ADAPTER_TYPE_DISCRETE:
-            case ADAPTER_TYPE_INTEGRATED: AdapterTypeStr = "HW"; break;
-            case ADAPTER_TYPE_SOFTWARE: AdapterTypeStr = "SW"; break;
-            default: AdapterTypeStr = "Type unknown";
-        }
-        LOG_INFO_MESSAGE("Adapter ", AdapterId, ": '", AdapterInfo.Description, "' (",
-                         AdapterTypeStr, ", ", AdapterInfo.Memory.LocalMemory / (1 << 20), " MB); ",
-                         DisplayModes.size(), (DisplayModes.size() == 1 ? " display mode" : " display modes"));
-    };
 #endif
 
     {
         bool FeaturesPrinted = false;
-        DeviceFeatures::Enumerate(CI.Features,
+        DeviceFeatures::Enumerate(EnvCI.Features,
                                   [&FeaturesPrinted](const char* FeatName, DEVICE_FEATURE_STATE State) //
                                   {
                                       if (State != DEVICE_FEATURE_STATE_OPTIONAL)
@@ -222,36 +233,30 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
             auto* pFactoryD3D11 = GetEngineFactoryD3D11();
             pFactoryD3D11->SetMessageCallback(MessageCallback);
 
-            EngineD3D11CreateInfo CreateInfo;
-            CreateInfo.GraphicsAPIVersion = Version{11, 0};
-            CreateInfo.Features           = CI.Features;
+            EngineD3D11CreateInfo EngineCI;
+            EngineCI.GraphicsAPIVersion = Version{11, 0};
+            EngineCI.Features           = EnvCI.Features;
 #    ifdef DILIGENT_DEVELOPMENT
-            CreateInfo.SetValidationLevel(VALIDATION_LEVEL_2);
+            EngineCI.SetValidationLevel(VALIDATION_LEVEL_2);
 #    endif
-            EnumerateAdapters(pFactoryD3D11, CreateInfo.GraphicsAPIVersion);
+            EnumerateAdapters(pFactoryD3D11, EngineCI.GraphicsAPIVersion,
+                              [pFactoryD3D11, &EngineCI](const GraphicsAdapterInfo& AdapterInfo, Uint32 AdapterId) {
+                                  std::vector<DisplayModeAttribs> DisplayModes;
+                                  if (AdapterInfo.NumOutputs > 0)
+                                  {
+                                      Uint32 NumDisplayModes = 0;
+                                      pFactoryD3D11->EnumerateDisplayModes(EngineCI.GraphicsAPIVersion, AdapterId, 0, TEX_FORMAT_RGBA8_UNORM, NumDisplayModes, nullptr);
+                                      DisplayModes.resize(NumDisplayModes);
+                                      pFactoryD3D11->EnumerateDisplayModes(EngineCI.GraphicsAPIVersion, AdapterId, 0, TEX_FORMAT_RGBA8_UNORM, NumDisplayModes, DisplayModes.data());
+                                  }
+                                  return DisplayModes;
+                              });
 
-            LOG_INFO_MESSAGE("Found ", Adapters.size(), " compatible adapters");
-            for (Uint32 i = 0; i < Adapters.size(); ++i)
-            {
-                const auto& AdapterInfo = Adapters[i];
-
-                std::vector<DisplayModeAttribs> DisplayModes;
-                if (AdapterInfo.NumOutputs > 0)
-                {
-                    Uint32 NumDisplayModes = 0;
-                    pFactoryD3D11->EnumerateDisplayModes(CreateInfo.GraphicsAPIVersion, i, 0, TEX_FORMAT_RGBA8_UNORM, NumDisplayModes, nullptr);
-                    DisplayModes.resize(NumDisplayModes);
-                    pFactoryD3D11->EnumerateDisplayModes(CreateInfo.GraphicsAPIVersion, i, 0, TEX_FORMAT_RGBA8_UNORM, NumDisplayModes, DisplayModes.data());
-                }
-
-                PrintAdapterInfo(i, AdapterInfo, DisplayModes);
-            }
-
-            CreateInfo.AdapterId           = FindAdapter(Adapters, CI.AdapterType, CI.AdapterId);
-            NumDeferredCtx                 = CI.NumDeferredContexts;
-            CreateInfo.NumDeferredContexts = NumDeferredCtx;
+            EngineCI.AdapterId           = FindAdapter(Adapters, EnvCI.AdapterType, EnvCI.AdapterId);
+            NumDeferredCtx               = EnvCI.NumDeferredContexts;
+            EngineCI.NumDeferredContexts = NumDeferredCtx;
             ppContexts.resize(std::max(size_t{1}, ContextCI.size()) + NumDeferredCtx);
-            pFactoryD3D11->CreateDeviceAndContextsD3D11(CreateInfo, &m_pDevice, ppContexts.data());
+            pFactoryD3D11->CreateDeviceAndContextsD3D11(EngineCI, &m_pDevice, ppContexts.data());
         }
         break;
 #endif
@@ -275,52 +280,46 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
                 LOG_ERROR_AND_THROW("Failed to load d3d12 dll");
             }
 
-            EngineD3D12CreateInfo CreateInfo;
-            CreateInfo.GraphicsAPIVersion = Version{11, 0};
+            EngineD3D12CreateInfo EngineCI;
+            EngineCI.GraphicsAPIVersion = Version{11, 0};
 
-            EnumerateAdapters(pFactoryD3D12, CreateInfo.GraphicsAPIVersion);
+            EnumerateAdapters(pFactoryD3D12, EngineCI.GraphicsAPIVersion,
+                              [pFactoryD3D12, &EngineCI](const GraphicsAdapterInfo& AdapterInfo, Uint32 AdapterId) {
+                                  std::vector<DisplayModeAttribs> DisplayModes;
+                                  if (AdapterInfo.NumOutputs > 0)
+                                  {
+                                      Uint32 NumDisplayModes = 0;
+                                      pFactoryD3D12->EnumerateDisplayModes(EngineCI.GraphicsAPIVersion, AdapterId, 0, TEX_FORMAT_RGBA8_UNORM, NumDisplayModes, nullptr);
+                                      DisplayModes.resize(NumDisplayModes);
+                                      pFactoryD3D12->EnumerateDisplayModes(EngineCI.GraphicsAPIVersion, AdapterId, 0, TEX_FORMAT_RGBA8_UNORM, NumDisplayModes, DisplayModes.data());
+                                  }
+                                  return DisplayModes;
+                              });
 
             // Always enable validation
-            CreateInfo.SetValidationLevel(VALIDATION_LEVEL_1);
-            CreateInfo.Features = CI.Features;
+            EngineCI.SetValidationLevel(VALIDATION_LEVEL_1);
+            EngineCI.Features = EnvCI.Features;
 
-            LOG_INFO_MESSAGE("Found ", Adapters.size(), " compatible adapters");
-            for (Uint32 i = 0; i < Adapters.size(); ++i)
-            {
-                const auto& AdapterInfo = Adapters[i];
+            EngineCI.AdapterId = FindAdapter(Adapters, EnvCI.AdapterType, EnvCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_COMPUTE, "Compute", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_TRANSFER, "Transfer", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics 2", EngineCI.AdapterId);
+            EngineCI.NumImmediateContexts  = static_cast<Uint32>(ContextCI.size());
+            EngineCI.pImmediateContextInfo = EngineCI.NumImmediateContexts > 0 ? ContextCI.data() : nullptr;
 
-                std::vector<DisplayModeAttribs> DisplayModes;
-                if (AdapterInfo.NumOutputs > 0)
-                {
-                    Uint32 NumDisplayModes = 0;
-                    pFactoryD3D12->EnumerateDisplayModes(CreateInfo.GraphicsAPIVersion, i, 0, TEX_FORMAT_RGBA8_UNORM, NumDisplayModes, nullptr);
-                    DisplayModes.resize(NumDisplayModes);
-                    pFactoryD3D12->EnumerateDisplayModes(CreateInfo.GraphicsAPIVersion, i, 0, TEX_FORMAT_RGBA8_UNORM, NumDisplayModes, DisplayModes.data());
-                }
+            //EngineCI.EnableGPUBasedValidation                = true;
+            EngineCI.CPUDescriptorHeapAllocationSize[0]      = 64; // D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+            EngineCI.CPUDescriptorHeapAllocationSize[1]      = 32; // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
+            EngineCI.CPUDescriptorHeapAllocationSize[2]      = 16; // D3D12_DESCRIPTOR_HEAP_TYPE_RTV
+            EngineCI.CPUDescriptorHeapAllocationSize[3]      = 16; // D3D12_DESCRIPTOR_HEAP_TYPE_DSV
+            EngineCI.DynamicDescriptorAllocationChunkSize[0] = 8;  // D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+            EngineCI.DynamicDescriptorAllocationChunkSize[1] = 8;  // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
 
-                PrintAdapterInfo(i, AdapterInfo, DisplayModes);
-            }
-
-            CreateInfo.AdapterId = FindAdapter(Adapters, CI.AdapterType, CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_COMPUTE, "Compute", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_TRANSFER, "Transfer", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics 2", CI.AdapterId);
-            CreateInfo.NumImmediateContexts  = static_cast<Uint32>(ContextCI.size());
-            CreateInfo.pImmediateContextInfo = CreateInfo.NumImmediateContexts > 0 ? ContextCI.data() : nullptr;
-
-            //CreateInfo.EnableGPUBasedValidation                = true;
-            CreateInfo.CPUDescriptorHeapAllocationSize[0]      = 64; // D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-            CreateInfo.CPUDescriptorHeapAllocationSize[1]      = 32; // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
-            CreateInfo.CPUDescriptorHeapAllocationSize[2]      = 16; // D3D12_DESCRIPTOR_HEAP_TYPE_RTV
-            CreateInfo.CPUDescriptorHeapAllocationSize[3]      = 16; // D3D12_DESCRIPTOR_HEAP_TYPE_DSV
-            CreateInfo.DynamicDescriptorAllocationChunkSize[0] = 8;  // D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-            CreateInfo.DynamicDescriptorAllocationChunkSize[1] = 8;  // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
-
-            NumDeferredCtx                 = CI.NumDeferredContexts;
-            CreateInfo.NumDeferredContexts = NumDeferredCtx;
+            NumDeferredCtx               = EnvCI.NumDeferredContexts;
+            EngineCI.NumDeferredContexts = NumDeferredCtx;
             ppContexts.resize(std::max(size_t{1}, ContextCI.size()) + NumDeferredCtx);
-            pFactoryD3D12->CreateDeviceAndContextsD3D12(CreateInfo, &m_pDevice, ppContexts.data());
+            pFactoryD3D12->CreateDeviceAndContextsD3D12(EngineCI, &m_pDevice, ppContexts.data());
         }
         break;
 #endif
@@ -340,22 +339,24 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
 #    endif
             auto* pFactoryOpenGL = GetEngineFactoryOpenGL();
             pFactoryOpenGL->SetMessageCallback(MessageCallback);
-            EnumerateAdapters(pFactoryOpenGL, Version{});
-
+            EnumerateAdapters(pFactoryOpenGL, Version{},
+                              [](const GraphicsAdapterInfo& AdapterInfo, Uint32 AdapterId) {
+                                  return std::vector<DisplayModeAttribs>{};
+                              });
             auto Window = CreateNativeWindow();
 
-            EngineGLCreateInfo CreateInfo;
+            EngineGLCreateInfo EngineCI;
 
             // Always enable validation
-            CreateInfo.SetValidationLevel(VALIDATION_LEVEL_1);
+            EngineCI.SetValidationLevel(VALIDATION_LEVEL_1);
 
-            CreateInfo.Window   = Window;
-            CreateInfo.Features = CI.Features;
-            NumDeferredCtx      = 0;
+            EngineCI.Window   = Window;
+            EngineCI.Features = EnvCI.Features;
+            NumDeferredCtx    = 0;
             ppContexts.resize(std::max(size_t{1}, ContextCI.size()) + NumDeferredCtx);
             RefCntAutoPtr<ISwapChain> pSwapChain; // We will use testing swap chain instead
             pFactoryOpenGL->CreateDeviceAndSwapChainGL(
-                CreateInfo, &m_pDevice, ppContexts.data(), SCDesc, &pSwapChain);
+                EngineCI, &m_pDevice, ppContexts.data(), SCDesc, &pSwapChain);
         }
         break;
 #endif
@@ -375,34 +376,37 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
             auto* pFactoryVk = GetEngineFactoryVk();
             pFactoryVk->SetMessageCallback(MessageCallback);
 
-            if (CI.EnableDeviceSimulation)
+            if (EnvCI.EnableDeviceSimulation)
                 pFactoryVk->EnableDeviceSimulation();
 
-            EnumerateAdapters(pFactoryVk, Version{});
-            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_COMPUTE, "Compute", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_TRANSFER, "Transfer", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics 2", CI.AdapterId);
+            EnumerateAdapters(pFactoryVk, Version{},
+                              [](const GraphicsAdapterInfo& AdapterInfo, Uint32 AdapterId) {
+                                  return std::vector<DisplayModeAttribs>{};
+                              });
 
-            EngineVkCreateInfo CreateInfo;
+            EngineVkCreateInfo EngineCI;
+            EngineCI.AdapterId = FindAdapter(Adapters, EnvCI.AdapterType, EnvCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_COMPUTE, "Compute", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_TRANSFER, "Transfer", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics 2", EngineCI.AdapterId);
 
             // Always enable validation
-            CreateInfo.SetValidationLevel(VALIDATION_LEVEL_1);
+            EngineCI.SetValidationLevel(VALIDATION_LEVEL_1);
 
-            CreateInfo.AdapterId                 = CI.AdapterId;
-            CreateInfo.NumImmediateContexts      = static_cast<Uint32>(ContextCI.size());
-            CreateInfo.pImmediateContextInfo     = CreateInfo.NumImmediateContexts > 0 ? ContextCI.data() : nullptr;
-            CreateInfo.MainDescriptorPoolSize    = VulkanDescriptorPoolSize{64, 64, 256, 256, 64, 32, 32, 32, 32, 16, 16};
-            CreateInfo.DynamicDescriptorPoolSize = VulkanDescriptorPoolSize{64, 64, 256, 256, 64, 32, 32, 32, 32, 16, 16};
-            CreateInfo.UploadHeapPageSize        = 32 * 1024;
-            //CreateInfo.DeviceLocalMemoryReserveSize = 32 << 20;
-            //CreateInfo.HostVisibleMemoryReserveSize = 48 << 20;
-            CreateInfo.Features = CI.Features;
+            EngineCI.NumImmediateContexts      = static_cast<Uint32>(ContextCI.size());
+            EngineCI.pImmediateContextInfo     = EngineCI.NumImmediateContexts > 0 ? ContextCI.data() : nullptr;
+            EngineCI.MainDescriptorPoolSize    = VulkanDescriptorPoolSize{64, 64, 256, 256, 64, 32, 32, 32, 32, 16, 16};
+            EngineCI.DynamicDescriptorPoolSize = VulkanDescriptorPoolSize{64, 64, 256, 256, 64, 32, 32, 32, 32, 16, 16};
+            EngineCI.UploadHeapPageSize        = 32 * 1024;
+            //EngineCI.DeviceLocalMemoryReserveSize = 32 << 20;
+            //EngineCI.HostVisibleMemoryReserveSize = 48 << 20;
+            EngineCI.Features = EnvCI.Features;
 
-            NumDeferredCtx                 = CI.NumDeferredContexts;
-            CreateInfo.NumDeferredContexts = NumDeferredCtx;
+            NumDeferredCtx               = EnvCI.NumDeferredContexts;
+            EngineCI.NumDeferredContexts = NumDeferredCtx;
             ppContexts.resize(std::max(size_t{1}, ContextCI.size()) + NumDeferredCtx);
-            pFactoryVk->CreateDeviceAndContextsVk(CreateInfo, &m_pDevice, ppContexts.data());
+            pFactoryVk->CreateDeviceAndContextsVk(EngineCI, &m_pDevice, ppContexts.data());
         }
         break;
 #endif
@@ -413,25 +417,29 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
             auto* pFactoryMtl = GetEngineFactoryMtl();
             pFactoryMtl->SetMessageCallback(MessageCallback);
 
-            EnumerateAdapters(pFactoryMtl, Version{});
-            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_COMPUTE, "Compute", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_TRANSFER, "Transfer", CI.AdapterId);
-            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics 2", CI.AdapterId);
+            EnumerateAdapters(pFactoryMtl, Version{},
+                              [](const GraphicsAdapterInfo& AdapterInfo, Uint32 AdapterId) {
+                                  return std::vector<DisplayModeAttribs>{};
+                              });
 
-            EngineMtlCreateInfo CreateInfo;
-            CreateInfo.AdapterId             = CI.AdapterId;
-            CreateInfo.NumImmediateContexts  = static_cast<Uint32>(ContextCI.size());
-            CreateInfo.pImmediateContextInfo = CreateInfo.NumImmediateContexts ? ContextCI.data() : nullptr;
-            CreateInfo.Features              = CI.Features;
+            EngineMtlCreateInfo EngineCI;
+            EngineCI.AdapterId = FindAdapter(Adapters, EnvCI.AdapterType, EnvCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_COMPUTE, "Compute", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_TRANSFER, "Transfer", EngineCI.AdapterId);
+            AddContext(COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics 2", EngineCI.AdapterId);
+
+            EngineCI.NumImmediateContexts  = static_cast<Uint32>(ContextCI.size());
+            EngineCI.pImmediateContextInfo = EngineCI.NumImmediateContexts ? ContextCI.data() : nullptr;
+            EngineCI.Features              = EnvCI.Features;
 
             // Always enable validation
-            CreateInfo.SetValidationLevel(VALIDATION_LEVEL_1);
+            EngineCI.SetValidationLevel(VALIDATION_LEVEL_1);
 
-            NumDeferredCtx                 = CI.NumDeferredContexts;
-            CreateInfo.NumDeferredContexts = NumDeferredCtx;
+            NumDeferredCtx               = EnvCI.NumDeferredContexts;
+            EngineCI.NumDeferredContexts = NumDeferredCtx;
             ppContexts.resize(std::max(size_t{1}, ContextCI.size()) + NumDeferredCtx);
-            pFactoryMtl->CreateDeviceAndContextsMtl(CreateInfo, &m_pDevice, ppContexts.data());
+            pFactoryMtl->CreateDeviceAndContextsMtl(EngineCI, &m_pDevice, ppContexts.data());
         }
         break;
 #endif
@@ -444,9 +452,9 @@ GPUTestingEnvironment::GPUTestingEnvironment(const CreateInfo& CI, const SwapCha
     {
         const auto& ActualFeats = m_pDevice->GetDeviceInfo().Features;
 #define CHECK_FEATURE_STATE(Feature)                                                                                                      \
-    if (CI.Features.Feature != DEVICE_FEATURE_STATE_OPTIONAL && CI.Features.Feature != ActualFeats.Feature)                               \
+    if (EnvCI.Features.Feature != DEVICE_FEATURE_STATE_OPTIONAL && EnvCI.Features.Feature != ActualFeats.Feature)                         \
     {                                                                                                                                     \
-        LOG_ERROR_MESSAGE("requested state (", GetDeviceFeatureStateString(CI.Features.Feature), ") of the '", #Feature,                  \
+        LOG_ERROR_MESSAGE("requested state (", GetDeviceFeatureStateString(EnvCI.Features.Feature), ") of the '", #Feature,               \
                           "' feature does not match the actual feature state (", GetDeviceFeatureStateString(ActualFeats.Feature), ")."); \
         UNEXPECTED("Requested feature state does not match the actual state.");                                                           \
     }
@@ -686,10 +694,18 @@ void GPUTestingEnvironment::SetDefaultCompiler(SHADER_COMPILER compiler)
                 case SHADER_COMPILER_DEFAULT:
                 case SHADER_COMPILER_GLSLANG:
                     m_ShaderCompiler = compiler;
+                    break;
 
                 case SHADER_COMPILER_DXC:
                     if (HasDXCompiler())
+                    {
                         m_ShaderCompiler = compiler;
+                    }
+                    else
+                    {
+                        LOG_WARNING_MESSAGE("DXC is not available. Using default shader compiler");
+                        m_ShaderCompiler = SHADER_COMPILER_DEFAULT;
+                    }
                     break;
 
                 default:
@@ -800,6 +816,11 @@ GPUTestingEnvironment* GPUTestingEnvironment::Initialize(int argc, char** argv)
         {
             TestEnvCI.deviceType = RENDER_DEVICE_TYPE_VULKAN;
         }
+        else if (strcmp(arg, "--mode=vk_sw") == 0)
+        {
+            TestEnvCI.deviceType  = RENDER_DEVICE_TYPE_VULKAN;
+            TestEnvCI.AdapterType = ADAPTER_TYPE_SOFTWARE;
+        }
         else if (strcmp(arg, "--mode=gl") == 0)
         {
             TestEnvCI.deviceType = RENDER_DEVICE_TYPE_GL;
@@ -810,7 +831,11 @@ GPUTestingEnvironment* GPUTestingEnvironment::Initialize(int argc, char** argv)
         }
         else if (AdapterArgName.compare(0, AdapterArgName.length(), arg, AdapterArgName.length()) == 0)
         {
-            TestEnvCI.AdapterId = static_cast<Uint32>(atoi(arg + AdapterArgName.length()));
+            const auto* AdapterStr = arg + AdapterArgName.length();
+            if (strcmp(AdapterStr, "sw") == 0)
+                TestEnvCI.AdapterType = ADAPTER_TYPE_SOFTWARE;
+            else
+                TestEnvCI.AdapterId = static_cast<Uint32>(atoi(AdapterStr));
         }
         else if (strcmp(arg, "--shader_compiler=dxc") == 0)
         {
@@ -845,24 +870,21 @@ GPUTestingEnvironment* GPUTestingEnvironment::Initialize(int argc, char** argv)
     Diligent::Testing::GPUTestingEnvironment* pEnv = nullptr;
     try
     {
+        std::cout << "\n\n\n==================== Running tests in "
+                  << GetRenderDeviceTypeString(TestEnvCI.deviceType)
+                  << (TestEnvCI.AdapterType == ADAPTER_TYPE_SOFTWARE ? "-SW" : "")
+                  << " mode ====================\n\n";
+
         switch (TestEnvCI.deviceType)
         {
 #if D3D11_SUPPORTED
             case RENDER_DEVICE_TYPE_D3D11:
-                if (TestEnvCI.AdapterType == ADAPTER_TYPE_SOFTWARE)
-                    std::cout << "\n\n\n================ Running tests in Direct3D11-SW mode =================\n\n";
-                else
-                    std::cout << "\n\n\n================== Running tests in Direct3D11 mode ==================\n\n";
                 pEnv = CreateTestingEnvironmentD3D11(TestEnvCI, SCDesc);
                 break;
 #endif
 
 #if D3D12_SUPPORTED
             case RENDER_DEVICE_TYPE_D3D12:
-                if (TestEnvCI.AdapterType == ADAPTER_TYPE_SOFTWARE)
-                    std::cout << "\n\n\n================ Running tests in Direct3D12-SW mode =================\n\n";
-                else
-                    std::cout << "\n\n\n================== Running tests in Direct3D12 mode ==================\n\n";
                 pEnv = CreateTestingEnvironmentD3D12(TestEnvCI, SCDesc);
                 break;
 #endif
@@ -870,7 +892,6 @@ GPUTestingEnvironment* GPUTestingEnvironment::Initialize(int argc, char** argv)
 #if GL_SUPPORTED || GLES_SUPPORTED
             case RENDER_DEVICE_TYPE_GL:
             case RENDER_DEVICE_TYPE_GLES:
-                std::cout << "\n\n\n==================== Running tests in OpenGL mode ====================\n\n";
                 pEnv = CreateTestingEnvironmentGL(TestEnvCI, SCDesc);
                 break;
 
@@ -878,20 +899,34 @@ GPUTestingEnvironment* GPUTestingEnvironment::Initialize(int argc, char** argv)
 
 #if VULKAN_SUPPORTED
             case RENDER_DEVICE_TYPE_VULKAN:
-                std::cout << "\n\n\n==================== Running tests in Vulkan mode ====================\n\n";
                 pEnv = CreateTestingEnvironmentVk(TestEnvCI, SCDesc);
                 break;
 #endif
 
 #if METAL_SUPPORTED
             case RENDER_DEVICE_TYPE_METAL:
-                std::cout << "\n\n\n==================== Running tests in Metal mode ====================\n\n";
                 pEnv = CreateTestingEnvironmentMtl(TestEnvCI, SCDesc);
                 break;
 #endif
 
             default:
                 LOG_ERROR_AND_THROW("Unsupported device type");
+        }
+
+        const auto DeviceType = pEnv->GetDevice()->GetDeviceInfo().Type;
+        if (DeviceType != TestEnvCI.deviceType)
+        {
+            delete pEnv;
+            LOG_ERROR_AND_THROW("Requested device type (", GetRenderDeviceTypeString(TestEnvCI.deviceType),
+                                ") does not match the type of the device that was created (", GetRenderDeviceTypeString(DeviceType), ").");
+        }
+
+        const auto AdapterType = pEnv->GetDevice()->GetAdapterInfo().Type;
+        if (TestEnvCI.AdapterType != ADAPTER_TYPE_UNKNOWN && TestEnvCI.AdapterType != AdapterType)
+        {
+            delete pEnv;
+            LOG_ERROR_AND_THROW("Requested adapter type (", GetAdapterTypeString(TestEnvCI.AdapterType),
+                                ") does not match the type of the adapter that was created (", GetAdapterTypeString(AdapterType), ").");
         }
     }
     catch (...)

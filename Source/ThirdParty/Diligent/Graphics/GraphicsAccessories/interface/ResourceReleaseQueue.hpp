@@ -35,10 +35,10 @@
 
 #include <mutex>
 #include <deque>
+#include <atomic>
 
 #include "../../../Primitives/interface/MemoryAllocator.h"
 #include "../../../Common/interface/STDAllocator.hpp"
-#include "../../../Platforms/interface/Atomics.hpp"
 #include "../../../Platforms/Basic/interface/DebugUtilities.hpp"
 
 namespace Diligent
@@ -64,8 +64,10 @@ public:
     //  |__________________________________________________|
     //
 
+    using RefCounterType = long;
+
     template <typename ResourceType, typename = typename std::enable_if<std::is_object<ResourceType>::value>::type>
-    static DynamicStaleResourceWrapper Create(ResourceType&& Resource, Atomics::Long NumReferences)
+    static DynamicStaleResourceWrapper Create(ResourceType&& Resource, RefCounterType NumReferences)
     {
         VERIFY_EXPR(NumReferences >= 1);
 
@@ -95,10 +97,10 @@ public:
         class SpecificSharedStaleResource final : public StaleResourceBase
         {
         public:
-            SpecificSharedStaleResource(ResourceType&& SpecificResource, Atomics::Long NumReferences) :
-                m_SpecificResource(std::move(SpecificResource))
+            SpecificSharedStaleResource(ResourceType&& SpecificResource, RefCounterType NumReferences) :
+                m_SpecificResource(std::move(SpecificResource)),
+                m_RefCounter{NumReferences}
             {
-                m_RefCounter = NumReferences;
             }
 
             // clang-format off
@@ -110,15 +112,15 @@ public:
 
             virtual void Release() override final
             {
-                if (Atomics::AtomicDecrement(m_RefCounter) == 0)
+                if (m_RefCounter.fetch_add(-1) - 1 == 0)
                 {
                     delete this;
                 }
             }
 
         private:
-            ResourceType        m_SpecificResource;
-            Atomics::AtomicLong m_RefCounter;
+            ResourceType                m_SpecificResource;
+            std::atomic<RefCounterType> m_RefCounter;
         };
 
         return DynamicStaleResourceWrapper{
@@ -178,7 +180,9 @@ template <typename ResourceType>
 class StaticStaleResourceWrapper
 {
 public:
-    static StaticStaleResourceWrapper Create(ResourceType&& Resource, Atomics::Long NumReferences)
+    using RefCounterType = long;
+
+    static StaticStaleResourceWrapper Create(ResourceType&& Resource, RefCounterType NumReferences)
     {
         VERIFY(NumReferences == 1, "Number of references must be 1 for StaticStaleResourceWrapper");
         return StaticStaleResourceWrapper{std::move(Resource)};
@@ -238,7 +242,7 @@ public:
     /// \param [in] Resource      - Resource to be released
     /// \param [in] NumReferences - Number of references to the resource
     template <typename ResourceType, typename = typename std::enable_if<std::is_object<ResourceType>::value>::type>
-    static ResourceWrapperType CreateWrapper(ResourceType&& Resource, Atomics::Long NumReferences)
+    static ResourceWrapperType CreateWrapper(ResourceType&& Resource, typename ResourceWrapperType::RefCounterType NumReferences)
     {
         return ResourceWrapperType::Create(std::move(Resource), NumReferences);
     }

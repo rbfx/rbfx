@@ -43,4 +43,25 @@ void HLSL2GLSLConverterObject::CreateStream(const Char*                      Inp
     Converter.CreateStream(InputFileName, pSourceStreamFactory, HLSLSource, NumSymbols, ppStream);
 }
 
+void CreateHLSL2GLSLConverter(IHLSL2GLSLConverter** ppConverter)
+{
+    try
+    {
+        RefCntAutoPtr<HLSL2GLSLConverterObject> pConverter{MakeNewRCObj<HLSL2GLSLConverterObject>()()};
+        pConverter->QueryInterface(IID_HLSL2GLSLConverter, reinterpret_cast<IObject**>(ppConverter));
+    }
+    catch (...)
+    {
+        LOG_ERROR_MESSAGE("Failed to create HLSL2GLSLConverterObject");
+    }
+}
+
 } // namespace Diligent
+
+extern "C"
+{
+    void Diligent_CreateHLSL2GLSLConverter(Diligent::IHLSL2GLSLConverter** ppConverter)
+    {
+        Diligent::CreateHLSL2GLSLConverter(ppConverter);
+    }
+}

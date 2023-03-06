@@ -61,7 +61,9 @@ DILIGENT_TYPED_ENUM(ATTACHMENT_LOAD_OP, Uint8)
     /// the attachment will be undefined inside the render area.
     /// Vulkan counterpart: VK_ATTACHMENT_LOAD_OP_DONT_CARE.
     /// D3D12 counterpart: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD.
-    ATTACHMENT_LOAD_OP_DISCARD
+    ATTACHMENT_LOAD_OP_DISCARD,
+
+    ATTACHMENT_LOAD_OP_COUNT
 };
 
 
@@ -79,7 +81,9 @@ DILIGENT_TYPED_ENUM(ATTACHMENT_STORE_OP, Uint8)
     /// the contents of the attachment will be undefined inside the render area.
     /// Vulkan counterpart: VK_ATTACHMENT_STORE_OP_DONT_CARE.
     /// D3D12 counterpart: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD.
-    ATTACHMENT_STORE_OP_DISCARD
+    ATTACHMENT_STORE_OP_DISCARD,
+
+    ATTACHMENT_STORE_OP_COUNT
 };
 
 

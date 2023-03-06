@@ -67,7 +67,7 @@ void TestDXBCRemapping(const char* Source, const char* Entry, const char* Profil
     D3D12_SHADER_DESC ShaderDesc = {};
     ShaderReflection->GetDesc(&ShaderDesc);
 
-    std::unordered_set<HashMapStringKey, HashMapStringKey::Hasher> UsedMappings;
+    std::unordered_set<HashMapStringKey> UsedMappings;
 
     for (Uint32 ResInd = 0; ResInd < ShaderDesc.BoundResources; ++ResInd)
     {

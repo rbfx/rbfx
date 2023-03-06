@@ -125,7 +125,7 @@ private:
         void* GetBlockStartAddress(Uint32 BlockIndex) const
         {
             VERIFY_EXPR(m_pOwnerAllocator != nullptr);
-            VERIFY(BlockIndex >= 0 && BlockIndex < m_pOwnerAllocator->m_NumBlocksInPage, "Invalid block index");
+            VERIFY(BlockIndex < m_pOwnerAllocator->m_NumBlocksInPage, "Invalid block index");
             return reinterpret_cast<Uint8*>(m_pPageStart) + BlockIndex * m_pOwnerAllocator->m_BlockSize;
         }
 
@@ -135,7 +135,7 @@ private:
             size_t Delta = reinterpret_cast<const Uint8*>(pBlockAddr) - reinterpret_cast<Uint8*>(m_pPageStart);
             VERIFY(Delta % m_pOwnerAllocator->m_BlockSize == 0, "Invalid address");
             Uint32 BlockIndex = static_cast<Uint32>(Delta / m_pOwnerAllocator->m_BlockSize);
-            VERIFY(BlockIndex >= 0 && BlockIndex < m_pOwnerAllocator->m_NumBlocksInPage, "Invalid block index");
+            VERIFY(BlockIndex < m_pOwnerAllocator->m_NumBlocksInPage, "Invalid block index");
         }
 #else
 #    define dbgVerifyAddress(...)

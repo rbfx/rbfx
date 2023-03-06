@@ -106,4 +106,13 @@ bool SerializedData::operator==(const SerializedData& Rhs) const
     return std::memcmp(m_Ptr, Rhs.m_Ptr, m_Size) == 0;
 }
 
+SerializedData SerializedData::MakeCopy(IMemoryAllocator& Allocator) const
+{
+    SerializedData Copy{m_Size, Allocator};
+    if (m_Ptr != nullptr)
+        std::memcpy(Copy.m_Ptr, m_Ptr, m_Size);
+
+    return Copy;
+}
+
 } // namespace Diligent

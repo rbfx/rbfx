@@ -40,23 +40,10 @@ class DearchiverGLImpl : public DearchiverBase
 public:
     using TDearchiverBase = DearchiverBase;
 
-    explicit DearchiverGLImpl(IReferenceCounters* pRefCounters) noexcept;
+    explicit DearchiverGLImpl(IReferenceCounters* pRefCounters, const DearchiverCreateInfo& CI) noexcept;
 
-    /// Implementation of IDearchiver::CreateDeviceObjectArchive() in Vulkan backend.
-    virtual void DILIGENT_CALL_TYPE CreateDeviceObjectArchive(IArchive*              pSource,
-                                                              IDeviceObjectArchive** ppArchive) const override final;
-
-    /// Implementation of IDearchiver::UnpackPipelineState() in Vulkan backend.
-    virtual void DILIGENT_CALL_TYPE UnpackPipelineState(const PipelineStateUnpackInfo& DeArchiveInfo,
-                                                        IPipelineState**               ppPSO) const override final;
-
-    /// Implementation of IDearchiver::UnpackResourceSignature() in Vulkan backend.
-    virtual void DILIGENT_CALL_TYPE UnpackResourceSignature(const ResourceSignatureUnpackInfo& DeArchiveInfo,
-                                                            IPipelineResourceSignature**       ppSignature) const override final;
-
-    /// Implementation of IDearchiver::UnpackRenderPass() in Vulkan backend.
-    virtual void DILIGENT_CALL_TYPE UnpackRenderPass(const RenderPassUnpackInfo& DeArchiveInfo,
-                                                     IRenderPass**               ppRP) const override final;
+protected:
+    RefCntAutoPtr<IPipelineResourceSignature> UnpackResourceSignature(const ResourceSignatureUnpackInfo& DeArchiveInfo, bool IsImplicit) override final;
 };
 
 } // namespace Diligent

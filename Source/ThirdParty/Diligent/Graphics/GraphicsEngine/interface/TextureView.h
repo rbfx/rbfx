@@ -130,6 +130,10 @@ struct TextureViewDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     /// Texture view flags, see Diligent::TEXTURE_VIEW_FLAGS.
     TEXTURE_VIEW_FLAGS Flags       DEFAULT_INITIALIZER(TEXTURE_VIEW_FLAG_NONE);
 
+    // 
+    // NB: when adding new members, don't forget to update std::hash<Diligent::TextureViewDesc>
+    //
+
 #if DILIGENT_CPP_INTERFACE
 
     constexpr TextureViewDesc() noexcept {}

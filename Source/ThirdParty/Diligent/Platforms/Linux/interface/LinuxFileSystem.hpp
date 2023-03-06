@@ -44,15 +44,14 @@ struct LinuxFileSystem : public BasicFileSystem
 public:
     static LinuxFile* OpenFile(const FileOpenAttribs& OpenAttribs);
 
-    static inline Char GetSlashSymbol() { return '/'; }
-
     static bool FileExists(const Char* strFilePath);
     static bool PathExists(const Char* strPath);
 
     static bool CreateDirectory(const Char* strPath);
     static bool DeleteDirectory(const Char* strPath);
+    static bool IsDirectory(const Char* strPath);
 
-    static void ClearDirectory(const Char* strPath);
+    static void ClearDirectory(const Char* strPath, bool Recursive = false);
     static void DeleteFile(const Char* strPath);
 
     static std::vector<std::unique_ptr<FindFileData>> Search(const Char* SearchPattern);
@@ -60,6 +59,8 @@ public:
     // Thread-safe popen/pclose
     static FILE* popen(const char* command, const char* type);
     static int   pclose(FILE* stream);
+
+    static std::string GetCurrentDirectory();
 };
 
 } // namespace Diligent

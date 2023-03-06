@@ -27,39 +27,35 @@
 #include "ArchiverImpl.hpp"
 #include "Archiver_Inc.hpp"
 
-#include <bitset>
+#include <vector>
 
-#include "PipelineStateBase.hpp"
 #include "PSOSerializer.hpp"
-#include "DataBlobImpl.hpp"
-#include "MemoryFileStream.hpp"
-#include "SerializedPipelineStateImpl.hpp"
 
 namespace Diligent
 {
 
-static ArchiverImpl::ChunkType PipelineTypeToChunkType(PIPELINE_TYPE PipelineType)
+static DeviceObjectArchive::ResourceType PipelineTypeToArchiveResourceType(PIPELINE_TYPE PipelineType)
 {
-    using ChunkType = ArchiverImpl::ChunkType;
+    using ResourceType = DeviceObjectArchive::ResourceType;
     static_assert(PIPELINE_TYPE_COUNT == 5, "Please handle the new pipeline type below");
     switch (PipelineType)
     {
         case PIPELINE_TYPE_GRAPHICS:
         case PIPELINE_TYPE_MESH:
-            return ChunkType::GraphicsPipelineStates;
+            return ResourceType::GraphicsPipeline;
 
         case PIPELINE_TYPE_COMPUTE:
-            return ChunkType::ComputePipelineStates;
+            return ResourceType::ComputePipeline;
 
         case PIPELINE_TYPE_RAY_TRACING:
-            return ChunkType::RayTracingPipelineStates;
+            return ResourceType::RayTracingPipeline;
 
         case PIPELINE_TYPE_TILE:
-            return ChunkType::TilePipelineStates;
+            return ResourceType::TilePipeline;
 
         default:
             UNEXPECTED("Unexpected pipeline type");
-            return ChunkType::Undefined;
+            return ResourceType::Undefined;
     }
 }
 
@@ -72,435 +68,41 @@ ArchiverImpl::~ArchiverImpl()
 {
 }
 
-const SerializedData& ArchiverImpl::GetDeviceData(const SerializedResourceSignatureImpl& PRS, DeviceType Type)
-{
-    const auto* pMem = PRS.GetDeviceData(Type);
-    if (pMem != nullptr)
-        return *pMem;
-
-    static const SerializedData NullData;
-    return NullData;
-}
-
-const SerializedData& ArchiverImpl::GetDeviceData(const PendingData& Pending, const SerializedPipelineStateImpl& PSO, DeviceType Type)
-{
-    auto it = Pending.PSOShaderIndices.find(&PSO);
-    if (it == Pending.PSOShaderIndices.end())
-    {
-        UNEXPECTED("Shader indices are not found for PSO '", PSO.GetDesc().Name, "'. This is likely a bug.");
-        static const SerializedData NullData;
-        return NullData;
-    }
-
-    return it->second[static_cast<size_t>(Type)];
-}
-
-
-template <typename MapType>
-Uint32* ArchiverImpl::InitNamedResourceArrayHeader(ChunkType      Type,
-                                                   const MapType& Map,
-                                                   PendingData&   Pending)
-{
-    VERIFY_EXPR(!Map.empty());
-
-    const auto ChunkInd = static_cast<size_t>(Type);
-
-    auto& DataOffsetArray = Pending.DataOffsetArrayPerChunk[ChunkInd];
-    auto& ChunkData       = Pending.ChunkData[ChunkInd];
-    auto& Count           = Pending.ResourceCountPerChunk[ChunkInd];
-
-    Count = StaticCast<Uint32>(Map.size());
-
-    ChunkData = TDataElement{GetRawAllocator()};
-    ChunkData.AddSpace<NamedResourceArrayHeader>();
-    ChunkData.AddSpace<Uint32>(Count); // NameLength
-    ChunkData.AddSpace<Uint32>(Count); // ***DataSize
-    ChunkData.AddSpace<Uint32>(Count); // ***DataOffset
-
-    for (const auto& NameAndData : Map)
-        ChunkData.AddSpaceForString(NameAndData.first.GetStr());
-
-    ChunkData.Reserve();
-
-    auto& Header = *ChunkData.Construct<NamedResourceArrayHeader>(Count);
-    VERIFY_EXPR(Header.Count == Count);
-
-    auto* NameLengthArray = ChunkData.ConstructArray<Uint32>(Count);
-    auto* DataSizeArray   = ChunkData.ConstructArray<Uint32>(Count);
-    DataOffsetArray       = ChunkData.ConstructArray<Uint32>(Count); // will be initialized later
-
-    Uint32 i = 0;
-    for (const auto& NameAndData : Map)
-    {
-        const auto* Name    = NameAndData.first.GetStr();
-        const auto  NameLen = strlen(Name);
-
-        auto* pStr = ChunkData.CopyString(Name, NameLen);
-        (void)pStr;
-
-        NameLengthArray[i] = StaticCast<Uint32>(NameLen + 1);
-        DataSizeArray[i]   = StaticCast<Uint32>(NameAndData.second->GetCommonData().Size());
-        ++i;
-    }
-
-    return DataSizeArray;
-}
-
 Bool ArchiverImpl::SerializeToBlob(IDataBlob** ppBlob)
 {
     DEV_CHECK_ERR(ppBlob != nullptr, "ppBlob must not be null");
     if (ppBlob == nullptr)
         return false;
 
-    *ppBlob = nullptr;
+    DeviceObjectArchive Archive;
 
-    auto pDataBlob  = DataBlobImpl::Create(0);
-    auto pMemStream = MemoryFileStream::Create(pDataBlob);
-
-    if (!SerializeToStream(pMemStream))
-        return false;
-
-    pDataBlob->QueryInterface(IID_DataBlob, reinterpret_cast<IObject**>(ppBlob));
-    return true;
-}
-
-void ArchiverImpl::ReserveSpace(PendingData& Pending) const
-{
-    auto& CommonData    = Pending.CommonData;
-    auto& PerDeviceData = Pending.PerDeviceData;
-
-    CommonData = TDataElement{GetRawAllocator()};
-    for (auto& DeviceData : PerDeviceData)
-        DeviceData = TDataElement{GetRawAllocator()};
-
-    // Reserve space for shaders
-    for (Uint32 type = 0; type < DeviceDataCount; ++type)
+    // Add pipelines and shaders
     {
-        const auto& Shaders = Pending.Shaders[type];
-        if (Shaders.Bytecodes.empty())
-            continue;
+        // A hash map that maps shader byte code to the index in the archive, for each device type
+        std::array<std::unordered_map<size_t, Uint32>, static_cast<size_t>(DeviceType::Count)> BytecodeHashToIdx;
 
-        auto& DeviceData = PerDeviceData[type];
-        DeviceData.AddSpace<FileOffsetAndSize>(Shaders.Bytecodes.size());
-        for (const auto& Bytecode : Shaders.Bytecodes)
+        for (const auto& pso_it : m_Pipelines)
         {
-            DeviceData.AddSpace(Bytecode.get().Size());
-        }
-    }
+            const auto* Name    = pso_it.first.GetName();
+            const auto  ResType = pso_it.first.GetType();
+            const auto& SrcPSO  = *pso_it.second;
+            const auto& SrcData = SrcPSO.GetData();
+            VERIFY_EXPR(SafeStrEqual(Name, SrcPSO.GetDesc().Name));
+            VERIFY_EXPR(ResType == PipelineTypeToArchiveResourceType(SrcPSO.GetDesc().PipelineType));
 
-    // Reserve space for pipeline resource signatures
-    for (const auto& PRS : m_Signatures)
-    {
-        CommonData.AddSpace<PRSDataHeader>();
-        CommonData.AddSpace(PRS.second->GetCommonData().Size());
+            auto& DstData = Archive.GetResourceData(ResType, Name);
+            // Add PSO common data
+            // NB: since the Archive object is temporary, we do not need to copy the data
+            DstData.Common = SerializedData{SrcData.Common.Ptr(), SrcData.Common.Size()};
 
-        for (Uint32 type = 0; type < DeviceDataCount; ++type)
-        {
-            const auto& Data = GetDeviceData(*PRS.second, static_cast<DeviceType>(type));
-            PerDeviceData[type].AddSpace(Data.Size());
-        }
-    }
-
-    // Reserve space for render passes
-    for (const auto& RP : m_RenderPasses)
-    {
-        CommonData.AddSpace<RPDataHeader>();
-        CommonData.AddSpace(RP.second->GetCommonData().Size());
-    }
-
-    // Reserve space for pipelines
-    for (const auto& Pipelines : m_Pipelines)
-    {
-        for (const auto& PSO : Pipelines)
-        {
-            CommonData.AddSpace<PSODataHeader>();
-            CommonData.AddSpace(PSO.second->GetCommonData().Size());
-
-            for (Uint32 type = 0; type < DeviceDataCount; ++type)
+            // Add shaders for each device type, if present
+            for (size_t device_type = 0; device_type < SrcData.Shaders.size(); ++device_type)
             {
-                const auto& Data = GetDeviceData(Pending, *PSO.second, static_cast<DeviceType>(type));
-                PerDeviceData[type].AddSpace(Data.Size());
-            }
-        }
-    }
-
-    static_assert(ChunkCount == 9, "Reserve space for new chunk type");
-
-    Pending.CommonData.Reserve();
-    for (auto& DeviceData : Pending.PerDeviceData)
-        DeviceData.Reserve();
-}
-
-void ArchiverImpl::WriteDebugInfo(PendingData& Pending) const
-{
-    auto& Chunk = Pending.ChunkData[static_cast<size_t>(ChunkType::ArchiveDebugInfo)];
-
-    auto SerializeDebugInfo = [](auto& Ser) //
-    {
-        Uint32 APIVersion = DILIGENT_API_VERSION;
-        Ser(APIVersion);
-
-        const char* GitHash = nullptr;
-#ifdef DILIGENT_CORE_COMMIT_HASH
-        GitHash = DILIGENT_CORE_COMMIT_HASH;
-#endif
-        Ser(GitHash);
-    };
-
-    Serializer<SerializerMode::Measure> MeasureSer;
-    SerializeDebugInfo(MeasureSer);
-
-    VERIFY_EXPR(Chunk.IsEmpty());
-    const auto Size = MeasureSer.GetSize();
-    if (Size == 0)
-        return;
-
-    Chunk = TDataElement{GetRawAllocator()};
-    Chunk.AddSpace(Size);
-    Chunk.Reserve();
-    Serializer<SerializerMode::Write> Ser{SerializedData{Chunk.Allocate(Size), Size}};
-    SerializeDebugInfo(Ser);
-}
-
-template <typename HeaderType>
-HeaderType* WriteHeader(ArchiverImpl::ChunkType     Type,
-                        const SerializedData&       SrcData,
-                        ArchiverImpl::TDataElement& DstChunk,
-                        Uint32&                     DstOffset,
-                        Uint32&                     DstArraySize)
-{
-    auto* pHeader = DstChunk.Construct<HeaderType>(Type);
-    VERIFY_EXPR(pHeader->Type == Type);
-    DstOffset = StaticCast<Uint32>(reinterpret_cast<const Uint8*>(pHeader) - DstChunk.GetDataPtr<const Uint8>());
-    // DeviceSpecificDataSize & DeviceSpecificDataOffset will be initialized later
-
-    DstChunk.Copy(SrcData.Ptr(), SrcData.Size());
-    DstArraySize += sizeof(*pHeader);
-
-    return pHeader;
-}
-
-template <typename HeaderType>
-void WritePerDeviceData(HeaderType&                 Header,
-                        ArchiverImpl::DeviceType    Type,
-                        const SerializedData&       SrcData,
-                        ArchiverImpl::TDataElement& DstChunk)
-{
-    if (!SrcData)
-        return;
-
-    auto* const pDst   = DstChunk.Copy(SrcData.Ptr(), SrcData.Size());
-    const auto  Offset = reinterpret_cast<const Uint8*>(pDst) - DstChunk.GetDataPtr<const Uint8>();
-    Header.SetSize(Type, StaticCast<Uint32>(SrcData.Size()));
-    Header.SetOffset(Type, StaticCast<Uint32>(Offset));
-}
-
-template <typename DataHeaderType, typename MapType, typename WritePerDeviceDataType>
-void ArchiverImpl::WriteDeviceObjectData(ChunkType Type, PendingData& Pending, MapType& ObjectMap, WritePerDeviceDataType WriteDeviceData) const
-{
-    if (ObjectMap.empty())
-        return;
-
-    auto* DataSizeArray   = InitNamedResourceArrayHeader(Type, ObjectMap, Pending);
-    auto* DataOffsetArray = Pending.DataOffsetArrayPerChunk[static_cast<size_t>(Type)];
-
-    Uint32 j = 0;
-    for (auto& Obj : ObjectMap)
-    {
-        auto* pHeader = WriteHeader<DataHeaderType>(Type, Obj.second->GetCommonData(),
-                                                    Pending.CommonData,
-                                                    DataOffsetArray[j], DataSizeArray[j]);
-
-        for (Uint32 type = 0; type < DeviceDataCount; ++type)
-        {
-            WriteDeviceData(*pHeader, static_cast<DeviceType>(type), Obj.second);
-        }
-        ++j;
-    }
-}
-
-void ArchiverImpl::WriteShaderData(PendingData& Pending) const
-{
-    {
-        bool HasShaders = false;
-        for (Uint32 type = 0; type < DeviceDataCount && !HasShaders; ++type)
-            HasShaders = !Pending.Shaders[type].Bytecodes.empty();
-        if (!HasShaders)
-            return;
-    }
-
-    const auto ChunkInd        = static_cast<Uint32>(ChunkType::Shaders);
-    auto&      Chunk           = Pending.ChunkData[ChunkInd];
-    Uint32*    DataOffsetArray = nullptr; // Pending.DataOffsetArrayPerChunk[ChunkInd];
-    Uint32*    DataSizeArray   = nullptr;
-    {
-        VERIFY_EXPR(Chunk.IsEmpty());
-        Chunk = TDataElement{GetRawAllocator()};
-        Chunk.AddSpace<ShadersDataHeader>();
-        Chunk.Reserve();
-
-        auto& Header    = *Chunk.Construct<ShadersDataHeader>(ChunkType::Shaders);
-        DataSizeArray   = Header.DeviceSpecificDataSize.data();
-        DataOffsetArray = Header.DeviceSpecificDataOffset.data();
-
-        Pending.ResourceCountPerChunk[ChunkInd] = DeviceDataCount;
-    }
-
-    for (Uint32 dev = 0; dev < DeviceDataCount; ++dev)
-    {
-        const auto& Shaders = Pending.Shaders[dev];
-        auto&       Dst     = Pending.PerDeviceData[dev];
-
-        if (Shaders.Bytecodes.empty())
-            continue;
-
-        VERIFY(Dst.GetCurrentSize() == 0, "Shaders must be written first");
-
-        // Write common data
-        auto* pOffsetAndSize = Dst.ConstructArray<FileOffsetAndSize>(Shaders.Bytecodes.size());
-        DataOffsetArray[dev] = StaticCast<Uint32>(reinterpret_cast<const Uint8*>(pOffsetAndSize) - Dst.GetDataPtr<const Uint8>());
-        DataSizeArray[dev]   = StaticCast<Uint32>(sizeof(FileOffsetAndSize) * Shaders.Bytecodes.size());
-
-        for (const auto& Bytecode : Shaders.Bytecodes)
-        {
-            const auto& Src  = Bytecode.get();
-            auto* const pDst = Dst.Copy(Src.Ptr(), Src.Size());
-
-            pOffsetAndSize->Offset = StaticCast<Uint32>(reinterpret_cast<const Uint8*>(pDst) - Dst.GetDataPtr<const Uint8>());
-            pOffsetAndSize->Size   = StaticCast<Uint32>(Src.Size());
-            ++pOffsetAndSize;
-        }
-    }
-}
-
-void ArchiverImpl::UpdateOffsetsInArchive(PendingData& Pending) const
-{
-    auto& ChunkData    = Pending.ChunkData;
-    auto& HeaderData   = Pending.HeaderData;
-    auto& OffsetInFile = Pending.OffsetInFile;
-
-    Uint32 NumChunks = 0;
-    for (auto& Chunk : ChunkData)
-    {
-        NumChunks += (Chunk.IsEmpty() ? 0 : 1);
-    }
-
-    HeaderData = TDataElement{GetRawAllocator()};
-    HeaderData.AddSpace<ArchiveHeader>();
-    HeaderData.AddSpace<ChunkHeader>(NumChunks);
-    HeaderData.Reserve();
-    auto&       FileHeader   = *HeaderData.Construct<ArchiveHeader>();
-    auto* const ChunkHeaders = HeaderData.ConstructArray<ChunkHeader>(NumChunks);
-
-    FileHeader.MagicNumber = DeviceObjectArchiveBase::HeaderMagicNumber;
-    FileHeader.Version     = DeviceObjectArchiveBase::HeaderVersion;
-    FileHeader.NumChunks   = NumChunks;
-
-    // Update offsets to the NamedResourceArrayHeader
-    OffsetInFile    = HeaderData.GetCurrentSize();
-    size_t ChunkIdx = 0;
-    for (Uint32 i = 0; i < ChunkData.size(); ++i)
-    {
-        if (ChunkData[i].IsEmpty())
-            continue;
-
-        auto& ChunkHdr  = ChunkHeaders[ChunkIdx++];
-        ChunkHdr.Type   = static_cast<ChunkType>(i);
-        ChunkHdr.Size   = StaticCast<Uint32>(ChunkData[i].GetCurrentSize());
-        ChunkHdr.Offset = StaticCast<Uint32>(OffsetInFile);
-
-        OffsetInFile += ChunkHdr.Size;
-    }
-
-    // Common data
-    {
-        for (Uint32 i = 0; i < NumChunks; ++i)
-        {
-            const auto& ChunkHdr = ChunkHeaders[i];
-            VERIFY_EXPR(ChunkHdr.Size > 0);
-            const auto ChunkInd = static_cast<Uint32>(ChunkHdr.Type);
-            const auto Count    = Pending.ResourceCountPerChunk[ChunkInd];
-
-            for (Uint32 j = 0; j < Count; ++j)
-            {
-                // Update offsets to the ***DataHeader
-                if (Pending.DataOffsetArrayPerChunk[ChunkInd] != nullptr)
-                {
-                    Uint32& Offset = Pending.DataOffsetArrayPerChunk[ChunkInd][j];
-                    Offset         = (Offset == InvalidOffset ? InvalidOffset : StaticCast<Uint32>(Offset + OffsetInFile));
-                }
-            }
-        }
-
-        if (!Pending.CommonData.IsEmpty())
-            OffsetInFile += Pending.CommonData.GetCurrentSize();
-    }
-
-    // Device specific data
-    for (Uint32 dev = 0; dev < DeviceDataCount; ++dev)
-    {
-        if (Pending.PerDeviceData[dev].IsEmpty())
-        {
-            FileHeader.BlockBaseOffsets[dev] = InvalidOffset;
-        }
-        else
-        {
-            FileHeader.BlockBaseOffsets[dev] = StaticCast<Uint32>(OffsetInFile);
-            OffsetInFile += Pending.PerDeviceData[dev].GetCurrentSize();
-        }
-    }
-}
-
-void ArchiverImpl::WritePendingDataToStream(const PendingData& Pending, IFileStream* pStream) const
-{
-    const size_t InitialSize = pStream->GetSize();
-    pStream->Write(Pending.HeaderData.GetDataPtr(), Pending.HeaderData.GetCurrentSize());
-
-    for (auto& Chunk : Pending.ChunkData)
-    {
-        if (Chunk.IsEmpty())
-            continue;
-
-        pStream->Write(Chunk.GetDataPtr(), Chunk.GetCurrentSize());
-    }
-
-    if (!Pending.CommonData.IsEmpty())
-        pStream->Write(Pending.CommonData.GetDataPtr(), Pending.CommonData.GetCurrentSize());
-
-    for (auto& DevData : Pending.PerDeviceData)
-    {
-        if (DevData.IsEmpty())
-            continue;
-
-        pStream->Write(DevData.GetDataPtr(), DevData.GetCurrentSize());
-    }
-
-    VERIFY_EXPR(InitialSize + pStream->GetSize() == Pending.OffsetInFile);
-}
-
-Bool ArchiverImpl::SerializeToStream(IFileStream* pStream)
-{
-    DEV_CHECK_ERR(pStream != nullptr, "pStream must not be null");
-    if (pStream == nullptr)
-        return false;
-
-    PendingData Pending;
-
-    // Process shader byte codes and initialize PSO shader indices
-    for (const auto& Pipelines : m_Pipelines)
-    {
-        for (const auto& PSO : Pipelines)
-        {
-            auto& PerDeviceShaderIndices = Pending.PSOShaderIndices[PSO.second];
-
-            const auto& SrcPerDeviceShaders = PSO.second->GetData().Shaders;
-            for (size_t device_type = 0; device_type < SrcPerDeviceShaders.size(); ++device_type)
-            {
-                const auto& SrcShaders = SrcPerDeviceShaders[device_type];
+                const auto& SrcShaders = SrcData.Shaders[device_type];
                 if (SrcShaders.empty())
-                    continue;
+                    continue; // No shaders for this device type
 
-                auto& DstShaders = Pending.Shaders[device_type];
+                auto& DstShaders = Archive.GetDeviceShaders(static_cast<DeviceType>(device_type));
 
                 std::vector<Uint32> ShaderIndices;
                 ShaderIndices.reserve(SrcShaders.size());
@@ -508,19 +110,22 @@ Bool ArchiverImpl::SerializeToStream(IFileStream* pStream)
                 {
                     VERIFY_EXPR(SrcShader.Data);
 
-                    auto it_inserted = DstShaders.HashToIdx.emplace(SrcShader.Hash, StaticCast<Uint32>(DstShaders.Bytecodes.size()));
+                    auto it_inserted = BytecodeHashToIdx[device_type].emplace(SrcShader.Hash, StaticCast<Uint32>(DstShaders.size()));
                     if (it_inserted.second)
                     {
-                        DstShaders.Bytecodes.emplace_back(SrcShader.Data);
+                        // New byte code - add it
+                        DstShaders.emplace_back(SrcShader.Data.Ptr(), SrcShader.Data.Size());
                     }
                     ShaderIndices.emplace_back(it_inserted.first->second);
                 }
 
-                ShaderIndexArray Indices{ShaderIndices.data(), static_cast<Uint32>(ShaderIndices.size())};
+                DeviceObjectArchive::ShaderIndexArray Indices{ShaderIndices.data(), StaticCast<Uint32>(ShaderIndices.size())};
+
+                // For pipelines, device specific data is the shader indices
+                auto& SerializedIndices = DstData.DeviceSpecific[device_type];
 
                 Serializer<SerializerMode::Measure> MeasureSer;
                 PSOSerializer<SerializerMode::Measure>::SerializeShaderIndices(MeasureSer, Indices, nullptr);
-                auto& SerializedIndices{PerDeviceShaderIndices[device_type]};
                 SerializedIndices = MeasureSer.AllocateData(GetRawAllocator());
 
                 Serializer<SerializerMode::Write> Ser{SerializedIndices};
@@ -530,37 +135,56 @@ Bool ArchiverImpl::SerializeToStream(IFileStream* pStream)
         }
     }
 
-    ReserveSpace(Pending);
-    WriteDebugInfo(Pending);
-    WriteShaderData(Pending);
-
-    auto WritePRSPerDeviceData = [&Pending](PRSDataHeader& Header, DeviceType Type, const RefCntAutoPtr<SerializedResourceSignatureImpl>& pPRS) //
+    // Add resource signatures
+    for (const auto& sign_it : m_Signatures)
     {
-        WritePerDeviceData(Header, Type, GetDeviceData(*pPRS, Type), Pending.PerDeviceData[static_cast<size_t>(Type)]);
-    };
-    WriteDeviceObjectData<PRSDataHeader>(ChunkType::ResourceSignature, Pending, m_Signatures, WritePRSPerDeviceData);
+        const auto* Name    = sign_it.first.GetStr();
+        const auto& SrcSign = *sign_it.second;
+        VERIFY_EXPR(SafeStrEqual(Name, SrcSign.GetDesc().Name));
+        const auto& SrcCommonData = SrcSign.GetCommonData();
 
-    WriteDeviceObjectData<RPDataHeader>(ChunkType::RenderPass, Pending, m_RenderPasses, [](RPDataHeader& Header, DeviceType Type, const RefCntAutoPtr<SerializedRenderPassImpl>&) {});
+        auto& DstData = Archive.GetResourceData(ResourceType::ResourceSignature, Name);
+        // NB: since the Archive object is temporary, we do not need to copy the data
+        DstData.Common = SerializedData{SrcCommonData.Ptr(), SrcCommonData.Size()};
 
-    auto WritePSOPerDeviceData = [&Pending](PSODataHeader& Header, DeviceType Type, const auto& pPSO) //
-    {
-        WritePerDeviceData(Header, Type, GetDeviceData(Pending, *pPSO, Type), Pending.PerDeviceData[static_cast<size_t>(Type)]);
-    };
-
-    for (Uint32 type = 0; type < m_Pipelines.size(); ++type)
-    {
-        const auto& Pipelines = m_Pipelines[type];
-        const auto  chunkType = PipelineTypeToChunkType(static_cast<PIPELINE_TYPE>(type));
-        WriteDeviceObjectData<PSODataHeader>(chunkType, Pending, Pipelines, WritePSOPerDeviceData);
+        for (size_t device_type = 0; device_type < static_cast<size_t>(DeviceType::Count); ++device_type)
+        {
+            if (const auto* pMem = SrcSign.GetDeviceData(static_cast<DeviceType>(device_type)))
+                DstData.DeviceSpecific[device_type] = SerializedData{pMem->Ptr(), pMem->Size()};
+        }
     }
 
-    static_assert(ChunkCount == 9, "Write data for new chunk type");
+    // Add render passes
+    for (const auto& rp_it : m_RenderPasses)
+    {
+        const auto* Name  = rp_it.first.GetStr();
+        const auto& SrcRP = *rp_it.second;
+        VERIFY_EXPR(SafeStrEqual(Name, SrcRP.GetDesc().Name));
+        const auto& SrcData = SrcRP.GetCommonData();
 
-    UpdateOffsetsInArchive(Pending);
-    WritePendingDataToStream(Pending, pStream);
+        auto& DstData  = Archive.GetResourceData(ResourceType::RenderPass, Name);
+        DstData.Common = SerializedData{SrcData.Ptr(), SrcData.Size()};
+    }
 
-    return true;
+    Archive.Serialize(ppBlob);
+
+    return *ppBlob != nullptr;
 }
+
+
+Bool ArchiverImpl::SerializeToStream(IFileStream* pStream)
+{
+    DEV_CHECK_ERR(pStream != nullptr, "pStream must not be null");
+    if (pStream == nullptr)
+        return false;
+
+    RefCntAutoPtr<IDataBlob> pDataBlob;
+    if (!SerializeToBlob(&pDataBlob))
+        return false;
+
+    return pStream->Write(pDataBlob->GetConstDataPtr(), pDataBlob->GetSize());
+}
+
 
 bool ArchiverImpl::AddPipelineResourceSignature(IPipelineResourceSignature* pPRS)
 {
@@ -635,13 +259,13 @@ Bool ArchiverImpl::AddPipelineState(IPipelineState* pPSO)
 
     const auto& Desc = pSerializedPSO->GetDesc();
     const auto* Name = Desc.Name;
-    // Mesh pipelines are serialized as graphics pipeliens
-    const auto PipelineType = Desc.PipelineType == PIPELINE_TYPE_MESH ? PIPELINE_TYPE_GRAPHICS : Desc.PipelineType;
+    // Mesh pipelines are serialized as graphics pipelines
+    const auto ArchiveResType = PipelineTypeToArchiveResourceType(Desc.PipelineType);
 
     {
-        std::lock_guard<std::mutex> Lock{m_PipelinesMtx[PipelineType]};
+        std::lock_guard<std::mutex> Lock{m_PipelinesMtx};
 
-        auto it_inserted = m_Pipelines[PipelineType].emplace(HashMapStringKey{Name, true}, pSerializedPSO);
+        auto it_inserted = m_Pipelines.emplace(NamedResourceKey{ArchiveResType, Name, true}, pSerializedPSO);
         if (!it_inserted.second)
         {
             LOG_ERROR_MESSAGE("Pipeline state with name '", Name, "' is already present in the archive. All pipelines of the same type must have unique names.");
@@ -656,14 +280,35 @@ Bool ArchiverImpl::AddPipelineState(IPipelineState* pPSO)
             Res = false;
     }
 
-    const auto& Signatures = pSerializedPSO->GetSignatures();
-    for (auto& pSign : Signatures)
+    if (!pSerializedPSO->GetData().DoNotPackSignatures)
     {
-        if (!AddPipelineResourceSignature(pSign.RawPtr<IPipelineResourceSignature>()))
-            Res = false;
+        const auto& Signatures = pSerializedPSO->GetSignatures();
+        for (auto& pSign : Signatures)
+        {
+            if (!AddPipelineResourceSignature(pSign.RawPtr<IPipelineResourceSignature>()))
+                Res = false;
+        }
     }
 
     return Res;
+}
+
+void ArchiverImpl::Reset()
+{
+    {
+        std::lock_guard<std::mutex> Lock{m_SignaturesMtx};
+        m_Signatures.clear();
+    }
+
+    {
+        std::lock_guard<std::mutex> Lock{m_RenderPassesMtx};
+        m_RenderPasses.clear();
+    }
+
+    {
+        std::lock_guard<std::mutex> Lock{m_PipelinesMtx};
+        m_Pipelines.clear();
+    }
 }
 
 } // namespace Diligent

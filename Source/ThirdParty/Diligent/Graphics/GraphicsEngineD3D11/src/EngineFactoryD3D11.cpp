@@ -60,11 +60,7 @@ public:
     using TBase = EngineFactoryD3DBase<IEngineFactoryD3D11, RENDER_DEVICE_TYPE_D3D11>;
 
     EngineFactoryD3D11Impl() :
-        TBase //
-        {
-            IID_EngineFactoryD3D11,
-            NEW_RC_OBJ(GetRawAllocator(), "DearchiverD3D11Impl instance", DearchiverD3D11Impl)() //
-        }
+        TBase{IID_EngineFactoryD3D11}
     {}
 
     virtual void DILIGENT_CALL_TYPE CreateDeviceAndContextsD3D11(const EngineD3D11CreateInfo& EngineCI,
@@ -86,6 +82,13 @@ public:
 
     virtual GraphicsAdapterInfo GetGraphicsAdapterInfo(void*          pd3dDevice,
                                                        IDXGIAdapter1* pDXIAdapter) const override final;
+
+
+    virtual void DILIGENT_CALL_TYPE CreateDearchiver(const DearchiverCreateInfo& CreateInfo,
+                                                     IDearchiver**               ppDearchiver) const override final
+    {
+        TBase::CreateDearchiver<DearchiverD3D11Impl>(CreateInfo, ppDearchiver);
+    }
 
 private:
     static void CreateD3D11DeviceAndContextForAdapter(IDXGIAdapter*         pAdapter,
@@ -173,7 +176,7 @@ void EngineFactoryD3D11Impl::CreateDeviceAndContextsD3D11(const EngineD3D11Creat
     }
 
     *ppDevice = nullptr;
-    memset(ppContexts, 0, sizeof(*ppContexts) * (std::max(1u, EngineCI.NumImmediateContexts) + EngineCI.NumDeferredContexts));
+    memset(ppContexts, 0, sizeof(*ppContexts) * (size_t{std::max(1u, EngineCI.NumImmediateContexts)} + size_t{EngineCI.NumDeferredContexts}));
 
     // This flag adds support for surfaces with a different color channel ordering
     // than the API default. It is required for compatibility with Direct2D.
@@ -281,7 +284,7 @@ void EngineFactoryD3D11Impl::AttachToD3D11Device(void*                        pd
     const auto NumImmediateContexts = std::max(1u, EngineCI.NumImmediateContexts);
 
     *ppDevice = nullptr;
-    memset(ppContexts, 0, sizeof(*ppContexts) * (NumImmediateContexts + EngineCI.NumDeferredContexts));
+    memset(ppContexts, 0, sizeof(*ppContexts) * (size_t{NumImmediateContexts} + size_t{EngineCI.NumDeferredContexts}));
 
     if (NumImmediateContexts > 1)
     {

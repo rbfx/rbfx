@@ -150,7 +150,7 @@ RenderDeviceVkImpl::RenderDeviceVkImpl(IReferenceCounters*                      
 
     const auto vkVersion    = m_PhysicalDevice->GetVkVersion();
     m_DeviceInfo.Type       = RENDER_DEVICE_TYPE_VULKAN;
-    m_DeviceInfo.APIVersion = Version{VK_VERSION_MAJOR(vkVersion), VK_VERSION_MINOR(vkVersion)};
+    m_DeviceInfo.APIVersion = Version{VK_API_VERSION_MAJOR(vkVersion), VK_API_VERSION_MINOR(vkVersion)};
 
     m_DeviceInfo.Features = VkFeaturesToDeviceFeatures(vkVersion,
                                                        m_LogicalVkDevice->GetEnabledFeatures(),
@@ -336,7 +336,7 @@ void RenderDeviceVkImpl::ExecuteAndDisposeTransientCmdBuff(SoftwareQueueIndex   
         TransientCmdPoolRecycler& operator = (const TransientCmdPoolRecycler&)  = delete;
         TransientCmdPoolRecycler& operator = (      TransientCmdPoolRecycler&&) = delete;
 
-        TransientCmdPoolRecycler(TransientCmdPoolRecycler&& rhs) :
+        TransientCmdPoolRecycler(TransientCmdPoolRecycler&& rhs) noexcept :
             LogicalDevice{rhs.LogicalDevice         },
             CmdPoolMgr   {rhs.CmdPoolMgr            },
             Pool         {std::move(rhs.Pool)       },

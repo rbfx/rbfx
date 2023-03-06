@@ -226,6 +226,7 @@ protected:
         if (sm_HasRayTracing)
         {
             ShaderCI.ShaderCompiler = SHADER_COMPILER_DXC;
+            ShaderCI.HLSLVersion    = {6, 3};
 
             ShaderCI.Source          = g_TrivialRGenSource;
             ShaderCI.Desc.ShaderType = SHADER_TYPE_RAY_GEN;

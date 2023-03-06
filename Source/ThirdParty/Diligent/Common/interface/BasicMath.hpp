@@ -1868,6 +1868,43 @@ constexpr VectorType normalize(const VectorType& a)
 }
 
 
+template <class T>
+constexpr bool any(const Vector2<T>& a)
+{
+    return (a.x != T{}) || (a.y != T{});
+}
+
+template <class T>
+constexpr bool any(const Vector3<T>& a)
+{
+    return (a.x != T{}) || (a.y != T{}) || (a.z != T{});
+}
+
+template <class T>
+constexpr bool any(const Vector4<T>& a)
+{
+    return (a.x != T{}) || (a.y != T{}) || (a.z != T{}) || (a.w != T{});
+}
+
+template <class T>
+constexpr bool all(const Vector2<T>& a)
+{
+    return (a.x != T{}) && (a.y != T{});
+}
+
+template <class T>
+constexpr bool all(const Vector3<T>& a)
+{
+    return (a.x != T{}) && (a.y != T{}) && (a.z != T{});
+}
+
+template <class T>
+constexpr bool all(const Vector4<T>& a)
+{
+    return (a.x != T{}) && (a.y != T{}) && (a.z != T{}) && (a.w != T{});
+}
+
+
 // Template Matrix-Matrix multiplications
 
 template <class T>
@@ -1939,6 +1976,10 @@ using float4 = Vector4<float>;
 using double2 = Vector2<double>;
 using double3 = Vector3<double>;
 using double4 = Vector4<double>;
+
+using bool2 = Vector2<bool>;
+using bool3 = Vector3<bool>;
+using bool4 = Vector4<bool>;
 
 using float4x4 = Matrix4x4<float>;
 using float3x3 = Matrix3x3<float>;

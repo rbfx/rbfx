@@ -39,7 +39,7 @@ String BasicPlatformDebug::FormatAssertionFailedMessage(const char* Message,
                                                         int         Line)
 {
     String FileName;
-    BasicFileSystem::SplitFilePath(File, nullptr, &FileName);
+    BasicFileSystem::GetPathComponents(File, nullptr, &FileName);
     return FormatString("Debug assertion failed in ", Function, "(), file ", FileName, ", line ", Line, ":\n", Message);
 }
 
@@ -73,6 +73,56 @@ String BasicPlatformDebug::FormatDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
     msg_ss << ": " << Message << '\n';
 
     return msg_ss.str();
+}
+
+const char* BasicPlatformDebug::TextColorToTextColorCode(DEBUG_MESSAGE_SEVERITY Severity, TextColor Color)
+{
+    switch (Color)
+    {
+        case TextColor::Auto:
+        {
+            switch (Severity)
+            {
+                case DEBUG_MESSAGE_SEVERITY_INFO:
+                    return TextColorCode::Default;
+
+                case DEBUG_MESSAGE_SEVERITY_WARNING:
+                    return TextColorCode::Yellow;
+
+                case DEBUG_MESSAGE_SEVERITY_ERROR:
+                case DEBUG_MESSAGE_SEVERITY_FATAL_ERROR:
+                    return TextColorCode::Red;
+
+                default:
+                    return TextColorCode::Default;
+            }
+        }
+#define TEX_COLOR_TO_CODE(Color) \
+    case TextColor::Color: return TextColorCode::Color
+
+            TEX_COLOR_TO_CODE(Default);
+
+            TEX_COLOR_TO_CODE(Black);
+            TEX_COLOR_TO_CODE(DarkRed);
+            TEX_COLOR_TO_CODE(DarkGreen);
+            TEX_COLOR_TO_CODE(DarkYellow);
+            TEX_COLOR_TO_CODE(DarkBlue);
+            TEX_COLOR_TO_CODE(DarkMagenta);
+            TEX_COLOR_TO_CODE(DarkCyan);
+            TEX_COLOR_TO_CODE(DarkGray);
+
+            TEX_COLOR_TO_CODE(Red);
+            TEX_COLOR_TO_CODE(Green);
+            TEX_COLOR_TO_CODE(Yellow);
+            TEX_COLOR_TO_CODE(Blue);
+            TEX_COLOR_TO_CODE(Magenta);
+            TEX_COLOR_TO_CODE(Cyan);
+            TEX_COLOR_TO_CODE(White);
+#undef TEX_COLOR_TO_CODE
+
+        default:
+            return TextColorCode::Default;
+    }
 }
 
 } // namespace Diligent

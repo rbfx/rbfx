@@ -228,7 +228,7 @@ void PipelineResourceSignatureD3D11Impl::CreateLayout(const bool IsSerialized)
                     const auto BindPoint = Uint16{BindPoints[ShaderInd]};
                     for (Uint32 elem = 0; elem < ResDesc.ArraySize; ++elem)
                     {
-                        VERIFY_EXPR(BindPoint + elem < sizeof(m_DynamicCBSlotsMask[0]) * 8);
+                        VERIFY_EXPR(BindPoint + elem < Uint32{sizeof(m_DynamicCBSlotsMask[0]) * 8});
                         m_DynamicCBSlotsMask[ShaderInd] |= 1u << (BindPoint + elem);
                     }
                 }

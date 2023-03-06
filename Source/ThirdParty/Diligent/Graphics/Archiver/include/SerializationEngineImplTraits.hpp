@@ -69,7 +69,6 @@ struct SerializationEngineImplTraits
     using CommandQueueInterface              = ICommandQueue;
     using DeviceMemoryInterface              = IDeviceMemory;
     using PipelineStateCacheInterface        = IPipelineStateCache;
-    using DeviceObjectArchiveInterface       = IDeviceObjectArchive;
 
     using RenderDeviceImplType              = SerializationDeviceImpl;
     using DeviceContextImplType             = IDeviceContext;
@@ -92,7 +91,6 @@ struct SerializationEngineImplTraits
     using PipelineResourceSignatureImplType = SerializedResourceSignatureImpl;
     using DeviceMemoryImplType              = SerializedObjectStub;
     using PipelineStateCacheImplType        = SerializedObjectStub;
-    using DeviceObjectArchiveImplType       = SerializedObjectStub;
 };
 
 template <typename ReturnType>
@@ -100,7 +98,7 @@ struct _DummyReturn
 {
     const ReturnType& operator()()
     {
-        static constexpr typename std::remove_reference<ReturnType>::type NullRet = {};
+        static const typename std::remove_reference<ReturnType>::type NullRet = {};
         return NullRet;
     }
 };

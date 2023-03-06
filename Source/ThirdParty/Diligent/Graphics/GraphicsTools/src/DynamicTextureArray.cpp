@@ -244,8 +244,8 @@ void DynamicTextureArray::ResizeSparseTexture(IDeviceContext* pContext)
     const auto  HasMipTail     = m_Desc.MipLevels > TexSparseProps.FirstMipInTail;
 
     std::vector<SparseTextureMemoryBindInfo> TexBinds;
-    TexBinds.reserve(NumSlicesToBind * (HasMipTail ? 2 : 1));
-    std::vector<SparseTextureMemoryBindRange> MipRanges(NumSlicesToBind * (NumNormalMips + (HasMipTail ? 1 : 0)));
+    TexBinds.reserve(size_t{NumSlicesToBind} * (HasMipTail ? 2 : 1));
+    std::vector<SparseTextureMemoryBindRange> MipRanges(size_t{NumSlicesToBind} * (size_t{NumNormalMips} + (HasMipTail ? 1 : 0)));
 
     auto range_it   = MipRanges.begin();
     auto StartSlice = std::min(m_Desc.ArraySize, m_PendingSize);

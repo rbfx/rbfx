@@ -32,7 +32,6 @@
 #include "../../../Primitives/interface/DataBlob.h"
 #include "PipelineResourceSignature.h"
 #include "PipelineState.h"
-#include "DeviceObjectArchive.h"
 
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
@@ -48,9 +47,6 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 struct ResourceSignatureUnpackInfo
 {
     struct IRenderDevice* pDevice DEFAULT_INITIALIZER(nullptr);
-
-    /// A pointer to the device object archive
-    IDeviceObjectArchive* pArchive DEFAULT_INITIALIZER(nullptr);
 
     /// Name of the signature to unpack. If there is only
     /// one signature in the archive, the name may be null.
@@ -78,7 +74,15 @@ DILIGENT_TYPED_ENUM(PSO_ARCHIVE_FLAGS, Uint32)
     /// to avoid situations where the same byte code is archived with
     /// and without reflection from different PSOs.
     PSO_ARCHIVE_FLAG_STRIP_REFLECTION = 1u << 0,
+
+    /// Do not archive signatures used by the pipeline state.
+    ///
+    /// \note   The flag only applies to explicit signatures.
+    ///         Implicit signatures are always packed.
+    PSO_ARCHIVE_FLAG_DO_NOT_PACK_SIGNATURES = 1u << 1
 };
+DEFINE_FLAG_ENUM_OPERATORS(PSO_ARCHIVE_FLAGS)
+
 
 /// Pipeline state unpack flags
 DILIGENT_TYPED_ENUM(PSO_UNPACK_FLAGS, Uint32)
@@ -95,15 +99,13 @@ DILIGENT_TYPED_ENUM(PSO_UNPACK_FLAGS, Uint32)
     ///          and this flag will have no effect.
     PSO_UNPACK_FLAG_NO_VALIDATION = 1u << 0,
 };
+DEFINE_FLAG_ENUM_OPERATORS(PSO_UNPACK_FLAGS)
 
 
 /// Pipeline state unpack parameters
 struct PipelineStateUnpackInfo
 {
     struct IRenderDevice* pDevice DEFAULT_INITIALIZER(nullptr);
-
-    /// A pointer to the device object archive
-    IDeviceObjectArchive* pArchive DEFAULT_INITIALIZER(nullptr);
 
     /// Name of the PSO to unpack. If there is only
     /// one PSO in the archive, the name may be null.
@@ -164,10 +166,7 @@ typedef struct PipelineStateUnpackInfo PipelineStateUnpackInfo;
 /// Render pass unpack parameters
 struct RenderPassUnpackInfo
 {
-    struct IRenderDevice* pDevice  DEFAULT_INITIALIZER(nullptr);
-
-    /// A pointer to the device object archive
-    IDeviceObjectArchive* pArchive DEFAULT_INITIALIZER(nullptr);
+    struct IRenderDevice* pDevice DEFAULT_INITIALIZER(nullptr);
 
     /// Name of the render pass to unpack.
     const char* Name DEFAULT_INITIALIZER(nullptr);
@@ -203,16 +202,25 @@ static const INTERFACE_ID IID_Dearchiver =
 /// Dearchiver interface
 DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
 {
-    /// Creates a device object archive.
+    /// Lodas a device object archive.
 
-    /// \param [in]  pSource   - A pointer to the source raw data to create the object archive from.
-    /// \param [out] ppArchive - Address of the memory location where a pointer to the
-    ///                          device object archive will be stored.
-    ///                          The function calls AddRef(), so that the archive object will have
-    ///                          one reference.
-    VIRTUAL void METHOD(CreateDeviceObjectArchive)(THIS_
-                                                   IArchive*              pSource,
-                                                   IDeviceObjectArchive** ppArchive) CONST PURE;
+    /// \param [in] pArchive - A pointer to the source raw data to load objects from.
+    /// \param [in] MakeCopy - Whether to make a copy of the archive, or use the
+    ///                        the original contents.
+    /// \return     true if the archive has been loaded successfully, and false otherwise.
+    ///
+    /// \note       If the archive was not copied, the dearchiver will keep a strong reference
+    ///             to the pArchive data blob. It will be kept alive until the dearchiver object
+    ///             is released or the Reset() method is called.
+    ///
+    /// \warning    If the archive was loaded without making a copy, the application
+    ///             must not modify its contents while it is in use by the dearchiver.
+    /// 
+    /// \warning    This method is not thread-safe and must not be called simultaneously
+    ///             with other methods.
+    VIRTUAL bool METHOD(LoadArchive)(THIS_
+                                     const IDataBlob* pArchive,
+                                     bool             MakeCopy DEFAULT_VALUE(false)) PURE;
 
     /// Unpacks a pipeline state object from the device object archive.
 
@@ -223,9 +231,11 @@ DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
     ///                           one reference.
     ///
     /// \note   Resource signatures used by the PSO will be unpacked from the same archive.
+    ///
+    ///         This method is thread-safe.
     VIRTUAL void METHOD(UnpackPipelineState)(THIS_
                                              const PipelineStateUnpackInfo REF UnpackInfo,
-                                             IPipelineState**                  ppPSO) CONST PURE;
+                                             IPipelineState**                  ppPSO) PURE;
 
     /// Unpacks resource signature from the device object archive.
 
@@ -234,9 +244,11 @@ DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
     ///                            unpacked pipeline resource signature object will be stored.
     ///                            The function calls AddRef(), so that the resource signature will have
     ///                            one reference.
+    ///
+    /// \note   This method is thread-safe.
     VIRTUAL void METHOD(UnpackResourceSignature)(THIS_
                                                  const ResourceSignatureUnpackInfo REF UnpackInfo,
-                                                 IPipelineResourceSignature**          ppSignature) CONST PURE;
+                                                 IPipelineResourceSignature**          ppSignature) PURE;
 
     /// Unpacks render pass from the device object archive.
 
@@ -245,9 +257,17 @@ DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
     ///                            unpacked render pass object will be stored.
     ///                            The function calls AddRef(), so that the render pass will have
     ///                            one reference.
+    ///
+    /// \note   This method is thread-safe.
     VIRTUAL void METHOD(UnpackRenderPass)(THIS_
                                           const RenderPassUnpackInfo REF UnpackInfo,
-                                          IRenderPass**                  ppRP) CONST PURE;
+                                          IRenderPass**                  ppRP) PURE;
+
+    /// Resets the dearchiver state and releases all loaded objects.
+    ///
+    /// \warning    This method is not thread-safe and must not be called simultaneously
+    ///             with other methods.
+    VIRTUAL void METHOD(Reset)(THIS) PURE;
 };
 DILIGENT_END_INTERFACE
 
@@ -255,10 +275,10 @@ DILIGENT_END_INTERFACE
 
 #if DILIGENT_C_INTERFACE
 
-#    define IDearchiver_CreateDeviceObjectArchive(This, ...)    CALL_IFACE_METHOD(Dearchiver, CreateDeviceObjectArchive,   This, __VA_ARGS__)
-#    define IDearchiver_UnpackPipelineState(This, ...)          CALL_IFACE_METHOD(Dearchiver, UnpackPipelineState,         This, __VA_ARGS__)
-#    define IDearchiver_UnpackResourceSignature(This, ...)      CALL_IFACE_METHOD(Dearchiver, UnpackResourceSignature,     This, __VA_ARGS__)
-#    define IDearchiver_UnpackRenderPass(This, ...)             CALL_IFACE_METHOD(Dearchiver, UnpackRenderPass,            This, __VA_ARGS__)
+#    define IDearchiver_LoadArchive(This, ...)             CALL_IFACE_METHOD(Dearchiver, LoadArchive,             This, __VA_ARGS__)
+#    define IDearchiver_UnpackPipelineState(This, ...)     CALL_IFACE_METHOD(Dearchiver, UnpackPipelineState,     This, __VA_ARGS__)
+#    define IDearchiver_UnpackResourceSignature(This, ...) CALL_IFACE_METHOD(Dearchiver, UnpackResourceSignature, This, __VA_ARGS__)
+#    define IDearchiver_UnpackRenderPass(This, ...)        CALL_IFACE_METHOD(Dearchiver, UnpackRenderPass,        This, __VA_ARGS__)
 
 #endif
 

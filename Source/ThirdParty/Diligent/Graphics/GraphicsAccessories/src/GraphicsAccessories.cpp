@@ -1227,6 +1227,39 @@ const char* GetDeviceFeatureStateString(DEVICE_FEATURE_STATE State, bool bGetFul
     }
 }
 
+const char* GetRenderDeviceTypeString(RENDER_DEVICE_TYPE DeviceType, bool bGetEnumString)
+{
+    static_assert(RENDER_DEVICE_TYPE_COUNT == 7, "Did you add a new device type? Please update the switch below.");
+    switch (DeviceType)
+    {
+        // clang-format off
+        case RENDER_DEVICE_TYPE_UNDEFINED: return bGetEnumString ? "RENDER_DEVICE_TYPE_UNDEFINED" : "Undefined";  break;
+        case RENDER_DEVICE_TYPE_D3D11:     return bGetEnumString ? "RENDER_DEVICE_TYPE_D3D11"     : "Direct3D11"; break;
+        case RENDER_DEVICE_TYPE_D3D12:     return bGetEnumString ? "RENDER_DEVICE_TYPE_D3D12"     : "Direct3D12"; break;
+        case RENDER_DEVICE_TYPE_GL:        return bGetEnumString ? "RENDER_DEVICE_TYPE_GL"        : "OpenGL";     break;
+        case RENDER_DEVICE_TYPE_GLES:      return bGetEnumString ? "RENDER_DEVICE_TYPE_GLES"      : "OpenGLES";   break;
+        case RENDER_DEVICE_TYPE_VULKAN:    return bGetEnumString ? "RENDER_DEVICE_TYPE_VULKAN"    : "Vulkan";     break;
+        case RENDER_DEVICE_TYPE_METAL:     return bGetEnumString ? "RENDER_DEVICE_TYPE_METAL"     : "Metal";      break;
+        // clang-format on
+        default: UNEXPECTED("Unknown/unsupported device type"); return "UNKNOWN";
+    }
+}
+
+const char* GetAdapterTypeString(ADAPTER_TYPE AdapterType, bool bGetEnumString)
+{
+    static_assert(ADAPTER_TYPE_COUNT == 4, "Did you add a new adapter type? Please update the switch below.");
+    switch (AdapterType)
+    {
+        // clang-format off
+        case ADAPTER_TYPE_UNKNOWN:    return bGetEnumString ? "ADAPTER_TYPE_UNKNOWN"    : "Unknown";    break;
+        case ADAPTER_TYPE_SOFTWARE:   return bGetEnumString ? "ADAPTER_TYPE_SOFTWARE"   : "Software";   break;
+        case ADAPTER_TYPE_INTEGRATED: return bGetEnumString ? "ADAPTER_TYPE_INTEGRATED" : "Integrated"; break;
+        case ADAPTER_TYPE_DISCRETE:   return bGetEnumString ? "ADAPTER_TYPE_DISCRETE"   : "Discrete";   break;
+        // clang-format on
+        default: UNEXPECTED("Unknown/unsupported adapter type"); return "UNKNOWN";
+    }
+}
+
 String GetPipelineResourceFlagsString(PIPELINE_RESOURCE_FLAGS Flags, bool GetFullName /*= false*/, const char* DelimiterString /*= "|"*/)
 {
     if (Flags == PIPELINE_RESOURCE_FLAG_NONE)
@@ -1322,6 +1355,38 @@ PIPELINE_RESOURCE_FLAGS ShaderVariableFlagsToPipelineResourceFlags(SHADER_VARIAB
             UNEXPECTED("Unexpected shader variable flag");
             return PIPELINE_RESOURCE_FLAG_NONE;
     }
+}
+
+BIND_FLAGS SwapChainUsageFlagsToBindFlags(SWAP_CHAIN_USAGE_FLAGS SwapChainUsage)
+{
+    BIND_FLAGS BindFlags = BIND_NONE;
+    static_assert(SWAP_CHAIN_USAGE_LAST == 8, "Did you add a new swap chain usage flag? Please handle it here.");
+    while (SwapChainUsage != SWAP_CHAIN_USAGE_NONE)
+    {
+        auto SCUsageBit = ExtractLSB(SwapChainUsage);
+        switch (SCUsageBit)
+        {
+            case SWAP_CHAIN_USAGE_RENDER_TARGET:
+                BindFlags |= BIND_RENDER_TARGET;
+                break;
+
+            case SWAP_CHAIN_USAGE_SHADER_RESOURCE:
+                BindFlags |= BIND_SHADER_RESOURCE;
+                break;
+
+            case SWAP_CHAIN_USAGE_INPUT_ATTACHMENT:
+                BindFlags |= BIND_INPUT_ATTACHMENT;
+                break;
+
+            case SWAP_CHAIN_USAGE_COPY_SOURCE:
+                // No special bind flag needed
+                break;
+
+            default:
+                UNEXPECTED("Unexpeced swap chain usage flag");
+        }
+    }
+    return BindFlags;
 }
 
 Uint32 ComputeMipLevelsCount(Uint32 Width)
@@ -1765,7 +1830,7 @@ Uint64 GetStagingTextureLocationOffset(const TextureDesc& TexDesc,
         Offset += (LocationZ * MipLevelAttribs.StorageHeight + LocationY) / FmtAttribs.BlockHeight * MipLevelAttribs.RowSize;
 
         // For non-compressed formats, BlockWidth is 1.
-        Offset += (LocationX / FmtAttribs.BlockWidth) * FmtAttribs.GetElementSize();
+        Offset += Uint64{LocationX / FmtAttribs.BlockWidth} * FmtAttribs.GetElementSize();
 
         // Note: this addressing complies with how Vulkan (as well as OpenGL/GLES and Metal) address
         // textures when copying data to/from buffers:

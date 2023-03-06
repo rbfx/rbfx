@@ -149,7 +149,7 @@ __forceinline SyncPointVkPtr CommandQueueVkImpl::CreateSyncPoint(Uint64 dbgValue
 
 Uint64 CommandQueueVkImpl::Submit(const VkSubmitInfo& InSubmitInfo)
 {
-    std::lock_guard<std::mutex> Lock{m_QueueMutex};
+    std::lock_guard<std::mutex> QueueGuard{m_QueueMutex};
 
     // Increment the value before submitting the buffer to be overly safe
     const uint64_t FenceValue = m_NextFenceValue.fetch_add(1);
@@ -195,7 +195,7 @@ Uint64 CommandQueueVkImpl::Submit(const VkSubmitInfo& InSubmitInfo)
 
     // Update the last sync point
     {
-        ThreadingTools::LockHelper Lock2{m_LastSyncPointGuard};
+        Threading::SpinLockGuard SyncPointGuard{m_LastSyncPointLock};
         m_LastSyncPoint = std::move(NewSyncPoint);
     }
 
@@ -223,7 +223,7 @@ Uint64 CommandQueueVkImpl::SubmitCmdBuffer(VkCommandBuffer cmdBuffer)
 
 Uint64 CommandQueueVkImpl::WaitForIdle()
 {
-    std::lock_guard<std::mutex> Lock{m_QueueMutex};
+    std::lock_guard<std::mutex> QueueGuard{m_QueueMutex};
 
     // Update last completed fence value to unlock all waiting events.
     const auto FenceValue = m_NextFenceValue.fetch_add(1);
@@ -245,7 +245,7 @@ void CommandQueueVkImpl::EnqueueSignalFence(VkFence vkFence)
 {
     DEV_CHECK_ERR(vkFence != VK_NULL_HANDLE, "vkFence must not be null");
 
-    std::lock_guard<std::mutex> Lock{m_QueueMutex};
+    std::lock_guard<std::mutex> QueueGuard{m_QueueMutex};
 
     auto err = vkQueueSubmit(m_VkQueue, 0, nullptr, vkFence);
     DEV_CHECK_ERR(err == VK_SUCCESS, "Failed to submit fence signal command to the command queue");
@@ -254,7 +254,7 @@ void CommandQueueVkImpl::EnqueueSignalFence(VkFence vkFence)
 
 void CommandQueueVkImpl::EnqueueSignal(VkSemaphore vkTimelineSemaphore, Uint64 Value)
 {
-    std::lock_guard<std::mutex> Lock{m_QueueMutex};
+    std::lock_guard<std::mutex> QueueGuard{m_QueueMutex};
     InternalSignalSemaphore(vkTimelineSemaphore, Value);
 }
 
@@ -286,13 +286,13 @@ void CommandQueueVkImpl::InternalSignalSemaphore(VkSemaphore vkTimelineSemaphore
 
 VkResult CommandQueueVkImpl::Present(const VkPresentInfoKHR& PresentInfo)
 {
-    std::lock_guard<std::mutex> Lock{m_QueueMutex};
+    std::lock_guard<std::mutex> QueueGuard{m_QueueMutex};
     return vkQueuePresentKHR(m_VkQueue, &PresentInfo);
 }
 
 Uint64 CommandQueueVkImpl::BindSparse(const VkBindSparseInfo& InBindInfo)
 {
-    std::lock_guard<std::mutex> Lock{m_QueueMutex};
+    std::lock_guard<std::mutex> QueueGuard{m_QueueMutex};
 
     // Increment the value before submitting the buffer to be overly safe
     const uint64_t FenceValue = m_NextFenceValue.fetch_add(1);
@@ -331,7 +331,7 @@ Uint64 CommandQueueVkImpl::BindSparse(const VkBindSparseInfo& InBindInfo)
 
     // Update the last sync point
     {
-        ThreadingTools::LockHelper Lock2{m_LastSyncPointGuard};
+        Threading::SpinLockGuard SyncPointGuard{m_LastSyncPointLock};
         m_LastSyncPoint = std::move(NewSyncPoint);
     }
 

@@ -32,7 +32,7 @@
 #include "PipelineResourceSignatureVkImpl.hpp"
 #include "PipelineStateVkImpl.hpp"
 #include "ShaderVkImpl.hpp"
-#include "DeviceObjectArchiveVkImpl.hpp"
+#include "DeviceObjectArchiveVk.hpp"
 #include "SerializedPipelineStateImpl.hpp"
 
 namespace Diligent
@@ -53,7 +53,7 @@ struct CompiledShaderVk : SerializedShaderImpl::CompiledShader
 
 inline const ShaderVkImpl* GetShaderVk(const SerializedShaderImpl* pShader)
 {
-    const auto* pCompiledShaderVk = pShader->GetShader<const CompiledShaderVk>(DeviceObjectArchiveBase::DeviceType::Vulkan);
+    const auto* pCompiledShaderVk = pShader->GetShader<const CompiledShaderVk>(DeviceObjectArchive::DeviceType::Vulkan);
     return pCompiledShaderVk != nullptr ? &pCompiledShaderVk->ShaderVk : nullptr;
 }
 

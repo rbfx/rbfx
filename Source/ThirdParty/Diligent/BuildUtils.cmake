@@ -1,24 +1,24 @@
 if(PLATFORM_WIN32 OR PLATFORM_UNIVERSAL_WINDOWS)
 
     function(copy_required_dlls TARGET_NAME)
-#        if(D3D11_SUPPORTED)
-#            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineD3D11-shared)
-#        endif()
-#        if(D3D12_SUPPORTED)
-#            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineD3D12-shared)
-#        endif()
-#        if(GL_SUPPORTED)
-#            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineOpenGL-shared)
-#        endif()
-#        if(VULKAN_SUPPORTED)
-#            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineVk-shared)
-#        endif()
-#        if(METAL_SUPPORTED)
-#            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineMetal-shared)
-#        endif()
-#        if(TARGET Diligent-Archiver-shared)
-#            list(APPEND ENGINE_DLLS Diligent-Archiver-shared)
-#        endif()
+        if(D3D11_SUPPORTED)
+            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineD3D11-shared)
+        endif()
+        if(D3D12_SUPPORTED)
+            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineD3D12-shared)
+        endif()
+        if(GL_SUPPORTED)
+            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineOpenGL-shared)
+        endif()
+        if(VULKAN_SUPPORTED)
+            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineVk-shared)
+        endif()
+        if(METAL_SUPPORTED)
+            list(APPEND ENGINE_DLLS Diligent-GraphicsEngineMetal-shared)
+        endif()
+        if(TARGET Diligent-Archiver-shared)
+            list(APPEND ENGINE_DLLS Diligent-Archiver-shared)
+        endif()
 
         foreach(DLL ${ENGINE_DLLS})
             add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
@@ -128,14 +128,12 @@ function(set_common_target_properties TARGET)
 
     get_target_property(TARGET_TYPE ${TARGET} TYPE)
 
-    if (NOT WEB)    # Somehow broken on emscripten
     set_target_properties(${TARGET} PROPERTIES
         # It is crucial to set CXX_STANDARD flag to only affect c++ files and avoid failures compiling c-files:
         # error: invalid argument '-std=c++14' not allowed with 'C/ObjC'
         CXX_STANDARD 14
         CXX_STANDARD_REQUIRED ON
     )
-    endif ()
 
     if(MSVC)
         # For msvc, enable link-time code generation for release builds (I was not able to
@@ -386,10 +384,14 @@ function(add_format_validation_target MODULE_NAME MODULE_ROOT_PATH IDE_FOLDER)
         return()
     endif()
 
-    # Start by copying .clang-format file to the module's root folder
-    add_custom_target(${MODULE_NAME}-ValidateFormatting ALL
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DILIGENT_CORE_SOURCE_DIR}/.clang-format" "${MODULE_ROOT_PATH}/.clang-format"
-    )
+    add_custom_target(${MODULE_NAME}-ValidateFormatting ALL)
+
+    if (NOT ("${DILIGENT_CORE_SOURCE_DIR}" STREQUAL "${MODULE_ROOT_PATH}"))
+        # Start by copying .clang-format file to the module's root folder
+        add_custom_command(TARGET ${MODULE_NAME}-ValidateFormatting
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DILIGENT_CORE_SOURCE_DIR}/.clang-format" "${MODULE_ROOT_PATH}/.clang-format"
+        )
+    endif()
 
     if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
         set(RUN_VALIDATION_SCRIPT validate_format_win.bat)
@@ -414,3 +416,5 @@ function(add_format_validation_target MODULE_NAME MODULE_ROOT_PATH IDE_FOLDER)
     endif()
 
 endfunction()
+
+

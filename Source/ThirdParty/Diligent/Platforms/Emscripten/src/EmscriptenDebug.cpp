@@ -41,11 +41,17 @@ void EmscriptenDebug::AssertionFailed(const Char* Message, const char* Function,
     raise(SIGTRAP);
 };
 
-void EmscriptenDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity, const Char* Message, const char* Function, const char* File, int Line)
+void EmscriptenDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                                         const Char*            Message,
+                                         const char*            Function,
+                                         const char*            File,
+                                         int                    Line,
+                                         TextColor              Color)
 {
     auto msg = FormatDebugMessage(Severity, Message, Function, File, Line);
-    std::cerr << msg;
-    std::cout << msg;
+
+    const auto* ColorCode = TextColorToTextColorCode(Severity, Color);
+    std::cout << ColorCode << msg << TextColorCode::Default;
 }
 
 void DebugAssertionFailed(const Diligent::Char* Message, const char* Function, const char* File, int Line)
@@ -53,6 +59,15 @@ void DebugAssertionFailed(const Diligent::Char* Message, const char* Function, c
     EmscriptenDebug::AssertionFailed(Message, Function, File, Line);
 }
 
-DebugMessageCallbackType DebugMessageCallback = EmscriptenDebug::OutputDebugMessage;
+static void OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                               const Char*            Message,
+                               const char*            Function,
+                               const char*            File,
+                               int                    Line)
+{
+    return EmscriptenDebug::OutputDebugMessage(Severity, Message, Function, File, Line, TextColor::Auto);
+}
+
+DebugMessageCallbackType DebugMessageCallback = OutputDebugMessage;
 
 } // namespace Diligent

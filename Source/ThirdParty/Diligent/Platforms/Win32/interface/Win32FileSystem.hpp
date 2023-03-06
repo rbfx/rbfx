@@ -30,7 +30,6 @@
 #include <memory>
 #include "../../Basic/interface/BasicFileSystem.hpp"
 #include "../../Basic/interface/StandardFile.hpp"
-#include "../../../Primitives/interface/FlagEnum.h"
 
 namespace Diligent
 {
@@ -41,103 +40,27 @@ public:
     WindowsFile(const FileOpenAttribs& OpenAttribs);
 };
 
-enum FILE_DIALOG_FLAGS : Diligent::Uint32
-{
-    FILE_DIALOG_FLAG_NONE = 0x000,
-
-    /// Prevents the system from adding a link to the selected file in the file system
-    /// directory that contains the user's most recently used documents.
-    FILE_DIALOG_FLAG_DONT_ADD_TO_RECENT = 0x001,
-
-    /// Only existing files can be opened
-    FILE_DIALOG_FLAG_FILE_MUST_EXIST = 0x002,
-
-    /// Restores the current directory to its original value if the user changed the
-    /// directory while searching for files.
-    FILE_DIALOG_FLAG_NO_CHANGE_DIR = 0x004,
-
-    /// Causes the Save As dialog box to show a message box if the selected file already exists.
-    FILE_DIALOG_FLAG_OVERWRITE_PROMPT = 0x008
-};
-DEFINE_FLAG_ENUM_OPERATORS(FILE_DIALOG_FLAGS);
-
-enum FILE_DIALOG_TYPE : Diligent::Uint32
-{
-    FILE_DIALOG_TYPE_OPEN,
-    FILE_DIALOG_TYPE_SAVE
-};
-
-struct FileDialogAttribs
-{
-    FILE_DIALOG_TYPE  Type  = FILE_DIALOG_TYPE_OPEN;
-    FILE_DIALOG_FLAGS Flags = FILE_DIALOG_FLAG_NONE;
-
-    const char* Title  = nullptr;
-    const char* Filter = nullptr;
-
-    FileDialogAttribs() noexcept {}
-
-    explicit FileDialogAttribs(FILE_DIALOG_TYPE _Type) noexcept :
-        Type{_Type}
-    {
-        switch (Type)
-        {
-            case FILE_DIALOG_TYPE_OPEN:
-                Flags = FILE_DIALOG_FLAG_DONT_ADD_TO_RECENT | FILE_DIALOG_FLAG_FILE_MUST_EXIST | FILE_DIALOG_FLAG_NO_CHANGE_DIR;
-                break;
-
-            case FILE_DIALOG_TYPE_SAVE:
-                Flags = FILE_DIALOG_FLAG_DONT_ADD_TO_RECENT | FILE_DIALOG_FLAG_OVERWRITE_PROMPT | FILE_DIALOG_FLAG_NO_CHANGE_DIR;
-                break;
-        }
-    }
-};
-
 struct WindowsFileSystem : public BasicFileSystem
 {
 public:
     static WindowsFile* OpenFile(const FileOpenAttribs& OpenAttribs);
 
-    static inline Diligent::Char GetSlashSymbol() { return '\\'; }
+    static bool FileExists(const Char* strFilePath);
+    static bool PathExists(const Char* strPath);
 
-    static bool FileExists(const Diligent::Char* strFilePath);
-    static bool PathExists(const Diligent::Char* strPath);
+    static void SetWorkingDirectory(const Char* strWorkingDir);
 
-    static void SetWorkingDirectory(const Diligent::Char* strWorkingDir);
+    static bool CreateDirectory(const Char* strPath);
+    static void ClearDirectory(const Char* strPath, bool Recursive = false);
+    static void DeleteFile(const Char* strPath);
+    static void DeleteDirectory(const Char* strPath);
+    static bool IsDirectory(const Char* strPath);
 
-    static bool CreateDirectory(const Diligent::Char* strPath);
-    static void ClearDirectory(const Diligent::Char* strPath, bool Recursive = false);
-    static void DeleteFile(const Diligent::Char* strPath);
-    static void DeleteDirectory(const Diligent::Char* strPath);
-    static bool IsDirectory(const Diligent::Char* strPath);
-
-    static std::vector<std::unique_ptr<FindFileData>> Search(const Diligent::Char* SearchPattern);
+    static std::vector<std::unique_ptr<FindFileData>> Search(const Char* SearchPattern);
 
     static std::string FileDialog(const FileDialogAttribs& DialogAttribs);
 
     static std::string GetCurrentDirectory();
-
-
-    /// Returns a relative path from one file or folder to another.
-
-    /// \param [in]  strPathFrom     - Path that defines the start of the relative path.
-    ///                                If this parameter is null, current directory will be used.
-    /// \param [in]  IsFromDirectory - Indicates if strPathFrom is a directory.
-    ///                                Ignored if strPathFrom is null (in which case current directory
-    ///                                is used).
-    /// \param [in]  strPathTo       - Path that defines the endpoint of the relative path.
-    ///                                This parameter must not be null.
-    /// \param [in]  IsToDirectory   - Indicates if strPathTo is a directory.
-    /// \param [out] RelativePath    - Relative path from strPathFrom to strPathTo.
-    ///                                If no relative path exists, strPathFrom will be returned.
-    ///
-    /// \return                        true if the relative path exists (i.e. strPathFrom and strPathTo
-    ///                                have a common prefix), and false otherwise.
-    static bool GetRelativePath(const Diligent::Char* strPathFrom,
-                                bool                  IsFromDirectory,
-                                const Diligent::Char* strPathTo,
-                                bool                  IsToDirectory,
-                                std::string&          RelativePath);
 };
 
 } // namespace Diligent

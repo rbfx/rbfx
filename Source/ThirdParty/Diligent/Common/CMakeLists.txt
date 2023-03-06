@@ -9,8 +9,7 @@ set(INCLUDE
 set(INTERFACE
     interface/AdvancedMath.hpp
     interface/Align.hpp
-    interface/ArchiveFileImpl.hpp
-    interface/ArchiveMemoryImpl.hpp
+    interface/Array2DTools.hpp
     interface/BasicMath.hpp
     interface/BasicFileStream.hpp
     interface/DataBlobImpl.hpp
@@ -21,7 +20,6 @@ set(INTERFACE
     interface/FilteringTools.hpp
     interface/FixedBlockMemoryAllocator.hpp
     interface/HashUtils.hpp
-    interface/LockHelper.hpp
     interface/FixedLinearAllocator.hpp
     interface/DynamicLinearAllocator.hpp
     interface/MemoryFileStream.hpp
@@ -30,6 +28,7 @@ set(INTERFACE
     interface/RefCntAutoPtr.hpp
     interface/RefCountedObjectImpl.hpp
     interface/Serializer.hpp
+    interface/SpinLock.hpp
     interface/STDAllocator.hpp
     interface/StringDataBlobImpl.hpp
     interface/StringTools.h
@@ -45,15 +44,14 @@ set(INTERFACE
 )
 
 set(SOURCE
-    src/ArchiveFileImpl.cpp
-    src/ArchiveMemoryImpl.cpp
+    src/Array2DTools.cpp
     src/BasicFileStream.cpp
     src/DataBlobImpl.cpp
     src/DefaultRawMemoryAllocator.cpp
     src/FixedBlockMemoryAllocator.cpp
-    src/LockHelper.cpp
     src/MemoryFileStream.cpp
     src/Serializer.cpp
+    src/SpinLock.cpp
     src/ThreadPool.cpp
     src/Timer.cpp
 )
@@ -64,7 +62,7 @@ target_include_directories(Diligent-Common
 PRIVATE
     include
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-Common

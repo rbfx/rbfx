@@ -73,7 +73,7 @@ public:
     /// Implementation of ISwapChain::GetCurrentBackBufferRTV() in Vulkan backend.
     virtual ITextureViewVk* DILIGENT_CALL_TYPE GetCurrentBackBufferRTV() override final
     {
-        VERIFY_EXPR(m_BackBufferIndex >= 0 && m_BackBufferIndex < m_SwapChainDesc.BufferCount);
+        VERIFY_EXPR(m_BackBufferIndex < m_SwapChainDesc.BufferCount);
         return m_pBackBufferRTV[m_BackBufferIndex];
     }
 

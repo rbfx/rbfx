@@ -35,7 +35,7 @@
 #include "ObjectBase.hpp"
 #include "STDAllocator.hpp"
 #include "Serializer.hpp"
-#include "DeviceObjectArchiveBase.hpp"
+#include "DeviceObjectArchive.hpp"
 #include "SerializationEngineImplTraits.hpp"
 
 namespace Diligent
@@ -50,7 +50,7 @@ class SerializedResourceSignatureImpl final : public ObjectBase<IPipelineResourc
 public:
     using TBase = ObjectBase<IPipelineResourceSignature>;
 
-    using DeviceType                    = DeviceObjectArchiveBase::DeviceType;
+    using DeviceType                    = DeviceObjectArchive::DeviceType;
     static constexpr Uint32 DeviceCount = static_cast<Uint32>(DeviceType::Count);
 
     SerializedResourceSignatureImpl(IReferenceCounters*                  pRefCounters,

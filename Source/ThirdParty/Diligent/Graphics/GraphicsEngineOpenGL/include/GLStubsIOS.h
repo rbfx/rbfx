@@ -534,6 +534,23 @@
 #endif
 
 
+#ifndef GL_LINES_ADJACENCY
+#    define GL_LINES_ADJACENCY 0x000A
+#endif
+
+#ifndef GL_LINE_STRIP_ADJACENCY
+#    define GL_LINE_STRIP_ADJACENCY 0x000B
+#endif
+
+#ifndef GL_TRIANGLES_ADJACENCY
+#    define GL_TRIANGLES_ADJACENCY 0x000C
+#endif
+
+#ifndef GL_TRIANGLE_STRIP_ADJACENCY
+#    define GL_TRIANGLE_STRIP_ADJACENCY 0x000D
+#endif
+
+
 // Define unsupported GL function stubs
 template <typename T>
 void UnsupportedGLFunctionStub(const T& Name)

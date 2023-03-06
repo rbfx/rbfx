@@ -49,7 +49,7 @@ namespace
 void ValidatePipelineResourceSignatureDescD3D12(const PipelineResourceSignatureDesc& Desc) noexcept(false)
 {
     {
-        std::unordered_multimap<HashMapStringKey, SHADER_TYPE, HashMapStringKey::Hasher> ResNameToShaderStages;
+        std::unordered_multimap<HashMapStringKey, SHADER_TYPE> ResNameToShaderStages;
         for (Uint32 i = 0; i < Desc.NumResources; ++i)
         {
             const auto& Res = Desc.Resources[i];
@@ -78,7 +78,7 @@ void ValidatePipelineResourceSignatureDescD3D12(const PipelineResourceSignatureD
     }
 
     {
-        std::unordered_multimap<HashMapStringKey, SHADER_TYPE, HashMapStringKey::Hasher> SamNameToShaderStages;
+        std::unordered_multimap<HashMapStringKey, SHADER_TYPE> SamNameToShaderStages;
         for (Uint32 i = 0; i < Desc.NumImmutableSamplers; ++i)
         {
             const auto& Sam = Desc.ImmutableSamplers[i];
@@ -452,11 +452,13 @@ void PipelineResourceSignatureD3D12Impl::CopyStaticResources(ShaderResourceCache
 void PipelineResourceSignatureD3D12Impl::CommitRootViews(const CommitCacheResourcesAttribs& CommitAttribs,
                                                          Uint64                             BuffersMask) const
 {
+    VERIFY_EXPR(CommitAttribs.pResourceCache != nullptr);
+
     while (BuffersMask != 0)
     {
         const auto  BufferBit = ExtractLSB(BuffersMask);
         const auto  RootInd   = PlatformMisc::GetLSB(BufferBit);
-        const auto& CacheTbl  = CommitAttribs.ResourceCache.GetRootTable(RootInd);
+        const auto& CacheTbl  = CommitAttribs.pResourceCache->GetRootTable(RootInd);
         VERIFY_EXPR(CacheTbl.IsRootView());
         const auto& BaseRootIndex = CommitAttribs.BaseRootIndex;
 
@@ -529,11 +531,11 @@ void PipelineResourceSignatureD3D12Impl::CommitRootViews(const CommitCacheResour
 
 void PipelineResourceSignatureD3D12Impl::CommitRootTables(const CommitCacheResourcesAttribs& CommitAttribs) const
 {
-    const auto& ResourceCache = CommitAttribs.ResourceCache;
+    VERIFY_EXPR(CommitAttribs.pResourceCache != nullptr);
+    const auto& ResourceCache = *CommitAttribs.pResourceCache;
     const auto& BaseRootIndex = CommitAttribs.BaseRootIndex;
     auto&       CmdCtx        = CommitAttribs.Ctx;
-
-    auto* const pd3d12Device = GetDevice()->GetD3D12Device();
+    auto* const pd3d12Device  = CommitAttribs.pd3d12Device;
 
     // Having an array of actual DescriptorHeapAllocation objects introduces unnecessary overhead when
     // there are no dynamic variables as constructors and destructors are always called. To avoid this

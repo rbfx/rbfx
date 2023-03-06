@@ -33,7 +33,7 @@
 
 #include "../../Platforms/Basic/interface/DebugUtilities.hpp"
 
-namespace ThreadingTools
+namespace Threading
 {
 
 class Signal
@@ -128,4 +128,4 @@ private:
     Signal& operator=(const Signal&) = delete;
 };
 
-} // namespace ThreadingTools
+} // namespace Threading

@@ -63,6 +63,7 @@ struct hash<Diligent::SamplerDesc>
             static_cast<int>(SamDesc.AddressV),
             static_cast<int>(SamDesc.AddressW),
             static_cast<int>(SamDesc.Flags),
+            SamDesc.UnnormalizedCoords,
             SamDesc.MipLODBias,
             SamDesc.MaxAnisotropy,
             static_cast<int>(SamDesc.ComparisonFunc),
@@ -113,12 +114,12 @@ struct hash<Diligent::RasterizerStateDesc>
         return Diligent::ComputeHash(static_cast<int>(RasterizerDesc.FillMode),
                                      static_cast<int>(RasterizerDesc.CullMode),
                                      RasterizerDesc.FrontCounterClockwise,
-                                     RasterizerDesc.DepthBias,
-                                     RasterizerDesc.DepthBiasClamp,
-                                     RasterizerDesc.SlopeScaledDepthBias,
                                      RasterizerDesc.DepthClipEnable,
                                      RasterizerDesc.ScissorEnable,
-                                     RasterizerDesc.AntialiasedLineEnable);
+                                     RasterizerDesc.AntialiasedLineEnable,
+                                     RasterizerDesc.DepthBias,
+                                     RasterizerDesc.DepthBiasClamp,
+                                     RasterizerDesc.SlopeScaledDepthBias);
     }
 };
 

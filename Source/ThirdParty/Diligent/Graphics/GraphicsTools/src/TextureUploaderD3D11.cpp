@@ -103,8 +103,8 @@ public:
     ID3D11Texture2D* GetStagingTex() { return m_pStagingTexture; }
 
 private:
-    ThreadingTools::Signal   m_BufferMappedSignal;
-    ThreadingTools::Signal   m_CopyScheduledSignal;
+    Threading::Signal        m_BufferMappedSignal;
+    Threading::Signal        m_CopyScheduledSignal;
     CComPtr<ID3D11Texture2D> m_pStagingTexture;
 };
 

@@ -29,7 +29,7 @@
 
 #include "GraphicsTypes.h"
 #include "TextureView.h"
-#include "LockHelper.hpp"
+#include "SpinLock.hpp"
 #include "HashUtils.hpp"
 #include "GLObjectWrapper.hpp"
 
@@ -92,7 +92,7 @@ private:
 
 
     friend class RenderDeviceGLImpl;
-    ThreadingTools::LockFlag                                                                 m_CacheLockFlag;
+    Threading::SpinLock                                                                      m_CacheLock;
     std::unordered_map<FBOCacheKey, GLObjectWrappers::GLFrameBufferObj, FBOCacheKeyHashFunc> m_Cache;
 
     // Multimap that sets up correspondence between unique texture id and all

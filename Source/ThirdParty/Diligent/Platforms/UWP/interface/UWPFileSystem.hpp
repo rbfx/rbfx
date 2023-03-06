@@ -70,8 +70,6 @@ struct WindowsStoreFileSystem : public BasicFileSystem
 public:
     static WindowsStoreFile* OpenFile(const FileOpenAttribs& OpenAttribs);
 
-    static inline Char GetSlashSymbol() { return '\\'; }
-
     static bool FileExists(const Char* strFilePath);
     static bool PathExists(const Char* strPath);
 

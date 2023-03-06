@@ -35,16 +35,14 @@
 namespace VulkanUtilities
 {
 
-std::unique_ptr<VulkanPhysicalDevice> VulkanPhysicalDevice::Create(VkPhysicalDevice      vkDevice,
-                                                                   const VulkanInstance& Instance)
+std::unique_ptr<VulkanPhysicalDevice> VulkanPhysicalDevice::Create(const CreateInfo& CI)
 {
-    auto* PhysicalDevice = new VulkanPhysicalDevice{vkDevice, Instance};
+    auto* PhysicalDevice = new VulkanPhysicalDevice{CI};
     return std::unique_ptr<VulkanPhysicalDevice>{PhysicalDevice};
 }
 
-VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice      vkDevice,
-                                           const VulkanInstance& Instance) :
-    m_VkDevice{vkDevice}
+VulkanPhysicalDevice::VulkanPhysicalDevice(const CreateInfo& CI) :
+    m_VkDevice{CI.vkDevice}
 {
     VERIFY_EXPR(m_VkDevice != VK_NULL_HANDLE);
 
@@ -70,13 +68,18 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice      vkDevice,
         VERIFY_EXPR(ExtensionCount == m_SupportedExtensions.size());
     }
 
-    m_VkVersion = std::min(Instance.GetVersion(), m_Properties.apiVersion);
+    if (CI.LogExtensions && !m_SupportedExtensions.empty())
+    {
+        LOG_INFO_MESSAGE("Extensions supported by device '", m_Properties.deviceName, "': ", PrintExtensionsList(m_SupportedExtensions, 3));
+    }
+
+    m_VkVersion = std::min(CI.Instance.GetVersion(), m_Properties.apiVersion);
 
     // remove patch version
-    m_VkVersion &= ~VK_MAKE_VERSION(0, 0, VK_VERSION_PATCH(~0u));
+    m_VkVersion &= ~VK_MAKE_VERSION(0, 0, VK_API_VERSION_PATCH(~0u));
 
 #if DILIGENT_USE_VOLK
-    if (Instance.IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+    if (CI.Instance.IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     {
         VkPhysicalDeviceFeatures2 Feats2{};
         Feats2.sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

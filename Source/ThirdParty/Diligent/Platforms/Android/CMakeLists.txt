@@ -16,12 +16,12 @@ set(SOURCE
     src/AndroidFileSystem.cpp
 )
 
-add_library(Diligent-AndroidPlatform STATIC ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
+add_library(Diligent-AndroidPlatform ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
 set_common_target_properties(Diligent-AndroidPlatform)
 
 target_include_directories(Diligent-AndroidPlatform
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-AndroidPlatform

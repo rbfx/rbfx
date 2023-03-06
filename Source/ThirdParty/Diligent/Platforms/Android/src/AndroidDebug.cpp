@@ -42,7 +42,12 @@ void AndroidDebug::AssertionFailed(const Char* Message, const char* Function, co
     raise(SIGTRAP);
 };
 
-void AndroidDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity, const Char* Message, const char* Function, const char* File, int Line)
+void AndroidDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                                      const Char*            Message,
+                                      const char*            Function,
+                                      const char*            File,
+                                      int                    Line,
+                                      TextColor              Color)
 {
     auto Msg = FormatDebugMessage(Severity, Message, Function, File, Line);
 
@@ -50,21 +55,21 @@ void AndroidDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity, const Cha
     static constexpr size_t              LogcatMsgMaxLen = 1024;
     const auto                           Priority        = Priorities[static_cast<int>(Severity)];
 
-    SplitString(Msg.begin(), Msg.end(), LogcatMsgMaxLen, 80,
-                [&](std::string::iterator Start, std::string::iterator End) {
-                    char tmp = '\0';
-                    if (End != Msg.end())
-                    {
-                        // Temporarily break the string
-                        tmp  = *End;
-                        *End = '\0';
-                    }
+    SplitLongString(Msg.begin(), Msg.end(), LogcatMsgMaxLen, 80,
+                    [&](std::string::iterator Start, std::string::iterator End) {
+                        char tmp = '\0';
+                        if (End != Msg.end())
+                        {
+                            // Temporarily break the string
+                            tmp  = *End;
+                            *End = '\0';
+                        }
 
-                    __android_log_print(Priority, "Diligent Engine", "%s", &*Start);
+                        __android_log_print(Priority, "Diligent Engine", "%s", &*Start);
 
-                    if (tmp != '\0')
-                        *End = tmp;
-                });
+                        if (tmp != '\0')
+                            *End = tmp;
+                    });
 }
 
 void DebugAssertionFailed(const Char* Message, const char* Function, const char* File, int Line)
@@ -72,6 +77,15 @@ void DebugAssertionFailed(const Char* Message, const char* Function, const char*
     AndroidDebug::AssertionFailed(Message, Function, File, Line);
 }
 
-DebugMessageCallbackType DebugMessageCallback = AndroidDebug::OutputDebugMessage;
+static void OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                               const Char*            Message,
+                               const char*            Function,
+                               const char*            File,
+                               int                    Line)
+{
+    return AndroidDebug::OutputDebugMessage(Severity, Message, Function, File, Line, TextColor::Auto);
+}
+
+DebugMessageCallbackType DebugMessageCallback = OutputDebugMessage;
 
 } // namespace Diligent

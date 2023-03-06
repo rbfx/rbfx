@@ -260,7 +260,9 @@ public:
     template <bool VerifyOnly>
     void TransitionResources(DeviceContextVkImpl* pCtxVkImpl);
 
-    __forceinline Uint32 GetDynamicBufferOffsets(DeviceContextIndex CtxId, std::vector<uint32_t>& Offsets) const;
+    __forceinline Uint32 GetDynamicBufferOffsets(DeviceContextIndex     CtxId,
+                                                 std::vector<uint32_t>& Offsets,
+                                                 Uint32                 StartInd) const;
 
 private:
     Resource* GetFirstResourcePtr()
@@ -316,7 +318,8 @@ __forceinline auto ShaderResourceCacheVk::Resource::GetDescriptorWriteInfo<Descr
 
 
 __forceinline Uint32 ShaderResourceCacheVk::GetDynamicBufferOffsets(DeviceContextIndex     CtxId,
-                                                                    std::vector<uint32_t>& Offsets) const
+                                                                    std::vector<uint32_t>& Offsets,
+                                                                    Uint32                 StartInd) const
 {
     // If any of the sets being bound include dynamic uniform or storage buffers, then
     // pDynamicOffsets includes one element for each array element in each dynamic descriptor
@@ -329,7 +332,7 @@ __forceinline Uint32 ShaderResourceCacheVk::GetDynamicBufferOffsets(DeviceContex
     // for every shader stage come first, followed by all storage buffers with dynamic offsets
     // (DescriptorType::StorageBufferDynamic and DescriptorType::StorageBufferDynamic_ReadOnly) for every shader stage,
     // followed by all other resources.
-    Uint32 OffsetInd = 0;
+    Uint32 OffsetInd = StartInd;
     for (Uint32 set = 0; set < m_NumSets; ++set)
     {
         const auto& DescrSet = GetDescriptorSet(set);
@@ -389,7 +392,7 @@ __forceinline Uint32 ShaderResourceCacheVk::GetDynamicBufferOffsets(DeviceContex
         }
 #endif
     }
-    return OffsetInd;
+    return OffsetInd - StartInd;
 }
 
 } // namespace Diligent

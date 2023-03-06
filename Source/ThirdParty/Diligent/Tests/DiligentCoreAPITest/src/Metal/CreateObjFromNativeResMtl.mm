@@ -67,6 +67,12 @@ void TestCreateObjFromNativeResMtl::CreateTexture(Diligent::ITexture* pTexture)
         EXPECT_EQ(TestFmtAttribs.ComponentSize, SrcFmtAttribs.ComponentSize);
         TestTexDesc.Format = SrcTexDesc.Format;
     }
+    if (TestTexDesc.BindFlags & BIND_INPUT_ATTACHMENT)
+    {
+        EXPECT_TRUE((TestTexDesc.BindFlags & (BIND_RENDER_TARGET | BIND_DEPTH_STENCIL)) && (TestTexDesc.BindFlags & BIND_SHADER_RESOURCE));
+        if ((SrcTexDesc.BindFlags & BIND_INPUT_ATTACHMENT) == 0)
+            TestTexDesc.BindFlags &= ~BIND_INPUT_ATTACHMENT;
+    }
     EXPECT_EQ(TestTexDesc, SrcTexDesc);
     EXPECT_STREQ(TestTexDesc.Name, SrcTexDesc.Name);
     RefCntAutoPtr<ITextureMtl> pAttachedTextureMtl(pAttachedTexture, IID_TextureMtl);

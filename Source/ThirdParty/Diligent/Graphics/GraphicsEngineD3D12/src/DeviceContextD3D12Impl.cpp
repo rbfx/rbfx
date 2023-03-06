@@ -373,6 +373,14 @@ void DeviceContextD3D12Impl::CommitRootTablesAndViews(RootTableInfo& RootInfo, U
 {
     const auto& RootSig = m_pPipelineState->GetRootSignature();
 
+    PipelineResourceSignatureD3D12Impl::CommitCacheResourcesAttribs CommitAttribs //
+        {
+            m_pDevice->GetD3D12Device(),
+            CmdCtx,
+            GetContextId(),
+            IsCompute //
+        };
+
     VERIFY(CommitSRBMask != 0, "This method should not be called when there is nothing to commit");
     while (CommitSRBMask != 0)
     {
@@ -386,14 +394,8 @@ void DeviceContextD3D12Impl::CommitRootTablesAndViews(RootTableInfo& RootInfo, U
         const auto* pResourceCache = RootInfo.ResourceCaches[sign];
         DEV_CHECK_ERR(pResourceCache != nullptr, "Resource cache at index ", sign, " is null.");
 
-        PipelineResourceSignatureD3D12Impl::CommitCacheResourcesAttribs CommitAttribs //
-            {
-                *pResourceCache,
-                CmdCtx,
-                GetContextId(),
-                IsCompute,
-                RootSig.GetBaseRootIndex(sign) //
-            };
+        CommitAttribs.pResourceCache = pResourceCache;
+        CommitAttribs.BaseRootIndex  = RootSig.GetBaseRootIndex(sign);
         if ((RootInfo.StaleSRBMask & SignBit) != 0)
         {
             // Commit root tables for stale SRBs only
@@ -949,7 +951,7 @@ void DeviceContextD3D12Impl::Flush(bool                 RequestNewCmdCtx,
 
     // TODO: use small_vector
     std::vector<RenderDeviceD3D12Impl::PooledCommandContext> Contexts;
-    Contexts.reserve(NumCommandLists + 1);
+    Contexts.reserve(size_t{NumCommandLists} + 1);
 
     // First, execute current context
     if (m_CurrCmdCtx)
@@ -1947,7 +1949,7 @@ void DeviceContextD3D12Impl::CopyTextureRegion(ID3D12Resource*                pd
     {
         const auto&  FmtAttribs = GetTextureFormatAttribs(TexDesc.Format);
         const Uint32 RowCount   = std::max((Footprint.Footprint.Height / FmtAttribs.BlockHeight), 1u);
-        VERIFY(BufferSize >= Footprint.Footprint.RowPitch * RowCount * Footprint.Footprint.Depth, "Buffer is not large enough");
+        VERIFY(BufferSize >= Uint64{Footprint.Footprint.RowPitch} * RowCount * Footprint.Footprint.Depth, "Buffer is not large enough");
         VERIFY(Footprint.Footprint.Depth == 1 || StaticCast<UINT>(SrcDepthStride) == Footprint.Footprint.RowPitch * RowCount, "Depth stride must be equal to the size of 2D plane");
     }
 #endif
@@ -2024,7 +2026,7 @@ DeviceContextD3D12Impl::TextureUploadSpace DeviceContextD3D12Impl::AllocateTextu
         // Box must be aligned by the calling function
         VERIFY_EXPR((UpdateRegionWidth % FmtAttribs.BlockWidth) == 0);
         VERIFY_EXPR((UpdateRegionHeight % FmtAttribs.BlockHeight) == 0);
-        UploadSpace.RowSize  = UpdateRegionWidth / Uint32{FmtAttribs.BlockWidth} * Uint32{FmtAttribs.ComponentSize};
+        UploadSpace.RowSize  = Uint64{UpdateRegionWidth} / Uint64{FmtAttribs.BlockWidth} * Uint64{FmtAttribs.ComponentSize};
         UploadSpace.RowCount = UpdateRegionHeight / FmtAttribs.BlockHeight;
     }
     else

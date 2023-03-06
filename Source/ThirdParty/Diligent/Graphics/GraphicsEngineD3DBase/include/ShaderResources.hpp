@@ -389,7 +389,7 @@ public:
         }
     }
     template <typename THandler>
-    void ProcessResources(THandler Handler) const
+    void ProcessResources(THandler&& Handler) const
     {
         ProcessResources(Handler, Handler, Handler, Handler, Handler, Handler, Handler);
     }

@@ -137,7 +137,7 @@ void ShaderResourceCacheGL::BindResources(GLContextState&              GLState,
                                            // will reflect data written by shaders prior to the barrier
             GLState);
 
-        GLState.BindUniformBuffer(binding, pBufferGL->GetGLHandle(), UB.BaseOffset + UB.DynamicOffset, UB.RangeSize);
+        GLState.BindUniformBuffer(binding, pBufferGL->GetGLHandle(), static_cast<GLintptr>(UB.BaseOffset) + static_cast<GLintptr>(UB.DynamicOffset), UB.RangeSize);
     }
 
     for (Uint32 s = 0, binding = BaseBindings[BINDING_RANGE_TEXTURE]; s < GetTextureCount(); ++s, ++binding)
@@ -312,7 +312,9 @@ void ShaderResourceCacheGL::BindDynamicBuffers(GLContextState&              GLSt
         const auto  UBOIdx = PlatformMisc::GetLSB(UBOBit);
         const auto& UB     = GetConstUB(UBOIdx);
         VERIFY_EXPR(UB.IsDynamic());
-        GLState.BindUniformBuffer(BaseUBOBinding + UBOIdx, UB.pBuffer->GetGLHandle(), UB.BaseOffset + UB.DynamicOffset, UB.RangeSize);
+        GLState.BindUniformBuffer(BaseUBOBinding + UBOIdx, UB.pBuffer->GetGLHandle(),
+                                  static_cast<GLintptr>(UB.BaseOffset) + static_cast<GLintptr>(UB.DynamicOffset),
+                                  UB.RangeSize);
     }
 
 

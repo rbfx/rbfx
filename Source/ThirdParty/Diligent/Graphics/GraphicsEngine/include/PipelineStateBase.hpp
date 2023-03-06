@@ -109,9 +109,9 @@ void ValidatePipelineResourceCompatibility(const PipelineResourceDesc& ResDesc,
 
 
 /// Copies ray tracing shader group names and also initializes the mapping from the group name to its index.
-void CopyRTShaderGroupNames(std::unordered_map<HashMapStringKey, Uint32, HashMapStringKey::Hasher>& NameToGroupIndex,
-                            const RayTracingPipelineStateCreateInfo&                                CreateInfo,
-                            FixedLinearAllocator&                                                   MemPool) noexcept;
+void CopyRTShaderGroupNames(std::unordered_map<HashMapStringKey, Uint32>& NameToGroupIndex,
+                            const RayTracingPipelineStateCreateInfo&      CreateInfo,
+                            FixedLinearAllocator&                         MemPool) noexcept;
 
 void CorrectGraphicsPipelineDesc(GraphicsPipelineDesc& GraphicsPipeline) noexcept;
 
@@ -505,7 +505,7 @@ public:
     }
 
 protected:
-    using TNameToGroupIndexMap = std::unordered_map<HashMapStringKey, Uint32, HashMapStringKey::Hasher>;
+    using TNameToGroupIndexMap = std::unordered_map<HashMapStringKey, Uint32>;
 
     void ReserveSpaceForPipelineDesc(const GraphicsPipelineStateCreateInfo& CreateInfo,
                                      FixedLinearAllocator&                  MemPool) noexcept
@@ -542,7 +542,10 @@ protected:
         size_t RTDataSize = sizeof(RayTracingPipelineData);
         // Reserve space for shader handles
         const auto ShaderHandleSize = this->GetDevice()->GetAdapterInfo().RayTracing.ShaderGroupHandleSize;
-        RTDataSize += ShaderHandleSize * (CreateInfo.GeneralShaderCount + CreateInfo.TriangleHitShaderCount + CreateInfo.ProceduralHitShaderCount);
+        RTDataSize += size_t{ShaderHandleSize} *
+            (size_t{CreateInfo.GeneralShaderCount} +
+             size_t{CreateInfo.TriangleHitShaderCount} +
+             size_t{CreateInfo.ProceduralHitShaderCount});
         // Extra bytes were reserved to avoid compiler errors on zero-sized arrays
         RTDataSize -= sizeof(RayTracingPipelineData::ShaderHandles);
         MemPool.AddSpace(RTDataSize, alignof(RayTracingPipelineData));

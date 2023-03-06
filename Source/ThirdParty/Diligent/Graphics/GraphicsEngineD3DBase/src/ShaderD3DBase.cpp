@@ -70,7 +70,7 @@ public:
             return E_FAIL;
         }
 
-        RefCntAutoPtr<IDataBlob> pFileData(MakeNewRCObj<DataBlobImpl>{}(0));
+        auto pFileData = DataBlobImpl::Create();
         pSourceStream->ReadBlob(pFileData);
         *ppData = pFileData->GetDataPtr();
         *pBytes = StaticCast<UINT>(pFileData->GetSize());

@@ -26,23 +26,26 @@
  */
 
 #include "BasicFileSystem.hpp"
-#include "DebugUtilities.hpp"
+
 #include <algorithm>
+#include <cstring>
+
+#include "DebugUtilities.hpp"
 
 namespace Diligent
 {
 
 String BasicFileSystem::m_strWorkingDirectory;
 
-BasicFile::BasicFile(const FileOpenAttribs& OpenAttribs, Char SlashSymbol) :
+BasicFile::BasicFile(const FileOpenAttribs& OpenAttribs) :
     m_Path //
     {
-        [](const Char* strPath, Char SlashSymbol) //
+        [](const Char* strPath) //
         {
             String Path = strPath != nullptr ? strPath : "";
-            BasicFileSystem::CorrectSlashes(Path, SlashSymbol);
+            BasicFileSystem::CorrectSlashes(Path);
             return Path;
-        }(OpenAttribs.strFilePath, SlashSymbol) //
+        }(OpenAttribs.strFilePath) //
     },
     m_OpenAttribs{m_Path.c_str(), OpenAttribs.AccessMode}
 {
@@ -58,9 +61,12 @@ String BasicFile::GetOpenModeStr()
     switch (m_OpenAttribs.AccessMode)
     {
         // clang-format off
-        case EFileAccessMode::Read:      OpenModeStr += 'r'; break;
-        case EFileAccessMode::Overwrite: OpenModeStr += 'w'; break;
-        case EFileAccessMode::Append:    OpenModeStr += 'a'; break;
+        case EFileAccessMode::Read:            OpenModeStr += 'r'; break;
+        case EFileAccessMode::Overwrite:       OpenModeStr += 'w'; break;
+        case EFileAccessMode::Append:          OpenModeStr += 'a'; break;
+        case EFileAccessMode::ReadUpdate:      OpenModeStr += "r+"; break;
+        case EFileAccessMode::OverwriteUpdate: OpenModeStr += "w+"; break;
+        case EFileAccessMode::AppendUpdate:    OpenModeStr += "a+"; break;
         // clang-format on
         default: break;
     }
@@ -87,39 +93,35 @@ bool BasicFileSystem::FileExists(const Char* strFilePath)
     return false;
 }
 
-Char BasicFileSystem::GetSlashSymbol()
+void BasicFileSystem::CorrectSlashes(String& Path, Char Slash)
 {
-    UNSUPPORTED("Unsupported");
-    return 0;
+    if (Slash != 0)
+        DEV_CHECK_ERR(IsSlash(Slash), "Incorrect slash symbol");
+    else
+        Slash = SlashSymbol;
+    Char RevSlashSym = (Slash == '\\') ? '/' : '\\';
+    std::replace(Path.begin(), Path.end(), RevSlashSym, Slash);
 }
 
-void BasicFileSystem::CorrectSlashes(String& Path, Char SlashSymbol)
+void BasicFileSystem::GetPathComponents(const String& Path,
+                                        String*       Directory,
+                                        String*       FileName)
 {
-    VERIFY(SlashSymbol == '\\' || SlashSymbol == '/',
-           "Incorrect slash symbol");
-    Char RevSlashSym = (SlashSymbol == '\\') ? '/' : '\\';
-    std::replace(Path.begin(), Path.end(), RevSlashSym, SlashSymbol);
-}
-
-void BasicFileSystem::SplitFilePath(const String& FullName,
-                                    String*       Path,
-                                    String*       Name)
-{
-    auto LastSlashPos = FullName.find_last_of("/\\");
-    if (Path)
+    auto LastSlashPos = Path.find_last_of("/\\");
+    if (Directory)
     {
         if (LastSlashPos != String::npos)
-            *Path = FullName.substr(0, LastSlashPos);
+            *Directory = Path.substr(0, LastSlashPos);
         else
-            *Path = "";
+            *Directory = "";
     }
 
-    if (Name)
+    if (FileName)
     {
         if (LastSlashPos != String::npos)
-            *Name = FullName.substr(LastSlashPos + 1);
+            *FileName = Path.substr(LastSlashPos + 1);
         else
-            *Name = FullName;
+            *FileName = Path;
     }
 }
 
@@ -138,21 +140,31 @@ bool BasicFileSystem::IsPathAbsolute(const Char* strPath)
 #endif
 }
 
-std::string BasicFileSystem::SimplifyPath(const Char* Path, Char SlashSymbol)
+template <typename StringType>
+std::vector<StringType> SplitPath(const Char* Path, bool Simplify)
 {
-    if (Path == nullptr)
-        return "";
+    std::vector<StringType> Components;
 
-    auto IsSlash = [](const Char c) {
+    // BasicFileSystem::IsSlash() does not get inlined by at least MSVC
+    auto IsSlash = [](Char c) {
         return c == '/' || c == '\\';
     };
 
-    std::vector<std::string> PathComponents;
+    // Estimate the number of components and reserve space in the vector
+    {
+        size_t CompnentCount = 1;
+        for (const auto* c = Path; *c != '\0'; ++c)
+        {
+            if (IsSlash(c[0]) && !IsSlash(c[1]))
+                ++CompnentCount;
+        }
+        Components.reserve(CompnentCount);
+    }
 
     const auto* c = Path;
     while (*c != '\0')
     {
-        while (*c != '\0' && IsSlash(*c))
+        while (IsSlash(*c))
             ++c;
 
         if (*c == '\0')
@@ -161,34 +173,156 @@ std::string BasicFileSystem::SimplifyPath(const Char* Path, Char SlashSymbol)
             break;
         }
 
-        std::string PathCmp;
+        const auto* const CmpStart = c;
         while (*c != '\0' && !IsSlash(*c))
-            PathCmp.push_back(*(c++));
+            ++c;
 
-        if (PathCmp == ".")
+        if (Simplify)
         {
-            // Skip /.
-            continue;
+            if ((c - CmpStart) == 1 && CmpStart[0] == '.') // "."
+            {
+                // Skip /.
+                continue;
+            }
+            else if ((c - CmpStart) == 2 && CmpStart[0] == '.' && CmpStart[1] == '.') // ".."
+            {
+                // Pop previous subdirectory if "/.." is found, but only if there is
+                // no ".." already (e.g "../..")
+                if (!Components.empty() && Components.back() != "..")
+                {
+                    Components.pop_back();
+                    continue;
+                }
+            }
         }
-        else if (PathCmp == ".." && !PathComponents.empty() && PathComponents.back() != "..")
-        {
-            // Pop previous subdirectory if /.. is found, but only if there is no .. already
-            PathComponents.pop_back();
-        }
-        else
-        {
-            PathComponents.emplace_back(std::move(PathCmp));
-        }
+
+        Components.emplace_back(CmpStart, c);
     }
+
+    return Components;
+}
+
+std::vector<String> BasicFileSystem::SplitPath(const Char* Path, bool Simplify)
+{
+    return Diligent::SplitPath<String>(Path, Simplify);
+}
+
+std::string BasicFileSystem::SimplifyPath(const Char* Path, Char Slash)
+{
+    if (Path == nullptr)
+        return "";
+
+    if (Slash != 0)
+        DEV_CHECK_ERR(IsSlash(Slash), "Incorrect slash symbol");
+    else
+        Slash = SlashSymbol;
+
+    struct MiniStringView
+    {
+        MiniStringView(const char* _Start,
+                       const char* _End) :
+            Start{_Start},
+            End{_End}
+        {}
+
+        bool operator==(const char* Str) const
+        {
+            const auto Len = End - Start;
+            return strncmp(Str, Start, Len) == 0 && Str[Len] == '\0';
+        }
+
+        bool operator!=(const char* str) const
+        {
+            return !(*this == str);
+        }
+
+        const char* const Start;
+        const char* const End;
+    };
+
+    const auto PathComponents  = Diligent::SplitPath<MiniStringView>(Path, true);
+    const auto NumComponents   = PathComponents.size();
+    const auto UseLeadingSlash = Slash == '/' && IsSlash(Path[0]);
+
+    size_t Len = UseLeadingSlash ? 1 : 0;
+    for (const auto& Cmp : PathComponents)
+        Len += Cmp.End - Cmp.Start;
+    if (NumComponents > 0)
+        Len += NumComponents - 1;
 
     std::string SimplifiedPath;
-    for (const auto& Cmp : PathComponents)
+    SimplifiedPath.reserve(Len);
+    if (UseLeadingSlash)
+        SimplifiedPath.push_back(Slash);
+
+    for (size_t i = 0; i < NumComponents; ++i)
     {
-        if (!SimplifiedPath.empty())
-            SimplifiedPath.push_back(SlashSymbol);
-        SimplifiedPath.append(Cmp);
+        if (i > 0)
+            SimplifiedPath.push_back(Slash);
+        const auto& Cmp = PathComponents[i];
+        SimplifiedPath.append(Cmp.Start, Cmp.End);
     }
+    VERIFY_EXPR(SimplifiedPath.length() == Len);
+
     return SimplifiedPath;
+}
+
+
+std::string BasicFileSystem::GetRelativePath(const Char* PathFrom,
+                                             bool        IsFromDirectory,
+                                             const Char* PathTo,
+                                             bool /*IsToDirectory*/)
+{
+    DEV_CHECK_ERR(PathFrom != nullptr, "Source path must not be null");
+    DEV_CHECK_ERR(PathTo != nullptr, "Destination path must not be null");
+
+    const auto FromPathComps = SplitPath(PathFrom, true);
+    const auto ToPathComps   = SplitPath(PathTo, true);
+
+    auto from_it = FromPathComps.begin();
+    auto to_it   = ToPathComps.begin();
+    while (from_it != FromPathComps.end() && to_it != ToPathComps.end() && *from_it == *to_it)
+    {
+        ++from_it;
+        ++to_it;
+    }
+    if (from_it == FromPathComps.begin())
+        return PathFrom; // No common prefix
+
+    String RelPath;
+    for (; from_it != FromPathComps.end(); ++from_it)
+    {
+        if (!IsFromDirectory && from_it + 1 == FromPathComps.end())
+        {
+            //                    from_it
+            //                       V
+            // from:    "common/from/file"
+            // to:      "common/to"
+            // RelPath: ".."
+            break;
+        }
+
+        if (!RelPath.empty())
+            RelPath.push_back(SlashSymbol);
+        RelPath.append("..");
+    }
+
+    for (; to_it != ToPathComps.end(); ++to_it)
+    {
+        // IsToDirectory is in fact irrelevant
+        if (!RelPath.empty())
+            RelPath.push_back(SlashSymbol);
+        RelPath.append(*to_it);
+    }
+
+    return RelPath;
+}
+
+
+std::string BasicFileSystem::FileDialog(const FileDialogAttribs& DialogAttribs)
+{
+    LOG_WARNING_MESSAGE("File dialog is not implemented on this platform");
+    return "";
 }
 
 } // namespace Diligent

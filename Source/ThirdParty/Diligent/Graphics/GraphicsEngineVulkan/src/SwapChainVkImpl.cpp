@@ -32,6 +32,7 @@
 #include "TextureVkImpl.hpp"
 #include "VulkanTypeConversions.hpp"
 #include "EngineMemory.h"
+#include "GraphicsAccessories.hpp"
 
 namespace Diligent
 {
@@ -439,11 +440,13 @@ void SwapChainVkImpl::CreateVulkanSwapChain()
     swapchain_ci.imageColorSpace    = ColorSpace;
 
     DEV_CHECK_ERR(m_SwapChainDesc.Usage != 0, "No swap chain usage flags defined");
-    static_assert(SWAP_CHAIN_USAGE_LAST == SWAP_CHAIN_USAGE_COPY_SOURCE, "Please update this function to handle the new swapchain usage");
+    static_assert(SWAP_CHAIN_USAGE_LAST == 8, "Please update this function to handle the new swapchain usage");
     if (m_SwapChainDesc.Usage & SWAP_CHAIN_USAGE_RENDER_TARGET)
         swapchain_ci.imageUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if (m_SwapChainDesc.Usage & SWAP_CHAIN_USAGE_SHADER_INPUT)
+    if (m_SwapChainDesc.Usage & SWAP_CHAIN_USAGE_SHADER_RESOURCE)
         swapchain_ci.imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (m_SwapChainDesc.Usage & SWAP_CHAIN_USAGE_INPUT_ATTACHMENT)
+        swapchain_ci.imageUsage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     if (m_SwapChainDesc.Usage & SWAP_CHAIN_USAGE_COPY_SOURCE)
         swapchain_ci.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
@@ -574,7 +577,7 @@ void SwapChainVkImpl::InitBuffersAndViews()
         BackBufferDesc.Width     = m_SwapChainDesc.Width;
         BackBufferDesc.Height    = m_SwapChainDesc.Height;
         BackBufferDesc.Format    = m_SwapChainDesc.ColorBufferFormat;
-        BackBufferDesc.BindFlags = BIND_RENDER_TARGET;
+        BackBufferDesc.BindFlags = SwapChainUsageFlagsToBindFlags(m_SwapChainDesc.Usage);
         BackBufferDesc.MipLevels = 1;
 
         RefCntAutoPtr<TextureVkImpl> pBackBufferTex;

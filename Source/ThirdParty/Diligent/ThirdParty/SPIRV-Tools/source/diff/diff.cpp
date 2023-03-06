@@ -758,9 +758,6 @@ int Differ::ComparePreambleInstructions(const opt::Instruction* a,
       return 1;
     }
 
-    assert(a_operand.words.size() == 1);
-    assert(b_operand.words.size() == 1);
-
     switch (a_operand.type) {
       case SPV_OPERAND_TYPE_ID:
         // Don't compare ids, there can't be multiple instances of the
@@ -781,6 +778,9 @@ int Differ::ComparePreambleInstructions(const opt::Instruction* a,
       }
       default:
         // Expect literal values to match.
+        assert(a_operand.words.size() == 1);
+        assert(b_operand.words.size() == 1);
+
         if (a_operand.words[0] < b_operand.words[0]) {
           return -1;
         }
@@ -2196,16 +2196,18 @@ void Differ::MatchTypeIds() {
         case SpvOpTypeSampledImage:
         case SpvOpTypeRuntimeArray:
         case SpvOpTypePointer:
-        case SpvOpTypeFunction:
           // Match these instructions when all operands match.
           assert(src_inst->NumInOperandWords() ==
                  dst_inst->NumInOperandWords());
           return DoOperandsMatch(src_inst, dst_inst, 0,
                                  src_inst->NumInOperandWords());
 
+        case SpvOpTypeFunction:
         case SpvOpTypeImage:
-          // Match these instructions when all operands match, including the
-          // optional final parameter (if provided in both).
+          // Match function types only if they have the same number of operands,
+          // and they all match.
+          // Match image types similarly, expecting the optional final parameter
+          // to match (if provided in both)
           if (src_inst->NumInOperandWords() != dst_inst->NumInOperandWords()) {
             return false;
           }

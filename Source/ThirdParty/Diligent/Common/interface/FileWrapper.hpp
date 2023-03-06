@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "../../Primitives/interface/Errors.hpp"
 #include "../../Platforms/Basic/interface/DebugUtilities.hpp"
 #include "../../Platforms/interface/FileSystem.hpp"
@@ -86,6 +88,31 @@ public:
     CFile* operator->() { return m_pFile; }
 
     explicit operator bool() const { return m_pFile != nullptr; }
+
+    static bool ReadWholeFile(const char* FilePath, std::vector<Uint8>& Data)
+    {
+        VERIFY_EXPR(FilePath != nullptr);
+
+        FileWrapper File{FilePath, EFileAccessMode::Read};
+        if (!File)
+        {
+            LOG_ERROR_MESSAGE("Failed to open file ", FilePath);
+            return false;
+        }
+
+        const auto Size = File->GetSize();
+        Data.resize(Size);
+        if (Size > 0)
+        {
+            if (!File->Read(Data.data(), Size))
+            {
+                LOG_ERROR_MESSAGE("Failed to read file ", FilePath);
+                return false;
+            }
+        }
+
+        return true;
+    }
 
 private:
     FileWrapper(const FileWrapper&);

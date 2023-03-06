@@ -32,6 +32,31 @@
 namespace Diligent
 {
 
+enum class TextColor
+{
+    Auto, // Text color is determined based on message severity
+
+    Default,
+
+    Black,
+    DarkRed,
+    DarkGreen,
+    DarkYellow,
+    DarkBlue,
+    DarkMagenta,
+    DarkCyan,
+    DarkGray,
+
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Magenta,
+    Cyan,
+    White,
+    Gray
+};
+
 struct BasicPlatformDebug
 {
     static String FormatAssertionFailedMessage(const Char* Message,
@@ -43,6 +68,8 @@ struct BasicPlatformDebug
                                      const char*            Function, // type of __FUNCTION__
                                      const char*            File,     // type of __FILE__
                                      int                    Line);
+
+    static const char* TextColorToTextColorCode(DEBUG_MESSAGE_SEVERITY Severity, TextColor Color);
 };
 
 // Forward declarations of platform-specific debug functions

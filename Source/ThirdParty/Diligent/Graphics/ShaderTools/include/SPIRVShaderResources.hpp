@@ -295,7 +295,7 @@ public:
     }
 
     template <typename THandler>
-    void ProcessResources(THandler Handler) const
+    void ProcessResources(THandler&& Handler) const
     {
         for (Uint32 n = 0; n < GetTotalResources(); ++n)
         {

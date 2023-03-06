@@ -240,8 +240,8 @@ void ValidatePipelineResourceSignatures(const PipelineStateCreateInfo& CreateInf
         const ImmutableSamplerDesc&       Desc;
     };
 
-    std::unordered_multimap<HashMapStringKey, ResourceInfo, HashMapStringKey::Hasher> AllResources;
-    std::unordered_multimap<HashMapStringKey, ImtblSamInfo, HashMapStringKey::Hasher> AllImtblSamplers;
+    std::unordered_multimap<HashMapStringKey, ResourceInfo> AllResources;
+    std::unordered_multimap<HashMapStringKey, ImtblSamInfo> AllImtblSamplers;
 
     std::array<const IPipelineResourceSignature*, MAX_RESOURCE_SIGNATURES> ppSignatures = {};
     for (Uint32 i = 0; i < CreateInfo.ResourceSignaturesCount; ++i)
@@ -442,7 +442,7 @@ void ValidatePipelineResourceLayoutDesc(const PipelineStateDesc& PSODesc, const 
 {
     const auto& Layout = PSODesc.ResourceLayout;
     {
-        std::unordered_multimap<HashMapStringKey, SHADER_TYPE, HashMapStringKey::Hasher> UniqueVariables;
+        std::unordered_multimap<HashMapStringKey, SHADER_TYPE> UniqueVariables;
         for (Uint32 i = 0; i < Layout.NumVariables; ++i)
         {
             const auto& Var = Layout.Variables[i];
@@ -480,7 +480,7 @@ void ValidatePipelineResourceLayoutDesc(const PipelineStateDesc& PSODesc, const 
         }
     }
     {
-        std::unordered_multimap<HashMapStringKey, SHADER_TYPE, HashMapStringKey::Hasher> UniqueSamplers;
+        std::unordered_multimap<HashMapStringKey, SHADER_TYPE> UniqueSamplers;
         for (Uint32 i = 0; i < Layout.NumImmutableSamplers; ++i)
         {
             const auto& Sam = Layout.ImmutableSamplers[i];
@@ -597,6 +597,32 @@ void ValidateGraphicsPipelineCreateInfo(const GraphicsPipelineStateCreateInfo& C
     }
     else
     {
+        for (Uint32 rt = 0; rt < GraphicsPipeline.NumRenderTargets; ++rt)
+        {
+            const auto RTVFmt = GraphicsPipeline.RTVFormats[rt];
+            if (RTVFmt == TEX_FORMAT_UNKNOWN)
+                continue;
+
+            const auto& FmtAttribs = GetTextureFormatAttribs(RTVFmt);
+            if (FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH ||
+                FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH_STENCIL ||
+                FmtAttribs.ComponentType == COMPONENT_TYPE_COMPRESSED)
+            {
+                LOG_PSO_ERROR_AND_THROW("Format ", FmtAttribs.Name, " of render target slot ", rt,
+                                        " is invalid: depth-stencil or compressed formats are not allowed.");
+            }
+        }
+
+        if (GraphicsPipeline.DSVFormat != TEX_FORMAT_UNKNOWN)
+        {
+            const auto& FmtAttribs = GetTextureFormatAttribs(GraphicsPipeline.DSVFormat);
+            if (FmtAttribs.ComponentType != COMPONENT_TYPE_DEPTH &&
+                FmtAttribs.ComponentType != COMPONENT_TYPE_DEPTH_STENCIL)
+            {
+                LOG_PSO_ERROR_AND_THROW(FmtAttribs.Name, " is not a valid depth buffer format.");
+            }
+        }
+
         for (Uint32 rt = GraphicsPipeline.NumRenderTargets; rt < _countof(GraphicsPipeline.RTVFormats); ++rt)
         {
             auto RTVFmt = GraphicsPipeline.RTVFormats[rt];
@@ -664,7 +690,7 @@ void ValidateRayTracingPipelineCreateInfo(const IRenderDevice*                  
                                 ") exceeds device limit (", RTProps.MaxRecursionDepth, ").");
     }
 
-    std::unordered_set<HashMapStringKey, HashMapStringKey::Hasher> GroupNames;
+    std::unordered_set<HashMapStringKey> GroupNames;
 
     auto VerifyShaderGroupName = [&](const char* MemberName, // "pGeneralShaders", "pTriangleHitShaders", or "pProceduralHitShaders"
                                      Uint32      GroupInd,
@@ -748,9 +774,9 @@ void ValidateTilePipelineCreateInfo(const TilePipelineStateCreateInfo& CreateInf
 
 } // namespace
 
-void CopyRTShaderGroupNames(std::unordered_map<HashMapStringKey, Uint32, HashMapStringKey::Hasher>& NameToGroupIndex,
-                            const RayTracingPipelineStateCreateInfo&                                CreateInfo,
-                            FixedLinearAllocator&                                                   MemPool) noexcept
+void CopyRTShaderGroupNames(std::unordered_map<HashMapStringKey, Uint32>& NameToGroupIndex,
+                            const RayTracingPipelineStateCreateInfo&      CreateInfo,
+                            FixedLinearAllocator&                         MemPool) noexcept
 {
     Uint32 GroupIndex = 0;
 

@@ -11,6 +11,7 @@ set(INTERFACE
     interface/DurationQueryHelper.hpp
     interface/GraphicsUtilities.h
     interface/MapHelper.hpp
+    interface/ScopedDebugGroup.hpp
     interface/GPUCompletionAwaitQueue.hpp
     interface/ScopedQueryHelper.hpp
     interface/ScreenCapture.hpp
@@ -19,7 +20,7 @@ set(INTERFACE
     interface/TextureUploader.hpp
     interface/TextureUploaderBase.hpp
     interface/XXH128Hasher.hpp
-    interface/BytecodeCache.h
+    interface/BytecodeCache.h  
 )
 
 set(SOURCE
@@ -59,7 +60,7 @@ add_library(Diligent-GraphicsTools STATIC ${SOURCE} ${INTERFACE})
 
 target_include_directories(Diligent-GraphicsTools
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 PRIVATE
     ../GraphicsEngineD3DBase/include
 )

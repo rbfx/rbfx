@@ -99,7 +99,7 @@ public:
                      VkDeviceSize          PageSize,
                      uint32_t              MemoryTypeIndex,
                      bool                  IsHostVisible,
-                     VkMemoryAllocateFlags AllocateFlags) noexcept;
+                     VkMemoryAllocateFlags AllocateFlags);
     ~VulkanMemoryPage();
 
     // clang-format off

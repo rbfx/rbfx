@@ -64,7 +64,7 @@ void VAOCache::OnDestroyBuffer(const BufferGLImpl& Buffer)
     // Collect all stale keys that use this buffer.
     std::vector<VAOHashKey> StaleKeys;
 
-    ThreadingTools::LockHelper CacheLock{m_CacheLockFlag};
+    Threading::SpinLockGuard CacheGuard{m_CacheLock};
 
     const auto range = m_BuffToKey.equal_range(Buffer.GetUniqueID());
     for (auto it = range.first; it != range.second; ++it)
@@ -84,7 +84,7 @@ void VAOCache::OnDestroyPSO(const PipelineStateGLImpl& PSO)
     // Collect all stale keys that use this PSO.
     std::vector<VAOHashKey> StaleKeys;
 
-    ThreadingTools::LockHelper CacheLock{m_CacheLockFlag};
+    Threading::SpinLockGuard CacheGuard{m_CacheLock};
 
     const auto range = m_PSOToKey.equal_range(PSO.GetUniqueID());
     for (auto it = range.first; it != range.second; ++it)
@@ -214,7 +214,7 @@ const GLObjectWrappers::GLVertexArrayObj& VAOCache::GetVAO(const VAOAttribs& Att
                                                            GLContextState&   GLState)
 {
     // Lock the cache
-    ThreadingTools::LockHelper CacheLock{m_CacheLockFlag};
+    Threading::SpinLockGuard CacheGuard{m_CacheLock};
 
     // Construct the key
     VAOHashKey Key{Attribs};

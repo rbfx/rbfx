@@ -163,8 +163,8 @@ TEST(Common_ThreadPool, ProcessTask)
 class WaitTask : public AsyncTaskBase
 {
 public:
-    WaitTask(IReferenceCounters*     pRefCounters,
-             ThreadingTools::Signal& WaitSignal) :
+    WaitTask(IReferenceCounters* pRefCounters,
+             Threading::Signal&  WaitSignal) :
         AsyncTaskBase{pRefCounters},
         m_WaitSignal{WaitSignal}
     {}
@@ -176,7 +176,7 @@ public:
     }
 
 private:
-    ThreadingTools::Signal& m_WaitSignal;
+    Threading::Signal& m_WaitSignal;
 };
 
 class DummyTask : public AsyncTaskBase
@@ -200,7 +200,7 @@ TEST(Common_ThreadPool, RemoveTask)
     auto pThreadPool = CreateThreadPool(ThreadPoolCreateInfo{NumThreads});
     ASSERT_NE(pThreadPool, nullptr);
 
-    ThreadingTools::Signal Signal;
+    Threading::Signal Signal;
 
     std::array<RefCntAutoPtr<WaitTask>, NumThreads> WaitTasks;
     for (auto& Task : WaitTasks)
@@ -254,7 +254,7 @@ TEST(Common_ThreadPool, Reprioritize)
     auto pThreadPool = CreateThreadPool(ThreadPoolCreateInfo{NumThreads});
     ASSERT_NE(pThreadPool, nullptr);
 
-    ThreadingTools::Signal Signal;
+    Threading::Signal Signal;
 
     std::array<RefCntAutoPtr<WaitTask>, NumThreads> WaitTasks;
     for (auto& Task : WaitTasks)
@@ -306,7 +306,7 @@ TEST(Common_ThreadPool, Priorities)
         auto pThreadPool = CreateThreadPool(ThreadPoolCreateInfo{NumThreads});
         ASSERT_NE(pThreadPool, nullptr);
 
-        ThreadingTools::Signal  Signal;
+        Threading::Signal       Signal;
         RefCntAutoPtr<WaitTask> pWaitTask;
         {
             pWaitTask = MakeNewRCObj<WaitTask>()(Signal);

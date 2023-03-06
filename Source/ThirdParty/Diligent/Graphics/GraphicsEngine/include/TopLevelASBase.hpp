@@ -387,7 +387,7 @@ protected:
     TLASBuildInfo      m_BuildInfo;
     ScratchBufferSizes m_ScratchSize;
 
-    std::unordered_map<HashMapStringKey, InstanceDesc, HashMapStringKey::Hasher> m_Instances;
+    std::unordered_map<HashMapStringKey, InstanceDesc> m_Instances;
 
     StringPool m_StringPool;
 

@@ -1037,6 +1037,7 @@ void PrimitiveTopology_To_VkPrimitiveTopologyAndPatchCPCount(PRIMITIVE_TOPOLOGY 
                                                              uint32_t&            PatchControlPoints)
 {
     PatchControlPoints = 0;
+    static_assert(PRIMITIVE_TOPOLOGY_NUM_TOPOLOGIES == 42, "Did you add a new primitive topology? Please handle it here.");
     switch (PrimTopology)
     {
         case PRIMITIVE_TOPOLOGY_UNDEFINED:
@@ -1062,6 +1063,22 @@ void PrimitiveTopology_To_VkPrimitiveTopologyAndPatchCPCount(PRIMITIVE_TOPOLOGY 
 
         case PRIMITIVE_TOPOLOGY_LINE_STRIP:
             VkPrimTopology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+            return;
+
+        case PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ:
+            VkPrimTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;
+            return;
+
+        case PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ:
+            VkPrimTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;
+            return;
+
+        case PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ:
+            VkPrimTopology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY;
+            return;
+
+        case PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ:
+            VkPrimTopology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY;
             return;
 
         default:

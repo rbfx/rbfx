@@ -25,12 +25,13 @@ Files in this repository originate from:
 ### Specification repository (https://github.com/KhronosGroup/Vulkan-Docs)
 
 * registry/cgenerator.py
-* registry/conventions.py
+* registry/spec_tools/conventions.py
 * registry/generator.py
 * registry/genvk.py
 * registry/reg.py
 * registry/spec_tools/util.py
 * registry/validusage.json
+* registry/video.xml
 * registry/vk.xml
 * registry/vkconventions.py
 * All files under include/vulkan/ which are *not* listed explicitly as originating from another repository.

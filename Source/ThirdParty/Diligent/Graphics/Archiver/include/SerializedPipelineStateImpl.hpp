@@ -38,7 +38,7 @@
 
 #include "ObjectBase.hpp"
 #include "PipelineStateBase.hpp"
-#include "DeviceObjectArchiveBase.hpp"
+#include "DeviceObjectArchive.hpp"
 
 namespace Diligent
 {
@@ -94,9 +94,9 @@ public:
         ARCHIVE_DEVICE_DATA_FLAGS DataType,
         Uint32                    ShaderIndex) const override final;
 
-    using SerializedPSOAuxData = DeviceObjectArchiveBase::SerializedPSOAuxData;
-    using DeviceType           = DeviceObjectArchiveBase::DeviceType;
-    using TPRSNames            = DeviceObjectArchiveBase::TPRSNames;
+    using SerializedPSOAuxData = DeviceObjectArchive::SerializedPSOAuxData;
+    using DeviceType           = DeviceObjectArchive::DeviceType;
+    using TPRSNames            = DeviceObjectArchive::TPRSNames;
 
     static constexpr auto DeviceDataCount = static_cast<size_t>(DeviceType::Count);
 
@@ -112,6 +112,8 @@ public:
             SHADER_TYPE    Stage = SHADER_TYPE_UNKNOWN;
         };
         std::array<std::vector<ShaderInfo>, DeviceDataCount> Shaders;
+
+        bool DoNotPackSignatures = false;
     };
 
     const Data& GetData() const { return m_Data; }

@@ -41,7 +41,8 @@ struct EmscriptenDebug : public BasicPlatformDebug
                                    const Char*            Message,
                                    const char*            Function, // type of __FUNCTION__
                                    const char*            File,     // type of __FILE__
-                                   int                    Line);
+                                   int                    Line,
+                                   TextColor              Color = TextColor::Auto);
 };
 
 } // namespace Diligent

@@ -26,7 +26,8 @@
 
 #pragma once
 
-#include "../../Platforms/interface/Atomics.hpp"
+#include <atomic>
+
 #include "../../Primitives/interface/ReferenceCounters.h"
 
 namespace Diligent
@@ -39,28 +40,26 @@ public:
     DummyReferenceCounters(ObjectType& Obj) noexcept :
         m_Object{Obj}
     {
-        m_lNumStrongReferences = 0;
-        m_lNumWeakReferences   = 0;
     }
 
     virtual ReferenceCounterValueType AddStrongRef() override final
     {
-        return Atomics::AtomicIncrement(m_lNumStrongReferences);
+        return m_NumStrongReferences.fetch_add(1) + 1;
     }
 
     virtual ReferenceCounterValueType ReleaseStrongRef() override final
     {
-        return Atomics::AtomicDecrement(m_lNumStrongReferences);
+        return m_NumStrongReferences.fetch_add(-1) - 1;
     }
 
     virtual ReferenceCounterValueType AddWeakRef() override final
     {
-        return Atomics::AtomicIncrement(m_lNumWeakReferences);
+        return m_NumWeakReferences.fetch_add(1) + 1;
     }
 
     virtual ReferenceCounterValueType ReleaseWeakRef() override final
     {
-        return Atomics::AtomicDecrement(m_lNumWeakReferences);
+        return m_NumWeakReferences.fetch_add(-1) - 1;
     }
 
     virtual void QueryObject(IObject** ppObject) override final
@@ -71,18 +70,18 @@ public:
 
     virtual ReferenceCounterValueType GetNumStrongRefs() const override final
     {
-        return m_lNumStrongReferences;
+        return m_NumStrongReferences.load();
     }
 
     virtual ReferenceCounterValueType GetNumWeakRefs() const override final
     {
-        return m_lNumWeakReferences;
+        return m_NumWeakReferences.load();
     }
 
 private:
-    ObjectType&         m_Object;
-    Atomics::AtomicLong m_lNumStrongReferences{0};
-    Atomics::AtomicLong m_lNumWeakReferences{0};
+    ObjectType&                            m_Object;
+    std::atomic<ReferenceCounterValueType> m_NumStrongReferences{0};
+    std::atomic<ReferenceCounterValueType> m_NumWeakReferences{0};
 };
 
 } // namespace Diligent

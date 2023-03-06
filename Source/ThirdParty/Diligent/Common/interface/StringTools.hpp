@@ -31,6 +31,7 @@
 #include <sstream>
 #include <locale>
 #include <algorithm>
+#include <vector>
 #include <cctype>
 
 #include "../../Platforms/Basic/interface/DebugUtilities.hpp"
@@ -40,52 +41,46 @@
 namespace Diligent
 {
 
+inline std::string NarrowString(const wchar_t* WideStr, size_t Len = 0)
+{
+    if (Len == 0)
+        Len = wcslen(WideStr);
+    else
+        VERIFY_EXPR(Len <= wcslen(WideStr));
+
+    std::string NarrowStr(Len, '\0');
+
+    const std::ctype<wchar_t>& ctfacet = std::use_facet<std::ctype<wchar_t>>(std::wstringstream().getloc());
+    for (size_t i = 0; i < Len; ++i)
+        NarrowStr[i] = ctfacet.narrow(WideStr[i], 0);
+
+    return NarrowStr;
+}
+
 inline std::string NarrowString(const std::wstring& WideStr)
 {
-    std::string NarrowStr;
-
-    const std::ctype<wchar_t>& ctfacet = std::use_facet<std::ctype<wchar_t>>(std::wstringstream().getloc());
-    for (std::wstring::const_iterator CurrWChar = WideStr.begin();
-         CurrWChar != WideStr.end();
-         CurrWChar++)
-        NarrowStr.push_back(ctfacet.narrow(*CurrWChar, 0));
-
-    return NarrowStr;
+    return NarrowString(WideStr.c_str(), WideStr.length());
 }
 
-inline std::string NarrowString(const wchar_t* WideStr)
+inline std::wstring WidenString(const char* Str, size_t Len = 0)
 {
-    std::string NarrowStr;
+    if (Len == 0)
+        Len = strlen(Str);
+    else
+        VERIFY_EXPR(Len <= strlen(Str));
+
+    std::wstring WideStr(Len, L'\0');
 
     const std::ctype<wchar_t>& ctfacet = std::use_facet<std::ctype<wchar_t>>(std::wstringstream().getloc());
-    for (auto CurrWChar = WideStr; *CurrWChar != 0; ++CurrWChar)
-        NarrowStr.push_back(ctfacet.narrow(*CurrWChar, 0));
-
-    return NarrowStr;
-}
-
-inline std::wstring WidenString(const char* Str)
-{
-    std::wstring WideStr;
-
-    const std::ctype<wchar_t>& ctfacet = std::use_facet<std::ctype<wchar_t>>(std::wstringstream().getloc());
-    for (auto CurrChar = Str; *CurrChar != 0; ++CurrChar)
-        WideStr.push_back(ctfacet.widen(*CurrChar));
+    for (size_t i = 0; i < Len; ++i)
+        WideStr[i] = ctfacet.widen(Str[i]);
 
     return WideStr;
 }
 
 inline std::wstring WidenString(const std::string& Str)
 {
-    std::wstring WideStr;
-
-    const std::ctype<wchar_t>& ctfacet = std::use_facet<std::ctype<wchar_t>>(std::wstringstream().getloc());
-    for (std::string::const_iterator CurrChar = Str.begin();
-         CurrChar != Str.end();
-         CurrChar++)
-        WideStr.push_back(ctfacet.widen(*CurrChar));
-
-    return WideStr;
+    return WidenString(Str.c_str(), Str.length());
 }
 
 inline int StrCmpNoCase(const char* Str1, const char* Str2, size_t NumChars)
@@ -202,13 +197,13 @@ inline size_t CountFloatNumberChars(const char* Str)
 /// \note   This function is used to split long messages on Android to avoid
 ///         trunction in logcat.
 template <typename IterType, typename HandlerType>
-void SplitString(IterType Start, IterType End, size_t MaxChunkLen, size_t NewLineSearchLen, HandlerType Handler)
+void SplitLongString(IterType Start, IterType End, size_t MaxChunkLen, size_t NewLineSearchLen, HandlerType&& Handler)
 {
     // NB: do not use debug macros to avoid infinite recursion!
 
     if (MaxChunkLen == 0)
         MaxChunkLen = 32;
-    while (Start < End)
+    while (Start != End)
     {
         auto ChunkEnd = End;
         if (static_cast<size_t>(ChunkEnd - Start) > MaxChunkLen)
@@ -227,6 +222,47 @@ void SplitString(IterType Start, IterType End, size_t MaxChunkLen, size_t NewLin
         Handler(Start, ChunkEnd);
         Start = ChunkEnd;
     }
+}
+
+
+/// Splits string [Start, End) into chunks separated by Delimiters.
+/// Ignores all leading and trailing delimiters.
+/// For each chunk, calls the Handler.
+template <typename IterType, typename HandlerType>
+void SplitString(IterType Start, IterType End, const char* Delimiters, HandlerType&& Handler)
+{
+    if (Delimiters == nullptr)
+        Delimiters = " \t\r\n";
+
+    auto Pos = Start;
+    while (Pos != End)
+    {
+        while (Pos != End && strchr(Delimiters, *Pos) != nullptr)
+            ++Pos;
+        if (Pos == End)
+            break;
+
+        auto SubstrStart = Pos;
+        while (Pos != End && strchr(Delimiters, *Pos) == nullptr)
+            ++Pos;
+
+        Handler(SubstrStart, Pos);
+    }
+}
+
+
+/// Splits string [Start, End) into chunks separated by Delimiters and returns them as vector of strings.
+/// Ignores all leading and trailing delimiters.
+template <typename IterType>
+std::vector<std::string> SplitString(IterType Start, IterType End, const char* Delimiters = nullptr)
+{
+    std::vector<std::string> Strings;
+    SplitString(Start, End, Delimiters,
+                [&Strings](IterType Start, IterType End) //
+                {
+                    Strings.emplace_back(Start, End);
+                });
+    return Strings;
 }
 
 } // namespace Diligent

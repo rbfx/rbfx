@@ -40,19 +40,34 @@ void AppleDebug::AssertionFailed(const Char *Message, const char *Function, cons
     raise( SIGTRAP );
 };
 
-void AppleDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity, const Char *Message, const char *Function, const char *File, int Line)
+void AppleDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                                    const Char*            Message,
+                                    const char*            Function,
+                                    const char*            File,
+                                    int                    Line,
+                                    TextColor              Color)
 {
     auto msg = FormatDebugMessage(Severity, Message, Function, File, Line);
+    const auto* ColorCode = TextColorToTextColorCode(Severity, Color);
+    printf("%s%s%s\n", ColorCode, msg.c_str(), TextColorCode::Default);
     // NSLog truncates the log at 1024 symbols
-    printf("%s\n", msg.c_str());
     //NSLog(@"%s", str.c_str());
 }
 
 void DebugAssertionFailed(const Char* Message, const char* Function, const char* File, int Line)
 {
-    AppleDebug :: AssertionFailed( Message, Function, File, Line );
+    AppleDebug::AssertionFailed( Message, Function, File, Line );
 }
 
-DebugMessageCallbackType DebugMessageCallback = AppleDebug::OutputDebugMessage;
+static void OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                               const Char*            Message,
+                               const char*            Function,
+                               const char*            File,
+                               int                    Line)
+{
+    return AppleDebug::OutputDebugMessage(Severity, Message, Function, File, Line, TextColor::Auto);
+}
+
+DebugMessageCallbackType DebugMessageCallback = OutputDebugMessage;
 
 } // namespace Diligent

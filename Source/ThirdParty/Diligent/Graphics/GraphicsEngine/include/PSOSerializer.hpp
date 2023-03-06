@@ -35,7 +35,7 @@
 #include "DynamicLinearAllocator.hpp"
 
 #include "PipelineResourceSignatureBase.hpp"
-#include "DeviceObjectArchiveBase.hpp"
+#include "DeviceObjectArchive.hpp"
 
 namespace Diligent
 {
@@ -46,42 +46,42 @@ struct PSOSerializer
     template <typename T>
     using ConstQual = typename Serializer<Mode>::template ConstQual<T>;
 
-    using TPRSNames            = DeviceObjectArchiveBase::TPRSNames;
-    using ShaderIndexArray     = DeviceObjectArchiveBase::ShaderIndexArray;
-    using SerializedPSOAuxData = DeviceObjectArchiveBase::SerializedPSOAuxData;
+    using TPRSNames            = DeviceObjectArchive::TPRSNames;
+    using ShaderIndexArray     = DeviceObjectArchive::ShaderIndexArray;
+    using SerializedPSOAuxData = DeviceObjectArchive::SerializedPSOAuxData;
 
-    static void SerializeCreateInfo(Serializer<Mode>&                   Ser,
+    static bool SerializeCreateInfo(Serializer<Mode>&                   Ser,
                                     ConstQual<PipelineStateCreateInfo>& CreateInfo,
                                     ConstQual<TPRSNames>&               PRSNames,
                                     DynamicLinearAllocator*             Allocator);
 
-    static void SerializeCreateInfo(Serializer<Mode>&                           Ser,
+    static bool SerializeCreateInfo(Serializer<Mode>&                           Ser,
                                     ConstQual<GraphicsPipelineStateCreateInfo>& CreateInfo,
                                     ConstQual<TPRSNames>&                       PRSNames,
                                     DynamicLinearAllocator*                     Allocator,
                                     ConstQual<const char*>&                     RenderPassName);
 
-    static void SerializeCreateInfo(Serializer<Mode>&                          Ser,
+    static bool SerializeCreateInfo(Serializer<Mode>&                          Ser,
                                     ConstQual<ComputePipelineStateCreateInfo>& CreateInfo,
                                     ConstQual<TPRSNames>&                      PRSNames,
                                     DynamicLinearAllocator*                    Allocator);
 
-    static void SerializeCreateInfo(Serializer<Mode>&                       Ser,
+    static bool SerializeCreateInfo(Serializer<Mode>&                       Ser,
                                     ConstQual<TilePipelineStateCreateInfo>& CreateInfo,
                                     ConstQual<TPRSNames>&                   PRSNames,
                                     DynamicLinearAllocator*                 Allocator);
 
-    static void SerializeCreateInfo(Serializer<Mode>&                                         Ser,
+    static bool SerializeCreateInfo(Serializer<Mode>&                                         Ser,
                                     ConstQual<RayTracingPipelineStateCreateInfo>&             CreateInfo,
                                     ConstQual<TPRSNames>&                                     PRSNames,
                                     DynamicLinearAllocator*                                   Allocator,
                                     const std::function<void(Uint32&, ConstQual<IShader*>&)>& ShaderToIndex);
 
-    static void SerializeShaderIndices(Serializer<Mode>&            Ser,
+    static bool SerializeShaderIndices(Serializer<Mode>&            Ser,
                                        ConstQual<ShaderIndexArray>& Shaders,
                                        DynamicLinearAllocator*      Allocator);
 
-    static void SerializeAuxData(Serializer<Mode>&                Ser,
+    static bool SerializeAuxData(Serializer<Mode>&                Ser,
                                  ConstQual<SerializedPSOAuxData>& AuxData,
                                  DynamicLinearAllocator*          Allocator);
 };
@@ -92,11 +92,11 @@ struct PRSSerializer
     template <typename T>
     using ConstQual = typename Serializer<Mode>::template ConstQual<T>;
 
-    static void SerializeDesc(Serializer<Mode>&                         Ser,
+    static bool SerializeDesc(Serializer<Mode>&                         Ser,
                               ConstQual<PipelineResourceSignatureDesc>& Desc,
                               DynamicLinearAllocator*                   Allocator);
 
-    static void SerializeInternalData(Serializer<Mode>&                                 Ser,
+    static bool SerializeInternalData(Serializer<Mode>&                                 Ser,
                                       ConstQual<PipelineResourceSignatureInternalData>& InternalData,
                                       DynamicLinearAllocator*                           Allocator);
 };
@@ -107,7 +107,7 @@ struct RPSerializer
     template <typename T>
     using ConstQual = typename Serializer<Mode>::template ConstQual<T>;
 
-    static void SerializeDesc(Serializer<Mode>&          Ser,
+    static bool SerializeDesc(Serializer<Mode>&          Ser,
                               ConstQual<RenderPassDesc>& RPDesc,
                               DynamicLinearAllocator*    Allocator);
 };
@@ -118,11 +118,11 @@ struct ShaderSerializer
     template <typename T>
     using ConstQual = typename Serializer<Mode>::template ConstQual<T>;
 
-    static void SerializeCI(Serializer<Mode>&            Ser,
+    static bool SerializeCI(Serializer<Mode>&            Ser,
                             ConstQual<ShaderCreateInfo>& CI);
 
 private:
-    static void SerializeBytecodeOrSource(Serializer<Mode>&            Ser,
+    static bool SerializeBytecodeOrSource(Serializer<Mode>&            Ser,
                                           ConstQual<ShaderCreateInfo>& CI);
 };
 

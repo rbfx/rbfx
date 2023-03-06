@@ -404,6 +404,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             EXPECT_EQ(tex2D_Static, pTestPSO->GetStaticVariableByName(SHADER_TYPE_VERTEX, ResDesc.Name));
             tex2D_Static->Set(pSRVs[0]);
             EXPECT_EQ(tex2D_Static->Get(), pSRVs[0]);
+
+            tex2D_Static->Set(pSRVs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_Static->Get(), pSRVs[1]);
+            tex2D_Static->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_Static->Get(), nullptr);
+
+            tex2D_Static->Set(pSRVs[0]);
+            EXPECT_EQ(tex2D_Static->Get(), pSRVs[0]);
         }
 
         {
@@ -421,6 +429,11 @@ TEST(ShaderResourceLayout, VariableAccess)
             tex2D_StaticArr->SetArray(pSRVs, 0, 2);
             EXPECT_EQ(tex2D_StaticArr->Get(0), pSRVs[0]);
             EXPECT_EQ(tex2D_StaticArr->Get(1), pSRVs[1]);
+
+            tex2D_StaticArr->SetArray(pSRVs + 1, 0, 1, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_StaticArr->Get(0), pSRVs[1]);
+            tex2D_StaticArr->SetArray(pSRVs, 0, 1, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_StaticArr->Get(0), pSRVs[0]);
         }
 
         {
@@ -435,6 +448,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             UniformBuff_Stat->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(UniformBuff_Stat, pTestPSO->GetStaticVariableByName(SHADER_TYPE_VERTEX, ResDesc.Name));
+            UniformBuff_Stat->Set(pUBs[0]);
+            EXPECT_EQ(UniformBuff_Stat->Get(), pUBs[0]);
+
+            UniformBuff_Stat->Set(pUBs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(UniformBuff_Stat->Get(), pUBs[1]);
+            UniformBuff_Stat->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(UniformBuff_Stat->Get(), nullptr);
+
             UniformBuff_Stat->Set(pUBs[0]);
             EXPECT_EQ(UniformBuff_Stat->Get(), pUBs[0]);
         }
@@ -457,6 +478,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             Buffer_Static->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(Buffer_Static, pTestPSO->GetStaticVariableByName(SHADER_TYPE_VERTEX, ResDesc.Name));
+            Buffer_Static->Set(pFormattedBuffSRV);
+            EXPECT_EQ(Buffer_Static->Get(), pFormattedBuffSRV);
+
+            Buffer_Static->Set(pFormattedBuffSRVs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(Buffer_Static->Get(), pFormattedBuffSRVs[1]);
+            Buffer_Static->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(Buffer_Static->Get(), nullptr);
+
             Buffer_Static->Set(pFormattedBuffSRV);
             EXPECT_EQ(Buffer_Static->Get(), pFormattedBuffSRV);
         }
@@ -520,6 +549,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             EXPECT_EQ(tex2D_Static, pTestPSO->GetStaticVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
             tex2D_Static->Set(pSRVs[0]);
             EXPECT_EQ(tex2D_Static->Get(), pSRVs[0]);
+
+            tex2D_Static->Set(pSRVs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_Static->Get(), pSRVs[1]);
+            tex2D_Static->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_Static->Get(), nullptr);
+
+            tex2D_Static->Set(pSRVs[0]);
+            EXPECT_EQ(tex2D_Static->Get(), pSRVs[0]);
         }
 
         {
@@ -550,6 +587,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             UniformBuff_Stat->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(UniformBuff_Stat, pTestPSO->GetStaticVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
+            UniformBuff_Stat->Set(pUBs[0]);
+            EXPECT_EQ(UniformBuff_Stat->Get(), pUBs[0]);
+
+            UniformBuff_Stat->Set(pUBs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(UniformBuff_Stat->Get(), pUBs[1]);
+            UniformBuff_Stat->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(UniformBuff_Stat->Get(), nullptr);
+
             UniformBuff_Stat->Set(pUBs[0]);
             EXPECT_EQ(UniformBuff_Stat->Get(), pUBs[0]);
         }
@@ -599,6 +644,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             EXPECT_EQ(rwtex2D_Static, pTestPSO->GetStaticVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
             rwtex2D_Static->Set(pTexUAVs[0]);
             EXPECT_EQ(rwtex2D_Static->Get(), pTexUAVs[0]);
+
+            rwtex2D_Static->Set(pTexUAVs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(rwtex2D_Static->Get(), pTexUAVs[1]);
+            rwtex2D_Static->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(rwtex2D_Static->Get(), nullptr);
+
+            rwtex2D_Static->Set(pTexUAVs[0]);
+            EXPECT_EQ(rwtex2D_Static->Get(), pTexUAVs[0]);
         }
 
 
@@ -620,6 +673,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             rwBuff_Static->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(rwBuff_Static, pTestPSO->GetStaticVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
+            rwBuff_Static->Set(spRawBuffUAV[0]);
+            EXPECT_EQ(rwBuff_Static->Get(), spRawBuffUAV[0].RawPtr());
+
+            rwBuff_Static->Set(spRawBuffUAV[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(rwBuff_Static->Get(), spRawBuffUAV[1].RawPtr());
+            rwBuff_Static->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(rwBuff_Static->Get(), nullptr);
+
             rwBuff_Static->Set(spRawBuffUAV[0]);
             EXPECT_EQ(rwBuff_Static->Get(), spRawBuffUAV[0].RawPtr());
         }
@@ -697,6 +758,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             EXPECT_EQ(tex2D_Mut, pSRB->GetVariableByName(SHADER_TYPE_VERTEX, ResDesc.Name));
             tex2D_Mut->Set(pSRVs[0]);
             EXPECT_EQ(tex2D_Mut->Get(), pSRVs[0]);
+
+            tex2D_Mut->Set(pSRVs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_Mut->Get(), pSRVs[1]);
+            tex2D_Mut->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_Mut->Get(), nullptr);
+
+            tex2D_Mut->Set(pSRVs[0]);
+            EXPECT_EQ(tex2D_Mut->Get(), pSRVs[0]);
         }
 
         {
@@ -763,6 +832,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             EXPECT_EQ(UniformBuff_Mut, pSRB->GetVariableByName(SHADER_TYPE_VERTEX, ResDesc.Name));
             UniformBuff_Mut->Set(pUBs[0]);
             EXPECT_EQ(UniformBuff_Mut->Get(), pUBs[0]);
+
+            UniformBuff_Mut->Set(pUBs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(UniformBuff_Mut->Get(), pUBs[1]);
+            UniformBuff_Mut->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(UniformBuff_Mut->Get(), nullptr);
+
+            UniformBuff_Mut->Set(pUBs[0]);
+            EXPECT_EQ(UniformBuff_Mut->Get(), pUBs[0]);
         }
 
         {
@@ -787,6 +864,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             Buffer_Mut->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(Buffer_Mut, pSRB->GetVariableByName(SHADER_TYPE_VERTEX, ResDesc.Name));
+            Buffer_Mut->Set(pFormattedBuffSRV);
+            EXPECT_EQ(Buffer_Mut->Get(0), pFormattedBuffSRV);
+
+            Buffer_Mut->Set(pFormattedBuffSRVs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(Buffer_Mut->Get(0), pFormattedBuffSRVs[1]);
+            Buffer_Mut->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(Buffer_Mut->Get(0), nullptr);
+
             Buffer_Mut->Set(pFormattedBuffSRV);
             EXPECT_EQ(Buffer_Mut->Get(0), pFormattedBuffSRV);
         }
@@ -855,6 +940,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             tex2D_Mut->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(tex2D_Mut, pSRB->GetVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
+            tex2D_Mut->Set(pRWTexSRVs[2]);
+            EXPECT_EQ(tex2D_Mut->Get(0), pRWTexSRVs[2]);
+
+            tex2D_Mut->Set(pRWTexSRVs[3], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_Mut->Get(0), pRWTexSRVs[3]);
+            tex2D_Mut->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(tex2D_Mut->Get(0), nullptr);
+
             tex2D_Mut->Set(pRWTexSRVs[4]);
             EXPECT_EQ(tex2D_Mut->Get(0), pRWTexSRVs[4]);
         }
@@ -927,6 +1020,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             EXPECT_EQ(UniformBuff_Mut, pSRB->GetVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
             UniformBuff_Mut->Set(pUBs[0]);
             EXPECT_EQ(UniformBuff_Mut->Get(0), pUBs[0]);
+
+            UniformBuff_Mut->Set(pUBs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(UniformBuff_Mut->Get(), pUBs[1]);
+            UniformBuff_Mut->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(UniformBuff_Mut->Get(), nullptr);
+
+            UniformBuff_Mut->Set(pUBs[0]);
+            EXPECT_EQ(UniformBuff_Mut->Get(), pUBs[0]);
         }
 
         {
@@ -951,6 +1052,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             Buffer_Mut->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(Buffer_Mut, pSRB->GetVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
+            Buffer_Mut->Set(spRawBuffSRVs[1]);
+            EXPECT_EQ(Buffer_Mut->Get(0), spRawBuffSRVs[1].RawPtr());
+
+            Buffer_Mut->Set(spRawBuffSRVs[0], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(Buffer_Mut->Get(0), spRawBuffSRVs[0].RawPtr());
+            Buffer_Mut->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(Buffer_Mut->Get(0), nullptr);
+
             Buffer_Mut->Set(spRawBuffSRVs[1]);
             EXPECT_EQ(Buffer_Mut->Get(0), spRawBuffSRVs[1].RawPtr());
         }
@@ -1003,6 +1112,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             rwtex2D_Mut->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(rwtex2D_Mut, pSRB->GetVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
+            rwtex2D_Mut->Set(pTexUAVs[0]);
+            EXPECT_EQ(rwtex2D_Mut->Get(0), pTexUAVs[0]);
+
+            rwtex2D_Mut->Set(pTexUAVs[1], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(rwtex2D_Mut->Get(0), pTexUAVs[1]);
+            rwtex2D_Mut->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(rwtex2D_Mut->Get(0), nullptr);
+
             rwtex2D_Mut->Set(pTexUAVs[2]);
             EXPECT_EQ(rwtex2D_Mut->Get(0), pTexUAVs[2]);
         }
@@ -1029,6 +1146,14 @@ TEST(ShaderResourceLayout, VariableAccess)
             rwBuff_Mut->GetResourceDesc(ResDesc);
             EXPECT_EQ(ResDesc.ArraySize, 1u);
             EXPECT_EQ(rwBuff_Mut, pSRB->GetVariableByName(SHADER_TYPE_PIXEL, ResDesc.Name));
+            rwBuff_Mut->Set(pFormattedBuffUAV[1]);
+            EXPECT_EQ(rwBuff_Mut->Get(0), pFormattedBuffUAV[1]);
+
+            rwBuff_Mut->Set(pFormattedBuffUAV[0], SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(rwBuff_Mut->Get(0), pFormattedBuffUAV[0]);
+            rwBuff_Mut->Set(nullptr, SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            EXPECT_EQ(rwBuff_Mut->Get(0), nullptr);
+
             rwBuff_Mut->Set(pFormattedBuffUAV[1]);
             EXPECT_EQ(rwBuff_Mut->Get(0), pFormattedBuffUAV[1]);
         }

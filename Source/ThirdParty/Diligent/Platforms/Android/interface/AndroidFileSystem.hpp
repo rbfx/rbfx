@@ -89,7 +89,6 @@ public:
 
 
     static AndroidFile* OpenFile(const FileOpenAttribs& OpenAttribs);
-    static inline Char  GetSlashSymbol() { return '/'; }
 
     static bool FileExists(const Char* strFilePath);
     static bool PathExists(const Char* strPath);

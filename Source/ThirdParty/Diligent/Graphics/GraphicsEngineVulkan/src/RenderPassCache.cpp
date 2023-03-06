@@ -230,7 +230,11 @@ RenderPassVkImpl* RenderPassCache::GetRenderPass(const RenderPassCacheKey& Key)
 
         RefCntAutoPtr<RenderPassVkImpl> pRenderPass;
         m_DeviceVkImpl.CreateRenderPass(RPDesc, pRenderPass.RawDblPtr<IRenderPass>(), /* IsDeviceInternal = */ true);
-        VERIFY_EXPR(pRenderPass != nullptr);
+        if (pRenderPass == nullptr)
+        {
+            UNEXPECTED("Failed to create render pass");
+            return nullptr;
+        }
         it = m_Cache.emplace(Key, std::move(pRenderPass)).first;
     }
 

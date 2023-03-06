@@ -32,7 +32,6 @@
 
 #include <vector>
 
-#include "Atomics.hpp"
 #include "ShaderResourceVariable.h"
 #include "PipelineState.h"
 #include "StringTools.hpp"
@@ -127,24 +126,28 @@ struct BindResourceInfo
 {
     IDeviceObject* const pObject;
 
+    const SET_SHADER_RESOURCE_FLAGS Flags;
+
     const Uint32 ArrayIndex;
     const Uint64 BufferBaseOffset;
     const Uint64 BufferRangeSize;
 
-    BindResourceInfo(Uint32         _ArrayIndex,
-                     IDeviceObject* _pObject,
-                     Uint64         _BufferBaseOffset = 0,
-                     Uint64         _BufferRangeSize  = 0) noexcept :
+    BindResourceInfo(Uint32                    _ArrayIndex,
+                     IDeviceObject*            _pObject,
+                     SET_SHADER_RESOURCE_FLAGS _Flags,
+                     Uint64                    _BufferBaseOffset = 0,
+                     Uint64                    _BufferRangeSize  = 0) noexcept :
         // clang-format off
         pObject         {_pObject},
+        Flags           {_Flags},
         ArrayIndex      {_ArrayIndex},
         BufferBaseOffset{_BufferBaseOffset},
         BufferRangeSize {_BufferRangeSize}
     // clang-format on
     {}
 
-    explicit BindResourceInfo(IDeviceObject* _pObject) noexcept :
-        BindResourceInfo{0, _pObject}
+    explicit BindResourceInfo(IDeviceObject* _pObject, SET_SHADER_RESOURCE_FLAGS _Flags) noexcept :
+        BindResourceInfo{0, _pObject, _Flags}
     {}
 };
 
@@ -176,7 +179,9 @@ bool VerifyResourceBinding(const char*                 ExpectedResourceTypeName,
         return false;
     }
 
-    if (ResDesc.VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC && pCachedObject != nullptr && pCachedObject != pResourceImpl)
+    if (ResDesc.VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC &&
+        (BindInfo.Flags & SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE) == 0 &&
+        pCachedObject != nullptr && pCachedObject != pResourceImpl)
     {
         auto VarTypeStr = GetShaderVariableTypeLiteralName(ResDesc.VarType);
 
@@ -187,7 +192,7 @@ bool VerifyResourceBinding(const char*                 ExpectedResourceTypeName,
         {
             ss << " defined by signature '" << SignatureName << '\'';
         }
-        ss << ". Attempting to bind ";
+        ss << ". Overwriting the binding with ";
         if (pResourceImpl != nullptr)
         {
             ss << "another resource ('" << pResourceImpl->GetDesc().Name << "')";
@@ -196,12 +201,18 @@ bool VerifyResourceBinding(const char*                 ExpectedResourceTypeName,
         {
             ss << "null";
         }
-        ss << " is an error and may cause unpredicted behavior.";
+        ss << " is disallowed by default.";
 
         if (ResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_STATIC)
-            ss << " Label the variable as mutable and use another shader resource binding instance, or label the variable as dynamic.";
+        {
+            ss << " If this is intended, use the SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE flag. Otherwise,"
+               << " label the variable as mutable and use another shader resource binding instance, or label the variable as dynamic.";
+        }
         else if (ResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE)
-            ss << " Use another shader resource binding instance or label the variable as dynamic.";
+        {
+            ss << " If this is intended and you ensured proper synchronization, use the SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE flag. Otherwise,"
+               << " use another shader resource binding instance or label the variable as dynamic.";
+        }
 
         RESOURCE_VALIDATION_FAILURE(ss.str());
 
@@ -640,12 +651,12 @@ struct ShaderVariableBase : public ResourceVariableBaseInterface
         }
     }
 
-    virtual Atomics::Long DILIGENT_CALL_TYPE AddRef() override final
+    virtual ReferenceCounterValueType DILIGENT_CALL_TYPE AddRef() override final
     {
         return m_ParentManager.GetOwner().AddRef();
     }
 
-    virtual Atomics::Long DILIGENT_CALL_TYPE Release() override final
+    virtual ReferenceCounterValueType DILIGENT_CALL_TYPE Release() override final
     {
         return m_ParentManager.GetOwner().Release();
     }
@@ -655,14 +666,15 @@ struct ShaderVariableBase : public ResourceVariableBaseInterface
         return m_ParentManager.GetOwner().GetReferenceCounters();
     }
 
-    virtual void DILIGENT_CALL_TYPE Set(IDeviceObject* pObject) override final
+    virtual void DILIGENT_CALL_TYPE Set(IDeviceObject* pObject, SET_SHADER_RESOURCE_FLAGS Flags) override final
     {
-        static_cast<ThisImplType*>(this)->BindResource(BindResourceInfo{pObject});
+        static_cast<ThisImplType*>(this)->BindResource(BindResourceInfo{pObject, Flags});
     }
 
-    virtual void DILIGENT_CALL_TYPE SetArray(IDeviceObject* const* ppObjects,
-                                             Uint32                FirstElement,
-                                             Uint32                NumElements) override final
+    virtual void DILIGENT_CALL_TYPE SetArray(IDeviceObject* const*     ppObjects,
+                                             Uint32                    FirstElement,
+                                             Uint32                    NumElements,
+                                             SET_SHADER_RESOURCE_FLAGS Flags) override final
     {
         const auto& Desc = GetDesc();
 
@@ -671,16 +683,17 @@ struct ShaderVariableBase : public ResourceVariableBaseInterface
                       FirstElement + NumElements - 1, ") is out of array bounds 0 .. ", Desc.ArraySize - 1);
 
         for (Uint32 elem = 0; elem < NumElements; ++elem)
-            static_cast<ThisImplType*>(this)->BindResource(BindResourceInfo{FirstElement + elem, ppObjects[elem]});
+            static_cast<ThisImplType*>(this)->BindResource(BindResourceInfo{FirstElement + elem, ppObjects[elem], Flags});
     }
 
-    virtual void DILIGENT_CALL_TYPE SetBufferRange(IDeviceObject* pObject,
-                                                   Uint64         Offset,
-                                                   Uint64         Size,
-                                                   Uint32         ArrayIndex) override
+    virtual void DILIGENT_CALL_TYPE SetBufferRange(IDeviceObject*            pObject,
+                                                   Uint64                    Offset,
+                                                   Uint64                    Size,
+                                                   Uint32                    ArrayIndex,
+                                                   SET_SHADER_RESOURCE_FLAGS Flags) override
     {
         DEV_CHECK_ERR(GetDesc().ResourceType == SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, "SetBufferRange() is only allowed for constant buffers.");
-        static_cast<ThisImplType*>(this)->BindResource(BindResourceInfo{ArrayIndex, pObject, Offset, Size});
+        static_cast<ThisImplType*>(this)->BindResource(BindResourceInfo{ArrayIndex, pObject, Flags, Offset, Size});
     }
 
     virtual void DILIGENT_CALL_TYPE SetBufferOffset(Uint32 Offset,
@@ -733,7 +746,10 @@ struct ShaderVariableBase : public ResourceVariableBaseInterface
 
             if (auto* pObj = pResourceMapping->GetResource(ResDesc.Name, ArrInd))
             {
-                pThis->BindResource(BindResourceInfo{ArrInd, pObj});
+                const auto SetResFlags = (Flags & BIND_SHADER_RESOURCES_ALLOW_OVERWRITE) != 0 ?
+                    SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE :
+                    SET_SHADER_RESOURCE_FLAG_NONE;
+                pThis->BindResource(BindResourceInfo{ArrInd, pObj, SetResFlags});
             }
             else
             {

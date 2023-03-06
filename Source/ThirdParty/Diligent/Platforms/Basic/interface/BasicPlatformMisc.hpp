@@ -32,6 +32,16 @@
 namespace Diligent
 {
 
+enum class ThreadPriority
+{
+    Unknown,
+    Lowest,
+    BelowNormal,
+    Normal,
+    AboveNormal,
+    Highest
+};
+
 struct BasicPlatformMisc
 {
     template <typename Type>
@@ -84,6 +94,19 @@ struct BasicPlatformMisc
         return Val;
     }
 
+    template <typename Type>
+    static typename std::enable_if<sizeof(Type) == 8, Type>::type SwapBytes(Type Val)
+    {
+        SwapBytes64(reinterpret_cast<Uint64&>(Val));
+        return Val;
+    }
+
+    static ThreadPriority GetCurrentThreadPriority();
+
+    /// Sets the current thread priority and on success returns the previous priority.
+    /// On failure, returns ThreadPriority::Unknown.
+    static ThreadPriority SetCurrentThreadPriority(ThreadPriority Priority);
+
 private:
     static void SwapBytes16(Uint16& Val)
     {
@@ -93,6 +116,19 @@ private:
     static void SwapBytes32(Uint32& Val)
     {
         Val = (Val << 24u) | ((Val & 0xFF00u) << 8u) | ((Val & 0xFF0000u) >> 8u) | (Val >> 24u);
+    }
+
+    static void SwapBytes64(Uint64& Val)
+    {
+        Val = //             -7-6-5-4-3-2-1-0
+            ((Val & Uint64{0x00000000000000FF}) << Uint64{7 * 8}) |
+            ((Val & Uint64{0x000000000000FF00}) << Uint64{5 * 8}) |
+            ((Val & Uint64{0x0000000000FF0000}) << Uint64{3 * 8}) |
+            ((Val & Uint64{0x00000000FF000000}) << Uint64{1 * 8}) |
+            ((Val & Uint64{0x000000FF00000000}) >> Uint64{1 * 8}) |
+            ((Val & Uint64{0x0000FF0000000000}) >> Uint64{3 * 8}) |
+            ((Val & Uint64{0x00FF000000000000}) >> Uint64{5 * 8}) |
+            ((Val & Uint64{0xFF00000000000000}) >> Uint64{7 * 8});
     }
 };
 

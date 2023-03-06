@@ -328,6 +328,40 @@ OpFunctionEnd
   SinglePassRunAndCheck<IfConversion>(text, text, true, true);
 }
 
+TEST_F(IfConversionTest, DontFlatten) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%v2uint = OpTypeVector %uint 2
+%10 = OpConstantComposite %v2uint %uint_0 %uint_1
+%11 = OpConstantComposite %v2uint %uint_1 %uint_0
+%_ptr_Output_v2uint = OpTypePointer Output %v2uint
+%2 = OpVariable %_ptr_Output_v2uint Output
+%13 = OpTypeFunction %void
+%1 = OpFunction %void None %13
+%14 = OpLabel
+OpSelectionMerge %15 DontFlatten
+OpBranchConditional %true %16 %17
+%16 = OpLabel
+OpBranch %15
+%17 = OpLabel
+OpBranch %15
+%15 = OpLabel
+%18 = OpPhi %v2uint %10 %16 %11 %17
+OpStore %2 %18
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<IfConversion>(text, text, true, true);
+}
+
 TEST_F(IfConversionTest, LoopUntouched) {
   const std::string text = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -555,6 +589,33 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndMatch<IfConversion>(text, true);
+}
+
+TEST_F(IfConversionTest, MultipleEdgesFromSameBlock) {
+  // If a block has two out going edges that go to the same block, then there
+  // can be an OpPhi instruction with fewer entries than the number of incoming
+  // edges.  This must be handled.
+  const std::string text = R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main"
+OpExecutionMode %2 OriginUpperLeft
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%true_0 = OpConstantTrue %bool
+%2 = OpFunction %void None %4
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpBranchConditional %true_0 %9 %9
+%9 = OpLabel
+%10 = OpPhi %bool %true %8
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<IfConversion>(text, text, true, true);
 }
 
 }  // namespace

@@ -161,12 +161,16 @@ public:
         {
             return pSrvCbvUavHeap == rhs.pSrvCbvUavHeap && pSamplerHeap == rhs.pSamplerHeap;
         }
+        bool operator!=(const ShaderDescriptorHeaps& rhs) const
+        {
+            return !(*this == rhs);
+        }
         explicit operator bool() const
         {
             return pSrvCbvUavHeap != nullptr || pSamplerHeap != nullptr;
         }
     };
-    void SetDescriptorHeaps(ShaderDescriptorHeaps& Heaps);
+    void SetDescriptorHeaps(ShaderDescriptorHeaps Heaps);
 
     void ExecuteIndirect(ID3D12CommandSignature* pCmdSignature, Uint32 MaxCommandCount, ID3D12Resource* pArgsBuff, Uint64 ArgsOffset, ID3D12Resource* pCountBuff = nullptr, Uint64 CountOffset = 0)
     {
@@ -235,9 +239,14 @@ public:
     void PixSetMarker(const Char* Label, const float* pColor);
 #else
     void PixBeginEvent(const Char* Name, const float* pColor)
-    {}
+    {
+        LOG_WARNING_MESSAGE_ONCE("Diligent Engine was built without PIX support. Use DILIGENT_LOAD_PIX_EVENT_RUNTIME CMake option to enable it.");
+    }
     void PixEndEvent() {}
-    void PixSetMarker(const Char* Label, const float* pColor) {}
+    void PixSetMarker(const Char* Label, const float* pColor)
+    {
+        LOG_WARNING_MESSAGE_ONCE("Diligent Engine was built without PIX support. Use DILIGENT_LOAD_PIX_EVENT_RUNTIME CMake option to enable it.");
+    }
 #endif
 
 protected:
@@ -509,7 +518,7 @@ inline ComputeContext& CommandContext::AsComputeContext()
     return static_cast<ComputeContext&>(*this);
 }
 
-inline void CommandContext::SetDescriptorHeaps(ShaderDescriptorHeaps& Heaps)
+inline void CommandContext::SetDescriptorHeaps(ShaderDescriptorHeaps Heaps)
 {
 #ifdef DILIGENT_DEBUG
     VERIFY(Heaps.pSrvCbvUavHeap != nullptr || Heaps.pSamplerHeap != nullptr, "At least one heap is expected to be set");
@@ -517,7 +526,16 @@ inline void CommandContext::SetDescriptorHeaps(ShaderDescriptorHeaps& Heaps)
     VERIFY(Heaps.pSamplerHeap == nullptr || Heaps.pSamplerHeap->GetDesc().Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, "Invalid heap type provided in pSamplerHeap");
 #endif
 
-    if (!(Heaps == m_BoundDescriptorHeaps))
+    // NB: when multiple signatures/SRBs are used, SetDescriptorHeaps()
+    //     is called for each SRB. There are only two global GPU descriptor
+    //     heaps, so there is no issue. However, we must not unset heaps used
+    //     by previous SRBs if current SRB does not use one of the heaps.
+    if (Heaps.pSrvCbvUavHeap == nullptr)
+        Heaps.pSrvCbvUavHeap = m_BoundDescriptorHeaps.pSrvCbvUavHeap;
+    if (Heaps.pSamplerHeap == nullptr)
+        Heaps.pSamplerHeap = m_BoundDescriptorHeaps.pSamplerHeap;
+
+    if (Heaps != m_BoundDescriptorHeaps)
     {
         m_BoundDescriptorHeaps = Heaps;
 

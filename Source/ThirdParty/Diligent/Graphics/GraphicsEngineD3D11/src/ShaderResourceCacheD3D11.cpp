@@ -106,27 +106,27 @@ void ShaderResourceCacheD3D11::Initialize(const D3D11ShaderResourceCounters&    
     size_t MemOffset = 0;
     for (Uint32 ShaderInd = 0; ShaderInd < NumShaderTypes; ++ShaderInd)
     {
-        const Uint32 Idx = FirstCBOffsetIdx + ShaderInd;
-        m_Offsets[Idx]   = static_cast<OffsetType>(MemOffset);
-        MemOffset        = AlignUp(MemOffset + (sizeof(CachedCB) + sizeof(ID3D11Buffer*)) * ResCount[D3D11_RESOURCE_RANGE_CBV][ShaderInd], MaxAlignment);
+        const auto Idx = FirstCBOffsetIdx + ShaderInd;
+        m_Offsets[Idx] = static_cast<OffsetType>(MemOffset);
+        MemOffset      = AlignUp(MemOffset + (sizeof(CachedCB) + sizeof(ID3D11Buffer*)) * ResCount[D3D11_RESOURCE_RANGE_CBV][ShaderInd], MaxAlignment);
     }
     for (Uint32 ShaderInd = 0; ShaderInd < NumShaderTypes; ++ShaderInd)
     {
-        const Uint32 Idx = FirstSRVOffsetIdx + ShaderInd;
-        m_Offsets[Idx]   = static_cast<OffsetType>(MemOffset);
-        MemOffset        = AlignUp(MemOffset + (sizeof(CachedResource) + sizeof(ID3D11ShaderResourceView*)) * ResCount[D3D11_RESOURCE_RANGE_SRV][ShaderInd], MaxAlignment);
+        const auto Idx = FirstSRVOffsetIdx + ShaderInd;
+        m_Offsets[Idx] = static_cast<OffsetType>(MemOffset);
+        MemOffset      = AlignUp(MemOffset + (sizeof(CachedResource) + sizeof(ID3D11ShaderResourceView*)) * ResCount[D3D11_RESOURCE_RANGE_SRV][ShaderInd], MaxAlignment);
     }
     for (Uint32 ShaderInd = 0; ShaderInd < NumShaderTypes; ++ShaderInd)
     {
-        const Uint32 Idx = FirstSamOffsetIdx + ShaderInd;
-        m_Offsets[Idx]   = static_cast<OffsetType>(MemOffset);
-        MemOffset        = AlignUp(MemOffset + (sizeof(CachedSampler) + sizeof(ID3D11SamplerState*)) * ResCount[D3D11_RESOURCE_RANGE_SAMPLER][ShaderInd], MaxAlignment);
+        const auto Idx = FirstSamOffsetIdx + ShaderInd;
+        m_Offsets[Idx] = static_cast<OffsetType>(MemOffset);
+        MemOffset      = AlignUp(MemOffset + (sizeof(CachedSampler) + sizeof(ID3D11SamplerState*)) * ResCount[D3D11_RESOURCE_RANGE_SAMPLER][ShaderInd], MaxAlignment);
     }
     for (Uint32 ShaderInd = 0; ShaderInd < NumShaderTypes; ++ShaderInd)
     {
-        const Uint32 Idx = FirstUAVOffsetIdx + ShaderInd;
-        m_Offsets[Idx]   = static_cast<OffsetType>(MemOffset);
-        MemOffset        = AlignUp(MemOffset + (sizeof(CachedResource) + sizeof(ID3D11UnorderedAccessView*)) * ResCount[D3D11_RESOURCE_RANGE_UAV][ShaderInd], MaxAlignment);
+        const auto Idx = FirstUAVOffsetIdx + ShaderInd;
+        m_Offsets[Idx] = static_cast<OffsetType>(MemOffset);
+        MemOffset      = AlignUp(MemOffset + (sizeof(CachedResource) + sizeof(ID3D11UnorderedAccessView*)) * ResCount[D3D11_RESOURCE_RANGE_UAV][ShaderInd], MaxAlignment);
     }
     m_Offsets[MaxOffsets - 1] = static_cast<OffsetType>(MemOffset);
 

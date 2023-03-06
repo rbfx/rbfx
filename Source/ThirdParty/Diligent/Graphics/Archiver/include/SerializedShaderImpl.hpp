@@ -35,7 +35,7 @@
 #include "RefCntAutoPtr.hpp"
 #include "STDAllocator.hpp"
 #include "Serializer.hpp"
-#include "DeviceObjectArchiveBase.hpp"
+#include "DeviceObjectArchive.hpp"
 
 namespace Diligent
 {
@@ -48,7 +48,7 @@ class SerializedShaderImpl final : public ObjectBase<IShader>
 {
 public:
     using TBase      = ObjectBase<IShader>;
-    using DeviceType = DeviceObjectArchiveBase::DeviceType;
+    using DeviceType = DeviceObjectArchive::DeviceType;
 
     SerializedShaderImpl(IReferenceCounters*      pRefCounters,
                          SerializationDeviceImpl* pDevice,

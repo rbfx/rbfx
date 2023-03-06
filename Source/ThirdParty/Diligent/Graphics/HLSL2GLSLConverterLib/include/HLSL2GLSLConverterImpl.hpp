@@ -35,7 +35,6 @@
 
 #include "HLSL2GLSLConverter.h"
 #include "ObjectBase.hpp"
-#include "HLSLKeywords.h"
 #include "Shader.h"
 #include "HashUtils.hpp"
 #include "HLSLKeywords.h"
@@ -61,7 +60,7 @@ struct FunctionStubHashKey
     {
     }
 
-    FunctionStubHashKey(FunctionStubHashKey&& Key) :
+    FunctionStubHashKey(FunctionStubHashKey&& Key) noexcept :
         Object      {std::move(Key.Object)  },
         Function    {std::move(Key.Function)},
         NumArguments{Key.NumArguments       }
@@ -199,7 +198,7 @@ private:
         ObjectsTypeHashType& operator = (ObjectsTypeHashType&)  = delete;
         // clang-format on
 
-        std::unordered_map<HashMapStringKey, HLSLObjectInfo, HashMapStringKey::Hasher> m;
+        std::unordered_map<HashMapStringKey, HLSLObjectInfo> m;
     };
 
     struct GLSLStubInfo
@@ -448,12 +447,24 @@ private:
         {
             enum class StorageQualifier : Int8
             {
-                Unknown = 0,
-                In      = 1,
-                Out     = 2,
-                InOut   = 3,
-                Ret     = 4
-            } storageQualifier;
+                Unknown,
+                In,
+                Out,
+                InOut,
+                Ret
+            } storageQualifier = StorageQualifier::Unknown;
+
+            enum class InterpolationQualifier : Int8
+            {
+                Default,
+                Linear,
+                Nointerpolation,
+                Noperspective,
+                Centroid,
+                Sample
+            } interpolationQualifier = InterpolationQualifier::Default;
+
+            bool SetInterpolationQualifier(TokenType tokenType);
 
             struct GSAttributes
             {
@@ -473,12 +484,8 @@ private:
                     Line      = 2,
                     Triangle  = 3
                 };
-                PrimitiveType PrimType;
-                StreamType    Stream;
-                GSAttributes() :
-                    PrimType{PrimitiveType::Undefined},
-                    Stream{StreamType::Undefined}
-                {}
+                PrimitiveType PrimType = PrimitiveType::Undefined;
+                StreamType    Stream   = StreamType::Undefined;
             } GSAttribs;
 
             struct HSAttributes
@@ -488,10 +495,7 @@ private:
                     Undefined   = 0,
                     InputPatch  = 1,
                     OutputPatch = 2
-                } PatchType;
-                HSAttributes() :
-                    PatchType{InOutPatchType::Undefined}
-                {}
+                } PatchType = InOutPatchType::Undefined;
             } HSAttribs;
 
             String ArraySize;
@@ -500,17 +504,15 @@ private:
             String Semantic;
 
             std::vector<ShaderParameterInfo> members;
-
-            ShaderParameterInfo() :
-                storageQualifier{StorageQualifier::Unknown}
-            {}
         };
         void ParseShaderParameter(TokenListType::iterator& Token,
                                   ShaderParameterInfo&     ParamInfo);
         void ProcessFunctionParameters(TokenListType::iterator&          Token,
                                        std::vector<ShaderParameterInfo>& Params,
                                        bool&                             bIsVoid);
-        bool RequiresFlatQualifier(const String& Type);
+
+        const char* GetInterpolationQualifier(const ShaderParameterInfo& ParamInfo) const;
+
         void ProcessFragmentShaderArguments(std::vector<ShaderParameterInfo>& Params,
                                             String&                           GlobalVariables,
                                             std::stringstream&                ReturnHandlerSS,
@@ -520,14 +522,14 @@ private:
                                   Char                                           Separator,
                                   const Char*                                    Prefix             = "",
                                   const Char*                                    SubstituteInstName = "",
-                                  const Char*                                    Index              = "");
+                                  const Char*                                    Index              = "") const;
 
         template <typename THandler>
         void ProcessScope(TokenListType::iterator& Token,
                           TokenListType::iterator  ScopeEnd,
                           TokenType                OpenParenType,
                           TokenType                ClosingParenType,
-                          THandler                 Handler);
+                          THandler&&               Handler);
 
         template <typename TArgHandler>
         void ProcessShaderArgument(const ShaderParameterInfo& Param,
@@ -548,8 +550,8 @@ private:
 
         void ProcessHullShaderConstantFunction(const Char* FuncName, bool& bTakesInputPatch);
 
-        void ProcessShaderAttributes(TokenListType::iterator&                                                TypeToken,
-                                     std::unordered_map<HashMapStringKey, String, HashMapStringKey::Hasher>& Attributes);
+        void ProcessShaderAttributes(TokenListType::iterator&                      TypeToken,
+                                     std::unordered_map<HashMapStringKey, String>& Attributes);
 
         void ProcessHullShaderArguments(TokenListType::iterator&          TypeToken,
                                         std::vector<ShaderParameterInfo>& Params,
@@ -581,7 +583,7 @@ private:
         TokenListType m_Tokens;
 
         // List of tokens defining structs
-        std::unordered_map<HashMapStringKey, TokenListType::iterator, HashMapStringKey::Hasher> m_StructDefinitions;
+        std::unordered_map<HashMapStringKey, TokenListType::iterator> m_StructDefinitions;
 
         // Stack of parsed objects, for every scope level.
         // There are currently only two levels:
@@ -603,13 +605,13 @@ private:
 
     // HLSL keyword->token info hash map
     // Example: "Texture2D" -> TokenInfo(TokenType::Texture2D, "Texture2D")
-    std::unordered_map<HashMapStringKey, TokenInfo, HashMapStringKey::Hasher> m_HLSLKeywords;
+    std::unordered_map<HashMapStringKey, TokenInfo> m_HLSLKeywords;
 
     // Set of all GLSL image types (image1D, uimage1D, iimage1D, image2D, ... )
-    std::unordered_set<HashMapStringKey, HashMapStringKey::Hasher> m_ImageTypes;
+    std::unordered_set<HashMapStringKey> m_ImageTypes;
 
     // Set of all HLSL atomic operations (InterlockedAdd, InterlockedOr, ...)
-    std::unordered_set<HashMapStringKey, HashMapStringKey::Hasher> m_AtomicOperations;
+    std::unordered_set<HashMapStringKey> m_AtomicOperations;
 
     // HLSL semantic -> glsl variable, for every shader stage and input/output type (in == 0, out == 1)
     // Example: [vertex, output] SV_Position -> gl_Position
@@ -618,7 +620,7 @@ private:
     static constexpr int OutVar          = 1;
     static constexpr int MaxShaderStages = 6; // Maximum supported shader stages: VS, GS, PS, DS, HS, CS
 
-    std::array<std::array<std::unordered_map<HashMapStringKey, String, HashMapStringKey::Hasher>, 2>, MaxShaderStages> m_HLSLSemanticToGLSLVar;
+    std::array<std::array<std::unordered_map<HashMapStringKey, String>, 2>, MaxShaderStages> m_HLSLSemanticToGLSLVar;
 };
 
 } // namespace Diligent

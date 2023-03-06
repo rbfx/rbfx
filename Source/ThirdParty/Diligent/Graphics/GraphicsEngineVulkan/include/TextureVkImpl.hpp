@@ -100,7 +100,6 @@ public:
 
 protected:
     void CreateViewInternal(const struct TextureViewDesc& ViewDesc, ITextureView** ppView, bool bIsDefaultView) override;
-    //void PrepareVkInitData(const TextureData &InitData, Uint32 NumSubresources, std::vector<Vk_SUBRESOURCE_DATA> &VkInitData);
 
     void InitializeTextureContent(const TextureData&          InitData,
                                   const TextureFormatAttribs& FmtAttribs,
@@ -115,7 +114,7 @@ protected:
     VulkanUtilities::ImageWrapper           m_VulkanImage;
     VulkanUtilities::BufferWrapper          m_StagingBuffer;
     VulkanUtilities::VulkanMemoryAllocation m_MemoryAllocation;
-    VkDeviceSize                            m_StagingDataAlignedOffset;
+    VkDeviceSize                            m_StagingDataAlignedOffset = 0;
 };
 
 VkImageCreateInfo TextureDescToVkImageCreateInfo(const TextureDesc& Desc, const RenderDeviceVkImpl* pDevice) noexcept;

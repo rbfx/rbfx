@@ -106,3 +106,8 @@
 #    error Unsupported platform
 
 #endif
+
+#if defined(_MSC_VER) || defined(__MINGW64__) || defined(__MINGW32__)
+// Use secure CRT functions such as strcpy_s, sscanf_s, etc.
+#    define DILIGENT_USE_SECURE_CRT 1
+#endif

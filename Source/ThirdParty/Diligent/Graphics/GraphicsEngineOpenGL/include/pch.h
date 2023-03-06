@@ -47,9 +47,9 @@
 #    include "GL/glew.h"
 
 #    include "WinHPreface.h"
-#    include <windows.h>
+// Glew includes <windows.h>
 #    include "GL/wglew.h"
-#    include <GL/gl.h>
+#    include <GL/GL.h>
 #    include "WinHPostface.h"
 
 #elif PLATFORM_LINUX

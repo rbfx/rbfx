@@ -27,35 +27,21 @@
 #include "pch.h"
 #include "RenderDeviceD3D11Impl.hpp"
 #include "DearchiverD3D11Impl.hpp"
-#include "DeviceObjectArchiveD3D11Impl.hpp"
+#include "DeviceObjectArchiveD3D11.hpp"
+#include "PipelineResourceSignatureD3D11Impl.hpp"
 
 namespace Diligent
 {
 
-DearchiverD3D11Impl::DearchiverD3D11Impl(IReferenceCounters* pRefCounters) noexcept :
-    TDearchiverBase{pRefCounters}
+DearchiverD3D11Impl::DearchiverD3D11Impl(IReferenceCounters*         pRefCounters,
+                                         const DearchiverCreateInfo& CI) noexcept :
+    TDearchiverBase{pRefCounters, CI}
 {
 }
 
-void DearchiverD3D11Impl::CreateDeviceObjectArchive(IArchive*              pSource,
-                                                    IDeviceObjectArchive** ppArchive) const
+RefCntAutoPtr<IPipelineResourceSignature> DearchiverD3D11Impl::UnpackResourceSignature(const ResourceSignatureUnpackInfo& DeArchiveInfo, bool IsImplicit)
 {
-    CreateDeviceObjectArchiveImpl<DeviceObjectArchiveD3D11Impl>(pSource, ppArchive);
-}
-
-void DearchiverD3D11Impl::UnpackPipelineState(const PipelineStateUnpackInfo& DeArchiveInfo, IPipelineState** ppPSO) const
-{
-    UnpackPipelineStateImpl<DeviceObjectArchiveD3D11Impl>(DeArchiveInfo, ppPSO);
-}
-
-void DearchiverD3D11Impl::UnpackResourceSignature(const ResourceSignatureUnpackInfo& DeArchiveInfo, IPipelineResourceSignature** ppSignature) const
-{
-    UnpackResourceSignatureImpl<DeviceObjectArchiveD3D11Impl>(DeArchiveInfo, ppSignature);
-}
-
-void DearchiverD3D11Impl::UnpackRenderPass(const RenderPassUnpackInfo& DeArchiveInfo, IRenderPass** ppRP) const
-{
-    UnpackRenderPassImpl<DeviceObjectArchiveD3D11Impl>(DeArchiveInfo, ppRP);
+    return DearchiverBase::UnpackResourceSignatureImpl<RenderDeviceD3D11Impl, PRSSerializerD3D11<SerializerMode::Read>>(DeArchiveInfo, IsImplicit);
 }
 
 } // namespace Diligent

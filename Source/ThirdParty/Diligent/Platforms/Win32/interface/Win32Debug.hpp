@@ -34,15 +34,17 @@ namespace Diligent
 
 struct WindowsDebug : public BasicPlatformDebug
 {
-    static void AssertionFailed(const Diligent::Char* Message,
-                                const char*           Function, // type of __FUNCTION__
-                                const char*           File,     // type of __FILE__
-                                int                   Line);
-    static void OutputDebugMessage(Diligent::DEBUG_MESSAGE_SEVERITY Severity,
-                                   const Diligent::Char*            Message,
-                                   const char*                      Function, // type of __FUNCTION__
-                                   const char*                      File,     // type of __FILE__
-                                   int                              Line);
+    static void AssertionFailed(const Char* Message,
+                                const char* Function, // type of __FUNCTION__
+                                const char* File,     // type of __FILE__
+                                int         Line);
+
+    static void OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                                   const Char*            Message,
+                                   const char*            Function, // type of __FUNCTION__
+                                   const char*            File,     // type of __FILE__
+                                   int                    Line,
+                                   TextColor              Color = TextColor::Auto);
 };
 
 } // namespace Diligent

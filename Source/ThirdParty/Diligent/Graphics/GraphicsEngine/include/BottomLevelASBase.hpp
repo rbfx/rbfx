@@ -54,7 +54,7 @@ struct BLASGeomIndex
         ActualIndex{_ActualIndex}
     {}
 };
-using BLASNameToIndex = std::unordered_map<HashMapStringKey, BLASGeomIndex, HashMapStringKey::Hasher>;
+using BLASNameToIndex = std::unordered_map<HashMapStringKey, BLASGeomIndex>;
 
 /// Validates bottom-level AS description and throws an exception in case of an error.
 void ValidateBottomLevelASDesc(const BottomLevelASDesc& Desc) noexcept(false);

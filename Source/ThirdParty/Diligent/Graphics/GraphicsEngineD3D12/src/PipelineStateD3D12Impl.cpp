@@ -767,7 +767,8 @@ PipelineStateD3D12Impl::PipelineStateD3D12Impl(IReferenceCounters*              
                 m_pd3d12PSO = pPSOCacheD3D12->LoadGraphicsPipeline(WName.c_str(), d3d12PSODesc);
             if (!m_pd3d12PSO)
             {
-                HRESULT hr = pd3d12Device->CreateGraphicsPipelineState(&d3d12PSODesc, IID_PPV_ARGS(&m_pd3d12PSO));
+                // Note: renderdoc frame capture fails if any interface but IID_ID3D12PipelineState is requested
+                HRESULT hr = pd3d12Device->CreateGraphicsPipelineState(&d3d12PSODesc, __uuidof(ID3D12PipelineState), IID_PPV_ARGS_Helper(&m_pd3d12PSO));
                 if (FAILED(hr))
                     LOG_ERROR_AND_THROW("Failed to create pipeline state");
 
@@ -853,8 +854,9 @@ PipelineStateD3D12Impl::PipelineStateD3D12Impl(IReferenceCounters*              
             streamDesc.SizeInBytes                   = sizeof(d3d12PSODesc);
             streamDesc.pPipelineStateSubobjectStream = &d3d12PSODesc;
 
-            auto*   device2 = pDeviceD3D12->GetD3D12Device2();
-            HRESULT hr      = device2->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&m_pd3d12PSO));
+            auto* pd3d12Device2 = pDeviceD3D12->GetD3D12Device2();
+            // Note: renderdoc frame capture fails if any interface but IID_ID3D12PipelineState is requested
+            HRESULT hr = pd3d12Device2->CreatePipelineState(&streamDesc, __uuidof(ID3D12PipelineState), IID_PPV_ARGS_Helper(&m_pd3d12PSO));
             if (FAILED(hr))
                 LOG_ERROR_AND_THROW("Failed to create pipeline state");
         }
@@ -916,7 +918,8 @@ PipelineStateD3D12Impl::PipelineStateD3D12Impl(IReferenceCounters*              
             m_pd3d12PSO = pPSOCacheD3D12->LoadComputePipeline(WName.c_str(), d3d12PSODesc);
         if (!m_pd3d12PSO)
         {
-            HRESULT hr = pd3d12Device->CreateComputePipelineState(&d3d12PSODesc, IID_PPV_ARGS(&m_pd3d12PSO));
+            // Note: renderdoc frame capture fails if any interface but IID_ID3D12PipelineState is requested
+            HRESULT hr = pd3d12Device->CreateComputePipelineState(&d3d12PSODesc, __uuidof(ID3D12PipelineState), IID_PPV_ARGS_Helper(&m_pd3d12PSO));
             if (FAILED(hr))
                 LOG_ERROR_AND_THROW("Failed to create pipeline state");
 
@@ -966,7 +969,7 @@ PipelineStateD3D12Impl::PipelineStateD3D12Impl(IReferenceCounters*              
         RTPipelineDesc.NumSubobjects           = static_cast<UINT>(Subobjects.size());
         RTPipelineDesc.pSubobjects             = Subobjects.data();
 
-        HRESULT hr = pd3d12Device->CreateStateObject(&RTPipelineDesc, IID_PPV_ARGS(&m_pd3d12PSO));
+        HRESULT hr = pd3d12Device->CreateStateObject(&RTPipelineDesc, __uuidof(ID3D12StateObject), IID_PPV_ARGS_Helper(&m_pd3d12PSO));
         if (FAILED(hr))
             LOG_ERROR_AND_THROW("Failed to create ray tracing state object");
 

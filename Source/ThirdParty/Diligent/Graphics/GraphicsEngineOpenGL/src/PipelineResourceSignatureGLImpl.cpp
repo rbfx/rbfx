@@ -179,14 +179,14 @@ void PipelineResourceSignatureGLImpl::CreateLayout(const bool IsSerialized)
             if (Range == BINDING_RANGE_UNIFORM_BUFFER && (ResDesc.Flags & PIPELINE_RESOURCE_FLAG_NO_DYNAMIC_BUFFERS) == 0)
             {
                 DEV_CHECK_ERR(size_t{CacheOffset} + ResDesc.ArraySize < sizeof(m_DynamicUBOMask) * 8, "Dynamic UBO index exceeds maximum representable bit position in the mask");
-                for (Uint32 elem = 0; elem < ResDesc.ArraySize; ++elem)
-                    m_DynamicUBOMask |= Uint64{1} << Uint64{CacheOffset + elem};
+                for (Uint64 elem = 0; elem < ResDesc.ArraySize; ++elem)
+                    m_DynamicUBOMask |= Uint64{1} << (Uint64{CacheOffset} + elem);
             }
             else if (Range == BINDING_RANGE_STORAGE_BUFFER && (ResDesc.Flags & PIPELINE_RESOURCE_FLAG_NO_DYNAMIC_BUFFERS) == 0)
             {
                 DEV_CHECK_ERR(size_t{CacheOffset} + ResDesc.ArraySize < sizeof(m_DynamicSSBOMask) * 8, "Dynamic SSBO index exceeds maximum representable bit position in the mask");
-                for (Uint32 elem = 0; elem < ResDesc.ArraySize; ++elem)
-                    m_DynamicSSBOMask |= Uint64{1} << Uint64{CacheOffset + elem};
+                for (Uint64 elem = 0; elem < ResDesc.ArraySize; ++elem)
+                    m_DynamicSSBOMask |= Uint64{1} << (Uint64{CacheOffset} + elem);
             }
 
             VERIFY(CacheOffset + ResDesc.ArraySize <= std::numeric_limits<TBindings::value_type>::max(), "Cache offset exceeds representable range");
@@ -225,6 +225,112 @@ void PipelineResourceSignatureGLImpl::Destruct()
     TPipelineResourceSignatureBase::Destruct();
 }
 
+namespace
+{
+
+inline void ApplyUBBindigs(GLuint glProg, const char* UBName, Uint32 BaseBinding, Uint32 ArraySize)
+{
+    const auto UniformBlockIndex = glGetUniformBlockIndex(glProg, UBName);
+    VERIFY(UniformBlockIndex != GL_INVALID_INDEX,
+           "Failed to find uniform buffer '", UBName,
+           "', which is unexpected as it is present in the list of program resources.");
+
+    for (Uint32 ArrInd = 0; ArrInd < ArraySize; ++ArrInd)
+    {
+        glUniformBlockBinding(glProg, UniformBlockIndex + ArrInd, BaseBinding + ArrInd);
+        CHECK_GL_ERROR("Failed to set binding point for uniform buffer '", UBName, '\'');
+    }
+}
+
+inline void ApplyTextureBindings(GLuint glProg, const char* TexName, Uint32 BaseBinding, Uint32 ArraySize)
+{
+    const auto UniformLocation = glGetUniformLocation(glProg, TexName);
+    VERIFY(UniformLocation >= 0, "Failed to find texture '", TexName,
+           "', which is unexpected as it is present in the list of program resources.");
+
+    for (Uint32 ArrInd = 0; ArrInd < ArraySize; ++ArrInd)
+    {
+        glUniform1i(UniformLocation + ArrInd, BaseBinding + ArrInd);
+        CHECK_GL_ERROR("Failed to set binding point for sampler uniform '", TexName, '\'');
+    }
+}
+
+#if GL_ARB_shader_image_load_store
+inline void ApplyImageBindings(GLuint glProg, const char* ImgName, Uint32 BaseBinding, Uint32 ArraySize)
+{
+    const auto UniformLocation = glGetUniformLocation(glProg, ImgName);
+    VERIFY(UniformLocation >= 0, "Failed to find image '", ImgName,
+           "', which is unexpected as it is present in the list of program resources.");
+
+    for (Uint32 ArrInd = 0; ArrInd < ArraySize; ++ArrInd)
+    {
+        // glUniform1i for image uniforms is not supported in at least GLES3.2.
+        // glProgramUniform1i is not available in GLES3.0
+        const Uint32 ImgBinding = BaseBinding + ArrInd;
+        glUniform1i(UniformLocation + ArrInd, ImgBinding);
+        if (glGetError() != GL_NO_ERROR)
+        {
+            if (ArraySize > 1)
+            {
+                LOG_WARNING_MESSAGE("Failed to set binding for image uniform '", ImgName, "'[", ArrInd,
+                                    "]. Expected binding: ", ImgBinding,
+                                    ". Make sure that this binding is explicitly assigned in shader source code."
+                                    " Note that if the source code is converted from HLSL and if images are only used"
+                                    " by a single shader stage, then bindings automatically assigned by HLSL->GLSL"
+                                    " converter will work fine.");
+            }
+            else
+            {
+                LOG_WARNING_MESSAGE("Failed to set binding for image uniform '", ImgName,
+                                    "'. Expected binding: ", ImgBinding,
+                                    ". Make sure that this binding is explicitly assigned in shader source code."
+                                    " Note that if the source code is converted from HLSL and if images are only used"
+                                    " by a single shader stage, then bindings automatically assigned by HLSL->GLSL"
+                                    " converter will work fine.");
+            }
+        }
+    }
+}
+#endif
+
+#if GL_ARB_shader_storage_buffer_object
+inline void ApplySSBOBindings(GLuint glProg, const char* SBName, Uint32 BaseBinding, Uint32 ArraySize)
+{
+    const auto SBIndex = glGetProgramResourceIndex(glProg, GL_SHADER_STORAGE_BLOCK, SBName);
+    VERIFY(SBIndex != GL_INVALID_INDEX, "Failed to find storage buffer '", SBName,
+           "', which is unexpected as it is present in the list of program resources.");
+
+    if (glShaderStorageBlockBinding)
+    {
+        for (Uint32 ArrInd = 0; ArrInd < ArraySize; ++ArrInd)
+        {
+            glShaderStorageBlockBinding(glProg, SBIndex + ArrInd, BaseBinding + ArrInd);
+            CHECK_GL_ERROR("glShaderStorageBlockBinding() failed");
+        }
+    }
+    else
+    {
+        const GLenum props[]                 = {GL_BUFFER_BINDING};
+        GLint        params[_countof(props)] = {};
+        glGetProgramResourceiv(glProg, GL_SHADER_STORAGE_BLOCK, SBIndex, _countof(props), props, _countof(params), nullptr, params);
+        CHECK_GL_ERROR("glGetProgramResourceiv() failed");
+
+        if (BaseBinding != static_cast<Uint32>(params[0]))
+        {
+            LOG_WARNING_MESSAGE("glShaderStorageBlockBinding is not available on this device and "
+                                "the engine is unable to automatically assign shader storage block binding for '",
+                                SBName, "' variable. Expected binding: ", BaseBinding, ", actual binding: ", params[0],
+                                ". Make sure that this binding is explicitly assigned in shader source code."
+                                " Note that if the source code is converted from HLSL and if storage blocks are only used"
+                                " by a single shader stage, then bindings automatically assigned by HLSL->GLSL"
+                                " converter will work fine.");
+        }
+    }
+}
+#endif
+
+} // namespace
+
 void PipelineResourceSignatureGLImpl::ApplyBindings(GLObjectWrappers::GLProgramObj& GLProgram,
                                                     const ShaderResourcesGL&        ProgResources,
                                                     GLContextState&                 State,
@@ -253,106 +359,25 @@ void PipelineResourceSignatureGLImpl::ApplyBindings(GLObjectWrappers::GLProgramO
         switch (Range)
         {
             case BINDING_RANGE_UNIFORM_BUFFER:
-            {
-                const auto UniformBlockIndex = glGetUniformBlockIndex(GLProgram, ResDesc.Name);
-                VERIFY(UniformBlockIndex != GL_INVALID_INDEX,
-                       "Failed to find uniform buffer '", ResDesc.Name,
-                       "', which is unexpected as it is present in the list of program resources.");
-
-                for (Uint32 ArrInd = 0; ArrInd < Attribs.ArraySize; ++ArrInd)
-                {
-                    glUniformBlockBinding(GLProgram, UniformBlockIndex + ArrInd, BindingIndex + ArrInd);
-                    CHECK_GL_ERROR("glUniformBlockBinding() failed");
-                }
+                ApplyUBBindigs(GLProgram, ResDesc.Name, BindingIndex, Attribs.ArraySize);
                 break;
-            }
+
             case BINDING_RANGE_TEXTURE:
-            {
-                const auto UniformLocation = glGetUniformLocation(GLProgram, ResDesc.Name);
-                VERIFY(UniformLocation >= 0, "Failed to find texture '", ResDesc.Name,
-                       "', which is unexpected as it is present in the list of program resources.");
-
-                for (Uint32 ArrInd = 0; ArrInd < Attribs.ArraySize; ++ArrInd)
-                {
-                    glUniform1i(UniformLocation + ArrInd, BindingIndex + ArrInd);
-                    CHECK_GL_ERROR("Failed to set binding point for sampler uniform '", ResDesc.Name, '\'');
-                }
+                ApplyTextureBindings(GLProgram, ResDesc.Name, BindingIndex, Attribs.ArraySize);
                 break;
-            }
+
 #if GL_ARB_shader_image_load_store
             case BINDING_RANGE_IMAGE:
-            {
-                const auto UniformLocation = glGetUniformLocation(GLProgram, ResDesc.Name);
-                VERIFY(UniformLocation >= 0, "Failed to find image '", ResDesc.Name,
-                       "', which is unexpected as it is present in the list of program resources.");
-
-                for (Uint32 ArrInd = 0; ArrInd < Attribs.ArraySize; ++ArrInd)
-                {
-                    // glUniform1i for image uniforms is not supported in at least GLES3.2.
-                    // glProgramUniform1i is not available in GLES3.0
-                    const Uint32 ImgBinding = BindingIndex + ArrInd;
-                    glUniform1i(UniformLocation + ArrInd, ImgBinding);
-                    if (glGetError() != GL_NO_ERROR)
-                    {
-                        if (Attribs.ArraySize > 1)
-                        {
-                            LOG_WARNING_MESSAGE("Failed to set binding for image uniform '", ResDesc.Name, "'[", ArrInd,
-                                                "]. Expected binding: ", ImgBinding,
-                                                ". Make sure that this binding is explicitly assigned in shader source code."
-                                                " Note that if the source code is converted from HLSL and if images are only used"
-                                                " by a single shader stage, then bindings automatically assigned by HLSL->GLSL"
-                                                " converter will work fine.");
-                        }
-                        else
-                        {
-                            LOG_WARNING_MESSAGE("Failed to set binding for image uniform '", ResDesc.Name,
-                                                "'. Expected binding: ", ImgBinding,
-                                                ". Make sure that this binding is explicitly assigned in shader source code."
-                                                " Note that if the source code is converted from HLSL and if images are only used"
-                                                " by a single shader stage, then bindings automatically assigned by HLSL->GLSL"
-                                                " converter will work fine.");
-                        }
-                    }
-                }
+                ApplyImageBindings(GLProgram, ResDesc.Name, BindingIndex, Attribs.ArraySize);
                 break;
-            }
 #endif
+
 #if GL_ARB_shader_storage_buffer_object
             case BINDING_RANGE_STORAGE_BUFFER:
-            {
-                const auto SBIndex = glGetProgramResourceIndex(GLProgram, GL_SHADER_STORAGE_BLOCK, ResDesc.Name);
-                VERIFY(SBIndex != GL_INVALID_INDEX, "Failed to storage buffer '", ResDesc.Name,
-                       "', which is unexpected as it is present in the list of program resources.");
-
-                if (glShaderStorageBlockBinding)
-                {
-                    for (Uint32 ArrInd = 0; ArrInd < Attribs.ArraySize; ++ArrInd)
-                    {
-                        glShaderStorageBlockBinding(GLProgram, SBIndex + ArrInd, BindingIndex + ArrInd);
-                        CHECK_GL_ERROR("glShaderStorageBlockBinding() failed");
-                    }
-                }
-                else
-                {
-                    const GLenum props[]                 = {GL_BUFFER_BINDING};
-                    GLint        params[_countof(props)] = {};
-                    glGetProgramResourceiv(GLProgram, GL_SHADER_STORAGE_BLOCK, SBIndex, _countof(props), props, _countof(params), nullptr, params);
-                    CHECK_GL_ERROR("glGetProgramResourceiv() failed");
-
-                    if (BindingIndex != static_cast<Uint32>(params[0]))
-                    {
-                        LOG_WARNING_MESSAGE("glShaderStorageBlockBinding is not available on this device and "
-                                            "the engine is unable to automatically assign shader storage block binding for '",
-                                            ResDesc.Name, "' variable. Expected binding: ", BindingIndex, ", actual binding: ", params[0],
-                                            ". Make sure that this binding is explicitly assigned in shader source code."
-                                            " Note that if the source code is converted from HLSL and if storage blocks are only used"
-                                            " by a single shader stage, then bindings automatically assigned by HLSL->GLSL"
-                                            " converter will work fine.");
-                    }
-                }
+                ApplySSBOBindings(GLProgram, ResDesc.Name, BindingIndex, Attribs.ArraySize);
                 break;
-            }
 #endif
+
             default:
                 UNEXPECTED("Unsupported shader resource range type.");
         }

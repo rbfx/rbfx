@@ -35,10 +35,10 @@ namespace Diligent
 
 CommandPoolManager::CommandPoolManager(const CreateInfo& CI) noexcept :
     // clang-format off
-    m_LogicalDevice   {CI.LogicalDevice    },
-    m_Name            {std::move(CI.Name)  },
-    m_QueueFamilyIndex{CI.queueFamilyIndex },
-    m_CmdPoolFlags    {CI.flags            },
+    m_LogicalDevice   {CI.LogicalDevice   },
+    m_Name            {CI.Name            },
+    m_QueueFamilyIndex{CI.queueFamilyIndex},
+    m_CmdPoolFlags    {CI.flags           },
     m_CmdPools        (STD_ALLOCATOR_RAW_MEM(VulkanUtilities::CommandPoolWrapper, GetRawAllocator(), "Allocator for deque<VulkanUtilities::CommandPoolWrapper>"))
 // clang-format on
 {

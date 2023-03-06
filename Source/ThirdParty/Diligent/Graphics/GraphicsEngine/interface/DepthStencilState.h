@@ -113,6 +113,9 @@ struct StencilOpDesc
     /// Default value: Diligent::COMPARISON_FUNC_ALWAYS. See Diligent::COMPARISON_FUNCTION.
     COMPARISON_FUNCTION StencilFunc         DEFAULT_INITIALIZER(COMPARISON_FUNC_ALWAYS);
 
+    // 
+    // NB: when adding new members, don't forget to update std::hash<Diligent::StencilOpDesc>
+    //
 
 #if DILIGENT_CPP_INTERFACE
     // We have to explicitly define constructors because otherwise Apple's clang fails to compile the following legitimate code:
@@ -186,6 +189,9 @@ struct DepthStencilStateDesc
     /// Identify stencil operations for the back-facing triangles, see Diligent::StencilOpDesc.
     StencilOpDesc BackFace;
 
+    // 
+    // NB: when adding new members, don't forget to update std::hash<Diligent::DepthStencilStateDesc>
+    //
 
 #if DILIGENT_CPP_INTERFACE
     // We have to explicitly define constructors because otherwise Apple's clang fails to compile the following legitimate code:

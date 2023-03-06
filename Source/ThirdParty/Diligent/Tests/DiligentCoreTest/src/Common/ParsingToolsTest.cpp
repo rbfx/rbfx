@@ -654,7 +654,7 @@ TEST(Common_ParsingTools, Tokenizer_Preprocessor)
 // Comment
 #include <Include1.h>
 
-// # not a definiton
+// # not a definition
 
 /* Comment */
 #define MACRO

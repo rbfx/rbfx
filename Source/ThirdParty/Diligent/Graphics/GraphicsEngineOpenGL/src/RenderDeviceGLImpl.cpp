@@ -1453,33 +1453,33 @@ void RenderDeviceGLImpl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
 
 FBOCache& RenderDeviceGLImpl::GetFBOCache(GLContext::NativeGLContextType Context)
 {
-    ThreadingTools::LockHelper FBOCacheLock{m_FBOCacheLockFlag};
+    Threading::SpinLockGuard FBOCacheGuard{m_FBOCacheLock};
     return m_FBOCache[Context];
 }
 
 void RenderDeviceGLImpl::OnReleaseTexture(ITexture* pTexture)
 {
-    ThreadingTools::LockHelper FBOCacheLock{m_FBOCacheLockFlag};
+    Threading::SpinLockGuard FBOCacheGuard{m_FBOCacheLock};
     for (auto& FBOCacheIt : m_FBOCache)
         FBOCacheIt.second.OnReleaseTexture(pTexture);
 }
 
 VAOCache& RenderDeviceGLImpl::GetVAOCache(GLContext::NativeGLContextType Context)
 {
-    ThreadingTools::LockHelper VAOCacheLock{m_VAOCacheLockFlag};
+    Threading::SpinLockGuard VAOCacheGuard{m_VAOCacheLock};
     return m_VAOCache[Context];
 }
 
 void RenderDeviceGLImpl::OnDestroyPSO(PipelineStateGLImpl& PSO)
 {
-    ThreadingTools::LockHelper VAOCacheLock{m_VAOCacheLockFlag};
+    Threading::SpinLockGuard VAOCacheGuard{m_VAOCacheLock};
     for (auto& VAOCacheIt : m_VAOCache)
         VAOCacheIt.second.OnDestroyPSO(PSO);
 }
 
 void RenderDeviceGLImpl::OnDestroyBuffer(BufferGLImpl& Buffer)
 {
-    ThreadingTools::LockHelper VAOCacheLock{m_VAOCacheLockFlag};
+    Threading::SpinLockGuard VAOCacheGuard{m_VAOCacheLock};
     for (auto& VAOCacheIt : m_VAOCache)
         VAOCacheIt.second.OnDestroyBuffer(Buffer);
 }

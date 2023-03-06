@@ -55,8 +55,8 @@ int TestShaderResourceVariableCInterface(struct IShaderResourceVariable* pVar, s
     if (RefCnt2 != RefCnt1 - 1)
         ++num_errors;
 
-    IShaderResourceVariable_Set(pVar, pObjectToSet);
-    IShaderResourceVariable_SetArray(pVar, &pObjectToSet, 0, 1);
+    IShaderResourceVariable_Set(pVar, pObjectToSet, SET_SHADER_RESOURCE_FLAG_NONE);
+    IShaderResourceVariable_SetArray(pVar, &pObjectToSet, 0, 1, SET_SHADER_RESOURCE_FLAG_NONE);
     VarType = IShaderResourceVariable_GetType(pVar);
     if (VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC)
         ++num_errors;

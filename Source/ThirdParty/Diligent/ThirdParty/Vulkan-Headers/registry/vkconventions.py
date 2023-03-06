@@ -10,8 +10,7 @@
 import re
 import os
 
-from conventions import ConventionsBase
-
+from spec_tools.conventions import ConventionsBase
 
 # Modified from default implementation - see category_requires_validation() below
 CATEGORIES_REQUIRING_VALIDATION = set(('handle', 'enum', 'bitmask'))
@@ -22,6 +21,8 @@ CATEGORIES_REQUIRING_VALIDATION = set(('handle', 'enum', 'bitmask'))
 # Ideally these would be listed in the spec as exceptions, as OpenXR does.
 SPECIAL_WORDS = set((
     '16Bit',  # VkPhysicalDevice16BitStorageFeatures
+    '2D',     # VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
+    '3D',     # VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
     '8Bit',  # VkPhysicalDevice8BitStorageFeaturesKHR
     'AABB',  # VkGeometryAABBNV
     'ASTC',  # VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT
@@ -48,6 +49,10 @@ class VulkanConventions(ConventionsBase):
     def null(self):
         """Preferred spelling of NULL."""
         return '`NULL`'
+
+    def formatExtension(self, name):
+        """Mark up an extension name as a link the spec."""
+        return '`apiext:{}`'.format(name)
 
     @property
     def struct_macro(self):
@@ -249,21 +254,12 @@ class VulkanConventions(ConventionsBase):
 
         return True
 
-    def extension_include_string(self, ext):
-        """Return format string for include:: line for an extension appendix
-           file. ext is an object with the following members:
-            - name - extension string string
-            - vendor - vendor portion of name
-            - barename - remainder of name"""
+    def extension_file_path(self, name):
+        """Return file path to an extension appendix relative to a directory
+           containing all such appendices.
+           - name - extension name"""
 
-        return 'include::{{appendices}}/{name}{suffix}[]'.format(
-                name=ext.name, suffix=self.file_suffix)
-
-    @property
-    def refpage_generated_include_path(self):
-        """Return path relative to the generated reference pages, to the
-           generated API include files."""
-        return "{generated}"
+        return f'{name}{self.file_suffix}'
 
     def valid_flag_bit(self, bitpos):
         """Return True if bitpos is an allowed numeric bit position for

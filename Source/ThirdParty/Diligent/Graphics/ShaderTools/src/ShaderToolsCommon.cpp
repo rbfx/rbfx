@@ -131,7 +131,7 @@ ShaderSourceFileData ReadShaderSourceFile(const char*                      Sourc
                 if (pSourceStream == nullptr)
                     LOG_ERROR_AND_THROW("Failed to load shader source file '", FilePath, '\'');
 
-                SourceData.pFileData = MakeNewRCObj<DataBlobImpl>{}(0);
+                SourceData.pFileData = DataBlobImpl::Create();
                 pSourceStream->ReadBlob(SourceData.pFileData);
                 SourceData.Source       = reinterpret_cast<char*>(SourceData.pFileData->GetDataPtr());
                 SourceData.SourceLength = StaticCast<Uint32>(SourceData.pFileData->GetSize());
@@ -179,7 +179,7 @@ static String ParserErrorMessage(const char* Message, const Char* pBuffer, const
 
 // https://github.com/tomtom-international/cpp-dependencies/blob/a91f330e97c6b9e4e9ecd81f43c4a40e044d4bbc/src/Input.cpp
 template <typename HandlerType, typename ErrorHandlerType>
-bool FindIncludes(const char* pBuffer, size_t BufferSize, HandlerType IncludeHandler, ErrorHandlerType ErrorHandler)
+bool FindIncludes(const char* pBuffer, size_t BufferSize, HandlerType&& IncludeHandler, ErrorHandlerType ErrorHandler)
 {
     if (BufferSize == 0)
         return true;
@@ -361,7 +361,7 @@ static void ProcessIncludeErrorHandler(const ShaderCreateInfo& ShaderCI, const s
 }
 
 template <typename IncludeHandlerType>
-void ProcessShaderIncludesImpl(const ShaderCreateInfo& ShaderCI, std::unordered_set<std::string>& Includes, IncludeHandlerType IncludeHandler) noexcept(false)
+void ProcessShaderIncludesImpl(const ShaderCreateInfo& ShaderCI, std::unordered_set<std::string>& Includes, IncludeHandlerType&& IncludeHandler) noexcept(false)
 {
     const auto SourceData = ReadShaderSourceFile(ShaderCI);
 
@@ -427,7 +427,7 @@ static std::string UnrollShaderIncludesImpl(ShaderCreateInfo ShaderCI, std::unor
 
             if (AllIncludes.insert(Path).second)
             {
-                // Process the #inlcude directive
+                // Process the #include directive
                 ShaderCreateInfo IncludeCI{ShaderCI};
                 IncludeCI.Source       = nullptr;
                 IncludeCI.SourceLength = 0;

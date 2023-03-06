@@ -285,8 +285,8 @@ private:
     }
 
     template <typename HandlerType>
-    void ProcessVariables(SHADER_TYPE ShaderStages,
-                          HandlerType Handler) const
+    void ProcessVariables(SHADER_TYPE   ShaderStages,
+                          HandlerType&& Handler) const
     {
         const auto PipelineType = GetPipelineType();
         for (size_t ShaderInd = 0; ShaderInd < m_ActiveShaderStageIndex.size(); ++ShaderInd)

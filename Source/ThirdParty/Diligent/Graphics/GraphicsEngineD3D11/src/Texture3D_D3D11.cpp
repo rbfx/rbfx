@@ -109,7 +109,7 @@ public:
         pd3d11Texture->GetPrivateData(WKPDID_D3DDebugObjectName, &DataSize, nullptr);
         if (DataSize > 0)
         {
-            ObjectName.resize(DataSize + 1); // Null terminator is not reported in
+            ObjectName.resize(size_t{DataSize} + 1); // Null terminator is not reported in
             pd3d11Texture->GetPrivateData(WKPDID_D3DDebugObjectName, &DataSize, ObjectName.data());
             TexDesc.Name = ObjectName.data();
         }

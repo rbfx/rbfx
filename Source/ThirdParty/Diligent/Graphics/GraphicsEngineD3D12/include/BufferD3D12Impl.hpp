@@ -136,7 +136,7 @@ private:
             *static_cast<D3D12DynamicAllocation*>(this) = Allocation;
             return *this;
         }
-        Uint8 Padding[CacheLineSize - sizeof(D3D12DynamicAllocation)];
+        Uint8 Padding[CacheLineSize - sizeof(D3D12DynamicAllocation)] = {};
     };
     static_assert(sizeof(CtxDynamicData) == CacheLineSize, "Unexpected sizeof(CtxDynamicData)");
 

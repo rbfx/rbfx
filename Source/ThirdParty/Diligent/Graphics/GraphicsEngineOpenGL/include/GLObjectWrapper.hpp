@@ -62,7 +62,7 @@ public:
     GLObjWrapper& operator=(const GLObjWrapper&) = delete;
     // clang-format on
 
-    GLObjWrapper(GLObjWrapper&& Wrapper) :
+    GLObjWrapper(GLObjWrapper&& Wrapper) noexcept :
         // clang-format off
         m_uiHandle           {Wrapper.m_uiHandle                      },
         m_CreateReleaseHelper{std::move(Wrapper.m_CreateReleaseHelper)},
@@ -72,7 +72,7 @@ public:
         Wrapper.m_uiHandle = 0;
     }
 
-    GLObjWrapper& operator=(GLObjWrapper&& Wrapper)
+    GLObjWrapper& operator=(GLObjWrapper&& Wrapper) noexcept
     {
         Release();
 
@@ -321,13 +321,13 @@ struct GLSyncObj
     GLSyncObj& operator = (const GLSyncObj&) = delete;
     // clang-format on
 
-    GLSyncObj(GLSyncObj&& rhs)
+    GLSyncObj(GLSyncObj&& rhs) noexcept
     {
         SyncHandle     = rhs.SyncHandle;
         rhs.SyncHandle = GLsync{};
     }
 
-    GLSyncObj& operator=(GLSyncObj&& rhs)
+    GLSyncObj& operator=(GLSyncObj&& rhs) noexcept
     {
         Release();
         SyncHandle     = rhs.SyncHandle;

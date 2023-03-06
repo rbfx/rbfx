@@ -199,7 +199,7 @@ public:
     }
 
     template <typename HandlerType>
-    void ProcessBlocks(HandlerType& Handler) const
+    void ProcessBlocks(HandlerType&& Handler) const
     {
         for (const auto& Block : m_Blocks)
             Handler(Block.Data, Block.Size);

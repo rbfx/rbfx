@@ -13,14 +13,15 @@ set(INTERFACE
 set(SOURCE
     src/LinuxDebug.cpp
     src/LinuxFileSystem.cpp
+    src/LinuxPlatformMisc.cpp
 )
 
-add_library(Diligent-LinuxPlatform STATIC ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
+add_library(Diligent-LinuxPlatform ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
 set_common_target_properties(Diligent-LinuxPlatform)
 
 target_include_directories(Diligent-LinuxPlatform
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-LinuxPlatform

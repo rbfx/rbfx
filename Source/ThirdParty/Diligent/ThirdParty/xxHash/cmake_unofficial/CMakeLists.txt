@@ -42,10 +42,11 @@ endif()
 if(NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "xxHash build type: ${CMAKE_BUILD_TYPE}")
 endif()
+
 # Enable assert() statements in debug builds
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     if("${CMAKE_VERSION}" VERSION_LESS "3.12")
-        add_definitions(-DXXH_DEBUGLEVEL=1)
+        # add_compile_definitions is not available for older cmake => do nothing
     else()
         add_compile_definitions(XXH_DEBUGLEVEL=1)
     endif()
@@ -175,3 +176,5 @@ if(NOT XXHASH_BUNDLED_MODE)
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 endif(NOT XXHASH_BUNDLED_MODE)
+
+include(CPack)

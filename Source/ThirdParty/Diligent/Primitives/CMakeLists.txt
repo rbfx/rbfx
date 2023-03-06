@@ -8,7 +8,6 @@ set(SOURCE
 )
 
 set(INTERFACE
-    interface/Archive.h
     interface/BasicTypes.h
     interface/CheckBaseStructAlignment.hpp
     interface/CommonDefinitions.h
@@ -40,7 +39,7 @@ PRIVATE
 
 target_include_directories(Diligent-Primitives
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 source_group("interface" FILES ${INTERFACE})

@@ -49,7 +49,7 @@ void ProcessSignatureResources(const PipelineResourceSignatureD3D12Impl& Signatu
                                const SHADER_RESOURCE_VARIABLE_TYPE*      AllowedVarTypes,
                                Uint32                                    NumAllowedTypes,
                                SHADER_TYPE                               ShaderStages,
-                               HandlerType                               Handler)
+                               HandlerType&&                             Handler)
 {
     const bool UsingCombinedSamplers = Signature.IsUsingCombinedSamplers();
     Signature.ProcessResources(AllowedVarTypes, NumAllowedTypes, ShaderStages,
@@ -197,7 +197,8 @@ public:
     BindResourceHelper(const PipelineResourceSignatureD3D12Impl& Signature,
                        ShaderResourceCacheD3D12&                 ResourceCache,
                        Uint32                                    ResIndex,
-                       Uint32                                    ArrayIndex);
+                       Uint32                                    ArrayIndex,
+                       SET_SHADER_RESOURCE_FLAGS                 Flags);
 
     void operator()(const BindResourceInfo& BindInfo) const;
 
@@ -208,8 +209,8 @@ private:
     void CacheAccelStruct(const BindResourceInfo& BindInfo) const;
     // clang-format on
 
-    void BindCombinedSampler(TextureViewD3D12Impl* pTexView, Uint32 ArrayIndex) const;
-    void BindCombinedSampler(BufferViewD3D12Impl* pTexView, Uint32 ArrayIndex) const {}
+    void BindCombinedSampler(TextureViewD3D12Impl* pTexView, Uint32 ArrayIndex, SET_SHADER_RESOURCE_FLAGS Flags) const;
+    void BindCombinedSampler(BufferViewD3D12Impl* pTexView, Uint32 ArrayIndex, SET_SHADER_RESOURCE_FLAGS Flags) const {}
 
     template <typename TResourceViewType, ///< The type of the view (TextureViewD3D12Impl or BufferViewD3D12Impl)
               typename TViewTypeEnum      ///< The type of the expected view type enum (TEXTURE_VIEW_TYPE or BUFFER_VIEW_TYPE)
@@ -224,7 +225,8 @@ private:
         if (m_DstTableCPUDescriptorHandle.ptr != 0)
         {
             VERIFY(CPUDescriptorHandle.ptr != 0, "CPU descriptor handle must not be null for resources allocated in descriptor tables");
-            DEV_CHECK_ERR(m_ResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC || m_DstRes.pObject == nullptr, "Static and mutable resource descriptors should only be copied once");
+            DEV_CHECK_ERR(m_DstRes.pObject == nullptr || m_AllowOverwrite,
+                          "Static and mutable resource descriptors should only be copied once unless ALLOW_OVERWRITE flag is set.");
             const auto d3d12HeapType = m_ResDesc.ResourceType == SHADER_RESOURCE_TYPE_SAMPLER ?
                 D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER :
                 D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -252,6 +254,7 @@ private:
     const Uint32                   m_RootIndex; // Must go before m_DstRes
     const Uint32                   m_ArrayIndex;
     const Uint32                   m_OffsetFromTableStart; // Must go before m_DstRes
+    const bool                     m_AllowOverwrite;
 
     const ShaderResourceCacheD3D12::Resource& m_DstRes;
 
@@ -261,7 +264,8 @@ private:
 BindResourceHelper::BindResourceHelper(const PipelineResourceSignatureD3D12Impl& Signature,
                                        ShaderResourceCacheD3D12&                 ResourceCache,
                                        Uint32                                    ResIndex,
-                                       Uint32                                    ArrayIndex) :
+                                       Uint32                                    ArrayIndex,
+                                       SET_SHADER_RESOURCE_FLAGS                 Flags) :
     // clang-format off
     m_Signature     {Signature},
     m_ResourceCache {ResourceCache},
@@ -271,6 +275,7 @@ BindResourceHelper::BindResourceHelper(const PipelineResourceSignatureD3D12Impl&
     m_RootIndex     {m_Attribs.RootIndex(m_CacheType)},
     m_ArrayIndex    {ArrayIndex},
     m_OffsetFromTableStart{m_Attribs.OffsetFromTableStart(m_CacheType) + ArrayIndex},
+    m_AllowOverwrite{m_ResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC || (Flags & SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE) != 0},
     m_DstRes        {const_cast<const ShaderResourceCacheD3D12&>(ResourceCache).GetRootTable(m_RootIndex).GetResource(m_OffsetFromTableStart)}
 // clang-format on
 {
@@ -332,10 +337,10 @@ void BindResourceHelper::CacheCB(const BindResourceInfo& BindInfo) const
 #endif
     if (pBuffD3D12)
     {
-        if (m_ResDesc.VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC && m_DstRes.pObject != nullptr)
+        if (m_DstRes.pObject != nullptr && !m_AllowOverwrite)
         {
-            // Do not update resource if one is already bound unless it is dynamic. This may be
-            // dangerous as CopyDescriptorsSimple() may interfere with GPU reading the same descriptor.
+            // Do not update resource if one is already bound unless it is dynamic or ALLOW_OVERWRITE flag is set.
+            // This may be dangerous as CopyDescriptorsSimple() may interfere with GPU reading the same descriptor.
             return;
         }
 
@@ -358,7 +363,8 @@ void BindResourceHelper::CacheCB(const BindResourceInfo& BindInfo) const
 
         if (m_DstTableCPUDescriptorHandle.ptr != 0)
         {
-            DEV_CHECK_ERR(m_ResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC || m_DstRes.pObject == nullptr, "Static and mutable resource descriptors should only be copied once");
+            DEV_CHECK_ERR(m_DstRes.pObject == nullptr || m_AllowOverwrite,
+                          "Static and mutable resource descriptors should only be copied once unless ALLOW_OVERWRITE flag is set.");
             if (RangeSize == BuffDesc.Size)
             {
                 GetD3D12Device()->CopyDescriptorsSimple(1, m_DstTableCPUDescriptorHandle, CPUDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -391,10 +397,10 @@ void BindResourceHelper::CacheSampler(const BindResourceInfo& BindInfo) const
 #endif
     if (pSamplerD3D12)
     {
-        if (m_ResDesc.VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC && m_DstRes.pObject != nullptr)
+        if (m_DstRes.pObject != nullptr && !m_AllowOverwrite)
         {
-            // Do not update resource if one is already bound unless it is dynamic. This may be
-            // dangerous as CopyDescriptorsSimple() may interfere with GPU reading the same descriptor.
+            // Do not update resource if one is already bound unless it is dynamic or ALLOW_OVERWRITE flag is set.
+            // This may be dangerous as CopyDescriptorsSimple() may interfere with GPU reading the same descriptor.
             return;
         }
 
@@ -418,10 +424,10 @@ void BindResourceHelper::CacheAccelStruct(const BindResourceInfo& BindInfo) cons
 #endif
     if (pTLASD3D12)
     {
-        if (m_ResDesc.VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC && m_DstRes.pObject != nullptr)
+        if (m_DstRes.pObject != nullptr && !m_AllowOverwrite)
         {
-            // Do not update resource if one is already bound unless it is dynamic. This may be
-            // dangerous as CopyDescriptorsSimple() may interfere with GPU reading the same descriptor.
+            // Do not update resource if one is already bound unless it is dynamic or ALLOW_OVERWRITE flag is set.
+            // This may be dangerous as CopyDescriptorsSimple() may interfere with GPU reading the same descriptor.
             return;
         }
 
@@ -500,10 +506,10 @@ void BindResourceHelper::CacheResourceView(const BindResourceInfo& BindInfo,
 #endif
     if (pViewD3D12)
     {
-        if (m_ResDesc.VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC && m_DstRes.pObject != nullptr)
+        if (m_DstRes.pObject != nullptr && !m_AllowOverwrite)
         {
-            // Do not update resource if one is already bound unless it is dynamic. This may be
-            // dangerous as CopyDescriptorsSimple() may interfere with GPU reading the same descriptor.
+            // Do not update resource if one is already bound unless it is dynamic or ALLOW_OVERWRITE flag is set.
+            // This may be dangerous as CopyDescriptorsSimple() may interfere with GPU reading the same descriptor.
             return;
         }
 
@@ -511,14 +517,14 @@ void BindResourceHelper::CacheResourceView(const BindResourceInfo& BindInfo,
         // Note that for dynamic structured buffers we still create SRV even though we don't really use it.
         VERIFY(CPUDescriptorHandle.ptr != 0, "Texture/buffer views should always have valid CPU descriptor handles");
 
-        BindCombinedSampler(pViewD3D12, BindInfo.ArrayIndex);
+        BindCombinedSampler(pViewD3D12, BindInfo.ArrayIndex, BindInfo.Flags);
 
         SetResource(CPUDescriptorHandle, std::move(pViewD3D12));
     }
 }
 
 
-void BindResourceHelper::BindCombinedSampler(TextureViewD3D12Impl* pTexView, Uint32 ArrayIndex) const
+void BindResourceHelper::BindCombinedSampler(TextureViewD3D12Impl* pTexView, Uint32 ArrayIndex, SET_SHADER_RESOURCE_FLAGS Flags) const
 {
     VERIFY_EXPR(pTexView != nullptr);
 
@@ -555,8 +561,8 @@ void BindResourceHelper::BindCombinedSampler(TextureViewD3D12Impl* pTexView, Uin
     VERIFY_EXPR(m_ResDesc.ArraySize == SamplerResDesc.ArraySize || SamplerResDesc.ArraySize == 1);
     const auto SamplerArrInd = SamplerResDesc.ArraySize > 1 ? ArrayIndex : 0;
 
-    BindResourceHelper BindSampler{m_Signature, m_ResourceCache, m_Attribs.SamplerInd, SamplerArrInd};
-    BindSampler(BindResourceInfo{SamplerArrInd, pSampler});
+    BindResourceHelper BindSampler{m_Signature, m_ResourceCache, m_Attribs.SamplerInd, SamplerArrInd, Flags};
+    BindSampler(BindResourceInfo{SamplerArrInd, pSampler, Flags});
 }
 
 void BindResourceHelper::operator()(const BindResourceInfo& BindInfo) const
@@ -601,9 +607,10 @@ void BindResourceHelper::operator()(const BindResourceInfo& BindInfo) const
     }
     else
     {
-        DEV_CHECK_ERR(m_DstRes.pObject == nullptr || m_ResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC,
+        DEV_CHECK_ERR(m_DstRes.pObject == nullptr || m_AllowOverwrite,
                       "Shader variable '", m_ResDesc.Name, "' is not dynamic, but is being reset to null. This is an error and may cause unpredicted behavior. ",
-                      "Use another shader resource binding instance or label the variable as dynamic if you need to bind another resource.");
+                      "If this is intended and you ensured proper synchronization, use the SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE flag. "
+                      "Otherwise, use another shader resource binding instance or label the variable as dynamic.");
 
         m_ResourceCache.ResetResource(m_RootIndex, m_OffsetFromTableStart);
         if (m_Attribs.IsCombinedWithSampler())
@@ -619,7 +626,7 @@ void BindResourceHelper::operator()(const BindResourceInfo& BindInfo) const
                 const auto  SamOffsetFromTableStart = SamplerAttribs.OffsetFromTableStart(m_CacheType) + SamplerArrInd;
                 const auto& DstSam                  = const_cast<const ShaderResourceCacheD3D12&>(m_ResourceCache).GetRootTable(SamRootIndex).GetResource(SamOffsetFromTableStart);
 
-                DEV_CHECK_ERR(DstSam.pObject == nullptr || SamplerResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC,
+                DEV_CHECK_ERR(DstSam.pObject == nullptr || m_AllowOverwrite,
                               "Sampler variable '", SamplerResDesc.Name, "' is not dynamic, but is being reset to null. This is an error and may cause unpredicted behavior. ",
                               "Use another shader resource binding instance or label the variable as dynamic if you need to bind another sampler.");
 
@@ -636,7 +643,7 @@ void ShaderVariableManagerD3D12::BindResource(Uint32 ResIndex, const BindResourc
 {
     VERIFY(m_pSignature->IsUsingSeparateSamplers() || GetResourceDesc(ResIndex).ResourceType != SHADER_RESOURCE_TYPE_SAMPLER,
            "Samplers should not be set directly when using combined texture samplers");
-    BindResourceHelper BindResHelper{*m_pSignature, m_ResourceCache, ResIndex, BindInfo.ArrayIndex};
+    BindResourceHelper BindResHelper{*m_pSignature, m_ResourceCache, ResIndex, BindInfo.ArrayIndex, BindInfo.Flags};
     BindResHelper(BindInfo);
 }
 

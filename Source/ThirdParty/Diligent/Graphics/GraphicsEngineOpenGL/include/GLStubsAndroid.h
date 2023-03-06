@@ -482,6 +482,24 @@
 #endif
 
 
+// Primitive types
+#ifndef GL_LINES_ADJACENCY
+#    define GL_LINES_ADJACENCY 0x000A
+#endif
+
+#ifndef GL_LINE_STRIP_ADJACENCY
+#    define GL_LINE_STRIP_ADJACENCY 0x000B
+#endif
+
+#ifndef GL_TRIANGLES_ADJACENCY
+#    define GL_TRIANGLES_ADJACENCY 0x000C
+#endif
+
+#ifndef GL_TRIANGLE_STRIP_ADJACENCY
+#    define GL_TRIANGLE_STRIP_ADJACENCY 0x000D
+#endif
+
+
 // Compute shader stubs
 #ifndef GL_ARB_compute_shader
 #   define GL_ARB_compute_shader 1

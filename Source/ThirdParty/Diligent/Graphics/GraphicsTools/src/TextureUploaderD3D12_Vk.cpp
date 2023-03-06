@@ -127,8 +127,8 @@ public:
     }
 
 private:
-    ThreadingTools::Signal m_CopyScheduledSignal;
-    ThreadingTools::Signal m_TextureMappedSignal;
+    Threading::Signal m_CopyScheduledSignal;
+    Threading::Signal m_TextureMappedSignal;
 
     RefCntAutoPtr<ITexture> m_pStagingTexture;
     Uint64                  m_CopyScheduledFenceValue = 0;

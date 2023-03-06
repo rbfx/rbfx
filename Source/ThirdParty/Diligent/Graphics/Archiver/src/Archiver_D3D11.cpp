@@ -32,7 +32,7 @@
 #include "PipelineResourceSignatureD3D11Impl.hpp"
 #include "PipelineStateD3D11Impl.hpp"
 #include "ShaderD3D11Impl.hpp"
-#include "DeviceObjectArchiveD3D11Impl.hpp"
+#include "DeviceObjectArchiveD3D11.hpp"
 #include "SerializedPipelineStateImpl.hpp"
 
 namespace Diligent
@@ -82,7 +82,7 @@ struct ShaderStageInfoD3D11
 private:
     static ShaderD3D11Impl* GetShaderD3D11(const SerializedShaderImpl* pShader)
     {
-        auto* pCompiledShaderD3D11 = pShader->GetShader<CompiledShaderD3D11>(DeviceObjectArchiveBase::DeviceType::Direct3D11);
+        auto* pCompiledShaderD3D11 = pShader->GetShader<CompiledShaderD3D11>(DeviceObjectArchive::DeviceType::Direct3D11);
         return pCompiledShaderD3D11 != nullptr ? &pCompiledShaderD3D11->ShaderD3D11 : nullptr;
     }
 };

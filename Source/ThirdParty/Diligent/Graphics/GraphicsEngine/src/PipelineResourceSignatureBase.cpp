@@ -64,7 +64,7 @@ void ValidatePipelineResourceSignatureDesc(const PipelineResourceSignatureDesc& 
 
 
     // Hash map of all resources by name
-    std::unordered_multimap<HashMapStringKey, const PipelineResourceDesc&, HashMapStringKey::Hasher> Resources;
+    std::unordered_multimap<HashMapStringKey, const PipelineResourceDesc&> Resources;
     for (Uint32 i = 0; i < Desc.NumResources; ++i)
     {
         const auto& Res = Desc.Resources[i];
@@ -158,7 +158,7 @@ void ValidatePipelineResourceSignatureDesc(const PipelineResourceSignatureDesc& 
     }
 
     // Hash map of all immutable samplers by name
-    std::unordered_multimap<HashMapStringKey, const ImmutableSamplerDesc&, HashMapStringKey::Hasher> ImtblSamplers;
+    std::unordered_multimap<HashMapStringKey, const ImmutableSamplerDesc&> ImtblSamplers;
     for (Uint32 i = 0; i < Desc.NumImmutableSamplers; ++i)
     {
         const auto& SamDesc = Desc.ImmutableSamplers[i];
@@ -200,9 +200,9 @@ void ValidatePipelineResourceSignatureDesc(const PipelineResourceSignatureDesc& 
         VERIFY_EXPR(Desc.CombinedSamplerSuffix != nullptr);
 
         // List of samplers assigned to some texture
-        std::unordered_multimap<HashMapStringKey, SHADER_TYPE, HashMapStringKey::Hasher> AssignedSamplers;
+        std::unordered_multimap<HashMapStringKey, SHADER_TYPE> AssignedSamplers;
         // List of immutable samplers assigned to some texture
-        std::unordered_multimap<HashMapStringKey, SHADER_TYPE, HashMapStringKey::Hasher> AssignedImtblSamplers;
+        std::unordered_multimap<HashMapStringKey, SHADER_TYPE> AssignedImtblSamplers;
         for (Uint32 i = 0; i < Desc.NumResources; ++i)
         {
             const auto& Res = Desc.Resources[i];
@@ -372,7 +372,8 @@ inline bool PipelineResourcesCompatible(const PipelineResourceDesc& lhs, const P
 }
 
 bool PipelineResourceSignaturesCompatible(const PipelineResourceSignatureDesc& Desc0,
-                                          const PipelineResourceSignatureDesc& Desc1) noexcept
+                                          const PipelineResourceSignatureDesc& Desc1,
+                                          bool                                 IgnoreSamplerDescriptions) noexcept
 {
     if (Desc0.BindingIndex != Desc1.BindingIndex)
         return false;
@@ -394,8 +395,10 @@ bool PipelineResourceSignaturesCompatible(const PipelineResourceSignatureDesc& D
         const auto& Samp0 = Desc0.ImmutableSamplers[s];
         const auto& Samp1 = Desc1.ImmutableSamplers[s];
 
-        if (Samp0.ShaderStages != Samp1.ShaderStages ||
-            !(Samp0.Desc == Samp1.Desc))
+        if (Samp0.ShaderStages != Samp1.ShaderStages)
+            return false;
+
+        if (!IgnoreSamplerDescriptions && Samp0.Desc != Samp1.Desc)
             return false;
     }
 
@@ -404,10 +407,7 @@ bool PipelineResourceSignaturesCompatible(const PipelineResourceSignatureDesc& D
 
 size_t CalculatePipelineResourceSignatureDescHash(const PipelineResourceSignatureDesc& Desc) noexcept
 {
-    if (Desc.NumResources == 0 && Desc.NumImmutableSamplers == 0)
-        return 0;
-
-    size_t Hash = ComputeHash(Desc.NumResources, Desc.NumImmutableSamplers, Desc.BindingIndex);
+    auto Hash = ComputeHash(Desc.NumResources, Desc.NumImmutableSamplers, Desc.BindingIndex);
 
     for (Uint32 i = 0; i < Desc.NumResources; ++i)
     {
@@ -470,14 +470,20 @@ void CopyPipelineResourceSignatureDesc(FixedLinearAllocator&                    
         VERIFY_EXPR(SrcRes.Name != nullptr && SrcRes.Name[0] != '\0');
         DstRes.Name = Allocator.CopyString(SrcRes.Name);
 
-        ++ResourceOffsets[DstRes.VarType + 1];
+        ++ResourceOffsets[size_t{DstRes.VarType} + 1];
     }
 
-    // Sort resources by variable type (all static -> all mutable -> all dynamic)
-    std::sort(pResources, pResources + SrcDesc.NumResources,
-              [](const PipelineResourceDesc& lhs, const PipelineResourceDesc& rhs) {
-                  return lhs.VarType < rhs.VarType;
-              });
+    // Sort resources by variable type (all static -> all mutable -> all dynamic).
+    // NB: It is crucial to use stable sort to make sure that relative
+    //     positions of resources are preserved.
+    //     std::sort may reposition equal elements differently depending on
+    //     the original arrangement, e.g.:
+    //          B1 B2 A1 A2 -> A1 A2 B1 B2
+    //          A1 B1 A2 B2 -> A2 A1 B2 B1
+    std::stable_sort(pResources, pResources + SrcDesc.NumResources,
+                     [](const PipelineResourceDesc& lhs, const PipelineResourceDesc& rhs) {
+                         return lhs.VarType < rhs.VarType;
+                     });
 
     for (size_t i = 1; i < ResourceOffsets.size(); ++i)
         ResourceOffsets[i] += ResourceOffsets[i - 1];

@@ -29,9 +29,9 @@
 
 void TestShaderResourceVariable_CInterface(IShaderResourceVariable* pVar)
 {
-    IShaderResourceVariable_Set(pVar, (struct IDeviceObject*)NULL);
-    IShaderResourceVariable_SetArray(pVar, (struct IDeviceObject* const*)NULL, (Uint32)1, (Uint32)2);
-    IShaderResourceVariable_SetBufferRange(pVar, (struct IDeviceObject*)NULL, (Uint64)0, (Uint64)16, (Uint32)1);
+    IShaderResourceVariable_Set(pVar, (struct IDeviceObject*)NULL, SET_SHADER_RESOURCE_FLAG_NONE);
+    IShaderResourceVariable_SetArray(pVar, (struct IDeviceObject* const*)NULL, (Uint32)1, (Uint32)2, SET_SHADER_RESOURCE_FLAG_NONE);
+    IShaderResourceVariable_SetBufferRange(pVar, (struct IDeviceObject*)NULL, (Uint64)0, (Uint64)16, (Uint32)1, SET_SHADER_RESOURCE_FLAG_NONE);
     IShaderResourceVariable_SetBufferOffset(pVar, (Uint32)1024, (Uint32)1);
     SHADER_RESOURCE_VARIABLE_TYPE Type = IShaderResourceVariable_GetType(pVar);
     (void)Type;

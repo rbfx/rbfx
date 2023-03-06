@@ -256,12 +256,12 @@ action("spvtools_generators_inc") {
 action("spvtools_build_version") {
   script = "utils/update_build_version.py"
 
-  src_dir = "."
+  changes_file = "CHANGES"
   inc_file = "${target_gen_dir}/build-version.inc"
 
   outputs = [ inc_file ]
   args = [
-    rebase_path(src_dir, root_build_dir),
+    rebase_path(changes_file, root_build_dir),
     rebase_path(inc_file, root_build_dir),
   ]
 }
@@ -466,7 +466,6 @@ static_library("spvtools") {
     "source/util/make_unique.h",
     "source/util/parse_number.cpp",
     "source/util/parse_number.h",
-    "source/util/pooled_linked_list.h",
     "source/util/small_vector.h",
     "source/util/string_utils.cpp",
     "source/util/string_utils.h",
@@ -531,6 +530,8 @@ static_library("spvtools_val") {
     "source/val/validate_mode_setting.cpp",
     "source/val/validate_non_uniform.cpp",
     "source/val/validate_primitives.cpp",
+    "source/val/validate_ray_query.cpp",
+    "source/val/validate_ray_tracing.cpp",
     "source/val/validate_scopes.cpp",
     "source/val/validate_scopes.h",
     "source/val/validate_small_type_uses.cpp",
@@ -629,6 +630,8 @@ static_library("spvtools_opt") {
     "source/opt/empty_pass.h",
     "source/opt/feature_manager.cpp",
     "source/opt/feature_manager.h",
+    "source/opt/fix_func_call_arguments.cpp",
+    "source/opt/fix_func_call_arguments.h",
     "source/opt/fix_storage_class.cpp",
     "source/opt/fix_storage_class.h",
     "source/opt/flatten_decoration_pass.cpp",
@@ -665,6 +668,8 @@ static_library("spvtools_opt") {
     "source/opt/instruction_list.h",
     "source/opt/instrument_pass.cpp",
     "source/opt/instrument_pass.h",
+    "source/opt/interface_var_sroa.cpp",
+    "source/opt/interface_var_sroa.h",
     "source/opt/interp_fixup_pass.cpp",
     "source/opt/interp_fixup_pass.h",
     "source/opt/ir_builder.h",

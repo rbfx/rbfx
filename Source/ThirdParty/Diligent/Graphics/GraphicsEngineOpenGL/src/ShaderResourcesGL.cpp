@@ -271,7 +271,7 @@ void ShaderResourcesGL::LoadUniforms(SHADER_TYPE                           Shade
 #endif
 
     MaxNameLength = std::max(MaxNameLength, 512);
-    std::vector<GLchar> Name(MaxNameLength + 1);
+    std::vector<GLchar> Name(static_cast<size_t>(MaxNameLength) + 1);
     for (int i = 0; i < numActiveUniforms; i++)
     {
         GLenum dataType = 0;

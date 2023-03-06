@@ -31,6 +31,14 @@
 #include "../../Primitives/interface/BasicTypes.h"
 #include "../../Primitives/interface/CommonDefinitions.h"
 
+#if !(defined(_MSC_VER) || defined(__MINGW64__) || defined(__MINGW32__))
+inline int strcpy_s(char* dest, size_t destsz, const char* src)
+{
+    strncpy(dest, src, destsz);
+    return 0;
+}
+#endif
+
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 inline bool IsNum(char c)

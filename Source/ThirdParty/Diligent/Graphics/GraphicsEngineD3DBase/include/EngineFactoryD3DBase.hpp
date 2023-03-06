@@ -42,8 +42,8 @@ class EngineFactoryD3DBase : public EngineFactoryBase<BaseInterface>
 public:
     using TEngineFactoryBase = EngineFactoryBase<BaseInterface>;
 
-    EngineFactoryD3DBase(const INTERFACE_ID& FactoryIID, IDearchiver* pDearchiver) :
-        TEngineFactoryBase{FactoryIID, pDearchiver}
+    EngineFactoryD3DBase(const INTERFACE_ID& FactoryIID) :
+        TEngineFactoryBase{FactoryIID}
     {}
 
 
@@ -142,7 +142,7 @@ public:
         if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory2), (void**)&pFactory)))
         {
             LOG_ERROR_MESSAGE("Failed to create DXGI Factory");
-            return std::move(DXGIAdapters);
+            return DXGIAdapters;
         }
 
         CComPtr<IDXGIAdapter1> pDXIAdapter;
@@ -159,7 +159,7 @@ public:
             }
         }
 
-        return std::move(DXGIAdapters);
+        return DXGIAdapters;
     }
 
 
@@ -176,8 +176,13 @@ public:
         {
             WideCharToMultiByte(CP_ACP, 0, dxgiAdapterDesc.Description, -1, AdapterInfo.Description, _countof(AdapterInfo.Description), NULL, FALSE);
 
-            // Can not detect discrete or integrated GPUs, so set discrete.
-            AdapterInfo.Type       = (dxgiAdapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) ? ADAPTER_TYPE_SOFTWARE : ADAPTER_TYPE_DISCRETE;
+            if (dxgiAdapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+                AdapterInfo.Type = ADAPTER_TYPE_SOFTWARE;
+            else if (dxgiAdapterDesc.DedicatedVideoMemory != 0)
+                AdapterInfo.Type = ADAPTER_TYPE_DISCRETE;
+            else
+                AdapterInfo.Type = ADAPTER_TYPE_INTEGRATED;
+
             AdapterInfo.Vendor     = VendorIdToAdapterVendor(dxgiAdapterDesc.VendorId);
             AdapterInfo.VendorId   = dxgiAdapterDesc.VendorId;
             AdapterInfo.DeviceId   = dxgiAdapterDesc.DeviceId;

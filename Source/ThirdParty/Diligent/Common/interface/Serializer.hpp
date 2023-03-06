@@ -44,7 +44,7 @@ namespace Diligent
 class SerializedData
 {
 public:
-    SerializedData() {}
+    SerializedData() noexcept {}
 
     SerializedData(void* pData, size_t Size) noexcept;
 
@@ -90,6 +90,8 @@ public:
     size_t GetHash() const;
 
     void Free();
+
+    SerializedData MakeCopy(IMemoryAllocator& Allocator) const;
 
     struct Hasher
     {
@@ -151,10 +153,10 @@ public:
     using RawType = typename std::remove_const_t<std::remove_reference_t<T>>;
 
     template <typename T>
-    using TEnable = typename std::enable_if_t<IsTriviallySerializable<T>::value, void>;
+    using TEnable = typename std::enable_if_t<IsTriviallySerializable<T>::value, bool>;
 
     template <typename T>
-    using TEnableStr = typename std::enable_if_t<(std::is_same<const char* const, T>::value || std::is_same<const char*, T>::value), void>;
+    using TEnableStr = typename std::enable_if_t<(std::is_same<const char* const, T>::value || std::is_same<const char*, T>::value), bool>;
     using CharPtr    = typename std::conditional_t<Mode == SerializerMode::Read, const char*&, const char*>;
     using VoidPtr    = typename std::conditional_t<Mode == SerializerMode::Read, const void*&, const void*>;
 
@@ -190,17 +192,19 @@ public:
     template <typename T>
     TEnable<T> Serialize(ConstQual<T>& Value)
     {
-        Copy(&Value, sizeof(Value));
+        return Copy(&Value, sizeof(Value));
     }
 
     // Copies Size bytes to/from pData
-    void CopyBytes(ConstQual<void>* pData, size_t Size)
+    bool CopyBytes(ConstQual<void>* pData, size_t Size)
     {
-        Copy(pData, Size);
+        return Copy(pData, Size);
     }
 
     template <typename T>
     TEnableStr<T> Serialize(CharPtr Str);
+
+    bool Serialize(ConstQual<SerializedData>& Data);
 
     /// Serializes Size bytes to/from pBytes
     ///
@@ -219,16 +223,16 @@ public:
     ///      Aligns up current offset to Alignment bytes
     ///      Sets pBytes to m_Ptr
     ///      Moves m_Ptr by Size bytes
-    void SerializeBytes(VoidPtr pBytes, ConstQual<size_t>& Size, size_t Alignment = 8);
+    bool SerializeBytes(VoidPtr pBytes, ConstQual<size_t>& Size, size_t Alignment = 8);
 
     template <typename ElemPtrType, typename CountType, typename ArrayElemSerializerType>
-    void SerializeArray(DynamicLinearAllocator* Allocator,
+    bool SerializeArray(DynamicLinearAllocator* Allocator,
                         ElemPtrType&            Elements,
                         CountType&              Count,
                         ArrayElemSerializerType ElemSerializer);
 
     template <typename ElemPtrType, typename CountType>
-    void SerializeArrayRaw(DynamicLinearAllocator* Allocator,
+    bool SerializeArrayRaw(DynamicLinearAllocator* Allocator,
                            ElemPtrType&            Elements,
                            CountType&              Count);
 
@@ -244,16 +248,18 @@ public:
     }
 
     template <typename Arg0Type, typename... ArgTypes>
-    void operator()(Arg0Type& Arg0, ArgTypes&... Args)
+    bool operator()(Arg0Type& Arg0, ArgTypes&... Args)
     {
-        Serialize<RawType<Arg0Type>>(Arg0);
-        operator()(Args...);
+        if (!Serialize<RawType<Arg0Type>>(Arg0))
+            return false;
+
+        return operator()(Args...);
     }
 
     template <typename Arg0Type>
-    void operator()(Arg0Type& Arg0)
+    bool operator()(Arg0Type& Arg0)
     {
-        Serialize<RawType<Arg0Type>>(Arg0);
+        return Serialize<RawType<Arg0Type>>(Arg0);
     }
 
     size_t GetSize() const
@@ -288,12 +294,12 @@ public:
 
 private:
     template <typename T>
-    void Copy(T* pData, size_t Size);
+    bool Copy(T* pData, size_t Size);
 
     void AlignOffset(size_t Alignment)
     {
         const auto Size       = GetSize();
-        const auto AlignShift = AlignUp(Size, size_t{8}) - Size;
+        const auto AlignShift = AlignUp(Size, Alignment) - Size;
         VERIFY_EXPR(m_Ptr + AlignShift <= m_End);
         m_Ptr += AlignShift;
     }
@@ -305,45 +311,61 @@ private:
     TPointer m_Ptr = nullptr;
 };
 
+#define CHECK_REMAINING_SIZE(Size, ...) \
+    do                                  \
+    {                                   \
+        if (m_Ptr + Size > m_End)       \
+        {                               \
+            UNEXPECTED(__VA_ARGS__);    \
+            return false;               \
+        }                               \
+    } while (false)
 
 template <>
 template <typename T>
-void Serializer<SerializerMode::Read>::Copy(T* pData, size_t Size)
+bool Serializer<SerializerMode::Read>::Copy(T* pData, size_t Size)
 {
     static_assert(IsAlignedBaseClass<T>::Value, "There is unused space at the end of the structure that may be filled with garbage. Use padding to zero-initialize this space and avoid nasty issues.");
-    VERIFY(m_Ptr + Size <= m_End, "Note enough data to read ", Size, " bytes");
+    CHECK_REMAINING_SIZE(Size, "Note enough data to read ", Size, " bytes");
     std::memcpy(pData, m_Ptr, Size);
     m_Ptr += Size;
+    return true;
 }
 
 template <>
 template <typename T>
-void Serializer<SerializerMode::Write>::Copy(T* pData, size_t Size)
+bool Serializer<SerializerMode::Write>::Copy(T* pData, size_t Size)
 {
     static_assert(IsAlignedBaseClass<T>::Value, "There is unused space at the end of the structure that may be filled with garbage. Use padding to zero-initialize this space and avoid nasty issues.");
-    VERIFY(m_Ptr + Size <= m_End, "Note enough data to write ", Size, " bytes");
+    CHECK_REMAINING_SIZE(Size, "Note enough data to write ", Size, " bytes");
     std::memcpy(m_Ptr, pData, Size);
     m_Ptr += Size;
+    return true;
 }
 
 template <>
 template <typename T>
-void Serializer<SerializerMode::Measure>::Copy(T* pData, size_t Size)
+bool Serializer<SerializerMode::Measure>::Copy(T* pData, size_t Size)
 {
     VERIFY_EXPR(m_Ptr + Size <= m_End);
     m_Ptr += Size;
+    return true;
 }
 
 template <>
 template <typename T>
 typename Serializer<SerializerMode::Read>::TEnableStr<T> Serializer<SerializerMode::Read>::Serialize(CharPtr Str)
 {
-    Uint32 Length = 0;
-    Serialize<Uint32>(Length);
+    Uint32 LenWithNull = 0;
+    if (!Serialize<Uint32>(LenWithNull))
+        return false;
 
-    VERIFY(m_Ptr + Length <= m_End, "Note enough data to read ", Length, " characters.");
-    Str = Length > 1 ? reinterpret_cast<const char*>(m_Ptr) : "";
-    m_Ptr += Length;
+    CHECK_REMAINING_SIZE(LenWithNull, "Note enough data to read ", LenWithNull, " characters.");
+
+    Str = LenWithNull > 1 ? reinterpret_cast<const char*>(m_Ptr) : "";
+    VERIFY_EXPR(Str[0] == '\0' || strlen(Str) < LenWithNull);
+    m_Ptr += LenWithNull;
+    return true;
 }
 
 template <SerializerMode Mode> // Write or Measure
@@ -351,57 +373,93 @@ template <typename T>
 typename Serializer<Mode>::template TEnableStr<T> Serializer<Mode>::Serialize(CharPtr Str)
 {
     static_assert(Mode == SerializerMode::Write || Mode == SerializerMode::Measure, "Unexpected mode");
-    const Uint32 Length = static_cast<Uint32>((Str != nullptr && *Str != 0) ? strlen(Str) + 1 : 0);
-    Serialize<Uint32>(Length);
-    Copy(Str, Length);
+    const Uint32 LenWithNull = static_cast<Uint32>((Str != nullptr && Str[0] != '\0') ? strlen(Str) + 1 : 0);
+    if (!Serialize<Uint32>(LenWithNull))
+        return false;
+
+    return Copy(Str, LenWithNull);
 }
 
 
 template <>
-inline void Serializer<SerializerMode::Read>::SerializeBytes(VoidPtr pBytes, ConstQual<size_t>& Size, size_t Alignment)
+inline bool Serializer<SerializerMode::Read>::SerializeBytes(VoidPtr pBytes, ConstQual<size_t>& Size, size_t Alignment)
 {
     Uint32 Size32 = 0;
-    Serialize<Uint32>(Size32);
+    if (!Serialize<Uint32>(Size32))
+        return false;
+
     Size = Size32;
 
     AlignOffset(Alignment);
 
-    VERIFY(m_Ptr + Size <= m_End, "Note enough data to read ", Size, " bytes.");
+    CHECK_REMAINING_SIZE(Size, "Note enough data to read ", Size, " bytes.");
 
     pBytes = m_Ptr;
     m_Ptr += Size;
+
+    return true;
 }
 
 template <SerializerMode Mode> // Write or Measure
-inline void Serializer<Mode>::SerializeBytes(VoidPtr pBytes, ConstQual<size_t>& Size, size_t Alignment)
+inline bool Serializer<Mode>::SerializeBytes(VoidPtr pBytes, ConstQual<size_t>& Size, size_t Alignment)
 {
     static_assert(Mode == SerializerMode::Write || Mode == SerializerMode::Measure, "Unexpected mode");
-    Serialize<Uint32>(static_cast<Uint32>(Size));
+    if (!Serialize<Uint32>(static_cast<Uint32>(Size)))
+        return false;
     AlignOffset(Alignment);
-    Copy(pBytes, Size);
+    return Copy(pBytes, Size);
+}
+
+
+template <>
+inline bool Serializer<SerializerMode::Read>::Serialize(SerializedData& Data)
+{
+    size_t      Size = 0;
+    const void* Ptr  = nullptr;
+    if (!SerializeBytes(Ptr, Size))
+        return false;
+    Data = SerializedData{Size > 0 ? const_cast<void*>(Ptr) : nullptr, Size};
+    return true;
+}
+
+template <>
+inline bool Serializer<SerializerMode::Write>::Serialize(const SerializedData& Data)
+{
+    return SerializeBytes(Data.Ptr(), Data.Size());
+}
+
+template <>
+inline bool Serializer<SerializerMode::Measure>::Serialize(const SerializedData& Data)
+{
+    return SerializeBytes(Data.Ptr(), Data.Size());
 }
 
 
 template <SerializerMode Mode>
 template <typename ElemPtrType, typename CountType, typename ArrayElemSerializerType>
-void Serializer<Mode>::SerializeArray(DynamicLinearAllocator* Allocator,
+bool Serializer<Mode>::SerializeArray(DynamicLinearAllocator* Allocator,
                                       ElemPtrType&            SrcArray,
                                       CountType&              Count,
                                       ArrayElemSerializerType ElemSerializer)
 {
     VERIFY_EXPR((SrcArray != nullptr) == (Count != 0));
 
-    (*this)(Count);
+    if (!(*this)(Count))
+        return false;
+
     for (size_t i = 0; i < static_cast<size_t>(Count); ++i)
     {
-        ElemSerializer(*this, SrcArray[i]);
+        if (!ElemSerializer(*this, SrcArray[i]))
+            return false;
     }
+
+    return true;
 }
 
 
 template <>
 template <typename ElemPtrType, typename CountType, typename ArrayElemSerializerType>
-void Serializer<SerializerMode::Read>::SerializeArray(DynamicLinearAllocator* Allocator,
+bool Serializer<SerializerMode::Read>::SerializeArray(DynamicLinearAllocator* Allocator,
                                                       ElemPtrType&            DstArray,
                                                       CountType&              Count,
                                                       ArrayElemSerializerType ElemSerializer)
@@ -409,28 +467,35 @@ void Serializer<SerializerMode::Read>::SerializeArray(DynamicLinearAllocator* Al
     VERIFY_EXPR(Allocator != nullptr);
     VERIFY_EXPR(DstArray == nullptr);
 
-    (*this)(Count);
+    if (!(*this)(Count))
+        return false;
+
     auto* pDstElements = Allocator->ConstructArray<RawType<decltype(DstArray[0])>>(Count);
     for (size_t i = 0; i < static_cast<size_t>(Count); ++i)
     {
-        ElemSerializer(*this, pDstElements[i]);
+        if (!ElemSerializer(*this, pDstElements[i]))
+            return false;
     }
     DstArray = pDstElements;
+
+    return true;
 }
 
 
 template <SerializerMode Mode>
 template <typename ElemPtrType, typename CountType>
-void Serializer<Mode>::SerializeArrayRaw(DynamicLinearAllocator* Allocator,
+bool Serializer<Mode>::SerializeArrayRaw(DynamicLinearAllocator* Allocator,
                                          ElemPtrType&            Elements,
                                          CountType&              Count)
 {
-    SerializeArray(Allocator, Elements, Count,
-                   [](Serializer<Mode>& Ser, auto& Elem) //
-                   {
-                       Ser(Elem);
-                   });
+    return SerializeArray(Allocator, Elements, Count,
+                          [](Serializer<Mode>& Ser, auto& Elem) //
+                          {
+                              return Ser(Elem);
+                          });
 }
+
+#undef CHECK_REMAINING_SIZE
 
 } // namespace Diligent
 

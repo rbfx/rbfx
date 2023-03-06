@@ -244,6 +244,10 @@ DILIGENT_BEGIN_INTERFACE(ISerializationDevice, IRenderDevice)
                                                      const PipelineResourceBindingAttribs REF Attribs,
                                                      Uint32 REF                               NumBindings,
                                                      const PipelineResourceBinding* REF       pBindings) PURE;
+
+
+    /// Returns a combination of supported device flags, see Diligent::ARCHIVE_DEVICE_DATA_FLAGS.
+    VIRTUAL ARCHIVE_DEVICE_DATA_FLAGS METHOD(GetSupportedDeviceFlags)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 

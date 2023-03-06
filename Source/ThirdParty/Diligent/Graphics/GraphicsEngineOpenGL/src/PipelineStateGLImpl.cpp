@@ -97,7 +97,7 @@ PipelineResourceSignatureDescWrapper PipelineStateGLImpl::GetDefaultResourceSign
     const PipelineResourceLayoutDesc& ResourceLayout,
     Uint32                            SRBAllocationGranularity) noexcept(false)
 {
-    return {};
+    return PipelineResourceSignatureDescWrapper{PSOName, {}, 1};
 }
 
 PipelineResourceSignatureDescWrapper PipelineStateGLImpl::GetDefaultSignatureDesc(
@@ -413,7 +413,7 @@ void PipelineStateGLImpl::CommitProgram(GLContextState& State)
 
 GLObjectWrappers::GLPipelineObj& PipelineStateGLImpl::GetGLProgramPipeline(GLContext::NativeGLContextType Context)
 {
-    ThreadingTools::LockHelper Lock(m_ProgPipelineLockFlag);
+    Threading::SpinLockGuard Guard{m_ProgPipelineLock};
     for (auto& ctx_pipeline : m_GLProgPipelines)
     {
         if (ctx_pipeline.first == Context)

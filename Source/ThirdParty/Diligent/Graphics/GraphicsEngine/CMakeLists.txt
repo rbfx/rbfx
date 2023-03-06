@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.6)
 
 project(Diligent-GraphicsEngine CXX)
 
-set(INCLUDE
+set(INCLUDE 
     include/BufferBase.hpp
     include/BufferViewBase.hpp
     include/BottomLevelASBase.hpp
@@ -13,7 +13,7 @@ set(INCLUDE
     include/DeviceContextBase.hpp
     include/DeviceMemoryBase.hpp
     include/DeviceObjectBase.hpp
-    include/DeviceObjectArchiveBase.hpp
+    include/DeviceObjectArchive.hpp
     include/EngineFactoryBase.hpp
     include/EngineMemory.h
     include/FenceBase.hpp
@@ -41,7 +41,7 @@ set(INCLUDE
     include/TopLevelASBase.hpp
 )
 
-set(INTERFACE
+set(INTERFACE 
     interface/APIInfo.h
     interface/BlendState.h
     interface/Buffer.h
@@ -55,7 +55,6 @@ set(INTERFACE
     interface/DeviceContext.h
     interface/DeviceMemory.h
     interface/DeviceObject.h
-    interface/DeviceObjectArchive.h
     interface/EngineFactory.h
     interface/Fence.h
     interface/Framebuffer.h
@@ -93,7 +92,7 @@ set(SOURCE
     src/DefaultShaderSourceStreamFactory.cpp
     src/DeviceContextBase.cpp
     src/DeviceMemoryBase.cpp
-    src/DeviceObjectArchiveBase.cpp
+    src/DeviceObjectArchive.cpp
     src/EngineMemory.cpp
     src/EngineFactoryBase.cpp
     src/FramebufferBase.cpp
@@ -113,13 +112,13 @@ set(SOURCE
 add_library(Diligent-GraphicsEngine STATIC ${SOURCE} ${INTERFACE} ${INCLUDE})
 set_common_target_properties(Diligent-GraphicsEngine)
 
-target_include_directories(Diligent-GraphicsEngine
+target_include_directories(Diligent-GraphicsEngine 
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    include
+    interface
 )
 
-target_link_libraries(Diligent-GraphicsEngine
+target_link_libraries(Diligent-GraphicsEngine 
 PRIVATE
     Diligent-BuildSettings
 PUBLIC
@@ -143,11 +142,12 @@ endif()
 find_package(Git QUIET)
 if(Git_FOUND)
     execute_process(
-        COMMAND "${GIT_EXECUTABLE}" describe --dirty=+ --tags --always
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMAND "${GIT_EXECUTABLE}" rev-parse --short=8 HEAD
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         OUTPUT_VARIABLE DILIGENT_CORE_COMMIT_HASH
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     set(DILIGENT_CORE_COMMIT_HASH "${DILIGENT_CORE_COMMIT_HASH}" CACHE INTERNAL "" FORCE)
+    message(STATUS "DiligentCore commit hash: " ${DILIGENT_CORE_COMMIT_HASH})
     target_compile_definitions(Diligent-GraphicsEngine PRIVATE DILIGENT_CORE_COMMIT_HASH="${DILIGENT_CORE_COMMIT_HASH}")
 endif()

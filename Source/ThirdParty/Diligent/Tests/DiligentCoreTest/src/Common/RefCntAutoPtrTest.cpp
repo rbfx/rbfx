@@ -611,7 +611,7 @@ TEST(Common_RefCntAutoPtr, Misc)
 
             virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final {}
 
-            inline virtual Atomics::Long DILIGENT_CALL_TYPE Release() override final
+            inline virtual ReferenceCounterValueType DILIGENT_CALL_TYPE Release() override final
             {
                 return RefCountedObject<IObject>::Release(
                     [&]() //
@@ -652,8 +652,8 @@ public:
 #else
     static const int NumThreadInterations = 50000;
 #endif
-    ThreadingTools::Signal m_WorkerThreadSignal[2];
-    ThreadingTools::Signal m_MainThreadSignal;
+    Threading::Signal m_WorkerThreadSignal[2];
+    Threading::Signal m_MainThreadSignal;
 
     std::mutex      m_NumThreadsCompletedMtx;
     std::atomic_int m_NumThreadsCompleted[2];

@@ -27,7 +27,12 @@
 #include "SPIRVTools.hpp"
 #include "DebugUtilities.hpp"
 
+#include "spirv-tools/optimizer.hpp"
+
 namespace Diligent
+{
+
+namespace
 {
 
 void SpvOptimizerMessageConsumer(
@@ -76,6 +81,66 @@ void SpvOptimizerMessageConsumer(
 
     if (level == SPV_MSG_FATAL || level == SPV_MSG_INTERNAL_ERROR || level == SPV_MSG_ERROR || level == SPV_MSG_WARNING)
         LOG_DEBUG_MESSAGE(MsgSeverity, "Spirv optimizer ", LevelText, ": ", message);
+}
+
+spv_target_env SpvTargetEnvFromSPIRV(const std::vector<uint32_t>& SPIRV)
+{
+    if (SPIRV.size() < 2)
+    {
+        // Invalid SPIRV
+        return SPV_ENV_VULKAN_1_0;
+    }
+
+#define SPV_SPIRV_VERSION_WORD(MAJOR, MINOR) ((uint32_t(uint8_t(MAJOR)) << 16) | (uint32_t(uint8_t(MINOR)) << 8))
+    switch (SPIRV[1])
+    {
+        case SPV_SPIRV_VERSION_WORD(1, 0): return SPV_ENV_VULKAN_1_0;
+        case SPV_SPIRV_VERSION_WORD(1, 1): return SPV_ENV_VULKAN_1_0;
+        case SPV_SPIRV_VERSION_WORD(1, 2): return SPV_ENV_VULKAN_1_0;
+        case SPV_SPIRV_VERSION_WORD(1, 3): return SPV_ENV_VULKAN_1_1;
+        case SPV_SPIRV_VERSION_WORD(1, 4): return SPV_ENV_VULKAN_1_1_SPIRV_1_4;
+        case SPV_SPIRV_VERSION_WORD(1, 5): return SPV_ENV_VULKAN_1_2;
+        case SPV_SPIRV_VERSION_WORD(1, 6): return SPV_ENV_VULKAN_1_3;
+        default: return SPV_ENV_VULKAN_1_3;
+    }
+}
+
+} // namespace
+
+std::vector<uint32_t> OptimizeSPIRV(const std::vector<uint32_t>& SrcSPIRV, spv_target_env TargetEnv, SPIRV_OPTIMIZATION_FLAGS Passes)
+{
+    VERIFY_EXPR(Passes != SPIRV_OPTIMIZATION_FLAG_NONE);
+
+    if (TargetEnv == SPV_ENV_MAX)
+        TargetEnv = SpvTargetEnvFromSPIRV(SrcSPIRV);
+
+    spvtools::Optimizer SpirvOptimizer(TargetEnv);
+    SpirvOptimizer.SetMessageConsumer(SpvOptimizerMessageConsumer);
+
+    // SPIR-V bytecode generated from HLSL must be legalized to
+    // turn it into a valid vulkan SPIR-V shader.
+    if (Passes & SPIRV_OPTIMIZATION_FLAG_LEGALIZATION)
+    {
+        SpirvOptimizer.RegisterLegalizationPasses();
+    }
+
+    if (Passes & SPIRV_OPTIMIZATION_FLAG_PERFORMANCE)
+    {
+        SpirvOptimizer.RegisterPerformancePasses();
+    }
+
+    if (Passes & SPIRV_OPTIMIZATION_FLAG_STRIP_REFLECTION)
+    {
+        // Decorations defined in SPV_GOOGLE_hlsl_functionality1 are the only instructions
+        // removed by strip-reflect-info pass. SPIRV offsets become INVALID after this operation.
+        SpirvOptimizer.RegisterPass(spvtools::CreateStripReflectInfoPass());
+    }
+
+    std::vector<uint32_t> OptimizedSPIRV;
+    if (!SpirvOptimizer.Run(SrcSPIRV.data(), SrcSPIRV.size(), &OptimizedSPIRV))
+        OptimizedSPIRV.clear();
+
+    return OptimizedSPIRV;
 }
 
 } // namespace Diligent

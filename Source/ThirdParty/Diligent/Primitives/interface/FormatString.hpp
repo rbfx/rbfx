@@ -107,4 +107,28 @@ StreamType& operator<<(StreamType& Stream, const MemorySizeFormatter<Type>& Arg)
     return Stream;
 }
 
+namespace TextColorCode
+{
+static constexpr char Default[] = "\033[39m";
+
+static constexpr char Black[]       = "\033[30m";
+static constexpr char DarkRed[]     = "\033[31m";
+static constexpr char DarkGreen[]   = "\033[32m";
+static constexpr char DarkYellow[]  = "\033[33m";
+static constexpr char DarkBlue[]    = "\033[34m";
+static constexpr char DarkMagenta[] = "\033[35m";
+static constexpr char DarkCyan[]    = "\033[36m";
+static constexpr char DarkGray[]    = "\033[90m";
+
+static constexpr char Red[]     = "\033[91m";
+static constexpr char Green[]   = "\033[92m";
+static constexpr char Yellow[]  = "\033[93m";
+static constexpr char Blue[]    = "\033[94m";
+static constexpr char Magenta[] = "\033[95m";
+static constexpr char Cyan[]    = "\033[96m";
+static constexpr char White[]   = "\033[97m";
+static constexpr char Gray[]    = "\033[37m";
+
+} // namespace TextColorCode
+
 } // namespace Diligent

@@ -36,7 +36,7 @@
 namespace Diligent
 {
 
-void WindowsStoreDebug ::AssertionFailed(const Char* Message, const char* Function, const char* File, int Line)
+void WindowsStoreDebug::AssertionFailed(const Char* Message, const char* Function, const char* File, int Line)
 {
     auto AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
     OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
@@ -71,7 +71,12 @@ void WindowsStoreDebug ::AssertionFailed(const Char* Message, const char* Functi
     //    return;
 };
 
-void WindowsStoreDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity, const Char* Message, const char* Function, const char* File, int Line)
+void WindowsStoreDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                                           const Char*            Message,
+                                           const char*            Function,
+                                           const char*            File,
+                                           int                    Line,
+                                           TextColor              Color)
 {
     auto msg = FormatDebugMessage(Severity, Message, Function, File, Line);
     OutputDebugStringA(msg.c_str());
@@ -82,6 +87,15 @@ void DebugAssertionFailed(const Char* Message, const char* Function, const char*
     WindowsStoreDebug ::AssertionFailed(Message, Function, File, Line);
 }
 
-DebugMessageCallbackType DebugMessageCallback = WindowsStoreDebug::OutputDebugMessage;
+static void OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
+                               const Char*            Message,
+                               const char*            Function,
+                               const char*            File,
+                               int                    Line)
+{
+    return WindowsStoreDebug::OutputDebugMessage(Severity, Message, Function, File, Line, TextColor::Auto);
+}
+
+DebugMessageCallbackType DebugMessageCallback = OutputDebugMessage;
 
 } // namespace Diligent

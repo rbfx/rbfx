@@ -221,7 +221,7 @@ bool AndroidFile::Open(const char* FileName, std::ifstream& IFS, AAsset*& AssetF
 }
 
 AndroidFile::AndroidFile(const FileOpenAttribs& OpenAttribs) :
-    BasicFile(OpenAttribs, AndroidFileSystem::GetSlashSymbol())
+    BasicFile{OpenAttribs}
 {
     auto FullPath = m_OpenAttribs.strFilePath;
     if (!Open(FullPath, m_IFS, m_AssetFile, m_Size))
@@ -319,7 +319,7 @@ bool AndroidFileSystem::FileExists(const Char* strFilePath)
     size_t          Size      = 0;
     FileOpenAttribs OpenAttribs;
     OpenAttribs.strFilePath = strFilePath;
-    BasicFile   DummyFile(OpenAttribs, AndroidFileSystem::GetSlashSymbol());
+    BasicFile   DummyFile{OpenAttribs};
     const auto& Path   = DummyFile.GetPath(); // This is necessary to correct slashes
     bool        Exists = AndroidFile::Open(Path.c_str(), IFS, AssetFile, Size);
 

@@ -112,8 +112,9 @@ public:
         if (QueueMask == 0)
             return;
 
-        Atomics::Long NumReferences = PlatformMisc::CountOneBits(QueueMask);
-        auto          Wrapper       = DynamicStaleResourceWrapper::Create(std::move(Object), NumReferences);
+        DynamicStaleResourceWrapper::RefCounterType NumReferences = PlatformMisc::CountOneBits(QueueMask);
+
+        auto Wrapper = DynamicStaleResourceWrapper::Create(std::move(Object), NumReferences);
 
         while (QueueMask != 0)
         {

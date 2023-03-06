@@ -229,13 +229,13 @@ DILIGENT_BEGIN_INTERFACE(IArchiverFactory, IObject)
 
     /// Removes device-specific data from the archive and writes a new archive to the stream.
 
-    /// \param [in]  pSrcArchive - Source archive from which device specific-data will be removed.
-    /// \param [in]  DeviceFlags - Combination of device types that will be removed.
-    /// \param [in]  pStream     - Destination file stream.
+    /// \param [in]  pSrcArchive  - Source archive from which device specific-data will be removed.
+    /// \param [in]  DeviceFlags  - Combination of device types that will be removed.
+    /// \param [out] ppDstArchive - Memory address where a pointer to the new archive will be written.
     VIRTUAL Bool METHOD(RemoveDeviceData)(THIS_
-                                          IArchive*                 pSrcArchive,
+                                          const IDataBlob*          pSrcArchive,
                                           ARCHIVE_DEVICE_DATA_FLAGS DeviceFlags,
-                                          IFileStream*              pStream) CONST PURE;
+                                          IDataBlob**               ppDstArchive) CONST PURE;
 
 
     /// Copies device-specific data from the source archive to the destination and writes a new archive to the stream.
@@ -243,17 +243,16 @@ DILIGENT_BEGIN_INTERFACE(IArchiverFactory, IObject)
     /// \param [in]  pSrcArchive    - Source archive to which new device-specific data will be added.
     /// \param [in]  DeviceFlags    - Combination of device types that will be copied.
     /// \param [in]  pDeviceArchive - Archive that contains the same common data and additional device-specific data.
-    /// \param [in]  pStream        - Destination file stream.
+    /// \param [out] ppDstArchive   - Memory address where a pointer to the new archive will be written.
     VIRTUAL Bool METHOD(AppendDeviceData)(THIS_
-                                          IArchive*                 pSrcArchive,
+                                          const IDataBlob*          pSrcArchive,
                                           ARCHIVE_DEVICE_DATA_FLAGS DeviceFlags,
-                                          IArchive*                 pDeviceArchive,
-                                          IFileStream*              pStream) CONST PURE;
-
+                                          const IDataBlob*          pDeviceArchive,
+                                          IDataBlob**               ppDstArchive) CONST PURE;
 
     /// Prints archive content for debugging and validation.
     VIRTUAL Bool METHOD(PrintArchiveContent)(THIS_
-                                             IArchive* pArchive) CONST PURE;
+                                             const IDataBlob* pArchive) CONST PURE;
 
     /// Sets a user-provided debug message callback.
 

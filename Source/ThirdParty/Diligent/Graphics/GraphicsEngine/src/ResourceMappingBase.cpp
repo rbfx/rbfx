@@ -35,17 +35,12 @@ ResourceMappingImpl::~ResourceMappingImpl()
 {
 }
 
-ThreadingTools::LockHelper ResourceMappingImpl::Lock()
-{
-    return ThreadingTools::LockHelper(m_LockFlag);
-}
-
 void ResourceMappingImpl::AddResourceArray(const Char* Name, Uint32 StartIndex, IDeviceObject* const* ppObjects, Uint32 NumElements, bool bIsUnique)
 {
     if (Name == nullptr || *Name == 0)
         return;
 
-    auto LockHelper = Lock();
+    Threading::SpinLockGuard Guard{m_Lock};
     for (Uint32 Elem = 0; Elem < NumElements; ++Elem)
     {
         auto* pObject = ppObjects[Elem];
@@ -78,7 +73,7 @@ void ResourceMappingImpl::RemoveResourceByName(const Char* Name, Uint32 ArrayInd
     if (*Name == 0)
         return;
 
-    auto LockHelper = Lock();
+    Threading::SpinLockGuard Guard{m_Lock};
     // Remove object with the given name
     // Name will be implicitly converted to HashMapStringKey without making a copy
     m_HashTable.erase(ResMappingHashKey{Name, false, ArrayIndex});
@@ -92,7 +87,7 @@ IDeviceObject* ResourceMappingImpl::GetResource(const Char* Name, Uint32 ArrayIn
         return nullptr;
     }
 
-    auto LockHelper = Lock();
+    Threading::SpinLockGuard Guard{m_Lock};
 
     // Find an object with the requested name
     auto It = m_HashTable.find(ResMappingHashKey{Name, false, ArrayIndex});

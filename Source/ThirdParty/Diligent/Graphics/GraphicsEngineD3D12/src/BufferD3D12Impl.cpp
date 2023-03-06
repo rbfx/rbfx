@@ -95,30 +95,30 @@ BufferD3D12Impl::BufferD3D12Impl(IReferenceCounters*        pRefCounters,
         VERIFY(m_Desc.Usage != USAGE_DYNAMIC || PlatformMisc::CountOneBits(m_Desc.ImmediateContextMask) <= 1,
                "ImmediateContextMask must contain single set bit, this error should've been handled in ValidateBufferDesc()");
 
-        D3D12_RESOURCE_DESC D3D12BuffDesc{};
-        D3D12BuffDesc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
-        D3D12BuffDesc.Alignment          = 0;
-        D3D12BuffDesc.Width              = m_Desc.Size;
-        D3D12BuffDesc.Height             = 1;
-        D3D12BuffDesc.DepthOrArraySize   = 1;
-        D3D12BuffDesc.MipLevels          = 1;
-        D3D12BuffDesc.Format             = DXGI_FORMAT_UNKNOWN;
-        D3D12BuffDesc.SampleDesc.Count   = 1;
-        D3D12BuffDesc.SampleDesc.Quality = 0;
+        D3D12_RESOURCE_DESC d3d12BuffDesc{};
+        d3d12BuffDesc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+        d3d12BuffDesc.Alignment          = 0;
+        d3d12BuffDesc.Width              = m_Desc.Size;
+        d3d12BuffDesc.Height             = 1;
+        d3d12BuffDesc.DepthOrArraySize   = 1;
+        d3d12BuffDesc.MipLevels          = 1;
+        d3d12BuffDesc.Format             = DXGI_FORMAT_UNKNOWN;
+        d3d12BuffDesc.SampleDesc.Count   = 1;
+        d3d12BuffDesc.SampleDesc.Quality = 0;
         // Layout must be D3D12_TEXTURE_LAYOUT_ROW_MAJOR, as buffer memory layouts are
         // understood by applications and row-major texture data is commonly marshaled through buffers.
-        D3D12BuffDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-        D3D12BuffDesc.Flags  = D3D12_RESOURCE_FLAG_NONE;
+        d3d12BuffDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        d3d12BuffDesc.Flags  = D3D12_RESOURCE_FLAG_NONE;
         if ((m_Desc.BindFlags & BIND_UNORDERED_ACCESS) || (m_Desc.BindFlags & BIND_RAY_TRACING))
-            D3D12BuffDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            d3d12BuffDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         if (!(m_Desc.BindFlags & BIND_SHADER_RESOURCE) && !(m_Desc.BindFlags & BIND_RAY_TRACING))
-            D3D12BuffDesc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+            d3d12BuffDesc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
 
         auto* pd3d12Device = pRenderDeviceD3D12->GetD3D12Device();
 
         if (m_Desc.Usage == USAGE_SPARSE)
         {
-            auto hr = pd3d12Device->CreateReservedResource(&D3D12BuffDesc, D3D12_RESOURCE_STATE_COMMON, nullptr,
+            auto hr = pd3d12Device->CreateReservedResource(&d3d12BuffDesc, D3D12_RESOURCE_STATE_COMMON, nullptr,
                                                            __uuidof(m_pd3d12Resource),
                                                            reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&m_pd3d12Resource)));
             if (FAILED(hr))
@@ -147,7 +147,7 @@ BufferD3D12Impl::BufferD3D12Impl(IReferenceCounters*        pRefCounters,
             HeapProps.VisibleNodeMask      = 1;
 
             const auto InitialDataSize = (pBuffData != nullptr && pBuffData->pData != nullptr) ?
-                std::min(pBuffData->DataSize, D3D12BuffDesc.Width) :
+                std::min(pBuffData->DataSize, d3d12BuffDesc.Width) :
                 0;
 
             if (InitialDataSize > 0)
@@ -164,11 +164,20 @@ BufferD3D12Impl::BufferD3D12Impl(IReferenceCounters*        pRefCounters,
                 GetSupportedD3D12ResourceStatesForCommandList(pRenderDeviceD3D12->GetCommandQueueType(CmdQueueInd)) :
                 static_cast<D3D12_RESOURCE_STATES>(~0u);
 
-            auto D3D12State = ResourceStateFlagsToD3D12ResourceStates(GetState()) & StateMask;
-            auto hr         = pd3d12Device->CreateCommittedResource(&HeapProps, D3D12_HEAP_FLAG_NONE,
-                                                            &D3D12BuffDesc, D3D12State, nullptr,
-                                                            __uuidof(m_pd3d12Resource),
-                                                            reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&m_pd3d12Resource)));
+            const auto d3d12State = ResourceStateFlagsToD3D12ResourceStates(GetState()) & StateMask;
+
+            // By default, committed resources and heaps are almost always zeroed upon creation.
+            // CREATE_NOT_ZEROED flag allows this to be elided in some scenarios to lower the overhead
+            // of creating the heap. No need to zero the resource if we initialize it.
+            const auto d3d12HeapFlags = InitialDataSize > 0 ?
+                D3D12_HEAP_FLAG_CREATE_NOT_ZEROED :
+                D3D12_HEAP_FLAG_NONE;
+
+            auto hr = pd3d12Device->CreateCommittedResource(
+                &HeapProps, d3d12HeapFlags, &d3d12BuffDesc, d3d12State,
+                nullptr, // pOptimizedClearValue
+                __uuidof(m_pd3d12Resource),
+                reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&m_pd3d12Resource)));
             if (FAILED(hr))
                 LOG_ERROR_AND_THROW("Failed to create D3D12 buffer");
 
@@ -184,11 +193,13 @@ BufferD3D12Impl::BufferD3D12Impl(IReferenceCounters*        pRefCounters,
                 UploadHeapProps.CreationNodeMask     = 1;
                 UploadHeapProps.VisibleNodeMask      = 1;
 
-                D3D12BuffDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+                d3d12BuffDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
                 CComPtr<ID3D12Resource> UploadBuffer;
-                hr = pd3d12Device->CreateCommittedResource(&UploadHeapProps, D3D12_HEAP_FLAG_NONE,
-                                                           &D3D12BuffDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, __uuidof(UploadBuffer),
-                                                           reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&UploadBuffer)));
+                hr = pd3d12Device->CreateCommittedResource(
+                    &UploadHeapProps, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, // Do not zero the heap
+                    &d3d12BuffDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, __uuidof(UploadBuffer),
+                    reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&UploadBuffer)));
                 if (FAILED(hr))
                     LOG_ERROR_AND_THROW("Failed to create upload buffer");
 
@@ -249,18 +260,18 @@ static BufferDesc BufferDescFromD3D12Resource(BufferDesc BuffDesc, ID3D12Resourc
 {
     DEV_CHECK_ERR(BuffDesc.Usage != USAGE_DYNAMIC, "Dynamic buffers cannot be attached to native d3d12 resource");
 
-    auto D3D12BuffDesc = pd3d12Buffer->GetDesc();
-    DEV_CHECK_ERR(D3D12BuffDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER, "D3D12 resource is not a buffer");
+    auto d3d12BuffDesc = pd3d12Buffer->GetDesc();
+    DEV_CHECK_ERR(d3d12BuffDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER, "D3D12 resource is not a buffer");
 
-    DEV_CHECK_ERR(BuffDesc.Size == 0 || BuffDesc.Size == D3D12BuffDesc.Width, "Buffer size specified by the BufferDesc (", BuffDesc.Size, ") does not match d3d12 resource size (", D3D12BuffDesc.Width, ")");
-    BuffDesc.Size = StaticCast<Uint32>(D3D12BuffDesc.Width);
+    DEV_CHECK_ERR(BuffDesc.Size == 0 || BuffDesc.Size == d3d12BuffDesc.Width, "Buffer size specified by the BufferDesc (", BuffDesc.Size, ") does not match d3d12 resource size (", d3d12BuffDesc.Width, ")");
+    BuffDesc.Size = StaticCast<Uint32>(d3d12BuffDesc.Width);
 
-    if (D3D12BuffDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+    if (d3d12BuffDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
     {
         DEV_CHECK_ERR(BuffDesc.BindFlags == 0 || (BuffDesc.BindFlags & BIND_UNORDERED_ACCESS), "BIND_UNORDERED_ACCESS flag is not specified by the BufferDesc, while d3d12 resource was created with D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS flag");
         BuffDesc.BindFlags |= BIND_UNORDERED_ACCESS;
     }
-    if (D3D12BuffDesc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)
+    if (d3d12BuffDesc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)
     {
         DEV_CHECK_ERR(!(BuffDesc.BindFlags & BIND_SHADER_RESOURCE), "BIND_SHADER_RESOURCE flag is specified by the BufferDesc, while d3d12 resource was created with D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE flag");
         BuffDesc.BindFlags &= ~BIND_SHADER_RESOURCE;

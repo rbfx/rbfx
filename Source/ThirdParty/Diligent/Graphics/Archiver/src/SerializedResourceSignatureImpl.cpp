@@ -34,7 +34,7 @@
 namespace Diligent
 {
 
-DeviceObjectArchiveBase::DeviceType ArchiveDeviceDataFlagToArchiveDeviceType(ARCHIVE_DEVICE_DATA_FLAGS DataTypeFlag);
+DeviceObjectArchive::DeviceType ArchiveDeviceDataFlagToArchiveDeviceType(ARCHIVE_DEVICE_DATA_FLAGS DataTypeFlag);
 
 SerializedResourceSignatureImpl::SerializedResourceSignatureImpl(IReferenceCounters*                  pRefCounters,
                                                                  SerializationDeviceImpl*             pDevice,
@@ -50,7 +50,7 @@ SerializedResourceSignatureImpl::SerializedResourceSignatureImpl(IReferenceCount
     ValidatePipelineResourceSignatureDesc(Desc, pDevice, RENDER_DEVICE_TYPE_UNDEFINED);
 
     auto DeviceFlags = ArchiveInfo.DeviceFlags;
-    if ((DeviceFlags & pDevice->GetValidDeviceFlags()) != DeviceFlags)
+    if ((DeviceFlags & pDevice->GetSupportedDeviceFlags()) != DeviceFlags)
     {
         LOG_ERROR_AND_THROW("DeviceFlags contain unsupported device type");
     }

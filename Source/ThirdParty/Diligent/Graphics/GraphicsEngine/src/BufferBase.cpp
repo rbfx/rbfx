@@ -72,6 +72,7 @@ void ValidateBufferDesc(const BufferDesc& Desc, const IRenderDevice* pDevice) no
         }
         else if (Desc.Mode == BUFFER_MODE_RAW)
         {
+            // Nothing needs to be done
         }
     }
 

@@ -25,7 +25,7 @@
  */
 
 #include "SerializedRenderPassImpl.hpp"
-#include "DeviceObjectArchiveBase.hpp"
+#include "DeviceObjectArchive.hpp"
 #include "PSOSerializer.hpp"
 #include "SerializationDeviceImpl.hpp"
 

@@ -31,12 +31,9 @@
 #include "TestingSwapChainBase.hpp"
 
 #include "GraphicsAccessories.hpp"
-#include "ArchiveMemoryImpl.hpp"
 #include "Dearchiver.h"
 #include "SerializedPipelineState.h"
 #include "ShaderMacroHelper.hpp"
-#include "DataBlobImpl.hpp"
-#include "MemoryFileStream.hpp"
 
 #include "ResourceLayoutTestCommon.hpp"
 #include "gtest/gtest.h"
@@ -73,7 +70,7 @@ constexpr ARCHIVE_DEVICE_DATA_FLAGS GetDeviceBits()
     return DeviceBits;
 }
 
-void ArchivePRS(RefCntAutoPtr<IArchive>&                   pSource,
+void ArchivePRS(RefCntAutoPtr<IDataBlob>&                  pArchive,
                 const char*                                PRS1Name,
                 const char*                                PRS2Name,
                 RefCntAutoPtr<IPipelineResourceSignature>& pRefPRS_1,
@@ -83,8 +80,10 @@ void ArchivePRS(RefCntAutoPtr<IArchive>&                   pSource,
     auto* pEnv             = GPUTestingEnvironment::GetInstance();
     auto* pDevice          = pEnv->GetDevice();
     auto* pArchiverFactory = pEnv->GetArchiverFactory();
-    auto* pDearchiver      = pDevice->GetEngineFactory()->GetDearchiver();
 
+    RefCntAutoPtr<IDearchiver> pDearchiver;
+    DearchiverCreateInfo       DearchiverCI{};
+    pDevice->GetEngineFactory()->CreateDearchiver(DearchiverCI, &pDearchiver);
     if (!pDearchiver || !pArchiverFactory)
         GTEST_SKIP() << "Archiver library is not loaded";
 
@@ -169,32 +168,33 @@ void ArchivePRS(RefCntAutoPtr<IArchive>&                   pSource,
         ASSERT_NE(pRefPRS_2, nullptr);
     }
 
-    RefCntAutoPtr<IDataBlob> pBlob;
-    pArchiver->SerializeToBlob(&pBlob);
-    ASSERT_NE(pBlob, nullptr);
-
-    pSource = RefCntAutoPtr<IArchive>{MakeNewRCObj<ArchiveMemoryImpl>{}(pBlob)};
+    pArchiver->SerializeToBlob(&pArchive);
+    ASSERT_NE(pArchive, nullptr);
 }
 
-void UnpackPRS(IArchive*                   pSource,
+void UnpackPRS(IDataBlob*                  pArchive,
                const char*                 PRS1Name,
                const char*                 PRS2Name,
                IPipelineResourceSignature* pRefPRS_1,
                IPipelineResourceSignature* pRefPRS_2)
 {
-    auto* pEnv        = GPUTestingEnvironment::GetInstance();
-    auto* pDevice     = pEnv->GetDevice();
-    auto* pDearchiver = pDevice->GetEngineFactory()->GetDearchiver();
+    auto* pEnv             = GPUTestingEnvironment::GetInstance();
+    auto* pDevice          = pEnv->GetDevice();
+    auto* pArchiverFactory = pEnv->GetArchiverFactory();
 
-    RefCntAutoPtr<IDeviceObjectArchive> pArchive;
-    pDearchiver->CreateDeviceObjectArchive(pSource, &pArchive);
+    RefCntAutoPtr<IDearchiver> pDearchiver;
+    DearchiverCreateInfo       DearchiverCI{};
+    pDevice->GetEngineFactory()->CreateDearchiver(DearchiverCI, &pDearchiver);
+    ASSERT_TRUE(pDearchiver);
+
     ASSERT_NE(pArchive, nullptr);
+    EXPECT_TRUE(pArchiverFactory->PrintArchiveContent(pArchive));
+    pDearchiver->LoadArchive(pArchive);
 
     // Unpack PRS 1
     {
         ResourceSignatureUnpackInfo UnpackInfo;
         UnpackInfo.Name                     = PRS1Name;
-        UnpackInfo.pArchive                 = pArchive;
         UnpackInfo.pDevice                  = pDevice;
         UnpackInfo.SRBAllocationGranularity = 10;
 
@@ -219,7 +219,6 @@ void UnpackPRS(IArchive*                   pSource,
     {
         ResourceSignatureUnpackInfo UnpackInfo;
         UnpackInfo.Name                     = PRS2Name;
-        UnpackInfo.pArchive                 = pArchive;
         UnpackInfo.pDevice                  = pDevice;
         UnpackInfo.SRBAllocationGranularity = 10;
 
@@ -247,7 +246,7 @@ TEST(ArchiveTest, ResourceSignature)
     constexpr char PRS1Name[] = "ArchiveTest.ResourceSignature - PRS 1";
     constexpr char PRS2Name[] = "ArchiveTest.ResourceSignature - PRS 2";
 
-    RefCntAutoPtr<IArchive>                   pArchive;
+    RefCntAutoPtr<IDataBlob>                  pArchive;
     RefCntAutoPtr<IPipelineResourceSignature> pRefPRS_1;
     RefCntAutoPtr<IPipelineResourceSignature> pRefPRS_2;
     ArchivePRS(pArchive, PRS1Name, PRS2Name, pRefPRS_1, pRefPRS_2, GetDeviceBits());
@@ -260,8 +259,10 @@ TEST(ArchiveTest, RemoveDeviceData)
     auto* pEnv             = GPUTestingEnvironment::GetInstance();
     auto* pDevice          = pEnv->GetDevice();
     auto* pArchiverFactory = pEnv->GetArchiverFactory();
-    auto* pDearchiver      = pDevice->GetEngineFactory()->GetDearchiver();
 
+    RefCntAutoPtr<IDearchiver> pDearchiver;
+    DearchiverCreateInfo       DearchiverCI{};
+    pDevice->GetEngineFactory()->CreateDearchiver(DearchiverCI, &pDearchiver);
     if (!pDearchiver || !pArchiverFactory)
         GTEST_SKIP() << "Archiver library is not loaded";
 
@@ -274,7 +275,7 @@ TEST(ArchiveTest, RemoveDeviceData)
     constexpr char PRS1Name[] = "ArchiveTest.RemoveDeviceData - PRS 1";
     constexpr char PRS2Name[] = "ArchiveTest.RemoveDeviceData - PRS 2";
 
-    RefCntAutoPtr<IArchive> pArchive1;
+    RefCntAutoPtr<IDataBlob> pArchive1;
     {
         RefCntAutoPtr<IPipelineResourceSignature> pRefPRS_1;
         RefCntAutoPtr<IPipelineResourceSignature> pRefPRS_2;
@@ -283,15 +284,11 @@ TEST(ArchiveTest, RemoveDeviceData)
     }
 
     {
-        auto pDataBlob  = DataBlobImpl::Create(0);
-        auto pMemStream = MemoryFileStream::Create(pDataBlob);
-
-        ASSERT_TRUE(pArchiverFactory->RemoveDeviceData(pArchive1, CurrentDeviceFlag, pMemStream));
-
-        RefCntAutoPtr<IArchive> pArchive2{MakeNewRCObj<ArchiveMemoryImpl>{}(pDataBlob)};
+        RefCntAutoPtr<IDataBlob> pResArhive;
+        ASSERT_TRUE(pArchiverFactory->RemoveDeviceData(pArchive1, CurrentDeviceFlag, &pResArhive));
 
         // PRS creation must fail
-        UnpackPRS(pArchive2, PRS1Name, PRS2Name, nullptr, nullptr);
+        UnpackPRS(pResArhive, PRS1Name, PRS2Name, nullptr, nullptr);
     }
 }
 
@@ -301,8 +298,10 @@ TEST(ArchiveTest, AppendDeviceData)
     auto* pEnv             = GPUTestingEnvironment::GetInstance();
     auto* pDevice          = pEnv->GetDevice();
     auto* pArchiverFactory = pEnv->GetArchiverFactory();
-    auto* pDearchiver      = pDevice->GetEngineFactory()->GetDearchiver();
 
+    RefCntAutoPtr<IDearchiver> pDearchiver;
+    DearchiverCreateInfo       DearchiverCI{};
+    pDevice->GetEngineFactory()->CreateDearchiver(DearchiverCI, &pDearchiver);
     if (!pDearchiver || !pArchiverFactory)
         GTEST_SKIP() << "Archiver library is not loaded";
 
@@ -321,12 +320,12 @@ TEST(ArchiveTest, AppendDeviceData)
     constexpr char PRS1Name[] = "ArchiveTest.AppendDeviceData - PRS 1";
     constexpr char PRS2Name[] = "ArchiveTest.AppendDeviceData - PRS 2";
 
-    RefCntAutoPtr<IArchive> pArchive;
+    RefCntAutoPtr<IDataBlob> pArchive;
     for (; AllDeviceFlags != 0;)
     {
         const auto DeviceFlag = ExtractLSB(AllDeviceFlags);
 
-        RefCntAutoPtr<IArchive>                   pArchive2;
+        RefCntAutoPtr<IDataBlob>                  pArchive2;
         RefCntAutoPtr<IPipelineResourceSignature> pRefPRS_1;
         RefCntAutoPtr<IPipelineResourceSignature> pRefPRS_2;
         ArchivePRS(pArchive2, PRS1Name, PRS2Name, pRefPRS_1, pRefPRS_2, DeviceFlag);
@@ -335,14 +334,11 @@ TEST(ArchiveTest, AppendDeviceData)
 
         if (pArchive != nullptr)
         {
-            auto pDataBlob  = DataBlobImpl::Create(0);
-            auto pMemStream = MemoryFileStream::Create(pDataBlob);
-
+            RefCntAutoPtr<IDataBlob> pTmpArchive;
             // pArchive  - without DeviceFlag
             // pArchive2 - with DeviceFlag
-            ASSERT_TRUE(pArchiverFactory->AppendDeviceData(pArchive, DeviceFlag, pArchive2, pMemStream));
-
-            pArchive = RefCntAutoPtr<IArchive>{MakeNewRCObj<ArchiveMemoryImpl>{}(pDataBlob)};
+            ASSERT_TRUE(pArchiverFactory->AppendDeviceData(pArchive, DeviceFlag, pArchive2, &pTmpArchive));
+            pArchive = pTmpArchive;
         }
         else
         {
@@ -350,22 +346,18 @@ TEST(ArchiveTest, AppendDeviceData)
         }
     }
 
-    RefCntAutoPtr<IArchive>                   pArchive3;
+    RefCntAutoPtr<IDataBlob>                  pArchive3;
     RefCntAutoPtr<IPipelineResourceSignature> pRefPRS_1;
     RefCntAutoPtr<IPipelineResourceSignature> pRefPRS_2;
     ArchivePRS(pArchive3, PRS1Name, PRS2Name, pRefPRS_1, pRefPRS_2, CurrentDeviceFlag);
 
     // Append device data
     {
-        auto pDataBlob  = DataBlobImpl::Create(0);
-        auto pMemStream = MemoryFileStream::Create(pDataBlob);
-
+        RefCntAutoPtr<IDataBlob> pTmpArchive;
         // pArchive  - without CurrentDeviceFlag
         // pArchive3 - with CurrentDeviceFlag
-        ASSERT_TRUE(pArchiverFactory->AppendDeviceData(pArchive, CurrentDeviceFlag, pArchive3, pMemStream));
-
-        pArchive = RefCntAutoPtr<IArchive>{MakeNewRCObj<ArchiveMemoryImpl>{}(pDataBlob)};
-        UnpackPRS(pArchive, PRS1Name, PRS2Name, pRefPRS_1, pRefPRS_2);
+        ASSERT_TRUE(pArchiverFactory->AppendDeviceData(pArchive, CurrentDeviceFlag, pArchive3, &pTmpArchive));
+        UnpackPRS(pTmpArchive, PRS1Name, PRS2Name, pRefPRS_1, pRefPRS_2);
     }
 }
 
@@ -663,7 +655,6 @@ void TestGraphicsPipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
     auto* pEnv             = GPUTestingEnvironment::GetInstance();
     auto* pDevice          = pEnv->GetDevice();
     auto* pArchiverFactory = pEnv->GetArchiverFactory();
-    auto* pDearchiver      = pDevice->GetEngineFactory()->GetDearchiver();
     auto* pSwapChain       = pEnv->GetSwapChain();
 
     GPUTestingEnvironment::ScopedReleaseResources AutoreleaseResources;
@@ -671,6 +662,9 @@ void TestGraphicsPipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
     if (pDevice->GetDeviceInfo().Features.SeparablePrograms != DEVICE_FEATURE_STATE_ENABLED)
         GTEST_SKIP() << "Non separable programs are not supported";
 
+    RefCntAutoPtr<IDearchiver> pDearchiver;
+    DearchiverCreateInfo       DearchiverCI{};
+    pDevice->GetEngineFactory()->CreateDearchiver(DearchiverCI, &pDearchiver);
     if (!pDearchiver || !pArchiverFactory)
         GTEST_SKIP() << "Archiver library is not loaded";
 
@@ -742,9 +736,8 @@ void TestGraphicsPipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
         ASSERT_NE(pRefPRS, nullptr);
     }
 
-    RefCntAutoPtr<IPipelineState>       pRefPSOWithLayout;
-    RefCntAutoPtr<IPipelineState>       pRefPSOWithSign;
-    RefCntAutoPtr<IDeviceObjectArchive> pArchive;
+    RefCntAutoPtr<IPipelineState> pRefPSOWithLayout;
+    RefCntAutoPtr<IPipelineState> pRefPSOWithSign;
     {
         RefCntAutoPtr<IArchiver> pArchiver;
         pArchiverFactory->CreateArchiver(pSerializationDevice, &pArchiver);
@@ -930,22 +923,20 @@ void TestGraphicsPipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
             }
         }
 
-        RefCntAutoPtr<IDataBlob> pBlob;
-        pArchiver->SerializeToBlob(&pBlob);
-        ASSERT_NE(pBlob, nullptr);
-
-        RefCntAutoPtr<IArchive> pSource{MakeNewRCObj<ArchiveMemoryImpl>{}(pBlob)};
-        pDearchiver->CreateDeviceObjectArchive(pSource, &pArchive);
+        RefCntAutoPtr<IDataBlob> pArchive;
+        pArchiver->SerializeToBlob(&pArchive);
         ASSERT_NE(pArchive, nullptr);
+
+        EXPECT_TRUE(pArchiverFactory->PrintArchiveContent(pArchive));
+        pDearchiver->LoadArchive(pArchive);
     }
 
     // Unpack Render pass
     RefCntAutoPtr<IRenderPass> pUnpackedRenderPass;
     {
         RenderPassUnpackInfo UnpackInfo;
-        UnpackInfo.Name     = RPName;
-        UnpackInfo.pArchive = pArchive;
-        UnpackInfo.pDevice  = pDevice;
+        UnpackInfo.Name    = RPName;
+        UnpackInfo.pDevice = pDevice;
 
         pDearchiver->UnpackRenderPass(UnpackInfo, &pUnpackedRenderPass);
         ASSERT_NE(pUnpackedRenderPass, nullptr);
@@ -956,7 +947,6 @@ void TestGraphicsPipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
     {
         PipelineStateUnpackInfo UnpackInfo;
         UnpackInfo.Name         = PSOWithResLayoutName;
-        UnpackInfo.pArchive     = pArchive;
         UnpackInfo.pDevice      = pDevice;
         UnpackInfo.PipelineType = PIPELINE_TYPE_GRAPHICS;
         UnpackInfo.pCache       = pPSOCache;
@@ -1000,7 +990,6 @@ void TestGraphicsPipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
     {
         PipelineStateUnpackInfo UnpackInfo;
         UnpackInfo.Name         = PSOWithSignName;
-        UnpackInfo.pArchive     = pArchive;
         UnpackInfo.pDevice      = pDevice;
         UnpackInfo.PipelineType = PIPELINE_TYPE_GRAPHICS;
         UnpackInfo.pCache       = pPSOCache;
@@ -1153,8 +1142,10 @@ void TestComputePipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
     auto* pEnv             = GPUTestingEnvironment::GetInstance();
     auto* pDevice          = pEnv->GetDevice();
     auto* pArchiverFactory = pEnv->GetArchiverFactory();
-    auto* pDearchiver      = pDevice->GetEngineFactory()->GetDearchiver();
 
+    RefCntAutoPtr<IDearchiver> pDearchiver;
+    DearchiverCreateInfo       DearchiverCI{};
+    pDevice->GetEngineFactory()->CreateDearchiver(DearchiverCI, &pDearchiver);
     if (!pDearchiver || !pArchiverFactory)
         GTEST_SKIP() << "Archiver library is not loaded";
 
@@ -1195,8 +1186,7 @@ void TestComputePipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
         ASSERT_NE(pRefPRS, nullptr);
     }
 
-    RefCntAutoPtr<IPipelineState>       pRefPSO;
-    RefCntAutoPtr<IDeviceObjectArchive> pArchive;
+    RefCntAutoPtr<IPipelineState> pRefPSO;
     {
         RefCntAutoPtr<IArchiver> pArchiver;
         pArchiverFactory->CreateArchiver(pSerializationDevice, &pArchiver);
@@ -1235,6 +1225,9 @@ void TestComputePipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
             pDevice->CreateComputePipelineState(PSOCreateInfo, &pRefPSO);
             ASSERT_NE(pRefPSO, nullptr);
         }
+
+        RefCntAutoPtr<IDataBlob> pArchive;
+        RefCntAutoPtr<IDataBlob> pSignArchive;
         {
             ComputePipelineStateCreateInfo PSOCreateInfo;
             PSOCreateInfo.PSODesc.Name         = PSO1Name;
@@ -1252,14 +1245,27 @@ void TestComputePipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
             pSerializationDevice->CreateComputePipelineState(PSOCreateInfo, ArchiveInfo, &pSerializedPSO);
             ASSERT_NE(pSerializedPSO, nullptr);
             ASSERT_TRUE(pArchiver->AddPipelineState(pSerializedPSO));
-        }
-        RefCntAutoPtr<IDataBlob> pBlob;
-        pArchiver->SerializeToBlob(&pBlob);
-        ASSERT_NE(pBlob, nullptr);
 
-        RefCntAutoPtr<IArchive> pSource{MakeNewRCObj<ArchiveMemoryImpl>{}(pBlob)};
-        pDearchiver->CreateDeviceObjectArchive(pSource, &pArchive);
-        ASSERT_NE(pArchive, nullptr);
+            {
+                pArchiver->SerializeToBlob(&pArchive);
+                ASSERT_NE(pArchive, nullptr);
+                EXPECT_TRUE(pArchiverFactory->PrintArchiveContent(pArchive));
+            }
+
+            if (ArchiveFlags & PSO_ARCHIVE_FLAG_DO_NOT_PACK_SIGNATURES)
+            {
+                pArchiver->Reset();
+                ASSERT_TRUE(pArchiver->AddPipelineResourceSignature(pSerializedPRS));
+
+                pArchiver->SerializeToBlob(&pSignArchive);
+                ASSERT_NE(pSignArchive, nullptr);
+                EXPECT_TRUE(pArchiverFactory->PrintArchiveContent(pSignArchive));
+            }
+        }
+
+        pDearchiver->LoadArchive(pArchive);
+        if (pSignArchive)
+            pDearchiver->LoadArchive(pSignArchive);
     }
 
     // Unpack PSO
@@ -1267,7 +1273,6 @@ void TestComputePipeline(PSO_ARCHIVE_FLAGS ArchiveFlags)
     {
         PipelineStateUnpackInfo UnpackInfo;
         UnpackInfo.Name         = PSO1Name;
-        UnpackInfo.pArchive     = pArchive;
         UnpackInfo.pDevice      = pDevice;
         UnpackInfo.PipelineType = PIPELINE_TYPE_COMPUTE;
 
@@ -1321,13 +1326,25 @@ TEST(ArchiveTest, ComputePipeline_NoReflection)
     TestComputePipeline(PSO_ARCHIVE_FLAG_STRIP_REFLECTION);
 }
 
+TEST(ArchiveTest, ComputePipeline_SplitArchive)
+{
+    TestComputePipeline(PSO_ARCHIVE_FLAG_DO_NOT_PACK_SIGNATURES);
+}
+
+TEST(ArchiveTest, ComputePipeline_NoReflection_SplitArchive)
+{
+    TestComputePipeline(PSO_ARCHIVE_FLAG_STRIP_REFLECTION | PSO_ARCHIVE_FLAG_DO_NOT_PACK_SIGNATURES);
+}
+
 TEST(ArchiveTest, RayTracingPipeline)
 {
     auto* pEnv             = GPUTestingEnvironment::GetInstance();
     auto* pDevice          = pEnv->GetDevice();
     auto* pArchiverFactory = pEnv->GetArchiverFactory();
-    auto* pDearchiver      = pDevice->GetEngineFactory()->GetDearchiver();
 
+    RefCntAutoPtr<IDearchiver> pDearchiver;
+    DearchiverCreateInfo       DearchiverCI{};
+    pDevice->GetEngineFactory()->CreateDearchiver(DearchiverCI, &pDearchiver);
     if (!pDearchiver || !pArchiverFactory)
         GTEST_SKIP() << "Archiver library is not loaded";
 
@@ -1359,8 +1376,7 @@ TEST(ArchiveTest, RayTracingPipeline)
 
     const auto DeviceBits = GetDeviceBits() & (ARCHIVE_DEVICE_DATA_FLAG_D3D12 | ARCHIVE_DEVICE_DATA_FLAG_VULKAN);
 
-    RefCntAutoPtr<IPipelineState>       pRefPSO;
-    RefCntAutoPtr<IDeviceObjectArchive> pArchive;
+    RefCntAutoPtr<IPipelineState> pRefPSO;
     {
         RefCntAutoPtr<IArchiver> pArchiver;
         pArchiverFactory->CreateArchiver(pSerializationDevice, &pArchiver);
@@ -1448,13 +1464,12 @@ TEST(ArchiveTest, RayTracingPipeline)
             ASSERT_NE(pSerializedPSO, nullptr);
             ASSERT_TRUE(pArchiver->AddPipelineState(pSerializedPSO));
         }
-        RefCntAutoPtr<IDataBlob> pBlob;
-        pArchiver->SerializeToBlob(&pBlob);
-        ASSERT_NE(pBlob, nullptr);
-
-        RefCntAutoPtr<IArchive> pSource{MakeNewRCObj<ArchiveMemoryImpl>{}(pBlob)};
-        pDearchiver->CreateDeviceObjectArchive(pSource, &pArchive);
+        RefCntAutoPtr<IDataBlob> pArchive;
+        pArchiver->SerializeToBlob(&pArchive);
         ASSERT_NE(pArchive, nullptr);
+
+        EXPECT_TRUE(pArchiverFactory->PrintArchiveContent(pArchive));
+        pDearchiver->LoadArchive(pArchive);
     }
 
     // Unpack PSO
@@ -1462,7 +1477,6 @@ TEST(ArchiveTest, RayTracingPipeline)
     {
         PipelineStateUnpackInfo UnpackInfo;
         UnpackInfo.Name         = PSO1Name;
-        UnpackInfo.pArchive     = pArchive;
         UnpackInfo.pDevice      = pDevice;
         UnpackInfo.PipelineType = PIPELINE_TYPE_RAY_TRACING;
 
@@ -1939,7 +1953,6 @@ TEST_P(TestSamplers, GraphicsPipeline)
     auto* const pSwapChain       = pEnv->GetSwapChain();
     const auto& deviceCaps       = pDevice->GetDeviceInfo();
     auto* const pArchiverFactory = pEnv->GetArchiverFactory();
-    auto* const pDearchiver      = pDevice->GetEngineFactory()->GetDearchiver();
 
     const auto& Param = GetParam();
 
@@ -1950,6 +1963,9 @@ TEST_P(TestSamplers, GraphicsPipeline)
     if (ShaderLang != SHADER_SOURCE_LANGUAGE_HLSL && deviceCaps.IsD3DDevice())
         GTEST_SKIP() << "Direct3D backends support HLSL only";
 
+    RefCntAutoPtr<IDearchiver> pDearchiver;
+    DearchiverCreateInfo       DearchiverCI{};
+    pDevice->GetEngineFactory()->CreateDearchiver(DearchiverCI, &pDearchiver);
     if (!pDearchiver || !pArchiverFactory)
         GTEST_SKIP() << "Archiver library is not loaded";
 
@@ -2010,7 +2026,6 @@ TEST_P(TestSamplers, GraphicsPipeline)
     pArchiverFactory->CreateSerializationDevice(SerializationDeviceCreateInfo{}, &pSerializationDevice);
     ASSERT_NE(pSerializationDevice, nullptr);
 
-    RefCntAutoPtr<IDeviceObjectArchive> pArchive;
     {
         RefCntAutoPtr<IArchiver> pArchiver;
         pArchiverFactory->CreateArchiver(pSerializationDevice, &pArchiver);
@@ -2233,20 +2248,18 @@ TEST_P(TestSamplers, GraphicsPipeline)
         ASSERT_NE(pSerializedPSO, nullptr);
         ASSERT_TRUE(pArchiver->AddPipelineState(pSerializedPSO));
 
-        RefCntAutoPtr<IDataBlob> pBlob;
-        pArchiver->SerializeToBlob(&pBlob);
-        ASSERT_NE(pBlob, nullptr);
-
-        RefCntAutoPtr<IArchive> pSource{MakeNewRCObj<ArchiveMemoryImpl>{}(pBlob)};
-        pDearchiver->CreateDeviceObjectArchive(pSource, &pArchive);
+        RefCntAutoPtr<IDataBlob> pArchive;
+        pArchiver->SerializeToBlob(&pArchive);
         ASSERT_NE(pArchive, nullptr);
+
+        EXPECT_TRUE(pArchiverFactory->PrintArchiveContent(pArchive));
+        pDearchiver->LoadArchive(pArchive);
     }
 
     RefCntAutoPtr<IPipelineState> pPSO;
     {
         PipelineStateUnpackInfo UnpackInfo;
         UnpackInfo.Name         = PSOName;
-        UnpackInfo.pArchive     = pArchive;
         UnpackInfo.pDevice      = pDevice;
         UnpackInfo.PipelineType = PIPELINE_TYPE_GRAPHICS;
 
@@ -2258,9 +2271,8 @@ TEST_P(TestSamplers, GraphicsPipeline)
     if (UseSignature)
     {
         ResourceSignatureUnpackInfo UnpackInfo;
-        UnpackInfo.Name     = PRSName;
-        UnpackInfo.pArchive = pArchive;
-        UnpackInfo.pDevice  = pDevice;
+        UnpackInfo.Name    = PRSName;
+        UnpackInfo.pDevice = pDevice;
 
         pDearchiver->UnpackResourceSignature(UnpackInfo, &pSignature);
         ASSERT_NE(pSignature, nullptr);

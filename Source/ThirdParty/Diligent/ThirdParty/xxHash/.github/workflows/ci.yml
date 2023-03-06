@@ -244,6 +244,10 @@ jobs:
       run: |
         make lint-unicode
 
+    - name: test-filename-escape
+      # See also issue #695 - https://github.com/Cyan4973/xxHash/issues/695
+      run: |
+        make clean test-filename-escape
 
   ubuntu-cmake-unofficial:
     name: Linux x64 cmake unofficial build test
@@ -267,6 +271,25 @@ jobs:
         CFLAGS=-Werror make
         mkdir test_install_dir
         DESTDIR=test_install_dir cmake --install .
+
+    - name: cmake minimum version v2.8.12 test
+      run: |
+        mkdir -p cmake_bins
+        cd cmake_bins
+        wget https://cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.tar.gz
+        tar xzf cmake-2.8.12.2-Linux-i386.tar.gz
+        cd ../cmake_unofficial
+        mkdir -p build
+        cd build
+        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake --version
+        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake ..
+        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake --build .
+        mkdir -p test_install_dir
+        DESTDIR=test_install_dir ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake --install .
+        rm -rf *
+        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake -DCMAKE_BUILD_TYPE=Debug ..
+        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake --build .
+
 
 
   # Linux, { ARM, ARM64, PPC64LE, PPC64, S390X }
@@ -523,7 +546,7 @@ jobs:
           ./xxhsum.exe --version
 
   tipi-build-linux:
-    name: tipi.build project build and dependency resolution 
+    name: tipi.build project build and dependency resolution
     runs-on: ubuntu-latest
     container: tipibuild/tipi-ubuntu
 
@@ -540,10 +563,10 @@ jobs:
 
       - name: Build as project target linux-cxx20 (run test multiInclude)
         run: tipi . --dont-upgrade --verbose --test multiInclude -t linux-cxx20
-      
+
       - name: Cleanup project builds
         run: rm -r ./build
-      
+
       # trying if pulling the dependency with tipi works properly
       - name: Build as dependency
         run: |

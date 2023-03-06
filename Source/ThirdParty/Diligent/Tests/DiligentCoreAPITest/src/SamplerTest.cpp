@@ -27,6 +27,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <thread>
+#include <vector>
+#include <atomic>
 
 #include "GPUTestingEnvironment.hpp"
 #include "Sampler.h"
@@ -34,6 +37,7 @@
 
 #include "ResourceLayoutTestCommon.hpp"
 #include "FastRand.hpp"
+#include "ThreadSignal.hpp"
 
 #include "gtest/gtest.h"
 
@@ -113,6 +117,8 @@ TEST(FilterTypeTest, AnisotropicFilter)
 {
     auto* pEnv    = GPUTestingEnvironment::GetInstance();
     auto* pDevice = pEnv->GetDevice();
+    if (!pDevice->GetAdapterInfo().Sampler.AnisotropicFilteringSupported)
+        GTEST_SKIP() << "Anisotropic filtering is not supported by this device";
 
     GPUTestingEnvironment::ScopedReleaseResources AutoreleaseResources;
 
@@ -471,6 +477,70 @@ TEST(SamplerTest, Correctness)
                       << " Immutable: " << (IsImmutable ? "Yes" : "No") << std::endl;
         }
     }
+}
+
+TEST(SamplerTest, Multithreading)
+{
+    auto* pEnv    = GPUTestingEnvironment::GetInstance();
+    auto* pDevice = pEnv->GetDevice();
+    if (!pDevice->GetDeviceInfo().Features.MultithreadedResourceCreation)
+        GTEST_SKIP() << "This deveice does not supported multithreaded resource creation";
+
+    const auto NumThreads = std::max(std::thread::hardware_concurrency(), 2u);
+
+    GPUTestingEnvironment::ScopedReset AutoReset;
+
+    Threading::Signal StartWorkSignal;
+    Threading::Signal WorkCompletedSignal;
+    std::atomic_int   NumCompltedThreads{0};
+
+    std::vector<std::thread> Workers(NumThreads);
+    for (auto& Worker : Workers)
+    {
+        Worker = std::thread{
+            [&]() //
+            {
+                const auto  Seed = static_cast<unsigned int>(reinterpret_cast<size_t>(this) & 0xFFFFFFFFu);
+                FastRandInt Rnd{Seed, 0, 2};
+                while (true)
+                {
+                    auto SignaledValue = StartWorkSignal.Wait(true, NumThreads);
+                    if (SignaledValue < 0)
+                        return;
+
+                    SamplerDesc SamDesc;
+                    SamDesc.Name      = Rnd() ? "Test sampler" : nullptr;
+                    SamDesc.AddressU  = TEXTURE_ADDRESS_CLAMP;
+                    SamDesc.AddressV  = TEXTURE_ADDRESS_WRAP;
+                    SamDesc.AddressW  = TEXTURE_ADDRESS_MIRROR;
+                    SamDesc.MinFilter = FILTER_TYPE_LINEAR;
+                    SamDesc.MagFilter = FILTER_TYPE_POINT;
+
+                    RefCntAutoPtr<ISampler> pSampler;
+                    pDevice->CreateSampler(SamDesc, &pSampler);
+                    EXPECT_TRUE(pSampler);
+
+                    if (NumCompltedThreads.fetch_add(1) + 1 == static_cast<int>(NumThreads))
+                        WorkCompletedSignal.Trigger();
+                }
+            } //
+        };
+    }
+
+    size_t NumIterations = 100;
+    for (size_t i = 0; i < NumIterations; ++i)
+    {
+        GPUTestingEnvironment::ScopedReleaseResources ReleaseRes;
+
+        NumCompltedThreads.store(0);
+        StartWorkSignal.Trigger(true);
+        WorkCompletedSignal.Wait(true, 1);
+    }
+
+    StartWorkSignal.Trigger(true, -1);
+
+    for (auto& Worker : Workers)
+        Worker.join();
 }
 
 } // namespace

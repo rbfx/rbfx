@@ -44,6 +44,7 @@ TEST(Common_HashUtils, HashMapStringKey)
         const char* Str = "Test String";
 
         HashMapStringKey Key1{Str};
+        EXPECT_TRUE(Key1);
         EXPECT_EQ(Key1.GetStr(), Str);
         EXPECT_STREQ(Key1.GetStr(), Str);
 
@@ -82,7 +83,7 @@ TEST(Common_HashUtils, HashMapStringKey)
     }
 
     {
-        std::unordered_map<HashMapStringKey, int, HashMapStringKey::Hasher> TestMap;
+        std::unordered_map<HashMapStringKey, int> TestMap;
 
         const char* Str1 = "String1";
         const char* Str2 = "String2";
@@ -115,6 +116,34 @@ TEST(Common_HashUtils, HashMapStringKey)
 
         it = TestMap.find(HashMapStringKey{std::string{Str3}});
         EXPECT_EQ(it, TestMap.end());
+    }
+
+    {
+        HashMapStringKey Key1;
+        EXPECT_FALSE(Key1);
+
+        HashMapStringKey Key2{"Key2", true};
+        Key1 = std::move(Key2);
+        EXPECT_TRUE(Key1);
+        EXPECT_FALSE(Key2);
+        EXPECT_STREQ(Key1.GetStr(), "Key2");
+
+        HashMapStringKey Key3{"Key3", true};
+        Key1 = Key3.Clone();
+        EXPECT_TRUE(Key1);
+        EXPECT_TRUE(Key3);
+        EXPECT_NE(Key1.GetStr(), Key3.GetStr());
+        EXPECT_STREQ(Key1.GetStr(), "Key3");
+
+        Key1.Clear();
+        EXPECT_FALSE(Key1);
+        EXPECT_EQ(Key1.GetStr(), nullptr);
+
+        Key2 = HashMapStringKey{"Key2"};
+        Key1 = Key2.Clone();
+        EXPECT_TRUE(Key1);
+        EXPECT_TRUE(Key2);
+        EXPECT_EQ(Key1.GetStr(), Key2.GetStr());
     }
 }
 

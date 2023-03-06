@@ -34,7 +34,7 @@
 #include "GraphicsTypes.h"
 #include "Buffer.h"
 #include "InputLayout.h"
-#include "LockHelper.hpp"
+#include "SpinLock.hpp"
 #include "HashUtils.hpp"
 #include "DeviceContextBase.hpp"
 
@@ -120,7 +120,7 @@ private:
     // Clears stale entries from m_PSOToKey and m_BuffToKey when a VAO is removed from m_Cache
     void ClearStaleKeys(const std::vector<VAOHashKey>& StaleKeys);
 
-    ThreadingTools::LockFlag                                                               m_CacheLockFlag;
+    Threading::SpinLock                                                                    m_CacheLock;
     std::unordered_map<VAOHashKey, GLObjectWrappers::GLVertexArrayObj, VAOHashKey::Hasher> m_Cache;
 
     std::unordered_multimap<UniqueIdentifier, VAOHashKey> m_PSOToKey;

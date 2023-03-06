@@ -152,8 +152,8 @@ public:
 private:
     void ReserveSpace(const RenderPassDesc& Desc, FixedLinearAllocator& MemPool) const
     {
-        MemPool.AddSpace<RESOURCE_STATE>(Desc.AttachmentCount * Desc.SubpassCount); // m_AttachmentStates
-        MemPool.AddSpace<std::pair<Uint32, Uint32>>(Desc.AttachmentCount);          // m_AttachmentFirstLastUse
+        MemPool.AddSpace<RESOURCE_STATE>(size_t{Desc.AttachmentCount} * size_t{Desc.SubpassCount}); // m_AttachmentStates
+        MemPool.AddSpace<std::pair<Uint32, Uint32>>(Desc.AttachmentCount);                          // m_AttachmentFirstLastUse
 
         MemPool.AddSpace<RenderPassAttachmentDesc>(Desc.AttachmentCount); // Desc.pAttachments
         MemPool.AddSpace<SubpassDesc>(Desc.SubpassCount);                 // Desc.pSubpasses
@@ -182,7 +182,7 @@ private:
 
     void CopyDesc(RenderPassDesc& Desc, RESOURCE_STATE*& AttachmentStates, const std::pair<Uint32, Uint32>*& outAttachmentFirstLastUse, FixedLinearAllocator& MemPool) const
     {
-        AttachmentStates             = MemPool.ConstructArray<RESOURCE_STATE>(Desc.AttachmentCount * Desc.SubpassCount, RESOURCE_STATE_UNKNOWN);
+        AttachmentStates             = MemPool.ConstructArray<RESOURCE_STATE>(size_t{Desc.AttachmentCount} * size_t{Desc.SubpassCount}, RESOURCE_STATE_UNKNOWN);
         auto* AttachmentFirstLastUse = MemPool.ConstructArray<std::pair<Uint32, Uint32>>(Desc.AttachmentCount, std::pair<Uint32, Uint32>{ATTACHMENT_UNUSED, 0});
         outAttachmentFirstLastUse    = AttachmentFirstLastUse;
 

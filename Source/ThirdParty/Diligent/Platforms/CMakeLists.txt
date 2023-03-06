@@ -2,15 +2,15 @@ cmake_minimum_required (VERSION 3.6)
 
 add_library(Diligent-PlatformInterface INTERFACE)
 
-target_include_directories(Diligent-PlatformInterface INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>)
+target_include_directories(Diligent-PlatformInterface INTERFACE interface)
 
 set(PLATFORM_INTERFACE_HEADERS
-	../interface/Atomics.hpp
-	../interface/FileSystem.hpp
-	../interface/PlatformDebug.hpp
-	../interface/PlatformDefinitions.h
-	../interface/PlatformMisc.hpp
-	../interface/NativeWindow.h
+    ../interface/FileSystem.hpp
+    ../interface/Intrinsics.hpp
+    ../interface/PlatformDebug.hpp
+    ../interface/PlatformDefinitions.h
+    ../interface/PlatformMisc.hpp
+    ../interface/NativeWindow.h
 )
 
 add_subdirectory(Basic)

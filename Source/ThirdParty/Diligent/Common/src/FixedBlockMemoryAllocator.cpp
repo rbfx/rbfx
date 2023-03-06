@@ -109,7 +109,7 @@ void FixedBlockMemoryAllocator::Free(void* Ptr)
     if (PageIdIt != m_AddrToPageId.end())
     {
         auto PageId = PageIdIt->second;
-        VERIFY_EXPR(PageId >= 0 && PageId < m_PagePool.size());
+        VERIFY_EXPR(PageId < m_PagePool.size());
         m_PagePool[PageId].DeAllocate(Ptr);
         m_AvailablePages.insert(PageId);
         m_AddrToPageId.erase(PageIdIt);

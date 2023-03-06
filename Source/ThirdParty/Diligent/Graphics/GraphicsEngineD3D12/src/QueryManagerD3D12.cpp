@@ -176,37 +176,40 @@ QueryManagerD3D12::QueryManagerD3D12(RenderDeviceD3D12Impl* pDeviceD3D12Impl,
         VERIFY_EXPR(!HeapInfo.IsNull() && HeapInfo.GetType() == QueryType && HeapInfo.GetQueryCount() == d3d12HeapDesc.Count);
     }
 
-    D3D12_RESOURCE_DESC D3D12BuffDesc = {};
-    D3D12BuffDesc.Dimension           = D3D12_RESOURCE_DIMENSION_BUFFER;
-    D3D12BuffDesc.Alignment           = 0;
-    D3D12BuffDesc.Width               = ResolveBufferOffset;
-    D3D12BuffDesc.Height              = 1;
-    D3D12BuffDesc.DepthOrArraySize    = 1;
-    D3D12BuffDesc.MipLevels           = 1;
-    D3D12BuffDesc.Format              = DXGI_FORMAT_UNKNOWN;
-    D3D12BuffDesc.SampleDesc.Count    = 1;
-    D3D12BuffDesc.SampleDesc.Quality  = 0;
-    // Layout must be D3D12_TEXTURE_LAYOUT_ROW_MAJOR, as buffer memory layouts are
-    // understood by applications and row-major texture data is commonly marshaled through buffers.
-    D3D12BuffDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    D3D12BuffDesc.Flags  = D3D12_RESOURCE_FLAG_NONE;
+    if (ResolveBufferOffset > 0)
+    {
+        D3D12_RESOURCE_DESC D3D12BuffDesc{};
+        D3D12BuffDesc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+        D3D12BuffDesc.Alignment          = 0;
+        D3D12BuffDesc.Width              = ResolveBufferOffset;
+        D3D12BuffDesc.Height             = 1;
+        D3D12BuffDesc.DepthOrArraySize   = 1;
+        D3D12BuffDesc.MipLevels          = 1;
+        D3D12BuffDesc.Format             = DXGI_FORMAT_UNKNOWN;
+        D3D12BuffDesc.SampleDesc.Count   = 1;
+        D3D12BuffDesc.SampleDesc.Quality = 0;
+        // Layout must be D3D12_TEXTURE_LAYOUT_ROW_MAJOR, as buffer memory layouts are
+        // understood by applications and row-major texture data is commonly marshaled through buffers.
+        D3D12BuffDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        D3D12BuffDesc.Flags  = D3D12_RESOURCE_FLAG_NONE;
 
-    D3D12_HEAP_PROPERTIES HeapProps = {};
-    HeapProps.Type                  = D3D12_HEAP_TYPE_READBACK;
-    HeapProps.CPUPageProperty       = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    HeapProps.MemoryPoolPreference  = D3D12_MEMORY_POOL_UNKNOWN;
-    HeapProps.CreationNodeMask      = 1;
-    HeapProps.VisibleNodeMask       = 1;
+        D3D12_HEAP_PROPERTIES HeapProps{};
+        HeapProps.Type                 = D3D12_HEAP_TYPE_READBACK;
+        HeapProps.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        HeapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        HeapProps.CreationNodeMask     = 1;
+        HeapProps.VisibleNodeMask      = 1;
 
-    // The destination buffer of a query resolve operation must be in the D3D12_RESOURCE_USAGE_COPY_DEST state.
-    // ResolveQueryData works with all heap types (default, upload, readback).
-    // https://microsoft.github.io/DirectX-Specs/d3d/CountersAndQueries.html#resolvequerydata
-    auto hr = pd3d12Device->CreateCommittedResource(&HeapProps, D3D12_HEAP_FLAG_NONE,
-                                                    &D3D12BuffDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
-                                                    __uuidof(m_pd3d12ResolveBuffer),
-                                                    reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&m_pd3d12ResolveBuffer)));
-    if (FAILED(hr))
-        LOG_ERROR_AND_THROW("Failed to create D3D12 resolve buffer");
+        // The destination buffer of a query resolve operation must be in the D3D12_RESOURCE_USAGE_COPY_DEST state.
+        // ResolveQueryData works with all heap types (default, upload, readback).
+        // https://microsoft.github.io/DirectX-Specs/d3d/CountersAndQueries.html#resolvequerydata
+        auto hr = pd3d12Device->CreateCommittedResource(&HeapProps, D3D12_HEAP_FLAG_NONE,
+                                                        &D3D12BuffDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
+                                                        __uuidof(m_pd3d12ResolveBuffer),
+                                                        reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&m_pd3d12ResolveBuffer)));
+        if (FAILED(hr))
+            LOG_ERROR_AND_THROW("Failed to create D3D12 resolve buffer");
+    }
 }
 
 QueryManagerD3D12::~QueryManagerD3D12()
@@ -271,7 +274,7 @@ void QueryManagerD3D12::ReadQueryData(QUERY_TYPE Type, Uint32 Index, void* pData
     const auto  Offset = HeapInfo.GetResolveBufferOffset(Index);
     D3D12_RANGE ReadRange;
     ReadRange.Begin = Offset;
-    ReadRange.End   = Offset + QueryDataSize;
+    ReadRange.End   = SIZE_T{Offset} + SIZE_T{QueryDataSize};
 
     void* pBufferData = nullptr;
     // The pointer returned by Map is never offset by any values in pReadRange.

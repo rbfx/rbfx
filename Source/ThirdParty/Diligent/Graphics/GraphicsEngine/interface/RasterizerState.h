@@ -135,6 +135,9 @@ struct RasterizerStateDesc
     /// Default value: 0.
     Float32   SlopeScaledDepthBias  DEFAULT_INITIALIZER(0.f);
 
+    // 
+    // NB: when adding new members, don't forget to update std::hash<Diligent::RasterizerStateDesc>
+    //
 
 #if DILIGENT_CPP_INTERFACE
 

@@ -60,15 +60,14 @@ static constexpr ARCHIVE_DEVICE_DATA_FLAGS GetSupportedDeviceFlags()
 }
 
 SerializationDeviceImpl::SerializationDeviceImpl(IReferenceCounters* pRefCounters, const SerializationDeviceCreateInfo& CreateInfo) :
-    TBase{pRefCounters, GetRawAllocator(), nullptr, EngineCreateInfo{}, CreateInfo.AdapterInfo}
+    TBase{pRefCounters, GetRawAllocator(), nullptr, EngineCreateInfo{}, CreateInfo.AdapterInfo},
+    m_ValidDeviceFlags{Diligent::GetSupportedDeviceFlags()}
 {
     m_DeviceInfo = CreateInfo.DeviceInfo;
 
 #if !DILIGENT_NO_GLSLANG
     GLSLangUtils::InitializeGlslang();
 #endif
-
-    m_ValidDeviceFlags = GetSupportedDeviceFlags();
 
     if (m_ValidDeviceFlags & ARCHIVE_DEVICE_DATA_FLAG_D3D11)
     {

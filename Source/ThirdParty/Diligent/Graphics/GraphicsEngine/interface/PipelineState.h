@@ -155,6 +155,10 @@ struct ShaderResourceVariableDesc
                SafeStrEqual(Name, RHS.Name);
     }
 
+    bool operator!=(const ShaderResourceVariableDesc& RHS) const
+    {
+        return !(*this == RHS);
+    }
 #endif
 };
 typedef struct ShaderResourceVariableDesc ShaderResourceVariableDesc;
@@ -213,24 +217,40 @@ struct PipelineResourceLayoutDesc
     const ImmutableSamplerDesc*         ImmutableSamplers    DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
+    /// Returns true if two resource layout descriptions are equal, and false otherwise.
+    /// Optionally ignores variable descriptions and/or sampler descriptions.
+    static bool IsEqual(const PipelineResourceLayoutDesc& Desc1, 
+                        const PipelineResourceLayoutDesc& Desc2,
+                        bool                              IgnoreVariables = false,
+                        bool                              IgnoreSamplers  = false)
+    {
+        if (!(Desc1.DefaultVariableType        == Desc2.DefaultVariableType        &&
+              Desc1.DefaultVariableMergeStages == Desc2.DefaultVariableMergeStages &&
+              Desc1.NumVariables               == Desc2.NumVariables               &&
+              Desc1.NumImmutableSamplers       == Desc2.NumImmutableSamplers))
+           return false;
+
+        if (!IgnoreVariables)
+        {
+            for (Uint32 i = 0; i < Desc1.NumVariables; ++i)
+                if (Desc1.Variables[i] != Desc2.Variables[i])
+                    return false;
+        }
+
+        if (!IgnoreSamplers)
+        {
+            for (Uint32 i = 0; i < Desc1.NumImmutableSamplers; ++i)
+                if (Desc1.ImmutableSamplers[i] != Desc2.ImmutableSamplers[i])
+                    return false;
+        }
+
+        return true;
+    }
+
     /// Comparison operator tests if two structures are equivalent
     bool operator==(const PipelineResourceLayoutDesc& RHS) const
     {
-        if (!(DefaultVariableType        == RHS.DefaultVariableType &&
-              DefaultVariableMergeStages == RHS.DefaultVariableMergeStages &&
-              NumVariables               == RHS.NumVariables &&
-              NumImmutableSamplers       == RHS.NumImmutableSamplers))
-           return false;
-
-        for (Uint32 i = 0; i < NumVariables; ++i)
-            if (!(Variables[i] == RHS.Variables[i]))
-                return false;
-
-        for (Uint32 i = 0; i < NumImmutableSamplers; ++i)
-            if (!(ImmutableSamplers[i] == RHS.ImmutableSamplers[i]))
-                return false;
-
-        return true;
+        return IsEqual(*this, RHS);
     }
     bool operator!=(const PipelineResourceLayoutDesc& RHS) const
     {

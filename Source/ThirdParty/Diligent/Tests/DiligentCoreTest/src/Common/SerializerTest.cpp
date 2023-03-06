@@ -59,16 +59,16 @@ TEST(SerializerTest, SerializerTest)
 
     DynamicLinearAllocator TmpAllocator{RawAllocator};
     const auto             WriteData = [&](auto& Ser) {
-        Ser(RefU16);
-        Ser(RefStr);
-        Ser(RefEmptyStr);
-        Ser(RefNullStr);
-        Ser(RefU64, RefU8);
-        Ser(RefU32);
-        Ser.SerializeArrayRaw(&TmpAllocator, RefArray, RefArraySize);
-        Ser.CopyBytes(RefBytes1, sizeof(RefBytes1));
-        Ser.SerializeBytes(RefBytes2, RefNumBytes2);
-        Ser.SerializeBytes(RefBytes3, RefNumBytes3);
+        EXPECT_TRUE(Ser(RefU16));
+        EXPECT_TRUE(Ser(RefStr));
+        EXPECT_TRUE(Ser(RefEmptyStr));
+        EXPECT_TRUE(Ser(RefNullStr));
+        EXPECT_TRUE(Ser(RefU64, RefU8));
+        EXPECT_TRUE(Ser(RefU32));
+        EXPECT_TRUE(Ser.SerializeArrayRaw(&TmpAllocator, RefArray, RefArraySize));
+        EXPECT_TRUE(Ser.CopyBytes(RefBytes1, sizeof(RefBytes1)));
+        EXPECT_TRUE(Ser.SerializeBytes(RefBytes2, RefNumBytes2));
+        EXPECT_TRUE(Ser.SerializeBytes(RefBytes3, RefNumBytes3));
     };
 
     Serializer<SerializerMode::Measure> MSer;
@@ -87,50 +87,50 @@ TEST(SerializerTest, SerializerTest)
 
     {
         Uint16 U16 = 0;
-        RSer(U16);
+        EXPECT_TRUE(RSer(U16));
         EXPECT_EQ(U16, RefU16);
     }
 
     {
         const char* Str = nullptr;
-        RSer(Str);
+        EXPECT_TRUE(RSer(Str));
         EXPECT_STREQ(Str, RefStr);
     }
 
     {
         const char* EmptyStr = nullptr;
-        RSer(EmptyStr);
+        EXPECT_TRUE(RSer(EmptyStr));
         EXPECT_STREQ(EmptyStr, RefEmptyStr);
     }
 
     {
         const char* NullStr = nullptr;
-        RSer(NullStr);
+        EXPECT_TRUE(RSer(NullStr));
         EXPECT_STREQ(NullStr, "");
     }
 
     {
         Uint64 U64 = 0;
-        RSer(U64);
+        EXPECT_TRUE(RSer(U64));
         EXPECT_EQ(U64, RefU64);
     }
 
     {
         Uint8 U8 = 0;
-        RSer(U8);
+        EXPECT_TRUE(RSer(U8));
         EXPECT_EQ(U8, RefU8);
     }
 
     {
         Uint32 U32 = 0;
-        RSer(U32);
+        EXPECT_TRUE(RSer(U32));
         EXPECT_EQ(U32, RefU32);
     }
 
     {
         Uint32  ArraySize = 0;
         Uint32* pArray    = nullptr;
-        RSer.SerializeArrayRaw(&TmpAllocator, pArray, ArraySize);
+        EXPECT_TRUE(RSer.SerializeArrayRaw(&TmpAllocator, pArray, ArraySize));
         EXPECT_EQ(ArraySize, RefArraySize);
         for (Uint32 i = 0; i < RefArraySize; ++i)
             EXPECT_EQ(RefArray[i], pArray[i]);
@@ -138,7 +138,7 @@ TEST(SerializerTest, SerializerTest)
 
     {
         Uint8 Bytes[NumBytes1] = {};
-        RSer.CopyBytes(Bytes, sizeof(Bytes));
+        EXPECT_TRUE(RSer.CopyBytes(Bytes, sizeof(Bytes)));
         for (Uint32 i = 0; i < NumBytes1; ++i)
             EXPECT_EQ(Bytes[i], RefBytes1[i]);
     }
@@ -146,7 +146,7 @@ TEST(SerializerTest, SerializerTest)
     {
         size_t      NumBytes2 = 0;
         const void* pBytes2   = nullptr;
-        RSer.SerializeBytes(pBytes2, NumBytes2);
+        EXPECT_TRUE(RSer.SerializeBytes(pBytes2, NumBytes2));
         EXPECT_EQ(NumBytes2, RefNumBytes2);
         EXPECT_EQ(std::memcmp(pBytes2, RefBytes2, RefNumBytes2), 0);
     }
@@ -154,7 +154,7 @@ TEST(SerializerTest, SerializerTest)
     {
         size_t      NumBytes3 = 0;
         const void* pBytes3   = nullptr;
-        RSer.SerializeBytes(pBytes3, NumBytes3);
+        EXPECT_TRUE(RSer.SerializeBytes(pBytes3, NumBytes3));
         EXPECT_EQ(NumBytes3, RefNumBytes3);
         EXPECT_EQ(std::memcmp(pBytes3, RefBytes3, RefNumBytes3), 0);
     }

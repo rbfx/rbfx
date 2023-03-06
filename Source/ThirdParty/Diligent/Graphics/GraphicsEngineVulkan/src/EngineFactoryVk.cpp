@@ -63,11 +63,7 @@ public:
 
     using TBase = EngineFactoryBase<IEngineFactoryVk>;
     EngineFactoryVkImpl() :
-        TBase //
-        {
-            IID_EngineFactoryVk,
-            NEW_RC_OBJ(GetRawAllocator(), "DearchiverVkImpl instance", DearchiverVkImpl)() //
-        }
+        TBase{IID_EngineFactoryVk}
     {
     }
 
@@ -113,6 +109,12 @@ public:
     virtual void DILIGENT_CALL_TYPE EnableDeviceSimulation() override final
     {
         m_EnableDeviceSimulation = true;
+    }
+
+    virtual void DILIGENT_CALL_TYPE CreateDearchiver(const DearchiverCreateInfo& CreateInfo,
+                                                     IDearchiver**               ppDearchiver) const override final
+    {
+        TBase::CreateDearchiver<DearchiverVkImpl>(CreateInfo, ppDearchiver);
     }
 
 #if PLATFORM_ANDROID
@@ -593,10 +595,13 @@ void EngineFactoryVkImpl::EnumerateAdapters(Version              MinVersion,
         return;
     }
 
-    // Create instance with maximum available version.
-    // If Volk is not enabled then version will be 1.0
-    const uint32_t APIVersion = VK_MAKE_VERSION(0xFF, 0xFF, 0);
-    auto           Instance   = VulkanUtilities::VulkanInstance::Create({APIVersion, false, m_EnableDeviceSimulation, 0, nullptr, nullptr});
+    VulkanUtilities::VulkanInstance::CreateInfo InstanceCI;
+    // Create instance with the maximum available version.
+    // If Volk is not enabled, the version will be 1.0.
+    InstanceCI.ApiVersion             = VK_MAKE_VERSION(0xFF, 0xFF, 0);
+    InstanceCI.EnableDeviceSimulation = m_EnableDeviceSimulation;
+
+    auto Instance = VulkanUtilities::VulkanInstance::Create(InstanceCI);
 
     if (Adapters == nullptr)
     {
@@ -607,7 +612,7 @@ void EngineFactoryVkImpl::EnumerateAdapters(Version              MinVersion,
     NumAdapters = std::min(NumAdapters, static_cast<Uint32>(Instance->GetVkPhysicalDevices().size()));
     for (Uint32 i = 0; i < NumAdapters; ++i)
     {
-        auto PhysicalDevice = VulkanUtilities::VulkanPhysicalDevice::Create(Instance->GetVkPhysicalDevices()[i], *Instance);
+        auto PhysicalDevice = VulkanUtilities::VulkanPhysicalDevice::Create({*Instance, Instance->GetVkPhysicalDevices()[i]});
         Adapters[i]         = GetPhysicalDeviceGraphicsAdapterInfo(*PhysicalDevice);
     }
 }
@@ -627,7 +632,7 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
         return;
 
     *ppDevice = nullptr;
-    memset(ppContexts, 0, sizeof(*ppContexts) * (std::max(1u, EngineCI.NumImmediateContexts) + EngineCI.NumDeferredContexts));
+    memset(ppContexts, 0, sizeof(*ppContexts) * (size_t{std::max(1u, EngineCI.NumImmediateContexts)} + size_t{EngineCI.NumDeferredContexts}));
 
     if (m_wpDevice.IsValid())
     {
@@ -643,20 +648,28 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
             Version{0xFF, 0xFF} : // Instance will use the maximum available version
             EngineCI.GraphicsAPIVersion;
 
-        auto Instance = VulkanUtilities::VulkanInstance::Create(
-            {
-                VK_MAKE_VERSION(GraphicsAPIVersion.Major, GraphicsAPIVersion.Minor, 0),
-                EngineCI.EnableValidation,
-                m_EnableDeviceSimulation,
-                EngineCI.InstanceExtensionCount,
-                EngineCI.ppInstanceExtensionNames,
-                reinterpret_cast<VkAllocationCallbacks*>(EngineCI.pVkAllocator) //
-            });
+        VulkanUtilities::VulkanInstance::CreateInfo InstanceCI;
+        InstanceCI.ApiVersion                = VK_MAKE_VERSION(GraphicsAPIVersion.Major, GraphicsAPIVersion.Minor, 0);
+        InstanceCI.EnableValidation          = EngineCI.EnableValidation;
+        InstanceCI.EnableDeviceSimulation    = m_EnableDeviceSimulation;
+        InstanceCI.LogExtensions             = true;
+        InstanceCI.EnabledLayerCount         = EngineCI.IntanceLayerCount;
+        InstanceCI.ppEnabledLayerNames       = EngineCI.ppInstanceLayerNames;
+        InstanceCI.ExtensionCount            = EngineCI.InstanceExtensionCount;
+        InstanceCI.ppExtensionNames          = EngineCI.ppInstanceExtensionNames;
+        InstanceCI.pVkAllocator              = reinterpret_cast<VkAllocationCallbacks*>(EngineCI.pVkAllocator);
+        InstanceCI.IgnoreDebugMessageCount   = EngineCI.IgnoreDebugMessageCount;
+        InstanceCI.ppIgnoreDebugMessageNames = EngineCI.ppIgnoreDebugMessageNames;
+
+        auto Instance = VulkanUtilities::VulkanInstance::Create(InstanceCI);
 
         auto vkDevice       = Instance->SelectPhysicalDevice(EngineCI.AdapterId);
-        auto PhysicalDevice = VulkanUtilities::VulkanPhysicalDevice::Create(vkDevice, *Instance);
+        auto PhysicalDevice = VulkanUtilities::VulkanPhysicalDevice::Create({*Instance, vkDevice, /*LogExtensions = */ true});
 
-        std::vector<const char*> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        std::vector<const char*> DeviceExtensions;
+        if (Instance->IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
+            DeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
         if (PhysicalDevice->IsExtensionSupported(VK_KHR_MAINTENANCE1_EXTENSION_NAME))
             DeviceExtensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME); // To allow negative viewport height
         else
@@ -793,6 +806,7 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
         vkEnabledFeatures.shaderSampledImageArrayDynamicIndexing  = vkDeviceFeatures.shaderSampledImageArrayDynamicIndexing;
         vkEnabledFeatures.shaderStorageBufferArrayDynamicIndexing = vkDeviceFeatures.shaderStorageBufferArrayDynamicIndexing;
         vkEnabledFeatures.shaderStorageImageArrayDynamicIndexing  = vkDeviceFeatures.shaderStorageImageArrayDynamicIndexing;
+        vkEnabledFeatures.shaderImageGatherExtended               = vkDeviceFeatures.shaderImageGatherExtended;
 
         if (EnabledFeatures.SparseResources)
         {
@@ -1194,7 +1208,7 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
             DefaultContextInfo.Name    = "Graphics context";
             DefaultContextInfo.QueueId = static_cast<Uint8>(QueueInfos[0].queueFamilyIndex);
 
-            CommandQueuesVk[0] = NEW_RC_OBJ(RawMemAllocator, "CommandQueueVk instance", CommandQueueVkImpl)(LogicalDevice, SoftwareQueueIndex{0}, 1, 1, DefaultContextInfo);
+            CommandQueuesVk[0] = NEW_RC_OBJ(RawMemAllocator, "CommandQueueVk instance", CommandQueueVkImpl)(LogicalDevice, SoftwareQueueIndex{0}, 1u, 1u, DefaultContextInfo);
             CommandQueues[0]   = CommandQueuesVk[0];
         }
 
@@ -1250,7 +1264,7 @@ void EngineFactoryVkImpl::AttachToVulkanDevice(std::shared_ptr<VulkanUtilities::
     VERIFY_EXPR(NumImmediateContexts == CommandQueueCount);
 
     *ppDevice = nullptr;
-    memset(ppContexts, 0, sizeof(*ppContexts) * (NumImmediateContexts + EngineCI.NumDeferredContexts));
+    memset(ppContexts, 0, sizeof(*ppContexts) * (size_t{NumImmediateContexts} + size_t{EngineCI.NumDeferredContexts}));
 
     try
     {

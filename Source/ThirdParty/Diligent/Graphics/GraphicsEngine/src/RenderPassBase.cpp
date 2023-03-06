@@ -218,6 +218,16 @@ void ValidateRenderPassDesc(const RenderPassDesc&      Desc,
                                                 " must be in ", (IsVulkan ? "RENDER_TARGET or COMMON" : "RENDER_TARGET"), " state, but specified state is ",
                                                 GetResourceStateString(AttchRef.State));
             }
+
+            const auto  Fmt        = Desc.pAttachments[AttchRef.AttachmentIndex].Format;
+            const auto& FmtAttribs = GetTextureFormatAttribs(Fmt);
+            if (FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH ||
+                FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH_STENCIL ||
+                FmtAttribs.ComponentType == COMPONENT_TYPE_COMPRESSED)
+            {
+                LOG_RENDER_PASS_ERROR_AND_THROW("attachment with index ", AttchRef.AttachmentIndex, " referenced as render target attachment in subpass ", subpass,
+                                                " uses format ", FmtAttribs.Name, ", which is not a valid render target format.");
+            }
         }
 
         if (Subpass.pResolveAttachments != nullptr)
@@ -260,6 +270,15 @@ void ValidateRenderPassDesc(const RenderPassDesc&      Desc,
                     LOG_RENDER_PASS_ERROR_AND_THROW("attachment with index ", AttchRef.AttachmentIndex, " referenced as depth stencil attachment in subpass ", subpass,
                                                     " must be in ", (IsVulkan ? "DEPTH_READ, DEPTH_WRITE or COMMON" : "DEPTH_READ or DEPTH_WRITE"),
                                                     " state, but specified state is ", GetResourceStateString(AttchRef.State));
+                }
+
+                const auto  Fmt        = Desc.pAttachments[AttchRef.AttachmentIndex].Format;
+                const auto& FmtAttribs = GetTextureFormatAttribs(Fmt);
+                if (FmtAttribs.ComponentType != COMPONENT_TYPE_DEPTH &&
+                    FmtAttribs.ComponentType != COMPONENT_TYPE_DEPTH_STENCIL)
+                {
+                    LOG_RENDER_PASS_ERROR_AND_THROW("attachment with index ", AttchRef.AttachmentIndex, " referenced as depth-stencil attachment in subpass ", subpass,
+                                                    " uses format ", FmtAttribs.Name, ", which is not a valid depth buffer format.");
                 }
             }
         }

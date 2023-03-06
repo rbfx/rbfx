@@ -164,7 +164,7 @@ void RenderPassVkImpl::CreateRenderPass() noexcept(false)
         TotalPreserveAttachmentsCount += Subpass.PreserveAttachmentCount;
     }
 
-    std::vector<AttachmentReferenceType>                vkAttachmentReferences(TotalAttachmentReferencesCount + TotalShadingRateAttachmentsCount);
+    std::vector<AttachmentReferenceType>                vkAttachmentReferences(size_t{TotalAttachmentReferencesCount} + size_t{TotalShadingRateAttachmentsCount});
     std::vector<Uint32>                                 vkPreserveAttachments(TotalPreserveAttachmentsCount);
     std::vector<VkFragmentShadingRateAttachmentInfoKHR> vkShadingRate{TotalShadingRateAttachmentsCount};
     const ShadingRateAttachment*                        pMainSRA = nullptr;

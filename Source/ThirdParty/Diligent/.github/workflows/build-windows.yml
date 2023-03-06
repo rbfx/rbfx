@@ -1,0 +1,145 @@
+name: Win32/UWP build
+
+on: [push, pull_request]
+
+jobs:
+  precheks:
+    runs-on: windows-latest
+    name: Win10 -> Pre-checks
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+
+    - name: Format validation
+      shell: cmd
+      working-directory: ${{github.workspace}}/BuildTools/FormatValidation
+      run: validate_format_win.bat
+
+
+  build:
+    needs:   precheks
+    runs-on: windows-2022
+
+    strategy:
+      fail-fast: false
+      matrix:
+        name:            ["Win10"]
+        toolset:         ["Win32", "x64"]
+        build_type:      ["Debug", "Release"]
+        cmake_generator: ["Visual Studio 17 2022"]
+        cmake_args:      ["-DDILIGENT_BUILD_TESTS=ON"]
+        platform:        ["Win32"]
+
+        include:
+          - name:            "Win10-Dev"
+            platform:        "Win32"
+            toolset:         "x64"
+            build_type:      "RelWithDebInfo"
+            cmake_generator: "Visual Studio 17 2022"
+            cmake_args:      "-DDILIGENT_BUILD_CORE_TESTS=ON -DDILIGENT_DEVELOPMENT=ON -DDILIGENT_LOAD_PIX_EVENT_RUNTIME=ON"
+
+          - name:            "Win8.1"
+            platform:        "Win32"
+            toolset:         "x64"
+            build_type:      "Release"
+            cmake_generator: "Visual Studio 17 2022"
+            cmake_args:      "-DDILIGENT_BUILD_CORE_TESTS=ON -DCMAKE_SYSTEM_VERSION=8.1"
+
+          - name:            "Win10-Ninja"
+            platform:        "Win32"
+            toolset:         "x64"
+            build_type:      "Debug"
+            cmake_generator: "Ninja"
+            cmake_args:      "-DDILIGENT_BUILD_CORE_TESTS=ON"
+
+          - name:            "MinGW"
+            platform:        "Win32"
+            toolset:         "x64"
+            build_type:      "Release"
+            cmake_generator: "MinGW Makefiles"
+            cmake_args:      "-DDILIGENT_BUILD_CORE_TESTS=ON"
+
+          - name:            "UWP"
+            platform:        "UWP"
+            toolset:         "x64"
+            build_type:      "Debug"
+            cmake_generator: "Visual Studio 17 2022"
+            cmake_args:      "-DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -DDILIGENT_LOAD_PIX_EVENT_RUNTIME=ON"
+
+          - name:            "UWP"
+            platform:        "UWP"
+            toolset:         "x64"
+            build_type:      "Release"
+            cmake_generator: "Visual Studio 17 2022"
+            cmake_args:      "-DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -DDILIGENT_LOAD_PIX_EVENT_RUNTIME=ON"
+
+    name: Win10 -> ${{ matrix.name }}-${{ matrix.toolset }}, ${{ matrix.build_type }}
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Set up build environment
+      if: success()
+      uses: DiligentGraphics/github-action/setup-build-env@v1
+      with:
+        platform:        ${{ matrix.platform }}
+        cmake-generator: ${{ matrix.cmake_generator }}
+        ninja-vs-arch:   ${{ matrix.toolset }}
+
+    - name: Configure CMake
+      if: success()
+      uses: DiligentGraphics/github-action/configure-cmake@v1
+      with:
+        generator:  ${{ matrix.cmake_generator }}
+        vs-arch:    ${{ matrix.toolset }}
+        build-type: ${{ matrix.build_type }}
+        cmake-args: ${{ matrix.cmake_args }}
+
+    - name: Build
+      id:   build
+      if:   success()
+      uses: DiligentGraphics/github-action/build@v1
+      with:
+        target: install
+
+    - name: DiligentCoreTest
+      if:   ${{ success() && matrix.name != 'UWP'}}
+      uses: DiligentGraphics/github-action/run-core-tests@v1
+
+    - name: DiligentCoreAPITest D3D11
+      # NB: it is essential to include failure() to override the default status check of success()
+      #     that is automatically applied to if conditions that don't contain a status check function.
+      if:   ${{ (success() || failure() && steps.build.outcome == 'success') && (matrix.name == 'Win10' || matrix.name == 'Win8.1') }}
+      uses: DiligentGraphics/github-action/run-core-gpu-tests@v1
+      with:
+        mode: d3d11_sw
+
+    - name: DiligentCoreAPITest D3D12
+      if:   ${{ (success() || failure() && steps.build.outcome == 'success') && matrix.name == 'Win10' }}
+      uses: DiligentGraphics/github-action/run-core-gpu-tests@v1
+      with:
+        mode: d3d12_sw
+
+    - name: DiligentCoreAPITest D3D12 DXC
+      if:   ${{ (success() || failure() && steps.build.outcome == 'success') && matrix.name == 'Win10' }}
+      uses: DiligentGraphics/github-action/run-core-gpu-tests@v1
+      with:
+        mode:    d3d12_sw
+        use-dxc: true
+        # Disable texture creation tests that are not relevant for DXC to save time
+        args: --gtest_filter=-TextureCreation*
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      if: ${{ success() && matrix.build_type != 'Debug' && matrix.cmake_generator != 'Ninja' }}
+      with:
+        name: DiligentCore-${{ matrix.name }}-${{ matrix.toolset }}-${{ matrix.build_type }}
+        path: |
+          ${{env.DILIGENT_INSTALL_DIR}}
+          !${{env.DILIGENT_INSTALL_DIR}}/**/*.lib
+          !${{env.DILIGENT_INSTALL_DIR}}/**/*.a
+        retention-days: 90

@@ -31,6 +31,7 @@
 #include <vector>
 #include <cstring>
 #include <algorithm>
+#include <array>
 
 #if DILIGENT_USE_VOLK
 #    define VOLK_IMPLEMENTATION
@@ -49,6 +50,46 @@
 namespace VulkanUtilities
 {
 
+std::string PrintExtensionsList(const std::vector<VkExtensionProperties>& Extensions, size_t NumColumns)
+{
+    VERIFY_EXPR(NumColumns > 0);
+
+    std::vector<std::string> ExtStrings;
+    ExtStrings.reserve(Extensions.size());
+    for (const auto& Ext : Extensions)
+    {
+        std::stringstream ss;
+        ss << Ext.extensionName << ' '
+           << VK_API_VERSION_MAJOR(Ext.specVersion) << '.'
+           << VK_API_VERSION_MINOR(Ext.specVersion) << '.'
+           << VK_API_VERSION_PATCH(Ext.specVersion);
+        ExtStrings.emplace_back(ss.str());
+    }
+
+    std::vector<size_t> ColWidth(NumColumns);
+    for (size_t i = 0; i < Extensions.size();)
+    {
+        for (size_t col = 0; col < NumColumns && i < Extensions.size(); ++col, ++i)
+        {
+            ColWidth[col] = std::max(ColWidth[col], ExtStrings[i].length());
+        }
+    }
+
+    std::stringstream ss;
+    for (size_t i = 0; i < Extensions.size();)
+    {
+        for (size_t col = 0; col < NumColumns && i < Extensions.size(); ++col, ++i)
+        {
+            ss << (col == 0 ? "\n    " : "    ");
+            if (col + 1 < NumColumns && i + 1 < Extensions.size())
+                ss << std::setw(static_cast<int>(ColWidth[col])) << std::left;
+            ss << ExtStrings[i];
+        }
+    }
+
+    return ss.str();
+}
+
 bool VulkanInstance::IsLayerAvailable(const char* LayerName, uint32_t& Version) const
 {
     for (const auto& Layer : m_Layers)
@@ -62,13 +103,56 @@ bool VulkanInstance::IsLayerAvailable(const char* LayerName, uint32_t& Version) 
     return false;
 }
 
-bool VulkanInstance::IsExtensionAvailable(const char* ExtensionName) const
+namespace
 {
-    for (const auto& Extension : m_Extensions)
+
+// clang-format off
+static constexpr std::array<const char*, 1> ValidationLayerNames =
+{
+    // Unified validation layer used on Desktop and Mobile platforms
+    "VK_LAYER_KHRONOS_validation"
+};
+// clang-format on
+
+
+bool EnumerateInstanceExtensions(const char* LayerName, std::vector<VkExtensionProperties>& Extensions)
+{
+    uint32_t ExtensionCount = 0;
+
+    if (vkEnumerateInstanceExtensionProperties(LayerName, &ExtensionCount, nullptr) != VK_SUCCESS)
+        return false;
+
+    Extensions.resize(ExtensionCount);
+    if (vkEnumerateInstanceExtensionProperties(LayerName, &ExtensionCount, Extensions.data()) != VK_SUCCESS)
+    {
+        Extensions.clear();
+        return false;
+    }
+    VERIFY(ExtensionCount == Extensions.size(),
+           "The number of extensions written by vkEnumerateInstanceExtensionProperties is not consistent "
+           "with the count returned in the first call. This is a Vulkan loader bug.");
+
+    return true;
+}
+
+bool IsExtensionAvailable(const std::vector<VkExtensionProperties>& Extensions, const char* ExtensionName)
+{
+    VERIFY_EXPR(ExtensionName != nullptr);
+
+    for (const auto& Extension : Extensions)
+    {
         if (strcmp(Extension.extensionName, ExtensionName) == 0)
             return true;
+    }
 
     return false;
+}
+
+} // namespace
+
+bool VulkanInstance::IsExtensionAvailable(const char* ExtensionName) const
+{
+    return VulkanUtilities::IsExtensionAvailable(m_Extensions, ExtensionName);
 }
 
 bool VulkanInstance::IsExtensionEnabled(const char* ExtensionName) const
@@ -108,64 +192,83 @@ VulkanInstance::VulkanInstance(const CreateInfo& CI) :
         VERIFY_EXPR(LayerCount == m_Layers.size());
     }
 
+    if (CI.LogExtensions)
     {
-        // Enumerate available extensions
-        uint32_t ExtensionCount = 0;
-
-        auto res = vkEnumerateInstanceExtensionProperties(nullptr, &ExtensionCount, nullptr);
-        CHECK_VK_ERROR_AND_THROW(res, "Failed to query extension count");
-        m_Extensions.resize(ExtensionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &ExtensionCount, m_Extensions.data());
-        CHECK_VK_ERROR_AND_THROW(res, "Failed to enumerate extensions");
-        VERIFY_EXPR(ExtensionCount == m_Extensions.size());
+        if (!m_Layers.empty())
+        {
+            std::stringstream ss;
+            for (const auto& Layer : m_Layers)
+            {
+                ss << "\n    "
+                   << Layer.layerName << ' '
+                   << VK_API_VERSION_MAJOR(Layer.specVersion) << '.'
+                   << VK_API_VERSION_MINOR(Layer.specVersion) << '.'
+                   << VK_API_VERSION_PATCH(Layer.specVersion);
+            }
+            LOG_INFO_MESSAGE("Available Vulkan instance layers: ", ss.str());
+        }
+        else
+        {
+            LOG_INFO_MESSAGE("No Vulkan instance layers found");
+        }
     }
 
-    std::vector<const char*> InstanceExtensions =
-    {
-        VK_KHR_SURFACE_EXTENSION_NAME,
+    // Enumerate available instance extensions
+    if (!EnumerateInstanceExtensions(nullptr, m_Extensions))
+        LOG_ERROR_AND_THROW("Failed to enumerate instance extensions");
 
-    // Enable surface extensions depending on OS
+    if (CI.LogExtensions)
+    {
+        if (!m_Extensions.empty())
+            LOG_INFO_MESSAGE("Supported Vulkan instance extensions: ", PrintExtensionsList(m_Extensions, 1));
+        else
+            LOG_INFO_MESSAGE("No Vulkan instance extensions found");
+    }
+
+    std::vector<const char*> InstanceExtensions;
+    if (IsExtensionAvailable(VK_KHR_SURFACE_EXTENSION_NAME))
+    {
+        InstanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+
+        // Enable surface extensions depending on OS
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+        InstanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
-        VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+        InstanceExtensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
-        VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
+        InstanceExtensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
-        VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+        InstanceExtensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_XCB_KHR)
-        VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+        InstanceExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_IOS_MVK)
-        VK_MVK_IOS_SURFACE_EXTENSION_NAME,
+        InstanceExtensions.push_back(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
-        VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
+        InstanceExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
 #endif
     };
+
+#if PLATFORM_MACOS
+    // Beginning with the 1.3.216 Vulkan SDK, the Vulkan Loader is strictly
+    // enforcing the new VK_KHR_PORTABILITY_subset extension.
+    constexpr bool UsePortabilityEnumeartion = true;
+#else
+    constexpr bool UsePortabilityEnumeartion = false;
+#endif
+
+    if (UsePortabilityEnumeartion)
+        InstanceExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 
     // This extension added to core in 1.1, but current version is 1.0
     if (IsExtensionAvailable(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     {
         InstanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-    }
-
-    if (CI.ppInstanceExtensionNames != nullptr)
-    {
-        for (uint32_t ext = 0; ext < CI.InstanceExtensionCount; ++ext)
-            InstanceExtensions.push_back(CI.ppInstanceExtensionNames[ext]);
-    }
-    else
-    {
-        if (CI.InstanceExtensionCount != 0)
-        {
-            LOG_ERROR_MESSAGE("Global extensions pointer is null while extensions count is ", CI.InstanceExtensionCount,
-                              ". Please initialize 'ppInstanceExtensionNames' member of EngineVkCreateInfo struct.");
-        }
     }
 
     for (const auto* ExtName : InstanceExtensions)
@@ -174,17 +277,24 @@ VulkanInstance::VulkanInstance(const CreateInfo& CI) :
             LOG_ERROR_AND_THROW("Required extension ", ExtName, " is not available");
     }
 
-    if (CI.EnableValidation)
+    if (CI.ppExtensionNames != nullptr)
     {
-        m_DebugUtilsEnabled = IsExtensionAvailable(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        if (m_DebugUtilsEnabled)
+        for (uint32_t ext = 0; ext < CI.ExtensionCount; ++ext)
         {
-            InstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            const auto* ExtName = CI.ppExtensionNames[ext];
+            if (ExtName == nullptr)
+                continue;
+            if (IsExtensionAvailable(ExtName))
+                InstanceExtensions.push_back(ExtName);
+            else
+                LOG_WARNING_MESSAGE("Extension ", ExtName, " is not available");
         }
-        else
-        {
-            LOG_WARNING_MESSAGE("Extension ", VK_EXT_DEBUG_UTILS_EXTENSION_NAME, " is not available.");
-        }
+    }
+    else
+    {
+        DEV_CHECK_ERR(CI.ExtensionCount == 0,
+                      "Global extensions pointer is null while extensions count is ", CI.ExtensionCount,
+                      ". Please initialize 'ppInstanceExtensionNames' member of EngineVkCreateInfo struct.");
     }
 
     auto ApiVersion = CI.ApiVersion;
@@ -221,24 +331,79 @@ VulkanInstance::VulkanInstance(const CreateInfo& CI) :
 
     if (CI.EnableValidation)
     {
-        for (size_t l = 0; l < _countof(VulkanUtilities::ValidationLayerNames); ++l)
+        if (IsExtensionAvailable(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
         {
-            auto*    pLayerName = VulkanUtilities::ValidationLayerNames[l];
-            uint32_t LayerVer   = ~0u; // Prevent warning if the layer is not found
-            if (IsLayerAvailable(pLayerName, LayerVer))
-                InstanceLayers.push_back(pLayerName);
-            else
-                LOG_WARNING_MESSAGE("Failed to find '", pLayerName, "' layer. Validation will be disabled");
+            // Prefer VK_EXT_debug_utils
+            m_DebugMode = DebugMode::Utils;
+        }
+        else if (IsExtensionAvailable(VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+        {
+            // If debug utils are unavailable (e.g. on Android), use VK_EXT_debug_report
+            m_DebugMode = DebugMode::Report;
+        }
+
+        for (const auto* LayerName : ValidationLayerNames)
+        {
+            uint32_t LayerVer = ~0u;
+            if (!IsLayerAvailable(LayerName, LayerVer))
+            {
+                LOG_WARNING_MESSAGE("Validation layer ", LayerName, " is not available.");
+                continue;
+            }
 
             // Beta extensions may vary and result in a crash.
             // New enums are not supported and may cause validation error.
             if (LayerVer < VK_HEADER_VERSION_COMPLETE)
             {
-                LOG_WARNING_MESSAGE("Layer '", pLayerName, "' version (", VK_VERSION_MAJOR(LayerVer), ".", VK_VERSION_MINOR(LayerVer), ".", VK_VERSION_PATCH(LayerVer),
-                                    ") is less than header version (",
-                                    VK_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE), ".", VK_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE), ".", VK_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE),
+                LOG_WARNING_MESSAGE("Layer '", LayerName, "' version (", VK_API_VERSION_MAJOR(LayerVer), '.', VK_API_VERSION_MINOR(LayerVer), '.', VK_API_VERSION_PATCH(LayerVer),
+                                    ") is less than the header version (",
+                                    VK_API_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE), '.', VK_API_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE), '.', VK_API_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE),
                                     ").");
             }
+
+            InstanceLayers.push_back(LayerName);
+
+            if (m_DebugMode != DebugMode::Utils)
+            {
+                // On Android, VK_EXT_debug_utils extension may not be supported by the loader,
+                // but supported by the layer.
+                std::vector<VkExtensionProperties> LayerExtensions;
+                if (EnumerateInstanceExtensions(LayerName, LayerExtensions))
+                {
+                    if (VulkanUtilities::IsExtensionAvailable(LayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+                        m_DebugMode = DebugMode::Utils;
+
+                    if (m_DebugMode == DebugMode::Disabled && VulkanUtilities::IsExtensionAvailable(LayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+                        m_DebugMode = DebugMode::Report; // Resort to debug report
+                }
+                else
+                {
+                    LOG_ERROR_MESSAGE("Failed to enumerate extensions for ", LayerName, " layer");
+                }
+            }
+        }
+
+
+        if (m_DebugMode == DebugMode::Utils)
+            InstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        else if (m_DebugMode == DebugMode::Report)
+            InstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+        else
+            LOG_WARNING_MESSAGE("Neither ", VK_EXT_DEBUG_UTILS_EXTENSION_NAME, " nor ", VK_EXT_DEBUG_REPORT_EXTENSION_NAME, " extension is available. Debug tools (validation layer message logging, performance markers, etc.) will be disabled.");
+    }
+
+    if (CI.ppEnabledLayerNames != nullptr)
+    {
+        for (size_t i = 0; i < CI.EnabledLayerCount; ++i)
+        {
+            const auto* LayerName = CI.ppEnabledLayerNames[i];
+            if (LayerName == nullptr)
+                return;
+            uint32_t LayerVer = 0;
+            if (IsLayerAvailable(LayerName, LayerVer))
+                InstanceLayers.push_back(LayerName);
+            else
+                LOG_WARNING_MESSAGE("Instance layer ", LayerName, " is not available");
         }
     }
 
@@ -252,9 +417,16 @@ VulkanInstance::VulkanInstance(const CreateInfo& CI) :
     appInfo.apiVersion         = ApiVersion;
 
     VkInstanceCreateInfo InstanceCreateInfo{};
-    InstanceCreateInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    InstanceCreateInfo.pNext                   = nullptr; // Pointer to an extension-specific structure.
-    InstanceCreateInfo.flags                   = 0;       // Reserved for future use.
+    InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    InstanceCreateInfo.pNext = nullptr; // Pointer to an extension-specific structure.
+    InstanceCreateInfo.flags = 0;
+    if (UsePortabilityEnumeartion)
+    {
+        // The instance will enumerate available Vulkan Portability-compliant physical
+        // devices and groups in addition to the Vulkan physical devices and groups that
+        // are enumerated by default.
+        InstanceCreateInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    }
     InstanceCreateInfo.pApplicationInfo        = &appInfo;
     InstanceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(InstanceExtensions.size());
     InstanceCreateInfo.ppEnabledExtensionNames = InstanceExtensions.empty() ? nullptr : InstanceExtensions.data();
@@ -272,16 +444,26 @@ VulkanInstance::VulkanInstance(const CreateInfo& CI) :
     m_VkVersion         = ApiVersion;
 
     // If requested, we enable the default validation layers for debugging
-    if (m_DebugUtilsEnabled)
+    if (m_DebugMode == DebugMode::Utils)
     {
-        VkDebugUtilsMessageSeverityFlagsEXT messageSeverity =
+        constexpr VkDebugUtilsMessageSeverityFlagsEXT messageSeverity =
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        VkDebugUtilsMessageTypeFlagsEXT messageType =
+        constexpr VkDebugUtilsMessageTypeFlagsEXT messageType =
             VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        VulkanUtilities::SetupDebugging(m_VkInstance, messageSeverity, messageType, nullptr);
+        if (!VulkanUtilities::SetupDebugUtils(m_VkInstance, messageSeverity, messageType, CI.IgnoreDebugMessageCount, CI.ppIgnoreDebugMessageNames, nullptr))
+            LOG_ERROR_MESSAGE("Failed to initialize debug utils. Validation layer message logging, performance markers, etc. will be disabled.");
+    }
+    else if (m_DebugMode == DebugMode::Report)
+    {
+        constexpr VkDebugReportFlagBitsEXT flags = static_cast<VkDebugReportFlagBitsEXT>(
+            VK_DEBUG_REPORT_WARNING_BIT_EXT |
+            VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+            VK_DEBUG_REPORT_ERROR_BIT_EXT);
+        if (!VulkanUtilities::SetupDebugReport(m_VkInstance, flags, nullptr))
+            LOG_ERROR_MESSAGE("Failed to initialize debug report. Validation layer message logging will be disabled.");
     }
 
     // Enumerate physical devices
@@ -307,9 +489,9 @@ VulkanInstance::VulkanInstance(const CreateInfo& CI) :
 
 VulkanInstance::~VulkanInstance()
 {
-    if (m_DebugUtilsEnabled)
+    if (m_DebugMode != DebugMode::Disabled)
     {
-        VulkanUtilities::FreeDebugging(m_VkInstance);
+        VulkanUtilities::FreeDebug(m_VkInstance);
     }
     vkDestroyInstance(m_VkInstance, m_pVkAllocator);
 
@@ -374,13 +556,13 @@ VkPhysicalDevice VulkanInstance::SelectPhysicalDevice(uint32_t AdapterId) const
         vkGetPhysicalDeviceProperties(SelectedPhysicalDevice, &SelectedDeviceProps);
         LOG_INFO_MESSAGE("Using physical device '", SelectedDeviceProps.deviceName,
                          "', API version ",
-                         VK_VERSION_MAJOR(SelectedDeviceProps.apiVersion), '.',
-                         VK_VERSION_MINOR(SelectedDeviceProps.apiVersion), '.',
-                         VK_VERSION_PATCH(SelectedDeviceProps.apiVersion),
+                         VK_API_VERSION_MAJOR(SelectedDeviceProps.apiVersion), '.',
+                         VK_API_VERSION_MINOR(SelectedDeviceProps.apiVersion), '.',
+                         VK_API_VERSION_PATCH(SelectedDeviceProps.apiVersion),
                          ", Driver version ",
-                         VK_VERSION_MAJOR(SelectedDeviceProps.driverVersion), '.',
-                         VK_VERSION_MINOR(SelectedDeviceProps.driverVersion), '.',
-                         VK_VERSION_PATCH(SelectedDeviceProps.driverVersion), '.');
+                         VK_API_VERSION_MAJOR(SelectedDeviceProps.driverVersion), '.',
+                         VK_API_VERSION_MINOR(SelectedDeviceProps.driverVersion), '.',
+                         VK_API_VERSION_PATCH(SelectedDeviceProps.driverVersion), '.');
     }
     else
     {

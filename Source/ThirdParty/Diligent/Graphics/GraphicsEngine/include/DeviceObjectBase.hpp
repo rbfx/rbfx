@@ -110,7 +110,7 @@ public:
         }
     }
 
-    inline virtual Atomics::Long DILIGENT_CALL_TYPE Release() override final
+    inline virtual ReferenceCounterValueType DILIGENT_CALL_TYPE Release() override final
     {
         // Render device owns allocators for all types of device objects,
         // so it must be destroyed after all device objects are released.

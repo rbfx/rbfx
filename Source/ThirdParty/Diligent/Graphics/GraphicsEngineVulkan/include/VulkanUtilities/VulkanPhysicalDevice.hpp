@@ -39,6 +39,13 @@ using Diligent::HardwareQueueIndex;
 class VulkanPhysicalDevice
 {
 public:
+    struct CreateInfo
+    {
+        const VulkanInstance&  Instance;
+        const VkPhysicalDevice vkDevice;
+        bool                   LogExtensions = false;
+    };
+
     struct ExtensionFeatures
     {
         VkPhysicalDeviceMeshShaderFeaturesNV              MeshShader             = {};
@@ -92,8 +99,7 @@ public:
     VulkanPhysicalDevice& operator = (VulkanPhysicalDevice&&)      = delete;
     // clang-format on
 
-    static std::unique_ptr<VulkanPhysicalDevice> Create(VkPhysicalDevice      vkDevice,
-                                                        const VulkanInstance& Instance);
+    static std::unique_ptr<VulkanPhysicalDevice> Create(const CreateInfo& CI);
 
     HardwareQueueIndex FindQueueFamily(VkQueueFlags QueueFlags) const;
 
@@ -115,8 +121,7 @@ public:
     const std::vector<VkQueueFamilyProperties>& GetQueueProperties() const { return m_QueueFamilyProperties; }
 
 private:
-    VulkanPhysicalDevice(VkPhysicalDevice      vkDevice,
-                         const VulkanInstance& Instance);
+    VulkanPhysicalDevice(const CreateInfo& CI);
 
     const VkPhysicalDevice               m_VkDevice;
     uint32_t                             m_VkVersion        = 0;

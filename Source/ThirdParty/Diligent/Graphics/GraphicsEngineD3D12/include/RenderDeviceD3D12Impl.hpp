@@ -172,7 +172,7 @@ public:
                                                                                   Uint32             SampleCount) const override final;
 
     /// Implementation of IRenderDeviceD3D12::GetD3D12Device().
-    virtual ID3D12Device* DILIGENT_CALL_TYPE GetD3D12Device() override final { return m_pd3d12Device; }
+    virtual ID3D12Device* DILIGENT_CALL_TYPE GetD3D12Device() const override final { return m_pd3d12Device; }
 
     /// Implementation of IRenderDeviceD3D12::CreateTextureFromD3DResource().
     virtual void DILIGENT_CALL_TYPE CreateTextureFromD3DResource(ID3D12Resource* pd3d12Texture,

@@ -1,0 +1,76 @@
+name: MSVC Code Analysis
+
+on: [push, pull_request]
+
+jobs:
+  run-analysis:
+    strategy:
+      matrix:
+        include:
+          - host_name:       "Win10"
+            platform:        "Win32"
+            toolset:         "x64"
+            build_type:      "Debug"
+            cmake_args:      "-DDILIGENT_NO_GLSLANG=ON -DDILIGENT_NO_HLSL=ON"
+            cmake_generator: "Visual Studio 17 2022"
+
+    runs-on: windows-2022
+    name: ${{ matrix.host_name }} -> MSVC Analysis, ${{ matrix.toolset }}, ${{ matrix.build_type }}
+
+    permissions:
+      # required for all workflows
+      security-events: write
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Set up build environment
+      if: success()
+      uses: DiligentGraphics/github-action/setup-build-env@v1
+      with:
+        platform:        ${{ matrix.platform }}
+        cmake-generator: ${{ matrix.cmake_generator }}
+
+    - name: Configure CMake
+      if: success()
+      uses: DiligentGraphics/github-action/configure-cmake@v1
+      with:
+        generator:  ${{ matrix.cmake_generator }}
+        vs-arch:    ${{ matrix.toolset }}
+        build-type: ${{ matrix.build_type }}
+        cmake-args: ${{ matrix.cmake_args }}
+
+    - name: Build
+      if: success()
+      uses: DiligentGraphics/github-action/build@v1
+
+    - name: Run MSVC Code Analysis
+      uses: microsoft/msvc-code-analysis-action@v0.1.1
+      # Provide a unique ID to access the sarif output path
+      id: run-analysis
+      with:
+        cmakeBuildDirectory: ${{ env.DILIGENT_BUILD_DIR }}
+        buildConfiguration: ${{ matrix.build_type }}
+        # Ruleset file that will determine what checks will be run
+        ruleset: NativeRecommendedRules.ruleset
+        # Paths to ignore analysis of CMake targets and includes
+        ignoredPaths: '${{ github.workspace }}/ThirdParty'
+
+    # Upload SARIF file to GitHub Code Scanning Alerts
+    - name: Upload SARIF to GitHub
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: ${{ steps.run-analysis.outputs.sarif }}
+
+    # Upload SARIF file as an Artifact to download and view
+    - name: Upload SARIF as an Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: sarif-file
+        path: ${{ steps.run-analysis.outputs.sarif }}

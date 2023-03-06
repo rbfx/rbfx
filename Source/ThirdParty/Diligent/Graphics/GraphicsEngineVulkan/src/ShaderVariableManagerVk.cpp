@@ -42,7 +42,7 @@ void ProcessSignatureResources(const PipelineResourceSignatureVkImpl& Signature,
                                const SHADER_RESOURCE_VARIABLE_TYPE*   AllowedVarTypes,
                                Uint32                                 NumAllowedTypes,
                                SHADER_TYPE                            ShaderStages,
-                               HandlerType                            Handler)
+                               HandlerType&&                          Handler)
 {
     const bool UsingSeparateSamplers = Signature.IsUsingSeparateSamplers();
     Signature.ProcessResources(AllowedVarTypes, NumAllowedTypes, ShaderStages,
@@ -251,6 +251,7 @@ private:
 
     template <typename ObjectType>
     bool UpdateCachedResource(RefCntAutoPtr<ObjectType>&& pObject,
+                              SET_SHADER_RESOURCE_FLAGS   Flags,
                               Uint64                      BufferBaseOffset = 0,
                               Uint64                      BufferRangeSize  = 0) const;
 
@@ -375,9 +376,12 @@ void BindResourceHelper::operator()(const BindResourceInfo& BindInfo) const
     }
     else
     {
-        DEV_CHECK_ERR(m_DstRes.pObject == nullptr || m_ResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC,
+        DEV_CHECK_ERR((m_DstRes.pObject == nullptr ||
+                       m_ResDesc.VarType == SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC ||
+                       (BindInfo.Flags & SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE) != 0),
                       "Shader variable '", m_ResDesc.Name, "' is not dynamic, but is being reset to null. This is an error and may cause unpredicted behavior. ",
-                      "Use another shader resource binding instance or label the variable as dynamic if you need to bind another resource.");
+                      "If this is intended and you ensured proper synchronization, use the SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE flag. "
+                      "Otherwise, use another shader resource binding instance or label the variable as dynamic.");
 
         m_ResourceCache.ResetResource(m_Attribs.DescrSet, m_DstResCacheOffset);
     }
@@ -385,12 +389,15 @@ void BindResourceHelper::operator()(const BindResourceInfo& BindInfo) const
 
 template <typename ObjectType>
 bool BindResourceHelper::UpdateCachedResource(RefCntAutoPtr<ObjectType>&& pObject,
+                                              SET_SHADER_RESOURCE_FLAGS   Flags,
                                               Uint64                      BufferBaseOffset,
                                               Uint64                      BufferRangeSize) const
 {
     if (pObject)
     {
-        if (m_ResDesc.VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC && m_DstRes.pObject != nullptr)
+        if (m_DstRes.pObject != nullptr &&
+            m_ResDesc.VarType != SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC &&
+            (Flags & SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE) == 0)
         {
             DEV_CHECK_ERR(m_DstRes.pObject == pObject, "Binding another object to a non-dynamic variable is not allowed");
             // Do not update resource if one is already bound unless it is dynamic. This may be
@@ -430,7 +437,7 @@ void BindResourceHelper::CacheUniformBuffer(const BindResourceInfo& BindInfo) co
                                 m_DstRes.BufferBaseOffset, m_DstRes.BufferRangeSize, m_Signature.GetDesc().Name);
 #endif
 
-    UpdateCachedResource(std::move(pBufferVk), BindInfo.BufferBaseOffset, BindInfo.BufferRangeSize);
+    UpdateCachedResource(std::move(pBufferVk), BindInfo.Flags, BindInfo.BufferBaseOffset, BindInfo.BufferRangeSize);
 }
 
 void BindResourceHelper::CacheStorageBuffer(const BindResourceInfo& BindInfo) const
@@ -460,7 +467,7 @@ void BindResourceHelper::CacheStorageBuffer(const BindResourceInfo& BindInfo) co
     }
 #endif
 
-    UpdateCachedResource(std::move(pBufferViewVk));
+    UpdateCachedResource(std::move(pBufferViewVk), BindInfo.Flags);
 }
 
 void BindResourceHelper::CacheTexelBuffer(const BindResourceInfo& BindInfo) const
@@ -489,7 +496,7 @@ void BindResourceHelper::CacheTexelBuffer(const BindResourceInfo& BindInfo) cons
     }
 #endif
 
-    UpdateCachedResource(std::move(pBufferViewVk));
+    UpdateCachedResource(std::move(pBufferViewVk), BindInfo.Flags);
 }
 
 void BindResourceHelper::CacheImage(const BindResourceInfo& BindInfo) const
@@ -515,7 +522,7 @@ void BindResourceHelper::CacheImage(const BindResourceInfo& BindInfo) const
 #endif
 
     TextureViewVkImpl* pTexViewVk = pTexViewVk0;
-    if (UpdateCachedResource(std::move(pTexViewVk0)))
+    if (UpdateCachedResource(std::move(pTexViewVk0), BindInfo.Flags))
     {
 #ifdef DILIGENT_DEVELOPMENT
         if (m_DstRes.Type == DescriptorType::CombinedImageSampler && !m_Attribs.IsImmutableSamplerAssigned())
@@ -555,7 +562,7 @@ void BindResourceHelper::CacheImage(const BindResourceInfo& BindInfo) const
                         m_ResourceCache,
                         m_Attribs.SamplerInd,
                         SamplerResDesc.ArraySize == 1 ? 0 : m_ArrayIndex};
-                    BindSeparateSampler(BindResourceInfo{BindSeparateSampler.m_ArrayIndex, pSampler});
+                    BindSeparateSampler(BindResourceInfo{BindSeparateSampler.m_ArrayIndex, pSampler, BindInfo.Flags});
                 }
                 else
                 {
@@ -579,7 +586,7 @@ void BindResourceHelper::CacheSeparateSampler(const BindResourceInfo& BindInfo) 
     VerifySamplerBinding(m_ResDesc, BindInfo, pSamplerVk.RawPtr(), m_DstRes.pObject, m_Signature.GetDesc().Name);
 #endif
 
-    UpdateCachedResource(std::move(pSamplerVk));
+    UpdateCachedResource(std::move(pSamplerVk), BindInfo.Flags);
 }
 
 void BindResourceHelper::CacheInputAttachment(const BindResourceInfo& BindInfo) const
@@ -598,7 +605,7 @@ void BindResourceHelper::CacheInputAttachment(const BindResourceInfo& BindInfo) 
                               m_Signature.GetDesc().Name);
 #endif
 
-    UpdateCachedResource(std::move(pTexViewVk));
+    UpdateCachedResource(std::move(pTexViewVk), BindInfo.Flags);
 }
 
 void BindResourceHelper::CacheAccelerationStructure(const BindResourceInfo& BindInfo) const
@@ -610,7 +617,7 @@ void BindResourceHelper::CacheAccelerationStructure(const BindResourceInfo& Bind
     VerifyTLASResourceBinding(m_ResDesc, BindInfo, pTLASVk.RawPtr(), m_DstRes.pObject.RawPtr(), m_Signature.GetDesc().Name);
 #endif
 
-    UpdateCachedResource(std::move(pTLASVk));
+    UpdateCachedResource(std::move(pTLASVk), BindInfo.Flags);
 }
 
 } // namespace

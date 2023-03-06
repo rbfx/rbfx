@@ -1040,6 +1040,22 @@ DILIGENT_TYPED_ENUM(PRIMITIVE_TOPOLOGY, Uint8)
     /// D3D counterpart: D3D_PRIMITIVE_TOPOLOGY_LINESTRIP. OpenGL counterpart: GL_LINE_STRIP.
     PRIMITIVE_TOPOLOGY_LINE_STRIP,
 
+    /// Interpret the vertex data as a list of triangles with adjacency data.\n
+    /// D3D counterpart: D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ. OpenGL counterpart: GL_TRIANGLES_ADJACENCY.
+    PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ,
+
+    /// Interpret the vertex data as a triangle strip with adjacency data.\n
+    /// D3D counterpart: D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ. OpenGL counterpart: GL_TRIANGLE_STRIP_ADJACENCY.
+    PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ,
+
+    /// Interpret the vertex data as a list of lines with adjacency data.\n
+    /// D3D counterpart: D3D_PRIMITIVE_TOPOLOGY_LINELIST_ADJ. OpenGL counterpart: GL_LINES_ADJACENCY.
+    PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ,
+
+    /// Interpret the vertex data as a line strip with adjacency data.\n
+    /// D3D counterpart: D3D_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ. OpenGL counterpart: GL_LINE_STRIP_ADJACENCY.
+    PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ,
+
     /// Interpret the vertex data as a list of one control point patches.\n
     /// D3D counterpart: D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST. OpenGL counterpart: GL_PATCHES.
     PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST,
@@ -1292,6 +1308,8 @@ DILIGENT_TYPED_ENUM(ADAPTER_TYPE, Uint8)
 
     /// Discrete hardware adapter
     ADAPTER_TYPE_DISCRETE,
+
+    ADAPTER_TYPE_COUNT
 };
 
 
@@ -1365,16 +1383,19 @@ typedef struct DisplayModeAttribs DisplayModeAttribs;
 DILIGENT_TYPED_ENUM(SWAP_CHAIN_USAGE_FLAGS, Uint32)
 {
     /// No allowed usage
-    SWAP_CHAIN_USAGE_NONE             = 0x00L,
+    SWAP_CHAIN_USAGE_NONE             = 0u,
 
-    /// Swap chain can be used as render target output
-    SWAP_CHAIN_USAGE_RENDER_TARGET    = 0x01L,
+    /// Swap chain images can be used as render target outputs
+    SWAP_CHAIN_USAGE_RENDER_TARGET    = 1u << 0,
 
-    /// Swap chain images can be used as shader inputs
-    SWAP_CHAIN_USAGE_SHADER_INPUT     = 0x02L,
+    /// Swap chain images can be used as shader resources
+    SWAP_CHAIN_USAGE_SHADER_RESOURCE  = 1u << 1,
 
-    /// Swap chain images can be used as source of copy operation
-    SWAP_CHAIN_USAGE_COPY_SOURCE      = 0x04L,
+    /// Swap chain images can be used as input attachments
+    SWAP_CHAIN_USAGE_INPUT_ATTACHMENT = 1u << 2,
+
+    /// Swap chain images can be used as a source of copy operation
+    SWAP_CHAIN_USAGE_COPY_SOURCE      = 1u << 3,
 
     SWAP_CHAIN_USAGE_LAST             = SWAP_CHAIN_USAGE_COPY_SOURCE,
 };
@@ -1802,7 +1823,7 @@ struct DeviceFeatures
     }
 
     template <typename FeatType, typename HandlerType>
-    static void Enumerate(FeatType& Features, HandlerType Handler)
+    static void Enumerate(FeatType& Features, HandlerType&& Handler)
     {
     #define HandleFeature(Feature)                \
         if (!Handler(#Feature, Features.Feature)) \
@@ -3034,7 +3055,7 @@ struct SparseResourceProperties
     /// Allowed bind flags for sparse buffer.
     BIND_FLAGS BufferBindFlags  DEFAULT_INITIALIZER(BIND_NONE);
 
-    Uint32 _Padding;
+    Uint32 _Padding DEFAULT_INITIALIZER(0);
 
 #if DILIGENT_CPP_INTERFACE
     /// Comparison operator tests if two structures are equivalent
@@ -3629,16 +3650,22 @@ typedef struct VulkanDescriptorPoolSize VulkanDescriptorPoolSize;
 /// Attributes specific to Vulkan engine
 struct EngineVkCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 
+    /// The number of Vulkan instance layers in ppInstanceLayerNames array.
+    Uint32             IntanceLayerCount        DEFAULT_INITIALIZER(0);
+
+    /// A list of additional Vulkan instance layers to enable.
+    const char* const* ppInstanceLayerNames     DEFAULT_INITIALIZER(nullptr);
+
     /// The number of Vulkan instance extensions in ppInstanceExtensionNames array.
     Uint32             InstanceExtensionCount   DEFAULT_INITIALIZER(0);
 
-    /// A list of InstanceExtensionCount Vulkan instance extensions to enable.
+    /// A list of additional Vulkan instance extensions to enable.
     const char* const* ppInstanceExtensionNames DEFAULT_INITIALIZER(nullptr);
 
     /// Number of Vulkan device extensions in ppDeviceExtensionNames array.
     Uint32             DeviceExtensionCount     DEFAULT_INITIALIZER(0);
 
-    /// List of Vulkan device extensions to enable.
+    /// A list of additional Vulkan device extensions to enable.
     const char* const* ppDeviceExtensionNames   DEFAULT_INITIALIZER(nullptr);
 
     /// Pointer to Vulkan device extension features.
@@ -3647,6 +3674,12 @@ struct EngineVkCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 
     /// Allocator used as pAllocator parameter in calls to Vulkan Create* functions
     void*              pVkAllocator             DEFAULT_INITIALIZER(nullptr);
+
+    /// The number of Vulkan validation messages to ignore in ppIgnoreMessageNames array.
+    Uint32             IgnoreDebugMessageCount  DEFAULT_INITIALIZER(0);
+
+    /// An optional list of IgnoreDebugMessageCount Vulkan validation message names to ignore.
+    const char* const* ppIgnoreDebugMessageNames DEFAULT_INITIALIZER(nullptr);
 
     /// Size of the main descriptor pool that is used to allocate descriptor sets
     /// for static and mutable variables. If allocation from the current pool fails,
@@ -3930,7 +3963,7 @@ struct TextureFormatInfo DILIGENT_DERIVE(TextureFormatAttribs)
     bool Supported  DEFAULT_INITIALIZER(false);
 
     // Explicitly pad the structure to 8-byte boundary
-    bool Padding[7];
+    bool Padding[7] DEFAULT_INITIALIZER({});
 };
 typedef struct TextureFormatInfo TextureFormatInfo;
 

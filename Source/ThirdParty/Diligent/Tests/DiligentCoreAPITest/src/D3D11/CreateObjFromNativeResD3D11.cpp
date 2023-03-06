@@ -35,6 +35,7 @@
 #include "TextureD3D11.h"
 #include "BufferD3D11.h"
 #include "GraphicsAccessories.hpp"
+#include "GraphicsTypesOutputInserters.hpp"
 
 #include "gtest/gtest.h"
 
@@ -81,6 +82,12 @@ void TestCreateObjFromNativeResD3D11::CreateTexture(ITexture* pTexture)
     {
         EXPECT_EQ(TestTexDesc.Type, RESOURCE_DIM_TEX_2D_ARRAY);
         TestTexDesc.Type = SrcTexDesc.Type;
+    }
+    if (TestTexDesc.BindFlags & BIND_INPUT_ATTACHMENT)
+    {
+        EXPECT_TRUE((TestTexDesc.BindFlags & (BIND_RENDER_TARGET | BIND_DEPTH_STENCIL)) && (TestTexDesc.BindFlags & BIND_SHADER_RESOURCE));
+        if ((SrcTexDesc.BindFlags & BIND_INPUT_ATTACHMENT) == 0)
+            TestTexDesc.BindFlags &= ~BIND_INPUT_ATTACHMENT;
     }
     EXPECT_EQ(TestTexDesc, SrcTexDesc) << "Src tex desc:  " << GetObjectDescString(SrcTexDesc)
                                        << "\nTest tex desc: " << GetObjectDescString(TestTexDesc);

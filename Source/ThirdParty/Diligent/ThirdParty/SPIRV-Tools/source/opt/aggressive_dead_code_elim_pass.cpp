@@ -630,6 +630,16 @@ void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
     auto dbg_none = context()->get_debug_info_mgr()->GetDebugInfoNone();
     AddToWorklist(dbg_none);
   }
+
+  // Add top level DebugInfo to worklist
+  for (auto& dbg : get_module()->ext_inst_debuginfo()) {
+    auto op = dbg.GetShader100DebugOpcode();
+    if (op == NonSemanticShaderDebugInfo100DebugCompilationUnit ||
+        op == NonSemanticShaderDebugInfo100DebugEntryPoint ||
+        op == NonSemanticShaderDebugInfo100DebugSourceContinued) {
+      AddToWorklist(&dbg);
+    }
+  }
 }
 
 Pass::Status AggressiveDCEPass::ProcessImpl() {
@@ -659,9 +669,14 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 
   InitializeModuleScopeLiveInstructions();
 
-  // Process all entry point functions.
-  ProcessFunction pfn = [this](Function* fp) { return AggressiveDCE(fp); };
-  modified |= context()->ProcessReachableCallTree(pfn);
+  // Run |AggressiveDCE| on the remaining functions.  The order does not matter,
+  // since |AggressiveDCE| is intra-procedural.  This can mean that function
+  // will become dead if all function call to them are removed.  These dead
+  // function will still be in the module after this pass.  We expect this to be
+  // rare.
+  for (Function& fp : *context()->module()) {
+    modified |= AggressiveDCE(&fp);
+  }
 
   // If the decoration manager is kept live then the context will try to keep it
   // up to date.  ADCE deals with group decorations by changing the operands in
@@ -687,8 +702,9 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   }
 
   // Cleanup all CFG including all unreachable blocks.
-  ProcessFunction cleanup = [this](Function* f) { return CFGCleanup(f); };
-  modified |= context()->ProcessReachableCallTree(cleanup);
+  for (Function& fp : *context()->module()) {
+    modified |= CFGCleanup(&fp);
+  }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
@@ -968,6 +984,7 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_EXT_shader_image_int64",
       "SPV_KHR_non_semantic_info",
       "SPV_KHR_uniform_group_instructions",
+      "SPV_KHR_fragment_shader_barycentric",
   });
 }
 

@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 33
 
     defaultConfig {
         applicationId 		'DE.Android.Tests'
-        targetSdkVersion 	28
+        targetSdkVersion 	32
         minSdkVersion 		21
 
         ndk {
@@ -27,11 +27,11 @@ android {
         }
     }
 
-    ndkVersion "23.1.7779620"
+    ndkVersion "25.0.8775105"
 
     externalNativeBuild {
         cmake {
-            version '3.18.1'
+            version '3.22.1'
             path 'src/main/jni/CMakeLists.txt'
         }
     }

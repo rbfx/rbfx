@@ -40,7 +40,7 @@ EmscriptenFile* EmscriptenFileSystem::OpenFile(const FileOpenAttribs& OpenAttrib
     EmscriptenFile* pFile = nullptr;
     try
     {
-        pFile = new EmscriptenFile(OpenAttribs, EmscriptenFileSystem::GetSlashSymbol());
+        pFile = new EmscriptenFile{OpenAttribs};
     }
     catch (const std::runtime_error& err)
     {
@@ -52,7 +52,7 @@ bool EmscriptenFileSystem::FileExists(const Char* strFilePath)
 {
     FileOpenAttribs OpenAttribs;
     OpenAttribs.strFilePath = strFilePath;
-    BasicFile   DummyFile(OpenAttribs, EmscriptenFileSystem::GetSlashSymbol());
+    BasicFile   DummyFile{OpenAttribs};
     const auto& Path   = DummyFile.GetPath(); // This is necessary to correct slashes
     FILE*       pFile  = fopen(Path.c_str(), "r");
     bool        Exists = (pFile != nullptr);

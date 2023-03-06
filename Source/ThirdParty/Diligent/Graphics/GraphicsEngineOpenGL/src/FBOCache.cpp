@@ -97,7 +97,7 @@ FBOCache::~FBOCache()
 
 void FBOCache::OnReleaseTexture(ITexture* pTexture)
 {
-    ThreadingTools::LockHelper CacheLock(m_CacheLockFlag);
+    Threading::SpinLockGuard CacheGuard{m_CacheLock};
 
     auto* pTexGL = ClassPtrCast<TextureBaseGL>(pTexture);
     // Find all FBOs that this texture used in
@@ -231,7 +231,7 @@ const GLObjectWrappers::GLFrameBufferObj& FBOCache::GetFBO(Uint32             Nu
     VERIFY(NumRenderTargets != 0 || pDSV != nullptr, "At least one render target or a depth-stencil buffer must be provided");
 
     // Lock the cache
-    ThreadingTools::LockHelper CacheLock(m_CacheLockFlag);
+    Threading::SpinLockGuard CacheGuard{m_CacheLock};
 
     // Construct the key
     FBOCacheKey Key;

@@ -366,7 +366,7 @@ public:
                                UINT                               FirstConstants[],
                                UINT                               NumConstants[],
                                const D3D11ShaderResourceCounters& BaseBindings,
-                               BindHandlerType                    BindHandler) const;
+                               BindHandlerType&&                  BindHandler) const;
 
     enum class StateTransitionMode
     {
@@ -458,11 +458,11 @@ private:
 
     static constexpr size_t MaxAlignment = std::max(std::max(std::max(alignof(CachedCB), alignof(CachedResource)), alignof(CachedSampler)), alignof(IUnknown*));
 
-    static constexpr Uint32 FirstCBOffsetIdx  = 0;                                      // | VS CB  | PS CB  | GS CB  | HS CB  | DS CB  | CS CB  |
-    static constexpr Uint32 FirstSRVOffsetIdx = FirstCBOffsetIdx + NumShaderTypes;      // | VS SRV | PS SRV | GS SRV | HS SRV | DS SRV | CS SRV |
-    static constexpr Uint32 FirstSamOffsetIdx = FirstSRVOffsetIdx + NumShaderTypes;     // | VS Sam | PS Sam | GS Sam | HS Sam | DS Sam | CS Sam |
-    static constexpr Uint32 FirstUAVOffsetIdx = FirstSamOffsetIdx + NumShaderTypes;     // | VS UAV | PS UAV | GS UAV | HS UAV | DS UAV | CS UAV |
-    static constexpr Uint32 MaxOffsets        = FirstUAVOffsetIdx + NumShaderTypes + 1; // | Count  |
+    static constexpr size_t FirstCBOffsetIdx  = 0;                                      // | VS CB  | PS CB  | GS CB  | HS CB  | DS CB  | CS CB  |
+    static constexpr size_t FirstSRVOffsetIdx = FirstCBOffsetIdx + NumShaderTypes;      // | VS SRV | PS SRV | GS SRV | HS SRV | DS SRV | CS SRV |
+    static constexpr size_t FirstSamOffsetIdx = FirstSRVOffsetIdx + NumShaderTypes;     // | VS Sam | PS Sam | GS Sam | HS Sam | DS Sam | CS Sam |
+    static constexpr size_t FirstUAVOffsetIdx = FirstSamOffsetIdx + NumShaderTypes;     // | VS UAV | PS UAV | GS UAV | HS UAV | DS UAV | CS UAV |
+    static constexpr size_t MaxOffsets        = FirstUAVOffsetIdx + NumShaderTypes + 1; // | Count  |
 
     std::array<OffsetType, MaxOffsets> m_Offsets = {};
 
@@ -673,7 +673,7 @@ inline void ShaderResourceCacheD3D11::BindDynamicCBs(Uint32                     
                                                      UINT                               FirstConstants[],
                                                      UINT                               NumConstants[],
                                                      const D3D11ShaderResourceCounters& BaseBindings,
-                                                     BindHandlerType                    BindHandler) const
+                                                     BindHandlerType&&                  BindHandler) const
 {
     constexpr auto Range = D3D11_RESOURCE_RANGE_CBV;
 

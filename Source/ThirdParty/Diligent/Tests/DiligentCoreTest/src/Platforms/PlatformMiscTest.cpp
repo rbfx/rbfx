@@ -34,57 +34,80 @@ using namespace Diligent;
 namespace
 {
 
+template <class PlatformClass>
+void TestMSB_LSB()
+{
+    EXPECT_EQ(PlatformClass::GetMSB(Uint32{0}), Uint32{32});
+    for (Uint32 i = 0; i < 32; ++i)
+    {
+        auto MSB = PlatformClass::GetMSB((Uint32{1} << i) | 1);
+        EXPECT_EQ(MSB, i);
+    }
+
+    EXPECT_EQ(PlatformClass::GetMSB(Uint64{0}), Uint64{64});
+    for (Uint32 i = 0; i < 64; ++i)
+    {
+        auto MSB = PlatformClass::GetMSB((Uint64{1} << i) | 1);
+        EXPECT_EQ(MSB, i);
+    }
+
+    EXPECT_EQ(PlatformClass::GetLSB(Uint32{0}), Uint32{32});
+    for (Uint32 i = 0; i < 32; ++i)
+    {
+        auto LSB = PlatformClass::GetLSB((Uint32{1} << i) | (Uint32{1} << 31));
+        EXPECT_EQ(LSB, i);
+    }
+
+    EXPECT_EQ(PlatformClass::GetLSB(Uint64{0}), Uint64{64});
+    for (Uint32 i = 0; i < 64; ++i)
+    {
+        auto LSB = PlatformClass::GetLSB((Uint64{1} << i) | (Uint64{1} << 63));
+        EXPECT_EQ(LSB, i);
+    }
+}
+
 TEST(Platforms_PlatformMisc, GetMsbLsb)
 {
-    EXPECT_EQ(PlatformMisc::GetMSB(Uint32{0}), Uint32{32});
-    for (Uint32 i = 0; i < 32; ++i)
-    {
-        auto MSB = PlatformMisc::GetMSB((Uint32{1} << i) | 1);
-        EXPECT_EQ(MSB, i);
-    }
+    TestMSB_LSB<PlatformMisc>();
+    TestMSB_LSB<BasicPlatformMisc>();
+}
 
-    EXPECT_EQ(PlatformMisc::GetMSB(Uint64{0}), Uint64{64});
-    for (Uint32 i = 0; i < 64; ++i)
-    {
-        auto MSB = PlatformMisc::GetMSB((Uint64{1} << i) | 1);
-        EXPECT_EQ(MSB, i);
-    }
-
-    EXPECT_EQ(PlatformMisc::GetLSB(Uint32{0}), Uint32{32});
-    for (Uint32 i = 0; i < 32; ++i)
-    {
-        auto LSB = PlatformMisc::GetLSB((Uint32{1} << i) | (Uint32{1} << 31));
-        EXPECT_EQ(LSB, i);
-    }
-
-    EXPECT_EQ(PlatformMisc::GetLSB(Uint64{0}), Uint64{64});
-    for (Uint32 i = 0; i < 64; ++i)
-    {
-        auto LSB = PlatformMisc::GetLSB((Uint64{1} << i) | (Uint64{1} << 63));
-        EXPECT_EQ(LSB, i);
-    }
+template <class PlatformClass>
+void TestCountOneBits()
+{
+    EXPECT_EQ(PlatformClass::CountOneBits(Uint32{0}), Uint32{0});
+    EXPECT_EQ(PlatformClass::CountOneBits(Uint64{0}), Uint64{0});
+    EXPECT_EQ(PlatformClass::CountOneBits(Uint32{1}), Uint32{1});
+    EXPECT_EQ(PlatformClass::CountOneBits(Uint64{1}), Uint64{1});
+    EXPECT_EQ(PlatformClass::CountOneBits(Uint32{7}), Uint32{3});
+    EXPECT_EQ(PlatformClass::CountOneBits(Uint64{7}), Uint64{3});
+    EXPECT_EQ(PlatformClass::CountOneBits((Uint32{1} << 31) | (Uint32{1} << 15)), Uint32{2});
+    EXPECT_EQ(PlatformClass::CountOneBits((Uint64{1} << 63) | (Uint32{1} << 31)), Uint64{2});
+    EXPECT_EQ(PlatformClass::CountOneBits((Uint32{1} << 31) - 1), Uint32{31});
+    EXPECT_EQ(PlatformClass::CountOneBits((Uint64{1} << 63) - 1), Uint64{63});
 }
 
 TEST(Platforms_PlatformMisc, CountOneBits)
 {
-    EXPECT_EQ(PlatformMisc::CountOneBits(Uint32{0}), Uint32{0});
-    EXPECT_EQ(PlatformMisc::CountOneBits(Uint64{0}), Uint64{0});
-    EXPECT_EQ(PlatformMisc::CountOneBits(Uint32{1}), Uint32{1});
-    EXPECT_EQ(PlatformMisc::CountOneBits(Uint64{1}), Uint64{1});
-    EXPECT_EQ(PlatformMisc::CountOneBits(Uint32{7}), Uint32{3});
-    EXPECT_EQ(PlatformMisc::CountOneBits(Uint64{7}), Uint64{3});
-    EXPECT_EQ(PlatformMisc::CountOneBits((Uint32{1} << 31) | (Uint32{1} << 15)), Uint32{2});
-    EXPECT_EQ(PlatformMisc::CountOneBits((Uint64{1} << 63) | (Uint32{1} << 31)), Uint64{2});
-    EXPECT_EQ(PlatformMisc::CountOneBits((Uint32{1} << 31) - 1), Uint32{31});
-    EXPECT_EQ(PlatformMisc::CountOneBits((Uint64{1} << 63) - 1), Uint64{63});
+    TestCountOneBits<PlatformMisc>();
+    TestCountOneBits<BasicPlatformMisc>();
+}
+
+template <typename PlatformClass>
+void TestSwapBytes()
+{
+    EXPECT_EQ(PlatformClass::SwapBytes(Uint64{0x0102030405060708}), Uint64{0x0807060504030201});
+    EXPECT_EQ(PlatformClass::SwapBytes(Int64{0x0102030405060708}), Int64{0x0807060504030201});
+    EXPECT_EQ(PlatformClass::SwapBytes(Uint32{0x01020304}), Uint32{0x04030201});
+    EXPECT_EQ(PlatformClass::SwapBytes(Int32{0x01020304}), Int32{0x04030201});
+    EXPECT_EQ(PlatformClass::SwapBytes(Uint16{0x0102}), Uint16{0x0201});
+    EXPECT_EQ(PlatformClass::SwapBytes(Int16{0x0102}), Int16{0x0201});
 }
 
 TEST(Platforms_PlatformMisc, SwapBytes)
 {
-    EXPECT_EQ(PlatformMisc::SwapBytes(Uint32{0x01020304}), Uint32{0x04030201});
-    EXPECT_EQ(PlatformMisc::SwapBytes(Int32{0x01020304}), Int32{0x04030201});
-    EXPECT_EQ(PlatformMisc::SwapBytes(Uint16{0x0102}), Uint16{0x0201});
-    EXPECT_EQ(PlatformMisc::SwapBytes(Int16{0x0102}), Int16{0x0201});
+    TestSwapBytes<PlatformMisc>();
+    TestSwapBytes<BasicPlatformMisc>();
 
     constexpr float f     = 1234.5678f;
     const auto      fswap = PlatformMisc::SwapBytes(f);

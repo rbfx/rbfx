@@ -425,11 +425,8 @@ struct InputLayoutDescX
     template <typename... ArgsType>
     InputLayoutDescX& Add(ArgsType&&... args)
     {
-        Elements.emplace_back(std::forward<ArgsType>(args)...);
-        auto& HLSLSemantic = Elements.back().HLSLSemantic;
-        HLSLSemantic       = StringPool.emplace(HLSLSemantic).first->c_str();
-        SyncDesc();
-        return *this;
+        const LayoutElement Elem{std::forward<ArgsType>(args)...};
+        return Add(Elem);
     }
 
     void Clear()
@@ -650,12 +647,26 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
         return *this;
     }
 
+    template <typename... ArgsType>
+    PipelineResourceSignatureDescX& AddResource(ArgsType&&... args)
+    {
+        const PipelineResourceDesc Res{std::forward<ArgsType>(args)...};
+        return AddResource(Res);
+    }
+
     PipelineResourceSignatureDescX& AddImmutableSampler(const ImmutableSamplerDesc& Sam)
     {
         ImtblSamCopy.push_back(Sam);
         ImtblSamCopy.back().SamplerOrTextureName = StringPool.emplace(Sam.SamplerOrTextureName).first->c_str();
         SyncDesc();
         return *this;
+    }
+
+    template <typename... ArgsType>
+    PipelineResourceSignatureDescX& AddImmutableSampler(ArgsType&&... args)
+    {
+        const ImmutableSamplerDesc Sam{std::forward<ArgsType>(args)...};
+        return AddImmutableSampler(Sam);
     }
 
     void RemoveResource(const char* ResName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
@@ -785,12 +796,26 @@ struct PipelineResourceLayoutDescX : PipelineResourceLayoutDesc
         return *this;
     }
 
+    template <typename... ArgsType>
+    PipelineResourceLayoutDescX& AddVariable(ArgsType&&... args)
+    {
+        const ShaderResourceVariableDesc Var{std::forward<ArgsType>(args)...};
+        return AddVariable(Var);
+    }
+
     PipelineResourceLayoutDescX& AddImmutableSampler(const ImmutableSamplerDesc& Sam)
     {
         ImtblSamCopy.push_back(Sam);
         ImtblSamCopy.back().SamplerOrTextureName = StringPool.emplace(Sam.SamplerOrTextureName).first->c_str();
         SyncDesc();
         return *this;
+    }
+
+    template <typename... ArgsType>
+    PipelineResourceLayoutDescX& AddImmutableSampler(ArgsType&&... args)
+    {
+        const ImmutableSamplerDesc Sam{std::forward<ArgsType>(args)...};
+        return AddImmutableSampler(Sam);
     }
 
     void RemoveVariable(const char* VarName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
@@ -912,12 +937,26 @@ struct BottomLevelASDescX : DeviceObjectAttribsX<BottomLevelASDesc>
         return *this;
     }
 
+    template <typename... ArgsType>
+    BottomLevelASDescX& AddTriangleGeomerty(ArgsType&&... args)
+    {
+        const BLASTriangleDesc Tri{std::forward<ArgsType>(args)...};
+        return AddTriangleGeomerty(Tri);
+    }
+
     BottomLevelASDescX& AddBoxGeomerty(const BLASBoundingBoxDesc& Geo)
     {
         Boxes.push_back(Geo);
         Boxes.back().GeometryName = StringPool.emplace(Geo.GeometryName).first->c_str();
         SyncDesc();
         return *this;
+    }
+
+    template <typename... ArgsType>
+    BottomLevelASDescX& AddBoxGeomerty(ArgsType&&... args)
+    {
+        const BLASBoundingBoxDesc Box{std::forward<ArgsType>(args)...};
+        return AddBoxGeomerty(Box);
     }
 
     void RemoveTriangleGeomerty(const char* GeoName)
@@ -1046,6 +1085,13 @@ struct RayTracingPipelineStateCreateInfoX : RayTracingPipelineStateCreateInfo
         return *this;
     }
 
+    template <typename... ArgsType>
+    RayTracingPipelineStateCreateInfoX& AddGeneralShader(ArgsType&&... args)
+    {
+        const RayTracingGeneralShaderGroup GenShader{std::forward<ArgsType>(args)...};
+        return AddGeneralShader(GenShader);
+    }
+
     RayTracingPipelineStateCreateInfoX& AddTriangleHitShader(const RayTracingTriangleHitShaderGroup& TriHitShader)
     {
         TriangleHitShaders.push_back(TriHitShader);
@@ -1054,12 +1100,26 @@ struct RayTracingPipelineStateCreateInfoX : RayTracingPipelineStateCreateInfo
         return *this;
     }
 
+    template <typename... ArgsType>
+    RayTracingPipelineStateCreateInfoX& AddTriangleHitShader(ArgsType&&... args)
+    {
+        const RayTracingTriangleHitShaderGroup TriHitShader{std::forward<ArgsType>(args)...};
+        return AddTriangleHitShader(TriHitShader);
+    }
+
     RayTracingPipelineStateCreateInfoX& AddProceduralHitShader(const RayTracingProceduralHitShaderGroup& ProcHitShader)
     {
         ProceduralHitShaders.push_back(ProcHitShader);
         ProceduralHitShaders.back().Name = StringPool.emplace(ProcHitShader.Name).first->c_str();
         SyncDesc();
         return *this;
+    }
+
+    template <typename... ArgsType>
+    RayTracingPipelineStateCreateInfoX& AddProceduralHitShader(ArgsType&&... args)
+    {
+        const RayTracingProceduralHitShaderGroup ProcHitShader{std::forward<ArgsType>(args)...};
+        return AddProceduralHitShader(ProcHitShader);
     }
 
     void RemoveGeneralShader(const char* ShaderName)

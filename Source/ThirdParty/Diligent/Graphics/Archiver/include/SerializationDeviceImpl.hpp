@@ -122,6 +122,11 @@ public:
                                                                 Uint32&                               NumBindings,
                                                                 const PipelineResourceBinding*&       pBindings) override final;
 
+    virtual ARCHIVE_DEVICE_DATA_FLAGS DILIGENT_CALL_TYPE GetSupportedDeviceFlags() const override final
+    {
+        return m_ValidDeviceFlags;
+    }
+
     struct D3D11Properties
     {
         Uint32 FeatureLevel = 0;
@@ -154,11 +159,6 @@ public:
     const D3D12Properties& GetD3D12Properties() const { return m_D3D12Props; }
     const VkProperties&    GetVkProperties() const { return m_VkProps; }
     const MtlProperties&   GetMtlProperties() const { return m_MtlProps; }
-
-    ARCHIVE_DEVICE_DATA_FLAGS GetValidDeviceFlags() const
-    {
-        return m_ValidDeviceFlags;
-    }
 
 protected:
     static PipelineResourceBinding ResDescToPipelineResBinding(const PipelineResourceDesc& ResDesc, SHADER_TYPE Stages, Uint32 Register, Uint32 Space);

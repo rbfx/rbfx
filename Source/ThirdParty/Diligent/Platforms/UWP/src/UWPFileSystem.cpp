@@ -69,8 +69,8 @@ public:
 };
 
 WindowsStoreFile::WindowsStoreFile(const FileOpenAttribs& OpenAttribs) :
-    BasicFile(OpenAttribs, WindowsStoreFileSystem::GetSlashSymbol()),
-    m_FileHandle(new FileHandleWrapper)
+    BasicFile{OpenAttribs},
+    m_FileHandle{new FileHandleWrapper}
 {
     CREATEFILE2_EXTENDED_PARAMETERS extendedParams = {0};
 
@@ -226,7 +226,7 @@ bool WindowsStoreFileSystem::FileExists(const Char* strFilePath)
     FileOpenAttribs OpenAttribs;
     OpenAttribs.AccessMode  = EFileAccessMode::Read;
     OpenAttribs.strFilePath = strFilePath;
-    BasicFile   DummyFile(OpenAttribs, WindowsStoreFileSystem::GetSlashSymbol());
+    BasicFile   DummyFile{OpenAttribs};
     const auto& Path = DummyFile.GetPath();
 
     CREATEFILE2_EXTENDED_PARAMETERS extendedParams = {0};
