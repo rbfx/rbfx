@@ -32,7 +32,7 @@ void VS(float4 iPos : POSITION,
     oPos = mul(float4(worldPos, 1.0), cViewProj);
 
     #ifdef VERTEXCOLOR
-        oColor = iColor;
+        oColor = iColor * Sample2D(DiffMap, float2(0.0));
     #endif
     #ifdef DIFFMAP
         oTexCoord = iTexCoord;

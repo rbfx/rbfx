@@ -128,4 +128,40 @@ namespace Urho3D
         FILL_MODE_WIREFRAME,
         // Point fill mode not supported
     };
+
+    static const PRIMITIVE_TOPOLOGY DiligentPrimitiveTopology[] = {
+        PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        PRIMITIVE_TOPOLOGY_LINE_LIST,
+        PRIMITIVE_TOPOLOGY_POINT_LIST,
+        PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        PRIMITIVE_TOPOLOGY_LINE_STRIP,
+        PRIMITIVE_TOPOLOGY_UNDEFINED // Triangle FAN is not supported by the D3D backends
+    };
+
+    static const ea::unordered_map<ea::string, TextureUnit> DiligentTextureUnitLookup = {
+        { "DiffMap", TextureUnit::TU_DIFFUSE },
+        { "DiffCubeMap", TextureUnit::TU_DIFFUSE },
+        { "NormalMap", TextureUnit::TU_NORMAL },
+        { "NormalCubeMap", TextureUnit::TU_NORMAL },
+        { "SpecMap", TextureUnit::TU_SPECULAR },
+        { "EmissiveMap", TextureUnit::TU_EMISSIVE },
+        { "EnvMap", TextureUnit::TU_ENVIRONMENT },
+        { "EnvCubeMap", TextureUnit::TU_ENVIRONMENT },
+        { "LightRampMap", TextureUnit::TU_LIGHTRAMP },
+        { "LightSpotMap", TextureUnit::TU_LIGHTSHAPE },
+        { "LightShapeMap", TextureUnit::TU_LIGHTSHAPE },
+        { "LightBufferMap", TextureUnit::TU_LIGHTBUFFER },
+        { "LightBuffer", TextureUnit::TU_LIGHTBUFFER },
+        { "ShadowMap", TextureUnit::TU_SHADOWMAP },
+        { "VolumeMap", TextureUnit::TU_VOLUMEMAP },
+        { "DepthBuffer", TextureUnit::TU_DEPTHBUFFER },
+        { "DepthBufferMap", TextureUnit::TU_DEPTHBUFFER },
+        { "ZoneBuffer", TextureUnit::TU_ZONE },
+        { "ZoneCubeMap", TextureUnit::TU_ZONE},
+        { "ZoneVolumeMap", TextureUnit::TU_VOLUMEMAP },
+        { "Custom1Map", TextureUnit::TU_CUSTOM1 },
+        { "Custom2Map", TextureUnit::TU_CUSTOM2 },
+        { "FaceSelectMap", TextureUnit::TU_FACESELECT },
+        { "IndirectionMap", TextureUnit::TU_INDIRECTION }
+    };
 }

@@ -42,6 +42,8 @@
 #include "../../IO/File.h"
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
+#include "../../Graphics/ShaderResourceBinding.h"
+#include "../../Graphics/PipelineState.h"
 
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
@@ -485,7 +487,7 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
                 clearFlags = CLEAR_DEPTH_FLAG;
             if (flags & CLEAR_STENCIL)
                 clearFlags = CLEAR_STENCIL_FLAG;
-            impl_->deviceContext_->ClearDepthStencil(impl_->swapChain_->GetDepthBufferDSV(), clearFlags, depth, (Uint8)stencil, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+            impl_->deviceContext_->ClearDepthStencil(impl_->depthStencilView_, clearFlags, depth, (Uint8)stencil, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
         }
     }
     else {
@@ -683,11 +685,21 @@ bool Graphics::ResolveToTexture(TextureCube* texture)
 
 void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCount)
 {
-    assert(0);
-    /*if (!vertexCount || !impl_->shaderProgram_)
+    assert(pipelineState_);
+    if (!vertexCount)
         return;
-
     PrepareDraw();
+    unsigned primitiveCount;
+
+    PRIMITIVE_TOPOLOGY primitiveTopology;
+    GetPrimitiveType(vertexCount, pipelineState_->GetDesc().primitiveType_, primitiveCount, primitiveTopology);
+
+    DrawAttribs drawAttrs;
+    drawAttrs.NumVertices = vertexCount;
+    drawAttrs.StartVertexLocation = vertexStart;
+    impl_->deviceContext_->Draw(drawAttrs);
+    /*
+
 
     unsigned primitiveCount;
     D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
@@ -849,7 +861,7 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
             {
                 vertexBuffers_[i] = buffer;
                 impl_->vertexBuffers_[i] = (IBuffer*)buffer->GetGPUObject();
-                impl_->vertexSizes_[i] = buffer->GetVertexSize();
+                //impl_->vertexSizes_[i] = buffer->GetVertexSize();
                 impl_->vertexOffsets_[i] = offset;
                 changed = true;
             }
@@ -858,7 +870,7 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
         {
             vertexBuffers_[i] = nullptr;
             impl_->vertexBuffers_[i] = nullptr;
-            impl_->vertexSizes_[i] = 0;
+            //impl_->vertexSizes_[i] = 0;
             impl_->vertexOffsets_[i] = 0;
             changed = true;
         }
@@ -906,6 +918,25 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 
         indexBuffer_ = buffer;
     }*/
+}
+
+void Graphics::SetPipelineState(PipelineState* pipelineState) {
+    using namespace Diligent;
+    pipelineState->BuildPipeline(this);
+    void* pipelineObj = pipelineState->GetGPUPipeline();
+    assert(pipelineObj);
+
+    impl_->deviceContext_->SetPipelineState(static_cast<IPipelineState*>(pipelineObj));
+    pipelineState_ = pipelineState;
+}
+
+void Graphics::CommitSRB(ShaderResourceBinding* srb) {
+    using namespace Diligent;
+    assert(srb);
+
+    if (srb->IsDirty())
+        srb->UpdateBindings();
+    impl_->deviceContext_->CommitShaderResources((IShaderResourceBinding*)srb->GetShaderResourceBinding(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 ShaderProgramLayout* Graphics::GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps)
@@ -1000,7 +1031,8 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
 void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
 {
-    bool buffersDirty = false;
+    assert(0);
+    /*bool buffersDirty = false;
     ea::vector<ResourceMappingEntry> entries;
 
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
@@ -1017,7 +1049,7 @@ void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> cons
     }
 
     if (buffersDirty)
-        impl_->constantBufferResMapping_ = impl_->resourceMappingCache_->CreateOrGetResourceMap(entries);
+        impl_->constantBufferResMapping_ = impl_->resourceMappingCache_->CreateOrGetResourceMap(entries);*/
 }
 
 void Graphics::SetShaderParameter(StringHash param, const float data[], unsigned count)
@@ -1780,91 +1812,112 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
     }
 }
 
+RenderBackend Graphics::GetRenderBackend() const {
+    return impl_->renderBackend_;
+}
+
 unsigned Graphics::GetAlphaFormat()
 {
-    return DXGI_FORMAT_A8_UNORM;
+    using namespace Diligent;
+    return TEX_FORMAT_A8_UNORM;
 }
 
 unsigned Graphics::GetLuminanceFormat()
 {
     // Note: not same sampling behavior as on D3D9; need to sample the R channel only
-    return DXGI_FORMAT_R8_UNORM;
+    using namespace Diligent;
+    return TEX_FORMAT_R8_UNORM;
 }
 
 unsigned Graphics::GetLuminanceAlphaFormat()
 {
     // Note: not same sampling behavior as on D3D9; need to sample the RG channels
-    return DXGI_FORMAT_R8G8_UNORM;
+    using namespace Diligent;
+    return TEX_FORMAT_RG8_UNORM;
 }
 
 unsigned Graphics::GetRGBFormat()
 {
-    return DXGI_FORMAT_R8G8B8A8_UNORM;
+    using namespace Diligent;
+    return TEX_FORMAT_RGBA8_UNORM;
 }
 
 unsigned Graphics::GetRGBAFormat()
 {
-    return DXGI_FORMAT_R8G8B8A8_UNORM;
+    using namespace Diligent;
+    return TEX_FORMAT_RGBA8_UNORM;
 }
 
 unsigned Graphics::GetRGBA16Format()
 {
-    return DXGI_FORMAT_R16G16B16A16_UNORM;
+    using namespace Diligent;
+    return TEX_FORMAT_RGBA16_UNORM;
 }
 
 unsigned Graphics::GetRGBAFloat16Format()
 {
-    return DXGI_FORMAT_R16G16B16A16_FLOAT;
+    using namespace Diligent;
+    return TEX_FORMAT_RGBA16_FLOAT;
 }
 
 unsigned Graphics::GetRGBAFloat32Format()
 {
-    return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    using namespace Diligent;
+    return TEX_FORMAT_RGBA32_FLOAT;
 }
 
 unsigned Graphics::GetRG16Format()
 {
-    return DXGI_FORMAT_R16G16_UNORM;
+    using namespace Diligent;
+    return TEX_FORMAT_RG16_UNORM;
 }
 
 unsigned Graphics::GetRGFloat16Format()
 {
-    return DXGI_FORMAT_R16G16_FLOAT;
+    using namespace Diligent;
+    return TEX_FORMAT_RG16_UNORM;
 }
 
 unsigned Graphics::GetRGFloat32Format()
 {
-    return DXGI_FORMAT_R32G32_FLOAT;
+    using namespace Diligent;
+    return TEX_FORMAT_RG32_FLOAT;
 }
 
 unsigned Graphics::GetFloat16Format()
 {
-    return DXGI_FORMAT_R16_FLOAT;
+    using namespace Diligent;
+    return TEX_FORMAT_R16_FLOAT;
 }
 
 unsigned Graphics::GetFloat32Format()
 {
-    return DXGI_FORMAT_R32_FLOAT;
+    using namespace Diligent;
+    return TEX_FORMAT_R32_FLOAT;
 }
 
 unsigned Graphics::GetLinearDepthFormat()
 {
-    return DXGI_FORMAT_R32_FLOAT;
+    using namespace Diligent;
+    return TEX_FORMAT_R32_FLOAT;
 }
 
 unsigned Graphics::GetDepthStencilFormat()
 {
-    return DXGI_FORMAT_R24G8_TYPELESS;
+    using namespace Diligent;
+    return TEX_FORMAT_R24G8_TYPELESS;
 }
 
 unsigned Graphics::GetReadableDepthFormat()
 {
-    return DXGI_FORMAT_R24G8_TYPELESS;
+    using namespace Diligent;
+    return TEX_FORMAT_R24G8_TYPELESS;
 }
 
 unsigned Graphics::GetReadableDepthStencilFormat()
 {
-    return DXGI_FORMAT_R24G8_TYPELESS;
+    using namespace Diligent;
+    return TEX_FORMAT_R24G8_TYPELESS;
 }
 
 unsigned Graphics::GetFormat(const ea::string& formatName)
@@ -2265,7 +2318,7 @@ void Graphics::ResetCachedState()
     {
         vertexBuffers_[i] = nullptr;
         impl_->vertexBuffers_[i] = nullptr;
-        impl_->vertexSizes_[i] = 0;
+        //impl_->vertexSizes_[i] = 0;
         impl_->vertexOffsets_[i] = 0;
     }
 
@@ -2351,8 +2404,19 @@ void Graphics::PrepareDraw()
             (!depthStencil_ || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
             impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
 
-        impl_->deviceContext_->SetRenderTargets(MAX_RENDERTARGETS, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
         impl_->renderTargetsDirty_ = false;
+    }
+    impl_->deviceContext_->SetRenderTargets(MAX_RENDERTARGETS, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    if (impl_->firstDirtyVB_ < M_MAX_UNSIGNED) {
+        impl_->deviceContext_->SetVertexBuffers(
+            impl_->firstDirtyVB_,
+            impl_->lastDirtyVB_ - impl_->firstDirtyVB_ + 1,
+            &impl_->vertexBuffers_[impl_->firstDirtyVB_],
+            &impl_->vertexOffsets_[impl_->firstDirtyVB_],
+            RESOURCE_STATE_TRANSITION_MODE_TRANSITION,
+            SET_VERTEX_BUFFERS_FLAG_RESET
+        );
+        impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
     }
 
     //if (impl_->texturesDirty_ && impl_->firstDirtyTexture_ < M_MAX_UNSIGNED)
@@ -2546,16 +2610,15 @@ void Graphics::PrepareDraw()
     //    impl_->rasterizerStateDirty_ = false;
     //}
 
-    //if (impl_->scissorRectDirty_)
-    //{
-    //    D3D11_RECT d3dRect;
-    //    d3dRect.left = scissorRect_.left_;
-    //    d3dRect.top = scissorRect_.top_;
-    //    d3dRect.right = scissorRect_.right_;
-    //    d3dRect.bottom = scissorRect_.bottom_;
-    //    impl_->deviceContext_->RSSetScissorRects(1, &d3dRect);
-    //    impl_->scissorRectDirty_ = false;
-    //}
+    if (impl_->scissorRectDirty_) {
+        Diligent::Rect rect;
+        rect.left = scissorRect_.left_;
+        rect.top = scissorRect_.top_;
+        rect.right = scissorRect_.right_;
+        rect.bottom = scissorRect_.bottom_;
+
+        impl_->deviceContext_->SetScissorRects(1, &rect, impl_->swapChain_->GetDesc().Width, impl_->swapChain_->GetDesc().Height);
+    }
 }
 
 void Graphics::CreateResolveTexture()

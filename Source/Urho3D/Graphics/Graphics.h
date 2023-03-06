@@ -29,7 +29,6 @@
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/ShaderVariation.h"
-#include "../Graphics/PipelineState.h"
 #include "../Math/Color.h"
 #include "../Math/Plane.h"
 #include "../Math/Rect.h"
@@ -60,6 +59,8 @@ class Vector3;
 class Vector4;
 class VertexBuffer;
 class VertexDeclaration;
+class PipelineState;
+class ShaderResourceBinding;
 
 struct ShaderParameter;
 
@@ -253,6 +254,11 @@ public:
     bool SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
+#ifdef URHO3D_DILIGENT
+    /// Set Pipeline State
+    void SetPipelineState(PipelineState* pipelineState);
+    void CommitSRB(ShaderResourceBinding* srb);
+#endif
     /// Return constant buffer layout for given shaders.
     ShaderProgramLayout* GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shaders.
@@ -700,6 +706,10 @@ public:
     /// @nobind
     void SetUBO(unsigned object);
 
+#ifdef URHO3D_DILIGENT
+    RenderBackend GetRenderBackend() const;
+#endif
+
     /// Return the API-specific alpha texture format.
     static unsigned GetAlphaFormat();
     /// Return the API-specific luminance texture format.
@@ -878,6 +888,10 @@ private:
     ShaderVariation* vertexShader_{};
     /// Pixel shader in use.
     ShaderVariation* pixelShader_{};
+#ifdef URHO3D_DILIGENT
+    /// PipelineState in use.
+    PipelineState* pipelineState_{nullptr};
+#endif
     /// Textures in use.
     Texture* textures_[MAX_TEXTURE_UNITS]{};
     /// Texture unit mappings.

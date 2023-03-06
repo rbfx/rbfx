@@ -244,9 +244,14 @@ namespace Urho3D
                                 }
 
                                 const VertexElementSemantic semantic = vertexElement.first;
+#ifdef URHO3D_DILIGENT
+                                const ea::string name = Format("ATTRIB{}", m.location);
+                                add_vertex_attribute_remap({ m.location, name.c_str() });
+#else
                                 const unsigned index = vertexElement.second;
                                 const ea::string name = Format("{}{}", ShaderVariation::elementSemanticNames[semantic], index);
                                 add_vertex_attribute_remap({ m.location, name.c_str() });
+#endif
                             }
                         });
                 }

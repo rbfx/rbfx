@@ -30,6 +30,7 @@
 #include "../Graphics/PipelineState.h"
 #include "../Graphics/ShaderParameterCollection.h"
 #include "../Graphics/ConstantBufferCollection.h"
+#include "../Graphics/ShaderResourceBindingCache.h"
 #include "../IO/Log.h"
 
 namespace Urho3D
@@ -336,6 +337,9 @@ private:
     DrawCommandDescription currentDrawCommand_;
     /// Current shader resource group.
     ShaderResourceRange currentShaderResourceGroup_;
+
+    /// Shader Resource Binding Cache.
+    SharedPtr<ShaderResourceBindingCache> srbCache_;
 };
 
 }

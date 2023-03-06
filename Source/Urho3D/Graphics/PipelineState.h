@@ -30,6 +30,7 @@
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/ShaderProgramLayout.h"
 #include "../Graphics/VertexBuffer.h"
+#include "../Graphics/ShaderResourceBinding.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/array.h>
@@ -93,6 +94,11 @@ struct PipelineStateDesc
 {
     static const unsigned MaxNumVertexElements = 32;
 
+    /// Debug
+    /// @{
+    ea::string debugName_{};
+    /// @}
+
     PrimitiveType primitiveType_{};
 
     /// Input layout
@@ -105,10 +111,19 @@ struct PipelineStateDesc
     void InitializeInputLayoutAndPrimitiveType(const Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
     /// @}
 
+    /// Render Target Formats
+    /// @{
+    ea::vector<unsigned> renderTargetsFormats_{};
+    unsigned depthStencilFormat_{};
+    /// @}
+
     /// Shaders
     /// @{
     ShaderVariation* vertexShader_{};
     ShaderVariation* pixelShader_{};
+    ShaderVariation* domainShader_{};
+    ShaderVariation* hullShader_{};
+    ShaderVariation* geometryShader_{};
     /// @}
 
     /// Depth-stencil state
@@ -199,8 +214,15 @@ struct PipelineStateDesc
             CombineHash(hash, vertexElements_[i].ToHash());
         CombineHash(hash, indexType_);
 
+        for (auto it = renderTargetsFormats_.begin(); it != renderTargetsFormats_.end(); ++it)
+            CombineHash(hash, (*it));
+        CombineHash(hash, depthStencilFormat_);
+
         CombineHash(hash, MakeHash(vertexShader_));
         CombineHash(hash, MakeHash(pixelShader_));
+        CombineHash(hash, MakeHash(domainShader_));
+        CombineHash(hash, MakeHash(hullShader_));
+        CombineHash(hash, MakeHash(geometryShader_));
 
         CombineHash(hash, depthWriteEnabled_);
         CombineHash(hash, depthCompareFunction_);
@@ -250,10 +272,25 @@ public:
     unsigned GetShaderID() const { return shaderProgramLayout_->GetObjectID(); }
     /// @}
 
+    /// Create Shader Resource Binding
+    ShaderResourceBinding* CreateSRB();
+#ifdef URHO3D_DILIGENT
+    void BuildPipeline(Graphics* graphics);
+    void* GetGPUPipeline() { return pipeline_; }
+#endif
 private:
+#ifdef URHO3D_DILIGENT
+    ShaderResourceBinding* CreateInternalSRB();
+    void ReleasePipeline();
+#endif
     WeakPtr<PipelineStateCache> owner_;
     PipelineStateDesc desc_;
     WeakPtr<ShaderProgramLayout> shaderProgramLayout_{};
+
+    ea::vector<SharedPtr<ShaderResourceBinding>> shaderResourceBindings_;
+#ifdef URHO3D_DILIGENT
+    void* pipeline_;
+#endif
 };
 
 /// Generic pipeline state cache.

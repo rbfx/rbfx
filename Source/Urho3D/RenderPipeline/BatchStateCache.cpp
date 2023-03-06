@@ -140,6 +140,10 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     desc.stencilTestEnabled_ = false;
     desc.blendMode_ = key.blendMode_;
     desc.scissorTestEnabled_ = true;
+    // TODO: Get RT formats dynamically
+    desc.renderTargetsFormats_.resize(1);
+    desc.renderTargetsFormats_[0] = Graphics::GetRGBAFormat();
+    desc.depthStencilFormat_ = Graphics::GetReadableDepthFormat();
 
     vertexShaderDefines_ = key.pass_->GetEffectiveVertexShaderDefines();
     pixelShaderDefines_ = key.pass_->GetEffectivePixelShaderDefines();

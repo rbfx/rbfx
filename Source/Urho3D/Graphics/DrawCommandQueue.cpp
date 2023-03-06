@@ -33,7 +33,7 @@ namespace Urho3D
 DrawCommandQueue::DrawCommandQueue(Graphics* graphics)
     : graphics_(graphics)
 {
-
+    srbCache_ = MakeShared<ShaderResourceBindingCache>(graphics->GetContext());
 }
 
 void DrawCommandQueue::Reset(bool preferConstantBuffers)
@@ -105,6 +105,10 @@ void DrawCommandQueue::Execute()
     ShaderResourceRange currentShaderResources;
     PrimitiveType currentPrimitiveType{};
     unsigned currentScissorRect = M_MAX_UNSIGNED;
+#ifdef URHO3D_DILIGENT
+    ShaderResourceBindingCacheCreateInfo srbCacheCI;
+    ShaderResourceBinding* srb = nullptr;
+#endif
 
     // Temporary collections
     ea::vector<VertexBuffer*> tempVertexBuffers;
@@ -146,6 +150,49 @@ void DrawCommandQueue::Execute()
             currentVertexBuffers = cmd.inputBuffers_.vertexBuffers_;
         }
 
+#ifdef URHO3D_DILIGENT
+        // On Diligent backend, we need to create Shader Resource Binding and attach on device context.
+        {
+            bool dirty = srb == nullptr;
+            if (cmd.pipelineState_ != srbCacheCI.pipeline_) {
+                dirty = true;
+                srbCacheCI.pipeline_ = cmd.pipelineState_;
+            }
+            // Set shader resources
+            if (cmd.shaderResources_ != currentShaderResources)
+            {
+                dirty = true;
+                srbCacheCI.ResetTextures();
+                for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
+                {
+                    const auto& unitAndResource = shaderResources_[i];
+                    srbCacheCI.textures_[unitAndResource.unit_] = unitAndResource.texture_;
+                }
+                currentShaderResources = cmd.shaderResources_;
+            }
+
+            // Update used ranges for each group
+            for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+            {
+                // Check for constant buffer bindings
+                if (cmd.constantBuffers_[i].size_ == 0 && srbCacheCI.constantBuffers_[i]) {
+                    dirty = true;
+                    srbCacheCI.constantBuffers_[i] = nullptr;
+                    continue;
+                }
+
+                ConstantBuffer* cbuffer = constantBuffers[cmd.constantBuffers_[i].index_];
+                if (cbuffer != srbCacheCI.constantBuffers_[i]) {
+                    dirty = true;
+                    srbCacheCI.constantBuffers_[i] = cbuffer;
+                }
+            }
+
+            if (dirty)
+                srb = srbCache_->GetOrCreateSRB(srbCacheCI);
+            graphics_->CommitSRB(srb);
+        }
+#else
         // Set shader resources
         if (cmd.shaderResources_ != currentShaderResources)
         {
@@ -191,7 +238,7 @@ void DrawCommandQueue::Execute()
                 shaderParameters_.collection_.ForEach(range.first, range.second, shaderParameterSetter);
             }
         }
-
+#endif
         // Invoke appropriate draw command
 #ifdef URHO3D_D3D9
         const unsigned vertexStart = cmd.vertexStart_;

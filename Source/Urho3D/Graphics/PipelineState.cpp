@@ -72,6 +72,9 @@ void PipelineStateDesc::InitializeInputLayoutAndPrimitiveType(const Geometry* ge
 PipelineState::PipelineState(PipelineStateCache* owner)
     : owner_(owner)
 {
+#ifdef URHO3D_DILIGENT
+    pipeline_ = nullptr;
+#endif
 }
 
 PipelineState::~PipelineState()
@@ -82,8 +85,17 @@ PipelineState::~PipelineState()
         return;
     }
 
+    // Release all allocated shader resource bindings
+    shaderResourceBindings_.clear();
+
     if (PipelineStateCache* owner = owner_)
         owner->ReleasePipelineState(desc_);
+}
+
+ShaderResourceBinding* PipelineState::CreateSRB() {
+    ShaderResourceBinding* srb = CreateInternalSRB();
+    shaderResourceBindings_.push_back(SharedPtr<ShaderResourceBinding>(srb));
+    return srb;
 }
 
 void PipelineState::Setup(const PipelineStateDesc& desc)
@@ -105,6 +117,7 @@ void PipelineState::RestoreCachedState(Graphics* graphics)
 
 void PipelineState::Apply(Graphics* graphics)
 {
+#ifndef URHO3D_DILIGENT
     graphics->SetShaders(desc_.vertexShader_, desc_.pixelShader_);
 
     graphics->SetDepthWrite(desc_.depthWriteEnabled_);
@@ -120,6 +133,9 @@ void PipelineState::Apply(Graphics* graphics)
 
     graphics->SetColorWrite(desc_.colorWriteEnabled_);
     graphics->SetBlendMode(desc_.blendMode_, desc_.alphaToCoverageEnabled_);
+#else
+    graphics->SetPipelineState(this);
+#endif
 }
 
 PipelineStateCache::PipelineStateCache(Context* context)

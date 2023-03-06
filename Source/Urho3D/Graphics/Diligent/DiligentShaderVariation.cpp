@@ -39,6 +39,8 @@
 #include <SPIRV-Reflect/spirv_reflect.h>
 #include "../../DebugNew.h"
 
+#include "./DiligentLookupSettings.h"
+
 namespace Urho3D
 {
 
@@ -64,29 +66,6 @@ const char* ShaderVariation::elementSemanticNames[] =
     "OBJECTINDEX"
 };
 
-static ea::unordered_map<ea::string,TextureUnit> sTextureUnitLookup = {
-    { "DiffMap", TextureUnit::TU_DIFFUSE },
-    { "DiffCubeMap", TextureUnit::TU_DIFFUSE },
-    { "NormalMap", TextureUnit::TU_NORMAL },
-    { "NormalCubeMap", TextureUnit::TU_NORMAL },
-    { "SpecMap", TextureUnit::TU_SPECULAR },
-    { "EmissiveMap", TextureUnit::TU_EMISSIVE },
-    { "EnvMap", TextureUnit::TU_ENVIRONMENT },
-    { "EnvCubeMap", TextureUnit::TU_ENVIRONMENT },
-    { "LightRampMap", TextureUnit::TU_LIGHTRAMP },
-    { "LightSpotMap", TextureUnit::TU_LIGHTSHAPE },
-    { "LightMap", TextureUnit::TU_LIGHTBUFFER },
-    { "ShadowMap", TextureUnit::TU_SHADOWMAP },
-    { "VolumeMap", TextureUnit::TU_VOLUMEMAP },
-    { "DepthBuffer", TextureUnit::TU_DEPTHBUFFER },
-    { "ZoneBuffer", TextureUnit::TU_ZONE },
-    { "ZoneCubeMap", TextureUnit::TU_ZONE},
-    { "ZoneVolumeMap", TextureUnit::TU_VOLUMEMAP },
-    { "Custom1Map", TextureUnit::TU_CUSTOM1 },
-    { "Custom2Map", TextureUnit::TU_CUSTOM2 },
-    { "FaceSelectMap", TextureUnit::TU_FACESELECT },
-    { "IndirectionMap", TextureUnit::TU_INDIRECTION }
-};
 static ea::unordered_map<ea::string, ShaderParameterGroup> sConstantBuffersLookup = {
     { "Frame", ShaderParameterGroup::SP_FRAME },
     { "Camera", ShaderParameterGroup::SP_CAMERA },
@@ -139,6 +118,13 @@ bool ShaderVariation::Create()
 
     ea::string srcCode;
     assert(CompileSpirvToHLSL(byteCode_, srcCode));
+
+    // TODO: Refactor this line
+    srcCode.replace("CameraVS", "Camera");
+    srcCode.replace("ObjectVS", "Object");
+    srcCode.replace("CameraPS", "Camera");
+    srcCode.replace("ObjectPS", "Object");
+
     Diligent::ShaderCreateInfo ci;
     ci.Desc.Name = name_.c_str();
     ci.Source = srcCode.c_str();
@@ -636,8 +622,8 @@ void ShaderVariation::ParseParameters(std::vector<unsigned>& byteCode)
                 ea::string name(binding->name);
                 if (name.at(0) == 't')
                     name = name.substr(1, name.size());
-                auto texUnitLookupVal = sTextureUnitLookup.find(name);
-                if (texUnitLookupVal == sTextureUnitLookup.end()) {
+                auto texUnitLookupVal = DiligentTextureUnitLookup.find(name);
+                if (texUnitLookupVal == DiligentTextureUnitLookup.end()) {
                     URHO3D_LOGERRORF("Failed to reflect shader texture samplers. Invalid texture sampler name: %s", name);
                     spvReflectDestroyShaderModule(&module);
                     return;

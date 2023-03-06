@@ -41,6 +41,15 @@ class Vector3;
 #define DESKTOP_GRAPHICS
 #endif
 
+///
+enum RenderBackend {
+    RENDER_D3D11 = 0,
+    RENDER_D3D12,
+    RENDER_GL,
+    RENDER_VULKAN,
+    RENDER_METAL
+};
+
 /// Primitive type.
 enum PrimitiveType
 {

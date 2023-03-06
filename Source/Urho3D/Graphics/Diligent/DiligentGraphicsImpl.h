@@ -82,6 +82,7 @@ public:
     void MarkRenderTargetsDirty() { renderTargetsDirty_ = true; }
 
     DiligentConstantBufferManager* GetConstantBufferManager() { return constantBufferManager_; }
+    DiligentResourceMappingCache* GetResourceMappingCache() { return resourceMappingCache_; }
 private:
     /// Graphics device.
     Diligent::IRenderDevice* device_;
@@ -119,10 +120,14 @@ private:
     UINT constantBuffersStartSlots_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Bound constant buffers start slots.
     UINT constantBuffersNumSlots_[MAX_SHADER_PARAMETER_GROUPS]{};
+#ifdef URHO3D_DILIGENT
+    unsigned long long vertexOffsets_[MAX_VERTEX_STREAMS];
+#else
     /// Vertex sizes per buffer.
     unsigned vertexSizes_[MAX_VERTEX_STREAMS];
     /// Vertex stream offsets per buffer.
     unsigned vertexOffsets_[MAX_VERTEX_STREAMS];
+#endif
     /// Rendertargets dirty flag.
     bool renderTargetsDirty_;
     /// Textures dirty flag.
@@ -169,6 +174,8 @@ private:
     DiligentCommonPipelines* commonPipelines_;
 
     DiligentResourceMappingCache* resourceMappingCache_;
+
+    RenderBackend renderBackend_;
 };
 
 }

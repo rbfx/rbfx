@@ -44,7 +44,8 @@ GraphicsImpl::GraphicsImpl() :
     constantBufferResMapping_(nullptr),
     constantBufferManager_(nullptr),
     commonPipelines_(nullptr),
-    resourceMappingCache_(nullptr)
+    resourceMappingCache_(nullptr),
+    renderBackend_(RENDER_D3D11)
 {
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         renderTargetViews_[i] = nullptr;
@@ -58,7 +59,7 @@ GraphicsImpl::GraphicsImpl() :
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         vertexBuffers_[i] = nullptr;
-        vertexSizes_[i] = 0;
+        //vertexSizes_[i] = 0;
         vertexOffsets_[i] = 0;
     }
 
