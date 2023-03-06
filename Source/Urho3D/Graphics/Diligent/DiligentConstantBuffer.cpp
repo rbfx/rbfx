@@ -66,6 +66,7 @@ bool ConstantBuffer::SetSize(unsigned size)
         bufferDesc.Usage = USAGE_DEFAULT;
         bufferDesc.CPUAccessFlags = CPU_ACCESS_NONE;
         bufferDesc.BindFlags = BIND_UNIFORM_BUFFER;
+        //bufferDesc.Mode = BUFFER_MODE_RAW;
 
         graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, 0, (IBuffer**)&object_.ptr_);
         if (object_.ptr_ == nullptr) {
@@ -74,6 +75,7 @@ bool ConstantBuffer::SetSize(unsigned size)
         }
     }
 
+    BuildHash();
     return true;
 }
 

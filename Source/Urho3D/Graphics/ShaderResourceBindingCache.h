@@ -14,8 +14,8 @@ namespace Urho3D
         unsigned ToHash() {
             hash_ = MakeHash((unsigned long long)pipeline_);
             for (unsigned i = 0; i < constantBuffers_.size(); ++i) {
-                if(constantBuffers_[i] != nullptr)
-                    CombineHash(hash_, (unsigned long long)constantBuffers_[i]);
+                if (constantBuffers_[i] != nullptr)
+                    CombineHash(hash_, constantBuffers_[i]->ToHash());
             }
             for (unsigned i = 0; i < textures_.size(); ++i) {
                 if (textures_[i] != nullptr)

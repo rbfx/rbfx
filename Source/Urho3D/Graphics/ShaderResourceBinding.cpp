@@ -23,14 +23,14 @@ namespace Urho3D
         while (len--)
             textures_[len] = nullptr;
     }
-    void ShaderResourceBinding::SetConstantBuffer(ShaderParameterGroup group, SharedPtr<ConstantBuffer> cbuffer)
+    void ShaderResourceBinding::SetConstantBuffer(ShaderParameterGroup group, WeakPtr<ConstantBuffer> cbuffer)
     {
         if (constantBuffers_[group] != cbuffer) {
             constantBuffers_[group] = cbuffer;
             MakeDirty();
         }
     }
-    void ShaderResourceBinding::SetTexture(TextureUnit texUnit, SharedPtr<Texture> texture)
+    void ShaderResourceBinding::SetTexture(TextureUnit texUnit, WeakPtr<Texture> texture)
     {
         if (textures_[texUnit] != texture) {
             textures_[texUnit] = texture;

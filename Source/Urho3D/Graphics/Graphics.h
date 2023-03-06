@@ -708,6 +708,8 @@ public:
 
 #ifdef URHO3D_DILIGENT
     RenderBackend GetRenderBackend() const;
+    unsigned GetSwapChainRTFormat();
+    unsigned GetSwapChainDepthFormat();
 #endif
 
     /// Return the API-specific alpha texture format.

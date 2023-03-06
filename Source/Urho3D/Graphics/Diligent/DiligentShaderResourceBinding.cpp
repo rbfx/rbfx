@@ -25,7 +25,7 @@ namespace Urho3D
 
             resourceEntries.push_back(resMap);
 
-            CombineHash(hash_, (unsigned long long)resMap.pObject);
+            CombineHash(hash_, constantBuffers_[i]->ToHash());
         }
 
         ea::unordered_map<ea::string, bool> mappedTex;
@@ -72,6 +72,8 @@ namespace Urho3D
                 strList.push_back(resSamplerName);
 
                 Texture* tex = textures_[texUnitIt->second];
+                if (tex->GetLevelsDirty())
+                    tex->RegenerateLevels();
                 if (tex->GetParametersDirty())
                     tex->UpdateParameters();
 
@@ -91,7 +93,7 @@ namespace Urho3D
                     resourceEntries.push_back(resMap);
                 }
 
-                CombineHash(hash_, (unsigned long long)textures_[texUnitIt->second].GetPointer());
+                CombineHash(hash_, (unsigned long long)textures_[texUnitIt->second].Get());
             }
         }
 

@@ -8,10 +8,10 @@ namespace Urho3D
     public:
         ShaderResourceBinding(Graphics* graphics, void* shaderResBindingObj = nullptr);
         ~ShaderResourceBinding();
-        void SetConstantBuffer(ShaderParameterGroup group, SharedPtr<ConstantBuffer> cbuffer);
-        void SetTexture(TextureUnit texUnit, SharedPtr<Texture> texture);
-        SharedPtr<ConstantBuffer> GetConstantBuffer(ShaderParameterGroup group) { return constantBuffers_[group]; }
-        SharedPtr<Texture> GetTexture(TextureUnit texUnit) { return textures_[texUnit]; }
+        void SetConstantBuffer(ShaderParameterGroup group, WeakPtr<ConstantBuffer> cbuffer);
+        void SetTexture(TextureUnit texUnit, WeakPtr<Texture> texture);
+        WeakPtr<ConstantBuffer> GetConstantBuffer(ShaderParameterGroup group) { return constantBuffers_[group]; }
+        WeakPtr<Texture> GetTexture(TextureUnit texUnit) { return textures_[texUnit]; }
         bool IsDirty() { return dirty_; }
         void MakeDirty() { dirty_ = true; }
         void UpdateBindings();
@@ -24,8 +24,8 @@ namespace Urho3D
         void UpdateInternalBindings();
         void ReleaseResources();
 #endif
-        ea::array<SharedPtr<ConstantBuffer>, MAX_SHADER_PARAMETER_GROUPS> constantBuffers_;
-        ea::array<SharedPtr<Texture>, MAX_TEXTURE_UNITS> textures_;
+        ea::array<WeakPtr<ConstantBuffer>, MAX_SHADER_PARAMETER_GROUPS> constantBuffers_;
+        ea::array<WeakPtr<Texture>, MAX_TEXTURE_UNITS> textures_;
 
         bool dirty_;
         unsigned hash_;

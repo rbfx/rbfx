@@ -60,9 +60,17 @@ public:
     /// Return size.
     unsigned GetSize() const { return size_; }
 
+    unsigned ToHash() {
+        return hash_;
+    }
 private:
+    void BuildHash() {
+        unsigned hash = MakeHash((unsigned long long)this);
+        CombineHash(hash, MakeHash(size_));
+    }
     /// Buffer byte size.
     unsigned size_{};
+    unsigned hash_{0};
 };
 
 }

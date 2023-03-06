@@ -21,7 +21,7 @@ namespace Urho3D
         VT_FLOAT32,
         VT_FLOAT32,
         VT_UINT32,
-        VT_UINT32
+        VT_UINT8
     };
     using namespace Diligent;
     void PipelineState::BuildPipeline(Graphics* graphics) {
@@ -40,7 +40,12 @@ namespace Urho3D
             element.InputIndex = i;
             element.NumComponents = sNumComponents[vElement.type_];
             element.ValueType = sValueTypes[vElement.type_];
-            element.IsNormalized = false;
+            if (vElement.semantic_ == SEM_COLOR)
+                element.IsNormalized = true;
+            else
+                element.IsNormalized = false;
+            element.Frequency = vElement.perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
+            element.InstanceDataStepRate = vElement.perInstance_ ? 1 : 0;
 
             layoutElements.push_back(element);
         }

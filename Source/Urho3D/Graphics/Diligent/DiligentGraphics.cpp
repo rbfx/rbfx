@@ -697,6 +697,7 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
     DrawAttribs drawAttrs;
     drawAttrs.NumVertices = vertexCount;
     drawAttrs.StartVertexLocation = vertexStart;
+    drawAttrs.Flags = DRAW_FLAG_VERIFY_ALL;
     impl_->deviceContext_->Draw(drawAttrs);
     /*
 
@@ -1815,6 +1816,12 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
 RenderBackend Graphics::GetRenderBackend() const {
     return impl_->renderBackend_;
 }
+unsigned Graphics::GetSwapChainRTFormat() {
+    return impl_->swapChain_->GetDesc().ColorBufferFormat;
+}
+unsigned Graphics::GetSwapChainDepthFormat() {
+    return impl_->swapChain_->GetDesc().DepthBufferFormat;
+}
 
 unsigned Graphics::GetAlphaFormat()
 {
@@ -2406,7 +2413,12 @@ void Graphics::PrepareDraw()
 
         impl_->renderTargetsDirty_ = false;
     }
-    impl_->deviceContext_->SetRenderTargets(MAX_RENDERTARGETS, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    unsigned rtCount = MAX_RENDERTARGETS;
+
+    if (pipelineState_)
+        rtCount = pipelineState_->GetDesc().renderTargetsFormats_.size();
+    impl_->deviceContext_->SetRenderTargets(rtCount, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
     if (impl_->firstDirtyVB_ < M_MAX_UNSIGNED) {
         impl_->deviceContext_->SetVertexBuffers(
             impl_->firstDirtyVB_,
