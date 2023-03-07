@@ -61,23 +61,26 @@ void Player::Setup()
 
 void Player::Start()
 {
+    auto engine = GetSubsystem<Engine>();
+    if (!engine->IsHeadless())
+    {
 #if URHO3D_SYSTEMUI
-    ui::GetIO().IniFilename = nullptr;              // Disable of imgui.ini creation,
+        ui::GetIO().IniFilename = nullptr; // Disable of imgui.ini creation,
 #endif
 
-    // TODO(editor): Support resource routing
+        // TODO(editor): Support resource routing
 
 #if URHO3D_RMLUI
-    auto* cache = GetSubsystem<ResourceCache>();
-    auto* ui = GetSubsystem<RmlUI>();
-    ea::vector<ea::string> fonts;
-    cache->Scan(fonts, "Fonts/", "*.ttf", SCAN_FILES, true);
-    cache->Scan(fonts, "Fonts/", "*.otf", SCAN_FILES, true);
-    for (const ea::string& font : fonts)
-        ui->LoadFont(Format("Fonts/{}", font));
+        auto* cache = GetSubsystem<ResourceCache>();
+        auto* ui = GetSubsystem<RmlUI>();
+        ea::vector<ea::string> fonts;
+        cache->Scan(fonts, "Fonts/", "*.ttf", SCAN_FILES, true);
+        cache->Scan(fonts, "Fonts/", "*.otf", SCAN_FILES, true);
+        for (const ea::string& font : fonts)
+            ui->LoadFont(Format("Fonts/{}", font));
 #endif
+    }
 
-    auto engine = GetSubsystem<Engine>();
     const StringVector loadedPlugins = engine->GetParameter(EP_PLUGINS).GetString().split(';');
 
     auto pluginManager = GetSubsystem<PluginManager>();
