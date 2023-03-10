@@ -44,6 +44,7 @@ struct GLTFImporterSettings
     bool cleanupRootNodes_{true};
     bool combineLODs_{true};
     bool repairLooping_{false};
+    ea::string skipTag_;
 
     float offsetMatrixError_{ 0.00002f };
     float keyFrameTimeError_{ M_EPSILON };

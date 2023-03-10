@@ -30,6 +30,8 @@ namespace Urho3D
 namespace
 {
 
+const ea::string DefaultSkipTag = "[skip]";
+
 bool IsFileNameGLTF(const ea::string& fileName)
 {
     return fileName.ends_with(".gltf", false)
@@ -57,6 +59,7 @@ void Assets_ModelImporter(Context* context, Project* project)
 ModelImporter::ModelImporter(Context* context)
     : AssetTransformer(context)
 {
+    settings_.skipTag_ = DefaultSkipTag;
 }
 
 void ModelImporter::RegisterObject(Context* context)
@@ -70,6 +73,7 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Cleanup Root Nodes", bool, settings_.cleanupRootNodes_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Combine LODs", bool, settings_.combineLODs_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, settings_.repairLooping_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Skip Tag", ea::string, settings_.skipTag_, DefaultSkipTag, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const

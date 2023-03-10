@@ -3290,6 +3290,17 @@ private:
                 scene->CreateChild("Disabled Node Placeholder");
         }
 
+        if (!settings.skipTag_.empty())
+        {
+            const auto children = rootNode->GetChildren(true);
+            const ea::vector<WeakPtr<Node>> weakChildren(children.begin(), children.end());
+            for (Node* child : weakChildren)
+            {
+                if (child && child->GetName().contains(settings.skipTag_))
+                    child->Remove();
+            }
+        }
+
         if (settings.cleanupRootNodes_)
         {
             Node* newRootNode = rootNode;
