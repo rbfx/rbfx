@@ -512,7 +512,10 @@ void IKLimbSolver::SolveInternal(const Transform& frameOfReference, const IKSett
 
     // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
-        thirdBone.rotation_ = thirdBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+    {
+        const Quaternion targetRotation = target_->GetWorldRotation() * thirdBone.localOriginalRotation_;
+        thirdBone.rotation_ = thirdBone.rotation_.Slerp(targetRotation, rotationWeight_);
+    }
 }
 
 Vector3 IKLimbSolver::GetTargetPosition() const
@@ -918,7 +921,10 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
 
     // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
-        toeBone.rotation_ = toeBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+    {
+        const Quaternion targetRotation = target_->GetWorldRotation() * toeBone.localOriginalRotation_;
+        toeBone.rotation_ = toeBone.rotation_.Slerp(targetRotation, rotationWeight_);
+    }
 }
 
 void IKLegSolver::RotateFoot(const Vector3& toeToHeel)
@@ -1123,7 +1129,8 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
     if (rotationWeight_ > 0.0f)
     {
         IKNode& lastBone = *bones.back();
-        lastBone.rotation_ = lastBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+        const Quaternion targetRotation = target_->GetWorldRotation() * lastBone.localOriginalRotation_;
+        lastBone.rotation_ = lastBone.rotation_.Slerp(targetRotation, rotationWeight_);
     }
 }
 
@@ -1291,7 +1298,10 @@ void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
 
     // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
-        handBone.rotation_ = handBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+    {
+        const Quaternion targetRotation = target_->GetWorldRotation() * handBone.localOriginalRotation_;
+        handBone.rotation_ = handBone.rotation_.Slerp(targetRotation, rotationWeight_);
+    }
 }
 
 void IKArmSolver::RotateShoulder(const Quaternion& rotation)
@@ -1449,9 +1459,9 @@ void IKHeadSolver::SolveRotation()
 {
     IKNode& headBone = *neckSegment_.endNode_;
 
-    const Quaternion rotation = target_->GetWorldRotation();
+    const Quaternion targetRotation = target_->GetWorldRotation() * headBone.localOriginalRotation_;
 
-    headBone.rotation_ = headBone.rotation_.Slerp(rotation, rotationWeight_);
+    headBone.rotation_ = headBone.rotation_.Slerp(targetRotation, rotationWeight_);
 
     headBone.MarkRotationDirty();
 }
