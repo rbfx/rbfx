@@ -32,8 +32,7 @@ namespace Urho3D
         ci.PSODesc.Name = desc_.debugName_.c_str();
         ci.GraphicsPipeline.PrimitiveTopology = DiligentPrimitiveTopology[desc_.primitiveType_];
 
-        bool isD3D = graphics->GetRenderBackend() == RENDER_D3D11 || graphics->GetRenderBackend() == RENDER_D3D12;
-        for (unsigned i = 0; i < desc_.numVertexElements_; ++i) {
+        /*for (unsigned i = 0; i < desc_.numVertexElements_; ++i) {
             VertexElement vElement = desc_.vertexElements_[i];
             LayoutElement element = {};
 
@@ -48,6 +47,34 @@ namespace Urho3D
             element.InstanceDataStepRate = vElement.perInstance_ ? 1 : 0;
 
             layoutElements.push_back(element);
+        }*/
+        {
+            assert(desc_.vertexShader_);
+            // Create LayoutElement based vertex shader input layout
+            const ea::vector<VertexElement>& vertexElements = desc_.vertexShader_->GetVertexElements();
+            ea::vector<VertexElement> vertexBufferElements(desc_.vertexElements_.begin(), desc_.vertexElements_.begin() + desc_.numVertexElements_);
+            unsigned attribCount = 0;
+            for (const VertexElement* shaderVertexElement = vertexElements.begin(); shaderVertexElement != vertexElements.end(); ++shaderVertexElement) {
+                LayoutElement layoutElement = {};
+                layoutElement.InputIndex = attribCount;
+
+                for (const VertexElement* vertexBufferElement = vertexBufferElements.begin(); vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement) {
+                    if (vertexBufferElement->semantic_ != shaderVertexElement->semantic_)
+                        continue;
+                    layoutElement.RelativeOffset = vertexBufferElement->offset_;
+                    layoutElement.NumComponents = sNumComponents[vertexBufferElement->type_];
+                    layoutElement.ValueType = sValueTypes[vertexBufferElement->type_];
+                    layoutElement.IsNormalized = vertexBufferElement->semantic_ == SEM_COLOR;
+                    layoutElement.Frequency = vertexBufferElement->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
+                    // Remove from vector processed vertex element
+                    vertexBufferElements.erase(vertexBufferElement);
+                    break;
+                }
+
+                layoutElements.push_back(layoutElement);
+                ++attribCount;
+            }
+
         }
 
         ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();

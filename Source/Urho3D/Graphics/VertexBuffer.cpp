@@ -30,6 +30,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Math/MathDefs.h"
+#include "../Graphics/GraphicsUtils.h"
 
 #include <EASTL/array.h>
 #include <EASTL/numeric.h>
@@ -257,15 +258,7 @@ unsigned VertexBuffer::GetElementOffset(const ea::vector<VertexElement>& element
 
 ea::vector<VertexElement> VertexBuffer::GetElements(unsigned elementMask)
 {
-    ea::vector<VertexElement> ret;
-
-    for (unsigned i = 0; i < MAX_LEGACY_VERTEX_ELEMENTS; ++i)
-    {
-        if (elementMask & (1u << i))
-            ret.push_back(LEGACY_VERTEXELEMENTS[i]);
-    }
-
-    return ret;
+    return Utils::GetVertexElements(elementMask);
 }
 
 unsigned VertexBuffer::GetVertexSize(const ea::vector<VertexElement>& elements)

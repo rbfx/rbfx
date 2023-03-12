@@ -55,15 +55,15 @@ const char* ShaderVariation_shaderExtensions[] = {
 
 const char* ShaderVariation::elementSemanticNames[] =
 {
-    "POSITION",
-    "NORMAL",
-    "BINORMAL",
-    "TANGENT",
-    "TEXCOORD",
-    "COLOR",
-    "BLENDWEIGHT",
-    "BLENDINDICES",
-    "OBJECTINDEX"
+    "SEM_POSITION",
+    "SEM_NORMAL",
+    "SEM_BINORMAL",
+    "SEM_TANGENT",
+    "SEM_TEXCOORD",
+    "SEM_COLOR",
+    "SEM_BLENDWEIGHT",
+    "SEM_BLENDINDICES",
+    "SEM_OBJECTINDEX"
 };
 
 static ea::unordered_map<ea::string, ShaderParameterGroup> sConstantBuffersLookup = {
@@ -106,83 +106,19 @@ bool ShaderVariation::Create()
 
     ea::string binaryShaderName = graphics_->GetShaderCacheDir() + name + "_" + StringHash(defines_).ToString() + extension;
 
-    if (!LoadByteCode(binaryShaderName))
-    {
-        // Compile shader if don't have valid bytecode
-        if (!Compile())
-            return false;
-        // Save the bytecode after successful compile, but not if the source is from a package
-        if (owner_->GetTimeStamp())
-            SaveByteCode(binaryShaderName);
-    }
+    // TODO: Fix Bytecode generation
+    //if (!LoadByteCode(binaryShaderName))
+    //{
+    //    // Compile shader if don't have valid bytecode
+    //    if (!Compile())
+    //        return false;
+    //    // Save the bytecode after successful compile, but not if the source is from a package
+    //    if (owner_->GetTimeStamp())
+    //        SaveByteCode(binaryShaderName);
+    //}
 
-    ea::string srcCode;
-    assert(CompileSpirvToHLSL(byteCode_, srcCode));
-
-    // TODO: Refactor this line
-    srcCode.replace("CameraVS", "Camera");
-    srcCode.replace("ObjectVS", "Object");
-    srcCode.replace("CameraPS", "Camera");
-    srcCode.replace("ObjectPS", "Object");
-
-    Diligent::ShaderCreateInfo ci;
-    ci.Desc.Name = name_.c_str();
-    ci.Source = srcCode.c_str();
-    ci.SourceLength = srcCode.size();
-    ci.SourceLanguage = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
-    ci.EntryPoint = "main";
-
-    switch (type_)
-    {
-    case Urho3D::VS:
-        ci.Desc.ShaderType = Diligent::SHADER_TYPE_VERTEX;
-        break;
-    case Urho3D::PS:
-        ci.Desc.ShaderType = Diligent::SHADER_TYPE_PIXEL;
-        break;
-    case Urho3D::GS:
-        ci.Desc.ShaderType = Diligent::SHADER_TYPE_GEOMETRY;
-        break;
-    case Urho3D::HS:
-        ci.Desc.ShaderType = Diligent::SHADER_TYPE_HULL;
-        break;
-    case Urho3D::DS:
-        ci.Desc.ShaderType = Diligent::SHADER_TYPE_DOMAIN;
-        break;
-    case Urho3D::CS:
-        ci.Desc.ShaderType = Diligent::SHADER_TYPE_COMPUTE;
-        break;
-    }
-
-    graphics_->GetImpl()->GetDevice()->CreateShader(ci, (Diligent::IShader**)&object_.ptr_);
-//#define CREATE_SHADER(TYPEENUM, SHADERTYPE, PRINTNAME) \
-//    if (device && byteCode_.size()) { \
-//        HRESULT hr = device->Create ## SHADERTYPE (&byteCode_[0], byteCode_.size(), nullptr, (ID3D11 ## SHADERTYPE **)&object_.ptr_); \
-//        if (FAILED(hr)) { \
-//            URHO3D_SAFE_RELEASE(object_.ptr_); \
-//            compilerOutput_ = "Could not create " PRINTNAME " (HRESULT " + ToStringHex((unsigned)hr) + ")"; \
-//        } \
-//    } \
-//    else \
-//        compilerOutput_ = "Could not create " PRINTNAME " , empty bytecode";
-//
-//
-//    // Then create shader from the bytecode
-//    ID3D11Device* device = graphics_->GetImpl()->GetDevice();
-//    if (type_ == VS)
-//    {
-//        CREATE_SHADER(VS, VertexShader, "vertex shader")
-//    }
-//    else if (type_ == CS)
-//    {
-//        CREATE_SHADER(CS, ComputeShader, "compute shader")
-//    }
-//    else
-//    {
-//        CREATE_SHADER(PS, PixelShader, "pixel shader")
-//    }
-//
-//#undef CREATE_SHADER
+    if (!Compile())
+        return false;
 
     return object_.ptr_ != nullptr;
 }
@@ -323,7 +259,7 @@ bool ShaderVariation::Compile()
 {
     using namespace Diligent;
     // Set the code, defines, entrypoint, profile and flags according to the shader being compiled
-    const ea::string* sourceCode = nullptr;
+    ea::string sourceCode;
     const char* entryPoint = nullptr;
     SHADER_TYPE shaderType = SHADER_TYPE_UNKNOWN;
     //const char* profile = nullptr;
@@ -420,8 +356,7 @@ bool ShaderVariation::Compile()
     }
     else
     {
-        const ea::string& nativeSourceCode = owner_->GetSourceCode(type_);
-        sourceCode = &nativeSourceCode;
+        sourceCode = owner_->GetSourceCode(type_);
 
 //        for (const auto& define : defines)
 //        {
@@ -439,11 +374,18 @@ bool ShaderVariation::Compile()
 //        }
     }
 
+    // TODO: Refactor this line
+    sourceCode.replace("CameraVS", "Camera");
+    sourceCode.replace("ObjectVS", "Object");
+    sourceCode.replace("CameraPS", "Camera");
+    sourceCode.replace("ObjectPS", "Object");
+
     ShaderCreateInfo shaderCI;
     shaderCI.Desc.Name = name_.c_str();
     shaderCI.Desc.ShaderType = shaderType;
+    shaderCI.Desc.UseCombinedTextureSamplers = false;
     shaderCI.EntryPoint = entryPoint;
-    shaderCI.Source = sourceCode->c_str();
+    shaderCI.Source = sourceCode.c_str();
     shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
 
     shaderCI.Macros = macros;
@@ -451,9 +393,12 @@ bool ShaderVariation::Compile()
     auto compilerOutputBlob = DataBlobImpl::Create();
     auto shaderSrcOutput = DataBlobImpl::Create();
 
-    compilerOutputBlob->Resize(sourceCode->size());
+    compilerOutputBlob->Resize(sourceCode.size());
     IDataBlob* compilerOutputs[] = {compilerOutputBlob, shaderSrcOutput};
-    auto byteCode = Diligent::GLSLangUtils::HLSLtoSPIRV(shaderCI, GLSLangUtils::SpirvVersion::Vk120, nullptr, compilerOutputs);
+    // Compile Shader Code into SPIR-V
+    // This is required because SPIR-V bytecode is
+    // used to collect cbuffers and input layout
+    auto spirvByteCode = Diligent::GLSLangUtils::HLSLtoSPIRV(shaderCI, GLSLangUtils::SpirvVersion::Vk120, nullptr, compilerOutputs);
 
     compilerOutput_ = ea::string(static_cast<const char*>(compilerOutputBlob->GetConstDataPtr()));
 
@@ -484,12 +429,26 @@ bool ShaderVariation::Compile()
         break;
     }
 
-    ParseParameters(byteCode);
+    ParseParameters(spirvByteCode);
     CalculateConstantBufferSizes();
+    GenerateVertexBindings(sourceCode);
 
-    size_t byteCodeLength = byteCode.size() * sizeof(unsigned int);
-    byteCode_.resize(byteCodeLength);
-    memcpy(byteCode_.data(), byteCode.data(), byteCodeLength);
+    shaderCI.Source = sourceCode.c_str();
+#ifndef URHO3D_DEBUG
+    // Compile Real Shader code and remove reflection info.
+    shaderCI.CompileFlags = SHADER_COMPILE_FLAG_SKIP_REFLECTION;
+#endif
+
+    IShader* shader = nullptr;
+    graphics_->GetImpl()->GetDevice()->CreateShader(shaderCI, &shader);
+
+    if (!shader) {
+        URHO3D_LOGDEBUG("Error has ocurred at Shader Compilation " + GetFullName());
+        return false;
+    }
+
+    object_.ptr_ = shader;
+
     return true;
 //
 //    D3D_SHADER_MACRO endMacro;
@@ -544,9 +503,10 @@ void ShaderVariation::ParseParameters(std::vector<unsigned>& byteCode)
     SpvReflectResult result = spvReflectCreateShaderModule(byteCode.size() * sizeof(byteCode[0]), byteCode.data(), &module);
     assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
-
     // Collect Vertex Elements from Shader Reflection and create hash
     if (type_ == VS) {
+        vertexElements_ = ea::vector<VertexElement>();
+           
         unsigned varCount = 0;
         result = spvReflectEnumerateInputVariables(&module, &varCount, nullptr);
         assert(result == SPV_REFLECT_RESULT_SUCCESS);
@@ -556,6 +516,10 @@ void ShaderVariation::ParseParameters(std::vector<unsigned>& byteCode)
         assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
         unsigned elementHash = 0;
+
+        ea::array<unsigned, MAX_VERTEX_ELEMENT_SEMANTICS> repeatedSemantics;
+        repeatedSemantics.fill(0);
+
         for (auto it = inputVars.begin(); it != inputVars.end(); ++it) {
             ea::string semanticName((*it)->semantic);
             // Remove Digits from Semantic Name
@@ -565,6 +529,8 @@ void ShaderVariation::ParseParameters(std::vector<unsigned>& byteCode)
             if (semantic != MAX_VERTEX_ELEMENT_SEMANTICS) {
                 CombineHash(elementHash, semantic);
                 CombineHash(elementHash, (*it)->location);
+                vertexElements_.push_back(VertexElement(MAX_VERTEX_ELEMENT_TYPES, semantic, repeatedSemantics[semantic]));
+                ++repeatedSemantics[semantic];
             }
         }
         elementHash_ = elementHash;
@@ -632,73 +598,34 @@ void ShaderVariation::ParseParameters(std::vector<unsigned>& byteCode)
     }
 
     spvReflectDestroyShaderModule(&module);
-    //ID3D11ShaderReflection* reflection = nullptr;
-    //D3D11_SHADER_DESC shaderDesc;
+}
 
-    //HRESULT hr = D3DReflect(bufData, bufSize, IID_ID3D11ShaderReflection, (void**)&reflection);
-    //if (FAILED(hr) || !reflection)
-    //{
-    //    URHO3D_SAFE_RELEASE(reflection);
-    //    URHO3D_LOGD3DERROR("Failed to reflect vertex shader's input signature", hr);
-    //    return;
-    //}
+void ShaderVariation::GenerateVertexBindings(ea::string& sourceCode) {
+    if (type_ != VS)
+        return;
 
-    //reflection->GetDesc(&shaderDesc);
+    byte attribIdx = 0;
+    ea::string attribKey = "";
+    ea::string semanticName = "";
+    ea::string semanticNameWithIndex = "";
+    ea::array<byte, MAX_VERTEX_ELEMENT_SEMANTICS> repeatedSemantics;
+    repeatedSemantics.fill(0);
+    for (const VertexElement* element = vertexElements_.begin(); element != vertexElements_.end(); ++element) {
+        semanticName = elementSemanticNames[element->semantic_];
+        semanticNameWithIndex = semanticName;
+        semanticNameWithIndex.append_sprintf("%d", repeatedSemantics[element->semantic_]);
+        attribKey = "ATTRIB";
+        attribKey.append_sprintf("%d", attribIdx);
 
-    //if (type_ == VS)
-    //{
-    //    unsigned elementHash = 0;
-    //    for (unsigned i = 0; i < shaderDesc.InputParameters; ++i)
-    //    {
-    //        D3D11_SIGNATURE_PARAMETER_DESC paramDesc;
-    //        reflection->GetInputParameterDesc((UINT)i, &paramDesc);
-    //        VertexElementSemantic semantic = (VertexElementSemantic)GetStringListIndex(paramDesc.SemanticName, elementSemanticNames, MAX_VERTEX_ELEMENT_SEMANTICS, true);
-    //        if (semantic != MAX_VERTEX_ELEMENT_SEMANTICS)
-    //        {
-    //            CombineHash(elementHash, semantic);
-    //            CombineHash(elementHash, paramDesc.SemanticIndex);
-    //        }
-    //    }
-    //    elementHash_ = elementHash;
-    //    elementHash_ <<= 32;
-    //}
-
-    //ea::unordered_map<ea::string, unsigned> cbRegisterMap;
-
-    //for (unsigned i = 0; i < shaderDesc.BoundResources; ++i)
-    //{
-    //    D3D11_SHADER_INPUT_BIND_DESC resourceDesc;
-    //    reflection->GetResourceBindingDesc(i, &resourceDesc);
-    //    ea::string resourceName(resourceDesc.Name);
-    //    if (resourceDesc.Type == D3D_SIT_CBUFFER)
-    //        cbRegisterMap[resourceName] = resourceDesc.BindPoint;
-    //    else if (resourceDesc.Type == D3D_SIT_SAMPLER && resourceDesc.BindPoint < MAX_TEXTURE_UNITS)
-    //        useTextureUnits_[resourceDesc.BindPoint] = true;
-    //}
-
-    //for (unsigned i = 0; i < shaderDesc.ConstantBuffers; ++i)
-    //{
-    //    ID3D11ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByIndex(i);
-    //    D3D11_SHADER_BUFFER_DESC cbDesc;
-    //    cb->GetDesc(&cbDesc);
-    //    unsigned cbRegister = cbRegisterMap[ea::string(cbDesc.Name)];
-
-    //    for (unsigned j = 0; j < cbDesc.Variables; ++j)
-    //    {
-    //        ID3D11ShaderReflectionVariable* var = cb->GetVariableByIndex(j);
-    //        D3D11_SHADER_VARIABLE_DESC varDesc;
-    //        var->GetDesc(&varDesc);
-    //        ea::string varName(varDesc.Name);
-    //        const auto nameStart = varName.find('c');
-    //        if (nameStart != ea::string::npos)
-    //        {
-    //            varName = varName.substr(nameStart + 1); // Strip the c to follow Urho3D constant naming convention
-    //            parameters_[varName] = ShaderParameter{type_, varName, varDesc.StartOffset, varDesc.Size, cbRegister};
-    //        }
-    //    }
-    //}
-
-    //reflection->Release();
+        // Replace semantic with index. Ex: SEM_TEXCOORD0 -> ATTRIBN
+        sourceCode.replace(semanticNameWithIndex, attribKey);
+        // Sometimes semantic doesn't contains a index normally this occurs if semantic doesn't repeats
+        // For this case, we replace semantic without index. Ex: SEM_POSITION -> ATTRIB0 or SEM_COLOR -> ATTRIBN
+        if (repeatedSemantics[element->semantic_] == 0)
+            sourceCode.replace(semanticName, attribKey);
+        ++repeatedSemantics[element->semantic_];
+        ++attribIdx;
+    }
 }
 
 void ShaderVariation::SaveByteCode(const ea::string& binaryShaderName)

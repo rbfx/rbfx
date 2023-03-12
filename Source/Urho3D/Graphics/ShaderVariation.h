@@ -133,6 +133,10 @@ public:
     /// Return constant buffer data sizes.
     const ConstantBufferSizes& GetConstantBufferSizes() const { return constantBufferSizes_; }
 
+#ifdef URHO3D_DILIGENT
+    const ea::vector<VertexElement>& GetVertexElements() const { return vertexElements_; }
+#endif
+
     /// D3D11 vertex semantic names. Used internally.
     static const char* elementSemanticNames[];
 
@@ -143,9 +147,10 @@ private:
     bool Compile();
 #ifdef URHO3D_DILIGENT
     void ParseParameters(std::vector<unsigned>& byteCode);
+    void GenerateVertexBindings(ea::string& sourceCode);
 #else
     /// Inspect the constant parameters and input layout (if applicable) from the shader bytecode.
-    void ParseParameters(unsigned char* bufData, unsigned bufSize);
+     void ParseParameters(unsigned char* bufData, unsigned bufSize);
 #endif
     /// Save bytecode to a file.
     void SaveByteCode(const ea::string& binaryShaderName);
@@ -158,6 +163,12 @@ private:
     ShaderType type_;
     /// Vertex element hash for vertex shaders. Zero for pixel shaders. Note that hashing is different than vertex buffers.
     unsigned long long elementHash_{};
+
+#ifdef  URHO3D_DILIGENT
+    /// Vertex elements for vertex shaders. Zero for any other shaders.
+    ea::vector<VertexElement> vertexElements_;
+#endif 
+
     /// Shader parameters.
     ea::unordered_map<StringHash, ShaderParameter> parameters_;
     /// Texture unit use flags.
