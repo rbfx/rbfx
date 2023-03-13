@@ -56,9 +56,8 @@ void RenderSurface::Release()
             graphics->ResetDepthStencil();
     }
 
-    assert(0);
-    /*URHO3D_SAFE_RELEASE(renderTargetView_);
-    URHO3D_SAFE_RELEASE(readOnlyView_);*/
+    URHO3D_SAFE_RELEASE(renderTargetView_);
+    URHO3D_SAFE_RELEASE(readOnlyView_);
 }
 
 bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)

@@ -699,6 +699,9 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
     drawAttrs.StartVertexLocation = vertexStart;
     drawAttrs.Flags = DRAW_FLAG_VERIFY_ALL;
     impl_->deviceContext_->Draw(drawAttrs);
+
+    numPrimitives_ += primitiveCount;
+    ++numBatches_;
     /*
 
 
@@ -716,8 +719,7 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
     }
     impl_->deviceContext_->Draw(vertexCount, vertexStart);
 
-    numPrimitives_ += primitiveCount;
-    ++numBatches_;*/
+    */
 }
 
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount)
@@ -777,8 +779,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,
     unsigned instanceCount)
 {
-    assert(0);
-    /*if (!indexCount || !instanceCount || !impl_->shaderProgram_)
+    if (!indexCount || !instanceCount || !pipelineState_)
         return;
 
     PrepareDraw();
@@ -789,16 +790,22 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     if (fillMode_ == FILL_POINT)
         type = POINT_LIST;
 
-    GetPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
-    if (d3dPrimitiveType != primitiveType_)
-    {
-        impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
-        primitiveType_ = d3dPrimitiveType;
-    }
-    impl_->deviceContext_->DrawIndexedInstanced(indexCount, instanceCount, indexStart, 0, 0);
+    PRIMITIVE_TOPOLOGY primitiveTopology;
+    GetPrimitiveType(vertexCount, pipelineState_->GetDesc().primitiveType_, primitiveCount, primitiveTopology);
+
+    DrawIndexedAttribs drawAttrs;
+    drawAttrs.NumIndices = indexCount;
+    drawAttrs.NumInstances = instanceCount;
+    drawAttrs.FirstIndexLocation = indexStart;
+    drawAttrs.BaseVertex = 0;
+    drawAttrs.FirstInstanceLocation = 0;
+    drawAttrs.Flags = DRAW_FLAG_VERIFY_ALL;
+    drawAttrs.IndexType = DiligentIndexBufferType[IndexBuffer::GetIndexBufferType(indexBuffer_)];
+
+    impl_->deviceContext_->DrawIndexed(drawAttrs);
 
     numPrimitives_ += instanceCount * primitiveCount;
-    ++numBatches_;*/
+    ++numBatches_;
 }
 
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertex, unsigned vertexCount,
@@ -830,11 +837,10 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
 void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 {
-    assert(0);
     // Note: this is not multi-instance safe
-    /*static ea::vector<VertexBuffer*> vertexBuffers(1);
+    static ea::vector<VertexBuffer*> vertexBuffers(1);
     vertexBuffers[0] = buffer;
-    SetVertexBuffers(vertexBuffers);*/
+    SetVertexBuffers(vertexBuffers);
 }
 
 bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
@@ -862,7 +868,6 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
             {
                 vertexBuffers_[i] = buffer;
                 impl_->vertexBuffers_[i] = (IBuffer*)buffer->GetGPUObject();
-                //impl_->vertexSizes_[i] = buffer->GetVertexSize();
                 impl_->vertexOffsets_[i] = offset;
                 changed = true;
             }
@@ -871,7 +876,6 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
         {
             vertexBuffers_[i] = nullptr;
             impl_->vertexBuffers_[i] = nullptr;
-            //impl_->vertexSizes_[i] = 0;
             impl_->vertexOffsets_[i] = 0;
             changed = true;
         }
@@ -897,18 +901,16 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
 
 bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    assert(0);
-    return false;
-    /*ea::vector<VertexBuffer*> bufferPointers;
+    ea::vector<VertexBuffer*> bufferPointers;
     bufferPointers.reserve(buffers.size());
     for (auto& buffer : buffers)
         bufferPointers.push_back(buffer.Get());
-    return SetVertexBuffers(bufferPointers, instanceOffset);*/
+    return SetVertexBuffers(bufferPointers, instanceOffset);
 }
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 {
-    assert(0);
+    indexBuffer_ = buffer;
     /*if (buffer != indexBuffer_)
     {
         if (buffer)
@@ -2431,6 +2433,9 @@ void Graphics::PrepareDraw()
         impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
     }
 
+    if (indexBuffer_ != nullptr)
+        impl_->deviceContext_->SetIndexBuffer((IBuffer*)indexBuffer_->GetGPUObject(), 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+            
     static const float blendFactors[] = {1.f, 1.f, 1.f, 1.f};
     impl_->deviceContext_->SetBlendFactors(blendFactors);
 

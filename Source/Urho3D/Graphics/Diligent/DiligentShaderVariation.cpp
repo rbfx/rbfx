@@ -332,27 +332,30 @@ bool ShaderVariation::Compile()
     static thread_local ea::string convertedShaderSourceCode;
     if (owner_->IsGLSL())
     {
-        assert(0);
-//        defines.Append("DESKTOP_GRAPHICS");
-//        defines.Append("GL3");
-//
-//        const ea::string& universalSourceCode = owner_->GetSourceCode(type_);
-//        ea::string errorMessage;
-//        if (!ConvertShaderToHLSL5(type_, universalSourceCode, defines, convertedShaderSourceCode, errorMessage))
-//        {
-//            URHO3D_LOGERROR("Failed to convert shader {} from GLSL:\n{}{}", GetFullName(), Shader::GetShaderFileList(), errorMessage);
-//            return false;
-//        }
-//
-//        // In debug mode, check that all defines are referenced by the shader code
-//#ifdef _DEBUG
-//        const auto& unusedDefines = defines.FindUnused(universalSourceCode);
-//        if (!unusedDefines.empty())
-//            URHO3D_LOGWARNING("Shader {} does not use the define(s): {}", GetFullName(), ea::string::joined(unusedDefines, ", "));
-//#endif
-//
-//        sourceCode = &convertedShaderSourceCode;
-//        entryPoint = "main";
+        macros.AddShaderMacro("DESKTOP_GRAPHICS", true);
+        macros.AddShaderMacro("GL3", true);
+
+        ShaderDefineArray defines;
+        for (const ShaderMacro* macro = macros; macro->Name != nullptr && macro->Definition != nullptr; ++macro)
+            defines.Append(macro->Name, macro->Definition);
+
+        const ea::string& universalSourceCode = owner_->GetSourceCode(type_);
+        ea::string errorMessage;
+        if (!ConvertShaderToHLSL5(type_, universalSourceCode, defines, convertedShaderSourceCode, errorMessage))
+        {
+            URHO3D_LOGERROR("Failed to convert shader {} from GLSL:\n{}{}", GetFullName(), Shader::GetShaderFileList(), errorMessage);
+            return false;
+        }
+
+        // In debug mode, check that all defines are referenced by the shader code
+#ifdef _DEBUG
+        const auto& unusedDefines = defines.FindUnused(universalSourceCode);
+        if (!unusedDefines.empty())
+            URHO3D_LOGWARNING("Shader {} does not use the define(s): {}", GetFullName(), ea::string::joined(unusedDefines, ", "));
+#endif
+
+        sourceCode = convertedShaderSourceCode;
+        entryPoint = "main";
     }
     else
     {

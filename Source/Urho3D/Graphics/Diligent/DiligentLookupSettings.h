@@ -164,4 +164,10 @@ namespace Urho3D
         { "FaceSelectMap", TextureUnit::TU_FACESELECT },
         { "IndirectionMap", TextureUnit::TU_INDIRECTION }
     };
+
+    static const Diligent::VALUE_TYPE DiligentIndexBufferType[] = {
+        Diligent::VT_UNDEFINED,
+        Diligent::VT_UINT16,
+        Diligent::VT_UINT32
+    };
 }
