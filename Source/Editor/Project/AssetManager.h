@@ -108,6 +108,7 @@ private:
         ea::vector<ea::string> outputs_;
         ea::unordered_set<ea::string> transformers_;
         FileTime modificationTime_{};
+        ea::unordered_map<ea::string, FileTime> dependencyModificationTimes_;
 
         bool cacheInvalid_{};
 

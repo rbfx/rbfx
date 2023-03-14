@@ -152,6 +152,9 @@ bool ModelImporter::Execute(
 bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
+    if (!metadata.metadataFileName_.empty())
+        AddDependency(input, output, metadata.metadataFileName_);
+
     settings_.assetName_ = GetFileName(input.originalInputFileName_);
     auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
@@ -172,6 +175,8 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
             URHO3D_LOGWARNING("Failed to load secondary file {} for asset {}", secondaryFilePath, input.resourceName_);
             continue;
         }
+
+        AddDependency(input, output, secondaryFilePath);
 
         if (!importer->MergeFile(secondaryFileHandle->fileName_, GetFileName(secondaryFilePath)))
         {
@@ -218,10 +223,12 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
 
 ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const
 {
+    ModelMetadata result;
+    result.metadataFileName_ = fileName + ".import";
+
     JSONFile file{context_};
-    if (file.LoadFile(fileName + ".import"))
+    if (file.LoadFile(result.metadataFileName_))
     {
-        ModelMetadata result;
         if (file.LoadObject("metadata", result))
             return result;
     }

@@ -35,9 +35,10 @@ namespace Urho3D
 
 void AssetManager::AssetDesc::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "Outputs", outputs_);
-    SerializeOptionalValue(archive, "Transformers", transformers_);
-    SerializeOptionalValue(archive, "AssetModifiedTime", modificationTime_);
+    SerializeOptionalValue(archive, "outputs", outputs_);
+    SerializeOptionalValue(archive, "transformers", transformers_);
+    SerializeOptionalValue(archive, "modificationTime", modificationTime_);
+    SerializeOptionalValue(archive, "dependencyModificationTimes", dependencyModificationTimes_);
 }
 
 bool AssetManager::AssetDesc::IsAnyTransformerUsed(const StringVector& transformers) const
@@ -332,6 +333,18 @@ bool AssetManager::IsAssetUpToDate(AssetDesc& assetDesc)
             return false;
     }
 
+    // Check if dependencies are present and up-to-date
+    for (const auto& [dependencyResourceName, cachedModificationTime] : assetDesc.dependencyModificationTimes_)
+    {
+        const ea::string dependencyFileName = GetFileName(dependencyResourceName);
+        if (!fs->FileExists(dependencyFileName))
+            return false;
+
+        const FileTime modificationTime = fs->GetLastModifiedTime(dependencyFileName, true);
+        if (modificationTime != cachedModificationTime)
+            return false;
+    }
+
     return true;
 }
 
@@ -377,7 +390,7 @@ void AssetManager::InvalidateOutdatedAssetsInPath(const ea::string& resourcePath
     hasInvalidAssets_ = true;
     for (auto& [resourceName, assetDesc] : assets_)
     {
-        if (resourceName.starts_with(resourcePath))
+        if (resourceName.starts_with(resourcePath) || assetDesc.dependencyModificationTimes_.contains(resourcePath))
         {
             if (!IsAssetUpToDate(assetDesc))
                 assetDesc.cacheInvalid_ = true;
@@ -592,6 +605,7 @@ void AssetManager::CompleteAssetProcessing(
         AssetDesc& assetDesc = assets_[input.resourceName_];
         assetDesc.resourceName_ = input.resourceName_;
         assetDesc.modificationTime_ = input.inputFileTime_;
+        assetDesc.dependencyModificationTimes_ = output->dependencyModificationTimes_;
         assetDesc.outputs_ = output->outputResourceNames_;
         assetDesc.transformers_ = output->appliedTransformers_;
 

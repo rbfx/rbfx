@@ -49,6 +49,7 @@ public:
 private:
     struct ModelMetadata
     {
+        ea::string metadataFileName_;
         StringVector appendFiles_;
 
         void SerializeInBlock(Archive& archive);
