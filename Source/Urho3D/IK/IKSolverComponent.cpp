@@ -1122,7 +1122,7 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
 
     // Solve rotations for partial solver weight for twist target
     const float twistAngle =
-        twistTarget_ ? GetTwistAngle(frameOfReference, chain_.GetSegments().back(), twistTarget_) : 0.0f;
+        twistTarget_ ? GetTwistAngle(chain_.GetSegments().back(), twistTarget_) : 0.0f;
     chain_.Twist(twistAngle * twistWeight_, settings);
 
     // Apply target rotation if needed
@@ -1134,13 +1134,14 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
     }
 }
 
-float IKSpineSolver::GetTwistAngle(
-    const Transform& frameOfReference, const IKNodeSegment& segment, Node* targetNode) const
+float IKSpineSolver::GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const
 {
-    const Quaternion targetRotation =
-        frameOfReference.rotation_.Inverse() * targetNode->GetWorldRotation() * twistRotationOffset_;
+    const Quaternion zeroTwistBoneRotation = node_->GetWorldRotation() * twistRotationOffset_;
+    const Quaternion targetBoneRotation = targetNode->GetWorldRotation() * segment.beginNode_->localOriginalRotation_;
+    const Quaternion deltaRotation = targetBoneRotation * zeroTwistBoneRotation.Inverse();
+
     const Vector3 direction = (segment.endNode_->position_ - segment.beginNode_->position_).Normalized();
-    const auto [_, twist] = targetRotation.ToSwingTwist(direction);
+    const auto [_, twist] = deltaRotation.ToSwingTwist(direction);
     const float angle = twist.Angle();
     const float sign = twist.Axis().DotProduct(direction) > 0.0f ? 1.0f : -1.0f;
     return sign * (angle > 180.0f ? angle - 360.0f : angle);

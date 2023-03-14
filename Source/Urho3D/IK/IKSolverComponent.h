@@ -390,7 +390,7 @@ private:
     float WeightFunction(float x) const;
 
     void SetOriginalTransforms(const Transform& frameOfReference);
-    float GetTwistAngle(const Transform& frameOfReference, const IKNodeSegment& segment, Node* targetNode) const;
+    float GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const;
 
     StringVector boneNames_;
     ea::string twistTargetName_;
@@ -401,6 +401,7 @@ private:
     float twistWeight_{1.0f};
     float maxAngle_{90.0f};
     float bendTweak_{0.0f};
+    /// This orientation of twist bone in object space is equivalent to having no twist.
     Quaternion twistRotationOffset_{Quaternion::ZERO};
 
     IKSpineChain chain_;
