@@ -22,7 +22,10 @@
 
 #include "../Assets/ModelImporter.h"
 
+#include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Resource/JSONFile.h>
 
 namespace Urho3D
 {
@@ -32,28 +35,41 @@ namespace
 
 const ea::string DefaultSkipTag = "[skip]";
 
-bool IsFileNameGLTF(const ea::string& fileName)
+bool IsFileNameGLTF(const ea::string& fileName, bool strict = true)
 {
-    return fileName.ends_with(".gltf", false)
-        || fileName.ends_with(".glb", false);
+    if (!strict && (fileName.ends_with(".gltf_", false) || fileName.ends_with(".glb_", false)))
+        return true;
+
+    return fileName.ends_with(".gltf", false) || fileName.ends_with(".glb", false);
 }
 
-bool IsFileNameFBX(const ea::string& fileName)
+bool IsFileNameFBX(const ea::string& fileName, bool strict = true)
 {
+    if (!strict && fileName.ends_with(".fbx_", false))
+        return true;
+
     return fileName.ends_with(".fbx", false);
 }
 
-bool IsFileNameBlend(const ea::string& fileName)
+bool IsFileNameBlend(const ea::string& fileName, bool strict = true)
 {
+    if (!strict && fileName.ends_with(".blend_", false))
+        return true;
+
     return fileName.ends_with(".blend", false);
 }
 
-}
+} // namespace
 
 void Assets_ModelImporter(Context* context, Project* project)
 {
     if (!context->IsReflected<ModelImporter>())
         ModelImporter::RegisterObject(context);
+}
+
+void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
+{
+    SerializeValue(archive, "appendFiles", appendFiles_);
 }
 
 ModelImporter::ModelImporter(Context* context)
@@ -74,6 +90,7 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Combine LODs", bool, settings_.combineLODs_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, settings_.repairLooping_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Skip Tag", ea::string, settings_.skipTag_, DefaultSkipTag, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Keep Names On Merge", bool, settings_.keepNamesOnMerge_, false, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -109,7 +126,8 @@ bool ModelImporter::IsApplicable(const AssetTransformerInput& input)
         {
             static bool logged = false;
             if (!logged)
-                URHO3D_LOGERROR("Blender is not found, cannot import Blender files. See Settings/Editor/ExternalTools.");
+                URHO3D_LOGERROR(
+                    "Blender is not found, cannot import Blender files. See Settings/Editor/ExternalTools.");
             logged = true;
             return false;
         }
@@ -119,32 +137,53 @@ bool ModelImporter::IsApplicable(const AssetTransformerInput& input)
     return false;
 }
 
-bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
+bool ModelImporter::Execute(
+    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
-    if (IsFileNameGLTF(input.resourceName_))
-    {
-        return ImportGLTF(input.inputFileName_, input, output, transformers);
-    }
-    else if (IsFileNameFBX(input.resourceName_))
-    {
-        return ImportFBX(input.inputFileName_, input, output, transformers);
-    }
-    else if (IsFileNameBlend(input.resourceName_))
-    {
-        return ImportBlend(input.inputFileName_, input, output, transformers);
-    }
-    return false;
+    const ModelMetadata metadata = LoadMetadata(input.inputFileName_);
+    const GLTFFileHandle handle = LoadData(input.inputFileName_, input.tempPath_);
+
+    if (!handle)
+        return false;
+
+    return ImportGLTF(handle, metadata, input, output, transformers);
 }
 
-bool ModelImporter::ImportGLTF(const ea::string& fileName,
+bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     settings_.assetName_ = GetFileName(input.originalInputFileName_);
     auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
-    if (!importer->LoadFile(fileName, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
+    const ea::string outputPath = AddTrailingSlash(input.outputFileName_);
+    const ea::string resourceNamePrefix = AddTrailingSlash(input.resourceName_);
+    if (!importer->LoadFile(fileHandle->fileName_))
     {
         URHO3D_LOGERROR("Failed to load asset {} as GLTF model", input.resourceName_);
+        return false;
+    }
+
+    for (const ea::string& secondaryFileName : metadata.appendFiles_)
+    {
+        const ea::string secondaryFilePath = GetPath(input.originalInputFileName_) + secondaryFileName;
+        const GLTFFileHandle secondaryFileHandle = LoadData(secondaryFilePath, input.tempPath_);
+        if (!secondaryFileHandle)
+        {
+            URHO3D_LOGWARNING("Failed to load secondary file {} for asset {}", secondaryFilePath, input.resourceName_);
+            continue;
+        }
+
+        if (!importer->MergeFile(secondaryFileHandle->fileName_, GetFileName(secondaryFilePath)))
+        {
+            URHO3D_LOGWARNING(
+                "Failed to merge secondary file {} into asset {}", secondaryFilePath, input.resourceName_);
+            continue;
+        }
+    }
+
+    if (!importer->Process(outputPath, resourceNamePrefix))
+    {
+        URHO3D_LOGERROR("Failed to process asset {}", input.resourceName_);
         return false;
     }
 
@@ -171,62 +210,105 @@ bool ModelImporter::ImportGLTF(const ea::string& fileName,
             return false;
         }
 
-        output.appliedTransformers_.insert(nestedOutput.appliedTransformers_.begin(), nestedOutput.appliedTransformers_.end());
+        output.appliedTransformers_.insert(
+            nestedOutput.appliedTransformers_.begin(), nestedOutput.appliedTransformers_.end());
     }
     return true;
 }
 
-bool ModelImporter::ImportFBX(const ea::string& fileName,
-    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
+ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const
+{
+    JSONFile file{context_};
+    if (file.LoadFile(fileName + ".import"))
+    {
+        ModelMetadata result;
+        if (file.LoadObject("metadata", result))
+            return result;
+    }
+
+    return {};
+}
+
+ModelImporter::GLTFFileHandle ModelImporter::LoadData(const ea::string& fileName, const ea::string& tempPath) const
+{
+    if (IsFileNameGLTF(fileName, false))
+    {
+        return LoadDataNative(fileName);
+    }
+    else if (IsFileNameFBX(fileName, false))
+    {
+        return LoadDataFromFBX(fileName, tempPath);
+    }
+    else if (IsFileNameBlend(fileName, false))
+    {
+        return LoadDataFromBlend(fileName, tempPath);
+    }
+    return nullptr;
+}
+
+ModelImporter::GLTFFileHandle ModelImporter::LoadDataNative(const ea::string& fileName) const
+{
+    auto fs = context_->GetSubsystem<FileSystem>();
+
+    if (!fs->FileExists(fileName))
+        return nullptr;
+
+    return ea::make_shared<GLTFFileInfo>(GLTFFileInfo{fileName});
+}
+
+ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromFBX(
+    const ea::string& fileName, const ea::string& tempPath) const
 {
     auto fs = context_->GetSubsystem<FileSystem>();
     const auto toolManager = GetToolManager();
 
-    const ea::string tempGltfFile = input.tempPath_ + "model.glb";
-    const StringVector arguments{
-        "--binary",
-        "--input",
-        fileName,
-        "--output",
-        tempGltfFile
-    };
+    if (!fs->FileExists(fileName))
+        return nullptr;
+
+    const ea::string tempGltfFile = Format("{}{}.glb", tempPath, GenerateUUID());
+    const StringVector arguments{"--binary", "--input", fileName, "--output", tempGltfFile};
 
     ea::string commandOutput;
     if (fs->SystemRun(toolManager->GetFBX2glTF(), arguments, commandOutput) != 0)
     {
         URHO3D_LOGERROR("{}", commandOutput);
-        return false;
+        return nullptr;
     }
 
-    const bool result = ImportGLTF(tempGltfFile, input, output, transformers);
-    fs->Delete(tempGltfFile);
-    return result;
+    const auto deleter = [fs](GLTFFileInfo* handle)
+    {
+        fs->Delete(handle->fileName_);
+        delete handle;
+    };
+    return ea::shared_ptr<GLTFFileInfo>(new GLTFFileInfo{tempGltfFile}, deleter);
 }
 
-bool ModelImporter::ImportBlend(const ea::string& fileName,
-    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
+ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
+    const ea::string& fileName, const ea::string& tempPath) const
 {
     auto fs = context_->GetSubsystem<FileSystem>();
     const auto toolManager = GetToolManager();
 
-    const ea::string tempGltfFile = input.tempPath_ + "model.gltf";
-    const StringVector arguments{
-        "-b",
-        fileName,
-        "--python-expr",
-        Format("import bpy; bpy.ops.export_scene.gltf(filepath='{}', export_format='GLTF_EMBEDDED')", tempGltfFile)
-    };
+    if (!fs->FileExists(fileName))
+        return nullptr;
+
+    const ea::string tempGltfFile = tempPath + "model.gltf";
+    const StringVector arguments{"-b", fileName, "--python-expr",
+        Format("import bpy; bpy.ops.export_scene.gltf(filepath='{}', export_format='GLTF_EMBEDDED')", tempGltfFile)};
 
     ea::string commandOutput;
     if (fs->SystemRun(toolManager->GetBlender(), arguments, commandOutput) != 0)
     {
         URHO3D_LOGERROR("{}", commandOutput);
-        return false;
+        return nullptr;
     }
 
-    const bool result = ImportGLTF(tempGltfFile, input, output, transformers);
-    fs->Delete(tempGltfFile);
-    return result;
+    const auto deleter = [fs](GLTFFileInfo* handle)
+    {
+        fs->Delete(handle->fileName_);
+        delete handle;
+    };
+    return ea::shared_ptr<GLTFFileInfo>(new GLTFFileInfo{tempGltfFile}, deleter);
 }
 
-}
+} // namespace Urho3D
