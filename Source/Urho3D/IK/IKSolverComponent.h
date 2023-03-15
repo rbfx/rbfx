@@ -390,7 +390,7 @@ private:
     float WeightFunction(float x) const;
 
     void SetOriginalTransforms(const Transform& frameOfReference);
-    float GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const;
+    float GetTwistAngle(const Transform& frameOfReference, const IKNodeSegment& segment, Node* targetNode) const;
 
     StringVector boneNames_;
     ea::string twistTargetName_;
@@ -413,6 +413,7 @@ private:
     {
         ea::vector<Transform> defaultTransforms_;
         Vector3 baseDirection_;
+        Quaternion zeroTwistRotation_;
     } local_;
 
     ea::vector<Quaternion> originalBoneRotations_;

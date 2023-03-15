@@ -1029,6 +1029,9 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
 
 void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
+    if (twistRotationOffset_ == Quaternion::ZERO)
+        UpdateTwistRotationOffset();
+
     chain_.UpdateLengths();
 
     const auto& bones = chain_.GetNodes();
@@ -1041,6 +1044,7 @@ void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 
     const Vector3 baseDirection = (bones[1]->position_ - bones[0]->position_).Normalized();
     local_.baseDirection_ = inverseFrameOfReference.rotation_ * baseDirection;
+    local_.zeroTwistRotation_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * twistRotationOffset_;
 }
 
 void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)
@@ -1122,7 +1126,7 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
 
     // Solve rotations for partial solver weight for twist target
     const float twistAngle =
-        twistTarget_ ? GetTwistAngle(chain_.GetSegments().back(), twistTarget_) : 0.0f;
+        twistTarget_ ? GetTwistAngle(frameOfReference, chain_.GetSegments().back(), twistTarget_) : 0.0f;
     chain_.Twist(twistAngle * twistWeight_, settings);
 
     // Apply target rotation if needed
@@ -1134,9 +1138,10 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
     }
 }
 
-float IKSpineSolver::GetTwistAngle(const IKNodeSegment& segment, Node* targetNode) const
+float IKSpineSolver::GetTwistAngle(
+    const Transform& frameOfReference, const IKNodeSegment& segment, Node* targetNode) const
 {
-    const Quaternion zeroTwistBoneRotation = node_->GetWorldRotation() * twistRotationOffset_;
+    const Quaternion zeroTwistBoneRotation = frameOfReference.rotation_ * local_.zeroTwistRotation_;
     const Quaternion targetBoneRotation = targetNode->GetWorldRotation() * segment.beginNode_->localOriginalRotation_;
     const Quaternion deltaRotation = targetBoneRotation * zeroTwistBoneRotation.Inverse();
 
