@@ -70,6 +70,7 @@ void Assets_ModelImporter(Context* context, Project* project)
 void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "appendFiles", appendFiles_);
+    SerializeValue(archive, "nodeRenames", nodeRenames_);
 }
 
 ModelImporter::ModelImporter(Context* context)
@@ -156,6 +157,7 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
         AddDependency(input, output, metadata.metadataFileName_);
 
     settings_.assetName_ = GetFileName(input.originalInputFileName_);
+    settings_.nodeRenames_ = metadata.nodeRenames_;
     auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
     const ea::string outputPath = AddTrailingSlash(input.outputFileName_);

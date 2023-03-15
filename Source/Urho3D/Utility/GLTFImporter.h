@@ -55,6 +55,8 @@ struct GLTFImporterSettings
     float offsetMatrixError_{0.00002f};
     float keyFrameTimeError_{M_EPSILON};
 
+    ea::unordered_map<ea::string, ea::string> nodeRenames_;
+
     /// Settings that affect only preview scene.
     struct PreviewSettings
     {

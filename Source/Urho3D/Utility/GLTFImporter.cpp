@@ -297,6 +297,16 @@ void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea
     }
 }
 
+void RenameNodes(tg::Model& model, const ea::unordered_map<ea::string, ea::string>& mapping)
+{
+    for (tg::Node& node : model.nodes)
+    {
+        const auto iter = mapping.find(node.name.c_str());
+        if (iter != mapping.end())
+            node.name = iter->second.c_str();
+    }
+}
+
 /// Raw imported input, parameters and generic output layout.
 class GLTFImporterBase : public NonCopyable
 {
@@ -3736,6 +3746,7 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
 
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
+    SerializeValue(archive, "nodeRenames", value.nodeRenames_);
 
     SerializeValue(archive, "addLights", value.preview_.addLights_);
     SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);
@@ -3763,6 +3774,7 @@ bool GLTFImporter::LoadFile(const ea::string& fileName)
             throw RuntimeException("Primary source model is already loaded");
 
         model_ = ea::make_unique<tg::Model>(LoadGLTF(fileName));
+        RenameNodes(*model_, settings_.nodeRenames_);
         return true;
     }
     catch (const RuntimeException& e)
@@ -3787,6 +3799,8 @@ bool GLTFImporter::MergeFile(const ea::string& fileName, const ea::string& asset
             overrideName = assetName;
 
         auto secondaryModel = LoadGLTF(fileName);
+        RenameNodes(secondaryModel, settings_.nodeRenames_);
+
         MergeModels(*model_, ea::move(secondaryModel), overrideName);
         return true;
     }

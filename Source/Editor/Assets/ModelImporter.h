@@ -51,6 +51,7 @@ private:
     {
         ea::string metadataFileName_;
         StringVector appendFiles_;
+        ea::unordered_map<ea::string, ea::string> nodeRenames_;
 
         void SerializeInBlock(Archive& archive);
     };
