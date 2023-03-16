@@ -92,6 +92,7 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Repair Looping", bool, settings_.repairLooping_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Skip Tag", ea::string, settings_.skipTag_, DefaultSkipTag, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Keep Names On Merge", bool, settings_.keepNamesOnMerge_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, blenderApplyModifiers_, true, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -302,8 +303,18 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
         return nullptr;
 
     const ea::string tempGltfFile = tempPath + "model.gltf";
-    const StringVector arguments{"-b", fileName, "--python-expr",
-        Format("import bpy; bpy.ops.export_scene.gltf(filepath='{}', export_format='GLTF_EMBEDDED')", tempGltfFile)};
+
+    // This script is passed as command line argument, so it must be a single line and use single quotes
+    const ea::string script = Format(
+        "import bpy;"
+        "bpy.ops.export_scene.gltf("
+        "  filepath='{}', "
+        "  export_format='GLTF_EMBEDDED', "
+        "  export_apply={}"
+        ");",
+        tempGltfFile, blenderApplyModifiers_ ? "True" : "False");
+
+    const StringVector arguments{"-b", fileName, "--python-expr", script};
 
     ea::string commandOutput;
     if (fs->SystemRun(toolManager->GetBlender(), arguments, commandOutput) != 0)

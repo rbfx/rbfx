@@ -78,6 +78,7 @@ private:
     ToolManager* GetToolManager() const;
 
     GLTFImporterSettings settings_;
+    bool blenderApplyModifiers_{true};
 };
 
 } // namespace Urho3D
