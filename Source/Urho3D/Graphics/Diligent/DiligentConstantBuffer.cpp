@@ -62,6 +62,9 @@ bool ConstantBuffer::SetSize(unsigned size)
     {
         using namespace Diligent;
         BufferDesc bufferDesc;
+#ifdef URHO3D_DEBUG
+        bufferDesc.Name = dbgName_.c_str();
+#endif
         bufferDesc.Size = size_;
         bufferDesc.Usage = USAGE_DEFAULT;
         bufferDesc.CPUAccessFlags = CPU_ACCESS_NONE;

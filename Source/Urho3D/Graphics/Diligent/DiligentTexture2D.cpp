@@ -72,7 +72,7 @@ void Texture2D::Release()
     URHO3D_SAFE_RELEASE(shaderResourceView_);
     URHO3D_SAFE_RELEASE(resolveTexture_);
     URHO3D_SAFE_RELEASE(object_.ptr_);
-    // URHO3D_SAFE_RELEASE(sampler_);
+    URHO3D_SAFE_RELEASE(sampler_);
 }
 
 bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, const void* data)

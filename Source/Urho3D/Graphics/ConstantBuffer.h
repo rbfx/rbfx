@@ -63,6 +63,11 @@ public:
     unsigned ToHash() {
         return hash_;
     }
+    void SetDbgName(ea::string& dbgName) {
+#ifdef URHO3D_DEBUG
+        dbgName_ = dbgName;
+#endif
+    }
 private:
     void BuildHash() {
         unsigned hash = MakeHash((unsigned long long)this);
@@ -71,6 +76,11 @@ private:
     /// Buffer byte size.
     unsigned size_{};
     unsigned hash_{0};
+#ifdef URHO3D_DEBUG
+    /// GPU Object Debug Name, only used by the Diligent Backend
+    /// This is usefully when you debug through Render Doc
+    ea::string dbgName_;
+#endif
 };
 
 }

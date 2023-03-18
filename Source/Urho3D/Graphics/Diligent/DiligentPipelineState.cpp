@@ -65,6 +65,7 @@ namespace Urho3D
                     layoutElement.NumComponents = sNumComponents[vertexBufferElement->type_];
                     layoutElement.ValueType = sValueTypes[vertexBufferElement->type_];
                     layoutElement.IsNormalized = vertexBufferElement->semantic_ == SEM_COLOR;
+                    layoutElement.BufferSlot = vertexBufferElement->perInstance_ ? 1 : 0;
                     layoutElement.Frequency = vertexBufferElement->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
                     // Remove from vector processed vertex element
                     vertexBufferElements.erase(vertexBufferElement);

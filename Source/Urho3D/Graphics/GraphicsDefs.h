@@ -365,6 +365,30 @@ static const char* shaderParameterGroupNames[] = {
     nullptr,
 };
 
+#ifdef URHO3D_DILIGENT
+//TODO: Refactor ShaderVariant to use this
+static const char* elementSemanticNames[] = {
+    "SEM_POSITION",
+    "SEM_NORMAL",
+    "SEM_BINORMAL",
+    "SEM_TANGENT",
+    "SEM_TEXCOORD",
+    "SEM_COLOR",
+    "SEM_BLENDWEIGHT",
+    "SEM_BLENDINDICES",
+    "SEM_OBJECTINDEX",
+    nullptr
+};
+static ea::unordered_map<ea::string, ShaderParameterGroup> constantBuffersNamesLookup = {
+    { "Frame", ShaderParameterGroup::SP_FRAME },
+    { "Camera", ShaderParameterGroup::SP_CAMERA },
+    { "Zone", ShaderParameterGroup::SP_ZONE },
+    { "Light", ShaderParameterGroup::SP_MATERIAL },
+    { "Object", ShaderParameterGroup::SP_OBJECT },
+    { "Custom", ShaderParameterGroup::SP_CUSTOM }
+};
+#endif
+
 /// Texture units.
 /// @manualbind
 enum TextureUnit
@@ -559,4 +583,16 @@ static const int MAX_VERTEX_STREAMS = 4;
 static const int MAX_CONSTANT_REGISTERS = 256;
 
 static const int BITS_PER_COMPONENT = 8;
+
+#ifdef URHO3D_DEBUG
+    static ea::string ConstantBufferDebugNames[] = {
+        "FrameCB",
+        "CameraCB",
+        "ZoneCB",
+        "LightCB",
+        "MaterialCB",
+        "ObjectCB",
+        "CustomCB"
+    };
+#endif
 }

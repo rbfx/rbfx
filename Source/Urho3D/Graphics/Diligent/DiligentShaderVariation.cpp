@@ -27,6 +27,7 @@
 #include "../../Graphics/Shader.h"
 #include "../../Graphics/ShaderDefineArray.h"
 #include "../../Graphics/ShaderConverter.h"
+#include "../../Graphics/ShaderCompiler.h"
 #include "../../Graphics/VertexBuffer.h"
 #include "../../IO/File.h"
 #include "../../IO/FileSystem.h"
@@ -40,6 +41,8 @@
 #include "../../DebugNew.h"
 
 #include "./DiligentLookupSettings.h"
+
+#include "../../Graphics/ShaderCompiler.h"
 
 namespace Urho3D
 {
@@ -265,59 +268,56 @@ bool ShaderVariation::Compile()
     //const char* profile = nullptr;
     //unsigned flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
     //ShaderDefineArray defines{ defines_ };
-    ShaderMacroHelper macros;
+    ShaderCompilerDesc compilerDesc = {};
+    compilerDesc.defines_ = ShaderDefineArray{ defines_ };
+    //ShaderMacroHelper macros;
 
 
+    compilerDesc.type_ = type_;
     switch (type_)
     {
     case Urho3D::VS:
     {
-        entryPoint = "VS";
-        macros.AddShaderMacro("COMPILEVS", true);
-        //defines.Append("COMPILEVS");
+        compilerDesc.entryPoint_ = "VS";
+        compilerDesc.defines_.Append("COMPILEVS");
         shaderType = SHADER_TYPE_VERTEX;
     }
         break;
     case Urho3D::PS:
     {
-        entryPoint = "PS";
-        macros.AddShaderMacro("COMPILEPS", true);
-        //defines.Append("COMPILEPS");
+        compilerDesc.entryPoint_ = "PS";
+        compilerDesc.defines_.Append("COMPILEPS");
         shaderType = SHADER_TYPE_PIXEL;
     }
         break;
     case Urho3D::GS:
-        entryPoint = "GS";
-        macros.AddShaderMacro("COMPILEGS", true);
-        //defines.Append("COMPILEGS");
+        compilerDesc.entryPoint_ = "GS";
+        compilerDesc.defines_.Append("COMPILEGS");
         shaderType = SHADER_TYPE_GEOMETRY;
         break;
     case Urho3D::HS:
-        entryPoint = "HS";
-        macros.AddShaderMacro("COMPILEHS", true);
-        //defines.Append("COMPILEHS");
+        compilerDesc.entryPoint_ = "HS";
+        compilerDesc.defines_.Append("COMPILEHS");
         shaderType = SHADER_TYPE_HULL;
         break;
     case Urho3D::DS:
-        entryPoint = "DS";
-        macros.AddShaderMacro("COMPILEDS", true);
-        //defines.Append("COMPILEDS");
+        compilerDesc.entryPoint_ = "DS";
+        compilerDesc.defines_.Append("COMPILEDS");
         shaderType = SHADER_TYPE_DOMAIN;
         break;
     case Urho3D::CS:
-        entryPoint = "CS";
-        macros.AddShaderMacro("COMPILECS", true);
-        //defines.Append("COMPILECS");
+        compilerDesc.entryPoint_ = "CS";
+        compilerDesc.defines_.Append("COMPILECS");
         shaderType = SHADER_TYPE_COMPUTE;
         break;
     }
 
-    macros.AddShaderMacro("MAXBONES", Graphics::GetMaxBones());
-    macros.AddShaderMacro("D3D11", true);
-    macros.AddShaderMacro("DILIGENT", true);
+    compilerDesc.defines_.Append("MAXBONES", Format("{}", Graphics::GetMaxBones()));
+    compilerDesc.defines_.Append("D3D11");
+    compilerDesc.defines_.Append("DILIGENT");
 
     // Include Variant defines into macros
-    {
+    /*{
         auto defineParts = defines_.split(' ');
         for (auto part = defineParts.begin(); part != defineParts.end(); ++part) {
             auto define = part->split('=');
@@ -326,39 +326,42 @@ bool ShaderVariation::Compile()
             else
                 macros.AddShaderMacro(define[0].c_str(), true);
         }
-    }
+    }*/
+
 
     // Convert shader source code if GLSL
     static thread_local ea::string convertedShaderSourceCode;
     if (owner_->IsGLSL())
     {
-        macros.AddShaderMacro("DESKTOP_GRAPHICS", true);
-        macros.AddShaderMacro("GL3", true);
+        compilerDesc.defines_.Append("DESKTOP_GRAPHICS");
+        compilerDesc.defines_.Append("GL3");
+        compilerDesc.language_ = ShaderLanguage::GLSL;
 
-        ShaderDefineArray defines;
+        /*ShaderDefineArray defines;
         for (const ShaderMacro* macro = macros; macro->Name != nullptr && macro->Definition != nullptr; ++macro)
-            defines.Append(macro->Name, macro->Definition);
+            defines.Append(macro->Name, macro->Definition);*/
 
-        const ea::string& universalSourceCode = owner_->GetSourceCode(type_);
-        ea::string errorMessage;
-        if (!ConvertShaderToHLSL5(type_, universalSourceCode, defines, convertedShaderSourceCode, errorMessage))
-        {
-            URHO3D_LOGERROR("Failed to convert shader {} from GLSL:\n{}{}", GetFullName(), Shader::GetShaderFileList(), errorMessage);
-            return false;
-        }
+//        const ea::string& universalSourceCode = owner_->GetSourceCode(type_);
+//        ea::string errorMessage;
+//        if (!ConvertShaderToHLSL5(type_, universalSourceCode, defines, convertedShaderSourceCode, errorMessage))
+//        {
+//            URHO3D_LOGERROR("Failed to convert shader {} from GLSL:\n{}{}", GetFullName(), Shader::GetShaderFileList(), errorMessage);
+//            return false;
+//        }
+//
+//        // In debug mode, check that all defines are referenced by the shader code
+//#ifdef _DEBUG
+//        const auto& unusedDefines = defines.FindUnused(universalSourceCode);
+//        if (!unusedDefines.empty())
+//            URHO3D_LOGWARNING("Shader {} does not use the define(s): {}", GetFullName(), ea::string::joined(unusedDefines, ", "));
+//#endif
 
-        // In debug mode, check that all defines are referenced by the shader code
-#ifdef _DEBUG
-        const auto& unusedDefines = defines.FindUnused(universalSourceCode);
-        if (!unusedDefines.empty())
-            URHO3D_LOGWARNING("Shader {} does not use the define(s): {}", GetFullName(), ea::string::joined(unusedDefines, ", "));
-#endif
-
-        sourceCode = convertedShaderSourceCode;
-        entryPoint = "main";
+        /*sourceCode = convertedShaderSourceCode;
+        entryPoint = "main";*/
     }
     else
     {
+        compilerDesc.language_ = ShaderLanguage::HLSL;
         sourceCode = owner_->GetSourceCode(type_);
 
 //        for (const auto& define : defines)
@@ -377,35 +380,10 @@ bool ShaderVariation::Compile()
 //        }
     }
 
-    // TODO: Refactor this line
-    sourceCode.replace("CameraVS", "Camera");
-    sourceCode.replace("ObjectVS", "Object");
-    sourceCode.replace("CameraPS", "Camera");
-    sourceCode.replace("ObjectPS", "Object");
+    compilerDesc.code_ = owner_->GetSourceCode(type_);
 
-    ShaderCreateInfo shaderCI;
-    shaderCI.Desc.Name = name_.c_str();
-    shaderCI.Desc.ShaderType = shaderType;
-    shaderCI.Desc.UseCombinedTextureSamplers = false;
-    shaderCI.EntryPoint = entryPoint;
-    shaderCI.Source = sourceCode.c_str();
-    shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
-
-    shaderCI.Macros = macros;
-
-    auto compilerOutputBlob = DataBlobImpl::Create();
-    auto shaderSrcOutput = DataBlobImpl::Create();
-
-    compilerOutputBlob->Resize(sourceCode.size());
-    IDataBlob* compilerOutputs[] = {compilerOutputBlob, shaderSrcOutput};
-    // Compile Shader Code into SPIR-V
-    // This is required because SPIR-V bytecode is
-    // used to collect cbuffers and input layout
-    auto spirvByteCode = Diligent::GLSLangUtils::HLSLtoSPIRV(shaderCI, GLSLangUtils::SpirvVersion::Vk120, nullptr, compilerOutputs);
-
-    compilerOutput_ = ea::string(static_cast<const char*>(compilerOutputBlob->GetConstDataPtr()));
-
-    if (!compilerOutput_.empty()) {
+    ShaderCompiler compiler(compilerDesc);
+    if (!compiler.Compile()) {
         URHO3D_LOGERROR("Failed to compile shader " + GetFullName());
         return false;
     }
@@ -432,72 +410,57 @@ bool ShaderVariation::Compile()
         break;
     }
 
-    ParseParameters(spirvByteCode);
+    ShaderCreateInfo shaderCI;
+#ifdef URHO3D_DEBUG
+    shaderCI.Desc.Name = name_.c_str();
+#endif
+    shaderCI.Desc.ShaderType = shaderType;
+    shaderCI.Desc.UseCombinedTextureSamplers = false;
+
+    if (compilerDesc.language_ == ShaderLanguage::HLSL) {
+        shaderCI.ByteCode = compiler.GetByteCode().data();
+        shaderCI.ByteCodeSize = compiler.GetByteCode().size();
+        shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    }
+    else {
+        shaderCI.Source = (const char*)compiler.GetByteCode().data();
+        shaderCI.SourceLength = compiler.GetByteCode().size();
+        shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL;
+    }
+
+    vertexElements_ = compiler.GetVertexElements();
+    parameters_ = compiler.GetShaderParams();
+
+    for (uint8_t i = 0; i < MAX_TEXTURE_UNITS; ++i)
+        useTextureUnits_[i] = compiler.IsUsedTextureSlot((TextureUnit)i);
+
+    //ParseParameters(spirvByteCode);
     CalculateConstantBufferSizes();
     GenerateVertexBindings(sourceCode);
-
-    shaderCI.Source = sourceCode.c_str();
-#ifndef URHO3D_DEBUG
-    // Compile Real Shader code and remove reflection info.
-    shaderCI.CompileFlags = SHADER_COMPILE_FLAG_SKIP_REFLECTION;
-#endif
 
     IShader* shader = nullptr;
     graphics_->GetImpl()->GetDevice()->CreateShader(shaderCI, &shader);
 
     if (!shader) {
-        URHO3D_LOGDEBUG("Error has ocurred at Shader Compilation " + GetFullName());
+        URHO3D_LOGDEBUG("Error has ocurred at Shader Object creation " + GetFullName());
         return false;
     }
 
     object_.ptr_ = shader;
 
     return true;
-//
-//    D3D_SHADER_MACRO endMacro;
-//    endMacro.Name = nullptr;
-//    endMacro.Definition = nullptr;
-//    macros.emplace_back(endMacro);
-//
-//    // Compile using D3DCompile
-//    ID3DBlob* shaderCode = nullptr;
-//    ID3DBlob* errorMsgs = nullptr;
-//
-//    HRESULT hr = D3DCompile(sourceCode->c_str(), sourceCode->length(), owner_->GetName().c_str(), &macros.front(), nullptr,
-//        entryPoint, profile, flags, 0, &shaderCode, &errorMsgs);
-//    if (FAILED(hr))
-//    {
-//        // Do not include end zero unnecessarily
-//        compilerOutput_ = ea::string((const char*)errorMsgs->GetBufferPointer(), (unsigned)errorMsgs->GetBufferSize() - 1);
-//    }
-//    else
-//    {
-//        if (type_ == VS)
-//            URHO3D_LOGDEBUG("Compiled vertex shader " + GetFullName());
-//        else if (type_ == CS)
-//            URHO3D_LOGDEBUG("Compiled compute shader " + GetFullName());
-//        else
-//            URHO3D_LOGDEBUG("Compiled pixel shader " + GetFullName());
-//
-//        unsigned char* bufData = (unsigned char*)shaderCode->GetBufferPointer();
-//        unsigned bufSize = (unsigned)shaderCode->GetBufferSize();
-//        // Use the original bytecode to reflect the parameters
-//        ParseParameters(bufData, bufSize);
-//        CalculateConstantBufferSizes();
-//
-//        // Then strip everything not necessary to use the shader
-//        ID3DBlob* strippedCode = nullptr;
-//        D3DStripShader(bufData, bufSize,
-//            D3DCOMPILER_STRIP_REFLECTION_DATA | D3DCOMPILER_STRIP_DEBUG_INFO | D3DCOMPILER_STRIP_TEST_BLOBS, &strippedCode);
-//        byteCode_.resize((unsigned)strippedCode->GetBufferSize());
-//        memcpy(&byteCode_[0], strippedCode->GetBufferPointer(), byteCode_.size());
-//        strippedCode->Release();
-//    }
-//
-//    URHO3D_SAFE_RELEASE(shaderCode);
-//    URHO3D_SAFE_RELEASE(errorMsgs);
-//
-//    return !byteCode_.empty();
+}
+
+void ShaderVariation::CollectVertexElements(const ea::string& sourceCode) {
+    if (type_ != VS)
+        return;
+    ea::vector<VertexElement> vertexElements;
+    ea::array<uint8_t, MAX_VERTEX_ELEMENT_SEMANTICS> repeatedSemantics;
+
+    size_t nextIdx = sourceCode.find(elementSemanticNames[0]);
+    while (nextIdx != ea::string::npos) {
+        
+    }
 }
 
 void ShaderVariation::ParseParameters(std::vector<unsigned>& byteCode)
@@ -621,11 +584,13 @@ void ShaderVariation::GenerateVertexBindings(ea::string& sourceCode) {
         attribKey.append_sprintf("%d", attribIdx);
 
         // Replace semantic with index. Ex: SEM_TEXCOORD0 -> ATTRIBN
-        sourceCode.replace(semanticNameWithIndex, attribKey);
-        // Sometimes semantic doesn't contains a index normally this occurs if semantic doesn't repeats
-        // For this case, we replace semantic without index. Ex: SEM_POSITION -> ATTRIB0 or SEM_COLOR -> ATTRIBN
-        if (repeatedSemantics[element->semantic_] == 0)
+        if (sourceCode.find(semanticNameWithIndex) != ea::string::npos)
+            sourceCode.replace(semanticNameWithIndex, attribKey);
+        else if(repeatedSemantics[element->semantic_] == 0) {
+            // Sometimes semantic doesn't contains a index normally this occurs if semantic doesn't repeats
+            // For this case, we replace semantic without index. Ex: SEM_POSITION -> ATTRIB0 or SEM_COLOR -> ATTRIBN
             sourceCode.replace(semanticName, attribKey);
+        }
         ++repeatedSemantics[element->semantic_];
         ++attribIdx;
     }

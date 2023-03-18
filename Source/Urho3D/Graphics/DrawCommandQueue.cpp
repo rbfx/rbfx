@@ -88,6 +88,7 @@ void DrawCommandQueue::Execute()
     // Utility to set shader parameters if constant buffers are not used
     const SharedParameterSetter shaderParameterSetter{ graphics_ };
 
+#ifndef URHO3D_DILIGENT // Constant Buffer Managament is dealt by the Constant Buffer Manager
     // Prepare shader parameters
     if (useConstantBuffers_)
     {
@@ -103,6 +104,7 @@ void DrawCommandQueue::Execute()
     {
         graphics_->ClearParameterSources();
     }
+#endif
 
     // Cached current state
     PipelineState* currentPipelineState = nullptr;

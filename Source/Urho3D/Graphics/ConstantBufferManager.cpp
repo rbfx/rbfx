@@ -1,4 +1,5 @@
 #include "./ConstantBufferManager.h"
+#include "./GraphicsDefs.h"
 
 namespace Urho3D
 {
@@ -36,6 +37,9 @@ namespace Urho3D
             if (!data_[i]->cbuffer_) {
                 hasChangedBuffers = true;
                 data_[i]->cbuffer_ = new ConstantBuffer(context_);
+#ifdef URHO3D_DEBUG
+                data_[i]->cbuffer_->SetDbgName(ConstantBufferDebugNames[i]);
+#endif
             }
             if (data_[i]->cbuffer_->GetSize() < data_[i]->cbufferSize_) {
                 hasChangedBuffers = true;

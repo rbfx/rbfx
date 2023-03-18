@@ -226,6 +226,10 @@ namespace Urho3D
                 const auto& execution = get_entry_point();
                 if (execution.model == spv::ExecutionModelVertex)
                 {
+#ifdef URHO3D_DILIGENT
+                    ea::array<uint8_t, MAX_VERTEX_ELEMENT_SEMANTICS> repeatedSemantics;
+                    repeatedSemantics.fill(0u);
+#endif
                     // Output Uniform Constants (values, samplers, images, etc).
                     ir.for_each_typed_id<spirv_cross::SPIRVariable>([&](uint32_t, spirv_cross::SPIRVariable& var)
                         {
@@ -236,8 +240,12 @@ namespace Urho3D
                                 m.decoration_flags.set(spv::DecorationLocation);
                                 m.location = location++;
 #ifdef URHO3D_DILIGENT
-                                const ea::string name = Format("ATTRIB{}", m.location);
+                                // On Diligent Backend, we align all semantic indexes
+                                // This is necessary because ShaderVariant will replace these semantics to ATTRIBN like
+                                const VertexElementSemantic semantic = ParseVertexElement(m.alias.c_str()).first;
+                                const ea::string name = Format("{}{}", ShaderVariation::elementSemanticNames[semantic], repeatedSemantics[semantic]);
                                 add_vertex_attribute_remap({ m.location, name.c_str() });
+                                ++repeatedSemantics[semantic];
 #else
                                 const VertexElementSemanticIndex vertexElement = ParseVertexElement(m.alias.c_str());
                                 if (vertexElement.first == MAX_VERTEX_ELEMENT_SEMANTICS)
@@ -302,7 +310,16 @@ namespace Urho3D
 
         return true;
     }
-    bool CompileSpirvToHLSL(const Urho3D::ByteVector& byteCode, ea::string& outputShaderCode) {
+    bool CompileGLSLToSpirV(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
+        ea::vector<unsigned>& outputByteCode, ea::string& errorMessage) {
+        SpirVShader shader;
+        if (!CompileSpirV(ConvertShaderType(shaderType), sourceCode, shaderDefines, shader, errorMessage))
+            return false;
+        outputByteCode = ea::vector<unsigned>(shader.bytecode_.begin(), shader.bytecode_.end());
+        return true;
+    }
+#ifdef URHO3D_DILIGENT
+    bool CompileSpirVToHLSL(const Urho3D::ByteVector& byteCode, ea::string& outputShaderCode) {
         SpirVShader shader;
         shader.bytecode_.resize(byteCode.size() / sizeof(unsigned int));
         memcpy_s(shader.bytecode_.data(), byteCode.size(), byteCode.data(), byteCode.size());
@@ -311,6 +328,21 @@ namespace Urho3D
             return false;
         return true;
     }
+    bool CompileHLSLToSpirV(const ea::string& sourceCode, ShaderType shaderType, const Diligent::ShaderMacro* defines, ea::vector<uint32_t>& byteCode) {
+        SpirVShader shader;
+        ea::string outputMsg;
+        ShaderDefineArray shaderDefines;
+        using namespace Diligent;
+        for (const ShaderMacro* macro = defines; macro->Name != nullptr && macro->Definition != nullptr; ++macro)
+            shaderDefines.Append(macro->Name, macro->Definition);
+
+        if (CompileSpirV(ConvertShaderType(shaderType), sourceCode, shaderDefines, shader, outputMsg)) {
+            byteCode = ea::vector<uint32_t>(shader.bytecode_.begin(), shader.bytecode_.end());
+            return true;
+        }
+        return false;
+    }
+#endif
 }
 namespace glslang
 {
