@@ -212,5 +212,7 @@ URHO3D_API ea::string GetAbsolutePath(const ea::string& path);
 /// Convert relative or absolute path to absolute path.
 URHO3D_API ea::string GetAbsolutePath(const ea::string& path, const ea::string& currentPath, bool addTrailingSlash = false);
 URHO3D_API StringVector GetAbsolutePaths(const StringVector& paths, const ea::string& currentPath, bool addTrailingSlash = false);
+/// Convert extension from filter mask, or return empty string if no filter specified.
+URHO3D_API ea::string GetExtensionFromFilter(const ea::string& filter);
 
 }

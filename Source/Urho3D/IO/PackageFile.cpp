@@ -191,8 +191,8 @@ void PackageFile::Scan(
     for (auto i = entryNames.begin(); i != entryNames.end(); ++i)
     {
         const ea::string entryName = GetSanitizedPath(*i);
-        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
-            entryName.starts_with(sanitizedPath, caseSensitive))
+        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive))
+            && entryName.starts_with(sanitizedPath, caseSensitive))
         {
             ea::string fileName = entryName.substr(sanitizedPath.length());
             if (fileName.starts_with("\\") || fileName.starts_with("/"))
@@ -239,13 +239,6 @@ AbstractFilePtr PackageFile::OpenFile(const FileIdentifier& fileName, FileMode m
 
     auto file = MakeShared<File>(context_, this, fileName.fileName_);
     return file;
-}
-
-/// Get full path to a file if it exists in a mount point.
-ea::string PackageFile::GetFileName(const FileIdentifier& fileName) const
-{
-    // Can't make path to a file within the PAK.
-    return ea::string();
 }
 
 }

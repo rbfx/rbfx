@@ -971,12 +971,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
     if (path.length() > startPath.length())
         deltaPath = path.substr(startPath.length());
 
-    ea::string filterExtension;
-    unsigned dotPos = filter.find_last_of('.');
-    if (dotPos != ea::string::npos)
-        filterExtension = filter.substr(dotPos);
-    if (filterExtension.contains('*'))
-        filterExtension.clear();
+    const ea::string filterExtension = GetExtensionFromFilter(filter);
 
 #ifdef __ANDROID__
     if (URHO3D_IS_ASSET(path))
@@ -1626,6 +1621,19 @@ StringVector GetAbsolutePaths(const StringVector& paths, const ea::string& curre
     for (const ea::string& path : paths)
         result.push_back(GetAbsolutePath(path, currentPath, addTrailingSlash));
     return result;
+}
+
+ea::string GetExtensionFromFilter(const ea::string& filter)
+{
+    const unsigned dotPos = filter.find_last_of('.');
+    if (dotPos == ea::string::npos)
+        return EMPTY_STRING;
+
+    const ea::string filterExtension = filter.substr(dotPos);
+    if (filterExtension.contains('*'))
+        return EMPTY_STRING;
+
+    return filterExtension;
 }
 
 }

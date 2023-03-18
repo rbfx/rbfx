@@ -71,13 +71,29 @@ public:
     /// Open file in the virtual file system. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) const;
     /// Return full absolute file name of the file if possible, or empty if not found.
-    ea::string GetFileName(const FileIdentifier& name);
+    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
+    /// Return relative file name of the file, or empty if not found.
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName);
+    /// Return relative file name of the file, or empty if not found.
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& scheme, const ea::string& absoluteFileName);
+
+    /// Enable or disable file watchers.
+    void SetWatching(bool enable);
+
+    /// Returns true if the file watchers are enabled.
+    bool IsWatching() const { return isWatching_; }
+
+    /// Scan for specified files.
+    void Scan(
+        ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const;
 
 private:
     /// Mutex for thread-safe access to the mount points.
     mutable Mutex mountMutex_;
     /// File system mount points. It is expected to have small number of mount points.
     ea::vector<SharedPtr<MountPoint>> mountPoints_;
+    /// Are file watchers enabled.
+    bool isWatching_{};
 };
 
 }
