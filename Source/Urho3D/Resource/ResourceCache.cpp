@@ -989,12 +989,11 @@ void RegisterResourceLibrary(Context* context)
     GraphNode::RegisterObject(context);
 }
 
-void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
+void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
-    ea::vector<ea::string> interimResult;
 
     auto* vfs = GetSubsystem<VirtualFileSystem>();
-    vfs->Scan(result, pathName, filter, flags, recursive);
+    vfs->Scan(result, pathName, filter, flags);
 
     // Filtering copied from PackageFile::Scan().
     ea::string sanitizedPath = GetSanitizedPath(pathName);

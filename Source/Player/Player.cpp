@@ -74,8 +74,8 @@ void Player::Start()
         auto* cache = GetSubsystem<ResourceCache>();
         auto* ui = GetSubsystem<RmlUI>();
         ea::vector<ea::string> fonts;
-        cache->Scan(fonts, "Fonts/", "*.ttf", SCAN_FILES, true);
-        cache->Scan(fonts, "Fonts/", "*.otf", SCAN_FILES, true);
+        cache->Scan(fonts, "Fonts/", "*.ttf", SCAN_FILES | SCAN_RECURSE);
+        cache->Scan(fonts, "Fonts/", "*.otf", SCAN_FILES | SCAN_RECURSE);
         for (const ea::string& font : fonts)
             ui->LoadFont(Format("Fonts/{}", font));
 #endif

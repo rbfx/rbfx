@@ -23,11 +23,11 @@
 #include "../CommonUtils.h"
 
 #include <Urho3D/Engine/ConfigFile.h>
+#include <Urho3D/IO/MountedExternalMemory.h>
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Resource/JSONFile.h>
-
-#include "../IO/InMemoryMountPoint.h"
 
 namespace
 {
@@ -37,7 +37,7 @@ class TestFileSystem
 public:
     TestFileSystem(Context* context)
         : fileSystem_(context->GetSubsystem<VirtualFileSystem>())
-        , mountPoint_(MakeShared<InMemoryMountPoint>(context, "memory"))
+        , mountPoint_(MakeShared<MountedExternalMemory>(context, "memory"))
     {
         fileSystem_->Mount(mountPoint_);
     }
@@ -47,19 +47,19 @@ public:
         fileSystem_->Unmount(mountPoint_);
     }
 
-    void AddFile(const ea::string& fileName, MemoryBuffer memory)
+    void AddFile(ea::string_view fileName, MemoryBuffer memory)
     {
-        mountPoint_->SetFile(fileName, memory);
+        mountPoint_->LinkMemory(fileName, memory);
     }
 
-    void AddFile(const ea::string& fileName, ea::string_view content)
+    void AddFile(ea::string_view fileName, const ea::string& content)
     {
-        mountPoint_->SetFile(fileName, content);
+        mountPoint_->LinkMemory(fileName, content);
     }
 
 private:
     WeakPtr<VirtualFileSystem> fileSystem_;
-    SharedPtr<InMemoryMountPoint> mountPoint_;
+    SharedPtr<MountedExternalMemory> mountPoint_;
 };
 
 const ea::string configDefaults = R"({

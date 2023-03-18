@@ -20,16 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/MountedDirectory.h"
-#include "../IO/MountPoint.h"
-#include "../IO/PackageFile.h"
-#include "../IO/VirtualFileSystem.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MountPoint.h"
+#include "Urho3D/IO/MountedDirectory.h"
+#include "Urho3D/IO/MountedRoot.h"
+#include "Urho3D/IO/PackageFile.h"
 
 #include <EASTL/bonus/adaptors.h>
 
@@ -42,6 +44,11 @@ VirtualFileSystem::VirtualFileSystem(Context* context)
 }
 
 VirtualFileSystem::~VirtualFileSystem() = default;
+
+void VirtualFileSystem::MountRoot()
+{
+    Mount(MakeShared<MountedRoot>(context_));
+}
 
 void VirtualFileSystem::MountDir(const ea::string& path)
 {
@@ -66,7 +73,7 @@ void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string&
 
     // Add all the subdirs (non-recursive) as resource directory
     ea::vector<ea::string> subdirs;
-    fileSystem->ScanDir(subdirs, path, "*", SCAN_DIRS, false);
+    fileSystem->ScanDir(subdirs, path, "*", SCAN_DIRS);
     for (const ea::string& dir : subdirs)
     {
         if (dir.starts_with("."))
@@ -78,7 +85,7 @@ void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string&
 
     // Add all the found package files (non-recursive)
     ea::vector<ea::string> packageFiles;
-    fileSystem->ScanDir(packageFiles, path, "*.pak", SCAN_FILES, false);
+    fileSystem->ScanDir(packageFiles, path, "*.pak", SCAN_FILES);
     for (const ea::string& packageFile : packageFiles)
     {
         if (packageFile.starts_with("."))
@@ -172,7 +179,6 @@ MountPoint* VirtualFileSystem::GetMountPoint(unsigned index) const
     return (index < mountPoints_.size()) ? mountPoints_[index].Get() : nullptr;
 }
 
-/// Open file in a virtual file system. Returns null if file not found.
 AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, FileMode mode) const
 {
     MutexLock lock(mountMutex_);
@@ -195,15 +201,6 @@ ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier
         const ea::string result = mountPoint->GetAbsoluteNameFromIdentifier(fileName);
         if (!result.empty())
             return result;
-    }
-
-    // TODO(vfs): This is a hack to support absolute paths, they should be handled by the mount points.
-    // Fallback to absolute path resolution, similar to ResourceCache behaviour.
-    if (fileName.scheme_.empty())
-    {
-        const auto* fileSystem = GetSubsystem<FileSystem>();
-        if (IsAbsolutePath(fileName.fileName_) && fileSystem->FileExists(fileName.fileName_))
-            return fileName.fileName_;
     }
 
     return EMPTY_STRING;
@@ -255,21 +252,18 @@ void VirtualFileSystem::SetWatching(bool enable)
     }
 }
 
-void VirtualFileSystem::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
-    unsigned flags, bool recursive) const
+void VirtualFileSystem::Scan(
+    ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
     MutexLock lock(mountMutex_);
 
-    ea::vector<ea::string> interimResult;
+    if (!flags.Test(SCAN_APPEND))
+        result.clear();
 
-    for (auto i = mountPoints_.rbegin(); i != mountPoints_.rend(); ++i)
-    {
-        (*i)->Scan(interimResult, pathName, filter, flags, recursive);
-        result.insert(result.end(), interimResult.begin(), interimResult.end());
-    }
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
+        mountPoint->Scan(result, pathName, filter, flags | SCAN_APPEND);
 }
 
-/// Check if a file exists in the virtual file system.
 bool VirtualFileSystem::Exists(const FileIdentifier& fileName) const
 {
     MutexLock lock(mountMutex_);
@@ -281,6 +275,5 @@ bool VirtualFileSystem::Exists(const FileIdentifier& fileName) const
     }
     return false;
 }
-
 
 } // namespace Urho3D

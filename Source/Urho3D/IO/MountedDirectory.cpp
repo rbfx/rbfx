@@ -20,27 +20,20 @@
 // THE SOFTWARE.
 //
 
+#include "Urho3D/IO/MountedDirectory.h"
 
-#include "MountedDirectory.h"
-
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Resource/ResourceEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Resource/ResourceEvents.h"
 
 namespace Urho3D
 {
 
-MountedDirectory::MountedDirectory(Context* context)
-    : MountPoint(context)
-{
-}
-
-MountedDirectory::MountedDirectory(
-    Context* context, const ea::string& directory, ea::string scheme)
-    : MountPoint(context)
+MountedDirectory::MountedDirectory(Context* context, const ea::string& directory, ea::string scheme)
+    : WatchableMountPoint(context)
     , scheme_(std::move(scheme))
     , directory_(SanitizeDirName(directory))
     , name_(scheme_.empty() ? directory_ : (scheme_ + "://" + directory_))
@@ -72,7 +65,7 @@ void MountedDirectory::StartWatching()
     fileWatcher_->StartWatching(directory_, true);
 
     // Subscribe BeginFrame for handling directory watcher
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(MountedDirectory, HandleBeginFrame));
+    SubscribeToEvent(E_BEGINFRAME, [this](StringHash eventType, VariantMap& eventData) { ProcessUpdates(); });
 }
 
 void MountedDirectory::StopWatching()
@@ -83,8 +76,7 @@ void MountedDirectory::StopWatching()
     UnsubscribeFromEvent(E_BEGINFRAME);
 }
 
-
-void MountedDirectory::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void MountedDirectory::ProcessUpdates()
 {
     if (!fileWatcher_)
         return;
@@ -92,7 +84,6 @@ void MountedDirectory::HandleBeginFrame(StringHash eventType, VariantMap& eventD
     FileChange change;
     while (fileWatcher_->GetNextChange(change))
     {
-        // Finally send a general file changed event even if the file was not a tracked resource
         using namespace FileChanged;
 
         VariantMap& eventData = GetEventDataMap();
@@ -102,14 +93,11 @@ void MountedDirectory::HandleBeginFrame(StringHash eventType, VariantMap& eventD
     }
 }
 
-
-/// Checks if mount point accepts scheme.
 bool MountedDirectory::AcceptsScheme(const ea::string& scheme) const
 {
     return scheme.comparei(scheme_) == 0;
 }
 
-/// Check if a file exists within the mount point.
 bool MountedDirectory::Exists(const FileIdentifier& fileName) const
 {
     // File system directory only reacts on specific scheme.
@@ -121,44 +109,41 @@ bool MountedDirectory::Exists(const FileIdentifier& fileName) const
     return fileSystem->FileExists(directory_ + fileName.fileName_);
 }
 
-/// Open file in a virtual file system. Returns null if file not found.
 AbstractFilePtr MountedDirectory::OpenFile(const FileIdentifier& fileName, FileMode mode)
 {
     // File system directory only reacts on specific scheme.
     if (!AcceptsScheme(fileName.scheme_))
-        return AbstractFilePtr();
+        return nullptr;
 
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
-    auto fullPath = directory_ + fileName.fileName_;
 
-    if (mode == FILE_WRITE)
+    const bool needRead = mode == FILE_READ || mode == FILE_READWRITE;
+    const bool needWrite = mode == FILE_WRITE || mode == FILE_READWRITE;
+    const ea::string fullPath = directory_ + fileName.fileName_;
+
+    if (needRead && !fileSystem->FileExists(fullPath))
+        return nullptr;
+
+    if (needWrite)
     {
-        const auto directory = GetPath(fullPath);
+        const ea::string directory = GetPath(fullPath);
         if (!fileSystem->DirExists(directory))
+        {
             if (!fileSystem->CreateDir(directory))
-                return AbstractFilePtr();
+                return nullptr;
+        }
     }
 
-    if (mode == FILE_READ && !fileSystem->FileExists(fullPath))
-        return AbstractFilePtr();
-
-    // Construct the file first with full path, then rename it to not contain the resource path,
-    // so that the file's sanitized name can be used in further GetFile() calls (for example over the network)
-    auto file(MakeShared<File>(context_, fullPath, mode));
-    file->SetName(fileName.fileName_);
+    auto file = MakeShared<File>(context_, fullPath, mode);
     if (!file->IsOpen())
-        return AbstractFilePtr();
+        return nullptr;
 
+    file->SetName(fileName.ToUri());
     return file;
 }
 
-/// Return full absolute file name of the file if possible, or empty if not found.
 ea::string MountedDirectory::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
 {
-    // File system directory only reacts on specific scheme.
-    if (fileName.scheme_ != scheme_)
-        return EMPTY_STRING;
-
     if (Exists(fileName))
         return directory_ + fileName.fileName_;
 
@@ -173,10 +158,11 @@ FileIdentifier MountedDirectory::GetIdentifierFromAbsoluteName(const ea::string&
     return FileIdentifier::Empty;
 }
 
-void MountedDirectory::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
-    unsigned flags, bool recursive) const
+void MountedDirectory::Scan(
+    ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
-    fileSystem->ScanDir(result, directory_ + pathName, filter, flags, recursive);
+    fileSystem->ScanDir(result, directory_ + pathName, filter, flags);
 }
+
 } // namespace Urho3D

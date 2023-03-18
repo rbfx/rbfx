@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../IO/MountPoint.h"
+#include "Urho3D/IO/MountPoint.h"
+#include "Urho3D/IO/ScanFlags.h"
 
 namespace Urho3D
 {
@@ -106,9 +107,9 @@ public:
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
 
     const ea::string& GetName() const override { return fileName_; }
-	
+
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
-        unsigned flags, bool recursive) const override;
+        ScanFlags flags) const override;
     /// @}
 
 private:

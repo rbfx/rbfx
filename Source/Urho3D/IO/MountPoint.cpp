@@ -20,8 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/MountPoint.h"
-#include "../IO/FileSystem.h"
+#include "Urho3D/IO/MountPoint.h"
+
+#include "Urho3D/IO/FileSystem.h"
 
 namespace Urho3D
 {
@@ -45,6 +46,22 @@ FileIdentifier MountPoint::GetIdentifierFromAbsoluteName(const ea::string& fileF
 
 void MountPoint::SetWatching(bool enable)
 {
+}
+
+bool MountPoint::IsWatching() const
+{
+    return false;
+}
+
+WatchableMountPoint::WatchableMountPoint(Context* context)
+    : MountPoint(context)
+{
+}
+
+WatchableMountPoint::~WatchableMountPoint() = default;
+
+void WatchableMountPoint::SetWatching(bool enable)
+{
     if (isWatching_ != enable)
     {
         isWatching_ = enable;
@@ -55,12 +72,9 @@ void MountPoint::SetWatching(bool enable)
     }
 }
 
-void MountPoint::StartWatching()
+bool WatchableMountPoint::IsWatching() const
 {
-}
-
-void MountPoint::StopWatching()
-{
+    return isWatching_;
 }
 
 } // namespace Urho3D

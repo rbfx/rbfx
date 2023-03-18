@@ -434,6 +434,7 @@ void Engine::InitializeVirtualFileSystem()
         absolutePrefixPaths.push_back(programDir);
 
     vfs->UnmountAll();
+    vfs->MountRoot();
     vfs->MountExistingDirectoriesOrPackages(absolutePrefixPaths, paths);
     vfs->MountExistingPackages(absolutePrefixPaths, packages);
 

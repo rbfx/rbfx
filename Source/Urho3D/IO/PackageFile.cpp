@@ -165,14 +165,17 @@ const PackageEntry* PackageFile::GetEntry(const ea::string& fileName) const
     return nullptr;
 }
 
-void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
-    unsigned flags, bool recursive) const
+void PackageFile::Scan(
+    ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
-    result.clear();
+    if (!flags.Test(SCAN_APPEND))
+        result.clear();
 
-    ea::string sanitizedPath = GetSanitizedPath(pathName);
+    const bool recursive = flags.Test(SCAN_RECURSE);
+    const ea::string sanitizedPath = GetSanitizedPath(pathName);
+
     ea::string filterExtension;
-    unsigned dotPos = filter.find_last_of('.');
+    const unsigned dotPos = filter.find_last_of('.');
     if (dotPos != ea::string::npos)
         filterExtension = filter.substr(dotPos);
     if (filterExtension.contains('*'))
@@ -187,9 +190,9 @@ void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathNam
     const StringVector& entryNames = GetEntryNames();
     for (auto i = entryNames.begin(); i != entryNames.end(); ++i)
     {
-        ea::string entryName = GetSanitizedPath(*i);
-        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
-            entryName.starts_with(sanitizedPath, caseSensitive))
+        const ea::string entryName = GetSanitizedPath(*i);
+        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive))
+            && entryName.starts_with(sanitizedPath, caseSensitive))
         {
             ea::string fileName = entryName.substr(sanitizedPath.length());
             if (fileName.starts_with("\\") || fileName.starts_with("/"))

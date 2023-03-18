@@ -2,14 +2,15 @@
 %ignore Urho3D::NULL_DEVICE;
 %constant char * Apk = Urho3D::APK;
 %ignore Urho3D::APK;
-%constant Urho3D::FileIdentifier EmptyFileid = Urho3D::EMPTY_FILEID;
-%ignore Urho3D::EMPTY_FILEID;
-%constant unsigned int ScanFiles = Urho3D::SCAN_FILES;
-%ignore Urho3D::SCAN_FILES;
-%constant unsigned int ScanDirs = Urho3D::SCAN_DIRS;
-%ignore Urho3D::SCAN_DIRS;
-%constant unsigned int ScanHidden = Urho3D::SCAN_HIDDEN;
-%ignore Urho3D::SCAN_HIDDEN;
+%csconstvalue("1") Urho3D::SCAN_FILES;
+%csconstvalue("2") Urho3D::SCAN_DIRS;
+%csconstvalue("4") Urho3D::SCAN_HIDDEN;
+%csconstvalue("8") Urho3D::SCAN_APPEND;
+%csconstvalue("16") Urho3D::SCAN_RECURSE;
+%typemap(csattributes) Urho3D::ScanFlag "[global::System.Flags]";
+using ScanFlags = Urho3D::ScanFlag;
+%typemap(ctype) ScanFlags "size_t";
+%typemap(out) ScanFlags "$result = (size_t)$1.AsInteger();"
 %csconstvalue("0") Urho3D::FILE_READ;
 %csattribute(Urho3D::ArchiveBlock, %arg(unsigned int), SizeHint, GetSizeHint);
 %csattribute(Urho3D::ArchiveBase, %arg(Urho3D::Context *), Context, GetContext);
@@ -42,7 +43,7 @@
 %csattribute(Urho3D::FileWatcher, %arg(float), Delay, GetDelay, SetDelay);
 %csattribute(Urho3D::MemoryBuffer, %arg(unsigned char *), Data, GetData);
 %csattribute(Urho3D::MemoryBuffer, %arg(bool), IsReadOnly, IsReadOnly);
-%csattribute(Urho3D::MountPoint, %arg(bool), IsWatching, IsWatching, SetWatching);
+%csattribute(Urho3D::WatchableMountPoint, %arg(bool), IsWatching, IsWatching, SetWatching);
 %csattribute(Urho3D::MountedDirectory, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::MountedDirectory, %arg(ea::string), Directory, GetDirectory);
 %csattribute(Urho3D::MultiFileWatcher, %arg(float), Delay, GetDelay, SetDelay);

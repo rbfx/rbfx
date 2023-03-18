@@ -897,7 +897,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
                 return false;
             }
 
-            GetSubsystem<FileSystem>()->ScanDir(downloadedPackages, packageCacheDir, "*.*", SCAN_FILES, false);
+            GetSubsystem<FileSystem>()->ScanDir(downloadedPackages, packageCacheDir, "*.*", SCAN_FILES);
             packagesScanned = true;
         }
 

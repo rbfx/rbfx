@@ -39,6 +39,8 @@ public:
     /// Destruct.
     ~VirtualFileSystem() override;
 
+    /// Mount file system root as file:// scheme.
+    void MountRoot();
     /// Mount real folder into virtual file system.
     void MountDir(const ea::string& path);
     /// Mount real folder into virtual file system under the scheme.
@@ -84,7 +86,8 @@ public:
     bool IsWatching() const { return isWatching_; }
 
     /// Scan for specified files.
-    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
+    void Scan(
+        ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const;
 
 private:
     /// Mutex for thread-safe access to the mount points.

@@ -24,13 +24,14 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
-#include <EASTL/hash_set.h>
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/ScanFlags.h"
+#include "Urho3D/Resource/Resource.h"
 
-#include "../Container/Ptr.h"
-#include "../Core/Mutex.h"
-#include "../IO/File.h"
-#include "../Resource/Resource.h"
+#include <EASTL/hash_set.h>
+#include <EASTL/unique_ptr.h>
 
 namespace Urho3D
 {
@@ -208,7 +209,8 @@ public:
     ea::string PrintMemoryUsage() const;
 
     /// Scan for specified files.
-    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
+    void Scan(
+        ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const;
     /// Returns a formatted string containing the currently loaded resources with optional type name filter.
     ea::string PrintResources(const ea::string& typeName = EMPTY_STRING) const;
     /// Renames resource without deleting it from cache. `source` and `destination` may be resource names or absolute
