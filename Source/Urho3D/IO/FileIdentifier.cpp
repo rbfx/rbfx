@@ -37,6 +37,10 @@ FileIdentifier::FileIdentifier(ea::string_view scheme, ea::string_view fileName)
 
 FileIdentifier FileIdentifier::FromUri(ea::string_view uri)
 {
+    // Special case: absolute path
+    if (uri.starts_with('/') || (uri.length() >= 3 && uri[1] == ':' && (uri[2] == '/' || uri[2] == '\\')))
+        return {"file", SanitizeFileName(uri)};
+
     const auto schemePos = uri.find(":");
 
     // Special case: empty scheme

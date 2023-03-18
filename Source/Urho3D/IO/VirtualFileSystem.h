@@ -39,6 +39,8 @@ public:
     /// Destruct.
     ~VirtualFileSystem() override;
 
+    /// Mount file system root as file:// scheme.
+    void MountRoot();
     /// Mount real folder into virtual file system.
     void MountDir(const ea::string& path);
     /// Mount real folder into virtual file system under the scheme.

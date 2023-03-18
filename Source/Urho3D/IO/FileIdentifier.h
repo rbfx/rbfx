@@ -32,6 +32,7 @@ namespace Urho3D
 
 /// File identifier, similar to Uniform Resource Identifier (URI).
 /// Known differences:
+/// - If URI starts with `/` or `x:/` it is treated as `file` scheme automatically.
 /// - Host names are not supported for `file:` scheme.
 ///   All of `file:/path/to/file`, `file://path/to/file`, and `file:///path/to/file` are supported
 ///   and denote absolute file path.

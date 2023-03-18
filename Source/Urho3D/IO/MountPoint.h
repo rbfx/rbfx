@@ -55,10 +55,11 @@ public:
     /// Returns human-readable name of the mount point.
     virtual const ea::string& GetName() const = 0;
 
-    /// Return absolute file name for given identifier in this mount point, if supported.
+    /// Return absolute file name for *existing* identifier in this mount point, if supported.
     virtual ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
 
     /// Return identifier in this mount point for absolute file name, if supported.
+    /// Works even if the file does not exist.
     virtual FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const;
 
     /// Enable or disable FileChanged events.

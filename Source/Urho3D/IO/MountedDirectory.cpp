@@ -113,29 +113,32 @@ AbstractFilePtr MountedDirectory::OpenFile(const FileIdentifier& fileName, FileM
 {
     // File system directory only reacts on specific scheme.
     if (!AcceptsScheme(fileName.scheme_))
-        return AbstractFilePtr();
+        return nullptr;
 
     const auto fileSystem = context_->GetSubsystem<FileSystem>();
-    auto fullPath = directory_ + fileName.fileName_;
 
-    if (mode == FILE_WRITE)
+    const bool needRead = mode == FILE_READ || mode == FILE_READWRITE;
+    const bool needWrite = mode == FILE_WRITE || mode == FILE_READWRITE;
+    const ea::string fullPath = directory_ + fileName.fileName_;
+
+    if (needRead && !fileSystem->FileExists(fullPath))
+        return nullptr;
+
+    if (needWrite)
     {
-        const auto directory = GetPath(fullPath);
+        const ea::string directory = GetPath(fullPath);
         if (!fileSystem->DirExists(directory))
+        {
             if (!fileSystem->CreateDir(directory))
-                return AbstractFilePtr();
+                return nullptr;
+        }
     }
 
-    if (mode == FILE_READ && !fileSystem->FileExists(fullPath))
-        return AbstractFilePtr();
-
-    // Construct the file first with full path, then rename it to not contain the resource path,
-    // so that the file's sanitized name can be used in further GetFile() calls (for example over the network)
-    auto file(MakeShared<File>(context_, fullPath, mode));
-    file->SetName(fileName.fileName_);
+    auto file = MakeShared<File>(context_, fullPath, mode);
     if (!file->IsOpen())
-        return AbstractFilePtr();
+        return nullptr;
 
+    file->SetName(fileName.ToUri());
     return file;
 }
 

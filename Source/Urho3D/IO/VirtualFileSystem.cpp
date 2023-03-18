@@ -20,16 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/MountedDirectory.h"
-#include "../IO/MountPoint.h"
-#include "../IO/PackageFile.h"
-#include "../IO/VirtualFileSystem.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MountPoint.h"
+#include "Urho3D/IO/MountedDirectory.h"
+#include "Urho3D/IO/MountedRoot.h"
+#include "Urho3D/IO/PackageFile.h"
 
 #include <EASTL/bonus/adaptors.h>
 
@@ -42,6 +44,11 @@ VirtualFileSystem::VirtualFileSystem(Context* context)
 }
 
 VirtualFileSystem::~VirtualFileSystem() = default;
+
+void VirtualFileSystem::MountRoot()
+{
+    Mount(MakeShared<MountedRoot>(context_));
+}
 
 void VirtualFileSystem::MountDir(const ea::string& path)
 {
@@ -194,15 +201,6 @@ ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier
         const ea::string result = mountPoint->GetAbsoluteNameFromIdentifier(fileName);
         if (!result.empty())
             return result;
-    }
-
-    // TODO(vfs): This is a hack to support absolute paths, they should be handled by the mount points.
-    // Fallback to absolute path resolution, similar to ResourceCache behaviour.
-    if (fileName.scheme_.empty())
-    {
-        const auto* fileSystem = GetSubsystem<FileSystem>();
-        if (IsAbsolutePath(fileName.fileName_) && fileSystem->FileExists(fileName.fileName_))
-            return fileName.fileName_;
     }
 
     return EMPTY_STRING;

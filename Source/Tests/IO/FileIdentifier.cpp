@@ -26,9 +26,14 @@
 
 TEST_CASE("FileIdentifier is created from URI")
 {
+    // Absolute path
+    CHECK(FileIdentifier::FromUri("/path/to/file") == FileIdentifier{"file", "/path/to/file"});
+    CHECK(FileIdentifier::FromUri("c:/path/to/file") == FileIdentifier{"file", "c:/path/to/file"});
+    CHECK(FileIdentifier::FromUri("D:/path/to/file") == FileIdentifier{"file", "D:/path/to/file"});
+
     // No scheme
     CHECK(FileIdentifier::FromUri("relative/path/to/file") == FileIdentifier{"", "relative/path/to/file"});
-    CHECK(FileIdentifier::FromUri("file") == FileIdentifier{"", "file"});
+    CHECK(FileIdentifier::FromUri("filename") == FileIdentifier{"", "filename"});
 
     // file scheme
     CHECK(FileIdentifier::FromUri("file:path/to/file") == FileIdentifier::Empty);
