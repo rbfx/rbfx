@@ -66,7 +66,7 @@ struct URHO3D_API FileIdentifier
     ea::string fileName_;
 
     /// Return whether the identifier is empty.
-    bool IsEmpty() const { return !scheme_.empty() || !fileName_.empty(); }
+    bool IsEmpty() const { return scheme_.empty() && fileName_.empty(); }
 
     /// Operators.
     /// @{
