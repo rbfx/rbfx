@@ -33,14 +33,14 @@ MountPoint::MountPoint(Context* context)
 
 MountPoint::~MountPoint() = default;
 
-ea::string MountPoint::GetFileName(const FileIdentifier& fileName) const
+ea::string MountPoint::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
 {
     return EMPTY_STRING;
 }
 
-FileIdentifier MountPoint::GetResourceName(const ea::string& fileFullPath) const
+FileIdentifier MountPoint::GetIdentifierFromAbsoluteName(const ea::string& fileFullPath) const
 {
-    return FileIdentifier();
+    return FileIdentifier::Empty;
 }
 
 void MountPoint::SetWatching(bool enable)

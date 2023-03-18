@@ -25,9 +25,12 @@
 
 namespace Urho3D
 {
-const FileIdentifier EMPTY_FILEID{};
 
-FileIdentifier::FileIdentifier()
+const FileIdentifier FileIdentifier::Empty{};
+
+FileIdentifier::FileIdentifier(const ea::string& scheme, const ea::string& fileName)
+    : scheme_(scheme)
+    , fileName_(fileName)
 {
 }
 
@@ -50,12 +53,6 @@ FileIdentifier::FileIdentifier(const ea::string& url)
             ++schemePos;
         fileName_ = SanitizeFileName(url.substr(schemePos));
     }
-}
-
-FileIdentifier::FileIdentifier(const ea::string& scheme, const ea::string& fileName)
-    : scheme_(scheme)
-    , fileName_(SanitizeFileName(fileName))
-{
 }
 
 FileIdentifier& FileIdentifier::operator+=(const ea::string_view& rhs)

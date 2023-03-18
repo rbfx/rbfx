@@ -26,23 +26,38 @@
 
 namespace Urho3D
 {
-/// File locator, similar to Universal Resource Locator (URL).
+
+/// File identifier, similar to Uniform Resource Identifier (URI).
+/// Known differences:
+/// - Host names are not supported for `file:` scheme.
+///   Both `file:/path/to/file` and `file:///path/to/file` are supported and denote absolute file path.
+///   URI with `file://host/path/to/file` is not supported and results in error.
+/// - If URI does not contain `:`, it is treated as special "empty" scheme,
+///   and the entire URI is treated as relative path.
 struct URHO3D_API FileIdentifier
 {
-    /// Construct.
-    FileIdentifier();
-    /// Construct from url-like path.
-    FileIdentifier(const ea::string& url);
-    /// Construct from scheme and file name.
+    /// File identifier that references nothing.
+    static const FileIdentifier Empty;
+
+    /// Construct default.
+    FileIdentifier() = default;
+    /// Construct from scheme and path (as is).
     FileIdentifier(const ea::string& scheme, const ea::string& fileName);
+    /// Construct from uri-like path.
+    FileIdentifier(const ea::string& url);
 
     /// URL-like scheme. May be empty if not specified.
     ea::string scheme_;
     /// URL-like path to the file.
     ea::string fileName_;
 
-    operator bool() const { return !(scheme_.empty() && fileName_.empty()); }
-    bool operator!() const { return scheme_.empty() && fileName_.empty(); }
+    /// Return URI-like path.
+    ea::string ToUri() const { return scheme_.empty() ? fileName_ : scheme_ + "://" + fileName_; }
+    /// Return whether the identifier is empty.
+    bool IsEmpty() const { return !scheme_.empty() || !fileName_.empty(); }
+
+    operator bool() const { return !IsEmpty(); }
+    bool operator!() const { return IsEmpty(); }
 
     /// Test for less than with another file locator.
     bool operator<(const FileIdentifier& rhs) const noexcept
@@ -78,7 +93,5 @@ struct URHO3D_API FileIdentifier
 
     static ea::string SanitizeFileName(const ea::string& fileName);
 };
-
-URHO3D_API extern const FileIdentifier EMPTY_FILEID;
 
 } // namespace Urho3D

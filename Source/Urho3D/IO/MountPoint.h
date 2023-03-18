@@ -53,12 +53,12 @@ public:
 
     /// Returns human-readable name of the mount point.
     virtual const ea::string& GetName() const = 0;
-	
-    /// Get full path to a file if it exists in a mount point.
-    virtual ea::string GetFileName(const FileIdentifier& fileName) const;
 
-    /// Return relative file name of the file if full path belongs to the mount point, or empty if not found.
-    virtual FileIdentifier GetResourceName(const ea::string& fileFullPath) const;
+    /// Return absolute file name for given identifier in this mount point, if supported.
+    virtual ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
+
+    /// Return identifier in this mount point for absolute file name, if supported.
+    virtual FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const;
 
     /// Enable or disable file watcher on the mount point.
     void SetWatching(bool enable);

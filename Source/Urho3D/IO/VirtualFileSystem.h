@@ -71,11 +71,11 @@ public:
     /// Open file in the virtual file system. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) const;
     /// Return full absolute file name of the file if possible, or empty if not found.
-    ea::string GetFileName(const FileIdentifier& name) const;
+    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
     /// Return relative file name of the file, or empty if not found.
-    FileIdentifier GetResourceName(const ea::string& fileFullPath);
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName);
     /// Return relative file name of the file, or empty if not found.
-    FileIdentifier GetResourceName(const ea::string& scheme, const ea::string& fileFullPath);
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& scheme, const ea::string& absoluteFileName);
 
     /// Enable or disable file watchers.
     void SetWatching(bool enable);

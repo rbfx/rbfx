@@ -47,11 +47,11 @@ public:
     bool AcceptsScheme(const ea::string& scheme) const override;
     bool Exists(const FileIdentifier& fileName) const override;
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
-    ea::string GetFileName(const FileIdentifier& fileName) const override;
-	
+
     const ea::string& GetName() const override { return name_; }
-	
-    FileIdentifier GetResourceName(const ea::string& fileFullPath) const override;
+
+    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const override;
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const override;
 
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
         unsigned flags, bool recursive) const override;
@@ -81,7 +81,7 @@ private:
     /// Name of the mount point.
     const ea::string name_;
     /// File watcher for resource directory, if automatic reloading enabled.
-    SharedPtr<FileWatcher> fileWatcher_;	
+    SharedPtr<FileWatcher> fileWatcher_;
 };
 
 } // namespace Urho3D

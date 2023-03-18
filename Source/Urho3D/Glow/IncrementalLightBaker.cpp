@@ -160,8 +160,10 @@ struct IncrementalLightBaker::Impl
             URHO3D_LOGERROR("Cannot allocate GI data file at '{}'", giFileName);
             return false;
         }
-        gi->SetFileRef({BinaryFile::GetTypeStatic(),
-            context_->GetSubsystem<VirtualFileSystem>()->GetResourceName(EMPTY_STRING, giFileName).fileName_});
+
+        auto vfs = context_->GetSubsystem<VirtualFileSystem>();
+        const FileIdentifier giResourceId = vfs->GetIdentifierFromAbsoluteName(giFileName);
+        gi->SetFileRef({BinaryFile::GetTypeStatic(), giResourceId.ToUri()});
 
         return true;
     }
@@ -195,9 +197,9 @@ struct IncrementalLightBaker::Impl
             {
                 LightProbeGroup* group = uniqueLightProbes[i];
                 const ea::string fileName = GetLightProbeBakedDataFileName(chunk, i);
-                const ea::string resourceName = vfs->GetResourceName(EMPTY_STRING, fileName).fileName_;
+                const FileIdentifier resourceId = vfs->GetIdentifierFromAbsoluteName(fileName);
                 fileSystem->CreateDirsRecursive(GetPath(fileName));
-                group->SetBakedDataFileRef({ BinaryFile::GetTypeStatic(), resourceName });
+                group->SetBakedDataFileRef({ BinaryFile::GetTypeStatic(), resourceId.ToUri() });
             }
 
             // Update base index
@@ -209,7 +211,7 @@ struct IncrementalLightBaker::Impl
         for (unsigned i = 0; i < numLightmapCharts_; ++i)
         {
             const ea::string fileName = GetLightmapFileName(i);
-            const ea::string resourceName = vfs->GetResourceName(EMPTY_STRING, fileName).fileName_;
+            const FileIdentifier resourceId = vfs->GetIdentifierFromAbsoluteName(fileName);
 
             fileSystem->CreateDirsRecursive(GetPath(fileName));
             if (!fileSystem->FileExists(fileName))
@@ -220,13 +222,14 @@ struct IncrementalLightBaker::Impl
                 placeholderImage.SaveFile(fileName);
             }
 
-            if (resourceName.empty())
+            // TODO(vfs): Revisit this place, we should not need condition here
+            if (!resourceId)
             {
                 URHO3D_LOGWARNING("Cannot find resource name for lightmap '{}', absolute path is used", fileName);
                 scene_->AddLightmap(fileName);
             }
             else
-                scene_->AddLightmap(resourceName);
+                scene_->AddLightmap(resourceId.ToUri());
         }
     }
 

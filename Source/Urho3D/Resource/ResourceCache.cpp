@@ -102,7 +102,7 @@ ResourceCache::ResourceCache(Context* context) :
 
     // Subscribe FileChanged for handling directory watchers
     SubscribeToEvent(E_FILECHANGED, URHO3D_HANDLER(ResourceCache, HandleFileChanged));
-    
+
 
     auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem)
@@ -675,7 +675,7 @@ unsigned long long ResourceCache::GetTotalMemoryUse() const
 ea::string ResourceCache::GetResourceFileName(const ea::string& name) const
 {
     const auto vfs = context_->GetSubsystem<VirtualFileSystem>();
-    const auto result = vfs->GetFileName(FileIdentifier(EMPTY_STRING, name));
+    const auto result = vfs->GetAbsoluteNameFromIdentifier(FileIdentifier(EMPTY_STRING, name));
     if (!result.empty())
     {
         return result;
@@ -738,7 +738,7 @@ ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
 
     // If the path refers to one of the resource directories, normalize the resource name
     auto* vfs = GetSubsystem<VirtualFileSystem>();
-    auto relativeResourcePath = vfs->GetResourceName(EMPTY_STRING, sanitatedName);
+    auto relativeResourcePath = vfs->GetIdentifierFromAbsoluteName(EMPTY_STRING, sanitatedName);
     if (relativeResourcePath)
         return relativeResourcePath.fileName_;
 
@@ -1021,7 +1021,7 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
                 entryName.starts_with(sanitizedPath, caseSensitive))
             {
                 // Manual resources do not exist in resource dirs.
-                bool isPhysicalResource = !vfs->GetFileName(FileIdentifier(EMPTY_STRING, entryName)).empty();
+                bool isPhysicalResource = !vfs->GetAbsoluteNameFromIdentifier(FileIdentifier(EMPTY_STRING, entryName)).empty();
 
                 if (!isPhysicalResource)
                 {
@@ -1093,8 +1093,8 @@ bool ResourceCache::RenameResource(const ea::string& source, const ea::string& d
         return false;
     }
 
-    auto resourceName = vfs->GetResourceName(EMPTY_STRING, source).fileName_;
-    auto destinationName = vfs->GetResourceName(EMPTY_STRING, destination).fileName_;
+    auto resourceName = vfs->GetIdentifierFromAbsoluteName(EMPTY_STRING, source).ToUri();
+    auto destinationName = vfs->GetIdentifierFromAbsoluteName(EMPTY_STRING, destination).ToUri();
     bool dirMode = fileSystem->DirExists(source);
 
     if (dirMode)

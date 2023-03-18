@@ -25,7 +25,7 @@
 
 TEST_CASE("FileIdentifier tests")
 {
-    REQUIRE(!EMPTY_FILEID);
+    REQUIRE(!FileIdentifier::Empty);
 }
 
 TEST_CASE("VirtualFileSystem has mount points")

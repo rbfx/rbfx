@@ -186,18 +186,19 @@ AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, File
     return AbstractFilePtr();
 }
 
-ea::string VirtualFileSystem::GetFileName(const FileIdentifier& fileName) const
+ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
 {
     MutexLock lock(mountMutex_);
 
     for (MountPoint* mountPoint : ea::reverse(mountPoints_))
     {
-        const ea::string result = mountPoint->GetFileName(fileName);
+        const ea::string result = mountPoint->GetAbsoluteNameFromIdentifier(fileName);
         if (!result.empty())
             return result;
     }
 
-    // Fallback to absolute path resolution, similar to ResouceCache behaviour.
+    // TODO(vfs): This is a hack to support absolute paths, they should be handled by the mount points.
+    // Fallback to absolute path resolution, similar to ResourceCache behaviour.
     if (fileName.scheme_.empty())
     {
         const auto* fileSystem = GetSubsystem<FileSystem>();
@@ -208,35 +209,36 @@ ea::string VirtualFileSystem::GetFileName(const FileIdentifier& fileName) const
     return EMPTY_STRING;
 }
 
-FileIdentifier VirtualFileSystem::GetResourceName(const ea::string& fileFullPath)
+FileIdentifier VirtualFileSystem::GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName)
 {
     MutexLock lock(mountMutex_);
 
-    for (auto i = mountPoints_.rbegin(); i != mountPoints_.rend(); ++i)
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
     {
-        auto result = (*i)->GetResourceName(fileFullPath);
+        const FileIdentifier result = mountPoint->GetIdentifierFromAbsoluteName(absoluteFileName);
         if (result)
             return result;
     }
-    
-    return EMPTY_FILEID;
+
+    return FileIdentifier::Empty;
 }
 
-FileIdentifier VirtualFileSystem::GetResourceName(const ea::string& scheme, const ea::string& fileFullPath)
+FileIdentifier VirtualFileSystem::GetIdentifierFromAbsoluteName(
+    const ea::string& scheme, const ea::string& absoluteFileName)
 {
     MutexLock lock(mountMutex_);
 
-    for (auto i = mountPoints_.rbegin(); i != mountPoints_.rend(); ++i)
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
     {
-        if (!(*i)->AcceptsScheme(scheme))
+        if (!mountPoint->AcceptsScheme(scheme))
             continue;
 
-        auto result = (*i)->GetResourceName(fileFullPath);
+        const FileIdentifier result = mountPoint->GetIdentifierFromAbsoluteName(absoluteFileName);
         if (result)
             return result;
     }
 
-    return EMPTY_FILEID;
+    return FileIdentifier::Empty;
 }
 
 void VirtualFileSystem::SetWatching(bool enable)

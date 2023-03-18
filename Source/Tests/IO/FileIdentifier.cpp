@@ -24,7 +24,7 @@
 
 #include <Urho3D/IO/FileIdentifier.h>
 
-TEST_CASE("FileIdentifier from string")
+TEST_CASE("FileIdentifier is created from URI")
 {
     FileIdentifier singleForwardSlash("file:/FileName");
     CHECK(singleForwardSlash.scheme_ == "file");

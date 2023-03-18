@@ -186,7 +186,7 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
     // than source
     if (sourceTimeStamp)
     {
-        ea::string fullPath = vfs->GetFileName(binaryShaderName);
+        ea::string fullPath = vfs->GetAbsoluteNameFromIdentifier(binaryShaderName);
         if (!fullPath.empty() && fileSystem->GetLastModifiedTime(fullPath) < sourceTimeStamp)
             return false;
     }

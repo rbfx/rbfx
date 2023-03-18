@@ -153,7 +153,7 @@ AbstractFilePtr MountedDirectory::OpenFile(const FileIdentifier& fileName, FileM
 }
 
 /// Return full absolute file name of the file if possible, or empty if not found.
-ea::string MountedDirectory::GetFileName(const FileIdentifier& fileName) const
+ea::string MountedDirectory::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
 {
     // File system directory only reacts on specific scheme.
     if (fileName.scheme_ != scheme_)
@@ -165,12 +165,12 @@ ea::string MountedDirectory::GetFileName(const FileIdentifier& fileName) const
     return EMPTY_STRING;
 }
 
-FileIdentifier MountedDirectory::GetResourceName(const ea::string& fileFullPath) const
+FileIdentifier MountedDirectory::GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const
 {
-    if (fileFullPath.starts_with(directory_))
-        return FileIdentifier{scheme_, fileFullPath.substr(directory_.length())};
+    if (absoluteFileName.starts_with(directory_))
+        return FileIdentifier{scheme_, absoluteFileName.substr(directory_.length())};
 
-    return EMPTY_FILEID;
+    return FileIdentifier::Empty;
 }
 
 void MountedDirectory::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
