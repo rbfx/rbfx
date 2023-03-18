@@ -20,8 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/FileIdentifier.h"
-#include "../IO/FileSystem.h"
+#include "Urho3D/IO/FileIdentifier.h"
+
+#include "Urho3D/Container/Str.h"
 
 namespace Urho3D
 {

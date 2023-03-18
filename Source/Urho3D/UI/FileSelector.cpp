@@ -298,8 +298,8 @@ void FileSelector::RefreshFiles()
 
     ea::vector<ea::string> directories;
     ea::vector<ea::string> files;
-    fileSystem->ScanDir(directories, path_, "*", SCAN_DIRS, false);
-    fileSystem->ScanDir(files, path_, GetFilter(), SCAN_FILES, false);
+    fileSystem->ScanDir(directories, path_, "*", SCAN_DIRS);
+    fileSystem->ScanDir(files, path_, GetFilter(), SCAN_FILES);
 
     fileEntries_.reserve(directories.size() + files.size());
 

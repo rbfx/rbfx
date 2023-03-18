@@ -820,23 +820,16 @@ bool FileSystem::DirExists(const ea::string& pathName) const
     return true;
 }
 
-void FileSystem::ScanDir(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
+void FileSystem::ScanDir(
+    ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
-    result.clear();
+    if (!flags.Test(SCAN_APPEND))
+        result.clear();
 
     if (CheckAccess(pathName))
     {
         ea::string initialPath = AddTrailingSlash(pathName);
-        ScanDirInternal(result, initialPath, initialPath, filter, flags, recursive);
-    }
-}
-
-void FileSystem::ScanDirAdd(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
-{
-    if (CheckAccess(pathName))
-    {
-        ea::string initialPath = AddTrailingSlash(pathName);
-        ScanDirInternal(result, initialPath, initialPath, filter, flags, recursive);
+        ScanDirInternal(result, initialPath, initialPath, filter, flags);
     }
 }
 
@@ -969,8 +962,10 @@ bool FileSystem::Reveal(const ea::string& path)
 }
 
 void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path, const ea::string& startPath,
-    const ea::string& filter, unsigned flags, bool recursive) const
+    const ea::string& filter, ScanFlags flags) const
 {
+    const bool recursive = flags.Test(SCAN_RECURSE);
+
     path = AddTrailingSlash(path);
     ea::string deltaPath;
     if (path.length() > startPath.length())
@@ -1005,7 +1000,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
                 if (flags & SCAN_DIRS)
                     result.push_back(deltaPath + fileName);
                 if (recursive)
-                    ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
+                    ScanDirInternal(result, path + fileName, startPath, filter, flags);
             }
             else if (flags & SCAN_FILES)
 #endif
@@ -1035,7 +1030,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
                     if (flags & SCAN_DIRS)
                         result.emplace_back(deltaPath + fileName);
                     if (recursive && fileName != "." && fileName != "..")
-                        ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
+                        ScanDirInternal(result, path + fileName, startPath, filter, flags);
                 }
                 else if (flags & SCAN_FILES)
                 {
@@ -1070,7 +1065,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
                     if (flags & SCAN_DIRS)
                         result.push_back(deltaPath + fileName);
                     if (recursive && normalEntry)
-                        ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
+                        ScanDirInternal(result, path + fileName, startPath, filter, flags);
                 }
                 else if (flags & SCAN_FILES)
                 {
@@ -1363,7 +1358,7 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
     // ensure empty if not recursive
     if (!recursive)
     {
-        ScanDir(results, directory, "*", SCAN_DIRS | SCAN_FILES | SCAN_HIDDEN, true );
+        ScanDir(results, directory, "*", SCAN_DIRS | SCAN_FILES | SCAN_HIDDEN | SCAN_RECURSE);
         while (results.erase_first(".") != results.end()) {}
         while (results.erase_first("..") != results.end()) {}
 
@@ -1378,7 +1373,7 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
     }
 
     // delete all files at this level
-    ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN, false );
+    ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN);
     for (unsigned i = 0; i < results.size(); i++)
     {
         if (!Delete(directory + results[i]))
@@ -1387,7 +1382,7 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
     results.clear();
 
     // recurse into subfolders
-    ScanDir(results, directory, "*", SCAN_DIRS, false );
+    ScanDir(results, directory, "*", SCAN_DIRS);
     for (unsigned i = 0; i < results.size(); i++)
     {
         if (results[i] == "." || results[i] == "..")
@@ -1407,7 +1402,7 @@ bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& direct
         return false;
 
     ea::vector<ea::string> results;
-    ScanDir(results, directoryIn, "*", SCAN_FILES, true);
+    ScanDir(results, directoryIn, "*", SCAN_FILES | SCAN_RECURSE);
 
     bool success = true;
     for (unsigned i = 0; i < results.size(); i++)

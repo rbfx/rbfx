@@ -68,7 +68,7 @@ void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string&
 
     // Add all the subdirs (non-recursive) as resource directory
     ea::vector<ea::string> subdirs;
-    fileSystem->ScanDir(subdirs, path, "*", SCAN_DIRS, false);
+    fileSystem->ScanDir(subdirs, path, "*", SCAN_DIRS);
     for (const ea::string& dir : subdirs)
     {
         if (dir.starts_with("."))
@@ -80,7 +80,7 @@ void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string&
 
     // Add all the found package files (non-recursive)
     ea::vector<ea::string> packageFiles;
-    fileSystem->ScanDir(packageFiles, path, "*.pak", SCAN_FILES, false);
+    fileSystem->ScanDir(packageFiles, path, "*.pak", SCAN_FILES);
     for (const ea::string& packageFile : packageFiles)
     {
         if (packageFile.starts_with("."))

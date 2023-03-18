@@ -571,7 +571,7 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
 
                 // Add all the subdirs (non-recursive) as resource directory
                 ea::vector<ea::string> subdirs;
-                fileSystem->ScanDir(subdirs, autoLoadPath, "*", SCAN_DIRS, false);
+                fileSystem->ScanDir(subdirs, autoLoadPath, "*", SCAN_DIRS);
                 for (unsigned y = 0; y < subdirs.size(); ++y)
                 {
                     ea::string dir = subdirs[y];
@@ -585,7 +585,7 @@ bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool re
 
                 // Add all the found package files (non-recursive)
                 ea::vector<ea::string> paks;
-                fileSystem->ScanDir(paks, autoLoadPath, "*.pak", SCAN_FILES, false);
+                fileSystem->ScanDir(paks, autoLoadPath, "*.pak", SCAN_FILES);
                 for (unsigned y = 0; y < paks.size(); ++y)
                 {
                     ea::string pak = paks[y];

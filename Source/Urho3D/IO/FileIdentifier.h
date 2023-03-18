@@ -22,7 +22,10 @@
 
 #pragma once
 
-#include "../Core/Object.h"
+#include <Urho3D/Urho3D.h>
+
+#include <EASTL/string.h>
+#include <EASTL/string_view.h>
 
 namespace Urho3D
 {

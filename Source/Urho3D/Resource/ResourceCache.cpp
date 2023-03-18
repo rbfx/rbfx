@@ -1219,22 +1219,18 @@ void RegisterResourceLibrary(Context* context)
     GraphNode::RegisterObject(context);
 }
 
-void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
+void ResourceCache::Scan(
+    ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
-    ea::vector<ea::string> interimResult;
+    if (!flags.Test(SCAN_APPEND))
+        result.clear();
 
     for (unsigned i = 0; i < packages_.size(); ++i)
-    {
-        packages_[i]->Scan(interimResult, pathName, filter, recursive);
-        result.insert(result.end(), interimResult.begin(), interimResult.end());
-    }
+        packages_[i]->Scan(result, pathName, filter, flags | SCAN_APPEND);
 
     FileSystem* fileSystem = GetSubsystem<FileSystem>();
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        fileSystem->ScanDir(interimResult, resourceDirs_[i] + pathName, filter, flags, recursive);
-        result.insert(result.end(), interimResult.begin(), interimResult.end());
-    }
+        fileSystem->ScanDir(result, resourceDirs_[i] + pathName, filter, flags | SCAN_APPEND);
 
     // Filtering copied from PackageFile::Scan().
     ea::string sanitizedPath = GetSanitizedPath(pathName);
