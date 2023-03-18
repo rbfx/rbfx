@@ -159,4 +159,10 @@ void IKSolver::UpdateOriginalTransforms()
         solverNode.UpdateOriginalTransform(worldTransform);
 }
 
+const IKNode* IKSolver::GetNodeData(Node* node) const
+{
+    const auto iter = solverNodes_.find_as(node);
+    return iter != solverNodes_.end() ? &iter->second : nullptr;
+}
+
 }

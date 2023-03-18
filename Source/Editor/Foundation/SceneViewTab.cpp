@@ -943,6 +943,8 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
             cache->ReloadResource(prefabResource);
         if (auto sceneResource = cache->GetExistingResource<SceneResource>(resourceName))
             cache->ReloadResource(sceneResource);
+        if (auto xmlResource = cache->GetExistingResource<XMLFile>(resourceName))
+            cache->ReloadResource(xmlResource);
     });
 }
 

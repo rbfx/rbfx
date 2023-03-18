@@ -43,16 +43,42 @@ public:
     static void RegisterObject(Context* context);
 
     bool IsApplicable(const AssetTransformerInput& input) override;
-    bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers) override;
+    bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output,
+        const AssetTransformerVector& transformers) override;
 
 private:
-    bool ImportGLTF(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers);
-    bool ImportFBX(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers);
-    bool ImportBlend(const ea::string& fileName, const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers);
+    struct ModelMetadata
+    {
+        ea::string metadataFileName_;
+        StringVector appendFiles_;
+        ea::unordered_map<ea::string, ea::string> nodeRenames_;
+
+        void SerializeInBlock(Archive& archive);
+    };
+
+    /// Information about GLTF file that can be imported directly.
+    struct GLTFFileInfo
+    {
+        ea::string fileName_;
+    };
+
+    /// Handler of GLTF file. Deletes temporary file on destruction.
+    using GLTFFileHandle = ea::shared_ptr<const GLTFFileInfo>;
+
+    bool ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata, const AssetTransformerInput& input,
+        AssetTransformerOutput& output, const AssetTransformerVector& transformers);
+
+    ModelMetadata LoadMetadata(const ea::string& fileName) const;
+    GLTFFileHandle LoadData(const ea::string& fileName, const ea::string& tempPath) const;
+
+    GLTFFileHandle LoadDataNative(const ea::string& fileName) const;
+    GLTFFileHandle LoadDataFromFBX(const ea::string& fileName, const ea::string& tempPath) const;
+    GLTFFileHandle LoadDataFromBlend(const ea::string& fileName, const ea::string& tempPath) const;
 
     ToolManager* GetToolManager() const;
 
     GLTFImporterSettings settings_;
+    bool blenderApplyModifiers_{true};
 };
 
-}
+} // namespace Urho3D

@@ -38,8 +38,10 @@ using AssetTransformerVector = ea::vector<AssetTransformer*>;
 struct URHO3D_API AssetTransformerInput
 {
     AssetTransformerInput() = default;
-    AssetTransformerInput(const ApplicationFlavor& flavor, const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime);
-    AssetTransformerInput(const AssetTransformerInput& other, const ea::string& tempPath, const ea::string& outputFileName);
+    AssetTransformerInput(const ApplicationFlavor& flavor, const ea::string& resourceName,
+        const ea::string& inputFileName, FileTime inputFileTime);
+    AssetTransformerInput(
+        const AssetTransformerInput& other, const ea::string& tempPath, const ea::string& outputFileName);
 
     void SerializeInBlock(Archive& archive);
     static AssetTransformerInput FromBase64(const ea::string& base64);
@@ -47,6 +49,8 @@ struct URHO3D_API AssetTransformerInput
 
     /// Flavor of the transformer.
     ApplicationFlavor flavor_;
+    /// Original resource name. May be different from resource name for nested transformers.
+    ea::string originalResourceName_;
     /// Original absolute file name. May be different from file name for nested transformers.
     ea::string originalInputFileName_;
 
@@ -75,6 +79,8 @@ struct URHO3D_API AssetTransformerOutput
     ea::vector<ea::string> outputResourceNames_;
     /// Types of transformers that were applied to the asset.
     ea::unordered_set<ea::string> appliedTransformers_;
+    /// Other files that were used to generate the output.
+    ea::unordered_map<ea::string, FileTime> dependencyModificationTimes_;
 };
 
 /// Interface of a script that can be used to transform assets.
@@ -93,13 +99,17 @@ public:
     static bool ExecuteTransformers(const AssetTransformerInput& input, AssetTransformerOutput& output,
         const AssetTransformerVector& transformers, bool isNestedExecution);
     /// Execute transformer array on the asset and copy results in the output path.
-    static bool ExecuteTransformersAndStore(const AssetTransformerInput& input, const ea::string& outputPath, AssetTransformerOutput& output,
-        const AssetTransformerVector& transformers);
+    static bool ExecuteTransformersAndStore(const AssetTransformerInput& input, const ea::string& outputPath,
+        AssetTransformerOutput& output, const AssetTransformerVector& transformers);
 
     /// Return whether the transformer can be applied to the given asset. Should be as fast as possible.
     virtual bool IsApplicable(const AssetTransformerInput& input) { return false; }
     /// Execute this transformer on the asset. Return true if any action was performed.
-    virtual bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers) { return false; }
+    virtual bool Execute(
+        const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
+    {
+        return false;
+    }
     /// Return whether the importer of this type should be invoked at most once.
     virtual bool IsSingleInstanced() { return true; }
     /// Return whether to execute this transformer on the output of the other transformer.
@@ -110,6 +120,11 @@ public:
     void SetFlavor(const ApplicationFlavorPattern& value) { flavor_ = value; }
     const ApplicationFlavorPattern& GetFlavor() const { return flavor_; }
     /// @}
+
+protected:
+    /// Helper to add file dependency.
+    void AddDependency(
+        const AssetTransformerInput& input, AssetTransformerOutput& output, const ea::string& fileName) const;
 
 private:
     ApplicationFlavorPattern flavor_{};
@@ -125,4 +140,4 @@ struct AssetTransformerDependency
     void SerializeInBlock(Archive& archive);
 };
 
-}
+} // namespace Urho3D

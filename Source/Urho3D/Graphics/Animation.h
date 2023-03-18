@@ -24,9 +24,10 @@
 
 #pragma once
 
-#include "../Graphics/AnimationTrack.h"
-#include "../Container/Ptr.h"
-#include "../Resource/Resource.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Core/ObjectRevisionTracker.h"
+#include "Urho3D/Graphics/AnimationTrack.h"
+#include "Urho3D/Resource/Resource.h"
 
 namespace Urho3D
 {
@@ -42,7 +43,7 @@ struct AnimationTriggerPoint
 
 /// Skeletal animation resource.
 /// Don't use bone tracks and generic variant tracks with the same names.
-class URHO3D_API Animation : public ResourceWithMetadata
+class URHO3D_API Animation : public ResourceWithMetadata, public ObjectRevisionTracker
 {
     URHO3D_OBJECT(Animation, ResourceWithMetadata);
 

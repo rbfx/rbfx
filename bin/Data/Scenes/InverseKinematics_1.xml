@@ -4,7 +4,7 @@
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
 	<attribute name="Next Node ID" value="2" />
-	<attribute name="Next Component ID" value="19" />
+	<attribute name="Next Component ID" value="34" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -755,6 +755,7 @@
 					<attribute name="Target Name" value="b_Neck_04_Target" />
 					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Max Angle" value="60.000000" />
+					<attribute name="Twist Rotation Offset" value="0.707069 0.00731058 0.707068 0.00731042" />
 				</component>
 				<component type="IKSpineSolver" id="829">
 					<attribute name="Bone Names">
@@ -762,7 +763,7 @@
 						<string value="b_Tail02_013" />
 						<string value="b_Tail03_014" />
 					</attribute>
-					<attribute name="Target Name" value="b_Tail03_014_Target2" />
+					<attribute name="Target Name" value="b_Tail03_014_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Max Angle" value="180.000000" />
 					<attribute name="Bend Tweak" value="-1.000000" />
@@ -771,7 +772,7 @@
 					<attribute name="Bone 0 Name" value="b_LeftUpperArm_09" />
 					<attribute name="Bone 1 Name" value="b_LeftForeArm_010" />
 					<attribute name="Bone 2 Name" value="b_LeftHand_011" />
-					<attribute name="Target Name" value="b_LeftHand_011_Target2" />
+					<attribute name="Target Name" value="b_LeftHand_011_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
@@ -779,14 +780,14 @@
 					<attribute name="Bone 0 Name" value="b_RightUpperArm_06" />
 					<attribute name="Bone 1 Name" value="b_RightForeArm_07" />
 					<attribute name="Bone 2 Name" value="b_RightHand_08" />
-					<attribute name="Target Name" value="b_RightHand_08_Target2" />
+					<attribute name="Target Name" value="b_RightHand_08_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
 				<component type="IKHeadSolver" id="832">
 					<attribute name="Neck Bone Name" value="b_Neck_04" />
 					<attribute name="Head Bone Name" value="b_Head_05" />
-					<attribute name="Target Name" value="b_Head_05_Target2" />
+					<attribute name="Target Name" value="b_Head_05_Target" />
 					<attribute name="Direction Weight" value="0.000000" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Eye Offset" value="0 0.03 0.13" />
@@ -834,15 +835,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<node id="272">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_Tail03_014_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.201997 -0.677641 -0.201996 -0.677642" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="273">
 						<attribute name="Is Enabled" value="true" />
@@ -870,15 +862,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<node id="276">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_LeftHand_011_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.676268 -0.215701 -0.6796 -0.185143" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="277">
 						<attribute name="Is Enabled" value="true" />
@@ -888,15 +871,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="0.999998 0.999998 1" />
 						<attribute name="Variables" />
-						<node id="278">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_RightHand_08_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 1.90735e-06" />
-							<attribute name="Rotation" value="-0.679566 -0.190391 -0.676617 -0.210075" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="279">
 						<attribute name="Is Enabled" value="true" />
@@ -906,15 +880,6 @@
 						<attribute name="Rotation" value="-0.999787 0.0186296 0.00396456 -0.00791044" />
 						<attribute name="Scale" value="0.3 0.3 0.3" />
 						<attribute name="Variables" />
-						<node id="280">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_Head_05_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.698727 -0.0993329 -0.703024 -0.0875809" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="281">
 						<attribute name="Is Enabled" value="true" />
@@ -1253,6 +1218,7 @@
 				<attribute name="Target Name" value="b_Neck_04_Target" />
 				<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="0.707069 0.00731058 0.707068 0.00731042" />
 			</component>
 			<component type="IKSpineSolver" id="841">
 				<attribute name="Bone Names">
@@ -1260,7 +1226,7 @@
 					<string value="b_Tail02_013" />
 					<string value="b_Tail03_014" />
 				</attribute>
-				<attribute name="Target Name" value="b_Tail03_014_Target2" />
+				<attribute name="Target Name" value="b_Tail03_014_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Max Angle" value="180.000000" />
 				<attribute name="Bend Tweak" value="-1.000000" />
@@ -1269,7 +1235,7 @@
 				<attribute name="Bone 0 Name" value="b_LeftUpperArm_09" />
 				<attribute name="Bone 1 Name" value="b_LeftForeArm_010" />
 				<attribute name="Bone 2 Name" value="b_LeftHand_011" />
-				<attribute name="Target Name" value="b_LeftHand_011_Target2" />
+				<attribute name="Target Name" value="b_LeftHand_011_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
@@ -1277,14 +1243,14 @@
 				<attribute name="Bone 0 Name" value="b_RightUpperArm_06" />
 				<attribute name="Bone 1 Name" value="b_RightForeArm_07" />
 				<attribute name="Bone 2 Name" value="b_RightHand_08" />
-				<attribute name="Target Name" value="b_RightHand_08_Target2" />
+				<attribute name="Target Name" value="b_RightHand_08_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKHeadSolver" id="844">
 				<attribute name="Neck Bone Name" value="b_Neck_04" />
 				<attribute name="Head Bone Name" value="b_Head_05" />
-				<attribute name="Target Name" value="b_Head_05_Target2" />
+				<attribute name="Target Name" value="b_Head_05_Target" />
 				<attribute name="Direction Weight" value="0.000000" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Eye Offset" value="0 0.03 0.13" />
@@ -1332,15 +1298,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<node id="289">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_Tail03_014_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.201997 -0.677641 -0.201996 -0.677642" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="290">
 					<attribute name="Is Enabled" value="true" />
@@ -1368,15 +1325,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<node id="293">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_LeftHand_011_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.676268 -0.215701 -0.6796 -0.185143" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="294">
 					<attribute name="Is Enabled" value="true" />
@@ -1386,15 +1334,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="0.999998 0.999998 1" />
 					<attribute name="Variables" />
-					<node id="295">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_RightHand_08_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 1.90735e-06" />
-						<attribute name="Rotation" value="-0.679566 -0.190391 -0.676617 -0.210075" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="296">
 					<attribute name="Is Enabled" value="true" />
@@ -1404,15 +1343,6 @@
 					<attribute name="Rotation" value="-0.999787 0.0186296 0.00396456 -0.00791044" />
 					<attribute name="Scale" value="0.3 0.3 0.3" />
 					<attribute name="Variables" />
-					<node id="297">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_Head_05_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.698727 -0.0993329 -0.703024 -0.0875809" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="298">
 					<attribute name="Is Enabled" value="true" />
@@ -2337,6 +2267,7 @@
 					<attribute name="Target Name" value="b_Neck_04_Target" />
 					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Max Angle" value="60.000000" />
+					<attribute name="Twist Rotation Offset" value="0.707069 0.00731058 0.707068 0.00731042" />
 				</component>
 				<component type="IKSpineSolver" id="733">
 					<attribute name="Bone Names">
@@ -2344,7 +2275,7 @@
 						<string value="b_Tail02_013" />
 						<string value="b_Tail03_014" />
 					</attribute>
-					<attribute name="Target Name" value="b_Tail03_014_Target2" />
+					<attribute name="Target Name" value="b_Tail03_014_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Max Angle" value="180.000000" />
 					<attribute name="Bend Tweak" value="-1.000000" />
@@ -2353,7 +2284,7 @@
 					<attribute name="Bone 0 Name" value="b_LeftUpperArm_09" />
 					<attribute name="Bone 1 Name" value="b_LeftForeArm_010" />
 					<attribute name="Bone 2 Name" value="b_LeftHand_011" />
-					<attribute name="Target Name" value="b_LeftHand_011_Target2" />
+					<attribute name="Target Name" value="b_LeftHand_011_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
@@ -2361,14 +2292,14 @@
 					<attribute name="Bone 0 Name" value="b_RightUpperArm_06" />
 					<attribute name="Bone 1 Name" value="b_RightForeArm_07" />
 					<attribute name="Bone 2 Name" value="b_RightHand_08" />
-					<attribute name="Target Name" value="b_RightHand_08_Target2" />
+					<attribute name="Target Name" value="b_RightHand_08_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
 				<component type="IKHeadSolver" id="416">
 					<attribute name="Neck Bone Name" value="b_Neck_04" />
 					<attribute name="Head Bone Name" value="b_Head_05" />
-					<attribute name="Target Name" value="b_Head_05_Target2" />
+					<attribute name="Target Name" value="b_Head_05_Target" />
 					<attribute name="Direction Weight" value="0.000000" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Eye Offset" value="0 0.03 0.13" />
@@ -2416,15 +2347,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<node id="201">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_Tail03_014_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.201997 -0.677641 -0.201996 -0.677642" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="131">
 						<attribute name="Is Enabled" value="true" />
@@ -2452,15 +2374,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<node id="198">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_LeftHand_011_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.676268 -0.215701 -0.6796 -0.185143" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="134">
 						<attribute name="Is Enabled" value="true" />
@@ -2470,15 +2383,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="0.999998 0.999998 1" />
 						<attribute name="Variables" />
-						<node id="199">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_RightHand_08_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 1.90735e-06" />
-							<attribute name="Rotation" value="-0.679566 -0.190391 -0.676617 -0.210075" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="135">
 						<attribute name="Is Enabled" value="true" />
@@ -2488,15 +2392,6 @@
 						<attribute name="Rotation" value="-0.999787 0.0186296 0.00396456 -0.00791044" />
 						<attribute name="Scale" value="0.3 0.3 0.3" />
 						<attribute name="Variables" />
-						<node id="202">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_Head_05_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.698727 -0.0993329 -0.703024 -0.0875809" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="136">
 						<attribute name="Is Enabled" value="true" />
@@ -2842,16 +2737,17 @@
 					<string value="b_Tail02_013" />
 					<string value="b_Tail03_014" />
 				</attribute>
-				<attribute name="Target Name" value="b_Tail03_014_Target2" />
+				<attribute name="Target Name" value="b_Tail03_014_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Max Angle" value="180.000000" />
 				<attribute name="Bend Tweak" value="-1.000000" />
+				<attribute name="Twist Rotation Offset" value="-0.238183 -0.665784 -0.238183 -0.665785" />
 			</component>
 			<component type="IKLimbSolver" id="774">
 				<attribute name="Bone 0 Name" value="b_LeftUpperArm_09" />
 				<attribute name="Bone 1 Name" value="b_LeftForeArm_010" />
 				<attribute name="Bone 2 Name" value="b_LeftHand_011" />
-				<attribute name="Target Name" value="b_LeftHand_011_Target2" />
+				<attribute name="Target Name" value="b_LeftHand_011_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
@@ -2859,14 +2755,14 @@
 				<attribute name="Bone 0 Name" value="b_RightUpperArm_06" />
 				<attribute name="Bone 1 Name" value="b_RightForeArm_07" />
 				<attribute name="Bone 2 Name" value="b_RightHand_08" />
-				<attribute name="Target Name" value="b_RightHand_08_Target2" />
+				<attribute name="Target Name" value="b_RightHand_08_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKHeadSolver" id="776">
 				<attribute name="Neck Bone Name" value="b_Neck_04" />
 				<attribute name="Head Bone Name" value="b_Head_05" />
-				<attribute name="Target Name" value="b_Head_05_Target2" />
+				<attribute name="Target Name" value="b_Head_05_Target" />
 				<attribute name="Direction Weight" value="0.000000" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Eye Offset" value="0 0.03 0.13" />
@@ -2914,15 +2810,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<node id="210">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_Tail03_014_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.201997 -0.677641 -0.201996 -0.677642" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="211">
 					<attribute name="Is Enabled" value="true" />
@@ -2950,15 +2837,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<node id="214">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_LeftHand_011_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.676268 -0.215701 -0.6796 -0.185143" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="215">
 					<attribute name="Is Enabled" value="true" />
@@ -2968,15 +2846,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="0.999998 0.999998 1" />
 					<attribute name="Variables" />
-					<node id="216">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_RightHand_08_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 1.90735e-06" />
-						<attribute name="Rotation" value="-0.679566 -0.190391 -0.676617 -0.210075" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="217">
 					<attribute name="Is Enabled" value="true" />
@@ -2986,15 +2855,6 @@
 					<attribute name="Rotation" value="-0.999787 0.0186296 0.00396456 -0.00791044" />
 					<attribute name="Scale" value="0.3 0.3 0.3" />
 					<attribute name="Variables" />
-					<node id="218">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_Head_05_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.698727 -0.0993329 -0.703024 -0.0875809" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="219">
 					<attribute name="Is Enabled" value="true" />
@@ -3919,6 +3779,7 @@
 					<attribute name="Target Name" value="b_Neck_04_Target" />
 					<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 					<attribute name="Max Angle" value="60.000000" />
+					<attribute name="Twist Rotation Offset" value="0.707069 0.00731058 0.707068 0.00731042" />
 				</component>
 				<component type="IKSpineSolver" id="800">
 					<attribute name="Bone Names">
@@ -3926,7 +3787,7 @@
 						<string value="b_Tail02_013" />
 						<string value="b_Tail03_014" />
 					</attribute>
-					<attribute name="Target Name" value="b_Tail03_014_Target2" />
+					<attribute name="Target Name" value="b_Tail03_014_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Max Angle" value="180.000000" />
 					<attribute name="Bend Tweak" value="-1.000000" />
@@ -3935,7 +3796,7 @@
 					<attribute name="Bone 0 Name" value="b_LeftUpperArm_09" />
 					<attribute name="Bone 1 Name" value="b_LeftForeArm_010" />
 					<attribute name="Bone 2 Name" value="b_LeftHand_011" />
-					<attribute name="Target Name" value="b_LeftHand_011_Target2" />
+					<attribute name="Target Name" value="b_LeftHand_011_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
@@ -3943,14 +3804,14 @@
 					<attribute name="Bone 0 Name" value="b_RightUpperArm_06" />
 					<attribute name="Bone 1 Name" value="b_RightForeArm_07" />
 					<attribute name="Bone 2 Name" value="b_RightHand_08" />
-					<attribute name="Target Name" value="b_RightHand_08_Target2" />
+					<attribute name="Target Name" value="b_RightHand_08_Target" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
 				<component type="IKHeadSolver" id="803">
 					<attribute name="Neck Bone Name" value="b_Neck_04" />
 					<attribute name="Head Bone Name" value="b_Head_05" />
-					<attribute name="Target Name" value="b_Head_05_Target2" />
+					<attribute name="Target Name" value="b_Head_05_Target" />
 					<attribute name="Direction Weight" value="0.000000" />
 					<attribute name="Rotation Weight" value="1.000000" />
 					<attribute name="Eye Offset" value="0 0.03 0.13" />
@@ -3998,15 +3859,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<node id="233">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_Tail03_014_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.201997 -0.677641 -0.201996 -0.677642" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="234">
 						<attribute name="Is Enabled" value="true" />
@@ -4034,15 +3886,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<node id="237">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_LeftHand_011_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.676268 -0.215701 -0.6796 -0.185143" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="238">
 						<attribute name="Is Enabled" value="true" />
@@ -4052,15 +3895,6 @@
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="0.999998 0.999998 1" />
 						<attribute name="Variables" />
-						<node id="239">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_RightHand_08_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 1.90735e-06" />
-							<attribute name="Rotation" value="-0.679566 -0.190391 -0.676617 -0.210075" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="240">
 						<attribute name="Is Enabled" value="true" />
@@ -4070,15 +3904,6 @@
 						<attribute name="Rotation" value="-0.999787 0.0186296 0.00396456 -0.00791044" />
 						<attribute name="Scale" value="0.3 0.3 0.3" />
 						<attribute name="Variables" />
-						<node id="241">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="b_Head_05_Target2" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="-0.698727 -0.0993329 -0.703024 -0.0875809" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-						</node>
 					</node>
 					<node id="242">
 						<attribute name="Is Enabled" value="true" />
@@ -4417,6 +4242,7 @@
 				<attribute name="Target Name" value="b_Neck_04_Target" />
 				<attribute name="Twist Target Name" value="b_Spine02_03_Target" />
 				<attribute name="Max Angle" value="60.000000" />
+				<attribute name="Twist Rotation Offset" value="0.707069 0.00731058 0.707068 0.00731042" />
 			</component>
 			<component type="IKSpineSolver" id="812">
 				<attribute name="Bone Names">
@@ -4424,7 +4250,7 @@
 					<string value="b_Tail02_013" />
 					<string value="b_Tail03_014" />
 				</attribute>
-				<attribute name="Target Name" value="b_Tail03_014_Target2" />
+				<attribute name="Target Name" value="b_Tail03_014_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Max Angle" value="180.000000" />
 				<attribute name="Bend Tweak" value="-1.000000" />
@@ -4433,7 +4259,7 @@
 				<attribute name="Bone 0 Name" value="b_LeftUpperArm_09" />
 				<attribute name="Bone 1 Name" value="b_LeftForeArm_010" />
 				<attribute name="Bone 2 Name" value="b_LeftHand_011" />
-				<attribute name="Target Name" value="b_LeftHand_011_Target2" />
+				<attribute name="Target Name" value="b_LeftHand_011_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
@@ -4441,14 +4267,14 @@
 				<attribute name="Bone 0 Name" value="b_RightUpperArm_06" />
 				<attribute name="Bone 1 Name" value="b_RightForeArm_07" />
 				<attribute name="Bone 2 Name" value="b_RightHand_08" />
-				<attribute name="Target Name" value="b_RightHand_08_Target2" />
+				<attribute name="Target Name" value="b_RightHand_08_Target" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKHeadSolver" id="815">
 				<attribute name="Neck Bone Name" value="b_Neck_04" />
 				<attribute name="Head Bone Name" value="b_Head_05" />
-				<attribute name="Target Name" value="b_Head_05_Target2" />
+				<attribute name="Target Name" value="b_Head_05_Target" />
 				<attribute name="Direction Weight" value="0.000000" />
 				<attribute name="Rotation Weight" value="1.000000" />
 				<attribute name="Eye Offset" value="0 0.03 0.13" />
@@ -4496,15 +4322,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<node id="250">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_Tail03_014_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.201997 -0.677641 -0.201996 -0.677642" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="251">
 					<attribute name="Is Enabled" value="true" />
@@ -4532,15 +4349,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<node id="254">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_LeftHand_011_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.676268 -0.215701 -0.6796 -0.185143" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="255">
 					<attribute name="Is Enabled" value="true" />
@@ -4550,15 +4358,6 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="0.999998 0.999998 1" />
 					<attribute name="Variables" />
-					<node id="256">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_RightHand_08_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 1.90735e-06" />
-						<attribute name="Rotation" value="-0.679566 -0.190391 -0.676617 -0.210075" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="257">
 					<attribute name="Is Enabled" value="true" />
@@ -4568,15 +4367,6 @@
 					<attribute name="Rotation" value="-0.999787 0.0186296 0.00396456 -0.00791044" />
 					<attribute name="Scale" value="0.3 0.3 0.3" />
 					<attribute name="Variables" />
-					<node id="258">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="b_Head_05_Target2" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="-0.698727 -0.0993329 -0.703024 -0.0875809" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-					</node>
 				</node>
 				<node id="259">
 					<attribute name="Is Enabled" value="true" />

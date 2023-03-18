@@ -239,6 +239,7 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     assetManager_->OnInitialized.Subscribe(this, [=](Project*) mutable { initializationGuard.reset(); });
 
     IgnoreFileNamePattern("*.user.json");
+    IgnoreFileNamePattern("*.blend1");
 
     ApplyPlugins();
 

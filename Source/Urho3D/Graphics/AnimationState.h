@@ -217,9 +217,9 @@ public:
 
 private:
     /// Apply value of transformation track to the output.
-    void CalulcateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const;
+    void CalculateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const;
     /// Apply single attribute track to target object. Key frame hint is updated on call.
-    void CalulcateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const;
+    void CalculateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const;
 
     /// Owner controller.
     WeakPtr<AnimationController> controller_;
@@ -232,6 +232,8 @@ private:
 
     /// Whether the animation state tracks are dirty and should be updated.
     bool tracksDirty_{ true };
+    /// Revision of Animation object. Used to detect changes in animation.
+    unsigned animationRevision_{};
 
     /// Dynamic properties of AnimationState.
     /// @{

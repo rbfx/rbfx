@@ -401,6 +401,7 @@ private:
     float twistWeight_{1.0f};
     float maxAngle_{90.0f};
     float bendTweak_{0.0f};
+    /// This orientation of twist bone in object space is equivalent to having no twist.
     Quaternion twistRotationOffset_{Quaternion::ZERO};
 
     IKSpineChain chain_;
@@ -412,6 +413,7 @@ private:
     {
         ea::vector<Transform> defaultTransforms_;
         Vector3 baseDirection_;
+        Quaternion zeroTwistRotation_;
     } local_;
 
     ea::vector<Quaternion> originalBoneRotations_;
