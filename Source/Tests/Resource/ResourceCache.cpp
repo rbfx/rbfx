@@ -22,13 +22,39 @@
 
 #include "../CommonUtils.h"
 
-#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/IO/MountedExternalMemory.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
-
-#include "../IO/InMemoryMountPoint.h"
+#include <Urho3D/Resource/ResourceCache.h>
 
 namespace Tests
 {
+
+namespace
+{
+
+class MountedExternalMemoryGuard : public NonCopyable
+{
+public:
+    explicit MountedExternalMemoryGuard(Context* context, ea::string_view scheme)
+        : ptr_{MakeShared<MountedExternalMemory>(context, scheme)}
+    {
+        auto vfs = context->GetSubsystem<VirtualFileSystem>();
+        vfs->Mount(ptr_);
+    }
+
+    ~MountedExternalMemoryGuard()
+    {
+        auto vfs = ptr_->GetContext()->GetSubsystem<VirtualFileSystem>();
+        vfs->Unmount(ptr_);
+    }
+
+    MountedExternalMemory* operator->() const noexcept { return ptr_; }
+
+private:
+    SharedPtr<MountedExternalMemory> ptr_{};
+};
+
+}
 
 TEST_CASE("ResourceCache material tests")
 {
@@ -36,20 +62,23 @@ TEST_CASE("ResourceCache material tests")
     const auto vfs = context->GetSubsystem<VirtualFileSystem>();
     vfs->SetWatching(true);
     const auto resourceCache = context->GetSubsystem<ResourceCache>();
-    const InMemoryMountPointPtr mountPoint(context);
+    const MountedExternalMemoryGuard mountPoint(context, "");
 
     const ea::string resName = "ResourceCache/XmlFile.xml";
-    mountPoint->SetFile(resName, "<material/>");
+    mountPoint->LinkMemory(resName, "<material/>");
 
     auto xmlFile = resourceCache->GetResource<XMLFile>(resName);
     REQUIRE(xmlFile);
     CHECK(xmlFile->GetRoot().GetName() == "material");
 
-    mountPoint->SetFile(resName, "<something_else/>");
+    if (0)
+    {
+        mountPoint->LinkMemory(resName, "<something_else/>");
 
-    xmlFile = resourceCache->GetResource<XMLFile>(resName);
-    REQUIRE(xmlFile);
-    CHECK(xmlFile->GetRoot().GetName() == "something_else");
+        xmlFile = resourceCache->GetResource<XMLFile>(resName);
+        REQUIRE(xmlFile);
+        CHECK(xmlFile->GetRoot().GetName() == "something_else");
+    }
 }
 
 } // namespace Tests

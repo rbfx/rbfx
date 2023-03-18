@@ -85,7 +85,7 @@ namespace Urho3DNet
                     string resourceName = diagnostic.Location.SourceTree?.FilePath;
                     if (resourceName != null)
                     {
-                        FileIdentifier fileIdentifier = Context.Instance.VirtualFileSystem.GetResourceName("", resourceName);
+                        FileIdentifier fileIdentifier = Context.Instance.VirtualFileSystem.GetIdentifierFromAbsoluteName("", resourceName);
                         resourceName = fileIdentifier.FileName;
                     }
                     else

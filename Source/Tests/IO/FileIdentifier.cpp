@@ -89,29 +89,3 @@ TEST_CASE("String is appended to FileIdentifier")
     CHECK(FileIdentifier{"", "path"} + "/to/file/" == FileIdentifier{"", "path/to/file/"});
     CHECK(FileIdentifier{"", "path/"} + "/to/file/" == FileIdentifier{"", "path/to/file/"});
 }
-
-TEST_CASE("FileIdentifier append")
-{
-    {
-        FileIdentifier identifier = FileIdentifier{"", ""} + "";
-        CHECK(identifier.scheme_.empty());
-        CHECK(identifier.fileName_.empty());
-    }
-    {
-        FileIdentifier identifier = FileIdentifier("sc", "") + "bla";
-        CHECK(identifier.scheme_ == "sc");
-        CHECK(identifier.fileName_ == "bla");
-    }
-    {
-        FileIdentifier identifier = FileIdentifier("", "bla") + "";
-        CHECK(identifier.fileName_ == "bla");
-    }
-    {
-        FileIdentifier identifier = FileIdentifier("", "bla") + "fla";
-        CHECK(identifier.fileName_ == "bla/fla");
-    }
-    {
-        FileIdentifier identifier = FileIdentifier("", "bla/") + "fla";
-        CHECK(identifier.fileName_ == "bla/fla");
-    }
-}
