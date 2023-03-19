@@ -226,8 +226,8 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector files;
-    fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES | SCAN_APPEND | SCAN_RECURSE);
-    fs->ScanDir(files, project_->GetDataPath(), "*.assetpipeline", SCAN_FILES | SCAN_APPEND | SCAN_RECURSE);
+    fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES | SCAN_APPEND | SCAN_RECURSIVE);
+    fs->ScanDir(files, project_->GetDataPath(), "*.assetpipeline", SCAN_FILES | SCAN_APPEND | SCAN_RECURSIVE);
 
     ea::erase_if(files, [&](const ea::string& resourceName) { return !AssetPipeline::CheckExtension(resourceName); });
 
@@ -431,7 +431,7 @@ void AssetManager::CleanupCacheFolder()
     }
 
     StringVector allFolders;
-    fs->ScanDir(allFolders, project_->GetCachePath(), "", SCAN_DIRS | SCAN_RECURSE);
+    fs->ScanDir(allFolders, project_->GetCachePath(), "", SCAN_DIRS | SCAN_RECURSIVE);
 
     if (const auto iter = allFolders.find("."); iter != allFolders.end())
         allFolders.erase(iter);
@@ -630,7 +630,7 @@ StringVector AssetManager::EnumerateAssetFiles(const ea::string& resourcePath) c
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector result;
-    fs->ScanDir(result, GetFileName(resourcePath), "", SCAN_FILES | SCAN_RECURSE);
+    fs->ScanDir(result, GetFileName(resourcePath), "", SCAN_FILES | SCAN_RECURSIVE);
 
     ea::erase_if(result, [this](const ea::string& fileName)
     {

@@ -33,7 +33,7 @@ enum ScanFlag : unsigned char
     SCAN_DIRS = 0x2,
     SCAN_HIDDEN = 0x4,
     SCAN_APPEND = 0x8,
-    SCAN_RECURSE = 0x10,
+    SCAN_RECURSIVE = 0x10,
 };
 URHO3D_FLAGSET(ScanFlag, ScanFlags);
 

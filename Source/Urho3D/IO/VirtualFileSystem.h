@@ -86,8 +86,10 @@ public:
     bool IsWatching() const { return isWatching_; }
 
     /// Scan for specified files.
-    void Scan(
-        ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const;
+    void Scan(ea::vector<ea::string>& result, const ea::string& scheme, const ea::string& pathName,
+        const ea::string& filter, ScanFlags flags) const;
+    void Scan(ea::vector<ea::string>& result, const FileIdentifier& pathName, const ea::string& filter,
+        ScanFlags flags) const;
 
 private:
     /// Mutex for thread-safe access to the mount points.

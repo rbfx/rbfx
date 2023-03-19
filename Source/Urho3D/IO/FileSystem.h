@@ -214,5 +214,11 @@ URHO3D_API ea::string GetAbsolutePath(const ea::string& path, const ea::string& 
 URHO3D_API StringVector GetAbsolutePaths(const StringVector& paths, const ea::string& currentPath, bool addTrailingSlash = false);
 /// Convert extension from filter mask, or return empty string if no filter specified.
 URHO3D_API ea::string GetExtensionFromFilter(const ea::string& filter);
+/// Check if a file name matches search mask.
+URHO3D_API bool MatchFileName(ea::string_view fileName, ea::string_view path, ea::string_view extension,
+    bool recursive = true, bool caseSensitive = true);
+/// Trim prefix path following slash from the file name.
+/// No check is performed if the prefix path is actually a prefix of the file name.
+URHO3D_API ea::string TrimPathPrefix(ea::string_view fileName, ea::string_view prefixPath);
 
 }

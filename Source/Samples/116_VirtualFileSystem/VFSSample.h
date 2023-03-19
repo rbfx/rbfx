@@ -61,6 +61,7 @@ private:
 
     /// Input URI string.
     ea::string uri_{"Models/Box.mdl"};
+
     /// Parsed URI.
     FileIdentifier fileIdentifier_;
     /// Whether the file exists.
@@ -71,4 +72,17 @@ private:
     AbstractFilePtr readOnlyFile_;
     /// URI reversed from the file name.
     ea::string reversedUri_;
+
+    /// Scan path and scheme.
+    FileIdentifier scanPath_{"", "Materials"};
+    /// Scan filter
+    ea::string scanFilter_{"*.*"};
+    /// Whether to scan recursively.
+    bool scanRecursive_{true};
+    /// Whether to scan for files.
+    bool scanFiles_{true};
+    /// Whether to scan for directories.
+    bool scanDirectories_{false};
+    /// Scan results.
+    ea::vector<ea::string> scanResults_;
 };

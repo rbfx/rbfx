@@ -252,8 +252,8 @@ void VirtualFileSystem::SetWatching(bool enable)
     }
 }
 
-void VirtualFileSystem::Scan(
-    ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
+void VirtualFileSystem::Scan(ea::vector<ea::string>& result, const ea::string& scheme, const ea::string& pathName,
+    const ea::string& filter, ScanFlags flags) const
 {
     MutexLock lock(mountMutex_);
 
@@ -261,7 +261,16 @@ void VirtualFileSystem::Scan(
         result.clear();
 
     for (MountPoint* mountPoint : ea::reverse(mountPoints_))
-        mountPoint->Scan(result, pathName, filter, flags | SCAN_APPEND);
+    {
+        if (mountPoint->AcceptsScheme(scheme))
+            mountPoint->Scan(result, pathName, filter, flags | SCAN_APPEND);
+    }
+}
+
+void VirtualFileSystem::Scan(ea::vector<ea::string>& result, const FileIdentifier& pathName, const ea::string& filter,
+    ScanFlags flags) const
+{
+    Scan(result, pathName.scheme_, pathName.fileName_, filter, flags);
 }
 
 bool VirtualFileSystem::Exists(const FileIdentifier& fileName) const
