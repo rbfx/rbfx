@@ -29,56 +29,27 @@
 namespace Tests
 {
 
-namespace
-{
-
-class MountedExternalMemoryGuard : public NonCopyable
-{
-public:
-    explicit MountedExternalMemoryGuard(Context* context, ea::string_view scheme)
-        : ptr_{MakeShared<MountedExternalMemory>(context, scheme)}
-    {
-        auto vfs = context->GetSubsystem<VirtualFileSystem>();
-        vfs->Mount(ptr_);
-    }
-
-    ~MountedExternalMemoryGuard()
-    {
-        auto vfs = ptr_->GetContext()->GetSubsystem<VirtualFileSystem>();
-        vfs->Unmount(ptr_);
-    }
-
-    MountedExternalMemory* operator->() const noexcept { return ptr_; }
-
-private:
-    SharedPtr<MountedExternalMemory> ptr_{};
-};
-
-}
-
-TEST_CASE("ResourceCache material tests")
+TEST_CASE("ResourceCache loads resources from memory")
 {
     const auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     const auto vfs = context->GetSubsystem<VirtualFileSystem>();
     vfs->SetWatching(true);
     const auto resourceCache = context->GetSubsystem<ResourceCache>();
-    const MountedExternalMemoryGuard mountPoint(context, "");
+    auto mountPoint = MakeShared<MountedExternalMemory>(context, "memory");
+    const MountPointGuard mountPointGuard(mountPoint);
 
-    const ea::string resName = "ResourceCache/XmlFile.xml";
-    mountPoint->LinkMemory(resName, "<material/>");
+    mountPoint->LinkMemory("path/to/file.xml", "<material/>");
 
-    auto xmlFile = resourceCache->GetResource<XMLFile>(resName);
+    auto xmlFile = resourceCache->GetResource<XMLFile>("memory://path/to/file.xml");
     REQUIRE(xmlFile);
     CHECK(xmlFile->GetRoot().GetName() == "material");
 
-    if (0)
-    {
-        mountPoint->LinkMemory(resName, "<something_else/>");
+    mountPoint->LinkMemory("path/to/file.xml", "<something_else/>");
+    mountPoint->SendFileChangedEvent("path/to/file.xml");
 
-        xmlFile = resourceCache->GetResource<XMLFile>(resName);
-        REQUIRE(xmlFile);
-        CHECK(xmlFile->GetRoot().GetName() == "something_else");
-    }
+    xmlFile = resourceCache->GetResource<XMLFile>("memory://path/to/file.xml");
+    REQUIRE(xmlFile);
+    CHECK(xmlFile->GetRoot().GetName() == "something_else");
 }
 
 } // namespace Tests

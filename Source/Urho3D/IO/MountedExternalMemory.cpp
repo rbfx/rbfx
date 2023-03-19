@@ -22,6 +22,8 @@
 
 #include "Urho3D/IO/MountedExternalMemory.h"
 
+#include "Urho3D/Resource/ResourceEvents.h"
+
 #include <utility>
 
 namespace Urho3D
@@ -66,6 +68,16 @@ void MountedExternalMemory::UnlinkMemory(ea::string_view fileName)
     auto it = files_.find_as(fileName);
     if (it != files_.end())
         files_.erase(it);
+}
+
+void MountedExternalMemory::SendFileChangedEvent(ea::string_view fileName)
+{
+    using namespace FileChanged;
+
+    VariantMap& eventData = GetEventDataMap();
+    eventData[P_FILENAME] = EMPTY_STRING;
+    eventData[P_RESOURCENAME] = FileIdentifier{scheme_, fileName}.ToUri();
+    SendEvent(E_FILECHANGED, eventData);
 }
 
 bool MountedExternalMemory::AcceptsScheme(const ea::string& scheme) const

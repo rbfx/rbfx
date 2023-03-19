@@ -307,4 +307,41 @@ bool VirtualFileSystem::Exists(const FileIdentifier& fileName) const
     return false;
 }
 
+MountPointGuard::MountPointGuard(MountPoint* mountPoint)
+    : mountPoint_(mountPoint)
+{
+    if (mountPoint_)
+    {
+        auto vfs = mountPoint_->GetContext()->GetSubsystem<VirtualFileSystem>();
+        vfs->Mount(mountPoint_);
+    }
+}
+
+MountPointGuard::~MountPointGuard()
+{
+    Release();
+}
+
+MountPointGuard::MountPointGuard(MountPointGuard&& other) noexcept
+{
+    *this = ea::move(other);
+}
+
+MountPointGuard& MountPointGuard::operator=(MountPointGuard&& other) noexcept
+{
+    Release();
+    mountPoint_ = ea::move(other.mountPoint_);
+    return *this;
+}
+
+void MountPointGuard::Release()
+{
+    if (mountPoint_)
+    {
+        auto vfs = mountPoint_->GetContext()->GetSubsystem<VirtualFileSystem>();
+        vfs->Unmount(mountPoint_);
+        mountPoint_ = nullptr;
+    }
+}
+
 } // namespace Urho3D

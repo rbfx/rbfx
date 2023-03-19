@@ -157,7 +157,7 @@ void LightProbeGroup::CollectLightProbes(Scene* scene,
     CollectLightProbes(lightProbeGroups, collection, bakedData, reload);
 }
 
-bool LightProbeGroup::SaveLightProbesBakedData(Context* context, const ea::string& fileName,
+bool LightProbeGroup::SaveLightProbesBakedData(Context* context, const FileIdentifier& fileName,
     const LightProbeCollection& collection, const LightProbeCollectionBakedData& bakedData, unsigned index)
 {
     if (index >= collection.GetNumGroups())

@@ -103,31 +103,9 @@ struct IncrementalLightBaker::Impl
     bool Initialize()
     {
         // Find or fix output directory
-        if (settings_.incremental_.outputDirectory_.empty())
-        {
-            const ea::string& sceneFileName = scene_->GetFileName();
-            if (sceneFileName.empty())
-            {
-                URHO3D_LOGERROR("Cannot find output directory for lightmaps: scene file name is undefined");
-                return false;
-            }
-
-            settings_.incremental_.outputDirectory_ = ReplaceExtension(sceneFileName, "");
-            if (settings_.incremental_.outputDirectory_ == sceneFileName)
-            {
-                URHO3D_LOGERROR("Cannot find output directory for lightmaps: scene file name has no extension");
-                return false;
-            }
-        }
-
-        settings_.incremental_.outputDirectory_ = AddTrailingSlash(settings_.incremental_.outputDirectory_);
-
-        FileSystem* fs = context_->GetSubsystem<FileSystem>();
-        if (!fs->CreateDir(settings_.incremental_.outputDirectory_))
-        {
-            URHO3D_LOGERROR("Cannot create output directory '{}' for lightmaps", settings_.incremental_.outputDirectory_);
+        outputDirectory_ = GetOutputDirectory();
+        if (!outputDirectory_)
             return false;
-        }
 
         // Collect chunks
         collector_->LockScene(scene_, settings_.incremental_.chunkSize_);
@@ -146,24 +124,18 @@ struct IncrementalLightBaker::Impl
 
         // Initialize GI data file
         auto gi = scene_->GetComponent<GlobalIllumination>();
-        const ea::string giFileName = settings_.incremental_.outputDirectory_ + settings_.incremental_.giDataFileName_;
-        const ea::string giFilePath = GetPath(giFileName);
-        if (!fs->CreateDir(giFilePath))
-        {
-            URHO3D_LOGERROR("Cannot create output directory '{}' for GI data file", giFilePath);
-            return false;
-        }
+        const FileIdentifier giFileName = outputDirectory_ + settings_.incremental_.giDataFileName_;
 
         BinaryFile file(context_);
         if (!file.SaveFile(giFileName))
         {
-            URHO3D_LOGERROR("Cannot allocate GI data file at '{}'", giFileName);
+            URHO3D_LOGERROR("Cannot allocate GI data file at '{}'", giFileName.ToUri());
             return false;
         }
 
         auto vfs = context_->GetSubsystem<VirtualFileSystem>();
-        const FileIdentifier giResourceId = vfs->GetIdentifierFromAbsoluteName(giFileName);
-        gi->SetFileRef({BinaryFile::GetTypeStatic(), giResourceId.ToUri()});
+        const FileIdentifier giResourceName = vfs->GetCanonicalIdentifier(giFileName);
+        gi->SetFileRef({BinaryFile::GetTypeStatic(), giResourceName.ToUri()});
 
         return true;
     }
@@ -196,10 +168,9 @@ struct IncrementalLightBaker::Impl
             for (unsigned i = 0; i < uniqueLightProbes.size(); ++i)
             {
                 LightProbeGroup* group = uniqueLightProbes[i];
-                const ea::string fileName = GetLightProbeBakedDataFileName(chunk, i);
-                const FileIdentifier resourceId = vfs->GetIdentifierFromAbsoluteName(fileName);
-                fileSystem->CreateDirsRecursive(GetPath(fileName));
-                group->SetBakedDataFileRef({ BinaryFile::GetTypeStatic(), resourceId.ToUri() });
+                const FileIdentifier fileName = GetLightProbeBakedDataFileName(chunk, i);
+                const FileIdentifier resourceName = vfs->GetCanonicalIdentifier(fileName);
+                group->SetBakedDataFileRef({BinaryFile::GetTypeStatic(), resourceName.ToUri()});
             }
 
             // Update base index
@@ -210,11 +181,10 @@ struct IncrementalLightBaker::Impl
         scene_->ResetLightmaps();
         for (unsigned i = 0; i < numLightmapCharts_; ++i)
         {
-            const ea::string fileName = GetLightmapFileName(i);
-            const FileIdentifier resourceId = vfs->GetIdentifierFromAbsoluteName(fileName);
+            const FileIdentifier fileName = GetLightmapFileName(i);
+            const FileIdentifier resourceName = vfs->GetCanonicalIdentifier(fileName);
 
-            fileSystem->CreateDirsRecursive(GetPath(fileName));
-            if (!fileSystem->FileExists(fileName))
+            if (!vfs->Exists(fileName))
             {
                 Image placeholderImage(context_);
                 placeholderImage.SetSize(1, 1, 4);
@@ -223,13 +193,10 @@ struct IncrementalLightBaker::Impl
             }
 
             // TODO(vfs): Revisit this place, we should not need condition here
-            if (!resourceId)
-            {
-                URHO3D_LOGWARNING("Cannot find resource name for lightmap '{}', absolute path is used", fileName);
-                scene_->AddLightmap(fileName);
-            }
-            else
-                scene_->AddLightmap(resourceId.ToUri());
+            if (resourceName.scheme_ == "file")
+                URHO3D_LOGWARNING("Absolute path is used for lightmap '{}'", fileName.ToUri());
+
+            scene_->AddLightmap(resourceName.ToUri());
         }
     }
 
@@ -387,7 +354,7 @@ struct IncrementalLightBaker::Impl
             // Save light probes
             for (unsigned groupIndex = 0; groupIndex < bakedChunk->numUniqueLightProbes_; ++groupIndex)
             {
-                const ea::string fileName = GetLightProbeBakedDataFileName(chunk, groupIndex);
+                const FileIdentifier fileName = GetLightProbeBakedDataFileName(chunk, groupIndex);
                 if (!LightProbeGroup::SaveLightProbesBakedData(context_, fileName,
                     bakedChunk->lightProbesCollection_, lightProbesBakedData, groupIndex))
                 {
@@ -460,8 +427,7 @@ struct IncrementalLightBaker::Impl
                 }
 
                 // Save image to destination folder
-                const ea::string fileName = GetLightmapFileName(lightmapIndex);
-                context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(GetPath(fileName));
+                const FileIdentifier fileName = GetLightmapFileName(lightmapIndex);
                 lightmapImage->SaveFile(fileName);
             }
         }
@@ -470,26 +436,47 @@ struct IncrementalLightBaker::Impl
     const IncrementalLightBakerStatus& GetStatus() const { return status_; }
 
 private:
-    /// Return lightmap file name.
-    ea::string GetLightmapFileName(unsigned lightmapIndex)
+    FileIdentifier GetOutputDirectory() const
     {
-        ea::string fileName;
-        fileName += settings_.incremental_.outputDirectory_;
-        fileName += Format(settings_.incremental_.lightmapNameFormat_, lightmapIndex);
-        return fileName;
+        if (!settings_.incremental_.outputDirectory_.empty())
+            return FileIdentifier::FromUri(settings_.incremental_.outputDirectory_);
+
+        const ea::string& sceneFileName = scene_->GetFileName();
+        if (sceneFileName.empty())
+        {
+            URHO3D_LOGERROR("Cannot find output directory for lightmaps: scene file name is undefined");
+            return FileIdentifier::Empty;
+        }
+
+        const ea::string sceneDirectory = ReplaceExtension(sceneFileName, "");
+        if (sceneDirectory == sceneFileName)
+        {
+            URHO3D_LOGERROR("Cannot find output directory for lightmaps: scene file name has no extension");
+            return FileIdentifier::Empty;
+        }
+
+        return FileIdentifier::FromUri(sceneDirectory);
+    }
+
+    /// Return lightmap file name.
+    FileIdentifier GetLightmapFileName(unsigned lightmapIndex)
+    {
+        const ea::string localName = Format(settings_.incremental_.lightmapNameFormat_, lightmapIndex);
+        return outputDirectory_ + localName;
     }
 
     /// Return light probe group baked data file.
-    ea::string GetLightProbeBakedDataFileName(const IntVector3& chunk, unsigned index)
+    FileIdentifier GetLightProbeBakedDataFileName(const IntVector3& chunk, unsigned index)
     {
-        ea::string fileName;
-        fileName += settings_.incremental_.outputDirectory_;
-        fileName += Format(settings_.incremental_.lightProbeGroupNameFormat_, chunk.x_, chunk.y_, chunk.z_, index);
-        return fileName;
+        const ea::string localName =
+            Format(settings_.incremental_.lightProbeGroupNameFormat_, chunk.x_, chunk.y_, chunk.z_, index);
+        return outputDirectory_ + localName;
     }
 
     /// Settings for light baking.
     LightBakingSettings settings_;
+    /// Output directory.
+    FileIdentifier outputDirectory_;
 
     /// Context.
     Context* context_{};
