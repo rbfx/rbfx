@@ -181,6 +181,9 @@ MountPoint* VirtualFileSystem::GetMountPoint(unsigned index) const
 
 AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, FileMode mode) const
 {
+    if (!fileName)
+        return nullptr;
+
     MutexLock lock(mountMutex_);
 
     for (MountPoint* mountPoint : ea::reverse(mountPoints_))
@@ -189,7 +192,7 @@ AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, File
             return result;
     }
 
-    return AbstractFilePtr();
+    return nullptr;
 }
 
 ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const

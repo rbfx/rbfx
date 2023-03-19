@@ -86,7 +86,6 @@ ResourceCache::ResourceCache(Context* context) :
     Object(context),
     returnFailedResources_(false),
     searchPackagesFirst_(true),
-    isRouting_(false),
     finishBackgroundResourcesMs_(5)
 {
     // Register Resource library object factories
@@ -408,33 +407,22 @@ AbstractFilePtr ResourceCache::GetFile(const ea::string& name, bool sendEventOnF
 {
     const auto* vfs = GetSubsystem<VirtualFileSystem>();
 
-    const ea::string sanitatedName = SanitateResourceName(name);
-    const FileIdentifier fileId{EMPTY_STRING, sanitatedName};
-    auto file = vfs->OpenFile(fileId, FILE_READ);
-
-    // Fallback to absolute path resolution.
-    if (!file)
-    {
-        const auto* fileSystem = GetSubsystem<FileSystem>();
-        if (IsAbsolutePath(sanitatedName) && fileSystem->FileExists(sanitatedName))
-        {
-            file.StaticCast(MakeShared<File>(context_, sanitatedName, FILE_READ));
-        }
-    }
+    const FileIdentifier resolvedName = GetResolvedIdentifier(FileIdentifier::FromUri(name));
+    auto file = vfs->OpenFile(resolvedName, FILE_READ);
 
     if (!file && sendEventOnFailure)
     {
-        if (resourceRouters_.size() && sanitatedName.empty() && !name.empty())
-            URHO3D_LOGERROR("Resource request " + name + " was blocked");
+        if (!resourceRouters_.empty() && !resolvedName)
+            URHO3D_LOGERROR("Resource request '{}' was blocked", name);
         else
-            URHO3D_LOGERROR("Could not find resource " + sanitatedName);
+            URHO3D_LOGERROR("Could not find resource '{}'", resolvedName.ToUri());
 
         if (Thread::IsMainThread())
         {
             using namespace ResourceNotFound;
 
             VariantMap& eventData = GetEventDataMap();
-            eventData[P_RESOURCENAME] = sanitatedName.length() ? sanitatedName : name;
+            eventData[P_RESOURCENAME] = resolvedName ? resolvedName.ToUri() : name;
             SendEvent(E_RESOURCENOTFOUND, eventData);
         }
     }
@@ -636,19 +624,12 @@ void ResourceCache::GetResources(ea::vector<Resource*>& result, StringHash type)
 
 bool ResourceCache::Exists(const ea::string& name) const
 {
-    const auto sanitatedName = SanitateResourceName(name);
-    if (sanitatedName.empty())
+    const FileIdentifier resolvedName = GetResolvedIdentifier(FileIdentifier::FromUri(name));
+    if (!resolvedName)
         return false;
 
     const auto vfs = context_->GetSubsystem<VirtualFileSystem>();
-    if (vfs->Exists(FileIdentifier(EMPTY_STRING, name)))
-    {
-        return true;
-    }
-
-    // Fallback using absolute path
-    const auto fileSystem = context_->GetSubsystem<FileSystem>();
-    return fileSystem->FileExists(sanitatedName);
+    return vfs->Exists(resolvedName);
 }
 
 unsigned long long ResourceCache::GetMemoryBudget(StringHash type) const
@@ -675,17 +656,7 @@ unsigned long long ResourceCache::GetTotalMemoryUse() const
 ea::string ResourceCache::GetResourceFileName(const ea::string& name) const
 {
     const auto vfs = context_->GetSubsystem<VirtualFileSystem>();
-    const auto result = vfs->GetAbsoluteNameFromIdentifier(FileIdentifier(EMPTY_STRING, name));
-    if (!result.empty())
-    {
-        return result;
-    }
-
-    const auto* fileSystem = GetSubsystem<FileSystem>();
-    if (IsAbsolutePath(name) && fileSystem->FileExists(name))
-        return name;
-
-    return EMPTY_STRING;
+    return vfs->GetAbsoluteNameFromIdentifier(FileIdentifier::FromUri(name));
 }
 
 ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
@@ -731,32 +702,7 @@ ea::string ResourceCache::GetPreferredResourceDir(const ea::string& path) const
 
 ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
 {
-    // Sanitate unsupported constructs from the resource name
-    ea::string sanitatedName = GetInternalPath(name);
-    sanitatedName.replace("../", "");
-    sanitatedName.replace("./", "");
-
-    // If the path refers to one of the resource directories, normalize the resource name
-    auto* vfs = GetSubsystem<VirtualFileSystem>();
-    auto relativeResourcePath = vfs->GetIdentifierFromAbsoluteName(EMPTY_STRING, sanitatedName);
-    if (relativeResourcePath)
-        return relativeResourcePath.fileName_;
-
-    sanitatedName.trim();
-    return sanitatedName;
-}
-
-ea::string ResourceCache::SanitateResourceDirName(const ea::string& name) const
-{
-    ea::string fixedPath = AddTrailingSlash(name);
-    if (!IsAbsolutePath(fixedPath))
-        fixedPath = GetSubsystem<FileSystem>()->GetCurrentDir() + fixedPath;
-
-    // Sanitate away /./ construct
-    fixedPath.replace("/./", "/");
-
-    fixedPath.trim();
-    return fixedPath;
+    return GetCanonicalIdentifier(FileIdentifier::FromUri(name)).ToUri();
 }
 
 void ResourceCache::StoreResourceDependency(Resource* resource, const ea::string& dependency)
@@ -994,42 +940,22 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
     auto* vfs = GetSubsystem<VirtualFileSystem>();
     vfs->Scan(result, FileIdentifier::FromUri(pathName), filter, flags);
 
-    // Filtering copied from PackageFile::Scan().
-    ea::string sanitizedPath = GetSanitizedPath(pathName);
-    ea::string filterExtension;
-    unsigned dotPos = filter.find_last_of('.');
-    if (dotPos != ea::string::npos)
-        filterExtension = filter.substr(dotPos);
-    if (filterExtension.contains('*'))
-        filterExtension.clear();
+    // Scan manual resources.
+    if (!flags.Test(SCAN_FILES))
+        return;
 
-    bool caseSensitive = true;
-#ifdef _WIN32
-    // On Windows ignore case in string comparisons
-    caseSensitive = false;
-#endif
-
-    // Manual resources.
-    for (auto group = resourceGroups_.begin(); group != resourceGroups_.end(); ++group)
+    const bool recursive = flags.Test(SCAN_RECURSIVE);
+    const ea::string filterExtension = GetExtensionFromFilter(filter);
+    for (const auto& [_, group] : resourceGroups_)
     {
-        for (auto res = group->second.resources_.begin(); res != group->second.resources_.end(); ++res)
+        for (const auto& [_, resource] : group.resources_)
         {
-            ea::string entryName = GetSanitizedPath(res->second->GetName());
-            if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
-                entryName.starts_with(sanitizedPath, caseSensitive))
-            {
-                // Manual resources do not exist in resource dirs.
-                bool isPhysicalResource = !vfs->GetAbsoluteNameFromIdentifier(FileIdentifier(EMPTY_STRING, entryName)).empty();
+            if (!MatchFileName(resource->GetName(), pathName, filterExtension, recursive))
+                continue;
 
-                if (!isPhysicalResource)
-                {
-                    int index = entryName.find("/", sanitizedPath.length());
-                    if (flags & SCAN_DIRS && index >= 0)
-                        result.emplace_back(entryName.substr(sanitizedPath.length(), index - sanitizedPath.length()));
-                    else if (flags & SCAN_FILES && index == -1)
-                        result.emplace_back(entryName.substr(sanitizedPath.length()));
-                }
-            }
+            const FileIdentifier resourceName = FileIdentifier::FromUri(resource->GetName());
+            if (!vfs->Exists(resourceName))
+                result.emplace_back(TrimPathPrefix(resource->GetName(), pathName));
         }
     }
 }
@@ -1061,125 +987,6 @@ ea::string ResourceCache::PrintResources(const ea::string& typeName) const
     return output;
 }
 
-bool ResourceCache::RenameResource(const ea::string& source, const ea::string& destination)
-{
-    auto vfs = GetSubsystem<VirtualFileSystem>();
-
-    //if (!packages_.empty())
-    //{
-    //    URHO3D_LOGERROR("Renaming resources not supported while packages are in use.");
-    //    return false;
-    //}
-
-    if (!IsAbsolutePath(source) || !IsAbsolutePath(destination))
-    {
-        URHO3D_LOGERROR("Renaming resources requires absolute paths.");
-        return false;
-    }
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-
-    if (!fileSystem->Exists(source))
-    {
-        URHO3D_LOGERROR("Source path does not exist.");
-        return false;
-    }
-
-    if (fileSystem->Exists(destination))
-    {
-        URHO3D_LOGERROR("Destination path already exists.");
-        return false;
-    }
-
-    auto resourceName = vfs->GetIdentifierFromAbsoluteName(EMPTY_STRING, source).ToUri();
-    auto destinationName = vfs->GetIdentifierFromAbsoluteName(EMPTY_STRING, destination).ToUri();
-    bool dirMode = fileSystem->DirExists(source);
-
-    if (dirMode)
-    {
-        resourceName = AddTrailingSlash(resourceName);
-        destinationName = AddTrailingSlash(destinationName);
-    }
-
-    if (resourceName.empty())
-    {
-        URHO3D_LOGERRORF("'%s' does not exist in resource path.", source.c_str());
-        return false;
-    }
-
-    // Ensure parent path exists
-    if (!fileSystem->CreateDirsRecursive(GetParentPath(destination)))
-        return false;
-
-    if (!fileSystem->Rename(source, destination))
-    {
-        URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", source.c_str(), destination.c_str());
-        return false;
-    }
-
-    const ea::string sourceDir = AddTrailingSlash(source);
-    const ea::string destinationDir = AddTrailingSlash(destination);
-
-    // Update loaded resource information
-    for (auto& groupPair : resourceGroups_)
-    {
-        bool movedAny = false;
-        auto resourcesCopy = groupPair.second.resources_;
-        for (auto& resourcePair : resourcesCopy)
-        {
-            SharedPtr<Resource> resource = resourcePair.second;
-            ea::string newName;
-            ea::string newNativeFileName;
-            if (dirMode)
-            {
-                if (!resource->GetName().starts_with(resourceName))
-                    continue;
-                newName = destinationName + resource->GetName().substr(resourceName.length());
-
-                newNativeFileName = resource->GetAbsoluteFileName();
-                if (newNativeFileName.starts_with(sourceDir))
-                    newNativeFileName.replace(0u, sourceDir.length(), destinationDir);
-            }
-            else if (resource->GetName() != resourceName)
-                continue;
-            else
-            {
-                newName = destinationName;
-                newNativeFileName = destination;
-            }
-
-            if (vfs->IsWatching())
-            {
-                ignoreResourceAutoReload_.emplace_back(destinationName);
-                ignoreResourceAutoReload_.emplace_back(resource->GetName());
-            }
-
-            groupPair.second.resources_.erase(resource->GetNameHash());
-            resource->SetName(newName);
-            resource->SetAbsoluteFileName(newNativeFileName);
-            groupPair.second.resources_[resource->GetNameHash()] = resource;
-            movedAny = true;
-
-            using namespace ResourceRenamed;
-            SendEvent(E_RESOURCERENAMED,
-                ea::forward_as_tuple(P_FROM, resourceName),
-                ea::forward_as_tuple(P_TO, destinationName));
-        }
-        if (movedAny)
-            UpdateResourceGroup(groupPair.first);
-    }
-
-    if (dirMode)
-    {
-        using namespace ResourceRenamed;
-        SendEvent(E_RESOURCERENAMED,
-            ea::forward_as_tuple(P_FROM, resourceName),
-            ea::forward_as_tuple(P_TO, destinationName));
-    }
-
-    return true;
-}
-
 void ResourceCache::IgnoreResourceReload(const ea::string& name)
 {
     ignoreResourceAutoReload_.emplace_back(name);
@@ -1190,22 +997,38 @@ void ResourceCache::IgnoreResourceReload(const Resource* resource)
     IgnoreResourceReload(resource->GetName());
 }
 
-void ResourceCache::RouteResourceName(ea::string& name, ResourceRequest requestType) const
+void ResourceCache::RouteResourceName(FileIdentifier& name) const
 {
-    name = SanitateResourceName(name);
-    if (!isRouting_)
-    {
-        isRouting_ = true;
-        for (unsigned i = 0; i < resourceRouters_.size(); ++i)
-            resourceRouters_[i]->Route(name, requestType);
-        isRouting_ = false;
-    }
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+    name = vfs->GetCanonicalIdentifier(name);
+
+    thread_local bool reentrancyGuard = false;
+    if (reentrancyGuard)
+        return;
+
+    reentrancyGuard = true;
+    for (ResourceRouter* router : resourceRouters_)
+        router->Route(name);
+    reentrancyGuard = false;
 }
 
 void ResourceCache::Clear()
 {
     resourceGroups_.clear();
     dependentResources_.clear();
+}
+
+FileIdentifier ResourceCache::GetCanonicalIdentifier(const FileIdentifier& name) const
+{
+    auto* vfs = GetSubsystem<VirtualFileSystem>();
+    return vfs->GetCanonicalIdentifier(name);
+}
+
+FileIdentifier ResourceCache::GetResolvedIdentifier(const FileIdentifier& name) const
+{
+    FileIdentifier result = name;
+    RouteResourceName(result);
+    return result;
 }
 
 }

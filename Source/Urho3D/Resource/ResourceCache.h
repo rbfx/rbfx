@@ -27,6 +27,7 @@
 #include "Urho3D/Container/Ptr.h"
 #include "Urho3D/Core/Mutex.h"
 #include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileIdentifier.h"
 #include "Urho3D/IO/ScanFlags.h"
 #include "Urho3D/Resource/Resource.h"
 
@@ -61,15 +62,9 @@ struct ResourceGroup
     ea::unordered_map<StringHash, SharedPtr<Resource> > resources_;
 };
 
-/// Resource request types.
-enum ResourceRequest
-{
-    RESOURCE_CHECKEXISTS = 0,
-    RESOURCE_GETFILE = 1
-};
 
-/// Optional resource request processor. Can deny requests, re-route resource file names, or perform other processing per request.
-/// @nobindtemp
+/// Optional resource request processor.
+/// Can deny requests, re-route resource file names, or perform other processing per request.
 class URHO3D_API ResourceRouter : public Object
 {
 public:
@@ -79,8 +74,9 @@ public:
     {
     }
 
-    /// Process the resource request and optionally modify the resource name string. Empty name string means the resource is not found or not allowed.
-    virtual void Route(ea::string& name, ResourceRequest requestType) = 0;
+    /// Process the resource request and optionally modify the resource identifier.
+    /// Empty identifier means the resource is not found or not allowed.
+    virtual void Route(FileIdentifier& name) = 0;
 };
 
 /// %Resource cache subsystem. Loads resources on demand and stores them for later access.
@@ -198,8 +194,6 @@ public:
     ea::string GetPreferredResourceDir(const ea::string& path) const;
     /// Remove unsupported constructs from the resource name to prevent ambiguity, and normalize absolute filename to resource path relative if possible.
     ea::string SanitateResourceName(const ea::string& name) const;
-    /// Remove unnecessary constructs from a resource directory name and ensure it to be an absolute path.
-    ea::string SanitateResourceDirName(const ea::string& name) const;
     /// Store a dependency for a resource. If a dependency file changes, the resource will be reloaded.
     void StoreResourceDependency(Resource* resource, const ea::string& dependency);
     /// Reset dependencies for a resource.
@@ -213,17 +207,19 @@ public:
         ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const;
     /// Returns a formatted string containing the currently loaded resources with optional type name filter.
     ea::string PrintResources(const ea::string& typeName = EMPTY_STRING) const;
-    /// Renames resource without deleting it from cache. `source` and `destination` may be resource names or absolute
-    /// paths to files in resource directories. If destination is a resource name then source file is renamed within same data directory.
-    bool RenameResource(const ea::string& source, const ea::string& destination);
     /// When resource auto-reloading is enabled ignore reloading resource once.
     void IgnoreResourceReload(const ea::string& name);
     /// When resource auto-reloading is enabled ignore reloading resource once.
     void IgnoreResourceReload(const Resource* resource);
     /// Pass name through resource routers and return final resource name.
-    void RouteResourceName(ea::string& name, ResourceRequest requestType) const;
+    void RouteResourceName(FileIdentifier& name) const;
     /// Clear all resources from resource cache.
     void Clear();
+
+    /// Return canonical resource identifier without resource routing.
+    FileIdentifier GetCanonicalIdentifier(const FileIdentifier& name) const;
+    /// Return canonical resource identifier with resource routing applied.
+    FileIdentifier GetResolvedIdentifier(const FileIdentifier& name) const;
 
 private:
     /// Find a resource.
@@ -253,8 +249,6 @@ private:
     bool returnFailedResources_;
     /// Search priority flag.
     bool searchPackagesFirst_;
-    /// Resource routing flag to prevent endless recursion.
-    mutable bool isRouting_;
     /// How many milliseconds maximum per frame to spend on finishing background loaded resources.
     int finishBackgroundResourcesMs_;
     /// List of resources that will not be auto-reloaded if reloading event triggers.
