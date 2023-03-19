@@ -73,8 +73,8 @@ private:
     /// URI reversed from the file name.
     ea::string reversedUri_;
 
-    /// Scan path
-    ea::string scanPath_{"Materials"};
+    /// Scan path and scheme.
+    FileIdentifier scanPath_{"", "Materials"};
     /// Scan filter
     ea::string scanFilter_{"*.*"};
     /// Whether to scan recursively.

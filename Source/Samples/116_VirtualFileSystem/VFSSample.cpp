@@ -176,12 +176,18 @@ void VFSSample::RenderUi()
         ui::Separator();
 
         bool needScan = ui::IsWindowAppearing();
-        ui::Text("scan path:");
+
+        ui::Text("scheme:");
         ui::SameLine();
-        if (ui::InputText("##scanpath", &scanPath_))
+        if (ui::InputText("##scanscheme", &scanPath_.scheme_))
             needScan = true;
 
-        ui::Text("scan filter:");
+        ui::Text("path:");
+        ui::SameLine();
+        if (ui::InputText("##scanpath", &scanPath_.fileName_))
+            needScan = true;
+
+        ui::Text("filter:");
         ui::SameLine();
         if (ui::InputText("##scanfilter", &scanFilter_))
             needScan = true;
@@ -207,12 +213,15 @@ void VFSSample::RenderUi()
             vfs->Scan(scanResults_, scanPath_, scanFilter_, scanFlags);
         }
 
-        ui::Text("scan results:");
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("scan results:");
+        }
         if (ui::BeginListBox("##results"))
         {
             for (unsigned i = 0; i < scanResults_.size(); i++)
             {
-                const auto result = FileIdentifier{EMPTY_STRING, scanPath_} + scanResults_[i];
+                const auto result = scanPath_ + scanResults_[i];
                 ui::Selectable(result.fileName_.c_str(), false);
             }
             ui::EndListBox();
