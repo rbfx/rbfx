@@ -178,10 +178,12 @@ namespace Urho3D
         }
 
         // Remove suffixes from constant buffers
-        sourceCode.replace("Camera"+cbufferSuffix, "Camera");
-        sourceCode.replace("Object"+cbufferSuffix, "Object");
-        sourceCode.replace("Camera"+cbufferSuffix, "Camera");
-        sourceCode.replace("Object"+cbufferSuffix, "Object");
+        {
+            size_t i = 0;
+            do {
+                sourceCode.replace(Format("{}{}", shaderParameterGroupNames[i], cbufferSuffix), shaderParameterGroupNames[i]);
+            } while (shaderParameterGroupNames[++i] != nullptr);
+        }
 
         HRESULT hr = D3DCompile(
             sourceCode.data(),

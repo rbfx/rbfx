@@ -368,15 +368,15 @@ static const char* shaderParameterGroupNames[] = {
 #ifdef URHO3D_DILIGENT
 //TODO: Refactor ShaderVariant to use this
 static const char* elementSemanticNames[] = {
-    "SEM_POSITION",
-    "SEM_NORMAL",
-    "SEM_BINORMAL",
-    "SEM_TANGENT",
-    "SEM_TEXCOORD",
-    "SEM_COLOR",
-    "SEM_BLENDWEIGHT",
-    "SEM_BLENDINDICES",
-    "SEM_OBJECTINDEX",
+    "POSITION",
+    "NORMAL",
+    "BINORMAL",
+    "TANGENT",
+    "TEXCOORD",
+    "COLOR",
+    "BLENDWEIGHT",
+    "BLENDINDICES",
+    "OBJECTINDEX",
     nullptr
 };
 static ea::unordered_map<ea::string, ShaderParameterGroup> constantBuffersNamesLookup = {

@@ -387,6 +387,7 @@ bool ShaderVariation::Compile()
     ShaderCompiler compiler(compilerDesc);
     if (!compiler.Compile()) {
         URHO3D_LOGERROR("Failed to compile shader " + GetFullName());
+        URHO3D_LOGERROR(compiler.GetCompilerOutput());
         return false;
     }
 
