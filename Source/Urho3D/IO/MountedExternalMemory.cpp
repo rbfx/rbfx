@@ -106,23 +106,8 @@ void MountedExternalMemory::Scan(
 
     for (const auto& [name, _] : files_)
     {
-        if (!name.starts_with(pathName))
-            continue;
-
-        if (!filterExtension.empty() && !name.ends_with(filterExtension, false))
-            continue;
-
-        if (!recursive)
-        {
-            ea::string_view fileName = ea::string_view{name}.substr(pathName.length());
-            if (fileName.starts_with('/'))
-                fileName = fileName.substr(1);
-
-            if (fileName.find('/') != ea::string_view::npos)
-                continue;
-        }
-
-        result.push_back(name);
+        if (MatchFileName(name, pathName, filterExtension, flags.Test(SCAN_RECURSIVE)))
+            result.push_back(TrimPathPrefix(name, pathName));
     }
 }
 

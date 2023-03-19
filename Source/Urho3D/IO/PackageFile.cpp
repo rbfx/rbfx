@@ -172,14 +172,7 @@ void PackageFile::Scan(
         result.clear();
 
     const bool recursive = flags.Test(SCAN_RECURSIVE);
-    const ea::string sanitizedPath = GetSanitizedPath(pathName);
-
-    ea::string filterExtension;
-    const unsigned dotPos = filter.find_last_of('.');
-    if (dotPos != ea::string::npos)
-        filterExtension = filter.substr(dotPos);
-    if (filterExtension.contains('*'))
-        filterExtension.clear();
+    const ea::string filterExtension = GetExtensionFromFilter(filter);
 
     bool caseSensitive = true;
 #ifdef _WIN32
@@ -188,20 +181,10 @@ void PackageFile::Scan(
 #endif
 
     const StringVector& entryNames = GetEntryNames();
-    for (auto i = entryNames.begin(); i != entryNames.end(); ++i)
+    for (const ea::string& entryName : entryNames)
     {
-        const ea::string entryName = GetSanitizedPath(*i);
-        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive))
-            && entryName.starts_with(sanitizedPath, caseSensitive))
-        {
-            ea::string fileName = entryName.substr(sanitizedPath.length());
-            if (fileName.starts_with("\\") || fileName.starts_with("/"))
-                fileName = fileName.substr(1, fileName.length() - 1);
-            if (!recursive && (fileName.contains("\\") || fileName.contains("/")))
-                continue;
-
-            result.push_back(fileName);
-        }
+        if (MatchFileName(entryName, pathName, filterExtension, recursive, caseSensitive))
+            result.push_back(TrimPathPrefix(entryName, pathName));
     }
 }
 
