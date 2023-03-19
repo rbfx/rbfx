@@ -52,10 +52,19 @@ namespace Urho3D
         {
             assert(desc_.vertexShader_);
             // Create LayoutElement based vertex shader input layout
-            const ea::vector<VertexElement>& vertexElements = desc_.vertexShader_->GetVertexElements();
+            const ea::vector<VertexElement>& shaderVertexElements = desc_.vertexShader_->GetVertexElements();
             ea::vector<VertexElement> vertexBufferElements(desc_.vertexElements_.begin(), desc_.vertexElements_.begin() + desc_.numVertexElements_);
             unsigned attribCount = 0;
-            for (const VertexElement* shaderVertexElement = vertexElements.begin(); shaderVertexElement != vertexElements.end(); ++shaderVertexElement) {
+
+            /*ea::string dbgShaderVertexElements = "";
+            ea::string dbgVertexBufferElements = "";
+
+            for (auto shaderVertexElement = shaderVertexElements.begin(); shaderVertexElement != shaderVertexElements.end(); ++shaderVertexElement)
+                dbgShaderVertexElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n", elementSemanticNames[shaderVertexElement->semantic_], shaderVertexElement->index_, shaderVertexElement->offset_));
+            for (auto vertexBufferElement = vertexBufferElements.begin(); vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement)
+                dbgVertexBufferElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n", elementSemanticNames[vertexBufferElement->semantic_], vertexBufferElement->index_, vertexBufferElement->offset_));*/
+
+            for (const VertexElement* shaderVertexElement = shaderVertexElements.begin(); shaderVertexElement != shaderVertexElements.end(); ++shaderVertexElement) {
                 LayoutElement layoutElement = {};
                 layoutElement.InputIndex = attribCount;
 

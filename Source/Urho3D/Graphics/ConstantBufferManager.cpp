@@ -19,7 +19,10 @@ namespace Urho3D
             ticket->id_ = data_[grp]->tickets_.size();
             data_[grp]->tickets_.push_back(ticket);
         }
-        return data_[grp]->tickets_[nextTicket++].get();
+        
+        ConstantBufferManagerTicket* ticket = data_[grp]->tickets_[nextTicket++].get();
+        data_[grp]->nextTicket_ = nextTicket;
+        return ticket;
     }
     void ConstantBufferManager::Reset(ShaderParameterGroup grp)
     {
@@ -66,8 +69,9 @@ namespace Urho3D
             return;
 
         auto ticket = data->tickets_[ticketId];
+        const void* bufferData = ticket->data_.data();
         // Write data into buffer
-        data->cbuffer_->Update(ticket->data_.data());
+        data->cbuffer_->Update(bufferData);
         data->prevTicketDispatched_ = ticketId;
     }
     void ConstantBufferManager::Finalize()
