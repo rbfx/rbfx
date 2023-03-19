@@ -991,9 +991,8 @@ void RegisterResourceLibrary(Context* context)
 
 void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
-
     auto* vfs = GetSubsystem<VirtualFileSystem>();
-    vfs->Scan(result, pathName, filter, flags);
+    vfs->Scan(result, FileIdentifier::FromUri(pathName), filter, flags);
 
     // Filtering copied from PackageFile::Scan().
     ea::string sanitizedPath = GetSanitizedPath(pathName);
