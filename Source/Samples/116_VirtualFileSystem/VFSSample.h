@@ -25,6 +25,8 @@
 
 #include "Sample.h"
 
+#include <Urho3D/IO/FileIdentifier.h>
+
 /// This first example, maintaining tradition, prints a "Hello World" message.
 /// Furthermore it shows:
 ///     - Using the Sample / Application classes, which initialize the Urho3D engine and run the main loop
@@ -54,4 +56,19 @@ protected:
 private:
     /// Construct a new Text instance, containing the 'Hello World' String, and add it to the UI root element.
     void CreateText();
+    /// Render interactive UI for testing.
+    void RenderUi();
+
+    /// Input URI string.
+    ea::string uri_{"Models/Box.mdl"};
+    /// Parsed URI.
+    FileIdentifier fileIdentifier_;
+    /// Whether the file exists.
+    bool exists_{};
+    /// Absolute path to the file.
+    ea::string absoluteFileName_;
+    /// File opened for reading.
+    AbstractFilePtr readOnlyFile_;
+    /// URI reversed from the file name.
+    ea::string reversedUri_;
 };
