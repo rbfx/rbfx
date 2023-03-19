@@ -161,6 +161,11 @@ void DrawCommandQueue::Execute()
         }
 
 #ifdef URHO3D_DILIGENT
+        ShaderResourceBindingCacheCreateInfo ci;
+        ci.pipeline_ = cmd.pipelineState_;
+        /*bool stopDebugger = false;
+        if (cmd.pipelineState_->GetDesc().debugName_ == ea::string("DrawablePipeline - Materials/StoneTiled.xml"))
+            stopDebugger = true;*/
         // On Diligent backend, we need to create Shader Resource Binding and attach on device context.
         {
             //if (cmd.pipelineState_ != srbCacheCI.pipeline_) {
@@ -196,11 +201,17 @@ void DrawCommandQueue::Execute()
             //        srbCacheCI.constantBuffers_[i] = cbuffer;
             //    }
             //}
-            ShaderResourceBindingCacheCreateInfo ci;
-            ci.pipeline_ = cmd.pipelineState_;
+            auto HasTextureUnit = [=](const PipelineStateDesc& desc, TextureUnit unit) {
+                ShaderVariation* vs = desc.vertexShader_;
+                ShaderVariation* ps = desc.pixelShader_;
+
+                if ((vs && vs->HasTextureUnit(unit)) || (ps && ps->HasTextureUnit(unit)))
+                    return true;
+                return false;
+            };
             for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i) {
                 const auto& unitAndResource = shaderResources_[i];
-                if (unitAndResource.texture_ != nullptr)
+                if (unitAndResource.texture_ != nullptr && HasTextureUnit(currentPipelineState->GetDesc(), unitAndResource.unit_))
                     ci.textures_[unitAndResource.unit_] = unitAndResource.texture_;
             }
 

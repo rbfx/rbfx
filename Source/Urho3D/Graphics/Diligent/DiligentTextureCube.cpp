@@ -125,7 +125,7 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
     unsigned char* src = (unsigned char*)data;
     unsigned rowSize = GetRowDataSize(width);
     unsigned rowStart = GetRowDataSize(x);
-    unsigned subResource = D3D11CalcSubresource(level, face, levels_);
+    unsigned subResource = level + (face * levels_);
 
     Box destBox;
     destBox.MinX = x;

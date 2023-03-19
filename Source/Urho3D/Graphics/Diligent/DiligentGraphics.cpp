@@ -799,9 +799,6 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     assert(impl_->renderTargetViews_[0]);
     PrepareDraw();
-    URHO3D_LOGWARNING("FIX-ME");
-    ITextureView* rts[] = { impl_->swapChain_->GetCurrentBackBufferRTV() };
-    impl_->deviceContext_->SetRenderTargets(1, rts, impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     unsigned primitiveCount;
     D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;

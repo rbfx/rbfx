@@ -15,30 +15,23 @@ namespace Urho3D
 
         ShaderResourceBinding* result = nullptr;
         if (srbIt != srbMap_.end())
-            result = srbIt->second;
+            return srbIt->second;
 
-        if (result == nullptr) {
-            ShaderResourceBinding* srb = createInfo.pipeline_->CreateSRB();
+        ShaderResourceBinding* srb = createInfo.pipeline_->CreateSRB();
 
-            for (unsigned i = 0; i < createInfo.constantBuffers_.size(); ++i) {
-                ConstantBuffer* cbuffer = createInfo.constantBuffers_[i];
-                if (cbuffer)
-                    srb->SetConstantBuffer((ShaderParameterGroup)i, SharedPtr<ConstantBuffer>(cbuffer));
-            }
-            for (unsigned i = 0; i < createInfo.textures_.size(); ++i) {
-                Texture* tex = createInfo.textures_[i];
-                if (tex)
-                    srb->SetTexture((TextureUnit)i, SharedPtr<Texture>(tex));
-            }
-
-            if (srbIt != srbMap_.end())
-                srbIt->second = WeakPtr<ShaderResourceBinding>(srb);
-            else
-                srbMap_.insert(ea::make_pair(hash, WeakPtr<ShaderResourceBinding>(srb)));
-            result = srb;
+        for (unsigned i = 0; i < createInfo.constantBuffers_.size(); ++i) {
+            ConstantBuffer* cbuffer = createInfo.constantBuffers_[i];
+            if (cbuffer)
+                srb->SetConstantBuffer((ShaderParameterGroup)i, SharedPtr<ConstantBuffer>(cbuffer));
+        }
+        for (unsigned i = 0; i < createInfo.textures_.size(); ++i) {
+            Texture* tex = createInfo.textures_[i];
+            if (tex)
+                srb->SetTexture((TextureUnit)i, SharedPtr<Texture>(tex));
         }
 
-        return result;
+        srbMap_.insert(ea::make_pair(hash, WeakPtr<ShaderResourceBinding>(srb)));
+        return srb;
     }
 
 }

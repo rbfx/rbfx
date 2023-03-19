@@ -28,16 +28,14 @@ namespace Urho3D
             CombineHash(hash_, constantBuffers_[i]->ToHash());
         }
 
-        ea::unordered_map<ea::string, bool> mappedTex;
         const SHADER_TYPE shaderTypes[] = {
             SHADER_TYPE_VERTEX,
             SHADER_TYPE_PIXEL,
             SHADER_TYPE_GEOMETRY,
             SHADER_TYPE_DOMAIN,
-            SHADER_TYPE_HULL,
-            SHADER_TYPE_COMPUTE
+            SHADER_TYPE_HULL
         };
-        StringVector strList;
+        ea::vector<ea::shared_ptr<ea::string>> strList;
         for (unsigned i = 0; i < _countof(shaderTypes); ++i) {
             SHADER_TYPE shaderType = shaderTypes[i];
             // Extract Shader Resource Textures used on all stages
@@ -46,15 +44,13 @@ namespace Urho3D
                 IShaderResourceVariable* shaderResVar = shaderResBinding->GetVariableByIndex(shaderType, j);
                 ShaderResourceDesc shaderResDesc;
                 shaderResVar->GetResourceDesc(shaderResDesc);
+
+                if (shaderResDesc.Type == SHADER_RESOURCE_TYPE_CONSTANT_BUFFER || shaderResDesc.Type == SHADER_RESOURCE_TYPE_SAMPLER)
+                    continue;
                 ea::string shaderResName = shaderResDesc.Name;
 
                 if (shaderResName.starts_with("t"))
                     shaderResName = shaderResName.substr(1, shaderResName.size());
-
-                // If texture has been already mapped, skip then.
-                if (mappedTex.contains(shaderResName))
-                    continue;
-
 
                 auto texUnitIt = DiligentTextureUnitLookup.find(shaderResName);
                 if (texUnitIt == DiligentTextureUnitLookup.end())
@@ -62,13 +58,7 @@ namespace Urho3D
 
                 assert(textures_[texUnitIt->second] != nullptr);
 
-                ea::string resTexName = shaderResName;
-                ea::string resSamplerName = shaderResName;
-
-                resTexName = "t" + resTexName;
-                resSamplerName = "s" + resSamplerName;
-
-                strList.push_back(resTexName);
+                ea::shared_ptr<ea::string> resSamplerName = ea::make_shared<ea::string>(Format("s{}",shaderResName));
                 strList.push_back(resSamplerName);
 
                 Texture* tex = textures_[texUnitIt->second];
@@ -79,16 +69,13 @@ namespace Urho3D
 
                 {   // Add Texture Resource
                     ResourceMappingEntry resMap;
-                    resMap.Name = resTexName.c_str();
+                    resMap.Name = shaderResDesc.Name;
                     resMap.pObject = static_cast<IDeviceObject*>(tex->GetShaderResourceView());
-
-                    mappedTex.insert(ea::make_pair(shaderResDesc.Name, true));
-
                     resourceEntries.push_back(resMap);
                 }
                 {   // Add Texture Sampler
                     ResourceMappingEntry resMap;
-                    resMap.Name = resSamplerName.c_str();
+                    resMap.Name = resSamplerName->c_str();
                     resMap.pObject = static_cast<IDeviceObject*>(tex->GetSampler());
                     resourceEntries.push_back(resMap);
                 }
@@ -100,6 +87,7 @@ namespace Urho3D
         Diligent::IResourceMapping* resMapping = resMappingCache->CreateOrGetResourceMap(resourceEntries);
         shaderResBinding->BindResources(SHADER_TYPE_ALL, resMapping, BIND_SHADER_RESOURCES_UPDATE_ALL);
 
+        strList.clear();
         dirty_ = false;
     }
 }

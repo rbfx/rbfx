@@ -150,6 +150,7 @@ namespace Urho3D
         { "LightRampMap", TextureUnit::TU_LIGHTRAMP },
         { "LightSpotMap", TextureUnit::TU_LIGHTSHAPE },
         { "LightShapeMap", TextureUnit::TU_LIGHTSHAPE },
+        { "LightCubeMap", TextureUnit::TU_LIGHTSHAPE },
         { "LightBufferMap", TextureUnit::TU_LIGHTBUFFER },
         { "LightBuffer", TextureUnit::TU_LIGHTBUFFER },
         { "ShadowMap", TextureUnit::TU_SHADOWMAP },

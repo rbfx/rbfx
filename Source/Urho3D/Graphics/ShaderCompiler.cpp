@@ -499,6 +499,9 @@ namespace Urho3D
                 return type;
             };
             for (SpvReflectInterfaceVariable** it = inputVars.begin(); it != inputVars.end(); ++it) {
+                // Skip gl_VertexId and gl_InstanceID
+                if ((*it)->built_in != -1)
+                    continue;
                 ea::string inputName((*it)->name == nullptr ? "" : (*it)->name);
                 ea::string inputNameWithoutIdx = inputName;
 
@@ -543,8 +546,8 @@ namespace Urho3D
 
                 auto cBufferLookupValue = constantBuffersNamesLookup.find(bindingName);
                 if (cBufferLookupValue == constantBuffersNamesLookup.end()) {
-                    spvReflectDestroyShaderModule(&module);
                     URHO3D_LOGERRORF("Failed to reflect shader constant buffer for %s shader. Invalid constant buffer name: %s", desc_.name_, bindingName);
+                    spvReflectDestroyShaderModule(&module);
                     return false;
                 }
 
@@ -561,10 +564,10 @@ namespace Urho3D
                     parameters_[varName] = ShaderParameter { desc_.type_ ,varName, variable.offset, variable.size, (unsigned)cBufferLookupValue->second };
                 }
             }
-            else if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
+            else if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
                 assert(binding->name);
                 ea::string name(binding->name);
-                if (name.at(0) == 't')
+                if (name.at(0) == 's')
                     name = name.substr(1, name.size());
                 auto texUnitLookupVal = DiligentTextureUnitLookup.find(name);
                 if (texUnitLookupVal == DiligentTextureUnitLookup.end()) {

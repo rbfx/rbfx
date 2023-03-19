@@ -130,6 +130,9 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     Renderer* renderer = GetSubsystem<Renderer>();
 
     PipelineStateDesc desc;
+#ifdef URHO3D_DEBUG
+    desc.debugName_ = "UI Batch Pipeline - "+key.material_->GetName();
+#endif
     desc.InitializeInputLayout(GeometryBufferArray{ { ctx.vertexBuffer_ }, ctx.indexBuffer_, nullptr });
     desc.primitiveType_ = TRIANGLE_LIST;
     desc.colorWriteEnabled_ = true;
