@@ -124,7 +124,11 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
 
         compositor_->ProcessUserBatch(shaderProgramDesc_, batchCompositorPass->GetFlags(),
             key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_, light, hasShadow, subpass);
+#ifdef  URHO3D_DEBUG
+        pipelineStateDesc_.debugName_ = Format("DrawablePipeline - {}",key.material_->GetName());
+#endif
         SetupUserPassState(key.drawable_, key.material_, key.pass_, lightMaskToStencil);
+
 
         // Support negative lights
         if (light && light->IsNegative())
@@ -217,6 +221,12 @@ void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* light
 void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
     const Material* material, const Pass* pass, bool lightMaskToStencil)
 {
+    #ifdef URHO3D_DILIGENT
+    // TODO: Change this or refactor code in a deal way
+    pipelineStateDesc_.renderTargetsFormats_.resize(1);
+    pipelineStateDesc_.renderTargetsFormats_[0] = graphics_->GetSwapChainRTFormat();
+    pipelineStateDesc_.depthStencilFormat_ = graphics_->GetSwapChainDepthFormat();
+    #endif
     pipelineStateDesc_.depthWriteEnabled_ = pass->GetDepthWrite();
     pipelineStateDesc_.depthCompareFunction_ = pass->GetDepthTestMode();
 

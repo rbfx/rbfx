@@ -454,7 +454,11 @@ void Graphics::EndFrame()
         URHO3D_PROFILE("Present");
 
         SendEvent(E_ENDRENDERING);
+        ITextureView* currentTexture = impl_->swapChain_->GetCurrentBackBufferRTV();
         impl_->swapChain_->Present(screenParams_.vsync_ ? 1 : 0);
+
+        if (currentTexture == impl_->renderTargetViews_[0])
+            impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
     }
 
     // Clean up too large scratch buffers
@@ -477,18 +481,22 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
     // Clear always clears the whole target regardless of viewport or scissor test settings
     // Emulate partial clear by rendering a quad
     if (!viewport_.left_ && !viewport_.top_ && viewport_.right_ == rtSize.x_ && viewport_.bottom_ == rtSize.y_) {
+        BeginDebug("Clear");
+        SetDepthWrite(true);
         PrepareDraw();
 
         if (flags & CLEAR_COLOR && impl_->renderTargetViews_[0])
             impl_->deviceContext_->ClearRenderTarget(impl_->renderTargetViews_[0], color.Data(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-        if (flags & (CLEAR_DEPTH | CLEAR_STENCIL)) {
+
+        if (flags & (CLEAR_DEPTH | CLEAR_STENCIL)&& impl_->depthStencilView_) {
             CLEAR_DEPTH_STENCIL_FLAGS clearFlags = CLEAR_DEPTH_FLAG_NONE;
             if (flags & CLEAR_DEPTH)
-                clearFlags = CLEAR_DEPTH_FLAG;
+                clearFlags |= CLEAR_DEPTH_FLAG;
             if (flags & CLEAR_STENCIL)
-                clearFlags = CLEAR_STENCIL_FLAG;
+                clearFlags |= CLEAR_STENCIL_FLAG;
             impl_->deviceContext_->ClearDepthStencil(impl_->depthStencilView_, clearFlags, depth, (Uint8)stencil, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
         }
+        EndDebug();
     }
     else {
         ClearPipelineDesc clearDesc;
@@ -511,7 +519,14 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
 
         DrawAttribs drawAttribs;
         drawAttribs.NumVertices = 4;
+#ifdef URHO3D_DEBUG
+        impl_->deviceContext_->BeginDebugGroup("Clear w/ Blit");
         impl_->deviceContext_->Draw(drawAttribs);
+        impl_->deviceContext_->EndDebugGroup();
+#else
+        impl_->deviceContext->Draw(drawAttribs);
+#endif
+        
     }
     /*bool oldColorWrite = colorWrite_;
     bool oldDepthWrite = depthWrite_;*/
@@ -782,7 +797,10 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     if (!indexCount || !instanceCount || !pipelineState_)
         return;
 
+    assert(impl_->renderTargetViews_[0]);
     PrepareDraw();
+    ITextureView* rts[] = { impl_->swapChain_->GetCurrentBackBufferRTV() };
+    impl_->deviceContext_->SetRenderTargets(1, rts, impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     unsigned primitiveCount;
     D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
@@ -1401,9 +1419,13 @@ void Graphics::SetDepthTest(CompareMode mode)
 
 void Graphics::SetDepthWrite(bool enable)
 {
-    if (enable != depthWrite_)
+    if (!pipelineState_) {
+        impl_->depthStateDirty_ = true;
+        impl_->depthStateDirty_ = true;
+        return;
+    }
+    if (enable != pipelineState_->GetDesc().depthWriteEnabled_)
     {
-        depthWrite_ = enable;
         impl_->depthStateDirty_ = true;
         // Also affects whether a read-only version of depth-stencil should be bound, to allow sampling
         impl_->renderTargetsDirty_ = true;
@@ -2416,7 +2438,6 @@ void Graphics::PrepareDraw()
         impl_->renderTargetsDirty_ = false;
     }
     unsigned rtCount = MAX_RENDERTARGETS;
-
     if (pipelineState_)
         rtCount = pipelineState_->GetDesc().renderTargetsFormats_.size();
     impl_->deviceContext_->SetRenderTargets(rtCount, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
@@ -2639,6 +2660,19 @@ void Graphics::PrepareDraw()
 
         impl_->deviceContext_->SetScissorRects(1, &rect, impl_->swapChain_->GetDesc().Width, impl_->swapChain_->GetDesc().Height);
     }
+}
+
+void Graphics::BeginDebug(const ea::string_view& dbgName) {
+    impl_->deviceContext_->BeginDebugGroup(dbgName.data());
+}
+void Graphics::BeginDebug(const ea::string& dbgName) {
+    impl_->deviceContext_->BeginDebugGroup(dbgName.data());
+}
+void Graphics::BeginDebug(const char* dbgName) {
+    impl_->deviceContext_->BeginDebugGroup(dbgName);
+}
+void Graphics::EndDebug() {
+    impl_->deviceContext_->EndDebugGroup();
 }
 
 void Graphics::CreateResolveTexture()

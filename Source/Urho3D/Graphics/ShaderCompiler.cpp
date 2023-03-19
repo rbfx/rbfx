@@ -7,12 +7,52 @@
 #include <d3dcompiler.h>
 #include <comdef.h>
 #endif
+#include <SPIRV-Reflect/spirv_reflect.h>
 
-#ifdef URHO3D_SPIRV
+#ifdef URHO3D_DILIGENT
+#include "../Graphics/Diligent/DiligentLookupSettings.h"
 #endif
 
 namespace Urho3D
 {
+#ifdef URHO3D_SPIRV
+    static const ea::unordered_map<ea::string, VertexElementSemantic> semanticsMapping = {
+        { "iPos", SEM_POSITION },
+        { "iNormal", SEM_NORMAL },
+        { "iColor", SEM_COLOR },
+        { "iTexCoord", SEM_TEXCOORD },
+        { "iTangent", SEM_TANGENT },
+        { "iBlendWeights", SEM_BLENDWEIGHTS },
+        { "iBlendIndices", SEM_BLENDINDICES },
+        { "iObjectIndex", SEM_OBJECTINDEX }
+    };
+    static const char* cbufferSuffixes[] = {
+        "VS", "PS", "GS", "HS", "DS", "CS"
+    };
+    static const char* samplerNames[] = {
+        "DiffMap",
+        "DiffCubeMap",
+        "NormalMap",
+        "SpecMap",
+        "EmissiveMap",
+        "EnvMap",
+        "EnvCubeMap",
+        "LightRampMap",
+        "LightSpotMap",
+        "LightCubeMap",
+        "ShadowMap",
+        "VolumeMap",
+        "DepthBuffer",
+        "ZoneCubeMap",
+        "ZoneVolumeMap",
+        nullptr
+    };
+
+    static void sanitizeCBName(ea::string& cbName) {
+        for (unsigned i = 0; i < MAX_SHADER_TYPES; ++i)
+            cbName.replace(cbufferSuffixes[i], "");
+    }
+#endif
     ShaderCompiler::ShaderCompiler(ShaderCompilerDesc desc) : desc_(desc)
     {
         textureSlots_.fill(false);
@@ -20,6 +60,15 @@ namespace Urho3D
     }
     bool ShaderCompiler::Compile()
     {
+        textureSlots_.fill(false);
+        constantBufferSlots_.fill(false);
+        vertexElements_.clear();
+        parameters_.clear();
+        byteCode_.clear();
+        compilerOutput_.clear();
+#ifdef URHO3D_DILIGENT
+        inputLayoutMapping_.clear();
+#endif
         if (desc_.language_ == ShaderLanguage::HLSL) {
 #ifdef WIN32
             return CompileHLSL();
@@ -79,7 +128,6 @@ namespace Urho3D
             profile = "cs_5_0";
             break;
         }
-
 
         ea::vector<D3D_SHADER_MACRO> macros;
         macros.reserve(desc_.defines_.Size());
@@ -298,8 +346,6 @@ namespace Urho3D
                 }
                 return type;
             };
-            ea::array<uint8_t, MAX_VERTEX_ELEMENT_SEMANTICS> repeatedSemantics;
-            repeatedSemantics.fill(0);
 
             for (uint8_t i = 0; i < shaderDesc.InputParameters; ++i) {
                 D3D11_SIGNATURE_PARAMETER_DESC paramDesc;
@@ -310,13 +356,12 @@ namespace Urho3D
                         VertexElement(
                             GetElementType(paramDesc),
                             semantic,
-                            repeatedSemantics[semantic]
+                            paramDesc.SemanticIndex
                         )
                     );
 #ifdef URHO3D_DILIGENT
                     inputLayoutMapping_.push_back(ea::make_pair(paramDesc.SemanticIndex, semantic));
 #endif
-                    ++repeatedSemantics[semantic];
                 }
             }
         }
@@ -370,7 +415,7 @@ namespace Urho3D
     {
         ea::string sourceCode = desc_.code_;
         ea::vector<unsigned> byteCode;
-        if (CompileGLSLToSpirV(
+        if (!CompileGLSLToSpirV(
             desc_.type_,
             desc_.code_,
             desc_.defines_,
@@ -380,8 +425,189 @@ namespace Urho3D
             URHO3D_LOGERROR("Failed to compile " + desc_.name_);
             return false;
         }
-        assert(0);
+        size_t byteCodeSize = sizeof(unsigned) * byteCode.size();
+        if (!ReflectGLSL(byteCode.data(), byteCodeSize))
+            return false;
+
+#ifdef URHO3D_DILIGENT
+        // On Diligent Mode, we must convert GLSL to HLSL for better compatibility
+        // Of course we can use GLSL only for OpenGL but this won't work if we
+        // choose another backend like D3D, Metal(MoltenVK) or Vulkan
+
+        ConvertShaderToHLSL5(byteCode, sourceCode, compilerOutput_);
+        RemapSamplers(sourceCode);
+        ApplyFixes(sourceCode);
+#endif
+        // On GLSL, bytecode is HLSL or GLSL code
+        byteCode_.resize(sourceCode.length() + 1);
+        byteCodeSize = sourceCode.length();
+        memcpy_s(byteCode_.data(), byteCodeSize, sourceCode.data(), byteCodeSize);
         return true;
+    }
+    bool ShaderCompiler::ReflectGLSL(const void* byteCode, size_t byteCodeSize)
+    {
+        SpvReflectShaderModule module = {};
+        SpvReflectResult result = spvReflectCreateShaderModule(byteCodeSize, byteCode, &module);
+        if (result != SPV_REFLECT_RESULT_SUCCESS) {
+            URHO3D_LOGERROR("Failed to reflect SPIR-V code for "+desc_.name_);
+            return false;
+        }
+
+        if (desc_.type_ == VS) {
+            unsigned varCount = 0;
+            result = spvReflectEnumerateInputVariables(&module, &varCount, nullptr);
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+            ea::vector<SpvReflectInterfaceVariable*> inputVars(varCount);
+            result = spvReflectEnumerateInputVariables(&module, &varCount, inputVars.data());
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+            auto GetElementType = [](SpvReflectInterfaceVariable* variable) {
+                VertexElementType type = MAX_VERTEX_ELEMENT_TYPES;
+                switch (variable->format)
+                {
+                case SPV_REFLECT_FORMAT_R32_UINT:
+                case SPV_REFLECT_FORMAT_R32_SINT:
+                    type = TYPE_INT;
+                    break;
+                case SPV_REFLECT_FORMAT_R32_SFLOAT:
+                    type = TYPE_FLOAT;
+                    break;
+                case SPV_REFLECT_FORMAT_R32G32_UINT:
+                case SPV_REFLECT_FORMAT_R32G32_SINT:
+                case SPV_REFLECT_FORMAT_R32G32_SFLOAT:
+                    type = TYPE_VECTOR2;
+                    break;
+                case SPV_REFLECT_FORMAT_R32G32B32_UINT:
+                case SPV_REFLECT_FORMAT_R32G32B32_SINT:
+                case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:
+                    type = TYPE_VECTOR3;
+                    break;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT:
+                    type = TYPE_VECTOR4;
+                    break;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_UINT:
+                case SPV_REFLECT_FORMAT_R32G32B32A32_SINT:
+                case SPV_REFLECT_FORMAT_R64_UINT:
+                case SPV_REFLECT_FORMAT_R64_SINT:
+                    type = TYPE_UBYTE4;
+                    break;
+                }
+
+                return type;
+            };
+            for (SpvReflectInterfaceVariable** it = inputVars.begin(); it != inputVars.end(); ++it) {
+                ea::string inputName((*it)->name == nullptr ? "" : (*it)->name);
+                ea::string inputNameWithoutIdx = inputName;
+
+                unsigned inputNameEndIdx = inputName.length() - 1;
+                while (isdigit(inputName.at(inputNameEndIdx)))
+                    --inputNameEndIdx;
+                inputNameWithoutIdx = inputName.substr(0, inputNameEndIdx + 1);
+
+                unsigned slotIdx = inputNameEndIdx == inputName.length() - 1 ? 0 : ToUInt(inputName.substr(inputNameWithoutIdx.length(), inputName.length() - 1));
+                auto semanticIt = semanticsMapping.find(inputNameWithoutIdx);
+                if (semanticIt == semanticsMapping.end()) {
+                    URHO3D_LOGWARNING("Invalid semantic \"{}\" name for {} shader.", inputNameWithoutIdx, desc_.name_);
+                    continue;
+                }
+                VertexElementSemantic semantic = semanticIt->second;
+
+                vertexElements_.push_back(
+                    VertexElement(
+                        GetElementType(*it),
+                        semantic,
+                        slotIdx
+                    )
+                );
+
+            }
+        }
+
+        unsigned bindingCount = 0;
+        result = spvReflectEnumerateDescriptorBindings(&module, &bindingCount, nullptr);
+        assert(result == SPV_REFLECT_RESULT_SUCCESS);
+        ea::vector<SpvReflectDescriptorBinding*> descriptorBindings(bindingCount);
+        result = spvReflectEnumerateDescriptorBindings(&module, &bindingCount, descriptorBindings.data());
+
+        ea::unordered_map<ea::string, unsigned> cbRegisterMap;
+        for (auto descBindingIt = descriptorBindings.begin(); descBindingIt != descriptorBindings.end(); descBindingIt++) {
+            SpvReflectDescriptorBinding* binding = *descBindingIt;
+
+            if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+                assert(binding->type_description->type_name != nullptr);
+                ea::string bindingName(binding->type_description->type_name);
+                sanitizeCBName(bindingName);
+
+                auto cBufferLookupValue = constantBuffersNamesLookup.find(bindingName);
+                if (cBufferLookupValue == constantBuffersNamesLookup.end()) {
+                    spvReflectDestroyShaderModule(&module);
+                    URHO3D_LOGERRORF("Failed to reflect shader constant buffer for %s shader. Invalid constant buffer name: %s", desc_.name_, bindingName);
+                    return false;
+                }
+
+                constantBufferSlots_[cBufferLookupValue->second] = true;
+
+                unsigned membersCount = binding->block.member_count;
+                // Extract CBuffer variable parameters and build shader parameters
+                while (membersCount--) {
+                    const SpvReflectBlockVariable& variable = binding->block.members[membersCount];
+                    ea::string varName(variable.name);
+                    const auto nameStart = varName.find('c');
+                    if (nameStart != ea::string::npos)
+                        varName = varName.substr(nameStart + 1);
+                    parameters_[varName] = ShaderParameter { desc_.type_ ,varName, variable.offset, variable.size, (unsigned)cBufferLookupValue->second };
+                }
+            }
+            else if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
+                assert(binding->name);
+                ea::string name(binding->name);
+                if (name.at(0) == 't')
+                    name = name.substr(1, name.size());
+                auto texUnitLookupVal = DiligentTextureUnitLookup.find(name);
+                if (texUnitLookupVal == DiligentTextureUnitLookup.end()) {
+                    URHO3D_LOGERRORF("Failed to reflect shader texture samplers. Invalid texture sampler name: %s", name);
+                    spvReflectDestroyShaderModule(&module);
+                    return false;
+                }
+                textureSlots_[texUnitLookupVal->second] = true;
+            }
+        }
+
+        return true;
+    }
+    void ShaderCompiler::RemapSamplers(ea::string& sourceCode)
+    {
+        // HLSL Conversion change samplers to _sTexMap_sampler and sTexMap
+        // We remapping theses names to sTexMap (SamplerState) and tTexMap (Texture Resource)
+
+        unsigned index = 0;
+        do {
+            ea::string targetTexName = ea::string("> s") + samplerNames[index];
+            ea::string targetSamplerName = ea::string("_s") + samplerNames[index];
+            ea::string targetSampleRead = Format("s{0}.Sample(s{0}", samplerNames[index]);
+            targetSamplerName.append("_sampler");
+
+            ea::string outputTexName = ea::string("> t") + samplerNames[index];
+            ea::string outputSamplerName = ea::string("s") + samplerNames[index];
+            ea::string outputSampleRead = Format("t{0}.Sample(s{0}", samplerNames[index]);
+
+            sourceCode.replace(targetTexName, outputTexName);
+            sourceCode.replace(targetSamplerName, outputSamplerName);
+            sourceCode.replace(targetSampleRead, outputSampleRead);
+        } while (samplerNames[++index] != nullptr);
+    }
+    void ShaderCompiler::ApplyFixes(ea::string& sourceCode)
+    {
+        if (desc_.type_ != PS)
+            return;
+        size_t inputIdx = sourceCode.find("struct SPIRV_Cross_Input");
+        if (inputIdx == ea::string::npos)
+            return;
+        inputIdx = sourceCode.find("}", inputIdx);
+        if (inputIdx == ea::string::npos)
+            return;
+        sourceCode.insert(inputIdx, "    float4 gl_Position : SV_Position;\n");
     }
 #endif
 #ifdef URHO3D_DILIGENT

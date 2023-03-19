@@ -258,6 +258,15 @@ public:
     /// Set Pipeline State
     void SetPipelineState(PipelineState* pipelineState);
     void CommitSRB(ShaderResourceBinding* srb);
+    void BeginDebug(const ea::string_view& dbgName);
+    void BeginDebug(const ea::string& dbgName);
+    void BeginDebug(const char* dbgName);
+    void EndDebug();
+#endif
+#ifndef URHO3D_DILIGENT
+    void BeginDebug(const ea::string& dbgName){}
+    void BeginDebug(const ea::string_view& dbgName) {}
+    void EndDebug(){}
 #endif
     /// Return constant buffer layout for given shaders.
     ShaderProgramLayout* GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps);

@@ -372,6 +372,7 @@ void SceneProcessor::RenderShadowMaps()
                 const ea::string passName = Format("ShadowMap.[{}].{}",
                     split.GetLight()->GetFullNameDebug(), split.GetSplitIndex());
                 debugger_->BeginPass(passName);
+                graphics_->BeginDebug(passName);
             }
 
             drawQueue_->Reset();
@@ -382,6 +383,7 @@ void SceneProcessor::RenderShadowMaps()
             if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
             {
                 debugger_->EndPass();
+                graphics_->EndDebug();
             }
         }
     }
@@ -404,8 +406,10 @@ void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camer
 void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera* camera,
     ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
 {
-    if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
+    if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_)) {
         debugger_->BeginPass(debugName);
+        graphics_->BeginDebug(debugName);
+    }
 
     drawQueue_->Reset();
 
@@ -418,8 +422,10 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
     graphics_->SetClipPlane(false);
     drawQueue_->Execute();
 
-    if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
+    if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_)) {
         debugger_->EndPass();
+        graphics_->EndDebug();
+    }
 }
 
 template <class T>
@@ -428,7 +434,7 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
 {
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
-
+    graphics_->BeginDebug(debugName);
     drawQueue_->Reset();
 
     BatchRenderingContext ctx{ *drawQueue_, *camera };
@@ -441,8 +447,10 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
 
     graphics_->SetClipPlane(camera->GetUseClipping(),
         camera->GetClipPlane(), camera->GetView(), camera->GetGPUProjection());
+
     drawQueue_->Execute();
 
+    graphics_->EndDebug();
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->EndPass();
 }

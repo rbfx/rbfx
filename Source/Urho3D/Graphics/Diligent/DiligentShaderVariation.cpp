@@ -270,6 +270,7 @@ bool ShaderVariation::Compile()
     //ShaderDefineArray defines{ defines_ };
     ShaderCompilerDesc compilerDesc = {};
     compilerDesc.defines_ = ShaderDefineArray{ defines_ };
+    compilerDesc.name_ = name_;
     //ShaderMacroHelper macros;
 
 
@@ -336,6 +337,7 @@ bool ShaderVariation::Compile()
         compilerDesc.defines_.Append("DESKTOP_GRAPHICS");
         compilerDesc.defines_.Append("GL3");
         compilerDesc.language_ = ShaderLanguage::GLSL;
+        compilerDesc.entryPoint_ = "main";
 
         /*ShaderDefineArray defines;
         for (const ShaderMacro* macro = macros; macro->Name != nullptr && macro->Definition != nullptr; ++macro)
@@ -416,16 +418,16 @@ bool ShaderVariation::Compile()
 #endif
     shaderCI.Desc.ShaderType = shaderType;
     shaderCI.Desc.UseCombinedTextureSamplers = false;
+    shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    shaderCI.EntryPoint = compilerDesc.entryPoint_.c_str();
 
     if (compilerDesc.language_ == ShaderLanguage::HLSL) {
         shaderCI.ByteCode = compiler.GetByteCode().data();
         shaderCI.ByteCodeSize = compiler.GetByteCode().size();
-        shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
     }
     else {
         shaderCI.Source = (const char*)compiler.GetByteCode().data();
         shaderCI.SourceLength = compiler.GetByteCode().size();
-        shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL;
     }
 
     vertexElements_ = compiler.GetVertexElements();

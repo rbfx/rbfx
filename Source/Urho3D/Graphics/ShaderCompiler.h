@@ -34,6 +34,9 @@ namespace Urho3D
 #endif
 #ifdef URHO3D_SPIRV
         bool CompileGLSL();
+        bool ReflectGLSL(const void* byteCode, size_t byteCodeSize);
+        void RemapSamplers(ea::string& sourceCode);
+        void ApplyFixes(ea::string& sourceCode);
 #endif
 #ifdef URHO3D_DILIGENT
         void RemapInputLayout(ea::string& sourceCode);

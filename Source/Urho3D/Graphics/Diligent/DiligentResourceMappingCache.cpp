@@ -27,6 +27,9 @@ namespace Urho3D
         assert(resourceMapping);
 
         for (auto it = entries.begin(); it != entries.end(); it++) {
+            // Don't add twice resources, if this occurs Diligent will throw a error
+            if (resourceMapping->GetResource(it->Name, 0) != nullptr)
+                continue;
             resourceMapping->AddResource(it->Name, it->pObject, true);
         }
 

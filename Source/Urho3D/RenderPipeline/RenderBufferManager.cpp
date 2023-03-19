@@ -394,6 +394,16 @@ SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(BlendMode 
     desc.vertexShader_ = graphics_->GetShader(VS, shaderName, defines);
     desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);
 
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i) {
+        RenderSurface* rt = graphics_->GetRenderTarget(i);
+        if (rt == nullptr)
+            break;
+        desc.renderTargetsFormats_.push_back(RenderSurface::GetFormat(graphics_, rt));
+    }
+    if (desc.renderTargetsFormats_.size() == 0)
+        desc.renderTargetsFormats_.push_back(graphics_->GetSwapChainRTFormat());
+    desc.depthStencilFormat_ = graphics_->GetDepthStencilFormat();
+
     return CreateQuadPipelineState(desc);
 }
 

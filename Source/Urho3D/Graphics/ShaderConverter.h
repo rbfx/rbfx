@@ -48,7 +48,6 @@ bool CompileGLSLToSpirV(ShaderType shaderType, const ea::string& sourceCode, con
     ea::vector<unsigned>& outputByteCode, ea::string& errorMessage);
 #endif
 #ifdef URHO3D_DILIGENT
-bool CompileSpirVToHLSL(const ByteVector& byteCode, ea::string& outputShaderCode);
-bool CompileHLSLToSpirV(const ea::string& sourceCode, ShaderType shaderType, const Diligent::ShaderMacro* defines, ea::vector<uint32_t>& byteCode);
+bool ConvertShaderToHLSL5(const ea::vector<unsigned>& byteCode, ea::string& outputShaderCode, ea::string& errorMessage);
 #endif
 }

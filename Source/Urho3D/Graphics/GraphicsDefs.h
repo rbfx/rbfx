@@ -383,7 +383,8 @@ static ea::unordered_map<ea::string, ShaderParameterGroup> constantBuffersNamesL
     { "Frame", ShaderParameterGroup::SP_FRAME },
     { "Camera", ShaderParameterGroup::SP_CAMERA },
     { "Zone", ShaderParameterGroup::SP_ZONE },
-    { "Light", ShaderParameterGroup::SP_MATERIAL },
+    { "Light", ShaderParameterGroup::SP_LIGHT },
+    { "Material", ShaderParameterGroup::SP_MATERIAL },
     { "Object", ShaderParameterGroup::SP_OBJECT },
     { "Custom", ShaderParameterGroup::SP_CUSTOM }
 };
