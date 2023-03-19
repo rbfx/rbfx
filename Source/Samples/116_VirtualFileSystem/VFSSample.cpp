@@ -172,6 +172,51 @@ void VFSSample::RenderUi()
         }
         if (!reversedUri_.empty())
             ui::Text("%s", reversedUri_.c_str());
+
+        ui::Separator();
+
+        bool needScan = ui::IsWindowAppearing();
+        ui::Text("scan path:");
+        ui::SameLine();
+        if (ui::InputText("##scanpath", &scanPath_))
+            needScan = true;
+
+        ui::Text("scan filter:");
+        ui::SameLine();
+        if (ui::InputText("##scanfilter", &scanFilter_))
+            needScan = true;
+
+        if (ui::Checkbox("Recursive", &scanRecursive_))
+            needScan = true;
+        ui::SameLine();
+        if (ui::Checkbox("Files", &scanFiles_))
+            needScan = true;
+        ui::SameLine();
+        if (ui::Checkbox("Directories", &scanDirectories_))
+            needScan = true;
+
+        if (needScan)
+        {
+            ScanFlags scanFlags{};
+            if (scanRecursive_)
+                scanFlags |= SCAN_RECURSIVE;
+            if (scanFiles_)
+                scanFlags |= SCAN_FILES;
+            if (scanDirectories_)
+                scanFlags |= SCAN_DIRS;
+            vfs->Scan(scanResults_, scanPath_, scanFilter_, scanFlags);
+        }
+
+        ui::Text("scan results:");
+        if (ui::BeginListBox("##results"))
+        {
+            for (unsigned i = 0; i < scanResults_.size(); i++)
+            {
+                const auto result = FileIdentifier{EMPTY_STRING, scanPath_} + scanResults_[i];
+                ui::Selectable(result.fileName_.c_str(), false);
+            }
+            ui::EndListBox();
+        }
     }
     ui::End();
 #endif
