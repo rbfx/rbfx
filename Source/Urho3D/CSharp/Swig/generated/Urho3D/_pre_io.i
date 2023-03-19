@@ -6,7 +6,7 @@
 %csconstvalue("2") Urho3D::SCAN_DIRS;
 %csconstvalue("4") Urho3D::SCAN_HIDDEN;
 %csconstvalue("8") Urho3D::SCAN_APPEND;
-%csconstvalue("16") Urho3D::SCAN_RECURSE;
+%csconstvalue("16") Urho3D::SCAN_RECURSIVE;
 %typemap(csattributes) Urho3D::ScanFlag "[global::System.Flags]";
 using ScanFlags = Urho3D::ScanFlag;
 %typemap(ctype) ScanFlags "size_t";

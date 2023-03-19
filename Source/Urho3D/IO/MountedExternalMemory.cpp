@@ -101,7 +101,7 @@ void MountedExternalMemory::Scan(
     if (!flags.Test(SCAN_APPEND))
         result.clear();
 
-    const bool recursive = flags.Test(SCAN_RECURSE);
+    const bool recursive = flags.Test(SCAN_RECURSIVE);
     const ea::string filterExtension = GetExtensionFromFilter(filter);
 
     for (const auto& [name, _] : files_)

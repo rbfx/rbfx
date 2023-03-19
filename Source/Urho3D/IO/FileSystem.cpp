@@ -964,7 +964,7 @@ bool FileSystem::Reveal(const ea::string& path)
 void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path, const ea::string& startPath,
     const ea::string& filter, ScanFlags flags) const
 {
-    const bool recursive = flags.Test(SCAN_RECURSE);
+    const bool recursive = flags.Test(SCAN_RECURSIVE);
 
     path = AddTrailingSlash(path);
     ea::string deltaPath;
@@ -1353,7 +1353,7 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
     // ensure empty if not recursive
     if (!recursive)
     {
-        ScanDir(results, directory, "*", SCAN_DIRS | SCAN_FILES | SCAN_HIDDEN | SCAN_RECURSE);
+        ScanDir(results, directory, "*", SCAN_DIRS | SCAN_FILES | SCAN_HIDDEN | SCAN_RECURSIVE);
         while (results.erase_first(".") != results.end()) {}
         while (results.erase_first("..") != results.end()) {}
 
@@ -1397,7 +1397,7 @@ bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& direct
         return false;
 
     ea::vector<ea::string> results;
-    ScanDir(results, directoryIn, "*", SCAN_FILES | SCAN_RECURSE);
+    ScanDir(results, directoryIn, "*", SCAN_FILES | SCAN_RECURSIVE);
 
     bool success = true;
     for (unsigned i = 0; i < results.size(); i++)
