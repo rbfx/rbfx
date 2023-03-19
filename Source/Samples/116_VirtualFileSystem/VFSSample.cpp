@@ -21,17 +21,20 @@
 // THE SOFTWARE.
 //
 
+#include "VFSSample.h"
+
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/IO/PackageFile.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
-#include <Urho3D/IO/MountedDirectory.h>
-#include <Urho3D/IO/PackageFile.h>
-#include <Urho3D/IO/VirtualFileSystem.h>
 
-#include "VFSSample.h"
+#if URHO3D_SYSTEMUI
+    #include <Urho3D/SystemUI/SystemUI.h>
+#endif
 
 #include <Urho3D/DebugNew.h>
 
@@ -50,6 +53,9 @@ void VFSSample::Start()
 
     // Create "Hello World" Text
     CreateText();
+
+    // Subscribe to Update event for rendering UI
+    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { RenderUi(); });
 }
 
 void VFSSample::CreateText()
@@ -94,4 +100,79 @@ void VFSSample::CreateText()
 
     // Add Text instance to the UI root element
     GetUIRoot()->AddChild(helloText);
+}
+
+void VFSSample::RenderUi()
+{
+#if URHO3D_SYSTEMUI
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+
+    ui::SetNextWindowSize(ImVec2(550, 400), ImGuiCond_FirstUseEver);
+    ui::SetNextWindowPos(ImVec2(350, 50), ImGuiCond_FirstUseEver);
+    if (ui::Begin("VFS Query Interface", 0, ImGuiWindowFlags_NoSavedSettings))
+    {
+        ui::Text("URI: ");
+        ui::SameLine();
+        if (ui::InputText("##uri", &uri_) || ui::IsWindowAppearing())
+        {
+            fileIdentifier_ = FileIdentifier::FromUri(uri_);
+            exists_ = vfs->Exists(fileIdentifier_);
+            absoluteFileName_ = vfs->GetAbsoluteNameFromIdentifier(fileIdentifier_);
+            readOnlyFile_ = vfs->OpenFile(fileIdentifier_, FILE_READ);
+            reversedUri_ = vfs->GetIdentifierFromAbsoluteName(absoluteFileName_).ToUri();
+        }
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("scheme: ");
+            ui::SameLine();
+        }
+        ui::Text("%s", fileIdentifier_.scheme_.c_str());
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("path: ");
+            ui::SameLine();
+        }
+        ui::Text("%s", fileIdentifier_.fileName_.c_str());
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("exists: ");
+            ui::SameLine();
+        }
+        ui::Text("%s", exists_ ? "yes" : "no");
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("absolute path: ");
+            ui::SameLine();
+            if (absoluteFileName_.empty())
+                ui::Text("[not found]");
+        }
+        if (!absoluteFileName_.empty())
+            ui::Text("%s", absoluteFileName_.c_str());
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("file size: ");
+            ui::SameLine();
+            if (!readOnlyFile_)
+                ui::Text("[not found]");
+        }
+        if (readOnlyFile_)
+            ui::Text("%d", readOnlyFile_->GetSize());
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("reversed URI: ");
+            ui::SameLine();
+            if (reversedUri_.empty())
+                ui::Text("[not found]");
+        }
+        if (!reversedUri_.empty())
+            ui::Text("%s", reversedUri_.c_str());
+    }
+    ui::End();
+#endif
 }
