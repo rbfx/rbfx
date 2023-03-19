@@ -664,42 +664,6 @@ ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
     return index < resourceRouters_.size() ? resourceRouters_[index] : nullptr;
 }
 
-ea::string ResourceCache::GetPreferredResourceDir(const ea::string& path) const
-{
-    ea::string fixedPath = AddTrailingSlash(path);
-
-    bool pathHasKnownDirs = false;
-    bool parentHasKnownDirs = false;
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-
-    for (unsigned i = 0; checkDirs[i] != nullptr; ++i)
-    {
-        if (fileSystem->DirExists(fixedPath + checkDirs[i]))
-        {
-            pathHasKnownDirs = true;
-            break;
-        }
-    }
-    if (!pathHasKnownDirs)
-    {
-        ea::string parentPath = GetParentPath(fixedPath);
-        for (unsigned i = 0; checkDirs[i] != nullptr; ++i)
-        {
-            if (fileSystem->DirExists(parentPath + checkDirs[i]))
-            {
-                parentHasKnownDirs = true;
-                break;
-            }
-        }
-        // If path does not have known subdirectories, but the parent path has, use the parent instead
-        if (parentHasKnownDirs)
-            fixedPath = parentPath;
-    }
-
-    return fixedPath;
-}
-
 ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
 {
     return GetCanonicalIdentifier(FileIdentifier::FromUri(name)).ToUri();

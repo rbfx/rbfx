@@ -190,8 +190,6 @@ public:
     /// Return a resource router by index.
     ResourceRouter* GetResourceRouter(unsigned index) const;
 
-    /// Return either the path itself or its parent, based on which of them has recognized resource subdirectories.
-    ea::string GetPreferredResourceDir(const ea::string& path) const;
     /// Remove unsupported constructs from the resource name to prevent ambiguity, and normalize absolute filename to resource path relative if possible.
     ea::string SanitateResourceName(const ea::string& name) const;
     /// Store a dependency for a resource. If a dependency file changes, the resource will be reloaded.
