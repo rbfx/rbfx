@@ -739,10 +739,24 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
 
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount)
 {
-    if (!impl_->shaderProgram_)
-        return;
     PrepareDraw();
-    assert(0);
+
+    unsigned primitiveCount;
+    PRIMITIVE_TOPOLOGY primitiveTopology;
+
+    GetPrimitiveType(indexCount, type, primitiveCount, primitiveTopology);
+
+    DrawIndexedAttribs drawAttrs;
+    drawAttrs.BaseVertex = 0;
+    drawAttrs.FirstIndexLocation = indexStart;
+    drawAttrs.NumIndices = indexCount;
+    drawAttrs.Flags = DRAW_FLAG_VERIFY_ALL;
+    drawAttrs.IndexType = DiligentIndexBufferType[IndexBuffer::GetIndexBufferType(indexBuffer_)];
+
+    impl_->deviceContext_->DrawIndexed(drawAttrs);
+
+    numPrimitives_ += primitiveCount;
+    ++numBatches_;
     /*
 
 
@@ -801,10 +815,6 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     PrepareDraw();
 
     unsigned primitiveCount;
-    D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
-
-    if (fillMode_ == FILL_POINT)
-        type = POINT_LIST;
 
     PRIMITIVE_TOPOLOGY primitiveTopology;
     GetPrimitiveType(vertexCount, pipelineState_->GetDesc().primitiveType_, primitiveCount, primitiveTopology);

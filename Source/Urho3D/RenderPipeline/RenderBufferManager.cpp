@@ -412,6 +412,9 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     if (!params.pipelineState_ || !params.pipelineState_->IsValid())
         return;
 
+#ifdef URHO3D_DEBUG
+    graphics_->BeginDebug("RenderBufferManager::DrawQuad");
+#endif
     Geometry* quadGeometry = renderer_->GetQuadGeometry();
     Matrix3x4 modelMatrix = Matrix3x4::IDENTITY;
     Matrix4 projection = Matrix4::IDENTITY;
@@ -470,6 +473,9 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
 
     drawQueue_->Execute();
 
+#ifdef URHO3D_DEBUG
+    graphics_->EndDebug();
+#endif
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
     {
         debugger_->ReportQuad(debugComment, graphics_->GetViewport().Size());
