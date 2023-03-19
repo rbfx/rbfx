@@ -64,6 +64,8 @@ private:
 
     /// Parsed URI.
     FileIdentifier fileIdentifier_;
+    /// Canonical form of URI.
+    FileIdentifier canonicalForm_;
     /// Whether the file exists.
     bool exists_{};
     /// Absolute path to the file.

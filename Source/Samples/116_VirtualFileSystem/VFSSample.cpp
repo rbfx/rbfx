@@ -107,7 +107,7 @@ void VFSSample::RenderUi()
 #if URHO3D_SYSTEMUI
     auto vfs = GetSubsystem<VirtualFileSystem>();
 
-    ui::SetNextWindowSize(ImVec2(550, 400), ImGuiCond_FirstUseEver);
+    ui::SetNextWindowSize(ImVec2(550, 500), ImGuiCond_FirstUseEver);
     ui::SetNextWindowPos(ImVec2(350, 50), ImGuiCond_FirstUseEver);
     if (ui::Begin("VFS Query Interface", 0, ImGuiWindowFlags_NoSavedSettings))
     {
@@ -116,6 +116,7 @@ void VFSSample::RenderUi()
         if (ui::InputText("##uri", &uri_) || ui::IsWindowAppearing())
         {
             fileIdentifier_ = FileIdentifier::FromUri(uri_);
+            canonicalForm_ = vfs->GetCanonicalIdentifier(fileIdentifier_);
             exists_ = vfs->Exists(fileIdentifier_);
             absoluteFileName_ = vfs->GetAbsoluteNameFromIdentifier(fileIdentifier_);
             readOnlyFile_ = vfs->OpenFile(fileIdentifier_, FILE_READ);
@@ -135,6 +136,13 @@ void VFSSample::RenderUi()
             ui::SameLine();
         }
         ui::Text("%s", fileIdentifier_.fileName_.c_str());
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("canonical: ");
+            ui::SameLine();
+        }
+        ui::Text("%s", canonicalForm_.ToUri().c_str());
 
         {
             ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};

@@ -72,12 +72,14 @@ public:
     bool Exists(const FileIdentifier& fileName) const;
     /// Open file in the virtual file system. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) const;
-    /// Return full absolute file name of the file if possible, or empty if not found.
+    /// Return absolute file name for *existing* identifier in this mount point, if supported.
     ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
+    /// Return canonical file identifier, if possible.
+    FileIdentifier GetCanonicalIdentifier(const FileIdentifier& fileName) const;
+    /// Works even if the file does not exist.
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const;
     /// Return relative file name of the file, or empty if not found.
-    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName);
-    /// Return relative file name of the file, or empty if not found.
-    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& scheme, const ea::string& absoluteFileName);
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& scheme, const ea::string& absoluteFileName) const;
 
     /// Enable or disable file watchers.
     void SetWatching(bool enable);
