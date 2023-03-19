@@ -119,7 +119,7 @@ bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, con
      unsigned char* src = (unsigned char*)data;
      unsigned rowSize = GetRowDataSize(width);
      unsigned rowStart = GetRowDataSize(x);
-     unsigned subResource = level * levels_;
+     unsigned subResource = level;
      //unsigned subResource = D3D11CalcSubresource(level, 0, levels_);
 
      Box destBox;

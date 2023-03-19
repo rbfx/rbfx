@@ -799,6 +799,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     assert(impl_->renderTargetViews_[0]);
     PrepareDraw();
+    URHO3D_LOGWARNING("FIX-ME");
     ITextureView* rts[] = { impl_->swapChain_->GetCurrentBackBufferRTV() };
     impl_->deviceContext_->SetRenderTargets(1, rts, impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
@@ -948,6 +949,17 @@ void Graphics::SetPipelineState(PipelineState* pipelineState) {
     assert(pipelineObj);
 
     impl_->deviceContext_->SetPipelineState(static_cast<IPipelineState*>(pipelineObj));
+
+    if (pipelineState_) {
+        PipelineStateDesc currDesc = pipelineState_->GetDesc();
+        PipelineStateDesc newDesc = pipelineState->GetDesc();
+
+        if (newDesc.ToHash() != currDesc.ToHash())
+            impl_->depthStateDirty_ = true;
+    }
+    else {
+        impl_->depthStateDirty_ = true;
+    }
     pipelineState_ = pipelineState;
 }
 
