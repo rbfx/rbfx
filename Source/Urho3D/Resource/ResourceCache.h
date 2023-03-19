@@ -251,8 +251,6 @@ private:
     int finishBackgroundResourcesMs_;
     /// List of resources that will not be auto-reloaded if reloading event triggers.
     ea::vector<ea::string> ignoreResourceAutoReload_;
-    /// Sanitized path to executable
-    ea::string exePath_;
 };
 
 template <class T> T* ResourceCache::GetExistingResource(const ea::string& name)

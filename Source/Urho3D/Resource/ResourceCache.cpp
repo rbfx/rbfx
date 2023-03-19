@@ -26,7 +26,6 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/WorkQueue.h"
-#include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
 #include "../IO/VirtualFileSystem.h"
@@ -101,13 +100,6 @@ ResourceCache::ResourceCache(Context* context) :
 
     // Subscribe FileChanged for handling directory watchers
     SubscribeToEvent(E_FILECHANGED, URHO3D_HANDLER(ResourceCache, HandleFileChanged));
-
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    if (fileSystem)
-    {
-        exePath_ = fileSystem->GetProgramDir().replaced("/./", "/");
-    }
 }
 
 ResourceCache::~ResourceCache()
