@@ -206,7 +206,26 @@ ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier
     return EMPTY_STRING;
 }
 
-FileIdentifier VirtualFileSystem::GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName)
+FileIdentifier VirtualFileSystem::GetCanonicalIdentifier(const FileIdentifier& fileName) const
+{
+    FileIdentifier result = fileName;
+
+    // .. is not supported
+    result.fileName_.replace("../", "");
+    result.fileName_.replace("./", "");
+    result.fileName_.trim();
+
+    // Attempt to go from "file" scheme to local schemes
+    if (result.scheme_ == "file")
+    {
+        if (const auto betterName = GetIdentifierFromAbsoluteName(result.fileName_))
+            result = betterName;
+    }
+
+    return result;
+}
+
+FileIdentifier VirtualFileSystem::GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const
 {
     MutexLock lock(mountMutex_);
 
@@ -221,7 +240,7 @@ FileIdentifier VirtualFileSystem::GetIdentifierFromAbsoluteName(const ea::string
 }
 
 FileIdentifier VirtualFileSystem::GetIdentifierFromAbsoluteName(
-    const ea::string& scheme, const ea::string& absoluteFileName)
+    const ea::string& scheme, const ea::string& absoluteFileName) const
 {
     MutexLock lock(mountMutex_);
 
