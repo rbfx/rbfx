@@ -35,10 +35,6 @@ namespace Urho3D
 
 class AsyncExecRequest;
 
-/// Alias for type used for file times.
-/// TODO(editor): Make 64 bit?
-using FileTime = unsigned;
-
 /// Subsystem for file and directory operations and access control.
 class URHO3D_API FileSystem : public Object
 {

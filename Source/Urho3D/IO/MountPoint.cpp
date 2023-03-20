@@ -34,6 +34,15 @@ MountPoint::MountPoint(Context* context)
 
 MountPoint::~MountPoint() = default;
 
+ea::optional<FileTime> MountPoint::GetLastModifiedTime(
+    const FileIdentifier& fileName, bool creationIsModification) const
+{
+    if (Exists(fileName))
+        return 0u;
+    else
+        return ea::nullopt;
+}
+
 ea::string MountPoint::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
 {
     return EMPTY_STRING;

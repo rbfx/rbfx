@@ -142,6 +142,17 @@ AbstractFilePtr MountedDirectory::OpenFile(const FileIdentifier& fileName, FileM
     return file;
 }
 
+ea::optional<FileTime> MountedDirectory::GetLastModifiedTime(
+    const FileIdentifier& fileName, bool creationIsModification) const
+{
+    if (!Exists(fileName))
+        return ea::nullopt;
+
+    auto fileSystem = context_->GetSubsystem<FileSystem>();
+    const ea::string fullPath = directory_ + fileName.fileName_;
+    return fileSystem->GetLastModifiedTime(fullPath, creationIsModification);
+}
+
 ea::string MountedDirectory::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
 {
     if (Exists(fileName))
