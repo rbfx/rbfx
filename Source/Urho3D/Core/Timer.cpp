@@ -180,9 +180,8 @@ ea::string Time::GetTimeStamp(time_t timestamp, const char* format)
         format = DEFAULT_DATE_TIME_FORMAT;
 
     char dateTime[128];
-    tm timeInfo{};
-    localtime_s(&timeInfo, &timestamp);
-    strftime(dateTime, sizeof(dateTime), format, &timeInfo);
+    tm* timeInfo = localtime(&timestamp);
+    strftime(dateTime, sizeof(dateTime), format, timeInfo);
     return dateTime;
 }
 
