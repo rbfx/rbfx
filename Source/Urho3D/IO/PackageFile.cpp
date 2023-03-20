@@ -224,4 +224,14 @@ AbstractFilePtr PackageFile::OpenFile(const FileIdentifier& fileName, FileMode m
     return file;
 }
 
+ea::optional<FileTime> PackageFile::GetLastModifiedTime(
+    const FileIdentifier& fileName, bool creationIsModification) const
+{
+    if (!Exists(fileName))
+        return ea::nullopt;
+
+    auto fileSystem = GetSubsystem<FileSystem>();
+    return fileSystem->GetLastModifiedTime(fileName_, creationIsModification);
+}
+
 }

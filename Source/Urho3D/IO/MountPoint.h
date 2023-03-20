@@ -52,6 +52,11 @@ public:
     /// The file name may be be case-insensitive on Windows and case-sensitive on other platforms.
     virtual AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) = 0;
 
+    /// Return modification time, or 0 if not supported.
+    /// Return nullopt if file does not exist.
+    virtual ea::optional<FileTime> GetLastModifiedTime(
+        const FileIdentifier& fileName, bool creationIsModification) const;
+
     /// Returns human-readable name of the mount point.
     virtual const ea::string& GetName() const = 0;
 

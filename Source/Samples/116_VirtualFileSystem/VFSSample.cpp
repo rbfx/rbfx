@@ -25,6 +25,7 @@
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/Core/Timer.h>
 #include <Urho3D/IO/PackageFile.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Input/Input.h>
@@ -120,6 +121,7 @@ void VFSSample::RenderUi()
             exists_ = vfs->Exists(fileIdentifier_);
             absoluteFileName_ = vfs->GetAbsoluteNameFromIdentifier(fileIdentifier_);
             readOnlyFile_ = vfs->OpenFile(fileIdentifier_, FILE_READ);
+            modificationTime_ = vfs->GetLastModifiedTime(fileIdentifier_, true);
             reversedUri_ = vfs->GetIdentifierFromAbsoluteName(absoluteFileName_).ToUri();
         }
 
@@ -170,6 +172,20 @@ void VFSSample::RenderUi()
         }
         if (readOnlyFile_)
             ui::Text("%d", readOnlyFile_->GetSize());
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("modification time: ");
+            ui::SameLine();
+            if (modificationTime_ == 0)
+                ui::Text("[unknown]");
+        }
+        if (modificationTime_ != 0)
+        {
+            // TODO: move to common place?
+            const time_t time = static_cast<time_t>(modificationTime_);
+            ui::Text("%s", Time::GetTimeStamp(time).c_str());
+        }
 
         {
             ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};

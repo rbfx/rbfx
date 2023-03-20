@@ -24,6 +24,22 @@
 
 #include <Urho3D/IO/FileIdentifier.h>
 
+TEST_CASE("Empty FileIdentifier is checked and created")
+{
+    REQUIRE_FALSE(static_cast<bool>(FileIdentifier::Empty));
+    REQUIRE(FileIdentifier::Empty.IsEmpty());
+
+    REQUIRE(static_cast<bool>(FileIdentifier{"file", "/path/to/file"}));
+    REQUIRE_FALSE(FileIdentifier{"file", "/path/to/file"}.IsEmpty());
+
+    REQUIRE(FileIdentifier{} == FileIdentifier::Empty);
+    REQUIRE(FileIdentifier::FromUri("") == FileIdentifier::Empty);
+    REQUIRE(FileIdentifier{"", ""} == FileIdentifier::Empty);
+    REQUIRE(FileIdentifier{"file", "/path/to/file"} != FileIdentifier::Empty);
+    REQUIRE(FileIdentifier{"", "/path/to/file"} != FileIdentifier::Empty);
+    REQUIRE(FileIdentifier{"file", ""} != FileIdentifier::Empty);
+}
+
 TEST_CASE("FileIdentifier is created from URI")
 {
     // Absolute path

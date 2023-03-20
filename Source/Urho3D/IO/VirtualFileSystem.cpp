@@ -189,7 +189,20 @@ AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, File
             return result;
     }
 
-    return AbstractFilePtr();
+    return nullptr;
+}
+
+FileTime VirtualFileSystem::GetLastModifiedTime(const FileIdentifier& fileName, bool creationIsModification) const
+{
+    MutexLock lock(mountMutex_);
+
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
+    {
+        if (const auto result = mountPoint->GetLastModifiedTime(fileName, creationIsModification))
+            return *result;
+    }
+
+    return 0;
 }
 
 ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const

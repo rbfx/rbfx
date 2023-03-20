@@ -37,4 +37,8 @@ enum ScanFlag : unsigned char
 };
 URHO3D_FLAGSET(ScanFlag, ScanFlags);
 
+/// Alias for type used for file times.
+/// TODO(editor): Make 64 bit?
+using FileTime = unsigned;
+
 }

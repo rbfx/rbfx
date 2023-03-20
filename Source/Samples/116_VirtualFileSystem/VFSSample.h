@@ -72,6 +72,8 @@ private:
     ea::string absoluteFileName_;
     /// File opened for reading.
     AbstractFilePtr readOnlyFile_;
+    /// File modification time.
+    FileTime modificationTime_{};
     /// URI reversed from the file name.
     ea::string reversedUri_;
 
