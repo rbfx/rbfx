@@ -30,11 +30,11 @@
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../Graphics/PipelineState.h"
+#include "../IO/FileIdentifier.h"
 #include "../Math/Color.h"
 #include "../Math/Plane.h"
 #include "../Math/Rect.h"
 #include "../Resource/Image.h"
-#include "../IO/FileIdentifier.h"
 
 struct SDL_Window;
 

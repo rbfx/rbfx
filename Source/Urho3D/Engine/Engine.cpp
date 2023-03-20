@@ -362,7 +362,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         if (HasParameter(EP_WINDOW_MAXIMIZE) && GetParameter(EP_WINDOW_MAXIMIZE).GetBool())
             graphics->Maximize();
 
-        graphics->SetShaderCacheDir(FileIdentifier("conf", GetParameter(EP_SHADER_CACHE_DIR).GetString()));
+        graphics->SetShaderCacheDir(FileIdentifier::FromUri(GetParameter(EP_SHADER_CACHE_DIR).GetString()));
 
         if (HasParameter(EP_DUMP_SHADERS))
             graphics->BeginDumpShaders(GetParameter(EP_DUMP_SHADERS).GetString());
@@ -1024,7 +1024,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);
-    engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "ShaderCache");
+    engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "conf://ShaderCache");
     engineParameters_->DefineVariable(EP_SHADOWS, true).Overridable();
     engineParameters_->DefineVariable(EP_SOUND, true);
     engineParameters_->DefineVariable(EP_SOUND_BUFFER, 100);

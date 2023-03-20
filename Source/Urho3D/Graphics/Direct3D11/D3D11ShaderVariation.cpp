@@ -29,14 +29,13 @@
 #include "../../Graphics/ShaderConverter.h"
 #include "../../Graphics/VertexBuffer.h"
 #include "../../IO/File.h"
-#include "../../IO/FileSystem.h"
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
 
 #include <d3dcompiler.h>
 
 #include "../../DebugNew.h"
-#include "Urho3D/IO/VirtualFileSystem.h"
 
 namespace Urho3D
 {
@@ -86,7 +85,7 @@ bool ShaderVariation::Create()
     SplitPath(owner_->GetName(), path, name, extension);
     extension = ShaderVariation_shaderExtensions[type_];
 
-    auto& cacheDir = graphics_->GetShaderCacheDir();
+    const FileIdentifier& cacheDir = graphics_->GetShaderCacheDir();
     const FileIdentifier binaryShaderName = cacheDir + (name + "_" + StringHash(defines_).ToString() + extension);
 
     if (!LoadByteCode(binaryShaderName))
@@ -180,14 +179,13 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
     if (!vfs->Exists(binaryShaderName))
         return false;
 
-    const FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
-    const unsigned sourceTimeStamp = owner_->GetTimeStamp();
+    const FileTime sourceTimeStamp = owner_->GetTimeStamp();
     // If source code is loaded from a package, its timestamp will be zero. Else check that binary is not older
     // than source
     if (sourceTimeStamp)
     {
-        ea::string fullPath = vfs->GetAbsoluteNameFromIdentifier(binaryShaderName);
-        if (!fullPath.empty() && fileSystem->GetLastModifiedTime(fullPath) < sourceTimeStamp)
+        const FileTime bytecodeTimeStamp = vfs->GetLastModifiedTime(binaryShaderName, false);
+        if (bytecodeTimeStamp && bytecodeTimeStamp < sourceTimeStamp)
             return false;
     }
 
@@ -447,7 +445,7 @@ void ShaderVariation::SaveByteCode(const FileIdentifier& binaryShaderName)
     VirtualFileSystem* vfs = owner_->GetSubsystem<VirtualFileSystem>();
 
     auto file = vfs->OpenFile(binaryShaderName, FILE_WRITE);
-    if (!file || !file->IsOpen())
+    if (!file)
         return;
 
     file->WriteFileID("USHD");
