@@ -181,7 +181,7 @@ ea::string Time::GetTimeStamp(time_t timestamp, const char* format)
 
     char dateTime[128];
     tm timeInfo{};
-    localtime_s(&timeInfo, &timestamp);
+    std::localtime_s(&timeInfo, &timestamp);
     strftime(dateTime, sizeof(dateTime), format, &timeInfo);
     return dateTime;
 }

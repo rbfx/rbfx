@@ -27,6 +27,8 @@
 #include "Urho3D/IO/FileIdentifier.h"
 #include "Urho3D/IO/FileSystem.h"
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
