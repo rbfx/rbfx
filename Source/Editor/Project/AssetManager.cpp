@@ -315,7 +315,7 @@ bool AssetManager::IsAssetUpToDate(AssetDesc& assetDesc)
 
     // Check if the asset has not been modified
     const FileTime assetModificationTime = fs->GetLastModifiedTime(fileName, true);
-    if (assetDesc.modificationTime_ != fs->GetLastModifiedTime(fileName))
+    if (assetDesc.modificationTime_ != assetModificationTime)
     {
         if (!ignoredAssetUpdates_.contains(assetDesc.resourceName_))
             return false;
@@ -559,7 +559,7 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
 
     const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(resourceName, flavor);
     const ea::string fileName = GetFileName(resourceName);
-    const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName);
+    const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName, true);
 
     AssetDesc& assetDesc = assets_[resourceName];
     assetDesc.resourceName_ = resourceName;
