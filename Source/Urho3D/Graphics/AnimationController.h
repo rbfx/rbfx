@@ -148,6 +148,7 @@ public:
     unsigned GetAnimationLayer(unsigned index) const { return animations_[index].params_.layer_; }
     const AnimationParameters& GetAnimationParameters(unsigned index) const { return animations_[index].params_; }
     unsigned GetRevision() const { return revision_; }
+    void UpdatePose();
     /// @}
 
     /// Manage played animations on high level.
