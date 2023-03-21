@@ -384,6 +384,8 @@ void AnimationController::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Reset Skeleton", bool, resetSkeleton_, false, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT)
         .SetMetadata(AttributeMetadata::VectorStructElements, animationParametersNames);
+
+    URHO3D_ACTION_STATIC_LABEL("Update Pose", UpdatePose, "");
 }
 
 void AnimationController::ApplyAttributes()
@@ -453,6 +455,11 @@ void AnimationController::Update(float timeStep)
 
     // Node and attribute animations need to be applied manually
     CommitNodeAndAttributeAnimations();
+}
+
+void AnimationController::UpdatePose()
+{
+    Update(0.0f);
 }
 
 void AnimationController::CommitNodeAndAttributeAnimations()
