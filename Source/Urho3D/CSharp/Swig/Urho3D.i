@@ -311,6 +311,7 @@ namespace SDL
     public global::Urho3DNet.Graphics Graphics => (global::Urho3DNet.Graphics)Subsystems.Get(new StringHash("Graphics"));
     public global::Urho3DNet.Renderer Renderer => (global::Urho3DNet.Renderer)Subsystems.Get(new StringHash("Renderer"));
     public global::Urho3DNet.Log Log => (global::Urho3DNet.Log)Subsystems.Get(new StringHash("Log"));
+    public global::Urho3DNet.VirtualFileSystem VirtualFileSystem => (global::Urho3DNet.VirtualFileSystem)Subsystems.Get(new StringHash("VirtualFileSystem"));
   %}
 }
 #if URHO3D_NETWORK
@@ -430,6 +431,7 @@ URHO3D_REFCOUNTED_INTERFACE(Urho3D::AbstractFile, Urho3D::RefCounted);
 %include "Urho3D/IO/MemoryBuffer.h"
 %include "Urho3D/IO/VectorBuffer.h"
 %include "Urho3D/IO/FileSystem.h"
+%include "Urho3D/IO/FileIdentifier.h"
 %include "Urho3D/IO/MountPoint.h"
 %include "Urho3D/IO/VirtualFileSystem.h"
 %include "Urho3D/IO/PackageFile.h"

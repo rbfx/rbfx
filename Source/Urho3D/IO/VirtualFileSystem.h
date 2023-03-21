@@ -104,4 +104,27 @@ private:
     bool isWatching_{};
 };
 
+/// Helper class to mount and unmount an object automatically.
+class URHO3D_API MountPointGuard : public MovableNonCopyable
+{
+public:
+    explicit MountPointGuard(MountPoint* mountPoint);
+    ~MountPointGuard();
+
+    MountPointGuard(MountPointGuard&& other) noexcept;
+    MountPointGuard& operator=(MountPointGuard&& other) noexcept;
+
+    void Release();
+    MountPoint* Get() const { return mountPoint_; }
+
+    template <class T>
+    explicit MountPointGuard(const SharedPtr<T>& mountPoint)
+        : MountPointGuard(mountPoint.Get())
+    {
+    }
+
+private:
+    SharedPtr<MountPoint> mountPoint_;
+};
+
 }

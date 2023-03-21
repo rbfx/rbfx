@@ -80,11 +80,4 @@ URHO3D_EVENT(E_CHANGELANGUAGE, ChangeLanguage)
 {
 }
 
-/// Resource renamed
-URHO3D_EVENT(E_RESOURCERENAMED, ResourceRenamed)
-{
-    URHO3D_PARAM(P_FROM, From);                            // String
-    URHO3D_PARAM(P_TO, To);                                // String
-}
-
 }

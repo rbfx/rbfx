@@ -43,6 +43,8 @@ public:
     void LinkMemory(ea::string_view fileName, ea::string_view content);
     void UnlinkMemory(ea::string_view fileName);
 
+    void SendFileChangedEvent(ea::string_view fileName);
+
     /// Implement MountPoint.
     /// @{
     bool AcceptsScheme(const ea::string& scheme) const override;

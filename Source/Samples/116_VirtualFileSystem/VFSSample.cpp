@@ -76,18 +76,6 @@ void VFSSample::CreateText()
         message += "\n";
     }
 
-    message += "\n  ResourceDirs:\n";
-    for (auto& resDir : cache->GetResourceDirs())
-    {
-        message += resDir + "\n";
-    }
-
-    message += "\n  PackageFiles:\n";
-    for (auto& pakFile : cache->GetPackageFiles())
-    {
-        message += pakFile->GetName() + "\n";
-    }
-
     // Set String to display
     helloText->SetText(message);
 

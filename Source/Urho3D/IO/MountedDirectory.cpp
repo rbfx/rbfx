@@ -88,7 +88,7 @@ void MountedDirectory::ProcessUpdates()
 
         VariantMap& eventData = GetEventDataMap();
         eventData[P_FILENAME] = fileWatcher_->GetPath() + change.fileName_;
-        eventData[P_RESOURCENAME] = change.fileName_;
+        eventData[P_RESOURCENAME] = FileIdentifier{scheme_, change.fileName_}.ToUri();
         SendEvent(E_FILECHANGED, eventData);
     }
 }

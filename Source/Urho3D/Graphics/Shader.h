@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Graphics/GraphicsDefs.h"
+#include "../IO/ScanFlags.h"
 #include "../Resource/Resource.h"
 
 namespace Urho3D
@@ -61,7 +62,7 @@ public:
     bool IsGLSL() const { return GetName().ends_with(".glsl"); }
 
     /// Return the latest timestamp of the shader code and its includes.
-    unsigned GetTimeStamp() const { return timeStamp_; }
+    FileTime GetTimeStamp() const { return timeStamp_; }
 
     /// Return global list of shader files.
     static ea::string GetShaderFileList();
@@ -89,7 +90,7 @@ private:
     /// Compute shader variations.
     ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > csVariations_;
     /// Source code timestamp.
-    unsigned timeStamp_;
+    FileTime timeStamp_;
     /// Number of unique variations so far.
     unsigned numVariations_;
     /// Mapping of shader files for error reporting.
