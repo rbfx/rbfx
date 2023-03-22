@@ -47,6 +47,17 @@ namespace Urho3D
             for (auto vertexBufferElement = vertexBufferElements.begin(); vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement)
                 dbgVertexBufferElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n", elementSemanticNames[vertexBufferElement->semantic_], vertexBufferElement->index_, vertexBufferElement->offset_));*/
 
+            auto BuildLayoutElement = [=](const VertexElement* element, LayoutElement& layoutElement) {
+                LayoutElement result = {};
+                layoutElement.RelativeOffset = element->offset_;
+                layoutElement.NumComponents = sNumComponents[element->type_];
+                layoutElement.ValueType = sValueTypes[element->type_];
+                if (element->semantic_ == SEM_BLENDINDICES)
+                    layoutElement.ValueType = VT_UINT8;
+                layoutElement.IsNormalized = element->semantic_ == SEM_COLOR;
+                layoutElement.BufferSlot = element->perInstance_ ? 1 : 0;
+                layoutElement.Frequency = element->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
+            };
             for (const VertexElement* shaderVertexElement = shaderVertexElements.begin(); shaderVertexElement != shaderVertexElements.end(); ++shaderVertexElement) {
                 LayoutElement layoutElement = {};
                 layoutElement.InputIndex = attribCount;
@@ -54,14 +65,7 @@ namespace Urho3D
                 for (const VertexElement* vertexBufferElement = vertexBufferElements.begin(); vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement) {
                     if (vertexBufferElement->semantic_ != shaderVertexElement->semantic_ || vertexBufferElement->index_ != shaderVertexElement->index_)
                         continue;
-                    layoutElement.RelativeOffset = vertexBufferElement->offset_;
-                    layoutElement.NumComponents = sNumComponents[vertexBufferElement->type_];
-                    layoutElement.ValueType = sValueTypes[vertexBufferElement->type_];
-                    if (vertexBufferElement->semantic_ == SEM_BLENDINDICES)
-                        layoutElement.ValueType = VT_UINT8;
-                    layoutElement.IsNormalized = vertexBufferElement->semantic_ == SEM_COLOR;
-                    layoutElement.BufferSlot = vertexBufferElement->perInstance_ ? 1 : 0;
-                    layoutElement.Frequency = vertexBufferElement->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
+                    BuildLayoutElement(vertexBufferElement, layoutElement);
                     // Remove from vector processed vertex element
                     vertexBufferElements.erase(vertexBufferElement);
                     break;
@@ -70,7 +74,14 @@ namespace Urho3D
                 layoutElements.push_back(layoutElement);
                 ++attribCount;
             }
-
+            // Add last semantics if has left vertex buffer elements
+            for (const VertexElement* element = vertexBufferElements.begin(); element != vertexBufferElements.end(); ++element) {
+                LayoutElement layoutElement = {};
+                layoutElement.InputIndex = attribCount;
+                BuildLayoutElement(element, layoutElement);
+                layoutElements.push_back(layoutElement);
+                ++attribCount;
+            }
         }
 
         ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();

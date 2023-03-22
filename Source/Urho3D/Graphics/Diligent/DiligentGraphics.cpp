@@ -811,9 +811,9 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     if (!indexCount || !instanceCount || !pipelineState_)
         return;
 
-    assert(impl_->renderTargetViews_[0]);
     PrepareDraw();
 
+    assert(impl_->vertexBuffers_[0]);
     unsigned primitiveCount;
 
     PRIMITIVE_TOPOLOGY primitiveTopology;
@@ -936,7 +936,16 @@ bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buff
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 {
-    indexBuffer_ = buffer;
+    if (buffer != indexBuffer_) {
+        if (buffer)
+            impl_->deviceContext_->SetIndexBuffer(
+                buffer->GetGPUObject().Cast<IBuffer>(IID_Buffer),
+                0,
+                RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        else
+            impl_->deviceContext_->SetIndexBuffer(nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        indexBuffer_ = buffer;
+    }
     /*if (buffer != indexBuffer_)
     {
         if (buffer)
@@ -2467,14 +2476,11 @@ void Graphics::PrepareDraw()
             &impl_->vertexBuffers_[impl_->firstDirtyVB_],
             &impl_->vertexOffsets_[impl_->firstDirtyVB_],
             RESOURCE_STATE_TRANSITION_MODE_TRANSITION,
-            SET_VERTEX_BUFFERS_FLAG_RESET
+            SET_VERTEX_BUFFERS_FLAG_NONE
         );
         impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
     }
 
-    if (indexBuffer_ != nullptr)
-        impl_->deviceContext_->SetIndexBuffer(indexBuffer_->GetGPUObject().Cast<IBuffer>(IID_Buffer), 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-            
     static const float blendFactors[] = {1.f, 1.f, 1.f, 1.f};
     impl_->deviceContext_->SetBlendFactors(blendFactors);
 
