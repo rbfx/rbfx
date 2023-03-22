@@ -3,7 +3,7 @@
 
 namespace Urho3D
 {
-    ShaderResourceBinding::ShaderResourceBinding(Graphics* graphics, void* shaderResBindingObj) :
+    ShaderResourceBinding::ShaderResourceBinding(Graphics* graphics, Diligent::IShaderResourceBinding* shaderResBindingObj) :
         RefCounted(),
         graphics_(graphics),
         shaderResBindingObj_(shaderResBindingObj),

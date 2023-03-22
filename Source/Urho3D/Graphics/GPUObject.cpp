@@ -35,6 +35,8 @@ GPUObject::GPUObject(Graphics* graphics) :
 {
 #ifdef URHO3D_OPENGL
     object_.name_ = 0;
+#elif URHO3D_DILIGENT
+    object_ = nullptr;
 #else
     object_.ptr_ = nullptr;
 #endif

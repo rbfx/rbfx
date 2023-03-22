@@ -7,7 +7,7 @@ namespace Urho3D
 {
     using namespace Diligent;
     void ShaderResourceBinding::ReleaseResources() {
-        URHO3D_SAFE_RELEASE(shaderResBindingObj_);
+        shaderResBindingObj_ = nullptr;
     }
     void ShaderResourceBinding::UpdateInternalBindings() {
         hash_ = 0u;

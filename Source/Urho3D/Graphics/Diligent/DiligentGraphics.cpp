@@ -893,7 +893,7 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
             if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
             {
                 vertexBuffers_[i] = buffer;
-                impl_->vertexBuffers_[i] = (IBuffer*)buffer->GetGPUObject();
+                impl_->vertexBuffers_[i] = buffer->GetGPUObject().Cast<Diligent::IBuffer>(Diligent::IID_Buffer);
                 impl_->vertexOffsets_[i] = offset;
                 changed = true;
             }
@@ -1347,14 +1347,11 @@ void Graphics::SetDepthStencil(RenderSurface* depthStencil)
 
 void Graphics::SetDepthStencil(Texture2D* texture)
 {
-    assert(0);
     RenderSurface* depthStencil = nullptr;
     if (texture)
         depthStencil = texture->GetRenderSurface();
 
     SetDepthStencil(depthStencil);
-    // Constant depth bias depends on the bitdepth
-    impl_->rasterizerStateDirty_ = true;
 }
 
 void Graphics::SetViewport(const IntRect& rect)
@@ -2474,7 +2471,7 @@ void Graphics::PrepareDraw()
     }
 
     if (indexBuffer_ != nullptr)
-        impl_->deviceContext_->SetIndexBuffer((IBuffer*)indexBuffer_->GetGPUObject(), 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        impl_->deviceContext_->SetIndexBuffer(indexBuffer_->GetGPUObject().Cast<IBuffer>(IID_Buffer), 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
             
     static const float blendFactors[] = {1.f, 1.f, 1.f, 1.f};
     impl_->deviceContext_->SetBlendFactors(blendFactors);

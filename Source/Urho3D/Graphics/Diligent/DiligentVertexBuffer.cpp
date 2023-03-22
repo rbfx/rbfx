@@ -60,7 +60,7 @@ void VertexBuffer::Release()
         }
     }
 
-    URHO3D_SAFE_RELEASE(object_.ptr_);
+    object_ = nullptr;
 }
 
 bool VertexBuffer::SetData(const void* data)
@@ -86,7 +86,7 @@ bool VertexBuffer::SetData(const void* data)
     if (shadowData_ && data != shadowData_.get())
         memcpy(shadowData_.get(), data, vertexCount_ * vertexSize_);
 
-    if (object_.ptr_)
+    if (object_)
     {
         if (dynamic_)
         {
@@ -102,7 +102,7 @@ bool VertexBuffer::SetData(const void* data)
         else
         {
             graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer(
-                (IBuffer*)object_.ptr_,
+                object_.Cast<IBuffer>(IID_Buffer),
                 0,
                 vertexCount_ * vertexSize_,
                 data,
@@ -143,7 +143,7 @@ bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count
     if (shadowData_ && shadowData_.get() + start * vertexSize_ != data)
         memcpy(shadowData_.get() + start * vertexSize_, data, count * vertexSize_);
 
-    if (object_.ptr_)
+    if (object_)
     {
         if (dynamic_)
         {
@@ -168,7 +168,7 @@ bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count
             destBox.MaxZ = 1;
 
             graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer(
-                (IBuffer*)object_.ptr_,
+                object_.Cast<IBuffer>(IID_Buffer),
                 start * vertexSize_,
                 destBox.MinX + count * vertexSize_,
                 data,
@@ -207,7 +207,7 @@ void* VertexBuffer::Lock(unsigned start, unsigned count, bool discard)
     lockCount_ = count;
 
     // Because shadow data must be kept in sync, can only lock hardware buffer if not shadowed
-    if (object_.ptr_ && !shadowData_ && dynamic_)
+    if (object_ && !shadowData_ && dynamic_)
         return MapBuffer(start, count, discard);
     else if (shadowData_)
     {
@@ -268,11 +268,13 @@ bool VertexBuffer::Create()
         bufferDesc.Usage = dynamic_ ? USAGE_DYNAMIC : USAGE_DEFAULT;
         bufferDesc.Size = vertexCount_ * vertexSize_;
 
-        graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, (IBuffer**)&object_.ptr_);
-        if (object_.ptr_ == nullptr) {
+        RefCntAutoPtr<IBuffer> buffer;
+        graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, &buffer);
+        if (buffer == nullptr) {
             URHO3D_LOGERROR("Failed to create vertex buffer. See Logs");
             return false;
         }
+        object_ = buffer;
     }
 
     return true;
@@ -280,7 +282,7 @@ bool VertexBuffer::Create()
 
 bool VertexBuffer::UpdateToGPU()
 {
-    if (object_.ptr_ && shadowData_)
+    if (object_ && shadowData_)
         return SetData(shadowData_.get());
     else
         return false;
@@ -291,10 +293,10 @@ void* VertexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
     using namespace Diligent;
     void* hwData = nullptr;
 
-    if (object_.ptr_)
+    if (object_)
     {
         graphics_->GetImpl()->GetDeviceContext()->MapBuffer(
-            (IBuffer*)object_.ptr_,
+            object_.Cast<IBuffer>(IID_Buffer),
             MAP_WRITE,
             discard ? MAP_FLAG_DISCARD : MAP_FLAG_NONE,
             hwData
@@ -311,9 +313,9 @@ void* VertexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
 void VertexBuffer::UnmapBuffer()
 {
     using namespace Diligent;
-    if (object_.ptr_ && lockState_ == LOCK_HARDWARE)
+    if (object_ && lockState_ == LOCK_HARDWARE)
     {
-        graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer((IBuffer*)object_.ptr_, MAP_WRITE);
+        graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(object_.Cast<IBuffer>(IID_Buffer), MAP_WRITE);
         lockState_ = LOCK_NONE;
     }
 }

@@ -110,4 +110,30 @@
 #   undef URHO3D_SSE
 #endif
 
+#ifdef URHO3D_DILIGENT
+// Macro Workaround for Diligent
+#if defined(__ANDROID__)
+#define PLATFORM_ANDROID 1
+#elif defined(IOS)
+#define PLATFORM_IOS 1
+#elif defined(TVOS)
+#define PLATFORM_TVOS 1
+#elif defined(__APPLE__)
+#define PLATFORM_MACOS 1
+#elif UWP
+#define PLATFORM_UNIVERSAL_WINDOWS 1
+#elif defined(_WIN32)
+#define PLATFORM_WIN32 1
+#elif defined(RPI)
+#define PLATFORM_LINUX 1 // As workaround, we use PLATFORM_LINUX for raspberry
+#elif defined(__EMSCRIPTEN__)
+#define PLATFORM_EMSCRIPTEN 1
+#elif defined(__linux__)
+#define PLATFORM_LINUX 1
+#else
+#error Unsupported platform
+#endif
+
+#endif
+
 #endif

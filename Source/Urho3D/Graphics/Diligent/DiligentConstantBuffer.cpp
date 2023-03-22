@@ -39,7 +39,7 @@ void ConstantBuffer::OnDeviceReset()
 
 void ConstantBuffer::Release()
 {
-    URHO3D_SAFE_RELEASE(object_.ptr_);
+    object_ = nullptr;
     size_ = 0;
 }
 
@@ -71,11 +71,13 @@ bool ConstantBuffer::SetSize(unsigned size)
         bufferDesc.BindFlags = BIND_UNIFORM_BUFFER;
         //bufferDesc.Mode = BUFFER_MODE_RAW;
 
-        graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, 0, (IBuffer**)&object_.ptr_);
-        if (object_.ptr_ == nullptr) {
+        RefCntAutoPtr<IBuffer> buffer;
+        graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, 0, &buffer);
+        if (buffer == nullptr) {
             URHO3D_LOGERROR("Failed to create constant buffer. See logs!");
             return false;
         }
+        object_ = buffer;
     }
 
     BuildHash();
@@ -85,8 +87,8 @@ bool ConstantBuffer::SetSize(unsigned size)
 void ConstantBuffer::Update(const void* data)
 {
     using namespace Diligent;
-    if (object_.ptr_) {
-        graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer((IBuffer*)object_.ptr_, 0, size_, data, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    if (object_) {
+        graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer(object_.Cast<IBuffer>(IID_Buffer), 0, size_, data, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
 }
 

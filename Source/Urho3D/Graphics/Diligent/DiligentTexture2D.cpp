@@ -53,7 +53,7 @@ void Texture2D::OnDeviceReset()
 
 void Texture2D::Release()
 {
-    if (graphics_ && object_.ptr_)
+    if (graphics_ && object_)
     {
         VariantMap& eventData = GetEventDataMap();
         eventData[GPUResourceReleased::P_OBJECT] = this;
@@ -69,17 +69,17 @@ void Texture2D::Release()
     if (renderSurface_)
         renderSurface_->Release();
 
-    URHO3D_SAFE_RELEASE(shaderResourceView_);
-    URHO3D_SAFE_RELEASE(resolveTexture_);
-    URHO3D_SAFE_RELEASE(object_.ptr_);
-    URHO3D_SAFE_RELEASE(sampler_);
+    sampler_ = nullptr;
+    shaderResourceView_ = nullptr;
+    resolveTexture_ = nullptr;
+    object_ = nullptr;
 }
 
 bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, const void* data)
 {
      URHO3D_PROFILE("SetTextureData");
 
-     if (!object_.ptr_)
+     if (!object_)
     {
          URHO3D_LOGERROR("No texture created, can not set data");
          return false;
@@ -139,7 +139,7 @@ bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, con
 
          MappedTextureSubresource mappedData;
          graphics_->GetImpl()->GetDeviceContext()->MapTextureSubresource(
-             (ITexture*)object_.ptr_,
+             object_.Cast<ITexture>(IID_Texture),
              subResource,
              0,
              MAP_WRITE,
@@ -151,7 +151,7 @@ bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, con
          for (int row = 0; row < height; ++row)
                 memcpy((unsigned char*)mappedData.pData + (row + y) * mappedData.Stride + rowStart, src + row *
                 rowSize, rowSize);
-         graphics_->GetImpl()->GetDeviceContext()->UnmapTextureSubresource((ITexture*)object_.ptr_, subResource, 0);
+         graphics_->GetImpl()->GetDeviceContext()->UnmapTextureSubresource(object_.Cast<ITexture>(IID_Texture), subResource, 0);
     }
      else
     {
@@ -159,7 +159,7 @@ bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, con
          resData.pData = data;
          resData.Stride = rowSize;
          graphics_->GetImpl()->GetDeviceContext()->UpdateTexture(
-             (ITexture*)object_.ptr_,
+             object_.Cast<ITexture>(IID_Texture),
              subResource,
              0,
              destBox,
@@ -229,7 +229,7 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         // high for new size
         if (IsCompressed() && requestedLevels_ > 1)
             requestedLevels_ = 0;
-        if (width_ != levelWidth || height_ != levelHeight || format != format_ || !object_.ptr_)
+        if (width_ != levelWidth || height_ != levelHeight || format != format_ || !object_)
             SetSize(levelWidth, levelHeight, format, usage_);
 
         for (unsigned i = 0; i < levels_; ++i)
@@ -270,7 +270,7 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         height /= (1 << mipsToSkip);
 
         SetNumLevels(Max((levels - mipsToSkip), 1U));
-        if (width_ != width || height_ != height || format != format_ || !object_.ptr_)
+        if (width_ != width || height_ != height || format != format_ || !object_)
             SetSize(width, height, format, usage_);
 
         for (unsigned i = 0; i < levels_ && i < levels - mipsToSkip; ++i)
@@ -438,12 +438,17 @@ bool Texture2D::Create()
     /*if (usage_ == TEXTURE_DEPTHSTENCIL && multiSample_ > 1 && graphics_->GetImpl()->GetDevice()->GetFeatureLevel() <
        D3D_FEATURE_LEVEL_10_1) textureDesc.BindFlags &= ~D3D11_BIND_SHADER_RESOURCE;*/
 
-    graphics_->GetImpl()->GetDevice()->CreateTexture(textureDesc, nullptr, (ITexture**)&object_.ptr_);
-    if (!object_.ptr_)
     {
-        URHO3D_LOGERROR("Failed to create texture");
-        return false;
+        RefCntAutoPtr<ITexture> texture;
+        graphics_->GetImpl()->GetDevice()->CreateTexture(textureDesc, nullptr, &texture);
+        if (!texture)
+        {
+            URHO3D_LOGERROR("Failed to create texture");
+            return false;
+        }
+        object_ = texture;
     }
+
 
     //// Create resolve texture for multisampling if necessary
     if (multiSample_ > 1 && autoResolve_)
@@ -453,7 +458,7 @@ bool Texture2D::Create()
         if (levels_ != 1)
             textureDesc.MiscFlags |= MISC_TEXTURE_FLAG_GENERATE_MIPS;
 
-        graphics_->GetImpl()->GetDevice()->CreateTexture(textureDesc, nullptr, (ITexture**)&resolveTexture_);
+        graphics_->GetImpl()->GetDevice()->CreateTexture(textureDesc, nullptr, &resolveTexture_);
         if (!resolveTexture_)
         {
             URHO3D_LOGERROR("Failed to create resolve texture");
@@ -463,7 +468,7 @@ bool Texture2D::Create()
 
     if (textureDesc.BindFlags & BIND_SHADER_RESOURCE)
     {
-        ITexture* viewObject = (ITexture*)(resolveTexture_ ? resolveTexture_ : object_.ptr_);
+        RefCntAutoPtr<ITexture> viewObject = (resolveTexture_ ? resolveTexture_ : object_.Cast<ITexture>(IID_Texture));
         shaderResourceView_ = viewObject->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
         if (!shaderResourceView_)
         {
@@ -474,14 +479,14 @@ bool Texture2D::Create()
 
     if (usage_ == TEXTURE_RENDERTARGET)
     {
-        ITexture* tex = (ITexture*)object_.ptr_;
+        RefCntAutoPtr<ITexture> tex = object_.Cast<ITexture>(IID_Texture);
         TextureViewDesc renderTargetViewDesc;
         renderTargetViewDesc.Name = (GetName() + "(RT)").c_str();
         renderTargetViewDesc.Format = textureDesc.Format;
         renderTargetViewDesc.TextureDim = RESOURCE_DIM_TEX_2D;
         renderTargetViewDesc.ViewType = TEXTURE_VIEW_RENDER_TARGET;
 
-        tex->CreateView(renderTargetViewDesc, (ITextureView**)&renderSurface_->renderTargetView_);
+        tex->CreateView(renderTargetViewDesc, &renderSurface_->renderTargetView_);
         if (!renderSurface_->renderTargetView_)
         {
             URHO3D_LOGERROR("Failed to create rendertarget view for texture.");
@@ -490,13 +495,13 @@ bool Texture2D::Create()
     }
     else if (usage_ == TEXTURE_DEPTHSTENCIL)
     {
-        ITexture* tex = (ITexture*)object_.ptr_;
+        RefCntAutoPtr<ITexture> tex = object_.Cast<ITexture>(IID_Texture);
         TextureViewDesc renderTargetViewDesc;
         renderTargetViewDesc.Name = (GetName() + "(Depth)").c_str();
         renderTargetViewDesc.Format = (TEXTURE_FORMAT)GetDSVFormat(textureDesc.Format);
         renderTargetViewDesc.TextureDim = RESOURCE_DIM_TEX_2D;
         renderTargetViewDesc.ViewType = TEXTURE_VIEW_DEPTH_STENCIL;
-        tex->CreateView(renderTargetViewDesc, (ITextureView**)&renderSurface_->renderTargetView_);
+        tex->CreateView(renderTargetViewDesc, &renderSurface_->renderTargetView_);
         if (!renderSurface_->renderTargetView_)
         {
             URHO3D_LOGERROR("Failed to create depth-stencil vie for texture.");

@@ -74,10 +74,10 @@ void TextureCube::Release()
             renderSurfaces_[i]->Release();
     }
 
-    URHO3D_SAFE_RELEASE(object_.ptr_);
-    URHO3D_SAFE_RELEASE(resolveTexture_);
-    URHO3D_SAFE_RELEASE(shaderResourceView_);
-    URHO3D_SAFE_RELEASE(sampler_);
+    sampler_ = nullptr;
+    resolveTexture_ = nullptr;
+    shaderResourceView_ = nullptr;
+    object_ = nullptr;
 }
 
 bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int width, int height, const void* data)
@@ -85,7 +85,7 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
     using namespace Diligent;
     URHO3D_PROFILE("SetTextureData");
 
-    if (!object_.ptr_)
+    if (!object_)
     {
         URHO3D_LOGERROR("No texture created, can not set data");
         return false;
@@ -144,7 +144,7 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
 
         MappedTextureSubresource mappedData;
         graphics_->GetImpl()->GetDeviceContext()->MapTextureSubresource(
-            (ITexture*)object_.ptr_,
+            object_.Cast<ITexture>(IID_Texture),
             subResource,
             0,
             MAP_WRITE,
@@ -154,7 +154,7 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
         );
         for (int row = 0; row < height; ++row)
                 memcpy((unsigned char*)mappedData.pData + (row + y) * mappedData.Stride + rowStart, src + row * rowSize, rowSize);
-        graphics_->GetImpl()->GetDeviceContext()->UnmapTextureSubresource((ITexture*)object_.ptr_, subResource, 0);
+        graphics_->GetImpl()->GetDeviceContext()->UnmapTextureSubresource(object_.Cast<ITexture>(IID_Texture), subResource, 0);
     }
     else
     {
@@ -162,7 +162,7 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
         resourceData.pData = data;
         resourceData.Stride = rowSize;
         graphics_->GetImpl()->GetDeviceContext()->UpdateTexture(
-            (ITexture*)object_.ptr_,
+            object_.Cast<ITexture>(IID_Texture),
             subResource,
             0,
             destBox,
@@ -493,11 +493,13 @@ bool TextureCube::Create()
         textureDesc.BindFlags |= BIND_DEPTH_STENCIL;
     textureDesc.CPUAccessFlags = usage_ == TEXTURE_DYNAMIC ? CPU_ACCESS_WRITE : CPU_ACCESS_NONE;
 
-    graphics_->GetImpl()->GetDevice()->CreateTexture(textureDesc, nullptr, (ITexture**)&object_.ptr_);
-    if (object_.ptr_ == nullptr) {
+    RefCntAutoPtr<ITexture> texture;
+    graphics_->GetImpl()->GetDevice()->CreateTexture(textureDesc, nullptr, &texture);
+    if (texture == nullptr) {
         URHO3D_LOGERROR("Failed to create texture");
         return false;
     }
+    object_ = texture;
 
     // Create resolve texture for multisampling
     if (multiSample_ > 1)
@@ -514,7 +516,7 @@ bool TextureCube::Create()
     }
 
 
-    shaderResourceView_ = ((ITexture*)object_.ptr_)->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
+    shaderResourceView_ = object_.Cast<ITexture>(IID_Texture)->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
     if (shaderResourceView_ == nullptr) {
         URHO3D_LOGERROR("Failed to create shader resource view for texture.");
         return false;
@@ -540,8 +542,8 @@ bool TextureCube::Create()
                 renderTargetViewDesc.NumMipLevels = 0;
             }
 
-            ((ITexture*)object_.ptr_)->CreateView(renderTargetViewDesc, (ITextureView**)&renderSurfaces_[i]->renderTargetView_);
-            if (&renderSurfaces_[i]->renderTargetView_== nullptr) {
+            object_.Cast<ITexture>(IID_Texture)->CreateView(renderTargetViewDesc, &renderSurfaces_[i]->renderTargetView_);
+            if (renderSurfaces_[i]->renderTargetView_ == nullptr) {
                 URHO3D_LOGERROR("Failed to create rendertarget view for texture");
                 return false;
             }

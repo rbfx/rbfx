@@ -97,15 +97,15 @@ namespace Urho3D
         ci.GraphicsPipeline.DSVFormat = (TEXTURE_FORMAT)desc_.depthStencilFormat_;
 
         if (desc_.vertexShader_)
-            ci.pVS = (IShader*)desc_.vertexShader_->GetGPUObject();
+            ci.pVS = desc_.vertexShader_->GetGPUObject().Cast<IShader>(IID_Shader);
         if (desc_.pixelShader_)
-            ci.pPS = (IShader*)desc_.pixelShader_->GetGPUObject();
+            ci.pPS = desc_.pixelShader_->GetGPUObject().Cast<IShader>(IID_Shader);
         if (desc_.domainShader_)
-            ci.pDS = (IShader*)desc_.domainShader_->GetGPUObject();
+            ci.pDS = desc_.domainShader_->GetGPUObject().Cast<IShader>(IID_Shader);
         if (desc_.hullShader_)
-            ci.pHS = (IShader*)desc_.hullShader_->GetGPUObject();
+            ci.pHS = desc_.hullShader_->GetGPUObject().Cast<IShader>(IID_Shader);
         if (desc_.geometryShader_)
-            ci.pGS = (IShader*)desc_.geometryShader_->GetGPUObject();
+            ci.pGS = desc_.geometryShader_->GetGPUObject().Cast<IShader>(IID_Shader);
 
         ci.GraphicsPipeline.BlendDesc.AlphaToCoverageEnable = desc_.alphaToCoverageEnabled_;
         ci.GraphicsPipeline.BlendDesc.IndependentBlendEnable = false;
@@ -154,17 +154,13 @@ namespace Urho3D
 
         ci.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
 
-        IPipelineState* pipelineState = nullptr;
-        graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &pipelineState);
+        graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &pipeline_);
 
-        assert(pipelineState);
+        assert(pipeline_ != nullptr);
 
         URHO3D_LOGDEBUGF("Created Graphics Pipeline (%d)", desc_.ToHash());
-        pipeline_ = pipelineState;
     }
     void PipelineState::ReleasePipeline() {
-        if (pipeline_)
-            static_cast<IPipelineState*>(pipeline_)->Release();
         pipeline_ = nullptr;
     }
 

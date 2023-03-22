@@ -76,7 +76,7 @@ void Texture::SetSRGB(bool enable)
     {
         sRGB_ = enable;
         // If texture had already been created, must recreate it to set the sRGB texture format
-        if (object_.name_)
+        if (object_)
             Create();
     }
 }
@@ -143,7 +143,7 @@ unsigned Texture::GetRowDataSize(int width) const
 
 void Texture::UpdateParameters()
 {
-    if ((!parametersDirty_ && sampler_) || !object_.ptr_)
+    if ((!parametersDirty_ && sampler_) || !object_)
         return;
 
     unsigned filterModeIndex = filterMode_ != FILTER_DEFAULT ? filterMode_ : graphics_->GetDefaultTextureFilterMode();

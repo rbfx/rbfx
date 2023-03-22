@@ -123,12 +123,12 @@ bool ShaderVariation::Create()
     if (!Compile())
         return false;
 
-    return object_.ptr_ != nullptr;
+    return object_ != nullptr;
 }
 
 void ShaderVariation::Release()
 {
-    if (object_.ptr_)
+    if (object_)
     {
         if (!graphics_)
             return;
@@ -441,7 +441,7 @@ bool ShaderVariation::Compile()
     CalculateConstantBufferSizes();
     GenerateVertexBindings(sourceCode);
 
-    IShader* shader = nullptr;
+    RefCntAutoPtr<IShader> shader;
     graphics_->GetImpl()->GetDevice()->CreateShader(shaderCI, &shader);
 
     if (!shader) {
@@ -449,7 +449,7 @@ bool ShaderVariation::Compile()
         return false;
     }
 
-    object_.ptr_ = shader;
+    object_ = shader;
 
     return true;
 }

@@ -27,6 +27,12 @@
 #include "../Math/Color.h"
 #include "../Resource/Resource.h"
 
+#ifdef URHO3D_DILIGENT
+#include <Diligent/Graphics/GraphicsEngine/interface/Texture.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/TextureView.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/Sampler.h>
+#endif
+
 namespace Urho3D
 {
 
@@ -196,6 +202,14 @@ public:
     /// Update dirty parameters to the texture object. Called by Graphics when assigning the texture.
     void UpdateParameters();
 
+#ifdef URHO3D_DILIGENT
+    /// Return shader resource view. Only used on Diligent, always use abstraction.
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> GetShaderResourceView() const { return shaderResourceView_; }
+    /// Return sampler state object. Only used on Diligent, always use abstraction.
+    Diligent::RefCntAutoPtr<Diligent::ISampler> GetSampler() const { return sampler_; }
+    /// Return resolve texture. Only used on Diligent, always use abstraction.
+    Diligent::RefCntAutoPtr<Diligent::ITexture> GetResolveTexture() const { return resolveTexture_; }
+#else
     /// Return shader resource view. Only used on Direct3D11.
     void* GetShaderResourceView() const { return shaderResourceView_; }
 
@@ -207,7 +221,7 @@ public:
 
     /// Return texture's target. Only used on OpenGL.
     unsigned GetTarget() const { return target_; }
-
+#endif
     /// Convert format to sRGB.
     /// @nobind
     unsigned GetSRGBFormat(unsigned format);
@@ -252,12 +266,18 @@ protected:
     /// OpenGL target.
     unsigned target_{};
 
+#ifdef URHO3D_DILIGENT
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> shaderResourceView_{};
+    Diligent::RefCntAutoPtr<Diligent::ISampler> sampler_{};
+    Diligent::RefCntAutoPtr<Diligent::ITexture> resolveTexture_{};
+#else
     /// Direct3D11 shader resource view.
     void* shaderResourceView_{};
     /// Direct3D11 sampler state object.
     void* sampler_{};
     /// Direct3D11 resolve texture object when multisample with autoresolve is used.
     void* resolveTexture_{};
+#endif
 
     /// Texture format.
     unsigned format_{};

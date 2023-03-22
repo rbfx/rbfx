@@ -32,6 +32,10 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../Graphics/ShaderResourceBinding.h"
 
+#ifdef URHO3D_DILIGENT
+#include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
+#endif
+
 #include <EASTL/algorithm.h>
 #include <EASTL/array.h>
 #include <EASTL/span.h>
@@ -276,7 +280,7 @@ public:
     ShaderResourceBinding* CreateSRB();
 #ifdef URHO3D_DILIGENT
     void BuildPipeline(Graphics* graphics);
-    void* GetGPUPipeline() { return pipeline_; }
+    Diligent::RefCntAutoPtr<Diligent::IPipelineState> GetGPUPipeline() const { return pipeline_; }
 #endif
 private:
 #ifdef URHO3D_DILIGENT
@@ -289,7 +293,7 @@ private:
 
     ea::vector<SharedPtr<ShaderResourceBinding>> shaderResourceBindings_;
 #ifdef URHO3D_DILIGENT
-    void* pipeline_;
+    Diligent::RefCntAutoPtr<Diligent::IPipelineState> pipeline_{};
 #endif
 };
 

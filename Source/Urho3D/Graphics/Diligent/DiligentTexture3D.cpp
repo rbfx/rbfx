@@ -51,7 +51,7 @@ void Texture3D::OnDeviceReset()
 
 void Texture3D::Release()
 {
-    if (graphics_ && object_.ptr_)
+    if (graphics_ && object_)
     {
         VariantMap& eventData = GetEventDataMap();
         eventData[GPUResourceReleased::P_OBJECT] = this;

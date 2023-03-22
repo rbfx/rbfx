@@ -26,6 +26,10 @@
 
 #include "../Container/Ptr.h"
 
+#ifdef URHO3D_DILIGENT
+#include <Diligent/Graphics/GraphicsEngine/interface/DeviceObject.h>
+#include <Diligent/Common/interface/RefCntAutoPtr.hpp>
+#endif
 namespace Urho3D
 {
 
@@ -61,10 +65,14 @@ public:
 
     /// Return the graphics subsystem associated with this GPU object.
     Graphics* GetGraphics() const;
+#ifdef URHO3D_DILIGENT
+    Diligent::RefCntAutoPtr<Diligent::IDeviceObject> GetGPUObject() const { return object_; }
+#else
     /// Return the object pointer. Applicable only on Direct3D.
     void* GetGPUObject() const { return object_.ptr_; }
     /// Return the object name. Applicable only on OpenGL.
     unsigned GetGPUObjectName() const { return object_.name_; }
+#endif
     /// Return whether data is lost due to context loss.
     /// @property
     bool IsDataLost() const { return dataLost_; }
@@ -75,7 +83,13 @@ protected:
     /// Graphics subsystem.
     WeakPtr<Graphics> graphics_;
     /// Object pointer or name.
+#ifdef URHO3D_DILIGENT
+    /// Object pointer (Diligent)
+    /// Note: Is more safe to use smart pointers from Diligent
+    Diligent::RefCntAutoPtr<Diligent::IDeviceObject> object_;
+#else
     GPUObjectHandle object_{};
+#endif
     /// Data lost flag.
     bool dataLost_{};
     /// Data pending flag.

@@ -25,6 +25,11 @@
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/Viewport.h"
 
+#ifdef URHO3D_DILIGENT
+#include <Diligent/Common/interface/RefCntAutoPtr.hpp>
+#include <Diligent/Graphics/GraphicsEngine/interface/TextureView.h>
+#endif
+
 #include <atomic>
 
 namespace Urho3D
@@ -120,6 +125,12 @@ public:
     /// @property
     Texture* GetParentTexture() const { return parentTexture_; }
 
+#ifdef URHO3D_DILIGENT
+    /// Return Diligent rendertarget or depth-stencil view.
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> GetRenderTargetView() const { return renderTargetView_; }
+    /// Return Diligent read-only depth-stencil view. May be null if not applicable.
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> GetReadOnlyView() const { return readOnlyView_; }
+#else
     /// Return Direct3D11 rendertarget or depth-stencil view. Not valid on OpenGL.
     void* GetRenderTargetView() const { return renderTargetView_; }
 
@@ -131,7 +142,7 @@ public:
 
     /// Return OpenGL renderbuffer if created.
     unsigned GetRenderBuffer() const { return renderBuffer_; }
-
+#endif
     /// Return whether multisampled rendertarget needs resolve.
     /// @property
     bool IsResolveDirty() const { return resolveDirty_; }
@@ -154,6 +165,12 @@ private:
     /// Parent texture.
     WeakPtr<Texture> parentTexture_;
 
+#ifdef URHO3D_DILIGENT
+    /// Diligent rendertarget or depth-stencil view.
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> renderTargetView_;
+    /// Diligent read-only depth-stencil view. Present only on depth-stencil surfaces.
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> readOnlyView_;
+#else
     // https://github.com/doxygen/doxygen/issues/7623
     union
     {
@@ -175,6 +192,7 @@ private:
         /// @nobind
         unsigned target_;
     };
+#endif
 
     /// Viewports.
     ea::vector<SharedPtr<Viewport> > viewports_;

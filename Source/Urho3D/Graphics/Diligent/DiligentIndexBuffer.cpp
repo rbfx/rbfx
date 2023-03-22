@@ -55,7 +55,7 @@ void IndexBuffer::Release()
     if (graphics_ && graphics_->GetIndexBuffer() == this)
         graphics_->SetIndexBuffer(nullptr);
 
-    URHO3D_SAFE_RELEASE(object_.ptr_);
+    object_ = nullptr;
 }
 
 bool IndexBuffer::SetData(const void* data)
@@ -76,7 +76,7 @@ bool IndexBuffer::SetData(const void* data)
     if (shadowData_ && data != shadowData_.get())
         memcpy(shadowData_.get(), data, indexCount_ * indexSize_);
 
-    if (object_.ptr_)
+    if (object_)
     {
         if (dynamic_)
         {
@@ -92,7 +92,7 @@ bool IndexBuffer::SetData(const void* data)
         else
         {
             graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer(
-                (IBuffer*)object_.ptr_,
+                object_.Cast<IBuffer>(IID_Buffer),
                 0,
                 indexCount_ * indexSize_,
                 data,
@@ -191,7 +191,7 @@ void* IndexBuffer::Lock(unsigned start, unsigned count, bool discard)
     lockCount_ = count;
 
     // Because shadow data must be kept in sync, can only lock hardware buffer if not shadowed
-    if (object_.ptr_ && !shadowData_ && dynamic_)
+    if (object_ && !shadowData_ && dynamic_)
         return MapBuffer(start, count, discard);
     else if (shadowData_)
     {
@@ -251,11 +251,13 @@ bool IndexBuffer::Create()
         bufferDesc.Usage = dynamic_ ? USAGE_DYNAMIC : USAGE_DEFAULT;
         bufferDesc.Size = indexCount_ * indexSize_;
 
-        graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, (IBuffer**)&object_.ptr_);
-        if (!object_.ptr_) {
+        RefCntAutoPtr<IBuffer> buffer;
+        graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, &buffer);
+        if (!buffer) {
             URHO3D_LOGERROR("Failed to create index buffer.");
             return false;
         }
+        object_ = buffer;
     }
 
     return true;
@@ -263,7 +265,7 @@ bool IndexBuffer::Create()
 
 bool IndexBuffer::UpdateToGPU()
 {
-    if (object_.ptr_ && shadowData_)
+    if (object_ && shadowData_)
         return SetData(shadowData_.get());
     else
         return false;
