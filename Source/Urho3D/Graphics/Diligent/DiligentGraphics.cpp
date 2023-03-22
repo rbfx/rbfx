@@ -1946,13 +1946,13 @@ unsigned Graphics::GetFloat32Format()
 unsigned Graphics::GetLinearDepthFormat()
 {
     using namespace Diligent;
-    return TEX_FORMAT_R32_FLOAT;
+    return TEX_FORMAT_D32_FLOAT;
 }
 
 unsigned Graphics::GetDepthStencilFormat()
 {
     using namespace Diligent;
-    return TEX_FORMAT_R24G8_TYPELESS;
+    return TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
 unsigned Graphics::GetReadableDepthFormat()
@@ -2337,9 +2337,9 @@ void Graphics::CheckFeatureSupport()
     deferredSupport_ = true;
     hardwareShadowSupport_ = true;
     instancingSupport_ = true;
-    shadowMapFormat_ = DXGI_FORMAT_R16_TYPELESS;
-    hiresShadowMapFormat_ = DXGI_FORMAT_R32_TYPELESS;
-    dummyColorFormat_ = DXGI_FORMAT_UNKNOWN;
+    shadowMapFormat_ = TEX_FORMAT_D16_UNORM;
+    hiresShadowMapFormat_ = TEX_FORMAT_D32_FLOAT;
+    dummyColorFormat_ = TEX_FORMAT_UNKNOWN;
     sRGBSupport_ = true;
     sRGBWriteSupport_ = true;
 

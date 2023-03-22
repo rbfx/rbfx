@@ -125,7 +125,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
         compositor_->ProcessUserBatch(shaderProgramDesc_, batchCompositorPass->GetFlags(),
             key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_, light, hasShadow, subpass);
 #ifdef  URHO3D_DEBUG
-        pipelineStateDesc_.debugName_ = Format("DrawablePipeline - {}",key.material_->GetName());
+        pipelineStateDesc_.debugName_ = Format("DrawablePipeline({})",key.material_->GetName());
 #endif
         SetupUserPassState(key.drawable_, key.material_, key.pass_, lightMaskToStencil);
 
@@ -165,6 +165,9 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
         pipelineStateDesc_.colorWriteEnabled_ = true;
         pipelineStateDesc_.constantDepthBias_ = 0.0f;
         pipelineStateDesc_.slopeScaledDepthBias_ = 0.0f;
+#ifdef URHO3D_DILIGENT
+        pipelineStateDesc_.depthStencilFormat_ = Graphics::GetRGFloat32Format();
+#endif
     }
     else
     {
@@ -178,6 +181,11 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
         desc.constantDepthBias_ = desc.constantDepthBias_ * multiplier + addition;
         desc.slopeScaledDepthBias_ *= multiplier;
 #endif
+#ifdef URHO3D_DILIGENT
+        pipelineStateDesc_.depthStencilFormat_ = shadowMapAllocator_->GetSettings().use16bitShadowMaps_
+            ? graphics_->GetShadowMapFormat()
+            : graphics_->GetHiresShadowMapFormat();
+#endif
     }
 
     pipelineStateDesc_.depthWriteEnabled_ = pass->GetDepthWrite();
@@ -185,9 +193,6 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
 
     pipelineStateDesc_.cullMode_ = GetEffectiveCullMode(pass->GetCullMode(), material->GetShadowCullMode(), false);
 
-#ifdef URHO3D_DILIGENT
-    pipelineStateDesc_.depthStencilFormat_ = graphics_->GetSwapChainDepthFormat();
-#endif
 }
 
 void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* lightProcessor)
