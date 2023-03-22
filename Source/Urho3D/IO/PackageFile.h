@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../IO/MountPoint.h"
+#include "Urho3D/IO/MountPoint.h"
+#include "Urho3D/IO/ScanFlags.h"
 
 namespace Urho3D
 {
@@ -60,10 +61,6 @@ public:
 
     /// Return all file entries.
     const ea::unordered_map<ea::string, PackageEntry>& GetEntries() const { return entries_; }
-
-    /// Return the package file name.
-    /// @property
-    const ea::string& GetName() const { return fileName_; }
 
     /// Return hash of the package file name.
     StringHash GetNameHash() const { return nameHash_; }
@@ -103,20 +100,19 @@ public:
         return EMPTY_STRING;
     }
 
-    /// Scan package for specified files.
-    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
-
-    /// Checks if mount point accepts scheme.
+    /// Implement MountPoint.
+    /// @{
     bool AcceptsScheme(const ea::string& scheme) const override;
-
-    /// Check if a file exists within the mount point.
     bool Exists(const FileIdentifier& fileName) const override;
-
-    /// Open package file. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
+    ea::optional<FileTime> GetLastModifiedTime(
+        const FileIdentifier& fileName, bool creationIsModification) const override;
 
-    /// Get full path to a file if it exists in a mount point.
-    ea::string GetFileName(const FileIdentifier& fileName) const override;
+    const ea::string& GetName() const override { return fileName_; }
+
+    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
+        ScanFlags flags) const override;
+    /// @}
 
 private:
     /// File entries.

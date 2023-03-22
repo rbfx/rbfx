@@ -23,6 +23,8 @@
 #include "../CommonUtils.h"
 
 #include <Urho3D/Engine/ConfigFile.h>
+#include <Urho3D/IO/MountedExternalMemory.h>
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Resource/JSONFile.h>
@@ -30,58 +32,12 @@
 namespace
 {
 
-// TODO: Extract to common place?
-class MountedExternalMemory : public MountPoint
-{
-    URHO3D_OBJECT(MountedExternalMemory, MountPoint);
-
-public:
-    explicit MountedExternalMemory(Context* context) : MountPoint(context) {}
-
-    void AddFile(const ea::string& fileName, MemoryBuffer memory)
-    {
-        files_.emplace(fileName, memory);
-    }
-
-    void RemoveFile(const ea::string& fileName)
-    {
-        files_.erase(fileName);
-    }
-
-    /// Implement MountPoint.
-    /// @{
-    bool AcceptsScheme(const ea::string& scheme) const override { return scheme == "memory"; }
-
-    bool Exists(const FileIdentifier& fileName) const override
-    {
-        return AcceptsScheme(fileName.scheme_) && files_.contains(fileName.fileName_);
-    }
-
-    AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override
-    {
-        if (mode & FILE_WRITE)
-            return nullptr;
-
-        const auto iter = files_.find(fileName.fileName_);
-        if (iter == files_.end())
-            return nullptr;
-
-        return AbstractFilePtr(&iter->second, this);
-    }
-
-    ea::string GetFileName(const FileIdentifier& fileName) const override { return EMPTY_STRING; }
-    /// @}
-
-private:
-    ea::unordered_map<ea::string, MemoryBuffer> files_{};
-};
-
 class TestFileSystem
 {
 public:
     TestFileSystem(Context* context)
         : fileSystem_(context->GetSubsystem<VirtualFileSystem>())
-        , mountPoint_(MakeShared<MountedExternalMemory>(context))
+        , mountPoint_(MakeShared<MountedExternalMemory>(context, "memory"))
     {
         fileSystem_->Mount(mountPoint_);
     }
@@ -91,14 +47,14 @@ public:
         fileSystem_->Unmount(mountPoint_);
     }
 
-    void AddFile(const ea::string& fileName, MemoryBuffer memory)
+    void AddFile(ea::string_view fileName, MemoryBuffer memory)
     {
-        mountPoint_->AddFile(fileName, memory);
+        mountPoint_->LinkMemory(fileName, memory);
     }
 
-    void AddFile(const ea::string& fileName, const ea::string& content)
+    void AddFile(ea::string_view fileName, const ea::string& content)
     {
-        mountPoint_->AddFile(fileName, MemoryBuffer{content.data(), content.size()});
+        mountPoint_->LinkMemory(fileName, content);
     }
 
 private:

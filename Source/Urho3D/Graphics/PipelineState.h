@@ -277,21 +277,21 @@ public:
     /// @}
 
     /// Create Shader Resource Binding
-    ShaderResourceBinding* CreateSRB();
+    Urho3D::ShaderResourceBinding* CreateSRB();
 #ifdef URHO3D_DILIGENT
     void BuildPipeline(Graphics* graphics);
     Diligent::RefCntAutoPtr<Diligent::IPipelineState> GetGPUPipeline() const { return pipeline_; }
 #endif
 private:
 #ifdef URHO3D_DILIGENT
-    ShaderResourceBinding* CreateInternalSRB();
+    Urho3D::ShaderResourceBinding* CreateInternalSRB();
     void ReleasePipeline();
 #endif
     WeakPtr<PipelineStateCache> owner_;
     PipelineStateDesc desc_;
     WeakPtr<ShaderProgramLayout> shaderProgramLayout_{};
 
-    ea::vector<SharedPtr<ShaderResourceBinding>> shaderResourceBindings_;
+    ea::vector<SharedPtr<Urho3D::ShaderResourceBinding>> shaderResourceBindings_;
 #ifdef URHO3D_DILIGENT
     Diligent::RefCntAutoPtr<Diligent::IPipelineState> pipeline_{};
 #endif

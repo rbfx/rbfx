@@ -384,8 +384,9 @@ bool Serializable::LoadFile(const ea::string& resourceName)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     // Router may redirect to different file.
-    ea::string realResourceName = resourceName;
-    cache->RouteResourceName(realResourceName, RESOURCE_CHECKEXISTS);
+    auto realResourceId = FileIdentifier::FromUri(resourceName);
+    cache->RouteResourceName(realResourceId);
+    const ea::string realResourceName = realResourceId.ToUri();
     ea::string extension = GetExtension(realResourceName);
 
     if (extension == ".xml")

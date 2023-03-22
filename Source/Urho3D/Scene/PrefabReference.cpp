@@ -35,7 +35,7 @@ namespace Urho3D
 
 PrefabReference::PrefabReference(Context* context)
     : BaseClassName(context)
-    , prefabRef_(PrefabReference::GetTypeStatic())
+    , prefabRef_(PrefabResource::GetTypeStatic())
 {
 }
 

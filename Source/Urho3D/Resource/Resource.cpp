@@ -27,9 +27,8 @@
 #include "../Core/Thread.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/BinaryArchive.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
 #include "../IO/Log.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../Resource/Resource.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLElement.h"
@@ -151,20 +150,18 @@ bool Resource::Save(Serializer& dest) const
     return false;
 }
 
-bool Resource::LoadFile(const ea::string& fileName)
+bool Resource::LoadFile(const FileIdentifier& fileName)
 {
-    File file(context_);
-    return file.Open(fileName, FILE_READ) && Load(file);
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+    auto file = vfs->OpenFile(fileName, FILE_READ);
+    return file && Load(*file);
 }
 
-bool Resource::SaveFile(const ea::string& fileName) const
+bool Resource::SaveFile(const FileIdentifier& fileName) const
 {
-    auto fs = GetSubsystem<FileSystem>();
-    if (!fs->CreateDirsRecursive(GetPath(fileName)))
-        return false;
-
-    File file(context_);
-    return file.Open(fileName, FILE_WRITE) && Save(file);
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+    auto file = vfs->OpenFile(fileName, FILE_WRITE);
+    return file && Save(*file);
 }
 
 void Resource::SetName(const ea::string& name)
@@ -249,17 +246,11 @@ bool SimpleResource::Save(Serializer& dest, InternalResourceFormat format) const
     }
 }
 
-bool SimpleResource::SaveFile(const ea::string& fileName, InternalResourceFormat format) const
+bool SimpleResource::SaveFile(const FileIdentifier& fileName, InternalResourceFormat format) const
 {
-    auto fs = GetSubsystem<FileSystem>();
-    if (!fs->CreateDirsRecursive(GetPath(fileName)))
-        return false;
-
-    File file(context_);
-    if (!file.Open(fileName, FILE_WRITE))
-        return false;
-
-    return Save(file, format);
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+    auto file = vfs->OpenFile(fileName, FILE_WRITE);
+    return file && Save(*file, format);
 }
 
 bool SimpleResource::BeginLoad(Deserializer& source)
@@ -289,8 +280,17 @@ bool SimpleResource::BeginLoad(Deserializer& source)
             if (!xmlFile.Load(source))
                 return false;
 
-            XMLInputArchive archive{context_, xmlFile.GetRoot(), &xmlFile};
-            SerializeValue(archive, GetRootBlockName(), *this);
+            XMLElement xmlRoot = xmlFile.GetRoot();
+            if (xmlRoot.GetName() == GetRootBlockName())
+            {
+                XMLInputArchive archive{context_, xmlFile.GetRoot(), &xmlFile};
+                SerializeValue(archive, GetRootBlockName(), *this);
+            }
+            else
+            {
+                if (!LoadLegacyXML(xmlRoot))
+                    return false;
+            }
 
             loadFormat_ = format;
             return true;
@@ -329,7 +329,7 @@ bool SimpleResource::Save(Serializer& dest) const
     return Save(dest, loadFormat_.value_or(GetDefaultInternalFormat()));
 }
 
-bool SimpleResource::SaveFile(const ea::string& fileName) const
+bool SimpleResource::SaveFile(const FileIdentifier& fileName) const
 {
     return SaveFile(fileName, loadFormat_.value_or(GetDefaultInternalFormat()));
 }

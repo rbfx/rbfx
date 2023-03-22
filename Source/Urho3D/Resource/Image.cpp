@@ -27,6 +27,7 @@
 #include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../Resource/Decompress.h"
 
 #include <SDL_surface.h>
@@ -920,26 +921,34 @@ bool Image::Save(Serializer& dest) const
     return success;
 }
 
-bool Image::SaveFile(const ea::string& fileName) const
+bool Image::SaveFile(const FileIdentifier& fileName) const
 {
+    // TODO(vfs): This function can save only to the host filesystem.
+    const ea::string& absoluteFileName = fileName.fileName_;
+    if (fileName.scheme_ != "file")
+    {
+        URHO3D_LOGERROR("Can not save image {}", fileName.ToUri());
+        return false;
+    }
+
     auto fs = GetSubsystem<FileSystem>();
-    if (!fs->CreateDirsRecursive(GetPath(fileName)))
+    if (!fs->CreateDirsRecursive(GetPath(absoluteFileName)))
         return false;
 
-    if (fileName.ends_with(".dds", false))
-        return SaveDDS(fileName);
-    else if (fileName.ends_with(".bmp", false))
-        return SaveBMP(fileName);
-    else if (fileName.ends_with(".jpg", false) || fileName.ends_with(".jpeg", false))
-        return SaveJPG(fileName, 100);
-    else if (fileName.ends_with(".tga", false))
-        return SaveTGA(fileName);
+    if (absoluteFileName.ends_with(".dds", false))
+        return SaveDDS(absoluteFileName);
+    else if (absoluteFileName.ends_with(".bmp", false))
+        return SaveBMP(absoluteFileName);
+    else if (absoluteFileName.ends_with(".jpg", false) || absoluteFileName.ends_with(".jpeg", false))
+        return SaveJPG(absoluteFileName, 100);
+    else if (absoluteFileName.ends_with(".tga", false))
+        return SaveTGA(absoluteFileName);
 #ifdef URHO3D_WEBP
-    else if (fileName.ends_with(".webp", false))
-        return SaveWEBP(fileName, 100.0f);
+    else if (absoluteFileName.ends_with(".webp", false))
+        return SaveWEBP(absoluteFileName, 100.0f);
 #endif
     else
-        return SavePNG(fileName);
+        return SavePNG(absoluteFileName);
 }
 
 bool Image::SetSize(int width, int height, unsigned components)

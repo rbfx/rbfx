@@ -28,6 +28,7 @@
 #include "../Project/ProjectRequest.h"
 #include "../Project/ToolManager.h"
 
+#include <Urho3D/IO/MountPoint.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -72,7 +73,7 @@ public:
 
 private:
     Context* context_{};
-    StringVector oldResourceDirs_;
+    ea::vector<SharedPtr<MountPoint>> oldResourceDirs_;
     ea::string oldCoreData_;
     ea::string oldEditorData_;
 };

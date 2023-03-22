@@ -71,7 +71,7 @@ void GamePlugin::Start(bool isMain)
     // Get materials for the sample
     const ea::string materialFolder = "Materials/Constant/";
     StringVector materialList;
-    cache->Scan(materialList, materialFolder, "*.xml", SCAN_FILES, true);
+    cache->Scan(materialList, materialFolder, "*.xml", SCAN_FILES | SCAN_RECURSIVE);
 
     // Get models for the sample
     const ea::string modelFolder = "Models/";

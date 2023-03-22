@@ -310,10 +310,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     }
 #endif
 
-    // Add resource paths
-    if (!InitializeResourceCache(parameters, false))
-        return false;
-
     auto* cache = GetSubsystem<ResourceCache>();
 
     // Initialize graphics & audio output
@@ -371,8 +367,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         if (HasParameter(EP_WINDOW_MAXIMIZE) && GetParameter(EP_WINDOW_MAXIMIZE).GetBool())
             graphics->Maximize();
 
-        const ea::string shaderCacheDir = appPreferencesDir_ + GetParameter(EP_SHADER_CACHE_DIR).GetString();
-        graphics->SetShaderCacheDir(shaderCacheDir);
+        graphics->SetShaderCacheDir(FileIdentifier::FromUri(GetParameter(EP_SHADER_CACHE_DIR).GetString()));
 
         if (HasParameter(EP_DUMP_SHADERS))
             graphics->BeginDumpShaders(GetParameter(EP_DUMP_SHADERS).GetString());
@@ -436,8 +431,7 @@ void Engine::InitializeVirtualFileSystem()
     const StringVector prefixPaths = GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString().split(';');
     const StringVector paths = GetParameter(EP_RESOURCE_PATHS).GetString().split(';');
     const StringVector packages = GetParameter(EP_RESOURCE_PACKAGES).GetString().split(';');
-    // TODO: Implement autoload
-    //const StringVector autoloadPaths = engine->GetParameter(EP_AUTOLOAD_PATHS).GetString().split(';');
+    const StringVector autoLoadPaths = GetParameter(EP_AUTOLOAD_PATHS).GetString().split(';');
 
     const ea::string& programDir = fileSystem->GetProgramDir();
     StringVector absolutePrefixPaths = GetAbsolutePaths(prefixPaths, programDir, true);
@@ -445,162 +439,31 @@ void Engine::InitializeVirtualFileSystem()
         absolutePrefixPaths.push_back(programDir);
 
     vfs->UnmountAll();
+    vfs->MountRoot();
     vfs->MountExistingDirectoriesOrPackages(absolutePrefixPaths, paths);
     vfs->MountExistingPackages(absolutePrefixPaths, packages);
+
+    // Add auto load folders. Prioritize these (if exist) before the default folders
+    for (const ea::string& autoLoadPath : autoLoadPaths)
+    {
+        if (IsAbsolutePath(autoLoadPath))
+        {
+            vfs->AutomountDir(autoLoadPath);
+        }
+        else
+        {
+            for (const ea::string& prefixPath : absolutePrefixPaths)
+            {
+                vfs->AutomountDir(AddTrailingSlash(prefixPath) + autoLoadPath);
+            }
+        }
+    }
 
 #ifndef __EMSCRIPTEN__
     vfs->MountDir("conf", GetAppPreferencesDir());
 #else
     vfs->MountDir("conf", "/IndexedDB/");
 #endif
-}
-
-bool Engine::InitializeResourceCache(const StringVariantMap& parameters, bool removeOld /*= true*/)
-{
-    auto* cache = GetSubsystem<ResourceCache>();
-    auto* fileSystem = GetSubsystem<FileSystem>();
-
-    // Remove all resource paths and packages
-    if (removeOld)
-    {
-        cache->RemoveAllResourceDirs();
-        ea::vector<SharedPtr<PackageFile> > packageFiles = cache->GetPackageFiles();
-        for (unsigned i = 0; i < packageFiles.size(); ++i)
-            cache->RemovePackageFile(packageFiles[i].Get());
-    }
-
-    // Add resource paths
-    ea::vector<ea::string> resourcePrefixPaths = GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString().split(';', true);
-    for (unsigned i = 0; i < resourcePrefixPaths.size(); ++i)
-        resourcePrefixPaths[i] = AddTrailingSlash(
-            IsAbsolutePath(resourcePrefixPaths[i]) ? resourcePrefixPaths[i] : fileSystem->GetProgramDir() + resourcePrefixPaths[i]);
-    ea::vector<ea::string> resourcePaths = GetParameter(EP_RESOURCE_PATHS).GetString().split(';');
-    ea::vector<ea::string> resourcePackages = GetParameter(EP_RESOURCE_PACKAGES).GetString().split(';');
-    ea::vector<ea::string> autoLoadPaths = GetParameter(EP_AUTOLOAD_PATHS).GetString().split(';');
-
-    for (unsigned i = 0; i < resourcePaths.size(); ++i)
-    {
-        // If path is not absolute, prefer to add it as a package if possible
-        if (!IsAbsolutePath(resourcePaths[i]))
-        {
-            unsigned j = 0;
-            for (; j < resourcePrefixPaths.size(); ++j)
-            {
-                ea::string packageName = resourcePrefixPaths[j] + resourcePaths[i] + ".pak";
-                if (fileSystem->FileExists(packageName))
-                {
-                    if (cache->AddPackageFile(packageName))
-                        break;
-                    else
-                        return false;   // The root cause of the error should have already been logged
-                }
-                ea::string pathName = resourcePrefixPaths[j] + resourcePaths[i];
-                if (fileSystem->DirExists(pathName))
-                {
-                    if (cache->AddResourceDir(pathName))
-                        break;
-                    else
-                        return false;
-                }
-            }
-            if (j == resourcePrefixPaths.size() && !headless_)
-            {
-                URHO3D_LOGERRORF(
-                    "Failed to add resource path '%s', check the documentation on how to set the 'resource prefix path'",
-                    resourcePaths[i].c_str());
-                return false;
-            }
-        }
-        else
-        {
-            ea::string pathName = resourcePaths[i];
-            if (fileSystem->DirExists(pathName))
-                if (!cache->AddResourceDir(pathName))
-                    return false;
-        }
-    }
-
-    // Then add specified packages
-    for (unsigned i = 0; i < resourcePackages.size(); ++i)
-    {
-        unsigned j = 0;
-        for (; j < resourcePrefixPaths.size(); ++j)
-        {
-            ea::string packageName = resourcePrefixPaths[j] + resourcePackages[i];
-            if (fileSystem->FileExists(packageName))
-            {
-                if (cache->AddPackageFile(packageName))
-                    break;
-                else
-                    return false;
-            }
-        }
-        if (j == resourcePrefixPaths.size() && !headless_)
-        {
-            URHO3D_LOGERRORF(
-                "Failed to add resource package '%s', check the documentation on how to set the 'resource prefix path'",
-                resourcePackages[i].c_str());
-            return false;
-        }
-    }
-
-    // Add auto load folders. Prioritize these (if exist) before the default folders
-    for (unsigned i = 0; i < autoLoadPaths.size(); ++i)
-    {
-        bool autoLoadPathExist = false;
-
-        for (unsigned j = 0; j < resourcePrefixPaths.size(); ++j)
-        {
-            ea::string autoLoadPath(autoLoadPaths[i]);
-            if (!IsAbsolutePath(autoLoadPath))
-                autoLoadPath = resourcePrefixPaths[j] + autoLoadPath;
-
-            if (fileSystem->DirExists(autoLoadPath))
-            {
-                autoLoadPathExist = true;
-
-                // Add all the subdirs (non-recursive) as resource directory
-                ea::vector<ea::string> subdirs;
-                fileSystem->ScanDir(subdirs, autoLoadPath, "*", SCAN_DIRS, false);
-                for (unsigned y = 0; y < subdirs.size(); ++y)
-                {
-                    ea::string dir = subdirs[y];
-                    if (dir.starts_with("."))
-                        continue;
-
-                    ea::string autoResourceDir = AddTrailingSlash(autoLoadPath) + dir;
-                    if (!cache->AddResourceDir(autoResourceDir, 0))
-                        return false;
-                }
-
-                // Add all the found package files (non-recursive)
-                ea::vector<ea::string> paks;
-                fileSystem->ScanDir(paks, autoLoadPath, "*.pak", SCAN_FILES, false);
-                for (unsigned y = 0; y < paks.size(); ++y)
-                {
-                    ea::string pak = paks[y];
-                    if (pak.starts_with("."))
-                        continue;
-
-                    ea::string autoPackageName = autoLoadPath + "/" + pak;
-                    if (!cache->AddPackageFile(autoPackageName, 0))
-                        return false;
-                }
-            }
-        }
-
-        // The following debug message is confusing when user is not aware of the autoload feature
-        // Especially because the autoload feature is enabled by default without user intervention
-        // The following extra conditional check below is to suppress unnecessary debug log entry under such default situation
-        // The cleaner approach is to not enable the autoload by default, i.e. do not use 'Autoload' as default value for 'AutoloadPaths' engine parameter
-        // However, doing so will break the existing applications that rely on this
-        if (!autoLoadPathExist && (autoLoadPaths.size() > 1 || autoLoadPaths[0] != "Autoload"))
-            URHO3D_LOGDEBUGF(
-                "Skipped autoload path '%s' as it does not exist, check the documentation on how to set the 'resource prefix path'",
-                autoLoadPaths[i].c_str());
-    }
-
-    return true;
 }
 
 void Engine::RunFrame()
@@ -1062,6 +925,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addOptionString("--pr,--resource-paths", EP_RESOURCE_PATHS, "Resource paths")->type_name("path1;path2;...");
     addOptionString("--pf,--resource-packages", EP_RESOURCE_PACKAGES, "Resource packages")->type_name("path1;path2;...");
     addOptionString("--ap,--autoload-paths", EP_AUTOLOAD_PATHS, "Resource autoload paths")->type_name("path1;path2;...");
+    addOptionString("--cn,--config-name", EP_CONFIG_NAME, "Config name")->type_name("filename");
     addOptionString("--ds,--dump-shaders", EP_DUMP_SHADERS, "Dump shaders")->type_name("filename");
     addFlagInternal("--mq,--material-quality", "Material quality", [&](CLI::results_t res) {
         unsigned value = 0;
@@ -1165,7 +1029,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);
-    engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "ShaderCache");
+    engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "conf://ShaderCache");
     engineParameters_->DefineVariable(EP_SHADOWS, true).Overridable();
     engineParameters_->DefineVariable(EP_SOUND, true);
     engineParameters_->DefineVariable(EP_SOUND_BUFFER, 100);

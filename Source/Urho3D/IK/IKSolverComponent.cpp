@@ -512,7 +512,10 @@ void IKLimbSolver::SolveInternal(const Transform& frameOfReference, const IKSett
 
     // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
-        thirdBone.rotation_ = thirdBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+    {
+        const Quaternion targetRotation = target_->GetWorldRotation() * thirdBone.localOriginalRotation_;
+        thirdBone.rotation_ = thirdBone.rotation_.Slerp(targetRotation, rotationWeight_);
+    }
 }
 
 Vector3 IKLimbSolver::GetTargetPosition() const
@@ -918,7 +921,10 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
 
     // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
-        toeBone.rotation_ = toeBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+    {
+        const Quaternion targetRotation = target_->GetWorldRotation() * toeBone.localOriginalRotation_;
+        toeBone.rotation_ = toeBone.rotation_.Slerp(targetRotation, rotationWeight_);
+    }
 }
 
 void IKLegSolver::RotateFoot(const Vector3& toeToHeel)
@@ -1023,6 +1029,9 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
 
 void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
+    if (twistRotationOffset_ == Quaternion::ZERO)
+        UpdateTwistRotationOffset();
+
     chain_.UpdateLengths();
 
     const auto& bones = chain_.GetNodes();
@@ -1035,6 +1044,7 @@ void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 
     const Vector3 baseDirection = (bones[1]->position_ - bones[0]->position_).Normalized();
     local_.baseDirection_ = inverseFrameOfReference.rotation_ * baseDirection;
+    local_.zeroTwistRotation_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * twistRotationOffset_;
 }
 
 void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)
@@ -1123,17 +1133,20 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
     if (rotationWeight_ > 0.0f)
     {
         IKNode& lastBone = *bones.back();
-        lastBone.rotation_ = lastBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+        const Quaternion targetRotation = target_->GetWorldRotation() * lastBone.localOriginalRotation_;
+        lastBone.rotation_ = lastBone.rotation_.Slerp(targetRotation, rotationWeight_);
     }
 }
 
 float IKSpineSolver::GetTwistAngle(
     const Transform& frameOfReference, const IKNodeSegment& segment, Node* targetNode) const
 {
-    const Quaternion targetRotation =
-        frameOfReference.rotation_.Inverse() * targetNode->GetWorldRotation() * twistRotationOffset_;
+    const Quaternion zeroTwistBoneRotation = frameOfReference.rotation_ * local_.zeroTwistRotation_;
+    const Quaternion targetBoneRotation = targetNode->GetWorldRotation() * segment.beginNode_->localOriginalRotation_;
+    const Quaternion deltaRotation = targetBoneRotation * zeroTwistBoneRotation.Inverse();
+
     const Vector3 direction = (segment.endNode_->position_ - segment.beginNode_->position_).Normalized();
-    const auto [_, twist] = targetRotation.ToSwingTwist(direction);
+    const auto [_, twist] = deltaRotation.ToSwingTwist(direction);
     const float angle = twist.Angle();
     const float sign = twist.Axis().DotProduct(direction) > 0.0f ? 1.0f : -1.0f;
     return sign * (angle > 180.0f ? angle - 360.0f : angle);
@@ -1291,7 +1304,10 @@ void IKArmSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
 
     // Apply target rotation if needed
     if (rotationWeight_ > 0.0f)
-        handBone.rotation_ = handBone.rotation_.Slerp(target_->GetWorldRotation(), rotationWeight_);
+    {
+        const Quaternion targetRotation = target_->GetWorldRotation() * handBone.localOriginalRotation_;
+        handBone.rotation_ = handBone.rotation_.Slerp(targetRotation, rotationWeight_);
+    }
 }
 
 void IKArmSolver::RotateShoulder(const Quaternion& rotation)
@@ -1449,9 +1465,9 @@ void IKHeadSolver::SolveRotation()
 {
     IKNode& headBone = *neckSegment_.endNode_;
 
-    const Quaternion rotation = target_->GetWorldRotation();
+    const Quaternion targetRotation = target_->GetWorldRotation() * headBone.localOriginalRotation_;
 
-    headBone.rotation_ = headBone.rotation_.Slerp(rotation, rotationWeight_);
+    headBone.rotation_ = headBone.rotation_.Slerp(targetRotation, rotationWeight_);
 
     headBone.MarkRotationDirty();
 }
@@ -1526,6 +1542,207 @@ Ray IKHeadSolver::GetEyeRay() const
     const Vector3 origin = headBone.position_ + headBone.rotation_ * headChain_.GetLocalEyeOffset();
     const Vector3 direction = headBone.rotation_ * headChain_.GetLocalEyeDirection();
     return {origin, direction};
+}
+
+IKStickTargets::IKStickTargets(Context* context)
+    : IKSolverComponent(context)
+{
+}
+
+IKStickTargets::~IKStickTargets()
+{
+}
+
+void IKStickTargets::RegisterObject(Context* context)
+{
+    context->AddFactoryReflection<IKStickTargets>(Category_IK);
+
+    URHO3D_ATTRIBUTE_EX("Target Names", StringVector, targetNames_, OnTreeDirty, Variant::emptyStringVector, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE("Is Position Sticky", bool, isPositionSticky_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Is Rotation Sticky", bool, isRotationSticky_, true, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE("Position Threshold", float, positionThreshold_, DefaultPositionThreshold, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation Threshold", float, rotationThreshold_, DefaultRotationThreshold, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Time Threshold", float, timeThreshold_, DefaultTimeThreshold, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE("Recover Time", float, recoverTime_, DefaultRecoverTime, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Min Target Distances", float, minTargetDistance_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Max Simultaneous Recoveries", unsigned, maxSimultaneousRecoveries_, 0, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE("Base World Velocity", Vector3, baseWorldVelocity_, Vector3::ZERO, AM_DEFAULT);
+}
+
+void IKStickTargets::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+}
+
+bool IKStickTargets::InitializeNodes(IKNodeCache& nodeCache)
+{
+    ea::vector<TargetInfo> targets;
+    for (const ea::string& targetName : targetNames_)
+    {
+        Node* targetNode = AddCheckedNode(nodeCache, targetName);
+        if (!targetNode)
+            return false;
+
+        targets.emplace_back(TargetInfo{WeakPtr<Node>{targetNode}});
+    }
+
+    targets_ = ea::move(targets);
+    return true;
+}
+
+void IKStickTargets::UpdateChainLengths(const Transform& inverseFrameOfReference)
+{
+}
+
+void IKStickTargets::SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep)
+{
+    CollectDesiredWorldTransforms();
+    ApplyWorldMovement(timeStep);
+    UpdateOverrideWeights(timeStep);
+    UpdateStuckTimers(timeStep);
+    ApplyDeactivation();
+    ApplyActivation();
+    UpdateRecovery();
+    CommitWorldTransforms();
+}
+
+void IKStickTargets::CollectDesiredWorldTransforms()
+{
+    for (TargetInfo& info : targets_)
+        info.desiredWorldTransform_ = Transform{info.node_->GetWorldPosition(), info.node_->GetWorldRotation()};
+}
+
+void IKStickTargets::ApplyWorldMovement(float timeStep)
+{
+    for (TargetInfo& info : targets_)
+    {
+        if (!info.IsEffectivelyInactive() && info.overrideWorldTransform_)
+            info.overrideWorldTransform_->position_ += baseWorldVelocity_ * timeStep;
+    }
+}
+
+void IKStickTargets::UpdateOverrideWeights(float timeStep)
+{
+    for (TargetInfo& info : targets_)
+    {
+        if (info.state_ == TargetState::Inactive || info.state_ == TargetState::Recovering)
+            info.SubtractWeight(timeStep / recoverTime_);
+    }
+}
+
+void IKStickTargets::UpdateStuckTimers(float timeStep)
+{
+    for (TargetInfo& info : targets_)
+    {
+        if (info.state_ == TargetState::Stuck)
+            info.stuckTimer_ += timeStep;
+    }
+}
+
+void IKStickTargets::ApplyDeactivation()
+{
+    for (TargetInfo& info : targets_)
+    {
+        const bool shouldBeActive = IsActive();
+        if (shouldBeActive)
+            continue;
+
+        if (info.state_ != TargetState::Inactive)
+        {
+            info.state_ = TargetState::Inactive;
+            info.OverrideToCurrent();
+        }
+    }
+}
+
+void IKStickTargets::ApplyActivation()
+{
+    for (TargetInfo& info : targets_)
+    {
+        const bool shouldBeActive = IsActive();
+        if (!shouldBeActive)
+            continue;
+
+        if (info.state_ == TargetState::Inactive)
+            info.Stick();
+    }
+}
+
+void IKStickTargets::UpdateRecovery()
+{
+    // Stop recoveries first, count how many are still going
+    unsigned numOngoingRecoveries = 0;
+    for (TargetInfo& info : targets_)
+    {
+        if (info.state_ == TargetState::Recovering)
+        {
+            const bool isCompleted = info.overrideWeight_ == 0.0f;
+            const bool shouldAbort = minTargetDistance_ > 0.0f
+                && GetDistanceToNearestStuckTarget(info.GetCurrentTransform().position_) < minTargetDistance_;
+
+            if (isCompleted || shouldAbort)
+                info.Stick();
+            else
+                ++numOngoingRecoveries;
+        }
+    }
+
+    // Start new recoveries
+    const unsigned numTargets = targets_.size();
+    const unsigned startIndex = recoveryStartIndex_;
+    for (unsigned i = 0; i < numTargets; ++i)
+    {
+        // Out of budget
+        if (maxSimultaneousRecoveries_ > 0 && numOngoingRecoveries >= maxSimultaneousRecoveries_)
+            break;
+
+        TargetInfo& info = targets_[(i + startIndex) % numTargets];
+
+        const bool isPositionExpired = info.GetStuckPositionError() > positionThreshold_;
+        const bool isRotationExpired = info.GetStuckRotationError() > rotationThreshold_;
+        const bool isTimedOut = timeThreshold_ > 0.0f && info.GetStuckTime() > timeThreshold_;
+
+        if (isPositionExpired || isRotationExpired || isTimedOut)
+        {
+            info.state_ = TargetState::Recovering;
+            ++numOngoingRecoveries;
+
+            // Next time we start from the next target
+            recoveryStartIndex_ = i + 1;
+        }
+    }
+}
+
+void IKStickTargets::CommitWorldTransforms()
+{
+    for (TargetInfo& info : targets_)
+    {
+        if (info.overrideWeight_ > 0.0f && info.overrideWorldTransform_)
+        {
+            const Transform transform = info.GetCurrentTransform();
+            if (isPositionSticky_)
+                info.node_->SetWorldPosition(transform.position_);
+            if (isRotationSticky_)
+                info.node_->SetWorldRotation(transform.rotation_);
+        }
+    }
+}
+
+float IKStickTargets::GetDistanceToNearestStuckTarget(const Vector3& worldPosition) const
+{
+    float minDistance = M_INFINITY;
+    for (const TargetInfo& info : targets_)
+    {
+        if (info.state_ == TargetState::Stuck && info.overrideWorldTransform_)
+        {
+            const float distance = (info.overrideWorldTransform_->position_ - worldPosition).Length();
+            minDistance = ea::min(minDistance, distance);
+        }
+    }
+    return minDistance;
 }
 
 }

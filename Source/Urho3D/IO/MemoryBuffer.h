@@ -52,10 +52,10 @@ public:
     unsigned Write(const void* data, unsigned size) override;
 
     /// Return memory area.
-    unsigned char* GetData() { return buffer_; }
+    unsigned char* GetData() const { return buffer_; }
 
     /// Return whether buffer is read-only.
-    bool IsReadOnly() { return readOnly_; }
+    bool IsReadOnly() const { return readOnly_; }
 
 private:
     /// Pointer to the memory area.

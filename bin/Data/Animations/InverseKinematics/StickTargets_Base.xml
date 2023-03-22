@@ -1,0 +1,8 @@
+<animation length="4.0">
+    <variant name="Targets/RightFoot_Target/@/Position" type="Vector3" interpolation="none">
+        <keyframe time="0.0" value="0.1 0.5 0.5"/>
+    </variant>
+    <variant name="Targets/LeftFoot_Target/@/Position" type="Vector3" interpolation="none">
+        <keyframe time="0.0" value="-0.1 0.5 0.5"/>
+    </variant>
+</animation>

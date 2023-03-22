@@ -30,6 +30,7 @@
 #include "../Container/Ptr.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
+#include "../IO/FileIdentifier.h"
 
 namespace Urho3D
 {
@@ -142,7 +143,7 @@ public:
 
 private:
     /// Load bytecode from a file. Return true if successful.
-    bool LoadByteCode(const ea::string& binaryShaderName);
+    bool LoadByteCode(const FileIdentifier& binaryShaderName);
     /// Compile from source. Return true if successful.
     bool Compile();
 #ifdef URHO3D_DILIGENT
@@ -154,7 +155,7 @@ private:
      void ParseParameters(unsigned char* bufData, unsigned bufSize);
 #endif
     /// Save bytecode to a file.
-    void SaveByteCode(const ea::string& binaryShaderName);
+    void SaveByteCode(const FileIdentifier& binaryShaderName);
     /// Calculate constant buffer sizes from parameters.
     void CalculateConstantBufferSizes();
 

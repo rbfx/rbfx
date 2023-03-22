@@ -24,11 +24,12 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Core/Timer.h"
-#include "../IO/Archive.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../Resource/JSONValue.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/FileIdentifier.h"
+#include "Urho3D/Resource/JSONValue.h"
 
 #include <EASTL/array.h>
 #include <EASTL/optional.h>
@@ -102,11 +103,9 @@ public:
     virtual bool Save(Serializer& dest) const;
 
     /// Load resource from file.
-    /// @alias{Load}
-    bool LoadFile(const ea::string& fileName);
+    bool LoadFile(const FileIdentifier& fileName);
     /// Save resource to file.
-    /// @alias{Save}
-    virtual bool SaveFile(const ea::string& fileName) const;
+    virtual bool SaveFile(const FileIdentifier& fileName) const;
 
     /// Set name.
     /// @property
@@ -171,14 +170,14 @@ public:
     /// Save resource in specified internal format.
     bool Save(Serializer& dest, InternalResourceFormat format) const;
     /// Save file with specified internal format.
-    bool SaveFile(const ea::string& fileName, InternalResourceFormat format) const;
+    bool SaveFile(const FileIdentifier& fileName, InternalResourceFormat format) const;
 
     /// Implement Resource.
     /// @{
     bool BeginLoad(Deserializer& source) override;
     bool EndLoad() override;
     bool Save(Serializer& dest) const override;
-    bool SaveFile(const ea::string& fileName) const override;
+    bool SaveFile(const FileIdentifier& fileName) const override;
     /// @}
 
 protected:
@@ -188,6 +187,8 @@ protected:
     virtual const char* GetRootBlockName() const { return "resource"; }
     /// Default internal resource format on save.
     virtual InternalResourceFormat GetDefaultInternalFormat() const { return InternalResourceFormat::Json; }
+    /// Try to load legacy XML format, whatever it is.
+    virtual bool LoadLegacyXML(const XMLElement& source) { return false; }
 
 private:
     ea::optional<InternalResourceFormat> loadFormat_;

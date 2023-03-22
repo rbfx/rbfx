@@ -557,7 +557,7 @@ StringVector PluginManager::ScanAvailableModules()
     auto fs = context_->GetSubsystem<FileSystem>();
 
     StringVector files;
-    fs->ScanDir(files, fs->GetProgramDir(), "*.*", SCAN_FILES, false);
+    fs->ScanDir(files, fs->GetProgramDir(), "*.*", SCAN_FILES);
 
     // Remove deleted plugin files.
     for (const ea::string& key : pluginInfoCache_.keys())

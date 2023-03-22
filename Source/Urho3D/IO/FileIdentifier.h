@@ -22,47 +22,84 @@
 
 #pragma once
 
-#include "../Core/Object.h"
+#include <Urho3D/Urho3D.h>
+
+#include <EASTL/string.h>
+#include <EASTL/string_view.h>
 
 namespace Urho3D
 {
-/// File locator, similar to Universal Resource Locator (URL).
+
+/// File identifier, similar to Uniform Resource Identifier (URI).
+/// Known differences:
+/// - If URI starts with `/` or `x:/` it is treated as `file` scheme automatically.
+/// - Host names are not supported for `file:` scheme.
+///   All of `file:/path/to/file`, `file://path/to/file`, and `file:///path/to/file` are supported
+///   and denote absolute file path.
+/// - If URI does not contain `:`, it is treated as special "empty" scheme,
+///   and the entire URI is treated as relative path.
+/// - Conversion to URI string uses `scheme://` format.
 struct URHO3D_API FileIdentifier
 {
-    /// Construct.
-    FileIdentifier();
-    /// Construct from url-like path.
-    FileIdentifier(const ea::string& url);
-    /// Construct from scheme and file name.
-    FileIdentifier(const ea::string& scheme, const ea::string& fileName);
+    /// File identifier that references nothing.
+    static const FileIdentifier Empty;
 
-    /// URL-like scheme. May be empty if not specified.
+    /// Construct default.
+    FileIdentifier() = default;
+    /// Construct from scheme and path (as is).
+    FileIdentifier(ea::string_view scheme, ea::string_view fileName);
+    /// Deprecated. Use FromUri() instead.
+    FileIdentifier(const ea::string& uri) : FileIdentifier(FromUri(uri)) {}
+
+    /// Construct from uri-like path.
+    static FileIdentifier FromUri(ea::string_view uri);
+    /// Return URI-like path. Does not always return original path.
+    ea::string ToUri() const;
+
+    /// Append path to the current path, adding slash in between if it's missing.
+    /// Ignores current scheme restrictions.
+    void AppendPath(ea::string_view path);
+
+    /// URI-like scheme. May be empty if not specified.
     ea::string scheme_;
-    /// URL-like path to the file.
+    /// URI-like path to the file.
     ea::string fileName_;
 
-    operator bool() const { return scheme_.empty() && fileName_.empty(); }
-    bool operator!() const { return !(scheme_.empty() && fileName_.empty()); }
+    /// Return whether the identifier is empty.
+    bool IsEmpty() const { return scheme_.empty() && fileName_.empty(); }
 
-    /// Test for less than with another file locator.
+    /// Operators.
+    /// @{
+    explicit operator bool() const { return !IsEmpty(); }
+    bool operator!() const { return IsEmpty(); }
+
     bool operator<(const FileIdentifier& rhs) const noexcept
     {
         return (scheme_ < rhs.scheme_) || (scheme_ == rhs.scheme_ && fileName_ < rhs.fileName_);
     }
 
-    /// Test for equality with another file locator.
     bool operator==(const FileIdentifier& rhs) const noexcept
     {
         return scheme_ == rhs.scheme_ && fileName_ == rhs.fileName_;
     }
 
-    /// Test for inequality with another file locator.
-    bool operator!=(const FileIdentifier& rhs) const noexcept
+    bool operator!=(const FileIdentifier& rhs) const noexcept { return !(rhs == *this); }
+
+    FileIdentifier& operator+=(ea::string_view rhs)
     {
-        return scheme_ != rhs.scheme_ || fileName_ != rhs.fileName_;
+        AppendPath(rhs);
+        return *this;
     }
 
-    static ea::string SanitizeFileName(const ea::string& fileName);
+    FileIdentifier operator+(ea::string_view rhs) const
+    {
+        FileIdentifier tmp = *this;
+        tmp += rhs;
+        return tmp;
+    }
+    /// @}
+
+    static ea::string SanitizeFileName(ea::string_view fileName);
 };
 
 } // namespace Urho3D

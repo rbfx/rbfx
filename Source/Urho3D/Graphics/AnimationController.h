@@ -148,12 +148,13 @@ public:
     unsigned GetAnimationLayer(unsigned index) const { return animations_[index].params_.layer_; }
     const AnimationParameters& GetAnimationParameters(unsigned index) const { return animations_[index].params_; }
     unsigned GetRevision() const { return revision_; }
+    void UpdatePose();
     /// @}
 
     /// Manage played animations on high level.
     /// @{
-    unsigned FindLastAnimation(Animation* animation) const;
-    const AnimationParameters* GetLastAnimationParameters(Animation* animation) const;
+    unsigned FindLastAnimation(Animation* animation, unsigned layer = M_MAX_UNSIGNED) const;
+    const AnimationParameters* GetLastAnimationParameters(Animation* animation, unsigned layer = M_MAX_UNSIGNED) const;
     bool IsPlaying(Animation* animation) const;
     unsigned PlayNew(const AnimationParameters& params, float fadeInTime = 0.0f);
     unsigned PlayNewExclusive(const AnimationParameters& params, float fadeInTime = 0.0f);

@@ -35,9 +35,10 @@ namespace Urho3D
 
 void AssetManager::AssetDesc::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "Outputs", outputs_);
-    SerializeOptionalValue(archive, "Transformers", transformers_);
-    SerializeOptionalValue(archive, "AssetModifiedTime", modificationTime_);
+    SerializeOptionalValue(archive, "outputs", outputs_);
+    SerializeOptionalValue(archive, "transformers", transformers_);
+    SerializeOptionalValue(archive, "modificationTime", modificationTime_);
+    SerializeOptionalValue(archive, "dependencyModificationTimes", dependencyModificationTimes_);
 }
 
 bool AssetManager::AssetDesc::IsAnyTransformerUsed(const StringVector& transformers) const
@@ -225,8 +226,8 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector files;
-    fs->ScanDirAdd(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
-    fs->ScanDirAdd(files, project_->GetDataPath(), "*.assetpipeline", SCAN_FILES, true);
+    fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES | SCAN_APPEND | SCAN_RECURSIVE);
+    fs->ScanDir(files, project_->GetDataPath(), "*.assetpipeline", SCAN_FILES | SCAN_APPEND | SCAN_RECURSIVE);
 
     ea::erase_if(files, [&](const ea::string& resourceName) { return !AssetPipeline::CheckExtension(resourceName); });
 
@@ -314,7 +315,7 @@ bool AssetManager::IsAssetUpToDate(AssetDesc& assetDesc)
 
     // Check if the asset has not been modified
     const FileTime assetModificationTime = fs->GetLastModifiedTime(fileName, true);
-    if (assetDesc.modificationTime_ != fs->GetLastModifiedTime(fileName))
+    if (assetDesc.modificationTime_ != assetModificationTime)
     {
         if (!ignoredAssetUpdates_.contains(assetDesc.resourceName_))
             return false;
@@ -329,6 +330,18 @@ bool AssetManager::IsAssetUpToDate(AssetDesc& assetDesc)
     {
         const ea::string outputFileName = project_->GetCachePath() + outputResourceName;
         if (!fs->FileExists(outputFileName))
+            return false;
+    }
+
+    // Check if dependencies are present and up-to-date
+    for (const auto& [dependencyResourceName, cachedModificationTime] : assetDesc.dependencyModificationTimes_)
+    {
+        const ea::string dependencyFileName = GetFileName(dependencyResourceName);
+        if (!fs->FileExists(dependencyFileName))
+            return false;
+
+        const FileTime modificationTime = fs->GetLastModifiedTime(dependencyFileName, true);
+        if (modificationTime != cachedModificationTime)
             return false;
     }
 
@@ -377,7 +390,7 @@ void AssetManager::InvalidateOutdatedAssetsInPath(const ea::string& resourcePath
     hasInvalidAssets_ = true;
     for (auto& [resourceName, assetDesc] : assets_)
     {
-        if (resourceName.starts_with(resourcePath))
+        if (resourceName.starts_with(resourcePath) || assetDesc.dependencyModificationTimes_.contains(resourcePath))
         {
             if (!IsAssetUpToDate(assetDesc))
                 assetDesc.cacheInvalid_ = true;
@@ -418,7 +431,7 @@ void AssetManager::CleanupCacheFolder()
     }
 
     StringVector allFolders;
-    fs->ScanDir(allFolders, project_->GetCachePath(), "", SCAN_DIRS, true);
+    fs->ScanDir(allFolders, project_->GetCachePath(), "", SCAN_DIRS | SCAN_RECURSIVE);
 
     if (const auto iter = allFolders.find("."); iter != allFolders.end())
         allFolders.erase(iter);
@@ -546,7 +559,7 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
 
     const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(resourceName, flavor);
     const ea::string fileName = GetFileName(resourceName);
-    const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName);
+    const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName, true);
 
     AssetDesc& assetDesc = assets_[resourceName];
     assetDesc.resourceName_ = resourceName;
@@ -592,6 +605,7 @@ void AssetManager::CompleteAssetProcessing(
         AssetDesc& assetDesc = assets_[input.resourceName_];
         assetDesc.resourceName_ = input.resourceName_;
         assetDesc.modificationTime_ = input.inputFileTime_;
+        assetDesc.dependencyModificationTimes_ = output->dependencyModificationTimes_;
         assetDesc.outputs_ = output->outputResourceNames_;
         assetDesc.transformers_ = output->appliedTransformers_;
 
@@ -616,7 +630,7 @@ StringVector AssetManager::EnumerateAssetFiles(const ea::string& resourcePath) c
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector result;
-    fs->ScanDir(result, GetFileName(resourcePath), "", SCAN_FILES, true);
+    fs->ScanDir(result, GetFileName(resourcePath), "", SCAN_FILES | SCAN_RECURSIVE);
 
     ea::erase_if(result, [this](const ea::string& fileName)
     {

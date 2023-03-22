@@ -1,4 +1,5 @@
 %csattribute(Urho3D::AssetTransformer, %arg(Urho3D::ApplicationFlavorPattern), Flavor, GetFlavor, SetFlavor);
+%csattribute(Urho3D::AnimationVelocityExtractor, %arg(bool), IsExecutedOnOutput, IsExecutedOnOutput);
 %csattribute(Urho3D::AssetPipeline, %arg(ea::vector<SharedPtr<AssetTransformer>>), Transformers, GetTransformers);
 %csattribute(Urho3D::AssetPipeline, %arg(ea::vector<AssetTransformerDependency>), Dependencies, GetDependencies);
 %csattribute(Urho3D::FileSystemReflection, %arg(Urho3D::FileSystemEntry), Root, GetRoot);

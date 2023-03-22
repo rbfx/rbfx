@@ -143,7 +143,7 @@ void Run(const ea::vector<ea::string>& arguments)
 
         // Get the file list recursively
         ea::vector<ea::string> fileNames;
-        fileSystem_->ScanDir(fileNames, dirName, "*", SCAN_FILES, true);
+        fileSystem_->ScanDir(fileNames, dirName, "*", SCAN_FILES | SCAN_RECURSIVE);
         if (!fileNames.size())
             ErrorExit("No files found");
 

@@ -625,7 +625,12 @@ public:
     Node* GetChild(StringHash nameHash, bool recursive = false) const;
     /// Find child node by path string in format "Parent Name/Child Name/Grandchild Name/..."
     /// Node index may be used instead of name: ".../#10/..."
-    Node* FindChild(ea::string_view path) const;
+    /// Node name '**' may be used to match any path. For example, "Parent Name/**/Target Name" will match either of:
+    /// - "Parent Name/Target Name"
+    /// - "Parent Name/Child Name/Target Name"
+    /// - "Parent Name/Child Name/Grandchild Name/Target Name"
+    /// - etc.
+    Node* FindChild(ea::string_view path, bool firstRecursive = false) const;
     /// Find attribute of itself or owned component by path string in format "@ComponentName/Attribute Name".
     /// If component name is not specified, attribute is searched in the node itself: "@/Position".
     ea::pair<Serializable*, unsigned> FindComponentAttribute(ea::string_view path) const;
@@ -670,6 +675,8 @@ public:
     template <class T> void GetChildrenWithComponent(ea::vector<Node*>& dest, bool recursive = false) const;
     /// Template version of returning a component by type.
     template <class T> T* GetComponent(bool recursive = false) const;
+    /// Return N-th component of given type.
+    template <class T> T* GetNthComponent(unsigned index) const;
     /// Template version of returning a parent's component by type.
     template <class T> T* GetParentComponent(bool fullTraversal = false) const;
     /// Template version of returning all components of type.
@@ -741,8 +748,8 @@ private:
     /// Remove a component from this node with the specified iterator.
     void RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i);
     /// Find child node by index if name is an integer starting with "#" (like "#12" or "#0").
-    /// Find child by name otherwise. Empty name is considered invalid.
-    Node* GetChildByNameOrIndex(ea::string_view name) const;
+    /// Find child by name otherwise (optionally recursive). Empty name is considered invalid.
+    Node* GetChildByNameOrIndex(ea::string_view name, bool recursive = false) const;
     /// Find component by name. If name is empty, returns the owner node itself.
     Serializable* GetSerializableByName(ea::string_view name) const;
 
@@ -804,6 +811,8 @@ template <class T> void Node::GetChildrenWithComponent(ea::vector<Node*>& dest, 
 }
 
 template <class T> T* Node::GetComponent(bool recursive) const { return static_cast<T*>(GetComponent(T::GetTypeStatic(), recursive)); }
+
+template <class T> T* Node::GetNthComponent(unsigned index) const { return static_cast<T*>(GetNthComponent(T::GetTypeStatic(), index)); }
 
 template <class T> T* Node::GetParentComponent(bool fullTraversal) const { return static_cast<T*>(GetParentComponent(T::GetTypeStatic(), fullTraversal)); }
 

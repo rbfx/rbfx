@@ -76,6 +76,7 @@
 #include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Console.h>
@@ -220,6 +221,7 @@ void Editor::Start()
     auto cache = GetSubsystem<ResourceCache>();
     auto input = GetSubsystem<Input>();
     auto fs = GetSubsystem<FileSystem>();
+    auto vfs = GetSubsystem<VirtualFileSystem>();
 
     const bool isHeadless = engine_->IsHeadless();
 
@@ -234,7 +236,7 @@ void Editor::Start()
     input->SetMouseVisible(true);
     input->SetEnabled(false);
 
-    cache->SetAutoReloadResources(true);
+    vfs->SetWatching(true);
 
     engine_->SetAutoExit(false);
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022-2022 the rbfx project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,13 +20,35 @@
 // THE SOFTWARE.
 //
 
-namespace Urho3DNet
+#pragma once
+
+#include <Urho3D/Urho3D.h>
+
+namespace Urho3D
 {
-    partial class File
+
+/// Utility to keep track of object revisions.
+/// Revision is never zero, so it can be used as sentinel value to save space.
+class URHO3D_API ObjectRevisionTracker
+{
+public:
+    static constexpr unsigned InvalidRevision = 0;
+
+    /// Return object revision.
+    unsigned GetRevision() const { return revision_; }
+
+protected:
+    /// Mark object as changed.
+    void MarkRevisionUpdated()
     {
-        string IAbstractFile.GetAbsoluteName()
-        {
-            return AbsoluteName;
-        }
+        ++revision_;
+        if (revision_ == InvalidRevision)
+            ++revision_;
     }
+
+private:
+    /// Object revision, used for detecting changes in animation tracks by the external user.
+    unsigned revision_{1};
+};
+
 }
