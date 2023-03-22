@@ -2185,8 +2185,8 @@ bool Graphics::CreateDevice(int width, int height)
     SwapChainDesc swapChainDesc;
     swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
     swapChainDesc.DepthBufferFormat = TEX_FORMAT_D24_UNORM_S8_UINT;
-    FullScreenModeDesc fullscreenDesc;
-    fullscreenDesc.Fullscreen = false;
+    FullScreenModeDesc fullscreenDesc = {};
+    fullscreenDesc.Fullscreen = screenParams_.fullscreen_;
 
     // Check that multisample level is supported
     ea::vector<int> multiSampleLevels = GetMultiSampleLevels();
