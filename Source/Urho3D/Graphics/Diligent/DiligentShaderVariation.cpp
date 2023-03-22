@@ -149,8 +149,6 @@ void ShaderVariation::Release()
             if (graphics_->GetPixelShader() == this)
                 graphics_->SetShaders(nullptr, nullptr);
         }
-
-        assert(0);
         /*URHO3D_SAFE_RELEASE(object_.ptr_);*/
     }
 
@@ -439,11 +437,12 @@ bool ShaderVariation::Compile()
 
     //ParseParameters(spirvByteCode);
     CalculateConstantBufferSizes();
-    GenerateVertexBindings(sourceCode);
+    //GenerateVertexBindings(sourceCode);
 
     RefCntAutoPtr<IShader> shader;
     graphics_->GetImpl()->GetDevice()->CreateShader(shaderCI, &shader);
 
+    assert(shader);
     if (!shader) {
         URHO3D_LOGDEBUG("Error has ocurred at Shader Object creation " + GetFullName());
         return false;

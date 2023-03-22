@@ -591,15 +591,18 @@ namespace Urho3D
             ea::string targetTexName = ea::string("> s") + samplerNames[index];
             ea::string targetSamplerName = ea::string("_s") + samplerNames[index];
             ea::string targetSampleRead = Format("s{0}.Sample(s{0}", samplerNames[index]);
+            ea::string targetSampleCmpRead = Format("s{0}.SampleCmp(s{0}", samplerNames[index]);
             targetSamplerName.append("_sampler");
 
             ea::string outputTexName = ea::string("> t") + samplerNames[index];
             ea::string outputSamplerName = ea::string("s") + samplerNames[index];
             ea::string outputSampleRead = Format("t{0}.Sample(s{0}", samplerNames[index]);
+            ea::string outputSampleCmpRead = Format("t{0}.SampleCmp(s{0}", samplerNames[index]);
 
             sourceCode.replace(targetTexName, outputTexName);
             sourceCode.replace(targetSamplerName, outputSamplerName);
             sourceCode.replace(targetSampleRead, outputSampleRead);
+            sourceCode.replace(targetSampleCmpRead, outputSampleCmpRead);
         } while (samplerNames[++index] != nullptr);
     }
     void ShaderCompiler::ApplyFixes(ea::string& sourceCode)

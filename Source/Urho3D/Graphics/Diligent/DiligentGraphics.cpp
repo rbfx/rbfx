@@ -2442,6 +2442,8 @@ void Graphics::PrepareDraw()
         if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
             impl_->depthStencilView_ = (ITextureView*)depthStencil_->GetReadOnlyView();
 
+        assert(impl_->depthStencilView_);
+
         for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
             impl_->renderTargetViews_[i] = (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET) ? (ITextureView*)renderTargets_[i]->GetRenderTargetView() : nullptr;
         // If rendertarget 0 is null and not doing depth-only rendering, render to the backbuffer
@@ -2451,12 +2453,12 @@ void Graphics::PrepareDraw()
             (!depthStencil_ || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
             impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
 
+        unsigned rtCount = 0;
+        while (impl_->renderTargetViews_[rtCount] != nullptr)
+            ++rtCount;
+        impl_->deviceContext_->SetRenderTargets(rtCount, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
         impl_->renderTargetsDirty_ = false;
     }
-    unsigned rtCount = MAX_RENDERTARGETS;
-    if (pipelineState_)
-        rtCount = pipelineState_->GetDesc().renderTargetsFormats_.size();
-    impl_->deviceContext_->SetRenderTargets(rtCount, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     if (impl_->firstDirtyVB_ < M_MAX_UNSIGNED) {
         impl_->deviceContext_->SetVertexBuffers(

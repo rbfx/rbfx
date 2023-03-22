@@ -27,7 +27,6 @@ namespace Urho3D
     void PipelineState::BuildPipeline(Graphics* graphics) {
         if (pipeline_)
             return;
-        assert(desc_.renderTargetsFormats_.size() > 0);
         ea::vector<LayoutElement> layoutElements;
         GraphicsPipelineStateCreateInfo ci;
         ci.PSODesc.Name = desc_.debugName_.c_str();
@@ -74,6 +73,8 @@ namespace Urho3D
                     layoutElement.RelativeOffset = vertexBufferElement->offset_;
                     layoutElement.NumComponents = sNumComponents[vertexBufferElement->type_];
                     layoutElement.ValueType = sValueTypes[vertexBufferElement->type_];
+                    if (vertexBufferElement->semantic_ == SEM_BLENDINDICES)
+                        layoutElement.ValueType = VT_UINT8;
                     layoutElement.IsNormalized = vertexBufferElement->semantic_ == SEM_COLOR;
                     layoutElement.BufferSlot = vertexBufferElement->perInstance_ ? 1 : 0;
                     layoutElement.Frequency = vertexBufferElement->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;

@@ -372,19 +372,17 @@ void SceneProcessor::RenderShadowMaps()
                 const ea::string passName = Format("ShadowMap.[{}].{}",
                     split.GetLight()->GetFullNameDebug(), split.GetSplitIndex());
                 debugger_->BeginPass(passName);
-                graphics_->BeginDebug(passName);
             }
 
+            graphics_->BeginDebug("ShadowMap Pass");
             drawQueue_->Reset();
             batchRenderer_->RenderBatches({ *drawQueue_, split }, split.GetShadowBatches());
             shadowMapAllocator_->BeginShadowMapRendering(split.GetShadowMap());
             drawQueue_->Execute();
+            graphics_->EndDebug();
 
             if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
-            {
                 debugger_->EndPass();
-                graphics_->EndDebug();
-            }
         }
     }
 }

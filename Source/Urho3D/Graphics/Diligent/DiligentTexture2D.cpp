@@ -470,6 +470,20 @@ bool Texture2D::Create()
     {
         RefCntAutoPtr<ITexture> viewObject = (resolveTexture_ ? resolveTexture_ : object_.Cast<ITexture>(IID_Texture));
         shaderResourceView_ = viewObject->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
+        // If could not get default view, we must create then.
+        if (!shaderResourceView_) {
+            TextureViewDesc resourceViewDesc;
+#ifdef URHO3D_DEBUG
+            ea::string dbgName = Format("{}(SRV)", GetName());
+            resourceViewDesc.Name = dbgName.c_str();
+#endif
+            resourceViewDesc.Format = (TEXTURE_FORMAT)GetSRVFormat(textureDesc.Format);
+            resourceViewDesc.TextureDim = RESOURCE_DIM_TEX_2D;
+            resourceViewDesc.NumMipLevels = usage_ != TEXTURE_DYNAMIC ? levels_ : 1;
+            resourceViewDesc.ViewType = TEXTURE_VIEW_SHADER_RESOURCE;
+
+            viewObject->CreateView(resourceViewDesc, &shaderResourceView_);
+        }
         if (!shaderResourceView_)
         {
             URHO3D_LOGERROR("Failed to create shader resource view for texture");
@@ -481,7 +495,10 @@ bool Texture2D::Create()
     {
         RefCntAutoPtr<ITexture> tex = object_.Cast<ITexture>(IID_Texture);
         TextureViewDesc renderTargetViewDesc;
-        renderTargetViewDesc.Name = (GetName() + "(RT)").c_str();
+#ifdef URHO3D_DEBUG
+        ea::string dbgName = Format("{}(RT)", GetName());
+        renderTargetViewDesc.Name = dbgName.c_str();
+#endif
         renderTargetViewDesc.Format = textureDesc.Format;
         renderTargetViewDesc.TextureDim = RESOURCE_DIM_TEX_2D;
         renderTargetViewDesc.ViewType = TEXTURE_VIEW_RENDER_TARGET;
@@ -497,7 +514,10 @@ bool Texture2D::Create()
     {
         RefCntAutoPtr<ITexture> tex = object_.Cast<ITexture>(IID_Texture);
         TextureViewDesc renderTargetViewDesc;
-        renderTargetViewDesc.Name = (GetName() + "(Depth)").c_str();
+#ifdef URHO3D_DEBUG
+        ea::string dbgName = Format("{}(Depth)", GetName());
+        renderTargetViewDesc.Name = dbgName.c_str();
+#endif
         renderTargetViewDesc.Format = (TEXTURE_FORMAT)GetDSVFormat(textureDesc.Format);
         renderTargetViewDesc.TextureDim = RESOURCE_DIM_TEX_2D;
         renderTargetViewDesc.ViewType = TEXTURE_VIEW_DEPTH_STENCIL;

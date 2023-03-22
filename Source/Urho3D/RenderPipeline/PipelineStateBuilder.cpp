@@ -184,6 +184,10 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
     pipelineStateDesc_.depthCompareFunction_ = pass->GetDepthTestMode();
 
     pipelineStateDesc_.cullMode_ = GetEffectiveCullMode(pass->GetCullMode(), material->GetShadowCullMode(), false);
+
+#ifdef URHO3D_DILIGENT
+    pipelineStateDesc_.depthStencilFormat_ = graphics_->GetSwapChainDepthFormat();
+#endif
 }
 
 void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* lightProcessor)
