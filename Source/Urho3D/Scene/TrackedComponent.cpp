@@ -99,9 +99,15 @@ void TrackedComponentRegistryBase::RemoveTrackedComponent(TrackedComponentBase* 
 void TrackedComponentRegistryBase::OnSceneSet(Scene* scene)
 {
     if (scene)
+    {
         InitializeTrackedComponents();
+        OnAddedToScene(scene);
+    }
     else
+    {
+        OnRemovedFromScene();
         DeinitializeTrackedComponents();
+    }
 }
 
 void TrackedComponentRegistryBase::InitializeTrackedComponents()
