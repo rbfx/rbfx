@@ -19,7 +19,7 @@ namespace Urho3D
             ticket->id_ = data_[grp]->tickets_.size();
             data_[grp]->tickets_.push_back(ticket);
         }
-        
+
         ConstantBufferManagerTicket* ticket = data_[grp]->tickets_[nextTicket++].get();
         data_[grp]->nextTicket_ = nextTicket;
         return ticket;
@@ -62,7 +62,9 @@ namespace Urho3D
             URHO3D_LOGERROR("Invalid TicketId.");
             return;
         }
-        if (data->cbuffer_->GetSize() == 0)
+        size_t cbufferSize = data->cbuffer_->GetSize();
+        // Unallocated CBuffer, this must never occurs
+        if (cbufferSize == 0)
             return;
         // Don't write twice if previous ticket has been already executed.
         if (ticketId == data->prevTicketDispatched_)

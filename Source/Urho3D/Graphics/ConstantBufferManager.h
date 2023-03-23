@@ -36,7 +36,7 @@ namespace Urho3D
         SharedPtr<ConstantBuffer> cbuffer_{};
         unsigned nextTicket_{ 0 };
         unsigned cbufferSize_{0};
-        unsigned prevTicketDispatched_{0};
+        unsigned prevTicketDispatched_{M_MAX_UNSIGNED};
     };
     /// @{
     /// This class is used by the DrawCommandQueue

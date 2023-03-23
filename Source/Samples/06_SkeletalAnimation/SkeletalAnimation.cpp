@@ -122,11 +122,12 @@ void SkeletalAnimation::CreateScene()
     const float MODEL_ROTATE_SPEED = 100.0f;
     const BoundingBox bounds(Vector3(-20.0f, 0.0f, -20.0f), Vector3(20.0f, 0.0f, 20.0f));
 
+    SetRandomSeed(10);
     for (unsigned i = 0; i < NUM_MODELS; ++i)
     {
         Node* modelNode = scene_->CreateChild("Jill");
         modelNode->SetPosition(Vector3(Random(40.0f) - 20.0f, 0.0f, Random(40.0f) - 20.0f));
-        modelNode->SetRotation(Quaternion(0.0f, Random(360.0f), 0.0f));
+        //modelNode->SetRotation(Quaternion(0.0f, Random(360.0f), 0.0f));
 
         auto* modelObject = modelNode->CreateComponent<AnimatedModel>();
         modelObject->SetModel(cache->GetResource<Model>("Models/Kachujin/Kachujin.mdl"));
@@ -140,11 +141,11 @@ void SkeletalAnimation::CreateScene()
         const float startTime = Random(walkAnimation->GetLength());
 
         auto animationController = modelNode->CreateComponent<AnimationController>();
-        animationController->PlayNewExclusive(AnimationParameters{walkAnimation}.Looped().Time(startTime));
+        //animationController->PlayNewExclusive(AnimationParameters{walkAnimation}.Looped().Time(startTime));
 
         // Create our custom Mover3D component that will move & animate the model during each frame's update
         auto* mover = modelNode->CreateComponent<Mover3D>();
-        mover->SetParameters(MODEL_MOVE_SPEED, MODEL_ROTATE_SPEED, bounds);
+        //mover->SetParameters(MODEL_MOVE_SPEED, MODEL_ROTATE_SPEED, bounds);
     }
 
     // Create the camera. Limit far clip distance to match the fog

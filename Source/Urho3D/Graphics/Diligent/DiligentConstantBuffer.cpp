@@ -58,12 +58,14 @@ bool ConstantBuffer::SetSize(unsigned size)
 
     size_ = size;
 
+    BuildHash();
     if (graphics_)
     {
         using namespace Diligent;
         BufferDesc bufferDesc;
 #ifdef URHO3D_DEBUG
-        bufferDesc.Name = dbgName_.c_str();
+        ea::string bufferName = Format("{}({})", dbgName_, (size_t)hash_);
+        bufferDesc.Name = bufferName.c_str();
 #endif
         bufferDesc.Size = size_;
         bufferDesc.Usage = USAGE_DEFAULT;
@@ -77,10 +79,10 @@ bool ConstantBuffer::SetSize(unsigned size)
             URHO3D_LOGERROR("Failed to create constant buffer. See logs!");
             return false;
         }
+        URHO3D_LOGDEBUG("Created Constant Buffer {}", buffer->GetUniqueID());
         object_ = buffer;
     }
 
-    BuildHash();
     return true;
 }
 

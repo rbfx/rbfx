@@ -70,8 +70,8 @@ public:
     }
 private:
     void BuildHash() {
-        unsigned hash = MakeHash((unsigned long long)this);
-        CombineHash(hash, MakeHash(size_));
+        hash_ = MakeHash((unsigned long long)this);
+        CombineHash(hash_, MakeHash(size_));
     }
     /// Buffer byte size.
     unsigned size_{};
