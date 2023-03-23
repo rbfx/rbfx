@@ -157,8 +157,8 @@ public:
                 return true;
             }
 
-            return false;
         }
+        return false;
 #else
         if (useConstantBuffers_)
         {

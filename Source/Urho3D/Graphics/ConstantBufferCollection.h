@@ -152,12 +152,20 @@ public:
     /// Copy new Matrix3 parameter into storage.
     static bool StoreParameter(unsigned char* dest, unsigned size, const Matrix3& value)
     {
+#ifdef URHO3D_DILIGENT
+        if (size < sizeof(Matrix3))
+            return false;
+        const Matrix3x4 data{ value };
+        memcpy(dest, data.Data(), sizeof(Matrix3x4));
+        return true;
+#else
         if (size != 11 * sizeof(float))
             return false;
 
         const Matrix3x4 data{ value };
         memcpy(dest, data.Data(), sizeof(Matrix3x4));
         return true;
+#endif
     }
 
     /// Copy new Matrix3x4 parameter into storage.
