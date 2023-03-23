@@ -64,7 +64,7 @@ bool ConstantBuffer::SetSize(unsigned size)
         using namespace Diligent;
         BufferDesc bufferDesc;
 #ifdef URHO3D_DEBUG
-        ea::string bufferName = Format("{}({})", dbgName_, (size_t)hash_);
+        ea::string bufferName = Format("{}#{}", dbgName_, (size_t)hash_);
         bufferDesc.Name = bufferName.c_str();
 #endif
         bufferDesc.Size = size_;
