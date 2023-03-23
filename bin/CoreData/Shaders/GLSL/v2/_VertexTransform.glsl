@@ -149,13 +149,8 @@ mat4 GetModelMatrix()
             ApplyShadowNormalOffset(result.position, result.normal);
 
             #ifdef URHO3D_VERTEX_NEED_TANGENT
-                #ifdef URHO3D_VERTEX_HAS_TANGENT
-                    result.tangent = normalize(iTangent.xyz * normalMatrix);
-                    result.bitangent = cross(result.tangent, result.normal) * iTangent.w;
-                #else
-                    result.tangent = normalize(vec3(1.0, 0.0, 0.0) * normalMatrix);
-                    result.bitangent = cross(result.tangent, result.normal);
-                #endif
+                result.tangent = normalize(iTangent.xyz * normalMatrix);
+                result.bitangent = cross(result.tangent, result.normal) * iTangent.w;
             #endif
         #endif
 
