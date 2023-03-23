@@ -35,6 +35,11 @@ static const float q = 32767.0f;
 
 Serializer::~Serializer() = default;
 
+const ea::string& Serializer::GetName() const
+{
+    return EMPTY_STRING;
+}
+
 bool Serializer::WriteInt64(long long value)
 {
     return Write(&value, sizeof value) == sizeof value;
