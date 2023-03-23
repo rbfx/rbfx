@@ -133,35 +133,27 @@ bool IndexBuffer::SetDataRange(const void* data, unsigned start, unsigned count,
     if (shadowData_ && shadowData_.get() + start * indexSize_ != data)
         memcpy(shadowData_.get() + start * indexSize_, data, count * indexSize_);
 
-    assert(0);
-    /*if (object_.ptr_)
-    {
-        if (dynamic_)
-        {
-            void* hwData = MapBuffer(start, count, discard);
-            if (hwData)
-            {
-                memcpy(hwData, data, count * indexSize_);
+    if (object_) {
+        if (dynamic_) {
+            void* hwdData = MapBuffer(start, count, discard);
+            if (hwdData) {
+                memcpy(hwdData, data, count * indexSize_);
                 UnmapBuffer();
             }
             else
                 return false;
         }
-        else
-        {
-            D3D11_BOX destBox;
-            destBox.left = start * indexSize_;
-            destBox.right = destBox.left + count * indexSize_;
-            destBox.top = 0;
-            destBox.bottom = 1;
-            destBox.front = 0;
-            destBox.back = 1;
-
-            graphics_->GetImpl()->GetDeviceContext()->UpdateSubresource((ID3D11Buffer*)object_.ptr_, 0, &destBox, data, 0, 0);
+        else {
+            graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer(
+                object_.Cast<Diligent::IBuffer>(Diligent::IID_Buffer),
+                start * indexSize_,
+                count * indexSize_,
+                data,
+                Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+            );
         }
     }
-
-    return true;*/
+    return true;
 }
 
 void* IndexBuffer::Lock(unsigned start, unsigned count, bool discard)
