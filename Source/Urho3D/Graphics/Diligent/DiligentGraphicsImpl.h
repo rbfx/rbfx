@@ -130,6 +130,8 @@ private:
 #endif
     /// Rendertargets dirty flag.
     bool renderTargetsDirty_;
+    /// Viewport dirty flag.
+    bool viewportDirty_;
     /// Textures dirty flag.
     bool texturesDirty_;
     /// Vertex declaration dirty flag.

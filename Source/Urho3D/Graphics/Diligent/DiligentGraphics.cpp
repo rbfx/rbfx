@@ -1378,18 +1378,8 @@ void Graphics::SetViewport(const IntRect& rect)
     rectCopy.right_ = Clamp(rectCopy.right_, 0, size.x_);
     rectCopy.bottom_ = Clamp(rectCopy.bottom_, 0, size.y_);
 
-    Diligent::Viewport viewport;
-    viewport.TopLeftX = rectCopy.left_;
-    viewport.TopLeftY = rectCopy.top_;
-    viewport.Width = (rectCopy.right_ - rectCopy.left_);
-    viewport.Height = (rectCopy.bottom_ - rectCopy.top_);
-    viewport.MinDepth = 0.0f;
-    viewport.MaxDepth = 1.0f;
-
-    auto swapChainDesc = impl_->GetSwapChain()->GetDesc();
-    impl_->GetDeviceContext()->SetViewports(1, &viewport, swapChainDesc.Width, swapChainDesc.Height);
-
     viewport_ = rectCopy;
+    impl_->viewportDirty_ = true;
 
     // Disable scissor test, needs to be re-enabled by the user
     SetScissorTest(false);
@@ -2467,6 +2457,8 @@ void Graphics::PrepareDraw()
             ++rtCount;
         impl_->deviceContext_->SetRenderTargets(rtCount, &impl_->renderTargetViews_[0], impl_->depthStencilView_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
         impl_->renderTargetsDirty_ = false;
+        // When RenderTarget is changed, Diligent forces Viewport by size of Render Target.
+        impl_->viewportDirty_ = true;
     }
 
     if (impl_->firstDirtyVB_ < M_MAX_UNSIGNED) {
@@ -2674,6 +2666,19 @@ void Graphics::PrepareDraw()
 
     //    impl_->rasterizerStateDirty_ = false;
     //}
+
+    if (impl_->viewportDirty_) {
+        Diligent::Viewport viewport;
+        viewport.TopLeftX = viewport_.left_;
+        viewport.TopLeftY = viewport_.top_;
+        viewport.Width = (viewport_.right_ - viewport_.left_);
+        viewport.Height = (viewport_.bottom_ - viewport_.top_);
+        viewport.MinDepth = 0.0f;
+        viewport.MaxDepth = 1.0f;
+
+        impl_->GetDeviceContext()->SetViewports(1, &viewport, 0, 0);
+        impl_->viewportDirty_ = false;
+    }
 
     if (impl_->scissorRectDirty_) {
         Diligent::Rect rect;

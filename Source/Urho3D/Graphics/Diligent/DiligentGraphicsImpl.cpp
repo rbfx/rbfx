@@ -45,7 +45,8 @@ GraphicsImpl::GraphicsImpl() :
     constantBufferManager_(nullptr),
     commonPipelines_(nullptr),
     resourceMappingCache_(nullptr),
-    renderBackend_(RENDER_D3D11)
+    renderBackend_(RENDER_D3D11),
+    viewportDirty_(true)
 {
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         renderTargetViews_[i] = nullptr;
