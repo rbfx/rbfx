@@ -299,6 +299,10 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Generate
+        shell: bash
+        run: dotnet workload install android
+
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1
         with:
