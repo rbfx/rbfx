@@ -78,6 +78,8 @@ public:
     EditorHotkey& MaybeShift() { qualifiersUp_.Set(QUAL_SHIFT, false); return *this; }
     EditorHotkey& MaybeCtrl() { qualifiersUp_.Set(QUAL_CTRL, false); return *this; }
     EditorHotkey& MaybeAlt() { qualifiersUp_.Set(QUAL_ALT, false); return *this; }
+
+    EditorHotkey& MaybeMouse() { mouseButtonsUp_ = MOUSEB_NONE; return *this; }
     /// @}
 
 public:
