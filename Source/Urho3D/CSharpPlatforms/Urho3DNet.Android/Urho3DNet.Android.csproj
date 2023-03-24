@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>19</SupportedOSPlatformVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Launcher.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\android\src\io\urho3d\UrhoActivity.java" Link="io/urho3d/UrhoActivity.java" />
+    <None Include="..\..\..\ThirdParty\SDL\android-project\app\src\main\java\org\libsdl\app\HIDDevice.java" Link="org\libsdl\app\HIDDevice.java" />
+    <None Include="..\..\..\ThirdParty\SDL\android-project\app\src\main\java\org\libsdl\app\HIDDeviceBLESteamController.java" Link="org\libsdl\app\HIDDeviceBLESteamController.java" />
+    <None Include="..\..\..\ThirdParty\SDL\android-project\app\src\main\java\org\libsdl\app\HIDDeviceManager.java" Link="org\libsdl\app\HIDDeviceManager.java" />
+    <None Include="..\..\..\ThirdParty\SDL\android-project\app\src\main\java\org\libsdl\app\HIDDeviceUSB.java" Link="org\libsdl\app\HIDDeviceUSB.java" />
+    <None Include="..\..\..\ThirdParty\SDL\android-project\app\src\main\java\org\libsdl\app\SDL.java" Link="org\libsdl\app\SDL.java" />
+    <None Include="..\..\..\ThirdParty\SDL\android-project\app\src\main\java\org\libsdl\app\SDLActivity.java" Link="org\libsdl\app\SDLActivity.java" />
+    <None Include="..\..\..\ThirdParty\SDL\android-project\app\src\main\java\org\libsdl\app\SDLAudioManager.java" Link="org\libsdl\app\SDLAudioManager.java" />
+    <None Include="..\..\..\ThirdParty\SDL\android-project\app\src\main\java\org\libsdl\app\SDLControllerManager.java" Link="org\libsdl\app\SDLControllerManager.java" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\CSharp\Urho3DNet.csproj" />
+  </ItemGroup>
+</Project>

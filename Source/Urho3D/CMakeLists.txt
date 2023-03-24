@@ -453,6 +453,15 @@ if (URHO3D_CSHARP)
     if (MSVC)
         target_compile_options(Urho3D PRIVATE /bigobj)
     endif ()
+
+    if (ANDROID)
+        add_target_csharp(
+            TARGET Urho3DNet.Android
+            PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharpPlatforms/Android/Urho3DNet.Android.csproj
+            OUTPUT ${NET_OUTPUT_DIRECTORY}/Urho3DNet.Android.dll
+            DEPENDS Urho3DNet
+        )
+    endif()
 endif ()
 
 # Install C# dependencies
