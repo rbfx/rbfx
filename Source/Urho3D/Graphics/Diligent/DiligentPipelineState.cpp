@@ -49,11 +49,12 @@ namespace Urho3D
                 dbgShaderVertexElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n", elementSemanticNames[shaderVertexElement->semantic_], shaderVertexElement->index_, shaderVertexElement->offset_));
             for (auto vertexBufferElement = vertexBufferElements.begin(); vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement)
                 dbgVertexBufferElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n", elementSemanticNames[vertexBufferElement->semantic_], vertexBufferElement->index_, vertexBufferElement->offset_));*/
-
             auto BuildLayoutElement = [=](const VertexElement* element, LayoutElement& layoutElement) {
                 LayoutElement result = {};
                 layoutElement.RelativeOffset = element->offset_;
                 layoutElement.NumComponents = sNumComponents[element->type_];
+                if (layoutElement.NumComponents == 0)
+                    __debugbreak();
                 layoutElement.ValueType = sValueTypes[element->type_];
                 if (element->semantic_ == SEM_BLENDINDICES)
                     layoutElement.ValueType = VT_UINT8;
@@ -62,6 +63,7 @@ namespace Urho3D
                 layoutElement.Frequency = element->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
             };
             for (const VertexElement* shaderVertexElement = shaderVertexElements.begin(); shaderVertexElement != shaderVertexElements.end(); ++shaderVertexElement) {
+                bool insert = false;
                 LayoutElement layoutElement = {};
                 layoutElement.InputIndex = attribCount;
 
@@ -71,11 +73,14 @@ namespace Urho3D
                     BuildLayoutElement(vertexBufferElement, layoutElement);
                     // Remove from vector processed vertex element
                     vertexBufferElements.erase(vertexBufferElement);
+                    insert = true;
                     break;
                 }
 
-                layoutElements.push_back(layoutElement);
-                ++attribCount;
+                if (insert) {
+                    layoutElements.push_back(layoutElement);
+                    ++attribCount;
+                }
             }
             // Add last semantics if has left vertex buffer elements
             for (const VertexElement* element = vertexBufferElements.begin(); element != vertexBufferElements.end(); ++element) {
@@ -85,6 +90,8 @@ namespace Urho3D
                 layoutElements.push_back(layoutElement);
                 ++attribCount;
             }
+
+            assert(layoutElements.size());
         }
 
         ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();

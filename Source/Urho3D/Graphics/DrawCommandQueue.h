@@ -292,6 +292,9 @@ public:
         currentDrawCommand_.baseVertexIndex_ = 0;
         currentDrawCommand_.instanceStart_ = 0;
         currentDrawCommand_.instanceCount_ = 0;
+        // fix: don't push command if index start and index count is 0
+        if (indexStart == 0 && indexCount == 0)
+            return;
         drawCommands_.push_back(currentDrawCommand_);
     }
 

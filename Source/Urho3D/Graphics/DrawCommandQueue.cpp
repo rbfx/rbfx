@@ -223,6 +223,7 @@ void DrawCommandQueue::Execute()
             }
 
             ShaderResourceBinding* srb = srbCache_->GetOrCreateSRB(ci);
+            assert(srb);
             graphics_->CommitSRB(srb);
         }
 #else
