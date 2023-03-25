@@ -36,15 +36,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  CheckSkipCI:
-    runs-on: ubuntu-20.04
-    # Skip CI if:
-    # - pull request is from rbfx/rbfx repository branch
-    if: |
-      !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx')
-    steps:
-      - run: exit 0
-
   notifications:
     name: Discord Commits
     runs-on: ubuntu-20.04
@@ -62,7 +53,6 @@ jobs:
   Windows:
     if: github.event.pull_request.draft == false
     runs-on: windows-2022
-    needs: [CheckSkipCI]
 
     strategy:
       fail-fast: false
@@ -159,7 +149,6 @@ jobs:
   UWP:
     if: github.event.pull_request.draft == false
     runs-on: windows-2022
-    needs: [CheckSkipCI]
 
     strategy:
       fail-fast: false
@@ -244,7 +233,6 @@ jobs:
   Linux:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-20.04
-    needs: [CheckSkipCI]
 
     strategy:
       fail-fast: false
@@ -333,7 +321,6 @@ jobs:
   MacOS:
     if: github.event.pull_request.draft == false
     runs-on: macos-11
-    needs: [CheckSkipCI]
 
     strategy:
       fail-fast: false
@@ -421,7 +408,6 @@ jobs:
   Android:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-20.04
-    needs: [CheckSkipCI]
 
     strategy:
       fail-fast: false
@@ -490,7 +476,6 @@ jobs:
   iOS:
     if: github.event.pull_request.draft == false
     runs-on: macos-11
-    needs: [CheckSkipCI]
 
     strategy:
       fail-fast: false
@@ -566,7 +551,6 @@ jobs:
   Web:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-20.04
-    needs: [CheckSkipCI]
 
     strategy:
       fail-fast: false
@@ -696,7 +680,6 @@ jobs:
       - Android
       - iOS
       - Web
-      - CheckSkipCI
     env:
       GH_TOKEN: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
 
