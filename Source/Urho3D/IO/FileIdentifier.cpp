@@ -20,45 +20,103 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/FileIdentifier.h"
+#include "Urho3D/IO/FileIdentifier.h"
+
+#include "Urho3D/Container/Str.h"
 
 namespace Urho3D
 {
 
-FileIdentifier::FileIdentifier()
-{
-}
+const FileIdentifier FileIdentifier::Empty{};
 
-FileIdentifier::FileIdentifier(const ea::string& url)
-{
-    constexpr ea::string_view schemeSeparator(":/");
-    auto schemePos = url.find(schemeSeparator);
-    if (schemePos == ea::string::npos)
-    {
-        fileName_ = SanitizeFileName(url);
-    }
-    else
-    {
-        scheme_ = url.substr(0, schemePos);
-        schemePos += schemeSeparator.size();
-        // Skip up to two forward slashes to accommodate common http:// or file:/// url patterns.
-        if (schemePos < url.size() && url[schemePos] == '/')
-            ++schemePos;
-        if (schemePos < url.size() && url[schemePos] == '/')
-            ++schemePos;
-        fileName_ = SanitizeFileName(url.substr(schemePos));
-    }
-}
-
-FileIdentifier::FileIdentifier(const ea::string& scheme, const ea::string& fileName)
+FileIdentifier::FileIdentifier(ea::string_view scheme, ea::string_view fileName)
     : scheme_(scheme)
-    , fileName_(SanitizeFileName(fileName))
+    , fileName_(fileName)
 {
 }
 
-ea::string FileIdentifier::SanitizeFileName(const ea::string& fileName)
+FileIdentifier FileIdentifier::FromUri(ea::string_view uri)
 {
-    ea::string sanitizedName = fileName;
+    // Special case: absolute path
+    if (uri.starts_with('/') || (uri.length() >= 3 && uri[1] == ':' && (uri[2] == '/' || uri[2] == '\\')))
+        return {"file", SanitizeFileName(uri)};
+
+    const auto schemePos = uri.find(":");
+
+    // Special case: empty scheme
+    if (schemePos == ea::string_view::npos)
+        return {EMPTY_STRING, SanitizeFileName(uri)};
+
+    const auto scheme = uri.substr(0, schemePos);
+    const auto path = uri.substr(schemePos + 1);
+
+    const auto isSlash = [](char c) { return c == '/'; };
+    const unsigned numSlashes = ea::find_if_not(path.begin(), path.end(), isSlash) - path.begin();
+
+    // Special case: file scheme
+    if (scheme == "file")
+    {
+        if (numSlashes == 0 || numSlashes > 3)
+            return FileIdentifier::Empty;
+
+        // Keep one leading slash
+        const auto localPath = path.substr(numSlashes - 1);
+
+        // Windows-like path, e.g. /c:/path/to/file
+        if (localPath.size() >= 3 && localPath[2] == ':')
+            return {scheme, localPath.substr(1)};
+
+        // Unix-like path, e.h. /path/to/file
+        return {scheme, localPath};
+    }
+
+    // Trim up to two leading slashes for other schemes
+    return {scheme, path.substr(ea::min(numSlashes, 2u))};
+}
+
+ea::string FileIdentifier::ToUri() const
+{
+    // Special case: empty scheme
+    if (scheme_.empty())
+        return fileName_;
+
+    // Special case: file scheme
+    if (scheme_ == "file")
+    {
+        if (fileName_.empty())
+            return ea::string{};
+        else if (fileName_.front() == '/')
+            return "file://" + fileName_;
+        else
+            return "file:///" + fileName_;
+    }
+
+    // Use scheme://path/to/file format by default
+    return scheme_ + "://" + fileName_;
+}
+
+void FileIdentifier::AppendPath(ea::string_view path)
+{
+    if (path.empty())
+        return;
+
+    if (fileName_.empty())
+    {
+        fileName_ = path;
+        return;
+    }
+
+    if (fileName_.back() != '/' && path.front() != '/')
+        fileName_.push_back('/');
+    if (fileName_.back() == '/' && path.front() == '/')
+        path = path.substr(1);
+
+    fileName_.append(path.data(), path.length());
+}
+
+ea::string FileIdentifier::SanitizeFileName(ea::string_view fileName)
+{
+    ea::string sanitizedName{fileName};
     sanitizedName.replace('\\', '/');
     sanitizedName.replace("../", "");
     sanitizedName.replace("./", "");

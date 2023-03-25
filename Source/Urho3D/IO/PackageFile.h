@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../IO/MountPoint.h"
+#include "Urho3D/IO/MountPoint.h"
+#include "Urho3D/IO/ScanFlags.h"
 
 namespace Urho3D
 {
@@ -99,16 +100,18 @@ public:
         return EMPTY_STRING;
     }
 
-    /// Scan package for specified files.
-    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
-
     /// Implement MountPoint.
     /// @{
     bool AcceptsScheme(const ea::string& scheme) const override;
     bool Exists(const FileIdentifier& fileName) const override;
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
-    ea::string GetFileName(const FileIdentifier& fileName) const override;
+    ea::optional<FileTime> GetLastModifiedTime(
+        const FileIdentifier& fileName, bool creationIsModification) const override;
+
     const ea::string& GetName() const override { return fileName_; }
+
+    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,
+        ScanFlags flags) const override;
     /// @}
 
 private:

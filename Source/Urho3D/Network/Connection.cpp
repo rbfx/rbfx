@@ -29,6 +29,7 @@
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/PackageFile.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../Network/ClockSynchronizer.h"
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
@@ -49,7 +50,6 @@
 
 #include "../DebugNew.h"
 #include "Connection.h"
-
 
 #include <cstdio>
 
@@ -438,14 +438,15 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     // In case we have joined other scenes in this session, remove first all downloaded package files from the resource system
     // to prevent resource conflicts
     auto* cache = GetSubsystem<ResourceCache>();
+    auto* vfs = GetSubsystem<VirtualFileSystem>();
     const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    ea::vector<SharedPtr<PackageFile> > packages = cache->GetPackageFiles();
-    for (unsigned i = 0; i < packages.size(); ++i)
+    
+    for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
     {
-        PackageFile* package = packages[i];
-        if (!package->GetName().find(packageCacheDir))
-            cache->RemovePackageFile(package, true);
+        const auto package = dynamic_cast<PackageFile*>(vfs->GetMountPoint(i));
+        if (package && !package->GetName().find(packageCacheDir))
+            vfs->Unmount(package);
     }
 
     // Now check which packages we have in the resource cache or in the download cache, and which we need to download
@@ -590,7 +591,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
 
                 // Instantiate the package and add to the resource system, as we will need it to load the scene
                 download.file_->Close();
-                GetSubsystem<ResourceCache>()->AddPackageFile(download.file_->GetName(), 0);
+                GetSubsystem<VirtualFileSystem>()->MountPackageFile(download.file_->GetName());
 
                 // Then start the next download if there are more
                 downloads_.erase(i);
@@ -852,10 +853,16 @@ void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& event
 
 bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
 {
-    auto* cache = GetSubsystem<ResourceCache>();
+    auto* vfs = GetSubsystem<VirtualFileSystem>();
     const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    ea::vector<SharedPtr<PackageFile> > packages = cache->GetPackageFiles();
+    ea::vector<SharedPtr<PackageFile>> packages;
+    for (unsigned i = 0; i<vfs->NumMountPoints(); ++i)
+    {
+        auto packageFile = dynamic_cast<PackageFile*>(vfs->GetMountPoint(i));
+        if (packageFile)
+            packages.push_back(SharedPtr<PackageFile>(packageFile));
+    }
     ea::vector<ea::string> downloadedPackages;
     bool packagesScanned = false;
 
@@ -890,7 +897,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
                 return false;
             }
 
-            GetSubsystem<FileSystem>()->ScanDir(downloadedPackages, packageCacheDir, "*.*", SCAN_FILES, false);
+            GetSubsystem<FileSystem>()->ScanDir(downloadedPackages, packageCacheDir, "*.*", SCAN_FILES);
             packagesScanned = true;
         }
 
@@ -906,7 +913,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
                 if (newPackage->GetTotalSize() == fileSize && newPackage->GetChecksum() == checksum)
                 {
                     // Add the package to the resource system now, as we will need it to load the scene
-                    cache->AddPackageFile(newPackage, 0);
+                    vfs->Mount(newPackage);
                     found = true;
                     break;
                 }

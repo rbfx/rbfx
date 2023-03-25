@@ -26,9 +26,14 @@ endif ()
 
 include (../ThirdParty/catch2/Catch.cmake)
 
-file (GLOB_RECURSE TEST_SOURCE_CODE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" *.cpp)
+file (GLOB_RECURSE TEST_SOURCE_CODE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" *.cpp *.h)
+
+# Group source code in VS solution
+group_sources()
+
 set (TARGET_NAME Tests)
 add_executable(${TARGET_NAME} ${TEST_SOURCE_CODE})
+
 target_link_libraries(${TARGET_NAME} PRIVATE Urho3D catch2)
 catch_discover_tests(${TARGET_NAME})
 

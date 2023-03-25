@@ -20,18 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../IO/VirtualFileSystem.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
 
-#include "PackageFile.h"
-#include "../IO/Log.h"
-#include "../IO/FileSystem.h"
-#include "../IO/MountedDirectory.h"
-#include "../IO/MountPoint.h"
-#include "../Core/Context.h"
-#include "../Engine/EngineDefs.h"
-#include "../Engine/Engine.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MountPoint.h"
+#include "Urho3D/IO/MountedDirectory.h"
+#include "Urho3D/IO/MountedRoot.h"
+#include "Urho3D/IO/PackageFile.h"
 
 #include <EASTL/bonus/adaptors.h>
 
@@ -44,6 +44,11 @@ VirtualFileSystem::VirtualFileSystem(Context* context)
 }
 
 VirtualFileSystem::~VirtualFileSystem() = default;
+
+void VirtualFileSystem::MountRoot()
+{
+    Mount(MakeShared<MountedRoot>(context_));
+}
 
 void VirtualFileSystem::MountDir(const ea::string& path)
 {
@@ -68,7 +73,7 @@ void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string&
 
     // Add all the subdirs (non-recursive) as resource directory
     ea::vector<ea::string> subdirs;
-    fileSystem->ScanDir(subdirs, path, "*", SCAN_DIRS, false);
+    fileSystem->ScanDir(subdirs, path, "*", SCAN_DIRS);
     for (const ea::string& dir : subdirs)
     {
         if (dir.starts_with("."))
@@ -80,7 +85,7 @@ void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string&
 
     // Add all the found package files (non-recursive)
     ea::vector<ea::string> packageFiles;
-    fileSystem->ScanDir(packageFiles, path, "*.pak", SCAN_FILES, false);
+    fileSystem->ScanDir(packageFiles, path, "*.pak", SCAN_FILES);
     for (const ea::string& packageFile : packageFiles)
     {
         if (packageFile.starts_with("."))
@@ -93,7 +98,7 @@ void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string&
 
 void VirtualFileSystem::MountPackageFile(const ea::string& path)
 {
-    auto packageFile = MakeShared<PackageFile>(context_);
+    const auto packageFile = MakeShared<PackageFile>(context_);
     if (packageFile->Open(path, 0u))
         Mount(packageFile);
 }
@@ -108,6 +113,8 @@ void VirtualFileSystem::Mount(MountPoint* mountPoint)
         return;
     }
     mountPoints_.push_back(pointPtr);
+
+    mountPoint->SetWatching(isWatching_);
 }
 
 void VirtualFileSystem::MountExistingPackages(
@@ -172,9 +179,11 @@ MountPoint* VirtualFileSystem::GetMountPoint(unsigned index) const
     return (index < mountPoints_.size()) ? mountPoints_[index].Get() : nullptr;
 }
 
-/// Open file in a virtual file system. Returns null if file not found.
 AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, FileMode mode) const
 {
+    if (!fileName)
+        return nullptr;
+
     MutexLock lock(mountMutex_);
 
     for (MountPoint* mountPoint : ea::reverse(mountPoints_))
@@ -182,32 +191,123 @@ AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, File
         if (AbstractFilePtr result = mountPoint->OpenFile(fileName, mode))
             return result;
     }
-    return AbstractFilePtr();
+
+    return nullptr;
 }
 
-ea::string VirtualFileSystem::GetFileName(const FileIdentifier& fileName)
+FileTime VirtualFileSystem::GetLastModifiedTime(const FileIdentifier& fileName, bool creationIsModification) const
 {
     MutexLock lock(mountMutex_);
 
     for (MountPoint* mountPoint : ea::reverse(mountPoints_))
     {
-        const ea::string result = mountPoint->GetFileName(fileName);
+        if (const auto result = mountPoint->GetLastModifiedTime(fileName, creationIsModification))
+            return *result;
+    }
+
+    return 0;
+}
+
+ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
+{
+    MutexLock lock(mountMutex_);
+
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
+    {
+        const ea::string result = mountPoint->GetAbsoluteNameFromIdentifier(fileName);
         if (!result.empty())
             return result;
     }
 
-    // Fallback to absolute path resolution, similar to ResouceCache behaviour.
-    if (fileName.scheme_.empty())
-    {
-        const auto* fileSystem = GetSubsystem<FileSystem>();
-        if (IsAbsolutePath(fileName.fileName_) && fileSystem->FileExists(fileName.fileName_))
-            return fileName.fileName_;
-    }
-
-    return ea::string();
+    return EMPTY_STRING;
 }
 
-/// Check if a file exists in the virtual file system.
+FileIdentifier VirtualFileSystem::GetCanonicalIdentifier(const FileIdentifier& fileName) const
+{
+    FileIdentifier result = fileName;
+
+    // .. is not supported
+    result.fileName_.replace("../", "");
+    result.fileName_.replace("./", "");
+    result.fileName_.trim();
+
+    // Attempt to go from "file" scheme to local schemes
+    if (result.scheme_ == "file")
+    {
+        if (const auto betterName = GetIdentifierFromAbsoluteName(result.fileName_))
+            result = betterName;
+    }
+
+    return result;
+}
+
+FileIdentifier VirtualFileSystem::GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const
+{
+    MutexLock lock(mountMutex_);
+
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
+    {
+        const FileIdentifier result = mountPoint->GetIdentifierFromAbsoluteName(absoluteFileName);
+        if (result)
+            return result;
+    }
+
+    return FileIdentifier::Empty;
+}
+
+FileIdentifier VirtualFileSystem::GetIdentifierFromAbsoluteName(
+    const ea::string& scheme, const ea::string& absoluteFileName) const
+{
+    MutexLock lock(mountMutex_);
+
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
+    {
+        if (!mountPoint->AcceptsScheme(scheme))
+            continue;
+
+        const FileIdentifier result = mountPoint->GetIdentifierFromAbsoluteName(absoluteFileName);
+        if (result)
+            return result;
+    }
+
+    return FileIdentifier::Empty;
+}
+
+void VirtualFileSystem::SetWatching(bool enable)
+{
+    if (isWatching_ != enable)
+    {
+        MutexLock lock(mountMutex_);
+
+        isWatching_ = enable;
+        for (auto i = mountPoints_.rbegin(); i != mountPoints_.rend(); ++i)
+        {
+            (*i)->SetWatching(isWatching_);
+        }
+    }
+}
+
+void VirtualFileSystem::Scan(ea::vector<ea::string>& result, const ea::string& scheme, const ea::string& pathName,
+    const ea::string& filter, ScanFlags flags) const
+{
+    MutexLock lock(mountMutex_);
+
+    if (!flags.Test(SCAN_APPEND))
+        result.clear();
+
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
+    {
+        if (mountPoint->AcceptsScheme(scheme))
+            mountPoint->Scan(result, pathName, filter, flags | SCAN_APPEND);
+    }
+}
+
+void VirtualFileSystem::Scan(ea::vector<ea::string>& result, const FileIdentifier& pathName, const ea::string& filter,
+    ScanFlags flags) const
+{
+    Scan(result, pathName.scheme_, pathName.fileName_, filter, flags);
+}
+
 bool VirtualFileSystem::Exists(const FileIdentifier& fileName) const
 {
     MutexLock lock(mountMutex_);
@@ -220,5 +320,41 @@ bool VirtualFileSystem::Exists(const FileIdentifier& fileName) const
     return false;
 }
 
+MountPointGuard::MountPointGuard(MountPoint* mountPoint)
+    : mountPoint_(mountPoint)
+{
+    if (mountPoint_)
+    {
+        auto vfs = mountPoint_->GetContext()->GetSubsystem<VirtualFileSystem>();
+        vfs->Mount(mountPoint_);
+    }
+}
+
+MountPointGuard::~MountPointGuard()
+{
+    Release();
+}
+
+MountPointGuard::MountPointGuard(MountPointGuard&& other) noexcept
+{
+    *this = ea::move(other);
+}
+
+MountPointGuard& MountPointGuard::operator=(MountPointGuard&& other) noexcept
+{
+    Release();
+    mountPoint_ = ea::move(other.mountPoint_);
+    return *this;
+}
+
+void MountPointGuard::Release()
+{
+    if (mountPoint_)
+    {
+        auto vfs = mountPoint_->GetContext()->GetSubsystem<VirtualFileSystem>();
+        vfs->Unmount(mountPoint_);
+        mountPoint_ = nullptr;
+    }
+}
 
 } // namespace Urho3D

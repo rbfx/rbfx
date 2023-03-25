@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Graphics/Drawable.h"
+#include "../IO/FileIdentifier.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/SphericalHarmonics.h"
 #include "../Scene/Component.h"
@@ -148,7 +149,7 @@ public:
     static void CollectLightProbes(Scene* scene,
         LightProbeCollection& collection, LightProbeCollectionBakedData* bakedData, bool reload = false);
     /// Save light probes baked data for specific element. Return false if failed.
-    static bool SaveLightProbesBakedData(Context* context, const ea::string& fileName,
+    static bool SaveLightProbesBakedData(Context* context, const FileIdentifier& fileName,
         const LightProbeCollection& collection, const LightProbeCollectionBakedData& bakedData, unsigned index);
 
     /// Return bounding box in local space.

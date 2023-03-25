@@ -29,8 +29,8 @@
 #include "../Graphics/Shader.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../IO/Deserializer.h"
-#include "../IO/FileSystem.h"
 #include "../IO/Log.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../Resource/ResourceCache.h"
 
 #include "../DebugNew.h"
@@ -270,7 +270,9 @@ unsigned Shader::GetShaderDefinesHash(const char* defines) const
 void Shader::ProcessSource(ea::string& code, Deserializer& source)
 {
     auto* cache = GetSubsystem<ResourceCache>();
+    auto* vfs = GetSubsystem<VirtualFileSystem>();
     auto* graphics = GetSubsystem<Graphics>();
+
     const ea::string& fileName = source.GetName();
     const bool isGLSL = IsGLSL();
 
@@ -280,15 +282,8 @@ void Shader::ProcessSource(ea::string& code, Deserializer& source)
         fileIndex = fileToIndexMapping.size();
 
     // If the source if a non-packaged file, store the timestamp
-    auto* file = dynamic_cast<File*>(&source);
-    if (file && !file->IsPackaged())
-    {
-        auto* fileSystem = GetSubsystem<FileSystem>();
-        ea::string fullName = cache->GetResourceFileName(file->GetName());
-        unsigned fileTimeStamp = fileSystem->GetLastModifiedTime(fullName);
-        if (fileTimeStamp > timeStamp_)
-            timeStamp_ = fileTimeStamp;
-    }
+    const FileTime sourceTimeStamp = vfs->GetLastModifiedTime(FileIdentifier::FromUri(source.GetName()), false);
+    timeStamp_ = ea::max(timeStamp_, sourceTimeStamp);
 
     // Store resource dependencies for includes so that we know to reload if any of them changes
     if (source.GetName() != GetName())

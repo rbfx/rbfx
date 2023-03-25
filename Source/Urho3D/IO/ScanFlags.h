@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022-2022 the rbfx project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -14,30 +14,31 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR rhs
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR rhsWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR rhs DEALINGS IN
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include "../CommonUtils.h"
 
-#include <Urho3D/IO/VirtualFileSystem.h>
+#pragma once
 
-TEST_CASE("FileIdentifier tests")
+#include "Urho3D/Container/FlagSet.h"
+
+namespace Urho3D
 {
-    REQUIRE(!FileIdentifier::Empty);
-}
 
-TEST_CASE("VirtualFileSystem has mount points")
+enum ScanFlag : unsigned char
 {
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto vfs = context->GetSubsystem<VirtualFileSystem>();
+    SCAN_FILES = 0x1,
+    SCAN_DIRS = 0x2,
+    SCAN_HIDDEN = 0x4,
+    SCAN_APPEND = 0x8,
+    SCAN_RECURSIVE = 0x10,
+};
+URHO3D_FLAGSET(ScanFlag, ScanFlags);
 
-    auto numMountPoints = vfs->NumMountPoints();
-    CHECK(numMountPoints > 0);
-    for (unsigned i = 0; i < numMountPoints; ++i)
-    {
-        auto mountPoint = vfs->GetMountPoint(i);
-        CHECK(mountPoint);
-    }
+/// Alias for type used for file times.
+/// TODO(editor): Make 64 bit?
+using FileTime = unsigned;
+
 }

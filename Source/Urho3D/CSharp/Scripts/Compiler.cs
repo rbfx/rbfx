@@ -16,7 +16,7 @@ namespace Urho3DNet
             var scriptRsrcs = new StringList();
             var scriptCodes = new List<string>();
             var sourceFiles = new List<string>();
-            Context.Instance.ResourceCache.Scan(scriptRsrcs, scanPath, "*.cs", Urho3D.ScanFiles, true);
+            Context.Instance.ResourceCache.Scan(scriptRsrcs, scanPath, "*.cs", Urho3DNet.ScanFlag.ScanFiles | Urho3DNet.ScanFlag.ScanRecursive);
             foreach (string fileName in scriptRsrcs)
             {
                 IAbstractFile file = Context.Instance.ResourceCache.GetFile(fileName);
@@ -85,14 +85,8 @@ namespace Urho3DNet
                     string resourceName = diagnostic.Location.SourceTree?.FilePath;
                     if (resourceName != null)
                     {
-                        foreach (string resourceDir in Context.Instance.ResourceCache.ResourceDirs)
-                        {
-                            if (resourceName.StartsWith(resourceDir))
-                            {
-                                resourceName = resourceName.Substring(resourceDir.Length);
-                                break;
-                            }
-                        }
+                        FileIdentifier fileIdentifier = Context.Instance.VirtualFileSystem.GetIdentifierFromAbsoluteName(resourceName);
+                        resourceName = fileIdentifier.FileName;
                     }
                     else
                         resourceName = "?";

@@ -24,29 +24,84 @@
 
 #include <Urho3D/IO/FileIdentifier.h>
 
-TEST_CASE("FileLocator")
+TEST_CASE("Empty FileIdentifier is checked and created")
 {
-    FileIdentifier singleForwardSlash("file:/FileName");
-    CHECK(singleForwardSlash.scheme_ == "file");
-    CHECK(singleForwardSlash.fileName_ == "FileName");
+    REQUIRE_FALSE(static_cast<bool>(FileIdentifier::Empty));
+    REQUIRE(FileIdentifier::Empty.IsEmpty());
 
-    FileIdentifier twoForwardSlash("file://FileName");
-    CHECK(twoForwardSlash.scheme_ == "file");
-    CHECK(twoForwardSlash.fileName_ == "FileName");
+    REQUIRE(static_cast<bool>(FileIdentifier{"file", "/path/to/file"}));
+    REQUIRE_FALSE(FileIdentifier{"file", "/path/to/file"}.IsEmpty());
 
-    FileIdentifier threeForwardSlash("file:///FileName");
-    CHECK(threeForwardSlash.scheme_ == "file");
-    CHECK(threeForwardSlash.fileName_ == "FileName");
+    REQUIRE(FileIdentifier{} == FileIdentifier::Empty);
+    REQUIRE(FileIdentifier::FromUri("") == FileIdentifier::Empty);
+    REQUIRE(FileIdentifier{"", ""} == FileIdentifier::Empty);
+    REQUIRE(FileIdentifier{"file", "/path/to/file"} != FileIdentifier::Empty);
+    REQUIRE(FileIdentifier{"", "/path/to/file"} != FileIdentifier::Empty);
+    REQUIRE(FileIdentifier{"file", ""} != FileIdentifier::Empty);
+}
 
-    FileIdentifier noSchema("Dir/FileName");
-    CHECK(noSchema.scheme_ == "");
-    CHECK(noSchema.fileName_ == "Dir/FileName");
+TEST_CASE("FileIdentifier is created from URI")
+{
+    // Absolute path
+    CHECK(FileIdentifier::FromUri("/path/to/file") == FileIdentifier{"file", "/path/to/file"});
+    CHECK(FileIdentifier::FromUri("c:/path/to/file") == FileIdentifier{"file", "c:/path/to/file"});
+    CHECK(FileIdentifier::FromUri("D:/path/to/file") == FileIdentifier{"file", "D:/path/to/file"});
 
-    FileIdentifier dotSlash("./Dir/FileName");
-    CHECK(dotSlash.scheme_ == "");
-    CHECK(dotSlash.fileName_ == "Dir/FileName");
+    // No scheme
+    CHECK(FileIdentifier::FromUri("relative/path/to/file") == FileIdentifier{"", "relative/path/to/file"});
+    CHECK(FileIdentifier::FromUri("filename") == FileIdentifier{"", "filename"});
 
-    FileIdentifier backSlash("Dir\\SubDir\\FileName");
-    CHECK(backSlash.scheme_ == "");
-    CHECK(backSlash.fileName_ == "Dir/SubDir/FileName");
+    // file scheme
+    CHECK(FileIdentifier::FromUri("file:path/to/file") == FileIdentifier::Empty);
+    CHECK(FileIdentifier::FromUri("file:/path/to/file") == FileIdentifier{"file", "/path/to/file"});
+    CHECK(FileIdentifier::FromUri("file://path/to/file") == FileIdentifier{"file", "/path/to/file"});
+    CHECK(FileIdentifier::FromUri("file:///path/to/file") == FileIdentifier{"file", "/path/to/file"});
+    CHECK(FileIdentifier::FromUri("file:////path/to/file") == FileIdentifier::Empty);
+    CHECK(FileIdentifier::FromUri("file:/c:/path/to/file") == FileIdentifier{"file", "c:/path/to/file"});
+    CHECK(FileIdentifier::FromUri("file://c:/path/to/file") == FileIdentifier{"file", "c:/path/to/file"});
+    CHECK(FileIdentifier::FromUri("file:///c:/path/to/file") == FileIdentifier{"file", "c:/path/to/file"});
+    CHECK(FileIdentifier::FromUri("file:////c:/path/to/file") == FileIdentifier::Empty);
+
+    // other schemes
+    CHECK(FileIdentifier::FromUri("http://example.com/a/b/c") == FileIdentifier{"http", "example.com/a/b/c"});
+    CHECK(FileIdentifier::FromUri("conf://config.json") == FileIdentifier{"conf", "config.json"});
+    CHECK(FileIdentifier::FromUri("conf:config.json") == FileIdentifier{"conf", "config.json"});
+}
+
+TEST_CASE("FileIdentifier is converted to URI")
+{
+    // No scheme
+    CHECK(FileIdentifier{"", "relative/path/to/file"}.ToUri() == "relative/path/to/file");
+    CHECK(FileIdentifier{"", "file"}.ToUri() == "file");
+
+    // file scheme
+    CHECK(FileIdentifier{"file", "/path/to/file"}.ToUri() == "file:///path/to/file");
+    CHECK(FileIdentifier{"file", "c:/path/to/file"}.ToUri() == "file:///c:/path/to/file");
+
+    // other schemes
+    CHECK(FileIdentifier{"http", "example.com/a/b/c"}.ToUri() == "http://example.com/a/b/c");
+    CHECK(FileIdentifier{"conf", "config.json"}.ToUri() == "conf://config.json");
+}
+
+TEST_CASE("String is appended to FileIdentifier")
+{
+    CHECK(FileIdentifier{"", ""} + "" == FileIdentifier{"", ""});
+
+    CHECK(FileIdentifier{"", ""} + "path" == FileIdentifier{"", "path"});
+    CHECK(FileIdentifier{"", "path"} + "" == FileIdentifier{"", "path"});
+
+    CHECK(FileIdentifier{"", "path"} + "to" == FileIdentifier{"", "path/to"});
+    CHECK(FileIdentifier{"", "path/"} + "to" == FileIdentifier{"", "path/to"});
+    CHECK(FileIdentifier{"", "path"} + "/to" == FileIdentifier{"", "path/to"});
+    CHECK(FileIdentifier{"", "path/"} + "/to" == FileIdentifier{"", "path/to"});
+
+    CHECK(FileIdentifier{"", "path"} + "to/file" == FileIdentifier{"", "path/to/file"});
+    CHECK(FileIdentifier{"", "path/"} + "to/file" == FileIdentifier{"", "path/to/file"});
+    CHECK(FileIdentifier{"", "path"} + "/to/file" == FileIdentifier{"", "path/to/file"});
+    CHECK(FileIdentifier{"", "path/"} + "/to/file" == FileIdentifier{"", "path/to/file"});
+
+    CHECK(FileIdentifier{"", "path"} + "to/file/" == FileIdentifier{"", "path/to/file/"});
+    CHECK(FileIdentifier{"", "path/"} + "to/file/" == FileIdentifier{"", "path/to/file/"});
+    CHECK(FileIdentifier{"", "path"} + "/to/file/" == FileIdentifier{"", "path/to/file/"});
+    CHECK(FileIdentifier{"", "path/"} + "/to/file/" == FileIdentifier{"", "path/to/file/"});
 }

@@ -135,7 +135,7 @@ bool FileWatcher::StartWatching(const ea::string& pathName, bool watchSubDirs)
         if (watchSubDirs_)
         {
             ea::vector<ea::string> subDirs;
-            fileSystem_->ScanDir(subDirs, pathName, "*", SCAN_DIRS, true);
+            fileSystem_->ScanDir(subDirs, pathName, "*", SCAN_DIRS | SCAN_RECURSIVE);
 
             for (unsigned i = 0; i < subDirs.size(); ++i)
             {

@@ -23,10 +23,9 @@
 #include <Urho3D/Precompiled.h>
 
 #include <Urho3D/IO/BinaryArchive.h>
-#include <Urho3D/IO/File.h>
-#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/MemoryBuffer.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/SceneResource.h>
 #include <Urho3D/Resource/BinaryFile.h>
@@ -121,17 +120,11 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool a
     }
 }
 
-bool SceneResource::SaveFile(const ea::string& fileName, InternalResourceFormat format, bool asPrefab) const
+bool SceneResource::SaveFile(const FileIdentifier& fileName, InternalResourceFormat format, bool asPrefab) const
 {
-    auto fs = GetSubsystem<FileSystem>();
-    if (!fs->CreateDirsRecursive(GetPath(fileName)))
-        return false;
-
-    File file(context_);
-    if (!file.Open(fileName, FILE_WRITE))
-        return false;
-
-    return Save(file, format, asPrefab);
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+    auto file = vfs->OpenFile(fileName, FILE_WRITE);
+    return file && Save(*file, format, asPrefab);
 }
 
 bool SceneResource::BeginLoad(Deserializer& source)
@@ -253,7 +246,7 @@ bool SceneResource::Save(Serializer& dest) const
     return Save(dest, loadFormat_.value_or(InternalResourceFormat::Xml), isPrefab_);
 }
 
-bool SceneResource::SaveFile(const ea::string& fileName) const
+bool SceneResource::SaveFile(const FileIdentifier& fileName) const
 {
     return SaveFile(fileName, loadFormat_.value_or(InternalResourceFormat::Xml), isPrefab_);
 }

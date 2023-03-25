@@ -26,12 +26,13 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/WorkQueue.h"
-#include "../IO/FileSystem.h"
-#include "../IO/FileWatcher.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../Resource/BackgroundLoader.h"
 #include "../Resource/BinaryFile.h"
+#include "../Resource/Graph.h"
+#include "../Resource/GraphNode.h"
 #include "../Resource/Image.h"
 #include "../Resource/ImageCube.h"
 #include "../Resource/JSONFile.h"
@@ -39,8 +40,6 @@
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
-#include "../Resource/Graph.h"
-#include "../Resource/GraphNode.h"
 
 #include "../DebugNew.h"
 
@@ -84,10 +83,8 @@ static const SharedPtr<Resource> noResource;
 
 ResourceCache::ResourceCache(Context* context) :
     Object(context),
-    autoReloadResources_(false),
     returnFailedResources_(false),
     searchPackagesFirst_(true),
-    isRouting_(false),
     finishBackgroundResourcesMs_(5)
 {
     // Register Resource library object factories
@@ -98,14 +95,11 @@ ResourceCache::ResourceCache(Context* context) :
     backgroundLoader_ = new BackgroundLoader(this);
 #endif
 
-    // Subscribe BeginFrame for handling directory watchers and background loaded resource finalization
+    // Subscribe BeginFrame for handling background loaded resource finalization
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(ResourceCache, HandleBeginFrame));
 
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    if (fileSystem)
-    {
-        exePath_ = fileSystem->GetProgramDir().replaced("/./", "/");
-    }
+    // Subscribe FileChanged for handling directory watchers
+    SubscribeToEvent(E_FILECHANGED, URHO3D_HANDLER(ResourceCache, HandleFileChanged));
 }
 
 ResourceCache::~ResourceCache()
@@ -114,70 +108,6 @@ ResourceCache::~ResourceCache()
     // Shut down the background loader first
     backgroundLoader_.Reset();
 #endif
-}
-
-bool ResourceCache::AddResourceDir(const ea::string& pathName, unsigned priority)
-{
-    MutexLock lock(resourceMutex_);
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    if (!fileSystem || !fileSystem->DirExists(pathName))
-    {
-        URHO3D_LOGERROR("Could not open directory " + pathName);
-        return false;
-    }
-
-    // Convert path to absolute
-    ea::string fixedPath = SanitateResourceDirName(pathName);
-
-    // Check that the same path does not already exist
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (!resourceDirs_[i].comparei(fixedPath))
-            return true;
-    }
-
-    if (priority < resourceDirs_.size())
-        resourceDirs_.insert_at(priority, fixedPath);
-    else
-        resourceDirs_.push_back(fixedPath);
-
-    // If resource auto-reloading active, create a file watcher for the directory
-    if (autoReloadResources_)
-    {
-        SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
-        watcher->StartWatching(fixedPath, true);
-        fileWatchers_.push_back(watcher);
-    }
-
-    URHO3D_LOGINFO("Added resource path " + fixedPath);
-    return true;
-}
-
-bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
-{
-    MutexLock lock(resourceMutex_);
-
-    // Do not add packages that failed to load
-    if (!package || !package->GetNumFiles())
-    {
-        URHO3D_LOGERRORF("Could not add package file %s due to load failure", package->GetName().c_str());
-        return false;
-    }
-
-    if (priority < packages_.size())
-        packages_.insert_at(priority, SharedPtr<PackageFile>(package));
-    else
-        packages_.push_back(SharedPtr<PackageFile>(package));
-
-    URHO3D_LOGINFO("Added resource package " + package->GetName());
-    return true;
-}
-
-bool ResourceCache::AddPackageFile(const ea::string& fileName, unsigned priority)
-{
-    SharedPtr<PackageFile> package(new PackageFile(context_));
-    return package->Open(fileName) && AddPackageFile(package, priority);
 }
 
 bool ResourceCache::AddManualResource(Resource* resource)
@@ -199,76 +129,6 @@ bool ResourceCache::AddManualResource(Resource* resource)
     resourceGroups_[resource->GetType()].resources_[resource->GetNameHash()] = resource;
     UpdateResourceGroup(resource->GetType());
     return true;
-}
-
-void ResourceCache::RemoveResourceDir(const ea::string& pathName)
-{
-    MutexLock lock(resourceMutex_);
-
-    ea::string fixedPath = SanitateResourceDirName(pathName);
-
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (!resourceDirs_[i].comparei(fixedPath))
-        {
-            resourceDirs_.erase_at(i);
-            // Remove the filewatcher with the matching path
-            for (unsigned j = 0; j < fileWatchers_.size(); ++j)
-            {
-                if (!fileWatchers_[j]->GetPath().comparei(fixedPath))
-                {
-                    fileWatchers_.erase_at(j);
-                    break;
-                }
-            }
-            URHO3D_LOGINFO("Removed resource path " + fixedPath);
-            return;
-        }
-    }
-}
-
-void ResourceCache::RemoveAllResourceDirs()
-{
-    const auto resourceDirsCopy = resourceDirs_;
-    for (const ea::string& dir : resourceDirsCopy)
-        RemoveResourceDir(dir);
-}
-
-void ResourceCache::RemovePackageFile(PackageFile* package, bool releaseResources, bool forceRelease)
-{
-    MutexLock lock(resourceMutex_);
-
-    for (auto i = packages_.begin(); i != packages_.end(); ++i)
-    {
-        if (i->Get() == package)
-        {
-            if (releaseResources)
-                ReleasePackageResources(i->Get(), forceRelease);
-            URHO3D_LOGINFO("Removed resource package " + (*i)->GetName());
-            packages_.erase(i);
-            return;
-        }
-    }
-}
-
-void ResourceCache::RemovePackageFile(const ea::string& fileName, bool releaseResources, bool forceRelease)
-{
-    MutexLock lock(resourceMutex_);
-
-    // Compare the name and extension only, not the path
-    ea::string fileNameNoPath = GetFileNameAndExtension(fileName);
-
-    for (auto i = packages_.begin(); i != packages_.end(); ++i)
-    {
-        if (!GetFileNameAndExtension((*i)->GetName()).comparei(fileNameNoPath))
-        {
-            if (releaseResources)
-                ReleasePackageResources(i->Get(), forceRelease);
-            URHO3D_LOGINFO("Removed resource package " + (*i)->GetName());
-            packages_.erase(i);
-            return;
-        }
-    }
 }
 
 void ResourceCache::ReleaseResource(StringHash type, const ea::string& name, bool force)
@@ -508,26 +368,6 @@ void ResourceCache::SetMemoryBudget(StringHash type, unsigned long long budget)
     resourceGroups_[type].memoryBudget_ = budget;
 }
 
-void ResourceCache::SetAutoReloadResources(bool enable)
-{
-    if (enable != autoReloadResources_)
-    {
-        if (enable)
-        {
-            for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-            {
-                SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
-                watcher->StartWatching(resourceDirs_[i], true);
-                fileWatchers_.push_back(watcher);
-            }
-        }
-        else
-            fileWatchers_.clear();
-
-        autoReloadResources_ = enable;
-    }
-}
-
 void ResourceCache::AddResourceRouter(ResourceRouter* router, bool addAsFirst)
 {
     // Check for duplicate
@@ -557,50 +397,29 @@ void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
 
 AbstractFilePtr ResourceCache::GetFile(const ea::string& name, bool sendEventOnFailure)
 {
-    MutexLock lock(resourceMutex_);
+    const auto* vfs = GetSubsystem<VirtualFileSystem>();
 
-    ea::string sanitatedName = SanitateResourceName(name);
-    RouteResourceName(sanitatedName, RESOURCE_GETFILE);
+    const FileIdentifier resolvedName = GetResolvedIdentifier(FileIdentifier::FromUri(name));
+    auto file = vfs->OpenFile(resolvedName, FILE_READ);
 
-    if (sanitatedName.length())
+    if (!file && sendEventOnFailure)
     {
-        AbstractFilePtr file;
-
-        if (searchPackagesFirst_)
-        {
-            file = SearchPackages(sanitatedName);
-            if (!file)
-                file = SearchResourceDirs(sanitatedName);
-        }
+        if (!resourceRouters_.empty() && !resolvedName)
+            URHO3D_LOGERROR("Resource request '{}' was blocked", name);
         else
-        {
-            file = SearchResourceDirs(sanitatedName);
-            if (!file)
-                file = SearchPackages(sanitatedName);
-        }
-
-        if (file)
-            return file;
-    }
-
-    if (sendEventOnFailure)
-    {
-        if (resourceRouters_.size() && sanitatedName.empty() && !name.empty())
-            URHO3D_LOGERROR("Resource request " + name + " was blocked");
-        else
-            URHO3D_LOGERROR("Could not find resource " + sanitatedName);
+            URHO3D_LOGERROR("Could not find resource '{}'", resolvedName.ToUri());
 
         if (Thread::IsMainThread())
         {
             using namespace ResourceNotFound;
 
             VariantMap& eventData = GetEventDataMap();
-            eventData[P_RESOURCENAME] = sanitatedName.length() ? sanitatedName : name;
+            eventData[P_RESOURCENAME] = resolvedName ? resolvedName.ToUri() : name;
             SendEvent(E_RESOURCENOTFOUND, eventData);
         }
     }
 
-    return SharedPtr<File>();
+    return file;
 }
 
 Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& name)
@@ -797,29 +616,12 @@ void ResourceCache::GetResources(ea::vector<Resource*>& result, StringHash type)
 
 bool ResourceCache::Exists(const ea::string& name) const
 {
-    MutexLock lock(resourceMutex_);
-
-    ea::string sanitatedName = SanitateResourceName(name);
-    RouteResourceName(sanitatedName, RESOURCE_CHECKEXISTS);
-
-    if (sanitatedName.empty())
+    const FileIdentifier resolvedName = GetResolvedIdentifier(FileIdentifier::FromUri(name));
+    if (!resolvedName)
         return false;
 
-    for (unsigned i = 0; i < packages_.size(); ++i)
-    {
-        if (packages_[i]->Exists(sanitatedName))
-            return true;
-    }
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (fileSystem->FileExists(resourceDirs_[i] + sanitatedName))
-            return true;
-    }
-
-    // Fallback using absolute path
-    return fileSystem->FileExists(sanitatedName);
+    const auto vfs = context_->GetSubsystem<VirtualFileSystem>();
+    return vfs->Exists(resolvedName);
 }
 
 unsigned long long ResourceCache::GetMemoryBudget(StringHash type) const
@@ -845,19 +647,8 @@ unsigned long long ResourceCache::GetTotalMemoryUse() const
 
 ea::string ResourceCache::GetResourceFileName(const ea::string& name) const
 {
-    MutexLock lock(resourceMutex_);
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        if (fileSystem->FileExists(resourceDirs_[i] + name))
-            return resourceDirs_[i] + name;
-    }
-
-    if (IsAbsolutePath(name) && fileSystem->FileExists(name))
-        return name;
-    else
-        return ea::string();
+    const auto vfs = context_->GetSubsystem<VirtualFileSystem>();
+    return vfs->GetAbsoluteNameFromIdentifier(FileIdentifier::FromUri(name));
 }
 
 ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
@@ -865,85 +656,9 @@ ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
     return index < resourceRouters_.size() ? resourceRouters_[index] : nullptr;
 }
 
-ea::string ResourceCache::GetPreferredResourceDir(const ea::string& path) const
-{
-    ea::string fixedPath = AddTrailingSlash(path);
-
-    bool pathHasKnownDirs = false;
-    bool parentHasKnownDirs = false;
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-
-    for (unsigned i = 0; checkDirs[i] != nullptr; ++i)
-    {
-        if (fileSystem->DirExists(fixedPath + checkDirs[i]))
-        {
-            pathHasKnownDirs = true;
-            break;
-        }
-    }
-    if (!pathHasKnownDirs)
-    {
-        ea::string parentPath = GetParentPath(fixedPath);
-        for (unsigned i = 0; checkDirs[i] != nullptr; ++i)
-        {
-            if (fileSystem->DirExists(parentPath + checkDirs[i]))
-            {
-                parentHasKnownDirs = true;
-                break;
-            }
-        }
-        // If path does not have known subdirectories, but the parent path has, use the parent instead
-        if (parentHasKnownDirs)
-            fixedPath = parentPath;
-    }
-
-    return fixedPath;
-}
-
 ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
 {
-    // Sanitate unsupported constructs from the resource name
-    ea::string sanitatedName = GetInternalPath(name);
-    sanitatedName.replace("../", "");
-    sanitatedName.replace("./", "");
-
-    // If the path refers to one of the resource directories, normalize the resource name
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    if (resourceDirs_.size())
-    {
-        ea::string namePath = GetPath(sanitatedName);
-
-        for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-        {
-            ea::string relativeResourcePath = resourceDirs_[i];
-            if (relativeResourcePath.starts_with(exePath_))
-                relativeResourcePath = relativeResourcePath.substr(exePath_.length());
-
-            if (namePath.starts_with(resourceDirs_[i], false))
-                namePath = namePath.substr(resourceDirs_[i].length());
-            else if (namePath.starts_with(relativeResourcePath, false))
-                namePath = namePath.substr(relativeResourcePath.length());
-        }
-
-        sanitatedName = namePath + GetFileNameAndExtension(sanitatedName);
-    }
-
-    sanitatedName.trim();
-    return sanitatedName;
-}
-
-ea::string ResourceCache::SanitateResourceDirName(const ea::string& name) const
-{
-    ea::string fixedPath = AddTrailingSlash(name);
-    if (!IsAbsolutePath(fixedPath))
-        fixedPath = GetSubsystem<FileSystem>()->GetCurrentDir() + fixedPath;
-
-    // Sanitate away /./ construct
-    fixedPath.replace("/./", "/");
-
-    fixedPath.trim();
-    return fixedPath;
+    return GetCanonicalIdentifier(FileIdentifier::FromUri(name)).ToUri();
 }
 
 void ResourceCache::StoreResourceDependency(Resource* resource, const ea::string& dependency)
@@ -1141,30 +856,6 @@ void ResourceCache::UpdateResourceGroup(StringHash type)
 
 void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
 {
-    for (unsigned i = 0; i < fileWatchers_.size(); ++i)
-    {
-        FileChange change;
-        while (fileWatchers_[i]->GetNextChange(change))
-        {
-            auto it = ignoreResourceAutoReload_.find(change.fileName_);
-            if (it != ignoreResourceAutoReload_.end())
-            {
-                ignoreResourceAutoReload_.erase(it);
-                continue;
-            }
-
-            ReloadResourceWithDependencies(change.fileName_);
-
-            // Finally send a general file changed event even if the file was not a tracked resource
-            using namespace FileChanged;
-
-            VariantMap& eventData = GetEventDataMap();
-            eventData[P_FILENAME] = fileWatchers_[i]->GetPath() + change.fileName_;
-            eventData[P_RESOURCENAME] = change.fileName_;
-            SendEvent(E_FILECHANGED, eventData);
-        }
-    }
-
     // Check for background loaded resources that can be finished
 #ifdef URHO3D_THREADING
     {
@@ -1174,37 +865,18 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 #endif
 }
 
-AbstractFilePtr ResourceCache::SearchResourceDirs(const ea::string& name)
+void ResourceCache::HandleFileChanged(StringHash eventType, VariantMap& eventData)
 {
-    auto* fileSystem = GetSubsystem<FileSystem>();
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
+    const auto& fileName = eventData[FileChanged::P_RESOURCENAME].GetString();
+
+    auto it = ignoreResourceAutoReload_.find(fileName);
+    if (it != ignoreResourceAutoReload_.end())
     {
-        if (fileSystem->FileExists(resourceDirs_[i] + name))
-        {
-            // Construct the file first with full path, then rename it to not contain the resource path,
-            // so that the file's sanitatedName can be used in further GetFile() calls (for example over the network)
-            SharedPtr<File> file(MakeShared<File>(context_, resourceDirs_[i] + name));
-            file->SetName(name);
-            return AbstractFilePtr(file, file);
-        }
+        ignoreResourceAutoReload_.erase(it);
+        return;
     }
 
-    // Fallback using absolute path
-    if (fileSystem->FileExists(name))
-        return AbstractFilePtr(MakeShared<File>(context_, name));
-
-    return nullptr;
-}
-
-AbstractFilePtr ResourceCache::SearchPackages(const ea::string& name)
-{
-    for (unsigned i = 0; i < packages_.size(); ++i)
-    {
-        if (packages_[i]->Exists(name))
-            return AbstractFilePtr(MakeShared<File>(context_, packages_[i], name));
-    }
-
-    return nullptr;
+    ReloadResourceWithDependencies(fileName);
 }
 
 void RegisterResourceLibrary(Context* context)
@@ -1219,61 +891,27 @@ void RegisterResourceLibrary(Context* context)
     GraphNode::RegisterObject(context);
 }
 
-void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
+void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
-    ea::vector<ea::string> interimResult;
+    auto* vfs = GetSubsystem<VirtualFileSystem>();
+    vfs->Scan(result, FileIdentifier::FromUri(pathName), filter, flags);
 
-    for (unsigned i = 0; i < packages_.size(); ++i)
+    // Scan manual resources.
+    if (!flags.Test(SCAN_FILES))
+        return;
+
+    const bool recursive = flags.Test(SCAN_RECURSIVE);
+    const ea::string filterExtension = GetExtensionFromFilter(filter);
+    for (const auto& [_, group] : resourceGroups_)
     {
-        packages_[i]->Scan(interimResult, pathName, filter, recursive);
-        result.insert(result.end(), interimResult.begin(), interimResult.end());
-    }
-
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
-    for (unsigned i = 0; i < resourceDirs_.size(); ++i)
-    {
-        fileSystem->ScanDir(interimResult, resourceDirs_[i] + pathName, filter, flags, recursive);
-        result.insert(result.end(), interimResult.begin(), interimResult.end());
-    }
-
-    // Filtering copied from PackageFile::Scan().
-    ea::string sanitizedPath = GetSanitizedPath(pathName);
-    ea::string filterExtension;
-    unsigned dotPos = filter.find_last_of('.');
-    if (dotPos != ea::string::npos)
-        filterExtension = filter.substr(dotPos);
-    if (filterExtension.contains('*'))
-        filterExtension.clear();
-
-    bool caseSensitive = true;
-#ifdef _WIN32
-    // On Windows ignore case in string comparisons
-    caseSensitive = false;
-#endif
-
-    // Manual resources.
-    for (auto group = resourceGroups_.begin(); group != resourceGroups_.end(); ++group)
-    {
-        for (auto res = group->second.resources_.begin(); res != group->second.resources_.end(); ++res)
+        for (const auto& [_, resource] : group.resources_)
         {
-            ea::string entryName = GetSanitizedPath(res->second->GetName());
-            if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
-                entryName.starts_with(sanitizedPath, caseSensitive))
-            {
-                // Manual resources do not exist in resource dirs.
-                bool isPhysicalResource = false;
-                for (unsigned i = 0; i < resourceDirs_.size() && !isPhysicalResource; ++i)
-                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + entryName);
+            if (!MatchFileName(resource->GetName(), pathName, filterExtension, recursive))
+                continue;
 
-                if (!isPhysicalResource)
-                {
-                    int index = entryName.find("/", sanitizedPath.length());
-                    if (flags & SCAN_DIRS && index >= 0)
-                        result.emplace_back(entryName.substr(sanitizedPath.length(), index - sanitizedPath.length()));
-                    else if (flags & SCAN_FILES && index == -1)
-                        result.emplace_back(entryName.substr(sanitizedPath.length()));
-                }
-            }
+            const FileIdentifier resourceName = FileIdentifier::FromUri(resource->GetName());
+            if (!vfs->Exists(resourceName))
+                result.emplace_back(TrimPathPrefix(resource->GetName(), pathName));
         }
     }
 }
@@ -1305,130 +943,6 @@ ea::string ResourceCache::PrintResources(const ea::string& typeName) const
     return output;
 }
 
-bool ResourceCache::RenameResource(const ea::string& source, const ea::string& destination)
-{
-    if (!packages_.empty())
-    {
-        URHO3D_LOGERROR("Renaming resources not supported while packages are in use.");
-        return false;
-    }
-
-    if (!IsAbsolutePath(source) || !IsAbsolutePath(destination))
-    {
-        URHO3D_LOGERROR("Renaming resources requires absolute paths.");
-        return false;
-    }
-
-    auto* fileSystem = GetSubsystem<FileSystem>();
-
-    if (!fileSystem->Exists(source))
-    {
-        URHO3D_LOGERROR("Source path does not exist.");
-        return false;
-    }
-
-    if (fileSystem->Exists(destination))
-    {
-        URHO3D_LOGERROR("Destination path already exists.");
-        return false;
-    }
-
-    ea::string resourceName;
-    ea::string destinationName;
-    bool dirMode = fileSystem->DirExists(source);
-    for (const auto& dir : resourceDirs_)
-    {
-        if (source.starts_with(dir))
-            resourceName = source.substr(dir.length());
-        if (destination.starts_with(dir))
-            destinationName = destination.substr(dir.length());
-    }
-
-    if (dirMode)
-    {
-        resourceName = AddTrailingSlash(resourceName);
-        destinationName = AddTrailingSlash(destinationName);
-    }
-
-    if (resourceName.empty())
-    {
-        URHO3D_LOGERRORF("'%s' does not exist in resource path.", source.c_str());
-        return false;
-    }
-
-    // Ensure parent path exists
-    if (!fileSystem->CreateDirsRecursive(GetParentPath(destination)))
-        return false;
-
-    if (!fileSystem->Rename(source, destination))
-    {
-        URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", source.c_str(), destination.c_str());
-        return false;
-    }
-
-    const ea::string sourceDir = AddTrailingSlash(source);
-    const ea::string destinationDir = AddTrailingSlash(destination);
-
-    // Update loaded resource information
-    for (auto& groupPair : resourceGroups_)
-    {
-        bool movedAny = false;
-        auto resourcesCopy = groupPair.second.resources_;
-        for (auto& resourcePair : resourcesCopy)
-        {
-            SharedPtr<Resource> resource = resourcePair.second;
-            ea::string newName;
-            ea::string newNativeFileName;
-            if (dirMode)
-            {
-                if (!resource->GetName().starts_with(resourceName))
-                    continue;
-                newName = destinationName + resource->GetName().substr(resourceName.length());
-
-                newNativeFileName = resource->GetAbsoluteFileName();
-                if (newNativeFileName.starts_with(sourceDir))
-                    newNativeFileName.replace(0u, sourceDir.length(), destinationDir);
-            }
-            else if (resource->GetName() != resourceName)
-                continue;
-            else
-            {
-                newName = destinationName;
-                newNativeFileName = destination;
-            }
-
-            if (autoReloadResources_)
-            {
-                ignoreResourceAutoReload_.emplace_back(destinationName);
-                ignoreResourceAutoReload_.emplace_back(resource->GetName());
-            }
-
-            groupPair.second.resources_.erase(resource->GetNameHash());
-            resource->SetName(newName);
-            resource->SetAbsoluteFileName(newNativeFileName);
-            groupPair.second.resources_[resource->GetNameHash()] = resource;
-            movedAny = true;
-
-            using namespace ResourceRenamed;
-            SendEvent(E_RESOURCERENAMED,
-                ea::forward_as_tuple(P_FROM, resourceName),
-                ea::forward_as_tuple(P_TO, destinationName));
-        }
-        if (movedAny)
-            UpdateResourceGroup(groupPair.first);
-    }
-
-    if (dirMode)
-    {
-        using namespace ResourceRenamed;
-        SendEvent(E_RESOURCERENAMED,
-            ea::forward_as_tuple(P_FROM, resourceName),
-            ea::forward_as_tuple(P_TO, destinationName));
-    }
-
-    return true;
-}
-
 void ResourceCache::IgnoreResourceReload(const ea::string& name)
 {
     ignoreResourceAutoReload_.emplace_back(name);
@@ -1439,22 +953,38 @@ void ResourceCache::IgnoreResourceReload(const Resource* resource)
     IgnoreResourceReload(resource->GetName());
 }
 
-void ResourceCache::RouteResourceName(ea::string& name, ResourceRequest requestType) const
+void ResourceCache::RouteResourceName(FileIdentifier& name) const
 {
-    name = SanitateResourceName(name);
-    if (!isRouting_)
-    {
-        isRouting_ = true;
-        for (unsigned i = 0; i < resourceRouters_.size(); ++i)
-            resourceRouters_[i]->Route(name, requestType);
-        isRouting_ = false;
-    }
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+    name = vfs->GetCanonicalIdentifier(name);
+
+    thread_local bool reentrancyGuard = false;
+    if (reentrancyGuard)
+        return;
+
+    reentrancyGuard = true;
+    for (ResourceRouter* router : resourceRouters_)
+        router->Route(name);
+    reentrancyGuard = false;
 }
 
 void ResourceCache::Clear()
 {
     resourceGroups_.clear();
     dependentResources_.clear();
+}
+
+FileIdentifier ResourceCache::GetCanonicalIdentifier(const FileIdentifier& name) const
+{
+    auto* vfs = GetSubsystem<VirtualFileSystem>();
+    return vfs->GetCanonicalIdentifier(name);
+}
+
+FileIdentifier ResourceCache::GetResolvedIdentifier(const FileIdentifier& name) const
+{
+    FileIdentifier result = name;
+    RouteResourceName(result);
+    return result;
 }
 
 }

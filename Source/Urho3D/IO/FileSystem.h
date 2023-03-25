@@ -22,27 +22,18 @@
 
 #pragma once
 
-#include <EASTL/list.h>
-#include <EASTL/hash_set.h>
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Core/NonCopyable.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/IO/ScanFlags.h"
 
-#include "../Core/NonCopyable.h"
-#include "../Core/Object.h"
+#include <EASTL/hash_set.h>
+#include <EASTL/list.h>
 
 namespace Urho3D
 {
 
 class AsyncExecRequest;
-
-/// Alias for type used for file times.
-/// TODO(editor): Make 64 bit?
-using FileTime = unsigned;
-
-/// Return files.
-static const unsigned SCAN_FILES = 0x1;
-/// Return directories.
-static const unsigned SCAN_DIRS = 0x2;
-/// Return also hidden files.
-static const unsigned SCAN_HIDDEN = 0x4;
 
 /// Subsystem for file and directory operations and access control.
 class URHO3D_API FileSystem : public Object
@@ -110,9 +101,8 @@ public:
     /// Check if a directory exists.
     bool DirExists(const ea::string& pathName) const;
     /// Scan a directory for specified files.
-    void ScanDir(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
-    /// Scan a directory for specified files. Appends to result container instead of clearing it.
-    void ScanDirAdd(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
+    void ScanDir(
+        ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const;
     /// Return the program's directory.
     /// @property
     ea::string GetProgramDir() const;
@@ -141,8 +131,8 @@ public:
 
 private:
     /// Scan directory, called internally.
-    void ScanDirInternal
-        (ea::vector<ea::string>& result, ea::string path, const ea::string& startPath, const ea::string& filter, unsigned flags, bool recursive) const;
+    void ScanDirInternal(ea::vector<ea::string>& result, ea::string path, const ea::string& startPath,
+        const ea::string& filter, ScanFlags flags) const;
     /// Handle begin frame event to check for completed async executions.
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
     /// Handle a console command event.
@@ -218,5 +208,13 @@ URHO3D_API ea::string GetAbsolutePath(const ea::string& path);
 /// Convert relative or absolute path to absolute path.
 URHO3D_API ea::string GetAbsolutePath(const ea::string& path, const ea::string& currentPath, bool addTrailingSlash = false);
 URHO3D_API StringVector GetAbsolutePaths(const StringVector& paths, const ea::string& currentPath, bool addTrailingSlash = false);
+/// Convert extension from filter mask, or return empty string if no filter specified.
+URHO3D_API ea::string GetExtensionFromFilter(const ea::string& filter);
+/// Check if a file name matches search mask.
+URHO3D_API bool MatchFileName(ea::string_view fileName, ea::string_view path, ea::string_view extension,
+    bool recursive = true, bool caseSensitive = true);
+/// Trim prefix path following slash from the file name.
+/// No check is performed if the prefix path is actually a prefix of the file name.
+URHO3D_API ea::string TrimPathPrefix(ea::string_view fileName, ea::string_view prefixPath);
 
 }

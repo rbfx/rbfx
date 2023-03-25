@@ -126,7 +126,7 @@ if (NOT MINI_URHO)
         add_subdirectory (StanHull)
     endif ()
 
-    if (URHO3D_TOOLS)
+    if (URHO3D_TOOLS OR URHO3D_EDITOR)
         add_subdirectory(nativefiledialog)
     endif ()
 

@@ -226,8 +226,8 @@ AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() cons
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector files;
-    fs->ScanDirAdd(files, project_->GetDataPath(), "*.json", SCAN_FILES, true);
-    fs->ScanDirAdd(files, project_->GetDataPath(), "*.assetpipeline", SCAN_FILES, true);
+    fs->ScanDir(files, project_->GetDataPath(), "*.json", SCAN_FILES | SCAN_APPEND | SCAN_RECURSIVE);
+    fs->ScanDir(files, project_->GetDataPath(), "*.assetpipeline", SCAN_FILES | SCAN_APPEND | SCAN_RECURSIVE);
 
     ea::erase_if(files, [&](const ea::string& resourceName) { return !AssetPipeline::CheckExtension(resourceName); });
 
@@ -315,7 +315,7 @@ bool AssetManager::IsAssetUpToDate(AssetDesc& assetDesc)
 
     // Check if the asset has not been modified
     const FileTime assetModificationTime = fs->GetLastModifiedTime(fileName, true);
-    if (assetDesc.modificationTime_ != fs->GetLastModifiedTime(fileName))
+    if (assetDesc.modificationTime_ != assetModificationTime)
     {
         if (!ignoredAssetUpdates_.contains(assetDesc.resourceName_))
             return false;
@@ -431,7 +431,7 @@ void AssetManager::CleanupCacheFolder()
     }
 
     StringVector allFolders;
-    fs->ScanDir(allFolders, project_->GetCachePath(), "", SCAN_DIRS, true);
+    fs->ScanDir(allFolders, project_->GetCachePath(), "", SCAN_DIRS | SCAN_RECURSIVE);
 
     if (const auto iter = allFolders.find("."); iter != allFolders.end())
         allFolders.erase(iter);
@@ -559,7 +559,7 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
 
     const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(resourceName, flavor);
     const ea::string fileName = GetFileName(resourceName);
-    const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName);
+    const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName, true);
 
     AssetDesc& assetDesc = assets_[resourceName];
     assetDesc.resourceName_ = resourceName;
@@ -630,7 +630,7 @@ StringVector AssetManager::EnumerateAssetFiles(const ea::string& resourcePath) c
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector result;
-    fs->ScanDir(result, GetFileName(resourcePath), "", SCAN_FILES, true);
+    fs->ScanDir(result, GetFileName(resourcePath), "", SCAN_FILES | SCAN_RECURSIVE);
 
     ea::erase_if(result, [this](const ea::string& fileName)
     {

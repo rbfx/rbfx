@@ -87,6 +87,28 @@ const char* SDL_IOS_GetDocumentsDir();
 namespace Urho3D
 {
 
+namespace
+{
+
+bool StartsWith(ea::string_view str, ea::string_view prefix, bool caseSensitive = true)
+{
+    if (!caseSensitive)
+        return str.starts_with(prefix);
+
+    return str.size() >= prefix.size() && ea::CompareI(str.data(), prefix.data(), prefix.size()) == 0;
+}
+
+bool EndsWith(ea::string_view str, ea::string_view suffix, bool caseSensitive = true)
+{
+    if (!caseSensitive)
+        return str.ends_with(suffix);
+
+    return str.size() >= suffix.size()
+        && ea::CompareI(str.data() + str.size() - suffix.size(), suffix.data(), suffix.size()) == 0;
+}
+
+}
+
 int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* context)
 {
 #if defined(TVOS) || defined(IOS) || defined(UWP)
@@ -820,23 +842,16 @@ bool FileSystem::DirExists(const ea::string& pathName) const
     return true;
 }
 
-void FileSystem::ScanDir(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
+void FileSystem::ScanDir(
+    ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
-    result.clear();
+    if (!flags.Test(SCAN_APPEND))
+        result.clear();
 
     if (CheckAccess(pathName))
     {
         ea::string initialPath = AddTrailingSlash(pathName);
-        ScanDirInternal(result, initialPath, initialPath, filter, flags, recursive);
-    }
-}
-
-void FileSystem::ScanDirAdd(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
-{
-    if (CheckAccess(pathName))
-    {
-        ea::string initialPath = AddTrailingSlash(pathName);
-        ScanDirInternal(result, initialPath, initialPath, filter, flags, recursive);
+        ScanDirInternal(result, initialPath, initialPath, filter, flags);
     }
 }
 
@@ -969,19 +984,16 @@ bool FileSystem::Reveal(const ea::string& path)
 }
 
 void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path, const ea::string& startPath,
-    const ea::string& filter, unsigned flags, bool recursive) const
+    const ea::string& filter, ScanFlags flags) const
 {
+    const bool recursive = flags.Test(SCAN_RECURSIVE);
+
     path = AddTrailingSlash(path);
     ea::string deltaPath;
     if (path.length() > startPath.length())
         deltaPath = path.substr(startPath.length());
 
-    ea::string filterExtension;
-    unsigned dotPos = filter.find_last_of('.');
-    if (dotPos != ea::string::npos)
-        filterExtension = filter.substr(dotPos);
-    if (filterExtension.contains('*'))
-        filterExtension.clear();
+    const ea::string filterExtension = GetExtensionFromFilter(filter);
 
 #ifdef __ANDROID__
     if (URHO3D_IS_ASSET(path))
@@ -1005,7 +1017,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
                 if (flags & SCAN_DIRS)
                     result.push_back(deltaPath + fileName);
                 if (recursive)
-                    ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
+                    ScanDirInternal(result, path + fileName, startPath, filter, flags);
             }
             else if (flags & SCAN_FILES)
 #endif
@@ -1035,7 +1047,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
                     if (flags & SCAN_DIRS)
                         result.emplace_back(deltaPath + fileName);
                     if (recursive && fileName != "." && fileName != "..")
-                        ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
+                        ScanDirInternal(result, path + fileName, startPath, filter, flags);
                 }
                 else if (flags & SCAN_FILES)
                 {
@@ -1070,7 +1082,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
                     if (flags & SCAN_DIRS)
                         result.push_back(deltaPath + fileName);
                     if (recursive && normalEntry)
-                        ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
+                        ScanDirInternal(result, path + fileName, startPath, filter, flags);
                 }
                 else if (flags & SCAN_FILES)
                 {
@@ -1363,7 +1375,7 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
     // ensure empty if not recursive
     if (!recursive)
     {
-        ScanDir(results, directory, "*", SCAN_DIRS | SCAN_FILES | SCAN_HIDDEN, true );
+        ScanDir(results, directory, "*", SCAN_DIRS | SCAN_FILES | SCAN_HIDDEN | SCAN_RECURSIVE);
         while (results.erase_first(".") != results.end()) {}
         while (results.erase_first("..") != results.end()) {}
 
@@ -1378,7 +1390,7 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
     }
 
     // delete all files at this level
-    ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN, false );
+    ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN);
     for (unsigned i = 0; i < results.size(); i++)
     {
         if (!Delete(directory + results[i]))
@@ -1387,7 +1399,7 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
     results.clear();
 
     // recurse into subfolders
-    ScanDir(results, directory, "*", SCAN_DIRS, false );
+    ScanDir(results, directory, "*", SCAN_DIRS);
     for (unsigned i = 0; i < results.size(); i++)
     {
         if (results[i] == "." || results[i] == "..")
@@ -1407,7 +1419,7 @@ bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& direct
         return false;
 
     ea::vector<ea::string> results;
-    ScanDir(results, directoryIn, "*", SCAN_FILES, true);
+    ScanDir(results, directoryIn, "*", SCAN_FILES | SCAN_RECURSIVE);
 
     bool success = true;
     for (unsigned i = 0; i < results.size(); i++)
@@ -1631,6 +1643,56 @@ StringVector GetAbsolutePaths(const StringVector& paths, const ea::string& curre
     for (const ea::string& path : paths)
         result.push_back(GetAbsolutePath(path, currentPath, addTrailingSlash));
     return result;
+}
+
+ea::string GetExtensionFromFilter(const ea::string& filter)
+{
+    const unsigned dotPos = filter.find_last_of('.');
+    if (dotPos == ea::string::npos)
+        return EMPTY_STRING;
+
+    const ea::string filterExtension = filter.substr(dotPos);
+    if (filterExtension.contains('*'))
+        return EMPTY_STRING;
+
+    return filterExtension;
+}
+
+bool MatchFileName(
+    ea::string_view fileName, ea::string_view path, ea::string_view extension, bool recursive, bool caseSensitive)
+{
+    if (!StartsWith(fileName, path, caseSensitive))
+        return false;
+
+    if (fileName.length() > path.length() && fileName[path.length()] != '/')
+        return false;
+
+    if (!extension.empty() && !EndsWith(fileName, extension, caseSensitive))
+        return false;
+
+    if (!recursive)
+    {
+        ea::string_view relativeFileName = fileName.substr(path.length());
+        if (relativeFileName.starts_with('/'))
+            relativeFileName = relativeFileName.substr(1);
+
+        if (relativeFileName.find('/') != ea::string_view::npos)
+            return false;
+    }
+
+    return true;
+}
+
+ea::string TrimPathPrefix(ea::string_view fileName, ea::string_view prefixPath)
+{
+    if (prefixPath.length() >= fileName.length())
+        return EMPTY_STRING;
+
+    ea::string_view result = fileName.substr(prefixPath.length());
+    if (result.starts_with('/'))
+        result = result.substr(1);
+
+    return ea::string{result};
 }
 
 }

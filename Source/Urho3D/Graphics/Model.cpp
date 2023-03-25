@@ -32,6 +32,7 @@
 #include "../IO/Log.h"
 #include "../IO/File.h"
 #include "../IO/FileSystem.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 
@@ -469,17 +470,15 @@ bool Model::Save(Serializer& dest) const
     // Write metadata
     if (HasMetadata())
     {
-        auto* destFile = dynamic_cast<File*>(&dest);
-        if (destFile)
+        auto vfs = GetSubsystem<VirtualFileSystem>();
+        const ea::string xmlName = ReplaceExtension(dest.GetName(), ".xml");
+        if (auto destXmlFile = vfs->OpenFile(xmlName, FILE_WRITE))
         {
-            ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
-
             SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
             XMLElement rootElem = xml->CreateRoot("model");
             SaveMetadataToXML(rootElem);
 
-            File xmlFile(context_, xmlName, FILE_WRITE);
-            xml->Save(xmlFile);
+            xml->Save(*destXmlFile);
         }
         else
             URHO3D_LOGWARNING("Can not save model metadata when not saving into a file");

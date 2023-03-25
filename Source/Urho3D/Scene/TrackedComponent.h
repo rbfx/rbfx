@@ -85,6 +85,8 @@ protected:
     virtual void OnComponentAdded(TrackedComponentBase* baseComponent) {}
     virtual void OnComponentMoved(TrackedComponentBase* baseComponent, unsigned oldIndex) {}
     virtual void OnComponentRemoved(TrackedComponentBase* baseComponent) {}
+    virtual void OnAddedToScene(Scene* scene) {}
+    virtual void OnRemovedFromScene() {}
 
 private:
     void InitializeTrackedComponents();

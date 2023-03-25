@@ -515,61 +515,60 @@ void CollisionShape::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     if (debug && physicsWorld_ && shape_ && node_ && IsEnabledEffective())
     {
-        // Use the rigid body's world transform if possible, as it may be different from the rendering transform
-        Matrix3x4 worldTransform;
-        auto* body = GetComponent<RigidBody>();
-        bool bodyActive = false;
-        if (body)
-        {
-            worldTransform = Matrix3x4(body->GetPosition(), body->GetRotation(), node_->GetWorldScale());
-            bodyActive = body->IsActive();
-        }
-        else
-            worldTransform = node_->GetWorldTransform();
+        const auto* body = GetComponent<RigidBody>();
+        const auto& color = body && body->IsActive() ? Color::WHITE : Color::GREEN;
+        DrawDebugGeometry(debug, color, depthTest);
+    }
+}
 
-        // Special case code for convex hull: bypass Bullet's own rendering to draw triangles correctly, not just edges
-        if (shapeType_ == SHAPE_CONVEXHULL)
-        {
-            auto*convexData = static_cast<ConvexData*>(GetGeometryData());
-            auto* body = GetComponent<RigidBody>();
-            Color color = bodyActive ? Color::WHITE : Color::GREEN;
-            Matrix3x4 shapeTransform(worldTransform * position_, worldTransform.Rotation() * rotation_, worldTransform.Scale());
+void CollisionShape::DrawDebugGeometry(DebugRenderer* debug, const Color& color, bool depthTest)
+{
+    // Use the rigid body's world transform if possible, as it may be different from the rendering transform
+    const auto* body = GetComponent<RigidBody>();
+    const Matrix3x4 worldTransform =
+        body ? Matrix3x4(body->GetPosition(), body->GetRotation(), node_->GetWorldScale()) : node_->GetWorldTransform();
 
-            if (convexData)
+    // Special case code for convex hull: bypass Bullet's own rendering to draw triangles correctly, not just edges
+    if (shapeType_ == SHAPE_CONVEXHULL)
+    {
+        const auto* convexData = static_cast<ConvexData*>(GetGeometryData());
+        const Matrix3x4 shapeTransform{
+            worldTransform * position_, worldTransform.Rotation() * rotation_, worldTransform.Scale()};
+
+        if (convexData)
+        {
+            for (unsigned i = 0; i < convexData->indexCount_; i += 3)
             {
-                for (unsigned i = 0; i < convexData->indexCount_; i += 3)
-                {
-                    Vector3 a = shapeTransform * convexData->vertexData_[convexData->indexData_[i + 0]];
-                    Vector3 b = shapeTransform * convexData->vertexData_[convexData->indexData_[i + 1]];
-                    Vector3 c = shapeTransform * convexData->vertexData_[convexData->indexData_[i + 2]];
-                    debug->AddLine(a, b, color, depthTest);
-                    debug->AddLine(b, c, color, depthTest);
-                    debug->AddLine(a, c, color, depthTest);
-                }
-             }
-        }
-        else
-        {
-            physicsWorld_->SetDebugRenderer(debug);
-            physicsWorld_->SetDebugDepthTest(depthTest);
-
-            Vector3 position = position_;
-            // For terrains, undo the height centering performed automatically by Bullet
-            if (shapeType_ == SHAPE_TERRAIN && geometry_)
-            {
-                auto* heightfield = static_cast<HeightfieldData*>(geometry_.Get());
-                position.y_ += (heightfield->minHeight_ + heightfield->maxHeight_) * 0.5f;
+                Vector3 a = shapeTransform * convexData->vertexData_[convexData->indexData_[i + 0]];
+                Vector3 b = shapeTransform * convexData->vertexData_[convexData->indexData_[i + 1]];
+                Vector3 c = shapeTransform * convexData->vertexData_[convexData->indexData_[i + 2]];
+                debug->AddLine(a, b, color, depthTest);
+                debug->AddLine(b, c, color, depthTest);
+                debug->AddLine(a, c, color, depthTest);
             }
-
-            Vector3 worldPosition(worldTransform * position);
-            Quaternion worldRotation(worldTransform.Rotation() * rotation_);
-
-            btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
-            world->debugDrawObject(btTransform(ToBtQuaternion(worldRotation), ToBtVector3(worldPosition)), shape_.get(), bodyActive ?
-                WHITE : GREEN);
-
-            physicsWorld_->SetDebugRenderer(nullptr);
         }
+    }
+    else
+    {
+        physicsWorld_->SetDebugRenderer(debug);
+        physicsWorld_->SetDebugDepthTest(depthTest);
+
+        Vector3 position = position_;
+        // For terrains, undo the height centering performed automatically by Bullet
+        if (shapeType_ == SHAPE_TERRAIN && geometry_)
+        {
+            auto* heightfield = static_cast<HeightfieldData*>(geometry_.Get());
+            position.y_ += (heightfield->minHeight_ + heightfield->maxHeight_) * 0.5f;
+        }
+
+        const Vector3 worldPosition(worldTransform * position);
+        const Quaternion worldRotation(worldTransform.Rotation() * rotation_);
+
+        btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
+        world->debugDrawObject(btTransform(ToBtQuaternion(worldRotation), ToBtVector3(worldPosition)), shape_.get(),
+            ToBtVector3(color.ToVector3()));
+
+        physicsWorld_->SetDebugRenderer(nullptr);
     }
 }
 

@@ -165,17 +165,14 @@ const PackageEntry* PackageFile::GetEntry(const ea::string& fileName) const
     return nullptr;
 }
 
-void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const
+void PackageFile::Scan(
+    ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const
 {
-    result.clear();
+    if (!flags.Test(SCAN_APPEND))
+        result.clear();
 
-    ea::string sanitizedPath = GetSanitizedPath(pathName);
-    ea::string filterExtension;
-    unsigned dotPos = filter.find_last_of('.');
-    if (dotPos != ea::string::npos)
-        filterExtension = filter.substr(dotPos);
-    if (filterExtension.contains('*'))
-        filterExtension.clear();
+    const bool recursive = flags.Test(SCAN_RECURSIVE);
+    const ea::string filterExtension = GetExtensionFromFilter(filter);
 
     bool caseSensitive = true;
 #ifdef _WIN32
@@ -184,20 +181,10 @@ void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathNam
 #endif
 
     const StringVector& entryNames = GetEntryNames();
-    for (auto i = entryNames.begin(); i != entryNames.end(); ++i)
+    for (const ea::string& entryName : entryNames)
     {
-        ea::string entryName = GetSanitizedPath(*i);
-        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
-            entryName.starts_with(sanitizedPath, caseSensitive))
-        {
-            ea::string fileName = entryName.substr(sanitizedPath.length());
-            if (fileName.starts_with("\\") || fileName.starts_with("/"))
-                fileName = fileName.substr(1, fileName.length() - 1);
-            if (!recursive && (fileName.contains("\\") || fileName.contains("/")))
-                continue;
-
-            result.push_back(fileName);
-        }
+        if (MatchFileName(entryName, pathName, filterExtension, recursive, caseSensitive))
+            result.push_back(TrimPathPrefix(entryName, pathName));
     }
 }
 
@@ -237,11 +224,14 @@ AbstractFilePtr PackageFile::OpenFile(const FileIdentifier& fileName, FileMode m
     return file;
 }
 
-/// Get full path to a file if it exists in a mount point.
-ea::string PackageFile::GetFileName(const FileIdentifier& fileName) const
+ea::optional<FileTime> PackageFile::GetLastModifiedTime(
+    const FileIdentifier& fileName, bool creationIsModification) const
 {
-    // Can't make path to a file within the PAK.
-    return ea::string();
+    if (!Exists(fileName))
+        return ea::nullopt;
+
+    auto fileSystem = GetSubsystem<FileSystem>();
+    return fileSystem->GetLastModifiedTime(fileName_, creationIsModification);
 }
 
 }

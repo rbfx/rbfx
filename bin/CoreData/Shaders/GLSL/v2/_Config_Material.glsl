@@ -214,7 +214,7 @@
         #define URHO3D_PIXEL_NEED_NORMAL
     #endif
 
-    #if defined(NORMALMAP)
+    #if defined(NORMALMAP) && defined(URHO3D_VERTEX_TANGENT_AVAILABLE)
         #ifndef URHO3D_PIXEL_NEED_TANGENT
             #define URHO3D_PIXEL_NEED_TANGENT
         #endif

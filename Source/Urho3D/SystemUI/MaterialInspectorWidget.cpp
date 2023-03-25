@@ -203,7 +203,7 @@ void MaterialInspectorWidget::UpdateTechniques(const ea::string& path)
 {
     auto cache = GetSubsystem<ResourceCache>();
     StringVector techniques;
-    cache->Scan(techniques, path, "*.xml", SCAN_FILES, true);
+    cache->Scan(techniques, path, "*.xml", SCAN_FILES | SCAN_RECURSIVE);
 
     techniques_.clear();
     sortedTechniques_.clear();

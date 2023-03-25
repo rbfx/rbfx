@@ -135,7 +135,7 @@ void FileSystemReflection::ScanRootDirectory(const ea::string& resourceDir,
     auto fs = GetSubsystem<FileSystem>();
 
     StringVector files;
-    fs->ScanDir(files, resourceDir, "", SCAN_FILES | SCAN_DIRS, true);
+    fs->ScanDir(files, resourceDir, "", SCAN_FILES | SCAN_DIRS | SCAN_RECURSIVE);
     for (const ea::string& resourceName : files)
     {
         if (resourceName.ends_with(".") || resourceName.ends_with(".."))

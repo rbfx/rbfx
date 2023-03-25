@@ -31,6 +31,7 @@
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/Serializer.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/JSONFile.h"
@@ -378,11 +379,10 @@ bool Animation::Save(Serializer& dest) const
     // If triggers have been defined, write an XML file for them
     if (!triggers_.empty() || HasMetadata())
     {
-        auto* destFile = dynamic_cast<File*>(&dest);
-        if (destFile)
+        auto vfs = GetSubsystem<VirtualFileSystem>();
+        const ea::string xmlName = ReplaceExtension(dest.GetName(), ".xml");
+        if (auto destXmlFile = vfs->OpenFile(xmlName, FILE_WRITE))
         {
-            ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
-
             SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
             XMLElement rootElem = xml->CreateRoot("animation");
 
@@ -395,8 +395,7 @@ bool Animation::Save(Serializer& dest) const
 
             SaveMetadataToXML(rootElem);
 
-            File xmlFile(context_, xmlName, FILE_WRITE);
-            xml->Save(xmlFile);
+            xml->Save(*destXmlFile);
         }
         else
             URHO3D_LOGWARNING("Can not save animation trigger data when not saving into a file");

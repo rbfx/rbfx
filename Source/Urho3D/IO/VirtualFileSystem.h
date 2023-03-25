@@ -39,6 +39,8 @@ public:
     /// Destruct.
     ~VirtualFileSystem() override;
 
+    /// Mount file system root as file:// scheme.
+    void MountRoot();
     /// Mount real folder into virtual file system.
     void MountDir(const ea::string& path);
     /// Mount real folder into virtual file system under the scheme.
@@ -70,14 +72,59 @@ public:
     bool Exists(const FileIdentifier& fileName) const;
     /// Open file in the virtual file system. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) const;
-    /// Return full absolute file name of the file if possible, or empty if not found.
-    ea::string GetFileName(const FileIdentifier& name);
+    /// Return modification time. Return 0 if not supported or file doesn't exist.
+    FileTime GetLastModifiedTime(const FileIdentifier& fileName, bool creationIsModification) const;
+    /// Return absolute file name for *existing* identifier in this mount point, if supported.
+    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
+    /// Return canonical file identifier, if possible.
+    FileIdentifier GetCanonicalIdentifier(const FileIdentifier& fileName) const;
+    /// Works even if the file does not exist.
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const;
+    /// Return relative file name of the file, or empty if not found.
+    FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& scheme, const ea::string& absoluteFileName) const;
+
+    /// Enable or disable file watchers.
+    void SetWatching(bool enable);
+
+    /// Returns true if the file watchers are enabled.
+    bool IsWatching() const { return isWatching_; }
+
+    /// Scan for specified files.
+    void Scan(ea::vector<ea::string>& result, const ea::string& scheme, const ea::string& pathName,
+        const ea::string& filter, ScanFlags flags) const;
+    void Scan(ea::vector<ea::string>& result, const FileIdentifier& pathName, const ea::string& filter,
+        ScanFlags flags) const;
 
 private:
     /// Mutex for thread-safe access to the mount points.
     mutable Mutex mountMutex_;
     /// File system mount points. It is expected to have small number of mount points.
     ea::vector<SharedPtr<MountPoint>> mountPoints_;
+    /// Are file watchers enabled.
+    bool isWatching_{};
+};
+
+/// Helper class to mount and unmount an object automatically.
+class URHO3D_API MountPointGuard : public MovableNonCopyable
+{
+public:
+    explicit MountPointGuard(MountPoint* mountPoint);
+    ~MountPointGuard();
+
+    MountPointGuard(MountPointGuard&& other) noexcept;
+    MountPointGuard& operator=(MountPointGuard&& other) noexcept;
+
+    void Release();
+    MountPoint* Get() const { return mountPoint_; }
+
+    template <class T>
+    explicit MountPointGuard(const SharedPtr<T>& mountPoint)
+        : MountPointGuard(mountPoint.Get())
+    {
+    }
+
+private:
+    SharedPtr<MountPoint> mountPoint_;
 };
 
 }
