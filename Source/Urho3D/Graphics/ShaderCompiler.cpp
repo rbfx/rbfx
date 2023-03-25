@@ -239,13 +239,15 @@ namespace Urho3D
         }
 
 
-        if (!ReflectHLSL(byteCode, byteCodeSize)) {
+        StringVector mappedSamplers;
+        if (!ReflectHLSL(byteCode, byteCodeSize, mappedSamplers)) {
             RELEASE_BLOBS();
             return false;
         }
 
 #ifdef URHO3D_DILIGENT
         RemapInputLayout(sourceCode);
+        RemapSamplers(sourceCode, mappedSamplers);
         {
             RELEASE_BLOBS();
             // Compile again to get final bytecode
@@ -294,7 +296,7 @@ namespace Urho3D
         RELEASE_BLOBS();
         return true;
     }
-    bool ShaderCompiler::ReflectHLSL(unsigned char* byteCode, size_t byteCodeSize)
+    bool ShaderCompiler::ReflectHLSL(unsigned char* byteCode, size_t byteCodeSize, StringVector& outputSamplersName)
     {
         ID3D11ShaderReflection* reflection = nullptr;
         D3D11_SHADER_DESC shaderDesc;
@@ -385,8 +387,10 @@ namespace Urho3D
                     continue;
                 }
             }
-            else if (resourceDesc.Type == D3D_SIT_SAMPLER && resourceDesc.BindPoint < MAX_TEXTURE_UNITS)
+            else if (resourceDesc.Type == D3D_SIT_SAMPLER && resourceDesc.BindPoint < MAX_TEXTURE_UNITS) {
+                outputSamplersName.push_back(resourceName);
                 textureSlots_[resourceDesc.BindPoint] = true;
+            }
         }
 
         for (unsigned i = 0; i < shaderDesc.ConstantBuffers; ++i) {
@@ -437,7 +441,7 @@ namespace Urho3D
         // choose another backend like D3D, Metal(MoltenVK) or Vulkan
 
         ConvertShaderToHLSL5(byteCode, sourceCode, compilerOutput_);
-        RemapSamplers(sourceCode);
+        //RemapSamplers(sourceCode);
         ApplyFixes(sourceCode);
 #endif
         // On GLSL, bytecode is HLSL or GLSL code
@@ -581,30 +585,30 @@ namespace Urho3D
 
         return true;
     }
-    void ShaderCompiler::RemapSamplers(ea::string& sourceCode)
-    {
-        // HLSL Conversion change samplers to _sTexMap_sampler and sTexMap
-        // We remapping theses names to sTexMap (SamplerState) and tTexMap (Texture Resource)
+    //void ShaderCompiler::RemapSamplers(ea::string& sourceCode)
+    //{
+    //    // HLSL Conversion change samplers to _sTexMap_sampler and sTexMap
+    //    // We remapping theses names to sTexMap (SamplerState) and tTexMap (Texture Resource)
 
-        unsigned index = 0;
-        do {
-            ea::string targetTexName = ea::string("> s") + samplerNames[index];
-            ea::string targetSamplerName = ea::string("_s") + samplerNames[index];
-            ea::string targetSampleRead = Format("s{0}.Sample(s{0}", samplerNames[index]);
-            ea::string targetSampleCmpRead = Format("s{0}.SampleCmp(s{0}", samplerNames[index]);
-            targetSamplerName.append("_sampler");
+    //    unsigned index = 0;
+    //    do {
+    //        ea::string targetTexName = ea::string("> s") + samplerNames[index];
+    //        ea::string targetSamplerName = ea::string("_s") + samplerNames[index];
+    //        ea::string targetSampleRead = Format("s{0}.Sample(s{0}", samplerNames[index]);
+    //        ea::string targetSampleCmpRead = Format("s{0}.SampleCmp(s{0}", samplerNames[index]);
+    //        targetSamplerName.append("_sampler");
 
-            ea::string outputTexName = ea::string("> t") + samplerNames[index];
-            ea::string outputSamplerName = ea::string("s") + samplerNames[index];
-            ea::string outputSampleRead = Format("t{0}.Sample(s{0}", samplerNames[index]);
-            ea::string outputSampleCmpRead = Format("t{0}.SampleCmp(s{0}", samplerNames[index]);
+    //        ea::string outputTexName = ea::string("> t") + samplerNames[index];
+    //        ea::string outputSamplerName = ea::string("s") + samplerNames[index];
+    //        ea::string outputSampleRead = Format("t{0}.Sample(s{0}", samplerNames[index]);
+    //        ea::string outputSampleCmpRead = Format("t{0}.SampleCmp(s{0}", samplerNames[index]);
 
-            sourceCode.replace(targetTexName, outputTexName);
-            sourceCode.replace(targetSamplerName, outputSamplerName);
-            sourceCode.replace(targetSampleRead, outputSampleRead);
-            sourceCode.replace(targetSampleCmpRead, outputSampleCmpRead);
-        } while (samplerNames[++index] != nullptr);
-    }
+    //        sourceCode.replace(targetTexName, outputTexName);
+    //        sourceCode.replace(targetSamplerName, outputSamplerName);
+    //        sourceCode.replace(targetSampleRead, outputSampleRead);
+    //        sourceCode.replace(targetSampleCmpRead, outputSampleCmpRead);
+    //    } while (samplerNames[++index] != nullptr);
+    //}
     void ShaderCompiler::ApplyFixes(ea::string& sourceCode)
     {
         if (desc_.type_ != PS)
@@ -641,6 +645,21 @@ namespace Urho3D
                 sourceCode.replace(replaceStartIdx, targetValue.length(), newValue);
             else // This case must never happens
                 assert(0);
+        }
+    }
+    void ShaderCompiler::RemapSamplers(ea::string& sourceCode, const StringVector& samplers) {
+        // Append _sampler to samplers
+        for (auto sampler = samplers.begin(); sampler != samplers.end(); ++sampler) {
+            sourceCode.replace(*sampler, Format("_{}_sampler", *sampler));
+        }
+        // Rename tTexture to sTexture, like: tDiffMap => sDiffMap
+        for (auto sampler = samplers.begin(); sampler != samplers.end(); ++sampler) {
+            assert(sampler->length() > 1);
+            ea::string targetSampler = *sampler;
+            if (targetSampler.at(0) == 's')
+                targetSampler.replace(0, 1, "t");
+
+            sourceCode.replace(targetSampler, *sampler);
         }
     }
 #endif

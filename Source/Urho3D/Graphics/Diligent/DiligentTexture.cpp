@@ -222,7 +222,6 @@ void Texture::RegenerateLevels()
     if (!shaderResourceView_)
         return;
 
-    assert(0);
     graphics_->GetImpl()->GetDeviceContext()->GenerateMips(static_cast<ITextureView*>(shaderResourceView_));
     levelsDirty_ = false;
 }

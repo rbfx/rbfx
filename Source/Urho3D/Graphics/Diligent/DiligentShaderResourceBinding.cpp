@@ -49,7 +49,7 @@ namespace Urho3D
                     continue;
                 ea::string shaderResName = shaderResDesc.Name;
 
-                if (shaderResName.starts_with("t"))
+                if (shaderResName.starts_with("s"))
                     shaderResName = shaderResName.substr(1, shaderResName.size());
 
                 auto texUnitIt = DiligentTextureUnitLookup.find(shaderResName);
@@ -58,7 +58,7 @@ namespace Urho3D
 
                 assert(textures_[texUnitIt->second] != nullptr);
 
-                ea::shared_ptr<ea::string> resSamplerName = ea::make_shared<ea::string>(Format("s{}",shaderResName));
+                ea::shared_ptr<ea::string> resSamplerName = ea::make_shared<ea::string>(Format("_{}_sampler",shaderResDesc.Name));
                 strList.push_back(resSamplerName);
 
                 Texture* tex = textures_[texUnitIt->second];

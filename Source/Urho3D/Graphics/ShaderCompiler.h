@@ -2,6 +2,7 @@
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/ShaderDefineArray.h"
 #include "../Graphics/ShaderVariation.h"
+#include "../Core/Variant.h"
 
 namespace Urho3D
 {
@@ -30,16 +31,17 @@ namespace Urho3D
     private:
 #ifdef WIN32
         bool CompileHLSL();
-        bool ReflectHLSL(unsigned char* byteCode, size_t byteCodeSize);
+        bool ReflectHLSL(unsigned char* byteCode, size_t byteCodeSize, StringVector& outputSamplersName);
+        //void RemapSamplers(ea::string& sourceCode)
 #endif
 #ifdef URHO3D_SPIRV
         bool CompileGLSL();
         bool ReflectGLSL(const void* byteCode, size_t byteCodeSize);
-        void RemapSamplers(ea::string& sourceCode);
         void ApplyFixes(ea::string& sourceCode);
 #endif
 #ifdef URHO3D_DILIGENT
         void RemapInputLayout(ea::string& sourceCode);
+        void RemapSamplers(ea::string& sourceCode, const StringVector& samplers);
 #endif
         ShaderCompilerDesc desc_;
 

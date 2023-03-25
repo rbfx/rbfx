@@ -186,177 +186,175 @@ bool TextureCube::SetData(CubeMapFace face, Deserializer& source)
 
 bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
 {
-    assert(0);
-    return false;
-    //if (!image)
-    //{
-    //    URHO3D_LOGERROR("Null image, can not load texture");
-    //    return false;
-    //}
+    if (!image)
+    {
+        URHO3D_LOGERROR("Null image, can not load texture");
+        return false;
+    }
 
-    //// Use a shared ptr for managing the temporary mip images created during this function
-    //SharedPtr<Image> mipImage;
-    //unsigned memoryUse = 0;
-    //MaterialQuality quality = QUALITY_HIGH;
-    //Renderer* renderer = GetSubsystem<Renderer>();
-    //if (renderer)
-    //    quality = renderer->GetTextureQuality();
+    // Use a shared ptr for managing the temporary mip images created during this function
+    SharedPtr<Image> mipImage;
+    unsigned memoryUse = 0;
+    MaterialQuality quality = QUALITY_HIGH;
+    Renderer* renderer = GetSubsystem<Renderer>();
+    if (renderer)
+        quality = renderer->GetTextureQuality();
 
-    //if (!image->IsCompressed())
-    //{
-    //    // Convert unsuitable formats to RGBA
-    //    unsigned components = image->GetComponents();
-    //    if ((components == 1 && !useAlpha) || components == 2 || components == 3)
-    //    {
-    //        mipImage = image->ConvertToRGBA(); image = mipImage;
-    //        if (!image)
-    //            return false;
-    //        components = image->GetComponents();
-    //    }
+    if (!image->IsCompressed())
+    {
+        // Convert unsuitable formats to RGBA
+        unsigned components = image->GetComponents();
+        if ((components == 1 && !useAlpha) || components == 2 || components == 3)
+        {
+            mipImage = image->ConvertToRGBA(); image = mipImage;
+            if (!image)
+                return false;
+            components = image->GetComponents();
+        }
 
-    //    unsigned char* levelData = image->GetData();
-    //    int levelWidth = image->GetWidth();
-    //    int levelHeight = image->GetHeight();
-    //    unsigned format = 0;
+        unsigned char* levelData = image->GetData();
+        int levelWidth = image->GetWidth();
+        int levelHeight = image->GetHeight();
+        unsigned format = 0;
 
-    //    if (levelWidth != levelHeight)
-    //    {
-    //        URHO3D_LOGERROR("Cube texture width not equal to height");
-    //        return false;
-    //    }
+        if (levelWidth != levelHeight)
+        {
+            URHO3D_LOGERROR("Cube texture width not equal to height");
+            return false;
+        }
 
-    //    // Discard unnecessary mip levels
-    //    for (unsigned i = 0; i < mipsToSkip_[quality]; ++i)
-    //    {
-    //        mipImage = image->GetNextLevel(); image = mipImage;
-    //        levelData = image->GetData();
-    //        levelWidth = image->GetWidth();
-    //        levelHeight = image->GetHeight();
-    //    }
+        // Discard unnecessary mip levels
+        for (unsigned i = 0; i < mipsToSkip_[quality]; ++i)
+        {
+            mipImage = image->GetNextLevel(); image = mipImage;
+            levelData = image->GetData();
+            levelWidth = image->GetWidth();
+            levelHeight = image->GetHeight();
+        }
 
-    //    switch (components)
-    //    {
-    //    case 1:
-    //        format = Graphics::GetAlphaFormat();
-    //        break;
+        switch (components)
+        {
+        case 1:
+            format = Graphics::GetAlphaFormat();
+            break;
 
-    //    case 4:
-    //        format = Graphics::GetRGBAFormat();
-    //        break;
+        case 4:
+            format = Graphics::GetRGBAFormat();
+            break;
 
-    //    default: break;
-    //    }
+        default: break;
+        }
 
-    //    // Create the texture when face 0 is being loaded, check that rest of the faces are same size & format
-    //    if (!face)
-    //    {
-    //        // If image was previously compressed, reset number of requested levels to avoid error if level count is too high for new size
-    //        if (IsCompressed() && requestedLevels_ > 1)
-    //            requestedLevels_ = 0;
-    //        SetSize(levelWidth, format);
-    //    }
-    //    else
-    //    {
-    //        if (!object_.ptr_)
-    //        {
-    //            URHO3D_LOGERROR("Cube texture face 0 must be loaded first");
-    //            return false;
-    //        }
-    //        if (levelWidth != width_ || format != format_)
-    //        {
-    //            URHO3D_LOGERROR("Cube texture face does not match size or format of face 0");
-    //            return false;
-    //        }
-    //    }
+        // Create the texture when face 0 is being loaded, check that rest of the faces are same size & format
+        if (!face)
+        {
+            // If image was previously compressed, reset number of requested levels to avoid error if level count is too high for new size
+            if (IsCompressed() && requestedLevels_ > 1)
+                requestedLevels_ = 0;
+            SetSize(levelWidth, format);
+        }
+        else
+        {
+            if (!object_)
+            {
+                URHO3D_LOGERROR("Cube texture face 0 must be loaded first");
+                return false;
+            }
+            if (levelWidth != width_ || format != format_)
+            {
+                URHO3D_LOGERROR("Cube texture face does not match size or format of face 0");
+                return false;
+            }
+        }
 
-    //    for (unsigned i = 0; i < levels_; ++i)
-    //    {
-    //        SetData(face, i, 0, 0, levelWidth, levelHeight, levelData);
-    //        memoryUse += levelWidth * levelHeight * components;
+        for (unsigned i = 0; i < levels_; ++i)
+        {
+            SetData(face, i, 0, 0, levelWidth, levelHeight, levelData);
+            memoryUse += levelWidth * levelHeight * components;
 
-    //        if (i < levels_ - 1)
-    //        {
-    //            mipImage = image->GetNextLevel(); image = mipImage;
-    //            levelData = image->GetData();
-    //            levelWidth = image->GetWidth();
-    //            levelHeight = image->GetHeight();
-    //        }
-    //    }
-    //}
-    //else
-    //{
-    //    int width = image->GetWidth();
-    //    int height = image->GetHeight();
-    //    unsigned levels = image->GetNumCompressedLevels();
-    //    unsigned format = graphics_->GetFormat(image->GetCompressedFormat());
-    //    bool needDecompress = false;
+            if (i < levels_ - 1)
+            {
+                mipImage = image->GetNextLevel(); image = mipImage;
+                levelData = image->GetData();
+                levelWidth = image->GetWidth();
+                levelHeight = image->GetHeight();
+            }
+        }
+    }
+    else
+    {
+        int width = image->GetWidth();
+        int height = image->GetHeight();
+        unsigned levels = image->GetNumCompressedLevels();
+        unsigned format = graphics_->GetFormat(image->GetCompressedFormat());
+        bool needDecompress = false;
 
-    //    if (width != height)
-    //    {
-    //        URHO3D_LOGERROR("Cube texture width not equal to height");
-    //        return false;
-    //    }
+        if (width != height)
+        {
+            URHO3D_LOGERROR("Cube texture width not equal to height");
+            return false;
+        }
 
-    //    if (!format)
-    //    {
-    //        format = Graphics::GetRGBAFormat();
-    //        needDecompress = true;
-    //    }
+        if (!format)
+        {
+            format = Graphics::GetRGBAFormat();
+            needDecompress = true;
+        }
 
-    //    unsigned mipsToSkip = mipsToSkip_[quality];
-    //    if (mipsToSkip >= levels)
-    //        mipsToSkip = levels - 1;
-    //    while (mipsToSkip && (width / (1 << mipsToSkip) < 4 || height / (1 << mipsToSkip) < 4))
-    //        --mipsToSkip;
-    //    width /= (1 << mipsToSkip);
-    //    height /= (1 << mipsToSkip);
+        unsigned mipsToSkip = mipsToSkip_[quality];
+        if (mipsToSkip >= levels)
+            mipsToSkip = levels - 1;
+        while (mipsToSkip && (width / (1 << mipsToSkip) < 4 || height / (1 << mipsToSkip) < 4))
+            --mipsToSkip;
+        width /= (1 << mipsToSkip);
+        height /= (1 << mipsToSkip);
 
-    //    // Create the texture when face 0 is being loaded, assume rest of the faces are same size & format
-    //    if (!face)
-    //    {
-    //        SetNumLevels(Max((levels - mipsToSkip), 1U));
-    //        SetSize(width, format);
-    //    }
-    //    else
-    //    {
-    //        if (!object_.ptr_)
-    //        {
-    //            URHO3D_LOGERROR("Cube texture face 0 must be loaded first");
-    //            return false;
-    //        }
-    //        if (width != width_ || format != format_)
-    //        {
-    //            URHO3D_LOGERROR("Cube texture face does not match size or format of face 0");
-    //            return false;
-    //        }
-    //    }
+        // Create the texture when face 0 is being loaded, assume rest of the faces are same size & format
+        if (!face)
+        {
+            SetNumLevels(Max((levels - mipsToSkip), 1U));
+            SetSize(width, format);
+        }
+        else
+        {
+            if (!object_)
+            {
+                URHO3D_LOGERROR("Cube texture face 0 must be loaded first");
+                return false;
+            }
+            if (width != width_ || format != format_)
+            {
+                URHO3D_LOGERROR("Cube texture face does not match size or format of face 0");
+                return false;
+            }
+        }
 
-    //    for (unsigned i = 0; i < levels_ && i < levels - mipsToSkip; ++i)
-    //    {
-    //        CompressedLevel level = image->GetCompressedLevel(i + mipsToSkip);
-    //        if (!needDecompress)
-    //        {
-    //            SetData(face, i, 0, 0, level.width_, level.height_, level.data_);
-    //            memoryUse += level.rows_ * level.rowSize_;
-    //        }
-    //        else
-    //        {
-    //            unsigned char* rgbaData = new unsigned char[level.width_ * level.height_ * 4];
-    //            level.Decompress(rgbaData);
-    //            SetData(face, i, 0, 0, level.width_, level.height_, rgbaData);
-    //            memoryUse += level.width_ * level.height_ * 4;
-    //            delete[] rgbaData;
-    //        }
-    //    }
-    //}
+        for (unsigned i = 0; i < levels_ && i < levels - mipsToSkip; ++i)
+        {
+            CompressedLevel level = image->GetCompressedLevel(i + mipsToSkip);
+            if (!needDecompress)
+            {
+                SetData(face, i, 0, 0, level.width_, level.height_, level.data_);
+                memoryUse += level.rows_ * level.rowSize_;
+            }
+            else
+            {
+                unsigned char* rgbaData = new unsigned char[level.width_ * level.height_ * 4];
+                level.Decompress(rgbaData);
+                SetData(face, i, 0, 0, level.width_, level.height_, rgbaData);
+                memoryUse += level.width_ * level.height_ * 4;
+                delete[] rgbaData;
+            }
+        }
+    }
 
-    //faceMemoryUse_[face] = memoryUse;
-    //unsigned totalMemoryUse = sizeof(TextureCube);
-    //for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-    //    totalMemoryUse += faceMemoryUse_[i];
-    //SetMemoryUse(totalMemoryUse);
+    faceMemoryUse_[face] = memoryUse;
+    unsigned totalMemoryUse = sizeof(TextureCube);
+    for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
+        totalMemoryUse += faceMemoryUse_[i];
+    SetMemoryUse(totalMemoryUse);
 
-    //return true;
+    return true;
 }
 
 bool TextureCube::GetData(CubeMapFace face, unsigned level, void* dest) const

@@ -180,7 +180,7 @@ namespace Urho3D
         { "DepthBuffer", TextureUnit::TU_DEPTHBUFFER },
         { "DepthBufferMap", TextureUnit::TU_DEPTHBUFFER },
         { "ZoneBuffer", TextureUnit::TU_ZONE },
-        { "ZoneCubeMap", TextureUnit::TU_ZONE},
+        { "ZoneCubeMap", TextureUnit::TU_ENVIRONMENT},
         { "ZoneVolumeMap", TextureUnit::TU_VOLUMEMAP },
         { "Custom1Map", TextureUnit::TU_CUSTOM1 },
         { "Custom2Map", TextureUnit::TU_CUSTOM2 },
