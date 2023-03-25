@@ -38,12 +38,20 @@ def main():
         logging.info(f'Preprocess {args.all_file}')
         parser.preprocess()
 
+        if args.save_pp:
+            logging.info(f'Save {args.save_pp}')
+            parser.save_preprocessed_source_code(args.save_pp)
+
     if args.load_ast:
         logging.info(f'Load {args.load_ast}')
         parser._json_ast = json.load(open(args.load_ast))
     else:
         logging.info(f'Parse {args.all_file}')
         parser.parse_json_ast()
+
+        if args.save_ast is not None:
+            logging.info(f'Save {args.save_ast}')
+            parser.save_ast(args.save_ast)
 
     # Parse json ast and create a convenient object tree.
     root_node = parser.create_ast()
@@ -72,14 +80,6 @@ def main():
             pass_instance.on_finish()
     finally:
         writer.close()
-
-    # Save AST or preprocessed source code (for debugging)
-    if args.save_ast is not None:
-        logging.info(f'Save {args.save_ast}')
-        parser.save_ast(args.save_ast)
-    if args.save_pp:
-        logging.info(f'Save {args.save_pp}')
-        parser.save_preprocessed_source_code(args.save_pp)
 
 
 if __name__ == '__main__':

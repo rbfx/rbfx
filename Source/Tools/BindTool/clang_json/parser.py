@@ -37,7 +37,7 @@ class ClangJsonAstParser(object):
         self.NODE_BY_FQN = {}
 
     def preprocess(self):
-        args = ['/usr/bin/clang', '-E', '-C', '-CC']
+        args = [self._clang_exe, '-E', '-C', '-CC']
         args.extend(self._compiler_parameters)
         args.append(self._source_file)
         self._source_code = subprocess.check_output(args)
