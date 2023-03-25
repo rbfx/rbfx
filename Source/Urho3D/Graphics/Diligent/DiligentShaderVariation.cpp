@@ -435,6 +435,7 @@ bool ShaderVariation::Compile()
         shaderCI.SourceLength = compiler.GetByteCode().size();
     }
 
+
     vertexElements_ = compiler.GetVertexElements();
     parameters_ = compiler.GetShaderParams();
 

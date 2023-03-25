@@ -613,6 +613,8 @@ namespace Urho3D
     {
         if (desc_.type_ != PS)
             return;
+        if (sourceCode.contains("gl_FrontFacing"))
+            return;
         size_t inputIdx = sourceCode.find("struct SPIRV_Cross_Input");
         if (inputIdx == ea::string::npos)
             return;
