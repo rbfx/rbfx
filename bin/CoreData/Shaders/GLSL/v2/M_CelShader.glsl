@@ -20,6 +20,19 @@ void main()
 #endif
 
 #ifdef URHO3D_PIXEL_SHADER
+
+// Based on https://github.com/glslify/glsl-aastep
+// Under MIT License
+float AntiAliasedStep(float threshold, float value)
+{
+#ifdef URHO3D_FEATURE_DERIVATIVES
+    float afwidth = length(vec2(dFdx(value), dFdy(value))) * 0.70710678118654757;
+    return smoothstep(threshold-afwidth, threshold+afwidth, value);
+#else
+    return step(threshold, value);
+#endif
+}
+
 void main()
 {
 #ifdef URHO3D_DEPTH_ONLY_PASS
@@ -54,8 +67,8 @@ void main()
 #elif defined(URHO3D_LIGHT_PASS)
     DirectLightData lightData = GetForwardDirectLightData();
     float NoL = dot(surfaceData.normal, lightData.lightVec.xyz);
-    float shadowStep = step(cStepOffsetWidthBrightness.x-cStepOffsetWidthBrightness.y*0.5, NoL) * cStepOffsetWidthBrightness.z;
-    float lightStep = step(cStepOffsetWidthBrightness.x+cStepOffsetWidthBrightness.y*0.5, NoL);
+    float shadowStep = AntiAliasedStep(cStepOffsetWidthBrightness.x-cStepOffsetWidthBrightness.y*0.5, NoL) * cStepOffsetWidthBrightness.z;
+    float lightStep = AntiAliasedStep(cStepOffsetWidthBrightness.x+cStepOffsetWidthBrightness.y*0.5, NoL);
     float steppedNoL = mix(shadowStep, 1.0, lightStep);
  #if (URHO3D_SPECULAR > 0)
     half3 halfVec = normalize(surfaceData.eyeVec + lightData.lightVec.xyz);
