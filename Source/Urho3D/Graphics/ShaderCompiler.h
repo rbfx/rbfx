@@ -1,22 +1,41 @@
+//
+// Copyright (c) 2008-2022 the Urho3D project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
 #pragma once
+#ifdef URHO3D_DILIGENT
 #include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/ShaderDefineArray.h"
-#include "../Graphics/ShaderVariation.h"
-#include "../Core/Variant.h"
 
 namespace Urho3D
 {
-    enum class ShaderLanguage {
-        GLSL=0,
-        HLSL
+    enum class ShaderCompilerOutput {
+        HLSL=0,
+        SPIRV
     };
     struct ShaderCompilerDesc {
         ea::string name_;
-        ea::string code_;
+        ea::string sourceCode_;
         ea::string entryPoint_;
         ShaderType type_;
-        ShaderDefineArray defines_;
-        ShaderLanguage language_;
+        ShaderCompilerOutput output_;
     };
     class URHO3D_API ShaderCompiler {
     public:
@@ -24,38 +43,19 @@ namespace Urho3D
         bool Compile();
         const ea::vector<uint8_t>& GetByteCode() const { return byteCode_; }
         const ea::string& GetCompilerOutput() const { return compilerOutput_; }
-        bool IsUsedCBufferSlot(ShaderParameterGroup grp) { return constantBufferSlots_[grp]; }
-        bool IsUsedTextureSlot(TextureUnit unit) { return textureSlots_[unit]; }
-        const ea::vector<VertexElement> GetVertexElements() const { return vertexElements_; }
-        const ea::unordered_map<StringHash, ShaderParameter> GetShaderParams() const { return parameters_; }
     private:
 #ifdef WIN32
         bool CompileHLSL();
-        bool ReflectHLSL(unsigned char* byteCode, size_t byteCodeSize, StringVector& outputSamplersName);
-        //void RemapSamplers(ea::string& sourceCode)
 #endif
-#ifdef URHO3D_SPIRV
-        bool CompileGLSL();
-        bool ReflectGLSL(const void* byteCode, size_t byteCodeSize);
-        void ApplyFixes(ea::string& sourceCode);
-#endif
-#ifdef URHO3D_DILIGENT
-        void RemapInputLayout(ea::string& sourceCode);
-        void RemapSamplers(ea::string& sourceCode, const StringVector& samplers);
-#endif
+        bool CompileSPIRV();
+
         ShaderCompilerDesc desc_;
 
-        ea::vector<uint8_t> byteCode_;
         ea::string compilerOutput_;
-
-        ea::vector<VertexElement> vertexElements_;
-        ea::array<bool, MAX_TEXTURE_UNITS> textureSlots_;
-        ea::array<bool, MAX_SHADER_PARAMETER_GROUPS> constantBufferSlots_;
-        ea::unordered_map<StringHash, ShaderParameter> parameters_;
-
-#ifdef URHO3D_DILIGENT
-        /// This is used for remapping the whole semantic attributes to attribn diligent like.
-        ea::vector<ea::pair<unsigned, VertexElementSemantic>> inputLayoutMapping_;
-#endif
+        ea::vector<uint8_t> byteCode_;
     };
 }
+
+#else
+#error ShaderCompiler is only available on Diligent mode.
+#endif

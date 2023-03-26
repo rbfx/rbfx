@@ -146,11 +146,7 @@ private:
     bool LoadByteCode(const FileIdentifier& binaryShaderName);
     /// Compile from source. Return true if successful.
     bool Compile();
-#ifdef URHO3D_DILIGENT
-    void ParseParameters(std::vector<unsigned>& byteCode);
-    void GenerateVertexBindings(ea::string& sourceCode);
-    void CollectVertexElements(const ea::string& sourceCode);
-#else
+#ifndef URHO3D_DILIGENT
     /// Inspect the constant parameters and input layout (if applicable) from the shader bytecode.
      void ParseParameters(unsigned char* bufData, unsigned bufSize);
 #endif

@@ -193,4 +193,13 @@ namespace Urho3D
         Diligent::VT_UINT16,
         Diligent::VT_UINT32
     };
+
+    static const Diligent::SHADER_TYPE DiligentShaderType[] = {
+        Diligent::SHADER_TYPE_VERTEX,
+        Diligent::SHADER_TYPE_PIXEL,
+        Diligent::SHADER_TYPE_GEOMETRY,
+        Diligent::SHADER_TYPE_HULL,
+        Diligent::SHADER_TYPE_DOMAIN,
+        Diligent::SHADER_TYPE_COMPUTE,
+    };
 }

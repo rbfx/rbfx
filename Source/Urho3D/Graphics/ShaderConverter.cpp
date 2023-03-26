@@ -265,15 +265,6 @@ namespace Urho3D
                             }
                         });
                 }
-//#ifdef URHO3D_DILIGENT
-//                using namespace spirv_cross;
-//                spirv_cross::ShaderResources resources = this->get_shader_resources();
-//                for (auto resource = resources.sampled_images.begin(); resource != resources.sampled_images.end(); ++resource) {
-//                    URHO3D_LOGDEBUG("Image: {}", resource->name);
-//                    //this->set_qualified_name(resource->id, resource->name +  "_texture");
-//                    set_name(resource->id, resource->name + "_texture");
-//                }
-//#endif
 
                 return numErrors == 0;
             }
