@@ -31,7 +31,14 @@
 #include "../Replica/NetworkId.h"
 #include "../Scene/Component.h"
 
+#if defined(_MSC_VER)
+    #pragma warning(push)
+    #pragma warning(disable : 4005)
+#endif
 #include <Bullet/LinearMath/btIDebugDraw.h>
+#ifdef _MSC_VER
+    #pragma warning(pop)
+#endif
 
 #include <EASTL/optional.h>
 
