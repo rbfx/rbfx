@@ -105,9 +105,9 @@ public:
     /// Get keyboard enabled flag.
     bool IsKeyboardEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Keyboard; }
     /// Set joystick enabled flag.
-    bool IsJoystickEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
+    bool IsJoystickEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
     /// Set touch enabled flag.
-    bool IsTouchEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Touch; }
+    bool IsTouchEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Touch; }
     /// Get UI element to filter touch events.
     UIElement* GetUIElement() const { return uiElement_; }
     /// Get dead zone.

@@ -344,7 +344,7 @@ void DirectionAggregator::HandleTouchMove(StringHash eventType, VariantMap& args
     // Do nothing if not tracking touch
     if (!activeTouchId_.has_value())
         return;
-    // Start tracking touch
+    // Validate touch id
     using namespace TouchBegin;
     const int touchId = args[P_TOUCHID].GetInt();
     if (touchId != activeTouchId_.value())
@@ -368,7 +368,7 @@ void DirectionAggregator::HandleTouchEnd(StringHash eventType, VariantMap& args)
     // Do nothing if not tracking touch
     if (!activeTouchId_.has_value())
         return;
-    // Start tracking touch
+    // Stop tracking touch
     using namespace TouchBegin;
     const int touchId = args[P_TOUCHID].GetInt();
     if (touchId != activeTouchId_.value())

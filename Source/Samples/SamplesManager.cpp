@@ -148,6 +148,7 @@
 #endif
 #include "115_RayCast/RayCastSample.h"
 #include "116_VirtualFileSystem/VFSSample.h"
+#include "117_PointerAdapter/PointerAdapterSample.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -397,6 +398,7 @@ void SamplesManager::Start()
 #endif
     RegisterSample<RayCastSample>();
     RegisterSample<VFSSample>();
+    RegisterSample<PointerAdapterSample>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

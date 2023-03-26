@@ -239,10 +239,10 @@ void AggregatedInput::HandleJoystickHatMove(StringHash eventType, VariantMap& ar
     AddRawEvent(Format("HatMove: Hat {}, Value {}", args[P_HAT].GetUInt(), posName));
 }
 
-void AggregatedInput::HandleJoystickDisconnected(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
-void AggregatedInput::HandleTouchBegin(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
-void AggregatedInput::HandleTouchMove(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
-void AggregatedInput::HandleTouchEnd(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
+void AggregatedInput::HandleJoystickDisconnected(StringHash eventType, VariantMap& args) { using namespace JoystickDisconnected; }
+void AggregatedInput::HandleTouchBegin(StringHash eventType, VariantMap& args) { using namespace TouchBegin; }
+void AggregatedInput::HandleTouchMove(StringHash eventType, VariantMap& args) { using namespace TouchMove; }
+void AggregatedInput::HandleTouchEnd(StringHash eventType, VariantMap& args) { using namespace TouchEnd; }
 
 void AggregatedInput::Update(float timeStep)
 {

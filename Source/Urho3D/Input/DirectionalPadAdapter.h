@@ -105,7 +105,7 @@ public:
     /// Get keyboard enabled flag.
     bool IsKeyboardEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Keyboard; }
     /// Set joystick enabled flag.
-    bool IsJoystickEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
+    bool IsJoystickEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
     /// Get enabled flag.
     bool IsKeyRepeatEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Update; }
 
