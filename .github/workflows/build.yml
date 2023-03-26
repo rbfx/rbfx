@@ -12,7 +12,7 @@ env:
   URHO3D_SAMPLES: ON
   URHO3D_TESTING: ON
   URHO3D_PROFILING_FALLBACK: ON
-  DOTNET_VERSION: '6.0'
+  DOTNET_VERSION: '7.0'
   CMAKE_VERSION: 3.21.x
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
