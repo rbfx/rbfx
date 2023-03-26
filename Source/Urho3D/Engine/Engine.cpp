@@ -326,6 +326,37 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
         graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
 
+#ifdef URHO3D_DILIGENT
+        RenderBackend renderBackend = RENDER_D3D12;
+#ifndef WIN32
+        renderBackend = RENDER_GL;
+#endif // !WIN32
+
+        ea::string renderBackendValue = GetParameter(EP_RENDER_BACKEND).GetString();
+        if (renderBackendValue == "D3D11") {
+#ifdef WIN32
+            renderBackend = RENDER_D3D11;
+#endif
+        }
+        else if (renderBackendValue == "D3D12") {
+#ifdef WIN32
+            renderBackend = RENDER_D3D12;
+#endif
+        }
+        else if (renderBackendValue == "Vulkan") {
+            renderBackend = RENDER_VULKAN;
+        }
+#if defined(PLATFORM_IOS) || defined(PLATFORM_MACOS)
+        else if (renderBackendValue == "Metal") {
+            renderBackend = RENDER_METAL;
+        }
+#endif
+
+        graphics->SetRenderBackend(renderBackend);
+        auto adapterIdParam = GetParameter(EP_RENDER_ADAPTER_ID);
+        if(adapterIdParam != Variant::EMPTY)
+            graphics->SetAdapterId(adapterIdParam.GetUInt());
+#endif
         SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& eventData)
         {
             using namespace ScreenMode;

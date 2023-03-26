@@ -45,10 +45,39 @@
 #include "../../Graphics/ShaderResourceBinding.h"
 #include "../../Graphics/PipelineState.h"
 
+#ifdef WIN32
+// D3D11 includes
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/DeviceContextD3D11.h>
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/SwapChainD3D11.h>
+// D3D12 includes
+#include <d3d12.h>
+#include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
+#include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
+#include <Diligent/Graphics/GraphicsEngineD3D12/interface/DeviceContextD3D12.h>
+#include <Diligent/Graphics/GraphicsEngineD3D12/interface/SwapChainD3D12.h>
+#endif
+// Vulkan includes
+#include <vulkan/vulkan.h>
+#include <Diligent/Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
+#include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
+#include <Diligent/Graphics/GraphicsEngineVulkan/interface/DeviceContextVk.h>
+#include <Diligent/Graphics/GraphicsEngineVulkan/interface/SwapChainVk.h>
+// OpenGL includes
+#include <gl/GL.h>
+#include <Diligent/Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
+#include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
+#include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
+#include <Diligent/Graphics/GraphicsEngineOpenGL/interface/SwapChainGL.h>
+// Metal includes
+#if defined(PLATFORM_MACOS) || defined(PLATFORM_IOS)
+#include <Diligent/Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
+#include <Diligent/Graphics/GraphicsEngineMetal/interface/RenderDeviceMtl.h>
+#include <Diligent/Graphics/GraphicsEngineMetal/interface/DeviceContextMtl.h>
+#include <Diligent/Graphics/GraphicsEngineMetal/interface/SwapChainMtl.h>
+#endif
+
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Graphics/GraphicsTools/interface/MapHelper.hpp>
 
@@ -1855,6 +1884,23 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
 RenderBackend Graphics::GetRenderBackend() const {
     return impl_->renderBackend_;
 }
+void Graphics::SetRenderBackend(RenderBackend renderBackend) {
+    if (impl_->device_) {
+        URHO3D_LOGERROR("Render Backend cannot be change after graphics initialization.");
+        return;
+    }
+    impl_->renderBackend_ = renderBackend;
+}
+unsigned Graphics::GetAdapterId() const {
+    return impl_->adapterId_;
+}
+void Graphics::SetAdapterId(unsigned adapterId) {
+    if (impl_->device_) {
+        URHO3D_LOGERROR("Cannot change Adapter ID after graphics initialization.");
+        return;
+    }
+    impl_->adapterId_ = adapterId;
+}
 unsigned Graphics::GetSwapChainRTFormat() {
     return impl_->swapChain_->GetDesc().ColorBufferFormat;
 }
@@ -2106,75 +2152,8 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, bool& newFullscreen, 
 bool Graphics::CreateDevice(int width, int height)
 {
     using namespace Diligent;
-    // Device needs only to be created once
-    if (!impl_->device_)
-    {
-        //UINT deviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-        //if (screenParams_.gpuDebug_)
-        //{
-        //    // Enable the debug layer if requested.
-        //    deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-        //}
-        //ID3D11DeviceContext* deviceContext = nullptr;
-        //const D3D_FEATURE_LEVEL featureLevels[] =
-        //{
-        //    D3D_FEATURE_LEVEL_11_1,
-        //    //D3D_FEATURE_LEVEL_11_0,
-        //    D3D_FEATURE_LEVEL_10_1,
-        //    //D3D_FEATURE_LEVEL_10_0,
-        //};
-        //HRESULT hr = D3D11CreateDevice(
-        //    nullptr,
-        //    D3D_DRIVER_TYPE_HARDWARE,
-        //    nullptr,
-        //    deviceFlags,
-        //    featureLevels,
-        //    ARRAYSIZE(featureLevels),
-        //    D3D11_SDK_VERSION,
-        //    &impl_->device_,
-        //    nullptr,
-        //    &deviceContext
-        //);
-
-        //if (FAILED(hr))
-        //{
-        //    URHO3D_SAFE_RELEASE(impl_->device_);
-        //    URHO3D_SAFE_RELEASE(deviceContext);
-        //    URHO3D_LOGD3DERROR("Failed to create D3D11 device", hr);
-        //    return false;
-        //}
-        
-        //deviceContext->QueryInterface(IID_ID3D11DeviceContext1, reinterpret_cast<void**>(&impl_->deviceContext_));
-
-        EngineD3D11CreateInfo engineCI;
-        IEngineFactoryD3D11* factory = GetEngineFactoryD3D11();
-
-        factory->CreateDeviceAndContextsD3D11(engineCI, &impl_->device_, &impl_->deviceContext_);
-        CheckFeatureSupport();
-
-
-        if (!impl_->device_ || !impl_->deviceContext_) {
-            URHO3D_LOGERROR("Failed to Initialize D3D11 device.");
-            return false;
-        }
-
-        ea::string adapterDesc = "Adapter used " + ea::string(impl_->device_->GetAdapterInfo().Description);
-        URHO3D_LOGINFO(adapterDesc);
-
-        //init requred objects from graphics impl.
-        impl_->constantBufferManager_ = new DiligentConstantBufferManager(this);
-        impl_->commonPipelines_ = new DiligentCommonPipelines(this);
-        impl_->resourceMappingCache_ = new DiligentResourceMappingCache(this);
-    }
-
-    // Discard old swapchain has been created.
-    if (impl_->swapChain_) {
-        impl_->swapChain_->Release();
-        impl_->swapChain_ = nullptr;
-    }
-
-    Win32NativeWindow wnd;
-#ifndef  UWP
+    NativeWindow wnd;
+#if defined(WIN32) && !defined(UWP)
     wnd.hWnd = GetWindowHandle(window_);
 #else
     // Not implemented.
@@ -2192,14 +2171,113 @@ bool Graphics::CreateDevice(int width, int height)
     if (!multiSampleLevels.contains(screenParams_.multiSample_))
         screenParams_.multiSample_ = 1;
 
-    GetEngineFactoryD3D11()->CreateSwapChainD3D11(
-        impl_->device_,
-        impl_->deviceContext_,
-        swapChainDesc,
-        fullscreenDesc,
-        wnd,
-        &impl_->swapChain_
-    );
+    // Discard old swapchain has been created.
+    if (impl_->swapChain_) {
+        impl_->swapChain_->Release();
+        impl_->swapChain_ = nullptr;
+    }
+
+    // Device needs only to be created once
+    if (!impl_->device_)
+    {
+
+        switch (impl_->renderBackend_)
+        {
+#ifdef WIN32
+        case RENDER_D3D11:
+        {
+            IEngineFactoryD3D11* factory = GetEngineFactoryD3D11();
+            EngineD3D11CreateInfo engineCI;
+            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
+
+            factory->CreateDeviceAndContextsD3D11(engineCI, &impl_->device_, &impl_->deviceContext_);
+            factory->CreateSwapChainD3D11(
+                impl_->device_,
+                impl_->deviceContext_,
+                swapChainDesc,
+                fullscreenDesc,
+                wnd,
+                &impl_->swapChain_
+            );
+        }
+        break;
+        case RENDER_D3D12:
+        {
+            IEngineFactoryD3D12* factory = GetEngineFactoryD3D12();
+            factory->LoadD3D12();
+            EngineD3D12CreateInfo engineCI;
+            engineCI.GraphicsAPIVersion = Version{11, 0};
+            engineCI.GPUDescriptorHeapDynamicSize[0] = 32768;
+            engineCI.GPUDescriptorHeapSize[1] = 128;
+            engineCI.GPUDescriptorHeapDynamicSize[1] = 2048 - 128;
+            engineCI.DynamicDescriptorAllocationChunkSize[0] = 32;
+            engineCI.DynamicDescriptorAllocationChunkSize[1] = 8; // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
+            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
+
+            factory->CreateDeviceAndContextsD3D12(engineCI, &impl_->device_, &impl_->deviceContext_);
+            factory->CreateSwapChainD3D12(
+                impl_->device_,
+                impl_->deviceContext_,
+                swapChainDesc,
+                fullscreenDesc,
+                wnd,
+                &impl_->swapChain_
+            );
+        }
+        break;
+#endif
+        case RENDER_VULKAN:
+        {
+            IEngineFactoryVk* factory = GetEngineFactoryVk();
+            EngineVkCreateInfo engineCI;
+            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
+
+            factory->CreateDeviceAndContextsVk(engineCI, &impl_->device_, &impl_->deviceContext_);
+            factory->CreateSwapChainVk(
+                impl_->device_,
+                impl_->deviceContext_,
+                swapChainDesc,
+                wnd,
+                &impl_->swapChain_
+            );
+        }
+                break;
+        case RENDER_GL:
+        {
+            IEngineFactoryOpenGL* factory = GetEngineFactoryOpenGL();
+            EngineGLCreateInfo engineCI;
+            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
+
+            factory->CreateDeviceAndSwapChainGL(
+                engineCI,
+                &impl_->device_,
+                &impl_->deviceContext_,
+                swapChainDesc,
+                &impl_->swapChain_
+            );
+        }
+                break;
+        case RENDER_METAL:
+            // TODO: Implement Metal backend
+            assert(0);
+            break;
+        }
+
+        if (!impl_->device_ || !impl_->deviceContext_) {
+            URHO3D_LOGERROR("Failed to Initialize GPU Device");
+            return false;
+        }
+
+        CheckFeatureSupport();
+
+        ea::string adapterDesc = "Adapter used " + ea::string(impl_->device_->GetAdapterInfo().Description);
+        URHO3D_LOGINFO(adapterDesc);
+
+        //init requred objects from graphics impl.
+        impl_->constantBufferManager_ = new DiligentConstantBufferManager(this);
+        impl_->commonPipelines_ = new DiligentCommonPipelines(this);
+        impl_->resourceMappingCache_ = new DiligentResourceMappingCache(this);
+    }
 
     if (!impl_->swapChain_)
     {

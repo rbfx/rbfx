@@ -46,7 +46,8 @@ GraphicsImpl::GraphicsImpl() :
     commonPipelines_(nullptr),
     resourceMappingCache_(nullptr),
     renderBackend_(RENDER_D3D11),
-    viewportDirty_(true)
+    viewportDirty_(true),
+    adapterId_(M_MAX_UNSIGNED)
 {
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         renderTargetViews_[i] = nullptr;
@@ -115,4 +116,29 @@ unsigned GraphicsImpl::GetMultiSampleQuality(Diligent::TEXTURE_FORMAT format, un
     //    return numLevels - 1; // D3D10.0 and below: use the best quality
 }
 
+unsigned GraphicsImpl::FindBestAdapter(Diligent::IEngineFactory* engineFactory, Diligent::Version& version) {
+    using namespace Diligent;
+    unsigned numAdapters = 0;
+    engineFactory->EnumerateAdapters(version, numAdapters, nullptr);
+    ea::vector<GraphicsAdapterInfo> adapters(numAdapters);
+    engineFactory->EnumerateAdapters(version, numAdapters, adapters.data());
+
+    if (adapterId_ == M_MAX_UNSIGNED || adapterId_ >= numAdapters) {
+        // Find best quality device
+        unsigned result = DEFAULT_ADAPTER_ID;
+        for (unsigned i = 0; i < numAdapters; ++i) {
+            auto adapter = adapters[i];
+            if (adapter.Type == ADAPTER_TYPE_INTEGRATED || adapter.Type == ADAPTER_TYPE_DISCRETE) {
+                result = i;
+                // Always prefer discrete gpu
+                if (adapter.Type == ADAPTER_TYPE_DISCRETE)
+                    break;
+            }
+        }
+        return result;
+    }
+    else {
+        return adapterId_;
+    }
+}
 }

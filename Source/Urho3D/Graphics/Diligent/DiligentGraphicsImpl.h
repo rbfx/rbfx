@@ -83,6 +83,8 @@ public:
 
     DiligentConstantBufferManager* GetConstantBufferManager() { return constantBufferManager_; }
     DiligentResourceMappingCache* GetResourceMappingCache() { return resourceMappingCache_; }
+
+    unsigned FindBestAdapter(Diligent::IEngineFactory* engineFactory, Diligent::Version& version);
 private:
     /// Graphics device.
     Diligent::IRenderDevice* device_;
@@ -178,6 +180,8 @@ private:
     DiligentResourceMappingCache* resourceMappingCache_;
 
     RenderBackend renderBackend_;
+
+    unsigned adapterId_;
 };
 
 }

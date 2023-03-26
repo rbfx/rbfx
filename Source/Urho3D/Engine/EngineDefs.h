@@ -89,6 +89,10 @@ URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_RESIZABLE{"WindowResizable"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_TITLE{"WindowTitle"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_WINDOW_WIDTH{"WindowWidth"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_WORKER_THREADS{"WorkerThreads"});
+#ifdef URHO3D_DILIGENT
+URHO3D_GLOBAL_CONSTANT(ConstString EP_RENDER_BACKEND{"RenderBackend"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_RENDER_ADAPTER_ID{"RenderAdapterId"});
+#endif
 /// @}
 
 /// Global parameters for user code which go as Engine parameters as convenience.

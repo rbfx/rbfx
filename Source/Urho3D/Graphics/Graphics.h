@@ -263,8 +263,7 @@ public:
     void BeginDebug(const ea::string& dbgName);
     void BeginDebug(const char* dbgName);
     void EndDebug();
-#endif
-#ifndef URHO3D_DILIGENT
+#else
     void BeginDebug(const ea::string& dbgName){}
     void BeginDebug(const ea::string_view& dbgName) {}
     void EndDebug(){}
@@ -662,7 +661,7 @@ public:
     /// Return whether a custom clipping plane is in use.
     bool GetUseClipPlane() const { return useClipPlane_; }
 
-    /// Return shader cache directory, Direct3D only.
+    /// Return shader cache directory, Direct3D and Diligent only
     /// @property
     const FileIdentifier& GetShaderCacheDir() const { return shaderCacheDir_; }
 
@@ -718,6 +717,11 @@ public:
 
 #ifdef URHO3D_DILIGENT
     RenderBackend GetRenderBackend() const;
+    void SetRenderBackend(RenderBackend backend);
+
+    unsigned GetAdapterId() const;
+    void SetAdapterId(unsigned adapterId);
+
     unsigned GetSwapChainRTFormat();
     unsigned GetSwapChainDepthFormat();
 #endif
