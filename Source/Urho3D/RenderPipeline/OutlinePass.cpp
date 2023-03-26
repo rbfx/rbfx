@@ -95,6 +95,9 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
 {
     ShaderProgramCompositor* compositor = builder->GetShaderProgramCompositor();
 
+#ifdef URHO3D_DEBUG
+    desc.debugName_ = Format("OutlinePass({})", key.material_->GetName());
+#endif
     desc.depthWriteEnabled_ = false;
     desc.depthCompareFunction_ = CMP_ALWAYS;
 
@@ -107,6 +110,11 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
 
     desc.scissorTestEnabled_ = true;
 
+#ifdef URHO3D_DILIGENT
+    Graphics* graphics = GetSubsystem<Graphics>();
+    desc.renderTargetsFormats_.push_back(graphics->GetSwapChainRTFormat());
+    desc.depthStencilFormat_ = graphics->GetSwapChainDepthFormat();
+#endif
     shaderProgramDesc_.Clear();
     compositor->ProcessUserBatch(shaderProgramDesc_, GetFlags(),
         key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_,

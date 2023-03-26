@@ -442,7 +442,7 @@ namespace Urho3D
 
         ConvertShaderToHLSL5(byteCode, sourceCode, compilerOutput_);
         //RemapSamplers(sourceCode);
-        ApplyFixes(sourceCode);
+        //ApplyFixes(sourceCode);
 #endif
         // On GLSL, bytecode is HLSL or GLSL code
         byteCode_.resize(sourceCode.length() + 1);

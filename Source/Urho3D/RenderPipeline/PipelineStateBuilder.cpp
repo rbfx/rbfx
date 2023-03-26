@@ -160,6 +160,9 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
     const float biasMultiplier = lightParams.shadowDepthBiasMultiplier_[splitIndex];
     const BiasParameters& biasParameters = lightProcessor->GetLight()->GetShadowBias();
 
+#ifdef URHO3D_DEBUG
+    pipelineStateDesc_.debugName_ = Format("ShadowPass({})|Split: {}", pass->GetName(), splitIndex);
+#endif
     if (shadowMapAllocator_->GetSettings().enableVarianceShadowMaps_)
     {
         pipelineStateDesc_.colorWriteEnabled_ = true;
