@@ -2195,6 +2195,7 @@ bool Graphics::CreateDevice(int width, int height)
         {
             IEngineFactoryD3D11* factory = GetEngineFactoryD3D11();
             EngineD3D11CreateInfo engineCI;
+            engineCI.GraphicsAPIVersion = Version{ 11, 0 };
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
 
             factory->CreateDeviceAndContextsD3D11(engineCI, &impl_->device_, &impl_->deviceContext_);
@@ -2263,6 +2264,7 @@ bool Graphics::CreateDevice(int width, int height)
         {
             IEngineFactoryOpenGL* factory = GetEngineFactoryOpenGL();
             EngineGLCreateInfo engineCI;
+            engineCI.Window = wnd;
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
 
             factory->CreateDeviceAndSwapChainGL(

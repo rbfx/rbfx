@@ -491,6 +491,7 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
 #ifdef URHO3D_DEBUG
         shaderCI.Desc.Name = name_.c_str();
 #endif
+        shaderCI.Desc.UseCombinedTextureSamplers = true;
         shaderCI.Desc.ShaderType = DiligentShaderType[type_];
         shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
         shaderCI.EntryPoint = entryPoint.c_str();

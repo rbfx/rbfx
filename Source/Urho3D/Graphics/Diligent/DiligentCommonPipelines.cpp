@@ -127,6 +127,7 @@ namespace Urho3D
         createInfo.Source = shader;
         createInfo.EntryPoint = "VS";
         createInfo.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        createInfo.Desc.UseCombinedTextureSamplers = true;
 
         if(clearVS_ == nullptr)
             graphics_->GetImpl()->GetDevice()->CreateShader(createInfo, &clearVS_);
