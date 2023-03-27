@@ -541,6 +541,13 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
             MapHelper<Color> clearColor(impl_->deviceContext_, frameCB, MAP_WRITE, MAP_FLAG_DISCARD);
             *clearColor = color;
         }
+        ITextureView* rts[] = { impl_->swapChain_->GetCurrentBackBufferRTV() };
+        // Vulkan needs to SetRenderTargets because they create a RenderPass.
+        impl_->deviceContext_->SetRenderTargets(1,
+            rts,
+            impl_->swapChain_->GetDepthBufferDSV(),
+            RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+        );
         impl_->deviceContext_->SetPipelineState(pipelineHolder->GetPipeline());
         impl_->deviceContext_->SetStencilRef(stencil);
 
@@ -2230,6 +2237,16 @@ bool Graphics::CreateDevice(int width, int height)
         {
             IEngineFactoryVk* factory = GetEngineFactoryVk();
             EngineVkCreateInfo engineCI;
+            const char* const ppIgnoreDebugMessages[] = //
+                {
+                    // Validation Performance Warning: [ UNASSIGNED-CoreValidation-Shader-OutputNotConsumed ]
+                    // vertex shader writes to output location 1.0 which is not consumed by fragment shader
+                    "UNASSIGNED-CoreValidation-Shader-OutputNotConsumed" //
+                };
+            engineCI.Features = DeviceFeatures{ DEVICE_FEATURE_STATE_OPTIONAL };
+            engineCI.Features.TransferQueueTimestampQueries = DEVICE_FEATURE_STATE_DISABLED;
+            engineCI.ppIgnoreDebugMessageNames = ppIgnoreDebugMessages;
+            engineCI.IgnoreDebugMessageCount   = _countof(ppIgnoreDebugMessages);
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
 
             factory->CreateDeviceAndContextsVk(engineCI, &impl_->device_, &impl_->deviceContext_);

@@ -1,5 +1,6 @@
 #include "./ShaderCompiler.h"
 #include "../IO/Log.h"
+#include "../Graphics/Diligent/DiligentLookupSettings.h"
 #ifdef WIN32
 #include <d3dcompiler.h>
 #endif
@@ -114,19 +115,27 @@ namespace Urho3D
         using namespace Diligent;
         ShaderCreateInfo ci;
         ci.Desc.Name = desc_.name_.c_str();
-
+        ci.Desc.ShaderType = DiligentShaderType[desc_.type_];
+        ci.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        ci.Source = desc_.sourceCode_.data();
+        ci.EntryPoint = desc_.entryPoint_.data();
+        const char* extraDefine = R"(
+#ifndef VULKAN
+#   define VULKAN 1
+#endif
+        )";
         auto byteCode = GLSLangUtils::HLSLtoSPIRV(
             ci,
             GLSLangUtils::SpirvVersion::Vk100,
-            nullptr,
+            extraDefine,
             nullptr
         );
 
         size_t byteCodeLength = byteCode.size() * sizeof(unsigned);
         byteCode_.resize(byteCodeLength);
 
-        memcpy_s(byteCode.data(), byteCodeLength, byteCode.data(), byteCodeLength);
-        return byteCode.size() > 0;
+        memcpy_s(byteCode_.data(), byteCodeLength, byteCode.data(), byteCodeLength);
+        return byteCode_.size() > 0;
     }
 
 }

@@ -59,6 +59,10 @@ namespace Urho3D
         ci.pVS = clearVS_;
         ci.pPS = clearPS_;
 
+        ci.GraphicsPipeline.NumRenderTargets = 1;
+        ci.GraphicsPipeline.RTVFormats[0] = graphics_->GetImpl()->GetSwapChain()->GetDesc().ColorBufferFormat;
+        ci.GraphicsPipeline.DSVFormat = graphics_->GetImpl()->GetSwapChain()->GetDesc().DepthBufferFormat;
+
         ci.GraphicsPipeline.BlendDesc.AlphaToCoverageEnable = false;
         ci.GraphicsPipeline.BlendDesc.RenderTargets[0].BlendEnable = DiligentBlendEnable[BLEND_REPLACE];
         ci.GraphicsPipeline.BlendDesc.RenderTargets[0].SrcBlend = DiligentSrcBlend[BLEND_REPLACE];
