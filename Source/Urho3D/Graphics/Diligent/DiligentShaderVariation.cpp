@@ -263,7 +263,7 @@ bool ShaderVariation::Compile()
     shaderCI.Desc.Name = name_.c_str();
 #endif
     shaderCI.Desc.ShaderType = shaderType;
-    shaderCI.Desc.UseCombinedTextureSamplers = false;
+    shaderCI.Desc.UseCombinedTextureSamplers = true;
     shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
     shaderCI.EntryPoint = processorDesc.entryPoint_.c_str();
 
@@ -292,7 +292,8 @@ bool ShaderVariation::Compile()
         byteCodeType_ = ShaderByteCodeType::HLSL;
         shaderCI.ByteCode = byteCode_.data();
         shaderCI.ByteCodeSize = byteCode_.size();
-
+        if (!compiler.GetCompilerOutput().empty())
+            URHO3D_LOGWARNING(compiler.GetCompilerOutput());
         graphics_->GetImpl()->GetDevice()->CreateShader(shaderCI, &shader);
     }
         break;
@@ -325,6 +326,8 @@ bool ShaderVariation::Compile()
         shaderCI.ByteCode = byteCode_.data();
         shaderCI.ByteCodeSize = byteCode_.size();
 
+        if (!compiler.GetCompilerOutput().empty())
+            URHO3D_LOGWARNING(compiler.GetCompilerOutput());
         graphics_->GetImpl()->GetDevice()->CreateShader(shaderCI, &shader);
     }
         break;

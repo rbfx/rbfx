@@ -86,7 +86,7 @@ namespace Urho3D
         if (errorMsg) {
             ea::string output(
                 (const char*)errorMsg->GetBufferPointer(),
-                (const char*)errorMsg->GetBufferSize() + errorMsg->GetBufferSize()
+                (const char*)errorMsg->GetBufferPointer() + errorMsg->GetBufferSize()
             );
             if (!output.empty())
                 compilerOutput_.append(output);
