@@ -46,12 +46,6 @@
 /// URHO3D_LIGHT_PASS: Whether there's active per-pixel light source in this pass (litbase, light and lightvolume passes).
 // #define URHO3D_LIGHT_PASS
 
-/// Whether vertex normal and/or tangent in object space is available.
-/// Some geometry types may deduce vertex tangent or normal and don't need them present in actual vertex layout.
-/// Don't rely on URHO3D_VERTEX_HAS_NORMAL and URHO3D_VERTEX_HAS_TANGENT.
-// #define URHO3D_VERTEX_NORMAL_AVAILABLE
-// #define URHO3D_VERTEX_TANGENT_AVAILABLE
-
 /// =================================== Utility defines ===================================
 
 /// Declare vertex input attribute received from vertex buffer.
@@ -296,18 +290,6 @@
     #if defined(URHO3D_GEOMETRY_TRAIL_FACE_CAMERA) || defined(URHO3D_GEOMETRY_TRAIL_BONE)
         #ifndef URHO3D_VERTEX_HAS_TANGENT
             #define URHO3D_VERTEX_HAS_TANGENT
-        #endif
-    #endif
-
-    #if defined(URHO3D_GEOMETRY_BILLBOARD) || defined(URHO3D_GEOMETRY_DIRBILLBOARD) || defined(URHO3D_GEOMETRY_TRAIL_FACE_CAMERA) || defined(URHO3D_GEOMETRY_TRAIL_BONE)
-        #define URHO3D_VERTEX_NORMAL_AVAILABLE
-        #define URHO3D_VERTEX_TANGENT_AVAILABLE
-    #else
-        #ifdef URHO3D_VERTEX_HAS_NORMAL
-            #define URHO3D_VERTEX_NORMAL_AVAILABLE
-        #endif
-        #ifdef URHO3D_VERTEX_HAS_TANGENT
-            #define URHO3D_VERTEX_TANGENT_AVAILABLE
         #endif
     #endif
 

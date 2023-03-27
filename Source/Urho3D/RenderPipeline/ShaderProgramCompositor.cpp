@@ -80,6 +80,8 @@ void ShaderProgramCompositor::ProcessUserBatch(ShaderProgramDesc& result, Drawab
     ApplyLayoutVertexAndCommonDefinesForUserPass(result, geometry->GetVertexBuffer(0));
     ApplyMaterialPixelDefinesForUserPass(result, material);
 
+    ApplyNormalTangentSpaceDefines(result, geometryType, geometry->GetVertexBuffer(0));
+
     if (isCameraClipped_)
         result.AddShaderDefines(VS, "URHO3D_CLIP_PLANE");
 
@@ -225,6 +227,16 @@ void ShaderProgramCompositor::ApplyPixelLightPixelAndCommonDefines(ShaderProgram
     }
 }
 
+void ShaderProgramCompositor::ApplyNormalTangentSpaceDefines(
+    ShaderProgramDesc& result, GeometryType geometryType, VertexBuffer* vertexBuffer) const
+{
+    const auto [hasNormal, hasTangent] = IsNormalAndTangentAvailable(geometryType, vertexBuffer);
+    if (hasNormal)
+        result.AddCommonShaderDefines("URHO3D_VERTEX_NORMAL_AVAILABLE");
+    if (hasTangent)
+        result.AddCommonShaderDefines("URHO3D_VERTEX_TANGENT_AVAILABLE");
+}
+
 void ShaderProgramCompositor::ApplyLayoutVertexAndCommonDefinesForUserPass(
     ShaderProgramDesc& result, VertexBuffer* vertexBuffer) const
 {
@@ -341,6 +353,27 @@ bool ShaderProgramCompositor::IsInstancingUsed(
     return !flags.Test(DrawableProcessorPassFlag::DisableInstancing)
         && settings_.instancingBuffer_.enableInstancing_
         && geometry->IsInstanced(geometryType);
+}
+
+ea::pair<bool, bool> ShaderProgramCompositor::IsNormalAndTangentAvailable(
+    GeometryType geometryType, VertexBuffer* vertexBuffer) const
+{
+    switch (geometryType)
+    {
+    case GEOM_BILLBOARD:
+    case GEOM_DIRBILLBOARD:
+    case GEOM_TRAIL_FACE_CAMERA:
+    case GEOM_TRAIL_BONE:
+        return {true, true};
+    case GEOM_STATIC:
+    case GEOM_SKINNED:
+    case GEOM_INSTANCED:
+    case GEOM_STATIC_NOINSTANCING:
+        return {vertexBuffer->HasElement(SEM_NORMAL), vertexBuffer->HasElement(SEM_TANGENT)};
+    default:
+        // This is just an assumption to prevent disabled normal mapping in case of unknown geometry type
+        return {true, true};
+    }
 }
 
 }
