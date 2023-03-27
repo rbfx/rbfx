@@ -263,7 +263,7 @@ bool ShaderVariation::Compile()
     shaderCI.Desc.Name = name_.c_str();
 #endif
     shaderCI.Desc.ShaderType = shaderType;
-    shaderCI.Desc.UseCombinedTextureSamplers = true;
+    shaderCI.Desc.UseCombinedTextureSamplers = false;
     shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
     shaderCI.EntryPoint = processorDesc.entryPoint_.c_str();
 
@@ -427,14 +427,12 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
     }
 
     unsigned vertexElements = file->ReadUInt();
+    vertexElements_.resize(vertexElements);
     for (unsigned i = 0; i < vertexElements; ++i) {
-        vertexElements_.push_back(
-            VertexElement(
-                (VertexElementType)file->ReadUByte(),
-                (VertexElementSemantic)file->ReadUByte(),
-                file->ReadUByte()
-            )
-        );
+        vertexElements_[i].type_ = (VertexElementType)file->ReadUByte();
+        vertexElements_[i].semantic_ = (VertexElementSemantic)file->ReadUByte();
+        vertexElements_[i].index_ = file->ReadUByte();
+        vertexElements_[i].offset_ = file->ReadUInt();
     }
 
     unsigned numParameters = file->ReadUInt();
@@ -494,18 +492,20 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
 #ifdef URHO3D_DEBUG
         shaderCI.Desc.Name = name_.c_str();
 #endif
-        shaderCI.Desc.UseCombinedTextureSamplers = true;
+        shaderCI.Desc.UseCombinedTextureSamplers = false;
         shaderCI.Desc.ShaderType = DiligentShaderType[type_];
         shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
         shaderCI.EntryPoint = entryPoint.c_str();
 
         if (byteCodeType_ == ShaderByteCodeType::RAW) {
-            shaderCI.ByteCode = byteCode_.data();
-            shaderCI.ByteCodeSize = byteCode_.size();
-        }
-        else {
             shaderCI.Source = (const char*)byteCode_.data();
             shaderCI.SourceLength = byteCode_.size();
+        }
+        else {
+            shaderCI.ByteCode = byteCode_.data();
+            shaderCI.ByteCodeSize = byteCode_.size();
+            if (byteCodeType_ == ShaderByteCodeType::HLSL)
+                shaderCI.ShaderCompiler = SHADER_COMPILER_DXC;
         }
 
         RefCntAutoPtr<IShader> shader;
@@ -545,6 +545,7 @@ void ShaderVariation::SaveByteCode(const FileIdentifier& binaryShaderName)
         file->WriteUByte(i->type_);
         file->WriteUByte(i->semantic_);
         file->WriteUByte(i->index_);
+        file->WriteUInt(i->offset_);
     }
 
     file->WriteUInt(parameters_.size());

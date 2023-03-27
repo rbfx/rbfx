@@ -77,6 +77,7 @@ namespace Urho3D
                     ResourceMappingEntry resMap;
                     resMap.Name = resSamplerName->c_str();
                     resMap.pObject = static_cast<IDeviceObject*>(tex->GetSampler());
+                    assert(resMap.pObject);
                     resourceEntries.push_back(resMap);
                 }
 
