@@ -163,8 +163,8 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
         resourceData.Stride = rowSize;
         graphics_->GetImpl()->GetDeviceContext()->UpdateTexture(
             object_.Cast<ITexture>(IID_Texture),
-            subResource,
-            0,
+            level,
+            face,
             destBox,
             resourceData,
             RESOURCE_STATE_TRANSITION_MODE_NONE,
