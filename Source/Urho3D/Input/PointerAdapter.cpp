@@ -27,7 +27,8 @@
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
 #include "../Core/CoreEvents.h"
-#include "Urho3D/Graphics/Graphics.h"
+#include "../Graphics/Graphics.h"
+#include "../UI/UI.h"
 
 namespace Urho3D
 {
@@ -136,6 +137,16 @@ void PointerAdapter::UpdateSubscriptions(SubscriptionFlags flags)
         UnsubscribeFromEvent(E_TOUCHEND);
         activeTouchId_.reset();
     }
+    if (toSubscribe & SubscriptionMask::Joystick)
+    {
+        SubscribeToEvent(input, E_JOYSTICKBUTTONDOWN, URHO3D_HANDLER(PointerAdapter, HandleJoystickButton));
+        SubscribeToEvent(input, E_JOYSTICKBUTTONUP, URHO3D_HANDLER(PointerAdapter, HandleJoystickButton));
+    }
+    else if (toUnsubscribe & SubscriptionMask::Joystick)
+    {
+        UnsubscribeFromEvent(E_JOYSTICKBUTTONDOWN);
+        UnsubscribeFromEvent(E_JOYSTICKBUTTONUP);
+    }
 }
 
 
@@ -187,6 +198,7 @@ void PointerAdapter::HandleMouseButtonDown(StringHash eventType, VariantMap& arg
     UpdatePointer(pointerPosition_, true, false);
 }
 
+
 void PointerAdapter::HandleTouchBegin(StringHash eventType, VariantMap& args)
 {
     // Do nothing if already is tracking touch
@@ -234,6 +246,16 @@ void PointerAdapter::HandleTouchEnd(StringHash eventType, VariantMap& args)
     UpdatePointer(IntVector2(args[P_X].GetInt(), args[P_Y].GetInt()).ToVector2(), false, true);
 
     activeTouchId_.reset();
+}
+
+void PointerAdapter::HandleJoystickButton(StringHash eventType, VariantMap& args)
+{
+    auto down = eventType == E_JOYSTICKBUTTONDOWN;
+    using namespace JoystickButtonDown;
+    if (args[P_BUTTON].GetInt() == 0)
+    {
+        UpdatePointer(pointerPosition_, down, false);
+    }
 }
 
 void PointerAdapter::UpdatePointer(const Vector2& position, bool press, bool moveMouse)
@@ -304,12 +326,31 @@ void PointerAdapter::SetKeyboardEnabled(bool enabled)
 void PointerAdapter::SetJoystickEnabled(bool enabled)
 {
     directionAdapter_->SetJoystickEnabled(enabled);
+    if (enabled)
+    {
+        enabledSubscriptions_ |= SubscriptionMask::Joystick;
+    }
+    else
+    {
+        enabledSubscriptions_ &= ~SubscriptionMask::Joystick;
+    }
+    if (IsEnabled())
+        UpdateSubscriptions(enabledSubscriptions_);
 }
 
 /// Set UI element to filter touch events. Only touch events originated in the element going to be handled.
 void PointerAdapter::SetUIElement(UIElement* element)
 {
     directionAdapter_->SetUIElement(element);
+}
+
+IntVector2 PointerAdapter::GetUIPointerPosition() const
+{
+    const auto ui = GetSubsystem<UI>();
+    const auto pos = GetPointerPosition();
+    if (ui)
+        return ui->ConvertSystemToUI(pos);
+    return pos;
 }
 
 DirectionAggregator* PointerAdapter::GetDirectionAggregator() const

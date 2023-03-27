@@ -35,7 +35,8 @@ enum class SubscriptionMask : unsigned
     None = 0,
     Mouse = 1 << 0,
     Touch = 1 << 1,
-    All = Touch | Mouse,
+    Joystick = 1 << 2,
+    All = Touch | Mouse | Joystick,
 };
 
 URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
@@ -76,12 +77,14 @@ public:
     bool IsMouseEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Mouse; }
     /// Get keyboard enabled flag.
     bool IsKeyboardEnabled() const { return directionAdapter_->IsKeyboardEnabled(); }
-    /// Set joystick enabled flag.
+    /// Get joystick enabled flag.
     bool IsJoystickEnabled() const { return directionAdapter_->IsJoystickEnabled(); }
-    /// Set touch enabled flag.
+    /// Get touch enabled flag.
     bool IsTouchEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Touch; }
     /// Get UI element to filter touch events.
     UIElement* GetUIElement() const { return directionAdapter_->GetUIElement(); }
+    /// Is button down (left mouse button, touch or gamepad A button).
+    bool IsButtonDown() const { return pointerPressed_; }
     /// Set maximum cursor velocity.
     float GetCursorVelocity() const { return maxCursorSpeed_; }
     /// Set cursor acceleration factor.
@@ -89,6 +92,9 @@ public:
 
     /// Get last known pointer position.
     IntVector2 GetPointerPosition() const { return pointerPosition_.ToIntVector2(); }
+    /// Get last known pointer position in UI space.
+    IntVector2 GetUIPointerPosition() const;
+    
 
     /// Get DirectionAggregator instance used to handle joystick and keyboard input.
     DirectionAggregator* GetDirectionAggregator() const;
@@ -105,6 +111,8 @@ private:
     void HandleTouchBegin(StringHash eventType, VariantMap& args);
     void HandleTouchMove(StringHash eventType, VariantMap& args);
     void HandleTouchEnd(StringHash eventType, VariantMap& args);
+
+    void HandleJoystickButton(StringHash eventType, VariantMap& args);
 
     void UpdatePointer(const Vector2& position, bool press, bool moveMouse);
 
