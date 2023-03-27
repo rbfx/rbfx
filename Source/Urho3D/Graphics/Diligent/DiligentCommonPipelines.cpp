@@ -122,6 +122,7 @@ namespace Urho3D
         createInfo.Desc.ShaderType = SHADER_TYPE_VERTEX;
         createInfo.Source = shader;
         createInfo.EntryPoint = "VS";
+        createInfo.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
 
         if(clearVS_ == nullptr)
             graphics_->GetImpl()->GetDevice()->CreateShader(createInfo, &clearVS_);
