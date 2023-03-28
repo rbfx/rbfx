@@ -333,6 +333,9 @@ public:
     /// Return absolute vector.
     Vector2 Abs() const { return Vector2(Urho3D::Abs(x_), Urho3D::Abs(y_)); }
 
+    /// Return fractional part of each vector component.
+    Vector2 Fract() const { return Vector2(Urho3D::Fract(x_), Urho3D::Fract(y_)); }
+
     /// Linear interpolation with another vector.
     Vector2 Lerp(const Vector2& rhs, float t) const { return *this * (1.0f - t) + rhs * t; }
 

@@ -195,7 +195,6 @@ bool Animation::BeginLoad(Deserializer& source)
 {
     ResetToDefault();
 
-    auto* cache = GetSubsystem<ResourceCache>();
     unsigned memoryUse = sizeof(Animation);
 
     // Try to load as XML if possible
@@ -290,18 +289,21 @@ bool Animation::BeginLoad(Deserializer& source)
     // Optionally read triggers from an XML file
     ea::string xmlName = ReplaceExtension(GetName(), ".xml");
 
-    SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
-    if (file)
+    auto* cache = GetSubsystem<ResourceCache>();
+    if (cache)
     {
-        XMLElement rootElem = file->GetRoot();
-        LoadTriggersFromXML(rootElem);
-        LoadMetadataFromXML(rootElem);
+        SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+        if (file)
+        {
+            XMLElement rootElem = file->GetRoot();
+            LoadTriggersFromXML(rootElem);
+            LoadMetadataFromXML(rootElem);
 
-        memoryUse += triggers_.size() * sizeof(AnimationTriggerPoint);
-        SetMemoryUse(memoryUse);
-        return true;
+            memoryUse += triggers_.size() * sizeof(AnimationTriggerPoint);
+            SetMemoryUse(memoryUse);
+            return true;
+        }
     }
-
     SetMemoryUse(memoryUse);
     return true;
 }
