@@ -182,6 +182,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     hasMutableGlyph_ = false;
 
     auto image = MakeShared<Image>(font_->GetContext());
+    image->SetName(font_->GetName()); // Always name resources
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());

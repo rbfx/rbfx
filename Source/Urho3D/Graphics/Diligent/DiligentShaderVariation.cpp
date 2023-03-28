@@ -502,6 +502,7 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
         shaderCI.EntryPoint = entryPoint.c_str();
 
         if (byteCodeType_ == ShaderByteCodeType::RAW) {
+            shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM;
             shaderCI.Source = (const char*)byteCode_.data();
             shaderCI.SourceLength = byteCode_.size();
         }

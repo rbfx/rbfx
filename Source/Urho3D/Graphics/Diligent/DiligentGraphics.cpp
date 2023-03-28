@@ -2266,6 +2266,7 @@ bool Graphics::CreateDevice(int width, int height)
             EngineGLCreateInfo engineCI;
             engineCI.Window = wnd;
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
+            swapChainDesc.ColorBufferFormat = TEX_FORMAT_RGBA8_UNORM;
 
             factory->CreateDeviceAndSwapChainGL(
                 engineCI,

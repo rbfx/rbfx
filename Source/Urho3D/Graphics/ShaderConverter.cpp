@@ -309,13 +309,9 @@ namespace Urho3D
             compiler.set_common_options(commonOptions);
             compiler.build_combined_image_samplers();
 
+            // Remove underscore from sampler and fix combined texture name.
             auto samplers = compiler.get_combined_image_samplers();
             for (auto it = samplers.begin(); it != samplers.end(); ++it) {
-                auto combinedType = compiler.get_type_from_variable(it->combined_id);
-                auto imageType = compiler.get_type_from_variable(it->image_id);
-                auto samplerType = compiler.get_type_from_variable(it->sampler_id);
-
-                auto combinedName = compiler.get_name(it->combined_id);
                 auto imageName = compiler.get_name(it->image_id);
                 auto samplerName = compiler.get_name(it->sampler_id);
                 if (samplerName.length() > 1 && samplerName[0] == '_')
