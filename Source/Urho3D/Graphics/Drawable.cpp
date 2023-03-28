@@ -472,10 +472,10 @@ void Drawable::RemoveFromOctree()
 void Drawable::RequestUpdateBatchesDelayed(const FrameInfo& frame)
 {
     auto workQueue = context_->GetSubsystem<WorkQueue>();
-    workQueue->CallFromMainThread([this, &frame](unsigned)
+    workQueue->PostTaskForMainThread([this, &frame]()
     {
         UpdateBatchesDelayed(frame);
-    });
+    }, TaskPriority::Immediate);
 }
 
 bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)

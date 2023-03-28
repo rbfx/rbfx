@@ -107,6 +107,8 @@ protected:
     ea::unordered_map<ea::string, SharedPtr<Texture2D>> projectPreviews_;
 
     bool showAbout_{};
+
+    ea::optional<unsigned> numIncompleteTasks_;
     /// @}
 };
 

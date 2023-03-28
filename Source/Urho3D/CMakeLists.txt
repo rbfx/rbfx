@@ -214,6 +214,7 @@ set (THIRD_PARTY_DEPENDENCIES
     spirv-cross-msl
     spirv-cross-hlsl
     tinygltf
+    enkiTS
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)
