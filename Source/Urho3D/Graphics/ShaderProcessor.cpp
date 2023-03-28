@@ -2,7 +2,7 @@
 #include "../Graphics/Diligent/DiligentLookupSettings.h"
 #include "../Graphics/ShaderConverter.h"
 #include <Diligent/Graphics/HLSL2GLSLConverterLib/include/HLSL2GLSLConverterImpl.hpp>
-
+#include <Diligent/Graphics/ShaderTools/include/SPIRVTools.hpp>
 #include <SPIRV-Reflect/spirv_reflect.h>
 #ifdef WIN32
 #include <d3dcompiler.h>
@@ -382,13 +382,24 @@ namespace Urho3D
 #endif
     bool ShaderProcessor::CompileGLSL(ea::vector<unsigned>& byteCode)
     {
-        return CompileGLSLToSpirV(
+        if (!CompileGLSLToSpirV(
             desc_.type_,
             desc_.sourceCode_,
             desc_.macros_,
             byteCode,
             compilerOutput_
-        );
+        ))
+            return false;
+        if (desc_.optimizeCode_) {
+            std::vector<unsigned> tmpByteCode = OptimizeSPIRV(std::vector<unsigned>(byteCode.begin(), byteCode.end()), SPV_ENV_OPENGL_4_0, SPIRV_OPTIMIZATION_FLAG_LEGALIZATION);
+            if (tmpByteCode.size() == 0)
+                return false;
+
+            byteCode.resize(tmpByteCode.size());
+            memcpy(byteCode.data(), tmpByteCode.data(), tmpByteCode.size() * sizeof(unsigned));
+        }
+
+        return true;
     }
     bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize)
     {

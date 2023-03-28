@@ -144,6 +144,10 @@ namespace Urho3D
     bool ShaderCompiler::CompileGLSL()
     {
         // Build SPIRV Bytecode
+        ea::string glVersion = "#version 450";
+        size_t glVersionIdx = desc_.sourceCode_.find("#version 450");
+        if (glVersionIdx != ea::string::npos)
+            desc_.sourceCode_ = desc_.sourceCode_.substr(glVersionIdx + glVersion.size());
         if (!CompileSPIRV())
             return false;
         ea::vector<unsigned> byteCode(byteCode_.size() / sizeof(unsigned));

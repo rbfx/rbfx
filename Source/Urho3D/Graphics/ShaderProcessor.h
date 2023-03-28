@@ -42,6 +42,7 @@ namespace Urho3D
         ShaderType type_;
         ShaderDefineArray macros_;
         ShaderLang language_;
+        bool optimizeCode_{ false };
     };
 
     class URHO3D_API ShaderProcessor {
