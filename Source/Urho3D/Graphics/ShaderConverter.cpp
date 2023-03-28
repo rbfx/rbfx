@@ -293,11 +293,45 @@ namespace Urho3D
                 errorMessage = "Unknown error";
                 return false;
             }
-
-            outputShader = src.c_str();
+            outputShader += "#version 450\n";
+            outputShader += src.c_str();
             return true;
         }
 
+        bool ConvertToGLSL(const SpirVShader& shader, ea::string& outputShader, ea::string& errorMessage) {
+            errorMessage.clear();
+            outputShader.clear();
+
+            spirv_cross::CompilerGLSL::Options commonOptions;
+            commonOptions.emit_line_directives = true;
+
+            spirv_cross::CompilerGLSL compiler(shader.bytecode_);
+            compiler.set_common_options(commonOptions);
+            compiler.build_combined_image_samplers();
+
+            auto samplers = compiler.get_combined_image_samplers();
+            for (auto it = samplers.begin(); it != samplers.end(); ++it) {
+                auto combinedType = compiler.get_type_from_variable(it->combined_id);
+                auto imageType = compiler.get_type_from_variable(it->image_id);
+                auto samplerType = compiler.get_type_from_variable(it->sampler_id);
+
+                auto combinedName = compiler.get_name(it->combined_id);
+                auto imageName = compiler.get_name(it->image_id);
+                auto samplerName = compiler.get_name(it->sampler_id);
+                if (samplerName.length() > 1 && samplerName[0] == '_')
+                    samplerName = samplerName.substr(1);
+                compiler.set_name(it->sampler_id, samplerName);
+                compiler.set_name(it->combined_id, imageName);
+            }
+
+            const std::string src = compiler.compile();
+            if (src.empty()) {
+                errorMessage = "Unknown error";
+                return false;
+            }
+            outputShader = src.c_str();
+            return true;
+        }
     }
 
     bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
@@ -329,6 +363,13 @@ namespace Urho3D
         if (!ConvertToHLSL5(shader, outputShader, errorMessage))
             return false;
         return true;
+    }
+    bool ConvertSPIRVToGLSL(const ea::vector<unsigned>& byteCode, ea::string& outputShader,
+        ea::string& errorMessage) {
+        SpirVShader shader;
+        shader.bytecode_ = std::vector<unsigned>(byteCode.begin(), byteCode.end());
+
+        return ConvertToGLSL(shader, outputShader, errorMessage);
     }
 #endif
 }

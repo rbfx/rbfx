@@ -7,6 +7,7 @@
 #include <Diligent/Graphics/GraphicsEngine/interface/Shader.h>
 #include <Diligent/Graphics/ShaderTools/include/GLSLangUtils.hpp>
 
+#include "../Graphics/ShaderConverter.h"
 namespace Urho3D
 {
     ShaderCompiler::ShaderCompiler(ShaderCompilerDesc desc) : desc_(desc)
@@ -17,16 +18,18 @@ namespace Urho3D
         byteCode_.clear();
         compilerOutput_.clear();
 
-        if (desc_.output_ == ShaderCompilerOutput::HLSL) {
+        if (desc_.output_ == ShaderCompilerOutput::DXC) {
 #ifdef WIN32
             return CompileHLSL();
 #else
-            URHO3D_LOGERROR("Failed to compile {} shader. HLSL compilation is only available on Windows Platform", desc_.name_);
+            URHO3D_LOGERROR("Failed to compile {}. DXC bytecode is only available on Windows Platform.", desc_.name_);
             return false;
 #endif
         }
         else if (desc_.output_ == ShaderCompilerOutput::SPIRV)
             return CompileSPIRV();
+        else if (desc_.output_ == ShaderCompilerOutput::GLSL)
+            return CompileGLSL();
         return false;
     }
 
@@ -136,6 +139,24 @@ namespace Urho3D
 
         memcpy_s(byteCode_.data(), byteCodeLength, byteCode.data(), byteCodeLength);
         return byteCode_.size() > 0;
+    }
+
+    bool ShaderCompiler::CompileGLSL()
+    {
+        // Build SPIRV Bytecode
+        if (!CompileSPIRV())
+            return false;
+        ea::vector<unsigned> byteCode(byteCode_.size() / sizeof(unsigned));
+        memcpy(byteCode.data(), byteCode_.data(), byteCode_.size());
+
+        ea::string outputShader;
+        if (!ConvertSPIRVToGLSL(byteCode, outputShader, compilerOutput_))
+            return false;
+
+        byteCode_.clear();
+        byteCode_.resize(outputShader.size());
+        memcpy(byteCode_.data(), outputShader.data(), outputShader.size());
+        return true;
     }
 
 }

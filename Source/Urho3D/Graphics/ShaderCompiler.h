@@ -23,12 +23,14 @@
 #pragma once
 #ifdef URHO3D_DILIGENT
 #include "../Graphics/GraphicsDefs.h"
+#include "../Graphics/ShaderProcessor.h"
 
 namespace Urho3D
 {
     enum class ShaderCompilerOutput {
-        HLSL=0,
-        SPIRV
+        DXC=0,
+        SPIRV,
+        GLSL
     };
     struct ShaderCompilerDesc {
         ea::string name_;
@@ -48,6 +50,7 @@ namespace Urho3D
         bool CompileHLSL();
 #endif
         bool CompileSPIRV();
+        bool CompileGLSL();
 
         ShaderCompilerDesc desc_;
 

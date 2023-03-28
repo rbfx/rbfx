@@ -281,7 +281,7 @@ bool ShaderVariation::Compile()
     case Urho3D::RENDER_D3D11:
     case Urho3D::RENDER_D3D12:
     {
-        compilerDesc.output_ = ShaderCompilerOutput::HLSL;
+        compilerDesc.output_ = ShaderCompilerOutput::DXC;
         ShaderCompiler compiler(compilerDesc);
         if (!compiler.Compile()) {
             URHO3D_LOGERROR("Failed to compile shader " + GetFullName());
@@ -299,15 +299,19 @@ bool ShaderVariation::Compile()
         break;
     case Urho3D::RENDER_GL:
     {
-        // Save Shader Code as bytecode
-        size_t len = compilerDesc.sourceCode_.size();
-        byteCode_.resize(len);
-        memcpy_s(byteCode_.data(), len, compilerDesc.sourceCode_.data(), len);
+        compilerDesc.output_ = ShaderCompilerOutput::GLSL;
+        ShaderCompiler compiler(compilerDesc);
+        if (!compiler.Compile()) {
+            URHO3D_LOGERROR("Failed to compile shader " + GetFullName());
+            return false;
+        }
+        byteCode_ = compiler.GetByteCode();
         byteCodeType_ = ShaderByteCodeType::RAW;
 
-
-        shaderCI.Source = compilerDesc.sourceCode_.c_str();
-        shaderCI.SourceLength = compilerDesc.sourceCode_.length();
+        const char* sourceCode = reinterpret_cast<const char*>(byteCode_.data());
+        shaderCI.Source = sourceCode;
+        shaderCI.SourceLength = byteCode_.size();
+        shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM;
 
         graphics_->GetImpl()->GetDevice()->CreateShader(shaderCI, &shader);
     }
