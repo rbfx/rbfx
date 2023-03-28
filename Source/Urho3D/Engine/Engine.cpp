@@ -299,14 +299,11 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     // Set amount of worker threads according to the available physical CPU cores. Using also hyperthreaded cores results in
     // unpredictable extra synchronization overhead. Also reserve one core for the main thread
 #ifdef URHO3D_THREADING
-    unsigned numThreads = GetParameter(EP_WORKER_THREADS).GetBool() ? GetNumPhysicalCPUs() - 1 : 0;
-    if (numThreads)
-    {
-        GetSubsystem<WorkQueue>()->CreateThreads(numThreads);
-
-        URHO3D_LOGINFOF("Created %u worker thread%s", numThreads, numThreads > 1 ? "s" : "");
-    }
+    const unsigned numThreads = GetParameter(EP_WORKER_THREADS).GetBool() ? GetNumPhysicalCPUs() - 1 : 0;
+#else
+    const unsigned numThreads = 0;
 #endif
+    GetSubsystem<WorkQueue>()->Initialize(numThreads);
 
     auto* cache = GetSubsystem<ResourceCache>();
 
