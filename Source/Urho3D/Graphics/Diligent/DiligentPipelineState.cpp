@@ -3,6 +3,8 @@
 #include "DiligentLookupSettings.h"
 #include "DiligentGraphicsImpl.h"
 
+#include "../Shader.h"
+
 namespace Urho3D
 {
     static unsigned sNumComponents[] = {
@@ -62,6 +64,7 @@ namespace Urho3D
                 layoutElement.BufferSlot = element->perInstance_ ? 1 : 0;
                 layoutElement.Frequency = element->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
             };
+
             for (const VertexElement* shaderVertexElement = shaderVertexElements.begin(); shaderVertexElement != shaderVertexElements.end(); ++shaderVertexElement) {
                 bool insert = false;
                 LayoutElement layoutElement = {};

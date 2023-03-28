@@ -301,7 +301,7 @@ bool ShaderVariation::Compile()
         break;
     case Urho3D::RENDER_GL:
     {
-        if (!owner_->IsGLSL()) {
+        //if (!owner_->IsGLSL()) {
 
             compilerDesc.output_ = ShaderCompilerOutput::GLSL;
             ShaderCompiler compiler(compilerDesc);
@@ -311,7 +311,7 @@ bool ShaderVariation::Compile()
             }
             byteCode_ = compiler.GetByteCode();
             byteCodeType_ = ShaderByteCodeType::RAW;
-        }
+        /*}
         else {
             ea::string sourceCode = processorDesc.sourceCode_;
             ea::string defines = "#version 450\n";
@@ -321,7 +321,7 @@ bool ShaderVariation::Compile()
             sourceCode = defines + sourceCode;
             byteCode_.resize(sourceCode.size());
             memcpy(byteCode_.data(), sourceCode.data(), sourceCode.length());
-        }
+        }*/
 
         const char* sourceCode = reinterpret_cast<const char*>(byteCode_.data());
         shaderCI.Source = sourceCode;
@@ -451,7 +451,7 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
         vertexElements_[i].type_ = (VertexElementType)file->ReadUByte();
         vertexElements_[i].semantic_ = (VertexElementSemantic)file->ReadUByte();
         vertexElements_[i].index_ = file->ReadUByte();
-        //vertexElements_[i].location_ = file->ReadUByte();
+        vertexElements_[i].location_ = file->ReadUByte();
         vertexElements_[i].offset_ = file->ReadUInt();
     }
 
@@ -566,7 +566,7 @@ void ShaderVariation::SaveByteCode(const FileIdentifier& binaryShaderName)
         file->WriteUByte(i->type_);
         file->WriteUByte(i->semantic_);
         file->WriteUByte(i->index_);
-        //file->WriteUByte(i->location_);
+        file->WriteUByte(i->location_);
         file->WriteUInt(i->offset_);
     }
 

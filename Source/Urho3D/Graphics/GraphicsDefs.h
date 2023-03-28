@@ -200,7 +200,8 @@ struct URHO3D_API VertexElement
         semantic_(SEM_POSITION),
         index_(0),
         perInstance_(false),
-        offset_(0)
+        offset_(0),
+        location_(0)
     {
     }
 
@@ -210,7 +211,8 @@ struct URHO3D_API VertexElement
         semantic_(semantic),
         index_(index),
         perInstance_(perInstance),
-        offset_(0)
+        offset_(0),
+        location_(0)
     {
     }
 
@@ -242,6 +244,8 @@ struct URHO3D_API VertexElement
     bool perInstance_;
     /// Offset of element from vertex start. Filled by VertexBuffer once the vertex declaration is built.
     unsigned offset_;
+    /// Location of element, used by Diligent on OpenGL
+    unsigned location_;
 };
 
 /// Sizes of vertex element types.

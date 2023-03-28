@@ -304,6 +304,9 @@ namespace Urho3D
 
             spirv_cross::CompilerGLSL::Options commonOptions;
             commonOptions.emit_line_directives = true;
+            commonOptions.enable_420pack_extension = false;
+            commonOptions.emit_push_constant_as_uniform_buffer = true;
+            commonOptions.force_flattened_io_blocks = true;
 
             spirv_cross::CompilerGLSL compiler(shader.bytecode_);
             compiler.set_common_options(commonOptions);
@@ -318,6 +321,26 @@ namespace Urho3D
                     samplerName = samplerName.substr(1);
                 compiler.set_name(it->sampler_id, samplerName);
                 compiler.set_name(it->combined_id, imageName);
+            }
+
+            auto variables = compiler.get_active_interface_variables();
+            for (auto it = variables.begin(); it != variables.end(); ++it) {
+                auto variableType = compiler.get_type_from_variable(*it);
+                std::string name = compiler.get_name(*it);
+                if (name.empty() && variableType.storage == spv::StorageClassUniform) {
+                    name = "u"+compiler.get_remapped_declared_block_name(*it);
+                    compiler.set_name(*it, name);
+                    size_t memberCount = variableType.member_types.size();
+                    for (size_t i = 0; i < memberCount; ++i) {
+                        std::string memberName = compiler.get_member_name(variableType.self, i);
+                        if (memberName.empty())
+                            continue;
+                        size_t lastUnderscore = memberName.find_last_of('_');
+                        if (lastUnderscore != std::string::npos)
+                            memberName = memberName.substr(lastUnderscore + 1);
+                        compiler.set_member_name(variableType.self, i, memberName);
+                    }
+                }
             }
 
             const std::string src = compiler.compile();

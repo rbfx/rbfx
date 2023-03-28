@@ -472,7 +472,6 @@ namespace Urho3D
                     continue;
                 }
                 VertexElementSemantic semantic = semanticIt->second;
-
                 vertexElements_.push_back(
                     VertexElement(
                         GetElementType(*it),
@@ -480,7 +479,7 @@ namespace Urho3D
                         slotIdx
                     )
                 );
-
+                vertexElements_[vertexElements_.size() - 1].location_ = (*it)->location;
             }
         }
 
