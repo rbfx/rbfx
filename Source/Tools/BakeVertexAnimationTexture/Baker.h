@@ -40,7 +40,7 @@ namespace Urho3D
 
 struct Options
 {
-    bool half_{true};
+    bool precise_{false};
     float targetFramerate_{30};
     ea::string inputModel_;
     ea::string inputAnimation_;

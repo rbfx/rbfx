@@ -1,5 +1,7 @@
 #include "Baker.h"
 
+#include "Urho3D/Scene/Scene.h"
+
 void Help(const ea::string& reason);
 
 namespace Urho3D
@@ -74,9 +76,10 @@ void Baker::Bake()
     LoadAnimation();
 
 
-    SharedPtr<Image> diffuseTexture = MakeShared<Image>(context_);
+    SharedPtr<Image> diffuseTexture;
     if (!options_.diffuse_.empty())
     {
+        diffuseTexture = MakeShared<Image>(context_);
         auto diffFile = MakeShared<File>(context_, options_.diffuse_);
         if (!diffuseTexture->Load(*diffFile))
         {
@@ -107,7 +110,7 @@ void Baker::Bake()
         auto data = sourceVertexBuffer->GetShadowData();
         auto vertexSize = sourceVertexBuffer->GetVertexSize();
         textureWidth_ = NextPowerOfTwo(vertexData.size());
-        Vector2 subPixelOffset = options_.half_ ? Vector2{0.25f, 0.5f} : Vector2{0.5f, 0.5f};
+        Vector2 subPixelOffset = Vector2{0.5f, 0.5f};
         for (unsigned i = 0; i < vertexData.size(); ++i)
         {
             auto* vertexPointer = data + i * vertexSize;
@@ -240,22 +243,35 @@ inline float DecodeFloatRG(Vector2 enc)
 void Baker::BuildVAT()
 {
     auto posLookUp = MakeShared<Image>(context_);
-    posLookUp->SetSize(textureWidth_ * (options_.half_ ? 2 : 1), textureHeight_, 4);
+    posLookUp->SetSize(textureWidth_ * (options_.precise_ ? 2 : 1), textureHeight_, 4);
 
     auto normLookUp = MakeShared<Image>(context_);
     normLookUp->SetSize(textureWidth_, textureHeight_, 4);
 
-    SharedPtr<Node> node = MakeShared<Node>(context_);
+    auto softwareModelAnimator = MakeShared<SoftwareModelAnimator>(context_);
+    softwareModelAnimator->Initialize(model_, true, 4);
+
+    SharedPtr<Scene> scene = MakeShared<Scene>(context_);
+    Node* node = scene->CreateChild();
     auto animatedModel = new AnimatedModel(context_);
     node->AddComponent(animatedModel, 0);
     auto animationController = new AnimationController(context_);
     node->AddComponent(animationController, 0);
     animatedModel->SetModel(model_);
-    AnimationParameters animationParameters{animation_};
-    animationController->PlayExistingExclusive(animationParameters);
+    animatedModel->ApplyAnimation();
+    assert(0 == animatedModel->GetGeometrySkinMatrices().size());
 
-    auto geometry = animatedModel->GetLodGeometry(0, 0);
-    auto vertexBuffer = geometry->GetVertexBuffer(0);
+    auto skeleton = animatedModel->GetSkeleton();
+    ea::vector<Matrix3x4> boneMatrices;
+    boneMatrices.resize(skeleton.GetNumBones());
+
+    AnimationParameters animationParameters{animation_};
+    animationController->Update(0.0f);
+    animationController->PlayNew(animationParameters);
+
+    //auto geometry = softwareModelAnimator->GetLodGeometry(0, 0);
+    //auto vertexBuffer = geometry->GetVertexBuffer(0);
+    auto vertexBuffer = softwareModelAnimator->GetVertexBuffers().front();
     VertexBufferReader vbReader{vertexBuffer};
 
     auto dt = animation_->GetLength() / textureHeight_;
@@ -263,25 +279,38 @@ void Baker::BuildVAT()
     auto positionPitch = 4 * posLookUp->GetWidth();
     for (unsigned y=0; y< textureHeight_; ++y)
     {
+        animationController->UpdateAnimationTime(animation_, dt*y);
+        animationController->Update(0.0f);
+        animatedModel->ApplyAnimation();
+
+        for (unsigned boneIndex = 0; boneIndex < boneMatrices.size(); ++boneIndex)
+        {
+            auto bone = skeleton.GetBone(boneIndex);
+            if (bone->node_)
+                boneMatrices[boneIndex] = bone->node_->GetWorldTransform() * bone->offsetMatrix_;
+            else
+                boneMatrices[boneIndex] = Matrix3x4::IDENTITY;
+        }
+        softwareModelAnimator->ResetAnimation();
+        softwareModelAnimator->ApplySkinning(boneMatrices);
+        softwareModelAnimator->Commit();
+
         auto posData = posLookUp->GetData() + y * positionPitch;
         auto normData = normLookUp->GetData() + y * normalPitch;
-
-        animatedModel->ApplyAnimation();
 
         for (unsigned i = 0; i < vertexBuffer->GetVertexCount(); ++i)
         {
             auto pos = positionTransform_ * vbReader.GetPosition(i);
             pos = VectorMin(VectorMax(pos, Vector3::ZERO), Vector3::ONE);
-            if (options_.half_)
+            if (options_.precise_)
             {
                 auto R = EncodeFloatRG(pos.x_);
                 auto G = EncodeFloatRG(pos.y_);
                 auto B = EncodeFloatRG(pos.z_);
                 Color firstColor {R.x_, G.x_, B.x_, 1.0f};
                 *reinterpret_cast<unsigned*>(posData) = firstColor.ToUInt();
-                posData += 4;
                 Color secondColor{R.y_, G.y_, B.y_, 1.0f};
-                *reinterpret_cast<unsigned*>(posData) = secondColor.ToUInt();
+                *reinterpret_cast<unsigned*>(posData + positionPitch/2) = secondColor.ToUInt();
                 posData += 4;
             }
             else
@@ -298,11 +327,6 @@ void Baker::BuildVAT()
             *reinterpret_cast<unsigned*>(normData) = normColor.ToUInt();
             normData += 4;
         }
-
-        animationController->Update(dt);
-        FrameInfo frame;
-        frame.timeStep_ = dt;
-        animatedModel->UpdateGeometry(frame);
     }
 
     auto fileNameWithoutExt = options_.outputFolder_ + GetFileName(options_.inputAnimation_);

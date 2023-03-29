@@ -42,7 +42,7 @@ void Help(const ea::string& reason)
         "\n"
         "Options:\n"
         "-diffuse <diffuse texture> Bake diffuse texture into vertex colors.\n"
-        "-half Create a half precision (16 bit) texture instead of 8 bit.\n", reason));
+        "-precise Create a high precision (16 bit) texture instead of 8 bit.\n", reason));
 }
 
 
@@ -76,9 +76,9 @@ void Run(ea::vector<ea::string>& arguments)
 
         if (arg.starts_with("-"))
         {
-            if (arg == "-half")
+            if (arg == "-precise")
             {
-                options.half_ = true;
+                options.precise_ = true;
             }
             else if (arg == "-diffuse")
             {
