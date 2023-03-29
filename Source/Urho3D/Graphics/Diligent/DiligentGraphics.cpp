@@ -331,6 +331,9 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
 
     AdjustWindow(width, height, newParams.windowMode_, newParams.monitor_);
 
+    if (screenParams_.resizable_ != newParams.resizable_)
+        SDL_SetWindowResizable(window_, (SDL_bool)newParams.resizable_);
+
     if (maximize)
     {
         Maximize();
@@ -2190,6 +2193,16 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, WindowMode& newWindow
             SDL_SetWindowPosition(window_, oldPosition.x_, oldPosition.y_);
         else
             position_ = oldPosition;
+
+#ifdef UWP
+        // Window size is off on UWP if it was created with the same size as on previous run.
+        // Tweak it a bit to force the correct size.
+        if (newWindowMode == WindowMode::Windowed)
+        {
+            SDL_SetWindowSize(window_, newWidth - 1, newHeight + 1);
+            SDL_SetWindowSize(window_, newWidth, newHeight);
+        }
+#endif
     }
     else
     {
@@ -2292,6 +2305,10 @@ bool Graphics::CreateDevice(int width, int height)
                 };
             engineCI.Features = DeviceFeatures{ DEVICE_FEATURE_STATE_OPTIONAL };
             engineCI.Features.TransferQueueTimestampQueries = DEVICE_FEATURE_STATE_DISABLED;
+            // Note: We need to fix this later to config based
+            // after vulkan initialization is not possible to change the dynamic heap size
+            // the basic features from rbfx requires at 12 mb.
+            engineCI.DynamicHeapSize = 8 << 22; // Allocates 33.55mb of dynamic memory
             engineCI.ppIgnoreDebugMessageNames = ppIgnoreDebugMessages;
             engineCI.IgnoreDebugMessageCount   = _countof(ppIgnoreDebugMessages);
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
@@ -2377,104 +2394,13 @@ bool Graphics::UpdateSwapChain(int width, int height)
     impl_->renderTargetsDirty_ = true;
 
     impl_->swapChain_->Resize(width, height);
+
+    // Update internally held backbuffer size
+    width_ = width;
+    height_ = height;
+
     ResetRenderTargets();
     return true;
-//    bool success = true;
-//
-//    ID3D11RenderTargetView* nullView = nullptr;
-//    impl_->deviceContext_->OMSetRenderTargets(1, &nullView, nullptr);
-//    if (impl_->defaultRenderTargetView_)
-//    {
-//        impl_->defaultRenderTargetView_->Release();
-//        impl_->defaultRenderTargetView_ = nullptr;
-//    }
-//    if (impl_->defaultDepthStencilView_)
-//    {
-//        impl_->defaultDepthStencilView_->Release();
-//        impl_->defaultDepthStencilView_ = nullptr;
-//    }
-//    if (impl_->defaultDepthTexture_)
-//    {
-//        impl_->defaultDepthTexture_->Release();
-//        impl_->defaultDepthTexture_ = nullptr;
-//    }
-//    if (impl_->resolveTexture_)
-//    {
-//        impl_->resolveTexture_->Release();
-//        impl_->resolveTexture_ = nullptr;
-//    }
-//
-//    impl_->depthStencilView_ = nullptr;
-//    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-//        impl_->renderTargetViews_[i] = nullptr;
-//    impl_->renderTargetsDirty_ = true;
-//
-//#if UWP
-//    int bufferCount = 2;
-//#else
-//    int bufferCount = 1;
-//#endif
-//    impl_->swapChain_->ResizeBuffers(bufferCount, (UINT)width, (UINT)height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
-//
-//    // Create default rendertarget view representing the backbuffer
-//    ID3D11Texture2D* backbufferTexture;
-//    HRESULT hr = impl_->swapChain_->GetBuffer(0, IID_ID3D11Texture2D, (void**)&backbufferTexture);
-//    if (FAILED(hr))
-//    {
-//        URHO3D_SAFE_RELEASE(backbufferTexture);
-//        URHO3D_LOGD3DERROR("Failed to get backbuffer texture", hr);
-//        success = false;
-//    }
-//    else
-//    {
-//        hr = impl_->device_->CreateRenderTargetView(backbufferTexture, nullptr, &impl_->defaultRenderTargetView_);
-//        backbufferTexture->Release();
-//        if (FAILED(hr))
-//        {
-//            URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
-//            URHO3D_LOGD3DERROR("Failed to create backbuffer rendertarget view", hr);
-//            success = false;
-//        }
-//    }
-//
-//    // Create default depth-stencil texture and view
-//    D3D11_TEXTURE2D_DESC depthDesc;
-//    memset(&depthDesc, 0, sizeof depthDesc);
-//    depthDesc.Width = (UINT)width;
-//    depthDesc.Height = (UINT)height;
-//    depthDesc.MipLevels = 1;
-//    depthDesc.ArraySize = 1;
-//    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-//    depthDesc.SampleDesc.Count = static_cast<UINT>(screenParams_.multiSample_);
-//    depthDesc.SampleDesc.Quality = 1;
-//    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-//    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-//    depthDesc.CPUAccessFlags = 0;
-//    depthDesc.MiscFlags = 0;
-//    hr = impl_->device_->CreateTexture2D(&depthDesc, nullptr, &impl_->defaultDepthTexture_);
-//    if (FAILED(hr))
-//    {
-//        URHO3D_SAFE_RELEASE(impl_->defaultDepthTexture_);
-//        URHO3D_LOGD3DERROR("Failed to create backbuffer depth-stencil texture", hr);
-//        success = false;
-//    }
-//    else
-//    {
-//        hr = impl_->device_->CreateDepthStencilView(impl_->defaultDepthTexture_, nullptr, &impl_->defaultDepthStencilView_);
-//        if (FAILED(hr))
-//        {
-//            URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilView_);
-//            URHO3D_LOGD3DERROR("Failed to create backbuffer depth-stencil view", hr);
-//            success = false;
-//        }
-//    }
-//
-//    // Update internally held backbuffer size
-//    width_ = width;
-//    height_ = height;
-//
-//    ResetRenderTargets();
-//    return success;
 }
 
 void Graphics::CheckFeatureSupport()

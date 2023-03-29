@@ -1947,11 +1947,17 @@ void Renderer::ReloadTextures()
 void Renderer::CreateGeometries()
 {
     SharedPtr<VertexBuffer> dlvb(MakeShared<VertexBuffer>(context_));
+#ifdef URHO3D_DEBUG
+    dlvb->SetDebugName("DirectionalLight");
+#endif
     dlvb->SetShadowed(true);
     dlvb->SetSize(4, MASK_POSITION);
     dlvb->SetData(dirLightVertexData);
 
     SharedPtr<IndexBuffer> dlib(MakeShared<IndexBuffer>(context_));
+#ifdef URHO3D_DEBUG
+    dlib->SetDebugName("DirectionLiDirectionalLightght");
+#endif
     dlib->SetShadowed(true);
     dlib->SetSize(6, false);
     dlib->SetData(dirLightIndexData);
@@ -1962,11 +1968,17 @@ void Renderer::CreateGeometries()
     dirLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, dlib->GetIndexCount());
 
     SharedPtr<VertexBuffer> slvb(MakeShared<VertexBuffer>(context_));
+#ifdef URHO3D_DEBUG
+    slvb->SetDebugName("SpotLight");
+#endif
     slvb->SetShadowed(true);
     slvb->SetSize(8, MASK_POSITION);
     slvb->SetData(spotLightVertexData);
 
     SharedPtr<IndexBuffer> slib(MakeShared<IndexBuffer>(context_));
+#ifdef URHO3D_DEBUG
+    slib->SetDebugName("SpotLight");
+#endif
     slib->SetShadowed(true);
     slib->SetSize(36, false);
     slib->SetData(spotLightIndexData);
@@ -1977,11 +1989,17 @@ void Renderer::CreateGeometries()
     spotLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, slib->GetIndexCount());
 
     SharedPtr<VertexBuffer> plvb(MakeShared<VertexBuffer>(context_));
+#ifdef URHO3D_DEBUG
+    plvb->SetDebugName("PointLight");
+#endif
     plvb->SetShadowed(true);
     plvb->SetSize(24, MASK_POSITION);
     plvb->SetData(pointLightVertexData);
 
     SharedPtr<IndexBuffer> plib(MakeShared<IndexBuffer>(context_));
+#ifdef URHO3D_DEBUG
+    plib->SetDebugName("PointLight");
+#endif
     plib->SetShadowed(true);
     plib->SetSize(132, false);
     plib->SetData(pointLightIndexData);
@@ -1995,11 +2013,17 @@ void Renderer::CreateGeometries()
     if (graphics_->GetShadowMapFormat())
     {
         faceSelectCubeMap_ = MakeShared<TextureCube>(context_);
+#ifdef URHO3D_DEBUG
+        faceSelectCubeMap_->SetName("FaceSelectCubeMap");
+#endif
         faceSelectCubeMap_->SetNumLevels(1);
         faceSelectCubeMap_->SetSize(1, graphics_->GetRGBAFormat());
         faceSelectCubeMap_->SetFilterMode(FILTER_NEAREST);
 
         indirectionCubeMap_ = MakeShared<TextureCube>(context_);
+#ifdef URHO3D_DEBUG
+        indirectionCubeMap_->SetName("IndirectionCubeMap");
+#endif
         indirectionCubeMap_->SetNumLevels(1);
         indirectionCubeMap_->SetSize(256, graphics_->GetRGBAFormat());
         indirectionCubeMap_->SetFilterMode(FILTER_BILINEAR);
@@ -2012,6 +2036,9 @@ void Renderer::CreateGeometries()
 #endif
 
     blackCubeMap_ = MakeShared<TextureCube>(context_);
+#ifdef URHO3D_DEBUG
+    blackCubeMap_->SetName("BlackCubeMap");
+#endif
     blackCubeMap_->SetNumLevels(1);
     blackCubeMap_->SetSize(1, graphics_->GetRGBAFormat());
     blackCubeMap_->SetFilterMode(FILTER_NEAREST);
@@ -2076,6 +2103,9 @@ void Renderer::CreateInstancingBuffer()
     }
 
     instancingBuffer_ = MakeShared<VertexBuffer>(context_);
+#ifdef URHO3D_DEBUG
+    instancingBuffer_->SetDebugName("InstancingBuffer");
+#endif
     const ea::vector<VertexElement> instancingBufferElements = CreateInstancingBufferElements(numExtraInstancingBufferElements_);
     if (!instancingBuffer_->SetSize(INSTANCING_BUFFER_DEFAULT_SIZE, instancingBufferElements, true))
     {

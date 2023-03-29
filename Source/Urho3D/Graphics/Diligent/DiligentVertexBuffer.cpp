@@ -260,6 +260,12 @@ bool VertexBuffer::Create()
     if (graphics_)
     {
         BufferDesc bufferDesc;
+        if (dbgName_.empty())
+            __debugbreak();
+#ifdef URHO3D_DEBUG
+        ea::string dbgName = Format("{}(VertexBuffer)", dbgName_);
+        bufferDesc.Name = dbgName.c_str();
+#endif
         bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
         if (!dynamic_ && graphics_->GetComputeSupport())
             bufferDesc.BindFlags = BIND_UNORDERED_ACCESS;
@@ -275,6 +281,19 @@ bool VertexBuffer::Create()
             return false;
         }
         object_ = buffer;
+
+        // Note: Dynamic memory is created after first memory write
+        // A error will be thrown if buffer is submitted to draw call but
+        // SetData has not called.
+        if (dynamic_ && graphics_->GetRenderBackend() == RENDER_VULKAN) {
+            ea::vector<uint8_t> tmpBuffer(bufferDesc.Size);
+            for (unsigned i = 0; i < bufferDesc.Size; ++i)
+                tmpBuffer[i] = 0;
+            void* mappedData = nullptr;
+            graphics_->GetImpl()->GetDeviceContext()->MapBuffer(buffer, MAP_WRITE, MAP_FLAG_NO_OVERWRITE, mappedData);
+            memcpy(mappedData, tmpBuffer.data(), bufferDesc.Size);
+            graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(buffer, MAP_WRITE);
+        }
     }
 
     return true;

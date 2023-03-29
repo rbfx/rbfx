@@ -235,6 +235,10 @@ bool IndexBuffer::Create()
     if (graphics_)
     {
         BufferDesc bufferDesc;
+#ifdef URHO3D_DEBUG
+        ea::string dbgName = Format("{}(IndexBuffer)", dbgName_);
+        bufferDesc.Name = dbgName.c_str();
+#endif
         bufferDesc.BindFlags = BIND_INDEX_BUFFER;
         if (!dynamic_ && graphics_->GetComputeSupport())
             bufferDesc.BindFlags |= BIND_UNORDERED_ACCESS;
@@ -249,6 +253,7 @@ bool IndexBuffer::Create()
             URHO3D_LOGERROR("Failed to create index buffer.");
             return false;
         }
+
         object_ = buffer;
     }
 

@@ -236,7 +236,7 @@ void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
     #ifdef URHO3D_DILIGENT
     // TODO: Change this or refactor code in a deal way
     pipelineStateDesc_.renderTargetsFormats_.resize(1);
-    pipelineStateDesc_.renderTargetsFormats_[0] = graphics_->GetSwapChainRTFormat();
+    pipelineStateDesc_.renderTargetsFormats_[0] = graphics_->GetRGBAFormat();
     pipelineStateDesc_.depthStencilFormat_ = graphics_->GetSwapChainDepthFormat();
     #endif
     pipelineStateDesc_.depthWriteEnabled_ = pass->GetDepthWrite();

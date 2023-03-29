@@ -144,7 +144,7 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     desc.blendMode_ = key.blendMode_;
     desc.scissorTestEnabled_ = true;
 #ifdef URHO3D_DILIGENT
-    // TODO: Get RT formats dynamically
+    // UI renders directly to backbuffer
     desc.renderTargetsFormats_.resize(1);
     desc.renderTargetsFormats_[0] = graphics->GetSwapChainRTFormat();
     desc.depthStencilFormat_ = graphics->GetSwapChainDepthFormat();

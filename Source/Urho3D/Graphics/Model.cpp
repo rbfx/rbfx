@@ -134,6 +134,10 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned vertexSize = VertexBuffer::GetVertexSize(desc.vertexElements_);
         desc.dataSize_ = desc.vertexCount_ * vertexSize;
 
+#ifdef URHO3D_DEBUG
+        buffer->SetDebugName(Format("{}[{}]", GetName(), i));
+#endif
+
         // Prepare vertex buffer data to be uploaded during EndLoad()
         if (async)
         {
@@ -165,7 +169,9 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned indexSize = source.ReadUInt();
 
         SharedPtr<IndexBuffer> buffer(MakeShared<IndexBuffer>(context_));
-
+#ifdef URHO3D_DEBUG
+        buffer->SetDebugName(Format("{}[{}]", GetName(), i));
+#endif
         // Prepare index buffer data to be uploaded during EndLoad()
         if (async)
         {
