@@ -1126,8 +1126,8 @@ void AnimatedModel::UpdateSkinning()
 void AnimatedModel::UpdateMorphs()
 {
     auto* graphics = GetSubsystem<Graphics>();
-    //if (!graphics)
-    //    return;
+    if (!graphics)
+        return;
 
     if (modelAnimator_)
     {
@@ -1152,11 +1152,7 @@ void AnimatedModel::UpdateSoftwareSkinningState()
 {
     auto renderer = context_->GetSubsystem<Renderer>();
     if (!renderer)
-    {
-        // Fallback to software skinning in headless mode.
-        softwareSkinning_ = true;
         return;
-    }
 
     softwareSkinning_ = !renderer->GetUseHardwareSkinning();
     numSoftwareSkinningBones_ = renderer->GetNumSoftwareSkinningBones();
