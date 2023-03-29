@@ -162,6 +162,47 @@ static void GetPrimitiveType(unsigned elementCount, PrimitiveType type, unsigned
     }
 }
 
+static void HandleDbgMessageCallbacks(Diligent::DEBUG_MESSAGE_SEVERITY severity, const char* msg, const char* func, const char* file, int line) {
+    ea::string logMsg = Format("(diligent) {}", ea::string(msg == nullptr ? "" : msg));
+    ea::vector<ea::pair<const char*, const char*>> additionalInfo;
+
+    ea::string lineStr = Format("{}", line);
+    if (func)
+        additionalInfo.push_back(ea::make_pair<const char*, const char*>("function", func));
+    if (file)
+        additionalInfo.push_back(ea::make_pair<const char*, const char*>("file", file));
+    if (line)
+        additionalInfo.push_back(ea::make_pair<const char*, const char*>("line", lineStr.c_str()));
+
+    if (additionalInfo.size() > 0)
+    {
+        logMsg.append("\n");
+        for (uint8_t i = 0; i < additionalInfo.size(); ++i) {
+            logMsg.append(additionalInfo[i].first);
+            logMsg.append(": ");
+            logMsg.append(additionalInfo[i].second);
+            if (i < additionalInfo.size() - 1)
+                logMsg.append(" | ");
+        }
+    }
+
+    switch (severity)
+    {
+    case Diligent::DEBUG_MESSAGE_SEVERITY_INFO:
+        URHO3D_LOGINFO(logMsg);
+        break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_WARNING:
+        URHO3D_LOGWARNING(logMsg);
+        break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_ERROR:
+        URHO3D_LOGERROR(logMsg);
+        break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR:
+        URHO3D_LOGERROR("[fatal]{}", logMsg.c_str());
+        break;
+    }
+}
+
 #ifndef UWP
 static HWND GetWindowHandle(SDL_Window* window)
 {
@@ -2189,7 +2230,8 @@ bool Graphics::CreateDevice(int width, int height)
     // Device needs only to be created once
     if (!impl_->device_)
     {
-
+        gl3Support = false;
+        IEngineFactory* engineFactory = nullptr;
         switch (impl_->renderBackend_)
         {
 #ifdef WIN32
@@ -2209,6 +2251,7 @@ bool Graphics::CreateDevice(int width, int height)
                 wnd,
                 &impl_->swapChain_
             );
+            engineFactory = factory;
         }
         break;
         case RENDER_D3D12:
@@ -2233,6 +2276,7 @@ bool Graphics::CreateDevice(int width, int height)
                 wnd,
                 &impl_->swapChain_
             );
+            engineFactory = factory;
         }
         break;
 #endif
@@ -2260,6 +2304,7 @@ bool Graphics::CreateDevice(int width, int height)
                 wnd,
                 &impl_->swapChain_
             );
+            engineFactory = factory;
         }
                 break;
         case RENDER_GL:
@@ -2277,6 +2322,8 @@ bool Graphics::CreateDevice(int width, int height)
                 swapChainDesc,
                 &impl_->swapChain_
             );
+            gl3Support = true;
+            engineFactory = factory;
         }
                 break;
         case RENDER_METAL:
@@ -2289,6 +2336,8 @@ bool Graphics::CreateDevice(int width, int height)
             URHO3D_LOGERROR("Failed to Initialize GPU Device");
             return false;
         }
+
+        engineFactory->SetMessageCallback(&HandleDbgMessageCallbacks);
 
         CheckFeatureSupport();
 
