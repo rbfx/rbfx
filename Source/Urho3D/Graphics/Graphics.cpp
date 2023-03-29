@@ -553,6 +553,12 @@ void Graphics::AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams&
     params.windowMode_ = ea::max(params.windowMode_, WindowMode::Borderless);
 #endif
 
+#ifdef UWP
+    // UWP doesn't support borderless windows
+    if (params.windowMode_ == WindowMode::Borderless)
+        params.windowMode_ = WindowMode::Fullscreen;
+#endif
+
     // Make sure monitor index is not bigger than the currently detected monitors
     const int numMonitors = SDL_GetNumVideoDisplays();
     if (params.monitor_ >= numMonitors || params.monitor_ < 0)

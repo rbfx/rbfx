@@ -2025,6 +2025,16 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, WindowMode& newWindow
             SDL_SetWindowPosition(window_, oldPosition.x_, oldPosition.y_);
         else
             position_ = oldPosition;
+
+#ifdef UWP
+        // Window size is off on UWP if it was created with the same size as on previous run.
+        // Tweak it a bit to force the correct size.
+        if (newWindowMode == WindowMode::Windowed)
+        {
+            SDL_SetWindowSize(window_, newWidth - 1, newHeight + 1);
+            SDL_SetWindowSize(window_, newWidth, newHeight);
+        }
+#endif
     }
     else
     {
