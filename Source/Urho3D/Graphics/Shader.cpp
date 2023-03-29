@@ -96,7 +96,7 @@ void CommentOutFunction(ea::string& code, const ea::string& signature)
 ea::string FormatLineDirective(bool isGLSL, const ea::string& fileName, unsigned fileIndex, unsigned line)
 {
     if (isGLSL)
-        return Format("#line {} {}\n", line, fileIndex);
+        return Format("/// #include {}\n#line {} {}\n", fileName, line, fileIndex);
     else
         return Format("#line {} \"{}\"\n", line, fileName);
 }
