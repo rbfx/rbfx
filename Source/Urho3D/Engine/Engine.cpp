@@ -225,17 +225,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     engineParameters_->DefineVariables(parameters);
     auto* fileSystem = GetSubsystem<FileSystem>();
 
-    // Start logging
-    auto* log = GetSubsystem<Log>();
-    if (log)
-    {
-        if (HasParameter(EP_LOG_LEVEL))
-            log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
-        log->SetQuiet(GetParameter(EP_LOG_QUIET).GetBool());
-        log->Open(GetParameter(EP_LOG_NAME).GetString());
-    }
-
-    // Initialize app preferences directory
     appPreferencesDir_ = GetParameter(EP_APPLICATION_PREFERENCES_DIR).GetString();
     if (appPreferencesDir_.empty())
     {
@@ -243,6 +232,20 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         const ea::string& applicationName = GetParameter(EP_APPLICATION_NAME).GetString();
         appPreferencesDir_ = fileSystem->GetAppPreferencesDir(organizationName, applicationName);
     }
+
+    // Start logging
+    auto* log = GetSubsystem<Log>();
+    if (log)
+    {
+        if (HasParameter(EP_LOG_LEVEL))
+            log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
+        log->SetQuiet(GetParameter(EP_LOG_QUIET).GetBool());
+        const ea::string logFileName = GetLogFileName(GetParameter(EP_LOG_NAME).GetString());
+        if (!logFileName.empty())
+            log->Open(logFileName);
+    }
+
+    // Initialize app preferences directory
     if (!appPreferencesDir_.empty())
         fileSystem->CreateDir(appPreferencesDir_);
 
@@ -1011,7 +1014,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_HEADLESS, false);
     engineParameters_->DefineVariable(EP_HIGH_DPI, true);
     engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE);
-    engineParameters_->DefineVariable(EP_LOG_NAME, "Urho3D.log");
+    engineParameters_->DefineVariable(EP_LOG_NAME, "conf://Urho3D.log");
     engineParameters_->DefineVariable(EP_LOG_QUIET, false);
     engineParameters_->DefineVariable(EP_LOW_QUALITY_SHADOWS, false).Overridable();
     engineParameters_->DefineVariable(EP_MAIN_PLUGIN, EMPTY_STRING);
@@ -1084,6 +1087,32 @@ void Engine::DoExit()
     // TODO: Revisit this place
     // emscripten_force_exit(EXIT_SUCCESS);    // Some how this is required to signal emrun to stop
 #endif
+}
+
+ea::string Engine::GetLogFileName(const ea::string& uri) const
+{
+    // We cannot really use VirtualFileSystem here, as it is not initialized yet.
+    // Emulate file:// and conf:// schemes in the same way.
+    // Empty scheme means relative to executable directory instead of resource directory.
+    const auto fileIdentifier = FileIdentifier::FromUri(uri);
+    if (fileIdentifier.scheme_ == "file")
+    {
+        return fileIdentifier.fileName_;
+    }
+    else if (fileIdentifier.scheme_ == "conf")
+    {
+#ifndef __EMSCRIPTEN__
+        return appPreferencesDir_ + fileIdentifier.fileName_;
+#endif
+    }
+    else if (fileIdentifier.scheme_ == "")
+    {
+        auto fileSystem = GetSubsystem<FileSystem>();
+        return fileSystem->GetProgramDir() + fileIdentifier.fileName_;
+    }
+
+    // Nothing we can do about it
+    return "";
 }
 
 }

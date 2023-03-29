@@ -620,7 +620,7 @@ void Graphics::OnScreenModeChanged()
 {
     URHO3D_LOGINFO("Set screen mode: {}x{} pixels at {} Hz at monitor {} [{}]{}{}{}", width_, height_,
         screenParams_.refreshRate_, screenParams_.monitor_, ToString(screenParams_.windowMode_),
-        screenParams_.resizable_ ? " [resizable]" : "", screenParams_.highDPI_ ? " [highDPI]" : "",
+        screenParams_.resizable_ ? " [Resizable]" : "", screenParams_.highDPI_ ? " [High DPI]" : "",
         screenParams_.multiSample_ > 1 ? Format(" [{}x MSAA]", screenParams_.multiSample_) : "");
 
     using namespace ScreenMode;
