@@ -75,6 +75,36 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+ea::string_view ToString(WindowMode mode)
+{
+    switch (mode)
+    {
+    case WindowMode::Windowed:
+        return "Windowed";
+    case WindowMode::Fullscreen:
+        return "Fullscreen";
+    case WindowMode::Borderless:
+        return "Borderless";
+    default:
+        return "Unknown";
+    }
+}
+
+WindowMode ToWindowMode(bool fullscreen, bool borderless)
+{
+    if (fullscreen)
+        return WindowMode::Fullscreen;
+    else if (borderless)
+        return WindowMode::Borderless;
+    else
+        return WindowMode::Windowed;
+}
+
+}
+
 GraphicsCaps Graphics::caps;
 
 void Graphics::SetExternalWindow(void* window)
@@ -145,17 +175,16 @@ bool Graphics::SetDefaultWindowModes(int width, int height, const ScreenModePara
     secondaryWindowMode.width_ = 0;
     secondaryWindowMode.height_ = 0;
 
-    if (params.fullscreen_ || params.borderless_)
+    if (!params.IsWindowed())
     {
-        secondaryWindowMode.screenParams_.fullscreen_ = false;
-        secondaryWindowMode.screenParams_.borderless_ = false;
+        secondaryWindowMode.screenParams_.windowMode_ = WindowMode::Windowed;
     }
     else
     {
-        secondaryWindowMode.screenParams_.borderless_ = true;
+        secondaryWindowMode.screenParams_.windowMode_ = WindowMode::Borderless;
     }
 
-    const bool maximize = (!width || !height) && !params.fullscreen_ && !params.borderless_ && params.resizable_;
+    const bool maximize = (!width || !height) && params.IsWindowed() && params.resizable_;
     return SetWindowModes(primaryWindowMode, secondaryWindowMode, maximize);
 }
 
@@ -163,8 +192,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     bool highDPI, bool vsync, bool tripleBuffer, int multiSample, int monitor, int refreshRate, bool gpuDebug)
 {
     ScreenModeParams params;
-    params.fullscreen_ = fullscreen;
-    params.borderless_ = borderless;
+    params.windowMode_ = ToWindowMode(fullscreen, borderless);
     params.resizable_ = resizable;
     params.highDPI_ = highDPI;
     params.vsync_ = vsync;
@@ -516,12 +544,19 @@ void Graphics::AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams&
 
 #if defined(IOS) || defined(TVOS)
     // iOS and tvOS app always take the fullscreen (and with status bar hidden)
-    params.fullscreen_ = true;
+    params.windowMode_ = WindowMode::Fullscreen;
 #endif
 
 #ifdef __EMSCRIPTEN__
     // Emscripten cannot be truly fullscreen
-    params.fullscreen_ = false;
+    // TODO: Maybe it should be only WindowMode::Windowed?
+    params.windowMode_ = ea::max(params.windowMode_, WindowMode::Borderless);
+#endif
+
+#ifdef UWP
+    // UWP doesn't support borderless windows
+    if (params.windowMode_ == WindowMode::Borderless)
+        params.windowMode_ = WindowMode::Fullscreen;
 #endif
 
     // Make sure monitor index is not bigger than the currently detected monitors
@@ -530,15 +565,11 @@ void Graphics::AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams&
         params.monitor_ = 0; // this monitor is not present, use first monitor
 
     // Fullscreen or Borderless can not be resizable and cannot be maximized
-    if (params.fullscreen_ || params.borderless_)
+    if (!params.IsWindowed())
     {
         params.resizable_ = false;
         maximize = false;
     }
-
-    // Borderless cannot be fullscreen, they are mutually exclusive
-    if (params.borderless_)
-        params.fullscreen_ = false;
 
     // On iOS window needs to be resizable to handle orientation changes properly
 #ifdef IOS
@@ -553,7 +584,7 @@ void Graphics::AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams&
     // If zero in fullscreen, use desktop mode
     if (!newWidth || !newHeight)
     {
-        if (params.fullscreen_ || params.borderless_)
+        if (!params.IsWindowed())
         {
             SDL_DisplayMode mode;
             SDL_GetDesktopDisplayMode(params.monitor_, &mode);
@@ -569,7 +600,7 @@ void Graphics::AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams&
 
     // Check fullscreen mode validity (desktop only). Use a closest match if not found
 #ifdef DESKTOP_GRAPHICS
-    if (params.fullscreen_)
+    if (params.IsFullscreen())
     {
         const ea::vector<IntVector3> resolutions = GetResolutions(params.monitor_);
         if (!resolutions.empty())
@@ -593,28 +624,18 @@ void Graphics::AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams&
 
 void Graphics::OnScreenModeChanged()
 {
-#ifdef URHO3D_LOGGING
-    ea::string msg;
-    msg.append_sprintf("Set screen mode %dx%d rate %d Hz %s monitor %d", width_, height_, screenParams_.refreshRate_,
-        (screenParams_.fullscreen_ ? "fullscreen" : "windowed"), screenParams_.monitor_);
-    if (screenParams_.borderless_)
-        msg.append(" borderless");
-    if (screenParams_.resizable_)
-        msg.append(" resizable");
-    if (screenParams_.highDPI_)
-        msg.append(" highDPI");
-    if (screenParams_.multiSample_ > 1)
-        msg.append_sprintf(" multisample %d", screenParams_.multiSample_);
-    URHO3D_LOGINFO(msg);
-#endif
+    URHO3D_LOGINFO("Set screen mode: {}x{} pixels at {} Hz at monitor {} [{}]{}{}{}", width_, height_,
+        screenParams_.refreshRate_, screenParams_.monitor_, ToString(screenParams_.windowMode_),
+        screenParams_.resizable_ ? " [Resizable]" : "", screenParams_.highDPI_ ? " [High DPI]" : "",
+        screenParams_.multiSample_ > 1 ? Format(" [{}x MSAA]", screenParams_.multiSample_) : "");
 
     using namespace ScreenMode;
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WIDTH] = width_;
     eventData[P_HEIGHT] = height_;
-    eventData[P_FULLSCREEN] = screenParams_.fullscreen_;
-    eventData[P_BORDERLESS] = screenParams_.borderless_;
+    eventData[P_FULLSCREEN] = screenParams_.IsFullscreen();
+    eventData[P_BORDERLESS] = screenParams_.IsBorderless();
     eventData[P_RESIZABLE] = screenParams_.resizable_;
     eventData[P_HIGHDPI] = screenParams_.highDPI_;
     eventData[P_MONITOR] = screenParams_.monitor_;

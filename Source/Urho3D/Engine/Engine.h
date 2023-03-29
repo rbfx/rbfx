@@ -162,6 +162,8 @@ private:
     void HandleEndFrame(StringHash eventType, VariantMap& eventData);
     /// Actually perform the exit actions.
     void DoExit();
+    /// Return log file name in OS file system.
+    ea::string GetLogFileName(const ea::string& uri) const;
 
     /// Engine parameters (default and current values).
     SharedPtr<ConfigFile> engineParameters_;

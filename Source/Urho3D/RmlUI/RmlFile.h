@@ -22,7 +22,8 @@
 #pragma once
 
 
-#include "../Container/Ptr.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/IO/FileIdentifier.h"
 
 #include <RmlUi/Core/FileInterface.h>
 
@@ -56,15 +57,15 @@ public:
     size_t Length(Rml::FileHandle file) override;
 
     /// Returns true if file was opened since last call to ClearOpenedFiles().
-    bool IsFileLoaded(const ea::string& path);
+    bool IsResourceLoaded(const ea::string& resourceName);
     /// Clear a set of opened files.
-    void ClearLoadedFiles() { loadedFiles_.clear(); }
+    void ClearLoadedResources() { loadedResources_.clear(); }
 
 private:
     /// Context pointer.
     WeakPtr<Context> context_;
     /// A set of loaded files. Used to trigger UI reloads when resource cache reloads a modified file.
-    ea::unordered_set<ea::string> loadedFiles_;
+    ea::unordered_set<ea::string> loadedResources_;
 };
 
 }   // namespace Detail

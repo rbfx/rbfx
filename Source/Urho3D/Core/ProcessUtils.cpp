@@ -20,15 +20,17 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/ProcessUtils.h"
-#include "../Core/StringUtils.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/ProcessUtils.h"
+
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
 
 #include <cstdio>
 #include <fcntl.h>
+#include <thread>
 
 #ifdef __APPLE__
 #include "TargetConditionals.h"
@@ -486,7 +488,8 @@ ea::string GetPlatformName()
 unsigned GetNumPhysicalCPUs()
 {
 #if defined(UWP)
-    return 1;
+    // This is as good as it gets on UWP
+    return std::thread::hardware_concurrency();
 #elif defined(IOS)
     host_basic_info_data_t data;
     GetCPUData(&data);
@@ -522,7 +525,7 @@ unsigned GetNumPhysicalCPUs()
 unsigned GetNumLogicalCPUs()
 {
 #if defined(UWP)
-    return 1;
+    return std::thread::hardware_concurrency();
 #elif defined(IOS)
     host_basic_info_data_t data;
     GetCPUData(&data);

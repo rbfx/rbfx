@@ -90,7 +90,7 @@ public:
         {
             auto graphics = GetSubsystem<Graphics>();
             graphics->SetRenderTarget(0, backbuffer_->GetTexture());
-            graphics->Clear(CLEAR_COLOR, Color::RED);
+            graphics->Clear(CLEAR_COLOR, 0x245953_rgb);
             UnsubscribeFromEvent(E_BEGINRENDERING);
         });
     }
