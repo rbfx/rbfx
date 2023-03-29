@@ -386,6 +386,9 @@ private:
 
     /// Current normalized mouse position supplied externally.
     Vector2 mousePosition_;
+
+    /// Graphics instance
+    WeakPtr<Graphics> graphics_;
 };
 
 }

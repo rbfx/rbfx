@@ -72,6 +72,7 @@ Camera::Camera(Context* context) :
     useClipping_(false)
 {
     reflectionMatrix_ = reflectionPlane_.ReflectionMatrix();
+    graphics_ = GetSubsystem<Graphics>();
 }
 
 Camera::~Camera() = default;
@@ -462,30 +463,43 @@ Matrix4 Camera::GetProjection(bool ignoreFlip) const
 
 Matrix4 Camera::GetGPUProjection(bool ignoreFlip) const
 {
-#ifndef URHO3D_OPENGL
-    return GetProjection(ignoreFlip); // Already matches API-specific format
-#else
-    // See formulation for depth range conversion at http://www.ogre3d.org/forums/viewtopic.php?f=4&t=13357
     Matrix4 ret = GetProjection(ignoreFlip);
+    bool isGL = false;
+#ifdef URHO3D_DILIGENT
+    assert(graphics_);
+    isGL = graphics_->GetRenderBackend() == RENDER_GL;
+#elif URHO3D_OPENGL
+    isGL = true;
+#endif
 
-    ret.m20_ = 2.0f * ret.m20_ - ret.m30_;
-    ret.m21_ = 2.0f * ret.m21_ - ret.m31_;
-    ret.m22_ = 2.0f * ret.m22_ - ret.m32_;
-    ret.m23_ = 2.0f * ret.m23_ - ret.m33_;
+    if (isGL) {
+        ret.m20_ = 2.0f * ret.m20_ - ret.m30_;
+        ret.m21_ = 2.0f * ret.m21_ - ret.m31_;
+        ret.m22_ = 2.0f * ret.m22_ - ret.m32_;
+        ret.m23_ = 2.0f * ret.m23_ - ret.m33_;
+    }
 
     return ret;
-#endif
 }
 
 Matrix4 Camera::GetEffectiveGPUViewProjection(float constantDepthBias) const
 {
+    bool isGL = false;
+#ifdef URHO3D_DILIGENT
+    assert(graphics_);
+    isGL = graphics_->GetRenderBackend() == RENDER_GL;
+#elif URHO3D_OPENGL
+    isGL = true;
+#endif
     Matrix4 projection = GetGPUProjection();
     // glPolygonOffset is not supported in GL ES 2.0
-#ifdef URHO3D_OPENGL
-    const float constantBias = 2.0f * constantDepthBias;
-    projection.m22_ += projection.m32_ * constantBias;
-    projection.m23_ += projection.m33_ * constantBias;
-#endif
+
+    if (isGL) {
+        const float constantBias = 2.0f * constantDepthBias;
+        projection.m22_ += projection.m32_ * constantBias;
+        projection.m23_ += projection.m33_ * constantBias;
+    }
+
     return projection * GetView();
 }
 
