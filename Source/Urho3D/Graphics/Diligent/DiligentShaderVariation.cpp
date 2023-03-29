@@ -301,28 +301,18 @@ bool ShaderVariation::Compile()
         break;
     case Urho3D::RENDER_GL:
     {
-        //if (!owner_->IsGLSL()) {
-
-            compilerDesc.output_ = ShaderCompilerOutput::GLSL;
-            ShaderCompiler compiler(compilerDesc);
-            if (!compiler.Compile()) {
-                URHO3D_LOGERROR("Failed to compile shader " + GetFullName());
-                return false;
-            }
-            byteCode_ = compiler.GetByteCode();
-            byteCodeType_ = ShaderByteCodeType::RAW;
-        /*}
-        else {
-            ea::string sourceCode = processorDesc.sourceCode_;
-            ea::string defines = "#version 450\n";
-            for (auto it = processorDesc.macros_.defines_.begin(); it != processorDesc.macros_.defines_.end(); ++it) {
-                defines.append(Format("#define {} {}\n", it->first, it->second));
-            }
-            sourceCode = defines + sourceCode;
-            byteCode_.resize(sourceCode.size());
-            memcpy(byteCode_.data(), sourceCode.data(), sourceCode.length());
-        }*/
-
+        size_t versionIdx = compilerDesc.sourceCode_.find("#version 450");
+        // Include GL version if not exists
+        if (versionIdx == ea::string::npos)
+            compilerDesc.sourceCode_ = "#version 450\n" + compilerDesc.sourceCode_;
+        compilerDesc.output_ = ShaderCompilerOutput::GLSL;
+        ShaderCompiler compiler(compilerDesc);
+        if (!compiler.Compile()) {
+            URHO3D_LOGERROR("Failed to compile shader " + GetFullName());
+            return false;
+        }
+        byteCode_ = compiler.GetByteCode();
+        byteCodeType_ = ShaderByteCodeType::RAW;
         const char* sourceCode = reinterpret_cast<const char*>(byteCode_.data());
         shaderCI.Source = sourceCode;
         shaderCI.SourceLength = byteCode_.size();

@@ -293,7 +293,9 @@ namespace Urho3D
                 errorMessage = "Unknown error";
                 return false;
             }
+#ifndef URHO3D_DILIGENT
             outputShader += "#version 450\n";
+#endif
             outputShader += src.c_str();
             return true;
         }
