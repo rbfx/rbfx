@@ -327,8 +327,10 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
             const bool isBorderless = eventData[P_BORDERLESS].GetBool();
 
-            SetParameter(EP_WINDOW_WIDTH, isBorderless ? 0 : eventData[P_WIDTH].GetInt());
-            SetParameter(EP_WINDOW_HEIGHT, isBorderless ? 0 : eventData[P_HEIGHT].GetInt());
+            // TODO: Uncomment when we have consistent handling of pixels vs points
+            // TODO: Also see PopulateDefaultParameters()
+            //SetParameter(EP_WINDOW_WIDTH, isBorderless ? 0 : eventData[P_WIDTH].GetInt());
+            //SetParameter(EP_WINDOW_HEIGHT, isBorderless ? 0 : eventData[P_HEIGHT].GetInt());
             SetParameter(EP_FULL_SCREEN, eventData[P_FULLSCREEN].GetBool());
             SetParameter(EP_BORDERLESS, isBorderless);
             SetParameter(EP_MONITOR, eventData[P_MONITOR].GetInt());
@@ -1040,14 +1042,14 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_TRIPLE_BUFFER, false);
     engineParameters_->DefineVariable(EP_VALIDATE_SHADERS, false);
     engineParameters_->DefineVariable(EP_VSYNC, false).Overridable();
-    engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0).Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WINDOW_ICON, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_WINDOW_MAXIMIZE, true).Overridable();
     engineParameters_->DefineVariable(EP_WINDOW_POSITION_X, 0);
     engineParameters_->DefineVariable(EP_WINDOW_POSITION_Y, 0);
     engineParameters_->DefineVariable(EP_WINDOW_RESIZABLE, false);
     engineParameters_->DefineVariable(EP_WINDOW_TITLE, "Urho3D");
-    engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0).Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
 }
 
