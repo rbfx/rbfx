@@ -78,8 +78,9 @@ namespace Urho3D
     }
     void ConstantBufferManager::Finalize()
     {
-        unsigned i = MAX_SHADER_PARAMETER_GROUPS;
-        while (--i)
+        unsigned i = MAX_SHADER_PARAMETER_GROUPS - 1;
+        do {
             Reset((ShaderParameterGroup)i);
+        } while (i--);
     }
 }
