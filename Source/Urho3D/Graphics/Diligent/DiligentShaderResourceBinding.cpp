@@ -62,10 +62,6 @@ namespace Urho3D
                 strList.push_back(resSamplerName);
 
                 Texture* tex = textures_[texUnitIt->second];
-                if (tex->GetLevelsDirty())
-                    tex->RegenerateLevels();
-                if (tex->GetParametersDirty())
-                    tex->UpdateParameters();
 
                 {   // Add Texture Resource
                     ResourceMappingEntry resMap;

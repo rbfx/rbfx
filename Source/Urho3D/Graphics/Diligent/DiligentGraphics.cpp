@@ -2254,6 +2254,8 @@ bool Graphics::CreateDevice(int width, int height)
             EngineD3D11CreateInfo engineCI;
             engineCI.GraphicsAPIVersion = Version{ 11, 0 };
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
+            engineCI.EnableValidation = true;
+            engineCI.D3D11ValidationFlags = D3D11_VALIDATION_FLAG_VERIFY_COMMITTED_RESOURCE_RELEVANCE;
 
             factory->CreateDeviceAndContextsD3D11(engineCI, &impl_->device_, &impl_->deviceContext_);
             factory->CreateSwapChainD3D11(
