@@ -1956,7 +1956,7 @@ void Renderer::CreateGeometries()
 
     SharedPtr<IndexBuffer> dlib(MakeShared<IndexBuffer>(context_));
 #ifdef URHO3D_DEBUG
-    dlib->SetDebugName("DirectionLiDirectionalLightght");
+    dlib->SetDebugName("DirectionalLight");
 #endif
     dlib->SetShadowed(true);
     dlib->SetSize(6, false);

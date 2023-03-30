@@ -330,7 +330,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
 
 #ifdef URHO3D_DILIGENT
-        RenderBackend renderBackend = RENDER_D3D11;
+        RenderBackend renderBackend = RENDER_VULKAN;
 #ifndef WIN32
         renderBackend = RENDER_GL;
 #endif // !WIN32

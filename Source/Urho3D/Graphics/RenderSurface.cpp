@@ -131,6 +131,10 @@ IntRect RenderSurface::GetRect(Graphics* graphics, const RenderSurface* renderSu
 
 unsigned RenderSurface::GetFormat(Graphics* /*graphics*/, const RenderSurface* renderSurface)
 {
+#ifdef URHO3D_DILIGENT
+    if (renderSurface && renderSurface->GetRenderTargetView())
+        return renderSurface->GetRenderTargetView()->GetDesc().Format;
+#endif
     return renderSurface ? renderSurface->GetParentTexture()->GetFormat() : Graphics::GetRGBFormat();
 }
 

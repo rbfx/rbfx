@@ -31,6 +31,7 @@ namespace Urho3D
             return;
         ea::vector<LayoutElement> layoutElements;
         GraphicsPipelineStateCreateInfo ci;
+        assert(!desc_.debugName_.empty());
 #ifdef URHO3D_DEBUG
         ea::string dbgName = Format("{}#{}", desc_.debugName_, desc_.ToHash());
         ci.PSODesc.Name = dbgName.c_str();

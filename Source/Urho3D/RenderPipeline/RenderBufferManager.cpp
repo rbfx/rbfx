@@ -390,6 +390,9 @@ SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(BlendMode 
         defines += " URHO3D_USE_CBUFFERS";
 
     PipelineStateDesc desc;
+#ifdef URHO3D_DEBUG
+    desc.debugName_ = shaderName;
+#endif
     desc.blendMode_ = blendMode;
     desc.vertexShader_ = graphics_->GetShader(VS, shaderName, defines);
     desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);
@@ -402,6 +405,27 @@ SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(BlendMode 
     }
     if (desc.renderTargetsFormats_.size() == 0)
         desc.renderTargetsFormats_.push_back(graphics_->GetSwapChainRTFormat());
+    desc.depthStencilFormat_ = graphics_->GetDepthStencilFormat();
+
+    return CreateQuadPipelineState(desc);
+}
+
+SharedPtr<PipelineState> RenderBufferManager::CreateCopyTextureToSwapChainPipeline(BlendMode blendMode,
+        const ea::string& shaderName, const ea::string& shaderDefines) {
+    ea::string defines = shaderDefines;
+    defines += " URHO3D_GEOMETRY_STATIC";
+    if (graphics_->GetCaps().constantBuffersSupported_)
+        defines += " URHO3D_USE_CBUFFERS";
+
+    PipelineStateDesc desc;
+#ifdef URHO3D_DEBUG
+    desc.debugName_ = "CopyTextureToSwapChain";
+#endif
+    desc.blendMode_ = blendMode;
+    desc.vertexShader_ = graphics_->GetShader(VS, shaderName, defines);
+    desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);
+
+    desc.renderTargetsFormats_.push_back(graphics_->GetSwapChainRTFormat());
     desc.depthStencilFormat_ = graphics_->GetDepthStencilFormat();
 
     return CreateQuadPipelineState(desc);
@@ -628,6 +652,7 @@ void RenderBufferManager::InitializeCopyTexturePipelineState()
 {
     static const char* shaderName = "v2/CopyFramebuffer";
     copyTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "");
+    copyTextureToSwapChainPipelineState_ = CreateCopyTextureToSwapChainPipeline(BLEND_REPLACE, shaderName, "");
     copyGammaToLinearTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_GAMMA_TO_LINEAR");
     copyLinearToGammaTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_LINEAR_TO_GAMMA");
 }
@@ -653,14 +678,19 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Textur
         return;
     }
 
-    if (!copyTexturePipelineState_ || !copyGammaToLinearTexturePipelineState_ || !copyLinearToGammaTexturePipelineState_)
+    if (!copyTexturePipelineState_ || !copyGammaToLinearTexturePipelineState_ || !copyLinearToGammaTexturePipelineState_ || !copyTextureToSwapChainPipelineState_)
         InitializeCopyTexturePipelineState();
 
     const bool isSRGBSource = sourceTexture->GetSRGB();
     const bool isSRGBDestination = RenderSurface::GetSRGB(graphics_, graphics_->GetRenderTarget(0));
+    // RenderTarget null at index 0 means render directly to swapchain.
+    const bool isSwapChainDestination = graphics_->GetRenderTarget(0) == nullptr;
 
     DrawQuadParams callParams;
-    if (mode == ColorSpaceTransition::None || isSRGBSource == isSRGBDestination)
+
+    if (isSwapChainDestination)
+        callParams.pipelineState_ = copyTextureToSwapChainPipelineState_;
+    else if (mode == ColorSpaceTransition::None || isSRGBSource == isSRGBDestination)
         callParams.pipelineState_ = copyTexturePipelineState_;
     else if (isSRGBDestination)
         callParams.pipelineState_ = copyGammaToLinearTexturePipelineState_;
