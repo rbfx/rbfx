@@ -1,38 +1,48 @@
 #define URHO3D_PIXEL_NEED_TEXCOORD
+#define URHO3D_DISABLE_NORMAL_SAMPLING
+#define URHO3D_DISABLE_SPECULAR_SAMPLING
 
-#include "_Config.glsl"
-#include "_GammaCorrection.glsl"
-#include "_BRDF.glsl"
-
-#include "_Uniforms.glsl"
-#include "_Samplers.glsl"
-#include "_VertexLayout.glsl"
-
-#include "_VertexTransform.glsl"
-
-VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
-#ifdef URHO3D_VERTEX_HAS_COLOR
-    VERTEX_OUTPUT(half4 vColor)
-#endif
+#include "_Material.glsl"
 
 #ifdef URHO3D_VERTEX_SHADER
 
-SAMPLER(0, sampler2D sDiffMap)
+SAMPLER(3, sampler2D sEmissiveMap)
 SAMPLER(1, sampler2D sNormalMap)
+#ifdef URHO3D_DEPTH_ONLY_PASS
+    VERTEX_INPUT(vec2 iTexCoord1)
+#endif
+
+vec3 SampleVec3(sampler2D sampler, vec2 uv)
+{
+#ifdef HIGHPRECISION
+    uv = uv * vec2(0.5, 1.0);
+    //#ifdef texture2DLod
+    //    vec3 high = texture2DLod(sampler, uv, 0).xyz;
+    //    vec3 low = texture2DLod(sampler, uv + vec2(0.5, 0), 0).xyz;
+    //    return high * (65280.0/65535.0) + low * (255.0/65535.0);
+    //#else
+        vec3 high = texture2D(sampler, uv).xyz;
+        vec3 low = texture2D(sampler, uv + vec2(0.5, 0)).xyz;
+        return high * (65280.0/65535.0) + low * (255.0/65535.0);
+    //#endif
+#else
+    return texture2D(sampler, uv).xyz;
+#endif
+
+}
 
 VertexTransform GetCustomVertexTransform()
 {
     mat4 modelMatrix = GetModelMatrix();
 
-    vec2 offset = vec2(0, fract(cElapsedTime*0.144));
     VertexTransform result;
-
-    vec3 pos = texture2D(sDiffMap, iTexCoord + offset).xyz;
+    vec2 uv = iTexCoord1 + vec2(0, fract(cElapsedTime*0.25));
+    vec3 pos = SampleVec3(sEmissiveMap, uv).xyz;
     result.position = vec4(pos, 1) * modelMatrix;
 
     #ifdef URHO3D_VERTEX_NEED_NORMAL
         mediump mat3 normalMatrix = GetNormalMatrix(modelMatrix);
-        vec3 norm = (texture2D(sNormalMap, iTexCoord + offset).xyz - vec3(0.5, 0.5, 0.5)) * vec3(2.0, 2.0, 2.0);
+        vec3 norm = normalize(SampleVec3(sNormalMap, uv).xyz * 2.0 - 1.0);
         result.normal = normalize(norm * normalMatrix);
 
         ApplyShadowNormalOffset(result.position, result.normal);
@@ -49,30 +59,32 @@ VertexTransform GetCustomVertexTransform()
 void main()
 {
     VertexTransform vertexTransform = GetCustomVertexTransform();
-    gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
-    ApplyClipPlane(gl_Position);
-
-    #ifdef URHO3D_VERTEX_HAS_TEXCOORD0
-        vTexCoord = iTexCoord;
-    #else
-        vTexCoord = vec2(0.0);
-    #endif
-
-    #ifdef URHO3D_VERTEX_HAS_COLOR
-        vColor = iColor;
-    #endif
+    //VertexTransform vertexTransform = GetVertexTransform();
+    FillVertexOutputs(vertexTransform);
 }
 #endif
 
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-    half4 diffColor = cMatDiffColor;
+#ifdef URHO3D_DEPTH_ONLY_PASS
+    DefaultPixelShader();
+#else
+    SurfaceData surfaceData;
 
-    #ifdef URHO3D_VERTEX_HAS_COLOR
-        diffColor *= vColor;
-    #endif
+    FillSurfaceCommon(surfaceData);
+    FillSurfaceNormal(surfaceData);
+    FillSurfaceMetallicRoughnessOcclusion(surfaceData);
+    FillSurfaceReflectionColor(surfaceData);
+    FillSurfaceBackground(surfaceData);
+    FillSurfaceAlbedoSpecular(surfaceData);
+#ifdef URHO3D_SURFACE_NEED_AMBIENT
+    surfaceData.emission = vec3(0.0);
+#endif
 
-    gl_FragColor = GammaToLightSpaceAlpha(diffColor);
+    half3 surfaceColor = GetSurfaceColor(surfaceData);
+    half surfaceAlpha = GetSurfaceAlpha(surfaceData);
+    gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceAlpha, surfaceData.fogFactor);
+#endif
 }
 #endif

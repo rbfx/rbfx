@@ -41,8 +41,8 @@ void Help(const ea::string& reason)
         "\nUsage: BakeVertexAnimationTexture -options <input mdl> <input ani> <output folder>\n"
         "\n"
         "Options:\n"
-        "-diffuse <diffuse texture> Bake diffuse texture into vertex colors.\n"
-        "-precise Create a high precision (16 bit) texture instead of 8 bit.\n", reason));
+        "--diffuse <diffuse texture> Bake diffuse texture into vertex colors.\n"
+        "--precise Create a high precision (16 bit) texture instead of 8 bit.\n", reason));
 }
 
 
@@ -76,11 +76,11 @@ void Run(ea::vector<ea::string>& arguments)
 
         if (arg.starts_with("-"))
         {
-            if (arg == "-precise")
+            if (arg == "--precise")
             {
                 options.precise_ = true;
             }
-            else if (arg == "-diffuse")
+            else if (arg == "--diffuse")
             {
                 ea::string arg = arguments.front();
                 arguments.pop_front();

@@ -26,13 +26,9 @@
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Graphics/Geometry.h>
-#include <Urho3D/Graphics/IndexBuffer.h>
 #include <Urho3D/Graphics/Model.h>
-#include <Urho3D/Graphics/SoftwareModelAnimator.h>
-#include <Urho3D/Graphics/VertexBuffer.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/Resource/Image.h>
 #include <Urho3D/Scene/Node.h>
 
 namespace Urho3D
@@ -56,11 +52,15 @@ struct VertexBufferReader
 
     Vector3 GetPosition(unsigned index) const;
     Vector3 GetNormal(unsigned index) const;
+    Color GetColor(unsigned index) const;
+    Vector2 GetUV(unsigned index) const;
 
     VertexBuffer* vertexBuffer_;
     unsigned positionOffset_;
     VertexElementType positionType_{MAX_VERTEX_ELEMENT_TYPES};
     unsigned normalOffset_;
+    unsigned uvOffset_;
+    unsigned colorOffset_;
 };
 
 #pragma pack(push)
@@ -70,7 +70,8 @@ struct VertexStructure
     Vector3 position_;
     Vector3 normal_;
     unsigned color_;
-    Vector2 uv_;
+    Vector2 uv0_;
+    Vector2 uv1_;
 };
 #pragma pack(pop)
 

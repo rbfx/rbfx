@@ -1,6 +1,10 @@
 #include "Baker.h"
 
-#include "Urho3D/Scene/Scene.h"
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Graphics/IndexBuffer.h>
+#include <Urho3D/Graphics/SoftwareModelAnimator.h>
+#include <Urho3D/Graphics/VertexBuffer.h>
+#include <Urho3D/Resource/Image.h>
 
 void Help(const ea::string& reason);
 
@@ -32,18 +36,27 @@ VertexBufferReader::VertexBufferReader(VertexBuffer* vertexBuffer)
     {
         Help("Vector3 normal not found in model");
     }
+
+    uvOffset_ = vertexBuffer->HasElement(TYPE_VECTOR2, SEM_TEXCOORD) ? vertexBuffer->GetElementOffset(SEM_TEXCOORD)
+                                                                     : M_MAX_UNSIGNED;
+
+    colorOffset_ = vertexBuffer->HasElement(TYPE_UBYTE4_NORM, SEM_COLOR) ? vertexBuffer->GetElementOffset(SEM_COLOR)
+                                                                     : M_MAX_UNSIGNED;
 }
 
 Vector3 VertexBufferReader::GetPosition(unsigned index) const
 {
-    auto data = vertexBuffer_->GetShadowData();
-    if (data)
+    if (positionOffset_ != M_MAX_UNSIGNED)
     {
-        data += index*vertexBuffer_->GetVertexSize() + positionOffset_;
-        switch (positionType_)
+        auto data = vertexBuffer_->GetShadowData();
+        if (data)
         {
-        case TYPE_VECTOR3: return *reinterpret_cast<Vector3*>(data);
-        case TYPE_VECTOR4: return reinterpret_cast<Vector4*>(data)->ToVector3();
+            data += index * vertexBuffer_->GetVertexSize() + positionOffset_;
+            switch (positionType_)
+            {
+            case TYPE_VECTOR3: return *reinterpret_cast<Vector3*>(data);
+            case TYPE_VECTOR4: return reinterpret_cast<Vector4*>(data)->ToVector3();
+            }
         }
     }
     return Vector3::ZERO;
@@ -51,13 +64,41 @@ Vector3 VertexBufferReader::GetPosition(unsigned index) const
 
 Vector3 VertexBufferReader::GetNormal(unsigned index) const
 {
-    auto data = vertexBuffer_->GetShadowData();
-    if (data)
+    if (normalOffset_ != M_MAX_UNSIGNED)
     {
-        data += index * vertexBuffer_->GetVertexSize() + normalOffset_;
-        return *reinterpret_cast<Vector3*>(data);
+        if (auto data = vertexBuffer_->GetShadowData())
+        {
+            data += index * vertexBuffer_->GetVertexSize() + normalOffset_;
+            return *reinterpret_cast<Vector3*>(data);
+        }
     }
     return Vector3::UP;
+}
+
+Color VertexBufferReader::GetColor(unsigned index) const
+{
+    if (colorOffset_ != M_MAX_UNSIGNED)
+    {
+        if (auto data = vertexBuffer_->GetShadowData())
+        {
+            Color c;
+            c.FromUInt(*reinterpret_cast<unsigned*>(data + index * vertexBuffer_->GetVertexSize() + colorOffset_));
+            return c;
+        }
+    }
+    return Color::WHITE;
+}
+
+Vector2 VertexBufferReader::GetUV(unsigned index) const
+{
+    if (uvOffset_ != M_MAX_UNSIGNED)
+    {
+        if (const auto data = vertexBuffer_->GetShadowData())
+        {
+            return *reinterpret_cast<Vector2*>(data + index * vertexBuffer_->GetVertexSize() + uvOffset_);
+        }
+    }
+    return Vector2::ZERO;
 }
 
 Baker::Baker(Context* context, const Options& options)
@@ -85,6 +126,7 @@ void Baker::Bake()
         {
             Help("Failed to load diffuse texture: " + options_.diffuse_);
         }
+        diffuseTexture = diffuseTexture->GetDecompressedImage();
     }
 
     if (model_->GetVertexBuffers().size() != 1)
@@ -99,39 +141,19 @@ void Baker::Bake()
     {
         auto sourceVertexBuffer = model_->GetVertexBuffers().front();
         VertexBufferReader vbReader{sourceVertexBuffer};
-        unsigned uvOffset = sourceVertexBuffer->HasElement(TYPE_VECTOR2, SEM_TEXCOORD)
-            ? sourceVertexBuffer->GetElementOffset(SEM_TEXCOORD)
-            : M_MAX_UNSIGNED;
-        unsigned colorOffset = sourceVertexBuffer->HasElement(TYPE_UBYTE4_NORM, SEM_COLOR)
-            ? sourceVertexBuffer->GetElementOffset(SEM_COLOR)
-            : M_MAX_UNSIGNED;
 
         vertexData.resize(sourceVertexBuffer->GetVertexCount());
-        auto data = sourceVertexBuffer->GetShadowData();
-        auto vertexSize = sourceVertexBuffer->GetVertexSize();
         textureWidth_ = NextPowerOfTwo(vertexData.size());
         Vector2 subPixelOffset = Vector2{0.5f, 0.5f};
         for (unsigned i = 0; i < vertexData.size(); ++i)
         {
-            auto* vertexPointer = data + i * vertexSize;
             auto& vertex = vertexData[i];
             vertex.position_ = positionTransform_ * vbReader.GetPosition(i);
             vertex.normal_ = normalTransform_* vbReader.GetNormal(i);
-            Color color{1, 1, 1, 1};
-            if (colorOffset != M_MAX_UNSIGNED)
-            {
-                color.FromUInt(*reinterpret_cast<unsigned*>(vertexPointer + colorOffset));
-            }
-            if (uvOffset != M_MAX_UNSIGNED && diffuseTexture)
-            {
-                auto uv = *reinterpret_cast<Vector2*>(vertexPointer + uvOffset);
-                Vector2 texSize = diffuseTexture->GetSize().ToVector2();
-                color = color
-                    * diffuseTexture->GetPixel(
-                        static_cast<int>(uv.x_ * texSize.x_), static_cast<int>(uv.y_ * texSize.y_));
-            }
+            Color color = vbReader.GetColor(i);
             vertex.color_ = color.ToUInt();
-            vertex.uv_ = Vector2((i + subPixelOffset.x_) / static_cast<float>(textureWidth_),
+            vertex.uv0_ = vbReader.GetUV(i);
+            vertex.uv1_ = Vector2((i + subPixelOffset.x_) / static_cast<float>(textureWidth_),
                 subPixelOffset.y_ / static_cast<float>(textureHeight_));
         }
 
@@ -175,6 +197,7 @@ void Baker::Bake()
     elements.push_back(VertexElement(TYPE_VECTOR3, SEM_NORMAL));
     elements.push_back(VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR));
     elements.push_back(VertexElement(TYPE_VECTOR2, SEM_TEXCOORD));
+    elements.push_back(VertexElement(TYPE_VECTOR2, SEM_TEXCOORD,1));
     outputVertexBuffer->SetSize(vertexData.size(), elements);
     outputVertexBuffer->SetData(vertexData.data());
 
@@ -224,29 +247,50 @@ void Baker::LoadAnimation()
     textureHeight_ = Max(1, Min(textureHeight_, 2048));
 }
 
-inline Vector2 EncodeFloatRG(float v)
+Vector2 Encode16bit(float x)
 {
-    Vector2 kEncodeMul = Vector2(1.0f, 255.0f);
-    float kEncodeBit = 1.0f / 255.0f;
-    Vector2 enc = kEncodeMul * v;
-
-    enc = enc.Fract();
-    enc.x_ = enc.x_ - enc.y_ * kEncodeBit;
-    return enc;
+    unsigned short u16 = static_cast<unsigned short>(x * 65535.0f);
+    auto high = u16 / 256;
+    auto low = u16 % 256;
+    return Vector2(high / 255.0f, low / 255.0f);
 }
-inline float DecodeFloatRG(Vector2 enc)
+
+inline float Decode16bit(Vector2 enc)
 {
-    Vector2 kDecodeDot = Vector2(1.0f, 1.0f / 255.0f);
-    return enc.DotProduct(kDecodeDot);
+    return enc.DotProduct(Vector2(65280.0f / 65535.0f, 255.0f / 65535.0f));
+}
+
+unsigned char* EncodeRGBA8(unsigned char* data, const Vector3& v)
+{
+    Color normColor{v.x_, v.y_, v.z_, 1.0};
+    *reinterpret_cast<unsigned*>(data) = normColor.ToUInt();
+    return data += 4;
+}
+
+unsigned char* EncodeRGBA16(unsigned char* data, unsigned offset, const Vector3& v)
+{
+    auto R = Encode16bit(v.x_);
+    auto G = Encode16bit(v.y_);
+    auto B = Encode16bit(v.z_);
+    assert(Urho3D::Abs(v.x_ - Decode16bit(R)) < 1e-4f);
+    assert(Urho3D::Abs(v.y_ - Decode16bit(G)) < 1e-4f);
+    assert(Urho3D::Abs(v.z_ - Decode16bit(B)) < 1e-4f);
+    Color firstColor{R.x_, G.x_, B.x_, 1.0f};
+    *reinterpret_cast<unsigned*>(data) = firstColor.ToUInt();
+    Color secondColor{R.y_, G.y_, B.y_, 1.0f};
+    *reinterpret_cast<unsigned*>(data + offset) = secondColor.ToUInt();
+    return data + 4;
 }
 
 void Baker::BuildVAT()
 {
+    unsigned textureWidth = textureWidth_ * (options_.precise_ ? 2 : 1);
+
     auto posLookUp = MakeShared<Image>(context_);
-    posLookUp->SetSize(textureWidth_ * (options_.precise_ ? 2 : 1), textureHeight_, 4);
+    posLookUp->SetSize(textureWidth, textureHeight_, 4);
 
     auto normLookUp = MakeShared<Image>(context_);
-    normLookUp->SetSize(textureWidth_, textureHeight_, 4);
+    normLookUp->SetSize(textureWidth, textureHeight_, 4);
 
     auto softwareModelAnimator = MakeShared<SoftwareModelAnimator>(context_);
     softwareModelAnimator->Initialize(model_, true, 4);
@@ -277,6 +321,8 @@ void Baker::BuildVAT()
     auto dt = animation_->GetLength() / textureHeight_;
     auto normalPitch = 4 * normLookUp->GetWidth();
     auto positionPitch = 4 * posLookUp->GetWidth();
+    unsigned highPrecisionOffset = positionPitch / 2;
+
     for (unsigned y=0; y< textureHeight_; ++y)
     {
         animationController->UpdateAnimationTime(animation_, dt*y);
@@ -302,30 +348,17 @@ void Baker::BuildVAT()
         {
             auto pos = positionTransform_ * vbReader.GetPosition(i);
             pos = VectorMin(VectorMax(pos, Vector3::ZERO), Vector3::ONE);
+            auto norm = ((normalTransform_ * vbReader.GetNormal(i)).Normalized() + Vector3(1.0f, 1.0f, 1.0f)) * 0.5f;
             if (options_.precise_)
             {
-                auto R = EncodeFloatRG(pos.x_);
-                auto G = EncodeFloatRG(pos.y_);
-                auto B = EncodeFloatRG(pos.z_);
-                Color firstColor {R.x_, G.x_, B.x_, 1.0f};
-                *reinterpret_cast<unsigned*>(posData) = firstColor.ToUInt();
-                Color secondColor{R.y_, G.y_, B.y_, 1.0f};
-                *reinterpret_cast<unsigned*>(posData + positionPitch/2) = secondColor.ToUInt();
-                posData += 4;
+                posData = EncodeRGBA16(posData, highPrecisionOffset, pos);
+                normData = EncodeRGBA16(normData, highPrecisionOffset, norm);
             }
             else
             {
-                Color colorPos{pos.x_, pos.y_, pos.z_, 1.0};
-                *reinterpret_cast<unsigned*>(posData) = colorPos.ToUInt();
-                posData += 4;
+                posData = EncodeRGBA8(posData, pos);
+                normData = EncodeRGBA8(normData, norm);
             }
-
-            auto norm = normalTransform_ * vbReader.GetNormal(i);
-            norm.Normalize();
-            norm = (norm + Vector3(1.0f, 1.0f, 1.0f)) * 0.5f;
-            Color normColor{norm.x_, norm.y_, norm.z_, 1.0};
-            *reinterpret_cast<unsigned*>(normData) = normColor.ToUInt();
-            normData += 4;
         }
     }
 
@@ -333,5 +366,7 @@ void Baker::BuildVAT()
     posLookUp->SaveFile(FileIdentifier("file", fileNameWithoutExt + ".pos.dds"));
     normLookUp->SaveFile(FileIdentifier("file", fileNameWithoutExt + ".norm.dds"));
 }
+
+
 
 } // namespace Urho3D
