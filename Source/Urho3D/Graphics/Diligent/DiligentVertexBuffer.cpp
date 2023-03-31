@@ -314,10 +314,11 @@ void* VertexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
 
     if (object_)
     {
+        MAP_FLAGS mapFlags = discard ? MAP_FLAG_DISCARD : MAP_FLAG_NO_OVERWRITE;
         graphics_->GetImpl()->GetDeviceContext()->MapBuffer(
             object_.Cast<IBuffer>(IID_Buffer),
             MAP_WRITE,
-            discard ? MAP_FLAG_DISCARD : MAP_FLAG_NONE,
+            mapFlags,
             hwData
         );
         if (hwData == nullptr)
@@ -334,7 +335,8 @@ void VertexBuffer::UnmapBuffer()
     using namespace Diligent;
     if (object_ && lockState_ == LOCK_HARDWARE)
     {
-        graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(object_.Cast<IBuffer>(IID_Buffer), MAP_WRITE);
+        RefCntAutoPtr<IBuffer> buffer = object_.Cast<IBuffer>(IID_Buffer);
+        graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(buffer, MAP_WRITE);
         lockState_ = LOCK_NONE;
     }
 }
