@@ -1048,7 +1048,6 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 
 void Graphics::SetPipelineState(PipelineState* pipelineState) {
     using namespace Diligent;
-    pipelineState->BuildPipeline(this);
     void* pipelineObj = pipelineState->GetGPUPipeline();
     assert(pipelineObj);
 

@@ -115,7 +115,7 @@ void PipelineState::RestoreCachedState(Graphics* graphics)
         shaderProgramLayout_ = graphics->GetShaderProgramLayout(desc_.vertexShader_, desc_.pixelShader_);
 }
 
-void PipelineState::Apply(Graphics* graphics)
+bool PipelineState::Apply(Graphics* graphics)
 {
 #ifndef URHO3D_DILIGENT
     graphics->SetShaders(desc_.vertexShader_, desc_.pixelShader_);
@@ -133,8 +133,12 @@ void PipelineState::Apply(Graphics* graphics)
 
     graphics->SetColorWrite(desc_.colorWriteEnabled_);
     graphics->SetBlendMode(desc_.blendMode_, desc_.alphaToCoverageEnabled_);
+    return true;
 #else
+    if (!BuildPipeline(graphics))
+        return false;
     graphics->SetPipelineState(this);
+    return true;
 #endif
 }
 

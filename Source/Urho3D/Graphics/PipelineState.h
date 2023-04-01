@@ -269,7 +269,7 @@ public:
     void RestoreCachedState(Graphics* graphics);
 
     /// Set pipeline state to GPU.
-    void Apply(Graphics* graphics);
+    bool Apply(Graphics* graphics);
 
     /// Getters
     /// @{
@@ -282,11 +282,11 @@ public:
     /// Create Shader Resource Binding
     Urho3D::ShaderResourceBinding* CreateSRB();
 #ifdef URHO3D_DILIGENT
-    void BuildPipeline(Graphics* graphics);
     Diligent::RefCntAutoPtr<Diligent::IPipelineState> GetGPUPipeline() const { return pipeline_; }
 #endif
 private:
 #ifdef URHO3D_DILIGENT
+    bool BuildPipeline(Graphics* graphics);
     Urho3D::ShaderResourceBinding* CreateInternalSRB();
     void ReleasePipeline();
 #endif

@@ -2,6 +2,7 @@
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
 #include "DiligentLookupSettings.h"
 #include "DiligentGraphicsImpl.h"
+#include "../RenderSurface.h"
 
 #include "../Shader.h"
 
@@ -26,13 +27,60 @@ namespace Urho3D
         VT_UINT8
     };
     using namespace Diligent;
-    void PipelineState::BuildPipeline(Graphics* graphics) {
+    bool PipelineState::BuildPipeline(Graphics* graphics) {
+        // Check for depth and rt formats
+        // If something is wrong, fix then.
+        // rbfx will try to make things work, but is developer
+        // responsability to fill correctly rts and depth formats.
+        bool invalidFmt = false;
+        TEXTURE_FORMAT currDepthFmt = (TEXTURE_FORMAT)(graphics->GetDepthStencil() ? RenderSurface::GetFormat(graphics, graphics->GetDepthStencil()) : graphics->GetSwapChainDepthFormat());
+        if (currDepthFmt != desc_.depthStencilFormat_) {
+#ifdef URHO3D_DEBUG
+            ea::string log = "Current Binded Depth Format does not correspond to PipelineDesc Depth Format.\n";
+            log += "Always fill correctly depth format to pipeline.\n";
+            log += "rbfx will fix depth format for you. Invalid format can lead to unexpected issues.\n";
+            log += Format("PipelineName: {} | Hash: {} | DepthFormat: {} | Expected Format: {}",
+                desc_.debugName_.empty() ? desc_.debugName_ : ea::string("Unknow"),
+                desc_.hash_,
+                desc_.depthStencilFormat_,
+                currDepthFmt
+            );
+            URHO3D_LOGWARNING(log);
+#endif
+            invalidFmt = true;
+            desc_.depthStencilFormat_ = currDepthFmt;
+        }
+        for (uint8_t i = 0; i < desc_.renderTargetsFormats_.size(); ++i) {
+            TEXTURE_FORMAT rtFmt = graphics->GetRenderTarget(i) ? (TEXTURE_FORMAT)RenderSurface::GetFormat(graphics, graphics->GetRenderTarget(i)) : TEX_FORMAT_UNKNOWN;
+            if (i == 0 && rtFmt == TEX_FORMAT_UNKNOWN)
+                rtFmt = (TEXTURE_FORMAT)graphics->GetSwapChainRTFormat();
+            if (rtFmt != desc_.renderTargetsFormats_[i]) {
+#ifdef URHO3D_DEBUG
+                ea::string log = Format("Current Binded Render Target Format at {} slot, does not corresponde to currently binded Render Target.\n", i);
+                log += "Always fill correctly render target formats.\n";
+                log += "rbfx will fix render target format for you. Invalid formats can lead to unexpected issues.\n";
+                log += Format("PipelineName: {} | Hash: {} | RTFormat: {} | Expected Format: {}",
+                    desc_.debugName_.empty() ? desc_.debugName_ : ea::string("Unknow"),
+                    desc_.hash_,
+                    desc_.renderTargetsFormats_[i],
+                    desc_.depthStencilFormat_
+                );
+                URHO3D_LOGWARNING(log);
+#endif
+                invalidFmt = true;
+                desc_.renderTargetsFormats_[i] = rtFmt;
+            }
+        }
+
+        if (invalidFmt)
+            pipeline_ = nullptr;
         if (pipeline_)
-            return;
+            return true;
         ea::vector<LayoutElement> layoutElements;
         GraphicsPipelineStateCreateInfo ci;
-        assert(!desc_.debugName_.empty());
 #ifdef URHO3D_DEBUG
+        if (desc_.debugName_.empty())
+            URHO3D_LOGWARNING("PipelineState doesn't have a debug name on your desc. This is critical but is recommended to have a debug name.");
         ea::string dbgName = Format("{}#{}", desc_.debugName_, desc_.ToHash());
         ci.PSODesc.Name = dbgName.c_str();
 #endif
@@ -166,9 +214,12 @@ namespace Urho3D
 
         graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &pipeline_);
 
-        assert(pipeline_ != nullptr);
+        if (!pipeline_) {
+            URHO3D_LOGERROR("Error has ocurred at Pipeline Build. ({})", desc_.ToHash());
+            return false;
+        }
 
-        URHO3D_LOGDEBUGF("Created Graphics Pipeline (%d)", desc_.ToHash());
+        URHO3D_LOGDEBUG("Created Graphics Pipeline ({})", desc_.ToHash());
     }
     void PipelineState::ReleasePipeline() {
         pipeline_ = nullptr;

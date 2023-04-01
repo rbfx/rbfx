@@ -129,7 +129,9 @@ void DrawCommandQueue::Execute()
         // Set pipeline state
         if (cmd.pipelineState_ != currentPipelineState)
         {
-            cmd.pipelineState_->Apply(graphics_);
+            // Skip this pipeline if something goes wrong.
+            if (!cmd.pipelineState_->Apply(graphics_))
+                continue;
             currentPipelineState = cmd.pipelineState_;
             currentPrimitiveType = currentPipelineState->GetDesc().primitiveType_;
             // Reset current shader resources because of HasTextureUnit check below
