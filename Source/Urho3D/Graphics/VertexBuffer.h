@@ -172,7 +172,7 @@ public:
 
 private:
 #ifdef URHO3D_DILIGENT
-    void HandleBeginRendering(StringHash eventType, VariantMap& eventData);
+    void HandleEndRendering(StringHash eventType, VariantMap& eventData);
 #endif
     /// Update offsets of vertex elements.
     void UpdateOffsets();

@@ -189,9 +189,6 @@ bool ShaderVariation::Compile()
     ea::string sourceCode;
     const char* entryPoint = nullptr;
     SHADER_TYPE shaderType = SHADER_TYPE_UNKNOWN;
-    //const char* profile = nullptr;
-    //unsigned flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
-    //ShaderDefineArray defines{ defines_ };
     ShaderProcessorDesc processorDesc = {};
     processorDesc.macros_ = ShaderDefineArray{ defines_ };
     processorDesc.name_ = name_;

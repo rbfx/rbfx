@@ -136,7 +136,8 @@ VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
     if (!graphics_)
         shadowed_ = true;
 #ifdef URHO3D_DILIGENT
-    SubscribeToEvent(E_BEGINRENDERING, URHO3D_HANDLER(VertexBuffer, HandleBeginRendering));
+    if(graphics_->GetRenderBackend() == RENDER_VULKAN)
+        SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(VertexBuffer, HandleEndRendering));
 #endif
 }
 

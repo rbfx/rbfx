@@ -288,8 +288,8 @@ bool VertexBuffer::Create()
             void* mappedData = nullptr;
             graphics_->GetImpl()->GetDeviceContext()->MapBuffer(buffer, MAP_WRITE, MAP_FLAG_NO_OVERWRITE, mappedData);
             graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(buffer, MAP_WRITE);
-            dataLost_ = false;
         }
+        dataLost_ = false;
     }
 
     return true;
@@ -338,7 +338,7 @@ void VertexBuffer::UnmapBuffer()
     }
 }
 
-void VertexBuffer::HandleBeginRendering(StringHash eventType, VariantMap& eventData) {
+void VertexBuffer::HandleEndRendering(StringHash eventType, VariantMap& eventData) {
     if (graphics_->GetRenderBackend() != RENDER_VULKAN)
         return;
     if (dynamic_)
