@@ -469,6 +469,12 @@ void RibbonTrail::UpdateBufferSize()
     bufferDirty_ = true;
     forceUpdate_ = true;
 
+#ifdef URHO3D_DEBUG
+    ea::string dbgName = Format("RibbonTrail({}|{})", node_->GetName(), GetMaterial()->GetName());
+    indexBuffer_->SetDebugName(dbgName);
+    vertexBuffer_->SetDebugName(dbgName);
+#endif
+
     if (numPoints_ < 2)
     {
         indexBuffer_->SetSize(0, false);
@@ -582,7 +588,6 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
     auto* dest = (float*)vertexBuffer_->Lock(0, (numPoints_ - 1) * vertexPerSegment, true);
     if (!dest)
         return;
-
     // Generate trail mesh
     if (trailType_ == TT_FACE_CAMERA)
     {

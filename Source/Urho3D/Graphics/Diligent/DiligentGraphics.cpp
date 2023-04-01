@@ -514,6 +514,7 @@ bool Graphics::BeginFrame()
     numPrimitives_ = 0;
     numBatches_ = 0;
 
+    ea::string output = Format("Begin Frame {}\n", impl_->GetDeviceContext()->GetFrameNumber());
     SendEvent(E_BEGINRENDERING);
     return true;
 }
@@ -819,6 +820,8 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
 
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount)
 {
+    if (!indexCount || !pipelineState_)
+        return;
     PrepareDraw();
 
     unsigned primitiveCount;
@@ -965,6 +968,11 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
         buffer = i < buffers.size() ? buffers[i] : nullptr;
         if (buffer)
         {
+            // On vulkan backend, if we use a buffer that had been lost
+            // diligent will thrown a assert.
+            // 
+            if (buffer->IsDataLost())
+                return false;
             const ea::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data
             bool hasInstanceData = elements.size() && elements[0].perInstance_;

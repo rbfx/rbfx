@@ -156,7 +156,9 @@ void DrawCommandQueue::Execute()
         {
             tempVertexBuffers.clear();
             tempVertexBuffers.assign(cmd.inputBuffers_.vertexBuffers_.begin(), cmd.inputBuffers_.vertexBuffers_.end());
-            graphics_->SetVertexBuffers(tempVertexBuffers, cmd.instanceStart_);
+            // If something goes wrong here, skip current command
+            if (!graphics_->SetVertexBuffers(tempVertexBuffers, cmd.instanceStart_))
+                continue;
             currentVertexBuffers = cmd.inputBuffers_.vertexBuffers_;
         }
 

@@ -263,7 +263,7 @@ bool VertexBuffer::Create()
         if (dbgName_.empty())
             __debugbreak();
 #ifdef URHO3D_DEBUG
-        ea::string dbgName = Format("{}(VertexBuffer)", dbgName_);
+        ea::string dbgName = Format("{}(VertexBuffer;{};{})", dbgName_, vertexCount_ * vertexSize_, (unsigned long long)this);
         bufferDesc.Name = dbgName.c_str();
 #endif
         bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
@@ -282,17 +282,13 @@ bool VertexBuffer::Create()
         }
         object_ = buffer;
 
-        // Note: Dynamic memory is created after first memory write
-        // A error will be thrown if buffer is submitted to draw call but
-        // SetData has not called.
+        // Note: Dynamic memory is created after first memory write on Vulkan backend
+        // if map is not called, a error will show.
         if (dynamic_ && graphics_->GetRenderBackend() == RENDER_VULKAN) {
-            ea::vector<uint8_t> tmpBuffer(bufferDesc.Size);
-            for (unsigned i = 0; i < bufferDesc.Size; ++i)
-                tmpBuffer[i] = 0;
             void* mappedData = nullptr;
             graphics_->GetImpl()->GetDeviceContext()->MapBuffer(buffer, MAP_WRITE, MAP_FLAG_NO_OVERWRITE, mappedData);
-            memcpy(mappedData, tmpBuffer.data(), bufferDesc.Size);
             graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(buffer, MAP_WRITE);
+            dataLost_ = false;
         }
     }
 
@@ -323,10 +319,11 @@ void* VertexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
         );
         if (hwData == nullptr)
             URHO3D_LOGERROR("Failed to map vertex buffer");
-        else
+        else {
+            dataLost_ = false;
             lockState_ = LOCK_HARDWARE;
+        }
     }
-
     return hwData;
 }
 
@@ -339,6 +336,13 @@ void VertexBuffer::UnmapBuffer()
         graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(buffer, MAP_WRITE);
         lockState_ = LOCK_NONE;
     }
+}
+
+void VertexBuffer::HandleBeginRendering(StringHash eventType, VariantMap& eventData) {
+    if (graphics_->GetRenderBackend() != RENDER_VULKAN)
+        return;
+    if (dynamic_)
+        dataLost_ = true;
 }
 
 }

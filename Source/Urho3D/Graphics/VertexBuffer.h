@@ -171,6 +171,9 @@ public:
     static void ShuffleUnpackedVertexData(unsigned vertexCount, const Vector4 source[], const ea::vector<VertexElement>& sourceElements, Vector4 dest[], const ea::vector<VertexElement>& destElements, bool setMissingElementsToZero = true);
 
 private:
+#ifdef URHO3D_DILIGENT
+    void HandleBeginRendering(StringHash eventType, VariantMap& eventData);
+#endif
     /// Update offsets of vertex elements.
     void UpdateOffsets();
     /// Create buffer.
