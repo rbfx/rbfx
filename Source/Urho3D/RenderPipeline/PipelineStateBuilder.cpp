@@ -201,7 +201,9 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
 void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* lightProcessor)
 {
     const Light* light = lightProcessor->GetLight();
-
+#if defined URHO3D_DEBUG && defined URHO3D_DILIGENT
+    pipelineStateDesc_.debugName_ = "LightVolumePass";
+#endif
     pipelineStateDesc_.colorWriteEnabled_ = true;
     pipelineStateDesc_.blendMode_ = light->IsNegative() ? BLEND_SUBTRACT : BLEND_ADD;
 

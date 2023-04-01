@@ -96,8 +96,11 @@ private:
 /// TODO: Store render target formats here as well
 struct PipelineStateDesc
 {
+#ifdef URHO3D_DILIGENT
+    static const unsigned MaxNumVertexElements = Diligent::MAX_LAYOUT_ELEMENTS;
+#else
     static const unsigned MaxNumVertexElements = 32;
-
+#endif
     /// Debug
     /// @{
     ea::string debugName_{};
