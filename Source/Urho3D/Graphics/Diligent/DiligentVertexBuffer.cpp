@@ -263,7 +263,7 @@ bool VertexBuffer::Create()
         if (dbgName_.empty())
             __debugbreak();
 #ifdef URHO3D_DEBUG
-        ea::string dbgName = Format("{}(VertexBuffer;{};{})", dbgName_, vertexCount_ * vertexSize_, (unsigned long long)this);
+        ea::string dbgName = Format("{}(VertexBuffer)", dbgName_);
         bufferDesc.Name = dbgName.c_str();
 #endif
         bufferDesc.BindFlags = BIND_VERTEX_BUFFER;

@@ -677,6 +677,9 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
         if (origBuffer)
         {
             cloneBuffer = MakeShared<IndexBuffer>(context_);
+#ifdef URHO3D_DEBUG
+            cloneBuffer->SetDebugName(GetName());
+#endif
             cloneBuffer->SetSize(origBuffer->GetIndexCount(), origBuffer->GetIndexSize() == sizeof(unsigned),
                 origBuffer->IsDynamic());
             cloneBuffer->SetShadowed(origBuffer->IsShadowed());
