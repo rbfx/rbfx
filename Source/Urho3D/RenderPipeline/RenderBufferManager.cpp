@@ -404,7 +404,7 @@ SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(BlendMode 
         desc.renderTargetsFormats_.push_back(RenderSurface::GetFormat(graphics_, rt));
     }
     if (desc.renderTargetsFormats_.size() == 0)
-        desc.renderTargetsFormats_.push_back(graphics_->GetSwapChainRTFormat());
+        desc.renderTargetsFormats_.push_back(Graphics::GetRGBFormat());
     desc.depthStencilFormat_ = graphics_->GetDepthStencilFormat();
 
     return CreateQuadPipelineState(desc);

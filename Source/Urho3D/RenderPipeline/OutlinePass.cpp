@@ -112,7 +112,7 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
 
 #ifdef URHO3D_DILIGENT
     Graphics* graphics = GetSubsystem<Graphics>();
-    desc.renderTargetsFormats_.push_back(graphics->GetSwapChainRTFormat());
+    desc.renderTargetsFormats_.push_back(Graphics::GetRGBFormat());
     desc.depthStencilFormat_ = graphics->GetSwapChainDepthFormat();
 #endif
     shaderProgramDesc_.Clear();
