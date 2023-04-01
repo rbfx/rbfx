@@ -145,7 +145,8 @@ void BackToFrontScenePass::OnBatchesReady()
         for (const PipelineBatchBackToFront& sortedBatch : sortedBatches_)
         {
             // Assume refraction if blending is disabled
-            if (sortedBatch.pipelineBatch_->pipelineState_->GetDesc().blendMode_ == BLEND_REPLACE)
+            BlendMode blendMode = sortedBatch.pipelineBatch_->pipelineState_->GetDesc().blendMode_;
+            if (blendMode == BLEND_REPLACE)
             {
                 hasRefractionBatches_ = true;
                 break;
