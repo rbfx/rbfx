@@ -24,7 +24,7 @@
 
 #include "../Graphics/Graphics.h"
 #include "../Graphics/DrawCommandQueue.h"
-
+#include "../Graphics/RenderSurface.h"
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -216,12 +216,16 @@ void DrawCommandQueue::Execute()
             for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i) {
                 const auto& unitAndResource = shaderResources_[i];
                 Texture* texture = unitAndResource.texture_;
-                if (texture != nullptr && HasTextureUnit(currentPipelineState->GetDesc(), unitAndResource.unit_)) {
+                if (texture && HasTextureUnit(currentPipelineState->GetDesc(), unitAndResource.unit_))
+                {
+                    RenderSurface* currRT = graphics_->GetRenderTarget(0);
+                    if (currRT && currRT->GetParentTexture() == texture)
+                        texture = texture->GetBackupTexture();
                     if (texture->GetLevelsDirty())
                         texture->RegenerateLevels();
                     if (texture->GetParametersDirty())
                         texture->UpdateParameters();
-                    ci.textures_[unitAndResource.unit_] = unitAndResource.texture_;
+                    ci.textures_[unitAndResource.unit_] = texture;
                 }
             }
 
