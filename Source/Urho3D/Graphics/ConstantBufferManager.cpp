@@ -160,4 +160,8 @@ namespace Urho3D
         }
         URHO3D_LOGDEBUG(output);
     }
+
+    void ConstantBufferManager::HandleBeginFrame(StringHash eventType, VariantMap& eventData) {
+        ++frame_;
+    }
 }

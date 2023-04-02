@@ -100,6 +100,8 @@ namespace Urho3D
 
         void PrintDebugOutput();
     private:
+        void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
+        uint64_t frame_;
         ea::array<ea::pair<size_t, ea::shared_array<uint8_t>>, MAX_SHADER_PARAMETER_GROUPS> buffer_;
         ea::array<ea::shared_ptr<ConstantBufferManagerData>, MAX_SHADER_PARAMETER_GROUPS> data_;
     };

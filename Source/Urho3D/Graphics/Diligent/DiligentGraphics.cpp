@@ -572,103 +572,46 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
         }
         EndDebug();
     }
-    else {
-        ClearPipelineDesc clearDesc;
-        clearDesc.rtTexture_ = impl_->swapChain_->GetDesc().ColorBufferFormat;
-        clearDesc.colorWrite_ = flags & CLEAR_COLOR;
-        clearDesc.depthWrite_ = flags & CLEAR_DEPTH;
-        clearDesc.clearStencil_ = flags & CLEAR_STENCIL;
-        //SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
-        IBuffer* frameCB = impl_->constantBufferManager_->GetOrCreateBuffer(ShaderParameterGroup::SP_FRAME);
-        auto* pipelineHolder = impl_->commonPipelines_->GetOrCreateClearPipeline(clearDesc);
-
-        {
-            MapHelper<Color> clearColor(impl_->deviceContext_, frameCB, MAP_WRITE, MAP_FLAG_DISCARD);
-            *clearColor = color;
-        }
-        ITextureView* rts[] = { impl_->swapChain_->GetCurrentBackBufferRTV() };
-        // Vulkan needs to SetRenderTargets because they create a RenderPass.
-        impl_->deviceContext_->SetRenderTargets(1,
-            rts,
-            impl_->swapChain_->GetDepthBufferDSV(),
-            RESOURCE_STATE_TRANSITION_MODE_TRANSITION
-        );
-        impl_->deviceContext_->SetPipelineState(pipelineHolder->GetPipeline());
-        impl_->deviceContext_->SetStencilRef(stencil);
-
-        impl_->deviceContext_->CommitShaderResources(pipelineHolder->GetShaderResourceBinding(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-
-        DrawAttribs drawAttribs;
-        drawAttribs.NumVertices = 4;
-#ifdef URHO3D_DEBUG
-        impl_->deviceContext_->BeginDebugGroup("Clear w/ Blit");
-        impl_->deviceContext_->Draw(drawAttribs);
-        impl_->deviceContext_->EndDebugGroup();
-#else
-        impl_->deviceContext->Draw(drawAttribs);
-#endif
-        
-    }
-    /*bool oldColorWrite = colorWrite_;
-    bool oldDepthWrite = depthWrite_;*/
-
-    //if (!viewport_.left_ && !viewport_.top_ && viewport_.right_ == rtSize.x_ && viewport_.bottom_ == rtSize.y_)
-    //{
-    //    // Make sure we use the read-write version of the depth stencil
-    //    SetDepthWrite(true);
-    //    PrepareDraw();
-
-    //    if ((flags & CLEAR_COLOR) && impl_->renderTargetViews_[0])
-    //        impl_->deviceContext_->ClearRenderTargetView(impl_->renderTargetViews_[0], color.Data());
-
-    //    if ((flags & (CLEAR_DEPTH | CLEAR_STENCIL)) && impl_->depthStencilView_)
-    //    {
-    //        unsigned depthClearFlags = 0;
-    //        if (flags & CLEAR_DEPTH)
-    //            depthClearFlags |= D3D11_CLEAR_DEPTH;
-    //        if (flags & CLEAR_STENCIL)
-    //            depthClearFlags |= D3D11_CLEAR_STENCIL;
-    //        impl_->deviceContext_->ClearDepthStencilView(impl_->depthStencilView_, depthClearFlags, depth, (UINT8)stencil);
-    //    }
-    //}
-    //else
-    //{
-    //    Renderer* renderer = GetSubsystem<Renderer>();
-    //    if (!renderer)
-    //        return;
-
-    //    Geometry* geometry = renderer->GetQuadGeometry();
-
-    //    ClearFramebufferConstantBuffer bufferData;
-    //    bufferData.matrix_.m23_ = Clamp(depth, 0.0f, 1.0f);
-    //    bufferData.color_ = color.ToVector4();
-
-    /*ConstantBufferRange buffers[MAX_SHADER_PARAMETER_GROUPS];
-    buffers[0].constantBuffer_ = GetOrCreateConstantBuffer(VS, 0, sizeof(bufferData));
-    buffers[0].constantBuffer_->Update(&bufferData);
-    buffers[0].size_ = sizeof(bufferData);*/
-
-    //    SetBlendMode(BLEND_REPLACE);
-    //    SetColorWrite(flags & CLEAR_COLOR);
-    //    SetCullMode(CULL_NONE);
-    //    SetDepthTest(CMP_ALWAYS);
-    //    SetDepthWrite(flags & CLEAR_DEPTH);
-    //    SetFillMode(FILL_SOLID);
-    //    SetScissorTest(false);
-    //    SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
-    //    SetShaders(GetShader(VS, "ClearFramebuffer"), GetShader(PS, "ClearFramebuffer"));
-
-    //SetShaderConstantBuffers(buffers);
-
-    //    geometry->Draw(this);
-
-    //    SetStencilTest(false);
-    //    ClearParameterSources();
-    //}
-
-    //// Restore color & depth write state now
-    /*SetColorWrite(oldColorWrite);
-    SetDepthWrite(oldDepthWrite);*/
+// note: idk if commented case below is really necessary
+// rbfx only reaches this case at startup and never is reached
+// again. all clear operation using blit is handled by RenderBufferManager::DrawQuad()
+//    else {
+//        ClearPipelineDesc clearDesc;
+//        clearDesc.rtTexture_ = impl_->swapChain_->GetDesc().ColorBufferFormat;
+//        clearDesc.colorWrite_ = flags & CLEAR_COLOR;
+//        clearDesc.depthWrite_ = flags & CLEAR_DEPTH;
+//        clearDesc.clearStencil_ = flags & CLEAR_STENCIL;
+//        //SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
+//        IBuffer* frameCB = impl_->constantBufferManager_->GetOrCreateBuffer(ShaderParameterGroup::SP_FRAME);
+//        auto* pipelineHolder = impl_->commonPipelines_->GetOrCreateClearPipeline(clearDesc);
+//
+//        {
+//            MapHelper<Color> clearColor(impl_->deviceContext_, frameCB, MAP_WRITE, MAP_FLAG_DISCARD);
+//            *clearColor = color;
+//        }
+//        ITextureView* rts[] = { impl_->swapChain_->GetCurrentBackBufferRTV() };
+//        // Vulkan needs to SetRenderTargets because they create a RenderPass.
+//        impl_->deviceContext_->SetRenderTargets(1,
+//            rts,
+//            impl_->swapChain_->GetDepthBufferDSV(),
+//            RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+//        );
+//        impl_->deviceContext_->SetPipelineState(pipelineHolder->GetPipeline());
+//        impl_->deviceContext_->SetStencilRef(stencil);
+//
+//        impl_->deviceContext_->CommitShaderResources(pipelineHolder->GetShaderResourceBinding(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+//
+//        DrawAttribs drawAttribs;
+//        drawAttribs.NumVertices = 4;
+//#ifdef URHO3D_DEBUG
+//        impl_->deviceContext_->BeginDebugGroup("Clear w/ Blit");
+//        impl_->deviceContext_->Draw(drawAttribs);
+//        impl_->deviceContext_->EndDebugGroup();
+//#else
+//        impl_->deviceContext->Draw(drawAttribs);
+//#endif
+//        
+//    }
 }
 
 bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)

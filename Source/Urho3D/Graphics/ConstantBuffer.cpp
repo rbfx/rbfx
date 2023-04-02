@@ -24,9 +24,9 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/ConstantBuffer.h"
 #include "../IO/Log.h"
-
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -36,6 +36,10 @@ ConstantBuffer::ConstantBuffer(Context* context) :
     Object(context),
     GPUObject(GetSubsystem<Graphics>())
 {
+#ifdef URHO3D_DILIGENT
+    if(graphics_->GetRenderBackend() == RENDER_VULKAN)
+        SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(ConstantBuffer, HandleEndRendering));
+#endif
 }
 
 ConstantBuffer::~ConstantBuffer()

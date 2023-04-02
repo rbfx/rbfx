@@ -132,6 +132,9 @@ public:
     }
 
 private:
+#ifdef URHO3D_DILIGENT
+    void HandleEndRendering(StringHash eventType, VariantMap& eventData);
+#endif
     /// Create buffer.
     bool Create();
     /// Update the shadow data to the GPU buffer.

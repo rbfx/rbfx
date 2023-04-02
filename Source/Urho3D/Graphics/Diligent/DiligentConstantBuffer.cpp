@@ -94,4 +94,10 @@ void ConstantBuffer::Update(const void* data)
     }
 }
 
+void ConstantBuffer::HandleEndRendering(StringHash eventType, VariantMap& eventData) {
+    if (graphics_->GetRenderBackend() != RENDER_VULKAN)
+        return;
+    dataLost_ = true;
+}
+
 }

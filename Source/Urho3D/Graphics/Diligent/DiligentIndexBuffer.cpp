@@ -303,4 +303,11 @@ void IndexBuffer::UnmapBuffer()
     }*/
 }
 
+void IndexBuffer::HandleEndRendering(StringHash eventType, VariantMap& eventData) {
+    if (graphics_->GetRenderBackend() != RENDER_VULKAN)
+        return;
+    if (dynamic_)
+        dataLost_ = true;
+}
+
 }
