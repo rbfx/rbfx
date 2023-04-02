@@ -132,6 +132,11 @@ public:
 #ifdef URHO3D_DILIGENT
         if (useConstantBuffers_) {
             const unsigned groupLayoutHash = constantBuffers_.currentLayout_->GetConstantBufferHash(group);
+            const unsigned size = constantBuffers_.currentLayout_->GetConstantBufferSize(group);
+            ConstantBufferManagerTicket* ticket = cbufferManager_->GetTicket(group, size);
+            currentCBufferTicket_ = ticket;
+            if (!ticket)
+                return false;
             // If constant buffer for this group is currently disabled...
             if (groupLayoutHash == 0)
             {
@@ -140,18 +145,10 @@ public:
                     constantBuffers_.currentHashes_[group] = 0;
                 return false;
             }
-            // If data and/or layout changed, acquire new ticket
+            // If data or layout changes, acquire new ticket
             if (differentFromPrevious || groupLayoutHash != constantBuffers_.currentHashes_[group])
             {
-                const unsigned size = constantBuffers_.currentLayout_->GetConstantBufferSize(group);
-
-                ConstantBufferManagerTicket* ticket = cbufferManager_->GetTicket(group);
-
-                if (ticket->data_.size() < size)
-                    ticket->data_.resize(size);
-
-                currentCBufferTicket_ = ticket;
-                constantBuffers_.currentData_ = ticket->data_.data();
+                constantBuffers_.currentData_ = ticket->GetPointerData();
                 constantBuffers_.currentHashes_[group] = groupLayoutHash;
                 constantBuffers_.currentGroup_ = group;
                 return true;
@@ -235,7 +232,7 @@ public:
         if (useConstantBuffers_)
         {
 #ifdef URHO3D_DILIGENT
-            currentDrawCommand_.cbufferTicketIds_[group] = currentCBufferTicket_->id_;
+            currentDrawCommand_.cbufferTicketIds_[group] = currentCBufferTicket_->GetId();
 #endif
             // All data is already stored, nothing to do
             constantBuffers_.currentGroup_ = MAX_SHADER_PARAMETER_GROUPS;

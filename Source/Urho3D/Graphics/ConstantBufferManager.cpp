@@ -3,31 +3,72 @@
 
 namespace Urho3D
 {
-    ConstantBufferManager::ConstantBufferManager(Context* context) : Object(context) {
-        unsigned size = MAX_SHADER_PARAMETER_GROUPS;
-        while (size--) {
-            data_[size] = ea::make_shared<ConstantBufferManagerData>();
-        }
+    ConstantBufferManagerTicket::ConstantBufferManagerTicket(ConstantBufferManagerTicketDesc desc) :
+        id_(desc.id_),
+        size_(desc.size_),
+        offset_(desc.offset_),
+        group_(desc.group_),
+        manager_(desc.manager_)
+    {
     }
-    ConstantBufferManagerTicket* ConstantBufferManager::GetTicket(ShaderParameterGroup grp)
+
+    unsigned char* ConstantBufferManagerTicket::GetPointerData() const {
+        return manager_->GetBufferData(group_) + offset_;
+    }
+
+    ConstantBufferManager::ConstantBufferManager(Context* context) : Object(context) {
+        unsigned size = MAX_SHADER_PARAMETER_GROUPS - 1;
+        do{
+            data_[size] = ea::make_shared<ConstantBufferManagerData>();
+            buffer_[size] = ea::make_pair(0, ea::shared_array<uint8_t>(new uint8_t[0]));
+        } while (size--);
+    }
+    ConstantBufferManagerTicket* ConstantBufferManager::GetTicket(ShaderParameterGroup grp, size_t size)
     {
         assert(grp < MAX_SHADER_PARAMETER_GROUPS);
-        unsigned nextTicket = data_[grp]->nextTicket_;
+        if (size == 0)
+            return nullptr;
+        ea::shared_ptr<ConstantBufferManagerData> mgrData = data_[grp];
+        const unsigned nextTicket = data_[grp]->nextTicket_;
+        ++mgrData->nextTicket_;
+
+        ConstantBufferManagerTicketDesc desc = {};
+        desc.group_ = grp;
+        desc.id_ = nextTicket;
+        desc.offset_ = mgrData->lastOffset_;
+        desc.size_ = size;
+        desc.manager_ = this;
+
         if (nextTicket >= data_[grp]->tickets_.size()) {
-            ea::shared_ptr<ConstantBufferManagerTicket> ticket = ea::make_shared<ConstantBufferManagerTicket>();
-            ticket->group_ = grp;
-            ticket->id_ = data_[grp]->tickets_.size();
+            ea::shared_ptr<ConstantBufferManagerTicket> ticket = ea::make_shared<ConstantBufferManagerTicket>(desc);
             data_[grp]->tickets_.push_back(ticket);
         }
 
-        ConstantBufferManagerTicket* ticket = data_[grp]->tickets_[nextTicket++].get();
-        data_[grp]->nextTicket_ = nextTicket;
-        return ticket;
+        size_t totalSize = mgrData->lastOffset_ + size;
+        auto bufferPair = buffer_[grp];
+        if (totalSize > bufferPair.first) {
+            ea::shared_array<uint8_t> newBuffer(new uint8_t[totalSize]);
+            if (bufferPair.first > 0)
+                memcpy_s(newBuffer.get(), bufferPair.first, bufferPair.second.get(), bufferPair.first);
+            buffer_[grp] = ea::make_pair(totalSize, newBuffer);
+        }
+
+        mgrData->cbufferSize_ = Max(size, mgrData->cbufferSize_);
+        mgrData->lastOffset_ = totalSize;
+
+        ea::shared_ptr<ConstantBufferManagerTicket> ticket = data_[grp]->tickets_[nextTicket];
+        // If ticket has different size from last frame, we must reallocate then with new sizes
+        if (ticket->GetSize() != size)
+            mgrData->tickets_[nextTicket] = ticket = ea::make_shared<ConstantBufferManagerTicket>(desc);
+
+        return ticket.get();
     }
     void ConstantBufferManager::Reset(ShaderParameterGroup grp)
     {
         assert(grp < MAX_SHADER_PARAMETER_GROUPS);
         data_[grp]->nextTicket_ = 0;
+        data_[grp]->lastOffset_ = 0;
+        data_[grp]->cbufferSize_ = 0;
         data_[grp]->prevTicketDispatched_ = M_MAX_UNSIGNED;
     }
     bool ConstantBufferManager::PrepareBuffers()
@@ -35,19 +76,14 @@ namespace Urho3D
         bool hasChangedBuffers = false;
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i) {
             ea::shared_ptr<ConstantBufferManagerData> data = data_[i];
-            for (unsigned j = 0; j < data->tickets_.size(); ++j)
-                data_[i]->cbufferSize_ = Max(data_[i]->cbufferSize_, data_[i]->tickets_[j]->data_.size());
             if (!data_[i]->cbuffer_) {
-                hasChangedBuffers = true;
                 data_[i]->cbuffer_ = new ConstantBuffer(context_);
 #ifdef URHO3D_DEBUG
                 data_[i]->cbuffer_->SetDbgName(ConstantBufferDebugNames[i]);
 #endif
             }
-            if (data_[i]->cbuffer_->GetSize() < data_[i]->cbufferSize_) {
-                hasChangedBuffers = true;
+            if (data_[i]->cbufferSize_ > data_[i]->cbuffer_->GetSize())
                 data_[i]->cbuffer_->SetSize(data_[i]->cbufferSize_);
-            }
         }
 
         return hasChangedBuffers;
@@ -71,7 +107,7 @@ namespace Urho3D
             return;
 
         auto ticket = data->tickets_[ticketId];
-        const void* bufferData = ticket->data_.data();
+        const void* bufferData = ticket->GetPointerData();
         // Write data into buffer
         data->cbuffer_->Update(bufferData);
         data->prevTicketDispatched_ = ticketId;
