@@ -50,6 +50,8 @@ public:
     const NodePrefab& GetNodePrefab() const;
     NodePrefab& GetMutableNodePrefab();
 
+    const NodePrefab& GetNodePrefabSlice(ea::string_view path) const;
+
 private:
     bool LoadLegacyXML(const XMLElement& source) override;
 
