@@ -384,6 +384,55 @@ void NodePrefab::Clear()
     children_.clear();
 }
 
+const ea::string& NodePrefab::GetNodeName() const
+{
+    const auto& attributes = node_.GetAttributes();
+    for (const AttributePrefab& attribute : attributes)
+    {
+        if (attribute.GetName() == "Name" || attribute.GetNameHash() == StringHash{"Name"})
+            return attribute.GetValue().GetString();
+    }
+    return EMPTY_STRING;
+}
+
+const NodePrefab& NodePrefab::FindChild(ea::string_view path) const
+{
+    if (path.empty())
+        return *this;
+
+    const auto sep = path.find('/');
+    const ea::string_view childName = sep != ea::string_view::npos ? path.substr(0, sep) : path;
+    const ea::string_view pathTail = sep != ea::string_view::npos ? path.substr(sep + 1) : "";
+
+    if (childName.empty())
+    {
+        URHO3D_LOGERROR("Empty child name in prefab path '{}'", path);
+        return Empty;
+    }
+
+    if (childName[0] == '#')
+    {
+        // TODO(string): Refactor StringUtils
+        const unsigned childIndex = ToUInt(ea::string(childName.substr(1)));
+        if (childIndex >= children_.size())
+        {
+            URHO3D_LOGERROR("Invalid child index #{} in prefab path '{}'", childIndex, path);
+            return Empty;
+        }
+
+        return children_[childIndex].FindChild(pathTail);
+    }
+
+    for (const NodePrefab& child : children_)
+    {
+        if (child.GetNodeName() == childName)
+            return child.FindChild(pathTail);
+    }
+
+    URHO3D_LOGERROR("Child '{}' is not found in prefab path '{}'", childName, path);
+    return Empty;
+}
+
 bool NodePrefab::IsEmpty() const
 {
     return node_.GetAttributes().empty() && components_.empty() && children_.empty();

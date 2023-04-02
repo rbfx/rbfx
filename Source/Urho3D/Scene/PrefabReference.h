@@ -53,8 +53,10 @@ public:
 
     /// Attributes.
     /// @{
-    void SetPrefab(PrefabResource* prefab, bool createInstance = true);
+    void SetPrefab(PrefabResource* prefab, ea::string_view path = {}, bool createInstance = true);
     PrefabResource* GetPrefab() const { return prefab_; }
+    void SetPath(ea::string_view path);
+    const ea::string& GetPath() const { return path_; }
     void SetPrefabAttr(ResourceRef prefab);
     ResourceRef GetPrefabAttr() const { return prefabRef_; }
     /// @}
@@ -86,6 +88,8 @@ private:
     void RemoveTemporaryChildren(Node* node) const;
     void InstantiatePrefab(const NodePrefab& nodePrefab);
 
+    void MarkPrefabDirty() { prefabDirty_ = true; }
+
     /// Try to create instance without spawning any new nodes or components.
     /// It may cause some nodes or components to remain if prefab is different.
     /// So, this method is not completely reliable, but it's the best we can do.
@@ -99,6 +103,7 @@ private:
 
     SharedPtr<PrefabResource> prefab_;
     ResourceRef prefabRef_;
+    ea::string path_;
 
     bool prefabDirty_{};
 
