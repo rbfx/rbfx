@@ -122,7 +122,6 @@ void SkeletalAnimation::CreateScene()
     const float MODEL_ROTATE_SPEED = 100.0f;
     const BoundingBox bounds(Vector3(-20.0f, 0.0f, -20.0f), Vector3(20.0f, 0.0f, 20.0f));
 
-    SetRandomSeed(10);
     for (unsigned i = 0; i < NUM_MODELS; ++i)
     {
         Node* modelNode = scene_->CreateChild("Jill");
