@@ -43,7 +43,7 @@ namespace Urho3D
         ShaderParameterGroup GetGroup() const { return group_; }
         unsigned char* GetPointerData() const;
         size_t GetSize() const { return size_; }
-
+        size_t GetOffset() const { return offset_; }
     private:
         ShaderParameterGroup group_;
         size_t id_;
@@ -97,6 +97,8 @@ namespace Urho3D
         void Finalize();
 
         unsigned char* GetBufferData(ShaderParameterGroup grp) { return buffer_[grp].second.get(); }
+
+        void PrintDebugOutput();
     private:
         ea::array<ea::pair<size_t, ea::shared_array<uint8_t>>, MAX_SHADER_PARAMETER_GROUPS> buffer_;
         ea::array<ea::shared_ptr<ConstantBufferManagerData>, MAX_SHADER_PARAMETER_GROUPS> data_;

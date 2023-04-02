@@ -26,7 +26,7 @@ namespace Urho3D
     ConstantBufferManagerTicket* ConstantBufferManager::GetTicket(ShaderParameterGroup grp, size_t size)
     {
         assert(grp < MAX_SHADER_PARAMETER_GROUPS);
-        if (size == 0)
+        if (size == 0 || grp >= MAX_SHADER_PARAMETER_GROUPS)
             return nullptr;
         ea::shared_ptr<ConstantBufferManagerData> mgrData = data_[grp];
         const unsigned nextTicket = data_[grp]->nextTicket_;
@@ -41,7 +41,8 @@ namespace Urho3D
 
         if (nextTicket >= data_[grp]->tickets_.size()) {
             ea::shared_ptr<ConstantBufferManagerTicket> ticket = ea::make_shared<ConstantBufferManagerTicket>(desc);
-            data_[grp]->tickets_.push_back(ticket);
+            mgrData->nextTicket_ = mgrData->tickets_.size();
+            mgrData->tickets_.push_back(ticket);
         }
 
         size_t totalSize = mgrData->lastOffset_ + size;
@@ -58,7 +59,7 @@ namespace Urho3D
 
         ea::shared_ptr<ConstantBufferManagerTicket> ticket = data_[grp]->tickets_[nextTicket];
         // If ticket has different size from last frame, we must reallocate then with new sizes
-        if (ticket->GetSize() != size)
+        if (ticket->GetSize() != size || ticket->GetOffset() != desc.offset_)
             mgrData->tickets_[nextTicket] = ticket = ea::make_shared<ConstantBufferManagerTicket>(desc);
 
         return ticket.get();
@@ -114,9 +115,49 @@ namespace Urho3D
     }
     void ConstantBufferManager::Finalize()
     {
+#ifdef URHO3D_DEBUG
+        bool logOutput = false;
+        // note: if you wan't debug memory, place breakpoint on if and change logOutput value to true
+        // or you can call manually PrintDebugOutput
+        if(logOutput)
+            PrintDebugOutput();
+#endif
         unsigned i = MAX_SHADER_PARAMETER_GROUPS - 1;
         do {
             Reset((ShaderParameterGroup)i);
         } while (i--);
+    }
+
+    void ConstantBufferManager::PrintDebugOutput() {
+        ea::string output = "======== Tickets ========\n";
+        for (uint8_t i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i) {
+            auto ticketMgr = data_[i];
+            output += Format("#{} nextTicket: {:d} | cbufferSize: {:d} | lastOffset: {:d} | prevTicketDispatched: {:d}\n",
+                shaderParameterGroupNames[i],
+                ticketMgr->nextTicket_,
+                ticketMgr->cbufferSize_,
+                ticketMgr->lastOffset_,
+                ticketMgr->prevTicketDispatched_
+            );
+            size_t offset = 0;
+            for (auto ticket = ticketMgr->tickets_.begin(); ticket != ticketMgr->tickets_.end(); ++ticket) {
+                output += Format("-- [{:d}] size: {:d} | offset: {:d} | corrected offset: {:d}\n",
+                    ticket->get()->GetId(),
+                    ticket->get()->GetSize(),
+                    ticket->get()->GetOffset(),
+                    offset
+                );
+                offset += ticket->get()->GetSize();
+            }
+        }
+        output += "======== Buffers ========\n";
+        for (uint8_t i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i) {
+            auto bufferPair = buffer_[i];
+            output += Format("#{} size: {:d}\n",
+                ea::string(shaderParameterGroupNames[i]),
+                bufferPair.first
+            );
+        }
+        URHO3D_LOGDEBUG(output);
     }
 }
