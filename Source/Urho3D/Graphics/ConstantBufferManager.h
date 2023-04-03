@@ -23,7 +23,6 @@
 #pragma once
 #include "../Graphics/ConstantBuffer.h"
 #include "../Graphics/Graphics.h"
-
 namespace Urho3D
 {
     class ConstantBufferManager;
@@ -59,6 +58,11 @@ namespace Urho3D
         unsigned cbufferSize_{0};
         size_t lastOffset_{0};
         unsigned prevTicketDispatched_{M_MAX_UNSIGNED};
+    };
+    struct ConstantBufferManagerGCData {
+        size_t totalUsedBytes_{0};
+        size_t lastTotalUsedBytes_{0};
+        uint8_t tickCount_{0};
     };
     /// @{
     /// This class is used by the DrawCommandQueue
@@ -99,10 +103,27 @@ namespace Urho3D
         unsigned char* GetBufferData(ShaderParameterGroup grp) { return buffer_[grp].second.get(); }
 
         void PrintDebugOutput();
+
+        /// @{
+        /// This value indicates when clean will occurs
+        /// Default is 60, after 60 frames all buffers will be resized down
+        /// to free up memory usage.
+        /// @}
+        uint8_t GetCleanTickCount() const { return gcCleanTickCount_; }
+        void SetCleanTickCount(uint8_t tickCount) { gcCleanTickCount_ = tickCount; }
+        /// @{
+        /// This method will free unused memory from buffers
+        /// Usually, this method is called automatically by the
+        /// GC procedure.
+        /// @}
+        void Collect();
     private:
+        void CollectBuffer(ShaderParameterGroup grp, size_t newSize);
         void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
-        uint64_t frame_;
+        uint8_t gcCleanTickCount_;
+        bool enableGC_;
         ea::array<ea::pair<size_t, ea::shared_array<uint8_t>>, MAX_SHADER_PARAMETER_GROUPS> buffer_;
         ea::array<ea::shared_ptr<ConstantBufferManagerData>, MAX_SHADER_PARAMETER_GROUPS> data_;
+        ea::array<ea::shared_ptr<ConstantBufferManagerGCData>, MAX_SHADER_PARAMETER_GROUPS> gcData_;
     };
 } // namespace Urho3D

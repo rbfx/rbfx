@@ -1,5 +1,6 @@
 #include "./ConstantBufferManager.h"
 #include "./GraphicsDefs.h"
+#include "./GraphicsEvents.h"
 
 namespace Urho3D
 {
@@ -16,12 +17,18 @@ namespace Urho3D
         return manager_->GetBufferData(group_) + offset_;
     }
 
-    ConstantBufferManager::ConstantBufferManager(Context* context) : Object(context) {
+    ConstantBufferManager::ConstantBufferManager(Context* context) :
+        Object(context),
+        gcCleanTickCount_(60),
+        enableGC_(false) {
         unsigned size = MAX_SHADER_PARAMETER_GROUPS - 1;
         do{
             data_[size] = ea::make_shared<ConstantBufferManagerData>();
             buffer_[size] = ea::make_pair(0, ea::shared_array<uint8_t>(new uint8_t[0]));
+            gcData_[size] = ea::make_shared<ConstantBufferManagerGCData>();
         } while (size--);
+
+        SubscribeToEvent(E_BEGINRENDERING, URHO3D_HANDLER(ConstantBufferManager, HandleBeginFrame));
     }
     ConstantBufferManagerTicket* ConstantBufferManager::GetTicket(ShaderParameterGroup grp, size_t size)
     {
@@ -52,6 +59,7 @@ namespace Urho3D
             if (bufferPair.first > 0)
                 memcpy_s(newBuffer.get(), bufferPair.first, bufferPair.second.get(), bufferPair.first);
             buffer_[grp] = ea::make_pair(totalSize, newBuffer);
+            enableGC_ = true;
         }
 
         mgrData->cbufferSize_ = Max(size, mgrData->cbufferSize_);
@@ -77,6 +85,9 @@ namespace Urho3D
         bool hasChangedBuffers = false;
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i) {
             ea::shared_ptr<ConstantBufferManagerData> data = data_[i];
+            // calculate total of used bytes
+            // at start of the frame this value will reset.
+            gcData_[i]->totalUsedBytes_ = Max(gcData_[i]->totalUsedBytes_, data->lastOffset_);
             if (!data_[i]->cbuffer_) {
                 data_[i]->cbuffer_ = new ConstantBuffer(context_);
 #ifdef URHO3D_DEBUG
@@ -162,6 +173,61 @@ namespace Urho3D
     }
 
     void ConstantBufferManager::HandleBeginFrame(StringHash eventType, VariantMap& eventData) {
-        ++frame_;
+        if (!enableGC_)
+            return;
+        uint8_t i = MAX_SHADER_PARAMETER_GROUPS - 1;
+        uint8_t readyBuffers = 0;
+        do {
+            auto gcData = gcData_[i];
+            size_t usedBytes = gcData->totalUsedBytes_;
+            gcData->totalUsedBytes_ = 0;
+            if (usedBytes != gcData->lastTotalUsedBytes_) {
+                gcData->lastTotalUsedBytes_ = usedBytes;
+                gcData->tickCount_ = 0; // Reset tick count if used bytes had been changed.
+                continue;
+            } else if (gcData->tickCount_ < gcCleanTickCount_) {
+                ++gcData->tickCount_;
+                continue;
+            }
+            // If bytes usage is equal to size of working buffer, skip resize!
+            else if (usedBytes == buffer_[i].first) {
+                ++readyBuffers;
+                continue;
+            }
+            gcData->tickCount_ = gcData->lastTotalUsedBytes_ = 0;
+            CollectBuffer((ShaderParameterGroup)i, usedBytes);
+        } while (i--);
+
+        // If all buffers has not resized, gc collection is now finish
+        // and it will be disabled until a buffer resizes again.
+        if (readyBuffers == MAX_SHADER_PARAMETER_GROUPS)
+            enableGC_ = false;
+    }
+
+    void ConstantBufferManager::Collect() {
+        uint8_t i = MAX_SHADER_PARAMETER_GROUPS - 1;
+        do {
+            auto gcData = gcData_[i];
+            size_t usedBytes = gcData->totalUsedBytes_;
+            gcData->totalUsedBytes_ = gcData->tickCount_ = gcData->lastTotalUsedBytes_ = 0;
+            CollectBuffer((ShaderParameterGroup)i, usedBytes);
+        } while (i--);
+    }
+
+    void ConstantBufferManager::CollectBuffer(ShaderParameterGroup grp, size_t newSize) {
+        auto bufferPair = buffer_[grp];
+        buffer_[grp] = ea::make_pair(newSize, ea::shared_array<uint8_t>(new uint8_t[newSize]));
+        if (data_[grp]->cbuffer_)
+            data_[grp]->cbuffer_->SetSize(newSize);
+#ifdef URHO3D_DEBUG
+        // Division can increase a little bit of performance
+        // This log will be skipped on release build.
+        URHO3D_LOGDEBUG("Buffer {} has resized down to {:d}=>{:d} | ratio: {:f}",
+            shaderParameterGroupNames[grp],
+            bufferPair.first,
+            newSize,
+            ((double)newSize / (double)bufferPair.first)
+        );
+#endif
     }
 }
