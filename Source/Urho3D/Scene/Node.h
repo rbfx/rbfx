@@ -106,7 +106,8 @@ public:
     bool Save(PrefabWriter& writer) const;
 
     /// Instantiate scene content from prefab. Return root node if successful.
-    Node* InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation);
+    Node* InstantiatePrefab(const NodePrefab& prefab, const Vector3& position = Vector3::ZERO,
+        const Quaternion& rotation = Quaternion::IDENTITY);
     /// Generate prefab from scene content.
     void GeneratePrefab(NodePrefab& prefab) const;
     NodePrefab GeneratePrefab() const;
