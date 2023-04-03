@@ -97,6 +97,7 @@
 #endif
 #ifdef URHO3D_DILIGENT
 #include "../Graphics/ConstantBufferManager.h"
+#include "../Graphics/PipelineStateCache.h"
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -286,6 +287,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 #endif
 #ifdef URHO3D_DILIGENT
     context_->RegisterSubsystem(new ConstantBufferManager(context_));
+    context_->RegisterSubsystem(new PipelineStateCache(context_));
 #endif
 #ifdef URHO3D_URHO2D
     // 2D graphics library is dependent on 3D graphics library
@@ -451,6 +453,12 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         RegisterStandardSerializableHooks();
 #endif
     }
+
+#ifdef URHO3D_DILIGENT
+    // Initialize Pipeline State Cache
+    GetSubsystem<PipelineStateCache>()->Init();
+#endif
+
     frameTimer_.Reset();
 
     URHO3D_LOGINFO("Initialized engine");
