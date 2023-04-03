@@ -68,8 +68,8 @@ bool ConstantBuffer::SetSize(unsigned size)
         bufferDesc.Name = bufferName.c_str();
 #endif
         bufferDesc.Size = size_;
-        bufferDesc.Usage = USAGE_DEFAULT;
-        bufferDesc.CPUAccessFlags = CPU_ACCESS_NONE;
+        bufferDesc.Usage = USAGE_DYNAMIC;
+        bufferDesc.CPUAccessFlags = CPU_ACCESS_WRITE;
         bufferDesc.BindFlags = BIND_UNIFORM_BUFFER;
         //bufferDesc.Mode = BUFFER_MODE_RAW;
 
@@ -80,6 +80,7 @@ bool ConstantBuffer::SetSize(unsigned size)
             return false;
         }
         URHO3D_LOGDEBUG("Created Constant Buffer {}", buffer->GetUniqueID());
+
         object_ = buffer;
     }
 
@@ -90,7 +91,11 @@ void ConstantBuffer::Update(const void* data)
 {
     using namespace Diligent;
     if (object_) {
-        graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer(object_.Cast<IBuffer>(IID_Buffer), 0, size_, data, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        void* mappedData = nullptr;
+        IBuffer* buffer = object_.Cast<IBuffer>(IID_Buffer);
+        graphics_->GetImpl()->GetDeviceContext()->MapBuffer(buffer, MAP_WRITE, MAP_FLAG_DISCARD, mappedData);
+        memcpy(mappedData, data, size_);
+        graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(buffer, MAP_WRITE);
     }
 }
 

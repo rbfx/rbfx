@@ -1,7 +1,6 @@
 #include "../ShaderResourceBinding.h"
 #include "DiligentGraphicsImpl.h"
 #include "./DiligentLookupSettings.h"
-#include "./DiligentResourceMappingCache.h"
 
 namespace Urho3D
 {

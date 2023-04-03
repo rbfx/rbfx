@@ -82,9 +82,6 @@
 #include <Diligent/Graphics/GraphicsTools/interface/MapHelper.hpp>
 
 #include "DiligentLookupSettings.h"
-#include "DiligentConstantBufferManager.h"
-#include "DiligentCommonPipelines.h"
-#include "DiligentResourceMappingCache.h"
 #if UWP
 #include <wrl/client.h>
 #include <windows.ui.xaml.media.dxinterop.h>
