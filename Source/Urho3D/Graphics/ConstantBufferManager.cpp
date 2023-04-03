@@ -217,8 +217,6 @@ namespace Urho3D
     void ConstantBufferManager::CollectBuffer(ShaderParameterGroup grp, size_t newSize) {
         auto bufferPair = buffer_[grp];
         buffer_[grp] = ea::make_pair(newSize, ea::shared_array<uint8_t>(new uint8_t[newSize]));
-        if (data_[grp]->cbuffer_)
-            data_[grp]->cbuffer_->SetSize(newSize);
 #ifdef URHO3D_DEBUG
         // Division can increase a little bit of performance
         // This log will be skipped on release build.

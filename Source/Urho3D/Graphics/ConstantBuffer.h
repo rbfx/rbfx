@@ -69,9 +69,6 @@ public:
 #endif
     }
 private:
-#ifdef URHO3D_DILIGENT
-    void HandleEndRendering(StringHash eventType, VariantMap& eventData);
-#endif
     void BuildHash() {
         hash_ = MakeHash((unsigned long long)this);
         CombineHash(hash_, MakeHash(size_));

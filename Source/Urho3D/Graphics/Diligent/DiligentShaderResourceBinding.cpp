@@ -11,20 +11,24 @@ namespace Urho3D
     }
     void ShaderResourceBinding::UpdateInternalBindings() {
         hash_ = 0u;
-        IShaderResourceBinding* shaderResBinding = static_cast<IShaderResourceBinding*>(shaderResBindingObj_);
-        DiligentResourceMappingCache* resMappingCache = graphics_->GetImpl()->GetResourceMappingCache();
-        ea::vector<ResourceMappingEntry> resourceEntries;
+        RefCntAutoPtr<IShaderResourceBinding> shaderResBinding = shaderResBindingObj_;
+        
+        ResourceMappingDesc resMappingDesc;
+        resMappingDesc.pEntries = nullptr;
+        RefCntAutoPtr<Diligent::IResourceMapping> resMapping;
+        graphics_->GetImpl()->GetDevice()->CreateResourceMapping(resMappingDesc, &resMapping);
+        assert(resMapping);
 
         // Add Constant Buffers to Resource Mapping Entries
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i) {
             if (constantBuffers_[i] == nullptr)
                 continue;
-            ResourceMappingEntry resMap;
-            resMap.Name = shaderParameterGroupNames[i];
-            resMap.pObject = static_cast<IDeviceObject*>(constantBuffers_[i]->GetGPUObject());
 
-            resourceEntries.push_back(resMap);
-
+            resMapping->AddResource(
+                shaderParameterGroupNames[i],
+                constantBuffers_[i]->GetGPUObject(),
+                true
+            );
             CombineHash(hash_, constantBuffers_[i]->ToHash());
         }
 
@@ -64,24 +68,24 @@ namespace Urho3D
                 Texture* tex = textures_[texUnitIt->second];
 
                 {   // Add Texture Resource
-                    ResourceMappingEntry resMap;
-                    resMap.Name = shaderResDesc.Name;
-                    resMap.pObject = static_cast<IDeviceObject*>(tex->GetShaderResourceView());
-                    resourceEntries.push_back(resMap);
+                    resMapping->AddResource(
+                        shaderResDesc.Name,
+                        tex->GetShaderResourceView(),
+                        true
+                    );
                 }
                 {   // Add Texture Sampler
-                    ResourceMappingEntry resMap;
-                    resMap.Name = resSamplerName->c_str();
-                    resMap.pObject = static_cast<IDeviceObject*>(tex->GetSampler());
-                    assert(resMap.pObject);
-                    resourceEntries.push_back(resMap);
+                    resMapping->AddResource(
+                        resSamplerName->c_str(),
+                        tex->GetSampler(),
+                        true
+                    );
                 }
 
                 CombineHash(hash_, (unsigned long long)textures_[texUnitIt->second].Get());
             }
         }
 
-        Diligent::IResourceMapping* resMapping = resMappingCache->CreateOrGetResourceMap(resourceEntries);
         shaderResBinding->BindResources(SHADER_TYPE_ALL, resMapping, BIND_SHADER_RESOURCES_UPDATE_ALL);
 
         strList.clear();

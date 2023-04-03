@@ -81,9 +81,6 @@ public:
     /// Mark render targets as dirty. Must be called if render targets were set using DX11 device directly.
     void MarkRenderTargetsDirty() { renderTargetsDirty_ = true; }
 
-    DiligentConstantBufferManager* GetConstantBufferManager() { return constantBufferManager_; }
-    DiligentResourceMappingCache* GetResourceMappingCache() { return resourceMappingCache_; }
-
     unsigned FindBestAdapter(Diligent::IEngineFactory* engineFactory, Diligent::Version& version);
 private:
     /// Graphics device.
@@ -170,17 +167,9 @@ private:
     ShaderProgramMap shaderPrograms_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_;
-    /// Constant Buffer Resource Mapping in use.
-    Diligent::IResourceMapping* constantBufferResMapping_;
-
-    DiligentConstantBufferManager* constantBufferManager_;
-
-    DiligentCommonPipelines* commonPipelines_;
-
-    DiligentResourceMappingCache* resourceMappingCache_;
-
+    /// Current running backend
     RenderBackend renderBackend_;
-
+    /// Current adapter id
     unsigned adapterId_;
 };
 

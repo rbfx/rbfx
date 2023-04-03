@@ -237,16 +237,6 @@ Graphics::~Graphics()
     if (impl_->device_) {
         impl_->device_->IdleGPU();
 
-        impl_->constantBufferManager_->Release();
-        impl_->commonPipelines_->Release();
-        delete impl_->constantBufferManager_;
-        delete impl_->commonPipelines_;
-        delete impl_->resourceMappingCache_;
-
-        impl_->constantBufferManager_ = nullptr;
-        impl_->commonPipelines_ = nullptr;
-        impl_->resourceMappingCache_ = nullptr;
-
         if(impl_->swapChain_)
             impl_->swapChain_->Release();
 
@@ -2312,11 +2302,6 @@ bool Graphics::CreateDevice(int width, int height)
 
         ea::string adapterDesc = "Adapter used " + ea::string(impl_->device_->GetAdapterInfo().Description);
         URHO3D_LOGINFO(adapterDesc);
-
-        //init requred objects from graphics impl.
-        impl_->constantBufferManager_ = new DiligentConstantBufferManager(this);
-        impl_->commonPipelines_ = new DiligentCommonPipelines(this);
-        impl_->resourceMappingCache_ = new DiligentResourceMappingCache(this);
     }
 
     if (!impl_->swapChain_)

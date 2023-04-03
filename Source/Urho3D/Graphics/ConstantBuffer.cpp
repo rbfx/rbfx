@@ -36,10 +36,6 @@ ConstantBuffer::ConstantBuffer(Context* context) :
     Object(context),
     GPUObject(GetSubsystem<Graphics>())
 {
-#ifdef URHO3D_DILIGENT
-    if(graphics_->GetRenderBackend() == RENDER_VULKAN)
-        SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(ConstantBuffer, HandleEndRendering));
-#endif
 }
 
 ConstantBuffer::~ConstantBuffer()

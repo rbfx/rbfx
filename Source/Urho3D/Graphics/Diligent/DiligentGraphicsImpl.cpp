@@ -41,10 +41,6 @@ GraphicsImpl::GraphicsImpl() :
     */
     resolveTexture_(nullptr),
     shaderProgram_(nullptr),
-    constantBufferResMapping_(nullptr),
-    constantBufferManager_(nullptr),
-    commonPipelines_(nullptr),
-    resourceMappingCache_(nullptr),
     renderBackend_(RENDER_D3D11),
     viewportDirty_(true),
     adapterId_(M_MAX_UNSIGNED)
