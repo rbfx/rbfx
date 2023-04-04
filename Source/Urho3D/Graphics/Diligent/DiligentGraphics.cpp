@@ -200,6 +200,8 @@ static void HandleDbgMessageCallbacks(Diligent::DEBUG_MESSAGE_SEVERITY severity,
     }
 }
 
+#ifdef WIN32
+
 #ifndef UWP
 static HWND GetWindowHandle(SDL_Window* window)
 {
@@ -208,6 +210,62 @@ static HWND GetWindowHandle(SDL_Window* window)
     SDL_VERSION(&sysInfo.version);
     SDL_GetWindowWMInfo(window, &sysInfo);
     return sysInfo.info.win.window;
+}
+#else
+static IUnknow* GetWindowHandle(SDL_Window* window)
+{
+    SDL_SysWMinfo sysInfo;
+
+    SDL_VERSION(&sysInfo.version);
+    SDL_GetWindowWMInfo(window, &sysInfo);
+    return sysInfo.info.winrt.window;
+}
+#endif
+#elif defined (PLATFORM_LINUX)
+static void GetWindowHandle(SDL_Window* window, Display** outDisplay, Window& outWindow)
+{
+    SDL_SysWMinfo sysInfo;
+
+    SDL_VERSION(&sysInfo.version);
+    SDL_GetWindowWMInfo(window, &sysInfo);
+    outDisplay = sysInfo.info.x11.display;
+    outWindow = sysInfo.info.x11.window;
+}
+#elif PLATFORM_MACOS
+static NSWindow* GetWindowHandle(SDL_Window* window)
+{
+    SDL_SysWMinfo sysInfo;
+
+    SDL_VERSION(&sysInfo.version);
+    SDL_GetWindowWMInfo(window, &sysInfo);
+    return sysInfo.info.cocoa.window;
+}
+#elif defined (PLATFORM_IOS) || defined(PLATFORM_TVOS)
+static UIWindow* GetWindowHandle(SDL_Window* window)
+{
+    SDL_SysWMinfo sysInfo;
+
+    SDL_VERSION(&sysInfo.version);
+    SDL_GetWindowWMInfo(window, &sysInfo);
+    return sysInfo.info.uikit.window;
+}
+#elif defined (PLATFORM_ANDROID)
+static ANativeWindow* GetWindowHandle(SDL_Window* window)
+{
+    SDL_SysWMinfo sysInfo;
+
+    SDL_VERSION(&sysInfo.version);
+    SDL_GetWindowWMInfo(window, &sysInfo);
+    return sysInfo.info.android.window;
+}
+#elif defined (PLATFORM_EMSCRIPTEN)
+static const char* GetWindowHandle()
+{
+    return "#canvas";
+}
+#else
+static void GetWindowHandle() {
+    assert(false);
 }
 #endif
 
@@ -2153,11 +2211,24 @@ bool Graphics::CreateDevice(int width, int height)
 {
     using namespace Diligent;
     NativeWindow wnd;
-#if defined(WIN32) && !defined(UWP)
-    wnd.hWnd = GetWindowHandle(window_);
+#ifdef WIN32
+
+#ifdef UWP
+    wnd.pCoreWindow = GetWindowHandle(window_);
 #else
-    // Not implemented.
-    assert(0);
+    wnd.hWnd = GetWindowHandle(window_);
+#endif
+
+#elif PLATFORM_LINUX
+    GetWindowHandle(window_, &wnd.pDisplay, &wnd.WindowId);
+#elif PLATFORM_MACOS
+    wnd.pNSView = GetWindowHandle(window_);
+#elif defined (PLATFORM_IOS) || defined(PLATFORM_TVOS)
+    wnd.pCALayer = GetWindowHandle(window_);
+#elif defined (PLATFORM_ANDROID)
+    wnd.pAWindow = GetWindowHandle(window_);
+#elif defined (PLATFORM_EMSCRIPTEN)
+    wnd.pCanvasId = GetWindowHandle(window_);
 #endif
 
     SwapChainDesc swapChainDesc;
