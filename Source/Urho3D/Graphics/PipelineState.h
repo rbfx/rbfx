@@ -303,10 +303,20 @@ private:
 /// Generic pipeline state cache.
 class URHO3D_API PipelineStateCache : public Object, private GPUObject
 {
+    friend class PipelineState;
     URHO3D_OBJECT(PipelineStateCache, Object);
 
 public:
     explicit PipelineStateCache(Context* context);
+    ///@{
+    /// Initializes pipeline state cache, read cached pso on disc
+    /// and creates pipeline state cache gpu object.
+    ///@}
+    void Init();
+    /// @{
+    /// Save cached pipeline objects into disk.
+    /// @}
+    void Save();
 
     /// Create new or return existing pipeline state. Returned state may be invalid.
     /// Return nullptr if description is malformed.
@@ -314,16 +324,25 @@ public:
 
     /// Internal. Remove pipeline state with given description from cache.
     void ReleasePipelineState(const PipelineStateDesc& desc);
-
+    /// Set Pipeline State Cache directory (Diligent only).
+    void SetCacheDir(const FileIdentifier& path);
+    /// Get Pipeline State Cache directory.
+    const FileIdentifier& GetCacheDir() const { return cacheDir_; }
 private:
     /// GPUObject callbacks
     /// @{
     void OnDeviceLost() override;
     void OnDeviceReset() override;
     void Release() override;
+#ifdef URHO3D_DILIGENT
+    void CreatePSOCache(const ByteVector& psoFileData);
+    void ReadPSOData(ByteVector& psoData);
+#endif
     /// @}
-
     void HandleResourceReload(StringHash eventType, VariantMap& eventData);
+
+    bool init_;
+    FileIdentifier cacheDir_;
 
     ea::unordered_map<PipelineStateDesc, WeakPtr<PipelineState>> states_;
 };

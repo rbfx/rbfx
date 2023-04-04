@@ -30,11 +30,14 @@
 #include "../Graphics/Shader.h"
 #include "../Resource/ResourceEvents.h"
 
+#include "../IO/VirtualFileSystem.h"
+#include "../Engine/EngineEvents.h"
+
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
-
+    static ea::string sPipelineStateCacheFileId = "PSCB";
 GeometryBufferArray::GeometryBufferArray(const Geometry* geometry, VertexBuffer* instancingBuffer)
     : GeometryBufferArray(geometry->GetVertexBuffers(), geometry->GetIndexBuffer(), instancingBuffer)
 {
@@ -144,9 +147,55 @@ bool PipelineState::Apply(Graphics* graphics)
 
 PipelineStateCache::PipelineStateCache(Context* context)
     : Object(context)
-    , GPUObject(GetSubsystem<Graphics>())
+    , GPUObject(GetSubsystem<Graphics>()),
+    init_(false)
 {
     SubscribeToEvent(E_RELOADFINISHED, &PipelineStateCache::HandleResourceReload);
+}
+void PipelineStateCache::Init()
+{
+    if (this->init_) {
+        URHO3D_LOGWARNING("PipelineStateCache has already initialized. Skipping then!");
+        return;
+    }
+    const VirtualFileSystem* vfs = GetSubsystem<VirtualFileSystem>();
+    ea::vector<uint8_t> fileData;
+    if (vfs->Exists(cacheDir_)) {
+        const AbstractFilePtr file = vfs->OpenFile(cacheDir_, FILE_READ);
+        // PSCB = Pipeline State Cache Binary
+        if (!file || file->ReadFileID() != sPipelineStateCacheFileId) {
+            URHO3D_LOGERROR("{} is not a valid pipeline state cache binary file", cacheDir_.ToUri());
+        }
+        else {
+            file->ReadBuffer(fileData);
+            URHO3D_LOGDEBUG("Loaded Pipeline State Cache ({:d})", fileData.size());
+        }
+    }
+#ifdef URHO3D_DILIGENT
+    CreatePSOCache(fileData);
+#endif
+
+    this->init_ = true;
+}
+
+void PipelineStateCache::Save()
+{
+    assert(this->init_);
+
+    ByteVector psoData;
+#ifdef URHO3D_DILIGENT
+    ReadPSOData(psoData);
+#endif
+
+    VirtualFileSystem* vfs = GetSubsystem<VirtualFileSystem>();
+
+    auto file = vfs->OpenFile(cacheDir_, FILE_WRITE);
+    if (!file)
+        return;
+
+    file->WriteFileID(sPipelineStateCacheFileId);
+    file->WriteBuffer(psoData);
+    URHO3D_LOGDEBUG("Pipeline State Cache has been saved ({:d}).", psoData.size());
 }
 
 SharedPtr<PipelineState> PipelineStateCache::GetPipelineState(PipelineStateDesc desc)
@@ -207,6 +256,11 @@ void PipelineStateCache::HandleResourceReload(StringHash /*eventType*/, VariantM
                 pipelineState->RestoreCachedState(graphics_);
         }
     }
+}
+
+void PipelineStateCache::SetCacheDir(const FileIdentifier& path) {
+    assert(!init_);
+    cacheDir_ = path;
 }
 
 }

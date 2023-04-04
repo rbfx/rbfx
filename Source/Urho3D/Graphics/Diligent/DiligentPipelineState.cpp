@@ -212,6 +212,9 @@ namespace Urho3D
 
         ci.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
 
+        PipelineStateCache* psoCache = graphics->GetSubsystem<PipelineStateCache>();
+        if (psoCache->object_)
+            ci.pPSOCache = psoCache->object_.Cast<IPipelineStateCache>(IID_PipelineStateCache);
         graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &pipeline_);
 
         if (!pipeline_) {

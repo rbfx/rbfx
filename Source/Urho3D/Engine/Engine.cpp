@@ -97,7 +97,7 @@
 #endif
 #ifdef URHO3D_DILIGENT
 #include "../Graphics/ConstantBufferManager.h"
-#include "../Graphics/PipelineStateCache.h"
+#include "../Graphics/PipelineState.h"
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -445,6 +445,12 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     if (HasParameter(EP_TIME_OUT))
         timeOut_ = GetParameter(EP_TIME_OUT).GetInt() * 1000000LL;
 
+#ifdef URHO3D_DILIGENT
+    PipelineStateCache* psoCache = GetSubsystem<PipelineStateCache>();
+    psoCache->SetCacheDir(FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE_DIR).GetString()));
+    psoCache->Init();
+#endif
+
     if (!headless_)
     {
 #ifdef URHO3D_SYSTEMUI
@@ -453,11 +459,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         RegisterStandardSerializableHooks();
 #endif
     }
-
-#ifdef URHO3D_DILIGENT
-    // Initialize Pipeline State Cache
-    GetSubsystem<PipelineStateCache>()->Init();
-#endif
 
     frameTimer_.Reset();
 
@@ -1098,6 +1099,10 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WINDOW_TITLE, "Urho3D");
     engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
+
+#ifdef URHO3D_DILIGENT
+    engineParameters_->DefineVariable(EP_PSO_CACHE_DIR, "conf://psocache.bin");
+#endif
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
@@ -1120,6 +1125,10 @@ void Engine::HandleEndFrame(StringHash eventType, VariantMap& eventData)
 
 void Engine::DoExit()
 {
+#ifdef URHO3D_DILIGENT
+    // Save Pipeline State Cache into disk before exit
+    GetSubsystem<PipelineStateCache>()->Save();
+#endif
     auto* graphics = GetSubsystem<Graphics>();
     if (graphics)
         graphics->Close();
