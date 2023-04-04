@@ -2354,8 +2354,35 @@ bool Graphics::CreateDevice(int width, int height)
         }
                 break;
         case RENDER_METAL:
-            // TODO: Implement Metal backend
-            assert(0);
+        {
+#if defined(PLATFORM_MACOS) || defined(PLATFORM_TVOS) || defined(PLATFORM_IOS)
+            auto* factory = GetEngineFactoryMtl();
+            EngineMtlCreateInfo engineCI;
+            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
+
+            factory->CreateDeviceAndContextsMtl(
+                engineCI,
+                &impl_->device_,
+                &impl_->deviceContext_,
+            );
+            factory->CreateSwapChainMtl(
+                impl_->device_,
+                impl_->deviceContext_,
+                wnd,
+                &impl_->swapChain_
+            );
+
+#endif
+            // In Metal, FinishFrame must be called from the same thread
+            // that issued rendering commands. On MacOS, however, rendering
+            // happens in DisplayLinkCallback which is called from some other
+            // thread. To avoid issues with autorelease pool, we have to pop
+            // it now by calling FinishFrame.
+            // Same as Sample on Diligent:
+            // https://github.com/DiligentGraphics/DiligentSamples/blob/d064143f4867acf78ff83d55460d8c2bca266cf2/SampleBase/src/MacOS/SampleAppMacOS.mm#L71
+            impl_->deviceContext_->Flush();
+            impl_->deviceContext_->FinishFrame();
+        }
             break;
         }
 

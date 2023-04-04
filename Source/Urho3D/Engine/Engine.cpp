@@ -351,7 +351,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         else if (renderBackendValue == "Vulkan") {
             renderBackend = RENDER_VULKAN;
         }
-#if defined(PLATFORM_IOS) || defined(PLATFORM_MACOS)
+#if defined(PLATFORM_IOS) || defined(PLATFORM_MACOS) || defined(PLATFORM_TVOS)
         else if (renderBackendValue == "Metal") {
             renderBackend = RENDER_METAL;
         }
