@@ -22,7 +22,19 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/ucm.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
 
+if (EMSCRIPTEN AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
+    # Workaround for following error:
+    #   The install of the Samples target requires changing an RPATH from the build
+    #   tree, but this is not supported with the Ninja generator unless on an
+    #   ELF-based platform.  The CMAKE_BUILD_WITH_INSTALL_RPATH variable may be set
+    #   to avoid this relinking step.
+    set (CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+endif ()
+
+# Ensure variable is in the cache.
 set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
 
 if (URHO3D_SDK)
@@ -32,7 +44,7 @@ if (URHO3D_SDK)
 endif ()
 
 if (EMSCRIPTEN)
-    set (WEB ON CACHE BOOL "" FORCE)
+    set (WEB ON)
     set (EMPACKAGER python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
     set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map --source-map-base=. -fdebug-compilation-dir='.' -gseparate-dwarf)
 endif ()
