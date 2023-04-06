@@ -219,14 +219,19 @@ set (THIRD_PARTY_DEPENDENCIES
     spirv-cross-glsl
     spirv-cross-msl
     spirv-cross-hlsl
-    Diligent-GraphicsEngineD3D11-static
-    Diligent-GraphicsEngineD3D12-static
     Diligent-GraphicsEngineOpenGL-static
     Diligent-GraphicsEngineVk-static
     Diligent-Common
     Diligent-HLSL2GLSLConverterLib
     SPIRV-Reflect
 )
+
+if (WIN32)
+    list (APPEND THIRD_PARTY_DEPENDENCIES Diligent-GraphicsEngineD3D11-static Diligent-GraphicsEngineD3D12-static)
+endif ()
+if (APPLE)
+    list (APPEND THIRD_PARTY_DEPENDENCIES Diligent-GraphicsEngineMetal-static)
+endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
@@ -356,10 +361,20 @@ if (NOT MINI_URHO)
             target_link_libraries (Urho3D PUBLIC GL)
         endif ()
     elseif(URHO3D_DILIGENT)
-        find_package(DirectX REQUIRED D3D11)
-        find_package(Vulkan REQUIRED Vulkan)
+        if (WIN32)
+            find_package(DirectX REQUIRED D3D11)
+        endif ()
 
-        target_link_libraries(Urho3D PUBLIC ${DIRECT3D_LIBRARIES} ${Vulkan_LIBRARIES} d3d12.lib)
+        if (!Vulkan_LIBRARIES)
+            find_package(Vulkan REQUIRED Vulkan)
+        endif()
+
+        set (LINK_LIBRARIES ${Vulkan_LIBRARIES} GL)
+        
+        if (WIN32)
+            list (APPEND LINK_LIBRARIES ${DIRECT3D_LIBRARIES} d3d12.lib)
+        endif ()
+        target_link_libraries(Urho3D PUBLIC ${LINK_LIBRARIES})
         target_include_directories(Urho3D PUBLIC ${Vulkan_INCLUDE_DIRS})
     else ()
         find_package(DirectX REQUIRED D3D11)

@@ -169,7 +169,12 @@ if (NOT MINI_URHO)
     # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
     add_subdirectory (tracy)
     set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "")
-    add_subdirectory(Diligent)
+    if (URHO3D_DILIGENT)
+        if (APPLE)
+         set(CMAKE_XCODE_GENERATE_SCHEME ON)
+        endif ()
+        add_subdirectory (Diligent)
+    endif()
 endif ()
 
 if (URHO3D_CSHARP_TOOLS AND DESKTOP)
