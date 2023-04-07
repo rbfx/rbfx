@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 #
 
-include(ucm)
+include(${CMAKE_CURRENT_LIST_DIR}/ucm.cmake)
 
 find_program(CCACHE ccache)
 if (NOT MSVC AND CCACHE_FOUND AND ENV{CCACHE_DIR})  # MSVC side is handled in ci_build.sh action-build-msvc()
