@@ -260,8 +260,6 @@ bool VertexBuffer::Create()
     if (graphics_)
     {
         BufferDesc bufferDesc;
-        if (dbgName_.empty())
-            __debugbreak();
 #ifdef URHO3D_DEBUG
         ea::string dbgName = Format("{}(VertexBuffer)", dbgName_);
         bufferDesc.Name = dbgName.c_str();

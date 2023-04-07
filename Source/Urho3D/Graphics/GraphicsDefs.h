@@ -34,8 +34,8 @@ namespace Urho3D
 class ConstantBuffer;
 class Vector3;
 
-// Graphics capability support level. Web platform (Emscripten) also uses OpenGL ES, but is considered a desktop platform capability-wise
-#if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
+// Graphics capability support level. Web platform (Emscripten) also uses OpenGL ES, but is considered a desktop platform capability-wise.
+#if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || (defined(__aarch64__) && !defined(MACOS))
 #define MOBILE_GRAPHICS
 #else
 #define DESKTOP_GRAPHICS

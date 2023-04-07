@@ -137,7 +137,7 @@ namespace Urho3D
         size_t byteCodeLength = byteCode.size() * sizeof(unsigned);
         byteCode_.resize(byteCodeLength);
 
-        memcpy_s(byteCode_.data(), byteCodeLength, byteCode.data(), byteCodeLength);
+        memcpy(byteCode_.data(), byteCode.data(), byteCodeLength);
         return byteCode_.size() > 0;
     }
 

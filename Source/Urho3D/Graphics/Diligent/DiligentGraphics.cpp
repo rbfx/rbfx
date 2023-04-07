@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+
+
 #include "../../Precompiled.h"
 
 #include "../../Core/Context.h"
@@ -45,6 +47,10 @@
 #include "../../Graphics/ShaderResourceBinding.h"
 #include "../../Graphics/PipelineState.h"
 
+#include <EASTL/utility.h>
+
+#include <Diligent/Primitives/interface/CommonDefinitions.h>
+#include <Diligent/Platforms/interface/PlatformDefinitions.h>
 #ifdef WIN32
 // D3D11 includes
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
@@ -65,19 +71,24 @@
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/DeviceContextVk.h>
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/SwapChainVk.h>
 // OpenGL includes
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
 #include <gl/GL.h>
+#endif
 #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
 #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
 #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
 #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/SwapChainGL.h>
 // Metal includes
+/*
 #if defined(PLATFORM_MACOS) || defined(PLATFORM_IOS)
 #include <Diligent/Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #include <Diligent/Graphics/GraphicsEngineMetal/interface/RenderDeviceMtl.h>
 #include <Diligent/Graphics/GraphicsEngineMetal/interface/DeviceContextMtl.h>
 #include <Diligent/Graphics/GraphicsEngineMetal/interface/SwapChainMtl.h>
 #endif
-
+*/
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Graphics/GraphicsTools/interface/MapHelper.hpp>
 
@@ -104,12 +115,14 @@ using namespace Platform;
 #pragma warning(disable:4355)
 #endif
 
+#ifdef WIN32
 // Prefer the high-performance GPU on switchable GPU systems
 extern "C"
 {
 __declspec(dllexport) DWORD NvOptimusEnablement = 1;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
+#endif
 
 namespace Urho3D
 {
@@ -161,15 +174,15 @@ static void GetPrimitiveType(unsigned elementCount, PrimitiveType type, unsigned
 
 static void HandleDbgMessageCallbacks(Diligent::DEBUG_MESSAGE_SEVERITY severity, const char* msg, const char* func, const char* file, int line) {
     ea::string logMsg = Format("(diligent) {}", ea::string(msg == nullptr ? "" : msg));
-    ea::vector<ea::pair<const char*, const char*>> additionalInfo;
+    ea::vector<ea::pair<ea::string, ea::string>> additionalInfo;
 
     ea::string lineStr = Format("{}", line);
     if (func)
-        additionalInfo.push_back(ea::make_pair<const char*, const char*>("function", func));
+        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("function"), ea::string(func)));
     if (file)
-        additionalInfo.push_back(ea::make_pair<const char*, const char*>("file", file));
+        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("file"), ea::string(file)));
     if (line)
-        additionalInfo.push_back(ea::make_pair<const char*, const char*>("line", lineStr.c_str()));
+        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("line"), ea::string(lineStr)));
 
     if (additionalInfo.size() > 0)
     {
@@ -2355,6 +2368,7 @@ bool Graphics::CreateDevice(int width, int height)
                 break;
         case RENDER_METAL:
         {
+            /*
 #if defined(PLATFORM_MACOS) || defined(PLATFORM_TVOS) || defined(PLATFORM_IOS)
             auto* factory = GetEngineFactoryMtl();
             EngineMtlCreateInfo engineCI;
@@ -2373,6 +2387,7 @@ bool Graphics::CreateDevice(int width, int height)
             );
 
 #endif
+             */
             // In Metal, FinishFrame must be called from the same thread
             // that issued rendering commands. On MacOS, however, rendering
             // happens in DisplayLinkCallback which is called from some other
@@ -2401,7 +2416,6 @@ bool Graphics::CreateDevice(int width, int height)
 
     if (!impl_->swapChain_)
     {
-        URHO3D_SAFE_RELEASE(impl_->swapChain_);
         URHO3D_LOGERROR("Failed to create swap chain");
         return false;
     }
@@ -2449,16 +2463,17 @@ void Graphics::CheckFeatureSupport()
     sRGBSupport_ = true;
     sRGBWriteSupport_ = true;
 
-    caps.maxVertexShaderUniforms_ = D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT;
-    caps.maxPixelShaderUniforms_ = D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT;
+    auto deviceFeatures = impl_->device_->GetDeviceInfo().Features;
+    caps.maxVertexShaderUniforms_ = 4096;
+    caps.maxPixelShaderUniforms_ = 4096;
     caps.constantBuffersSupported_ = true;
-    caps.constantBufferOffsetAlignment_ = 256;
-    caps.maxTextureSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-    caps.maxRenderTargetSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-    caps.maxNumRenderTargets_ = 8;
+    caps.constantBufferOffsetAlignment_ = impl_->device_->GetAdapterInfo().Buffer.ConstantBufferOffsetAlignment;
+    caps.maxTextureSize_ = impl_->device_->GetAdapterInfo().Texture.MaxTexture2DDimension;
+    caps.maxRenderTargetSize_ = impl_->device_->GetAdapterInfo().Texture.MaxTexture2DDimension;
+    caps.maxNumRenderTargets_ = MAX_RENDER_TARGETS;
 
 #ifdef URHO3D_COMPUTE
-    computeSupport_ = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+    computeSupport_ = true;
 #endif
 }
 

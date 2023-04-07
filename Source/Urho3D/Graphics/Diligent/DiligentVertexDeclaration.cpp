@@ -114,7 +114,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertex
 
 VertexDeclaration::~VertexDeclaration()
 {
-    URHO3D_SAFE_RELEASE(inputLayout_);
+    //URHO3D_SAFE_RELEASE(inputLayout_);
 }
 
 }

@@ -334,7 +334,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 #ifdef URHO3D_DILIGENT
         RenderBackend renderBackend = RENDER_VULKAN;
 #ifndef WIN32
-        renderBackend = RENDER_GL;
+        renderBackend = RENDER_VULKAN;
 #endif // !WIN32
 
         ea::string renderBackendValue = GetParameter(EP_RENDER_BACKEND).GetString();

@@ -226,11 +226,21 @@ set (THIRD_PARTY_DEPENDENCIES
     SPIRV-Reflect
 )
 
+# LibCpuId does not work on M1 Mac
+if (APPLE AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+    message("LibCpuId is not compatible with Mac M1, LibCpuId has been disabled.")
+    list (REMOVE_ITEM THIRD_PARTY_DEPENDENCIES LibCpuId)
+endif ()
+
 if (WIN32)
     list (APPEND THIRD_PARTY_DEPENDENCIES Diligent-GraphicsEngineD3D11-static Diligent-GraphicsEngineD3D12-static)
 endif ()
 if (APPLE)
     list (APPEND THIRD_PARTY_DEPENDENCIES Diligent-GraphicsEngineMetal-static)
+endif ()
+
+if (URHO3D_DILIGENT)
+    list (APPEND THIRD_PARTY_DEPENDENCIES SPIRV-Tools-opt)
 endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
@@ -367,15 +377,23 @@ if (NOT MINI_URHO)
 
         if (!Vulkan_LIBRARIES)
             find_package(Vulkan REQUIRED Vulkan)
-        endif()
+        endif ()
 
-        set (LINK_LIBRARIES ${Vulkan_LIBRARIES} GL)
-        
+        set (LINK_LIBRARIES ${Vulkan_LIBRARIES})
+        set (HEADER_LIBRARIES ${Vulkan_INCLUDE_DIR})
+
+        if (${OPENGL_INCLUDE_DIR})
+            list (APPEND HEADER_LIBRARIES ${OPENGL_INCLUDE_DIR})
+        endif ()
+        if(${OPENGL_LIBRARY})
+            list(APPEND LINK_LIBRARIES ${OPENGL_LIBRARY})
+        endif ()
+
         if (WIN32)
             list (APPEND LINK_LIBRARIES ${DIRECT3D_LIBRARIES} d3d12.lib)
         endif ()
         target_link_libraries(Urho3D PUBLIC ${LINK_LIBRARIES})
-        target_include_directories(Urho3D PUBLIC ${Vulkan_INCLUDE_DIRS})
+        target_include_directories(Urho3D PUBLIC ${HEADER_LIBRARIES})
     else ()
         find_package(DirectX REQUIRED D3D11)
         target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})

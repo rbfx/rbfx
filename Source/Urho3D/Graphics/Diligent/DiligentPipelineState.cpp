@@ -104,8 +104,6 @@ namespace Urho3D
                 LayoutElement result = {};
                 layoutElement.RelativeOffset = element->offset_;
                 layoutElement.NumComponents = sNumComponents[element->type_];
-                if (layoutElement.NumComponents == 0)
-                    __debugbreak();
                 layoutElement.ValueType = sValueTypes[element->type_];
                 if (element->semantic_ == SEM_BLENDINDICES)
                     layoutElement.ValueType = VT_UINT8;

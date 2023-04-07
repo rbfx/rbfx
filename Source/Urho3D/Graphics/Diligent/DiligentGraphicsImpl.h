@@ -28,7 +28,7 @@
 #include "../../Graphics/VertexDeclaration.h"
 #include "../../Math/Color.h"
 
-#ifdef WIN32
+#if defined(WIN32)
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
 #endif

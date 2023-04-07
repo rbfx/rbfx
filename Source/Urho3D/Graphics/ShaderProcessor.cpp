@@ -500,7 +500,7 @@ namespace Urho3D
 
                 auto cBufferLookupValue = constantBuffersNamesLookup.find(bindingName);
                 if (cBufferLookupValue == constantBuffersNamesLookup.end()) {
-                    URHO3D_LOGERRORF("Failed to reflect shader constant buffer for %s shader. Invalid constant buffer name: %s", desc_.name_, bindingName);
+                    URHO3D_LOGERROR("Failed to reflect shader constant buffer for {} shader. Invalid constant buffer name: {}", desc_.name_, bindingName);
                     spvReflectDestroyShaderModule(&module);
                     return false;
                 }
@@ -525,7 +525,7 @@ namespace Urho3D
                     name = name.substr(1, name.size());
                 auto texUnitLookupVal = DiligentTextureUnitLookup.find(name);
                 if (texUnitLookupVal == DiligentTextureUnitLookup.end()) {
-                    URHO3D_LOGERRORF("Failed to reflect shader texture samplers. Invalid texture sampler name: %s", name);
+                    URHO3D_LOGERROR("Failed to reflect shader texture samplers. Invalid texture sampler name: {}", name);
                     spvReflectDestroyShaderModule(&module);
                     return false;
                 }
