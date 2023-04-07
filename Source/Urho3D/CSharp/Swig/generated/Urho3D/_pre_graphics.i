@@ -804,7 +804,7 @@ using BoneCollisionShapeFlags = Urho3D::BoneCollisionShape;
 %csattribute(Urho3D::Animation, %arg(float), Length, GetLength, SetLength);
 %csattribute(Urho3D::Animation, %arg(ea::unordered_map<StringHash, AnimationTrack>), Tracks, GetTracks);
 %csattribute(Urho3D::Animation, %arg(unsigned int), NumTracks, GetNumTracks);
-%csattribute(Urho3D::Animation, %arg(ea::unordered_map<StringHash, VariantAnimationTrack>), VariantTracks, GetVariantTracks);
+//%csattribute(Urho3D::Animation, %arg(ea::unordered_map<StringHash, VariantAnimationTrack>), VariantTracks, GetVariantTracks);
 %csattribute(Urho3D::Animation, %arg(unsigned int), NumVariantTracks, GetNumVariantTracks);
 %csattribute(Urho3D::Animation, %arg(ea::vector<AnimationTriggerPoint>), Triggers, GetTriggers);
 %csattribute(Urho3D::Animation, %arg(unsigned int), NumTriggers, GetNumTriggers, SetNumTriggers);
