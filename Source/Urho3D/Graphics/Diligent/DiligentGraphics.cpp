@@ -2255,8 +2255,16 @@ bool Graphics::CreateDevice(int width, int height)
 #endif
 
     SwapChainDesc swapChainDesc;
-    swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
     swapChainDesc.DepthBufferFormat = TEX_FORMAT_D24_UNORM_S8_UINT;
+    if(impl_->renderBackend_ == RENDER_VULKAN) {
+        swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_BGRA8_UNORM_SRGB : TEX_FORMAT_BGRA8_UNORM;
+#ifdef PLATFORM_MACOS
+        swapChainDesc.DepthBufferFormat = TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+#endif
+    } else {
+        swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
+    }
+    
     FullScreenModeDesc fullscreenDesc = {};
     fullscreenDesc.Fullscreen = screenParams_.IsFullscreen();
 
