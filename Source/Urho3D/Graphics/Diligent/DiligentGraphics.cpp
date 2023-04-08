@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-
-
 #include "../../Precompiled.h"
 
 #include "../../Core/Context.h"
@@ -108,6 +106,9 @@ using namespace Platform;
 
 #include <SDL.h>
 #include <SDL_syswm.h>
+#ifdef PLATFORM_MACOS
+#include <SDL_metal.h>
+#endif
 
 #include "../../DebugNew.h"
 
@@ -244,15 +245,6 @@ static void GetWindowHandle(SDL_Window* window, Display** outDisplay, Window& ou
     outDisplay = sysInfo.info.x11.display;
     outWindow = sysInfo.info.x11.window;
 }
-#elif PLATFORM_MACOS
-static NSWindow* GetWindowHandle(SDL_Window* window)
-{
-    SDL_SysWMinfo sysInfo;
-
-    SDL_VERSION(&sysInfo.version);
-    SDL_GetWindowWMInfo(window, &sysInfo);
-    return sysInfo.info.cocoa.window;
-}
 #elif defined (PLATFORM_IOS) || defined(PLATFORM_TVOS)
 static UIWindow* GetWindowHandle(SDL_Window* window)
 {
@@ -296,8 +288,13 @@ Graphics::Graphics(Context* context) :
     SetTextureUnitMappings();
     ResetCachedState();
 
+    
     SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
     context_->RequireSDL(SDL_INIT_VIDEO);
+    
+#ifdef PLATFORM_MACOS
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
+#endif
 }
 
 Graphics::~Graphics()
@@ -350,6 +347,13 @@ Graphics::~Graphics()
     //URHO3D_SAFE_RELEASE(impl_->deviceContext_);
     //URHO3D_SAFE_RELEASE(impl_->device_);
 
+#ifdef PLATFORM_MACOS
+    if(impl_->metalView_) {
+        SDL_Metal_DestroyView(impl_->metalView_);
+        impl_->metalView_ = nullptr;
+    }
+#endif
+    
     if (window_)
     {
         SDL_ShowCursor(SDL_TRUE);
@@ -2131,7 +2135,10 @@ bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless
             flags |= SDL_WINDOW_RESIZABLE;
         if (borderless)
             flags |= SDL_WINDOW_BORDERLESS;
-
+        
+#ifdef PLATFORM_MACOS
+        flags |= SDL_WINDOW_METAL;
+#endif
         window_ = SDL_CreateWindow(windowTitle_.c_str(), position_.x_, position_.y_, width, height, flags);
     }
     else
@@ -2142,7 +2149,10 @@ bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless
         URHO3D_LOGERRORF("Could not create window, root cause: '%s'", SDL_GetError());
         return false;
     }
-
+#ifdef PLATFORM_MACOS
+    impl_->metalView_ = SDL_Metal_CreateView(window_);
+    assert(impl_->metalView_);
+#endif
     SDL_GetWindowPosition(window_, &position_.x_, &position_.y_);
 
     CreateWindowIcon();
@@ -2235,7 +2245,7 @@ bool Graphics::CreateDevice(int width, int height)
 #elif PLATFORM_LINUX
     GetWindowHandle(window_, &wnd.pDisplay, &wnd.WindowId);
 #elif PLATFORM_MACOS
-    wnd.pNSView = GetWindowHandle(window_);
+    wnd.pNSView = impl_->metalView_;
 #elif defined (PLATFORM_IOS) || defined(PLATFORM_TVOS)
     wnd.pCALayer = GetWindowHandle(window_);
 #elif defined (PLATFORM_ANDROID)

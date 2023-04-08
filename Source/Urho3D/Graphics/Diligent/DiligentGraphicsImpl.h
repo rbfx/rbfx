@@ -28,6 +28,11 @@
 #include "../../Graphics/VertexDeclaration.h"
 #include "../../Math/Color.h"
 
+#ifdef PLATFORM_MACOS
+#include <SDL.h>
+#include <SDL_metal.h>
+#endif
+
 #if defined(WIN32)
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
@@ -167,6 +172,9 @@ private:
     RenderBackend renderBackend_;
     /// Current adapter id
     unsigned adapterId_;
+#ifdef PLATFORM_MACOS
+    SDL_MetalView metalView_;
+#endif
 };
 
 }
