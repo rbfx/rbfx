@@ -374,14 +374,6 @@ bool Connection::ProcessMessage(MemoryBuffer& buffer)
     return true;
 }
 
-void Connection::Ban()
-{
-    //if (peer_)
-    {
-        //peer_->AddToBanList(address_->ToString(false), 0);
-    }
-}
-
 void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
 {
     if (IsClient())

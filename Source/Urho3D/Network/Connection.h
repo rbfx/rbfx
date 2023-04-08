@@ -149,8 +149,6 @@ public:
     void SendAllBuffers();
     /// Process a message from the server or client. Called by Network.
     bool ProcessMessage(MemoryBuffer& buffer);
-    /// Ban this connections IP address.
-    void Ban();
     /// Return client identity.
     VariantMap& GetIdentity() { return identity_; }
 
