@@ -595,6 +595,7 @@ void Graphics::EndFrame()
 
         if (currentTexture == impl_->renderTargetViews_[0])
             impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
+        impl_->renderTargetsDirty_ = true;
     }
 
     // Clean up too large scratch buffers
