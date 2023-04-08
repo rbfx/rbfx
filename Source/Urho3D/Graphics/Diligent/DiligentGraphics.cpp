@@ -299,6 +299,12 @@ Graphics::Graphics(Context* context) :
 
 Graphics::~Graphics()
 {
+    // Reset State
+    impl_->deviceContext_->SetRenderTargets(0,nullptr, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    impl_->deviceContext_->SetPipelineState(nullptr);
+    impl_->deviceContext_->SetIndexBuffer(nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    impl_->deviceContext_->SetVertexBuffers(0, 0, nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    
     if (impl_->device_) {
         impl_->device_->IdleGPU();
 
