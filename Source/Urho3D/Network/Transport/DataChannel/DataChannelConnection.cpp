@@ -25,9 +25,9 @@
 #include <rtc/description.hpp>
 #include <rtc/candidate.hpp>
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/Timer.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
-#include <Urho3D/Network/AbstractConnection.h>
 
 namespace Urho3D
 {
@@ -35,6 +35,11 @@ namespace Urho3D
 DataChannelConnection::DataChannelConnection(Context* context)
     : NetworkConnection(context)
 {
+}
+
+DataChannelConnection::~DataChannelConnection()
+{
+    assert(state_ == NetworkConnection::State::Disconnected);
 }
 
 void DataChannelConnection::RegisterObject(Context* context)
@@ -62,9 +67,10 @@ bool DataChannelConnection::Connect(const URL& url)
 
 void DataChannelConnection::Disconnect()
 {
-    state_ = State::Disconnecting;
     if (peer_)
     {
+        AddRef();    // Ensure this object is alive until all callbacks are done executing.
+        state_ = State::Disconnecting;
 #ifndef EMSCRIPTEN
         peer_->resetCallbacks();
         peer_->close();
@@ -165,6 +171,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index)
     }
     peer_ = nullptr;
     server_ = nullptr;
+    ReleaseRef();
 }
 
 void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket)
