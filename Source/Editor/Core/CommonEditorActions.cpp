@@ -151,7 +151,7 @@ void CreateRemoveComponentAction::RemoveComponent() const
 
 ChangeNodeTransformAction::ChangeNodeTransformAction(Node* node, const Transform& oldTransform)
     : scene_(node->GetScene())
-    , nodes_{{node->GetID(), NodeData{oldTransform, node->GetDecomposedTransform()}}}
+    , nodes_{{node->GetID(), NodeData{oldTransform, node->GetTransform()}}}
 {
 }
 

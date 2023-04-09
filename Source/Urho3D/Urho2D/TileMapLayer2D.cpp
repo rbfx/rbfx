@@ -62,7 +62,7 @@ void TileMapLayer2D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
     if (objectGroup_)
     {
-        const Matrix3x4 transform = GetTileMap()->GetNode()->GetTransform();
+        const Matrix3x4 transform = GetTileMap()->GetNode()->GetTransformMatrix();
         for (unsigned i = 0; i < objectGroup_->GetNumObjects(); ++i)
         {
             TileMapObject2D* object = objectGroup_->GetObject(i);
