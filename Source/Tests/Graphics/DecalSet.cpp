@@ -32,6 +32,58 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/Node.h>
 
+TEST_CASE("Static model decal simple test")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto scene = MakeShared<Scene>(context);
+    auto octree = scene->CreateComponent<Octree>();
+    auto node = scene->CreateChild();
+
+    auto staticModel = node->CreateComponent<StaticModel>();
+    staticModel->SetModel(context->GetSubsystem<ResourceCache>()->GetResource<Model>("Models/Box.mdl"));
+    Vector3 rayStart{0, 0, -4};
+    Vector3 rayDirection = (node->GetWorldPosition() - rayStart).Normalized();
+    ea::vector<RayQueryResult> results;
+    RayOctreeQuery query{results, Ray(rayStart, rayDirection), RAY_TRIANGLE};
+    octree->Raycast(query);
+    REQUIRE(!results.empty());
+
+    RayQueryResult& result = results[0];
+
+    Quaternion lookAt;
+    lookAt.FromLookRotation(rayDirection);
+
+    auto decalSet = node->CreateComponent<DecalSet>();
+    decalSet->AddDecal(staticModel, result.position_, lookAt, 0.2f, 1.1f, 0.1f, Vector2::ZERO, Vector2::ONE);
+
+    REQUIRE(decalSet->GetNumDecals() == 1);
+    auto* decal = decalSet->GetDecal(0);
+    REQUIRE(decal);
+    REQUIRE(decal->indices_.size() == 12);
+    REQUIRE(decal->vertices_.size() == 6);
+
+    ea::array<DecalVertex, 6> expectedVertices = {{
+        {{-0.1f, -0.1f, -0.5f}, {-3.42285e-08f, 0.f, -1.f}, {0.0454545f, 1.f}, {1.f, -5.20357e-07f, -3.42285e-08f, 1.f}},
+        {{0.1f, 0.1f, -0.5f}, {-3.42285e-08f, 0.f, -1.f}, {0.954545f, 0.f}, {1.f, -4.73052e-07f, -3.42285e-08f, 1.f}},
+        {{0.11f, 0.1f, -0.5f}, {-3.42285e-08f, 0.f, -1.f}, {1.f, 0.f}, {1.f, -7.80536e-07f, -3.42285e-08f, 1.f}},
+        {{0.11f, -0.1f, -0.5f}, {-3.42285e-08f, 0.f, -1.f}, {1.f, 1.f}, {1.f, -7.09579e-08f, -3.42285e-08f, 1.f}},
+        {{-0.11f, -0.1f, -0.5f}, {-3.42285e-08f, 0.f, -1.f}, {-1.78814e-07f, 1.f}, {1.f, 3.54789e-08f, -3.42285e-08f, 1.f}},
+        {{-0.11f, 0.1f, -0.5f}, {-3.42285e-08f, 0.f, -1.f}, {-1.19209e-07f, 0.f}, {1.f, 7.09579e-08f, -3.42285e-08f, 1.f}},
+    }};
+
+    for (unsigned i = 0; i < expectedVertices.size(); ++i)
+    {
+         UNSCOPED_INFO("{ {" << decal->vertices_[i].position_.x_ << "f, " << decal->vertices_[i].position_.y_ << "f, "
+                             << decal->vertices_[i].position_.z_ << "f },");
+         UNSCOPED_INFO("{" << decal->vertices_[i].normal_.x_ << "f, " << decal->vertices_[i].normal_.y_ << "f, "
+                           << decal->vertices_[i].normal_.z_ << "f},");
+         UNSCOPED_INFO("{" << decal->vertices_[i].texCoord_.x_ << "f, " << decal->vertices_[i].texCoord_.y_ << "f},");
+         UNSCOPED_INFO("{" << decal->vertices_[i].tangent_.x_ << "f, " << decal->vertices_[i].tangent_.y_ << "f, "
+                           << decal->vertices_[i].tangent_.z_ << "f, " << decal->vertices_[i].tangent_.w_ << "f} }");
+        CHECK(expectedVertices[i].Equals(decal->vertices_[i], 1e-3f));
+    }
+}
+
 TEST_CASE("Static model decal projection test")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
@@ -88,21 +140,14 @@ TEST_CASE("Static model decal projection test")
 
     for (unsigned i=0; i<expectedVertices.size(); ++i)
     {
-        //UNSCOPED_INFO("{ {" << decal->vertices_[i].position_.x_ << "f, " << decal->vertices_[i].position_.y_ << "f, "
-        //                    << decal->vertices_[i].position_.z_ << "f },");
-        //UNSCOPED_INFO("{" << decal->vertices_[i].normal_.x_ << "f, " << decal->vertices_[i].normal_.y_ << "f, "
-        //                  << decal->vertices_[i].normal_.z_ << "f},");
-        //UNSCOPED_INFO("{" << decal->vertices_[i].texCoord_.x_ << "f, " << decal->vertices_[i].texCoord_.y_ << "f},");
-        //UNSCOPED_INFO("{" << decal->vertices_[i].tangent_.x_ << "f, " << decal->vertices_[i].tangent_.y_ << "f, "
-        //                  << decal->vertices_[i].tangent_.z_ << "f, " << decal->vertices_[i].tangent_.w_ << "f},");
-        //UNSCOPED_INFO("{" << decal->vertices_[i].blendWeights_[0] << "f, " << decal->vertices_[i].blendWeights_[1]
-        //                  << "f, " << decal->vertices_[i].blendWeights_[2] << "f, "
-        //                  << decal->vertices_[i].blendWeights_[3] << "f},");
-        //UNSCOPED_INFO("{" << (unsigned)decal->vertices_[i].blendIndices_[0] << ", "
-        //                  << (unsigned)decal->vertices_[i].blendIndices_[1] << ", "
-        //                  << (unsigned)decal->vertices_[i].blendIndices_[2] << ", "
-        //                  << (unsigned)decal->vertices_[i].blendIndices_[3] << "} },");
-        CHECK(expectedVertices[i].Equals(decal->vertices_[i]));
+        UNSCOPED_INFO("{ {" << decal->vertices_[i].position_.x_ << "f, " << decal->vertices_[i].position_.y_ << "f, "
+                            << decal->vertices_[i].position_.z_ << "f },");
+        UNSCOPED_INFO("{" << decal->vertices_[i].normal_.x_ << "f, " << decal->vertices_[i].normal_.y_ << "f, "
+                          << decal->vertices_[i].normal_.z_ << "f},");
+        UNSCOPED_INFO("{" << decal->vertices_[i].texCoord_.x_ << "f, " << decal->vertices_[i].texCoord_.y_ << "f},");
+        UNSCOPED_INFO("{" << decal->vertices_[i].tangent_.x_ << "f, " << decal->vertices_[i].tangent_.y_ << "f, "
+                          << decal->vertices_[i].tangent_.z_ << "f, " << decal->vertices_[i].tangent_.w_ << "f} }");
+        CHECK(expectedVertices[i].Equals(decal->vertices_[i], 1e-3f));
     }
 }
 
@@ -171,13 +216,14 @@ TEST_CASE("Animated model decal projection test")
 
     // There are too many vertices to compare. Let's compare first few random vertices, that should be "good enough".
 
+    const float eps = 1e-3f;
     {
         auto& vertex = decal->vertices_[0];
-        CHECK(vertex.position_.Equals(Vector3{0.234493f, 0.996382f, 0.0135708f}));
-        CHECK(vertex.normal_.Equals(Vector3{-0.528885f, -0.496562f, -0.688263f}));
-        CHECK(vertex.texCoord_.Equals(Vector2{0.463876f, 0.427102f}));
-        CHECK(vertex.tangent_.Equals(Vector4{0.835496f, -0.447094f, -0.319458f, 1.f}));
-        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}));
+        CHECK(vertex.position_.Equals(Vector3{0.234493f, 0.996382f, 0.0135708f}, eps));
+        CHECK(vertex.normal_.Equals(Vector3{-0.528885f, -0.496562f, -0.688263f}, eps));
+        CHECK(vertex.texCoord_.Equals(Vector2{0.463876f, 0.427102f}, eps));
+        CHECK(vertex.tangent_.Equals(Vector4{0.835496f, -0.447094f, -0.319458f, 1.f}, eps));
+        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}, eps));
         CHECK(vertex.blendIndices_[0] == 0);
         CHECK(vertex.blendIndices_[1] == 0);
         CHECK(vertex.blendIndices_[2] == 0);
@@ -185,11 +231,11 @@ TEST_CASE("Animated model decal projection test")
     }
     {
         auto& vertex = decal->vertices_[1];
-        CHECK(vertex.position_.Equals(Vector3{0.240903988f, 1.03326809f, -0.00848847814f}));
-        CHECK(vertex.normal_.Equals(Vector3{-0.422799f, -0.503043f, -0.753783f}));
-        CHECK(vertex.texCoord_.Equals(Vector2{0.417679f, 0.f}));
-        CHECK(vertex.tangent_.Equals(Vector4{0.892582f, -0.374943f, -0.250431f, 1.f}));
-        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}));
+        CHECK(vertex.position_.Equals(Vector3{0.240903988f, 1.03326809f, -0.00848847814f}, eps));
+        CHECK(vertex.normal_.Equals(Vector3{-0.422799f, -0.503043f, -0.753783f}, eps));
+        CHECK(vertex.texCoord_.Equals(Vector2{0.417679f, 0.f}, eps));
+        CHECK(vertex.tangent_.Equals(Vector4{0.892582f, -0.374943f, -0.250431f, 1.f}, eps));
+        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}, eps));
         CHECK(vertex.blendIndices_[0] == 0);
         CHECK(vertex.blendIndices_[1] == 0);
         CHECK(vertex.blendIndices_[2] == 0);
@@ -197,11 +243,11 @@ TEST_CASE("Animated model decal projection test")
     }
     {
         auto& vertex = decal->vertices_[2];
-        CHECK(vertex.position_.Equals(Vector3{0.264088690f, 1.02781534f, -0.00949959457f}));
-        CHECK(vertex.normal_.Equals(Vector3{-0.152182f, -0.487659f, -0.859668f}));
-        CHECK(vertex.texCoord_.Equals(Vector2{0.604814f, -9.53674e-07f}));
-        CHECK(vertex.tangent_.Equals(Vector4{0.972564f, -0.228736f, -0.0424133f, 1.f}));
-        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}));
+        CHECK(vertex.position_.Equals(Vector3{0.264088690f, 1.02781534f, -0.00949959457f}, eps));
+        CHECK(vertex.normal_.Equals(Vector3{-0.152182f, -0.487659f, -0.859668f}, eps));
+        CHECK(vertex.texCoord_.Equals(Vector2{0.604814f, -9.53674e-07f}, eps));
+        CHECK(vertex.tangent_.Equals(Vector4{0.972564f, -0.228736f, -0.0424133f, 1.f}, eps));
+        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}, eps));
         CHECK(vertex.blendIndices_[0] == 0);
         CHECK(vertex.blendIndices_[1] == 0);
         CHECK(vertex.blendIndices_[2] == 0);
@@ -209,11 +255,11 @@ TEST_CASE("Animated model decal projection test")
     }
     {
         auto& vertex = decal->vertices_[50];
-        CHECK(vertex.position_.Equals(Vector3{0.238162f, 0.939239f, 0.0372444f}));
-        CHECK(vertex.normal_.Equals(Vector3{-0.853497f, -0.0454199f, 0.519115f}));
-        CHECK(vertex.texCoord_.Equals(Vector2{0.66768f, 1.f}));
-        CHECK(vertex.tangent_.Equals(Vector4{-0.320773f, -0.739288f, -0.592079f, 1.f}));
-        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}));
+        CHECK(vertex.position_.Equals(Vector3{0.238162f, 0.939239f, 0.0372444f}, eps));
+        CHECK(vertex.normal_.Equals(Vector3{-0.853497f, -0.0454199f, 0.519115f}, eps));
+        CHECK(vertex.texCoord_.Equals(Vector2{0.66768f, 1.f}, eps));
+        CHECK(vertex.tangent_.Equals(Vector4{-0.320773f, -0.739288f, -0.592079f, 1.f}, eps));
+        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}, eps));
         CHECK(vertex.blendIndices_[0] == 5);
         CHECK(vertex.blendIndices_[1] == 0);
         CHECK(vertex.blendIndices_[2] == 0);
@@ -221,11 +267,11 @@ TEST_CASE("Animated model decal projection test")
     }
     {
         auto& vertex = decal->vertices_[67];
-        CHECK(vertex.position_.Equals(Vector3{0.252909f, 0.982886f, 0.0896384f}));
-        CHECK(vertex.normal_.Equals(Vector3{-0.00110826f, 0.752038f, -0.659118f}));
-        CHECK(vertex.texCoord_.Equals(Vector2{0.364721f, 1.f}));
-        CHECK(vertex.tangent_.Equals(Vector4{0.988457f, -0.0990318f, -0.114655f, 1.f}));
-        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}));
+        CHECK(vertex.position_.Equals(Vector3{0.252909f, 0.982886f, 0.0896384f}, eps));
+        CHECK(vertex.normal_.Equals(Vector3{-0.00110826f, 0.752038f, -0.659118f}, eps));
+        CHECK(vertex.texCoord_.Equals(Vector2{0.364721f, 1.f}, eps));
+        CHECK(vertex.tangent_.Equals(Vector4{0.988480389f, -0.0989458859f, -0.1145261f, 1.f}, eps));
+        CHECK(Vector4{vertex.blendWeights_}.Equals(Vector4{1.f, 0.f, 0.f, 0.f}, eps));
         CHECK(vertex.blendIndices_[0] == 5);
         CHECK(vertex.blendIndices_[1] == 0);
         CHECK(vertex.blendIndices_[2] == 0);

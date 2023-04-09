@@ -24,11 +24,12 @@
 
 #include "../Graphics/DecalProjection.h"
 
+#include "DebugRenderer.h"
 #include "DecalSet.h"
 #include "Octree.h"
 #include "../Resource/ResourceCache.h"
-#include "Urho3D/Core/CoreEvents.h"
-#include "Urho3D/Scene/Scene.h"
+#include "../Core/CoreEvents.h"
+#include "../Scene/Scene.h"
 
 namespace Urho3D
 {
@@ -47,9 +48,24 @@ void DecalProjection::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
         "Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Near Clip", GetNearClip, SetNearClip, float, 0.1f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Far Clip", GetFarClip, SetFarClip, float, 1.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("FOV", GetFov, SetFov, float, 90.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Aspect Ratio", GetAspectRatio, SetAspectRatio, float, 1.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Orthographic", IsOrthographic, SetOrthographic, bool, false, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Orthographic Size", GetOrthoSize, SetOrthoSize, float, 1.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Component);
+    URHO3D_ACTION_STATIC_LABEL("Update", Update, "");
+    URHO3D_ACTION_STATIC_LABEL("Inline", Inline, "");
 }
 
+void DecalProjection::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    Matrix4 viewProj = GetViewProj();
+    Frustum frustum;
+    frustum.Define(viewProj);
+    debug->AddFrustum(frustum, Color::WHITE, depthTest);
+}
 Material* DecalProjection::GetMaterial() const
 {
     return material_;
@@ -63,6 +79,12 @@ void DecalProjection::SetMaterial(Material* material)
         material_ = material;
         SheduleUpdate();
     }
+}
+
+void DecalProjection::SetOrthographic(bool enable)
+{
+    orthographic_ = enable;
+    SheduleUpdate();
 }
 
 void DecalProjection::SetNearClip(float nearClip)
@@ -81,6 +103,15 @@ void DecalProjection::SetFov(float fov)
 {
     fov_ = Clamp(fov, 0.0f, M_MAX_FOV);
     SheduleUpdate();
+}
+
+void DecalProjection::SetOrthoSize(float orthoSize)
+{
+    if (orthoSize_ != orthoSize)
+    {
+        orthoSize_ = orthoSize;
+        SheduleUpdate();
+    }
 }
 
 void DecalProjection::SetAspectRatio(float aspectRatio)
@@ -118,6 +149,35 @@ void DecalProjection::HandlePreRenderEvent(StringHash eventName, VariantMap& eve
     Update();
 }
 
+Matrix4 DecalProjection::GetViewProj() const
+{
+    Matrix3x4 frustumTransform(
+        node_ ? Matrix3x4(node_->GetWorldPosition(), node_->GetWorldRotation(), 1.0f) : Matrix3x4::IDENTITY);
+    Matrix4 proj;
+    if (orthographic_)
+    {
+        proj.SetOrthographic(orthoSize_, 1.0f, aspectRatio_, farClip_, Vector2::ZERO);
+    }
+    else
+    {
+        proj.SetPerspective(fov_, 1.0f, aspectRatio_, nearClip_, farClip_, Vector2::ZERO);
+    }
+    return  proj * frustumTransform.Inverse();
+}
+
+void DecalProjection::Inline()
+{
+    if (isDirty_)
+        Update();
+
+    for (auto& activeDecal : activeDecalSets_)
+    {
+        activeDecal->SetTemporary(false);
+    }
+    activeDecalSets_.clear();
+    Remove();
+}
+
 void DecalProjection::Update()
 {
     if (isDirty_)
@@ -130,13 +190,19 @@ void DecalProjection::Update()
     if (!octree)
         return;
 
-    ea::vector<Drawable*> drawables;
-    Matrix3x4 frustumTransform(
-        node_ ? Matrix3x4(node_->GetWorldPosition(), node_->GetWorldRotation(), 1.0f) : Matrix3x4::IDENTITY);
-    Frustum ret;
-    ret.Define(fov_, aspectRatio_, 1.0f, nearClip_, farClip_, frustumTransform);
+    for (auto& activeDecal: activeDecalSets_)
+    {
+        auto* node = activeDecal->GetNode();
+        if (node)
+            node->RemoveComponent(activeDecal);
+    }
+    activeDecalSets_.clear();
 
+    ea::vector<Drawable*> drawables;
+    Matrix4 viewProj = GetViewProj();
     Frustum frustum;
+    frustum.Define(viewProj);
+
     FrustumOctreeQuery query{drawables, frustum, DRAWABLE_GEOMETRY};
     octree->GetDrawables(query);
 
@@ -146,8 +212,10 @@ void DecalProjection::Update()
         if (node)
         {
             DecalSet * decalSet = node->CreateComponent<DecalSet>();
+            decalSet->SetTemporary(true);
             decalSet->SetMaterial(material_);
-            //decalSet->AddDecal(drawable, )
+            decalSet->AddDecal(drawable, viewProj, orthoSize_, Vector2::ZERO, Vector2::ONE);
+            activeDecalSets_.push_back(SharedPtr<DecalSet>(decalSet));
         }
     }
 }

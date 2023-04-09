@@ -326,9 +326,25 @@ void DecalSet::SetOptimizeBufferSize(bool enable)
         bufferDirty_ = true;
     }
 }
-
 bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Quaternion& worldRotation, float size,
-    float aspectRatio, float depth, const Vector2& topLeftUV, const Vector2& bottomRightUV, float timeToLive, float normalCutoff,
+    float aspectRatio, float depth, const Vector2& topLeftUV, const Vector2& bottomRightUV, float timeToLive,
+    float normalCutoff, unsigned subGeometry)
+{
+    Matrix4 proj;
+    proj.SetOrthographic(size, 1.0f, aspectRatio, depth, Vector2::ZERO);
+
+    Matrix4 view;
+    const Vector3 adjustedWorldPosition = worldPosition - 0.5f * depth * (worldRotation * Vector3::FORWARD);
+    view.SetTranslation(adjustedWorldPosition);
+    view.SetRotation(worldRotation.RotationMatrix());
+
+    return AddDecal(target, proj * view.Inverse(), size, topLeftUV,
+        bottomRightUV,
+        timeToLive, normalCutoff, subGeometry);
+}
+
+bool DecalSet::AddDecal(Drawable* target, const Matrix4& viewProj,
+    float size, const Vector2& topLeftUV, const Vector2& bottomRightUV, float timeToLive, float normalCutoff,
     unsigned subGeometry)
 {
     URHO3D_PROFILE("AddDecal");
@@ -336,6 +352,9 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     // Do not add decals in headless mode
     if (!node_ || (!context_->IsUnitTest() && !GetSubsystem<Graphics>()))
         return false;
+
+    Matrix4 viewProjInv = viewProj.Inverse();
+    Vector3 worldPosition = viewProjInv * Vector3(0, 0, 0.5f);
 
     if (!target || !target->GetNode())
     {
@@ -352,8 +371,6 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
         bufferDirty_ = true;
     }
 
-    // Center the decal frustum on the world position
-    Vector3 adjustedWorldPosition = worldPosition - 0.5f * depth * (worldRotation * Vector3::FORWARD);
     /// \todo target transform is not right if adding a decal to StaticModelGroup
     Matrix3x4 targetTransform = target->GetNode()->GetWorldTransform().Inverse();
 
@@ -372,14 +389,16 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
             if (!bone->node_ || !bone->collisionMask_)
                 continue;
 
-            // Represent the decal as a sphere, try to find the biggest colliding bone
-            Sphere decalSphere
-                (bone->node_->GetWorldTransform().Inverse() * worldPosition, 0.5f * size / bone->node_->GetWorldScale().Length());
+            // Build the decal frustum
+            Matrix4 localViewProj = viewProj * bone->node_->GetWorldTransform();
+            Frustum localFrustum;
+            localFrustum.Define(localViewProj);
 
             if (bone->collisionMask_ & BONECOLLISION_BOX)
             {
                 float size = bone->boundingBox_.HalfSize().Length();
-                if (bone->boundingBox_.IsInside(decalSphere) && size > bestSize)
+                
+                if (localFrustum.IsInside(bone->boundingBox_) && size > bestSize)
                 {
                     bestBone = bone;
                     bestSize = size;
@@ -389,7 +408,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
             {
                 Sphere boneSphere(Vector3::ZERO, bone->radius_);
                 float size = bone->radius_;
-                if (boneSphere.IsInside(decalSphere) && size > bestSize)
+                if (localFrustum.IsInside(boneSphere) && size > bestSize)
                 {
                     bestBone = bone;
                     bestSize = size;
@@ -403,10 +422,11 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
 
     // Build the decal frustum
     Frustum decalFrustum;
-    Matrix3x4 frustumTransform = targetTransform * Matrix3x4(adjustedWorldPosition, worldRotation, 1.0f);
-    decalFrustum.DefineOrtho(size, aspectRatio, 1.0, 0.0f, depth, frustumTransform);
+    Matrix4 localViewProjInv = (targetTransform * viewProjInv);
+    Matrix4 localViewProj = localViewProjInv.Inverse();
+    decalFrustum.Define(localViewProj);
 
-    Vector3 decalNormal = (targetTransform * (worldRotation * Vector3::BACK).ToVector4()).Normalized();
+    Vector3 decalNormal = (localViewProjInv * Vector4(0, 0, -1, 0)).ToVector3().Normalized();
 
     decals_.resize(decals_.size() + 1);
     Decal& newDecal = decals_.back();
@@ -478,13 +498,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     }
 
     // Calculate UVs
-    Matrix4 projection(Matrix4::ZERO);
-    projection.m11_ = (1.0f / (size * 0.5f));
-    projection.m00_ = projection.m11_ / aspectRatio;
-    projection.m22_ = 1.0f / depth;
-    projection.m33_ = 1.0f;
-
-    CalculateUVs(newDecal, frustumTransform.Inverse(), projection, topLeftUV, bottomRightUV);
+    CalculateUVs(newDecal, localViewProj, topLeftUV, bottomRightUV);
 
     // Transform vertices to this node's local space and generate tangents
     Matrix3x4 decalTransform = node_->GetWorldTransform().Inverse() * target->GetNode()->GetWorldTransform();
@@ -999,11 +1013,9 @@ bool DecalSet::GetBones(Drawable* target, unsigned batchIndex, const float* blen
     return true;
 }
 
-void DecalSet::CalculateUVs(Decal& decal, const Matrix3x4& view, const Matrix4& projection, const Vector2& topLeftUV,
+void DecalSet::CalculateUVs(Decal& decal, const Matrix4& viewProj, const Vector2& topLeftUV,
     const Vector2& bottomRightUV)
 {
-    Matrix4 viewProj = projection * view;
-
     for (auto i = decal.vertices_.begin(); i != decal.vertices_.end(); ++i)
     {
         Vector3 projected = viewProj * i->position_;

@@ -23,7 +23,8 @@
 #pragma once
 
 #include "../Scene/Component.h"
-#include "../Graphics//Material.h"
+#include "../Graphics/Material.h"
+#include "../Graphics/DecalSet.h"
 
 namespace Urho3D
 {
@@ -42,14 +43,21 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Visualize the component as debug geometry.
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
     /// Set material. The material should use a small negative depth bias to avoid Z-fighting.
     void SetMaterial(Material* material);
+    /// Set orthographic mode enabled/disabled.
+    void SetOrthographic(bool enable);
     /// Set near clip distance.
     void SetNearClip(float nearClip);
     /// Set far clip distance.
     void SetFarClip(float farClip);
     /// Set vertical field of view in degrees.
     void SetFov(float fov);
+    /// Set orthographic size attribute.
+    void SetOrthoSize(float orthoSize);
     /// Set aspect ratio manually. Disables the auto aspect ratio -mode.
     void SetAspectRatio(float aspectRatio);
     /// Set material attribute.
@@ -59,17 +67,26 @@ public:
     Material* GetMaterial() const;
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
+    /// Return orthographic flag.
+    bool IsOrthographic() const { return orthographic_; }
     /// Return far clip distance.
-    float GetFarClip() const;
+    float GetFarClip() const { return farClip_; }
     /// Return near clip distance.
-    float GetNearClip() const;
+    float GetNearClip() const { return nearClip_; }
     /// Return vertical field of view in degrees.
     float GetFov() const { return fov_; }
+    /// Return orthographic mode size.
+    float GetOrthoSize() const { return orthoSize_; }
     /// Return aspect ratio.
     float GetAspectRatio() const { return aspectRatio_; }
 
+    /// Get view-projection matrix
+    Matrix4 GetViewProj() const;
+
     /// Update projection.
     void Update();
+    /// Inline projection.
+    void Inline();
 
 private:
     void SheduleUpdate();
@@ -81,14 +98,20 @@ private:
     /// Is projection needs to be updated.
     bool isDirty_{};
 
+    /// Orthographic mode flag.
+    bool orthographic_{true};
     /// Near clip distance.
     float nearClip_{0.1f};
     /// Far clip distance.
     float farClip_{1.0f};
     /// Field of view.
     float fov_{90.0f};
+    /// Orthographic view size.
+    float orthoSize_{1.0f};
     /// Aspect ratio.
     float aspectRatio_{1.0f};
+
+    ea::vector<SharedPtr<DecalSet>> activeDecalSets_;
 };
 
 } // namespace Urho3D
