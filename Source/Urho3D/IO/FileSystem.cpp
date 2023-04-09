@@ -865,6 +865,16 @@ ea::string FileSystem::GetProgramDir() const
     return APK;
 #elif defined(IOS) || defined(TVOS)
     return AddTrailingSlash(SDL_IOS_GetResourceDir());
+#elif MACOS
+    // On MacOS, Program Dir is on Program Package dir
+    ea::string path, file, extension;
+    SplitPath(GetProgramFileName(), path, file, extension);
+    const ea::string packageDir = Format("{}.app/Contents/MacOS", file);
+    size_t pathPos = path.find_last_of(packageDir);
+    if(pathPos == ea::string::npos)
+        return path;
+    path = path.substr(0, pathPos - packageDir.size());
+    return path;
 #elif DESKTOP
     return GetPath(GetProgramFileName());
 #else
