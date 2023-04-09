@@ -270,6 +270,16 @@ void Context::ReleaseSDL()
 }
 #endif // ifndef MINI_URHO
 
+void Context::SetUnitTest(bool isUnitTest)
+{
+    isUnitTest_ = isUnitTest;
+}
+
+bool Context::IsUnitTest() const
+{
+    return isUnitTest_;
+}
+
 Object* Context::GetSubsystem(StringHash type) const
 {
     return subsystems_.Get(type);

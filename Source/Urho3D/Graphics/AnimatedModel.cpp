@@ -1126,7 +1126,7 @@ void AnimatedModel::UpdateSkinning()
 void AnimatedModel::UpdateMorphs()
 {
     auto* graphics = GetSubsystem<Graphics>();
-    if (!graphics)
+    if (!context_->IsUnitTest() && !graphics)
         return;
 
     if (modelAnimator_)

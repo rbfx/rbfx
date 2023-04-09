@@ -22,8 +22,27 @@
 
 #include "ModelUtils.h"
 
+#include "Urho3D/Graphics/IndexBuffer.h"
+
+#include <Urho3D/Graphics/Geometry.h>
+#include <Urho3D/Graphics/Model.h>
+
 namespace Tests
 {
+namespace 
+{
+#pragma pack(push)
+#pragma pack(push, 1)
+struct PosNormTangUvColor
+{
+    Vector3 position_;
+    Vector3 normal_;
+    Vector4 tangent_;
+    Vector2 texCoord_;
+    unsigned color_;
+};
+#pragma pack(pop)
+}
 
 ModelVertexFormat GetVertexFormat()
 {

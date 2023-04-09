@@ -516,6 +516,63 @@ public:
         m22_ = scale;
     }
 
+    /// Set perspective projection.
+    void SetPerspective(float fov, float zoom, float aspectRatio, float nearClip, float farClip, const Vector2& projectionOffset)
+    {
+        float h = (1.0f / tanf(fov * M_DEGTORAD * 0.5f)) * zoom;
+        float w = h / aspectRatio;
+        float q = farClip / (farClip - nearClip);
+        float r = -q * nearClip;
+
+        m00_ = w;
+        m01_ = 0.0f;
+        m02_ = projectionOffset.x_ * 2.0f;
+        m03_ = 0.0f;
+
+        m10_ = 0.0f;
+        m11_ = h;
+        m12_ = projectionOffset.y_ * 2.0f;
+        m13_ = 0.0f;
+
+        m20_ = 0.0f;
+        m21_ = 0.0f;
+        m22_ = q;
+        m23_ = r;
+
+        m30_ = 0.0f;
+        m31_ = 0.0f;
+        m32_ = 1.0f;
+        m33_ = 0.0f;
+    }
+
+    /// Set perspective projection.
+    void SetOrthographic(float orthoSize, float zoom, float aspectRatio, float farClip, const Vector2& projectionOffset)
+    {
+        float h = (1.0f / (orthoSize * 0.5f)) * zoom;
+        float w = h / aspectRatio;
+        float q = 1.0f / farClip;
+        float r = 0.0f;
+
+        m00_ = w;
+        m01_ = 0.0f;
+        m02_ = 0.0f;
+        m03_ = projectionOffset.x_ * 2.0f;
+
+        m10_ = 0.0f;
+        m11_ = h;
+        m12_ = 0.0f;
+        m13_ = projectionOffset.y_ * 2.0f;
+
+        m20_ = 0.0f;
+        m21_ = 0.0f;
+        m22_ = q;
+        m23_ = r;
+
+        m30_ = 0.0f;
+        m31_ = 0.0f;
+        m32_ = 0.0f;
+        m33_ = 1.0f;
+    }
     /// Return the combined rotation and scaling matrix.
     Matrix3 ToMatrix3() const
     {

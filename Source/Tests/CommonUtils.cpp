@@ -77,6 +77,7 @@ void ResetContext()
 SharedPtr<Context> CreateCompleteContext()
 {
     auto context = MakeShared<Context>();
+    context->SetUnitTest(true);
     auto engine = new Engine(context);
     auto fs = context->GetSubsystem<FileSystem>();
     auto exeDir = GetParentPath(fs->GetProgramFileName());

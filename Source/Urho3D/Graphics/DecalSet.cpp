@@ -58,6 +58,41 @@ static const VertexMaskFlags STATIC_ELEMENT_MASK = MASK_POSITION | MASK_NORMAL |
 static const VertexMaskFlags SKINNED_ELEMENT_MASK = MASK_POSITION | MASK_NORMAL | MASK_TEXCOORD1 | MASK_TANGENT |
     MASK_BLENDWEIGHTS | MASK_BLENDINDICES;
 
+DecalVertex::DecalVertex(const Vector3& position, const Vector3& normal, const float blendWeights[], const unsigned char blendIndices[])
+    : position_(position)
+    , normal_(normal)
+{
+    for (unsigned i = 0; i < 4; ++i)
+    {
+        blendWeights_[i] = blendWeights[i];
+        blendIndices_[i] = blendIndices[i];
+    }
+};
+
+DecalVertex::DecalVertex(const Vector3& position, const Vector3& normal, const Vector2& texCoord, const Vector4& tangent)
+    : position_(position)
+    , normal_(normal)
+    , texCoord_(texCoord)
+    , tangent_(tangent)
+{
+};
+
+bool DecalVertex::Equals(const DecalVertex& rhs, float eps) const
+{
+    if (!position_.Equals(rhs.position_, eps) || !normal_.Equals(rhs.normal_, eps)
+        || !tangent_.Equals(rhs.tangent_, eps) || !texCoord_.Equals(rhs.texCoord_, eps))
+        return false;
+
+    for (unsigned i=0; i<4;++i)
+    {
+        if (!Urho3D::Equals(blendWeights_[i], rhs.blendWeights_[i], eps))
+            return false;
+        if (blendIndices_[i] != rhs.blendIndices_[i])
+            return false;
+    }
+    return true;
+}
+
 static DecalVertex ClipEdge(const DecalVertex& v0, const DecalVertex& v1, float d0, float d1, bool skinned)
 {
     DecalVertex ret;
@@ -299,7 +334,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     URHO3D_PROFILE("AddDecal");
 
     // Do not add decals in headless mode
-    if (!node_ || !GetSubsystem<Graphics>())
+    if (!node_ || (!context_->IsUnitTest() && !GetSubsystem<Graphics>()))
         return false;
 
     if (!target || !target->GetNode())
@@ -507,6 +542,19 @@ void DecalSet::RemoveAllDecals()
 Material* DecalSet::GetMaterial() const
 {
     return batches_[0].material_;
+}
+
+const Decal* DecalSet::GetDecal(unsigned index) const
+{
+    auto i = decals_.begin();
+    while (index > 0 && i!=decals_.end())
+    {
+        i = ea::next(i);
+    }
+    if (i == decals_.end())
+        return nullptr;
+
+    return &(*i);
 }
 
 void DecalSet::SetMaterialAttr(const ResourceRef& value)

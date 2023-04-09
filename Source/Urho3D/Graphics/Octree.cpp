@@ -262,7 +262,7 @@ void Octant::GetDrawablesInternal(RayOctreeQuery& query) const
     if (octantDist >= query.maxDistance_)
         return;
 
-    if (drawables_.size())
+    if (!drawables_.empty())
     {
         auto** start = const_cast<Drawable**>(&drawables_[0]);
         Drawable** end = start + drawables_.size();

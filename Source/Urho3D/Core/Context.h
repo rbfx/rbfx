@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -92,6 +93,11 @@ public:
     bool RequireSDL(unsigned int sdlFlags);
     /// Indicate that you are done with using SDL. Must be called after using RequireSDL().
     void ReleaseSDL();
+    /// Set flag to indicate if the code runs within a unit test.
+    void SetUnitTest(bool isUnitTest);
+    /// Returns true if the context runs in a unit test.
+    /// There are some checks to omit certain calculations in a headless mode. This flag should be used in conjunction with headless check to let code run in test environment.
+    bool IsUnitTest() const;
 
     /// Deprecated. Use AddFactoryReflection, AddAbstractReflection or AddReflection instead.
     template <class T> void RegisterFactory(ea::string_view category = {}) { AddFactoryReflection<T>(category); }
@@ -192,6 +198,8 @@ private:
     EventHandler* eventHandler_;
     /// Variant map for global variables that can persist throughout application execution.
     VariantMap globalVars_;
+    /// Unit test flag.
+    bool isUnitTest_{false};
 };
 
 template <class T> T* Context::RegisterSubsystem()

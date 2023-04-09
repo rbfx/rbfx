@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,16 +49,10 @@ struct URHO3D_API DecalVertex
     }
 
     /// Construct with position, normal and skinning information.
-    DecalVertex(const Vector3& position, const Vector3& normal, const float blendWeights[], const unsigned char blendIndices[]) :
-        position_(position),
-        normal_(normal)
-    {
-        for (unsigned i = 0; i < 4; ++i)
-        {
-            blendWeights_[i] = blendWeights[i];
-            blendIndices_[i] = blendIndices[i];
-        }
-    }
+    DecalVertex(const Vector3& position, const Vector3& normal, const float blendWeights[], const unsigned char blendIndices[]);
+
+    /// Construct with position, normal and skinning information.
+    DecalVertex(const Vector3& position, const Vector3& normal, const Vector2& texCoord, const Vector4& tangent);
 
     /// Position.
     Vector3 position_;
@@ -71,6 +66,9 @@ struct URHO3D_API DecalVertex
     float blendWeights_[4]{};
     /// Blend indices.
     unsigned char blendIndices_[4]{};
+
+    /// Test for equality with another vertex with epsilon.
+    bool Equals(const DecalVertex& rhs, float eps = M_EPSILON) const;
 };
 
 /// One decal in a decal set.
@@ -158,7 +156,10 @@ public:
     /// @property
     unsigned GetNumDecals() const { return decals_.size(); }
 
-    /// Retur number of vertices in the decals.
+    /// Return decal by index. This operation has linear complexity and should be only used by unit tests.
+    const Decal* GetDecal(unsigned index) const;
+
+    /// Return number of vertices in the decals.
     /// @property
     unsigned GetNumVertices() const { return numVertices_; }
 

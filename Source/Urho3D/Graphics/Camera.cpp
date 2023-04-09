@@ -706,36 +706,15 @@ void Camera::UpdateProjection() const
 
     if (!orthographic_)
     {
-        float h = (1.0f / tanf(fov_ * M_DEGTORAD * 0.5f)) * zoom_;
-        float w = h / aspectRatio_;
-        float q = farClip_ / (farClip_ - nearClip_);
-        float r = -q * nearClip_;
-
-        projection.m00_ = w;
-        projection.m02_ = projectionOffset_.x_ * 2.0f;
-        projection.m11_ = h;
-        projection.m12_ = projectionOffset_.y_ * 2.0f;
-        projection.m22_ = q;
-        projection.m23_ = r;
-        projection.m32_ = 1.0f;
+        projection.SetPerspective(fov_, zoom_, aspectRatio_, nearClip_, farClip_, projectionOffset_);
         projNearClip = nearClip_;
         projFarClip = farClip_;
     }
     else
     {
-        float h = (1.0f / (orthoSize_ * 0.5f)) * zoom_;
-        float w = h / aspectRatio_;
-        float q = 1.0f / farClip_;
-        float r = 0.0f;
-
-        projection.m00_ = w;
-        projection.m03_ = projectionOffset_.x_ * 2.0f;
-        projection.m11_ = h;
-        projection.m13_ = projectionOffset_.y_ * 2.0f;
-        projection.m22_ = q;
-        projection.m23_ = r;
-        projection.m33_ = 1.0f;
-        // Near clip does not affect depth accuracy in ortho projection, so let it stay 0 to avoid problems with shader depth parameters
+        projection.SetOrthographic(orthoSize_, zoom_, aspectRatio_, farClip_, projectionOffset_);
+        // Near clip does not affect depth accuracy in ortho projection, so let it stay 0 to avoid problems with shader
+        // depth parameters
         projNearClip = 0.0f;
         projFarClip = farClip_;
     }
