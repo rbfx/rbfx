@@ -145,9 +145,8 @@ public:
         unsigned subGeometry = M_MAX_UNSIGNED);
     /// Add a decal from view-projection matrix, using a target drawable's geometry for reference. If the decal needs to move
     /// with the target, the decal component should be created to the target's node. Return true if successful.
-    bool AddDecal(Drawable* target, const Matrix4& viewProj, float size,
-        const Vector2& topLeftUV, const Vector2& bottomRightUV, float timeToLive = 0.0f,
-        float normalCutoff = 0.1f, unsigned subGeometry = M_MAX_UNSIGNED);
+    bool AddDecal(Drawable* target, const Matrix4& viewProj, const Vector2& topLeftUV, const Vector2& bottomRightUV,
+        float timeToLive = 0.0f, float normalCutoff = 0.1f, unsigned subGeometry = M_MAX_UNSIGNED);
     /// Remove n oldest decals.
     void RemoveDecals(unsigned num);
     /// Remove all decals.

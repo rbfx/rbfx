@@ -28,11 +28,27 @@
 
 namespace Urho3D
 {
+namespace DecalProjectionDetail
+{
+
+enum class SubscriptionMask : unsigned
+{
+    None = 0,
+    Update = 1 << 0,
+    PreRender = 1 << 1
+};
+
+URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
+
+} // namespace DirectionAggregatorDetail
 
 /// %Decal projection component.
 class URHO3D_API DecalProjection : public Urho3D::Component
 {
     URHO3D_OBJECT(DecalProjection, Component);
+
+    typedef DecalProjectionDetail::SubscriptionFlags SubscriptionFlags;
+    typedef DecalProjectionDetail::SubscriptionMask SubscriptionMask;
 
 public:
     /// Construct.
@@ -45,6 +61,8 @@ public:
 
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    void OnSceneSet(Scene* scene) override;
 
     /// Set material. The material should use a small negative depth bias to avoid Z-fighting.
     void SetMaterial(Material* material);
@@ -62,6 +80,12 @@ public:
     void SetAspectRatio(float aspectRatio);
     /// Set material attribute.
     void SetMaterialAttr(const ResourceRef& value);
+    /// Set time to live in seconds.
+    void SetTimeToLive(float timeToLive);
+    /// Return normal threshold value.
+    void SetNormalCutoff(float normalCutoff);
+    /// Return view mask.
+    void SetViewMask(unsigned);
 
     /// Return material.
     Material* GetMaterial() const;
@@ -79,39 +103,64 @@ public:
     float GetOrthoSize() const { return orthoSize_; }
     /// Return aspect ratio.
     float GetAspectRatio() const { return aspectRatio_; }
+    /// Return time to live in seconds.
+    float GetTimeToLive() const { return timeToLive_; }
+    /// Return normal threshold value.
+    float GetNormalCutoff() const { return normalCutoff_; }
+    /// Return view mask.
+    unsigned GetViewMask() const { return viewMask_; }
 
     /// Get view-projection matrix
     Matrix4 GetViewProj() const;
 
     /// Update projection.
-    void Update();
+    void UpdateGeometry();
     /// Inline projection.
     void Inline();
 
 private:
-    void SheduleUpdate();
+    void UpdateSubscriptions(bool needGeometryUpdate = true);
     void HandlePreRenderEvent(StringHash eventName, VariantMap& eventData);
+    void HandleSceneUpdate(StringHash eventName, VariantMap& eventData);
 
     /// Material.
     SharedPtr<Material> material_;
 
-    /// Is projection needs to be updated.
-    bool isDirty_{};
+    static constexpr float DEFAULT_NEAR_CLIP = -1.0f;
+    static constexpr float DEFAULT_FAR_CLIP = 1.0f;
+    static constexpr float DEFAULT_FOV = 45.0f;
+    static constexpr float DEFAULT_ASPECT_RATIO = 1.0f;
+    static constexpr float DEFAULT_ORTHO_SIZE = 1.0f;
+    static constexpr bool DEFAULT_ORTHO = true;
+    static constexpr float DEFAULT_TIME_TO_LIVE = 0.0f;
+    static constexpr float DEFAULT_NORMAL_CUTOFF = 0.1f;
+    static constexpr unsigned DEFAULT_VIEWMASK = M_MAX_UNSIGNED;
 
     /// Orthographic mode flag.
-    bool orthographic_{true};
+    bool orthographic_{DEFAULT_ORTHO};
     /// Near clip distance.
-    float nearClip_{0.1f};
+    float nearClip_{DEFAULT_NEAR_CLIP};
     /// Far clip distance.
-    float farClip_{1.0f};
+    float farClip_{DEFAULT_FAR_CLIP};
     /// Field of view.
-    float fov_{90.0f};
+    float fov_{DEFAULT_FOV};
     /// Orthographic view size.
-    float orthoSize_{1.0f};
+    float orthoSize_{DEFAULT_ORTHO_SIZE};
     /// Aspect ratio.
-    float aspectRatio_{1.0f};
+    float aspectRatio_{DEFAULT_ASPECT_RATIO};
+    /// Time to live. The projection going to remove itself after the timeout.
+    float timeToLive_{DEFAULT_TIME_TO_LIVE};
+    /// Elapsed time in seconds.
+    float elapsedTime_{0.0f};
+    /// Projection normal threshold.
+    float normalCutoff_{DEFAULT_NORMAL_CUTOFF};
+    /// Query mask.
+    unsigned viewMask_{DEFAULT_VIEWMASK};
 
+    /// Active decal sets attached to objects in the scene.
     ea::vector<SharedPtr<DecalSet>> activeDecalSets_;
+    /// Active subscriptions bitmask.
+    SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
 };
 
 } // namespace Urho3D

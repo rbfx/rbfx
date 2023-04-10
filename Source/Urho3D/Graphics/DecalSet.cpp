@@ -331,21 +331,18 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     float normalCutoff, unsigned subGeometry)
 {
     Matrix4 proj;
-    proj.SetOrthographic(size, 1.0f, aspectRatio, depth, Vector2::ZERO);
+    proj.SetOrthographic(size, 1.0f, aspectRatio, 0.0f, depth, Vector2::ZERO);
 
     Matrix4 view;
     const Vector3 adjustedWorldPosition = worldPosition - 0.5f * depth * (worldRotation * Vector3::FORWARD);
     view.SetTranslation(adjustedWorldPosition);
     view.SetRotation(worldRotation.RotationMatrix());
 
-    return AddDecal(target, proj * view.Inverse(), size, topLeftUV,
-        bottomRightUV,
-        timeToLive, normalCutoff, subGeometry);
+    return AddDecal(target, proj * view.Inverse(), topLeftUV, bottomRightUV, timeToLive, normalCutoff, subGeometry);
 }
 
-bool DecalSet::AddDecal(Drawable* target, const Matrix4& viewProj,
-    float size, const Vector2& topLeftUV, const Vector2& bottomRightUV, float timeToLive, float normalCutoff,
-    unsigned subGeometry)
+bool DecalSet::AddDecal(Drawable* target, const Matrix4& viewProj, const Vector2& topLeftUV,
+    const Vector2& bottomRightUV, float timeToLive, float normalCutoff, unsigned subGeometry)
 {
     URHO3D_PROFILE("AddDecal");
 

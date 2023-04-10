@@ -712,7 +712,7 @@ void Camera::UpdateProjection() const
     }
     else
     {
-        projection.SetOrthographic(orthoSize_, zoom_, aspectRatio_, farClip_, projectionOffset_);
+        projection.SetOrthographic(orthoSize_, zoom_, aspectRatio_, 0.0f, farClip_, projectionOffset_);
         // Near clip does not affect depth accuracy in ortho projection, so let it stay 0 to avoid problems with shader
         // depth parameters
         projNearClip = 0.0f;

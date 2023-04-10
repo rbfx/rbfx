@@ -3,8 +3,8 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Node ID" value="45" />
-	<attribute name="Next Component ID" value="268" />
+	<attribute name="Next Node ID" value="63" />
+	<attribute name="Next Component ID" value="489" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -15,9 +15,9 @@
 		<attribute name="Color" value="1 0.32549 1 0.882353" />
 		<attribute name="Render Order" value="129" />
 		<attribute name="Drawables">
-			<variant type="Int" value="1461" />
-			<variant type="Int" value="1373" />
 			<variant type="Int" value="1518" />
+			<variant type="Int" value="1373" />
+			<variant type="Int" value="1461" />
 		</attribute>
 	</component>
 	<component type="OutlineGroup" id="1375">
@@ -1863,9 +1863,11 @@
 			<attribute name="Variables" />
 			<component type="DecalProjection" id="42">
 				<attribute name="Material" value="Material;Materials/UrhoDecal.xml" />
-				<attribute name="Far Clip" value="4.000000" />
+				<attribute name="Near Clip" value="0.010000" />
+				<attribute name="Far Clip" value="3.000000" />
+				<attribute name="FOV" value="20.000000" />
 				<attribute name="Aspect Ratio" value="2.000000" />
-				<attribute name="Orthographic" value="true" />
+				<attribute name="Orthographic" value="false" />
 			</component>
 		</node>
 		<node id="40">
@@ -1879,7 +1881,6 @@
 			<component type="DecalProjection" id="195">
 				<attribute name="Material" value="Material;Materials/UrhoDecal.xml" />
 				<attribute name="Aspect Ratio" value="2.000000" />
-				<attribute name="Orthographic" value="true" />
 			</component>
 		</node>
 	</node>

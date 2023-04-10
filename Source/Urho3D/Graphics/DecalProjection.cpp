@@ -23,13 +23,13 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/DecalProjection.h"
-
-#include "DebugRenderer.h"
-#include "DecalSet.h"
-#include "Octree.h"
+#include "../Graphics/DebugRenderer.h"
+#include "../Graphics/DecalSet.h"
+#include "../Graphics/Octree.h"
 #include "../Resource/ResourceCache.h"
 #include "../Core/CoreEvents.h"
 #include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 
 namespace Urho3D
 {
@@ -48,14 +48,19 @@ void DecalProjection::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
         "Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Near Clip", GetNearClip, SetNearClip, float, 0.1f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Far Clip", GetFarClip, SetFarClip, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("FOV", GetFov, SetFov, float, 90.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Aspect Ratio", GetAspectRatio, SetAspectRatio, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Orthographic", IsOrthographic, SetOrthographic, bool, false, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Orthographic Size", GetOrthoSize, SetOrthoSize, float, 1.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE(
+        "Near Clip", GetNearClip, SetNearClip, float, DEFAULT_NEAR_CLIP, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Far Clip", GetFarClip, SetFarClip, float, DEFAULT_FAR_CLIP, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("FOV", GetFov, SetFov, float, DEFAULT_FOV, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Aspect Ratio", GetAspectRatio, SetAspectRatio, float, DEFAULT_ASPECT_RATIO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Orthographic", IsOrthographic, SetOrthographic, bool, DEFAULT_ORTHO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Orthographic Size", GetOrthoSize, SetOrthoSize, float, DEFAULT_ORTHO_SIZE, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Normal Cutoff", GetNormalCutoff, SetNormalCutoff, float, DEFAULT_NORMAL_CUTOFF, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Time To Live", GetTimeToLive, SetTimeToLive, float, DEFAULT_TIME_TO_LIVE, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Elapsed Time", float, elapsedTime_, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("View Mask", GetViewMask, SetViewMask, unsigned, DEFAULT_VIEWMASK, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Component);
-    URHO3D_ACTION_STATIC_LABEL("Update", Update, "");
+    URHO3D_ACTION_STATIC_LABEL("Update", UpdateGeometry, "");
     URHO3D_ACTION_STATIC_LABEL("Inline", Inline, "");
 }
 
@@ -77,32 +82,32 @@ void DecalProjection::SetMaterial(Material* material)
     if (material_ != material)
     {
         material_ = material;
-        SheduleUpdate();
+        UpdateSubscriptions();
     }
 }
 
 void DecalProjection::SetOrthographic(bool enable)
 {
     orthographic_ = enable;
-    SheduleUpdate();
+    UpdateSubscriptions();
 }
 
 void DecalProjection::SetNearClip(float nearClip)
 {
-    nearClip_ = Max(nearClip, M_MIN_NEARCLIP);
-    SheduleUpdate();
+    nearClip_ = nearClip;
+    UpdateSubscriptions();
 }
 
 void DecalProjection::SetFarClip(float farClip)
 {
-    farClip_ = Max(farClip, M_MIN_NEARCLIP);
-    SheduleUpdate();
+    farClip_ = farClip;
+    UpdateSubscriptions();
 }
 
 void DecalProjection::SetFov(float fov)
 {
     fov_ = Clamp(fov, 0.0f, M_MAX_FOV);
-    SheduleUpdate();
+    UpdateSubscriptions();
 }
 
 void DecalProjection::SetOrthoSize(float orthoSize)
@@ -110,7 +115,7 @@ void DecalProjection::SetOrthoSize(float orthoSize)
     if (orthoSize_ != orthoSize)
     {
         orthoSize_ = orthoSize;
-        SheduleUpdate();
+        UpdateSubscriptions();
     }
 }
 
@@ -119,7 +124,7 @@ void DecalProjection::SetAspectRatio(float aspectRatio)
     if (aspectRatio_ != aspectRatio)
     {
         aspectRatio_ = aspectRatio;
-        SheduleUpdate();
+        UpdateSubscriptions();
     }
 }
 
@@ -129,46 +134,104 @@ void DecalProjection::SetMaterialAttr(const ResourceRef& value)
     SetMaterial(cache->GetResource<Material>(value.name_));
 }
 
+void DecalProjection::SetTimeToLive(float timeToLive)
+{
+    timeToLive_ = timeToLive;
+    UpdateSubscriptions();
+}
+
+void DecalProjection::SetNormalCutoff(float normalCutoff)
+{
+    normalCutoff_ = normalCutoff;
+    UpdateSubscriptions();
+}
+
+void DecalProjection::SetViewMask(unsigned viewMask)
+{
+    viewMask_ = viewMask;
+    UpdateSubscriptions();
+}
+
+void DecalProjection::OnSceneSet(Scene* scene)
+{
+    BaseClassName::OnSceneSet(scene);
+
+    UpdateSubscriptions(subscriptionFlags_ & SubscriptionMask::PreRender);
+}
 
 ResourceRef DecalProjection::GetMaterialAttr() const
 {
     return GetResourceRef(material_, Material::GetTypeStatic());
 }
 
-void DecalProjection::SheduleUpdate()
+void DecalProjection::UpdateSubscriptions(bool needGeometryUpdate)
 {
-    if (isDirty_)
-        return;
-    isDirty_ = true;
+    SubscriptionFlags flags{SubscriptionMask::None};
+    Scene* scene = GetScene();
+    if (timeToLive_ > 0.0f && scene)
+        flags |= SubscriptionMask::Update;
+    if (needGeometryUpdate)
+        flags |= SubscriptionMask::PreRender;
+    
+    const auto toSubscribe = flags & ~subscriptionFlags_;
+    const auto toUnsubscribe = subscriptionFlags_ & ~flags;
 
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(DecalProjection, HandlePreRenderEvent));
+    subscriptionFlags_ = flags;
+
+    if (toSubscribe & SubscriptionMask::Update)
+    {
+        SubscribeToEvent(scene, E_SCENEUPDATE, URHO3D_HANDLER(DecalProjection, HandleSceneUpdate));
+    }
+    else if (toUnsubscribe & SubscriptionMask::Update)
+    {
+        UnsubscribeFromEvent(scene, E_SCENEUPDATE);
+    }
+
+    if (toSubscribe & SubscriptionMask::PreRender)
+    {
+        SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(DecalProjection, HandlePreRenderEvent));
+    }
+    else if (toUnsubscribe & SubscriptionMask::PreRender)
+    {
+        UnsubscribeFromEvent(E_POSTUPDATE);
+    }
+}
+
+void DecalProjection::HandleSceneUpdate(StringHash eventName, VariantMap& eventData)
+{
+    using namespace  SceneUpdate;
+    elapsedTime_ += eventData[P_TIMESTEP].GetFloat();
+    if (elapsedTime_ > timeToLive_)
+    {
+        Remove();
+    }
 }
 
 void DecalProjection::HandlePreRenderEvent(StringHash eventName, VariantMap& eventData)
 {
-    Update();
+    UpdateGeometry();
 }
 
 Matrix4 DecalProjection::GetViewProj() const
 {
-    Matrix3x4 frustumTransform(
+    const Matrix3x4 frustumTransform(
         node_ ? Matrix3x4(node_->GetWorldPosition(), node_->GetWorldRotation(), 1.0f) : Matrix3x4::IDENTITY);
     Matrix4 proj;
     if (orthographic_)
     {
-        proj.SetOrthographic(orthoSize_, 1.0f, aspectRatio_, farClip_, Vector2::ZERO);
+        proj.SetOrthographic(orthoSize_, 1.0f, aspectRatio_, nearClip_, farClip_, Vector2::ZERO);
     }
     else
     {
-        proj.SetPerspective(fov_, 1.0f, aspectRatio_, nearClip_, farClip_, Vector2::ZERO);
+        proj.SetPerspective(fov_, 1.0f, aspectRatio_, Max(nearClip_, M_MIN_NEARCLIP), Max(farClip_, M_MIN_NEARCLIP*2.0f), Vector2::ZERO);
     }
     return  proj * frustumTransform.Inverse();
 }
 
 void DecalProjection::Inline()
 {
-    if (isDirty_)
-        Update();
+    if (subscriptionFlags_ & SubscriptionMask::PreRender)
+        UpdateGeometry();
 
     for (auto& activeDecal : activeDecalSets_)
     {
@@ -178,13 +241,9 @@ void DecalProjection::Inline()
     Remove();
 }
 
-void DecalProjection::Update()
+void DecalProjection::UpdateGeometry()
 {
-    if (isDirty_)
-    {
-        UnsubscribeFromEvent(E_POSTUPDATE);
-        isDirty_ = false;
-    }
+    UpdateSubscriptions(false);
 
     auto* octree = GetScene()->GetComponent<Octree>();
     if (!octree)
@@ -203,7 +262,7 @@ void DecalProjection::Update()
     Frustum frustum;
     frustum.Define(viewProj);
 
-    FrustumOctreeQuery query{drawables, frustum, DRAWABLE_GEOMETRY};
+    FrustumOctreeQuery query{drawables, frustum, DRAWABLE_GEOMETRY, viewMask_};
     octree->GetDrawables(query);
 
     for (Drawable* drawable: drawables)
@@ -214,7 +273,7 @@ void DecalProjection::Update()
             DecalSet * decalSet = node->CreateComponent<DecalSet>();
             decalSet->SetTemporary(true);
             decalSet->SetMaterial(material_);
-            decalSet->AddDecal(drawable, viewProj, orthoSize_, Vector2::ZERO, Vector2::ONE);
+            decalSet->AddDecal(drawable, viewProj, Vector2::ZERO, Vector2::ONE, Urho3D::Max(M_EPSILON, timeToLive_-elapsedTime_), normalCutoff_);
             activeDecalSets_.push_back(SharedPtr<DecalSet>(decalSet));
         }
     }
