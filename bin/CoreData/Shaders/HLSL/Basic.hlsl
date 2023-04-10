@@ -13,49 +13,62 @@ SamplerState sDiffMap : register(s0);
 
 #define Sample2D(tex, uv) t##tex.Sample(s##tex, uv)
 
-void VS(float4 iPos : POSITION,
+#ifdef COMPILEVS
+struct VertexInput {
+    float4 iPos : POSITION;
     #ifdef DIFFMAP
-        float2 iTexCoord : TEXCOORD0,
+    float2 iTexCoord: TEXCOORD0;
     #endif
     #ifdef VERTEXCOLOR
-        float4 iColor : COLOR0,
+    float4 iColor: COLOR0;
     #endif
+};
+struct VertexOutput {
     #ifdef DIFFMAP
-        out float2 oTexCoord : TEXCOORD0,
+    float2 oTexCoord : TEXCOORD0;
     #endif
     #ifdef VERTEXCOLOR
-        out float4 oColor : COLOR0,
+    float4 oColor: COLOR0;
     #endif
-    out float4 oPos : SV_POSITION)
+    float4 oPos : SV_POSITION;
+};
+
+VertexOutput VS(VertexInput input)
 {
-    float3 worldPos = mul(iPos, cModel);
-    oPos = mul(float4(worldPos, 1.0), cViewProj);
+    VertexOutput output;
+    float3 worldPos = mul(input.iPos, cModel);
+    output.oPos = mul(float4(worldPos, 1.0), cViewProj);
 
     #ifdef VERTEXCOLOR
-        oColor = iColor * Sample2D(DiffMap, float2(0.0));
+        output.oColor = input.iColor;
     #endif
     #ifdef DIFFMAP
-        oTexCoord = iTexCoord;
+        output.oTexCoord = input.iTexCoord;
     #endif
+    return output;
 }
+#endif
 
-void PS(
+#ifdef COMPILEPS
+struct VertexInput {
     #if defined(DIFFMAP) || defined(ALPHAMAP)
-        float2 iTexCoord : TEXCOORD0,
+    float2 iTexCoord: TEXCOORD0;
     #endif
     #ifdef VERTEXCOLOR
-        float4 iColor : COLOR0,
+    float4 iColor: COLOR0;
     #endif
-    out float4 oColor : SV_TARGET)
+    float4 iPos : SV_POSITION;
+};
+float4 PS(VertexInput input) : SV_TARGET
 {
     float4 diffColor = 1.0;
 
     #ifdef VERTEXCOLOR
-        diffColor *= iColor;
+        diffColor *= input.iColor;
     #endif
 
     #ifdef DIFFMAP
-        float4 diffInput = Sample2D(DiffMap, iTexCoord);
+        float4 diffInput = Sample2D(DiffMap, input.iTexCoord);
         #ifdef ALPHAMASK
             if (diffInput.a < 0.5)
                 discard;
@@ -63,12 +76,13 @@ void PS(
         diffColor *= diffInput;
     #endif
     #ifdef ALPHAMAP
-        float alphaInput = Sample2D(DiffMap, iTexCoord).a;
+        float alphaInput = Sample2D(DiffMap, input.iTexCoord).a;
         diffColor.a *= alphaInput;
     #endif
 
     #ifdef URHO3D_LINEAR_OUTPUT
         diffColor.rgb *= diffColor.rgb * (diffColor.rgb * 0.305306011 + 0.682171111) + 0.012522878;
     #endif
-    oColor = diffColor;
+    return diffColor;
 }
+#endif
