@@ -226,16 +226,15 @@ namespace Urho3D
         HLSL2GLSLConverterImpl::ConversionAttribs attribs;
         attribs.EntryPoint = desc_.entryPoint_.c_str();
         attribs.HLSLSource = desc_.sourceCode_.c_str();
+        attribs.NumSymbols = desc_.sourceCode_.length();
         attribs.ShaderType = DiligentShaderType[desc_.type_];
         ea::string currCode = desc_.sourceCode_;
         desc_.sourceCode_ = HLSL2GLSLConverterImpl::GetInstance().Convert(attribs).c_str();
         desc_.macros_.defines_.clear(); // Clear macros to not execute again
 
         ea::vector<unsigned> byteCode;
-        if (!CompileGLSL(byteCode)) {
-            desc_.sourceCode_ = currCode;
+        if (!CompileGLSL(byteCode))
             return false;
-        }
 
         desc_.sourceCode_ = currCode;
         if (!ReflectGLSL(byteCode.data(), byteCode.size() * sizeof(unsigned)))
