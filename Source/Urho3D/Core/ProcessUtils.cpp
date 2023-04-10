@@ -41,7 +41,7 @@
 #include <mach/mach_host.h>
 #elif defined(TVOS)
 extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
-#elif !defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(UWP)
+#elif !defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(UWP) && (defined(__APPLE__) && !defined(__aarch64__))
 #include <LibCpuId/libcpuid.h>
 #endif
 
@@ -177,7 +177,7 @@ static void GetCPUData(struct CpuCoreCount* data)
     }
 }
 
-#elif !defined(__EMSCRIPTEN__) && !defined(TVOS) && !defined(UWP)
+#elif !defined(__EMSCRIPTEN__) && !defined(TVOS) && !defined(UWP) && (defined(__APPLE__) && !defined(__aarch64__))
 static void GetCPUData(struct cpu_id_t* data)
 {
     if (cpu_identify(nullptr, data) < 0)
@@ -487,7 +487,7 @@ ea::string GetPlatformName()
 
 unsigned GetNumPhysicalCPUs()
 {
-#if defined(UWP)
+#if defined(UWP) || (defined(__APPLE__) && defined(__aarch64__))
     // This is as good as it gets on UWP
     return std::thread::hardware_concurrency();
 #elif defined(IOS)
@@ -524,7 +524,7 @@ unsigned GetNumPhysicalCPUs()
 
 unsigned GetNumLogicalCPUs()
 {
-#if defined(UWP)
+#if defined(UWP) || (defined(__APPLE__) && defined(__aarch64__))
     return std::thread::hardware_concurrency();
 #elif defined(IOS)
     host_basic_info_data_t data;

@@ -45,6 +45,10 @@
 #include "../../Graphics/ShaderResourceBinding.h"
 #include "../../Graphics/PipelineState.h"
 
+#include <EASTL/utility.h>
+
+#include <Diligent/Primitives/interface/CommonDefinitions.h>
+#include <Diligent/Platforms/interface/PlatformDefinitions.h>
 #ifdef WIN32
 // D3D11 includes
 #include <Diligent/Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
@@ -65,19 +69,24 @@
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/DeviceContextVk.h>
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/SwapChainVk.h>
 // OpenGL includes
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
 #include <gl/GL.h>
+#endif
 #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
 #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
 #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
 #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/SwapChainGL.h>
 // Metal includes
+/*
 #if defined(PLATFORM_MACOS) || defined(PLATFORM_IOS)
 #include <Diligent/Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #include <Diligent/Graphics/GraphicsEngineMetal/interface/RenderDeviceMtl.h>
 #include <Diligent/Graphics/GraphicsEngineMetal/interface/DeviceContextMtl.h>
 #include <Diligent/Graphics/GraphicsEngineMetal/interface/SwapChainMtl.h>
 #endif
-
+*/
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Graphics/GraphicsTools/interface/MapHelper.hpp>
 
@@ -97,6 +106,9 @@ using namespace Platform;
 
 #include <SDL.h>
 #include <SDL_syswm.h>
+#ifdef PLATFORM_MACOS
+#include <SDL_metal.h>
+#endif
 
 #include "../../DebugNew.h"
 
@@ -104,12 +116,14 @@ using namespace Platform;
 #pragma warning(disable:4355)
 #endif
 
+#ifdef WIN32
 // Prefer the high-performance GPU on switchable GPU systems
 extern "C"
 {
 __declspec(dllexport) DWORD NvOptimusEnablement = 1;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
+#endif
 
 namespace Urho3D
 {
@@ -161,15 +175,15 @@ static void GetPrimitiveType(unsigned elementCount, PrimitiveType type, unsigned
 
 static void HandleDbgMessageCallbacks(Diligent::DEBUG_MESSAGE_SEVERITY severity, const char* msg, const char* func, const char* file, int line) {
     ea::string logMsg = Format("(diligent) {}", ea::string(msg == nullptr ? "" : msg));
-    ea::vector<ea::pair<const char*, const char*>> additionalInfo;
+    ea::vector<ea::pair<ea::string, ea::string>> additionalInfo;
 
     ea::string lineStr = Format("{}", line);
     if (func)
-        additionalInfo.push_back(ea::make_pair<const char*, const char*>("function", func));
+        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("function"), ea::string(func)));
     if (file)
-        additionalInfo.push_back(ea::make_pair<const char*, const char*>("file", file));
+        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("file"), ea::string(file)));
     if (line)
-        additionalInfo.push_back(ea::make_pair<const char*, const char*>("line", lineStr.c_str()));
+        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("line"), ea::string(lineStr)));
 
     if (additionalInfo.size() > 0)
     {
@@ -231,15 +245,6 @@ static void GetWindowHandle(SDL_Window* window, Display** outDisplay, Window& ou
     outDisplay = sysInfo.info.x11.display;
     outWindow = sysInfo.info.x11.window;
 }
-#elif PLATFORM_MACOS
-static NSWindow* GetWindowHandle(SDL_Window* window)
-{
-    SDL_SysWMinfo sysInfo;
-
-    SDL_VERSION(&sysInfo.version);
-    SDL_GetWindowWMInfo(window, &sysInfo);
-    return sysInfo.info.cocoa.window;
-}
 #elif defined (PLATFORM_IOS) || defined(PLATFORM_TVOS)
 static UIWindow* GetWindowHandle(SDL_Window* window)
 {
@@ -283,12 +288,23 @@ Graphics::Graphics(Context* context) :
     SetTextureUnitMappings();
     ResetCachedState();
 
+    
     SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
     context_->RequireSDL(SDL_INIT_VIDEO);
+    
+#ifdef PLATFORM_MACOS
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
+#endif
 }
 
 Graphics::~Graphics()
 {
+    // Reset State
+    impl_->deviceContext_->SetRenderTargets(0,nullptr, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    impl_->deviceContext_->SetPipelineState(nullptr);
+    impl_->deviceContext_->SetIndexBuffer(nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    impl_->deviceContext_->SetVertexBuffers(0, 0, nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    
     if (impl_->device_) {
         impl_->device_->IdleGPU();
 
@@ -337,6 +353,13 @@ Graphics::~Graphics()
     //URHO3D_SAFE_RELEASE(impl_->deviceContext_);
     //URHO3D_SAFE_RELEASE(impl_->device_);
 
+#ifdef PLATFORM_MACOS
+    if(impl_->metalView_) {
+        SDL_Metal_DestroyView(impl_->metalView_);
+        impl_->metalView_ = nullptr;
+    }
+#endif
+    
     if (window_)
     {
         SDL_ShowCursor(SDL_TRUE);
@@ -578,6 +601,7 @@ void Graphics::EndFrame()
 
         if (currentTexture == impl_->renderTargetViews_[0])
             impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
+        impl_->renderTargetsDirty_ = true;
     }
 
     // Clean up too large scratch buffers
@@ -2118,7 +2142,10 @@ bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless
             flags |= SDL_WINDOW_RESIZABLE;
         if (borderless)
             flags |= SDL_WINDOW_BORDERLESS;
-
+        
+#ifdef PLATFORM_MACOS
+        flags |= SDL_WINDOW_METAL;
+#endif
         window_ = SDL_CreateWindow(windowTitle_.c_str(), position_.x_, position_.y_, width, height, flags);
     }
     else
@@ -2129,7 +2156,10 @@ bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless
         URHO3D_LOGERRORF("Could not create window, root cause: '%s'", SDL_GetError());
         return false;
     }
-
+#ifdef PLATFORM_MACOS
+    impl_->metalView_ = SDL_Metal_CreateView(window_);
+    assert(impl_->metalView_);
+#endif
     SDL_GetWindowPosition(window_, &position_.x_, &position_.y_);
 
     CreateWindowIcon();
@@ -2222,7 +2252,7 @@ bool Graphics::CreateDevice(int width, int height)
 #elif PLATFORM_LINUX
     GetWindowHandle(window_, &wnd.pDisplay, &wnd.WindowId);
 #elif PLATFORM_MACOS
-    wnd.pNSView = GetWindowHandle(window_);
+    wnd.pNSView = impl_->metalView_;
 #elif defined (PLATFORM_IOS) || defined(PLATFORM_TVOS)
     wnd.pCALayer = GetWindowHandle(window_);
 #elif defined (PLATFORM_ANDROID)
@@ -2232,8 +2262,16 @@ bool Graphics::CreateDevice(int width, int height)
 #endif
 
     SwapChainDesc swapChainDesc;
-    swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
     swapChainDesc.DepthBufferFormat = TEX_FORMAT_D24_UNORM_S8_UINT;
+    if(impl_->renderBackend_ == RENDER_VULKAN) {
+        swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_BGRA8_UNORM_SRGB : TEX_FORMAT_BGRA8_UNORM;
+#ifdef PLATFORM_MACOS
+        swapChainDesc.DepthBufferFormat = TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+#endif
+    } else {
+        swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
+    }
+    
     FullScreenModeDesc fullscreenDesc = {};
     fullscreenDesc.Fullscreen = screenParams_.IsFullscreen();
 
@@ -2355,6 +2393,7 @@ bool Graphics::CreateDevice(int width, int height)
                 break;
         case RENDER_METAL:
         {
+            /*
 #if defined(PLATFORM_MACOS) || defined(PLATFORM_TVOS) || defined(PLATFORM_IOS)
             auto* factory = GetEngineFactoryMtl();
             EngineMtlCreateInfo engineCI;
@@ -2373,6 +2412,7 @@ bool Graphics::CreateDevice(int width, int height)
             );
 
 #endif
+             */
             // In Metal, FinishFrame must be called from the same thread
             // that issued rendering commands. On MacOS, however, rendering
             // happens in DisplayLinkCallback which is called from some other
@@ -2401,7 +2441,6 @@ bool Graphics::CreateDevice(int width, int height)
 
     if (!impl_->swapChain_)
     {
-        URHO3D_SAFE_RELEASE(impl_->swapChain_);
         URHO3D_LOGERROR("Failed to create swap chain");
         return false;
     }
@@ -2449,16 +2488,17 @@ void Graphics::CheckFeatureSupport()
     sRGBSupport_ = true;
     sRGBWriteSupport_ = true;
 
-    caps.maxVertexShaderUniforms_ = D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT;
-    caps.maxPixelShaderUniforms_ = D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT;
+    auto deviceFeatures = impl_->device_->GetDeviceInfo().Features;
+    caps.maxVertexShaderUniforms_ = 4096;
+    caps.maxPixelShaderUniforms_ = 4096;
     caps.constantBuffersSupported_ = true;
-    caps.constantBufferOffsetAlignment_ = 256;
-    caps.maxTextureSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-    caps.maxRenderTargetSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-    caps.maxNumRenderTargets_ = 8;
+    caps.constantBufferOffsetAlignment_ = impl_->device_->GetAdapterInfo().Buffer.ConstantBufferOffsetAlignment;
+    caps.maxTextureSize_ = impl_->device_->GetAdapterInfo().Texture.MaxTexture2DDimension;
+    caps.maxRenderTargetSize_ = impl_->device_->GetAdapterInfo().Texture.MaxTexture2DDimension;
+    caps.maxNumRenderTargets_ = MAX_RENDER_TARGETS;
 
 #ifdef URHO3D_COMPUTE
-    computeSupport_ = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+    computeSupport_ = true;
 #endif
 }
 

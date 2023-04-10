@@ -219,14 +219,29 @@ set (THIRD_PARTY_DEPENDENCIES
     spirv-cross-glsl
     spirv-cross-msl
     spirv-cross-hlsl
-    Diligent-GraphicsEngineD3D11-static
-    Diligent-GraphicsEngineD3D12-static
     Diligent-GraphicsEngineOpenGL-static
     Diligent-GraphicsEngineVk-static
     Diligent-Common
     Diligent-HLSL2GLSLConverterLib
     SPIRV-Reflect
 )
+
+# LibCpuId does not work on M1 Mac
+if (APPLE AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+    message("LibCpuId is not compatible with Mac M1, LibCpuId has been disabled.")
+    list (REMOVE_ITEM THIRD_PARTY_DEPENDENCIES LibCpuId)
+endif ()
+
+if (WIN32)
+    list (APPEND THIRD_PARTY_DEPENDENCIES Diligent-GraphicsEngineD3D11-static Diligent-GraphicsEngineD3D12-static)
+endif ()
+if (APPLE)
+    list (APPEND THIRD_PARTY_DEPENDENCIES Diligent-GraphicsEngineMetal-static)
+endif ()
+
+if (URHO3D_DILIGENT)
+    list (APPEND THIRD_PARTY_DEPENDENCIES SPIRV-Tools-opt)
+endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
@@ -356,11 +371,29 @@ if (NOT MINI_URHO)
             target_link_libraries (Urho3D PUBLIC GL)
         endif ()
     elseif(URHO3D_DILIGENT)
-        find_package(DirectX REQUIRED D3D11)
-        find_package(Vulkan REQUIRED Vulkan)
+        if (WIN32)
+            find_package(DirectX REQUIRED D3D11)
+        endif ()
 
-        target_link_libraries(Urho3D PUBLIC ${DIRECT3D_LIBRARIES} ${Vulkan_LIBRARIES} d3d12.lib)
-        target_include_directories(Urho3D PUBLIC ${Vulkan_INCLUDE_DIRS})
+        if (!Vulkan_LIBRARIES)
+            find_package(Vulkan REQUIRED Vulkan)
+        endif ()
+
+        set (LINK_LIBRARIES ${Vulkan_LIBRARIES})
+        set (HEADER_LIBRARIES ${Vulkan_INCLUDE_DIR})
+
+        if (${OPENGL_INCLUDE_DIR})
+            list (APPEND HEADER_LIBRARIES ${OPENGL_INCLUDE_DIR})
+        endif ()
+        if(${OPENGL_LIBRARY})
+            list(APPEND LINK_LIBRARIES ${OPENGL_LIBRARY})
+        endif ()
+
+        if (WIN32)
+            list (APPEND LINK_LIBRARIES ${DIRECT3D_LIBRARIES} d3d12.lib)
+        endif ()
+        target_link_libraries(Urho3D PUBLIC ${LINK_LIBRARIES})
+        target_include_directories(Urho3D PUBLIC ${HEADER_LIBRARIES})
     else ()
         find_package(DirectX REQUIRED D3D11)
         target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})

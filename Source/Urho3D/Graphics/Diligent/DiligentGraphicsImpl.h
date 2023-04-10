@@ -28,8 +28,15 @@
 #include "../../Graphics/VertexDeclaration.h"
 #include "../../Math/Color.h"
 
+#ifdef PLATFORM_MACOS
+#include <SDL.h>
+#include <SDL_metal.h>
+#endif
+
+#if defined(WIN32)
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
+#endif
 
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>
@@ -99,12 +106,6 @@ private:
     Diligent::ITextureView* renderTargetViews_[MAX_RENDERTARGETS];
     /// Current depth-stencil view.
     Diligent::ITextureView* depthStencilView_;
-    /// Created blend state objects.
-    ea::unordered_map<unsigned, ID3D11BlendState*> blendStates_;
-    /// Created depth state objects.
-    ea::unordered_map<unsigned, ID3D11DepthStencilState*> depthStates_;
-    /// Created rasterizer state objects.
-    ea::unordered_map<unsigned, ID3D11RasterizerState*> rasterizerStates_;
     /// Intermediate texture for multisampled screenshots and less than whole viewport multisampled resolve, created on demand.
     Diligent::ITexture* resolveTexture_;
     /// Bound shader resource views.
@@ -116,9 +117,9 @@ private:
     /// Bound constant buffers.
     Diligent::IBuffer* constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Bound constant buffers start slots.
-    UINT constantBuffersStartSlots_[MAX_SHADER_PARAMETER_GROUPS]{};
+    unsigned constantBuffersStartSlots_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Bound constant buffers start slots.
-    UINT constantBuffersNumSlots_[MAX_SHADER_PARAMETER_GROUPS]{};
+    unsigned constantBuffersNumSlots_[MAX_SHADER_PARAMETER_GROUPS]{};
 #ifdef URHO3D_DILIGENT
     unsigned long long vertexOffsets_[MAX_VERTEX_STREAMS];
 #else
@@ -171,6 +172,9 @@ private:
     RenderBackend renderBackend_;
     /// Current adapter id
     unsigned adapterId_;
+#ifdef PLATFORM_MACOS
+    SDL_MetalView metalView_;
+#endif
 };
 
 }

@@ -180,8 +180,8 @@ void PipelineStateCache::Init()
 
 void PipelineStateCache::Save()
 {
-    assert(this->init_);
-
+    if(!this->init_)
+        return;
     ByteVector psoData;
 #ifdef URHO3D_DILIGENT
     ReadPSOData(psoData);

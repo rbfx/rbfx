@@ -57,7 +57,7 @@ namespace Urho3D
         if (totalSize > bufferPair.first) {
             ea::shared_array<uint8_t> newBuffer(new uint8_t[totalSize]);
             if (bufferPair.first > 0)
-                memcpy_s(newBuffer.get(), bufferPair.first, bufferPair.second.get(), bufferPair.first);
+                memcpy(newBuffer.get(), bufferPair.second.get(), bufferPair.first);
             buffer_[grp] = ea::make_pair(totalSize, newBuffer);
             enableGC_ = true;
         }

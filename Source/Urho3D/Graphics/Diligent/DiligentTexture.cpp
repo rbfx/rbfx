@@ -205,16 +205,17 @@ unsigned Texture::GetDSVFormat(unsigned format)
 
 unsigned Texture::GetSRGBFormat(unsigned format)
 {
-    if (format == DXGI_FORMAT_R8G8B8A8_UNORM)
-        return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    else if (format == DXGI_FORMAT_BC1_UNORM)
-        return DXGI_FORMAT_BC1_UNORM_SRGB;
-    else if (format == DXGI_FORMAT_BC2_UNORM)
-        return DXGI_FORMAT_BC2_UNORM_SRGB;
-    else if (format == DXGI_FORMAT_BC3_UNORM)
-        return DXGI_FORMAT_BC3_UNORM_SRGB;
-    else
-        return format;
+    switch(format) {
+        case TEX_FORMAT_RGBA8_UNORM:
+            return TEX_FORMAT_RGBA8_UNORM_SRGB;
+        case TEX_FORMAT_BC1_UNORM:
+            return TEX_FORMAT_BC1_UNORM_SRGB;
+        case TEX_FORMAT_BC2_UNORM:
+            return TEX_FORMAT_BC2_UNORM;
+        case TEX_FORMAT_BC3_UNORM:
+            return TEX_FORMAT_BC3_UNORM_SRGB;
+    }
+    return format;
 }
 
 void Texture::RegenerateLevels()

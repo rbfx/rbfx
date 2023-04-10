@@ -45,6 +45,9 @@ GraphicsImpl::GraphicsImpl() :
     viewportDirty_(true),
     adapterId_(M_MAX_UNSIGNED)
 {
+#ifdef PLATFORM_MACOS
+    metalView_ = nullptr;
+#endif
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         renderTargetViews_[i] = nullptr;
 

@@ -55,9 +55,7 @@
 #include "../Graphics/Technique.h"
 #include "../Graphics/Terrain.h"
 #include "../Graphics/TerrainPatch.h"
-#ifdef _WIN32
 #include "../Graphics/Texture2D.h"
-#endif
 #include "../Graphics/Texture2DArray.h"
 #include "../Graphics/Texture3D.h"
 #include "../Graphics/TextureCube.h"
