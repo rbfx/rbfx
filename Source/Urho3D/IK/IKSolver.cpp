@@ -20,14 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../IK/IKSolver.h"
+#include "Urho3D/IK/IKSolver.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/AnimatedModel.h"
-#include "../Graphics/AnimationController.h"
-#include "../IO/Log.h"
-#include "../Scene/Node.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/AnimationController.h"
+#include "Urho3D/IK/IKEvents.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {
@@ -96,15 +97,25 @@ void IKSolver::Solve(float timeStep)
     if (solvers_.empty() || solverNodes_.empty())
         return;
 
+    SendIKEvent(true);
     UpdateOriginalTransforms();
     for (IKSolverComponent* solver : solvers_)
     {
         URHO3D_ASSERT(solver);
         solver->Solve(settings_, timeStep);
     }
+    SendIKEvent(false);
 
     if (auto animatedModel = node_->GetComponent<AnimatedModel>())
         animatedModel->UpdateBoneBoundingBox();
+}
+
+void IKSolver::SendIKEvent(bool preSolve)
+{
+    using namespace IKPreSolve;
+    node_->SendEvent(preSolve ? E_IKPRESOLVE : E_IKPOSTSOLVE, //
+        ea::forward_as_tuple(P_NODE, node_), //
+        ea::forward_as_tuple(P_IKSOLVER, this));
 }
 
 bool IKSolver::IsChainTreeExpired() const

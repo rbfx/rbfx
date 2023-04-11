@@ -116,7 +116,7 @@ void StaticNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deserialize
     const Matrix3x4 localTransform = node_->IsTransformHierarchyRoot()
         ? worldTransform
         : node_->GetParent()->GetWorldTransform().Inverse() * worldTransform;
-    node_->SetTransform(localTransform);
+    node_->SetTransformMatrix(localTransform);
 }
 
 void StaticNetworkObject::ReadReliableDelta(NetworkFrame frame, Deserializer& src)

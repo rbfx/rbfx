@@ -88,21 +88,21 @@ bool Sprite::IsWithinScissor(const IntRect& currentScissor)
 const IntVector2& Sprite::GetScreenPosition() const
 {
     // This updates screen position for a sprite
-    GetTransform();
+    GetTransformMatrix();
     return screenPosition_;
 }
 
 IntVector2 Sprite::ScreenToElement(const IntVector2& screenPosition)
 {
     Vector3 floatPos((float)screenPosition.x_, (float)screenPosition.y_, 0.0f);
-    Vector3 transformedPos = GetTransform().Inverse() * floatPos;
+    Vector3 transformedPos = GetTransformMatrix().Inverse() * floatPos;
     return IntVector2((int)transformedPos.x_, (int)transformedPos.y_);
 }
 
 IntVector2 Sprite::ElementToScreen(const IntVector2& position)
 {
     Vector3 floatPos((float)position.x_, (float)position.y_, 0.0f);
-    Vector3 transformedPos = GetTransform() * floatPos;
+    Vector3 transformedPos = GetTransformMatrix() * floatPos;
     return IntVector2((int)transformedPos.x_, (int)transformedPos.y_);
 }
 
@@ -117,7 +117,7 @@ void Sprite::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexD
     UIBatch
         batch(this, blendMode_ == BLEND_REPLACE && !allOpaque ? BLEND_ALPHA : blendMode_, currentScissor, texture_, &vertexData);
 
-    batch.AddQuad(GetTransform(), 0, 0, size.x_, size.y_, imageRect_.left_, imageRect_.top_, imageRect_.right_ - imageRect_.left_,
+    batch.AddQuad(GetTransformMatrix(), 0, 0, size.x_, size.y_, imageRect_.left_, imageRect_.top_, imageRect_.right_ - imageRect_.left_,
         imageRect_.bottom_ - imageRect_.top_);
 
     UIBatch::AddOrMerge(batch, batches);
@@ -214,7 +214,7 @@ void Sprite::SetBlendMode(BlendMode mode)
     blendMode_ = mode;
 }
 
-const Matrix3x4& Sprite::GetTransform() const
+const Matrix3x4& Sprite::GetTransformMatrix() const
 {
     if (positionDirty_)
     {
@@ -226,7 +226,7 @@ const Matrix3x4& Sprite::GetTransform() const
         {
             auto* parentSprite = dynamic_cast<Sprite*>(parent_);
             if (parentSprite)
-                parentTransform = parentSprite->GetTransform();
+                parentTransform = parentSprite->GetTransformMatrix();
             else
             {
                 const IntVector2& parentScreenPos = parent_->GetScreenPosition() + parent_->GetChildOffset();
