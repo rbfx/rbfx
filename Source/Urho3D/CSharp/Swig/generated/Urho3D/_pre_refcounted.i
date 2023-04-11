@@ -191,6 +191,7 @@ URHO3D_REFCOUNTED(Urho3D::ComputeDevice);
 URHO3D_REFCOUNTED(Urho3D::CubemapRenderer);
 URHO3D_REFCOUNTED(Urho3D::CustomGeometry);
 URHO3D_REFCOUNTED(Urho3D::DecalSet);
+URHO3D_REFCOUNTED(Urho3D::DecalProjection);
 URHO3D_REFCOUNTED(Urho3D::LightProbeGroup);
 URHO3D_REFCOUNTED(Urho3D::GlobalIllumination);
 URHO3D_REFCOUNTED(Urho3D::LightBaker);
