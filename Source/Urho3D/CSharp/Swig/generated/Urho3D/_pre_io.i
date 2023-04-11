@@ -60,6 +60,7 @@ using ScanFlags = Urho3D::ScanFlag;
 %csattribute(Urho3D::PackageFile, %arg(ea::vector<ea::string>), EntryNames, GetEntryNames);
 %csattribute(Urho3D::PackageFile, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::VirtualFileSystem, %arg(bool), IsWatching, IsWatching, SetWatching);
+%csattribute(Urho3D::MountPointGuard, %arg(Urho3D::MountPoint *), , Get);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
