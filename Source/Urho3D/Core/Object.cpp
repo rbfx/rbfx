@@ -108,7 +108,7 @@ bool Object::IsInstanceOf(const TypeInfo* typeInfo) const
     return GetTypeInfo()->IsTypeOf(typeInfo);
 }
 
-void Object::SubscribeToEvent(StringHash eventType, EventHandler* handler)
+void Object::SubscribeToEventManual(StringHash eventType, EventHandler* handler)
 {
     if (!handler)
         return;
@@ -128,7 +128,7 @@ void Object::SubscribeToEvent(StringHash eventType, EventHandler* handler)
     }
 }
 
-void Object::SubscribeToEvent(Object* sender, StringHash eventType, EventHandler* handler)
+void Object::SubscribeToEventManual(Object* sender, StringHash eventType, EventHandler* handler)
 {
     // If a null sender was specified, the event can not be subscribed to. Delete the handler in that case
     if (!sender || !handler)
@@ -150,16 +150,6 @@ void Object::SubscribeToEvent(Object* sender, StringHash eventType, EventHandler
         eventHandlers_.insert(eventHandlers_.begin(), *handler);
         context_->AddEventReceiver(this, sender, eventType);
     }
-}
-
-void Object::SubscribeToEvent(StringHash eventType, const ea::function<void(StringHash, VariantMap&)>& function, void* userData/*=0*/)
-{
-    SubscribeToEvent(eventType, new EventHandler11Impl(function, userData));
-}
-
-void Object::SubscribeToEvent(Object* sender, StringHash eventType, const ea::function<void(StringHash, VariantMap&)>& function, void* userData/*=0*/)
-{
-    SubscribeToEvent(sender, eventType, new EventHandler11Impl(function, userData));
 }
 
 void Object::UnsubscribeFromEvent(StringHash eventType)
@@ -229,11 +219,11 @@ void Object::UnsubscribeFromAllEvents()
     }
 }
 
-void Object::UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& exceptions, bool onlyUserData)
+void Object::UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& exceptions)
 {
     for (auto handler = eventHandlers_.begin(); handler != eventHandlers_.end(); )
     {
-        if ((!onlyUserData || handler->GetUserData()) && !exceptions.contains(handler->GetEventType()))
+        if (!exceptions.contains(handler->GetEventType()))
         {
             if (handler->GetSender())
                 context_->RemoveEventReceiver(this, handler->GetSender(), handler->GetEventType());
@@ -247,11 +237,11 @@ void Object::UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& except
     }
 }
 
-void Object::UnsubscribeFromAllEventsExcept(const ea::vector<Object*>& exceptions, bool onlyUserData)
+void Object::UnsubscribeFromAllEventsExcept(const ea::vector<Object*>& exceptions)
 {
     for (auto handler = eventHandlers_.begin(); handler != eventHandlers_.end(); )
     {
-        if ((!onlyUserData || handler->GetUserData()) && !exceptions.contains(handler->GetSender()))
+        if (!exceptions.contains(handler->GetSender()))
         {
             if (handler->GetSender())
                 context_->RemoveEventReceiver(this, handler->GetSender(), handler->GetEventType());
