@@ -100,7 +100,6 @@ using AttributeModeFlags = Urho3D::AttributeMode;
 %csattribute(Urho3D::EventHandler, %arg(Urho3D::Object *), Receiver, GetReceiver);
 %csattribute(Urho3D::EventHandler, %arg(Urho3D::Object *), Sender, GetSender);
 %csattribute(Urho3D::EventHandler, %arg(Urho3D::StringHash), EventType, GetEventType);
-%csattribute(Urho3D::EventHandler, %arg(void *), UserData, GetUserData);
 %csattribute(Urho3D::ObjectReflection, %arg(ea::string), Category, GetCategory);
 %csattribute(Urho3D::ObjectReflection, %arg(Urho3D::TypeInfo *), TypeInfo, GetTypeInfo);
 %csattribute(Urho3D::ObjectReflection, %arg(ea::string), TypeName, GetTypeName);
