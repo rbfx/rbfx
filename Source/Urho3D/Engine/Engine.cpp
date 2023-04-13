@@ -321,7 +321,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
         graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
 
-        SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& eventData)
+        SubscribeToEvent(E_SCREENMODE, [this](VariantMap& eventData)
         {
             using namespace ScreenMode;
 

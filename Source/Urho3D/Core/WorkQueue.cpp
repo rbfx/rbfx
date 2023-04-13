@@ -259,7 +259,7 @@ WorkQueue::WorkQueue(Context* context)
         workQueue = this;
     }
 
-    SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap&) { Update(); });
+    SubscribeToEvent(E_BEGINFRAME, &WorkQueue::Update);
 }
 
 WorkQueue::~WorkQueue()

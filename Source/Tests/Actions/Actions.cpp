@@ -409,7 +409,7 @@ TEST_CASE("RemoveSelf action deletes node")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     auto actionManager = context->GetSubsystem<ActionManager>();
-    
+
     auto scene = MakeShared<Scene>(context);
     WeakPtr<Node> weakNode = WeakPtr<Node>(scene->CreateChild("", false));
 
@@ -485,7 +485,7 @@ TEST_CASE("SendEvent action")
     const auto target = MakeShared<CallReceiver>(context);
 
     ea::string res;
-    target->SubscribeToEvent(target, "Event", [&res](StringHash e, VariantMap& args) { res = args["A"].GetString(); });
+    target->SubscribeToEvent(target, "Event", [&res](VariantMap& args) { res = args["A"].GetString(); });
 
     actionManager->AddAction(action, target);
     actionManager->Update(0.1f);

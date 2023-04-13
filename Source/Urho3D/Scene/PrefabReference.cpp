@@ -279,7 +279,7 @@ void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bo
 
     if (prefab_)
     {
-        SubscribeToEvent(prefab_, E_RELOADFINISHED, [this](StringHash, VariantMap&) { CreateInstance(); });
+        SubscribeToEvent(prefab_, E_RELOADFINISHED, [this] { CreateInstance(); });
         prefabRef_ = GetResourceRef(prefab_, PrefabResource::GetTypeStatic());
     }
     else

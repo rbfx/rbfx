@@ -239,12 +239,12 @@ void SamplesManager::Start()
         debugHud->ToggleAll();
 #endif
     auto* input = context_->GetSubsystem<Input>();
-    SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnArrowKeyPress(args); });
-    SubscribeToEvent(input, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
-    SubscribeToEvent(E_SAMPLE_EXIT_REQUESTED, [this](StringHash, VariantMap&) { OnCloseCurrentSample(); });
-    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
-    SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
+    SubscribeToEvent(E_RELEASED, &SamplesManager::OnClickSample);
+    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, &SamplesManager::OnArrowKeyPress);
+    SubscribeToEvent(input, E_KEYUP, &SamplesManager::OnKeyPress);
+    SubscribeToEvent(E_SAMPLE_EXIT_REQUESTED, &SamplesManager::OnCloseCurrentSample);
+    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, &SamplesManager::OnButtonPress);
+    SubscribeToEvent(E_BEGINFRAME, &SamplesManager::OnFrameStart);
 
 #if URHO3D_RMLUI
     auto* rmlUi = context_->GetSubsystem<RmlUI>();

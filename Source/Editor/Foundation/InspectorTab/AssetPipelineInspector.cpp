@@ -108,7 +108,7 @@ void AssetPipelineInspector::InspectObjects()
 
     UnsubscribeFromEvent(E_RELOADFINISHED);
     if (resource_)
-        SubscribeToEvent(resource_, E_RELOADFINISHED, [this](StringHash, VariantMap&) { OnResourceReloaded(); });
+        SubscribeToEvent(resource_, E_RELOADFINISHED, &AssetPipelineInspector::OnResourceReloaded);
 
     OnResourceReloaded();
 }

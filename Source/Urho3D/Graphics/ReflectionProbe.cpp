@@ -179,10 +179,7 @@ ea::optional<float> InternalReflectionProbeData::GetIntersectionVolume(const Bou
 ReflectionProbeManager::ReflectionProbeManager(Context* context)
     : TrackedComponentRegistryBase(context, ReflectionProbe::GetTypeStatic())
 {
-    SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&)
-    {
-        RestoreCubemaps();
-    });
+    SubscribeToEvent(E_DEVICERESET, &ReflectionProbeManager::RestoreCubemaps);
 }
 
 ReflectionProbeManager::~ReflectionProbeManager()
