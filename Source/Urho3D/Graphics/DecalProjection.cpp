@@ -66,6 +66,18 @@ void DecalProjection::RegisterObject(Context* context)
 
 void DecalProjection::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
+    // Workaround for Editor.
+    if (elapsedTime_ == 0)
+    {
+        auto transform = GetNode()->GetWorldTransform();
+        if (!transform.Equals(projectionTransform_))
+        {
+            projectionTransform_ = transform;
+            UpdateSubscriptions(true);
+        }
+    }
+
+    // Render projection frustum.
     Matrix4 viewProj = GetViewProj();
     Frustum frustum;
     frustum.Define(viewProj);
@@ -176,6 +188,9 @@ void DecalProjection::UpdateSubscriptions(bool needGeometryUpdate)
     const auto toSubscribe = flags & ~subscriptionFlags_;
     const auto toUnsubscribe = subscriptionFlags_ & ~flags;
 
+    if (toSubscribe == SubscriptionMask::None && toUnsubscribe == SubscriptionMask::None)
+        return;
+
     subscriptionFlags_ = flags;
 
     if (toSubscribe & SubscriptionMask::Update)
@@ -273,7 +288,8 @@ void DecalProjection::UpdateGeometry()
             DecalSet * decalSet = node->CreateComponent<DecalSet>();
             decalSet->SetTemporary(true);
             decalSet->SetMaterial(material_);
-            decalSet->AddDecal(drawable, viewProj, Vector2::ZERO, Vector2::ONE, Urho3D::Max(M_EPSILON, timeToLive_-elapsedTime_), normalCutoff_);
+            float timeLive = (timeToLive_ > 0) ? Urho3D::Max(M_EPSILON, timeToLive_ - elapsedTime_) : 0.0f;
+            decalSet->AddDecal(drawable, viewProj, Vector2::ZERO, Vector2::ONE, timeLive, normalCutoff_);
             activeDecalSets_.push_back(SharedPtr<DecalSet>(decalSet));
         }
     }

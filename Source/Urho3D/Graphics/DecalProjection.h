@@ -161,6 +161,8 @@ private:
     ea::vector<SharedPtr<DecalSet>> activeDecalSets_;
     /// Active subscriptions bitmask.
     SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
+    /// Saved projection transform.
+    Matrix3x4 projectionTransform_;
 };
 
 } // namespace Urho3D

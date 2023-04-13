@@ -706,6 +706,7 @@ public:
 %include "Urho3D/Graphics/ConstantBuffer.h"
 %include "Urho3D/Graphics/ShaderVariation.h"
 %include "Urho3D/Graphics/ShaderPrecache.h"
+%include "Urho3D/Graphics/DecalProjection.h"
 #if defined(URHO3D_COMPUTE)
 %include "Urho3D/Graphics/ComputeDevice.h"
 %include "Urho3D/Graphics/ComputeBuffer.h"
