@@ -282,7 +282,7 @@ Renderer::Renderer(Context* context) :
     defaultZone_(MakeShared<Zone>(context)),
     pipelineStateCache_(MakeShared<PipelineStateCache>(context))
 {
-    SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Renderer, HandleScreenMode));
+    SubscribeToEvent(E_SCREENMODE, &Renderer::HandleScreenMode);
 
     // TODO(legacy): Remove global shader parameters
 #if URHO3D_SPHERICAL_HARMONICS && defined(URHO3D_LEGACY_RENDERER)
@@ -1785,7 +1785,7 @@ void Renderer::Initialize()
         UpdateMousePositionsForMainViewports();
     });
 
-    SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Renderer, HandleRenderUpdate));
+    SubscribeToEvent(E_RENDERUPDATE, &Renderer::HandleRenderUpdate);
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&)
     {
         frameStats_ = FrameStatistics{};

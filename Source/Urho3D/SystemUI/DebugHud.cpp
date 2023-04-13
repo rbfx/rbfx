@@ -65,7 +65,7 @@ static const unsigned FPS_UPDATE_INTERVAL_MS = 500;
 DebugHud::DebugHud(Context* context)
     : Object(context)
 {
-    SubscribeToEvent(E_ENDALLVIEWSRENDER, URHO3D_HANDLER(DebugHud, OnRenderDebugUI));
+    SubscribeToEvent(E_ENDALLVIEWSRENDER, &DebugHud::OnRenderDebugUI);
 }
 
 DebugHud::~DebugHud()

@@ -144,7 +144,7 @@ void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
 
     if (!subscriptionFlags_ && flags)
     {
-        SubscribeToEvent(input_, E_INPUTFOCUS, URHO3D_HANDLER(DirectionAggregator, HandleInputFocus));
+        SubscribeToEvent(input_, E_INPUTFOCUS, &DirectionAggregator::HandleInputFocus);
     }
     else if (subscriptionFlags_ && !flags)
     {
@@ -154,8 +154,8 @@ void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
     subscriptionFlags_ = flags;
     if (toSubscribe & SubscriptionMask::Keyboard)
     {
-        SubscribeToEvent(input_, E_KEYUP, URHO3D_HANDLER(DirectionAggregator, HandleKeyUp));
-        SubscribeToEvent(input_, E_KEYDOWN, URHO3D_HANDLER(DirectionAggregator, HandleKeyDown));
+        SubscribeToEvent(input_, E_KEYUP, &DirectionAggregator::HandleKeyUp);
+        SubscribeToEvent(input_, E_KEYDOWN, &DirectionAggregator::HandleKeyDown);
     }
     else if (toUnsubscribe & SubscriptionMask::Keyboard)
     {
@@ -168,10 +168,10 @@ void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
     }
     if (toSubscribe & SubscriptionMask::Joystick)
     {
-        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, URHO3D_HANDLER(DirectionAggregator, HandleJoystickAxisMove));
-        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, URHO3D_HANDLER(DirectionAggregator, HandleJoystickHatMove));
+        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, &DirectionAggregator::HandleJoystickAxisMove);
+        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, &DirectionAggregator::HandleJoystickHatMove);
         SubscribeToEvent(
-            input_, E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(DirectionAggregator, HandleJoystickDisconnected));
+            input_, E_JOYSTICKDISCONNECTED, &DirectionAggregator::HandleJoystickDisconnected);
     }
     else if (toUnsubscribe & SubscriptionMask::Joystick)
     {
@@ -185,9 +185,9 @@ void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
     }
     if (toSubscribe & SubscriptionMask::Touch)
     {
-        SubscribeToEvent(input_, E_TOUCHBEGIN, URHO3D_HANDLER(DirectionAggregator, HandleTouchBegin));
-        SubscribeToEvent(input_, E_TOUCHMOVE, URHO3D_HANDLER(DirectionAggregator, HandleTouchMove));
-        SubscribeToEvent(input_, E_TOUCHEND, URHO3D_HANDLER(DirectionAggregator, HandleTouchEnd));
+        SubscribeToEvent(input_, E_TOUCHBEGIN, &DirectionAggregator::HandleTouchBegin);
+        SubscribeToEvent(input_, E_TOUCHMOVE, &DirectionAggregator::HandleTouchMove);
+        SubscribeToEvent(input_, E_TOUCHEND, &DirectionAggregator::HandleTouchEnd);
     }
     else if (toUnsubscribe & SubscriptionMask::Touch)
     {

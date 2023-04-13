@@ -102,7 +102,7 @@ void Obstacle::OnSceneSet(Scene* scene)
         if (ownerMesh_)
         {
             ownerMesh_->AddObstacle(this);
-            SubscribeToEvent(ownerMesh_, E_NAVIGATION_TILE_ADDED, URHO3D_HANDLER(Obstacle, HandleNavigationTileAdded));
+            SubscribeToEvent(ownerMesh_, E_NAVIGATION_TILE_ADDED, &Obstacle::HandleNavigationTileAdded);
         }
     }
     else

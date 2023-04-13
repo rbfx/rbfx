@@ -133,7 +133,7 @@ void ActionDemo::CreateUI()
 void ActionDemo::SubscribeToEvents()
 {
     auto* input = context_->GetSubsystem<Input>();
-    SubscribeToEvent(E_UIMOUSECLICK, URHO3D_HANDLER(ActionDemo, HandleMouseClick));
+    SubscribeToEvent(E_UIMOUSECLICK, &ActionDemo::HandleMouseClick);
 }
 
 void ActionDemo::HandleMouseClick(StringHash eventType, VariantMap& eventData)

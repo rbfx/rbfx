@@ -133,9 +133,9 @@ void Urho2DParticle::SetupViewport()
 
 void Urho2DParticle::SubscribeToEvents()
 {
-    SubscribeToEvent(E_MOUSEMOVE, URHO3D_HANDLER(Urho2DParticle, HandleMouseMove));
+    SubscribeToEvent(E_MOUSEMOVE, &Urho2DParticle::HandleMouseMove);
     if (touchEnabled_)
-        SubscribeToEvent(E_TOUCHMOVE, URHO3D_HANDLER(Urho2DParticle, HandleMouseMove));
+        SubscribeToEvent(E_TOUCHMOVE, &Urho2DParticle::HandleMouseMove);
 
     // Unsubscribe the SceneUpdate event from base class to prevent camera pitch and yaw in 2D sample
     UnsubscribeFromEvent(E_SCENEUPDATE);

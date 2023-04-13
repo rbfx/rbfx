@@ -73,8 +73,8 @@ void HelloSystemUi::Start()
 
 void HelloSystemUi::SubscribeToEvents()
 {
-    SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(HelloSystemUi, HandleKeyDown));
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HelloSystemUi, RenderUi));
+    SubscribeToEvent(E_KEYDOWN, &HelloSystemUi::HandleKeyDown);
+    SubscribeToEvent(E_UPDATE, &HelloSystemUi::RenderUi);
 }
 
 void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
@@ -93,9 +93,7 @@ void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
             if (ui::Button("Show message box"))
             {
                 messageBox_ = new SystemMessageBox(context_, "Hello from SystemUI", "Sample Message Box");
-                SubscribeToEvent(E_MESSAGEACK, [&](StringHash, VariantMap&) {
-                    messageBox_ = nullptr;
-                });
+                SubscribeToEvent(E_MESSAGEACK, [&] { messageBox_ = nullptr; });
             }
         }
 

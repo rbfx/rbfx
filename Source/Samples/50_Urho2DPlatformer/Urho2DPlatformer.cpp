@@ -89,7 +89,7 @@ void Urho2DPlatformer::Start()
     sample2D_->CreateUIContent("PLATFORMER 2D DEMO", character2D_->remainingLifes_, character2D_->remainingCoins_);
     auto* ui = GetSubsystem<UI>();
     Button* playButton = static_cast<Button*>(GetUIRoot()->GetChild("PlayButton", true));
-    SubscribeToEvent(playButton, E_RELEASED, URHO3D_HANDLER(Urho2DPlatformer, HandlePlayButton));
+    SubscribeToEvent(playButton, E_RELEASED, &Urho2DPlatformer::HandlePlayButton);
 
     // Hook up to the frame update events
     SubscribeToEvents();
@@ -156,7 +156,7 @@ void Urho2DPlatformer::CreateScene()
     sample2D_->CreateBackgroundSprite(info, 3.5, "Textures/HeightMap.png");
 
     // Check when scene is rendered
-    SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(Urho2DPlatformer, HandleSceneRendered));
+    SubscribeToEvent(E_ENDRENDERING, &Urho2DPlatformer::HandleSceneRendered);
 }
 
 void Urho2DPlatformer::HandleSceneRendered(StringHash eventType, VariantMap& eventData)
@@ -171,14 +171,14 @@ void Urho2DPlatformer::HandleSceneRendered(StringHash eventType, VariantMap& eve
 void Urho2DPlatformer::SubscribeToEvents()
 {
     // Subscribe HandlePostUpdate() function for processing post update events
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(Urho2DPlatformer, HandlePostUpdate));
+    SubscribeToEvent(E_POSTUPDATE, &Urho2DPlatformer::HandlePostUpdate);
 
     // Subscribe to PostRenderUpdate to draw debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Urho2DPlatformer, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &Urho2DPlatformer::HandlePostRenderUpdate);
 
     // Subscribe to Box2D contact listeners
-    SubscribeToEvent(E_PHYSICSBEGINCONTACT2D, URHO3D_HANDLER(Urho2DPlatformer, HandleCollisionBegin));
-    SubscribeToEvent(E_PHYSICSENDCONTACT2D, URHO3D_HANDLER(Urho2DPlatformer, HandleCollisionEnd));
+    SubscribeToEvent(E_PHYSICSBEGINCONTACT2D, &Urho2DPlatformer::HandleCollisionBegin);
+    SubscribeToEvent(E_PHYSICSENDCONTACT2D, &Urho2DPlatformer::HandleCollisionEnd);
 
     // Unsubscribe the SceneUpdate event from base class to prevent camera pitch and yaw in 2D sample
     UnsubscribeFromEvent(E_SCENEUPDATE);

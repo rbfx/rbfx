@@ -107,10 +107,10 @@ void SceneAndUILoad::CreateUI()
     // Subscribe to button actions (toggle scene lights when pressed then released)
     auto* button = layoutRoot->GetChildStaticCast<Button>("ToggleLight1", true);
     if (button)
-        SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SceneAndUILoad, ToggleLight1));
+        SubscribeToEvent(button, E_RELEASED, &SceneAndUILoad::ToggleLight1);
     button = layoutRoot->GetChildStaticCast<Button>("ToggleLight2", true);
     if (button)
-        SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SceneAndUILoad, ToggleLight2));
+        SubscribeToEvent(button, E_RELEASED, &SceneAndUILoad::ToggleLight2);
 }
 
 void SceneAndUILoad::SetupViewport()

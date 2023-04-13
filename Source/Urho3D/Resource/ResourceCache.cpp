@@ -96,10 +96,10 @@ ResourceCache::ResourceCache(Context* context) :
 #endif
 
     // Subscribe BeginFrame for handling background loaded resource finalization
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(ResourceCache, HandleBeginFrame));
+    SubscribeToEvent(E_BEGINFRAME, &ResourceCache::HandleBeginFrame);
 
     // Subscribe FileChanged for handling directory watchers
-    SubscribeToEvent(E_FILECHANGED, URHO3D_HANDLER(ResourceCache, HandleFileChanged));
+    SubscribeToEvent(E_FILECHANGED, &ResourceCache::HandleFileChanged);
 }
 
 ResourceCache::~ResourceCache()

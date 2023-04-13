@@ -102,28 +102,28 @@ void InputLogger::Start(bool isMain)
     input->SetMouseMode(MM_FREE);
     //input->SetMouseMode(MM_WRAP);
 
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { Update(); });
+    SubscribeToEvent(E_UPDATE, &InputLogger::Update);
 
-    SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_MOUSEMOVE, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_MOUSEWHEEL, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_KEYUP, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_TEXTINPUT, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_TEXTEDITING, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_JOYSTICKCONNECTED, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_JOYSTICKBUTTONUP, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_JOYSTICKAXISMOVE, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_JOYSTICKHATMOVE, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_TOUCHEND, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_TOUCHMOVE, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_GESTURERECORDED, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_GESTUREINPUT, URHO3D_HANDLER(InputLogger, OnInputEvent));
-    SubscribeToEvent(E_MULTIGESTURE, URHO3D_HANDLER(InputLogger, OnInputEvent));
+    SubscribeToEvent(E_MOUSEBUTTONDOWN, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_MOUSEBUTTONUP, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_MOUSEMOVE, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_MOUSEWHEEL, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_KEYDOWN, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_KEYUP, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_TEXTINPUT, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_TEXTEDITING, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_JOYSTICKCONNECTED, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_JOYSTICKDISCONNECTED, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_JOYSTICKBUTTONUP, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_JOYSTICKAXISMOVE, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_JOYSTICKHATMOVE, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_TOUCHBEGIN, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_TOUCHEND, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_TOUCHMOVE, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_GESTURERECORDED, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_GESTUREINPUT, &InputLogger::OnInputEvent);
+    SubscribeToEvent(E_MULTIGESTURE, &InputLogger::OnInputEvent);
 }
 
 void InputLogger::OnInputEvent(StringHash eventType, VariantMap& eventData)

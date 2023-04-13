@@ -86,7 +86,7 @@ void Urho2DIsometricDemo::Start()
     sample2D_->CreateUIContent("ISOMETRIC 2.5D DEMO", character2D_->remainingLifes_, character2D_->remainingCoins_);
     auto* ui = GetSubsystem<UI>();
     Button* playButton = static_cast<Button*>(GetUIRoot()->GetChild("PlayButton", true));
-    SubscribeToEvent(playButton, E_RELEASED, URHO3D_HANDLER(Urho2DIsometricDemo, HandlePlayButton));
+    SubscribeToEvent(playButton, E_RELEASED, &Urho2DIsometricDemo::HandlePlayButton);
 
     // Hook up to the frame update events
     SubscribeToEvents();
@@ -149,7 +149,7 @@ void Urho2DIsometricDemo::CreateScene()
     character2D_->maxCoins_ = coinsLayer->GetNumObjects();
 
     // Check when scene is rendered
-    SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(Urho2DIsometricDemo, HandleSceneRendered));
+    SubscribeToEvent(E_ENDRENDERING, &Urho2DIsometricDemo::HandleSceneRendered);
 }
 
 void Urho2DIsometricDemo::HandleCollisionBegin(StringHash eventType, VariantMap& eventData)
@@ -224,16 +224,16 @@ void Urho2DIsometricDemo::HandleSceneRendered(StringHash eventType, VariantMap& 
 void Urho2DIsometricDemo::SubscribeToEvents()
 {
     // Subscribe HandlePostUpdate() function for processing post update events
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(Urho2DIsometricDemo, HandlePostUpdate));
+    SubscribeToEvent(E_POSTUPDATE, &Urho2DIsometricDemo::HandlePostUpdate);
 
     // Subscribe to PostRenderUpdate to draw debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Urho2DIsometricDemo, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &Urho2DIsometricDemo::HandlePostRenderUpdate);
 
     // Unsubscribe the SceneUpdate event from base class to prevent camera pitch and yaw in 2D sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 
     // Subscribe to Box2D contact listeners
-    SubscribeToEvent(E_PHYSICSBEGINCONTACT2D, URHO3D_HANDLER(Urho2DIsometricDemo, HandleCollisionBegin));
+    SubscribeToEvent(E_PHYSICSBEGINCONTACT2D, &Urho2DIsometricDemo::HandleCollisionBegin);
 }
 
 void Urho2DIsometricDemo::Update(float timeStep)

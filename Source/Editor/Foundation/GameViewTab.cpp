@@ -86,7 +86,7 @@ public:
         pluginManager_->StartApplication();
         UpdatePreferredMouseSetup();
 
-        SubscribeToEvent(E_BEGINRENDERING, [this](StringHash, VariantMap&)
+        SubscribeToEvent(E_BEGINRENDERING, [this]()
         {
             auto graphics = GetSubsystem<Graphics>();
             graphics->SetRenderTarget(0, backbuffer_->GetTexture());

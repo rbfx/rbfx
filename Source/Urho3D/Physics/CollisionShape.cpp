@@ -900,7 +900,7 @@ void CollisionShape::OnNodeSet(Node* previousNode, Node* currentNode)
         cachedWorldScale_ = node_->GetWorldScale();
 
         // Terrain collision shape depends on the terrain component's geometry updates. Subscribe to them
-        SubscribeToEvent(node_, E_TERRAINCREATED, URHO3D_HANDLER(CollisionShape, HandleTerrainCreated));
+        SubscribeToEvent(node_, E_TERRAINCREATED, &CollisionShape::HandleTerrainCreated);
     }
 }
 
@@ -1121,7 +1121,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
         shape_.reset(CreateCollisionGeometryDataShape(shapeType_, geometry_, cachedWorldScale_ * size_));
         assert(shape_);
         // Watch for live reloads of the collision model to reload the geometry if necessary
-        SubscribeToEvent(model_, E_RELOADFINISHED, URHO3D_HANDLER(CollisionShape, HandleModelReloadFinished));
+        SubscribeToEvent(model_, E_RELOADFINISHED, &CollisionShape::HandleModelReloadFinished);
     }
 }
 

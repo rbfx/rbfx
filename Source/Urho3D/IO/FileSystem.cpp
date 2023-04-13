@@ -414,7 +414,7 @@ private:
 FileSystem::FileSystem(Context* context) :
     Object(context)
 {
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(FileSystem, HandleBeginFrame));
+    SubscribeToEvent(E_BEGINFRAME, &FileSystem::HandleBeginFrame);
 }
 
 FileSystem::~FileSystem()
@@ -492,7 +492,7 @@ void FileSystem::SetExecuteConsoleCommands(bool enable)
 
     executeConsoleCommands_ = enable;
     if (enable)
-        SubscribeToEvent(E_CONSOLECOMMAND, URHO3D_HANDLER(FileSystem, HandleConsoleCommand));
+        SubscribeToEvent(E_CONSOLECOMMAND, &FileSystem::HandleConsoleCommand);
     else
         UnsubscribeFromEvent(E_CONSOLECOMMAND);
 

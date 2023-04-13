@@ -77,18 +77,18 @@ void Typography::Start()
     CreateText();
 
     // Add a checkbox to toggle the background color.
-    CreateCheckbox("White background", URHO3D_HANDLER(Typography, HandleWhiteBackground))
+    CreateCheckbox("White background", &Typography::HandleWhiteBackground)
         ->SetChecked(false);
 
     // Add a checkbox to toggle SRGB output conversion (if available).
     // This will give more correct text output for FreeType fonts, as the FreeType rasterizer
     // outputs linear coverage values rather than SRGB values. However, this feature isn't
     // available on all platforms.
-    CreateCheckbox("Graphics::SetSRGB", URHO3D_HANDLER(Typography, HandleSRGB))
+    CreateCheckbox("Graphics::SetSRGB", &Typography::HandleSRGB)
         ->SetChecked(GetSubsystem<Graphics>()->GetSRGB());
 
     // Add a checkbox for the global ForceAutoHint setting. This affects character spacing.
-    CreateCheckbox("UI::SetForceAutoHint", URHO3D_HANDLER(Typography, HandleForceAutoHint))
+    CreateCheckbox("UI::SetForceAutoHint", &Typography::HandleForceAutoHint)
         ->SetChecked(ui->GetForceAutoHint());
 
     // Add a drop-down menu to control the font hinting level.
@@ -98,7 +98,7 @@ void Typography::Start()
         "FONT_HINT_LEVEL_NORMAL",
         nullptr
     };
-    CreateMenu("UI::SetFontHintLevel", levels, URHO3D_HANDLER(Typography, HandleFontHintLevel))
+    CreateMenu("UI::SetFontHintLevel", levels, &Typography::HandleFontHintLevel)
         ->SetSelection(ui->GetFontHintLevel());
 
     // Add a drop-down menu to control the subpixel threshold.
@@ -113,7 +113,7 @@ void Typography::Start()
         "21",
         nullptr
     };
-    CreateMenu("UI::SetFontSubpixelThreshold", thresholds, URHO3D_HANDLER(Typography, HandleFontSubpixel))
+    CreateMenu("UI::SetFontSubpixelThreshold", thresholds, &Typography::HandleFontSubpixel)
         ->SetSelection(ui->GetFontSubpixelThreshold() / 3);
 
     // Add a drop-down menu to control oversampling.
@@ -128,7 +128,7 @@ void Typography::Start()
         "8",
         nullptr
     };
-    CreateMenu("UI::SetFontOversampling", limits, URHO3D_HANDLER(Typography, HandleFontOversampling))
+    CreateMenu("UI::SetFontOversampling", limits, &Typography::HandleFontOversampling)
         ->SetSelection(ui->GetFontOversampling() - 1);
 
     // Set the mouse mode to use in the sample

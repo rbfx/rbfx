@@ -91,7 +91,7 @@ void ParticleEmitter::OnSetEnabled()
     if (scene)
     {
         if (IsEnabledEffective())
-            SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleEmitter, HandleScenePostUpdate));
+            SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &ParticleEmitter::HandleScenePostUpdate);
         else
             UnsubscribeFromEvent(scene, E_SCENEPOSTUPDATE);
     }
@@ -273,7 +273,7 @@ void ParticleEmitter::SetEffect(ParticleEffect* effect)
     effect_ = effect;
 
     if (effect_)
-        SubscribeToEvent(effect_, E_RELOADFINISHED, URHO3D_HANDLER(ParticleEmitter, HandleEffectReloadFinished));
+        SubscribeToEvent(effect_, E_RELOADFINISHED, &ParticleEmitter::HandleEffectReloadFinished);
 
     ApplyEffect();
 }
@@ -437,7 +437,7 @@ void ParticleEmitter::OnSceneSet(Scene* scene)
     BillboardSet::OnSceneSet(scene);
 
     if (scene && IsEnabledEffective())
-        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleEmitter, HandleScenePostUpdate));
+        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &ParticleEmitter::HandleScenePostUpdate);
     else if (!scene)
          UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
 }

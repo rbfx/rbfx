@@ -62,7 +62,7 @@ void ApplicationState::Activate(StringVariantMap& bundle)
     active_ = true;
 
     // Subscribe HandleUpdate() method for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ApplicationState, HandleUpdate));
+    SubscribeToEvent(E_UPDATE, &ApplicationState::HandleUpdate);
 
     {
         auto* input = GetSubsystem<Input>();
@@ -299,8 +299,8 @@ void ApplicationState::InitMouseMode()
     else
     {
         input->SetMouseVisible(true);
-        SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(ApplicationState, HandleMouseModeRequest));
-        SubscribeToEvent(E_MOUSEMODECHANGED, URHO3D_HANDLER(ApplicationState, HandleMouseModeChange));
+        SubscribeToEvent(E_MOUSEBUTTONDOWN, &ApplicationState::HandleMouseModeRequest);
+        SubscribeToEvent(E_MOUSEMODECHANGED, &ApplicationState::HandleMouseModeChange);
     }
 }
 
@@ -483,14 +483,14 @@ void StateManager::SetTransitionState(TransitionState state)
     case TransitionState::FadeOut:
         fadeTime_ = 0.0f;
         UpdateFadeOverlay(0.0f);
-        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(StateManager, HandleUpdate));
+        SubscribeToEvent(E_UPDATE, &StateManager::HandleUpdate);
         break;
     case TransitionState::WaitToExit:
         if (fadeOverlay_)
         {
             fadeOverlay_->Remove();
         }
-        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(StateManager, HandleUpdate));
+        SubscribeToEvent(E_UPDATE, &StateManager::HandleUpdate);
         break;
     default:
         break;

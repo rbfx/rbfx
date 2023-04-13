@@ -126,20 +126,20 @@ void Chat::CreateUI()
 void Chat::SubscribeToEvents()
 {
     // Subscribe to UI element events
-    SubscribeToEvent(textEdit_, E_TEXTFINISHED, URHO3D_HANDLER(Chat, HandleSend));
-    SubscribeToEvent(sendButton_, E_RELEASED, URHO3D_HANDLER(Chat, HandleSend));
-    SubscribeToEvent(connectButton_, E_RELEASED, URHO3D_HANDLER(Chat, HandleConnect));
-    SubscribeToEvent(disconnectButton_, E_RELEASED, URHO3D_HANDLER(Chat, HandleDisconnect));
-    SubscribeToEvent(startServerButton_, E_RELEASED, URHO3D_HANDLER(Chat, HandleStartServer));
+    SubscribeToEvent(textEdit_, E_TEXTFINISHED, &Chat::HandleSend);
+    SubscribeToEvent(sendButton_, E_RELEASED, &Chat::HandleSend);
+    SubscribeToEvent(connectButton_, E_RELEASED, &Chat::HandleConnect);
+    SubscribeToEvent(disconnectButton_, E_RELEASED, &Chat::HandleDisconnect);
+    SubscribeToEvent(startServerButton_, E_RELEASED, &Chat::HandleStartServer);
 
     // Subscribe to log messages so that we can pipe them to the chat window
-    SubscribeToEvent(E_LOGMESSAGE, URHO3D_HANDLER(Chat, HandleLogMessage));
+    SubscribeToEvent(E_LOGMESSAGE, &Chat::HandleLogMessage);
 
     // Subscribe to network events
-    SubscribeToEvent(E_NETWORKMESSAGE, URHO3D_HANDLER(Chat, HandleNetworkMessage));
-    SubscribeToEvent(E_SERVERCONNECTED, URHO3D_HANDLER(Chat, HandleConnectionStatus));
-    SubscribeToEvent(E_SERVERDISCONNECTED, URHO3D_HANDLER(Chat, HandleConnectionStatus));
-    SubscribeToEvent(E_CONNECTFAILED, URHO3D_HANDLER(Chat, HandleConnectionStatus));
+    SubscribeToEvent(E_NETWORKMESSAGE, &Chat::HandleNetworkMessage);
+    SubscribeToEvent(E_SERVERCONNECTED, &Chat::HandleConnectionStatus);
+    SubscribeToEvent(E_SERVERDISCONNECTED, &Chat::HandleConnectionStatus);
+    SubscribeToEvent(E_CONNECTFAILED, &Chat::HandleConnectionStatus);
 }
 
 Button* Chat::CreateButton(const ea::string& text, int width)

@@ -64,10 +64,10 @@ ScrollBar::ScrollBar(Context* context) :
     // For backward compatibility
     SetColor(Color(0.0f, 0.0f, 0.0f, 0.0f));
 
-    SubscribeToEvent(backButton_, E_PRESSED, URHO3D_HANDLER(ScrollBar, HandleBackButtonPressed));
-    SubscribeToEvent(forwardButton_, E_PRESSED, URHO3D_HANDLER(ScrollBar, HandleForwardButtonPressed));
-    SubscribeToEvent(slider_, E_SLIDERCHANGED, URHO3D_HANDLER(ScrollBar, HandleSliderChanged));
-    SubscribeToEvent(slider_, E_SLIDERPAGED, URHO3D_HANDLER(ScrollBar, HandleSliderPaged));
+    SubscribeToEvent(backButton_, E_PRESSED, &ScrollBar::HandleBackButtonPressed);
+    SubscribeToEvent(forwardButton_, E_PRESSED, &ScrollBar::HandleForwardButtonPressed);
+    SubscribeToEvent(slider_, E_SLIDERCHANGED, &ScrollBar::HandleSliderChanged);
+    SubscribeToEvent(slider_, E_SLIDERPAGED, &ScrollBar::HandleSliderPaged);
 
     // Set default orientation
     SetOrientation(O_HORIZONTAL);

@@ -131,9 +131,9 @@ void KinematicCharacterController::OnSceneSet(Scene* scene)
         {
             AddKinematicToWorld();
         }
-        SubscribeToEvent(physicsWorld_, E_PHYSICSPREUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPreUpdate));
-        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostStep));
-        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostUpdate));
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPREUPDATE, &KinematicCharacterController::HandlePhysicsPreUpdate);
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, &KinematicCharacterController::HandlePhysicsPostStep);
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTUPDATE, &KinematicCharacterController::HandlePhysicsPostUpdate);
     }
     else
     {

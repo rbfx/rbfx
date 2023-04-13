@@ -715,7 +715,7 @@ void PhysicsWorld2D::OnSceneSet(Scene* scene)
 {
     // Subscribe to the scene subsystem update, which will trigger the physics simulation step
     if (scene)
-        SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(PhysicsWorld2D, HandleSceneSubsystemUpdate));
+        SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, &PhysicsWorld2D::HandleSceneSubsystemUpdate);
     else
         UnsubscribeFromEvent(E_SCENESUBSYSTEMUPDATE);
 }

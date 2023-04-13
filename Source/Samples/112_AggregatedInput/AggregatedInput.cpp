@@ -119,16 +119,16 @@ void AggregatedInput::SubscribeToEvents()
     auto* input = context_->GetSubsystem<Input>();
     aggregatedInput_.SetEnabled(true);
     dpadInput_.SetEnabled(true);
-    SubscribeToEvent(&dpadInput_, E_KEYUP, URHO3D_HANDLER(AggregatedInput, HandleDPadKeyUp));
-    SubscribeToEvent(&dpadInput_, E_KEYDOWN, URHO3D_HANDLER(AggregatedInput, HandleDPadKeyDown));
-    SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(AggregatedInput, HandleKeyUp));
-    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(AggregatedInput, HandleKeyDown));
-    SubscribeToEvent(input, E_JOYSTICKAXISMOVE, URHO3D_HANDLER(AggregatedInput, HandleJoystickAxisMove));
-    SubscribeToEvent(input, E_JOYSTICKHATMOVE, URHO3D_HANDLER(AggregatedInput, HandleJoystickHatMove));
-    SubscribeToEvent(input, E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(AggregatedInput, HandleJoystickDisconnected));
-    SubscribeToEvent(input, E_TOUCHBEGIN, URHO3D_HANDLER(AggregatedInput, HandleTouchBegin));
-    SubscribeToEvent(input, E_TOUCHMOVE, URHO3D_HANDLER(AggregatedInput, HandleTouchMove));
-    SubscribeToEvent(input, E_TOUCHEND, URHO3D_HANDLER(AggregatedInput, HandleTouchEnd));
+    SubscribeToEvent(&dpadInput_, E_KEYUP, &AggregatedInput::HandleDPadKeyUp);
+    SubscribeToEvent(&dpadInput_, E_KEYDOWN, &AggregatedInput::HandleDPadKeyDown);
+    SubscribeToEvent(input, E_KEYUP, &AggregatedInput::HandleKeyUp);
+    SubscribeToEvent(input, E_KEYDOWN, &AggregatedInput::HandleKeyDown);
+    SubscribeToEvent(input, E_JOYSTICKAXISMOVE, &AggregatedInput::HandleJoystickAxisMove);
+    SubscribeToEvent(input, E_JOYSTICKHATMOVE, &AggregatedInput::HandleJoystickHatMove);
+    SubscribeToEvent(input, E_JOYSTICKDISCONNECTED, &AggregatedInput::HandleJoystickDisconnected);
+    SubscribeToEvent(input, E_TOUCHBEGIN, &AggregatedInput::HandleTouchBegin);
+    SubscribeToEvent(input, E_TOUCHMOVE, &AggregatedInput::HandleTouchMove);
+    SubscribeToEvent(input, E_TOUCHEND, &AggregatedInput::HandleTouchEnd);
 }
 
 void AggregatedInput::Deactivate()

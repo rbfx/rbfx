@@ -265,7 +265,7 @@ void AdvancedNetworking::SubscribeToEvents()
 {
     // Subscribe to raycast events.
     SubscribeToEvent(E_ADVANCEDNETWORKING_RAYCAST,
-        [this](StringHash, VariantMap& eventData)
+        [this](VariantMap& eventData)
     {
         using namespace AdvancedNetworkingRaycast;
         ServerRaycastInfo info;
@@ -281,7 +281,7 @@ void AdvancedNetworking::SubscribeToEvents()
 
     // Subscribe to rayhit events.
     SubscribeToEvent(E_ADVANCEDNETWORKING_RAYHIT,
-        [this](StringHash, VariantMap& eventData)
+        [this](VariantMap& eventData)
     {
         using namespace AdvancedNetworkingRayhit;
         const Variant& position = eventData[P_POSITION];
@@ -293,7 +293,7 @@ void AdvancedNetworking::SubscribeToEvents()
     // of the usual Update so that physics simulation has already proceeded for the frame, and can
     // accurately follow the object with the camera
     SubscribeToEvent(E_POSTUPDATE,
-        [this](StringHash, VariantMap& eventData)
+        [this]
     {
         ProcessRaycastsOnServer();
         if (!GetSubsystem<Engine>()->IsHeadless())
@@ -304,8 +304,8 @@ void AdvancedNetworking::SubscribeToEvents()
     });
 
     // Subscribe to network events
-    SubscribeToEvent(E_CLIENTCONNECTED, URHO3D_HANDLER(AdvancedNetworking, HandleClientConnected));
-    SubscribeToEvent(E_CLIENTDISCONNECTED, URHO3D_HANDLER(AdvancedNetworking, HandleClientDisconnected));
+    SubscribeToEvent(E_CLIENTCONNECTED, &AdvancedNetworking::HandleClientConnected);
+    SubscribeToEvent(E_CLIENTDISCONNECTED, &AdvancedNetworking::HandleClientDisconnected);
 
     auto* network = GetSubsystem<Network>();
     network->RegisterRemoteEvent(E_ADVANCEDNETWORKING_RAYCAST);

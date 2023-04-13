@@ -58,7 +58,7 @@ void ParticleGraphEmitter::OnSetEnabled()
     if (scene)
     {
         if (IsEnabledEffective())
-            SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleGraphEmitter, HandleScenePostUpdate));
+            SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &ParticleGraphEmitter::HandleScenePostUpdate);
         else
             UnsubscribeFromEvent(scene, E_SCENEPOSTUPDATE);
     }
@@ -123,7 +123,7 @@ void ParticleGraphEmitter::SetEffect(ParticleGraphEffect* effect)
     effect_ = effect;
 
     if (effect_)
-        SubscribeToEvent(effect_, E_RELOADFINISHED, URHO3D_HANDLER(ParticleGraphEmitter, HandleEffectReloadFinished));
+        SubscribeToEvent(effect_, E_RELOADFINISHED, &ParticleGraphEmitter::HandleEffectReloadFinished);
 
     ApplyEffect();
 }
@@ -150,7 +150,7 @@ void ParticleGraphEmitter::OnSceneSet(Scene* scene)
     Component::OnSceneSet(scene);
 
     if (scene && IsEnabledEffective())
-        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleGraphEmitter, HandleScenePostUpdate));
+        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &ParticleGraphEmitter::HandleScenePostUpdate);
     else if (!scene)
         UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
 

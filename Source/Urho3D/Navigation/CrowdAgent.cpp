@@ -92,7 +92,7 @@ CrowdAgent::CrowdAgent(Context* context) :
     previousAgentState_(CA_STATE_WALKING),
     ignoreTransformChanges_(false)
 {
-    SubscribeToEvent(E_NAVIGATION_TILE_ADDED, URHO3D_HANDLER(CrowdAgent, HandleNavigationTileAdded));
+    SubscribeToEvent(E_NAVIGATION_TILE_ADDED, &CrowdAgent::HandleNavigationTileAdded);
 }
 
 CrowdAgent::~CrowdAgent()

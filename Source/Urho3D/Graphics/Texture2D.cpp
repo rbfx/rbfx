@@ -146,7 +146,7 @@ bool Texture2D::SetSize(int width, int height, unsigned format, TextureUsage usa
     }
 
     if (usage == TEXTURE_RENDERTARGET)
-        SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(Texture2D, HandleRenderSurfaceUpdate));
+        SubscribeToEvent(E_RENDERSURFACEUPDATE, &Texture2D::HandleRenderSurfaceUpdate);
     else
         UnsubscribeFromEvent(E_RENDERSURFACEUPDATE);
 

@@ -225,8 +225,8 @@ Network::Network(Context* context) :
     // Register Network library object factories
     RegisterNetworkLibrary(context_);
 
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Network, HandleBeginFrame));
-    SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Network, HandleRenderUpdate));
+    SubscribeToEvent(E_BEGINFRAME, &Network::HandleBeginFrame);
+    SubscribeToEvent(E_RENDERUPDATE, &Network::HandleRenderUpdate);
 }
 
 Network::~Network()

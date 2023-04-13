@@ -99,7 +99,7 @@ Audio::Audio(Context* context) :
     // Register Audio library object factories
     RegisterAudioLibrary(context_);
 
-    SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Audio, HandleRenderUpdate));
+    SubscribeToEvent(E_RENDERUPDATE, &Audio::HandleRenderUpdate);
 }
 
 Audio::~Audio()
@@ -412,7 +412,7 @@ void Audio::MixOutput(void* dest, unsigned samples)
     }
 }
 
-void Audio::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
+void Audio::HandleRenderUpdate(VariantMap& eventData)
 {
     using namespace RenderUpdate;
 

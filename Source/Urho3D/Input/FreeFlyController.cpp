@@ -40,7 +40,7 @@ FreeFlyController::FreeFlyController(Context* context)
     : Component(context)
     , multitouchAdapter_(context)
 {
-    SubscribeToEvent(&multitouchAdapter_, E_MULTITOUCH, URHO3D_HANDLER(FreeFlyController, HandleMultitouch));
+    SubscribeToEvent(&multitouchAdapter_, E_MULTITOUCH, &FreeFlyController::HandleMultitouch);
 }
 
 void FreeFlyController::OnSetEnabled() { UpdateEventSubscription(); }
@@ -59,7 +59,7 @@ void FreeFlyController::UpdateEventSubscription()
 
     if (enabled && !subscribed_)
     {
-        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(FreeFlyController, HandleUpdate));
+        SubscribeToEvent(E_UPDATE, &FreeFlyController::HandleUpdate);
         subscribed_ = true;
     }
     else if (subscribed_)

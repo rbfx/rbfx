@@ -173,9 +173,7 @@ void RaycastVehicleDemo::CreateInstructions()
 void RaycastVehicleDemo::SubscribeToEvents()
 {
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
-    SubscribeToEvent(E_POSTUPDATE,
-                     URHO3D_HANDLER(RaycastVehicleDemo,
-                                    HandlePostUpdate));
+    SubscribeToEvent(E_POSTUPDATE, &RaycastVehicleDemo::HandlePostUpdate);
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }

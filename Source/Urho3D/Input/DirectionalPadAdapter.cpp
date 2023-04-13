@@ -477,7 +477,7 @@ void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
 
     if (!subscriptionFlags_ && flags)
     {
-        SubscribeToEvent(input_, E_INPUTFOCUS, URHO3D_HANDLER(DirectionalPadAdapter, HandleInputFocus));
+        SubscribeToEvent(input_, E_INPUTFOCUS, &DirectionalPadAdapter::HandleInputFocus);
     }
     else if (subscriptionFlags_ && !flags)
     {
@@ -487,7 +487,7 @@ void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
     subscriptionFlags_ = flags;
     if (toSubscribe & SubscriptionMask::Update)
     {
-        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(DirectionalPadAdapter, HandleUpdate));
+        SubscribeToEvent(E_UPDATE, &DirectionalPadAdapter::HandleUpdate);
     }
     else if (toUnsubscribe & SubscriptionMask::Keyboard)
     {
@@ -496,8 +496,8 @@ void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
 
     if (toSubscribe & SubscriptionMask::Keyboard)
     {
-        SubscribeToEvent(input_, E_KEYUP, URHO3D_HANDLER(DirectionalPadAdapter, HandleKeyUp));
-        SubscribeToEvent(input_, E_KEYDOWN, URHO3D_HANDLER(DirectionalPadAdapter, HandleKeyDown));
+        SubscribeToEvent(input_, E_KEYUP, &DirectionalPadAdapter::HandleKeyUp);
+        SubscribeToEvent(input_, E_KEYDOWN, &DirectionalPadAdapter::HandleKeyDown);
     }
     else if (toUnsubscribe & SubscriptionMask::Keyboard)
     {
@@ -512,9 +512,9 @@ void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
     }
     if (toSubscribe & SubscriptionMask::Joystick)
     {
-        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickAxisMove));
-        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickHatMove));
-        SubscribeToEvent(input_, E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickDisconnected));
+        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, &DirectionalPadAdapter::HandleJoystickAxisMove);
+        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, &DirectionalPadAdapter::HandleJoystickHatMove);
+        SubscribeToEvent(input_, E_JOYSTICKDISCONNECTED, &DirectionalPadAdapter::HandleJoystickDisconnected);
     }
     else if (toUnsubscribe & SubscriptionMask::Joystick)
     {

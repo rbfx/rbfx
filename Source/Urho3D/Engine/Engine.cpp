@@ -209,8 +209,8 @@ Engine::Engine(Context* context) :
     context_->AddFactoryReflection<AssetTransformer>();
     AnimationVelocityExtractor::RegisterObject(context_);
 
-    SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
+    SubscribeToEvent(E_EXITREQUESTED, &Engine::HandleExitRequested);
+    SubscribeToEvent(E_ENDFRAME, &Engine::HandleEndFrame);
 }
 
 Engine::~Engine() = default;
@@ -1053,7 +1053,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
 }
 
-void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
+void Engine::HandleExitRequested()
 {
     if (autoExit_)
     {
@@ -1061,7 +1061,7 @@ void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
     }
 }
 
-void Engine::HandleEndFrame(StringHash eventType, VariantMap& eventData)
+void Engine::HandleEndFrame()
 {
     if (exitRequired_)
     {

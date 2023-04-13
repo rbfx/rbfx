@@ -88,10 +88,10 @@ void UIDrag::CreateGUI()
         if (i % 2 == 0)
             b->AddTag("SomeTag");
 
-        SubscribeToEvent(b, E_CLICK, URHO3D_HANDLER(UIDrag, HandleClick));
-        SubscribeToEvent(b, E_DRAGMOVE, URHO3D_HANDLER(UIDrag, HandleDragMove));
-        SubscribeToEvent(b, E_DRAGBEGIN, URHO3D_HANDLER(UIDrag, HandleDragBegin));
-        SubscribeToEvent(b, E_DRAGCANCEL, URHO3D_HANDLER(UIDrag, HandleDragCancel));
+        SubscribeToEvent(b, E_CLICK, &UIDrag::HandleClick);
+        SubscribeToEvent(b, E_DRAGMOVE, &UIDrag::HandleDragMove);
+        SubscribeToEvent(b, E_DRAGBEGIN, &UIDrag::HandleDragBegin);
+        SubscribeToEvent(b, E_DRAGCANCEL, &UIDrag::HandleDragCancel);
     }
 
     for (int i = 0; i < 10; i++)

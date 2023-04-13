@@ -200,7 +200,7 @@ void Connection::SetScene(Scene* newScene)
     {
         // Make sure there is no existing async loading
         scene_->StopAsyncLoading();
-        SubscribeToEvent(scene_, E_ASYNCLOADFINISHED, URHO3D_HANDLER(Connection, HandleAsyncLoadFinished));
+        SubscribeToEvent(scene_, E_ASYNCLOADFINISHED, &Connection::HandleAsyncLoadFinished);
     }
 }
 
@@ -441,7 +441,7 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     auto* vfs = GetSubsystem<VirtualFileSystem>();
     const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    
+
     for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
     {
         const auto package = dynamic_cast<PackageFile*>(vfs->GetMountPoint(i));

@@ -91,7 +91,7 @@ void AnimatedSprite2D::OnSetEnabled()
     if (scene)
     {
         if (enabled)
-            SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(AnimatedSprite2D, HandleScenePostUpdate));
+            SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &AnimatedSprite2D::HandleScenePostUpdate);
         else
             UnsubscribeFromEvent(scene, E_SCENEPOSTUPDATE);
     }
@@ -215,7 +215,7 @@ void AnimatedSprite2D::OnSceneSet(Scene* scene)
         if (scene == node_)
             URHO3D_LOGWARNING(GetTypeName() + " should not be created to the root scene node");
         if (IsEnabledEffective())
-            SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(AnimatedSprite2D, HandleScenePostUpdate));
+            SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &AnimatedSprite2D::HandleScenePostUpdate);
     }
     else
         UnsubscribeFromEvent(E_SCENEPOSTUPDATE);

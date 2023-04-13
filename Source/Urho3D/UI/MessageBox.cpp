@@ -78,7 +78,7 @@ MessageBox::MessageBox(Context* context, const ea::string& messageString, const 
         const IntVector2& size = window->GetSize();
         window->SetPosition((root->GetWidth() - size.x_) / 2, (root->GetHeight() - size.y_) / 2);
         window->SetModal(true);
-        SubscribeToEvent(window, E_MODALCHANGED, URHO3D_HANDLER(MessageBox, HandleMessageAcknowledged));
+        SubscribeToEvent(window, E_MODALCHANGED, &MessageBox::HandleMessageAcknowledged);
     }
 
     // Bind the buttons (if any in the loaded UI layout) to event handlers
@@ -86,14 +86,14 @@ MessageBox::MessageBox(Context* context, const ea::string& messageString, const 
     if (okButton_)
     {
         ui->SetFocusElement(okButton_);
-        SubscribeToEvent(okButton_, E_RELEASED, URHO3D_HANDLER(MessageBox, HandleMessageAcknowledged));
+        SubscribeToEvent(okButton_, E_RELEASED, &MessageBox::HandleMessageAcknowledged);
     }
     auto* cancelButton = window_->GetChildDynamicCast<Button>("CancelButton", true);
     if (cancelButton)
-        SubscribeToEvent(cancelButton, E_RELEASED, URHO3D_HANDLER(MessageBox, HandleMessageAcknowledged));
+        SubscribeToEvent(cancelButton, E_RELEASED, &MessageBox::HandleMessageAcknowledged);
     auto* closeButton = window_->GetChildDynamicCast<Button>("CloseButton", true);
     if (closeButton)
-        SubscribeToEvent(closeButton, E_RELEASED, URHO3D_HANDLER(MessageBox, HandleMessageAcknowledged));
+        SubscribeToEvent(closeButton, E_RELEASED, &MessageBox::HandleMessageAcknowledged);
 
     // Increase reference count to keep Self alive
     AddRef();

@@ -130,18 +130,18 @@ UI::UI(Context* context) :
     rootModalElement_->SetTraversalMode(TM_DEPTH_FIRST);
     Input* input = context_->GetSubsystem<Input>();
     URHO3D_ASSERT(input);
-    SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(UI, HandleScreenMode));
-    SubscribeToEvent(input, E_MOUSEBUTTONDOWN, URHO3D_HANDLER(UI, HandleMouseButtonDown));
-    SubscribeToEvent(input, E_MOUSEBUTTONUP, URHO3D_HANDLER(UI, HandleMouseButtonUp));
-    SubscribeToEvent(input, E_MOUSEMOVE, URHO3D_HANDLER(UI, HandleMouseMove));
-    SubscribeToEvent(input, E_MOUSEWHEEL, URHO3D_HANDLER(UI, HandleMouseWheel));
-    SubscribeToEvent(input, E_TOUCHBEGIN, URHO3D_HANDLER(UI, HandleTouchBegin));
-    SubscribeToEvent(input, E_TOUCHEND, URHO3D_HANDLER(UI, HandleTouchEnd));
-    SubscribeToEvent(input, E_TOUCHMOVE, URHO3D_HANDLER(UI, HandleTouchMove));
-    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(UI, HandleKeyDown));
-    SubscribeToEvent(input, E_TEXTINPUT, URHO3D_HANDLER(UI, HandleTextInput));
-    SubscribeToEvent(input, E_DROPFILE, URHO3D_HANDLER(UI, HandleDropFile));
-    SubscribeToEvent(E_FOCUSED, URHO3D_HANDLER(UI, HandleFocused));
+    SubscribeToEvent(E_SCREENMODE, &UI::HandleScreenMode);
+    SubscribeToEvent(input, E_MOUSEBUTTONDOWN, &UI::HandleMouseButtonDown);
+    SubscribeToEvent(input, E_MOUSEBUTTONUP, &UI::HandleMouseButtonUp);
+    SubscribeToEvent(input, E_MOUSEMOVE, &UI::HandleMouseMove);
+    SubscribeToEvent(input, E_MOUSEWHEEL, &UI::HandleMouseWheel);
+    SubscribeToEvent(input, E_TOUCHBEGIN, &UI::HandleTouchBegin);
+    SubscribeToEvent(input, E_TOUCHEND, &UI::HandleTouchEnd);
+    SubscribeToEvent(input, E_TOUCHMOVE, &UI::HandleTouchMove);
+    SubscribeToEvent(input, E_KEYDOWN, &UI::HandleKeyDown);
+    SubscribeToEvent(input, E_TEXTINPUT, &UI::HandleTextInput);
+    SubscribeToEvent(input, E_DROPFILE, &UI::HandleDropFile);
+    SubscribeToEvent(E_FOCUSED, &UI::HandleFocused);
 
     // Try to initialize right now, but skip if screen mode is not yet set
     Initialize();
@@ -872,9 +872,9 @@ void UI::Initialize()
 
     initialized_ = true;
 
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(UI, HandleBeginFrame));
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(UI, HandlePostUpdate));
-    SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(UI, HandleRenderUpdate));
+    SubscribeToEvent(E_BEGINFRAME, &UI::HandleBeginFrame);
+    SubscribeToEvent(E_POSTUPDATE, &UI::HandlePostUpdate);
+    SubscribeToEvent(E_RENDERUPDATE, &UI::HandleRenderUpdate);
 }
 
 void UI::Update(float timeStep, UIElement* element)
@@ -2127,7 +2127,7 @@ void UI::SetRenderTarget(Texture2D* texture, Color clearColor)
         UnsubscribeFromEvent(E_ENDALLVIEWSRENDER);
     else
     {
-        SubscribeToEvent(E_ENDALLVIEWSRENDER, URHO3D_HANDLER(UI, HandleEndAllViewsRender));
+        SubscribeToEvent(E_ENDALLVIEWSRENDER, &UI::HandleEndAllViewsRender);
         ResizeRootElement();
     }
 }

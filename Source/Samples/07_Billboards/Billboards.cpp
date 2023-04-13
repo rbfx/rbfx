@@ -245,7 +245,7 @@ void Billboards::SubscribeToEvents()
 {
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Billboards, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &Billboards::HandlePostRenderUpdate);
 }
 
 void Billboards::MoveCamera(float timeStep)
@@ -293,7 +293,7 @@ void Billboards::AnimateScene(float timeStep)
 
 void Billboards::Update(float timeStep)
 {
-	
+
     // Move the camera and animate the scene, scale movement with time step
     AnimateScene(timeStep);
 }

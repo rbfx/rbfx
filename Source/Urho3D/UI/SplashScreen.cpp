@@ -77,9 +77,9 @@ void SplashScreen::Activate(StringVariantMap& bundle)
 {
     ApplicationState::Activate(bundle);
     auto* input = context_->GetSubsystem<Input>();
-    SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
-    SubscribeToEvent(input, E_MOUSEBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
-    SubscribeToEvent(input, E_JOYSTICKBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
+    SubscribeToEvent(input, E_KEYUP, &SplashScreen::HandleKeyUp);
+    SubscribeToEvent(input, E_MOUSEBUTTONUP, &SplashScreen::HandleKeyUp);
+    SubscribeToEvent(input, E_JOYSTICKBUTTONUP, &SplashScreen::HandleKeyUp);
 
     timeAcc_ = 0.0;
     exitRequested_ = false;

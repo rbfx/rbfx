@@ -344,7 +344,7 @@ void Text::SetAutoLocalizable(bool enable)
             stringId_ = text_;
             auto* l10n = GetSubsystem<Localization>();
             text_ = l10n->Get(stringId_);
-            SubscribeToEvent(E_CHANGELANGUAGE, URHO3D_HANDLER(Text, HandleChangeLanguage));
+            SubscribeToEvent(E_CHANGELANGUAGE, &Text::HandleChangeLanguage);
         }
         else
         {

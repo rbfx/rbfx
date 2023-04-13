@@ -313,24 +313,24 @@ void SceneReplication::SetupViewport()
 void SceneReplication::SubscribeToEvents()
 {
     // Subscribe to fixed timestep physics updates for setting or applying controls
-    SubscribeToEvent(E_PHYSICSPRESTEP, URHO3D_HANDLER(SceneReplication, HandlePhysicsPreStep));
+    SubscribeToEvent(E_PHYSICSPRESTEP, &SceneReplication::HandlePhysicsPreStep);
 
     // Subscribe HandlePostUpdate() method for processing update events. Subscribe to PostUpdate instead
     // of the usual Update so that physics simulation has already proceeded for the frame, and can
     // accurately follow the object with the camera
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(SceneReplication, HandlePostUpdate));
+    SubscribeToEvent(E_POSTUPDATE, &SceneReplication::HandlePostUpdate);
 
     // Subscribe to button actions
-    SubscribeToEvent(connectButton_, E_RELEASED, URHO3D_HANDLER(SceneReplication, HandleConnect));
-    SubscribeToEvent(disconnectButton_, E_RELEASED, URHO3D_HANDLER(SceneReplication, HandleDisconnect));
-    SubscribeToEvent(startServerButton_, E_RELEASED, URHO3D_HANDLER(SceneReplication, HandleStartServer));
+    SubscribeToEvent(connectButton_, E_RELEASED, &SceneReplication::HandleConnect);
+    SubscribeToEvent(disconnectButton_, E_RELEASED, &SceneReplication::HandleDisconnect);
+    SubscribeToEvent(startServerButton_, E_RELEASED, &SceneReplication::HandleStartServer);
 
     // Subscribe to network events
-    SubscribeToEvent(E_SERVERCONNECTED, URHO3D_HANDLER(SceneReplication, HandleConnectionStatus));
-    SubscribeToEvent(E_SERVERDISCONNECTED, URHO3D_HANDLER(SceneReplication, HandleConnectionStatus));
-    SubscribeToEvent(E_CONNECTFAILED, URHO3D_HANDLER(SceneReplication, HandleConnectionStatus));
-    SubscribeToEvent(E_CLIENTCONNECTED, URHO3D_HANDLER(SceneReplication, HandleClientConnected));
-    SubscribeToEvent(E_CLIENTDISCONNECTED, URHO3D_HANDLER(SceneReplication, HandleClientDisconnected));
+    SubscribeToEvent(E_SERVERCONNECTED, &SceneReplication::HandleConnectionStatus);
+    SubscribeToEvent(E_SERVERDISCONNECTED, &SceneReplication::HandleConnectionStatus);
+    SubscribeToEvent(E_CONNECTFAILED, &SceneReplication::HandleConnectionStatus);
+    SubscribeToEvent(E_CLIENTCONNECTED, &SceneReplication::HandleClientConnected);
+    SubscribeToEvent(E_CLIENTDISCONNECTED, &SceneReplication::HandleClientDisconnected);
 }
 
 Button* SceneReplication::CreateButton(const ea::string& text, int width)

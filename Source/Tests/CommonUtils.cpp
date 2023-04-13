@@ -42,7 +42,7 @@ namespace Tests
 namespace
 {
 
-void PrintError(StringHash hash, VariantMap& args)
+void PrintError(VariantMap& args)
 {
     if (args[LogMessage::P_LEVEL].GetInt() == LOG_ERROR)
     {
@@ -171,7 +171,7 @@ FrameEventTracker::FrameEventTracker(Context* context, StringHash endFrameEventT
     : Object(context)
 {
     SubscribeToEvent(endFrameEventType,
-        [&](StringHash, VariantMap&)
+        [&]
     {
         if (!recordEvents_)
             recordEvents_ = true;
@@ -185,12 +185,12 @@ FrameEventTracker::FrameEventTracker(Context* context, StringHash endFrameEventT
 
 void FrameEventTracker::TrackEvent(StringHash eventType)
 {
-    SubscribeToEvent(eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
+    SubscribeToEvent(eventType, &FrameEventTracker::HandleEvent);
 }
 
 void FrameEventTracker::TrackEvent(Object* object, StringHash eventType)
 {
-    SubscribeToEvent(object, eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
+    SubscribeToEvent(object, eventType, &FrameEventTracker::HandleEvent);
 }
 
 void FrameEventTracker::SkipFramesUntilEvent(StringHash eventType, unsigned hits)
@@ -234,7 +234,7 @@ AttributeTracker::AttributeTracker(Context* context, StringHash endFrameEventTyp
     : Object(context)
 {
     SubscribeToEvent(endFrameEventType,
-        [&](StringHash, VariantMap&)
+        [&]
     {
         for (const auto& [serializable, attributeName] : trackers_)
         {

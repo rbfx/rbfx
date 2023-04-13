@@ -178,10 +178,10 @@ void Hello3DUI::InitWindow()
     buttonClose->SetStyle("CloseButton");
 
     // Subscribe to buttonClose release (following a 'press') events
-    SubscribeToEvent(buttonClose, E_RELEASED, URHO3D_HANDLER(Hello3DUI, HandleClosePressed));
+    SubscribeToEvent(buttonClose, E_RELEASED, &Hello3DUI::HandleClosePressed);
 
     // Subscribe also to all UI mouse clicks just to see where we have clicked
-    SubscribeToEvent(E_UIMOUSECLICK, URHO3D_HANDLER(Hello3DUI, HandleControlClicked));
+    SubscribeToEvent(E_UIMOUSECLICK, &Hello3DUI::HandleControlClicked);
 }
 
 void Hello3DUI::InitScene()
@@ -247,9 +247,9 @@ void Hello3DUI::CreateDraggableFish()
 
     // Subscribe draggableFish to Drag Events (in order to make it draggable)
     // See "Event list" in documentation's Main Page for reference on available Events and their eventData
-    SubscribeToEvent(draggableFish, E_DRAGBEGIN, URHO3D_HANDLER(Hello3DUI, HandleDragBegin));
-    SubscribeToEvent(draggableFish, E_DRAGMOVE, URHO3D_HANDLER(Hello3DUI, HandleDragMove));
-    SubscribeToEvent(draggableFish, E_DRAGEND, URHO3D_HANDLER(Hello3DUI, HandleDragEnd));
+    SubscribeToEvent(draggableFish, E_DRAGBEGIN, &Hello3DUI::HandleDragBegin);
+    SubscribeToEvent(draggableFish, E_DRAGMOVE, &Hello3DUI::HandleDragMove);
+    SubscribeToEvent(draggableFish, E_DRAGEND, &Hello3DUI::HandleDragEnd);
 }
 
 void Hello3DUI::HandleDragBegin(StringHash eventType, VariantMap& eventData)

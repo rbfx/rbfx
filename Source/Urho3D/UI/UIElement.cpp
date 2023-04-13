@@ -1924,7 +1924,7 @@ IntVector2 UIElement::GetEffectiveMinSize() const
 void UIElement::OnAttributeAnimationAdded()
 {
     if (attributeAnimationInfos_.size() == 1)
-        SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(UIElement, HandlePostUpdate));
+        SubscribeToEvent(E_POSTUPDATE, &UIElement::HandlePostUpdate);
 }
 
 void UIElement::OnAttributeAnimationRemoved()

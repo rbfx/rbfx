@@ -44,7 +44,7 @@ SystemMessageBox::SystemMessageBox(Context* context, const ea::string& messageSt
     Graphics* graphics = GetSubsystem<Graphics>();
     windowSize_ = ImVec2(300, 150);
     windowPosition_ = ImVec2(graphics->GetWidth() / 2 - windowSize_.x / 2, graphics->GetHeight() / 2 - windowSize_.y / 2);
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(SystemMessageBox, RenderFrame));
+    SubscribeToEvent(E_UPDATE, &SystemMessageBox::RenderFrame);
 }
 
 SystemMessageBox::~SystemMessageBox()

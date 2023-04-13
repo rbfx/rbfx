@@ -249,10 +249,10 @@ void Editor::Start()
     if (auto debugHud = engine_->CreateDebugHud())
         debugHud->SetMode(DEBUGHUD_SHOW_NONE);
 
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { Render(); });
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateProjectStatus(); });
-    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
-    SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
+    SubscribeToEvent(E_UPDATE, &Editor::Render);
+    SubscribeToEvent(E_ENDFRAME, &Editor::UpdateProjectStatus);
+    SubscribeToEvent(E_EXITREQUESTED, &Editor::OnExitRequested);
+    SubscribeToEvent(E_CONSOLEURICLICK, &Editor::OnConsoleUriClick);
 
     if (!isHeadless)
     {

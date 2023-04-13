@@ -68,16 +68,16 @@ RmlNavigationManager::RmlNavigationManager(RmlUIComponent* owner)
 {
     SetInputEnabled(true);
 
-    SubscribeToEvent(directionInput_, E_KEYUP, URHO3D_HANDLER(RmlNavigationManager, HandleDirectionKeyEvent));
-    SubscribeToEvent(directionInput_, E_KEYDOWN, URHO3D_HANDLER(RmlNavigationManager, HandleDirectionKeyEvent));
+    SubscribeToEvent(directionInput_, E_KEYUP, &RmlNavigationManager::HandleDirectionKeyEvent);
+    SubscribeToEvent(directionInput_, E_KEYDOWN, &RmlNavigationManager::HandleDirectionKeyEvent);
 
     auto input = GetSubsystem<Input>();
-    SubscribeToEvent(input, E_MOUSEBUTTONDOWN, URHO3D_HANDLER(RmlNavigationManager, HandleMouseButtonEvent));
-    SubscribeToEvent(input, E_MOUSEBUTTONUP, URHO3D_HANDLER(RmlNavigationManager, HandleMouseButtonEvent));
-    SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(RmlNavigationManager, HandleKeyboardButtonEvent));
-    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(RmlNavigationManager, HandleKeyboardButtonEvent));
-    SubscribeToEvent(input, E_JOYSTICKBUTTONUP, URHO3D_HANDLER(RmlNavigationManager, HandleJoystickButtonEvent));
-    SubscribeToEvent(input, E_JOYSTICKBUTTONDOWN, URHO3D_HANDLER(RmlNavigationManager, HandleJoystickButtonEvent));
+    SubscribeToEvent(input, E_MOUSEBUTTONDOWN, &RmlNavigationManager::HandleMouseButtonEvent);
+    SubscribeToEvent(input, E_MOUSEBUTTONUP, &RmlNavigationManager::HandleMouseButtonEvent);
+    SubscribeToEvent(input, E_KEYUP, &RmlNavigationManager::HandleKeyboardButtonEvent);
+    SubscribeToEvent(input, E_KEYDOWN, &RmlNavigationManager::HandleKeyboardButtonEvent);
+    SubscribeToEvent(input, E_JOYSTICKBUTTONUP, &RmlNavigationManager::HandleJoystickButtonEvent);
+    SubscribeToEvent(input, E_JOYSTICKBUTTONDOWN, &RmlNavigationManager::HandleJoystickButtonEvent);
 }
 
 RmlNavigationManager::~RmlNavigationManager()

@@ -220,7 +220,7 @@ void MultipleViewports::SubscribeToEvents()
 {
     // Subscribe HandlePostRenderUpdate() method for processing the post-render update event, during which we request
     // debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(MultipleViewports, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &MultipleViewports::HandlePostRenderUpdate);
 }
 
 void MultipleViewports::MoveCamera(float timeStep)

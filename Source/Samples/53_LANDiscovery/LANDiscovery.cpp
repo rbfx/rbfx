@@ -108,11 +108,11 @@ void LANDiscovery::CreateUI()
 
 void LANDiscovery::SubscribeToEvents()
 {
-    SubscribeToEvent(E_NETWORKHOSTDISCOVERED, URHO3D_HANDLER(LANDiscovery, HandleNetworkHostDiscovered));
+    SubscribeToEvent(E_NETWORKHOSTDISCOVERED, &LANDiscovery::HandleNetworkHostDiscovered);
 
-    SubscribeToEvent(startServer_, "Released", URHO3D_HANDLER(LANDiscovery, HandleStartServer));
-    SubscribeToEvent(stopServer_, "Released", URHO3D_HANDLER(LANDiscovery, HandleStopServer));
-    SubscribeToEvent(refreshServerList_, "Released", URHO3D_HANDLER(LANDiscovery, HandleDoNetworkDiscovery));
+    SubscribeToEvent(startServer_, "Released", &LANDiscovery::HandleStartServer);
+    SubscribeToEvent(stopServer_, "Released", &LANDiscovery::HandleStopServer);
+    SubscribeToEvent(refreshServerList_, "Released", &LANDiscovery::HandleDoNetworkDiscovery);
 }
 
 Button* LANDiscovery::CreateButton(const ea::string& text, int width, IntVector2 position)

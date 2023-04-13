@@ -196,7 +196,7 @@ void Decals::SubscribeToEvents()
 {
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Decals, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &Decals::HandlePostRenderUpdate);
 }
 
 void Decals::MoveCamera(float timeStep)

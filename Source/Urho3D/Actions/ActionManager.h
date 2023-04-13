@@ -79,7 +79,7 @@ public:
     Actions::FiniteTimeAction* GetEmptyAction();
 
 private:
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(VariantMap& eventData);
 
 private:
     // Current target strong pointer to keep target alive while manager operates on actions.

@@ -128,13 +128,13 @@ private:
     /// Create console and debug HUD.
     void CreateConsoleAndDebugHud();
     /// Handle key down event to process key controls common to all samples.
-    void HandleKeyDown(StringHash eventType, VariantMap& eventData);
+    void HandleKeyDown(VariantMap& eventData);
     /// Handle key up event to process key controls common to all samples.
-    void HandleKeyUp(StringHash eventType, VariantMap& eventData);
+    void HandleKeyUp(VariantMap& eventData);
     /// Handle scene update event to control camera's pitch and yaw for all samples.
-    void HandleSceneUpdate(StringHash eventType, VariantMap& eventData);
+    void HandleSceneUpdate(VariantMap& eventData);
     /// Handle touch begin event to initialize touch input on desktop platform.
-    void HandleTouchBegin(StringHash eventType, VariantMap& eventData);
+    void HandleTouchBegin();
 
     /// Screen joystick index for navigational controls (mobile platforms only).
     unsigned screenJoystickIndex_;

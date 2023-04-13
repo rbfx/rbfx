@@ -56,8 +56,8 @@ Console::Console(Context* context) :
     HandleScreenMode(StringHash::Empty, dummy);
     RefreshInterpreters();
 
-    SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Console, HandleScreenMode));
-    SubscribeToEvent(E_LOGMESSAGE, URHO3D_HANDLER(Console, HandleLogMessage));
+    SubscribeToEvent(E_SCREENMODE, &Console::HandleScreenMode);
+    SubscribeToEvent(E_LOGMESSAGE, &Console::HandleLogMessage);
 }
 
 Console::~Console()
@@ -71,7 +71,7 @@ void Console::SetVisible(bool enable)
     if (isOpen_)
     {
         focusInput_ = true;
-        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Console, RenderUi));
+        SubscribeToEvent(E_UPDATE, &Console::RenderUi);
     }
     else
     {

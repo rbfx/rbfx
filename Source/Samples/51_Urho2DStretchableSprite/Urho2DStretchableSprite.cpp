@@ -133,7 +133,7 @@ void Urho2DStretchableSprite::SetupViewport()
 void Urho2DStretchableSprite::SubscribeToEvents()
 {
     auto* input = context_->GetSubsystem<Input>();
-    SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(Urho2DStretchableSprite, OnKeyUp));
+    SubscribeToEvent(input, E_KEYUP, &Urho2DStretchableSprite::OnKeyUp);
 
     // Unsubscribe the SceneUpdate event from base class to prevent camera pitch and yaw in 2D sample
     UnsubscribeFromEvent(E_SCENEUPDATE);

@@ -209,7 +209,7 @@ void Physics::SubscribeToEvents()
 {
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Physics, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &Physics::HandlePostRenderUpdate);
 }
 
 void Physics::MoveCamera(float timeStep)

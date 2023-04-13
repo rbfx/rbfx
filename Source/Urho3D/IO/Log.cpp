@@ -367,7 +367,7 @@ Log::Log(Context* context) :
 #if !__EMSCRIPTEN__
     spdlog::flush_every(std::chrono::seconds(5));
 #endif
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Log, HandleEndFrame));
+    SubscribeToEvent(E_ENDFRAME, &Log::HandleEndFrame);
 }
 
 Log::~Log()

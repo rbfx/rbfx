@@ -89,9 +89,9 @@ public:
     {
         listView_ = listView;
         overlayContainer_ = overlayContainer;
-        SubscribeToEvent(this, E_LAYOUTUPDATED, URHO3D_HANDLER(HierarchyContainer, HandleLayoutUpdated));
-        SubscribeToEvent(overlayContainer->GetParent(), E_VIEWCHANGED, URHO3D_HANDLER(HierarchyContainer, HandleViewChanged));
-        SubscribeToEvent(E_UIMOUSECLICK, URHO3D_HANDLER(HierarchyContainer, HandleUIMouseClick));
+        SubscribeToEvent(this, E_LAYOUTUPDATED, &HierarchyContainer::HandleLayoutUpdated);
+        SubscribeToEvent(overlayContainer->GetParent(), E_VIEWCHANGED, &HierarchyContainer::HandleViewChanged);
+        SubscribeToEvent(E_UIMOUSECLICK, &HierarchyContainer::HandleUIMouseClick);
     }
 
     /// Register object factory.
@@ -186,10 +186,10 @@ ListView::ListView(Context* context) :
     // By default list view is set to non-hierarchy mode
     SetHierarchyMode(false);
 
-    SubscribeToEvent(E_UIMOUSEDOUBLECLICK, URHO3D_HANDLER(ListView, HandleUIMouseDoubleClick));
-    SubscribeToEvent(E_FOCUSCHANGED, URHO3D_HANDLER(ListView, HandleItemFocusChanged));
-    SubscribeToEvent(this, E_DEFOCUSED, URHO3D_HANDLER(ListView, HandleFocusChanged));
-    SubscribeToEvent(this, E_FOCUSED, URHO3D_HANDLER(ListView, HandleFocusChanged));
+    SubscribeToEvent(E_UIMOUSEDOUBLECLICK, &ListView::HandleUIMouseDoubleClick);
+    SubscribeToEvent(E_FOCUSCHANGED, &ListView::HandleItemFocusChanged);
+    SubscribeToEvent(this, E_DEFOCUSED, &ListView::HandleFocusChanged);
+    SubscribeToEvent(this, E_FOCUSED, &ListView::HandleFocusChanged);
 
     UpdateUIClickSubscription();
 }
@@ -1167,7 +1167,7 @@ void ListView::UpdateUIClickSubscription()
 {
     UnsubscribeFromEvent(E_UIMOUSECLICK);
     UnsubscribeFromEvent(E_UIMOUSECLICKEND);
-    SubscribeToEvent(selectOnClickEnd_ ? E_UIMOUSECLICKEND : E_UIMOUSECLICK, URHO3D_HANDLER(ListView, HandleUIMouseClick));
+    SubscribeToEvent(selectOnClickEnd_ ? E_UIMOUSECLICKEND : E_UIMOUSECLICK, &ListView::HandleUIMouseClick);
 }
 
 }

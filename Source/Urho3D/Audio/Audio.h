@@ -144,7 +144,7 @@ public:
 
 private:
     /// Handle render update event.
-    void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
+    void HandleRenderUpdate(VariantMap& eventData);
     /// Stop sound output and release the sound buffer.
     void Release();
     /// Actually update sound sources with the specific timestep. Called internally.

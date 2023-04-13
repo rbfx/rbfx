@@ -51,7 +51,7 @@ View3D::View3D(Context* context) :
     renderTexture_->SetNumLevels(1);
     depthTexture_->SetNumLevels(1);
 
-    SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(View3D, HandleRenderSurfaceUpdate));
+    SubscribeToEvent(E_RENDERSURFACEUPDATE, &View3D::HandleRenderSurfaceUpdate);
 }
 
 View3D::~View3D()

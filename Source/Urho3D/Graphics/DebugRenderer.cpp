@@ -54,7 +54,7 @@ DebugRenderer::DebugRenderer(Context* context) :
 {
     vertexBuffer_ = MakeShared<VertexBuffer>(context_);
 
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
+    SubscribeToEvent(E_ENDFRAME, &DebugRenderer::HandleEndFrame);
 }
 
 DebugRenderer::~DebugRenderer() = default;

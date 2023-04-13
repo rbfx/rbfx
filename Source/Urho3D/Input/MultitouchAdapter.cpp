@@ -48,9 +48,9 @@ void MultitouchAdapter::SetEnabled(bool enabled)
 }
 void MultitouchAdapter::SubscribeToEvents()
 {
-    SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(MultitouchAdapter, HandleTouchBegin));
-    SubscribeToEvent(E_TOUCHEND, URHO3D_HANDLER(MultitouchAdapter, HandleTouchEnd));
-    SubscribeToEvent(E_TOUCHMOVE, URHO3D_HANDLER(MultitouchAdapter, HandleTouchMove));
+    SubscribeToEvent(E_TOUCHBEGIN, &MultitouchAdapter::HandleTouchBegin);
+    SubscribeToEvent(E_TOUCHEND, &MultitouchAdapter::HandleTouchEnd);
+    SubscribeToEvent(E_TOUCHMOVE, &MultitouchAdapter::HandleTouchMove);
 }
 
 void MultitouchAdapter::UnsubscribeFromEvents()

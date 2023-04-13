@@ -113,25 +113,25 @@ void NATPunchtrough::CreateUI()
 
 void NATPunchtrough::SubscribeToEvents()
 {
-    SubscribeToEvent(E_SERVERCONNECTED, URHO3D_HANDLER(NATPunchtrough, HandleServerConnected));
-    SubscribeToEvent(E_SERVERDISCONNECTED, URHO3D_HANDLER(NATPunchtrough, HandleServerDisconnected));
-    SubscribeToEvent(E_CONNECTFAILED, URHO3D_HANDLER(NATPunchtrough, HandleConnectFailed));
+    SubscribeToEvent(E_SERVERCONNECTED, &NATPunchtrough::HandleServerConnected);
+    SubscribeToEvent(E_SERVERDISCONNECTED, &NATPunchtrough::HandleServerDisconnected);
+    SubscribeToEvent(E_CONNECTFAILED, &NATPunchtrough::HandleConnectFailed);
 
     // NAT server connection related events
-    SubscribeToEvent(E_NATMASTERCONNECTIONFAILED, URHO3D_HANDLER(NATPunchtrough, HandleNatConnectionFailed));
-    SubscribeToEvent(E_NATMASTERCONNECTIONSUCCEEDED, URHO3D_HANDLER(NATPunchtrough, HandleNatConnectionSucceeded));
-    SubscribeToEvent(E_NATMASTERDISCONNECTED, URHO3D_HANDLER(NATPunchtrough, HandleNatDisconnected));
+    SubscribeToEvent(E_NATMASTERCONNECTIONFAILED, &NATPunchtrough::HandleNatConnectionFailed);
+    SubscribeToEvent(E_NATMASTERCONNECTIONSUCCEEDED, &NATPunchtrough::HandleNatConnectionSucceeded);
+    SubscribeToEvent(E_NATMASTERDISCONNECTED, &NATPunchtrough::HandleNatDisconnected);
 
     // NAT punchtrough request events
-    SubscribeToEvent(E_NETWORKNATPUNCHTROUGHSUCCEEDED, URHO3D_HANDLER(NATPunchtrough, HandleNatPunchtroughSucceeded));
-    SubscribeToEvent(E_NETWORKNATPUNCHTROUGHFAILED, URHO3D_HANDLER(NATPunchtrough, HandleNatPunchtroughFailed));
+    SubscribeToEvent(E_NETWORKNATPUNCHTROUGHSUCCEEDED, &NATPunchtrough::HandleNatPunchtroughSucceeded);
+    SubscribeToEvent(E_NETWORKNATPUNCHTROUGHFAILED, &NATPunchtrough::HandleNatPunchtroughFailed);
 
-    SubscribeToEvent(E_CLIENTCONNECTED, URHO3D_HANDLER(NATPunchtrough, HandleClientConnected));
-    SubscribeToEvent(E_CLIENTDISCONNECTED, URHO3D_HANDLER(NATPunchtrough, HandleClientDisconnected));
+    SubscribeToEvent(E_CLIENTCONNECTED, &NATPunchtrough::HandleClientConnected);
+    SubscribeToEvent(E_CLIENTDISCONNECTED, &NATPunchtrough::HandleClientDisconnected);
 
-    SubscribeToEvent(saveNatSettingsButton_, "Released", URHO3D_HANDLER(NATPunchtrough, HandleSaveNatSettings));
-    SubscribeToEvent(startServerButton_, "Released", URHO3D_HANDLER(NATPunchtrough, HandleStartServer));
-    SubscribeToEvent(connectButton_, "Released", URHO3D_HANDLER(NATPunchtrough, HandleConnect));
+    SubscribeToEvent(saveNatSettingsButton_, "Released", &NATPunchtrough::HandleSaveNatSettings);
+    SubscribeToEvent(startServerButton_, "Released", &NATPunchtrough::HandleStartServer);
+    SubscribeToEvent(connectButton_, "Released", &NATPunchtrough::HandleConnect);
 }
 
 Button* NATPunchtrough::CreateButton(const ea::string& text, int width, IntVector2 position)

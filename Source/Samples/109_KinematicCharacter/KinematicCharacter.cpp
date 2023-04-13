@@ -71,7 +71,7 @@ void KinematicCharacter::DelayedStart()
 void KinematicCharacter::Start()
 {
     // Component has been inserted into its scene node. Subscribe to events now
-    SubscribeToEvent(GetNode(), E_NODECOLLISION, URHO3D_HANDLER(KinematicCharacter, HandleNodeCollision));
+    SubscribeToEvent(GetNode(), E_NODECOLLISION, &KinematicCharacter::HandleNodeCollision);
 }
 
 void KinematicCharacter::FixedUpdate(float timeStep)

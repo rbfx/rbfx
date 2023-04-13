@@ -207,7 +207,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
         constructedUAVs_.insert({ WeakPtr<Object>(texture), bindingList });
 
         // Subscribe to the release event so the UAV can be cleaned up.
-        SubscribeToEvent(texture, E_GPURESOURCERELEASED, URHO3D_HANDLER(ComputeDevice, HandleGPUResourceRelease));
+        SubscribeToEvent(texture, E_GPURESOURCERELEASED, &ComputeDevice::HandleGPUResourceRelease);
     }
 
     uavs_[unit] = view;
@@ -285,7 +285,7 @@ bool ComputeDevice::SetWritableBuffer(Object* object, unsigned slot)
     }
 
     // Subscribe for the clean-up opportunity
-    SubscribeToEvent(object, E_GPURESOURCERELEASED, URHO3D_HANDLER(ComputeDevice, HandleGPUResourceRelease));
+    SubscribeToEvent(object, E_GPURESOURCERELEASED, &ComputeDevice::HandleGPUResourceRelease);
 
     constructedBufferUAVs_.insert({ WeakPtr(object), uav });
     uavs_[slot] = uav;

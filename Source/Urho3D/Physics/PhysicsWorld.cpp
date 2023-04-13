@@ -855,7 +855,7 @@ void PhysicsWorld::OnSceneSet(Scene* scene)
     if (scene)
     {
         scene_ = GetScene();
-        SubscribeToEvent(scene_, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(PhysicsWorld, HandleSceneSubsystemUpdate));
+        SubscribeToEvent(scene_, E_SCENESUBSYSTEMUPDATE, &PhysicsWorld::HandleSceneSubsystemUpdate);
     }
     else
         UnsubscribeFromEvent(E_SCENESUBSYSTEMUPDATE);

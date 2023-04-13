@@ -70,7 +70,7 @@ void Sample::Start()
         InitTouchInput();
     else if (GetSubsystem<Input>()->GetNumJoysticks() == 0)
         // On desktop platform, do not detect touch when we already got a joystick
-        SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(Sample, HandleTouchBegin));
+        SubscribeToEvent(E_TOUCHBEGIN, &Sample::HandleTouchBegin);
 
     if (!GetSubsystem<Engine>()->IsHeadless())
     {
@@ -83,11 +83,11 @@ void Sample::Start()
     }
 
     // Subscribe key down event
-    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(Sample, HandleKeyDown));
+    SubscribeToEvent(input, E_KEYDOWN, &Sample::HandleKeyDown);
     // Subscribe key up event
-    SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(Sample, HandleKeyUp));
+    SubscribeToEvent(input, E_KEYUP, &Sample::HandleKeyUp);
     // Subscribe scene update event
-    SubscribeToEvent(E_SCENEUPDATE, URHO3D_HANDLER(Sample, HandleSceneUpdate));
+    SubscribeToEvent(E_SCENEUPDATE, &Sample::HandleSceneUpdate);
 }
 
 void Sample::Stop()
@@ -190,11 +190,11 @@ void Sample::CreateConsoleAndDebugHud()
 }
 
 
-void Sample::HandleKeyUp(StringHash /*eventType*/, VariantMap& eventData)
+void Sample::HandleKeyUp(VariantMap& eventData)
 {
 }
 
-void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
+void Sample::HandleKeyDown(VariantMap& eventData)
 {
     using namespace KeyDown;
 
@@ -324,7 +324,7 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
     }
 }
 
-void Sample::HandleSceneUpdate(StringHash /*eventType*/, VariantMap& eventData)
+void Sample::HandleSceneUpdate(VariantMap& eventData)
 {
     if (touchEnabled_)
     {
@@ -343,7 +343,7 @@ void Sample::HandleSceneUpdate(StringHash /*eventType*/, VariantMap& eventData)
     }
 }
 
-void Sample::HandleTouchBegin(StringHash /*eventType*/, VariantMap& eventData)
+void Sample::HandleTouchBegin()
 {
     // On some platforms like Windows the presence of touch input can only be detected dynamically
     InitTouchInput();

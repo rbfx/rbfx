@@ -395,7 +395,7 @@ Input::Input(Context* context) :
     for (int i = 0; i < TOUCHID_MAX; i++)
         availableTouchIDs_.push_back(i);
 
-    SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Input, HandleScreenMode));
+    SubscribeToEvent(E_SCREENMODE, &Input::HandleScreenMode);
 
 #ifdef __EMSCRIPTEN__
     // Toggle fullscreen is implemented at the level of the shell
@@ -1155,9 +1155,9 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
 
     // There could be potentially more than one screen joystick, however they all will be handled by a same handler method
     // So there is no harm to replace the old handler with the new handler in each call to SubscribeToEvent()
-    SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(Input, HandleScreenJoystickTouch));
-    SubscribeToEvent(E_TOUCHMOVE, URHO3D_HANDLER(Input, HandleScreenJoystickTouch));
-    SubscribeToEvent(E_TOUCHEND, URHO3D_HANDLER(Input, HandleScreenJoystickTouch));
+    SubscribeToEvent(E_TOUCHBEGIN, &Input::HandleScreenJoystickTouch);
+    SubscribeToEvent(E_TOUCHMOVE, &Input::HandleScreenJoystickTouch);
+    SubscribeToEvent(E_TOUCHEND, &Input::HandleScreenJoystickTouch);
 
     return joystickID;
 }
@@ -1586,9 +1586,9 @@ void Input::Initialize()
     ResetJoysticks();
     ResetState();
 
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Input, HandleBeginFrame));
+    SubscribeToEvent(E_BEGINFRAME, &Input::HandleBeginFrame);
 #ifdef __EMSCRIPTEN__
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Input, HandleEndFrame));
+    SubscribeToEvent(E_ENDFRAME, &Input::HandleEndFrame);
 #endif
 
 #if defined(_WIN32) && defined(DESKTOP)

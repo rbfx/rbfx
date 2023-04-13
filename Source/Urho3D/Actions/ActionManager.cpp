@@ -98,7 +98,7 @@ ActionManager::ActionManager(Context* context, bool autoupdate)
     RegisterActionLibrary(context, this);
     if (autoupdate)
     {
-        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ActionManager, HandleUpdate));
+        SubscribeToEvent(E_UPDATE, &ActionManager::HandleUpdate);
     }
 }
 
@@ -143,7 +143,7 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<RepeatForever>();
 }
 
-void ActionManager::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void ActionManager::HandleUpdate(VariantMap& eventData)
 {
     using namespace Update;
 

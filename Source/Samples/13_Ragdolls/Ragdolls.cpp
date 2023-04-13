@@ -267,7 +267,7 @@ void Ragdolls::SubscribeToEvents()
 {
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Ragdolls, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &Ragdolls::HandlePostRenderUpdate);
 }
 
 void Ragdolls::Update(float timeStep)

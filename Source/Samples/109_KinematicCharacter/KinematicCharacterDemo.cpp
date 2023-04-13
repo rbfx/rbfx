@@ -247,14 +247,14 @@ void KinematicCharacterDemo::CreateInstructions()
 void KinematicCharacterDemo::SubscribeToEvents()
 {
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(KinematicCharacterDemo, HandlePostUpdate));
+    SubscribeToEvent(E_POSTUPDATE, &KinematicCharacterDemo::HandlePostUpdate);
 
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(KinematicCharacterDemo, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &KinematicCharacterDemo::HandlePostRenderUpdate);
 
 }
 

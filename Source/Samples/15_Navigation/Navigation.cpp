@@ -215,7 +215,7 @@ void Navigation::SubscribeToEvents()
 {
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Navigation, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &Navigation::HandlePostRenderUpdate);
 }
 
 void Navigation::MoveCamera(float timeStep)

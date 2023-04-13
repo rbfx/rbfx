@@ -192,7 +192,7 @@ void SkeletalAnimation::SubscribeToEvents()
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, sent after Renderer subsystem is
     // done with defining the draw calls for the viewports (but before actually executing them.) We will request debug geometry
     // rendering during that event
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(SkeletalAnimation, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &SkeletalAnimation::HandlePostRenderUpdate);
 }
 
 void SkeletalAnimation::Update(float timeStep)

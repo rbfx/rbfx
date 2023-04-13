@@ -157,9 +157,9 @@ private:
     /// Populate default parameter values.
     void PopulateDefaultParameters();
     /// Set flag indicating that exit request has to be handled.
-    void HandleExitRequested(StringHash eventType, VariantMap& eventData);
+    void HandleExitRequested();
     /// Do housekeeping tasks at the end of frame. Actually handles exit requested event. Auto-exit if enabled.
-    void HandleEndFrame(StringHash eventType, VariantMap& eventData);
+    void HandleEndFrame();
     /// Actually perform the exit actions.
     void DoExit();
     /// Return log file name in OS file system.

@@ -1370,9 +1370,9 @@ void Material::UpdateEventSubscription()
     if (shaderParameterAnimationInfos_.size() && !subscribed_)
     {
         if (scene_)
-            SubscribeToEvent(scene_, E_ATTRIBUTEANIMATIONUPDATE, URHO3D_HANDLER(Material, HandleAttributeAnimationUpdate));
+            SubscribeToEvent(scene_, E_ATTRIBUTEANIMATIONUPDATE, &Material::HandleAttributeAnimationUpdate);
         else
-            SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Material, HandleAttributeAnimationUpdate));
+            SubscribeToEvent(E_UPDATE, &Material::HandleAttributeAnimationUpdate);
         subscribed_ = true;
     }
     else if (subscribed_ && shaderParameterAnimationInfos_.empty())

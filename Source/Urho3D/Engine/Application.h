@@ -62,7 +62,7 @@ public:
 
 protected:
     /// Handle log message.
-    void HandleLogMessage(StringHash eventType, VariantMap& eventData);
+    void HandleLogMessage(VariantMap& eventData);
 #ifndef UWP
     /// Return command line for registering custom parameters.
     CLI::App& GetCommandLineParser();

@@ -460,16 +460,16 @@ void Urho2DConstraints::MoveCamera(float timeStep)
 void Urho2DConstraints::SubscribeToEvents()
 {
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Urho2DConstraints, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, &Urho2DConstraints::HandlePostRenderUpdate);
 
     // Subscribe to mouse click
-    SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(Urho2DConstraints, HandleMouseButtonDown));
+    SubscribeToEvent(E_MOUSEBUTTONDOWN, &Urho2DConstraints::HandleMouseButtonDown);
 
     // Unsubscribe the SceneUpdate event from base class to prevent camera pitch and yaw in 2D sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 
     if (touchEnabled_)
-        SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(Urho2DConstraints, HandleTouchBegin3));
+        SubscribeToEvent(E_TOUCHBEGIN, &Urho2DConstraints::HandleTouchBegin3);
 }
 
 void Urho2DConstraints::Update(float timeStep)
@@ -516,8 +516,8 @@ void Urho2DConstraints::HandleMouseButtonDown(StringHash eventType, VariantMap& 
         constraintMouse->SetCollideConnected(true);
         constraintMouse->SetOtherBody(dummyBody);  // Use dummy body instead of rigidBody. It's better to create a dummy body automatically in ConstraintMouse2D
     }
-    SubscribeToEvent(E_MOUSEMOVE, URHO3D_HANDLER(Urho2DConstraints, HandleMouseMove));
-    SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(Urho2DConstraints, HandleMouseButtonUp));
+    SubscribeToEvent(E_MOUSEMOVE, &Urho2DConstraints::HandleMouseMove);
+    SubscribeToEvent(E_MOUSEBUTTONUP, &Urho2DConstraints::HandleMouseButtonUp);
 }
 
 void Urho2DConstraints::HandleMouseButtonUp(StringHash eventType, VariantMap& eventData)
@@ -574,8 +574,8 @@ void Urho2DConstraints::HandleTouchBegin3(StringHash eventType, VariantMap& even
         constraintMouse->SetOtherBody(dummyBody);  // Use dummy body instead of rigidBody. It's better to create a dummy body automatically in ConstraintMouse2D
         constraintMouse->SetDampingRatio(0);
     }
-    SubscribeToEvent(E_TOUCHMOVE, URHO3D_HANDLER(Urho2DConstraints, HandleTouchMove3));
-    SubscribeToEvent(E_TOUCHEND, URHO3D_HANDLER(Urho2DConstraints, HandleTouchEnd3));
+    SubscribeToEvent(E_TOUCHMOVE, &Urho2DConstraints::HandleTouchMove3);
+    SubscribeToEvent(E_TOUCHEND, &Urho2DConstraints::HandleTouchEnd3);
 }
 
 void Urho2DConstraints::HandleTouchMove3(StringHash eventType, VariantMap& eventData)
