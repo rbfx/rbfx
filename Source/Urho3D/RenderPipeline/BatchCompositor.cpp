@@ -241,13 +241,13 @@ void BatchCompositor::ComposeShadowBatches()
         const unsigned numSplits = lightProcessor->GetNumSplits();
         for (unsigned splitIndex = 0; splitIndex < numSplits; ++splitIndex)
         {
-            workQueue_->AddWorkItem([=](unsigned threadIndex)
+            workQueue_->PostTask([=](unsigned threadIndex)
             {
                 BeginShadowBatchesComposition(lightIndex, lightProcessor->GetMutableSplit(splitIndex));
-            }, M_MAX_UNSIGNED);
+            }, TaskPriority::Immediate);
         }
     }
-    workQueue_->Complete(M_MAX_UNSIGNED);
+    workQueue_->CompleteImmediateForThisThread();
 
     // Finalize shadow batches
     FinalizeShadowBatchesComposition();
@@ -404,13 +404,13 @@ void BatchCompositor::FinalizeShadowBatchesComposition()
         const unsigned numSplits = lightProcessor->GetNumSplits();
         for (unsigned splitIndex = 0; splitIndex < numSplits; ++splitIndex)
         {
-            workQueue_->AddWorkItem([=](unsigned threadIndex)
+            workQueue_->PostTask([=](unsigned threadIndex)
             {
                 lightProcessor->GetMutableSplit(splitIndex)->FinalizeShadowBatches();
-            }, M_MAX_UNSIGNED);
+            }, TaskPriority::Immediate);
         }
     }
-    workQueue_->Complete(M_MAX_UNSIGNED);
+    workQueue_->CompleteImmediateForThisThread();
 }
 
 }

@@ -303,21 +303,6 @@ SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode ble
     return newMaterial;
 }
 
-void CheckDrawableVisibilityWork(const WorkItem* item, unsigned threadIndex)
-{
-    URHO3D_PROFILE("CheckDrawableVisibilityWork");
-    auto* renderer = reinterpret_cast<Renderer2D*>(item->aux_);
-    auto** start = reinterpret_cast<Drawable2D**>(item->start_);
-    auto** end = reinterpret_cast<Drawable2D**>(item->end_);
-
-    while (start != end)
-    {
-        Drawable2D* drawable = *start++;
-        if (renderer->CheckVisibility(drawable))
-            drawable->MarkInView(renderer->frame_);
-    }
-}
-
 void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventData)
 {
     using namespace BeginViewUpdate;
@@ -341,29 +326,11 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
         URHO3D_PROFILE("CheckDrawableVisibility");
 
         auto* queue = GetSubsystem<WorkQueue>();
-        int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
-        int drawablesPerItem = drawables_.size() / numWorkItems;
-
-        auto start = drawables_.begin();
-        for (int i = 0; i < numWorkItems; ++i)
+        ForEachParallel(queue, drawables_, [this](unsigned, Drawable2D* drawable)
         {
-            SharedPtr<WorkItem> item = queue->GetFreeItem();
-            item->priority_ = M_MAX_UNSIGNED;
-            item->workFunction_ = CheckDrawableVisibilityWork;
-            item->aux_ = this;
-
-            auto end = drawables_.end();
-            if (i < numWorkItems - 1 && end - start > drawablesPerItem)
-                end = start + drawablesPerItem;
-
-            item->start_ = &(*start);
-            item->end_ = &(*end);
-            queue->AddWorkItem(item);
-
-            start = end;
-        }
-
-        queue->Complete(M_MAX_UNSIGNED);
+            if (CheckVisibility(drawable))
+                drawable->MarkInView(frame_);
+        });
     }
 
     ViewBatchInfo2D& viewBatchInfo = viewBatchInfos_[camera];

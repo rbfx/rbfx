@@ -463,15 +463,15 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
 #endif
         SDL_Rect display_rect;
         SDL_GetDisplayBounds(newParams.monitor_, &display_rect);
-        reposition = newParams.fullscreen_ || (newParams.borderless_ && width >= display_rect.w && height >= display_rect.h);
+        reposition = newParams.IsFullscreen() || (newParams.IsBorderless() && width >= display_rect.w && height >= display_rect.h);
 
         const int x = reposition ? display_rect.x : position_.x_;
         const int y = reposition ? display_rect.y : position_.y_;
 
         unsigned flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
-        if (newParams.fullscreen_)
+        if (newParams.IsFullscreen())
             flags |= SDL_WINDOW_FULLSCREEN;
-        if (newParams.borderless_)
+        if (newParams.IsBorderless())
             flags |= SDL_WINDOW_BORDERLESS;
         if (newParams.resizable_)
             flags |= SDL_WINDOW_RESIZABLE;
@@ -509,7 +509,7 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
     #ifndef __EMSCRIPTEN__
                     if (!window_)
                         window_ = SDL_CreateWindowFrom(externalWindow_, SDL_WINDOW_OPENGL);
-                    newParams.fullscreen_ = false;
+                    newParams.windowMode_ = WindowMode::Windowed;
     #endif
                 }
 
@@ -2295,16 +2295,16 @@ void Graphics::OnWindowResized()
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WIDTH] = width_;
     eventData[P_HEIGHT] = height_;
-    eventData[P_FULLSCREEN] = screenParams_.fullscreen_;
+    eventData[P_FULLSCREEN] = screenParams_.IsFullscreen();
+    eventData[P_BORDERLESS] = screenParams_.IsBorderless();
     eventData[P_RESIZABLE] = screenParams_.resizable_;
-    eventData[P_BORDERLESS] = screenParams_.borderless_;
     eventData[P_HIGHDPI] = screenParams_.highDPI_;
     SendEvent(E_SCREENMODE, eventData);
 }
 
 void Graphics::OnWindowMoved()
 {
-    if (!window_ || screenParams_.fullscreen_)
+    if (!window_ || screenParams_.IsFullscreen())
         return;
 
     int newX, newY;
@@ -2437,7 +2437,7 @@ void Graphics::Release(bool clearGPUObjects, bool closeWindow)
 
     // End fullscreen mode first to counteract transition and getting stuck problems on OS X
 #if defined(__APPLE__) && !defined(IOS) && !defined(TVOS)
-    if (closeWindow && screenParams_.fullscreen_ && !externalWindow_)
+    if (closeWindow && screenParams_.IsFullscreen() && !externalWindow_)
         SDL_SetWindowFullscreen(window_, 0);
 #endif
 

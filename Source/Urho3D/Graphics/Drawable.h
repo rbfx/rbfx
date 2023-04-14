@@ -202,7 +202,6 @@ class URHO3D_API Drawable : public Component, public PipelineStateTracker
 
     friend class Octant;
     friend class Octree;
-    friend void UpdateDrawablesWork(const WorkItem* item, unsigned threadIndex);
 
 public:
     /// Construct.

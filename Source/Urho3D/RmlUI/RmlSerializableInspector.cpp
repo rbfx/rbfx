@@ -232,11 +232,7 @@ void RmlSerializableInspector::OnDataModelInitialized(Rml::DataModelConstructor&
     constructor.Bind("attributes", &attributes_);
     constructor.Bind("type", &type_);
 
-    SubscribeToEvent(GetUI(), "RmlSerializableInspector_CloseWindow",
-        [this](StringHash, VariantMap& args)
-    {
-        Remove();
-    });
+    SubscribeToEvent(GetUI(), "RmlSerializableInspector_CloseWindow", &RmlSerializableInspector::Remove);
 }
 
 void RmlSerializableInspector::Update(float timeStep)

@@ -201,7 +201,7 @@ void DrawableProcessor::OnUpdateBegin(const FrameInfo& frameInfo)
 
     // Clean temporary containers
     sceneZRangeTemp_.clear();
-    sceneZRangeTemp_.resize(WorkQueue::GetMaxThreadIndex());
+    sceneZRangeTemp_.resize(WorkQueue::GetThreadIndexCount());
     sceneZRange_ = {};
 
     isDrawableUpdated_.resize(numDrawables_);

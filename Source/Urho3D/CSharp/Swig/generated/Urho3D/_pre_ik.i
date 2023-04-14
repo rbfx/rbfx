@@ -82,3 +82,23 @@
 %csattribute(Urho3D::IKSolver, %arg(bool), IsSolveWhenPaused, IsSolveWhenPaused, SetSolveWhenPaused);
 %csattribute(Urho3D::IKSolver, %arg(bool), IsContinuousRotation, IsContinuousRotation, SetContinuousRotation);
 %csattribute(Urho3D::IKTargetExtractor, %arg(bool), IsExecutedOnOutput, IsExecutedOnOutput);
+%pragma(csharp) moduleimports=%{
+public static partial class E
+{
+    public class IKPreSolveEvent {
+        private StringHash _event = new StringHash("IKPreSolve");
+        public StringHash Node = new StringHash("Node");
+        public StringHash IKSolver = new StringHash("IKSolver");
+        public IKPreSolveEvent() { }
+        public static implicit operator StringHash(IKPreSolveEvent e) { return e._event; }
+    }
+    public static IKPreSolveEvent IKPreSolve = new IKPreSolveEvent();
+    public class IKPostSolveEvent {
+        private StringHash _event = new StringHash("IKPostSolve");
+        public StringHash Node = new StringHash("Node");
+        public StringHash IKSolver = new StringHash("IKSolver");
+        public IKPostSolveEvent() { }
+        public static implicit operator StringHash(IKPostSolveEvent e) { return e._event; }
+    }
+    public static IKPostSolveEvent IKPostSolve = new IKPostSolveEvent();
+} %}

@@ -225,17 +225,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     engineParameters_->DefineVariables(parameters);
     auto* fileSystem = GetSubsystem<FileSystem>();
 
-    // Start logging
-    auto* log = GetSubsystem<Log>();
-    if (log)
-    {
-        if (HasParameter(EP_LOG_LEVEL))
-            log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
-        log->SetQuiet(GetParameter(EP_LOG_QUIET).GetBool());
-        log->Open(GetParameter(EP_LOG_NAME).GetString());
-    }
-
-    // Initialize app preferences directory
     appPreferencesDir_ = GetParameter(EP_APPLICATION_PREFERENCES_DIR).GetString();
     if (appPreferencesDir_.empty())
     {
@@ -243,6 +232,20 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         const ea::string& applicationName = GetParameter(EP_APPLICATION_NAME).GetString();
         appPreferencesDir_ = fileSystem->GetAppPreferencesDir(organizationName, applicationName);
     }
+
+    // Start logging
+    auto* log = GetSubsystem<Log>();
+    if (log)
+    {
+        if (HasParameter(EP_LOG_LEVEL))
+            log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
+        log->SetQuiet(GetParameter(EP_LOG_QUIET).GetBool());
+        const ea::string logFileName = GetLogFileName(GetParameter(EP_LOG_NAME).GetString());
+        if (!logFileName.empty())
+            log->Open(logFileName);
+    }
+
+    // Initialize app preferences directory
     if (!appPreferencesDir_.empty())
         fileSystem->CreateDir(appPreferencesDir_);
 
@@ -296,14 +299,11 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     // Set amount of worker threads according to the available physical CPU cores. Using also hyperthreaded cores results in
     // unpredictable extra synchronization overhead. Also reserve one core for the main thread
 #ifdef URHO3D_THREADING
-    unsigned numThreads = GetParameter(EP_WORKER_THREADS).GetBool() ? GetNumPhysicalCPUs() - 1 : 0;
-    if (numThreads)
-    {
-        GetSubsystem<WorkQueue>()->CreateThreads(numThreads);
-
-        URHO3D_LOGINFOF("Created %u worker thread%s", numThreads, numThreads > 1 ? "s" : "");
-    }
+    const unsigned numThreads = GetParameter(EP_WORKER_THREADS).GetBool() ? GetNumPhysicalCPUs() - 1 : 0;
+#else
+    const unsigned numThreads = 0;
 #endif
+    GetSubsystem<WorkQueue>()->Initialize(numThreads);
 
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -321,14 +321,16 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
         graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
 
-        SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& eventData)
+        SubscribeToEvent(E_SCREENMODE, [this](VariantMap& eventData)
         {
             using namespace ScreenMode;
 
             const bool isBorderless = eventData[P_BORDERLESS].GetBool();
 
-            SetParameter(EP_WINDOW_WIDTH, isBorderless ? 0 : eventData[P_WIDTH].GetInt());
-            SetParameter(EP_WINDOW_HEIGHT, isBorderless ? 0 : eventData[P_HEIGHT].GetInt());
+            // TODO: Uncomment when we have consistent handling of pixels vs points
+            // TODO: Also see PopulateDefaultParameters()
+            //SetParameter(EP_WINDOW_WIDTH, isBorderless ? 0 : eventData[P_WIDTH].GetInt());
+            //SetParameter(EP_WINDOW_HEIGHT, isBorderless ? 0 : eventData[P_HEIGHT].GetInt());
             SetParameter(EP_FULL_SCREEN, eventData[P_FULLSCREEN].GetBool());
             SetParameter(EP_BORDERLESS, isBorderless);
             SetParameter(EP_MONITOR, eventData[P_MONITOR].GetInt());
@@ -1009,7 +1011,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_HEADLESS, false);
     engineParameters_->DefineVariable(EP_HIGH_DPI, true);
     engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE);
-    engineParameters_->DefineVariable(EP_LOG_NAME, "Urho3D.log");
+    engineParameters_->DefineVariable(EP_LOG_NAME, "conf://Urho3D.log");
     engineParameters_->DefineVariable(EP_LOG_QUIET, false);
     engineParameters_->DefineVariable(EP_LOW_QUALITY_SHADOWS, false).Overridable();
     engineParameters_->DefineVariable(EP_MAIN_PLUGIN, EMPTY_STRING);
@@ -1040,14 +1042,14 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_TRIPLE_BUFFER, false);
     engineParameters_->DefineVariable(EP_VALIDATE_SHADERS, false);
     engineParameters_->DefineVariable(EP_VSYNC, false).Overridable();
-    engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0).Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WINDOW_ICON, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_WINDOW_MAXIMIZE, true).Overridable();
     engineParameters_->DefineVariable(EP_WINDOW_POSITION_X, 0);
     engineParameters_->DefineVariable(EP_WINDOW_POSITION_Y, 0);
     engineParameters_->DefineVariable(EP_WINDOW_RESIZABLE, false);
     engineParameters_->DefineVariable(EP_WINDOW_TITLE, "Urho3D");
-    engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0).Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
 }
 
@@ -1082,6 +1084,32 @@ void Engine::DoExit()
     // TODO: Revisit this place
     // emscripten_force_exit(EXIT_SUCCESS);    // Some how this is required to signal emrun to stop
 #endif
+}
+
+ea::string Engine::GetLogFileName(const ea::string& uri) const
+{
+    // We cannot really use VirtualFileSystem here, as it is not initialized yet.
+    // Emulate file:// and conf:// schemes in the same way.
+    // Empty scheme means relative to executable directory instead of resource directory.
+    const auto fileIdentifier = FileIdentifier::FromUri(uri);
+    if (fileIdentifier.scheme_ == "file")
+    {
+        return fileIdentifier.fileName_;
+    }
+    else if (fileIdentifier.scheme_ == "conf")
+    {
+#ifndef __EMSCRIPTEN__
+        return appPreferencesDir_ + fileIdentifier.fileName_;
+#endif
+    }
+    else if (fileIdentifier.scheme_ == "")
+    {
+        auto fileSystem = GetSubsystem<FileSystem>();
+        return fileSystem->GetProgramDir() + fileIdentifier.fileName_;
+    }
+
+    // Nothing we can do about it
+    return "";
 }
 
 }

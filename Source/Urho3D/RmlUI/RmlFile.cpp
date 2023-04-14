@@ -20,16 +20,14 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../RmlUI/RmlFile.h"
+#include "Urho3D/RmlUI/RmlFile.h"
 
-#include "../Core/Context.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -45,11 +43,11 @@ RmlFile::RmlFile(Urho3D::Context* context)
 
 Rml::FileHandle RmlFile::Open(const Rml::String& path)
 {
-    ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
-    AbstractFilePtr file = cache->GetFile(path);
-    if (file != nullptr)
+    auto cache = context_->GetSubsystem<ResourceCache>();
+
+    if (AbstractFilePtr file = cache->GetFile(path))
     {
-        loadedFiles_.insert(GetAbsolutePath(cache->GetResourceFileName(path)));
+        loadedResources_.insert(file->GetName());
         return reinterpret_cast<Rml::FileHandle>(file.Detach());
     }
     return 0;
@@ -85,15 +83,9 @@ size_t RmlFile::Length(Rml::FileHandle file)
     return reinterpret_cast<AbstractFile*>(file)->GetSize();
 }
 
-bool RmlFile::IsFileLoaded(const ea::string& path)
+bool RmlFile::IsResourceLoaded(const ea::string& path)
 {
-    ea::string fullPath;
-    FileSystem* fs = context_->GetSubsystem<FileSystem>();
-    if (IsAbsolutePath(path))
-        fullPath = GetAbsolutePath(path);
-    else
-        fullPath = GetAbsolutePath(fs->GetCurrentDir() + path);
-    return loadedFiles_.contains(fullPath);
+    return loadedResources_.contains(path);
 }
 
 }   // namespace Detail

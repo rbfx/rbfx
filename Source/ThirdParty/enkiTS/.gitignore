@@ -1,0 +1,4 @@
+.travis.yml
+.github/
+example/
+src/*_c.*

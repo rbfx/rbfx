@@ -102,7 +102,7 @@ void InputLogger::Start(bool isMain)
     input->SetMouseMode(MM_FREE);
     //input->SetMouseMode(MM_WRAP);
 
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { Update(); });
+    SubscribeToEvent(E_UPDATE, &InputLogger::Update);
 
     SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(InputLogger, OnInputEvent));
     SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(InputLogger, OnInputEvent));

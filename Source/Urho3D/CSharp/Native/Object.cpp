@@ -23,43 +23,28 @@
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Script/Script.h>
 
+#include <EASTL/shared_ptr.h>
+
 namespace Urho3D
 {
 
-typedef void(SWIGSTDCALL*EventHandlerCallback)(void*, unsigned, VariantMap*);
+typedef void(SWIGSTDCALL* EventHandlerCallback)(void*, unsigned, VariantMap*);
 
-class ManagedEventHandler : public EventHandler
+auto WrapCSharpHandler(EventHandlerCallback callback, void* callbackHandle)
 {
-public:
-    ManagedEventHandler(Object* receiver, EventHandlerCallback callback, void* callbackHandle)
-        : EventHandler(receiver, nullptr)
-        , callback_(callback)
-        , callbackHandle_(callbackHandle)
+    // callbackHandle is a handle to Action<> which references receiver object. We have to ensure object is alive as
+    // long as engine will be sending events to it. On the other hand pinning receiver object is not required as it's
+    // lifetime is managed by user or engine. If such object is deallocated it will simply stop sending events.
+    ea::shared_ptr<void> callbackHandlePtr(callbackHandle,
+        [](void* handle)
     {
-    }
+        if (handle)
+            Script::GetRuntimeApi()->FreeGCHandle(handle);
+    });
 
-    ~ManagedEventHandler() override
-    {
-        Script::GetRuntimeApi()->FreeGCHandle(callbackHandle_);
-        callbackHandle_ = nullptr;
-    }
-
-    void Invoke(VariantMap& eventData) override
-    {
-        callback_(callbackHandle_, eventType_.Value(), &eventData);
-    }
-
-    EventHandler* Clone() const override
-    {
-        return new ManagedEventHandler(receiver_, callback_, Script::GetRuntimeApi()->CloneGCHandle(callbackHandle_));
-    }
-
-public:
-
-protected:
-    EventHandlerCallback callback_ = nullptr;
-    void* callbackHandle_ = nullptr;
-};
+    return [=](Object* receiver, StringHash eventType, VariantMap& eventData)
+    { callback(callbackHandlePtr.get(), eventType.Value(), &eventData); };
+}
 
 extern "C"
 {
@@ -67,14 +52,11 @@ extern "C"
 URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_Object_SubscribeToEvent(Object* receiver, Object* sender, unsigned eventType,
     EventHandlerCallback callback, void* callbackHandle)
 {
-    // callbackHandle is a handle to Action<> which references receiver object. We have to ensure object is alive as long as
-    // engine will be sending events to it. On the other hand pinning receiver object is not required as it's lifetime
-    // is managed by user or engine. If such object is deallocated it will simply stop sending events.
-    StringHash event(eventType);
+    const auto eventHandler = WrapCSharpHandler(callback, callbackHandle);
     if (sender == nullptr)
-        receiver->SubscribeToEvent(event, new ManagedEventHandler(receiver, callback, callbackHandle));
+        receiver->SubscribeToEvent(StringHash{eventType}, eventHandler);
     else
-        receiver->SubscribeToEvent(sender, event, new ManagedEventHandler(receiver, callback, callbackHandle));
+        receiver->SubscribeToEvent(sender, StringHash{eventType}, eventHandler);
 }
 
 }

@@ -54,6 +54,8 @@ void PrefabReference::RegisterObject(Context* context)
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Prefab", GetPrefabAttr, SetPrefabAttr, ResourceRef, ResourceRef(PrefabResource::GetTypeStatic()), AM_DEFAULT)
         .SetScopeHint(AttributeScopeHint::Node);
+    URHO3D_ATTRIBUTE_EX("Path", ea::string, path_, MarkPrefabDirty, EMPTY_STRING, AM_DEFAULT)
+        .SetScopeHint(AttributeScopeHint::Node);
 }
 
 void PrefabReference::ApplyAttributes()
@@ -68,7 +70,7 @@ void PrefabReference::ApplyAttributes()
 const NodePrefab& PrefabReference::GetNodePrefab() const
 {
     if (node_ && prefab_)
-        return prefab_->GetNodePrefab();
+        return prefab_->GetNodePrefabSlice(path_);
     return NodePrefab::Empty;
 }
 
@@ -260,9 +262,9 @@ void PrefabReference::CreateInstance(bool tryInplace)
     InstantiatePrefab(nodePrefab);
 }
 
-void PrefabReference::SetPrefab(PrefabResource* prefab, bool createInstance)
+void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bool createInstance)
 {
-    if (prefab == prefab_)
+    if (prefab == prefab_ && path == path_)
     {
         return;
     }
@@ -273,10 +275,11 @@ void PrefabReference::SetPrefab(PrefabResource* prefab, bool createInstance)
     }
 
     prefab_ = prefab;
+    path_ = path;
 
     if (prefab_)
     {
-        SubscribeToEvent(prefab_, E_RELOADFINISHED, [this](StringHash, VariantMap&) { CreateInstance(); });
+        SubscribeToEvent(prefab_, E_RELOADFINISHED, [this] { CreateInstance(); });
         prefabRef_ = GetResourceRef(prefab_, PrefabResource::GetTypeStatic());
     }
     else
@@ -288,21 +291,26 @@ void PrefabReference::SetPrefab(PrefabResource* prefab, bool createInstance)
         CreateInstance();
 }
 
-/// Set reference to prefab resource.
 void PrefabReference::SetPrefabAttr(ResourceRef prefab)
 {
     if (prefab.name_.empty())
     {
-        SetPrefab(nullptr, false);
+        SetPrefab(nullptr, path_, false);
     }
     else
     {
         auto cache = context_->GetSubsystem<ResourceCache>();
-        SetPrefab(cache->GetResource<PrefabResource>(prefab.name_), false);
+        SetPrefab(cache->GetResource<PrefabResource>(prefab.name_), path_, false);
     }
 
     prefabRef_ = prefab;
-    prefabDirty_ = true;
+    MarkPrefabDirty();
+}
+
+void PrefabReference::SetPath(ea::string_view path)
+{
+    if (path_ != path)
+        SetPrefab(prefab_, path, true);
 }
 
 void PrefabReference::Inline(PrefabInlineFlags flags)
@@ -341,6 +349,12 @@ void PrefabReference::Inline(PrefabInlineFlags flags)
 
 void PrefabReference::CommitChanges()
 {
+    if (!path_.empty())
+    {
+        URHO3D_LOGERROR("Cannot commit changes to a prefab slice");
+        return;
+    }
+
     if (!node_ || !prefab_)
         return;
 

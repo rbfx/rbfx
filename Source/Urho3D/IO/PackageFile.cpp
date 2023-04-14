@@ -221,6 +221,7 @@ AbstractFilePtr PackageFile::OpenFile(const FileIdentifier& fileName, FileMode m
         return {};
 
     auto file = MakeShared<File>(context_, this, fileName.fileName_);
+    file->SetName(fileName.ToUri());
     return file;
 }
 
