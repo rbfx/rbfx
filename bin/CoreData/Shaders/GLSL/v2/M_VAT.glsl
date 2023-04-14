@@ -1,6 +1,16 @@
 #define URHO3D_PIXEL_NEED_TEXCOORD
 #define URHO3D_DISABLE_NORMAL_SAMPLING
 #define URHO3D_DISABLE_SPECULAR_SAMPLING
+#define URHO3D_CUSTOM_MATERIAL_UNIFORMS
+
+#include "_Config.glsl"
+#include "_Uniforms.glsl"
+
+UNIFORM_BUFFER_BEGIN(4, Material)
+    DEFAULT_MATERIAL_UNIFORMS
+    UNIFORM(float cTextureHeight)
+    UNIFORM(float cRowsPerFrame)
+UNIFORM_BUFFER_END(4, Material)
 
 #include "_Material.glsl"
 
@@ -23,12 +33,12 @@ vec3 SampleVec3(sampler2D sampler, vec2 uv)
     //#else
         vec3 high = texture2D(sampler, uv).xyz;
         vec3 low = texture2D(sampler, uv + vec2(0.5, 0)).xyz;
-        return high * (65280.0/65535.0) + low * (255.0/65535.0);
+        vec3 result = high * (65280.0/65535.0) + low * (255.0/65535.0);
     //#endif
 #else
-    return texture2D(sampler, uv).xyz;
+    vec3 result = texture2D(sampler, uv).xyz;
 #endif
-
+    return result - 0.5;
 }
 
 VertexTransform GetCustomVertexTransform()
@@ -36,13 +46,16 @@ VertexTransform GetCustomVertexTransform()
     mat4 modelMatrix = GetModelMatrix();
 
     VertexTransform result;
-    vec2 uv = iTexCoord1 + vec2(0, fract(cElapsedTime*0.25));
+    float offset = fract(cElapsedTime*0.2);
+    float frameScale = cTextureHeight/cRowsPerFrame;
+    offset = floor(offset*frameScale)/frameScale;
+    vec2 uv = iTexCoord1 + vec2(0, offset);
     vec3 pos = SampleVec3(sEmissiveMap, uv).xyz;
     result.position = vec4(pos, 1) * modelMatrix;
 
     #ifdef URHO3D_VERTEX_NEED_NORMAL
         mediump mat3 normalMatrix = GetNormalMatrix(modelMatrix);
-        vec3 norm = normalize(SampleVec3(sNormalMap, uv).xyz * 2.0 - 1.0);
+        vec3 norm = normalize(SampleVec3(sNormalMap, uv).xyz);
         result.normal = normalize(norm * normalMatrix);
 
         ApplyShadowNormalOffset(result.position, result.normal);

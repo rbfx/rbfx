@@ -275,10 +275,8 @@ unsigned char* EncodeRGBA16(unsigned char* data, unsigned offset, const Vector3&
     assert(Urho3D::Abs(v.x_ - Decode16bit(R)) < 1e-4f);
     assert(Urho3D::Abs(v.y_ - Decode16bit(G)) < 1e-4f);
     assert(Urho3D::Abs(v.z_ - Decode16bit(B)) < 1e-4f);
-    Color firstColor{R.x_, G.x_, B.x_, 1.0f};
-    *reinterpret_cast<unsigned*>(data) = firstColor.ToUInt();
-    Color secondColor{R.y_, G.y_, B.y_, 1.0f};
-    *reinterpret_cast<unsigned*>(data + offset) = secondColor.ToUInt();
+    EncodeRGBA8(data, Vector3(R.x_, G.x_, B.x_));
+    EncodeRGBA8(data + offset, Vector3(R.y_, G.y_, B.y_));
     return data + 4;
 }
 
