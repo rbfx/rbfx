@@ -93,7 +93,7 @@ RmlRenderer::RmlRenderer(Context* context)
     : Object(context)
 {
     InitializeGraphics();
-    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap&) { InitializeGraphics(); });
+    SubscribeToEvent(E_SCREENMODE, &RmlRenderer::InitializeGraphics);
 }
 
 void RmlRenderer::BeginRendering()

@@ -22,6 +22,7 @@
 
 #include "CommonUtils.h"
 
+#include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/Input/InputEvents.h"
 #include "Urho3D/Input/Input.h"
 
@@ -41,7 +42,7 @@ namespace Tests
 namespace
 {
 
-void PrintError(StringHash hash, VariantMap& args)
+void PrintError(VariantMap& args)
 {
     if (args[LogMessage::P_LEVEL].GetInt() == LOG_ERROR)
     {
@@ -77,9 +78,13 @@ SharedPtr<Context> CreateCompleteContext()
 {
     auto context = MakeShared<Context>();
     auto engine = new Engine(context);
+    auto fs = context->GetSubsystem<FileSystem>();
+    auto exeDir = GetParentPath(fs->GetProgramFileName());
     StringVariantMap parameters;
     parameters[EP_HEADLESS] = true;
     parameters[EP_LOG_QUIET] = true;
+    parameters[EP_RESOURCE_PATHS] = "CoreData;Data";
+    parameters[EP_RESOURCE_PREFIX_PATHS] = Format("{};{}", exeDir, GetParentPath(exeDir));
     const bool engineInitialized = engine->Initialize(parameters);
 
     engine->SubscribeToEvent(E_LOGMESSAGE, PrintError);
@@ -180,7 +185,7 @@ FrameEventTracker::FrameEventTracker(Context* context, StringHash endFrameEventT
     : Object(context)
 {
     SubscribeToEvent(endFrameEventType,
-        [&](StringHash, VariantMap&)
+        [&]
     {
         if (!recordEvents_)
             recordEvents_ = true;
@@ -243,7 +248,7 @@ AttributeTracker::AttributeTracker(Context* context, StringHash endFrameEventTyp
     : Object(context)
 {
     SubscribeToEvent(endFrameEventType,
-        [&](StringHash, VariantMap&)
+        [&]
     {
         for (const auto& [serializable, attributeName] : trackers_)
         {

@@ -192,15 +192,14 @@ void ReplicationManager::OnSceneSet(Scene* scene)
     if (scene)
     {
         SubscribeToEvent(scene, E_SCENEUPDATE,
-            [this](StringHash, VariantMap& eventData)
+            [this](VariantMap& eventData)
         {
             using namespace SceneUpdate;
             const float timeStep = eventData[P_TIMESTEP].GetFloat();
             OnSceneUpdate(timeStep);
         });
 
-        SubscribeToEvent(
-            scene, E_SCENEPOSTUPDATE, [this](StringHash, VariantMap& eventData) { UpdateNetworkObjects(); });
+        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &ReplicationManager::UpdateNetworkObjects);
     }
     else
     {

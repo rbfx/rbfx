@@ -347,11 +347,11 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
 
     if (!window_)
     {
-        if (!OpenWindow(width, height, newParams.resizable_, newParams.borderless_))
+        if (!OpenWindow(width, height, newParams.resizable_, newParams.IsBorderless()))
             return false;
     }
 
-    AdjustWindow(width, height, newParams.fullscreen_, newParams.borderless_, newParams.monitor_);
+    AdjustWindow(width, height, newParams.windowMode_, newParams.monitor_);
 
     if (maximize)
     {
@@ -514,7 +514,7 @@ bool Graphics::BeginFrame()
     {
         // To prevent a loop of endless device loss and flicker, do not attempt to render when in fullscreen
         // and the window is minimized
-        if (screenParams_.fullscreen_ && (SDL_GetWindowFlags(window_) & SDL_WINDOW_MINIMIZED))
+        if (screenParams_.IsFullscreen() && (SDL_GetWindowFlags(window_) & SDL_WINDOW_MINIMIZED))
             return false;
     }
 
@@ -1742,16 +1742,16 @@ void Graphics::OnWindowResized()
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WIDTH] = width_;
     eventData[P_HEIGHT] = height_;
-    eventData[P_FULLSCREEN] = screenParams_.fullscreen_;
+    eventData[P_FULLSCREEN] = screenParams_.IsFullscreen();
+    eventData[P_BORDERLESS] = screenParams_.IsBorderless();
     eventData[P_RESIZABLE] = screenParams_.resizable_;
-    eventData[P_BORDERLESS] = screenParams_.borderless_;
     eventData[P_HIGHDPI] = screenParams_.highDPI_;
     SendEvent(E_SCREENMODE, eventData);
 }
 
 void Graphics::OnWindowMoved()
 {
-    if (!impl_->device_ || !window_ || screenParams_.fullscreen_)
+    if (!impl_->device_ || !window_ || screenParams_.IsFullscreen())
         return;
 
     int newX, newY;
@@ -1974,7 +1974,7 @@ bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless
     return true;
 }
 
-void Graphics::AdjustWindow(int& newWidth, int& newHeight, bool& newFullscreen, bool& newBorderless, int& monitor)
+void Graphics::AdjustWindow(int& newWidth, int& newHeight, WindowMode& newWindowMode, int& monitor)
 {
     if (!externalWindow_)
     {
@@ -1992,7 +1992,9 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, bool& newFullscreen, 
             SDL_Rect display_rect;
             SDL_GetDisplayBounds(monitor, &display_rect);
 
-            reposition = newFullscreen || (newBorderless && newWidth >= display_rect.w && newHeight >= display_rect.h);
+            reposition = newWindowMode == WindowMode::Fullscreen
+                || (newWindowMode == WindowMode::Borderless && newWidth >= display_rect.w
+                    && newHeight >= display_rect.h);
             if (reposition)
             {
                 // Reposition the window on the specified monitor if it's supposed to cover the entire monitor
@@ -2000,7 +2002,7 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, bool& newFullscreen, 
             }
 
             // Postpone window resize if exiting fullscreen to avoid redundant resolution change
-            if (!newFullscreen && screenParams_.fullscreen_)
+            if (newWindowMode != WindowMode::Fullscreen && screenParams_.IsFullscreen())
                 resizePostponed = true;
             else
                 SDL_SetWindowSize(window_, newWidth, newHeight);
@@ -2009,10 +2011,10 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, bool& newFullscreen, 
         // Turn off window fullscreen mode so it gets repositioned to the correct monitor
         SDL_SetWindowFullscreen(window_, SDL_FALSE);
         // Hack fix: on SDL 2.0.4 a fullscreen->windowed transition results in a maximized window when the D3D device is reset, so hide before
-        if (!newFullscreen) SDL_HideWindow(window_);
-        SDL_SetWindowFullscreen(window_, newFullscreen ? SDL_WINDOW_FULLSCREEN : 0);
-        SDL_SetWindowBordered(window_, newBorderless ? SDL_FALSE : SDL_TRUE);
-        if (!newFullscreen) SDL_ShowWindow(window_);
+        if (newWindowMode != WindowMode::Fullscreen) SDL_HideWindow(window_);
+        SDL_SetWindowFullscreen(window_, newWindowMode == WindowMode::Fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+        SDL_SetWindowBordered(window_, newWindowMode == WindowMode::Borderless ? SDL_FALSE : SDL_TRUE);
+        if (newWindowMode != WindowMode::Fullscreen) SDL_ShowWindow(window_);
 
         // Resize now if was postponed
         if (resizePostponed)
@@ -2023,12 +2025,22 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, bool& newFullscreen, 
             SDL_SetWindowPosition(window_, oldPosition.x_, oldPosition.y_);
         else
             position_ = oldPosition;
+
+#ifdef UWP
+        // Window size is off on UWP if it was created with the same size as on previous run.
+        // Tweak it a bit to force the correct size.
+        if (newWindowMode == WindowMode::Windowed)
+        {
+            SDL_SetWindowSize(window_, newWidth - 1, newHeight + 1);
+            SDL_SetWindowSize(window_, newWidth, newHeight);
+        }
+#endif
     }
     else
     {
         // If external window, must ask its dimensions instead of trying to set them
         SDL_GetWindowSize(window_, &newWidth, &newHeight);
-        newFullscreen = false;
+        newWindowMode = WindowMode::Windowed;
     }
 }
 

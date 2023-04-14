@@ -100,7 +100,7 @@ void PredictedKinematicController::InitializeStandalone()
         return;
 
     SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP,
-        [this](StringHash, VariantMap& eventData)
+        [this]
     {
         UpdateEffectiveVelocity(physicsStepTime_);
         ApplyActionsOnClient();
@@ -119,7 +119,7 @@ void PredictedKinematicController::InitializeOnServer()
     server_.input_.Resize(maxInputFrames_);
 
     SubscribeToEvent(E_BEGINSERVERNETWORKFRAME,
-        [this](StringHash, VariantMap& eventData)
+        [this](VariantMap& eventData)
     {
         using namespace BeginServerNetworkFrame;
         const auto frame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());
@@ -140,7 +140,7 @@ void PredictedKinematicController::InitializeFromSnapshot(NetworkFrame frame, De
         client_.input_.set_capacity(maxInputFrames_);
 
         SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP,
-            [this](StringHash, VariantMap& eventData)
+            [this](VariantMap& eventData)
         {
             const Variant& networkFrame = eventData[PhysicsPreStep::P_NETWORKFRAME];
             if (!networkFrame.IsEmpty())

@@ -43,6 +43,10 @@ add_subdirectory(spdlog)
 add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
 
+if (NOT WEB)
+    add_subdirectory(enkiTS)
+endif ()
+
 if (NOT MINI_URHO)
     add_subdirectory(tinygltf)
     if (URHO3D_TESTING)
@@ -84,6 +88,7 @@ if (NOT MINI_URHO)
     endif ()
 
     if (URHO3D_SPIRV AND URHO3D_D3D11)
+        set (ENABLE_PCH OFF CACHE BOOL "" FORCE)
         set (ENABLE_HLSL OFF CACHE BOOL "" FORCE)
         set (ENABLE_CTEST OFF CACHE BOOL "" FORCE)
         set (ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)

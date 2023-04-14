@@ -53,8 +53,8 @@ private:
     SharedPtr<UIElement> uielement_;
 
     void CreateText();
-    SharedPtr<CheckBox> CreateCheckbox(const ea::string& label, EventHandler* handler);
-    SharedPtr<DropDownList> CreateMenu(const ea::string& label, const char** items, EventHandler* handler);
+    template <class T> SharedPtr<CheckBox> CreateCheckbox(const ea::string& label, T handler);
+    template <class T> SharedPtr<DropDownList> CreateMenu(const ea::string& label, const char** items, T handler);
 
     void HandleWhiteBackground(StringHash eventType, VariantMap& eventData);
     void HandleSRGB(StringHash eventType, VariantMap& eventData);

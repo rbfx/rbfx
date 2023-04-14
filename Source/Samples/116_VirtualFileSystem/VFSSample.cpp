@@ -56,7 +56,7 @@ void VFSSample::Start()
     CreateText();
 
     // Subscribe to Update event for rendering UI
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { RenderUi(); });
+    SubscribeToEvent(E_UPDATE, &VFSSample::RenderUi);
 }
 
 void VFSSample::CreateText()

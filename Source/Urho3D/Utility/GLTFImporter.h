@@ -51,6 +51,7 @@ struct GLTFImporterSettings
     bool repairLooping_{false};
     ea::string skipTag_;
     bool keepNamesOnMerge_{false};
+    bool addEmptyNodesToSkeleton_{false};
 
     float offsetMatrixError_{0.00002f};
     float keyFrameTimeError_{M_EPSILON};

@@ -142,6 +142,9 @@ public:
     const ea::vector<NodePrefab>& GetChildren() const { return children_; }
     ea::vector<NodePrefab>& GetMutableChildren() { return children_; }
 
+    const ea::string& GetNodeName() const;
+    const NodePrefab& FindChild(ea::string_view path) const;
+
     void Clear();
     bool IsEmpty() const;
 

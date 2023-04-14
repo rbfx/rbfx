@@ -37,10 +37,7 @@ ToolManager::ToolManager(Context* context)
 {
     ForceScan();
 
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&)
-    {
-        Update();
-    });
+    SubscribeToEvent(E_UPDATE, &ToolManager::Update);
 }
 
 ToolManager::~ToolManager()

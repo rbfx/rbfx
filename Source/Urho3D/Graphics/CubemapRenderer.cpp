@@ -99,10 +99,7 @@ void CubemapRenderer::ConnectViewportsToTexture(TextureCube* texture)
     }
 
     UnsubscribeFromEvent(E_ENDVIEWRENDER);
-    SubscribeToEvent(texture, E_ENDVIEWRENDER, [&](StringHash, VariantMap&)
-    {
-        ProcessFaceRendered();
-    });
+    SubscribeToEvent(texture, E_ENDVIEWRENDER, &CubemapRenderer::ProcessFaceRendered);
 }
 
 void CubemapRenderer::DisconnectViewportsFromTexture(TextureCube* texture) const

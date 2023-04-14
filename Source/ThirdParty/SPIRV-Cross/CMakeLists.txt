@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 2.8)
+#cmake_minimum_required(VERSION 2.8)    # rbfx: kill a warning
 set(CMAKE_CXX_STANDARD 11)
 project(SPIRV-Cross LANGUAGES CXX C)
 enable_testing()

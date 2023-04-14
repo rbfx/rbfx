@@ -106,7 +106,8 @@ public:
     bool Save(PrefabWriter& writer) const;
 
     /// Instantiate scene content from prefab. Return root node if successful.
-    Node* InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation);
+    Node* InstantiatePrefab(const NodePrefab& prefab, const Vector3& position = Vector3::ZERO,
+        const Quaternion& rotation = Quaternion::IDENTITY);
     /// Generate prefab from scene content.
     void GeneratePrefab(NodePrefab& prefab) const;
     NodePrefab GeneratePrefab() const;
@@ -197,7 +198,7 @@ public:
     /// Set position, rotation, and scale in parent space as an atomic operation.
     void SetTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale);
     /// Set node transformation in parent space as an atomic operation.
-    void SetTransform(const Matrix3x4& matrix);
+    void SetTransformMatrix(const Matrix3x4& matrix);
     /// Set node transformation in parent space as an atomic operation.
     void SetTransform(const Transform& transform);
 
@@ -472,12 +473,12 @@ public:
     /// @property
     Vector2 GetScale2D() const { return Vector2(scale_.x_, scale_.y_); }
 
-    /// Return parent space transform matrix.
+    /// Return local-to-parent space transform matrix.
     /// @property
-    Matrix3x4 GetTransform() const { return Matrix3x4(position_, rotation_, scale_); }
+    Matrix3x4 GetTransformMatrix() const { return Matrix3x4(position_, rotation_, scale_); }
 
-    /// Return parent space transform tuple.
-    Transform GetDecomposedTransform() const { return Transform{position_, rotation_, scale_}; }
+    /// Return local-to-parent space transform components.
+    Transform GetTransform() const { return Transform{position_, rotation_, scale_}; }
 
     /// Return position in world space.
     /// @property
@@ -724,7 +725,7 @@ public:
     void SetTransformSilent(const Vector3& position, const Quaternion& rotation, const Vector3& scale);
 
     /// Set local transform silently without marking the node & child nodes dirty. Used by animation code.
-    void SetTransformSilent(const Matrix3x4& matrix);
+    void SetTransformMatrixSilent(const Matrix3x4& matrix);
 
 private:
     /// Set enabled/disabled state with optional recursion. Optionally affect the remembered enable state.

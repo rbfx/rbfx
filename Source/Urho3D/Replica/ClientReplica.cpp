@@ -134,14 +134,14 @@ ClientReplica::ClientReplica(
 {
     URHO3D_ASSERT(objectRegistry_);
 
-    SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
+    SubscribeToEvent(E_INPUTREADY, [this](VariantMap& eventData)
     {
         using namespace InputReady;
         const float timeStep = eventData[P_TIMESTEP].GetFloat();
         OnInputReady(timeStep);
     });
 
-    SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap& eventData)
+    SubscribeToEvent(network_, E_NETWORKUPDATE, [this](VariantMap& eventData)
     {
         using namespace NetworkUpdate;
         const bool isServer = eventData[P_ISSERVER].GetBool();

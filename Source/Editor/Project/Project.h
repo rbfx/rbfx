@@ -38,8 +38,10 @@
 #include <Urho3D/SystemUI/DragDropPayload.h>
 
 #include <EASTL/functional.h>
+#include <EASTL/optional.h>
 #include <EASTL/set.h>
 
+#include <chrono>
 #include <future>
 #include <regex>
 
@@ -254,6 +256,7 @@ private:
     void ProcessCommand(const ea::string& command, bool exitOnCompletion);
     void ProcessPendingRemoteCommands();
     void RenderAssetsToolbar();
+    void RenderPluginReloadToolbar();
 
     /// Project properties
     /// @{
@@ -325,6 +328,7 @@ private:
     bool areGlobalHotkeysEnabled_{true};
     bool isHighlightEnabled_{};
     ea::string currentLaunchConfiguration_;
+    ea::optional<std::chrono::steady_clock::time_point> pluginReloadEndTime_;
     /// @}
 };
 

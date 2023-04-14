@@ -29,6 +29,7 @@
 #include "../Core/StringHashRegister.h"
 #include "../Core/SubsystemCache.h"
 #include "../Core/TypeInfo.h"
+#include "../Core/TypeTrait.h"
 #include "../Core/Variant.h"
 
 #include <EASTL/functional.h>
@@ -93,19 +94,13 @@ public:
     template<typename T> const T* Cast() const { return IsInstanceOf<T>() ? static_cast<const T*>(this) : nullptr; }
 
     /// Subscribe to an event that can be sent by any sender.
-    void SubscribeToEvent(StringHash eventType, EventHandler* handler);
+    void SubscribeToEventManual(StringHash eventType, EventHandler* handler);
     /// Subscribe to a specific sender's event.
-    void SubscribeToEvent(Object* sender, StringHash eventType, EventHandler* handler);
+    void SubscribeToEventManual(Object* sender, StringHash eventType, EventHandler* handler);
     /// Subscribe to an event that can be sent by any sender.
-    void SubscribeToEvent(StringHash eventType, const ea::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
+    template <class T> void SubscribeToEvent(StringHash eventType, T handler);
     /// Subscribe to a specific sender's event.
-    void SubscribeToEvent(Object* sender, StringHash eventType, const ea::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
-    /// Subscribe to an event that can be sent by any sender.
-    template<typename T>
-    void SubscribeToEvent(StringHash eventType, void(T::*handler)(StringHash, VariantMap&));
-    /// Subscribe to a specific sender's event.
-    template<typename T>
-    void SubscribeToEvent(Object* sender, StringHash eventType, void(T::*handler)(StringHash, VariantMap&));
+    template <class T> void SubscribeToEvent(Object* sender, StringHash eventType, T handler);
     /// Unsubscribe from an event.
     void UnsubscribeFromEvent(StringHash eventType);
     /// Unsubscribe from a specific sender's event.
@@ -114,10 +109,10 @@ public:
     void UnsubscribeFromEvents(Object* sender);
     /// Unsubscribe from all events.
     void UnsubscribeFromAllEvents();
-    /// Unsubscribe from all events except those listed, and optionally only those with userdata (script registered events).
-    void UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& exceptions, bool onlyUserData);
-    /// Unsubscribe from all events except those with listed senders, and optionally only those with userdata (script registered events.)
-    void UnsubscribeFromAllEventsExcept(const ea::vector<Object*>& exceptions, bool onlyUserData);
+    /// Unsubscribe from all events except those listed.
+    void UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& exceptions);
+    /// Unsubscribe from all events except those with listed senders.
+    void UnsubscribeFromAllEventsExcept(const ea::vector<Object*>& exceptions);
     /// Send event to all subscribers.
     void SendEvent(StringHash eventType);
     /// Send event with parameters to all subscribers.
@@ -207,16 +202,24 @@ template <class T> T* Object::GetSubsystem() const { return GetSubsystems().Get<
 class URHO3D_API EventHandler : public ea::intrusive_list_node
 {
 public:
-    /// Construct with specified receiver and userdata.
-    explicit EventHandler(Object* receiver, void* userData = nullptr) :
-        receiver_(receiver),
-        sender_(nullptr),
-        userData_(userData)
+    using HandlerFunction = ea::function<void(Object* receiver, StringHash eventType, VariantMap& eventData)>;
+
+    /// Construct with specified receiver and handler.
+    EventHandler(Object* receiver, HandlerFunction handler)
+        : receiver_(receiver)
+        , sender_(nullptr)
+        , handler_(ea::move(handler))
     {
     }
 
-    /// Destruct.
-    virtual ~EventHandler() = default;
+    /// Construct with specified receiver and handler of flexible signature.
+    template <class T>
+    EventHandler(Object* receiver, T handler)
+        : receiver_(receiver)
+        , sender_(nullptr)
+        , handler_(WrapHandler(ea::move(handler)))
+    {
+    }
 
     /// Set sender and event type.
     void SetSenderAndEventType(Object* sender, StringHash eventType)
@@ -226,9 +229,10 @@ public:
     }
 
     /// Invoke event handler function.
-    virtual void Invoke(VariantMap& eventData) = 0;
-    /// Return a unique copy of the event handler.
-    virtual EventHandler* Clone() const = 0;
+    void Invoke(VariantMap& eventData) const
+    {
+        handler_(receiver_, eventType_, eventData);
+    }
 
     /// Return event receiver.
     Object* GetReceiver() const { return receiver_; }
@@ -239,93 +243,76 @@ public:
     /// Return event type.
     const StringHash& GetEventType() const { return eventType_; }
 
-    /// Return userdata.
-    void* GetUserData() const { return userData_; }
+private:
+    template <class T> static HandlerFunction WrapHandler(T&& handler)
+    {
+        if constexpr (ea::is_member_function_pointer_v<T>)
+            return WrapMemberHandler(ea::move(handler));
+        else
+            return WrapGenericHandler(ea::move(handler));
+    }
 
-protected:
-    /// Event receiver.
+    template <class T> static HandlerFunction WrapGenericHandler(T&& handler)
+    {
+        static constexpr bool hasObjectTypeData = ea::is_invocable_r_v<void, T, Object*, StringHash, VariantMap&>;
+        static constexpr bool hasTypeData = ea::is_invocable_r_v<void, T, StringHash, VariantMap&>;
+        static constexpr bool hasType = ea::is_invocable_r_v<void, T, StringHash>;
+        static constexpr bool hasData = ea::is_invocable_r_v<void, T, VariantMap&>;
+        static constexpr bool hasNone = ea::is_invocable_r_v<void, T>;
+        static_assert(hasObjectTypeData || hasTypeData || hasType || hasData || hasNone, "Invalid handler signature");
+
+        // clang-format off
+        if constexpr (hasObjectTypeData)
+            return [handler = ea::move(handler)](Object* receiver, StringHash eventType, VariantMap& eventData) mutable { handler(receiver, eventType, eventData); };
+        else if constexpr (hasTypeData)
+            return [handler = ea::move(handler)](Object*, StringHash eventType, VariantMap& eventData) mutable { handler(eventType, eventData); };
+        else if constexpr (hasType)
+            return [handler = ea::move(handler)](Object*, StringHash eventType, VariantMap&) mutable { handler(eventType); };
+        else if constexpr (hasData)
+            return [handler = ea::move(handler)](Object*, StringHash, VariantMap& eventData) mutable { handler(eventData); };
+        else
+            return [handler = ea::move(handler)](Object*, StringHash, VariantMap&) mutable { handler(); };
+        // clang-format on
+    }
+
+    template <class T> static HandlerFunction WrapMemberHandler(T&& handler)
+    {
+        using ObjectType = MemberFunctionObject<T>;
+
+        static constexpr bool hasTypeData = ea::is_invocable_r_v<void, T, ObjectType*, StringHash, VariantMap&>;
+        static constexpr bool hasType = ea::is_invocable_r_v<void, T, ObjectType*, StringHash>;
+        static constexpr bool hasData = ea::is_invocable_r_v<void, T, ObjectType*, VariantMap&>;
+        static constexpr bool hasNone = ea::is_invocable_r_v<void, T, ObjectType*>;
+        static_assert(hasTypeData || hasType || hasData || hasNone, "Invalid handler signature");
+
+        // clang-format off
+        if constexpr (hasTypeData)
+            return [handler = ea::move(handler)](Object* receiver, StringHash eventType, VariantMap& eventData) mutable { (static_cast<ObjectType*>(receiver)->*handler)(eventType, eventData); };
+        else if constexpr (hasType)
+            return [handler = ea::move(handler)](Object* receiver, StringHash eventType, VariantMap&) mutable { (static_cast<ObjectType*>(receiver)->*handler)(eventType); };
+        else if constexpr (hasData)
+            return [handler = ea::move(handler)](Object* receiver, StringHash, VariantMap& eventData) mutable { (static_cast<ObjectType*>(receiver)->*handler)(eventData); };
+        else
+            return [handler = ea::move(handler)](Object* receiver, StringHash, VariantMap&) mutable { (static_cast<ObjectType*>(receiver)->*handler)(); };
+        // clang-format on
+    }
+
     Object* receiver_;
-    /// Event sender.
     Object* sender_;
-    /// Event type.
     StringHash eventType_;
-    /// Userdata.
-    void* userData_;
-};
-
-/// Template implementation of the event handler invoke helper (stores a function pointer of specific class).
-template <class T> class EventHandlerImpl : public EventHandler
-{
-public:
-    using HandlerFunctionPtr = void (T::*)(StringHash, VariantMap&);
-
-    /// Construct with receiver and function pointers and userdata.
-    EventHandlerImpl(T* receiver, HandlerFunctionPtr function, void* userData = nullptr) :
-        EventHandler(receiver, userData),
-        function_(function)
-    {
-        assert(receiver_);
-        assert(function_);
-    }
-
-    /// Invoke event handler function.
-    void Invoke(VariantMap& eventData) override
-    {
-        auto* receiver = static_cast<T*>(receiver_);
-        (receiver->*function_)(eventType_, eventData);
-    }
-
-    /// Return a unique copy of the event handler.
-    EventHandler* Clone() const override
-    {
-        return new EventHandlerImpl(static_cast<T*>(receiver_), function_, userData_);
-    }
-
-private:
-    /// Class-specific pointer to handler function.
-    HandlerFunctionPtr function_;
-};
-
-/// Template implementation of the event handler invoke helper (ea::function instance).
-/// @nobind
-class EventHandler11Impl : public EventHandler
-{
-public:
-    /// Construct with receiver and function pointers and userdata.
-    explicit EventHandler11Impl(ea::function<void(StringHash, VariantMap&)> function, void* userData = nullptr) :
-        EventHandler(nullptr, userData),
-        function_(ea::move(function))
-    {
-        assert(function_);
-    }
-
-    /// Invoke event handler function.
-    void Invoke(VariantMap& eventData) override
-    {
-        function_(eventType_, eventData);
-    }
-
-    /// Return a unique copy of the event handler.
-    EventHandler* Clone() const override
-    {
-        return new EventHandler11Impl(function_, userData_);
-    }
-
-private:
-    /// Class-specific pointer to handler function.
-    ea::function<void(StringHash, VariantMap&)> function_;
+    HandlerFunction handler_;
 };
 
 template<typename T>
-inline void Object::SubscribeToEvent(StringHash eventType, void(T::*handler)(StringHash, VariantMap&))
+inline void Object::SubscribeToEvent(StringHash eventType, T handler)
 {
-    SubscribeToEvent(eventType, new Urho3D::EventHandlerImpl<T>((T*)this, handler));
+    SubscribeToEventManual(eventType, new Urho3D::EventHandler(this, ea::move(handler)));
 }
 
 template<typename T>
-inline void Object::SubscribeToEvent(Object* sender, StringHash eventType, void(T::*handler)(StringHash, VariantMap&))
+inline void Object::SubscribeToEvent(Object* sender, StringHash eventType, T handler)
 {
-    SubscribeToEvent(sender, eventType, new Urho3D::EventHandlerImpl<T>((T*)this, handler));
+    SubscribeToEventManual(sender, eventType, new Urho3D::EventHandler(this, ea::move(handler)));
 }
 
 /// Get register of event names.
@@ -336,9 +323,7 @@ URHO3D_API StringHashRegister& GetEventParamRegister();
 #define URHO3D_EVENT(eventID, eventName) static const Urho3D::StringHash eventID(Urho3D::GetEventNameRegister().RegisterString(#eventName)); namespace eventName
 /// Describe an event's parameter hash ID. Should be used inside an event namespace.
 #define URHO3D_PARAM(paramID, paramName) static const Urho3D::StringHash paramID(Urho3D::GetEventParamRegister().RegisterString(#paramName))
-/// Convenience macro to construct an EventHandler that points to a receiver object and its member function.
-#define URHO3D_HANDLER(className, function) (new Urho3D::EventHandlerImpl<className>(this, &className::function))
-/// Convenience macro to construct an EventHandler that points to a receiver object and its member function, and also defines a userdata pointer.
-#define URHO3D_HANDLER_USERDATA(className, function, userData) (new Urho3D::EventHandlerImpl<className>(this, &className::function, userData))
+/// Deprecated. Just use &className::function instead.
+#define URHO3D_HANDLER(className, function) (&className::function)
 
 }

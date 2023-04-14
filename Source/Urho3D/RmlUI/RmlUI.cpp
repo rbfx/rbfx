@@ -626,11 +626,11 @@ void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
 {
     (void)eventType;
     using namespace FileChanged;
-    const ea::string& fileName = eventData[P_FILENAME].GetString();
+    const ea::string& resourceName = eventData[P_RESOURCENAME].GetString();
     Detail::RmlFile* file = static_cast<Detail::RmlFile*>(Rml::GetFileInterface());
-    if (file->IsFileLoaded(fileName))
+    if (file->IsResourceLoaded(resourceName))
     {
-        file->ClearLoadedFiles();
+        file->ClearLoadedResources();
 
         Rml::ReleaseTextures();
         Rml::Factory::ClearStyleSheetCache();

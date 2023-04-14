@@ -40,6 +40,8 @@
 %ignore Urho3D::DYN_LIB_SUFFIX;
 %constant char * DefaultDateTimeFormat = Urho3D::DEFAULT_DATE_TIME_FORMAT;
 %ignore Urho3D::DEFAULT_DATE_TIME_FORMAT;
+%constant unsigned int TaskBufferSize = Urho3D::TaskBufferSize;
+%ignore Urho3D::TaskBufferSize;
 %csconstvalue("0") Urho3D::VAR_NONE;
 %typemap(csattributes) Urho3D::AttributeMode "[global::System.Flags]";
 using AttributeModeFlags = Urho3D::AttributeMode;
@@ -100,7 +102,6 @@ using AttributeModeFlags = Urho3D::AttributeMode;
 %csattribute(Urho3D::EventHandler, %arg(Urho3D::Object *), Receiver, GetReceiver);
 %csattribute(Urho3D::EventHandler, %arg(Urho3D::Object *), Sender, GetSender);
 %csattribute(Urho3D::EventHandler, %arg(Urho3D::StringHash), EventType, GetEventType);
-%csattribute(Urho3D::EventHandler, %arg(void *), UserData, GetUserData);
 %csattribute(Urho3D::ObjectReflection, %arg(ea::string), Category, GetCategory);
 %csattribute(Urho3D::ObjectReflection, %arg(Urho3D::TypeInfo *), TypeInfo, GetTypeInfo);
 %csattribute(Urho3D::ObjectReflection, %arg(ea::string), TypeName, GetTypeName);
@@ -122,11 +123,12 @@ using AttributeModeFlags = Urho3D::AttributeMode;
 %csattribute(Urho3D::Time, %arg(unsigned int), TimerPeriod, GetTimerPeriod, SetTimerPeriod);
 %csattribute(Urho3D::Time, %arg(float), ElapsedTime, GetElapsedTime);
 %csattribute(Urho3D::Time, %arg(float), FramesPerSecond, GetFramesPerSecond);
-%csattribute(Urho3D::WorkQueue, %arg(SharedPtr<Urho3D::WorkItem>), FreeItem, GetFreeItem);
-%csattribute(Urho3D::WorkQueue, %arg(unsigned int), NumThreads, GetNumThreads);
-%csattribute(Urho3D::WorkQueue, %arg(bool), IsCompleting, IsCompleting);
-%csattribute(Urho3D::WorkQueue, %arg(int), Tolerance, GetTolerance, SetTolerance);
+%csattribute(Urho3D::WorkQueue, %arg(unsigned int), NumIncomplete, GetNumIncomplete);
+%csattribute(Urho3D::WorkQueue, %arg(bool), IsCompleted, IsCompleted);
 %csattribute(Urho3D::WorkQueue, %arg(int), NonThreadedWorkMs, GetNonThreadedWorkMs, SetNonThreadedWorkMs);
+%csattribute(Urho3D::WorkQueue, %arg(unsigned int), NumProcessingThreads, GetNumProcessingThreads);
+%csattribute(Urho3D::WorkQueue, %arg(bool), IsMultithreaded, IsMultithreaded);
+%csattribute(Urho3D::WorkQueue, %arg(SharedPtr<Urho3D::WorkItem>), FreeItem, GetFreeItem);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
@@ -185,11 +187,4 @@ public static partial class E
         public static implicit operator StringHash(EndFramePrivateEvent e) { return e._event; }
     }
     public static EndFramePrivateEvent EndFramePrivate = new EndFramePrivateEvent();
-    public class WorkItemCompletedEvent {
-        private StringHash _event = new StringHash("WorkItemCompleted");
-        public StringHash Item = new StringHash("Item");
-        public WorkItemCompletedEvent() { }
-        public static implicit operator StringHash(WorkItemCompletedEvent e) { return e._event; }
-    }
-    public static WorkItemCompletedEvent WorkItemCompleted = new WorkItemCompletedEvent();
 } %}

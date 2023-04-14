@@ -618,7 +618,7 @@ ServerReplicator::ServerReplicator(Scene* scene)
     SetNetworkSetting(settings_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
     SubscribeToEvent(E_INPUTREADY,
-        [this](StringHash, VariantMap& eventData)
+        [this](VariantMap& eventData)
     {
         using namespace InputReady;
         const float timeStep = eventData[P_TIMESTEP].GetFloat();
@@ -629,7 +629,7 @@ ServerReplicator::ServerReplicator(Scene* scene)
     });
 
     SubscribeToEvent(network_, E_NETWORKUPDATE,
-        [this](StringHash, VariantMap& eventData)
+        [this](VariantMap& eventData)
     {
         using namespace NetworkUpdate;
         const bool isServer = eventData[P_ISSERVER].GetBool();

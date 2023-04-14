@@ -45,14 +45,6 @@ enum ClipMask : unsigned
 };
 URHO3D_FLAGSET(ClipMask, ClipMaskFlags);
 
-void DrawOcclusionBatchWork(const WorkItem* item, unsigned threadIndex)
-{
-    URHO3D_PROFILE("DrawOcclusionBatchWork");
-    auto* buffer = reinterpret_cast<OcclusionBuffer*>(item->aux_);
-    OcclusionBatch& batch = *reinterpret_cast<OcclusionBatch*>(item->start_);
-    buffer->DrawBatch(batch, threadIndex);
-}
-
 OcclusionBuffer::OcclusionBuffer(Context* context) :
     Object(context)
 {
@@ -87,7 +79,7 @@ bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
     height_ = height;
 
     // Build work buffers for threading
-    unsigned numThreadBuffers = threaded ? GetSubsystem<WorkQueue>()->GetNumThreads() + 1 : 1;
+    unsigned numThreadBuffers = threaded ? GetSubsystem<WorkQueue>()->GetNumProcessingThreads() : 1;
     buffers_.resize(numThreadBuffers);
     for (unsigned i = 0; i < numThreadBuffers; ++i)
     {
@@ -206,6 +198,8 @@ bool OcclusionBuffer::AddTriangles(const Matrix3x4& model, const void* vertexDat
 
 void OcclusionBuffer::DrawTriangles()
 {
+    URHO3D_PROFILE("DrawOcclusionBatchWork");
+
     if (buffers_.size() == 1)
     {
         // Not threaded
@@ -218,18 +212,10 @@ void OcclusionBuffer::DrawTriangles()
     {
         // Threaded
         auto* queue = GetSubsystem<WorkQueue>();
-
-        for (auto i = batches_.begin(); i != batches_.end(); ++i)
+        ForEachParallel(queue, batches_, [this](unsigned, const OcclusionBatch& batch)
         {
-            SharedPtr<WorkItem> item = queue->GetFreeItem();
-            item->priority_ = M_MAX_UNSIGNED;
-            item->workFunction_ = DrawOcclusionBatchWork;
-            item->aux_ = this;
-            item->start_ = &(*i);
-            queue->AddWorkItem(item);
-        }
-
-        queue->Complete(M_MAX_UNSIGNED);
+            DrawBatch(batch, WorkQueue::GetThreadIndex());
+        });
 
         MergeBuffers();
         depthHierarchyDirty_ = true;
