@@ -135,6 +135,8 @@ public:
         Note that the custom projection is not serialized or replicated through the network.
      */
     void SetProjection(const Matrix4& projection);
+    /// Set whether to draw the debug geometry when rendering the scene from this camera.
+    void SetDrawDebugGeometry(bool enable) { drawDebugGeometry_ = enable; }
 
     /// Return far clip distance. If a custom projection matrix is in use, is calculated from it instead of the value assigned with SetFarClip().
     /// @property
@@ -186,6 +188,9 @@ public:
     /// Return auto aspect ratio flag.
     /// @property
     bool GetAutoAspectRatio() const { return autoAspectRatio_; }
+
+    /// Return whether to draw the debug geometry when rendering the scene from this camera.
+    bool GetDrawDebugGeometry() const { return drawDebugGeometry_; }
 
     /// Return frustum in world space.
     /// @property
@@ -383,6 +388,8 @@ private:
     bool useReflection_;
     /// Use custom clip plane flag.
     bool useClipping_;
+    /// Whether to draw debug geometry when rendering from this camera.
+    bool drawDebugGeometry_{true};
 
     /// Current normalized mouse position supplied externally.
     Vector2 mousePosition_;

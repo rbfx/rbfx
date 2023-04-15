@@ -84,6 +84,7 @@ void CubemapRenderer::InitializeCameras()
         auto camera = cameraNode->CreateComponent<Camera>();
         camera->SetFov(90.0f);
         camera->SetAspectRatio(1.0f);
+        camera->SetDrawDebugGeometry(false);
         renderCameras_[face] = cameraNode;
 
         viewports_[face] = MakeShared<Viewport>(context_, scene_, camera, IntRect::ZERO, renderPipeline_);
