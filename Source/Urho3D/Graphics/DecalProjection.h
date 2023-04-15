@@ -122,6 +122,7 @@ private:
     void UpdateSubscriptions(bool needGeometryUpdate = true);
     void HandlePreRenderEvent(StringHash eventName, VariantMap& eventData);
     void HandleSceneUpdate(StringHash eventName, VariantMap& eventData);
+    bool IsValidDrawable(Drawable* drawable);
 
     /// Material.
     SharedPtr<Material> material_;

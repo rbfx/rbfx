@@ -23,11 +23,15 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/DecalProjection.h"
+
+#include "../Core/CoreEvents.h"
+#include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/DecalSet.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/StaticModel.h"
+#include "../Graphics/TerrainPatch.h"
 #include "../Resource/ResourceCache.h"
-#include "../Core/CoreEvents.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 
@@ -222,6 +226,23 @@ void DecalProjection::HandleSceneUpdate(StringHash eventName, VariantMap& eventD
     }
 }
 
+bool DecalProjection::IsValidDrawable(Drawable* drawable)
+{
+    auto current = drawable->GetTypeInfo();
+    while (current)
+    {
+        if (current->GetType() == StaticModel::GetTypeNameStatic())
+            return true;
+        if (current->GetType() == TerrainPatch::GetTypeNameStatic())
+            return true;
+        if (current->GetType() == CustomGeometry::GetTypeNameStatic())
+            return true;
+
+        current = current->GetBaseTypeInfo();
+    }
+    return false;
+}
+
 void DecalProjection::HandlePreRenderEvent(StringHash eventName, VariantMap& eventData)
 {
     UpdateGeometry();
@@ -282,15 +303,18 @@ void DecalProjection::UpdateGeometry()
 
     for (Drawable* drawable: drawables)
     {
-        auto* node = drawable->GetNode();
-        if (node)
+        if (IsValidDrawable(drawable))
         {
-            DecalSet * decalSet = node->CreateComponent<DecalSet>();
-            decalSet->SetTemporary(true);
-            decalSet->SetMaterial(material_);
-            float timeLive = (timeToLive_ > 0) ? Urho3D::Max(M_EPSILON, timeToLive_ - elapsedTime_) : 0.0f;
-            decalSet->AddDecal(drawable, viewProj, Vector2::ZERO, Vector2::ONE, timeLive, normalCutoff_);
-            activeDecalSets_.push_back(SharedPtr<DecalSet>(decalSet));
+            auto* node = drawable->GetNode();
+            if (node)
+            {
+                DecalSet* decalSet = node->CreateComponent<DecalSet>();
+                decalSet->SetTemporary(true);
+                decalSet->SetMaterial(material_);
+                float timeLive = (timeToLive_ > 0) ? Urho3D::Max(M_EPSILON, timeToLive_ - elapsedTime_) : 0.0f;
+                decalSet->AddDecal(drawable, viewProj, Vector2::ZERO, Vector2::ONE, timeLive, normalCutoff_);
+                activeDecalSets_.push_back(SharedPtr<DecalSet>(decalSet));
+            }
         }
     }
 }
