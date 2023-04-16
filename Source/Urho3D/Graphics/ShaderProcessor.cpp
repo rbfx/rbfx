@@ -4,6 +4,7 @@
 #include <Diligent/Graphics/HLSL2GLSLConverterLib/include/HLSL2GLSLConverterImpl.hpp>
 #include <Diligent/Graphics/ShaderTools/include/SPIRVTools.hpp>
 #include <SPIRV-Reflect/spirv_reflect.h>
+#include "../Graphics/ShaderMacroExpander.h"
 #ifdef WIN32
 #include <d3dcompiler.h>
 #endif
@@ -68,6 +69,14 @@ namespace Urho3D
     }
     bool ShaderProcessor::ProcessHLSL()
     {
+        ShaderMacroExpanderCreationDesc ci;
+        ci.macros_ = desc_.macros_;
+        ci.shaderCode_ = desc_.sourceCode_;
+
+        ea::shared_ptr<ShaderMacroExpander> expander = ea::make_shared<ShaderMacroExpander>(ci);
+        expander->Process(desc_.sourceCode_);
+
+
 #ifdef WIN32
         ea::string sourceCode = desc_.sourceCode_;
         ea::string cbufferSuffix = "";
