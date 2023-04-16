@@ -195,6 +195,7 @@ public:
     const ea::string& GetCoreDataPath() const { return coreDataPath_; }
     const ea::string& GetDataPath() const { return dataPath_; }
     const ea::string& GetCachePath() const { return cachePath_; }
+    const ea::string& GetArtifactsPath() const { return artifactsPath_; }
     const ea::string& GetPreviewPngPath() const { return previewPngPath_; }
     /// @}
 
@@ -269,6 +270,7 @@ private:
     const ea::string coreDataPath_;
     const ea::string cachePath_;
     const ea::string tempPath_;
+    const ea::string artifactsPath_;
 
     const ea::string projectJsonPath_;
     const ea::string settingsJsonPath_;
