@@ -41,7 +41,7 @@
 #include <mach/mach_host.h>
 #elif defined(TVOS)
 extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
-#elif !defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(UWP) && (defined(__APPLE__) && !defined(__aarch64__))
+#elif !defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(UWP) || (defined(__APPLE__) && !defined(__aarch64__))
 #include <LibCpuId/libcpuid.h>
 #endif
 
@@ -177,7 +177,7 @@ static void GetCPUData(struct CpuCoreCount* data)
     }
 }
 
-#elif !defined(__EMSCRIPTEN__) && !defined(TVOS) && !defined(UWP) && (defined(__APPLE__) && !defined(__aarch64__))
+#elif !defined(__EMSCRIPTEN__) && !defined(TVOS) && !defined(UWP) || (defined(__APPLE__) && !defined(__aarch64__))
 static void GetCPUData(struct cpu_id_t* data)
 {
     if (cpu_identify(nullptr, data) < 0)
