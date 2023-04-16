@@ -55,12 +55,13 @@ private:
     void InitializePopup(SceneViewPage& page);
     void RenderPopup();
 
-    ea::string GenerateFileName() const;
+    ea::string GenerateFileName(const IntVector2& size) const;
 
     bool openPending_{};
 
     bool keepPopupOpen_{};
     bool useInSceneCamera_{true};
+    unsigned resolutionOption_{0};
     IntVector2 resolution_{1920, 1080};
 
     WeakPtr<Scene> scene_;

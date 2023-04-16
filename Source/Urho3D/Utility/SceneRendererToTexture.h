@@ -78,6 +78,7 @@ class URHO3D_API SceneRendererToTexture : public CustomBackbufferTexture
 
 public:
     explicit SceneRendererToTexture(Scene* scene);
+    explicit SceneRendererToTexture(Scene* scene, Camera* camera);
     ~SceneRendererToTexture() override;
 
     /// Return properties

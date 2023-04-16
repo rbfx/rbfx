@@ -33,6 +33,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/RenderPipeline/RenderPipeline.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/Math/Vector2.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -58,6 +59,7 @@ private:
     void OnEndViewRender();
 
     const bool oldDebugGeometry_{};
+    const float oldAspectRatio_{};
     const WeakPtr<Camera> camera_;
 
     SharedPtr<Texture2D> texture_;
@@ -67,10 +69,12 @@ private:
 ScreenshotRenderer::ScreenshotRenderer(Scene* scene, Camera* camera, const IntVector2& resolution)
     : BaseClassName(scene->GetContext())
     , oldDebugGeometry_(camera->GetDrawDebugGeometry())
+    , oldAspectRatio_(camera->GetAspectRatio())
     , camera_(camera)
     , texture_(MakeShared<Texture2D>(context_))
 {
     camera_->SetDrawDebugGeometry(false);
+    camera_->SetAspectRatio(resolution.x_ / (float)resolution.y_);
 
     texture_->SetSize(resolution.x_, resolution.y_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET, 1, true);
     SubscribeToEvent(texture_, E_ENDVIEWRENDER, &ScreenshotRenderer::OnEndViewRender);
@@ -87,7 +91,10 @@ ScreenshotRenderer::ScreenshotRenderer(Scene* scene, Camera* camera, const IntVe
 ScreenshotRenderer::~ScreenshotRenderer()
 {
     if (camera_)
+    {
         camera_->SetDrawDebugGeometry(oldDebugGeometry_);
+        camera_->SetAspectRatio(oldAspectRatio_);
+    }
 }
 
 void ScreenshotRenderer::OnEndViewRender()
@@ -131,7 +138,7 @@ void SceneScreenshot::TakeScreenshotNow(Scene* scene, Camera* camera, const IntV
     auto screenshotRenderer = MakeShared<ScreenshotRenderer>(scene, camera, resolution);
     screenshotRenderer->OnReady.Subscribe(this, [this, screenshotRenderer](const Image& image)
     {
-        const ea::string fileName = GenerateFileName();
+        const ea::string fileName = GenerateFileName(image.GetSize().ToIntVector2());
         if (!fileName.empty())
         {
             image.SaveFile(fileName);
@@ -140,14 +147,14 @@ void SceneScreenshot::TakeScreenshotNow(Scene* scene, Camera* camera, const IntV
     });
 }
 
-ea::string SceneScreenshot::GenerateFileName() const
+ea::string SceneScreenshot::GenerateFileName(const IntVector2& size) const
 {
     auto project = owner_->GetProject();
     auto fileSystem = GetSubsystem<FileSystem>();
 
     const ea::string& outputPath = project->GetArtifactsPath();
-    const ea::string screenshotTime = Time::GetTimeStamp("%Y-%m-%d_%H-%M-%S");
-    const ea::string fileNamePrefix = Format("{}Screenshots/{}", outputPath, screenshotTime);
+    const ea::string screenshotTime = Time::GetTimeStamp("%Y-%m-%d/%H-%M-%S");
+    const ea::string fileNamePrefix = Format("{}Screenshots/{}_{}x{}", outputPath, screenshotTime, size.x_, size.y_);
     const ea::string fileNameSuffix = ".png";
 
     static const unsigned MaxAttempts = 100;
@@ -242,16 +249,50 @@ void SceneScreenshot::RenderPopup()
     ui::EndDisabled();
 
     ui::Separator();
+    static const ea::pair<const char*, IntVector2> resolutions[] = {
+        ea::make_pair("Custom", IntVector2::ZERO),
+        ea::make_pair("FullHD", IntVector2{1920, 1080}),
+        ea::make_pair("FullHD Portrait", IntVector2{1080, 1920}),
+        ea::make_pair("4K", IntVector2{3840, 2160}),
+        ea::make_pair("4K Portrait", IntVector2{2160, 3840}),
+        ea::make_pair("Square", IntVector2{2048, 2048}),
+        ea::make_pair("Android Feature", IntVector2{1024, 500}),
+        ea::make_pair("Android TV", IntVector2{1280, 720}),
+    };
 
-    ui::Text("Resolution: ");
-    ui::SameLine();
-    ui::PushItemWidth(100);
-    ui::InputInt("##width", &resolution_.x_, 0);
-    ui::SameLine();
-    ui::Text("x");
-    ui::SameLine();
-    ui::InputInt("##height", &resolution_.y_, 0);
-    ui::PopItemWidth();
+    if (ui::BeginCombo("Resolution", resolutions[resolutionOption_].first))
+    {
+        if (ui::Selectable(resolutions[0].first, !resolutionOption_))
+        {
+            resolutionOption_ = 0;
+        }
+        for (unsigned i=1; i<ea::size(resolutions); ++i)
+        {
+            if (ui::Selectable(resolutions[i].first, resolutionOption_ == i))
+            {
+                resolutionOption_ = i;
+                resolution_ = resolutions[i].second;
+            }
+        }
+        ui::EndCombo();
+    }
+
+    if (!resolutionOption_)
+    {
+        ui::Text("Resolution: ");
+        ui::SameLine();
+        ui::PushItemWidth(100);
+        ui::InputInt("##width", &resolution_.x_, 0);
+        ui::SameLine();
+        ui::Text("x");
+        ui::SameLine();
+        ui::InputInt("##height", &resolution_.y_, 0);
+        ui::PopItemWidth();
+    }
+    else
+    {
+        ui::Text("Resolution: %dx%d", resolution_.x_, resolution_.y_);
+    }
 
     resolution_ = VectorClamp(resolution_, IntVector2::ONE, IntVector2{8192, 8192});
 
