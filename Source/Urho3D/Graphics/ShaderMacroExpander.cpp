@@ -4,6 +4,7 @@
 #ifdef URHO3D_DEBUG
 #include "../IO/Log.h"
 #endif
+#define MAX_SEARCH_LOOP 5
 namespace Urho3D
 {
     static unsigned sNewLineTokenHash = MakeHash('\n');
@@ -36,9 +37,11 @@ namespace Urho3D
                 children_[i]->Process(i, processDesc);
             }
         }
+        virtual bool Evaluate(size_t firstValue, size_t secondValue) { return false; }
         virtual bool BeginChild() { return false; }
         virtual bool EndChild() { return false; }
         virtual bool IsOperator() { return false; }
+        virtual bool IsMacro() { return false; }
 #ifdef URHO3D_DEBUG
         void PrintDbgTree(unsigned identationLevel = 0) {
             ea::string identationSymbol = "";
@@ -69,9 +72,13 @@ namespace Urho3D
     class MacroToken : public TokenBase {
     public:
         MacroToken() : TokenBase() {}
+        virtual bool IsMacro() override {
+            return true;
+        }
         virtual bool BeginChild() override {
             return true;
         }
+        bool enabled_{ false };
     };
     class IfDefToken : public MacroToken {
     public:
@@ -81,11 +88,10 @@ namespace Urho3D
 
             size_t tokenIdx = desc_.idx_;
             uint8_t loop = 0;
-            uint8_t maxSearchLoop = 5;
             // Find next valid token.
-            while (loop < maxSearchLoop) {
+            while (loop < MAX_SEARCH_LOOP) {
                 ++tokenIdx;
-                ++maxSearchLoop;
+                ++loop;
                 nextToken = processDesc.tokenList_->at(tokenIdx);
                 if (nextToken->IsOperator()) {
                     throw std::runtime_error(
@@ -101,7 +107,8 @@ namespace Urho3D
             }
 
             auto macroIt = processDesc.macros_->find(nextToken->desc_.id_);
-            if (macroIt == processDesc.macros_->end())
+            enabled_ = macroIt != processDesc.macros_->end();
+            if (!enabled_)
                 return;
             // Start loop after child index.
             for (unsigned i = nextToken->desc_.childIdx_ + 1; i < children_.size(); ++i)
@@ -111,10 +118,113 @@ namespace Urho3D
     class IfToken : public MacroToken {
     public:
         IfToken() : MacroToken() {}
+        virtual void Process(unsigned& parentSeek, TokenProcessDesc& processDesc) override {
+            ea::vector<size_t> tokenValues;
+            ea::vector<ea::shared_ptr<TokenBase>> opTokens;
+
+            unsigned currIdx = desc_.idx_;
+            ea::shared_ptr<TokenBase> currToken;
+
+            // Evaluate macro values and get all operators
+            {
+                uint8_t loop = 0;
+                while (loop < children_.size()) {
+                    ++loop;
+                    ++currIdx;
+
+                    currToken = processDesc.tokenList_->at(currIdx);
+                    if (currToken->desc_.id_ == sSpacementTokenHash)
+                        continue;
+                    if (currToken->desc_.id_ == sNewLineTokenHash && tokenValues.size() - 1 == opTokens.size())
+                        break;
+                    // WRONG Case: #if || or  #if && COMPILE_PS
+                    if (currToken->IsOperator() && tokenValues.size() == opTokens.size()) {
+                        throw std::runtime_error(
+                            Format(
+                        "Expected evaluator. ({:d}, {:d})",
+                            currToken->desc_.line_,
+                            currToken->desc_.col_
+                            ).c_str()
+                        );
+                    }
+                    if (currToken->IsOperator()) {
+                        opTokens.push_back(currToken);
+                    }
+                    else {
+                        ea::string value = currToken->desc_.value_;
+                        // Remove defined() syntax and search for macro value
+                        if (value.starts_with("defined(")) {
+                            if (!value.ends_with(")")) {
+                                throw std::runtime_error(
+                                    Format(
+                                        "Expected a ')'. ({:d}, {:d})",
+                                        currToken->desc_.line_,
+                                        currToken->desc_.col_+value.size()
+                                    ).c_str()
+                                );
+                            }
+
+                            value.replace("defined(", "");
+                            value.pop_back();
+
+                            // Find macro and add to token values value 1
+                            tokenValues.push_back(processDesc.macros_->contains(StringHash(value).ToHash()) ? 1 : 0);
+                        }
+                    }
+                }
+
+            }
+
+            if (tokenValues.size() == 0) {
+                throw std::runtime_error(
+                    Format("Expected an evaluator. ({}, {})", desc_.line_, desc_.col_).c_str()
+                );
+            }
+
+            if (tokenValues.size() - 1 != opTokens.size()) {
+                throw std::runtime_error(
+                    Format("Invalid Syntax at ({}, {})", desc_.line_, desc_.col_).c_str()
+                );
+            }
+
+            // Evaluate macros with operators
+            size_t firstValue = tokenValues[0];
+            for (unsigned i = 0; i < opTokens.size(); ++i) {
+                firstValue = opTokens[i]->Evaluate(firstValue, tokenValues[i + 1]);
+                if (opTokens[i]->desc_.value_ == "&&")
+                    break;
+            }
+
+            enabled_ = firstValue > 0;
+            if (!enabled_)
+                return;
+            // Start loop at last current token
+            for (unsigned i = currToken->desc_.childIdx_ + 1; i < children_.size(); ++i)
+                children_[i]->Process(i, processDesc);
+        }
     };
     class ElseToken : public MacroToken {
     public:
         ElseToken() : MacroToken() {}
+        virtual void Process(unsigned& parentSeek, TokenProcessDesc& processDesc) {
+            auto parentList = !parent_.expired() ? parent_.lock()->children_ : *processDesc.tokenRootTree_;
+
+            // Find sibling macro token and check if else token must enable
+            ea::shared_ptr<MacroToken> siblingMacroToken;
+            int currIdx = desc_.childIdx_;
+
+            while (currIdx > 0) {
+                --currIdx;
+                if (parentList.at(currIdx)->IsMacro()) {
+                    siblingMacroToken = ea::static_pointer_cast<MacroToken>(parentList.at(currIdx));
+                    break;
+                }
+            }
+
+            if (siblingMacroToken->enabled_)
+                return;
+            TokenBase::Process(parentSeek, processDesc);
+        }
         virtual bool EndChild() override {
             return true;
         }
@@ -140,9 +250,8 @@ namespace Urho3D
 
             unsigned currIdx = desc_.idx_;
             uint8_t loop = 0;
-            uint8_t maxSearchLoop = 5;
             // Find along list next break line token
-            while (loop < maxSearchLoop) {
+            while (loop < MAX_SEARCH_LOOP) {
                 ++currIdx;
                 ++loop;
                 nextToken = processDesc.tokenList_->at(currIdx);
@@ -158,40 +267,62 @@ namespace Urho3D
     public:
         OperatorToken() : IdentityToken() {}
         virtual bool IsOperator() override { return true; }
-        // Evaluate Token Operation
-        virtual bool Evaluate(const ea::unordered_map<unsigned, ea::string>& macros, ea::shared_ptr<TokenBase> leftOp, ea::shared_ptr<TokenBase> rightOp) { return false; }
     };
     class GreaterThanOpToken : public OperatorToken {
     public:
         GreaterThanOpToken() : OperatorToken(){}
+        virtual bool Evaluate(size_t first, size_t second) override {
+            return first > second;
+        }
     };
     class LessThanOpToken : public OperatorToken {
     public:
         LessThanOpToken() : OperatorToken() {}
+        virtual bool Evaluate(size_t first, size_t second) override {
+            return first < second;
+        }
     };
     class GreaterOrEqualOpToken : public OperatorToken {
     public:
         GreaterOrEqualOpToken() : OperatorToken() {}
+        virtual bool Evaluate(size_t first, size_t second) override {
+            return first >= second;
+        }
     };
     class LessOrEqualOpToken : public OperatorToken {
     public:
         LessOrEqualOpToken() : OperatorToken() {}
+        virtual bool Evaluate(size_t first, size_t second) override {
+            return first <= second;
+        }
     };
     class EqualOpToken : public OperatorToken {
     public:
         EqualOpToken() : OperatorToken () {}
+        virtual bool Evaluate(size_t first, size_t second) override {
+            return first == second;
+        }
     };
     class NotEqualOpToken : public OperatorToken {
     public:
         NotEqualOpToken() : OperatorToken () {}
+        virtual bool Evaluate(size_t first, size_t second) override {
+            return first != second;
+        }
     };
     class AndOpToken : public OperatorToken {
     public:
         AndOpToken() : OperatorToken () {}
+        virtual bool Evaluate(size_t first, size_t second) override {
+            return first && second;
+        }
     };
     class OrOpToken : public OperatorToken {
     public:
         OrOpToken() : OperatorToken () {}
+        virtual bool Evaluate(size_t first, size_t second) override {
+            return first || second;
+        }
     };
     // @} End Operator Token Classes
 
