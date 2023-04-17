@@ -86,6 +86,8 @@ public:
     void SetNormalCutoff(float normalCutoff);
     /// Return view mask.
     void SetViewMask(unsigned);
+    /// Set to remove either the component or its owner node from the scene automatically on decal time to live completion. Disabled by default.
+    void SetAutoRemoveMode(AutoRemoveMode mode);
 
     /// Return material.
     Material* GetMaterial() const;
@@ -109,6 +111,8 @@ public:
     float GetNormalCutoff() const { return normalCutoff_; }
     /// Return view mask.
     unsigned GetViewMask() const { return viewMask_; }
+    /// Return automatic removal mode on decal time to live completion.
+    AutoRemoveMode GetAutoRemoveMode() const { return autoRemove_; }
 
     /// Get view-projection matrix
     Matrix4 GetViewProj() const;
@@ -151,6 +155,8 @@ private:
     float aspectRatio_{DEFAULT_ASPECT_RATIO};
     /// Time to live. The projection going to remove itself after the timeout.
     float timeToLive_{DEFAULT_TIME_TO_LIVE};
+    /// Automatic removal mode.
+    AutoRemoveMode autoRemove_{REMOVE_DISABLED};
     /// Elapsed time in seconds.
     float elapsedTime_{0.0f};
     /// Projection normal threshold.

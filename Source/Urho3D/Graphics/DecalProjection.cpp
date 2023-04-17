@@ -29,6 +29,7 @@
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/DecalSet.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/Skybox.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/TerrainPatch.h"
 #include "../Resource/ResourceCache.h"
@@ -37,6 +38,7 @@
 
 namespace Urho3D
 {
+extern const char* autoRemoveModeNames[];
 
 DecalProjection::DecalProjection(Context* context)
     : Component(context)
@@ -61,6 +63,7 @@ void DecalProjection::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Orthographic Size", GetOrthoSize, SetOrthoSize, float, DEFAULT_ORTHO_SIZE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Normal Cutoff", GetNormalCutoff, SetNormalCutoff, float, DEFAULT_NORMAL_CUTOFF, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time To Live", GetTimeToLive, SetTimeToLive, float, DEFAULT_TIME_TO_LIVE, AM_DEFAULT);
+    URHO3D_ENUM_ATTRIBUTE("Autoremove Mode", autoRemove_, autoRemoveModeNames, REMOVE_DISABLED, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Elapsed Time", float, elapsedTime_, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("View Mask", GetViewMask, SetViewMask, unsigned, DEFAULT_VIEWMASK, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Component);
@@ -168,6 +171,12 @@ void DecalProjection::SetViewMask(unsigned viewMask)
     UpdateSubscriptions();
 }
 
+void DecalProjection::SetAutoRemoveMode(AutoRemoveMode mode)
+{
+    autoRemove_ = mode;
+    UpdateSubscriptions();
+}
+
 void DecalProjection::OnSceneSet(Scene* scene)
 {
     BaseClassName::OnSceneSet(scene);
@@ -184,7 +193,7 @@ void DecalProjection::UpdateSubscriptions(bool needGeometryUpdate)
 {
     SubscriptionFlags flags{SubscriptionMask::None};
     Scene* scene = GetScene();
-    if (timeToLive_ > 0.0f && scene)
+    if (timeToLive_ > 0.0f && autoRemove_ != REMOVE_DISABLED && scene)
         flags |= SubscriptionMask::Update;
     if (needGeometryUpdate)
         flags |= SubscriptionMask::PreRender;
@@ -222,7 +231,7 @@ void DecalProjection::HandleSceneUpdate(StringHash eventName, VariantMap& eventD
     elapsedTime_ += eventData[P_TIMESTEP].GetFloat();
     if (elapsedTime_ > timeToLive_)
     {
-        Remove();
+        DoAutoRemove(autoRemove_);
     }
 }
 
@@ -231,6 +240,8 @@ bool DecalProjection::IsValidDrawable(Drawable* drawable)
     auto current = drawable->GetTypeInfo();
     while (current)
     {
+        if (current->GetType() == Skybox::GetTypeNameStatic())
+            return false;
         if (current->GetType() == StaticModel::GetTypeNameStatic())
             return true;
         if (current->GetType() == TerrainPatch::GetTypeNameStatic())
