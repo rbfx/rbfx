@@ -82,6 +82,7 @@ public:
 
     /// Return properties
     /// @{
+    Scene* GetScene() const { return scene_; }
     Camera* GetCamera() const { return camera_; }
     Node* GetCameraNode() const { return cameraNode_; }
     Vector3 GetCameraPosition() const;

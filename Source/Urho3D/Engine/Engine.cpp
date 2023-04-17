@@ -409,7 +409,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 #ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_,
             GetParameter(EP_SYSTEMUI_FLAGS).GetUInt()));
-        RegisterStandardSerializableHooks();
+        RegisterStandardSerializableHooks(context_);
 #endif
     }
     frameTimer_.Reset();
