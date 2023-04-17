@@ -94,16 +94,6 @@ void CustomBackbufferTexture::Update()
     }
 }
 
-SceneRendererToTexture::SceneRendererToTexture(Scene* scene, Camera* camera)
-    : CustomBackbufferTexture(scene->GetContext())
-    , scene_(scene)
-    , cameraNode_(camera->GetNode())
-    , camera_(camera)
-    , viewport_(MakeShared<Viewport>(context_, scene_, camera_))
-{
-    OnRenderSurfaceCreated.Subscribe(this, &SceneRendererToTexture::SetupViewport);
-}
-
 SceneRendererToTexture::SceneRendererToTexture(Scene* scene)
     : CustomBackbufferTexture(scene->GetContext())
     , scene_(scene)
