@@ -1439,16 +1439,6 @@ Node* Node::GetChild(unsigned index) const
     return index < children_.size() ? children_[index] : nullptr;
 }
 
-Node* Node::GetChild(const ea::string& name, bool recursive) const
-{
-    return GetChild(StringHash(name), recursive);
-}
-
-Node* Node::GetChild(const char* name, bool recursive) const
-{
-    return GetChild(StringHash(name), recursive);
-}
-
 Node* Node::GetChild(StringHash nameHash, bool recursive) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
