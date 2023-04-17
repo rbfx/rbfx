@@ -11,8 +11,6 @@ cbuffer ObjectVS : register(b5)
 Texture2D tDiffMap : register(t0);
 SamplerState sDiffMap : register(s0);
 
-#define Sample2D(tex, uv) t##tex.Sample(s##tex, uv)
-
 #ifdef COMPILEVS
 struct VertexInput {
     float4 iPos : POSITION;
@@ -68,7 +66,7 @@ float4 PS(VertexInput input) : SV_TARGET
     #endif
 
     #ifdef DIFFMAP
-        float4 diffInput = Sample2D(DiffMap, input.iTexCoord);
+        float4 diffInput = tDiffMap.Sample(sDiffMap, input.iTexCoord);
         #ifdef ALPHAMASK
             if (diffInput.a < 0.5)
                 discard;
@@ -76,7 +74,7 @@ float4 PS(VertexInput input) : SV_TARGET
         diffColor *= diffInput;
     #endif
     #ifdef ALPHAMAP
-        float alphaInput = Sample2D(DiffMap, input.iTexCoord).a;
+        float alphaInput = tDiffMap.Sample(sDiffMap, input.iTexCoord).a;
         diffColor.a *= alphaInput;
     #endif
 

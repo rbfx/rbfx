@@ -69,14 +69,6 @@ namespace Urho3D
     }
     bool ShaderProcessor::ProcessHLSL()
     {
-        ShaderMacroExpanderCreationDesc ci;
-        ci.macros_ = desc_.macros_;
-        ci.shaderCode_ = desc_.sourceCode_;
-
-        ea::shared_ptr<ShaderMacroExpander> expander = ea::make_shared<ShaderMacroExpander>(ci);
-        expander->Process(desc_.sourceCode_);
-
-
 #ifdef WIN32
         ea::string sourceCode = desc_.sourceCode_;
         ea::string cbufferSuffix = "";
@@ -230,12 +222,19 @@ namespace Urho3D
 
         return result;
 #else
+        ea::string sourceCode = desc_.sourceCode_;
+        ShaderMacroExpanderCreationDesc ci;
+        ci.macros_ = desc_.macros_;
+        ci.shaderCode_ = desc_.sourceCode_;
+
+        ea::shared_ptr<ShaderMacroExpander> expander = ea::make_shared<ShaderMacroExpander>(ci);
+        expander->Process(sourceCode);
         // On non windows platform, we must convert our shader into
         // GLSL and compile with SPIR-V.
         HLSL2GLSLConverterImpl::ConversionAttribs attribs;
         attribs.EntryPoint = desc_.entryPoint_.c_str();
-        attribs.HLSLSource = desc_.sourceCode_.c_str();
-        attribs.NumSymbols = desc_.sourceCode_.length();
+        attribs.HLSLSource = sourceCode.c_str();
+        attribs.NumSymbols = sourceCode.length();
         attribs.ShaderType = DiligentShaderType[desc_.type_];
         ea::string currCode = desc_.sourceCode_;
         desc_.sourceCode_ = HLSL2GLSLConverterImpl::GetInstance().Convert(attribs).c_str();
