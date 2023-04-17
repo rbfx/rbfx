@@ -88,10 +88,13 @@ public:
 private:
     Options options_;
     Context* context_;
-    unsigned textureHeight_;
     SharedPtr<Model> model_;
     SharedPtr<Animation> animation_;
-    unsigned textureWidth_;
+    unsigned textureWidth_{};
+    unsigned textureHeight_{};
+    unsigned rowsPerFrame_{};
+    unsigned verticesPerRow_{1024};
+    unsigned numFrames_{};
     Matrix3x4 positionTransform_;
     Matrix3 normalTransform_;
 };

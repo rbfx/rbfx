@@ -9,7 +9,9 @@
 UNIFORM_BUFFER_BEGIN(4, Material)
     DEFAULT_MATERIAL_UNIFORMS
     UNIFORM(float cTextureHeight)
+    UNIFORM(float cNumFrames)
     UNIFORM(float cRowsPerFrame)
+    UNIFORM(float cNormalizedTime)
 UNIFORM_BUFFER_END(4, Material)
 
 #include "_Material.glsl"
@@ -46,9 +48,8 @@ VertexTransform GetCustomVertexTransform()
     mat4 modelMatrix = GetModelMatrix();
 
     VertexTransform result;
-    float offset = fract(cElapsedTime*0.2);
-    float frameScale = cTextureHeight/cRowsPerFrame;
-    offset = floor(offset*frameScale)/frameScale;
+    float time = clamp(cNormalizedTime, 0.0f, 1.0f);
+    float offset = round(time*(cNumFrames-1.0))*cRowsPerFrame/cTextureHeight;
     vec2 uv = iTexCoord1 + vec2(0, offset);
     vec3 pos = SampleVec3(sEmissiveMap, uv).xyz;
     result.position = vec4(pos, 1) * modelMatrix;

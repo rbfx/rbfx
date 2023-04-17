@@ -1,0 +1,2346 @@
+<?xml version="1.0"?>
+<scene id="1">
+	<attribute name="Name" value="" />
+	<attribute name="Time Scale" value="1.000000" />
+	<attribute name="Elapsed Time" value="1745.954468" />
+	<attribute name="Next Node ID" value="225" />
+	<attribute name="Next Component ID" value="341" />
+	<attribute name="Variables" />
+	<attribute name="Variable Names" value="" />
+	<attribute name="Lightmaps" value="Texture2D" />
+	<component type="Octree" id="1" />
+	<component type="RenderPipeline" id="2">
+		<attribute name="Color Space" value="LDR Linear" />
+		<attribute name="PCF Kernel Size" value="5" />
+		<attribute name="Post Process Antialiasing" value="FXAA3" />
+	</component>
+	<component type="ReflectionProbeManager" id="11" />
+	<node id="2">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Skybox" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Skybox" id="3">
+			<attribute name="Model" value="Model;Models/Box.mdl" />
+			<attribute name="Material" value="Material;Materials/DefaultSkybox.xml" />
+		</component>
+	</node>
+	<node id="3">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Global Zone" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Zone" id="4">
+			<attribute name="Bounding Box Min" value="-1000 -1000 -1000" />
+			<attribute name="Bounding Box Max" value="1000 1000 1000" />
+			<attribute name="Ambient Color" value="0 0 0 1" />
+			<attribute name="Background Brightness" value="0.500000" />
+			<attribute name="Zone Texture" value="TextureCube;Textures/DefaultSkybox.xml" />
+		</component>
+	</node>
+	<node id="4">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Global Light" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="0.888074 0.325058 0.325058 -0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Light" id="5">
+			<attribute name="Light Type" value="Directional" />
+			<attribute name="Cast Shadows" value="true" />
+			<attribute name="CSM Splits" value="4 16 0 0" />
+		</component>
+	</node>
+	<node id="5">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Sample Cube" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.0765 0.58301 -2.49334" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="3 3 3" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="6">
+			<attribute name="Is Enabled" value="false" />
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="6">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ground Plane" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="20 20 20" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="7">
+			<attribute name="Model" value="Model;Models/Plane.mdl" />
+			<attribute name="Material" value="Material;Materials/DefaultGrey.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="9">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Global Light" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.865078 1.58614 0.0257052" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Light" id="23">
+			<attribute name="Is Enabled" value="false" />
+			<attribute name="Color" value="1 0 0 1" />
+			<attribute name="Brightness Multiplier" value="2.000000" />
+			<attribute name="Range" value="2.000000" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="58">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="160">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="66">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="182">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="67">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="183">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="68">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="184">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="69">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="185">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="70">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="186">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="71">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00378 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="187">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="72">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00378 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="188">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="73">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00378 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="189">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="74">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="190">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="75">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="191">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="76">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="192">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="77">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="193">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="78">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00282 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="194">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="79">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00282 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="195">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="80">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00281772 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="196">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="81">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00281772 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="197">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="82">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00386676 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="198">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="83">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00386676 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="199">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="84">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00386676 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="200">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="85">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="201">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="86">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00818 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="202">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="87">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="203">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="88">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="204">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="89">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="205">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="90">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="206">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="91">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00714 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="207">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="92">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="208">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="93">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.00713 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="209">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="94">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.00713 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="210">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="95">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.0081 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="211">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="96">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="212">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="97">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.0081 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="213">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="98">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00818 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="214">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="99">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.0081 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="215">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="100">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00818 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="216">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="101">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00714 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="217">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="102">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="218">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="103">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="219">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="104">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="220">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="105">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="221">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="106">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00281772 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="222">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="107">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00378 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="223">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="108">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="224">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="109">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="225">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="110">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00378 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="226">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="111">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00714 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="227">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="112">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00378 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="228">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="113">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00386676 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="229">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="114">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="230">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="115">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="231">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="116">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="6.0081 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="232">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="117">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00386676 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="233">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="118">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="234">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="119">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.0081 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="235">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="120">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00282 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="236">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="121">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.0081 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="237">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="122">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="238">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="123">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.00713 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="239">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="124">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="240">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="125">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00818 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="241">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="126">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="242">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="127">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="243">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="128">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00386676 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="244">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="129">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="245">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="130">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00714 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="246">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="131">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.00281772 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="247">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="132">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="248">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="133">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00818 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="249">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="134">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="3.00378 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="250">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="135">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.0081 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="251">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="136">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="252">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="137">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="253">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="138">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.00818 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="254">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="139">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="255">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="140">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="256">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="141">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.00378 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="257">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="142">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.0081 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="258">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="143">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="5.00713 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="259">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="144">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.00282 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="260">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="145">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00267 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="261">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="146">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="262">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="147">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99932 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="263">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="148">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00363 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="264">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="149">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="265">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="150">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00258 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="266">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="151">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00363 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="267">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="152">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="268">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="153">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00267 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="269">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="154">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00267 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="270">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="155">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="271">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="156">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="272">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="157">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99836 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="273">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="158">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00363 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="274">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="159">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="275">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="160">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="276">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="161">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99932 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="277">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="162">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="278">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="163">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00363 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="279">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="164">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="280">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="165">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="281">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="166">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="282">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="167">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="283">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="168">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99836 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="284">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="169">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="285">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="170">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="286">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="171">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99827 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="287">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="172">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99932 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="288">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="173">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99932 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="289">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="174">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00363 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="290">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="175">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99836 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="291">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="176">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00363 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="292">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="177">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99932 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="293">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="178">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="294">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="179">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00258 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="295">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="180">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="296">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="181">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00258 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="297">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="182">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00258 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="298">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="183">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="299">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="184">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="300">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="185">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99827 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="301">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="186">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="302">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="187">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99827 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="303">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="188">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="304">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="189">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="305">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="190">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="306">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="191">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00267 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="307">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="192">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99932 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="308">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="193">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="309">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="194">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00363 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="310">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="195">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00267 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="311">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="196">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="312">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="197">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="313">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="198">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="314">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="199">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="315">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="200">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99827 0.500001 -4.00228" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="316">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="201">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="317">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="202">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="318">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="203">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="319">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="204">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99836 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="320">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="205">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99932 0.500001 2.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="321">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="206">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00363 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="322">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="207">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99827 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="323">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="208">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00258 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="324">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="209">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.00258 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="325">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="210">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="326">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="211">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.00267 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="327">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="212">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99836 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="328">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="213">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-2.99836 0.500001 1.99616" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="329">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="214">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="330">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="215">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99932 0.500001 -1.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="331">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="216">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="332">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="217">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 0.996158" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="333">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="218">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 -5.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="334">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="219">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.00267 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="335">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="220">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 -0.003842" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="336">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="221">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.998356 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="337">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="222">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.99827 0.500001 -3.00229" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="338">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="223">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-1.99836 0.500001 3.99663" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="339">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="224">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Ninja" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.00267 0.500001 -2.00181" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="340">
+			<attribute name="Model" value="Model;Models/NinjaVAT/Ninja.mdl" />
+			<attribute name="Material" value="Material;Models/NinjaVAT/Ninja_Walk.material" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+</scene>

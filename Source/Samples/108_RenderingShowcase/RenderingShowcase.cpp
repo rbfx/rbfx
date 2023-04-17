@@ -45,6 +45,7 @@ RenderingShowcase::RenderingShowcase(Context* context)
     sceneNames_.push_back({ "0" });
     sceneNames_.push_back({ "2_Dynamic", "2_BakedDirect", "2_BakedIndirect", "2_BakedDirectIndirect" });
     sceneNames_.push_back({ "3_MixedBoxProbes", "3_MixedProbes" });
+    sceneNames_.push_back({"5"});
     // Keep 1 last because it may crash mobile browsers
     sceneNames_.push_back({ "1" });
 }

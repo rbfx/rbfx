@@ -1,5 +1,9 @@
 #include "Baker.h"
 
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/ValueAnimation.h>
+
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Graphics/IndexBuffer.h>
 #include <Urho3D/Graphics/SoftwareModelAnimator.h>
@@ -143,8 +147,12 @@ void Baker::Bake()
         VertexBufferReader vbReader{sourceVertexBuffer};
 
         vertexData.resize(sourceVertexBuffer->GetVertexCount());
-        textureWidth_ = NextPowerOfTwo(vertexData.size());
+        textureWidth_ = Urho3D::Min(verticesPerRow_, NextPowerOfTwo(vertexData.size()));
+        numFrames_ = Max(animation_->GetLength() * options_.targetFramerate_, 2);
+        rowsPerFrame_ = (vertexData.size() + verticesPerRow_ - 1) / verticesPerRow_;
+        textureHeight_ = NextPowerOfTwo(rowsPerFrame_ * numFrames_);
         Vector2 subPixelOffset = Vector2{0.5f, 0.5f};
+        IntVector2 pixelXY{};
         for (unsigned i = 0; i < vertexData.size(); ++i)
         {
             auto& vertex = vertexData[i];
@@ -153,8 +161,14 @@ void Baker::Bake()
             Color color = vbReader.GetColor(i);
             vertex.color_ = color.ToUInt();
             vertex.uv0_ = vbReader.GetUV(i);
-            vertex.uv1_ = Vector2((i + subPixelOffset.x_) / static_cast<float>(textureWidth_),
-                subPixelOffset.y_ / static_cast<float>(textureHeight_));
+            vertex.uv1_ = Vector2((pixelXY.x_ + subPixelOffset.x_) / static_cast<float>(textureWidth_),
+                (pixelXY.y_ + subPixelOffset.y_) / static_cast<float>(textureHeight_));
+            ++pixelXY.x_;
+            if (pixelXY.x_ >= textureWidth_)
+            {
+                pixelXY.x_ = 0;
+                ++pixelXY.y_;
+            }
         }
 
         for (auto lods : model_->GetGeometries())
@@ -243,8 +257,6 @@ void Baker::LoadAnimation()
     {
         Help("Failed to parse animation file: " + options_.inputAnimation_);
     }
-    textureHeight_ = NextPowerOfTwo(animation_->GetLength() * options_.targetFramerate_);
-    textureHeight_ = Max(1, Min(textureHeight_, 2048));
 }
 
 Vector2 Encode16bit(float x)
@@ -311,19 +323,16 @@ void Baker::BuildVAT()
     animationController->Update(0.0f);
     animationController->PlayNew(animationParameters);
 
-    //auto geometry = softwareModelAnimator->GetLodGeometry(0, 0);
-    //auto vertexBuffer = geometry->GetVertexBuffer(0);
     auto vertexBuffer = softwareModelAnimator->GetVertexBuffers().front();
     VertexBufferReader vbReader{vertexBuffer};
 
-    auto dt = animation_->GetLength() / textureHeight_;
-    auto normalPitch = 4 * normLookUp->GetWidth();
-    auto positionPitch = 4 * posLookUp->GetWidth();
-    unsigned highPrecisionOffset = positionPitch / 2;
+    auto dt = animation_->GetLength() / (numFrames_-1);
+    auto pitch = 4 * posLookUp->GetWidth();
+    unsigned highPrecisionOffset = pitch / 2;
 
-    for (unsigned y=0; y< textureHeight_; ++y)
+    for (unsigned frameIndex = 0; frameIndex < numFrames_; ++frameIndex)
     {
-        animationController->UpdateAnimationTime(animation_, dt*y);
+        animationController->UpdateAnimationTime(animation_, dt*frameIndex);
         animationController->Update(0.0f);
         animatedModel->ApplyAnimation();
 
@@ -339,11 +348,12 @@ void Baker::BuildVAT()
         softwareModelAnimator->ApplySkinning(boneMatrices);
         softwareModelAnimator->Commit();
 
-        auto posData = posLookUp->GetData() + y * positionPitch;
-        auto normData = normLookUp->GetData() + y * normalPitch;
-
         for (unsigned i = 0; i < vertexBuffer->GetVertexCount(); ++i)
         {
+            auto pixelOffset = (rowsPerFrame_ * frameIndex + i / verticesPerRow_) * pitch + (i % verticesPerRow_) * 4;
+            auto posData = posLookUp->GetData() + pixelOffset;
+            auto normData = normLookUp->GetData() + pixelOffset;
+
             auto pos = positionTransform_ * vbReader.GetPosition(i);
             pos = VectorMin(VectorMax(pos, Vector3::ZERO), Vector3::ONE);
             auto norm = ((normalTransform_ * vbReader.GetNormal(i)).Normalized() + Vector3(1.0f, 1.0f, 1.0f)) * 0.5f;
@@ -361,8 +371,62 @@ void Baker::BuildVAT()
     }
 
     auto fileNameWithoutExt = options_.outputFolder_ + GetFileName(options_.inputAnimation_);
-    posLookUp->SaveFile(FileIdentifier("file", fileNameWithoutExt + ".pos.dds"));
-    normLookUp->SaveFile(FileIdentifier("file", fileNameWithoutExt + ".norm.dds"));
+
+    auto xmlFile = MakeShared<XMLFile>(context_);
+    auto root = xmlFile->CreateRoot("texture");
+    auto addressU = root.CreateChild("address");
+    addressU.SetAttribute("coord", "u");
+    addressU.SetAttribute("mode", "wrap");
+    auto addressV = root.CreateChild("address");
+    addressV.SetAttribute("coord", "v");
+    addressV.SetAttribute("mode", "wrap");
+    auto mipmap = root.CreateChild("mipmap");
+    mipmap.SetAttribute("enable", "false");
+    auto filter = root.CreateChild("filter");
+    if (rowsPerFrame_ == 1)
+        filter.SetAttribute("mode", "linear");
+    else
+        filter.SetAttribute("mode", "nearest");
+    auto metadataRows = root.CreateChild("metadata");
+    metadataRows.SetAttribute("name", "RowsPerFrame");
+    metadataRows.SetAttribute("type", "Float");
+    metadataRows.SetAttribute("value", Format("{}", rowsPerFrame_));
+    auto metadataFrames = root.CreateChild("metadata");
+    metadataFrames.SetAttribute("name", "NumFrames");
+    metadataFrames.SetAttribute("type", "Float");
+    metadataFrames.SetAttribute("value", Format("{}", numFrames_));
+    auto metadataTextureHeight = root.CreateChild("metadata");
+    metadataTextureHeight.SetAttribute("name", "TextureHeight");
+    metadataTextureHeight.SetAttribute("type", "Float");
+    metadataTextureHeight.SetAttribute("value", Format("{}", textureHeight_));
+    auto metadataAnimationLength = root.CreateChild("metadata");
+    metadataTextureHeight.SetAttribute("name", "AnimationLength");
+    metadataTextureHeight.SetAttribute("type", "Float");
+    metadataTextureHeight.SetAttribute("value", Format("{}", animation_->GetLength()));
+    {
+        posLookUp->SaveFile(FileIdentifier("file", fileNameWithoutExt + ".pos.dds"));
+        auto metadataFileName = fileNameWithoutExt + ".pos.xml";
+        auto file = MakeShared<File>(context_, metadataFileName, FILE_WRITE);
+        xmlFile->Save(*file);
+    }
+    {
+        normLookUp->SaveFile(FileIdentifier("file", fileNameWithoutExt + ".norm.dds"));
+        auto metadataFileName = fileNameWithoutExt + ".norm.xml";
+        auto file = MakeShared<File>(context_, metadataFileName, FILE_WRITE);
+        xmlFile->Save(*file);
+    }
+
+    {
+        auto va = MakeShared<ValueAnimation>(context_);
+        va->SetKeyFrame(0.0f, 0.0f);
+        va->SetKeyFrame(1.0f, 1.0f);
+        auto m = MakeShared<Material>(context_);
+        m->SetShaderParameter("NormalizedTime", 0.0f);
+        m->SetShaderParameterAnimation("NormalizedTime", va, WM_LOOP, 2.0);
+        auto file = MakeShared<File>(context_, fileNameWithoutExt + ".test.xml", FILE_WRITE);
+        m->Save(*file);
+        
+    }
 }
 
 
