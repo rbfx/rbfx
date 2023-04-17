@@ -153,7 +153,7 @@ ea::string SceneScreenshot::GenerateFileName(const IntVector2& size) const
     auto fileSystem = GetSubsystem<FileSystem>();
 
     const ea::string& outputPath = project->GetArtifactsPath();
-    const ea::string screenshotTime = Time::GetTimeStamp("%Y-%m-%d/%H-%M-%S");
+    const ea::string screenshotTime = Time::GetTimeStamp("%Y-%m-%d/%Y-%m-%d_%H-%M-%S");
     const ea::string fileNamePrefix = Format("{}Screenshots/{}_{}x{}", outputPath, screenshotTime, size.x_, size.y_);
     const ea::string fileNameSuffix = ".png";
 
