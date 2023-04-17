@@ -1351,7 +1351,35 @@ public:
     StringHash GetStringHash() const { return type_ == VAR_INT ? StringHash(GetUInt()) : StringHash::Empty; }
 
     /// Return bool or false on type mismatch.
-    bool GetBool() const { return type_ == VAR_BOOL ? value_.bool_ : false; }
+    bool GetBool() const
+    {
+        switch (type_)
+        {
+            case VAR_BOOL: return value_.bool_;
+            case VAR_INT: return static_cast<bool>(value_.int_);
+            case VAR_INT64: return static_cast<bool>(value_.int64_);
+            case VAR_FLOAT: return static_cast<bool>(value_.float_);
+            case VAR_DOUBLE: return static_cast<bool>(value_.double_);
+            case VAR_STRING: return !value_.string_.empty();
+            case VAR_COLOR: return value_.color_ != Color{};
+            case VAR_QUATERNION: return value_.quaternion_ != Quaternion::IDENTITY;
+            case VAR_VECTOR2: return value_.vector2_ != Vector2::ZERO;
+            case VAR_VECTOR3: return value_.vector3_ != Vector3::ZERO;
+            case VAR_VECTOR4: return value_.vector4_ != Vector4::ZERO;
+            case VAR_INTVECTOR2: return value_.intVector2_ != IntVector2::ZERO;
+            case VAR_INTVECTOR3: return value_.intVector3_ != IntVector3::ZERO;
+            case VAR_MATRIX3: return *value_.matrix3_ != Matrix3::IDENTITY;
+            case VAR_MATRIX3X4: return *value_.matrix3x4_!= Matrix3x4::IDENTITY;
+            case VAR_MATRIX4: return *value_.matrix4_ != Matrix4::IDENTITY;
+            case VAR_VOIDPTR: return value_.voidPtr_;
+            case VAR_PTR: return value_.weakPtr_;
+            case VAR_RECT: return value_.rect_ != Rect{};
+            case VAR_INTRECT: return value_.intRect_ != IntRect{};
+            case VAR_RESOURCEREF: return !value_.resourceRef_.name_.empty();
+            case VAR_RESOURCEREFLIST: return !value_.resourceRefList_.names_.empty();
+            default: return false;
+        }
+    }
 
     /// Return float or zero on type mismatch. Ints and doubles are converted.
     float GetFloat() const
