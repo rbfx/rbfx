@@ -59,6 +59,7 @@ private:
     void OnEndViewRender();
 
     const bool oldDebugGeometry_{};
+    const bool oldAutoAspectRatio_{};
     const float oldAspectRatio_{};
     const WeakPtr<Camera> camera_;
 
@@ -70,6 +71,7 @@ ScreenshotRenderer::ScreenshotRenderer(Scene* scene, Camera* camera, const IntVe
     : BaseClassName(scene->GetContext())
     , oldDebugGeometry_(camera->GetDrawDebugGeometry())
     , oldAspectRatio_(camera->GetAspectRatio())
+    , oldAutoAspectRatio_(camera->GetAutoAspectRatio())
     , camera_(camera)
     , texture_(MakeShared<Texture2D>(context_))
 {
@@ -94,6 +96,7 @@ ScreenshotRenderer::~ScreenshotRenderer()
     {
         camera_->SetDrawDebugGeometry(oldDebugGeometry_);
         camera_->SetAspectRatio(oldAspectRatio_);
+        camera_->SetAutoAspectRatio(oldAutoAspectRatio_);
     }
 }
 
@@ -101,6 +104,10 @@ void ScreenshotRenderer::OnEndViewRender()
 {
     auto self = SharedPtr<ScreenshotRenderer>(this);
     OnReady(this, *texture_->GetImage());
+
+    // Postpone deletion of this object until the end of frame
+    auto queue = GetSubsystem<WorkQueue>();
+    queue->PostDelayedTaskForMainThread([self]() {});
 }
 
 } // namespace
@@ -144,6 +151,9 @@ void SceneScreenshot::TakeScreenshotNow(Scene* scene, Camera* camera, const IntV
             image.SaveFile(fileName);
             URHO3D_LOGINFO("Screenshot saved to file://{}", fileName);
         }
+
+        // Remove this callback and ScreenshotRenderer with it
+        return false;
     });
 }
 
