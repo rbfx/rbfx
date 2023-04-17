@@ -88,7 +88,8 @@ namespace Urho3D
             StringVector& samplers, ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout);
 #endif
         bool CompileGLSL(ea::vector<unsigned>& byteCode);
-        bool ReflectGLSL(const void* byteCode, size_t byteCodeSize);
+        bool ReflectGLSL(const void* byteCode, size_t byteCodeSize,
+             StringVector& samplers, ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout);
         void RemapHLSLInputLayout(ea::string& sourceCode, const ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout);
         void RemapHLSLSamplers(ea::string& sourceCode, const StringVector& samplers);
 

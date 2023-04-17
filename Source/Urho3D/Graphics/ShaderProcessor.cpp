@@ -232,6 +232,42 @@ namespace Urho3D
         ea::shared_ptr<ShaderMacroExpander> expander = ea::make_shared<ShaderMacroExpander>(ci);
         expander->Process(sourceCode);
         
+        ea::string cbufferSuffix = "";
+        switch (desc_.type_) {
+            case VS:
+                cbufferSuffix = "VS";
+                break;
+            case PS:
+                cbufferSuffix = "PS";
+                break;
+            case GS:
+                cbufferSuffix = "GS";
+                break;
+            case HS:
+                cbufferSuffix = "HS";
+                break;
+            case DS:
+                cbufferSuffix = "DS";
+                break;
+            case CS:
+                cbufferSuffix = "CS";
+                break;
+            default:
+                URHO3D_LOGERROR("Unsupported ShaderType {}", desc_.type_);
+                return false;
+        }
+        
+        // Remove constant buffer suffixes
+        // Old Urho3D constant buffer is named like: ConstantBufferNameTYPE
+        // Examples: CameraVS, ObjectPS, ZonePS
+        // We normalize buffers to: CameraVS => Camera, ObjectPS => Object, ZonePS => Zone
+        {
+            size_t i = 0;
+            do {
+                sourceCode.replace(Format("{}{}", shaderParameterGroupNames[i], cbufferSuffix), shaderParameterGroupNames[i]);
+            } while (shaderParameterGroupNames[++i] != nullptr);
+        }
+        
         ShaderMacroHelper macros;
         for(auto macroIt = desc_.macros_.defines_.begin(); macroIt != desc_.macros_.defines_.end(); ++macroIt) {
             macros.AddShaderMacro(macroIt->first.c_str(), macroIt->second.c_str());
@@ -251,10 +287,14 @@ namespace Urho3D
             return false;
         }
         
-         if (!ReflectGLSL(byteCode.data(), byteCode.size() * sizeof(unsigned)))
+        StringVector mappedSamplers;
+        ea::vector<ea::pair<unsigned, VertexElementSemantic>> inputLayout;
+        if (!ReflectGLSL(byteCode.data(), byteCode.size() * sizeof(unsigned), mappedSamplers, inputLayout))
             return false;
-
-        outputCode_ = desc_.sourceCode_;
+        
+        RemapHLSLSamplers(sourceCode,  mappedSamplers);
+        RemapHLSLInputLayout(sourceCode, inputLayout);
+        outputCode_ = sourceCode;
         return true;
 #endif
     }
@@ -265,7 +305,9 @@ namespace Urho3D
             return false;
 
         size_t byteCodeSize = sizeof(unsigned) * byteCode.size();
-        if (!ReflectGLSL(byteCode.data(), byteCodeSize))
+        StringVector mappedSamplers;
+        ea::vector<ea::pair<unsigned, VertexElementSemantic>> inputLayout;
+        if (!ReflectGLSL(byteCode.data(), byteCodeSize, mappedSamplers, inputLayout))
             return false;
 
         ea::string sourceCode = desc_.sourceCode_;
@@ -414,7 +456,7 @@ namespace Urho3D
 
         return true;
     }
-    bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize)
+    bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize, StringVector& samplers, ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout)
     {
         SpvReflectShaderModule module = {};
         SpvReflectResult result = spvReflectCreateShaderModule(byteCodeSize, byteCode, &module);
@@ -494,6 +536,21 @@ namespace Urho3D
                     )
                 );
                 vertexElements_[vertexElements_.size() - 1].location_ = (*it)->location;
+                // Extract Semantic Index from Semantic Name
+                ea::string semanticName = (*it)->semantic == nullptr ? "" : (*it)->semantic;
+                unsigned semanticIdx = 0;
+                if(semanticName.size() > 0 && IsNum(semanticName[semanticName.size() - 1])) {
+                    unsigned semanticCharIdx = semanticName.size() - 1;
+                    while(semanticCharIdx > 0) {
+                        if(IsNum(semanticName[semanticCharIdx]))
+                            --semanticCharIdx;
+                        else
+                            break;
+                    }
+                    
+                    semanticIdx = atoi(semanticName.substr(semanticCharIdx).c_str());
+                }
+                inputLayout.push_back(ea::make_pair(semanticIdx, semantic));
             }
         }
 
@@ -504,6 +561,7 @@ namespace Urho3D
         result = spvReflectEnumerateDescriptorBindings(&module, &bindingCount, descriptorBindings.data());
 
         ea::unordered_map<ea::string, unsigned> cbRegisterMap;
+        ea::unordered_map<ea::string, bool> texMap;
         for (auto descBindingIt = descriptorBindings.begin(); descBindingIt != descriptorBindings.end(); descBindingIt++) {
             SpvReflectDescriptorBinding* binding = *descBindingIt;
 
@@ -532,9 +590,14 @@ namespace Urho3D
                     parameters_[varName] = ShaderParameter { desc_.type_ ,varName, variable.offset, variable.size, (unsigned)cBufferLookupValue->second };
                 }
             }
-            else if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+            else if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER) {
                 assert(binding->name);
                 ea::string name(binding->name);
+                ea::string rawName = name;
+                
+                if(texMap.contains(rawName))
+                    continue;
+                
                 if (name.at(0) == 's')
                     name = name.substr(1, name.size());
                 auto texUnitLookupVal = DiligentTextureUnitLookup.find(name);
@@ -544,6 +607,9 @@ namespace Urho3D
                     return false;
                 }
                 textureSlots_[texUnitLookupVal->second] = true;
+                samplers.push_back(rawName);
+                
+                texMap[rawName] = true;
             }
         }
 
