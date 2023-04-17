@@ -367,11 +367,11 @@ namespace Urho3D
     };
 
     static ea::shared_ptr<TokenBase> sBuildToken(const TokenDesc& desc) {
-        for (uint8_t i = 0; i < _countof(sTokenHashes); ++i) {
+        for (uint8_t i = 0; i < std::size(sTokenHashes); ++i) {
             if (sTokenHashes[i] == desc.id_)
                 return sTokenCtors[i]();
         }
-        for (uint8_t i = 0; i < _countof(sTokenOpHashes); ++i) {
+        for (uint8_t i = 0; i < std::size(sTokenOpHashes); ++i) {
             if (sTokenOpHashes[i] == desc.id_)
                 return sTokenOpCtors[i]();
         }

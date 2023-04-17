@@ -3,6 +3,8 @@
 #include "../Graphics/ShaderConverter.h"
 #include <Diligent/Graphics/HLSL2GLSLConverterLib/include/HLSL2GLSLConverterImpl.hpp>
 #include <Diligent/Graphics/ShaderTools/include/SPIRVTools.hpp>
+#include <Diligent/Graphics/ShaderTools/include/GLSLangUtils.hpp>
+#include <Diligent/Graphics/GraphicsTools/interface/ShaderMacroHelper.hpp>
 #include <SPIRV-Reflect/spirv_reflect.h>
 #include "../Graphics/ShaderMacroExpander.h"
 #ifdef WIN32
@@ -229,23 +231,27 @@ namespace Urho3D
 
         ea::shared_ptr<ShaderMacroExpander> expander = ea::make_shared<ShaderMacroExpander>(ci);
         expander->Process(sourceCode);
-        // On non windows platform, we must convert our shader into
-        // GLSL and compile with SPIR-V.
-        HLSL2GLSLConverterImpl::ConversionAttribs attribs;
-        attribs.EntryPoint = desc_.entryPoint_.c_str();
-        attribs.HLSLSource = sourceCode.c_str();
-        attribs.NumSymbols = sourceCode.length();
-        attribs.ShaderType = DiligentShaderType[desc_.type_];
-        ea::string currCode = desc_.sourceCode_;
-        desc_.sourceCode_ = HLSL2GLSLConverterImpl::GetInstance().Convert(attribs).c_str();
-        desc_.macros_.defines_.clear(); // Clear macros to not execute again
-
-        ea::vector<unsigned> byteCode;
-        if (!CompileGLSL(byteCode))
+        
+        ShaderMacroHelper macros;
+        for(auto macroIt = desc_.macros_.defines_.begin(); macroIt != desc_.macros_.defines_.end(); ++macroIt) {
+            macros.AddShaderMacro(macroIt->first.c_str(), macroIt->second.c_str());
+        }
+        
+        ShaderCreateInfo shaderCI;
+        shaderCI.Desc.Name = desc_.name_.c_str();
+        shaderCI.Desc.ShaderType = DiligentShaderType[desc_.type_];
+        shaderCI.Macros = macros;
+        shaderCI.Source = sourceCode.c_str();
+        shaderCI.SourceLength = sourceCode.length();
+        shaderCI.EntryPoint = desc_.entryPoint_.c_str();
+        shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+        
+        std::vector<uint32_t> byteCode = GLSLangUtils::HLSLtoSPIRV(shaderCI, GLSLangUtils::SpirvVersion::Vk100, nullptr, nullptr);
+        if(byteCode.size() == 0) {
             return false;
-
-        desc_.sourceCode_ = currCode;
-        if (!ReflectGLSL(byteCode.data(), byteCode.size() * sizeof(unsigned)))
+        }
+        
+         if (!ReflectGLSL(byteCode.data(), byteCode.size() * sizeof(unsigned)))
             return false;
 
         outputCode_ = desc_.sourceCode_;
@@ -471,6 +477,7 @@ namespace Urho3D
                 while (isdigit(inputName.at(inputNameEndIdx)))
                     --inputNameEndIdx;
                 inputNameWithoutIdx = inputName.substr(0, inputNameEndIdx + 1);
+                inputNameWithoutIdx.replace("input.", "");
 
                 unsigned slotIdx = inputNameEndIdx == inputName.length() - 1 ? 0 : ToUInt(inputName.substr(inputNameWithoutIdx.length(), inputName.length() - 1));
                 auto semanticIt = sSemanticsMapping.find(inputNameWithoutIdx);
