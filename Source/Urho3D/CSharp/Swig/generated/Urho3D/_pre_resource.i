@@ -9,8 +9,6 @@
 %ignore Urho3D::PRIORITY_LAST;
 %csconstvalue("0") Urho3D::CF_NONE;
 %csconstvalue("0") Urho3D::PLVT_NONE;
-%csconstvalue("0") Urho3D::RESOURCE_CHECKEXISTS;
-%csconstvalue("1") Urho3D::RESOURCE_GETFILE;
 %csattribute(Urho3D::JSONValue, %arg(Urho3D::JSONValueType), ValueType, GetValueType);
 %csattribute(Urho3D::JSONValue, %arg(Urho3D::JSONNumberType), NumberType, GetNumberType);
 %csattribute(Urho3D::JSONValue, %arg(bool), IsNull, IsNull);
@@ -176,12 +174,4 @@ public static partial class E
         public static implicit operator StringHash(ChangeLanguageEvent e) { return e._event; }
     }
     public static ChangeLanguageEvent ChangeLanguage = new ChangeLanguageEvent();
-    public class ResourceRenamedEvent {
-        private StringHash _event = new StringHash("ResourceRenamed");
-        public StringHash From = new StringHash("From");
-        public StringHash To = new StringHash("To");
-        public ResourceRenamedEvent() { }
-        public static implicit operator StringHash(ResourceRenamedEvent e) { return e._event; }
-    }
-    public static ResourceRenamedEvent ResourceRenamed = new ResourceRenamedEvent();
 } %}

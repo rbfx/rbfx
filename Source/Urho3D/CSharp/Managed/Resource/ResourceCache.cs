@@ -1,5 +1,5 @@
-﻿//
-// Copyright (c) 2017-2020 the rbfx project.
+//
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,11 @@ namespace Urho3DNet
         public T GetResource<T>(string name, bool sendEventOnFailure = true) where T: Resource
         {
             return (T) GetResource(typeof(T).Name, name, sendEventOnFailure);
+        }
+
+        public T GetTempResource<T>(string name, bool sendEventOnFailure = true) where T : Resource
+        {
+            return (T)GetTempResource(typeof(T).Name, name, sendEventOnFailure);
         }
     }
 }

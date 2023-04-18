@@ -528,6 +528,7 @@ public:
 %include "Urho3D/Scene/Component.h"
 %include "Urho3D/Scene/Node.h"
 %include "Urho3D/Scene/Scene.h"
+%include "Urho3D/Scene/SceneResource.h"
 %include "Urho3D/Scene/SplinePath.h"
 %include "Urho3D/Scene/ValueAnimation.h"
 %include "Urho3D/Scene/LogicComponent.h"
