@@ -1360,11 +1360,8 @@ public:
             case VAR_INT64: return static_cast<bool>(value_.int64_);
             case VAR_FLOAT: return static_cast<bool>(value_.float_);
             case VAR_DOUBLE: return static_cast<bool>(value_.double_);
-            case VAR_STRING: return !value_.string_.empty();
             case VAR_VOIDPTR: return value_.voidPtr_;
             case VAR_PTR: return value_.weakPtr_;
-            case VAR_RESOURCEREF: return !value_.resourceRef_.name_.empty();
-            case VAR_RESOURCEREFLIST: return !value_.resourceRefList_.names_.empty();
             default: return false;
         }
     }
