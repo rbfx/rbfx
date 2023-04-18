@@ -392,6 +392,7 @@ namespace SDL
 
 %ignore Urho3D::DirectionAggregatorDetail::SubscriptionMask;
 %ignore Urho3D::DirectionalPadAdapterDetail::SubscriptionMask;
+%ignore Urho3D::PointerAdapterDetail::SubscriptionMask;
 
 %include "generated/Urho3D/_pre_input.i"
 %include "Urho3D/Input/InputConstants.h"

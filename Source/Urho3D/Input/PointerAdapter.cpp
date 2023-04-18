@@ -344,6 +344,16 @@ void PointerAdapter::SetUIElement(UIElement* element)
     directionAdapter_->SetUIElement(element);
 }
 
+void PointerAdapter::SetCursorSpeed(float cursorSpeed)
+{
+    cursorSpeed_ = cursorSpeed;
+}
+
+void PointerAdapter::SetCursorAcceleration(float cursorAcceleration)
+{
+    cursorAcceleration_ = cursorAcceleration;
+}
+
 IntVector2 PointerAdapter::GetUIPointerPosition() const
 {
     const auto ui = GetSubsystem<UI>();
