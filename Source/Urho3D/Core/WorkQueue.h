@@ -138,6 +138,9 @@ public:
     /// Post the task for main thread.
     void PostTaskForMainThread(TaskFunction&& task, TaskPriority priority = TaskPriority::Medium);
     template <class T> void PostTaskForMainThread(T task, TaskPriority priority = TaskPriority::Medium);
+    /// Post delayed task for main thread. It is guaranteed to be invoked between frames.
+    void PostDelayedTaskForMainThread(TaskFunction&& task);
+    template <class T> void PostDelayedTaskForMainThread(T task);
 
     /// Complete tasks with Immediate priority, posted from this thread.
     /// Can be called only from main thread or from another task.
@@ -390,6 +393,11 @@ template <class T> void WorkQueue::PostTaskForThread(T task, TaskPriority priori
 template <class T> void WorkQueue::PostTaskForMainThread(T task, TaskPriority priority)
 {
     PostTaskForMainThread(WrapTask(ea::move(task)), priority);
+}
+
+template <class T> void WorkQueue::PostDelayedTaskForMainThread(T task)
+{
+    PostDelayedTaskForMainThread(WrapTask(ea::move(task)));
 }
 
 }

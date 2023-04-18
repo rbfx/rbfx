@@ -618,10 +618,6 @@ public:
     unsigned GetIndexInParent() const;
     /// Return child scene node by index.
     Node* GetChild(unsigned index) const;
-    /// Return child scene node by name.
-    Node* GetChild(const ea::string& name, bool recursive = false) const;
-    /// Return child scene node by name.
-    Node* GetChild(const char* name, bool recursive = false) const;
     /// Return child scene node by name hash.
     Node* GetChild(StringHash nameHash, bool recursive = false) const;
     /// Find child node by path string in format "Parent Name/Child Name/Grandchild Name/..."

@@ -25,6 +25,8 @@
 namespace Urho3D
 {
 
-void RegisterStandardSerializableHooks();
+class Context;
+
+void RegisterStandardSerializableHooks(Context* context);
 
 }

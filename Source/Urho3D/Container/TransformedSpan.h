@@ -44,7 +44,7 @@ public:
     public:
         using iterator_category = std::random_access_iterator_tag;
         using value_type = DestinationType;
-        using difference_type = unsigned;
+        using difference_type = eastl_size_t;
         using pointer = const DestinationType*;
         using reference = const DestinationType&;
 
@@ -112,7 +112,7 @@ public:
         bool operator<=(const Iterator& rhs) const { return iter_ <= rhs.iter_; }
         bool operator>=(const Iterator& rhs) const { return iter_ >= rhs.iter_; }
 
-        difference_type operator-(const Iterator& rhs) const { return iter_ - rhs.iter_; }
+        difference_type operator-(const Iterator& rhs) const { return static_cast<difference_type>(iter_ - rhs.iter_); }
 
     private:
         UnderlyingIterator iter_{};
@@ -123,7 +123,7 @@ public:
 
     Iterator Begin() const { return Iterator{span_.begin()}; }
     Iterator End() const { return Iterator{span_.end()}; }
-    unsigned Size() const { return span_.size(); }
+    eastl_size_t Size() const { return span_.size(); }
 
 private:
     UndelyingSpan span_;
