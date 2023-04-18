@@ -47,6 +47,20 @@ class NodePrefab;
 class SceneResolver;
 class SerializablePrefab;
 
+enum SceneLookupFlag
+{
+    None = 0x0,
+    /// Whether to do recursive search in the scene subtree.
+    Recursive = 0x1,
+    /// Whether to ignore temporary nodes and components.
+    //IgnoreTemporary = 0x2,
+    /// Used for lazy node lookup. Whether to validate the existing node name.
+    ValidateName = 0x4,
+    /// Used for lazy node lookup. Whether to validate that the existing node is a child of the queried node.
+    ValidateRelation = 0x8,
+};
+URHO3D_FLAGSET(SceneLookupFlag, SceneLookupFlags);
+
 /// Transform space for translations and rotations.
 enum TransformSpace
 {
@@ -418,7 +432,7 @@ public:
     Scene* GetScene() const { return scene_; }
 
     /// Return whether is a direct or indirect child of specified node.
-    bool IsChildOf(Node* node) const;
+    bool IsChildOf(const Node* node) const;
 
     /// Return whether the node is effectively temporary, i.e. is temporary or is a child of temporary node.
     bool IsTemporaryEffective() const;
@@ -682,6 +696,16 @@ public:
     /// Template version of checking whether has a specific component.
     template <class T> bool HasComponent() const;
 
+    /// Find and return child node inplace if pointer is null, do nothing if pointer is already initialized.
+    /// Return true if child node is found or is already initialized.
+    /// This function is optimized for the case when the child node is expected to be found.
+    bool GetChildLazy(
+        WeakPtr<Node>& childNode, StringHash nameHash, SceneLookupFlags flags = SceneLookupFlag::None) const;
+    /// Find and return component inplace if pointer is null, do nothing if pointer is already initialized.
+    /// Return true if component is found or is already initialized.
+    /// This function is optimized for the case when the component is expected to be found.
+    template <class T> bool GetNthComponentLazy(WeakPtr<T>& childComponent, unsigned index = 0) const;
+
     /// Set ID. Called by Scene.
     /// @property{set_id}
     void SetID(unsigned id);
@@ -906,6 +930,22 @@ template <class U> void Node::GetDerivedComponents(U& destVector, bool recursive
 {
     using ComponentType = ea::remove_reference_t<decltype(*destVector[0])>;
     GetDerivedComponents<ComponentType>(destVector, recursive, clearVector);
+}
+
+template <class T> bool Node::GetNthComponentLazy(WeakPtr<T>& childComponent, unsigned index) const
+{
+    // Try to use existing weak pointer
+    if (childComponent)
+        return true;
+
+    // Try to find and cache the component.
+    if (auto component = GetNthComponent<T>(index))
+    {
+        childComponent = component;
+        return true;
+    }
+
+    return false;
 }
 
 }

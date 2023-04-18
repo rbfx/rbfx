@@ -1579,7 +1579,7 @@ bool Node::HasTag(const ea::string& tag) const
     return impl_->tags_.contains(tag);
 }
 
-bool Node::IsChildOf(Node* node) const
+bool Node::IsChildOf(const Node* node) const
 {
     Node* parent = parent_;
     while (parent)
@@ -1632,6 +1632,37 @@ const Variant& Node::GetVarByHash(StringHash key) const
 {
     auto i = vars_.find_by_hash(key.Value());
     return i != vars_.end() ? i->second : Variant::EMPTY;
+}
+
+bool Node::GetChildLazy(WeakPtr<Node>& childNode, StringHash nameHash, SceneLookupFlags flags) const
+{
+    // Try to use existing weak pointer. This should be the most common case.
+    if (childNode)
+    {
+        const bool isNameGood = !flags.Test(SceneLookupFlag::ValidateName) || childNode->GetNameHash() == nameHash;
+        const bool isRelationGood = !flags.Test(SceneLookupFlag::ValidateRelation) || childNode->IsChildOf(this);
+        if (isNameGood && isRelationGood)
+        {
+#ifdef _DEBUG
+            if (childNode->GetNameHash() != nameHash)
+                URHO3D_LOGWARNING("Change of node name is ignored during lazy lookup");
+            if (!childNode->IsChildOf(this))
+                URHO3D_LOGWARNING("Change of node hierarchy is ignored during lazy lookup");
+#endif
+            return true;
+        }
+
+        childNode = nullptr;
+    }
+
+    // Try to find and cache the node.
+    if (Node* node = GetChild(nameHash, flags.Test(SceneLookupFlag::Recursive)))
+    {
+        childNode = node;
+        return true;
+    }
+
+    return false;
 }
 
 Component* Node::GetComponent(StringHash type, bool recursive) const
