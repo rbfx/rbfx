@@ -401,6 +401,7 @@ namespace SDL
 %include "Urho3D/Input/AxisAdapter.h"
 %include "Urho3D/Input/DirectionalPadAdapter.h"
 %include "Urho3D/Input/DirectionAggregator.h"
+%include "Urho3D/Input/PointerAdapter.h"
 
 // --------------------------------------- IO ---------------------------------------
 %ignore Urho3D::GetWideNativePath;
