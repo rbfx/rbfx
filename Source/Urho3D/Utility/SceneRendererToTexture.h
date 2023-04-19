@@ -92,7 +92,7 @@ public:
 private:
     void SetupViewport(RenderSurface* renderSurface);
 
-    SharedPtr<Scene> scene_;
+    WeakPtr<Scene> scene_;
     SharedPtr<Node> cameraNode_;
     Camera* camera_{};
 

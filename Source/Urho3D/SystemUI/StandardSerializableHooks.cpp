@@ -69,7 +69,7 @@ void RegisterStandardSerializableHooks(Context* context)
     });
 
     SerializableInspectorWidget::RegisterObjectHook({Camera::GetTypeNameStatic(), ObjectHookType::Append},
-        [context, widget = SharedPtr<SceneRendererToTexture>()](const WeakSerializableVector& objects) mutable
+        [context, widget = WeakPtr<SceneRendererToTexture>()](const WeakSerializableVector& objects) mutable
     {
         auto workQueue = context->GetSubsystem<WorkQueue>();
 
@@ -82,7 +82,11 @@ void RegisterStandardSerializableHooks(Context* context)
             return;
 
         if (!widget || widget->GetScene() != scene)
-            widget = MakeShared<SceneRendererToTexture>(scene);
+        {
+            auto widgetHolder = MakeShared<SceneRendererToTexture>(scene);
+            context->SetGlobalVar("Camera_Hook_Widget", MakeCustomValue(widgetHolder));
+            widget = widgetHolder;
+        }
 
         widget->SetActive(true);
 

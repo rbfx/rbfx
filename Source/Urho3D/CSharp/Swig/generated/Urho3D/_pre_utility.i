@@ -13,6 +13,7 @@
 %csattribute(Urho3D::CustomBackbufferTexture, %arg(Urho3D::Texture2D *), Texture, GetTexture);
 %csattribute(Urho3D::CustomBackbufferTexture, %arg(Urho3D::IntVector2), TextureSize, GetTextureSize, SetTextureSize);
 %csattribute(Urho3D::CustomBackbufferTexture, %arg(bool), IsActive, IsActive, SetActive);
+%csattribute(Urho3D::SceneRendererToTexture, %arg(Urho3D::Scene *), Scene, GetScene);
 %csattribute(Urho3D::SceneRendererToTexture, %arg(Urho3D::Camera *), Camera, GetCamera);
 %csattribute(Urho3D::SceneRendererToTexture, %arg(Urho3D::Node *), CameraNode, GetCameraNode);
 %csattribute(Urho3D::SceneRendererToTexture, %arg(Urho3D::Vector3), CameraPosition, GetCameraPosition);

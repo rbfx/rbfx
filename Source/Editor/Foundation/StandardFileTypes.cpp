@@ -60,8 +60,12 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (desc.HasExtension({".scene"}) || ctx.HasXMLRoot("scene"))
+        if (desc.HasExtension({".scene"}) || ctx.HasXMLRoot("scene")
+            // Support new scene format with legacy extension too
+            || (desc.HasExtension(".xml") && ctx.HasXMLRoot("resource") && ctx.xmlFile_->GetRoot().HasAttribute("_id")))
+        {
             desc.AddObjectType<Scene>();
+        }
     });
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
