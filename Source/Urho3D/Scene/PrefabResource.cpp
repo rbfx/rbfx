@@ -70,6 +70,12 @@ const NodePrefab& PrefabResource::GetNodePrefab() const
     return !prefab_.GetChildren().empty() ? prefab_.GetChildren()[0] : NodePrefab::Empty;
 }
 
+const NodePrefab& PrefabResource::GetNodePrefabSlice(ea::string_view path) const
+{
+    const NodePrefab& nodePrefab = GetNodePrefab();
+    return nodePrefab.FindChild(path);
+}
+
 NodePrefab& PrefabResource::GetMutableNodePrefab()
 {
     auto& children = prefab_.GetMutableChildren();

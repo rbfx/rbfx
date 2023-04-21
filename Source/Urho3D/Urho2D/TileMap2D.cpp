@@ -66,7 +66,7 @@ void TileMap2D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     const Color& color = Color::RED;
     float mapW = info_.GetMapWidth();
     float mapH = info_.GetMapHeight();
-    const Matrix3x4 transform = GetNode()->GetTransform();
+    const Matrix3x4 transform = GetNode()->GetTransformMatrix();
 
     switch (info_.orientation_)
     {

@@ -131,10 +131,12 @@ bool SceneSelectionRenderer::PrepareInternalComponents(SceneViewPage& scenePage,
         state.directSelection_ = scene->CreateComponent<OutlineGroup>();
         state.directSelection_->SetRenderOrder(DirectSelectionRenderOrder);
         state.directSelection_->SetTemporary(true);
+        state.directSelection_->SetDebug(true);
 
         state.indirectSelection_ = scene->CreateComponent<OutlineGroup>();
         state.indirectSelection_->SetRenderOrder(IndirectSelectionRenderOrder);
         state.indirectSelection_->SetTemporary(true);
+        state.indirectSelection_->SetDebug(true);
     }
 
     return state.directSelection_ && state.indirectSelection_;

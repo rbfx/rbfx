@@ -38,8 +38,10 @@
 #include <Urho3D/SystemUI/DragDropPayload.h>
 
 #include <EASTL/functional.h>
+#include <EASTL/optional.h>
 #include <EASTL/set.h>
 
+#include <chrono>
 #include <future>
 #include <regex>
 
@@ -193,6 +195,7 @@ public:
     const ea::string& GetCoreDataPath() const { return coreDataPath_; }
     const ea::string& GetDataPath() const { return dataPath_; }
     const ea::string& GetCachePath() const { return cachePath_; }
+    const ea::string& GetArtifactsPath() const { return artifactsPath_; }
     const ea::string& GetPreviewPngPath() const { return previewPngPath_; }
     /// @}
 
@@ -254,6 +257,7 @@ private:
     void ProcessCommand(const ea::string& command, bool exitOnCompletion);
     void ProcessPendingRemoteCommands();
     void RenderAssetsToolbar();
+    void RenderPluginReloadToolbar();
 
     /// Project properties
     /// @{
@@ -266,6 +270,7 @@ private:
     const ea::string coreDataPath_;
     const ea::string cachePath_;
     const ea::string tempPath_;
+    const ea::string artifactsPath_;
 
     const ea::string projectJsonPath_;
     const ea::string settingsJsonPath_;
@@ -325,6 +330,7 @@ private:
     bool areGlobalHotkeysEnabled_{true};
     bool isHighlightEnabled_{};
     ea::string currentLaunchConfiguration_;
+    ea::optional<std::chrono::steady_clock::time_point> pluginReloadEndTime_;
     /// @}
 };
 

@@ -614,6 +614,34 @@ unsigned Serializable::GetNumAttributes() const
     return attributes ? attributes->size() : 0;
 }
 
+void Serializable::CopyAttributes(const Serializable* source, bool resetToDefault)
+{
+    URHO3D_ASSERT(source);
+
+    if (resetToDefault)
+        ResetToDefault();
+
+    const auto* sourceAttributes = source->GetAttributes();
+    const auto* destAttributes = GetAttributes();
+    if (!sourceAttributes || !destAttributes)
+        return;
+
+    if (sourceAttributes != destAttributes)
+    {
+        URHO3D_LOGERROR("Source and destination objects have different types");
+        return;
+    }
+
+    for (unsigned i = 0; i < sourceAttributes->size(); ++i)
+    {
+        const AttributeInfo& attr = sourceAttributes->at(i);
+
+        Variant value;
+        source->OnGetAttribute(attr, value);
+        OnSetAttribute(attr, value);
+    }
+}
+
 void Serializable::SetInstanceDefault(const ea::string& name, const Variant& defaultValue)
 {
     // Allocate the instance level default value

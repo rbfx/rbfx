@@ -66,7 +66,7 @@ TEST_CASE("TrackedAnimatedModel tracks bones on server")
 
     // Animate objects forever
     serverScene->SubscribeToEvent(serverScene, E_SCENEUPDATE,
-        [&](StringHash, VariantMap& eventData)
+        [&](VariantMap& eventData)
     {
         const float timeStep = eventData[SceneUpdate::P_TIMESTEP].GetFloat();
         quad1->Translate(timeStep * Vector3::LEFT, TS_PARENT);

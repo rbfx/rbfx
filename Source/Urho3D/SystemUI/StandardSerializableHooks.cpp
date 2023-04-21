@@ -20,21 +20,25 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/AnimatedModel.h"
-#include "../SystemUI/SerializableInspectorWidget.h"
-#include "../SystemUI/StandardSerializableHooks.h"
-#include "../SystemUI/SystemUI.h"
-#include "../SystemUI/Widgets.h"
+#include "Urho3D/SystemUI/StandardSerializableHooks.h"
+
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/SystemUI/SerializableInspectorWidget.h"
+#include "Urho3D/SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/Widgets.h"
+#include "Urho3D/Utility/SceneRendererToTexture.h"
 
 namespace Urho3D
 {
 
-void RegisterStandardSerializableHooks()
+void RegisterStandardSerializableHooks(Context* context)
 {
-    SerializableInspectorWidget::RegisterHook({AnimatedModel::GetTypeNameStatic(), "Morphs"},
-        [](const SerializableHookContext& ctx, Variant& boxedValue)
+    SerializableInspectorWidget::RegisterAttributeHook({AnimatedModel::GetTypeNameStatic(), "Morphs"},
+        [](const AttributeHookContext& ctx, Variant& boxedValue)
     {
         if (boxedValue.GetType() != VAR_BUFFER)
             return false;
@@ -62,6 +66,46 @@ void RegisterStandardSerializableHooks()
             ui::NewLine();
 
         return modified;
+    });
+
+    SerializableInspectorWidget::RegisterObjectHook({Camera::GetTypeNameStatic(), ObjectHookType::Append},
+        [context, widget = WeakPtr<SceneRendererToTexture>()](const WeakSerializableVector& objects) mutable
+    {
+        auto workQueue = context->GetSubsystem<WorkQueue>();
+
+        if (objects.size() != 1)
+            return;
+
+        const auto camera = dynamic_cast<Camera*>(objects.front().Get());
+        Scene* scene = camera ? camera->GetScene() : nullptr;
+        if (!camera || !scene)
+            return;
+
+        if (!widget || widget->GetScene() != scene)
+        {
+            auto widgetHolder = MakeShared<SceneRendererToTexture>(scene);
+            context->SetGlobalVar("Camera_Hook_Widget", MakeCustomValue(widgetHolder));
+            widget = widgetHolder;
+        }
+
+        widget->SetActive(true);
+
+        widget->GetCamera()->CopyAttributes(camera);
+        widget->GetCamera()->SetDrawDebugGeometry(false);
+        widget->GetCameraNode()->CopyAttributes(camera->GetNode());
+
+        workQueue->PostDelayedTaskForMainThread([widget] { widget->SetActive(false); });
+
+        const float availableWidth = ui::GetContentRegionAvail().x;
+        const float defaultAspectRatio = 16.0f / 9.0f;
+        const float aspectRatio = camera->GetAutoAspectRatio() ? defaultAspectRatio : camera->GetAspectRatio();
+        const auto textureSize = Vector2{availableWidth, availableWidth / aspectRatio}.ToIntVector2();
+
+        widget->SetTextureSize(textureSize);
+        widget->Update();
+
+        Texture2D* sceneTexture = widget->GetTexture();
+        Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
     });
 }
 

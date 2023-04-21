@@ -528,6 +528,7 @@ public:
 %include "Urho3D/Scene/Component.h"
 %include "Urho3D/Scene/Node.h"
 %include "Urho3D/Scene/Scene.h"
+%include "Urho3D/Scene/SceneResource.h"
 %include "Urho3D/Scene/SplinePath.h"
 %include "Urho3D/Scene/ValueAnimation.h"
 %include "Urho3D/Scene/LogicComponent.h"
@@ -595,10 +596,8 @@ public:
 %ignore Urho3D::PointOctreeQuery::TestDrawables;
 %ignore Urho3D::BoxOctreeQuery::TestDrawables;
 %ignore Urho3D::OctreeQuery::TestDrawables;
-%ignore Urho3D::UpdateDrawablesWork;
 %ignore Urho3D::ProcessLightWork;
 %ignore Urho3D::CheckVisibilityWork;
-%ignore Urho3D::CheckDrawableVisibilityWork;
 %ignore Urho3D::ELEMENT_TYPESIZES;
 %ignore Urho3D::ScratchBuffer;
 %ignore Urho3D::Drawable::batches_;
@@ -664,6 +663,7 @@ public:
 %ignore Urho3D::AnimationState::CalculateModelTracks;
 %ignore Urho3D::AnimationState::CalculateNodeTracks;
 %ignore Urho3D::AnimationState::CalculateAttributeTracks;
+%ignore Urho3D::Animation::GetVariantTracks;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {

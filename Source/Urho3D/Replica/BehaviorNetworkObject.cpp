@@ -115,7 +115,7 @@ void BehaviorNetworkObject::InitializeBehaviors()
     if (callbackMask_.Test(NetworkCallbackMask::Update))
     {
         SubscribeToEvent(GetScene(), E_SCENENETWORKUPDATE,
-            [this](StringHash, VariantMap& eventData)
+            [this](VariantMap& eventData)
         {
             using namespace SceneNetworkUpdate;
             const float replicaTimeStep = eventData[P_TIMESTEP_REPLICA].GetFloat();

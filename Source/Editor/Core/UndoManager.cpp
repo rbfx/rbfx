@@ -105,10 +105,7 @@ bool UndoManager::ActionGroup::CanUndo() const
 UndoManager::UndoManager(Context* context)
     : Object(context)
 {
-    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap&)
-    {
-        Update();
-    });
+    SubscribeToEvent(E_INPUTEND, &UndoManager::Update);
 }
 
 void UndoManager::NewFrame()

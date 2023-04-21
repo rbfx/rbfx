@@ -317,7 +317,7 @@ View::View(Context* context) :
     renderer_(GetSubsystem<Renderer>())
 {
     // Create octree query and scene results vector for each thread
-    unsigned numThreads = GetSubsystem<WorkQueue>()->GetNumThreads() + 1; // Worker threads + main thread
+    unsigned numThreads = GetSubsystem<WorkQueue>()->GetNumProcessingThreads();
     tempDrawables_.resize(numThreads);
     sceneResults_.resize(numThreads);
 }
@@ -924,7 +924,7 @@ void View::GetDrawables()
             result.maxZ_ = 0.0f;
         }
 
-        int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
+        int numWorkItems = queue->GetNumProcessingThreads();
         int drawablesPerItem = tempDrawables.size() / numWorkItems;
 
         auto start = tempDrawables.begin();
@@ -1379,7 +1379,7 @@ void View::UpdateGeometries()
                 }
             }
 
-            int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
+            int numWorkItems = queue->GetNumProcessingThreads();
             int drawablesPerItem = threadedGeometries_.size() / numWorkItems;
 
             auto start = threadedGeometries_.begin();

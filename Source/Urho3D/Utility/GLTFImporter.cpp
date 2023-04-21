@@ -663,6 +663,14 @@ struct GLTFNode : public ea::enable_shared_from_this<GLTFNode>
     /// @}
 
     const ea::string& GetEffectiveName() const { return uniqueBoneName_ ? *uniqueBoneName_ : name_; }
+
+    /// Check if this node subtree contains nothing but empty nodes.
+    bool IsRecursivelyEmpty() const
+    {
+        return !mesh_ && !skin_ && containedInSkins_.empty()
+            && ea::all_of(children_.begin(), children_.end(),
+                [](const GLTFNodePtr& child) { return child->IsRecursivelyEmpty(); });
+    }
 };
 
 /// Represents Urho skeleton which may be composed from one or more GLTF skins.
@@ -1126,6 +1134,7 @@ private:
             GLTFSkeleton& skeleton = skeletons_[skeletonIndex];
             skeleton.index_ = skeletonIndex;
             InitializeSkeletonRootNode(skeleton);
+            AppendEmptyNodesToSkeleton(skeleton);
             AssignSkeletonBoneNames(skeleton);
             if (base_.GetSettings().cleanupBoneNames_)
                 CleanupSkeletonBoneNames(skeleton);
@@ -1164,6 +1173,33 @@ private:
             if (!skeleton.rootNode_ || (skeleton.rootNode_->skeletonIndex_ != skeleton.index_))
                 throw RuntimeException("Cannot find root of the skeleton when processing skin #{}", skinIndex);
         }
+    }
+
+    void AppendEmptyNodesToSkeleton(GLTFSkeleton& skeleton) const
+    {
+        if (!base_.GetSettings().addEmptyNodesToSkeleton_)
+            return;
+
+        ForEachSkeletonNode(*skeleton.rootNode_, skeleton.index_,
+            [&](GLTFNode& boneNode)
+        {
+            for (const GLTFNodePtr& child : boneNode.children_)
+            {
+                if (child->skeletonIndex_ == skeleton.index_)
+                    continue;
+
+                // For each direct child of the bone node that is not a part of the skeleton,
+                // check if it is empty and if so, add it to the skeleton.
+                if (!child->IsRecursivelyEmpty())
+                    continue;
+
+                ForEach(ea::span<const GLTFNodePtr>{&child, 1u},
+                    [&](GLTFNode& emptyNode)
+                {
+                    emptyNode.skeletonIndex_ = skeleton.index_;
+                });
+            }
+        });
     }
 
     void AssignSkeletonBoneNames(GLTFSkeleton& skeleton) const
@@ -3743,6 +3779,7 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "repairLooping", value.repairLooping_);
     SerializeValue(archive, "skipTag", value.skipTag_);
     SerializeValue(archive, "keepNamesOnMerge", value.keepNamesOnMerge_);
+    SerializeValue(archive, "addEmptyNodesToSkeleton", value.addEmptyNodesToSkeleton_);
 
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);

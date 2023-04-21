@@ -139,10 +139,7 @@ PhysicsTickSynchronizer::PhysicsTickSynchronizer(Scene* scene, unsigned networkF
         physicsWorld_->SetInterpolation(interpolated_);
     }
 
-    eventListener_->SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, [this](StringHash, VariantMap&)
-    {
-        UpdatePhysics();
-    });
+    eventListener_->SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, [this] { UpdatePhysics(); });
 #endif
 }
 

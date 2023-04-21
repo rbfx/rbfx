@@ -111,10 +111,7 @@ TEST_CASE("DirectionalPadAdapter tests")
         CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
         auto obj = MakeShared<Node>(context);
         unsigned eventCounter = 0;
-        obj->SubscribeToEvent(&adapter, E_KEYDOWN, [&](StringHash eventType, VariantMap& args)
-        {
-            ++eventCounter;
-        });
+        obj->SubscribeToEvent(&adapter, E_KEYDOWN, [&] { ++eventCounter; });
         Tests::RunFrame(context, 0.9f, 1.0f);
         CHECK(eventCounter == 0); //Time 0.9, no event yet
         Tests::RunFrame(context, 0.2f, 1.0f);

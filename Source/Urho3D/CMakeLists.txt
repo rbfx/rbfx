@@ -224,6 +224,8 @@ set (THIRD_PARTY_DEPENDENCIES
     Diligent-Common
     Diligent-HLSL2GLSLConverterLib
     SPIRV-Reflect
+    tinygltf
+    enkiTS
 )
 
 # LibCpuId does not work on M1 Mac

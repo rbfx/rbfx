@@ -11,6 +11,10 @@
 # Ignore preview screenshot
 /Preview.png
 
+# Ignore artifacts
+/Artifacts/
+
 # Ignore internal files
+*.blend1
 *.user.json
 

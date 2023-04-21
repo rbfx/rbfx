@@ -39,39 +39,15 @@ if (APPLE)
 endif ()
 
 # Set CMake modules search path
-set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules)
+set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
 
-if (EMSCRIPTEN AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
-    # Workaround for following error:
-    #   The install of the Samples target requires changing an RPATH from the build
-    #   tree, but this is not supported with the Ninja generator unless on an
-    #   ELF-based platform.  The CMAKE_BUILD_WITH_INSTALL_RPATH variable may be set
-    #   to avoid this relinking step.
-    set (CMAKE_BUILD_WITH_INSTALL_RPATH ON)
-endif ()
-
-# Include file that sets up ccache.
-include(CCache)
-
-# Include file that sets up all configurable properties
-include(UrhoOptions)
-
-# Include common utilitles
+# Include common utilities
 include(UrhoCommon)
 
 # Enable testing
 if (URHO3D_TESTING)
     include (CTest)
 endif ()
-
-# Enable common build options
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set (CLANG ON)
-    set (GNU ON)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set (GCC ON)
-    set (GNU ON)
-endif()
 
 # Set compiler variable
 set ("${CMAKE_CXX_COMPILER_ID}" ON)
@@ -114,7 +90,6 @@ set (DEST_SHARE_DIR share)
 set (DEST_RESOURCE_DIR ${DEST_BIN_DIR})
 set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
 set (DEST_ARCHIVE_DIR lib)
-set (DEST_PKGCONFIG_DIR ${DEST_ARCHIVE_DIR}/pkgconfig)
 set (DEST_THIRDPARTY_HEADERS_DIR ${DEST_INCLUDE_DIR}/ThirdParty)
 
 if (ANDROID)
@@ -178,20 +153,6 @@ if (NOT DEFINED VS_DEBUGGER_WORKING_DIRECTORY)
     set (VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif ()
 
-string(TOLOWER "${CMAKE_GENERATOR_PLATFORM}" CMAKE_GENERATOR_PLATFORM)
-set(URHO3D_PLATFORM "${CMAKE_GENERATOR_PLATFORM}")
-if (CMAKE_SIZEOF_VOID_P MATCHES 8)
-    set(URHO3D_64BIT ON)
-    if (NOT URHO3D_PLATFORM)
-        set (URHO3D_PLATFORM x64)
-    endif ()
-else ()
-    set(URHO3D_64BIT OFF)
-    if (NOT URHO3D_PLATFORM OR "${URHO3D_PLATFORM}" STREQUAL "win32")
-        set (URHO3D_PLATFORM x86)
-    endif ()
-endif ()
-
 if (MULTI_CONFIG_PROJECT)
     set (URHO3D_CONFIG $<CONFIG>)
 else ()
@@ -239,38 +200,10 @@ if (WEB)
     set (CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
 endif ()
 
-if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
-    set (HOST_LINUX 1)
-elseif ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
-    set (HOST_WIN32 1)
-elseif ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
-    set (HOST_MACOS 1)
-endif ()
-
 if (NOT APPLE AND CLANG)
     if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.1)
         # Workaround for Clang 7.0.1 and above until the Bullet upstream has fixed the Clang 7 diagnostic checks issue (see https://github.com/bulletphysics/bullet3/issues/2114)
         ucm_add_flags(-Wno-argument-outside-range)
-    endif ()
-endif ()
-
-if (URHO3D_SSE)
-    if (DESKTOP)
-        string (TOLOWER "${URHO3D_SSE}" URHO3D_SSE)
-        if (MSVC)
-            list (APPEND VALID_SSE_OPTIONS sse sse2 avx avx2)
-        else ()
-            list (APPEND VALID_SSE_OPTIONS sse sse2 sse3 sse4 sse4a sse4.1 sse4.2 avx avx2)
-        endif ()
-        list (FIND VALID_SSE_OPTIONS "${URHO3D_SSE}" SSE_INDEX)
-        if (SSE_INDEX EQUAL -1)
-            set (URHO3D_SSE sse2)
-        endif ()
-        if (MSVC)
-            string (TOUPPER "${URHO3D_SSE}" URHO3D_SSE)
-        endif ()
-    else ()
-        set (URHO3D_SSE OFF)
     endif ()
 endif ()
 
@@ -336,8 +269,8 @@ if (URHO3D_CSHARP)
     set (ENV{RBFX_BINARY_DIR} "${rbfx_BINARY_DIR}/")
     set (ENV{CMAKE_RUNTIME_OUTPUT_DIRECTORY} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
 
-    set (DOTNET_FRAMEWORK_TYPES net47 net48 net5)
-    set (DOTNET_FRAMEWORK_VERSIONS v4.7 v4.8 v5.0)
+    set (DOTNET_FRAMEWORK_TYPES net6 net7)
+    set (DOTNET_FRAMEWORK_VERSIONS v6.0 v7.0)
     list (FIND DOTNET_FRAMEWORK_TYPES ${URHO3D_NETFX} DOTNET_FRAMEWORK_INDEX)
     if (DOTNET_FRAMEWORK_INDEX GREATER -1)
         list (GET DOTNET_FRAMEWORK_VERSIONS ${DOTNET_FRAMEWORK_INDEX} CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION)

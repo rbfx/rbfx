@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,32 @@
 
 #pragma once
 
-#include "../Math/Matrix3x4.h"
-#include "../Math/Vector3.h"
-#include "../Math/Quaternion.h"
+#include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Math/Quaternion.h"
 
 namespace Urho3D
 {
 
-/// Position, rotation and scale in 3D.
+/// 3D transform decomposed into translation, rotation and scale components.
 /// TODO: Expand it into something more user-friendly.
-struct Transform
+struct URHO3D_API Transform
 {
     Vector3 position_;
     Quaternion rotation_;
     Vector3 scale_{Vector3::ONE};
 
+    static const Transform Identity;
+
+    /// Construct Transform from Matrix3x4. It is not precise for non-uniform scale.
+    static Transform FromMatrix3x4(const Matrix3x4& matrix)
+    {
+        Transform result;
+        matrix.Decompose(result.position_, result.rotation_, result.scale_);
+        return result;
+    }
+
+    /// Construct Matrix3x4 from Transform.
     Matrix3x4 ToMatrix3x4() const { return Matrix3x4(position_, rotation_, scale_); };
 
     /// Interpolate between two transforms.

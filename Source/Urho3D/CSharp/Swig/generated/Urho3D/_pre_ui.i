@@ -237,7 +237,7 @@ using DragAndDropModeFlags = Urho3D::DragAndDropMode;
 %csattribute(Urho3D::Sprite, %arg(Urho3D::IntRect), ImageRect, GetImageRect, SetImageRect);
 %csattribute(Urho3D::Sprite, %arg(Urho3D::BlendMode), BlendMode, GetBlendMode, SetBlendMode);
 %csattribute(Urho3D::Sprite, %arg(Urho3D::ResourceRef), TextureAttr, GetTextureAttr, SetTextureAttr);
-%csattribute(Urho3D::Sprite, %arg(Urho3D::Matrix3x4), Transform, GetTransform);
+%csattribute(Urho3D::Sprite, %arg(Urho3D::Matrix3x4), TransformMatrix, GetTransformMatrix);
 %csattribute(Urho3D::SplashScreen, %arg(Urho3D::Texture *), BackgroundImage, GetBackgroundImage, SetBackgroundImage);
 %csattribute(Urho3D::SplashScreen, %arg(Urho3D::Texture *), ForegroundImage, GetForegroundImage, SetForegroundImage);
 %csattribute(Urho3D::SplashScreen, %arg(Urho3D::Texture *), ProgressImage, GetProgressImage, SetProgressImage);

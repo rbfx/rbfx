@@ -217,8 +217,8 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_CreateSiblingNode, &SceneViewTab::CreateNodeNextToSelection);
     BindHotkey(Hotkey_CreateChildNode, &SceneViewTab::CreateNodeInSelection);
 
-    SubscribeToEvent(E_BEGINPLUGINRELOAD, [this](StringHash, VariantMap&) { BeginPluginReload(); });
-    SubscribeToEvent(E_ENDPLUGINRELOAD, [this](StringHash, VariantMap&) { EndPluginReload(); });
+    SubscribeToEvent(E_BEGINPLUGINRELOAD, &SceneViewTab::BeginPluginReload);
+    SubscribeToEvent(E_ENDPLUGINRELOAD, &SceneViewTab::EndPluginReload);
 }
 
 SceneViewTab::~SceneViewTab()
