@@ -637,7 +637,7 @@ void DebugRenderer::Render()
         InitializePipelineStates();
 
     DrawCommandQueue* drawQueue = renderer->GetDefaultDrawQueue();
-    drawQueue->Reset(false /*preferConstantBuffers*/);
+    drawQueue->Reset();
 
     const auto setDefaultConstants = [&]()
     {
@@ -749,8 +749,12 @@ void DebugRenderer::InitializePipelineStates()
         desc.InitializeInputLayout(GeometryBufferArray{ { vertexBuffer_ }, nullptr, nullptr });
         desc.colorWriteEnabled_ = true;
 
-        desc.vertexShader_ = graphics->GetShader(VS, "Basic", "VERTEXCOLOR");
-        desc.pixelShader_ = graphics->GetShader(PS, "Basic", "VERTEXCOLOR");
+        ea::string shaderDefines = "VERTEXCOLOR ";
+        if (graphics->GetCaps().constantBuffersSupported_)
+            shaderDefines += "URHO3D_USE_CBUFFERS ";
+
+        desc.vertexShader_ = graphics->GetShader(VS, "v2/X_Basic", shaderDefines);
+        desc.pixelShader_ = graphics->GetShader(PS, "v2/X_Basic", shaderDefines);
 
         desc.primitiveType_ = primitiveType;
         desc.depthCompareFunction_ = depthCompare;
