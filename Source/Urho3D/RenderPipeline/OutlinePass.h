@@ -88,7 +88,7 @@ public:
 
     /// Implement PostProcessPass.
     /// @{
-    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
+    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::None; }
     void Execute(Camera* camera) override;
     /// @}
 
