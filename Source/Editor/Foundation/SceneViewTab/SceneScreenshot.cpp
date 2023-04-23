@@ -265,9 +265,11 @@ void SceneScreenshot::RenderPopup()
         ea::make_pair("FullHD Portrait", IntVector2{1080, 1920}),
         ea::make_pair("4K", IntVector2{3840, 2160}),
         ea::make_pair("4K Portrait", IntVector2{2160, 3840}),
-        ea::make_pair("Square", IntVector2{2048, 2048}),
+        ea::make_pair("2K Square", IntVector2{2048, 2048}),
         ea::make_pair("Android Feature", IntVector2{1024, 500}),
         ea::make_pair("Android TV", IntVector2{1280, 720}),
+        ea::make_pair("Youtube banner", IntVector2{2048, 1152}),
+        ea::make_pair("Youtube watermark", IntVector2{150, 150}),
     };
 
     if (ui::BeginCombo("Resolution", resolutions[resolutionOption_].first))
