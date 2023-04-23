@@ -48,6 +48,7 @@ public:
     ea::string GetResourceTitle() { return "Model"; }
     bool SupportMultipleResources() { return false; }
     bool CanOpenResource(const ResourceFileDescriptor& desc) override;
+    void ResetCamera() override;
     /// @}
 
 protected:

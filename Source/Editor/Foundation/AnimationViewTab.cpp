@@ -81,10 +81,19 @@ void AnimationViewTab::RenderTitle()
         animatedModel_->SetModel(model_);
         if (model_)
         {
-            state_.LookAt(model_->GetBoundingBox());
+            ResetCamera();
         }
     }
 }
+
+void AnimationViewTab::ResetCamera()
+{
+    if (model_)
+    {
+        state_.LookAt(model_->GetBoundingBox());
+    }
+}
+
 
 void AnimationViewTab::RenderContent()
 {
@@ -100,9 +109,9 @@ void AnimationViewTab::OnResourceLoaded(const ea::string& resourceName)
     animation_ = cache->GetResource<Animation>(resourceName);
 
     auto params = AnimationParameters{animation_}.Layer(0);
-    params.removeOnZeroWeight_ = true;
     params.looped_ = true;
-    animationController_->PlayExisting(params);
+    animationController_->StopAll();
+    animationController_->PlayNewExclusive(params);
 }
 
 void AnimationViewTab::OnResourceUnloaded(const ea::string& resourceName)
