@@ -51,9 +51,9 @@ public:
     void Stop() override;
 
 private:
-    void HandleMouseMove(StringHash eventType, VariantMap& args);
-    void HandleMouseButtonUp(StringHash eventType, VariantMap& args);
-    void HandleMouseButtonDown(StringHash eventType, VariantMap& args);
+    void HandleMouseMove(VariantMap& args);
+    void HandleMouseButtonUp(VariantMap& args);
+    void HandleMouseButtonDown(VariantMap& args);
 
     /// Construct the scene content.
     void CreateScene();

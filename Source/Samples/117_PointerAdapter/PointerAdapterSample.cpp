@@ -63,9 +63,9 @@ void PointerAdapterSample::Start()
     SetMouseMode(MM_FREE);
     SetMouseVisible(true);
 
-    SubscribeToEvent(&pointerAdapter_, E_MOUSEMOVE, URHO3D_HANDLER(PointerAdapterSample, HandleMouseMove));
-    SubscribeToEvent(&pointerAdapter_, E_MOUSEBUTTONUP, URHO3D_HANDLER(PointerAdapterSample, HandleMouseButtonUp));
-    SubscribeToEvent(&pointerAdapter_, E_MOUSEBUTTONDOWN, URHO3D_HANDLER(PointerAdapterSample, HandleMouseButtonDown));
+    SubscribeToEvent(&pointerAdapter_, E_MOUSEMOVE, &PointerAdapterSample::HandleMouseMove);
+    SubscribeToEvent(&pointerAdapter_, E_MOUSEBUTTONUP, &PointerAdapterSample::HandleMouseButtonUp);
+    SubscribeToEvent(&pointerAdapter_, E_MOUSEBUTTONDOWN, &PointerAdapterSample::HandleMouseButtonDown);
 
     pointerAdapter_.SetEnabled(true);
 }
@@ -77,7 +77,7 @@ void PointerAdapterSample::Stop()
     pointerAdapter_.SetEnabled(false);
 }
 
-void PointerAdapterSample::HandleMouseMove(StringHash eventType, VariantMap& args)
+void PointerAdapterSample::HandleMouseMove(VariantMap& args)
 {
     using namespace MouseMove;
     auto ray = GetViewport(0)->GetScreenRay(args[P_X].GetInt(), args[P_Y].GetInt());
@@ -85,22 +85,21 @@ void PointerAdapterSample::HandleMouseMove(StringHash eventType, VariantMap& arg
     auto octree = scene_->GetComponent<Octree>();
     RayOctreeQuery query{ray, RAY_TRIANGLE, 100.0f, DRAWABLE_GEOMETRY, 1};
     octree->RaycastSingle(query);
+
+    outlineGroup_->ClearDrawables();
+
     if (!query.result_.empty())
     {
         outlineGroup_->AddDrawable(query.result_.front().drawable_);
     }
-    else
-    {
-        outlineGroup_->ClearDrawables();
-    }
 }
 
-void PointerAdapterSample::HandleMouseButtonUp(StringHash eventType, VariantMap& args)
+void PointerAdapterSample::HandleMouseButtonUp(VariantMap& args)
 {
     outlineGroup_->SetColor(Color::WHITE);
 }
 
-void PointerAdapterSample::HandleMouseButtonDown(StringHash eventType, VariantMap& args)
+void PointerAdapterSample::HandleMouseButtonDown(VariantMap& args)
 {
     outlineGroup_->SetColor(Color::RED);
 }
@@ -124,12 +123,14 @@ void PointerAdapterSample::CreateScene()
     auto* light = lightNode->CreateComponent<Light>();
     light->SetLightType(LIGHT_DIRECTIONAL);
 
+    for (int x=-1; x<=1; ++x)
+        for (int y = -1; y <= 1; ++y)
     {
         auto* mushroomPrefab = cache->GetResource<PrefabResource>("Prefabs/Mushroom.prefab");
         Node* objectNode = scene_->CreateChild("Mushroom");
-        objectNode->SetPosition(Vector3(0, 0, 10));
-        objectNode->SetRotation(Quaternion(30, 50, 20));
-        objectNode->SetScale(2.0f + Random(5.0f));
+        objectNode->SetPosition(Vector3(x*3, y*3, 10));
+        //objectNode->SetRotation(Quaternion(30, 50, 20));
+        objectNode->SetScale(2.0f + Random(1.0f));
         auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
         prefabReference->SetPrefab(mushroomPrefab);
     }

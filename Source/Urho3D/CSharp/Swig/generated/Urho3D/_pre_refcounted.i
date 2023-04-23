@@ -63,6 +63,7 @@ URHO3D_REFCOUNTED(Urho3D::DirectionAggregator);
 URHO3D_REFCOUNTED(Urho3D::DirectionalPadAdapter);
 URHO3D_REFCOUNTED(Urho3D::MultitouchAdapter);
 URHO3D_REFCOUNTED(Urho3D::FreeFlyController);
+URHO3D_REFCOUNTED(Urho3D::PointerAdapter);
 URHO3D_REFCOUNTED(Urho3D::DynamicModule);
 URHO3D_REFCOUNTED(Urho3D::Plugin);
 URHO3D_REFCOUNTED(Urho3D::ModulePlugin);

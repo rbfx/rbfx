@@ -36,8 +36,8 @@ PointerAdapter::PointerAdapter(Context* context)
     : Object(context)
     , directionAdapter_(MakeShared<DirectionAggregator>(context))
 {
-    // We only need keyboard and gamepad from the direction aggregator.
-    directionAdapter_->SetTouchEnabled(false);
+    // Propagate default subscription mask to direction adapter.
+    SetSubscriptionMask(GetSubscriptionMask());
 
     const auto* input = GetSubsystem<Input>();
     pointerPosition_ = input->GetMousePosition().ToVector2();
@@ -63,41 +63,29 @@ void PointerAdapter::SetEnabled(bool enabled)
         }
         else
         {
-            UpdateSubscriptions(SubscriptionMask::None);
+            UpdateSubscriptions(PointerAdapterMask::None);
         }
     }
 }
 
-void PointerAdapter::SetMouseEnabled(bool enabled)
+void PointerAdapter::SetSubscriptionMask(PointerAdapterFlags mask)
 {
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Mouse;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Mouse;
-    }
-    if (IsEnabled())
-        UpdateSubscriptions(enabledSubscriptions_);
-}
+    enabledSubscriptions_ = mask;
 
-void PointerAdapter::SetTouchEnabled(bool enabled)
-{
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Touch;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Touch;
-    }
+    // Propagate keyboard settings to the underlying direction adapter.
+    DirectionAggregatorFlags flags{DirectionAggregatorMask::None};
+    if (enabledSubscriptions_.Test(PointerAdapterMask::Keyboard))
+        flags.Set(DirectionAggregatorMask::Keyboard);
+    if (enabledSubscriptions_.Test(PointerAdapterMask::Joystick))
+        flags.Set(DirectionAggregatorMask::Joystick);
+    directionAdapter_->SetSubscriptionMask(flags);
+
     if (IsEnabled())
         UpdateSubscriptions(enabledSubscriptions_);
 }
 
 
-void PointerAdapter::UpdateSubscriptions(SubscriptionFlags flags)
+void PointerAdapter::UpdateSubscriptions(PointerAdapterFlags flags)
 {
     auto* input = GetSubsystem<Input>();
 
@@ -106,7 +94,7 @@ void PointerAdapter::UpdateSubscriptions(SubscriptionFlags flags)
 
     if (!subscriptionFlags_ && flags)
     {
-        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(PointerAdapter, HandleUpdate));
+        SubscribeToEvent(E_UPDATE, &PointerAdapter::HandleUpdate);
     }
     else if (subscriptionFlags_ && !flags)
     {
@@ -114,41 +102,40 @@ void PointerAdapter::UpdateSubscriptions(SubscriptionFlags flags)
     }
 
     subscriptionFlags_ = flags;
-    if (toSubscribe & SubscriptionMask::Mouse)
+    if (toSubscribe & PointerAdapterMask::Mouse)
     {
-        SubscribeToEvent(input, E_MOUSEMOVE, URHO3D_HANDLER(PointerAdapter, HandleMouseMove));
-        SubscribeToEvent(input, E_MOUSEBUTTONUP, URHO3D_HANDLER(PointerAdapter, HandleMouseButtonUp));
-        SubscribeToEvent(input, E_MOUSEBUTTONDOWN, URHO3D_HANDLER(PointerAdapter, HandleMouseButtonDown));
+        SubscribeToEvent(input, E_MOUSEMOVE, &PointerAdapter::HandleMouseMove);
+        SubscribeToEvent(input, E_MOUSEBUTTONUP, &PointerAdapter::HandleMouseButtonUp);
+        SubscribeToEvent(input, E_MOUSEBUTTONDOWN, &PointerAdapter::HandleMouseButtonDown);
     }
-    else if (toUnsubscribe & SubscriptionMask::Mouse)
+    else if (toUnsubscribe & PointerAdapterMask::Mouse)
     {
         UnsubscribeFromEvent(E_MOUSEMOVE);
     }
-    if (toSubscribe & SubscriptionMask::Touch)
+    if (toSubscribe & PointerAdapterMask::Touch)
     {
-        SubscribeToEvent(input, E_TOUCHBEGIN, URHO3D_HANDLER(PointerAdapter, HandleTouchBegin));
-        SubscribeToEvent(input, E_TOUCHMOVE, URHO3D_HANDLER(PointerAdapter, HandleTouchMove));
-        SubscribeToEvent(input, E_TOUCHEND, URHO3D_HANDLER(PointerAdapter, HandleTouchEnd));
+        SubscribeToEvent(input, E_TOUCHBEGIN, &PointerAdapter::HandleTouchBegin);
+        SubscribeToEvent(input, E_TOUCHMOVE, &PointerAdapter::HandleTouchMove);
+        SubscribeToEvent(input, E_TOUCHEND, &PointerAdapter::HandleTouchEnd);
     }
-    else if (toUnsubscribe & SubscriptionMask::Touch)
+    else if (toUnsubscribe & PointerAdapterMask::Touch)
     {
         UnsubscribeFromEvent(E_TOUCHBEGIN);
         UnsubscribeFromEvent(E_TOUCHMOVE);
         UnsubscribeFromEvent(E_TOUCHEND);
         activeTouchId_.reset();
     }
-    if (toSubscribe & SubscriptionMask::Joystick)
+    if (toSubscribe & PointerAdapterMask::Joystick)
     {
-        SubscribeToEvent(input, E_JOYSTICKBUTTONDOWN, URHO3D_HANDLER(PointerAdapter, HandleJoystickButton));
-        SubscribeToEvent(input, E_JOYSTICKBUTTONUP, URHO3D_HANDLER(PointerAdapter, HandleJoystickButton));
+        SubscribeToEvent(input, E_JOYSTICKBUTTONDOWN, &PointerAdapter::HandleJoystickButton);
+        SubscribeToEvent(input, E_JOYSTICKBUTTONUP, &PointerAdapter::HandleJoystickButton);
     }
-    else if (toUnsubscribe & SubscriptionMask::Joystick)
+    else if (toUnsubscribe & PointerAdapterMask::Joystick)
     {
         UnsubscribeFromEvent(E_JOYSTICKBUTTONDOWN);
         UnsubscribeFromEvent(E_JOYSTICKBUTTONUP);
     }
 }
-
 
 void PointerAdapter::HandleUpdate(StringHash eventType, VariantMap& args)
 {
@@ -316,26 +303,6 @@ void PointerAdapter::UpdatePointer(const Vector2& position, bool press, bool mov
             SendEvent(E_MOUSEBUTTONUP, eventData);
         }
     }
-}
-
-void PointerAdapter::SetKeyboardEnabled(bool enabled)
-{
-    directionAdapter_->SetKeyboardEnabled(enabled);
-}
-
-void PointerAdapter::SetJoystickEnabled(bool enabled)
-{
-    directionAdapter_->SetJoystickEnabled(enabled);
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Joystick;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Joystick;
-    }
-    if (IsEnabled())
-        UpdateSubscriptions(enabledSubscriptions_);
 }
 
 /// Set UI element to filter touch events. Only touch events originated in the element going to be handled.

@@ -232,7 +232,9 @@ void SamplesManager::Start()
     inspectorNode_ = MakeShared<Scene>(context_);
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
     // Keyboard arrow keys are already handled by UI
-    sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
+    DirectionalPadAdapterFlags flags = sampleSelectionScreen_->dpadAdapter_.GetSubscriptionMask();
+    flags.Set(DirectionalPadAdapterMask::Keyboard, false);
+    sampleSelectionScreen_->dpadAdapter_.SetSubscriptionMask(static_cast<DirectionalPadAdapterMask>(flags));
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI

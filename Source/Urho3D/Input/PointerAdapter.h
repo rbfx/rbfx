@@ -27,28 +27,21 @@
 namespace Urho3D
 {
 
-namespace PointerAdapterDetail
-{
-
-enum class SubscriptionMask : unsigned
+enum class PointerAdapterMask : unsigned
 {
     None = 0,
     Mouse = 1 << 0,
     Touch = 1 << 1,
-    Joystick = 1 << 2,
-    All = Touch | Mouse | Joystick,
+    Keyboard = 1 << 2,
+    Joystick = 1 << 3,
+    All = Touch | Mouse | Keyboard | Joystick,
 };
 
-URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
-
-}  // PointerAdapterDetail
+URHO3D_FLAGSET(PointerAdapterMask, PointerAdapterFlags);
 
 class URHO3D_API PointerAdapter : public Object
 {
     URHO3D_OBJECT(PointerAdapter, Object)
-
-    typedef PointerAdapterDetail::SubscriptionFlags SubscriptionFlags;
-    typedef PointerAdapterDetail::SubscriptionMask SubscriptionMask;
 
 public:
     /// Construct.
@@ -56,14 +49,9 @@ public:
 
     /// Set enabled flag. The object subscribes for events when enabled.
     void SetEnabled(bool enabled);
-    /// Set mouse enabled flag.
-    void SetMouseEnabled(bool enabled);
-    /// Set touch enabled flag.
-    void SetTouchEnabled(bool enabled);
-    /// Set keyboard enabled flag.
-    void SetKeyboardEnabled(bool enabled);
-    /// Set joystick enabled flag.
-    void SetJoystickEnabled(bool enabled);
+
+    /// Set subscription mask.
+    void SetSubscriptionMask(PointerAdapterFlags mask);
     /// Set UI element to filter touch events. Only touch events originated in the element going to be handled.
     void SetUIElement(UIElement* element);
     /// Set maximum cursor velocity.
@@ -73,14 +61,8 @@ public:
 
     /// Get enabled flag.
     bool IsEnabled() const { return enabled_; }
-    /// Get mouse enabled flag.
-    bool IsMouseEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Mouse; }
-    /// Get keyboard enabled flag.
-    bool IsKeyboardEnabled() const { return directionAdapter_->IsKeyboardEnabled(); }
-    /// Get joystick enabled flag.
-    bool IsJoystickEnabled() const { return directionAdapter_->IsJoystickEnabled(); }
-    /// Get touch enabled flag.
-    bool IsTouchEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Touch; }
+    /// Get subscription mask.
+    PointerAdapterFlags GetSubscriptionMask() const { return enabledSubscriptions_; }
     /// Get UI element to filter touch events.
     UIElement* GetUIElement() const { return directionAdapter_->GetUIElement(); }
     /// Is button down (left mouse button, touch or gamepad A button).
@@ -100,7 +82,7 @@ public:
     DirectionAggregator* GetDirectionAggregator() const;
 
 private:
-    void UpdateSubscriptions(SubscriptionFlags flags);
+    void UpdateSubscriptions(PointerAdapterFlags flags);
 
     void HandleUpdate(StringHash eventType, VariantMap& args);
 
@@ -121,9 +103,9 @@ private:
     /// Is aggregator enabled
     bool enabled_{false};
     /// Enabled subscriptions
-    SubscriptionFlags enabledSubscriptions_{SubscriptionMask::All};
+    PointerAdapterFlags enabledSubscriptions_{PointerAdapterMask::All};
     /// Active subscriptions bitmask
-    SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
+    PointerAdapterFlags subscriptionFlags_{PointerAdapterMask::None};
     /// Last known pointer position.
     /// This is required in case of SDL can't set a mouse position on the platform.
     /// Also it is a floating point vector to handle analog axis input correctly.
