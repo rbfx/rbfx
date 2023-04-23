@@ -31,7 +31,6 @@
 
 namespace Urho3D
 {
-using namespace DirectionalPadAdapterDetail;
 
 DirectionalPadAdapter::AggregatedState::AggregatedState(Scancode scancode)
     : scancode_(scancode)
@@ -122,38 +121,14 @@ void DirectionalPadAdapter::SetEnabled(bool enabled)
         }
         else
         {
-            UpdateSubscriptions(SubscriptionMask::None);
+            UpdateSubscriptions(DirectionalPadAdapterMask::None);
         }
     }
 }
 
-
-/// Set keyboard enabled flag.
-void DirectionalPadAdapter::SetKeyboardEnabled(bool enabled)
+void DirectionalPadAdapter::SetSubscriptionMask(DirectionalPadAdapterFlags mask)
 {
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Keyboard;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Keyboard;
-    }
-    if (IsEnabled())
-        UpdateSubscriptions(enabledSubscriptions_);
-}
-
-/// Set joystick enabled flag.
-void DirectionalPadAdapter::SetJoystickEnabled(bool enabled)
-{
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Joystick;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Joystick;
-    }
+    enabledSubscriptions_ = mask;
     if (IsEnabled())
         UpdateSubscriptions(enabledSubscriptions_);
 }
@@ -163,20 +138,6 @@ void DirectionalPadAdapter::SetAxisUpperThreshold(float threshold) { axisUpperTh
 
 /// Set axis lower threshold. Axis value lower than threshold is interpreted as key press.
 void DirectionalPadAdapter::SetAxisLowerThreshold(float threshold) { axisLowerThreshold_ = threshold; }
-
-void DirectionalPadAdapter::SetKeyRepeatEnabled(bool enabled)
-{
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Update;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Update;
-    }
-    if (IsEnabled())
-        UpdateSubscriptions(enabledSubscriptions_);
-}
 
 /// Set repeat delay in seconds.
 void DirectionalPadAdapter::SetRepeatDelay(float delayInSeconds)
@@ -470,14 +431,14 @@ void DirectionalPadAdapter::RemoveIf(
     }
 }
 
-void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
+void DirectionalPadAdapter::UpdateSubscriptions(DirectionalPadAdapterFlags flags)
 {
     const auto toSubscribe = flags & ~subscriptionFlags_;
     const auto toUnsubscribe = subscriptionFlags_ & ~flags;
 
     if (!subscriptionFlags_ && flags)
     {
-        SubscribeToEvent(input_, E_INPUTFOCUS, URHO3D_HANDLER(DirectionalPadAdapter, HandleInputFocus));
+        SubscribeToEvent(input_, E_INPUTFOCUS, &DirectionalPadAdapter::HandleInputFocus);
     }
     else if (subscriptionFlags_ && !flags)
     {
@@ -485,21 +446,21 @@ void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
     }
 
     subscriptionFlags_ = flags;
-    if (toSubscribe & SubscriptionMask::Update)
+    if (toSubscribe & DirectionalPadAdapterMask::KeyRepeat)
     {
-        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(DirectionalPadAdapter, HandleUpdate));
+        SubscribeToEvent(E_UPDATE, &DirectionalPadAdapter::HandleUpdate);
     }
-    else if (toUnsubscribe & SubscriptionMask::Keyboard)
+    else if (toUnsubscribe & DirectionalPadAdapterMask::Keyboard)
     {
         UnsubscribeFromEvent(E_UPDATE);
     }
 
-    if (toSubscribe & SubscriptionMask::Keyboard)
+    if (toSubscribe & DirectionalPadAdapterMask::Keyboard)
     {
-        SubscribeToEvent(input_, E_KEYUP, URHO3D_HANDLER(DirectionalPadAdapter, HandleKeyUp));
-        SubscribeToEvent(input_, E_KEYDOWN, URHO3D_HANDLER(DirectionalPadAdapter, HandleKeyDown));
+        SubscribeToEvent(input_, E_KEYUP, &DirectionalPadAdapter::HandleKeyUp);
+        SubscribeToEvent(input_, E_KEYDOWN, &DirectionalPadAdapter::HandleKeyDown);
     }
-    else if (toUnsubscribe & SubscriptionMask::Keyboard)
+    else if (toUnsubscribe & DirectionalPadAdapterMask::Keyboard)
     {
         UnsubscribeFromEvent(E_KEYUP);
         UnsubscribeFromEvent(E_KEYDOWN);
@@ -510,13 +471,13 @@ void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
         RemoveIf(left_, pred);
         RemoveIf(right_, pred);
     }
-    if (toSubscribe & SubscriptionMask::Joystick)
+    if (toSubscribe & DirectionalPadAdapterMask::Joystick)
     {
-        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickAxisMove));
-        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickHatMove));
-        SubscribeToEvent(input_, E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickDisconnected));
+        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, &DirectionalPadAdapter::HandleJoystickAxisMove);
+        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, &DirectionalPadAdapter::HandleJoystickHatMove);
+        SubscribeToEvent(input_, E_JOYSTICKDISCONNECTED, &DirectionalPadAdapter::HandleJoystickDisconnected);
     }
-    else if (toUnsubscribe & SubscriptionMask::Joystick)
+    else if (toUnsubscribe & DirectionalPadAdapterMask::Joystick)
     {
         UnsubscribeFromEvent(E_JOYSTICKAXISMOVE);
         UnsubscribeFromEvent(E_JOYSTICKHATMOVE);

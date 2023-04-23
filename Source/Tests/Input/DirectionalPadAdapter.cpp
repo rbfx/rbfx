@@ -95,16 +95,16 @@ TEST_CASE("DirectionalPadAdapter tests")
     {
         SendAxisEvent(input, 0, 0.8f);
         CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
-        adapter.SetJoystickEnabled(false);
+        adapter.SetSubscriptionMask(adapter.GetSubscriptionMask() & ~DirectionalPadAdapterMask::Joystick);
         CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
         SendAxisEvent(input, 0, 1.0f);
         CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
-        adapter.SetJoystickEnabled(true);
+        adapter.SetSubscriptionMask(adapter.GetSubscriptionMask() | DirectionalPadAdapterMask::Joystick);
         CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
     }
     SECTION("Test repeating")
     {
-        adapter.SetKeyRepeatEnabled(true);
+        adapter.SetSubscriptionMask(adapter.GetSubscriptionMask() | DirectionalPadAdapterMask::KeyRepeat);
         adapter.SetRepeatDelay(1.0f);
         adapter.SetRepeatInterval(0.5f);
         SendAxisEvent(input, 0, 0.8f);

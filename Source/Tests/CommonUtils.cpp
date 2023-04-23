@@ -118,6 +118,20 @@ Resource* GetOrCreateResource(
     return resource;
 }
 
+void SendMouseMoveEvent(Input* input, IntVector2 pos, IntVector2 delta)
+{
+    using namespace MouseMove;
+
+    VariantMap args;
+    args[P_BUTTONS] = 0;
+    args[P_QUALIFIERS] = 0;
+    args[P_X] = pos.x_;
+    args[P_Y] = pos.y_;
+    args[P_DX] = delta.x_;
+    args[P_DY] = delta.y_;
+    input->SendEvent(E_MOUSEMOVE, args);
+}
+
 void SendKeyEvent(Input* input, StringHash eventId, Scancode scancode, Key key)
 {
     using namespace KeyDown;

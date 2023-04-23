@@ -148,6 +148,7 @@
 #endif
 #include "115_RayCast/RayCastSample.h"
 #include "116_VirtualFileSystem/VFSSample.h"
+#include "117_PointerAdapter/PointerAdapterSample.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -231,7 +232,9 @@ void SamplesManager::Start()
     inspectorNode_ = MakeShared<Scene>(context_);
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
     // Keyboard arrow keys are already handled by UI
-    sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
+    DirectionalPadAdapterFlags flags = sampleSelectionScreen_->dpadAdapter_.GetSubscriptionMask();
+    flags.Set(DirectionalPadAdapterMask::Keyboard, false);
+    sampleSelectionScreen_->dpadAdapter_.SetSubscriptionMask(static_cast<DirectionalPadAdapterMask>(flags));
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
@@ -398,6 +401,7 @@ void SamplesManager::Start()
 #endif
     RegisterSample<RayCastSample>();
     RegisterSample<VFSSample>();
+    RegisterSample<PointerAdapterSample>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
