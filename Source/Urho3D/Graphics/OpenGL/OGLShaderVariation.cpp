@@ -218,7 +218,7 @@ bool ShaderVariation::Create()
     else
         shaderCode += originalShaderCode;
 
-#ifdef URHO3D_SPIRV
+#ifdef URHO3D_SHADER_TRANSLATOR
     if (targetShaderLanguage && graphics_->GetPolicyGLSL() != ShaderTranslationPolicy::Verbatim)
     {
         // TODO: Make it optional
