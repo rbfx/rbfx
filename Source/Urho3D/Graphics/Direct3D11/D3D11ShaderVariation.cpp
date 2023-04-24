@@ -25,12 +25,12 @@
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsImpl.h"
 #include "../../Graphics/Shader.h"
-#include "../../Graphics/ShaderDefineArray.h"
-#include "../../Graphics/ShaderConverter.h"
 #include "../../Graphics/VertexBuffer.h"
 #include "../../IO/File.h"
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
+#include "../../Shader/ShaderSourceLogger.h"
+#include "../../Shader/ShaderTranslator.h"
 #include "Urho3D/IO/VirtualFileSystem.h"
 
 #include <d3dcompiler.h>
@@ -280,17 +280,29 @@ bool ShaderVariation::Compile()
     defines.Append("D3D11");
 
     // Convert shader source code if GLSL
-    static thread_local ea::string convertedShaderSourceCode;
     if (owner_->IsGLSL())
     {
         defines.Append("DESKTOP_GRAPHICS");
         defines.Append("GL3");
 
         const ea::string& universalSourceCode = owner_->GetSourceCode(type_);
-        ea::string errorMessage;
-        if (!ConvertShaderToHLSL5(type_, universalSourceCode, defines, convertedShaderSourceCode, errorMessage))
+
+        static thread_local SpirVShader spirvShader;
+        static thread_local TargetShader hlslShader;
+
+        ParseUniversalShader(spirvShader, type_, universalSourceCode, defines);
+        if (!spirvShader)
         {
-            URHO3D_LOGERROR("Failed to convert shader {} from GLSL:\n{}{}", GetFullName(), Shader::GetShaderFileList(), errorMessage);
+            URHO3D_LOGERROR("Failed to convert shader {} from GLSL to SPIR-V:\n{}{}", GetFullName(),
+                Shader::GetShaderFileList(), spirvShader.compilerOutput_);
+            return false;
+        }
+
+        TranslateSpirVShader(hlslShader, spirvShader, TargetShaderLanguage::HLSL_5_0);
+        if (!hlslShader)
+        {
+            URHO3D_LOGERROR("Failed to convert shader {} from SPIR-V to HLSL:\n{}{}", GetFullName(),
+                Shader::GetShaderFileList(), hlslShader.compilerOutput_);
             return false;
         }
 
@@ -301,8 +313,10 @@ bool ShaderVariation::Compile()
             URHO3D_LOGWARNING("Shader {} does not use the define(s): {}", GetFullName(), ea::string::joined(unusedDefines, ", "));
 #endif
 
-        sourceCode = &convertedShaderSourceCode;
+        sourceCode = &hlslShader.sourceCode_;
         entryPoint = "main";
+
+        LogShaderSource(owner_->GetName(), type_, defines_, *sourceCode, "hlsl");
     }
     else
     {
