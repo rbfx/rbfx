@@ -27,7 +27,7 @@
 #include "Urho3D/Graphics/ShaderVariation.h"
 #include "Urho3D/IO/Log.h"
 
-#ifdef URHO3D_SPIRV
+#ifdef URHO3D_SHADER_TRANSLATOR
     #include <SPIRV/GlslangToSpv.h>
     #include <StandAlone/ResourceLimits.h>
     #include <glslang/Public/ShaderLang.h>
@@ -52,7 +52,7 @@ ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shader
     return ea::make_pair(start, end);
 }
 
-#ifdef URHO3D_SPIRV
+#ifdef URHO3D_SHADER_TRANSLATOR
 
 namespace
 {
@@ -298,10 +298,10 @@ void ConvertToGLSL(TargetShader& output, const SpirVShader& shader, int version,
 void ParseUniversalShader(
     SpirVShader& output, ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines)
 {
-#ifdef URHO3D_SPIRV
+#ifdef URHO3D_SHADER_TRANSLATOR
     CompileSpirV(output, ConvertShaderType(shaderType), sourceCode, shaderDefines);
 #else
-    URHO3D_ASSERTLOG(0, "URHO3D_SPIRV is should be enabled to use ParseUniversalShader");
+    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR is should be enabled to use ParseUniversalShader");
 
     SpirVShader shader;
     return shader;
@@ -310,7 +310,7 @@ void ParseUniversalShader(
 
 void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, TargetShaderLanguage targetLanguage)
 {
-#ifdef URHO3D_SPIRV
+#ifdef URHO3D_SHADER_TRANSLATOR
     output.language_ = targetLanguage;
     switch (targetLanguage)
     {
@@ -334,7 +334,7 @@ void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, Targe
         URHO3D_ASSERTLOG(0, "TODO: Implement");
     }
 #else
-    URHO3D_ASSERTLOG(0, "URHO3D_SPIRV is should be enabled to use TranslateSpirVShader");
+    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR is should be enabled to use TranslateSpirVShader");
 
     SpirVShader shader;
     return shader;
@@ -343,7 +343,7 @@ void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, Targe
 
 }
 
-#ifdef URHO3D_SPIRV
+#ifdef URHO3D_SHADER_TRANSLATOR
 namespace glslang
 {
 
