@@ -315,8 +315,6 @@ bool ShaderVariation::Compile()
 
         sourceCode = &hlslShader.sourceCode_;
         entryPoint = "main";
-
-        LogShaderSource(owner_->GetName(), type_, defines_, *sourceCode, "hlsl");
     }
     else
     {
@@ -336,6 +334,8 @@ bool ShaderVariation::Compile()
 #endif
         }
     }
+
+    LogShaderSource(owner_->GetName(), type_, defines_, *sourceCode, "hlsl");
 
     D3D_SHADER_MACRO endMacro;
     endMacro.Name = nullptr;

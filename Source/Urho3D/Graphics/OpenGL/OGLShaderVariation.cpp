@@ -219,7 +219,7 @@ bool ShaderVariation::Create()
         shaderCode += originalShaderCode;
 
 #ifdef URHO3D_SPIRV
-    if (targetShaderLanguage)
+    if (targetShaderLanguage && graphics_->GetPolicyGLSL() != ShaderTranslationPolicy::Verbatim)
     {
         // TODO: Make it optional
         static thread_local SpirVShader spirvShader;
@@ -242,9 +242,10 @@ bool ShaderVariation::Create()
         }
 
         shaderCode = glslShader.sourceCode_;
-        LogShaderSource(owner_->GetName(), type_, defines_, shaderCode, "glsl");
     }
 #endif
+
+    LogShaderSource(owner_->GetName(), type_, defines_, shaderCode, "glsl");
 
     const char* shaderCStr = shaderCode.c_str();
     glShaderSource(object_.name_, 1, &shaderCStr, nullptr);

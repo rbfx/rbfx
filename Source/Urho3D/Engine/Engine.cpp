@@ -325,6 +325,9 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetFlushGPU(GetParameter(EP_FLUSH_GPU).GetBool());
         graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
         graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
+        graphics->SetLogShaderSources(GetParameter(EP_SHADER_LOG_SOURCES).GetBool());
+        graphics->SetPolicyGLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_GLSL).GetInt()));
+        graphics->SetPolicyHLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_HLSL).GetInt()));
 
         SubscribeToEvent(E_SCREENMODE, [this](VariantMap& eventData)
         {
@@ -968,6 +971,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addOptionInt("--timeout", EP_TIME_OUT, "Quit application after specified time");
     addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->type_name("plugin1;plugin2;...");
     addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->type_name("plugin");
+    addFlag("--log-shader-sources", EP_SHADER_LOG_SOURCES, true, "Log shader sources into shader cache directory");
 }
 #endif
 
@@ -1032,6 +1036,9 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "conf://ShaderCache");
+    engineParameters_->DefineVariable(EP_SHADER_POLICY_GLSL, static_cast<int>(ShaderTranslationPolicy::Verbatim));
+    engineParameters_->DefineVariable(EP_SHADER_POLICY_HLSL, static_cast<int>(ShaderTranslationPolicy::Translate));
+    engineParameters_->DefineVariable(EP_SHADER_LOG_SOURCES, false);
     engineParameters_->DefineVariable(EP_SHADOWS, true).Overridable();
     engineParameters_->DefineVariable(EP_SOUND, true);
     engineParameters_->DefineVariable(EP_SOUND_BUFFER, 100);
