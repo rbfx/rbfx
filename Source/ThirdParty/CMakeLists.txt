@@ -87,7 +87,7 @@ if (NOT MINI_URHO)
         add_subdirectory(embree)
     endif ()
 
-    if (URHO3D_SPIRV AND URHO3D_D3D11)
+    if (URHO3D_SPIRV)
         set (ENABLE_PCH OFF CACHE BOOL "" FORCE)
         set (ENABLE_HLSL OFF CACHE BOOL "" FORCE)
         set (ENABLE_CTEST OFF CACHE BOOL "" FORCE)

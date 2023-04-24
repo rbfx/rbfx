@@ -20,22 +20,22 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Graphics.h"
-#include "../Graphics/ShaderConverter.h"
-#include "../Graphics/ShaderVariation.h"
-#include "../IO/Log.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Shader/ShaderTranslator.h"
+
+#include "Urho3D/Graphics/ShaderVariation.h"
+#include "Urho3D/IO/Log.h"
 
 #ifdef URHO3D_SPIRV
-#include <glslang/Public/ShaderLang.h>
-#include <StandAlone/ResourceLimits.h>
-#include <SPIRV/GlslangToSpv.h>
-#include <spirv_hlsl.hpp>
+    #include <SPIRV/GlslangToSpv.h>
+    #include <StandAlone/ResourceLimits.h>
+    #include <glslang/Public/ShaderLang.h>
+
+    #include <spirv_hlsl.hpp>
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -105,15 +105,6 @@ VertexElementSemanticIndex ParseVertexElement(ea::string_view name)
     return { semantic , index };
 }
 
-/// SpirV shader data.
-struct SpirVShader
-{
-    /// Shader bytecode.
-    std::vector<unsigned> bytecode_;
-    /// Input layout.
-    //ea::vector<VertexElementSemanticIndex> inputLayout_;
-};
-
 void AppendWithoutVersion(ea::string& dest, ea::string_view source)
 {
     const auto versionTag = FindVersionTag(source);
@@ -130,10 +121,11 @@ void AppendWithoutVersion(ea::string& dest, ea::string_view source)
 }
 
 /// Compile SpirV shader.
-bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDefineArray& shaderDefines,
-    SpirVShader& outputShader, ea::string& errorMessage)
+void CompileSpirV(
+    SpirVShader& outputShader, EShLanguage stage, ea::string_view sourceCode, const ShaderDefineArray& shaderDefines)
 {
-    outputShader = {};
+    outputShader.bytecode_.clear();
+    outputShader.compilerOutput_.clear();
 
     // Prepare defines
     thread_local ea::string shaderCode;
@@ -157,8 +149,8 @@ bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDef
     // Parse input shader
     if (!shader.parse(&glslang::DefaultTBuiltInResource, 100, false, EShMsgDefault))
     {
-        errorMessage = shader.getInfoLog();
-        return false;
+        outputShader.compilerOutput_ = shader.getInfoLog();
+        return;
     }
 
     // Link into fake program
@@ -166,13 +158,13 @@ bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDef
     program.addShader(&shader);
     if (!program.link(EShMsgDefault))
     {
-        errorMessage = program.getInfoLog();
-        return false;
+        outputShader.compilerOutput_ = program.getInfoLog();
+        return;
     }
     if (!program.mapIO())
     {
-        errorMessage = program.getInfoLog();
-        return false;
+        outputShader.compilerOutput_ = program.getInfoLog();
+        return;
     }
 
     // Parse input layout
@@ -201,10 +193,9 @@ bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDef
     const std::string spirvLog = spvLogger.getAllMessages();
     if (!spirvLog.empty())
     {
-        errorMessage = spirvLog.c_str();
+        outputShader.bytecode_.clear();
+        outputShader.compilerOutput_ = spirvLog.c_str();
     }
-
-    return true;
 }
 
 /// Remapping HLSL compiler.
@@ -253,14 +244,14 @@ public:
 };
 
 /// Convert SpirV to HLSL5
-bool ConvertToHLSL5(const SpirVShader& shader, ea::string& outputShader, ea::string& errorMessage)
+void ConvertToHLSL5(TargetShader& output, const SpirVShader& shader)
 {
-    errorMessage.clear();
-    outputShader.clear();
+    output.sourceCode_.clear();
+    output.compilerOutput_.clear();
 
     RemappingCompilerHLSL compiler(shader.bytecode_);
-    if (!compiler.RemapInputLayout(errorMessage))
-        return false;
+    if (!compiler.RemapInputLayout(output.compilerOutput_))
+        return;
 
     spirv_cross::CompilerGLSL::Options commonOptions;
     commonOptions.emit_line_directives = true;
@@ -272,31 +263,87 @@ bool ConvertToHLSL5(const SpirVShader& shader, ea::string& outputShader, ea::str
     const std::string src = compiler.compile();
     if (src.empty())
     {
-        errorMessage = "Unknown error";
-        return false;
+        output.compilerOutput_ = "Unknown error";
+        return;
     }
 
-    outputShader = src.c_str();
-    return true;
+    output.sourceCode_ = src.c_str();
 }
 
-}
-
-bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
-    ea::string& outputShaderCode, ea::string& errorMessage)
+void ConvertToGLSL(TargetShader& output, const SpirVShader& shader, int version, bool es)
 {
+    output.sourceCode_.clear();
+    output.compilerOutput_.clear();
+
+    spirv_cross::CompilerGLSL compiler(shader.bytecode_);
+    spirv_cross::CompilerGLSL::Options options;
+    options.version = version;
+    options.es = es;
+    //options.vertex.fixup_clipspace = true;
+    //options.vertex.flip_vert_y = true;
+    compiler.set_common_options(options);
+    const std::string src = compiler.compile();
+    if (src.empty())
+    {
+        output.compilerOutput_ = "Unknown error";
+        return;
+    }
+
+    output.sourceCode_ = src.c_str();
+}
+
+}
+#endif
+
+void ParseUniversalShader(
+    SpirVShader& output, ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines)
+{
+#ifdef URHO3D_SPIRV
+    CompileSpirV(output, ConvertShaderType(shaderType), sourceCode, shaderDefines);
+#else
+    URHO3D_ASSERTLOG(0, "URHO3D_SPIRV is should be enabled to use ParseUniversalShader");
+
     SpirVShader shader;
-    if (!CompileSpirV(ConvertShaderType(shaderType), sourceCode, shaderDefines, shader, errorMessage))
-        return false;
+    return shader;
+#endif
+}
 
-    if (!ConvertToHLSL5(shader, outputShaderCode, errorMessage))
-        return false;
+void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, TargetShaderLanguage targetLanguage)
+{
+#ifdef URHO3D_SPIRV
+    output.language_ = targetLanguage;
+    switch (targetLanguage)
+    {
+    case TargetShaderLanguage::HLSL_5_0:
+        ConvertToHLSL5(output, shader);
+        break;
 
-    return true;
+    case TargetShaderLanguage::GLSL_3_2:
+        ConvertToGLSL(output, shader, 150, false);
+        break;
+
+    case TargetShaderLanguage::GLSL_4_1:
+        ConvertToGLSL(output, shader, 410, false);
+        break;
+
+    case TargetShaderLanguage::GLSL_ES_3_0:
+        ConvertToGLSL(output, shader, 300, true);
+        break;
+
+    default:
+        URHO3D_ASSERTLOG(0, "TODO: Implement");
+    }
+#else
+    URHO3D_ASSERTLOG(0, "URHO3D_SPIRV is should be enabled to use TranslateSpirVShader");
+
+    SpirVShader shader;
+    return shader;
+#endif
 }
 
 }
 
+#ifdef URHO3D_SPIRV
 namespace glslang
 {
 
@@ -407,5 +454,5 @@ const TBuiltInResource DefaultTBuiltInResource = {
         /* .generalConstantMatrixVectorIndexing = */ 1,
     }};
 
-#endif
 }
+#endif

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,36 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Object.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/ShaderDefineArray.h"
-
-#include <EASTL/optional.h>
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
 
 namespace Urho3D
 {
 
-ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shaderCode);
+namespace
+{
 
-#ifdef URHO3D_SPIRV
-
-/// Convert GLSL shader to HLSL5.
-bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
-    ea::string& outputShaderCode, ea::string& errorMessage);
-
-#endif
+const ea::string shaderTypeName[] = {"vs", "ps", "gs", "hs", "ds", "cs"};
 
 }
+
+void LogShaderSource(const ea::string& fileName, ShaderType type, ea::string_view defines, ea::string_view source,
+    ea::string_view extension)
+{
+    // TODO: Make optional
+    auto context = Context::GetInstance();
+    auto graphics = context->GetSubsystem<Graphics>();
+    auto vfs = context->GetSubsystem<VirtualFileSystem>();
+
+    const FileIdentifier& cacheDir = graphics->GetShaderCacheDir();
+    const ea::string sourceName =
+        Format("{}_{}_{}.{}", GetFileName(fileName), StringHash(defines).ToString(), shaderTypeName[type], extension);
+
+    const FileIdentifier sourceFileName = cacheDir + sourceName;
+    if (auto sourceFile = vfs->OpenFile(sourceFileName, FILE_WRITE))
+        sourceFile->Write(source.data(), source.size());
+}
+
+} // namespace Urho3D
