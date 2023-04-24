@@ -38,9 +38,11 @@ const ea::string shaderTypeName[] = {"vs", "ps", "gs", "hs", "ds", "cs"};
 void LogShaderSource(const ea::string& fileName, ShaderType type, ea::string_view defines, ea::string_view source,
     ea::string_view extension)
 {
-    // TODO: Make optional
     auto context = Context::GetInstance();
     auto graphics = context->GetSubsystem<Graphics>();
+    if (!graphics->GetLogShaderSources())
+        return;
+
     auto vfs = context->GetSubsystem<VirtualFileSystem>();
 
     const FileIdentifier& cacheDir = graphics->GetShaderCacheDir();
@@ -49,7 +51,11 @@ void LogShaderSource(const ea::string& fileName, ShaderType type, ea::string_vie
 
     const FileIdentifier sourceFileName = cacheDir + sourceName;
     if (auto sourceFile = vfs->OpenFile(sourceFileName, FILE_WRITE))
+    {
+        const ea::string header = Format("// {}\n", defines);
+        sourceFile->Write(header.data(), header.size());
         sourceFile->Write(source.data(), source.size());
+    }
 }
 
 } // namespace Urho3D

@@ -760,6 +760,13 @@ public:
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
 
+    void SetLogShaderSources(bool enable) { logShaderSources_ = enable; }
+    bool GetLogShaderSources() const { return logShaderSources_; }
+    void SetPolicyGLSL(ShaderTranslationPolicy policy) { policyGlsl_ = policy; }
+    ShaderTranslationPolicy GetPolicyGLSL() const { return policyGlsl_; }
+    void SetPolicyHLSL(ShaderTranslationPolicy policy) { policyHlsl_ = policy; }
+    ShaderTranslationPolicy GetPolicyHLSL() const { return policyHlsl_; }
+
 private:
     /// Create the application window.
     bool OpenWindow(int width, int height, bool resizable, bool borderless);
@@ -977,6 +984,10 @@ private:
     ea::string globalShaderDefines_;
     /// Hash of global shader defines.
     StringHash globalShaderDefinesHash_;
+
+    bool logShaderSources_{};
+    ShaderTranslationPolicy policyGlsl_{ShaderTranslationPolicy::Verbatim};
+    ShaderTranslationPolicy policyHlsl_{ShaderTranslationPolicy::Translate};
 
     /// OpenGL3 support flag.
     static bool gl3Support;
