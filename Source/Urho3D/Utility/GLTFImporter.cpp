@@ -337,7 +337,7 @@ public:
             const ea::string_view nameFormat = i != 0 ? "{0}{1}_{2}{3}" : "{0}{1}{3}";
             const ea::string localResourceName = Format(nameFormat, prefix, body, i, suffix);
             if (localResourceNames_.contains(localResourceName))
-                return *(localResourceNames_.find(localResourceName));
+                continue;
 
             localResourceNames_.emplace(localResourceName);
             return localResourceName;
