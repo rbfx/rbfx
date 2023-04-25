@@ -337,7 +337,7 @@ public:
             const ea::string_view nameFormat = i != 0 ? "{0}{1}_{2}{3}" : "{0}{1}{3}";
             const ea::string localResourceName = Format(nameFormat, prefix, body, i, suffix);
             if (localResourceNames_.contains(localResourceName))
-                continue;
+                return *(localResourceNames_.find(localResourceName));
 
             localResourceNames_.emplace(localResourceName);
             return localResourceName;
@@ -2459,7 +2459,6 @@ private:
         if (isAlphaMask)
         {
             shaderDefines += "ALPHAMASK ";
-            // TODO: Add support in standard shader
             material.SetShaderParameter("AlphaCutoff", static_cast<float>(sourceMaterial.alphaCutoff));
         }
 
