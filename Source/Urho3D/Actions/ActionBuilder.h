@@ -53,6 +53,14 @@ public:
     /// Continue with MoveBy action.
     ActionBuilder& MoveBy(float duration, const Vector2& offset, ea::string_view attributeName = Actions::POSITION_ATTRIBUTE);
 
+    /// Continue with MoveBy action with quad .
+    ActionBuilder& MoveByQuadratic(float duration, const Vector3& controlOffset, const Vector3& targetOffset,
+        ea::string_view attributeName = Actions::POSITION_ATTRIBUTE);
+
+    /// Continue with MoveBy action.
+    ActionBuilder& MoveByQuadratic(float duration, const Vector2& controlOffset, const Vector2& targetOffset,
+        ea::string_view attributeName = Actions::POSITION_ATTRIBUTE);
+
     /// Continue with JumpBy action.
     ActionBuilder& JumpBy(const Vector3& offset, ea::string_view attributeName = Actions::POSITION_ATTRIBUTE);
 
