@@ -364,6 +364,11 @@ void Object::SetGlobalVar(StringHash key, const Variant& value)
     context_->SetGlobalVar(key, value);
 }
 
+void Object::RemoveGlobalVar(StringHash key)
+{
+    context_->RemoveGlobalVar(key);
+}
+
 Object* Object::GetSubsystem(StringHash type) const
 {
     return context_->GetSubsystem(type);

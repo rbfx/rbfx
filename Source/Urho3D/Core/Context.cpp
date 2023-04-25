@@ -286,6 +286,11 @@ void Context::SetGlobalVar(StringHash key, const Variant& value)
     globalVars_[key] = value;
 }
 
+void Context::RemoveGlobalVar(StringHash key)
+{
+    globalVars_.erase(key);
+}
+
 Object* Context::GetEventSender() const
 {
     if (!eventSenders_.empty())

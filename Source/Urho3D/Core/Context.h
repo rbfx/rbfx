@@ -111,6 +111,9 @@ public:
 
     /// Set global variable with the respective key and value.
     void SetGlobalVar(StringHash key, const Variant& value);
+        
+    /// Remove global variable
+    void RemoveGlobalVar(StringHash key);
 
     /// Return all subsystems.
     const SubsystemCache& GetSubsystems() const { return subsystems_; }

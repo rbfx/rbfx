@@ -138,6 +138,9 @@ public:
     /// Set global variable with the respective key and value.
     /// @property
     void SetGlobalVar(StringHash key, const Variant& value);
+    /// Remove global variable.
+    /// @property
+    void RemoveGlobalVar(StringHash key);
     /// Return subsystem by type.
     Object* GetSubsystem(StringHash type) const;
     /// Return active event sender. Null outside event handling.
