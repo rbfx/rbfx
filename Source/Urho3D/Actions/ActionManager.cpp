@@ -115,6 +115,7 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<BaseAction>();
     manager->AddFactoryReflection<FiniteTimeAction>();
     manager->AddFactoryReflection<MoveBy>();
+    manager->AddFactoryReflection<MoveByQuadratic>();
     manager->AddFactoryReflection<JumpBy>();
     manager->AddFactoryReflection<RotateBy>();
     manager->AddFactoryReflection<RotateAround>();

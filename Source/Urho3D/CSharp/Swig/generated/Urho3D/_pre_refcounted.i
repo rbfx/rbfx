@@ -404,6 +404,7 @@ URHO3D_REFCOUNTED(Urho3D::Actions::Disable);
 URHO3D_REFCOUNTED(Urho3D::Actions::Blink);
 URHO3D_REFCOUNTED(Urho3D::Actions::DelayTime);
 URHO3D_REFCOUNTED(Urho3D::Actions::MoveBy);
+URHO3D_REFCOUNTED(Urho3D::Actions::MoveByQuadratic);
 URHO3D_REFCOUNTED(Urho3D::Actions::JumpBy);
 URHO3D_REFCOUNTED(Urho3D::Actions::ScaleBy);
 URHO3D_REFCOUNTED(Urho3D::Actions::RotateBy);

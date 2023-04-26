@@ -34,6 +34,7 @@
 %csattribute(Urho3D::Actions::EaseElastic, %arg(float), Period, GetPeriod, SetPeriod);
 %csattribute(Urho3D::Actions::Blink, %arg(unsigned int), NumOfBlinks, GetNumOfBlinks, SetNumOfBlinks);
 %csattribute(Urho3D::Actions::MoveBy, %arg(Urho3D::Vector3), PositionDelta, GetPositionDelta, SetPositionDelta);
+%csattribute(Urho3D::Actions::MoveByQuadratic, %arg(Urho3D::Vector3), ControlDelta, GetControlDelta, SetControlDelta);
 %csattribute(Urho3D::Actions::JumpBy, %arg(Urho3D::Vector3), PositionDelta, GetPositionDelta, SetPositionDelta);
 %csattribute(Urho3D::Actions::ScaleBy, %arg(Urho3D::Vector3), ScaleDelta, GetScaleDelta, SetScaleDelta);
 %csattribute(Urho3D::Actions::RotateBy, %arg(Urho3D::Quaternion), RotationDelta, GetRotationDelta, SetRotationDelta);
