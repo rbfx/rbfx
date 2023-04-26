@@ -22,42 +22,44 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/Shader/ShaderSourceLogger.h"
+#include "Urho3D/Shader/ShaderOptimizer.h"
 
-#include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/IO/VirtualFileSystem.h"
+#ifdef URHO3D_SHADER_OPTIMIZER
+    #include <spirv-tools/optimizer.hpp>
+#endif
 
 namespace Urho3D
 {
 
+#ifdef URHO3D_SHADER_OPTIMIZER
 namespace
 {
 
-const ea::string shaderTypeName[] = {"vs", "ps", "gs", "hs", "ds", "cs"};
-
+spv_target_env GetTarget(TargetShaderLanguage targetLanguage)
+{
+    switch (targetLanguage)
+    {
+    default: return SPV_ENV_UNIVERSAL_1_6;
+    }
 }
 
-void LogShaderSource(const ea::string& fileName, ShaderType type, ea::string_view defines, ea::string_view source,
-    ea::string_view extension)
+} // namespace
+#endif
+
+void OptimizeSpirVShader(SpirVShader& shader, TargetShaderLanguage targetLanguage)
 {
-    auto context = Context::GetInstance();
-    auto graphics = context->GetSubsystem<Graphics>();
-    if (!graphics->GetLogShaderSources())
-        return;
+#ifdef URHO3D_SHADER_OPTIMIZER
+    spvtools::Optimizer spirvOptimizer(GetTarget(targetLanguage));
 
-    auto vfs = context->GetSubsystem<VirtualFileSystem>();
+    spirvOptimizer.RegisterPerformancePasses();
 
-    const FileIdentifier& cacheDir = graphics->GetShaderCacheDir();
-    const ea::string sourceName =
-        Format("{}_{}_{}.{}", GetFileName(fileName), StringHash(defines).ToString(), shaderTypeName[type], extension);
+    std::vector<uint32_t> optimizedSPIRV;
+    if (spirvOptimizer.Run(shader.bytecode_.data(), shader.bytecode_.size(), &optimizedSPIRV))
+        shader.bytecode_ = ea::move(optimizedSPIRV);
+#else
+    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_OPTIMIZER should be enabled to use OptimizeSpirVShader");
 
-    const FileIdentifier sourceFileName = cacheDir + sourceName;
-    if (auto sourceFile = vfs->OpenFile(sourceFileName, FILE_WRITE))
-    {
-        const ea::string header = Format("// {}\n", defines);
-        sourceFile->Write(header.data(), header.size());
-        sourceFile->Write(source.data(), source.size());
-    }
+#endif
 }
 
 } // namespace Urho3D

@@ -22,32 +22,13 @@
 
 #pragma once
 
-#include "Urho3D/Graphics/GraphicsDefs.h"
 #include "Urho3D/Shader/ShaderDefs.h"
 
-#include <EASTL/optional.h>
+#include <EASTL/string.h>
 
 namespace Urho3D
 {
 
-URHO3D_API ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shaderCode);
+URHO3D_API void OptimizeSpirVShader(SpirVShader& shader, TargetShaderLanguage targetLanguage);
 
-/// Shader translated to the target language.
-struct TargetShader
-{
-    TargetShaderLanguage language_;
-    ea::string sourceCode_;
-    ea::string compilerOutput_;
-
-    const bool IsValid() const { return !sourceCode_.empty(); }
-    operator bool() const { return IsValid(); }
-};
-
-/// Convert universal GLSL shader to SPIR-V.
-URHO3D_API void ParseUniversalShader(
-    SpirVShader& output, ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines);
-
-/// Convert SPIR-V shader to target shader language.
-URHO3D_API void TranslateSpirVShader(
-    TargetShader& output, const SpirVShader& shader, TargetShaderLanguage targetLanguage);
 }

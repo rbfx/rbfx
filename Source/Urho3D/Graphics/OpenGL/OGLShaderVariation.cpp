@@ -28,6 +28,7 @@
 #include "../../Graphics/ShaderProgram.h"
 #include "../../Graphics/ShaderVariation.h"
 #include "../../IO/Log.h"
+#include "../../Shader/ShaderOptimizer.h"
 #include "../../Shader/ShaderSourceLogger.h"
 #include "../../Shader/ShaderTranslator.h"
 
@@ -219,7 +220,8 @@ bool ShaderVariation::Create()
         shaderCode += originalShaderCode;
 
 #ifdef URHO3D_SHADER_TRANSLATOR
-    if (targetShaderLanguage && graphics_->GetPolicyGLSL() != ShaderTranslationPolicy::Verbatim)
+    const ShaderTranslationPolicy policy = graphics_->GetPolicyGLSL();
+    if (targetShaderLanguage && policy != ShaderTranslationPolicy::Verbatim)
     {
         // TODO: Make it optional
         static thread_local SpirVShader spirvShader;
@@ -232,6 +234,11 @@ bool ShaderVariation::Create()
                 Shader::GetShaderFileList(), spirvShader.compilerOutput_);
             return false;
         }
+
+#ifdef URHO3D_SHADER_OPTIMIZER
+        if (policy == ShaderTranslationPolicy::Optimize)
+            OptimizeSpirVShader(spirvShader, *targetShaderLanguage);
+#endif
 
         TranslateSpirVShader(glslShader, spirvShader, *targetShaderLanguage);
         if (!glslShader)

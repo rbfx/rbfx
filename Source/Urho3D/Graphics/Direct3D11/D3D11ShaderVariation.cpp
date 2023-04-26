@@ -30,6 +30,7 @@
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
 #include "../../Shader/ShaderSourceLogger.h"
+#include "../../Shader/ShaderOptimizer.h"
 #include "../../Shader/ShaderTranslator.h"
 #include "Urho3D/IO/VirtualFileSystem.h"
 
@@ -297,6 +298,11 @@ bool ShaderVariation::Compile()
                 Shader::GetShaderFileList(), spirvShader.compilerOutput_);
             return false;
         }
+
+#ifdef URHO3D_SHADER_OPTIMIZER
+        if (graphics_->GetPolicyHLSL() == ShaderTranslationPolicy::Optimize)
+            OptimizeSpirVShader(spirvShader, TargetShaderLanguage::HLSL_5_0);
+#endif
 
         TranslateSpirVShader(hlslShader, spirvShader, TargetShaderLanguage::HLSL_5_0);
         if (!hlslShader)

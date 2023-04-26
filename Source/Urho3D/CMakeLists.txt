@@ -176,8 +176,8 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
-# Link dependencies
-set (THIRD_PARTY_DEPENDENCIES
+# Public dependencies that are available to the user or are exposed in the public API or headers
+set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     FreeType
     LZ4
     PugiXml
@@ -206,18 +206,24 @@ set (THIRD_PARTY_DEPENDENCIES
     xatlas
     embree
     RmlUi
+    tinygltf
+    enkiTS
+)
+
+# Private dependencies that are hidden from the user and are not exposed in the public API or headers
+set (PRIVATE_THIRD_PARTY_DEPENDENCIES
     glslang
     SPIRV
     spirv-cross-core
     spirv-cross-glsl
     spirv-cross-msl
     spirv-cross-hlsl
-    tinygltf
-    enkiTS
+    SPIRV-Tools
+    SPIRV-Tools-opt
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)
-    list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
+    list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES Bullet)
 elseif (TARGET Bullet)
     # This library can not be exported from .dll on windows platforms.
     if (WEB AND BUILD_SHARED_LIBS)
@@ -229,7 +235,7 @@ elseif (TARGET Bullet)
     endif ()
 endif ()
 
-foreach (dep ${THIRD_PARTY_DEPENDENCIES})
+foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         # By linking them as private but inheriting definitions/options/dirs we avoid having
         # to export third party lib targets in a monolithic dll build.
@@ -281,6 +287,12 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         endif ()
     endif ()
 endforeach()
+
+foreach (dep ${PRIVATE_THIRD_PARTY_DEPENDENCIES})
+    if (TARGET "${dep}")
+        target_link_libraries(Urho3D PRIVATE ${dep})
+    endif ()
+endforeach ()
 
 if (URHO3D_SSE)
     if (MSVC)

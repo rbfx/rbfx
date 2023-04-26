@@ -192,7 +192,8 @@ option                (URHO3D_RMLUI              "HTML subset UIs via RmlUI midd
 option                (URHO3D_PARTICLE_GRAPH     "Particle Graph Effects"                                ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_COMPUTE            "Enable Compute shaders"                                ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT MOBILE;NOT URHO3D_GLES2" OFF)
 option                (URHO3D_ACTIONS            "Tweening actions"                                      ${URHO3D_ENABLE_ALL})
-option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from universal GLSL shaders to other GAPI via glslang and SpirV" ON)
+option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from universal GLSL shaders to other GAPI via glslang and SPIRV-Cross" ON)
+option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ON)
 
 # Features
 set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
