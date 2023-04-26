@@ -69,7 +69,7 @@ void ReplicatedAnimation::InitializeOnServer()
     server_.newAnimationLookups_.clear();
 
     SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
-        [this](StringHash, VariantMap& eventData)
+        [this](VariantMap& eventData)
     {
         using namespace BeginServerNetworkFrame;
         const auto serverFrame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());

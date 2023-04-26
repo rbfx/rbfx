@@ -157,7 +157,8 @@ void Typography::CreateText()
     }
 }
 
-SharedPtr<CheckBox> Typography::CreateCheckbox(const ea::string& label, EventHandler* handler)
+template <class T>
+SharedPtr<CheckBox> Typography::CreateCheckbox(const ea::string& label, T handler)
 {
     SharedPtr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
@@ -178,7 +179,8 @@ SharedPtr<CheckBox> Typography::CreateCheckbox(const ea::string& label, EventHan
     return box;
 }
 
-SharedPtr<DropDownList> Typography::CreateMenu(const ea::string& label, const char** items, EventHandler* handler)
+template <class T>
+SharedPtr<DropDownList> Typography::CreateMenu(const ea::string& label, const char** items, T handler)
 {
     SharedPtr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);

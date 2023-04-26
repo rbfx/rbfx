@@ -1780,16 +1780,10 @@ void Renderer::Initialize()
 
     initialized_ = true;
 
-    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap&)
-    {
-        UpdateMousePositionsForMainViewports();
-    });
+    SubscribeToEvent(E_INPUTEND, &Renderer::UpdateMousePositionsForMainViewports);
 
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Renderer, HandleRenderUpdate));
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&)
-    {
-        frameStats_ = FrameStatistics{};
-    });
+    SubscribeToEvent(E_ENDFRAME, [this] { frameStats_ = FrameStatistics(); });
 
     URHO3D_LOGINFO("Initialized renderer");
 }

@@ -43,6 +43,8 @@
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/FreeFlyController.h"
+#include "../Input/DirectionalPadAdapter.h"
+#include "../Input/PointerAdapter.h"
 #include "../IO/FileSystem.h"
 #include "../IO/VirtualFileSystem.h"
 #include "../IO/MountedDirectory.h"
@@ -260,6 +262,9 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
     context_->AddFactoryReflection<FreeFlyController>();
+    context_->AddFactoryReflection<PointerAdapter>();
+    context_->AddFactoryReflection<DirectionAggregator>();
+    context_->AddFactoryReflection<DirectionalPadAdapter>();
 
     context_->RegisterSubsystem(new UI(context_));
 
@@ -321,7 +326,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
         graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
 
-        SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& eventData)
+        SubscribeToEvent(E_SCREENMODE, [this](VariantMap& eventData)
         {
             using namespace ScreenMode;
 
@@ -409,7 +414,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 #ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_,
             GetParameter(EP_SYSTEMUI_FLAGS).GetUInt()));
-        RegisterStandardSerializableHooks();
+        RegisterStandardSerializableHooks(context_);
 #endif
     }
     frameTimer_.Reset();

@@ -51,6 +51,8 @@ public:
     const Color& GetColor() const { return color_; }
     void SetRenderOrder(unsigned renderOrder);
     unsigned GetRenderOrder() const { return renderOrder_; }
+    void SetDebug(bool isDebug) { isDebug_ = isDebug; }
+    bool IsDebug() const { return isDebug_; }
     void SetDrawablesAttr(const VariantVector& drawables);
     const VariantVector& GetDrawablesAttr() const;
     /// @}
@@ -86,6 +88,7 @@ private:
 
     Color color_{Color::WHITE};
     unsigned renderOrder_{DEFAULT_RENDER_ORDER};
+    bool isDebug_{};
 
     /// Selected drawables.
     ea::unordered_set<WeakPtr<Drawable>> drawables_;

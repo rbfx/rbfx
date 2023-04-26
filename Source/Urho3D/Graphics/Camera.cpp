@@ -101,6 +101,7 @@ void Camera::RegisterObject(Context* context)
         AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Use Reflection", GetUseReflection, SetUseReflection, bool, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Use Clipping", GetUseClipping, SetUseClipping, bool, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Draw Debug Geometry", bool, drawDebugGeometry_, true, AM_DEFAULT);
 }
 
 void Camera::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)

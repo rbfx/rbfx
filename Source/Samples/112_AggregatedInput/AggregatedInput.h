@@ -27,11 +27,10 @@
 #include <Urho3D/Input/DirectionAggregator.h>
 #include <EASTL/queue.h>
 
-/// This first example, maintaining tradition, prints a "Hello World" message.
-/// Furthermore it shows:
-///     - Using the Sample / Application classes, which initialize the Urho3D engine and run the main loop
-///     - Adding a Text element to the graphical user interface
-///     - Subscribing to and handling of update events
+/// Aggregated input example to compare raw input events to aggregated events.
+/// Demonstrates how
+/// - DirectionAggregator evaluates aggregated direction from all input devices.
+/// - DirectionalPadAdapter translates input events into simple directional events similar to d-pad.
 class AggregatedInput : public Sample
 {
     URHO3D_OBJECT(AggregatedInput, Sample);

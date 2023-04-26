@@ -84,6 +84,7 @@ void CubemapRenderer::InitializeCameras()
         auto camera = cameraNode->CreateComponent<Camera>();
         camera->SetFov(90.0f);
         camera->SetAspectRatio(1.0f);
+        camera->SetDrawDebugGeometry(false);
         renderCameras_[face] = cameraNode;
 
         viewports_[face] = MakeShared<Viewport>(context_, scene_, camera, IntRect::ZERO, renderPipeline_);
@@ -99,10 +100,7 @@ void CubemapRenderer::ConnectViewportsToTexture(TextureCube* texture)
     }
 
     UnsubscribeFromEvent(E_ENDVIEWRENDER);
-    SubscribeToEvent(texture, E_ENDVIEWRENDER, [&](StringHash, VariantMap&)
-    {
-        ProcessFaceRendered();
-    });
+    SubscribeToEvent(texture, E_ENDVIEWRENDER, &CubemapRenderer::ProcessFaceRendered);
 }
 
 void CubemapRenderer::DisconnectViewportsFromTexture(TextureCube* texture) const

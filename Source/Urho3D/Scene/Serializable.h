@@ -122,6 +122,9 @@ public:
     /// @property
     unsigned GetNumAttributes() const;
 
+    /// Copy all attributes from another serializable.
+    void CopyAttributes(const Serializable* source, bool resetToDefault = true);
+
     /// Return whether is temporary.
     /// @property
     bool IsTemporary() const { return temporary_; }

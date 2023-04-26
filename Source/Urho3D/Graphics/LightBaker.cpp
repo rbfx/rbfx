@@ -79,10 +79,7 @@ struct LightBaker::TaskData
 LightBaker::LightBaker(Context* context) :
     Component(context)
 {
-    SubscribeToEvent(E_UPDATE, [this](StringHash eventType, VariantMap& eventData)
-    {
-        Update();
-    });
+    SubscribeToEvent(E_UPDATE, &LightBaker::Update);
 }
 
 LightBaker::~LightBaker()

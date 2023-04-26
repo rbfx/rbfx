@@ -47,9 +47,7 @@ void AggregatedInput::Start()
     // Create UI elements
     CreateUI();
 
-    // Finally subscribe to the update event. Note that by subscribing events at this point we have already missed some
-    // events like the ScreenMode event sent by the Graphics subsystem when opening the application window. To catch
-    // those as well we could subscribe in the constructor instead.
+    // Finally subscribe to events.
     SubscribeToEvents();
 }
 
@@ -239,10 +237,29 @@ void AggregatedInput::HandleJoystickHatMove(StringHash eventType, VariantMap& ar
     AddRawEvent(Format("HatMove: Hat {}, Value {}", args[P_HAT].GetUInt(), posName));
 }
 
-void AggregatedInput::HandleJoystickDisconnected(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
-void AggregatedInput::HandleTouchBegin(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
-void AggregatedInput::HandleTouchMove(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
-void AggregatedInput::HandleTouchEnd(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
+void AggregatedInput::HandleJoystickDisconnected(StringHash eventType, VariantMap& args)
+{
+    using namespace JoystickDisconnected;
+    AddRawEvent(Format("JoystickDisconnected: Id {}", args[P_JOYSTICKID].GetInt()));
+}
+
+void AggregatedInput::HandleTouchBegin(StringHash eventType, VariantMap& args)
+{
+    using namespace TouchBegin;
+    AddRawEvent(Format("TouchBegin: Id {}", args[P_TOUCHID].GetInt()));
+}
+
+void AggregatedInput::HandleTouchMove(StringHash eventType, VariantMap& args)
+{
+    using namespace TouchMove;
+    AddRawEvent(Format("TouchMove: Id {}", args[P_TOUCHID].GetInt()));
+}
+
+void AggregatedInput::HandleTouchEnd(StringHash eventType, VariantMap& args)
+{
+    using namespace TouchEnd;
+    AddRawEvent(Format("TouchEnd: Id {}", args[P_TOUCHID].GetInt()));
+}
 
 void AggregatedInput::Update(float timeStep)
 {

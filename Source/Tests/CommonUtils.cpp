@@ -42,7 +42,7 @@ namespace Tests
 namespace
 {
 
-void PrintError(StringHash hash, VariantMap& args)
+void PrintError(VariantMap& args)
 {
     if (args[LogMessage::P_LEVEL].GetInt() == LOG_ERROR)
     {
@@ -119,6 +119,20 @@ Resource* GetOrCreateResource(
     return resource;
 }
 
+void SendMouseMoveEvent(Input* input, IntVector2 pos, IntVector2 delta)
+{
+    using namespace MouseMove;
+
+    VariantMap args;
+    args[P_BUTTONS] = 0;
+    args[P_QUALIFIERS] = 0;
+    args[P_X] = pos.x_;
+    args[P_Y] = pos.y_;
+    args[P_DX] = delta.x_;
+    args[P_DY] = delta.y_;
+    input->SendEvent(E_MOUSEMOVE, args);
+}
+
 void SendKeyEvent(Input* input, StringHash eventId, Scancode scancode, Key key)
 {
     using namespace KeyDown;
@@ -172,7 +186,7 @@ FrameEventTracker::FrameEventTracker(Context* context, StringHash endFrameEventT
     : Object(context)
 {
     SubscribeToEvent(endFrameEventType,
-        [&](StringHash, VariantMap&)
+        [&]
     {
         if (!recordEvents_)
             recordEvents_ = true;
@@ -235,7 +249,7 @@ AttributeTracker::AttributeTracker(Context* context, StringHash endFrameEventTyp
     : Object(context)
 {
     SubscribeToEvent(endFrameEventType,
-        [&](StringHash, VariantMap&)
+        [&]
     {
         for (const auto& [serializable, attributeName] : trackers_)
         {

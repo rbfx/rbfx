@@ -1430,7 +1430,7 @@ void Material::ApplyShaderDefines(unsigned index)
 void Material::RefreshTextureEventSubscriptions()
 {
     UnsubscribeFromEvent(E_RELOADFINISHED);
-    const auto onReload = [this](StringHash, const VariantMap&) { MarkPipelineStateHashDirty(); };
+    const auto onReload = [this] { MarkPipelineStateHashDirty(); };
     for (const auto& item : textures_)
         SubscribeToEvent(item.second, E_RELOADFINISHED, onReload);
     MarkPipelineStateHashDirty();
