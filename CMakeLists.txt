@@ -209,7 +209,7 @@ endif ()
 
 if (MINGW AND CROSS_TARGET)
     # Workarounds for crosscompiling MinGW on linux. EASTL uses uppser-case headers where MinGW has them lower-case.
-    foreach (HEADER Windows.h WinSock2.h ShellAPI.h XInput.h Rpc.h)
+    foreach (HEADER Windows.h WinSock2.h ShellAPI.h XInput.h Rpc.h Shlwapi.h)
         find_path(${HEADER}_PATH ${HEADER})
         if (NOT ${${HEADER}_PATH})
             string(TOLOWER "${HEADER}" HEADER_LOWER)

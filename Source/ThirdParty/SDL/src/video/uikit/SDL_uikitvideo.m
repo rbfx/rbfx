@@ -37,9 +37,7 @@
 #include "SDL_uikitwindow.h"
 #include "SDL_uikitopengles.h"
 #include "SDL_uikitclipboard.h"
-#ifndef TARGET_IPHONE_SIMULATOR
 #include "SDL_uikitvulkan.h"
-#endif
 #include "SDL_uikitmetalview.h"
 
 #define UIKITVID_DRIVER_NAME "uikit"
@@ -125,7 +123,7 @@ UIKit_CreateDevice(void)
 #endif
         device->free = UIKit_DeleteDevice;
 
-#if SDL_VIDEO_VULKAN && !defined(TARGET_IPHONE_SIMULATOR)
+#if SDL_VIDEO_VULKAN
         device->Vulkan_LoadLibrary = UIKit_Vulkan_LoadLibrary;
         device->Vulkan_UnloadLibrary = UIKit_Vulkan_UnloadLibrary;
         device->Vulkan_GetInstanceExtensions

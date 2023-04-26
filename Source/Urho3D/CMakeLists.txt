@@ -208,6 +208,14 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     RmlUi
     tinygltf
     enkiTS
+    Diligent-Common
+    Diligent-GraphicsEngineOpenGL-static
+    Diligent-GraphicsEngineVk-static
+    Diligent-GraphicsEngineD3D11-static
+    Diligent-GraphicsEngineD3D12-static
+    Diligent-GraphicsEngineMetal-static
+    Diligent-HLSL2GLSLConverterLib
+    Vulkan-Headers
 )
 
 # Private dependencies that are hidden from the user and are not exposed in the public API or headers
@@ -343,26 +351,9 @@ if (URHO3D_PROFILING)
     target_link_libraries(Urho3D PUBLIC Tracy)
 endif ()
 
-# Graphics
-if (NOT MINI_URHO)
-    if (URHO3D_OPENGL)
-        if (APPLE)
-            # Do nothing
-        elseif (WIN32)
-            target_link_libraries (Urho3D PUBLIC opengl32)
-        elseif (ANDROID OR ARM)
-            if (URHO3D_GLES2)
-                target_link_libraries (Urho3D PUBLIC GLESv1_CM GLESv2)
-            elseif (URHO3D_GLES3)
-                target_link_libraries (Urho3D PUBLIC GLESv3)
-            endif ()
-        else ()
-            target_link_libraries (Urho3D PUBLIC GL)
-        endif ()
-    else ()
-        find_package(DirectX REQUIRED D3D11)
-        target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
-    endif ()
+# TODO(diligent): Remove it later
+if (D3D11_SUPPORTED)
+    target_link_libraries(Urho3D PUBLIC dxguid)
 endif ()
 
 if (WEB)
@@ -381,6 +372,9 @@ if (WEB)
         math(EXPR EMSCRIPTEN_TOTAL_MEMORY_BYTES "${EMSCRIPTEN_TOTAL_MEMORY} * 1024 * 1024")
         target_link_libraries(Urho3D PUBLIC "-s INITIAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
     endif ()
+    target_link_libraries(Urho3D PUBLIC "-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2")
+    # TODO(diligent): Remove FULL_ES3 if glMapBufferRange and glUnmapBuffer are removed from Diligent
+    target_link_libraries(Urho3D PUBLIC "-s FULL_ES3=1")
 endif ()
 
 if (BUILD_SHARED_LIBS)
