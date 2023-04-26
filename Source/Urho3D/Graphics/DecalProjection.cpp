@@ -55,6 +55,9 @@ void DecalProjection::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
         "Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE(
+        "Max Vertices", GetMaxVertices, SetMaxVertices, unsigned, DEFAULT_MAX_VERTICES, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Max Indices", GetMaxIndices, SetMaxIndices, unsigned, DEFAULT_MAX_INDICES, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE(
         "Near Clip", GetNearClip, SetNearClip, float, DEFAULT_NEAR_CLIP, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Far Clip", GetFarClip, SetFarClip, float, DEFAULT_FAR_CLIP, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("FOV", GetFov, SetFov, float, DEFAULT_FOV, AM_DEFAULT);
@@ -103,6 +106,16 @@ void DecalProjection::SetMaterial(Material* material)
         material_ = material;
         UpdateSubscriptions();
     }
+}
+
+void DecalProjection::SetMaxVertices(unsigned num)
+{
+    maxVertices_ = num;
+}
+
+void DecalProjection::SetMaxIndices(unsigned num)
+{
+    maxIndices_ = num;
 }
 
 void DecalProjection::SetOrthographic(bool enable)
@@ -240,6 +253,8 @@ bool DecalProjection::IsValidDrawable(Drawable* drawable)
     auto current = drawable->GetTypeInfo();
     while (current)
     {
+        if (current->GetType() == DecalSet::GetTypeNameStatic())
+            return false;
         if (current->GetType() == Skybox::GetTypeNameStatic())
             return false;
         if (current->GetType() == StaticModel::GetTypeNameStatic())
@@ -319,10 +334,12 @@ void DecalProjection::UpdateGeometry()
             auto* node = drawable->GetNode();
             if (node)
             {
-                DecalSet* decalSet = node->CreateComponent<DecalSet>();
+                auto decalSet = node->CreateComponent<DecalSet>();
                 decalSet->SetTemporary(true);
                 decalSet->SetMaterial(material_);
-                float timeLive = (timeToLive_ > 0) ? Urho3D::Max(M_EPSILON, timeToLive_ - elapsedTime_) : 0.0f;
+                decalSet->SetMaxIndices(maxIndices_);
+                decalSet->SetMaxVertices(maxVertices_);
+                const float timeLive = (timeToLive_ > 0) ? Urho3D::Max(M_EPSILON, timeToLive_ - elapsedTime_) : 0.0f;
                 decalSet->AddDecal(drawable, viewProj, Vector2::ZERO, Vector2::ONE, timeLive, normalCutoff_);
                 activeDecalSets_.push_back(SharedPtr<DecalSet>(decalSet));
             }

@@ -66,6 +66,10 @@ public:
 
     /// Set material. The material should use a small negative depth bias to avoid Z-fighting.
     void SetMaterial(Material* material);
+    /// Set maximum number of decal vertices per decal set.
+    void SetMaxVertices(unsigned num);
+    /// Set maximum number of decal vertex indices per decal set.
+    void SetMaxIndices(unsigned num);
     /// Set orthographic mode enabled/disabled.
     void SetOrthographic(bool enable);
     /// Set near clip distance.
@@ -93,6 +97,10 @@ public:
     Material* GetMaterial() const;
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
+    /// Return maximum number of decal vertices.
+    unsigned GetMaxVertices() const { return maxVertices_; }
+    /// Return maximum number of decal vertex indices.
+    unsigned GetMaxIndices() const { return maxIndices_; }
     /// Return orthographic flag.
     bool IsOrthographic() const { return orthographic_; }
     /// Return far clip distance.
@@ -140,6 +148,8 @@ private:
     static constexpr float DEFAULT_TIME_TO_LIVE = 0.0f;
     static constexpr float DEFAULT_NORMAL_CUTOFF = 0.1f;
     static constexpr unsigned DEFAULT_VIEWMASK = M_MAX_UNSIGNED;
+    static constexpr unsigned DEFAULT_MAX_VERTICES = 512;
+    static constexpr unsigned DEFAULT_MAX_INDICES = 1024;
 
     /// Orthographic mode flag.
     bool orthographic_{DEFAULT_ORTHO};
@@ -163,7 +173,10 @@ private:
     float normalCutoff_{DEFAULT_NORMAL_CUTOFF};
     /// Query mask.
     unsigned viewMask_{DEFAULT_VIEWMASK};
-
+    /// Maximum vertices.
+    unsigned maxVertices_{DEFAULT_MAX_VERTICES};
+    /// Maximum indices.
+    unsigned maxIndices_{DEFAULT_MAX_INDICES};
     /// Active decal sets attached to objects in the scene.
     ea::vector<SharedPtr<DecalSet>> activeDecalSets_;
     /// Active subscriptions bitmask.
