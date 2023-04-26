@@ -1,20 +1,10 @@
-*.o
-*.a
-*.so
-*.exe
-.vscode/
-tags
-TAGS
-bazel-*
-build/
-Test/localResults/
-External/googletest
-External/spirv-tools
-out/
+/.appveyor.yml
+/.gn
 
-# GN generated files
-.cipd/
-*.gclient_entries
-third_party/
-buildtools/
-tools/
+/.github/
+
+/gtests/
+/hlsl/
+/kokoro/
+/ndk_test/
+/Test/

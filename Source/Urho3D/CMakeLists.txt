@@ -291,6 +291,11 @@ endforeach()
 foreach (dep ${PRIVATE_THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         target_link_libraries(Urho3D PRIVATE ${dep})
+
+        get_target_property(_TARGET_TYPE ${dep} TYPE)
+        if (URHO3D_MERGE_STATIC_LIBS AND NOT BUILD_SHARED_LIBS AND ${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
+            list (APPEND DEPENDENCY_TARGET_FILES $<TARGET_FILE:${dep}>)
+        endif ()
     endif ()
 endforeach ()
 

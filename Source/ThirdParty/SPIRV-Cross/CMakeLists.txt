@@ -616,11 +616,3 @@ if (SPIRV_CROSS_CLI)
 		endif()
 	endif()
 endif()
-
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS SPIRV spirv-cross-core spirv-cross-glsl spirv-cross-msl spirv-cross-hlsl EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
-endif ()
-
-target_include_directories(spirv-cross-core PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-)
