@@ -237,7 +237,7 @@ option(URHO3D_SSL                               "Enable OpenSSL support"        
 
 if (WIN32)
     set(URHO3D_GRAPHICS_API D3D11 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D9 D3D11 OpenGL)
+    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D11 OpenGL)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
 elseif (IOS OR ANDROID)
     set(URHO3D_GRAPHICS_API GLES2 CACHE STRING "Graphics API")
@@ -253,9 +253,6 @@ endif ()
 
 # Whether to use legacy renderer. Only OpenGL support legacy renderer.
 cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)
-if (URHO3D_D3D9)
-    set (URHO3D_LEGACY_RENDERER ON)
-endif ()
 
 if (URHO3D_CSHARP)
     set (URHO3D_MONOLITHIC_HEADER ON)   # Used by wrapper code
@@ -272,6 +269,10 @@ elseif ((URHO3D_TOOLS OR URHO3D_EDITOR) AND NOT MINI_URHO)
     set (URHO3D_FILEWATCHER ON)
     set (URHO3D_LOGGING ON)
     set (URHO3D_HASH_DEBUG ON)
+endif ()
+
+if (URHO3D_D3D11)
+    set (URHO3D_SHADER_TRANSLATOR ON)
 endif ()
 
 if (EMSCRIPTEN)
