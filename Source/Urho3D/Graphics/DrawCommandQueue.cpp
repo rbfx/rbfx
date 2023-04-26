@@ -193,13 +193,8 @@ void DrawCommandQueue::Execute()
         }
 
         // Invoke appropriate draw command
-#ifdef URHO3D_D3D9
-        const unsigned vertexStart = cmd.vertexStart_;
-        const unsigned vertexCount = cmd.vertexCount_;
-#else
         const unsigned vertexStart = 0;
         const unsigned vertexCount = 0;
-#endif
         if (cmd.instanceCount_ != 0)
         {
             if (cmd.baseVertexIndex_ == 0)
