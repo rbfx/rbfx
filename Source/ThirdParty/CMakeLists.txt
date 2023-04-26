@@ -88,16 +88,31 @@ if (NOT MINI_URHO)
     endif ()
 
     if (URHO3D_SHADER_TRANSLATOR)
+        set (ENABLE_SPVREMAPPER OFF CACHE BOOL "" FORCE)
+        set (ENABLE_GLSLANG_INSTALL OFF CACHE BOOL "" FORCE)
         set (ENABLE_PCH OFF CACHE BOOL "" FORCE)
-        set (ENABLE_HLSL OFF CACHE BOOL "" FORCE)
+        set (ENABLE_HLSL TRUE CACHE BOOL "" FORCE)
         set (ENABLE_CTEST OFF CACHE BOOL "" FORCE)
         set (ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
         set (BUILD_EXTERNAL OFF CACHE BOOL "" FORCE)
         set (SKIP_GLSLANG_INSTALL ON CACHE BOOL "" FORCE)
         set (BUILD_TESTING OFF CACHE BOOL "" FORCE)
+        unset (LLVM_USE_CRT_DEBUG CACHE)
+        unset (LLVM_USE_CRT_RELEASE CACHE)
+        unset (LLVM_USE_CRT_RELWITHDEBINFO CACHE)
         add_subdirectory(glslang)
         install_third_party_libs (glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen)
 
+        set (SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_ENABLE_MSL ON CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_ENABLE_GLSL ON CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_ENABLE_HLSL ON CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_ENABLE_CPP OFF CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_ENABLE_REFLECT OFF CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_ENABLE_C_API OFF CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_ENABLE_UTIL OFF CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_FORCE_PIC ON CACHE BOOL "" FORCE)
+        set (SPIRV_CROSS_NAMESPACE_OVERRIDE OFF CACHE BOOL "" FORCE)
         set (SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
         set (SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
         add_subdirectory(SPIRV-Cross)
@@ -153,16 +168,12 @@ if (NOT MINI_URHO)
         add_subdirectory(nativefiledialog)
     endif ()
 
-    if (NOT ANDROID AND NOT ARM AND NOT WEB)
-        if (URHO3D_OPENGL)
-            add_subdirectory (GLEW)
-        endif ()
+    if (NOT UWP)
+        add_subdirectory (GLEW)
+        add_library (GLEW::glew ALIAS GLEW)
     endif ()
 
     if (URHO3D_PROFILING)
-        if (NOT TARGET GLEW AND URHO3D_TOOLS)
-            add_subdirectory (GLEW)
-        endif ()
         set (CAPSTONE_BUILD_STATIC_RUNTIME ${URHO3D_STATIC_RUNTIME})
         set (CAPSTONE_BUILD_STATIC ON)
         set (CAPSTONE_BUILD_SHARED OFF)
@@ -178,6 +189,45 @@ if (NOT MINI_URHO)
 
     # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
     add_subdirectory (tracy)
+
+    set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "")
+    add_subdirectory (Diligent)
+    install_third_party_libs (
+        Diligent-AndroidPlatform
+        Diligent-ApplePlatform
+        Diligent-Archiver-static
+        Diligent-ArchiverInterface
+        Diligent-BasicPlatform
+        Diligent-BuildSettings
+        Diligent-Common
+        Diligent-EmscriptenPlatform
+        Diligent-GraphicsAccessories
+        Diligent-GraphicsEngine
+        Diligent-GraphicsEngineD3D11-shared
+        Diligent-GraphicsEngineD3D11-static
+        Diligent-GraphicsEngineD3D11Interface
+        Diligent-GraphicsEngineD3D12-shared
+        Diligent-GraphicsEngineD3D12-static
+        Diligent-GraphicsEngineD3D12Interface
+        Diligent-GraphicsEngineD3DBase
+        Diligent-GraphicsEngineD3DBaseInterface
+        Diligent-GraphicsEngineInterface
+        Diligent-GraphicsEngineNextGenBase
+        Diligent-GraphicsEngineOpenGL-static
+        Diligent-GraphicsEngineOpenGLInterface
+        Diligent-GraphicsEngineVk-static
+        Diligent-GraphicsEngineVkInterface
+        Diligent-HLSL2GLSLConverterLib
+        Diligent-LinuxPlatform
+        Diligent-PlatformInterface
+        Diligent-Primitives
+        Diligent-PublicBuildSettings
+        Diligent-ShaderTools
+        Diligent-UniversalWindowsPlatform
+        Diligent-Win32Platform
+        volk_headers
+        Vulkan-Headers
+    )
 endif ()
 
 if (URHO3D_CSHARP_TOOLS AND DESKTOP)
