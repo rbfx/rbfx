@@ -364,12 +364,3 @@ if(ENABLE_CTEST AND BUILD_TESTING)
         COMMAND bash ${IGNORE_CR_FLAG} runtests ${RESULTS_PATH} ${VALIDATOR_PATH} ${REMAP_PATH}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Test/)
 endif()
-
-# rbfx:
-target_include_directories(glslang PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS
-        glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen
-        EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
-
