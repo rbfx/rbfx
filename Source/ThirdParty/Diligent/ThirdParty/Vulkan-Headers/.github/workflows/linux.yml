@@ -1,0 +1,58 @@
+# Copyright (c) 2022-2023 LunarG, Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Linux
+
+on:
+    push:
+    pull_request:
+        branches:
+            - main
+
+jobs:
+  ubuntu-cmake-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.15.0
+      - name: Configure Vulkan-Headers
+        run: cmake -S . -B build -G "Ninja"
+      - name: Install Vulkan-Headers
+        run: cmake --install build --prefix ${GITHUB_WORKSPACE}/build/install
+      - name: Test Vulkan-Headers find_package support
+        run: cmake -S tests/find_package -B build/tests/find_package -D CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/build/install
+
+  ubuntu-cmake-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.25.0
+      - name: Configure Vulkan-Headers
+        run: cmake -S . -B build -D BUILD_TESTS=ON --log-level=DEBUG -G "Ninja"
+      - name: Build Vulkan-Headers Tests
+        run: cmake --build build
+
+  test-cmake-minimum:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.14.0
+      - name: Configure Vulkan-Headers
+        run: cmake -S . -B build/ -G "Ninja"
