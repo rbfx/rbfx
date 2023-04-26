@@ -554,7 +554,7 @@ enum class ShaderTranslationPolicy
     /// Fully process and optimize shader via SPIR-V Tools.
     /// This results in even slower shader compilation, especially in Debug builds.
     /// This mode may improve realtime performance of the shaders, especially on mobile platforms.
-    //Optimize
+    Optimize
 };
 
 }

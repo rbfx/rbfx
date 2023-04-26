@@ -30,8 +30,30 @@
 #include <EASTL/vector.h>
 #include <EASTL/utility.h>
 
+#include <vector>
+
 namespace Urho3D
 {
+
+/// SPIR-V shader.
+struct SpirVShader
+{
+    // Use STD vector for easier interop with third parties.
+    std::vector<unsigned> bytecode_;
+    ea::string compilerOutput_;
+
+    const bool IsValid() const { return !bytecode_.empty(); }
+    operator bool() const { return IsValid(); }
+};
+
+/// List of supported target shader languages.
+enum class TargetShaderLanguage
+{
+    GLSL_3_2,
+    GLSL_4_1,
+    GLSL_ES_3_0,
+    HLSL_5_0,
+};
 
 /// Array of shader defines: pairs of name and value.
 struct URHO3D_API ShaderDefineArray

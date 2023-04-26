@@ -301,7 +301,7 @@ void ParseUniversalShader(
 #ifdef URHO3D_SHADER_TRANSLATOR
     CompileSpirV(output, ConvertShaderType(shaderType), sourceCode, shaderDefines);
 #else
-    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR is should be enabled to use ParseUniversalShader");
+    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR should be enabled to use ParseUniversalShader");
 
     SpirVShader shader;
     return shader;
@@ -334,7 +334,7 @@ void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, Targe
         URHO3D_ASSERTLOG(0, "TODO: Implement");
     }
 #else
-    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR is should be enabled to use TranslateSpirVShader");
+    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR should be enabled to use TranslateSpirVShader");
 
     SpirVShader shader;
     return shader;
