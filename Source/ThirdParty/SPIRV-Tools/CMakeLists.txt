@@ -252,7 +252,7 @@ if(NOT COMMAND find_host_program)
 endif()
 
 # Tests require Python3
-if("${SPIRV_SKIP_TESTS}" AND "${SPIRV_GENERATOR_CACHE}")
+if("${SPIRV_SKIP_TESTS}" AND NOT "${SPIRV_GENERATOR_CACHE} " STREQUAL " ")
   find_host_package(PythonInterp 3)
 else()
   find_host_package(PythonInterp 3 REQUIRED)
