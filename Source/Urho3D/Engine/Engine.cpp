@@ -105,6 +105,16 @@
 #include "StateManager.h"
 #include "../Core/CommandLine.h"
 
+// TODO(diligent): Temporary anchor to force linking with the library
+#include <Diligent/Graphics/GraphicsEngine/interface/Buffer.h>
+#include <EASTL/finally.h>
+auto _anchorDiligent = ea::finally([]()
+{
+    Diligent::IBuffer* volatile pBuf = nullptr;
+    if (pBuf)
+        pBuf->FlushMappedRange(0, 0);
+});
+
 #include "../DebugNew.h"
 
 #if defined(_MSC_VER) && defined(_DEBUG)
