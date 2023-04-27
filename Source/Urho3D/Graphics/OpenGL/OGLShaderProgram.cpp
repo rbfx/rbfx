@@ -386,6 +386,11 @@ bool ShaderProgram::Link()
             name = name.substr(0, index);
         }
 
+        // Check for named uniform buffers, ignore buffer name prefix
+        const unsigned dotIndex = name.find('.');
+        if (dotIndex != ea::string::npos)
+            name = name.substr(dotIndex + 1);
+
         if (name[0] == 'c')
         {
             // Store constant uniform

@@ -1,0 +1,10 @@
+/.appveyor.yml
+/.gn
+
+/.github/
+
+/gtests/
+/hlsl/
+/kokoro/
+/ndk_test/
+/Test/

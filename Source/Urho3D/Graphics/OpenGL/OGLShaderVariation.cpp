@@ -25,10 +25,12 @@
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsImpl.h"
 #include "../../Graphics/Shader.h"
-#include "../../Graphics/ShaderConverter.h"
 #include "../../Graphics/ShaderProgram.h"
 #include "../../Graphics/ShaderVariation.h"
 #include "../../IO/Log.h"
+#include "../../Shader/ShaderOptimizer.h"
+#include "../../Shader/ShaderSourceLogger.h"
+#include "../../Shader/ShaderTranslator.h"
 
 #include <cctype>
 #include <EASTL/optional.h>
@@ -140,6 +142,7 @@ bool ShaderVariation::Create()
 
     const ea::string& originalShaderCode = owner_->GetSourceCode(type_);
     ea::string shaderCode;
+    ea::optional<TargetShaderLanguage> targetShaderLanguage;
 
     // Check if the shader code contains a version define
     const auto versionTag = FindVersionTag(originalShaderCode);
@@ -148,13 +151,16 @@ bool ShaderVariation::Create()
         // If version define found, insert it first
         const ea::string versionDefine = originalShaderCode.substr(versionTag->first, versionTag->second - versionTag->first);
         shaderCode += versionDefine + "\n";
+        targetShaderLanguage = TargetShaderLanguage::GLSL_4_1;
     }
     else if (Graphics::GetGL3Support())
     {
 #ifdef MOBILE_GRAPHICS
         shaderCode += "#version 300 es\n";
+        targetShaderLanguage = TargetShaderLanguage::GLSL_ES_3_0;
 #else
         shaderCode += "#version 150\n";
+        targetShaderLanguage = TargetShaderLanguage::GLSL_3_2;
 #endif
     }
 #if defined(DESKTOP_GRAPHICS)
@@ -212,6 +218,41 @@ bool ShaderVariation::Create()
     }
     else
         shaderCode += originalShaderCode;
+
+#ifdef URHO3D_SHADER_TRANSLATOR
+    const ShaderTranslationPolicy policy = graphics_->GetPolicyGLSL();
+    if (targetShaderLanguage && policy != ShaderTranslationPolicy::Verbatim)
+    {
+        // TODO: Make it optional
+        static thread_local SpirVShader spirvShader;
+        static thread_local TargetShader glslShader;
+
+        ParseUniversalShader(spirvShader, type_, shaderCode, ShaderDefineArray{});
+        if (!spirvShader)
+        {
+            URHO3D_LOGERROR("Failed to convert shader {} from GLSL to SPIR-V:\n{}{}", GetFullName(),
+                Shader::GetShaderFileList(), spirvShader.compilerOutput_);
+            return false;
+        }
+
+#ifdef URHO3D_SHADER_OPTIMIZER
+        if (policy == ShaderTranslationPolicy::Optimize)
+            OptimizeSpirVShader(spirvShader, *targetShaderLanguage);
+#endif
+
+        TranslateSpirVShader(glslShader, spirvShader, *targetShaderLanguage);
+        if (!glslShader)
+        {
+            URHO3D_LOGERROR("Failed to convert shader {} from SPIR-V to GLSL:\n{}{}", GetFullName(),
+                Shader::GetShaderFileList(), glslShader.compilerOutput_);
+            return false;
+        }
+
+        shaderCode = glslShader.sourceCode_;
+    }
+#endif
+
+    LogShaderSource(owner_->GetName(), type_, defines_, shaderCode, "glsl");
 
     const char* shaderCStr = shaderCode.c_str();
     glShaderSource(object_.name_, 1, &shaderCStr, nullptr);

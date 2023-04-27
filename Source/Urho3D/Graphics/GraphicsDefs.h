@@ -540,4 +540,21 @@ static const int MAX_VERTEX_STREAMS = 4;
 static const int MAX_CONSTANT_REGISTERS = 256;
 
 static const int BITS_PER_COMPONENT = 8;
+
+/// Shader translation policy.
+enum class ShaderTranslationPolicy
+{
+    /// Do not translate shaders, use universal GLSL shaders directly.
+    /// This mode is only supported for OpenGL and OpenGL ES backends (GLSL-based backends).
+    Verbatim,
+    /// Preprocess and translate shader to the target language through SPIR-V without any optimization.
+    /// This results in slower shader compilation, especially in Debug builds.
+    /// This mode may help to work around OpenGL driver bugs if used for GLSL-based backends.
+    Translate,
+    /// Fully process and optimize shader via SPIR-V Tools.
+    /// This results in even slower shader compilation, especially in Debug builds.
+    /// This mode may improve realtime performance of the shaders, especially on mobile platforms.
+    Optimize
+};
+
 }
