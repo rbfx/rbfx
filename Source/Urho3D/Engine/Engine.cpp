@@ -1054,14 +1054,14 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_TRIPLE_BUFFER, false);
     engineParameters_->DefineVariable(EP_VALIDATE_SHADERS, false);
     engineParameters_->DefineVariable(EP_VSYNC, false).Overridable();
-    engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0); //.Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0).Overridable();
     engineParameters_->DefineVariable(EP_WINDOW_ICON, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_WINDOW_MAXIMIZE, true).Overridable();
     engineParameters_->DefineVariable(EP_WINDOW_POSITION_X, 0);
     engineParameters_->DefineVariable(EP_WINDOW_POSITION_Y, 0);
     engineParameters_->DefineVariable(EP_WINDOW_RESIZABLE, false);
     engineParameters_->DefineVariable(EP_WINDOW_TITLE, "Urho3D");
-    engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0); //.Overridable();
+    engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0).Overridable();
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
 }
 
