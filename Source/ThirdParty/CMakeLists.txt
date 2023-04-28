@@ -193,6 +193,10 @@ if (NOT MINI_URHO)
     # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
     add_subdirectory (tracy)
 
+    # TODO(diligent): Fix linking on Web, should not be needed
+    set (ENABLE_SPIRV TRUE)
+    set (USE_GLSLANG TRUE)
+    set (USE_SPIRV_TOOLS TRUE)
     # TODO(diligent): Get rid of File2String tool
     set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "")
     add_subdirectory (Diligent)

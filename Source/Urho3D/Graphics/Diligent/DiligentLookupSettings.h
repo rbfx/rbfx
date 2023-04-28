@@ -140,13 +140,16 @@ static const ea::unordered_map<ea::string, TextureUnit> DiligentTextureUnitLooku
     {"EnvMap", TextureUnit::TU_ENVIRONMENT}, {"EnvCubeMap", TextureUnit::TU_ENVIRONMENT},
     {"LightRampMap", TextureUnit::TU_LIGHTRAMP}, {"LightSpotMap", TextureUnit::TU_LIGHTSHAPE},
     {"LightShapeMap", TextureUnit::TU_LIGHTSHAPE}, {"LightCubeMap", TextureUnit::TU_LIGHTSHAPE},
+#ifdef DESKTOP_GRAPHICS
     {"LightBufferMap", TextureUnit::TU_LIGHTBUFFER}, {"LightBuffer", TextureUnit::TU_LIGHTBUFFER},
     {"ShadowMap", TextureUnit::TU_SHADOWMAP}, {"VolumeMap", TextureUnit::TU_VOLUMEMAP},
     {"DepthBuffer", TextureUnit::TU_DEPTHBUFFER}, {"DepthBufferMap", TextureUnit::TU_DEPTHBUFFER},
     {"ZoneBuffer", TextureUnit::TU_ZONE}, {"ZoneCubeMap", TextureUnit::TU_ENVIRONMENT},
     {"ZoneVolumeMap", TextureUnit::TU_VOLUMEMAP}, {"Custom1Map", TextureUnit::TU_CUSTOM1},
     {"Custom2Map", TextureUnit::TU_CUSTOM2}, {"FaceSelectMap", TextureUnit::TU_FACESELECT},
-    {"IndirectionMap", TextureUnit::TU_INDIRECTION}};
+    {"IndirectionMap", TextureUnit::TU_INDIRECTION}
+#endif
+};
 
 static const Diligent::VALUE_TYPE DiligentIndexBufferType[] = {
     Diligent::VT_UNDEFINED, Diligent::VT_UINT16, Diligent::VT_UINT32};

@@ -129,7 +129,7 @@ private:
     /// Bound constant buffers start slots.
     unsigned constantBuffersNumSlots_[MAX_SHADER_PARAMETER_GROUPS]{};
 #ifdef URHO3D_DILIGENT
-    unsigned long long vertexOffsets_[MAX_VERTEX_STREAMS];
+    Diligent::Uint64 vertexOffsets_[MAX_VERTEX_STREAMS];
 #else
     /// Vertex sizes per buffer.
     unsigned vertexSizes_[MAX_VERTEX_STREAMS];

@@ -628,7 +628,7 @@ void View::Render()
         camera_->SetAspectRatioInternal((float)(viewSize_.x_) / (float)(viewSize_.y_));
 
     // Bind the face selection and indirection cube maps for point light shadows
-#ifndef GL_ES_VERSION_2_0
+#ifdef DESKTOP_GRAPHICS
     if (renderer_->GetDrawShadows())
     {
         graphics_->SetTexture(TU_FACESELECT, renderer_->GetFaceSelectCubeMap());
