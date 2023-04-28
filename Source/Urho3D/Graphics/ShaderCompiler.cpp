@@ -22,7 +22,7 @@ bool ShaderCompiler::Compile()
 
     if (desc_.output_ == ShaderCompilerOutput::DXC)
     {
-#ifdef WIN32
+#if D3D11_SUPPORTED || D3D12_SUPPORTED
         return CompileHLSL();
 #else
         URHO3D_LOGERROR("Failed to compile {}. DXC bytecode is only available on Windows Platform.", desc_.name_);
@@ -36,7 +36,7 @@ bool ShaderCompiler::Compile()
     return false;
 }
 
-#ifdef WIN32
+#if D3D11_SUPPORTED || D3D12_SUPPORTED
 bool ShaderCompiler::CompileHLSL()
 {
     const char* profile = nullptr;

@@ -450,9 +450,11 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     if (HasParameter(EP_TIME_OUT))
         timeOut_ = GetParameter(EP_TIME_OUT).GetInt() * 1000000LL;
 
-    PipelineStateCache* psoCache = GetSubsystem<PipelineStateCache>();
-    psoCache->SetCacheDir(FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE_DIR).GetString()));
-    psoCache->Init();
+    if (auto psoCache = GetSubsystem<PipelineStateCache>())
+    {
+        psoCache->SetCacheDir(FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE_DIR).GetString()));
+        psoCache->Init();
+    }
 
     if (!headless_)
     {

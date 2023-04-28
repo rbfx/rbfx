@@ -5,11 +5,10 @@
 #include "../Shader/ShaderTranslator.h"
 
 #include <Diligent/Graphics/GraphicsTools/interface/ShaderMacroHelper.hpp>
-#include <Diligent/Graphics/HLSL2GLSLConverterLib/include/HLSL2GLSLConverterImpl.hpp>
 #include <Diligent/Graphics/ShaderTools/include/GLSLangUtils.hpp>
 #include <Diligent/Graphics/ShaderTools/include/SPIRVTools.hpp>
 #include <SPIRV-Reflect/spirv_reflect.h>
-#ifdef WIN32
+#if D3D11_SUPPORTED || D3D12_SUPPORTED
     #include <d3dcompiler.h>
 #endif
 namespace Urho3D
@@ -51,7 +50,7 @@ bool ShaderProcessor::Execute()
 }
 bool ShaderProcessor::ProcessHLSL()
 {
-#ifdef WIN32
+#if D3D11_SUPPORTED || D3D12_SUPPORTED
     ea::string sourceCode = desc_.sourceCode_;
     ea::string cbufferSuffix = "";
     const char* profile = nullptr;
@@ -272,7 +271,7 @@ bool ShaderProcessor::ProcessGLSL()
     outputCode_ = sourceCode;
     return true;
 }
-#ifdef WIN32
+#if D3D11_SUPPORTED || D3D12_SUPPORTED
 bool ShaderProcessor::ReflectHLSL(uint8_t* byteCode, size_t byteCodeLength, StringVector& samplers,
     ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout)
 {

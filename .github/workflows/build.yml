@@ -79,7 +79,10 @@ jobs:
         ci_compiler:
           - msvc
           - mingw
-
+        # MinGW debug builds require too much memory
+        exclude:
+          - ci_compiler: mingw
+            ci_build_type: dbg
     env:
       ci_platform: windows
       ci_arch: ${{ matrix.ci_arch }}
