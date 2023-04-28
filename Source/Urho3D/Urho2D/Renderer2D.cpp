@@ -196,6 +196,9 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
     {
         unsigned vertexCount = viewBatchInfo.vertexCount_;
         VertexBuffer* vertexBuffer = viewBatchInfo.vertexBuffer_;
+#ifdef URHO3D_DEBUG
+        vertexBuffer->SetDebugName("Renderer2D");
+#endif
         if (vertexBuffer->GetVertexCount() < vertexCount)
             vertexBuffer->SetSize(vertexCount, MASK_VERTEX2D, true);
 

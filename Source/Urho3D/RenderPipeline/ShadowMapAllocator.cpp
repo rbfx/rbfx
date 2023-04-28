@@ -179,6 +179,9 @@ void ShadowMapAllocator::AllocatePage()
     auto newShadowMap = MakeShared<Texture2D>(context_);
     const unsigned dummyColorFormat = graphics_->GetDummyColorFormat();
 
+#ifdef URHO3D_DEBUG
+    newShadowMap->SetName("ShadowMap");
+#endif
     // Disable mipmaps from the shadow map
     newShadowMap->SetNumLevels(1);
     newShadowMap->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowMapFormat_, textureUsage, multiSample);

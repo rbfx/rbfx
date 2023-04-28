@@ -362,6 +362,11 @@ void SceneProcessor::RenderShadowMaps()
 
     URHO3D_PROFILE("RenderShadowMaps");
 
+#ifdef URHO3D_DEBUG
+    graphics_->BeginDebug("SceneProcessor::RenderShadowMaps");
+    unsigned renderIdx = 0;
+#endif
+
     const auto& lightsByShadowMap = drawableProcessor_->GetLightProcessorsByShadowMap();
     for (LightProcessor* sceneLight : lightsByShadowMap)
     {
@@ -374,10 +379,20 @@ void SceneProcessor::RenderShadowMaps()
                 debugger_->BeginPass(passName);
             }
 
+#ifdef URHO3D_DEBUG
+            graphics_->BeginDebug(
+                Format("ShadowMap.[{}].{}.{}", split.GetLight()->GetFullNameDebug(), split.GetSplitIndex(), renderIdx));
+#endif
+
             drawQueue_->Reset();
             batchRenderer_->RenderBatches({ *drawQueue_, split }, split.GetShadowBatches());
             shadowMapAllocator_->BeginShadowMapRendering(split.GetShadowMap());
             drawQueue_->Execute();
+
+#ifdef URHO3D_DEBUG
+            ++renderIdx;
+            graphics_->EndDebug();
+#endif
 
             if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
             {
@@ -385,6 +400,10 @@ void SceneProcessor::RenderShadowMaps()
             }
         }
     }
+
+#ifdef URHO3D_DEBUG
+    graphics_->EndDebug();
+#endif
 }
 
 void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camera,
@@ -407,6 +426,10 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
 
+#ifdef URHO3D_DEBUG
+    graphics_->BeginDebug(debugName);
+#endif
+
     drawQueue_->Reset();
 
     BatchRenderingContext ctx{ *drawQueue_, *camera };
@@ -418,6 +441,10 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
     graphics_->SetClipPlane(false);
     drawQueue_->Execute();
 
+#ifdef URHO3D_DEBUG
+    graphics_->EndDebug();
+#endif
+
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->EndPass();
 }
@@ -428,6 +455,10 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
 {
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
+
+#ifdef URHO3D_DEBUG
+    graphics_->BeginDebug(debugName);
+#endif
 
     drawQueue_->Reset();
 
@@ -442,6 +473,10 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     graphics_->SetClipPlane(camera->GetUseClipping(),
         camera->GetClipPlane(), camera->GetView(), camera->GetGPUProjection());
     drawQueue_->Execute();
+
+#ifdef URHO3D_DEBUG
+    graphics_->EndDebug();
+#endif
 
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->EndPass();

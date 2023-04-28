@@ -24,6 +24,7 @@
 
 #include "../Graphics/Graphics.h"
 #include "../Graphics/DrawCommandQueue.h"
+#include "../Graphics/RenderSurface.h"
 
 #include "../DebugNew.h"
 
@@ -32,8 +33,10 @@ namespace Urho3D
 
 DrawCommandQueue::DrawCommandQueue(Graphics* graphics)
     : graphics_(graphics)
+    , currentCBufferTicket_(nullptr)
 {
-
+    srbCache_ = MakeShared<ShaderResourceBindingCache>(graphics->GetContext());
+    cbufferManager_ = graphics->GetSubsystem<ConstantBufferManager>();
 }
 
 void DrawCommandQueue::Reset(bool preferConstantBuffers)
@@ -64,6 +67,8 @@ void DrawCommandQueue::Reset(bool preferConstantBuffers)
         currentDrawCommand_.shaderParameters_.fill({});
     }
 
+    currentDrawCommand_.cbufferTicketIds_.fill(M_MAX_UNSIGNED);
+
     // Clear arrays and draw commands
     shaderResources_.clear();
     drawCommands_.clear();
@@ -82,22 +87,6 @@ void DrawCommandQueue::Execute()
     // Utility to set shader parameters if constant buffers are not used
     const SharedParameterSetter shaderParameterSetter{ graphics_ };
 
-    // Prepare shader parameters
-    if (useConstantBuffers_)
-    {
-        const unsigned numConstantBuffers = constantBuffers_.collection_.GetNumBuffers();
-        constantBuffers.resize(numConstantBuffers);
-        for (unsigned i = 0; i < numConstantBuffers; ++i)
-        {
-            constantBuffers[i] = graphics_->GetOrCreateConstantBuffer(VS, i, constantBuffers_.collection_.GetGPUBufferSize(i));
-            constantBuffers[i]->Update(constantBuffers_.collection_.GetBufferData(i));
-        }
-    }
-    else
-    {
-        graphics_->ClearParameterSources();
-    }
-
     // Cached current state
     PipelineState* currentPipelineState = nullptr;
     IndexBuffer* currentIndexBuffer = nullptr;
@@ -105,6 +94,8 @@ void DrawCommandQueue::Execute()
     ShaderResourceRange currentShaderResources;
     PrimitiveType currentPrimitiveType{};
     unsigned currentScissorRect = M_MAX_UNSIGNED;
+
+    cbufferManager_->PrepareBuffers();
 
     // Temporary collections
     ea::vector<VertexBuffer*> tempVertexBuffers;
@@ -115,7 +106,9 @@ void DrawCommandQueue::Execute()
         // Set pipeline state
         if (cmd.pipelineState_ != currentPipelineState)
         {
-            cmd.pipelineState_->Apply(graphics_);
+            // Skip this pipeline if something goes wrong.
+            if (!cmd.pipelineState_->Apply(graphics_))
+                continue;
             currentPipelineState = cmd.pipelineState_;
             currentPrimitiveType = currentPipelineState->GetDesc().primitiveType_;
             // Reset current shader resources because of HasTextureUnit check below
@@ -142,54 +135,87 @@ void DrawCommandQueue::Execute()
         {
             tempVertexBuffers.clear();
             tempVertexBuffers.assign(cmd.inputBuffers_.vertexBuffers_.begin(), cmd.inputBuffers_.vertexBuffers_.end());
-            graphics_->SetVertexBuffers(tempVertexBuffers, cmd.instanceStart_);
+            // If something goes wrong here, skip current command
+            if (!graphics_->SetVertexBuffers(tempVertexBuffers, cmd.instanceStart_))
+                continue;
             currentVertexBuffers = cmd.inputBuffers_.vertexBuffers_;
         }
 
-        // Set shader resources
-        if (cmd.shaderResources_ != currentShaderResources)
+        // TODO(diligent): Revisit
+        ShaderResourceBindingCacheCreateInfo ci;
+        ci.pipeline_ = cmd.pipelineState_;
+        /*bool stopDebugger = false;
+        if (cmd.pipelineState_->GetDesc().debugName_ == ea::string("DrawablePipeline - Materials/StoneTiled.xml"))
+            stopDebugger = true;*/
+        // On Diligent backend, we need to create Shader Resource Binding and attach on device context.
         {
-            for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
-            {
+            //if (cmd.pipelineState_ != srbCacheCI.pipeline_) {
+            //    dirty = true;
+            //    srbCacheCI.pipeline_ = cmd.pipelineState_;
+            //}
+            //// Set shader resources
+            //if (cmd.shaderResources_ != currentShaderResources)
+            //{
+            //    dirty = true;
+            //    srbCacheCI.ResetTextures();
+            //    for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
+            //    {
+            //        const auto& unitAndResource = shaderResources_[i];
+            //        srbCacheCI.textures_[unitAndResource.unit_] = unitAndResource.texture_;
+            //    }
+            //    currentShaderResources = cmd.shaderResources_;
+            //}
+
+            //// Update used ranges for each group
+            //for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+            //{
+            //    // Check for constant buffer bindings
+            //    if (cmd.constantBuffers_[i].size_ == 0 && srbCacheCI.constantBuffers_[i]) {
+            //        dirty = true;
+            //        srbCacheCI.constantBuffers_[i] = nullptr;
+            //        continue;
+            //    }
+
+            //    ConstantBuffer* cbuffer = constantBuffers[cmd.constantBuffers_[i].index_];
+            //    if (cbuffer != srbCacheCI.constantBuffers_[i]) {
+            //        dirty = true;
+            //        srbCacheCI.constantBuffers_[i] = cbuffer;
+            //    }
+            //}
+            auto HasTextureUnit = [=](const PipelineStateDesc& desc, TextureUnit unit) {
+                ShaderVariation* vs = desc.vertexShader_;
+                ShaderVariation* ps = desc.pixelShader_;
+
+                if ((vs && vs->HasTextureUnit(unit)) || (ps && ps->HasTextureUnit(unit)))
+                    return true;
+                return false;
+            };
+            for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i) {
                 const auto& unitAndResource = shaderResources_[i];
-                if (graphics_->HasTextureUnit(unitAndResource.unit_))
-                    graphics_->SetTexture(unitAndResource.unit_, unitAndResource.texture_);
-            }
-            currentShaderResources = cmd.shaderResources_;
-        }
-
-        // Set shader parameters or constant buffers
-        if (useConstantBuffers_)
-        {
-            // Update used ranges for each group
-            for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-            {
-                // If constant buffer is not needed, ignore
-                if (cmd.constantBuffers_[i].size_ == 0)
-                    continue;
-
-                constantBufferRanges[i].constantBuffer_ = constantBuffers[cmd.constantBuffers_[i].index_];
-                constantBufferRanges[i].offset_ = cmd.constantBuffers_[i].offset_;
-                constantBufferRanges[i].size_ = cmd.constantBuffers_[i].size_;
+                Texture* texture = unitAndResource.texture_;
+                if (texture && HasTextureUnit(currentPipelineState->GetDesc(), unitAndResource.unit_))
+                {
+                    RenderSurface* currRT = graphics_->GetRenderTarget(0);
+                    if (currRT && currRT->GetParentTexture() == texture)
+                        texture = texture->GetBackupTexture();
+                    if (texture->GetLevelsDirty())
+                        texture->RegenerateLevels();
+                    if (texture->GetParametersDirty())
+                        texture->UpdateParameters();
+                    ci.textures_[unitAndResource.unit_] = texture;
+                }
             }
 
-            // Set all constant buffers at once
-            graphics_->SetShaderConstantBuffers(constantBufferRanges);
-        }
-        else
-        {
-            // Set parameters for each group if update needed
-            for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-            {
-                const auto group = static_cast<ShaderParameterGroup>(i);
-                const auto range = cmd.shaderParameters_[i];
-
-                // If needed range is already bound to active shader program, ignore
-                if (!graphics_->NeedParameterUpdate(group, reinterpret_cast<void *>(static_cast<uintptr_t>(range.first))))
-                    continue;
-
-                shaderParameters_.collection_.ForEach(range.first, range.second, shaderParameterSetter);
+            for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i) {
+                WeakPtr<ConstantBuffer> cbuffer = cbufferManager_->GetCBuffer((ShaderParameterGroup)i);
+                if (cbuffer != nullptr)
+                    ci.constantBuffers_[i] = cbuffer;
+                cbufferManager_->Dispatch((ShaderParameterGroup)i, cmd.cbufferTicketIds_[i]);
             }
+
+            ShaderResourceBinding* srb = srbCache_->GetOrCreateSRB(ci);
+            assert(srb);
+            graphics_->CommitSRB(srb);
         }
 
         // Invoke appropriate draw command
@@ -226,6 +252,8 @@ void DrawCommandQueue::Execute()
             }
         }
     }
+
+    cbufferManager_->Finalize();
 }
 
 }

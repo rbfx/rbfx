@@ -38,8 +38,10 @@
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
 #include "../Engine/StateManager.h"
+#include "../Graphics/ConstantBufferManager.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/PipelineState.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/FreeFlyController.h"
@@ -104,16 +106,6 @@
 
 #include "StateManager.h"
 #include "../Core/CommandLine.h"
-
-// TODO(diligent): Temporary anchor to force linking with the library
-#include <Diligent/Graphics/GraphicsEngine/interface/Buffer.h>
-#include <EASTL/finally.h>
-auto _anchorDiligent = ea::finally([]()
-{
-    Diligent::IBuffer* volatile pBuf = nullptr;
-    if (pBuf)
-        pBuf->FlushMappedRange(0, 0);
-});
 
 #include "../DebugNew.h"
 
@@ -288,6 +280,8 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     {
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
+        context_->RegisterSubsystem(new ConstantBufferManager(context_));
+        context_->RegisterSubsystem(new PipelineStateCache(context_));
 #ifdef URHO3D_COMPUTE
         context_->RegisterSubsystem(new ComputeDevice(context_, context_->GetSubsystem<Graphics>()));
 #endif
@@ -338,6 +332,40 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetLogShaderSources(GetParameter(EP_SHADER_LOG_SOURCES).GetBool());
         graphics->SetPolicyGLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_GLSL).GetInt()));
         graphics->SetPolicyHLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_HLSL).GetInt()));
+
+        RenderBackend renderBackend = RENDER_D3D11;
+#ifndef WIN32
+        renderBackend = RENDER_GL;
+#endif
+
+        ea::string renderBackendValue = GetParameter(EP_RENDER_BACKEND).GetString();
+        if (renderBackendValue == "D3D11")
+        {
+#ifdef WIN32
+            renderBackend = RENDER_D3D11;
+#endif
+        }
+        else if (renderBackendValue == "D3D12")
+        {
+#ifdef WIN32
+            renderBackend = RENDER_D3D12;
+#endif
+        }
+        else if (renderBackendValue == "Vulkan")
+        {
+            renderBackend = RENDER_VULKAN;
+        }
+#if defined(PLATFORM_IOS) || defined(PLATFORM_MACOS) || defined(PLATFORM_TVOS)
+        else if (renderBackendValue == "Metal")
+        {
+            renderBackend = RENDER_METAL;
+        }
+#endif
+
+        graphics->SetRenderBackend(renderBackend);
+        auto adapterIdParam = GetParameter(EP_RENDER_ADAPTER_ID);
+        if (adapterIdParam != Variant::EMPTY)
+            graphics->SetAdapterId(adapterIdParam.GetUInt());
 
         SubscribeToEvent(E_SCREENMODE, [this](VariantMap& eventData)
         {
@@ -421,6 +449,10 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
     if (HasParameter(EP_TIME_OUT))
         timeOut_ = GetParameter(EP_TIME_OUT).GetInt() * 1000000LL;
+
+    PipelineStateCache* psoCache = GetSubsystem<PipelineStateCache>();
+    psoCache->SetCacheDir(FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE_DIR).GetString()));
+    psoCache->Init();
 
     if (!headless_)
     {
@@ -1073,6 +1105,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WINDOW_TITLE, "Urho3D");
     engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
+    engineParameters_->DefineVariable(EP_PSO_CACHE_DIR, "conf://psocache.bin");
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
@@ -1095,6 +1128,10 @@ void Engine::HandleEndFrame(StringHash eventType, VariantMap& eventData)
 
 void Engine::DoExit()
 {
+    // Save Pipeline State Cache into disk before exit
+    if (auto psoCache = GetSubsystem<PipelineStateCache>())
+        psoCache->Save();
+
     auto* graphics = GetSubsystem<Graphics>();
     if (graphics)
         graphics->Close();

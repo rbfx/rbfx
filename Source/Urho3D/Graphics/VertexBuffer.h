@@ -50,6 +50,13 @@ public:
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
+    void SetDebugName(const ea::string& debugName)
+    {
+#ifdef URHO3D_DEBUG
+        debugName_ = debugName;
+#endif
+    }
+
     /// Mark the buffer destroyed on graphics context destruction. May be a no-op depending on the API.
     void OnDeviceLost() override;
     /// Recreate the buffer and restore data if applicable. May be a no-op depending on the API.
@@ -164,6 +171,8 @@ public:
     static void ShuffleUnpackedVertexData(unsigned vertexCount, const Vector4 source[], const ea::vector<VertexElement>& sourceElements, Vector4 dest[], const ea::vector<VertexElement>& destElements, bool setMissingElementsToZero = true);
 
 private:
+    void HandleEndRendering(StringHash eventType, VariantMap& eventData);
+
     /// Update offsets of vertex elements.
     void UpdateOffsets();
     /// Create buffer.
@@ -204,6 +213,10 @@ private:
     bool shadowed_{};
     /// Discard lock flag. Used by OpenGL only.
     bool discardLock_{};
+#ifdef URHO3D_DEBUG
+    /// Debug name, usefully when debug GPU objects through RenderDoc.
+    ea::string debugName_{};
+#endif
 };
 
 /// Vertex Buffer of dynamic size. Resize policy is similar to standard vector.
@@ -243,6 +256,8 @@ public:
 
     VertexBuffer* GetVertexBuffer() const { return vertexBuffer_; }
     unsigned GetVertexCount() const { return numVertices_; }
+
+    void SetDebugName(const ea::string& debugName) { vertexBuffer_->SetDebugName(debugName); }
 
 private:
     void GrowBuffer(unsigned newMaxNumVertices);

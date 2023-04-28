@@ -25,6 +25,9 @@
 #include "Urho3D/Graphics/GraphicsDefs.h"
 #include "Urho3D/Shader/ShaderDefs.h"
 
+// TODO(diligent): Revisit
+#include <Diligent/Graphics/GraphicsEngine/interface/Shader.h>
+
 #include <EASTL/optional.h>
 
 namespace Urho3D
@@ -50,4 +53,11 @@ URHO3D_API void ParseUniversalShader(
 /// Convert SPIR-V shader to target shader language.
 URHO3D_API void TranslateSpirVShader(
     TargetShader& output, const SpirVShader& shader, TargetShaderLanguage targetLanguage);
+
+// TODO(diligent): Revisit
+bool CompileGLSLToSpirV(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
+    ea::vector<unsigned>& outputByteCode, ea::string& errorMessage);
+bool ConvertShaderToHLSL5(const ea::vector<unsigned>& byteCode, ea::string& outputShaderCode, ea::string& errorMessage);
+bool ConvertSPIRVToGLSL(const ea::vector<unsigned>& byteCode, ea::string& outputShaderCode, ea::string& errorMessage);
+
 }

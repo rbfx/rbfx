@@ -171,6 +171,11 @@ DecalSet::DecalSet(Context* context) :
     batches_.resize(1);
     batches_[0].geometry_ = geometry_;
     batches_[0].geometryType_ = GEOM_STATIC_NOINSTANCING;
+
+#ifdef URHO3D_DEBUG
+    vertexBuffer_->SetDebugName("DecalSet");
+    indexBuffer_->SetDebugName("DecalSet");
+#endif
 }
 
 DecalSet::~DecalSet() = default;
