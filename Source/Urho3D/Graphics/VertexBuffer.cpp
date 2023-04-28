@@ -135,10 +135,9 @@ VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
     // Force shadowing mode if graphics subsystem does not exist
     if (!graphics_)
         shadowed_ = true;
-#ifdef URHO3D_DILIGENT
-    if (graphics_->GetRenderBackend() == RENDER_VULKAN)
+
+    if (graphics_ && graphics_->GetRenderBackend() == RENDER_VULKAN)
         SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(VertexBuffer, HandleEndRendering));
-#endif
 }
 
 VertexBuffer::~VertexBuffer()

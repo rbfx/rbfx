@@ -73,10 +73,16 @@
 
 // OpenGL includes
 #if GL_SUPPORTED || GLES_SUPPORTED
-    #ifdef __APPLE__
-        #include <OpenGL/gl.h>
+    #if defined(IOS) || defined(TVOS)
+        #include <OpenGLES/ES3/gl.h>
+        #include <OpenGLES/ES3/glext.h>
+    #elif defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
+        #include <GLES3/gl3.h>
+        #include <GLES3/gl3ext.h>
+    #elif defined(__EMSCRIPTEN__)
+        #include <GLES3/gl32.h>
     #else
-        #include <gl/GL.h>
+        #include <GL/glew.h>
     #endif
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
@@ -228,7 +234,7 @@ static HWND GetWindowHandle(SDL_Window* window)
     return sysInfo.info.win.window;
 }
     #else
-static IUnknow* GetWindowHandle(SDL_Window* window)
+static IUnknown* GetWindowHandle(SDL_Window* window)
 {
     SDL_SysWMinfo sysInfo;
 
@@ -238,14 +244,14 @@ static IUnknow* GetWindowHandle(SDL_Window* window)
 }
     #endif
 #elif defined(PLATFORM_LINUX)
-static void GetWindowHandle(SDL_Window* window, Display** outDisplay, Window& outWindow)
+static void GetWindowHandle(SDL_Window* window, void** outDisplay, Diligent::Uint32* outWindow)
 {
     SDL_SysWMinfo sysInfo;
 
     SDL_VERSION(&sysInfo.version);
     SDL_GetWindowWMInfo(window, &sysInfo);
-    outDisplay = sysInfo.info.x11.display;
-    outWindow = sysInfo.info.x11.window;
+    *outDisplay = sysInfo.info.x11.display;
+    *outWindow = sysInfo.info.x11.window;
 }
 #elif defined(PLATFORM_IOS) || defined(PLATFORM_TVOS)
 static UIWindow* GetWindowHandle(SDL_Window* window)
@@ -2731,11 +2737,13 @@ void Graphics::SetTextureUnitMappings()
     textureUnits_["LightSpotMap"] = TU_LIGHTSHAPE;
     textureUnits_["LightCubeMap"] = TU_LIGHTSHAPE;
     textureUnits_["ShadowMap"] = TU_SHADOWMAP;
+#ifdef DESKTOP_GRAPHICS
     textureUnits_["FaceSelectCubeMap"] = TU_FACESELECT;
     textureUnits_["IndirectionCubeMap"] = TU_INDIRECTION;
     textureUnits_["VolumeMap"] = TU_VOLUMEMAP;
     textureUnits_["ZoneCubeMap"] = TU_ZONE;
     textureUnits_["ZoneVolumeMap"] = TU_ZONE;
+#endif
 }
 
 void Graphics::SetTextureForUpdate(Texture* texture)
