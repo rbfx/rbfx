@@ -29,7 +29,6 @@
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/ShaderVariation.h"
-#include "../Graphics/PipelineState.h"
 #include "../IO/FileIdentifier.h"
 #include "../Math/Color.h"
 #include "../Math/Plane.h"
@@ -61,6 +60,8 @@ class Vector3;
 class Vector4;
 class VertexBuffer;
 class VertexDeclaration;
+class PipelineState;
+class ShaderResourceBinding;
 
 struct ShaderParameter;
 
@@ -266,6 +267,14 @@ public:
     bool SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
+    /// Set Pipeline State
+    void SetPipelineState(PipelineState* pipelineState);
+    void CommitSRB(ShaderResourceBinding* srb);
+    void BeginDebug(const ea::string_view& debugName);
+    void BeginDebug(const ea::string& debugName);
+    void BeginDebug(const char* debugName);
+    void EndDebug();
+
     /// Return constant buffer layout for given shaders.
     ShaderProgramLayout* GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shaders.
@@ -659,7 +668,7 @@ public:
     /// Return whether a custom clipping plane is in use.
     bool GetUseClipPlane() const { return useClipPlane_; }
 
-    /// Return shader cache directory, Direct3D only.
+    /// Return shader cache directory, Direct3D and Diligent only
     /// @property
     const FileIdentifier& GetShaderCacheDir() const { return shaderCacheDir_; }
 
@@ -712,6 +721,15 @@ public:
     /// Bind a UBO, avoiding redundant operation. Used only on OpenGL.
     /// @nobind
     void SetUBO(unsigned object);
+
+    RenderBackend GetRenderBackend() const;
+    void SetRenderBackend(RenderBackend backend);
+
+    unsigned GetAdapterId() const;
+    void SetAdapterId(unsigned adapterId);
+
+    unsigned GetSwapChainRTFormat();
+    unsigned GetSwapChainDepthFormat();
 
     /// Return the API-specific alpha texture format.
     static unsigned GetAlphaFormat();
@@ -898,6 +916,8 @@ private:
     ShaderVariation* vertexShader_{};
     /// Pixel shader in use.
     ShaderVariation* pixelShader_{};
+    /// PipelineState in use.
+    PipelineState* pipelineState_{nullptr};
     /// Textures in use.
     Texture* textures_[MAX_TEXTURE_UNITS]{};
     /// Texture unit mappings.

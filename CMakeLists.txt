@@ -44,6 +44,14 @@ set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
 # Include common utilities
 include(UrhoCommon)
 
+# TODO(diligent): Restore
+set (URHO3D_EDITOR OFF CACHE BOOL "" FORCE)
+set (URHO3D_TOOLS OFF CACHE BOOL "" FORCE)
+set (URHO3D_CSHARP OFF CACHE BOOL "" FORCE)
+set (URHO3D_COMPUTE OFF CACHE BOOL "" FORCE)
+set (URHO3D_PROFILING OFF CACHE BOOL "" FORCE)
+set (URHO3D_SYSTEMUI OFF CACHE BOOL "" FORCE)
+
 # Enable testing
 if (URHO3D_TESTING)
     include (CTest)
@@ -353,7 +361,6 @@ message(STATUS "  2D              ${URHO3D_URHO2D}")
 message(STATUS "  Compute         ${URHO3D_COMPUTE}")
 message(STATUS "  CSharp          ${URHO3D_CSHARP}")
 message(STATUS "  Glow            ${URHO3D_GLOW}")
-message(STATUS "  Graphics        ${URHO3D_GRAPHICS_API}")
 message(STATUS "  IK              ${URHO3D_IK}")
 message(STATUS "  Navigation      ${URHO3D_NAVIGATION}")
 message(STATUS "  Network         ${URHO3D_NETWORK}")

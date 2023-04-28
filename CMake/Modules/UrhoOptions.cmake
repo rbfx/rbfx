@@ -125,7 +125,6 @@ endif ()
 
 if (UWP)
     set (URHO3D_SSE OFF)
-    set (URHO3D_GRAPHICS_API D3D11)
 else ()
     set (URHO3D_SSE           SSE2 CACHE STRING "Enable SSE instructions")
 endif ()
@@ -236,20 +235,11 @@ option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player e
 option(URHO3D_SSL                               "Enable OpenSSL support"                                OFF)
 
 if (WIN32)
-    set(URHO3D_GRAPHICS_API D3D11 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D11 OpenGL)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
-elseif (IOS OR ANDROID)
-    set(URHO3D_GRAPHICS_API GLES2 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS GLES2 GLES3)
-else ()
-    set(URHO3D_GRAPHICS_API OpenGL)
 endif ()
-string(TOUPPER "${URHO3D_GRAPHICS_API}" URHO3D_GRAPHICS_API)
-set (URHO3D_${URHO3D_GRAPHICS_API} ON)
-if (URHO3D_GLES2 OR URHO3D_GLES3)
-    set (URHO3D_OPENGL ON)
-endif ()
+
+# TODO(diligent): Remove this define
+set (URHO3D_DILIGENT ON)
 
 # Whether to use legacy renderer. Only OpenGL support legacy renderer.
 cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)

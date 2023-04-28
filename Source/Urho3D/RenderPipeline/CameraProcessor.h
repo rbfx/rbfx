@@ -25,6 +25,7 @@
 #include "../Core/Object.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/GraphicsDefs.h"
+#include "../Graphics/Graphics.h"
 
 #include <EASTL/span.h>
 
@@ -65,6 +66,9 @@ private:
     bool flipCameraForRendering_{};
     FillMode cameraFillMode_{};
     ea::vector<WeakPtr<Camera>> cameras_{};
+
+    /// Graphics instance
+    WeakPtr<Graphics> graphics_;
 };
 
 }

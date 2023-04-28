@@ -469,6 +469,12 @@ void RibbonTrail::UpdateBufferSize()
     bufferDirty_ = true;
     forceUpdate_ = true;
 
+#ifdef URHO3D_DEBUG
+    ea::string debugName = Format("RibbonTrail({}|{})", node_->GetName(), GetMaterial()->GetName());
+    indexBuffer_->SetDebugName(debugName);
+    vertexBuffer_->SetDebugName(debugName);
+#endif
+
     if (numPoints_ < 2)
     {
         indexBuffer_->SetSize(0, false);

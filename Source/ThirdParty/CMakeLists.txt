@@ -118,6 +118,9 @@ if (NOT MINI_URHO)
         add_subdirectory(SPIRV-Cross)
         install_third_party_libs (SPIRV spirv-cross-core spirv-cross-glsl spirv-cross-msl spirv-cross-hlsl)
 
+        add_subdirectory(SPIRV-Reflect)
+        install_third_party_libs (SPIRV-Reflect)
+
         if (URHO3D_SHADER_OPTIMIZER)
             add_subdirectory(SPIRV-Headers)
             install_third_party_libs (SPIRV-Headers)
@@ -190,6 +193,7 @@ if (NOT MINI_URHO)
     # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
     add_subdirectory (tracy)
 
+    # TODO(diligent): Get rid of File2String tool
     set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "")
     add_subdirectory (Diligent)
     install_third_party_libs (

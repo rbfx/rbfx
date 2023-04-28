@@ -99,6 +99,10 @@ BillboardSet::BillboardSet(Context* context) :
 {
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     geometry_->SetIndexBuffer(indexBuffer_);
+#ifdef URHO3D_DEBUG
+    vertexBuffer_->SetDebugName("BillboardSet");
+    indexBuffer_->SetDebugName("BillboardSet");
+#endif
 
     batches_.resize(1);
     batches_[0].geometry_ = geometry_;
