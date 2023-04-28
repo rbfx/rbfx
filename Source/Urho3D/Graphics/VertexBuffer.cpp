@@ -30,6 +30,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Math/MathDefs.h"
+#include "../Graphics/GraphicsUtils.h"
 
 #include <EASTL/array.h>
 #include <EASTL/numeric.h>
@@ -134,6 +135,10 @@ VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
     // Force shadowing mode if graphics subsystem does not exist
     if (!graphics_)
         shadowed_ = true;
+#ifdef URHO3D_DILIGENT
+    if (graphics_->GetRenderBackend() == RENDER_VULKAN)
+        SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(VertexBuffer, HandleEndRendering));
+#endif
 }
 
 VertexBuffer::~VertexBuffer()
@@ -257,15 +262,7 @@ unsigned VertexBuffer::GetElementOffset(const ea::vector<VertexElement>& element
 
 ea::vector<VertexElement> VertexBuffer::GetElements(unsigned elementMask)
 {
-    ea::vector<VertexElement> ret;
-
-    for (unsigned i = 0; i < MAX_LEGACY_VERTEX_ELEMENTS; ++i)
-    {
-        if (elementMask & (1u << i))
-            ret.push_back(LEGACY_VERTEXELEMENTS[i]);
-    }
-
-    return ret;
+    return Utils::GetVertexElements(elementMask);
 }
 
 unsigned VertexBuffer::GetVertexSize(const ea::vector<VertexElement>& elements)

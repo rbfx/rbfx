@@ -56,6 +56,13 @@ public:
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
+    void SetDebugName(const ea::string& debugName)
+    {
+#ifdef URHO3D_DEBUG
+        debugName_ = debugName;
+#endif
+    }
+
     /// Mark the buffer destroyed on graphics context destruction. May be a no-op depending on the API.
     void OnDeviceLost() override;
     /// Recreate the buffer and restore data if applicable. May be a no-op depending on the API.
@@ -127,6 +134,8 @@ public:
     }
 
 private:
+    void HandleEndRendering(StringHash eventType, VariantMap& eventData);
+
     /// Create buffer.
     bool Create();
     /// Update the shadow data to the GPU buffer.
@@ -159,6 +168,10 @@ private:
     bool shadowed_;
     /// Discard lock flag. Used by OpenGL only.
     bool discardLock_;
+#ifdef URHO3D_DEBUG
+    /// Debug name. Usefully when debugging through renderdoc
+    ea::string debugName_{};
+#endif
 };
 
 /// Index Buffer of dynamic size. Resize policy is similar to standard vector.
@@ -169,7 +182,7 @@ class URHO3D_API DynamicIndexBuffer : public Object
 public:
     DynamicIndexBuffer(Context* context);
     bool Initialize(unsigned indexCount, bool largeIndices);
-
+    void SetDebugName(const ea::string& debugName) { indexBuffer_->SetDebugName(debugName); }
     /// Discard existing content of the buffer.
     void Discard();
     /// Commit all added data to GPU.

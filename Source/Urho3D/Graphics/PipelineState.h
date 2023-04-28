@@ -30,6 +30,9 @@
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/ShaderProgramLayout.h"
 #include "../Graphics/VertexBuffer.h"
+#include "../Graphics/ShaderResourceBinding.h"
+
+#include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
 
 #include <EASTL/algorithm.h>
 #include <EASTL/array.h>
@@ -91,7 +94,12 @@ private:
 /// TODO: Store render target formats here as well
 struct PipelineStateDesc
 {
-    static const unsigned MaxNumVertexElements = 32;
+    static const unsigned MaxNumVertexElements = Diligent::MAX_LAYOUT_ELEMENTS;
+
+    /// Debug
+    /// @{
+    ea::string debugName_{};
+    /// @}
 
     PrimitiveType primitiveType_{};
 
@@ -105,10 +113,19 @@ struct PipelineStateDesc
     void InitializeInputLayoutAndPrimitiveType(const Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
     /// @}
 
+    /// Render Target Formats
+    /// @{
+    ea::vector<unsigned> renderTargetsFormats_{};
+    unsigned depthStencilFormat_{};
+    /// @}
+
     /// Shaders
     /// @{
     ShaderVariation* vertexShader_{};
     ShaderVariation* pixelShader_{};
+    ShaderVariation* domainShader_{};
+    ShaderVariation* hullShader_{};
+    ShaderVariation* geometryShader_{};
     /// @}
 
     /// Depth-stencil state
@@ -199,8 +216,15 @@ struct PipelineStateDesc
             CombineHash(hash, vertexElements_[i].ToHash());
         CombineHash(hash, indexType_);
 
+        for (auto it = renderTargetsFormats_.begin(); it != renderTargetsFormats_.end(); ++it)
+            CombineHash(hash, (*it));
+        CombineHash(hash, depthStencilFormat_);
+
         CombineHash(hash, MakeHash(vertexShader_));
         CombineHash(hash, MakeHash(pixelShader_));
+        CombineHash(hash, MakeHash(domainShader_));
+        CombineHash(hash, MakeHash(hullShader_));
+        CombineHash(hash, MakeHash(geometryShader_));
 
         CombineHash(hash, depthWriteEnabled_);
         CombineHash(hash, depthCompareFunction_);
@@ -240,7 +264,7 @@ public:
     void RestoreCachedState(Graphics* graphics);
 
     /// Set pipeline state to GPU.
-    void Apply(Graphics* graphics);
+    bool Apply(Graphics* graphics);
 
     /// Getters
     /// @{
@@ -250,19 +274,39 @@ public:
     unsigned GetShaderID() const { return shaderProgramLayout_->GetObjectID(); }
     /// @}
 
+    /// Create Shader Resource Binding
+    Urho3D::ShaderResourceBinding* CreateSRB();
+    Diligent::RefCntAutoPtr<Diligent::IPipelineState> GetGPUPipeline() const { return pipeline_; }
 private:
+    bool BuildPipeline(Graphics* graphics);
+    Urho3D::ShaderResourceBinding* CreateInternalSRB();
+    void ReleasePipeline();
+
     WeakPtr<PipelineStateCache> owner_;
     PipelineStateDesc desc_;
     WeakPtr<ShaderProgramLayout> shaderProgramLayout_{};
+
+    ea::vector<SharedPtr<Urho3D::ShaderResourceBinding>> shaderResourceBindings_;
+    Diligent::RefCntAutoPtr<Diligent::IPipelineState> pipeline_{};
 };
 
 /// Generic pipeline state cache.
 class URHO3D_API PipelineStateCache : public Object, private GPUObject
 {
+    friend class PipelineState;
     URHO3D_OBJECT(PipelineStateCache, Object);
 
 public:
     explicit PipelineStateCache(Context* context);
+    ///@{
+    /// Initializes pipeline state cache, read cached pso on disc
+    /// and creates pipeline state cache gpu object.
+    ///@}
+    void Init();
+    /// @{
+    /// Save cached pipeline objects into disk.
+    /// @}
+    void Save();
 
     /// Create new or return existing pipeline state. Returned state may be invalid.
     /// Return nullptr if description is malformed.
@@ -270,7 +314,10 @@ public:
 
     /// Internal. Remove pipeline state with given description from cache.
     void ReleasePipelineState(const PipelineStateDesc& desc);
-
+    /// Set Pipeline State Cache directory (Diligent only).
+    void SetCacheDir(const FileIdentifier& path);
+    /// Get Pipeline State Cache directory.
+    const FileIdentifier& GetCacheDir() const { return cacheDir_; }
 private:
     /// GPUObject callbacks
     /// @{
@@ -278,8 +325,12 @@ private:
     void OnDeviceReset() override;
     void Release() override;
     /// @}
-
+    void CreatePSOCache(const ByteVector& psoFileData);
+    void ReadPSOData(ByteVector& psoData);
     void HandleResourceReload(StringHash eventType, VariantMap& eventData);
+
+    bool init_;
+    FileIdentifier cacheDir_;
 
     ea::unordered_map<PipelineStateDesc, WeakPtr<PipelineState>> states_;
 };

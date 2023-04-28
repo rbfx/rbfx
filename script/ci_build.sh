@@ -72,7 +72,6 @@ quirks_mingw=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
     '-DURHO3D_TESTING=OFF'
-    '-DURHO3D_GRAPHICS_API=OpenGL'
     '-DURHO3D_PCH=OFF'
 )
 quirks_msvc=(

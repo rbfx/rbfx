@@ -131,6 +131,9 @@ IntRect RenderSurface::GetRect(Graphics* graphics, const RenderSurface* renderSu
 
 unsigned RenderSurface::GetFormat(Graphics* /*graphics*/, const RenderSurface* renderSurface)
 {
+    // TODO(diligent): Revisit formats
+    if (renderSurface && renderSurface->GetRenderTargetView())
+        return renderSurface->GetRenderTargetView()->GetDesc().Format;
     return renderSurface ? renderSurface->GetParentTexture()->GetFormat() : Graphics::GetRGBFormat();
 }
 

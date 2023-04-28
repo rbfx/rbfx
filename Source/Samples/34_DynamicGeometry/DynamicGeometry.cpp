@@ -219,6 +219,12 @@ void DynamicGeometry::CreateScene()
         SharedPtr<IndexBuffer> ib(new IndexBuffer(context_));
         SharedPtr<Geometry> geom(new Geometry(context_));
 
+#ifdef URHO3D_DEBUG
+        // Always name your GPU objects, its usefully when things goes wrong
+        vb->SetDebugName("DynamicGeometry");
+        ib->SetDebugName("DynamicGeometry");
+#endif
+
         // Shadowed buffer needed for raycasts to work, and so that data can be automatically restored on device loss
         vb->SetShadowed(true);
         // We could use the "legacy" element bitmask to define elements for more compact code, but let's demonstrate

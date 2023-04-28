@@ -30,7 +30,9 @@
 #include "../Graphics/PipelineState.h"
 #include "../Graphics/ShaderParameterCollection.h"
 #include "../Graphics/ConstantBufferCollection.h"
+#include "../Graphics/ShaderResourceBindingCache.h"
 #include "../IO/Log.h"
+#include "../Graphics/ConstantBufferManager.h"
 
 namespace Urho3D
 {
@@ -75,6 +77,8 @@ struct DrawCommandDescription
 
     ShaderResourceRange shaderResources_;
 
+    /// Constant Buffer Ticket
+    ea::array<unsigned, MAX_SHADER_PARAMETER_GROUPS> cbufferTicketIds_;
     /// Index of scissor rectangle. 0 if disabled.
     unsigned scissorRect_{};
 
@@ -126,7 +130,11 @@ public:
         if (useConstantBuffers_)
         {
             const unsigned groupLayoutHash = constantBuffers_.currentLayout_->GetConstantBufferHash(group);
-
+            const unsigned size = constantBuffers_.currentLayout_->GetConstantBufferSize(group);
+            ConstantBufferManagerTicket* ticket = cbufferManager_->GetTicket(group, size);
+            currentCBufferTicket_ = ticket;
+            if (!ticket)
+                return false;
             // If constant buffer for this group is currently disabled...
             if (groupLayoutHash == 0)
             {
@@ -135,29 +143,16 @@ public:
                     constantBuffers_.currentHashes_[group] = 0;
                 return false;
             }
-
-            // If data and/or layout changed, rebuild block
+            // If data or layout changes, acquire new ticket
             if (differentFromPrevious || groupLayoutHash != constantBuffers_.currentHashes_[group])
             {
-                const unsigned size = constantBuffers_.currentLayout_->GetConstantBufferSize(group);
-                const auto& refAndData = constantBuffers_.collection_.AddBlock(size);
-
-                currentDrawCommand_.constantBuffers_[group] = refAndData.first;
-                constantBuffers_.currentData_ = refAndData.second;
+                constantBuffers_.currentData_ = ticket->GetPointerData();
                 constantBuffers_.currentHashes_[group] = groupLayoutHash;
                 constantBuffers_.currentGroup_ = group;
                 return true;
             }
-
-            return false;
         }
-        else
-        {
-            // Allocate new group if different from previous or group is not initialized yet
-            const ShaderParameterRange& groupRange = currentDrawCommand_.shaderParameters_[group];
-            const bool groupInitialized = groupRange.first != groupRange.second;
-            return differentFromPrevious || !groupInitialized;
-        }
+        return false;
     }
 
     /// Add shader parameter. Shall be called only if BeginShaderParameterGroup returned true.
@@ -196,8 +191,10 @@ public:
     {
         if (useConstantBuffers_)
         {
+            currentDrawCommand_.cbufferTicketIds_[group] = currentCBufferTicket_->GetId();
             // All data is already stored, nothing to do
             constantBuffers_.currentGroup_ = MAX_SHADER_PARAMETER_GROUPS;
+
         }
         else
         {
@@ -250,6 +247,10 @@ public:
         currentDrawCommand_.baseVertexIndex_ = 0;
         currentDrawCommand_.instanceStart_ = 0;
         currentDrawCommand_.instanceCount_ = 0;
+        // TODO(diligent): Revisit this
+        // fix: don't push command if index start and index count is 0
+        if (indexStart == 0 && indexCount == 0)
+            return;
         drawCommands_.push_back(currentDrawCommand_);
     }
 
@@ -326,6 +327,7 @@ private:
     } constantBuffers_;
 
     /// Shader resources.
+    /// TODO(diligent): This is not used anymore
     ShaderResourceCollection shaderResources_;
     /// Scissor rects.
     ea::vector<IntRect> scissorRects_;
@@ -336,6 +338,13 @@ private:
     DrawCommandDescription currentDrawCommand_;
     /// Current shader resource group.
     ShaderResourceRange currentShaderResourceGroup_;
+
+    /// Current Constant Buffer
+    ConstantBufferManagerTicket* currentCBufferTicket_;
+    /// Shader Resource Binding Cache.
+    SharedPtr<ShaderResourceBindingCache> srbCache_;
+    /// Constant Buffer Manager
+    WeakPtr<ConstantBufferManager> cbufferManager_;
 };
 
 }

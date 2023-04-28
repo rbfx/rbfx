@@ -152,7 +152,7 @@ public:
     /// Copy new Matrix3 parameter into storage.
     static bool StoreParameter(unsigned char* dest, unsigned size, const Matrix3& value)
     {
-        if (size != 11 * sizeof(float))
+        if (size < sizeof(Matrix3))
             return false;
 
         const Matrix3x4 data{ value };

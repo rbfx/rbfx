@@ -165,6 +165,9 @@ private:
     void OnRenderEnd(const CommonFrameInfo& frameInfo);
     /// @}
 
+    SharedPtr<PipelineState> CreateCopyTextureToSwapChainPipeline(BlendMode blendMode,
+        const ea::string& shaderName, const ea::string& shaderDefines);
+
     void InitializeCopyTexturePipelineState();
     void ResetCachedRenderBuffers();
     void CopyTextureRegion(ea::string_view debugComment, Texture* sourceTexture, const IntRect& sourceRect,
@@ -187,6 +190,7 @@ private:
     SharedPtr<RenderBuffer> viewportDepthBuffer_;
 
     SharedPtr<PipelineState> copyTexturePipelineState_;
+    SharedPtr<PipelineState> copyTextureToSwapChainPipelineState_;
     SharedPtr<PipelineState> copyGammaToLinearTexturePipelineState_;
     SharedPtr<PipelineState> copyLinearToGammaTexturePipelineState_;
 
