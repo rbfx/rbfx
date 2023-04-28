@@ -29,6 +29,6 @@ endif()
 # Urho3D: Install targets
 if (NOT MINI_URHO)
     if (NOT URHO3D_MERGE_STATIC_LIBS)
-        install(TARGETS algorithms EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+        install(TARGETS algorithms EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
     endif ()
 endif ()

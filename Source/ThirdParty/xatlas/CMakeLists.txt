@@ -6,7 +6,7 @@ add_library(xatlas STATIC xatlas.cpp)
 
 if (NOT MINI_URHO)
     if (NOT URHO3D_MERGE_STATIC_LIBS)
-        install(TARGETS xatlas EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+        install(TARGETS xatlas EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
     endif ()
 endif ()
 
