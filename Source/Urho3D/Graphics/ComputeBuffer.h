@@ -26,7 +26,12 @@
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
 
+#ifdef URHO3D_DILIGENT
+#include <Diligent/Graphics/GraphicsEngine/interface/Buffer.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/BufferView.h>
+#else
 class ID3D11UnorderedAccessView;
+#endif
 
 #if defined(URHO3D_COMPUTE)
 
@@ -68,6 +73,8 @@ public:
 
 #if defined(URHO3D_D3D11)
     ID3D11UnorderedAccessView* GetUAV() const { return uav_; }
+#elif defined(URHO3D_DILIGENT)
+    Diligent::RefCntAutoPtr<Diligent::IBufferView> GetUAV() const { return uav_; }
 #endif
 
 private:
@@ -75,6 +82,8 @@ private:
     unsigned structureSize_;
 #if defined(URHO3D_D3D11)
     ID3D11UnorderedAccessView* uav_;
+#elif defined (URHO3D_DILIGENT)
+    Diligent::RefCntAutoPtr<Diligent::IBufferView> uav_;
 #endif
 };
 
