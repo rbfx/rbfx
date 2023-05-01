@@ -40,6 +40,7 @@ public:
     ~RenderBillboardInstance() override;
     void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
     void OnSceneSet(Scene* scene) override;
+    void UpdateDrawableAttributes() override;
 
     void Prepare(unsigned numParticles);
     void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color,

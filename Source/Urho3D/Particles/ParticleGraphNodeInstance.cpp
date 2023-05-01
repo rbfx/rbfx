@@ -33,7 +33,21 @@ ParticleGraphNodeInstance::~ParticleGraphNodeInstance() = default;
 
 void ParticleGraphNodeInstance::Reset() {}
 
+void ParticleGraphNodeInstance::CopyDrawableAttributes(Drawable* drawable, ParticleGraphEmitter* emitter)
+{
+    if (!drawable || !emitter)
+        return;
+
+    drawable->SetViewMask(emitter->GetViewMask());
+    drawable->SetLightMask(emitter->GetLightMask());
+    drawable->SetShadowMask(emitter->GetShadowMask());
+    drawable->SetZoneMask(emitter->GetZoneMask());
+}
+
 /// Handle scene change in instance.
 void ParticleGraphNodeInstance::OnSceneSet(Scene* scene) {}
+
+/// Handle drawable attribute change.
+void ParticleGraphNodeInstance::UpdateDrawableAttributes() {}
 
 } // namespace Urho3D

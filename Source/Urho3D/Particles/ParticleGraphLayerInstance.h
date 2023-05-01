@@ -111,6 +111,9 @@ public:
     /// emission timer.
     void Reset();
 
+    /// Update all drawable attributes. Executed by ParticleGraphEmitter.
+    void UpdateDrawables();
+
     /// Get effect layer.
     ParticleGraphLayer* GetLayer() const { return layer_; }
 

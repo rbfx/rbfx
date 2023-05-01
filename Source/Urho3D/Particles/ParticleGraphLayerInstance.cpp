@@ -176,6 +176,22 @@ void ParticleGraphLayerInstance::Reset()
     time_ = 0.0f;
 }
 
+void ParticleGraphLayerInstance::UpdateDrawables()
+{
+    for (ParticleGraphNodeInstance* node : initNodeInstances_)
+    {
+        node->UpdateDrawableAttributes();
+    }
+    for (ParticleGraphNodeInstance* node : emitNodeInstances_)
+    {
+        node->UpdateDrawableAttributes();
+    }
+    for (ParticleGraphNodeInstance* node : updateNodeInstances_)
+    {
+        node->UpdateDrawableAttributes();
+    }
+}
+
 void ParticleGraphLayerInstance::SetEmitter(ParticleGraphEmitter* emitter)
 {
     emitter_ = emitter;

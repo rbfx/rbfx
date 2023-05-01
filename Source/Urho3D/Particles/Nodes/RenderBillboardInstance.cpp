@@ -50,6 +50,7 @@ void RenderBillboardInstance::Init(ParticleGraphNode* node, ParticleGraphLayerIn
     billboardSet_->SetMaterialAttr(renderBillboard->GetMaterial());
     billboardSet_->SetFaceCameraMode(static_cast<FaceCameraMode>(renderBillboard->GetFaceCameraMode()));
     billboardSet_->SetSorted(renderBillboard->GetSortByDistance());
+    UpdateDrawableAttributes();
     OnSceneSet(GetScene());
 }
 void RenderBillboardInstance::OnSceneSet(Scene* scene)
@@ -64,6 +65,11 @@ void RenderBillboardInstance::OnSceneSet(Scene* scene)
         octree_ = scene->GetOrCreateComponent<Octree>();
         octree_->AddManualDrawable(billboardSet_);
     }
+}
+
+void RenderBillboardInstance::UpdateDrawableAttributes()
+{
+    CopyDrawableAttributes(billboardSet_, GetEmitter());
 }
 
 RenderBillboardInstance::~RenderBillboardInstance()

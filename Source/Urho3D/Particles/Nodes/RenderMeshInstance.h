@@ -55,6 +55,7 @@ public:
     void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
 
     void OnSceneSet(Scene* scene) override;
+    void UpdateDrawableAttributes() override;
 
     ~RenderMeshInstance() override;
 
