@@ -35,7 +35,7 @@ namespace ParticleGraphNodes
 class EmitterScaleInstance final : public EmitterScale::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& pin0)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pin0)
     {
         auto* node = GetNode();
         for (unsigned i = 0; i < numParticles; ++i)

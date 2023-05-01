@@ -41,10 +41,10 @@ struct UpdateContext
     ea::span<uint8_t> tempBuffer_;
     ParticleGraphLayerInstance* layer_;
 
-    template <typename ValueType> SparseSpan<ValueType> GetSpan(const ParticleGraphPinRef& pin);
+    template <typename ValueType> SparseSpan<ValueType> GetSpan(const ParticleGraphPinRef& pin) const;
 };
 
-template <typename ValueType> SparseSpan<ValueType> UpdateContext::GetSpan(const ParticleGraphPinRef& pin)
+template <typename ValueType> SparseSpan<ValueType> UpdateContext::GetSpan(const ParticleGraphPinRef& pin) const
 {
     switch (pin.type_)
     {

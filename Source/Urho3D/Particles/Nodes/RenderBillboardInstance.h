@@ -47,9 +47,9 @@ public:
         float rotation, Vector3& direction);
     void Commit();
 
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& pin0, SparseSpan<Vector2>& pin1,
-        SparseSpan<float>& frame, SparseSpan<Color>& color, SparseSpan<float>& rotation,
-        SparseSpan<Vector3>& direction)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pin0,
+        const SparseSpan<Vector2>& pin1, const SparseSpan<float>& frame, const SparseSpan<Color>& color,
+        const SparseSpan<float>& rotation, const SparseSpan<Vector3>& direction)
     {
         Prepare(numParticles);
         for (unsigned i = 0; i < numParticles; ++i)

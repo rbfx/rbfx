@@ -30,8 +30,9 @@ namespace ParticleGraphNodes
 {
 template <typename Value0, typename Value1, typename Value2> struct DivideInstance
 {
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Value0>& x, SparseSpan<Value1>& y,
-        SparseSpan<Value2>& out)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Value0>& x,
+        const SparseSpan<Value1>& y,
+        const SparseSpan<Value2>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

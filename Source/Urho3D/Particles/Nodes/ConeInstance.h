@@ -35,7 +35,8 @@ namespace ParticleGraphNodes
 class ConeInstance final : public Cone::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& pos, SparseSpan<Vector3>& vel)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pos,
+        const SparseSpan<Vector3>& vel)
     {
         const Cone* cone = static_cast<Cone*>(GetGraphNode());
         const Matrix3x4 m = Matrix3x4(cone->GetTranslation(), cone->GetRotation(), cone->GetScale());

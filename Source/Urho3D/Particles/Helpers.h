@@ -48,7 +48,7 @@ template <typename T> struct GetPinType<ParticleGraphTypedPin<T>>
 
 /// Abstract update runner.
 template <typename Instance, typename... Values>
-void RunUpdate(UpdateContext& context, Instance& instance, ParticleGraphPinRef* pinRefs)
+void RunUpdate(const UpdateContext& context, Instance& instance, ParticleGraphPinRef* pinRefs)
 {
     auto spans = SpanVariantTuple<Values...>::Make(context, pinRefs);
     ea::apply(instance, ea::tuple_cat(ea::tie(context), ea::make_tuple(static_cast<unsigned>(context.indices_.size())), spans));
@@ -84,14 +84,14 @@ void SelectByVariantType(VariantType variantType, Args... args)
 
 template <typename Value0> struct SpanVariantTuple<Value0>
 {
-    static auto Make(UpdateContext& context, ParticleGraphPinRef* pinRefs)
+    static auto Make(const UpdateContext& context, ParticleGraphPinRef* pinRefs)
     {
         return ea::make_tuple(context.GetSpan<typename ParticleGraphNodes::GetPinType<Value0>::Type>(pinRefs[0]));
     }
 };
 template <typename Value0, typename Value1> struct SpanVariantTuple<Value0, Value1>
 {
-    static auto Make(UpdateContext& context, ParticleGraphPinRef* pinRefs)
+    static auto Make(const UpdateContext& context, ParticleGraphPinRef* pinRefs)
     {
         return ea::make_tuple(context.GetSpan<typename ParticleGraphNodes::GetPinType<Value0>::Type>(pinRefs[0]),
             context.GetSpan<typename ParticleGraphNodes::GetPinType<Value1>::Type>(pinRefs[1]));
@@ -99,7 +99,7 @@ template <typename Value0, typename Value1> struct SpanVariantTuple<Value0, Valu
 };
 template <typename Value0, typename Value1, typename Value2> struct SpanVariantTuple<Value0, Value1, Value2>
 {
-    static auto Make(UpdateContext& context, ParticleGraphPinRef* pinRefs)
+    static auto Make(const UpdateContext& context, ParticleGraphPinRef* pinRefs)
     {
         return ea::make_tuple(context.GetSpan<typename ParticleGraphNodes::GetPinType<Value0>::Type>(pinRefs[0]),
             context.GetSpan<typename ParticleGraphNodes::GetPinType<Value1>::Type>(pinRefs[1]),
@@ -109,7 +109,7 @@ template <typename Value0, typename Value1, typename Value2> struct SpanVariantT
 template <typename Value0, typename Value1, typename Value2, typename Value3>
 struct SpanVariantTuple<Value0, Value1, Value2, Value3>
 {
-    static auto Make(UpdateContext& context, ParticleGraphPinRef* pinRefs)
+    static auto Make(const UpdateContext& context, ParticleGraphPinRef* pinRefs)
     {
         return ea::make_tuple(context.GetSpan<typename ParticleGraphNodes::GetPinType<Value0>::Type>(pinRefs[0]),
             context.GetSpan<typename ParticleGraphNodes::GetPinType<Value1>::Type>(pinRefs[1]),
@@ -120,7 +120,7 @@ struct SpanVariantTuple<Value0, Value1, Value2, Value3>
 template <typename Value0, typename Value1, typename Value2, typename Value3, typename Value4>
 struct SpanVariantTuple<Value0, Value1, Value2, Value3, Value4>
 {
-    static auto Make(UpdateContext& context, ParticleGraphPinRef* pinRefs)
+    static auto Make(const UpdateContext& context, ParticleGraphPinRef* pinRefs)
     {
         return ea::make_tuple(context.GetSpan<typename ParticleGraphNodes::GetPinType<Value0>::Type>(pinRefs[0]),
             context.GetSpan<typename ParticleGraphNodes::GetPinType<Value1>::Type>(pinRefs[1]),
@@ -132,7 +132,7 @@ struct SpanVariantTuple<Value0, Value1, Value2, Value3, Value4>
 template <typename Value0, typename Value1, typename Value2, typename Value3, typename Value4, typename Value5>
 struct SpanVariantTuple<Value0, Value1, Value2, Value3, Value4, Value5>
 {
-    static auto Make(UpdateContext& context, ParticleGraphPinRef* pinRefs)
+    static auto Make(const UpdateContext& context, ParticleGraphPinRef* pinRefs)
     {
         return ea::make_tuple(context.GetSpan<typename ParticleGraphNodes::GetPinType<Value0>::Type>(pinRefs[0]),
             context.GetSpan<typename ParticleGraphNodes::GetPinType<Value1>::Type>(pinRefs[1]),
@@ -146,7 +146,7 @@ template <typename Value0, typename Value1, typename Value2, typename Value3, ty
     typename Value6>
 struct SpanVariantTuple<Value0, Value1, Value2, Value3, Value4, Value5, Value6>
 {
-    static auto Make(UpdateContext& context, ParticleGraphPinRef* pinRefs)
+    static auto Make(const UpdateContext& context, ParticleGraphPinRef* pinRefs)
     {
         return ea::make_tuple(context.GetSpan<typename ParticleGraphNodes::GetPinType<Value0>::Type>(pinRefs[0]),
             context.GetSpan<typename ParticleGraphNodes::GetPinType<Value1>::Type>(pinRefs[1]),

@@ -34,7 +34,8 @@ namespace ParticleGraphNodes
 class ExpireInstance final : public Expire::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<float>& time, SparseSpan<float>& lifetime)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<float>& time,
+        const SparseSpan<float>& lifetime)
     {
         // Iterate all particles even if all pins are scalar.
         for (unsigned i = 0; i < context.indices_.size(); ++i)

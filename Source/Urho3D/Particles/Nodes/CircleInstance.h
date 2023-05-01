@@ -35,7 +35,8 @@ namespace ParticleGraphNodes
 class CircleInstance final : public Circle::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& pos, SparseSpan<Vector3>& vel)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pos,
+        const SparseSpan<Vector3>& vel)
     {
         const Circle* circle = static_cast<Circle*>(GetGraphNode());
         const Matrix3x4 m = Matrix3x4(circle->GetTranslation(), circle->GetRotation(), circle->GetScale());

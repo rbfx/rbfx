@@ -34,8 +34,8 @@ namespace ParticleGraphNodes
 class SlerpInstance final : public Slerp::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Quaternion> x, SparseSpan<Quaternion> y,
-        SparseSpan<float> t, SparseSpan<Quaternion> out) const
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Quaternion>& x,
+        const SparseSpan<Quaternion>& y, const SparseSpan<float>& t, const SparseSpan<Quaternion>& out) const
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

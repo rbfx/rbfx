@@ -37,8 +37,8 @@ namespace ParticleGraphNodes
 class MoveInstance final : public Move::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& pin0, SparseSpan<Vector3>& pin1,
-        SparseSpan<Vector3>& pin2)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pin0,
+        const SparseSpan<Vector3>& pin1, const SparseSpan<Vector3>& pin2)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

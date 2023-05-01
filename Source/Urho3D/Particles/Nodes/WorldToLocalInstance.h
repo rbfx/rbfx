@@ -35,7 +35,7 @@ namespace ParticleGraphNodes
 class WorldToLocalInstance final : public WorldToLocal::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Matrix3x4>& pin0)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Matrix3x4>& pin0)
     {
         auto* node = GetNode();
         for (unsigned i = 0; i < numParticles; ++i)

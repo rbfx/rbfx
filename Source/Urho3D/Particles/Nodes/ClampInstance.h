@@ -30,7 +30,8 @@ namespace ParticleGraphNodes
 {
 template <typename Value0, typename Value1> struct ClampInstance
 {
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Value0> x, SparseSpan<Value1> out)
+    void operator()(
+        const UpdateContext& context, unsigned numParticles, const SparseSpan<Value0>& x, const SparseSpan<Value1>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
@@ -41,7 +42,8 @@ template <typename Value0, typename Value1> struct ClampInstance
 
 template <> struct ClampInstance<float, float>
 {
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<float> x, SparseSpan<float> out)
+    void operator()(
+        const UpdateContext& context, unsigned numParticles, const SparseSpan<float>& x, const SparseSpan<float>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

@@ -35,7 +35,8 @@ namespace ParticleGraphNodes
 class HemisphereInstance final : public Hemisphere::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& pos, SparseSpan<Vector3>& vel)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pos,
+        const SparseSpan<Vector3>& vel)
     {
         const Hemisphere* hemisphere = static_cast<Hemisphere*>(GetGraphNode());
         const Matrix3x4 m = Matrix3x4(hemisphere->GetTranslation(), hemisphere->GetRotation(), hemisphere->GetScale());

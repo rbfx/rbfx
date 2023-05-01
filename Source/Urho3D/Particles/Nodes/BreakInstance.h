@@ -30,15 +30,14 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-template <typename... Value>
-struct BreakInstance
-{};
+template <typename... Value> struct BreakInstance
+{
+};
 
 template <> struct BreakInstance<Vector3, float, float, float>
 {
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3> vec, SparseSpan<float> x,
-        SparseSpan<float> y,
-        SparseSpan<float> z)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& vec,
+        const SparseSpan<float>& x, const SparseSpan<float>& y, const SparseSpan<float>& z)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
@@ -51,8 +50,8 @@ template <> struct BreakInstance<Vector3, float, float, float>
 
 template <> struct BreakInstance<Vector2, float, float>
 {
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector2>& vec, SparseSpan<float>& x,
-        SparseSpan<float>& y)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector2>& vec,
+        const SparseSpan<float>& x, const SparseSpan<float>& y)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
@@ -64,8 +63,8 @@ template <> struct BreakInstance<Vector2, float, float>
 
 template <> struct BreakInstance<Quaternion, float, float, float, float>
 {
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Quaternion>& vec, SparseSpan<float>& x,
-        SparseSpan<float>& y, SparseSpan<float>& z, SparseSpan<float>& w)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Quaternion>& vec,
+        const SparseSpan<float>& x, const SparseSpan<float>& y, const SparseSpan<float>& z, const SparseSpan<float>& w)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
@@ -79,9 +78,8 @@ template <> struct BreakInstance<Quaternion, float, float, float, float>
 
 template <> struct BreakInstance<Quaternion, Vector3, float>
 {
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Quaternion>& vec,
-        SparseSpan<Vector3>& axis,
-        SparseSpan<float>& angle)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Quaternion>& vec,
+        const SparseSpan<Vector3>& axis, const SparseSpan<float>& angle)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

@@ -40,7 +40,7 @@ namespace
 
 template <typename T> struct CopyValues
 {
-    void operator()(UpdateContext& context, const ParticleGraphPin& pin0, const ParticleGraphPin& pin1)
+    void operator()(const UpdateContext& context, const ParticleGraphPin& pin0, const ParticleGraphPin& pin1)
     {
         const unsigned numParticles = context.indices_.size();
 

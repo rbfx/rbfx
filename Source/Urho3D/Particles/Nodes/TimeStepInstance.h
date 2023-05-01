@@ -34,7 +34,7 @@ namespace ParticleGraphNodes
 class TimeStepInstance final : public TimeStep::InstanceBase
 {
 public:
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<float>& pin0)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<float>& pin0)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

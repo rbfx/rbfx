@@ -39,7 +39,8 @@ public:
 
     void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
 
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& x, SparseSpan<float>& out)
+    void operator()(
+        const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& x, const SparseSpan<float>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

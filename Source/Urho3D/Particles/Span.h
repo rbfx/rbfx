@@ -23,7 +23,6 @@
 #pragma once
 
 #include <EASTL/span.h>
-#include <assert.h>
 
 namespace Urho3D
 {
@@ -55,60 +54,10 @@ template <typename T> struct SparseSpan
         , indices_(indices)
     {
     }
-    inline T& operator[](unsigned index) { return data_[indices_[index]]; }
+    inline T& operator[](unsigned index) const { return data_[indices_[index]]; }
     T* data_;
     unsigned* indices_;
 };
-//
-//template <typename T> struct SpanVariant
-//{
-//    typedef T element_type;
-//    typedef ea::remove_cv_t<T> value_type;
-//
-//    SpanVariant() = default;
-//
-//    SpanVariant(ParticleGraphContainerType type, T* data, unsigned* indices)
-//        : type_(type)
-//        , data_(data)
-//        , indices_(indices)
-//    {
-//    }
-//
-//    SpanVariant(UpdateContext& context, ParticleGraphPinRef& pinRef);
-//
-//    inline T& operator[](unsigned index)
-//    {
-//        switch (type_)
-//        {
-//        case ParticleGraphContainerType::Span: return data_[index];
-//        case ParticleGraphContainerType::Sparse: return data_[indices_[index]];
-//        case ParticleGraphContainerType::Scalar: return *data_;
-//        default: return *data_;
-//        }
-//    }
-//
-//    SparseSpan<T> GetSpan()
-//    {
-//        assert(type_ == ParticleGraphContainerType::Span);
-//        return data_;
-//    }
-//
-//    SparseSpan<T> GetScalar()
-//    {
-//        assert(type_ == ParticleGraphContainerType::Scalar);
-//        return ScalarSpan<T>(data_);
-//    }
-//
-//    SparseSpan<T> GetSparse()
-//    {
-//        assert(type_ == ParticleGraphContainerType::Sparse);
-//        return SparseSpan<T>(data_, indices_);
-//    }
-//
-//    ParticleGraphContainerType type_{ParticleGraphContainerType::Scalar};
-//    T* data_;
-//    unsigned* indices_;
-//};
 
 template <typename... Values> struct SpanVariantTuple;
 

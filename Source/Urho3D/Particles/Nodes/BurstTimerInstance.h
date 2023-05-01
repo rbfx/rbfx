@@ -42,7 +42,8 @@ public:
         counter_ = burstTimer->GetCycles();
     }
 
-    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<float> count, SparseSpan<float> out)
+    void operator()(
+        const UpdateContext& context, unsigned numParticles, const SparseSpan<float>& count, const SparseSpan<float>& out)
     {
         timeToBurst_ -= context.timeStep_;
         if (counter_ > 0 && timeToBurst_ <= 0.0f)
