@@ -150,6 +150,31 @@ static const ea::unordered_map<ea::string, TextureUnit> DiligentTextureUnitLooku
     {"IndirectionMap", TextureUnit::TU_INDIRECTION}
 #endif
 };
+static const char* DiligentSamplerNames[] = {
+    "DiffMap",
+    "NormalMap",
+    "SpecMap",
+    "EmissiveMap",
+    "EnvMap",
+#ifdef DESKTOP_GRAPHICS
+    "VolumeMap",
+    "Custom1Map",
+    "Custom2Map",
+    "LightRampMap",
+    "LightShapeMap",
+    "ShadowMap",
+    "FaceSelectMap",
+    "IndirectionMap",
+    "DepthBufferMap",
+    "LightBufferMap",
+    "ZoneBuffer",
+#else
+    "LightRampMap",
+    "LightShapeMap",
+    "ShadowMap"
+#endif
+    nullptr,
+};
 
 static const Diligent::VALUE_TYPE DiligentIndexBufferType[] = {
     Diligent::VT_UNDEFINED, Diligent::VT_UINT16, Diligent::VT_UINT32};

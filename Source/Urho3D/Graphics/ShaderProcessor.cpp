@@ -18,9 +18,7 @@ static const ea::unordered_map<ea::string, VertexElementSemantic> sSemanticsMapp
     {"iNormal", SEM_NORMAL}, {"iColor", SEM_COLOR}, {"iTexCoord", SEM_TEXCOORD}, {"iTangent", SEM_TANGENT},
     {"iBlendWeights", SEM_BLENDWEIGHTS}, {"iBlendIndices", SEM_BLENDINDICES}, {"iObjectIndex", SEM_OBJECTINDEX}};
 static const char* sCBufferSuffixes[] = {"VS", "PS", "GS", "HS", "DS", "CS"};
-static const char* sSamplerNames[] = {"DiffMap", "DiffCubeMap", "NormalMap", "SpecMap", "EmissiveMap", "EnvMap",
-    "EnvCubeMap", "LightRampMap", "LightSpotMap", "LightCubeMap", "ShadowMap", "VolumeMap", "DepthBuffer",
-    "ZoneCubeMap", "ZoneVolumeMap", nullptr};
+
 static void sSanitizeCBName(ea::string& cbName)
 {
     for (unsigned i = 0; i < MAX_SHADER_TYPES; ++i)
@@ -261,13 +259,17 @@ bool ShaderProcessor::ProcessGLSL()
 
     size_t byteCodeSize = sizeof(unsigned) * byteCode.size();
     StringVector mappedSamplers;
-    ea::vector<ea::pair<unsigned, VertexElementSemantic>> inputLayout;
-    if (!ReflectGLSL(byteCode.data(), byteCodeSize, mappedSamplers, inputLayout))
+    ReflectGLSLResult reflectResult = {};
+    if (!ReflectGLSL(byteCode.data(), byteCodeSize, reflectResult))
         return false;
 
     ea::string sourceCode = desc_.sourceCode_;
     if (!ConvertShaderToHLSL5(byteCode, sourceCode, compilerOutput_))
         return false;
+
+    if(desc_.type_ == CS)
+        RemapResources(reflectResult.resourceRemaps_, sourceCode);
+
     outputCode_ = sourceCode;
     return true;
 }
@@ -417,8 +419,7 @@ bool ShaderProcessor::CompileGLSL(ea::vector<unsigned>& byteCode)
 
     return true;
 }
-bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize, StringVector& samplers,
-    ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout)
+bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize, ReflectGLSLResult& reflectResult)
 {
     SpvReflectShaderModule module = {};
     SpvReflectResult result = spvReflectCreateShaderModule(byteCodeSize, byteCode, &module);
@@ -503,7 +504,7 @@ bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize, Str
 
                 semanticIdx = atoi(semanticName.substr(semanticCharIdx).c_str());
             }
-            inputLayout.push_back(ea::make_pair(semanticIdx, semantic));
+            reflectResult.inputLayout_.push_back(ea::make_pair(semanticIdx, semantic));
         }
     }
 
@@ -551,9 +552,23 @@ bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize, Str
             }
         }
         else if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
-            || binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER)
+            || binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER
+            || binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
         {
             assert(binding->name);
+
+            // On Constant Buffer Shaders
+            // Samplers is declared with slot based.
+            // Ex:
+            // layout(binding = 0)
+            // uniform samplerCube srcTex;
+            if (desc_.type_ == CS) {
+                textureSlots_[binding->binding] = true;
+                // Add to resource maps to perform resource rename later.
+                reflectResult.resourceRemaps_[binding->binding] = binding->name;
+                continue;
+            }
+
             ea::string name(binding->name);
             ea::string rawName = name;
 
@@ -570,7 +585,7 @@ bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize, Str
                 return false;
             }
             textureSlots_[texUnitLookupVal->second] = true;
-            samplers.push_back(rawName);
+            reflectResult.samplerNames_.push_back(rawName);
 
             texMap[rawName] = true;
         }
@@ -621,6 +636,16 @@ void ShaderProcessor::RemapHLSLSamplers(ea::string& sourceCode, const StringVect
             targetSampler.replace(0, 1, "t");
 
         sourceCode.replace(targetSampler, *sampler);
+    }
+}
+void ShaderProcessor::RemapResources(const ea::array<ea::string, MAX_TEXTURE_UNITS>& resources, ea::string& sourceCode)
+{
+    for (uint8_t i = 0; i < MAX_TEXTURE_UNITS; ++i) {
+        if (resources[i].empty())
+            continue;
+
+        ea::string samplerName = DiligentSamplerNames[i];
+        sourceCode.replace(resources[i], samplerName);
     }
 }
 } // namespace Urho3D
