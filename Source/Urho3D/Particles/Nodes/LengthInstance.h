@@ -30,7 +30,7 @@ namespace ParticleGraphNodes
 {
 template <typename Value0, typename Value1> struct LengthInstance
 {
-    template <typename X, typename Out> void operator()(UpdateContext& context, unsigned numParticles, X x, Out out)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Value0>& x, SparseSpan<Value1>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

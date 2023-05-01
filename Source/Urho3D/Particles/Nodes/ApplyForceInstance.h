@@ -34,8 +34,8 @@ namespace ParticleGraphNodes
 class ApplyForceInstance final : public ApplyForce::InstanceBase
 {
 public:
-    template <typename Vel, typename Force, typename Result>
-    void operator()(UpdateContext& context, unsigned numParticles, Vel vel, Force force, Result result)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& vel,
+        SparseSpan<Vector3>& force, SparseSpan<Vector3>& result)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

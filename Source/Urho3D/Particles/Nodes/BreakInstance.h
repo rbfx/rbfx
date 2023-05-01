@@ -36,8 +36,9 @@ struct BreakInstance
 
 template <> struct BreakInstance<Vector3, float, float, float>
 {
-    template <typename Vec, typename X, typename Y, typename Z>
-    void operator()(UpdateContext& context, unsigned numParticles, Vec vec, X x, Y y, Z z)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3> vec, SparseSpan<float> x,
+        SparseSpan<float> y,
+        SparseSpan<float> z)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
@@ -50,8 +51,8 @@ template <> struct BreakInstance<Vector3, float, float, float>
 
 template <> struct BreakInstance<Vector2, float, float>
 {
-    template <typename Vec, typename X, typename Y>
-    void operator()(UpdateContext& context, unsigned numParticles, Vec vec, X x, Y y)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector2>& vec, SparseSpan<float>& x,
+        SparseSpan<float>& y)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
@@ -63,8 +64,8 @@ template <> struct BreakInstance<Vector2, float, float>
 
 template <> struct BreakInstance<Quaternion, float, float, float, float>
 {
-    template <typename Vec, typename X, typename Y, typename Z, typename W>
-    void operator()(UpdateContext& context, unsigned numParticles, Vec vec, X x, Y y, Z z, W w)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Quaternion>& vec, SparseSpan<float>& x,
+        SparseSpan<float>& y, SparseSpan<float>& z, SparseSpan<float>& w)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
@@ -78,8 +79,9 @@ template <> struct BreakInstance<Quaternion, float, float, float, float>
 
 template <> struct BreakInstance<Quaternion, Vector3, float>
 {
-    template <typename Vec, typename X, typename Y>
-    void operator()(UpdateContext& context, unsigned numParticles, Vec vec, X axis, Y angle)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Quaternion>& vec,
+        SparseSpan<Vector3>& axis,
+        SparseSpan<float>& angle)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

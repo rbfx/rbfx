@@ -77,54 +77,30 @@ void Constant::Instance::Update(UpdateContext& context)
     const auto& pin0 = node_->pins_[0];
     switch (node_->value_.GetType())
     {
-    case VAR_INT:
-        context.GetScalar<int>(pin0.GetMemoryReference())[0] = node_->value_.GetInt();
-        break;
-    case VAR_BOOL:
-        context.GetScalar<bool>(pin0.GetMemoryReference())[0] = node_->value_.GetBool();
-        break;
-    case VAR_INT64:
-        context.GetScalar<long long>(pin0.GetMemoryReference())[0] = node_->value_.GetInt64();
-        break;
-    case VAR_FLOAT:
-        context.GetScalar<float>(pin0.GetMemoryReference())[0] = node_->value_.GetFloat();
-        break;
-    case VAR_VECTOR2:
-        context.GetScalar<Vector2>(pin0.GetMemoryReference())[0] = node_->value_.GetVector2();
-        break;
-    case VAR_VECTOR3:
-        context.GetScalar<Vector3>(pin0.GetMemoryReference())[0] = node_->value_.GetVector3();
-        break;
-    case VAR_VECTOR4:
-        context.GetScalar<Vector4>(pin0.GetMemoryReference())[0] = node_->value_.GetVector4();
-        break;
+    case VAR_INT: context.GetSpan<int>(pin0.GetMemoryReference())[0] = node_->value_.GetInt(); break;
+    case VAR_BOOL: context.GetSpan<bool>(pin0.GetMemoryReference())[0] = node_->value_.GetBool(); break;
+    case VAR_INT64: context.GetSpan<long long>(pin0.GetMemoryReference())[0] = node_->value_.GetInt64(); break;
+    case VAR_FLOAT: context.GetSpan<float>(pin0.GetMemoryReference())[0] = node_->value_.GetFloat(); break;
+    case VAR_VECTOR2: context.GetSpan<Vector2>(pin0.GetMemoryReference())[0] = node_->value_.GetVector2(); break;
+    case VAR_VECTOR3: context.GetSpan<Vector3>(pin0.GetMemoryReference())[0] = node_->value_.GetVector3(); break;
+    case VAR_VECTOR4: context.GetSpan<Vector4>(pin0.GetMemoryReference())[0] = node_->value_.GetVector4(); break;
     case VAR_INTVECTOR2:
-        context.GetScalar<IntVector2>(pin0.GetMemoryReference())[0] = node_->value_.GetIntVector2();
+        context.GetSpan<IntVector2>(pin0.GetMemoryReference())[0] = node_->value_.GetIntVector2();
         break;
     case VAR_INTVECTOR3:
-        context.GetScalar<IntVector3>(pin0.GetMemoryReference())[0] = node_->value_.GetIntVector3();
+        context.GetSpan<IntVector3>(pin0.GetMemoryReference())[0] = node_->value_.GetIntVector3();
         break;
     case VAR_QUATERNION:
-        context.GetScalar<Quaternion>(pin0.GetMemoryReference())[0] = node_->value_.GetQuaternion();
+        context.GetSpan<Quaternion>(pin0.GetMemoryReference())[0] = node_->value_.GetQuaternion();
         break;
-    case VAR_MATRIX3:
-        context.GetScalar<Matrix3>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix3();
-        break;
-    case VAR_MATRIX3X4:
-        context.GetScalar<Matrix3x4>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix3x4();
-        break;
-    case VAR_MATRIX4:
-        context.GetScalar<Matrix4>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix4();
-        break;
-    case VAR_COLOR:
-        context.GetScalar<Color>(pin0.GetMemoryReference())[0] = node_->value_.GetColor();
-        break;
+    case VAR_MATRIX3: context.GetSpan<Matrix3>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix3(); break;
+    case VAR_MATRIX3X4: context.GetSpan<Matrix3x4>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix3x4(); break;
+    case VAR_MATRIX4: context.GetSpan<Matrix4>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix4(); break;
+    case VAR_COLOR: context.GetSpan<Color>(pin0.GetMemoryReference())[0] = node_->value_.GetColor(); break;
     case VAR_VARIANTCURVE:
-        context.GetScalar<const VariantCurve*>(pin0.GetMemoryReference())[0] = &node_->value_.GetVariantCurve();
+        context.GetSpan<const VariantCurve*>(pin0.GetMemoryReference())[0] = &node_->value_.GetVariantCurve();
         break;
-    default:
-        assert(!"Not implemented yet");
-        break;
+    default: assert(!"Not implemented yet"); break;
     }
 };
 } // namespace ParticleGraphNodes

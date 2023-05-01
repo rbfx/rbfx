@@ -47,9 +47,9 @@ public:
         float rotation, Vector3& direction);
     void Commit();
 
-    template <typename Pin0, typename Pin1, typename Frame, typename Color, typename Rotation, typename Direction>
-    void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Frame frame, Color color,
-        Rotation rotation, Direction direction)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& pin0, SparseSpan<Vector2>& pin1,
+        SparseSpan<float>& frame, SparseSpan<Color>& color, SparseSpan<float>& rotation,
+        SparseSpan<Vector3>& direction)
     {
         Prepare(numParticles);
         for (unsigned i = 0; i < numParticles; ++i)

@@ -39,8 +39,7 @@ public:
 
     void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
 
-    template <typename Pos, typename Vel>
-    void operator()(UpdateContext& context, unsigned numParticles, Pos x, Vel out)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& x, SparseSpan<Vector3>& out)
     {
         scrollPos_ += context.timeStep_;
         for (unsigned i = 0; i < numParticles; ++i)

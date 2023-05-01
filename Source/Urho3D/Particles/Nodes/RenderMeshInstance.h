@@ -61,7 +61,7 @@ public:
 
     ea::vector<Matrix3x4>& Prepare(unsigned numParticles);
 
-    template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T transforms)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Matrix3x4>& transforms)
     {
         auto& dst = Prepare(numParticles);
         auto* graphNode = static_cast<RenderMesh*>(GetGraphNode());

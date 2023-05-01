@@ -78,9 +78,13 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
 
     // Initialize indices
     indices_ = layout.indices_.MakeSpan<unsigned>(attributes_);
+    scalarIndices_ = layout.scalarIndices_.MakeSpan<unsigned>(attributes_);
+    naturalIndices_ = layout.naturalIndices_.MakeSpan<unsigned>(attributes_);
     for (unsigned i = 0; i < indices_.size(); ++i)
     {
         indices_[i] = i;
+        scalarIndices_[i] = 0;
+        naturalIndices_[i] = i;
     }
     destructionQueue_ = layout.destructionQueue_.MakeSpan<unsigned>(attributes_);
     Reset();
@@ -283,8 +287,6 @@ ea::span<uint8_t> ParticleGraphLayerInstance::InitNodeInstances(ea::span<uint8_t
     template Span<Matrix4> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
     template Span<const VariantCurve*> UpdateContext::FuncName(const ParticleGraphPinRef& pin);
 
-InstantiateSpan(ea::span, GetSpan);
-InstantiateSpan(ScalarSpan, GetScalar);
-InstantiateSpan(SparseSpan, GetSparse);
+InstantiateSpan(SparseSpan, GetSpan);
 
 } // namespace Urho3D

@@ -43,8 +43,8 @@ class BounceInstance final : public Bounce::InstanceBase
 public:
     void RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity);
 
-    template <typename Pin0, typename Pin1, typename Pin2, typename Pin3>
-    void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Pin2 pin2, Pin3 pin3)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Vector3>& pin0, SparseSpan<Vector3>& pin1,
+        SparseSpan<Vector3>& pin2, SparseSpan<Vector3>& pin3)
     {
 #if URHO3D_PHYSICS
         auto node = GetNode();

@@ -53,21 +53,7 @@ namespace
         {
             const unsigned numParticles = context.indices_.size();
 
-            switch (pin0.GetContainerType())
-            {
-            case ParticleGraphContainerType::Span:
-                LogSpan(LOG_INFO, numParticles, context.GetSpan<T>(pin0.GetMemoryReference()));
-                break;
-            case ParticleGraphContainerType::Scalar:
-                LogSpan(LOG_INFO, 1, context.GetScalar<T>(pin0.GetMemoryReference()));
-                break;
-            case ParticleGraphContainerType::Sparse:
-                LogSpan(LOG_INFO, numParticles, context.GetSparse<T>(pin0.GetMemoryReference()));
-                break;
-            default:
-                assert(!"Invalid pin container type");
-                break;
-            }
+            LogSpan(LOG_INFO, numParticles, context.GetSpan<T>(pin0.GetMemoryReference()));
         }
     };
 

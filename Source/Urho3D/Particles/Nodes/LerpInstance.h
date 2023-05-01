@@ -30,8 +30,8 @@ namespace ParticleGraphNodes
 {
 template <typename Value0, typename Value1, typename Value2, typename Value3> struct LerpInstance
 {
-    template <typename X, typename Y, typename T, typename Out>
-    void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, T t, Out out)
+    void operator()(UpdateContext& context, unsigned numParticles, SparseSpan<Value0>& x, SparseSpan<Value1>& y,
+        SparseSpan<Value2>& t, SparseSpan<Value3>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
