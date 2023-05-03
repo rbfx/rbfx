@@ -217,10 +217,10 @@ void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* light
 void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
     const Material* material, const Pass* pass, bool lightMaskToStencil)
 {
+    pipelineStateDesc_.colorWriteEnabled_ = pass->GetColorWrite();
     pipelineStateDesc_.depthWriteEnabled_ = pass->GetDepthWrite();
     pipelineStateDesc_.depthCompareFunction_ = pass->GetDepthTestMode();
 
-    pipelineStateDesc_.colorWriteEnabled_ = true;
     pipelineStateDesc_.blendMode_ = pass->GetBlendMode();
     pipelineStateDesc_.alphaToCoverageEnabled_ = pass->GetAlphaToCoverage() || material->GetAlphaToCoverage();
     pipelineStateDesc_.constantDepthBias_ = material->GetDepthBias().constantBias_;

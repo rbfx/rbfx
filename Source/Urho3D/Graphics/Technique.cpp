@@ -45,6 +45,7 @@ Pass::Pass(const ea::string& name) :
     lightingMode_(LIGHTING_UNLIT),
     shadersLoadedFrameNumber_(0),
     alphaToCoverage_(false),
+    colorWrite_(true),
     depthWrite_(true),
     isDesktop_(false)
 {
@@ -82,6 +83,12 @@ void Pass::SetDepthTestMode(CompareMode mode)
 void Pass::SetLightingMode(PassLightingMode mode)
 {
     lightingMode_ = mode;
+}
+
+void Pass::SetColorWrite(bool enable)
+{
+    colorWrite_ = enable;
+    MarkPipelineStateHashDirty();
 }
 
 void Pass::SetDepthWrite(bool enable)
@@ -209,6 +216,7 @@ unsigned Pass::RecalculatePipelineStateHash() const
     CombineHash(hash, blendMode_);
     CombineHash(hash, cullMode_);
     CombineHash(hash, depthTestMode_);
+    CombineHash(hash, colorWrite_);
     CombineHash(hash, depthWrite_);
     CombineHash(hash, alphaToCoverage_);
     CombineHash(hash, MakeHash(vertexShaderName_));
@@ -341,6 +349,9 @@ bool Technique::BeginLoad(Deserializer& source)
                     newPass->SetDepthTestMode((CompareMode)GetStringListIndex(depthTest.c_str(), compareModeNames, CMP_LESS));
             }
 
+            if (passElem.HasAttribute("colorwrite"))
+                newPass->SetColorWrite(passElem.GetBool("colorwrite"));
+
             if (passElem.HasAttribute("depthwrite"))
                 newPass->SetDepthWrite(passElem.GetBool("depthwrite"));
 
@@ -389,6 +400,7 @@ SharedPtr<Technique> Technique::Clone(const ea::string& cloneName) const
         newPass->SetBlendMode(srcPass->GetBlendMode());
         newPass->SetDepthTestMode(srcPass->GetDepthTestMode());
         newPass->SetLightingMode(srcPass->GetLightingMode());
+        newPass->SetColorWrite(srcPass->GetColorWrite());
         newPass->SetDepthWrite(srcPass->GetDepthWrite());
         newPass->SetAlphaToCoverage(srcPass->GetAlphaToCoverage());
         newPass->SetIsDesktop(srcPass->IsDesktop());
