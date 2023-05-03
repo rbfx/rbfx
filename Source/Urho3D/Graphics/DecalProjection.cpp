@@ -76,17 +76,6 @@ void DecalProjection::RegisterObject(Context* context)
 
 void DecalProjection::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    // Workaround for Editor.
-    if (elapsedTime_ == 0)
-    {
-        auto transform = GetNode()->GetWorldTransform();
-        if (!transform.Equals(projectionTransform_))
-        {
-            projectionTransform_ = transform;
-            UpdateSubscriptions(true);
-        }
-    }
-
     // Render projection frustum.
     Matrix4 viewProj = GetViewProj();
     Frustum frustum;
@@ -190,11 +179,28 @@ void DecalProjection::SetAutoRemoveMode(AutoRemoveMode mode)
     UpdateSubscriptions();
 }
 
+void DecalProjection::OnNodeSet(Node* previousNode, Node* currentNode)
+{
+    if (node_)
+        node_->AddListener(this);
+}
+
 void DecalProjection::OnSceneSet(Scene* scene)
 {
     BaseClassName::OnSceneSet(scene);
 
     UpdateSubscriptions(subscriptionFlags_ & SubscriptionMask::PreRender);
+}
+
+void DecalProjection::OnMarkedDirty(Node* node)
+{
+    Component::OnMarkedDirty(node);
+
+    // Update geometry.
+    if (elapsedTime_ < Urho3D::M_EPSILON)
+    {
+        UpdateSubscriptions(true);
+    }
 }
 
 ResourceRef DecalProjection::GetMaterialAttr() const

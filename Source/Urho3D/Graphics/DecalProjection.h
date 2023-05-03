@@ -63,6 +63,9 @@ public:
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
     void OnSceneSet(Scene* scene) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
+    /// Handle node transform being dirtied.
+    void OnMarkedDirty(Node* node) override;
 
     /// Set material. The material should use a small negative depth bias to avoid Z-fighting.
     void SetMaterial(Material* material);
@@ -181,8 +184,6 @@ private:
     ea::vector<SharedPtr<DecalSet>> activeDecalSets_;
     /// Active subscriptions bitmask.
     SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
-    /// Saved projection transform.
-    Matrix3x4 projectionTransform_;
 };
 
 } // namespace Urho3D
