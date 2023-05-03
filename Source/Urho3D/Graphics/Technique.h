@@ -101,6 +101,9 @@ public:
     /// Set depth write on/off.
     /// @property
     void SetDepthWrite(bool enable);
+    /// Set color write on/off.
+    /// @property
+    void SetColorWrite(bool enable);
     /// Set alpha-to-coverage on/off.
     /// @property
     void SetAlphaToCoverage(bool enable);
@@ -154,6 +157,10 @@ public:
 
     /// Return last shaders loaded frame number.
     unsigned GetShadersLoadedFrameNumber() const { return shadersLoadedFrameNumber_; }
+
+    /// Return color write mode.
+    /// @property
+    bool GetColorWrite() const { return colorWrite_; }
 
     /// Return depth write mode.
     /// @property
@@ -225,6 +232,8 @@ private:
     PassLightingMode lightingMode_;
     /// Last shaders loaded frame number.
     unsigned shadersLoadedFrameNumber_;
+    /// Color write mode.
+    bool colorWrite_;
     /// Depth write mode.
     bool depthWrite_;
     /// Alpha-to-coverage mode.

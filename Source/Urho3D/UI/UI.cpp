@@ -865,10 +865,15 @@ void UI::Initialize()
 
     batchStateCache_ = MakeShared<DefaultUIBatchStateCache>(context_);
 
-    noTextureMaterial_ = Material::CreateBaseMaterial(context_, "Basic", "VERTEXCOLOR", "VERTEXCOLOR");
-    alphaMapMaterial_ = Material::CreateBaseMaterial(context_, "Basic", "DIFFMAP VERTEXCOLOR", "ALPHAMAP VERTEXCOLOR");
-    diffMapMaterial_ = Material::CreateBaseMaterial(context_, "Basic", "DIFFMAP VERTEXCOLOR", "DIFFMAP VERTEXCOLOR");
-    diffMapAlphaMaskMaterial_ = Material::CreateBaseMaterial(context_, "Basic", "DIFFMAP VERTEXCOLOR", "DIFFMAP ALPHAMASK VERTEXCOLOR");
+    const ea::string baseDefines = "VERTEXCOLOR ";
+    const ea::string alphaMapDefines = baseDefines + "ALPHAMAP ";
+    const ea::string diffMapDefines = baseDefines + "DIFFMAP ";
+    const ea::string diffMapAlphaMaskDefines = diffMapDefines + "ALPHAMASK ";
+
+    noTextureMaterial_ = Material::CreateBaseMaterial(context_, "v2/X_Basic", baseDefines, baseDefines);
+    alphaMapMaterial_ = Material::CreateBaseMaterial(context_, "v2/X_Basic", alphaMapDefines, alphaMapDefines);
+    diffMapMaterial_ = Material::CreateBaseMaterial(context_, "v2/X_Basic", diffMapDefines, diffMapDefines);
+    diffMapAlphaMaskMaterial_ = Material::CreateBaseMaterial(context_, "v2/X_Basic", diffMapDefines, diffMapAlphaMaskDefines);
 
     initialized_ = true;
 
@@ -958,7 +963,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
     projection.m23_ = 0.0f;
     projection.m33_ = 1.0f;
 
-    drawQueue->Reset(false /* prefer uniforms for compatibility with old shaders */);
+    drawQueue->Reset();
 
     const float elapsedTime = GetSubsystem<Time>()->GetElapsedTime();
     UIBatchStateCreateContext batchStateCreateContext{ vertexBuffer_, nullptr };
