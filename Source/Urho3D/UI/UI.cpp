@@ -865,9 +865,7 @@ void UI::Initialize()
 
     batchStateCache_ = MakeShared<DefaultUIBatchStateCache>(context_);
 
-    ea::string baseDefines = "VERTEXCOLOR ";
-    if (graphics->GetCaps().constantBuffersSupported_)
-        baseDefines += "URHO3D_USE_CBUFFERS ";
+    const ea::string baseDefines = "VERTEXCOLOR ";
     const ea::string alphaMapDefines = baseDefines + "ALPHAMAP ";
     const ea::string diffMapDefines = baseDefines + "DIFFMAP ";
     const ea::string diffMapAlphaMaskDefines = diffMapDefines + "ALPHAMASK ";
