@@ -44,6 +44,7 @@
 #include "../../IO/File.h"
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
+#include "../../RenderAPI/OpenGLIncludes.h"
 
 #include <Diligent/Platforms/interface/PlatformDefinitions.h>
 #include <Diligent/Primitives/interface/CommonDefinitions.h>
@@ -73,17 +74,6 @@
 
 // OpenGL includes
 #if GL_SUPPORTED || GLES_SUPPORTED
-    #if defined(IOS) || defined(TVOS)
-        #include <OpenGLES/ES3/gl.h>
-        #include <OpenGLES/ES3/glext.h>
-    #elif defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
-        #include <GLES3/gl3.h>
-        #include <GLES3/gl3ext.h>
-    #elif defined(__EMSCRIPTEN__)
-        #include <GLES3/gl32.h>
-    #else
-        #include <GL/glew.h>
-    #endif
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
@@ -1080,24 +1070,9 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 
 void Graphics::SetPipelineState(PipelineState* pipelineState)
 {
-    using namespace Diligent;
-    void* pipelineObj = pipelineState->GetGPUPipeline();
-    assert(pipelineObj);
+    impl_->deviceContext_->SetPipelineState(pipelineState->GetHandle());
 
-    impl_->deviceContext_->SetPipelineState(static_cast<IPipelineState*>(pipelineObj));
-
-    if (pipelineState_)
-    {
-        PipelineStateDesc currDesc = pipelineState_->GetDesc();
-        PipelineStateDesc newDesc = pipelineState->GetDesc();
-
-        if (newDesc.ToHash() != currDesc.ToHash())
-            impl_->depthStateDirty_ = true;
-    }
-    else
-    {
-        impl_->depthStateDirty_ = true;
-    }
+    // TODO(diligent): We shouldn't need it cached
     pipelineState_ = pipelineState;
 }
 
