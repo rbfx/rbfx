@@ -49,8 +49,9 @@ void PipelineStateDesc::InitializeInputLayout(const GeometryBufferArray& buffers
 {
     indexType_ = IndexBuffer::GetIndexBufferType(buffers.indexBuffer_);
     numVertexElements_ = 0;
-    for (VertexBuffer* vertexBuffer : buffers.vertexBuffers_)
+    for (unsigned bufferIndex = 0; bufferIndex < buffers.vertexBuffers_.size(); ++bufferIndex)
     {
+        VertexBuffer* vertexBuffer = buffers.vertexBuffers_[bufferIndex];
         if (vertexBuffer)
         {
             const auto& elements = vertexBuffer->GetElements();
@@ -58,6 +59,12 @@ void PipelineStateDesc::InitializeInputLayout(const GeometryBufferArray& buffers
             if (numElements > 0)
             {
                 ea::copy_n(elements.begin(), numElements, vertexElements_.begin() + numVertexElements_);
+                for (unsigned i = 0; i < numElements; ++i)
+                {
+                    VertexElementInBuffer& element = vertexElements_[numVertexElements_ + i];
+                    element.bufferIndex_ = bufferIndex;
+                    element.bufferStride_ = vertexBuffer->GetVertexSize();
+                }
                 numVertexElements_ += numElements;
             }
             if (elements.size() != numElements)
@@ -110,39 +117,24 @@ void PipelineState::Setup(const PipelineStateDesc& desc)
 void PipelineState::ResetCachedState()
 {
     shaderProgramLayout_ = nullptr;
+    pipeline_ = nullptr;
 }
 
 void PipelineState::RestoreCachedState(Graphics* graphics)
 {
     if (!shaderProgramLayout_)
         shaderProgramLayout_ = graphics->GetShaderProgramLayout(desc_.vertexShader_, desc_.pixelShader_);
+    if (!pipeline_)
+        BuildPipeline(graphics);
 }
 
 bool PipelineState::Apply(Graphics* graphics)
 {
-#ifndef URHO3D_DILIGENT
-    graphics->SetShaders(desc_.vertexShader_, desc_.pixelShader_);
-
-    graphics->SetDepthWrite(desc_.depthWriteEnabled_);
-    graphics->SetDepthTest(desc_.depthCompareFunction_);
-    graphics->SetStencilTest(desc_.stencilTestEnabled_, desc_.stencilCompareFunction_,
-        desc_.stencilOperationOnPassed_, desc_.stencilOperationOnStencilFailed_, desc_.stencilOperationOnDepthFailed_,
-        desc_.stencilReferenceValue_, desc_.stencilCompareMask_, desc_.stencilWriteMask_);
-
-    graphics->SetFillMode(desc_.fillMode_);
-    graphics->SetCullMode(desc_.cullMode_);
-    graphics->SetDepthBias(desc_.constantDepthBias_, desc_.slopeScaledDepthBias_);
-    graphics->SetLineAntiAlias(desc_.lineAntiAlias_);
-
-    graphics->SetColorWrite(desc_.colorWriteEnabled_);
-    graphics->SetBlendMode(desc_.blendMode_, desc_.alphaToCoverageEnabled_);
-    return true;
-#else
-    if (!BuildPipeline(graphics))
+    if (!pipeline_)
         return false;
+
     graphics->SetPipelineState(this);
     return true;
-#endif
 }
 
 PipelineStateCache::PipelineStateCache(Context* context)

@@ -93,6 +93,9 @@ private:
     template <typename PSOCreateInfoType>
     void InitInternalObjects(const PSOCreateInfoType& CreateInfo, const TShaderStages& ShaderStages);
 
+    void PatchInputLayout(const GraphicsPipelineStateCreateInfo& CreateInfo);
+    void PatchInputLayout(const ComputePipelineStateCreateInfo& CreateInfo) {}
+
     void InitResourceLayout(PSO_CREATE_INTERNAL_FLAGS InternalFlags,
                             const TShaderStages&      ShaderStages,
                             SHADER_TYPE               ActiveStages);
