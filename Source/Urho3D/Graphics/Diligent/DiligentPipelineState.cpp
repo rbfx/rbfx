@@ -4,20 +4,193 @@
 #include "DiligentGraphicsImpl.h"
 #include "DiligentLookupSettings.h"
 
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/RenderAPI/OpenGLIncludes.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
+
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
+
+#include <EASTL/optional.h>
+#include <EASTL/span.h>
 
 namespace Urho3D
 {
-static unsigned sNumComponents[] = {
-    1, // TYPE_INT
-    1, // TYPE_FLOAT
-    2, // TYPE_VECTOR2
-    3, // TYPE_VECTOR3
-    4, // TYPE_VECTOR4
-    4, // TYPE_UBYTE4
-    4, // TYPE_UBYTE4_NORM
+
+namespace
+{
+
+const ea::string elementSemanticNames[] = {
+    "iPos", // SEM_POSITION
+    "iNormal", // SEM_NORMAL
+    "iBinormal", // SEM_BINORMAL
+    "iTangent", // SEM_TANGENT
+    "iTexCoord", // SEM_TEXCOORD
+    "iColor", // SEM_COLOR
+    "iBlendWeights", // SEM_BLENDWEIGHTS
+    "iBlendIndices", // SEM_BLENDINDICES
 };
-static VALUE_TYPE sValueTypes[] = {VT_INT32, VT_FLOAT32, VT_FLOAT32, VT_FLOAT32, VT_FLOAT32, VT_UINT32, VT_UINT8};
+
+#if GL_SUPPORTED || GLES_SUPPORTED
+
+ea::optional<VertexShaderAttribute> ParseGLVertexAttribute(const ea::string& name)
+{
+    for (unsigned index = 0; index < URHO3D_ARRAYSIZE(elementSemanticNames); ++index)
+    {
+        const ea::string& semanticName = elementSemanticNames[index];
+        VertexElementSemantic semanticValue = static_cast<VertexElementSemantic>(index);
+
+        const unsigned semanticPos = name.find(semanticName);
+        if (semanticPos == ea::string::npos)
+            continue;
+
+        const unsigned semanticIndexPos = semanticPos + semanticName.length();
+        const unsigned semanticIndex = ToUInt(&name[semanticIndexPos]);
+        return VertexShaderAttribute{semanticValue, semanticIndex};
+    }
+    return ea::nullopt;
+}
+
+VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
+{
+    GLint numActiveAttribs = 0;
+    GLint maxNameLength = 0;
+    glGetProgramiv(programObject, GL_ACTIVE_ATTRIBUTES, &numActiveAttribs);
+    glGetProgramiv(programObject, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxNameLength);
+
+    ea::string attributeName;
+    attributeName.resize(maxNameLength, '\0');
+
+    VertexShaderAttributeVector result;
+    for (int attribIndex = 0; attribIndex < numActiveAttribs; ++attribIndex)
+    {
+        GLint attributeSize = 0;
+        GLenum attributeType = 0;
+        glGetActiveAttrib(programObject, attribIndex, maxNameLength, nullptr, &attributeSize, &attributeType,
+            attributeName.data());
+
+        if (const auto element = ParseGLVertexAttribute(attributeName))
+        {
+            const int location = glGetAttribLocation(programObject, attributeName.c_str());
+            URHO3D_ASSERT(location != -1);
+
+            result.push_back({element->semantic_, element->semanticIndex_, static_cast<unsigned>(location)});
+        }
+        else
+        {
+            URHO3D_LOGWARNING("Unknown vertex element semantic: {}", attributeName);
+        }
+    }
+
+    return result;
+}
+
+#endif
+
+void InitializeLayoutElements(
+    ea::vector<Diligent::LayoutElement>& result, ea::span<const VertexElementInBuffer> vertexElements)
+{
+    static const unsigned numComponents[] = {
+        1, // TYPE_INT
+        1, // TYPE_FLOAT
+        2, // TYPE_VECTOR2
+        3, // TYPE_VECTOR3
+        4, // TYPE_VECTOR4
+        4, // TYPE_UBYTE4
+        4, // TYPE_UBYTE4_NORM
+    };
+
+    static const Diligent::VALUE_TYPE valueTypes[] = {
+        Diligent::VT_INT32, // TYPE_INT
+        Diligent::VT_FLOAT32, // TYPE_FLOAT
+        Diligent::VT_FLOAT32, // TYPE_VECTOR2
+        Diligent::VT_FLOAT32, // TYPE_VECTOR3
+        Diligent::VT_FLOAT32, // TYPE_VECTOR4
+        Diligent::VT_UINT8, // TYPE_UBYTE4
+        Diligent::VT_UINT8 // TYPE_UBYTE4_NORM
+    };
+
+    static const bool isNormalized[] = {
+        false, // TYPE_INT
+        false, // TYPE_FLOAT
+        false, // TYPE_VECTOR2
+        false, // TYPE_VECTOR3
+        false, // TYPE_VECTOR4
+        false, // TYPE_UBYTE4
+        true // TYPE_UBYTE4_NORM
+    };
+
+    result.clear();
+    result.reserve(vertexElements.size());
+
+    for (const VertexElementInBuffer& sourceElement : vertexElements)
+    {
+        Diligent::LayoutElement& destElement = result.emplace_back();
+
+        destElement.InputIndex = M_MAX_UNSIGNED;
+        destElement.RelativeOffset = sourceElement.offset_;
+        destElement.NumComponents = numComponents[sourceElement.type_];
+        destElement.ValueType = valueTypes[sourceElement.type_];
+        destElement.IsNormalized = isNormalized[sourceElement.type_];
+        destElement.BufferSlot = sourceElement.bufferIndex_;
+        destElement.Stride = sourceElement.bufferStride_;
+        // TODO(xr): Patch this place
+        destElement.Frequency =
+            sourceElement.perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
+    }
+}
+
+bool IsSameSematics(const VertexElementInBuffer& lhs, const VertexShaderAttribute& rhs)
+{
+    return lhs.semantic_ == rhs.semantic_ && lhs.index_ == rhs.semanticIndex_;
+}
+
+void FillLayoutElementIndices(ea::span<Diligent::LayoutElement> result,
+    ea::span<const VertexElementInBuffer> vertexElements, const VertexShaderAttributeVector& attributes)
+{
+    URHO3D_ASSERT(result.size() == vertexElements.size());
+
+    const unsigned numExpectedAttributes = attributes.size();
+    for (const VertexShaderAttribute& attribute : attributes)
+    {
+        // For each attribute, find the latest element in the layout that matches the attribute.
+        // This is needed because the layout may contain multiple elements with the same semantic.
+        const auto iter = ea::find(vertexElements.rbegin(), vertexElements.rend(), attribute, &IsSameSematics);
+        if (iter != vertexElements.rend())
+        {
+            const unsigned elementIndex = vertexElements.rend() - iter - 1;
+            result[elementIndex].InputIndex = attribute.inputIndex_;
+        }
+        else
+        {
+            URHO3D_LOGERROR("Attribute #{} with semantics '{}{}' is not found in the vertex layout",
+                attribute.inputIndex_, elementSemanticNames[attribute.semantic_], attribute.semanticIndex_);
+        }
+    }
+}
+
+unsigned RemoveUnusedElements(ea::span<Diligent::LayoutElement> result)
+{
+    const auto isUnused = [](const Diligent::LayoutElement& element) { return element.InputIndex == M_MAX_UNSIGNED; };
+    const auto iter = ea::remove_if(result.begin(), result.end(), isUnused);
+    return iter - result.begin();
+}
+
+// TODO(diligent): Remove this function, we should store VertexShaderAttributeVector directly.
+VertexShaderAttributeVector ToAttributes(const ea::vector<VertexElement>& vertexElements)
+{
+    VertexShaderAttributeVector result;
+    result.reserve(vertexElements.size());
+
+    unsigned inputIndex = 0;
+    for (const VertexElement& element : vertexElements)
+        result.push_back(VertexShaderAttribute{element.semantic_, element.index_, inputIndex++});
+
+    return result;
+}
+
+}
+
 using namespace Diligent;
 bool PipelineState::BuildPipeline(Graphics* graphics)
 {
@@ -73,7 +246,19 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
         pipeline_ = nullptr;
     if (pipeline_)
         return true;
+
     ea::vector<LayoutElement> layoutElements;
+    InitializeLayoutElements(layoutElements, desc_.GetVertexElements());
+
+    // On OpenGL layout initialization is postponed until the program is linked.
+    if (graphics->GetRenderBackend() != RENDER_GL)
+    {
+        const ea::vector<VertexElement>& vertexShaderAttributes = desc_.vertexShader_->GetVertexElements();
+        FillLayoutElementIndices(layoutElements, desc_.GetVertexElements(), ToAttributes(vertexShaderAttributes));
+        const unsigned numElements = RemoveUnusedElements(layoutElements);
+        layoutElements.resize(numElements);
+    }
+
     GraphicsPipelineStateCreateInfo ci;
 #ifdef URHO3D_DEBUG
     if (desc_.debugName_.empty())
@@ -84,79 +269,6 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     ci.PSODesc.Name = debugName.c_str();
 #endif
     ci.GraphicsPipeline.PrimitiveTopology = DiligentPrimitiveTopology[desc_.primitiveType_];
-
-    {
-        assert(desc_.vertexShader_);
-        // Create LayoutElement based vertex shader input layout
-        const ea::vector<VertexElement>& shaderVertexElements = desc_.vertexShader_->GetVertexElements();
-        ea::vector<VertexElement> vertexBufferElements(
-            desc_.vertexElements_.begin(), desc_.vertexElements_.begin() + desc_.numVertexElements_);
-        unsigned attribCount = 0;
-
-        /*ea::string dbgShaderVertexElements = "";
-        ea::string dbgVertexBufferElements = "";
-
-        for (auto shaderVertexElement = shaderVertexElements.begin(); shaderVertexElement != shaderVertexElements.end();
-        ++shaderVertexElement) dbgShaderVertexElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n",
-        elementSemanticNames[shaderVertexElement->semantic_], shaderVertexElement->index_,
-        shaderVertexElement->offset_)); for (auto vertexBufferElement = vertexBufferElements.begin();
-        vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement)
-            dbgVertexBufferElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n",
-        elementSemanticNames[vertexBufferElement->semantic_], vertexBufferElement->index_,
-        vertexBufferElement->offset_));*/
-        auto BuildLayoutElement = [=](const VertexElement* element, LayoutElement& layoutElement)
-        {
-            LayoutElement result = {};
-            layoutElement.RelativeOffset = element->offset_;
-            layoutElement.NumComponents = sNumComponents[element->type_];
-            layoutElement.ValueType = sValueTypes[element->type_];
-            if (element->semantic_ == SEM_BLENDINDICES)
-                layoutElement.ValueType = VT_UINT8;
-            layoutElement.IsNormalized = element->semantic_ == SEM_COLOR;
-            layoutElement.BufferSlot = element->perInstance_ ? 1 : 0;
-            layoutElement.Frequency =
-                element->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
-        };
-
-        for (const VertexElement* shaderVertexElement = shaderVertexElements.begin();
-             shaderVertexElement != shaderVertexElements.end(); ++shaderVertexElement)
-        {
-            bool insert = false;
-            LayoutElement layoutElement = {};
-            layoutElement.InputIndex = attribCount;
-
-            for (const VertexElement* vertexBufferElement = vertexBufferElements.begin();
-                 vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement)
-            {
-                if (vertexBufferElement->semantic_ != shaderVertexElement->semantic_
-                    || vertexBufferElement->index_ != shaderVertexElement->index_)
-                    continue;
-                BuildLayoutElement(vertexBufferElement, layoutElement);
-                // Remove from vector processed vertex element
-                vertexBufferElements.erase(vertexBufferElement);
-                insert = true;
-                break;
-            }
-
-            if (insert)
-            {
-                layoutElements.push_back(layoutElement);
-                ++attribCount;
-            }
-        }
-        // Add last semantics if has left vertex buffer elements
-        for (const VertexElement* element = vertexBufferElements.begin(); element != vertexBufferElements.end();
-             ++element)
-        {
-            LayoutElement layoutElement = {};
-            layoutElement.InputIndex = attribCount;
-            BuildLayoutElement(element, layoutElement);
-            layoutElements.push_back(layoutElement);
-            ++attribCount;
-        }
-
-        assert(layoutElements.size());
-    }
 
     ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
     ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
@@ -230,6 +342,26 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     PipelineStateCache* psoCache = graphics->GetSubsystem<PipelineStateCache>();
     if (psoCache->object_)
         ci.pPSOCache = psoCache->object_.Cast<IPipelineStateCache>(IID_PipelineStateCache);
+
+#if GL_SUPPORTED || GLES_SUPPORTED
+    auto patchInputLayout = [&](GLuint programObject, Diligent::Uint32& numElements, Diligent::LayoutElement* elements)
+    {
+        const ea::span<Diligent::LayoutElement> elementsSpan{elements, numElements};
+        const auto vertexAttributes = GetGLVertexAttributes(programObject);
+
+        FillLayoutElementIndices(elementsSpan, desc_.GetVertexElements(), vertexAttributes);
+        numElements = RemoveUnusedElements(elementsSpan);
+    };
+
+    ci.GLPatchVertexLayoutCallbackUserData = &patchInputLayout;
+    ci.GLPatchVertexLayoutCallback = [](
+        GLuint programObject, Diligent::Uint32* numElements, Diligent::LayoutElement* elements, void* userData)
+    {
+        const auto& callback = *reinterpret_cast<decltype(patchInputLayout)*>(userData);
+        callback(programObject, *numElements, elements);
+    };
+#endif
+
     graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &pipeline_);
 
     if (!pipeline_)
@@ -239,7 +371,9 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     }
 
     URHO3D_LOGDEBUG("Created Graphics Pipeline ({})", desc_.ToHash());
+    return true;
 }
+
 void PipelineState::ReleasePipeline()
 {
     pipeline_ = nullptr;
