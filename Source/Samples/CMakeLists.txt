@@ -85,24 +85,28 @@ if (XCODE)
         # Default app icon on the iOS/tvOS home screen
         list(APPEND RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/UrhoIcon.png)
     endif ()
+    
+    # Add REOSOURCE FILES to the bundle
     set_source_files_properties (${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     target_sources(Samples PRIVATE ${RESOURCE_FILES})
+    
+    # Add other resources to the bundle
+    if (URHO3D_PACKAGING)
+        set_source_files_properties (${URHO3D_DATA_PAKS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+        target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS})
+    else ()
+        set_source_files_properties (
+            "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData"
+            PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+        target_sources(Samples PRIVATE
+            "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData")
+    endif ()
 
     if (IOS)
         set_target_properties(Samples
             PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME \${PRODUCT_NAME}
                        MACOSX_BUNDLE_GUI_IDENTIFIER com.github.rbfx.\${PRODUCT_NAME:rfc1034identifier:lower}
         )
-        if (URHO3D_PACKAGING)
-            set_source_files_properties (${URHO3D_DATA_PAKS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-            target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS})
-        else ()
-            set_source_files_properties (
-                "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData"
-                PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-            target_sources(Samples PRIVATE
-                "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData")
-        endif ()
     endif ()
 endif ()
 
