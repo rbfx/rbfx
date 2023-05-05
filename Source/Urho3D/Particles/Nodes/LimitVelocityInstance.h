@@ -34,8 +34,8 @@ namespace ParticleGraphNodes
 class LimitVelocityInstance final : public LimitVelocity::InstanceBase
 {
 public:
-    template <typename Vel, typename Limit, typename Result>
-    void operator()(UpdateContext& context, unsigned numParticles, Vel vel, Limit limit, Result result)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& vel,
+        const SparseSpan<float>& limit, const SparseSpan<Vector3>& result)
     {
         const float dampen = static_cast<LimitVelocity*>(GetGraphNode())->GetDampen();
         if (dampen <= 1e-6f || context.timeStep_ < 1e-6f)

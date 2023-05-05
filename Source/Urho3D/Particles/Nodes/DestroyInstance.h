@@ -34,7 +34,7 @@ namespace ParticleGraphNodes
 class DestroyInstance final : public Destroy::InstanceBase
 {
 public:
-    template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T pin0)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<bool>& pin0)
     {
         // Iterate all particles even if all pins are scalar.
         for (unsigned i = 0; i < context.indices_.size(); ++i)

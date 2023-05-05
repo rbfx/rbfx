@@ -34,7 +34,7 @@ namespace ParticleGraphNodes
 class EmitInstance final : public Emit::InstanceBase
 {
 public:
-    template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T span)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<float>& span)
     {
         // Can't use iterator here as it may use ScalarSpan with infinite iterator.
         float sum = 0.0f;

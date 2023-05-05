@@ -30,7 +30,8 @@ namespace ParticleGraphNodes
 {
 template <typename Value0, typename Value1> struct NormalizedInstance
 {
-    template <typename X, typename Out> void operator()(UpdateContext& context, unsigned numParticles, X x, Out out)
+    void operator()(
+        const UpdateContext& context, unsigned numParticles, const SparseSpan<Value0>& x, const SparseSpan<Value1>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

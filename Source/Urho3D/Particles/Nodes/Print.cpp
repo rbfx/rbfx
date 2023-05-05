@@ -38,7 +38,7 @@ namespace ParticleGraphNodes
 namespace
 {
     template <typename T>
-    void LogSpan(LogLevel level, unsigned numParticles, T span)
+    void LogSpan(LogLevel level, unsigned numParticles, const SparseSpan<T>& span)
     {
         for (unsigned i=0; i<numParticles;++i)
         {
@@ -49,25 +49,11 @@ namespace
 
     template <typename T> struct LogPin
     {
-        void operator()(UpdateContext& context, const ParticleGraphPin& pin0)
+        void operator()(const UpdateContext& context, const ParticleGraphPin& pin0)
         {
             const unsigned numParticles = context.indices_.size();
 
-            switch (pin0.GetContainerType())
-            {
-            case ParticleGraphContainerType::Span:
-                LogSpan(LOG_INFO, numParticles, context.GetSpan<T>(pin0.GetMemoryReference()));
-                break;
-            case ParticleGraphContainerType::Scalar:
-                LogSpan(LOG_INFO, 1, context.GetScalar<T>(pin0.GetMemoryReference()));
-                break;
-            case ParticleGraphContainerType::Sparse:
-                LogSpan(LOG_INFO, numParticles, context.GetSparse<T>(pin0.GetMemoryReference()));
-                break;
-            default:
-                assert(!"Invalid pin container type");
-                break;
-            }
+            LogSpan<T>(LOG_INFO, numParticles, context.GetSpan<T>(pin0.GetMemoryReference()));
         }
     };
 

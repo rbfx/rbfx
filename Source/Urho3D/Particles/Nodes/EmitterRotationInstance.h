@@ -35,7 +35,7 @@ namespace ParticleGraphNodes
 class EmitterRotationInstance final : public EmitterRotation::InstanceBase
 {
 public:
-    template <typename Pin0> void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Quaternion>& pin0)
     {
         auto* node = GetNode();
         for (unsigned i = 0; i < numParticles; ++i)
