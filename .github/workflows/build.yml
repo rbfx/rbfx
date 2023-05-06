@@ -473,9 +473,10 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
 
-      - name: Generate
-        shell: bash
-        run: ${{ env.ci_build_script }} generate
+      # Not applicable on Android, because build is performed through Gradle.
+      #- name: Generate
+      #  shell: bash
+      #  run: ${{ env.ci_build_script }} generate
 
       - name: Build
         shell: bash
