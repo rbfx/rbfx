@@ -507,6 +507,13 @@ bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize, Str
         }
     }
 
+    // Skip Resource gathering on Compute Shaders
+    // They made automatically by the Diligent.
+    if (desc_.type_ == CS) {
+        spvReflectDestroyShaderModule(&module);
+        return true;
+    }
+
     unsigned bindingCount = 0;
     result = spvReflectEnumerateDescriptorBindings(&module, &bindingCount, nullptr);
     assert(result == SPV_REFLECT_RESULT_SUCCESS);
@@ -576,6 +583,7 @@ bool ShaderProcessor::ReflectGLSL(const void* byteCode, size_t byteCodeSize, Str
         }
     }
 
+    spvReflectDestroyShaderModule(&module);
     return true;
 }
 void ShaderProcessor::RemapHLSLInputLayout(
