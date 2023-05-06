@@ -91,20 +91,12 @@ private:
     bool ReflectHLSL(uint8_t* byteCode, size_t byteCodeLength, StringVector& samplers,
         ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout);
     #endif
-    struct ReflectGLSLResult {
-        /// Sampler Names
-        StringVector samplerNames_;
-        /// Invalid resource names, this field will be renamed to texture slot names.
-        ea::array<ea::string, MAX_TEXTURE_UNITS> resourceRemaps_;
-        /// Input Layout
-        ea::vector<ea::pair<unsigned, VertexElementSemantic>> inputLayout_;
-    };
     bool CompileGLSL(ea::vector<unsigned>& byteCode);
-    bool ReflectGLSL(const void* byteCode, size_t byteCodeSize, ReflectGLSLResult& reflectResult);
+    bool ReflectGLSL(const void* byteCode, size_t byteCodeSize, StringVector& samplers,
+        ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout);
     void RemapHLSLInputLayout(
         ea::string& sourceCode, const ea::vector<ea::pair<unsigned, VertexElementSemantic>>& inputLayout);
     void RemapHLSLSamplers(ea::string& sourceCode, const StringVector& samplers);
-    void RemapResources(const ea::array<ea::string, MAX_TEXTURE_UNITS>& resources, ea::string& sourceCode);
 
     ShaderProcessorDesc desc_;
     /// Processed HLSL code. Used by Diligent
