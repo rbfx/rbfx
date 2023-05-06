@@ -318,6 +318,8 @@ public:
     void SetCacheDir(const FileIdentifier& path);
     /// Get Pipeline State Cache directory.
     const FileIdentifier& GetCacheDir() const { return cacheDir_; }
+    /// Get GPU Pipeline cache device object.
+    Diligent::RefCntAutoPtr<Diligent::IDeviceObject> GetGPUPipelineCache() { return object_; }
 private:
     /// GPUObject callbacks
     /// @{

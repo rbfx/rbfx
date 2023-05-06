@@ -38,6 +38,7 @@
     #include <Diligent/Graphics/GraphicsEngine/interface/ResourceMapping.h>
     #include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceBinding.h>
     #include "../Graphics/PipelineState.h"
+    #include "../Engine/EngineEvents.h"
 #elif defined(URHO3D_OPENGL)
 #endif
 
@@ -154,10 +155,20 @@ private:
     /// Current Pipeline Shader Resource Binding
     Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> srb_{};
 
+    /// Record for pipeline+shader resource binding combination.
+    struct CacheEntry {
+        Diligent::RefCntAutoPtr<Diligent::IPipelineState> pipeline_;
+        Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> srb_;
+    };
+    /// Compute Pipeline Cache Table. All compute pipelines will be saved here
+    eastl::unordered_map<unsigned, CacheEntry> cachedPipelines_;
+
     /// Pipeline State Cache
+    /// This object will reduce overhead at pipeline creation.
     WeakPtr<PipelineStateCache> psoCache_;
 
     bool resourcesDirty_{};
+   
 #elif defined(URHO3D_OPENGL)
     /// OpenGL requires some additional information in order to make the bind since a UAV-object isn't a thing.
     struct WriteTexBinding
@@ -183,7 +194,7 @@ private:
     WriteBufferBinding ssbos_[MAX_COMPUTE_WRITE_TARGETS];
 
 #endif
-
+    void HandleEngineInitialization(StringHash eventType, VariantMap& eventData);
     bool BuildPipeline();
     /// Handle to the graphics object for device specific access.
     Graphics* graphics_;

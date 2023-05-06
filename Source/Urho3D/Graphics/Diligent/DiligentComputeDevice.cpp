@@ -56,9 +56,14 @@ bool ComputeDevice_ClearUAV(ID3D11UnorderedAccessView* view, ID3D11UnorderedAcce
 
 void ComputeDevice::Init()
 {
+    SubscribeToEvent(E_ENGINEINITIALIZED, URHO3D_HANDLER(ComputeDevice, HandleEngineInitialization));
+}
+void ComputeDevice::HandleEngineInitialization(StringHash eventType, VariantMap& eventData)
+{
     psoCache_ = GetSubsystem<PipelineStateCache>();
-
-    graphics_->GetImpl()->GetDevice()->CreateResourceMapping(ResourceMappingDesc{}, &resourceMapping_);
+    ResourceMappingDesc desc = {};
+    desc.pEntries = nullptr;
+    graphics_->GetImpl()->GetDevice()->CreateResourceMapping(desc, &resourceMapping_);
     URHO3D_ASSERTLOG(resourceMapping_, "Error when create ResourceMapping.");
 
     resourcesDirty_ = true;
@@ -325,6 +330,20 @@ bool ComputeDevice::BuildPipeline()
     if (!programDirty_ && pipeline_ && srb_)
         return true;
 
+    RefCntAutoPtr<IShader> computeShader = computeShader_->GetGPUObject().Cast<IShader>(IID_Shader);
+    unsigned hash = MakeHash((void*)computeShader);
+    auto cacheEntry = cachedPipelines_.find(hash);
+    if (cacheEntry != cachedPipelines_.end())
+    {
+        pipeline_ = cacheEntry->second.pipeline_;
+        srb_ = cacheEntry->second.srb_;
+        resourcesDirty_ = true; // Force resource binding update.
+        return true;
+    }
+
+    pipeline_ = nullptr;
+    srb_ = nullptr;
+
     ComputePipelineStateCreateInfo ci;
 #ifdef URHO3D_DEBUG
     ea::string dbgName = Format("{}(Compute)", computeShader_->GetName());
@@ -333,7 +352,10 @@ bool ComputeDevice::BuildPipeline()
     ci.PSODesc.PipelineType = PIPELINE_TYPE_COMPUTE;
     ci.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC;
 
-    ci.pCS = computeShader_->GetGPUObject().Cast<IShader>(IID_Shader);
+    ci.pCS = computeShader;
+    // Use PSO Cache if was created.
+    if(psoCache_->GetGPUPipelineCache())
+        ci.pPSOCache = psoCache_->GetGPUPipelineCache().Cast<IPipelineStateCache>(IID_PipelineStateCache);
 
     auto device = graphics_->GetImpl()->GetDevice();
     device->CreateComputePipelineState(ci, &pipeline_);
@@ -350,6 +372,7 @@ bool ComputeDevice::BuildPipeline()
         return false;
     }
 
+    cachedPipelines_.insert(ea::make_pair(hash, CacheEntry{ pipeline_, srb_ }));
     return true;
 }
 
@@ -461,6 +484,11 @@ void ComputeDevice::ReleaseLocalState()
 {
     constructedUAVs_.clear();
     constructedBufferUAVs_.clear();
+    cachedPipelines_.clear();
+
+    pipeline_ = nullptr;
+    srb_ = nullptr;
+    resourceMapping_ = nullptr;
 }
 
 } // namespace Urho3D
