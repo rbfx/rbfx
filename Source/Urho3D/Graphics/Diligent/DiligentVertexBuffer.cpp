@@ -261,7 +261,6 @@ bool VertexBuffer::Create()
         bufferDesc.CPUAccessFlags = dynamic_ ? CPU_ACCESS_WRITE : CPU_ACCESS_NONE;
         bufferDesc.Usage = dynamic_ ? USAGE_DYNAMIC : USAGE_DEFAULT;
         bufferDesc.Size = vertexCount_ * vertexSize_;
-        bufferDesc.ElementByteStride = vertexSize_;
 
         RefCntAutoPtr<IBuffer> buffer;
         graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, &buffer);
