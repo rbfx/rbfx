@@ -39,7 +39,7 @@
 
 namespace Urho3D
 {
-
+    using namespace Diligent;
 bool ComputeDevice_ClearUAV(ID3D11UnorderedAccessView* view, ID3D11UnorderedAccessView** table, size_t tableSize)
 {
     bool changedAny = false;
@@ -56,71 +56,78 @@ bool ComputeDevice_ClearUAV(ID3D11UnorderedAccessView* view, ID3D11UnorderedAcce
 
 void ComputeDevice::Init()
 {
-    ZeroMemory(shaderResourceViews_, sizeof(shaderResourceViews_));
-    ZeroMemory(uavs_, sizeof(uavs_));
-    ZeroMemory(samplerBindings_, sizeof(samplerBindings_));
-    ZeroMemory(constantBuffers_, sizeof(constantBuffers_));
+    psoCache_ = GetSubsystem<PipelineStateCache>();
+
+    graphics_->GetImpl()->GetDevice()->CreateResourceMapping(ResourceMappingDesc{}, &resourceMapping_);
+    URHO3D_ASSERTLOG(resourceMapping_, "Error when create ResourceMapping.");
+
+    resourcesDirty_ = true;
 }
 
 bool ComputeDevice::IsSupported() const
 {
-    auto device = graphics_->GetImpl()->GetDevice();
-
-    // Although D3D10 *can optionally* support DirectCompute - I'm betting on it being too finnicky to trust for general
-    // exposure.
-    return device->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+    return true;
 }
 
-bool ComputeDevice::SetReadTexture(Texture* texture, unsigned unit)
+bool ComputeDevice::SetReadTexture(Texture* texture, CD_UNIT textureSlot)
 {
-    if (unit >= MAX_TEXTURE_UNITS)
+    if (texture == nullptr)
     {
-        URHO3D_LOGERROR("ComputeDevice::SetReadTexture, invalid unit {} specified", unit);
-        return false;
-    }
-    if (shaderResourceViews_[unit] != texture->GetGPUObject())
-    {
-        if (texture->GetParametersDirty())
-            texture->UpdateParameters();
+        if (resourceMapping_->GetResource(textureSlot.c_str()))
+            resourcesDirty_ = true;
 
-        samplerBindings_[unit] = (ID3D11SamplerState*)texture->GetSampler();
-        shaderResourceViews_[unit] = (ID3D11ShaderResourceView*)texture->GetShaderResourceView();
-        samplersDirty_ = true;
-        texturesDirty_ = true;
+        resourceMapping_->RemoveResourceByName(textureSlot.c_str());
+        return true;
     }
+
+    if (texture->GetParametersDirty())
+        texture->UpdateParameters();
+
+    RefCntAutoPtr<IDeviceObject> textureObj = texture->GetShaderResourceView();
+    RefCntAutoPtr<IDeviceObject> sampler = texture->GetSampler();
+
+    if (resourceMapping_->GetResource(textureSlot.c_str()) == textureObj)
+        return true;
+
+    resourceMapping_->AddResource(textureSlot.c_str(), textureObj, false);
+    // Name convention by the SPIRV-Reflect
+    resourceMapping_->AddResource(Format("_{}_sampler", textureSlot).c_str(), sampler, false);
+
+    resourcesDirty_ = true;
+    return true;
+}
+
+bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, CD_UNIT cbufferSlot)
+{
+    if (buffer == nullptr)
+    {
+        if (resourceMapping_->GetResource(cbufferSlot.c_str()))
+            resourcesDirty_ = true;
+
+        resourceMapping_->RemoveResourceByName(cbufferSlot.c_str());
+        return true;
+    }
+
+    RefCntAutoPtr<IDeviceObject> bufferObj = buffer->GetGPUObject();
+
+    if (resourceMapping_->GetResource(cbufferSlot.c_str()) == bufferObj)
+        return true;
+
+    resourceMapping_->AddResource(cbufferSlot.c_str(), bufferObj, false);
+    resourcesDirty_ = true;
 
     return true;
 }
 
-bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, unsigned unit)
+bool ComputeDevice::SetWriteTexture(Texture* texture, CD_UNIT textureSlot, unsigned faceIndex, unsigned mipLevel)
 {
-    if (unit >= MAX_SHADER_PARAMETER_GROUPS)
-    {
-        URHO3D_LOGERROR("ComputeDevice::SetConstantBuffer, invalid unit {} specified", unit);
-        return false;
-    }
-
-    if (constantBuffers_[unit] != buffer->GetGPUObject())
-    {
-        constantBuffers_[unit] = (ID3D11Buffer*)buffer->GetGPUObject();
-        constantBuffersDirty_ = true;
-    }
-    return true;
-}
-
-bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned faceIndex, unsigned mipLevel)
-{
-    if (unit >= MAX_COMPUTE_WRITE_TARGETS)
-    {
-        URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, invalid unit {} specified", unit);
-        return false;
-    }
-
     // If null then clear and mark.
     if (texture == nullptr)
     {
-        uavs_[unit] = nullptr;
-        uavsDirty_ = true;
+        if (resourceMapping_->GetResource(textureSlot.c_str()))
+            resourcesDirty_ = true;
+
+        resourceMapping_->RemoveResourceByName(textureSlot.c_str());
         return true;
     }
 
@@ -139,45 +146,51 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
         {
             if (entry.face_ == faceIndex && entry.mipLevel_ == mipLevel)
             {
-                uavs_[unit] = entry.uav_;
-                uavsDirty_ = true;
+                resourceMapping_->AddResource(textureSlot.c_str(), entry.uav_, false);
+                resourcesDirty_ = true;
                 return true;
             }
         }
     }
 
     // Existing UAV wasn't found, so now a new one needs to be created.
-    auto d3dDevice = graphics_->GetImpl()->GetDevice();
+    auto device = graphics_->GetImpl()->GetDevice();
 
-    D3D11_UNORDERED_ACCESS_VIEW_DESC viewDesc;
-    ZeroMemory(&viewDesc, sizeof(viewDesc));
+    TextureViewDesc viewDesc = {};
+#ifdef URHO3D_DEBUG
+    ea::string dbgName = Format("{}(UAV)", texture->GetName());
+    viewDesc.Name = dbgName.c_str();
+#endif
+    viewDesc.Format = (TEXTURE_FORMAT)texture->GetFormat();
+    viewDesc.ViewType = TEXTURE_VIEW_UNORDERED_ACCESS;
 
-    viewDesc.Format = (DXGI_FORMAT)texture->GetFormat();
+    RefCntAutoPtr<ITexture> currTexture = texture->GetGPUObject().Cast<ITexture>(IID_Texture);
+
     if (auto tex2D = texture->Cast<Texture2D>())
     {
-        viewDesc.Texture2D.MipSlice = mipLevel;
-        viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+        viewDesc.TextureDim = RESOURCE_DIM_TEX_2D;
+        viewDesc.MostDetailedMip = mipLevel;
     }
     else if (auto tex2DArray = texture->Cast<Texture2DArray>())
     {
-        viewDesc.Texture2DArray.ArraySize = faceIndex == UINT_MAX ? tex2DArray->GetLayers() : 1;
-        viewDesc.Texture2DArray.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
-        viewDesc.Texture2DArray.MipSlice = mipLevel;
-        viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
+        viewDesc.TextureDim = RESOURCE_DIM_TEX_2D_ARRAY;
+        viewDesc.NumArraySlices = faceIndex == UINT_MAX ? tex2DArray->GetLayers() : 1;
+        viewDesc.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
+        viewDesc.MostDetailedMip = mipLevel;
     }
     else if (auto texCube = texture->Cast<TextureCube>())
     {
-        viewDesc.Texture2DArray.ArraySize = faceIndex == UINT_MAX ? 6 : 1;
-        viewDesc.Texture2DArray.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
-        viewDesc.Texture2DArray.MipSlice = mipLevel;
-        viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
+        viewDesc.TextureDim = RESOURCE_DIM_TEX_2D_ARRAY;
+        viewDesc.NumArraySlices = faceIndex == UINT_MAX ? 6 : 1;
+        viewDesc.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
+        viewDesc.MostDetailedMip = mipLevel;
     }
     else if (auto tex3D = texture->Cast<Texture3D>())
     {
-        viewDesc.Texture3D.MipSlice = mipLevel;
-        viewDesc.Texture3D.FirstWSlice = 0;
-        viewDesc.Texture3D.WSize = texture->GetLevelDepth(mipLevel);
-        viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE3D;
+        viewDesc.TextureDim = RESOURCE_DIM_TEX_3D;
+        viewDesc.MostDetailedMip = mipLevel;
+        viewDesc.FirstDepthSlice = 0;
+        viewDesc.NumDepthSlices = texture->GetLevelDepth(mipLevel);
     }
     else
     {
@@ -185,12 +198,12 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
         return false;
     }
 
-    ID3D11UnorderedAccessView* view = nullptr;
-    auto result = d3dDevice->CreateUnorderedAccessView((ID3D11Resource*)texture->GetGPUObject(), &viewDesc, &view);
-    if (FAILED(result))
+    RefCntAutoPtr<ITextureView> view;
+    currTexture->CreateView(viewDesc, &view);
+
+    if (!view)
     {
-        URHO3D_LOGD3DERROR("Failed to create UAV for texture", result);
-        URHO3D_SAFE_RELEASE(view);
+        URHO3D_LOGERROR("Failed to create UAV for texture");
         return false;
     }
 
@@ -209,65 +222,78 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
         SubscribeToEvent(texture, E_GPURESOURCERELEASED, URHO3D_HANDLER(ComputeDevice, HandleGPUResourceRelease));
     }
 
-    uavs_[unit] = view;
-    uavsDirty_ = true;
+
+    resourceMapping_->AddResource(textureSlot.c_str(), view, false);
+    resourcesDirty_ = true;
 
     return true;
 }
 
-bool ComputeDevice::SetWritableBuffer(Object* object, unsigned slot)
+bool ComputeDevice::SetWritableBuffer(Object* object, CD_UNIT slot)
 {
-    // Null object is trivial
+    // If null then clear and mark.
     if (object == nullptr)
     {
-        uavsDirty_ = uavs_[slot] != nullptr;
-        uavs_[slot] = nullptr;
+        if (resourceMapping_->GetResource(slot.c_str()))
+            resourcesDirty_ = true;
+
+        resourceMapping_->RemoveResourceByName(slot.c_str());
         return true;
     }
 
     // Easy case, it's a structured-buffer and thus manages the UAV itself
     if (auto structuredBuffer = object->Cast<ComputeBuffer>())
     {
-        uavs_[slot] = structuredBuffer->GetUAV();
-        uavsDirty_ = true;
-        return true;
+        auto uav = structuredBuffer->GetUAV();
+        if (resourceMapping_->GetResource(slot.c_str()) == uav)
+            return true;
+        resourceMapping_->AddResource(slot.c_str(), structuredBuffer->GetUAV(), false);
+        return resourcesDirty_ = true;
     }
 
     auto found = constructedBufferUAVs_.find(WeakPtr(object));
     if (found != constructedBufferUAVs_.end())
     {
-        uavs_[slot] = found->second;
-        uavsDirty_ = true;
-        return true;
+        if (resourceMapping_->GetResource(slot.c_str()) == found->second)
+            return true;
+        resourceMapping_->AddResource(slot.c_str(), found->second, false);
+        return resourcesDirty_ = true;
     }
 
-    D3D11_UNORDERED_ACCESS_VIEW_DESC viewDesc;
-    ZeroMemory(&viewDesc, sizeof viewDesc);
-    viewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+    BufferViewDesc viewDesc;
+    viewDesc.ViewType = BUFFER_VIEW_UNORDERED_ACCESS;
+#ifdef URHO3D_DEBUG
+    ea::string dbgName;
+#endif
+    RefCntAutoPtr<IBuffer> buffer;
 
-    ID3D11Buffer* buffer = nullptr;
-    // if (auto cbuffer = object->Cast<ConstantBuffer>())
-    //{
-    //     buffer = (ID3D11Buffer*)cbuffer->GetGPUObject();
-    //     viewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    //     viewDesc.Buffer.NumElements = cbuffer->GetSize() / sizeof(Vector4);
-    // }
-    // else
-    if (auto vbuffer = object->Cast<VertexBuffer>())
+    if (auto cbuffer = object->Cast<ConstantBuffer>())
     {
-        buffer = (ID3D11Buffer*)vbuffer->GetGPUObject();
-        viewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        viewDesc.Buffer.NumElements = vbuffer->GetElements().size() * vbuffer->GetVertexCount();
+        buffer = cbuffer->GetGPUObject().Cast<IBuffer>(IID_Buffer);
+        viewDesc.Format.ValueType = VT_FLOAT32;
+        viewDesc.Format.NumComponents = 4;
+        viewDesc.Format.IsNormalized = false;
+        viewDesc.ByteWidth = cbuffer->GetSize();
+    }
+    else if (auto vbuffer = object->Cast<VertexBuffer>())
+    {
+        buffer = vbuffer->GetGPUObject().Cast<IBuffer>(IID_Buffer);
+        viewDesc.Format.ValueType = VT_FLOAT32;
+        viewDesc.Format.NumComponents = 4;
+        viewDesc.Format.IsNormalized = false;
+        viewDesc.ByteWidth = (vbuffer->GetElements().size() * vbuffer->GetVertexCount()) * vbuffer->GetElements().size();
     }
     else if (auto ibuffer = object->Cast<IndexBuffer>())
     {
-        buffer = (ID3D11Buffer*)ibuffer->GetGPUObject();
+        buffer = ibuffer->GetGPUObject().Cast<IBuffer>(IID_Buffer);
+        viewDesc.Format.IsNormalized = false;
+        viewDesc.Format.NumComponents = 1;
         if (ibuffer->GetIndexSize() == sizeof(unsigned short))
-            viewDesc.Format = DXGI_FORMAT_R16_UINT;
+            viewDesc.Format.ValueType = VT_UINT16;
         else
-            viewDesc.Format = DXGI_FORMAT_R32_UINT;
+            viewDesc.Format.ValueType = VT_UINT32;
 
-        viewDesc.Buffer.NumElements = ibuffer->GetIndexCount();
+        viewDesc.ByteWidth = ibuffer->GetIndexCount();
     }
     else
     {
@@ -275,63 +301,69 @@ bool ComputeDevice::SetWritableBuffer(Object* object, unsigned slot)
         return false;
     }
 
-    ID3D11UnorderedAccessView* uav = nullptr;
-    auto hr = graphics_->GetImpl()->GetDevice()->CreateUnorderedAccessView(buffer, &viewDesc, &uav);
-    if (FAILED(hr))
+    RefCntAutoPtr<IBufferView> view;
+    buffer->CreateView(viewDesc, &view);
+    if (!view)
     {
-        URHO3D_SAFE_RELEASE(uav);
-        URHO3D_LOGD3DERROR("Failed to create UAV for buffer", hr);
+        URHO3D_LOGERROR("Failed to create UAV for buffer");
+        return false;
     }
 
     // Subscribe for the clean-up opportunity
     SubscribeToEvent(object, E_GPURESOURCERELEASED, URHO3D_HANDLER(ComputeDevice, HandleGPUResourceRelease));
 
-    constructedBufferUAVs_.insert({WeakPtr(object), uav});
-    uavs_[slot] = uav;
-    uavsDirty_ = true;
+    constructedBufferUAVs_.insert({WeakPtr(object), view});
+
+    resourceMapping_->AddResource(slot.c_str(), view, false);
+
+    return resourcesDirty_ = true;
+}
+
+
+bool ComputeDevice::BuildPipeline()
+{
+    if (!programDirty_ && pipeline_ && srb_)
+        return true;
+
+    ComputePipelineStateCreateInfo ci;
+#ifdef URHO3D_DEBUG
+    ea::string dbgName = Format("{}(Compute)", computeShader_->GetName());
+    ci.PSODesc.Name = dbgName.c_str();
+#endif
+    ci.PSODesc.PipelineType = PIPELINE_TYPE_COMPUTE;
+    ci.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC;
+
+    ci.pCS = computeShader_->GetGPUObject().Cast<IShader>(IID_Shader);
+
+    auto device = graphics_->GetImpl()->GetDevice();
+    device->CreateComputePipelineState(ci, &pipeline_);
+
+    if (!pipeline_) {
+        URHO3D_LOGERROR("Failed to create Compute Pipeline State.");
+        return false;
+    }
+
+    pipeline_->CreateShaderResourceBinding(&srb_, true);
+    if (!srb_) {
+        URHO3D_LOGERROR("Failed to create SRB for Compute Pipeline State");
+        pipeline_ = nullptr;
+        return false;
+    }
 
     return true;
 }
 
 void ComputeDevice::ApplyBindings()
 {
-    auto d3dContext = graphics_->GetImpl()->GetDeviceContext();
+    auto ctx = graphics_->GetImpl()->GetDeviceContext();
 
-    if (texturesDirty_)
-    {
-        // attempting to sample an active render-target doesn't work...
-        graphics_->SetRenderTarget(0, (RenderSurface*)nullptr);
-        // ...so make certain the deed is done.
-        d3dContext->OMSetRenderTargets(0, nullptr, nullptr);
+    if(resourcesDirty_)
+        srb_->BindResources(SHADER_TYPE_COMPUTE, resourceMapping_, BIND_SHADER_RESOURCES_UPDATE_ALL | BIND_SHADER_RESOURCES_ALLOW_OVERWRITE);
+    resourcesDirty_ = false;
 
-        d3dContext->CSSetShaderResources(0, MAX_TEXTURE_UNITS, shaderResourceViews_);
-    }
+    ctx->SetPipelineState(pipeline_);
+    ctx->CommitShaderResources(srb_, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-    if (samplersDirty_)
-        d3dContext->CSSetSamplers(0, MAX_TEXTURE_UNITS, samplerBindings_);
-
-    if (constantBuffersDirty_)
-        d3dContext->CSSetConstantBuffers(0, MAX_SHADER_PARAMETER_GROUPS, constantBuffers_);
-
-    if (uavsDirty_)
-    {
-        unsigned deadCounts[16];
-        ZeroMemory(deadCounts, sizeof(deadCounts));
-        d3dContext->CSSetUnorderedAccessViews(0, MAX_COMPUTE_WRITE_TARGETS, uavs_, nullptr);
-    }
-
-    if (programDirty_)
-    {
-        if (computeShader_ != nullptr)
-            d3dContext->CSSetShader((ID3D11ComputeShader*)computeShader_->GetGPUObject(), nullptr, 0);
-        else
-            d3dContext->CSSetShader(nullptr, nullptr, 0);
-    }
-
-    constantBuffersDirty_ = false;
-    samplersDirty_ = false;
-    texturesDirty_ = false;
-    uavsDirty_ = false;
     programDirty_ = false;
 }
 
@@ -359,16 +391,26 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
     if (!computeShader_)
         return;
 
+    if (!BuildPipeline())
+        return;
+
     ApplyBindings();
 
-    auto d3dContext = graphics_->GetImpl()->GetDeviceContext();
-    if (computeShader_ != nullptr)
-        d3dContext->Dispatch(xDim, yDim, zDim);
+    if (!pipeline_ || !srb_)
+        return;
+
+    DispatchComputeAttribs attribs;
+    attribs.ThreadGroupCountX = xDim;
+    attribs.ThreadGroupCountY = yDim;
+    attribs.ThreadGroupCountZ = zDim;
+
+    auto device = graphics_->GetImpl()->GetDeviceContext();
+    device->DispatchCompute(attribs);
 }
 
 void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData)
 {
-    SharedPtr<Object> object(dynamic_cast<Object*>(eventData["GPUObject"].GetPtr()));
+    /*SharedPtr<Object> object(dynamic_cast<Object*>(eventData["GPUObject"].GetPtr()));
     if (object == nullptr)
         return;
     void* gpuObject = ((GPUObject*)object.Get())->GetGPUObject();
@@ -412,24 +454,12 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
         constructedBufferUAVs_.erase(foundBuffUAV);
     }
 
-    UnsubscribeFromEvent(object.Get(), E_GPURESOURCERELEASED);
+    UnsubscribeFromEvent(object.Get(), E_GPURESOURCERELEASED);*/
 }
 
 void ComputeDevice::ReleaseLocalState()
 {
-    for (auto& uav : constructedUAVs_)
-    {
-        for (auto& item : uav.second)
-        {
-            URHO3D_SAFE_RELEASE(item.uav_);
-        }
-    }
     constructedUAVs_.clear();
-
-    for (auto& srv : constructedBufferUAVs_)
-    {
-        URHO3D_SAFE_RELEASE(srv.second);
-    }
     constructedBufferUAVs_.clear();
 }
 
