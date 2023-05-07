@@ -266,6 +266,7 @@ bool ShaderVariation::Compile()
     shaderCI.Desc.UseCombinedTextureSamplers = false;
     shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
     shaderCI.EntryPoint = processorDesc.entryPoint_.c_str();
+    shaderCI.LoadConstantBufferReflection = true;
 
     ShaderCompilerDesc compilerDesc;
     compilerDesc.entryPoint_ = processorDesc.entryPoint_;
@@ -504,6 +505,7 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
         shaderCI.Desc.ShaderType = DiligentShaderType[type_];
         shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
         shaderCI.EntryPoint = entryPoint.c_str();
+        shaderCI.LoadConstantBufferReflection = true;
 
         if (byteCodeType_ == ShaderByteCodeType::RAW) {
             shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM;

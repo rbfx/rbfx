@@ -32,7 +32,8 @@ namespace Urho3D
 {
 
 /// Element of constant buffer.
-struct ConstantBufferElement
+/// TODO(diligent): Expand this description
+struct ShaderParameterReflection
 {
     /// Shader parameter group aka constant buffer index.
     ShaderParameterGroup group_{};
@@ -53,13 +54,12 @@ public:
     unsigned GetConstantBufferHash(ShaderParameterGroup group) const { return constantBufferHashes_[group]; }
 
     /// Return parameter info by hash.
-    const ConstantBufferElement& GetConstantBufferParameter(StringHash name) const
+    const ShaderParameterReflection* GetConstantBufferParameter(StringHash name) const
     {
-        static const ConstantBufferElement empty{ MAX_SHADER_PARAMETER_GROUPS, M_MAX_UNSIGNED, 0 };
         const auto iter = constantBufferParameters_.find(name);
         if (iter == constantBufferParameters_.end())
-            return empty;
-        return iter->second;
+            return nullptr;
+        return &iter->second;
     }
 
 protected:
@@ -76,7 +76,7 @@ private:
     /// Constant buffer hashes.
     unsigned constantBufferHashes_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Mapping from parameter name to (buffer, offset) pair.
-    ea::unordered_map<StringHash, ConstantBufferElement> constantBufferParameters_;
+    ea::unordered_map<StringHash, ShaderParameterReflection> constantBufferParameters_;
 };
 
 }

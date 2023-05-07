@@ -583,7 +583,6 @@ using BoneCollisionShapeFlags = Urho3D::BoneCollisionShape;
 %csattribute(Urho3D::PipelineStateDesc, %arg(bool), IsInitialized, IsInitialized);
 %csattribute(Urho3D::PipelineState, %arg(bool), IsValid, IsValid);
 %csattribute(Urho3D::PipelineState, %arg(Urho3D::PipelineStateDesc), Desc, GetDesc);
-%csattribute(Urho3D::PipelineState, %arg(Urho3D::ShaderProgramLayout *), ShaderProgramLayout, GetShaderProgramLayout);
 %csattribute(Urho3D::PipelineState, %arg(unsigned int), ShaderID, GetShaderID);
 %csattribute(Urho3D::ConstantBuffer, %arg(unsigned int), Size, GetSize, SetSize);
 %csattribute(Urho3D::Geometry, %arg(ea::vector<SharedPtr<VertexBuffer>>), VertexBuffers, GetVertexBuffers, SetVertexBuffers);

@@ -289,15 +289,15 @@ public:
 
     /// Getters
     /// @{
-    bool IsValid() const { return !!shaderProgramLayout_; }
+    bool IsValid() const { return !!reflection_; }
     const PipelineStateDesc& GetDesc() const { return desc_; }
-    ShaderProgramLayout* GetShaderProgramLayout() const { return shaderProgramLayout_; }
-    unsigned GetShaderID() const { return shaderProgramLayout_->GetObjectID(); }
+    ShaderProgramLayout* GetReflection() const { return reflection_; }
+    unsigned GetShaderID() const { return reflection_->GetObjectID(); }
     /// @}
 
     /// Create Shader Resource Binding
     Urho3D::ShaderResourceBinding* CreateSRB();
-    Diligent::IPipelineState* GetHandle() const { return const_cast<Diligent::IPipelineState*>(pipeline_.RawPtr()); }
+    Diligent::IPipelineState* GetHandle() const { return const_cast<Diligent::IPipelineState*>(handle_.RawPtr()); }
 
 private:
     bool BuildPipeline(Graphics* graphics);
@@ -307,11 +307,11 @@ private:
     WeakPtr<PipelineStateCache> owner_;
     PipelineStateDesc desc_;
 
-    // TODO(diligent): Remove ShaderProgramLayout?
-    WeakPtr<ShaderProgramLayout> shaderProgramLayout_{};
-
     ea::vector<SharedPtr<Urho3D::ShaderResourceBinding>> shaderResourceBindings_;
-    Diligent::RefCntAutoPtr<Diligent::IPipelineState> pipeline_{};
+
+    Diligent::RefCntAutoPtr<Diligent::IPipelineState> handle_{};
+    // TODO(diligent): We may want to actually share reflection objects between pipeline states.
+    SharedPtr<ShaderProgramLayout> reflection_;
 };
 
 /// Generic pipeline state cache.

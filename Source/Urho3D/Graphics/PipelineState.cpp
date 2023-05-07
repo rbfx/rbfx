@@ -116,21 +116,19 @@ void PipelineState::Setup(const PipelineStateDesc& desc)
 
 void PipelineState::ResetCachedState()
 {
-    shaderProgramLayout_ = nullptr;
-    pipeline_ = nullptr;
+    handle_ = nullptr;
+    reflection_ = nullptr;
 }
 
 void PipelineState::RestoreCachedState(Graphics* graphics)
 {
-    if (!shaderProgramLayout_)
-        shaderProgramLayout_ = graphics->GetShaderProgramLayout(desc_.vertexShader_, desc_.pixelShader_);
-    if (!pipeline_)
+    if (!handle_ || !reflection_)
         BuildPipeline(graphics);
 }
 
 bool PipelineState::Apply(Graphics* graphics)
 {
-    if (!pipeline_)
+    if (!handle_)
         return false;
 
     graphics->SetPipelineState(this);
