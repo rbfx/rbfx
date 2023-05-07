@@ -234,6 +234,7 @@ bool ShaderProcessor::ProcessHLSL()
     shaderCI.SourceLength = sourceCode.length();
     shaderCI.EntryPoint = desc_.entryPoint_.c_str();
     shaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+    shaderCI.LoadConstantBufferReflection = true;
 
     std::vector<uint32_t> byteCode =
         GLSLangUtils::HLSLtoSPIRV(shaderCI, GLSLangUtils::SpirvVersion::Vk100, nullptr, nullptr);

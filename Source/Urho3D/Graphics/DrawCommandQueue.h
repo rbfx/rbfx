@@ -110,7 +110,7 @@ public:
 
         if (useConstantBuffers_)
         {
-            constantBuffers_.currentLayout_ = pipelineState->GetShaderProgramLayout();
+            constantBuffers_.currentLayout_ = pipelineState->GetReflection();
         }
     }
 
@@ -161,21 +161,21 @@ public:
     {
         if (useConstantBuffers_)
         {
-            const auto& paramInfo = constantBuffers_.currentLayout_->GetConstantBufferParameter(name);
-            if (paramInfo.offset_ != M_MAX_UNSIGNED)
+            const auto* paramInfo = constantBuffers_.currentLayout_->GetConstantBufferParameter(name);
+            if (paramInfo)
             {
-                if (constantBuffers_.currentGroup_ != paramInfo.group_)
+                if (constantBuffers_.currentGroup_ != paramInfo->group_)
                 {
                     URHO3D_LOGERROR("Shader parameter #{} '{}' shall be stored in group {} instead of group {}",
-                        name.Value(), name.Reverse(), constantBuffers_.currentGroup_, paramInfo.group_);
+                        name.Value(), name.Reverse(), constantBuffers_.currentGroup_, paramInfo->group_);
                     return;
                 }
 
-                if (!ConstantBufferCollection::StoreParameter(constantBuffers_.currentData_ + paramInfo.offset_,
-                    paramInfo.size_, value))
+                if (!ConstantBufferCollection::StoreParameter(constantBuffers_.currentData_ + paramInfo->offset_,
+                    paramInfo->size_, value))
                 {
                     URHO3D_LOGERROR("Shader parameter #{} '{}' has unexpected type, {} bytes expected",
-                        name.Value(), name.Reverse(), paramInfo.size_);
+                        name.Value(), name.Reverse(), paramInfo->size_);
                 }
             }
         }

@@ -102,6 +102,7 @@ bool ShaderCompiler::CompileSPIRV()
     ci.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
     ci.Source = desc_.sourceCode_.data();
     ci.EntryPoint = desc_.entryPoint_.data();
+    ci.LoadConstantBufferReflection = true;
     const char* extraDefine = R"(
 #ifndef VULKAN
 #   define VULKAN 1
