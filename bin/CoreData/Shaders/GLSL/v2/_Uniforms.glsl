@@ -190,8 +190,7 @@ UNIFORM_BUFFER_END(3, Light)
     UNIFORM(half4 cMatSpecColor) \
     UNIFORM(half2 cFadeOffsetScale) \
     UNIFORM(half cNormalScale) \
-    UNIFORM(half cDielectricReflectance) \
-    UNIFORM(half cAlphaCutoff)
+    UNIFORM(half cDielectricReflectance)
 
 /// Uniforms needed for planar reflections.
 /// cReflectionPlaneX: Dot with world normal to get distortion in screen texture X component.

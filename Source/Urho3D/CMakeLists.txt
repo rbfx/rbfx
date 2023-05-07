@@ -54,7 +54,7 @@ endmacro()
 define_engine_source_files (Container Core IO Math)
 
 if (NOT MINI_URHO)
-    define_engine_source_files (Audio Engine Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility)
+    define_engine_source_files (Audio Engine Input Plugins RenderPipeline Resource Scene Script Shader UI Utility)
     define_engine_source_files (NORECURSE . Graphics)
     list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
     if (URHO3D_OPENGL)

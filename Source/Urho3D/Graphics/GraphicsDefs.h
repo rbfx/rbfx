@@ -247,7 +247,6 @@ struct URHO3D_API VertexElement
     /// Offset of element from vertex start. Filled by VertexBuffer once the vertex declaration is built.
     unsigned offset_;
     /// Location of element, used by Diligent on OpenGL
-    /// TODO(diligent): Remove this
     unsigned location_;
 };
 

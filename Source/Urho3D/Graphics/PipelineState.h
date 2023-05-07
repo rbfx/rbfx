@@ -87,21 +87,6 @@ private:
     }
 };
 
-/// Vertex element with additional buffer information.
-struct VertexElementInBuffer : public VertexElement
-{
-    /// Source buffer index.
-    unsigned bufferIndex_{};
-    /// Source buffer stride.
-    unsigned bufferStride_{};
-
-    VertexElementInBuffer() = default;
-    VertexElementInBuffer(const VertexElement& element)
-        : VertexElement(element)
-    {
-    }
-};
-
 /// Description structure used to create PipelineState.
 /// Should contain all relevant information about input layout,
 /// shader resources and parameters and pipeline configuration.
@@ -109,8 +94,7 @@ struct VertexElementInBuffer : public VertexElement
 /// TODO: Store render target formats here as well
 struct PipelineStateDesc
 {
-    /// Some vertex elements in layout may be unused and the hard GPU limit is only applied to the used ones.
-    static const unsigned MaxNumVertexElements = 2 * Diligent::MAX_LAYOUT_ELEMENTS;
+    static const unsigned MaxNumVertexElements = Diligent::MAX_LAYOUT_ELEMENTS;
 
     /// Debug
     /// @{
@@ -122,22 +106,11 @@ struct PipelineStateDesc
     /// Input layout
     /// @{
     unsigned numVertexElements_{};
-    ea::array<VertexElementInBuffer, MaxNumVertexElements> vertexElements_;
+    ea::array<VertexElement, MaxNumVertexElements> vertexElements_;
     IndexBufferType indexType_{};
 
     void InitializeInputLayout(const GeometryBufferArray& buffers);
     void InitializeInputLayoutAndPrimitiveType(const Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
-
-    ea::span<const VertexElementInBuffer> GetVertexElements() const
-    {
-        return {vertexElements_.data(), numVertexElements_};
-    }
-    /// @}
-
-    /// Render Target Formats
-    /// @{
-    ea::vector<unsigned> renderTargetsFormats_{};
-    unsigned depthStencilFormat_{};
     /// @}
 
     /// Render Target Formats
@@ -303,12 +276,7 @@ public:
 
     /// Create Shader Resource Binding
     Urho3D::ShaderResourceBinding* CreateSRB();
-<<<<<<< HEAD
     Diligent::RefCntAutoPtr<Diligent::IPipelineState> GetGPUPipeline() const { return pipeline_; }
-=======
-    Diligent::IPipelineState* GetHandle() const { return const_cast<Diligent::IPipelineState*>(pipeline_.RawPtr()); }
-
->>>>>>> 69a840a50571520e3c7b82761212d04a6c215536
 private:
     bool BuildPipeline(Graphics* graphics);
     Urho3D::ShaderResourceBinding* CreateInternalSRB();
@@ -316,8 +284,6 @@ private:
 
     WeakPtr<PipelineStateCache> owner_;
     PipelineStateDesc desc_;
-
-    // TODO(diligent): Remove ShaderProgramLayout?
     WeakPtr<ShaderProgramLayout> shaderProgramLayout_{};
 
     ea::vector<SharedPtr<Urho3D::ShaderResourceBinding>> shaderResourceBindings_;
@@ -352,11 +318,8 @@ public:
     void SetCacheDir(const FileIdentifier& path);
     /// Get Pipeline State Cache directory.
     const FileIdentifier& GetCacheDir() const { return cacheDir_; }
-<<<<<<< HEAD
     /// Get GPU Pipeline cache device object.
     Diligent::RefCntAutoPtr<Diligent::IDeviceObject> GetGPUPipelineCache() { return object_; }
-=======
->>>>>>> 69a840a50571520e3c7b82761212d04a6c215536
 private:
     /// GPUObject callbacks
     /// @{

@@ -129,73 +129,6 @@ typedef struct _CrtMemBlockHeader
 namespace Urho3D
 {
 
-namespace
-{
-
-/// TODO(diligent): Extract it from Engine.cpp
-RenderBackend GetDefaultRenderBackend()
-{
-#if URHO3D_PLATFORM_WINDOWS
-    return RENDER_D3D11;
-#endif
-#if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
-    return RENDER_D3D11;
-#endif
-
-#if URHO3D_PLATFORM_LINUX
-    return RENDER_GL;
-#endif
-#if URHO3D_PLATFORM_ANDROID
-    return RENDER_GL;
-#endif
-#if URHO3D_PLATFORM_RASPBERRY_PI
-    return RENDER_GL;
-#endif
-
-#if URHO3D_PLATFORM_MACOS
-    // TODO(diligent): Replace with Metal/Vulkan later?
-    return RENDER_GL;
-#endif
-#if URHO3D_PLATFORM_IOS
-    return RENDER_GL;
-#endif
-#if URHO3D_PLATFORM_TVOS
-    return RENDER_GL;
-#endif
-
-#if URHO3D_PLATFORM_WEB
-    return RENDER_GL;
-#endif
-}
-
-RenderBackend GetRenderBackend(const Variant& requestedValue)
-{
-    RenderBackend backend = GetDefaultRenderBackend();
-    if (requestedValue.GetType() == VAR_INT)
-    {
-        const RenderBackend requestedBackend = static_cast<RenderBackend>(requestedValue.GetInt());
-#if D3D11_SUPPORTED
-        if (requestedBackend == RENDER_D3D11)
-            backend = RENDER_D3D11;
-#endif
-#if D3D12_SUPPORTED
-        if (requestedBackend == RENDER_D3D12)
-            backend = RENDER_D3D12;
-#endif
-#if GL_SUPPORTED || GLES_SUPPORTED
-        if (requestedBackend == RENDER_GL)
-            backend = RENDER_GL;
-#endif
-#if VULKAN_SUPPORTED
-        if (requestedBackend == RENDER_VULKAN)
-            backend = RENDER_VULKAN;
-#endif
-    }
-    return backend;
-}
-
-}
-
 extern const char* logLevelNames[];
 
 Engine::Engine(Context* context) :
@@ -400,7 +333,35 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         graphics->SetPolicyGLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_GLSL).GetInt()));
         graphics->SetPolicyHLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_HLSL).GetInt()));
 
-        const RenderBackend renderBackend = GetRenderBackend(GetParameter(EP_RENDER_BACKEND));
+        RenderBackend renderBackend = RENDER_D3D11;
+#ifndef WIN32
+        renderBackend = RENDER_GL;
+#endif
+
+        ea::string renderBackendValue = GetParameter(EP_RENDER_BACKEND).GetString();
+        if (renderBackendValue == "D3D11")
+        {
+#ifdef WIN32
+            renderBackend = RENDER_D3D11;
+#endif
+        }
+        else if (renderBackendValue == "D3D12")
+        {
+#ifdef WIN32
+            renderBackend = RENDER_D3D12;
+#endif
+        }
+        else if (renderBackendValue == "Vulkan")
+        {
+            renderBackend = RENDER_VULKAN;
+        }
+#if defined(PLATFORM_IOS) || defined(PLATFORM_MACOS) || defined(PLATFORM_TVOS)
+        else if (renderBackendValue == "Metal")
+        {
+            renderBackend = RENDER_METAL;
+        }
+#endif
+
         graphics->SetRenderBackend(renderBackend);
         auto adapterIdParam = GetParameter(EP_RENDER_ADAPTER_ID);
         if (adapterIdParam != Variant::EMPTY)
@@ -921,7 +882,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
         return opt;
     };
 
-    auto addFlag = [&](const char* name, const ea::string& param, const Variant& value, const char* description) {
+    auto addFlag = [&](const char* name, const ea::string& param, bool value, const char* description) {
         CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
@@ -1055,11 +1016,6 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->type_name("plugin1;plugin2;...");
     addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->type_name("plugin");
     addFlag("--log-shader-sources", EP_SHADER_LOG_SOURCES, true, "Log shader sources into shader cache directory");
-
-    addFlag("--d3d11", EP_RENDER_BACKEND, static_cast<int>(RENDER_D3D11), "Use Direct3D11 rendering backend");
-    addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RENDER_D3D12), "Use Direct3D12 rendering backend");
-    addFlag("--opengl", EP_RENDER_BACKEND, static_cast<int>(RENDER_GL), "Use OpenGL rendering backend");
-    addFlag("--vulkan", EP_RENDER_BACKEND, static_cast<int>(RENDER_VULKAN), "Use Vulkan rendering backend");
 }
 #endif
 
@@ -1152,10 +1108,6 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
     engineParameters_->DefineVariable(EP_PSO_CACHE_DIR, "conf://psocache.bin");
-<<<<<<< HEAD
-=======
-    engineParameters_->DefineVariable(EP_RENDER_BACKEND, Variant::EMPTY);
->>>>>>> 69a840a50571520e3c7b82761212d04a6c215536
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
