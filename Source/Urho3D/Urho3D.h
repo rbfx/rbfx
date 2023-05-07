@@ -109,25 +109,60 @@
 #   undef URHO3D_SSE
 #endif
 
-// Macro Workaround for Diligent
+// Platform identification macros.
 #if defined(__ANDROID__)
-    #define PLATFORM_ANDROID 1
+    #define URHO3D_PLATFORM_ANDROID 1
 #elif defined(IOS)
-    #define PLATFORM_IOS 1
+    #define URHO3D_PLATFORM_IOS 1
 #elif defined(TVOS)
-    #define PLATFORM_TVOS 1
+    #define URHO3D_PLATFORM_TVOS 1
 #elif defined(__APPLE__)
-    #define PLATFORM_MACOS 1
+    #define URHO3D_PLATFORM_MACOS 1
 #elif UWP
-    #define PLATFORM_UNIVERSAL_WINDOWS 1
+    #define URHO3D_PLATFORM_UNIVERSAL_WINDOWS 1
 #elif defined(_WIN32)
-    #define PLATFORM_WIN32 1
+    #define URHO3D_PLATFORM_WINDOWS 1
 #elif defined(RPI)
-    #define PLATFORM_LINUX 1 // As workaround, we use PLATFORM_LINUX for raspberry
+    #define URHO3D_PLATFORM_RASPBERRY_PI 1
 #elif defined(__EMSCRIPTEN__)
-    #define PLATFORM_EMSCRIPTEN 1
+    #define URHO3D_PLATFORM_WEB 1
 #elif defined(__linux__)
-    #define PLATFORM_LINUX 1
+    #define URHO3D_PLATFORM_LINUX 1
 #else
     #error Unsupported platform
 #endif
+
+// Diligent platform defines.
+// TODO(diligent): Why do we need those here?
+#if URHO3D_PLATFORM_WINDOWS
+    #define PLATFORM_WIN32 1
+#endif
+#if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
+    #define PLATFORM_UNIVERSAL_WINDOWS 1
+#endif
+
+#if URHO3D_PLATFORM_LINUX
+    #define PLATFORM_LINUX 1
+#endif
+#if URHO3D_PLATFORM_ANDROID
+    #define PLATFORM_ANDROID 1
+#endif
+#if URHO3D_PLATFORM_RASPBERRY_PI
+    // As workaround, we use PLATFORM_LINUX for raspberry pi
+    #define PLATFORM_LINUX 1
+#endif
+
+#if URHO3D_PLATFORM_MACOS
+    #define PLATFORM_MACOS 1
+#endif
+#if URHO3D_PLATFORM_IOS
+    #define PLATFORM_IOS 1
+#endif
+#if URHO3D_PLATFORM_TVOS
+    #define PLATFORM_TVOS 1
+#endif
+
+#if URHO3D_PLATFORM_WEB
+    #define PLATFORM_EMSCRIPTEN 1
+#endif
+

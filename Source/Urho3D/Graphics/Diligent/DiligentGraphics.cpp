@@ -44,6 +44,7 @@
 #include "../../IO/File.h"
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
+#include "../../RenderAPI/OpenGLIncludes.h"
 
 #include <Diligent/Platforms/interface/PlatformDefinitions.h>
 #include <Diligent/Primitives/interface/CommonDefinitions.h>
@@ -73,6 +74,7 @@
 
 // OpenGL includes
 #if GL_SUPPORTED || GLES_SUPPORTED
+<<<<<<< HEAD
     #if defined(IOS) || defined(TVOS)
         #include <OpenGLES/ES3/gl.h>
         #include <OpenGLES/ES3/glext.h>
@@ -84,6 +86,8 @@
     #else
         #include <GL/glew.h>
     #endif
+=======
+>>>>>>> 69a840a50571520e3c7b82761212d04a6c215536
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
@@ -1080,6 +1084,7 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 
 void Graphics::SetPipelineState(PipelineState* pipelineState)
 {
+<<<<<<< HEAD
     using namespace Diligent;
     void* pipelineObj = pipelineState->GetGPUPipeline();
     assert(pipelineObj);
@@ -1098,6 +1103,11 @@ void Graphics::SetPipelineState(PipelineState* pipelineState)
     {
         impl_->depthStateDirty_ = true;
     }
+=======
+    impl_->deviceContext_->SetPipelineState(pipelineState->GetHandle());
+
+    // TODO(diligent): We shouldn't need it cached
+>>>>>>> 69a840a50571520e3c7b82761212d04a6c215536
     pipelineState_ = pipelineState;
 }
 

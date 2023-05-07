@@ -1313,6 +1313,7 @@ void Material::ResetToDefaults()
     SetShaderParameter("Metallic", 1.0f);
     SetShaderParameter("DielectricReflectance", 0.5f);
     SetShaderParameter("NormalScale", 1.0f);
+    SetShaderParameter("AlphaCutoff", 0.5f);
     batchedParameterUpdate_ = false;
 
     cullMode_ = CULL_CCW;

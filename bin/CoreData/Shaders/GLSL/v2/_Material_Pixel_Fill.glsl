@@ -160,7 +160,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
 #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
     half4 albedoInput = texture2D(sDiffMap, vTexCoord);
     #ifdef ALPHAMASK
-        if (albedoInput.a < 0.5)
+        if (albedoInput.a < cAlphaCutoff)
             discard;
     #endif
 
