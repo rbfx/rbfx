@@ -39,16 +39,17 @@
 
 namespace Urho3D
 {
-    using namespace Diligent;
-bool ComputeDevice_ClearUAV(ID3D11UnorderedAccessView* view, ID3D11UnorderedAccessView** table, size_t tableSize)
+
+using namespace Diligent;
+bool ComputeDevice_ClearResource(IDeviceObject* view, ea::unordered_map<ea::string, RefCntAutoPtr<IDeviceObject>>& resources)
 {
     bool changedAny = false;
-    for (size_t i = 0; i < tableSize; ++i)
+    for (auto it : resources)
     {
-        if (table[i] == view)
+        if (it.second == view)
         {
-            table[i] = nullptr;
             changedAny = true;
+            resources.erase(it.first);
         }
     }
     return changedAny;
@@ -61,11 +62,6 @@ void ComputeDevice::Init()
 void ComputeDevice::HandleEngineInitialization(StringHash eventType, VariantMap& eventData)
 {
     psoCache_ = GetSubsystem<PipelineStateCache>();
-    ResourceMappingDesc desc = {};
-    desc.pEntries = nullptr;
-    graphics_->GetImpl()->GetDevice()->CreateResourceMapping(desc, &resourceMapping_);
-    URHO3D_ASSERTLOG(resourceMapping_, "Error when create ResourceMapping.");
-
     resourcesDirty_ = true;
 }
 
@@ -78,10 +74,10 @@ bool ComputeDevice::SetReadTexture(Texture* texture, CD_UNIT textureSlot)
 {
     if (texture == nullptr)
     {
-        if (resourceMapping_->GetResource(textureSlot.c_str()))
+        if (resources_.contains(textureSlot))
             resourcesDirty_ = true;
 
-        resourceMapping_->RemoveResourceByName(textureSlot.c_str());
+        resources_[textureSlot] = nullptr;
         return true;
     }
 
@@ -91,12 +87,13 @@ bool ComputeDevice::SetReadTexture(Texture* texture, CD_UNIT textureSlot)
     RefCntAutoPtr<IDeviceObject> textureObj = texture->GetShaderResourceView();
     RefCntAutoPtr<IDeviceObject> sampler = texture->GetSampler();
 
-    if (resourceMapping_->GetResource(textureSlot.c_str()) == textureObj)
+    auto foundRes = resources_.find(textureSlot);
+    if (foundRes != resources_.end() && foundRes->second == textureObj)
         return true;
 
-    resourceMapping_->AddResource(textureSlot.c_str(), textureObj, false);
+    resources_[textureSlot] = textureObj;
     // Name convention by the SPIRV-Reflect
-    resourceMapping_->AddResource(Format("_{}_sampler", textureSlot).c_str(), sampler, false);
+    resources_[Format("_{}_sampler", textureSlot)] = sampler;
 
     resourcesDirty_ = true;
     return true;
@@ -106,19 +103,20 @@ bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, CD_UNIT cbufferSlo
 {
     if (buffer == nullptr)
     {
-        if (resourceMapping_->GetResource(cbufferSlot.c_str()))
+        if (resources_.contains(cbufferSlot))
             resourcesDirty_ = true;
 
-        resourceMapping_->RemoveResourceByName(cbufferSlot.c_str());
+        resources_[cbufferSlot] = nullptr;
         return true;
     }
 
     RefCntAutoPtr<IDeviceObject> bufferObj = buffer->GetGPUObject();
 
-    if (resourceMapping_->GetResource(cbufferSlot.c_str()) == bufferObj)
+    auto foundRes = resources_.find(cbufferSlot.c_str());
+    if (foundRes != resources_.end() && foundRes->second == bufferObj)
         return true;
 
-    resourceMapping_->AddResource(cbufferSlot.c_str(), bufferObj, false);
+    resources_[cbufferSlot] = bufferObj;
     resourcesDirty_ = true;
 
     return true;
@@ -129,10 +127,10 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, CD_UNIT textureSlot, unsig
     // If null then clear and mark.
     if (texture == nullptr)
     {
-        if (resourceMapping_->GetResource(textureSlot.c_str()))
+        if (resources_.contains(textureSlot))
             resourcesDirty_ = true;
 
-        resourceMapping_->RemoveResourceByName(textureSlot.c_str());
+        resources_[textureSlot] = nullptr;
         return true;
     }
 
@@ -151,7 +149,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, CD_UNIT textureSlot, unsig
         {
             if (entry.face_ == faceIndex && entry.mipLevel_ == mipLevel)
             {
-                resourceMapping_->AddResource(textureSlot.c_str(), entry.uav_, false);
+                resources_[textureSlot] = entry.uav_;
                 resourcesDirty_ = true;
                 return true;
             }
@@ -227,8 +225,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, CD_UNIT textureSlot, unsig
         SubscribeToEvent(texture, E_GPURESOURCERELEASED, URHO3D_HANDLER(ComputeDevice, HandleGPUResourceRelease));
     }
 
-
-    resourceMapping_->AddResource(textureSlot.c_str(), view, false);
+    resources_[textureSlot] = view;
     resourcesDirty_ = true;
 
     return true;
@@ -239,10 +236,10 @@ bool ComputeDevice::SetWritableBuffer(Object* object, CD_UNIT slot)
     // If null then clear and mark.
     if (object == nullptr)
     {
-        if (resourceMapping_->GetResource(slot.c_str()))
+        if (resources_.contains(slot))
             resourcesDirty_ = true;
 
-        resourceMapping_->RemoveResourceByName(slot.c_str());
+        resources_[slot] = nullptr;
         return true;
     }
 
@@ -250,18 +247,20 @@ bool ComputeDevice::SetWritableBuffer(Object* object, CD_UNIT slot)
     if (auto structuredBuffer = object->Cast<ComputeBuffer>())
     {
         auto uav = structuredBuffer->GetUAV();
-        if (resourceMapping_->GetResource(slot.c_str()) == uav)
+        auto foundRes = resources_.find(slot);
+        if (foundRes != resources_.end() && foundRes->second == uav)
             return true;
-        resourceMapping_->AddResource(slot.c_str(), structuredBuffer->GetUAV(), false);
+        resources_[slot] = structuredBuffer->GetUAV();
         return resourcesDirty_ = true;
     }
 
     auto found = constructedBufferUAVs_.find(WeakPtr(object));
     if (found != constructedBufferUAVs_.end())
     {
-        if (resourceMapping_->GetResource(slot.c_str()) == found->second)
+        auto foundRes = resources_.find(slot);
+        if (foundRes != resources_.end() && foundRes->second == found->second)
             return true;
-        resourceMapping_->AddResource(slot.c_str(), found->second, false);
+        resources_[slot] = found->second;
         return resourcesDirty_ = true;
     }
 
@@ -319,7 +318,7 @@ bool ComputeDevice::SetWritableBuffer(Object* object, CD_UNIT slot)
 
     constructedBufferUAVs_.insert({WeakPtr(object), view});
 
-    resourceMapping_->AddResource(slot.c_str(), view, false);
+    resources_[slot] = view;
 
     return resourcesDirty_ = true;
 }
@@ -379,9 +378,18 @@ bool ComputeDevice::BuildPipeline()
 void ComputeDevice::ApplyBindings()
 {
     auto ctx = graphics_->GetImpl()->GetDeviceContext();
+    auto device = graphics_->GetImpl()->GetDevice();
 
-    if(resourcesDirty_)
-        srb_->BindResources(SHADER_TYPE_COMPUTE, resourceMapping_, BIND_SHADER_RESOURCES_UPDATE_ALL | BIND_SHADER_RESOURCES_ALLOW_OVERWRITE);
+    if (resourcesDirty_) {
+        RefCntAutoPtr<IResourceMapping> resMapping;
+        device->CreateResourceMapping(ResourceMappingDesc{}, &resMapping);
+
+        URHO3D_ASSERTLOG(resMapping, "Can create resource mapping object.");
+        for (auto it : resources_)
+            resMapping->AddResource(it.first.c_str(), it.second, false);
+
+        srb_->BindResources(SHADER_TYPE_COMPUTE, resMapping, BIND_SHADER_RESOURCES_UPDATE_ALL | BIND_SHADER_RESOURCES_ALLOW_OVERWRITE);
+    }
     resourcesDirty_ = false;
 
     ctx->SetPipelineState(pipeline_);
@@ -433,7 +441,7 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
 
 void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData)
 {
-    /*SharedPtr<Object> object(dynamic_cast<Object*>(eventData["GPUObject"].GetPtr()));
+    SharedPtr<Object> object(dynamic_cast<Object*>(eventData["GPUObject"].GetPtr()));
     if (object == nullptr)
         return;
     void* gpuObject = ((GPUObject*)object.Get())->GetGPUObject();
@@ -445,8 +453,7 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
 
         for (auto& entry : foundUAV->second)
         {
-            uavsDirty_ |= ComputeDevice_ClearUAV(entry.uav_, uavs_, MAX_COMPUTE_WRITE_TARGETS);
-            URHO3D_SAFE_RELEASE(entry.uav_);
+            resourcesDirty_ |= ComputeDevice_ClearResource(entry.uav_, resources_);
         }
 
         constructedUAVs_.erase(foundUAV);
@@ -455,29 +462,12 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
     auto foundBuffUAV = constructedBufferUAVs_.find(object);
     if (foundBuffUAV != constructedBufferUAVs_.end())
     {
-        for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-        {
-            if (shaderResourceViews_[i] == gpuObject)
-            {
-                shaderResourceViews_[i] = nullptr;
-                texturesDirty_ = true;
-            }
-        }
-
-        for (unsigned i = 0; i < MAX_COMPUTE_WRITE_TARGETS; ++i)
-        {
-            if (uavs_[i] == foundBuffUAV->second)
-            {
-                uavs_[i] = nullptr;
-                uavsDirty_ = true;
-            }
-        }
-
-        URHO3D_SAFE_RELEASE(foundBuffUAV->second);
+        resourcesDirty_ |= ComputeDevice_ClearResource(foundBuffUAV->second, resources_);
         constructedBufferUAVs_.erase(foundBuffUAV);
     }
 
-    UnsubscribeFromEvent(object.Get(), E_GPURESOURCERELEASED);*/
+    UnsubscribeFromEvent(object.Get(), E_GPURESOURCERELEASED);
+    
 }
 
 void ComputeDevice::ReleaseLocalState()
@@ -485,10 +475,10 @@ void ComputeDevice::ReleaseLocalState()
     constructedUAVs_.clear();
     constructedBufferUAVs_.clear();
     cachedPipelines_.clear();
+    resources_.clear();
 
     pipeline_ = nullptr;
     srb_ = nullptr;
-    resourceMapping_ = nullptr;
 }
 
 } // namespace Urho3D

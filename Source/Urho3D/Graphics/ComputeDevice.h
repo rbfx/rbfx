@@ -54,11 +54,13 @@ class ShaderVariation;
 class Texture;
 class VertexBuffer;
 
-// CD_UNIT == Comput Device Unit
+// CD_UNIT == Comput Device - Binding Unit
 #ifdef URHO3D_DILIGENT
-#define CD_UNIT const ea::string&
+#define CD_UNIT_TYPE ea::string
+#define CD_UNIT const CD_UNIT_TYPE&
 #else
-#define CD_UNIT unsigned 
+#define CD_UNIT_TYPE unsigned
+#define CD_UNIT CD_UNIT_TYPE 
 #endif
 
 //  On devices created at a Feature Level D3D_FEATURE_LEVEL_11_0, the maximum Compute Shader Unordered Access View slot is 7.
@@ -148,7 +150,7 @@ private:
     eastl::map<WeakPtr<Object>, Diligent::RefCntAutoPtr<Diligent::IDeviceObject>> constructedBufferUAVs_;
 
     /// Table of bounded resources
-    Diligent::RefCntAutoPtr<Diligent::IResourceMapping> resourceMapping_{};
+    ea::unordered_map<ea::string, Diligent::RefCntAutoPtr<Diligent::IDeviceObject>> resources_{};
 
     /// Current Compute Pipeline
     Diligent::RefCntAutoPtr<Diligent::IPipelineState> pipeline_{};
