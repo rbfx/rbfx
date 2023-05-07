@@ -389,6 +389,7 @@ function(spirv_tools_default_target_options target)
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE ${GENERATOR_OUTPUT_DIRECTORY}
     PRIVATE ${SPIRV_HEADER_INCLUDE_DIR}
+    PRIVATE .
   )
   set_property(TARGET ${target} PROPERTY FOLDER "SPIRV-Tools libraries")
   spvtools_check_symbol_exports(${target})

@@ -262,6 +262,7 @@ target_include_directories(SPIRV-Tools-opt
 	$<BUILD_INTERFACE:${SPIRV_HEADER_INCLUDE_DIR}>
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   PRIVATE ${GENERATOR_OUTPUT_DIRECTORY}
+  PRIVATE .
 )
 # We need the assembling and disassembling functionalities in the main library.
 target_link_libraries(SPIRV-Tools-opt
