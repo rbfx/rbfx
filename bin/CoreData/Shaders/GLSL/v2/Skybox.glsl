@@ -1,3 +1,4 @@
+#define URHO3D_DISABLE_TEXTURES
 #ifndef UNLIT
     #define UNLIT
 #endif
@@ -9,6 +10,8 @@
 
 #include "_VertexTransform.glsl"
 #include "_GammaCorrection.glsl"
+
+SAMPLER(0, samplerCube sDiffMap)
 
 VERTEX_OUTPUT_HIGHP(vec3 vTexCoord)
 
@@ -28,6 +31,6 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-    gl_FragColor = GammaToLightSpaceAlpha(cMatDiffColor) * DiffMap_ToLight(textureCube(sDiffCubeMap, vTexCoord));
+    gl_FragColor = GammaToLightSpaceAlpha(cMatDiffColor) * DiffMap_ToLight(textureCube(sDiffMap, vTexCoord));
 }
 #endif

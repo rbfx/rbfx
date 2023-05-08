@@ -25,13 +25,15 @@
 #include "./PipelineState.h"
 #include "./ShaderResourceBinding.h"
 
+#include <EASTL/fixed_vector.h>
+
 namespace Urho3D
 {
 struct ShaderResourceBindingCacheCreateInfo
 {
     PipelineState* pipeline_{};
     ea::array<ConstantBuffer*, MAX_SHADER_PARAMETER_GROUPS> constantBuffers_{};
-    ea::array<Texture*, MAX_TEXTURE_UNITS> textures_{};
+    ea::fixed_vector<ea::pair<StringHash, Texture*>, MAX_TEXTURE_UNITS> textures_;
 
     unsigned hash_{0u};
     unsigned ToHash()
@@ -44,8 +46,11 @@ struct ShaderResourceBindingCacheCreateInfo
         }
         for (unsigned i = 0; i < textures_.size(); ++i)
         {
-            if (textures_[i] != nullptr)
-                CombineHash(hash_, (unsigned long long)textures_[i]);
+            if (textures_[i].second != nullptr)
+            {
+                CombineHash(hash_, (unsigned long long)textures_[i].first.Value());
+                CombineHash(hash_, (unsigned long long)textures_[i].second);
+            }
         }
         return hash_;
     }
@@ -54,9 +59,7 @@ struct ShaderResourceBindingCacheCreateInfo
 
     void ResetTextures()
     {
-        unsigned i = MAX_TEXTURE_UNITS;
-        while (i--)
-            textures_[i] = nullptr;
+        textures_.clear();
     }
     void ResetConstantBuffers()
     {

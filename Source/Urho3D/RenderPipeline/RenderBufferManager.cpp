@@ -486,12 +486,12 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     if (params.bindSecondaryColorToDiffuse_)
     {
         if (Texture2D* secondaryColor = GetSecondaryColorTexture())
-            drawQueue_->AddShaderResource(TU_DIFFUSE, secondaryColor);
+            drawQueue_->AddShaderResource(ShaderResources::DiffMap, secondaryColor);
     }
     for (const ShaderResourceDesc& shaderResource : params.resources_)
     {
-        if (!params.bindSecondaryColorToDiffuse_ || shaderResource.unit_ != TU_DIFFUSE)
-            drawQueue_->AddShaderResource(shaderResource.unit_, shaderResource.texture_);
+        if (!params.bindSecondaryColorToDiffuse_ || shaderResource.name_ != ShaderResources::DiffMap)
+            drawQueue_->AddShaderResource(shaderResource.name_, shaderResource.texture_);
     }
     drawQueue_->CommitShaderResources();
 
@@ -706,7 +706,7 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Textur
     const IntRect effectiveSourceRect = sourceRect != IntRect::ZERO ? sourceRect : sourceTexture->GetRect();
     callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(sourceTexture->GetSize(), effectiveSourceRect);
 
-    const ShaderResourceDesc shaderResources[] = { { TU_DIFFUSE, sourceTexture } };
+    const ShaderResourceDesc shaderResources[] = { { ShaderResources::DiffMap, sourceTexture } };
     callParams.resources_ = shaderResources;
 
     DrawQuad(debugComment, callParams, flipVertical);

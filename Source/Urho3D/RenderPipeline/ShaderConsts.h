@@ -109,4 +109,21 @@ namespace ShaderConsts
     URHO3D_SHADER_CONST(Object, SkinMatrices);
 };
 
+/// Built-in shader resources.
+/// See _Samplers.glsl for descriptions.
+namespace ShaderResources
+{
+    // TODO(diligent): Revisit names
+    URHO3D_SHADER_RESOURCE(DiffMap);
+    URHO3D_SHADER_RESOURCE(NormalMap);
+    URHO3D_SHADER_RESOURCE(SpecMap);
+    URHO3D_SHADER_RESOURCE(EmissiveMap);
+    URHO3D_SHADER_RESOURCE(EnvMap);
+    URHO3D_SHADER_RESOURCE(LightRampMap);
+    URHO3D_SHADER_RESOURCE(LightSpotMap);
+    URHO3D_SHADER_RESOURCE(ShadowMap);
+    URHO3D_SHADER_RESOURCE(DepthBuffer);
+    URHO3D_SHADER_RESOURCE(ZoneCubeMap);
+}
+
 }

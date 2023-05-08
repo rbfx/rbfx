@@ -34,7 +34,7 @@
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
 #include "Urho3D/IO/VirtualFileSystem.h"
-
+#include "Urho3D/Shader/ShaderSourceLogger.h"
 
 #include "../../DebugNew.h"
 
@@ -273,6 +273,8 @@ bool ShaderVariation::Compile()
     compilerDesc.name_ = name_;
     compilerDesc.sourceCode_ = processor.GetOutputCode();
     compilerDesc.type_ = type_;
+
+    LogShaderSource(owner_->GetName(), type_, defines_, compilerDesc.sourceCode_, "txt");
 
     RefCntAutoPtr<IShader> shader;
 

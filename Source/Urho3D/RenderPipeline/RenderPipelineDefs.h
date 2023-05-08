@@ -46,6 +46,9 @@ struct UIBatchStateCreateContext;
 /// Macro to define shader constant name. Group name doesn't serve any functional purpose.
 #define URHO3D_SHADER_CONST(group, name) URHO3D_GLOBAL_CONSTANT(ConstString group##_##name{#name})
 
+/// Macro to define shader resource name.
+#define URHO3D_SHADER_RESOURCE(name) URHO3D_GLOBAL_CONSTANT(ConstString name{#name})
+
 /// Common parameters of rendered frame.
 struct CommonFrameInfo
 {

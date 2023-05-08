@@ -39,33 +39,19 @@ DrawCommandQueue::DrawCommandQueue(Graphics* graphics)
     cbufferManager_ = graphics->GetSubsystem<ConstantBufferManager>();
 }
 
-void DrawCommandQueue::Reset(bool preferConstantBuffers)
+void DrawCommandQueue::Reset()
 {
-    useConstantBuffers_ = preferConstantBuffers
-        ? graphics_->GetCaps().constantBuffersSupported_
-        : !graphics_->GetCaps().globalUniformsSupported_;
-
     // Reset state accumulators
     currentDrawCommand_ = {};
     currentShaderResourceGroup_ = {};
 
     // Clear shadep parameters
-    if (useConstantBuffers_)
-    {
-        constantBuffers_.collection_.ClearAndInitialize(graphics_->GetCaps().constantBufferOffsetAlignment_);
-        constantBuffers_.currentLayout_ = nullptr;
-        constantBuffers_.currentData_ = nullptr;
-        constantBuffers_.currentHashes_.fill(0);
+    constantBuffers_.collection_.ClearAndInitialize(graphics_->GetCaps().constantBufferOffsetAlignment_);
+    constantBuffers_.currentLayout_ = nullptr;
+    constantBuffers_.currentData_ = nullptr;
+    constantBuffers_.currentHashes_.fill(0);
 
-        currentDrawCommand_.constantBuffers_.fill({});
-    }
-    else
-    {
-        shaderParameters_.collection_.Clear();
-        shaderParameters_.currentGroupRange_ = {};
-
-        currentDrawCommand_.shaderParameters_.fill({});
-    }
+    currentDrawCommand_.constantBuffers_.fill({});
 
     currentDrawCommand_.cbufferTicketIds_.fill(M_MAX_UNSIGNED);
 
@@ -84,11 +70,9 @@ void DrawCommandQueue::Execute()
     // Constant buffers to store all shader parameters for queue
     ea::vector<SharedPtr<ConstantBuffer>> constantBuffers;
 
-    // Utility to set shader parameters if constant buffers are not used
-    const SharedParameterSetter shaderParameterSetter{ graphics_ };
-
     // Cached current state
     PipelineState* currentPipelineState = nullptr;
+    ShaderProgramLayout* currentShaderReflection = nullptr;
     IndexBuffer* currentIndexBuffer = nullptr;
     ea::array<VertexBuffer*, MAX_VERTEX_STREAMS> currentVertexBuffers{};
     ShaderResourceRange currentShaderResources;
@@ -110,6 +94,7 @@ void DrawCommandQueue::Execute()
             if (!cmd.pipelineState_->Apply(graphics_))
                 continue;
             currentPipelineState = cmd.pipelineState_;
+            currentShaderReflection = cmd.pipelineState_->GetReflection();
             currentPrimitiveType = currentPipelineState->GetDesc().primitiveType_;
             // Reset current shader resources because of HasTextureUnit check below
             currentShaderResources = {};
@@ -191,9 +176,9 @@ void DrawCommandQueue::Execute()
                 return false;
             };
             for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i) {
-                const auto& unitAndResource = shaderResources_[i];
-                Texture* texture = unitAndResource.texture_;
-                if (texture && HasTextureUnit(currentPipelineState->GetDesc(), unitAndResource.unit_))
+                const auto& nameAndResource = shaderResources_[i];
+                Texture* texture = nameAndResource.texture_;
+                if (texture && currentShaderReflection->GetShaderResource(nameAndResource.name_))
                 {
                     RenderSurface* currRT = graphics_->GetRenderTarget(0);
                     if (currRT && currRT->GetParentTexture() == texture)
@@ -202,7 +187,7 @@ void DrawCommandQueue::Execute()
                         texture->RegenerateLevels();
                     if (texture->GetParametersDirty())
                         texture->UpdateParameters();
-                    ci.textures_[unitAndResource.unit_] = texture;
+                    ci.textures_.emplace_back(nameAndResource.name_, texture);
                 }
             }
 

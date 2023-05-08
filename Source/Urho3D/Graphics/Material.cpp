@@ -43,6 +43,7 @@
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/JSONFile.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/ValueAnimation.h"
@@ -1457,6 +1458,35 @@ unsigned Material::RecalculatePipelineStateHash() const
     }
 
     return hash;
+}
+
+StringHash Material::TextureUnitToShaderResource(TextureUnit unit)
+{
+    static const auto mapping = []
+    {
+        ea::array<StringHash, MAX_TEXTURE_UNITS> result;
+
+        result[TU_DIFFUSE] = ShaderResources::DiffMap;
+        result[TU_NORMAL] = ShaderResources::NormalMap;
+        result[TU_SPECULAR] = ShaderResources::SpecMap;
+        result[TU_EMISSIVE] = ShaderResources::EmissiveMap;
+        result[TU_ENVIRONMENT] = ShaderResources::EnvMap;
+        //result[TU_VOLUMEMAP] = "";
+        result[TU_CUSTOM1] = "Custom1";
+        result[TU_CUSTOM2] = "Custom2";
+        result[TU_LIGHTRAMP] = ShaderResources::LightRampMap;
+        result[TU_LIGHTSHAPE] = ShaderResources::LightSpotMap;
+        result[TU_SHADOWMAP] = ShaderResources::ShadowMap;
+        //result[TU_FACESELECT] = "";
+        //result[TU_INDIRECTION] = "";
+        result[TU_DEPTHBUFFER] = ShaderResources::DepthBuffer;
+        //result[TU_LIGHTBUFFER] = "";
+        result[TU_ZONE] = ShaderResources::ZoneCubeMap;
+
+        return result;
+    }();
+
+    return mapping[unit];
 }
 
 }

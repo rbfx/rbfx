@@ -20,9 +20,9 @@ ShaderResourceBinding::~ShaderResourceBinding()
     while (len--)
         constantBuffers_[len] = nullptr;
 
-    len = MAX_TEXTURE_UNITS;
-    while (len--)
-        textures_[len] = nullptr;
+    //len = MAX_TEXTURE_UNITS;
+    //while (len--)
+    //    textures_[len] = nullptr;
 }
 void ShaderResourceBinding::SetConstantBuffer(ShaderParameterGroup group, WeakPtr<ConstantBuffer> cbuffer)
 {
@@ -32,13 +32,9 @@ void ShaderResourceBinding::SetConstantBuffer(ShaderParameterGroup group, WeakPt
         MakeDirty();
     }
 }
-void ShaderResourceBinding::SetTexture(TextureUnit texUnit, WeakPtr<Texture> texture)
+void ShaderResourceBinding::SetTexture(const ea::string& texUnit, WeakPtr<Texture> texture)
 {
-    if (textures_[texUnit] != texture)
-    {
-        textures_[texUnit] = texture;
-        MakeDirty();
-    }
+    textures_.emplace_back(texUnit, texture);
 }
 void ShaderResourceBinding::UpdateBindings()
 {

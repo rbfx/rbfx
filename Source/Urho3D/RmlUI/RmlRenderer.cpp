@@ -232,7 +232,8 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
 
     if (texture)
     {
-        drawQueue_->AddShaderResource(TU_DIFFUSE, texture);
+        // TODO(diligent): Revisit constants
+        drawQueue_->AddShaderResource("DiffMap", texture);
         textures_.emplace_back(texture);
     }
     drawQueue_->CommitShaderResources();

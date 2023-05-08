@@ -85,7 +85,7 @@ unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
     const IntVector2 inputSize = viewportTexture->GetSize();
     const Vector2 inputInvSize = Vector2::ONE / inputSize.ToVector2();
 
-    const ShaderResourceDesc shaderResources[] = { { TU_DIFFUSE, viewportTexture } };
+    const ShaderResourceDesc shaderResources[] = { { "DiffMap", viewportTexture } };
     const auto shaderParameters = GetShaderParameters(inputInvSize);
 
     DrawQuadParams drawParams;
@@ -103,7 +103,7 @@ unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
 void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
 {
     ShaderResourceDesc shaderResources[1];
-    shaderResources[0].unit_ = TU_DIFFUSE;
+    shaderResources[0].name_ = "DiffMap";
 
     const Vector2 inputInvSize = Vector2::ONE / final->GetTexture2D()->GetSize().ToVector2();
     const auto shaderParameters = GetShaderParameters(inputInvSize);
@@ -127,7 +127,7 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
 void BloomPass::ApplyBloom(RenderBuffer* bloom, float intensity)
 {
     const ShaderResourceDesc shaderResources[] = {
-        { TU_DIFFUSE, bloom->GetTexture2D() }
+        { "DiffMap", bloom->GetTexture2D() }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { Bloom_LuminanceWeights, luminanceWeights_ },

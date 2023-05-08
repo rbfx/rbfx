@@ -7,26 +7,31 @@
 
 #ifdef URHO3D_PIXEL_SHADER
 
+#ifndef URHO3D_DISABLE_TEXTURES
 SAMPLER(0, sampler2D sDiffMap)
-SAMPLER(0, samplerCube sDiffCubeMap)
 SAMPLER(1, sampler2D sNormalMap)
 SAMPLER(2, sampler2D sSpecMap)
 SAMPLER(3, sampler2D sEmissiveMap)
-SAMPLER(4, sampler2D sEnvMap)
-SAMPLER(4, samplerCube sEnvCubeMap)
+#ifdef URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT
+    SAMPLER(4, sampler2D sEnvMap)
+#else
+    SAMPLER(4, samplerCube sEnvMap)
+#endif
 SAMPLER(8, sampler2D sLightRampMap)
-SAMPLER(9, sampler2D sLightSpotMap)
-SAMPLER(9, samplerCube sLightCubeMap)
+#ifndef URHO3D_LIGHT_POINT
+    SAMPLER(9, sampler2D sLightSpotMap)
+#else
+    SAMPLER(9, samplerCube sLightSpotMap)
+#endif
 #if defined(URHO3D_VARIANCE_SHADOW_MAP) || defined(GL_ES)
     SAMPLER_HIGHP(10, sampler2D sShadowMap)
 #else
     SAMPLER_HIGHP(10, sampler2DShadow sShadowMap)
 #endif
 #ifndef GL_ES
-    SAMPLER(5, sampler3D sVolumeMap)
     SAMPLER(13, sampler2D sDepthBuffer)
     SAMPLER(15, samplerCube sZoneCubeMap)
-    SAMPLER(15, sampler3D sZoneVolumeMap)
+#endif
 #endif
 
 /// Helpers to sample sDiffMap in specified color space.

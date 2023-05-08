@@ -346,6 +346,9 @@ public:
     /// Parse a shader parameter value from a string. Retunrs either a bool, a float, or a 2 to 4-component vector.
     static Variant ParseShaderParameterValue(const ea::string& value);
 
+    /// TODO(diligent): Remove this
+    static StringHash TextureUnitToShaderResource(TextureUnit unit);
+
 private:
     /// Helper function for loading JSON files.
     bool BeginLoadJSON(Deserializer& source);

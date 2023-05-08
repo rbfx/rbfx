@@ -30,54 +30,63 @@ void ShaderResourceBinding::UpdateInternalBindings()
         CombineHash(hash_, constantBuffers_[i]->ToHash());
     }
 
-    const SHADER_TYPE shaderTypes[] = {
-        SHADER_TYPE_VERTEX, SHADER_TYPE_PIXEL, SHADER_TYPE_GEOMETRY, SHADER_TYPE_DOMAIN, SHADER_TYPE_HULL};
-    ea::vector<ea::shared_ptr<ea::string>> strList;
-    for (unsigned i = 0; i < _countof(shaderTypes); ++i)
+    for (const auto& [internalName, texture] : textures_)
     {
-        SHADER_TYPE shaderType = shaderTypes[i];
-        // Extract Shader Resource Textures used on all stages
-        unsigned varCount = shaderResBinding->GetVariableCount(shaderType);
-        for (unsigned j = 0; j < varCount; ++j)
-        {
-            IShaderResourceVariable* shaderResVar = shaderResBinding->GetVariableByIndex(shaderType, j);
-            ShaderResourceDesc shaderResDesc;
-            shaderResVar->GetResourceDesc(shaderResDesc);
-
-            if (shaderResDesc.Type == SHADER_RESOURCE_TYPE_CONSTANT_BUFFER
-                || shaderResDesc.Type == SHADER_RESOURCE_TYPE_SAMPLER)
-                continue;
-            ea::string shaderResName = shaderResDesc.Name;
-
-            if (shaderResName.starts_with("s"))
-                shaderResName = shaderResName.substr(1, shaderResName.size());
-
-            auto texUnitIt = DiligentTextureUnitLookup.find(shaderResName);
-            if (texUnitIt == DiligentTextureUnitLookup.end())
-                continue;
-
-            assert(textures_[texUnitIt->second] != nullptr);
-
-            ea::shared_ptr<ea::string> resSamplerName =
-                ea::make_shared<ea::string>(Format("_{}_sampler", shaderResDesc.Name));
-            strList.push_back(resSamplerName);
-
-            Texture* tex = textures_[texUnitIt->second];
-
-            { // Add Texture Resource
-                resMapping->AddResource(shaderResDesc.Name, tex->GetShaderResourceView(), true);
-            }
-            { // Add Texture Sampler
-                resMapping->AddResource(resSamplerName->c_str(), tex->GetSampler(), true);
-            }
-
-            CombineHash(hash_, (unsigned long long)textures_[texUnitIt->second].Get());
-        }
+        // TODO(diligent): Why leading underscore?
+        const ea::string samplerName = "_" + internalName + "_sampler";
+        resMapping->AddResource(internalName.c_str(), texture->GetShaderResourceView(), true);
+        resMapping->AddResource(samplerName.c_str(), texture->GetSampler(), true);
+        CombineHash(hash_, (unsigned long long)texture.Get());
     }
+
+//    const SHADER_TYPE shaderTypes[] = {
+//        SHADER_TYPE_VERTEX, SHADER_TYPE_PIXEL, SHADER_TYPE_GEOMETRY, SHADER_TYPE_DOMAIN, SHADER_TYPE_HULL};
+//    ea::vector<ea::shared_ptr<ea::string>> strList;
+//    for (unsigned i = 0; i < _countof(shaderTypes); ++i)
+//    {
+//        SHADER_TYPE shaderType = shaderTypes[i];
+//        // Extract Shader Resource Textures used on all stages
+//        unsigned varCount = shaderResBinding->GetVariableCount(shaderType);
+//        for (unsigned j = 0; j < varCount; ++j)
+//        {
+//            IShaderResourceVariable* shaderResVar = shaderResBinding->GetVariableByIndex(shaderType, j);
+//            ShaderResourceDesc shaderResDesc;
+//            shaderResVar->GetResourceDesc(shaderResDesc);
+//
+//            if (shaderResDesc.Type == SHADER_RESOURCE_TYPE_CONSTANT_BUFFER
+//                || shaderResDesc.Type == SHADER_RESOURCE_TYPE_SAMPLER)
+//                continue;
+//            ea::string shaderResName = shaderResDesc.Name;
+//
+//            if (shaderResName.starts_with("s"))
+//                shaderResName = shaderResName.substr(1, shaderResName.size());
+//
+//            auto texUnitIt = DiligentTextureUnitLookup.find(shaderResName);
+//            if (texUnitIt == DiligentTextureUnitLookup.end())
+//                continue;
+//
+//            assert(textures_[texUnitIt->second] != nullptr);
+//
+//            ea::shared_ptr<ea::string> resSamplerName =
+//                ea::make_shared<ea::string>(Format("_{}_sampler", shaderResDesc.Name));
+//            strList.push_back(resSamplerName);
+//
+//            Texture* tex = textures_[texUnitIt->second];
+//
+//            { // Add Texture Resource
+//                resMapping->AddResource(shaderResDesc.Name, tex->GetShaderResourceView(), true);
+//            }
+//            { // Add Texture Sampler
+//                resMapping->AddResource(resSamplerName->c_str(), tex->GetSampler(), true);
+//            }
+//
+//            CombineHash(hash_, (unsigned long long)textures_[texUnitIt->second].Get());
+//        }
+//    }
 
     shaderResBinding->BindResources(SHADER_TYPE_ALL, resMapping, BIND_SHADER_RESOURCES_UPDATE_ALL);
 
-    strList.clear();
+    //strList.clear();
     dirty_ = false;
 }
 } // namespace Urho3D
