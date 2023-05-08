@@ -43,6 +43,11 @@ struct ShaderParameterReflection
     unsigned size_{};
 };
 
+struct ShaderResourceReflection
+{
+    ea::string internalName_;
+};
+
 /// Description of constant buffer layout of shader program.
 class URHO3D_API ShaderProgramLayout : public RefCounted, public IDFamily<ShaderProgramLayout>
 {
@@ -62,11 +67,20 @@ public:
         return &iter->second;
     }
 
+    const ShaderResourceReflection* GetShaderResource(StringHash name) const
+    {
+        const auto iter = shaderResources_.find(name);
+        if (iter == shaderResources_.end())
+            return nullptr;
+        return &iter->second;
+    }
+
 protected:
     /// Add constant buffer.
     void AddConstantBuffer(ShaderParameterGroup group, unsigned size);
     /// Add parameter inside constant buffer.
     void AddConstantBufferParameter(StringHash name, ShaderParameterGroup group, unsigned offset, unsigned size);
+    void AddShaderResource(StringHash name, ea::string_view internalName);
     /// Recalculate layout hash.
     void RecalculateLayoutHash();
 
@@ -77,6 +91,7 @@ private:
     unsigned constantBufferHashes_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Mapping from parameter name to (buffer, offset) pair.
     ea::unordered_map<StringHash, ShaderParameterReflection> constantBufferParameters_;
+    ea::unordered_map<StringHash, ShaderResourceReflection> shaderResources_;
 };
 
 }

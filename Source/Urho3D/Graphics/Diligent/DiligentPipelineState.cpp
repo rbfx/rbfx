@@ -113,6 +113,14 @@ ea::optional<ea::string_view> SanitateUniformName(ea::string_view name)
     return name.substr(pos + 1);
 }
 
+ea::optional<ea::string_view> SanitateResourceName(ea::string_view name)
+{
+    if (name.empty() || name[0] != 's')
+        return ea::nullopt;
+
+    return name.substr(1);
+}
+
 /// TODO(diligent): Get rid of this hack when we remove other backends
 class ShaderReflectionImpl : public ShaderProgramLayout
 {
@@ -165,6 +173,11 @@ public:
         }
 
         AddConstantBufferParameter(nameHash, group, offset, size);
+    }
+
+    void AddOrCheckShaderResource(StringHash name, ea::string_view internalName)
+    {
+        AddShaderResource(name, internalName);
     }
 
     void Cook()
@@ -346,6 +359,10 @@ void AppendShaderReflection(ShaderReflectionImpl& reflection, Diligent::IShader*
             AppendConstantBufferToReflection(reflection, shader, resourceIndex, desc);
             break;
 
+        case SHADER_RESOURCE_TYPE_TEXTURE_SRV:
+            if (const auto sanitatedName = SanitateResourceName(desc.Name))
+                reflection.AddOrCheckShaderResource(StringHash{*sanitatedName}, desc.Name);
+            break;
 
         default: break;
         }
@@ -548,6 +565,12 @@ SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
         GLint elementCount = 0;
         GLenum type = 0;
         glGetActiveUniform(programObject, uniformIndex, nameLength, nullptr, &elementCount, &type, name.data());
+
+        if (const auto sanitatedResourceName = SanitateResourceName(name.c_str()))
+        {
+            reflection->AddOrCheckShaderResource(StringHash{*sanitatedResourceName}, name.c_str());
+            continue;
+        }
 
         const auto sanitatedName = SanitateGLUniformName(name.c_str());
         if (!sanitatedName)

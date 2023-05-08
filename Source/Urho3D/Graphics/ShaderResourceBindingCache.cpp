@@ -30,9 +30,12 @@ ShaderResourceBinding* ShaderResourceBindingCache::GetOrCreateSRB(ShaderResource
     }
     for (unsigned i = 0; i < createInfo.textures_.size(); ++i)
     {
-        Texture* tex = createInfo.textures_[i];
-        if (tex)
-            srb->SetTexture((TextureUnit)i, SharedPtr<Texture>(tex));
+        const auto& [nameHash, tex] = createInfo.textures_[i];
+        const ShaderResourceReflection* binding = createInfo.pipeline_->GetReflection()->GetShaderResource(nameHash);
+        if (tex && binding)
+        {
+            srb->SetTexture(binding->internalName_, SharedPtr<Texture>(tex));
+        }
     }
 
     srbMap_[hash] = WeakPtr<ShaderResourceBinding>(srb);

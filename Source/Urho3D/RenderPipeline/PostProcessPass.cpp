@@ -60,9 +60,9 @@ void SimplePostProcessPass::AddShaderParameter(StringHash name, const Variant& v
     shaderParameters_.push_back(ShaderParameterDesc{ name, value });
 }
 
-void SimplePostProcessPass::AddShaderResource(TextureUnit unit, Texture* texture)
+void SimplePostProcessPass::AddShaderResource(StringHash name, Texture* texture)
 {
-    shaderResources_.push_back(ShaderResourceDesc{ unit, texture });
+    shaderResources_.push_back(ShaderResourceDesc{ name, texture });
 }
 
 void SimplePostProcessPass::Execute(Camera* camera)

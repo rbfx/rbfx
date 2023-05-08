@@ -256,7 +256,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
             #ifdef URHO3D_BLEND_REFLECTIONS
                 reflectionColor[1] = textureCube(sZoneCubeMap, vReflectionVec);
             #endif
-            reflectionColor[0] = textureCube(sEnvCubeMap, vReflectionVec);
+            reflectionColor[0] = textureCube(sEnvMap, vReflectionVec);
         }
 
         #define FillSurfaceReflectionColor(surfaceData) \
@@ -294,7 +294,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
                 reflectionVec0 = ApplyBoxProjection(reflectionVec0, vWorldPos,
                     cCubemapCenter0, cProjectionBoxMin0.xyz, cProjectionBoxMax0.xyz);
             #endif
-            reflectionColor[0] = SampleCubeReflectionColor(sEnvCubeMap, reflectionVec0, roughness, cRoughnessToLODFactor0);
+            reflectionColor[0] = SampleCubeReflectionColor(sEnvMap, reflectionVec0, roughness, cRoughnessToLODFactor0);
         }
 
         #define FillSurfaceReflectionColor(surfaceData) \

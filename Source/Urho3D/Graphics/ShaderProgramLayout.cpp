@@ -35,6 +35,11 @@ void ShaderProgramLayout::AddConstantBufferParameter(StringHash name, ShaderPara
     constantBufferParameters_.emplace(name, ShaderParameterReflection{ group, offset, size });
 }
 
+void ShaderProgramLayout::AddShaderResource(StringHash name, ea::string_view internalName)
+{
+    shaderResources_.emplace(name, ShaderResourceReflection{ea::string{internalName}});
+}
+
 void ShaderProgramLayout::RecalculateLayoutHash()
 {
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)

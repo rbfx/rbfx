@@ -65,7 +65,7 @@ public:
         const ea::string& shaderName, const ea::string& shaderDefines);
 
     void AddShaderParameter(StringHash name, const Variant& value);
-    void AddShaderResource(TextureUnit unit, Texture* texture);
+    void AddShaderResource(StringHash name, Texture* texture);
 
     PostProcessPassFlags GetExecutionFlags() const override { return flags_; }
     void Execute(Camera* camera) override;
