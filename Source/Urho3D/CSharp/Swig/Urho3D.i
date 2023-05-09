@@ -617,7 +617,6 @@ public:
 %ignore Urho3D::RenderPathCommand::outputs_;    // Needs Pair<String, CubeMapFace>
 %ignore Urho3D::RenderPathCommand::textureNames_;    // Needs array of strings
 %ignore Urho3D::VertexBufferMorph::morphData_;      // Needs SharedPtrArray
-%ignore Urho3D::ShaderVariation::GetConstantBufferSizes;
 %ignore Urho3D::DecalVertex::blendIndices_;
 %ignore Urho3D::DecalVertex::blendWeights_;
 %ignore Urho3D::ShaderVariation::elementSemanticNames;

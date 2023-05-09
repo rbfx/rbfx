@@ -140,6 +140,9 @@ void Texture::UpdateParameters()
         URHO3D_LOGERROR("Failed to create sampler state");
     }
 
+    if (shaderResourceView_)
+        shaderResourceView_->SetSampler(sampler_);
+
     parametersDirty_ = false;
 }
 

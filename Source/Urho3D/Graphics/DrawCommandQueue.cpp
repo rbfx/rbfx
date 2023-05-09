@@ -167,14 +167,6 @@ void DrawCommandQueue::Execute()
             //        srbCacheCI.constantBuffers_[i] = cbuffer;
             //    }
             //}
-            auto HasTextureUnit = [=](const PipelineStateDesc& desc, TextureUnit unit) {
-                ShaderVariation* vs = desc.vertexShader_;
-                ShaderVariation* ps = desc.pixelShader_;
-
-                if ((vs && vs->HasTextureUnit(unit)) || (ps && ps->HasTextureUnit(unit)))
-                    return true;
-                return false;
-            };
             for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i) {
                 const auto& nameAndResource = shaderResources_[i];
                 Texture* texture = nameAndResource.texture_;
