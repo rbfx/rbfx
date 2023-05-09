@@ -29,6 +29,6 @@
 namespace Urho3D
 {
 
-URHO3D_API void OptimizeSpirVShader(SpirVShader& shader, TargetShaderLanguage targetLanguage);
-
+URHO3D_API bool OptimizeSpirVShader(
+    SpirVShader& shader, ea::string& optimizerOutput, TargetShaderLanguage targetLanguage);
 }

@@ -23,7 +23,7 @@ void ShaderResourceBinding::UpdateInternalBindings()
     // Add Constant Buffers to Resource Mapping Entries
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
     {
-        if (constantBuffers_[i] == nullptr)
+        if (constantBuffers_[i] == nullptr || constantBuffers_[i]->GetGPUObject() == nullptr)
             continue;
 
         resMapping->AddResource(shaderParameterGroupNames[i], constantBuffers_[i]->GetGPUObject(), true);

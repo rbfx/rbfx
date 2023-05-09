@@ -40,36 +40,36 @@ public:
     ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader)
     {
         // Create needed constant buffers
-        const auto& vsBufferSizes = vertexShader->GetConstantBufferSizes();
-        for (unsigned i = 0; i < vsBufferSizes.size(); ++i)
-        {
-            if (vsBufferSizes[i])
-                AddConstantBuffer(static_cast<ShaderParameterGroup>(i), vsBufferSizes[i]);
-        }
+//        const auto& vsBufferSizes = vertexShader->GetConstantBufferSizes();
+//        for (unsigned i = 0; i < vsBufferSizes.size(); ++i)
+//        {
+//            if (vsBufferSizes[i])
+//                AddConstantBuffer(static_cast<ShaderParameterGroup>(i), vsBufferSizes[i]);
+//        }
+//
+//        const auto& psBufferSizes = pixelShader->GetConstantBufferSizes();
+//        for (unsigned i = 0; i < psBufferSizes.size(); ++i)
+//        {
+//            if (psBufferSizes[i])
+//                AddConstantBuffer(static_cast<ShaderParameterGroup>(i), psBufferSizes[i]);
+//        }
 
-        const auto& psBufferSizes = pixelShader->GetConstantBufferSizes();
-        for (unsigned i = 0; i < psBufferSizes.size(); ++i)
-        {
-            if (psBufferSizes[i])
-                AddConstantBuffer(static_cast<ShaderParameterGroup>(i), psBufferSizes[i]);
-        }
-
-        // Copy parameters, add direct links to constant buffers
-        const ea::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
-        for (auto i = vsParams.begin(); i != vsParams.end(); ++i)
-        {
-            const ShaderParameter& param = i->second;
-            AddConstantBufferParameter(
-                param.name_, static_cast<ShaderParameterGroup>(param.buffer_), param.offset_, param.size_);
-        }
-
-        const ea::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
-        for (auto i = psParams.begin(); i != psParams.end(); ++i)
-        {
-            const ShaderParameter& param = i->second;
-            AddConstantBufferParameter(
-                param.name_, static_cast<ShaderParameterGroup>(param.buffer_), param.offset_, param.size_);
-        }
+//        // Copy parameters, add direct links to constant buffers
+//        const ea::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
+//        for (auto i = vsParams.begin(); i != vsParams.end(); ++i)
+//        {
+//            const ShaderParameter& param = i->second;
+//            AddConstantBufferParameter(
+//                param.name_, static_cast<ShaderParameterGroup>(param.buffer_), param.offset_, param.size_);
+//        }
+//
+//        const ea::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
+//        for (auto i = psParams.begin(); i != psParams.end(); ++i)
+//        {
+//            const ShaderParameter& param = i->second;
+//            AddConstantBufferParameter(
+//                param.name_, static_cast<ShaderParameterGroup>(param.buffer_), param.offset_, param.size_);
+//        }
 
         RecalculateLayoutHash();
     }

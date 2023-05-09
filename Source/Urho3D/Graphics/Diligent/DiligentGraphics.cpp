@@ -1272,8 +1272,9 @@ bool Graphics::HasShaderParameter(StringHash param)
 
 bool Graphics::HasTextureUnit(TextureUnit unit)
 {
-    return (vertexShader_ && vertexShader_->HasTextureUnit(unit))
-        || (pixelShader_ && pixelShader_->HasTextureUnit(unit));
+    return false;
+//    return (vertexShader_ && vertexShader_->HasTextureUnit(unit))
+//        || (pixelShader_ && pixelShader_->HasTextureUnit(unit));
 }
 
 void Graphics::ClearParameterSource(ShaderParameterGroup group)

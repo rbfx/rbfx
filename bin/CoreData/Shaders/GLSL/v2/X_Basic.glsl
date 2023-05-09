@@ -63,7 +63,7 @@ void main()
         diffColor *= diffInput;
     #endif
     #ifdef ALPHAMAP
-        #if defined(GL3) && !defined(D3D11)
+        #ifdef WEBGL
             float alphaInput = texture2D(sDiffMap, vTexCoord).r;
         #else
             float alphaInput = texture2D(sDiffMap, vTexCoord).a;

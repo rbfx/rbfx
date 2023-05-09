@@ -8,6 +8,7 @@
 #include "Urho3D/Core/StringUtils.h"
 #include "Urho3D/RenderAPI/OpenGLIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
 
@@ -70,7 +71,8 @@ unsigned GetUniformSize(const Diligent::ShaderCodeVariableDesc& uniformDesc)
             return GetVectorArrayUniformSize(uniformDesc.BasicType, 1, uniformDesc.ArraySize);
 
         case Diligent::SHADER_CODE_VARIABLE_CLASS_VECTOR:
-            return GetVectorArrayUniformSize(uniformDesc.BasicType, uniformDesc.NumColumns, uniformDesc.ArraySize);
+            return GetVectorArrayUniformSize(
+                uniformDesc.BasicType, ea::max(uniformDesc.NumColumns, uniformDesc.NumRows), uniformDesc.ArraySize);
 
         case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS:
             return GetVectorArrayUniformSize(
@@ -91,7 +93,7 @@ unsigned GetUniformSize(const Diligent::ShaderCodeVariableDesc& uniformDesc)
             return GetScalarUniformSize(uniformDesc.BasicType);
 
         case Diligent::SHADER_CODE_VARIABLE_CLASS_VECTOR:
-            return GetVectorUniformSize(uniformDesc.BasicType, uniformDesc.NumColumns);
+            return GetVectorUniformSize(uniformDesc.BasicType, ea::max(uniformDesc.NumColumns, uniformDesc.NumRows));
 
         case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS:
             return GetVectorArrayUniformSize(uniformDesc.BasicType, uniformDesc.NumRows, uniformDesc.NumColumns);
@@ -186,17 +188,6 @@ public:
     }
 };
 
-const ea::string elementSemanticNames[] = {
-    "iPos", // SEM_POSITION
-    "iNormal", // SEM_NORMAL
-    "iBinormal", // SEM_BINORMAL
-    "iTangent", // SEM_TANGENT
-    "iTexCoord", // SEM_TEXCOORD
-    "iColor", // SEM_COLOR
-    "iBlendWeights", // SEM_BLENDWEIGHTS
-    "iBlendIndices", // SEM_BLENDINDICES
-};
-
 void InitializeLayoutElements(
     ea::vector<Diligent::LayoutElement>& result, ea::span<const VertexElementInBuffer> vertexElements)
 {
@@ -274,7 +265,7 @@ void FillLayoutElementIndices(ea::span<Diligent::LayoutElement> result,
         else
         {
             URHO3D_LOGERROR("Attribute #{} with semantics '{}{}' is not found in the vertex layout",
-                attribute.inputIndex_, elementSemanticNames[attribute.semantic_], attribute.semanticIndex_);
+                attribute.inputIndex_, ToShaderInputName(attribute.semantic_), attribute.semanticIndex_);
         }
     }
 }
@@ -284,19 +275,6 @@ unsigned RemoveUnusedElements(ea::span<Diligent::LayoutElement> result)
     const auto isUnused = [](const Diligent::LayoutElement& element) { return element.InputIndex == M_MAX_UNSIGNED; };
     const auto iter = ea::remove_if(result.begin(), result.end(), isUnused);
     return iter - result.begin();
-}
-
-// TODO(diligent): Remove this function, we should store VertexShaderAttributeVector directly.
-VertexShaderAttributeVector ToAttributes(const ea::vector<VertexElement>& vertexElements)
-{
-    VertexShaderAttributeVector result;
-    result.reserve(vertexElements.size());
-
-    unsigned inputIndex = 0;
-    for (const VertexElement& element : vertexElements)
-        result.push_back(VertexShaderAttribute{element.semantic_, element.index_, inputIndex++});
-
-    return result;
 }
 
 Diligent::IShader* ToHandle(ShaderVariation* shader)
@@ -383,24 +361,6 @@ SharedPtr<ShaderProgramLayout> ReflectShaders(std::initializer_list<Diligent::IS
 
 #if GL_SUPPORTED || GLES_SUPPORTED
 
-ea::optional<VertexShaderAttribute> ParseGLVertexAttribute(const ea::string& name)
-{
-    for (unsigned index = 0; index < URHO3D_ARRAYSIZE(elementSemanticNames); ++index)
-    {
-        const ea::string& semanticName = elementSemanticNames[index];
-        VertexElementSemantic semanticValue = static_cast<VertexElementSemantic>(index);
-
-        const unsigned semanticPos = name.find(semanticName);
-        if (semanticPos == ea::string::npos)
-            continue;
-
-        const unsigned semanticIndexPos = semanticPos + semanticName.length();
-        const unsigned semanticIndex = ToUInt(&name[semanticIndexPos]);
-        return VertexShaderAttribute{semanticValue, semanticIndex};
-    }
-    return ea::nullopt;
-}
-
 VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
 {
     GLint numActiveAttribs = 0;
@@ -419,7 +379,7 @@ VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
         glGetActiveAttrib(programObject, attribIndex, maxNameLength, nullptr, &attributeSize, &attributeType,
             attributeName.data());
 
-        if (const auto element = ParseGLVertexAttribute(attributeName.c_str()))
+        if (const auto element = ParseVertexAttribute(attributeName.c_str()))
         {
             const int location = glGetAttribLocation(programObject, attributeName.c_str());
             URHO3D_ASSERT(location != -1);
@@ -676,8 +636,8 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     // On OpenGL, vertex layout initialization is postponed until the program is linked.
     if (!isOpenGL)
     {
-        const ea::vector<VertexElement>& vertexShaderAttributes = desc_.vertexShader_->GetVertexElements();
-        FillLayoutElementIndices(layoutElements, desc_.GetVertexElements(), ToAttributes(vertexShaderAttributes));
+        const VertexShaderAttributeVector& vertexShaderAttributes = desc_.vertexShader_->GetVertexShaderAttributes();
+        FillLayoutElementIndices(layoutElements, desc_.GetVertexElements(), vertexShaderAttributes);
         const unsigned numElements = RemoveUnusedElements(layoutElements);
         layoutElements.resize(numElements);
     }
