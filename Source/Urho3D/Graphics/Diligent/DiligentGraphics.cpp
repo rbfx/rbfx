@@ -2337,8 +2337,9 @@ bool Graphics::CreateDevice(int width, int height)
             EngineD3D12CreateInfo engineCI;
             engineCI.GraphicsAPIVersion = Version{11, 0};
             engineCI.GPUDescriptorHeapDynamicSize[0] = 32768;
-            engineCI.GPUDescriptorHeapSize[1] = 128;
-            engineCI.GPUDescriptorHeapDynamicSize[1] = 2048 - 128;
+            // TODO(diligent): Revisit limits
+            //engineCI.GPUDescriptorHeapSize[1] = 128;
+            //engineCI.GPUDescriptorHeapDynamicSize[1] = 2048 - 128;
             engineCI.DynamicDescriptorAllocationChunkSize[0] = 32;
             engineCI.DynamicDescriptorAllocationChunkSize[1] = 8; // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
@@ -2384,10 +2385,13 @@ bool Graphics::CreateDevice(int width, int height)
             EngineGLCreateInfo engineCI;
             engineCI.Window = wnd;
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
-            swapChainDesc.ColorBufferFormat = TEX_FORMAT_RGBA8_UNORM;
 
             factory->CreateDeviceAndSwapChainGL(
                 engineCI, &impl_->device_, &impl_->deviceContext_, swapChainDesc, &impl_->swapChain_);
+
+            // TODO(diligent): Do we want to do something about this?
+            sRGB_ = true;
+
             gl3Support = true;
             engineFactory = factory;
         }

@@ -692,9 +692,11 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Textur
 
     DrawQuadParams callParams;
 
-    if (isSwapChainDestination)
-        callParams.pipelineState_ = copyTextureToSwapChainPipelineState_;
-    else if (mode == ColorSpaceTransition::None || isSRGBSource == isSRGBDestination)
+    // TODO(diligent): Why this needed?
+    //if (isSwapChainDestination)
+    //    callParams.pipelineState_ = copyTextureToSwapChainPipelineState_;
+    //else
+    if (mode == ColorSpaceTransition::None || isSRGBSource == isSRGBDestination)
         callParams.pipelineState_ = copyTexturePipelineState_;
     else if (isSRGBDestination)
         callParams.pipelineState_ = copyGammaToLinearTexturePipelineState_;

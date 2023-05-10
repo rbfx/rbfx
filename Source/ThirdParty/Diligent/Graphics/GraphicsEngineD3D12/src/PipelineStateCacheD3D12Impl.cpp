@@ -75,7 +75,8 @@ CComPtr<ID3D12DeviceChild> PipelineStateCacheD3D12Impl::LoadGraphicsPipeline(con
     if ((m_Desc.Mode & PSO_CACHE_MODE_LOAD) != 0)
     {
         auto hr = m_pLibrary->LoadGraphicsPipeline(Name, &Desc, IID_PPV_ARGS(&d3d12PSO));
-        DEV_CHECK_ERR(SUCCEEDED(hr), "Failed to load graphics pipeline from the library");
+        // TODO(diligent): Revisit this assert
+        (void)hr;//DEV_CHECK_ERR(SUCCEEDED(hr), "Failed to load graphics pipeline from the library");
     }
     return d3d12PSO;
 }

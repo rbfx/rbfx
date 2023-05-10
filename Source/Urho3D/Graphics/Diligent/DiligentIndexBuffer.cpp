@@ -298,7 +298,7 @@ void IndexBuffer::UnmapBuffer()
 
 void IndexBuffer::HandleEndRendering(StringHash eventType, VariantMap& eventData)
 {
-    if (graphics_->GetRenderBackend() != RENDER_VULKAN)
+    if (!(graphics_->GetRenderBackend() == RENDER_VULKAN || graphics_->GetRenderBackend() == RENDER_D3D12))
         return;
     if (dynamic_)
         dataLost_ = true;
