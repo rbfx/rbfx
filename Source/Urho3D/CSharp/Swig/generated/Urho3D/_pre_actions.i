@@ -22,7 +22,7 @@
 %csattribute(Urho3D::Actions::FiniteTimeActionState, %arg(float), Duration, GetDuration);
 %csattribute(Urho3D::Actions::FiniteTimeActionState, %arg(float), Elapsed, GetElapsed);
 %csattribute(Urho3D::Actions::ActionInstantState, %arg(bool), IsDone, IsDone);
-%csattribute(Urho3D::ActionSet, %arg(Actions::BaseAction *), DefaultAction, GetDefaultAction, SetDefaultAction);
+%csattribute(Urho3D::ActionSet, %arg(Actions::BaseAction *), Action, GetAction, SetAction);
 %csattribute(Urho3D::Actions::AttributeFromTo, %arg(Urho3D::Variant), From, GetFrom, SetFrom);
 %csattribute(Urho3D::Actions::AttributeFromTo, %arg(Urho3D::Variant), To, GetTo, SetTo);
 %csattribute(Urho3D::Actions::AttributeTo, %arg(Urho3D::Variant), To, GetTo, SetTo);

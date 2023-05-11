@@ -397,6 +397,7 @@ URHO3D_REFCOUNTED(Urho3D::Actions::EaseElasticIn);
 URHO3D_REFCOUNTED(Urho3D::Actions::EaseElasticOut);
 URHO3D_REFCOUNTED(Urho3D::Actions::EaseElasticInOut);
 URHO3D_REFCOUNTED(Urho3D::Actions::RemoveSelf);
+URHO3D_REFCOUNTED(Urho3D::Actions::CloneMaterials);
 URHO3D_REFCOUNTED(Urho3D::Actions::Show);
 URHO3D_REFCOUNTED(Urho3D::Actions::Hide);
 URHO3D_REFCOUNTED(Urho3D::Actions::Enable);
