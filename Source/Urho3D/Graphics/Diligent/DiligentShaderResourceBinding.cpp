@@ -32,10 +32,7 @@ void ShaderResourceBinding::UpdateInternalBindings()
 
     for (const auto& [internalName, texture] : textures_)
     {
-        // TODO(diligent): Why leading underscore?
-        const ea::string samplerName = "_" + internalName + "_sampler";
         resMapping->AddResource(internalName.c_str(), texture->GetShaderResourceView(), true);
-        resMapping->AddResource(samplerName.c_str(), texture->GetSampler(), true);
         CombineHash(hash_, (unsigned long long)texture.Get());
     }
 
