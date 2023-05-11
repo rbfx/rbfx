@@ -299,7 +299,7 @@ void PipelineStateGLImpl::PatchInputLayout(const GraphicsPipelineStateCreateInfo
 
     auto& InputLayout = m_pGraphicsPipelineData->Desc.InputLayout;
     (*CreateInfo.GLPatchVertexLayoutCallback)(
-        m_GLPrograms[0], &InputLayout.NumElements, const_cast<LayoutElement*>(InputLayout.LayoutElements), CreateInfo.GLPatchVertexLayoutCallbackUserData);
+        m_GLPrograms[0], &InputLayout.NumElements, const_cast<LayoutElement*>(InputLayout.LayoutElements), &m_Desc.ResourceLayout, CreateInfo.GLPatchVertexLayoutCallbackUserData);
 }
 
 PipelineStateGLImpl::PipelineStateGLImpl(IReferenceCounters*                    pRefCounters,

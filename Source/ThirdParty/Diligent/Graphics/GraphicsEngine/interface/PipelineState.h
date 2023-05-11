@@ -716,6 +716,7 @@ typedef struct PipelineStateCreateInfo PipelineStateCreateInfo;
 typedef void(DILIGENT_CALL_TYPE* GLPatchVertexLayoutCallbackType)(Uint32 VertexProgramObject,
                                                                   Uint32* NumElements,
                                                                   LayoutElement* Elements,
+                                                                  PipelineResourceLayoutDesc* ResourceLayout,
                                                                   void* UserData);
 
 /// Graphics pipeline state initialization information.

@@ -31,6 +31,7 @@
 #include "../Graphics/ShaderProgramLayout.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Graphics/ShaderResourceBinding.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
 
@@ -111,6 +112,7 @@ struct PipelineStateDesc
 {
     /// Some vertex elements in layout may be unused and the hard GPU limit is only applied to the used ones.
     static const unsigned MaxNumVertexElements = 2 * Diligent::MAX_LAYOUT_ELEMENTS;
+    static const unsigned MaxNumSamplers = 16;
 
     /// Debug
     /// @{
@@ -180,6 +182,15 @@ struct PipelineStateDesc
     bool alphaToCoverageEnabled_{};
     /// @}
 
+    /// Samplers
+    /// @{
+    unsigned numSamplers_{};
+    ea::array<StringHash, MaxNumSamplers> samplerNames_;
+    ea::array<SamplerStateDesc, MaxNumSamplers> samplers_;
+
+    bool AddSampler(StringHash samplerName, const SamplerStateDesc& samplerDesc);
+    /// @}
+
     /// Cached hash of the structure.
     unsigned hash_{};
     unsigned ToHash() const { return hash_; }
@@ -218,7 +229,10 @@ struct PipelineStateDesc
 
             && colorWriteEnabled_ == rhs.colorWriteEnabled_
             && blendMode_ == rhs.blendMode_
-            && alphaToCoverageEnabled_ == rhs.alphaToCoverageEnabled_;
+            && alphaToCoverageEnabled_ == rhs.alphaToCoverageEnabled_
+
+            && numSamplers_ == rhs.numSamplers_
+            && samplers_ == rhs.samplers_;
     }
 
     /// Return whether the description structure is properly initialized.
@@ -268,6 +282,14 @@ struct PipelineStateDesc
         CombineHash(hash, colorWriteEnabled_);
         CombineHash(hash, blendMode_);
         CombineHash(hash, alphaToCoverageEnabled_);
+
+        CombineHash(hash, numSamplers_);
+        for (unsigned i = 0; i < numSamplers_; ++i)
+        {
+            const SamplerStateDesc& samplerDesc = samplers_[i];
+            CombineHash(hash, samplerNames_[i].Value());
+            CombineHash(hash, samplers_[i].ToHash());
+        }
 
         // Consider 0-hash invalid
         hash_ = ea::max(1u, hash);

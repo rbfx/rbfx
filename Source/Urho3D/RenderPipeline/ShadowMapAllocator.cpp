@@ -78,6 +78,11 @@ void ShadowMapAllocator::CacheSettings()
     }
 
     shadowAtlasPageSize_ = static_cast<int>(settings_.shadowAtlasPageSize_) * IntVector2::ONE;
+
+    const bool isDepthTexture = !settings_.enableVarianceShadowMaps_;
+    samplerStateDesc_ = {};
+    samplerStateDesc_.shadowCompare_ = isDepthTexture;
+    samplerStateDesc_.filterMode_ = FILTER_BILINEAR;
 }
 
 void ShadowMapAllocator::ResetAllShadowMaps()

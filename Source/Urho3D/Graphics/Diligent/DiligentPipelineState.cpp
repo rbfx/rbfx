@@ -241,6 +241,61 @@ void InitializeLayoutElements(
     }
 }
 
+void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const PipelineStateDesc& desc,
+    const ShaderProgramLayout& reflection)
+{
+    static const Diligent::FILTER_TYPE minMagFilter[][2] = {
+        {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_NEAREST
+        {FILTER_TYPE_LINEAR, FILTER_TYPE_COMPARISON_LINEAR}, // FILTER_BILINEAR
+        {FILTER_TYPE_LINEAR, FILTER_TYPE_COMPARISON_LINEAR}, // FILTER_TRILINEAR
+        {FILTER_TYPE_ANISOTROPIC, FILTER_TYPE_COMPARISON_ANISOTROPIC}, // FILTER_ANISOTROPIC
+        {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_NEAREST_ANISOTROPIC
+    };
+    static const Diligent::FILTER_TYPE mipFilter[][2] = {
+        {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_NEAREST
+        {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_BILINEAR
+        {FILTER_TYPE_LINEAR, FILTER_TYPE_COMPARISON_LINEAR}, // FILTER_TRILINEAR
+        {FILTER_TYPE_ANISOTROPIC, FILTER_TYPE_COMPARISON_ANISOTROPIC}, // FILTER_ANISOTROPIC
+        {FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR}, // FILTER_NEAREST_ANISOTROPIC
+    };
+    static const Diligent::TEXTURE_ADDRESS_MODE addressMode[] = {
+        Diligent::TEXTURE_ADDRESS_WRAP, // ADDRESS_WRAP
+        Diligent::TEXTURE_ADDRESS_MIRROR, // ADDRESS_MIRROR
+        Diligent::TEXTURE_ADDRESS_CLAMP, // ADDRESS_CLAMP
+        Diligent::TEXTURE_ADDRESS_BORDER // ADDRESS_BORDER
+    };
+
+    for (unsigned i = 0; i < desc.numSamplers_; ++i)
+    {
+        const StringHash nameHash = desc.samplerNames_[i];
+        if (const ShaderResourceReflection* resourceReflection = reflection.GetShaderResource(nameHash))
+        {
+            const SamplerStateDesc& sourceSampler = desc.samplers_[i];
+
+            // TODO(diligent): Configure defaults
+            const int anisotropy = sourceSampler.anisotropy_ ? sourceSampler.anisotropy_ : 4;
+            const TextureFilterMode filterMode =
+                sourceSampler.filterMode_ != FILTER_DEFAULT ? sourceSampler.filterMode_ : FILTER_TRILINEAR;
+
+            Diligent::ImmutableSamplerDesc& destSampler = result.emplace_back();
+
+            destSampler.ShaderStages = SHADER_TYPE_ALL_GRAPHICS;
+            destSampler.SamplerOrTextureName = resourceReflection->internalName_.c_str();
+            destSampler.Desc.MinFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
+            destSampler.Desc.MagFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
+            destSampler.Desc.MipFilter = mipFilter[filterMode][sourceSampler.shadowCompare_];
+            destSampler.Desc.AddressU = addressMode[sourceSampler.addressMode_[COORD_U]];
+            destSampler.Desc.AddressV = addressMode[sourceSampler.addressMode_[COORD_V]];
+            destSampler.Desc.AddressW = addressMode[sourceSampler.addressMode_[COORD_W]];
+            destSampler.Desc.MaxAnisotropy = anisotropy;
+            destSampler.Desc.ComparisonFunc = COMPARISON_FUNC_LESS_EQUAL;
+            destSampler.Desc.MinLOD = -M_INFINITY;
+            destSampler.Desc.MaxLOD = M_INFINITY;
+            memcpy(&destSampler.Desc.BorderColor, sourceSampler.borderColor_.Data(), 4 * sizeof(float));
+        }
+    }
+}
+
 bool IsSameSematics(const VertexElementInBuffer& lhs, const VertexShaderAttribute& rhs)
 {
     return lhs.semantic_ == rhs.semantic_ && lhs.index_ == rhs.semanticIndex_;
@@ -624,8 +679,12 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     // TODO(diligent): This is hack to force shader compilation, we should not need it
     graphics->GetShaderProgramLayout(desc_.vertexShader_, desc_.pixelShader_);
 
+    GraphicsPipelineStateCreateInfo ci;
+
     ea::vector<LayoutElement> layoutElements;
     InitializeLayoutElements(layoutElements, desc_.GetVertexElements());
+
+    ea::vector<Diligent::ImmutableSamplerDesc> immutableSamplers;
 
     Diligent::IShader* vertexShader = ToHandle(desc_.vertexShader_);
     Diligent::IShader* pixelShader = ToHandle(desc_.pixelShader_);
@@ -646,9 +705,12 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     if (hasSeparableShaderPrograms)
     {
         reflection_ = ReflectShaders({vertexShader, pixelShader, domainShader, hullShader, geometryShader});
+
+        InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
+        ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
+        ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
     }
 
-    GraphicsPipelineStateCreateInfo ci;
 #ifdef URHO3D_DEBUG
     if (desc_.debugName_.empty())
         URHO3D_LOGWARNING(
@@ -728,7 +790,9 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
         ci.pPSOCache = psoCache->object_.Cast<IPipelineStateCache>(IID_PipelineStateCache);
 
 #if GL_SUPPORTED || GLES_SUPPORTED
-    auto patchInputLayout = [&](GLuint programObject, Diligent::Uint32& numElements, Diligent::LayoutElement* elements)
+    // clang-format off
+    auto patchInputLayout = [&](GLuint programObject, Diligent::Uint32& numElements, Diligent::LayoutElement* elements,
+        Diligent::PipelineResourceLayoutDesc& resourceLayout)
     {
         const ea::span<Diligent::LayoutElement> elementsSpan{elements, numElements};
         const auto vertexAttributes = GetGLVertexAttributes(programObject);
@@ -737,16 +801,24 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
         numElements = RemoveUnusedElements(elementsSpan);
 
         if (!hasSeparableShaderPrograms)
+        {
             reflection_ = ReflectGLProgram(programObject);
+
+            InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
+            resourceLayout.NumImmutableSamplers = immutableSamplers.size();
+            resourceLayout.ImmutableSamplers = immutableSamplers.data();
+        }
     };
 
     ci.GLPatchVertexLayoutCallbackUserData = &patchInputLayout;
-    ci.GLPatchVertexLayoutCallback = [](
-        GLuint programObject, Diligent::Uint32* numElements, Diligent::LayoutElement* elements, void* userData)
+    ci.GLPatchVertexLayoutCallback = [](GLuint programObject,
+        Diligent::Uint32* numElements, Diligent::LayoutElement* elements,
+        Diligent::PipelineResourceLayoutDesc* resourceLayout, void* userData)
     {
         const auto& callback = *reinterpret_cast<decltype(patchInputLayout)*>(userData);
-        callback(programObject, *numElements, elements);
+        callback(programObject, *numElements, elements, *resourceLayout);
     };
+    // clang-format on
 #endif
 
     graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &handle_);
@@ -756,6 +828,20 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
         URHO3D_LOGERROR("Error has ocurred at Pipeline Build. ({})", desc_.ToHash());
         return false;
     }
+
+#if 0
+    SamplerDesc SamLinearClampDesc
+    {
+        FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR,
+        TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP
+    };
+    ImmutableSamplerDesc ImtblSamplers[] =
+    {
+        {SHADER_TYPE_PIXEL, "g_Texture", SamLinearClampDesc}
+    };
+    PSOCreateInfo.PSODesc.ResourceLayout.ImmutableSamplers    = ImtblSamplers;
+    PSOCreateInfo.PSODesc.ResourceLayout.NumImmutableSamplers = _countof(ImtblSamplers);
+#endif
 
     URHO3D_LOGDEBUG("Created Graphics Pipeline ({})", desc_.ToHash());
     return true;
