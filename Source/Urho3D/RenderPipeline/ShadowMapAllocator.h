@@ -28,6 +28,7 @@
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/Light.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <EASTL/vector.h>
 
@@ -53,6 +54,7 @@ public:
     bool BeginShadowMapRendering(const ShadowMapRegion& shadowMap);
 
     const ShadowMapAllocatorSettings& GetSettings() const { return settings_; }
+    const SamplerStateDesc& GetSamplerStateDesc() const { return samplerStateDesc_; }
 
 private:
     struct AtlasPage
@@ -78,6 +80,7 @@ private:
     /// Settings
     /// @{
     ShadowMapAllocatorSettings settings_;
+    SamplerStateDesc samplerStateDesc_;
     unsigned shadowMapFormat_{};
     IntVector2 shadowAtlasPageSize_;
     /// @}

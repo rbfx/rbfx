@@ -38,6 +38,7 @@ static const int MAX_TEXTURE_QUALITY_LEVELS = 3;
 
 class XMLElement;
 class XMLFile;
+struct SamplerStateDesc;
 
 /// Base class for texture resources.
 class URHO3D_API Texture : public ResourceWithMetadata, public GPUObject
@@ -223,6 +224,9 @@ public:
     /// Convert format to sRGB.
     /// @nobind
     unsigned GetSRGBFormat(unsigned format);
+
+    /// TODO(diligent): Store SamplerStateDesc in the texture object
+    SamplerStateDesc GetSamplerStateDesc() const;
 
     /// Set or clear the need resolve flag. Called internally by Graphics.
     void SetResolveDirty(bool enable) { resolveDirty_ = enable; }

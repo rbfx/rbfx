@@ -1450,11 +1450,12 @@ unsigned Material::RecalculatePipelineStateHash() const
     CombineHash(hash, MakeHash(depthBias_.slopeScaledBias_));
     CombineHash(hash, alphaToCoverage_);
     CombineHash(hash, specular_);
-    for (const auto& item : textures_)
+    for (const auto& [unit, texture] : textures_)
     {
-        CombineHash(hash, item.first);
-        CombineHash(hash, item.second->GetSRGB());
-        CombineHash(hash, item.second->GetLinear());
+        CombineHash(hash, unit);
+        CombineHash(hash, texture->GetSRGB());
+        CombineHash(hash, texture->GetLinear());
+        CombineHash(hash, texture->GetSamplerStateDesc().ToHash());
     }
 
     return hash;

@@ -81,6 +81,20 @@ void PipelineStateDesc::InitializeInputLayoutAndPrimitiveType(const Geometry* ge
     primitiveType_ = geometry->GetPrimitiveType();
 }
 
+bool PipelineStateDesc::AddSampler(StringHash samplerName, const SamplerStateDesc& samplerDesc)
+{
+    if (numSamplers_ >= MaxNumSamplers)
+    {
+        URHO3D_LOGWARNING("Too many samplers: PipelineState cannot handle more than {}", MaxNumSamplers);
+        return false;
+    }
+
+    samplerNames_[numSamplers_] = samplerName;
+    samplers_[numSamplers_] = samplerDesc;
+    ++numSamplers_;
+    return true;
+}
+
 PipelineState::PipelineState(PipelineStateCache* owner)
     : owner_(owner)
 {

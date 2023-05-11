@@ -512,8 +512,8 @@ void LightProcessor::UpdateHashes()
     CombineHash(commonHash, light_->GetLightType());
     CombineHash(commonHash, light_->IsNegative());
     CombineHash(commonHash, HasShadow());
-    CombineHash(commonHash, !!light_->GetShapeTexture());
-    CombineHash(commonHash, !!light_->GetRampTexture());
+    CombineHash(commonHash, light_->GetShapeTexture() ? light_->GetShapeTexture()->GetSamplerStateDesc().ToHash() : 0);
+    CombineHash(commonHash, light_->GetRampTexture() ? light_->GetRampTexture()->GetSamplerStateDesc().ToHash() : 0);
     CombineHash(commonHash, light_->GetSpecularIntensity() > 0.0f);
     CombineHash(commonHash, biasParameters.normalOffset_ > 0.0f);
     CombineHash(commonHash, MakeHash(biasParameters.constantBias_));
