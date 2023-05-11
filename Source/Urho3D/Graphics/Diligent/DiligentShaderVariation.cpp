@@ -429,7 +429,7 @@ Diligent::IShader* ShaderVariation::CreateShader(const CompiledShaderVariation& 
     createInfo.Desc.Name = name_.c_str();
 #endif
     createInfo.Desc.ShaderType = shaderTypes[type_];
-    createInfo.Desc.UseCombinedTextureSamplers = false; // TODO(diligent): Revisit this setting
+    createInfo.Desc.UseCombinedTextureSamplers = true;
     createInfo.EntryPoint = "main";
     createInfo.LoadConstantBufferReflection = true;
 

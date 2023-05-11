@@ -166,20 +166,26 @@ void CompileSpirV(SpirVShader& outputShader, EShLanguage stage, ea::string_view 
 class RemappingCompilerHLSL : public spirv_cross::CompilerHLSL
 {
 public:
-    RemappingCompilerHLSL(std::vector<unsigned> spirv) : spirv_cross::CompilerHLSL(spirv)
+    RemappingCompilerHLSL(std::vector<unsigned> spirv)
+        : spirv_cross::CompilerHLSL(ea::move(spirv))
     {
+        RemapInputLayout();
+        CollectSamplers();
     }
 
-    bool RemapInputLayout(ea::string& errorMessage)
+    std::string compile() override
     {
-        unsigned location = 0;
-        unsigned numErrors = 0;
+        std::string result = spirv_cross::CompilerHLSL::compile();
+        ReplaceSamplers(result);
+        return result;
+    }
 
+private:
+    void RemapInputLayout()
+    {
         const auto& execution = get_entry_point();
         if (execution.model == spv::ExecutionModelVertex)
         {
-            unsigned attribCount = 0;
-
             // Output Uniform Constants (values, samplers, images, etc).
             ir.for_each_typed_id<spirv_cross::SPIRVariable>([&](uint32_t, spirv_cross::SPIRVariable &var)
             {
@@ -194,9 +200,40 @@ public:
                 }
             });
         }
-
-        return numErrors == 0;
     }
+
+    void CollectSamplers()
+    {
+        ir.for_each_typed_id<spirv_cross::SPIRVariable>([&](uint32_t, spirv_cross::SPIRVariable &var)
+        {
+            auto& type = this->get<spirv_cross::SPIRType>(var.basetype);
+            auto& m = ir.meta[var.self].decoration;
+            if (type.basetype == spirv_cross::SPIRType::SampledImage && type.image.dim != spv::DimBuffer)
+            {
+                const std::string samplerName = "_" + m.alias + "_sampler";
+                samplers_.emplace_back(samplerName);
+            }
+        });
+    }
+
+    void ReplaceSamplers(std::string& hlsl)
+    {
+        // Use arbitrary non-text symbol to replace leading underscore in sampler name.
+        // Then remove it from the string.
+        const char placeholder = '\1';
+
+        // TODO(diligent): Optimize it?
+        for (const std::string& name : samplers_)
+        {
+            for (size_t pos = hlsl.find(name, 0); pos != std::string::npos; pos = hlsl.find(name, pos))
+                hlsl[pos] = placeholder;
+        }
+
+        const auto isPlaceholder = [placeholder](char c) { return c == placeholder; };
+        hlsl.erase(ea::remove_if(hlsl.begin(), hlsl.end(), isPlaceholder), hlsl.end());
+    }
+
+    ea::vector<std::string> samplers_;
 };
 
 /// Convert SpirV to HLSL5
@@ -206,8 +243,6 @@ void ConvertToHLSL5(TargetShader& output, const SpirVShader& shader)
     output.compilerOutput_.clear();
 
     RemappingCompilerHLSL compiler(shader.bytecode_);
-    if (!compiler.RemapInputLayout(output.compilerOutput_))
-        return;
 
     spirv_cross::CompilerGLSL::Options commonOptions;
     commonOptions.emit_line_directives = true;

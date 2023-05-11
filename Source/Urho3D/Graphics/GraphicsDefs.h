@@ -258,7 +258,7 @@ extern URHO3D_API const unsigned ELEMENT_TYPESIZES[];
 extern URHO3D_API const VertexElement LEGACY_VERTEXELEMENTS[];
 
 /// Texture filtering mode.
-enum TextureFilterMode
+enum TextureFilterMode : unsigned char
 {
     FILTER_NEAREST = 0,
     FILTER_BILINEAR,
@@ -280,7 +280,7 @@ static const char* textureFilterModeNames[] = {
 };
 
 /// Texture addressing mode.
-enum TextureAddressMode
+enum TextureAddressMode : unsigned char
 {
     ADDRESS_WRAP = 0,
     ADDRESS_MIRROR,
