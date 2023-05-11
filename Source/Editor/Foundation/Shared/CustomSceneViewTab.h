@@ -48,6 +48,8 @@ public:
     void RenderContent() override;
     /// @}
 
+    virtual void ResetCamera();
+
     Scene* GetScene() const { return preview_ ? preview_->GetScene() : nullptr; }
 
 protected:
