@@ -515,7 +515,7 @@ TEST_CASE("Serialize Action")
 
     auto action = MakeShared<ActionSet>(context);
     SharedPtr<Actions::BaseAction> innerAction = ActionBuilder(context).MoveBy(2.0f, Vector3(1, 2, 3)).Build();
-    action->SetDefaultAction(innerAction);
+    action->SetAction(innerAction);
 
     VectorBuffer buf;
     action->Save(buf);
@@ -525,9 +525,9 @@ TEST_CASE("Serialize Action")
     auto action2 = MakeShared<ActionSet>(context);
     action2->Load(buf);
 
-    CHECK(action->GetDefaultAction()->GetType() == action2->GetDefaultAction()->GetType());
-    auto expected = static_cast<Actions::MoveBy*>(action->GetDefaultAction());
-    auto actual = static_cast<Actions::MoveBy*>(action2->GetDefaultAction());
+    CHECK(action->GetAction()->GetType() == action2->GetAction()->GetType());
+    auto expected = static_cast<Actions::MoveBy*>(action->GetAction());
+    auto actual = static_cast<Actions::MoveBy*>(action2->GetAction());
     CHECK(Equals(expected->GetDuration(), actual->GetDuration()));
     CHECK(expected->GetPositionDelta().Equals(actual->GetPositionDelta()));
 }

@@ -30,10 +30,9 @@
 #include "../UI/UIElement.h"
 #include "AttributeActionState.h"
 #include "FiniteTimeActionState.h"
+#include "Urho3D/Graphics/StaticModel.h"
 
-namespace Urho3D
-{
-namespace Actions
+namespace Urho3D { namespace Actions
 {
 
 namespace
@@ -64,6 +63,35 @@ public:
     }
 };
 
+class CloneMaterialsState : public FiniteTimeActionState
+{
+public:
+    CloneMaterialsState(CloneMaterials* action, Object* target)
+        : FiniteTimeActionState(action, target)
+    {
+    }
+
+    void Update(float time) override
+    {
+        if (!triggered_)
+        {
+            triggered_ = true;
+            auto* target = dynamic_cast<StaticModel*>(GetTarget());
+            if (!target)
+            {
+                URHO3D_LOGERROR("CloneMaterials action is not running on StaticModel");
+                return;
+            }
+            for (unsigned i = 0; i < target->GetNumGeometries(); ++i)
+            {
+                target->SetMaterial(i, target->GetMaterial(i)->Clone());
+            }
+        }
+    }
+private:
+    bool triggered_{};
+};
+
 } // namespace
 
 /// Construct.
@@ -74,6 +102,18 @@ RemoveSelf::RemoveSelf(Context* context)
 
 /// Create new action state from the action.
 SharedPtr<ActionState> RemoveSelf::StartAction(Object* target) { return MakeShared<RemoveSelfState>(this, target); }
+
+/// Construct.
+CloneMaterials::CloneMaterials(Context* context)
+    : BaseClassName(context)
+{
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> CloneMaterials::StartAction(Object* target)
+{
+    return MakeShared<CloneMaterialsState>(this, target);
+}
 
 /// Construct.
 Hide::Hide(Context* context)

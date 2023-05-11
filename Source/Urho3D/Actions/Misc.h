@@ -43,6 +43,19 @@ protected:
     SharedPtr<ActionState> StartAction(Object* target) override;
 };
 
+/// Clone all materials from the target attributes.
+class URHO3D_API CloneMaterials : public FiniteTimeAction
+{
+    URHO3D_OBJECT(CloneMaterials, FiniteTimeAction)
+public:
+    /// Construct.
+    explicit CloneMaterials(Context* context);
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+};
+
 /// Show target. The Target should have "Is Visible" attribute.
 class URHO3D_API Show : public AttributeAction
 {

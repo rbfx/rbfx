@@ -30,6 +30,7 @@
 #include "Attribute.h"
 #include "Ease.h"
 #include "FiniteTimeActionState.h"
+#include "Misc.h"
 #include "Move.h"
 #include "Parallel.h"
 #include "Repeat.h"
@@ -111,6 +112,9 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
         ActionSet::RegisterObject(context);
     }
 
+    manager->AddFactoryReflection<RemoveSelf>();
+    manager->AddFactoryReflection<CloneMaterials>();
+    manager->AddFactoryReflection<DelayTime>();
     manager->AddFactoryReflection<EmptyAction>();
     manager->AddFactoryReflection<BaseAction>();
     manager->AddFactoryReflection<FiniteTimeAction>();
@@ -123,6 +127,7 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<AttributeTo>();
     manager->AddFactoryReflection<AttributeBlink>();
     manager->AddFactoryReflection<ShaderParameterFromTo>();
+    manager->AddFactoryReflection<ShaderParameterTo>();
     manager->AddFactoryReflection<EaseBackIn>();
     manager->AddFactoryReflection<EaseBackInOut>();
     manager->AddFactoryReflection<EaseBackOut>();

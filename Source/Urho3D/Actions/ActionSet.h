@@ -32,9 +32,9 @@ namespace Urho3D
 class XMLFile;
 
 /// Action as resource
-class URHO3D_API ActionSet : public Resource
+class URHO3D_API ActionSet : public SimpleResource
 {
-    URHO3D_OBJECT(ActionSet, Resource)
+    URHO3D_OBJECT(ActionSet, SimpleResource)
 
 public:
     /// Construct.
@@ -42,22 +42,21 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Load resource from stream. May be called from a worker thread. Return true if successful.
-    bool BeginLoad(Deserializer& source) override;
-
-    /// Save resource. Return true if successful.
-    bool Save(Serializer& dest) const override;
     /// Serialize from/to archive. Return true if successful.
     void SerializeInBlock(Archive& archive) override;
 
     /// Get action
-    Actions::BaseAction* GetDefaultAction() const { return defaultAction_; }
+    Actions::BaseAction* GetAction() const { return action_; }
     /// Set action
-    void SetDefaultAction(Actions::BaseAction* action);
+    void SetAction(Actions::BaseAction* action);
+
+protected:
+    /// Root block name. Used for XML serialization only.
+    const char* GetRootBlockName() const override { return "actionset"; };
 
 private:
     /// Root action.
-    SharedPtr<Actions::BaseAction> defaultAction_;
+    SharedPtr<Actions::BaseAction> action_;
 };
 
 } // namespace Urho3D

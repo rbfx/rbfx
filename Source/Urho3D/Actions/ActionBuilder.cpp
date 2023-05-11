@@ -130,7 +130,6 @@ ActionBuilder& ActionBuilder::MoveByQuadratic(
     return Then(action);
 }
 
-
 ActionBuilder& ActionBuilder::JumpBy(const Vector3& offset, ea::string_view attributeName)
 {
     const auto action = MakeShared<Actions::JumpBy>(context_);
@@ -421,6 +420,9 @@ ActionBuilder& ActionBuilder::ElasticInOut(float period)
 
 /// Combine with RemoveSelf action.
 ActionBuilder& ActionBuilder::RemoveSelf() { return Then(MakeShared<Actions::RemoveSelf>(context_)); }
+
+/// Combine with CloneMaterials action.
+ActionBuilder& ActionBuilder::CloneMaterials() { return Then(MakeShared<Actions::CloneMaterials>(context_)); }
 
 /// Combine with DelayTime action.
 ActionBuilder& ActionBuilder::DelayTime(float duration)

@@ -22,10 +22,12 @@
 
 #include "ShaderParameter.h"
 
+#include "../Actions/FiniteTimeActionState.h"
 #include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "FiniteTimeActionState.h"
-#include "Urho3D/Graphics/Material.h"
+#include "../Graphics/Material.h"
+#include "../Graphics/StaticModel.h"
+#include "../Graphics/AnimatedModel.h"
+#include "../Scene/Node.h"
 
 namespace Urho3D
 {
@@ -39,6 +41,7 @@ class ShaderParameterFromToState : public FiniteTimeActionState
     Variant from_;
     Variant to_;
     ea::string name_;
+    SharedPtr<Material> material_;
 
 public:
     ShaderParameterFromToState(ShaderParameterFromTo* action, Object* target)
@@ -47,14 +50,35 @@ public:
         , to_(action->GetTo())
         , name_(action->GetName())
     {
+        material_ = ShaderParameterFromToState::GetMaterial(GetTarget());
+    }
+
+    static Material* GetMaterial(Object* target)
+    {
+        if (!target)
+            return nullptr;
+        auto* material = target->Cast<Material>();
+        if (material)
+            return material;
+        if (auto* staticModel = target->Cast<StaticModel>())
+            return  staticModel->GetMaterial(0);
+
+        if (auto* node = target->Cast<Node>())
+        {
+            if (auto* staticModel = node->GetComponent<StaticModel>())
+                return staticModel->GetMaterial(0);
+            if (auto* animatedModel = node->GetComponent<AnimatedModel>())
+                return animatedModel->GetMaterial(0);
+        }
+        URHO3D_LOGERROR("Can't get matrial from {}", target->GetTypeName());
+        return nullptr;
     }
 
     void Update(float time) override
     {
-        auto* material = GetTarget()->Cast<Material>();
-        if (material)
+        if (material_)
         {
-            material->SetShaderParameter(name_, from_.Lerp(to_, time));
+            material_->SetShaderParameter(name_, from_.Lerp(to_, time));
         }
     }
 };
@@ -64,6 +88,7 @@ class ShaderParameterToState : public FiniteTimeActionState
     Variant from_;
     Variant to_;
     ea::string name_;
+    SharedPtr<Material> material_;
 
 public:
     ShaderParameterToState(ShaderParameterTo* action, Object* target)
@@ -71,10 +96,10 @@ public:
         , to_(action->GetTo())
         , name_(action->GetName())
     {
-        const auto* material = GetTarget()->Cast<Material>();
-        if (material)
+        material_ = ShaderParameterFromToState::GetMaterial(GetTarget());
+        if (material_)
         {
-            from_ = material->GetShaderParameter(name_);
+            from_ = material_->GetShaderParameter(name_);
             if (from_.GetType() != to_.GetType())
             {
                 from_ = to_;
@@ -84,10 +109,9 @@ public:
 
     void Update(float time) override
     {
-        auto* material = GetTarget()->Cast<Material>();
-        if (material)
+        if (material_)
         {
-            material->SetShaderParameter(name_, from_.Lerp(to_, time));
+            material_->SetShaderParameter(name_, from_.Lerp(to_, time));
         }
     }
 };

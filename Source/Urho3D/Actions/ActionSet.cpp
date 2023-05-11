@@ -22,55 +22,33 @@
 
 #include "ActionSet.h"
 
-#include "ActionManager.h"
+#include "../Actions/ActionManager.h"
+#include "../Actions/FiniteTimeAction.h"
 #include "../Core/Context.h"
 #include "../Resource/XMLFile.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Deserializer.h"
 
 namespace Urho3D
 {
 using namespace Actions;
 
 ActionSet::ActionSet(Context* context)
-    : Resource(context)
+    : BaseClassName(context)
 {
-    SetDefaultAction(nullptr);
+    SetAction(nullptr);
 }
 
 void ActionSet::RegisterObject(Context* context) { context->RegisterFactory<ActionSet>(); }
 
-bool ActionSet::BeginLoad(Deserializer& source)
-{
-    ea::string extension = GetExtension(source.GetName());
-
-    defaultAction_.Reset();
-
-    const auto xmlFile = MakeShared<XMLFile>(context_);
-    if (!xmlFile->Load(source))
-        return false;
-
-    return xmlFile->LoadObject("actions", *this);
-}
-
 /// Set action
-void ActionSet::SetDefaultAction(BaseAction* action)
+void ActionSet::SetAction(BaseAction* action)
 {
-    defaultAction_ = (action) ? action : (BaseAction*)context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction();
-}
-
-
-bool ActionSet::Save(Serializer& dest) const
-{
-    const auto xmlFile = MakeShared<XMLFile>(context_);
-    xmlFile->SaveObject("actions", *this);
-    xmlFile->Save(dest);
-    return true;
+    action_ = (action) ? action : static_cast<BaseAction*>(context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction());
 }
 
 void ActionSet::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "default", defaultAction_);
+    const SharedPtr<Actions::BaseAction> defaultValue{context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction()};
+    SerializeOptionalValue(archive, "action", action_, defaultValue);
 }
 
 } // namespace Urho3D

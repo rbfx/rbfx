@@ -170,6 +170,9 @@ public:
     /// Combine with ElasticInOut action.
     ActionBuilder& ElasticInOut(float period = 0.3f);
 
+    /// Combine with CloneMaterials action.
+    ActionBuilder& CloneMaterials();
+
     /// Combine with RemoveSelf action.
     ActionBuilder& RemoveSelf();
 
