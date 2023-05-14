@@ -26,6 +26,7 @@
 #include "ActionManager.h"
 #include "../Core/Context.h"
 #include "../IO/ArchiveSerializationBasic.h"
+#include "Urho3D/Resource/GraphNode.h"
 
 namespace Urho3D
 {
@@ -86,6 +87,41 @@ void FiniteTimeAction::SetDuration(float duration)
 SharedPtr<FiniteTimeAction> FiniteTimeAction::Reverse() const
 {
     return MakeShared<NoAction>(context_, const_cast<FiniteTimeAction*>(this));
+}
+
+GraphNode* FiniteTimeAction::ToGraphNode(Graph* graph) const
+{
+    auto* node = BaseAction::ToGraphNode(graph);
+    GraphInPin* pin = node->GetOrAddInput("duration");
+    pin->SetValue(duration_);
+    return node;
+}
+
+void FiniteTimeAction::FromGraphNode(GraphNode* node) const
+{
+    BaseAction::FromGraphNode(node);
+}
+
+/// Construct.
+DynamicAction::DynamicAction(Context* context)
+    : BaseClassName(context)
+{
+}
+
+void DynamicAction::SerializeInBlock(Archive& archive)
+{
+    // Skip FiniteTimeAction::SerializeInBlock intentionally.
+    BaseAction::SerializeInBlock(archive);
+}
+
+GraphNode* DynamicAction::ToGraphNode(Graph* graph) const
+{
+    return BaseAction::ToGraphNode(graph);
+}
+
+void DynamicAction::FromGraphNode(GraphNode* node) const
+{
+    BaseAction::FromGraphNode(node);
 }
 
 /// Construct.

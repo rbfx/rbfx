@@ -32,9 +32,9 @@ namespace Actions
 {
 
 /// Base action state.
-class URHO3D_API ActionEase : public FiniteTimeAction
+class URHO3D_API ActionEase : public DynamicAction
 {
-    URHO3D_OBJECT(ActionEase, FiniteTimeAction)
+    URHO3D_OBJECT(ActionEase, DynamicAction)
 public:
     /// Construct.
     explicit ActionEase(Context* context);

@@ -143,7 +143,7 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<EaseExponentialIn>();
     manager->AddFactoryReflection<EaseExponentialInOut>();
     manager->AddFactoryReflection<EaseExponentialOut>();
-    manager->AddFactoryReflection<Sequence>();
+    Sequence::RegisterObject(manager);
     manager->AddFactoryReflection<Parallel>();
     manager->AddFactoryReflection<Repeat>();
     manager->AddFactoryReflection<RepeatForever>();

@@ -167,8 +167,24 @@ public:
     /// @property
     void SetName(const ea::string& name);
 
+    /// Set position hint.
+    void SetPositionHint(const Vector2& position);
+
+    /// Get position hint.
+    const Vector2& GetPositionHint() const { return positionHint_; }
+
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
+
+    /// Get pin index by pointer.
+    unsigned GetPinIndex(const GraphInPin* pin) const { return static_cast<unsigned>(pin - inputPins_.begin()); }
+    /// Get pin index by pointer.
+    unsigned GetPinIndex(const GraphEnterPin* pin) const { return static_cast<unsigned>(pin - enterPins_.begin()); }
+    /// Get pin index by pointer.
+    unsigned GetPinIndex(const GraphExitPin* pin) const { return static_cast<unsigned>(pin - exitPins_.begin()); }
+    /// Get pin index by pointer.
+    unsigned GetPinIndex(const GraphOutPin* pin) const {return static_cast<unsigned>(pin - outputPins_.begin()); }
+
 
 protected:
     /// Set graph and id. Called by Graph.
@@ -197,6 +213,9 @@ private:
     ea::fixed_vector<GraphInPin, 3> inputPins_;
     /// Output pins. Define data flow.
     ea::fixed_vector<GraphOutPin, 1> outputPins_;
+
+    /// Node position hint in the editor.
+    Vector2 positionHint_{};
 
     friend class Graph;
 };

@@ -29,9 +29,9 @@
 namespace Urho3D
 {
 
-class XMLFile;
+class Graph;
 
-/// Action as resource
+    /// Action as resource
 class URHO3D_API ActionSet : public SimpleResource
 {
     URHO3D_OBJECT(ActionSet, SimpleResource)
@@ -50,9 +50,14 @@ public:
     /// Set action
     void SetAction(Actions::BaseAction* action);
 
+    /// Create GraphNode from the action. Required for action editor.
+    SharedPtr<Graph> ToGraph() const;
+    /// Initialize action from GraphNode. Required for action editor.
+    bool FromGraph(const Graph* graph);
+
 protected:
     /// Root block name. Used for XML serialization only.
-    const char* GetRootBlockName() const override { return "actionset"; };
+    const char* GetRootBlockName() const override { return "actionset"; }
 
 private:
     /// Root action.

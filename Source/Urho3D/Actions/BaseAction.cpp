@@ -28,6 +28,9 @@
 
 #include "../Core/Context.h"
 #include "../IO/Archive.h"
+#include "../Resource/GraphNode.h"
+#include "../Resource/Graph.h"
+#include "Urho3D/IO/Log.h"
 
 namespace Urho3D
 {
@@ -63,6 +66,42 @@ BaseAction* BaseAction::GetOrDefault(BaseAction* action) const
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void BaseAction::SerializeInBlock(Archive& archive) {}
+
+GraphNode* BaseAction::ToGraphNode(Graph* graph) const {
+    auto node = MakeShared<GraphNode>(context_);
+    node->SetName(GetTypeInfo()->GetTypeName());
+    node->GetOrAddEnter("");
+    graph->Add(node);
+    return node;
+}
+
+SharedPtr<Actions::BaseAction> BaseAction::MakeActionFromGraphNode(GraphNode* graphNode)
+{
+    if (!graphNode)
+        return {};
+
+    const auto name = graphNode->GetNameHash();
+    const auto reflection = graphNode->GetContext()->GetSubsystem<Urho3D::ActionManager>()->GetReflection(name);
+    if (!reflection)
+    {
+        URHO3D_LOGERROR("Can't create action of type {}", graphNode->GetName());
+        return {};
+    }
+
+    SharedPtr<BaseAction> action;
+    action.DynamicCast(reflection->CreateObject());
+    if (!action)
+    {
+        URHO3D_LOGERROR("Can't create action of type {}", graphNode->GetName());
+        return {};
+    }
+    action->FromGraphNode(graphNode);
+    return action;
+}
+
+void BaseAction::FromGraphNode(GraphNode* node) const
+{
+}
 
 /// Create new action state from the action.
 SharedPtr<ActionState> BaseAction::StartAction(Object* target) { return MakeShared<NoActionState>(this, target); }

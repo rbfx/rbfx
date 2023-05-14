@@ -32,9 +32,9 @@ namespace Actions
 {
 
 /// Set of actions to be executed in parallel.
-class URHO3D_API Parallel : public FiniteTimeAction
+class URHO3D_API Parallel : public DynamicAction
 {
-    URHO3D_OBJECT(Parallel, FiniteTimeAction)
+    URHO3D_OBJECT(Parallel, DynamicAction)
 public:
     /// Construct.
     explicit Parallel(Context* context);
@@ -59,6 +59,8 @@ public:
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
+
+    GraphNode* ToGraphNode(Graph* graph) const override;
 
 protected:
     /// Create new action state from the action.

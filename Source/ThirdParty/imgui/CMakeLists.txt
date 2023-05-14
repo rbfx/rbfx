@@ -24,6 +24,9 @@
 # stb_rectpack already included in the engine.
 
 file (GLOB SOURCE_FILES *.cpp *.h)
+file (GLOB NODEED_SOURCE_FILES "nodeeditor/*.cpp")
+list (APPEND SOURCE_FILES ${NODEED_SOURCE_FILES})
+
 list (APPEND SOURCE_FILES backends/imgui_impl_sdl.h backends/imgui_impl_sdl.cpp)
 if (WIN32 AND NOT URHO3D_OPENGL)
     if (NOT UWP)

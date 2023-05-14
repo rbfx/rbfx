@@ -241,6 +241,11 @@ void GraphNode::SetName(const ea::string& name)
     }
 }
 
+void GraphNode::SetPositionHint(const Vector2& position)
+{
+    positionHint_ = position;
+}
+
 void GraphNode::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "name", name_);
@@ -263,6 +268,7 @@ void GraphNode::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "in", inputPins_, EmptyObject{}, serializePinVector);
     SerializeOptionalValue(archive, "exit", exitPins_, EmptyObject{}, serializePinVector);
     SerializeOptionalValue(archive, "out", outputPins_, EmptyObject{}, serializePinVector);
+    SerializeOptionalValue(archive, "pos", positionHint_, Vector2::ZERO);
 }
 
 void GraphNode::SetGraph(Graph* scene, unsigned id)

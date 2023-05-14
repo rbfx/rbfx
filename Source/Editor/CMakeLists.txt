@@ -59,6 +59,9 @@ if (TARGET libEditor)
     set_target_properties(libEditor PROPERTIES PREFIX "")
 endif ()
 
+# Group source code in VS solution
+group_sources()
+
 target_include_directories(${EDITOR_TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries (${EDITOR_TARGET} PUBLIC Urho3D)
 if (TARGET TracyEmbedded)

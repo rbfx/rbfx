@@ -103,8 +103,7 @@ float ActionEase::Ease(float time) const { return time; }
 /// Serialize content from/to archive. May throw ArchiveException.
 void ActionEase::SerializeInBlock(Archive& archive)
 {
-    // Skipping FiniteTimeAction::SerializeInBlock on purpose to skip duration serialization
-    BaseAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeValue(archive, "innerAction", innerAction_);
 }
 

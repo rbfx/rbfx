@@ -52,6 +52,9 @@ public:
     /// Get number of nodes in the graph.
     unsigned GetNumNodes() const { return nodes_.size(); }
 
+    /// Get node id that is not present in the graph.
+    unsigned GetNextNodeId() const { return laskKnownNodeID_; }
+
     /// Get node ids.
     void GetNodeIds(ea::vector<unsigned>& ids) const;
 

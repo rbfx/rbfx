@@ -38,6 +38,10 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/Utility/AssetPipeline.h>
 
+#ifdef URHO3D_ACTIONS
+    #include "Urho3D/Actions/ActionSet.h"
+#endif
+
 namespace Urho3D
 {
 
@@ -73,6 +77,15 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
         if (desc.HasExtension({".material"}) || ctx.HasXMLRoot("material"))
             desc.AddObjectType<Material>();
     });
+
+    #ifdef URHO3D_ACTIONS
+    project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
+    {
+        if (desc.HasExtension({".action"}) || ctx.HasXMLRoot("actionset"))
+            desc.AddObjectType<ActionSet>();
+    });
+    #endif
+
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {

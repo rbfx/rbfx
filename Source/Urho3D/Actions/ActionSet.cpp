@@ -25,7 +25,9 @@
 #include "../Actions/ActionManager.h"
 #include "../Actions/FiniteTimeAction.h"
 #include "../Core/Context.h"
-#include "../Resource/XMLFile.h"
+#include "../Resource/Graph.h"
+#include "Urho3D/Resource/GraphNode.h"
+// #include "../Resource/XMLFile.h"
 
 namespace Urho3D
 {
@@ -43,6 +45,57 @@ void ActionSet::RegisterObject(Context* context) { context->RegisterFactory<Acti
 void ActionSet::SetAction(BaseAction* action)
 {
     action_ = (action) ? action : static_cast<BaseAction*>(context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction());
+}
+
+SharedPtr<Graph> ActionSet::ToGraph() const
+{
+    auto graph = MakeShared<Graph>(context_);
+    if (action_)
+    {
+        action_->ToGraphNode(graph);
+    }
+    return graph;
+}
+
+bool ActionSet::FromGraph(const Graph* graph)
+{
+    const unsigned numNodes = graph ? graph->GetNumNodes() : 0;
+    if (!numNodes)
+    {
+        action_ = nullptr;
+        return true;
+    }
+
+    ea::vector<unsigned> nodeIds;
+    graph->GetNodeIds(nodeIds);
+
+    ea::unordered_set<unsigned> rootNodes;
+    rootNodes.insert(nodeIds.begin(), nodeIds.end());
+    for (unsigned i : nodeIds)
+    {
+        auto node = graph->GetNode(i);
+        for (unsigned pinIndex = 0; pinIndex < node->GetNumExits(); ++pinIndex)
+        {
+            auto pin = node->GetExit(pinIndex);
+            auto connectedPin = pin.GetConnectedPin<GraphEnterPin>();
+            if (connectedPin.GetNode())
+            {
+                rootNodes.erase(connectedPin.GetNode()->GetID());
+            }
+        }
+    }
+
+    if (rootNodes.empty())
+    {
+        URHO3D_LOGERROR("No enter node found.");
+        return false;
+    }
+    if (rootNodes.size() > 1)
+    {
+        URHO3D_LOGERROR("More than one enter node found.");
+    }
+    action_ = BaseAction::MakeActionFromGraphNode(graph->GetNode(*rootNodes.begin()));
+    return rootNodes.size() == 1;
 }
 
 void ActionSet::SerializeInBlock(Archive& archive)
