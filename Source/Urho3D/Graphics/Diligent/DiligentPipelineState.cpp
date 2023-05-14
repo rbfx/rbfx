@@ -4,20 +4,617 @@
 #include "DiligentGraphicsImpl.h"
 #include "DiligentLookupSettings.h"
 
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/RenderAPI/OpenGLIncludes.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
+
+#include <EASTL/optional.h>
+#include <EASTL/span.h>
 
 namespace Urho3D
 {
-static unsigned sNumComponents[] = {
-    1, // TYPE_INT
-    1, // TYPE_FLOAT
-    2, // TYPE_VECTOR2
-    3, // TYPE_VECTOR3
-    4, // TYPE_VECTOR4
-    4, // TYPE_UBYTE4
-    4, // TYPE_UBYTE4_NORM
+
+namespace
+{
+
+unsigned GetScalarUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType)
+{
+    switch (basicType)
+    {
+    case Diligent::SHADER_CODE_BASIC_TYPE_INT64:
+    case Diligent::SHADER_CODE_BASIC_TYPE_UINT64:
+    case Diligent::SHADER_CODE_BASIC_TYPE_DOUBLE: return sizeof(double);
+
+    default: return sizeof(float);
+    }
+}
+
+unsigned GetVectorUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType, unsigned numElements)
+{
+    switch (numElements)
+    {
+    case 1: return GetScalarUniformSize(basicType);
+
+    case 2: return 2 * GetScalarUniformSize(basicType);
+
+    case 3: return 3 * GetScalarUniformSize(basicType);
+
+    case 4: return 4 * GetScalarUniformSize(basicType);
+
+    default: return 0;
+    }
+}
+
+unsigned GetVectorArrayUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType, unsigned numElements, unsigned arraySize)
+{
+    const unsigned alignment = 4 * sizeof(float);
+    const unsigned elementSize = GetVectorUniformSize(basicType, numElements);
+    return arraySize * ((elementSize + alignment - 1) / alignment) * alignment;
+}
+
+unsigned GetMatrixUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType, unsigned innerSize, unsigned outerSize)
+{
+    return outerSize * GetVectorUniformSize(basicType, innerSize);
+}
+
+unsigned GetUniformSize(const Diligent::ShaderCodeVariableDesc& uniformDesc)
+{
+    if (uniformDesc.ArraySize > 1)
+    {
+        switch (uniformDesc.Class)
+        {
+        case Diligent::SHADER_CODE_VARIABLE_CLASS_SCALAR:
+            return GetVectorArrayUniformSize(uniformDesc.BasicType, 1, uniformDesc.ArraySize);
+
+        case Diligent::SHADER_CODE_VARIABLE_CLASS_VECTOR:
+            return GetVectorArrayUniformSize(
+                uniformDesc.BasicType, ea::max(uniformDesc.NumColumns, uniformDesc.NumRows), uniformDesc.ArraySize);
+
+        case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS:
+            return GetVectorArrayUniformSize(
+                uniformDesc.BasicType, uniformDesc.NumRows, uniformDesc.ArraySize * uniformDesc.NumColumns);
+
+        case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS:
+            return GetVectorArrayUniformSize(
+                uniformDesc.BasicType, uniformDesc.NumColumns, uniformDesc.ArraySize * uniformDesc.NumRows);
+
+        default: return 0;
+        }
+    }
+    else
+    {
+        switch (uniformDesc.Class)
+        {
+        case Diligent::SHADER_CODE_VARIABLE_CLASS_SCALAR: //
+            return GetScalarUniformSize(uniformDesc.BasicType);
+
+        case Diligent::SHADER_CODE_VARIABLE_CLASS_VECTOR:
+            return GetVectorUniformSize(uniformDesc.BasicType, ea::max(uniformDesc.NumColumns, uniformDesc.NumRows));
+
+        case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS:
+            return GetVectorArrayUniformSize(uniformDesc.BasicType, uniformDesc.NumRows, uniformDesc.NumColumns);
+
+        case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS:
+            return GetVectorArrayUniformSize(uniformDesc.BasicType, uniformDesc.NumColumns, uniformDesc.NumRows);
+
+        default: return 0;
+        }
+    }
+}
+
+ea::optional<ea::string_view> SanitateUniformName(ea::string_view name)
+{
+    const auto pos = name.find('c');
+    if (pos == ea::string_view::npos || pos + 1 == name.length())
+        return ea::nullopt;
+
+    return name.substr(pos + 1);
+}
+
+ea::optional<ea::string_view> SanitateResourceName(ea::string_view name)
+{
+    if (name.empty() || name[0] != 's')
+        return ea::nullopt;
+
+    return name.substr(1);
+}
+
+/// TODO(diligent): Get rid of this hack when we remove other backends
+class ShaderReflectionImpl : public ShaderProgramLayout
+{
+public:
+    void AddOrCheckConstantBuffer(ShaderParameterGroup group, unsigned size)
+    {
+        const unsigned oldSize = GetConstantBufferSize(group);
+        if (oldSize != 0)
+        {
+            if (oldSize != size)
+                URHO3D_LOGWARNING("Constant buffer #{} has inconsistent size in different stages", group);
+            return;
+        }
+
+        AddConstantBuffer(group, size);
+    }
+
+    void AddOrCheckShaderParameter(ShaderParameterGroup group, const Diligent::ShaderCodeVariableDesc& desc)
+    {
+        const auto sanitatedName = SanitateUniformName(desc.Name);
+        if (!sanitatedName)
+        {
+            URHO3D_LOGWARNING("Cannot parse uniform with name '{}'", desc.Name);
+            return;
+        }
+
+        const unsigned uniformSize = GetUniformSize(desc);
+        if (uniformSize == 0)
+        {
+            URHO3D_LOGWARNING("Cannot deduce the size of the uniform '{}'", *sanitatedName);
+            return;
+        }
+
+        AddOrCheckShaderParameter(group, *sanitatedName, uniformSize, desc.Offset);
+    }
+
+    void AddOrCheckShaderParameter(ShaderParameterGroup group, ea::string_view name, unsigned size, unsigned offset)
+    {
+        const auto nameHash = StringHash{name};
+        const ShaderParameterReflection* oldParameter = GetConstantBufferParameter(nameHash);
+        if (oldParameter)
+        {
+            if (oldParameter->size_ != size)
+                URHO3D_LOGWARNING("Uniform '{}' has inconsistent size in different stages", name);
+            if (oldParameter->offset_ != offset)
+                URHO3D_LOGWARNING("Uniform '{}' has inconsistent offset in different stages", name);
+            if (oldParameter->group_ != group)
+                URHO3D_LOGWARNING("Uniform '{}' has inconsistent owner in different stages", name);
+            return;
+        }
+
+        AddConstantBufferParameter(nameHash, group, offset, size);
+    }
+
+    void AddOrCheckShaderResource(StringHash name, ea::string_view internalName)
+    {
+        AddShaderResource(name, internalName);
+    }
+
+    void Cook()
+    {
+        RecalculateLayoutHash();
+    }
 };
-static VALUE_TYPE sValueTypes[] = {VT_INT32, VT_FLOAT32, VT_FLOAT32, VT_FLOAT32, VT_FLOAT32, VT_UINT32, VT_UINT8};
+
+void InitializeLayoutElements(
+    ea::vector<Diligent::LayoutElement>& result, ea::span<const VertexElementInBuffer> vertexElements)
+{
+    static const unsigned numComponents[] = {
+        1, // TYPE_INT
+        1, // TYPE_FLOAT
+        2, // TYPE_VECTOR2
+        3, // TYPE_VECTOR3
+        4, // TYPE_VECTOR4
+        4, // TYPE_UBYTE4
+        4, // TYPE_UBYTE4_NORM
+    };
+
+    static const Diligent::VALUE_TYPE valueTypes[] = {
+        Diligent::VT_INT32, // TYPE_INT
+        Diligent::VT_FLOAT32, // TYPE_FLOAT
+        Diligent::VT_FLOAT32, // TYPE_VECTOR2
+        Diligent::VT_FLOAT32, // TYPE_VECTOR3
+        Diligent::VT_FLOAT32, // TYPE_VECTOR4
+        Diligent::VT_UINT8, // TYPE_UBYTE4
+        Diligent::VT_UINT8 // TYPE_UBYTE4_NORM
+    };
+
+    static const bool isNormalized[] = {
+        false, // TYPE_INT
+        false, // TYPE_FLOAT
+        false, // TYPE_VECTOR2
+        false, // TYPE_VECTOR3
+        false, // TYPE_VECTOR4
+        false, // TYPE_UBYTE4
+        true // TYPE_UBYTE4_NORM
+    };
+
+    result.clear();
+    result.reserve(vertexElements.size());
+
+    for (const VertexElementInBuffer& sourceElement : vertexElements)
+    {
+        Diligent::LayoutElement& destElement = result.emplace_back();
+
+        destElement.InputIndex = M_MAX_UNSIGNED;
+        destElement.RelativeOffset = sourceElement.offset_;
+        destElement.NumComponents = numComponents[sourceElement.type_];
+        destElement.ValueType = valueTypes[sourceElement.type_];
+        destElement.IsNormalized = isNormalized[sourceElement.type_];
+        destElement.BufferSlot = sourceElement.bufferIndex_;
+        destElement.Stride = sourceElement.bufferStride_;
+        // TODO(xr): Patch this place
+        destElement.Frequency =
+            sourceElement.perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
+    }
+}
+
+void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const PipelineStateDesc& desc,
+    const ShaderProgramLayout& reflection)
+{
+    static const Diligent::FILTER_TYPE minMagFilter[][2] = {
+        {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_NEAREST
+        {FILTER_TYPE_LINEAR, FILTER_TYPE_COMPARISON_LINEAR}, // FILTER_BILINEAR
+        {FILTER_TYPE_LINEAR, FILTER_TYPE_COMPARISON_LINEAR}, // FILTER_TRILINEAR
+        {FILTER_TYPE_ANISOTROPIC, FILTER_TYPE_COMPARISON_ANISOTROPIC}, // FILTER_ANISOTROPIC
+        {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_NEAREST_ANISOTROPIC
+    };
+    static const Diligent::FILTER_TYPE mipFilter[][2] = {
+        {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_NEAREST
+        {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_BILINEAR
+        {FILTER_TYPE_LINEAR, FILTER_TYPE_COMPARISON_LINEAR}, // FILTER_TRILINEAR
+        {FILTER_TYPE_ANISOTROPIC, FILTER_TYPE_COMPARISON_ANISOTROPIC}, // FILTER_ANISOTROPIC
+        {FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR}, // FILTER_NEAREST_ANISOTROPIC
+    };
+    static const Diligent::TEXTURE_ADDRESS_MODE addressMode[] = {
+        Diligent::TEXTURE_ADDRESS_WRAP, // ADDRESS_WRAP
+        Diligent::TEXTURE_ADDRESS_MIRROR, // ADDRESS_MIRROR
+        Diligent::TEXTURE_ADDRESS_CLAMP, // ADDRESS_CLAMP
+        Diligent::TEXTURE_ADDRESS_BORDER // ADDRESS_BORDER
+    };
+
+    for (unsigned i = 0; i < desc.numSamplers_; ++i)
+    {
+        const StringHash nameHash = desc.samplerNames_[i];
+        if (const ShaderResourceReflection* resourceReflection = reflection.GetShaderResource(nameHash))
+        {
+            const SamplerStateDesc& sourceSampler = desc.samplers_[i];
+
+            // TODO(diligent): Configure defaults
+            const int anisotropy = sourceSampler.anisotropy_ ? sourceSampler.anisotropy_ : 4;
+            const TextureFilterMode filterMode =
+                sourceSampler.filterMode_ != FILTER_DEFAULT ? sourceSampler.filterMode_ : FILTER_TRILINEAR;
+
+            Diligent::ImmutableSamplerDesc& destSampler = result.emplace_back();
+
+            destSampler.ShaderStages = SHADER_TYPE_ALL_GRAPHICS;
+            destSampler.SamplerOrTextureName = resourceReflection->internalName_.c_str();
+            destSampler.Desc.MinFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
+            destSampler.Desc.MagFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
+            destSampler.Desc.MipFilter = mipFilter[filterMode][sourceSampler.shadowCompare_];
+            destSampler.Desc.AddressU = addressMode[sourceSampler.addressMode_[COORD_U]];
+            destSampler.Desc.AddressV = addressMode[sourceSampler.addressMode_[COORD_V]];
+            destSampler.Desc.AddressW = addressMode[sourceSampler.addressMode_[COORD_W]];
+            destSampler.Desc.MaxAnisotropy = anisotropy;
+            destSampler.Desc.ComparisonFunc = COMPARISON_FUNC_LESS_EQUAL;
+            destSampler.Desc.MinLOD = -M_INFINITY;
+            destSampler.Desc.MaxLOD = M_INFINITY;
+            memcpy(&destSampler.Desc.BorderColor, sourceSampler.borderColor_.Data(), 4 * sizeof(float));
+        }
+    }
+}
+
+bool IsSameSematics(const VertexElementInBuffer& lhs, const VertexShaderAttribute& rhs)
+{
+    return lhs.semantic_ == rhs.semantic_ && lhs.index_ == rhs.semanticIndex_;
+}
+
+void FillLayoutElementIndices(ea::span<Diligent::LayoutElement> result,
+    ea::span<const VertexElementInBuffer> vertexElements, const VertexShaderAttributeVector& attributes)
+{
+    URHO3D_ASSERT(result.size() == vertexElements.size());
+
+    const unsigned numExpectedAttributes = attributes.size();
+    for (const VertexShaderAttribute& attribute : attributes)
+    {
+        // For each attribute, find the latest element in the layout that matches the attribute.
+        // This is needed because the layout may contain multiple elements with the same semantic.
+        const auto iter = ea::find(vertexElements.rbegin(), vertexElements.rend(), attribute, &IsSameSematics);
+        if (iter != vertexElements.rend())
+        {
+            const unsigned elementIndex = vertexElements.rend() - iter - 1;
+            result[elementIndex].InputIndex = attribute.inputIndex_;
+        }
+        else
+        {
+            URHO3D_LOGERROR("Attribute #{} with semantics '{}{}' is not found in the vertex layout",
+                attribute.inputIndex_, ToShaderInputName(attribute.semantic_), attribute.semanticIndex_);
+        }
+    }
+}
+
+unsigned RemoveUnusedElements(ea::span<Diligent::LayoutElement> result)
+{
+    const auto isUnused = [](const Diligent::LayoutElement& element) { return element.InputIndex == M_MAX_UNSIGNED; };
+    const auto iter = ea::remove_if(result.begin(), result.end(), isUnused);
+    return iter - result.begin();
+}
+
+Diligent::IShader* ToHandle(ShaderVariation* shader)
+{
+    // TODO(diligent): Simplify this function, we should have better API.
+    return shader ? shader->GetGPUObject().Cast<Diligent::IShader>(Diligent::IID_Shader).RawPtr() : nullptr;
+}
+
+ea::optional<ShaderParameterGroup> ParseConstantBufferName(ea::string_view name)
+{
+    static const ea::string builtinNames[] = {
+        "Frame",
+        "Camera",
+        "Zone",
+        "Light",
+        "Material",
+        "Object",
+        "Custom",
+    };
+    for (unsigned group = 0; group < MAX_SHADER_PARAMETER_GROUPS; ++group)
+    {
+        if (builtinNames[group] == name)
+            return static_cast<ShaderParameterGroup>(group);
+    }
+    return ea::nullopt;
+}
+
+void AppendConstantBufferToReflection(ShaderReflectionImpl& reflection, Diligent::IShader* shader,
+    unsigned resourceIndex, const Diligent::ShaderResourceDesc& desc)
+{
+    const auto bufferGroup = ParseConstantBufferName(desc.Name);
+    if (!bufferGroup)
+    {
+        URHO3D_LOGWARNING("Unknown constant buffer '{}' is ignored", desc.Name);
+        return;
+    }
+
+    const Diligent::ShaderCodeBufferDesc& bufferDesc = *shader->GetConstantBufferDesc(resourceIndex);
+    reflection.AddOrCheckConstantBuffer(*bufferGroup, bufferDesc.Size);
+
+    const unsigned numUniforms = bufferDesc.NumVariables;
+    for (unsigned uniformIndex = 0; uniformIndex < numUniforms; ++uniformIndex)
+    {
+        const Diligent::ShaderCodeVariableDesc& uniformDesc = bufferDesc.pVariables[uniformIndex];
+        reflection.AddOrCheckShaderParameter(*bufferGroup, uniformDesc);
+    }
+}
+
+void AppendShaderReflection(ShaderReflectionImpl& reflection, Diligent::IShader* shader)
+{
+    const unsigned numResources = shader->GetResourceCount();
+    for (unsigned resourceIndex = 0; resourceIndex < numResources; ++resourceIndex)
+    {
+        Diligent::ShaderResourceDesc desc;
+        shader->GetResourceDesc(resourceIndex, desc);
+
+        switch (desc.Type)
+        {
+        case SHADER_RESOURCE_TYPE_CONSTANT_BUFFER:
+            AppendConstantBufferToReflection(reflection, shader, resourceIndex, desc);
+            break;
+
+        case SHADER_RESOURCE_TYPE_TEXTURE_SRV:
+            if (const auto sanitatedName = SanitateResourceName(desc.Name))
+                reflection.AddOrCheckShaderResource(StringHash{*sanitatedName}, desc.Name);
+            break;
+
+        default: break;
+        }
+    }
+}
+
+SharedPtr<ShaderProgramLayout> ReflectShaders(std::initializer_list<Diligent::IShader*> shaders)
+{
+    auto reflection = MakeShared<ShaderReflectionImpl>();
+    for (Diligent::IShader* shader : shaders)
+    {
+        if (shader)
+            AppendShaderReflection(*reflection, shader);
+    }
+    reflection->Cook();
+    return reflection;
+}
+
+#if GL_SUPPORTED || GLES_SUPPORTED
+
+VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
+{
+    GLint numActiveAttribs = 0;
+    GLint maxNameLength = 0;
+    glGetProgramiv(programObject, GL_ACTIVE_ATTRIBUTES, &numActiveAttribs);
+    glGetProgramiv(programObject, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxNameLength);
+
+    ea::string attributeName;
+    attributeName.resize(maxNameLength, '\0');
+
+    VertexShaderAttributeVector result;
+    for (int attribIndex = 0; attribIndex < numActiveAttribs; ++attribIndex)
+    {
+        GLint attributeSize = 0;
+        GLenum attributeType = 0;
+        glGetActiveAttrib(programObject, attribIndex, maxNameLength, nullptr, &attributeSize, &attributeType,
+            attributeName.data());
+
+        if (const auto element = ParseVertexAttribute(attributeName.c_str()))
+        {
+            const int location = glGetAttribLocation(programObject, attributeName.c_str());
+            URHO3D_ASSERT(location != -1);
+
+            result.push_back({element->semantic_, element->semanticIndex_, static_cast<unsigned>(location)});
+        }
+        else
+        {
+            URHO3D_LOGWARNING("Unknown vertex element semantic: {}", attributeName);
+        }
+    }
+
+    return result;
+}
+
+ea::optional<ea::string_view> SanitateGLUniformName(ea::string_view name)
+{
+    // Remove trailing '[0]' from array names
+    const unsigned subscriptIndex = name.find('[');
+    if (subscriptIndex != ea::string::npos)
+    {
+        // If not the first index, skip
+        if (name.find("[0]", subscriptIndex) == ea::string::npos)
+            return ea::nullopt;
+
+        name = name.substr(0, subscriptIndex);
+    }
+
+    // Remove uniform buffer name
+    const unsigned dotIndex = name.find('.');
+    if (dotIndex != ea::string::npos)
+        name = name.substr(dotIndex + 1);
+
+    // Remove trailing 'c', ignore other uniforms
+    if (name.empty() || name[0] != 'c')
+        return ea::nullopt;
+
+    return name.substr(1);
+}
+
+void ConstructUniformDesc(Diligent::ShaderCodeVariableDesc& result, Diligent::SHADER_CODE_VARIABLE_CLASS kind,
+    Diligent::SHADER_CODE_BASIC_TYPE basicType, unsigned numColumns, unsigned numRows)
+{
+    result.Class = kind;
+    result.BasicType = basicType;
+    result.NumColumns = numColumns;
+    result.NumRows = numRows;
+}
+
+Diligent::ShaderCodeVariableDesc CreateUniformDesc(GLenum type, GLint elementCount)
+{
+    using namespace Diligent;
+
+    ShaderCodeVariableDesc result;
+    result.ArraySize = elementCount;
+    switch (type)
+    {
+    case GL_BOOL:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_SCALAR, SHADER_CODE_BASIC_TYPE_BOOL, 1, 1);
+        break;
+
+    case GL_INT:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_SCALAR, SHADER_CODE_BASIC_TYPE_INT, 1, 1);
+        break;
+
+    case GL_FLOAT:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_SCALAR, SHADER_CODE_BASIC_TYPE_FLOAT, 1, 1);
+        break;
+
+    case GL_FLOAT_VEC2:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 2, 1);
+        break;
+
+    case GL_FLOAT_VEC3:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 3, 1);
+        break;
+
+    case GL_FLOAT_VEC4:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 1);
+        break;
+
+    case GL_FLOAT_MAT3:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS, SHADER_CODE_BASIC_TYPE_FLOAT, 3, 3);
+        break;
+
+    case GL_FLOAT_MAT3x4:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 3);
+        break;
+
+    case GL_FLOAT_MAT4:
+        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 4);
+        break;
+
+    default: break;
+    }
+
+    return result;
+}
+
+SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
+{
+    auto reflection = MakeShared<ShaderReflectionImpl>();
+
+    GLint numUniformBlocks = 0;
+    GLint numUniforms = 0;
+    glGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &numUniformBlocks);
+    glGetProgramiv(programObject, GL_ACTIVE_UNIFORMS, &numUniforms);
+
+    ea::vector<ShaderParameterGroup> indexToGroup;
+
+    ea::string name;
+    for (GLuint uniformBlockIndex = 0; uniformBlockIndex < static_cast<GLuint>(numUniformBlocks); ++uniformBlockIndex)
+    {
+        GLint nameLength = 0;
+        glGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_NAME_LENGTH, &nameLength);
+        name.resize(nameLength, '\0');
+        glGetActiveUniformBlockName(programObject, uniformBlockIndex, nameLength, &nameLength, name.data());
+
+        const auto bufferGroup = ParseConstantBufferName(name.c_str());
+        if (!bufferGroup)
+        {
+            URHO3D_LOGWARNING("Unknown constant buffer '{}' is ignored", name);
+            continue;
+        }
+
+        GLint dataSize = 0;
+        glGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &dataSize);
+
+        reflection->AddOrCheckConstantBuffer(*bufferGroup, dataSize);
+
+        const unsigned blockIndex = glGetUniformBlockIndex(programObject, name.c_str());
+        if (blockIndex >= indexToGroup.size())
+            indexToGroup.resize(blockIndex + 1, MAX_SHADER_PARAMETER_GROUPS);
+        indexToGroup[blockIndex] = *bufferGroup;
+    }
+
+    for (GLuint uniformIndex = 0; uniformIndex < static_cast<GLuint>(numUniforms); ++uniformIndex)
+    {
+        GLint nameLength = 0;
+        glGetActiveUniformsiv(programObject, 1, &uniformIndex, GL_UNIFORM_NAME_LENGTH, &nameLength);
+        name.resize(nameLength, '\0');
+
+        GLint elementCount = 0;
+        GLenum type = 0;
+        glGetActiveUniform(programObject, uniformIndex, nameLength, nullptr, &elementCount, &type, name.data());
+
+        if (const auto sanitatedResourceName = SanitateResourceName(name.c_str()))
+        {
+            reflection->AddOrCheckShaderResource(StringHash{*sanitatedResourceName}, name.c_str());
+            continue;
+        }
+
+        const auto sanitatedName = SanitateGLUniformName(name.c_str());
+        if (!sanitatedName)
+            continue;
+
+        GLint blockIndex = 0;
+        GLint blockOffset = 0;
+        glGetActiveUniformsiv(programObject, 1, &uniformIndex, GL_UNIFORM_BLOCK_INDEX, &blockIndex);
+        glGetActiveUniformsiv(programObject, 1, &uniformIndex, GL_UNIFORM_OFFSET, &blockOffset);
+
+        if (blockIndex >= 0 && blockIndex < indexToGroup.size())
+        {
+            const ShaderParameterGroup group = indexToGroup[blockIndex];
+            if (group != MAX_SHADER_PARAMETER_GROUPS)
+            {
+                const unsigned size = GetUniformSize(CreateUniformDesc(type, elementCount));
+                reflection->AddOrCheckShaderParameter(group, *sanitatedName, size, blockOffset);
+            }
+        }
+    }
+
+    reflection->Cook();
+    return reflection;
+}
+
+#endif
+
+}
+
 using namespace Diligent;
 bool PipelineState::BuildPipeline(Graphics* graphics)
 {
@@ -70,11 +667,50 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     }
 
     if (invalidFmt)
-        pipeline_ = nullptr;
-    if (pipeline_)
+        handle_ = nullptr;
+    if (handle_)
         return true;
-    ea::vector<LayoutElement> layoutElements;
+
+    Diligent::IRenderDevice* renderDevice = graphics->GetImpl()->GetDevice();
+    const bool isOpenGL = graphics->GetRenderBackend() == RENDER_GL;
+    const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
+    URHO3D_ASSERT(isOpenGL || hasSeparableShaderPrograms);
+
+    // TODO(diligent): This is hack to force shader compilation, we should not need it
+    graphics->GetShaderProgramLayout(desc_.vertexShader_, desc_.pixelShader_);
+
     GraphicsPipelineStateCreateInfo ci;
+
+    ea::vector<LayoutElement> layoutElements;
+    InitializeLayoutElements(layoutElements, desc_.GetVertexElements());
+
+    ea::vector<Diligent::ImmutableSamplerDesc> immutableSamplers;
+
+    Diligent::IShader* vertexShader = ToHandle(desc_.vertexShader_);
+    Diligent::IShader* pixelShader = ToHandle(desc_.pixelShader_);
+    Diligent::IShader* domainShader = ToHandle(desc_.domainShader_);
+    Diligent::IShader* hullShader = ToHandle(desc_.hullShader_);
+    Diligent::IShader* geometryShader = ToHandle(desc_.geometryShader_);
+
+    // On OpenGL, vertex layout initialization is postponed until the program is linked.
+    if (!isOpenGL)
+    {
+        const VertexShaderAttributeVector& vertexShaderAttributes = desc_.vertexShader_->GetVertexShaderAttributes();
+        FillLayoutElementIndices(layoutElements, desc_.GetVertexElements(), vertexShaderAttributes);
+        const unsigned numElements = RemoveUnusedElements(layoutElements);
+        layoutElements.resize(numElements);
+    }
+
+    // On OpenGL, uniform layout initialization may be postponed.
+    if (hasSeparableShaderPrograms)
+    {
+        reflection_ = ReflectShaders({vertexShader, pixelShader, domainShader, hullShader, geometryShader});
+
+        InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
+        ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
+        ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
+    }
+
 #ifdef URHO3D_DEBUG
     if (desc_.debugName_.empty())
         URHO3D_LOGWARNING(
@@ -85,79 +721,6 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
 #endif
     ci.GraphicsPipeline.PrimitiveTopology = DiligentPrimitiveTopology[desc_.primitiveType_];
 
-    {
-        assert(desc_.vertexShader_);
-        // Create LayoutElement based vertex shader input layout
-        const ea::vector<VertexElement>& shaderVertexElements = desc_.vertexShader_->GetVertexElements();
-        ea::vector<VertexElement> vertexBufferElements(
-            desc_.vertexElements_.begin(), desc_.vertexElements_.begin() + desc_.numVertexElements_);
-        unsigned attribCount = 0;
-
-        /*ea::string dbgShaderVertexElements = "";
-        ea::string dbgVertexBufferElements = "";
-
-        for (auto shaderVertexElement = shaderVertexElements.begin(); shaderVertexElement != shaderVertexElements.end();
-        ++shaderVertexElement) dbgShaderVertexElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n",
-        elementSemanticNames[shaderVertexElement->semantic_], shaderVertexElement->index_,
-        shaderVertexElement->offset_)); for (auto vertexBufferElement = vertexBufferElements.begin();
-        vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement)
-            dbgVertexBufferElements.append(Format("Semantic: {} | Index: {} | Offset: {}\n",
-        elementSemanticNames[vertexBufferElement->semantic_], vertexBufferElement->index_,
-        vertexBufferElement->offset_));*/
-        auto BuildLayoutElement = [=](const VertexElement* element, LayoutElement& layoutElement)
-        {
-            LayoutElement result = {};
-            layoutElement.RelativeOffset = element->offset_;
-            layoutElement.NumComponents = sNumComponents[element->type_];
-            layoutElement.ValueType = sValueTypes[element->type_];
-            if (element->semantic_ == SEM_BLENDINDICES)
-                layoutElement.ValueType = VT_UINT8;
-            layoutElement.IsNormalized = element->semantic_ == SEM_COLOR;
-            layoutElement.BufferSlot = element->perInstance_ ? 1 : 0;
-            layoutElement.Frequency =
-                element->perInstance_ ? INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
-        };
-
-        for (const VertexElement* shaderVertexElement = shaderVertexElements.begin();
-             shaderVertexElement != shaderVertexElements.end(); ++shaderVertexElement)
-        {
-            bool insert = false;
-            LayoutElement layoutElement = {};
-            layoutElement.InputIndex = attribCount;
-
-            for (const VertexElement* vertexBufferElement = vertexBufferElements.begin();
-                 vertexBufferElement != vertexBufferElements.end(); ++vertexBufferElement)
-            {
-                if (vertexBufferElement->semantic_ != shaderVertexElement->semantic_
-                    || vertexBufferElement->index_ != shaderVertexElement->index_)
-                    continue;
-                BuildLayoutElement(vertexBufferElement, layoutElement);
-                // Remove from vector processed vertex element
-                vertexBufferElements.erase(vertexBufferElement);
-                insert = true;
-                break;
-            }
-
-            if (insert)
-            {
-                layoutElements.push_back(layoutElement);
-                ++attribCount;
-            }
-        }
-        // Add last semantics if has left vertex buffer elements
-        for (const VertexElement* element = vertexBufferElements.begin(); element != vertexBufferElements.end();
-             ++element)
-        {
-            LayoutElement layoutElement = {};
-            layoutElement.InputIndex = attribCount;
-            BuildLayoutElement(element, layoutElement);
-            layoutElements.push_back(layoutElement);
-            ++attribCount;
-        }
-
-        assert(layoutElements.size());
-    }
-
     ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
     ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
 
@@ -166,16 +729,11 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
         ci.GraphicsPipeline.RTVFormats[i] = (TEXTURE_FORMAT)desc_.renderTargetsFormats_[i];
     ci.GraphicsPipeline.DSVFormat = (TEXTURE_FORMAT)desc_.depthStencilFormat_;
 
-    if (desc_.vertexShader_)
-        ci.pVS = desc_.vertexShader_->GetGPUObject().Cast<IShader>(IID_Shader);
-    if (desc_.pixelShader_)
-        ci.pPS = desc_.pixelShader_->GetGPUObject().Cast<IShader>(IID_Shader);
-    if (desc_.domainShader_)
-        ci.pDS = desc_.domainShader_->GetGPUObject().Cast<IShader>(IID_Shader);
-    if (desc_.hullShader_)
-        ci.pHS = desc_.hullShader_->GetGPUObject().Cast<IShader>(IID_Shader);
-    if (desc_.geometryShader_)
-        ci.pGS = desc_.geometryShader_->GetGPUObject().Cast<IShader>(IID_Shader);
+    ci.pVS = vertexShader;
+    ci.pPS = pixelShader;
+    ci.pDS = domainShader;
+    ci.pHS = hullShader;
+    ci.pGS = geometryShader;
 
     ci.GraphicsPipeline.BlendDesc.AlphaToCoverageEnable = desc_.alphaToCoverageEnabled_;
     ci.GraphicsPipeline.BlendDesc.IndependentBlendEnable = false;
@@ -230,26 +788,75 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     PipelineStateCache* psoCache = graphics->GetSubsystem<PipelineStateCache>();
     if (psoCache->object_)
         ci.pPSOCache = psoCache->object_.Cast<IPipelineStateCache>(IID_PipelineStateCache);
-    graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &pipeline_);
 
-    if (!pipeline_)
+#if GL_SUPPORTED || GLES_SUPPORTED
+    // clang-format off
+    auto patchInputLayout = [&](GLuint programObject, Diligent::Uint32& numElements, Diligent::LayoutElement* elements,
+        Diligent::PipelineResourceLayoutDesc& resourceLayout)
+    {
+        const ea::span<Diligent::LayoutElement> elementsSpan{elements, numElements};
+        const auto vertexAttributes = GetGLVertexAttributes(programObject);
+
+        FillLayoutElementIndices(elementsSpan, desc_.GetVertexElements(), vertexAttributes);
+        numElements = RemoveUnusedElements(elementsSpan);
+
+        if (!hasSeparableShaderPrograms)
+        {
+            reflection_ = ReflectGLProgram(programObject);
+
+            InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
+            resourceLayout.NumImmutableSamplers = immutableSamplers.size();
+            resourceLayout.ImmutableSamplers = immutableSamplers.data();
+        }
+    };
+
+    ci.GLPatchVertexLayoutCallbackUserData = &patchInputLayout;
+    ci.GLPatchVertexLayoutCallback = [](GLuint programObject,
+        Diligent::Uint32* numElements, Diligent::LayoutElement* elements,
+        Diligent::PipelineResourceLayoutDesc* resourceLayout, void* userData)
+    {
+        const auto& callback = *reinterpret_cast<decltype(patchInputLayout)*>(userData);
+        callback(programObject, *numElements, elements, *resourceLayout);
+    };
+    // clang-format on
+#endif
+
+    graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &handle_);
+
+    if (!handle_)
     {
         URHO3D_LOGERROR("Error has ocurred at Pipeline Build. ({})", desc_.ToHash());
         return false;
     }
 
+#if 0
+    SamplerDesc SamLinearClampDesc
+    {
+        FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR,
+        TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP
+    };
+    ImmutableSamplerDesc ImtblSamplers[] =
+    {
+        {SHADER_TYPE_PIXEL, "g_Texture", SamLinearClampDesc}
+    };
+    PSOCreateInfo.PSODesc.ResourceLayout.ImmutableSamplers    = ImtblSamplers;
+    PSOCreateInfo.PSODesc.ResourceLayout.NumImmutableSamplers = _countof(ImtblSamplers);
+#endif
+
     URHO3D_LOGDEBUG("Created Graphics Pipeline ({})", desc_.ToHash());
+    return true;
 }
+
 void PipelineState::ReleasePipeline()
 {
-    pipeline_ = nullptr;
+    handle_ = nullptr;
 }
 
 ShaderResourceBinding* PipelineState::CreateInternalSRB()
 {
-    assert(pipeline_);
+    assert(handle_);
 
-    IPipelineState* pipeline = static_cast<IPipelineState*>(pipeline_);
+    IPipelineState* pipeline = static_cast<IPipelineState*>(handle_);
     IShaderResourceBinding* srb = nullptr;
     pipeline->CreateShaderResourceBinding(&srb, false);
     assert(srb);

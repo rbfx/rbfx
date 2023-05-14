@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 #include "Urho3D/Shader/ShaderDefs.h"
 
 // TODO(diligent): Revisit
@@ -47,17 +48,14 @@ struct TargetShader
 };
 
 /// Convert universal GLSL shader to SPIR-V.
-URHO3D_API void ParseUniversalShader(
-    SpirVShader& output, ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines);
+URHO3D_API void ParseUniversalShader(SpirVShader& output, ShaderType shaderType, ea::string_view sourceCode,
+    const ShaderDefineArray& shaderDefines, TargetShaderLanguage targetLanguage);
 
 /// Convert SPIR-V shader to target shader language.
 URHO3D_API void TranslateSpirVShader(
     TargetShader& output, const SpirVShader& shader, TargetShaderLanguage targetLanguage);
 
-// TODO(diligent): Revisit
-bool CompileGLSLToSpirV(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
-    ea::vector<unsigned>& outputByteCode, ea::string& errorMessage);
-bool ConvertShaderToHLSL5(const ea::vector<unsigned>& byteCode, ea::string& outputShaderCode, ea::string& errorMessage);
-bool ConvertSPIRVToGLSL(const ea::vector<unsigned>& byteCode, ea::string& outputShaderCode, ea::string& errorMessage);
+/// Extract vertex attributes from SPIR-V.
+URHO3D_API VertexShaderAttributeVector GetVertexAttributesFromSpirV(const SpirVShader& shader);
 
 }

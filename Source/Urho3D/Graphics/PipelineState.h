@@ -31,6 +31,7 @@
 #include "../Graphics/ShaderProgramLayout.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Graphics/ShaderResourceBinding.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
 
@@ -87,6 +88,21 @@ private:
     }
 };
 
+/// Vertex element with additional buffer information.
+struct VertexElementInBuffer : public VertexElement
+{
+    /// Source buffer index.
+    unsigned bufferIndex_{};
+    /// Source buffer stride.
+    unsigned bufferStride_{};
+
+    VertexElementInBuffer() = default;
+    VertexElementInBuffer(const VertexElement& element)
+        : VertexElement(element)
+    {
+    }
+};
+
 /// Description structure used to create PipelineState.
 /// Should contain all relevant information about input layout,
 /// shader resources and parameters and pipeline configuration.
@@ -94,7 +110,9 @@ private:
 /// TODO: Store render target formats here as well
 struct PipelineStateDesc
 {
-    static const unsigned MaxNumVertexElements = Diligent::MAX_LAYOUT_ELEMENTS;
+    /// Some vertex elements in layout may be unused and the hard GPU limit is only applied to the used ones.
+    static const unsigned MaxNumVertexElements = 2 * Diligent::MAX_LAYOUT_ELEMENTS;
+    static const unsigned MaxNumSamplers = 16;
 
     /// Debug
     /// @{
@@ -106,11 +124,16 @@ struct PipelineStateDesc
     /// Input layout
     /// @{
     unsigned numVertexElements_{};
-    ea::array<VertexElement, MaxNumVertexElements> vertexElements_;
+    ea::array<VertexElementInBuffer, MaxNumVertexElements> vertexElements_;
     IndexBufferType indexType_{};
 
     void InitializeInputLayout(const GeometryBufferArray& buffers);
     void InitializeInputLayoutAndPrimitiveType(const Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
+
+    ea::span<const VertexElementInBuffer> GetVertexElements() const
+    {
+        return {vertexElements_.data(), numVertexElements_};
+    }
     /// @}
 
     /// Render Target Formats
@@ -159,6 +182,15 @@ struct PipelineStateDesc
     bool alphaToCoverageEnabled_{};
     /// @}
 
+    /// Samplers
+    /// @{
+    unsigned numSamplers_{};
+    ea::array<StringHash, MaxNumSamplers> samplerNames_;
+    ea::array<SamplerStateDesc, MaxNumSamplers> samplers_;
+
+    bool AddSampler(StringHash samplerName, const SamplerStateDesc& samplerDesc);
+    /// @}
+
     /// Cached hash of the structure.
     unsigned hash_{};
     unsigned ToHash() const { return hash_; }
@@ -197,7 +229,10 @@ struct PipelineStateDesc
 
             && colorWriteEnabled_ == rhs.colorWriteEnabled_
             && blendMode_ == rhs.blendMode_
-            && alphaToCoverageEnabled_ == rhs.alphaToCoverageEnabled_;
+            && alphaToCoverageEnabled_ == rhs.alphaToCoverageEnabled_
+
+            && numSamplers_ == rhs.numSamplers_
+            && samplers_ == rhs.samplers_;
     }
 
     /// Return whether the description structure is properly initialized.
@@ -248,6 +283,14 @@ struct PipelineStateDesc
         CombineHash(hash, blendMode_);
         CombineHash(hash, alphaToCoverageEnabled_);
 
+        CombineHash(hash, numSamplers_);
+        for (unsigned i = 0; i < numSamplers_; ++i)
+        {
+            const SamplerStateDesc& samplerDesc = samplers_[i];
+            CombineHash(hash, samplerNames_[i].Value());
+            CombineHash(hash, samplers_[i].ToHash());
+        }
+
         // Consider 0-hash invalid
         hash_ = ea::max(1u, hash);
     }
@@ -268,15 +311,16 @@ public:
 
     /// Getters
     /// @{
-    bool IsValid() const { return !!shaderProgramLayout_; }
+    bool IsValid() const { return !!reflection_; }
     const PipelineStateDesc& GetDesc() const { return desc_; }
-    ShaderProgramLayout* GetShaderProgramLayout() const { return shaderProgramLayout_; }
-    unsigned GetShaderID() const { return shaderProgramLayout_->GetObjectID(); }
+    ShaderProgramLayout* GetReflection() const { return reflection_; }
+    unsigned GetShaderID() const { return reflection_->GetObjectID(); }
     /// @}
 
     /// Create Shader Resource Binding
     Urho3D::ShaderResourceBinding* CreateSRB();
-    Diligent::RefCntAutoPtr<Diligent::IPipelineState> GetGPUPipeline() const { return pipeline_; }
+    Diligent::IPipelineState* GetHandle() const { return const_cast<Diligent::IPipelineState*>(handle_.RawPtr()); }
+
 private:
     bool BuildPipeline(Graphics* graphics);
     Urho3D::ShaderResourceBinding* CreateInternalSRB();
@@ -284,10 +328,12 @@ private:
 
     WeakPtr<PipelineStateCache> owner_;
     PipelineStateDesc desc_;
-    WeakPtr<ShaderProgramLayout> shaderProgramLayout_{};
 
     ea::vector<SharedPtr<Urho3D::ShaderResourceBinding>> shaderResourceBindings_;
-    Diligent::RefCntAutoPtr<Diligent::IPipelineState> pipeline_{};
+
+    Diligent::RefCntAutoPtr<Diligent::IPipelineState> handle_{};
+    // TODO(diligent): We may want to actually share reflection objects between pipeline states.
+    SharedPtr<ShaderProgramLayout> reflection_;
 };
 
 /// Generic pipeline state cache.

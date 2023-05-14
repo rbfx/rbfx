@@ -26,6 +26,7 @@
 #include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
 #include "../RenderPipeline/CameraProcessor.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/LightProcessor.h"
 #include "../RenderPipeline/PipelineStateBuilder.h"
@@ -100,6 +101,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
             key.geometry_, key.geometryType_, key.material_, key.pass_, light);
         SetupShadowPassState(ctx.shadowSplitIndex_, key.pixelLight_, key.material_, key.pass_);
 
+        SetupSamplersForUserOrShadowPass(key.material_, nullptr, false, false);
         SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
@@ -109,6 +111,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
             key.geometry_, key.geometryType_, key.pass_, light, hasShadow);
         SetupLightVolumePassState(key.pixelLight_);
 
+        // TODO(diligent): Setup samplers for light volume pass
         SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
@@ -121,6 +124,8 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
         const auto subpass = static_cast<BatchCompositorSubpass>(ctx.subpassIndex_);
         const bool lightMaskToStencil = subpass == BatchCompositorSubpass::Deferred
             && batchCompositorPass->GetFlags().Test(DrawableProcessorPassFlag::DeferredLightMaskToStencil);
+        const bool hasAmbient = batchCompositorPass->GetFlags().Test(DrawableProcessorPassFlag::HasAmbientLighting);
+        const bool hasLightmap = key.drawable_->GetGlobalIlluminationType() == GlobalIlluminationType::UseLightMap;
 
         compositor_->ProcessUserBatch(shaderProgramDesc_, batchCompositorPass->GetFlags(),
             key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_, light, hasShadow, subpass);
@@ -139,9 +144,11 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
                 pipelineStateDesc_.blendMode_ = BLEND_SUBTRACTALPHA;
         }
 
+        SetupSamplersForUserOrShadowPass(key.material_, key.pixelLight_, hasLightmap, hasAmbient);
         SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
+
 
     return renderer_->GetOrCreatePipelineState(pipelineStateDesc_);
 }
@@ -274,6 +281,47 @@ void PipelineStateBuilder::SetupShaders(PipelineStateDesc& pipelineStateDesc, Sh
         VS, shaderProgramDesc.shaderName_[VS], shaderProgramDesc.shaderDefines_[VS]);
     pipelineStateDesc.pixelShader_ = graphics_->GetShader(
         PS, shaderProgramDesc.shaderName_[PS], shaderProgramDesc.shaderDefines_[PS]);
+}
+
+void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(
+    const Material* material, const LightProcessor* lightProcessor, bool hasLightmap, bool hasAmbient)
+{
+    // TODO(diligent): Make configurable
+    static const SamplerStateDesc lightMapSampler{};
+    static const SamplerStateDesc reflectionMapSampler{};
+
+    const Light* light = lightProcessor ? lightProcessor->GetLight() : nullptr;
+    bool materialHasEnvironmentMap = false;
+    for (const auto& [unit, texture] : material->GetTextures())
+    {
+        if (texture)
+        {
+            const StringHash textureName = Material::TextureUnitToShaderResource(unit);
+            if (textureName == ShaderResources::EmissiveMap && hasLightmap)
+                continue;
+            if (textureName == ShaderResources::EnvMap)
+                materialHasEnvironmentMap = true;
+            pipelineStateDesc_.AddSampler(textureName, texture->GetSamplerStateDesc());
+        }
+    }
+
+    if (hasLightmap)
+        pipelineStateDesc_.AddSampler(ShaderResources::EmissiveMap, lightMapSampler);
+    if (light)
+    {
+        if (Texture* rampTexture = light->GetRampTexture())
+            pipelineStateDesc_.AddSampler(ShaderResources::LightRampMap, rampTexture->GetSamplerStateDesc());
+        if (Texture* shapeTexture = light->GetShapeTexture())
+            pipelineStateDesc_.AddSampler(ShaderResources::LightRampMap, shapeTexture->GetSamplerStateDesc());
+    }
+    if (lightProcessor && lightProcessor->HasShadow())
+        pipelineStateDesc_.AddSampler(ShaderResources::ShadowMap, shadowMapAllocator_->GetSamplerStateDesc());
+
+    if (hasAmbient)
+    {
+        pipelineStateDesc_.AddSampler(ShaderResources::EnvMap, reflectionMapSampler);
+        pipelineStateDesc_.AddSampler(ShaderResources::ZoneCubeMap, reflectionMapSampler);
+    }
 }
 
 }

@@ -28,7 +28,6 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/PipelineState.h"
-#include "../Graphics/ShaderParameterCollection.h"
 #include "../Graphics/ConstantBufferCollection.h"
 #include "../Graphics/ShaderResourceBindingCache.h"
 #include "../IO/Log.h"
@@ -42,7 +41,7 @@ class Graphics;
 /// Reference to input shader resource. Only textures are supported now.
 struct ShaderResourceDesc
 {
-    TextureUnit unit_{};
+    StringHash name_{};
     Texture* texture_{};
 };
 
@@ -69,11 +68,7 @@ struct DrawCommandDescription
     PipelineState* pipelineState_{};
     GeometryBufferArray inputBuffers_;
 
-    union
-    {
-        ea::array<ShaderParameterRange, MAX_SHADER_PARAMETER_GROUPS> shaderParameters_;
-        ea::array<ConstantBufferCollectionRef, MAX_SHADER_PARAMETER_GROUPS> constantBuffers_;
-    };
+    ea::array<ConstantBufferCollectionRef, MAX_SHADER_PARAMETER_GROUPS> constantBuffers_;
 
     ShaderResourceRange shaderResources_;
 
@@ -100,18 +95,14 @@ public:
     DrawCommandQueue(Graphics* graphics);
 
     /// Reset queue.
-    void Reset(bool preferConstantBuffers = true);
+    void Reset();
 
     /// Set pipeline state. Must be called first.
     void SetPipelineState(PipelineState* pipelineState)
     {
         assert(pipelineState);
         currentDrawCommand_.pipelineState_ = pipelineState;
-
-        if (useConstantBuffers_)
-        {
-            constantBuffers_.currentLayout_ = pipelineState->GetShaderProgramLayout();
-        }
+        constantBuffers_.currentLayout_ = pipelineState->GetReflection();
     }
 
     /// Set scissor rect.
@@ -127,30 +118,27 @@ public:
     /// Begin shader parameter group. All parameters shall be set for each draw command.
     bool BeginShaderParameterGroup(ShaderParameterGroup group, bool differentFromPrevious = false)
     {
-        if (useConstantBuffers_)
+        const unsigned groupLayoutHash = constantBuffers_.currentLayout_->GetConstantBufferHash(group);
+        const unsigned size = constantBuffers_.currentLayout_->GetConstantBufferSize(group);
+        ConstantBufferManagerTicket* ticket = cbufferManager_->GetTicket(group, size);
+        currentCBufferTicket_ = ticket;
+        if (!ticket)
+            return false;
+        // If constant buffer for this group is currently disabled...
+        if (groupLayoutHash == 0)
         {
-            const unsigned groupLayoutHash = constantBuffers_.currentLayout_->GetConstantBufferHash(group);
-            const unsigned size = constantBuffers_.currentLayout_->GetConstantBufferSize(group);
-            ConstantBufferManagerTicket* ticket = cbufferManager_->GetTicket(group, size);
-            currentCBufferTicket_ = ticket;
-            if (!ticket)
-                return false;
-            // If constant buffer for this group is currently disabled...
-            if (groupLayoutHash == 0)
-            {
-                // If contents changed, forget cached constant buffer
-                if (differentFromPrevious)
-                    constantBuffers_.currentHashes_[group] = 0;
-                return false;
-            }
-            // If data or layout changes, acquire new ticket
-            if (differentFromPrevious || groupLayoutHash != constantBuffers_.currentHashes_[group])
-            {
-                constantBuffers_.currentData_ = ticket->GetPointerData();
-                constantBuffers_.currentHashes_[group] = groupLayoutHash;
-                constantBuffers_.currentGroup_ = group;
-                return true;
-            }
+            // If contents changed, forget cached constant buffer
+            if (differentFromPrevious)
+                constantBuffers_.currentHashes_[group] = 0;
+            return false;
+        }
+        // If data or layout changes, acquire new ticket
+        if (differentFromPrevious || groupLayoutHash != constantBuffers_.currentHashes_[group])
+        {
+            constantBuffers_.currentData_ = ticket->GetPointerData();
+            constantBuffers_.currentHashes_[group] = groupLayoutHash;
+            constantBuffers_.currentGroup_ = group;
+            return true;
         }
         return false;
     }
@@ -159,56 +147,37 @@ public:
     template <class T>
     void AddShaderParameter(StringHash name, const T& value)
     {
-        if (useConstantBuffers_)
+        const auto* paramInfo = constantBuffers_.currentLayout_->GetConstantBufferParameter(name);
+        if (paramInfo)
         {
-            const auto& paramInfo = constantBuffers_.currentLayout_->GetConstantBufferParameter(name);
-            if (paramInfo.offset_ != M_MAX_UNSIGNED)
+            if (constantBuffers_.currentGroup_ != paramInfo->group_)
             {
-                if (constantBuffers_.currentGroup_ != paramInfo.group_)
-                {
-                    URHO3D_LOGERROR("Shader parameter #{} '{}' shall be stored in group {} instead of group {}",
-                        name.Value(), name.Reverse(), constantBuffers_.currentGroup_, paramInfo.group_);
-                    return;
-                }
-
-                if (!ConstantBufferCollection::StoreParameter(constantBuffers_.currentData_ + paramInfo.offset_,
-                    paramInfo.size_, value))
-                {
-                    URHO3D_LOGERROR("Shader parameter #{} '{}' has unexpected type, {} bytes expected",
-                        name.Value(), name.Reverse(), paramInfo.size_);
-                }
+                URHO3D_LOGERROR("Shader parameter #{} '{}' shall be stored in group {} instead of group {}",
+                    name.Value(), name.Reverse(), constantBuffers_.currentGroup_, paramInfo->group_);
+                return;
             }
-        }
-        else
-        {
-            shaderParameters_.collection_.AddParameter(name, value);
-            ++shaderParameters_.currentGroupRange_.second;
+
+            if (!ConstantBufferCollection::StoreParameter(constantBuffers_.currentData_ + paramInfo->offset_,
+                paramInfo->size_, value))
+            {
+                URHO3D_LOGERROR("Shader parameter #{} '{}' has unexpected type, {} bytes expected",
+                    name.Value(), name.Reverse(), paramInfo->size_);
+            }
         }
     }
 
     /// Commit shader parameter group. Shall be called only if BeginShaderParameterGroup returned true.
     void CommitShaderParameterGroup(ShaderParameterGroup group)
     {
-        if (useConstantBuffers_)
-        {
-            currentDrawCommand_.cbufferTicketIds_[group] = currentCBufferTicket_->GetId();
-            // All data is already stored, nothing to do
-            constantBuffers_.currentGroup_ = MAX_SHADER_PARAMETER_GROUPS;
-
-        }
-        else
-        {
-            // Store range in draw op
-            currentDrawCommand_.shaderParameters_[static_cast<unsigned>(group)] = shaderParameters_.currentGroupRange_;
-            shaderParameters_.currentGroupRange_.first = shaderParameters_.collection_.Size();
-            shaderParameters_.currentGroupRange_.second = shaderParameters_.currentGroupRange_.first;
-        }
+        currentDrawCommand_.cbufferTicketIds_[group] = currentCBufferTicket_->GetId();
+        // All data is already stored, nothing to do
+        constantBuffers_.currentGroup_ = MAX_SHADER_PARAMETER_GROUPS;
     }
 
     /// Add shader resource.
-    void AddShaderResource(TextureUnit unit, Texture* texture)
+    void AddShaderResource(StringHash name, Texture* texture)
     {
-        shaderResources_.push_back(ShaderResourceDesc{ unit, texture });
+        shaderResources_.push_back(ShaderResourceDesc{name, texture});
         ++currentShaderResourceGroup_.second;
     }
 
@@ -297,18 +266,6 @@ public:
 private:
     /// Cached pointer to Graphics.
     Graphics* graphics_{};
-    /// Whether to use constant buffers.
-    bool useConstantBuffers_{};
-
-    /// Shader parameters data when constant buffers are not used.
-    struct ShaderParametersData
-    {
-        /// Shader parameters collection.
-        ShaderParameterCollection collection_;
-
-        /// Current shader parameter group range.
-        ShaderParameterRange currentGroupRange_;
-    } shaderParameters_;
 
     /// Shader parameters data when constant buffers are used.
     struct ConstantBuffersData

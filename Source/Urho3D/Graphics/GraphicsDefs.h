@@ -36,11 +36,11 @@ class Vector3;
 
 // Graphics capability support level. Web platform (Emscripten) also uses OpenGL ES, but is considered a desktop platform capability-wise.
 // TODO(diligent): Revisit this distinction
-#if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || (defined(__aarch64__) && !defined(MACOS))
-#define MOBILE_GRAPHICS
-#else
+//#if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || (defined(__aarch64__) && !defined(MACOS))
+//#define MOBILE_GRAPHICS
+//#else
 #define DESKTOP_GRAPHICS
-#endif
+//#endif
 
 ///
 enum RenderBackend
@@ -247,6 +247,7 @@ struct URHO3D_API VertexElement
     /// Offset of element from vertex start. Filled by VertexBuffer once the vertex declaration is built.
     unsigned offset_;
     /// Location of element, used by Diligent on OpenGL
+    /// TODO(diligent): Remove this
     unsigned location_;
 };
 
@@ -257,7 +258,7 @@ extern URHO3D_API const unsigned ELEMENT_TYPESIZES[];
 extern URHO3D_API const VertexElement LEGACY_VERTEXELEMENTS[];
 
 /// Texture filtering mode.
-enum TextureFilterMode
+enum TextureFilterMode : unsigned char
 {
     FILTER_NEAREST = 0,
     FILTER_BILINEAR,
@@ -279,7 +280,7 @@ static const char* textureFilterModeNames[] = {
 };
 
 /// Texture addressing mode.
-enum TextureAddressMode
+enum TextureAddressMode : unsigned char
 {
     ADDRESS_WRAP = 0,
     ADDRESS_MIRROR,

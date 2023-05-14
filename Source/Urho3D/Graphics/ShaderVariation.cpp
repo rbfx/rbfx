@@ -31,22 +31,6 @@
 namespace Urho3D
 {
 
-ShaderParameter::ShaderParameter(const ea::string& name, unsigned glType, int location) :   // NOLINT(hicpp-member-init)
-    name_{name},
-    glType_{glType},
-    location_{location}
-{
-}
-
-ShaderParameter::ShaderParameter(ShaderType type, const ea::string& name, unsigned offset, unsigned size, unsigned buffer) :    // NOLINT(hicpp-member-init)
-    type_{type},
-    name_{name},
-    offset_{offset},
-    size_{size},
-    buffer_{buffer}
-{
-}
-
 ShaderVariation::ShaderVariation(Shader* owner, ShaderType type) :
     GPUObject(owner->GetSubsystem<Graphics>()),
     owner_(owner),

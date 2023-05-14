@@ -1038,12 +1038,13 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
 #endif
         drawQueue->SetScissorRect(scissor);
 
+        // TODO(diligent): Revisit constants
         if (!batch.customMaterial_)
-            drawQueue->AddShaderResource(TU_DIFFUSE, batch.texture_);
+            drawQueue->AddShaderResource("DiffMap", batch.texture_);
         else
         {
             for (const auto& texture : batch.customMaterial_->GetTextures())
-                drawQueue->AddShaderResource(texture.first, texture.second);
+                drawQueue->AddShaderResource(Material::TextureUnitToShaderResource(texture.first), texture.second);
         }
         drawQueue->CommitShaderResources();
 

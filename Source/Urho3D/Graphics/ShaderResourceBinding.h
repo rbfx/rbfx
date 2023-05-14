@@ -29,6 +29,8 @@
     #include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceBinding.h>
 #endif
 
+#include <EASTL/fixed_vector.h>
+
 namespace Urho3D
 {
 class URHO3D_API ShaderResourceBinding : public RefCounted
@@ -37,9 +39,9 @@ public:
     ShaderResourceBinding(Graphics* graphics, Diligent::IShaderResourceBinding* shaderResBindingObj = nullptr);
     ~ShaderResourceBinding();
     void SetConstantBuffer(ShaderParameterGroup group, WeakPtr<ConstantBuffer> cbuffer);
-    void SetTexture(TextureUnit texUnit, WeakPtr<Texture> texture);
+    void SetTexture(const ea::string& texUnit, WeakPtr<Texture> texture);
     WeakPtr<ConstantBuffer> GetConstantBuffer(ShaderParameterGroup group) { return constantBuffers_[group]; }
-    WeakPtr<Texture> GetTexture(TextureUnit texUnit) { return textures_[texUnit]; }
+    //WeakPtr<Texture> GetTexture(TextureUnit texUnit) { return textures_[texUnit]; }
     bool IsDirty() { return dirty_; }
     void MakeDirty() { dirty_ = true; }
     void UpdateBindings();
@@ -56,7 +58,7 @@ private:
     void ReleaseResources();
 #endif
     ea::array<WeakPtr<ConstantBuffer>, MAX_SHADER_PARAMETER_GROUPS> constantBuffers_;
-    ea::array<WeakPtr<Texture>, MAX_TEXTURE_UNITS> textures_;
+    ea::fixed_vector<ea::pair<ea::string, WeakPtr<Texture>>, MAX_TEXTURE_UNITS> textures_;
 
     bool dirty_;
     unsigned hash_;

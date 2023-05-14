@@ -362,7 +362,7 @@ void DefaultRenderPipelineView::Render()
             renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
 
             ShaderResourceDesc depthAndColorTextures[] = {
-                {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+                {ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture()},
             };
 
             sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, deferredDecalPass_->GetDeferredBatches(), depthAndColorTextures);
@@ -370,10 +370,10 @@ void DefaultRenderPipelineView::Render()
 
         // Draw deferred lights
         const ShaderResourceDesc geometryBuffer[] = {
-            { TU_DIFFUSE, deferred_->albedoBuffer_->GetTexture() },
-            { TU_SPECULAR, deferred_->specularBuffer_->GetTexture() },
-            { TU_NORMAL, deferred_->normalBuffer_->GetTexture() },
-            { TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture() }
+            { ShaderResources::DiffMap, deferred_->albedoBuffer_->GetTexture() },
+            { ShaderResources::SpecMap, deferred_->specularBuffer_->GetTexture() },
+            { ShaderResources::NormalMap, deferred_->normalBuffer_->GetTexture() },
+            { ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture() }
         };
         const ShaderParameterDesc cameraParameters[] = {
             {ShaderConsts::Camera_GBufferOffsets, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
@@ -407,12 +407,12 @@ void DefaultRenderPipelineView::Render()
 
 #ifdef DESKTOP_GRAPHICS
     ShaderResourceDesc depthAndColorTextures[] = {
-        { TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture() },
-        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
+        { ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture() },
+        { ShaderResources::EmissiveMap, renderBufferManager_->GetSecondaryColorTexture() },
     };
 #else
     ShaderResourceDesc depthAndColorTextures[] = {
-        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
+        { ShaderResources::EmissiveMap, renderBufferManager_->GetSecondaryColorTexture() },
     };
 #endif
 

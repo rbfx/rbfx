@@ -44,6 +44,7 @@
 #include "../../IO/File.h"
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
+#include "../../RenderAPI/OpenGLIncludes.h"
 
 #include <Diligent/Platforms/interface/PlatformDefinitions.h>
 #include <Diligent/Primitives/interface/CommonDefinitions.h>
@@ -73,17 +74,6 @@
 
 // OpenGL includes
 #if GL_SUPPORTED || GLES_SUPPORTED
-    #if defined(IOS) || defined(TVOS)
-        #include <OpenGLES/ES3/gl.h>
-        #include <OpenGLES/ES3/glext.h>
-    #elif defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
-        #include <GLES3/gl3.h>
-        #include <GLES3/gl3ext.h>
-    #elif defined(__EMSCRIPTEN__)
-        #include <GLES3/gl32.h>
-    #else
-        #include <GL/glew.h>
-    #endif
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
@@ -1080,24 +1070,9 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 
 void Graphics::SetPipelineState(PipelineState* pipelineState)
 {
-    using namespace Diligent;
-    void* pipelineObj = pipelineState->GetGPUPipeline();
-    assert(pipelineObj);
+    impl_->deviceContext_->SetPipelineState(pipelineState->GetHandle());
 
-    impl_->deviceContext_->SetPipelineState(static_cast<IPipelineState*>(pipelineObj));
-
-    if (pipelineState_)
-    {
-        PipelineStateDesc currDesc = pipelineState_->GetDesc();
-        PipelineStateDesc newDesc = pipelineState->GetDesc();
-
-        if (newDesc.ToHash() != currDesc.ToHash())
-            impl_->depthStateDirty_ = true;
-    }
-    else
-    {
-        impl_->depthStateDirty_ = true;
-    }
+    // TODO(diligent): We shouldn't need it cached
     pipelineState_ = pipelineState;
 }
 
@@ -1297,8 +1272,9 @@ bool Graphics::HasShaderParameter(StringHash param)
 
 bool Graphics::HasTextureUnit(TextureUnit unit)
 {
-    return (vertexShader_ && vertexShader_->HasTextureUnit(unit))
-        || (pixelShader_ && pixelShader_->HasTextureUnit(unit));
+    return false;
+//    return (vertexShader_ && vertexShader_->HasTextureUnit(unit))
+//        || (pixelShader_ && pixelShader_->HasTextureUnit(unit));
 }
 
 void Graphics::ClearParameterSource(ShaderParameterGroup group)
@@ -2361,8 +2337,9 @@ bool Graphics::CreateDevice(int width, int height)
             EngineD3D12CreateInfo engineCI;
             engineCI.GraphicsAPIVersion = Version{11, 0};
             engineCI.GPUDescriptorHeapDynamicSize[0] = 32768;
-            engineCI.GPUDescriptorHeapSize[1] = 128;
-            engineCI.GPUDescriptorHeapDynamicSize[1] = 2048 - 128;
+            // TODO(diligent): Revisit limits
+            //engineCI.GPUDescriptorHeapSize[1] = 128;
+            //engineCI.GPUDescriptorHeapDynamicSize[1] = 2048 - 128;
             engineCI.DynamicDescriptorAllocationChunkSize[0] = 32;
             engineCI.DynamicDescriptorAllocationChunkSize[1] = 8; // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
@@ -2408,10 +2385,13 @@ bool Graphics::CreateDevice(int width, int height)
             EngineGLCreateInfo engineCI;
             engineCI.Window = wnd;
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
-            swapChainDesc.ColorBufferFormat = TEX_FORMAT_RGBA8_UNORM;
 
             factory->CreateDeviceAndSwapChainGL(
                 engineCI, &impl_->device_, &impl_->deviceContext_, swapChainDesc, &impl_->swapChain_);
+
+            // TODO(diligent): Do we want to do something about this?
+            sRGB_ = true;
+
             gl3Support = true;
             engineFactory = factory;
         }

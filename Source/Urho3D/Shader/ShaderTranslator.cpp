@@ -26,6 +26,7 @@
 
 #include "Urho3D/Graphics/ShaderVariation.h"
 #include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #ifdef URHO3D_SHADER_TRANSLATOR
     #include <SPIRV/GlslangToSpv.h>
@@ -33,6 +34,7 @@
     #include <glslang/Public/ShaderLang.h>
 
     #include <spirv_hlsl.hpp>
+    #include <spirv_parser.hpp>
 #endif
 
 #include "Urho3D/DebugNew.h"
@@ -65,9 +67,6 @@ struct GlslangGuardian
 };
 static const GlslangGuardian glslangGuardian;
 
-/// Vertex element semantics and index.
-using VertexElementSemanticIndex = ea::pair<VertexElementSemantic, unsigned>;
-
 EShLanguage ConvertShaderType(ShaderType shaderType)
 {
     switch (shaderType)
@@ -80,29 +79,6 @@ EShLanguage ConvertShaderType(ShaderType shaderType)
     case DS: return EShLangTessEvaluation;
     case CS: return EShLangCompute;
     }
-}
-
-/// Return vertex element semantics.
-VertexElementSemanticIndex ParseVertexElement(ea::string_view name)
-{
-    const auto firstDigit = ea::find_if(name.begin(), name.end(), [](char ch) { return isdigit(ch); });
-    const unsigned index = firstDigit != name.end() ? ToUInt(ea::string{ firstDigit, name.end() }) : 0;
-    static const ea::unordered_map<ea::string, VertexElementSemantic> semanticsMapping = {
-        { "iPos", SEM_POSITION },
-        { "iNormal", SEM_NORMAL },
-        { "iColor", SEM_COLOR },
-        { "iTexCoord", SEM_TEXCOORD },
-        { "iTangent", SEM_TANGENT },
-        { "iBlendWeights", SEM_BLENDWEIGHTS },
-        { "iBlendIndices", SEM_BLENDINDICES },
-        { "iObjectIndex", SEM_OBJECTINDEX }
-    };
-    const ea::string_view sematicName = firstDigit != name.end() ? name.substr(0, firstDigit - name.begin()) : name;
-    const auto semanticIter = semanticsMapping.find_as(sematicName);
-    const VertexElementSemantic semantic = semanticIter != semanticsMapping.end()
-        ? semanticIter->second
-        : MAX_VERTEX_ELEMENT_SEMANTICS;
-    return { semantic , index };
 }
 
 void AppendWithoutVersion(ea::string& dest, ea::string_view source)
@@ -121,8 +97,8 @@ void AppendWithoutVersion(ea::string& dest, ea::string_view source)
 }
 
 /// Compile SpirV shader.
-void CompileSpirV(
-    SpirVShader& outputShader, EShLanguage stage, ea::string_view sourceCode, const ShaderDefineArray& shaderDefines)
+void CompileSpirV(SpirVShader& outputShader, EShLanguage stage, ea::string_view sourceCode,
+    const ShaderDefineArray& shaderDefines, TargetShaderLanguage targetLanguage)
 {
     outputShader.bytecode_.clear();
     outputShader.compilerOutput_.clear();
@@ -139,10 +115,12 @@ void CompileSpirV(
     const int inputLengths[] = { static_cast<int>(shaderCode.length()) };
 
     // Setup glslang shader
+    const auto envClient =
+        targetLanguage == TargetShaderLanguage::VULKAN_1_0 ? glslang::EShClientVulkan : glslang::EShClientOpenGL;
     glslang::TShader shader(stage);
     shader.setStringsWithLengths(inputStrings, inputLengths, 1);
-    shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientOpenGL, 100);
-    shader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
+    shader.setEnvInput(glslang::EShSourceGlsl, stage, envClient, 100);
+    shader.setEnvClient(envClient, glslang::EShTargetOpenGL_450);
     shader.setEnvTarget(glslang::EshTargetSpv, glslang::EShTargetSpv_1_0);
     shader.setAutoMapLocations(true);
 
@@ -167,20 +145,6 @@ void CompileSpirV(
         return;
     }
 
-    // Parse input layout
-    /*program.buildReflection(EShReflectionAllBlockVariables);
-    for (int i = 0; i < program.getNumLiveAttributes(); ++i)
-    {
-        const char* name = program.getAttributeName(i);
-        const auto element = ParseVertexElement(name);
-        if (element.first == MAX_VERTEX_ELEMENT_SEMANTICS)
-        {
-            errorMessage = Format("Unknown vertex element '{}'", name);
-            return false;
-        }
-        outputShader.inputLayout_.push_back(element);
-    }*/
-
     // Convert intermediate representation to SPIRV
     const glslang::TIntermediate* im = program.getIntermediate(stage);
     assert(im);
@@ -202,22 +166,26 @@ void CompileSpirV(
 class RemappingCompilerHLSL : public spirv_cross::CompilerHLSL
 {
 public:
-    RemappingCompilerHLSL(std::vector<unsigned> spirv) : spirv_cross::CompilerHLSL(spirv)
+    RemappingCompilerHLSL(std::vector<unsigned> spirv)
+        : spirv_cross::CompilerHLSL(ea::move(spirv))
     {
+        RemapInputLayout();
+        CollectSamplers();
     }
 
-    bool RemapInputLayout(ea::string& errorMessage)
+    std::string compile() override
     {
-        unsigned location = 0;
-        unsigned numErrors = 0;
+        std::string result = spirv_cross::CompilerHLSL::compile();
+        ReplaceSamplers(result);
+        return result;
+    }
 
+private:
+    void RemapInputLayout()
+    {
         const auto& execution = get_entry_point();
         if (execution.model == spv::ExecutionModelVertex)
         {
-            ea::array<uint8_t, MAX_VERTEX_ELEMENT_SEMANTICS> repeatedSemantics;
-            repeatedSemantics.fill(0u);
-            unsigned attribCount = 0;
-
             // Output Uniform Constants (values, samplers, images, etc).
             ir.for_each_typed_id<spirv_cross::SPIRVariable>([&](uint32_t, spirv_cross::SPIRVariable &var)
             {
@@ -225,22 +193,47 @@ public:
                 auto& m = ir.meta[var.self].decoration;
                 if (type.storage == spv::StorageClassInput && !is_builtin_variable(var))
                 {
-                    m.decoration_flags.set(spv::DecorationLocation);
-                    m.location = location++;
+                    URHO3D_ASSERT(m.decoration_flags.get(spv::DecorationLocation));
 
-                    // On Diligent Backend we must make all semantic names
-                    // to ATTRIBN like
-                    const VertexElementSemantic semantic = ParseVertexElement(m.alias.c_str()).first;
-                    //const ea::string name = Format("{}{}", ShaderVariation::elementSemanticNames[semantic], repeatedSemantics[semantic]);
-                    const ea::string name = Format("ATTRIB{}", attribCount++);
+                    const ea::string name = Format("ATTRIB{}", m.location);
                     add_vertex_attribute_remap({ m.location, name.c_str() });
-                    ++repeatedSemantics[semantic];
                 }
             });
         }
-
-        return numErrors == 0;
     }
+
+    void CollectSamplers()
+    {
+        ir.for_each_typed_id<spirv_cross::SPIRVariable>([&](uint32_t, spirv_cross::SPIRVariable &var)
+        {
+            auto& type = this->get<spirv_cross::SPIRType>(var.basetype);
+            auto& m = ir.meta[var.self].decoration;
+            if (type.basetype == spirv_cross::SPIRType::SampledImage && type.image.dim != spv::DimBuffer)
+            {
+                const std::string samplerName = "_" + m.alias + "_sampler";
+                samplers_.emplace_back(samplerName);
+            }
+        });
+    }
+
+    void ReplaceSamplers(std::string& hlsl)
+    {
+        // Use arbitrary non-text symbol to replace leading underscore in sampler name.
+        // Then remove it from the string.
+        const char placeholder = '\1';
+
+        // TODO(diligent): Optimize it?
+        for (const std::string& name : samplers_)
+        {
+            for (size_t pos = hlsl.find(name, 0); pos != std::string::npos; pos = hlsl.find(name, pos))
+                hlsl[pos] = placeholder;
+        }
+
+        const auto isPlaceholder = [placeholder](char c) { return c == placeholder; };
+        hlsl.erase(ea::remove_if(hlsl.begin(), hlsl.end(), isPlaceholder), hlsl.end());
+    }
+
+    ea::vector<std::string> samplers_;
 };
 
 /// Convert SpirV to HLSL5
@@ -250,8 +243,6 @@ void ConvertToHLSL5(TargetShader& output, const SpirVShader& shader)
     output.compilerOutput_.clear();
 
     RemappingCompilerHLSL compiler(shader.bytecode_);
-    if (!compiler.RemapInputLayout(output.compilerOutput_))
-        return;
 
     spirv_cross::CompilerGLSL::Options commonOptions;
     commonOptions.emit_line_directives = true;
@@ -292,74 +283,14 @@ void ConvertToGLSL(TargetShader& output, const SpirVShader& shader, int version,
     output.sourceCode_ = src.c_str();
 }
 
-// TODO(diligent): Revisit
-bool ConvertToGLSL(const SpirVShader& shader, ea::string& outputShader, ea::string& errorMessage)
-{
-    errorMessage.clear();
-    outputShader.clear();
-
-    spirv_cross::CompilerGLSL::Options commonOptions;
-    commonOptions.emit_line_directives = true;
-    commonOptions.enable_420pack_extension = false;
-    commonOptions.emit_push_constant_as_uniform_buffer = true;
-    commonOptions.force_flattened_io_blocks = true;
-
-    spirv_cross::CompilerGLSL compiler(shader.bytecode_);
-    compiler.set_common_options(commonOptions);
-    compiler.build_combined_image_samplers();
-
-    // Remove underscore from sampler and fix combined texture name.
-    auto samplers = compiler.get_combined_image_samplers();
-    for (auto it = samplers.begin(); it != samplers.end(); ++it)
-    {
-        auto imageName = compiler.get_name(it->image_id);
-        auto samplerName = compiler.get_name(it->sampler_id);
-        if (samplerName.length() > 1 && samplerName[0] == '_')
-            samplerName = samplerName.substr(1);
-        compiler.set_name(it->sampler_id, samplerName);
-        compiler.set_name(it->combined_id, imageName);
-    }
-
-    auto variables = compiler.get_active_interface_variables();
-    for (auto it = variables.begin(); it != variables.end(); ++it)
-    {
-        auto variableType = compiler.get_type_from_variable(*it);
-        std::string name = compiler.get_name(*it);
-        if (name.empty() && variableType.storage == spv::StorageClassUniform)
-        {
-            name = "u" + compiler.get_remapped_declared_block_name(*it);
-            compiler.set_name(*it, name);
-            size_t memberCount = variableType.member_types.size();
-            for (size_t i = 0; i < memberCount; ++i)
-            {
-                std::string memberName = compiler.get_member_name(variableType.self, i);
-                if (memberName.empty())
-                    continue;
-                size_t lastUnderscore = memberName.find_last_of('_');
-                if (lastUnderscore != std::string::npos)
-                    memberName = memberName.substr(lastUnderscore + 1);
-                compiler.set_member_name(variableType.self, i, memberName);
-            }
-        }
-    }
-
-    const std::string src = compiler.compile();
-    if (src.empty())
-    {
-        errorMessage = "Unknown error";
-        return false;
-    }
-    outputShader = src.c_str();
-    return true;
-}
 }
 #endif
 
-void ParseUniversalShader(
-    SpirVShader& output, ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines)
+void ParseUniversalShader(SpirVShader& output, ShaderType shaderType, ea::string_view sourceCode,
+    const ShaderDefineArray& shaderDefines, TargetShaderLanguage targetLanguage)
 {
 #ifdef URHO3D_SHADER_TRANSLATOR
-    CompileSpirV(output, ConvertShaderType(shaderType), sourceCode, shaderDefines);
+    CompileSpirV(output, ConvertShaderType(shaderType), sourceCode, shaderDefines, targetLanguage);
 #else
     URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR should be enabled to use ParseUniversalShader");
 
@@ -376,10 +307,6 @@ void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, Targe
     {
     case TargetShaderLanguage::HLSL_5_0:
         ConvertToHLSL5(output, shader);
-        break;
-
-    case TargetShaderLanguage::GLSL_3_2:
-        ConvertToGLSL(output, shader, 150, false);
         break;
 
     case TargetShaderLanguage::GLSL_4_1:
@@ -401,64 +328,36 @@ void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, Targe
 #endif
 }
 
-// TODO(diligent): Revisit
-bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDefineArray& shaderDefines,
-    SpirVShader& outputShader, ea::string& errorMessage)
+VertexShaderAttributeVector GetVertexAttributesFromSpirV(const SpirVShader& shader)
 {
-    CompileSpirV(outputShader, stage, sourceCode, shaderDefines);
-    errorMessage = outputShader.compilerOutput_;
-    return !!outputShader;
+#ifdef URHO3D_SHADER_TRANSLATOR
+    VertexShaderAttributeVector result;
+
+    // https://github.com/KhronosGroup/SPIRV-Cross/wiki/Reflection-API-user-guide
+    spirv_cross::Parser parser{shader.bytecode_};
+    parser.parse();
+    spirv_cross::Compiler compiler{ea::move(parser.get_parsed_ir())};
+
+    spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+    for (const auto& input : resources.stage_inputs)
+    {
+        if (compiler.has_decoration(input.id, spv::DecorationLocation))
+        {
+            const auto location = compiler.get_decoration(input.id, spv::DecorationLocation);
+            if (const auto vertexInput = ParseVertexAttribute(input.name.c_str()))
+            {
+                result.push_back(*vertexInput);
+                result.back().inputIndex_ = location;
+            }
+        }
+    }
+    return result;
+#else
+    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR should be enabled to use GetVertexAttributesFromSpirV");
+    return {};
+#endif
 }
 
-bool ConvertToHLSL5(const SpirVShader& shader, ea::string& outputShader, ea::string& errorMessage)
-{
-    TargetShader result;
-    ConvertToHLSL5(result, shader);
-    outputShader = result.sourceCode_;
-    errorMessage = result.compilerOutput_;
-    return !!result;
-}
-
-bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
-    ea::string& outputShaderCode, ea::string& errorMessage)
-{
-    SpirVShader shader;
-    if (!CompileSpirV(ConvertShaderType(shaderType), sourceCode, shaderDefines, shader, errorMessage))
-        return false;
-
-    if (!ConvertToHLSL5(shader, outputShaderCode, errorMessage))
-        return false;
-
-    return true;
-}
-
-bool CompileGLSLToSpirV(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
-    ea::vector<unsigned>& outputByteCode, ea::string& errorMessage)
-{
-    SpirVShader shader;
-    if (!CompileSpirV(ConvertShaderType(shaderType), sourceCode, shaderDefines, shader, errorMessage))
-        return false;
-    outputByteCode = ea::vector<unsigned>(shader.bytecode_.begin(), shader.bytecode_.end());
-    return true;
-}
-
-bool ConvertShaderToHLSL5(const ea::vector<unsigned>& byteCode, ea::string& outputShader, ea::string& errorMessage)
-{
-    SpirVShader shader;
-    shader.bytecode_ = std::vector<unsigned>(byteCode.begin(), byteCode.end());
-
-    if (!ConvertToHLSL5(shader, outputShader, errorMessage))
-        return false;
-    return true;
-}
-
-bool ConvertSPIRVToGLSL(const ea::vector<unsigned>& byteCode, ea::string& outputShader, ea::string& errorMessage)
-{
-    SpirVShader shader;
-    shader.bytecode_ = std::vector<unsigned>(byteCode.begin(), byteCode.end());
-
-    return ConvertToGLSL(shader, outputShader, errorMessage);
-}
 }
 
 #ifdef URHO3D_SHADER_TRANSLATOR

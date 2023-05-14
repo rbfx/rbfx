@@ -287,7 +287,19 @@ void PipelineStateGLImpl::InitInternalObjects(const PSOCreateInfoType& CreateInf
         m_GLPrograms[0].SetName(m_Desc.Name);
     }
 
+    PatchInputLayout(CreateInfo);
+
     InitResourceLayout(GetInternalCreateFlags(CreateInfo), ShaderStages, ActiveStages);
+}
+
+void PipelineStateGLImpl::PatchInputLayout(const GraphicsPipelineStateCreateInfo& CreateInfo)
+{
+    if (!CreateInfo.GLPatchVertexLayoutCallback)
+        return;
+
+    auto& InputLayout = m_pGraphicsPipelineData->Desc.InputLayout;
+    (*CreateInfo.GLPatchVertexLayoutCallback)(
+        m_GLPrograms[0], &InputLayout.NumElements, const_cast<LayoutElement*>(InputLayout.LayoutElements), &m_Desc.ResourceLayout, CreateInfo.GLPatchVertexLayoutCallbackUserData);
 }
 
 PipelineStateGLImpl::PipelineStateGLImpl(IReferenceCounters*                    pRefCounters,

@@ -67,7 +67,7 @@
         #elif defined(URHO3D_LIGHT_POINT)
             half3 GetLightColorFromShape(const vec4 shapePos)
             {
-                return textureCube(sLightCubeMap, shapePos.xyz).rgb * cLightColor.rgb;
+                return textureCube(sLightSpotMap, shapePos.xyz).rgb * cLightColor.rgb;
             }
         #elif defined(URHO3D_LIGHT_DIRECTIONALPOINT)
             #define GetLightColorFromShape(shapePos) (cLightColor.rgb)
