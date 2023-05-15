@@ -211,8 +211,8 @@ void ShadowSplitProcessor::FinalizeShadow(const ShadowMapRegion& shadowMap, unsi
         AdjustDirectionalLightCamera(shadowBox, shadowMapWidth);
     }
 
-    const unsigned padding = ea::min(4u, 1 + pcfKernelSize / 2);
-    const float effectiveShadowMapWidth = shadowMapWidth - 2.0f * padding;
+    shadowMapPadding_ = ea::min(4u, 1 + pcfKernelSize / 2);
+    const float effectiveShadowMapWidth = shadowMapWidth - 2.0f * shadowMapPadding_;
     shadowCamera_->SetZoom(effectiveShadowMapWidth / shadowMapWidth);
 
     // Estimate shadow map texel size. Exact size for directional light, upper bound for point and spot lights.
