@@ -2004,7 +2004,7 @@ void Renderer::CreateGeometries()
     pointLightGeometry_->SetIndexBuffer(plib);
     pointLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, plib->GetIndexCount());
 
-#if !defined(URHO3D_OPENGL) || !defined(GL_ES_VERSION_2_0)
+#if 0 && (!defined(URHO3D_OPENGL) || !defined(GL_ES_VERSION_2_0))
     if (graphics_->GetShadowMapFormat())
     {
         faceSelectCubeMap_ = MakeShared<TextureCube>(context_);

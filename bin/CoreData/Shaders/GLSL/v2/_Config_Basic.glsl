@@ -135,6 +135,15 @@
     #define URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
 #endif
 
+/// =================================== Precision ===================================
+
+#ifdef GL_ES
+    #ifdef URHO3D_FEATURE_HIGHP_IN_STAGE
+        precision highp float;
+    #else
+        precision mediump float;
+    #endif
+#endif
 
 /// =================================== Global functions ===================================
 
@@ -216,11 +225,9 @@
 #else
     /// Use max available precision by default
     #ifdef URHO3D_FEATURE_HIGHP_IN_STAGE
-        precision highp float;
         #define UNIFORM_HIGHP(decl) UNIFORM(decl)
         #define SAMPLER_HIGHP(index, decl) SAMPLER(index, highp decl)
     #else
-        precision mediump float;
         #define UNIFORM_HIGHP(decl)
         #define SAMPLER_HIGHP(index, decl) SAMPLER(index, mediump decl)
     #endif

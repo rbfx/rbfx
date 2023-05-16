@@ -225,12 +225,12 @@ void BufferGLImpl::UpdateData(GLContextState& CtxState, Uint64 Offset, Uint64 Si
 
     // We must unbind VAO because otherwise we will break the bindings
     constexpr bool ResetVAO = true;
-    CtxState.BindBuffer(GL_ARRAY_BUFFER, m_GlBuffer, ResetVAO);
+    CtxState.BindBuffer(m_BindTarget, m_GlBuffer, ResetVAO);
     // All buffer bind targets (GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER etc.) relate to the same
     // kind of objects. As a result they are all equivalent from a transfer point of view.
-    glBufferSubData(GL_ARRAY_BUFFER, StaticCast<GLintptr>(Offset), StaticCast<GLsizeiptr>(Size), pData);
+    glBufferSubData(m_BindTarget, StaticCast<GLintptr>(Offset), StaticCast<GLsizeiptr>(Size), pData);
     CHECK_GL_ERROR("glBufferSubData() failed");
-    CtxState.BindBuffer(GL_ARRAY_BUFFER, GLObjectWrappers::GLBufferObj::Null(), ResetVAO);
+    CtxState.BindBuffer(m_BindTarget, GLObjectWrappers::GLBufferObj::Null(), ResetVAO);
 }
 
 

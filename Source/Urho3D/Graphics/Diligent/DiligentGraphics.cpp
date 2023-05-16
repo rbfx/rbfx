@@ -46,8 +46,19 @@
 #include "../../Resource/ResourceCache.h"
 #include "../../RenderAPI/OpenGLIncludes.h"
 
+// TODO(diligent): This is Web-only, revisit
+// @{
+#include "../../Input/Input.h"
+#include "../../UI/Cursor.h"
+#include "../../UI/UI.h"
+#ifdef URHO3D_RMLUI
+    #include "../../RmlUI/RmlUI.h"
+#endif
+// @}
+
 #include <Diligent/Platforms/interface/PlatformDefinitions.h>
 #include <Diligent/Primitives/interface/CommonDefinitions.h>
+#include <Diligent/Primitives/interface/DebugOutput.h>
 
 #if D3D11_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/DeviceContextD3D11.h>
@@ -113,6 +124,11 @@ using namespace Platform;
     #include <SDL_metal.h>
 #endif
 
+#if URHO3D_PLATFORM_WEB
+#include <emscripten/emscripten.h>
+#include <emscripten/bind.h>
+#endif
+
 #include "../../DebugNew.h"
 
 #ifdef _MSC_VER
@@ -125,6 +141,81 @@ extern "C"
 {
     __declspec(dllexport) DWORD NvOptimusEnablement = 1;
     __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
+#if URHO3D_PLATFORM_WEB
+static void JSCanvasSize(int width, int height, bool fullscreen, float scale)
+{
+    URHO3D_LOGINFOF("JSCanvasSize: width=%d height=%d fullscreen=%d ui scale=%f", width, height, fullscreen, scale);
+
+    using namespace Urho3D;
+
+    auto context = Context::GetInstance();
+    if (context)
+    {
+        bool uiCursorVisible = false;
+        bool systemCursorVisible = false;
+        MouseMode mouseMode{};
+
+        // Detect current system pointer state
+        Input* input = context->GetSubsystem<Input>();
+        if (input)
+        {
+            systemCursorVisible = input->IsMouseVisible();
+            mouseMode = input->GetMouseMode();
+        }
+
+        UI* ui = context->GetSubsystem<UI>();
+        if (ui)
+        {
+            ui->SetScale(scale);
+
+            // Detect current UI pointer state
+            Cursor* cursor = ui->GetCursor();
+            if (cursor)
+                uiCursorVisible = cursor->IsVisible();
+        }
+
+#ifdef URHO3D_RMLUI
+        if (RmlUI* ui = context->GetSubsystem<RmlUI>())
+            ui->SetScale(scale);
+#endif
+
+        // Apply new resolution
+        context->GetSubsystem<Graphics>()->SetMode(width, height);
+
+        // Reset the pointer state as it was before resolution change
+        if (input)
+        {
+            if (uiCursorVisible)
+                input->SetMouseVisible(false);
+            else
+                input->SetMouseVisible(systemCursorVisible);
+
+            input->SetMouseMode(mouseMode);
+        }
+
+        if (ui)
+        {
+            Cursor* cursor = ui->GetCursor();
+            if (cursor)
+            {
+                cursor->SetVisible(uiCursorVisible);
+
+                IntVector2 pos = input->GetMousePosition();
+                pos = ui->ConvertSystemToUI(pos);
+
+                cursor->SetPosition(pos);
+            }
+        }
+    }
+}
+
+using namespace emscripten;
+EMSCRIPTEN_BINDINGS(Module)
+{
+    function("JSCanvasSize", &JSCanvasSize);
 }
 #endif
 
@@ -293,6 +384,8 @@ Graphics::Graphics(Context* context)
 #ifdef PLATFORM_MACOS
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
 #endif
+
+    Diligent::SetDebugMessageCallback(&HandleDbgMessageCallbacks);
 }
 
 Graphics::~Graphics()
@@ -419,7 +512,13 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
 
     //// Clear the initial window contents to black
     Clear(CLEAR_COLOR);
+
+    // TODO(diligent): Revisit this
+#if URHO3D_PLATFORM_WEB
+    SDL_GL_SwapWindow(window_);
+#else
     impl_->swapChain_->Present(0);
+#endif
 
     OnScreenModeChanged();
     return true;
@@ -601,9 +700,15 @@ void Graphics::EndFrame()
         URHO3D_PROFILE("Present");
 
         SendEvent(E_ENDRENDERING);
-        ITextureView* currentTexture = impl_->swapChain_->GetCurrentBackBufferRTV();
-        impl_->swapChain_->Present(screenParams_.vsync_ ? 1 : 0);
 
+        // TODO(diligent): Revisit this
+#if URHO3D_PLATFORM_WEB
+        SDL_GL_SwapWindow(window_);
+#else
+        impl_->swapChain_->Present(screenParams_.vsync_ ? 1 : 0);
+#endif
+
+        ITextureView* currentTexture = impl_->swapChain_->GetCurrentBackBufferRTV();
         if (currentTexture == impl_->renderTargetViews_[0])
             impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
         impl_->renderTargetsDirty_ = true;
@@ -2340,8 +2445,15 @@ bool Graphics::CreateDevice(int width, int height)
     }
     else if (impl_->renderBackend_ == RENDER_GL)
     {
-        sRGB_ = true;
-        swapChainDesc.ColorBufferFormat = TEX_FORMAT_RGBA8_UNORM_SRGB;
+        // TODO(diligent): This is awful and unreliable. Must be fixed!
+#if URHO3D_PLATFORM_WEB
+        const bool hasFramebufferSRGB = false;
+#else
+        const bool hasFramebufferSRGB = true;
+#endif
+
+        sRGB_ = hasFramebufferSRGB;
+        swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
     }
     else
     {
@@ -2492,8 +2604,6 @@ bool Graphics::CreateDevice(int width, int height)
             URHO3D_LOGERROR("Failed to Initialize GPU Device");
             return false;
         }
-
-        engineFactory->SetMessageCallback(&HandleDbgMessageCallbacks);
 
         CheckFeatureSupport();
 

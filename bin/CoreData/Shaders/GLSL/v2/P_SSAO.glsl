@@ -182,7 +182,7 @@ void main()
 void main()
 {
 #ifdef EVALUATE_OCCLUSION
-    const half3 sampleOffsets[NUM_OCCLUSION_SAMPLES] = half3[NUM_OCCLUSION_SAMPLES] (
+    const half3 sampleOffsets[NUM_OCCLUSION_SAMPLES] = vec3[NUM_OCCLUSION_SAMPLES] (
         vec3(-0.3991061,  -0.2619659,   0.7481203),  // Length: 0.887466
         vec3( 0.5641699,  -0.1403742,  -0.5268592),  // Length: 0.7845847
         vec3(-0.4665807,   0.3778321,  -0.06707126), // Length: 0.6041135
@@ -226,7 +226,7 @@ void main()
 #endif
 
 #ifdef BLUR
-    const half sampleWeights[NUM_BLUR_SAMPLES + 1] = half[NUM_BLUR_SAMPLES + 1] (
+    const half sampleWeights[NUM_BLUR_SAMPLES + 1] = float[NUM_BLUR_SAMPLES + 1] (
         1.0,
         0.9071823,
         0.683296,
@@ -243,8 +243,8 @@ void main()
 
     for (int i = 1; i <= NUM_BLUR_SAMPLES; ++i)
     {
-        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord + cBlurStep * i), basePosition, baseNormal, sampleWeights[i]);
-        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord - cBlurStep * i), basePosition, baseNormal, sampleWeights[i]);
+        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord + cBlurStep * float(i)), basePosition, baseNormal, sampleWeights[i]);
+        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord - cBlurStep * float(i)), basePosition, baseNormal, sampleWeights[i]);
     }
 
     gl_FragColor = occlusion / weightSum;

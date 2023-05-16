@@ -275,18 +275,16 @@ bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
         int height = image->GetHeight();
         unsigned levels = image->GetNumCompressedLevels();
         unsigned format = graphics_->GetFormat(image->GetCompressedFormat());
-        bool needDecompress = false;
+
+        Diligent::IRenderDevice* device = graphics_->GetImpl()->GetDevice();
+        const bool needDecompress = !device->GetTextureFormatInfo(static_cast<TextureFormat>(format)).Supported;
+        if (needDecompress)
+            format = Graphics::GetRGBAFormat();
 
         if (width != height)
         {
             URHO3D_LOGERROR("Cube texture width not equal to height");
             return false;
-        }
-
-        if (!format)
-        {
-            format = Graphics::GetRGBAFormat();
-            needDecompress = true;
         }
 
         unsigned mipsToSkip = mipsToSkip_[quality];

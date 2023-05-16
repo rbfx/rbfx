@@ -545,15 +545,14 @@ SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
 
     ea::vector<ShaderParameterGroup> indexToGroup;
 
-    ea::string name;
+    static const unsigned maxNameLength = 256;
+    char name[maxNameLength]{};
+
     for (GLuint uniformBlockIndex = 0; uniformBlockIndex < static_cast<GLuint>(numUniformBlocks); ++uniformBlockIndex)
     {
-        GLint nameLength = 0;
-        glGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_NAME_LENGTH, &nameLength);
-        name.resize(nameLength, '\0');
-        glGetActiveUniformBlockName(programObject, uniformBlockIndex, nameLength, &nameLength, name.data());
+        glGetActiveUniformBlockName(programObject, uniformBlockIndex, maxNameLength, nullptr, name);
 
-        const auto bufferGroup = ParseConstantBufferName(name.c_str());
+        const auto bufferGroup = ParseConstantBufferName(name);
         if (!bufferGroup)
         {
             URHO3D_LOGWARNING("Unknown constant buffer '{}' is ignored", name);
@@ -565,7 +564,7 @@ SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
 
         reflection->AddOrCheckConstantBuffer(*bufferGroup, dataSize);
 
-        const unsigned blockIndex = glGetUniformBlockIndex(programObject, name.c_str());
+        const unsigned blockIndex = glGetUniformBlockIndex(programObject, name);
         if (blockIndex >= indexToGroup.size())
             indexToGroup.resize(blockIndex + 1, MAX_SHADER_PARAMETER_GROUPS);
         indexToGroup[blockIndex] = *bufferGroup;
@@ -573,21 +572,17 @@ SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
 
     for (GLuint uniformIndex = 0; uniformIndex < static_cast<GLuint>(numUniforms); ++uniformIndex)
     {
-        GLint nameLength = 0;
-        glGetActiveUniformsiv(programObject, 1, &uniformIndex, GL_UNIFORM_NAME_LENGTH, &nameLength);
-        name.resize(nameLength, '\0');
-
         GLint elementCount = 0;
         GLenum type = 0;
-        glGetActiveUniform(programObject, uniformIndex, nameLength, nullptr, &elementCount, &type, name.data());
+        glGetActiveUniform(programObject, uniformIndex, maxNameLength, nullptr, &elementCount, &type, name);
 
-        if (const auto sanitatedResourceName = SanitateResourceName(name.c_str()))
+        if (const auto sanitatedResourceName = SanitateResourceName(name))
         {
-            reflection->AddOrCheckShaderResource(StringHash{*sanitatedResourceName}, name.c_str());
+            reflection->AddOrCheckShaderResource(StringHash{*sanitatedResourceName}, name);
             continue;
         }
 
-        const auto sanitatedName = SanitateGLUniformName(name.c_str());
+        const auto sanitatedName = SanitateGLUniformName(name);
         if (!sanitatedName)
             continue;
 

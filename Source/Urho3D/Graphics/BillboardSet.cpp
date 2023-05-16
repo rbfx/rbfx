@@ -491,7 +491,7 @@ void BillboardSet::UpdateBufferSize()
 {
     unsigned numBillboards = billboards_.size();
 
-    if (vertexBuffer_->GetVertexCount() != numBillboards * 4 || geometryTypeUpdate_
+    if (vertexBuffer_->GetVertexCount() < numBillboards * 4 || geometryTypeUpdate_
         || vertexBuffer_->GetElementMask() == MASK_NONE)
     {
         vertexBuffer_->SetSize(numBillboards * 4, GetVertexBufferFormat(), true);
@@ -501,7 +501,7 @@ void BillboardSet::UpdateBufferSize()
 
     bool largeIndices = (numBillboards * 4) >= 65536;
 
-    if (indexBuffer_->GetIndexCount() != numBillboards * 6)
+    if (indexBuffer_->GetIndexCount() < numBillboards * 6)
         indexBuffer_->SetSize(numBillboards * 6, largeIndices);
 
     bufferSizeDirty_ = false;

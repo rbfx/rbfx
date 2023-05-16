@@ -240,13 +240,11 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         int height = image->GetHeight();
         unsigned levels = image->GetNumCompressedLevels();
         unsigned format = graphics_->GetFormat(image->GetCompressedFormat());
-        bool needDecompress = false;
 
-        if (!format)
-        {
+        Diligent::IRenderDevice* device = graphics_->GetImpl()->GetDevice();
+        const bool needDecompress = !device->GetTextureFormatInfo(static_cast<TextureFormat>(format)).Supported;
+        if (needDecompress)
             format = Graphics::GetRGBAFormat();
-            needDecompress = true;
-        }
 
         unsigned mipsToSkip = mipsToSkip_[quality];
         if (mipsToSkip >= levels)

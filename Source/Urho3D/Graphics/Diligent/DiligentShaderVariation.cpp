@@ -4,6 +4,7 @@
 
 #include "Urho3D/Precompiled.h"
 
+#include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/Graphics/Graphics.h"
 #include "Urho3D/Graphics/GraphicsImpl.h"
 #include "Urho3D/Graphics/Shader.h"
@@ -189,6 +190,10 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
 
 void ShaderVariation::SaveByteCode(const FileIdentifier& binaryShaderName)
 {
+    // TODO(diligent): Revisit this
+    if (GetPlatform() == PlatformId::Web)
+        return;
+
     auto vfs = owner_->GetSubsystem<VirtualFileSystem>();
 
     auto file = vfs->OpenFile(binaryShaderName, FILE_WRITE);

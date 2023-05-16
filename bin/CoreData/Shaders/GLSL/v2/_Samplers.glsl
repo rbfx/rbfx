@@ -23,15 +23,13 @@ SAMPLER(8, sampler2D sLightRampMap)
 #else
     SAMPLER(9, samplerCube sLightSpotMap)
 #endif
-#if defined(URHO3D_VARIANCE_SHADOW_MAP) || defined(GL_ES)
+#if defined(URHO3D_VARIANCE_SHADOW_MAP)
     SAMPLER_HIGHP(10, sampler2D sShadowMap)
 #else
     SAMPLER_HIGHP(10, sampler2DShadow sShadowMap)
 #endif
-#ifndef GL_ES
-    SAMPLER(13, sampler2D sDepthBuffer)
-    SAMPLER(15, samplerCube sZoneCubeMap)
-#endif
+SAMPLER(13, sampler2D sDepthBuffer)
+SAMPLER(15, samplerCube sZoneCubeMap)
 #endif
 
 /// Helpers to sample sDiffMap in specified color space.
