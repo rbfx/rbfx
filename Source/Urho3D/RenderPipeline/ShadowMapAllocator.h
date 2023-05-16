@@ -55,6 +55,7 @@ public:
 
     const ShadowMapAllocatorSettings& GetSettings() const { return settings_; }
     const SamplerStateDesc& GetSamplerStateDesc() const { return samplerStateDesc_; }
+    const PipelineStateOutputDesc& GetShadowOutputDesc() const { return shadowOutputDesc_; }
 
 private:
     struct AtlasPage
@@ -81,6 +82,7 @@ private:
     /// @{
     ShadowMapAllocatorSettings settings_;
     SamplerStateDesc samplerStateDesc_;
+    PipelineStateOutputDesc shadowOutputDesc_;
     unsigned shadowMapFormat_{};
     IntVector2 shadowAtlasPageSize_;
     /// @}

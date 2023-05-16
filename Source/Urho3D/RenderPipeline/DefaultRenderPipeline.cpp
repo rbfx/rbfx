@@ -266,6 +266,29 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         ApplySettings();
     }
 
+    renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
+
+    const TextureFormat outputColorFormat = renderBufferManager_->GetOutputColorFormat();
+    const TextureFormat outputDepthFormat = renderBufferManager_->GetOutputDepthStencilFormat();
+
+    const PipelineStateOutputDesc standardOutputDesc{outputDepthFormat, 1, {outputColorFormat}};
+    const PipelineStateOutputDesc deferredOutputDesc{
+        outputDepthFormat, 4, {outputColorFormat, albedoFormat_, specularFormat_, normalFormat_}};
+
+    opaquePass_->SetDeferredOutputDesc(deferredOutputDesc);
+    deferredDecalPass_->SetDeferredOutputDesc(deferredOutputDesc);
+
+    opaquePass_->SetForwardOutputDesc(standardOutputDesc);
+    if (depthPrePass_)
+        depthPrePass_->SetForwardOutputDesc(standardOutputDesc);
+    postOpaquePass_->SetForwardOutputDesc(standardOutputDesc);
+    alphaPass_->SetForwardOutputDesc(standardOutputDesc);
+    postAlphaPass_->SetForwardOutputDesc(standardOutputDesc);
+
+    auto batchCompositor = sceneProcessor_->GetBatchCompositor();
+    batchCompositor->SetLightVolumesOutputDesc(standardOutputDesc);
+    batchCompositor->SetShadowOutputDesc(shadowMapAllocator_->GetShadowOutputDesc());
+
     return true;
 }
 

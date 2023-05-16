@@ -51,8 +51,8 @@ public:
 
     /// Implement BatchStateCacheCallback
     /// @{
-    SharedPtr<PipelineState> CreateBatchPipelineState(
-        const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) override;
+    SharedPtr<PipelineState> CreateBatchPipelineState(const BatchStateCreateKey& key,
+        const BatchStateCreateContext& ctx, const PipelineStateOutputDesc& outputDesc) override;
     /// @}
 
     /// Helpers for passes that override pipeline state creation.

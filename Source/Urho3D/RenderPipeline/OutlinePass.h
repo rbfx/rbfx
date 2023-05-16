@@ -99,8 +99,8 @@ private:
 
     bool enabled_{};
 
-    SharedPtr<PipelineState> pipelineStateGamma_;
-    SharedPtr<PipelineState> pipelineStateLinear_;
+    StaticPipelineStateId pipelineStateGamma_{};
+    StaticPipelineStateId pipelineStateLinear_{};
     SharedPtr<RenderBuffer> outlineBuffer_;
 };
 

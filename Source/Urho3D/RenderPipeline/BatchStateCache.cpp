@@ -39,8 +39,19 @@ void BatchStateCache::Invalidate()
     cache_.clear();
 }
 
+void BatchStateCache::SetOutputDesc(const PipelineStateOutputDesc& outputDesc)
+{
+    if (outputDesc_ != outputDesc)
+    {
+        outputDesc_ = outputDesc;
+        Invalidate();
+    }
+}
+
 PipelineState* BatchStateCache::GetPipelineState(const BatchStateLookupKey& key) const
 {
+    URHO3D_ASSERT(outputDesc_);
+
     const auto iter = cache_.find(key);
     if (iter == cache_.end() || iter->second.invalidated_.load(std::memory_order_relaxed))
         return nullptr;
@@ -61,13 +72,15 @@ PipelineState* BatchStateCache::GetPipelineState(const BatchStateLookupKey& key)
 PipelineState* BatchStateCache::GetOrCreatePipelineState(const BatchStateCreateKey& key,
     const BatchStateCreateContext& ctx, BatchStateCacheCallback* callback)
 {
+    URHO3D_ASSERT(outputDesc_);
+
     CachedBatchState& entry = cache_[key];
     if (!entry.pipelineState_ || entry.invalidated_.load(std::memory_order_relaxed)
         || key.geometry_->GetPipelineStateHash() != entry.geometryHash_
         || key.material_->GetPipelineStateHash() != entry.materialHash_
         || key.pass_->GetPipelineStateHash() != entry.passHash_)
     {
-        entry.pipelineState_ = callback->CreateBatchPipelineState(key, ctx);
+        entry.pipelineState_ = callback->CreateBatchPipelineState(key, ctx, *outputDesc_);
         entry.geometryHash_ = key.geometry_->GetPipelineStateHash();
         entry.materialHash_ = key.material_->GetPipelineStateHash();
         entry.passHash_ = key.pass_->GetPipelineStateHash();
@@ -135,6 +148,7 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
 #endif
     desc.InitializeInputLayout(GeometryBufferArray{ { ctx.vertexBuffer_ }, ctx.indexBuffer_, nullptr });
     desc.primitiveType_ = TRIANGLE_LIST;
+    desc.output_ = key.outputDesc_;
     desc.colorWriteEnabled_ = true;
     desc.cullMode_ = CULL_NONE;
     desc.depthCompareFunction_ = CMP_ALWAYS;
@@ -143,11 +157,6 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     desc.stencilTestEnabled_ = false;
     desc.blendMode_ = key.blendMode_;
     desc.scissorTestEnabled_ = true;
-
-    // TODO(diligent): Rework this
-    desc.renderTargetsFormats_.resize(1);
-    desc.renderTargetsFormats_[0] = graphics->GetSwapChainRTFormat();
-    desc.depthStencilFormat_ = graphics->GetSwapChainDepthFormat();
 
     vertexShaderDefines_ = key.pass_->GetEffectiveVertexShaderDefines();
     pixelShaderDefines_ = key.pass_->GetEffectivePixelShaderDefines();

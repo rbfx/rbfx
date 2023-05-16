@@ -84,7 +84,7 @@ void PipelineStateBuilder::UpdateFrameSettings()
 }
 
 SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
-    const BatchStateCreateKey& key, const BatchStateCreateContext& ctx)
+    const BatchStateCreateKey& key, const BatchStateCreateContext& ctx, const PipelineStateOutputDesc& outputDesc)
 {
     Light* light = key.pixelLight_ ? key.pixelLight_->GetLight() : nullptr;
     const bool hasShadow = key.pixelLight_ && key.pixelLight_->HasShadow();
@@ -94,6 +94,8 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
     const bool isLightVolumePass = batchCompositorPass == nullptr && ctx.subpassIndex_ == BatchCompositor::LitVolumeSubpass;
 
     ClearState();
+
+    pipelineStateDesc_.output_ = outputDesc;
 
     if (isShadowPass)
     {
@@ -174,7 +176,6 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
         pipelineStateDesc_.colorWriteEnabled_ = true;
         pipelineStateDesc_.constantDepthBias_ = 0.0f;
         pipelineStateDesc_.slopeScaledDepthBias_ = 0.0f;
-        pipelineStateDesc_.depthStencilFormat_ = Graphics::GetRGFloat32Format();
     }
     else
     {
@@ -188,9 +189,6 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
         desc.constantDepthBias_ = desc.constantDepthBias_ * multiplier + addition;
         desc.slopeScaledDepthBias_ *= multiplier;
 #endif
-        pipelineStateDesc_.depthStencilFormat_ = shadowMapAllocator_->GetSettings().use16bitShadowMaps_
-            ? graphics_->GetShadowMapFormat()
-            : graphics_->GetHiresShadowMapFormat();
     }
 
     pipelineStateDesc_.depthWriteEnabled_ = pass->GetDepthWrite();
@@ -236,11 +234,6 @@ void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* light
 void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
     const Material* material, const Pass* pass, bool lightMaskToStencil)
 {
-    // TODO(refactor): Change this or refactor code in a deal way
-    pipelineStateDesc_.renderTargetsFormats_.resize(1);
-    pipelineStateDesc_.renderTargetsFormats_[0] = graphics_->GetRGBAFormat();
-    pipelineStateDesc_.depthStencilFormat_ = graphics_->GetSwapChainDepthFormat();
-
     pipelineStateDesc_.depthWriteEnabled_ = pass->GetDepthWrite();
     pipelineStateDesc_.depthCompareFunction_ = pass->GetDepthTestMode();
 

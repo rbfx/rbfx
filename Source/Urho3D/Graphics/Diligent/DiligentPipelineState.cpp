@@ -618,59 +618,6 @@ SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
 using namespace Diligent;
 bool PipelineState::BuildPipeline(Graphics* graphics)
 {
-    // Check for depth and rt formats
-    // If something is wrong, fix then.
-    // rbfx will try to make things work, but is developer
-    // responsability to fill correctly rts and depth formats.
-    bool invalidFmt = false;
-    TEXTURE_FORMAT currDepthFmt =
-        (TEXTURE_FORMAT)(graphics->GetDepthStencil() ? RenderSurface::GetFormat(graphics, graphics->GetDepthStencil())
-                                                     : graphics->GetSwapChainDepthFormat());
-    if (currDepthFmt != desc_.depthStencilFormat_)
-    {
-#ifdef URHO3D_DEBUG
-        ea::string log = "Current Binded Depth Format does not correspond to PipelineDesc Depth Format.\n";
-        log += "Always fill correctly depth format to pipeline.\n";
-        log += "rbfx will fix depth format for you. Invalid format can lead to unexpected issues.\n";
-        log += Format("PipelineName: {} | Hash: {} | DepthFormat: {} | Expected Format: {}",
-            desc_.debugName_.empty() ? desc_.debugName_ : ea::string("Unknow"), desc_.hash_, desc_.depthStencilFormat_,
-            currDepthFmt);
-        URHO3D_LOGWARNING(log);
-#endif
-        invalidFmt = true;
-        desc_.depthStencilFormat_ = currDepthFmt;
-    }
-    for (uint8_t i = 0; i < desc_.renderTargetsFormats_.size(); ++i)
-    {
-        TEXTURE_FORMAT rtFmt = graphics->GetRenderTarget(i)
-            ? (TEXTURE_FORMAT)RenderSurface::GetFormat(graphics, graphics->GetRenderTarget(i))
-            : TEX_FORMAT_UNKNOWN;
-        if (i == 0 && rtFmt == TEX_FORMAT_UNKNOWN)
-            rtFmt = (TEXTURE_FORMAT)graphics->GetSwapChainRTFormat();
-        if (rtFmt != desc_.renderTargetsFormats_[i])
-        {
-#ifdef URHO3D_DEBUG
-            ea::string log = Format(
-                "Current Binded Render Target Format at {} slot, does not corresponde to currently binded Render "
-                "Target.\n",
-                i);
-            log += "Always fill correctly render target formats.\n";
-            log += "rbfx will fix render target format for you. Invalid formats can lead to unexpected issues.\n";
-            log += Format("PipelineName: {} | Hash: {} | RTFormat: {} | Expected Format: {}",
-                desc_.debugName_.empty() ? desc_.debugName_ : ea::string("Unknow"), desc_.hash_,
-                desc_.renderTargetsFormats_[i], desc_.depthStencilFormat_);
-            URHO3D_LOGWARNING(log);
-#endif
-            invalidFmt = true;
-            desc_.renderTargetsFormats_[i] = rtFmt;
-        }
-    }
-
-    if (invalidFmt)
-        handle_ = nullptr;
-    if (handle_)
-        return true;
-
     Diligent::IRenderDevice* renderDevice = graphics->GetImpl()->GetDevice();
     const bool isOpenGL = graphics->GetRenderBackend() == RENDER_GL;
     const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
@@ -712,22 +659,19 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     }
 
 #ifdef URHO3D_DEBUG
-    if (desc_.debugName_.empty())
-        URHO3D_LOGWARNING(
-            "PipelineState doesn't have a debug name on your desc. This is critical but is recommended to have a debug "
-            "name.");
-    ea::string debugName = Format("{}#{}", desc_.debugName_, desc_.ToHash());
+    const ea::string debugName = Format("{}#{}", desc_.debugName_, desc_.ToHash());
     ci.PSODesc.Name = debugName.c_str();
 #endif
+
     ci.GraphicsPipeline.PrimitiveTopology = DiligentPrimitiveTopology[desc_.primitiveType_];
 
     ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
     ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
 
-    ci.GraphicsPipeline.NumRenderTargets = desc_.renderTargetsFormats_.size();
-    for (unsigned i = 0; i < ci.GraphicsPipeline.NumRenderTargets; ++i)
-        ci.GraphicsPipeline.RTVFormats[i] = (TEXTURE_FORMAT)desc_.renderTargetsFormats_[i];
-    ci.GraphicsPipeline.DSVFormat = (TEXTURE_FORMAT)desc_.depthStencilFormat_;
+    ci.GraphicsPipeline.NumRenderTargets = desc_.output_.numRenderTargets_;
+    for (unsigned i = 0; i < desc_.output_.numRenderTargets_; ++i)
+        ci.GraphicsPipeline.RTVFormats[i] = desc_.output_.renderTargetFormats_[i];
+    ci.GraphicsPipeline.DSVFormat = desc_.output_.depthStencilFormat_;
 
     ci.pVS = vertexShader;
     ci.pPS = pixelShader;
@@ -769,13 +713,12 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     unsigned depthBits = 24;
     if (ci.GraphicsPipeline.DSVFormat == TEX_FORMAT_R16_TYPELESS)
         depthBits = 16;
-    int scaledDepthBias = (int)(desc_.constantDepthBias_ * (1 << depthBits));
+    const int scaledDepthBias = isOpenGL ? 0 : (int)(desc_.constantDepthBias_ * (1 << depthBits));
 
     ci.GraphicsPipeline.RasterizerDesc.FillMode = DiligentFillMode[desc_.fillMode_];
     ci.GraphicsPipeline.RasterizerDesc.CullMode = DiligentCullMode[desc_.cullMode_];
     ci.GraphicsPipeline.RasterizerDesc.FrontCounterClockwise = false;
     ci.GraphicsPipeline.RasterizerDesc.DepthBias = scaledDepthBias;
-    ci.GraphicsPipeline.RasterizerDesc.DepthBiasClamp = M_INFINITY;
     ci.GraphicsPipeline.RasterizerDesc.SlopeScaledDepthBias = desc_.slopeScaledDepthBias_;
     ci.GraphicsPipeline.RasterizerDesc.DepthClipEnable = true;
     ci.GraphicsPipeline.RasterizerDesc.ScissorEnable = desc_.scissorTestEnabled_;

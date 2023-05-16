@@ -16,9 +16,6 @@
 // #define fixed3
 // #define fixed4
 
-/// Compatible ivec4 vertex attribite. Cast to ivec4 before use.
-// #define ivec4_attrib
-
 /// =================================== Flow control defines ===================================
 
 /// Defined for corresponding shader stage.
@@ -145,12 +142,6 @@
 #define Saturate(x) clamp(x, 0.0, 1.0)
 
 /// =================================== Stage inputs and outputs ===================================
-
-#ifdef D3D11
-    #define ivec4_attrib ivec4
-#else
-    #define ivec4_attrib vec4
-#endif
 
 #if defined(URHO3D_VERTEX_SHADER)
     #ifdef GL3

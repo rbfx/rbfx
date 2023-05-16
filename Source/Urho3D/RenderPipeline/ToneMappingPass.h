@@ -53,7 +53,7 @@ protected:
 
     ToneMappingMode mode_;
 
-    SharedPtr<PipelineState> toneMappingState_;
+    StaticPipelineStateId toneMappingState_{};
 };
 
 }

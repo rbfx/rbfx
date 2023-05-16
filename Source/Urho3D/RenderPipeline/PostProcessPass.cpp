@@ -67,9 +67,6 @@ void SimplePostProcessPass::AddShaderResource(StringHash name, Texture* texture)
 
 void SimplePostProcessPass::Execute(Camera* camera)
 {
-    if (!pipelineState_ || !pipelineState_->IsValid())
-        return;
-
     const bool colorReadAndWrite = flags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
 
     if (colorReadAndWrite)

@@ -107,7 +107,6 @@ struct VertexElementInBuffer : public VertexElement
 /// Should contain all relevant information about input layout,
 /// shader resources and parameters and pipeline configuration.
 /// PipelineState is automatically updated on shader reload.
-/// TODO: Store render target formats here as well
 struct PipelineStateDesc
 {
     /// Some vertex elements in layout may be unused and the hard GPU limit is only applied to the used ones.
@@ -119,7 +118,10 @@ struct PipelineStateDesc
     ea::string debugName_{};
     /// @}
 
+    /// Primitive description
+    /// @{
     PrimitiveType primitiveType_{};
+    /// @}
 
     /// Input layout
     /// @{
@@ -138,8 +140,7 @@ struct PipelineStateDesc
 
     /// Render Target Formats
     /// @{
-    ea::vector<unsigned> renderTargetsFormats_{};
-    unsigned depthStencilFormat_{};
+    PipelineStateOutputDesc output_;
     /// @}
 
     /// Shaders
@@ -206,8 +207,13 @@ struct PipelineStateDesc
             && vertexElements_ == rhs.vertexElements_
             && indexType_ == rhs.indexType_
 
+            && output_ == rhs.output_
+
             && vertexShader_ == rhs.vertexShader_
             && pixelShader_ == rhs.pixelShader_
+            && geometryShader_ == rhs.geometryShader_
+            && hullShader_ == rhs.hullShader_
+            && domainShader_ == rhs.domainShader_
 
             && depthWriteEnabled_ == rhs.depthWriteEnabled_
             && stencilTestEnabled_ == rhs.stencilTestEnabled_
@@ -232,7 +238,8 @@ struct PipelineStateDesc
             && alphaToCoverageEnabled_ == rhs.alphaToCoverageEnabled_
 
             && numSamplers_ == rhs.numSamplers_
-            && samplers_ == rhs.samplers_;
+            && samplers_ == rhs.samplers_
+            && samplerNames_ == rhs.samplerNames_;
     }
 
     /// Return whether the description structure is properly initialized.
@@ -244,6 +251,7 @@ struct PipelineStateDesc
     void RecalculateHash()
     {
         unsigned hash = 0;
+
         CombineHash(hash, primitiveType_);
 
         CombineHash(hash, numVertexElements_);
@@ -251,9 +259,7 @@ struct PipelineStateDesc
             CombineHash(hash, vertexElements_[i].ToHash());
         CombineHash(hash, indexType_);
 
-        for (auto it = renderTargetsFormats_.begin(); it != renderTargetsFormats_.end(); ++it)
-            CombineHash(hash, (*it));
-        CombineHash(hash, depthStencilFormat_);
+        CombineHash(hash, output_.ToHash());
 
         CombineHash(hash, MakeHash(vertexShader_));
         CombineHash(hash, MakeHash(pixelShader_));

@@ -115,25 +115,25 @@ void AutoExposurePass::EvaluateLuminance()
 
     shaderResources[0].texture_ = textures_.color128_->GetTexture2D();
     shaderParameters[0].value_ = Vector2::ONE / 128.0f;
-    drawParams.pipelineState_ = pipelineStates_->lum64_;
+    drawParams.pipelineStateId_ = pipelineStates_->lum64_;
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.lum64_ });
     renderBufferManager_->DrawQuad("Downsample luminosity buffer", drawParams);
 
     shaderResources[0].texture_ = textures_.lum64_->GetTexture2D();
     shaderParameters[0].value_ = Vector2::ONE / 64.0f;
-    drawParams.pipelineState_ = pipelineStates_->lum16_;
+    drawParams.pipelineStateId_ = pipelineStates_->lum16_;
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.lum16_ });
     renderBufferManager_->DrawQuad("Downsample luminosity buffer", drawParams);
 
     shaderResources[0].texture_ = textures_.lum16_->GetTexture2D();
     shaderParameters[0].value_ = Vector2::ONE / 16.0f;
-    drawParams.pipelineState_ = pipelineStates_->lum4_;
+    drawParams.pipelineStateId_ = pipelineStates_->lum4_;
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.lum4_ });
     renderBufferManager_->DrawQuad("Downsample luminosity buffer", drawParams);
 
     shaderResources[0].texture_ = textures_.lum4_->GetTexture2D();
     shaderParameters[0].value_ = Vector2::ONE / 4.0f;
-    drawParams.pipelineState_ = pipelineStates_->lum1_;
+    drawParams.pipelineStateId_ = pipelineStates_->lum1_;
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.lum1_ });
     renderBufferManager_->DrawQuad("Downsample luminosity buffer", drawParams);
 }
@@ -155,7 +155,7 @@ void AutoExposurePass::EvaluateAdaptedLuminance()
     DrawQuadParams drawParams;
     drawParams.resources_ = shaderResources;
     drawParams.parameters_ = shaderParameters;
-    drawParams.pipelineState_ = pipelineStates_->adaptedLum_;
+    drawParams.pipelineStateId_ = pipelineStates_->adaptedLum_;
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.adaptedLum_ });
     renderBufferManager_->DrawQuad("Adapt luminosity", drawParams);
@@ -167,9 +167,6 @@ void AutoExposurePass::Execute(Camera* camera)
 {
     if (!pipelineStates_)
         InitializeStates();
-
-    if (!pipelineStates_->IsValid())
-        return;
 
     renderBufferManager_->SwapColorBuffers(false);
 

@@ -130,7 +130,7 @@ void ConstantBufferManager::Dispatch(ShaderParameterGroup grp, unsigned ticketId
     auto ticket = data->tickets_[ticketId];
     const void* bufferData = ticket->GetPointerData();
     // Write data into buffer
-    data->cbuffer_->Update(bufferData);
+    data->cbuffer_->Update(bufferData, ticket->GetSize());
     data->prevTicketDispatched_ = ticketId;
 }
 void ConstantBufferManager::Finalize()

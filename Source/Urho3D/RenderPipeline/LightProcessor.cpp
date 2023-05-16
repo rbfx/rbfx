@@ -28,6 +28,7 @@
 #include "../Math/NumericRange.h"
 #include "../Math/Polyhedron.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/OctreeQuery.h"
 #include "../Graphics/Renderer.h"
@@ -57,7 +58,7 @@ float GetLightFade(Light* light)
 }
 
 /// Return spot light matrix.
-Matrix4 CalculateSpotMatrix(Light* light)
+Matrix4 CalculateSpotMatrix(Light* light, RenderBackend renderBackend)
 {
     Node* lightNode = light->GetNode();
     const Matrix3x4 spotView = Matrix3x4(lightNode->GetWorldPosition(), lightNode->GetWorldRotation(), 1.0f).Inverse();
@@ -72,13 +73,16 @@ Matrix4 CalculateSpotMatrix(Light* light)
     spotProj.m32_ = 1.0f;
 
     Matrix4 texAdjust;
-#ifdef URHO3D_OPENGL
-    texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.5f));
-    texAdjust.SetScale(Vector3(0.5f, -0.5f, 0.5f));
-#else
-    texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
-    texAdjust.SetScale(Vector3(0.5f, -0.5f, 1.0f));
-#endif
+    if (renderBackend == RENDER_GL)
+    {
+        texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.5f));
+        texAdjust.SetScale(Vector3(0.5f, -0.5f, 0.5f));
+    }
+    else
+    {
+        texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
+        texAdjust.SetScale(Vector3(0.5f, -0.5f, 1.0f));
+    }
 
     return texAdjust * spotProj * spotView;
 }
@@ -146,6 +150,7 @@ float EstimateDistanceToCamera(Camera* cullCamera, Light* light)
 
 LightProcessor::LightProcessor(Light* light)
     : light_(light)
+    , renderBackend_(light_->GetSubsystem<Graphics>()->GetRenderBackend())
 {
 }
 
@@ -378,7 +383,7 @@ void LightProcessor::CookShaderParameters(Camera* cullCamera, const DrawableProc
             cookedParams_.lightShapeMatrix_ = Matrix4::IDENTITY;
             break;
         case LIGHT_SPOT:
-            cookedParams_.lightShapeMatrix_ = CalculateSpotMatrix(light_);
+            cookedParams_.lightShapeMatrix_ = CalculateSpotMatrix(light_, renderBackend_);
             break;
         case LIGHT_POINT:
             cookedParams_.lightShapeMatrix_ = lightNode->GetWorldTransform().Inverse().ToMatrix4();
@@ -427,14 +432,20 @@ void LightProcessor::CookShaderParameters(Camera* cullCamera, const DrawableProc
         const Vector2 relativeViewportOffset{ viewportOffsetX / textureSizeX, viewportOffsetY / textureSizeY };
         cookedParams_.shadowCubeUVBias_ =
             Vector2::ONE - 2.0f * cubeShadowMapPadding * cookedParams_.shadowMapInvSize_ / relativeViewportSize;
-#ifdef URHO3D_OPENGL
-        const Vector2 scale = relativeViewportSize * Vector2(1, -1);
-        const Vector2 offset = Vector2(0, 1) + relativeViewportOffset * Vector2(1, -1);
-#else
-        const Vector2 scale = relativeViewportSize;
-        const Vector2 offset = relativeViewportOffset;
-#endif
-        cookedParams_.shadowCubeAdjust_ = { scale, offset };
+
+        if (renderBackend_ == RENDER_GL)
+        {
+            const Vector2 scale = relativeViewportSize * Vector2(1, -1);
+            const Vector2 offset = Vector2(0, 1) + relativeViewportOffset * Vector2(1, -1);
+            cookedParams_.shadowCubeAdjust_ = { scale, offset };
+        }
+        else
+        {
+            const Vector2 scale = relativeViewportSize;
+            const Vector2 offset = relativeViewportOffset;
+            cookedParams_.shadowCubeAdjust_ = { scale, offset };
+        }
+
         break;
     }
     default:

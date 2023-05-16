@@ -92,8 +92,8 @@ unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
     drawParams.resources_ = shaderResources;
     drawParams.parameters_ = shaderParameters;
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
+    drawParams.pipelineStateId_ = pipelineStates_->bright_;
 
-    drawParams.pipelineState_ = pipelineStates_->bright_;
     renderBufferManager_->SetRenderTargets(nullptr, { destination });
     renderBufferManager_->DrawQuad("Gather bright regions", drawParams);
 
@@ -114,12 +114,12 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
 
     shaderResources[0].texture_ = final->GetTexture2D();
-    drawParams.pipelineState_ = pipelineStates_->blurH_;
+    drawParams.pipelineStateId_ = pipelineStates_->blurH_;
     renderBufferManager_->SetRenderTargets(nullptr, { temporary });
     renderBufferManager_->DrawQuad("Blur vertically", drawParams);
 
     shaderResources[0].texture_ = temporary->GetTexture2D();
-    drawParams.pipelineState_ = pipelineStates_->blurV_;
+    drawParams.pipelineStateId_ = pipelineStates_->blurV_;
     renderBufferManager_->SetRenderTargets(nullptr, { final });
     renderBufferManager_->DrawQuad("Blur horizontally", drawParams);
 }
@@ -146,9 +146,6 @@ void BloomPass::Execute(Camera* camera)
 {
     if (!pipelineStates_)
         InitializeStates();
-
-    if (!pipelineStates_->IsValid())
-        return;
 
     luminanceWeights_ = renderBufferManager_->GetSettings().colorSpace_ == RenderPipelineColorSpace::GammaLDR
         ? Color::LUMINOSITY_GAMMA.ToVector3() : Color::LUMINOSITY_LINEAR.ToVector3();

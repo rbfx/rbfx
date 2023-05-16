@@ -73,7 +73,7 @@ public:
 protected:
     const PostProcessPassFlags flags_;
     const ea::string debugComment_;
-    SharedPtr<PipelineState> pipelineState_;
+    StaticPipelineStateId pipelineState_{};
 
     ea::vector<ShaderParameterDesc> shaderParameters_;
     ea::vector<ShaderResourceDesc> shaderResources_;

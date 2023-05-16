@@ -68,13 +68,23 @@ void ShadowMapAllocator::SetSettings(const ShadowMapAllocatorSettings& settings)
 
 void ShadowMapAllocator::CacheSettings()
 {
+    shadowOutputDesc_ = {};
     if (settings_.enableVarianceShadowMaps_)
+    {
         shadowMapFormat_ = graphics_->GetRGFloat32Format();
+
+        shadowOutputDesc_.depthStencilFormat_ = static_cast<TextureFormat>(Graphics::GetDepthStencilFormat());
+        shadowOutputDesc_.numRenderTargets_ = 1;
+        shadowOutputDesc_.renderTargetFormats_[0] = static_cast<TextureFormat>(shadowMapFormat_);
+    }
     else
     {
         shadowMapFormat_ = settings_.use16bitShadowMaps_
             ? graphics_->GetShadowMapFormat()
             : graphics_->GetHiresShadowMapFormat();
+
+        shadowOutputDesc_.depthStencilFormat_ = static_cast<TextureFormat>(shadowMapFormat_);
+        shadowOutputDesc_.numRenderTargets_ = 0;
     }
 
     shadowAtlasPageSize_ = static_cast<int>(settings_.shadowAtlasPageSize_) * IntVector2::ONE;

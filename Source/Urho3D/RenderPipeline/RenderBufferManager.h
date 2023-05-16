@@ -28,6 +28,7 @@
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/PipelineState.h"
 #include "../RenderPipeline/RenderBuffer.h"
+#include "Urho3D/RenderPipeline/StaticPipelineStateCache.h"
 
 namespace Urho3D
 {
@@ -39,6 +40,7 @@ struct FrameInfo;
 /// clipToUVOffsetAndScale_ and invInputSize_ are filled automatically for viewport quad.
 struct DrawQuadParams
 {
+    StaticPipelineStateId pipelineStateId_{};
     PipelineState* pipelineState_{};
     Vector4 clipToUVOffsetAndScale_;
     Vector2 invInputSize_;
@@ -66,6 +68,8 @@ public:
     explicit RenderBufferManager(RenderPipelineInterface* renderPipeline);
     void SetSettings(const RenderBufferManagerSettings& settings);
     void SetFrameSettings(const RenderBufferManagerFrameSettings& frameSettings);
+
+    void OnViewportDefined(RenderSurface* renderTarget, const IntRect& viewportRect);
 
     SharedPtr<RenderBuffer> CreateColorBuffer(const RenderBufferParams& params, const Vector2& size = Vector2::ONE);
 
@@ -114,21 +118,24 @@ public:
 
     /// Create pipeline states for fullscreen quad rendering
     /// @{
-    SharedPtr<PipelineState> CreateQuadPipelineState(PipelineStateDesc desc);
-    SharedPtr<PipelineState> CreateQuadPipelineState(BlendMode blendMode,
-        const ea::string& shaderName, const ea::string& shaderDefines);
+    StaticPipelineStateId CreateQuadPipelineState(PipelineStateDesc desc);
+    StaticPipelineStateId CreateQuadPipelineState(
+        BlendMode blendMode, const ea::string& shaderName, const ea::string& shaderDefines);
     /// @}
+
+    /// Return pipeline state for fullscreen quad rendering for current output.
+    PipelineState* GetQuadPipelineState(StaticPipelineStateId id);
 
     /// Render fullscreen quad with custom parameters into currently bound render buffer.
     void DrawQuad(ea::string_view debugComment, const DrawQuadParams& params, bool flipVertical = false);
     /// Render fullscreen quad into currently bound viewport-sized render buffer.
     void DrawViewportQuad(ea::string_view debugComment,
-        PipelineState* pipelineState, ea::span<const ShaderResourceDesc> resources,
+        StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
         ea::span<const ShaderParameterDesc> parameters, bool flipVertical = false);
     /// Render fullscreen quad into currently bound viewport-sized render buffer.
     /// Current secondary color render buffer is passed as diffuse texture input.
     void DrawFeedbackViewportQuad(ea::string_view debugComment,
-        PipelineState* pipelineState, ea::span<const ShaderResourceDesc> resources,
+        StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
         ea::span<const ShaderParameterDesc> parameters, bool flipVertical = false);
     /// Draw region of input texture into into currently bound render buffer. sRGB is taken into account.
     void DrawTextureRegion(ea::string_view debugComment, Texture* sourceTexture, const IntRect& sourceRect,
@@ -155,6 +162,8 @@ public:
     Vector2 GetInvOutputSize() const { return Vector2::ONE / GetOutputSize().ToVector2(); }
     /// Return identity offset and scale used to convert clip space to UV space.
     Vector4 GetDefaultClipToUVSpaceOffsetAndScale() const;
+    TextureFormat GetOutputColorFormat() const;
+    TextureFormat GetOutputDepthStencilFormat() const;
     const RenderBufferManagerSettings& GetSettings() const { return settings_; }
 
 private:
@@ -165,15 +174,12 @@ private:
     void OnRenderEnd(const CommonFrameInfo& frameInfo);
     /// @}
 
-    SharedPtr<PipelineState> CreateCopyTextureToSwapChainPipeline(BlendMode blendMode,
-        const ea::string& shaderName, const ea::string& shaderDefines);
-
     void InitializeCopyTexturePipelineState();
     void ResetCachedRenderBuffers();
     void CopyTextureRegion(ea::string_view debugComment, Texture* sourceTexture, const IntRect& sourceRect,
         RenderSurface* destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical);
 
-    /// Extrenal dependencies
+    /// External dependencies
     /// @{
     RenderPipelineInterface* renderPipeline_{};
     Graphics* graphics_{};
@@ -185,19 +191,20 @@ private:
     /// Cached between frames
     /// @{
     RenderBufferManagerSettings settings_;
+    StaticPipelineStateCache pipelineStates_;
 
     SharedPtr<RenderBuffer> viewportColorBuffer_;
     SharedPtr<RenderBuffer> viewportDepthBuffer_;
 
-    SharedPtr<PipelineState> copyTexturePipelineState_;
-    SharedPtr<PipelineState> copyTextureToSwapChainPipelineState_;
-    SharedPtr<PipelineState> copyGammaToLinearTexturePipelineState_;
-    SharedPtr<PipelineState> copyLinearToGammaTexturePipelineState_;
+    StaticPipelineStateId copyTexturePipelineState_{};
+    StaticPipelineStateId copyGammaToLinearTexturePipelineState_{};
+    StaticPipelineStateId copyLinearToGammaTexturePipelineState_{};
 
     SharedPtr<RenderBuffer> substituteRenderBuffers_[2];
     SharedPtr<RenderBuffer> substituteDepthBuffer_;
 
-    RenderBufferParams previousViewportParams_;
+    RenderBufferParams colorOutputParams_;
+    RenderBufferParams depthStencilOutputParams_;
     /// @}
 
     /// State of current frame

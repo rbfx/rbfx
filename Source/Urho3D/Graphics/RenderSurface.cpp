@@ -129,12 +129,12 @@ IntRect RenderSurface::GetRect(Graphics* graphics, const RenderSurface* renderSu
     return { IntVector2::ZERO, GetSize(graphics, renderSurface) };
 }
 
-unsigned RenderSurface::GetFormat(Graphics* /*graphics*/, const RenderSurface* renderSurface)
+unsigned RenderSurface::GetFormat(Graphics* graphics, const RenderSurface* renderSurface)
 {
     // TODO(diligent): Revisit formats
     if (renderSurface && renderSurface->GetRenderTargetView())
         return renderSurface->GetRenderTargetView()->GetDesc().Format;
-    return renderSurface ? renderSurface->GetParentTexture()->GetFormat() : Graphics::GetRGBFormat();
+    return renderSurface ? renderSurface->GetParentTexture()->GetFormat() : graphics->GetSwapChainOutputDesc().renderTargetFormats_[0];
 }
 
 int RenderSurface::GetMultiSample(Graphics* graphics, const RenderSurface* renderSurface)

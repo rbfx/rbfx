@@ -731,6 +731,9 @@ public:
     unsigned GetSwapChainRTFormat();
     unsigned GetSwapChainDepthFormat();
 
+    PipelineStateOutputDesc GetSwapChainOutputDesc() const;
+    PipelineStateOutputDesc GetCurrentOutputDesc() const;
+
     /// Return the API-specific alpha texture format.
     static unsigned GetAlphaFormat();
     /// Return the API-specific luminance texture format.

@@ -149,6 +149,9 @@ public:
     virtual bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
         const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) { return false; }
 
+    void SetForwardOutputDesc(const PipelineStateOutputDesc& desc);
+    void SetDeferredOutputDesc(const PipelineStateOutputDesc& desc);
+
     void ComposeBatches();
 
     bool HasBatches() const
@@ -224,6 +227,9 @@ public:
     ~BatchCompositor() override;
     void SetPasses(ea::vector<SharedPtr<BatchCompositorPass>> passes);
     void SetShadowMaterialQuality(MaterialQuality materialQuality) { shadowMaterialQuality_ = materialQuality; }
+
+    void SetShadowOutputDesc(const PipelineStateOutputDesc& desc);
+    void SetLightVolumesOutputDesc(const PipelineStateOutputDesc& desc);
 
     /// Compose batches
     /// @{

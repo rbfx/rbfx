@@ -40,6 +40,7 @@ class Texture2D;
 class Viewport;
 struct BatchStateCreateKey;
 struct BatchStateCreateContext;
+struct PipelineStateOutputDesc;
 struct UIBatchStateKey;
 struct UIBatchStateCreateContext;
 
@@ -224,8 +225,8 @@ class BatchStateCacheCallback
 public:
     /// Create pipeline state for given context and key.
     /// Only attributes that constribute to pipeline state hashes are safe to use.
-    virtual SharedPtr<PipelineState> CreateBatchPipelineState(
-        const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) = 0;
+    virtual SharedPtr<PipelineState> CreateBatchPipelineState(const BatchStateCreateKey& key,
+        const BatchStateCreateContext& ctx, const PipelineStateOutputDesc& outputDesc) = 0;
 };
 
 /// Pipeline state cache callback used to create actual pipeline state for UI batches.
@@ -818,6 +819,12 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     void PropagateImpliedSettings();
     void AdjustForPostProcessing(PostProcessPassFlags flags);
     /// @}
+};
+
+/// ID of static pipeline state.
+enum class StaticPipelineStateId : unsigned
+{
+    Invalid,
 };
 
 }

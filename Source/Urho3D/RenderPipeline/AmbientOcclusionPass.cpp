@@ -128,11 +128,11 @@ void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextu
     renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
     if (normalBuffer_)
     {
-        drawParams.pipelineState_ = pipelineStates_->ssaoDeferred_;
+        drawParams.pipelineStateId_ = pipelineStates_->ssaoDeferred_;
     }
     else
     {
-        drawParams.pipelineState_ = pipelineStates_->ssaoForward_;
+        drawParams.pipelineStateId_ = pipelineStates_->ssaoForward_;
     }
     renderBufferManager_->DrawQuad("Apply SSAO", drawParams);
     //renderBufferManager_->SetOutputRenderTargets();
@@ -156,9 +156,9 @@ void AmbientOcclusionPass::BlurTexture(const Matrix4& textureToViewSpace)
     drawParams.parameters_ = shaderParameters;
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
     if (normalBuffer_)
-        drawParams.pipelineState_ = pipelineStates_->blurDeferred_;
+        drawParams.pipelineStateId_ = pipelineStates_->blurDeferred_;
     else
-        drawParams.pipelineState_ = pipelineStates_->blurForward_;
+        drawParams.pipelineStateId_ = pipelineStates_->blurForward_;
 
     {
         renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
@@ -185,14 +185,14 @@ void AmbientOcclusionPass::BlurTexture(const Matrix4& textureToViewSpace)
     }
 }
 
-void AmbientOcclusionPass::Blit(PipelineState* state)
+void AmbientOcclusionPass::Blit(StaticPipelineStateId pipelineStateId)
 {
     renderBufferManager_->SetOutputRenderTargets();
 
     const ShaderResourceDesc shaderResources[] = {
         {"DiffMap", textures_.previousTarget_->GetTexture2D()}};
 
-    renderBufferManager_->DrawViewportQuad("SSAO Combine", state, shaderResources, {});
+    renderBufferManager_->DrawViewportQuad("SSAO Combine", pipelineStateId, shaderResources, {});
 }
 
 void AmbientOcclusionPass::SetNormalBuffer(RenderBuffer* normalBuffer)
@@ -204,9 +204,6 @@ void AmbientOcclusionPass::Execute(Camera* camera)
 {
     if (!pipelineStates_)
         InitializeStates();
-
-    if (!pipelineStates_->IsValid())
-        return;
 
     if (settings_.strength_ <= 0.0f)
         return;

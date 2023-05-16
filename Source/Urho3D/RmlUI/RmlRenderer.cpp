@@ -186,6 +186,8 @@ Material* RmlRenderer::GetBatchMaterial(Texture2D* texture)
 void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices,
     Rml::TextureHandle textureHandle, const Rml::Vector2f& translation)
 {
+    auto graphics = GetSubsystem<Graphics>();
+
     const auto [firstVertex, vertexData] = vertexBuffer_->AddVertices(num_vertices);
     const auto [firstIndex, indexData] = indexBuffer_->AddIndices(num_indices);
 
@@ -216,7 +218,8 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
 
     Material* material = GetBatchMaterial(texture);
     Pass* pass = material->GetDefaultPass();
-    const UIBatchStateKey batchStateKey{ isRenderSurfaceSRGB_, material, pass, BLEND_ALPHA };
+    const UIBatchStateKey batchStateKey{
+        isRenderSurfaceSRGB_, graphics->GetCurrentOutputDesc(), material, pass, BLEND_ALPHA};
     PipelineState* pipelineState = batchStateCache_->GetOrCreatePipelineState(batchStateKey, batchStateCreateContext_);
 
     IntRect scissor;

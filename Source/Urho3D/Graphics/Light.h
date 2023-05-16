@@ -85,8 +85,6 @@ static const float DEFAULT_SHADOWNEARFARRATIO = 0.002f;
 static const float DEFAULT_SHADOWMAXEXTRUSION = 1000.0f;
 static const float DEFAULT_SHADOWSPLIT = 1000.0f;
 static const float DEFAULT_TEMPERATURE = 6590.0f;
-static const float DEFAULT_RADIUS = 0.0f;
-static const float DEFAULT_LENGTH = 0.0f;
 
 /// Depth bias parameters. Used both by lights (for shadow mapping) and materials.
 struct URHO3D_API BiasParameters

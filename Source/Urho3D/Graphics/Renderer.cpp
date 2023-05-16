@@ -1220,9 +1220,10 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
 
 RenderSurface* Renderer::GetDepthStencil(int width, int height, int multiSample, bool autoResolve)
 {
+    // TODO(diligent): Revisit this
+    const bool isOpenGL = graphics_->GetRenderBackend() == RENDER_GL;
     // Return the default depth-stencil surface if applicable
-    // (when using OpenGL Graphics will allocate right size surfaces on demand to emulate Direct3D9)
-    if (width == graphics_->GetWidth() && height == graphics_->GetHeight() && multiSample == 1 &&
+    if (!isOpenGL && width == graphics_->GetWidth() && height == graphics_->GetHeight() && multiSample == 1 &&
         graphics_->GetMultiSample() == multiSample)
         return nullptr;
     else

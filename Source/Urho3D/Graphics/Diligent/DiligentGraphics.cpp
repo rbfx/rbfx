@@ -302,6 +302,7 @@ Graphics::~Graphics()
     // impl_->deviceContext_->SetPipelineState(nullptr);
     impl_->deviceContext_->SetIndexBuffer(nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     impl_->deviceContext_->SetVertexBuffers(0, 0, nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    impl_->deviceContext_->Flush();
 
     if (impl_->device_)
     {
@@ -468,6 +469,9 @@ void Graphics::SetForceGL2(bool enable)
 
 void Graphics::Close()
 {
+    if (impl_->deviceContext_)
+        impl_->deviceContext_->Flush();
+
     if (window_)
     {
         SDL_ShowCursor(SDL_TRUE);
@@ -1074,6 +1078,11 @@ void Graphics::SetPipelineState(PipelineState* pipelineState)
 
     // TODO(diligent): We shouldn't need it cached
     pipelineState_ = pipelineState;
+    if (pipelineState_ && pipelineState_->GetDesc().depthCompareFunction_ == CMP_ALWAYS
+        && !pipelineState_->GetDesc().depthWriteEnabled_
+        && pipelineState_->GetDesc().output_.depthStencilFormat_ == TEX_FORMAT_UNKNOWN)
+        impl_->renderTargetsDirty_ = true;
+
 }
 
 void Graphics::CommitSRB(ShaderResourceBinding* srb)
@@ -1990,6 +1999,50 @@ unsigned Graphics::GetSwapChainDepthFormat()
     return impl_->swapChain_->GetDesc().DepthBufferFormat;
 }
 
+PipelineStateOutputDesc Graphics::GetSwapChainOutputDesc() const
+{
+    const Diligent::SwapChainDesc& swapChainDesc = impl_->swapChain_->GetDesc();
+
+    PipelineStateOutputDesc result;
+    result.depthStencilFormat_ = swapChainDesc.DepthBufferFormat;
+    result.numRenderTargets_ = 1;
+    result.renderTargetFormats_[0] = swapChainDesc.ColorBufferFormat;
+    return result;
+}
+
+PipelineStateOutputDesc Graphics::GetCurrentOutputDesc() const
+{
+    // TODO(diligent): Cache PipelineStateOutputDesc
+    PipelineStateOutputDesc result;
+
+    // TODO(diligent): Revisit this mess
+    // @{
+    Diligent::ITextureView* depthStencil = (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL)
+        ? (ITextureView*)depthStencil_->GetRenderTargetView()
+        : impl_->swapChain_->GetDepthBufferDSV();
+
+    Diligent::ITextureView* renderTargets[MAX_RENDERTARGETS]{};
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+        renderTargets[i] = (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET)
+            ? (ITextureView*)renderTargets_[i]->GetRenderTargetView()
+            : nullptr;
+    if (!renderTargets_[0]
+        && (!depthStencil_
+            || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
+        renderTargets[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
+    unsigned rtCount = 0;
+    while (impl_->renderTargetViews_[rtCount] != nullptr)
+        ++rtCount;
+    // @}
+
+    result.depthStencilFormat_ = depthStencil->GetDesc().Format;
+    result.numRenderTargets_ = rtCount;
+    for (unsigned i = 0; i < rtCount; ++i)
+        result.renderTargetFormats_[i] = renderTargets[i]->GetDesc().Format;
+
+    return result;
+}
+
 unsigned Graphics::GetAlphaFormat()
 {
     using namespace Diligent;
@@ -2085,13 +2138,13 @@ unsigned Graphics::GetDepthStencilFormat()
 unsigned Graphics::GetReadableDepthFormat()
 {
     using namespace Diligent;
-    return TEX_FORMAT_R24G8_TYPELESS;
+    return TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
 unsigned Graphics::GetReadableDepthStencilFormat()
 {
     using namespace Diligent;
-    return TEX_FORMAT_R24G8_TYPELESS;
+    return TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
 unsigned Graphics::GetFormat(const ea::string& formatName)
@@ -2285,6 +2338,11 @@ bool Graphics::CreateDevice(int width, int height)
         swapChainDesc.DepthBufferFormat = TEX_FORMAT_D32_FLOAT_S8X24_UINT;
 #endif
     }
+    else if (impl_->renderBackend_ == RENDER_GL)
+    {
+        sRGB_ = true;
+        swapChainDesc.ColorBufferFormat = TEX_FORMAT_RGBA8_UNORM_SRGB;
+    }
     else
     {
         swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
@@ -2389,9 +2447,6 @@ bool Graphics::CreateDevice(int width, int height)
             factory->CreateDeviceAndSwapChainGL(
                 engineCI, &impl_->device_, &impl_->deviceContext_, swapChainDesc, &impl_->swapChain_);
 
-            // TODO(diligent): Do we want to do something about this?
-            sRGB_ = true;
-
             gl3Support = true;
             engineFactory = factory;
         }
@@ -2491,7 +2546,7 @@ void Graphics::CheckFeatureSupport()
     hardwareShadowSupport_ = true;
     instancingSupport_ = true;
     shadowMapFormat_ = TEX_FORMAT_D16_UNORM;
-    hiresShadowMapFormat_ = TEX_FORMAT_D32_FLOAT;
+    hiresShadowMapFormat_ = TEX_FORMAT_D24_UNORM_S8_UINT;
     dummyColorFormat_ = TEX_FORMAT_UNKNOWN;
     sRGBSupport_ = true;
     sRGBWriteSupport_ = true;
@@ -2588,17 +2643,22 @@ void Graphics::ResetCachedState()
 
 void Graphics::PrepareDraw()
 {
+    // TODO(diligent): This is ALL terrible. Refactor.
     if (impl_->renderTargetsDirty_)
     {
         impl_->depthStencilView_ = (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL)
             ? (ITextureView*)depthStencil_->GetRenderTargetView()
             : impl_->swapChain_->GetDepthBufferDSV();
+        if (pipelineState_ && pipelineState_->GetDesc().depthCompareFunction_ == CMP_ALWAYS
+            && !pipelineState_->GetDesc().depthWriteEnabled_
+            && pipelineState_->GetDesc().output_.depthStencilFormat_ == TEX_FORMAT_UNKNOWN)
+            impl_->depthStencilView_ = nullptr;
 
         // If possible, bind a read-only depth stencil view to allow reading depth in shader
         if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
             impl_->depthStencilView_ = (ITextureView*)depthStencil_->GetReadOnlyView();
 
-        assert(impl_->depthStencilView_);
+        //assert(impl_->depthStencilView_);
 
         for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
             impl_->renderTargetViews_[i] = (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET)

@@ -44,7 +44,9 @@ Pass* GetFirstPass(Technique* technique, const ea::vector<unsigned>& passIndices
     return nullptr;
 }
 
-}
+const TextureFormat outlineTextureFormat = static_cast<TextureFormat>(Graphics::GetRGBAFormat());
+
+} // namespace
 
 OutlineScenePass::OutlineScenePass(RenderPipelineInterface* renderPipeline,
     DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback,
@@ -55,6 +57,10 @@ OutlineScenePass::OutlineScenePass(RenderPipelineInterface* renderPipeline,
 {
     ea::transform(outlinedPasses.begin(), outlinedPasses.end(), std::back_inserter(outlinedPasses_),
         [](const ea::string& pass) { return Technique::GetPassIndex(pass); });
+
+    const PipelineStateOutputDesc outputDesc{
+        Diligent::TEX_FORMAT_UNKNOWN, 1, {static_cast<TextureFormat>(outlineTextureFormat)}};
+    SetDeferredOutputDesc(outputDesc);
 }
 
 void OutlineScenePass::SetOutlineGroups(Scene* scene, bool drawDebugOutlines)
@@ -113,11 +119,6 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
 
     desc.scissorTestEnabled_ = true;
 
-    // TODO(diligent): Rework this
-    Graphics* graphics = GetSubsystem<Graphics>();
-    desc.renderTargetsFormats_.push_back(Graphics::GetRGBFormat());
-    desc.depthStencilFormat_ = graphics->GetSwapChainDepthFormat();
-
     shaderProgramDesc_.Clear();
     compositor->ProcessUserBatch(shaderProgramDesc_, GetFlags(),
         key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_,
@@ -170,15 +171,14 @@ void OutlinePass::OnRenderBegin(const CommonFrameInfo& frameInfo)
 
     if (!outlineBuffer_)
     {
-        const unsigned format = Graphics::GetRGBAFormat();
-        const RenderBufferParams params{format, 1, RenderBufferFlag::BilinearFiltering};
+        const RenderBufferParams params{outlineTextureFormat, 1, RenderBufferFlag::BilinearFiltering};
         const Vector2 sizeMultiplier = Vector2::ONE; // / 2.0f;
         outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     }
 
-    if (!pipelineStateLinear_)
+    if (pipelineStateLinear_ == StaticPipelineStateId::Invalid)
         pipelineStateLinear_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "URHO3D_GAMMA_CORRECTION");
-    if (!pipelineStateGamma_)
+    if (pipelineStateGamma_ == StaticPipelineStateId::Invalid)
         pipelineStateGamma_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "");
 }
 
@@ -188,9 +188,7 @@ void OutlinePass::Execute(Camera* camera)
         return;
 
     const bool inLinearSpace = renderBufferManager_->GetSettings().colorSpace_ != RenderPipelineColorSpace::GammaLDR;
-    PipelineState* pipelineState = inLinearSpace ? pipelineStateLinear_ : pipelineStateGamma_;
-    if (!pipelineState->IsValid())
-        return;
+    const StaticPipelineStateId pipelineState = inLinearSpace ? pipelineStateLinear_ : pipelineStateGamma_;
 
     auto texture = outlineBuffer_->GetTexture();
     const Vector2 inputInvSize = Vector2::ONE / texture->GetSize().ToVector2();

@@ -42,7 +42,7 @@ void ToneMappingPass::SetMode(ToneMappingMode mode)
 {
     if (mode_ != mode)
     {
-        toneMappingState_ = nullptr;
+        toneMappingState_ = StaticPipelineStateId::Invalid;
         mode_ = mode;
     }
 }
@@ -71,11 +71,8 @@ void ToneMappingPass::InitializeStates()
 
 void ToneMappingPass::Execute(Camera* camera)
 {
-    if (!toneMappingState_)
+    if (toneMappingState_ == StaticPipelineStateId::Invalid)
         InitializeStates();
-
-    if (!toneMappingState_->IsValid())
-        return;
 
     renderBufferManager_->SwapColorBuffers(false);
 

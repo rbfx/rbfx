@@ -225,12 +225,6 @@
 %ignore Urho3D::DEFAULT_TEMPERATURE;
 %csconst(1) Urho3D::DEFAULT_TEMPERATURE;
 %constant float DefaultTemperature = (float)6590;
-%ignore Urho3D::DEFAULT_RADIUS;
-%csconst(1) Urho3D::DEFAULT_RADIUS;
-%constant float DefaultRadius = (float)0;
-%ignore Urho3D::DEFAULT_LENGTH;
-%csconst(1) Urho3D::DEFAULT_LENGTH;
-%constant float DefaultLength = (float)0;
 %ignore Urho3D::DEFAULT_RENDER_ORDER;
 %csconst(1) Urho3D::DEFAULT_RENDER_ORDER;
 %constant unsigned char DefaultRenderOrder = 128;

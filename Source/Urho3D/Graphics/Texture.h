@@ -223,7 +223,7 @@ public:
 #endif
     /// Convert format to sRGB.
     /// @nobind
-    unsigned GetSRGBFormat(unsigned format);
+    static unsigned GetSRGBFormat(unsigned format);
 
     /// TODO(diligent): Store SamplerStateDesc in the texture object
     SamplerStateDesc GetSamplerStateDesc() const;

@@ -12,6 +12,7 @@
 // TODO(diligent): Remove this include
 #include "Urho3D/Graphics/GraphicsDefs.h"
 
+#include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/InputLayout.h>
 
 #include <EASTL/array.h>
@@ -19,6 +20,10 @@
 
 namespace Urho3D
 {
+
+/// Texture format, equivalent to Diligent::TEXTURE_FORMAT.
+/// TODO(diligent): Use stricter typing?
+using TextureFormat = Diligent::TEXTURE_FORMAT;
 
 /// Description of the single input required by the vertex shader.
 struct URHO3D_API VertexShaderAttribute
@@ -40,6 +45,8 @@ struct URHO3D_API SamplerStateDesc
     bool shadowCompare_{};
     ea::array<TextureAddressMode, 3> addressMode_{ADDRESS_CLAMP, ADDRESS_CLAMP, ADDRESS_CLAMP};
 
+    /// Operators.
+    /// @{
     bool operator==(const SamplerStateDesc& rhs) const
     {
         return borderColor_ == rhs.borderColor_ //
@@ -63,6 +70,36 @@ struct URHO3D_API SamplerStateDesc
         CombineHash(hash, addressMode_[COORD_W]);
         return hash;
     }
+    /// @}
+};
+
+/// Description of pipeline state output (depth-stencil and render targets).
+struct URHO3D_API PipelineStateOutputDesc
+{
+    TextureFormat depthStencilFormat_{};
+    unsigned numRenderTargets_{};
+    ea::array<TextureFormat, MAX_RENDERTARGETS> renderTargetFormats_{};
+
+    /// Operators.
+    /// @{
+    bool operator ==(const PipelineStateOutputDesc& rhs) const
+    {
+        return depthStencilFormat_ == rhs.depthStencilFormat_ //
+            && numRenderTargets_ == rhs.numRenderTargets_ //
+            && renderTargetFormats_ == rhs.renderTargetFormats_;
+    }
+
+    bool operator !=(const PipelineStateOutputDesc& rhs) const { return !(*this == rhs); }
+
+    unsigned ToHash() const
+    {
+        unsigned hash = 0;
+        CombineHash(hash, depthStencilFormat_);
+        for (unsigned i = 0; i < numRenderTargets_; ++i)
+            CombineHash(hash, renderTargetFormats_[i]);
+        return hash;
+    }
+    /// @}
 };
 
 } // namespace Urho3D

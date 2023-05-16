@@ -48,9 +48,10 @@ static const unsigned MAX_LINES = 1000000;
 // Cap the amount of triangles to prevent crash.
 static const unsigned MAX_TRIANGLES = 100000;
 
-DebugRenderer::DebugRenderer(Context* context) :
-    Component(context),
-    lineAntiAlias_(false)
+DebugRenderer::DebugRenderer(Context* context)
+    : Component(context)
+    , lineAntiAlias_(false)
+    , pipelineStates_(context)
 {
     vertexBuffer_ = MakeShared<VertexBuffer>(context_);
 #ifdef URHO3D_DEBUG
@@ -667,12 +668,14 @@ void DebugRenderer::Render()
 
     drawQueue->SetBuffers({ { vertexBuffer_ }, nullptr, nullptr });
 
+    const PipelineStateOutputDesc& outputDesc = graphics->GetCurrentOutputDesc();
+
     unsigned start = 0;
     unsigned count = 0;
     if (lines_.size())
     {
         count = lines_.size() * 2;
-        drawQueue->SetPipelineState(depthLinesPipelineState_[lineAntiAlias_]);
+        drawQueue->SetPipelineState(pipelineStates_.GetState(depthLinesPipelineState_[lineAntiAlias_], outputDesc));
         setDefaultConstants();
         drawQueue->Draw(start, count);
         start += count;
@@ -680,7 +683,7 @@ void DebugRenderer::Render()
     if (noDepthLines_.size())
     {
         count = noDepthLines_.size() * 2;
-        drawQueue->SetPipelineState(noDepthLinesPipelineState_[lineAntiAlias_]);
+        drawQueue->SetPipelineState(pipelineStates_.GetState(noDepthLinesPipelineState_[lineAntiAlias_], outputDesc));
         setDefaultConstants();
         drawQueue->Draw(start, count);
         start += count;
@@ -689,7 +692,7 @@ void DebugRenderer::Render()
     if (triangles_.size())
     {
         count = triangles_.size() * 3;
-        drawQueue->SetPipelineState(depthTrianglesPipelineState_);
+        drawQueue->SetPipelineState(pipelineStates_.GetState(depthTrianglesPipelineState_, outputDesc));
         setDefaultConstants();
         drawQueue->Draw(start, count);
         start += count;
@@ -697,7 +700,7 @@ void DebugRenderer::Render()
     if (noDepthTriangles_.size())
     {
         count = noDepthTriangles_.size() * 3;
-        drawQueue->SetPipelineState(noDepthTrianglesPipelineState_);
+        drawQueue->SetPipelineState(pipelineStates_.GetState(noDepthTrianglesPipelineState_, outputDesc));
         setDefaultConstants();
         drawQueue->Draw(start, count);
     }
@@ -768,11 +771,8 @@ void DebugRenderer::InitializePipelineStates()
 #ifdef URHO3D_DEBUG
         desc.debugName_ = Format("DebugRenderer({})", debugName);
 #endif
-        // TODO(diligent): This assumption is incorrect.
-        desc.renderTargetsFormats_.push_back(Graphics::GetRGBFormat());
-        desc.depthStencilFormat_ = graphics->GetSwapChainDepthFormat();
 
-        return renderer->GetOrCreatePipelineState(desc);
+        return pipelineStates_.CreateState(desc);
     };
 
     for (bool lineAntiAlias : { false, true })

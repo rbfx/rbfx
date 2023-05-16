@@ -68,6 +68,18 @@ BatchCompositorPass::BatchCompositorPass(RenderPipelineInterface* renderPipeline
     renderPipeline->OnPipelineStatesInvalidated.Subscribe(this, &BatchCompositorPass::OnPipelineStatesInvalidated);
 }
 
+void BatchCompositorPass::SetForwardOutputDesc(const PipelineStateOutputDesc& desc)
+{
+    unlitBaseCache_.SetOutputDesc(desc);
+    litBaseCache_.SetOutputDesc(desc);
+    lightCache_.SetOutputDesc(desc);
+}
+
+void BatchCompositorPass::SetDeferredOutputDesc(const PipelineStateOutputDesc& desc)
+{
+    deferredCache_.SetOutputDesc(desc);
+}
+
 void BatchCompositorPass::ComposeBatches()
 {
     // Try to process batches in worker threads
@@ -227,6 +239,16 @@ BatchCompositor::~BatchCompositor()
 void BatchCompositor::SetPasses(ea::vector<SharedPtr<BatchCompositorPass>> passes)
 {
     allPasses_ = passes;
+}
+
+void BatchCompositor::SetShadowOutputDesc(const PipelineStateOutputDesc& desc)
+{
+    shadowCache_.SetOutputDesc(desc);
+}
+
+void BatchCompositor::SetLightVolumesOutputDesc(const PipelineStateOutputDesc& desc)
+{
+    lightVolumeCache_.SetOutputDesc(desc);
 }
 
 void BatchCompositor::ComposeShadowBatches()

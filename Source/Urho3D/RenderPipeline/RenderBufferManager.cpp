@@ -215,6 +215,7 @@ RenderBufferManager::RenderBufferManager(RenderPipelineInterface* renderPipeline
     , renderer_(GetSubsystem<Renderer>())
     , debugger_(renderPipeline_->GetDebugger())
     , drawQueue_(renderer_->GetDefaultDrawQueue())
+    , pipelineStates_(context_)
 {
     // Order is important. RenderBufferManager should receive callbacks before any of render buffers
     renderPipeline_->OnPipelineStatesInvalidated.Subscribe(this, &RenderBufferManager::OnPipelineStatesInvalidated);
@@ -223,6 +224,8 @@ RenderBufferManager::RenderBufferManager(RenderPipelineInterface* renderPipeline
 
     viewportColorBuffer_ = MakeShared<ViewportColorRenderBuffer>(renderPipeline_);
     viewportDepthBuffer_ = MakeShared<ViewportDepthStencilRenderBuffer>(renderPipeline_);
+
+    InitializeCopyTexturePipelineState();
 }
 
 void RenderBufferManager::SetSettings(const RenderBufferManagerSettings& settings)
@@ -237,6 +240,18 @@ void RenderBufferManager::SetFrameSettings(const RenderBufferManagerFrameSetting
         frameSettings_.readableColor_ = true;
 }
 
+TextureFormat RenderBufferManager::GetOutputColorFormat() const
+{
+    const bool isSRGB = colorOutputParams_.flags_.Test(RenderBufferFlag::sRGB);
+    return static_cast<TextureFormat>(
+        isSRGB ? Texture::GetSRGBFormat(colorOutputParams_.textureFormat_) : colorOutputParams_.textureFormat_);
+}
+
+TextureFormat RenderBufferManager::GetOutputDepthStencilFormat() const
+{
+    return static_cast<TextureFormat>(depthStencilOutputParams_.textureFormat_);
+}
+
 SharedPtr<RenderBuffer> RenderBufferManager::CreateColorBuffer(const RenderBufferParams& params, const Vector2& size)
 {
     return MakeShared<TextureRenderBuffer>(renderPipeline_, params, size);
@@ -246,12 +261,12 @@ void RenderBufferManager::SwapColorBuffers(bool synchronizeContents)
 {
     if (!frameSettings_.supportColorReadWrite_)
     {
-        URHO3D_LOGERROR("Cannot call SwapColorBuffers if 'supportColorReadWrite' flag is not set");
+        URHO3D_ASSERTLOG("Cannot call SwapColorBuffers if 'supportColorReadWrite' flag is not set");
         assert(0);
         return;
     }
 
-    assert(readableColorBuffer_ && writeableColorBuffer_);
+    URHO3D_ASSERT(readableColorBuffer_ && writeableColorBuffer_);
     ea::swap(writeableColorBuffer_, readableColorBuffer_);
 
     if (synchronizeContents)
@@ -371,17 +386,17 @@ Vector4 RenderBufferManager::GetDefaultClipToUVSpaceOffsetAndScale() const
     return CalculateViewportOffsetAndScale(size, IntRect{ IntVector2::ZERO, size });
 }
 
-SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(PipelineStateDesc desc)
+StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(PipelineStateDesc desc)
 {
     Geometry* quadGeometry = renderer_->GetQuadGeometry();
 
     desc.InitializeInputLayoutAndPrimitiveType(quadGeometry);
     desc.colorWriteEnabled_ = true;
 
-    return renderer_->GetOrCreatePipelineState(desc);
+    return pipelineStates_.CreateState(desc);
 }
 
-SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(BlendMode blendMode,
+StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode blendMode,
     const ea::string& shaderName, const ea::string& shaderDefines)
 {
     ea::string defines = shaderDefines;
@@ -397,45 +412,19 @@ SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(BlendMode 
     desc.vertexShader_ = graphics_->GetShader(VS, shaderName, defines);
     desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);
 
-    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-    {
-        RenderSurface* rt = graphics_->GetRenderTarget(i);
-        if (rt == nullptr)
-            break;
-        desc.renderTargetsFormats_.push_back(RenderSurface::GetFormat(graphics_, rt));
-    }
-    if (desc.renderTargetsFormats_.size() == 0)
-        desc.renderTargetsFormats_.push_back(Graphics::GetRGBFormat());
-    desc.depthStencilFormat_ = graphics_->GetDepthStencilFormat();
-
     return CreateQuadPipelineState(desc);
 }
 
-SharedPtr<PipelineState> RenderBufferManager::CreateCopyTextureToSwapChainPipeline(
-    BlendMode blendMode, const ea::string& shaderName, const ea::string& shaderDefines)
+PipelineState* RenderBufferManager::GetQuadPipelineState(StaticPipelineStateId id)
 {
-    ea::string defines = shaderDefines;
-    defines += " URHO3D_GEOMETRY_STATIC";
-    if (graphics_->GetCaps().constantBuffersSupported_)
-        defines += " URHO3D_USE_CBUFFERS";
-
-    PipelineStateDesc desc;
-#ifdef URHO3D_DEBUG
-    desc.debugName_ = "CopyTextureToSwapChain";
-#endif
-    desc.blendMode_ = blendMode;
-    desc.vertexShader_ = graphics_->GetShader(VS, shaderName, defines);
-    desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);
-
-    desc.renderTargetsFormats_.push_back(graphics_->GetSwapChainRTFormat());
-    desc.depthStencilFormat_ = graphics_->GetDepthStencilFormat();
-
-    return CreateQuadPipelineState(desc);
+    return pipelineStates_.GetState(id, graphics_->GetCurrentOutputDesc());
 }
 
 void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadParams& params, bool flipVertical)
 {
-    if (!params.pipelineState_ || !params.pipelineState_->IsValid())
+    PipelineState* pipelineState =
+        params.pipelineState_ ? params.pipelineState_ : GetQuadPipelineState(params.pipelineStateId_);
+    if (!pipelineState || !pipelineState->IsValid())
         return;
 
 #ifdef URHO3D_DEBUG
@@ -454,7 +443,7 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
 #endif
 
     drawQueue_->Reset();
-    drawQueue_->SetPipelineState(params.pipelineState_);
+    drawQueue_->SetPipelineState(pipelineState);
 
     if (drawQueue_->BeginShaderParameterGroup(SP_FRAME))
     {
@@ -511,11 +500,11 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
 }
 
 void RenderBufferManager::DrawViewportQuad(ea::string_view debugComment,
-    PipelineState* pipelineState, ea::span<const ShaderResourceDesc> resources,
+    StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
     ea::span<const ShaderParameterDesc> parameters, bool flipVertical)
 {
     DrawQuadParams params;
-    params.pipelineState_ = pipelineState;
+    params.pipelineStateId_ = pipelineStateId;
     params.clipToUVOffsetAndScale_ = GetDefaultClipToUVSpaceOffsetAndScale();
     params.invInputSize_ = GetInvOutputSize();
     params.resources_ = resources;
@@ -524,11 +513,11 @@ void RenderBufferManager::DrawViewportQuad(ea::string_view debugComment,
 }
 
 void RenderBufferManager::DrawFeedbackViewportQuad(ea::string_view debugComment,
-    PipelineState* pipelineState, ea::span<const ShaderResourceDesc> resources,
+    StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
     ea::span<const ShaderParameterDesc> parameters, bool flipVertical)
 {
     DrawQuadParams params;
-    params.pipelineState_ = pipelineState;
+    params.pipelineStateId_ = pipelineStateId;
     params.clipToUVOffsetAndScale_ = GetDefaultClipToUVSpaceOffsetAndScale();
     params.invInputSize_ = GetInvOutputSize();
     params.bindSecondaryColorToDiffuse_ = true;
@@ -539,7 +528,46 @@ void RenderBufferManager::DrawFeedbackViewportQuad(ea::string_view debugComment,
 
 void RenderBufferManager::OnPipelineStatesInvalidated()
 {
-    copyTexturePipelineState_ = nullptr;
+    // TODO(diligent): Why needed?
+    pipelineStates_.Invalidate();
+}
+
+void RenderBufferManager::OnViewportDefined(RenderSurface* renderTarget, const IntRect& viewportRect)
+{
+    Texture2D* outputTexture = GetParentTexture2D(renderTarget);
+    const bool isBilinearFilteredOutput = outputTexture && outputTexture->GetFilterMode() != FILTER_NEAREST;
+    const int outputMultiSample = RenderSurface::GetMultiSample(graphics_, renderTarget);
+
+    // Determine output format
+    const bool needHDR = settings_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
+    const bool needSRGB = settings_.colorSpace_ == RenderPipelineColorSpace::LinearLDR;
+
+    RenderBufferParams colorParams;
+    colorParams.multiSampleLevel_ = settings_.inheritMultiSampleLevel_
+        ? outputMultiSample : settings_.multiSampleLevel_;
+    colorParams.textureFormat_ = needHDR ? Graphics::GetRGBAFloat16Format() : Graphics::GetRGBFormat();
+    colorParams.flags_.Set(RenderBufferFlag::sRGB, needSRGB);
+    colorParams.flags_.Set(RenderBufferFlag::BilinearFiltering, settings_.filteredColor_ || isBilinearFilteredOutput);
+
+    RenderBufferParams depthParams = colorParams;
+    depthParams.flags_ |= RenderBufferFlag::Persistent;
+    if (settings_.readableDepth_)
+    {
+        depthParams.textureFormat_ = settings_.stencilBuffer_
+            ? Graphics::GetReadableDepthStencilFormat()
+            : Graphics::GetReadableDepthFormat();
+    }
+    else
+    {
+        depthParams.textureFormat_ = Graphics::GetDepthStencilFormat();
+    }
+
+    if (colorOutputParams_ != colorParams || depthStencilOutputParams_ != depthParams)
+    {
+        colorOutputParams_ = colorParams;
+        depthStencilOutputParams_ = depthParams;
+        ResetCachedRenderBuffers();
+    }
 }
 
 void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
@@ -557,36 +585,19 @@ void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
     const bool outputHasReadableDepth = outputDepthStencil && HasReadableDepth(*outputDepthStencil);
 
     Texture2D* outputTexture = GetParentTexture2D(frameInfo.renderTarget_);
-    const bool isFullRectOutput = frameInfo.viewportRect_ == IntRect::ZERO
-        || frameInfo.viewportRect_ == RenderSurface::GetRect(graphics_, frameInfo.renderTarget_);
+    const bool isFullRectOutput =
+        viewportRect_ == IntRect::ZERO || viewportRect_ == RenderSurface::GetRect(graphics_, frameInfo.renderTarget_);
     const bool isSimpleTextureOutput = outputTexture != nullptr && isFullRectOutput;
     const bool isBilinearFilteredOutput = outputTexture && outputTexture->GetFilterMode() != FILTER_NEAREST;
-
-    // Determine output format
-    const bool needHDR = settings_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
-    const bool needSRGB = settings_.colorSpace_ == RenderPipelineColorSpace::LinearLDR;
-
-    RenderBufferParams viewportParams;
-    viewportParams.multiSampleLevel_ = settings_.inheritMultiSampleLevel_
-        ? outputMultiSample : settings_.multiSampleLevel_;
-    viewportParams.textureFormat_ = needHDR ? Graphics::GetRGBAFloat16Format() : Graphics::GetRGBFormat();
-    viewportParams.flags_.Set(RenderBufferFlag::sRGB, needSRGB);
-    viewportParams.flags_.Set(RenderBufferFlag::BilinearFiltering, settings_.filteredColor_ || isBilinearFilteredOutput);
-
-    if (previousViewportParams_ != viewportParams)
-    {
-        previousViewportParams_ = viewportParams;
-        ResetCachedRenderBuffers();
-    }
 
     // Check if need to allocate secondary color buffer, substitute primary color buffer or substitute depth buffer
     const bool needSimpleTexture = frameSettings_.readableColor_ || settings_.readableDepth_
         || settings_.colorUsableWithMultipleRenderTargets_;
 
-    const bool isColorFormatMatching = IsColorFormatMatching(outputFormat, viewportParams.textureFormat_);
-    const bool isColorSRGBMatching = isOutputSRGB == viewportParams.flags_.Test(RenderBufferFlag::sRGB);
-    const bool isMultiSampleMatching = outputMultiSample == viewportParams.multiSampleLevel_;
-    const bool isFilterMatching = isBilinearFilteredOutput == viewportParams.flags_.Test(RenderBufferFlag::BilinearFiltering);
+    const bool isColorFormatMatching = IsColorFormatMatching(outputFormat, colorOutputParams_.textureFormat_);
+    const bool isColorSRGBMatching = isOutputSRGB == colorOutputParams_.flags_.Test(RenderBufferFlag::sRGB);
+    const bool isMultiSampleMatching = outputMultiSample == colorOutputParams_.multiSampleLevel_;
+    const bool isFilterMatching = isBilinearFilteredOutput == colorOutputParams_.flags_.Test(RenderBufferFlag::BilinearFiltering);
     const bool isColorUsageMatching = isSimpleTextureOutput || !needSimpleTexture;
 
     const bool needSecondaryBuffer = frameSettings_.supportColorReadWrite_;
@@ -600,27 +611,15 @@ void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
     // Allocate substitute buffers if necessary
     if (needSubstitutePrimaryBuffer && !substituteRenderBuffers_[0])
     {
-        substituteRenderBuffers_[0] = MakeShared<TextureRenderBuffer>(renderPipeline_, viewportParams);
+        substituteRenderBuffers_[0] = MakeShared<TextureRenderBuffer>(renderPipeline_, colorOutputParams_);
     }
     if (needSecondaryBuffer && !substituteRenderBuffers_[1])
     {
-        substituteRenderBuffers_[1] = MakeShared<TextureRenderBuffer>(renderPipeline_, viewportParams);
+        substituteRenderBuffers_[1] = MakeShared<TextureRenderBuffer>(renderPipeline_, colorOutputParams_);
     }
     if (needSubstituteDepthBuffer && !substituteDepthBuffer_)
     {
-        RenderBufferParams depthBufferParams = viewportParams;
-        depthBufferParams.flags_ |= RenderBufferFlag::Persistent;
-        if (settings_.readableDepth_)
-        {
-            depthBufferParams.textureFormat_ = settings_.stencilBuffer_
-                ? Graphics::GetReadableDepthStencilFormat()
-                : Graphics::GetReadableDepthFormat();
-        }
-        else
-        {
-            depthBufferParams.textureFormat_ = Graphics::GetDepthStencilFormat();
-        }
-        substituteDepthBuffer_ = MakeShared<TextureRenderBuffer>(renderPipeline_, depthBufferParams);
+        substituteDepthBuffer_ = MakeShared<TextureRenderBuffer>(renderPipeline_, depthStencilOutputParams_);
     }
 
     depthStencilBuffer_ = needSubstituteDepthBuffer ? substituteDepthBuffer_.Get() : viewportDepthBuffer_.Get();
@@ -656,7 +655,6 @@ void RenderBufferManager::InitializeCopyTexturePipelineState()
 {
     static const char* shaderName = "v2/CopyFramebuffer";
     copyTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "");
-    copyTextureToSwapChainPipelineState_ = CreateCopyTextureToSwapChainPipeline(BLEND_REPLACE, shaderName, "");
     copyGammaToLinearTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_GAMMA_TO_LINEAR");
     copyLinearToGammaTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_LINEAR_TO_GAMMA");
 }
@@ -682,9 +680,6 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Textur
         return;
     }
 
-    if (!copyTexturePipelineState_ || !copyGammaToLinearTexturePipelineState_ || !copyLinearToGammaTexturePipelineState_ || !copyTextureToSwapChainPipelineState_)
-        InitializeCopyTexturePipelineState();
-
     const bool isSRGBSource = sourceTexture->GetSRGB();
     const bool isSRGBDestination = RenderSurface::GetSRGB(graphics_, graphics_->GetRenderTarget(0));
     // RenderTarget null at index 0 means render directly to swapchain.
@@ -692,16 +687,12 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Textur
 
     DrawQuadParams callParams;
 
-    // TODO(diligent): Why this needed?
-    //if (isSwapChainDestination)
-    //    callParams.pipelineState_ = copyTextureToSwapChainPipelineState_;
-    //else
     if (mode == ColorSpaceTransition::None || isSRGBSource == isSRGBDestination)
-        callParams.pipelineState_ = copyTexturePipelineState_;
+        callParams.pipelineStateId_ = copyTexturePipelineState_;
     else if (isSRGBDestination)
-        callParams.pipelineState_ = copyGammaToLinearTexturePipelineState_;
+        callParams.pipelineStateId_ = copyGammaToLinearTexturePipelineState_;
     else
-        callParams.pipelineState_ = copyLinearToGammaTexturePipelineState_;
+        callParams.pipelineStateId_ = copyLinearToGammaTexturePipelineState_;
 
     callParams.invInputSize_ = Vector2::ONE / sourceTexture->GetSize().ToVector2();
 

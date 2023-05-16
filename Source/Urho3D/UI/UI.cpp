@@ -978,7 +978,8 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
             continue;
 
         Material* material = GetBatchMaterial(batch);
-        const UIBatchStateKey key{ isSurfaceSRGB, material, material->GetDefaultPass(), batch.blendMode_ };
+        const UIBatchStateKey key{
+            isSurfaceSRGB, graphics_->GetCurrentOutputDesc(), material, material->GetDefaultPass(), batch.blendMode_};
         PipelineState* pipelineState = batchStateCache_->GetOrCreatePipelineState(key, batchStateCreateContext);
         if (!pipelineState || !pipelineState->IsValid())
             continue;

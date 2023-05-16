@@ -88,7 +88,7 @@ bool ConstantBuffer::SetSize(unsigned size)
     return true;
 }
 
-void ConstantBuffer::Update(const void* data)
+void ConstantBuffer::Update(const void* data, unsigned size)
 {
     using namespace Diligent;
     if (object_)
@@ -96,7 +96,7 @@ void ConstantBuffer::Update(const void* data)
         void* mappedData = nullptr;
         IBuffer* buffer = object_.Cast<IBuffer>(IID_Buffer);
         graphics_->GetImpl()->GetDeviceContext()->MapBuffer(buffer, MAP_WRITE, MAP_FLAG_DISCARD, mappedData);
-        memcpy(mappedData, data, size_);
+        memcpy(mappedData, data, ea::min(size_, size));
         graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(buffer, MAP_WRITE);
     }
 }

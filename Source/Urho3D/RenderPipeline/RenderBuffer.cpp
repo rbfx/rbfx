@@ -160,6 +160,13 @@ IntRect TextureRenderBuffer::GetViewportRect() const
     return CheckIfBufferIsReady() ? IntRect{ IntVector2::ZERO, currentSize_ } : IntRect::ZERO;
 }
 
+TextureFormat TextureRenderBuffer::GetFormat() const
+{
+    // TODO(diligent): Get rid of srgb flag
+    const bool isSRGB = params_.flags_.Test(RenderBufferFlag::sRGB);
+    return static_cast<TextureFormat>(isSRGB ? Texture::GetSRGBFormat(params_.textureFormat_) : params_.textureFormat_);
+}
+
 ViewportColorRenderBuffer::ViewportColorRenderBuffer(RenderPipelineInterface* renderPipeline)
     : RenderBuffer(renderPipeline)
 {
@@ -173,6 +180,12 @@ Texture* ViewportColorRenderBuffer::GetTexture() const
 RenderSurface* ViewportColorRenderBuffer::GetRenderSurface(CubeMapFace face) const
 {
     return CheckIfBufferIsReady() ? renderTarget_ : nullptr;
+}
+
+TextureFormat ViewportColorRenderBuffer::GetFormat() const
+{
+    auto graphics = GetSubsystem<Graphics>();
+    return graphics->GetSwapChainOutputDesc().renderTargetFormats_[0];
 }
 
 void ViewportColorRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)
@@ -200,6 +213,12 @@ Texture* ViewportDepthStencilRenderBuffer::GetTexture() const
 RenderSurface* ViewportDepthStencilRenderBuffer::GetRenderSurface(CubeMapFace face) const
 {
     return CheckIfBufferIsReady() ? depthStencil_ : nullptr;
+}
+
+TextureFormat ViewportDepthStencilRenderBuffer::GetFormat() const
+{
+    auto graphics = GetSubsystem<Graphics>();
+    return graphics->GetSwapChainOutputDesc().depthStencilFormat_;
 }
 
 void ViewportDepthStencilRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)

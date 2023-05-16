@@ -27,6 +27,8 @@
 #include "../Graphics/PipelineState.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
@@ -119,6 +121,9 @@ class URHO3D_API BatchStateCache : public NonCopyable
 public:
     /// Invalidate cache.
     void Invalidate();
+    /// Set currently used output description. Invalidates cache if it has changed.
+    void SetOutputDesc(const PipelineStateOutputDesc& outputDesc);
+
     /// Return existing pipeline state or nullptr if not found. Thread-safe.
     /// Resulting state may be invalid.
     PipelineState* GetPipelineState(const BatchStateLookupKey& key) const;
@@ -128,6 +133,8 @@ public:
         const BatchStateCreateContext& ctx, BatchStateCacheCallback* callback);
 
 private:
+    /// Current output description. Invalid on start.
+    ea::optional<PipelineStateOutputDesc> outputDesc_;
     /// Cached states, possibly invalid.
     ea::unordered_map<BatchStateLookupKey, CachedBatchState> cache_;
 };
@@ -137,27 +144,35 @@ private:
 struct UIBatchStateKey
 {
     bool linearOutput_{};
+    PipelineStateOutputDesc outputDesc_{};
     Material* material_{};
     Pass* pass_{};
     BlendMode blendMode_{};
 
-    bool operator ==(const UIBatchStateKey& rhs) const
+    /// Operators.
+    /// @{
+    bool operator==(const UIBatchStateKey& rhs) const
     {
-        return linearOutput_ == rhs.linearOutput_
-            && material_ == rhs.material_
-            && pass_ == rhs.pass_
+        return linearOutput_ == rhs.linearOutput_ //
+            && outputDesc_ == rhs.outputDesc_ //
+            && material_ == rhs.material_ //
+            && pass_ == rhs.pass_ //
             && blendMode_ == rhs.blendMode_;
     }
+
+    bool operator!=(const UIBatchStateKey& rhs) const { return !(*this == rhs); }
 
     unsigned ToHash() const
     {
         unsigned hash = 0;
         CombineHash(hash, MakeHash(linearOutput_));
+        CombineHash(hash, MakeHash(outputDesc_));
         CombineHash(hash, MakeHash(material_));
         CombineHash(hash, MakeHash(pass_));
         CombineHash(hash, MakeHash(blendMode_));
         return hash;
     }
+    /// @}
 };
 
 /// Pipeline state UI batch cache entry. May be invalid.

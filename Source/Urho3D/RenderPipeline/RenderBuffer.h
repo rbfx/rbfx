@@ -41,6 +41,7 @@ struct CommonFrameInfo;
 struct FrameInfo;
 
 /// Base class fro writable texture or texture region. Readability is not guaranteed.
+/// TODO(diligent): Get rid of this class and use Texture instead
 class URHO3D_API RenderBuffer : public Object, public IDFamily<RenderBuffer>
 {
     URHO3D_OBJECT(RenderBuffer, Object);
@@ -53,6 +54,8 @@ public:
     /// Return effective viewport rectangle.
     /// Always equal to whole texture for TextureRenderBuffer, not so for viewport buffers.
     virtual IntRect GetViewportRect() const = 0;
+    /// Return texture format.
+    virtual TextureFormat GetFormat() const = 0;
 
     /// Return readable Texture2D or null if not supported or use different texture type.
     Texture2D* GetTexture2D() const;
@@ -87,6 +90,7 @@ public:
     Texture* GetTexture() const override;
     RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
     IntRect GetViewportRect() const override;
+    TextureFormat GetFormat() const override;
     /// @}
 
 private:
@@ -123,6 +127,7 @@ public:
     Texture* GetTexture() const override;
     RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
+    TextureFormat GetFormat() const override;
     /// @}
 
 private:
@@ -148,6 +153,7 @@ public:
     Texture* GetTexture() const override;
     RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
+    TextureFormat GetFormat() const override;
     /// @}
 
 private:

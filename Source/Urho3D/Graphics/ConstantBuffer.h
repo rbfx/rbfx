@@ -55,7 +55,7 @@ public:
     /// Set size and create GPU-side buffer. Return true on success.
     bool SetSize(unsigned size);
     /// Update data on GPU.
-    void Update(const void* data);
+    void Update(const void* data, unsigned size);
 
     /// Return size.
     unsigned GetSize() const { return size_; }

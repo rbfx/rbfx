@@ -5,7 +5,7 @@
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
 
-uniform sampler2D sDiffMap;
+SAMPLER(0, sampler2D sDiffMap)
 
 VERTEX_OUTPUT_HIGHP(vec2 vScreenPos)
 
