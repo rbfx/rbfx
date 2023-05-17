@@ -26,6 +26,7 @@
 #include "../Graphics/GraphicsDefs.h"
 #include "../Math/Color.h"
 #include "../Resource/Resource.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/Sampler.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/Texture.h>
@@ -38,7 +39,6 @@ static const int MAX_TEXTURE_QUALITY_LEVELS = 3;
 
 class XMLElement;
 class XMLFile;
-struct SamplerStateDesc;
 
 /// Base class for texture resources.
 class URHO3D_API Texture : public ResourceWithMetadata, public GPUObject
@@ -116,22 +116,22 @@ public:
 
     /// Return filtering mode.
     /// @property
-    TextureFilterMode GetFilterMode() const { return filterMode_; }
+    TextureFilterMode GetFilterMode() const { return samplerStateDesc_.filterMode_; }
 
     /// Return addressing mode by texture coordinate.
     /// @property
-    TextureAddressMode GetAddressMode(TextureCoordinate coord) const { return addressModes_[coord]; }
+    TextureAddressMode GetAddressMode(TextureCoordinate coord) const { return samplerStateDesc_.addressMode_[coord]; }
 
     /// Return texture max. anisotropy level. Value 0 means to use the default value from Renderer.
     /// @property
-    unsigned GetAnisotropy() const { return anisotropy_; }
+    unsigned GetAnisotropy() const { return samplerStateDesc_.anisotropy_; }
 
     /// Return whether shadow compare is enabled.
-    bool GetShadowCompare() const { return shadowCompare_; }
+    bool GetShadowCompare() const { return samplerStateDesc_.shadowCompare_; }
 
     /// Return border color.
     /// @property
-    const Color& GetBorderColor() const { return borderColor_; }
+    const Color& GetBorderColor() const { return samplerStateDesc_.borderColor_; }
 
     /// Return whether the texture data are in linear space (instead of gamma space).
     bool GetLinear() const { return linear_; }
@@ -226,7 +226,7 @@ public:
     static unsigned GetSRGBFormat(unsigned format);
 
     /// TODO(diligent): Store SamplerStateDesc in the texture object
-    SamplerStateDesc GetSamplerStateDesc() const;
+    const SamplerStateDesc& GetSamplerStateDesc() const { return samplerStateDesc_; }
 
     /// Set or clear the need resolve flag. Called internally by Graphics.
     void SetResolveDirty(bool enable) { resolveDirty_ = enable; }
@@ -295,20 +295,12 @@ protected:
     int height_{};
     /// Texture depth.
     int depth_{};
-    /// Shadow compare mode.
-    bool shadowCompare_{};
+    /// Sampler parameters.
+    SamplerStateDesc samplerStateDesc_;
     /// Whether to use this texture as UAV resource in shader.
     bool unorderedAccess_{};
-    /// Filtering mode.
-    TextureFilterMode filterMode_{FILTER_DEFAULT};
-    /// Addressing mode.
-    TextureAddressMode addressModes_[MAX_COORDS]{ADDRESS_WRAP, ADDRESS_WRAP, ADDRESS_WRAP};
-    /// Texture anisotropy level.
-    unsigned anisotropy_{};
     /// Mip levels to skip when loading per texture quality setting.
     unsigned mipsToSkip_[MAX_TEXTURE_QUALITY_LEVELS]{2, 1, 0};
-    /// Border color.
-    Color borderColor_;
     /// Multisampling level.
     int multiSample_{1};
     /// sRGB sampling and writing mode flag.

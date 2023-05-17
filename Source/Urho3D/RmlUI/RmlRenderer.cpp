@@ -218,8 +218,12 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
 
     Material* material = GetBatchMaterial(texture);
     Pass* pass = material->GetDefaultPass();
+
+    const unsigned samplerStateHash = texture ? texture->GetSamplerStateDesc().ToHash() : 0;
+    batchStateCreateContext_.defaultSampler_ = texture ? &texture->GetSamplerStateDesc() : nullptr;
+
     const UIBatchStateKey batchStateKey{
-        isRenderSurfaceSRGB_, graphics->GetCurrentOutputDesc(), material, pass, BLEND_ALPHA};
+        isRenderSurfaceSRGB_, graphics->GetCurrentOutputDesc(), material, pass, BLEND_ALPHA, samplerStateHash};
     PipelineState* pipelineState = batchStateCache_->GetOrCreatePipelineState(batchStateKey, batchStateCreateContext_);
 
     IntRect scissor;

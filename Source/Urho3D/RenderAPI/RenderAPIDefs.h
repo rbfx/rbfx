@@ -43,7 +43,18 @@ struct URHO3D_API SamplerStateDesc
     TextureFilterMode filterMode_{FILTER_DEFAULT};
     unsigned char anisotropy_{};
     bool shadowCompare_{};
-    ea::array<TextureAddressMode, 3> addressMode_{ADDRESS_CLAMP, ADDRESS_CLAMP, ADDRESS_CLAMP};
+    ea::array<TextureAddressMode, 3> addressMode_{ADDRESS_WRAP, ADDRESS_WRAP, ADDRESS_WRAP};
+
+    /// Constructors.
+    /// @{
+    static SamplerStateDesc Bilinear(TextureAddressMode addressMode = ADDRESS_CLAMP)
+    {
+        SamplerStateDesc desc;
+        desc.filterMode_ = FILTER_BILINEAR;
+        desc.addressMode_ = {addressMode, addressMode, addressMode};
+        return desc;
+    }
+    /// @}
 
     /// Operators.
     /// @{

@@ -28,7 +28,8 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
 #include "../Resource/ResourceCache.h"
-#include "RenderBufferManager.h"
+#include "Urho3D/RenderPipeline/RenderBufferManager.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 namespace Urho3D
 {
@@ -66,13 +67,33 @@ void AmbientOcclusionPass::InitializeTextures()
 
 void AmbientOcclusionPass::InitializeStates()
 {
+    static const NamedSamplerStateDesc ssaoSamplers[] = {
+        {ShaderResources::DiffMap, SamplerStateDesc::Bilinear()},
+        {ShaderResources::NormalMap, SamplerStateDesc::Bilinear()},
+        {ShaderResources::DepthBuffer, SamplerStateDesc::Bilinear()},
+    };
+    static const NamedSamplerStateDesc blurSamplers[] = {
+        {ShaderResources::DiffMap, SamplerStateDesc::Bilinear()},
+        {ShaderResources::NormalMap, SamplerStateDesc::Bilinear()},
+        {ShaderResources::DepthBuffer, SamplerStateDesc::Bilinear()},
+    };
+    static const NamedSamplerStateDesc applySamplers[] = {
+        {ShaderResources::DiffMap, SamplerStateDesc::Bilinear()},
+    };
+
     pipelineStates_ = CachedStates{};
-    pipelineStates_->ssaoForward_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION");
-    pipelineStates_->ssaoDeferred_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION DEFERRED");
-    pipelineStates_->blurForward_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR");
-    pipelineStates_->blurDeferred_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR DEFERRED");
-    pipelineStates_->combine_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_SSAO", "COMBINE");
-    pipelineStates_->preview_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "PREVIEW");
+    pipelineStates_->ssaoForward_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION", ssaoSamplers);
+    pipelineStates_->ssaoDeferred_ = renderBufferManager_->CreateQuadPipelineState(
+        BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION DEFERRED", ssaoSamplers);
+    pipelineStates_->blurForward_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR", blurSamplers);
+    pipelineStates_->blurDeferred_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR DEFERRED", blurSamplers);
+    pipelineStates_->combine_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_SSAO", "COMBINE", applySamplers);
+    pipelineStates_->preview_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "PREVIEW", applySamplers);
 }
 
 void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextureSpace, const Matrix4& textureToViewSpace)

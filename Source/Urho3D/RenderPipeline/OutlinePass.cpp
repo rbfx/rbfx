@@ -26,6 +26,7 @@
 
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/RenderBufferManager.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D
@@ -127,10 +128,15 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
     shaderProgramDesc_.shaderName_[PS] = "v2/M_OutlinePixel";
     shaderProgramDesc_.shaderDefines_[PS] = "";
 
-    const bool needAlphaMask = key.pass_->IsAlphaMask()
-        || (key.pass_->GetBlendMode() != BLEND_REPLACE && key.material_->GetTexture(TU_DIFFUSE));
+    const Texture* diffMap = key.material_->GetTexture(TU_DIFFUSE);
+    const bool needAlphaMask = key.pass_->IsAlphaMask() || (key.pass_->GetBlendMode() != BLEND_REPLACE && diffMap);
     if (needAlphaMask)
+    {
         shaderProgramDesc_.AddShaderDefines(PS, "ALPHAMASK");
+        desc.numSamplers_ = 1;
+        desc.samplerNames_[0] = ShaderResources::DiffMap;
+        desc.samplers_[0] = diffMap->GetSamplerStateDesc();
+    }
 
     builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_);
     builder->SetupShaders(desc, shaderProgramDesc_);
@@ -176,10 +182,16 @@ void OutlinePass::OnRenderBegin(const CommonFrameInfo& frameInfo)
         outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     }
 
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
     if (pipelineStateLinear_ == StaticPipelineStateId::Invalid)
-        pipelineStateLinear_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "URHO3D_GAMMA_CORRECTION");
+    {
+        pipelineStateLinear_ = renderBufferManager_->CreateQuadPipelineState(
+            BLEND_ALPHA, "v2/P_Outline", "URHO3D_GAMMA_CORRECTION", samplers);
+    }
     if (pipelineStateGamma_ == StaticPipelineStateId::Invalid)
-        pipelineStateGamma_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "");
+    {
+        pipelineStateGamma_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "", samplers);
+    }
 }
 
 void OutlinePass::Execute(Camera* camera)

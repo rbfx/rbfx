@@ -241,8 +241,8 @@ void InitializeLayoutElements(
     }
 }
 
-void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const PipelineStateDesc& desc,
-    const ShaderProgramLayout& reflection)
+void InitializeImmutableSampler(
+    Diligent::ImmutableSamplerDesc& destSampler, const SamplerStateDesc& sourceSampler, const ea::string& samplerName)
 {
     static const Diligent::FILTER_TYPE minMagFilter[][2] = {
         {FILTER_TYPE_POINT, FILTER_TYPE_COMPARISON_POINT}, // FILTER_NEAREST
@@ -265,34 +265,49 @@ void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& res
         Diligent::TEXTURE_ADDRESS_BORDER // ADDRESS_BORDER
     };
 
-    for (unsigned i = 0; i < desc.numSamplers_; ++i)
+    // TODO(diligent): Configure defaults
+    const int anisotropy = sourceSampler.anisotropy_ ? sourceSampler.anisotropy_ : 4;
+    const TextureFilterMode filterMode =
+        sourceSampler.filterMode_ != FILTER_DEFAULT ? sourceSampler.filterMode_ : FILTER_TRILINEAR;
+
+    destSampler.ShaderStages = SHADER_TYPE_ALL_GRAPHICS;
+    destSampler.SamplerOrTextureName = samplerName.c_str();
+    destSampler.Desc.MinFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
+    destSampler.Desc.MagFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
+    destSampler.Desc.MipFilter = mipFilter[filterMode][sourceSampler.shadowCompare_];
+    destSampler.Desc.AddressU = addressMode[sourceSampler.addressMode_[COORD_U]];
+    destSampler.Desc.AddressV = addressMode[sourceSampler.addressMode_[COORD_V]];
+    destSampler.Desc.AddressW = addressMode[sourceSampler.addressMode_[COORD_W]];
+    destSampler.Desc.MaxAnisotropy = anisotropy;
+    destSampler.Desc.ComparisonFunc = COMPARISON_FUNC_LESS_EQUAL;
+    destSampler.Desc.MinLOD = -M_INFINITY;
+    destSampler.Desc.MaxLOD = M_INFINITY;
+    memcpy(&destSampler.Desc.BorderColor, sourceSampler.borderColor_.Data(), 4 * sizeof(float));
+}
+
+void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const PipelineStateDesc& desc,
+    const ShaderProgramLayout& reflection)
+{
+    static const auto defaultSampler = SamplerStateDesc::Bilinear();
+
+    const auto samplerNames = desc.GetSamplerNames();
+    for (const auto& [nameHash, resourceDesc] : reflection.GetShaderResources())
     {
-        const StringHash nameHash = desc.samplerNames_[i];
-        if (const ShaderResourceReflection* resourceReflection = reflection.GetShaderResource(nameHash))
+        const auto iter = ea::find(samplerNames.begin(), samplerNames.end(), nameHash);
+        const SamplerStateDesc* sourceSampler = &defaultSampler;
+        if (iter != samplerNames.end())
         {
-            const SamplerStateDesc& sourceSampler = desc.samplers_[i];
-
-            // TODO(diligent): Configure defaults
-            const int anisotropy = sourceSampler.anisotropy_ ? sourceSampler.anisotropy_ : 4;
-            const TextureFilterMode filterMode =
-                sourceSampler.filterMode_ != FILTER_DEFAULT ? sourceSampler.filterMode_ : FILTER_TRILINEAR;
-
-            Diligent::ImmutableSamplerDesc& destSampler = result.emplace_back();
-
-            destSampler.ShaderStages = SHADER_TYPE_ALL_GRAPHICS;
-            destSampler.SamplerOrTextureName = resourceReflection->internalName_.c_str();
-            destSampler.Desc.MinFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
-            destSampler.Desc.MagFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
-            destSampler.Desc.MipFilter = mipFilter[filterMode][sourceSampler.shadowCompare_];
-            destSampler.Desc.AddressU = addressMode[sourceSampler.addressMode_[COORD_U]];
-            destSampler.Desc.AddressV = addressMode[sourceSampler.addressMode_[COORD_V]];
-            destSampler.Desc.AddressW = addressMode[sourceSampler.addressMode_[COORD_W]];
-            destSampler.Desc.MaxAnisotropy = anisotropy;
-            destSampler.Desc.ComparisonFunc = COMPARISON_FUNC_LESS_EQUAL;
-            destSampler.Desc.MinLOD = -M_INFINITY;
-            destSampler.Desc.MaxLOD = M_INFINITY;
-            memcpy(&destSampler.Desc.BorderColor, sourceSampler.borderColor_.Data(), 4 * sizeof(float));
+            const auto index = static_cast<unsigned>(iter - samplerNames.begin());
+            sourceSampler = &desc.samplers_[index];
         }
+        else
+        {
+            URHO3D_LOGWARNING("Default sampler is used for resource '{}'", resourceDesc.internalName_);
+        }
+
+        const ea::string& internalName = resourceDesc.internalName_;
+        Diligent::ImmutableSamplerDesc& destSampler = result.emplace_back();
+        InitializeImmutableSampler(destSampler, *sourceSampler, internalName);
     }
 }
 

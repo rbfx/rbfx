@@ -74,31 +74,31 @@ void Texture::SetNumLevels(unsigned levels)
 
 void Texture::SetFilterMode(TextureFilterMode mode)
 {
-    filterMode_ = mode;
+    samplerStateDesc_.filterMode_ = mode;
     parametersDirty_ = true;
 }
 
 void Texture::SetAddressMode(TextureCoordinate coord, TextureAddressMode mode)
 {
-    addressModes_[coord] = mode;
+    samplerStateDesc_.addressMode_[coord] = mode;
     parametersDirty_ = true;
 }
 
 void Texture::SetAnisotropy(unsigned level)
 {
-    anisotropy_ = level;
+    samplerStateDesc_.anisotropy_ = level;
     parametersDirty_ = true;
 }
 
 void Texture::SetShadowCompare(bool enable)
 {
-    shadowCompare_ = enable;
+    samplerStateDesc_.shadowCompare_ = enable;
     parametersDirty_ = true;
 }
 
 void Texture::SetBorderColor(const Color& color)
 {
-    borderColor_ = color;
+    samplerStateDesc_.borderColor_ = color;
     parametersDirty_ = true;
 }
 
@@ -283,19 +283,6 @@ void Texture::CheckTextureBudget(StringHash type)
     // Therefore free unused materials first
     if (textureUse > textureBudget)
         cache->ReleaseResources(Material::GetTypeStatic());
-}
-
-SamplerStateDesc Texture::GetSamplerStateDesc() const
-{
-    SamplerStateDesc desc;
-    desc.borderColor_ = borderColor_;
-    desc.filterMode_ = filterMode_;
-    desc.anisotropy_ = anisotropy_;
-    desc.shadowCompare_ = shadowCompare_;
-    desc.addressMode_[COORD_U] = addressModes_[COORD_U];
-    desc.addressMode_[COORD_V] = addressModes_[COORD_V];
-    desc.addressMode_[COORD_W] = addressModes_[COORD_W];
-    return desc;
 }
 
 }

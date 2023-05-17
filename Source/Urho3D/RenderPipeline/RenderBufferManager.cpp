@@ -397,7 +397,7 @@ StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(PipelineState
 }
 
 StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode blendMode,
-    const ea::string& shaderName, const ea::string& shaderDefines)
+    const ea::string& shaderName, const ea::string& shaderDefines, ea::span<const NamedSamplerStateDesc> samplers)
 {
     ea::string defines = shaderDefines;
     defines += " URHO3D_GEOMETRY_STATIC";
@@ -411,6 +411,13 @@ StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode ble
     desc.blendMode_ = blendMode;
     desc.vertexShader_ = graphics_->GetShader(VS, shaderName, defines);
     desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);
+
+    for (const auto& [name, samplerStateDesc] : samplers)
+    {
+        desc.samplerNames_[desc.numSamplers_] = StringHash{name};
+        desc.samplers_[desc.numSamplers_] = samplerStateDesc;
+        ++desc.numSamplers_;
+    }
 
     return CreateQuadPipelineState(desc);
 }
@@ -654,9 +661,13 @@ void RenderBufferManager::ResetCachedRenderBuffers()
 void RenderBufferManager::InitializeCopyTexturePipelineState()
 {
     static const char* shaderName = "v2/CopyFramebuffer";
-    copyTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "");
-    copyGammaToLinearTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_GAMMA_TO_LINEAR");
-    copyLinearToGammaTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_LINEAR_TO_GAMMA");
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+
+    copyTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "", samplers);
+    copyGammaToLinearTexturePipelineState_ =
+        CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_GAMMA_TO_LINEAR", samplers);
+    copyLinearToGammaTexturePipelineState_ =
+        CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_LINEAR_TO_GAMMA", samplers);
 }
 
 void RenderBufferManager::CopyTextureRegion(ea::string_view debugComment,

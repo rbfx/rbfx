@@ -148,6 +148,7 @@ struct UIBatchStateKey
     Material* material_{};
     Pass* pass_{};
     BlendMode blendMode_{};
+    unsigned samplerStateHash_{};
 
     /// Operators.
     /// @{
@@ -157,7 +158,8 @@ struct UIBatchStateKey
             && outputDesc_ == rhs.outputDesc_ //
             && material_ == rhs.material_ //
             && pass_ == rhs.pass_ //
-            && blendMode_ == rhs.blendMode_;
+            && blendMode_ == rhs.blendMode_
+            && samplerStateHash_ == rhs.samplerStateHash_;
     }
 
     bool operator!=(const UIBatchStateKey& rhs) const { return !(*this == rhs); }
@@ -170,6 +172,7 @@ struct UIBatchStateKey
         CombineHash(hash, MakeHash(material_));
         CombineHash(hash, MakeHash(pass_));
         CombineHash(hash, MakeHash(blendMode_));
+        CombineHash(hash, samplerStateHash_);
         return hash;
     }
     /// @}
@@ -194,6 +197,7 @@ struct UIBatchStateCreateContext
 {
     VertexBuffer* vertexBuffer_{};
     IndexBuffer* indexBuffer_{};
+    const SamplerStateDesc* defaultSampler_{};
 };
 
 /// Pipeline state cache for UI batches.

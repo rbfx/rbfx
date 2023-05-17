@@ -827,4 +827,8 @@ enum class StaticPipelineStateId : unsigned
     Invalid,
 };
 
+/// Helper for pipeline state creation.
+/// Keep entire string because it should be used only on startup.
+using NamedSamplerStateDesc = ea::pair<ea::string, SamplerStateDesc>;
+
 }

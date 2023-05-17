@@ -26,6 +26,7 @@
 #include "../Graphics/Texture2D.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/BloomPass.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include <EASTL/numeric.h>
 
@@ -72,11 +73,17 @@ void BloomPass::InitializeTextures()
 
 void BloomPass::InitializeStates()
 {
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+
     pipelineStates_ = CachedStates{};
-    pipelineStates_->bright_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BRIGHT");
-    pipelineStates_->blurH_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURH");
-    pipelineStates_->blurV_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURV");
-    pipelineStates_->bloom_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ADD, "v2/P_Bloom", "COMBINE");
+    pipelineStates_->bright_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BRIGHT", samplers);
+    pipelineStates_->blurH_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURH", samplers);
+    pipelineStates_->blurV_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURV", samplers);
+    pipelineStates_->bloom_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_ADD, "v2/P_Bloom", "COMBINE", samplers);
 }
 
 unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)

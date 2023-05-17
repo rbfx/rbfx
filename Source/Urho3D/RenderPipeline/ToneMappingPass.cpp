@@ -25,6 +25,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Texture2D.h"
 #include "../RenderPipeline/RenderBufferManager.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/ToneMappingPass.h"
 
 #include "../DebugNew.h"
@@ -65,8 +66,9 @@ void ToneMappingPass::InitializeStates()
         break;
     }
 
-    toneMappingState_  = renderBufferManager_->CreateQuadPipelineState(
-        BLEND_REPLACE, "v2/P_ToneMapping", defines);
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+    toneMappingState_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_ToneMapping", defines, samplers);
 }
 
 void ToneMappingPass::Execute(Camera* camera)

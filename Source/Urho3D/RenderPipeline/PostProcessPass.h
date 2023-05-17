@@ -61,8 +61,8 @@ class URHO3D_API SimplePostProcessPass
 
 public:
     SimplePostProcessPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager,
-        PostProcessPassFlags flags, BlendMode blendMode,
-        const ea::string& shaderName, const ea::string& shaderDefines);
+        PostProcessPassFlags flags, BlendMode blendMode, const ea::string& shaderName, const ea::string& shaderDefines,
+        ea::span<const NamedSamplerStateDesc> samplers = {});
 
     void AddShaderParameter(StringHash name, const Variant& value);
     void AddShaderResource(StringHash name, Texture* texture);

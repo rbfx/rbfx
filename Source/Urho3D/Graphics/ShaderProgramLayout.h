@@ -42,11 +42,13 @@ struct ShaderParameterReflection
     /// Size of element in the buffer.
     unsigned size_{};
 };
+using ShaderParameterReflectionMap = ea::unordered_map<StringHash, ShaderParameterReflection>;
 
 struct ShaderResourceReflection
 {
     ea::string internalName_;
 };
+using ShaderResourceReflectionMap = ea::unordered_map<StringHash, ShaderResourceReflection>;
 
 /// Description of constant buffer layout of shader program.
 class URHO3D_API ShaderProgramLayout : public RefCounted, public IDFamily<ShaderProgramLayout>
@@ -75,6 +77,9 @@ public:
         return &iter->second;
     }
 
+    const ShaderParameterReflectionMap& GetConstantBufferParameters() const { return constantBufferParameters_; }
+    const ShaderResourceReflectionMap& GetShaderResources() const { return shaderResources_; }
+
 protected:
     /// Add constant buffer.
     void AddConstantBuffer(ShaderParameterGroup group, unsigned size);
@@ -90,8 +95,8 @@ private:
     /// Constant buffer hashes.
     unsigned constantBufferHashes_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Mapping from parameter name to (buffer, offset) pair.
-    ea::unordered_map<StringHash, ShaderParameterReflection> constantBufferParameters_;
-    ea::unordered_map<StringHash, ShaderResourceReflection> shaderResources_;
+    ShaderParameterReflectionMap constantBufferParameters_;
+    ShaderResourceReflectionMap shaderResources_;
 };
 
 }

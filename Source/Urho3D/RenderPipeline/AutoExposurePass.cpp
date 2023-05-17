@@ -26,6 +26,7 @@
 #include "../Graphics/Texture2D.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/AutoExposurePass.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include "../DebugNew.h"
 
@@ -78,19 +79,34 @@ void AutoExposurePass::InitializeTextures()
 
 void AutoExposurePass::InitializeStates()
 {
+    static const NamedSamplerStateDesc lumSamplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+    static const NamedSamplerStateDesc adaptedLumSamplers[] = {
+        {ShaderResources::DiffMap, SamplerStateDesc::Bilinear()},
+        {ShaderResources::NormalMap, SamplerStateDesc::Bilinear()},
+    };
+    static const NamedSamplerStateDesc applySamplers[] = {
+        {ShaderResources::DiffMap, SamplerStateDesc::Bilinear()},
+        {ShaderResources::NormalMap, SamplerStateDesc::Bilinear()},
+    };
+
     pipelineStates_ = CachedStates{};
-    pipelineStates_->lum64_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE64");
-    pipelineStates_->lum16_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE16");
-    pipelineStates_->lum4_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE4");
-    pipelineStates_->lum1_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE1");
-    pipelineStates_->adaptedLum_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "ADAPTLUMINANCE");
+    pipelineStates_->lum64_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE64", lumSamplers);
+    pipelineStates_->lum16_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE16", lumSamplers);
+    pipelineStates_->lum4_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE4", lumSamplers);
+    pipelineStates_->lum1_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE1", lumSamplers);
+    pipelineStates_->adaptedLum_ = renderBufferManager_->CreateQuadPipelineState(
+        BLEND_REPLACE, "v2/P_AutoExposure", "ADAPTLUMINANCE", adaptedLumSamplers);
 
     ea::string exposureDefines = "EXPOSURE ";
     if (settings_.autoExposure_)
         exposureDefines += "AUTOEXPOSURE ";
 
     pipelineStates_->autoExposure_  = renderBufferManager_->CreateQuadPipelineState(
-        BLEND_REPLACE, "v2/P_AutoExposure", exposureDefines);
+        BLEND_REPLACE, "v2/P_AutoExposure", exposureDefines, applySamplers);
 }
 
 void AutoExposurePass::EvaluateDownsampledColorBuffer()

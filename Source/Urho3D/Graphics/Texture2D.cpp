@@ -140,9 +140,9 @@ bool Texture2D::SetSize(int width, int height, unsigned format, TextureUsage usa
         renderSurface_ = new RenderSurface(this);
 
         // Clamp mode addressing by default and nearest filtering
-        addressModes_[COORD_U] = ADDRESS_CLAMP;
-        addressModes_[COORD_V] = ADDRESS_CLAMP;
-        filterMode_ = FILTER_NEAREST;
+        samplerStateDesc_.addressMode_[COORD_U] = ADDRESS_CLAMP;
+        samplerStateDesc_.addressMode_[COORD_V] = ADDRESS_CLAMP;
+        samplerStateDesc_.filterMode_ = FILTER_NEAREST;
     }
 
     if (usage == TEXTURE_RENDERTARGET)

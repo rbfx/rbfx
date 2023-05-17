@@ -499,6 +499,7 @@ void BillboardSet::UpdateBufferSize()
         geometryTypeUpdate_ = false;
     }
 
+    // TODO(diligent): These checks look way too lose. Revisit.
     bool largeIndices = (numBillboards * 4) >= 65536;
 
     if (indexBuffer_->GetIndexCount() < numBillboards * 6)

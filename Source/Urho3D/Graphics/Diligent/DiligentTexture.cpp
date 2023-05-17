@@ -114,6 +114,7 @@ unsigned Texture::GetRowDataSize(int width) const
 
 void Texture::UpdateParameters()
 {
+#if 0
     if ((!parametersDirty_ && sampler_) || !object_)
         return;
 
@@ -144,6 +145,7 @@ void Texture::UpdateParameters()
         shaderResourceView_->SetSampler(sampler_);
 
     parametersDirty_ = false;
+#endif
 }
 
 unsigned Texture::GetSRVFormat(unsigned format)

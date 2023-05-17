@@ -190,6 +190,7 @@ struct PipelineStateDesc
     ea::array<SamplerStateDesc, MaxNumSamplers> samplers_;
 
     bool AddSampler(StringHash samplerName, const SamplerStateDesc& samplerDesc);
+    ea::span<const StringHash> GetSamplerNames() const { return {samplerNames_.data(), numSamplers_}; }
     /// @}
 
     /// Cached hash of the structure.

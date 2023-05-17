@@ -25,6 +25,7 @@
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/PostProcessPass.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Texture2D.h"
@@ -44,15 +45,21 @@ PostProcessPass::~PostProcessPass()
 {
 }
 
-SimplePostProcessPass::SimplePostProcessPass(
-    RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager,
-    PostProcessPassFlags flags, BlendMode blendMode,
-    const ea::string& shaderName, const ea::string& shaderDefines)
+SimplePostProcessPass::SimplePostProcessPass(RenderPipelineInterface* renderPipeline,
+    RenderBufferManager* renderBufferManager, PostProcessPassFlags flags, BlendMode blendMode,
+    const ea::string& shaderName, const ea::string& shaderDefines, ea::span<const NamedSamplerStateDesc> samplers)
     : PostProcessPass(renderPipeline, renderBufferManager)
     , flags_(flags)
     , debugComment_(Format("Apply shader '{}'", shaderName))
-    , pipelineState_(renderBufferManager_->CreateQuadPipelineState(blendMode, shaderName, shaderDefines))
 {
+    ea::vector<NamedSamplerStateDesc> samplersAdjusted{samplers.begin(), samplers.end()};
+
+    const bool colorReadAndWrite = flags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
+    if (colorReadAndWrite)
+        samplersAdjusted.emplace_back(ShaderResources::DiffMap, SamplerStateDesc::Bilinear());
+
+    pipelineState_ =
+        renderBufferManager_->CreateQuadPipelineState(blendMode, shaderName, shaderDefines, samplersAdjusted);
 }
 
 void SimplePostProcessPass::AddShaderParameter(StringHash name, const Variant& value)

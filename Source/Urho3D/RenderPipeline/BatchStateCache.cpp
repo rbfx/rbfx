@@ -28,6 +28,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Technique.h"
 #include "../RenderPipeline/BatchStateCache.h"
+#include "../RenderPipeline/ShaderConsts.h"
 
 #include "../DebugNew.h"
 
@@ -144,7 +145,7 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
 
     PipelineStateDesc desc;
 #ifdef URHO3D_DEBUG
-    desc.debugName_ = "UI Batch Pipeline - "+key.material_->GetName();
+    desc.debugName_ = "UI Batch Pipeline - " + key.material_->GetName();
 #endif
     desc.InitializeInputLayout(GeometryBufferArray{ { ctx.vertexBuffer_ }, ctx.indexBuffer_, nullptr });
     desc.primitiveType_ = TRIANGLE_LIST;
@@ -157,6 +158,17 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     desc.stencilTestEnabled_ = false;
     desc.blendMode_ = key.blendMode_;
     desc.scissorTestEnabled_ = true;
+
+    for (const auto& [unit, texture] : key.material_->GetTextures())
+    {
+        if (texture)
+        {
+            const StringHash textureName = Material::TextureUnitToShaderResource(unit);
+            desc.AddSampler(textureName, texture->GetSamplerStateDesc());
+        }
+    }
+    if (ctx.defaultSampler_)
+        desc.AddSampler(ShaderResources::DiffMap, *ctx.defaultSampler_);
 
     vertexShaderDefines_ = key.pass_->GetEffectiveVertexShaderDefines();
     pixelShaderDefines_ = key.pass_->GetEffectivePixelShaderDefines();

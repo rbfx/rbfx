@@ -119,8 +119,8 @@ public:
     /// Create pipeline states for fullscreen quad rendering
     /// @{
     StaticPipelineStateId CreateQuadPipelineState(PipelineStateDesc desc);
-    StaticPipelineStateId CreateQuadPipelineState(
-        BlendMode blendMode, const ea::string& shaderName, const ea::string& shaderDefines);
+    StaticPipelineStateId CreateQuadPipelineState(BlendMode blendMode, const ea::string& shaderName,
+        const ea::string& shaderDefines, ea::span<const NamedSamplerStateDesc> samplers);
     /// @}
 
     /// Return pipeline state for fullscreen quad rendering for current output.

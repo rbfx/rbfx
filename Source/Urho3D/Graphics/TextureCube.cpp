@@ -66,9 +66,9 @@ TextureCube::TextureCube(Context* context) :
 #endif
 
     // Default to clamp mode addressing
-    addressModes_[COORD_U] = ADDRESS_CLAMP;
-    addressModes_[COORD_V] = ADDRESS_CLAMP;
-    addressModes_[COORD_W] = ADDRESS_CLAMP;
+    samplerStateDesc_.addressMode_[COORD_U] = ADDRESS_CLAMP;
+    samplerStateDesc_.addressMode_[COORD_V] = ADDRESS_CLAMP;
+    samplerStateDesc_.addressMode_[COORD_W] = ADDRESS_CLAMP;
 }
 
 TextureCube::~TextureCube()
@@ -174,7 +174,7 @@ bool TextureCube::SetSize(int size, unsigned format, TextureUsage usage, int mul
         }
 
         // Nearest filtering by default
-        filterMode_ = FILTER_NEAREST;
+        samplerStateDesc_.filterMode_ = FILTER_NEAREST;
     }
 
     if (usage == TEXTURE_RENDERTARGET)

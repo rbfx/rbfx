@@ -173,7 +173,7 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, unsigned fo
         renderSurface_ = new RenderSurface(this);
 
         // Nearest filtering by default
-        filterMode_ = FILTER_NEAREST;
+        samplerStateDesc_.filterMode_ = FILTER_NEAREST;
     }
 
     if (usage == TEXTURE_RENDERTARGET)
