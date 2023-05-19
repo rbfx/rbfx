@@ -52,9 +52,6 @@ struct ShaderParameterDesc
     Variant value_;
 };
 
-/// Shader parameter group, range in array. Plain old data.
-struct ShaderParameterRange { unsigned first; unsigned second; };
-
 /// Shader resource group, range in array.
 using ShaderResourceRange = ea::pair<unsigned, unsigned>;
 
@@ -68,8 +65,6 @@ struct DrawCommandDescription
 
     ShaderResourceRange shaderResources_;
 
-    /// Constant Buffer Ticket
-    ea::array<unsigned, MAX_SHADER_PARAMETER_GROUPS> cbufferTicketIds_;
     /// Index of scissor rectangle. 0 if disabled.
     unsigned scissorRect_{};
 
@@ -116,30 +111,25 @@ public:
     {
         const UniformBufferReflection* uniformBuffer = currentShaderProgramReflection_->GetUniformBuffer(group);
         if (!uniformBuffer)
-            return false;
-
-        const unsigned groupLayoutHash = uniformBuffer->hash_;
-        const unsigned size = uniformBuffer->size_;
-        ConstantBufferManagerTicket* ticket = cbufferManager_->GetTicket(group, size);
-        currentCBufferTicket_ = ticket;
-        if (!ticket)
-            return false;
-        // If constant buffer for this group is currently disabled...
-        if (groupLayoutHash == 0)
         {
             // If contents changed, forget cached constant buffer
             if (differentFromPrevious)
                 constantBuffers_.currentHashes_[group] = 0;
             return false;
         }
-        // If data or layout changes, acquire new ticket
-        if (differentFromPrevious || groupLayoutHash != constantBuffers_.currentHashes_[group])
+
+        // If data and/or layout changed, rebuild block
+        if (differentFromPrevious || uniformBuffer->hash_ != constantBuffers_.currentHashes_[group])
         {
-            constantBuffers_.currentData_ = ticket->GetPointerData();
-            constantBuffers_.currentHashes_[group] = groupLayoutHash;
+            const auto& refAndData = constantBuffers_.collection_.AddBlock(uniformBuffer->size_);
+
+            currentDrawCommand_.constantBuffers_[group] = refAndData.first;
+            constantBuffers_.currentData_ = refAndData.second;
+            constantBuffers_.currentHashes_[group] = uniformBuffer->hash_;
             constantBuffers_.currentGroup_ = group;
             return true;
         }
+
         return false;
     }
 
@@ -169,7 +159,6 @@ public:
     /// Commit shader parameter group. Shall be called only if BeginShaderParameterGroup returned true.
     void CommitShaderParameterGroup(ShaderParameterGroup group)
     {
-        currentDrawCommand_.cbufferTicketIds_[group] = currentCBufferTicket_->GetId();
         // All data is already stored, nothing to do
         constantBuffers_.currentGroup_ = MAX_SHADER_PARAMETER_GROUPS;
     }
@@ -304,10 +293,6 @@ private:
     ShaderResourceRange currentShaderResourceGroup_;
     ShaderProgramLayout* currentShaderProgramReflection_{};
 
-    /// Current Constant Buffer
-    ConstantBufferManagerTicket* currentCBufferTicket_;
-    /// Constant Buffer Manager
-    WeakPtr<ConstantBufferManager> cbufferManager_;
 };
 
 }

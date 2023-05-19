@@ -37,9 +37,7 @@ namespace Urho3D
 
 DrawCommandQueue::DrawCommandQueue(Graphics* graphics)
     : graphics_(graphics)
-    , currentCBufferTicket_(nullptr)
 {
-    cbufferManager_ = graphics->GetSubsystem<ConstantBufferManager>();
 }
 
 void DrawCommandQueue::Reset()
@@ -56,8 +54,6 @@ void DrawCommandQueue::Reset()
 
     currentDrawCommand_.constantBuffers_.fill({});
 
-    currentDrawCommand_.cbufferTicketIds_.fill(M_MAX_UNSIGNED);
-
     // Clear arrays and draw commands
     shaderResources_.clear();
     drawCommands_.clear();
@@ -73,7 +69,16 @@ void DrawCommandQueue::Execute()
     Diligent::IDeviceContext* deviceContext = graphics_->GetImpl()->GetDeviceContext();
 
     // Constant buffers to store all shader parameters for queue
-    ea::vector<SharedPtr<ConstantBuffer>> constantBuffers;
+    ea::vector<Diligent::IDeviceObject*> uniformBuffers;
+    const unsigned numUniformBuffers = constantBuffers_.collection_.GetNumBuffers();
+    uniformBuffers.resize(numUniformBuffers);
+    for (unsigned i = 0; i < numUniformBuffers; ++i)
+    {
+        const unsigned size = constantBuffers_.collection_.GetBufferSize(i);
+        ConstantBuffer* uniformBuffer = graphics_->GetOrCreateConstantBuffer(VS, i, size);
+        uniformBuffer->Update(constantBuffers_.collection_.GetBufferData(i), size);
+        uniformBuffers[i] = uniformBuffer->GetGPUObject().RawPtr();
+    }
 
     // Cached current state
     PipelineState* currentPipelineState = nullptr;
@@ -85,11 +90,8 @@ void DrawCommandQueue::Execute()
     PrimitiveType currentPrimitiveType{};
     unsigned currentScissorRect = M_MAX_UNSIGNED;
 
-    cbufferManager_->PrepareBuffers();
-
     // Temporary collections
     ea::vector<VertexBuffer*> tempVertexBuffers;
-    ea::array<ConstantBufferRange, MAX_SHADER_PARAMETER_GROUPS> constantBufferRanges{};
 
     for (const DrawCommandDescription& cmd : drawCommands_)
     {
@@ -157,13 +159,11 @@ void DrawCommandQueue::Execute()
             if (!uniformBufferReflection)
                 continue;
 
-            WeakPtr<ConstantBuffer> cbuffer = cbufferManager_->GetCBuffer(group);
-            if (cbuffer == nullptr || !cbuffer->GetGPUObject())
-                continue;
-
-            cbufferManager_->Dispatch(group, cmd.cbufferTicketIds_[i]);
+            Diligent::IDeviceObject* uniformBuffer = uniformBuffers[cmd.constantBuffers_[i].index_];
             for (Diligent::IShaderResourceVariable* variable : uniformBufferReflection->variables_)
-                variable->Set(cbuffer->GetGPUObject());
+            {
+                variable->SetBufferRange(uniformBuffer, cmd.constantBuffers_[i].offset_, cmd.constantBuffers_[i].size_);
+            }
         }
 
         deviceContext->CommitShaderResources(
@@ -203,8 +203,6 @@ void DrawCommandQueue::Execute()
             }
         }
     }
-
-    cbufferManager_->Finalize();
 }
 
 }
