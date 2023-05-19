@@ -26,27 +26,45 @@
 #include "../Container/RefCounted.h"
 #include "../Graphics/GraphicsDefs.h"
 
+#include <EASTL/array.h>
+#include <EASTL/fixed_vector.h>
 #include <EASTL/unordered_map.h>
+
+namespace Diligent
+{
+
+struct IShaderResourceBinding;
+struct IShaderResourceVariable;
+
+}
 
 namespace Urho3D
 {
 
-/// Element of constant buffer.
-/// TODO(diligent): Expand this description
-struct ShaderParameterReflection
+/// Description of uniform buffer used by the shader program.
+struct UniformBufferReflection
 {
-    /// Shader parameter group aka constant buffer index.
+    unsigned size_{};
+    unsigned hash_{};
+    ea::string internalName_;
+    ea::fixed_vector<Diligent::IShaderResourceVariable*, MAX_SHADER_TYPES> variables_;
+};
+using UniformBufferReflectionArray = ea::array<UniformBufferReflection, MAX_SHADER_PARAMETER_GROUPS>;
+
+/// Description of specific uniform in the shader program.
+struct UniformReflection
+{
     ShaderParameterGroup group_{};
-    /// Offset of the element within buffer.
     unsigned offset_{};
-    /// Size of element in the buffer.
     unsigned size_{};
 };
-using ShaderParameterReflectionMap = ea::unordered_map<StringHash, ShaderParameterReflection>;
+using ShaderParameterReflectionMap = ea::unordered_map<StringHash, UniformReflection>;
 
+/// Description of resource used by the shader program, excluding uniform buffers and samplers.
 struct ShaderResourceReflection
 {
     ea::string internalName_;
+    Diligent::IShaderResourceVariable* variable_{};
 };
 using ShaderResourceReflectionMap = ea::unordered_map<StringHash, ShaderResourceReflection>;
 
@@ -54,17 +72,17 @@ using ShaderResourceReflectionMap = ea::unordered_map<StringHash, ShaderResource
 class URHO3D_API ShaderProgramLayout : public RefCounted, public IDFamily<ShaderProgramLayout>
 {
 public:
-    /// Return constant buffer size for given group.
-    unsigned GetConstantBufferSize(ShaderParameterGroup group) const { return constantBufferSizes_[group]; }
-
-    /// Return constant buffer hash for given group.
-    unsigned GetConstantBufferHash(ShaderParameterGroup group) const { return constantBufferHashes_[group]; }
-
-    /// Return parameter info by hash.
-    const ShaderParameterReflection* GetConstantBufferParameter(StringHash name) const
+    const UniformBufferReflection* GetUniformBuffer(ShaderParameterGroup group) const
     {
-        const auto iter = constantBufferParameters_.find(name);
-        if (iter == constantBufferParameters_.end())
+        if (group >= MAX_SHADER_PARAMETER_GROUPS || uniformBuffers_[group].size_ == 0)
+            return nullptr;
+        return &uniformBuffers_[group];
+    }
+
+    const UniformReflection* GetUniform(StringHash name) const
+    {
+        const auto iter = uniforms_.find(name);
+        if (iter == uniforms_.end())
             return nullptr;
         return &iter->second;
     }
@@ -77,25 +95,20 @@ public:
         return &iter->second;
     }
 
-    const ShaderParameterReflectionMap& GetConstantBufferParameters() const { return constantBufferParameters_; }
+    const ShaderParameterReflectionMap& GetUniforms() const { return uniforms_; }
     const ShaderResourceReflectionMap& GetShaderResources() const { return shaderResources_; }
 
-protected:
-    /// Add constant buffer.
-    void AddConstantBuffer(ShaderParameterGroup group, unsigned size);
-    /// Add parameter inside constant buffer.
-    void AddConstantBufferParameter(StringHash name, ShaderParameterGroup group, unsigned offset, unsigned size);
-    void AddShaderResource(StringHash name, ea::string_view internalName);
-    /// Recalculate layout hash.
     void RecalculateLayoutHash();
+    void ConnectToShaderVariables(Diligent::IShaderResourceBinding* binding);
+
+protected:
+    void AddUniformBuffer(ShaderParameterGroup group, ea::string_view internalName, unsigned size);
+    void AddUniform(StringHash name, ShaderParameterGroup group, unsigned offset, unsigned size);
+    void AddShaderResource(StringHash name, ea::string_view internalName);
 
 private:
-    /// Constant buffer sizes.
-    unsigned constantBufferSizes_[MAX_SHADER_PARAMETER_GROUPS]{};
-    /// Constant buffer hashes.
-    unsigned constantBufferHashes_[MAX_SHADER_PARAMETER_GROUPS]{};
-    /// Mapping from parameter name to (buffer, offset) pair.
-    ShaderParameterReflectionMap constantBufferParameters_;
+    UniformBufferReflectionArray uniformBuffers_;
+    ShaderParameterReflectionMap uniforms_;
     ShaderResourceReflectionMap shaderResources_;
 };
 

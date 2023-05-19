@@ -37,7 +37,6 @@
 #include "../../Graphics/Shader.h"
 #include "../../Graphics/ShaderPrecache.h"
 #include "../../Graphics/ShaderProgram.h"
-#include "../../Graphics/ShaderResourceBinding.h"
 #include "../../Graphics/Texture2D.h"
 #include "../../Graphics/TextureCube.h"
 #include "../../Graphics/VertexBuffer.h"
@@ -1188,17 +1187,6 @@ void Graphics::SetPipelineState(PipelineState* pipelineState)
         && pipelineState_->GetDesc().output_.depthStencilFormat_ == TEX_FORMAT_UNKNOWN)
         impl_->renderTargetsDirty_ = true;
 
-}
-
-void Graphics::CommitSRB(ShaderResourceBinding* srb)
-{
-    using namespace Diligent;
-    assert(srb);
-
-    if (srb->IsDirty())
-        srb->UpdateBindings();
-    impl_->deviceContext_->CommitShaderResources(
-        (IShaderResourceBinding*)srb->GetShaderResourceBinding(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 ShaderProgramLayout* Graphics::GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps)

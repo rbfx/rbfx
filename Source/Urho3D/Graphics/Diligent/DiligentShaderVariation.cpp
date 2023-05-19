@@ -14,6 +14,7 @@
 #include "Urho3D/Shader/ShaderOptimizer.h"
 #include "Urho3D/Shader/ShaderSourceLogger.h"
 #include "Urho3D/Shader/ShaderTranslator.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include <EASTL/span.h>
 
@@ -420,20 +421,11 @@ bool ShaderVariation::ProcessShaderSource(ea::string_view& translatedSource, con
 
 Diligent::IShader* ShaderVariation::CreateShader(const CompiledShaderVariation& compiledShader) const
 {
-    static Diligent::SHADER_TYPE shaderTypes[] = {
-        Diligent::SHADER_TYPE_VERTEX,
-        Diligent::SHADER_TYPE_PIXEL,
-        Diligent::SHADER_TYPE_GEOMETRY,
-        Diligent::SHADER_TYPE_HULL,
-        Diligent::SHADER_TYPE_DOMAIN,
-        Diligent::SHADER_TYPE_COMPUTE,
-    };
-
     Diligent::ShaderCreateInfo createInfo;
 #ifdef URHO3D_DEBUG
     createInfo.Desc.Name = name_.c_str();
 #endif
-    createInfo.Desc.ShaderType = shaderTypes[type_];
+    createInfo.Desc.ShaderType = ToInternalShaderType(type_);
     createInfo.Desc.UseCombinedTextureSamplers = true;
     createInfo.EntryPoint = "main";
     createInfo.LoadConstantBufferReflection = true;

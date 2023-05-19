@@ -20,19 +20,24 @@
 // THE SOFTWARE.
 //
 
-#include "../Graphics/ShaderProgramLayout.h"
+#include "Urho3D/Precompiled.h"
+
+#include "Urho3D/Graphics/ShaderProgramLayout.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+
+#include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceBinding.h>
 
 namespace Urho3D
 {
 
-void ShaderProgramLayout::AddConstantBuffer(ShaderParameterGroup group, unsigned size)
+void ShaderProgramLayout::AddUniformBuffer(ShaderParameterGroup group, ea::string_view internalName, unsigned size)
 {
-    constantBufferSizes_[group] = size;
+    uniformBuffers_[group] = UniformBufferReflection{size, 0u, ea::string{internalName}};
 }
 
-void ShaderProgramLayout::AddConstantBufferParameter(StringHash name, ShaderParameterGroup group, unsigned offset, unsigned size)
+void ShaderProgramLayout::AddUniform(StringHash name, ShaderParameterGroup group, unsigned offset, unsigned size)
 {
-    constantBufferParameters_.emplace(name, ShaderParameterReflection{ group, offset, size });
+    uniforms_.emplace(name, UniformReflection{ group, offset, size });
 }
 
 void ShaderProgramLayout::AddShaderResource(StringHash name, ea::string_view internalName)
@@ -42,23 +47,57 @@ void ShaderProgramLayout::AddShaderResource(StringHash name, ea::string_view int
 
 void ShaderProgramLayout::RecalculateLayoutHash()
 {
-    for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+    for (UniformBufferReflection& uniformBuffer : uniformBuffers_)
     {
-        constantBufferHashes_[i] = 0;
-        if (constantBufferSizes_[i] != 0)
-            CombineHash(constantBufferHashes_[i], constantBufferSizes_[i]);
+        uniformBuffer.hash_ = 0;
+        if (uniformBuffer.size_ != 0)
+            CombineHash(uniformBuffer.hash_, uniformBuffer.size_);
     }
 
-    for (const auto& item : constantBufferParameters_)
+    for (const auto& [nameHash, uniform] : uniforms_)
     {
-        const StringHash paramName = item.first;
-        const ShaderParameterReflection& element = item.second;
-        CombineHash(constantBufferHashes_[element.group_], paramName.Value());
-        CombineHash(constantBufferHashes_[element.group_], element.offset_);
-        CombineHash(constantBufferHashes_[element.group_], element.size_);
+        UniformBufferReflection& uniformBuffer = uniformBuffers_[uniform.group_];
+        CombineHash(uniformBuffer.hash_, nameHash.Value());
+        CombineHash(uniformBuffer.hash_, uniform.offset_);
+        CombineHash(uniformBuffer.hash_, uniform.size_);
 
-        if (constantBufferHashes_[element.group_] == 0)
-            constantBufferHashes_[element.group_] = 1;
+        if (uniformBuffer.hash_ == 0)
+            uniformBuffer.hash_ = 1;
+    }
+}
+
+void ShaderProgramLayout::ConnectToShaderVariables(Diligent::IShaderResourceBinding* binding)
+{
+    // TODO(diligent): Revisit this place? Do we want to reuse it for compute shaders?
+    const unsigned maxShaderType = CS;
+    for (UniformBufferReflection& uniformBuffer : uniformBuffers_)
+    {
+        if (uniformBuffer.size_ == 0)
+            continue;
+
+        for (unsigned i = 0; i < maxShaderType; ++i)
+        {
+            const Diligent::SHADER_TYPE shaderType = ToInternalShaderType(static_cast<ShaderType>(i));
+            Diligent::IShaderResourceVariable* shaderVariable =
+                binding->GetVariableByName(shaderType, uniformBuffer.internalName_.c_str());
+            if (shaderVariable)
+                uniformBuffer.variables_.push_back(shaderVariable);
+        }
+    }
+
+    for (auto& [nameHash, resource] : shaderResources_)
+    {
+        for (unsigned i = 0; i < maxShaderType; ++i)
+        {
+            const Diligent::SHADER_TYPE shaderType = ToInternalShaderType(static_cast<ShaderType>(i));
+            Diligent::IShaderResourceVariable* shaderVariable =
+                binding->GetVariableByName(shaderType, resource.internalName_.c_str());
+            if (shaderVariable)
+            {
+                resource.variable_ = shaderVariable;
+                break;
+            }
+        }
     }
 }
 

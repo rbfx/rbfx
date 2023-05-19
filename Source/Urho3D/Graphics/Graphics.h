@@ -269,7 +269,6 @@ public:
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set Pipeline State
     void SetPipelineState(PipelineState* pipelineState);
-    void CommitSRB(ShaderResourceBinding* srb);
     void BeginDebug(const ea::string_view& debugName);
     void BeginDebug(const ea::string& debugName);
     void BeginDebug(const char* debugName);

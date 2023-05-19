@@ -476,7 +476,8 @@ private:
 
     void UpdateDirtyResources()
     {
-        const bool resourcesDirty = dirty_.material_ || dirty_.reflectionProbe_ || dirty_.IsResourcesDirty();
+        const bool resourcesDirty =
+            dirty_.pipelineState_ || dirty_.material_ || dirty_.reflectionProbe_ || dirty_.IsResourcesDirty();
         if (resourcesDirty)
         {
             for (const ShaderResourceDesc& desc : globalResources_)

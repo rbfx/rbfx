@@ -108,18 +108,8 @@ PipelineState::~PipelineState()
         return;
     }
 
-    // Release all allocated shader resource bindings
-    shaderResourceBindings_.clear();
-
     if (PipelineStateCache* owner = owner_)
         owner->ReleasePipelineState(desc_);
-}
-
-ShaderResourceBinding* PipelineState::CreateSRB()
-{
-    ShaderResourceBinding* srb = CreateInternalSRB();
-    shaderResourceBindings_.push_back(SharedPtr<ShaderResourceBinding>(srb));
-    return srb;
 }
 
 void PipelineState::Setup(const PipelineStateDesc& desc)

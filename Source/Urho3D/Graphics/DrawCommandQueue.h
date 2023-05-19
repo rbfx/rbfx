@@ -29,7 +29,6 @@
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/PipelineState.h"
 #include "../Graphics/ConstantBufferCollection.h"
-#include "../Graphics/ShaderResourceBindingCache.h"
 #include "../IO/Log.h"
 #include "../Graphics/ConstantBufferManager.h"
 
@@ -52,9 +51,6 @@ struct ShaderParameterDesc
     StringHash name_;
     Variant value_;
 };
-
-/// Collection of shader resources.
-using ShaderResourceCollection = ea::vector<ShaderResourceDesc>;
 
 /// Shader parameter group, range in array. Plain old data.
 struct ShaderParameterRange { unsigned first; unsigned second; };
@@ -102,7 +98,7 @@ public:
     {
         assert(pipelineState);
         currentDrawCommand_.pipelineState_ = pipelineState;
-        constantBuffers_.currentLayout_ = pipelineState->GetReflection();
+        currentShaderProgramReflection_ = pipelineState->GetReflection();
     }
 
     /// Set scissor rect.
@@ -118,8 +114,12 @@ public:
     /// Begin shader parameter group. All parameters shall be set for each draw command.
     bool BeginShaderParameterGroup(ShaderParameterGroup group, bool differentFromPrevious = false)
     {
-        const unsigned groupLayoutHash = constantBuffers_.currentLayout_->GetConstantBufferHash(group);
-        const unsigned size = constantBuffers_.currentLayout_->GetConstantBufferSize(group);
+        const UniformBufferReflection* uniformBuffer = currentShaderProgramReflection_->GetUniformBuffer(group);
+        if (!uniformBuffer)
+            return false;
+
+        const unsigned groupLayoutHash = uniformBuffer->hash_;
+        const unsigned size = uniformBuffer->size_;
         ConstantBufferManagerTicket* ticket = cbufferManager_->GetTicket(group, size);
         currentCBufferTicket_ = ticket;
         if (!ticket)
@@ -147,7 +147,7 @@ public:
     template <class T>
     void AddShaderParameter(StringHash name, const T& value)
     {
-        const auto* paramInfo = constantBuffers_.currentLayout_->GetConstantBufferParameter(name);
+        const auto* paramInfo = currentShaderProgramReflection_->GetUniform(name);
         if (paramInfo)
         {
             if (constantBuffers_.currentGroup_ != paramInfo->group_)
@@ -177,7 +177,11 @@ public:
     /// Add shader resource.
     void AddShaderResource(StringHash name, Texture* texture)
     {
-        shaderResources_.push_back(ShaderResourceDesc{name, texture});
+        const ShaderResourceReflection* shaderParameter = currentShaderProgramReflection_->GetShaderResource(name);
+        if (!shaderParameter || !shaderParameter->variable_)
+            return;
+
+        shaderResources_.push_back(ShaderResourceData{shaderParameter->variable_, texture});
         ++currentShaderResourceGroup_.second;
     }
 
@@ -275,17 +279,20 @@ private:
 
         /// Current constant buffer group.
         ShaderParameterGroup currentGroup_{ MAX_SHADER_PARAMETER_GROUPS };
-        /// Current constant buffer layout.
-        ShaderProgramLayout* currentLayout_{};
         /// Current pointer to constant buffer data.
         unsigned char* currentData_{};
         /// Current constant buffer layout hashes.
         ea::array<unsigned, MAX_SHADER_PARAMETER_GROUPS> currentHashes_{};
     } constantBuffers_;
 
+    struct ShaderResourceData
+    {
+        Diligent::IShaderResourceVariable* variable_{};
+        Texture* texture_{};
+    };
+
     /// Shader resources.
-    /// TODO(diligent): This is not used anymore
-    ShaderResourceCollection shaderResources_;
+    ea::vector<ShaderResourceData> shaderResources_;
     /// Scissor rects.
     ea::vector<IntRect> scissorRects_;
     /// Draw operations.
@@ -295,11 +302,10 @@ private:
     DrawCommandDescription currentDrawCommand_;
     /// Current shader resource group.
     ShaderResourceRange currentShaderResourceGroup_;
+    ShaderProgramLayout* currentShaderProgramReflection_{};
 
     /// Current Constant Buffer
     ConstantBufferManagerTicket* currentCBufferTicket_;
-    /// Shader Resource Binding Cache.
-    SharedPtr<ShaderResourceBindingCache> srbCache_;
     /// Constant Buffer Manager
     WeakPtr<ConstantBufferManager> cbufferManager_;
 };

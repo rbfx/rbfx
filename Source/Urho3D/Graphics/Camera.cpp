@@ -26,6 +26,7 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Drawable.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Zone.h"
 #include "../Scene/Node.h"
 

@@ -54,4 +54,17 @@ const ea::string& ToShaderInputName(VertexElementSemantic semantic)
         return EMPTY_STRING;
 }
 
+Diligent::SHADER_TYPE ToInternalShaderType(ShaderType type)
+{
+    static Diligent::SHADER_TYPE shaderTypes[] = {
+        Diligent::SHADER_TYPE_VERTEX,
+        Diligent::SHADER_TYPE_PIXEL,
+        Diligent::SHADER_TYPE_GEOMETRY,
+        Diligent::SHADER_TYPE_HULL,
+        Diligent::SHADER_TYPE_DOMAIN,
+        Diligent::SHADER_TYPE_COMPUTE,
+    };
+    return type < MAX_SHADER_TYPES ? shaderTypes[type] : Diligent::SHADER_TYPE_UNKNOWN;
+}
+
 } // namespace Urho3D

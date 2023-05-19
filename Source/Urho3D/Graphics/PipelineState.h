@@ -30,10 +30,11 @@
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/ShaderProgramLayout.h"
 #include "../Graphics/VertexBuffer.h"
-#include "../Graphics/ShaderResourceBinding.h"
+#include "Urho3D/IO/FileIdentifier.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceBinding.h>
 
 #include <EASTL/algorithm.h>
 #include <EASTL/array.h>
@@ -325,20 +326,22 @@ public:
     /// @}
 
     /// Create Shader Resource Binding
-    Urho3D::ShaderResourceBinding* CreateSRB();
     Diligent::IPipelineState* GetHandle() const { return const_cast<Diligent::IPipelineState*>(handle_.RawPtr()); }
+
+    Diligent::IShaderResourceBinding* GetShaderResourceBinding() const
+    {
+        return const_cast<Diligent::IShaderResourceBinding*>(shaderResourceBinding_.RawPtr());
+    }
 
 private:
     bool BuildPipeline(Graphics* graphics);
-    Urho3D::ShaderResourceBinding* CreateInternalSRB();
     void ReleasePipeline();
 
     WeakPtr<PipelineStateCache> owner_;
     PipelineStateDesc desc_;
 
-    ea::vector<SharedPtr<Urho3D::ShaderResourceBinding>> shaderResourceBindings_;
-
     Diligent::RefCntAutoPtr<Diligent::IPipelineState> handle_{};
+    Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> shaderResourceBinding_{};
     // TODO(diligent): We may want to actually share reflection objects between pipeline states.
     SharedPtr<ShaderProgramLayout> reflection_;
 };

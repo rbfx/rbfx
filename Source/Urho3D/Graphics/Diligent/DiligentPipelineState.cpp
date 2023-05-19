@@ -127,20 +127,22 @@ ea::optional<ea::string_view> SanitateResourceName(ea::string_view name)
 class ShaderReflectionImpl : public ShaderProgramLayout
 {
 public:
-    void AddOrCheckConstantBuffer(ShaderParameterGroup group, unsigned size)
+    void AddOrCheckUniformBuffer(ShaderParameterGroup group, ea::string_view internalName, unsigned size)
     {
-        const unsigned oldSize = GetConstantBufferSize(group);
-        if (oldSize != 0)
+        const UniformBufferReflection* oldBuffer = GetUniformBuffer(group);
+        if (oldBuffer)
         {
-            if (oldSize != size)
-                URHO3D_LOGWARNING("Constant buffer #{} has inconsistent size in different stages", group);
+            if (oldBuffer->size_ != size)
+                URHO3D_LOGWARNING("Uniform buffer #{} has inconsistent size in different stages", group);
+            if (oldBuffer->internalName_ != internalName)
+                URHO3D_LOGWARNING("Uniform buffer #{} has inconsistent name in different stages", group);
             return;
         }
 
-        AddConstantBuffer(group, size);
+        AddUniformBuffer(group, internalName, size);
     }
 
-    void AddOrCheckShaderParameter(ShaderParameterGroup group, const Diligent::ShaderCodeVariableDesc& desc)
+    void AddOrCheckUniform(ShaderParameterGroup group, const Diligent::ShaderCodeVariableDesc& desc)
     {
         const auto sanitatedName = SanitateUniformName(desc.Name);
         if (!sanitatedName)
@@ -156,13 +158,13 @@ public:
             return;
         }
 
-        AddOrCheckShaderParameter(group, *sanitatedName, uniformSize, desc.Offset);
+        AddOrCheckUniform(group, *sanitatedName, uniformSize, desc.Offset);
     }
 
-    void AddOrCheckShaderParameter(ShaderParameterGroup group, ea::string_view name, unsigned size, unsigned offset)
+    void AddOrCheckUniform(ShaderParameterGroup group, ea::string_view name, unsigned size, unsigned offset)
     {
         const auto nameHash = StringHash{name};
-        const ShaderParameterReflection* oldParameter = GetConstantBufferParameter(nameHash);
+        const UniformReflection* oldParameter = GetUniform(nameHash);
         if (oldParameter)
         {
             if (oldParameter->size_ != size)
@@ -174,17 +176,19 @@ public:
             return;
         }
 
-        AddConstantBufferParameter(nameHash, group, offset, size);
+        AddUniform(nameHash, group, offset, size);
     }
 
     void AddOrCheckShaderResource(StringHash name, ea::string_view internalName)
     {
-        AddShaderResource(name, internalName);
-    }
+        const ShaderResourceReflection* oldResource = GetShaderResource(name);
+        if (oldResource)
+        {
+            URHO3D_LOGWARNING("Shader resource '{}' is referenced by multiple shader stages", internalName);
+            return;
+        }
 
-    void Cook()
-    {
-        RecalculateLayoutHash();
+        AddShaderResource(name, internalName);
     }
 };
 
@@ -383,13 +387,13 @@ void AppendConstantBufferToReflection(ShaderReflectionImpl& reflection, Diligent
     }
 
     const Diligent::ShaderCodeBufferDesc& bufferDesc = *shader->GetConstantBufferDesc(resourceIndex);
-    reflection.AddOrCheckConstantBuffer(*bufferGroup, bufferDesc.Size);
+    reflection.AddOrCheckUniformBuffer(*bufferGroup, desc.Name, bufferDesc.Size);
 
     const unsigned numUniforms = bufferDesc.NumVariables;
     for (unsigned uniformIndex = 0; uniformIndex < numUniforms; ++uniformIndex)
     {
         const Diligent::ShaderCodeVariableDesc& uniformDesc = bufferDesc.pVariables[uniformIndex];
-        reflection.AddOrCheckShaderParameter(*bufferGroup, uniformDesc);
+        reflection.AddOrCheckUniform(*bufferGroup, uniformDesc);
     }
 }
 
@@ -425,7 +429,6 @@ SharedPtr<ShaderProgramLayout> ReflectShaders(std::initializer_list<Diligent::IS
         if (shader)
             AppendShaderReflection(*reflection, shader);
     }
-    reflection->Cook();
     return reflection;
 }
 
@@ -577,7 +580,7 @@ SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
         GLint dataSize = 0;
         glGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &dataSize);
 
-        reflection->AddOrCheckConstantBuffer(*bufferGroup, dataSize);
+        reflection->AddOrCheckUniformBuffer(*bufferGroup, name, dataSize);
 
         const unsigned blockIndex = glGetUniformBlockIndex(programObject, name);
         if (blockIndex >= indexToGroup.size())
@@ -612,12 +615,11 @@ SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
             if (group != MAX_SHADER_PARAMETER_GROUPS)
             {
                 const unsigned size = GetUniformSize(CreateUniformDesc(type, elementCount));
-                reflection->AddOrCheckShaderParameter(group, *sanitatedName, size, blockOffset);
+                reflection->AddOrCheckUniform(group, *sanitatedName, size, blockOffset);
             }
         }
     }
 
-    reflection->Cook();
     return reflection;
 }
 
@@ -736,7 +738,7 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
 
     ci.GraphicsPipeline.RasterizerDesc.ScissorEnable = desc_.scissorTestEnabled_;
 
-    ci.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
+    ci.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC;
 
     PipelineStateCache* psoCache = graphics->GetSubsystem<PipelineStateCache>();
     if (psoCache->object_)
@@ -774,7 +776,7 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     // clang-format on
 #endif
 
-    graphics->GetImpl()->GetDevice()->CreateGraphicsPipelineState(ci, &handle_);
+    renderDevice->CreateGraphicsPipelineState(ci, &handle_);
 
     if (!handle_)
     {
@@ -782,19 +784,9 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
         return false;
     }
 
-#if 0
-    SamplerDesc SamLinearClampDesc
-    {
-        FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR,
-        TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP
-    };
-    ImmutableSamplerDesc ImtblSamplers[] =
-    {
-        {SHADER_TYPE_PIXEL, "g_Texture", SamLinearClampDesc}
-    };
-    PSOCreateInfo.PSODesc.ResourceLayout.ImmutableSamplers    = ImtblSamplers;
-    PSOCreateInfo.PSODesc.ResourceLayout.NumImmutableSamplers = _countof(ImtblSamplers);
-#endif
+    handle_->CreateShaderResourceBinding(&shaderResourceBinding_, true);
+    reflection_->RecalculateLayoutHash();
+    reflection_->ConnectToShaderVariables(shaderResourceBinding_);
 
     URHO3D_LOGDEBUG("Created Graphics Pipeline ({})", desc_.ToHash());
     return true;
@@ -805,15 +797,4 @@ void PipelineState::ReleasePipeline()
     handle_ = nullptr;
 }
 
-ShaderResourceBinding* PipelineState::CreateInternalSRB()
-{
-    assert(handle_);
-
-    IPipelineState* pipeline = static_cast<IPipelineState*>(handle_);
-    IShaderResourceBinding* srb = nullptr;
-    pipeline->CreateShaderResourceBinding(&srb, false);
-    assert(srb);
-
-    return new ShaderResourceBinding(owner_->GetSubsystem<Graphics>(), srb);
-}
 } // namespace Urho3D
