@@ -43,8 +43,11 @@ struct GraphLinkView
 
 struct GraphPinView
 {
+    GraphPinView(ax::NodeEditor::PinId id);
     ax::NodeEditor::PinId id_{0};
     ea::string title_;
+    VariantType type_{VAR_NONE};
+    ea::string value_;
     ax::NodeEditor::PinKind kind_{ax::NodeEditor::PinKind::Input};
 };
 
@@ -53,6 +56,7 @@ struct GraphNodeView
     ax::NodeEditor::NodeId id_;
     ea::string title_;
     Vector2 position_{0, 0};
+    Vector2 size_{0, 0};
     ea::vector<GraphPinView> enterPins_;
     ea::vector<GraphPinView> inputPins_;
     ea::vector<GraphPinView> exitPins_;
@@ -67,6 +71,7 @@ struct GraphView
 
     void Reset();
     void Populate(Graph* graph);
+    void AutoLayout();
 };
 
 /// Tab that renders graph.
@@ -93,8 +98,10 @@ protected:
     virtual void RenderTitle();
 
     ax::NodeEditor::EditorContext* editorContext_ = nullptr; // Editor context, required to trace a editor state.
-    bool firstFrame_{true};
+    bool showOrdinals_{};
+    bool applyLayout_{true};
     GraphView graph_;
+    std::vector<ax::NodeEditor::NodeId> orderedNodeIds_;
 };
 
 } // namespace Urho3D

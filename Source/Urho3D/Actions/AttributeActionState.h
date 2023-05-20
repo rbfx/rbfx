@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "AttributeAction.h"
 #include "FiniteTimeActionState.h"
 #include "../Core/Attribute.h"
 #include "../Scene/Serializable.h"
@@ -30,13 +31,16 @@ namespace Urho3D
 {
 namespace Actions
 {
+class AttributeAction;
 
 /// Attribute action state.
 class URHO3D_API AttributeActionState : public FiniteTimeActionState
 {
 public:
     /// Construct.
-    AttributeActionState(FiniteTimeAction* action, Object* target, AttributeInfo* attribute);
+    AttributeActionState(AttributeAction* action, Object* target);
+    /// Construct.
+    AttributeActionState(AttributeActionInstant* action, Object* target);
     /// Destruct.
     ~AttributeActionState() override;
 
@@ -47,6 +51,8 @@ protected:
     void Get(Variant& value) const;
 
     void Set(const Variant& value);
+
+    const AttributeInfo* GetAttribute() const { return attribute_; }
 
     /// Get attribute value or default value.
     template <typename T> T Get() const
@@ -69,7 +75,10 @@ protected:
 class SetAttributeState : public AttributeActionState
 {
 public:
-    SetAttributeState(FiniteTimeAction* action, Object* target, AttributeInfo* attribute, const Variant& value);
+    /// Construct.
+    SetAttributeState(AttributeAction* action, Object* target, const Variant& value);
+    /// Construct.
+    SetAttributeState(AttributeActionInstant* action, Object* target, const Variant& value);
 
 private:
     void Update(float time, Variant& var) override;
@@ -83,8 +92,7 @@ private:
 class AttributeBlinkState : public AttributeActionState
 {
 public:
-    AttributeBlinkState(
-        FiniteTimeAction* action, Object* target, AttributeInfo* attribute, Variant from,
+    AttributeBlinkState(AttributeAction* action, Object* target, Variant from,
         Variant to, unsigned times);
 
     void Update(float time, Variant& var) override;

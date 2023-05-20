@@ -26,8 +26,6 @@
 #include "Urho3D/Resource/GraphNode.h"
 
 #include <Urho3D/Graphics/DebugRenderer.h>
-#include <Urho3D/Actions/ActionSet.h>
-#include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
@@ -70,6 +68,9 @@ namespace
     };
 }
 
+GraphPinView::GraphPinView(ax::NodeEditor::PinId id): id_(id)
+{}
+
 void GraphView::Reset()
 {
     nextUniqueId_ = 1;
@@ -102,26 +103,26 @@ void GraphView::Populate(Graph* graph)
         {
             auto pin = node->GetEnter(pinIndex);
             enterPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.enterPins_.emplace_back();
-            pinView.id_ = nextUniqueId_++;
+            auto& pinView = nodeView.enterPins_.emplace_back(nextUniqueId_++);
             pinView.title_ = pin.GetPin()->GetName();
         }
 
         for (unsigned pinIndex = 0; pinIndex < node->GetNumInputs(); ++pinIndex)
         {
-            auto pin = node->GetInput(pinIndex);
-            inputPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.inputPins_.emplace_back();
-            pinView.id_ = nextUniqueId_++;
-            pinView.title_ = pin.GetPin()->GetName();
+            auto pinRef = node->GetInput(pinIndex);
+            inputPins[StablePinKey(pinRef)] = nextUniqueId_;
+            auto& pinView = nodeView.inputPins_.emplace_back(nextUniqueId_++);
+            auto* pin = pinRef.GetPin();
+            pinView.title_ = pin->GetName();
+            pinView.value_ = pin->GetValue().ToString();
+            pinView.type_ = pin->GetValue().GetType();
         }
 
         for (unsigned pinIndex = 0; pinIndex < node->GetNumExits(); ++pinIndex)
         {
             auto pin = node->GetExit(pinIndex);
             exitPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.exitPins_.emplace_back();
-            pinView.id_ = nextUniqueId_++;
+            auto& pinView = nodeView.exitPins_.emplace_back(nextUniqueId_++);
             pinView.title_ = pin.GetPin()->GetName();
         }
 
@@ -129,8 +130,7 @@ void GraphView::Populate(Graph* graph)
         {
             auto pin = node->GetOutput(pinIndex);
             outputPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.inputPins_.emplace_back();
-            pinView.id_ = nextUniqueId_++;
+            auto& pinView = nodeView.inputPins_.emplace_back(nextUniqueId_++);
             pinView.title_ = pin.GetPin()->GetName();
         }
     }
@@ -161,14 +161,20 @@ void GraphView::Populate(Graph* graph)
 
     if (needLayouting)
     {
-        // TODO: perform layouting
         int x = 0;
         for (auto& node: nodes_)
         {
             node.position_ = Vector2(x, 0);
+            node.size_ = Vector2(100, 100);
             x += 100;
         }
+        AutoLayout();
     }
+}
+
+void GraphView::AutoLayout()
+{
+    // TODO: perform layouting
 }
 
 GraphViewTab::GraphViewTab(Context* context, const ea::string& title, const ea::string& guid,
@@ -188,7 +194,7 @@ GraphViewTab::~GraphViewTab()
 
 void GraphViewTab::Reset()
 {
-    firstFrame_ = true;
+    applyLayout_ = true;
     graph_.Reset();
 }
 
@@ -196,7 +202,7 @@ void GraphViewTab::RenderGraph()
 {
     for (auto& node : graph_.nodes_)
     {
-        if (firstFrame_)
+        if (applyLayout_)
             ed::SetNodePosition(node.id_, ImVec2(node.position_.x_, node.position_.y_));
         ed::BeginNode(node.id_);
         ImGui::Text("%s", node.title_.c_str());
@@ -213,6 +219,15 @@ void GraphViewTab::RenderGraph()
         for (auto& pin : node.inputPins_)
         {
             ed::BeginPin(pin.id_, ax::NodeEditor::PinKind::Input);
+            if (pin.type_ != VAR_NONE)
+            {
+                ImGui::PushItemWidth(100.0f);
+                ImGui::PushID(pin.id_.Get());
+                ImGui::InputText("##edit", &pin.value_);
+                ImGui::PopID();
+                ImGui::PopItemWidth();
+                ImGui::SameLine();
+            }
             ImGui::Text("%s", pin.title_.c_str());
             ed::EndPin();
         }
@@ -236,6 +251,14 @@ void GraphViewTab::RenderGraph()
         ImGui::EndGroup();
 
         ed::EndNode();
+
+        auto newPos = ToVector2(ed::GetNodePosition(node.id_));
+        if (node.position_ != newPos)
+        {
+            node.position_ = newPos;
+            //TODO: add to Undo stack
+        }
+        node.size_ = ToVector2(ed::GetNodeSize(node.id_));
     }
 
     for (auto& link : graph_.links_)
@@ -285,12 +308,22 @@ void GraphViewTab::RenderContent()
 
     RenderTitle();
 
-    const ImVec2 contentPosition = ui::GetCursorPos();
+   
+    ed::SetCurrentEditor(editorContext_);
 
+    if (ImGui::Button("Zoom to Content"))
+        ed::NavigateToContent();
+    ImGui::SameLine();
+    if (ImGui::Button("Autolayout"))
+        graph_.AutoLayout();
+    //if (ImGui::Button("Save"))
+    //    Save();
+    ImGui::SameLine();
+    ImGui::Checkbox("Show Ordinals", &showOrdinals_);
+
+    const ImVec2 contentPosition = ui::GetCursorPos();
     const auto contentSize = GetContentSize() - IntVector2(0, contentPosition.y - basePosition.y);
     const auto imContentSize = ToImGui(VectorMax(contentSize, IntVector2::ONE));
-    
-    ed::SetCurrentEditor(editorContext_);
 
     // Start interaction with editor.
     ed::Begin("graph_view", imContentSize);
@@ -300,12 +333,49 @@ void GraphViewTab::RenderContent()
     // End of interaction with editor.
     ed::End();
 
-    if (firstFrame_)
-        ed::NavigateToContent(0.0f);
+    auto editorMin = ImGui::GetItemRectMin();
+    auto editorMax = ImGui::GetItemRectMax();
+
+    if (showOrdinals_)
+    {
+        int nodeCount = ed::GetNodeCount();
+        orderedNodeIds_.resize(static_cast<size_t>(nodeCount));
+        ed::GetOrderedNodeIds(orderedNodeIds_.data(), nodeCount);
+
+        auto drawList = ImGui::GetWindowDrawList();
+        drawList->PushClipRect(editorMin, editorMax);
+
+        int ordinal = 0;
+        for (auto& nodeId : orderedNodeIds_)
+        {
+            auto p0 = ed::GetNodePosition(nodeId);
+            auto p1 = p0 + ed::GetNodeSize(nodeId);
+            p0 = ed::CanvasToScreen(p0);
+            p1 = ed::CanvasToScreen(p1);
+
+            ImGuiTextBuffer builder;
+            builder.appendf("#%d", ordinal++);
+
+            auto textSize = ImGui::CalcTextSize(builder.c_str());
+            auto padding = ImVec2(2.0f, 2.0f);
+            auto widgetSize = textSize + padding * 2;
+
+            auto widgetPosition = ImVec2(p1.x, p0.y) + ImVec2(0.0f, -widgetSize.y);
+
+            drawList->AddRectFilled(widgetPosition, widgetPosition + widgetSize, IM_COL32(100, 80, 80, 190), 3.0f,
+                ImDrawFlags_RoundCornersAll);
+            drawList->AddRect(widgetPosition, widgetPosition + widgetSize, IM_COL32(200, 160, 160, 190), 3.0f,
+                ImDrawFlags_RoundCornersAll);
+            drawList->AddText(widgetPosition + padding, IM_COL32(255, 255, 255, 255), builder.c_str());
+        }
+
+        drawList->PopClipRect();
+    }
+
 
     ed::SetCurrentEditor(nullptr);
 
-    firstFrame_ = false;
+    applyLayout_ = false;
 }
 
 } // namespace Urho3D

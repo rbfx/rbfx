@@ -31,9 +31,9 @@ namespace Actions
 {
 
 /// Repeat inner action several times.
-class URHO3D_API Repeat : public FiniteTimeAction
+class URHO3D_API Repeat : public DynamicAction
 {
-    URHO3D_OBJECT(Repeat, FiniteTimeAction)
+    URHO3D_OBJECT(Repeat, DynamicAction)
 public:
     /// Construct.
     explicit Repeat(Context* context);
@@ -69,9 +69,9 @@ private:
 };
 
 /// Repeat inner action forever.
-class URHO3D_API RepeatForever : public FiniteTimeAction
+class URHO3D_API RepeatForever : public DynamicAction
 {
-    URHO3D_OBJECT(RepeatForever, FiniteTimeAction)
+    URHO3D_OBJECT(RepeatForever, DynamicAction)
 public:
     /// Construct.
     explicit RepeatForever(Context* context);

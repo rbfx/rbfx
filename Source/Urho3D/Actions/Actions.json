@@ -1,0 +1,261 @@
+{
+    "actions": {
+        "MoveBy": {
+            "parent": "AttributeAction",
+            "comment": "Move by 3D or 2D offset action. Target should have attribute \"Position\" of type Vector3, Vector2, IntVector2 or IntVector3.\"",
+            "parameters": [
+                {
+                    "name": "delta",
+                    "type": "vector3"
+                },
+                {
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Position",
+                    "Inherited":  true 
+                }
+            ]
+        },
+        "MoveByQuadratic": {
+            "parent": "MoveBy",
+            "comment": "Move by 3D or 2D offset action with quadratic interpolation. Target should have attribute \"Position\" of type Vector3, Vector2, IntVector2 or IntVector3.\"",
+            "parameters": [
+                {
+                    "name": "control",
+                    "type": "vector3"
+                },
+                {
+                  "name": "attribute name",
+                  "type": "string",
+                  "default": "Position",
+                  "Inherited": true
+                }
+            ]
+        },
+        "JumpBy": {
+            "parent": "AttributeActionInstant",
+            "comment": "Move instantly by 3D offset action. Target should have attribute \"Position\" of type Vector3 or IntVector3.",
+            "parameters": [
+                {
+                    "name": "delta",
+                    "type": "vector3"
+                },
+                {
+                  "name": "attribute name",
+                  "type": "string",
+                  "default": "Position",
+                  "Inherited": true
+                }
+            ]
+        },
+        "ScaleBy": {
+            "parent": "AttributeAction",
+            "comment": "Scale by 3D offset action. Target should have attribute \"Scale\" of type Vector3.",
+            "parameters": [
+                {
+                    "name": "delta",
+                    "type": "vector3",
+                    "default": "1,1,1"
+                },
+                {
+                  "name": "attribute name",
+                  "type": "string",
+                  "default": "Scale",
+                  "Inherited": true
+                }
+            ]
+        },
+        "RotateBy": {
+            "parent": "AttributeAction",
+            "comment": "Rotate by 3D delta action. Target should have attribute \"Rotation\" of type Quaternion.",
+            "parameters": [
+                {
+                    "name": "delta",
+                    "type": "quaternion"
+                },
+                {
+                  "name": "attribute name",
+                  "type": "string",
+                  "default": "Rotation",
+                  "Inherited": true
+                }
+            ]
+        },
+        "RotateAround": {
+            "parent": "AttributeAction",
+            "comment": "Rotate around 3D point action. Target should have \"Position\" of type Vector3 and \"Rotation\" of type Quaternion attributes",
+            "parameters": [
+                {
+                    "name": "delta",
+                    "type": "quaternion"
+                },
+                {
+                    "name": "pivot",
+                    "type": "vector3"
+                }
+            ]
+        },
+        "RemoveSelf": {
+            "parent": "ActionInstant",
+            "comment": "Remove self from parent. The Target of the action should be either Node or UIElement."
+        },
+        "CloneMaterials": {
+            "parent": "ActionInstant",
+            "comment": "Clone all materials from the target attributes."
+        },
+        "Show": {
+            "parent": "AttributeActionInstant",
+            "comment": "Show target. The Target should have \"Is Visible\" attribute.",
+            "parameters": [
+              {
+                "name": "attribute name",
+                "type": "string",
+                "default": "Is Visible"
+              }
+            ]
+        },
+        "Hide": {
+            "parent": "AttributeActionInstant",
+            "comment": "Hide target. The Target should have \"Is Visible\" attribute.",
+            "parameters": [
+                {
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Is Visible"
+                }
+            ]
+        },
+        "Enable": {
+            "parent": "AttributeActionInstant",
+            "comment": "Show target. The Target should have \"Is Enabled\" attribute.",
+            "parameters": [
+              {
+                "name": "attribute name",
+                "type": "string",
+                "default": "Is Enabled"
+              }
+            ]
+        },
+        "Disable": {
+            "parent": "AttributeActionInstant",
+            "comment": "Hide target. The Target should have \"Is Enabled\" attribute.",
+            "parameters": [
+                {
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Is Enabled"
+                }
+            ]
+        },
+        "Blink": {
+            "parent": "AttributeAction",
+            "comment": "Blink target by toggling \"Is Enabled\" attribute. The Target should have \"Is Enabled\" attribute.",
+            "parameters": [
+                {
+                    "name": "num of blinks",
+                    "type": "unsigned"
+                },
+                {
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Is Enabled"
+                }
+            ]
+        },
+        "DelayTime": {
+            "parent": "FiniteTimeAction",
+            "comment": "Action that does nothing but waits."
+        },
+        "ActionEase": {
+            "parent": "DynamicAction",
+            "comment": "Base class for easing action",
+            "parameters": [
+                {
+                    "name": "inner action",
+                    "type": "FiniteTimeAction"
+                }
+            ]
+        },
+        "EaseElastic": {
+            "parent": "ActionEase",
+            "comment": "Base for elastic easing action",
+            "parameters": [
+                {
+                    "name": "period",
+                    "type": "float",
+                    "default": "0.3f"
+                }
+            ]
+        },
+        "EaseBackIn": {
+            "parent": "ActionEase",
+            "comment": "BackIn easing action",
+            "customReverse": true
+        },
+        "EaseBackOut": {
+            "parent": "ActionEase",
+            "comment": "BackOut easing action",
+            "customReverse": true
+        },
+        "EaseBackInOut": {
+            "parent": "ActionEase",
+            "comment": "BackInOut easing action"
+        },
+        "EaseBounceOut": {
+            "parent": "ActionEase",
+            "comment": "BounceOut easing action",
+            "customReverse": true
+        },
+        "EaseBounceIn": {
+            "parent": "ActionEase",
+            "comment": "BounceIn easing action",
+            "customReverse": true
+        },
+        "EaseBounceInOut": {
+            "parent": "ActionEase",
+            "comment": "BounceInOut easing action"
+        },
+        "EaseSineOut": {
+            "parent": "ActionEase",
+            "comment": "SineOut easing action",
+            "customReverse": true
+        },
+        "EaseSineIn": {
+            "parent": "ActionEase",
+            "comment": "SineIn easing action",
+            "customReverse": true
+        },
+        "EaseSineInOut": {
+            "parent": "ActionEase",
+            "comment": "SineInOut easing action"
+        },
+        "EaseExponentialOut": {
+            "parent": "ActionEase",
+            "comment": "ExponentialOut easing action",
+            "customReverse": true
+        },
+        "EaseExponentialIn": {
+            "parent": "ActionEase",
+            "comment": "ExponentialIn easing action",
+            "customReverse": true
+        },
+        "EaseExponentialInOut": {
+            "parent": "ActionEase",
+            "comment": "ExponentialInOut easing action"
+        },
+        "EaseElasticIn": {
+            "parent": "EaseElastic",
+            "comment": "ElasticIn easing action",
+            "customReverse": true
+        },
+        "EaseElasticOut": {
+            "parent": "EaseElastic",
+            "comment": "ElasticOut easing action",
+            "customReverse": true 
+        },
+        "EaseElasticInOut": {
+            "parent": "EaseElastic",
+            "comment": "ElasticInOut easing action"
+        }
+    }
+}

@@ -28,7 +28,7 @@
 #include <Urho3D/Math/EaseMath.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Actions/ActionManager.h>
-#include <Urho3D/Actions/Move.h>
+#include <Urho3D/Actions/Actions.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/UI/UIElement.h>
 
@@ -186,7 +186,7 @@ TEST_CASE("MoveBy2D tweening")
 
     auto moveBy = MakeShared<Actions::MoveBy>(context);
     moveBy->SetDuration(2.0f);
-    moveBy->SetPositionDelta(Vector3(12, 0, 0));
+    moveBy->SetDelta(Vector3(12, 0, 0));
     auto uiElement = MakeShared<UIElement>(context);
 
     // Initial state - no actions added
@@ -529,7 +529,7 @@ TEST_CASE("Serialize Action")
     auto expected = static_cast<Actions::MoveBy*>(action->GetAction());
     auto actual = static_cast<Actions::MoveBy*>(action2->GetAction());
     CHECK(Equals(expected->GetDuration(), actual->GetDuration()));
-    CHECK(expected->GetPositionDelta().Equals(actual->GetPositionDelta()));
+    CHECK(expected->GetDelta().Equals(actual->GetDelta()));
 }
 
 TEST_CASE("Cancel Action")

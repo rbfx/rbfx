@@ -319,6 +319,15 @@ public:
         return *this;
     }
 
+    /// Cast to Vector2 (required by function templates).
+    explicit operator Vector2() const { return {x_, y_}; }
+
+    /// Cast to IntVector3 (required by function templates).
+    explicit operator IntVector3() const {return {static_cast<int>(x_), static_cast<int>(y_), static_cast<int>(z_)}; }
+
+    /// Cast to Vector2 (required by function templates).
+    explicit operator IntVector2() const {return {static_cast<int>(x_), static_cast<int>(y_) }; }
+
     /// Normalize to unit length.
     void Normalize()
     {

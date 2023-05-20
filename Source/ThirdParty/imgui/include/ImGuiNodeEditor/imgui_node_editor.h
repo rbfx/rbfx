@@ -364,7 +364,7 @@ IMGUI_API bool HasAnyLinks(NodeId nodeId); // Returns true if node has any link 
 IMGUI_API bool HasAnyLinks(PinId pinId); // Return true if pin has any link connected
 IMGUI_API int BreakLinks(NodeId nodeId); // Break all links connected to this node
 IMGUI_API int BreakLinks(PinId pinId); // Break all links connected to this pin
-IMGUI_API 
+
 IMGUI_API void NavigateToContent(float duration = -1);
 IMGUI_API void NavigateToSelection(bool zoomIn = false, float duration = -1);
 

@@ -27,7 +27,6 @@
 #include "../Core/Context.h"
 #include "../Resource/Graph.h"
 #include "Urho3D/Resource/GraphNode.h"
-// #include "../Resource/XMLFile.h"
 
 namespace Urho3D
 {

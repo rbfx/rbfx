@@ -86,20 +86,29 @@ void FiniteTimeAction::SetDuration(float duration)
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> FiniteTimeAction::Reverse() const
 {
-    return MakeShared<NoAction>(context_, const_cast<FiniteTimeAction*>(this));
+    auto action = MakeShared<NoAction>(context_, const_cast<FiniteTimeAction*>(this));
+    ReverseImpl(action);
+    return action;
+}
+
+/// Populate fields in reversed action.
+void FiniteTimeAction::ReverseImpl(FiniteTimeAction* action) const
+{
+    action->SetDuration(GetDuration());
 }
 
 GraphNode* FiniteTimeAction::ToGraphNode(Graph* graph) const
 {
-    auto* node = BaseAction::ToGraphNode(graph);
-    GraphInPin* pin = node->GetOrAddInput("duration");
-    pin->SetValue(duration_);
-    return node;
+    return BaseAction::ToGraphNode(graph)->WithInput("duration", duration_);
 }
 
-void FiniteTimeAction::FromGraphNode(GraphNode* node) const
+void FiniteTimeAction::FromGraphNode(GraphNode* node)
 {
     BaseAction::FromGraphNode(node);
+    if (auto duration = node->GetInput("duration"))
+    {
+        duration_ = duration.GetPin()->GetValue().Get<float>();
+    }
 }
 
 /// Construct.
@@ -119,7 +128,7 @@ GraphNode* DynamicAction::ToGraphNode(Graph* graph) const
     return BaseAction::ToGraphNode(graph);
 }
 
-void DynamicAction::FromGraphNode(GraphNode* node) const
+void DynamicAction::FromGraphNode(GraphNode* node)
 {
     BaseAction::FromGraphNode(node);
 }

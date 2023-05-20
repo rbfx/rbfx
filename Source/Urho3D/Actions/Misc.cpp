@@ -21,8 +21,7 @@
 // THE SOFTWARE.
 //
 
-#include "Misc.h"
-
+#include "Actions.h"
 #include "../Core/Context.h"
 #include "../IO/ArchiveSerializationBasic.h"
 #include "../IO/Log.h"
@@ -35,161 +34,10 @@
 namespace Urho3D { namespace Actions
 {
 
-namespace
+void Blink::ReverseImpl(FiniteTimeAction* action) const
 {
-class RemoveSelfState : public FiniteTimeActionState
-{
-public:
-    RemoveSelfState(RemoveSelf* action, Object* target)
-        : FiniteTimeActionState(action, target)
-    {
-    }
-
-    void Update(float time) override
-    {
-        const auto target = GetTarget();
-        if (!target)
-        {
-            return;
-        }
-        if (Node* node = target->Cast<Node>())
-        {
-            node->Remove();
-        }
-        else if (UIElement* element = target->Cast<UIElement>())
-        {
-            element->Remove();
-        }
-    }
-};
-
-class CloneMaterialsState : public FiniteTimeActionState
-{
-public:
-    CloneMaterialsState(CloneMaterials* action, Object* target)
-        : FiniteTimeActionState(action, target)
-    {
-    }
-
-    void Update(float time) override
-    {
-        if (!triggered_)
-        {
-            triggered_ = true;
-            auto* target = dynamic_cast<StaticModel*>(GetTarget());
-            if (!target)
-            {
-                URHO3D_LOGERROR("CloneMaterials action is not running on StaticModel");
-                return;
-            }
-            for (unsigned i = 0; i < target->GetNumGeometries(); ++i)
-            {
-                target->SetMaterial(i, target->GetMaterial(i)->Clone());
-            }
-        }
-    }
-private:
-    bool triggered_{};
-};
-
-} // namespace
-
-/// Construct.
-RemoveSelf::RemoveSelf(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> RemoveSelf::StartAction(Object* target) { return MakeShared<RemoveSelfState>(this, target); }
-
-/// Construct.
-CloneMaterials::CloneMaterials(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> CloneMaterials::StartAction(Object* target)
-{
-    return MakeShared<CloneMaterialsState>(this, target);
-}
-
-/// Construct.
-Hide::Hide(Context* context)
-    : BaseClassName(context, ISVISIBLE_ATTRIBUTE)
-{
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> Hide::StartAction(Object* target)
-{
-    return MakeShared<SetAttributeState>(this, target, GetAttribute(target), false);
-}
-
-/// Construct.
-Show::Show(Context* context)
-    : BaseClassName(context, ISVISIBLE_ATTRIBUTE)
-{
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> Show::StartAction(Object* target)
-{
-    return MakeShared<SetAttributeState>(this, target, GetAttribute(target), true);
-}
-
-/// Construct.
-Disable::Disable(Context* context)
-    : BaseClassName(context, ISENABLED_ATTRIBUTE)
-{
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> Disable::StartAction(Object* target)
-{
-    return MakeShared<SetAttributeState>(this, target, GetAttribute(target), false);
-}
-
-/// Construct.
-Enable::Enable(Context* context)
-    : BaseClassName(context, ISENABLED_ATTRIBUTE)
-{
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> Enable::StartAction(Object* target)
-{
-    return MakeShared<SetAttributeState>(this, target, GetAttribute(target), true);
-}
-
-/// Construct.
-Blink::Blink(Context* context)
-    : BaseClassName(context, ISENABLED_ATTRIBUTE)
-{
-}
-
-/// Serialize content from/to archive. May throw ArchiveException.
-void Blink::SerializeInBlock(Archive& archive)
-{
-    BaseClassName::SerializeInBlock(archive);
-    SerializeOptionalValue(archive, "times", times_, 1);
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> Blink::StartAction(Object* target) { return MakeShared<AttributeBlinkState>(this, target, GetAttribute(target), false, true, times_); }
-
-
-/// Construct.
-DelayTime::DelayTime(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> DelayTime::StartAction(Object* target)
-{
-    return MakeShared<FiniteTimeActionState>(this, target);
+    BaseClassName::ReverseImpl(action);
+    static_cast<Blink*>(action)->SetNumOfBlinks(GetNumOfBlinks());
 }
 
 } // namespace Actions

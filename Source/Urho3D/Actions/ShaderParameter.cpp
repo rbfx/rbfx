@@ -28,6 +28,7 @@
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/AnimatedModel.h"
 #include "../Scene/Node.h"
+#include "Urho3D/Resource/GraphNode.h"
 
 namespace Urho3D
 {
@@ -136,6 +137,20 @@ void ShaderParameterAction::SerializeInBlock(Archive& archive)
     SerializeValue(archive, "name", name_);
 }
 
+GraphNode* ShaderParameterAction::ToGraphNode(Graph* graph) const
+{
+    return BaseClassName::ToGraphNode(graph)->WithInput("name", name_);
+}
+
+void ShaderParameterAction::FromGraphNode(GraphNode* node)
+{
+    FiniteTimeAction::FromGraphNode(node);
+    if (const auto name = node->GetInput("name"))
+    {
+        name_ = name.GetPin()->GetValue().Get<ea::string>();
+    }
+}
+
 
 /// --------------------------------------------------
 /// Construct.
@@ -146,6 +161,20 @@ ShaderParameterTo::ShaderParameterTo(Context* context)
 
 // Get "to" value.
 void ShaderParameterTo::SetTo(const Variant& variant) { to_ = variant; }
+
+GraphNode* ShaderParameterTo::ToGraphNode(Graph* graph) const
+{
+    return BaseClassName::ToGraphNode(graph)->WithInput("to", to_);
+}
+
+void ShaderParameterTo::FromGraphNode(GraphNode* node)
+{
+    ShaderParameterAction::FromGraphNode(node);
+    if (const auto to = node->GetInput("to"))
+    {
+        to_ = to.GetPin()->GetValue();
+    }
+}
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void ShaderParameterTo::SerializeInBlock(Archive& archive)
@@ -179,6 +208,20 @@ SharedPtr<FiniteTimeAction> ShaderParameterFromTo::Reverse() const
     result->SetFrom(GetTo());
     result->SetTo(from_);
     return result;
+}
+
+GraphNode* ShaderParameterFromTo::ToGraphNode(Graph* graph) const
+{
+    return BaseClassName::ToGraphNode(graph)->WithInput("from", from_);
+}
+
+void ShaderParameterFromTo::FromGraphNode(GraphNode* node)
+{
+    ShaderParameterTo::FromGraphNode(node);
+    if (const auto from = node->GetInput("from"))
+    {
+        from_ = from.GetPin()->GetValue();
+    }
 }
 
 /// Serialize content from/to archive. May throw ArchiveException.

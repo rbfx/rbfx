@@ -41,8 +41,7 @@ ActionInstant::ActionInstant(Context* context)
 /// Serialize content from/to archive. May throw ArchiveException.
 void ActionInstant::SerializeInBlock(Archive& archive)
 {
-    // Skip FiniteTimeAction::SerializeInBlock because duration is always 0
-    BaseAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
 }
 
 /// Get action duration.

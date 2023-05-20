@@ -46,6 +46,11 @@ public:
         /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
 
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+
 private:
     ea::string name_;
 };
@@ -65,6 +70,11 @@ public:
 
     // Get "to" value.
     const Variant& GetTo() const { return to_; }
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
 
 protected:
     /// Serialize content from/to archive. May throw ArchiveException.
@@ -94,6 +104,11 @@ public:
 
     /// Create reversed action.
     SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
 
 protected:
     /// Serialize content from/to archive. May throw ArchiveException.

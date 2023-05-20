@@ -99,7 +99,7 @@ SharedPtr<Actions::BaseAction> BaseAction::MakeActionFromGraphNode(GraphNode* gr
     return action;
 }
 
-void BaseAction::FromGraphNode(GraphNode* node) const
+void BaseAction::FromGraphNode(GraphNode* node)
 {
 }
 

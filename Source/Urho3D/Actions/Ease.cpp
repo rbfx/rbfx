@@ -21,7 +21,7 @@
 // THE SOFTWARE.
 //
 
-#include "Ease.h"
+#include "Actions.h"
 
 #include "../Core/Context.h"
 #include "../IO/ArchiveSerializationBasic.h"
@@ -52,7 +52,7 @@ public:
     {
         if (innerAction_)
         {
-            innerAction_->Update(action_->Ease(dt));
+            //innerAction_->Update(action_->Ease(dt));
         }
     }
 
@@ -62,12 +62,6 @@ private:
 };
 
 } // namespace
-
-/// Construct.
-ActionEase::ActionEase(Context* context)
-    : BaseClassName(context)
-{
-}
 
 /// Get action duration.
 float ActionEase::GetDuration() const
@@ -79,336 +73,96 @@ float ActionEase::GetDuration() const
     return ea::numeric_limits<float>::epsilon();
 }
 
-/// Set inner action.
-void ActionEase::SetInnerAction(FiniteTimeAction* action)
+void ActionEase::ReverseImpl(FiniteTimeAction* action) const
 {
-    innerAction_ = GetOrDefault(action);
-    SetDuration(innerAction_->GetDuration());
+    BaseClassName::ReverseImpl(action);
+    static_cast<ActionEase*>(action)->SetInnerAction(innerAction_->Reverse());
+}
+
+/// Populate fields in reversed action.
+void EaseElastic::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
 }
 
 /// Create reversed action.
-SharedPtr<FiniteTimeAction> ActionEase::Reverse() const
-{
-    auto result = MakeShared<ActionEase>(context_);
-    if (innerAction_)
-    {
-        result->SetInnerAction(innerAction_->Reverse());
-    }
-    return result;
-}
-
-/// Apply easing function to the time argument.
-float ActionEase::Ease(float time) const { return time; }
-
-/// Serialize content from/to archive. May throw ArchiveException.
-void ActionEase::SerializeInBlock(Archive& archive)
-{
-    BaseClassName::SerializeInBlock(archive);
-    SerializeValue(archive, "innerAction", innerAction_);
-}
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseElastic::EaseElastic(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Serialize content from/to archive. May throw ArchiveException.
-void EaseElastic::SerializeInBlock(Archive& archive)
-{
-    // Skipping FiniteTimeAction::SerializeInBlock on purpose
-    BaseClassName::SerializeInBlock(archive);
-    SerializeOptionalValue(archive, "period_", period_, 0.3f);
-}
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseBackIn::EaseBackIn(Context* context)
-    : BaseClassName(context)
-{
-    SetInnerAction(nullptr);
-}
-
 SharedPtr<FiniteTimeAction> EaseBackIn::Reverse() const
 {
-    auto result = MakeShared<EaseBackOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseBackIn::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseBackOut::EaseBackOut(Context* context)
-    : BaseClassName(context)
-{
+    auto action = MakeShared<EaseBackOut>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> EaseBackOut::Reverse() const
 {
-    auto result = MakeShared<EaseBackIn>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseBackOut::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseElasticIn::EaseElasticIn(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseElasticIn::Reverse() const
-{
-    auto result = MakeShared<EaseElasticOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    result->SetPeriod(GetPeriod());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseElasticIn::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseElasticInOut::EaseElasticInOut(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseElasticInOut::Reverse() const
-{
-    auto result = MakeShared<EaseElasticInOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    result->SetPeriod(GetPeriod());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseElasticInOut::StartAction(Object* target)
-{
-    return MakeShared<ActionEaseState>(this, target);
-}
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseElasticOut::EaseElasticOut(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseElasticOut::Reverse() const
-{
-    auto result = MakeShared<EaseElasticIn>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    result->SetPeriod(GetPeriod());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseElasticOut::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseBackInOut::EaseBackInOut(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseBackInOut::Reverse() const
-{
-    auto result = MakeShared<EaseBackInOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseBackInOut::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseBounceOut::EaseBounceOut(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseBounceOut::Reverse() const
-{
-    auto result = MakeShared<EaseBounceIn>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseBounceOut::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseBounceIn::EaseBounceIn(Context* context)
-    : BaseClassName(context)
-{
+    auto action = MakeShared<EaseBackIn>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> EaseBounceIn::Reverse() const
 {
-    auto result = MakeShared<EaseBounceOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseBounceIn::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseBounceInOut::EaseBounceInOut(Context* context)
-    : BaseClassName(context)
-{
+    auto action = MakeShared<EaseBounceOut>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 /// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseBounceInOut::Reverse() const
+SharedPtr<FiniteTimeAction> EaseBounceOut::Reverse() const
 {
-    auto result = MakeShared<EaseBounceInOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseBounceInOut::StartAction(Object* target)
-{
-    return MakeShared<ActionEaseState>(this, target);
-}
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseSineOut::EaseSineOut(Context* context)
-    : BaseClassName(context)
-{
-}
-
-/// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseSineOut::Reverse() const
-{
-    auto result = MakeShared<EaseSineIn>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseSineOut::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseSineIn::EaseSineIn(Context* context)
-    : BaseClassName(context)
-{
+    auto action = MakeShared<EaseBounceIn>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> EaseSineIn::Reverse() const
 {
-    auto result = MakeShared<EaseSineOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseSineIn::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseSineInOut::EaseSineInOut(Context* context)
-    : BaseClassName(context)
-{
+    auto action = MakeShared<EaseSineOut>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 /// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseSineInOut::Reverse() const
+SharedPtr<FiniteTimeAction> EaseSineOut::Reverse() const
 {
-    auto result = MakeShared<EaseSineInOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseSineInOut::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseExponentialOut::EaseExponentialOut(Context* context)
-    : BaseClassName(context)
-{
+    auto action = MakeShared<EaseSineIn>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 /// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseExponentialOut::Reverse() const
+SharedPtr<FiniteTimeAction> EaseElasticIn::Reverse() const
 {
-    auto result = MakeShared<EaseExponentialIn>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
+    auto action = MakeShared<EaseElasticOut>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseExponentialOut::StartAction(Object* target)
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> EaseElasticOut::Reverse() const
 {
-    return MakeShared<ActionEaseState>(this, target);
-}
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseExponentialIn::EaseExponentialIn(Context* context)
-    : BaseClassName(context)
-{
+    auto action = MakeShared<EaseElasticIn>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> EaseExponentialIn::Reverse() const
 {
-    auto result = MakeShared<EaseExponentialOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseExponentialIn::StartAction(Object* target)
-{
-    return MakeShared<ActionEaseState>(this, target);
-}
-
-/// -------------------------------------------------------------------
-/// Construct.
-EaseExponentialInOut::EaseExponentialInOut(Context* context)
-    : BaseClassName(context)
-{
+    auto action = MakeShared<EaseExponentialOut>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 /// Create reversed action.
-SharedPtr<FiniteTimeAction> EaseExponentialInOut::Reverse() const
+SharedPtr<FiniteTimeAction> EaseExponentialOut::Reverse() const
 {
-    auto result = MakeShared<EaseExponentialInOut>(context_);
-    result->SetInnerAction(GetInnerAction()->Reverse());
-    return result;
-}
-
-/// Create new action state from the action.
-SharedPtr<ActionState> EaseExponentialInOut::StartAction(Object* target)
-{
-    return MakeShared<ActionEaseState>(this, target);
+    auto action = MakeShared<EaseExponentialIn>(context_);
+    ReverseImpl(action);
+    return action;
 }
 
 } // namespace Actions

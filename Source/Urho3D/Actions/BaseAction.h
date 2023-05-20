@@ -55,7 +55,7 @@ public:
     /// Create GraphNode from the action. Required for action editor.
     virtual GraphNode* ToGraphNode(Graph* graph) const;
     /// Initialize action from GraphNode. Required for action editor.
-    virtual void FromGraphNode(GraphNode* node) const;
+    virtual void FromGraphNode(GraphNode* node);
 
     static SharedPtr<BaseAction> MakeActionFromGraphNode(GraphNode* graphNode);
 

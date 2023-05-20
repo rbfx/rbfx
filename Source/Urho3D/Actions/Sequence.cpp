@@ -219,6 +219,21 @@ GraphNode* Sequence::ToGraphNode(Graph* graph) const
     return node;
 }
 
+void Sequence::FromGraphNode(GraphNode* node)
+{
+    DynamicAction::FromGraphNode(node);
+    if (const auto first = node->GetExit("first"))
+    {
+        const auto internalAction = MakeActionFromGraphNode(first.GetConnectedPin<GraphEnterPin>().GetNode());
+        SetFirstAction(dynamic_cast<FiniteTimeAction*>(internalAction.Get()));
+    }
+    if (const auto second = node->GetExit("second"))
+    {
+        const auto internalAction = MakeActionFromGraphNode(second.GetConnectedPin<GraphEnterPin>().GetNode());
+        SetSecondAction(dynamic_cast<FiniteTimeAction*>(internalAction.Get()));
+    }
+}
+
 /// Create new action state from the action.
 SharedPtr<ActionState> Sequence::StartAction(Object* target) { return MakeShared<SequenceState>(this, target); }
 

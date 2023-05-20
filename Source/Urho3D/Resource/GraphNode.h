@@ -160,6 +160,9 @@ public:
     /// Get or add exit pin.
     GraphPinRef<GraphExitPin> GetOrAddExit(const ea::string_view name);
 
+    /// Add exit pin.
+    GraphNode* WithExit(const ea::string_view name);
+
     /// Get number of exit pins.
     unsigned GetNumExits() const { return exitPins_.size(); }
 

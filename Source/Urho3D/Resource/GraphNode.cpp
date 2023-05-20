@@ -214,6 +214,12 @@ GraphPinRef<GraphExitPin> GraphNode::GetOrAddExit(const ea::string_view name)
     return GraphPinRef(this, &MakeMapHelper(exitPins_).GetOrAdd(name));
 }
 
+GraphNode* GraphNode::WithExit(const ea::string_view name)
+{
+    GetOrAddExit(name);
+    return this;
+}
+
 GraphPinRef<GraphEnterPin> GraphNode::GetOrAddEnter(const ea::string_view name)
 {
     return GraphPinRef(this, &MakeMapHelper(enterPins_).GetOrAdd(name));

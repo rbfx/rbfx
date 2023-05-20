@@ -22,6 +22,8 @@
 
 #include "AttributeActionState.h"
 
+#include "AttributeAction.h"
+#include "FiniteTimeAction.h"
 #include "../Core/Context.h"
 #include "../Core/Object.h"
 #include "../IO/Log.h"
@@ -32,10 +34,15 @@ namespace Urho3D
 namespace Actions
 {
 /// Construct.
-AttributeActionState::AttributeActionState(
-    FiniteTimeAction* action, Object* target, AttributeInfo* attribute)
+AttributeActionState::AttributeActionState(AttributeAction* action, Object* target)
     : FiniteTimeActionState(action, target)
-    , attribute_(attribute)
+    , attribute_(action->GetAttribute(target))
+{
+}
+
+AttributeActionState::AttributeActionState(AttributeActionInstant* action, Object* target)
+    : FiniteTimeActionState(action, target)
+    , attribute_(action->GetAttribute(target))
 {
 }
 
@@ -74,11 +81,15 @@ void AttributeActionState::Update(float dt)
     Set(dst);
 }
 
-SetAttributeState::SetAttributeState(
-    FiniteTimeAction* action, Object* target, AttributeInfo* attribute, const Variant& value)
-    : AttributeActionState(action, target, attribute)
+SetAttributeState::SetAttributeState(AttributeAction* action, Object* target, const Variant& value)
+    : AttributeActionState(action, target)
     , value_(value)
-    , triggered_(false)
+{
+}
+
+SetAttributeState::SetAttributeState(AttributeActionInstant* action, Object* target, const Variant& value)
+    : AttributeActionState(action, target)
+    , value_(value)
 {
 }
 
@@ -92,10 +103,10 @@ void SetAttributeState::Update(float time, Variant& var)
 }
 
 AttributeBlinkState::AttributeBlinkState(
-    FiniteTimeAction* action, Object* target, AttributeInfo* attribute,
+    AttributeAction* action, Object* target,
     Variant from,
     Variant to, unsigned times)
-    : AttributeActionState(action, target, attribute)
+    : AttributeActionState(action, target)
     , from_(from)
     , to_(to)
 {

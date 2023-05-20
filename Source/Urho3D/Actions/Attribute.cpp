@@ -42,8 +42,8 @@ class AttributeFromToState : public AttributeActionState
     Variant to_;
 
 public:
-    AttributeFromToState(AttributeFromTo* action, Object* target, AttributeInfo* attribute)
-        : AttributeActionState(action, target, attribute)
+    AttributeFromToState(AttributeFromTo* action, Object* target)
+        : AttributeActionState(action, target)
         , from_(action->GetFrom())
         , to_(action->GetTo())
     {
@@ -58,8 +58,8 @@ class AttributeToState : public AttributeActionState
     Variant to_;
 
 public:
-    AttributeToState(AttributeTo* action, Object* target, AttributeInfo* attribute)
-        : AttributeActionState(action, target, attribute)
+    AttributeToState(AttributeTo* action, Object* target)
+        : AttributeActionState(action, target)
         , to_(action->GetTo())
     {
         if (attribute_)
@@ -106,7 +106,7 @@ void AttributeFromTo::SerializeInBlock(Archive& archive)
 /// Create new action state from the action.
 SharedPtr<ActionState> AttributeFromTo::StartAction(Object* target)
 {
-    return MakeShared<AttributeFromToState>(this, target, GetAttribute(target));
+    return MakeShared<AttributeFromToState>(this, target);
 }
 
 /// Construct.
@@ -128,7 +128,7 @@ void AttributeTo::SerializeInBlock(Archive& archive)
 /// Create new action state from the action.
 SharedPtr<ActionState> AttributeTo::StartAction(Object* target)
 {
-    return MakeShared<AttributeToState>(this, target, GetAttribute(target));
+    return MakeShared<AttributeToState>(this, target);
 }
 
 /// Construct.
@@ -165,7 +165,7 @@ void AttributeBlink::SerializeInBlock(Archive& archive)
 /// Create new action state from the action.
 SharedPtr<ActionState> AttributeBlink::StartAction(Object* target)
 {
-    return MakeShared<AttributeBlinkState>(this, target, GetAttribute(target), from_, to_, times_);
+    return MakeShared<AttributeBlinkState>(this, target, from_, to_, times_);
 }
 
 } // namespace Actions

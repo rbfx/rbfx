@@ -23,10 +23,8 @@
 #include "ActionBuilder.h"
 
 #include "ActionManager.h"
+#include "Actions.h"
 #include "Attribute.h"
-#include "Ease.h"
-#include "Misc.h"
-#include "Move.h"
 #include "Parallel.h"
 #include "Repeat.h"
 #include "Sequence.h"
@@ -94,7 +92,7 @@ ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector3& offset, ea::
     const auto action = MakeShared<Actions::MoveBy>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetPositionDelta(offset);
+    action->SetDelta(offset);
     return Then(action);
 }
 
@@ -103,7 +101,7 @@ ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector2& offset, ea::
     const auto action = MakeShared<Actions::MoveBy>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetPositionDelta(offset.ToVector3());
+    action->SetDelta(offset.ToVector3());
     return Then(action);
 }
 
@@ -114,8 +112,8 @@ ActionBuilder& ActionBuilder::MoveByQuadratic(
     const auto action = MakeShared<Actions::MoveByQuadratic>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetControlDelta(controlOffset);
-    action->SetPositionDelta(targetOffset);
+    action->SetControl(controlOffset);
+    action->SetDelta(targetOffset);
     return Then(action);
 }
 
@@ -125,8 +123,8 @@ ActionBuilder& ActionBuilder::MoveByQuadratic(
     const auto action = MakeShared<Actions::MoveByQuadratic>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetControlDelta(controlOffset.ToVector3());
-    action->SetPositionDelta(targetOffset.ToVector3());
+    action->SetControl(controlOffset.ToVector3());
+    action->SetDelta(targetOffset.ToVector3());
     return Then(action);
 }
 
@@ -134,7 +132,7 @@ ActionBuilder& ActionBuilder::JumpBy(const Vector3& offset, ea::string_view attr
 {
     const auto action = MakeShared<Actions::JumpBy>(context_);
     action->SetAttributeName(attributeName);
-    action->SetPositionDelta(offset);
+    action->SetDelta(offset);
     return Then(action);
 }
 
@@ -142,7 +140,7 @@ ActionBuilder& ActionBuilder::JumpBy(const Vector2& offset, ea::string_view attr
 {
     const auto action = MakeShared<Actions::JumpBy>(context_);
     action->SetAttributeName(attributeName);
-    action->SetPositionDelta(offset.ToVector3());
+    action->SetDelta(offset.ToVector3());
     return Then(action);
 }
 
@@ -152,7 +150,7 @@ ActionBuilder& ActionBuilder::ScaleBy(float duration, const Vector3& delta, ea::
     const auto action = MakeShared<Actions::ScaleBy>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetScaleDelta(delta);
+    action->SetDelta(delta);
     return Then(action);
 }
 
@@ -168,7 +166,7 @@ ActionBuilder& ActionBuilder::RotateBy(float duration, const Quaternion& delta, 
     const auto action = MakeShared<Actions::RotateBy>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetRotationDelta(delta);
+    action->SetDelta(delta);
     return Then(action);
 }
 
@@ -177,7 +175,7 @@ ActionBuilder& ActionBuilder::RotateAround(float duration, const Vector3& pivot,
 {
     const auto action = MakeShared<Actions::RotateAround>(context_);
     action->SetDuration(duration);
-    action->SetRotationDelta(delta);
+    action->SetDelta(delta);
     action->SetPivot(pivot);
     return Then(action);
 }

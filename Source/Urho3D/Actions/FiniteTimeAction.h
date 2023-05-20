@@ -55,7 +55,11 @@ public:
     /// Create GraphNode from the action. Required for action editor.
     GraphNode* ToGraphNode(Graph* graph) const override;
     /// Initialize action from GraphNode. Required for action editor.
-    void FromGraphNode(GraphNode* node) const override;
+    void FromGraphNode(GraphNode* node) override;
+
+protected:
+    /// Populate fields in reversed action.
+    virtual void ReverseImpl(FiniteTimeAction*) const;
 
 private:
     float duration_{ea::numeric_limits<float>::epsilon()};
@@ -79,7 +83,7 @@ public:
     /// Create GraphNode from the action. Required for action editor.
     GraphNode* ToGraphNode(Graph* graph) const override;
     /// Initialize action from GraphNode. Required for action editor.
-    void FromGraphNode(GraphNode* node) const override;
+    void FromGraphNode(GraphNode* node) override;
 };
 
 } // namespace Actions
