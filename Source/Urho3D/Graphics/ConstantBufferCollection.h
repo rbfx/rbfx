@@ -91,7 +91,8 @@ public:
     /// Return best size of GPU buffer. Round up to next power of two.
     unsigned GetGPUBufferSize(unsigned index) const
     {
-        return ea::max(256u, NextPowerOfTwo(GetBufferSize(index)));
+        // TODO(diligent): Revisit
+        return GetBufferSize(index) < 512 ? 512 : bufferSize_;
     }
 
     /// Return buffer data.

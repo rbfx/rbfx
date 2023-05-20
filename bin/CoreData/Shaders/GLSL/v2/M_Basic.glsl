@@ -45,7 +45,7 @@ void main()
 
     #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
         #ifdef ALPHAMAP
-            half alphaInput = DecodeAlphaMap(texture2D(sDiffMap, vTexCoord));
+            half alphaInput = texture2D(sDiffMap, vTexCoord).r;
             diffColor.a *= alphaInput;
         #else
             half4 diffInput = texture2D(sDiffMap, vTexCoord);

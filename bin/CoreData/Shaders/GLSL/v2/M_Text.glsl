@@ -83,7 +83,7 @@ void main()
     finalColor.a = mainWeight;
 #else
     #ifdef ALPHAMAP
-        finalColor.a *= DecodeAlphaMap(texture2D(sDiffMap, vTexCoord));
+        finalColor.a *= texture2D(sDiffMap, vTexCoord).r;
     #else
         finalColor *= texture2D(sDiffMap, vTexCoord);
     #endif

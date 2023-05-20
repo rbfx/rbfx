@@ -2138,8 +2138,9 @@ PipelineStateOutputDesc Graphics::GetCurrentOutputDesc() const
 
 unsigned Graphics::GetAlphaFormat()
 {
+    // TODO(diligent): Revisit
     using namespace Diligent;
-    return TEX_FORMAT_A8_UNORM;
+    return TEX_FORMAT_R8_UNORM;
 }
 
 unsigned Graphics::GetLuminanceFormat()

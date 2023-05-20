@@ -74,7 +74,7 @@ void DrawCommandQueue::Execute()
     uniformBuffers.resize(numUniformBuffers);
     for (unsigned i = 0; i < numUniformBuffers; ++i)
     {
-        const unsigned size = constantBuffers_.collection_.GetBufferSize(i);
+        const unsigned size = constantBuffers_.collection_.GetGPUBufferSize(i);
         ConstantBuffer* uniformBuffer = graphics_->GetOrCreateConstantBuffer(VS, i, size);
         uniformBuffer->Update(constantBuffers_.collection_.GetBufferData(i), size);
         uniformBuffers[i] = uniformBuffer->GetGPUObject().RawPtr();

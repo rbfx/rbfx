@@ -39,7 +39,7 @@ using VertexShaderAttributeVector = ea::fixed_vector<VertexShaderAttribute, Dili
 /// Description of immutable texture sampler bound to the pipeline.
 struct URHO3D_API SamplerStateDesc
 {
-    Color borderColor_{};
+    Color borderColor_{0.0f, 0.0f, 0.0f, 0.0f};
     TextureFilterMode filterMode_{FILTER_DEFAULT};
     unsigned char anisotropy_{};
     bool shadowCompare_{};

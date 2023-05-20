@@ -58,15 +58,6 @@ SAMPLER(15, samplerCube sZoneCubeMap)
     #endif
 #endif
 
-/// Extract alpha from alpha-only texture.
-/// GL3 doesn't support alpha format and used R8 instead.
-/// GL2 and DX11 are both ok with alpha-only format.
-#if defined(GL3) && !defined(D3D11)
-    #define DecodeAlphaMap(diffuseInput) diffuseInput.r
-#else
-    #define DecodeAlphaMap(diffuseInput) diffuseInput.a
-#endif
-
 /// Convert sampled value from sNormalMap to normal in tangent space.
 half3 DecodeNormal(half4 normalInput)
 {
