@@ -34,7 +34,15 @@
 #include "../SystemUI/ImGui.h"
 #include "../SystemUI/SystemUIEvents.h"
 
+#include <EASTL/unique_ptr.h>
 #include <EASTL/unordered_map.h>
+
+namespace Diligent
+{
+
+class ImGuiDiligentRenderer;
+
+}
 
 namespace Urho3D
 {
@@ -81,11 +89,9 @@ public:
     bool GetPassThroughEvents() const { return passThroughEvents_; }
 
 protected:
-    VertexBuffer vertexBuffer_;
-    IndexBuffer indexBuffer_;
     ea::vector<SharedPtr<Texture2D>> fontTextures_;
     ea::vector<float> fontSizes_;
-    ImGuiContext* imContext_;
+    ImGuiContext* imContext_{};
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
     /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
     bool passThroughEvents_ = false;
@@ -106,6 +112,8 @@ protected:
     Vector2 relativeMouseMove_;
     bool revertMousePositionOnDisable_{};
     ImVec2 revertMousePosition_;
+
+    ea::unique_ptr<Diligent::ImGuiDiligentRenderer> impl_;
 };
 
 }

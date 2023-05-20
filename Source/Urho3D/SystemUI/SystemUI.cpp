@@ -39,6 +39,7 @@
 #include "../Input/InputEvents.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/Console.h"
+#include "Urho3D/SystemUI/3rdParty/ImGuiDiligentRenderer.hpp"
 
 #include <ImGui/imgui_freetype.h>
 #include <ImGui/imgui_internal.h>
@@ -47,19 +48,12 @@
 
 #define IMGUI_IMPL_API IMGUI_API
 #include <imgui_impl_sdl.h>
-#if defined(URHO3D_OPENGL)
-#include <imgui_impl_opengl3.h>
-#elif defined(URHO3D_D3D11)
-#include <imgui_impl_dx11.h>
-#endif
 
 namespace Urho3D
 {
 
 SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     : Object(context)
-    , vertexBuffer_(context)
-    , indexBuffer_(context)
 {
     imContext_ = ui::CreateContext();
 
@@ -91,28 +85,46 @@ SystemUI::~SystemUI()
 
 void SystemUI::PlatformInitialize()
 {
+    static const unsigned defaultNumVertices = 16 * 1024;
+    static const unsigned defaultNumIndices = 32 * 1024;
+
     Graphics* graphics = GetSubsystem<Graphics>();
     ImGuiIO& io = ui::GetIO();
     io.DisplaySize = { static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight()) };
-#if URHO3D_OPENGL
-    ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(graphics->GetSDLWindow()), graphics->GetImpl()->GetGLContext());
-#else
-    ImGui_ImplSDL2_InitForD3D(static_cast<SDL_Window*>(graphics->GetSDLWindow()));
-#endif
-#if URHO3D_OPENGL
-#if __APPLE__
-#if URHO3D_GLES3
-    const char* glslVersion = "#version 300 es";
-#else
-    const char* glslVersion = "#version 150";
-#endif
-#else
-    const char* glslVersion = nullptr;
-#endif
-    ImGui_ImplOpenGL3_Init(glslVersion);
-#elif URHO3D_D3D11
-    ImGui_ImplDX11_Init(graphics->GetImpl()->GetDevice(), graphics->GetImpl()->GetDeviceContext());
-#endif
+
+    const auto sdlWindow = static_cast<SDL_Window*>(graphics->GetSDLWindow());
+    const RenderBackend renderBackend = graphics->GetRenderBackend();
+    switch (renderBackend)
+    {
+    case RENDER_GL:
+    {
+        ImGui_ImplSDL2_InitForOpenGL(sdlWindow, SDL_GL_GetCurrentContext());
+        break;
+    }
+    case RENDER_VULKAN:
+    {
+        ImGui_ImplSDL2_InitForVulkan(sdlWindow);
+        break;
+    }
+    case RENDER_D3D11:
+    case RENDER_D3D12:
+    {
+        ImGui_ImplSDL2_InitForD3D(sdlWindow);
+        break;
+    }
+    default:
+    {
+        URHO3D_ASSERT(false, "Not implemented");
+        break;
+    }
+    }
+
+    Diligent::IRenderDevice* renderDevice = graphics->GetImpl()->GetDevice();
+    const PipelineStateOutputDesc swapChainDesc = graphics->GetSwapChainOutputDesc();
+    const Diligent::TEXTURE_FORMAT colorFormat = swapChainDesc.renderTargetFormats_[0];
+    const Diligent::TEXTURE_FORMAT depthStencilFormat = swapChainDesc.depthStencilFormat_;
+    impl_ = ea::make_unique<Diligent::ImGuiDiligentRenderer>(
+        renderDevice, colorFormat, depthStencilFormat, defaultNumVertices, defaultNumIndices);
 }
 
 void SystemUI::PlatformShutdown()
@@ -120,11 +132,8 @@ void SystemUI::PlatformShutdown()
     ImGuiIO& io = ui::GetIO();
     referencedTextures_.clear();
     ClearPerScreenFonts();
-#if URHO3D_OPENGL
-    ImGui_ImplOpenGL3_Shutdown();
-#elif URHO3D_D3D11
-    ImGui_ImplDX11_Shutdown();
-#endif
+
+    impl_ = nullptr;
     ImGui_ImplSDL2_Shutdown();
 }
 
@@ -221,11 +230,7 @@ void SystemUI::OnInputEnd()
     Input* input = GetSubsystem<Input>();
     if (graphics && graphics->IsInitialized())
     {
-#if URHO3D_OPENGL
-        ImGui_ImplOpenGL3_NewFrame();
-#elif URHO3D_D3D11
-        ImGui_ImplDX11_NewFrame();
-#endif
+        impl_->NewFrame(graphics->GetWidth(), graphics->GetHeight(), Diligent::SURFACE_TRANSFORM_IDENTITY);
         ImGui_ImplSDL2_NewFrame();
     }
 
@@ -290,18 +295,16 @@ void SystemUI::OnRenderEnd()
         io.WantSetMousePos = true;
     }
 
-#if URHO3D_OPENGL
-    ImGui_ImplOpenGL3_RenderDrawData(ui::GetDrawData());
-#elif URHO3D_D3D11
-    // Resetting render target view required because if last view we rendered into was a texture
-    // ImGui would try to render into that texture and we would see no UI on screen.
-    auto* graphics = GetSubsystem<Graphics>();
-    auto* graphicsImpl = graphics->GetImpl();
-    ID3D11RenderTargetView* defaultRenderTargetView = graphicsImpl->GetDefaultRenderTargetView();
-    graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
-    graphicsImpl->MarkRenderTargetsDirty();
-    ImGui_ImplDX11_RenderDrawData(ui::GetDrawData());
-#endif
+    // TODO(diligent): Revisit
+    Graphics* graphics = GetSubsystem<Graphics>();
+    Diligent::IDeviceContext* deviceContext = graphics->GetImpl()->GetDeviceContext();
+    graphics->SetRenderTarget(0, (RenderSurface*)nullptr);
+    graphics->PrepareDraw();
+    impl_->RenderDrawData(deviceContext, ui::GetDrawData());
+
+    graphics->SetVertexBuffer(nullptr);
+    graphics->SetIndexBuffer(nullptr);
+#if 0
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
 #if URHO3D_OPENGL
@@ -317,6 +320,7 @@ void SystemUI::OnRenderEnd()
         graphicsImpl->MarkRenderTargetsDirty();
 #endif
     }
+#endif
 }
 
 void SystemUI::OnMouseVisibilityChanged(StringHash, VariantMap& args)
@@ -431,11 +435,7 @@ ImTextureID SystemUI::AllocateFontTexture(ImFontAtlas* atlas)
     fontTextures_.push_back(fontTexture);
 
     // Store return texture identifier
-#if URHO3D_D3D11
-    return fontTexture->GetShaderResourceView();
-#else
-    return fontTexture->GetGPUObject();
-#endif
+    return fontTexture->GetShaderResourceView().RawPtr();
 }
 
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)

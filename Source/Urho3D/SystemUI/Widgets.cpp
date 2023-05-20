@@ -980,11 +980,8 @@ void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVe
     auto systemUI = context->GetSubsystem<SystemUI>();
 
     systemUI->ReferenceTexture(texture);
-#if URHO3D_D3D11
-    void* textureId = texture->GetShaderResourceView();
-#else
-    void* textureId = texture->GetGPUObject();
-#endif
+
+    void* textureId = texture->GetShaderResourceView().RawPtr();
     ui::Image(textureId, size, uv0, uv1, tintCol, borderCol);
 }
 
@@ -1003,11 +1000,8 @@ bool ImageButton(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, cons
     auto systemUI = context->GetSubsystem<SystemUI>();
 
     systemUI->ReferenceTexture(texture);
-#if URHO3D_D3D11
-    void* textureId = texture->GetShaderResourceView();
-#else
-    void* textureId = texture->GetGPUObject();
-#endif
+
+    void* textureId = texture->GetShaderResourceView().RawPtr();
     return ui::ImageButton(textureId, size, uv0, uv1, framePadding, bgCol, tintCol);
 }
 

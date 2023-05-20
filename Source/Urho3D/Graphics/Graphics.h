@@ -789,6 +789,10 @@ public:
     void SetPolicyHLSL(ShaderTranslationPolicy policy) { policyHlsl_ = policy; }
     ShaderTranslationPolicy GetPolicyHLSL() const { return policyHlsl_; }
 
+    /// Process dirtied state before draw.
+    /// TODO(diligent): Revisit
+    void PrepareDraw();
+
 private:
     /// Create the application window.
     bool OpenWindow(int width, int height, bool resizable, bool borderless);
@@ -810,8 +814,6 @@ private:
     void ResetCachedState();
     /// Initialize texture unit mappings.
     void SetTextureUnitMappings();
-    /// Process dirtied state before draw.
-    void PrepareDraw();
     /// Create intermediate texture for multisampled backbuffer resolve. No-op if already exists.
     void CreateResolveTexture();
     /// Clean up all framebuffers. Called when destroying the context. Used only on OpenGL.
