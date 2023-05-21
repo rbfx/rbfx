@@ -76,8 +76,13 @@ struct GraphView
     ea::unordered_map<ax::NodeEditor::NodeId, GraphNodeView> nodes_;
     ea::unordered_map<ax::NodeEditor::LinkId, GraphLinkView> links_;
 
+    /// Reset graph view to empty.
     void Reset();
+    /// Populate view from the graph resource.
     void Populate(Graph* graph);
+    /// Build graph from view.
+    SharedPtr<Graph> BuildGraph(Context* context);
+    /// Evaluate node positions.
     void AutoLayout();
 };
 

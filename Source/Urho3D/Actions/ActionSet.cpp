@@ -26,7 +26,8 @@
 #include "../Actions/FiniteTimeAction.h"
 #include "../Core/Context.h"
 #include "../Resource/Graph.h"
-#include "Urho3D/Resource/GraphNode.h"
+#include <Urho3D/Resource/GraphNode.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {

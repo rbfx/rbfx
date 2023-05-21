@@ -225,6 +225,12 @@ GraphPinRef<GraphEnterPin> GraphNode::GetOrAddEnter(const ea::string_view name)
     return GraphPinRef(this, &MakeMapHelper(enterPins_).GetOrAdd(name));
 }
 
+GraphNode* GraphNode::WithEnter(const ea::string_view name)
+{
+    GetOrAddEnter(name);
+    return this;
+}
+
 GraphPinRef<GraphEnterPin> GraphNode::GetEnter(const ea::string_view name)
 {
     return GraphPinRef(this, MakeMapHelper(enterPins_).Get(name));

@@ -107,6 +107,18 @@ void ActionViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, c
 
 void ActionViewTab::OnResourceSaved(const ea::string& resourceName)
 {
+    auto graph = graph_.BuildGraph(context_);
+
+    VectorBuffer buffer;
+    buffer.SetName(resourceName);
+    actionSet_->FromGraph(graph);
+    actionSet_->Save(buffer);
+    auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
+
+    auto project = GetProject();
+
+    project->SaveFileDelayed(actionSet_->GetAbsoluteFileName(), resourceName, sharedBuffer,
+        [this](const ea::string& _, const ea::string& resourceName, bool& needReload) {});
 }
 
 void ActionViewTab::OnResourceShallowSaved(const ea::string& resourceName)

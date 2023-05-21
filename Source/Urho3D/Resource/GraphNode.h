@@ -142,6 +142,9 @@ public:
     /// Get or add enter pin.
     GraphPinRef<GraphEnterPin> GetOrAddEnter(const ea::string_view name);
 
+    /// Add exit pin.
+    GraphNode* WithEnter(const ea::string_view name);
+
     /// Get enter pin by name.
     GraphPinRef<GraphEnterPin> GetEnter(const ea::string_view name);
 

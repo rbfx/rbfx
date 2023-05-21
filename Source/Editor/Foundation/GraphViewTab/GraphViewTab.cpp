@@ -180,6 +180,61 @@ void GraphView::Populate(Graph* graph)
     }
 }
 
+SharedPtr<Graph> GraphView::BuildGraph(Context* context)
+{
+    auto graph = MakeShared<Graph>(context);
+    ea::unordered_map<ax::NodeEditor::NodeId, GraphNode*> nodeMap;
+    ea::unordered_map<ax::NodeEditor::PinId, ea::tuple<GraphNode*, unsigned>> pinMap;
+    for (auto& nodeKeyValue: nodes_)
+    {
+        auto node = MakeShared<GraphNode>(context);
+        graph->Add(node);
+        nodeMap[nodeKeyValue.first] = node.Get();
+        node->SetName(nodeKeyValue.second.title_);
+        node->SetPositionHint(nodeKeyValue.second.position_);
+
+        unsigned pinIndex = 0;
+        for (auto enterPin : nodeKeyValue.second.enterPins_)
+        {
+            node->WithEnter(enterPin.title_);
+            pinMap[enterPin.id_] = ea::make_tuple(node.Get(), pinIndex);
+            ++pinIndex;
+        }
+        for (auto inputPin : nodeKeyValue.second.inputPins_)
+        {
+            node->WithInput(inputPin.title_, inputPin.value_);
+        }
+        for (auto exitPin : nodeKeyValue.second.exitPins_)
+        {
+            unsigned pinIndex = 0;
+            node->WithExit(exitPin.title_);
+            pinMap[exitPin.id_] = ea::make_tuple(node.Get(), pinIndex);
+            ++pinIndex;
+        }
+        for (auto outputPin : nodeKeyValue.second.outputPins_)
+        {
+            node->WithOutput(outputPin.title_, outputPin.type_);
+        }
+    }
+
+    for (auto& linkKeyValue : links_)
+    {
+        const auto from = pinMap.find(linkKeyValue.second.from_);
+        const auto to = pinMap.find(linkKeyValue.second.to_);
+        if (from != pinMap.end() && to != pinMap.end())
+        {
+            auto* fromNode = ea::get<0>(from->second);
+            unsigned fromPinIndex = ea::get<1>(from->second);
+            auto* toNode = ea::get<0>(to->second);
+            unsigned toIndex = ea::get<1>(from->second);
+
+            fromNode->GetExit(fromPinIndex).GetPin()->ConnectTo(toNode->GetEnter(toIndex));
+        }
+    }
+
+    return graph;
+}
+
 void GraphView::AutoLayout()
 {
     // TODO: perform layouting
