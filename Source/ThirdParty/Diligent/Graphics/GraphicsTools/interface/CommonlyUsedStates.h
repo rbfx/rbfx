@@ -49,6 +49,12 @@ static const DepthStencilStateDesc DSS_DisableDepth
     False  // DepthWriteEnable
 };
 
+static const DepthStencilStateDesc DSS_EnableDepthNoWrites
+{
+    True, // DepthEnable
+    False // DepthWriteEnable
+};
+
 
 // Common rasterizer states
 static const RasterizerStateDesc RS_Default{};

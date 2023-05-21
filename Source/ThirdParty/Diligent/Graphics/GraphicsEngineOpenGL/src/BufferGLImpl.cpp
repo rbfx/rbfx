@@ -224,7 +224,7 @@ void BufferGLImpl::UpdateData(GLContextState& CtxState, Uint64 Offset, Uint64 Si
         CtxState);
 
     // We must unbind VAO because otherwise we will break the bindings
-    constexpr bool ResetVAO = true;
+    const auto ResetVAO = m_BindTarget == GL_ARRAY_BUFFER || m_BindTarget == GL_ELEMENT_ARRAY_BUFFER;
     CtxState.BindBuffer(m_BindTarget, m_GlBuffer, ResetVAO);
     // All buffer bind targets (GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER etc.) relate to the same
     // kind of objects. As a result they are all equivalent from a transfer point of view.

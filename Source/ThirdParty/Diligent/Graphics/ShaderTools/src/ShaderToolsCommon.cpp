@@ -236,6 +236,18 @@ ShaderSourceFileData ReadShaderSourceFile(const char*                      Sourc
     return SourceData;
 }
 
+void AppendLine1Marker(std::string& Source, const char* FileName)
+{
+    Source.append("#line 1");
+    if (FileName != nullptr)
+    {
+        Source.append(" \"");
+        Source.append(FileName);
+        Source.append("\"");
+    }
+    Source.append("\n");
+}
+
 void AppendShaderSourceCode(std::string& Source, const ShaderCreateInfo& ShaderCI) noexcept(false)
 {
     VERIFY_EXPR(ShaderCI.ByteCode == nullptr);

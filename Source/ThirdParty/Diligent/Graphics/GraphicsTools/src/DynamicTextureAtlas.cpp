@@ -108,6 +108,11 @@ public:
 
     virtual float4 GetUVScaleBias() const override final;
 
+    virtual Uint32 GetAlignment() const override final
+    {
+        return m_Alignment;
+    }
+
     virtual IDynamicTextureAtlas* GetAtlas() override final;
 
     virtual void SetUserData(IObject* pUserData) override final
@@ -385,7 +390,7 @@ public:
         {
             DefaultRawMemoryAllocator::GetAllocator(),
             sizeof(TextureAtlasSuballocationImpl),
-            CreateInfo.SuballocationObjAllocationGranularity
+            1024u / Uint32{sizeof(TextureAtlasSuballocationImpl)} // Use 1KB pages.
         }
     // clang-format on
     {
@@ -470,6 +475,11 @@ public:
         }
     }
 
+    virtual Uint32 GetAllocationAlignment(Uint32 Width, Uint32 Height) const override final
+    {
+        return ComputeTextureAtlasSuballocationAlignment(Width, Height, m_MinAlignment);
+    }
+
     virtual void Allocate(Uint32                       Width,
                           Uint32                       Height,
                           ITextureAtlasSuballocation** ppSuballocation) override final
@@ -486,16 +496,7 @@ public:
             return;
         }
 
-        Uint32 Alignment = m_MinAlignment;
-        if (Alignment > 0)
-        {
-            while (std::min(Width, Height) > Alignment)
-                Alignment *= 2;
-        }
-        else
-        {
-            Alignment = 1;
-        }
+        const auto Alignment     = GetAllocationAlignment(Width, Height);
         const auto AlignedWidth  = AlignUp(Width, Alignment);
         const auto AlignedHeight = AlignUp(Height, Alignment);
 
@@ -647,16 +648,16 @@ public:
     {
         if (m_DynamicTexArray)
         {
-            Stats.Size = m_DynamicTexArray->GetMemoryUsage();
+            Stats.CommittedSize = m_DynamicTexArray->GetMemoryUsage();
             const auto& Desc{m_DynamicTexArray->GetDesc()};
             Stats.TotalArea = Uint64{Desc.Width} * Uint64{Desc.Height} * Uint64{Desc.ArraySize};
         }
         else
         {
             VERIFY_EXPR(m_Desc.Type == RESOURCE_DIM_TEX_2D);
-            Stats.Size = 0;
+            Stats.CommittedSize = 0;
             for (Uint32 mip = 0; mip < m_Desc.MipLevels; ++mip)
-                Stats.Size += GetMipLevelProperties(m_Desc, mip).MipSize;
+                Stats.CommittedSize += GetMipLevelProperties(m_Desc, mip).MipSize;
             Stats.TotalArea = Uint64{m_Desc.Width} * Uint64{m_Desc.Height};
         }
 
@@ -762,6 +763,20 @@ float4 TextureAtlasSuballocationImpl::GetUVScaleBias() const
         };
 }
 
+Uint32 ComputeTextureAtlasSuballocationAlignment(Uint32 Width, Uint32 Height, Uint32 MinAlignment)
+{
+    Uint32 Alignment = MinAlignment;
+    if (Alignment > 0)
+    {
+        while (std::min(Width, Height) > Alignment)
+            Alignment *= 2;
+    }
+    else
+    {
+        Alignment = 1;
+    }
+    return Alignment;
+}
 
 void CreateDynamicTextureAtlas(IRenderDevice*                       pDevice,
                                const DynamicTextureAtlasCreateInfo& CreateInfo,

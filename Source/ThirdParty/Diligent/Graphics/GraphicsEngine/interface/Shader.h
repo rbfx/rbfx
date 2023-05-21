@@ -401,6 +401,73 @@ struct ShaderCreateInfo
     IDataBlob** ppCompilerOutput DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
+    constexpr ShaderCreateInfo() noexcept
+    {}
+
+    constexpr ShaderCreateInfo(const Char*                      _FilePath,
+                               IShaderSourceInputStreamFactory* _pSourceFactory,
+                               SHADER_SOURCE_LANGUAGE           _SourceLanguage = ShaderCreateInfo{}.SourceLanguage,
+                               const ShaderDesc&                _Desc           = ShaderDesc{}) noexcept :
+        // clang-format off
+        FilePath                  {_FilePath},
+        pShaderSourceStreamFactory{_pSourceFactory},
+        Desc                      {_Desc},
+        SourceLanguage            {_SourceLanguage}
+    // clang-format on
+    {}
+
+    constexpr ShaderCreateInfo(const Char*                      _FilePath,
+                               IShaderSourceInputStreamFactory* _pSourceFactory,
+                               const Char*                      _EntryPoint,
+                               const ShaderMacro*               _Macros         = ShaderCreateInfo{}.Macros,
+                               SHADER_SOURCE_LANGUAGE           _SourceLanguage = ShaderCreateInfo{}.SourceLanguage,
+                               const ShaderDesc&                _Desc           = ShaderDesc{}) noexcept :
+        // clang-format off
+        FilePath                  {_FilePath},
+        pShaderSourceStreamFactory{_pSourceFactory},
+        EntryPoint                {_EntryPoint},
+        Macros                    {_Macros},
+        Desc                      {_Desc},
+        SourceLanguage            {_SourceLanguage}
+    // clang-format on
+    {}
+
+    constexpr ShaderCreateInfo(const Char*            _Source,
+                               size_t                 _SourceLength,
+                               const Char*            _EntryPoint     = ShaderCreateInfo{}.EntryPoint,
+                               const ShaderMacro*     _Macros         = ShaderCreateInfo{}.Macros,
+                               SHADER_SOURCE_LANGUAGE _SourceLanguage = ShaderCreateInfo{}.SourceLanguage,
+                               const ShaderDesc&      _Desc           = ShaderDesc{}) noexcept :
+        // clang-format off
+        Source        {_Source},
+        SourceLength  {_SourceLength},
+        EntryPoint    {_EntryPoint},
+        Macros        {_Macros},
+        Desc          {_Desc},
+        SourceLanguage{_SourceLanguage}
+    // clang-format on
+    {}
+
+    constexpr ShaderCreateInfo(const Char*            _Source,
+                               size_t                 _SourceLength,
+                               const Char*            _EntryPoint     = ShaderCreateInfo{}.EntryPoint,
+                               SHADER_SOURCE_LANGUAGE _SourceLanguage = ShaderCreateInfo{}.SourceLanguage,
+                               const ShaderDesc&      _Desc           = ShaderDesc{}) noexcept :
+        // clang-format off
+        Source        {_Source},
+        SourceLength  {_SourceLength},
+        EntryPoint    {_EntryPoint},
+        Desc          {_Desc},
+        SourceLanguage{_SourceLanguage}
+    // clang-format on
+    {}
+
+    constexpr ShaderCreateInfo(const void* _ByteCode,
+                               size_t      _ByteCodeSize) noexcept :
+        ByteCode{_ByteCode},
+        ByteCodeSize{_ByteCodeSize}
+    {}
+
     /// Comparison operator tests if two structures are equivalent.
     ///
     /// \note   Comparison ignores shader name.
@@ -666,9 +733,13 @@ typedef struct ShaderCodeVariableDesc
     SHADER_CODE_BASIC_TYPE BasicType DEFAULT_INITIALIZER(SHADER_CODE_BASIC_TYPE_UNKNOWN);
 
     /// For a matrix type, the number of rows.
+    ///
+    /// \note   For shaders compiled from GLSL, NumRows and NumColumns are swapped.
     Uint8 NumRows DEFAULT_INITIALIZER(0);
 
     /// For a matrix type, the number of columns. For a vector, the number of components.
+    ///
+    /// \note   For shaders compiled from GLSL, NumRows and NumColumns are swapped.
     Uint8 NumColumns DEFAULT_INITIALIZER(0);
 
     /// Offset, in bytes, between the start of the parent structure and this variable.

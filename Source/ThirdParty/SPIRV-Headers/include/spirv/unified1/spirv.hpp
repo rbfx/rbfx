@@ -722,6 +722,7 @@ enum BuiltIn {
     BuiltInHitKindKHR = 5333,
     BuiltInHitKindNV = 5333,
     BuiltInCurrentRayTimeNV = 5334,
+    BuiltInHitTriangleVertexPositionsKHR = 5335,
     BuiltInIncomingRayFlagsKHR = 5351,
     BuiltInIncomingRayFlagsNV = 5351,
     BuiltInRayGeometryIndexKHR = 5352,
@@ -1078,6 +1079,7 @@ enum Capability {
     CapabilityUniformTexelBufferArrayNonUniformIndexingEXT = 5311,
     CapabilityStorageTexelBufferArrayNonUniformIndexing = 5312,
     CapabilityStorageTexelBufferArrayNonUniformIndexingEXT = 5312,
+    CapabilityRayTracingPositionFetchKHR = 5336,
     CapabilityRayTracingNV = 5340,
     CapabilityRayTracingMotionBlurNV = 5341,
     CapabilityVulkanMemoryModel = 5345,
@@ -1098,6 +1100,7 @@ enum Capability {
     CapabilityRayTracingOpacityMicromapEXT = 5381,
     CapabilityShaderInvocationReorderNV = 5383,
     CapabilityBindlessTextureNV = 5390,
+    CapabilityRayQueryPositionFetchKHR = 5391,
     CapabilitySubgroupShuffleINTEL = 5568,
     CapabilitySubgroupBufferBlockIOINTEL = 5569,
     CapabilitySubgroupImageBlockIOINTEL = 5570,
@@ -1709,6 +1712,7 @@ enum Op {
     OpTraceNV = 5337,
     OpTraceMotionNV = 5338,
     OpTraceRayMotionNV = 5339,
+    OpRayQueryGetIntersectionTriangleVertexPositionsKHR = 5340,
     OpTypeAccelerationStructureKHR = 5341,
     OpTypeAccelerationStructureNV = 5341,
     OpExecuteCallableNV = 5344,
@@ -2425,6 +2429,7 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpTraceNV: *hasResult = false; *hasResultType = false; break;
     case OpTraceMotionNV: *hasResult = false; *hasResultType = false; break;
     case OpTraceRayMotionNV: *hasResult = false; *hasResultType = false; break;
+    case OpRayQueryGetIntersectionTriangleVertexPositionsKHR: *hasResult = true; *hasResultType = true; break;
     case OpTypeAccelerationStructureNV: *hasResult = true; *hasResultType = false; break;
     case OpExecuteCallableNV: *hasResult = false; *hasResultType = false; break;
     case OpTypeCooperativeMatrixNV: *hasResult = true; *hasResultType = false; break;

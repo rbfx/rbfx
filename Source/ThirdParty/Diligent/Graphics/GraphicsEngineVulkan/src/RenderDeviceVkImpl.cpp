@@ -158,6 +158,10 @@ RenderDeviceVkImpl::RenderDeviceVkImpl(IReferenceCounters*                      
                                                        m_LogicalVkDevice->GetEnabledExtFeatures(),
                                                        m_PhysicalDevice->GetExtProperties());
 
+    m_DeviceInfo.MaxShaderVersion.HLSL   = {5, 1};
+    m_DeviceInfo.MaxShaderVersion.GLSL   = {4, 6};
+    m_DeviceInfo.MaxShaderVersion.GLESSL = {3, 2};
+
     // Note that Vulkan itself does not invert Y coordinate when transforming
     // normalized device Y to window space. However, we use negative viewport
     // height which achieves the same effect as in D3D, therefore we need to

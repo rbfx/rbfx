@@ -197,12 +197,6 @@ public:
                                                               RESOURCE_STATE        InitialState,
                                                               ITopLevelAS**         ppTLAS) override final;
 
-    /// Implementation of IRenderDeviceD3D12::GetMaxShaderVersion().
-    virtual const ShaderVersion& DILIGENT_CALL_TYPE GetMaxShaderVersion() const override final
-    {
-        return m_MaxShaderVersion;
-    }
-
     void CreateRootSignature(const RefCntAutoPtr<class PipelineResourceSignatureD3D12Impl>* ppSignatures, Uint32 SignatureCount, size_t Hash, RootSignatureD3D12** ppRootSig);
 
     RootSignatureCacheD3D12& GetRootSignatureCache() { return m_RootSignatureCache; }
@@ -303,8 +297,6 @@ private:
 
     // Note: mips generator must be released after the device has been idled
     GenerateMipsHelper m_MipsGenerator;
-
-    ShaderVersion m_MaxShaderVersion;
 
     std::unique_ptr<IDXCompiler> m_pDxCompiler;
 

@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "source/diagnostic.h"
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
 #include "source/val/function.h"
@@ -389,6 +388,7 @@ spv_result_t GetLocationsForVariable(
       for (uint32_t i = start; i < end; ++i) {
         if (!locs->insert(i).second) {
           return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
+                 << (is_output ? _.VkErrorID(8722) : _.VkErrorID(8721))
                  << "Entry-point has conflicting " << storage_class
                  << " location assignment at location " << i / 4
                  << ", component " << i % 4;
@@ -460,6 +460,7 @@ spv_result_t GetLocationsForVariable(
             uint32_t check = 4 * l + c;
             if (!locations->insert(check).second) {
               return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
+                     << (is_output ? _.VkErrorID(8722) : _.VkErrorID(8721))
                      << "Entry-point has conflicting " << storage_class
                      << " location assignment at location " << l
                      << ", component " << c;
@@ -477,6 +478,7 @@ spv_result_t GetLocationsForVariable(
         for (uint32_t l = start; l < end; ++l) {
           if (!locations->insert(l).second) {
             return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
+                   << (is_output ? _.VkErrorID(8722) : _.VkErrorID(8721))
                    << "Entry-point has conflicting " << storage_class
                    << " location assignment at location " << l / 4
                    << ", component " << l % 4;

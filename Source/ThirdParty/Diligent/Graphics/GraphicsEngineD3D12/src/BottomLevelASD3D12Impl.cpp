@@ -154,7 +154,7 @@ BottomLevelASD3D12Impl::BottomLevelASD3D12Impl(IReferenceCounters*      pRefCoun
     if (FAILED(hr))
         LOG_ERROR_AND_THROW("Failed to create D3D12 Bottom-level acceleration structure");
 
-    if (*m_Desc.Name != 0)
+    if (m_Desc.Name != nullptr && *m_Desc.Name != '\0')
         m_pd3d12Resource->SetName(WidenString(m_Desc.Name).c_str());
 
     VERIFY_EXPR(GetGPUAddress() % D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT == 0);

@@ -31,6 +31,8 @@
 
 #include "RenderStateCache.h"
 #include "../../GraphicsEngine/interface/GraphicsTypesX.hpp"
+#include "../../../Common/interface/FileWrapper.hpp"
+#include "../../../Common/interface/DataBlobImpl.hpp"
 
 namespace Diligent
 {
@@ -42,11 +44,49 @@ class RenderDeviceWithCache : public RenderDeviceX<ThrowOnError>
 public:
     using TBase = RenderDeviceX<ThrowOnError>;
 
+    RenderDeviceWithCache() noexcept {}
+
     explicit RenderDeviceWithCache(IRenderDevice*     pDevice,
                                    IRenderStateCache* pCache = nullptr) noexcept :
         TBase{pDevice},
         m_pCache{pCache}
     {
+    }
+
+    // clang-format off
+    RenderDeviceWithCache           (const RenderDeviceWithCache&) noexcept = default;
+    RenderDeviceWithCache& operator=(const RenderDeviceWithCache&) noexcept = default;
+    RenderDeviceWithCache           (RenderDeviceWithCache&&)      noexcept = default;
+    RenderDeviceWithCache& operator=(RenderDeviceWithCache&&)      noexcept = default;
+    // clang-format on
+
+    RenderDeviceWithCache(IRenderDevice*                    pDevice,
+                          const RenderStateCacheCreateInfo& CacheCI) :
+        TBase{pDevice}
+    {
+        CreateRenderStateCache(CacheCI);
+    }
+
+    ~RenderDeviceWithCache()
+    {
+        if (m_pCache != nullptr && !m_CacheFilePath.empty())
+        {
+            // Save render state cache data to the file
+            RefCntAutoPtr<IDataBlob> pCacheData;
+            if (m_pCache->WriteToBlob(&pCacheData))
+            {
+                if (pCacheData)
+                {
+                    FileWrapper CacheDataFile{m_CacheFilePath.c_str(), EFileAccessMode::Overwrite};
+                    if (CacheDataFile->Write(pCacheData->GetConstDataPtr(), pCacheData->GetSize()))
+                        LOG_INFO_MESSAGE("Successfully saved state cache file ", m_CacheFilePath, " (", FormatMemorySize(pCacheData->GetSize()), ").");
+                }
+            }
+            else
+            {
+                LOG_ERROR_MESSAGE("Failed to write cache data.");
+            }
+        }
     }
 
     RefCntAutoPtr<IShader> CreateShader(const ShaderCreateInfo& ShaderCI) noexcept(!ThrowOnError)
@@ -101,9 +141,67 @@ public:
         return CreateTilePipelineState(CreateInfo);
     }
 
-    IRenderStateCache* GetCache() const
+    IRenderStateCache* GetCache() const noexcept
     {
         return m_pCache.RawPtr<IRenderStateCache>();
+    }
+
+    operator IRenderStateCache*() const noexcept
+    {
+        return GetCache();
+    }
+
+    void CreateRenderStateCache(RenderStateCacheCreateInfo CacheCI) noexcept
+    {
+        if (m_pCache)
+        {
+            UNEXPECTED("Render state cache is already initialized");
+            return;
+        }
+
+        if (CacheCI.pDevice == nullptr)
+            CacheCI.pDevice = this->GetDevice();
+
+        Diligent::CreateRenderStateCache(CacheCI, &m_pCache);
+        VERIFY_EXPR(m_pCache);
+    }
+
+    void LoadCacheFromFile(const char* FilePath, bool UpdateOnExit)
+    {
+        if (!m_pCache)
+        {
+            UNEXPECTED("Render state cache is not initialized");
+            return;
+        }
+
+        if (FilePath == nullptr)
+        {
+            UNEXPECTED("File path is null");
+            return;
+        }
+
+        if (UpdateOnExit)
+            m_CacheFilePath = FilePath;
+
+        if (!FileSystem::FileExists(FilePath))
+            return;
+
+        FileWrapper CacheDataFile{FilePath};
+        if (!CacheDataFile)
+        {
+            LOG_ERROR_MESSAGE("Failed to open render state cache file ", FilePath);
+            return;
+        }
+
+        auto pCacheData = DataBlobImpl::Create();
+        if (!CacheDataFile->Read(pCacheData))
+        {
+            LOG_ERROR_MESSAGE("Failed to read render state cache file ", FilePath);
+            return;
+        }
+
+        if (!m_pCache->Load(pCacheData))
+            LOG_ERROR_MESSAGE("Failed to load render state cache data from file ", FilePath);
     }
 
 private:
@@ -122,6 +220,22 @@ private:
 
 private:
     RefCntAutoPtr<IRenderStateCache> m_pCache;
+    std::string                      m_CacheFilePath;
 };
+
+/// Special string to indicate that the render state cache file should be stored in the application data folder.
+static constexpr char RenderStateCacheLocationAppData[] = "<AppData>";
+
+/// Returns the path to the render state cache file.
+
+/// \param [in] CacheLocation - Cache location. If it is equal to RenderStateCacheLocationAppData,
+///                             the function returns the path to the cache file in the application data folder.
+///                             Otherwise, the function returns the path to the cache file in the specified folder.
+/// \param [in] AppName       - Application name.
+/// \param [in] DeviceType    - Render device type.
+/// \return                   Render state cache file path.
+std::string GetRenderStateCacheFilePath(const char*        CacheLocation,
+                                        const char*        AppName,
+                                        RENDER_DEVICE_TYPE DeviceType);
 
 } // namespace Diligent

@@ -491,6 +491,9 @@ HLSL2GLSLConverterImpl::HLSL2GLSLConverterImpl()
                 DEFINE_STUB("Gather_2", GLSLSampler, "Gather", 2); // Gather( SamplerState, Location )
                 DEFINE_STUB("Gather_3", GLSLSampler, "Gather", 3); // Gather( SamplerState, Location, Offset )
             }
+
+            Swizzle = "";
+            DEFINE_STUB("CalculateLevelOfDetail_2", GLSLSampler, "CalculateLevelOfDetail", 2); // CalculateLevelOfDetail(Sampler, Location)
         }
     }
 

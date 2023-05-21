@@ -239,10 +239,10 @@ AndroidFile::~AndroidFile()
         AAsset_close(m_AssetFile);
 }
 
-void AndroidFile::Read(IDataBlob* pData)
+bool AndroidFile::Read(IDataBlob* pData)
 {
     pData->Resize(GetSize());
-    Read(pData->GetDataPtr(), pData->GetSize());
+    return Read(pData->GetDataPtr(), pData->GetSize());
 }
 
 bool AndroidFile::Read(void* Data, size_t BufferSize)
@@ -357,6 +357,12 @@ std::vector<std::unique_ptr<FindFileData>> AndroidFileSystem::Search(const Char*
 {
     UNSUPPORTED("Not implemented");
     return std::vector<std::unique_ptr<FindFileData>>();
+}
+
+std::string GetLocalAppDataDirectory(const char* AppName /*= nullptr*/, bool Create /*= true*/)
+{
+    UNSUPPORTED("GetLocalAppDataDirectory() is not supported on Android");
+    return "";
 }
 
 } // namespace Diligent

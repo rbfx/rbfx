@@ -100,7 +100,7 @@ TopLevelASD3D12Impl::TopLevelASD3D12Impl(IReferenceCounters*    pRefCounters,
     if (FAILED(hr))
         LOG_ERROR_AND_THROW("Failed to create D3D12 Top-level acceleration structure");
 
-    if (*m_Desc.Name != 0)
+    if (m_Desc.Name != nullptr && *m_Desc.Name != '\0')
         m_pd3d12Resource->SetName(WidenString(m_Desc.Name).c_str());
 
     m_DescriptorHandle = pDeviceD3D12->AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);

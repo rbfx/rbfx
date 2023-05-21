@@ -104,6 +104,10 @@ inline ShaderSourceFileData ReadShaderSourceFile(const ShaderCreateInfo& ShaderC
     return ReadShaderSourceFile(ShaderCI.Source, ShaderCI.SourceLength, ShaderCI.pShaderSourceStreamFactory, ShaderCI.FilePath);
 }
 
+/// Appends #line 1 directive to the source string to make sure that the error messages
+/// contain correct line numbers.
+void AppendLine1Marker(std::string& Source, const char* FileName);
+
 /// Appends shader source code to the source string
 void AppendShaderSourceCode(std::string& Source, const ShaderCreateInfo& ShaderCI) noexcept(false);
 

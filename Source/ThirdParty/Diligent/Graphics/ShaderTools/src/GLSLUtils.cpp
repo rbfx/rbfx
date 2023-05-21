@@ -58,9 +58,20 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
     const auto ShaderType = ShaderCI.Desc.ShaderType;
 
 #if PLATFORM_WIN32 || PLATFORM_LINUX
-    GLSLSource.append(
-        "#version 430 core\n"
-        "#define DESKTOP_GL 1\n");
+
+    auto GLSLVer = ShaderCI.GLSLVersion;
+    if (GLSLVer == ShaderVersion{})
+        GLSLVer = DeviceInfo.MaxShaderVersion.GLSL;
+    if (GLSLVer == ShaderVersion{})
+        GLSLVer = ShaderVersion{4, 3};
+
+    {
+        std::stringstream verss;
+        verss << "#version " << Uint32{GLSLVer.Major} << Uint32{GLSLVer.Minor} << "0 core\n";
+        GLSLSource.append(verss.str());
+    }
+    GLSLSource.append("#define DESKTOP_GL 1\n");
+
 #    if PLATFORM_WIN32
     GLSLSource.append("#define PLATFORM_WIN32 1\n");
 #    elif PLATFORM_LINUX
@@ -68,7 +79,9 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
 #    else
 #        error Unexpected platform
 #    endif
+
 #elif PLATFORM_MACOS
+
     if (TargetCompiler == TargetGLSLCompiler::glslang)
     {
         GLSLSource.append("#version 430 core\n");
@@ -88,6 +101,7 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
         "#define PLATFORM_MACOS 1\n");
 
 #elif PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_TVOS || PLATFORM_EMSCRIPTEN
+
     bool IsES30        = false;
     bool IsES31OrAbove = false;
     bool IsES32OrAbove = false;

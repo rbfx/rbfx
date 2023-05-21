@@ -5484,6 +5484,25 @@
       "version" : "None"
     },
     {
+      "opname" : "OpRayQueryGetIntersectionTriangleVertexPositionsKHR",
+      "class"  : "Reserved",
+      "opcode" : 5340,
+        "operands" : [
+            { "kind" : "IdResultType" },
+            { "kind" : "IdResult" },
+            {
+                "kind" : "IdRef",
+                "name" : "'RayQuery'"
+            },
+            {
+                "kind" : "IdRef",
+                "name" : "'Intersection'"
+            }
+        ],
+      "capabilities" : [ "RayQueryPositionFetchKHR" ],
+      "version" : "None"
+    },
+    {
       "opname" : "OpTypeAccelerationStructureNV",
       "class"  : "Reserved",
       "opcode" : 5341,
@@ -13538,6 +13557,12 @@
           "version" : "None"
         },
         {
+          "enumerant" : "HitTriangleVertexPositionsKHR",
+          "value" : 5335,
+          "capabilities" : [ "RayTracingPositionFetchKHR" ],
+          "version" : "None"
+        },
+        {
           "enumerant" : "IncomingRayFlagsNV",
           "value" : 5351,
           "capabilities" : [ "RayTracingNV" , "RayTracingKHR" ],
@@ -14067,6 +14092,24 @@
           "extensions" : [ "SPV_ARM_core_builtins" ]
         },
         {
+          "enumerant" : "TileImageColorReadAccessEXT",
+          "value" : 4166,
+          "extensions" : [ "SPV_EXT_shader_tile_image" ],
+          "version" : "None"
+        },
+        {
+          "enumerant" : "TileImageDepthReadAccessEXT",
+          "value" : 4167,
+          "extensions" : [ "SPV_EXT_shader_tile_image" ],
+          "version" : "None"
+        },
+        {
+          "enumerant" : "TileImageStencilReadAccessEXT",
+          "value" : 4168,
+          "extensions" : [ "SPV_EXT_shader_tile_image" ],
+          "version" : "None"
+        },
+        {
           "enumerant" : "FragmentShadingRateKHR",
           "value" : 4422,
           "capabilities" : [ "Shader" ],
@@ -14214,24 +14257,6 @@
           "value" : 4450,
           "extensions" : [ "SPV_KHR_8bit_storage" ],
           "version" : "1.5"
-        },
-        {
-          "enumerant" : "TileImageColorReadAccessEXT",
-          "value" : 4166,
-          "extensions" : [ "SPV_EXT_shader_tile_image" ],
-          "version" : "None"
-        },
-        {
-          "enumerant" : "TileImageDepthReadAccessEXT",
-          "value" : 4167,
-          "extensions" : [ "SPV_EXT_shader_tile_image" ],
-          "version" : "None"
-        },
-        {
-          "enumerant" : "TileImageStencilReadAccessEXT",
-          "value" : 4168,
-          "extensions" : [ "SPV_EXT_shader_tile_image" ],
-          "version" : "None"
         },
         {
           "enumerant" : "DenormPreserve",
@@ -14628,6 +14653,13 @@
           "version" : "1.5"
         },
         {
+          "enumerant" : "RayTracingPositionFetchKHR",
+          "value" : 5336,
+          "capabilities" : [ "Shader" ],
+          "extensions" : [ "SPV_KHR_ray_tracing_position_fetch" ],
+          "version" : "None"
+        },
+        {
           "enumerant" : "RayTracingNV",
           "value" : 5340,
           "capabilities" : [ "Shader" ],
@@ -14756,6 +14788,13 @@
           "enumerant" : "BindlessTextureNV",
           "value" : 5390,
           "extensions" : [ "SPV_NV_bindless_texture" ],
+          "version" : "None"
+        },
+        {
+          "enumerant" : "RayQueryPositionFetchKHR",
+          "value" : 5391,
+          "capabilities" : [ "Shader" ],
+          "extensions" : [ "SPV_KHR_ray_tracing_position_fetch" ],
           "version" : "None"
         },
         {

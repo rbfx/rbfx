@@ -60,6 +60,7 @@ String BuildHLSLSourceString(const ShaderCreateInfo& ShaderCI,
         AppendShaderMacros(HLSLSource, ShaderCI.Macros);
     }
 
+    AppendLine1Marker(HLSLSource, ShaderCI.FilePath != nullptr ? ShaderCI.FilePath : ShaderCI.Desc.Name);
     AppendShaderSourceCode(HLSLSource, ShaderCI);
 
     return HLSLSource;

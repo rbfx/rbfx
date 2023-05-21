@@ -215,9 +215,12 @@ RenderDeviceD3D12Impl::RenderDeviceD3D12Impl(IReferenceCounters*          pRefCo
                     break;
                 }
             }
-            m_MaxShaderVersion = Version{(MaxShaderModel >> 4) & 0xFu, MaxShaderModel & 0xFu};
 
-            LOG_INFO_MESSAGE("Max device shader model: ", Uint32{m_MaxShaderVersion.Major}, '_', Uint32{m_MaxShaderVersion.Minor} & 0xF);
+            auto& MaxHLSLVersion = m_DeviceInfo.MaxShaderVersion.HLSL;
+            MaxHLSLVersion.Major = (MaxShaderModel >> 4) & 0xFu;
+            MaxHLSLVersion.Minor = MaxShaderModel & 0xFu;
+
+            LOG_INFO_MESSAGE("Max device shader model: ", Uint32{MaxHLSLVersion.Major}, '_', Uint32{MaxHLSLVersion.Minor} & 0xF);
         }
 
 #ifdef DILIGENT_DEVELOPMENT
@@ -556,7 +559,7 @@ void RenderDeviceD3D12Impl::CreateShader(const ShaderCreateInfo& ShaderCI, IShad
         GetDxCompiler(),
         GetDeviceInfo(),
         GetAdapterInfo(),
-        GetMaxShaderVersion() //
+        m_DeviceInfo.MaxShaderVersion.HLSL,
     };
     CreateShaderImpl(ppShader, ShaderCI, D3D12ShaderCI);
 }

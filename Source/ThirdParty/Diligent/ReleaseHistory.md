@@ -1,5 +1,6 @@
 ## Current progress
 
+* Added `RenderDeviceShaderVersionInfo` struct and `RenderDeviceInfo::MaxShaderVersion` member (API253003)
 * Added texture component swizzle (API253002)
   * Added `TEXTURE_COMPONENT_SWIZZLE` enum and `TextureComponentMapping` struct
   * Added `Swizzle` member to `TextureViewDesc` struct

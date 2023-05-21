@@ -32,6 +32,7 @@
 #include "DebugUtilities.hpp"
 #include "GraphicsAccessories.hpp"
 #include "Align.hpp"
+#include "GraphicsUtilities.h"
 
 namespace Diligent
 {
@@ -114,6 +115,7 @@ void DynamicTextureArray::CreateSparseTexture(IRenderDevice* pDevice)
     }
 
     const auto& AdapterInfo = pDevice->GetAdapterInfo();
+    const auto& DeviceInfo  = pDevice->GetDeviceInfo();
 
     {
         // Some implementations may return UINT64_MAX, so limit the maximum memory size per resource.
@@ -127,11 +129,30 @@ void DynamicTextureArray::CreateSparseTexture(IRenderDevice* pDevice)
         // Account for the maximum virtual space size
         TmpDesc.ArraySize = std::min(TmpDesc.ArraySize, StaticCast<Uint32>(MaxMemorySize / (MipProps.MipSize * 4 / 3)));
 
-        pDevice->CreateTexture(TmpDesc, nullptr, &m_pTexture);
-        DEV_CHECK_ERR(m_pTexture, "Failed to create sparse texture");
-        if (!m_pTexture)
-            return;
+        if (DeviceInfo.IsMetalDevice())
+        {
+            // Metal sparse texture requires memory object at initialization
+            DeviceMemoryCreateInfo MemCI;
+            MemCI.Desc.Name     = "Sparse dynamic texture memory pool";
+            MemCI.Desc.Type     = DEVICE_MEMORY_TYPE_SPARSE;
+            MemCI.Desc.PageSize = 65536; // Page size is not relevant in Metal
+            // TODO: properly set the heap size.
+            MemCI.InitialSize = Uint64{512} << Uint64{20};
 
+            pDevice->CreateDeviceMemory(MemCI, &m_pMemory);
+            DEV_CHECK_ERR(m_pMemory, "Failed to create device memory");
+
+            CreateSparseTextureMtl(pDevice, TmpDesc, m_pMemory, &m_pTexture);
+        }
+        else
+        {
+            pDevice->CreateTexture(TmpDesc, nullptr, &m_pTexture);
+        }
+        if (!m_pTexture)
+        {
+            DEV_ERROR("Failed to create sparse texture");
+            return;
+        }
         // No slices are currently committed
         m_Desc.ArraySize = 0;
     }
@@ -163,6 +184,7 @@ void DynamicTextureArray::CreateSparseTexture(IRenderDevice* pDevice)
     m_MemoryPageSize *= m_NumSlicesInPage;
 
     // Create memory pool
+    if (!m_pMemory)
     {
         DeviceMemoryCreateInfo MemCI;
         MemCI.Desc.Name     = "Sparse dynamic texture memory pool";
@@ -177,6 +199,11 @@ void DynamicTextureArray::CreateSparseTexture(IRenderDevice* pDevice)
 
         pDevice->CreateDeviceMemory(MemCI, &m_pMemory);
         DEV_CHECK_ERR(m_pMemory, "Failed to create device memory");
+    }
+    else
+    {
+        VERIFY_EXPR(DeviceInfo.IsMetalDevice());
+        m_pMemory->Resize(m_MemoryPageSize);
     }
 
     // Create fences

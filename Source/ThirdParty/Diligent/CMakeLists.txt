@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.19)
 
 project(DiligentCore)
 
@@ -155,14 +155,14 @@ if(PLATFORM_WIN32)
     endif()
 
     set(GL_SUPPORTED       TRUE CACHE INTERNAL "OpenGL is supported on Win32 platform")
-	set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Win32 platform")
+    set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Win32 platform")
     set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Win32 platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_WIN32=1)
 elseif(PLATFORM_UNIVERSAL_WINDOWS)
     set(D3D11_SUPPORTED TRUE CACHE INTERNAL "D3D11 is supported on Universal Windows platform")
-	if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
-		set(D3D12_SUPPORTED TRUE CACHE INTERNAL "D3D12 is supported on Universal Windows platform")
-	endif()
+    if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
+        set(D3D12_SUPPORTED TRUE CACHE INTERNAL "D3D12 is supported on Universal Windows platform")
+    endif()
     set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Universal Windows platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_UNIVERSAL_WINDOWS=1)
 elseif(PLATFORM_ANDROID)
@@ -314,7 +314,7 @@ endforeach()
 
 if(DILIGENT_DEVELOPMENT)
     foreach(REL_CONFIG ${RELEASE_CONFIGURATIONS})
-		target_compile_definitions(Diligent-PublicBuildSettings INTERFACE "$<$<CONFIG:${REL_CONFIG}>:DILIGENT_DEVELOPMENT>")
+        target_compile_definitions(Diligent-PublicBuildSettings INTERFACE "$<$<CONFIG:${REL_CONFIG}>:DILIGENT_DEVELOPMENT>")
     endforeach()
 endif()
 
@@ -327,7 +327,7 @@ foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
 endforeach()
 
 foreach(REL_CONFIG ${RELEASE_CONFIGURATIONS})
-	target_compile_definitions(Diligent-BuildSettings INTERFACE "$<$<CONFIG:${REL_CONFIG}>:NDEBUG>")
+    target_compile_definitions(Diligent-BuildSettings INTERFACE "$<$<CONFIG:${REL_CONFIG}>:NDEBUG>")
 endforeach()
 
 if(MSVC)
@@ -359,7 +359,7 @@ if(MSVC)
     # In RELEASE mode:
     # - Set favor fast code option (/Ot)
     # - Enable intrinsic functions (/Oi)
-	# - Maximize Speed (/O2)
+    # - Maximize Speed (/O2)
     # - Inline any suitable function (/Ob2)
     set(MSVC_RELEASE_COMPILE_OPTIONS ${MSVC_ALL_RELEASE_COMPILE_OPTIONS} /Ot /Oi /Ob2 /O2 ${DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS})
     set(MSVC_RELWITHDEBINFO_COMPILE_OPTIONS ${MSVC_RELEASE_COMPILE_OPTIONS})
@@ -420,9 +420,10 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CLANG_RELEASE_OPTIONS -Wno-unused-variable ${DILIGENT_CLANG_RELEASE_COMPILE_OPTIONS})
     target_compile_options(Diligent-BuildSettings INTERFACE $<$<NOT:$<CONFIG:Debug>>:${CLANG_RELEASE_OPTIONS}>)
 
-    if ((PLATFORM_IOS  AND CMAKE_OSX_SYSROOT STREQUAL "iphonesimulator")  OR PLATFORM_IOS_SIMULATOR OR
-        (PLATFORM_TVOS AND CMAKE_OSX_SYSROOT STREQUAL "appletvsimulator") OR PLATFORM_TVOS_SIMULATOR)
-        # There is a known long-standing issue in simulator SDK:
+    if (PLATFORM_APPLE)
+        # Allow unavailable API warnings not being errors as they tend to randomly
+        # appear in new versions of XCode.
+        # Besides, there is a known long-standing issue in simulator SDK:
         # the compiler generates a lot of bogus warnings in Metal
         # headers about unavailable API
         target_compile_options(Diligent-BuildSettings

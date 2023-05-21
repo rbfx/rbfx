@@ -4,6 +4,7 @@ project(Diligent-GraphicsTools CXX)
 
 set(INTERFACE
     interface/BufferSuballocator.h
+    interface/BytecodeCache.h
     interface/CommonlyUsedStates.h
     interface/DynamicBuffer.hpp
     interface/DynamicTextureArray.hpp
@@ -20,25 +21,22 @@ set(INTERFACE
     interface/TextureUploader.hpp
     interface/TextureUploaderBase.hpp
     interface/XXH128Hasher.hpp
-    interface/BytecodeCache.h  
+    interface/VertexPool.h
 )
 
 set(SOURCE
     src/BufferSuballocator.cpp
+    src/BytecodeCache.cpp
     src/DurationQueryHelper.cpp
     src/DynamicBuffer.cpp
     src/DynamicTextureArray.cpp
     src/DynamicTextureAtlas.cpp
     src/GraphicsUtilities.cpp
-    src/GraphicsUtilitiesD3D11.cpp
-    src/GraphicsUtilitiesD3D12.cpp
-    src/GraphicsUtilitiesGL.cpp
-    src/GraphicsUtilitiesVk.cpp
     src/ScopedQueryHelper.cpp
     src/ScreenCapture.cpp
     src/TextureUploader.cpp
     src/XXH128Hasher.cpp
-    src/BytecodeCache.cpp
+    src/VertexPool.cpp
 )
 
 if(ARCHIVER_SUPPORTED)
@@ -49,21 +47,26 @@ if(ARCHIVER_SUPPORTED)
     list(APPEND SOURCE
         src/RenderStateCache.cpp
     )
+    set(RENDER_STATE_CACHE_SUPPORTED TRUE CACHE INTERNAL "Render state cache is supported")
+else()
+    set(RENDER_STATE_CACHE_SUPPORTED FALSE CACHE INTERNAL "Render state cache is not supported")
 endif()
 
 set(DEPENDENCIES)
 
 if(D3D11_SUPPORTED)
-    list(APPEND SOURCE src/TextureUploaderD3D11.cpp)
+    list(APPEND SOURCE src/TextureUploaderD3D11.cpp src/GraphicsUtilitiesD3D11.cpp)
     list(APPEND INTERFACE interface/TextureUploaderD3D11.hpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineD3D11Interface)
 endif()
 
 if(D3D12_SUPPORTED)
+    list(APPEND SOURCE src/GraphicsUtilitiesD3D12.cpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineD3D12Interface)
 endif()
 
 if(VULKAN_SUPPORTED)
+    list(APPEND SOURCE src/GraphicsUtilitiesVk.cpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineVkInterface Vulkan::Headers)
 endif()
 
@@ -73,9 +76,14 @@ if(D3D12_SUPPORTED OR VULKAN_SUPPORTED)
 endif()
 
 if(GL_SUPPORTED OR GLES_SUPPORTED)
-    list(APPEND SOURCE src/TextureUploaderGL.cpp)
+    list(APPEND SOURCE src/TextureUploaderGL.cpp src/GraphicsUtilitiesGL.cpp)
     list(APPEND INTERFACE interface/TextureUploaderGL.hpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineOpenGLInterface)
+endif()
+
+if(METAL_SUPPORTED)
+    list(APPEND SOURCE src/GraphicsUtilitiesMtl.mm)
+    list(APPEND DEPENDENCIES Diligent-GraphicsEngineMetalInterface)
 endif()
 
 add_library(Diligent-GraphicsTools STATIC ${SOURCE} ${INTERFACE})
@@ -106,6 +114,10 @@ if(ARCHIVER_SUPPORTED)
     PRIVATE
         Diligent-Archiver-static
     )
+endif()
+
+if(RENDER_STATE_CACHE_SUPPORTED)
+    target_compile_definitions(Diligent-GraphicsTools PUBLIC DILIGENT_RENDER_STATE_CACHE_SUPPORTED=1)
 endif()
 
 if(D3D11_SUPPORTED OR D3D12_SUPPORTED)

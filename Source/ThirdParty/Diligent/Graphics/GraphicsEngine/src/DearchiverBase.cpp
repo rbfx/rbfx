@@ -337,14 +337,14 @@ void DearchiverBase::PSOData<GraphicsPipelineStateCreateInfo>::AssignShaders()
 template <>
 void DearchiverBase::PSOData<ComputePipelineStateCreateInfo>::AssignShaders()
 {
-    VERIFY(Shaders.size() == 1, "Compute pipline must have one shader");
+    VERIFY(Shaders.size() == 1, "Compute pipeline must have one shader");
     AssignShader(CreateInfo.pCS, Shaders[0], SHADER_TYPE_COMPUTE);
 }
 
 template <>
 void DearchiverBase::PSOData<TilePipelineStateCreateInfo>::AssignShaders()
 {
-    VERIFY(Shaders.size() == 1, "Tile pipline must have one shader");
+    VERIFY(Shaders.size() == 1, "Tile pipeline must have one shader");
     AssignShader(CreateInfo.pTS, Shaders[0], SHADER_TYPE_TILE);
 }
 

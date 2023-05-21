@@ -65,6 +65,9 @@ struct ITextureAtlasSuballocation : public IObject
     /// Returns the texture coordinate scale (xy) and bias (zw).
     virtual float4 GetUVScaleBias() const = 0;
 
+    /// Returns the suballocation alignment.
+    virtual Uint32 GetAlignment() const = 0;
+
     /// Returns the pointer to the parent texture atlas.
     virtual IDynamicTextureAtlas* GetAtlas() = 0;
 
@@ -88,8 +91,8 @@ struct ITextureAtlasSuballocation : public IObject
 /// Dynamic texture atlas usage stats.
 struct DynamicTextureAtlasUsageStats
 {
-    /// The total size of the atlas, in bytes.
-    Uint64 Size = 0;
+    /// The total committed memory size of the atlas, in bytes.
+    Uint64 CommittedSize = 0;
 
     /// The total number of allocations in the atlas.
     Uint32 AllocationCount = 0;
@@ -156,6 +159,14 @@ struct IDynamicTextureAtlas : public IObject
 
     /// Returns the usage stats, see Diligent::DynamicTextureAtlasUsageStats.
     virtual void GetUsageStats(DynamicTextureAtlasUsageStats& Stats) const = 0;
+
+
+    /// Computes the allocation alignment for the region of a given size.
+
+    /// \param [in] Width  - Region width.
+    /// \param [in] Height - Region height.
+    /// \return            - Allocation alignment.
+    virtual Uint32 GetAllocationAlignment(Uint32 Width, Uint32 Height) const = 0;
 };
 
 
@@ -213,17 +224,19 @@ struct DynamicTextureAtlasCreateInfo
     /// Maximum number of slices in texture array.
     Uint32 MaxSliceCount = 2048;
 
-
-    /// Allocation granularity for ITextureAtlasSuballocation objects.
-
-    /// Texture atlas uses FixedBlockMemoryAllocator to allocate instances
-    /// of ITextureAtlasSuballocation implementation class. This member defines
-    /// the number of objects in one page.
-    Uint32 SuballocationObjAllocationGranularity = 64;
-
     /// Silence allocation errors.
     bool Silent = false;
 };
+
+
+/// Computes the texture atlas suballocation alignment for the region of a given size.
+
+/// \param [in] Width        - Region width.
+/// \param [in] Height       - Region height.
+/// \param [in] MinAlignment - Minimum required alignment, see DynamicTextureAtlasCreateInfo::MinAlignment.
+/// \return                  - Allocation alignment.
+Uint32 ComputeTextureAtlasSuballocationAlignment(Uint32 Width, Uint32 Height, Uint32 MinAlignment);
+
 
 /// Creates a new dynamic texture atlas.
 

@@ -154,7 +154,8 @@ struct XXH128State final
                              std::is_same<typename std::remove_cv<T>::type, GraphicsPipelineStateCreateInfo>::value ||
                              std::is_same<typename std::remove_cv<T>::type, ComputePipelineStateCreateInfo>::value ||
                              std::is_same<typename std::remove_cv<T>::type, RayTracingPipelineStateCreateInfo>::value ||
-                             std::is_same<typename std::remove_cv<T>::type, TilePipelineStateCreateInfo>::value),
+                             std::is_same<typename std::remove_cv<T>::type, TilePipelineStateCreateInfo>::value ||
+                             std::is_same<typename std::remove_cv<T>::type, VertexPoolElementDesc>::value),
                             void>::type
     Update(const T& Val) noexcept
     {

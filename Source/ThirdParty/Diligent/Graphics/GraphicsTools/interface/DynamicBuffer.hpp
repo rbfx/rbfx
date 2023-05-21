@@ -62,7 +62,7 @@ struct DynamicBufferCreateInfo
 
     /// When Desc.Usage == USAGE_SPARSE, the virtual size of the sparse buffer;
     /// ignored otherwise.
-    Uint64 VirualSize = Uint64{1} << Uint64{30};
+    Uint64 VirtualSize = Uint64{1} << Uint64{30};
 };
 
 
@@ -183,7 +183,7 @@ private:
     RefCntAutoPtr<IDeviceMemory> m_pMemory;
 
     Uint64 m_PendingSize = 0;
-    Uint64 m_VirualSize  = 0;
+    Uint64 m_VirtualSize = 0;
 
     Uint32 m_MemoryPageSize = 0;
 

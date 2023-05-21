@@ -881,6 +881,12 @@ template <class T> struct Matrix2x2
         Inv *= static_cast<T>(1) / Determinant();
         return Inv;
     }
+
+    template <typename Y>
+    constexpr Matrix2x2<Y> Recast() const
+    {
+        return Matrix2x2<Y>::MakeMatrix(Data());
+    }
 };
 
 
@@ -1154,6 +1160,12 @@ template <class T> struct Matrix3x3
         Inv *= static_cast<T>(1) / det;
 
         return Inv;
+    }
+
+    template <typename Y>
+    constexpr Matrix3x3<Y> Recast() const
+    {
+        return Matrix3x3<Y>::MakeMatrix(Data());
     }
 };
 
@@ -1710,6 +1722,12 @@ template <class T> struct Matrix4x4
                   0,   0,   0, _44 // clang-format on
             };
     }
+
+    template <typename Y>
+    constexpr Matrix4x4<Y> Recast() const
+    {
+        return Matrix4x4<Y>::MakeMatrix(Data());
+    }
 };
 
 // Template Vector Operations
@@ -1985,15 +2003,15 @@ using double4x4 = Matrix4x4<double>;
 using double3x3 = Matrix3x3<double>;
 using double2x2 = Matrix2x2<double>;
 
-
+template <typename T = float>
 struct Quaternion
 {
-    float4 q;
+    Vector4<T> q;
 
-    constexpr Quaternion(const float4& _q) noexcept :
+    constexpr Quaternion(const Vector4<T>& _q) noexcept :
         q{_q}
     {}
-    constexpr Quaternion(float x, float y, float z, float w) noexcept :
+    constexpr Quaternion(T x, T y, T z, T w) noexcept :
         q{x, y, z, w}
     {
     }
@@ -2006,61 +2024,66 @@ struct Quaternion
         return q == right.q;
     }
 
+    constexpr bool operator!=(const Quaternion& right) const
+    {
+        return q != right.q;
+    }
+
     template <typename Y>
     constexpr static Quaternion MakeQuaternion(const Y& vals)
     {
-        return Quaternion{float4::MakeVector(vals)};
+        return Quaternion{Vector4<T>::MakeVector(vals)};
     }
 
-    static Quaternion RotationFromAxisAngle(const float3& axis, float angle)
+    static Quaternion RotationFromAxisAngle(const Vector3<T>& axis, T angle)
     {
         Quaternion out{0, 0, 0, 1};
-        float      norm = length(axis);
+        const auto norm = length(axis);
         if (norm != 0)
         {
-            float sina2 = sin(0.5f * angle);
-            out.q[0]    = sina2 * axis[0] / norm;
-            out.q[1]    = sina2 * axis[1] / norm;
-            out.q[2]    = sina2 * axis[2] / norm;
-            out.q[3]    = cos(0.5f * angle);
+            auto sina2 = std::sin(T{0.5} * angle);
+            out.q[0]   = sina2 * axis[0] / norm;
+            out.q[1]   = sina2 * axis[1] / norm;
+            out.q[2]   = sina2 * axis[2] / norm;
+            out.q[3]   = std::cos(T{0.5} * angle);
         }
         return out;
     }
 
-    void GetAxisAngle(float3& outAxis, float& outAngle) const
+    void GetAxisAngle(Vector3<T>& outAxis, T& outAngle) const
     {
-        float sina2 = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2]);
-        outAngle    = 2.0f * atan2(sina2, q[3]);
-        float r     = (sina2 > 0) ? (1.0f / sina2) : 0;
-        outAxis[0]  = r * q[0];
-        outAxis[1]  = r * q[1];
-        outAxis[2]  = r * q[2];
+        auto sina2 = std::sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2]);
+        outAngle   = T{2} * std::atan2(sina2, q[3]);
+        auto r     = (sina2 > 0) ? (T{1} / sina2) : 0;
+        outAxis[0] = r * q[0];
+        outAxis[1] = r * q[1];
+        outAxis[2] = r * q[2];
     }
 
-    float4x4 ToMatrix() const
+    Matrix4x4<T> ToMatrix() const
     {
-        float4x4 out;
-        float    yy2 = 2.0f * q[1] * q[1];
-        float    xy2 = 2.0f * q[0] * q[1];
-        float    xz2 = 2.0f * q[0] * q[2];
-        float    yz2 = 2.0f * q[1] * q[2];
-        float    zz2 = 2.0f * q[2] * q[2];
-        float    wz2 = 2.0f * q[3] * q[2];
-        float    wy2 = 2.0f * q[3] * q[1];
-        float    wx2 = 2.0f * q[3] * q[0];
-        float    xx2 = 2.0f * q[0] * q[0];
-        out[0][0]    = -yy2 - zz2 + 1.0f;
-        out[0][1]    = xy2 + wz2;
-        out[0][2]    = xz2 - wy2;
-        out[0][3]    = 0;
-        out[1][0]    = xy2 - wz2;
-        out[1][1]    = -xx2 - zz2 + 1.0f;
-        out[1][2]    = yz2 + wx2;
-        out[1][3]    = 0;
-        out[2][0]    = xz2 + wy2;
-        out[2][1]    = yz2 - wx2;
-        out[2][2]    = -xx2 - yy2 + 1.0f;
-        out[2][3]    = 0;
+        Matrix4x4<T> out;
+        auto         yy2 = 2.0f * q[1] * q[1];
+        auto         xy2 = 2.0f * q[0] * q[1];
+        auto         xz2 = 2.0f * q[0] * q[2];
+        auto         yz2 = 2.0f * q[1] * q[2];
+        auto         zz2 = 2.0f * q[2] * q[2];
+        auto         wz2 = 2.0f * q[3] * q[2];
+        auto         wy2 = 2.0f * q[3] * q[1];
+        auto         wx2 = 2.0f * q[3] * q[0];
+        auto         xx2 = 2.0f * q[0] * q[0];
+        out[0][0]        = -yy2 - zz2 + 1.0f;
+        out[0][1]        = xy2 + wz2;
+        out[0][2]        = xz2 - wy2;
+        out[0][3]        = 0;
+        out[1][0]        = xy2 - wz2;
+        out[1][1]        = -xx2 - zz2 + 1.0f;
+        out[1][2]        = yz2 + wx2;
+        out[1][3]        = 0;
+        out[2][0]        = xz2 + wy2;
+        out[2][1]        = yz2 - wx2;
+        out[2][2]        = -xx2 - yy2 + 1.0f;
+        out[2][3]        = 0;
         out[3][0] = out[3][1] = out[3][2] = 0;
         out[3][3]                         = 1;
         return out;
@@ -2088,25 +2111,30 @@ struct Quaternion
         return *this;
     }
 
-    float3 RotateVector(const float3& v) const
+    Vector3<T> RotateVector(const Vector3<T>& v) const
     {
-        const float3 axis(q.x, q.y, q.z);
-        return v + 2.f * cross(axis, cross(axis, v) + q.w * v);
+        const Vector3<T> axis{q.x, q.y, q.z};
+        return v + T{2} * cross(axis, cross(axis, v) + q.w * v);
     }
 };
+using QuaternionF = Quaternion<float>;
+using QuaternionD = Quaternion<double>;
 
-constexpr inline Quaternion operator*(const Quaternion& q1, const Quaternion& q2)
+template <typename T>
+constexpr inline Quaternion<T> operator*(const Quaternion<T>& q1, const Quaternion<T>& q2)
 {
-    return Quaternion::Mul(q1, q2);
+    return Quaternion<T>::Mul(q1, q2);
 }
 
-constexpr inline Quaternion normalize(const Quaternion& q)
+template <typename T>
+constexpr inline Quaternion<T> normalize(const Quaternion<T>& q)
 {
-    return Quaternion{normalize(q.q)};
+    return Quaternion<T>{normalize(q.q)};
 }
 
 // https://en.wikipedia.org/wiki/Slerp
-inline Quaternion slerp(Quaternion v0, Quaternion v1, float t, bool DoNotNormalize = false)
+template <typename T>
+inline Quaternion<T> slerp(Quaternion<T> v0, Quaternion<T> v1, T t, bool DoNotNormalize = false)
 {
     // Only unit quaternions are valid rotations.
     // Normalize to avoid undefined behavior.
@@ -2135,8 +2163,8 @@ inline Quaternion slerp(Quaternion v0, Quaternion v1, float t, bool DoNotNormali
         // If the inputs are too close for comfort, linearly interpolate
         // and normalize the result.
 
-        Quaternion result = Quaternion{v0.q + t * (v1.q - v0.q)};
-        result.q          = normalize(result.q);
+        auto result = Quaternion<T>{v0.q + t * (v1.q - v0.q)};
+        result.q    = normalize(result.q);
         return result;
     }
 
@@ -2149,7 +2177,7 @@ inline Quaternion slerp(Quaternion v0, Quaternion v1, float t, bool DoNotNormali
     auto s0 = cos(theta) - dp * sin_theta / sin_theta_0; // == sin(theta_0 - theta) / sin(theta_0)
     auto s1 = sin_theta / sin_theta_0;
 
-    auto v = Quaternion{v0.q * s0 + v1.q * s1};
+    auto v = Quaternion<T>{v0.q * s0 + v1.q * s1};
     if (!DoNotNormalize)
     {
         v = normalize(v);

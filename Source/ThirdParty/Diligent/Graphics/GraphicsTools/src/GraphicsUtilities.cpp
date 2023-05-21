@@ -451,6 +451,15 @@ void ComputeMipLevel(const ComputeMipLevelAttribs& Attribs)
     }
 }
 
+#if !METAL_SUPPORTED
+void CreateSparseTextureMtl(IRenderDevice*     pDevice,
+                            const TextureDesc& TexDesc,
+                            IDeviceMemory*     pMemory,
+                            ITexture**         ppTexture)
+{
+}
+#endif
+
 } // namespace Diligent
 
 
@@ -482,5 +491,13 @@ extern "C"
     void Diligent_ComputeMipLevel(const Diligent::ComputeMipLevelAttribs& Attribs)
     {
         Diligent::ComputeMipLevel(Attribs);
+    }
+
+    void Diligent_CreateSparseTextureMtl(Diligent::IRenderDevice*     pDevice,
+                                         const Diligent::TextureDesc& TexDesc,
+                                         Diligent::IDeviceMemory*     pMemory,
+                                         Diligent::ITexture**         ppTexture)
+    {
+        Diligent::CreateSparseTextureMtl(pDevice, TexDesc, pMemory, ppTexture);
     }
 }

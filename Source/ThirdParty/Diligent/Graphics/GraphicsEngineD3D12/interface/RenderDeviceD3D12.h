@@ -117,9 +117,6 @@ DILIGENT_BEGIN_INTERFACE(IRenderDeviceD3D12, IRenderDevice)
                                                    const TopLevelASDesc REF Desc,
                                                    RESOURCE_STATE           InitialState,
                                                    ITopLevelAS**            ppTLAS) PURE;
-
-    /// Returns the maximum shader version supported by this render device.
-    VIRTUAL const ShaderVersion REF METHOD(GetMaxShaderVersion)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 
@@ -134,7 +131,6 @@ DILIGENT_END_INTERFACE
 #    define IRenderDeviceD3D12_CreateBufferFromD3DResource(This, ...)  CALL_IFACE_METHOD(RenderDeviceD3D12, CreateBufferFromD3DResource,  This, __VA_ARGS__)
 #    define IRenderDeviceD3D12_CreateBLASFromD3DResource(This, ...)    CALL_IFACE_METHOD(RenderDeviceD3D12, CreateBLASFromD3DResource,    This, __VA_ARGS__)
 #    define IRenderDeviceD3D12_CreateTLASFromD3DResource(This, ...)    CALL_IFACE_METHOD(RenderDeviceD3D12, CreateTLASFromD3DResource,    This, __VA_ARGS__)
-#    define IRenderDeviceD3D12_GetMaxShaderVersion(This)               CALL_IFACE_METHOD(RenderDeviceD3D12, GetMaxShaderVersion,          This)
 
 // clang-format on
 

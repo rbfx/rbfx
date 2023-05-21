@@ -141,12 +141,21 @@ typedef struct ComputeMipLevelAttribs ComputeMipLevelAttribs;
 
 void DILIGENT_GLOBAL_FUNCTION(ComputeMipLevel)(const ComputeMipLevelAttribs REF Attribs);
 
-/// For a Direct3D12 render device, returns the maximum supported shader version. For any other device type, returns 0.
 
-/// \param [in]  pDevice - a pointer to the render device object.
-/// \param [out] Version - maximum shader version supported by this device.
+/// Creates a sparse texture in Metal backend.
+
+/// \param [in]  pDevice   - A pointer to the render device.
+/// \param [in]  TexDesc   - Texture description.
+/// \param [in]  pMemory   - A pointer to the device memory.
+/// \param [out] ppTexture - Address of the memory location where a pointer to the
+///                          sparse texture will be written.
 ///
-/// \return     true if the maximum shader version was determined successfully, and false otherwise.
-bool DILIGENT_GLOBAL_FUNCTION(GetRenderDeviceD3D12MaxShaderVersion)(IRenderDevice* pDevice, ShaderVersion REF Version);
+/// \remarks    If pDevice is a pointer to Metal device (IRenderDeviceMtl), this function
+///             creates a sparse texture using IRenderDeviceMtl::CreateSparseTexture method.
+///             Otherwise, it does nothing.
+void DILIGENT_GLOBAL_FUNCTION(CreateSparseTextureMtl)(IRenderDevice*        pDevice,
+                                                      const TextureDesc REF TexDesc,
+                                                      IDeviceMemory*        pMemory,
+                                                      ITexture**            ppTexture);
 
 DILIGENT_END_NAMESPACE // namespace Diligent

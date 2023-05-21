@@ -292,6 +292,15 @@ RenderDeviceGLImpl::RenderDeviceGLImpl(IReferenceCounters*       pRefCounters,
 #endif
         }
     }
+
+    if (m_DeviceInfo.Type == RENDER_DEVICE_TYPE_GL)
+        m_DeviceInfo.MaxShaderVersion.GLSL = m_DeviceInfo.APIVersion;
+    else
+        m_DeviceInfo.MaxShaderVersion.GLESSL = m_DeviceInfo.APIVersion;
+
+#if !DILIGENT_NO_HLSL
+    m_DeviceInfo.MaxShaderVersion.HLSL = {5, 0};
+#endif
 }
 
 RenderDeviceGLImpl::~RenderDeviceGLImpl()

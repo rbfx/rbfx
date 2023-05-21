@@ -285,4 +285,10 @@ std::vector<std::unique_ptr<FindFileData>> WindowsStoreFileSystem::Search(const 
     return std::vector<std::unique_ptr<FindFileData>>();
 }
 
+std::string GetLocalAppDataDirectory(const char* AppName /*= nullptr*/, bool Create /*= true*/)
+{
+    UNSUPPORTED("GetLocalAppDataDirectory() is not supported on UWP");
+    return "";
+}
+
 } // namespace Diligent

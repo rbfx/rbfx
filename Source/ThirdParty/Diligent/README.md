@@ -18,7 +18,6 @@ The module's cmake script defines a number of variables that are required to gen
 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](License.txt)
-[![Chat on gitter](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/diligent-engine)
 [![Chat on Discord](https://img.shields.io/discord/730091778081947680?logo=discord)](https://discord.gg/t7HGBK7)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/DiligentGraphics/DiligentCore?svg=true)](https://ci.appveyor.com/project/DiligentGraphics/diligentcore)
 [![CodeQL Scanning](https://github.com/DiligentGraphics/DiligentCore/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/DiligentGraphics/DiligentCore/actions/workflows/codeql.yml?query=branch%3Amaster)

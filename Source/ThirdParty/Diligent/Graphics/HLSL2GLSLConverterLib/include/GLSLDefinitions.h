@@ -952,6 +952,10 @@ vec4 _frexp(vec4 f4, out vec4 fexp4)
 #define SampleGrad_4(Tex, Sampler, Coords, DDX, DDY)         textureGrad      (Tex, _ToVec(Coords), _ToVec(DDX), _ToVec(DDY))
 #define SampleGrad_5(Tex, Sampler, Coords, DDX, DDY, Offset) textureGradOffset(Tex, _ToVec(Coords), _ToVec(DDX), _ToVec(DDY), Offset)
 
+// https://www.opengl.org/sdk/docs/man/html/textureQueryLod.xhtml
+// The mipmap array(s) that would be accessed is returned in the x component of the return value.
+// The computed level-of-detail relative to the base level is returned in the y component of the return value.
+#define CalculateLevelOfDetail_2(Tex, Sampler, Coords) textureQueryLod(Tex, _ToVec(Coords)).y
 
 // texelFetch performs a lookup of a single texel from texture coordinate P in the texture
 // bound to sampler. The array layer is specified in the last component of P for array forms.

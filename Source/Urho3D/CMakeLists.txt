@@ -226,6 +226,7 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
 # Private dependencies that are hidden from the user and are not exposed in the public API or headers
 set (PRIVATE_THIRD_PARTY_DEPENDENCIES
     glslang
+    glslang-default-resource-limits
     SPIRV
     spirv-cross-core
     spirv-cross-glsl

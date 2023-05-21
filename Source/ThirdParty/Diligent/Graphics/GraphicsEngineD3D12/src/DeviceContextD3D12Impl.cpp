@@ -936,7 +936,7 @@ void DeviceContextD3D12Impl::ClearRenderTarget(ITextureView* pView, const float*
 
 void DeviceContextD3D12Impl::RequestCommandContext()
 {
-    m_CurrCmdCtx = m_pDevice->AllocateCommandContext(GetCommandQueueId());
+    m_CurrCmdCtx = m_pDevice->AllocateCommandContext(GetCommandQueueId(), "Command list");
     m_CurrCmdCtx->SetDynamicGPUDescriptorAllocators(m_DynamicGPUDescriptorAllocator);
 }
 
@@ -960,7 +960,7 @@ void DeviceContextD3D12Impl::Flush(bool                 RequestNewCmdCtx,
         VERIFY(!IsDeferred(), "Deferred contexts cannot execute command lists directly");
         if (m_State.NumCommands != 0)
             Contexts.emplace_back(std::move(m_CurrCmdCtx));
-        else
+        else if (!RequestNewCmdCtx) // Reuse existing context instead of disposing and creating new one.
             m_pDevice->DisposeCommandContext(std::move(m_CurrCmdCtx));
     }
 
@@ -979,24 +979,31 @@ void DeviceContextD3D12Impl::Flush(bool                 RequestNewCmdCtx,
     if (!Contexts.empty())
     {
         m_pDevice->CloseAndExecuteCommandContexts(GetCommandQueueId(), static_cast<Uint32>(Contexts.size()), Contexts.data(), true, &m_SignalFences, &m_WaitFences);
-        m_SignalFences.clear();
 
 #ifdef DILIGENT_DEBUG
-        for (Uint32 i = 0; i < NumCommandLists; ++i)
-            VERIFY(!Contexts[i], "All contexts must be disposed by CloseAndExecuteCommandContexts");
+        for (const auto& Ctx : Contexts)
+            VERIFY(!Ctx, "All contexts must be disposed by CloseAndExecuteCommandContexts");
 #endif
     }
-
-    m_WaitFences.clear();
-
-    // If there is no command list to submit, but there are pending fences, we need to signal them now
-    if (!m_SignalFences.empty())
+    else
     {
-        m_pDevice->SignalFences(GetCommandQueueId(), m_SignalFences);
-        m_SignalFences.clear();
+        // If there is no command list to submit, but there are pending fences, we need to process them now
+
+        if (!m_WaitFences.empty())
+        {
+            m_pDevice->WaitFences(GetCommandQueueId(), m_WaitFences);
+        }
+
+        if (!m_SignalFences.empty())
+        {
+            m_pDevice->SignalFences(GetCommandQueueId(), m_SignalFences);
+        }
     }
 
-    if (RequestNewCmdCtx)
+    m_SignalFences.clear();
+    m_WaitFences.clear();
+
+    if (!m_CurrCmdCtx && RequestNewCmdCtx)
         RequestCommandContext();
 
     m_State             = State{};

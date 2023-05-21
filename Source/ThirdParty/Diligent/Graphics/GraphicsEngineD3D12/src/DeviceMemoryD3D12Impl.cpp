@@ -223,9 +223,14 @@ Bool DeviceMemoryD3D12Impl::Resize(Uint64 NewSize)
     while (m_Pages.size() < NewPageCount)
     {
         if (auto pHeap = CreateD3D12Heap(m_pDevice, d3d12HeapDesc, m_UseNVApi))
+        {
+            pHeap->SetName(L"Device memory page");
             m_Pages.emplace_back(std::move(pHeap));
+        }
         else
+        {
             return false;
+        }
     }
 
     while (m_Pages.size() > NewPageCount)

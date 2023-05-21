@@ -20,6 +20,7 @@ set(INTERFACE
     interface/FilteringTools.hpp
     interface/FixedBlockMemoryAllocator.hpp
     interface/HashUtils.hpp
+    interface/LRUCache.hpp
     interface/FixedLinearAllocator.hpp
     interface/DynamicLinearAllocator.hpp
     interface/MemoryFileStream.hpp

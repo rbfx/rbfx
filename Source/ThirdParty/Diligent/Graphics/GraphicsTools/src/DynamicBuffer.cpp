@@ -66,9 +66,14 @@ DynamicBuffer::DynamicBuffer(IRenderDevice*                 pDevice,
                              const DynamicBufferCreateInfo& CI) :
     m_Name{CI.Desc.Name != nullptr ? CI.Desc.Name : "Dynamic buffer"},
     m_Desc{CI.Desc},
-    m_VirualSize{CI.VirualSize},
+    m_VirtualSize{CI.VirtualSize},
     m_MemoryPageSize{CI.MemoryPageSize}
 {
+    if (m_Desc.BindFlags & (BIND_SHADER_RESOURCE | BIND_UNORDERED_ACCESS))
+    {
+        VERIFY_EXPR(m_Desc.ElementByteStride != 0);
+        m_VirtualSize = AlignDownNonPw2(m_VirtualSize, m_Desc.ElementByteStride);
+    }
     m_Desc.Name   = m_Name.c_str();
     m_PendingSize = m_Desc.Size;
     m_Desc.Size   = 0; // Current buffer size
@@ -95,11 +100,11 @@ void DynamicBuffer::CreateSparseBuffer(IRenderDevice* pDevice)
     const auto  SparseMemBlockSize = SparseResources.StandardBlockSize;
 
     m_MemoryPageSize = std::max(AlignUp(m_MemoryPageSize, SparseMemBlockSize), SparseMemBlockSize);
-    m_VirualSize     = std::min(m_VirualSize, AlignDown(SparseResources.ResourceSpaceSize, m_MemoryPageSize));
+    m_VirtualSize    = std::min(m_VirtualSize, AlignDown(SparseResources.ResourceSpaceSize, m_MemoryPageSize));
 
     {
         auto Desc = m_Desc;
-        Desc.Size = m_VirualSize;
+        Desc.Size = m_VirtualSize;
         pDevice->CreateBuffer(Desc, nullptr, &m_pBuffer);
         DEV_CHECK_ERR(m_pBuffer, "Failed to create sparse buffer");
         if (!m_pBuffer)

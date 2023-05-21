@@ -228,9 +228,11 @@ DILIGENT_TYPED_ENUM(USAGE, Uint8)
 /// \note Only USAGE_DYNAMIC resources can be mapped
 DILIGENT_TYPED_ENUM(CPU_ACCESS_FLAGS, Uint8)
 {
-    CPU_ACCESS_NONE  = 0x00, ///< No CPU access
-    CPU_ACCESS_READ  = 0x01, ///< A resource can be mapped for reading
-    CPU_ACCESS_WRITE = 0x02  ///< A resource can be mapped for writing
+    CPU_ACCESS_NONE  = 0u,       ///< No CPU access
+    CPU_ACCESS_READ  = 1u << 0u, ///< A resource can be mapped for reading
+    CPU_ACCESS_WRITE = 1u << 1u, ///< A resource can be mapped for writing
+
+    CPU_ACCESS_FLAG_LAST = CPU_ACCESS_WRITE
 };
 DEFINE_FLAG_ENUM_OPERATORS(CPU_ACCESS_FLAGS)
 
@@ -2352,6 +2354,39 @@ struct NDCAttribs
 typedef struct NDCAttribs NDCAttribs;
 
 
+/// Render device shader version information
+struct RenderDeviceShaderVersionInfo
+{
+    /// HLSL shader model.
+    Version HLSL DEFAULT_INITIALIZER({});
+
+    /// GLSL version.
+    Version GLSL DEFAULT_INITIALIZER({});
+
+    /// GLSL-ES version.
+    Version GLESSL DEFAULT_INITIALIZER({});
+
+    /// MSL version.
+    Version MSL DEFAULT_INITIALIZER({});
+
+#if DILIGENT_CPP_INTERFACE
+    constexpr bool operator == (const RenderDeviceShaderVersionInfo& RHS) const 
+    {
+        return HLSL   == RHS.HLSL   &&
+               GLSL   == RHS.GLSL   &&
+               GLESSL == RHS.GLESSL &&
+               MSL    == RHS.MSL;
+    }
+
+    constexpr bool operator != (const RenderDeviceShaderVersionInfo& RHS) const 
+    {
+        return !(*this == RHS);
+    }
+#endif
+};
+typedef struct RenderDeviceShaderVersionInfo RenderDeviceShaderVersionInfo;
+
+
 /// Render device information
 struct RenderDeviceInfo
 {
@@ -2375,6 +2410,9 @@ struct RenderDeviceInfo
 
     /// Normalized device coordinates
     NDCAttribs NDC DEFAULT_INITIALIZER({});
+
+    /// Maximum supported version for each shader language, see Diligent::RenderDeviceShaderVersionInfo.
+    RenderDeviceShaderVersionInfo MaxShaderVersion DEFAULT_INITIALIZER({});
 
 #if DILIGENT_CPP_INTERFACE
     constexpr bool IsGLDevice()const
@@ -2408,12 +2446,12 @@ struct RenderDeviceInfo
     /// - False otherwise.
     constexpr bool operator == (const RenderDeviceInfo& RHS) const 
     {
-        return Type       == RHS.Type       &&
-               APIVersion == RHS.APIVersion &&
-               Features   == RHS.Features   &&
-               NDC        == RHS.NDC; 
+        return Type             == RHS.Type       &&
+               APIVersion       == RHS.APIVersion &&
+               Features         == RHS.Features   &&
+               NDC              == RHS.NDC        &&
+               MaxShaderVersion == RHS.MaxShaderVersion; 
     }
-
 #endif
 };
 typedef struct RenderDeviceInfo RenderDeviceInfo;

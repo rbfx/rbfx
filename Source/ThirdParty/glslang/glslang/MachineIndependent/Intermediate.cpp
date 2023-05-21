@@ -352,7 +352,7 @@ TIntermTyped* TIntermediate::addIndex(TOperator op, TIntermTyped* base, TIntermT
 TIntermTyped* TIntermediate::addUnaryMath(TOperator op, TIntermTyped* child,
     const TSourceLoc& loc)
 {
-    if (child == 0)
+    if (child == nullptr)
         return nullptr;
 
     if (child->getType().getBasicType() == EbtBlock)
@@ -751,6 +751,11 @@ bool TIntermediate::buildConvertOp(TBasicType dst, TBasicType src, TOperator& ne
         case EbtInt64:   newOp = EOpConvInt64ToUint;   break;
         case EbtUint64:  newOp = EOpConvUint64ToUint;  break;
 #endif
+        // For bindless texture type conversion, add a dummy convert op, just
+        // to generate a new TIntermTyped
+        // uvec2(any sampler type)
+        // uvec2(any image type)
+        case EbtSampler: newOp = EOpConvIntToUint;  break;
         default:
             return false;
         }
@@ -2733,10 +2738,10 @@ TIntermAggregate* TIntermediate::addForLoop(TIntermNode* body, TIntermNode* init
     TIntermAggregate* loopSequence = (initializer == nullptr ||
                                       initializer->getAsAggregate() == nullptr) ? makeAggregate(initializer, loc)
                                                                                 : initializer->getAsAggregate();
-    if (loopSequence != nullptr && loopSequence->getOp() == EOpSequence)
+    if (loopSequence != nullptr && (loopSequence->getOp() == EOpSequence || loopSequence->getOp() == EOpScope))
         loopSequence->setOp(EOpNull);
     loopSequence = growAggregate(loopSequence, node);
-    loopSequence->setOperator(EOpSequence);
+    loopSequence->setOperator(getDebugInfo() ? EOpScope : EOpSequence);
 
     return loopSequence;
 }

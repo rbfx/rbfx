@@ -98,11 +98,22 @@ private:
     };
 
 public:
-    VariableSizeAllocationsManager(OffsetType MaxSize, IMemoryAllocator& Allocator) :
-        m_FreeBlocksByOffset(STD_ALLOCATOR_RAW_MEM(TFreeBlocksByOffsetMap::value_type, Allocator, "Allocator for map<OffsetType, FreeBlockInfo>")),
-        m_FreeBlocksBySize(STD_ALLOCATOR_RAW_MEM(TFreeBlocksBySizeMap::value_type, Allocator, "Allocator for multimap<OffsetType, TFreeBlocksByOffsetMap::iterator>")),
-        m_MaxSize(MaxSize),
-        m_FreeSize(MaxSize)
+    struct CreateInfo
+    {
+        IMemoryAllocator& Allocator;
+        OffsetType        MaxSize                   = 0;
+        bool              DbgDisableDebugValidation = false;
+    };
+    explicit VariableSizeAllocationsManager(const CreateInfo& CI)
+        // clang-format off
+        : m_FreeBlocksByOffset{STD_ALLOCATOR_RAW_MEM(TFreeBlocksByOffsetMap::value_type, CI.Allocator, "Allocator for map<OffsetType, FreeBlockInfo>")}
+        , m_FreeBlocksBySize  {STD_ALLOCATOR_RAW_MEM(TFreeBlocksBySizeMap::value_type,   CI.Allocator, "Allocator for multimap<OffsetType, TFreeBlocksByOffsetMap::iterator>")}
+        , m_MaxSize {CI.MaxSize}
+        , m_FreeSize{CI.MaxSize}
+#ifdef DILIGENT_DEBUG
+        , m_DbgDisableDebugValidation{CI.DbgDisableDebugValidation}
+#endif
+    // clang-format on
     {
         // Insert single maximum-size block
         AddNewBlock(0, m_MaxSize);
@@ -112,6 +123,10 @@ public:
         DbgVerifyList();
 #endif
     }
+
+    VariableSizeAllocationsManager(OffsetType MaxSize, IMemoryAllocator& Allocator) :
+        VariableSizeAllocationsManager{CreateInfo{Allocator, MaxSize}}
+    {}
 
     ~VariableSizeAllocationsManager()
     {
@@ -132,12 +147,15 @@ public:
     }
 
     // clang-format off
-    VariableSizeAllocationsManager(VariableSizeAllocationsManager&& rhs) noexcept :
-        m_FreeBlocksByOffset {std::move(rhs.m_FreeBlocksByOffset)},
-        m_FreeBlocksBySize   {std::move(rhs.m_FreeBlocksBySize)  },
-        m_MaxSize            {rhs.m_MaxSize      },
-        m_FreeSize           {rhs.m_FreeSize     },
-        m_CurrAlignment      {rhs.m_CurrAlignment}
+    VariableSizeAllocationsManager(VariableSizeAllocationsManager&& rhs) noexcept
+        : m_FreeBlocksByOffset{std::move(rhs.m_FreeBlocksByOffset)}
+        , m_FreeBlocksBySize  {std::move(rhs.m_FreeBlocksBySize)  }
+        , m_MaxSize           {rhs.m_MaxSize      }
+        , m_FreeSize          {rhs.m_FreeSize     }
+        , m_CurrAlignment     {rhs.m_CurrAlignment}
+#ifdef DILIGENT_DEBUG
+        , m_DbgDisableDebugValidation{rhs.m_DbgDisableDebugValidation}
+#endif
     {
         // clang-format on
         rhs.m_MaxSize       = 0;
@@ -146,9 +164,9 @@ public:
     }
 
     // clang-format off
-    VariableSizeAllocationsManager& operator = (VariableSizeAllocationsManager&& rhs) = default;
-    VariableSizeAllocationsManager             (const VariableSizeAllocationsManager&) = delete;
-    VariableSizeAllocationsManager& operator = (const VariableSizeAllocationsManager&) = delete;
+    VariableSizeAllocationsManager& operator = (      VariableSizeAllocationsManager&&) = delete;
+    VariableSizeAllocationsManager             (const VariableSizeAllocationsManager&)  = delete;
+    VariableSizeAllocationsManager& operator = (const VariableSizeAllocationsManager&)  = delete;
     // clang-format on
 
     // Offset returned by Allocate() may not be aligned, but the size of the allocation
@@ -243,7 +261,9 @@ public:
         }
 
 #ifdef DILIGENT_DEBUG
-        DbgVerifyList();
+        VERIFY_EXPR(m_FreeBlocksByOffset.size() == m_FreeBlocksBySize.size());
+        if (!m_DbgDisableDebugValidation)
+            DbgVerifyList();
 #endif
         return Allocation{Offset, AdjustedSize};
     }
@@ -347,7 +367,9 @@ public:
         }
 
 #ifdef DILIGENT_DEBUG
-        DbgVerifyList();
+        VERIFY_EXPR(m_FreeBlocksByOffset.size() == m_FreeBlocksBySize.size());
+        if (!m_DbgDisableDebugValidation)
+            DbgVerifyList();
 #endif
     }
 
@@ -400,7 +422,9 @@ public:
         m_FreeSize += ExtraSize;
 
 #ifdef DILIGENT_DEBUG
-        DbgVerifyList();
+        VERIFY_EXPR(m_FreeBlocksByOffset.size() == m_FreeBlocksBySize.size());
+        if (!m_DbgDisableDebugValidation)
+            DbgVerifyList();
 #endif
     }
 
@@ -464,6 +488,9 @@ private:
     OffsetType m_MaxSize       = 0;
     OffsetType m_FreeSize      = 0;
     OffsetType m_CurrAlignment = 0;
+#ifdef DILIGENT_DEBUG
+    bool m_DbgDisableDebugValidation = false;
+#endif
     // When adding new members, do not forget to update move ctor
 };
 } // namespace Diligent

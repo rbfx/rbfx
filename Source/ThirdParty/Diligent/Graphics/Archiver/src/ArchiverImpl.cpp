@@ -384,7 +384,7 @@ IPipelineState* ArchiverImpl::GetPipelineState(PIPELINE_TYPE PSOType,
     const auto ResType = PiplineTypeToArchiveResourceType(PSOType);
     if (ResType == ResourceType::Undefined)
     {
-        UNEXPECTED("Unexpected pipline type");
+        UNEXPECTED("Unexpected pipeline type");
         return nullptr;
     }
 

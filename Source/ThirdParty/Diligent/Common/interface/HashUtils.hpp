@@ -41,6 +41,7 @@
 #include "../../Graphics/GraphicsEngine/interface/TextureView.h"
 #include "../../Graphics/GraphicsEngine/interface/PipelineResourceSignature.h"
 #include "../../Graphics/GraphicsEngine/interface/PipelineState.h"
+#include "../../Graphics/GraphicsTools/interface/VertexPool.h"
 #include "Align.hpp"
 
 #define LOG_HASH_CONFLICTS 1
@@ -1284,6 +1285,28 @@ struct HashCombiner<HasherType, TilePipelineStateCreateInfo> : HashCombinerBase<
     }
 };
 
+template <typename HasherType>
+struct HashCombiner<HasherType, VertexPoolElementDesc> : HashCombinerBase<HasherType>
+{
+    HashCombiner(HasherType& Hasher) :
+        HashCombinerBase<HasherType>{Hasher}
+    {}
+
+    void operator()(const VertexPoolElementDesc& Desc) const
+    {
+        ASSERT_SIZEOF(Desc.Usage, 1, "Hash logic below may be incorrect.");
+        ASSERT_SIZEOF(Desc.CPUAccessFlags, 1, "Hash logic below may be incorrect.");
+        ASSERT_SIZEOF(Desc.Mode, 1, "Hash logic below may be incorrect.");
+
+        this->m_Hasher(
+            Desc.Size,
+            Desc.BindFlags,
+            ((static_cast<uint32_t>(Desc.Usage) << 0u) |
+             (static_cast<uint32_t>(Desc.CPUAccessFlags) << 8u) |
+             (static_cast<uint32_t>(Desc.Mode) << 16u)));
+    }
+};
+
 struct DefaultHasher
 {
     template <typename... ArgsType>
@@ -1377,6 +1400,8 @@ DEFINE_HASH(Diligent::ComputePipelineStateCreateInfo);
 DEFINE_HASH(Diligent::RayTracingPipelineStateCreateInfo);
 DEFINE_HASH(Diligent::TilePipelineDesc);
 DEFINE_HASH(Diligent::TilePipelineStateCreateInfo);
+DEFINE_HASH(Diligent::VertexPoolElementDesc);
+
 
 #undef DEFINE_HASH
 

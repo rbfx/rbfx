@@ -465,6 +465,8 @@ void PipelineResourceSignatureVkImpl::CreateSetLayouts(const bool IsSerialized)
 #ifdef DILIGENT_DEBUG
     for (Uint32 i = 0; i < NumSets; ++i)
         VERIFY_EXPR(m_DescriptorSetSizes[i] != ~0U && m_DescriptorSetSizes[i] > 0);
+#else
+    (void)NumSets;
 #endif
 
     VkDescriptorSetLayoutCreateInfo SetLayoutCI = {};

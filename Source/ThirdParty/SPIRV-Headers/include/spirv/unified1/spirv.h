@@ -726,6 +726,7 @@ typedef enum SpvBuiltIn_ {
     SpvBuiltInHitKindKHR = 5333,
     SpvBuiltInHitKindNV = 5333,
     SpvBuiltInCurrentRayTimeNV = 5334,
+    SpvBuiltInHitTriangleVertexPositionsKHR = 5335,
     SpvBuiltInIncomingRayFlagsKHR = 5351,
     SpvBuiltInIncomingRayFlagsNV = 5351,
     SpvBuiltInRayGeometryIndexKHR = 5352,
@@ -1082,6 +1083,7 @@ typedef enum SpvCapability_ {
     SpvCapabilityUniformTexelBufferArrayNonUniformIndexingEXT = 5311,
     SpvCapabilityStorageTexelBufferArrayNonUniformIndexing = 5312,
     SpvCapabilityStorageTexelBufferArrayNonUniformIndexingEXT = 5312,
+    SpvCapabilityRayTracingPositionFetchKHR = 5336,
     SpvCapabilityRayTracingNV = 5340,
     SpvCapabilityRayTracingMotionBlurNV = 5341,
     SpvCapabilityVulkanMemoryModel = 5345,
@@ -1102,6 +1104,7 @@ typedef enum SpvCapability_ {
     SpvCapabilityRayTracingOpacityMicromapEXT = 5381,
     SpvCapabilityShaderInvocationReorderNV = 5383,
     SpvCapabilityBindlessTextureNV = 5390,
+    SpvCapabilityRayQueryPositionFetchKHR = 5391,
     SpvCapabilitySubgroupShuffleINTEL = 5568,
     SpvCapabilitySubgroupBufferBlockIOINTEL = 5569,
     SpvCapabilitySubgroupImageBlockIOINTEL = 5570,
@@ -1713,6 +1716,7 @@ typedef enum SpvOp_ {
     SpvOpTraceNV = 5337,
     SpvOpTraceMotionNV = 5338,
     SpvOpTraceRayMotionNV = 5339,
+    SpvOpRayQueryGetIntersectionTriangleVertexPositionsKHR = 5340,
     SpvOpTypeAccelerationStructureKHR = 5341,
     SpvOpTypeAccelerationStructureNV = 5341,
     SpvOpExecuteCallableNV = 5344,
@@ -2429,6 +2433,7 @@ inline void SpvHasResultAndType(SpvOp opcode, bool *hasResult, bool *hasResultTy
     case SpvOpTraceNV: *hasResult = false; *hasResultType = false; break;
     case SpvOpTraceMotionNV: *hasResult = false; *hasResultType = false; break;
     case SpvOpTraceRayMotionNV: *hasResult = false; *hasResultType = false; break;
+    case SpvOpRayQueryGetIntersectionTriangleVertexPositionsKHR: *hasResult = true; *hasResultType = true; break;
     case SpvOpTypeAccelerationStructureNV: *hasResult = true; *hasResultType = false; break;
     case SpvOpExecuteCallableNV: *hasResult = false; *hasResultType = false; break;
     case SpvOpTypeCooperativeMatrixNV: *hasResult = true; *hasResultType = false; break;

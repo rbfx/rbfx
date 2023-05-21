@@ -182,12 +182,12 @@ struct SubpassDescX
         Desc.pPreserveAttachments    = nullptr;
     }
 
-    const SubpassDesc& Get() const
+    const SubpassDesc& Get() const noexcept
     {
         return Desc;
     }
 
-    operator const SubpassDesc&() const
+    operator const SubpassDesc&() const noexcept
     {
         return Desc;
     }
@@ -325,12 +325,12 @@ struct RenderPassDescX
         SyncDesc();
     }
 
-    const RenderPassDesc& Get() const
+    const RenderPassDesc& Get() const noexcept
     {
         return Desc;
     }
 
-    operator const RenderPassDesc&() const
+    operator const RenderPassDesc&() const noexcept
     {
         return Desc;
     }
@@ -437,12 +437,12 @@ struct InputLayoutDescX
         std::swap(*this, EmptyDesc);
     }
 
-    const InputLayoutDesc& Get() const
+    const InputLayoutDesc& Get() const noexcept
     {
         return Desc;
     }
 
-    operator const InputLayoutDesc&() const
+    operator const InputLayoutDesc&() const noexcept
     {
         return Desc;
     }
@@ -483,7 +483,7 @@ private:
 };
 
 
-template <typename BaseType>
+template <typename DerivedType, typename BaseType>
 struct DeviceObjectAttribsX : BaseType
 {
     DeviceObjectAttribsX() noexcept
@@ -510,6 +510,15 @@ struct DeviceObjectAttribsX : BaseType
         this->Name = NameCopy.c_str();
     }
 
+    explicit DeviceObjectAttribsX(const char* Name)
+    {
+        SetName(Name);
+    }
+    explicit DeviceObjectAttribsX(const std::string& Name)
+    {
+        SetName(Name);
+    }
+
     DeviceObjectAttribsX& operator=(const DeviceObjectAttribsX& Other)
     {
         static_cast<BaseType&>(*this) = Other;
@@ -530,10 +539,16 @@ struct DeviceObjectAttribsX : BaseType
         return *this;
     }
 
-    void SetName(const char* NewName)
+    DerivedType& SetName(const char* NewName)
     {
         NameCopy   = NewName != nullptr ? NewName : "";
         this->Name = NameCopy.c_str();
+        return static_cast<DerivedType&>(*this);
+    }
+
+    DerivedType& SetName(const std::string& NewName)
+    {
+        return SetName(NewName.c_str());
     }
 
 private:
@@ -542,15 +557,13 @@ private:
 
 
 /// C++ wrapper over FramebufferDesc.
-struct FramebufferDescX : DeviceObjectAttribsX<FramebufferDesc>
+struct FramebufferDescX : DeviceObjectAttribsX<FramebufferDescX, FramebufferDesc>
 {
-    using TBase = DeviceObjectAttribsX<FramebufferDesc>;
-
     FramebufferDescX() noexcept
     {}
 
     FramebufferDescX(const FramebufferDesc& _Desc) :
-        TBase{_Desc}
+        DeviceObjectAttribsX{_Desc}
     {
         if (AttachmentCount != 0)
         {
@@ -563,6 +576,16 @@ struct FramebufferDescX : DeviceObjectAttribsX<FramebufferDesc>
         FramebufferDescX{static_cast<const FramebufferDesc&>(_DescX)}
     {}
 
+    explicit FramebufferDescX(const char* Name) :
+        DeviceObjectAttribsX{Name}
+    {
+    }
+
+    explicit FramebufferDescX(const std::string& Name) :
+        DeviceObjectAttribsX{Name}
+    {
+    }
+
     FramebufferDescX& operator=(const FramebufferDescX& _DescX)
     {
         FramebufferDescX Copy{_DescX};
@@ -573,11 +596,35 @@ struct FramebufferDescX : DeviceObjectAttribsX<FramebufferDesc>
     FramebufferDescX(FramebufferDescX&&) noexcept = default;
     FramebufferDescX& operator=(FramebufferDescX&&) noexcept = default;
 
+    FramebufferDescX& SetRenderPass(IRenderPass* _pRenderPass) noexcept
+    {
+        pRenderPass = _pRenderPass;
+        return *this;
+    }
+
     FramebufferDescX& AddAttachment(ITextureView* pView)
     {
         Attachments.push_back(pView);
         AttachmentCount = static_cast<Uint32>(Attachments.size());
         ppAttachments   = Attachments.data();
+        return *this;
+    }
+
+    FramebufferDescX& SetWidth(Uint32 _Width) noexcept
+    {
+        Width = _Width;
+        return *this;
+    }
+
+    FramebufferDescX& SetHeight(Uint32 _Height) noexcept
+    {
+        Height = _Height;
+        return *this;
+    }
+
+    FramebufferDescX& SetNumArraySlices(Uint32 _NumArraySlices) noexcept
+    {
+        NumArraySlices = _NumArraySlices;
         return *this;
     }
 
@@ -600,15 +647,13 @@ private:
 
 
 /// C++ wrapper over PipelineResourceSignatureDesc.
-struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSignatureDesc>
+struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSignatureDescX, PipelineResourceSignatureDesc>
 {
-    using TBase = DeviceObjectAttribsX<PipelineResourceSignatureDesc>;
-
     PipelineResourceSignatureDescX() noexcept
     {}
 
     PipelineResourceSignatureDescX(const PipelineResourceSignatureDesc& _Desc) :
-        TBase{_Desc}
+        DeviceObjectAttribsX{_Desc}
     {
         if (NumResources != 0)
             ResCopy.assign(Resources, Resources + NumResources);
@@ -631,6 +676,16 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
         PipelineResourceSignatureDescX{static_cast<const PipelineResourceSignatureDesc&>(_DescX)}
     {}
 
+    explicit PipelineResourceSignatureDescX(const char* Name) :
+        DeviceObjectAttribsX{Name}
+    {
+    }
+
+    explicit PipelineResourceSignatureDescX(const std::string& Name) :
+        DeviceObjectAttribsX{Name}
+    {
+    }
+
     PipelineResourceSignatureDescX& operator=(const PipelineResourceSignatureDescX& _DescX)
     {
         PipelineResourceSignatureDescX Copy{_DescX};
@@ -645,8 +700,7 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
     {
         ResCopy.push_back(Res);
         ResCopy.back().Name = StringPool.emplace(Res.Name).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -660,8 +714,7 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
     {
         ImtblSamCopy.push_back(Sam);
         ImtblSamCopy.back().SamplerOrTextureName = StringPool.emplace(Sam.SamplerOrTextureName).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -671,7 +724,7 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
         return AddImmutableSampler(Sam);
     }
 
-    void RemoveResource(const char* ResName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
+    PipelineResourceSignatureDescX& RemoveResource(const char* ResName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
     {
         VERIFY_EXPR(!IsNullOrEmptyStr(ResName));
         for (auto it = ResCopy.begin(); it != ResCopy.end();)
@@ -681,10 +734,10 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
             else
                 ++it;
         }
-        SyncDesc();
+        return SyncDesc();
     }
 
-    void RemoveImmutableSampler(const char* SamName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
+    PipelineResourceSignatureDescX& RemoveImmutableSampler(const char* SamName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
     {
         VERIFY_EXPR(!IsNullOrEmptyStr(SamName));
         for (auto it = ImtblSamCopy.begin(); it != ImtblSamCopy.end();)
@@ -694,7 +747,7 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
             else
                 ++it;
         }
-        SyncDesc();
+        return SyncDesc();
     }
 
     void ClearResources()
@@ -709,11 +762,24 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
         SyncDesc();
     }
 
-    void SetCombinedSamplerSuffix(const char* Suffix)
+    PipelineResourceSignatureDescX& SetBindingIndex(Uint8 _BindingIndex) noexcept
+    {
+        BindingIndex = _BindingIndex;
+        return *this;
+    }
+
+    PipelineResourceSignatureDescX& SetUseCombinedTextureSamplers(bool _UseCombinedSamplers) noexcept
+    {
+        UseCombinedTextureSamplers = _UseCombinedSamplers;
+        return *this;
+    }
+
+    PipelineResourceSignatureDescX& SetCombinedSamplerSuffix(const char* Suffix)
     {
         CombinedSamplerSuffix = Suffix != nullptr ?
             StringPool.emplace(Suffix).first->c_str() :
             PipelineResourceSignatureDesc{}.CombinedSamplerSuffix;
+        return *this;
     }
 
     void Clear()
@@ -723,7 +789,7 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
     }
 
 private:
-    void SyncDesc(bool UpdateStrings = false)
+    PipelineResourceSignatureDescX& SyncDesc(bool UpdateStrings = false)
     {
         NumResources = static_cast<Uint32>(ResCopy.size());
         Resources    = NumResources > 0 ? ResCopy.data() : nullptr;
@@ -742,6 +808,8 @@ private:
             if (CombinedSamplerSuffix != nullptr)
                 CombinedSamplerSuffix = StringPool.emplace(CombinedSamplerSuffix).first->c_str();
         }
+
+        return *this;
     }
 
     std::vector<PipelineResourceDesc> ResCopy;
@@ -790,12 +858,23 @@ struct PipelineResourceLayoutDescX : PipelineResourceLayoutDesc
     PipelineResourceLayoutDescX(PipelineResourceLayoutDescX&&) noexcept = default;
     PipelineResourceLayoutDescX& operator=(PipelineResourceLayoutDescX&&) noexcept = default;
 
+    PipelineResourceLayoutDescX& SetDefaultVariableType(SHADER_RESOURCE_VARIABLE_TYPE DefaultVarType) noexcept
+    {
+        DefaultVariableType = DefaultVarType;
+        return *this;
+    }
+
+    PipelineResourceLayoutDescX& SetDefaultVariableMergeStages(SHADER_TYPE DefaultVarMergeStages) noexcept
+    {
+        DefaultVariableMergeStages = DefaultVarMergeStages;
+        return *this;
+    }
+
     PipelineResourceLayoutDescX& AddVariable(const ShaderResourceVariableDesc& Var)
     {
         VarCopy.push_back(Var);
         VarCopy.back().Name = StringPool.emplace(Var.Name).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -809,8 +888,7 @@ struct PipelineResourceLayoutDescX : PipelineResourceLayoutDesc
     {
         ImtblSamCopy.push_back(Sam);
         ImtblSamCopy.back().SamplerOrTextureName = StringPool.emplace(Sam.SamplerOrTextureName).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -820,7 +898,7 @@ struct PipelineResourceLayoutDescX : PipelineResourceLayoutDesc
         return AddImmutableSampler(Sam);
     }
 
-    void RemoveVariable(const char* VarName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
+    PipelineResourceLayoutDescX& RemoveVariable(const char* VarName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
     {
         VERIFY_EXPR(!IsNullOrEmptyStr(VarName));
         for (auto it = VarCopy.begin(); it != VarCopy.end();)
@@ -830,10 +908,10 @@ struct PipelineResourceLayoutDescX : PipelineResourceLayoutDesc
             else
                 ++it;
         }
-        SyncDesc();
+        return SyncDesc();
     }
 
-    void RemoveImmutableSampler(const char* SamName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
+    PipelineResourceLayoutDescX& RemoveImmutableSampler(const char* SamName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
     {
         VERIFY_EXPR(!IsNullOrEmptyStr(SamName));
         for (auto it = ImtblSamCopy.begin(); it != ImtblSamCopy.end();)
@@ -843,7 +921,7 @@ struct PipelineResourceLayoutDescX : PipelineResourceLayoutDesc
             else
                 ++it;
         }
-        SyncDesc();
+        return SyncDesc();
     }
 
     void ClearVariables()
@@ -865,7 +943,7 @@ struct PipelineResourceLayoutDescX : PipelineResourceLayoutDesc
     }
 
 private:
-    void SyncDesc(bool UpdateStrings = false)
+    PipelineResourceLayoutDescX& SyncDesc(bool UpdateStrings = false)
     {
         NumVariables = static_cast<Uint32>(VarCopy.size());
         Variables    = NumVariables > 0 ? VarCopy.data() : nullptr;
@@ -881,6 +959,8 @@ private:
             for (auto& Sam : ImtblSamCopy)
                 Sam.SamplerOrTextureName = StringPool.emplace(Sam.SamplerOrTextureName).first->c_str();
         }
+
+        return *this;
     }
 
     std::vector<ShaderResourceVariableDesc> VarCopy;
@@ -890,15 +970,13 @@ private:
 
 
 /// C++ wrapper over BottomLevelASDesc.
-struct BottomLevelASDescX : DeviceObjectAttribsX<BottomLevelASDesc>
+struct BottomLevelASDescX : DeviceObjectAttribsX<BottomLevelASDescX, BottomLevelASDesc>
 {
-    using TBase = DeviceObjectAttribsX<BottomLevelASDesc>;
-
     BottomLevelASDescX() noexcept
     {}
 
     BottomLevelASDescX(const BottomLevelASDesc& _Desc) :
-        TBase{_Desc}
+        DeviceObjectAttribsX{_Desc}
     {
         if (TriangleCount != 0)
             Triangles.assign(pTriangles, pTriangles + TriangleCount);
@@ -921,6 +999,15 @@ struct BottomLevelASDescX : DeviceObjectAttribsX<BottomLevelASDesc>
         BottomLevelASDescX{static_cast<const BottomLevelASDesc&>(_DescX)}
     {}
 
+    explicit BottomLevelASDescX(const char* Name) :
+        DeviceObjectAttribsX{Name}
+    {
+    }
+    explicit BottomLevelASDescX(const std::string& Name) :
+        DeviceObjectAttribsX{Name}
+    {
+    }
+
     BottomLevelASDescX& operator=(const BottomLevelASDescX& _DescX)
     {
         BottomLevelASDescX Copy{_DescX};
@@ -935,8 +1022,7 @@ struct BottomLevelASDescX : DeviceObjectAttribsX<BottomLevelASDesc>
     {
         Triangles.push_back(Geo);
         Triangles.back().GeometryName = StringPool.emplace(Geo.GeometryName).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -950,8 +1036,7 @@ struct BottomLevelASDescX : DeviceObjectAttribsX<BottomLevelASDesc>
     {
         Boxes.push_back(Geo);
         Boxes.back().GeometryName = StringPool.emplace(Geo.GeometryName).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -961,14 +1046,32 @@ struct BottomLevelASDescX : DeviceObjectAttribsX<BottomLevelASDesc>
         return AddBoxGeomerty(Box);
     }
 
-    void RemoveTriangleGeomerty(const char* GeoName)
+    BottomLevelASDescX& RemoveTriangleGeomerty(const char* GeoName)
     {
-        RemoveGeometry(GeoName, Triangles);
+        return RemoveGeometry(GeoName, Triangles);
     }
 
-    void RemoveBoxGeomerty(const char* GeoName)
+    BottomLevelASDescX& RemoveBoxGeomerty(const char* GeoName)
     {
-        RemoveGeometry(GeoName, Boxes);
+        return RemoveGeometry(GeoName, Boxes);
+    }
+
+    BottomLevelASDescX& SetFlags(RAYTRACING_BUILD_AS_FLAGS _Flags) noexcept
+    {
+        Flags = _Flags;
+        return *this;
+    }
+
+    BottomLevelASDescX& SetCompactedSize(Uint64 _CompactedSize) noexcept
+    {
+        CompactedSize = _CompactedSize;
+        return *this;
+    }
+
+    BottomLevelASDescX& SetImmediateContextMask(Uint64 _ImmediateContextMask) noexcept
+    {
+        ImmediateContextMask = _ImmediateContextMask;
+        return *this;
     }
 
     void ClearTriangles()
@@ -990,7 +1093,7 @@ struct BottomLevelASDescX : DeviceObjectAttribsX<BottomLevelASDesc>
     }
 
 private:
-    void SyncDesc(bool UpdateStrings = false)
+    BottomLevelASDescX& SyncDesc(bool UpdateStrings = false)
     {
         TriangleCount = static_cast<Uint32>(Triangles.size());
         pTriangles    = TriangleCount > 0 ? Triangles.data() : nullptr;
@@ -1012,10 +1115,12 @@ private:
                     Box.GeometryName = StringPool.emplace(Box.GeometryName).first->c_str();
             }
         }
+
+        return *this;
     }
 
     template <typename BLASType>
-    void RemoveGeometry(const char* GeoName, std::vector<BLASType>& Geometries)
+    BottomLevelASDescX& RemoveGeometry(const char* GeoName, std::vector<BLASType>& Geometries)
     {
         VERIFY_EXPR(!IsNullOrEmptyStr(GeoName));
         for (auto it = Geometries.begin(); it != Geometries.end();)
@@ -1025,7 +1130,7 @@ private:
             else
                 ++it;
         }
-        SyncDesc();
+        return SyncDesc();
     }
 
     std::vector<BLASTriangleDesc>    Triangles;
@@ -1033,15 +1138,525 @@ private:
     std::unordered_set<std::string>  StringPool;
 };
 
+/// C++ wrapper over PipelineStateCreateInfo
+
+template <typename DerivedType, typename CreateInfoType>
+struct PipelineStateCreateInfoX : CreateInfoType
+{
+    PipelineStateCreateInfoX() noexcept
+    {}
+
+    PipelineStateCreateInfoX(const CreateInfoType& CI) noexcept :
+        CreateInfoType{CI}
+    {
+        SetName(this->PSODesc.Name);
+        for (size_t i = 0; i < CI.ResourceSignaturesCount; ++i)
+            AddSignature(CI.ppResourceSignatures[i]);
+        if (CI.pPSOCache != nullptr)
+            SetPipelineStateCache(CI.pPSOCache);
+    }
+
+    explicit PipelineStateCreateInfoX(const char* Name)
+    {
+        SetName(Name);
+    }
+    explicit PipelineStateCreateInfoX(const std::string& Name)
+    {
+        SetName(Name);
+    }
+
+    PipelineStateCreateInfoX(PipelineStateCreateInfoX&&) noexcept = default;
+    PipelineStateCreateInfoX& operator=(PipelineStateCreateInfoX&&) noexcept = default;
+
+    DerivedType& SetName(const char* Name)
+    {
+        if (Name != nullptr)
+            this->PSODesc.Name = StringPool.emplace(Name).first->c_str();
+        return static_cast<DerivedType&>(*this);
+    }
+
+    DerivedType& SetName(const std::string& Name)
+    {
+        return SetName(Name.c_str());
+    }
+
+    DerivedType& SetResourceLayout(const PipelineResourceLayoutDesc& LayoutDesc) noexcept
+    {
+        this->PSODesc.ResourceLayout = LayoutDesc;
+        return static_cast<DerivedType&>(*this);
+    }
+    template <typename... ArgsType>
+    DerivedType& SetResourceLayout(ArgsType&&... args) noexcept
+    {
+        const PipelineResourceLayoutDesc Layout{std::forward<ArgsType>(args)...};
+        return SetResourceLayout(Layout);
+    }
+
+    DerivedType& SetImmediateContextMask(Uint64 ImmediateContextMask) noexcept
+    {
+        this->PSODesc.ImmediateContextMask = ImmediateContextMask;
+        return static_cast<DerivedType&>(*this);
+    }
+
+    DerivedType& SetSRBAllocationGranularity(Uint32 SRBAllocationGranularity) noexcept
+    {
+        this->PSODesc.SRBAllocationGranularity = SRBAllocationGranularity;
+        return static_cast<DerivedType&>(*this);
+    }
+
+    DerivedType& SetFlags(PSO_CREATE_FLAGS _Flags) noexcept
+    {
+        this->Flags = _Flags;
+        return static_cast<DerivedType&>(*this);
+    }
+
+    DerivedType& AddSignature(IPipelineResourceSignature* pSignature)
+    {
+        if (pSignature == nullptr)
+        {
+            UNEXPECTED("Signature must not be null");
+            return static_cast<DerivedType&>(*this);
+        }
+
+        Signatures.emplace_back(pSignature);
+        this->ppResourceSignatures    = Signatures.data();
+        this->ResourceSignaturesCount = static_cast<Uint32>(Signatures.size());
+        VERIFY_EXPR(this->ResourceSignaturesCount <= MAX_RESOURCE_SIGNATURES);
+        Objects.emplace_back(pSignature);
+
+        return static_cast<DerivedType&>(*this);
+    }
+
+    DerivedType& RemoveSignature(IPipelineResourceSignature* pSignature)
+    {
+        if (pSignature == nullptr)
+        {
+            UNEXPECTED("Signature must not be null");
+            return static_cast<DerivedType&>(*this);
+        }
+
+        for (auto it = Signatures.begin(); it != Signatures.end(); ++it)
+        {
+            if (*it == pSignature)
+            {
+                Signatures.erase(it);
+                break;
+            }
+        }
+
+        this->ppResourceSignatures    = Signatures.data();
+        this->ResourceSignaturesCount = static_cast<Uint32>(Signatures.size());
+
+        return RemoveObject(pSignature);
+    }
+
+    DerivedType& ClearSignatures()
+    {
+        for (auto* pSign : Signatures)
+            RemoveObject(pSign);
+
+        Signatures.clear();
+        this->ppResourceSignatures    = nullptr;
+        this->ResourceSignaturesCount = 0;
+
+        return static_cast<DerivedType&>(*this);
+    }
+
+    DerivedType& SetPipelineStateCache(IPipelineStateCache* pPipelineStateCache)
+    {
+        if (this->pPSOCache != nullptr)
+            RemoveObject(this->pPSOCache);
+        this->pPSOCache = pPipelineStateCache;
+        Objects.emplace_back(pPipelineStateCache);
+        return static_cast<DerivedType&>(*this);
+    }
+
+protected:
+    DerivedType& SetShader(IShader*& pDstShader, IShader* pShader)
+    {
+        if (pShader != nullptr)
+        {
+            if (pDstShader != nullptr)
+                RemoveObject(pDstShader);
+            pDstShader = pShader;
+            Objects.emplace_back(pShader);
+        }
+
+        return static_cast<DerivedType&>(*this);
+    }
+
+    DerivedType& RemoveObject(IDeviceObject* pObject)
+    {
+        for (auto it = Objects.begin(); it != Objects.end();)
+        {
+            if (it->RawPtr() == pObject)
+                it = Objects.erase(it);
+            else
+                ++it;
+        }
+
+        return static_cast<DerivedType&>(*this);
+    }
+
+protected:
+    std::unordered_set<std::string>           StringPool;
+    std::vector<RefCntAutoPtr<IDeviceObject>> Objects;
+    std::vector<IPipelineResourceSignature*>  Signatures;
+};
+
+
+/// C++ wrapper over GraphicsPipelineStateCreateInfo
+struct GraphicsPipelineStateCreateInfoX : PipelineStateCreateInfoX<GraphicsPipelineStateCreateInfoX, GraphicsPipelineStateCreateInfo>
+{
+    GraphicsPipelineStateCreateInfoX() noexcept
+    {}
+
+    GraphicsPipelineStateCreateInfoX(const GraphicsPipelineStateCreateInfo& CI) :
+        PipelineStateCreateInfoX{CI}
+    {
+        if (pVS != nullptr) Objects.emplace_back(pVS);
+        if (pPS != nullptr) Objects.emplace_back(pPS);
+        if (pDS != nullptr) Objects.emplace_back(pDS);
+        if (pHS != nullptr) Objects.emplace_back(pHS);
+        if (pGS != nullptr) Objects.emplace_back(pGS);
+        if (pAS != nullptr) Objects.emplace_back(pAS);
+        if (pMS != nullptr) Objects.emplace_back(pMS);
+
+        if (GraphicsPipeline.pRenderPass != nullptr)
+            Objects.emplace_back(GraphicsPipeline.pRenderPass);
+    }
+
+    GraphicsPipelineStateCreateInfoX(const GraphicsPipelineStateCreateInfoX& _DescX) :
+        GraphicsPipelineStateCreateInfoX{static_cast<const GraphicsPipelineStateCreateInfo&>(_DescX)}
+    {}
+
+    explicit GraphicsPipelineStateCreateInfoX(const char* Name) :
+        PipelineStateCreateInfoX{Name}
+    {
+    }
+    explicit GraphicsPipelineStateCreateInfoX(const std::string& Name) :
+        PipelineStateCreateInfoX{Name}
+    {
+    }
+
+    GraphicsPipelineStateCreateInfoX& operator=(const GraphicsPipelineStateCreateInfoX& _DescX)
+    {
+        GraphicsPipelineStateCreateInfoX Copy{_DescX};
+        std::swap(*this, Copy);
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX(GraphicsPipelineStateCreateInfoX&&) noexcept = default;
+    GraphicsPipelineStateCreateInfoX& operator=(GraphicsPipelineStateCreateInfoX&&) noexcept = default;
+
+    GraphicsPipelineStateCreateInfoX& AddShader(IShader* pShader)
+    {
+        if (pShader == nullptr)
+        {
+            UNEXPECTED("Shader must not be null");
+            return *this;
+        }
+        switch (pShader->GetDesc().ShaderType)
+        {
+            // clang-format off
+            case SHADER_TYPE_VERTEX:        return SetShader(pVS, pShader);
+            case SHADER_TYPE_PIXEL:         return SetShader(pPS, pShader);
+            case SHADER_TYPE_GEOMETRY:      return SetShader(pGS, pShader);
+            case SHADER_TYPE_HULL:          return SetShader(pHS, pShader);
+            case SHADER_TYPE_DOMAIN:        return SetShader(pDS, pShader);
+            case SHADER_TYPE_AMPLIFICATION: return SetShader(pAS, pShader);
+            case SHADER_TYPE_MESH:          return SetShader(pMS, pShader);
+            // clang-format on
+            default: UNEXPECTED("Unexpected shader type"); return *this;
+        }
+    }
+
+    GraphicsPipelineStateCreateInfoX& RemoveShader(IShader* pShader)
+    {
+        if (pShader == nullptr)
+        {
+            UNEXPECTED("Shader must not be null");
+            return *this;
+        }
+
+        if (pVS == pShader) pVS = nullptr;
+        if (pPS == pShader) pPS = nullptr;
+        if (pGS == pShader) pGS = nullptr;
+        if (pHS == pShader) pHS = nullptr;
+        if (pDS == pShader) pDS = nullptr;
+        if (pAS == pShader) pAS = nullptr;
+        if (pMS == pShader) pMS = nullptr;
+
+        return RemoveObject(pShader);
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetBlendDesc(const BlendStateDesc& BSDesc) noexcept
+    {
+        GraphicsPipeline.BlendDesc = BSDesc;
+        return *this;
+    }
+
+    template <typename... ArgsType>
+    GraphicsPipelineStateCreateInfoX& SetBlendDesc(ArgsType&&... args) noexcept
+    {
+        const BlendStateDesc BSDesc{std::forward<ArgsType>(args)...};
+        return SetBlendDesc(BSDesc);
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetSampleMask(Uint32 SampleMask) noexcept
+    {
+        GraphicsPipeline.SampleMask = SampleMask;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetRasterizerDesc(const RasterizerStateDesc& RSDesc) noexcept
+    {
+        GraphicsPipeline.RasterizerDesc = RSDesc;
+        return *this;
+    }
+
+    template <typename... ArgsType>
+    GraphicsPipelineStateCreateInfoX& SetRasterizerDesc(ArgsType&&... args) noexcept
+    {
+        const RasterizerStateDesc RSDesc{std::forward<ArgsType>(args)...};
+        return SetRasterizerDesc(RSDesc);
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetDepthStencilDesc(const DepthStencilStateDesc& DSDesc) noexcept
+    {
+        GraphicsPipeline.DepthStencilDesc = DSDesc;
+        return *this;
+    }
+
+    template <typename... ArgsType>
+    GraphicsPipelineStateCreateInfoX& SetDepthStencilDesc(ArgsType&&... args) noexcept
+    {
+        const DepthStencilStateDesc DSSDesc{std::forward<ArgsType>(args)...};
+        return SetDepthStencilDesc(DSSDesc);
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetInputLayout(const InputLayoutDesc& LayoutDesc) noexcept
+    {
+        GraphicsPipeline.InputLayout = LayoutDesc;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetNumViewports(Uint8 NumViewports) noexcept
+    {
+        GraphicsPipeline.NumViewports = NumViewports;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetPrimitiveTopology(PRIMITIVE_TOPOLOGY Topology) noexcept
+    {
+        GraphicsPipeline.PrimitiveTopology = Topology;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetSubpassIndex(Uint8 SubpassIndex) noexcept
+    {
+        GraphicsPipeline.SubpassIndex = SubpassIndex;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetShadingRateFlags(PIPELINE_SHADING_RATE_FLAGS ShadingRateFlags) noexcept
+    {
+        GraphicsPipeline.ShadingRateFlags = ShadingRateFlags;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& AddRenderTarget(TEXTURE_FORMAT RTVFormat) noexcept
+    {
+        VERIFY_EXPR(GraphicsPipeline.NumRenderTargets < MAX_RENDER_TARGETS);
+        GraphicsPipeline.RTVFormats[GraphicsPipeline.NumRenderTargets++] = RTVFormat;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetDepthFormat(TEXTURE_FORMAT DSVFormat) noexcept
+    {
+        GraphicsPipeline.DSVFormat = DSVFormat;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetSampleDesc(const SampleDesc& Desc) noexcept
+    {
+        GraphicsPipeline.SmplDesc = Desc;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetRenderPass(IRenderPass* pRenderPass)
+    {
+        VERIFY_EXPR(pRenderPass != nullptr);
+        if (GraphicsPipeline.pRenderPass != nullptr)
+            RemoveObject(GraphicsPipeline.pRenderPass);
+        GraphicsPipeline.pRenderPass = pRenderPass;
+        Objects.emplace_back(pRenderPass);
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& SetNodeMask(Uint32 NodeMask) noexcept
+    {
+        GraphicsPipeline.NodeMask = NodeMask;
+        return *this;
+    }
+
+    GraphicsPipelineStateCreateInfoX& Clear()
+    {
+        GraphicsPipelineStateCreateInfoX CleanDesc;
+        std::swap(*this, CleanDesc);
+        return *this;
+    }
+};
+
+
+/// C++ wrapper over ComputePipelineStateCreateInfo
+struct ComputePipelineStateCreateInfoX : PipelineStateCreateInfoX<ComputePipelineStateCreateInfoX, ComputePipelineStateCreateInfo>
+{
+    ComputePipelineStateCreateInfoX() noexcept
+    {}
+
+    ComputePipelineStateCreateInfoX(const ComputePipelineStateCreateInfo& CI) :
+        PipelineStateCreateInfoX{CI}
+    {
+        if (pCS != nullptr) Objects.emplace_back(pCS);
+    }
+
+    ComputePipelineStateCreateInfoX(const ComputePipelineStateCreateInfoX& _DescX) :
+        ComputePipelineStateCreateInfoX{static_cast<const ComputePipelineStateCreateInfo&>(_DescX)}
+    {}
+
+    explicit ComputePipelineStateCreateInfoX(const char* Name) :
+        PipelineStateCreateInfoX{Name}
+    {
+    }
+    explicit ComputePipelineStateCreateInfoX(const std::string& Name) :
+        PipelineStateCreateInfoX{Name}
+    {
+    }
+
+    ComputePipelineStateCreateInfoX& operator=(const ComputePipelineStateCreateInfoX& _DescX)
+    {
+        ComputePipelineStateCreateInfoX Copy{_DescX};
+        std::swap(*this, Copy);
+        return *this;
+    }
+
+    ComputePipelineStateCreateInfoX(ComputePipelineStateCreateInfoX&&) noexcept = default;
+    ComputePipelineStateCreateInfoX& operator=(ComputePipelineStateCreateInfoX&&) noexcept = default;
+
+    ComputePipelineStateCreateInfoX& AddShader(IShader* pShader)
+    {
+        if (pShader == nullptr)
+        {
+            UNEXPECTED("Shader must not be null");
+            return *this;
+        }
+        if (pShader->GetDesc().ShaderType == SHADER_TYPE_COMPUTE)
+            return SetShader(pCS, pShader);
+
+        UNEXPECTED("Unexpected shader type");
+        return *this;
+    }
+
+    ComputePipelineStateCreateInfoX& RemoveShader(IShader* pShader)
+    {
+        if (pShader == nullptr)
+        {
+            UNEXPECTED("Shader must not be null");
+            return *this;
+        }
+
+        if (pCS == pShader) pCS = nullptr;
+
+        return RemoveObject(pShader);
+    }
+};
+
+
+/// C++ wrapper over TilePipelineStateCreateInfo
+struct TilePipelineStateCreateInfoX : PipelineStateCreateInfoX<TilePipelineStateCreateInfoX, TilePipelineStateCreateInfo>
+{
+    TilePipelineStateCreateInfoX() noexcept
+    {}
+
+    TilePipelineStateCreateInfoX(const TilePipelineStateCreateInfo& CI) :
+        PipelineStateCreateInfoX{CI}
+    {
+        if (pTS != nullptr) Objects.emplace_back(pTS);
+    }
+
+    TilePipelineStateCreateInfoX(const TilePipelineStateCreateInfoX& _DescX) :
+        TilePipelineStateCreateInfoX{static_cast<const TilePipelineStateCreateInfo&>(_DescX)}
+    {}
+
+    explicit TilePipelineStateCreateInfoX(const char* Name) :
+        PipelineStateCreateInfoX{Name}
+    {
+    }
+    explicit TilePipelineStateCreateInfoX(const std::string& Name) :
+        PipelineStateCreateInfoX{Name}
+    {
+    }
+
+    TilePipelineStateCreateInfoX& operator=(const TilePipelineStateCreateInfoX& _DescX)
+    {
+        TilePipelineStateCreateInfoX Copy{_DescX};
+        std::swap(*this, Copy);
+        return *this;
+    }
+
+    TilePipelineStateCreateInfoX(TilePipelineStateCreateInfoX&&) noexcept = default;
+    TilePipelineStateCreateInfoX& operator=(TilePipelineStateCreateInfoX&&) noexcept = default;
+
+    TilePipelineStateCreateInfoX& SetSampleCount(Uint8 SampleCount) noexcept
+    {
+        TilePipeline.SampleCount = SampleCount;
+        return *this;
+    }
+
+    TilePipelineStateCreateInfoX& AddShader(IShader* pShader)
+    {
+        if (pShader == nullptr)
+        {
+            UNEXPECTED("Shader must not be null");
+            return *this;
+        }
+        if (pShader->GetDesc().ShaderType == SHADER_TYPE_TILE)
+            return SetShader(pTS, pShader);
+
+        UNEXPECTED("Unexpected shader type");
+        return *this;
+    }
+
+    TilePipelineStateCreateInfoX& RemoveShader(IShader* pShader)
+    {
+        if (pShader == nullptr)
+        {
+            UNEXPECTED("Shader must not be null");
+            return *this;
+        }
+
+        if (pTS == pShader) pTS = nullptr;
+
+        return RemoveObject(pShader);
+    }
+
+    TilePipelineStateCreateInfoX& AddRenderTarget(TEXTURE_FORMAT RTVFormat) noexcept
+    {
+        VERIFY_EXPR(TilePipeline.NumRenderTargets < MAX_RENDER_TARGETS);
+        TilePipeline.RTVFormats[TilePipeline.NumRenderTargets++] = RTVFormat;
+        return *this;
+    }
+};
 
 /// C++ wrapper over RayTracingPipelineStateCreateInfo
-struct RayTracingPipelineStateCreateInfoX : RayTracingPipelineStateCreateInfo
+struct RayTracingPipelineStateCreateInfoX : PipelineStateCreateInfoX<RayTracingPipelineStateCreateInfoX, RayTracingPipelineStateCreateInfo>
 {
     RayTracingPipelineStateCreateInfoX() noexcept
     {}
 
     RayTracingPipelineStateCreateInfoX(const RayTracingPipelineStateCreateInfo& _Desc) :
-        RayTracingPipelineStateCreateInfo{_Desc}
+        PipelineStateCreateInfoX{_Desc}
     {
         if (GeneralShaderCount != 0)
             GeneralShaders.assign(pGeneralShaders, pGeneralShaders + GeneralShaderCount);
@@ -1069,6 +1684,15 @@ struct RayTracingPipelineStateCreateInfoX : RayTracingPipelineStateCreateInfo
         RayTracingPipelineStateCreateInfoX{static_cast<const RayTracingPipelineStateCreateInfo&>(_DescX)}
     {}
 
+    explicit RayTracingPipelineStateCreateInfoX(const char* Name) :
+        PipelineStateCreateInfoX{Name}
+    {
+    }
+    explicit RayTracingPipelineStateCreateInfoX(const std::string& Name) :
+        PipelineStateCreateInfoX{Name}
+    {
+    }
+
     RayTracingPipelineStateCreateInfoX& operator=(const RayTracingPipelineStateCreateInfoX& _DescX)
     {
         RayTracingPipelineStateCreateInfoX Copy{_DescX};
@@ -1083,8 +1707,7 @@ struct RayTracingPipelineStateCreateInfoX : RayTracingPipelineStateCreateInfo
     {
         GeneralShaders.push_back(GenShader);
         GeneralShaders.back().Name = StringPool.emplace(GenShader.Name).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -1098,8 +1721,7 @@ struct RayTracingPipelineStateCreateInfoX : RayTracingPipelineStateCreateInfo
     {
         TriangleHitShaders.push_back(TriHitShader);
         TriangleHitShaders.back().Name = StringPool.emplace(TriHitShader.Name).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -1113,8 +1735,7 @@ struct RayTracingPipelineStateCreateInfoX : RayTracingPipelineStateCreateInfo
     {
         ProceduralHitShaders.push_back(ProcHitShader);
         ProceduralHitShaders.back().Name = StringPool.emplace(ProcHitShader.Name).first->c_str();
-        SyncDesc();
-        return *this;
+        return SyncDesc();
     }
 
     template <typename... ArgsType>
@@ -1124,54 +1745,56 @@ struct RayTracingPipelineStateCreateInfoX : RayTracingPipelineStateCreateInfo
         return AddProceduralHitShader(ProcHitShader);
     }
 
-    void RemoveGeneralShader(const char* ShaderName)
+    RayTracingPipelineStateCreateInfoX& RemoveGeneralShader(const char* ShaderName)
     {
-        RemoveShader(ShaderName, GeneralShaders);
+        return RemoveShader(ShaderName, GeneralShaders);
     }
 
-    void RemoveTriangleHitShader(const char* ShaderName)
+    RayTracingPipelineStateCreateInfoX& RemoveTriangleHitShader(const char* ShaderName)
     {
-        RemoveShader(ShaderName, TriangleHitShaders);
+        return RemoveShader(ShaderName, TriangleHitShaders);
     }
 
-    void RemoveProceduralHitShader(const char* ShaderName)
+    RayTracingPipelineStateCreateInfoX& RemoveProceduralHitShader(const char* ShaderName)
     {
-        RemoveShader(ShaderName, ProceduralHitShaders);
+        return RemoveShader(ShaderName, ProceduralHitShaders);
     }
 
-    void SetShaderRecordName(const char* RecordName)
+    RayTracingPipelineStateCreateInfoX& SetShaderRecordName(const char* RecordName)
     {
         pShaderRecordName = RecordName != nullptr ?
             StringPool.emplace(RecordName).first->c_str() :
             nullptr;
+        return *this;
     }
 
-    void ClearGeneralShaders()
+    RayTracingPipelineStateCreateInfoX& ClearGeneralShaders()
     {
         GeneralShaders.clear();
-        SyncDesc();
+        return SyncDesc();
     }
 
-    void ClearTriangleHitShaders()
+    RayTracingPipelineStateCreateInfoX& ClearTriangleHitShaders()
     {
         TriangleHitShaders.clear();
-        SyncDesc();
+        return SyncDesc();
     }
 
-    void ClearProceduralHitShaders()
+    RayTracingPipelineStateCreateInfoX& ClearProceduralHitShaders()
     {
         ProceduralHitShaders.clear();
-        SyncDesc();
+        return SyncDesc();
     }
 
-    void Clear()
+    RayTracingPipelineStateCreateInfoX& Clear()
     {
         RayTracingPipelineStateCreateInfoX CleanDesc;
         std::swap(*this, CleanDesc);
+        return *this;
     }
 
 private:
-    void SyncDesc(bool UpdateStrings = false)
+    RayTracingPipelineStateCreateInfoX& SyncDesc(bool UpdateStrings = false)
     {
         GeneralShaderCount = static_cast<Uint32>(GeneralShaders.size());
         pGeneralShaders    = GeneralShaderCount > 0 ? GeneralShaders.data() : nullptr;
@@ -1196,10 +1819,12 @@ private:
             if (pShaderRecordName != nullptr)
                 pShaderRecordName = StringPool.emplace(pShaderRecordName).first->c_str();
         }
+
+        return *this;
     }
 
     template <typename ShaderGroupType>
-    void RemoveShader(const char* ShaderName, std::vector<ShaderGroupType>& Shaders)
+    RayTracingPipelineStateCreateInfoX& RemoveShader(const char* ShaderName, std::vector<ShaderGroupType>& Shaders)
     {
         VERIFY_EXPR(!IsNullOrEmptyStr(ShaderName));
         for (auto it = Shaders.begin(); it != Shaders.end();)
@@ -1209,13 +1834,12 @@ private:
             else
                 ++it;
         }
-        SyncDesc();
+        return SyncDesc();
     }
 
     std::vector<RayTracingGeneralShaderGroup>       GeneralShaders;
     std::vector<RayTracingTriangleHitShaderGroup>   TriangleHitShaders;
     std::vector<RayTracingProceduralHitShaderGroup> ProceduralHitShaders;
-    std::unordered_set<std::string>                 StringPool;
 };
 
 
@@ -1224,11 +1848,20 @@ template <bool ThrowOnError = true>
 class RenderDeviceX
 {
 public:
+    RenderDeviceX() noexcept {}
+
     explicit RenderDeviceX(IRenderDevice* pDevice) noexcept :
         m_pDevice{pDevice}
     {
         DEV_CHECK_ERR(pDevice, "Device must not be null");
     }
+
+    // clang-format off
+    RenderDeviceX           (const RenderDeviceX&) noexcept = default;
+    RenderDeviceX& operator=(const RenderDeviceX&) noexcept = default;
+    RenderDeviceX           (RenderDeviceX&&)      noexcept = default;
+    RenderDeviceX& operator=(RenderDeviceX&&)      noexcept = default;
+    // clang-format on
 
     RefCntAutoPtr<IBuffer> CreateBuffer(const BufferDesc& BuffDesc,
                                         const BufferData* pBuffData = nullptr) noexcept(!ThrowOnError)
@@ -1272,6 +1905,13 @@ public:
     RefCntAutoPtr<IShader> CreateShader(const ShaderCreateInfo& ShaderCI) noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IShader>("shader", ShaderCI.Desc.Name, &IRenderDevice::CreateShader, ShaderCI);
+    }
+
+    template <typename... ArgsType>
+    RefCntAutoPtr<IShader> CreateShader(ArgsType&&... args) noexcept(!ThrowOnError)
+    {
+        const ShaderCreateInfo ShaderCI{std::forward<ArgsType>(args)...};
+        return CreateShader(ShaderCI);
     }
 
     RefCntAutoPtr<ISampler> CreateSampler(const SamplerDesc& SamDesc) noexcept(!ThrowOnError)
@@ -1417,9 +2057,19 @@ public:
         return m_pDevice->GetEngineFactory();
     }
 
-    operator IRenderDevice*()
+    IRenderDevice* GetDevice() const noexcept
     {
-        return m_pDevice;
+        return m_pDevice.RawPtr<IRenderDevice>();
+    }
+
+    operator IRenderDevice*() const noexcept
+    {
+        return GetDevice();
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return m_pDevice != nullptr;
     }
 
 private:

@@ -43,15 +43,6 @@
 namespace Diligent
 {
 
-#ifdef DILIGENT_DEBUG
-inline void FillWithDebugPattern(void* ptr, Uint8 Pattern, size_t NumBytes)
-{
-    memset(ptr, Pattern, NumBytes);
-}
-#else
-#    define FillWithDebugPattern(...)
-#endif
-
 /// Memory allocator that allocates memory in a fixed-size chunks
 class FixedBlockMemoryAllocator final : public IMemoryAllocator
 {
@@ -85,126 +76,19 @@ private:
         static constexpr Uint8 DeallocatedBlockMemPattern = 0xDE;
         static constexpr Uint8 InitializedBlockMemPattern = 0xCF;
 
-        MemoryPage(FixedBlockMemoryAllocator& OwnerAllocator) :
-            // clang-format off
-            m_NumFreeBlocks       {OwnerAllocator.m_NumBlocksInPage},
-            m_NumInitializedBlocks{0},
-            m_pOwnerAllocator     {&OwnerAllocator}
-        // clang-format on
-        {
-            const auto PageSize = OwnerAllocator.m_BlockSize * OwnerAllocator.m_NumBlocksInPage;
-            VERIFY_EXPR(PageSize > 0);
-            m_pPageStart = reinterpret_cast<Uint8*>(
-                OwnerAllocator.m_RawMemoryAllocator.Allocate(PageSize, "FixedBlockMemoryAllocator page", __FILE__, __LINE__));
-            m_pNextFreeBlock = m_pPageStart;
-            FillWithDebugPattern(m_pPageStart, NewPageMemPattern, PageSize);
-        }
+        MemoryPage(FixedBlockMemoryAllocator& OwnerAllocator);
+        MemoryPage(MemoryPage&& Page) noexcept;
 
-        MemoryPage(MemoryPage&& Page) noexcept :
-            // clang-format off
-            m_NumFreeBlocks       {Page.m_NumFreeBlocks       },
-            m_NumInitializedBlocks{Page.m_NumInitializedBlocks},
-            m_pPageStart          {Page.m_pPageStart          },
-            m_pNextFreeBlock      {Page.m_pNextFreeBlock      },
-            m_pOwnerAllocator     {Page.m_pOwnerAllocator     }
-        // clang-format on
-        {
-            Page.m_NumFreeBlocks        = 0;
-            Page.m_NumInitializedBlocks = 0;
-            Page.m_pPageStart           = nullptr;
-            Page.m_pNextFreeBlock       = nullptr;
-            Page.m_pOwnerAllocator      = nullptr;
-        }
+        ~MemoryPage();
 
-        ~MemoryPage()
-        {
-            if (m_pOwnerAllocator)
-                m_pOwnerAllocator->m_RawMemoryAllocator.Free(m_pPageStart);
-        }
-
-        void* GetBlockStartAddress(Uint32 BlockIndex) const
-        {
-            VERIFY_EXPR(m_pOwnerAllocator != nullptr);
-            VERIFY(BlockIndex < m_pOwnerAllocator->m_NumBlocksInPage, "Invalid block index");
-            return reinterpret_cast<Uint8*>(m_pPageStart) + BlockIndex * m_pOwnerAllocator->m_BlockSize;
-        }
+        void* GetBlockStartAddress(Uint32 BlockIndex) const;
 
 #ifdef DILIGENT_DEBUG
-        void dbgVerifyAddress(const void* pBlockAddr) const
-        {
-            size_t Delta = reinterpret_cast<const Uint8*>(pBlockAddr) - reinterpret_cast<Uint8*>(m_pPageStart);
-            VERIFY(Delta % m_pOwnerAllocator->m_BlockSize == 0, "Invalid address");
-            Uint32 BlockIndex = static_cast<Uint32>(Delta / m_pOwnerAllocator->m_BlockSize);
-            VERIFY(BlockIndex < m_pOwnerAllocator->m_NumBlocksInPage, "Invalid block index");
-        }
-#else
-#    define dbgVerifyAddress(...)
+        void dbgVerifyAddress(const void* pBlockAddr) const;
 #endif
 
-        void* Allocate()
-        {
-            VERIFY_EXPR(m_pOwnerAllocator != nullptr);
-
-            if (m_NumFreeBlocks == 0)
-            {
-                VERIFY_EXPR(m_NumInitializedBlocks == m_pOwnerAllocator->m_NumBlocksInPage);
-                return nullptr;
-            }
-
-            // Initialize the next block
-            if (m_NumInitializedBlocks < m_pOwnerAllocator->m_NumBlocksInPage)
-            {
-                // Link next uninitialized block to the end of the list:
-
-                //
-                //                            ___________                      ___________
-                //                           |           |                    |           |
-                //                           | 0xcdcdcd  |                 -->| 0xcdcdcd  |   m_NumInitializedBlocks
-                //                           |-----------|                |   |-----------|
-                //                           |           |                |   |           |
-                //  m_NumInitializedBlocks   | 0xcdcdcd  |      ==>        ---|           |
-                //                           |-----------|                    |-----------|
-                //
-                //                           ~           ~                    ~           ~
-                //                           |           |                    |           |
-                //                       0   |           |                    |           |
-                //                            -----------                      -----------
-                //
-                auto* pUninitializedBlock = GetBlockStartAddress(m_NumInitializedBlocks);
-                FillWithDebugPattern(pUninitializedBlock, InitializedBlockMemPattern, m_pOwnerAllocator->m_BlockSize);
-                void** ppNextBlock = reinterpret_cast<void**>(pUninitializedBlock);
-                ++m_NumInitializedBlocks;
-                if (m_NumInitializedBlocks < m_pOwnerAllocator->m_NumBlocksInPage)
-                    *ppNextBlock = GetBlockStartAddress(m_NumInitializedBlocks);
-                else
-                    *ppNextBlock = nullptr;
-            }
-
-            void* res = m_pNextFreeBlock;
-            dbgVerifyAddress(res);
-            // Move pointer to the next free block
-            m_pNextFreeBlock = *reinterpret_cast<void**>(m_pNextFreeBlock);
-            --m_NumFreeBlocks;
-            if (m_NumFreeBlocks != 0)
-                dbgVerifyAddress(m_pNextFreeBlock);
-            else
-                VERIFY_EXPR(m_pNextFreeBlock == nullptr);
-
-            FillWithDebugPattern(res, AllocatedBlockMemPattern, m_pOwnerAllocator->m_BlockSize);
-            return res;
-        }
-
-        void DeAllocate(void* p)
-        {
-            VERIFY_EXPR(m_pOwnerAllocator != nullptr);
-
-            dbgVerifyAddress(p);
-            FillWithDebugPattern(p, DeallocatedBlockMemPattern, m_pOwnerAllocator->m_BlockSize);
-            // Add block to the beginning of the linked list
-            *reinterpret_cast<void**>(p) = m_pNextFreeBlock;
-            m_pNextFreeBlock             = p;
-            ++m_NumFreeBlocks;
-        }
+        void* Allocate();
+        void  DeAllocate(void* p);
 
         bool HasSpace() const { return m_NumFreeBlocks > 0; }
         bool HasAllocations() const { return m_NumFreeBlocks < m_NumInitializedBlocks; }

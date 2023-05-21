@@ -203,6 +203,9 @@ BufferD3D12Impl::BufferD3D12Impl(IReferenceCounters*        pRefCounters,
                 if (FAILED(hr))
                     LOG_ERROR_AND_THROW("Failed to create upload buffer");
 
+                const auto UploadBufferName = std::wstring{L"Upload buffer for buffer '"} + WidenString(m_Desc.Name) + L'\'';
+                UploadBuffer->SetName(UploadBufferName.c_str());
+
                 void* DestAddress = nullptr;
 
                 hr = UploadBuffer->Map(0, nullptr, &DestAddress);

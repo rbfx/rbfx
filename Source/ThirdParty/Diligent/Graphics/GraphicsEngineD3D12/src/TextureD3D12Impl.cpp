@@ -141,9 +141,9 @@ TextureD3D12Impl::TextureD3D12Impl(IReferenceCounters*        pRefCounters,
 
     if ((m_Desc.MiscFlags & MISC_TEXTURE_FLAG_GENERATE_MIPS) != 0)
     {
-        if (m_Desc.Type != RESOURCE_DIM_TEX_2D && m_Desc.Type != RESOURCE_DIM_TEX_2D_ARRAY && m_Desc.Type != RESOURCE_DIM_TEX_CUBE)
+        if (!m_Desc.Is2D())
         {
-            LOG_ERROR_AND_THROW("Mipmap generation is currently only supported for 2D textures and 2D texture arrays in d3d12 backend");
+            LOG_ERROR_AND_THROW("Mipmap generation is currently only supported for 2D and cube textures/texture arrays in d3d12 backend");
         }
     }
 
@@ -284,6 +284,9 @@ TextureD3D12Impl::TextureD3D12Impl(IReferenceCounters*        pRefCounters,
                 reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&UploadBuffer)));
             if (FAILED(hr))
                 LOG_ERROR_AND_THROW("Failed to create committed resource in an upload heap");
+
+            const auto UploadBufferName = std::wstring{L"Upload buffer for texture '"} + WidenString(m_Desc.Name) + L'\'';
+            UploadBuffer->SetName(UploadBufferName.c_str());
 
             auto InitContext = pRenderDeviceD3D12->AllocateCommandContext(CmdQueueInd);
             // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default texture
@@ -576,7 +579,7 @@ void TextureD3D12Impl::CreateViewInternal(const TextureViewDesc& ViewDesc, IText
         DescriptorHeapAllocation TexArraySRVDescriptor, MipUAVDescriptors;
         if (UpdatedViewDesc.Flags & TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION)
         {
-            VERIFY_EXPR((m_Desc.MiscFlags & MISC_TEXTURE_FLAG_GENERATE_MIPS) != 0 && (m_Desc.Type == RESOURCE_DIM_TEX_2D || m_Desc.Type == RESOURCE_DIM_TEX_2D_ARRAY || m_Desc.Type == RESOURCE_DIM_TEX_CUBE || m_Desc.Type == RESOURCE_DIM_TEX_CUBE_ARRAY));
+            VERIFY_EXPR((m_Desc.MiscFlags & MISC_TEXTURE_FLAG_GENERATE_MIPS) != 0 && m_Desc.Is2D());
 
             {
                 TexArraySRVDescriptor           = pDeviceD3D12Impl->AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);

@@ -45,6 +45,13 @@ public:
         m_NumThreadsAwaken.store(0);
     }
 
+    // clang-format off
+    Signal           (const Signal&) = delete;
+    Signal& operator=(const Signal&) = delete;
+    Signal           (Signal&&)      = delete;
+    Signal& operator=(Signal&&)      = delete;
+    // clang-format on
+
     // http://en.cppreference.com/w/cpp/thread/condition_variable
     void Trigger(bool NotifyAll = false, int SignalValue = 1)
     {
@@ -123,9 +130,6 @@ private:
     std::condition_variable m_CondVar;
     std::atomic_int         m_SignaledValue{0};
     std::atomic_int         m_NumThreadsAwaken{0};
-
-    Signal(const Signal&) = delete;
-    Signal& operator=(const Signal&) = delete;
 };
 
 } // namespace Threading

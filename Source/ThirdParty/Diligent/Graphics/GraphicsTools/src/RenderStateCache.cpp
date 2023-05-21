@@ -25,6 +25,7 @@
  */
 
 #include "RenderStateCache.h"
+#include "RenderStateCache.hpp"
 
 #include <array>
 #include <unordered_map>
@@ -46,7 +47,7 @@
 #include "SerializedShader.h"
 #include "XXH128Hasher.hpp"
 #include "CallbackWrapper.hpp"
-#include "GraphicsUtilities.h"
+#include "GraphicsAccessories.hpp"
 
 namespace Diligent
 {
@@ -486,7 +487,7 @@ RenderStateCacheImpl::RenderStateCacheImpl(IReferenceCounters*               pRe
             break;
 
         case RENDER_DEVICE_TYPE_D3D12:
-            GetRenderDeviceD3D12MaxShaderVersion(m_pDevice, SerializationDeviceCI.D3D12.ShaderVersion);
+            SerializationDeviceCI.D3D12.ShaderVersion = SerializationDeviceCI.DeviceInfo.MaxShaderVersion.HLSL;
             break;
 
         case RENDER_DEVICE_TYPE_GL:
@@ -1424,7 +1425,22 @@ bool ReloadablePipelineState::Reload(ReloadGraphicsPipelineCallbackType ReloadGr
     {
         if (m_pPipeline != pNewPSO)
         {
-            m_pPipeline->CopyStaticResources(pNewPSO);
+            const auto SrcSignCount = m_pPipeline->GetResourceSignatureCount();
+            const auto DstSignCount = pNewPSO->GetResourceSignatureCount();
+            if (SrcSignCount == DstSignCount)
+            {
+                for (Uint32 s = 0; s < SrcSignCount; ++s)
+                {
+                    auto* pSrcSign = m_pPipeline->GetResourceSignature(s);
+                    auto* pDstSign = pNewPSO->GetResourceSignature(s);
+                    if (pSrcSign != pDstSign)
+                        pSrcSign->CopyStaticResources(pDstSign);
+                }
+            }
+            else
+            {
+                UNEXPECTED("The number of resource signatures in old pipeline (", SrcSignCount, ") does not match the number of signatures in new pipeline (", DstSignCount, ")");
+            }
             m_pPipeline = pNewPSO;
         }
     }
@@ -1461,6 +1477,49 @@ bool ReloadablePipelineState::Reload(ReloadGraphicsPipelineCallbackType ReloadGr
             UNEXPECTED("Unexpected pipeline type");
             return false;
     }
+}
+
+static constexpr char RenderStateCacheFileExtension[] = ".diligentcache";
+
+std::string GetRenderStateCacheFilePath(const char* CacheLocation, const char* AppName, RENDER_DEVICE_TYPE DeviceType)
+{
+    if (CacheLocation == nullptr)
+    {
+        UNEXPECTED("Cache location is null");
+        return "";
+    }
+
+    std::string StateCachePath = CacheLocation;
+    if (StateCachePath == RenderStateCacheLocationAppData)
+    {
+        // Use the app data directory.
+        StateCachePath = FileSystem::GetLocalAppDataDirectory(AppName);
+    }
+    else if (!StateCachePath.empty() && !FileSystem::PathExists(StateCachePath.c_str()))
+    {
+        // Use the user-provided directory
+        FileSystem::CreateDirectory(StateCachePath.c_str());
+    }
+
+    if (!StateCachePath.empty() && !FileSystem::IsSlash(StateCachePath.back()))
+        StateCachePath.push_back(FileSystem::SlashSymbol);
+
+    if (AppName != nullptr)
+    {
+        StateCachePath += AppName;
+        StateCachePath += '_';
+    }
+    StateCachePath += GetRenderDeviceTypeShortString(DeviceType);
+    // Use different cache files for debug and release modes.
+    // This is not required, but is convenient.
+#ifdef DILIGENT_DEBUG
+    StateCachePath += "_d";
+#else
+    StateCachePath += "_r";
+#endif
+    StateCachePath += RenderStateCacheFileExtension;
+
+    return StateCachePath;
 }
 
 } // namespace Diligent

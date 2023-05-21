@@ -58,6 +58,8 @@ FenceD3D12Impl::FenceD3D12Impl(IReferenceCounters*    pRefCounters,
     auto* const pd3d12Device = pDevice->GetD3D12Device();
     auto        hr           = pd3d12Device->CreateFence(0, Flags, __uuidof(m_pd3d12Fence), reinterpret_cast<void**>(static_cast<ID3D12Fence**>(&m_pd3d12Fence)));
     CHECK_D3D_RESULT_THROW(hr, "Failed to create D3D12 fence");
+    if (m_Desc.Name != nullptr)
+        m_pd3d12Fence->SetName(WidenString(m_Desc.Name).c_str());
 }
 
 FenceD3D12Impl::~FenceD3D12Impl()

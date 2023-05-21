@@ -175,7 +175,7 @@ public:
         m_WorkerThreads.clear();
     }
 
-    virtual bool RemoveTask(IAsyncTask* pTask, bool CancelIfRunning) override final
+    virtual bool RemoveTask(IAsyncTask* pTask) override final
     {
         std::unique_lock<std::mutex> lock{m_TasksQueueMtx};
 
@@ -187,13 +187,8 @@ public:
             m_TasksQueue.erase(it);
             return true;
         }
-        else
-        {
-            if (CancelIfRunning)
-                pTask->Cancel();
 
-            return pTask->IsFinished();
-        }
+        return false;
     }
 
     virtual bool ReprioritizeTask(IAsyncTask* pTask) override final

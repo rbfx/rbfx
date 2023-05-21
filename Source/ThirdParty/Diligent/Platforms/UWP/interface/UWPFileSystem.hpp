@@ -78,6 +78,8 @@ public:
     static void DeleteFile(const Char* strPath);
 
     static std::vector<std::unique_ptr<FindFileData>> Search(const Char* SearchPattern);
+
+    static std::string GetLocalAppDataDirectory(const char* AppName = nullptr, bool Create = true);
 };
 
 } // namespace Diligent

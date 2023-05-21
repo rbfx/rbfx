@@ -80,10 +80,25 @@ RenderDeviceD3D11Impl::RenderDeviceD3D11Impl(IReferenceCounters*          pRefCo
     m_DeviceInfo.Type = RENDER_DEVICE_TYPE_D3D11;
     switch (m_pd3d11Device->GetFeatureLevel())
     {
-        case D3D_FEATURE_LEVEL_11_1: m_DeviceInfo.APIVersion = {11, 1}; break;
-        case D3D_FEATURE_LEVEL_11_0: m_DeviceInfo.APIVersion = {11, 0}; break;
-        case D3D_FEATURE_LEVEL_10_1: m_DeviceInfo.APIVersion = {10, 1}; break;
-        case D3D_FEATURE_LEVEL_10_0: m_DeviceInfo.APIVersion = {10, 0}; break;
+        case D3D_FEATURE_LEVEL_11_1:
+            m_DeviceInfo.APIVersion            = {11, 1};
+            m_DeviceInfo.MaxShaderVersion.HLSL = {5, 1};
+            break;
+        case D3D_FEATURE_LEVEL_11_0:
+            m_DeviceInfo.APIVersion            = {11, 0};
+            m_DeviceInfo.MaxShaderVersion.HLSL = {5, 0};
+            break;
+
+        case D3D_FEATURE_LEVEL_10_1:
+            m_DeviceInfo.APIVersion            = {10, 1};
+            m_DeviceInfo.MaxShaderVersion.HLSL = {4, 1};
+            break;
+
+        case D3D_FEATURE_LEVEL_10_0:
+            m_DeviceInfo.APIVersion            = {10, 0};
+            m_DeviceInfo.MaxShaderVersion.HLSL = {4, 0};
+            break;
+
         default: UNEXPECTED("Unexpected D3D feature level");
     }
 
