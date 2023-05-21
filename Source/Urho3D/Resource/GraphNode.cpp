@@ -159,6 +159,15 @@ GraphNode* GraphNode::WithInput(const ea::string_view name, const Variant& value
     return this;
 }
 
+GraphNode* GraphNode::WithAnyInput(const ea::string_view name, const Variant& value)
+{
+    auto pin = GetOrAddInput(name);
+    pin.GetPin()->SetName(name);
+    pin.GetPin()->type_ = VAR_NONE;
+    pin.GetPin()->SetValue(value);
+    return this;
+}
+
 GraphNode* GraphNode::WithInput(const ea::string_view name, GraphPinRef<GraphOutPin> outputPin, VariantType type)
 {
     auto pin = GetOrAddInput(name);
@@ -217,6 +226,17 @@ GraphPinRef<GraphExitPin> GraphNode::GetOrAddExit(const ea::string_view name)
 GraphNode* GraphNode::WithExit(const ea::string_view name)
 {
     GetOrAddExit(name);
+    return this;
+}
+
+GraphNode* GraphNode::WithExit(const ea::string_view name, GraphPinRef<GraphEnterPin> enterPin)
+{
+    auto pin = GetOrAddExit(name);
+    pin.GetPin()->SetName(name);
+    if (enterPin)
+    {
+        pin.GetPin()->ConnectTo(enterPin);
+    }
     return this;
 }
 

@@ -29,43 +29,57 @@ namespace ActionGenerator.Templates
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"//
-// Copyright (c) 2015 Xamarin Inc.
-// Copyright (c) 2022-2023 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the ""Software""), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR rhs
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR rhsWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR rhs DEALINGS IN
-// THE SOFTWARE.
-//
-
-#include ""../Precompiled.h""
-#include ""Actions.h""
-#include ""ActionStates.h""
-#include ""Urho3D/IO/ArchiveSerializationBasic.h""
-#include ""Urho3D/Resource/GraphNode.h""
-
-namespace Urho3D
-{
-namespace Actions
-{
-");
+            this.Write("//\r\n// Copyright (c) 2015 Xamarin Inc.\r\n// Copyright (c) 2022-2023 the rbfx proje" +
+                    "ct.\r\n//\r\n// Permission is hereby granted, free of charge, to any person obtainin" +
+                    "g a copy\r\n// of this software and associated documentation files (the \"Software\"" +
+                    "), to deal\r\n// in the Software without restriction, including without limitation" +
+                    " the rights\r\n// to use, copy, modify, merge, publish, distribute, sublicense, an" +
+                    "d/or sell\r\n// copies of the Software, and to permit persons to whom the Software" +
+                    " is\r\n// furnished to do so, subject to the following conditions:\r\n//\r\n// The abo" +
+                    "ve copyright notice and this permission notice shall be included in\r\n// all copi" +
+                    "es or substantial portions of the Software.\r\n//\r\n// THE SOFTWARE IS PROVIDED \"AS" +
+                    " IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\r\n// IMPLIED, INCLUDING BUT NOT LI" +
+                    "MITED TO THE WARRANTIES OF MERCHANTABILITY,\r\n// FITNESS FOR A PARTICULAR PURPOSE" +
+                    " AND NONINFRINGEMENT. IN NO EVENT SHALL THE\r\n// AUTHORS OR COPYRIGHT HOLDERS BE " +
+                    "LIABLE FOR ANY CLAIM, DAMAGES OR rhs\r\n// LIABILITY, WHETHER IN AN ACTION OF CONT" +
+                    "RACT, TORT OR rhsWISE, ARISING FROM,\r\n// OUT OF OR IN CONNECTION WITH THE SOFTWA" +
+                    "RE OR THE USE OR rhs DEALINGS IN\r\n// THE SOFTWARE.\r\n//\r\n\r\n#include \"../Precompil" +
+                    "ed.h\"\r\n\r\n#include \"Urho3D/Actions/Actions.h\"\r\n#include \"Urho3D/Actions/ActionMan" +
+                    "ager.h\"\r\n#include \"Urho3D/Actions/ActionStates.h\"\r\n#include \"Urho3D/IO/ArchiveSe" +
+                    "rializationBasic.h\"\r\n#include \"Urho3D/Resource/GraphNode.h\"\r\n\r\nnamespace Urho3D\r" +
+                    "\n{\r\nnamespace Actions\r\n{\r\n\r\nvoid RegisterActions(ActionManager* manager)\r\n{\r\n");
             
-            #line 40 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
- foreach (var actionKeyValue in _definition.Actions)
+            #line 45 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+
+var sortedActions = _definition.Actions.OrderBy(_=>_.Key).ToList();
+
+foreach (var actionKeyValue in sortedActions)
+{
+    var className = actionKeyValue.Key;
+
+            
+            #line default
+            #line hidden
+            this.Write("    manager->AddFactoryReflection<");
+            
+            #line 52 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(className));
+            
+            #line default
+            #line hidden
+            this.Write(">();\r\n");
+            
+            #line 53 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+
+}
+
+            
+            #line default
+            #line hidden
+            this.Write("}\r\n\r\n");
+            
+            #line 58 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+ foreach (var actionKeyValue in sortedActions)
 {
     var action = actionKeyValue.Value;
     var className = actionKeyValue.Key;
@@ -75,21 +89,21 @@ namespace Actions
             #line hidden
             this.Write("\r\n/// Construct.\r\n");
             
-            #line 47 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 65 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("::");
             
-            #line 47 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 65 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("(Context* context)\r\n    : BaseClassName(context)\r\n{\r\n");
             
-            #line 50 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 68 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 foreach (var parameter in action.Parameters)
 {
@@ -101,21 +115,21 @@ foreach (var parameter in action.Parameters)
             #line hidden
             this.Write("    Set");
             
-            #line 56 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 74 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.Camel(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 56 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 74 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.GetValue(parameter.DefaultValue, parameter.Type)));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 57 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 75 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
     }
 }
@@ -125,21 +139,21 @@ foreach (var parameter in action.Parameters)
             #line hidden
             this.Write("}\r\n\r\n/// Create new action state from the action.\r\nSharedPtr<ActionState> ");
             
-            #line 64 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 82 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("::StartAction(Object* target) { return MakeShared<Detail::");
             
-            #line 64 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 82 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("State>(this, target); }\r\n\r\n");
             
-            #line 66 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 84 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 if (!action.CustomReverse)
 {
@@ -149,21 +163,21 @@ if (!action.CustomReverse)
             #line hidden
             this.Write("\r\n/// Create reversed action.\r\nSharedPtr<FiniteTimeAction> ");
             
-            #line 72 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 90 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("::Reverse() const\r\n{\r\n    auto action = MakeShared<");
             
-            #line 74 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 92 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write(">(context_);\r\n    ReverseImpl(action);\r\n    return action;\r\n}\r\n");
             
-            #line 78 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 96 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 
@@ -179,56 +193,56 @@ foreach (var parameter in action.ThisParameters)
             #line hidden
             this.Write("\r\n/// Set ");
             
-            #line 89 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 107 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(".\r\nvoid ");
             
-            #line 90 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 108 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("::Set");
             
-            #line 90 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 108 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.Camel(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 90 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 108 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.CppTypeRef(parameter.Type)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 90 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 108 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
             
             #line default
             #line hidden
             this.Write(")\r\n{\r\n    ");
             
-            #line 92 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 110 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("_ = ");
             
-            #line 92 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 110 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
             
             #line default
             #line hidden
             this.Write(";\r\n");
             
-            #line 93 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 111 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 if (parameter.Type == ParameterType.FiniteTimeAction)
 {
@@ -238,7 +252,7 @@ if (parameter.Type == ParameterType.FiniteTimeAction)
             #line hidden
             this.Write("    SetDuration(GetDuration());\r\n");
             
-            #line 98 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 116 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 
@@ -247,7 +261,7 @@ if (parameter.Type == ParameterType.FiniteTimeAction)
             #line hidden
             this.Write("}\r\n\r\n");
             
-            #line 103 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 121 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 
@@ -256,7 +270,7 @@ if (parameter.Type == ParameterType.FiniteTimeAction)
             #line hidden
             this.Write("\r\n/// Serialize content from/to archive. May throw ArchiveException.\r\nvoid ");
             
-            #line 108 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 126 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
@@ -264,7 +278,7 @@ if (parameter.Type == ParameterType.FiniteTimeAction)
             this.Write("::SerializeInBlock(Archive& archive)\r\n{\r\n    BaseClassName::SerializeInBlock(arch" +
                     "ive);\r\n");
             
-            #line 111 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 129 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 foreach (var parameter in action.ThisParameters)
 {
@@ -274,35 +288,35 @@ foreach (var parameter in action.ThisParameters)
             #line hidden
             this.Write("    SerializeOptionalValue(archive, \"");
             
-            #line 115 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 133 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("\", ");
             
-            #line 115 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 133 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("_, ");
             
-            #line 115 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 133 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.CppType(parameter.Type)));
             
             #line default
             #line hidden
             this.Write("{");
             
-            #line 115 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 133 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.DefaultValue));
             
             #line default
             #line hidden
             this.Write("});\r\n");
             
-            #line 116 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 134 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 
@@ -311,7 +325,7 @@ foreach (var parameter in action.ThisParameters)
             #line hidden
             this.Write("}\r\n\r\nGraphNode* ");
             
-            #line 121 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 139 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
@@ -319,11 +333,37 @@ foreach (var parameter in action.ThisParameters)
             this.Write("::ToGraphNode(Graph* graph) const\r\n{\r\n    return BaseClassName::ToGraphNode(graph" +
                     ")");
             
-            #line 123 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 141 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 foreach (var parameter in action.ThisParameters)
 {
-if (parameter.Type != ParameterType.FiniteTimeAction)
+var paramName = Util.ArgName(parameter.Name);
+if (parameter.Type == ParameterType.Variant)
+{
+
+            
+            #line default
+            #line hidden
+            this.Write("->WithAnyInput(\"");
+            
+            #line 147 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(paramName));
+            
+            #line default
+            #line hidden
+            this.Write("\", ");
+            
+            #line 147 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(paramName));
+            
+            #line default
+            #line hidden
+            this.Write("_)");
+            
+            #line 147 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+
+}
+else if (parameter.Type != ParameterType.FiniteTimeAction)
 {
 
             
@@ -331,21 +371,21 @@ if (parameter.Type != ParameterType.FiniteTimeAction)
             #line hidden
             this.Write("->WithInput(\"");
             
-            #line 128 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
+            #line 151 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(paramName));
             
             #line default
             #line hidden
             this.Write("\", ");
             
-            #line 128 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
+            #line 151 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(paramName));
             
             #line default
             #line hidden
             this.Write("_)");
             
-            #line 128 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 151 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 else
@@ -356,14 +396,28 @@ else
             #line hidden
             this.Write("->WithExit(\"");
             
-            #line 132 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
+            #line 155 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(paramName));
             
             #line default
             #line hidden
-            this.Write("\")");
+            this.Write("\", ");
             
-            #line 132 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 155 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(paramName));
+            
+            #line default
+            #line hidden
+            this.Write("_ ? ");
+            
+            #line 155 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(paramName));
+            
+            #line default
+            #line hidden
+            this.Write("_->ToGraphNode(graph)->GetEnter(0) : GraphPinRef<GraphEnterPin>{})");
+            
+            #line 155 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 }
@@ -373,14 +427,14 @@ else
             #line hidden
             this.Write(";\r\n}\r\n\r\nvoid ");
             
-            #line 138 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 161 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("::FromGraphNode(GraphNode* node)\r\n{\r\n    BaseClassName::FromGraphNode(node);\r\n");
             
-            #line 141 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 164 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 foreach (var parameter in action.ThisParameters)
 {
@@ -393,42 +447,42 @@ if (parameter.Type != ParameterType.FiniteTimeAction)
             #line hidden
             this.Write("    if (const auto ");
             
-            #line 148 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 171 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argName));
             
             #line default
             #line hidden
             this.Write(" = node->GetInput(\"");
             
-            #line 148 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 171 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argName));
             
             #line default
             #line hidden
             this.Write("\"))\r\n    {\r\n        ");
             
-            #line 150 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 173 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argName));
             
             #line default
             #line hidden
             this.Write("_ = ");
             
-            #line 150 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 173 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argName));
             
             #line default
             #line hidden
-            this.Write(".GetPin()->GetValue().Get<");
+            this.Write(".GetPin()->GetValue()");
             
-            #line 150 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.CppType(parameter.Type)));
+            #line 173 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.FromVariant(parameter.Type)));
             
             #line default
             #line hidden
-            this.Write(">();\r\n    }\r\n");
+            this.Write(";\r\n    }\r\n");
             
-            #line 152 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 175 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 else
@@ -439,35 +493,35 @@ else
             #line hidden
             this.Write("    if (const auto ");
             
-            #line 157 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 180 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argName));
             
             #line default
             #line hidden
             this.Write(" = node->GetExit(\"");
             
-            #line 157 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 180 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argName));
             
             #line default
             #line hidden
             this.Write("\"))\r\n    {\r\n        const auto internalAction = MakeActionFromGraphNode(");
             
-            #line 159 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 182 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argName));
             
             #line default
             #line hidden
             this.Write(".GetConnectedPin<GraphEnterPin>().GetNode());\r\n        ");
             
-            #line 160 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 183 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argName));
             
             #line default
             #line hidden
             this.Write("_.DynamicCast(internalAction);\r\n    }\r\n");
             
-            #line 162 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 185 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 }
@@ -477,7 +531,7 @@ else
             #line hidden
             this.Write("}\r\n\r\n");
             
-            #line 168 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
+            #line 191 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\CppTemplate.tt"
 
 }
 }

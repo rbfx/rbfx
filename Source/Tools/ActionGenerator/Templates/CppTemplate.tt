@@ -28,8 +28,10 @@
 //
 
 #include "../Precompiled.h"
-#include "Actions.h"
-#include "ActionStates.h"
+
+#include "Urho3D/Actions/Actions.h"
+#include "Urho3D/Actions/ActionManager.h"
+#include "Urho3D/Actions/ActionStates.h"
 #include "Urho3D/IO/ArchiveSerializationBasic.h"
 #include "Urho3D/Resource/GraphNode.h"
 
@@ -37,7 +39,23 @@ namespace Urho3D
 {
 namespace Actions
 {
-<# foreach (var actionKeyValue in _definition.Actions)
+
+void RegisterActions(ActionManager* manager)
+{
+<#
+var sortedActions = _definition.Actions.OrderBy(_=>_.Key).ToList();
+
+foreach (var actionKeyValue in sortedActions)
+{
+    var className = actionKeyValue.Key;
+#>
+    manager->AddFactoryReflection<<#=className#>>();
+<#
+}
+#>
+}
+
+<# foreach (var actionKeyValue in sortedActions)
 {
     var action = actionKeyValue.Value;
     var className = actionKeyValue.Key;
@@ -123,13 +141,18 @@ GraphNode* <#=className#>::ToGraphNode(Graph* graph) const
     return BaseClassName::ToGraphNode(graph)<#
 foreach (var parameter in action.ThisParameters)
 {
-if (parameter.Type != ParameterType.FiniteTimeAction)
+var paramName = Util.ArgName(parameter.Name);
+if (parameter.Type == ParameterType.Variant)
 {
-#>->WithInput("<#=Util.ArgName(parameter.Name)#>", <#=Util.ArgName(parameter.Name)#>_)<#
+#>->WithAnyInput("<#=paramName#>", <#=paramName#>_)<#
+}
+else if (parameter.Type != ParameterType.FiniteTimeAction)
+{
+#>->WithInput("<#=paramName#>", <#=paramName#>_)<#
 }
 else
 {
-#>->WithExit("<#=Util.ArgName(parameter.Name)#>")<#
+#>->WithExit("<#=paramName#>", <#=paramName#>_ ? <#=paramName#>_->ToGraphNode(graph)->GetEnter(0) : GraphPinRef<GraphEnterPin>{})<#
 }
 }
 #>;
@@ -147,7 +170,7 @@ if (parameter.Type != ParameterType.FiniteTimeAction)
 #>
     if (const auto <#=argName#> = node->GetInput("<#=argName#>"))
     {
-        <#=argName#>_ = <#=argName#>.GetPin()->GetValue().Get<<#=Util.CppType(parameter.Type)#>>();
+        <#=argName#>_ = <#=argName#>.GetPin()->GetValue()<#=Util.FromVariant(parameter.Type)#>;
     }
 <#
 }

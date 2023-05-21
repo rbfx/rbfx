@@ -253,6 +253,24 @@ private:
     bool triggered_{};
 };
 
+class SetAttributeState : public AttributeActionState
+{
+public:
+    /// Construct.
+    SetAttributeState(AttributeAction* action, Object* target, const Variant& value);
+    /// Construct.
+    SetAttributeState(AttributeActionInstant* action, Object* target, const Variant& value);
+    /// Construct.
+    SetAttributeState(SetAttribute* action, Object* target);
+
+private:
+    void Update(float time, Variant& var) override;
+
+private:
+    Variant value_;
+    bool triggered_{};
+};
+
 struct ShowState : public SetAttributeState
 {
     ShowState(Show* action, Object* target);
@@ -272,6 +290,24 @@ struct DisableState : public SetAttributeState
 {
     DisableState(Disable* action, Object* target);
 };
+
+class AttributeBlinkState : public AttributeActionState
+{
+public:
+    AttributeBlinkState(AttributeAction* action, Object* target, Variant from, Variant to, unsigned times);
+    AttributeBlinkState(AttributeBlink* action, Object* target);
+
+    void Update(float time, Variant& var) override;
+
+    void Stop() override;
+
+private:
+    unsigned times_;
+    Variant originalState_;
+    Variant from_;
+    Variant to_;
+};
+
 
 struct BlinkState : public AttributeBlinkState
 {
@@ -406,6 +442,28 @@ struct EaseElasticInOutState : public ActionEaseState
     using ActionEaseState::ActionEaseState;
 
     float Ease(float time) const override;
+};
+
+class AttributeFromToState : public AttributeActionState
+{
+    Variant from_;
+    Variant to_;
+
+public:
+    AttributeFromToState(AttributeFromTo* action, Object* target);
+
+    void Update(float time, Variant& value) override;
+};
+
+class AttributeToState : public AttributeActionState
+{
+    Variant from_;
+    Variant to_;
+
+public:
+    AttributeToState(AttributeTo* action, Object* target);
+
+    void Update(float time, Variant& value) override;
 };
 
 } // namespace Detail

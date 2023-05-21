@@ -569,7 +569,6 @@ public:
 %include "Urho3D/Actions/ActionInstantState.h"
 %include "Urho3D/Actions/AttributeAction.h"
 %include "Urho3D/Actions/AttributeActionState.h"
-%include "Urho3D/Actions/Attribute.h"
 %include "Urho3D/Actions/CallFunc.h"
 %include "Urho3D/Actions/Actions.h"
 %include "Urho3D/Actions/Parallel.h"

@@ -8,6 +8,7 @@ namespace ActionGenerator.Model
         Vector3,
         Quaternion,
         String,
-        FiniteTimeAction
+        Variant,
+        FiniteTimeAction,
     }
 }

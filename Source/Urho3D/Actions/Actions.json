@@ -12,7 +12,7 @@
                     "name": "attribute name",
                     "type": "string",
                     "default": "Position",
-                    "Inherited":  true 
+                    "Inherited": true
                 }
             ]
         },
@@ -25,10 +25,10 @@
                     "type": "vector3"
                 },
                 {
-                  "name": "attribute name",
-                  "type": "string",
-                  "default": "Position",
-                  "Inherited": true
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Position",
+                    "Inherited": true
                 }
             ]
         },
@@ -41,10 +41,10 @@
                     "type": "vector3"
                 },
                 {
-                  "name": "attribute name",
-                  "type": "string",
-                  "default": "Position",
-                  "Inherited": true
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Position",
+                    "Inherited": true
                 }
             ]
         },
@@ -58,10 +58,10 @@
                     "default": "1,1,1"
                 },
                 {
-                  "name": "attribute name",
-                  "type": "string",
-                  "default": "Scale",
-                  "Inherited": true
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Scale",
+                    "Inherited": true
                 }
             ]
         },
@@ -74,10 +74,10 @@
                     "type": "quaternion"
                 },
                 {
-                  "name": "attribute name",
-                  "type": "string",
-                  "default": "Rotation",
-                  "Inherited": true
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Rotation",
+                    "Inherited": true
                 }
             ]
         },
@@ -107,11 +107,11 @@
             "parent": "AttributeActionInstant",
             "comment": "Show target. The Target should have \"Is Visible\" attribute.",
             "parameters": [
-              {
-                "name": "attribute name",
-                "type": "string",
-                "default": "Is Visible"
-              }
+                {
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Is Visible"
+                }
             ]
         },
         "Hide": {
@@ -129,11 +129,11 @@
             "parent": "AttributeActionInstant",
             "comment": "Show target. The Target should have \"Is Enabled\" attribute.",
             "parameters": [
-              {
-                "name": "attribute name",
-                "type": "string",
-                "default": "Is Enabled"
-              }
+                {
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Is Enabled"
+                }
             ]
         },
         "Disable": {
@@ -251,11 +251,63 @@
         "EaseElasticOut": {
             "parent": "EaseElastic",
             "comment": "ElasticOut easing action",
-            "customReverse": true 
+            "customReverse": true
         },
         "EaseElasticInOut": {
             "parent": "EaseElastic",
             "comment": "ElasticInOut easing action"
+        },
+        "AttributeFromTo": {
+            "parent": "AttributeAction",
+            "comment": "Animate attribute between two values",
+            "parameters": [
+                {
+                    "name": "from",
+                    "type": "variant"
+                },
+                {
+                    "name": "to",
+                    "type": "variant"
+                }
+            ]
+        },
+        "AttributeTo": {
+            "parent": "AttributeAction",
+            "comment": "Animate attribute between current and provided value",
+            "parameters": [
+                {
+                    "name": "to",
+                    "type": "variant"
+                }
+            ]
+        },
+        "AttributeBlink": {
+            "parent": "AttributeAction",
+            "comment": "Blink attribute between two values",
+            "parameters": [
+                {
+                    "name": "from",
+                    "type": "variant"
+                },
+                {
+                    "name": "to",
+                    "type": "variant"
+                },
+                {
+                    "name": "num of blinks",
+                    "type": "unsigned"
+                }
+            ]
+        },
+        "SetAttribute": {
+            "parent": "AttributeActionInstant",
+            "comment": "Set attribute value",
+            "parameters": [
+                {
+                    "name": "value",
+                    "type": "variant"
+                }
+            ]
         }
     }
 }

@@ -67,6 +67,7 @@ protected:
 
 private:
     SharedPtr<ActionSet> actionSet_;
+    ea::vector<SharedPtr<ObjectReflection>> actionTypes_;
 };
 
 } // namespace Urho3D

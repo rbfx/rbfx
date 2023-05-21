@@ -85,6 +85,31 @@ GraphPinView::GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, Va
 {
 }
 
+GraphPinView* GraphView::GetInputPinView(ax::NodeEditor::NodeId node, const ea::string& pinName)
+{
+    auto it = nodes_.find(node);
+    if (it != nodes_.end())
+    {
+        for (auto& pin : it->second.inputPins_)
+        {
+            if (pin.title_ == pinName)
+                return &pin;
+        }
+    }
+    return nullptr;
+}
+
+GraphPinView* GraphView::GetInputPinView(ax::NodeEditor::NodeId node, unsigned pinIndex)
+{
+    auto it = nodes_.find(node);
+    if (it != nodes_.end())
+    {
+        if (pinIndex < it->second.inputPins_.size())
+            return &it->second.inputPins_[pinIndex];
+    }
+    return nullptr;
+}
+
 void GraphView::Reset()
 {
     nextUniqueId_ = 1;
@@ -152,6 +177,9 @@ void GraphView::Populate(Graph* graph)
             auto connectedPinRef = pinRef.GetConnectedPin<GraphOutPin>();
             if (connectedPinRef.GetNode())
             {
+                auto inputPin = GetInputPinView(node->GetID(), pinIndex);
+                if (inputPin)
+                    inputPin->link_ = nextUniqueId_;
                 links_[nextUniqueId_++] = GraphLinkView{outputPins[pinRef], inputPins[connectedPinRef]};
             }
         }
@@ -290,7 +318,12 @@ void GraphViewTab::RenderGraph()
         for (auto& pin : node.inputPins_)
         {
             ed::BeginPin(pin.id_, ax::NodeEditor::PinKind::Input);
-            if (pin.type_ != VAR_NONE)
+            ax::Widgets::Icon(ImVec2(16, 16), ax::Drawing::IconType::Circle, pin.link_.Get());
+            ImGui::SameLine();
+            if (pin.type_ == VAR_NONE)
+            {
+            }
+            if (pin.value_.GetType() != VAR_NONE)
             {
                 ImGui::PushItemWidth(100.0f);
                 ImGui::PushID(pin.id_.Get());
@@ -351,35 +384,37 @@ void GraphViewTab::RenderGraph()
         PushAction(moveNodesAction);
     }
 
-    //if (ed::BeginCreate())
-    //{
-    //    ed::PinId inputPinId, outputPinId;
-    //    if (ed::QueryNewLink(&inputPinId, &outputPinId))
-    //    {
-    //        ed::RejectNewItem();
-    //    }
+    if (ed::BeginCreate())
+    {
+        ed::PinId inputPinId, outputPinId;
+        if (ed::QueryNewLink(&inputPinId, &outputPinId))
+        {
+            ed::RejectNewItem();
+        }
 
-    //    ed::PinId newNodeId;
-    //    if (ed::QueryNewNode(&newNodeId))
-    //    {
-    //        ed::RejectNewItem();
-    //    }
-    //}
+        ed::PinId newNodeId;
+        if (ed::QueryNewNode(&newNodeId))
+        {
+            ed::RejectNewItem();
+        }
+    }
+    ed::EndCreate();
 
-    //if (ed::BeginDelete())
-    //{
-    //    ed::LinkId deletedLinkId;
-    //    while (ed::QueryDeletedLink(&deletedLinkId))
-    //    {
-    //        ed::RejectDeletedItem();
-    //    }
+    if (ed::BeginDelete())
+    {
+        ed::LinkId deletedLinkId;
+        while (ed::QueryDeletedLink(&deletedLinkId))
+        {
+            ed::RejectDeletedItem();
+        }
 
-    //    ed::NodeId deletedNodeId;
-    //    while (ed::QueryDeletedNode(&deletedNodeId))
-    //    {
-    //        ed::RejectDeletedItem();
-    //    }
-    //}
+        ed::NodeId deletedNodeId;
+        while (ed::QueryDeletedNode(&deletedNodeId))
+        {
+            ed::RejectDeletedItem();
+        }
+    }
+    ed::EndDelete();
 }
 
 void GraphViewTab::ApplyLayoutFromView()
@@ -412,6 +447,8 @@ void GraphViewTab::RenderContent()
     const ImVec2 contentPosition = ui::GetCursorPos();
     const auto contentSize = GetContentSize() - IntVector2(0, contentPosition.y - basePosition.y);
     const auto imContentSize = ToImGui(VectorMax(contentSize, IntVector2::ONE));
+
+    ImGui::BeginChild("graph_panel", imContentSize);
 
     // Start interaction with editor.
     ed::Begin("graph_view", imContentSize);
@@ -483,6 +520,8 @@ void GraphViewTab::RenderContent()
     ed::SetCurrentEditor(nullptr);
 
     applyLayout_ = false;
+
+    ImGui::EndChild();
 }
 
 } // namespace Urho3D

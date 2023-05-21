@@ -28,7 +28,6 @@
 #include "Actions.h"
 #include "ActionSet.h"
 #include "ActionState.h"
-#include "Attribute.h"
 #include "FiniteTimeActionState.h"
 #include "Parallel.h"
 #include "Repeat.h"
@@ -110,41 +109,16 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
         ActionSet::RegisterObject(context);
     }
 
-    manager->AddFactoryReflection<RemoveSelf>();
-    manager->AddFactoryReflection<CloneMaterials>();
-    manager->AddFactoryReflection<DelayTime>();
+    manager->AddAbstractReflection<BaseAction>();
     manager->AddFactoryReflection<EmptyAction>();
-    manager->AddFactoryReflection<BaseAction>();
-    manager->AddFactoryReflection<FiniteTimeAction>();
-    manager->AddFactoryReflection<MoveBy>();
-    manager->AddFactoryReflection<MoveByQuadratic>();
-    manager->AddFactoryReflection<JumpBy>();
-    manager->AddFactoryReflection<RotateBy>();
-    manager->AddFactoryReflection<RotateAround>();
-    manager->AddFactoryReflection<AttributeFromTo>();
-    manager->AddFactoryReflection<AttributeTo>();
-    manager->AddFactoryReflection<AttributeBlink>();
-    manager->AddFactoryReflection<ShaderParameterFromTo>();
-    manager->AddFactoryReflection<ShaderParameterTo>();
-    manager->AddFactoryReflection<EaseBackIn>();
-    manager->AddFactoryReflection<EaseBackInOut>();
-    manager->AddFactoryReflection<EaseBackOut>();
-    manager->AddFactoryReflection<EaseElasticIn>();
-    manager->AddFactoryReflection<EaseElasticInOut>();
-    manager->AddFactoryReflection<EaseElasticOut>();
-    manager->AddFactoryReflection<EaseBounceIn>();
-    manager->AddFactoryReflection<EaseBounceInOut>();
-    manager->AddFactoryReflection<EaseBounceOut>();
-    manager->AddFactoryReflection<EaseSineIn>();
-    manager->AddFactoryReflection<EaseSineInOut>();
-    manager->AddFactoryReflection<EaseSineOut>();
-    manager->AddFactoryReflection<EaseExponentialIn>();
-    manager->AddFactoryReflection<EaseExponentialInOut>();
-    manager->AddFactoryReflection<EaseExponentialOut>();
-    Sequence::RegisterObject(manager);
+    manager->AddAbstractReflection<FiniteTimeAction>();
     manager->AddFactoryReflection<Parallel>();
     manager->AddFactoryReflection<Repeat>();
     manager->AddFactoryReflection<RepeatForever>();
+    manager->AddFactoryReflection<Sequence>();
+    manager->AddFactoryReflection<ShaderParameterFromTo>();
+    manager->AddFactoryReflection<ShaderParameterTo>();
+    Actions::RegisterActions(manager);
 }
 
 void ActionManager::HandleUpdate(StringHash eventType, VariantMap& eventData)

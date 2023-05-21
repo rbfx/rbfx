@@ -24,6 +24,8 @@
 #include "../Core/IniHelpers.h"
 #include "../Foundation/ActionViewTab.h"
 
+#include "Urho3D/Actions/FiniteTimeAction.h"
+
 #include <Urho3D/Actions/ActionManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/GraphNode.h>
@@ -46,7 +48,18 @@ void Foundation_ActionViewTab(Context* context, Project* project)
 ActionViewTab::ActionViewTab(Context* context)
     : BaseClassName(context, "Action", "23C3DC77-AA8F-4DF1-B410-9CB62384B34D",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
+    , actionTypes_(ea::move(context_->GetSubsystem<ActionManager>()->GetObjectReflections().values()))
 {
+    ea::erase_if(actionTypes_, [](const SharedPtr<ObjectReflection>& a) { return !a->HasObjectFactory(); });
+    ea::sort(actionTypes_.begin(), actionTypes_.end(),
+        [](const SharedPtr<ObjectReflection>& l, const SharedPtr<ObjectReflection>& r)
+        {
+        if (l->GetCategory() < r->GetCategory())
+            return true;
+        if (l->GetCategory() > r->GetCategory())
+            return false;
+        return l->GetTypeName() < r->GetTypeName();
+    });
 }
 
 ActionViewTab::~ActionViewTab()
@@ -79,11 +92,18 @@ void ActionViewTab::RenderTitle()
 
 SharedPtr<GraphNode> ActionViewTab::CreateNewNodePopup() const
 {
-    auto actionManager = context_->GetSubsystem<ActionManager>();
-    for (auto& actionReflection : actionManager->GetObjectReflections())
+    for (auto& actionReflection : actionTypes_)
     {
-        if (ImGui::MenuItem(actionReflection.second->GetTypeName().c_str()))
+        if (ImGui::MenuItem(actionReflection->GetTypeName().c_str()))
         {
+            SharedPtr<Actions::FiniteTimeAction> action;
+            action.DynamicCast(actionReflection->CreateObject());
+            if (action)
+            {
+                const auto graph = MakeShared<Graph>(context_);
+                const auto node = action->ToGraphNode(graph);
+                return SharedPtr<GraphNode>{node};
+            }
         }
     }
     return {};
@@ -121,15 +141,15 @@ void ActionViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, c
 
 void ActionViewTab::OnResourceSaved(const ea::string& resourceName)
 {
-    auto graph = graph_.BuildGraph(context_);
+    const auto graph = graph_.BuildGraph(context_);
 
     VectorBuffer buffer;
     buffer.SetName(resourceName);
     actionSet_->FromGraph(graph);
     actionSet_->Save(buffer);
-    auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
+    const auto sharedBuffer = ea::make_shared<ByteVector>(ea::move(buffer.GetBuffer()));
 
-    auto project = GetProject();
+    const auto project = GetProject();
 
     project->SaveFileDelayed(actionSet_->GetAbsoluteFileName(), resourceName, sharedBuffer,
         [this](const ea::string& _, const ea::string& resourceName, bool& needReload) {});

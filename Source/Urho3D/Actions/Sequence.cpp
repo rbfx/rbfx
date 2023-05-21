@@ -150,24 +150,6 @@ Sequence::Sequence(Context* context)
     actions_[1] = GetOrDefault(nullptr);
 }
 
-void Sequence::RegisterObject(ActionManager* context)
-{
-    auto* reflection = context->AddFactoryReflection<Sequence>();
-    reflection->AddAttribute(Urho3D::AttributeInfo(VAR_PTR, "First",
-        Urho3D::MakeVariantAttributeAccessor<ClassName>([](const ClassName& self, Urho3D::Variant& value)
-            { value = self.GetFirstAction(); },
-            [](ClassName& self, const Urho3D::Variant& value)
-            { self.SetFirstAction(dynamic_cast<FiniteTimeAction*>(value.Get<RefCounted*>())); }),
-        nullptr, Variant(static_cast<RefCounted*>(nullptr)),
-        AM_DEFAULT));
-    reflection->AddAttribute(Urho3D::AttributeInfo(VAR_PTR, "Second",
-        Urho3D::MakeVariantAttributeAccessor<ClassName>([](const ClassName& self, Urho3D::Variant& value)
-            { value = self.GetSecondAction(); },
-            [](ClassName& self, const Urho3D::Variant& value)
-            { self.SetSecondAction(dynamic_cast<FiniteTimeAction*>(value.Get<RefCounted*>())); }),
-        nullptr, Variant(static_cast<RefCounted*>(nullptr)), AM_DEFAULT));
-}
-
 /// Set first action in sequence.
 void Sequence::SetFirstAction(FiniteTimeAction* action)
 {

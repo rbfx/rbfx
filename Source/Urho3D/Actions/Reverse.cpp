@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2015 Xamarin Inc.
-// Copyright (c) 2022 the rbfx project.
+// Copyright (c) 2022-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,45 +23,66 @@
 
 #include "Actions.h"
 
-#include "../Core/Context.h"
-#include "../IO/ArchiveSerializationBasic.h"
-#include "../IO/Log.h"
-#include "ActionManager.h"
-#include "FiniteTimeActionState.h"
+#include "AttributeActionState.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
 
 namespace Urho3D
 {
 namespace Actions
 {
 
-namespace
+/// ------------------------------------------------------------------------------
+void MoveBy::ReverseImpl(FiniteTimeAction* action) const
 {
-class ActionEaseState : public FiniteTimeActionState
+    BaseClassName::ReverseImpl(action);
+    static_cast<MoveBy*>(action)->SetDelta(-delta_);
+}
+
+/// ------------------------------------------------------------------------------
+void MoveByQuadratic::ReverseImpl(FiniteTimeAction* action) const
 {
+    BaseClassName::ReverseImpl(action);
+    static_cast<MoveByQuadratic*>(action)->SetDelta(-GetDelta());
+    static_cast<MoveByQuadratic*>(action)->SetControl(-GetControl());
+}
 
-public:
-    ActionEaseState(ActionEase* action, Object* target)
-        : FiniteTimeActionState(action, target)
-        , action_(action)
-    {
-        innerAction_.DynamicCast(StartAction(action->GetInnerAction(), target));
-    }
+/// ------------------------------------------------------------------------------
+void JumpBy::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<JumpBy*>(action)->SetDelta(-delta_);
+}
 
-    /// Called every frame with it's delta time.
-    void Update(float dt) override
-    {
-        if (innerAction_)
-        {
-            //innerAction_->Update(action_->Ease(dt));
-        }
-    }
+/// ------------------------------------------------------------------------------
+///
+void ScaleBy::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<ScaleBy*>(action)->SetDelta(Vector3(1.0f / delta_.x_, 1.0f / delta_.y_, 1.0f / delta_.z_));
+}
 
-private:
-    SharedPtr<ActionEase> action_;
-    SharedPtr<FiniteTimeActionState> innerAction_;
-};
+/// ------------------------------------------------------------------------------
+void RotateBy::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<RotateBy*>(action)->SetDelta(delta_.Inverse());
+}
 
-} // namespace
+
+/// ------------------------------------------------------------------------------
+
+void RotateAround::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<RotateAround*>(action)->SetDelta(delta_.Inverse());
+    static_cast<RotateAround*>(action)->SetPivot(GetPivot());
+}
+
+void Blink::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<Blink*>(action)->SetNumOfBlinks(GetNumOfBlinks());
+}
 
 /// Get action duration.
 float ActionEase::GetDuration() const
@@ -165,5 +186,33 @@ SharedPtr<FiniteTimeAction> EaseExponentialOut::Reverse() const
     return action;
 }
 
+void AttributeFromTo::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<AttributeFromTo*>(action)->SetFrom(GetTo());
+    static_cast<AttributeFromTo*>(action)->SetTo(GetFrom());
+}
+
+void AttributeBlink::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<AttributeBlink*>(action)->SetFrom(GetTo());
+    static_cast<AttributeBlink*>(action)->SetTo(GetFrom());
+    static_cast<AttributeBlink*>(action)->SetNumOfBlinks(GetNumOfBlinks());
+}
+
+void AttributeTo::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<AttributeTo*>(action)->SetTo(GetTo());
+}
+
+void SetAttribute::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<SetAttribute*>(action)->SetValue(GetValue());
+}
+
 } // namespace Actions
 } // namespace Urho3D
+

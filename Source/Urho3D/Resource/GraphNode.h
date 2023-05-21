@@ -121,6 +121,9 @@ public:
     /// Add input pin with value.
     GraphNode* WithInput(const ea::string_view name, const Variant& value);
 
+    /// Add input pin of any type with value.
+    GraphNode* WithAnyInput(const ea::string_view name, const Variant& value);
+
     /// Add input pin connected to the output pin.
     GraphNode* WithInput(const ea::string_view name, GraphPinRef<GraphOutPin> pin, VariantType type = VAR_NONE);
 
@@ -165,6 +168,9 @@ public:
 
     /// Add exit pin.
     GraphNode* WithExit(const ea::string_view name);
+
+    /// Add exit pin.
+    GraphNode* WithExit(const ea::string_view name, GraphPinRef<GraphEnterPin> pin);
 
     /// Get number of exit pins.
     unsigned GetNumExits() const { return exitPins_.size(); }

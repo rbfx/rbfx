@@ -30,6 +30,7 @@ namespace Urho3D
 {
 namespace Actions
 {
+/// Move by 3D or 2D offset action. Target should have attribute "Position" of type Vector3, Vector2, IntVector2 or IntVector3."
 class URHO3D_API MoveBy : public  AttributeAction
 {
     URHO3D_OBJECT(MoveBy, AttributeAction)
@@ -65,6 +66,7 @@ private:
     Vector3 delta_{};
 };
 
+/// Move by 3D or 2D offset action with quadratic interpolation. Target should have attribute "Position" of type Vector3, Vector2, IntVector2 or IntVector3."
 class URHO3D_API MoveByQuadratic : public  MoveBy
 {
     URHO3D_OBJECT(MoveByQuadratic, MoveBy)
@@ -100,6 +102,7 @@ private:
     Vector3 control_{};
 };
 
+/// Move instantly by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
 class URHO3D_API JumpBy : public  AttributeActionInstant
 {
     URHO3D_OBJECT(JumpBy, AttributeActionInstant)
@@ -135,6 +138,7 @@ private:
     Vector3 delta_{};
 };
 
+/// Scale by 3D offset action. Target should have attribute "Scale" of type Vector3.
 class URHO3D_API ScaleBy : public  AttributeAction
 {
     URHO3D_OBJECT(ScaleBy, AttributeAction)
@@ -170,6 +174,7 @@ private:
     Vector3 delta_{1,1,1};
 };
 
+/// Rotate by 3D delta action. Target should have attribute "Rotation" of type Quaternion.
 class URHO3D_API RotateBy : public  AttributeAction
 {
     URHO3D_OBJECT(RotateBy, AttributeAction)
@@ -205,6 +210,7 @@ private:
     Quaternion delta_{};
 };
 
+/// Rotate around 3D point action. Target should have "Position" of type Vector3 and "Rotation" of type Quaternion attributes
 class URHO3D_API RotateAround : public  AttributeAction
 {
     URHO3D_OBJECT(RotateAround, AttributeAction)
@@ -247,6 +253,7 @@ private:
     Vector3 pivot_{};
 };
 
+/// Remove self from parent. The Target of the action should be either Node or UIElement.
 class URHO3D_API RemoveSelf : public  ActionInstant
 {
     URHO3D_OBJECT(RemoveSelf, ActionInstant)
@@ -263,6 +270,7 @@ protected:
 private:
 };
 
+/// Clone all materials from the target attributes.
 class URHO3D_API CloneMaterials : public  ActionInstant
 {
     URHO3D_OBJECT(CloneMaterials, ActionInstant)
@@ -279,6 +287,7 @@ protected:
 private:
 };
 
+/// Show target. The Target should have "Is Visible" attribute.
 class URHO3D_API Show : public  AttributeActionInstant
 {
     URHO3D_OBJECT(Show, AttributeActionInstant)
@@ -295,6 +304,7 @@ protected:
 private:
 };
 
+/// Hide target. The Target should have "Is Visible" attribute.
 class URHO3D_API Hide : public  AttributeActionInstant
 {
     URHO3D_OBJECT(Hide, AttributeActionInstant)
@@ -311,6 +321,7 @@ protected:
 private:
 };
 
+/// Show target. The Target should have "Is Enabled" attribute.
 class URHO3D_API Enable : public  AttributeActionInstant
 {
     URHO3D_OBJECT(Enable, AttributeActionInstant)
@@ -327,6 +338,7 @@ protected:
 private:
 };
 
+/// Hide target. The Target should have "Is Enabled" attribute.
 class URHO3D_API Disable : public  AttributeActionInstant
 {
     URHO3D_OBJECT(Disable, AttributeActionInstant)
@@ -343,6 +355,7 @@ protected:
 private:
 };
 
+/// Blink target by toggling "Is Enabled" attribute. The Target should have "Is Enabled" attribute.
 class URHO3D_API Blink : public  AttributeAction
 {
     URHO3D_OBJECT(Blink, AttributeAction)
@@ -378,6 +391,7 @@ private:
     unsigned numOfBlinks_{};
 };
 
+/// Action that does nothing but waits.
 class URHO3D_API DelayTime : public  FiniteTimeAction
 {
     URHO3D_OBJECT(DelayTime, FiniteTimeAction)
@@ -394,6 +408,7 @@ protected:
 private:
 };
 
+/// Base class for easing action
 class URHO3D_API ActionEase : public  DynamicAction
 {
     URHO3D_OBJECT(ActionEase, DynamicAction)
@@ -432,6 +447,7 @@ private:
     SharedPtr<FiniteTimeAction> innerAction_{};
 };
 
+/// Base for elastic easing action
 class URHO3D_API EaseElastic : public  ActionEase
 {
     URHO3D_OBJECT(EaseElastic, ActionEase)
@@ -467,6 +483,7 @@ private:
     float period_{0.3f};
 };
 
+/// BackIn easing action
 class URHO3D_API EaseBackIn : public  ActionEase
 {
     URHO3D_OBJECT(EaseBackIn, ActionEase)
@@ -483,6 +500,7 @@ protected:
 private:
 };
 
+/// BackOut easing action
 class URHO3D_API EaseBackOut : public  ActionEase
 {
     URHO3D_OBJECT(EaseBackOut, ActionEase)
@@ -499,6 +517,7 @@ protected:
 private:
 };
 
+/// BackInOut easing action
 class URHO3D_API EaseBackInOut : public  ActionEase
 {
     URHO3D_OBJECT(EaseBackInOut, ActionEase)
@@ -515,6 +534,7 @@ protected:
 private:
 };
 
+/// BounceOut easing action
 class URHO3D_API EaseBounceOut : public  ActionEase
 {
     URHO3D_OBJECT(EaseBounceOut, ActionEase)
@@ -531,6 +551,7 @@ protected:
 private:
 };
 
+/// BounceIn easing action
 class URHO3D_API EaseBounceIn : public  ActionEase
 {
     URHO3D_OBJECT(EaseBounceIn, ActionEase)
@@ -547,6 +568,7 @@ protected:
 private:
 };
 
+/// BounceInOut easing action
 class URHO3D_API EaseBounceInOut : public  ActionEase
 {
     URHO3D_OBJECT(EaseBounceInOut, ActionEase)
@@ -563,6 +585,7 @@ protected:
 private:
 };
 
+/// SineOut easing action
 class URHO3D_API EaseSineOut : public  ActionEase
 {
     URHO3D_OBJECT(EaseSineOut, ActionEase)
@@ -579,6 +602,7 @@ protected:
 private:
 };
 
+/// SineIn easing action
 class URHO3D_API EaseSineIn : public  ActionEase
 {
     URHO3D_OBJECT(EaseSineIn, ActionEase)
@@ -595,6 +619,7 @@ protected:
 private:
 };
 
+/// SineInOut easing action
 class URHO3D_API EaseSineInOut : public  ActionEase
 {
     URHO3D_OBJECT(EaseSineInOut, ActionEase)
@@ -611,6 +636,7 @@ protected:
 private:
 };
 
+/// ExponentialOut easing action
 class URHO3D_API EaseExponentialOut : public  ActionEase
 {
     URHO3D_OBJECT(EaseExponentialOut, ActionEase)
@@ -627,6 +653,7 @@ protected:
 private:
 };
 
+/// ExponentialIn easing action
 class URHO3D_API EaseExponentialIn : public  ActionEase
 {
     URHO3D_OBJECT(EaseExponentialIn, ActionEase)
@@ -643,6 +670,7 @@ protected:
 private:
 };
 
+/// ExponentialInOut easing action
 class URHO3D_API EaseExponentialInOut : public  ActionEase
 {
     URHO3D_OBJECT(EaseExponentialInOut, ActionEase)
@@ -659,6 +687,7 @@ protected:
 private:
 };
 
+/// ElasticIn easing action
 class URHO3D_API EaseElasticIn : public  EaseElastic
 {
     URHO3D_OBJECT(EaseElasticIn, EaseElastic)
@@ -675,6 +704,7 @@ protected:
 private:
 };
 
+/// ElasticOut easing action
 class URHO3D_API EaseElasticOut : public  EaseElastic
 {
     URHO3D_OBJECT(EaseElasticOut, EaseElastic)
@@ -691,6 +721,7 @@ protected:
 private:
 };
 
+/// ElasticInOut easing action
 class URHO3D_API EaseElasticInOut : public  EaseElastic
 {
     URHO3D_OBJECT(EaseElasticInOut, EaseElastic)
@@ -706,6 +737,174 @@ protected:
 
 private:
 };
+
+/// Animate attribute between two values
+class URHO3D_API AttributeFromTo : public  AttributeAction
+{
+    URHO3D_OBJECT(AttributeFromTo, AttributeAction)
+public:
+    /// Construct.
+    explicit AttributeFromTo(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Set from.
+    void SetFrom(const Variant& from);
+
+    /// Get from.
+    const Variant& GetFrom() const { return from_; }
+
+    /// Set to.
+    void SetTo(const Variant& to);
+
+    /// Get to.
+    const Variant& GetTo() const { return to_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+
+private:
+    Variant from_{};
+    Variant to_{};
+};
+
+/// Animate attribute between current and provided value
+class URHO3D_API AttributeTo : public  AttributeAction
+{
+    URHO3D_OBJECT(AttributeTo, AttributeAction)
+public:
+    /// Construct.
+    explicit AttributeTo(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Set to.
+    void SetTo(const Variant& to);
+
+    /// Get to.
+    const Variant& GetTo() const { return to_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+
+private:
+    Variant to_{};
+};
+
+/// Blink attribute between two values
+class URHO3D_API AttributeBlink : public  AttributeAction
+{
+    URHO3D_OBJECT(AttributeBlink, AttributeAction)
+public:
+    /// Construct.
+    explicit AttributeBlink(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Set from.
+    void SetFrom(const Variant& from);
+
+    /// Get from.
+    const Variant& GetFrom() const { return from_; }
+
+    /// Set to.
+    void SetTo(const Variant& to);
+
+    /// Get to.
+    const Variant& GetTo() const { return to_; }
+
+    /// Set num of blinks.
+    void SetNumOfBlinks(unsigned numOfBlinks);
+
+    /// Get num of blinks.
+    unsigned GetNumOfBlinks() const { return numOfBlinks_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+
+private:
+    Variant from_{};
+    Variant to_{};
+    unsigned numOfBlinks_{};
+};
+
+/// Set attribute value
+class URHO3D_API SetAttribute : public  AttributeActionInstant
+{
+    URHO3D_OBJECT(SetAttribute, AttributeActionInstant)
+public:
+    /// Construct.
+    explicit SetAttribute(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Set value.
+    void SetValue(const Variant& value);
+
+    /// Get value.
+    const Variant& GetValue() const { return value_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+
+private:
+    Variant value_{};
+};
+
+
+void RegisterActions(ActionManager* manager);
 
 } // namespace Actions
 } // namespace Urho3D

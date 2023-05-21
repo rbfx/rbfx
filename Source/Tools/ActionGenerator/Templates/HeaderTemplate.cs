@@ -72,37 +72,44 @@ namespace Actions
             
             #line default
             #line hidden
-            this.Write("class URHO3D_API ");
+            this.Write("/// ");
             
             #line 44 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(action.Comment));
+            
+            #line default
+            #line hidden
+            this.Write("\r\nclass URHO3D_API ");
+            
+            #line 45 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write(" : public  ");
             
-            #line 44 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 45 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(action.Parent));
             
             #line default
             #line hidden
             this.Write("\r\n{\r\n    URHO3D_OBJECT(");
             
-            #line 46 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 47 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write(", ");
             
-            #line 46 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 47 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(action.Parent));
             
             #line default
             #line hidden
             this.Write(")\r\npublic:\r\n    /// Construct.\r\n    explicit ");
             
-            #line 49 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 50 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
@@ -110,7 +117,7 @@ namespace Actions
             this.Write("(Context* context);\r\n\r\n    /// Create reversed action.\r\n    SharedPtr<FiniteTimeA" +
                     "ction> Reverse() const override;\r\n");
             
-            #line 53 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 54 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 if (action.ThisParameters.Count > 0)
 {
@@ -123,7 +130,7 @@ if (action.ThisParameters.Any(_=>_.Type == ParameterType.FiniteTimeAction))
             #line hidden
             this.Write("\r\n    /// Get action duration.\r\n    float GetDuration() const override;\r\n");
             
-            #line 63 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 64 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 }
 
@@ -135,63 +142,63 @@ foreach (var parameter in action.ThisParameters)
             #line hidden
             this.Write("\r\n    /// Set ");
             
-            #line 70 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 71 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(".\r\n    void Set");
             
-            #line 71 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 72 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.Camel(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 71 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 72 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.CppTypeRef(parameter.Type)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 71 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 72 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
             
             #line default
             #line hidden
             this.Write(");\r\n\r\n    /// Get ");
             
-            #line 73 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 74 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(".\r\n    ");
             
-            #line 74 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 75 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.CppTypeRef(parameter.Type)));
             
             #line default
             #line hidden
             this.Write(" Get");
             
-            #line 74 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 75 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.Camel(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("() const { return ");
             
-            #line 74 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 75 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("_; }\r\n");
             
-            #line 75 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 76 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 }
 
@@ -209,7 +216,7 @@ foreach (var parameter in action.ThisParameters)
     void FromGraphNode(GraphNode* node) override;
 ");
             
-            #line 87 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 88 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 }
 
@@ -219,7 +226,7 @@ foreach (var parameter in action.ThisParameters)
             this.Write("protected:\r\n    /// Create new action state from the action.\r\n    SharedPtr<Actio" +
                     "nState> StartAction(Object* target) override;\r\n");
             
-            #line 93 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 94 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 if (action.ThisParameters.Count > 0 && !action.CustomReverse)
 {
@@ -230,7 +237,7 @@ if (action.ThisParameters.Count > 0 && !action.CustomReverse)
             this.Write("\r\n    /// Populate fields in reversed action.\r\n    void ReverseImpl(FiniteTimeAct" +
                     "ion*) const override;\r\n");
             
-            #line 100 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 101 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 }
 
@@ -239,7 +246,7 @@ if (action.ThisParameters.Count > 0 && !action.CustomReverse)
             #line hidden
             this.Write("\r\nprivate:\r\n");
             
-            #line 105 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 106 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 foreach (var parameter in action.ThisParameters)
 {
@@ -249,28 +256,28 @@ foreach (var parameter in action.ThisParameters)
             #line hidden
             this.Write("    ");
             
-            #line 109 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 110 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.CppType(parameter.Type)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 109 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 110 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.ArgName(parameter.Name)));
             
             #line default
             #line hidden
             this.Write("_{");
             
-            #line 109 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 110 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.DefaultValue));
             
             #line default
             #line hidden
             this.Write("};\r\n");
             
-            #line 110 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 111 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 }
 
@@ -279,14 +286,15 @@ foreach (var parameter in action.ThisParameters)
             #line hidden
             this.Write("};\r\n\r\n");
             
-            #line 115 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
+            #line 116 "C:\github\rbfx3\Source\Tools\ActionGenerator\Templates\HeaderTemplate.tt"
 
 }
 
             
             #line default
             #line hidden
-            this.Write("} // namespace Actions\r\n} // namespace Urho3D\r\n");
+            this.Write("\r\nvoid RegisterActions(ActionManager* manager);\r\n\r\n} // namespace Actions\r\n} // n" +
+                    "amespace Urho3D\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

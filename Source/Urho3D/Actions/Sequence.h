@@ -38,7 +38,6 @@ class URHO3D_API Sequence : public DynamicAction
 public:
     /// Construct.
     explicit Sequence(Context* context);
-    static void RegisterObject(ActionManager* context);
 
     /// Set first action in sequence.
     void SetFirstAction(FiniteTimeAction* action);

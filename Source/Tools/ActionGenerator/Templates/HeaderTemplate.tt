@@ -41,6 +41,7 @@ namespace Actions
     var action = actionKeyValue.Value;
     var className = actionKeyValue.Key;
 #>
+/// <#=action.Comment#>
 class URHO3D_API <#=className#> : public  <#=action.Parent#>
 {
     URHO3D_OBJECT(<#=className#>, <#=action.Parent#>)
@@ -115,5 +116,8 @@ foreach (var parameter in action.ThisParameters)
 <#
 }
 #>
+
+void RegisterActions(ActionManager* manager);
+
 } // namespace Actions
 } // namespace Urho3D

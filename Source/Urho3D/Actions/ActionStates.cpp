@@ -108,21 +108,11 @@ MoveByState::MoveByState(MoveBy* action, Object* target)
     {
         switch (attribute->type_)
         {
-        case VAR_VECTOR2:
-            state_.emplace<Vec2State>();
-            break;
-        case VAR_VECTOR3:
-            state_.emplace<Vec3State>();
-            break;
-        case VAR_INTVECTOR2:
-            state_.emplace<IntVec2State>();
-            break;
-        case VAR_INTVECTOR3:
-            state_.emplace<IntVec3State>();
-            break;
-        default:
-            URHO3D_LOGERROR(Format("Attribute {} is not of valid type.", action->GetAttributeName()));
-            break;
+        case VAR_VECTOR2: state_.emplace<Vec2State>(); break;
+        case VAR_VECTOR3: state_.emplace<Vec3State>(); break;
+        case VAR_INTVECTOR2: state_.emplace<IntVec2State>(); break;
+        case VAR_INTVECTOR3: state_.emplace<IntVec3State>(); break;
+        default: URHO3D_LOGERROR(Format("Attribute {} is not of valid type.", action->GetAttributeName())); break;
         }
         auto callInit = [=](auto& state) { state.Init(this); };
         ea::visit(callInit, state_);
@@ -171,7 +161,6 @@ void MoveByQuadraticState::IntVec3State::Update(float time, Variant& value)
     value = newPos;
     previousPosition_ = newPos;
 }
-
 
 void MoveByQuadraticState::Vec2State::Init(const MoveByQuadraticState* state)
 {
@@ -548,6 +537,91 @@ float EaseElasticOutState::Ease(float time) const
 float EaseElasticInOutState::Ease(float time) const
 {
     return ElasticInOut(time, static_cast<EaseElasticInOut*>(GetAction())->GetPeriod());
+}
+
+AttributeFromToState::AttributeFromToState(AttributeFromTo* action, Object* target)
+    : AttributeActionState(action, target)
+    , from_(action->GetFrom())
+    , to_(action->GetTo())
+{
+}
+
+void AttributeFromToState::Update(float time, Variant& value)
+{
+    value = from_.Lerp(to_, time);
+}
+
+AttributeToState::AttributeToState(AttributeTo* action, Object* target)
+    : AttributeActionState(action, target)
+    , to_(action->GetTo())
+{
+    if (attribute_)
+    {
+        attribute_->accessor_->Get(static_cast<const Serializable*>(target), from_);
+    }
+}
+
+void AttributeToState::Update(float time, Variant& value)
+{
+    value = from_.Lerp(to_, time);
+}
+
+
+AttributeBlinkState::AttributeBlinkState(
+    AttributeAction* action, Object* target, Variant from, Variant to, unsigned times)
+    : AttributeActionState(action, target)
+    , from_(from)
+    , to_(to)
+{
+    times_ = Max(1, times);
+    Get(originalState_);
+}
+
+AttributeBlinkState::AttributeBlinkState(AttributeBlink* action, Object* target)
+    : AttributeActionState(action, target)
+    , from_(action->GetFrom())
+    , to_(action->GetTo())
+{
+    times_ = Max(1, action->GetNumOfBlinks());
+    Get(originalState_);
+}
+
+void AttributeBlinkState::Update(float time, Variant& var)
+{
+    const auto slice = 1.0f / static_cast<float>(times_);
+    const auto m = Mod(time, slice);
+    var = (m > slice / 2) ? from_ : to_;
+}
+
+void AttributeBlinkState::Stop()
+{
+    Set(originalState_);
+}
+SetAttributeState::SetAttributeState(AttributeAction* action, Object* target, const Variant& value)
+    : AttributeActionState(action, target)
+    , value_(value)
+{
+}
+
+SetAttributeState::SetAttributeState(AttributeActionInstant* action, Object* target, const Variant& value)
+    : AttributeActionState(action, target)
+    , value_(value)
+{
+}
+
+SetAttributeState::SetAttributeState(SetAttribute* action, Object* target)
+    : AttributeActionState(action, target)
+    , value_(action->GetValue())
+{
+}
+
+void SetAttributeState::Update(float time, Variant& var)
+{
+    if (!triggered_)
+    {
+        var = value_;
+        triggered_ = true;
+    }
 }
 
 } // namespace Detail

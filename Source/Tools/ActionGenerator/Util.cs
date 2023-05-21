@@ -50,6 +50,7 @@ public class Util
 
         return sb.ToString();
     }
+
     public static string CppType(ParameterType type)
     {
         switch (type)
@@ -66,11 +67,20 @@ public class Util
                 return "Quaternion";
             case ParameterType.String:
                 return "ea::string";
+            case ParameterType.Variant:
+                return "Variant";
             case ParameterType.FiniteTimeAction:
                 return "SharedPtr<FiniteTimeAction>";
             default:
                 throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
+    }
+
+    public static string FromVariant(ParameterType type)
+    {
+        if (type == ParameterType.Variant)
+            return "";
+        return ".Get<" + CppType(type) + ">()";
     }
 
     public static string CppTypeRef(ParameterType type)

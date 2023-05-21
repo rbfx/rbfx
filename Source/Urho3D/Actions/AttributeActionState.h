@@ -72,39 +72,5 @@ protected:
     AttributeInfo* attribute_{};
 };
 
-class SetAttributeState : public AttributeActionState
-{
-public:
-    /// Construct.
-    SetAttributeState(AttributeAction* action, Object* target, const Variant& value);
-    /// Construct.
-    SetAttributeState(AttributeActionInstant* action, Object* target, const Variant& value);
-
-private:
-    void Update(float time, Variant& var) override;
-
-private:
-    Variant value_;
-    bool triggered_{};
-};
-
-
-class AttributeBlinkState : public AttributeActionState
-{
-public:
-    AttributeBlinkState(AttributeAction* action, Object* target, Variant from,
-        Variant to, unsigned times);
-
-    void Update(float time, Variant& var) override;
-
-    void Stop() override;
-
-private:
-    unsigned times_;
-    Variant originalState_;
-    Variant from_;
-    Variant to_;
-};
-
 } // namespace Actions
 } // namespace Urho3D

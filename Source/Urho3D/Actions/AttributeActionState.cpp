@@ -81,50 +81,6 @@ void AttributeActionState::Update(float dt)
     Set(dst);
 }
 
-SetAttributeState::SetAttributeState(AttributeAction* action, Object* target, const Variant& value)
-    : AttributeActionState(action, target)
-    , value_(value)
-{
-}
-
-SetAttributeState::SetAttributeState(AttributeActionInstant* action, Object* target, const Variant& value)
-    : AttributeActionState(action, target)
-    , value_(value)
-{
-}
-
-void SetAttributeState::Update(float time, Variant& var)
-{
-    if (!triggered_)
-    {
-        var = value_;
-        triggered_ = true;
-    }
-}
-
-AttributeBlinkState::AttributeBlinkState(
-    AttributeAction* action, Object* target,
-    Variant from,
-    Variant to, unsigned times)
-    : AttributeActionState(action, target)
-    , from_(from)
-    , to_(to)
-{
-    times_ = Max(1, times);
-    Get(originalState_);
-}
-
-void AttributeBlinkState::Update(float time, Variant& var)
-{
-    const auto slice = 1.0f / static_cast<float>(times_);
-    const auto m = Mod(time, slice);
-    var = (m > slice / 2)?from_:to_;
-}
-
-void AttributeBlinkState::Stop()
-{
-    Set(originalState_);
-}
 
 } // namespace Actions
 } // namespace Urho3D

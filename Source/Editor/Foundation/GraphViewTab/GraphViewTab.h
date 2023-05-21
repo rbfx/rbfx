@@ -57,6 +57,8 @@ struct GraphPinView
     ea::string text_;
     /// Pin type.
     ax::NodeEditor::PinKind kind_{ax::NodeEditor::PinKind::Input};
+    /// Connected link ID
+    ax::NodeEditor::LinkId link_{0};
 };
 
 struct GraphNodeView
@@ -75,6 +77,9 @@ struct GraphView
     uintptr_t nextUniqueId_{1};
     ea::unordered_map<ax::NodeEditor::NodeId, GraphNodeView> nodes_;
     ea::unordered_map<ax::NodeEditor::LinkId, GraphLinkView> links_;
+
+    GraphPinView* GetInputPinView(ax::NodeEditor::NodeId node, const ea::string& pinName);
+    GraphPinView* GetInputPinView(ax::NodeEditor::NodeId node, unsigned pinIndex);
 
     /// Reset graph view to empty.
     void Reset();
