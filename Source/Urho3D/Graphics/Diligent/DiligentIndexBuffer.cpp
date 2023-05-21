@@ -236,7 +236,7 @@ bool IndexBuffer::Create()
         if (!dynamic_ && graphics_->GetComputeSupport())
             bufferDesc.BindFlags |= BIND_UNORDERED_ACCESS;
 
-        bufferDesc.Mode = BUFFER_MODE_RAW;
+        bufferDesc.Mode = dynamic_ ? BUFFER_MODE_UNDEFINED : BUFFER_MODE_RAW;
         bufferDesc.CPUAccessFlags = dynamic_ ? CPU_ACCESS_WRITE : CPU_ACCESS_NONE;
         bufferDesc.Usage = dynamic_ ? USAGE_DYNAMIC : USAGE_DEFAULT;
         bufferDesc.Size = indexCount_ * indexSize_;
