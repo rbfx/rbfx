@@ -306,14 +306,21 @@ void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* des
     }
 
     // go through them cubemap -> level
-    computeDevice->SetReadTexture(sourceTexture, 0);
+#ifdef URHO3D_DILIGENT
+    computeDevice->SetReadTexture(sourceTexture, "srcTex");
+    ea::string writeUnit = "outputTexture";
+#else
+    ComputeDevice->SetReadTexture(sourceTexture, 0);
+    const unsigned writeUnit = 1;
+#endif
+
     for (unsigned i = 0; i < numLevels; ++i)
     {
-        computeDevice->SetWriteTexture(destTexture, 1, UINT_MAX, i);
+        computeDevice->SetWriteTexture(destTexture, writeUnit, UINT_MAX, i);
         computeDevice->SetProgram(shaders[i]);
         computeDevice->Dispatch(destTexture->GetLevelWidth(i), destTexture->GetLevelHeight(i), 6);
     }
-    computeDevice->SetWriteTexture(nullptr, 1, 0, 0);
+    computeDevice->SetWriteTexture(nullptr, writeUnit, 0, 0);
     computeDevice->ApplyBindings();
 #endif
 }

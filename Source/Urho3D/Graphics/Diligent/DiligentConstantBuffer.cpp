@@ -71,7 +71,8 @@ bool ConstantBuffer::SetSize(unsigned size)
         bufferDesc.Usage = USAGE_DYNAMIC;
         bufferDesc.CPUAccessFlags = CPU_ACCESS_WRITE;
         bufferDesc.BindFlags = BIND_UNIFORM_BUFFER;
-        // bufferDesc.Mode = BUFFER_MODE_RAW;
+        bufferDesc.Mode = BUFFER_MODE_RAW;
+        bufferDesc.ElementByteStride = sizeof(Vector4);
 
         RefCntAutoPtr<IBuffer> buffer;
         graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, 0, &buffer);

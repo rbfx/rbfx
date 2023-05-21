@@ -145,7 +145,9 @@ void DrawCommandQueue::Execute()
             // TODO(diligent): Revisit this place
             RenderSurface* currRT = graphics_->GetRenderTarget(0);
             if (currRT && currRT->GetParentTexture() == texture)
-                texture = texture->GetBackupTexture();
+                texture = texture->GetBackupTexture(); // TODO(diligent): We should have default backup texture!
+            if (!texture)
+                continue;
             if (texture->GetLevelsDirty())
                 texture->RegenerateLevels();
 

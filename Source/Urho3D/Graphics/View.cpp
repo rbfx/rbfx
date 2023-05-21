@@ -1759,6 +1759,13 @@ void View::ExecuteRenderPathCommands()
             case CMD_COMPUTE_FILTER:
                 #if defined(URHO3D_COMPUTE)
                 {
+#ifdef URHO3D_DILIGENT
+                    const ea::string readUnit = "srcTex";
+                    const ea::string writeUnit = "outputTexture";
+#else
+                    const unsigned readUnit = 0;
+                    const unsigned writeUnit = 1;
+#endif
                     if (auto device = graphics_->GetSubsystem<ComputeDevice>())
                     {
                         Texture* firstInput = nullptr;
@@ -1767,7 +1774,7 @@ void View::ExecuteRenderPathCommands()
                             if (!command.textureNames_[i].empty())
                             {
                                 if (auto tex = FindNamedTexture(command.GetTextureName((TextureUnit)i), false, i == TU_VOLUMEMAP))
-                                    device->SetReadTexture(tex, i);
+                                    device->SetReadTexture(tex, readUnit);
                             }
                         }
 
@@ -1776,7 +1783,7 @@ void View::ExecuteRenderPathCommands()
                         {
                             if (auto tex = FindNamedTexture(command.outputs_[i].first, true, false))
                             {
-                                device->SetWriteTexture(tex, i, 0, UINT_MAX);
+                                device->SetWriteTexture(tex, writeUnit, 0, UINT_MAX);
                                 if (firstOutput == nullptr)
                                     firstOutput = tex;
                             }

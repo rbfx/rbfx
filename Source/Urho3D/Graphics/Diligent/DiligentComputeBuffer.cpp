@@ -21,28 +21,29 @@
 //
 
 #include "../../Graphics/ComputeBuffer.h"
-#include "../../Graphics/Direct3D11/D3D11GraphicsImpl.h"
+#include "../../Graphics/GraphicsImpl.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsDefs.h"
 #include "../../IO/Log.h"
 
 namespace Urho3D
 {
+    using namespace Diligent;
 
 void ComputeBuffer::OnDeviceLost()
 {
-    // nothing to do here on DX11
+    // nothing to do here on Diligent
 }
 
 void ComputeBuffer::OnDeviceReset()
 {
-    // nothing to do here on DX11
+    // nothing to do here on Diligent
 }
 
 void ComputeBuffer::Release()
 {
-    URHO3D_SAFE_RELEASE(object_.ptr_);
-    URHO3D_SAFE_RELEASE(uav_);
+    uav_ = nullptr;
+    object_ = nullptr;
 }
 
 bool ComputeBuffer::SetSize(unsigned bytes, unsigned structureSize)
@@ -60,40 +61,29 @@ bool ComputeBuffer::SetSize(unsigned bytes, unsigned structureSize)
 
     if (graphics_)
     {
-        D3D11_BUFFER_DESC bufferDesc;
-        ZeroMemory(&bufferDesc, sizeof bufferDesc);
-        bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-        bufferDesc.CPUAccessFlags = 0;
-        bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-        bufferDesc.StructureByteStride = structureSize_;
-        bufferDesc.ByteWidth = size_;
-        bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+        BufferDesc bufferDesc = {};
+#ifdef URHO3D_DEBUG
+        bufferDesc.Name = "Compute Buffer/UAV";
+#endif
+        bufferDesc.Usage = USAGE_DEFAULT;
+        bufferDesc.BindFlags = BIND_UNORDERED_ACCESS;
+        bufferDesc.CPUAccessFlags = CPU_ACCESS_NONE;
+        bufferDesc.ElementByteStride = structureSize_;
+        bufferDesc.Size = size_;
+        bufferDesc.Mode = BUFFER_MODE_STRUCTURED;
 
-        HRESULT hr =
-            graphics_->GetImpl()->GetDevice()->CreateBuffer(&bufferDesc, nullptr, (ID3D11Buffer**)&object_.ptr_);
-        if (FAILED(hr))
+        RefCntAutoPtr<IBuffer> buffer;
+        graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, &buffer);
+
+        if (!buffer)
         {
-            URHO3D_SAFE_RELEASE(object_.ptr_);
-            URHO3D_LOGD3DERROR("Failed to create compute buffer", hr);
+            URHO3D_LOGERROR("Failed to create a compute buffer.");
             return false;
         }
 
-        D3D11_UNORDERED_ACCESS_VIEW_DESC viewDesc;
-        ZeroMemory(&viewDesc, sizeof viewDesc);
-        viewDesc.Format = DXGI_FORMAT_UNKNOWN;
-        viewDesc.Buffer.FirstElement = 0;
-        viewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-        viewDesc.Buffer.NumElements = GetNumElements();
+        object_ = buffer;
 
-        hr = graphics_->GetImpl()->GetDevice()->CreateUnorderedAccessView(
-            (ID3D11Resource*)object_.ptr_, &viewDesc, &uav_);
-        if (FAILED(hr))
-        {
-            URHO3D_SAFE_RELEASE(uav_);
-            URHO3D_SAFE_RELEASE(object_.ptr_);
-            URHO3D_LOGD3DERROR("Failed to create UAV for compute buffer", hr);
-            return false;
-        }
+        uav_ = buffer->GetDefaultView(BUFFER_VIEW_UNORDERED_ACCESS);
     }
 
     return true;
@@ -108,56 +98,62 @@ bool ComputeBuffer::SetData(void* data, unsigned dataSize, unsigned structureSiz
             return false;
     }
 
-    D3D11_BOX box;
-    box.left = 0;
-    box.right = dataSize;
-    box.top = 0;
-    box.bottom = 1;
-    box.front = 0;
-    box.back = 1;
-    graphics_->GetImpl()->GetDeviceContext()->UpdateSubresource((ID3D11Resource*)object_.ptr_, 0, &box, data, 0, 0);
+
+    graphics_->GetImpl()->GetDeviceContext()->UpdateBuffer(
+        object_.Cast<IBuffer>(IID_Buffer),
+        0,
+        dataSize,
+        data,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+    );
+
     return true;
 }
 
 bool ComputeBuffer::GetData(void* writeInto, unsigned offset, unsigned readLength)
 {
-    if (!object_.ptr_)
+    if (!object_)
     {
         URHO3D_LOGERROR("Attempted to read ComputeBuffer data for invalid buffer");
         return false;
     }
 
-    D3D11_BUFFER_DESC bufferDesc;
-    ZeroMemory(&bufferDesc, sizeof bufferDesc);
-    bufferDesc.ByteWidth = size_;
-    bufferDesc.Usage = D3D11_USAGE_STAGING;
-    bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    if (!graphics_)
+        return false;
 
-    ID3D11Buffer* staging = nullptr;
-    auto hr = graphics_->GetImpl()->GetDevice()->CreateBuffer(&bufferDesc, nullptr, &staging);
-    if (FAILED(hr))
+    BufferDesc bufferDesc;
+#ifdef URHO3D_DEBUG
+    bufferDesc.Name = "Compute Buffer/Staging Buffer";
+#endif
+    bufferDesc.Size = size_;
+    bufferDesc.Usage = USAGE_STAGING;
+    bufferDesc.CPUAccessFlags = CPU_ACCESS_READ;
+
+    RefCntAutoPtr<IBuffer> stagingBuffer;
+    graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, &stagingBuffer);
+
+    if (stagingBuffer)
     {
-        URHO3D_LOGD3DERROR("Failed to create staging buffer for ComputeBuffer read", hr);
+        URHO3D_LOGERROR("Failed to create staging buffer for ComputeBuffer read");
         return false;
     }
 
-    graphics_->GetImpl()->GetDeviceContext()->CopyResource(staging, (ID3D11Buffer*)object_.ptr_);
+    graphics_->GetImpl()->GetDeviceContext()->CopyBuffer(
+        object_.Cast<IBuffer>(IID_Buffer),
+        0,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION,
+        stagingBuffer,
+        0,
+        size_,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+    );
 
-    D3D11_MAPPED_SUBRESOURCE mappedData;
-    mappedData.pData = nullptr;
+    void* mappedData = nullptr;
+    graphics_->GetImpl()->GetDeviceContext()->MapBuffer(stagingBuffer, MAP_READ, MAP_FLAG_DISCARD, mappedData);
 
-    hr = graphics_->GetImpl()->GetDeviceContext()->Map(staging, 0, D3D11_MAP_READ, 0, &mappedData);
-    if (FAILED(hr) || !mappedData.pData)
-    {
-        URHO3D_LOGD3DERROR("Failed to map staging buffer for ComputeBuffer::GetData", hr);
-        URHO3D_SAFE_RELEASE(staging);
-        return false;
-    }
+    memcpy(writeInto, ((unsigned char*)mappedData) + offset, readLength);
 
-    memcpy(writeInto, ((unsigned char*)mappedData.pData) + offset, readLength);
-
-    graphics_->GetImpl()->GetDeviceContext()->Unmap(staging, 0);
-    URHO3D_SAFE_RELEASE(staging);
+    graphics_->GetImpl()->GetDeviceContext()->UnmapBuffer(stagingBuffer, MAP_READ);
     return true;
 }
 

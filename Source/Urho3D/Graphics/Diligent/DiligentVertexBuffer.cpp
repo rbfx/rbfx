@@ -255,11 +255,13 @@ bool VertexBuffer::Create()
 #endif
         bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
         if (!dynamic_ && graphics_->GetComputeSupport())
-            bufferDesc.BindFlags = BIND_UNORDERED_ACCESS;
+            bufferDesc.BindFlags |= BIND_UNORDERED_ACCESS;
 
+        bufferDesc.Mode = BUFFER_MODE_RAW;
         bufferDesc.CPUAccessFlags = dynamic_ ? CPU_ACCESS_WRITE : CPU_ACCESS_NONE;
         bufferDesc.Usage = dynamic_ ? USAGE_DYNAMIC : USAGE_DEFAULT;
         bufferDesc.Size = vertexCount_ * vertexSize_;
+        bufferDesc.ElementByteStride = vertexSize_;
 
         RefCntAutoPtr<IBuffer> buffer;
         graphics_->GetImpl()->GetDevice()->CreateBuffer(bufferDesc, nullptr, &buffer);

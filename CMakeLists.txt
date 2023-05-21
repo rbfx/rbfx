@@ -46,7 +46,6 @@ include(UrhoCommon)
 
 # TODO(diligent): Restore
 set (URHO3D_CSHARP OFF CACHE BOOL "" FORCE)
-set (URHO3D_COMPUTE OFF CACHE BOOL "" FORCE)
 set (URHO3D_WINVER 0x0A00 CACHE STRING "" FORCE)
 
 # Enable testing

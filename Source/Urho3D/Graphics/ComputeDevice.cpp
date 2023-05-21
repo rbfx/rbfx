@@ -39,12 +39,17 @@ namespace Urho3D
 
 ComputeDevice::ComputeDevice(Context* context, Graphics* graphics) :
     Object(context),
+#ifndef URHO3D_DILIGENT
     graphics_(graphics),
     constantBuffersDirty_(false),
     uavsDirty_(false),
     samplersDirty_(false),
     texturesDirty_(false),
-    programDirty_(false)
+    programDirty_(false),
+#else
+    graphics_(graphics),
+    psoCache_(nullptr)
+#endif
 {
     Init();
 }
@@ -67,22 +72,22 @@ bool ComputeDevice::SetProgram(ShaderVariation* shaderVariation)
     return true;
 }
 
-bool ComputeDevice::SetWriteBuffer(ConstantBuffer* buffer, unsigned unit)
+bool ComputeDevice::SetWriteBuffer(ConstantBuffer* buffer, CD_UNIT unit)
 {
     return SetWritableBuffer(buffer, unit);
 }
 
-bool ComputeDevice::SetWriteBuffer(VertexBuffer* buffer, unsigned unit)
+bool ComputeDevice::SetWriteBuffer(VertexBuffer* buffer, CD_UNIT unit)
 {
     return SetWritableBuffer(buffer, unit);
 }
 
-bool ComputeDevice::SetWriteBuffer(IndexBuffer* buffer, unsigned unit)
+bool ComputeDevice::SetWriteBuffer(IndexBuffer* buffer, CD_UNIT unit)
 {
     return SetWritableBuffer(buffer, unit);
 }
 
-bool ComputeDevice::SetWriteBuffer(ComputeBuffer* buffer, unsigned unit)
+bool ComputeDevice::SetWriteBuffer(ComputeBuffer* buffer, CD_UNIT unit)
 {
     return SetWritableBuffer(buffer, unit);
 }
