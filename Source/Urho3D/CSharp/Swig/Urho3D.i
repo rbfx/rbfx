@@ -571,11 +571,9 @@ public:
 %include "Urho3D/Actions/AttributeActionState.h"
 %include "Urho3D/Actions/Attribute.h"
 %include "Urho3D/Actions/CallFunc.h"
-%include "Urho3D/Actions/Move.h"
-%include "Urho3D/Actions/Ease.h"
+%include "Urho3D/Actions/Actions.h"
 %include "Urho3D/Actions/Parallel.h"
 %include "Urho3D/Actions/Sequence.h"
-%include "Urho3D/Actions/Misc.h"
 %include "Urho3D/Actions/Repeat.h"
 %include "Urho3D/Actions/ShaderParameter.h"
 

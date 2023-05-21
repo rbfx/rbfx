@@ -85,7 +85,7 @@ void ActionViewTab::RenderContent()
 
 void ActionViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
-    auto cache = GetSubsystem<ResourceCache>();
+    const auto cache = GetSubsystem<ResourceCache>();
     actionSet_ = cache->GetResource<ActionSet>(resourceName);
 
     Reset();

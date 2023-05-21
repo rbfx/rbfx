@@ -468,7 +468,7 @@ struct SafePointerType
     explicit operator bool() const { return *this != Invalid; }
 
     ///rbfx: For EASTL compatibility.
-    unsigned ToHash() const { return static_cast<unsigned>(Get()); }
+    unsigned ToHash() const { return static_cast<unsigned>(this->Get()); }
 };
 
 template <typename Tag>

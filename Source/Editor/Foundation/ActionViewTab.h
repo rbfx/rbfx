@@ -25,7 +25,7 @@
 #include "../Foundation/Shared/CustomSceneViewTab.h"
 #include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
-#include "../Foundation/Shared/GraphViewTab.h"
+#include "../Foundation/GraphViewTab/GraphViewTab.h"
 
 #include <Urho3D/Actions/ActionSet.h>
 

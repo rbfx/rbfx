@@ -43,17 +43,24 @@ struct GraphLinkView
 
 struct GraphPinView
 {
-    GraphPinView(ax::NodeEditor::PinId id);
+    GraphPinView(ax::NodeEditor::PinId id, const ea::string& title);
+    GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, VariantType type, const Variant& value);
+    /// Global unique identifier of the pin.
     ax::NodeEditor::PinId id_{0};
+    /// Name of the pin.
     ea::string title_;
+    /// Field type. VAR_NONE means that it could be of any type.
     VariantType type_{VAR_NONE};
-    ea::string value_;
+    /// Field value.
+    Variant value_{};
+    /// Value as text string.
+    ea::string text_;
+    /// Pin type.
     ax::NodeEditor::PinKind kind_{ax::NodeEditor::PinKind::Input};
 };
 
 struct GraphNodeView
 {
-    ax::NodeEditor::NodeId id_;
     ea::string title_;
     Vector2 position_{0, 0};
     Vector2 size_{0, 0};
@@ -66,7 +73,7 @@ struct GraphNodeView
 struct GraphView
 {
     uintptr_t nextUniqueId_{1};
-    ea::vector<GraphNodeView> nodes_;
+    ea::unordered_map<ax::NodeEditor::NodeId, GraphNodeView> nodes_;
     ea::unordered_map<ax::NodeEditor::LinkId, GraphLinkView> links_;
 
     void Reset();
@@ -87,12 +94,14 @@ public:
     /// ResourceEditorTab implementation
     /// @{
     void RenderContent() override;
+    bool IsUndoSupported() override { return true; }
     /// @}
 
     GraphView* GetGraphView() { return &graph_; } 
     void Reset();
 
     virtual void RenderGraph();
+    void ApplyLayoutFromView();
 
 protected:
     virtual void RenderTitle();

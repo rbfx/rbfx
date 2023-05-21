@@ -21,10 +21,12 @@
 //
 
 #include "../../Core/IniHelpers.h"
-#include "../../Foundation/Shared/GraphViewTab.h"
+#include "../../Foundation/GraphViewTab/GraphViewTab.h"
 
-#include "Urho3D/Resource/GraphNode.h"
+#include "MoveNodes.h"
+#include "UpdatePinValue.h"
 
+#include <Urho3D/Resource/GraphNode.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>
@@ -68,8 +70,20 @@ namespace
     };
 }
 
-GraphPinView::GraphPinView(ax::NodeEditor::PinId id): id_(id)
-{}
+GraphPinView::GraphPinView(ax::NodeEditor::PinId id, const ea::string& title)
+    : id_(id)
+    , title_(title)
+{
+}
+
+GraphPinView::GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, VariantType type, const Variant& value)
+    : id_(id)
+    , title_(title)
+    , type_(type)
+    , value_(value)
+    , text_(value.ToString())
+{
+}
 
 void GraphView::Reset()
 {
@@ -93,8 +107,7 @@ void GraphView::Populate(Graph* graph)
     for (unsigned i : nodeIds)
     {
         auto* node = graph->GetNode(i);
-        auto& nodeView = nodes_.emplace_back();
-        nodeView.id_ = node->GetID();
+        auto& nodeView = nodes_[node->GetID()];
         nodeView.title_ = node->GetName();
         nodeView.position_ = node->GetPositionHint();
         needLayouting &= nodeView.position_ == Vector2::ZERO;
@@ -103,35 +116,30 @@ void GraphView::Populate(Graph* graph)
         {
             auto pin = node->GetEnter(pinIndex);
             enterPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.enterPins_.emplace_back(nextUniqueId_++);
-            pinView.title_ = pin.GetPin()->GetName();
+            auto& pinView = nodeView.enterPins_.emplace_back(nextUniqueId_++, pin.GetPin()->GetName());
         }
 
         for (unsigned pinIndex = 0; pinIndex < node->GetNumInputs(); ++pinIndex)
         {
             auto pinRef = node->GetInput(pinIndex);
             inputPins[StablePinKey(pinRef)] = nextUniqueId_;
-            auto& pinView = nodeView.inputPins_.emplace_back(nextUniqueId_++);
             auto* pin = pinRef.GetPin();
-            pinView.title_ = pin->GetName();
-            pinView.value_ = pin->GetValue().ToString();
-            pinView.type_ = pin->GetValue().GetType();
+            auto& pinView = nodeView.inputPins_.emplace_back(
+                nextUniqueId_++, pin->GetName(), pin->GetValue().GetType(), pin->GetValue());
         }
 
         for (unsigned pinIndex = 0; pinIndex < node->GetNumExits(); ++pinIndex)
         {
             auto pin = node->GetExit(pinIndex);
             exitPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.exitPins_.emplace_back(nextUniqueId_++);
-            pinView.title_ = pin.GetPin()->GetName();
+            auto& pinView = nodeView.exitPins_.emplace_back(nextUniqueId_++, pin.GetPin()->GetName());
         }
 
         for (unsigned pinIndex = 0; pinIndex < node->GetNumOutputs(); ++pinIndex)
         {
             auto pin = node->GetOutput(pinIndex);
             outputPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.inputPins_.emplace_back(nextUniqueId_++);
-            pinView.title_ = pin.GetPin()->GetName();
+            auto& pinView = nodeView.inputPins_.emplace_back(nextUniqueId_++, pin.GetPin()->GetName());
         }
     }
 
@@ -164,8 +172,8 @@ void GraphView::Populate(Graph* graph)
         int x = 0;
         for (auto& node: nodes_)
         {
-            node.position_ = Vector2(x, 0);
-            node.size_ = Vector2(100, 100);
+            node.second.position_ = Vector2(x, 0);
+            node.second.size_ = Vector2(100, 100);
             x += 100;
         }
         AutoLayout();
@@ -200,11 +208,14 @@ void GraphViewTab::Reset()
 
 void GraphViewTab::RenderGraph()
 {
-    for (auto& node : graph_.nodes_)
+    SharedPtr<MoveNodesAction> moveNodesAction;
+    for (auto& nodeKeyValue : graph_.nodes_)
     {
+        auto nodeId = nodeKeyValue.first;
+        auto& node = nodeKeyValue.second;
         if (applyLayout_)
-            ed::SetNodePosition(node.id_, ImVec2(node.position_.x_, node.position_.y_));
-        ed::BeginNode(node.id_);
+            ed::SetNodePosition(nodeId, ImVec2(node.position_.x_, node.position_.y_));
+        ed::BeginNode(nodeId);
         ImGui::Text("%s", node.title_.c_str());
 
         ImGui::BeginGroup();
@@ -223,7 +234,14 @@ void GraphViewTab::RenderGraph()
             {
                 ImGui::PushItemWidth(100.0f);
                 ImGui::PushID(pin.id_.Get());
-                ImGui::InputText("##edit", &pin.value_);
+                if (ImGui::InputText("##edit", &pin.text_))
+                {
+                    Variant value;
+                    value.FromString(pin.value_.GetType(), pin.text_);
+
+                    PushAction(MakeShared<UpdatePinValueAction>(this, nodeId, pin.id_, pin.value_,value));
+                    pin.value_ = value;
+                }
                 ImGui::PopID();
                 ImGui::PopItemWidth();
                 ImGui::SameLine();
@@ -252,18 +270,25 @@ void GraphViewTab::RenderGraph()
 
         ed::EndNode();
 
-        auto newPos = ToVector2(ed::GetNodePosition(node.id_));
+        auto newPos = ToVector2(ed::GetNodePosition(nodeId));
         if (node.position_ != newPos)
         {
+            if (!moveNodesAction)
+                moveNodesAction = MakeShared<MoveNodesAction>(this);
+            moveNodesAction->Add(nodeKeyValue.first, node.position_, newPos);
             node.position_ = newPos;
-            //TODO: add to Undo stack
         }
-        node.size_ = ToVector2(ed::GetNodeSize(node.id_));
+        node.size_ = ToVector2(ed::GetNodeSize(nodeId));
     }
 
     for (auto& link : graph_.links_)
     {
         ed::Link(link.first, link.second.from_, link.second.to_);
+    }
+
+    if (moveNodesAction)
+    {
+        PushAction(moveNodesAction);
     }
 
     //if (ed::BeginCreate())
@@ -295,6 +320,11 @@ void GraphViewTab::RenderGraph()
     //        ed::RejectDeletedItem();
     //    }
     //}
+}
+
+void GraphViewTab::ApplyLayoutFromView()
+{
+    applyLayout_ = true;
 }
 
 void GraphViewTab::RenderTitle()
