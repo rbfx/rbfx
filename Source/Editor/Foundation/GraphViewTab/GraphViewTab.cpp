@@ -204,9 +204,9 @@ SharedPtr<Graph> GraphView::BuildGraph(Context* context)
         {
             node->WithInput(inputPin.title_, inputPin.value_);
         }
+        pinIndex = 0;
         for (auto exitPin : nodeKeyValue.second.exitPins_)
         {
-            unsigned pinIndex = 0;
             node->WithExit(exitPin.title_);
             pinMap[exitPin.id_] = ea::make_tuple(node.Get(), pinIndex);
             ++pinIndex;
@@ -226,7 +226,7 @@ SharedPtr<Graph> GraphView::BuildGraph(Context* context)
             auto* fromNode = ea::get<0>(from->second);
             unsigned fromPinIndex = ea::get<1>(from->second);
             auto* toNode = ea::get<0>(to->second);
-            unsigned toIndex = ea::get<1>(from->second);
+            unsigned toIndex = ea::get<1>(to->second);
 
             fromNode->GetExit(fromPinIndex).GetPin()->ConnectTo(toNode->GetEnter(toIndex));
         }
@@ -259,6 +259,11 @@ void GraphViewTab::Reset()
 {
     applyLayout_ = true;
     graph_.Reset();
+}
+
+SharedPtr<GraphNode> GraphViewTab::CreateNewNodePopup() const
+{
+    return {};
 }
 
 void GraphViewTab::RenderGraph()
@@ -401,8 +406,6 @@ void GraphViewTab::RenderContent()
     ImGui::SameLine();
     if (ImGui::Button("Autolayout"))
         graph_.AutoLayout();
-    //if (ImGui::Button("Save"))
-    //    Save();
     ImGui::SameLine();
     ImGui::Checkbox("Show Ordinals", &showOrdinals_);
 
@@ -414,6 +417,25 @@ void GraphViewTab::RenderContent()
     ed::Begin("graph_view", imContentSize);
 
     RenderGraph();
+
+    auto openPopupPosition = ImGui::GetMousePos();
+    //ed::Suspend();
+    if (ed::ShowBackgroundContextMenu())
+    {
+        ImGui::OpenPopup("Create New Node");
+    }
+    //ed::Resume();
+
+    //ed::Suspend();
+    if (ImGui::BeginPopup("Create New Node"))
+    {
+        auto newNodePosition = openPopupPosition;
+
+        CreateNewNodePopup();
+
+        ImGui::EndPopup();
+    }
+    //ed::Resume();
 
     // End of interaction with editor.
     ed::End();

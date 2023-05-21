@@ -166,6 +166,22 @@ GraphNode* Parallel::ToGraphNode(Graph* graph) const
     return node;
 }
 
+void Parallel::FromGraphNode(GraphNode* node)
+{
+    DynamicAction::FromGraphNode(node);
+    actions_.clear();
+    for (unsigned i=0; i<node->GetNumExits(); ++i)
+    {
+        auto exit = node->GetExit(i);
+        SharedPtr<FiniteTimeAction> internalAction;
+        internalAction.DynamicCast(MakeActionFromGraphNode(exit.GetConnectedPin<GraphEnterPin>().GetNode()));
+        if (internalAction)
+        {
+            actions_.push_back(internalAction);
+        }
+    }
+}
+
 /// Serialize content from/to archive. May throw ArchiveException.
 void Parallel::SerializeInBlock(Archive& archive)
 {

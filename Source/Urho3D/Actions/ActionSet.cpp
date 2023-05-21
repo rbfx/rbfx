@@ -22,6 +22,7 @@
 
 #include "ActionSet.h"
 
+#include "Parallel.h"
 #include "../Actions/ActionManager.h"
 #include "../Actions/FiniteTimeAction.h"
 #include "../Core/Context.h"
@@ -92,9 +93,22 @@ bool ActionSet::FromGraph(const Graph* graph)
     }
     if (rootNodes.size() > 1)
     {
-        URHO3D_LOGERROR("More than one enter node found.");
+        const auto parallelAction = MakeShared<Parallel>(context_);
+        for (auto& rootNode: rootNodes)
+        {
+            SharedPtr<FiniteTimeAction> action;
+            action.DynamicCast(BaseAction::MakeActionFromGraphNode(graph->GetNode(*rootNodes.begin())));
+            if (action)
+            {
+                parallelAction->AddAction(action);
+            }
+        }
+        action_ = parallelAction;
     }
-    action_ = BaseAction::MakeActionFromGraphNode(graph->GetNode(*rootNodes.begin()));
+    else
+    {
+        action_ = BaseAction::MakeActionFromGraphNode(graph->GetNode(*rootNodes.begin()));
+    }
     return rootNodes.size() == 1;
 }
 

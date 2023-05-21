@@ -105,6 +105,7 @@ public:
     GraphView* GetGraphView() { return &graph_; } 
     void Reset();
 
+    virtual SharedPtr<GraphNode> CreateNewNodePopup() const;
     virtual void RenderGraph();
     void ApplyLayoutFromView();
 

@@ -60,7 +60,10 @@ public:
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
 
+    /// Create GraphNode from the action. Required for action editor.
     GraphNode* ToGraphNode(Graph* graph) const override;
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
 
 protected:
     /// Create new action state from the action.

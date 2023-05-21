@@ -29,7 +29,10 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Actions/ActionManager.h>
 #include <Urho3D/Actions/Actions.h>
+#include <Urho3D/Actions/Sequence.h>
+#include <Urho3D/Actions/Parallel.h>
 #include <Urho3D/Scene/Node.h>
+#include <Urho3D/Resource/Graph.h>
 #include <Urho3D/UI/UIElement.h>
 
 using namespace Urho3D;
@@ -530,6 +533,60 @@ TEST_CASE("Serialize Action")
     auto actual = static_cast<Actions::MoveBy*>(action2->GetAction());
     CHECK(Equals(expected->GetDuration(), actual->GetDuration()));
     CHECK(expected->GetDelta().Equals(actual->GetDelta()));
+}
+
+TEST_CASE("Action to Graph and back")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto action = MakeShared<ActionSet>(context);
+    SharedPtr<Actions::BaseAction> innerAction = ActionBuilder(context)
+        .JumpBy(Vector3(3,2,1))
+        .Then(ActionBuilder(context)
+            .MoveBy(2.0f, Vector3(1, 2, 3))
+            .ElasticInOut()
+            .Build())
+        .Build();
+    action->SetAction(innerAction);
+
+    const auto graph = action->ToGraph();
+    const auto restoredAction = MakeShared<ActionSet>(context);
+    restoredAction->FromGraph(graph);
+
+    SharedPtr<Actions::Sequence> sequence{dynamic_cast<Actions::Sequence*>(restoredAction->GetAction())};
+    REQUIRE(sequence);
+    SharedPtr<Actions::JumpBy> first{dynamic_cast<Actions::JumpBy*>(sequence->GetFirstAction())};
+    REQUIRE(first);
+    SharedPtr<Actions::EaseElasticInOut> second{dynamic_cast<Actions::EaseElasticInOut*>(sequence->GetSecondAction())};
+    REQUIRE(second);
+    SharedPtr<Actions::MoveBy> inner{dynamic_cast<Actions::MoveBy*>(second->GetInnerAction())};
+    REQUIRE(inner);
+}
+
+TEST_CASE("Parallel Action to Graph and back")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto action = MakeShared<ActionSet>(context);
+    SharedPtr<Actions::BaseAction> innerAction =
+        ActionBuilder(context)
+            .JumpBy(Vector3(3, 2, 1))
+            .Also(ActionBuilder(context).MoveBy(2.0f, Vector3(1, 2, 3)).ElasticInOut().Build())
+            .Build();
+    action->SetAction(innerAction);
+
+    const auto graph = action->ToGraph();
+    const auto restoredAction = MakeShared<ActionSet>(context);
+    restoredAction->FromGraph(graph);
+
+    SharedPtr<Actions::Parallel> sequence{dynamic_cast<Actions::Parallel*>(restoredAction->GetAction())};
+    REQUIRE(sequence);
+    SharedPtr<Actions::JumpBy> first{dynamic_cast<Actions::JumpBy*>(sequence->GetAction(0))};
+    REQUIRE(first);
+    SharedPtr<Actions::EaseElasticInOut> second{dynamic_cast<Actions::EaseElasticInOut*>(sequence->GetAction(1))};
+    REQUIRE(second);
+    SharedPtr<Actions::MoveBy> inner{dynamic_cast<Actions::MoveBy*>(second->GetInnerAction())};
+    REQUIRE(inner);
 }
 
 TEST_CASE("Cancel Action")

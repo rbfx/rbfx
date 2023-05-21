@@ -63,6 +63,7 @@ protected:
     /// @}
 
     void RenderTitle() override;
+    SharedPtr<GraphNode> CreateNewNodePopup() const override;
 
 private:
     SharedPtr<ActionSet> actionSet_;

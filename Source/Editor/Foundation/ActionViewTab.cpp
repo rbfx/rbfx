@@ -24,7 +24,9 @@
 #include "../Core/IniHelpers.h"
 #include "../Foundation/ActionViewTab.h"
 
+#include <Urho3D/Actions/ActionManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/GraphNode.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
 namespace Urho3D
@@ -73,6 +75,18 @@ void ActionViewTab::RenderTitle()
     {
         actionSet_ = cache->GetResource<ActionSet>(actionName);
     }
+}
+
+SharedPtr<GraphNode> ActionViewTab::CreateNewNodePopup() const
+{
+    auto actionManager = context_->GetSubsystem<ActionManager>();
+    for (auto& actionReflection : actionManager->GetObjectReflections())
+    {
+        if (ImGui::MenuItem(actionReflection.second->GetTypeName().c_str()))
+        {
+        }
+    }
+    return {};
 }
 
 void ActionViewTab::RenderContent()

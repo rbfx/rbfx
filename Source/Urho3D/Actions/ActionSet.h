@@ -31,7 +31,7 @@ namespace Urho3D
 
 class Graph;
 
-    /// Action as resource
+/// Action as resource
 class URHO3D_API ActionSet : public SimpleResource
 {
     URHO3D_OBJECT(ActionSet, SimpleResource)
