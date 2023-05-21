@@ -24,6 +24,7 @@
 
 #include "Actions.h"
 #include "Urho3D/Actions/AttributeActionState.h"
+#include <EASTL/variant.h>
 
 namespace Urho3D
 {
