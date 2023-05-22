@@ -23,6 +23,10 @@
 #include "../../Core/IniHelpers.h"
 #include "../../Foundation/GraphViewTab/GraphViewTab.h"
 
+#include "CreateLink.h"
+#include "CreateNode.h"
+#include "DeleteLink.h"
+#include "DeleteNode.h"
 #include "MoveNodes.h"
 #include "UpdatePinValue.h"
 
@@ -39,6 +43,11 @@ namespace Urho3D
 {
 namespace
 {
+    enum class PopupMenuType
+    {
+        None,
+        Background
+    };
     struct StablePinKey
     {
         unsigned nodeId_;
@@ -70,9 +79,12 @@ namespace
     };
 }
 
+namespace Detail
+{
 GraphPinView::GraphPinView(ax::NodeEditor::PinId id, const ea::string& title)
     : id_(id)
     , title_(title)
+    , link_(ed::LinkId::Invalid)
 {
 }
 
@@ -82,7 +94,34 @@ GraphPinView::GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, Va
     , type_(type)
     , value_(value)
     , text_(value.ToString())
+    , link_(ed::LinkId::Invalid)
 {
+}
+
+GraphNodeView::GraphNodeView(ax::NodeEditor::NodeId id, const ea::string& title)
+    : id_(id)
+    , title_(title)
+{
+}
+
+GraphPinView* GraphNodeView::GetPinView(const Urho3D::Detail::PinNodeViewRef& pinRef)
+{
+    switch (pinRef.type_)
+    {
+    case GraphPinViewType::Output:
+            return (pinRef.index_ < outputPins_.size()) ? &outputPins_[pinRef.index_]
+                                                        : static_cast<GraphPinView*>(nullptr);
+    case GraphPinViewType::Input:
+            return (pinRef.index_ < inputPins_.size()) ? &inputPins_[pinRef.index_]
+                                                        : static_cast<GraphPinView*>(nullptr);
+    case GraphPinViewType::Enter:
+            return (pinRef.index_ < enterPins_.size()) ? &enterPins_[pinRef.index_]
+                                                        : static_cast<GraphPinView*>(nullptr);
+    case GraphPinViewType::Exit:
+            return (pinRef.index_ < exitPins_.size()) ? &exitPins_[pinRef.index_]
+                                                        : static_cast<GraphPinView*>(nullptr);
+    }
+    return nullptr;
 }
 
 GraphPinView* GraphView::GetInputPinView(ax::NodeEditor::NodeId node, const ea::string& pinName)
@@ -110,6 +149,14 @@ GraphPinView* GraphView::GetInputPinView(ax::NodeEditor::NodeId node, unsigned p
     return nullptr;
 }
 
+GraphNodeView* GraphView::GetNode(ax::NodeEditor::NodeId id)
+{
+    auto nodeIt = nodes_.find(id);
+    if (nodeIt != nodes_.end())
+        return &nodeIt->second;
+    return nullptr;
+}
+
 void GraphView::Reset()
 {
     nextUniqueId_ = 1;
@@ -117,82 +164,87 @@ void GraphView::Reset()
     links_.clear();
 }
 
+void GraphView::AddLink(ax::NodeEditor::LinkId id, GraphPinView& from, GraphPinView& to)
+{
+    links_[id] = {from.id_, to.id_};
+    from.link_ = id;
+    to.link_ = id;
+}
+
+void GraphView::AddLink(ax::NodeEditor::LinkId linkId, ax::NodeEditor::PinId from, ax::NodeEditor::PinId to)
+{
+    auto fromIt = pinToNode_.find(from);
+    auto toIt = pinToNode_.find(to);
+    if (fromIt != pinToNode_.end() && toIt != pinToNode_.end())
+    {
+        switch (fromIt->second.type_)
+        {
+        case GraphPinViewType::Enter: return AddLink(linkId, to, from);
+        case GraphPinViewType::Input: return AddLink(linkId, to, from);
+        case GraphPinViewType::Output:
+        {
+            auto* fromNode = GetNode(fromIt->second.node_);
+            auto* toNode =  GetNode(toIt->second.node_);
+            return AddLink(linkId, fromNode->outputPins_[fromIt->second.index_], toNode->inputPins_[toIt->second.index_]);
+        }
+        case GraphPinViewType::Exit:
+        {
+            auto* fromNode = GetNode(fromIt->second.node_);
+            auto* toNode = GetNode(toIt->second.node_);
+            return AddLink(linkId, fromNode->exitPins_[fromIt->second.index_], toNode->enterPins_[toIt->second.index_]);
+        }
+        }
+    }
+}
+
 void GraphView::Populate(Graph* graph)
 {
     Reset();
     bool needLayouting = true;
 
+    ea::unordered_map<GraphNode*, ed::NodeId> nodeMap;
+
     ea::vector<unsigned> nodeIds;
     graph->GetNodeIds(nodeIds);
-    ea::unordered_map<StablePinKey, ed::PinId> enterPins;
-    ea::unordered_map<StablePinKey, ed::PinId> exitPins;
-    ea::unordered_map<StablePinKey, ed::PinId> inputPins;
-    ea::unordered_map<StablePinKey, ed::PinId> outputPins;
-    nextUniqueId_ = graph->GetNextNodeId();
+
     for (unsigned i : nodeIds)
     {
         auto* node = graph->GetNode(i);
-        auto& nodeView = nodes_[node->GetID()];
-        nodeView.title_ = node->GetName();
-        nodeView.position_ = node->GetPositionHint();
-        needLayouting &= nodeView.position_ == Vector2::ZERO;
-
-        for (unsigned pinIndex = 0; pinIndex < node->GetNumEnters(); ++pinIndex)
-        {
-            auto pin = node->GetEnter(pinIndex);
-            enterPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.enterPins_.emplace_back(nextUniqueId_++, pin.GetPin()->GetName());
-        }
-
-        for (unsigned pinIndex = 0; pinIndex < node->GetNumInputs(); ++pinIndex)
-        {
-            auto pinRef = node->GetInput(pinIndex);
-            inputPins[StablePinKey(pinRef)] = nextUniqueId_;
-            auto* pin = pinRef.GetPin();
-            auto& pinView = nodeView.inputPins_.emplace_back(
-                nextUniqueId_++, pin->GetName(), pin->GetValue().GetType(), pin->GetValue());
-        }
-
-        for (unsigned pinIndex = 0; pinIndex < node->GetNumExits(); ++pinIndex)
-        {
-            auto pin = node->GetExit(pinIndex);
-            exitPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.exitPins_.emplace_back(nextUniqueId_++, pin.GetPin()->GetName());
-        }
-
-        for (unsigned pinIndex = 0; pinIndex < node->GetNumOutputs(); ++pinIndex)
-        {
-            auto pin = node->GetOutput(pinIndex);
-            outputPins[StablePinKey(pin)] = nextUniqueId_;
-            auto& pinView = nodeView.inputPins_.emplace_back(nextUniqueId_++, pin.GetPin()->GetName());
-        }
+        auto nodeId = AddNode(node);
+        nodeMap[node] = nodeId;
+        auto* nodeView = GetNode(nodeId);
+        needLayouting &= nodeView->position_ == Vector2::ZERO;
     }
 
     for (unsigned i : nodeIds)
     {
         auto* node = graph->GetNode(i);
+        auto nodeId = nodeMap[node];
+        auto* nodeView = GetNode(nodeId);
         for (unsigned pinIndex = 0; pinIndex < node->GetNumInputs(); ++pinIndex)
         {
             auto pinRef = node->GetInput(pinIndex);
             auto connectedPinRef = pinRef.GetConnectedPin<GraphOutPin>();
-            if (connectedPinRef.GetNode())
+            if (auto connectedNode = connectedPinRef.GetNode())
             {
-                auto inputPin = GetInputPinView(node->GetID(), pinIndex);
-                if (inputPin)
-                    inputPin->link_ = nextUniqueId_;
-                links_[nextUniqueId_++] = GraphLinkView{outputPins[pinRef], inputPins[connectedPinRef]};
+                auto connectedNodeId = nodeMap[connectedNode];
+                auto* connectedNodeView = GetNode(connectedNodeId);
+                const auto connectedPinIndex = connectedNode->GetPinIndex(connectedPinRef.GetPin());
+                AddLink(nextUniqueId_++, connectedNodeView->outputPins_[connectedPinIndex], nodeView->inputPins_[pinIndex]);
             }
         }
         for (unsigned pinIndex = 0; pinIndex < node->GetNumExits(); ++pinIndex)
         {
             auto pinRef = node->GetExit(pinIndex);
             auto connectedPinRef = pinRef.GetConnectedPin<GraphEnterPin>();
-            if (connectedPinRef.GetNode())
+            if (auto connectedNode = connectedPinRef.GetNode())
             {
-                links_[nextUniqueId_++] = GraphLinkView{exitPins[pinRef], enterPins[connectedPinRef]};
+                auto connectedNodeId = nodeMap[connectedNode];
+                auto* connectedNodeView = GetNode(connectedNodeId);
+                const auto connectedPinIndex = connectedNode->GetPinIndex(connectedPinRef.GetPin());
+                AddLink(nextUniqueId_++, nodeView->exitPins_[pinIndex], connectedNodeView->enterPins_[connectedPinIndex]);
             }
         }
-
     }
 
     if (needLayouting)
@@ -263,10 +315,96 @@ SharedPtr<Graph> GraphView::BuildGraph(Context* context)
     return graph;
 }
 
+bool GraphView::AddNode(const GraphNodeView& nodeView)
+{
+    auto id = nodeView.id_;
+    if (!id)
+    {
+        id = nextUniqueId_++;
+    }
+    auto nodeIt = nodes_.find(id);
+    if (nodeIt == nodes_.end())
+    {
+        nodes_.insert({id, nodeView});
+        return true;
+    }
+    return false;
+}
+
+ax::NodeEditor::NodeId GraphView::AddNode(GraphNode* node)
+{
+    auto nodeId = ax::NodeEditor::NodeId(nextUniqueId_++);
+    GraphNodeView nodeView{nodeId, node->GetName()};
+    nodeView.position_ = node->GetPositionHint();
+
+    for (unsigned pinIndex = 0; pinIndex < node->GetNumEnters(); ++pinIndex)
+    {
+        auto pin = node->GetEnter(pinIndex);
+        auto id = ed::PinId(nextUniqueId_++);
+        pinToNode_[id] = {nodeId, GraphPinViewType::Enter, pinIndex};
+        auto& pinView = nodeView.enterPins_.emplace_back(id, pin.GetPin()->GetName());
+    }
+
+    for (unsigned pinIndex = 0; pinIndex < node->GetNumInputs(); ++pinIndex)
+    {
+        auto pinRef = node->GetInput(pinIndex);
+        auto* pin = pinRef.GetPin();
+        auto id = ed::PinId(nextUniqueId_++);
+        pinToNode_[id] = {nodeId, GraphPinViewType::Input, pinIndex};
+        auto& pinView = nodeView.inputPins_.emplace_back(
+            id, pin->GetName(), pin->GetValue().GetType(), pin->GetValue());
+    }
+
+    for (unsigned pinIndex = 0; pinIndex < node->GetNumExits(); ++pinIndex)
+    {
+        auto pin = node->GetExit(pinIndex);
+        auto id = ed::PinId(nextUniqueId_++);
+        pinToNode_[id] = {nodeId, GraphPinViewType::Exit, pinIndex};
+        auto& pinView = nodeView.exitPins_.emplace_back(id, pin.GetPin()->GetName());
+    }
+
+    for (unsigned pinIndex = 0; pinIndex < node->GetNumOutputs(); ++pinIndex)
+    {
+        auto pin = node->GetOutput(pinIndex);
+        auto id = ed::PinId(nextUniqueId_++);
+        pinToNode_[id] = {nodeId, GraphPinViewType::Output, pinIndex};
+        auto& pinView = nodeView.outputPins_.emplace_back(
+            id, pin.GetPin()->GetName(), pin.GetPin()->GetType(), Variant(pin.GetPin()->GetType()));
+    }
+    AddNode(nodeView);
+    return nodeId;
+}
+
 void GraphView::AutoLayout()
 {
     // TODO: perform layouting
 }
+
+void GraphView::DeleteLink(const ax::NodeEditor::LinkId& linkId)
+{
+    auto linkIt = links_.find(linkId);
+    if (linkIt != links_.end())
+    {
+        auto fromIt = pinToNode_.find(linkIt->second.from_);
+        auto toIt = pinToNode_.find(linkIt->second.to_);
+        if (fromIt != pinToNode_.end() && toIt != pinToNode_.end())
+        {
+            auto* fromNode = GetNode(fromIt->second.node_);
+            auto* toNode = GetNode(toIt->second.node_);
+
+            fromNode->GetPinView(fromIt->second)->link_ = ed::LinkId::Invalid;
+            toNode->GetPinView(toIt->second)->link_ = ed::LinkId::Invalid;
+            links_.erase(linkId);
+        }
+    }
+}
+
+void GraphView::DeleteNode(const ax::NodeEditor::NodeId& id)
+{
+    nodes_.erase(id);
+}
+
+} // namespace Detail
 
 GraphViewTab::GraphViewTab(Context* context, const ea::string& title, const ea::string& guid,
     EditorTabFlags flags, EditorTabPlacement placement)
@@ -389,7 +527,16 @@ void GraphViewTab::RenderGraph()
         ed::PinId inputPinId, outputPinId;
         if (ed::QueryNewLink(&inputPinId, &outputPinId))
         {
-            ed::RejectNewItem();
+            if (inputPinId && outputPinId)
+            {
+                if (ed::AcceptNewItem())
+                {
+                    auto action = MakeShared<CreateLinkAction>(this, inputPinId, outputPinId);
+                    action->Redo();
+                    PushAction(action);
+                }
+            }
+            //ed::RejectNewItem();
         }
 
         ed::PinId newNodeId;
@@ -405,13 +552,36 @@ void GraphViewTab::RenderGraph()
         ed::LinkId deletedLinkId;
         while (ed::QueryDeletedLink(&deletedLinkId))
         {
-            ed::RejectDeletedItem();
+            DeleteLink(deletedLinkId);
         }
 
+        nodesToDelete_.clear();
         ed::NodeId deletedNodeId;
         while (ed::QueryDeletedNode(&deletedNodeId))
         {
-            ed::RejectDeletedItem();
+            nodesToDelete_.push_back(deletedNodeId);
+        }
+
+        for (auto& nodeToDelete: nodesToDelete_)
+        {
+            if (auto* node = graph_.GetNode(nodeToDelete))
+            {
+                for (auto& pin : node->inputPins_)
+                    DeleteLink(pin.link_);
+                for (auto& pin : node->outputPins_)
+                    DeleteLink(pin.link_);
+                for (auto& pin : node->enterPins_)
+                    DeleteLink(pin.link_);
+                for (auto& pin : node->exitPins_)
+                    DeleteLink(pin.link_);
+            }
+        }
+
+        for (auto& nodeToDelete : nodesToDelete_)
+        {
+            auto action = MakeShared<DeleteNodeAction>(this, graph_.GetNode(nodeToDelete));
+            action->Redo();
+            PushAction(action);
         }
     }
     ed::EndDelete();
@@ -425,6 +595,18 @@ void GraphViewTab::ApplyLayoutFromView()
 void GraphViewTab::RenderTitle()
 {
     ui::Text("%s", GetActiveResourceName().c_str());
+}
+
+void GraphViewTab::DeleteLink(const ax::NodeEditor::LinkId& deletedLinkId)
+{
+    if (!deletedLinkId)
+        return;
+    if (graph_.links_.find(deletedLinkId) != graph_.links_.end())
+    {
+        auto action = MakeShared<DeleteLinkAction>(this, deletedLinkId);
+        action->Redo();
+        PushAction(action);
+    }
 }
 
 void GraphViewTab::RenderContent()
@@ -455,24 +637,11 @@ void GraphViewTab::RenderContent()
 
     RenderGraph();
 
+    auto popupMenuType = PopupMenuType::None;
     auto openPopupPosition = ImGui::GetMousePos();
-    //ed::Suspend();
+
     if (ed::ShowBackgroundContextMenu())
-    {
-        ImGui::OpenPopup("Create New Node");
-    }
-    //ed::Resume();
-
-    //ed::Suspend();
-    if (ImGui::BeginPopup("Create New Node"))
-    {
-        auto newNodePosition = openPopupPosition;
-
-        CreateNewNodePopup();
-
-        ImGui::EndPopup();
-    }
-    //ed::Resume();
+        popupMenuType = PopupMenuType::Background;
 
     // End of interaction with editor.
     ed::End();
@@ -516,10 +685,32 @@ void GraphViewTab::RenderContent()
         drawList->PopClipRect();
     }
 
-
     ed::SetCurrentEditor(nullptr);
 
     applyLayout_ = false;
+
+    switch (popupMenuType)
+    {
+    case PopupMenuType::Background: ImGui::OpenPopup("Create New Node"); break;
+    }
+
+    if (ImGui::BeginPopup("Create New Node"))
+    {
+        auto newNodePosition = openPopupPosition;
+
+        auto node = CreateNewNodePopup();
+        if (node)
+        {
+            auto nodeId = graph_.AddNode(node);
+            auto* nodeView = graph_.GetNode(nodeId);
+            nodeView->position_ = Vector2(newNodePosition.x, newNodePosition.y);
+            PushAction(MakeShared<CreateNodeAction>(this, *nodeView));
+            applyLayout_ = true;
+        }
+
+        ImGui::EndPopup();
+    }
+
 
     ImGui::EndChild();
 }

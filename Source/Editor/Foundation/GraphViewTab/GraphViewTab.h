@@ -34,11 +34,20 @@
 
 namespace Urho3D
 {
-
+namespace Detail
+{
 struct GraphLinkView
 {
     ax::NodeEditor::PinId from_;
     ax::NodeEditor::PinId to_;
+};
+
+enum class GraphPinViewType
+{
+    Input,
+    Output,
+    Enter,
+    Exit
 };
 
 struct GraphPinView
@@ -46,7 +55,7 @@ struct GraphPinView
     GraphPinView(ax::NodeEditor::PinId id, const ea::string& title);
     GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, VariantType type, const Variant& value);
     /// Global unique identifier of the pin.
-    ax::NodeEditor::PinId id_{0};
+    ax::NodeEditor::PinId id_{};
     /// Name of the pin.
     ea::string title_;
     /// Field type. VAR_NONE means that it could be of any type.
@@ -58,38 +67,64 @@ struct GraphPinView
     /// Pin type.
     ax::NodeEditor::PinKind kind_{ax::NodeEditor::PinKind::Input};
     /// Connected link ID
-    ax::NodeEditor::LinkId link_{0};
+    ax::NodeEditor::LinkId link_;
+};
+
+/// Reference to node's pin view
+struct PinNodeViewRef
+{
+    ax::NodeEditor::NodeId node_;
+    GraphPinViewType type_;
+    unsigned index_;
 };
 
 struct GraphNodeView
 {
+    GraphNodeView(ax::NodeEditor::NodeId id, const ea::string& title);
+    /// Global unique identifier of the node.
+    ax::NodeEditor::NodeId id_{};
     ea::string title_;
     Vector2 position_{0, 0};
     Vector2 size_{0, 0};
-    ea::vector<GraphPinView> enterPins_;
-    ea::vector<GraphPinView> inputPins_;
-    ea::vector<GraphPinView> exitPins_;
-    ea::vector<GraphPinView> outputPins_;
+    ea::fixed_vector<GraphPinView,1> enterPins_;
+    ea::fixed_vector<GraphPinView,3> inputPins_;
+    ea::fixed_vector<GraphPinView,1> exitPins_;
+    ea::fixed_vector<GraphPinView,1> outputPins_;
+    GraphPinView* GetPinView(const ::Urho3D::Detail::PinNodeViewRef& pinRef);
 };
 
 struct GraphView
 {
     uintptr_t nextUniqueId_{1};
     ea::unordered_map<ax::NodeEditor::NodeId, GraphNodeView> nodes_;
+    ea::unordered_map<ax::NodeEditor::PinId, PinNodeViewRef> pinToNode_;
     ea::unordered_map<ax::NodeEditor::LinkId, GraphLinkView> links_;
 
     GraphPinView* GetInputPinView(ax::NodeEditor::NodeId node, const ea::string& pinName);
     GraphPinView* GetInputPinView(ax::NodeEditor::NodeId node, unsigned pinIndex);
 
+    GraphNodeView* GetNode(ax::NodeEditor::NodeId id);
     /// Reset graph view to empty.
     void Reset();
+    /// Add link between two pins.
+    void AddLink(ax::NodeEditor::LinkId id, GraphPinView& from, GraphPinView& to);
+    /// Add link between two pins.
+    void AddLink(ax::NodeEditor::LinkId id, ax::NodeEditor::PinId from, ax::NodeEditor::PinId to);
     /// Populate view from the graph resource.
     void Populate(Graph* graph);
     /// Build graph from view.
     SharedPtr<Graph> BuildGraph(Context* context);
+    /// Add graph node.
+    ax::NodeEditor::NodeId AddNode(GraphNode* graphNode);
+    /// Add graph node.
+    bool AddNode(const GraphNodeView& nodeView);
     /// Evaluate node positions.
     void AutoLayout();
+    void DeleteLink(const ax::NodeEditor::LinkId& linkId);
+    void DeleteNode(const ax::NodeEditor::NodeId& id);
 };
+
+} // namespace Detail
 
 /// Tab that renders graph.
 class GraphViewTab : public ResourceEditorTab
@@ -107,7 +142,7 @@ public:
     bool IsUndoSupported() override { return true; }
     /// @}
 
-    GraphView* GetGraphView() { return &graph_; } 
+    Detail::GraphView* GetGraphView() { return &graph_; } 
     void Reset();
 
     virtual SharedPtr<GraphNode> CreateNewNodePopup() const;
@@ -116,12 +151,14 @@ public:
 
 protected:
     virtual void RenderTitle();
+    void DeleteLink(const ax::NodeEditor::LinkId& link_id);
 
     ax::NodeEditor::EditorContext* editorContext_ = nullptr; // Editor context, required to trace a editor state.
     bool showOrdinals_{};
     bool applyLayout_{true};
-    GraphView graph_;
+    Detail::GraphView graph_;
     std::vector<ax::NodeEditor::NodeId> orderedNodeIds_;
+    std::vector<ax::NodeEditor::NodeId> nodesToDelete_;
 };
 
 } // namespace Urho3D
