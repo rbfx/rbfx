@@ -448,7 +448,7 @@ void GraphViewTab::RenderGraph()
         for (auto& pin : node.enterPins_)
         {
             ed::BeginPin(pin.id_, ax::NodeEditor::PinKind::Input);
-            ax::Widgets::Icon(ImVec2(16, 16), ax::Drawing::IconType::Flow, true);
+            ax::Widgets::Icon(ImVec2(16, 16), ax::Drawing::IconType::Flow, !!pin.link_);
             ImGui::SameLine();
             ImGui::Text("%s", pin.title_.c_str());
             ed::EndPin();
@@ -456,7 +456,7 @@ void GraphViewTab::RenderGraph()
         for (auto& pin : node.inputPins_)
         {
             ed::BeginPin(pin.id_, ax::NodeEditor::PinKind::Input);
-            ax::Widgets::Icon(ImVec2(16, 16), ax::Drawing::IconType::Circle, pin.link_.Get());
+            ax::Widgets::Icon(ImVec2(16, 16), ax::Drawing::IconType::Circle, !!pin.link_);
             ImGui::SameLine();
             if (pin.type_ == VAR_NONE)
             {
@@ -488,13 +488,15 @@ void GraphViewTab::RenderGraph()
             ed::BeginPin(pin.id_, ax::NodeEditor::PinKind::Output);
             ImGui::Text("%s", pin.title_.c_str());
             ImGui::SameLine();
-            ax::Widgets::Icon(ImVec2(16, 16), ax::Drawing::IconType::Flow, true);
+            ax::Widgets::Icon(ImVec2(16, 16), ax::Drawing::IconType::Flow, !!pin.link_);
             ed::EndPin();
         }
         for (auto& pin : node.outputPins_)
         {
             ed::BeginPin(pin.id_, ax::NodeEditor::PinKind::Output);
             ImGui::Text("%s", pin.title_.c_str());
+            ImGui::SameLine();
+            ax::Widgets::Icon(ImVec2(16, 16), ax::Drawing::IconType::Circle, !!pin.link_);
             ed::EndPin();
         }
         ImGui::EndGroup();
@@ -704,7 +706,7 @@ void GraphViewTab::RenderContent()
             auto nodeId = graph_.AddNode(node);
             auto* nodeView = graph_.GetNode(nodeId);
             nodeView->position_ = Vector2(newNodePosition.x, newNodePosition.y);
-            PushAction(MakeShared<CreateNodeAction>(this, *nodeView));
+            PushAction(MakeShared<CreateNodeAction>(this, nodeView));
             applyLayout_ = true;
         }
 

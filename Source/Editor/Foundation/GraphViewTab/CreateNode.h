@@ -33,7 +33,7 @@ class GraphViewTab;
 class CreateNodeAction : public EditorAction
 {
 public:
-    CreateNodeAction(GraphViewTab* graphTab, const Detail::GraphNodeView& node);
+    CreateNodeAction(GraphViewTab* graphTab, const Detail::GraphNodeView* node);
 
     /// Redo this action. May fail if external state has unexpectedly changed.
     void Redo() const override;

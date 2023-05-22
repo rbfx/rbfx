@@ -25,10 +25,13 @@
 
 namespace Urho3D
 {
-CreateNodeAction::CreateNodeAction(GraphViewTab* graphTab, const Detail::GraphNodeView& node)
+CreateNodeAction::CreateNodeAction(GraphViewTab* graphTab, const Detail::GraphNodeView* node)
     :graphTab_(graphTab)
 {
-    nodes_.push_back(node);
+    if (node)
+    {
+        nodes_.push_back(*node);
+    }
 }
 
 void CreateNodeAction::Redo() const
