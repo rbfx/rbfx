@@ -533,9 +533,7 @@ void GraphViewTab::RenderGraph()
             {
                 if (ed::AcceptNewItem())
                 {
-                    auto action = MakeShared<CreateLinkAction>(this, inputPinId, outputPinId);
-                    action->Redo();
-                    PushAction(action);
+                    CreateLink(inputPinId, outputPinId);
                 }
             }
             //ed::RejectNewItem();
@@ -609,6 +607,42 @@ void GraphViewTab::DeleteLink(const ax::NodeEditor::LinkId& deletedLinkId)
         action->Redo();
         PushAction(action);
     }
+}
+
+void GraphViewTab::CreateLink(const ax::NodeEditor::PinId& from, const ax::NodeEditor::PinId& to)
+{
+    auto fromIt = graph_.pinToNode_.find(from);
+    auto toIt = graph_.pinToNode_.find(to);
+    if (fromIt == graph_.pinToNode_.end() || toIt == graph_.pinToNode_.end())
+        return;
+    if (fromIt->second.type_ == Detail::GraphPinViewType::Input
+        || fromIt->second.type_ == Detail::GraphPinViewType::Enter)
+    {
+        if (toIt->second.type_ == Detail::GraphPinViewType::Input
+            || toIt->second.type_ == Detail::GraphPinViewType::Enter)
+            return;
+        CreateLink(to, from);
+        return;
+    }
+
+    auto fromRef = fromIt->second;
+    auto toRef = toIt->second;
+
+    if (fromRef.node_ == toRef.node_)
+        return;
+
+    if (fromRef.type_ == Detail::GraphPinViewType::Output)
+    {
+        if (toRef.type_ != Detail::GraphPinViewType::Input)
+            return;
+        //TODO: Check pin type
+    }
+    if (fromRef.type_ == Detail::GraphPinViewType::Exit && toRef.type_ != Detail::GraphPinViewType::Enter)
+        return;
+
+    auto action = MakeShared<CreateLinkAction>(this, from, to);
+    action->Redo();
+    PushAction(action);
 }
 
 void GraphViewTab::RenderContent()
