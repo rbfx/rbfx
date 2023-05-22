@@ -631,14 +631,29 @@ void GraphViewTab::CreateLink(const ax::NodeEditor::PinId& from, const ax::NodeE
     if (fromRef.node_ == toRef.node_)
         return;
 
+    auto* fromView = graph_.GetNode(fromRef.node_)->GetPinView(fromRef);
+    auto* toView = graph_.GetNode(toRef.node_)->GetPinView(fromRef);
+
     if (fromRef.type_ == Detail::GraphPinViewType::Output)
     {
         if (toRef.type_ != Detail::GraphPinViewType::Input)
             return;
-        //TODO: Check pin type
+        if (fromView->type_ != toView->type_)
+            return;
+        if (toView->link_)
+            DeleteLink(toView->link_);
     }
-    if (fromRef.type_ == Detail::GraphPinViewType::Exit && toRef.type_ != Detail::GraphPinViewType::Enter)
+    else if (fromRef.type_ == Detail::GraphPinViewType::Exit)
+    {
+        if (toRef.type_ != Detail::GraphPinViewType::Enter)
+            return;
+        if (fromView->link_)
+            DeleteLink(fromView->link_);
+    }
+    else
+    {
         return;
+    }
 
     auto action = MakeShared<CreateLinkAction>(this, from, to);
     action->Redo();
