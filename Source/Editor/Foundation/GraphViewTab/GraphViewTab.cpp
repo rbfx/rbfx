@@ -480,7 +480,7 @@ void GraphViewTab::RenderGraph()
         if (!applyLayout_)
         {
             auto newPos = ToVector2(ed::GetNodePosition(nodeId));
-            if (node.position_.Equals(newPos, 1.42f))
+            if (!node.position_.Equals(newPos, 0.1f))
             {
                 if (!moveNodesAction)
                     moveNodesAction = MakeShared<MoveNodesAction>(this);
@@ -811,7 +811,7 @@ void GraphViewTab::RenderContent()
         {
             auto nodeId = graph_.AddNode(node);
             auto* nodeView = graph_.GetNode(nodeId);
-            nodeView->position_ = Vector2(newNodePosition.x, newNodePosition.y);
+            nodeView->position_ = Vector2(static_cast<int>(newNodePosition.x), static_cast<int>(newNodePosition.y));
             PushAction(MakeShared<CreateNodeAction>(this, nodeView));
             applyLayout_ = true;
         }
