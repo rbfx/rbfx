@@ -2425,14 +2425,14 @@ bool Graphics::CreateDevice(int width, int height)
 
     SwapChainDesc swapChainDesc;
     swapChainDesc.DepthBufferFormat = TEX_FORMAT_D24_UNORM_S8_UINT;
-    if (impl_->renderBackend_ == RENDER_VULKAN)
+    if (impl_->renderBackend_ == RenderBackend::Vulkan)
     {
         swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_BGRA8_UNORM_SRGB : TEX_FORMAT_BGRA8_UNORM;
 #ifdef PLATFORM_MACOS
         swapChainDesc.DepthBufferFormat = TEX_FORMAT_D32_FLOAT_S8X24_UINT;
 #endif
     }
-    else if (impl_->renderBackend_ == RENDER_GL)
+    else if (impl_->renderBackend_ == RenderBackend::OpenGL)
     {
         // TODO(diligent): This is awful and unreliable. Must be fixed!
 #if URHO3D_PLATFORM_WEB
@@ -2472,7 +2472,7 @@ bool Graphics::CreateDevice(int width, int height)
         switch (impl_->renderBackend_)
         {
 #if D3D11_SUPPORTED
-        case RENDER_D3D11:
+        case RenderBackend::D3D11:
         {
             IEngineFactoryD3D11* factory = GetEngineFactoryD3D11();
             EngineD3D11CreateInfo engineCI;
@@ -2489,7 +2489,7 @@ bool Graphics::CreateDevice(int width, int height)
         break;
 #endif
 #if D3D12_SUPPORTED
-        case RENDER_D3D12:
+        case RenderBackend::D3D12:
         {
             IEngineFactoryD3D12* factory = GetEngineFactoryD3D12();
             factory->LoadD3D12();
@@ -2511,7 +2511,7 @@ bool Graphics::CreateDevice(int width, int height)
         break;
 #endif
 #if VULKAN_SUPPORTED
-        case RENDER_VULKAN:
+        case RenderBackend::Vulkan:
         {
             IEngineFactoryVk* factory = GetEngineFactoryVk();
             EngineVkCreateInfo engineCI;
@@ -2538,7 +2538,7 @@ bool Graphics::CreateDevice(int width, int height)
         break;
 #endif
 #if GL_SUPPORTED || GLES_SUPPORTED
-        case RENDER_GL:
+        case RenderBackend::OpenGL:
         {
             IEngineFactoryOpenGL* factory = GetEngineFactoryOpenGL();
             EngineGLCreateInfo engineCI;
@@ -2553,39 +2553,11 @@ bool Graphics::CreateDevice(int width, int height)
         }
         break;
 #endif
-        case RENDER_METAL:
+        default:
         {
-            /*
-#if defined(PLATFORM_MACOS) || defined(PLATFORM_TVOS) || defined(PLATFORM_IOS)
-            auto* factory = GetEngineFactoryMtl();
-            EngineMtlCreateInfo engineCI;
-            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
-
-            factory->CreateDeviceAndContextsMtl(
-                engineCI,
-                &impl_->device_,
-                &impl_->deviceContext_,
-            );
-            factory->CreateSwapChainMtl(
-                impl_->device_,
-                impl_->deviceContext_,
-                wnd,
-                &impl_->swapChain_
-            );
-
-#endif
-             */
-            // In Metal, FinishFrame must be called from the same thread
-            // that issued rendering commands. On MacOS, however, rendering
-            // happens in DisplayLinkCallback which is called from some other
-            // thread. To avoid issues with autorelease pool, we have to pop
-            // it now by calling FinishFrame.
-            // Same as Sample on Diligent:
-            // https://github.com/DiligentGraphics/DiligentSamples/blob/d064143f4867acf78ff83d55460d8c2bca266cf2/SampleBase/src/MacOS/SampleAppMacOS.mm#L71
-            impl_->deviceContext_->Flush();
-            impl_->deviceContext_->FinishFrame();
+            URHO3D_LOGWARNING("Unsupported render backend");
+            return false;
         }
-        break;
         }
 
         if (!impl_->device_ || !impl_->deviceContext_)

@@ -52,7 +52,7 @@ IndexBuffer::IndexBuffer(Context* context, bool forceHeadless) :
     if (!graphics_)
         shadowed_ = true;
 
-    if (graphics_ && (graphics_->GetRenderBackend() == RENDER_VULKAN || graphics_->GetRenderBackend() == RENDER_D3D12))
+    if (graphics_ && (graphics_->GetRenderBackend() == RenderBackend::Vulkan || graphics_->GetRenderBackend() == RenderBackend::D3D12))
         SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(IndexBuffer, HandleEndRendering));
 }
 

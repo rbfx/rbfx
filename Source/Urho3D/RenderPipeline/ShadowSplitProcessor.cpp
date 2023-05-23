@@ -341,7 +341,7 @@ Matrix4 ShadowSplitProcessor::GetWorldToShadowSpaceMatrix(float subPixelOffset) 
     offset.y_ += scale.y_;
 
     // Apply GAPI-specific transforms
-    if (renderBackend_ == RENDER_GL)
+    if (renderBackend_ == RenderBackend::OpenGL)
     {
         offset.z_ = 0.5f;
         scale.z_ = 0.5f;

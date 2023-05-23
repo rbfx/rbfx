@@ -73,7 +73,7 @@ Matrix4 CalculateSpotMatrix(Light* light, RenderBackend renderBackend)
     spotProj.m32_ = 1.0f;
 
     Matrix4 texAdjust;
-    if (renderBackend == RENDER_GL)
+    if (renderBackend == RenderBackend::OpenGL)
     {
         texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.5f));
         texAdjust.SetScale(Vector3(0.5f, -0.5f, 0.5f));
@@ -433,7 +433,7 @@ void LightProcessor::CookShaderParameters(Camera* cullCamera, const DrawableProc
         cookedParams_.shadowCubeUVBias_ =
             Vector2::ONE - 2.0f * cubeShadowMapPadding * cookedParams_.shadowMapInvSize_ / relativeViewportSize;
 
-        if (renderBackend_ == RENDER_GL)
+        if (renderBackend_ == RenderBackend::OpenGL)
         {
             const Vector2 scale = relativeViewportSize * Vector2(1, -1);
             const Vector2 offset = Vector2(0, 1) + relativeViewportOffset * Vector2(1, -1);

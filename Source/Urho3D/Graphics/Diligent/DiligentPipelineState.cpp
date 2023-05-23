@@ -631,7 +631,7 @@ using namespace Diligent;
 bool PipelineState::BuildPipeline(Graphics* graphics)
 {
     Diligent::IRenderDevice* renderDevice = graphics->GetImpl()->GetDevice();
-    const bool isOpenGL = graphics->GetRenderBackend() == RENDER_GL;
+    const bool isOpenGL = graphics->GetRenderBackend() == RenderBackend::OpenGL;
     const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
     URHO3D_ASSERT(isOpenGL || hasSeparableShaderPrograms);
 

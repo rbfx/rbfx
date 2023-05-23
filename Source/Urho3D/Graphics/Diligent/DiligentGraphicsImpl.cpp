@@ -42,7 +42,7 @@ GraphicsImpl::GraphicsImpl()
     */
     resolveTexture_(nullptr)
     , shaderProgram_(nullptr)
-    , renderBackend_(RENDER_D3D11)
+    , renderBackend_(RenderBackend::D3D11)
     , viewportDirty_(true)
     , adapterId_(M_MAX_UNSIGNED)
 {

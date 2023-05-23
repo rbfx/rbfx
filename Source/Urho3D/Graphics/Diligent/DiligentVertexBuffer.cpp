@@ -274,7 +274,7 @@ bool VertexBuffer::Create()
 
         // Note: Dynamic memory is created after first memory write on Vulkan backend
         // if map is not called, a error will show.
-        if (dynamic_ && graphics_->GetRenderBackend() == RENDER_VULKAN)
+        if (dynamic_ && graphics_->GetRenderBackend() == RenderBackend::Vulkan)
         {
             void* mappedData = nullptr;
             graphics_->GetImpl()->GetDeviceContext()->MapBuffer(buffer, MAP_WRITE, MAP_FLAG_NO_OVERWRITE, mappedData);
@@ -328,7 +328,7 @@ void VertexBuffer::UnmapBuffer()
 
 void VertexBuffer::HandleEndRendering(StringHash eventType, VariantMap& eventData)
 {
-    if (!(graphics_->GetRenderBackend() == RENDER_VULKAN || graphics_->GetRenderBackend() == RENDER_D3D12))
+    if (!(graphics_->GetRenderBackend() == RenderBackend::Vulkan || graphics_->GetRenderBackend() == RenderBackend::D3D12))
         return;
     if (dynamic_)
         dataLost_ = true;

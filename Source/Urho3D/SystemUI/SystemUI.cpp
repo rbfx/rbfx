@@ -96,18 +96,18 @@ void SystemUI::PlatformInitialize()
     const RenderBackend renderBackend = graphics->GetRenderBackend();
     switch (renderBackend)
     {
-    case RENDER_GL:
+    case RenderBackend::OpenGL:
     {
         ImGui_ImplSDL2_InitForOpenGL(sdlWindow, SDL_GL_GetCurrentContext());
         break;
     }
-    case RENDER_VULKAN:
+    case RenderBackend::Vulkan:
     {
         ImGui_ImplSDL2_InitForVulkan(sdlWindow);
         break;
     }
-    case RENDER_D3D11:
-    case RENDER_D3D12:
+    case RenderBackend::D3D11:
+    case RenderBackend::D3D12:
     {
         ImGui_ImplSDL2_InitForD3D(sdlWindow);
         break;

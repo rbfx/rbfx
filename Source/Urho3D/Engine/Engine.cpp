@@ -136,35 +136,35 @@ namespace
 RenderBackend GetDefaultRenderBackend()
 {
 #if URHO3D_PLATFORM_WINDOWS
-    return RENDER_D3D11;
+    return RenderBackend::D3D11;
 #endif
 #if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
-    return RENDER_D3D11;
+    return RenderBackend::D3D11;
 #endif
 
 #if URHO3D_PLATFORM_LINUX
-    return RENDER_GL;
+    return RenderBackend::OpenGL;
 #endif
 #if URHO3D_PLATFORM_ANDROID
-    return RENDER_GL;
+    return RenderBackend::OpenGL;
 #endif
 #if URHO3D_PLATFORM_RASPBERRY_PI
-    return RENDER_GL;
+    return RenderBackend::OpenGL;
 #endif
 
 #if URHO3D_PLATFORM_MACOS
     // TODO(diligent): Replace with Metal/Vulkan later?
-    return RENDER_GL;
+    return RenderBackend::OpenGL;
 #endif
 #if URHO3D_PLATFORM_IOS
-    return RENDER_GL;
+    return RenderBackend::OpenGL;
 #endif
 #if URHO3D_PLATFORM_TVOS
-    return RENDER_GL;
+    return RenderBackend::OpenGL;
 #endif
 
 #if URHO3D_PLATFORM_WEB
-    return RENDER_GL;
+    return RenderBackend::OpenGL;
 #endif
 }
 
@@ -175,20 +175,20 @@ RenderBackend GetRenderBackend(const Variant& requestedValue)
     {
         const RenderBackend requestedBackend = static_cast<RenderBackend>(requestedValue.GetInt());
 #if D3D11_SUPPORTED
-        if (requestedBackend == RENDER_D3D11)
-            backend = RENDER_D3D11;
+        if (requestedBackend == RenderBackend::D3D11)
+            backend = RenderBackend::D3D11;
 #endif
 #if D3D12_SUPPORTED
-        if (requestedBackend == RENDER_D3D12)
-            backend = RENDER_D3D12;
+        if (requestedBackend == RenderBackend::D3D12)
+            backend = RenderBackend::D3D12;
 #endif
 #if GL_SUPPORTED || GLES_SUPPORTED
-        if (requestedBackend == RENDER_GL)
-            backend = RENDER_GL;
+        if (requestedBackend == RenderBackend::OpenGL)
+            backend = RenderBackend::OpenGL;
 #endif
 #if VULKAN_SUPPORTED
-        if (requestedBackend == RENDER_VULKAN)
-            backend = RENDER_VULKAN;
+        if (requestedBackend == RenderBackend::Vulkan)
+            backend = RenderBackend::Vulkan;
 #endif
     }
     return backend;
@@ -1056,10 +1056,10 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->type_name("plugin");
     addFlag("--log-shader-sources", EP_SHADER_LOG_SOURCES, true, "Log shader sources into shader cache directory");
 
-    addFlag("--d3d11", EP_RENDER_BACKEND, static_cast<int>(RENDER_D3D11), "Use Direct3D11 rendering backend");
-    addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RENDER_D3D12), "Use Direct3D12 rendering backend");
-    addFlag("--opengl", EP_RENDER_BACKEND, static_cast<int>(RENDER_GL), "Use OpenGL rendering backend");
-    addFlag("--vulkan", EP_RENDER_BACKEND, static_cast<int>(RENDER_VULKAN), "Use Vulkan rendering backend");
+    addFlag("--d3d11", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D11), "Use Direct3D11 rendering backend");
+    addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D12), "Use Direct3D12 rendering backend");
+    addFlag("--opengl", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::OpenGL), "Use OpenGL rendering backend");
+    addFlag("--vulkan", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::Vulkan), "Use Vulkan rendering backend");
 }
 #endif
 

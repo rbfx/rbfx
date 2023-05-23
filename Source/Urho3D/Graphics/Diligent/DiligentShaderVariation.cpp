@@ -30,12 +30,12 @@ TargetShaderLanguage GetTargetShaderLanguage(RenderBackend renderBackend)
 {
     switch (renderBackend)
     {
-    case RENDER_D3D11:
-    case RENDER_D3D12: //
+    case RenderBackend::D3D11:
+    case RenderBackend::D3D12: //
         return TargetShaderLanguage::HLSL_5_0;
-    case RENDER_VULKAN: //
+    case RenderBackend::Vulkan: //
         return TargetShaderLanguage::VULKAN_1_0;
-    case RENDER_GL:
+    case RenderBackend::OpenGL:
 #if GLES_SUPPORTED
         return TargetShaderLanguage::GLSL_ES_3_0;
 #else
@@ -51,12 +51,12 @@ ea::string GetCompiledShaderMIME(RenderBackend renderBackend)
 {
     switch (renderBackend)
     {
-    case RENDER_D3D11:
-    case RENDER_D3D12: //
+    case RenderBackend::D3D11:
+    case RenderBackend::D3D12: //
         return "application/hlsl-bin";
-    case RENDER_VULKAN: //
+    case RenderBackend::Vulkan: //
         return "application/spirv";
-    case RENDER_GL:
+    case RenderBackend::OpenGL:
         return "application/glsl";
     default: //
         URHO3D_ASSERT(0);
@@ -216,7 +216,7 @@ ea::string ShaderVariation::GetCachedVariationName(ea::string_view extension) co
         "compute",
     };
 
-    static const ea::string backendSuffix[] = {
+    static const ea::string backendNames[] = {
         "d3d11",
         "d3d12",
         "opengl",
@@ -225,16 +225,16 @@ ea::string ShaderVariation::GetCachedVariationName(ea::string_view extension) co
     };
 
     const RenderBackend backend = graphics_->GetRenderBackend();
+    const ea::string& backendName = backendNames[static_cast<unsigned>(backend)];
     const ea::string shortName = GetFileName(owner_->GetName());
     const StringHash definesHash{defines_};
-    return Format(
-        "{}_{}_{}_{}.{}", shortName, typeSuffix[type_], definesHash.ToString(), backendSuffix[backend], extension);
+    return Format("{}_{}_{}_{}.{}", shortName, typeSuffix[type_], definesHash.ToString(), backendName, extension);
 }
 
 bool ShaderVariation::NeedShaderTranslation() const
 {
     const RenderBackend backend = graphics_->GetRenderBackend();
-    if (backend == RENDER_GL)
+    if (backend == RenderBackend::OpenGL)
     {
         const ShaderTranslationPolicy policy = graphics_->GetPolicyGLSL();
         return policy != ShaderTranslationPolicy::Verbatim;
@@ -248,15 +248,15 @@ bool ShaderVariation::NeedShaderOptimization() const
     const RenderBackend backend = graphics_->GetRenderBackend();
     switch (backend)
     {
-    case RENDER_VULKAN:
+    case RenderBackend::Vulkan:
         // TODO(diligent): Revisit this. Can we not optimize SPIRV? Does glslang provide legalized SPIRV?
         return true;
 
-    case RENDER_GL: //
+    case RenderBackend::OpenGL: //
         return graphics_->GetPolicyGLSL() == ShaderTranslationPolicy::Optimize;
 
-    case RENDER_D3D11:
-    case RENDER_D3D12:
+    case RenderBackend::D3D11:
+    case RenderBackend::D3D12:
         return graphics_->GetPolicyHLSL() == ShaderTranslationPolicy::Optimize;
 
     default:
@@ -321,7 +321,7 @@ ea::string ShaderVariation::PrepareGLSLShaderCode(const ea::string& originalShad
 #endif
 
     // TODO(diligent): Revisit this define
-    if (renderBackend == RENDER_D3D11 || renderBackend == RENDER_D3D12 || renderBackend == RENDER_VULKAN)
+    if (renderBackend == RenderBackend::D3D11 || renderBackend == RenderBackend::D3D12 || renderBackend == RenderBackend::Vulkan)
         shaderCode += "#define D3D11\n";
 
     // When version define found, do not insert it a second time
@@ -393,7 +393,7 @@ bool ShaderVariation::ProcessShaderSource(ea::string_view& translatedSource, con
             }
 
             translatedSource = targetShader.sourceCode_;
-            if (renderBackend == RENDER_D3D11 || renderBackend == RENDER_D3D12)
+            if (renderBackend == RenderBackend::D3D11 || renderBackend == RenderBackend::D3D12)
             {
                 // On D3D backends, compile the translated source code
                 static thread_local ByteVector hlslBytecode;
@@ -432,27 +432,26 @@ Diligent::IShader* ShaderVariation::CreateShader(const CompiledShaderVariation& 
 
     switch (graphics_->GetRenderBackend())
     {
-    case RENDER_D3D11:
-    case RENDER_D3D12:
+    case RenderBackend::D3D11:
+    case RenderBackend::D3D12:
     {
         createInfo.ByteCode = compiledShader.bytecode_.data();
         createInfo.ByteCodeSize = compiledShader.bytecode_.size();
         break;
     }
-    case RENDER_GL:
+    case RenderBackend::OpenGL:
     {
         createInfo.SourceLanguage = Diligent::SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM;
         createInfo.Source = reinterpret_cast<const Diligent::Char*>(compiledShader.bytecode_.data());
         createInfo.SourceLength = compiledShader.bytecode_.size();
         break;
     }
-    case RENDER_VULKAN:
+    case RenderBackend::Vulkan:
     {
         createInfo.ByteCode = compiledShader.bytecode_.data();
         createInfo.ByteCodeSize = compiledShader.bytecode_.size();
         break;
     }
-    case RENDER_METAL:
     default:
     {
         URHO3D_ASSERT(0, "Not implemented");

@@ -42,14 +42,17 @@ class Vector3;
 #define DESKTOP_GRAPHICS
 //#endif
 
-///
-enum RenderBackend
+/// GAPI used for rendering.
+enum class RenderBackend
 {
-    RENDER_D3D11 = 0,
-    RENDER_D3D12,
-    RENDER_GL,
-    RENDER_VULKAN,
-    RENDER_METAL
+    /// Direct3D 11.1 or later.
+    D3D11,
+    /// Direct3D 12.0 for SDK 10.0.17763.0 or later.
+    D3D12,
+    /// OpenGL 4.1 (for Desktop) or OpenGL ES 3.0 (for mobiles) or later.
+    OpenGL,
+    /// Vulkan 1.0 or later.
+    Vulkan,
 };
 
 /// Primitive type.

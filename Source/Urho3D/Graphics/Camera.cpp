@@ -467,7 +467,7 @@ Matrix4 Camera::GetGPUProjection(bool ignoreFlip) const
 {
     Matrix4 ret = GetProjection(ignoreFlip);
 
-    const bool isOpenGL = graphics_ && graphics_->GetRenderBackend() == RENDER_GL;
+    const bool isOpenGL = graphics_ && graphics_->GetRenderBackend() == RenderBackend::OpenGL;
     if (isOpenGL)
     {
         ret.m20_ = 2.0f * ret.m20_ - ret.m30_;
@@ -485,7 +485,7 @@ Matrix4 Camera::GetEffectiveGPUViewProjection(float constantDepthBias) const
 
     // glPolygonOffset is not supported in GL ES 2.0
     // TODO(diligent): It is supported in GL ES 3.0, get rid of this hack
-    const bool isOpenGL = graphics_ && graphics_->GetRenderBackend() == RENDER_GL;
+    const bool isOpenGL = graphics_ && graphics_->GetRenderBackend() == RenderBackend::OpenGL;
     if (isOpenGL)
     {
         const float constantBias = 2.0f * constantDepthBias;
