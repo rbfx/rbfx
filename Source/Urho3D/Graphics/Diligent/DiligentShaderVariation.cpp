@@ -76,7 +76,7 @@ template <class T> ConstByteSpan ToByteSpan(const T& value)
 
 void ShaderVariation::OnDeviceLost()
 {
-    // No-op on Direct3D11
+    object_ = nullptr;
 }
 
 bool ShaderVariation::Create()

@@ -67,6 +67,9 @@ public:
     /// Implementation of ISwapChain::SetWindowedMode() in Vulkan backend.
     virtual void DILIGENT_CALL_TYPE SetWindowedMode() override final;
 
+    /// Implementation of ISwapChainVk::GetVkSurface().
+    virtual VkSurfaceKHR DILIGENT_CALL_TYPE GetVkSurface() override final { return m_VkSurface; }
+
     /// Implementation of ISwapChainVk::GetVkSwapChain().
     virtual VkSwapchainKHR DILIGENT_CALL_TYPE GetVkSwapChain() override final { return m_VkSwapChain; }
 

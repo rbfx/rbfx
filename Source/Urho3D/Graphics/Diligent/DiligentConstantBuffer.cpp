@@ -34,7 +34,8 @@ namespace Urho3D
 
 void ConstantBuffer::OnDeviceReset()
 {
-    // No-op on Direct3D11
+    if (size_)
+        SetSize(size_); // Recreate
 }
 
 void ConstantBuffer::Release()

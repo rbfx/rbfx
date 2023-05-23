@@ -21,6 +21,17 @@
 namespace Urho3D
 {
 
+/// Window mode.
+enum class WindowMode
+{
+    /// Windowed.
+    Windowed,
+    /// Borderless "full-screen" window.
+    Borderless,
+    /// Native full-screen.
+    Fullscreen,
+};
+
 /// Texture format, equivalent to Diligent::TEXTURE_FORMAT.
 /// TODO(diligent): Use stricter typing?
 using TextureFormat = Diligent::TEXTURE_FORMAT;

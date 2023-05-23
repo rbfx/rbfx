@@ -45,12 +45,35 @@ namespace Urho3D
 
 void TextureCube::OnDeviceLost()
 {
-    // No-op on Direct3D11
+    object_ = nullptr;
+    shaderResourceView_ = nullptr;
+    sampler_ = nullptr;
+    resolveTexture_ = nullptr;
+
+    for (auto& renderSurface : renderSurfaces_)
+    {
+        if (renderSurface)
+            renderSurface->OnDeviceLost();
+    }
 }
 
 void TextureCube::OnDeviceReset()
 {
-    // No-op on Direct3D11
+    if (!object_ || dataPending_)
+    {
+        // If has a resource file, reload through the resource cache. Otherwise just recreate.
+        auto* cache = GetSubsystem<ResourceCache>();
+        if (cache->Exists(GetName()))
+            dataLost_ = !cache->ReloadResource(this);
+
+        if (!object_)
+        {
+            Create();
+            dataLost_ = true;
+        }
+    }
+
+    dataPending_ = false;
 }
 
 void TextureCube::Release()

@@ -28,6 +28,17 @@ const ea::string shaderInputsNames[] = {
 
 }
 
+const ea::string& ToString(RenderBackend backend)
+{
+    static const StringVector backendNames = {
+        "D3D11",
+        "D3D12",
+        "OpenGL",
+        "Vulkan",
+    };
+    return backendNames[static_cast<unsigned>(backend)];
+}
+
 ea::optional<VertexShaderAttribute> ParseVertexAttribute(ea::string_view name)
 {
     for (unsigned index = 0; index < URHO3D_ARRAYSIZE(shaderInputsNames); ++index)

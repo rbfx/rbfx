@@ -34,6 +34,7 @@
 #include "../Math/Plane.h"
 #include "../Math/Rect.h"
 #include "../Resource/Image.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 struct SDL_Window;
 
@@ -62,6 +63,7 @@ class VertexBuffer;
 class VertexDeclaration;
 class PipelineState;
 class ShaderResourceBinding;
+class RenderDevice;
 
 struct ShaderParameter;
 
@@ -80,17 +82,6 @@ struct ScratchBuffer
     unsigned size_;
     /// Reserved flag.
     bool reserved_;
-};
-
-/// Window mode.
-enum class WindowMode
-{
-    /// Windowed.
-    Windowed,
-    /// Borderless "full-screen" window.
-    Borderless,
-    /// Native full-screen.
-    Fullscreen,
 };
 
 /// Screen mode parameters.
@@ -793,6 +784,11 @@ public:
     /// TODO(diligent): Revisit
     void PrepareDraw();
 
+    /// Getters.
+    /// @{
+    RenderDevice* GetRenderDevice() const { return renderDevice_.Get(); }
+    /// @}
+
 private:
     /// Create the application window.
     bool OpenWindow(int width, int height, bool resizable, bool borderless);
@@ -806,8 +802,6 @@ private:
     void AdjustWindow(int& newWidth, int& newHeight, WindowMode& newWindowMode, int& monitor);
     /// Create the Direct3D11 device and swap chain. Requires an open window. Can also be called again to recreate swap chain. Return true on success.
     bool CreateDevice(int width, int height);
-    /// Update Direct3D11 swap chain state for a new mode and create views for the backbuffer & default depth buffer. Return true on success.
-    bool UpdateSwapChain(int width, int height);
     /// Check supported rendering features.
     void CheckFeatureSupport();
     /// Reset cached rendering state.
@@ -1010,6 +1004,8 @@ private:
     ea::string globalShaderDefines_;
     /// Hash of global shader defines.
     StringHash globalShaderDefinesHash_;
+
+    SharedPtr<RenderDevice> renderDevice_;
 
     bool logShaderSources_{};
     ShaderTranslationPolicy policyGlsl_{ShaderTranslationPolicy::Verbatim};

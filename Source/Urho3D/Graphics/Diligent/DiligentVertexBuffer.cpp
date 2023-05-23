@@ -35,12 +35,20 @@ namespace Urho3D
 
 void VertexBuffer::OnDeviceLost()
 {
-    // No-op on Direct3D11
+    object_ = nullptr;
 }
 
 void VertexBuffer::OnDeviceReset()
 {
-    // No-op on Direct3D11
+    if (!object_)
+    {
+        Create();
+        dataLost_ = !UpdateToGPU();
+    }
+    else if (dataPending_)
+        dataLost_ = !UpdateToGPU();
+
+    dataPending_ = false;
 }
 
 void VertexBuffer::Release()

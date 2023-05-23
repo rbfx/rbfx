@@ -44,6 +44,7 @@
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
 #include "../../RenderAPI/OpenGLIncludes.h"
+#include "../../RenderAPI/RenderDevice.h"
 
 // TODO(diligent): This is Web-only, revisit
 // @{
@@ -377,12 +378,10 @@ Graphics::Graphics(Context* context)
     SetTextureUnitMappings();
     ResetCachedState();
 
+    // TODO(diligent): Revisit this
+    //SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
     SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
     context_->RequireSDL(SDL_INIT_VIDEO);
-
-#ifdef PLATFORM_MACOS
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
-#endif
 
     Diligent::SetDebugMessageCallback(&HandleDbgMessageCallbacks);
 }
@@ -396,16 +395,16 @@ Graphics::~Graphics()
     impl_->deviceContext_->SetVertexBuffers(0, 0, nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     impl_->deviceContext_->Flush();
 
-    if (impl_->device_)
-    {
-        impl_->device_->IdleGPU();
-
-        if (impl_->swapChain_)
-            impl_->swapChain_->Release();
-
-        impl_->deviceContext_->Release();
-        impl_->device_->Release();
-    }
+//    if (impl_->device_)
+//    {
+//        impl_->device_->IdleGPU();
+//
+//        if (impl_->swapChain_)
+//            impl_->swapChain_->Release();
+//
+//        impl_->deviceContext_->Release();
+//        impl_->device_->Release();
+//    }
     //{
     //    MutexLock lock(gpuObjectMutex_);
 
@@ -445,20 +444,20 @@ Graphics::~Graphics()
     // URHO3D_SAFE_RELEASE(impl_->deviceContext_);
     // URHO3D_SAFE_RELEASE(impl_->device_);
 
-#ifdef PLATFORM_MACOS
-    if (impl_->metalView_)
-    {
-        SDL_Metal_DestroyView(impl_->metalView_);
-        impl_->metalView_ = nullptr;
-    }
-#endif
-
-    if (window_)
-    {
-        SDL_ShowCursor(SDL_TRUE);
-        SDL_DestroyWindow(window_);
-        window_ = nullptr;
-    }
+//#ifdef PLATFORM_MACOS
+//    if (impl_->metalView_)
+//    {
+//        SDL_Metal_DestroyView(impl_->metalView_);
+//        impl_->metalView_ = nullptr;
+//    }
+//#endif
+//
+//    if (window_)
+//    {
+//        SDL_ShowCursor(SDL_TRUE);
+//        SDL_DestroyWindow(window_);
+//        window_ = nullptr;
+//    }
 
     delete impl_;
     impl_ = nullptr;
@@ -469,6 +468,63 @@ Graphics::~Graphics()
 bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& params, bool maximize)
 {
     URHO3D_PROFILE("SetScreenMode");
+
+    // TODO(diligent): Get rid of ScreenModeParams
+    const auto toWindowSettings = [&](int width, int height, const ScreenModeParams& params)
+    {
+        WindowSettings result;
+        result.mode_ = params.windowMode_;
+        result.size_ = IntVector2{width, height};
+        result.resizable_ = params.resizable_;
+        result.monitor_ = params.monitor_;
+        result.vSync_ = params.vsync_;
+        result.refreshRate_ = params.refreshRate_;
+        result.multiSample_ = params.multiSample_;
+        result.sRGB_ = sRGB_;
+        result.orientations_ = orientations_.split(' ');
+        return result;
+    };
+
+    if (!renderDevice_)
+    {
+        RenderDeviceSettings settings;
+
+        settings.backend_ = GetRenderBackend();
+        settings.window_ = toWindowSettings(width, height, params);
+        settings.gpuDebug_ = params.gpuDebug_;
+        if (impl_->adapterId_ != M_MAX_UNSIGNED)
+            settings.adapterId_ = impl_->adapterId_;
+
+        try
+        {
+            renderDevice_ = MakeShared<RenderDevice>(context_, settings);
+        }
+        catch (const RuntimeException& ex)
+        {
+            URHO3D_LOGERROR("Failed to create render device: {}", ex.what());
+            return false;
+        }
+
+        renderDevice_->OnDeviceLost.Subscribe(this, [this]()
+        {
+            impl_->shaderPrograms_.clear();
+            for (GPUObject* gpuObject : gpuObjects_)
+                gpuObject->OnDeviceLost();
+            SendEvent(E_DEVICELOST);
+        });
+        renderDevice_->OnDeviceRestored.Subscribe(this, [this]()
+        {
+            for (GPUObject* gpuObject : gpuObjects_)
+                gpuObject->OnDeviceReset();
+            SendEvent(E_DEVICERESET);
+        });
+    }
+    else
+    {
+        renderDevice_->UpdateWindowSettings(toWindowSettings(width, height, params));
+    }
+
+#if 0
     // Ensure that parameters are properly filled
     ScreenModeParams newParams = params;
     AdjustScreenMode(width, height, newParams, maximize);
@@ -491,7 +547,7 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
             return false;
     }
 
-    AdjustWindow(width, height, newParams.windowMode_, newParams.monitor_);
+    //AdjustWindow(width, height, newParams.windowMode_, newParams.monitor_);
 
     if (screenParams_.resizable_ != newParams.resizable_)
         SDL_SetWindowResizable(window_, (SDL_bool)newParams.resizable_);
@@ -502,22 +558,39 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
         SDL_GetWindowSize(window_, &width, &height);
     }
 
-    const int oldMultiSample = screenParams_.multiSample_;
-    screenParams_ = newParams;
-
     if (!impl_->device_ || screenParams_.multiSample_ != oldMultiSample)
         CreateDevice(width, height);
-    UpdateSwapChain(width, height);
+#endif
+
+    const int oldMultiSample = screenParams_.multiSample_;
+    screenParams_ = params;
+
+    window_ = renderDevice_->GetSDLWindow();
+    sRGB_ = renderDevice_->GetSettings().window_.sRGB_;
+    screenParams_.vsync_ = renderDevice_->GetSettings().window_.vSync_;
+    screenParams_.refreshRate_ = renderDevice_->GetSettings().window_.refreshRate_;
+    impl_->device_ = renderDevice_->GetRenderDevice();
+    impl_->deviceContext_ = renderDevice_->GetDeviceContext();
+    impl_->swapChain_ = renderDevice_->GetSwapChain();
+
+    CheckFeatureSupport();
+    ResetRenderTargets();
+
+    auto size = renderDevice_->GetSwapChainSize();
+    width_ = size.x_;
+    height_ = size.y_;
+
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+        impl_->renderTargetViews_[i] = nullptr;
+    impl_->renderTargetsDirty_ = true;
 
     //// Clear the initial window contents to black
     Clear(CLEAR_COLOR);
+    renderDevice_->Present();
 
-    // TODO(diligent): Revisit this
-#if URHO3D_PLATFORM_WEB
-    SDL_GL_SwapWindow(window_);
-#else
-    impl_->swapChain_->Present(0);
-#endif
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+        impl_->renderTargetViews_[i] = nullptr;
+    impl_->renderTargetsDirty_ = true;
 
     OnScreenModeChanged();
     return true;
@@ -570,12 +643,12 @@ void Graphics::Close()
     if (impl_->deviceContext_)
         impl_->deviceContext_->Flush();
 
-    if (window_)
-    {
-        SDL_ShowCursor(SDL_TRUE);
-        SDL_DestroyWindow(window_);
-        window_ = nullptr;
-    }
+    //if (window_)
+    //{
+    //    SDL_ShowCursor(SDL_TRUE);
+    //    SDL_DestroyWindow(window_);
+    //    window_ = nullptr;
+    //}
 }
 
 bool Graphics::TakeScreenShot(Image& destImage)
@@ -700,16 +773,10 @@ void Graphics::EndFrame()
 
         SendEvent(E_ENDRENDERING);
 
-        // TODO(diligent): Revisit this
-#if URHO3D_PLATFORM_WEB
-        SDL_GL_SwapWindow(window_);
-#else
-        impl_->swapChain_->Present(screenParams_.vsync_ ? 1 : 0);
-#endif
+        renderDevice_->Present();
 
-        ITextureView* currentTexture = impl_->swapChain_->GetCurrentBackBufferRTV();
-        if (currentTexture == impl_->renderTargetViews_[0])
-            impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
+        for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+            impl_->renderTargetViews_[i] = nullptr;
         impl_->renderTargetsDirty_ = true;
     }
 
@@ -1475,7 +1542,11 @@ void Graphics::SetDefaultTextureAnisotropy(unsigned level)
 
 void Graphics::Restore()
 {
-    // No-op on Direct3D11
+    if (renderDevice_)
+    {
+        if (!renderDevice_->Restore())
+            renderDevice_ = nullptr;
+    }
 }
 
 void Graphics::SetTextureParametersDirty()
@@ -1970,16 +2041,18 @@ bool Graphics::IsDeviceLost() const
 
 void Graphics::OnWindowResized()
 {
-    if (!impl_->device_ || !window_)
+    if (!renderDevice_ || GetPlatform() == PlatformId::Web)
         return;
 
-    int newWidth, newHeight;
+    renderDevice_->UpdateSwapChainSize();
 
-    SDL_GetWindowSize(window_, &newWidth, &newHeight);
-    if (newWidth == width_ && newHeight == height_)
-        return;
+    auto size = renderDevice_->GetSwapChainSize();
+    width_ = size.x_;
+    height_ = size.y_;
 
-    UpdateSwapChain(newWidth, newHeight);
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+        impl_->renderTargetViews_[i] = nullptr;
+    impl_->renderTargetsDirty_ = true;
 
     // Reset rendertargets and viewport for the new screen size
     ResetRenderTargets();
@@ -2545,8 +2618,10 @@ bool Graphics::CreateDevice(int width, int height)
             engineCI.Window = wnd;
             engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
 
-            factory->CreateDeviceAndSwapChainGL(
-                engineCI, &impl_->device_, &impl_->deviceContext_, swapChainDesc, &impl_->swapChain_);
+            factory->AttachToActiveGLContext(engineCI, &impl_->device_, &impl_->deviceContext_);
+
+            //factory->CreateDeviceAndSwapChainGL(
+            //    engineCI, &impl_->device_, &impl_->deviceContext_, swapChainDesc, &impl_->swapChain_);
 
             gl3Support = true;
             engineFactory = factory;
@@ -2578,33 +2653,6 @@ bool Graphics::CreateDevice(int width, int height)
         return false;
     }
 
-    return true;
-}
-
-bool Graphics::UpdateSwapChain(int width, int height)
-{
-    // Don't update swapchain if width and height has the same size.
-    if (width_ == width || height_ == height)
-        return true;
-    // If swapchain has been recent created, size of this will be the same as arguments
-    // In this case, we don't update swapchain and only update width and height properties.
-    if (impl_->swapChain_->GetDesc().Width == width || impl_->swapChain_->GetDesc().Height == height)
-    {
-        width_ = width;
-        height_ = height;
-        return true;
-    }
-    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-        impl_->renderTargetViews_[i] = nullptr;
-    impl_->renderTargetsDirty_ = true;
-
-    impl_->swapChain_->Resize(width, height);
-
-    // Update internally held backbuffer size
-    width_ = width;
-    height_ = height;
-
-    ResetRenderTargets();
     return true;
 }
 

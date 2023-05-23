@@ -693,6 +693,6 @@ private:
 #endif
 };
 
-#define NEW_RC_OBJ(Allocator, Desc, Type, ...) MakeNewRCObj<Type, typename std::remove_reference<decltype(Allocator)>::type>(Allocator, Desc, __FILE__, __LINE__, ##__VA_ARGS__)
+#define NEW_RC_OBJ(Allocator, Desc, Type, ...) Diligent::MakeNewRCObj<Type, typename std::remove_reference<decltype(Allocator)>::type>(Allocator, Desc, __FILE__, __LINE__, ##__VA_ARGS__)
 
 } // namespace Diligent

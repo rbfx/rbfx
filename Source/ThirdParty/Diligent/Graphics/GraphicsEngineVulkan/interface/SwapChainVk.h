@@ -49,6 +49,9 @@ static const INTERFACE_ID IID_SwapChainVk =
 /// Exposes Vulkan-specific functionality of a swap chain.
 DILIGENT_BEGIN_INTERFACE(ISwapChainVk, ISwapChain)
 {
+    /// Returns a Vulkan handle to the internal surface object.
+    VIRTUAL VkSurfaceKHR METHOD(GetVkSurface)(THIS) PURE;
+
     /// Returns a Vulkan handle to the internal swap chain object.
     VIRTUAL VkSwapchainKHR METHOD(GetVkSwapChain)(THIS) PURE;
 };

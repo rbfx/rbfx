@@ -32,12 +32,16 @@ namespace Urho3D
 
 void ComputeBuffer::OnDeviceLost()
 {
-    // nothing to do here on Diligent
+    dataLost_ = true;
+    Release();
 }
 
 void ComputeBuffer::OnDeviceReset()
 {
-    // nothing to do here on Diligent
+    // ComputeBuffers do not attempt to restore with a shadow or such.
+    if (dataLost_)
+        SetSize(size_, structureSize_);
+    dataLost_ = false;
 }
 
 void ComputeBuffer::Release()

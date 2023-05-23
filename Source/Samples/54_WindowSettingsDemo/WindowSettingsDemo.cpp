@@ -28,10 +28,12 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/RenderAPI/RenderDevice.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/CheckBox.h>
 #include <Urho3D/UI/DropDownList.h>
+#include <Urho3D/UI/ListView.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/ToolTip.h>
 #include <Urho3D/UI/UIEvents.h>
@@ -144,8 +146,12 @@ void WindowSettingsDemo::InitSettings()
     }
 
     // Create resolution selector
-    resolutionControl_ = window_->CreateChild<DropDownList>("Resolution");
-    resolutionControl_->SetMinHeight(24);
+    resolutionLabel_ = window_->CreateChild<Text>("Resolution Label");
+    resolutionLabel_->SetText("???");
+    resolutionLabel_->SetStyleAuto();
+
+    resolutionControl_ = window_->CreateChild<ListView>("Resolution");
+    resolutionControl_->SetMinHeight(256);
     resolutionControl_->SetStyleAuto();
 
     auto resolutionPlaceholder = MakeShared<Text>(context_);
@@ -236,13 +242,15 @@ void WindowSettingsDemo::InitSettings()
     SubscribeToEvent(applyButton, E_RELEASED,
         [this, graphics]
     {
+        RenderDevice* renderDevice = graphics->GetRenderDevice();
+
         const unsigned monitor = monitorControl_->GetSelection();
         if (monitor == M_MAX_UNSIGNED)
             return;
 
-        const auto& resolutions = graphics->GetResolutions(monitor);
-        const unsigned selectedResolution = resolutionControl_->GetSelection();
-        if (selectedResolution >= resolutions.size())
+        const auto& fullscreenModes = RenderDevice::GetFullscreenModes(monitor);
+        const unsigned selectedMode = resolutionControl_->GetSelection();
+        if (selectedMode >= fullscreenModes.size())
             return;
 
         const bool fullscreen = fullscreenControl_->IsChecked();
@@ -257,9 +265,10 @@ void WindowSettingsDemo::InitSettings()
         const bool highDPI = graphics->GetHighDPI();
         const bool tripleBuffer = graphics->GetTripleBuffer();
 
-        const int width = resolutions[selectedResolution].x_;
-        const int height = resolutions[selectedResolution].y_;
-        const int refreshRate = resolutions[selectedResolution].z_;
+        const float dpiScale = fullscreen ? 1.0 : renderDevice->GetDpiScale();
+        const int width = RoundToInt(fullscreenModes[selectedMode].size_.x_ / dpiScale);
+        const int height = RoundToInt(fullscreenModes[selectedMode].size_.y_ / dpiScale);
+        const int refreshRate = fullscreenModes[selectedMode].refreshRate_;
         graphics->SetMode(width, height, fullscreen, borderless, resizable, highDPI, vsync, tripleBuffer, multiSample, monitor, refreshRate, false);
     });
 }
@@ -267,6 +276,7 @@ void WindowSettingsDemo::InitSettings()
 void WindowSettingsDemo::SynchronizeSettings()
 {
     auto* graphics = GetSubsystem<Graphics>();
+    RenderDevice* renderDevice = graphics->GetRenderDevice();
 
     // Synchronize monitor
     const unsigned currentMonitor = graphics->GetMonitor();
@@ -274,20 +284,23 @@ void WindowSettingsDemo::SynchronizeSettings()
 
     // Synchronize resolution list
     resolutionControl_->RemoveAllItems();
-    const auto& resolutions = graphics->GetResolutions(currentMonitor);
-    for (const IntVector3& resolution : resolutions)
+    const auto& fullscreenModes = RenderDevice::GetFullscreenModes(currentMonitor);
+    for (const FullscreenMode& mode : fullscreenModes)
     {
         auto resolutionEntry = MakeShared<Text>(context_);
-        resolutionEntry->SetText(ToString("%dx%d, %d Hz", resolution.x_, resolution.y_, resolution.z_));
+        resolutionEntry->SetText(ToString("%dx%d, %d Hz", mode.size_.x_, mode.size_.y_, mode.refreshRate_));
         resolutionEntry->SetMinWidth(CeilToInt(resolutionEntry->GetRowWidth(0) + 10));
         resolutionControl_->AddItem(resolutionEntry);
-        resolutionEntry->SetStyleAuto();
+        resolutionEntry->SetStyle("FileSelectorListText");
     }
 
     // Synchronize selected resolution
-    const unsigned currentResolution = graphics->FindBestResolutionIndex(currentMonitor,
-        graphics->GetWidth(), graphics->GetHeight(), graphics->GetRefreshRate());
-    resolutionControl_->SetSelection(currentResolution);
+    const IntVector2 currentSwapChainSize = renderDevice->GetSwapChainSize();
+    const FullscreenMode currentMode{currentSwapChainSize, graphics->GetRefreshRate()};
+    const unsigned currentModeIndex = RenderDevice::GetClosestFullscreenModeIndex(fullscreenModes, currentMode);
+    resolutionControl_->SetSelection(currentModeIndex);
+    resolutionLabel_->SetText(
+        Format("Current: {}x{}, {} Hz", currentMode.size_.x_, currentMode.size_.y_, currentMode.refreshRate_));
 
     // Synchronize fullscreen and borderless flags
     fullscreenControl_->SetChecked(graphics->GetFullscreen());

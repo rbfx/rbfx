@@ -765,6 +765,7 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
         }
     };
 
+    // TODO(diligent): This is incorrect! We should patch diligent so we need to change GraphicsPipelineStateCreateInfo only!
     ci.GLPatchVertexLayoutCallbackUserData = &patchInputLayout;
     ci.GLPatchVertexLayoutCallback = [](GLuint programObject,
         Diligent::Uint32* numElements, Diligent::LayoutElement* elements,

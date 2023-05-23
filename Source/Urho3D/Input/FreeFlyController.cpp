@@ -384,7 +384,9 @@ void FreeFlyController::HandleKeyboardMouseAndJoysticks(float timeStep)
     for (unsigned joystickIndex = 0; joystickIndex < numJoysticks; ++joystickIndex)
     {
         const auto state = input->GetJoystickByIndex(joystickIndex);
-        if (state)
+        const bool isAccelerometer =
+            state->GetNumAxes() == 3 && state->GetNumButtons() == 0 && state->GetNumHats() == 0;
+        if (state && !isAccelerometer)
         {
             switch (state->type_)
             {

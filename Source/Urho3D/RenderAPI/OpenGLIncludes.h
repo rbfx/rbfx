@@ -7,13 +7,21 @@
 #include <Urho3D/Urho3D.h>
 
 #if GL_SUPPORTED || GLES_SUPPORTED
-    #if defined(IOS) || defined(TVOS)
+    #if URHO3D_PLATFORM_IOS || URHO3D_PLATFORM_TVOS
         #include <OpenGLES/ES3/gl.h>
         #include <OpenGLES/ES3/glext.h>
-    #elif defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
+    #elif URHO3D_PLATFORM_MACOS
+        #ifndef GLEW_STATIC
+            #define GLEW_STATIC
+        #endif
+        #ifndef GLEW_NO_GLU
+            #define GLEW_NO_GLU
+        #endif
+        #include <GL/glew.h>
+    #elif URHO3D_PLATFORM_ANDROID
         #include <GLES3/gl3.h>
         #include <GLES3/gl3ext.h>
-    #elif defined(__EMSCRIPTEN__)
+    #elif URHO3D_PLATFORM_WEB
         #include <GLES3/gl32.h>
     #else
         #include <GL/glew.h>

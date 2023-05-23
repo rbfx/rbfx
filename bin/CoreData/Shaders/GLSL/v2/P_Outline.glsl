@@ -54,7 +54,7 @@ void main()
     half edge = edgeScale * max(max(edge4.r, edge4.g), max(edge4.b, edge4.a));
 #else
     // Simple edge detection based on alpha
-    half edge = sin(averageAlpha * 3.1415926535897932384626433832795);
+    half edge = sin(averageAlpha * M_PI);
 #endif
 
     half3 color = averageColor / max(0.001, averageAlpha);

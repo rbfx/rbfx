@@ -987,7 +987,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--nothreads", EP_WORKER_THREADS, false, "Disable multithreading");
     addFlag("-v,--vsync", EP_VSYNC, true, "Enable vsync");
     addFlag("-t,--tripple-buffer", EP_TRIPLE_BUFFER, true, "Enable tripple-buffering");
-    addFlag("-w,--windowed", EP_FULL_SCREEN, false, "Windowed mode");
+    addFlag("-w,--windowed", EP_BORDERLESS, false, "Windowed mode");
     addFlag("-f,--full-screen", EP_FULL_SCREEN, true, "Full screen mode");
     addFlag("--borderless", EP_BORDERLESS, true, "Borderless window mode");
     addFlag("--lowdpi", EP_HIGH_DPI, false, "Disable high-dpi handling");

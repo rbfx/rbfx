@@ -85,7 +85,7 @@
 
 /// =================================== Types and constants ===================================
 
-#define M_PI 3.14159265358979323846
+#define M_PI 3.1415927
 #define M_MEDIUMP_FLT_MAX 65504.0
 
 /// Disable precision modifiers if not GL ES.

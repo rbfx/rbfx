@@ -122,6 +122,7 @@ void PipelineState::ResetCachedState()
 {
     handle_ = nullptr;
     reflection_ = nullptr;
+    shaderResourceBinding_ = nullptr;
 }
 
 void PipelineState::RestoreCachedState(Graphics* graphics)

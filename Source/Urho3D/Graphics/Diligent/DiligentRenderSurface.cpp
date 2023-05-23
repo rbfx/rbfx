@@ -69,7 +69,8 @@ bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned
 
 void RenderSurface::OnDeviceLost()
 {
-    // No-op on Direct3D
+    renderTargetView_ = nullptr;
+    readOnlyView_ = nullptr;
 }
 
 } // namespace Urho3D

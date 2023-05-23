@@ -15,6 +15,8 @@
 namespace Urho3D
 {
 
+URHO3D_API const ea::string& ToString(RenderBackend backend);
+
 URHO3D_API ea::optional<VertexShaderAttribute> ParseVertexAttribute(ea::string_view name);
 URHO3D_API const ea::string& ToShaderInputName(VertexElementSemantic semantic);
 URHO3D_API Diligent::SHADER_TYPE ToInternalShaderType(ShaderType type);
