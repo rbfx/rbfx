@@ -213,6 +213,26 @@ void SetAttribute::ReverseImpl(FiniteTimeAction* action) const
     static_cast<SetAttribute*>(action)->SetValue(GetValue());
 }
 
+
+void ShaderParameterAction::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<ShaderParameterAction*>(action)->SetName(GetName());
+}
+
+void ShaderParameterTo::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<ShaderParameterTo*>(action)->SetTo(GetTo());
+}
+
+void ShaderParameterFromTo::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<ShaderParameterFromTo*>(action)->SetFrom(GetFrom());
+    static_cast<ShaderParameterFromTo*>(action)->SetTo(GetTo());
+}
+
 } // namespace Actions
 } // namespace Urho3D
 

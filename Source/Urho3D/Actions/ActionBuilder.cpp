@@ -27,7 +27,6 @@
 #include "Parallel.h"
 #include "Repeat.h"
 #include "Sequence.h"
-#include "ShaderParameter.h"
 #include "Urho3D/Core/Context.h"
 
 namespace Urho3D
@@ -239,7 +238,7 @@ ActionBuilder& ActionBuilder::AttributeFromTo(
 }
 
 /// Continue with ShaderParameterTo action.
-ActionBuilder& ActionBuilder::ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to)
+ActionBuilder& ActionBuilder::ShaderParameterTo(float duration, const ea::string& parameter, const Variant& to)
 {
     const auto action = MakeShared<Actions::ShaderParameterTo>(context_);
     action->SetDuration(duration);
@@ -250,7 +249,7 @@ ActionBuilder& ActionBuilder::ShaderParameterTo(float duration, ea::string_view 
 
 /// Continue with ShaderParameterFromTo action.
 ActionBuilder& ActionBuilder::ShaderParameterFromTo(
-    float duration, ea::string_view parameter, const Variant& from, const Variant& to)
+    float duration, const ea::string& parameter, const Variant& from, const Variant& to)
 {
     const auto action = MakeShared<Actions::ShaderParameterFromTo>(context_);
     action->SetDuration(duration);

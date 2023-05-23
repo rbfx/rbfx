@@ -299,6 +299,40 @@
                 }
             ]
         },
+        "ShaderParameterAction": {
+            "parent": "FiniteTimeAction",
+            "comment": "Animate shader parameter",
+            "parameters": [
+                {
+                    "name": "name",
+                    "type": "string"
+                }
+            ]
+        },
+        "ShaderParameterTo": {
+            "parent": "ShaderParameterAction",
+            "comment": "Animate shader parameter from current value to another",
+            "parameters": [
+                {
+                    "name": "to",
+                    "type": "variant"
+                }
+            ]
+        },
+        "ShaderParameterFromTo": {
+            "parent": "ShaderParameterAction",
+            "comment": "Animate shader parameter from one value to another",
+            "parameters": [
+                {
+                    "name": "from",
+                    "type": "variant"
+                },
+                {
+                    "name": "to",
+                    "type": "variant"
+                }
+            ]
+        },
         "SetAttribute": {
             "parent": "AttributeActionInstant",
             "comment": "Set attribute value",

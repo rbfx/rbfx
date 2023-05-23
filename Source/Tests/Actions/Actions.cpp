@@ -21,18 +21,16 @@
 //
 #include "../CommonUtils.h"
 
-#include <Urho3D/Actions/ActionSet.h>
 #include <Urho3D/Actions/ActionBuilder.h>
-#include <Urho3D/Actions/Attribute.h>
-#include <Urho3D/Actions/ShaderParameter.h>
-#include <Urho3D/Math/EaseMath.h>
-#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Actions/ActionManager.h>
 #include <Urho3D/Actions/Actions.h>
-#include <Urho3D/Actions/Sequence.h>
+#include <Urho3D/Actions/ActionSet.h>
 #include <Urho3D/Actions/Parallel.h>
-#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Actions/Sequence.h>
+#include <Urho3D/Math/EaseMath.h>
 #include <Urho3D/Resource/Graph.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/UIElement.h>
 
 using namespace Urho3D;

@@ -574,7 +574,6 @@ public:
 %include "Urho3D/Actions/Parallel.h"
 %include "Urho3D/Actions/Sequence.h"
 %include "Urho3D/Actions/Repeat.h"
-%include "Urho3D/Actions/ShaderParameter.h"
 
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)

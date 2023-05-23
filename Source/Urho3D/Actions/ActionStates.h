@@ -24,6 +24,10 @@
 
 #include "Actions.h"
 #include "Urho3D/Actions/AttributeActionState.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/StaticModel.h"
+
 #include <EASTL/variant.h>
 
 namespace Urho3D
@@ -464,6 +468,44 @@ public:
     AttributeToState(AttributeTo* action, Object* target);
 
     void Update(float time, Variant& value) override;
+};
+class ShaderParameterActionState : public FiniteTimeActionState
+{
+    Variant from_;
+    Variant to_;
+    ea::string name_;
+    SharedPtr<Material> material_;
+
+public:
+    ShaderParameterActionState(ShaderParameterAction* action, Object* target);
+};
+
+class ShaderParameterFromToState : public FiniteTimeActionState
+{
+    Variant from_;
+    Variant to_;
+    ea::string name_;
+    SharedPtr<Material> material_;
+
+public:
+    ShaderParameterFromToState(ShaderParameterFromTo* action, Object* target);
+
+    static Material* GetMaterial(Object* target);
+
+    void Update(float time) override;
+};
+
+class ShaderParameterToState : public FiniteTimeActionState
+{
+    Variant from_;
+    Variant to_;
+    ea::string name_;
+    SharedPtr<Material> material_;
+
+public:
+    ShaderParameterToState(ShaderParameterTo* action, Object* target);
+
+    void Update(float time) override;
 };
 
 } // namespace Detail

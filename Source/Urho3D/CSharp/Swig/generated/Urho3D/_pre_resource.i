@@ -65,6 +65,7 @@
 %csattribute(Urho3D::BinaryFile, %arg(Urho3D::ByteVector), Data, GetData, SetData);
 %csattribute(Urho3D::BinaryFile, %arg(ea::string_view), Text, GetText);
 %csattribute(Urho3D::Graph, %arg(unsigned int), NumNodes, GetNumNodes);
+%csattribute(Urho3D::Graph, %arg(unsigned int), NextNodeId, GetNextNodeId);
 %csattribute(Urho3D::GraphPin, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::GraphInPin, %arg(bool), IsConnected, IsConnected);
 %csattribute(Urho3D::GraphInPin, %arg(Urho3D::Variant), Value, GetValue, SetValue);
@@ -80,6 +81,7 @@
 %csattribute(Urho3D::GraphNode, %arg(unsigned int), NumOutputs, GetNumOutputs);
 %csattribute(Urho3D::GraphNode, %arg(unsigned int), NumEnters, GetNumEnters);
 %csattribute(Urho3D::GraphNode, %arg(unsigned int), NumExits, GetNumExits);
+%csattribute(Urho3D::GraphNode, %arg(Urho3D::Vector2), PositionHint, GetPositionHint, SetPositionHint);
 %csattribute(Urho3D::ImageCube, %arg(ea::vector<SharedPtr<Image>>), Images, GetImages);
 %csattribute(Urho3D::ImageCube, %arg(Urho3D::XMLFile *), ParametersXML, GetParametersXML);
 %csattribute(Urho3D::ImageCube, %arg(unsigned int), SphericalHarmonicsMipLevel, GetSphericalHarmonicsMipLevel);

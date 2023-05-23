@@ -105,11 +105,11 @@ public:
         float duration, ea::string_view attributeName, const Variant& from, const Variant& to);
 
     /// Continue with ShaderParameterTo action.
-    ActionBuilder& ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to);
+    ActionBuilder& ShaderParameterTo(float duration, const ea::string& parameter, const Variant& to);
 
     /// Continue with ShaderParameterFromTo action.
     ActionBuilder& ShaderParameterFromTo(
-        float duration, ea::string_view parameter, const Variant& from, const Variant& to);
+        float duration, const ea::string& parameter, const Variant& from, const Variant& to);
 
     /// Continue with SendEvent action.
     ActionBuilder& SendEvent(ea::string_view eventType, const StringVariantMap& data);

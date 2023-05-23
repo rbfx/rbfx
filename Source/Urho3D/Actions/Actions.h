@@ -867,6 +867,121 @@ private:
     unsigned numOfBlinks_{};
 };
 
+/// Animate shader parameter
+class URHO3D_API ShaderParameterAction : public  FiniteTimeAction
+{
+    URHO3D_OBJECT(ShaderParameterAction, FiniteTimeAction)
+public:
+    /// Construct.
+    explicit ShaderParameterAction(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Set name.
+    void SetName(const ea::string& name);
+
+    /// Get name.
+    const ea::string& GetName() const { return name_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+
+private:
+    ea::string name_{};
+};
+
+/// Animate shader parameter from current value to another
+class URHO3D_API ShaderParameterTo : public  ShaderParameterAction
+{
+    URHO3D_OBJECT(ShaderParameterTo, ShaderParameterAction)
+public:
+    /// Construct.
+    explicit ShaderParameterTo(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Set to.
+    void SetTo(const Variant& to);
+
+    /// Get to.
+    const Variant& GetTo() const { return to_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+
+private:
+    Variant to_{};
+};
+
+/// Animate shader parameter from one value to another
+class URHO3D_API ShaderParameterFromTo : public  ShaderParameterAction
+{
+    URHO3D_OBJECT(ShaderParameterFromTo, ShaderParameterAction)
+public:
+    /// Construct.
+    explicit ShaderParameterFromTo(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Set from.
+    void SetFrom(const Variant& from);
+
+    /// Get from.
+    const Variant& GetFrom() const { return from_; }
+
+    /// Set to.
+    void SetTo(const Variant& to);
+
+    /// Get to.
+    const Variant& GetTo() const { return to_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+
+private:
+    Variant from_{};
+    Variant to_{};
+};
+
 /// Set attribute value
 class URHO3D_API SetAttribute : public  AttributeActionInstant
 {

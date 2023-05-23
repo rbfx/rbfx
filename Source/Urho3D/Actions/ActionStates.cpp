@@ -566,6 +566,71 @@ void AttributeToState::Update(float time, Variant& value)
     value = from_.Lerp(to_, time);
 }
 
+ShaderParameterActionState::ShaderParameterActionState(ShaderParameterAction* action, Object* target)
+    : FiniteTimeActionState(action, target)
+{
+}
+
+ShaderParameterFromToState::ShaderParameterFromToState(ShaderParameterFromTo* action, Object* target): FiniteTimeActionState(action, target)
+                                                                                                       , from_(action->GetFrom())
+                                                                                                       , to_(action->GetTo())
+                                                                                                       , name_(action->GetName())
+{
+    material_ = ShaderParameterFromToState::GetMaterial(GetTarget());
+}
+
+Material* ShaderParameterFromToState::GetMaterial(Object* target)
+{
+    if (!target)
+        return nullptr;
+    auto* material = target->Cast<Material>();
+    if (material)
+        return material;
+    if (auto* staticModel = target->Cast<StaticModel>())
+        return staticModel->GetMaterial(0);
+
+    if (auto* node = target->Cast<Node>())
+    {
+        if (auto* staticModel = node->GetComponent<StaticModel>())
+            return staticModel->GetMaterial(0);
+        if (auto* animatedModel = node->GetComponent<AnimatedModel>())
+            return animatedModel->GetMaterial(0);
+    }
+    URHO3D_LOGERROR("Can't get matrial from {}", target->GetTypeName());
+    return nullptr;
+}
+
+void ShaderParameterFromToState::Update(float time)
+{
+    if (material_)
+    {
+        material_->SetShaderParameter(name_, from_.Lerp(to_, time));
+    }
+}
+
+ShaderParameterToState::ShaderParameterToState(ShaderParameterTo* action, Object* target): FiniteTimeActionState(action, target)
+    , to_(action->GetTo())
+    , name_(action->GetName())
+{
+    material_ = ShaderParameterFromToState::GetMaterial(GetTarget());
+    if (material_)
+    {
+        from_ = material_->GetShaderParameter(name_);
+        if (from_.GetType() != to_.GetType())
+        {
+            from_ = to_;
+        }
+    }
+}
+
+void ShaderParameterToState::Update(float time)
+{
+    if (material_)
+    {
+        material_->SetShaderParameter(name_, from_.Lerp(to_, time));
+    }
+}
+
 
 AttributeBlinkState::AttributeBlinkState(
     AttributeAction* action, Object* target, Variant from, Variant to, unsigned times)

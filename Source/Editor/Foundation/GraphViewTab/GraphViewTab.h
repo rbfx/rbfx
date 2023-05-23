@@ -28,6 +28,7 @@
 #include "../../Project/ResourceEditorTab.h"
 
 #include <Urho3D/Resource/Graph.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include <ImGuiNodeEditor/imgui_node_editor.h>
 #include <EASTL/fixed_vector.h>
@@ -52,16 +53,21 @@ enum class GraphPinViewType
 
 struct GraphPinView
 {
-    GraphPinView(ax::NodeEditor::PinId id, const ea::string& title);
-    GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, VariantType type, const Variant& value);
+    GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, GraphPinViewType pinType);
+    GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, GraphPinViewType pinType, VariantType type,
+        const Variant& value);
     /// Global unique identifier of the pin.
     ax::NodeEditor::PinId id_{};
     /// Name of the pin.
     ea::string title_;
     /// Field type. VAR_NONE means that it could be of any type.
-    VariantType type_{VAR_NONE};
+    VariantType valueType_{VAR_NONE};
+    /// Type of the pin.
+    GraphPinViewType pinType_;
     /// Field value.
     Variant value_{};
+    /// Temporal value for editor.
+    Variant tempValue_{};
     /// Value as text string.
     ea::string text_;
     /// Pin type.
@@ -140,24 +146,27 @@ public:
     /// @{
     void RenderContent() override;
     bool IsUndoSupported() override { return true; }
+    void ApplyLayoutFromView();
     /// @}
 
     Detail::GraphView* GetGraphView() { return &graph_; } 
     void Reset();
 
     virtual SharedPtr<GraphNode> CreateNewNodePopup() const;
-    virtual void RenderGraph();
-    void ApplyLayoutFromView();
 
 protected:
     virtual void RenderTitle();
+
+    void RenderGraph();
+    void RenderPin(ax::NodeEditor::NodeId nodeId, Detail::GraphPinView& pin);
     void DeleteLink(const ax::NodeEditor::LinkId& link_id);
-    void CreateLink(const ax::NodeEditor::PinId& from, const ax::NodeEditor::PinId& to);
+    bool CreateLink(const ax::NodeEditor::PinId& from, const ax::NodeEditor::PinId& to);
 
     ax::NodeEditor::EditorContext* editorContext_ = nullptr; // Editor context, required to trace a editor state.
     bool showOrdinals_{};
     bool applyLayout_{true};
     Detail::GraphView graph_;
+    Widgets::EditVariantOptions editVariantOptions_;
     std::vector<ax::NodeEditor::NodeId> orderedNodeIds_;
     std::vector<ax::NodeEditor::NodeId> nodesToDelete_;
 };

@@ -28,7 +28,6 @@
 #include "Urho3D/Actions/ActionStates.h"
 #include "Urho3D/IO/ArchiveSerializationBasic.h"
 #include "Urho3D/Resource/GraphNode.h"
-#include "Urho3D/IO/ArchiveSerializationVariant.h"
 
 namespace Urho3D
 {
@@ -71,6 +70,9 @@ void RegisterActions(ActionManager* manager)
     manager->AddFactoryReflection<RotateBy>();
     manager->AddFactoryReflection<ScaleBy>();
     manager->AddFactoryReflection<SetAttribute>();
+    manager->AddFactoryReflection<ShaderParameterAction>();
+    manager->AddFactoryReflection<ShaderParameterFromTo>();
+    manager->AddFactoryReflection<ShaderParameterTo>();
     manager->AddFactoryReflection<Show>();
 }
 
@@ -203,6 +205,7 @@ AttributeFromTo::AttributeFromTo(Context* context)
 
 /// Create new action state from the action.
 SharedPtr<ActionState> AttributeFromTo::StartAction(Object* target) { return MakeShared<Detail::AttributeFromToState>(this, target); }
+
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> AttributeFromTo::Reverse() const
@@ -1041,6 +1044,159 @@ void SetAttribute::FromGraphNode(GraphNode* node)
     if (const auto value = node->GetInput("value"))
     {
         value_ = value.GetPin()->GetValue();
+    }
+}
+
+
+/// Construct.
+ShaderParameterAction::ShaderParameterAction(Context* context)
+    : BaseClassName(context)
+{
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> ShaderParameterAction::StartAction(Object* target) { return MakeShared<Detail::ShaderParameterActionState>(this, target); }
+
+
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> ShaderParameterAction::Reverse() const
+{
+    auto action = MakeShared<ShaderParameterAction>(context_);
+    ReverseImpl(action);
+    return action;
+}
+
+/// Set name.
+void ShaderParameterAction::SetName(const ea::string& name)
+{
+    name_ = name;
+}
+
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void ShaderParameterAction::SerializeInBlock(Archive& archive)
+{
+    BaseClassName::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "name", name_, ea::string{});
+}
+
+GraphNode* ShaderParameterAction::ToGraphNode(Graph* graph) const
+{
+    return BaseClassName::ToGraphNode(graph)->WithInput("name", name_);
+}
+
+void ShaderParameterAction::FromGraphNode(GraphNode* node)
+{
+    BaseClassName::FromGraphNode(node);
+    if (const auto name = node->GetInput("name"))
+    {
+        name_ = name.GetPin()->GetValue().Get<ea::string>();
+    }
+}
+
+
+/// Construct.
+ShaderParameterFromTo::ShaderParameterFromTo(Context* context)
+    : BaseClassName(context)
+{
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> ShaderParameterFromTo::StartAction(Object* target) { return MakeShared<Detail::ShaderParameterFromToState>(this, target); }
+
+
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> ShaderParameterFromTo::Reverse() const
+{
+    auto action = MakeShared<ShaderParameterFromTo>(context_);
+    ReverseImpl(action);
+    return action;
+}
+
+/// Set from.
+void ShaderParameterFromTo::SetFrom(const Variant& from)
+{
+    from_ = from;
+}
+
+
+/// Set to.
+void ShaderParameterFromTo::SetTo(const Variant& to)
+{
+    to_ = to;
+}
+
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void ShaderParameterFromTo::SerializeInBlock(Archive& archive)
+{
+    BaseClassName::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "from", from_, Variant{});
+    SerializeOptionalValue(archive, "to", to_, Variant{});
+}
+
+GraphNode* ShaderParameterFromTo::ToGraphNode(Graph* graph) const
+{
+    return BaseClassName::ToGraphNode(graph)->WithAnyInput("from", from_)->WithAnyInput("to", to_);
+}
+
+void ShaderParameterFromTo::FromGraphNode(GraphNode* node)
+{
+    BaseClassName::FromGraphNode(node);
+    if (const auto from = node->GetInput("from"))
+    {
+        from_ = from.GetPin()->GetValue();
+    }
+    if (const auto to = node->GetInput("to"))
+    {
+        to_ = to.GetPin()->GetValue();
+    }
+}
+
+
+/// Construct.
+ShaderParameterTo::ShaderParameterTo(Context* context)
+    : BaseClassName(context)
+{
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> ShaderParameterTo::StartAction(Object* target) { return MakeShared<Detail::ShaderParameterToState>(this, target); }
+
+
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> ShaderParameterTo::Reverse() const
+{
+    auto action = MakeShared<ShaderParameterTo>(context_);
+    ReverseImpl(action);
+    return action;
+}
+
+/// Set to.
+void ShaderParameterTo::SetTo(const Variant& to)
+{
+    to_ = to;
+}
+
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void ShaderParameterTo::SerializeInBlock(Archive& archive)
+{
+    BaseClassName::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "to", to_, Variant{});
+}
+
+GraphNode* ShaderParameterTo::ToGraphNode(Graph* graph) const
+{
+    return BaseClassName::ToGraphNode(graph)->WithAnyInput("to", to_);
+}
+
+void ShaderParameterTo::FromGraphNode(GraphNode* node)
+{
+    BaseClassName::FromGraphNode(node);
+    if (const auto to = node->GetInput("to"))
+    {
+        to_ = to.GetPin()->GetValue();
     }
 }
 

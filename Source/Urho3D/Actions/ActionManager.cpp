@@ -32,7 +32,6 @@
 #include "Parallel.h"
 #include "Repeat.h"
 #include "Sequence.h"
-#include "ShaderParameter.h"
 
 namespace Urho3D
 {
@@ -116,8 +115,6 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<Repeat>();
     manager->AddFactoryReflection<RepeatForever>();
     manager->AddFactoryReflection<Sequence>();
-    manager->AddFactoryReflection<ShaderParameterFromTo>();
-    manager->AddFactoryReflection<ShaderParameterTo>();
     Actions::RegisterActions(manager);
 }
 
