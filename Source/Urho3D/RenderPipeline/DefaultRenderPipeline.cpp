@@ -202,11 +202,18 @@ void DefaultRenderPipelineView::ApplySettings()
         break;
     }
 
-    if (settings_.greyScale_)
+    const Vector4 hueSaturationValueContrast{
+        settings_.hueShift_,
+        settings_.saturation_,
+        settings_.brightness_,
+        settings_.contrast_,
+    };
+    if (!hueSaturationValueContrast.Equals(Vector4::ONE))
     {
         auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
             PostProcessPassFlag::NeedColorOutputReadAndWrite,
-            BLEND_REPLACE, "v2/P_GreyScale", "");
+            BLEND_REPLACE, "v2/P_HSV", "");
+        pass->AddShaderParameter("HSVParams", hueSaturationValueContrast);
         postProcessPasses_.push_back(pass);
     }
 
