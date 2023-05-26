@@ -27,29 +27,30 @@ void main()
 // You can find good explanation of the math here:
 // https://blog.en.uwa4d.com/2022/09/29/screen-post-processing-effects-color-models-and-color-grading/
 
-vec3 RGBToHSV(vec3 c)
+const half M_MEDIUMP_FLT_EPS = 0.0009765626;
+
+half3 RGBToHSV(half3 c)
 {
-    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-    float d = q.x - min(q.w, q.y);
-    float e = 1.0e-10;
-    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+    half4 K = half4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    half4 p = mix(half4(c.bg, K.wz), half4(c.gb, K.xy), step(c.b, c.g));
+    half4 q = mix(half4(p.xyw, c.r), half4(c.r, p.yzx), step(p.x, c.r));
+    half d = q.x - min(q.w, q.y);
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + M_MEDIUMP_FLT_EPS)), d / (q.x + M_MEDIUMP_FLT_EPS), q.x);
 }
 
-vec3 HSVToRGB(vec3 c)
+half3 HSVToRGB(half3 c)
 {
-    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    half4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    half3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
 void main()
 {
-    vec3 rgb = texture2D(sDiffMap, vScreenPos).rgb;
-    vec3 hsv = RGBToHSV(rgb);
-    vec3 correctedHsv = vec3(fract(hsv.x+cHSVParams.x), hsv.y*cHSVParams.y, ((hsv.z*cHSVParams.z)-0.5)*cHSVParams.w+0.5);
-    vec3 correctedRgb = HSVToRGB(correctedHsv); 
+    half3 rgb = texture2D(sDiffMap, vScreenPos).rgb;
+    half3 hsv = RGBToHSV(rgb);
+    half3 correctedHsv = vec3(fract(hsv.x+cHSVParams.x), hsv.y*cHSVParams.y, ((hsv.z*cHSVParams.z)-0.5)*cHSVParams.w+0.5);
+    half3 correctedRgb = HSVToRGB(correctedHsv); 
     gl_FragColor = vec4(correctedRgb.r, correctedRgb.g, correctedRgb.b, 1.0);
 }
 #endif
