@@ -31,9 +31,9 @@ const half M_MEDIUMP_FLT_EPS = 0.0009765626;
 
 half3 RGBToHSV(half3 c)
 {
-    half4 K = half4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-    half4 p = mix(half4(c.bg, K.wz), half4(c.gb, K.xy), step(c.b, c.g));
-    half4 q = mix(half4(p.xyw, c.r), half4(c.r, p.yzx), step(p.x, c.r));
+    half4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    half4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+    half4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
     half d = q.x - min(q.w, q.y);
     return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + M_MEDIUMP_FLT_EPS)), d / (q.x + M_MEDIUMP_FLT_EPS), q.x);
 }
