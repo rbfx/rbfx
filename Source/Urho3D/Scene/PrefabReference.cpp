@@ -230,15 +230,50 @@ void PrefabReference::RemoveInstance()
     instanceNode_ = nullptr;
 }
 
-void PrefabReference::InstantiatePrefab(const NodePrefab& nodePrefab)
+void PrefabReference::InstantiatePrefab(const NodePrefab& nodePrefab, PrefabInstanceFlags instanceFlags)
 {
     const auto flags = PrefabLoadFlag::KeepExistingComponents | PrefabLoadFlag::KeepExistingChildren
         | PrefabLoadFlag::LoadAsTemporary | PrefabLoadFlag::IgnoreRootAttributes;
     PrefabReaderFromMemory reader{nodePrefab};
     node_->Load(reader, flags);
+    if (instanceFlags != PrefabInstanceFlag::None) {
+        for (const AttributePrefab& attribute : nodePrefab.GetNode().GetAttributes()) {
+            auto name = attribute.GetName().c_str();
+            if (instanceFlags & PrefabInstanceFlag::SetNodeScale) {
+                if (attribute.GetName() == "Scale") {
+                    node_->SetAttribute("Scale", attribute.GetValue());
+                }
+            }
+            if (instanceFlags & PrefabInstanceFlag::SetNodePosition) {
+                if (attribute.GetName() == "Position") {
+                    node_->SetAttribute("Position", attribute.GetValue());
+                }
+            }
+            if (instanceFlags & PrefabInstanceFlag::SetNodeRotation) {
+                if (attribute.GetName() == "Rotation") {
+                    node_->SetAttribute("Rotation", attribute.GetValue());
+                }
+            }
+            if (instanceFlags & PrefabInstanceFlag::SetNodeTags) {
+                if (attribute.GetName() == "Tags") {
+                    node_->SetAttribute("Tags", attribute.GetValue());
+                }
+            }
+            if (instanceFlags & PrefabInstanceFlag::SetNodeName) {
+                if (attribute.GetName() == "Name") {
+                    node_->SetAttribute("Name", attribute.GetValue());
+                }
+            }
+            if (instanceFlags & PrefabInstanceFlag::SetNodeVariables) {
+                if (attribute.GetName() == "Variables") {
+                    node_->SetAttribute("Variables", attribute.GetValue());
+                }
+            }
+        }
+    }
 }
 
-void PrefabReference::CreateInstance(bool tryInplace)
+void PrefabReference::CreateInstance(bool tryInplace, PrefabInstanceFlags instanceFlags)
 {
     // Remove existing instance if moved to another node
     if (instanceNode_ && instanceNode_ != node_)
@@ -259,10 +294,10 @@ void PrefabReference::CreateInstance(bool tryInplace)
 
     RemoveTemporaryComponents(node_);
     RemoveTemporaryChildren(node_);
-    InstantiatePrefab(nodePrefab);
+    InstantiatePrefab(nodePrefab, instanceFlags);
 }
 
-void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bool createInstance)
+void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bool createInstance, PrefabInstanceFlags instanceFlags)
 {
     if (prefab == prefab_ && path == path_)
     {
@@ -288,7 +323,7 @@ void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bo
     }
 
     if (createInstance)
-        CreateInstance();
+        CreateInstance(false, instanceFlags);
 }
 
 void PrefabReference::SetPrefabAttr(ResourceRef prefab)

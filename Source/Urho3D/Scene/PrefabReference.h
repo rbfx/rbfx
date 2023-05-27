@@ -37,6 +37,20 @@ enum class PrefabInlineFlag
 };
 URHO3D_FLAGSET(PrefabInlineFlag, PrefabInlineFlags);
 
+/// Controls, which attributes of top-level node of the prefab are copied to the scene node, assoociated with prefab instance
+/// By default, no copying is made.
+enum class PrefabInstanceFlag
+{
+    None = 0,
+    SetNodeScale = 1 << 0,
+    SetNodePosition = 1 << 1,
+    SetNodeRotation = 1 << 2,
+    SetNodeTags = 1 << 3,
+    SetNodeName = 1 << 4,
+    SetNodeVariables = 1 << 5,
+};
+URHO3D_FLAGSET(PrefabInstanceFlag, PrefabInstanceFlags);
+
 /// Component that instantiates prefab resource into the parent Node.
 class URHO3D_API PrefabReference : public Component
 {
@@ -53,7 +67,8 @@ public:
 
     /// Attributes.
     /// @{
-    void SetPrefab(PrefabResource* prefab, ea::string_view path = {}, bool createInstance = true);
+    void SetPrefab(PrefabResource* prefab, ea::string_view path = {}, bool createInstance = true,
+                   PrefabInstanceFlags instanceFlags = PrefabInstanceFlag::None);
     PrefabResource* GetPrefab() const { return prefab_; }
     void SetPath(ea::string_view path);
     const ea::string& GetPath() const { return path_; }
@@ -86,7 +101,7 @@ private:
 
     void RemoveTemporaryComponents(Node* node) const;
     void RemoveTemporaryChildren(Node* node) const;
-    void InstantiatePrefab(const NodePrefab& nodePrefab);
+    void InstantiatePrefab(const NodePrefab& nodePrefab, PrefabInstanceFlags instanceFlags);
 
     void MarkPrefabDirty() { prefabDirty_ = true; }
 
@@ -99,7 +114,7 @@ private:
     void RemoveInstance();
     /// Create prefab instance. Spawns all nodes and components in the prefab.
     /// Removes all existing children and components except this PrefabReference.
-    void CreateInstance(bool tryInplace = false);
+    void CreateInstance(bool tryInplace = false, PrefabInstanceFlags instanceFlags = PrefabInstanceFlag::None);
 
     SharedPtr<PrefabResource> prefab_;
     ResourceRef prefabRef_;
