@@ -84,68 +84,6 @@ struct ScratchBuffer
     bool reserved_;
 };
 
-/// Screen mode parameters.
-struct ScreenModeParams
-{
-    /// Window mode.
-    WindowMode windowMode_{};
-    /// Whether the window is resizable.
-    bool resizable_{};
-    /// Whether the high DPI is enabled.
-    /// TODO: Explain what exactly it means.
-    bool highDPI_{};
-    /// Whether the vertical synchronization is used.
-    bool vsync_{};
-    /// Whether the triple bufferization is used.
-    bool tripleBuffer_{};
-    /// Level of multisampling.
-    int multiSample_{ 1 };
-    /// Monitor for fullscreen mode. Has no effect in windowed mode.
-    int monitor_{};
-    /// Refresh rate. 0 to pick automatically.
-    int refreshRate_{};
-    /// Whether to enable debug mode on GPU if possible.
-    bool gpuDebug_{};
-
-    /// Compare contents except vsync flag.
-    bool EqualsExceptVSync(const ScreenModeParams& rhs) const
-    {
-        return windowMode_ == rhs.windowMode_
-            && resizable_ == rhs.resizable_
-            && highDPI_ == rhs.highDPI_
-            // && vsync_ == rhs.vsync_
-            && tripleBuffer_ == rhs.tripleBuffer_
-            && multiSample_ == rhs.multiSample_
-            && monitor_ == rhs.monitor_
-            && refreshRate_ == rhs.refreshRate_
-            && gpuDebug_ == rhs.gpuDebug_;
-    }
-
-    bool IsWindowed() const { return windowMode_ == WindowMode::Windowed; }
-    bool IsFullscreen() const { return windowMode_ == WindowMode::Fullscreen; }
-    bool IsBorderless() const { return windowMode_ == WindowMode::Borderless; }
-
-    /// Compare for equality with another parameter set.
-    bool operator ==(const ScreenModeParams& rhs) const
-    {
-        return vsync_ == rhs.vsync_ && EqualsExceptVSync(rhs);
-    }
-
-    /// Compare for inequality with another parameter set.
-    bool operator !=(const ScreenModeParams& rhs) const { return !(*this == rhs); }
-};
-
-/// Window mode parameters.
-struct WindowModeParams
-{
-    /// Width of the window. 0 to pick automatically.
-    int width_{};
-    /// Height of the window. 0 to pick automatically.
-    int height_{};
-    /// Screen mode parameters.
-    ScreenModeParams screenParams_;
-};
-
 /// Graphics capabilities aggregator.
 /// TODO: Move all other things here
 struct GraphicsCaps
@@ -191,31 +129,18 @@ public:
     void SetWindowPosition(int x, int y);
     /// Set screen mode. Return true if successful.
     /// Don't use SetScreenMode if ToggleFullscreen is used directly or indirectly.
-    bool SetScreenMode(int width, int height, const ScreenModeParams& params, bool maximize = false);
-    /// Set screen resolution only. Return true if successful.
-    /// Don't use SetScreenMode if ToggleFullscreen is used directly or indirectly.
-    bool SetScreenMode(int width, int height);
-    /// Set window modes to be rotated by ToggleFullscreen. Apply primary window settings immeditally.
-    /// Window may be maximized if requested and possible. Return true if successful.
-    bool SetWindowModes(const WindowModeParams& windowMode, const WindowModeParams& secondaryWindowMode, bool maximize = false);
+    bool SetScreenMode(const WindowSettings& windowSettings);
+    /// Set window modes to be rotated by ToggleFullscreen. Apply primary window settings immediately.
+    /// Return true if successful.
+    bool SetWindowModes(const WindowSettings& primarySettings, const WindowSettings& secondarySettings);
     /// Set default window modes. Return true if successful.
-    bool SetDefaultWindowModes(int width, int height, const ScreenModeParams& params);
+    bool SetDefaultWindowModes(const WindowSettings& commonSettings);
     /// Set default window modes. Deprecated. Return true if successful.
     bool SetMode(int width, int height, bool fullscreen, bool borderless, bool resizable,
         bool highDPI, bool vsync, bool tripleBuffer, int multiSample, int monitor, int refreshRate, bool gpuDebug);
     /// Set screen resolution only. Deprecated. Return true if successful.
     bool SetMode(int width, int height);
-    /// Set whether the main window uses sRGB conversion on write.
-    /// @property
-    void SetSRGB(bool enable);
-    /// Set whether rendering output is dithered. Default true on OpenGL. No effect on Direct3D.
-    /// @property
-    void SetDither(bool enable);
-    /// Set whether to flush the GPU command buffer to prevent multiple frames being queued and uneven frame timesteps. Default off, may decrease performance if enabled. Not currently implemented on OpenGL.
-    /// @property
-    void SetFlushGPU(bool enable);
-    /// Set forced use of OpenGL 2 even if OpenGL 3 is available. Must be called before setting the screen mode for the first time. Default false. No effect on DirectX 11.
-    void SetForceGL2(bool enable);
+
     /// Set allowed screen orientations as a space-separated list of "LandscapeLeft", "LandscapeRight", "Portrait" and "PortraitUpsideDown". Affects currently only iOS platform.
     /// @property
     void SetOrientations(const ea::string& orientations);
@@ -402,71 +327,60 @@ public:
     /// @property
     IntVector2 GetWindowPosition() const;
 
+    /// Return screen mode parameters.
+    const WindowSettings& GetWindowSettings() const;
+
+    /// Return swap chain size.
+    const IntVector2 GetSwapChainSize() const;
+
     /// Return window width in pixels.
     /// @property
-    int GetWidth() const { return width_; }
+    int GetWidth() const { return GetSwapChainSize().x_; }
 
     /// Return window height in pixels.
     /// @property
-    int GetHeight() const { return height_; }
-
-    /// Return screen mode parameters.
-    const ScreenModeParams& GetScreenModeParams() const { return screenParams_; }
+    int GetHeight() const { return GetSwapChainSize().y_; }
 
     /// Return multisample mode (1 = no multisampling).
     /// @property
-    int GetMultiSample() const { return screenParams_.multiSample_; }
+    int GetMultiSample() const { return GetWindowSettings().multiSample_; }
 
     /// Return window size in pixels.
     /// @property
-    IntVector2 GetSize() const { return IntVector2(width_, height_); }
+    IntVector2 GetSize() const { return GetSwapChainSize(); }
 
     /// Return whether window is fullscreen.
     /// @property
-    bool GetFullscreen() const { return screenParams_.IsFullscreen(); }
+    bool GetFullscreen() const { return GetWindowSettings().mode_ == WindowMode::Fullscreen; }
 
     /// Return whether gpu debug is enabled.
-    bool GetGPUDebug() const { return screenParams_.gpuDebug_; }
+    bool GetGPUDebug() const { return gpuDebug_; }
 
     /// Return whether window is borderless.
     /// @property
-    bool GetBorderless() const { return screenParams_.IsBorderless(); }
+    bool GetBorderless() const { return GetWindowSettings().mode_ == WindowMode::Borderless; }
 
     /// Return whether window is resizable.
     /// @property
-    bool GetResizable() const { return screenParams_.resizable_; }
-
-    /// Return whether window is high DPI.
-    bool GetHighDPI() const { return screenParams_.highDPI_; }
+    bool GetResizable() const { return GetWindowSettings().resizable_; }
 
     /// Return whether vertical sync is on.
     /// @property
-    bool GetVSync() const { return screenParams_.vsync_; }
+    bool GetVSync() const { return GetWindowSettings().vSync_; }
 
     /// Return refresh rate when using vsync in fullscreen
-    int GetRefreshRate() const { return screenParams_.refreshRate_; }
+    int GetRefreshRate() const { return GetWindowSettings().refreshRate_; }
 
     /// Return the current monitor index. Effective on in fullscreen
-    int GetMonitor() const { return screenParams_.monitor_; }
-
-    /// Return whether triple buffering is enabled.
-    /// @property
-    bool GetTripleBuffer() const { return screenParams_.tripleBuffer_; }
+    int GetMonitor() const { return GetWindowSettings().monitor_; }
 
     /// Return whether the main window is using sRGB conversion on write.
     /// @property
-    bool GetSRGB() const { return sRGB_; }
+    bool GetSRGB() const { return GetWindowSettings().sRGB_; }
 
     /// Return whether rendering output is dithered.
     /// @property
     bool GetDither() const;
-
-    /// Return whether the GPU command buffer is flushed each frame.
-    /// @property
-    bool GetFlushGPU() const { return flushGPU_; }
-
-    /// Return whether OpenGL 2 use is forced. Effective only on OpenGL.
-    bool GetForceGL2() const { return forceGL2_; }
 
     /// Return allowed screen orientations.
     /// @property
@@ -717,6 +631,7 @@ public:
 
     unsigned GetAdapterId() const;
     void SetAdapterId(unsigned adapterId);
+    void SetGPUDebug(bool enable) { gpuDebug_ = enable; }
 
     unsigned GetSwapChainRTFormat();
     unsigned GetSwapChainDepthFormat();
@@ -790,18 +705,10 @@ public:
     /// @}
 
 private:
-    /// Create the application window.
-    bool OpenWindow(int width, int height, bool resizable, bool borderless);
     /// Create the application window icon.
     void CreateWindowIcon();
-    /// Adjust parameters according to the platform. Fill in missing paramters and resolve possible conflicts.
-    void AdjustScreenMode(int& newWidth, int& newHeight, ScreenModeParams& params, bool& maximize) const;
     /// Called when screen mode is successfully changed by the backend.
     void OnScreenModeChanged();
-    /// Adjust the window for new resolution and fullscreen mode.
-    void AdjustWindow(int& newWidth, int& newHeight, WindowMode& newWindowMode, int& monitor);
-    /// Create the Direct3D11 device and swap chain. Requires an open window. Can also be called again to recreate swap chain. Return true on success.
-    bool CreateDevice(int width, int height);
     /// Check supported rendering features.
     void CheckFeatureSupport();
     /// Reset cached rendering state.
@@ -843,27 +750,15 @@ private:
     WeakPtr<Image> windowIcon_;
     /// External window, null if not in use (default.)
     void* externalWindow_{};
-    /// Most recently applied window mode. It may not represent actual window state
+    /// Most recently applied window settings. It may not represent actual window state
     /// if window was resized by user or Graphics::SetScreenMode was explicitly called.
-    WindowModeParams primaryWindowMode_;
+    WindowSettings primaryWindowSettings_;
     /// Secondary window mode to be applied on Graphics::ToggleFullscreen.
-    WindowModeParams secondaryWindowMode_;
-    /// Window width in pixels.
-    int width_{};
-    /// Window height in pixels.
-    int height_{};
+    WindowSettings secondaryWindowSettings_;
     /// Window position.
     IntVector2 position_;
-    /// Screen mode parameters.
-    ScreenModeParams screenParams_;
     /// Whether the shader validation is enabled.
     bool validateShaders_{};
-    /// Flush GPU command buffer flag.
-    bool flushGPU_{};
-    /// Force OpenGL 2 flag. Only used on OpenGL.
-    bool forceGL2_{};
-    /// sRGB conversion on write flag for the main window.
-    bool sRGB_{};
     /// Light pre-pass rendering support flag.
     bool lightPrepassSupport_{};
     /// Deferred rendering support flag.
@@ -1010,6 +905,7 @@ private:
     bool logShaderSources_{};
     ShaderTranslationPolicy policyGlsl_{ShaderTranslationPolicy::Verbatim};
     ShaderTranslationPolicy policyHlsl_{ShaderTranslationPolicy::Translate};
+    bool gpuDebug_{};
 
     /// OpenGL3 support flag.
     static bool gl3Support;

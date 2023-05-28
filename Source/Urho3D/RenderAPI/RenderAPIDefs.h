@@ -7,6 +7,7 @@
 #include <Urho3D/Urho3D.h>
 
 #include "Urho3D/Container/Hash.h"
+#include "Urho3D/Core/Variant.h"
 #include "Urho3D/Math/Color.h"
 
 // TODO(diligent): Remove this include
@@ -30,6 +31,54 @@ enum class WindowMode
     Borderless,
     /// Native full-screen.
     Fullscreen,
+};
+
+/// Description of fullscreen mode (resolution and refresh rate).
+struct URHO3D_API FullscreenMode
+{
+    IntVector2 size_{};
+    int refreshRate_{};
+
+    /// Operators.
+    /// @{
+    const auto Tie() const { return ea::tie(size_.x_, size_.y_, refreshRate_); }
+    bool operator==(const FullscreenMode& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const FullscreenMode& rhs) const { return Tie() != rhs.Tie(); }
+    bool operator<(const FullscreenMode& rhs) const { return Tie() < rhs.Tie(); }
+    /// @}
+};
+using FullscreenModeVector = ea::vector<FullscreenMode>;
+
+/// Description of the window and GAPI. Some settings may be changed in real time.
+struct URHO3D_API WindowSettings
+{
+    /// Type of window (windowed, borderless fullscreen, native fullscreen).
+    WindowMode mode_{};
+    /// Windowed: size of the window in units. May be different from the size in pixels due to DPI scale.
+    /// Fullscreen: display resolution in pixels.
+    /// Borderless: ignored.
+    /// Set to 0 to pick automatically.
+    IntVector2 size_;
+    /// Window title.
+    ea::string title_;
+
+    /// Windowed only: whether the window can be resized.
+    bool resizable_{};
+    /// Fullscreen and Borderless only: index of the monitor.
+    int monitor_{};
+
+    /// Whether to enable vertical synchronization.
+    bool vSync_{};
+    /// Refresh rate. 0 to pick automatically.
+    int refreshRate_{};
+    /// Multi-sampling level.
+    int multiSample_{1};
+    /// Whether to use sRGB framebuffer.
+    bool sRGB_{};
+
+    /// Mobiles: orientation hints.
+    /// Could be any combination of "LandscapeLeft", "LandscapeRight", "Portrait" and "PortraitUpsideDown".
+    StringVector orientations_{"LandscapeLeft", "LandscapeRight"};
 };
 
 /// Texture format, equivalent to Diligent::TEXTURE_FORMAT.

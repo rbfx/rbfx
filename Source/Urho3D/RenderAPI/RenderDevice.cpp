@@ -577,6 +577,8 @@ void RenderDevice::InitializeWindow()
         int effectiveSRGB{};
         if (SDL_GL_GetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, &effectiveSRGB) == 0)
             settings_.window_.sRGB_ = effectiveSRGB != 0;
+
+        SDL_GL_SetSwapInterval(settings_.window_.vSync_ ? 1 : 0);
     }
     else
     {
@@ -878,6 +880,14 @@ void RenderDevice::UpdateWindowSettings(const WindowSettings& settings)
         oldSettings.resizable_ = newSettings.resizable_;
 
         SDL_SetWindowResizable(window_.get(), newSettings.resizable_ ? SDL_TRUE : SDL_FALSE);
+    }
+
+    if (oldSettings.vSync_ != newSettings.vSync_)
+    {
+        oldSettings.vSync_ = newSettings.vSync_;
+
+        if (settings_.backend_ == RenderBackend::OpenGL)
+            SDL_GL_SetSwapInterval(settings_.window_.vSync_ ? 1 : 0);
     }
 }
 

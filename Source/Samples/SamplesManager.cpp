@@ -173,7 +173,6 @@ void SamplesManager::Setup()
     engineParameters_[EP_BORDERLESS]   = false;
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
-    engineParameters_[EP_HIGH_DPI]     = true;
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
     engineParameters_[EP_ORIENTATIONS] = "LandscapeLeft LandscapeRight Portrait";
     engineParameters_[EP_WINDOW_RESIZABLE] = true;

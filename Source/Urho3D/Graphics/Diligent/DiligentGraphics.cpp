@@ -60,69 +60,14 @@
 #include <Diligent/Primitives/interface/CommonDefinitions.h>
 #include <Diligent/Primitives/interface/DebugOutput.h>
 
-#if D3D11_SUPPORTED
-    #include <Diligent/Graphics/GraphicsEngineD3D11/interface/DeviceContextD3D11.h>
-    #include <Diligent/Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
-    #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
-    #include <Diligent/Graphics/GraphicsEngineD3D11/interface/SwapChainD3D11.h>
-#endif
-
-#if D3D12_SUPPORTED
-    #include <d3d12.h>
-    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/DeviceContextD3D12.h>
-    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
-    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
-    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/SwapChainD3D12.h>
-#endif
-
-#if VULKAN_SUPPORTED
-    #include <vulkan/vulkan.h>
-    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/DeviceContextVk.h>
-    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
-    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
-    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/SwapChainVk.h>
-#endif
-
-// OpenGL includes
-#if GL_SUPPORTED || GLES_SUPPORTED
-    #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
-    #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
-    #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
-    #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/SwapChainGL.h>
-#endif
-
-#if 0 // METAL_SUPPORTED
-    #include <Diligent/Graphics/GraphicsEngineMetal/interface/DeviceContextMtl.h>
-    #include <Diligent/Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
-    #include <Diligent/Graphics/GraphicsEngineMetal/interface/RenderDeviceMtl.h>
-    #include <Diligent/Graphics/GraphicsEngineMetal/interface/SwapChainMtl.h>
-#endif
-
 #include <EASTL/utility.h>
 
 #include "DiligentLookupSettings.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Graphics/GraphicsTools/interface/MapHelper.hpp>
-#if UWP
-    #include <wrl/client.h>
-
-    #include <windows.ui.xaml.media.dxinterop.h>
-using namespace Microsoft::WRL;
-using namespace Windows::Foundation;
-using namespace Windows::Graphics::Display;
-using namespace Windows::UI::Core;
-using namespace Windows::UI::Xaml;
-using namespace Windows::UI::Xaml::Controls;
-using namespace Windows::UI::Xaml::Media;
-using namespace Platform;
-#endif
 
 #include <SDL.h>
-#include <SDL_syswm.h>
-#ifdef PLATFORM_MACOS
-    #include <SDL_metal.h>
-#endif
 
 #if URHO3D_PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -303,67 +248,6 @@ static void HandleDbgMessageCallbacks(
     }
 }
 
-#ifdef WIN32
-
-    #ifndef UWP
-static HWND GetWindowHandle(SDL_Window* window)
-{
-    SDL_SysWMinfo sysInfo;
-
-    SDL_VERSION(&sysInfo.version);
-    SDL_GetWindowWMInfo(window, &sysInfo);
-    return sysInfo.info.win.window;
-}
-    #else
-static IUnknown* GetWindowHandle(SDL_Window* window)
-{
-    SDL_SysWMinfo sysInfo;
-
-    SDL_VERSION(&sysInfo.version);
-    SDL_GetWindowWMInfo(window, &sysInfo);
-    return sysInfo.info.winrt.window;
-}
-    #endif
-#elif defined(PLATFORM_LINUX)
-static void GetWindowHandle(SDL_Window* window, void** outDisplay, Diligent::Uint32* outWindow)
-{
-    SDL_SysWMinfo sysInfo;
-
-    SDL_VERSION(&sysInfo.version);
-    SDL_GetWindowWMInfo(window, &sysInfo);
-    *outDisplay = sysInfo.info.x11.display;
-    *outWindow = sysInfo.info.x11.window;
-}
-#elif defined(PLATFORM_IOS) || defined(PLATFORM_TVOS)
-static UIWindow* GetWindowHandle(SDL_Window* window)
-{
-    SDL_SysWMinfo sysInfo;
-
-    SDL_VERSION(&sysInfo.version);
-    SDL_GetWindowWMInfo(window, &sysInfo);
-    return sysInfo.info.uikit.window;
-}
-#elif defined(PLATFORM_ANDROID)
-static ANativeWindow* GetWindowHandle(SDL_Window* window)
-{
-    SDL_SysWMinfo sysInfo;
-
-    SDL_VERSION(&sysInfo.version);
-    SDL_GetWindowWMInfo(window, &sysInfo);
-    return sysInfo.info.android.window;
-}
-#elif defined(PLATFORM_EMSCRIPTEN)
-static const char* GetWindowHandle(SDL_Window* window)
-{
-    return "canvas";
-}
-#else
-static void GetWindowHandle()
-{
-    assert(false);
-}
-#endif
-
 bool Graphics::gl3Support = false;
 
 Graphics::Graphics(Context* context)
@@ -465,33 +349,17 @@ Graphics::~Graphics()
     context_->ReleaseSDL();
 }
 
-bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& params, bool maximize)
+bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 {
     URHO3D_PROFILE("SetScreenMode");
-
-    // TODO(diligent): Get rid of ScreenModeParams
-    const auto toWindowSettings = [&](int width, int height, const ScreenModeParams& params)
-    {
-        WindowSettings result;
-        result.mode_ = params.windowMode_;
-        result.size_ = IntVector2{width, height};
-        result.resizable_ = params.resizable_;
-        result.monitor_ = params.monitor_;
-        result.vSync_ = params.vsync_;
-        result.refreshRate_ = params.refreshRate_;
-        result.multiSample_ = params.multiSample_;
-        result.sRGB_ = sRGB_;
-        result.orientations_ = orientations_.split(' ');
-        return result;
-    };
 
     if (!renderDevice_)
     {
         RenderDeviceSettings settings;
 
         settings.backend_ = GetRenderBackend();
-        settings.window_ = toWindowSettings(width, height, params);
-        settings.gpuDebug_ = params.gpuDebug_;
+        settings.window_ = windowSettings;
+        settings.gpuDebug_ = gpuDebug_;
         if (impl_->adapterId_ != M_MAX_UNSIGNED)
             settings.adapterId_ = impl_->adapterId_;
 
@@ -521,64 +389,16 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
     }
     else
     {
-        renderDevice_->UpdateWindowSettings(toWindowSettings(width, height, params));
+        renderDevice_->UpdateWindowSettings(windowSettings);
     }
-
-#if 0
-    // Ensure that parameters are properly filled
-    ScreenModeParams newParams = params;
-    AdjustScreenMode(width, height, newParams, maximize);
-
-    //// Find out the full screen mode display format (match desktop color depth)
-    SDL_DisplayMode mode;
-    SDL_GetDesktopDisplayMode(newParams.monitor_, &mode);
-    const TEXTURE_FORMAT fullscreenFormat =
-        SDL_BITSPERPIXEL(mode.format) == 16 ? TEX_FORMAT_B5G6R5_UNORM : TEX_FORMAT_RGBA8_UNORM;
-
-    //// If nothing changes, do not reset the device
-    if (width == width_ && height == height_ && newParams == screenParams_)
-        return true;
-
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
-
-    if (!window_)
-    {
-        if (!OpenWindow(width, height, newParams.resizable_, newParams.IsBorderless()))
-            return false;
-    }
-
-    //AdjustWindow(width, height, newParams.windowMode_, newParams.monitor_);
-
-    if (screenParams_.resizable_ != newParams.resizable_)
-        SDL_SetWindowResizable(window_, (SDL_bool)newParams.resizable_);
-
-    if (maximize)
-    {
-        Maximize();
-        SDL_GetWindowSize(window_, &width, &height);
-    }
-
-    if (!impl_->device_ || screenParams_.multiSample_ != oldMultiSample)
-        CreateDevice(width, height);
-#endif
-
-    const int oldMultiSample = screenParams_.multiSample_;
-    screenParams_ = params;
 
     window_ = renderDevice_->GetSDLWindow();
-    sRGB_ = renderDevice_->GetSettings().window_.sRGB_;
-    screenParams_.vsync_ = renderDevice_->GetSettings().window_.vSync_;
-    screenParams_.refreshRate_ = renderDevice_->GetSettings().window_.refreshRate_;
     impl_->device_ = renderDevice_->GetRenderDevice();
     impl_->deviceContext_ = renderDevice_->GetDeviceContext();
     impl_->swapChain_ = renderDevice_->GetSwapChain();
 
     CheckFeatureSupport();
     ResetRenderTargets();
-
-    auto size = renderDevice_->GetSwapChainSize();
-    width_ = size.x_;
-    height_ = size.y_;
 
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         impl_->renderTargetViews_[i] = nullptr;
@@ -594,48 +414,6 @@ bool Graphics::SetScreenMode(int width, int height, const ScreenModeParams& para
 
     OnScreenModeChanged();
     return true;
-}
-
-void Graphics::SetSRGB(bool enable)
-{
-    assert(0);
-    // bool newEnable = enable && sRGBWriteSupport_;
-    // if (newEnable != sRGB_)
-    //{
-    //     sRGB_ = newEnable;
-    //     if (impl_->swapChain_)
-    //     {
-    //         // Recreate swap chain for the new backbuffer format
-    //         CreateDevice(width_, height_);
-    //         UpdateSwapChain(width_, height_);
-    //     }
-    // }
-}
-
-void Graphics::SetDither(bool enable)
-{
-    // No effect on Direct3D11
-}
-
-void Graphics::SetFlushGPU(bool enable)
-{
-    flushGPU_ = enable;
-
-    /*if (impl_->device_)
-    {
-        IDXGIDevice1* dxgiDevice;
-        impl_->device_->QueryInterface(IID_IDXGIDevice1, (void**)&dxgiDevice);
-        if (dxgiDevice)
-        {
-            dxgiDevice->SetMaximumFrameLatency(enable ? 1 : 3);
-            dxgiDevice->Release();
-        }
-    }*/
-}
-
-void Graphics::SetForceGL2(bool enable)
-{
-    // No effect on Direct3D11
 }
 
 void Graphics::Close()
@@ -744,7 +522,7 @@ bool Graphics::BeginFrame()
     {
         // To prevent a loop of endless device loss and flicker, do not attempt to render when in fullscreen
         // and the window is minimized
-        if (screenParams_.IsFullscreen() && (SDL_GetWindowFlags(window_) & SDL_WINDOW_MINIMIZED))
+        if (GetFullscreen() && (SDL_GetWindowFlags(window_) & SDL_WINDOW_MINIMIZED))
             return false;
     }
 
@@ -784,6 +562,7 @@ void Graphics::EndFrame()
     CleanupScratchBuffers();
 
     // If using an external window, check it for size changes, and reset screen mode if necessary
+#if 0
     if (externalWindow_)
     {
         int width, height;
@@ -792,6 +571,7 @@ void Graphics::EndFrame()
         if (width != width_ || height != height_)
             SetMode(width, height);
     }
+#endif
 }
 
 void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)
@@ -1566,7 +1346,7 @@ void Graphics::ResetRenderTargets()
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         SetRenderTarget(i, (RenderSurface*)nullptr);
     SetDepthStencil((RenderSurface*)nullptr);
-    SetViewport(IntRect(0, 0, width_, height_));
+    SetViewport(IntRect(0, 0, GetWidth(), GetHeight()));
 }
 
 void Graphics::ResetRenderTarget(unsigned index)
@@ -1891,7 +1671,7 @@ ea::vector<int> Graphics::GetMultiSampleLevels() const
     if (!impl_->device_)
         return ret;
     const TextureFormatInfoExt& colorFmtInfo =
-        impl_->device_->GetTextureFormatInfoExt(sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM);
+        impl_->device_->GetTextureFormatInfoExt(GetSRGB() ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM);
     if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_64)
         ret.emplace_back(64);
     else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_32)
@@ -2019,8 +1799,8 @@ IntVector2 Graphics::GetRenderTargetDimensions() const
     }
     else
     {
-        width = width_;
-        height = height_;
+        width = GetWidth();
+        height = GetHeight();
     }
 
     return IntVector2(width, height);
@@ -2046,10 +1826,6 @@ void Graphics::OnWindowResized()
 
     renderDevice_->UpdateSwapChainSize();
 
-    auto size = renderDevice_->GetSwapChainSize();
-    width_ = size.x_;
-    height_ = size.y_;
-
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         impl_->renderTargetViews_[i] = nullptr;
     impl_->renderTargetsDirty_ = true;
@@ -2057,23 +1833,20 @@ void Graphics::OnWindowResized()
     // Reset rendertargets and viewport for the new screen size
     ResetRenderTargets();
 
-    URHO3D_LOGTRACEF("Window was resized to %dx%d", width_, height_);
-
     using namespace ScreenMode;
 
     VariantMap& eventData = GetEventDataMap();
-    eventData[P_WIDTH] = width_;
-    eventData[P_HEIGHT] = height_;
-    eventData[P_FULLSCREEN] = screenParams_.IsFullscreen();
-    eventData[P_BORDERLESS] = screenParams_.IsBorderless();
-    eventData[P_RESIZABLE] = screenParams_.resizable_;
-    eventData[P_HIGHDPI] = screenParams_.highDPI_;
+    eventData[P_WIDTH] = GetWidth();
+    eventData[P_HEIGHT] = GetWidth();
+    eventData[P_FULLSCREEN] = GetFullscreen();
+    eventData[P_BORDERLESS] = GetBorderless();
+    eventData[P_RESIZABLE] = GetResizable();
     SendEvent(E_SCREENMODE, eventData);
 }
 
 void Graphics::OnWindowMoved()
 {
-    if (!impl_->device_ || !window_ || screenParams_.IsFullscreen())
+    if (!impl_->device_ || !window_ || GetFullscreen())
         return;
 
     int newX, newY;
@@ -2194,7 +1967,7 @@ PipelineStateOutputDesc Graphics::GetCurrentOutputDesc() const
             : nullptr;
     if (!renderTargets_[0]
         && (!depthStencil_
-            || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
+            || (depthStencil_ && depthStencil_->GetWidth() == GetWidth() && depthStencil_->GetHeight() == GetHeight())))
         renderTargets[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
     unsigned rtCount = 0;
     while (impl_->renderTargetViews_[rtCount] != nullptr)
@@ -2365,297 +2138,6 @@ bool Graphics::GetGL3Support()
     return gl3Support;
 }
 
-bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless)
-{
-    if (!externalWindow_)
-    {
-        unsigned flags = 0;
-        if (resizable)
-            flags |= SDL_WINDOW_RESIZABLE;
-        if (borderless)
-            flags |= SDL_WINDOW_BORDERLESS;
-
-#ifdef PLATFORM_MACOS
-        flags |= SDL_WINDOW_METAL;
-#endif
-        window_ = SDL_CreateWindow(windowTitle_.c_str(), position_.x_, position_.y_, width, height, flags);
-    }
-    else
-        window_ = SDL_CreateWindowFrom(externalWindow_, 0);
-
-    if (!window_)
-    {
-        URHO3D_LOGERRORF("Could not create window, root cause: '%s'", SDL_GetError());
-        return false;
-    }
-#ifdef PLATFORM_MACOS
-    impl_->metalView_ = SDL_Metal_CreateView(window_);
-    assert(impl_->metalView_);
-#endif
-    SDL_GetWindowPosition(window_, &position_.x_, &position_.y_);
-
-    CreateWindowIcon();
-
-    return true;
-}
-
-void Graphics::AdjustWindow(int& newWidth, int& newHeight, WindowMode& newWindowMode, int& monitor)
-{
-    if (!externalWindow_)
-    {
-        // Keep current window position because it may change in intermediate callbacks
-        const IntVector2 oldPosition = position_;
-        bool reposition = false;
-        bool resizePostponed = false;
-        if (!newWidth || !newHeight)
-        {
-            SDL_MaximizeWindow(window_);
-            SDL_GetWindowSize(window_, &newWidth, &newHeight);
-        }
-        else
-        {
-            SDL_Rect display_rect;
-            SDL_GetDisplayBounds(monitor, &display_rect);
-
-            reposition = newWindowMode == WindowMode::Fullscreen
-                || (newWindowMode == WindowMode::Borderless && newWidth >= display_rect.w
-                    && newHeight >= display_rect.h);
-            if (reposition)
-            {
-                // Reposition the window on the specified monitor if it's supposed to cover the entire monitor
-                SDL_SetWindowPosition(window_, display_rect.x, display_rect.y);
-            }
-
-            // Postpone window resize if exiting fullscreen to avoid redundant resolution change
-            if (newWindowMode != WindowMode::Fullscreen && screenParams_.IsFullscreen())
-                resizePostponed = true;
-            else
-                SDL_SetWindowSize(window_, newWidth, newHeight);
-        }
-
-        // Turn off window fullscreen mode so it gets repositioned to the correct monitor
-        SDL_SetWindowFullscreen(window_, SDL_FALSE);
-        // Hack fix: on SDL 2.0.4 a fullscreen->windowed transition results in a maximized window when the D3D device is
-        // reset, so hide before
-        if (newWindowMode != WindowMode::Fullscreen)
-            SDL_HideWindow(window_);
-        SDL_SetWindowFullscreen(window_, newWindowMode == WindowMode::Fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
-        SDL_SetWindowBordered(window_, newWindowMode == WindowMode::Borderless ? SDL_FALSE : SDL_TRUE);
-        if (newWindowMode != WindowMode::Fullscreen)
-            SDL_ShowWindow(window_);
-
-        // Resize now if was postponed
-        if (resizePostponed)
-            SDL_SetWindowSize(window_, newWidth, newHeight);
-
-        // Ensure that window keeps its position
-        if (!reposition)
-            SDL_SetWindowPosition(window_, oldPosition.x_, oldPosition.y_);
-        else
-            position_ = oldPosition;
-
-#ifdef UWP
-        // Window size is off on UWP if it was created with the same size as on previous run.
-        // Tweak it a bit to force the correct size.
-        if (newWindowMode == WindowMode::Windowed)
-        {
-            SDL_SetWindowSize(window_, newWidth - 1, newHeight + 1);
-            SDL_SetWindowSize(window_, newWidth, newHeight);
-        }
-#endif
-    }
-    else
-    {
-        // If external window, must ask its dimensions instead of trying to set them
-        SDL_GetWindowSize(window_, &newWidth, &newHeight);
-        newWindowMode = WindowMode::Windowed;
-    }
-}
-
-bool Graphics::CreateDevice(int width, int height)
-{
-    using namespace Diligent;
-    NativeWindow wnd;
-#ifdef WIN32
-
-    #ifdef UWP
-    wnd.pCoreWindow = GetWindowHandle(window_);
-    #else
-    wnd.hWnd = GetWindowHandle(window_);
-    #endif
-
-#elif PLATFORM_LINUX
-    GetWindowHandle(window_, &wnd.pDisplay, &wnd.WindowId);
-#elif PLATFORM_MACOS
-    wnd.pNSView = impl_->metalView_;
-#elif defined(PLATFORM_IOS) || defined(PLATFORM_TVOS)
-    wnd.pCALayer = GetWindowHandle(window_);
-#elif defined(PLATFORM_ANDROID)
-    wnd.pAWindow = GetWindowHandle(window_);
-#elif defined(PLATFORM_EMSCRIPTEN)
-    wnd.pCanvasId = GetWindowHandle(window_);
-#endif
-
-    SwapChainDesc swapChainDesc;
-    swapChainDesc.DepthBufferFormat = TEX_FORMAT_D24_UNORM_S8_UINT;
-    if (impl_->renderBackend_ == RenderBackend::Vulkan)
-    {
-        swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_BGRA8_UNORM_SRGB : TEX_FORMAT_BGRA8_UNORM;
-#ifdef PLATFORM_MACOS
-        swapChainDesc.DepthBufferFormat = TEX_FORMAT_D32_FLOAT_S8X24_UINT;
-#endif
-    }
-    else if (impl_->renderBackend_ == RenderBackend::OpenGL)
-    {
-        // TODO(diligent): This is awful and unreliable. Must be fixed!
-#if URHO3D_PLATFORM_WEB
-        const bool hasFramebufferSRGB = false;
-#else
-        const bool hasFramebufferSRGB = true;
-#endif
-
-        sRGB_ = hasFramebufferSRGB;
-        swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
-    }
-    else
-    {
-        swapChainDesc.ColorBufferFormat = sRGB_ ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM;
-    }
-
-    FullScreenModeDesc fullscreenDesc = {};
-    fullscreenDesc.Fullscreen = screenParams_.IsFullscreen();
-
-    // Check that multisample level is supported
-    ea::vector<int> multiSampleLevels = GetMultiSampleLevels();
-    if (!multiSampleLevels.contains(screenParams_.multiSample_))
-        screenParams_.multiSample_ = 1;
-
-    // Discard old swapchain has been created.
-    if (impl_->swapChain_)
-    {
-        impl_->swapChain_->Release();
-        impl_->swapChain_ = nullptr;
-    }
-
-    // Device needs only to be created once
-    if (!impl_->device_)
-    {
-        gl3Support = false;
-        IEngineFactory* engineFactory = nullptr;
-        switch (impl_->renderBackend_)
-        {
-#if D3D11_SUPPORTED
-        case RenderBackend::D3D11:
-        {
-            IEngineFactoryD3D11* factory = GetEngineFactoryD3D11();
-            EngineD3D11CreateInfo engineCI;
-            engineCI.GraphicsAPIVersion = Version{11, 0};
-            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
-            engineCI.EnableValidation = true;
-            engineCI.D3D11ValidationFlags = D3D11_VALIDATION_FLAG_VERIFY_COMMITTED_RESOURCE_RELEVANCE;
-
-            factory->CreateDeviceAndContextsD3D11(engineCI, &impl_->device_, &impl_->deviceContext_);
-            factory->CreateSwapChainD3D11(
-                impl_->device_, impl_->deviceContext_, swapChainDesc, fullscreenDesc, wnd, &impl_->swapChain_);
-            engineFactory = factory;
-        }
-        break;
-#endif
-#if D3D12_SUPPORTED
-        case RenderBackend::D3D12:
-        {
-            IEngineFactoryD3D12* factory = GetEngineFactoryD3D12();
-            factory->LoadD3D12();
-            EngineD3D12CreateInfo engineCI;
-            engineCI.GraphicsAPIVersion = Version{11, 0};
-            engineCI.GPUDescriptorHeapDynamicSize[0] = 32768;
-            // TODO(diligent): Revisit limits
-            //engineCI.GPUDescriptorHeapSize[1] = 128;
-            //engineCI.GPUDescriptorHeapDynamicSize[1] = 2048 - 128;
-            engineCI.DynamicDescriptorAllocationChunkSize[0] = 32;
-            engineCI.DynamicDescriptorAllocationChunkSize[1] = 8; // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
-            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
-
-            factory->CreateDeviceAndContextsD3D12(engineCI, &impl_->device_, &impl_->deviceContext_);
-            factory->CreateSwapChainD3D12(
-                impl_->device_, impl_->deviceContext_, swapChainDesc, fullscreenDesc, wnd, &impl_->swapChain_);
-            engineFactory = factory;
-        }
-        break;
-#endif
-#if VULKAN_SUPPORTED
-        case RenderBackend::Vulkan:
-        {
-            IEngineFactoryVk* factory = GetEngineFactoryVk();
-            EngineVkCreateInfo engineCI;
-            const char* const ppIgnoreDebugMessages[] = //
-                {
-                    // Validation Performance Warning: [ UNASSIGNED-CoreValidation-Shader-OutputNotConsumed ]
-                    // vertex shader writes to output location 1.0 which is not consumed by fragment shader
-                    "UNASSIGNED-CoreValidation-Shader-OutputNotConsumed" //
-                };
-            engineCI.Features = DeviceFeatures{DEVICE_FEATURE_STATE_OPTIONAL};
-            engineCI.Features.TransferQueueTimestampQueries = DEVICE_FEATURE_STATE_DISABLED;
-            // Note: We need to fix this later to config based
-            // after vulkan initialization is not possible to change the dynamic heap size
-            // the basic features from rbfx requires at 12 mb.
-            engineCI.DynamicHeapSize = 8 << 22; // Allocates 33.55mb of dynamic memory
-            engineCI.ppIgnoreDebugMessageNames = ppIgnoreDebugMessages;
-            engineCI.IgnoreDebugMessageCount = _countof(ppIgnoreDebugMessages);
-            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
-
-            factory->CreateDeviceAndContextsVk(engineCI, &impl_->device_, &impl_->deviceContext_);
-            factory->CreateSwapChainVk(impl_->device_, impl_->deviceContext_, swapChainDesc, wnd, &impl_->swapChain_);
-            engineFactory = factory;
-        }
-        break;
-#endif
-#if GL_SUPPORTED || GLES_SUPPORTED
-        case RenderBackend::OpenGL:
-        {
-            IEngineFactoryOpenGL* factory = GetEngineFactoryOpenGL();
-            EngineGLCreateInfo engineCI;
-            engineCI.Window = wnd;
-            engineCI.AdapterId = impl_->adapterId_ = impl_->FindBestAdapter(factory, engineCI.GraphicsAPIVersion);
-
-            factory->AttachToActiveGLContext(engineCI, &impl_->device_, &impl_->deviceContext_);
-
-            //factory->CreateDeviceAndSwapChainGL(
-            //    engineCI, &impl_->device_, &impl_->deviceContext_, swapChainDesc, &impl_->swapChain_);
-
-            gl3Support = true;
-            engineFactory = factory;
-        }
-        break;
-#endif
-        default:
-        {
-            URHO3D_LOGWARNING("Unsupported render backend");
-            return false;
-        }
-        }
-
-        if (!impl_->device_ || !impl_->deviceContext_)
-        {
-            URHO3D_LOGERROR("Failed to Initialize GPU Device");
-            return false;
-        }
-
-        CheckFeatureSupport();
-
-        ea::string adapterDesc = "Adapter used " + ea::string(impl_->device_->GetAdapterInfo().Description);
-        URHO3D_LOGINFO(adapterDesc);
-    }
-
-    if (!impl_->swapChain_)
-    {
-        URHO3D_LOGERROR("Failed to create swap chain");
-        return false;
-    }
-
-    return true;
-}
-
 void Graphics::CheckFeatureSupport()
 {
     anisotropySupport_ = true;
@@ -2716,7 +2198,7 @@ void Graphics::ResetCachedState()
 
     depthStencil_ = nullptr;
     // impl_->depthStencilView_ = nullptr;
-    viewport_ = IntRect(0, 0, width_, height_);
+    viewport_ = IntRect(0, 0, GetWidth(), GetHeight());
 
     indexBuffer_ = nullptr;
     vertexDeclarationHash_ = 0;
@@ -2788,7 +2270,7 @@ void Graphics::PrepareDraw()
         // is to do backbuffer rendering with a custom depth stencil
         if (!renderTargets_[0]
             && (!depthStencil_
-                || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
+                || (depthStencil_ && depthStencil_->GetWidth() == GetWidth() && depthStencil_->GetHeight() == GetHeight())))
             impl_->renderTargetViews_[0] = impl_->swapChain_->GetCurrentBackBufferRTV();
 
         unsigned rtCount = 0;

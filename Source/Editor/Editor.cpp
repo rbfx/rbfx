@@ -209,10 +209,7 @@ void Editor::Setup()
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
     engineParameters_[EP_SYSTEMUI_FLAGS] = ImGuiConfigFlags_DpiEnableScaleFonts;
 #if URHO3D_SYSTEMUI_VIEWPORTS
-    engineParameters_[EP_HIGH_DPI] = true;
     engineParameters_[EP_SYSTEMUI_FLAGS] = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt() | ImGuiConfigFlags_ViewportsEnable /*| ImGuiConfigFlags_DpiEnableScaleViewports*/;
-#else
-    engineParameters_[EP_HIGH_DPI] = true;
 #endif
 
     PluginApplication::RegisterStaticPlugins();

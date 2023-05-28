@@ -393,7 +393,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
             graphics->SetExternalWindow(GetParameter(EP_EXTERNAL_WINDOW).GetVoidPtr());
         graphics->SetWindowTitle(GetParameter(EP_WINDOW_TITLE).GetString());
         graphics->SetWindowIcon(cache->GetResource<Image>(GetParameter(EP_WINDOW_ICON).GetString()));
-        graphics->SetFlushGPU(GetParameter(EP_FLUSH_GPU).GetBool());
         graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
         graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
         graphics->SetLogShaderSources(GetParameter(EP_SHADER_LOG_SOURCES).GetBool());
@@ -405,6 +404,9 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         auto adapterIdParam = GetParameter(EP_RENDER_ADAPTER_ID);
         if (adapterIdParam != Variant::EMPTY)
             graphics->SetAdapterId(adapterIdParam.GetUInt());
+
+        const bool gpuDebug = GetParameter(EP_GPU_DEBUG).GetBool();
+        graphics->SetGPUDebug(gpuDebug);
 
         SubscribeToEvent(E_SCREENMODE, [this](VariantMap& eventData)
         {
@@ -421,25 +423,23 @@ bool Engine::Initialize(const StringVariantMap& parameters)
             SetParameter(EP_MONITOR, eventData[P_MONITOR].GetInt());
         });
 
-#ifdef URHO3D_OPENGL
-        if (HasParameter(EP_FORCE_GL2))
-            graphics->SetForceGL2(GetParameter(EP_FORCE_GL2).GetBool());
-#endif
+        WindowSettings windowSettings;
 
-        if (!graphics->SetMode(
-            GetParameter(EP_WINDOW_WIDTH).GetInt(),
-            GetParameter(EP_WINDOW_HEIGHT).GetInt(),
-            GetParameter(EP_FULL_SCREEN).GetBool(),
-            GetParameter(EP_BORDERLESS).GetBool(),
-            GetParameter(EP_WINDOW_RESIZABLE).GetBool(),
-            GetParameter(EP_HIGH_DPI).GetBool(),
-            GetParameter(EP_VSYNC).GetBool(),
-            GetParameter(EP_TRIPLE_BUFFER).GetBool(),
-            GetParameter(EP_MULTI_SAMPLE).GetInt(),
-            GetParameter(EP_MONITOR).GetInt(),
-            GetParameter(EP_REFRESH_RATE).GetInt(),
-            GetParameter(EP_GPU_DEBUG).GetBool()
-        ))
+        const int width = GetParameter(EP_WINDOW_WIDTH).GetInt();
+        const int height = GetParameter(EP_WINDOW_HEIGHT).GetInt();
+        if (width && height)
+            windowSettings.size_ = {width, height};
+        if (GetParameter(EP_FULL_SCREEN).GetBool())
+            windowSettings.mode_ = WindowMode::Fullscreen;
+        else if (GetParameter(EP_BORDERLESS).GetBool())
+            windowSettings.mode_ = WindowMode::Borderless;
+        windowSettings.resizable_ = GetParameter(EP_WINDOW_RESIZABLE).GetBool();
+        windowSettings.vSync_ = GetParameter(EP_VSYNC).GetBool();
+        windowSettings.multiSample_ = GetParameter(EP_MULTI_SAMPLE).GetInt();
+        windowSettings.monitor_ = GetParameter(EP_MONITOR).GetInt();
+        windowSettings.refreshRate_ = GetParameter(EP_REFRESH_RATE).GetInt();
+
+        if (!graphics->SetDefaultWindowModes(windowSettings))
             return false;
 
         if (HasParameter(EP_WINDOW_POSITION_X) && HasParameter(EP_WINDOW_POSITION_Y))
@@ -974,8 +974,6 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--headless", EP_HEADLESS, true, "Do not initialize graphics subsystem");
     addFlag("--validate-shaders", EP_VALIDATE_SHADERS, true, "Validate shaders before submitting them to GAPI");
     addFlag("--nolimit", EP_FRAME_LIMITER, false, "Disable frame limiter");
-    addFlag("--flushgpu", EP_FLUSH_GPU, true, "Enable GPU flushing");
-    addFlag("--gl2", EP_FORCE_GL2, true, "Force OpenGL2");
     addOptionPrependString("--landscape", EP_ORIENTATIONS, "LandscapeLeft LandscapeRight ", "Force landscape orientation");
     addOptionPrependString("--portrait", EP_ORIENTATIONS, "Portrait PortraitUpsideDown ", "Force portrait orientation");
     addFlag("--nosound", EP_SOUND, false, "Disable sound");
@@ -986,12 +984,9 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     optNoShadows->excludes(optLowQualityShadows);
     addFlag("--nothreads", EP_WORKER_THREADS, false, "Disable multithreading");
     addFlag("-v,--vsync", EP_VSYNC, true, "Enable vsync");
-    addFlag("-t,--tripple-buffer", EP_TRIPLE_BUFFER, true, "Enable tripple-buffering");
     addFlag("-w,--windowed", EP_BORDERLESS, false, "Windowed mode");
     addFlag("-f,--full-screen", EP_FULL_SCREEN, true, "Full screen mode");
     addFlag("--borderless", EP_BORDERLESS, true, "Borderless window mode");
-    addFlag("--lowdpi", EP_HIGH_DPI, false, "Disable high-dpi handling");
-    addFlag("--highdpi", EP_HIGH_DPI, true, "Enable high-dpi handling");
     addFlag("-s,--resizable", EP_WINDOW_RESIZABLE, true, "Enable window resizing");
     addFlag("-q,--quiet", EP_LOG_QUIET, true, "Disable logging");
     addFlagInternal("-l,--log", "Logging level", [&](CLI::results_t res) {
@@ -1100,13 +1095,10 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_ENGINE_AUTO_LOAD_SCRIPTS, false);
     engineParameters_->DefineVariable(EP_ENGINE_CLI_PARAMETERS, true);
     engineParameters_->DefineVariable(EP_EXTERNAL_WINDOW, static_cast<void*>(nullptr));
-    engineParameters_->DefineVariable(EP_FLUSH_GPU, false);
-    engineParameters_->DefineVariable(EP_FORCE_GL2, false);
     engineParameters_->DefineVariable(EP_FRAME_LIMITER, true).Overridable();
     engineParameters_->DefineVariable(EP_FULL_SCREEN, false).Overridable();
     engineParameters_->DefineVariable(EP_GPU_DEBUG, false);
     engineParameters_->DefineVariable(EP_HEADLESS, false);
-    engineParameters_->DefineVariable(EP_HIGH_DPI, true);
     engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE);
     engineParameters_->DefineVariable(EP_LOG_NAME, "conf://Urho3D.log");
     engineParameters_->DefineVariable(EP_LOG_QUIET, false);
@@ -1139,7 +1131,6 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_TEXTURE_QUALITY, QUALITY_HIGH).Overridable();
     engineParameters_->DefineVariable(EP_TIME_OUT, 0);
     engineParameters_->DefineVariable(EP_TOUCH_EMULATION, false);
-    engineParameters_->DefineVariable(EP_TRIPLE_BUFFER, false);
     engineParameters_->DefineVariable(EP_VALIDATE_SHADERS, false);
     engineParameters_->DefineVariable(EP_VSYNC, false).Overridable();
     engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0); //.Overridable();
