@@ -37,17 +37,19 @@ enum class PrefabInlineFlag
 };
 URHO3D_FLAGSET(PrefabInlineFlag, PrefabInlineFlags);
 
-/// Controls, which attributes of top-level node of the prefab are copied to the scene node, assoociated with prefab instance
-/// By default, no copying is made.
-enum class PrefabInstanceFlag
+/// Controls which attributes of the top-level node of the prefab are copied to the scene node
+/// containing PrefabReference. By default, none are copied.
+enum class PrefabInstanceFlag : unsigned
 {
     None = 0,
-    SetNodeScale = 1 << 0,
-    SetNodePosition = 1 << 1,
-    SetNodeRotation = 1 << 2,
-    SetNodeTags = 1 << 3,
-    SetNodeName = 1 << 4,
-    SetNodeVariables = 1 << 5,
+    UpdateName = 1 << 0,
+    UpdateTags = 1 << 1,
+    UpdatePosition = 1 << 2,
+    UpdateRotation = 1 << 3,
+    UpdateScale = 1 << 4,
+    UpdateVariables = 1 << 5,
+
+    UpdateAll = 0xffffffff
 };
 URHO3D_FLAGSET(PrefabInstanceFlag, PrefabInstanceFlags);
 
@@ -68,7 +70,7 @@ public:
     /// Attributes.
     /// @{
     void SetPrefab(PrefabResource* prefab, ea::string_view path = {}, bool createInstance = true,
-                   PrefabInstanceFlags instanceFlags = PrefabInstanceFlag::None);
+        PrefabInstanceFlags instanceFlags = PrefabInstanceFlag::None);
     PrefabResource* GetPrefab() const { return prefab_; }
     void SetPath(ea::string_view path);
     const ea::string& GetPath() const { return path_; }

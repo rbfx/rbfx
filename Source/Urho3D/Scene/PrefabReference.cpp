@@ -236,39 +236,27 @@ void PrefabReference::InstantiatePrefab(const NodePrefab& nodePrefab, PrefabInst
         | PrefabLoadFlag::LoadAsTemporary | PrefabLoadFlag::IgnoreRootAttributes;
     PrefabReaderFromMemory reader{nodePrefab};
     node_->Load(reader, flags);
-    if (instanceFlags != PrefabInstanceFlag::None) {
-        for (const AttributePrefab& attribute : nodePrefab.GetNode().GetAttributes()) {
-            auto name = attribute.GetName().c_str();
-            if (instanceFlags & PrefabInstanceFlag::SetNodeScale) {
-                if (attribute.GetName() == "Scale") {
-                    node_->SetAttribute("Scale", attribute.GetValue());
-                }
-            }
-            if (instanceFlags & PrefabInstanceFlag::SetNodePosition) {
-                if (attribute.GetName() == "Position") {
-                    node_->SetAttribute("Position", attribute.GetValue());
-                }
-            }
-            if (instanceFlags & PrefabInstanceFlag::SetNodeRotation) {
-                if (attribute.GetName() == "Rotation") {
-                    node_->SetAttribute("Rotation", attribute.GetValue());
-                }
-            }
-            if (instanceFlags & PrefabInstanceFlag::SetNodeTags) {
-                if (attribute.GetName() == "Tags") {
-                    node_->SetAttribute("Tags", attribute.GetValue());
-                }
-            }
-            if (instanceFlags & PrefabInstanceFlag::SetNodeName) {
-                if (attribute.GetName() == "Name") {
-                    node_->SetAttribute("Name", attribute.GetValue());
-                }
-            }
-            if (instanceFlags & PrefabInstanceFlag::SetNodeVariables) {
-                if (attribute.GetName() == "Variables") {
-                    node_->SetAttribute("Variables", attribute.GetValue());
-                }
-            }
+
+    if (instanceFlags != PrefabInstanceFlag::None)
+    {
+        static const ea::unordered_map<ea::string, PrefabInstanceFlag> attributeToFlag = {
+            {"Scale", PrefabInstanceFlag::UpdateScale},
+            {"Position", PrefabInstanceFlag::UpdatePosition},
+            {"Rotation", PrefabInstanceFlag::UpdateRotation},
+            {"Tags", PrefabInstanceFlag::UpdateTags},
+            {"Name", PrefabInstanceFlag::UpdateName},
+            {"Variables", PrefabInstanceFlag::UpdateVariables},
+        };
+
+        for (const AttributePrefab& attribute : nodePrefab.GetNode().GetAttributes())
+        {
+            const auto iter = attributeToFlag.find(attribute.GetName());
+            if (iter == attributeToFlag.end())
+                continue;
+
+            const auto& [name, flag] = *iter;
+            if (instanceFlags.Test(flag))
+                node_->SetAttribute(name, attribute.GetValue());
         }
     }
 }
