@@ -39,7 +39,7 @@ URHO3D_FLAGSET(PrefabInlineFlag, PrefabInlineFlags);
 
 /// Controls which attributes of the top-level node of the prefab are copied to the scene node
 /// containing PrefabReference. By default, none are copied.
-enum class PrefabInstanceFlag : unsigned
+enum class PrefabInstanceFlag
 {
     None = 0,
     UpdateName = 1 << 0,
@@ -49,7 +49,7 @@ enum class PrefabInstanceFlag : unsigned
     UpdateScale = 1 << 4,
     UpdateVariables = 1 << 5,
 
-    UpdateAll = 0xffffffff
+    UpdateAll = 0x7fffffff
 };
 URHO3D_FLAGSET(PrefabInstanceFlag, PrefabInstanceFlags);
 
