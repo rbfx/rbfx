@@ -106,6 +106,7 @@ WindowMode ToWindowMode(bool fullscreen, bool borderless)
 }
 
 GraphicsCaps Graphics::caps;
+unsigned Graphics::maxBonesHWSkinned = 0;
 
 void Graphics::SetExternalWindow(void* window)
 {
