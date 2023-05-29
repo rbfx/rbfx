@@ -31,14 +31,12 @@ namespace Urho3D
 namespace Actions
 {
 
-/// ------------------------------------------------------------------------------
 void MoveBy::ReverseImpl(FiniteTimeAction* action) const
 {
     BaseClassName::ReverseImpl(action);
     static_cast<MoveBy*>(action)->SetDelta(-delta_);
 }
 
-/// ------------------------------------------------------------------------------
 void MoveByQuadratic::ReverseImpl(FiniteTimeAction* action) const
 {
     BaseClassName::ReverseImpl(action);
@@ -46,30 +44,23 @@ void MoveByQuadratic::ReverseImpl(FiniteTimeAction* action) const
     static_cast<MoveByQuadratic*>(action)->SetControl(-GetControl());
 }
 
-/// ------------------------------------------------------------------------------
 void JumpBy::ReverseImpl(FiniteTimeAction* action) const
 {
     BaseClassName::ReverseImpl(action);
     static_cast<JumpBy*>(action)->SetDelta(-delta_);
 }
 
-/// ------------------------------------------------------------------------------
-///
 void ScaleBy::ReverseImpl(FiniteTimeAction* action) const
 {
     BaseClassName::ReverseImpl(action);
     static_cast<ScaleBy*>(action)->SetDelta(Vector3(1.0f / delta_.x_, 1.0f / delta_.y_, 1.0f / delta_.z_));
 }
 
-/// ------------------------------------------------------------------------------
 void RotateBy::ReverseImpl(FiniteTimeAction* action) const
 {
     BaseClassName::ReverseImpl(action);
     static_cast<RotateBy*>(action)->SetDelta(delta_.Inverse());
 }
-
-
-/// ------------------------------------------------------------------------------
 
 void RotateAround::ReverseImpl(FiniteTimeAction* action) const
 {

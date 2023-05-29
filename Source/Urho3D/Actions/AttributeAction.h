@@ -23,8 +23,8 @@
 
 #pragma once
 
-#include "ActionInstant.h"
-#include "FiniteTimeAction.h"
+#include "Urho3D/Actions/ActionInstant.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
 
 namespace Urho3D
 {
@@ -55,7 +55,7 @@ public:
     virtual const ea::string& GetAttributeName() const;
 
     /// Get attribute info from target.
-    AttributeInfo* GetAttribute(Object* target);
+    AttributeInfo* GetAttribute(Object* target) const;
 
 private:
     ea::string animatedAttribute_{};
@@ -80,7 +80,7 @@ public:
     virtual const ea::string& GetAttributeName() const;
 
     /// Get attribute info from target.
-    AttributeInfo* GetAttribute(Object* target);
+    AttributeInfo* GetAttribute(Object* target) const;
 
 private:
     ea::string animatedAttribute_{};

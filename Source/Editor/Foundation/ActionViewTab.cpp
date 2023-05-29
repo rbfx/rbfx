@@ -24,8 +24,7 @@
 #include "../Core/IniHelpers.h"
 #include "../Foundation/ActionViewTab.h"
 
-#include "Urho3D/Actions/FiniteTimeAction.h"
-
+#include <Urho3D/Actions/FiniteTimeAction.h>
 #include <Urho3D/Actions/ActionManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/GraphNode.h>

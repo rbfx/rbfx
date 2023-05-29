@@ -26,10 +26,10 @@
 #include "ActionState.h"
 #include "FiniteTimeAction.h"
 
-#include "../Core/Context.h"
-#include "../IO/Archive.h"
-#include "../Resource/GraphNode.h"
-#include "../Resource/Graph.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/Resource/GraphNode.h"
+#include "Urho3D/Resource/Graph.h"
 #include "Urho3D/IO/Log.h"
 
 namespace Urho3D

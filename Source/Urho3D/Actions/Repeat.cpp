@@ -99,6 +99,7 @@ Repeat::Repeat(Context* context)
 {
     innerAction_ = GetOrDefault(nullptr);
 }
+
 /// Get action duration.
 float Repeat::GetDuration() const { return innerAction_->GetDuration() * times_; }
 

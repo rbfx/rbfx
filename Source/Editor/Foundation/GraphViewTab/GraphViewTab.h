@@ -158,9 +158,12 @@ protected:
     virtual void RenderTitle();
 
     void RenderGraph();
+    void RenderNode(Detail::GraphNodeView& node);
     void RenderPin(ax::NodeEditor::NodeId nodeId, Detail::GraphPinView& pin);
     void DeleteLink(const ax::NodeEditor::LinkId& link_id);
     bool CreateLink(const ax::NodeEditor::PinId& from, const ax::NodeEditor::PinId& to);
+    void CreateNodeOrLink();
+    void DeleteNodeOrLink();
 
     ax::NodeEditor::EditorContext* editorContext_ = nullptr; // Editor context, required to trace a editor state.
     bool showOrdinals_{};

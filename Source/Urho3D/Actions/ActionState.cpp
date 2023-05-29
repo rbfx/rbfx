@@ -20,10 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include "ActionState.h"
-#include "BaseAction.h"
+#include "Urho3D/Actions/ActionState.h"
+#include "Urho3D/Actions/BaseAction.h"
 
-#include "../Core/Context.h"
+#include "Urho3D/Core/Context.h"
 
 namespace Urho3D
 {

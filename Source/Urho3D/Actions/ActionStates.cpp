@@ -104,7 +104,7 @@ MoveByState::MoveByState(MoveBy* action, Object* target)
     : AttributeActionState(action, target)
 {
 
-    if (auto attribute = GetAttribute())
+    if (const auto attribute = GetAttribute())
     {
         switch (attribute->type_)
         {
@@ -202,7 +202,7 @@ void MoveByQuadraticState::IntVec2State::Update(float time, Variant& value)
 MoveByQuadraticState::MoveByQuadraticState(MoveByQuadratic* action, Object* target)
     : AttributeActionState(action, target)
 {
-    if (auto attribute = GetAttribute())
+    if (const auto attribute = GetAttribute())
     {
         switch (attribute->type_)
         {
@@ -226,7 +226,7 @@ void MoveByQuadraticState::Update(float dt, Variant& value)
 JumpByState::JumpByState(JumpBy* action, Object* target)
     : AttributeActionState(action, target)
 {
-    if (auto attribute = GetAttribute())
+    if (const auto attribute = GetAttribute())
     {
         switch (attribute->type_)
         {
@@ -250,7 +250,7 @@ void JumpByState::Update(float dt, Variant& value)
 ScaleByState::ScaleByState(ScaleBy* action, Object* target)
     : AttributeActionState(action, target)
 {
-    if (auto attribute = GetAttribute())
+    if (const auto attribute = GetAttribute())
     {
         switch (attribute->type_)
         {
@@ -274,7 +274,7 @@ RotateByState::RotateByState(RotateBy* action, Object* target)
 {
     rotationDelta_ = action->GetDelta();
     previousRotation_ = startRotation_ = Get<Quaternion>();
-    if (auto attribute = GetAttribute())
+    if (const auto attribute = GetAttribute())
     {
         if (attribute->type_ != VAR_QUATERNION)
         {
@@ -286,7 +286,7 @@ RotateByState::RotateByState(RotateBy* action, Object* target)
 void RotateByState::Update(float time, Variant& value)
 {
     const auto currentRotation = value.GetQuaternion();
-    auto diff = previousRotation_.Inverse() * currentRotation;
+    const auto diff = previousRotation_.Inverse() * currentRotation;
     startRotation_ = startRotation_ * diff;
     const auto newRotation = startRotation_ * Quaternion::IDENTITY.Slerp(rotationDelta_, time);
     value = newRotation;
@@ -387,7 +387,7 @@ void RemoveSelfState::Update(float time)
         {
             node->Remove();
         }
-        else if (UIElement* element = target->Cast<UIElement>())
+        else if (auto* element = target->Cast<UIElement>())
         {
             element->Remove();
         }
@@ -583,17 +583,16 @@ Material* ShaderParameterFromToState::GetMaterial(Object* target)
 {
     if (!target)
         return nullptr;
-    auto* material = target->Cast<Material>();
-    if (material)
+    if (auto* material = target->Cast<Material>())
         return material;
-    if (auto* staticModel = target->Cast<StaticModel>())
+    if (const auto* staticModel = target->Cast<StaticModel>())
         return staticModel->GetMaterial(0);
 
-    if (auto* node = target->Cast<Node>())
+    if (const auto* node = target->Cast<Node>())
     {
-        if (auto* staticModel = node->GetComponent<StaticModel>())
+        if (const auto* staticModel = node->GetComponent<StaticModel>())
             return staticModel->GetMaterial(0);
-        if (auto* animatedModel = node->GetComponent<AnimatedModel>())
+        if (const auto* animatedModel = node->GetComponent<AnimatedModel>())
             return animatedModel->GetMaterial(0);
     }
     URHO3D_LOGERROR("Can't get matrial from {}", target->GetTypeName());
@@ -633,7 +632,7 @@ void ShaderParameterToState::Update(float time)
 
 
 AttributeBlinkState::AttributeBlinkState(
-    AttributeAction* action, Object* target, Variant from, Variant to, unsigned times)
+    AttributeAction* action, Object* target, const Variant& from, const Variant& to, unsigned times)
     : AttributeActionState(action, target)
     , from_(from)
     , to_(to)

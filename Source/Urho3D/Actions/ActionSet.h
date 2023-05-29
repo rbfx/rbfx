@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "BaseAction.h"
+#include "Urho3D/Actions/BaseAction.h"
 #include "../Resource/Resource.h"
 #include "../IO/Archive.h"
 

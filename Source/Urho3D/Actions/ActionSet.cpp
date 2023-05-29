@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,14 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "ActionSet.h"
+#include "Urho3D/Actions/ActionSet.h"
 
-#include "Parallel.h"
-#include "../Actions/ActionManager.h"
-#include "../Actions/FiniteTimeAction.h"
-#include "../Core/Context.h"
-#include "../Resource/Graph.h"
-#include <Urho3D/Resource/GraphNode.h>
+#include "Urho3D/Actions/Parallel.h"
+#include "Urho3D/Actions/ActionManager.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Resource/Graph.h"
+#include "Urho3D/Resource/GraphNode.h"
+
 #include <EASTL/unordered_set.h>
 
 namespace Urho3D

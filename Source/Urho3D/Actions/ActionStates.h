@@ -298,7 +298,8 @@ struct DisableState : public SetAttributeState
 class AttributeBlinkState : public AttributeActionState
 {
 public:
-    AttributeBlinkState(AttributeAction* action, Object* target, Variant from, Variant to, unsigned times);
+    AttributeBlinkState(
+        AttributeAction* action, Object* target, const Variant& from, const Variant& to, unsigned times);
     AttributeBlinkState(AttributeBlink* action, Object* target);
 
     void Update(float time, Variant& var) override;

@@ -47,7 +47,7 @@ AttributeActionState::AttributeActionState(AttributeActionInstant* action, Objec
 }
 
 /// Destruct.
-AttributeActionState::~AttributeActionState() {}
+AttributeActionState::~AttributeActionState() = default;
 
 void AttributeActionState::Update(float dt, Variant& value) {}
 
