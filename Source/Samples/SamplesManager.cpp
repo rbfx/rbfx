@@ -178,8 +178,15 @@ void SamplesManager::Setup()
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
-    if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
+    if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS)) 
+    {
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+        if (GetPlatform() == PlatformId::MacOS ||
+            GetPlatform() == PlatformId::iOS)
+            engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";../Resources;../..";
+        else
+            engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+    }
     engineParameters_[EP_AUTOLOAD_PATHS] = "Autoload";
 #if DESKTOP
     GetCommandLineParser().add_option("--sample", commandLineArgsTemp_);
