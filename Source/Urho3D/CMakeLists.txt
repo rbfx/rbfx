@@ -195,7 +195,6 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     Box2D
     WebP
     ImGui
-    LibCpuId
     GLEW
     nativefiledialog
     CLI11
