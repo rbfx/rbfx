@@ -750,8 +750,8 @@ public:
     /// Return the API-specific texture format from a textual description, for example "rgb".
     static unsigned GetFormat(const ea::string& formatName);
 
-    /// Sets the maximum number of supported bones for hardware skinning. Check GPU capabilities before setting..
-    static void SetMaxBones(unsigned);
+    /// Sets the maximum number of supported bones for hardware skinning. Check GPU capabilities before setting.
+    static void SetMaxBones(unsigned maxBones);
     /// Return maximum number of supported bones for skinning.
     static unsigned GetMaxBones();
     /// Return whether is using an OpenGL 3 context. Return always false on DirectX 11.

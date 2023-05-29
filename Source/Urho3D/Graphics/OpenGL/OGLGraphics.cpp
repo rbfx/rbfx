@@ -2160,20 +2160,16 @@ unsigned Graphics::GetFormat(CompressedFormat format) const
     }
 }
 
-void Graphics::SetMaxBones(unsigned numBones)
-{
-    maxBonesHWSkinned = numBones;
-}
-
 unsigned Graphics::GetMaxBones()
 {
+    /// User-specified number of bones
+    if (maxBonesHWSkinned)
+        return maxBonesHWSkinned;
+
 #ifdef RPI
     // At the moment all RPI GPUs are low powered and only have limited number of uniforms
     return 32;
 #else
-    /// User-specified number of bones
-    if (maxBonesHWSkinned)
-        return maxBonesHWSkinned;
     /// The defaults
     return gl3Support ? 128 : 64;
 #endif

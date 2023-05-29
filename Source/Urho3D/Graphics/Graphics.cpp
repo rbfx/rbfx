@@ -644,6 +644,11 @@ void Graphics::OnScreenModeChanged()
     SendEvent(E_SCREENMODE, eventData);
 }
 
+void Graphics::SetMaxBones(unsigned numBones)
+{
+    maxBonesHWSkinned = numBones;
+}
+
 void RegisterGraphicsLibrary(Context* context)
 {
     Animation::RegisterObject(context);
