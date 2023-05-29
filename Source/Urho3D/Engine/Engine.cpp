@@ -389,8 +389,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
         auto* graphics = GetSubsystem<Graphics>();
         auto* renderer = GetSubsystem<Renderer>();
 
-        if (HasParameter(EP_EXTERNAL_WINDOW))
-            graphics->SetExternalWindow(GetParameter(EP_EXTERNAL_WINDOW).GetVoidPtr());
+        graphics->SetExternalWindow(GetParameter(EP_EXTERNAL_WINDOW).GetVoidPtr());
         graphics->SetWindowTitle(GetParameter(EP_WINDOW_TITLE).GetString());
         graphics->SetWindowIcon(cache->GetResource<Image>(GetParameter(EP_WINDOW_ICON).GetString()));
         graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
@@ -446,7 +445,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
             graphics->SetWindowPosition(GetParameter(EP_WINDOW_POSITION_X).GetInt(),
                 GetParameter(EP_WINDOW_POSITION_Y).GetInt());
 
-        if (HasParameter(EP_WINDOW_MAXIMIZE) && GetParameter(EP_WINDOW_MAXIMIZE).GetBool())
+        if (GetParameter(EP_WINDOW_MAXIMIZE).GetBool())
             graphics->Maximize();
 
         graphics->SetShaderCacheDir(FileIdentifier::FromUri(GetParameter(EP_SHADER_CACHE_DIR).GetString()));

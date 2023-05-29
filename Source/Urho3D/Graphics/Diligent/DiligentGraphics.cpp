@@ -359,6 +359,7 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 
         settings.backend_ = GetRenderBackend();
         settings.window_ = windowSettings;
+        settings.externalWindowHandle_ = externalWindow_;
         settings.gpuDebug_ = gpuDebug_;
         if (impl_->adapterId_ != M_MAX_UNSIGNED)
             settings.adapterId_ = impl_->adapterId_;
@@ -560,18 +561,6 @@ void Graphics::EndFrame()
 
     // Clean up too large scratch buffers
     CleanupScratchBuffers();
-
-    // If using an external window, check it for size changes, and reset screen mode if necessary
-#if 0
-    if (externalWindow_)
-    {
-        int width, height;
-
-        SDL_GetWindowSize(window_, &width, &height);
-        if (width != width_ || height != height_)
-            SetMode(width, height);
-    }
-#endif
 }
 
 void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)

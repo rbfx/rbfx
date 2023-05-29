@@ -203,25 +203,35 @@ void SetWindowFullscreen(SDL_Window* window, const WindowSettings& settings)
     SDL_SetWindowFullscreen(window, ToSDLFlag(settings.mode_));
 }
 
-ea::shared_ptr<SDL_Window> CreateEmptyWindow(RenderBackend backend, const WindowSettings& settings)
+ea::shared_ptr<SDL_Window> CreateEmptyWindow(
+    RenderBackend backend, const WindowSettings& settings, void* externalWindowHandle)
 {
-    unsigned flags = SDL_WINDOW_ALLOW_HIGHDPI;
-    if (settings.resizable_)
-        flags |= SDL_WINDOW_RESIZABLE; // | SDL_WINDOW_MAXIMIZED;
-    if (settings.mode_ == WindowMode::Borderless)
-        flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-    if (IsMetalBackend(backend))
+    unsigned flags = 0;
+    if (externalWindowHandle == nullptr)
     {
-        flags |= SDL_WINDOW_METAL;
-        SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
+        if (GetPlatform() != PlatformId::Web)
+            flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+        if (settings.resizable_)
+            flags |= SDL_WINDOW_RESIZABLE; // | SDL_WINDOW_MAXIMIZED;
+        if (settings.mode_ == WindowMode::Borderless)
+            flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+        if (IsMetalBackend(backend))
+        {
+            flags |= SDL_WINDOW_METAL;
+            SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
+        }
     }
 
     const int x = SDL_WINDOWPOS_UNDEFINED_DISPLAY(settings.monitor_);
     const int y = SDL_WINDOWPOS_UNDEFINED_DISPLAY(settings.monitor_);
+    const int w = settings.size_.x_;
+    const int h = settings.size_.y_;
 
     SDL_SetHint(SDL_HINT_ORIENTATIONS, ea::string::joined(settings.orientations_, " ").c_str());
     SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");
-    SDL_Window* window = SDL_CreateWindow(settings.title_.c_str(), x, y, settings.size_.x_, settings.size_.y_, flags);
+    SDL_Window* window = externalWindowHandle == nullptr //
+        ? SDL_CreateWindow(settings.title_.c_str(), x, y, w, h, flags)
+        : SDL_CreateWindowFrom(externalWindowHandle, flags);
 
     if (!window)
         throw RuntimeException("Could not create window: {}", SDL_GetError());
@@ -239,18 +249,24 @@ ea::shared_ptr<SDL_Window> CreateEmptyWindow(RenderBackend backend, const Window
     return ea::shared_ptr<SDL_Window>(window, SDL_DestroyWindow);
 }
 
-ea::shared_ptr<SDL_Window> CreateOpenGLWindow(bool es, const WindowSettings& settings)
+ea::shared_ptr<SDL_Window> CreateOpenGLWindow(bool es, const WindowSettings& settings, void* externalWindowHandle)
 {
-    unsigned flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
-    if (GetPlatform() != PlatformId::Web)
-        flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-    if (settings.resizable_)
-        flags |= SDL_WINDOW_RESIZABLE; // | SDL_WINDOW_MAXIMIZED; | SDL_WINDOW_MAXIMIZED;
-    if (settings.mode_ == WindowMode::Borderless)
-        flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    unsigned flags = SDL_WINDOW_OPENGL;
+    if (externalWindowHandle == nullptr)
+    {
+        flags |= SDL_WINDOW_SHOWN;
+        if (GetPlatform() != PlatformId::Web)
+            flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+        if (settings.resizable_)
+            flags |= SDL_WINDOW_RESIZABLE; // | SDL_WINDOW_MAXIMIZED; | SDL_WINDOW_MAXIMIZED;
+        if (settings.mode_ == WindowMode::Borderless)
+            flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    }
 
     const int x = SDL_WINDOWPOS_UNDEFINED_DISPLAY(settings.monitor_);
     const int y = SDL_WINDOWPOS_UNDEFINED_DISPLAY(settings.monitor_);
+    const int w = settings.size_.x_;
+    const int h = settings.size_.y_;
 
     SDL_SetHint(SDL_HINT_ORIENTATIONS, ea::string::joined(settings.orientations_, " ").c_str());
 
@@ -274,7 +290,7 @@ ea::shared_ptr<SDL_Window> CreateOpenGLWindow(bool es, const WindowSettings& set
         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, colorBits);
         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, colorBits);
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, colorBits);
-        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, externalWindowHandle ? 8 : 0);
 
         for (int depthBits : {24, 16})
         {
@@ -301,8 +317,10 @@ ea::shared_ptr<SDL_Window> CreateOpenGLWindow(bool es, const WindowSettings& set
                             SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
                         }
 
-                        SDL_Window* window = SDL_CreateWindow(
-                            settings.title_.c_str(), x, y, settings.size_.x_, settings.size_.y_, flags);
+                        SDL_Window* window = externalWindowHandle == nullptr
+                            ? SDL_CreateWindow(settings.title_.c_str(), x, y, w, h, flags)
+                            : SDL_CreateWindowFrom(externalWindowHandle, flags);
+
                         if (window)
                         {
                             SetWindowFullscreen(window, settings);
@@ -544,6 +562,9 @@ RenderDevice::RenderDevice(Context* context, const RenderDeviceSettings& setting
     : Object(context)
     , settings_(settings)
 {
+    if (settings_.externalWindowHandle_)
+        settings_.window_.mode_ = WindowMode::Windowed;
+
     ValidateWindowSettings(settings_.window_);
     InitializeWindow();
     InitializeFactory();
@@ -564,7 +585,7 @@ void RenderDevice::InitializeWindow()
 {
     if (settings_.backend_ == RenderBackend::OpenGL)
     {
-        window_ = CreateOpenGLWindow(IsESBackend(), settings_.window_);
+        window_ = CreateOpenGLWindow(IsESBackend(), settings_.window_, settings_.externalWindowHandle_);
 
         glContext_ = CreateGLContext(window_.get());
         if (!glContext_)
@@ -582,7 +603,7 @@ void RenderDevice::InitializeWindow()
     }
     else
     {
-        window_ = CreateEmptyWindow(settings_.backend_, settings_.window_);
+        window_ = CreateEmptyWindow(settings_.backend_, settings_.window_, settings_.externalWindowHandle_);
         if (IsMetalBackend(settings_.backend_))
             metalView_ = CreateMetalView(window_.get());
     }
@@ -955,6 +976,16 @@ bool RenderDevice::RestoreGLESContext()
 void RenderDevice::Present()
 {
     swapChain_->Present(settings_.window_.vSync_ ? 1 : 0);
+
+    // If using an external window, check it for size changes, and reset screen mode if necessary
+    if (settings_.externalWindowHandle_ != nullptr)
+    {
+        IntVector2 currentSize;
+        SDL_GetWindowSize(window_.get(), &currentSize.x_, &currentSize.y_);
+
+        if (settings_.window_.size_ != currentSize)
+            UpdateSwapChainSize();
+    }
 }
 
 IntVector2 RenderDevice::GetSwapChainSize() const

@@ -54,6 +54,8 @@ struct RenderDeviceSettings
 
     /// Initial window settings.
     WindowSettings window_;
+    /// Pointer to external window native handle.
+    void* externalWindowHandle_{};
     /// Whether to enable debug mode on GPU if possible.
     bool gpuDebug_{};
     /// Adapter ID.
