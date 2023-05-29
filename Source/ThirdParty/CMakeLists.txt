@@ -185,8 +185,4 @@ if (URHO3D_CSHARP_TOOLS AND DESKTOP)
     add_subdirectory(swig)
 endif ()
 
-if (DESKTOP AND NOT LINUX)
-    add_subdirectory (LibCpuId)
-endif ()
-
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
