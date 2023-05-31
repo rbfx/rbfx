@@ -604,28 +604,28 @@ void GraphViewTab::RenderPin(ed::NodeId nodeId, Detail::GraphPinView& pin)
         ImGui::SameLine();
         if (!pin.link_)
         {
-            if (pin.valueType_ == VAR_NONE)
-            {
-                const auto names = Variant::GetTypeNameList();
-                ImGui::SetNextItemWidth(ImGui::GetTextLineHeight()*6);
-                //ed::Suspend();
-                if (ImGui::BeginCombo("##pinType", names[pin.value_.GetType()]))
-                {
-                    for (unsigned index = 0; names[index]; ++index)
-                    {
-                        if (ui::Selectable(names[index], index == pin.value_.GetType()))
-                        {
-                            if (pin.value_ != index)
-                            {
-                                pin.value_ = Variant(static_cast<VariantType>(index));
-                            }
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-                //ed::Resume();
-                ImGui::SameLine();
-            }
+            //if (pin.valueType_ == VAR_NONE)
+            //{
+            //    const auto names = Variant::GetTypeNameList();
+            //    ImGui::SetNextItemWidth(ImGui::GetTextLineHeight()*6);
+            //    ed::Suspend();
+            //    if (ImGui::BeginCombo("##pinType", names[pin.value_.GetType()]))
+            //    {
+            //        for (unsigned index = 0; names[index]; ++index)
+            //        {
+            //            if (ui::Selectable(names[index], index == pin.value_.GetType()))
+            //            {
+            //                if (pin.value_ != index)
+            //                {
+            //                    pin.value_ = Variant(static_cast<VariantType>(index));
+            //                }
+            //            }
+            //        }
+            //        ImGui::EndCombo();
+            //    }
+            //    ed::Resume();
+            //    ImGui::SameLine();
+            //}
             if (pin.value_.GetType() != VAR_NONE)
             {
                 ImGui::PushID(static_cast<int>(pin.id_.Get()));
@@ -762,11 +762,38 @@ void GraphViewTab::RenderContent()
 
     RenderGraph();
 
-    auto popupMenuType = PopupMenuType::None;
     const auto openPopupPosition = ImGui::GetMousePos();
 
+    // Pick context menu to open
+    ed::Suspend();
+    ax::NodeEditor::NodeId contextNodeId;
+    ax::NodeEditor::PinId contextPinId;
+    if (ed::ShowNodeContextMenu(&contextNodeId))
+        ImGui::OpenPopup("Node Context Menu");
+    else if (ed::ShowPinContextMenu(&contextPinId))
+        ImGui::OpenPopup("Pin Context Menu");
     if (ed::ShowBackgroundContextMenu())
-        popupMenuType = PopupMenuType::Background;
+        ImGui::OpenPopup("Create New Node");
+    ed::Resume();
+
+    // Draw context menu
+    ed::Suspend();
+    if (ImGui::BeginPopup("Create New Node"))
+    {
+        const auto newNodePosition = openPopupPosition;
+
+        if (const auto node = CreateNewNodePopup())
+        {
+            const auto nodeId = graph_.AddNode(node);
+            auto* nodeView = graph_.GetNode(nodeId);
+            nodeView->position_ = Vector2(Round(newNodePosition.x), Round(newNodePosition.y));
+            PushAction(MakeShared<CreateNodeAction>(this, nodeView));
+            applyLayout_ = true;
+        }
+
+        ImGui::EndPopup();
+    }
+    ed::Resume();
 
     // End of interaction with editor.
     ed::End();
@@ -813,27 +840,6 @@ void GraphViewTab::RenderContent()
     ed::SetCurrentEditor(nullptr);
 
     applyLayout_ = false;
-
-    switch (popupMenuType)
-    {
-    case PopupMenuType::Background: ImGui::OpenPopup("Create New Node"); break;
-    }
-
-    if (ImGui::BeginPopup("Create New Node"))
-    {
-        const auto newNodePosition = openPopupPosition;
-
-        if (const auto node = CreateNewNodePopup())
-        {
-            const auto nodeId = graph_.AddNode(node);
-            auto* nodeView = graph_.GetNode(nodeId);
-            nodeView->position_ = Vector2(Round(newNodePosition.x), Round(newNodePosition.y));
-            PushAction(MakeShared<CreateNodeAction>(this, nodeView));
-            applyLayout_ = true;
-        }
-
-        ImGui::EndPopup();
-    }
 
     ImGui::EndChild();
 }
