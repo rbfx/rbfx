@@ -733,15 +733,15 @@ void ImGuiDiligentRenderer::RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDr
         pCtx->SetBlendFactors(blend_factor);
 
         Viewport vp;
-        vp.Width    = static_cast<float>(m_RenderSurfaceWidth) * pDrawData->FramebufferScale.x;
-        vp.Height   = static_cast<float>(m_RenderSurfaceHeight) * pDrawData->FramebufferScale.y;
+        vp.Width    = static_cast<float>(m_RenderSurfaceWidth);
+        vp.Height   = static_cast<float>(m_RenderSurfaceHeight);
         vp.MinDepth = 0.0f;
         vp.MaxDepth = 1.0f;
         vp.TopLeftX = vp.TopLeftY = 0;
         pCtx->SetViewports(1,
                            &vp,
-                           static_cast<Uint32>(m_RenderSurfaceWidth * pDrawData->FramebufferScale.x),
-                           static_cast<Uint32>(m_RenderSurfaceHeight * pDrawData->FramebufferScale.y));
+                           static_cast<Uint32>(m_RenderSurfaceWidth),
+                           static_cast<Uint32>(m_RenderSurfaceHeight));
     };
 
     SetupRenderState();
@@ -789,8 +789,8 @@ void ImGuiDiligentRenderer::RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDr
                     };
                 pCtx->SetScissorRects(1,
                                       &Scissor,
-                                      static_cast<Uint32>(m_RenderSurfaceWidth * pDrawData->FramebufferScale.x),
-                                      static_cast<Uint32>(m_RenderSurfaceHeight * pDrawData->FramebufferScale.y));
+                                      static_cast<Uint32>(m_RenderSurfaceWidth),
+                                      static_cast<Uint32>(m_RenderSurfaceHeight));
 
                 // Bind texture
                 auto* pTextureView = reinterpret_cast<ITextureView*>(pCmd->TextureId);

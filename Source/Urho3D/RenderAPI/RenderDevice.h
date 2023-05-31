@@ -76,6 +76,9 @@ public:
     RenderDevice(Context* context, const RenderDeviceSettings& settings);
     ~RenderDevice() override;
 
+    /// Create swap chain for secondary window. It is not supported for some platforms and backends.
+    Diligent::RefCntAutoPtr<Diligent::ISwapChain> CreateSecondarySwapChain(SDL_Window* sdlWindow);
+
     /// Update swap chain size according to current dimensions of the window.
     void UpdateSwapChainSize();
     /// Change window settings. Some settings cannot be changed in runtime.
@@ -90,6 +93,7 @@ public:
 
     /// Getters.
     /// @{
+    const RenderBackend GetBackend() const { return settings_.backend_; }
     const RenderDeviceSettings& GetSettings() const { return settings_; }
     SDL_Window* GetSDLWindow() const { return window_.get(); }
     void* GetMetalView() const { return metalView_.get(); }

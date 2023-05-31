@@ -139,23 +139,6 @@ void ValidateWindowSettings(WindowSettings& settings)
     }
 }
 
-bool IsESBackend()
-{
-#if GLES_SUPPORTED
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool IsMetalBackend(RenderBackend backend)
-{
-    const PlatformId platform = GetPlatform();
-    const bool isApplePlatform =
-        platform == PlatformId::iOS || platform == PlatformId::tvOS || platform == PlatformId::MacOS;
-    return backend == RenderBackend::Vulkan && isApplePlatform;
-}
-
 unsigned ToSDLFlag(WindowMode mode)
 {
     switch (mode)
@@ -326,6 +309,7 @@ ea::shared_ptr<void> CreateMetalView(SDL_Window* window)
     return ea::shared_ptr<void>(metalView, SDL_Metal_DestroyView);
 }
 
+/// @note This function is never used for OpenGL backend!
 Diligent::NativeWindow GetNativeWindow(SDL_Window* window, void* metalView)
 {
     Diligent::NativeWindow result;
@@ -566,7 +550,8 @@ void RenderDevice::InitializeWindow()
 {
     if (settings_.backend_ == RenderBackend::OpenGL)
     {
-        window_ = CreateOpenGLWindow(IsESBackend(), settings_.window_, settings_.externalWindowHandle_);
+        window_ = CreateOpenGLWindow(
+            IsOpenGLESBackend(settings_.backend_), settings_.window_, settings_.externalWindowHandle_);
 
         glContext_ = CreateGLContext(window_.get());
         if (!glContext_)
@@ -753,6 +738,52 @@ void RenderDevice::InitializeDevice()
     }
 #endif
     default: throw RuntimeException("Unsupported render backend");
+    }
+}
+
+Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapChain(SDL_Window* sdlWindow)
+{
+    const auto metalView = IsMetalBackend(settings_.backend_) ? CreateMetalView(sdlWindow) : nullptr;
+    Diligent::NativeWindow nativeWindow = GetNativeWindow(sdlWindow, metalView.get());
+    Diligent::SwapChainDesc swapChainDesc{};
+    swapChainDesc.ColorBufferFormat = swapChain_->GetDesc().ColorBufferFormat;
+    swapChainDesc.DepthBufferFormat = swapChain_->GetDesc().DepthBufferFormat;
+    Diligent::FullScreenModeDesc fullscreenDesc{};
+
+    switch (settings_.backend_)
+    {
+#if D3D11_SUPPORTED
+    case RenderBackend::D3D11:
+    {
+        Diligent::RefCntAutoPtr<Diligent::ISwapChain> secondarySwapChain;
+        factoryD3D11_->CreateSwapChainD3D11(
+            renderDevice_, deviceContext_, swapChainDesc, fullscreenDesc, nativeWindow, &secondarySwapChain);
+        return secondarySwapChain;
+    }
+#endif
+#if D3D12_SUPPORTED
+    case RenderBackend::D3D12:
+    {
+        Diligent::RefCntAutoPtr<Diligent::ISwapChain> secondarySwapChain;
+        factoryD3D12_->CreateSwapChainD3D12(
+            renderDevice_, deviceContext_, swapChainDesc, fullscreenDesc, nativeWindow, &secondarySwapChain);
+        return secondarySwapChain;
+    }
+#endif
+#if VULKAN_SUPPORTED
+    case RenderBackend::Vulkan:
+    {
+        Diligent::RefCntAutoPtr<Diligent::ISwapChain> secondarySwapChain;
+        factoryVulkan_->CreateSwapChainVk(
+            renderDevice_, deviceContext_, swapChainDesc, nativeWindow, &secondarySwapChain);
+        return secondarySwapChain;
+    }
+#endif
+    default:
+    {
+        URHO3D_ASSERT(false, "Unsupported render backend");
+        return {};
+    }
     }
 }
 

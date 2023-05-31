@@ -7,6 +7,7 @@
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include "Urho3D/Core/Macros.h"
+#include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/Core/StringUtils.h"
 
 namespace Urho3D
@@ -26,6 +27,22 @@ const ea::string shaderInputsNames[] = {
     "iBlendIndices", // SEM_BLENDINDICES
 };
 
+}
+
+bool IsOpenGLESBackend(RenderBackend backend)
+{
+    const PlatformId platform = GetPlatform();
+    const bool isMobilePlatform = platform == PlatformId::Android || platform == PlatformId::iOS
+        || platform == PlatformId::tvOS || platform == PlatformId::Web || platform == PlatformId::RaspberryPi;
+    return backend == RenderBackend::OpenGL && isMobilePlatform;
+}
+
+bool IsMetalBackend(RenderBackend backend)
+{
+    const PlatformId platform = GetPlatform();
+    const bool isApplePlatform =
+        platform == PlatformId::iOS || platform == PlatformId::tvOS || platform == PlatformId::MacOS;
+    return backend == RenderBackend::Vulkan && isApplePlatform;
 }
 
 const ea::string& ToString(RenderBackend backend)

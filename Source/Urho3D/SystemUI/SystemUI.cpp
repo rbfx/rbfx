@@ -39,11 +39,13 @@
 #include "../Input/InputEvents.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/Console.h"
-#include "Urho3D/SystemUI/3rdParty/ImGuiDiligentRenderer.hpp"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/SystemUI/ImGuiDiligentRendererEx.h"
 
 #include <ImGui/imgui_freetype.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
+
 #include <SDL.h>
 
 #define IMGUI_IMPL_API IMGUI_API
@@ -89,27 +91,28 @@ void SystemUI::PlatformInitialize()
     static const unsigned defaultNumIndices = 32 * 1024;
 
     Graphics* graphics = GetSubsystem<Graphics>();
-    ImGuiIO& io = ui::GetIO();
-    io.DisplaySize = { static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight()) };
+    RenderDevice* renderDevice = graphics->GetRenderDevice();
 
-    const auto sdlWindow = static_cast<SDL_Window*>(graphics->GetSDLWindow());
-    const RenderBackend renderBackend = graphics->GetRenderBackend();
-    switch (renderBackend)
+    ImGuiIO& io = ui::GetIO();
+    io.DisplaySize = ToImGui(renderDevice->GetSwapChainSize());
+
+    switch (renderDevice->GetBackend())
     {
     case RenderBackend::OpenGL:
     {
-        ImGui_ImplSDL2_InitForOpenGL(sdlWindow, SDL_GL_GetCurrentContext());
+        ImGui_ImplSDL2_InitForOpenGL(renderDevice->GetSDLWindow(), SDL_GL_GetCurrentContext());
         break;
     }
     case RenderBackend::Vulkan:
     {
-        ImGui_ImplSDL2_InitForVulkan(sdlWindow);
+        // Diligent manages Vulkan on its own.
+        ImGui_ImplSDL2_InitForSDLRenderer(renderDevice->GetSDLWindow());
         break;
     }
     case RenderBackend::D3D11:
     case RenderBackend::D3D12:
     {
-        ImGui_ImplSDL2_InitForD3D(sdlWindow);
+        ImGui_ImplSDL2_InitForD3D(renderDevice->GetSDLWindow());
         break;
     }
     default:
@@ -119,12 +122,7 @@ void SystemUI::PlatformInitialize()
     }
     }
 
-    Diligent::IRenderDevice* renderDevice = graphics->GetImpl()->GetDevice();
-    const PipelineStateOutputDesc swapChainDesc = graphics->GetSwapChainOutputDesc();
-    const Diligent::TEXTURE_FORMAT colorFormat = swapChainDesc.renderTargetFormats_[0];
-    const Diligent::TEXTURE_FORMAT depthStencilFormat = swapChainDesc.depthStencilFormat_;
-    impl_ = ea::make_unique<Diligent::ImGuiDiligentRenderer>(
-        renderDevice, colorFormat, depthStencilFormat, defaultNumVertices, defaultNumIndices);
+    impl_ = ea::make_unique<ImGuiDiligentRendererEx>(renderDevice);
 }
 
 void SystemUI::PlatformShutdown()
@@ -240,7 +238,7 @@ void SystemUI::OnInputEnd()
     for (int i = 1; i < io.AllFonts.size(); ++i)
         io.AllFonts[i]->TexID = ToImTextureID(fontTextures_[i]);
 
-    impl_->NewFrame(graphics->GetWidth(), graphics->GetHeight(), Diligent::SURFACE_TRANSFORM_IDENTITY);
+    impl_->NewFrame();
     ImGui_ImplSDL2_NewFrame();
 
     ui::NewFrame();
@@ -310,7 +308,9 @@ void SystemUI::OnRenderEnd()
     graphics->SetRenderTarget(0, (RenderSurface*)nullptr);
     graphics->SetDepthStencil((RenderSurface*)nullptr);
     graphics->PrepareDraw();
-    impl_->RenderDrawData(deviceContext, ui::GetDrawData());
+
+    impl_->RenderDrawData(ui::GetDrawData());
+    impl_->RenderSecondaryWindows();
 
     graphics->SetVertexBuffer(nullptr);
     graphics->SetIndexBuffer(nullptr);

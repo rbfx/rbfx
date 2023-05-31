@@ -15,6 +15,9 @@
 namespace Urho3D
 {
 
+URHO3D_API bool IsOpenGLESBackend(RenderBackend backend);
+URHO3D_API bool IsMetalBackend(RenderBackend backend);
+
 URHO3D_API const ea::string& ToString(RenderBackend backend);
 
 URHO3D_API ea::optional<VertexShaderAttribute> ParseVertexAttribute(ea::string_view name);

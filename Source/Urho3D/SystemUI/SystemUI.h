@@ -36,15 +36,10 @@
 #include <EASTL/unique_ptr.h>
 #include <EASTL/unordered_map.h>
 
-namespace Diligent
-{
-
-class ImGuiDiligentRenderer;
-
-}
-
 namespace Urho3D
 {
+
+class ImGuiDiligentRendererEx;
 
 const float SYSTEMUI_DEFAULT_FONT_SIZE = 14;
 
@@ -112,7 +107,7 @@ protected:
     bool revertMousePositionOnDisable_{};
     ImVec2 revertMousePosition_;
 
-    ea::unique_ptr<Diligent::ImGuiDiligentRenderer> impl_;
+    ea::unique_ptr<ImGuiDiligentRendererEx> impl_;
 };
 
 }
