@@ -89,8 +89,7 @@ void CameraProcessor::OnUpdateBegin(const FrameInfo& frameInfo)
     // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the same way
     // as a render texture produced on Direct3D
     const bool isOpenGL = graphics_->GetRenderBackend() == RenderBackend::OpenGL;
-    // TODO(diligent): Revisit this place
-    //flipCameraForRendering_ = isOpenGL;
+    flipCameraForRendering_ = frameInfo.renderTarget_ && isOpenGL;
 
     for (Camera* camera : cameras_)
     {

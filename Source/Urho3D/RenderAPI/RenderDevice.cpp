@@ -404,6 +404,10 @@ public:
     void DILIGENT_CALL_TYPE Resize(
         Uint32 NewWidth, Uint32 NewHeight, Diligent::SURFACE_TRANSFORM NewPreTransform) override
     {
+        if (NewPreTransform == Diligent::SURFACE_TRANSFORM_OPTIMAL)
+            NewPreTransform = Diligent::SURFACE_TRANSFORM_IDENTITY;
+        URHO3D_ASSERT(NewPreTransform == Diligent::SURFACE_TRANSFORM_IDENTITY, "Unsupported pre-transform");
+
         if (TBase::Resize(NewWidth, NewHeight, NewPreTransform))
         {
             CreateDummyBuffers();
@@ -419,6 +423,9 @@ public:
 private:
     void InitializeParameters()
     {
+        if (m_SwapChainDesc.PreTransform == Diligent::SURFACE_TRANSFORM_OPTIMAL)
+            m_SwapChainDesc.PreTransform = Diligent::SURFACE_TRANSFORM_IDENTITY;
+
         // Get default framebuffer for iOS platforms
         const PlatformId platform = GetPlatform();
         if (platform == PlatformId::iOS || platform == PlatformId::tvOS)
@@ -777,6 +784,19 @@ Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapC
         factoryVulkan_->CreateSwapChainVk(
             renderDevice_, deviceContext_, swapChainDesc, nativeWindow, &secondarySwapChain);
         return secondarySwapChain;
+    }
+#endif
+#if GL_SUPPORTED || GLES_SUPPORTED
+    case RenderBackend::OpenGL:
+    {
+        SDL_GLContext currentContext = SDL_GL_GetCurrentContext();
+        URHO3D_ASSERT(currentContext && currentContext != glContext_.get());
+
+        auto& defaultAllocator = Diligent::DefaultRawMemoryAllocator::GetAllocator();
+        auto secondarySwapChain = NEW_RC_OBJ(defaultAllocator, "Secondary ProxySwapChainGL instance", ProxySwapChainGL)(
+            renderDevice_, deviceContext_, swapChainDesc, sdlWindow);
+
+        return Diligent::RefCntAutoPtr<Diligent::ISwapChain>{secondarySwapChain};
     }
 #endif
     default:

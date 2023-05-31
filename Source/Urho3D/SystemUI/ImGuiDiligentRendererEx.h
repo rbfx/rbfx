@@ -8,10 +8,6 @@
 
 #include "Urho3D/SystemUI/3rdParty/ImGuiDiligentRenderer.hpp"
 
-#ifdef CreateWindow
-#    undef CreateWindow
-#endif
-
 namespace Urho3D
 {
 
@@ -31,16 +27,19 @@ private:
 #if URHO3D_PLATFORM_WINDOWS || URHO3D_PLATFORM_LINUX || URHO3D_PLATFORM_MACOS
     void CreatePlatformWindow(ImGuiViewport* viewport);
 
-    void CreateWindow(ImGuiViewport* viewport);
-    void DestroyWindow(ImGuiViewport* viewport);
+    void CreateRendererWindow(ImGuiViewport* viewport);
+    void DestroyRendererWindow(ImGuiViewport* viewport);
     void SetWindowSize(ImGuiViewport* viewport, ImVec2 size);
     void RenderWindow(ImGuiViewport* viewport, void* renderArg);
     void SwapBuffers(ImGuiViewport* viewport, void* renderArg);
+
+    void CreateSwapChainForViewport(ImGuiViewport* viewport);
 #endif
 
 private:
     RenderDevice* renderDevice_{};
     void (*createPlatformWindow_)(ImGuiViewport* viewport);
+    bool isCachedStateInvalid_{};
 };
 
 } // namespace Diligent

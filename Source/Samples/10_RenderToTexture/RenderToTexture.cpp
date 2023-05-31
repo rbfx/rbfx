@@ -95,7 +95,7 @@ void RenderToTexture::CreateScene()
         for (unsigned i = 0; i < NUM_OBJECTS; ++i)
         {
             Node* boxNode = rttScene_->CreateChild("Box");
-            boxNode->SetPosition(Vector3(Random(200.0f) - 100.0f, Random(200.0f) - 100.0f, Random(200.0f) - 100.0f));
+            boxNode->SetPosition(Vector3(Random(200.0f) - 100.0f, Random(100.0f), Random(200.0f) - 100.0f));
             // Orient using random pitch, yaw and roll Euler angles
             boxNode->SetRotation(Quaternion(Random(360.0f), Random(360.0f), Random(360.0f)));
             auto* boxObject = boxNode->CreateComponent<StaticModel>();

@@ -77,6 +77,7 @@ public:
     ~RenderDevice() override;
 
     /// Create swap chain for secondary window. It is not supported for some platforms and backends.
+    /// @note For OpenGL, unique shared context should be set as current before calling this function.
     Diligent::RefCntAutoPtr<Diligent::ISwapChain> CreateSecondarySwapChain(SDL_Window* sdlWindow);
 
     /// Update swap chain size according to current dimensions of the window.
