@@ -8,7 +8,7 @@
 
 #include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/IO/Log.h"
-#include "Urho3D/RenderAPI/OpenGLIncludes.h"
+#include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include <Diligent/Common/interface/DefaultRawMemoryAllocator.hpp>
@@ -22,8 +22,6 @@
 #include <SDL_syswm.h>
 
 #if D3D11_SUPPORTED
-    #include <d3d11_1.h>
-    // Diligent should be included after d3d11.h
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/DeviceContextD3D11.h>
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
@@ -31,8 +29,6 @@
 #endif
 
 #if D3D12_SUPPORTED
-    #include <d3d12.h>
-    // Diligent should be included after d3d12.h
     #include <Diligent/Graphics/GraphicsEngineD3D12/interface/DeviceContextD3D12.h>
     #include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
     #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
@@ -40,21 +36,6 @@
 #endif
 
 #if VULKAN_SUPPORTED
-    #if URHO3D_PLATFORM_WINDOWS || URHO3D_PLATFORM_LINUX || URHO3D_PLATFORM_MACOS || URHO3D_PLATFORM_ANDROID
-        #define DILIGENT_USE_VOLK 1
-    #endif
-
-    #if DILIGENT_USE_VOLK
-        #define VK_NO_PROTOTYPES
-    #endif
-
-    #include <vulkan/vulkan.h>
-
-    #if DILIGENT_USE_VOLK
-        #include <Diligent/ThirdParty/volk/volk.h>
-    #endif
-
-    // Diligent should be included after vulkan.h
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/DeviceContextVk.h>
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>

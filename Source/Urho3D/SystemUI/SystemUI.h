@@ -23,9 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Texture2D.h"
-#include "../Graphics/VertexBuffer.h"
 #include "../Input/InputEvents.h"
 #include "../Math/Matrix4.h"
 #include "../Math/StringHash.h"
@@ -33,6 +31,7 @@
 #include "../Math/Vector4.h"
 #include "../SystemUI/ImGui.h"
 #include "../SystemUI/SystemUIEvents.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <EASTL/unique_ptr.h>
 #include <EASTL/unordered_map.h>
@@ -100,7 +99,7 @@ protected:
     void PlatformShutdown();
     void ReallocateFontTexture();
     void ClearPerScreenFonts();
-    ImTextureID AllocateFontTexture(ImFontAtlas* atlas);
+    SharedPtr<Texture2D> AllocateFontTexture(ImFontAtlas* atlas) const;
     void OnRawEvent(VariantMap& args);
     void OnScreenMode(VariantMap& args);
     void OnInputBegin();

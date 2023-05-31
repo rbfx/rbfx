@@ -2253,8 +2253,8 @@ void DeviceContextD3D12Impl::GenerateMips(ITextureView* pTexView)
     PipelineStateD3D12Impl* pCurrPSO = nullptr;
     if (m_pPipelineState)
     {
-        const auto& PSODesc = m_pPipelineState->GetDesc();
-        if (PSODesc.IsComputePipeline() || PSODesc.IsRayTracingPipeline())
+        //const auto& PSODesc = m_pPipelineState->GetDesc();
+        //if (PSODesc.IsComputePipeline() || PSODesc.IsRayTracingPipeline())
         {
             // Mips generator will set its own compute pipeline, root signature and root resources.
             // We need to invalidate current PSO and reset it afterwards.

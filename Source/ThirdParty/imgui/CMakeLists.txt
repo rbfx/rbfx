@@ -29,9 +29,6 @@ list (APPEND SOURCE_FILES backends/imgui_impl_sdl.h backends/imgui_impl_sdl.cpp)
 add_library (ImGui STATIC ${SOURCE_FILES})
 target_link_libraries(ImGui PUBLIC SDL2-static STB FreeType EASTL)
 target_compile_definitions(ImGui PRIVATE -DSDL_EXPORTS) # A workaround for MinGW to not try to import SDL APIs from a static library that exports them.
-if (APPLE)
-    target_compile_definitions(ImGui PUBLIC -DTARGET_OS_IOS=1)
-endif ()
 target_compile_definitions(ImGui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
     PRIVATE -DIMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION -DIMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION=1
     PUBLIC  -DIMGUI_DEFINE_MATH_OPERATORS=1 -DUSE_IMGUI_API=1)

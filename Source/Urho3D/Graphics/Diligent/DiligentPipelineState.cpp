@@ -6,7 +6,7 @@
 
 #include "Urho3D/Core/Macros.h"
 #include "Urho3D/Core/StringUtils.h"
-#include "Urho3D/RenderAPI/OpenGLIncludes.h"
+#include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 

@@ -43,7 +43,7 @@
 #include "../../IO/File.h"
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
-#include "../../RenderAPI/OpenGLIncludes.h"
+#include "../../RenderAPI/RenderAPIUtils.h"
 #include "../../RenderAPI/RenderDevice.h"
 
 // TODO(diligent): This is Web-only, revisit
@@ -387,6 +387,8 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
                 gpuObject->OnDeviceReset();
             SendEvent(E_DEVICERESET);
         });
+
+        apiName_ = ToString(GetRenderBackend());
     }
     else
     {

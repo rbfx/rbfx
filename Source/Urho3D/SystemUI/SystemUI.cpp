@@ -225,14 +225,23 @@ void SystemUI::OnInputEnd()
         ui::UpdatePlatformWindows();
     }
 
-    ImGuiIO& io = ui::GetIO();
-    Graphics* graphics = GetSubsystem<Graphics>();
     Input* input = GetSubsystem<Input>();
-    if (graphics && graphics->IsInitialized())
-    {
-        impl_->NewFrame(graphics->GetWidth(), graphics->GetHeight(), Diligent::SURFACE_TRANSFORM_IDENTITY);
-        ImGui_ImplSDL2_NewFrame();
-    }
+    Graphics* graphics = GetSubsystem<Graphics>();
+    if (!graphics || !graphics->IsInitialized())
+        return;
+
+    if (fontTextures_.empty())
+       ReallocateFontTexture();
+
+    // ImTextureID may be transient, make sure to tag all used textures every frame
+    ImGuiIO& io = ui::GetIO();
+    URHO3D_ASSERT(fontTextures_.size() >= io.AllFonts.size());
+    io.Fonts->TexID = ToImTextureID(fontTextures_[0]);
+    for (int i = 1; i < io.AllFonts.size(); ++i)
+        io.AllFonts[i]->TexID = ToImTextureID(fontTextures_[i]);
+
+    impl_->NewFrame(graphics->GetWidth(), graphics->GetHeight(), Diligent::SURFACE_TRANSFORM_IDENTITY);
+    ImGui_ImplSDL2_NewFrame();
 
     ui::NewFrame();
 
@@ -299,6 +308,7 @@ void SystemUI::OnRenderEnd()
     Graphics* graphics = GetSubsystem<Graphics>();
     Diligent::IDeviceContext* deviceContext = graphics->GetImpl()->GetDeviceContext();
     graphics->SetRenderTarget(0, (RenderSurface*)nullptr);
+    graphics->SetDepthStencil((RenderSurface*)nullptr);
     graphics->PrepareDraw();
     impl_->RenderDrawData(deviceContext, ui::GetDrawData());
 
@@ -392,17 +402,18 @@ void SystemUI::ReallocateFontTexture()
     ClearPerScreenFonts();
 
     // Store main atlas, imgui expects it.
-    io.Fonts->TexID = AllocateFontTexture(io.Fonts);
-
+    fontTextures_.push_back(AllocateFontTexture(io.Fonts));
     io.AllFonts.push_back(io.Fonts);
+
     for (ImGuiPlatformMonitor& monitor : platform_io.Monitors)
     {
         if (monitor.DpiScale == 1.0f)
             continue; // io.Fonts has default scale.
         ImFontAtlas* atlas = new ImFontAtlas();
         io.Fonts->CloneInto(atlas, monitor.DpiScale);
+
+        fontTextures_.push_back(AllocateFontTexture(atlas));
         io.AllFonts.push_back(atlas);
-        atlas->TexID = AllocateFontTexture(atlas);
     }
 }
 
@@ -415,16 +426,20 @@ void SystemUI::ClearPerScreenFonts()
     io.AllFonts.clear();
 }
 
-ImTextureID SystemUI::AllocateFontTexture(ImFontAtlas* atlas)
+SharedPtr<Texture2D> SystemUI::AllocateFontTexture(ImFontAtlas* atlas) const
 {
     // Create font texture.
     unsigned char* pixels;
     int width, height;
-    atlas->ClearTexData();
 
-    const ImFontBuilderIO* fontBuilder = ImGuiFreeType::GetBuilderForFreeType();
-    atlas->FontBuilderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint;
-    fontBuilder->FontBuilder_Build(atlas);
+    if (atlas->ConfigData.Size > 0)
+    {
+        atlas->ClearTexData();
+
+        const ImFontBuilderIO* fontBuilder = ImGuiFreeType::GetBuilderForFreeType();
+        atlas->FontBuilderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint;
+        fontBuilder->FontBuilder_Build(atlas);
+    }
     atlas->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     SharedPtr<Texture2D> fontTexture = MakeShared<Texture2D>(context_);
@@ -432,10 +447,8 @@ ImTextureID SystemUI::AllocateFontTexture(ImFontAtlas* atlas)
     fontTexture->SetFilterMode(FILTER_BILINEAR);
     fontTexture->SetSize(width, height, Graphics::GetRGBAFormat());
     fontTexture->SetData(0, 0, 0, width, height, pixels);
-    fontTextures_.push_back(fontTexture);
 
-    // Store return texture identifier
-    return fontTexture->GetShaderResourceView().RawPtr();
+    return fontTexture;
 }
 
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)

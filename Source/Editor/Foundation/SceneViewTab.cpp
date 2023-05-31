@@ -950,6 +950,8 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
 
 void SceneViewTab::SavePagePreview(SceneViewPage& page) const
 {
+    // TODO(diligent): Restore
+#if 0
     Texture2D* texture = page.renderer_->GetTexture();
     SharedPtr<Image> image = texture->GetImage();
 
@@ -968,6 +970,7 @@ void SceneViewTab::SavePagePreview(SceneViewPage& page) const
 
     const ea::string& path = GetProject()->GetPreviewPngPath();
     croppedImage->SavePNG(path);
+#endif
 }
 
 void SceneViewTab::PreRenderUpdate()

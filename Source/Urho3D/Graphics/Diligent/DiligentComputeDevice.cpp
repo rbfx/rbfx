@@ -92,8 +92,6 @@ bool ComputeDevice::SetReadTexture(Texture* texture, CD_UNIT textureSlot)
         return true;
 
     resources_[textureSlot] = textureObj;
-    // Name convention by the SPIRV-Reflect
-    resources_[Format("_{}_sampler", textureSlot)] = sampler;
 
     resourcesDirty_ = true;
     return true;
@@ -166,6 +164,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, CD_UNIT textureSlot, unsig
 #endif
     viewDesc.Format = (TEXTURE_FORMAT)texture->GetFormat();
     viewDesc.ViewType = TEXTURE_VIEW_UNORDERED_ACCESS;
+    viewDesc.AccessFlags = UAV_ACCESS_FLAG_WRITE;
 
     RefCntAutoPtr<ITexture> currTexture = texture->GetGPUObject().Cast<ITexture>(IID_Texture);
 
@@ -351,6 +350,24 @@ bool ComputeDevice::BuildPipeline()
     ci.PSODesc.PipelineType = PIPELINE_TYPE_COMPUTE;
     ci.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC;
 
+    // TODO(diligent): Revisit this
+    ea::vector<ImmutableSamplerDesc> immutableSamplers;
+    immutableSamplers.reserve(resources_.size());
+    for (const auto& [resource, _] : resources_)
+    {
+        ImmutableSamplerDesc& desc = immutableSamplers.emplace_back();
+        desc.SamplerOrTextureName = resource.c_str();
+        desc.ShaderStages = SHADER_TYPE_COMPUTE;
+        desc.Desc.MinFilter = FILTER_TYPE_LINEAR;
+        desc.Desc.MagFilter = FILTER_TYPE_LINEAR;
+        desc.Desc.MipFilter = FILTER_TYPE_LINEAR;
+        desc.Desc.AddressU = TEXTURE_ADDRESS_WRAP;
+        desc.Desc.AddressV = TEXTURE_ADDRESS_WRAP;
+        desc.Desc.AddressW = TEXTURE_ADDRESS_WRAP;
+    }
+    ci.PSODesc.ResourceLayout.NumImmutableSamplers = resources_.size();
+    ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
+
     ci.pCS = computeShader;
     // Use PSO Cache if was created.
     if(psoCache_->GetGPUPipelineCache())
@@ -467,7 +484,7 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
     }
 
     UnsubscribeFromEvent(object.Get(), E_GPURESOURCERELEASED);
-    
+
 }
 
 void ComputeDevice::ReleaseLocalState()

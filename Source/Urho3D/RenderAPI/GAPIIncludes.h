@@ -27,3 +27,27 @@
         #include <GL/glew.h>
     #endif
 #endif
+
+#if VULKAN_SUPPORTED
+    #if URHO3D_PLATFORM_WINDOWS || URHO3D_PLATFORM_LINUX || URHO3D_PLATFORM_MACOS || URHO3D_PLATFORM_ANDROID
+        #define DILIGENT_USE_VOLK 1
+    #endif
+
+    #if DILIGENT_USE_VOLK
+        #define VK_NO_PROTOTYPES
+    #endif
+
+    #include <vulkan/vulkan.h>
+
+    #if DILIGENT_USE_VOLK
+        #include <Diligent/ThirdParty/volk/volk.h>
+    #endif
+#endif
+
+#if D3D11_SUPPORTED
+    #include <d3d11_1.h>
+#endif
+
+#if D3D12_SUPPORTED
+    #include <d3d12.h>
+#endif
