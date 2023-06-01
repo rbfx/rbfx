@@ -192,7 +192,7 @@ public:
     }
 };
 
-void InitializeLayoutElements(
+void InitializeLayoutElementsMetadata(
     ea::vector<Diligent::LayoutElement>& result, ea::span<const VertexElementInBuffer> vertexElements)
 {
     static const unsigned numComponents[] = {
@@ -349,6 +349,15 @@ unsigned RemoveUnusedElements(ea::span<Diligent::LayoutElement> result)
     const auto isUnused = [](const Diligent::LayoutElement& element) { return element.InputIndex == M_MAX_UNSIGNED; };
     const auto iter = ea::remove_if(result.begin(), result.end(), isUnused);
     return iter - result.begin();
+}
+
+void InitializeLayoutElements(ea::vector<Diligent::LayoutElement>& result,
+    ea::span<const VertexElementInBuffer> vertexElements, const VertexShaderAttributeVector& vertexShaderAttributes)
+{
+    InitializeLayoutElementsMetadata(result, vertexElements);
+    FillLayoutElementIndices(result, vertexElements, vertexShaderAttributes);
+    const unsigned numElements = RemoveUnusedElements(result);
+    result.resize(numElements);
 }
 
 Diligent::IShader* ToHandle(ShaderVariation* shader)
@@ -641,8 +650,6 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     GraphicsPipelineStateCreateInfo ci;
 
     ea::vector<LayoutElement> layoutElements;
-    InitializeLayoutElements(layoutElements, desc_.GetVertexElements());
-
     ea::vector<Diligent::ImmutableSamplerDesc> immutableSamplers;
 
     Diligent::IShader* vertexShader = ToHandle(desc_.vertexShader_);
@@ -655,9 +662,9 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     if (!isOpenGL)
     {
         const VertexShaderAttributeVector& vertexShaderAttributes = desc_.vertexShader_->GetVertexShaderAttributes();
-        FillLayoutElementIndices(layoutElements, desc_.GetVertexElements(), vertexShaderAttributes);
-        const unsigned numElements = RemoveUnusedElements(layoutElements);
-        layoutElements.resize(numElements);
+        InitializeLayoutElements(layoutElements, desc_.GetVertexElements(), vertexShaderAttributes);
+        ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
+        ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
     }
 
     // On OpenGL, uniform layout initialization may be postponed.
@@ -676,9 +683,6 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
 #endif
 
     ci.GraphicsPipeline.PrimitiveTopology = DiligentPrimitiveTopology[desc_.primitiveType_];
-
-    ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
-    ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
 
     ci.GraphicsPipeline.NumRenderTargets = desc_.output_.numRenderTargets_;
     for (unsigned i = 0; i < desc_.output_.numRenderTargets_; ++i)
@@ -745,36 +749,31 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
         ci.pPSOCache = psoCache->object_.Cast<IPipelineStateCache>(IID_PipelineStateCache);
 
 #if GL_SUPPORTED || GLES_SUPPORTED
-    // clang-format off
-    auto patchInputLayout = [&](GLuint programObject, Diligent::Uint32& numElements, Diligent::LayoutElement* elements,
-        Diligent::PipelineResourceLayoutDesc& resourceLayout)
+    auto patchInputLayout = [&](GLuint* programObjects, Diligent::Uint32 numPrograms)
     {
-        const ea::span<Diligent::LayoutElement> elementsSpan{elements, numElements};
-        const auto vertexAttributes = GetGLVertexAttributes(programObject);
+        const auto vertexShaderAttributes = GetGLVertexAttributes(programObjects[0]);
 
-        FillLayoutElementIndices(elementsSpan, desc_.GetVertexElements(), vertexAttributes);
-        numElements = RemoveUnusedElements(elementsSpan);
+        InitializeLayoutElements(layoutElements, desc_.GetVertexElements(), vertexShaderAttributes);
+        ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
+        ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
 
         if (!hasSeparableShaderPrograms)
         {
-            reflection_ = ReflectGLProgram(programObject);
+            reflection_ = ReflectGLProgram(programObjects[0]);
 
             InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
-            resourceLayout.NumImmutableSamplers = immutableSamplers.size();
-            resourceLayout.ImmutableSamplers = immutableSamplers.data();
+            ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
+            ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
         }
     };
 
-    // TODO(diligent): This is incorrect! We should patch diligent so we need to change GraphicsPipelineStateCreateInfo only!
-    ci.GLPatchVertexLayoutCallbackUserData = &patchInputLayout;
-    ci.GLPatchVertexLayoutCallback = [](GLuint programObject,
-        Diligent::Uint32* numElements, Diligent::LayoutElement* elements,
-        Diligent::PipelineResourceLayoutDesc* resourceLayout, void* userData)
+    ci.GLProgramLinkedCallbackUserData = &patchInputLayout;
+    ci.GLProgramLinkedCallback =
+        [](Diligent::Uint32* programObjects, Diligent::Uint32 numProgramObjects, void* userData)
     {
         const auto& callback = *reinterpret_cast<decltype(patchInputLayout)*>(userData);
-        callback(programObject, *numElements, elements, *resourceLayout);
+        callback(programObjects, numProgramObjects);
     };
-    // clang-format on
 #endif
 
     renderDevice->CreateGraphicsPipelineState(ci, &handle_);

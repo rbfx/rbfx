@@ -140,6 +140,11 @@ ImGuiDiligentRendererEx::ImGuiDiligentRendererEx(RenderDevice* renderDevice)
 
 ImGuiDiligentRendererEx::~ImGuiDiligentRendererEx()
 {
+#if URHO3D_PLATFORM_WINDOWS || URHO3D_PLATFORM_LINUX || URHO3D_PLATFORM_MACOS
+    const auto viewports = ea::move(viewports_);
+    for (ImGuiViewport* viewport : viewports)
+        DestroyRendererWindow(viewport);
+
     ImGuiIO& IO = ImGui::GetIO();
     ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
 
@@ -150,6 +155,7 @@ ImGuiDiligentRendererEx::~ImGuiDiligentRendererEx()
     platformIO.Renderer_RenderWindow = nullptr;
     platformIO.Renderer_SwapBuffers = nullptr;
     platformIO.Platform_CreateWindow = createPlatformWindow_;
+#endif
 }
 
 void ImGuiDiligentRendererEx::NewFrame()
@@ -228,6 +234,8 @@ void ImGuiDiligentRendererEx::CreateRendererWindow(ImGuiViewport* viewport)
     // Postpone SwapChain creation until we have a valid shared OpenGL context
     if (renderDevice_->GetBackend() != RenderBackend::OpenGL)
         CreateSwapChainForViewport(viewport);
+
+    viewports_.push_back(viewport);
 }
 
 void ImGuiDiligentRendererEx::DestroyRendererWindow(ImGuiViewport* viewport)
@@ -235,6 +243,8 @@ void ImGuiDiligentRendererEx::DestroyRendererWindow(ImGuiViewport* viewport)
     auto userData = GetViewportData(viewport);
     delete userData;
     viewport->RendererUserData = nullptr;
+
+    viewports_.erase_first(viewport);
 }
 
 void ImGuiDiligentRendererEx::SetWindowSize(ImGuiViewport* viewport, ImVec2 size)

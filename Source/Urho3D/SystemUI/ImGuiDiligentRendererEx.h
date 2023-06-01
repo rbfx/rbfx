@@ -7,6 +7,8 @@
 #include "Urho3D/Container/Ptr.h"
 #include "Urho3D/SystemUI/3rdParty/ImGuiDiligentRenderer.hpp"
 
+#include <EASTL/vector.h>
+
 namespace Urho3D
 {
 
@@ -45,6 +47,8 @@ private:
 
     SharedPtr<PipelineState> primaryPipelineState_;
     SharedPtr<PipelineState> secondaryPipelineState_;
+
+    ea::vector<ImGuiViewport*> viewports_;
 };
 
 } // namespace Diligent

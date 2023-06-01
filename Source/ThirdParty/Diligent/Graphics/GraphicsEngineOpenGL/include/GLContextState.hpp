@@ -83,6 +83,7 @@ public:
     Bool GetScissorTestEnabled(){ return m_RSState.ScissorTestEnable; }
     void GetColorWriteMask(Uint32 RTIndex, Uint32& WriteMask, Bool& bIsIndependent);
     void SetColorWriteMask(Uint32 RTIndex, Uint32 WriteMask, Bool bIsIndependent);
+    Uint8 GetStencilWriteMask(){ return static_cast<Uint8>(m_DSState.m_StencilWriteMask); }
 
     void GetBoundImage(Uint32 Index, GLuint& GLHandle, GLint& MipLevel, GLboolean& IsLayered, GLint& Layer, GLenum& Access, GLenum& Format) const;
 

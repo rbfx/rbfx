@@ -214,7 +214,7 @@ bool PSOSerializer<Mode>::SerializeCreateInfo(
 {
     return SerializeCreateInfo(Ser, static_cast<ConstQual<PipelineStateCreateInfo>&>(CreateInfo), PRSNames, Allocator);
 
-    ASSERT_SIZEOF64(ComputePipelineStateCreateInfo, 104, "Did you add a new member to ComputePipelineStateCreateInfo? Please add serialization here.");
+    ASSERT_SIZEOF64(ComputePipelineStateCreateInfo, 120, "Did you add a new member to ComputePipelineStateCreateInfo? Please add serialization here.");
 }
 
 template <SerializerMode Mode>

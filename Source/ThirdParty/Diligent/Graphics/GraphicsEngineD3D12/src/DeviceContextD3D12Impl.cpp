@@ -2250,29 +2250,51 @@ void DeviceContextD3D12Impl::GenerateMips(ITextureView* pTexView)
 {
     TDeviceContextBase::GenerateMips(pTexView);
 
-    PipelineStateD3D12Impl* pCurrPSO = nullptr;
-    if (m_pPipelineState)
-    {
-        //const auto& PSODesc = m_pPipelineState->GetDesc();
-        //if (PSODesc.IsComputePipeline() || PSODesc.IsRayTracingPipeline())
-        {
-            // Mips generator will set its own compute pipeline, root signature and root resources.
-            // We need to invalidate current PSO and reset it afterwards.
-            pCurrPSO = m_pPipelineState;
-            m_pPipelineState.Release();
-            m_ComputeResources.pd3d12RootSig = nullptr;
-        }
-    }
-
     auto& Ctx = GetCmdContext();
 
     const auto& MipsGenerator = m_pDevice->GetMipsGenerator();
     MipsGenerator.GenerateMips(m_pDevice->GetD3D12Device(), ClassPtrCast<TextureViewD3D12Impl>(pTexView), Ctx);
     ++m_State.NumCommands;
 
-    if (pCurrPSO != nullptr)
+    // Invalidate compute resources as they were set by the mips generator
+    m_ComputeResources.MakeAllStale();
+
+    if (m_pPipelineState)
     {
-        SetPipelineState(pCurrPSO);
+        // Restore previous PSO and root signature
+        const auto& PSODesc = m_pPipelineState->GetDesc();
+        static_assert(PIPELINE_TYPE_LAST == 4, "Please update the switch below to handle the new pipeline type");
+        switch (PSODesc.PipelineType)
+        {
+            case PIPELINE_TYPE_GRAPHICS:
+            {
+                Ctx.SetPipelineState(m_pPipelineState->GetD3D12PipelineState());
+                // No need to restore graphics signature as it is not changed
+            }
+            break;
+
+            case PIPELINE_TYPE_COMPUTE:
+            {
+                auto& CompCtx = Ctx.AsComputeContext();
+                CompCtx.SetPipelineState(m_pPipelineState->GetD3D12PipelineState());
+                CompCtx.SetComputeRootSignature(m_ComputeResources.pd3d12RootSig);
+            }
+            break;
+
+            case PIPELINE_TYPE_RAY_TRACING:
+            {
+                auto& RTCtx = Ctx.AsGraphicsContext4();
+                RTCtx.SetRayTracingPipelineState(m_pPipelineState->GetD3D12StateObject());
+                RTCtx.SetComputeRootSignature(m_ComputeResources.pd3d12RootSig);
+            }
+            break;
+
+            case PIPELINE_TYPE_TILE:
+                UNEXPECTED("Unsupported pipeline type");
+                break;
+            default:
+                UNEXPECTED("Unknown pipeline type");
+        }
     }
 }
 

@@ -712,12 +712,8 @@ struct PipelineStateCreateInfo
 typedef struct PipelineStateCreateInfo PipelineStateCreateInfo;
 
 
-/// Callback used to patch input layout after the OpenGL program object is linked.
-typedef void(DILIGENT_CALL_TYPE* GLPatchVertexLayoutCallbackType)(Uint32 VertexProgramObject,
-                                                                  Uint32* NumElements,
-                                                                  LayoutElement* Elements,
-                                                                  PipelineResourceLayoutDesc* ResourceLayout,
-                                                                  void* UserData);
+/// Callback that is invoked after OpenGL program object is linked.
+typedef void(DILIGENT_CALL_TYPE* GLProgramLinkedCallbackType)(Uint32* ProgramObjects, Uint32 NumProgramObjects, void* pUserData);
 
 /// Graphics pipeline state initialization information.
 struct GraphicsPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
@@ -746,12 +742,12 @@ struct GraphicsPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
     /// Mesh shader to be used with the pipeline.
     IShader* pMS DEFAULT_INITIALIZER(nullptr);
 
-    /// OpenGL only: Callback that is executed when program is linked.
-    /// It is allowed to remove elements from the layout, but not to add new ones.
-    GLPatchVertexLayoutCallbackType GLPatchVertexLayoutCallback DEFAULT_INITIALIZER(nullptr);
+    /// OpenGL only: Callback that is executed when program(s) are linked.
+    /// It is allowed to modify CreateInfo in this callback.
+    GLProgramLinkedCallbackType GLProgramLinkedCallback DEFAULT_INITIALIZER(nullptr);
 
-    /// OpenGL only: user data for GLPatchVertexLayoutCallback.
-    void* GLPatchVertexLayoutCallbackUserData DEFAULT_INITIALIZER(nullptr);
+    /// OpenGL only: user data for GLProgramLinkedCallback.
+    void* GLProgramLinkedCallbackUserData DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
     bool operator==(const GraphicsPipelineStateCreateInfo& Rhs) const noexcept
@@ -784,6 +780,13 @@ struct ComputePipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
 
     /// Compute shader to be used with the pipeline
     IShader* pCS DEFAULT_INITIALIZER(nullptr);
+
+    /// OpenGL only: Callback that is executed when program(s) are linked.
+    /// It is allowed to modify CreateInfo in this callback.
+    GLProgramLinkedCallbackType GLProgramLinkedCallback DEFAULT_INITIALIZER(nullptr);
+
+    /// OpenGL only: user data for GLProgramLinkedCallback.
+    void* GLProgramLinkedCallbackUserData DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
     ComputePipelineStateCreateInfo() noexcept

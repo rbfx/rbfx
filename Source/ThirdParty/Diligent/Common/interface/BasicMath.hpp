@@ -2412,6 +2412,18 @@ inline std::ostream& operator<<(std::ostream& os, const uint2& vec)
     return os << "uint2(" << vec.x << ", " << vec.y << ')';
 }
 
+template <typename T>
+T DegToRad(T Deg)
+{
+    return Deg * (static_cast<T>(PI) / static_cast<T>(180));
+}
+
+template <typename T>
+T RadToDeg(T Rad)
+{
+    return Rad * (static_cast<T>(180) / static_cast<T>(PI));
+}
+
 } // namespace Diligent
 
 

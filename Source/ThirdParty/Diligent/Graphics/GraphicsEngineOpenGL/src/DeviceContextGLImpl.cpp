@@ -1167,6 +1167,10 @@ void DeviceContextGLImpl::ClearDepthStencil(ITextureView*                  pView
     bool DepthWritesEnabled = m_ContextState.GetDepthWritesEnabled();
     m_ContextState.EnableDepthWrites(True);
 
+    // Set stencil write mask
+    Uint8 StencilWriteMask = m_ContextState.GetStencilWriteMask();
+    m_ContextState.SetStencilWriteMask(0xFF);
+
     // Unlike OpenGL, in D3D10+, the full extent of the resource view is always cleared.
     // Viewport and scissor settings are not applied.
 
@@ -1178,6 +1182,7 @@ void DeviceContextGLImpl::ClearDepthStencil(ITextureView*                  pView
     // are ignored by glClear.
     glClear(glClearFlags);
     DEV_CHECK_GL_ERROR("glClear() failed");
+    m_ContextState.SetStencilWriteMask(StencilWriteMask);
     m_ContextState.EnableDepthWrites(DepthWritesEnabled);
     m_ContextState.EnableScissorTest(ScissorTestEnabled);
 }

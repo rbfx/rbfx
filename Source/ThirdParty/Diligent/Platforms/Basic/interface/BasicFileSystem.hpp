@@ -178,6 +178,9 @@ public:
     ///     - Collapses .. (a/b/../c -> a/c)
     static std::vector<String> SplitPath(const Char* Path, bool Simplify);
 
+    /// Builds a path from the given components.
+    static std::string BuildPathFromComponents(const std::vector<String>& Components, Char Slash = 0);
+
     /// Simplifies the path.
 
     /// The function performs the following path simplifications:

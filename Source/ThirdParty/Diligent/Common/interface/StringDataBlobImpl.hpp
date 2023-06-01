@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,10 +30,12 @@
 /// \file
 /// Implementation for the IDataBlob interface
 
+#include <vector>
+
 #include "../../Primitives/interface/BasicTypes.h"
 #include "../../Primitives/interface/DataBlob.h"
 #include "ObjectBase.hpp"
-#include <vector>
+#include "RefCntAutoPtr.hpp"
 
 namespace Diligent
 {
@@ -44,12 +46,17 @@ class StringDataBlobImpl : public Diligent::ObjectBase<IDataBlob>
 public:
     typedef Diligent::ObjectBase<IDataBlob> TBase;
 
-    StringDataBlobImpl(IReferenceCounters* pRefCounters, const char* str) :
-        TBase(pRefCounters), m_String(str) {}
-    StringDataBlobImpl(IReferenceCounters* pRefCounters, const String& str) :
-        TBase(pRefCounters), m_String(str) {}
-    StringDataBlobImpl(IReferenceCounters* pRefCounters, String&& str) :
-        TBase(pRefCounters), m_String(std::move(str)) {}
+    template <typename... ArgsType>
+    StringDataBlobImpl(IReferenceCounters* pRefCounters, ArgsType&&... Args) :
+        TBase{pRefCounters},
+        m_String{std::forward<ArgsType>(Args)...}
+    {}
+
+    template <typename... ArgsType>
+    static RefCntAutoPtr<StringDataBlobImpl> Create(ArgsType&&... Args)
+    {
+        return RefCntAutoPtr<StringDataBlobImpl>{MakeNewRCObj<StringDataBlobImpl>()(std::forward<ArgsType>(Args)...)};
+    }
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_DataBlob, TBase)
 

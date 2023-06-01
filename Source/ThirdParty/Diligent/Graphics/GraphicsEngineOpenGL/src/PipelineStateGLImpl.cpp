@@ -245,6 +245,35 @@ void PipelineStateGLImpl::InitInternalObjects(const PSOCreateInfoType& CreateInf
     m_IsProgramPipelineSupported = DeviceInfo.Features.SeparablePrograms != DEVICE_FEATURE_STATE_DISABLED;
     m_NumPrograms                = m_IsProgramPipelineSupported ? static_cast<Uint8>(ShaderStages.size()) : 1;
 
+    // Link shader programs before initializing pipeline state so that callback can change CreateInfo
+    static const Uint32 MaxNumShaderStages = 5;
+    VERIFY(ShaderStages.size() <= MaxNumShaderStages, "Unexpected number of shader stages");
+
+    std::array<GLProgramObj, MaxNumShaderStages> GLPrograms{GLProgramObj{false}, GLProgramObj{false}, GLProgramObj{false}, GLProgramObj{false}, GLProgramObj{false}};
+    std::array<Uint32, MaxNumShaderStages>       GLProgramsHandles;
+
+    // Create programs.
+    if (m_IsProgramPipelineSupported)
+    {
+        for (size_t i = 0; i < ShaderStages.size(); ++i)
+        {
+            GLPrograms[i]        = GLProgramObj{ShaderGLImpl::LinkProgram(&ShaderStages[i], 1, true)};
+            GLProgramsHandles[i] = static_cast<GLuint>(GLPrograms[i]);
+        }
+    }
+    else
+    {
+        GLPrograms[0]        = ShaderGLImpl::LinkProgram(ShaderStages.data(), static_cast<Uint32>(ShaderStages.size()), false);
+        GLProgramsHandles[0] = static_cast<GLuint>(GLPrograms[0]);
+    }
+
+    // Patch CreateInfo if necessary.
+    if (CreateInfo.GLProgramLinkedCallback)
+    {
+        (*CreateInfo.GLProgramLinkedCallback)(&GLProgramsHandles[0], m_NumPrograms, CreateInfo.GLProgramLinkedCallbackUserData);
+        m_Desc.ResourceLayout = CreateInfo.PSODesc.ResourceLayout;
+    }
+
     FixedLinearAllocator MemPool{GetRawAllocator()};
 
     ReserveSpaceForPipelineDesc(CreateInfo, MemPool);
@@ -275,31 +304,19 @@ void PipelineStateGLImpl::InitInternalObjects(const PSOCreateInfoType& CreateInf
         for (size_t i = 0; i < ShaderStages.size(); ++i)
         {
             auto* pShaderGL  = ShaderStages[i];
-            m_GLPrograms[i]  = GLProgramObj{ShaderGLImpl::LinkProgram(&ShaderStages[i], 1, true)};
+            m_GLPrograms[i]  = std::move(GLPrograms[i]);
             m_ShaderTypes[i] = pShaderGL->GetDesc().ShaderType;
         }
     }
     else
     {
-        m_GLPrograms[0]  = ShaderGLImpl::LinkProgram(ShaderStages.data(), static_cast<Uint32>(ShaderStages.size()), false);
+        m_GLPrograms[0]  = std::move(GLPrograms[0]);
         m_ShaderTypes[0] = ActiveStages;
 
         m_GLPrograms[0].SetName(m_Desc.Name);
     }
 
-    PatchInputLayout(CreateInfo);
-
     InitResourceLayout(GetInternalCreateFlags(CreateInfo), ShaderStages, ActiveStages);
-}
-
-void PipelineStateGLImpl::PatchInputLayout(const GraphicsPipelineStateCreateInfo& CreateInfo)
-{
-    if (!CreateInfo.GLPatchVertexLayoutCallback)
-        return;
-
-    auto& InputLayout = m_pGraphicsPipelineData->Desc.InputLayout;
-    (*CreateInfo.GLPatchVertexLayoutCallback)(
-        m_GLPrograms[0], &InputLayout.NumElements, const_cast<LayoutElement*>(InputLayout.LayoutElements), &m_Desc.ResourceLayout, CreateInfo.GLPatchVertexLayoutCallbackUserData);
 }
 
 PipelineStateGLImpl::PipelineStateGLImpl(IReferenceCounters*                    pRefCounters,
