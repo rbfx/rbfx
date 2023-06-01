@@ -606,11 +606,23 @@ float4 ImGuiDiligentRenderer::TransformClipRect(const ImVec2& DisplaySize, const
     }
 }
 
-void ImGuiDiligentRenderer::RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDrawData)
+void ImGuiDiligentRenderer::RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDrawData, IPipelineState* pUserPSO, IShaderResourceBinding* pUserSRB, IShaderResourceVariable* pUserTextureVar, IShaderResourceVariable* pUserConstantsVar)
 {
     // Avoid rendering when minimized
     if (pDrawData->DisplaySize.x <= 0.0f || pDrawData->DisplaySize.y <= 0.0f)
         return;
+
+    // Setup pipeline state if provided by the user.
+    IPipelineState* pPSO = m_pPSO;
+    IShaderResourceBinding* pSRB = m_pSRB;
+    IShaderResourceVariable* pTextureVar = m_pTextureVar;
+    if (pUserPSO && pUserSRB && pUserTextureVar && pUserConstantsVar)
+    {
+        pPSO = pUserPSO;
+        pSRB = pUserSRB;
+        pTextureVar = pUserTextureVar;
+        pUserConstantsVar->Set(m_pVertexConstantBuffer);
+    }
 
     // Create and grow vertex/index buffers if needed
     if (!m_pVB || static_cast<int>(m_VertexBufferSize) < pDrawData->TotalVtxCount)
@@ -721,13 +733,14 @@ void ImGuiDiligentRenderer::RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDr
         *CBData = Projection;
     }
 
+    ITextureView* pLastTextureView = nullptr;
     auto SetupRenderState = [&]() //
     {
         // Setup shader and vertex buffers
         IBuffer* pVBs[] = {m_pVB};
         pCtx->SetVertexBuffers(0, 1, pVBs, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_RESET);
         pCtx->SetIndexBuffer(m_pIB, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-        pCtx->SetPipelineState(m_pPSO);
+        pCtx->SetPipelineState(pPSO);
 
         const float blend_factor[4] = {0.f, 0.f, 0.f, 0.f};
         pCtx->SetBlendFactors(blend_factor);
@@ -742,6 +755,8 @@ void ImGuiDiligentRenderer::RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDr
                            &vp,
                            static_cast<Uint32>(m_RenderSurfaceWidth),
                            static_cast<Uint32>(m_RenderSurfaceHeight));
+
+        pLastTextureView = nullptr;
     };
 
     SetupRenderState();
@@ -751,7 +766,6 @@ void ImGuiDiligentRenderer::RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDr
     Uint32 GlobalIdxOffset = 0;
     Uint32 GlobalVtxOffset = 0;
 
-    ITextureView* pLastTextureView = nullptr;
     for (Int32 CmdListID = 0; CmdListID < pDrawData->CmdListsCount; CmdListID++)
     {
         const ImDrawList* pCmdList = pDrawData->CmdLists[CmdListID];
@@ -798,8 +812,8 @@ void ImGuiDiligentRenderer::RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDr
                 if (pTextureView != pLastTextureView)
                 {
                     pLastTextureView = pTextureView;
-                    m_pTextureVar->Set(pTextureView);
-                    pCtx->CommitShaderResources(m_pSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+                    pTextureVar->Set(pTextureView);
+                    pCtx->CommitShaderResources(pSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
                 }
 
                 DrawIndexedAttribs DrawAttrs{pCmd->ElemCount, sizeof(ImDrawIdx) == sizeof(Uint16) ? VT_UINT16 : VT_UINT32, DRAW_FLAG_VERIFY_STATES};

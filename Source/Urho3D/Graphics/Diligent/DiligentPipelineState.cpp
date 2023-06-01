@@ -106,7 +106,7 @@ unsigned GetUniformSize(const Diligent::ShaderCodeVariableDesc& uniformDesc)
     }
 }
 
-ea::optional<ea::string_view> SanitateUniformName(ea::string_view name)
+ea::optional<ea::string_view> SanitizeUniformName(ea::string_view name)
 {
     const auto pos = name.find('c');
     if (pos == ea::string_view::npos || pos + 1 == name.length())
@@ -115,7 +115,7 @@ ea::optional<ea::string_view> SanitateUniformName(ea::string_view name)
     return name.substr(pos + 1);
 }
 
-ea::optional<ea::string_view> SanitateResourceName(ea::string_view name)
+ea::optional<ea::string_view> SanitizeResourceName(ea::string_view name)
 {
     if (name.empty() || name[0] != 's')
         return ea::nullopt;
@@ -144,7 +144,7 @@ public:
 
     void AddOrCheckUniform(ShaderParameterGroup group, const Diligent::ShaderCodeVariableDesc& desc)
     {
-        const auto sanitatedName = SanitateUniformName(desc.Name);
+        const auto sanitatedName = SanitizeUniformName(desc.Name);
         if (!sanitatedName)
         {
             URHO3D_LOGWARNING("Cannot parse uniform with name '{}'", desc.Name);
@@ -412,7 +412,7 @@ void AppendShaderReflection(ShaderReflectionImpl& reflection, Diligent::IShader*
             break;
 
         case SHADER_RESOURCE_TYPE_TEXTURE_SRV:
-            if (const auto sanitatedName = SanitateResourceName(desc.Name))
+            if (const auto sanitatedName = SanitizeResourceName(desc.Name))
                 reflection.AddOrCheckShaderResource(StringHash{*sanitatedName}, desc.Name);
             break;
 
@@ -594,7 +594,7 @@ SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
         GLenum type = 0;
         glGetActiveUniform(programObject, uniformIndex, maxNameLength, nullptr, &elementCount, &type, name);
 
-        if (const auto sanitatedResourceName = SanitateResourceName(name))
+        if (const auto sanitatedResourceName = SanitizeResourceName(name))
         {
             reflection->AddOrCheckShaderResource(StringHash{*sanitatedResourceName}, name);
             continue;

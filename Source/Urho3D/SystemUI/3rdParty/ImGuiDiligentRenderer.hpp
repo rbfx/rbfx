@@ -63,7 +63,7 @@ public:
                   Uint32            RenderSurfaceHeight,
                   SURFACE_TRANSFORM SurfacePreTransform);
     void EndFrame();
-    void RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDrawData);
+    void RenderDrawData(IDeviceContext* pCtx, ImDrawData* pDrawData, IPipelineState* pUserPSO = nullptr, IShaderResourceBinding* pUserSRB = nullptr, IShaderResourceVariable* pUserTextureVar = nullptr, IShaderResourceVariable* pUserConstantsVar = nullptr);
     void InvalidateDeviceObjects();
     void CreateDeviceObjects();
     void CreateFontsTexture();

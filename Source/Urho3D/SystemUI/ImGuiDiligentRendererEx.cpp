@@ -6,12 +6,16 @@
 
 #include "Urho3D/SystemUI/ImGuiDiligentRendererEx.h"
 
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/PipelineState.h"
+#include "Urho3D/Graphics/Renderer.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/SystemUI/ImGui.h"
 
 #include <Diligent/Common/interface/Cast.hpp>
+#include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
 #if GL_SUPPORTED || GLES_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/DeviceContextGL.h>
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/SwapChainGL.h>
@@ -48,6 +52,58 @@ ViewportRendererData* GetViewportData(ImGuiViewport* viewport)
     return static_cast<ViewportRendererData*>(viewport->RendererUserData);
 }
 
+bool IsSRGBTextureFormat(TextureFormat format)
+{
+    return format == Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB || format == Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB;
+}
+
+SharedPtr<PipelineState> CreateRenderPipeline(
+    RenderDevice* renderDevice, TextureFormat colorBufferFormat, TextureFormat depthBufferFormat)
+{
+    auto renderer = renderDevice->GetContext()->GetSubsystem<Renderer>();
+    auto graphics = renderDevice->GetContext()->GetSubsystem<Graphics>();
+
+    PipelineStateDesc desc;
+    desc.debugName_ = Format("ImGUI Render Pipeline (Color: {}, Depth: {})",
+        Diligent::GetTextureFormatAttribs(colorBufferFormat).Name,
+        Diligent::GetTextureFormatAttribs(depthBufferFormat).Name);
+
+    desc.output_.numRenderTargets_ = 1;
+    desc.output_.renderTargetFormats_[0] = colorBufferFormat;
+    desc.output_.depthStencilFormat_ = depthBufferFormat;
+
+    desc.numVertexElements_ = 3;
+    desc.vertexElements_[0].bufferStride_ = sizeof(ImDrawVert);
+    desc.vertexElements_[0].semantic_ = SEM_POSITION;
+    desc.vertexElements_[0].type_ = TYPE_VECTOR2;
+    desc.vertexElements_[0].offset_ = 0;
+    desc.vertexElements_[1].bufferStride_ = sizeof(ImDrawVert);
+    desc.vertexElements_[1].semantic_ = SEM_TEXCOORD;
+    desc.vertexElements_[1].type_ = TYPE_VECTOR2;
+    desc.vertexElements_[1].offset_ = sizeof(ImVec2);
+    desc.vertexElements_[2].bufferStride_ = sizeof(ImDrawVert);
+    desc.vertexElements_[2].semantic_ = SEM_COLOR;
+    desc.vertexElements_[2].type_ = TYPE_UBYTE4_NORM;
+    desc.vertexElements_[2].offset_ = sizeof(ImVec2) + sizeof(ImVec2);
+    desc.colorWriteEnabled_ = true;
+
+    ea::string shaderDefines;
+    if (IsSRGBTextureFormat(colorBufferFormat))
+        shaderDefines += "URHO3D_LINEAR_OUTPUT ";
+
+    desc.vertexShader_ = graphics->GetShader(VS, "v2/X_ImGui", shaderDefines);
+    desc.pixelShader_ = graphics->GetShader(PS, "v2/X_ImGui", shaderDefines);
+
+    desc.primitiveType_ = TRIANGLE_LIST;
+    desc.depthCompareFunction_ = CMP_ALWAYS;
+    desc.depthWriteEnabled_ = false;
+    desc.blendMode_ = BLEND_ALPHA;
+
+    desc.AddSampler("Texture", SamplerStateDesc::Bilinear(ADDRESS_WRAP));
+
+    return renderer->GetOrCreatePipelineState(desc);
+}
+
 } // namespace
 
 ImGuiDiligentRendererEx::ImGuiDiligentRendererEx(RenderDevice* renderDevice)
@@ -58,12 +114,11 @@ ImGuiDiligentRendererEx::ImGuiDiligentRendererEx(RenderDevice* renderDevice)
 {
     ImGuiIO& IO = ImGui::GetIO();
     ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
+    createPlatformWindow_ = platformIO.Platform_CreateWindow;
 
 #if URHO3D_PLATFORM_WINDOWS || URHO3D_PLATFORM_LINUX || URHO3D_PLATFORM_MACOS
     const RenderBackend renderBackend = renderDevice->GetBackend();
     IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
-
-    createPlatformWindow_ = platformIO.Platform_CreateWindow;
 
     // clang-format off
     IO.BackendRendererUserData = this;
@@ -75,6 +130,12 @@ ImGuiDiligentRendererEx::ImGuiDiligentRendererEx(RenderDevice* renderDevice)
     platformIO.Renderer_SwapBuffers = [](ImGuiViewport* viewport, void* renderArg) { GetBackendData()->SwapBuffers(viewport, renderArg); };
     // clang-format on
 #endif
+
+    const Diligent::SwapChainDesc& swapChainDesc = renderDevice->GetSwapChain()->GetDesc();
+    primaryPipelineState_ =
+        CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, swapChainDesc.DepthBufferFormat);
+    secondaryPipelineState_ =
+        CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, Diligent::TEX_FORMAT_UNKNOWN);
 }
 
 ImGuiDiligentRendererEx::~ImGuiDiligentRendererEx()
@@ -104,7 +165,7 @@ void ImGuiDiligentRendererEx::EndFrame()
 
 void ImGuiDiligentRendererEx::RenderDrawData(ImDrawData* drawData)
 {
-    Diligent::ImGuiDiligentRenderer::RenderDrawData(renderDevice_->GetDeviceContext(), drawData);
+    RenderDrawDataWith(drawData, primaryPipelineState_);
 }
 
 void ImGuiDiligentRendererEx::RenderSecondaryWindows()
@@ -132,6 +193,20 @@ void ImGuiDiligentRendererEx::RenderSecondaryWindows()
 #endif
 }
 
+void ImGuiDiligentRendererEx::RenderDrawDataWith(ImDrawData* drawData, PipelineState* pipelineState)
+{
+    auto graphics = renderDevice_->GetContext()->GetSubsystem<Graphics>();
+    pipelineState->RestoreCachedState(graphics);
+    if (!pipelineState->IsValid())
+        return;
+
+    Diligent::IShaderResourceBinding* srb = pipelineState->GetShaderResourceBinding();
+    Diligent::IShaderResourceVariable* textureVar = srb->GetVariableByName(Diligent::SHADER_TYPE_PIXEL, "sTexture");
+    Diligent::IShaderResourceVariable* constantsVar = srb->GetVariableByName(Diligent::SHADER_TYPE_VERTEX, "Camera");
+    Diligent::ImGuiDiligentRenderer::RenderDrawData(
+        renderDevice_->GetDeviceContext(), drawData, pipelineState->GetHandle(), srb, textureVar, constantsVar);
+}
+
 #if URHO3D_PLATFORM_WINDOWS || URHO3D_PLATFORM_LINUX || URHO3D_PLATFORM_MACOS
 void ImGuiDiligentRendererEx::CreatePlatformWindow(ImGuiViewport* viewport)
 {
@@ -152,11 +227,7 @@ void ImGuiDiligentRendererEx::CreateRendererWindow(ImGuiViewport* viewport)
 
     // Postpone SwapChain creation until we have a valid shared OpenGL context
     if (renderDevice_->GetBackend() != RenderBackend::OpenGL)
-    {
-        auto sdlWindow = reinterpret_cast<SDL_Window*>(viewport->PlatformHandle);
-        URHO3D_ASSERT(sdlWindow);
-        userData->swapChain_ = renderDevice_->CreateSecondarySwapChain(sdlWindow);
-    }
+        CreateSwapChainForViewport(viewport);
 }
 
 void ImGuiDiligentRendererEx::DestroyRendererWindow(ImGuiViewport* viewport)
@@ -208,6 +279,8 @@ void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* render
         auto swapChainGL = ClassPtrCast<Diligent::ISwapChainGL>(userData->swapChain_.RawPtr());
         deviceContextGL->SetSwapChain(swapChainGL);
         deviceContextGL->InvalidateState();
+
+        glEnable(GL_FRAMEBUFFER_SRGB);
     }
 #endif
 
@@ -216,14 +289,13 @@ void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* render
 
     // TODO(diligent): Get rid of depth buffer
     Diligent::ITextureView* renderTarget = userData->swapChain_->GetCurrentBackBufferRTV();
-    Diligent::ITextureView* depthBuffer = userData->swapChain_->GetDepthBufferDSV();
-    deviceContext->SetRenderTargets(1, &renderTarget, depthBuffer, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    deviceContext->SetRenderTargets(1, &renderTarget, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     if (!(viewport->Flags & ImGuiViewportFlags_NoRendererClear))
     {
         deviceContext->ClearRenderTarget(
             renderTarget, Color::TRANSPARENT_BLACK.Data(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
-    Diligent::ImGuiDiligentRenderer::RenderDrawData(deviceContext, viewport->DrawData);
+    RenderDrawDataWith(viewport->DrawData, secondaryPipelineState_);
 }
 
 void ImGuiDiligentRendererEx::SwapBuffers(ImGuiViewport* viewport, void* renderArg)
@@ -243,7 +315,7 @@ void ImGuiDiligentRendererEx::CreateSwapChainForViewport(ImGuiViewport* viewport
     auto userData = GetViewportData(viewport);
     auto sdlWindow = reinterpret_cast<SDL_Window*>(viewport->PlatformHandle);
     URHO3D_ASSERT(sdlWindow);
-    userData->swapChain_ = renderDevice_->CreateSecondarySwapChain(sdlWindow);
+    userData->swapChain_ = renderDevice_->CreateSecondarySwapChain(sdlWindow, false);
 }
 
 #endif

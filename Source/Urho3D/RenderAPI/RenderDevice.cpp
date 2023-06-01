@@ -748,13 +748,14 @@ void RenderDevice::InitializeDevice()
     }
 }
 
-Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapChain(SDL_Window* sdlWindow)
+Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapChain(
+    SDL_Window* sdlWindow, bool hasDepthBuffer)
 {
     const auto metalView = IsMetalBackend(settings_.backend_) ? CreateMetalView(sdlWindow) : nullptr;
     Diligent::NativeWindow nativeWindow = GetNativeWindow(sdlWindow, metalView.get());
     Diligent::SwapChainDesc swapChainDesc{};
     swapChainDesc.ColorBufferFormat = swapChain_->GetDesc().ColorBufferFormat;
-    swapChainDesc.DepthBufferFormat = swapChain_->GetDesc().DepthBufferFormat;
+    swapChainDesc.DepthBufferFormat = hasDepthBuffer ? swapChain_->GetDesc().DepthBufferFormat : Diligent::TEX_FORMAT_UNKNOWN;
     Diligent::FullScreenModeDesc fullscreenDesc{};
 
     switch (settings_.backend_)

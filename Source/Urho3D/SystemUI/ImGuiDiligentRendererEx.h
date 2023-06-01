@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
-
+#include "Urho3D/Container/Ptr.h"
 #include "Urho3D/SystemUI/3rdParty/ImGuiDiligentRenderer.hpp"
 
 namespace Urho3D
 {
 
+class PipelineState;
 class RenderDevice;
 
 class ImGuiDiligentRendererEx : private Diligent::ImGuiDiligentRenderer
@@ -24,6 +24,8 @@ public:
     void RenderSecondaryWindows();
 
 private:
+    void RenderDrawDataWith(ImDrawData* drawData, PipelineState* pipelineState);
+
 #if URHO3D_PLATFORM_WINDOWS || URHO3D_PLATFORM_LINUX || URHO3D_PLATFORM_MACOS
     void CreatePlatformWindow(ImGuiViewport* viewport);
 
@@ -40,6 +42,9 @@ private:
     RenderDevice* renderDevice_{};
     void (*createPlatformWindow_)(ImGuiViewport* viewport);
     bool isCachedStateInvalid_{};
+
+    SharedPtr<PipelineState> primaryPipelineState_;
+    SharedPtr<PipelineState> secondaryPipelineState_;
 };
 
 } // namespace Diligent

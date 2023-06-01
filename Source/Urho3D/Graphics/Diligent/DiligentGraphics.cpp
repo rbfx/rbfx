@@ -2121,6 +2121,10 @@ unsigned Graphics::GetFormat(const ea::string& formatName)
 
 unsigned Graphics::GetMaxBones()
 {
+    /// User-specified number of bones
+    if (maxBonesHWSkinned)
+        return maxBonesHWSkinned;
+
     return 128;
 }
 
