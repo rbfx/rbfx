@@ -27,6 +27,7 @@
 #include "../Container/FlagSet.h"
 #include "../Container/Hash.h"
 #include "../Math/StringHash.h"
+#include "../RenderAPI/RenderAPIDefs.h"
 
 namespace Urho3D
 {
@@ -41,19 +42,6 @@ class Vector3;
 //#else
 #define DESKTOP_GRAPHICS
 //#endif
-
-/// GAPI used for rendering.
-enum class RenderBackend
-{
-    /// Direct3D 11.1 or later.
-    D3D11,
-    /// Direct3D 12.0 for SDK 10.0.17763.0 or later.
-    D3D12,
-    /// OpenGL 4.1 (for Desktop) or OpenGL ES 3.0 (for mobiles) or later.
-    OpenGL,
-    /// Vulkan 1.0 or later.
-    Vulkan,
-};
 
 /// Primitive type.
 enum PrimitiveType
@@ -181,21 +169,6 @@ enum VertexElementType : unsigned char
     MAX_VERTEX_ELEMENT_TYPES
 };
 
-/// Arbitrary vertex declaration element semantics.
-enum VertexElementSemantic : unsigned char
-{
-    SEM_POSITION = 0,
-    SEM_NORMAL,
-    SEM_BINORMAL,
-    SEM_TANGENT,
-    SEM_TEXCOORD,
-    SEM_COLOR,
-    SEM_BLENDWEIGHTS,
-    SEM_BLENDINDICES,
-    SEM_OBJECTINDEX,
-    MAX_VERTEX_ELEMENT_SEMANTICS
-};
-
 /// Vertex element description for arbitrary vertex declarations.
 struct URHO3D_API VertexElement
 {
@@ -260,18 +233,6 @@ extern URHO3D_API const unsigned ELEMENT_TYPESIZES[];
 /// Vertex element definitions for the legacy elements.
 extern URHO3D_API const VertexElement LEGACY_VERTEXELEMENTS[];
 
-/// Texture filtering mode.
-enum TextureFilterMode : unsigned char
-{
-    FILTER_NEAREST = 0,
-    FILTER_BILINEAR,
-    FILTER_TRILINEAR,
-    FILTER_ANISOTROPIC,
-    FILTER_NEAREST_ANISOTROPIC,
-    FILTER_DEFAULT,
-    MAX_FILTERMODES
-};
-
 static const char* textureFilterModeNames[] = {
     "NEAREST",
     "BILINEAR",
@@ -280,25 +241,6 @@ static const char* textureFilterModeNames[] = {
     "NEAREST_ANISOTROPIC",
     "DEFAULT",
     nullptr,
-};
-
-/// Texture addressing mode.
-enum TextureAddressMode : unsigned char
-{
-    ADDRESS_WRAP = 0,
-    ADDRESS_MIRROR,
-    ADDRESS_CLAMP,
-    ADDRESS_BORDER,
-    MAX_ADDRESSMODES
-};
-
-/// Texture coordinates.
-enum TextureCoordinate
-{
-    COORD_U = 0,
-    COORD_V,
-    COORD_W,
-    MAX_COORDS
 };
 
 /// Texture usage types.
@@ -338,18 +280,6 @@ enum RenderSurfaceUpdateMode
     SURFACE_MANUALUPDATE = 0,
     SURFACE_UPDATEVISIBLE,
     SURFACE_UPDATEALWAYS
-};
-
-/// Shader types.
-enum ShaderType
-{
-    VS = 0,
-    PS,
-    GS,
-    HS,
-    DS,
-    CS,
-    MAX_SHADER_TYPES
 };
 
 /// Shader parameter groups for determining need to update. On APIs that support constant buffers, these correspond to different constant buffers.
@@ -587,11 +517,8 @@ enum VertexMask : unsigned
 };
 URHO3D_FLAGSET(VertexMask, VertexMaskFlags);
 
-static const int MAX_RENDERTARGETS = 8;
-static const int MAX_VERTEX_STREAMS = 4;
-static const int MAX_CONSTANT_REGISTERS = 256;
-
-static const int BITS_PER_COMPONENT = 8;
+static const int MAX_RENDERTARGETS = (int)MaxRenderTargets;
+static const int MAX_VERTEX_STREAMS = (int)MaxVertexStreams;
 
 /// Shader translation policy.
 enum class ShaderTranslationPolicy

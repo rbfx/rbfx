@@ -138,12 +138,6 @@
 %ignore Urho3D::MAX_VERTEX_STREAMS;
 %csconst(1) Urho3D::MAX_VERTEX_STREAMS;
 %constant int MaxVertexStreams = 4;
-%ignore Urho3D::MAX_CONSTANT_REGISTERS;
-%csconst(1) Urho3D::MAX_CONSTANT_REGISTERS;
-%constant int MaxConstantRegisters = 256;
-%ignore Urho3D::BITS_PER_COMPONENT;
-%csconst(1) Urho3D::BITS_PER_COMPONENT;
-%constant int BitsPerComponent = 8;
 %ignore Urho3D::MAX_TEXTURE_QUALITY_LEVELS;
 %csconst(1) Urho3D::MAX_TEXTURE_QUALITY_LEVELS;
 %constant int MaxTextureQualityLevels = 3;

@@ -163,8 +163,8 @@ UIComponent::UIComponent(Context* context)
 {
     texture_ = MakeShared<Texture2D>(context_);
     texture_->SetFilterMode(FILTER_BILINEAR);
-    texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
-    texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
+    texture_->SetAddressMode(TextureCoordinate::U, ADDRESS_CLAMP);
+    texture_->SetAddressMode(TextureCoordinate::V, ADDRESS_CLAMP);
     texture_->SetNumLevels(1);                                        // No mipmaps
     if (texture_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE, Graphics::GetRGBAFormat(),
         TEXTURE_RENDERTARGET))

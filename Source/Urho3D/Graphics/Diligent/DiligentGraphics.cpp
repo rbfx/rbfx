@@ -355,18 +355,17 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 
     if (!renderDevice_)
     {
-        RenderDeviceSettings settings;
+        RenderDeviceSettings deviceSettings;
 
-        settings.backend_ = GetRenderBackend();
-        settings.window_ = windowSettings;
-        settings.externalWindowHandle_ = externalWindow_;
-        settings.gpuDebug_ = gpuDebug_;
+        deviceSettings.backend_ = GetRenderBackend();
+        deviceSettings.externalWindowHandle_ = externalWindow_;
+        deviceSettings.gpuDebug_ = gpuDebug_;
         if (impl_->adapterId_ != M_MAX_UNSIGNED)
-            settings.adapterId_ = impl_->adapterId_;
+            deviceSettings.adapterId_ = impl_->adapterId_;
 
         try
         {
-            renderDevice_ = MakeShared<RenderDevice>(context_, settings);
+            renderDevice_ = MakeShared<RenderDevice>(context_, deviceSettings, windowSettings);
         }
         catch (const RuntimeException& ex)
         {

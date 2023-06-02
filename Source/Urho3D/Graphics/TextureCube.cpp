@@ -66,9 +66,9 @@ TextureCube::TextureCube(Context* context) :
 #endif
 
     // Default to clamp mode addressing
-    samplerStateDesc_.addressMode_[COORD_U] = ADDRESS_CLAMP;
-    samplerStateDesc_.addressMode_[COORD_V] = ADDRESS_CLAMP;
-    samplerStateDesc_.addressMode_[COORD_W] = ADDRESS_CLAMP;
+    samplerStateDesc_.addressMode_[TextureCoordinate::U] = ADDRESS_CLAMP;
+    samplerStateDesc_.addressMode_[TextureCoordinate::V] = ADDRESS_CLAMP;
+    samplerStateDesc_.addressMode_[TextureCoordinate::W] = ADDRESS_CLAMP;
 }
 
 TextureCube::~TextureCube()

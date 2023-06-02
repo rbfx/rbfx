@@ -47,21 +47,6 @@ struct ISwapChainVk;
 namespace Urho3D
 {
 
-struct RenderDeviceSettings
-{
-    /// Render backend to use.
-    RenderBackend backend_{};
-
-    /// Initial window settings.
-    WindowSettings window_;
-    /// Pointer to external window native handle.
-    void* externalWindowHandle_{};
-    /// Whether to enable debug mode on GPU if possible.
-    bool gpuDebug_{};
-    /// Adapter ID.
-    ea::optional<unsigned> adapterId_;
-};
-
 /// Wrapper for window and GAPI backend.
 class URHO3D_API RenderDevice : public Object
 {
@@ -73,7 +58,7 @@ public:
 
     /// Initialize the OS window and GAPI.
     /// Throws RuntimeException if unrecoverable error occurs.
-    RenderDevice(Context* context, const RenderDeviceSettings& settings);
+    RenderDevice(Context* context, const RenderDeviceSettings& deviceSettings, const WindowSettings& windowSettings);
     ~RenderDevice() override;
 
     /// Create swap chain for secondary window. It is not supported for some platforms and backends.
@@ -94,8 +79,9 @@ public:
 
     /// Getters.
     /// @{
-    const RenderBackend GetBackend() const { return settings_.backend_; }
-    const RenderDeviceSettings& GetSettings() const { return settings_; }
+    const RenderBackend GetBackend() const { return deviceSettings_.backend_; }
+    const RenderDeviceSettings& GetDeviceSettings() const { return deviceSettings_; }
+    const WindowSettings& GetWindowSettings() const { return windowSettings_; }
     SDL_Window* GetSDLWindow() const { return window_.get(); }
     void* GetMetalView() const { return metalView_.get(); }
     Diligent::IEngineFactory* GetFactory() { return factory_.RawPtr(); }
@@ -122,7 +108,8 @@ private:
     void InvalidateGLESContext();
     bool RestoreGLESContext();
 
-    RenderDeviceSettings settings_;
+    RenderDeviceSettings deviceSettings_;
+    WindowSettings windowSettings_;
 
     ea::shared_ptr<SDL_Window> window_;
     ea::shared_ptr<void> metalView_;

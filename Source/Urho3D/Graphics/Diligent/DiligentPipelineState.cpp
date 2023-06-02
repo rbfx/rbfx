@@ -279,9 +279,9 @@ void InitializeImmutableSampler(
     destSampler.Desc.MinFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
     destSampler.Desc.MagFilter = minMagFilter[filterMode][sourceSampler.shadowCompare_];
     destSampler.Desc.MipFilter = mipFilter[filterMode][sourceSampler.shadowCompare_];
-    destSampler.Desc.AddressU = addressMode[sourceSampler.addressMode_[COORD_U]];
-    destSampler.Desc.AddressV = addressMode[sourceSampler.addressMode_[COORD_V]];
-    destSampler.Desc.AddressW = addressMode[sourceSampler.addressMode_[COORD_W]];
+    destSampler.Desc.AddressU = addressMode[sourceSampler.addressMode_[TextureCoordinate::U]];
+    destSampler.Desc.AddressV = addressMode[sourceSampler.addressMode_[TextureCoordinate::V]];
+    destSampler.Desc.AddressW = addressMode[sourceSampler.addressMode_[TextureCoordinate::W]];
     destSampler.Desc.MaxAnisotropy = anisotropy;
     destSampler.Desc.ComparisonFunc = COMPARISON_FUNC_LESS_EQUAL;
     destSampler.Desc.MinLOD = -M_INFINITY;

@@ -521,7 +521,7 @@ IntVector2 CalculateSwapChainSize(SDL_Window* window)
     const auto displayInfo = Windows::Graphics::Display::DisplayInformation::GetForCurrentView();
     const float dpiScale = displayInfo->LogicalDpi / 96.0f;
 
-    const auto coreWindow = reinterpret_cast<Windows::UI::Core::CoreWindow^>(sysInfo.info.winrt.window);
+    const auto coreWindow = reinterpret_cast<Windows::UI::Core::CoreWindow ^>(sysInfo.info.winrt.window);
     const float width = coreWindow->Bounds.Width * dpiScale;
     const float height = coreWindow->Bounds.Height * dpiScale;
     return VectorCeilToInt(Vector2{width, height});
@@ -530,21 +530,23 @@ IntVector2 CalculateSwapChainSize(SDL_Window* window)
 
 } // namespace
 
-RenderDevice::RenderDevice(Context* context, const RenderDeviceSettings& settings)
+RenderDevice::RenderDevice(
+    Context* context, const RenderDeviceSettings& deviceSettings, const WindowSettings& windowSettings)
     : Object(context)
-    , settings_(settings)
+    , deviceSettings_(deviceSettings)
+    , windowSettings_(windowSettings)
 {
-    if (settings_.externalWindowHandle_)
-        settings_.window_.mode_ = WindowMode::Windowed;
+    if (deviceSettings_.externalWindowHandle_)
+        windowSettings_.mode_ = WindowMode::Windowed;
 
-    ValidateWindowSettings(settings_.window_);
+    ValidateWindowSettings(windowSettings_);
     InitializeWindow();
     InitializeFactory();
     InitializeDevice();
 
     const Diligent::SwapChainDesc& desc = swapChain_->GetDesc();
     URHO3D_LOGINFO("RenderDevice is initialized for {}: size={}x{}px ({}x{}dp), color={}, depth={}",
-        ToString(settings_.backend_), desc.Width, desc.Height, settings_.window_.size_.x_, settings_.window_.size_.y_,
+        ToString(deviceSettings_.backend_), desc.Width, desc.Height, windowSettings_.size_.x_, windowSettings_.size_.y_,
         Diligent::GetTextureFormatAttribs(desc.ColorBufferFormat).Name,
         Diligent::GetTextureFormatAttribs(desc.DepthBufferFormat).Name);
 }
@@ -555,38 +557,38 @@ RenderDevice::~RenderDevice()
 
 void RenderDevice::InitializeWindow()
 {
-    if (settings_.backend_ == RenderBackend::OpenGL)
+    if (deviceSettings_.backend_ == RenderBackend::OpenGL)
     {
         window_ = CreateOpenGLWindow(
-            IsOpenGLESBackend(settings_.backend_), settings_.window_, settings_.externalWindowHandle_);
+            IsOpenGLESBackend(deviceSettings_.backend_), windowSettings_, deviceSettings_.externalWindowHandle_);
 
         glContext_ = CreateGLContext(window_.get());
         if (!glContext_)
             throw RuntimeException("Could not create OpenGL context: {}", SDL_GetError());
 
         int effectiveMultiSample{};
-        if (SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &settings_.window_.multiSample_) == 0)
-            settings_.window_.multiSample_ = ea::max(1, effectiveMultiSample);
+        if (SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &windowSettings_.multiSample_) == 0)
+            windowSettings_.multiSample_ = ea::max(1, effectiveMultiSample);
 
         int effectiveSRGB{};
         if (SDL_GL_GetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, &effectiveSRGB) == 0)
-            settings_.window_.sRGB_ = effectiveSRGB != 0;
+            windowSettings_.sRGB_ = effectiveSRGB != 0;
 
-        SDL_GL_SetSwapInterval(settings_.window_.vSync_ ? 1 : 0);
+        SDL_GL_SetSwapInterval(windowSettings_.vSync_ ? 1 : 0);
     }
     else
     {
-        window_ = CreateEmptyWindow(settings_.backend_, settings_.window_, settings_.externalWindowHandle_);
-        if (IsMetalBackend(settings_.backend_))
+        window_ = CreateEmptyWindow(deviceSettings_.backend_, windowSettings_, deviceSettings_.externalWindowHandle_);
+        if (IsMetalBackend(deviceSettings_.backend_))
             metalView_ = CreateMetalView(window_.get());
     }
 
-    SDL_GetWindowSize(window_.get(), &settings_.window_.size_.x_, &settings_.window_.size_.y_);
+    SDL_GetWindowSize(window_.get(), &windowSettings_.size_.x_, &windowSettings_.size_.y_);
 }
 
 void RenderDevice::InitializeFactory()
 {
-    switch (settings_.backend_)
+    switch (deviceSettings_.backend_)
     {
 #if D3D11_SUPPORTED
     case RenderBackend::D3D11:
@@ -628,10 +630,10 @@ void RenderDevice::InitializeDevice()
     };
 
     // TODO(diligent): Why is that?
-    const bool isBGRA = settings_.backend_ == RenderBackend::Vulkan;
+    const bool isBGRA = deviceSettings_.backend_ == RenderBackend::Vulkan;
 
     Diligent::SwapChainDesc swapChainDesc{};
-    swapChainDesc.ColorBufferFormat = colorFormats[isBGRA][settings_.window_.sRGB_];
+    swapChainDesc.ColorBufferFormat = colorFormats[isBGRA][windowSettings_.sRGB_];
     swapChainDesc.DepthBufferFormat = Diligent::TEX_FORMAT_D24_UNORM_S8_UINT;
 #if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
     const IntVector2 swapChainSize = CalculateSwapChainSize(window_.get());
@@ -640,18 +642,18 @@ void RenderDevice::InitializeDevice()
 #endif
 
     Diligent::FullScreenModeDesc fullscreenDesc{};
-    fullscreenDesc.Fullscreen = settings_.window_.mode_ == WindowMode::Fullscreen;
-    fullscreenDesc.RefreshRateNumerator = settings_.window_.refreshRate_;
+    fullscreenDesc.Fullscreen = windowSettings_.mode_ == WindowMode::Fullscreen;
+    fullscreenDesc.RefreshRateNumerator = windowSettings_.refreshRate_;
     fullscreenDesc.RefreshRateDenominator = 1;
 
-    switch (settings_.backend_)
+    switch (deviceSettings_.backend_)
     {
 #if D3D11_SUPPORTED
     case RenderBackend::D3D11:
     {
         Diligent::EngineD3D11CreateInfo createInfo;
         createInfo.GraphicsAPIVersion = Diligent::Version{11, 0};
-        createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, settings_.adapterId_);
+        createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);
         createInfo.EnableValidation = true;
         createInfo.D3D11ValidationFlags = Diligent::D3D11_VALIDATION_FLAG_VERIFY_COMMITTED_RESOURCE_RELEVANCE;
 
@@ -676,7 +678,7 @@ void RenderDevice::InitializeDevice()
         createInfo.GPUDescriptorHeapDynamicSize[0] = 32768;
         createInfo.DynamicDescriptorAllocationChunkSize[0] = 32;
         createInfo.DynamicDescriptorAllocationChunkSize[1] = 8;
-        createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, settings_.adapterId_);
+        createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);
 
         factoryD3D12_->CreateDeviceAndContextsD3D12(createInfo, &renderDevice_, &deviceContext_);
         factoryD3D12_->CreateSwapChainD3D12(
@@ -705,7 +707,7 @@ void RenderDevice::InitializeDevice()
         createInfo.DynamicHeapSize = 32 << 20;
         createInfo.ppIgnoreDebugMessageNames = ppIgnoreDebugMessages;
         createInfo.IgnoreDebugMessageCount = _countof(ppIgnoreDebugMessages);
-        createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, settings_.adapterId_);
+        createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);
 
         factoryVulkan_->CreateDeviceAndContextsVk(createInfo, &renderDevice_, &deviceContext_);
         factoryVulkan_->CreateSwapChainVk(renderDevice_, deviceContext_, swapChainDesc, nativeWindow, &swapChain_);
@@ -722,7 +724,7 @@ void RenderDevice::InitializeDevice()
     case RenderBackend::OpenGL:
     {
         Diligent::EngineGLCreateInfo createInfo;
-        createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, settings_.adapterId_);
+        createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);
 
         factoryOpenGL_->AttachToActiveGLContext(createInfo, &renderDevice_, &deviceContext_);
 
@@ -751,14 +753,15 @@ void RenderDevice::InitializeDevice()
 Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapChain(
     SDL_Window* sdlWindow, bool hasDepthBuffer)
 {
-    const auto metalView = IsMetalBackend(settings_.backend_) ? CreateMetalView(sdlWindow) : nullptr;
+    const auto metalView = IsMetalBackend(deviceSettings_.backend_) ? CreateMetalView(sdlWindow) : nullptr;
     Diligent::NativeWindow nativeWindow = GetNativeWindow(sdlWindow, metalView.get());
     Diligent::SwapChainDesc swapChainDesc{};
     swapChainDesc.ColorBufferFormat = swapChain_->GetDesc().ColorBufferFormat;
-    swapChainDesc.DepthBufferFormat = hasDepthBuffer ? swapChain_->GetDesc().DepthBufferFormat : Diligent::TEX_FORMAT_UNKNOWN;
+    swapChainDesc.DepthBufferFormat =
+        hasDepthBuffer ? swapChain_->GetDesc().DepthBufferFormat : Diligent::TEX_FORMAT_UNKNOWN;
     Diligent::FullScreenModeDesc fullscreenDesc{};
 
-    switch (settings_.backend_)
+    switch (deviceSettings_.backend_)
     {
 #if D3D11_SUPPORTED
     case RenderBackend::D3D11:
@@ -810,12 +813,12 @@ Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapC
 
 void RenderDevice::UpdateSwapChainSize()
 {
-    const IntVector2 oldWindowSize = settings_.window_.size_;
+    const IntVector2 oldWindowSize = windowSettings_.size_;
     const IntVector2 oldSwapChainSize = GetSwapChainSize();
 
-    SDL_GetWindowSize(window_.get(), &settings_.window_.size_.x_, &settings_.window_.size_.y_);
+    SDL_GetWindowSize(window_.get(), &windowSettings_.size_.x_, &windowSettings_.size_.y_);
 
-    switch (settings_.backend_)
+    switch (deviceSettings_.backend_)
     {
 #if GL_SUPPORTED || GLES_SUPPORTED
     case RenderBackend::OpenGL:
@@ -881,16 +884,16 @@ void RenderDevice::UpdateSwapChainSize()
     }
 
     const IntVector2 newSwapChainSize = GetSwapChainSize();
-    if (oldWindowSize != settings_.window_.size_ || oldSwapChainSize != newSwapChainSize)
+    if (oldWindowSize != windowSettings_.size_ || oldSwapChainSize != newSwapChainSize)
     {
-        URHO3D_LOGINFO("Swap chain is resized to {}x{}px ({}x{}dp)", newSwapChainSize.x_,
-            newSwapChainSize.y_, settings_.window_.size_.x_, settings_.window_.size_.y_);
+        URHO3D_LOGINFO("Swap chain is resized to {}x{}px ({}x{}dp)", newSwapChainSize.x_, newSwapChainSize.y_,
+            windowSettings_.size_.x_, windowSettings_.size_.y_);
     }
 }
 
 void RenderDevice::UpdateWindowSettings(const WindowSettings& settings)
 {
-    WindowSettings& oldSettings = settings_.window_;
+    WindowSettings& oldSettings = windowSettings_;
     WindowSettings newSettings = settings;
     ValidateWindowSettings(newSettings);
 
@@ -940,15 +943,15 @@ void RenderDevice::UpdateWindowSettings(const WindowSettings& settings)
     {
         oldSettings.vSync_ = newSettings.vSync_;
 
-        if (settings_.backend_ == RenderBackend::OpenGL)
-            SDL_GL_SetSwapInterval(settings_.window_.vSync_ ? 1 : 0);
+        if (deviceSettings_.backend_ == RenderBackend::OpenGL)
+            SDL_GL_SetSwapInterval(windowSettings_.vSync_ ? 1 : 0);
     }
 }
 
 bool RenderDevice::Restore()
 {
 #if URHO3D_PLATFORM_ANDROID && GLES_SUPPORTED
-    URHO3D_ASSERT(settings_.backend_ == RenderBackend::OpenGL);
+    URHO3D_ASSERT(deviceSettings_.backend_ == RenderBackend::OpenGL);
 
     if (!SDL_GL_GetCurrentContext())
     {
@@ -965,7 +968,7 @@ bool RenderDevice::EmulateLossAndRestore()
         return true;
 
     // TODO(diligent): Support Vulkan on Android
-    if (settings_.backend_ != RenderBackend::OpenGL)
+    if (deviceSettings_.backend_ != RenderBackend::OpenGL)
         return true;
 
     InvalidateGLESContext();
@@ -1008,15 +1011,15 @@ bool RenderDevice::RestoreGLESContext()
 
 void RenderDevice::Present()
 {
-    swapChain_->Present(settings_.window_.vSync_ ? 1 : 0);
+    swapChain_->Present(windowSettings_.vSync_ ? 1 : 0);
 
     // If using an external window, check it for size changes, and reset screen mode if necessary
-    if (settings_.externalWindowHandle_ != nullptr)
+    if (deviceSettings_.externalWindowHandle_ != nullptr)
     {
         IntVector2 currentSize;
         SDL_GetWindowSize(window_.get(), &currentSize.x_, &currentSize.y_);
 
-        if (settings_.window_.size_ != currentSize)
+        if (windowSettings_.size_ != currentSize)
             UpdateSwapChainSize();
     }
 }
@@ -1031,7 +1034,7 @@ IntVector2 RenderDevice::GetSwapChainSize() const
 
 IntVector2 RenderDevice::GetWindowSize() const
 {
-    return settings_.window_.size_;
+    return windowSettings_.size_;
 }
 
 float RenderDevice::GetDpiScale() const

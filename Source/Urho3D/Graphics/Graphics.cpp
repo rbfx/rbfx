@@ -278,7 +278,7 @@ IntVector2 Graphics::GetWindowPosition() const
 const WindowSettings& Graphics::GetWindowSettings() const
 {
     if (renderDevice_)
-        return renderDevice_->GetSettings().window_;
+        return renderDevice_->GetWindowSettings();
     else
         return primaryWindowSettings_;
 }

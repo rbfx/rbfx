@@ -100,8 +100,8 @@ SharedPtr<Texture2D> FontFace::CreateFaceTexture()
     auto texture = MakeShared<Texture2D>(font_->GetContext());
     texture->SetMipsToSkip(QUALITY_LOW, 0); // No quality reduction
     texture->SetNumLevels(1); // No mipmaps
-    texture->SetAddressMode(COORD_U, ADDRESS_CLAMP);
-    texture->SetAddressMode(COORD_V, ADDRESS_CLAMP);
+    texture->SetAddressMode(TextureCoordinate::U, ADDRESS_CLAMP);
+    texture->SetAddressMode(TextureCoordinate::V, ADDRESS_CLAMP);
     return texture;
 }
 

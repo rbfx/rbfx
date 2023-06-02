@@ -281,7 +281,7 @@ void WindowSettingsDemo::SynchronizeSettings()
 {
     auto* graphics = GetSubsystem<Graphics>();
     RenderDevice* renderDevice = graphics->GetRenderDevice();
-    const WindowSettings& windowSettings = renderDevice->GetSettings().window_;
+    const WindowSettings& windowSettings = renderDevice->GetWindowSettings();
 
     // Synchronize monitor
     monitorControl_->SetSelection(windowSettings.monitor_);

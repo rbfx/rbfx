@@ -79,9 +79,9 @@ const ea::vector<ResourceInspectorWidget::PropertyDesc> Texture2DInspectorWidget
         "U Address Mode",
         Variant{ADDRESS_WRAP},
         [](const Resource* resource)
-        { return Variant{static_cast<int>(static_cast<const Texture2D*>(resource)->GetAddressMode(COORD_U))}; },
+        { return Variant{static_cast<int>(static_cast<const Texture2D*>(resource)->GetAddressMode(TextureCoordinate::U))}; },
         [](Resource* resource, const Variant& value)
-        { static_cast<Texture2D*>(resource)->SetAddressMode(COORD_U, static_cast<TextureAddressMode>(value.GetInt())); },
+        { static_cast<Texture2D*>(resource)->SetAddressMode(TextureCoordinate::U, static_cast<TextureAddressMode>(value.GetInt())); },
         "U texture coordinate address mode",
         Widgets::EditVariantOptions{}.Enum(textureAddressMode),
     },
@@ -89,9 +89,9 @@ const ea::vector<ResourceInspectorWidget::PropertyDesc> Texture2DInspectorWidget
         "V Address Mode",
         Variant{ADDRESS_WRAP},
         [](const Resource* resource)
-        { return Variant{static_cast<int>(static_cast<const Texture2D*>(resource)->GetAddressMode(COORD_V))}; },
+        { return Variant{static_cast<int>(static_cast<const Texture2D*>(resource)->GetAddressMode(TextureCoordinate::V))}; },
         [](Resource* resource, const Variant& value) {
-            static_cast<Texture2D*>(resource)->SetAddressMode(COORD_V, static_cast<TextureAddressMode>(value.GetInt()));
+            static_cast<Texture2D*>(resource)->SetAddressMode(TextureCoordinate::V, static_cast<TextureAddressMode>(value.GetInt()));
         },
         "V texture coordinate address mode",
         Widgets::EditVariantOptions{}.Enum(textureAddressMode),

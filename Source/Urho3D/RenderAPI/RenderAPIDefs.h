@@ -6,21 +6,40 @@
 
 #include <Urho3D/Urho3D.h>
 
+#include "Urho3D/Container/FlagSet.h"
 #include "Urho3D/Container/Hash.h"
 #include "Urho3D/Core/Variant.h"
 #include "Urho3D/Math/Color.h"
-
-// TODO(diligent): Remove this include
-#include "Urho3D/Graphics/GraphicsDefs.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/InputLayout.h>
 
 #include <EASTL/array.h>
 #include <EASTL/fixed_vector.h>
+#include <EASTL/optional.h>
 
 namespace Urho3D
 {
+
+/// Maximum number of bound render targets supported by the engine. Hardware limit could be lower.
+static constexpr unsigned MaxRenderTargets = 8;
+/// Maximum number of bound vertex buffers supported by the engine.
+static constexpr unsigned MaxVertexStreams = 4;
+
+/// GAPI used for rendering.
+enum class RenderBackend
+{
+    /// Direct3D 11.1 or later.
+    D3D11,
+    /// Direct3D 12.0 for SDK 10.0.17763.0 or later.
+    D3D12,
+    /// OpenGL 4.1 (for Desktop) or OpenGL ES 3.0 (for mobiles) or later.
+    OpenGL,
+    /// Vulkan 1.0 or later.
+    Vulkan,
+
+    Count
+};
 
 /// Window mode.
 enum class WindowMode
@@ -81,9 +100,49 @@ struct URHO3D_API WindowSettings
     StringVector orientations_{"LandscapeLeft", "LandscapeRight"};
 };
 
+/// Immutable settings of the render device.
+struct RenderDeviceSettings
+{
+    /// Render backend to use.
+    RenderBackend backend_{};
+    /// Pointer to external window native handle.
+    void* externalWindowHandle_{};
+    /// Whether to enable debug mode on GPU if possible.
+    bool gpuDebug_{};
+    /// Adapter ID.
+    ea::optional<unsigned> adapterId_;
+};
+
+/// Shader types.
+enum ShaderType
+{
+    VS = 0,
+    PS,
+    GS,
+    HS,
+    DS,
+    CS,
+    MAX_SHADER_TYPES
+};
+
 /// Texture format, equivalent to Diligent::TEXTURE_FORMAT.
 /// TODO(diligent): Use stricter typing?
 using TextureFormat = Diligent::TEXTURE_FORMAT;
+
+/// Vertex declaration element semantics.
+enum VertexElementSemantic : unsigned char
+{
+    SEM_POSITION = 0,
+    SEM_NORMAL,
+    SEM_BINORMAL,
+    SEM_TANGENT,
+    SEM_TEXCOORD,
+    SEM_COLOR,
+    SEM_BLENDWEIGHTS,
+    SEM_BLENDINDICES,
+    SEM_OBJECTINDEX,
+    MAX_VERTEX_ELEMENT_SEMANTICS
+};
 
 /// Description of the single input required by the vertex shader.
 struct URHO3D_API VertexShaderAttribute
@@ -96,14 +155,48 @@ struct URHO3D_API VertexShaderAttribute
 /// Description of vertex shader attributes.
 using VertexShaderAttributeVector = ea::fixed_vector<VertexShaderAttribute, Diligent::MAX_LAYOUT_ELEMENTS>;
 
+/// Texture filtering mode.
+enum TextureFilterMode : unsigned char
+{
+    FILTER_NEAREST = 0,
+    FILTER_BILINEAR,
+    FILTER_TRILINEAR,
+    FILTER_ANISOTROPIC,
+    FILTER_NEAREST_ANISOTROPIC,
+    FILTER_DEFAULT,
+    MAX_FILTERMODES
+};
+
+/// Texture addressing mode.
+enum TextureAddressMode : unsigned char
+{
+    ADDRESS_WRAP = 0,
+    ADDRESS_MIRROR,
+    ADDRESS_CLAMP,
+    ADDRESS_BORDER,
+    MAX_ADDRESSMODES
+};
+
+/// Texture coordinates.
+enum class TextureCoordinate
+{
+    U = 0,
+    V,
+    W,
+
+    Count
+};
+static constexpr auto MaxTextureCoordinates = static_cast<unsigned>(TextureCoordinate::Count);
+
 /// Description of immutable texture sampler bound to the pipeline.
 struct URHO3D_API SamplerStateDesc
 {
+    // TODO(diligent): Remove border color
     Color borderColor_{0.0f, 0.0f, 0.0f, 0.0f};
     TextureFilterMode filterMode_{FILTER_DEFAULT};
     unsigned char anisotropy_{};
     bool shadowCompare_{};
-    ea::array<TextureAddressMode, 3> addressMode_{ADDRESS_WRAP, ADDRESS_WRAP, ADDRESS_WRAP};
+    EnumArray<TextureAddressMode, TextureCoordinate> addressMode_{ADDRESS_WRAP};
 
     /// Constructors.
     /// @{
@@ -111,7 +204,7 @@ struct URHO3D_API SamplerStateDesc
     {
         SamplerStateDesc desc;
         desc.filterMode_ = FILTER_BILINEAR;
-        desc.addressMode_ = {addressMode, addressMode, addressMode};
+        desc.addressMode_.fill(addressMode);
         return desc;
     }
     /// @}
@@ -136,9 +229,9 @@ struct URHO3D_API SamplerStateDesc
         CombineHash(hash, filterMode_);
         CombineHash(hash, anisotropy_);
         CombineHash(hash, shadowCompare_);
-        CombineHash(hash, addressMode_[COORD_U]);
-        CombineHash(hash, addressMode_[COORD_V]);
-        CombineHash(hash, addressMode_[COORD_W]);
+        CombineHash(hash, addressMode_[TextureCoordinate::U]);
+        CombineHash(hash, addressMode_[TextureCoordinate::V]);
+        CombineHash(hash, addressMode_[TextureCoordinate::W]);
         return hash;
     }
     /// @}
@@ -149,7 +242,7 @@ struct URHO3D_API PipelineStateOutputDesc
 {
     TextureFormat depthStencilFormat_{};
     unsigned numRenderTargets_{};
-    ea::array<TextureFormat, MAX_RENDERTARGETS> renderTargetFormats_{};
+    ea::array<TextureFormat, MaxRenderTargets> renderTargetFormats_{};
 
     /// Operators.
     /// @{

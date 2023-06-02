@@ -16,7 +16,7 @@ namespace Urho3D
 namespace
 {
 
-const ea::string shaderInputsNames[] = {
+const ea::array<ea::string, MAX_VERTEX_ELEMENT_SEMANTICS> shaderInputsNames = {
     "iPos", // SEM_POSITION
     "iNormal", // SEM_NORMAL
     "iBinormal", // SEM_BINORMAL
@@ -25,6 +25,7 @@ const ea::string shaderInputsNames[] = {
     "iColor", // SEM_COLOR
     "iBlendWeights", // SEM_BLENDWEIGHTS
     "iBlendIndices", // SEM_BLENDINDICES
+    "", // SEM_OBJECTINDEX
 };
 
 }
@@ -47,13 +48,26 @@ bool IsMetalBackend(RenderBackend backend)
 
 const ea::string& ToString(RenderBackend backend)
 {
-    static const StringVector backendNames = {
+    static const EnumArray<ea::string, RenderBackend> backendNames{{
         "D3D11",
         "D3D12",
         "OpenGL",
         "Vulkan",
+    }};
+    return backendNames[backend];
+}
+
+const ea::string& ToString(ShaderType type)
+{
+    static const ea::array<ea::string, MAX_SHADER_TYPES> shaderTypeNames = {
+        "Vertex",
+        "Pixel",
+        "Geometry",
+        "Hull",
+        "Domain",
+        "Compute",
     };
-    return backendNames[static_cast<unsigned>(backend)];
+    return shaderTypeNames[type];
 }
 
 ea::optional<VertexShaderAttribute> ParseVertexAttribute(ea::string_view name)
@@ -76,15 +90,12 @@ ea::optional<VertexShaderAttribute> ParseVertexAttribute(ea::string_view name)
 
 const ea::string& ToShaderInputName(VertexElementSemantic semantic)
 {
-    if (semantic < URHO3D_ARRAYSIZE(shaderInputsNames))
-        return shaderInputsNames[semantic];
-    else
-        return EMPTY_STRING;
+    return shaderInputsNames[semantic];
 }
 
 Diligent::SHADER_TYPE ToInternalShaderType(ShaderType type)
 {
-    static Diligent::SHADER_TYPE shaderTypes[] = {
+    static const ea::array<Diligent::SHADER_TYPE, MAX_SHADER_TYPES> shaderTypes = {
         Diligent::SHADER_TYPE_VERTEX,
         Diligent::SHADER_TYPE_PIXEL,
         Diligent::SHADER_TYPE_GEOMETRY,
@@ -92,7 +103,7 @@ Diligent::SHADER_TYPE ToInternalShaderType(ShaderType type)
         Diligent::SHADER_TYPE_DOMAIN,
         Diligent::SHADER_TYPE_COMPUTE,
     };
-    return type < MAX_SHADER_TYPES ? shaderTypes[type] : Diligent::SHADER_TYPE_UNKNOWN;
+    return shaderTypes[type];
 }
 
 } // namespace Urho3D
