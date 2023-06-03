@@ -38,6 +38,18 @@ using UpdateEventFlags = Urho3D::UpdateEvent;
 using PrefabInlineFlags = Urho3D::PrefabInlineFlag;
 %typemap(ctype) PrefabInlineFlags "size_t";
 %typemap(out) PrefabInlineFlags "$result = (size_t)$1.AsInteger();"
+%csconstvalue("0") Urho3D::PrefabInstanceFlag::None;
+%csconstvalue("1") Urho3D::PrefabInstanceFlag::UpdateName;
+%csconstvalue("2") Urho3D::PrefabInstanceFlag::UpdateTags;
+%csconstvalue("4") Urho3D::PrefabInstanceFlag::UpdatePosition;
+%csconstvalue("8") Urho3D::PrefabInstanceFlag::UpdateRotation;
+%csconstvalue("16") Urho3D::PrefabInstanceFlag::UpdateScale;
+%csconstvalue("32") Urho3D::PrefabInstanceFlag::UpdateVariables;
+%csconstvalue("2147483647") Urho3D::PrefabInstanceFlag::UpdateAll;
+%typemap(csattributes) Urho3D::PrefabInstanceFlag "[global::System.Flags]";
+using PrefabInstanceFlags = Urho3D::PrefabInstanceFlag;
+%typemap(ctype) PrefabInstanceFlags "size_t";
+%typemap(out) PrefabInstanceFlags "$result = (size_t)$1.AsInteger();"
 %csattribute(Urho3D::Serializable, %arg(unsigned int), NumAttributes, GetNumAttributes);
 %csattribute(Urho3D::Serializable, %arg(bool), IsTemporary, IsTemporary, SetTemporary);
 %csattribute(Urho3D::Component, %arg(Urho3D::AttributeScopeHint), EffectiveScopeHint, GetEffectiveScopeHint);
