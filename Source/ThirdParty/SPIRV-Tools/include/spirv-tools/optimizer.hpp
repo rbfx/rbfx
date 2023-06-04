@@ -525,7 +525,8 @@ Optimizer::PassToken CreateDeadInsertElimPass();
 // If |remove_outputs| is true, allow outputs to be removed from the interface.
 // This is only safe if the caller knows that there is no corresponding input
 // variable in the following shader. It is false by default.
-Optimizer::PassToken CreateAggressiveDCEPass(bool preserve_interface = false,
+// rbfx: preserve_interface = true by default
+Optimizer::PassToken CreateAggressiveDCEPass(bool preserve_interface = true,
                                              bool remove_outputs = false);
 
 // Creates a remove-unused-interface-variables pass.
