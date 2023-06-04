@@ -479,12 +479,14 @@ void RibbonTrail::UpdateBufferSize()
     {
         indexBuffer_->SetSize(0, false);
         vertexBuffer_->SetSize(0, mask, true);
+        batches_[0].geometry_->SetDrawRange(TRIANGLE_LIST, 0, 0, false);
         return;
     }
     else
     {
         indexBuffer_->SetSize(((numPoints_ - 1) * indexPerSegment), false);
         vertexBuffer_->SetSize(numPoints_ * vertexPerSegment, mask, true);
+        batches_[0].geometry_->SetDrawRange(TRIANGLE_LIST, 0, (numPoints_ - 1) * indexPerSegment, false);
     }
 
     // Indices do not change for a given tail generator capacity
@@ -549,7 +551,6 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
     // if tail path is short and nothing to draw, exit
     if (numPoints_ < 2)
     {
-        batches_[0].geometry_->SetDrawRange(TRIANGLE_LIST, 0, 0, false);
         return;
     }
 
@@ -581,11 +582,10 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
             points_[i].next_ = &points_[i+1];
     }
 
-    batches_[0].geometry_->SetDrawRange(TRIANGLE_LIST, 0, (numPoints_ - 1) * indexPerSegment, false);
     bufferDirty_ = false;
     forceUpdate_ = false;
 
-    auto* dest = (float*)vertexBuffer_->Lock(0, (numPoints_ - 1) * vertexPerSegment, true);
+    auto* dest = (float*)vertexBuffer_->Map();
     if (!dest)
         return;
 
@@ -815,7 +815,7 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
         }
     }
 
-    vertexBuffer_->Unlock();
+    vertexBuffer_->Unmap();
     vertexBuffer_->ClearDataLost();
 }
 

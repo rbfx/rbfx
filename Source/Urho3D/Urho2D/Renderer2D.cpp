@@ -204,7 +204,7 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
 
         if (vertexCount)
         {
-            auto* dest = reinterpret_cast<Vertex2D*>(vertexBuffer->Lock(0, vertexCount, true));
+            auto* dest = reinterpret_cast<Vertex2D*>(vertexBuffer->Map());
             if (dest)
             {
                 const ea::vector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
@@ -216,7 +216,7 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
                     dest += vertices.size();
                 }
 
-                vertexBuffer->Unlock();
+                vertexBuffer->Unmap();
             }
             else
                 URHO3D_LOGERROR("Failed to lock vertex buffer");

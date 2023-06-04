@@ -810,7 +810,7 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
         previousOffset_ = (worldPos - frame.camera_->GetNode()->GetWorldPosition());
     }
 
-    auto* dest = (float*)vertexBuffer_->Lock(0, enabledBillboards * 4, true);
+    auto* dest = (float*)vertexBuffer_->Map();
     if (!dest)
         return;
 
@@ -827,7 +827,7 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
         BuildDefaultVertexBuffer(enabledBillboards, dest, billboardScale);
     }
 
-    vertexBuffer_->Unlock();
+    vertexBuffer_->Unmap();
     vertexBuffer_->ClearDataLost();
 }
 

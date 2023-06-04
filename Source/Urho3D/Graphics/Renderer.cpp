@@ -1947,7 +1947,7 @@ void Renderer::CreateGeometries()
 #endif
     dlvb->SetShadowed(true);
     dlvb->SetSize(4, MASK_POSITION);
-    dlvb->SetData(dirLightVertexData);
+    dlvb->Update(dirLightVertexData);
 
     SharedPtr<IndexBuffer> dlib(MakeShared<IndexBuffer>(context_));
 #ifdef URHO3D_DEBUG
@@ -1968,7 +1968,7 @@ void Renderer::CreateGeometries()
 #endif
     slvb->SetShadowed(true);
     slvb->SetSize(8, MASK_POSITION);
-    slvb->SetData(spotLightVertexData);
+    slvb->Update(spotLightVertexData);
 
     SharedPtr<IndexBuffer> slib(MakeShared<IndexBuffer>(context_));
 #ifdef URHO3D_DEBUG
@@ -1989,7 +1989,7 @@ void Renderer::CreateGeometries()
 #endif
     plvb->SetShadowed(true);
     plvb->SetSize(24, MASK_POSITION);
-    plvb->SetData(pointLightVertexData);
+    plvb->Update(pointLightVertexData);
 
     SharedPtr<IndexBuffer> plib(MakeShared<IndexBuffer>(context_));
 #ifdef URHO3D_DEBUG

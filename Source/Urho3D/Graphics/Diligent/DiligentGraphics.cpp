@@ -396,7 +396,7 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 
     window_ = renderDevice_->GetSDLWindow();
     impl_->device_ = renderDevice_->GetRenderDevice();
-    impl_->deviceContext_ = renderDevice_->GetDeviceContext();
+    impl_->deviceContext_ = renderDevice_->GetImmediateContext();
     impl_->swapChain_ = renderDevice_->GetSwapChain();
 
     CheckFeatureSupport();
@@ -949,7 +949,7 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
             if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
             {
                 vertexBuffers_[i] = buffer;
-                impl_->vertexBuffers_[i] = buffer->GetGPUObject().Cast<Diligent::IBuffer>(Diligent::IID_Buffer);
+                impl_->vertexBuffers_[i] = buffer->GetHandle();
                 impl_->vertexOffsets_[i] = offset;
                 changed = true;
             }

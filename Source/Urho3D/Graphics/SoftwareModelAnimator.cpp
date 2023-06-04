@@ -186,7 +186,7 @@ void SoftwareModelAnimator::Commit()
     for (VertexBuffer* clonedVertexBuffer : vertexBuffers_)
     {
         if (clonedVertexBuffer)
-            clonedVertexBuffer->SetData(clonedVertexBuffer->GetShadowData());
+            clonedVertexBuffer->Update(clonedVertexBuffer->GetShadowData());
     }
 }
 
@@ -279,7 +279,7 @@ void SoftwareModelAnimator::CloneModelGeometries()
         clonedVertexBuffer->SetSize(originalVertexBuffer->GetVertexCount(), clonedBufferMask, true);
         CopyMorphVertices(clonedVertexBuffer->GetShadowData(), originalVertexBuffer->GetShadowData(),
             originalVertexBuffer->GetVertexCount(), clonedVertexBuffer, originalVertexBuffer);
-        clonedVertexBuffer->SetData(clonedVertexBuffer->GetShadowData());
+        clonedVertexBuffer->Update(clonedVertexBuffer->GetShadowData());
         originalToClonedMapping[originalVertexBuffer] = clonedVertexBuffer;
         vertexBuffers_[i] = clonedVertexBuffer;
     }

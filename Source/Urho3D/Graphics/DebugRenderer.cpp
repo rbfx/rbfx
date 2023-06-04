@@ -555,7 +555,7 @@ void DebugRenderer::Render()
     if (vertexBuffer_->GetVertexCount() < numVertices || vertexBuffer_->GetVertexCount() > numVertices * 2)
         vertexBuffer_->SetSize(numVertices, MASK_POSITION | MASK_COLOR, true);
 
-    auto* dest = (float*)vertexBuffer_->Lock(0, numVertices, true);
+    auto* dest = (float*)vertexBuffer_->Map();
     if (!dest)
         return;
 
@@ -635,7 +635,7 @@ void DebugRenderer::Render()
         dest += 12;
     }
 
-    vertexBuffer_->Unlock();
+    vertexBuffer_->Unmap();
 
     if (!pipelineStatesInitialized_)
         InitializePipelineStates();

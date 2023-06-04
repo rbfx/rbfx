@@ -598,7 +598,6 @@ void RegisterGraphicsLibrary(Context* context)
     Octree::RegisterObject(context);
     OutlineGroup::RegisterObject(context);
     Zone::RegisterObject(context);
-    VertexBuffer::RegisterObject(context);
     IndexBuffer::RegisterObject(context);
     Geometry::RegisterObject(context);
     ConstantBuffer::RegisterObject(context);

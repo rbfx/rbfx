@@ -108,7 +108,7 @@ void DynamicGeometry::CreateScene()
     }
     // Get the vertex buffer from the first geometry's first LOD level
     VertexBuffer* buffer = originalModel->GetGeometry(0, 0)->GetVertexBuffer(0);
-    const auto* vertexData = (const unsigned char*)buffer->Lock(0, buffer->GetVertexCount());
+    const auto* vertexData = buffer->GetShadowData();
     if (vertexData)
     {
         unsigned numVertices = buffer->GetVertexCount();
@@ -119,7 +119,6 @@ void DynamicGeometry::CreateScene()
             const Vector3& src = *reinterpret_cast<const Vector3*>(vertexData + i * vertexSize);
             originalVertices_.push_back(src);
         }
-        buffer->Unlock();
 
         // Detect duplicate vertices to allow seamless animation
         vertexDuplicates_.resize(originalVertices_.size());
@@ -163,6 +162,7 @@ void DynamicGeometry::CreateScene()
     {
         const unsigned numVertices = 18;
 
+        // TODO(diligent): Normals are lost
         float vertexData[] = {
             // Position             Normal
             0.0f, 0.5f, 0.0f,       0.0f, 0.0f, 0.0f,
@@ -233,7 +233,7 @@ void DynamicGeometry::CreateScene()
         elements.push_back(VertexElement(TYPE_VECTOR3, SEM_POSITION));
         elements.push_back(VertexElement(TYPE_VECTOR3, SEM_NORMAL));
         vb->SetSize(numVertices, elements);
-        vb->SetData(vertexData);
+        vb->Update(vertexData);
 
         ib->SetShadowed(true);
         ib->SetSize(numVertices, false);
@@ -319,7 +319,7 @@ void DynamicGeometry::AnimateObjects(float timeStep)
 
         // Lock the vertex buffer for update and rewrite positions with sine wave modulated ones
         // Cannot use discard lock as there is other data (normals, UVs) that we are not overwriting
-        auto* vertexData = (unsigned char*)buffer->Lock(0, buffer->GetVertexCount());
+        auto* vertexData = (unsigned char*)buffer->Map();
         if (vertexData)
         {
             unsigned vertexSize = buffer->GetVertexSize();
@@ -335,7 +335,7 @@ void DynamicGeometry::AnimateObjects(float timeStep)
                 dest.z_ = src.z_ * (1.0f + 0.1f * Sin(phase + 120.0f));
             }
 
-            buffer->Unlock();
+            buffer->Unmap();
         }
     }
 }

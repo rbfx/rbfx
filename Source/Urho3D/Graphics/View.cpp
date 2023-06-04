@@ -3080,7 +3080,7 @@ void View::PrepareInstancingBuffer()
 
     VertexBuffer* instancingBuffer = renderer_->GetInstancingBuffer();
     unsigned freeIndex = 0;
-    void* dest = instancingBuffer->Lock(0, totalInstances, true);
+    void* dest = instancingBuffer->Map();
     if (!dest)
         return;
 
@@ -3096,7 +3096,7 @@ void View::PrepareInstancingBuffer()
         i->litBatches_.SetInstancingData(dest, stride, freeIndex);
     }
 
-    instancingBuffer->Unlock();
+    instancingBuffer->Unmap();
 }
 
 void View::SetupLightVolumeBatch(Batch& batch)

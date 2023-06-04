@@ -280,7 +280,7 @@ bool ComputeDevice::SetWritableBuffer(Object* object, CD_UNIT slot)
     }
     else if (auto vbuffer = object->Cast<VertexBuffer>())
     {
-        buffer = vbuffer->GetGPUObject().Cast<IBuffer>(IID_Buffer);
+        buffer = vbuffer->GetHandle();
         viewDesc.Format.ValueType = VT_FLOAT32;
         viewDesc.Format.NumComponents = 4;
         viewDesc.Format.IsNormalized = false;

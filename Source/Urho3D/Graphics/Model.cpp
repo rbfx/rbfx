@@ -150,9 +150,9 @@ bool Model::BeginLoad(Deserializer& source)
             desc.data_.reset(); // Make sure no previous data
             buffer->SetShadowed(true);
             buffer->SetSize(desc.vertexCount_, desc.vertexElements_);
-            void* dest = buffer->Lock(0, desc.vertexCount_);
+            void* dest = buffer->Map();
             source.Read(dest, desc.vertexCount_ * vertexSize);
-            buffer->Unlock();
+            buffer->Unmap();
         }
 
         memoryUse += sizeof(VertexBuffer) + desc.vertexCount_ * vertexSize;
@@ -339,7 +339,7 @@ bool Model::EndLoad()
         {
             buffer->SetShadowed(true);
             buffer->SetSize(desc.vertexCount_, desc.vertexElements_);
-            buffer->SetData(desc.data_.get());
+            buffer->Update(desc.data_.get());
         }
     }
 
@@ -650,18 +650,12 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
 #ifdef URHO3D_DEBUG
             cloneBuffer->SetDebugName(GetName());
 #endif
-            cloneBuffer->SetSize(origBuffer->GetVertexCount(), origBuffer->GetElements(), origBuffer->IsDynamic());
             cloneBuffer->SetShadowed(origBuffer->IsShadowed());
+            cloneBuffer->SetSize(origBuffer->GetVertexCount(), origBuffer->GetElements(), origBuffer->IsDynamic());
             if (origBuffer->IsShadowed())
-                cloneBuffer->SetData(origBuffer->GetShadowData());
+                cloneBuffer->Update(origBuffer->GetShadowData());
             else
-            {
-                void* origData = origBuffer->Lock(0, origBuffer->GetVertexCount());
-                if (origData)
-                    cloneBuffer->SetData(origData);
-                else
-                    URHO3D_LOGERROR("Failed to lock original vertex buffer for copying");
-            }
+                URHO3D_LOGERROR("Failed to read original vertex buffer");
             vbMapping[origBuffer] = cloneBuffer;
         }
 
@@ -680,19 +674,13 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
 #ifdef URHO3D_DEBUG
             cloneBuffer->SetDebugName(GetName());
 #endif
+            cloneBuffer->SetShadowed(origBuffer->IsShadowed());
             cloneBuffer->SetSize(origBuffer->GetIndexCount(), origBuffer->GetIndexSize() == sizeof(unsigned),
                 origBuffer->IsDynamic());
-            cloneBuffer->SetShadowed(origBuffer->IsShadowed());
             if (origBuffer->IsShadowed())
                 cloneBuffer->SetData(origBuffer->GetShadowData());
             else
-            {
-                void* origData = origBuffer->Lock(0, origBuffer->GetIndexCount());
-                if (origData)
-                    cloneBuffer->SetData(origData);
-                else
-                    URHO3D_LOGERROR("Failed to lock original index buffer for copying");
-            }
+                URHO3D_LOGERROR("Failed to read original index buffer");
             ibMapping[origBuffer] = cloneBuffer;
         }
 

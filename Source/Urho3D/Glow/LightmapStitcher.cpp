@@ -185,7 +185,7 @@ SharedPtr<VertexBuffer> CreateSeamsVertexBuffer(Context* context, const Lightmap
     auto vertexBuffer = MakeShared<VertexBuffer>(context);
     vertexBuffer->SetShadowed(true);
     vertexBuffer->SetSize(seams.size() * 2, vertexElements);
-    vertexBuffer->SetData(vertexData.data());
+    vertexBuffer->Update(vertexData.data());
     return vertexBuffer;
 }
 

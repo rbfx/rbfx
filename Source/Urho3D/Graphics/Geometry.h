@@ -123,8 +123,6 @@ public:
     /// Return number of primitives.
     unsigned GetPrimitiveCount() const;
 
-    /// Return buffers' combined hash value for state sorting.
-    unsigned short GetBufferHash() const;
     /// Return raw vertex and index data for CPU operations, or null pointers if not available. Will return data of the first vertex buffer if override data not set.
     void GetRawData(const unsigned char*& vertexData, unsigned& vertexSize, const unsigned char*& indexData, unsigned& indexSize, const ea::vector<VertexElement>*& elements) const;
     /// Return raw vertex and index data for CPU operations, or null pointers if not available. Will return data of the first vertex buffer if override data not set.

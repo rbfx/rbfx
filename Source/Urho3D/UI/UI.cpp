@@ -912,7 +912,7 @@ void UI::SetVertexData(VertexBuffer* dest, const ea::vector<float>& vertexData)
     if (dest->GetVertexCount() < numVertices || dest->GetVertexCount() > numVertices * 2)
         dest->SetSize(numVertices, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, true);
 
-    dest->SetData(&vertexData[0]);
+    dest->Update(&vertexData[0]);
 }
 
 Material* UI::GetBatchMaterial(const UIBatch& batch) const

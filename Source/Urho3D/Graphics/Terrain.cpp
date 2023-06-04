@@ -654,7 +654,7 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
     ea::shared_array<unsigned char> cpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
     ea::shared_array<unsigned char> occlusionCpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
 
-    auto* vertexData = (float*)vertexBuffer->Lock(0, vertexBuffer->GetVertexCount());
+    auto* vertexData = (float*)vertexBuffer->Map();
     auto* positionData = (float*)cpuVertexData.get();
     auto* occlusionData = (float*)occlusionCpuVertexData.get();
     BoundingBox box;
@@ -732,7 +732,7 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
             }
         }
 
-        vertexBuffer->Unlock();
+        vertexBuffer->Unmap();
         vertexBuffer->ClearDataLost();
     }
 

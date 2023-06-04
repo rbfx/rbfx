@@ -130,6 +130,11 @@ void DrawCommandQueue::Execute()
         {
             tempVertexBuffers.clear();
             tempVertexBuffers.assign(cmd.inputBuffers_.vertexBuffers_.begin(), cmd.inputBuffers_.vertexBuffers_.end());
+            for (VertexBuffer* vertexBuffer : tempVertexBuffers)
+            {
+                if (vertexBuffer)
+                    vertexBuffer->Resolve();
+            }
             // If something goes wrong here, skip current command
             if (!graphics_->SetVertexBuffers(tempVertexBuffers, cmd.instanceStart_))
                 continue;

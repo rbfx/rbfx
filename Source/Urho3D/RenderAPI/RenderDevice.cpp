@@ -61,6 +61,10 @@
     #include <windows.ui.core.h>
 #endif
 
+#ifdef None
+    #undef None
+#endif
+
 namespace Urho3D
 {
 
@@ -553,6 +557,7 @@ RenderDevice::RenderDevice(
 
 RenderDevice::~RenderDevice()
 {
+    OnDeviceObjectEvent(this, DeviceObjectEvent::Destroy);
 }
 
 void RenderDevice::InitializeWindow()
@@ -980,6 +985,7 @@ void RenderDevice::InvalidateGLESContext()
 {
 #if URHO3D_PLATFORM_ANDROID && GLES_SUPPORTED
     URHO3D_LOGINFO("OpenGL context is lost");
+    OnDeviceObjectEvent(this, DeviceObjectEvent::Invalidate);
     OnDeviceLost(this);
     deviceContextGL_->InvalidateState();
     renderDeviceGLES_->Invalidate();
@@ -1000,6 +1006,7 @@ bool RenderDevice::RestoreGLESContext()
     }
 
     renderDeviceGLES_->Resume(nullptr);
+    OnDeviceObjectEvent(this, DeviceObjectEvent::Restore);
     OnDeviceRestored(this);
     URHO3D_LOGINFO("OpenGL context is restored");
     return true;
@@ -1022,6 +1029,9 @@ void RenderDevice::Present()
         if (windowSettings_.size_ != currentSize)
             UpdateSwapChainSize();
     }
+
+    frameIndex_ = static_cast<FrameIndex>(static_cast<unsigned long long>(frameIndex_) + 1);
+    URHO3D_ASSERT(frameIndex_ != FrameIndex::None, "How did you exhaust 2^64 frames?");
 }
 
 IntVector2 RenderDevice::GetSwapChainSize() const

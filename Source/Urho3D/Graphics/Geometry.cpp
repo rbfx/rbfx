@@ -235,22 +235,6 @@ unsigned Geometry::GetPrimitiveCount() const
     }
 }
 
-unsigned short Geometry::GetBufferHash() const
-{
-    unsigned short hash = 0;
-
-    for (unsigned i = 0; i < vertexBuffers_.size(); ++i)
-    {
-        VertexBuffer* vBuf = vertexBuffers_[i];
-        hash += *((unsigned short*)&vBuf);
-    }
-
-    IndexBuffer* iBuf = indexBuffer_;
-    hash += *((unsigned short*)&iBuf);
-
-    return hash;
-}
-
 void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize, const unsigned char*& indexData,
     unsigned& indexSize, const ea::vector<VertexElement>*& elements) const
 {

@@ -26,6 +26,13 @@ static constexpr unsigned MaxRenderTargets = 8;
 /// Maximum number of bound vertex buffers supported by the engine.
 static constexpr unsigned MaxVertexStreams = 4;
 
+/// Index of the frame, counted by the presents of the primary swap chain.
+enum class FrameIndex : unsigned long long
+{
+    None,
+    First
+};
+
 /// GAPI used for rendering.
 enum class RenderBackend
 {
@@ -112,6 +119,31 @@ struct RenderDeviceSettings
     /// Adapter ID.
     ea::optional<unsigned> adapterId_;
 };
+
+/// GPU buffer types.
+enum class BufferType
+{
+    /// Vertex buffer for per-vertex or per-instance data.
+    Vertex,
+    /// Index buffer.
+    Index,
+
+    Count
+};
+
+/// Buffer usage flags.
+enum class BufferFlag
+{
+    /// Buffer maintains up-to-date CPU-readable copy of the data. Some buffer types cannot be shadowed.
+    Shadowed = 1 << 0,
+    /// Buffer is dynamic and will be updated frequently.
+    Dynamic = 1 << 1,
+    /// Buffer data is discarded when frame ends.
+    Discard = 1 << 2,
+    /// Buffer can be used as unordered access view.
+    BindUnorderedAccess = 1 << 3,
+};
+URHO3D_FLAGSET(BufferFlag, BufferFlags);
 
 /// Shader types.
 enum ShaderType

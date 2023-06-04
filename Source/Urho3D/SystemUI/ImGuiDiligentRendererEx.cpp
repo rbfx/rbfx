@@ -193,7 +193,7 @@ void ImGuiDiligentRendererEx::RenderSecondaryWindows()
     {
         SDL_GL_MakeCurrent(backupCurrentWindow, backupCurrentContext);
 
-        auto deviceContextGL = ClassPtrCast<Diligent::IDeviceContextGL>(renderDevice_->GetDeviceContext());
+        auto deviceContextGL = ClassPtrCast<Diligent::IDeviceContextGL>(renderDevice_->GetImmediateContext());
         deviceContextGL->InvalidateState();
     }
 #endif
@@ -210,7 +210,7 @@ void ImGuiDiligentRendererEx::RenderDrawDataWith(ImDrawData* drawData, PipelineS
     Diligent::IShaderResourceVariable* textureVar = srb->GetVariableByName(Diligent::SHADER_TYPE_PIXEL, "sTexture");
     Diligent::IShaderResourceVariable* constantsVar = srb->GetVariableByName(Diligent::SHADER_TYPE_VERTEX, "Camera");
     Diligent::ImGuiDiligentRenderer::RenderDrawData(
-        renderDevice_->GetDeviceContext(), drawData, pipelineState->GetHandle(), srb, textureVar, constantsVar);
+        renderDevice_->GetImmediateContext(), drawData, pipelineState->GetHandle(), srb, textureVar, constantsVar);
 }
 
 #if URHO3D_PLATFORM_WINDOWS || URHO3D_PLATFORM_LINUX || URHO3D_PLATFORM_MACOS
@@ -266,7 +266,7 @@ void ImGuiDiligentRendererEx::SetWindowSize(ImGuiViewport* viewport, ImVec2 size
 void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* renderArg)
 {
     auto userData = GetViewportData(viewport);
-    Diligent::IDeviceContext* deviceContext = renderDevice_->GetDeviceContext();
+    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
 
     // Delayed initialization for OpenGL
     if (!userData->swapChain_)

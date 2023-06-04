@@ -2679,6 +2679,7 @@ void Input::HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventDat
             {
                 evt.type = SDL_KEYUP;
                 evt.key.keysym.sym = element->GetVar(VAR_LAST_KEYSYM).GetInt();
+                evt.key.keysym.scancode = SDL_SCANCODE_UNKNOWN;
                 if (!evt.key.keysym.sym)
                     return;
 

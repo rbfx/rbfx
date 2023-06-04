@@ -348,7 +348,7 @@ void CustomGeometry::Commit()
 
     if (totalVertices)
     {
-        auto* dest = (unsigned char*)vertexBuffer_->Lock(0, totalVertices, true);
+        auto* dest = (unsigned char*)vertexBuffer_->Map();
         if (dest)
         {
             unsigned vertexStart = 0;
@@ -391,7 +391,7 @@ void CustomGeometry::Commit()
                 vertexStart += vertexCount;
             }
 
-            vertexBuffer_->Unlock();
+            vertexBuffer_->Unmap();
         }
         else
             URHO3D_LOGERROR("Failed to lock custom geometry vertex buffer");

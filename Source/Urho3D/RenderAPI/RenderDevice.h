@@ -47,14 +47,27 @@ struct ISwapChainVk;
 namespace Urho3D
 {
 
+/// Internal event sent to DeviceObject by RenderDevice.
+enum class DeviceObjectEvent
+{
+    Invalidate,
+    Restore,
+    Destroy
+};
+
 /// Wrapper for window and GAPI backend.
 class URHO3D_API RenderDevice : public Object
 {
     URHO3D_OBJECT(RenderDevice, Object);
 
 public:
+    Signal<void(DeviceObjectEvent)> OnDeviceObjectEvent;
+
+    /// Android only: handle device loss and restore.
+    /// @{
     Signal<void()> OnDeviceLost;
     Signal<void()> OnDeviceRestored;
+    /// @}
 
     /// Initialize the OS window and GAPI.
     /// Throws RuntimeException if unrecoverable error occurs.
@@ -86,11 +99,12 @@ public:
     void* GetMetalView() const { return metalView_.get(); }
     Diligent::IEngineFactory* GetFactory() { return factory_.RawPtr(); }
     Diligent::IRenderDevice* GetRenderDevice() { return renderDevice_.RawPtr(); }
-    Diligent::IDeviceContext* GetDeviceContext() { return deviceContext_.RawPtr(); }
+    Diligent::IDeviceContext* GetImmediateContext() { return deviceContext_.RawPtr(); }
     Diligent::ISwapChain* GetSwapChain() { return swapChain_.RawPtr(); }
     IntVector2 GetSwapChainSize() const;
     IntVector2 GetWindowSize() const;
     float GetDpiScale() const;
+    FrameIndex GetFrameIndex() const { return frameIndex_; }
     /// @}
 
     /// Static utilities.
@@ -119,6 +133,8 @@ private:
     Diligent::RefCntAutoPtr<Diligent::IRenderDevice> renderDevice_;
     Diligent::RefCntAutoPtr<Diligent::IDeviceContext> deviceContext_;
     Diligent::RefCntAutoPtr<Diligent::ISwapChain> swapChain_;
+
+    FrameIndex frameIndex_{FrameIndex::First};
 
     // Keep aliases at the end to ensure they are destroyed first and don't affect real order of destruction.
 #if D3D11_SUPPORTED
