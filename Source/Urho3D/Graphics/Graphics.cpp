@@ -599,7 +599,6 @@ void RegisterGraphicsLibrary(Context* context)
     OutlineGroup::RegisterObject(context);
     Zone::RegisterObject(context);
     Geometry::RegisterObject(context);
-    ConstantBuffer::RegisterObject(context);
     View::RegisterObject(context);
     Viewport::RegisterObject(context);
     OcclusionBuffer::RegisterObject(context);

@@ -47,7 +47,6 @@ class URHO3D_API IndexBuffer : public RawBuffer, public PipelineStateTracker
     URHO3D_OBJECT(IndexBuffer, RawBuffer);
 
 public:
-    /// Construct. Optionally force headless (no GPU-side buffer) operation.
     explicit IndexBuffer(Context* context);
 
     /// Enable shadowing in CPU memory. Shadowing is forced on if the graphics subsystem does not exist.

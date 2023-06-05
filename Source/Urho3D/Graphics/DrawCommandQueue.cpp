@@ -69,15 +69,15 @@ void DrawCommandQueue::Execute()
     Diligent::IDeviceContext* deviceContext = graphics_->GetImpl()->GetDeviceContext();
 
     // Constant buffers to store all shader parameters for queue
-    ea::vector<Diligent::IDeviceObject*> uniformBuffers;
+    ea::vector<Diligent::IBuffer*> uniformBuffers;
     const unsigned numUniformBuffers = constantBuffers_.collection_.GetNumBuffers();
     uniformBuffers.resize(numUniformBuffers);
     for (unsigned i = 0; i < numUniformBuffers; ++i)
     {
         const unsigned size = constantBuffers_.collection_.GetGPUBufferSize(i);
         ConstantBuffer* uniformBuffer = graphics_->GetOrCreateConstantBuffer(VS, i, size);
-        uniformBuffer->Update(constantBuffers_.collection_.GetBufferData(i), size);
-        uniformBuffers[i] = uniformBuffer->GetGPUObject().RawPtr();
+        uniformBuffer->Update(constantBuffers_.collection_.GetBufferData(i));
+        uniformBuffers[i] = uniformBuffer->GetHandle();
     }
 
     // Cached current state
@@ -166,7 +166,7 @@ void DrawCommandQueue::Execute()
             if (!uniformBufferReflection)
                 continue;
 
-            Diligent::IDeviceObject* uniformBuffer = uniformBuffers[cmd.constantBuffers_[i].index_];
+            Diligent::IBuffer* uniformBuffer = uniformBuffers[cmd.constantBuffers_[i].index_];
             for (Diligent::IShaderResourceVariable* variable : uniformBufferReflection->variables_)
             {
                 variable->SetBufferRange(uniformBuffer, cmd.constantBuffers_[i].offset_, cmd.constantBuffers_[i].size_);

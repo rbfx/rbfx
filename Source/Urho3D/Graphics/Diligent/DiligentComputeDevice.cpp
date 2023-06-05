@@ -108,7 +108,7 @@ bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, CD_UNIT cbufferSlo
         return true;
     }
 
-    RefCntAutoPtr<IDeviceObject> bufferObj = buffer->GetGPUObject();
+    IBuffer* bufferObj = buffer->GetHandle();
 
     auto foundRes = resources_.find(cbufferSlot.c_str());
     if (foundRes != resources_.end() && foundRes->second == bufferObj)
@@ -272,7 +272,7 @@ bool ComputeDevice::SetWritableBuffer(Object* object, CD_UNIT slot)
 
     if (auto cbuffer = object->Cast<ConstantBuffer>())
     {
-        buffer = cbuffer->GetGPUObject().Cast<IBuffer>(IID_Buffer);
+        buffer = cbuffer->GetHandle();
         viewDesc.Format.ValueType = VT_FLOAT32;
         viewDesc.Format.NumComponents = 4;
         viewDesc.Format.IsNormalized = false;

@@ -22,67 +22,22 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
-
-#include "../Core/Object.h"
-#include "../Graphics/GPUObject.h"
-#include "../Graphics/GraphicsDefs.h"
+#include "Urho3D/RenderAPI/RawBuffer.h"
 
 namespace Urho3D
 {
 
 /// Hardware constant buffer.
-class URHO3D_API ConstantBuffer : public Object, public GPUObject
+class URHO3D_API ConstantBuffer : public RawBuffer
 {
-    URHO3D_OBJECT(ConstantBuffer, Object);
-
-    using GPUObject::GetGraphics;
+    URHO3D_OBJECT(ConstantBuffer, RawBuffer);
 
 public:
     /// Construct.
     explicit ConstantBuffer(Context* context);
-    /// Destruct.
-    ~ConstantBuffer() override;
-
-    /// Register object with the engine.
-    static void RegisterObject(Context* context);
-
-    /// Recreate the GPU resource and restore data if applicable.
-    void OnDeviceReset() override;
-    /// Release the buffer.
-    void Release() override;
 
     /// Set size and create GPU-side buffer. Return true on success.
     bool SetSize(unsigned size);
-    /// Update data on GPU.
-    void Update(const void* data, unsigned size);
-
-    /// Return size.
-    unsigned GetSize() const { return size_; }
-
-    unsigned ToHash() { return hash_; }
-    void SetDebugName(const ea::string& debugName)
-    {
-#ifdef URHO3D_DEBUG
-        debugName_ = debugName;
-#endif
-    }
-
-private:
-    void BuildHash()
-    {
-        hash_ = MakeHash((unsigned long long)this);
-        CombineHash(hash_, MakeHash(size_));
-    }
-
-    /// Buffer byte size.
-    unsigned size_{};
-    unsigned hash_{0};
-
-#ifdef URHO3D_DEBUG
-    /// GPU Object Debug Name, only used by the Diligent Backend
-    /// This is usefully when you debug through Render Doc
-    ea::string debugName_;
-#endif
 };
-}
+
+} // namespace Urho3D

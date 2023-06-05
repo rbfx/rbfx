@@ -41,7 +41,6 @@ class URHO3D_API VertexBuffer : public RawBuffer, public PipelineStateTracker
     URHO3D_OBJECT(VertexBuffer, RawBuffer);
 
 public:
-    /// Construct. Optionally force headless (no GPU-side buffer) operation.
     explicit VertexBuffer(Context* context);
 
     /// Enable shadowing in CPU memory. Shadowing is forced on if the graphics subsystem does not exist.

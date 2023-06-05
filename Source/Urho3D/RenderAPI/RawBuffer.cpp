@@ -102,6 +102,10 @@ bool RawBuffer::Create(BufferType type, unsigned size, unsigned stride, BufferFl
         data = nullptr;
     }
 
+    // Dynamic buffers on OpenGL are weird, don't use them
+    if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::OpenGL)
+        flags_ &= ~BufferFlag::Dynamic;
+
     // Create CPU buffer
     if (flags_.Test(BufferFlag::Shadowed))
     {
@@ -126,6 +130,7 @@ bool RawBuffer::CreateGPU(const void* data)
     static const EnumArray<Diligent::BIND_FLAGS, BufferType> bufferTypeToBindFlag{{
         Diligent::BIND_VERTEX_BUFFER,
         Diligent::BIND_INDEX_BUFFER,
+        Diligent::BIND_UNIFORM_BUFFER,
     }};
 
     Diligent::BufferDesc bufferDesc;

@@ -127,6 +127,8 @@ enum class BufferType
     Vertex,
     /// Index buffer.
     Index,
+    /// Uniform aka constant buffer.
+    Uniform,
 
     Count
 };

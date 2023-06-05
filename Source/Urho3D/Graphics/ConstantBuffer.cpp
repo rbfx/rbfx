@@ -20,32 +20,27 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/ConstantBuffer.h"
-#include "../IO/Log.h"
+#include "Urho3D/Graphics/ConstantBuffer.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
 
-ConstantBuffer::ConstantBuffer(Context* context) :
-    Object(context),
-    GPUObject(GetSubsystem<Graphics>())
+ConstantBuffer::ConstantBuffer(Context* context)
+    : RawBuffer(context)
 {
 }
 
-ConstantBuffer::~ConstantBuffer()
+bool ConstantBuffer::SetSize(unsigned size)
 {
-    Release();
-}
+    // Round up to next 16 bytes
+    size += 15;
+    size &= 0xfffffff0;
 
-void ConstantBuffer::RegisterObject(Context* context)
-{
-    context->AddFactoryReflection<ConstantBuffer>();
+    return Create(BufferType::Uniform, size, 0, BufferFlag::Dynamic | BufferFlag::Discard);
 }
 
 }
