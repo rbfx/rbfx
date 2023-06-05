@@ -38,7 +38,7 @@ namespace Urho3D
 /// Hardware vertex buffer.
 class URHO3D_API VertexBuffer : public RawBuffer, public PipelineStateTracker
 {
-    URHO3D_OBJECT(VertexBuffer, Object);
+    URHO3D_OBJECT(VertexBuffer, RawBuffer);
 
 public:
     /// Construct. Optionally force headless (no GPU-side buffer) operation.

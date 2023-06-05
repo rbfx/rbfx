@@ -105,9 +105,7 @@ void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextu
         0.0f,  0.0f, 0.0f, 1.0f
     };
 
-    const Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
-    const IntVector2 inputSize = viewportTexture->GetSize();
-    const Vector2 inputInvSize = Vector2::ONE / inputSize.ToVector2();
+    const Vector2 inputInvSize = renderBufferManager_->GetInvOutputSize();
 
 #ifdef URHO3D_OPENGL
     const bool invertY = camera->GetFlipVertical();

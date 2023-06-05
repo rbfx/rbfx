@@ -145,7 +145,7 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
         bool largeIndices = (indexCount * 4 / 6) > 0xffff;
         indexBuffer_->SetSize(indexCount, largeIndices);
 
-        void* buffer = indexBuffer_->Lock(0, indexCount, true);
+        void* buffer = indexBuffer_->Map();
         if (buffer)
         {
             unsigned quadCount = indexCount / 6;
@@ -180,7 +180,7 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
                 }
             }
 
-            indexBuffer_->Unlock();
+            indexBuffer_->Unmap();
         }
         else
         {

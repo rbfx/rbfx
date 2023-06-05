@@ -995,8 +995,7 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
     if (buffer != indexBuffer_)
     {
         if (buffer)
-            impl_->deviceContext_->SetIndexBuffer(
-                buffer->GetGPUObject().Cast<IBuffer>(IID_Buffer), 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+            impl_->deviceContext_->SetIndexBuffer(buffer->GetHandle(), 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
         else
             impl_->deviceContext_->SetIndexBuffer(nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
         indexBuffer_ = buffer;

@@ -490,7 +490,7 @@ void RibbonTrail::UpdateBufferSize()
     }
 
     // Indices do not change for a given tail generator capacity
-    auto* dest = (unsigned short*)indexBuffer_->Lock(0, ((numPoints_ - 1) * indexPerSegment), true);
+    auto* dest = (unsigned short*)indexBuffer_->Map();
     if (!dest)
         return;
 
@@ -528,7 +528,7 @@ void RibbonTrail::UpdateBufferSize()
 
     }
 
-    indexBuffer_->Unlock();
+    indexBuffer_->Unmap();
     indexBuffer_->ClearDataLost();
 }
 

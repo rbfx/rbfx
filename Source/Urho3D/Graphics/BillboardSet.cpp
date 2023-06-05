@@ -513,7 +513,7 @@ void BillboardSet::UpdateBufferSize()
         return;
 
     // Indices do not change for a given billboard capacity
-    void* destPtr = indexBuffer_->Lock(0, numBillboards * 6, true);
+    void* destPtr = indexBuffer_->Map();
     if (!destPtr)
         return;
 
@@ -552,7 +552,7 @@ void BillboardSet::UpdateBufferSize()
         }
     }
 
-    indexBuffer_->Unlock();
+    indexBuffer_->Unmap();
     indexBuffer_->ClearDataLost();
 }
 

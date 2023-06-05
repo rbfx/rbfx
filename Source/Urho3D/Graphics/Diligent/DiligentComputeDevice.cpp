@@ -288,7 +288,7 @@ bool ComputeDevice::SetWritableBuffer(Object* object, CD_UNIT slot)
     }
     else if (auto ibuffer = object->Cast<IndexBuffer>())
     {
-        buffer = ibuffer->GetGPUObject().Cast<IBuffer>(IID_Buffer);
+        buffer = ibuffer->GetHandle();
         viewDesc.Format.IsNormalized = false;
         viewDesc.Format.NumComponents = 1;
         if (ibuffer->GetIndexSize() == sizeof(unsigned short))

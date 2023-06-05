@@ -187,9 +187,9 @@ bool Model::BeginLoad(Deserializer& source)
             loadIBData_[i].data_.reset(); // Make sure no previous data
             buffer->SetShadowed(true);
             buffer->SetSize(indexCount, indexSize > sizeof(unsigned short));
-            void* dest = buffer->Lock(0, indexCount);
+            void* dest = buffer->Map();
             source.Read(dest, indexCount * indexSize);
-            buffer->Unlock();
+            buffer->Unmap();
         }
 
         memoryUse += sizeof(IndexBuffer) + indexCount * indexSize;
@@ -352,7 +352,7 @@ bool Model::EndLoad()
         {
             buffer->SetShadowed(true);
             buffer->SetSize(desc.indexCount_, desc.indexSize_ > sizeof(unsigned short));
-            buffer->SetData(desc.data_.get());
+            buffer->Update(desc.data_.get());
         }
     }
 
@@ -678,7 +678,7 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
             cloneBuffer->SetSize(origBuffer->GetIndexCount(), origBuffer->GetIndexSize() == sizeof(unsigned),
                 origBuffer->IsDynamic());
             if (origBuffer->IsShadowed())
-                cloneBuffer->SetData(origBuffer->GetShadowData());
+                cloneBuffer->Update(origBuffer->GetShadowData());
             else
                 URHO3D_LOGERROR("Failed to read original index buffer");
             ibMapping[origBuffer] = cloneBuffer;

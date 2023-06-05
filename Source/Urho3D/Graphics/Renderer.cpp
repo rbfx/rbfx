@@ -1955,7 +1955,7 @@ void Renderer::CreateGeometries()
 #endif
     dlib->SetShadowed(true);
     dlib->SetSize(6, false);
-    dlib->SetData(dirLightIndexData);
+    dlib->Update(dirLightIndexData);
 
     dirLightGeometry_ = MakeShared<Geometry>(context_);
     dirLightGeometry_->SetVertexBuffer(0, dlvb);
@@ -1976,7 +1976,7 @@ void Renderer::CreateGeometries()
 #endif
     slib->SetShadowed(true);
     slib->SetSize(36, false);
-    slib->SetData(spotLightIndexData);
+    slib->Update(spotLightIndexData);
 
     spotLightGeometry_ = MakeShared<Geometry>(context_);
     spotLightGeometry_->SetVertexBuffer(0, slvb);
@@ -1997,7 +1997,7 @@ void Renderer::CreateGeometries()
 #endif
     plib->SetShadowed(true);
     plib->SetSize(132, false);
-    plib->SetData(pointLightIndexData);
+    plib->Update(pointLightIndexData);
 
     pointLightGeometry_ = MakeShared<Geometry>(context_);
     pointLightGeometry_->SetVertexBuffer(0, plvb);

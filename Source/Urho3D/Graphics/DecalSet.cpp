@@ -1021,7 +1021,7 @@ void DecalSet::UpdateBuffers()
     geometry_->SetDrawRange(TRIANGLE_LIST, 0, numIndices_, 0, numVertices_);
 
     float* vertices = numVertices_ ? (float*)vertexBuffer_->Map() : nullptr;
-    unsigned short* indices = numIndices_ ? (unsigned short*)indexBuffer_->Lock(0, numIndices_) : nullptr;
+    unsigned short* indices = numIndices_ ? (unsigned short*)indexBuffer_->Map() : nullptr;
 
     if (vertices && indices)
     {
@@ -1063,7 +1063,7 @@ void DecalSet::UpdateBuffers()
 
     vertexBuffer_->Unmap();
     vertexBuffer_->ClearDataLost();
-    indexBuffer_->Unlock();
+    indexBuffer_->Unmap();
     indexBuffer_->ClearDataLost();
     bufferDirty_ = false;
 }

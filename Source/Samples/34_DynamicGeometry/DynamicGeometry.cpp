@@ -237,7 +237,7 @@ void DynamicGeometry::CreateScene()
 
         ib->SetShadowed(true);
         ib->SetSize(numVertices, false);
-        ib->SetData(indexData);
+        ib->Update(indexData);
 
         geom->SetVertexBuffer(0, vb);
         geom->SetIndexBuffer(ib);

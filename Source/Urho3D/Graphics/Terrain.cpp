@@ -1317,7 +1317,7 @@ void Terrain::CreateIndexData()
     }
 
     indexBuffer_->SetSize(indices.size(), false);
-    indexBuffer_->SetData(&indices[0]);
+    indexBuffer_->Update(&indices[0]);
 }
 
 float Terrain::GetRawHeight(int x, int z) const

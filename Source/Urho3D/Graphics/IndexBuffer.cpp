@@ -35,75 +35,35 @@
 namespace Urho3D
 {
 
-IndexBuffer::IndexBuffer(Context* context, bool forceHeadless) :
-    Object(context),
-    GPUObject(forceHeadless ? nullptr : GetSubsystem<Graphics>()),
-    indexCount_(0),
-    indexSize_(0),
-    lockState_(LOCK_NONE),
-    lockStart_(0),
-    lockCount_(0),
-    lockScratchData_(nullptr),
-    shadowed_(false),
-    dynamic_(false),
-    discardLock_(false)
+IndexBuffer::IndexBuffer(Context* context)
+    : RawBuffer(context)
 {
-    // Force shadowing mode if graphics subsystem does not exist
-    if (!graphics_)
-        shadowed_ = true;
-
-    if (graphics_ && (graphics_->GetRenderBackend() == RenderBackend::Vulkan || graphics_->GetRenderBackend() == RenderBackend::D3D12))
-        SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(IndexBuffer, HandleEndRendering));
-}
-
-IndexBuffer::~IndexBuffer()
-{
-    Release();
-}
-
-void IndexBuffer::RegisterObject(Context* context)
-{
-    context->AddFactoryReflection<IndexBuffer>();
 }
 
 void IndexBuffer::SetShadowed(bool enable)
 {
-    // If no graphics subsystem, can not disable shadowing
-    if (!graphics_)
-        enable = true;
-
-    if (enable != shadowed_)
-    {
-        if (enable && indexCount_ && indexSize_)
-            shadowData_ = new unsigned char[indexCount_ * indexSize_];
-        else
-            shadowData_.reset();
-
-        shadowed_ = enable;
-    }
+    shadowedPending_ = enable;
 }
 
 bool IndexBuffer::SetSize(unsigned indexCount, bool largeIndices, bool dynamic)
 {
-    Unlock();
-
     indexCount_ = indexCount;
     indexSize_ = (unsigned)(largeIndices ? sizeof(unsigned) : sizeof(unsigned short));
-    dynamic_ = dynamic;
-
     MarkPipelineStateHashDirty();
 
-    if (shadowed_ && indexCount_ && indexSize_)
-        shadowData_ = new unsigned char[indexCount_ * indexSize_];
-    else
-        shadowData_.reset();
+    BufferFlags flags;
+    if (shadowedPending_)
+        flags |= BufferFlag::Shadowed;
+    if (dynamic)
+        flags |= BufferFlag::Dynamic;
 
-    return Create();
+    return Create(BufferType::Index, indexCount_ * indexSize_, indexSize_, flags, nullptr);
 }
 
 bool IndexBuffer::GetUsedVertexRange(unsigned start, unsigned count, unsigned& minVertex, unsigned& vertexCount)
 {
-    if (!shadowData_)
+    const unsigned char* shadowData = GetShadowData();
+    if (!shadowData)
     {
         URHO3D_LOGERROR("Used vertex range can only be queried from an index buffer with shadow data");
         return false;
@@ -120,7 +80,7 @@ bool IndexBuffer::GetUsedVertexRange(unsigned start, unsigned count, unsigned& m
 
     if (indexSize_ == sizeof(unsigned))
     {
-        unsigned* indices = ((unsigned*)shadowData_.get()) + start;
+        unsigned* indices = ((unsigned*)shadowData) + start;
 
         for (unsigned i = 0; i < count; ++i)
         {
@@ -132,7 +92,7 @@ bool IndexBuffer::GetUsedVertexRange(unsigned start, unsigned count, unsigned& m
     }
     else
     {
-        unsigned short* indices = ((unsigned short*)shadowData_.get()) + start;
+        unsigned short* indices = ((unsigned short*)shadowData) + start;
 
         for (unsigned i = 0; i < count; ++i)
         {
@@ -176,7 +136,7 @@ void IndexBuffer::SetUnpackedData(const unsigned data[], unsigned start, unsigne
     ea::vector<unsigned char> buffer(count * indexSize_);
 
     PackIndexData(data, buffer.data(), largeIndices, 0, count);
-    SetDataRange(buffer.data(), start, count);
+    UpdateRange(buffer.data(), start * indexSize_, count * indexSize_);
 }
 
 void IndexBuffer::UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned dest[])
@@ -270,7 +230,7 @@ void DynamicIndexBuffer::Commit()
         }
     }
 
-    indexBuffer_->SetData(shadowData_.data());
+    indexBuffer_->UpdateRange(shadowData_.data(), 0, numIndices_ * indexSize_);
 }
 
 void DynamicIndexBuffer::GrowBuffer(unsigned newMaxNumIndices)
