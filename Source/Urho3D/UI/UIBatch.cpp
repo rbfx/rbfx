@@ -406,7 +406,8 @@ bool UIBatch::Merge(const UIBatch& batch)
         batch.scissor_ != scissor_ ||
         batch.texture_ != texture_ ||
         batch.vertexData_ != vertexData_ ||
-        batch.vertexStart_ != vertexEnd_)
+        batch.vertexStart_ != vertexEnd_ ||
+        batch.customMaterial_ != customMaterial_)
         return false;
 
     vertexEnd_ = batch.vertexEnd_;

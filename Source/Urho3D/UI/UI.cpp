@@ -1000,7 +1000,10 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
             drawQueue->CommitShaderParameterGroup(SP_CAMERA);
         }
 
-        if (drawQueue->BeginShaderParameterGroup(SP_MATERIAL))
+        // Assuming that custom batch material have different parameters that
+        // the material in previous batch. Further optimizations are possible.
+        // Solves the issue #566
+        if (drawQueue->BeginShaderParameterGroup(SP_MATERIAL, batch.customMaterial_))
         {
             if (!batch.customMaterial_)
                 drawQueue->AddShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
