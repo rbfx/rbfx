@@ -41,7 +41,7 @@ namespace Urho3D
 namespace
 {
 
-unsigned GetViewportTextureFormat()
+TextureFormat GetViewportTextureFormat()
 {
 #ifdef URHO3D_D3D11
     // DX11 doesn't have RGB texture format and we don't want ImGUI to use alpha
@@ -84,7 +84,7 @@ void CustomBackbufferTexture::Update()
     if (textureDirty_)
     {
         textureDirty_ = false;
-        texture_->SetSize(textureSize_.x_, textureSize_.y_, GetViewportTextureFormat(), TEXTURE_RENDERTARGET);
+        texture_->SetSize(textureSize_.x_, textureSize_.y_, GetViewportTextureFormat(), TextureFlag::BindRenderTarget);
         RenderSurface* renderSurface = texture_->GetRenderSurface();
         if (renderSurface)
         {

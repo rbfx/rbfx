@@ -142,10 +142,47 @@ enum class BufferFlag
     Dynamic = 1 << 1,
     /// Buffer data is discarded when frame ends.
     Discard = 1 << 2,
-    /// Buffer can be used as unordered access view.
+    /// Buffer can be accessed via unordered access view.
     BindUnorderedAccess = 1 << 3,
 };
 URHO3D_FLAGSET(BufferFlag, BufferFlags);
+
+/// GPU texture types.
+enum class TextureType
+{
+    /// Singular 2D texture.
+    Texture2D,
+    /// Singular cube texture.
+    TextureCube,
+    /// Singular 3D texture. Support is not guaranteed.
+    Texture3D,
+    /// Array of 2D textures. Support is not guaranteed.
+    Array2D,
+
+    Count
+};
+
+/// Texture usage flags.
+enum class TextureFlag
+{
+    None = 0,
+    /// Texture can be used as possibly sampled shader resource.
+    /// TODO(diligent): This is always true for now. Remove?
+    //BindShaderResource = 1 << 0,
+
+    /// Texture can be used as render target.
+    BindRenderTarget = 1 << 1,
+    /// Texture can be used as depth-stencil target.
+    BindDepthStencil = 1 << 2,
+    /// Texture can be used via unordered access view.
+    BindUnorderedAccess = 1 << 3,
+    /// Whether NOT to resolve multisampled texture after rendering.
+    /// If set, multisampled texture is used as is. Keep in mind that you cannot easily sample such texture in shader.
+    /// By default, shader resource view will point to the resolved texture.
+    /// Automatically resolved textures cannot be accessed via unordered access view.
+    NoMultiSampledAutoResolve = 1 << 4,
+};
+URHO3D_FLAGSET(TextureFlag, TextureFlags);
 
 /// Shader types.
 enum ShaderType
@@ -234,6 +271,13 @@ struct URHO3D_API SamplerStateDesc
 
     /// Constructors.
     /// @{
+    static SamplerStateDesc Nearest(TextureAddressMode addressMode = ADDRESS_CLAMP)
+    {
+        SamplerStateDesc desc;
+        desc.filterMode_ = FILTER_NEAREST;
+        desc.addressMode_.fill(addressMode);
+        return desc;
+    }
     static SamplerStateDesc Bilinear(TextureAddressMode addressMode = ADDRESS_CLAMP)
     {
         SamplerStateDesc desc;
@@ -298,6 +342,14 @@ struct URHO3D_API PipelineStateOutputDesc
         return hash;
     }
     /// @}
+};
+
+/// Internal event sent to DeviceObject by RenderDevice.
+enum class DeviceObjectEvent
+{
+    Invalidate,
+    Restore,
+    Destroy
 };
 
 } // namespace Urho3D

@@ -106,4 +106,27 @@ Diligent::SHADER_TYPE ToInternalShaderType(ShaderType type)
     return shaderTypes[type];
 }
 
+unsigned GetMipLevelCount(const IntVector3& size)
+{
+    unsigned maxLevels = 1;
+    IntVector3 dim = size;
+    while (dim.x_ > 1 || dim.y_ > 1 || dim.z_ > 1)
+    {
+        ++maxLevels;
+        dim.x_ = dim.x_ > 1 ? (dim.x_ >> 1u) : 1;
+        dim.y_ = dim.y_ > 1 ? (dim.y_ >> 1u) : 1;
+        dim.z_ = dim.z_ > 1 ? (dim.z_ >> 1u) : 1;
+    }
+    return maxLevels;
+}
+
+IntVector3 GetMipLevelSize(const IntVector3& size, unsigned level)
+{
+    IntVector3 dim = size;
+    dim.x_ >>= level;
+    dim.y_ >>= level;
+    dim.z_ >>= level;
+    return VectorMax(dim, IntVector3::ONE);
+}
+
 } // namespace Urho3D

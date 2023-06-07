@@ -2109,7 +2109,7 @@ void View::AllocateScreenBuffers()
     }
 
     // Follow final rendertarget format, or use RGB to match the backbuffer format
-    unsigned format = renderTarget_ ? renderTarget_->GetParentTexture()->GetFormat() : Graphics::GetRGBFormat();
+    TextureFormat format = renderTarget_ ? renderTarget_->GetParentTexture()->GetFormat() : Graphics::GetRGBFormat();
 
     // If HDR rendering is enabled use RGBA16f and reserve a buffer
     if (renderer_->GetHDRRendering())
@@ -2950,7 +2950,7 @@ void View::CheckMaterialForAuxView(Material* material)
         textures.end(); ++i)
     {
         Texture* texture = i->second;
-        if (texture && texture->GetUsage() == TEXTURE_RENDERTARGET)
+        if (texture && texture->IsRenderTarget())
         {
             // Have to check cube & 2D textures separately
             if (texture->GetType() == Texture2D::GetTypeStatic())
@@ -3170,7 +3170,7 @@ void View::RenderShadowMap(const LightBatchQueue& queue)
     BiasParameters parameters = queue.light_->GetShadowBias();
 
     // The shadow map is a depth stencil texture
-    if (shadowMap->GetUsage() == TEXTURE_DEPTHSTENCIL)
+    if (shadowMap->IsDepthStencil())
     {
         graphics_->SetColorWrite(false);
         graphics_->SetDepthStencil(shadowMap);

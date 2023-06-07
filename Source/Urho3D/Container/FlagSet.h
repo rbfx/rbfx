@@ -236,6 +236,16 @@ public:
     {
         Set(static_cast<Integer>(value), enabled);
     }
+
+    constexpr void Unset(const Integer flags)
+    {
+        Set(flags, false);
+    }
+
+    constexpr void Unset(const Enum value)
+    {
+        Set(value, false);
+    }
     /// @}
 
     /// Return underlying integer (constant).

@@ -176,7 +176,7 @@ void SamplesManager::Setup()
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
     engineParameters_[EP_ORIENTATIONS] = "LandscapeLeft LandscapeRight Portrait";
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-    if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS)) 
+    if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
     {
         if (GetPlatform() == PlatformId::MacOS ||
             GetPlatform() == PlatformId::iOS)

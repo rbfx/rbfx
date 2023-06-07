@@ -64,7 +64,7 @@ const Vector3 seamsMultitap[numMultiTapSamples] =
 };
 
 /// Return texture format for given amount of channels.
-unsigned GetStitchTextureFormat(unsigned numChannels)
+TextureFormat GetStitchTextureFormat(unsigned numChannels)
 {
     switch (numChannels)
     {
@@ -73,7 +73,7 @@ unsigned GetStitchTextureFormat(unsigned numChannels)
     case 4: return Graphics::GetRGBAFloat32Format();
     default:
         assert(0);
-        return 0;
+        return TextureFormat::TEX_FORMAT_UNKNOWN;
     }
 }
 
@@ -239,7 +239,7 @@ LightmapStitchingContext InitializeStitchingContext(Context* context, unsigned l
     result.context_ = context;
     result.lightmapSize_ = lightmapSize;
 
-    const unsigned textureFormat = GetStitchTextureFormat(numChannels);
+    const TextureFormat textureFormat = GetStitchTextureFormat(numChannels);
     result.pingTexture_ = MakeShared<Texture2D>(context);
     result.pongTexture_ = MakeShared<Texture2D>(context);
 
@@ -247,7 +247,7 @@ LightmapStitchingContext InitializeStitchingContext(Context* context, unsigned l
     {
         const int size = static_cast<int>(lightmapSize);
         texture->SetNumLevels(1);
-        texture->SetSize(size, size, textureFormat, TEXTURE_RENDERTARGET);
+        texture->SetSize(size, size, textureFormat, TextureFlag::BindRenderTarget);
     }
 
     return result;

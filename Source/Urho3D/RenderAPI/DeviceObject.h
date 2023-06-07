@@ -26,6 +26,7 @@
 
 #include "Urho3D/Container/Ptr.h"
 #include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <EASTL/string.h>
 
@@ -39,7 +40,7 @@ class RenderDevice;
 class URHO3D_API DeviceObject
 {
 public:
-    DeviceObject(Context* context, RefCounted* owner);
+    explicit DeviceObject(Context* context);
     virtual ~DeviceObject();
 
     /// Android only: Invalidate GPU data.
@@ -58,9 +59,12 @@ public:
     /// TODO(diligent): Remove this
     class Graphics* GetGraphics() const { return graphics_; }
 
+    /// Internal: process device object event.
+    void ProcessDeviceObjectEvent(DeviceObjectEvent event);
+
 protected:
-    /// Render device that owns this object. Pointer is cleared in Destroy.
-    RenderDevice* renderDevice_{};
+    /// Render device that owns this object.
+    WeakPtr<RenderDevice> renderDevice_;
     /// Debug name of the object.
     ea::string debugName_;
     /// Android only: whether the data is lost due to context loss.

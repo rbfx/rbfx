@@ -377,11 +377,11 @@ void ReflectionProbeManager::ConsumeUpdateQueue()
         if (TextureCube* probeTexture = probe->GetMixedProbeTexture())
         {
             // TODO: Create correct texture from the start
-            if (probeTexture->GetUnorderedAccess() != filterCubemapsEffective)
+            const TextureFlags probeFlags = probeTexture->GetParams().flags_;
+            if (!probeFlags.Test(TextureFlag::BindUnorderedAccess))
             {
-                probeTexture->SetUnorderedAccess(filterCubemapsEffective);
                 probeTexture->SetSize(probeTexture->GetWidth(), probeTexture->GetFormat(),
-                    probeTexture->GetUsage());
+                    probeFlags | TextureFlag::BindUnorderedAccess);
             }
 
             CubemapUpdateParameters params;

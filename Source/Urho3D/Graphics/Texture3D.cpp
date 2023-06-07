@@ -39,19 +39,13 @@
 namespace Urho3D
 {
 
-Texture3D::Texture3D(Context* context) :
-    Texture(context)
+Texture3D::Texture3D(Context* context)
+    : Texture(context)
 {
-#ifdef URHO3D_OPENGL
-#ifndef GL_ES_VERSION_2_0
-    target_ = GL_TEXTURE_3D;
-#endif
-#endif
 }
 
 Texture3D::~Texture3D()
 {
-    Release();
 }
 
 void Texture3D::RegisterObject(Context* context)
@@ -66,14 +60,6 @@ bool Texture3D::BeginLoad(Deserializer& source)
     // In headless mode, do not actually load the texture, just return success
     if (!graphics_)
         return true;
-
-    // If device is lost, retry later
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture load while device is lost");
-        dataPending_ = true;
-        return true;
-    }
 
     ea::string texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
@@ -156,27 +142,15 @@ bool Texture3D::EndLoad()
     return success;
 }
 
-bool Texture3D::SetSize(int width, int height, int depth, unsigned format, TextureUsage usage)
+bool Texture3D::SetSize(int width, int height, int depth, TextureFormat format, TextureFlags flags)
 {
-    if (width <= 0 || height <= 0 || depth <= 0)
-    {
-        URHO3D_LOGERROR("Zero or negative 3D texture dimensions");
-        return false;
-    }
-    if (usage >= TEXTURE_RENDERTARGET)
-    {
-        URHO3D_LOGERROR("Rendertarget or depth-stencil usage not supported for 3D textures");
-        return false;
-    }
+    RawTextureParams params;
+    params.type_ = TextureType::Texture3D;
+    params.format_ = format;
+    params.size_ = {width, height, depth};
+    params.numLevels_ = requestedLevels_;
 
-    usage_ = usage;
-
-    width_ = width;
-    height_ = height;
-    depth_ = depth;
-    format_ = format;
-
-    return Create();
+    return Create(params);
 }
 
 }

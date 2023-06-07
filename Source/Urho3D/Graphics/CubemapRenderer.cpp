@@ -112,9 +112,9 @@ void CubemapRenderer::DisconnectViewportsFromTexture(TextureCube* texture) const
     }
 }
 
-void CubemapRenderer::DefineTexture(TextureCube* texture, const CubemapRenderingSettings& settings)
+void CubemapRenderer::DefineTexture(TextureCube* texture, const CubemapRenderingSettings& settings, TextureFlags flags)
 {
-    texture->SetSize(settings.textureSize_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
+    texture->SetSize(settings.textureSize_, Graphics::GetRGBAFormat(), flags | TextureFlag::BindRenderTarget);
     texture->SetFilterMode(FILTER_TRILINEAR);
 }
 
@@ -163,14 +163,13 @@ void CubemapRenderer::PrepareForUpdate(const CubemapUpdateParameters& params)
     // Initialize contents
     if (currentViewportTexture_ == viewportTexture_ && !IsTextureMatching(viewportTexture_, params.settings_))
     {
-        DefineTexture(viewportTexture_, params.settings_);
+        DefineTexture(viewportTexture_, params.settings_, TextureFlag::None);
         ConnectViewportsToTexture(viewportTexture_);
         viewportsConnectedToSelf_ = true;
     }
     if (currentFilteredTexture_ == filteredTexture_ && !IsTextureMatching(filteredTexture_, params.settings_))
     {
-        filteredTexture_->SetUnorderedAccess(true);
-        DefineTexture(filteredTexture_, params.settings_);
+        DefineTexture(filteredTexture_, params.settings_, TextureFlag::BindUnorderedAccess);
     }
 
     if (currentViewportTexture_ != viewportTexture_)

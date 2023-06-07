@@ -43,19 +43,13 @@
 namespace Urho3D
 {
 
-Texture2DArray::Texture2DArray(Context* context) :
-    Texture(context)
+Texture2DArray::Texture2DArray(Context* context)
+    : Texture(context)
 {
-#ifdef URHO3D_OPENGL
-#ifndef GL_ES_VERSION_2_0
-    target_ = GL_TEXTURE_2D_ARRAY;
-#endif
-#endif
 }
 
 Texture2DArray::~Texture2DArray()
 {
-    Release();
 }
 
 void Texture2DArray::RegisterObject(Context* context)
@@ -70,14 +64,6 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
     // In headless mode, do not actually load the texture, just return success
     if (!graphics_)
         return true;
-
-    // If device is lost, retry later
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture load while device is lost");
-        dataPending_ = true;
-        return true;
-    }
 
     cache->ResetDependencies(this);
 
@@ -145,65 +131,22 @@ bool Texture2DArray::EndLoad()
 
 void Texture2DArray::SetLayers(unsigned layers)
 {
-    Release();
-
     layers_ = layers;
 }
 
-bool Texture2DArray::SetSize(unsigned layers, int width, int height, unsigned format, TextureUsage usage)
+bool Texture2DArray::SetSize(unsigned layers, int width, int height, TextureFormat format, TextureFlags flags)
 {
-    if (width <= 0 || height <= 0)
-    {
-        URHO3D_LOGERROR("Zero or negative texture array size");
-        return false;
-    }
-    if (usage == TEXTURE_DEPTHSTENCIL)
-    {
-        URHO3D_LOGERROR("Depth-stencil usage not supported for texture arrays");
-        return false;
-    }
+    layers_ = layers ? layers : layers_;
 
-    // Delete the old rendersurface if any
-    renderSurface_.Reset();
+    RawTextureParams params;
+    params.type_ = TextureType::Array2D;
+    params.format_ = format;
+    params.size_ = {width, height, 1};
+    params.arraySize_ = layers_;
+    params.numLevels_ = requestedLevels_;
+    params.flags_ = flags;
 
-    usage_ = usage;
-
-    if (usage == TEXTURE_RENDERTARGET)
-    {
-        renderSurface_ = new RenderSurface(this);
-
-        // Nearest filtering by default
-        samplerStateDesc_.filterMode_ = FILTER_NEAREST;
-    }
-
-    if (usage == TEXTURE_RENDERTARGET)
-        SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(Texture2DArray, HandleRenderSurfaceUpdate));
-    else
-        UnsubscribeFromEvent(E_RENDERSURFACEUPDATE);
-
-    width_ = width;
-    height_ = height;
-    format_ = format;
-    depth_ = 1;
-    if (layers)
-        layers_ = layers;
-
-    layerMemoryUse_.resize(layers_);
-    for (unsigned i = 0; i < layers_; ++i)
-        layerMemoryUse_[i] = 0;
-
-    return Create();
-}
-
-void Texture2DArray::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)
-{
-    if (renderSurface_ && (renderSurface_->GetUpdateMode() == SURFACE_UPDATEALWAYS || renderSurface_->IsUpdateQueued()))
-    {
-        auto* renderer = GetSubsystem<Renderer>();
-        if (renderer)
-            renderer->QueueRenderSurface(renderSurface_);
-        renderSurface_->ResetUpdateQueued();
-    }
+    return Create(params);
 }
 
 }

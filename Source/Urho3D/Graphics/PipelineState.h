@@ -325,13 +325,8 @@ public:
     unsigned GetShaderID() const { return reflection_->GetObjectID(); }
     /// @}
 
-    /// Create Shader Resource Binding
-    Diligent::IPipelineState* GetHandle() const { return const_cast<Diligent::IPipelineState*>(handle_.RawPtr()); }
-
-    Diligent::IShaderResourceBinding* GetShaderResourceBinding() const
-    {
-        return const_cast<Diligent::IShaderResourceBinding*>(shaderResourceBinding_.RawPtr());
-    }
+    Diligent::IPipelineState* GetHandle() const { return handle_; }
+    Diligent::IShaderResourceBinding* GetShaderResourceBinding() const { return shaderResourceBinding_; }
 
 private:
     bool BuildPipeline(Graphics* graphics);

@@ -39,6 +39,7 @@
 namespace Urho3D
 {
 
+#if 0
 void Texture3D::OnDeviceLost()
 {
     // No-op on Direct3D11
@@ -69,6 +70,7 @@ void Texture3D::Release()
     URHO3D_SAFE_RELEASE(shaderResourceView_);
     URHO3D_SAFE_RELEASE(sampler_);*/
 }
+#endif
 
 bool Texture3D::SetData(unsigned level, int x, int y, int z, int width, int height, int depth, const void* data)
 {
@@ -391,6 +393,7 @@ bool Texture3D::GetData(unsigned level, void* dest) const
     }*/
 }
 
+#if 0
 bool Texture3D::Create()
 {
     Release();
@@ -443,5 +446,6 @@ bool Texture3D::Create()
 
     // return true;
 }
+#endif
 
 } // namespace Urho3D

@@ -52,15 +52,9 @@ public:
     bool BeginLoad(Deserializer& source) override;
     /// Finish resource loading. Always called from the main thread. Return true if successful.
     bool EndLoad() override;
-    /// Mark the GPU resource destroyed on context destruction.
-    void OnDeviceLost() override;
-    /// Recreate the GPU resource and restore data if applicable.
-    void OnDeviceReset() override;
-    /// Release the texture.
-    void Release() override;
 
     /// Set size, format, usage and multisampling parameter for rendertargets. Note that cube textures always use autoresolve when multisampled due to lacking support (on all APIs) to multisample them in a shader. Return true if successful.
-    bool SetSize(int size, unsigned format, TextureUsage usage = TEXTURE_STATIC, int multiSample = 1);
+    bool SetSize(int size, TextureFormat format, TextureFlags flags = TextureFlag::None, int multiSample = 1);
     /// Set data either partially or fully on a face's mip level. Return true if successful.
     bool SetData(CubeMapFace face, unsigned level, int x, int y, int width, int height, const void* data);
     /// Set data of one face from a stream. Return true if successful.
@@ -75,20 +69,9 @@ public:
 
     /// Return render surface for one face.
     /// @property{get_renderSurfaces}
-    RenderSurface* GetRenderSurface(CubeMapFace face) const { return renderSurfaces_[face]; }
-
-protected:
-    /// Create the GPU texture.
-    bool Create() override;
+    RenderSurface* GetRenderSurface(CubeMapFace face) const { return Texture::GetRenderSurface(face); }
 
 private:
-    /// Handle render surface update event.
-    void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
-
-    /// Render surfaces.
-    SharedPtr<RenderSurface> renderSurfaces_[MAX_CUBEMAP_FACES];
-    /// Memory use per face.
-    unsigned faceMemoryUse_[MAX_CUBEMAP_FACES]{};
     /// Face image files acquired during BeginLoad.
     SharedPtr<ImageCube> loadImageCube_;
 };

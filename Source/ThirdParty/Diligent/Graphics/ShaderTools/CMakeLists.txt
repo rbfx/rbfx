@@ -176,13 +176,17 @@ target_sources(Diligent-ShaderTools PRIVATE
     ${HLSL_DEFINITIONS_INC}
 )
 
-add_custom_command(OUTPUT ${HLSL_DEFINITIONS_INC} # We must use full path here!
-                   COMMAND ${PYTHON_EXECUTABLE} ${FILE2STRING_PATH} ${HLSL_DEFINITIONS} include/HLSLDefinitions_inc.fxh
-                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                   MAIN_DEPENDENCY ${HLSL_DEFINITIONS}
-                   COMMENT "Processing HLSLDefinitions.fxh"
-                   VERBATIM
-)
+if(NOT "${FILE2STRING_PATH}" STREQUAL "")
+    add_custom_command(OUTPUT ${HLSL_DEFINITIONS_INC} # We must use full path here!
+                    COMMAND ${PYTHON_EXECUTABLE} ${FILE2STRING_PATH} ${HLSL_DEFINITIONS} include/HLSLDefinitions_inc.fxh
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    MAIN_DEPENDENCY ${HLSL_DEFINITIONS}
+                    COMMENT "Processing HLSLDefinitions.fxh"
+                    VERBATIM
+    )
+else()
+    message(WARNING "File2String utility is currently unavailable on this host system. This is not an issues unless you modify HLSLDefinitions.fxh file")
+endif()
 
 set_common_target_properties(Diligent-ShaderTools)
 

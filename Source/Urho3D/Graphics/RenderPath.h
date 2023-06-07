@@ -78,7 +78,7 @@ struct URHO3D_API RenderTargetInfo
     /// Tag name.
     ea::string tag_;
     /// Texture format.
-    unsigned format_{};
+    TextureFormat format_{};
     /// Absolute size or multiplier.
     Vector2 size_;
     /// Size mode.

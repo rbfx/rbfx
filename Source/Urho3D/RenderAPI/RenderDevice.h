@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "Urho3D/Core/Mutex.h"
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/Core/Signal.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
@@ -13,6 +14,7 @@
 #include <EASTL/optional.h>
 #include <EASTL/shared_ptr.h>
 #include <EASTL/tuple.h>
+#include <EASTL/unordered_set.h>
 #include <EASTL/vector.h>
 
 struct SDL_Window;
@@ -47,13 +49,7 @@ struct ISwapChainVk;
 namespace Urho3D
 {
 
-/// Internal event sent to DeviceObject by RenderDevice.
-enum class DeviceObjectEvent
-{
-    Invalidate,
-    Restore,
-    Destroy
-};
+class DeviceObject;
 
 /// Wrapper for window and GAPI backend.
 class URHO3D_API RenderDevice : public Object
@@ -61,8 +57,6 @@ class URHO3D_API RenderDevice : public Object
     URHO3D_OBJECT(RenderDevice, Object);
 
 public:
-    Signal<void(DeviceObjectEvent)> OnDeviceObjectEvent;
-
     /// Android only: handle device loss and restore.
     /// @{
     Signal<void()> OnDeviceLost;
@@ -90,6 +84,9 @@ public:
     /// Present the frame. Should be called between engine frames.
     void Present();
 
+    /// Check if texture format is supported on hardware.
+    bool IsTextureFormatSupported(TextureFormat format) const;
+
     /// Getters.
     /// @{
     const RenderBackend GetBackend() const { return deviceSettings_.backend_; }
@@ -114,6 +111,12 @@ public:
     static FullscreenMode GetClosestFullscreenMode(const FullscreenModeVector& modes, FullscreenMode desiredMode);
     /// @}
 
+    /// Internal.
+    /// @{
+    void AddDeviceObject(DeviceObject* object);
+    void RemoveDeviceObject(DeviceObject* object);
+    /// @}
+
 private:
     void InitializeWindow();
     void InitializeFactory();
@@ -121,6 +124,8 @@ private:
 
     void InvalidateGLESContext();
     bool RestoreGLESContext();
+
+    void SendDeviceObjectEvent(DeviceObjectEvent event);
 
     RenderDeviceSettings deviceSettings_;
     WindowSettings windowSettings_;
@@ -135,6 +140,9 @@ private:
     Diligent::RefCntAutoPtr<Diligent::ISwapChain> swapChain_;
 
     FrameIndex frameIndex_{FrameIndex::First};
+
+    ea::unordered_set<DeviceObject*> deviceObjects_;
+    Mutex deviceObjectsMutex_;
 
     // Keep aliases at the end to ensure they are destroyed first and don't affect real order of destruction.
 #if D3D11_SUPPORTED

@@ -406,7 +406,7 @@ void DrawableProcessor::CheckMaterialForAuxiliaryRenderSurfaces(Material* materi
     {
         // Skip if not render targets
         Texture* texture = item.second;
-        if (!texture || texture->GetUsage() != TEXTURE_RENDERTARGET)
+        if (!texture || !texture->IsRenderTarget())
             continue;
 
         // Have to check cube & 2D textures separately

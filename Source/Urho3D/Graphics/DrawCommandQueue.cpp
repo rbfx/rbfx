@@ -154,9 +154,9 @@ void DrawCommandQueue::Execute()
             if (!texture)
                 continue;
             if (texture->GetLevelsDirty())
-                texture->RegenerateLevels();
+                texture->GenerateLevels();
 
-            data.variable_->Set(texture->GetShaderResourceView());
+            data.variable_->Set(texture->GetHandles().srv_);
         }
 
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)

@@ -54,7 +54,7 @@ ViewportRendererData* GetViewportData(ImGuiViewport* viewport)
 
 bool IsSRGBTextureFormat(TextureFormat format)
 {
-    return format == Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB || format == Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB;
+    return format == TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB || format == TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB;
 }
 
 SharedPtr<PipelineState> CreateRenderPipeline(
@@ -135,7 +135,7 @@ ImGuiDiligentRendererEx::ImGuiDiligentRendererEx(RenderDevice* renderDevice)
     primaryPipelineState_ =
         CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, swapChainDesc.DepthBufferFormat);
     secondaryPipelineState_ =
-        CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, Diligent::TEX_FORMAT_UNKNOWN);
+        CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, TextureFormat::TEX_FORMAT_UNKNOWN);
 }
 
 ImGuiDiligentRendererEx::~ImGuiDiligentRendererEx()

@@ -38,15 +38,14 @@ class Texture;
 /// %Color or depth-stencil surface that can be rendered into.
 class URHO3D_API RenderSurface : public RefCounted
 {
-    friend class Texture2D;
-    friend class Texture2DArray;
-    friend class TextureCube;
-
 public:
-    /// Construct with parent texture.
     explicit RenderSurface(Texture* parentTexture);
-    /// Destruct.
     ~RenderSurface() override;
+
+    /// Internal. Restore GPU resource.
+    void Restore(Diligent::ITextureView* view) { renderTargetView_ = view; }
+    /// Internal. Invalidate GPU resource.
+    void Invalidate() { renderTargetView_ = nullptr; }
 
     /// Set number of viewports.
     /// @property
@@ -67,10 +66,6 @@ public:
     void QueueUpdate();
     /// Release surface.
     void Release();
-    /// Mark the GPU resource destroyed on graphics context destruction. Only used on OpenGL.
-    void OnDeviceLost();
-    /// Create renderbuffer that cannot be sampled as a texture. Only used on OpenGL.
-    bool CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample);
 
     /// Return width.
     /// @property
@@ -82,10 +77,6 @@ public:
 
     /// Return size.
     IntVector2 GetSize() const;
-
-    /// Return usage.
-    /// @property
-    TextureUsage GetUsage() const;
 
     /// Return multisampling level.
     int GetMultiSample() const;
@@ -123,24 +114,12 @@ public:
     /// @property
     Texture* GetParentTexture() const { return parentTexture_; }
 
-#ifdef URHO3D_DILIGENT
+    bool IsRenderTarget() const;
+    bool IsDepthStencil() const;
+
     /// Return Diligent rendertarget or depth-stencil view.
     Diligent::RefCntAutoPtr<Diligent::ITextureView> GetRenderTargetView() const { return renderTargetView_; }
-    /// Return Diligent read-only depth-stencil view. May be null if not applicable.
-    Diligent::RefCntAutoPtr<Diligent::ITextureView> GetReadOnlyView() const { return readOnlyView_; }
-#else
-    /// Return Direct3D11 rendertarget or depth-stencil view. Not valid on OpenGL.
-    void* GetRenderTargetView() const { return renderTargetView_; }
 
-    /// Return Direct3D11 read-only depth-stencil view. May be null if not applicable. Not valid on OpenGL.
-    void* GetReadOnlyView() const { return readOnlyView_; }
-
-    /// Return surface's OpenGL target.
-    unsigned GetTarget() const { return target_; }
-
-    /// Return OpenGL renderbuffer if created.
-    unsigned GetRenderBuffer() const { return renderBuffer_; }
-#endif
     /// Return whether multisampled rendertarget needs resolve.
     /// @property
     bool IsResolveDirty() const { return resolveDirty_; }
@@ -163,34 +142,8 @@ private:
     /// Parent texture.
     WeakPtr<Texture> parentTexture_;
 
-#ifdef URHO3D_DILIGENT
     /// Diligent rendertarget or depth-stencil view.
     Diligent::RefCntAutoPtr<Diligent::ITextureView> renderTargetView_;
-    /// Diligent read-only depth-stencil view. Present only on depth-stencil surfaces.
-    Diligent::RefCntAutoPtr<Diligent::ITextureView> readOnlyView_;
-#else
-    // https://github.com/doxygen/doxygen/issues/7623
-    union
-    {
-        /// Direct3D11 rendertarget or depth-stencil view.
-        /// @nobind
-        void* renderTargetView_;
-        /// OpenGL renderbuffer name.
-        /// @nobind
-        unsigned renderBuffer_;
-    };
-
-    // https://github.com/doxygen/doxygen/issues/7623
-    union
-    {
-        /// Direct3D11 read-only depth-stencil view. Present only on depth-stencil surfaces.
-        /// @nobind
-        void* readOnlyView_;
-        /// OpenGL target.
-        /// @nobind
-        unsigned target_;
-    };
-#endif
 
     /// Viewports.
     ea::vector<SharedPtr<Viewport> > viewports_;

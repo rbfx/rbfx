@@ -44,41 +44,42 @@ RenderDevice* GetRenderDeviceFrom(Context* context)
 
 } // namespace
 
-DeviceObject::DeviceObject(Context* context, RefCounted* owner)
+DeviceObject::DeviceObject(Context* context)
     : renderDevice_(GetRenderDeviceFrom(context))
     , graphics_(context->GetSubsystem<Graphics>())
 {
     if (renderDevice_)
-    {
-        renderDevice_->OnDeviceObjectEvent.Subscribe(owner,
-            [this](DeviceObjectEvent event)
-        {
-            switch (event)
-            {
-            case DeviceObjectEvent::Invalidate:
-            {
-                dataLost_ = true;
-                Invalidate();
-                break;
-            }
-            case DeviceObjectEvent::Restore:
-            {
-                Restore();
-                break;
-            }
-            case DeviceObjectEvent::Destroy:
-            {
-                Destroy();
-                renderDevice_ = nullptr;
-                break;
-            }
-            }
-        });
-    }
+        renderDevice_->AddDeviceObject(this);
 }
 
 DeviceObject::~DeviceObject()
 {
+    if (renderDevice_)
+        renderDevice_->RemoveDeviceObject(this);
+}
+
+void DeviceObject::ProcessDeviceObjectEvent(DeviceObjectEvent event)
+{
+    switch (event)
+    {
+    case DeviceObjectEvent::Invalidate:
+    {
+        dataLost_ = true;
+        Invalidate();
+        break;
+    }
+    case DeviceObjectEvent::Restore:
+    {
+        Restore();
+        break;
+    }
+    case DeviceObjectEvent::Destroy:
+    {
+        Destroy();
+        renderDevice_ = nullptr;
+        break;
+    }
+    }
 }
 
 } // namespace Urho3D

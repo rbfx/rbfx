@@ -58,6 +58,7 @@ bool ComputeDevice_ClearResource(IDeviceObject* view, ea::unordered_map<ea::stri
 void ComputeDevice::Init()
 {
     SubscribeToEvent(E_ENGINEINITIALIZED, URHO3D_HANDLER(ComputeDevice, HandleEngineInitialization));
+    SubscribeToEvent(E_DEVICELOST, &ComputeDevice::ReleaseLocalState);
 }
 void ComputeDevice::HandleEngineInitialization(StringHash eventType, VariantMap& eventData)
 {
@@ -81,11 +82,7 @@ bool ComputeDevice::SetReadTexture(Texture* texture, CD_UNIT textureSlot)
         return true;
     }
 
-    if (texture->GetParametersDirty())
-        texture->UpdateParameters();
-
-    RefCntAutoPtr<IDeviceObject> textureObj = texture->GetShaderResourceView();
-    RefCntAutoPtr<IDeviceObject> sampler = texture->GetSampler();
+    ITextureView* textureObj = texture->GetHandles().srv_;
 
     auto foundRes = resources_.find(textureSlot);
     if (foundRes != resources_.end() && foundRes->second == textureObj)
@@ -132,101 +129,24 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, CD_UNIT textureSlot, unsig
         return true;
     }
 
-    if (!texture->IsUnorderedAccessSupported())
+    if (!texture->IsUnorderedAccess())
     {
         URHO3D_LOGERROR(
             "ComputeDevice::SetWriteTexture, provided texture of format {} is not writeable", texture->GetFormat());
         return false;
     }
 
-    // First try to find a UAV that's already been constructed for this resource.
-    auto existingRecord = constructedUAVs_.find(WeakPtr<Object>(texture));
-    if (existingRecord != constructedUAVs_.end())
+    RawTextureUAVKey key;
+    key.canWrite_ = true;
+    key.firstLevel_ = mipLevel;
+    if (faceIndex != UINT_MAX)
     {
-        for (auto& entry : existingRecord->second)
-        {
-            if (entry.face_ == faceIndex && entry.mipLevel_ == mipLevel)
-            {
-                resources_[textureSlot] = entry.uav_;
-                resourcesDirty_ = true;
-                return true;
-            }
-        }
+        key.firstSlice_ = faceIndex;
+        key.numSlices_ = 1;
     }
 
-    // Existing UAV wasn't found, so now a new one needs to be created.
-    auto device = graphics_->GetImpl()->GetDevice();
-
-    TextureViewDesc viewDesc = {};
-#ifdef URHO3D_DEBUG
-    ea::string dbgName = Format("{}(UAV)", texture->GetName());
-    viewDesc.Name = dbgName.c_str();
-#endif
-    viewDesc.Format = (TEXTURE_FORMAT)texture->GetFormat();
-    viewDesc.ViewType = TEXTURE_VIEW_UNORDERED_ACCESS;
-    viewDesc.AccessFlags = UAV_ACCESS_FLAG_WRITE;
-
-    RefCntAutoPtr<ITexture> currTexture = texture->GetGPUObject().Cast<ITexture>(IID_Texture);
-
-    if (auto tex2D = texture->Cast<Texture2D>())
-    {
-        viewDesc.TextureDim = RESOURCE_DIM_TEX_2D;
-        viewDesc.MostDetailedMip = mipLevel;
-    }
-    else if (auto tex2DArray = texture->Cast<Texture2DArray>())
-    {
-        viewDesc.TextureDim = RESOURCE_DIM_TEX_2D_ARRAY;
-        viewDesc.NumArraySlices = faceIndex == UINT_MAX ? tex2DArray->GetLayers() : 1;
-        viewDesc.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
-        viewDesc.MostDetailedMip = mipLevel;
-    }
-    else if (auto texCube = texture->Cast<TextureCube>())
-    {
-        viewDesc.TextureDim = RESOURCE_DIM_TEX_2D_ARRAY;
-        viewDesc.NumArraySlices = faceIndex == UINT_MAX ? 6 : 1;
-        viewDesc.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
-        viewDesc.MostDetailedMip = mipLevel;
-    }
-    else if (auto tex3D = texture->Cast<Texture3D>())
-    {
-        viewDesc.TextureDim = RESOURCE_DIM_TEX_3D;
-        viewDesc.MostDetailedMip = mipLevel;
-        viewDesc.FirstDepthSlice = 0;
-        viewDesc.NumDepthSlices = texture->GetLevelDepth(mipLevel);
-    }
-    else
-    {
-        URHO3D_LOGERROR("Unsupported texture type for UAV");
-        return false;
-    }
-
-    RefCntAutoPtr<ITextureView> view;
-    currTexture->CreateView(viewDesc, &view);
-
-    if (!view)
-    {
-        URHO3D_LOGERROR("Failed to create UAV for texture");
-        return false;
-    }
-
-    // Store the UAV now
-    UAVBinding binding = {view, faceIndex, mipLevel, false};
-    // List found, so append
-    if (existingRecord != constructedUAVs_.end())
-        existingRecord->second.push_back(binding);
-    else
-    {
-        // list not found, create it
-        eastl::vector<UAVBinding> bindingList = {binding};
-        constructedUAVs_.insert({WeakPtr<Object>(texture), bindingList});
-
-        // Subscribe to the release event so the UAV can be cleaned up.
-        SubscribeToEvent(texture, E_GPURESOURCERELEASED, URHO3D_HANDLER(ComputeDevice, HandleGPUResourceRelease));
-    }
-
-    resources_[textureSlot] = view;
+    resources_[textureSlot] = texture->CreateUAV(key);
     resourcesDirty_ = true;
-
     return true;
 }
 
@@ -463,19 +383,6 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
         return;
     void* gpuObject = ((GPUObject*)object.Get())->GetGPUObject();
 
-    auto foundUAV = constructedUAVs_.find(object);
-    if (foundUAV != constructedUAVs_.end())
-    {
-        auto d3dDevice = graphics_->GetImpl()->GetDevice();
-
-        for (auto& entry : foundUAV->second)
-        {
-            resourcesDirty_ |= ComputeDevice_ClearResource(entry.uav_, resources_);
-        }
-
-        constructedUAVs_.erase(foundUAV);
-    }
-
     auto foundBuffUAV = constructedBufferUAVs_.find(object);
     if (foundBuffUAV != constructedBufferUAVs_.end())
     {
@@ -489,7 +396,6 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
 
 void ComputeDevice::ReleaseLocalState()
 {
-    constructedUAVs_.clear();
     constructedBufferUAVs_.clear();
     cachedPipelines_.clear();
     resources_.clear();

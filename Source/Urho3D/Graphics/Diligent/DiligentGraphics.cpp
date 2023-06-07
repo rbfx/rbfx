@@ -1246,24 +1246,24 @@ void Graphics::SetTexture(unsigned index, Texture* texture)
         else
         {
             // Resolve multisampled texture now as necessary
-            if (texture->GetMultiSample() > 1 && texture->GetAutoResolve() && texture->IsResolveDirty())
-            {
-                if (texture->GetType() == Texture2D::GetTypeStatic())
-                    ResolveToTexture(static_cast<Texture2D*>(texture));
-                if (texture->GetType() == TextureCube::GetTypeStatic())
-                    ResolveToTexture(static_cast<TextureCube*>(texture));
-            }
+//            if (texture->GetMultiSample() > 1 && texture->GetAutoResolve() && texture->IsResolveDirty())
+//            {
+//                if (texture->GetType() == Texture2D::GetTypeStatic())
+//                    ResolveToTexture(static_cast<Texture2D*>(texture));
+//                if (texture->GetType() == TextureCube::GetTypeStatic())
+//                    ResolveToTexture(static_cast<TextureCube*>(texture));
+//            }
         }
 
-        if (texture && texture->GetLevelsDirty())
-            texture->RegenerateLevels();
+        //if (texture && texture->GetLevelsDirty())
+        //    texture->RegenerateLevels();
     }
 
-    if (texture && texture->GetParametersDirty())
-    {
-        texture->UpdateParameters();
-        textures_[index] = nullptr; // Force reassign
-    }
+    //if (texture && texture->GetParametersDirty())
+    //{
+    //    texture->UpdateParameters();
+    //    textures_[index] = nullptr; // Force reassign
+    //}
 
     if (texture != textures_[index])
     {
@@ -1278,8 +1278,8 @@ void Graphics::SetTexture(unsigned index, Texture* texture)
         }
 
         textures_[index] = texture;
-        impl_->shaderResourceViews_[index] = texture ? (ITextureView*)texture->GetShaderResourceView() : nullptr;
-        impl_->samplers_[index] = texture ? (ISampler*)texture->GetSampler() : nullptr;
+        impl_->shaderResourceViews_[index] = texture ? texture->GetHandles().srv_.RawPtr() : nullptr;
+        impl_->samplers_[index] = nullptr;
         impl_->texturesDirty_ = true;
     }
 }
@@ -1326,7 +1326,7 @@ void Graphics::SetTextureParametersDirty()
     {
         Texture* texture = dynamic_cast<Texture*>(*i);
         if (texture)
-            texture->SetParametersDirty();
+            ;//texture->SetParametersDirty();
     }
 }
 
@@ -1372,7 +1372,7 @@ void Graphics::SetRenderTarget(unsigned index, RenderSurface* renderTarget)
             // If multisampled, mark the texture & surface needing resolve
             if (parentTexture->GetMultiSample() > 1 && parentTexture->GetAutoResolve())
             {
-                parentTexture->SetResolveDirty(true);
+                parentTexture->SetResolveDirty();
                 renderTarget->SetResolveDirty(true);
             }
 
@@ -1677,7 +1677,7 @@ ea::vector<int> Graphics::GetMultiSampleLevels() const
     return ret;
 }
 
-unsigned Graphics::GetFormat(CompressedFormat format) const
+TextureFormat Graphics::GetFormat(CompressedFormat format) const
 {
     switch (format)
     {
@@ -1689,7 +1689,7 @@ unsigned Graphics::GetFormat(CompressedFormat format) const
 
     case CF_DXT5: return TEX_FORMAT_BC3_UNORM;
 
-    default: return 0;
+    default: return TEX_FORMAT_UNKNOWN;
     }
 }
 
@@ -1945,13 +1945,13 @@ PipelineStateOutputDesc Graphics::GetCurrentOutputDesc() const
 
     // TODO(diligent): Revisit this mess
     // @{
-    Diligent::ITextureView* depthStencil = (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL)
+    Diligent::ITextureView* depthStencil = (depthStencil_ && depthStencil_->IsDepthStencil())
         ? (ITextureView*)depthStencil_->GetRenderTargetView()
         : impl_->swapChain_->GetDepthBufferDSV();
 
     Diligent::ITextureView* renderTargets[MAX_RENDERTARGETS]{};
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-        renderTargets[i] = (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET)
+        renderTargets[i] = (renderTargets_[i] && renderTargets_[i]->IsRenderTarget())
             ? (ITextureView*)renderTargets_[i]->GetRenderTargetView()
             : nullptr;
     if (!renderTargets_[0]
@@ -1971,112 +1971,112 @@ PipelineStateOutputDesc Graphics::GetCurrentOutputDesc() const
     return result;
 }
 
-unsigned Graphics::GetAlphaFormat()
+TextureFormat Graphics::GetAlphaFormat()
 {
     // TODO(diligent): Revisit
     using namespace Diligent;
     return TEX_FORMAT_R8_UNORM;
 }
 
-unsigned Graphics::GetLuminanceFormat()
+TextureFormat Graphics::GetLuminanceFormat()
 {
     // Note: not same sampling behavior as on D3D9; need to sample the R channel only
     using namespace Diligent;
     return TEX_FORMAT_R8_UNORM;
 }
 
-unsigned Graphics::GetLuminanceAlphaFormat()
+TextureFormat Graphics::GetLuminanceAlphaFormat()
 {
     // Note: not same sampling behavior as on D3D9; need to sample the RG channels
     using namespace Diligent;
     return TEX_FORMAT_RG8_UNORM;
 }
 
-unsigned Graphics::GetRGBFormat()
+TextureFormat Graphics::GetRGBFormat()
 {
     using namespace Diligent;
     return TEX_FORMAT_RGBA8_UNORM;
 }
 
-unsigned Graphics::GetRGBAFormat()
+TextureFormat Graphics::GetRGBAFormat()
 {
     using namespace Diligent;
     return TEX_FORMAT_RGBA8_UNORM;
 }
 
-unsigned Graphics::GetRGBA16Format()
+TextureFormat Graphics::GetRGBA16Format()
 {
     using namespace Diligent;
     return TEX_FORMAT_RGBA16_UNORM;
 }
 
-unsigned Graphics::GetRGBAFloat16Format()
+TextureFormat Graphics::GetRGBAFloat16Format()
 {
     using namespace Diligent;
     return TEX_FORMAT_RGBA16_FLOAT;
 }
 
-unsigned Graphics::GetRGBAFloat32Format()
+TextureFormat Graphics::GetRGBAFloat32Format()
 {
     using namespace Diligent;
     return TEX_FORMAT_RGBA32_FLOAT;
 }
 
-unsigned Graphics::GetRG16Format()
+TextureFormat Graphics::GetRG16Format()
 {
     using namespace Diligent;
     return TEX_FORMAT_RG16_UNORM;
 }
 
-unsigned Graphics::GetRGFloat16Format()
+TextureFormat Graphics::GetRGFloat16Format()
 {
     using namespace Diligent;
     return TEX_FORMAT_RG16_UNORM;
 }
 
-unsigned Graphics::GetRGFloat32Format()
+TextureFormat Graphics::GetRGFloat32Format()
 {
     using namespace Diligent;
     return TEX_FORMAT_RG32_FLOAT;
 }
 
-unsigned Graphics::GetFloat16Format()
+TextureFormat Graphics::GetFloat16Format()
 {
     using namespace Diligent;
     return TEX_FORMAT_R16_FLOAT;
 }
 
-unsigned Graphics::GetFloat32Format()
+TextureFormat Graphics::GetFloat32Format()
 {
     using namespace Diligent;
     return TEX_FORMAT_R32_FLOAT;
 }
 
-unsigned Graphics::GetLinearDepthFormat()
+TextureFormat Graphics::GetLinearDepthFormat()
 {
     using namespace Diligent;
     return TEX_FORMAT_D32_FLOAT;
 }
 
-unsigned Graphics::GetDepthStencilFormat()
+TextureFormat Graphics::GetDepthStencilFormat()
 {
     using namespace Diligent;
     return TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
-unsigned Graphics::GetReadableDepthFormat()
+TextureFormat Graphics::GetReadableDepthFormat()
 {
     using namespace Diligent;
     return TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
-unsigned Graphics::GetReadableDepthStencilFormat()
+TextureFormat Graphics::GetReadableDepthStencilFormat()
 {
     using namespace Diligent;
     return TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
-unsigned Graphics::GetFormat(const ea::string& formatName)
+TextureFormat Graphics::GetFormat(const ea::string& formatName)
 {
     ea::string nameLower = formatName.to_lower();
     nameLower.trim();
@@ -2240,7 +2240,7 @@ void Graphics::PrepareDraw()
     // TODO(diligent): This is ALL terrible. Refactor.
     if (impl_->renderTargetsDirty_)
     {
-        impl_->depthStencilView_ = (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL)
+        impl_->depthStencilView_ = (depthStencil_ && depthStencil_->IsDepthStencil())
             ? (ITextureView*)depthStencil_->GetRenderTargetView()
             : impl_->swapChain_->GetDepthBufferDSV();
         if (pipelineState_ && pipelineState_->GetDesc().depthCompareFunction_ == CMP_ALWAYS
@@ -2249,13 +2249,13 @@ void Graphics::PrepareDraw()
             impl_->depthStencilView_ = nullptr;
 
         // If possible, bind a read-only depth stencil view to allow reading depth in shader
-        if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
-            impl_->depthStencilView_ = (ITextureView*)depthStencil_->GetReadOnlyView();
+        //if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
+        //    impl_->depthStencilView_ = (ITextureView*)depthStencil_->GetReadOnlyView();
 
         //assert(impl_->depthStencilView_);
 
         for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-            impl_->renderTargetViews_[i] = (renderTargets_[i] && renderTargets_[i]->GetUsage() == TEXTURE_RENDERTARGET)
+            impl_->renderTargetViews_[i] = (renderTargets_[i] && renderTargets_[i]->IsRenderTarget())
                 ? (ITextureView*)renderTargets_[i]->GetRenderTargetView()
                 : nullptr;
         // If rendertarget 0 is null and not doing depth-only rendering, render to the backbuffer

@@ -2097,11 +2097,11 @@ void UI::ResizeRootElement()
     {
         if (texture_->GetWidth() != effectiveSize.x_ || texture_->GetHeight() != effectiveSize.y_)
         {
-            unsigned format = texture_->GetFormat();
-            if (format == 0)
+            TextureFormat format = texture_->GetFormat();
+            if (!format)
                 format = Graphics::GetRGBAFormat();
-            if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, TEXTURE_RENDERTARGET,
-                                  texture_->GetMultiSample(), texture_->GetAutoResolve()))
+            const auto flags = texture_->GetParams().flags_ | TextureFlag::BindRenderTarget;
+            if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, flags, texture_->GetMultiSample()))
                 texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
             else
                 URHO3D_LOGERROR("Resizing of UI render target texture failed.");

@@ -12,14 +12,12 @@
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>
 
-#include <EASTL/shared_array.h>
-
 namespace Urho3D
 {
 
 RawBuffer::RawBuffer(Context* context)
     : Object(context)
-    , DeviceObject(context, this)
+    , DeviceObject(context)
 {
 }
 
@@ -39,9 +37,22 @@ void RawBuffer::Restore()
 {
     URHO3D_ASSERT(!IsLocked());
 
-    if (shadowData_)
+    if (size_ == 0)
     {
-        CreateGPU(shadowData_.get());
+        dataLost_ = false;
+    }
+    else if (shadowData_)
+    {
+        const bool isDynamic = flags_.Test(BufferFlag::Dynamic);
+        if (flags_.Test(BufferFlag::Dynamic))
+        {
+            CreateGPU(nullptr);
+            Update(shadowData_.get());
+        }
+        else
+        {
+            CreateGPU(shadowData_.get());
+        }
         dataLost_ = false;
     }
     else
@@ -74,7 +85,7 @@ bool RawBuffer::Create(BufferType type, unsigned size, unsigned stride, BufferFl
     if (!renderDevice_)
     {
         // If there's no render device, buffer must be shadowed
-        flags_ |= BufferFlag::Shadowed;
+        flags_.Set(BufferFlag::Shadowed);
     }
     else
     {
@@ -83,28 +94,28 @@ bool RawBuffer::Create(BufferType type, unsigned size, unsigned stride, BufferFl
         const bool isNextGen = backend != RenderBackend::D3D11 && backend != RenderBackend::OpenGL;
         if (isNextGen && flags_.Test(BufferFlag::Dynamic) && !flags_.Test(BufferFlag::Discard))
         {
-            flags_ |= BufferFlag::Shadowed;
+            flags_.Set(BufferFlag::Shadowed);
             needResolve_ = true;
         }
     }
 
     // Dynamic buffer cannot be bound as UAV
-    if (flags_.Test(BufferFlag::BindUnorderedAccess))
+    if (flags_.Test(BufferFlag::BindUnorderedAccess) && flags_.Test(BufferFlag::Dynamic))
     {
-        URHO3D_ASSERTLOG(!flags_.Test(BufferFlag::Dynamic), "Dynamic buffer cannot be bound as UAV and is demoted");
-        flags_ &= ~BufferFlag::Dynamic;
+        URHO3D_ASSERTLOG(false, "Dynamic buffer cannot be bound as UAV and is demoted");
+        return false;
     }
 
     // Dynamic buffer cannot have initial data
-    if (flags_.Test(BufferFlag::Dynamic))
+    if (flags_.Test(BufferFlag::Dynamic) && data)
     {
-        URHO3D_ASSERTLOG(!data, "Dynamic buffer cannot have initial data");
-        data = nullptr;
+        URHO3D_ASSERTLOG(false, "Dynamic buffer cannot have initial data");
+        return false;
     }
 
     // Dynamic buffers on OpenGL are weird, don't use them
     if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::OpenGL)
-        flags_ &= ~BufferFlag::Dynamic;
+        flags_.Unset(BufferFlag::Dynamic);
 
     // Create CPU buffer
     if (flags_.Test(BufferFlag::Shadowed))
@@ -220,6 +231,8 @@ void RawBuffer::UpdateRange(const void* data, unsigned offset, unsigned size)
 
         lastUpdateFrameIndex_ = renderDevice_->GetFrameIndex();
     }
+
+    ClearDataLost();
 }
 
 void* RawBuffer::Map()
@@ -264,6 +277,8 @@ void RawBuffer::Unmap()
 
     if (renderDevice_)
         lastUpdateFrameIndex_ = renderDevice_->GetFrameIndex();
+
+    ClearDataLost();
 }
 
 void RawBuffer::Resolve()

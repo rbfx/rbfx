@@ -83,7 +83,7 @@ private:
     ShadowMapAllocatorSettings settings_;
     SamplerStateDesc samplerStateDesc_;
     PipelineStateOutputDesc shadowOutputDesc_;
-    unsigned shadowMapFormat_{};
+    TextureFormat shadowMapFormat_{};
     IntVector2 shadowAtlasPageSize_;
     /// @}
 

@@ -34,6 +34,11 @@
 namespace Urho3D
 {
 
+RenderSurface::RenderSurface(Texture* parentTexture)
+    : parentTexture_(parentTexture)
+{
+}
+
 RenderSurface::~RenderSurface()
 {
     // only release if parent texture hasn't expired, in that case
@@ -99,11 +104,6 @@ IntVector2 RenderSurface::GetSize() const
     return { GetWidth(), GetHeight() };
 }
 
-TextureUsage RenderSurface::GetUsage() const
-{
-    return parentTexture_->GetUsage();
-}
-
 int RenderSurface::GetMultiSample() const
 {
     return parentTexture_->GetMultiSample();
@@ -145,6 +145,16 @@ int RenderSurface::GetMultiSample(Graphics* graphics, const RenderSurface* rende
 bool RenderSurface::GetSRGB(Graphics* graphics, const RenderSurface* renderSurface)
 {
     return renderSurface ? renderSurface->GetParentTexture()->GetSRGB() : graphics->GetSRGB();
+}
+
+bool RenderSurface::IsRenderTarget() const
+{
+    return parentTexture_->IsRenderTarget();
+}
+
+bool RenderSurface::IsDepthStencil() const
+{
+    return parentTexture_->IsDepthStencil();
 }
 
 }

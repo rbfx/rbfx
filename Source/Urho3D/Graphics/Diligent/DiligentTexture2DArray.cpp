@@ -43,6 +43,7 @@
 namespace Urho3D
 {
 
+#if 0
 void Texture2DArray::OnDeviceLost()
 {
     // No-op on Direct3D11
@@ -79,6 +80,7 @@ void Texture2DArray::Release()
 
     levelsDirty_ = false;
 }
+#endif
 
 bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int width, int height, const void* data)
 {
@@ -447,6 +449,7 @@ bool Texture2DArray::GetData(unsigned layer, unsigned level, void* dest) const
     }*/
 }
 
+#if 0
 bool Texture2DArray::Create()
 {
     Release();
@@ -551,5 +554,6 @@ bool Texture2DArray::Create()
 
     // return true;
 }
+#endif
 
 } // namespace Urho3D

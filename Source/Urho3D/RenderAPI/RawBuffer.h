@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "Urho3D/Container/ByteVector.h"
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/RenderAPI/DeviceObject.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
@@ -61,7 +60,8 @@ public:
     unsigned char* GetShadowData() { return shadowData_.get(); }
     ea::shared_array<unsigned char> GetShadowDataShared() { return shadowData_; }
     const unsigned char* GetShadowData() const { return shadowData_.get(); }
-    Diligent::IBuffer* GetHandle() const { return const_cast<Diligent::IBuffer*>(handle_.RawPtr()); }
+
+    Diligent::IBuffer* GetHandle() const { return handle_; }
     /// @}
 
 protected:

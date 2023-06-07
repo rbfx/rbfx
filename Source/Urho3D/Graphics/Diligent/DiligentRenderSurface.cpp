@@ -34,14 +34,6 @@
 namespace Urho3D
 {
 
-RenderSurface::RenderSurface(Texture* parentTexture)
-    : // NOLINT(hicpp-member-init)
-    parentTexture_(parentTexture)
-    , renderTargetView_(nullptr)
-    , readOnlyView_(nullptr)
-{
-}
-
 void RenderSurface::Release()
 {
     Graphics* graphics = parentTexture_->GetGraphics();
@@ -58,19 +50,6 @@ void RenderSurface::Release()
     }
 
     renderTargetView_ = nullptr;
-    readOnlyView_ = nullptr;
-}
-
-bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)
-{
-    // Not used on Direct3D
-    return false;
-}
-
-void RenderSurface::OnDeviceLost()
-{
-    renderTargetView_ = nullptr;
-    readOnlyView_ = nullptr;
 }
 
 } // namespace Urho3D

@@ -132,7 +132,7 @@ bool ShadowMapAllocator::BeginShadowMapRendering(const ShadowMapRegion& shadowMa
     Texture2D* shadowMapTexture = shadowMap.texture_;
     AtlasPage& poolElement = pages_[shadowMap.pageIndex_];
 
-    if (shadowMapTexture->GetUsage() == TEXTURE_DEPTHSTENCIL)
+    if (shadowMapTexture->IsDepthStencil())
     {
         // The shadow map is a depth stencil texture
         graphics_->SetDepthStencil(shadowMapTexture);
@@ -188,18 +188,18 @@ ShadowMapRegion ShadowMapAllocator::AtlasPage::AllocateRegion(const IntVector2& 
 void ShadowMapAllocator::AllocatePage()
 {
     const bool isDepthTexture = !settings_.enableVarianceShadowMaps_;
-    const TextureUsage textureUsage = isDepthTexture ? TEXTURE_DEPTHSTENCIL : TEXTURE_RENDERTARGET;
+    const TextureFlags textureFlags = isDepthTexture ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget;
     const int multiSample = isDepthTexture ? 1 : settings_.varianceShadowMapMultiSample_;
 
     auto newShadowMap = MakeShared<Texture2D>(context_);
-    const unsigned dummyColorFormat = graphics_->GetDummyColorFormat();
+    const TextureFormat dummyColorFormat = graphics_->GetDummyColorFormat();
 
 #ifdef URHO3D_DEBUG
     newShadowMap->SetName("ShadowMap");
 #endif
     // Disable mipmaps from the shadow map
     newShadowMap->SetNumLevels(1);
-    newShadowMap->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowMapFormat_, textureUsage, multiSample);
+    newShadowMap->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowMapFormat_, textureFlags, multiSample);
 
 #ifndef GL_ES_VERSION_2_0
     // OpenGL (desktop) and D3D11: shadow compare mode needs to be specifically enabled for the shadow map
@@ -216,7 +216,7 @@ void ShadowMapAllocator::AllocatePage()
             dummyColorTexture_ = MakeShared<Texture2D>(context_);
             dummyColorTexture_->SetNumLevels(1);
             dummyColorTexture_->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_,
-                dummyColorFormat, TEXTURE_RENDERTARGET);
+                dummyColorFormat, TextureFlag::BindRenderTarget);
         }
         // Link the color rendertarget to the shadow map
         newShadowMap->GetRenderSurface()->SetLinkedRenderTarget(dummyColorTexture_->GetRenderSurface());

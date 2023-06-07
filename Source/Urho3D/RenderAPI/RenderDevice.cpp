@@ -8,6 +8,7 @@
 
 #include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/DeviceObject.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
@@ -443,7 +444,7 @@ private:
         m_SwapChainDesc.Height = static_cast<Uint32>(height);
 
         m_SwapChainDesc.ColorBufferFormat =
-            IsSRGB() ? Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB : Diligent::TEX_FORMAT_RGBA8_UNORM;
+            IsSRGB() ? TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB : TextureFormat::TEX_FORMAT_RGBA8_UNORM;
         m_SwapChainDesc.DepthBufferFormat = GetDepthStencilFormat();
     }
 
@@ -483,7 +484,7 @@ private:
 
     Diligent::TEXTURE_FORMAT GetDepthStencilFormat() const
     {
-        static const Diligent::TEXTURE_FORMAT defaultFormat = Diligent::TEX_FORMAT_D24_UNORM_S8_UINT;
+        static const Diligent::TEXTURE_FORMAT defaultFormat = TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
 
         int effectiveDepthBits{};
         if (SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &effectiveDepthBits) != 0)
@@ -493,15 +494,15 @@ private:
             return defaultFormat;
 
         if (effectiveDepthBits == 16 && effectiveStencilBits == 0)
-            return Diligent::TEX_FORMAT_D16_UNORM;
+            return TextureFormat::TEX_FORMAT_D16_UNORM;
         else if (effectiveDepthBits == 24 && effectiveStencilBits == 0)
-            return Diligent::TEX_FORMAT_D24_UNORM_S8_UINT;
+            return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
         else if (effectiveDepthBits == 24 && effectiveStencilBits == 8)
-            return Diligent::TEX_FORMAT_D24_UNORM_S8_UINT;
+            return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
         else if (effectiveDepthBits == 32 && effectiveStencilBits == 0)
-            return Diligent::TEX_FORMAT_D32_FLOAT;
+            return TextureFormat::TEX_FORMAT_D32_FLOAT;
         else if (effectiveDepthBits == 32 && effectiveStencilBits == 8)
-            return Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+            return TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
         else
             return defaultFormat;
     }
@@ -557,7 +558,7 @@ RenderDevice::RenderDevice(
 
 RenderDevice::~RenderDevice()
 {
-    OnDeviceObjectEvent(this, DeviceObjectEvent::Destroy);
+    SendDeviceObjectEvent(DeviceObjectEvent::Destroy);
 }
 
 void RenderDevice::InitializeWindow()
@@ -630,8 +631,8 @@ void RenderDevice::InitializeDevice()
     Diligent::NativeWindow nativeWindow = GetNativeWindow(window_.get(), metalView_.get());
 
     const Diligent::TEXTURE_FORMAT colorFormats[2][2] = {
-        {Diligent::TEX_FORMAT_RGBA8_UNORM, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB},
-        {Diligent::TEX_FORMAT_BGRA8_UNORM, Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_BGRA8_UNORM, TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB},
     };
 
     // TODO(diligent): Why is that?
@@ -639,7 +640,7 @@ void RenderDevice::InitializeDevice()
 
     Diligent::SwapChainDesc swapChainDesc{};
     swapChainDesc.ColorBufferFormat = colorFormats[isBGRA][windowSettings_.sRGB_];
-    swapChainDesc.DepthBufferFormat = Diligent::TEX_FORMAT_D24_UNORM_S8_UINT;
+    swapChainDesc.DepthBufferFormat = TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
 #if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
     const IntVector2 swapChainSize = CalculateSwapChainSize(window_.get());
     swapChainDesc.Width = swapChainSize.x_;
@@ -763,7 +764,7 @@ Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapC
     Diligent::SwapChainDesc swapChainDesc{};
     swapChainDesc.ColorBufferFormat = swapChain_->GetDesc().ColorBufferFormat;
     swapChainDesc.DepthBufferFormat =
-        hasDepthBuffer ? swapChain_->GetDesc().DepthBufferFormat : Diligent::TEX_FORMAT_UNKNOWN;
+        hasDepthBuffer ? swapChain_->GetDesc().DepthBufferFormat : TextureFormat::TEX_FORMAT_UNKNOWN;
     Diligent::FullScreenModeDesc fullscreenDesc{};
 
     switch (deviceSettings_.backend_)
@@ -970,7 +971,17 @@ bool RenderDevice::Restore()
 bool RenderDevice::EmulateLossAndRestore()
 {
     if (GetPlatform() != PlatformId::Android)
+    {
+        SendDeviceObjectEvent(DeviceObjectEvent::Invalidate);
+        OnDeviceLost(this);
+
+        URHO3D_LOGINFO("Emulated context lost");
+
+        SendDeviceObjectEvent(DeviceObjectEvent::Restore);
+        OnDeviceRestored(this);
+
         return true;
+    }
 
     // TODO(diligent): Support Vulkan on Android
     if (deviceSettings_.backend_ != RenderBackend::OpenGL)
@@ -985,7 +996,7 @@ void RenderDevice::InvalidateGLESContext()
 {
 #if URHO3D_PLATFORM_ANDROID && GLES_SUPPORTED
     URHO3D_LOGINFO("OpenGL context is lost");
-    OnDeviceObjectEvent(this, DeviceObjectEvent::Invalidate);
+    SendDeviceObjectEvent(DeviceObjectEvent::Invalidate);
     OnDeviceLost(this);
     deviceContextGL_->InvalidateState();
     renderDeviceGLES_->Invalidate();
@@ -1006,7 +1017,7 @@ bool RenderDevice::RestoreGLESContext()
     }
 
     renderDeviceGLES_->Resume(nullptr);
-    OnDeviceObjectEvent(this, DeviceObjectEvent::Restore);
+    SendDeviceObjectEvent(DeviceObjectEvent::Restore);
     OnDeviceRestored(this);
     URHO3D_LOGINFO("OpenGL context is restored");
     return true;
@@ -1112,6 +1123,30 @@ FullscreenMode RenderDevice::GetClosestFullscreenMode(const FullscreenModeVector
 {
     const unsigned index = GetClosestFullscreenModeIndex(modes, desiredMode);
     return modes[index];
+}
+
+void RenderDevice::AddDeviceObject(DeviceObject* object)
+{
+    MutexLock lock(deviceObjectsMutex_);
+    deviceObjects_.emplace(object);
+}
+
+void RenderDevice::RemoveDeviceObject(DeviceObject* object)
+{
+    MutexLock lock(deviceObjectsMutex_);
+    deviceObjects_.erase(object);
+}
+
+void RenderDevice::SendDeviceObjectEvent(DeviceObjectEvent event)
+{
+    MutexLock lock(deviceObjectsMutex_);
+    for (DeviceObject* object : deviceObjects_)
+        object->ProcessDeviceObjectEvent(event);
+}
+
+bool RenderDevice::IsTextureFormatSupported(TextureFormat format) const
+{
+    return renderDevice_->GetTextureFormatInfo(format).Supported;
 }
 
 } // namespace Urho3D

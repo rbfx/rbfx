@@ -43,146 +43,9 @@
 namespace Urho3D
 {
 
-void TextureCube::OnDeviceLost()
-{
-    object_ = nullptr;
-    shaderResourceView_ = nullptr;
-    sampler_ = nullptr;
-    resolveTexture_ = nullptr;
-
-    for (auto& renderSurface : renderSurfaces_)
-    {
-        if (renderSurface)
-            renderSurface->OnDeviceLost();
-    }
-}
-
-void TextureCube::OnDeviceReset()
-{
-    if (!object_ || dataPending_)
-    {
-        // If has a resource file, reload through the resource cache. Otherwise just recreate.
-        auto* cache = GetSubsystem<ResourceCache>();
-        if (cache->Exists(GetName()))
-            dataLost_ = !cache->ReloadResource(this);
-
-        if (!object_)
-        {
-            Create();
-            dataLost_ = true;
-        }
-    }
-
-    dataPending_ = false;
-}
-
-void TextureCube::Release()
-{
-    if (graphics_)
-    {
-        VariantMap& eventData = GetEventDataMap();
-        eventData[GPUResourceReleased::P_OBJECT] = this;
-        SendEvent(E_GPURESOURCERELEASED, eventData);
-
-        for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-        {
-            if (graphics_->GetTexture(i) == this)
-                graphics_->SetTexture(i, nullptr);
-        }
-    }
-
-    for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-    {
-        if (renderSurfaces_[i])
-            renderSurfaces_[i]->Release();
-    }
-
-    sampler_ = nullptr;
-    resolveTexture_ = nullptr;
-    shaderResourceView_ = nullptr;
-    object_ = nullptr;
-}
-
 bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int width, int height, const void* data)
 {
-    using namespace Diligent;
-    URHO3D_PROFILE("SetTextureData");
-
-    if (!object_)
-    {
-        URHO3D_LOGERROR("No texture created, can not set data");
-        return false;
-    }
-
-    if (!data)
-    {
-        URHO3D_LOGERROR("Null source for setting data");
-        return false;
-    }
-
-    if (level >= levels_)
-    {
-        URHO3D_LOGERROR("Illegal mip level for setting data");
-        return false;
-    }
-
-    int levelWidth = GetLevelWidth(level);
-    int levelHeight = GetLevelHeight(level);
-    if (x < 0 || x + width > levelWidth || y < 0 || y + height > levelHeight || width <= 0 || height <= 0)
-    {
-        URHO3D_LOGERROR("Illegal dimensions for setting data");
-        return false;
-    }
-
-    // If compressed, align the update region on a block
-    if (IsCompressed())
-    {
-        x &= ~3;
-        y &= ~3;
-        width += 3;
-        width &= 0xfffffffc;
-        height += 3;
-        height &= 0xfffffffc;
-    }
-
-    unsigned char* src = (unsigned char*)data;
-    unsigned rowSize = GetRowDataSize(width);
-    unsigned rowStart = GetRowDataSize(x);
-    unsigned subResource = level + (face * levels_);
-
-    Box destBox;
-    destBox.MinX = x;
-    destBox.MaxX = x + width;
-    destBox.MinY = y;
-    destBox.MaxY = y + height;
-    destBox.MinZ = 0;
-    destBox.MaxZ = 1;
-    if (usage_ == TEXTURE_DYNAMIC)
-    {
-        if (IsCompressed())
-        {
-            height = (height + 3) >> 2;
-            y >>= 2;
-        }
-
-        MappedTextureSubresource mappedData;
-        graphics_->GetImpl()->GetDeviceContext()->MapTextureSubresource(
-            object_.Cast<ITexture>(IID_Texture), subResource, 0, MAP_WRITE, MAP_FLAG_DISCARD, &destBox, mappedData);
-        for (int row = 0; row < height; ++row)
-            memcpy((unsigned char*)mappedData.pData + (row + y) * mappedData.Stride + rowStart, src + row * rowSize,
-                rowSize);
-        graphics_->GetImpl()->GetDeviceContext()->UnmapTextureSubresource(
-            object_.Cast<ITexture>(IID_Texture), subResource, 0);
-    }
-    else
-    {
-        TextureSubResData resourceData;
-        resourceData.pData = data;
-        resourceData.Stride = rowSize;
-        graphics_->GetImpl()->GetDeviceContext()->UpdateTexture(object_.Cast<ITexture>(IID_Texture), level, face,
-            destBox, resourceData, RESOURCE_STATE_TRANSITION_MODE_NONE, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    }
-
+    Update(level, {x, y, 0}, {width, height, 1}, face, data);
     return true;
 }
 
@@ -227,7 +90,7 @@ bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
         unsigned char* levelData = image->GetData();
         int levelWidth = image->GetWidth();
         int levelHeight = image->GetHeight();
-        unsigned format = 0;
+        TextureFormat format = TextureFormat::TEX_FORMAT_UNKNOWN;
 
         if (levelWidth != levelHeight)
         {
@@ -265,24 +128,24 @@ bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
         }
         else
         {
-            if (!object_)
+            if (!GetHandles().texture_)
             {
                 URHO3D_LOGERROR("Cube texture face 0 must be loaded first");
                 return false;
             }
-            if (levelWidth != width_ || format != format_)
+            if (levelWidth != GetWidth() || format != GetFormat())
             {
                 URHO3D_LOGERROR("Cube texture face does not match size or format of face 0");
                 return false;
             }
         }
 
-        for (unsigned i = 0; i < levels_; ++i)
+        for (unsigned i = 0; i < GetLevels(); ++i)
         {
             SetData(face, i, 0, 0, levelWidth, levelHeight, levelData);
             memoryUse += levelWidth * levelHeight * components;
 
-            if (i < levels_ - 1)
+            if (i < GetLevels() - 1)
             {
                 mipImage = image->GetNextLevel();
                 image = mipImage;
@@ -297,7 +160,7 @@ bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
         int width = image->GetWidth();
         int height = image->GetHeight();
         unsigned levels = image->GetNumCompressedLevels();
-        unsigned format = graphics_->GetFormat(image->GetCompressedFormat());
+        TextureFormat format = graphics_->GetFormat(image->GetCompressedFormat());
 
         Diligent::IRenderDevice* device = graphics_->GetImpl()->GetDevice();
         const bool needDecompress = !device->GetTextureFormatInfo(static_cast<TextureFormat>(format)).Supported;
@@ -326,19 +189,19 @@ bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
         }
         else
         {
-            if (!object_)
+            if (!GetHandles().texture_)
             {
                 URHO3D_LOGERROR("Cube texture face 0 must be loaded first");
                 return false;
             }
-            if (width != width_ || format != format_)
+            if (width != GetWidth() || format != GetFormat())
             {
                 URHO3D_LOGERROR("Cube texture face does not match size or format of face 0");
                 return false;
             }
         }
 
-        for (unsigned i = 0; i < levels_ && i < levels - mipsToSkip; ++i)
+        for (unsigned i = 0; i < GetLevels() && i < levels - mipsToSkip; ++i)
         {
             CompressedLevel level = image->GetCompressedLevel(i + mipsToSkip);
             if (!needDecompress)
@@ -357,10 +220,8 @@ bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
         }
     }
 
-    faceMemoryUse_[face] = memoryUse;
     unsigned totalMemoryUse = sizeof(TextureCube);
-    for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-        totalMemoryUse += faceMemoryUse_[i];
+    totalMemoryUse += MAX_CUBEMAP_FACES * memoryUse;
     SetMemoryUse(totalMemoryUse);
 
     return true;
@@ -456,6 +317,7 @@ bool TextureCube::GetData(CubeMapFace face, unsigned level, void* dest) const
      }*/
 }
 
+#if 0
 bool TextureCube::Create()
 {
     using namespace Diligent;
@@ -564,5 +426,6 @@ bool TextureCube::Create()
 
     return true;
 }
+#endif
 
 } // namespace Urho3D

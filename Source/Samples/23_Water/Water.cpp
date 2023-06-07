@@ -219,7 +219,7 @@ void Water::SetupViewport()
     // texture unit of the water material
     int texSize = 1024;
     SharedPtr<Texture2D> renderTexture(new Texture2D(context_));
-    renderTexture->SetSize(texSize, texSize, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+    renderTexture->SetSize(texSize, texSize, Graphics::GetRGBFormat(), TextureFlag::BindRenderTarget);
     renderTexture->SetFilterMode(FILTER_BILINEAR);
     RenderSurface* surface = renderTexture->GetRenderSurface();
     SharedPtr<Viewport> rttViewport(new Viewport(context_, scene_, reflectionCamera));

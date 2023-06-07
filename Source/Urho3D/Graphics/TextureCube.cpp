@@ -58,22 +58,14 @@ static SharedPtr<Image> GetTileImage(Image* src, int tileX, int tileY, int tileW
         src->GetSubimage(IntRect(tileX * tileWidth, tileY * tileHeight, (tileX + 1) * tileWidth, (tileY + 1) * tileHeight)));
 }
 
-TextureCube::TextureCube(Context* context) :
-    Texture(context)
+TextureCube::TextureCube(Context* context)
+    : Texture(context)
 {
-#ifdef URHO3D_OPENGL
-    target_ = GL_TEXTURE_CUBE_MAP;
-#endif
-
-    // Default to clamp mode addressing
-    samplerStateDesc_.addressMode_[TextureCoordinate::U] = ADDRESS_CLAMP;
-    samplerStateDesc_.addressMode_[TextureCoordinate::V] = ADDRESS_CLAMP;
-    samplerStateDesc_.addressMode_[TextureCoordinate::W] = ADDRESS_CLAMP;
+    SetSamplerStateDesc(SamplerStateDesc::Bilinear(ADDRESS_CLAMP));
 }
 
 TextureCube::~TextureCube()
 {
-    Release();
 }
 
 void TextureCube::RegisterObject(Context* context)
@@ -88,14 +80,6 @@ bool TextureCube::BeginLoad(Deserializer& source)
     // In headless mode, do not actually load the texture, just return success
     if (!graphics_)
         return true;
-
-    // If device is lost, retry later
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture load while device is lost");
-        dataPending_ = true;
-        return true;
-    }
 
     cache->ResetDependencies(this);
 
@@ -134,66 +118,22 @@ bool TextureCube::EndLoad()
     return true;
 }
 
-bool TextureCube::SetSize(int size, unsigned format, TextureUsage usage, int multiSample)
+bool TextureCube::SetSize(int size, TextureFormat format, TextureFlags flags, int multiSample)
 {
-    if (size <= 0)
-    {
-        URHO3D_LOGERROR("Zero or negative cube texture size");
-        return false;
-    }
-    if (usage == TEXTURE_DEPTHSTENCIL)
-    {
-        URHO3D_LOGERROR("Depth-stencil usage not supported for cube textures");
-        return false;
-    }
+    RawTextureParams params;
+    params.type_ = TextureType::TextureCube;
+    params.format_ = format;
+    params.size_ = {size, size, 1};
+    params.numLevels_ = requestedLevels_;
+    params.flags_ = flags;
+    params.multiSample_ = multiSample;
 
-    multiSample = Clamp(multiSample, 1, 16);
-    if (multiSample > 1 && usage < TEXTURE_RENDERTARGET)
-    {
-        URHO3D_LOGERROR("Multisampling is only supported for rendertarget cube textures");
-        return false;
-    }
-
-    // Delete the old rendersurfaces if any
-    for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-    {
-        renderSurfaces_[i].Reset();
-        faceMemoryUse_[i] = 0;
-    }
-
-    usage_ = usage;
-
-    if (usage == TEXTURE_RENDERTARGET)
-    {
-        for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-        {
-            renderSurfaces_[i] = new RenderSurface(this);
-#ifdef URHO3D_OPENGL
-            renderSurfaces_[i]->target_ = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
-#endif
-        }
-
-        // Nearest filtering by default
-        samplerStateDesc_.filterMode_ = FILTER_NEAREST;
-    }
-
-    if (usage == TEXTURE_RENDERTARGET)
-        SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(TextureCube, HandleRenderSurfaceUpdate));
-    else
-        UnsubscribeFromEvent(E_RENDERSURFACEUPDATE);
-
-    width_ = size;
-    height_ = size;
-    depth_ = 1;
-    format_ = format;
-    multiSample_ = multiSample;
-    autoResolve_ = multiSample > 1;
-
-    return Create();
+    return Create(params);
 }
 
 SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
 {
+#if 0
     if (format_ != Graphics::GetRGBAFormat() && format_ != Graphics::GetRGBFormat())
     {
         URHO3D_LOGERROR("Unsupported texture format, can not convert to Image");
@@ -210,21 +150,8 @@ SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
 
     GetData(face, 0, rawImage->GetData());
     return SharedPtr<Image>(rawImage);
-}
-
-void TextureCube::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)
-{
-    auto* renderer = GetSubsystem<Renderer>();
-
-    for (auto& renderSurface : renderSurfaces_)
-    {
-        if (renderSurface && (renderSurface->GetUpdateMode() == SURFACE_UPDATEALWAYS || renderSurface->IsUpdateQueued()))
-        {
-            if (renderer)
-                renderer->QueueRenderSurface(renderSurface);
-            renderSurface->ResetUpdateQueued();
-        }
-    }
+#endif
+    return nullptr;
 }
 
 }

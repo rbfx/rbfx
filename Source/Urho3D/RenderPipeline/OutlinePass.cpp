@@ -60,7 +60,7 @@ OutlineScenePass::OutlineScenePass(RenderPipelineInterface* renderPipeline,
         [](const ea::string& pass) { return Technique::GetPassIndex(pass); });
 
     const PipelineStateOutputDesc outputDesc{
-        Diligent::TEX_FORMAT_UNKNOWN, 1, {static_cast<TextureFormat>(outlineTextureFormat)}};
+        TextureFormat::TEX_FORMAT_UNKNOWN, 1, {static_cast<TextureFormat>(outlineTextureFormat)}};
     SetDeferredOutputDesc(outputDesc);
 }
 

@@ -76,9 +76,9 @@ private:
     unsigned settingsPipelineStateHash_{};
     bool settingsDirty_{};
 
-    TextureFormat albedoFormat_{Diligent::TEX_FORMAT_RGBA8_UNORM};
-    TextureFormat normalFormat_{Diligent::TEX_FORMAT_RGBA8_UNORM};
-    TextureFormat specularFormat_{Diligent::TEX_FORMAT_RGBA8_UNORM};
+    TextureFormat albedoFormat_{TextureFormat::TEX_FORMAT_RGBA8_UNORM};
+    TextureFormat normalFormat_{TextureFormat::TEX_FORMAT_RGBA8_UNORM};
+    TextureFormat specularFormat_{TextureFormat::TEX_FORMAT_RGBA8_UNORM};
 
     /// Previous pipeline state hash.
     unsigned oldPipelineStateHash_{};

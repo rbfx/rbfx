@@ -104,7 +104,8 @@ public:
     explicit CubemapRenderer(Scene* scene);
     ~CubemapRenderer() override;
 
-    static void DefineTexture(TextureCube* texture, const CubemapRenderingSettings& settings);
+    static void DefineTexture(
+        TextureCube* texture, const CubemapRenderingSettings& settings, TextureFlags flags = TextureFlag::None);
 
     CubemapUpdateResult Update(const CubemapUpdateParameters& params);
 

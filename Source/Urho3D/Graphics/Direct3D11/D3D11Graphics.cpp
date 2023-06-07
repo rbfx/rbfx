@@ -2417,7 +2417,7 @@ void Graphics::PrepareDraw()
     if (impl_->renderTargetsDirty_)
     {
         impl_->depthStencilView_ =
-            (depthStencil_ && depthStencil_->GetUsage() == TEXTURE_DEPTHSTENCIL) ?
+            (depthStencil_ && depthStencil_->IsDepthStencil()) ?
                 (ID3D11DepthStencilView*)depthStencil_->GetRenderTargetView() : impl_->defaultDepthStencilView_;
 
         // If possible, bind a read-only depth stencil view to allow reading depth in shader

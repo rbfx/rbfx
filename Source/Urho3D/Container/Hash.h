@@ -142,4 +142,20 @@ struct hash<unordered_map<Key, Value, Hash, Predicate, Allocator, bCacheHashCode
     }
 };
 
-}
+template <class... T> struct hash<tuple<T...>>
+{
+    size_t operator()(const tuple<T...>& value) const
+    {
+        size_t result = 0;
+        const auto calculate = [&result](const auto&... args)
+        {
+            const unsigned hashes[] = {Urho3D::MakeHash(args)...};
+            for (const unsigned hash : hashes)
+                Urho3D::CombineHash(result, hash);
+        };
+        ea::apply(calculate, value);
+        return result;
+    }
+};
+
+} // namespace eastl

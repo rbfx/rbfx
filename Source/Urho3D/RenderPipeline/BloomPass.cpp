@@ -61,7 +61,7 @@ void BloomPass::InitializeTextures()
 
     for (unsigned i = 0; i < settings_.numIterations_; ++i)
     {
-        const unsigned format = settings_.hdr_ ? Graphics::GetRGBAFloat16Format() : Graphics::GetRGBFormat();
+        const TextureFormat format = settings_.hdr_ ? Graphics::GetRGBAFloat16Format() : Graphics::GetRGBFormat();
         const RenderBufferParams params{ format, 1, RenderBufferFlag::BilinearFiltering };
         // Start scale is 1
         // It's okay to do it unchecked because render buffers are never smaller than 1x1

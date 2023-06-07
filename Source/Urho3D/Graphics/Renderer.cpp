@@ -1047,8 +1047,8 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     }
 
     // Find format and usage of the shadow map
-    unsigned shadowMapFormat = 0;
-    TextureUsage shadowMapUsage = TEXTURE_DEPTHSTENCIL;
+    TextureFormat shadowMapFormat = TextureFormat::TEX_FORMAT_UNKNOWN;
+    TextureFlags shadowMapFlags = TextureFlag::BindDepthStencil;
     int multiSample = 1;
 
     switch (shadowQuality_)
@@ -1066,7 +1066,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     case SHADOWQUALITY_VSM:
     case SHADOWQUALITY_BLUR_VSM:
         shadowMapFormat = graphics_->GetRGFloat32Format();
-        shadowMapUsage = TEXTURE_RENDERTARGET;
+        shadowMapFlags = TextureFlag::BindRenderTarget;
         multiSample = vsmMultiSample_;
         break;
     }
@@ -1076,14 +1076,14 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
 
     SharedPtr<Texture2D> newShadowMap(MakeShared<Texture2D>(context_));
     int retries = 3;
-    unsigned dummyColorFormat = graphics_->GetDummyColorFormat();
+    TextureFormat dummyColorFormat = graphics_->GetDummyColorFormat();
 
     // Disable mipmaps from the shadow map
     newShadowMap->SetNumLevels(1);
 
     while (retries)
     {
-        if (!newShadowMap->SetSize(width, height, shadowMapFormat, shadowMapUsage, multiSample))
+        if (!newShadowMap->SetSize(width, height, shadowMapFormat, shadowMapFlags, multiSample))
         {
             width >>= 1;
             height >>= 1;
@@ -1094,18 +1094,18 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
 #ifndef GL_ES_VERSION_2_0
             // OpenGL (desktop) and D3D11: shadow compare mode needs to be specifically enabled for the shadow map
             newShadowMap->SetFilterMode(FILTER_BILINEAR);
-            newShadowMap->SetShadowCompare(shadowMapUsage == TEXTURE_DEPTHSTENCIL);
+            newShadowMap->SetShadowCompare(shadowMapFlags == TextureFlag::BindDepthStencil);
 #endif
             // Create dummy color texture for the shadow map if necessary: on OpenGL when working around an OS X +
             // Intel driver bug
-            if (shadowMapUsage == TEXTURE_DEPTHSTENCIL && dummyColorFormat)
+            if (shadowMapFlags == TextureFlag::BindDepthStencil && dummyColorFormat)
             {
                 // If no dummy color rendertarget for this size exists yet, create one now
                 if (!colorShadowMaps_.contains(searchKey))
                 {
                     colorShadowMaps_[searchKey] = MakeShared<Texture2D>(context_);
                     colorShadowMaps_[searchKey]->SetNumLevels(1);
-                    colorShadowMaps_[searchKey]->SetSize(width, height, dummyColorFormat, TEXTURE_RENDERTARGET);
+                    colorShadowMaps_[searchKey]->SetSize(width, height, dummyColorFormat, TextureFlag::BindRenderTarget);
                 }
                 // Link the color rendertarget to the shadow map
                 newShadowMap->GetRenderSurface()->SetLinkedRenderTarget(colorShadowMaps_[searchKey]->GetRenderSurface());
@@ -1125,7 +1125,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     return newShadowMap;
 }
 
-Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int multiSample, bool autoResolve, bool cubemap, bool filtered, bool srgb,
+Texture* Renderer::GetScreenBuffer(int width, int height, TextureFormat format, int multiSample, bool autoResolve, bool cubemap, bool filtered, bool srgb,
     unsigned persistentKey)
 {
     bool depthStencil = (format == Graphics::GetDepthStencilFormat()) || (format == Graphics::GetReadableDepthFormat()) || format == Graphics::GetReadableDepthStencilFormat();
@@ -1175,7 +1175,10 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
             SharedPtr<Texture2D> newTex2D(MakeShared<Texture2D>(context_));
             /// \todo Mipmaps disabled for now. Allow to request mipmapped buffer?
             newTex2D->SetNumLevels(1);
-            newTex2D->SetSize(width, height, format, depthStencil ? TEXTURE_DEPTHSTENCIL : TEXTURE_RENDERTARGET, multiSample, autoResolve);
+            TextureFlags flags = depthStencil ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget;
+            if (!autoResolve)
+                flags |= TextureFlag::NoMultiSampledAutoResolve;
+            newTex2D->SetSize(width, height, format, depthStencil ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget, multiSample);
 
 #ifdef URHO3D_OPENGL
             // OpenGL hack: clear persistent floating point screen buffers to ensure the initial contents aren't illegal (NaN)?
@@ -1197,7 +1200,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
         {
             SharedPtr<TextureCube> newTexCube(MakeShared<TextureCube>(context_));
             newTexCube->SetNumLevels(1);
-            newTexCube->SetSize(width, format, TEXTURE_RENDERTARGET, multiSample);
+            newTexCube->SetSize(width, format, TextureFlag::BindRenderTarget, multiSample);
 
             newBuffer = newTexCube;
         }

@@ -60,7 +60,7 @@ class VertexBuffer;
 #define CD_UNIT const CD_UNIT_TYPE&
 #else
 #define CD_UNIT_TYPE unsigned
-#define CD_UNIT CD_UNIT_TYPE 
+#define CD_UNIT CD_UNIT_TYPE
 #endif
 
 //  On devices created at a Feature Level D3D_FEATURE_LEVEL_11_0, the maximum Compute Shader Unordered Access View slot is 7.
@@ -113,39 +113,6 @@ private:
     /// Internal implementation of buffer object setting.
     bool SetWritableBuffer(Object*, CD_UNIT slot);
 
-#if defined(URHO3D_D3D11)
-    /// Record for a mip+face UAV combination.
-    struct UAVBinding {
-        ID3D11UnorderedAccessView* uav_;
-        unsigned face_;
-        unsigned mipLevel_;
-        bool isBuffer_;
-    };
-
-    /// As needed UAVs are constructed for textures and those UAVs are saved here.
-    eastl::map<WeakPtr<Object>, eastl::vector<UAVBinding> > constructedUAVs_;
-    /// As needed SRVs are constructed for buffers and those are saved here.
-    eastl::map<WeakPtr<Object>, ID3D11UnorderedAccessView*> constructedBufferUAVs_;
-
-    /// List of sampler bindings.
-    ID3D11SamplerState* samplerBindings_[MAX_TEXTURE_UNITS];
-    /// List of SRV bindings (textures or buffers).
-    ID3D11ShaderResourceView* shaderResourceViews_[MAX_TEXTURE_UNITS];
-    /// Constant buffer bindings.
-    ID3D11Buffer* constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
-    /// UAV targets for writing.
-    ID3D11UnorderedAccessView* uavs_[MAX_COMPUTE_WRITE_TARGETS];
-#elif defined(URHO3D_DILIGENT)
-    /// Record for a mip+face UAV combination.
-    struct UAVBinding {
-        Diligent::RefCntAutoPtr<Diligent::IDeviceObject> uav_;
-        unsigned face_;
-        unsigned mipLevel_;
-        bool isBuffer_;
-    };
-
-    /// As needed UAVs are constructed for textures and those UAVs are saved here.
-    eastl::map<WeakPtr<Object>, eastl::vector<UAVBinding>> constructedUAVs_;
     /// As needed SRVs are constructed for buffers and those are saved here.
     eastl::map<WeakPtr<Object>, Diligent::RefCntAutoPtr<Diligent::IDeviceObject>> constructedBufferUAVs_;
 
@@ -170,50 +137,13 @@ private:
     WeakPtr<PipelineStateCache> psoCache_;
 
     bool resourcesDirty_{};
-   
-#elif defined(URHO3D_OPENGL)
-    /// OpenGL requires some additional information in order to make the bind since a UAV-object isn't a thing.
-    struct WriteTexBinding
-    {
-        SharedPtr<Texture> object_;
-        int mipLevel_;
-        int layer_;
-        int layerCount_;
-    };
 
-    /// Structure for SSBO record list.
-    struct WriteBufferBinding
-    {
-        unsigned object_ = { 0 };
-        bool dirty_ = { false };
-    };
-
-    /// Table of bound constant buffers, uses the lower range of the parameter groups.
-    ConstantBufferRange constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
-    /// Table of write-texture targets.
-    WriteTexBinding uavs_[MAX_COMPUTE_WRITE_TARGETS];
-    /// Table of write-buffer targets (SSBO).
-    WriteBufferBinding ssbos_[MAX_COMPUTE_WRITE_TARGETS];
-
-#endif
     void HandleEngineInitialization(StringHash eventType, VariantMap& eventData);
     bool BuildPipeline();
     /// Handle to the graphics object for device specific access.
     Graphics* graphics_;
     /// Active compute shader that will be invoked with dispatch.
     WeakPtr<ShaderVariation> computeShader_;
-#ifndef URHO3D_DILIGENT
-    /// Tags samplers as dirty.
-    bool samplersDirty_;
-    /// Tags constant buffers as dirty.
-    bool constantBuffersDirty_;
-    /// Tags textures as dirty.
-    bool texturesDirty_;
-    /// Tags UAVs as dirty.
-    bool uavsDirty_;
-    /// Tag for the availability of compute, determined at startup.
-    bool isComputeSupported_;
-#endif
     /// Tag the shader program as dirty.
     bool programDirty_;
 };

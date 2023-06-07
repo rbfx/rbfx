@@ -243,15 +243,6 @@ static const char* textureFilterModeNames[] = {
     nullptr,
 };
 
-/// Texture usage types.
-enum TextureUsage
-{
-    TEXTURE_STATIC = 0,
-    TEXTURE_DYNAMIC,
-    TEXTURE_RENDERTARGET,
-    TEXTURE_DEPTHSTENCIL
-};
-
 /// Cube map faces.
 enum CubeMapFace
 {

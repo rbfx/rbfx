@@ -57,7 +57,7 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
 
     const Vector2 size = Vector2::ONE * textureSize;
     const RenderBufferFlags flags = RenderBufferFlag::FixedTextureSize | RenderBufferFlag::Persistent;
-    const unsigned colorFormat = Graphics::GetRGBAFloat32Format();
+    const TextureFormat colorFormat = Graphics::GetRGBAFloat32Format();
     depthBuffer_ = renderBufferManager->CreateColorBuffer({ Graphics::GetReadableDepthFormat(), 1, flags }, size);
     positionBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     smoothPositionBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);

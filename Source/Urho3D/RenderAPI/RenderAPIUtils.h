@@ -25,4 +25,7 @@ URHO3D_API ea::optional<VertexShaderAttribute> ParseVertexAttribute(ea::string_v
 URHO3D_API const ea::string& ToShaderInputName(VertexElementSemantic semantic);
 URHO3D_API Diligent::SHADER_TYPE ToInternalShaderType(ShaderType type);
 
+URHO3D_API unsigned GetMipLevelCount(const IntVector3& size);
+URHO3D_API IntVector3 GetMipLevelSize(const IntVector3& size, unsigned level);
+
 } // namespace Urho3D

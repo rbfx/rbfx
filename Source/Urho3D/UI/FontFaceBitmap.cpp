@@ -344,7 +344,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const ea::string& ind
     return xml->Save(dest, indentation);
 }
 
-unsigned FontFaceBitmap::ConvertFormatToNumComponents(unsigned format)
+unsigned FontFaceBitmap::ConvertFormatToNumComponents(TextureFormat format)
 {
     if (format == Graphics::GetRGBAFormat())
         return 4;

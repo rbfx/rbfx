@@ -77,8 +77,8 @@ void View3D::OnResize(const IntVector2& newSize, const IntVector2& delta)
 
     if (width > 0 && height > 0)
     {
-        renderTexture_->SetSize(width, height, rttFormat_, TEXTURE_RENDERTARGET);
-        depthTexture_->SetSize(width, height, Graphics::GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL);
+        renderTexture_->SetSize(width, height, rttFormat_, TextureFlag::BindRenderTarget);
+        depthTexture_->SetSize(width, height, Graphics::GetDepthStencilFormat(), TextureFlag::BindDepthStencil);
         RenderSurface* surface = renderTexture_->GetRenderSurface();
         surface->SetViewport(0, viewport_);
         surface->SetUpdateMode(SURFACE_MANUALUPDATE);
@@ -105,7 +105,7 @@ void View3D::SetView(Scene* scene, Camera* camera, bool ownScene)
     QueueUpdate();
 }
 
-void View3D::SetFormat(unsigned format)
+void View3D::SetFormat(TextureFormat format)
 {
     if (format != rttFormat_)
     {

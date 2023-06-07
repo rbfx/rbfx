@@ -67,7 +67,7 @@ int ToImGui(MouseButton button)
 
 ImTextureID ToImTextureID(Texture2D* texture)
 {
-    return texture->GetShaderResourceView().RawPtr();
+    return texture->GetHandles().srv_;
 }
 
 }

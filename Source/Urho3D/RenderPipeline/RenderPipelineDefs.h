@@ -126,7 +126,7 @@ URHO3D_FLAGSET(RenderBufferFlag, RenderBufferFlags);
 /// Render buffer parameters. Actual render buffer size is controlled externally.
 struct RenderBufferParams
 {
-    unsigned textureFormat_{};
+    TextureFormat textureFormat_{};
     int multiSampleLevel_{ 1 };
     RenderBufferFlags flags_;
 

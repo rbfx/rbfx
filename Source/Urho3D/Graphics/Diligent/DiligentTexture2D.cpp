@@ -40,142 +40,10 @@
 
 namespace Urho3D
 {
-using namespace Diligent;
-void Texture2D::OnDeviceLost()
-{
-    object_ = nullptr;
-    shaderResourceView_ = nullptr;
-    sampler_ = nullptr;
-    resolveTexture_ = nullptr;
-
-    if (renderSurface_)
-        renderSurface_->OnDeviceLost();
-}
-
-void Texture2D::OnDeviceReset()
-{
-    if (!object_ || dataPending_)
-    {
-        // If has a resource file, reload through the resource cache. Otherwise just recreate.
-        auto* cache = GetSubsystem<ResourceCache>();
-        if (cache->Exists(GetName()))
-            dataLost_ = !cache->ReloadResource(this);
-
-        if (!object_)
-        {
-            Create();
-            dataLost_ = true;
-        }
-    }
-
-    dataPending_ = false;
-}
-
-void Texture2D::Release()
-{
-    if (graphics_ && object_)
-    {
-        VariantMap& eventData = GetEventDataMap();
-        eventData[GPUResourceReleased::P_OBJECT] = this;
-        SendEvent(E_GPURESOURCERELEASED, eventData);
-
-        for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-        {
-            if (graphics_->GetTexture(i) == this)
-                graphics_->SetTexture(i, nullptr);
-        }
-    }
-
-    if (renderSurface_)
-        renderSurface_->Release();
-
-    sampler_ = nullptr;
-    shaderResourceView_ = nullptr;
-    resolveTexture_ = nullptr;
-    object_ = nullptr;
-}
 
 bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, const void* data)
 {
-    URHO3D_PROFILE("SetTextureData");
-
-    if (!object_)
-    {
-        URHO3D_LOGERROR("No texture created, can not set data");
-        return false;
-    }
-
-    if (!data)
-    {
-        URHO3D_LOGERROR("Null source for setting data");
-        return false;
-    }
-
-    if (level >= levels_)
-    {
-        URHO3D_LOGERROR("Illegal mip level for setting data");
-        return false;
-    }
-
-    int levelWidth = GetLevelWidth(level);
-    int levelHeight = GetLevelHeight(level);
-    if (x < 0 || x + width > levelWidth || y < 0 || y + height > levelHeight || width <= 0 || height <= 0)
-    {
-        URHO3D_LOGERROR("Illegal dimensions for setting data");
-        return false;
-    }
-
-    // If compressed, align the update region on a block
-    if (IsCompressed())
-    {
-        x &= ~3;
-        y &= ~3;
-        width += 3;
-        width &= 0xfffffffc;
-        height += 3;
-        height &= 0xfffffffc;
-    }
-
-    unsigned char* src = (unsigned char*)data;
-    unsigned rowSize = GetRowDataSize(width);
-    unsigned rowStart = GetRowDataSize(x);
-    unsigned subResource = level;
-    // unsigned subResource = D3D11CalcSubresource(level, 0, levels_);
-
-    Box destBox;
-    destBox.MinX = x;
-    destBox.MaxX = x + width;
-    destBox.MinY = y;
-    destBox.MaxY = y + height;
-    destBox.MinZ = 0;
-    destBox.MaxZ = 1;
-    if (usage_ == TEXTURE_DYNAMIC)
-    {
-        if (IsCompressed())
-        {
-            height = (height + 3) >> 2;
-            y >>= 2;
-        }
-
-        MappedTextureSubresource mappedData;
-        graphics_->GetImpl()->GetDeviceContext()->MapTextureSubresource(
-            object_.Cast<ITexture>(IID_Texture), subResource, 0, MAP_WRITE, MAP_FLAG_DISCARD, &destBox, mappedData);
-
-        for (int row = 0; row < height; ++row)
-            memcpy((unsigned char*)mappedData.pData + (row + y) * mappedData.Stride + rowStart, src + row * rowSize,
-                rowSize);
-        graphics_->GetImpl()->GetDeviceContext()->UnmapTextureSubresource(
-            object_.Cast<ITexture>(IID_Texture), subResource, 0);
-    }
-    else
-    {
-        TextureSubResData resData;
-        resData.pData = data;
-        resData.Stride = rowSize;
-        graphics_->GetImpl()->GetDeviceContext()->UpdateTexture(object_.Cast<ITexture>(IID_Texture), subResource, 0,
-            destBox, resData, RESOURCE_STATE_TRANSITION_MODE_NONE, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    }
-
+    Update(level, {x, y, 0}, {width, height, 1}, 0, data);
     return true;
 }
 
@@ -211,7 +79,7 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         unsigned char* levelData = image->GetData();
         int levelWidth = image->GetWidth();
         int levelHeight = image->GetHeight();
-        unsigned format = 0;
+        TextureFormat format = TextureFormat::TEX_FORMAT_UNKNOWN;
 
         // Discard unnecessary mip levels
         for (unsigned i = 0; i < mipsToSkip_[quality]; ++i)
@@ -236,15 +104,15 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         // high for new size
         if (IsCompressed() && requestedLevels_ > 1)
             requestedLevels_ = 0;
-        if (width_ != levelWidth || height_ != levelHeight || format != format_ || !object_)
-            SetSize(levelWidth, levelHeight, format, usage_);
+        if (GetWidth() != levelWidth || GetHeight() != levelHeight || format != GetFormat() || !GetHandles().texture_)
+            SetSize(levelWidth, levelHeight, format, GetParams().flags_);
 
-        for (unsigned i = 0; i < levels_; ++i)
+        for (unsigned i = 0; i < GetLevels(); ++i)
         {
             SetData(i, 0, 0, levelWidth, levelHeight, levelData);
             memoryUse += levelWidth * levelHeight * components;
 
-            if (i < levels_ - 1)
+            if (i < GetLevels() - 1)
             {
                 mipImage = image->GetNextLevel();
                 image = mipImage;
@@ -259,7 +127,7 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         int width = image->GetWidth();
         int height = image->GetHeight();
         unsigned levels = image->GetNumCompressedLevels();
-        unsigned format = graphics_->GetFormat(image->GetCompressedFormat());
+        TextureFormat format = graphics_->GetFormat(image->GetCompressedFormat());
 
         Diligent::IRenderDevice* device = graphics_->GetImpl()->GetDevice();
         const bool needDecompress = !device->GetTextureFormatInfo(static_cast<TextureFormat>(format)).Supported;
@@ -275,10 +143,10 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         height /= (1 << mipsToSkip);
 
         SetNumLevels(Max((levels - mipsToSkip), 1U));
-        if (width_ != width || height_ != height || format != format_ || !object_)
-            SetSize(width, height, format, usage_);
+        if (GetWidth() != width || GetHeight() != height || format != GetFormat() || !GetHandles().texture_)
+            SetSize(width, height, format, GetParams().flags_);
 
-        for (unsigned i = 0; i < levels_ && i < levels - mipsToSkip; ++i)
+        for (unsigned i = 0; i < GetLevels() && i < levels - mipsToSkip; ++i)
         {
             CompressedLevel level = image->GetCompressedLevel(i + mipsToSkip);
             if (!needDecompress)
@@ -391,6 +259,7 @@ bool Texture2D::GetData(unsigned level, void* dest) const
     }*/
 }
 
+#if 0
 bool Texture2D::Create()
 {
     Release();
@@ -553,5 +422,6 @@ bool Texture2D::Create()
 
     return true;
 }
+#endif
 
 } // namespace Urho3D
