@@ -256,6 +256,8 @@ URHO3D_REFCOUNTED(Urho3D::RmlUIComponent);
 URHO3D_REFCOUNTED(Urho3D::RmlSerializableInspector);
 URHO3D_REFCOUNTED(Urho3D::Detail::RmlSystem);
 URHO3D_REFCOUNTED(Urho3D::RmlUI);
+URHO3D_REFCOUNTED(Urho3D::RaytracerScene);
+URHO3D_REFCOUNTED(Urho3D::StaticModelForLightmap);
 URHO3D_REFCOUNTED(Urho3D::IKSolverComponent);
 URHO3D_REFCOUNTED(Urho3D::IKIdentitySolver);
 URHO3D_REFCOUNTED(Urho3D::IKLimbSolver);
