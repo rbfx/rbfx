@@ -932,6 +932,14 @@ using ImGuiConfigFlags = unsigned;
 %include "Urho3D/UI/View3D.h"
 %nocsattribute Urho3D::LineEdit::GetCursor;
 
+// --------------------------------------- RmlUI ---------------------------------------
+#if URHO3D_RMLUI
+%include "Urho3D/RmlUI/RmlSystem.h"
+%include "Urho3D/RmlUI/RmlUI.h"
+%include "Urho3D/RmlUI/RmlUIComponent.h"
+%include "Urho3D/RmlUI/RmlCanvasComponent.h"
+#endif
+
 // --------------------------------------- Urho2D ---------------------------------------
 #if URHO3D_URHO2D
 %rename(GetMapType) Urho3D::TileMapObject2D::GetType;
