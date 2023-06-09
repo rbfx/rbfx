@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@
 #ifndef RMLUI_CORE_STYLESHEETTYPES_H
 #define RMLUI_CORE_STYLESHEETTYPES_H
 
+#include "Factory.h"
 #include "PropertyDictionary.h"
 #include "Types.h"
 #include "Utilities.h"
@@ -63,6 +64,21 @@ struct DecoratorDeclaration {
 	DecoratorInstancer* instancer;
 	PropertyDictionary properties;
 };
+
+struct DecoratorDeclarationView {
+	DecoratorDeclarationView(const DecoratorDeclaration& declaration) :
+		type(declaration.type), instancer(declaration.instancer), properties(declaration.properties)
+	{}
+	DecoratorDeclarationView(const DecoratorSpecification* specification) :
+		type(specification->decorator_type), instancer(Factory::GetDecoratorInstancer(specification->decorator_type)),
+		properties(specification->properties)
+	{}
+
+	const String& type;
+	DecoratorInstancer* instancer;
+	const PropertyDictionary& properties;
+};
+
 struct DecoratorDeclarationList {
 	Vector<DecoratorDeclaration> list;
 	String value;
@@ -97,7 +113,7 @@ namespace std {
 // Hash specialization for the node list, so it can be used as key in UnorderedMap.
 template <>
 struct hash<::Rml::StyleSheetIndex::NodeList> {
-	std::size_t operator()(const ::Rml::StyleSheetIndex::NodeList& nodes) const
+	std::size_t operator()(const ::Rml::StyleSheetIndex::NodeList& nodes) const noexcept
 	{
 		std::size_t seed = 0;
 		for (const ::Rml::StyleSheetNode* node : nodes)

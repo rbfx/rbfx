@@ -173,7 +173,7 @@ void RmlNavigable::Refresh()
 
 void RmlNavigable::UpdatePosition()
 {
-    const auto position = GetAbsoluteOffset(Rml::Box::BORDER) + GetBox().GetSize(Rml::Box::BORDER) * 0.5f;
+    const auto position = GetAbsoluteOffset(Rml::BoxArea::Border) + GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
     position_ = {position.x, position.y};
 }
 
