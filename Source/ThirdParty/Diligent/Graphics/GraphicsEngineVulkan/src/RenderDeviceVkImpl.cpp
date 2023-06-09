@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -407,7 +407,7 @@ void RenderDeviceVkImpl::SubmitCommandBuffer(SoftwareQueueIndex                 
 
         for (auto& val_fence : *pSignalFences)
         {
-            auto* pFenceVkImpl = val_fence.second.RawPtr<FenceVkImpl>();
+            FenceVkImpl* pFenceVkImpl = val_fence.second;
             if (!pFenceVkImpl->IsTimelineSemaphore())
                 pFenceVkImpl->AddPendingSyncPoint(CommandQueueId, val_fence.first, pSyncPoint);
         }

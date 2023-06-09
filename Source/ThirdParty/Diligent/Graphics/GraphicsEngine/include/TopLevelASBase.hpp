@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -253,7 +253,7 @@ public:
             const auto& Inst                   = Iter->second;
             Result.ContributionToHitGroupIndex = Inst.ContributionToHitGroupIndex;
             Result.InstanceIndex               = Inst.InstanceIndex;
-            Result.pBLAS                       = Inst.pBLAS.template RawPtr<IBottomLevelAS>();
+            Result.pBLAS                       = Inst.pBLAS;
         }
         else
         {

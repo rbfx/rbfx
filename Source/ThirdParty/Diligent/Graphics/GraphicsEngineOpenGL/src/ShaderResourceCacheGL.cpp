@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -131,13 +131,12 @@ void ShaderResourceCacheGL::BindResources(GLContextState&              GLState,
         if (!UB.pBuffer)
             continue;
 
-        auto* pBufferGL = UB.pBuffer.RawPtr<BufferGLImpl>();
-        pBufferGL->BufferMemoryBarrier(
+        UB.pBuffer->BufferMemoryBarrier(
             MEMORY_BARRIER_UNIFORM_BUFFER, // Shader uniforms sourced from buffer objects after the barrier
                                            // will reflect data written by shaders prior to the barrier
             GLState);
 
-        GLState.BindUniformBuffer(binding, pBufferGL->GetGLHandle(), static_cast<GLintptr>(UB.BaseOffset) + static_cast<GLintptr>(UB.DynamicOffset), UB.RangeSize);
+        GLState.BindUniformBuffer(binding, UB.pBuffer->GetGLHandle(), static_cast<GLintptr>(UB.BaseOffset) + static_cast<GLintptr>(UB.DynamicOffset), UB.RangeSize);
     }
 
     for (Uint32 s = 0, binding = BaseBindings[BINDING_RANGE_TEXTURE]; s < GetTextureCount(); ++s, ++binding)
@@ -281,7 +280,7 @@ void ShaderResourceCacheGL::BindResources(GLContextState&              GLState,
         if (!SSBO.pBufferView)
             return;
 
-        auto* const pBufferViewGL = SSBO.pBufferView.RawPtr<BufferViewGLImpl>();
+        auto* const pBufferViewGL = SSBO.pBufferView.ConstPtr();
         const auto& ViewDesc      = pBufferViewGL->GetDesc();
         VERIFY(ViewDesc.ViewType == BUFFER_VIEW_UNORDERED_ACCESS || ViewDesc.ViewType == BUFFER_VIEW_SHADER_RESOURCE, "Unexpected buffer view type");
 
@@ -326,7 +325,7 @@ void ShaderResourceCacheGL::BindDynamicBuffers(GLContextState&              GLSt
         const auto& SSBO    = GetConstSSBO(SSBOIdx);
         VERIFY_EXPR(SSBO.IsDynamic());
 
-        auto* const pBufferViewGL = SSBO.pBufferView.RawPtr<const BufferViewGLImpl>();
+        auto* const pBufferViewGL = SSBO.pBufferView.ConstPtr<BufferViewGLImpl>();
         const auto* pBufferGL     = pBufferViewGL->GetBuffer<const BufferGLImpl>();
         const auto& ViewDesc      = pBufferViewGL->GetDesc();
 

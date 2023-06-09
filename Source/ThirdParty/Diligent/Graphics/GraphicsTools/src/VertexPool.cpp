@@ -102,7 +102,7 @@ public:
 
     virtual IObject* GetUserData() const override final
     {
-        return m_pUserData.RawPtr<IObject>();
+        return m_pUserData;
     }
 
 private:

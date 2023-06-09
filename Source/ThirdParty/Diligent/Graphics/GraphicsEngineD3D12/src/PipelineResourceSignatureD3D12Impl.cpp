@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -478,12 +478,12 @@ void PipelineResourceSignatureD3D12Impl::CommitRootViews(const CommitCacheResour
         if (Res.Type == SHADER_RESOURCE_TYPE_CONSTANT_BUFFER)
         {
             // No need to QueryInterface() - the type is verified when a resource is bound
-            pBuffer = Res.pObject.RawPtr<const BufferD3D12Impl>();
+            pBuffer = Res.pObject.ConstPtr<BufferD3D12Impl>();
         }
         else if (Res.Type == SHADER_RESOURCE_TYPE_BUFFER_SRV ||
                  Res.Type == SHADER_RESOURCE_TYPE_BUFFER_UAV)
         {
-            auto* pBuffView = Res.pObject.RawPtr<const BufferViewD3D12Impl>();
+            auto* pBuffView = Res.pObject.ConstPtr<BufferViewD3D12Impl>();
             pBuffer         = pBuffView->GetBuffer<const BufferD3D12Impl>();
         }
         else

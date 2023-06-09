@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -180,7 +180,7 @@ public:
                    "Buffer range may only be specified for constant buffers");
             if (pObject && (Type == SHADER_RESOURCE_TYPE_BUFFER_SRV || Type == SHADER_RESOURCE_TYPE_BUFFER_UAV))
             {
-                const auto& BuffViewDesc{pObject.RawPtr<const BufferViewD3D12Impl>()->GetDesc()};
+                const auto& BuffViewDesc{pObject.ConstPtr<BufferViewD3D12Impl>()->GetDesc()};
                 BufferBaseOffset = BuffViewDesc.ByteOffset;
                 BufferRangeSize  = BuffViewDesc.ByteWidth;
             }

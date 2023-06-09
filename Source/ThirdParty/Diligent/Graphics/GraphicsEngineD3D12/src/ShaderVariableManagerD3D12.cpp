@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -684,7 +684,7 @@ IDeviceObject* ShaderVariableManagerD3D12::Get(Uint32 ArrayIndex,
         if (OffsetFromTableStart < RootTable.GetSize())
         {
             const auto& CachedRes = RootTable.GetResource(OffsetFromTableStart);
-            return CachedRes.pObject.RawPtr<IDeviceObject>();
+            return CachedRes.pObject;
         }
     }
 

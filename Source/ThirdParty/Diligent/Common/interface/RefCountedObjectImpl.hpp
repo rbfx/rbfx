@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,7 @@
 /// \file
 /// Implementation of the template base class for reference counting objects
 
+#include <stdlib.h>
 #include <atomic>
 
 #include "../../Primitives/interface/Object.h"
@@ -575,7 +576,7 @@ protected:
 
     void operator delete(void* ptr)
     {
-        delete[] reinterpret_cast<Uint8*>(ptr);
+        free(ptr);
     }
 
     template <typename ObjectAllocatorType>
@@ -589,7 +590,7 @@ private:
 
     void* operator new(size_t Size)
     {
-        return new Uint8[Size];
+        return malloc(Size);
     }
 
     template <typename ObjectAllocatorType>

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -200,22 +200,19 @@ public:
     bool     operator!=(const RefCntAutoPtr& Ptr) const noexcept { return m_pObject != Ptr.m_pObject; }
     bool     operator<(const RefCntAutoPtr& Ptr) const noexcept { return static_cast<const T*>(*this) < static_cast<const T*>(Ptr); }
 
-    T&       operator*() noexcept { return *m_pObject; }
-    const T& operator*() const noexcept { return *m_pObject; }
+    T& operator*() const noexcept { return *m_pObject; }
 
-    T*       RawPtr() noexcept { return m_pObject; }
-    const T* RawPtr() const noexcept { return m_pObject; }
+    T*       RawPtr() const noexcept { return m_pObject; }
+    const T* ConstPtr() const noexcept { return m_pObject; }
 
-    template <typename DstType>
-    DstType* RawPtr() noexcept { return ClassPtrCast<DstType>(m_pObject); }
     template <typename DstType>
     DstType* RawPtr() const noexcept { return ClassPtrCast<DstType>(m_pObject); }
+    template <typename DstType>
+    const DstType* ConstPtr() const noexcept { return ClassPtrCast<const DstType>(m_pObject); }
 
-    operator T*() noexcept { return RawPtr(); }
-    operator const T*() const noexcept { return RawPtr(); }
+    operator T*() const noexcept { return RawPtr(); }
 
-    T*       operator->() noexcept { return m_pObject; }
-    const T* operator->() const noexcept { return m_pObject; }
+    T* operator->() const noexcept { return m_pObject; }
 
     template <typename InterfaceType>
     RefCntAutoPtr<InterfaceType> Cast(const INTERFACE_ID& IID) const

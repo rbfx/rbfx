@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -585,7 +585,7 @@ void PipelineResourceSignatureVkImpl::CopyStaticResources(ShaderResourceCacheVk&
         {
             const auto     SrcCacheOffset = Attr.CacheOffset(SrcCacheType) + ArrInd;
             const auto&    SrcCachedRes   = SrcDescrSet.GetResource(SrcCacheOffset);
-            IDeviceObject* pObject        = SrcCachedRes.pObject.RawPtr<IDeviceObject>();
+            IDeviceObject* pObject        = SrcCachedRes.pObject;
             if (pObject == nullptr)
             {
                 if (DstCacheType == ResourceCacheContentType::SRB)

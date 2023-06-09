@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -274,7 +274,7 @@ public:
 
     virtual IEngineFactory* DILIGENT_CALL_TYPE GetEngineFactory() const override final
     {
-        return m_pEngineFactory.RawPtr<IEngineFactory>();
+        return m_pEngineFactory;
     }
 
     /// Base implementation of IRenderDevice::CreateTilePipelineState().

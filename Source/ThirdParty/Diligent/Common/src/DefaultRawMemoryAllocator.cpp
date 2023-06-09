@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,13 @@
 #include "pch.h"
 #include "DefaultRawMemoryAllocator.hpp"
 
+#include <stdlib.h>
+
+#if defined(_DEBUG) && defined(_MSC_VER)
+#    include <crtdbg.h>
+#    define USE_CRT_MALLOC_DBG 1
+#endif
+
 namespace Diligent
 {
 
@@ -38,12 +45,16 @@ DefaultRawMemoryAllocator::DefaultRawMemoryAllocator()
 void* DefaultRawMemoryAllocator::Allocate(size_t Size, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber)
 {
     VERIFY_EXPR(Size > 0);
-    return new Uint8[Size];
+#ifdef USE_CRT_MALLOC_DBG
+    return _malloc_dbg(Size, _NORMAL_BLOCK, dbgFileName, dbgLineNumber);
+#else
+    return malloc(Size);
+#endif
 }
 
 void DefaultRawMemoryAllocator::Free(void* Ptr)
 {
-    delete[] reinterpret_cast<Uint8*>(Ptr);
+    free(Ptr);
 }
 
 DefaultRawMemoryAllocator& DefaultRawMemoryAllocator::GetAllocator()

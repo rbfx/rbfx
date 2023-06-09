@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -344,7 +344,7 @@ __forceinline Uint32 ShaderResourceCacheVk::GetDynamicBufferOffsets(DeviceContex
             const auto& Res = DescrSet.GetResource(res);
             if (Res.Type == DescriptorType::UniformBufferDynamic)
             {
-                const auto* pBufferVk = Res.pObject.RawPtr<const BufferVkImpl>();
+                const auto* pBufferVk = Res.pObject.ConstPtr<BufferVkImpl>();
                 // Do not verify dynamic allocation here as there may be some buffers that are not used by the PSO.
                 // The allocations of the buffers that are actually used will be verified by
                 // PipelineResourceSignatureVkImpl::DvpValidateCommittedResource().
@@ -365,7 +365,7 @@ __forceinline Uint32 ShaderResourceCacheVk::GetDynamicBufferOffsets(DeviceContex
             if (Res.Type == DescriptorType::StorageBufferDynamic ||
                 Res.Type == DescriptorType::StorageBufferDynamic_ReadOnly)
             {
-                const auto* pBufferVkView = Res.pObject.RawPtr<const BufferViewVkImpl>();
+                const auto* pBufferVkView = Res.pObject.ConstPtr<BufferViewVkImpl>();
                 const auto* pBufferVk     = pBufferVkView != nullptr ? pBufferVkView->GetBuffer<const BufferVkImpl>() : nullptr;
                 // Do not verify dynamic allocation here as there may be some buffers that are not used by the PSO.
                 // The allocations of the buffers that are actually used will be verified by

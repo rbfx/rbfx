@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ D3D12_HEAP_FLAGS GetD3D12HeapFlags(ID3D12Device*   pd3d12Device,
 
         if (RefCntAutoPtr<ITextureD3D12> pTexture{pResource, IID_TextureD3D12})
         {
-            const auto* pTexD3D12Impl = pTexture.RawPtr<const TextureD3D12Impl>();
+            const auto* pTexD3D12Impl = pTexture.ConstPtr<TextureD3D12Impl>();
             const auto& TexDesc       = pTexD3D12Impl->GetDesc();
 
             if (TexDesc.Usage != USAGE_SPARSE)
@@ -119,7 +119,7 @@ D3D12_HEAP_FLAGS GetD3D12HeapFlags(ID3D12Device*   pd3d12Device,
         }
         else if (RefCntAutoPtr<IBufferD3D12> pBuffer{pResource, IID_BufferD3D12})
         {
-            const auto& BuffDesc = pBuffer.RawPtr<const BufferD3D12Impl>()->GetDesc();
+            const auto& BuffDesc = pBuffer.ConstPtr<BufferD3D12Impl>()->GetDesc();
 
             if (BuffDesc.Usage != USAGE_SPARSE)
                 LOG_ERROR_AND_THROW("Resource must be created with USAGE_SPARSE");

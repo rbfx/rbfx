@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -129,7 +129,7 @@ public:
         {
             VERIFY_EXPR(ArrayIndex < GetDesc().ArraySize);
             const auto& UB = m_ParentManager.m_ResourceCache.GetConstUB(GetAttribs().CacheOffset + ArrayIndex);
-            return UB.pBuffer.RawPtr<IDeviceObject>();
+            return UB.pBuffer;
         }
 
         void SetDynamicOffset(Uint32 ArrayIndex, Uint32 Offset);
@@ -149,7 +149,7 @@ public:
             const auto& Desc = GetDesc();
             VERIFY_EXPR(ArrayIndex < Desc.ArraySize);
             const auto& Tex = m_ParentManager.m_ResourceCache.GetConstTexture(GetAttribs().CacheOffset + ArrayIndex);
-            return Tex.pView.RawPtr<IDeviceObject>();
+            return Tex.pView;
         }
     };
 
@@ -167,7 +167,7 @@ public:
             const auto& Desc = GetDesc();
             VERIFY_EXPR(ArrayIndex < Desc.ArraySize);
             const auto& Img = m_ParentManager.m_ResourceCache.GetConstImage(GetAttribs().CacheOffset + ArrayIndex);
-            return Img.pView.RawPtr<IDeviceObject>();
+            return Img.pView;
         }
     };
 
@@ -184,7 +184,7 @@ public:
         {
             VERIFY_EXPR(ArrayIndex < GetDesc().ArraySize);
             const auto& SSBO = m_ParentManager.m_ResourceCache.GetConstSSBO(GetAttribs().CacheOffset + ArrayIndex);
-            return SSBO.pBufferView.RawPtr<IDeviceObject>();
+            return SSBO.pBufferView;
         }
 
         void SetDynamicOffset(Uint32 ArrayIndex, Uint32 Offset);

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -306,7 +306,7 @@ const ShaderResourceCacheD3D12::Resource& ShaderResourceCacheD3D12::SetResource(
             switch (SrcRes.Type)
             {
                 case SHADER_RESOURCE_TYPE_CONSTANT_BUFFER:
-                    pBuffer = SrcRes.pObject.RawPtr<const BufferD3D12Impl>();
+                    pBuffer = SrcRes.pObject.ConstPtr<BufferD3D12Impl>();
                     break;
 
                 case SHADER_RESOURCE_TYPE_BUFFER_SRV:
@@ -343,12 +343,12 @@ const ShaderResourceCacheD3D12::Resource& ShaderResourceCacheD3D12::SetResource(
             switch (SrcRes.Type)
             {
                 case SHADER_RESOURCE_TYPE_CONSTANT_BUFFER:
-                    pBuffer = SrcRes.pObject.RawPtr<const BufferD3D12Impl>();
+                    pBuffer = SrcRes.pObject.ConstPtr<BufferD3D12Impl>();
                     break;
 
                 case SHADER_RESOURCE_TYPE_BUFFER_SRV:
                 case SHADER_RESOURCE_TYPE_BUFFER_UAV:
-                    pBuffer = SrcRes.pObject.RawPtr<const BufferViewD3D12Impl>()->GetBuffer<const BufferD3D12Impl>();
+                    pBuffer = SrcRes.pObject.ConstPtr<BufferViewD3D12Impl>()->GetBuffer<const BufferD3D12Impl>();
                     break;
 
                 default:
@@ -409,7 +409,7 @@ const ShaderResourceCacheD3D12::Resource& ShaderResourceCacheD3D12::CopyResource
             else
             {
                 VERIFY(DstRes.Type == SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, "Null CPU descriptor is only allowed for constant buffers");
-                const auto* pBuffer = DstRes.pObject.RawPtr<const BufferD3D12Impl>();
+                const auto* pBuffer = DstRes.pObject.ConstPtr<BufferD3D12Impl>();
                 VERIFY(DstRes.BufferRangeSize < pBuffer->GetDesc().Size, "Null CPU descriptor is only allowed for partial views of constant buffers");
                 pBuffer->CreateCBV(DstDescrHandle, DstRes.BufferBaseOffset, DstRes.BufferRangeSize);
             }
@@ -439,7 +439,7 @@ void ShaderResourceCacheD3D12::DbgValidateDynamicBuffersMask() const
                 switch (Res.Type)
                 {
                     case SHADER_RESOURCE_TYPE_CONSTANT_BUFFER:
-                        pBuffer = Res.pObject.RawPtr<const BufferD3D12Impl>();
+                        pBuffer = Res.pObject.ConstPtr<BufferD3D12Impl>();
                         break;
 
                     case SHADER_RESOURCE_TYPE_BUFFER_SRV:
@@ -574,7 +574,7 @@ void ShaderResourceCacheD3D12::Resource::DvpVerifyResourceState()
         case SHADER_RESOURCE_TYPE_CONSTANT_BUFFER:
         {
             // Not using QueryInterface() for the sake of efficiency
-            const auto* pBufferD3D12 = pObject.RawPtr<const BufferD3D12Impl>();
+            const auto* pBufferD3D12 = pObject.ConstPtr<BufferD3D12Impl>();
             if (pBufferD3D12->IsInKnownState() && !pBufferD3D12->CheckState(RESOURCE_STATE_CONSTANT_BUFFER))
             {
                 LOG_ERROR_MESSAGE("Buffer '", pBufferD3D12->GetDesc().Name, "' must be in RESOURCE_STATE_CONSTANT_BUFFER state. Actual state: ",
@@ -588,7 +588,7 @@ void ShaderResourceCacheD3D12::Resource::DvpVerifyResourceState()
 
         case SHADER_RESOURCE_TYPE_BUFFER_SRV:
         {
-            const auto* pBuffViewD3D12 = pObject.RawPtr<const BufferViewD3D12Impl>();
+            const auto* pBuffViewD3D12 = pObject.ConstPtr<BufferViewD3D12Impl>();
             const auto* pBufferD3D12   = pBuffViewD3D12->GetBuffer<const BufferD3D12Impl>();
             if (pBufferD3D12->IsInKnownState() && !pBufferD3D12->CheckState(RESOURCE_STATE_SHADER_RESOURCE))
             {
@@ -603,7 +603,7 @@ void ShaderResourceCacheD3D12::Resource::DvpVerifyResourceState()
 
         case SHADER_RESOURCE_TYPE_BUFFER_UAV:
         {
-            const auto* pBuffViewD3D12 = pObject.RawPtr<const BufferViewD3D12Impl>();
+            const auto* pBuffViewD3D12 = pObject.ConstPtr<BufferViewD3D12Impl>();
             const auto* pBufferD3D12   = pBuffViewD3D12->GetBuffer<const BufferD3D12Impl>();
             if (pBufferD3D12->IsInKnownState() && !pBufferD3D12->CheckState(RESOURCE_STATE_UNORDERED_ACCESS))
             {
@@ -619,7 +619,7 @@ void ShaderResourceCacheD3D12::Resource::DvpVerifyResourceState()
         case SHADER_RESOURCE_TYPE_TEXTURE_SRV:
         case SHADER_RESOURCE_TYPE_INPUT_ATTACHMENT:
         {
-            const auto* pTexViewD3D12 = pObject.RawPtr<const TextureViewD3D12Impl>();
+            const auto* pTexViewD3D12 = pObject.ConstPtr<TextureViewD3D12Impl>();
             const auto* pTexD3D12     = pTexViewD3D12->GetTexture<TextureD3D12Impl>();
             if (pTexD3D12->IsInKnownState() && !pTexD3D12->CheckAnyState(RESOURCE_STATE_SHADER_RESOURCE | RESOURCE_STATE_INPUT_ATTACHMENT))
             {
@@ -634,7 +634,7 @@ void ShaderResourceCacheD3D12::Resource::DvpVerifyResourceState()
 
         case SHADER_RESOURCE_TYPE_TEXTURE_UAV:
         {
-            const auto* pTexViewD3D12 = pObject.RawPtr<const TextureViewD3D12Impl>();
+            const auto* pTexViewD3D12 = pObject.ConstPtr<TextureViewD3D12Impl>();
             const auto* pTexD3D12     = pTexViewD3D12->GetTexture<const TextureD3D12Impl>();
             if (pTexD3D12->IsInKnownState() && !pTexD3D12->CheckState(RESOURCE_STATE_UNORDERED_ACCESS))
             {
@@ -653,7 +653,7 @@ void ShaderResourceCacheD3D12::Resource::DvpVerifyResourceState()
 
         case SHADER_RESOURCE_TYPE_ACCEL_STRUCT:
         {
-            const auto* pTLASD3D12 = pObject.RawPtr<const TopLevelASD3D12Impl>();
+            const auto* pTLASD3D12 = pObject.ConstPtr<TopLevelASD3D12Impl>();
             if (pTLASD3D12->IsInKnownState() && !pTLASD3D12->CheckState(RESOURCE_STATE_RAY_TRACING))
             {
                 LOG_ERROR_MESSAGE("TLAS '", pTLASD3D12->GetDesc().Name, "' must be in RESOURCE_STATE_RAY_TRACING state.  Actual state: ",

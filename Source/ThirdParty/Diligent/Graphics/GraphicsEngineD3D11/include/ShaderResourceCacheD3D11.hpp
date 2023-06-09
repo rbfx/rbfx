@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -127,7 +127,7 @@ public:
 
         IDeviceObject* Get() const
         {
-            return pBuff.RawPtr<IDeviceObject>();
+            return pBuff;
         }
 
         // Returns true if the bound constant buffer allows setting dynamic offset,
@@ -170,7 +170,7 @@ public:
 
         IDeviceObject* Get() const
         {
-            return pSampler.RawPtr<IDeviceObject>();
+            return pSampler;
         }
     };
 
@@ -229,7 +229,7 @@ public:
 
         IDeviceObject* Get() const
         {
-            return pView.RawPtr<IDeviceObject>();
+            return pView;
         }
 
         // Returns ID3D11ShaderResourceView or ID3D11UnorderedAccessView (not pd3d11Resource!)

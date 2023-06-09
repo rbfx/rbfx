@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -2392,7 +2392,7 @@ static void AliasingBarrier(CommandContext& CmdCtx, IDeviceObject* pResourceBefo
     {
         if (RefCntAutoPtr<ITextureD3D12> pTexture{pResource, IID_TextureD3D12})
         {
-            const auto* pTexD3D12 = pTexture.RawPtr<const TextureD3D12Impl>();
+            const auto* pTexD3D12 = pTexture.ConstPtr<TextureD3D12Impl>();
             if (pTexD3D12->IsUsingNVApi())
                 UseNVApi = true;
             return pTexD3D12->GetD3D12Texture();

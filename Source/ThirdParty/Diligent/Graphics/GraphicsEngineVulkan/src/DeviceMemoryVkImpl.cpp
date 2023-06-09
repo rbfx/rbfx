@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ DeviceMemoryVkImpl::DeviceMemoryVkImpl(IReferenceCounters*           pRefCounter
 
         if (RefCntAutoPtr<ITextureVk> pTexture{pResource, IID_TextureVk})
         {
-            const auto* pTexVk = pTexture.RawPtr<const TextureVkImpl>();
+            const auto* pTexVk = pTexture.ConstPtr<TextureVkImpl>();
             if (pTexVk->GetDesc().Usage != USAGE_SPARSE)
                 DEVMEM_CHECK_CREATE_INFO("ppCompatibleResources[", i, "] must be created with USAGE_SPARSE");
 
@@ -69,7 +69,7 @@ DeviceMemoryVkImpl::DeviceMemoryVkImpl(IReferenceCounters*           pRefCounter
         }
         else if (RefCntAutoPtr<IBufferVk> pBuffer{pResource, IID_BufferVk})
         {
-            const auto* pBuffVk = pBuffer.RawPtr<const BufferVkImpl>();
+            const auto* pBuffVk = pBuffer.ConstPtr<BufferVkImpl>();
             if (pBuffVk->GetDesc().Usage != USAGE_SPARSE)
                 DEVMEM_CHECK_CREATE_INFO("ppCompatibleResources[", i, "] must be created with USAGE_SPARSE");
 
@@ -161,12 +161,12 @@ Bool DeviceMemoryVkImpl::IsCompatible(IDeviceObject* pResource) const
     uint32_t memoryTypeBits = 0;
     if (RefCntAutoPtr<ITextureVk> pTexture{pResource, IID_TextureVk})
     {
-        const auto* pTexVk = pTexture.RawPtr<const TextureVkImpl>();
+        const auto* pTexVk = pTexture.ConstPtr<TextureVkImpl>();
         memoryTypeBits     = LogicalDevice.GetImageMemoryRequirements(pTexVk->GetVkImage()).memoryTypeBits;
     }
     else if (RefCntAutoPtr<IBufferVk> pBuffer{pResource, IID_BufferVk})
     {
-        const auto* pBuffVk = pBuffer.RawPtr<const BufferVkImpl>();
+        const auto* pBuffVk = pBuffer.ConstPtr<BufferVkImpl>();
         memoryTypeBits      = LogicalDevice.GetBufferMemoryRequirements(pBuffVk->GetVkBuffer()).memoryTypeBits;
     }
     else
