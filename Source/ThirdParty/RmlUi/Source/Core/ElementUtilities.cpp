@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -38,8 +38,8 @@
 #include "DataModel.h"
 #include "DataView.h"
 #include "ElementStyle.h"
-#include "LayoutDetails.h"
-#include "LayoutEngine.h"
+#include "Layout/LayoutDetails.h"
+#include "Layout/LayoutEngine.h"
 #include "TransformState.h"
 #include <limits>
 
@@ -67,10 +67,10 @@ static void SetBox(Element* element)
 // Positions an element relative to an offset parent.
 static void SetElementOffset(Element* element, Vector2f offset)
 {
-	Vector2f relative_offset = element->GetParentNode()->GetBox().GetPosition(Box::CONTENT);
+	Vector2f relative_offset = element->GetParentNode()->GetBox().GetPosition(BoxArea::Content);
 	relative_offset += offset;
-	relative_offset.x += element->GetBox().GetEdge(Box::MARGIN, Box::LEFT);
-	relative_offset.y += element->GetBox().GetEdge(Box::MARGIN, Box::TOP);
+	relative_offset.x += element->GetBox().GetEdge(BoxArea::Margin, BoxEdge::Left);
+	relative_offset.y += element->GetBox().GetEdge(BoxArea::Margin, BoxEdge::Top);
 
 	element->SetOffset(relative_offset, element->GetParentNode());
 }
@@ -86,12 +86,12 @@ Element* ElementUtilities::GetElementById(Element* root_element, const String& i
 	{
 		Element* element = search_queue.front();
 		search_queue.pop();
-		
+
 		if (element->GetId() == id)
 		{
 			return element;
 		}
-		
+
 		// Add all children to search
 		for (int i = 0; i < element->GetNumChildren(); i++)
 			search_queue.push(element->GetChild(i));
@@ -103,7 +103,7 @@ Element* ElementUtilities::GetElementById(Element* root_element, const String& i
 void ElementUtilities::GetElementsByTagName(ElementList& elements, Element* root_element, const String& tag)
 {
 	// Breadth first search on elements for the corresponding id
-	typedef Queue< Element* > SearchQueue;
+	typedef Queue<Element*> SearchQueue;
 	SearchQueue search_queue;
 	for (int i = 0; i < root_element->GetNumChildren(); ++i)
 		search_queue.push(root_element->GetChild(i));
@@ -125,7 +125,7 @@ void ElementUtilities::GetElementsByTagName(ElementList& elements, Element* root
 void ElementUtilities::GetElementsByClassName(ElementList& elements, Element* root_element, const String& class_name)
 {
 	// Breadth first search on elements for the corresponding id
-	typedef Queue< Element* > SearchQueue;
+	typedef Queue<Element*> SearchQueue;
 	SearchQueue search_queue;
 	for (int i = 0; i < root_element->GetNumChildren(); ++i)
 		search_queue.push(root_element->GetChild(i));
@@ -144,7 +144,7 @@ void ElementUtilities::GetElementsByClassName(ElementList& elements, Element* ro
 	}
 }
 
-float ElementUtilities::GetDensityIndependentPixelRatio(Element * element)
+float ElementUtilities::GetDensityIndependentPixelRatio(Element* element)
 {
 	Context* context = element->GetContext();
 	if (context == nullptr)
@@ -153,17 +153,17 @@ float ElementUtilities::GetDensityIndependentPixelRatio(Element * element)
 	return context->GetDensityIndependentPixelRatio();
 }
 
-// Returns the width of a string rendered within the context of the given element.
 int ElementUtilities::GetStringWidth(Element* element, const String& string, Character prior_character)
 {
+	const float letter_spacing = element->GetComputedValues().letter_spacing();
+
 	FontFaceHandle font_face_handle = element->GetFontFaceHandle();
 	if (font_face_handle == 0)
 		return 0;
 
-	return GetFontEngineInterface()->GetStringWidth(font_face_handle, string, prior_character);
+	return GetFontEngineInterface()->GetStringWidth(font_face_handle, string, letter_spacing, prior_character);
 }
 
-// Generates the clipping region for an element.
 bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_dimensions, Element* element)
 {
 	using Style::Clip;
@@ -179,7 +179,7 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 	// Search through the element's ancestors, finding all elements that clip their overflow and have overflow to clip.
 	// For each that we find, we combine their clipping region with the existing clipping region, and so build up a
 	// complete clipping region for the element.
-	Element* clipping_element = element->GetParentNode();
+	Element* clipping_element = element->GetOffsetParent();
 
 	while (clipping_element != nullptr)
 	{
@@ -196,14 +196,14 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 			if (clip_always || clipping_element->GetClientWidth() < clipping_element->GetScrollWidth() - 0.5f ||
 				clipping_element->GetClientHeight() < clipping_element->GetScrollHeight() - 0.5f)
 			{
-				const Box::Area client_area = clipping_element->GetClientArea();
+				const BoxArea client_area = clipping_element->GetClientArea();
 				Vector2f element_origin_f = clipping_element->GetAbsoluteOffset(client_area);
 				Vector2f element_dimensions_f = clipping_element->GetBox().GetSize(client_area);
 				Math::SnapToPixelGrid(element_origin_f, element_dimensions_f);
 
 				const Vector2i element_origin(element_origin_f);
 				const Vector2i element_dimensions(element_dimensions_f);
-				
+
 				if (clip_origin == Vector2i(-1, -1) && clip_dimensions == Vector2i(-1, -1))
 				{
 					clip_origin = element_origin;
@@ -211,15 +211,11 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 				}
 				else
 				{
-					const Vector2i top_left(Math::Max(clip_origin.x, element_origin.x),
-					                        Math::Max(clip_origin.y, element_origin.y));
-					
-					const Vector2i bottom_right(Math::Min(clip_origin.x + clip_dimensions.x, element_origin.x + element_dimensions.x),
-					                            Math::Min(clip_origin.y + clip_dimensions.y, element_origin.y + element_dimensions.y));
-					
+					const Vector2i top_left = Math::Max(clip_origin, element_origin);
+					const Vector2i bottom_right = Math::Min(clip_origin + clip_dimensions, element_origin + element_dimensions);
+
 					clip_origin = top_left;
-					clip_dimensions.x = Math::Max(0, bottom_right.x - top_left.x);
-					clip_dimensions.y = Math::Max(0, bottom_right.y - top_left.y);
+					clip_dimensions = Math::Max(Vector2i(0), bottom_right - top_left);
 				}
 			}
 		}
@@ -227,7 +223,7 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 		// If this region is meant to clip and we're skipping regions, update the counter.
 		if (num_ignored_clips > 0 && clip_enabled)
 			num_ignored_clips--;
-		
+
 		// Inherit how many clip regions this ancestor ignores.
 		num_ignored_clips = Math::Max(num_ignored_clips, clip_number);
 
@@ -236,53 +232,42 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 			break;
 
 		// Climb the tree to this region's parent.
-		clipping_element = clipping_element->GetParentNode();
+		clipping_element = clipping_element->GetOffsetParent();
 	}
-	
+
 	return clip_dimensions.x >= 0 && clip_dimensions.y >= 0;
 }
 
-// Sets the clipping region from an element and its ancestors.
 bool ElementUtilities::SetClippingRegion(Element* element, Context* context)
-{	
-	RenderInterface* render_interface = nullptr;
-	if (element)
-	{
-		render_interface = element->GetRenderInterface();
-		if (!context)
-			context = element->GetContext();
-	}
-	else if (context)
-	{
-		render_interface = context->GetRenderInterface();
-		if (!render_interface)
-			render_interface = GetRenderInterface();
-	}
+{
+	if (element && !context)
+		context = element->GetContext();
 
-	if (!render_interface || !context)
+	if (!context)
 		return false;
-	
-	Vector2i clip_origin = { -1, -1 };
-	Vector2i clip_dimensions = { -1, -1 };
+
+	Vector2i clip_origin = {-1, -1};
+	Vector2i clip_dimensions = {-1, -1};
 	bool clip = element && GetClippingRegion(clip_origin, clip_dimensions, element);
-	
-	Vector2i current_origin = { -1, -1 };
-	Vector2i current_dimensions = { -1, -1 };
+
+	Vector2i current_origin = {-1, -1};
+	Vector2i current_dimensions = {-1, -1};
 	bool current_clip = context->GetActiveClipRegion(current_origin, current_dimensions);
 	if (current_clip != clip || (clip && (clip_origin != current_origin || clip_dimensions != current_dimensions)))
 	{
 		context->SetActiveClipRegion(clip_origin, clip_dimensions);
-		ApplyActiveClipRegion(context, render_interface);
+		ApplyActiveClipRegion(context);
 	}
 
 	return true;
 }
 
-void ElementUtilities::ApplyActiveClipRegion(Context* context, RenderInterface* render_interface)
+void ElementUtilities::ApplyActiveClipRegion(Context* context)
 {
-	if (render_interface == nullptr)
+	RenderInterface* render_interface = ::Rml::GetRenderInterface();
+	if (!render_interface)
 		return;
-	
+
 	Vector2i origin;
 	Vector2i dimensions;
 	bool clip_enabled = context->GetActiveClipRegion(origin, dimensions);
@@ -294,19 +279,16 @@ void ElementUtilities::ApplyActiveClipRegion(Context* context, RenderInterface* 
 	}
 }
 
-// Formats the contents of an element.
 void ElementUtilities::FormatElement(Element* element, Vector2f containing_block)
 {
 	LayoutEngine::FormatElement(element, containing_block);
 }
 
-// Generates the box for an element.
 void ElementUtilities::BuildBox(Box& box, Vector2f containing_block, Element* element, bool inline_element)
 {
-	LayoutDetails::BuildBox(box, containing_block, element, inline_element ? BoxContext::Inline : BoxContext::Block);
+	LayoutDetails::BuildBox(box, containing_block, element, inline_element ? BuildBoxMode::Inline : BuildBoxMode::Block);
 }
 
-// Sizes an element, and positions it within its parent offset from the borders of its content area.
 bool ElementUtilities::PositionElement(Element* element, Vector2f offset, PositionAnchor anchor)
 {
 	Element* parent = element->GetParentNode();
@@ -315,8 +297,8 @@ bool ElementUtilities::PositionElement(Element* element, Vector2f offset, Positi
 
 	SetBox(element);
 
-	Vector2f containing_block = element->GetParentNode()->GetBox().GetSize(Box::CONTENT);
-	Vector2f element_block = element->GetBox().GetSize(Box::MARGIN);
+	Vector2f containing_block = element->GetParentNode()->GetBox().GetSize(BoxArea::Content);
+	Vector2f element_block = element->GetBox().GetSize(BoxArea::Margin);
 
 	Vector2f resolved_offset = offset;
 
@@ -331,50 +313,36 @@ bool ElementUtilities::PositionElement(Element* element, Vector2f offset, Positi
 	return true;
 }
 
-bool ElementUtilities::ApplyTransform(Element &element)
+bool ElementUtilities::ApplyTransform(Element& element)
 {
-	RenderInterface *render_interface = element.GetRenderInterface();
+	RenderInterface* render_interface = ::Rml::GetRenderInterface();
 	if (!render_interface)
 		return false;
 
-	struct PreviousMatrix {
-		const Matrix4f* pointer; // This may be expired, dereferencing not allowed!
-		Matrix4f value;
-	};
-	static SmallUnorderedMap<RenderInterface*, PreviousMatrix> previous_matrix;
+	static const Matrix4f* old_transform_ptr = {}; // This may be expired, dereferencing not allowed!
+	static Matrix4f old_transform_value = Matrix4f::Identity();
 
-	auto it = previous_matrix.find(render_interface);
-	if (it == previous_matrix.end())
-		it = previous_matrix.emplace(render_interface, PreviousMatrix{ nullptr, Matrix4f::Identity() }).first;
-
-	RMLUI_ASSERT(it != previous_matrix.end());
-
-	const Matrix4f*& old_transform = it->second.pointer;
-	const Matrix4f* new_transform = nullptr;
-
+	const Matrix4f* new_transform_ptr = nullptr;
 	if (const TransformState* state = element.GetTransformState())
-		new_transform = state->GetTransform();
+		new_transform_ptr = state->GetTransform();
 
 	// Only changed transforms are submitted.
-	if (old_transform != new_transform)
+	if (old_transform_ptr != new_transform_ptr)
 	{
-		Matrix4f& old_transform_value = it->second.value;
-
 		// Do a deep comparison as well to avoid submitting a new transform which is equal.
-		if(!old_transform || !new_transform || (old_transform_value != *new_transform))
+		if (!old_transform_ptr || !new_transform_ptr || (old_transform_value != *new_transform_ptr))
 		{
-			render_interface->SetTransform(new_transform);
+			render_interface->SetTransform(new_transform_ptr);
 
-			if(new_transform)
-				old_transform_value = *new_transform;
+			if (new_transform_ptr)
+				old_transform_value = *new_transform_ptr;
 		}
 
-		old_transform = new_transform;
+		old_transform_ptr = new_transform_ptr;
 	}
 
 	return true;
 }
-
 
 static bool ApplyDataViewsControllersInternal(Element* element, const bool construct_structural_view, const String& structural_view_inner_rml)
 {
@@ -393,7 +361,7 @@ static bool ApplyDataViewsControllersInternal(Element* element, const bool const
 			explicit operator bool() const { return view || controller; }
 		};
 
-		// Since data views and controllers may modify the element's attributes during initialization, we 
+		// Since data views and controllers may modify the element's attributes during initialization, we
 		// need to iterate over all the attributes _before_ initializing any views or controllers. We store
 		// the information needed to initialize them in the following container.
 		Vector<ViewControllerInitializer> initializer_list;
@@ -469,7 +437,8 @@ static bool ApplyDataViewsControllersInternal(Element* element, const bool const
 					result = true;
 				}
 				else
-					Log::Message(Log::LT_WARNING, "Could not add data-%s view to element: %s", initializer.type.c_str(), element->GetAddress().c_str());
+					Log::Message(Log::LT_WARNING, "Could not add data-%s view to element: %s", initializer.type.c_str(),
+						element->GetAddress().c_str());
 			}
 
 			if (controller)
@@ -480,14 +449,14 @@ static bool ApplyDataViewsControllersInternal(Element* element, const bool const
 					result = true;
 				}
 				else
-					Log::Message(Log::LT_WARNING, "Could not add data-%s controller to element: %s", initializer.type.c_str(), element->GetAddress().c_str());
+					Log::Message(Log::LT_WARNING, "Could not add data-%s controller to element: %s", initializer.type.c_str(),
+						element->GetAddress().c_str());
 			}
 		}
 	}
 
 	return result;
 }
-
 
 bool ElementUtilities::ApplyDataViewsControllers(Element* element)
 {
