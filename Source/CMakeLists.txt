@@ -23,8 +23,12 @@
 if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     # Enable parallel builds
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    if (URHO3D_PARALLEL_BUILD GREATER_EQUAL 2)
+        ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
+    elseif (URHO3D_PARALLEL_BUILD)
+        cmake_host_system_information(RESULT URHO3D_PARALLEL_BUILD QUERY NUMBER_OF_PHYSICAL_CORES)
+        ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
+    endif ()
 endif ()
 
 if (DEFINED URHO3D_DESKTOP_SDK)
