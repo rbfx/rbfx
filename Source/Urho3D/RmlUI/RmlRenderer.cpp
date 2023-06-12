@@ -212,7 +212,7 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
     Texture2D* texture = cachedTexture ? cachedTexture->texture_ : nullptr;
     if (texture && texture->IsDataLost())
     {
-        texture->SetData(cachedTexture->image_, true);
+        texture->SetData(cachedTexture->image_);
         texture->ClearDataLost();
     }
 
@@ -314,7 +314,7 @@ bool RmlRenderer::GenerateTexture(Rml::TextureHandle& handleOut, const Rml::byte
     image->SetData(source);
 
     auto texture = MakeShared<Texture2D>(context_);
-    texture->SetData(image, true);
+    texture->SetData(image);
 
     auto cachedTexture = new CachedRmlTexture{ image, texture };
     handleOut = WrapTextureHandle(cachedTexture);

@@ -489,7 +489,7 @@ bool AnimationSet2D::EndLoadSpriter()
             texture->SetNumLevels(1);
 
             SpriteInfo& info = spriteInfos[0];
-            texture->SetData(info.image_, true);
+            texture->SetData(info.image_);
 
             sprite_ = MakeShared<Sprite2D>(context_);
             sprite_->SetTexture(texture);

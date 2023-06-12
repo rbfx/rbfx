@@ -131,26 +131,45 @@ bool TextureCube::SetSize(int size, TextureFormat format, TextureFlags flags, in
     return Create(params);
 }
 
-SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
+bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int width, int height, const void* data)
 {
-#if 0
-    if (format_ != Graphics::GetRGBAFormat() && format_ != Graphics::GetRGBFormat())
+    Update(level, {x, y, 0}, {width, height, 1}, face, data);
+    return true;
+}
+
+bool TextureCube::SetData(CubeMapFace face, Deserializer& source)
+{
+    SharedPtr<Image> image(MakeShared<Image>(context_));
+    if (!image->Load(source))
+        return false;
+
+    return SetData(face, image);
+}
+
+bool TextureCube::SetData(CubeMapFace face, Image* image)
+{
+    if (!face)
     {
-        URHO3D_LOGERROR("Unsupported texture format, can not convert to Image");
-        return SharedPtr<Image>();
+        RawTextureParams params;
+        params.type_ = TextureType::TextureCube;
+        params.numLevels_ = requestedLevels_;
+        if (!CreateForImage(params, image))
+            return false;
     }
 
-    auto rawImage = MakeShared<Image>(context_);
-    if (format_ == Graphics::GetRGBAFormat())
-        rawImage->SetSize(width_, height_, 4);
-    else if (format_ == Graphics::GetRGBFormat())
-        rawImage->SetSize(width_, height_, 3);
-    else
-        assert(false);
+    return UpdateFromImage(face, image);
+}
 
-    GetData(face, 0, rawImage->GetData());
-    return SharedPtr<Image>(rawImage);
-#endif
+bool TextureCube::GetData(CubeMapFace face, unsigned level, void* dest)
+{
+    return Read(face, level, dest, M_MAX_UNSIGNED);
+}
+
+SharedPtr<Image> TextureCube::GetImage(CubeMapFace face)
+{
+    auto image = MakeShared<Image>(context_);
+    if (ReadToImage(face, 0, image))
+        return image;
     return nullptr;
 }
 

@@ -59,14 +59,14 @@ public:
     /// Set data either partially or fully on a mip level. Return true if successful.
     bool SetData(unsigned level, int x, int y, int width, int height, const void* data);
     /// Set data from an image. Return true if successful. Optionally make a single channel image alpha-only.
-    bool SetData(Image* image, bool useAlpha = false);
+    bool SetData(Image* image);
 
     /// Get data from a mip level. The destination buffer must be big enough. Return true if successful.
-    bool GetData(unsigned level, void* dest) const;
+    bool GetData(unsigned level, void* dest);
     /// Get image data from zero mip level. Only RGB and RGBA textures are supported.
-    bool GetImage(Image& image) const;
+    bool GetImage(Image& image);
     /// Get image data from zero mip level. Only RGB and RGBA textures are supported.
-    SharedPtr<Image> GetImage() const;
+    SharedPtr<Image> GetImage();
 
 private:
     /// Image file acquired during BeginLoad.

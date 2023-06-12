@@ -1976,10 +1976,6 @@ SharedPtr<Image> Image::ConvertToRGBA() const
         return SharedPtr<Image>();
     }
 
-    // Already RGBA?
-    if (components_ == 4)
-        return SharedPtr<Image>(const_cast<Image*>(this));
-
     SharedPtr<Image> ret(MakeShared<Image>(context_));
     ret->SetSize(width_, height_, depth_, 4);
 
@@ -2018,6 +2014,10 @@ SharedPtr<Image> Image::ConvertToRGBA() const
             *dest++ = *src++;
             *dest++ = 255;
         }
+        break;
+
+    case 4:
+        memcpy(dest, src, width_ * height_ * depth_ * 4);
         break;
 
     default:

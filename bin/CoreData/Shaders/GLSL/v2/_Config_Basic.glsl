@@ -298,11 +298,10 @@
 #endif // URHO3D_VERTEX_SHADER
 
 #ifdef URHO3D_PIXEL_SHADER
-    #if defined(D3D11) || defined(URHO3D_CAMERA_REVERSED)
-        #define IS_FRONT_FACE gl_FrontFacing
-        #define SELECT_FRONT_BACK_FACE(frontValue, backValue) (gl_FrontFacing ? (frontValue) : (backValue))
-    #else
+    #if defined(URHO3D_CAMERA_REVERSED)
         #define IS_FRONT_FACE (!gl_FrontFacing)
-        #define SELECT_FRONT_BACK_FACE(frontValue, backValue) (gl_FrontFacing ? (backValue) : (frontValue))
+    #else
+        #define IS_FRONT_FACE (gl_FrontFacing)
     #endif
+    #define SELECT_FRONT_BACK_FACE(frontValue, backValue) ((IS_FRONT_FACE) ? (frontValue) : (backValue))
 #endif // URHO3D_PIXEL_SHADER

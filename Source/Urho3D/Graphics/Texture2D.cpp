@@ -109,43 +109,34 @@ bool Texture2D::SetSize(int width, int height, TextureFormat format, TextureFlag
     return Create(params);
 }
 
-bool Texture2D::GetImage(Image& image) const
+bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, const void* data)
 {
-#ifdef URHO3D_D3D11
-    if (format_ == DXGI_FORMAT_B8G8R8X8_UNORM)
-    {
-        image.SetSize(width_, height_, 4);
-        unsigned char* imageData = image.GetData();
-        GetData(0, imageData);
-        const unsigned numPixels = width_ * height_;
-        for (unsigned i = 0; i < numPixels; ++i)
-        {
-            ea::swap(imageData[i * 4], imageData[i * 4 + 2]);
-            imageData[i * 4 + 3] = 255;
-        }
-        return true;
-    }
-#elif URHO3D_DILIGENT
-    // TODO(diligent): Implement this
-    assert(0);
-    return false;
-#endif
-
-#if 0
-    if (format_ != Graphics::GetRGBAFormat() && format_ != Graphics::GetRGBFormat())
-    {
-        URHO3D_LOGERROR("Unsupported texture format, can not convert to Image");
-        return false;
-    }
-
-    image.SetSize(width_, height_, GetComponents());
-    if (!GetData(0, image.GetData()))
-        return false;
+    Update(level, {x, y, 0}, {width, height, 1}, 0, data);
     return true;
-#endif
 }
 
-SharedPtr<Image> Texture2D::GetImage() const
+bool Texture2D::SetData(Image* image)
+{
+    RawTextureParams params;
+    params.type_ = TextureType::Texture2D;
+    params.numLevels_ = requestedLevels_;
+    if (!CreateForImage(params, image))
+        return false;
+
+    return UpdateFromImage(0, image);
+}
+
+bool Texture2D::GetData(unsigned level, void* dest)
+{
+    return Read(0, level, dest, M_MAX_UNSIGNED);
+}
+
+bool Texture2D::GetImage(Image& image)
+{
+    return ReadToImage(0, 0, &image);
+}
+
+SharedPtr<Image> Texture2D::GetImage()
 {
     auto rawImage = MakeShared<Image>(context_);
     if (!GetImage(*rawImage))

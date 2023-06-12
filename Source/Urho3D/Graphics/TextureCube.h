@@ -60,12 +60,12 @@ public:
     /// Set data of one face from a stream. Return true if successful.
     bool SetData(CubeMapFace face, Deserializer& source);
     /// Set data of one face from an image. Return true if successful. Optionally make a single channel image alpha-only.
-    bool SetData(CubeMapFace face, Image* image, bool useAlpha = false);
+    bool SetData(CubeMapFace face, Image* image);
 
     /// Get data from a face's mip level. The destination buffer must be big enough. Return true if successful.
-    bool GetData(CubeMapFace face, unsigned level, void* dest) const;
+    bool GetData(CubeMapFace face, unsigned level, void* dest);
     /// Get image data from a face's zero mip level. Only RGB and RGBA textures are supported.
-    SharedPtr<Image> GetImage(CubeMapFace face) const;
+    SharedPtr<Image> GetImage(CubeMapFace face);
 
     /// Return render surface for one face.
     /// @property{get_renderSurfaces}

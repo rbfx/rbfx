@@ -164,7 +164,7 @@ TextureFormat TextureRenderBuffer::GetFormat() const
 {
     // TODO(diligent): Get rid of srgb flag
     const bool isSRGB = params_.flags_.Test(RenderBufferFlag::sRGB);
-    return static_cast<TextureFormat>(isSRGB ? Texture::GetSRGBFormat(params_.textureFormat_) : params_.textureFormat_);
+    return static_cast<TextureFormat>(isSRGB ? Texture::ConvertSRGB(params_.textureFormat_) : params_.textureFormat_);
 }
 
 ViewportColorRenderBuffer::ViewportColorRenderBuffer(RenderPipelineInterface* renderPipeline)

@@ -244,7 +244,7 @@ TextureFormat RenderBufferManager::GetOutputColorFormat() const
 {
     const bool isSRGB = colorOutputParams_.flags_.Test(RenderBufferFlag::sRGB);
     return static_cast<TextureFormat>(
-        isSRGB ? Texture::GetSRGBFormat(colorOutputParams_.textureFormat_) : colorOutputParams_.textureFormat_);
+        isSRGB ? Texture::ConvertSRGB(colorOutputParams_.textureFormat_) : colorOutputParams_.textureFormat_);
 }
 
 TextureFormat RenderBufferManager::GetOutputDepthStencilFormat() const

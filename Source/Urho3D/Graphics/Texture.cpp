@@ -32,6 +32,8 @@
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
 
@@ -39,6 +41,88 @@
 
 namespace Urho3D
 {
+
+namespace
+{
+
+ea::pair<unsigned, unsigned> GetLevelsOffsetAndCount(const Image& image, unsigned numLevels, unsigned mostDetailedMip)
+{
+    const unsigned maxNumLevels =
+        image.IsCompressed() ? image.GetNumCompressedLevels() : GetMipLevelCount(image.GetSize());
+    const unsigned effectiveMostDetailedMip = ea::min(mostDetailedMip, maxNumLevels - 1);
+    const unsigned effectiveNumLevels = numLevels == 0
+        ? maxNumLevels - effectiveMostDetailedMip
+        : ea::min(numLevels, maxNumLevels - effectiveMostDetailedMip);
+    return {effectiveMostDetailedMip, effectiveNumLevels};
+}
+
+// TODO(diligent): This can be in common place?
+TextureFormat GetImageFormat(const Image& image)
+{
+    if (!image.IsCompressed())
+    {
+        switch (image.GetComponents())
+        {
+        case 1: return Diligent::TEX_FORMAT_R8_UNORM;
+        case 2: return Diligent::TEX_FORMAT_RG8_UNORM;
+        case 4: return Diligent::TEX_FORMAT_RGBA8_UNORM;
+        default: return Diligent::TEX_FORMAT_UNKNOWN;
+        }
+    }
+    else
+    {
+        switch (image.GetCompressedFormat())
+        {
+        case CF_RGBA: return Diligent::TEX_FORMAT_RGBA8_UNORM;
+        case CF_DXT1: return Diligent::TEX_FORMAT_BC1_UNORM;
+        case CF_DXT3: return Diligent::TEX_FORMAT_BC2_UNORM;
+        case CF_DXT5: return Diligent::TEX_FORMAT_BC3_UNORM;
+        default: return Diligent::TEX_FORMAT_UNKNOWN;
+        }
+    }
+};
+
+TextureFormat ToHardwareFormat(const TextureFormat format, RenderDevice* renderDevice)
+{
+    if (format == Diligent::TEX_FORMAT_UNKNOWN)
+        return Diligent::TEX_FORMAT_RGBA8_UNORM;
+
+    if (renderDevice && !renderDevice->IsTextureFormatSupported(format))
+        return Diligent::TEX_FORMAT_RGBA8_UNORM;
+
+    return format;
+}
+
+bool IsCompressedEffective(const Image& image, RenderDevice* renderDevice)
+{
+    if (!image.IsCompressed())
+        return false;
+    // Don't decompress if there is no GPU at all
+    return !renderDevice || renderDevice->IsTextureFormatSupported(GetImageFormat(image));
+}
+
+using TextureFormatMap = ea::unordered_map<TextureFormat, TextureFormat>;
+
+ea::pair<TextureFormatMap, TextureFormatMap> GetTextureFormatSRGB()
+{
+    ea::unordered_map<TextureFormat, TextureFormat> toSrgb = {
+        {TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB },
+        {TextureFormat::TEX_FORMAT_BGRA8_UNORM, TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB },
+        {TextureFormat::TEX_FORMAT_BGRX8_UNORM, TextureFormat::TEX_FORMAT_BGRX8_UNORM_SRGB },
+        {TextureFormat::TEX_FORMAT_BC1_UNORM, TextureFormat::TEX_FORMAT_BC1_UNORM_SRGB },
+        {TextureFormat::TEX_FORMAT_BC2_UNORM, TextureFormat::TEX_FORMAT_BC2_UNORM_SRGB },
+        {TextureFormat::TEX_FORMAT_BC3_UNORM, TextureFormat::TEX_FORMAT_BC3_UNORM_SRGB },
+        {TextureFormat::TEX_FORMAT_BC7_UNORM, TextureFormat::TEX_FORMAT_BC7_UNORM_SRGB }
+    };
+    ea::unordered_map<TextureFormat, TextureFormat> fromSrgb;
+    for (const auto& [linear, srgb] : toSrgb)
+        fromSrgb[srgb] = linear;
+    return {toSrgb, fromSrgb};
+}
+
+const auto [linearToSrgb, srgbToLinear] = GetTextureFormatSRGB();
+
+} // namespace
 
 static const char* addressModeNames[] =
 {
@@ -267,6 +351,7 @@ bool Texture::CreateGPU()
             renderSurfaces_[i]->Restore(renderSurfaceHandles[i]);
     }
 
+    SetMemoryUse(CalculateMemoryUseGPU());
     return true;
 }
 
@@ -333,19 +418,123 @@ unsigned Texture::GetRowDataSize(int width) const
     return formatInfo.GetElementSize() * ((width + formatInfo.BlockWidth - 1) / formatInfo.BlockWidth);
 }
 
-TextureFormat Texture::GetSRGBFormat(TextureFormat format)
+TextureFormat Texture::ConvertSRGB(TextureFormat format, bool sRGB)
 {
-    switch (format)
+    const auto& map = sRGB ? linearToSrgb : srgbToLinear;
+    const auto iter = map.find(format);
+    return iter != map.end() ? iter->second : format;
+}
+
+bool Texture::CreateForImage(const RawTextureParams& baseParams, Image* image)
+{
+    Graphics* graphics = GetSubsystem<Graphics>();
+    Renderer* renderer = GetSubsystem<Renderer>();
+    RenderDevice* renderDevice = graphics ? graphics->GetRenderDevice() : nullptr;
+
+    const MaterialQuality quality = renderer ? renderer->GetTextureQuality() : QUALITY_HIGH;
+    const auto [mostDetailedLevel, numLevels] =
+        GetLevelsOffsetAndCount(*image, baseParams.numLevels_, GetMipsToSkip(quality));
+
+    mostDetailedLevel_ = mostDetailedLevel;
+
+    RawTextureParams params = baseParams;
+    params.size_ = GetMipLevelSize(image->GetSize(), mostDetailedLevel);
+    params.numLevels_ = numLevels;
+    params.format_ = ToHardwareFormat(GetImageFormat(*image), renderDevice);
+    if (sRGB_)
+        params.format_ = ConvertSRGB(params.format_);
+    return Create(params);
+}
+
+bool Texture::UpdateFromImage(unsigned arraySlice, Image* image)
+{
+    const TextureFormat internalFormat = GetFormat();
+    const TextureFormat imageFormat = GetImageFormat(*image);
+
+    if (!image->IsCompressed() && (ConvertSRGB(internalFormat, false) == imageFormat))
     {
-    case TextureFormat::TEX_FORMAT_RGBA8_UNORM: return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
-    case TextureFormat::TEX_FORMAT_BGRA8_UNORM: return TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB;
-    case TextureFormat::TEX_FORMAT_BGRX8_UNORM: return TextureFormat::TEX_FORMAT_BGRX8_UNORM_SRGB;
-    case TextureFormat::TEX_FORMAT_BC1_UNORM: return TextureFormat::TEX_FORMAT_BC1_UNORM_SRGB;
-    case TextureFormat::TEX_FORMAT_BC2_UNORM: return TextureFormat::TEX_FORMAT_BC2_UNORM_SRGB;
-    case TextureFormat::TEX_FORMAT_BC3_UNORM: return TextureFormat::TEX_FORMAT_BC3_UNORM_SRGB;
-    case TextureFormat::TEX_FORMAT_BC7_UNORM: return TextureFormat::TEX_FORMAT_BC7_UNORM_SRGB;
+        // If not compressed and not converted, upload image data as is
+        const Image* currentLevel = image;
+        SharedPtr<Image> currentLevelHolder;
+        for (unsigned level = 0; level < mostDetailedLevel_; ++level)
+        {
+            currentLevelHolder = currentLevel->GetNextLevel();
+            currentLevel = currentLevelHolder;
+        }
+
+        for (unsigned level = 0; level < GetLevels(); ++level)
+        {
+            Update(level, IntVector3::ZERO, currentLevel->GetSize(), arraySlice, currentLevel->GetData());
+            currentLevelHolder = currentLevel->GetNextLevel();
+            currentLevel = currentLevelHolder;
+        }
     }
-    return format;
+    else if (ConvertSRGB(internalFormat, false) == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
+    {
+        // RGBA8 is default format, use it if hardware format is not available.
+        URHO3D_LOGWARNING("Image '{}' is converted to RGBA8 format on upload to GPU", GetName());
+
+        for (unsigned level = 0; level < GetLevels(); ++level)
+        {
+            const auto decompressedLevel = image->GetDecompressedImageLevel(mostDetailedLevel_ + level);
+            if (!decompressedLevel)
+                return false;
+
+            Update(level, IntVector3::ZERO, decompressedLevel->GetSize(), arraySlice, decompressedLevel->GetData());
+        }
+    }
+    else
+    {
+        URHO3D_ASSERT(image->IsCompressed());
+
+        // Upload compressed image data as is
+        for (unsigned level = 0; level < GetLevels(); ++level)
+        {
+            const CompressedLevel imageLevel = image->GetCompressedLevel(mostDetailedLevel_ + level);
+            const IntVector3 levelSize{imageLevel.width_, imageLevel.height_, imageLevel.depth_};
+            Update(level, IntVector3::ZERO, levelSize, arraySlice, imageLevel.data_);
+        }
+    }
+
+    return true;
+}
+
+bool Texture::ReadToImage(unsigned arraySlice, unsigned level, Image* image)
+{
+    static const TextureFormat supportedFormats[] = {
+        TextureFormat::TEX_FORMAT_RGBA8_UNORM,
+        TextureFormat::TEX_FORMAT_BGRA8_UNORM,
+        TextureFormat::TEX_FORMAT_BGRX8_UNORM,
+    };
+
+    const auto imageFormat = ConvertSRGB(GetFormat(), false);
+    if (ea::find(ea::begin(supportedFormats), ea::end(supportedFormats), imageFormat) == ea::end(supportedFormats))
+    {
+        URHO3D_LOGWARNING("Unsupported texture format, can not convert to Image");
+        return false;
+    }
+
+    const unsigned numComponents = 4;
+    const IntVector3 levelSize = GetMipLevelSize(GetParams().size_, level);
+    image->SetSize(levelSize.x_, levelSize.y_, levelSize.z_, numComponents);
+
+    const unsigned numTexels = levelSize.x_ * levelSize.y_ * levelSize.z_;
+    unsigned char* imageData = image->GetData();
+    if (!Read(arraySlice, level, imageData, numTexels * numComponents))
+        return false;
+
+    if (imageFormat == TextureFormat::TEX_FORMAT_BGRA8_UNORM || imageFormat == TextureFormat::TEX_FORMAT_BGRX8_UNORM)
+    {
+        for (unsigned i = 0; i < numTexels; ++i)
+            ea::swap(imageData[i * numComponents], imageData[i * numComponents + 2]);
+    }
+    if (imageFormat == TextureFormat::TEX_FORMAT_BGRX8_UNORM)
+    {
+        for (unsigned i = 0; i < numTexels; ++i)
+            imageData[i * numComponents + 3] = 255;
+    }
+
+    return true;
 }
 
 }

@@ -39,6 +39,7 @@ namespace Urho3D
 
 static const int MAX_TEXTURE_QUALITY_LEVELS = 3;
 
+class Image;
 class XMLElement;
 class XMLFile;
 
@@ -207,7 +208,7 @@ public:
 
     /// Convert format to sRGB.
     /// @nobind
-    static TextureFormat GetSRGBFormat(TextureFormat format);
+    static TextureFormat ConvertSRGB(TextureFormat format, bool sRGB = true);
 
 private:
     /// Implement RawTexture.
@@ -223,6 +224,14 @@ private:
 protected:
     /// Check whether texture memory budget has been exceeded. Free unused materials in that case to release the texture references.
     void CheckTextureBudget(StringHash type);
+
+    /// Create texture so it can fit the image.
+    /// Size and format are deduced from the image. Number of mips is adjusted according to the image.
+    bool CreateForImage(const RawTextureParams& baseParams, Image* image);
+    /// Set texture data from image.
+    bool UpdateFromImage(unsigned arraySlice, Image* image);
+    /// Read texture data to image.
+    bool ReadToImage(unsigned arraySlice, unsigned level, Image* image);
 
     /// Requested mip levels.
     unsigned requestedLevels_{};
@@ -240,6 +249,8 @@ protected:
     SharedPtr<Texture> backupTexture_;
     /// Render surface(s).
     ea::vector<SharedPtr<RenderSurface>> renderSurfaces_;
+    /// Most detailed mip level currently used.
+    unsigned mostDetailedLevel_{};
 };
 
 }

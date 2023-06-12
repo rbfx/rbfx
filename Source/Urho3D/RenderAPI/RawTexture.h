@@ -39,6 +39,16 @@ struct URHO3D_API RawTextureParams
     /// and resolved texture with multiple mip levels (aka `numLevels_`) used as SRV.
     /// Otherwise, `numLevelsRTV_` is equal to `numLevels_`.
     unsigned numLevelsRTV_{};
+
+    /// Operators.
+    /// @{
+    auto Tie() const
+    {
+        return ea::tie(type_, format_, flags_, size_, arraySize_, numLevels_, multiSample_, numLevelsRTV_);
+    }
+    bool operator==(const RawTextureParams& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const RawTextureParams& rhs) const { return Tie() != rhs.Tie(); }
+    /// @}
 };
 
 struct URHO3D_API RawTextureUAVKey
@@ -111,9 +121,16 @@ public:
 
     /// Generate mip levels from the topmost level. Avoid calling it during the rendering.
     void GenerateLevels();
+    /// Resolve multi-sampled texture to the simple resolved texture.
+    void Resolve();
     /// Update texture data.
     void Update(
         unsigned level, const IntVector3& offset, const IntVector3& size, unsigned arraySlice, const void* data);
+    /// Read texture data from GPU. This operation is very slow and shouldn't be used in real time.
+    bool Read(unsigned slice, unsigned level, void* buffer, unsigned bufferSize);
+
+    /// Evaluate approximate memory footprint of the texture on GPU.
+    unsigned long long CalculateMemoryUseGPU() const;
 
     /// Implement DeviceObject.
     /// @{

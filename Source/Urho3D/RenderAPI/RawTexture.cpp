@@ -34,6 +34,13 @@ static const EnumArray<Diligent::RESOURCE_DIMENSION, TextureType> textureTypeToV
     Diligent::RESOURCE_DIM_TEX_2D_ARRAY,
 }};
 
+static const EnumArray<Diligent::RESOURCE_DIMENSION, TextureType> textureTypeToStagingDimensions{{
+    Diligent::RESOURCE_DIM_TEX_2D,
+    Diligent::RESOURCE_DIM_TEX_2D,
+    Diligent::RESOURCE_DIM_TEX_3D,
+    Diligent::RESOURCE_DIM_TEX_2D,
+}};
+
 bool AllLess(const IntVector3& lhs, const IntVector3& rhs)
 {
     return lhs.x_ < rhs.x_ && lhs.y_ < rhs.y_ && lhs.z_ < rhs.z_;
@@ -237,6 +244,29 @@ bool ValidateKey(RawTextureUAVKey& key, const RawTextureParams& params)
     return true;
 }
 
+IntVector3 GetSizeInBlocks(const IntVector3& size, TextureFormat format)
+{
+    const auto& formatInfo = Diligent::GetTextureFormatAttribs(format);
+    return {
+        (size.x_ + formatInfo.BlockWidth - 1) / formatInfo.BlockWidth,
+        (size.y_ + formatInfo.BlockHeight - 1) / formatInfo.BlockHeight, //
+        size.z_ //
+    };
+}
+
+unsigned GetBlockSize(TextureFormat format)
+{
+    const auto& formatInfo = Diligent::GetTextureFormatAttribs(format);
+    return formatInfo.GetElementSize();
+}
+
+unsigned long long GetMipLevelSizeInBytes(const IntVector3& size, unsigned level, TextureFormat format)
+{
+    const IntVector3 sizeInTexels = GetMipLevelSize(size, level);
+    const IntVector3 sizeInBlocks = GetSizeInBlocks(sizeInTexels, format);
+    return sizeInBlocks.x_ * sizeInBlocks.y_ * sizeInBlocks.z_ * GetBlockSize(format);
+}
+
 } // namespace
 
 RawTexture::RawTexture(Context* context)
@@ -347,6 +377,10 @@ Diligent::ITextureView* RawTexture::GetUAV(const RawTextureUAVKey& key) const
 
 bool RawTexture::Create(const RawTextureParams& params)
 {
+    // Optimize repeated calls.
+    if (params == params_ && handles_)
+        return true;
+
     Destroy();
 
     params_ = params;
@@ -558,6 +592,28 @@ void RawTexture::GenerateLevels()
     levelsDirty_ = false;
 }
 
+void RawTexture::Resolve()
+{
+    if (handles_.resolvedTexture_)
+    {
+        Diligent::IDeviceContext* immediateContext = renderDevice_->GetImmediateContext();
+        Diligent::ResolveTextureSubresourceAttribs attribs;
+        attribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+        attribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+        for (unsigned slice = 0; slice < params_.arraySize_; ++slice)
+        {
+            attribs.SrcSlice = slice;
+            attribs.DstSlice = slice;
+            immediateContext->ResolveTextureSubresource(handles_.texture_, handles_.resolvedTexture_, attribs);
+        }
+
+        if (params_.numLevels_ > 1)
+            SetLevelsDirty();
+    }
+
+    resolveDirty_ = false;
+}
+
 void RawTexture::Update(
     unsigned level, const IntVector3& offset, const IntVector3& size, unsigned arraySlice, const void* data)
 {
@@ -605,6 +661,116 @@ void RawTexture::Update(
     Diligent::IDeviceContext* immediateContext = renderDevice_->GetImmediateContext();
     immediateContext->UpdateTexture(handles_.texture_, level, arraySlice, destBox, resourceData,
         Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+}
+
+bool RawTexture::Read(unsigned slice, unsigned level, void* buffer, unsigned bufferSize)
+{
+    if (!handles_)
+    {
+        URHO3D_LOGWARNING("RawTexture::Read is ignored for uninitialized texture");
+        return false;
+    }
+
+    if (level >= params_.numLevels_)
+    {
+        URHO3D_ASSERTLOG(false, "Trying to read invalid mip level {}", level);
+        return false;
+    }
+    if (slice >= params_.arraySize_)
+    {
+        URHO3D_ASSERTLOG(false, "Trying to read invalid array slice {}", slice);
+        return false;
+    }
+    const auto sizeInBytes = GetMipLevelSizeInBytes(params_.size_, level, params_.format_);
+    if (sizeInBytes > bufferSize)
+    {
+        URHO3D_ASSERTLOG(false, "Trying to read {} bytes of texture to the buffer of size {}", sizeInBytes, bufferSize);
+        return false;
+    }
+
+    if (GetResolveDirty())
+        Resolve();
+    if (GetLevelsDirty())
+        GenerateLevels();
+
+    Diligent::IRenderDevice* device = renderDevice_->GetRenderDevice();
+    Diligent::IDeviceContext* immediateContext = renderDevice_->GetImmediateContext();
+    const IntVector3 sizeInTexels = GetMipLevelSize(params_.size_, level);
+
+    Diligent::TextureDesc textureDesc;
+    textureDesc.Type = textureTypeToStagingDimensions[params_.type_];
+    textureDesc.Name = "RawTexture::Read staging texture";
+    textureDesc.Usage = Diligent::USAGE_STAGING;
+    textureDesc.CPUAccessFlags = Diligent::CPU_ACCESS_READ;
+    textureDesc.Format = params_.format_;
+    textureDesc.Width = sizeInTexels.x_;
+    textureDesc.Height = sizeInTexels.y_;
+    textureDesc.Depth = sizeInTexels.z_;
+
+    Diligent::RefCntAutoPtr<Diligent::ITexture> stagingTexture;
+    device->CreateTexture(textureDesc, nullptr, &stagingTexture);
+    if (!stagingTexture)
+    {
+        URHO3D_LOGERROR("Failed to create staging texture for RawTexture::Read");
+        return false;
+    }
+
+    Diligent::CopyTextureAttribs attribs;
+    attribs.pSrcTexture = handles_.resolvedTexture_ ? handles_.resolvedTexture_ : handles_.texture_;
+    attribs.SrcMipLevel = level;
+    attribs.SrcSlice = slice;
+    attribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    attribs.pDstTexture = stagingTexture;
+    attribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    immediateContext->CopyTexture(attribs);
+
+    Diligent::MappedTextureSubresource mappedData;
+    immediateContext->WaitForIdle();
+    immediateContext->MapTextureSubresource(
+        stagingTexture, 0, 0, Diligent::MAP_READ, Diligent::MAP_FLAG_NONE, nullptr, mappedData);
+
+    if (!mappedData.pData)
+    {
+        URHO3D_LOGERROR("Failed to map staging texture for RawTexture::Read");
+        return false;
+    }
+
+    const auto& formatInfo = Diligent::GetTextureFormatAttribs(params_.format_);
+
+    const IntVector3 sizeInBlocks = GetSizeInBlocks(params_.size_, params_.format_);
+    const unsigned rowSize = GetBlockSize(params_.format_) * sizeInBlocks.x_;
+
+    const auto srcBuffer = reinterpret_cast<const unsigned char*>(mappedData.pData);
+    auto destBuffer = reinterpret_cast<unsigned char*>(buffer);
+    for (unsigned depth = 0; depth < sizeInBlocks.z_; ++depth)
+    {
+        for (unsigned row = 0; row < sizeInBlocks.y_; ++row)
+        {
+            memcpy(destBuffer, srcBuffer + depth * mappedData.DepthStride + row * mappedData.Stride, rowSize);
+            destBuffer += rowSize;
+        }
+    }
+
+    immediateContext->UnmapTextureSubresource(stagingTexture, 0, 0);
+    return true;
+}
+
+unsigned long long RawTexture::CalculateMemoryUseGPU() const
+{
+    if (!handles_)
+        return 0;
+
+    unsigned long long sliceMemory = 0;
+
+    // If resolve texture is present, count the only MSAA slice of original texture
+    if (handles_.resolvedTexture_)
+        sliceMemory += params_.multiSample_ * GetMipLevelSizeInBytes(params_.size_, 0, params_.format_);
+
+    // Count non-multisampled mip levels
+    for (unsigned level = 0; level < params_.numLevels_; ++level)
+        sliceMemory += GetMipLevelSizeInBytes(params_.size_, level, params_.format_);
+
+    return params_.arraySize_ * sliceMemory;
 }
 
 } // namespace Urho3D
