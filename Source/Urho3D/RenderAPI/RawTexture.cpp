@@ -93,7 +93,7 @@ bool ValidateDimensions(RawTextureParams& params)
         params.arraySize_ = 1;
         return true;
 
-    case TextureType::Array2D:
+    case TextureType::Texture2DArray:
         if (params.size_.x_ <= 0 || params.size_.y_ <= 0 || params.arraySize_ == 0)
         {
             URHO3D_ASSERTLOG(false, "Zero or negative texture dimensions");
@@ -422,8 +422,10 @@ bool RawTexture::CreateGPU()
     textureDesc.Format = params_.format_;
     textureDesc.Width = params_.size_.x_;
     textureDesc.Height = params_.size_.y_;
-    textureDesc.Depth = params_.size_.z_;
-    textureDesc.ArraySize = params_.arraySize_;
+    if (params_.type_ == TextureType::Texture3D)
+        textureDesc.Depth = params_.size_.z_;
+    else
+        textureDesc.ArraySize = params_.arraySize_;
 
     textureDesc.BindFlags = Diligent::BIND_SHADER_RESOURCE;
     if (isRTV)
@@ -554,7 +556,7 @@ bool RawTexture::CreateRenderSurfaces(Diligent::ITextureView* defaultView, Dilig
     {
         handles_.renderSurfaces_.emplace_back(defaultView);
     }
-    else if (params_.type_ == TextureType::TextureCube || params_.type_ == TextureType::Array2D)
+    else if (params_.type_ == TextureType::TextureCube || params_.type_ == TextureType::Texture2DArray)
     {
         for (unsigned i = 0; i < params_.arraySize_; ++i)
         {

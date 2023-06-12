@@ -157,7 +157,7 @@ enum class TextureType
     /// Singular 3D texture. Support is not guaranteed.
     Texture3D,
     /// Array of 2D textures. Support is not guaranteed.
-    Array2D,
+    Texture2DArray,
 
     Count
 };

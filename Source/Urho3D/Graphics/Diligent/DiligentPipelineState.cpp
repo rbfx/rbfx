@@ -738,7 +738,7 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     ci.GraphicsPipeline.RasterizerDesc.SlopeScaledDepthBias = desc_.slopeScaledDepthBias_;
     ci.GraphicsPipeline.RasterizerDesc.DepthClipEnable = true;
     ci.GraphicsPipeline.RasterizerDesc.ScissorEnable = desc_.scissorTestEnabled_;
-    ci.GraphicsPipeline.RasterizerDesc.AntialiasedLineEnable = desc_.lineAntiAlias_;
+    ci.GraphicsPipeline.RasterizerDesc.AntialiasedLineEnable = !isOpenGL && desc_.lineAntiAlias_;
 
     ci.GraphicsPipeline.RasterizerDesc.ScissorEnable = desc_.scissorTestEnabled_;
 

@@ -139,7 +139,7 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, TextureForm
     layers_ = layers ? layers : layers_;
 
     RawTextureParams params;
-    params.type_ = TextureType::Array2D;
+    params.type_ = TextureType::Texture2DArray;
     params.format_ = format;
     params.size_ = {width, height, 1};
     params.arraySize_ = layers_;
@@ -147,6 +147,41 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, TextureForm
     params.flags_ = flags;
 
     return Create(params);
+}
+
+bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int width, int height, const void* data)
+{
+    Update(level, {x, y, 0}, {width, height, 1}, layer, data);
+    return true;
+}
+
+bool Texture2DArray::SetData(unsigned layer, Deserializer& source)
+{
+    SharedPtr<Image> image(MakeShared<Image>(context_));
+    if (!image->Load(source))
+        return false;
+
+    return SetData(layer, image);
+}
+
+bool Texture2DArray::SetData(unsigned layer, Image* image)
+{
+    if (layer == 0)
+    {
+        RawTextureParams params;
+        params.type_ = TextureType::Texture2DArray;
+        params.numLevels_ = requestedLevels_;
+        params.arraySize_ = layers_;
+        if (!CreateForImage(params, image))
+            return false;
+    }
+
+    return UpdateFromImage(layer, image);
+}
+
+bool Texture2DArray::GetData(unsigned layer, unsigned level, void* dest)
+{
+    return Read(layer, level, dest, M_MAX_UNSIGNED);
 }
 
 }

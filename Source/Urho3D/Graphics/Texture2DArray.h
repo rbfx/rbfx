@@ -61,13 +61,13 @@ public:
     /// Set data of one layer from a stream. Return true if successful.
     bool SetData(unsigned layer, Deserializer& source);
     /// Set data of one layer from an image. Return true if successful. Optionally make a single channel image alpha-only.
-    bool SetData(unsigned layer, Image* image, bool useAlpha = false);
+    bool SetData(unsigned layer, Image* image);
 
     /// Return number of layers in the texture.
     /// @property
     unsigned GetLayers() const { return layers_; }
     /// Get data from a mip level. The destination buffer must be big enough. Return true if successful.
-    bool GetData(unsigned layer, unsigned level, void* dest) const;
+    bool GetData(unsigned layer, unsigned level, void* dest);
 
 private:
     /// Texture array layers number.

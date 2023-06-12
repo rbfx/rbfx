@@ -153,4 +153,26 @@ bool Texture3D::SetSize(int width, int height, int depth, TextureFormat format, 
     return Create(params);
 }
 
+bool Texture3D::SetData(unsigned level, int x, int y, int z, int width, int height, int depth, const void* data)
+{
+    Update(level, {x, y, z}, {width, height, depth}, 0, data);
+    return true;
+}
+
+bool Texture3D::SetData(Image* image)
+{
+    RawTextureParams params;
+    params.type_ = TextureType::Texture3D;
+    params.numLevels_ = requestedLevels_;
+    if (!CreateForImage(params, image))
+        return false;
+
+    return UpdateFromImage(0, image);
+}
+
+bool Texture3D::GetData(unsigned level, void* dest)
+{
+    return Read(0, level, dest, M_MAX_UNSIGNED);
+}
+
 }
