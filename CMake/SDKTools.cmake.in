@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-2022 the rbfx project.
+# Copyright (c) 2017-2023 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,13 +20,12 @@
 # THE SOFTWARE.
 #
 
-add_library(CLI11 INTERFACE)
-target_include_directories(CLI11
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
+set(SWIG_EXECUTABLE "${URHO3D_SDK}/@SWIG_EXECUTABLE@")
+set(PACKAGE_TOOL    "${URHO3D_SDK}/@PACKAGE_TOOL@")
 
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.hpp)
-
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS CLI11 EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+set(TOOL_ANY_EXIST OFF)
+foreach (pth TOOL_SWIG_EXE_PATH PACKAGE_TOOL)
+    if (EXISTS "${${pth}}")
+        set(TOOL_ANY_EXIST ON)
+    endif ()
+endforeach ()

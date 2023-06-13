@@ -40,9 +40,7 @@ macro (define_engine_source_files)
         )
         list (APPEND HEADER_FILES ${_files})
         # Install them
-        if (NOT MINI_URHO)
-            install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
-        endif ()
+        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
         # Get source files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
         list (APPEND SOURCE_FILES ${_files})
@@ -51,18 +49,13 @@ endmacro()
 
 define_engine_source_files (Container Core IO Math)
 
-if (NOT MINI_URHO)
-    define_engine_source_files (Audio Engine Input Plugins RenderPipeline Resource Scene Script Shader UI Utility)
-    define_engine_source_files (NORECURSE . Graphics)
-    list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
-    if (URHO3D_OPENGL)
-        define_engine_source_files (Graphics/OpenGL)
-    elseif (URHO3D_D3D11)
-        define_engine_source_files (Graphics/Direct3D11)
-    endif ()
-else ()
-    # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
-    set (URHO3D_CSHARP OFF)
+define_engine_source_files (Audio Engine Input Plugins RenderPipeline Resource Scene Script Shader UI Utility)
+define_engine_source_files (NORECURSE . Graphics)
+list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
+if (URHO3D_OPENGL)
+    define_engine_source_files (Graphics/OpenGL)
+elseif (URHO3D_D3D11)
+    define_engine_source_files (Graphics/Direct3D11)
 endif ()
 
 if (URHO3D_PARTICLE_GRAPH)
@@ -158,9 +151,6 @@ foreach (var ${__cmake_variables})
     endif ()
 endforeach()
 
-if (MINI_URHO)
-    target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
-endif ()
 target_compile_definitions(Urho3D PUBLIC -DNOMINMAX -DURHO3D_DEBUG=$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>)
 
 # Set platform definitions
@@ -343,25 +333,23 @@ if (URHO3D_PROFILING)
 endif ()
 
 # Graphics
-if (NOT MINI_URHO)
-    if (URHO3D_OPENGL)
-        if (APPLE)
-            # Do nothing
-        elseif (WIN32)
-            target_link_libraries (Urho3D PUBLIC opengl32)
-        elseif (ANDROID OR ARM)
-            if (URHO3D_GLES2)
-                target_link_libraries (Urho3D PUBLIC GLESv1_CM GLESv2)
-            elseif (URHO3D_GLES3)
-                target_link_libraries (Urho3D PUBLIC GLESv3)
-            endif ()
-        else ()
-            target_link_libraries (Urho3D PUBLIC GL)
+if (URHO3D_OPENGL)
+    if (APPLE)
+        # Do nothing
+    elseif (WIN32)
+        target_link_libraries (Urho3D PUBLIC opengl32)
+    elseif (ANDROID OR ARM)
+        if (URHO3D_GLES2)
+            target_link_libraries (Urho3D PUBLIC GLESv1_CM GLESv2)
+        elseif (URHO3D_GLES3)
+            target_link_libraries (Urho3D PUBLIC GLESv3)
         endif ()
     else ()
-        find_package(DirectX REQUIRED D3D11)
-        target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
+        target_link_libraries (Urho3D PUBLIC GL)
     endif ()
+else ()
+    find_package(DirectX REQUIRED D3D11)
+    target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
 endif ()
 
 if (WEB)
@@ -477,9 +465,6 @@ if (URHO3D_CSHARP)
 endif ()
 
 ################################################### SDK preparation ####################################################
-if (MINI_URHO)
-    return ()
-endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
     # Merge static libraries of third party dependencies to final engine static library

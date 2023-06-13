@@ -19,8 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+return_if_not_tool(SpritePacker)
 
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (SpritePacker ${SOURCE_FILES})
 target_link_libraries (SpritePacker Urho3D)
-install(TARGETS SpritePacker RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
+install(TARGETS SpritePacker EXPORT Urho3D RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG} PERMISSIONS ${PERMISSIONS_755})

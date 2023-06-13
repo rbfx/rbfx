@@ -111,9 +111,7 @@ inline void SetFPUState(unsigned control)
 extern "C" RPCRTAPI RPC_STATUS RPC_ENTRY RpcStringFreeA(RPC_CSTR* String);
 #endif
 
-#ifndef MINI_URHO
 #include <SDL.h>
-#endif
 
 #include "../DebugNew.h"
 
@@ -143,9 +141,7 @@ void InitFPU()
 
 void ErrorDialog(const ea::string& title, const ea::string& message)
 {
-#ifndef MINI_URHO
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title.c_str(), message.c_str(), nullptr);
-#endif
 }
 
 void ErrorExit(const ea::string& message, int exitCode)
@@ -491,7 +487,6 @@ void SetMiniDumpDir(const ea::string& pathName)
 
 ea::string GetMiniDumpDir()
 {
-#ifndef MINI_URHO
     if (miniDumpDir.empty())
     {
         char* pathName = SDL_GetPrefPath("urho3d", "crashdumps");
@@ -502,7 +497,6 @@ ea::string GetMiniDumpDir()
             return ret;
         }
     }
-#endif
 
     return miniDumpDir;
 }
@@ -578,7 +572,7 @@ ea::string GetHostName()
 }
 
 // Disable Windows OS version functionality when compiling mini version for Web, see https://github.com/urho3d/Urho3D/issues/1998
-#if defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
+#if defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW)
 using RtlGetVersionPtr = NTSTATUS (WINAPI *)(PRTL_OSVERSIONINFOW);
 
 static void GetOS(RTL_OSVERSIONINFOW *r)
@@ -599,7 +593,7 @@ ea::string GetOSVersion()
     struct utsname u{};
     if (uname(&u) == 0)
         return ea::string(u.sysname) + " " + u.release;
-#elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
+#elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW)
     RTL_OSVERSIONINFOW r;
     GetOS(&r);
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx

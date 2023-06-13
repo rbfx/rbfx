@@ -413,9 +413,6 @@ if (CLANG_TIDY)
 endif()
 
 ################################################### SDK preparation ####################################################
-if (MINI_URHO)
-    return ()
-endif ()
 
 # Install CMake modules and toolchains provided by and for Urho3D
 install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/CMake/Toolchains)    # Note: the trailing slash is significant
