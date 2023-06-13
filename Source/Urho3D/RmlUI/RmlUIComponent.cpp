@@ -78,6 +78,53 @@ void RmlUIComponent::Update(float timeStep)
     UpdateConnectedCanvas();
 }
 
+bool RmlUIComponent::BindDataModelProperty(const ea::string& name, GetterFunc getter, SetterFunc setter)
+{
+    const auto constructor = GetDataModelConstructor();
+    if (!constructor)
+    {
+        URHO3D_LOGERROR("BindDataModelProperty can only be executed from OnDataModelInitialized");
+        return false;
+    }
+    return constructor->BindFunc(
+        name,
+        [=](Rml::Variant& outputValue)
+        {
+        Variant variant;
+        getter(variant);
+        RmlUI::TryConvertVariant(variant, outputValue);
+        },
+        [=](const Rml::Variant& inputValue)
+        {
+        Variant variant;
+        if (RmlUI::TryConvertVariant(inputValue, variant))
+        {
+            setter(variant);
+        }
+    });
+}
+
+bool RmlUIComponent::BindDataModelEvent(const ea::string& name, EventFunc eventCallback)
+{
+    auto constructor = GetDataModelConstructor();
+    if (!constructor)
+    {
+        URHO3D_LOGERROR("BindDataModelProperty can only be executed from OnDataModelInitialized");
+        return false;
+    }
+    return constructor->BindEventCallback(
+        name,
+        [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& args)
+        {
+        VariantVector urhoArgs;
+        for (auto& src: args)
+        {
+            RmlUI::TryConvertVariant(src, urhoArgs.push_back());
+        }
+        eventCallback(urhoArgs);
+    });
+}
+
 void RmlUIComponent::OnSetEnabled()
 {
     UpdateDocumentOpen();
@@ -118,9 +165,10 @@ void RmlUIComponent::OpenInternal()
 
     if (!dataModel_)
     {
-        Rml::DataModelConstructor constructor = CreateDataModel();
-        OnDataModelInitialized(constructor);
-        dataModel_ = constructor.GetModelHandle();
+        CreateDataModel();
+        OnDataModelInitialized();
+        dataModel_ = modelConstructor_->GetModelHandle();
+        modelConstructor_.reset();
     }
 
     SetDocument(ui->LoadDocument(resource_.name_));
@@ -335,19 +383,18 @@ void RmlUIComponent::DoNavigablePop(Rml::DataModelHandle model, Rml::Event& even
         navigationManager_->PopCursorGroup();
 }
 
-Rml::DataModelConstructor RmlUIComponent::CreateDataModel()
+void RmlUIComponent::CreateDataModel()
 {
     RmlUI* ui = GetUI();
     Rml::Context* context = ui->GetRmlContext();
 
     dataModelName_ = GetDataModelName();
-    Rml::DataModelConstructor constructor = context->CreateDataModel(dataModelName_, &typeRegister_);
+    modelConstructor_ = ea::make_unique<Rml::DataModelConstructor>(context->CreateDataModel(dataModelName_, &typeRegister_));
 
-    constructor.BindFunc("navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
-    constructor.BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);
-    constructor.BindEventCallback("navigable_pop", &RmlUIComponent::DoNavigablePop, this);
-
-    return constructor;
+    modelConstructor_->BindFunc(
+        "navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
+    modelConstructor_->BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);
+    modelConstructor_->BindEventCallback("navigable_pop", &RmlUIComponent::DoNavigablePop, this);
 }
 
 void RmlUIComponent::RemoveDataModel()

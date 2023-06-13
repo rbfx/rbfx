@@ -109,6 +109,11 @@ public:
     /// Emitted when automatic resource reloading triggers reload of a document.
     Signal<void(const RmlDocumentReloadedArgs&)> documentReloaded_;
 
+    /// Try to convert variant from RmlUI to Urho3D.
+    static bool TryConvertVariant(const Rml::Variant& src, Variant& dst);
+    /// Try to convert variant from Urho3D to RmlUI.
+    static bool TryConvertVariant(const Variant& src, Rml::Variant& dst);
+
 private:
     /// Returns a size that this UI screen will cover.
     IntVector2 GetDesiredCanvasSize() const;
@@ -169,10 +174,25 @@ private:
 /// Convert math types from/to RmlUI
 /// @{
 inline Rml::Vector2f ToRmlUi(const Vector2& value) { return {value.x_, value.y_}; };
+inline Rml::Vector3f ToRmlUi(const Vector3& value) { return {value.x_, value.y_, value.z_}; };
+inline Rml::Vector4f ToRmlUi(const Vector4& value) { return {value.x_, value.y_, value.z_, value.w_}; };
+inline Rml::Colourf ToRmlUi(const Color& value) { return {value.r_, value.g_, value.b_, value.a_}; };
 inline Rml::Vector2i ToRmlUi(const IntVector2& value) { return {value.x_, value.y_}; };
 
 inline Vector2 ToVector2(const Rml::Vector2f& value) { return {value.x, value.y}; }
-inline IntVector2 ToIntVector2(const Rml::Vector2i& value) { return {value.x, value.y}; }
+inline Vector3 ToVector3(const Rml::Vector3f& value) { return {value.x, value.y, value.z}; }
+inline Vector4 ToVector4(const Rml::Vector4f& value) { return {value.x, value.y, value.z, value.w}; }
+inline Color ToColor(const Rml::Colourf& value) { return {value.red, value.green, value.blue, value.alpha}; }
+inline Color ToColor(const Rml::Colourb& value)
+{
+    return Color{static_cast<float>(value.red), static_cast<float>(value.green), static_cast<float>(value.blue),
+               static_cast<float>(value.alpha)}
+    * (1.0f / 255.0f);
+}
+inline IntVector2 ToIntVector2(const Rml::Vector2i& value)
+{
+    return {value.x, value.y};
+}
 /// @}
 
 namespace Detail

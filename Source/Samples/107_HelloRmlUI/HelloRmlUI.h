@@ -46,7 +46,7 @@ protected:
     /// Update model and animate progressbars.
     void Update(float timeStep) override;
     /// Initialize document model.
-    void OnDataModelInitialized(Rml::DataModelConstructor& constructor) override;
+    void OnDataModelInitialized() override;
 
     /// Value of UI slider.
     int sliderValue_ = 0;
