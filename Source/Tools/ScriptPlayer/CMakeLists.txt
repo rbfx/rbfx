@@ -24,6 +24,8 @@ if (NOT URHO3D_CSHARP)
     return ()
 endif ()
 
+return_if_not_tool(ScriptPlayer)
+
 add_target_csharp(
     TARGET ScriptPlayer
     EXE

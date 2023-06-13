@@ -19,6 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+if (NOT DESKTOP)
+  return ()
+endif ()
+if (NOT URHO3D_CSHARP)
+  return_if_not_tool(swig)
+endif ()
+
 project(swig)
 
 add_subdirectory(pcre)
@@ -59,10 +66,7 @@ add_executable(swig ${SWIG_SOURCES})
 target_link_libraries(swig PUBLIC pcre)
 target_include_directories(swig PRIVATE Source/CParse Source/DOH Source/Include Source/Modules Source/Preprocessor Source/Swig ${CMAKE_CURRENT_BINARY_DIR})
 
-# A lame way to detect that target is built alone, with a native toolchain when corsscompiling.
-if (NOT TARGET Urho3D)
-    install (TARGETS swig RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG} BUNDLE DESTINATION ${DEST_BIN_DIR_CONFIG})
-endif ()
+install(TARGETS swig EXPORT Urho3D RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG} BUNDLE DESTINATION ${DEST_BIN_DIR_CONFIG} PERMISSIONS ${PERMISSIONS_755})
 
 file(TIMESTAMP Lib/swigwarn.swg SWIGWARN_SWG_TIMESTAMP "%s")
 file(TIMESTAMP Source/Include/swigwarn.h SWIGWARN_H_TIMESTAMP "%s")

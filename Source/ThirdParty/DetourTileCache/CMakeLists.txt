@@ -28,8 +28,6 @@ target_include_directories(DetourTileCache
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/DetourTileCache>
 )
 
-if (NOT MINI_URHO)
-    if (NOT URHO3D_MERGE_STATIC_LIBS)
-        install(TARGETS DetourTileCache EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-    endif ()
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS DetourTileCache EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
 endif ()
