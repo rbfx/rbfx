@@ -547,7 +547,7 @@ bool RmlUI::TryConvertVariant(const Rml::Variant& src, Variant& dst)
     case Rml::Variant::NONE: dst = Variant{}; return true;
     case Rml::Variant::BOOL: dst = src.Get<bool>(); return true;
     case Rml::Variant::INT: dst = src.Get<int>(); return true;
-    case Rml::Variant::INT64: dst = src.Get<int64_t>(); return true;
+    case Rml::Variant::INT64: dst = static_cast<long long>(src.Get<int64_t>()); return true;
     case Rml::Variant::FLOAT: dst = src.Get<float>(); return true;
     case Rml::Variant::DOUBLE: dst = src.Get<double>(); return true;
     case Rml::Variant::STRING: dst = src.Get<Rml::String>(); return true;
@@ -560,7 +560,7 @@ bool RmlUI::TryConvertVariant(const Rml::Variant& src, Variant& dst)
     case Rml::Variant::BYTE: dst = src.Get<Rml::byte>(); return true;
     case Rml::Variant::CHAR: dst = src.Get<char>(); return true;
     case Rml::Variant::UINT: dst = src.Get<unsigned>(); return true;
-    case Rml::Variant::UINT64: dst = src.Get<uint64_t>(); return true;
+    case Rml::Variant::UINT64: dst = static_cast<unsigned long long>(src.Get<uint64_t>()); return true;
     case Rml::Variant::SCRIPTINTERFACE: break;
     case Rml::Variant::TRANSFORMPTR: break;
     case Rml::Variant::TRANSITIONLIST: break;
