@@ -30,6 +30,9 @@ namespace Urho3DNet
         [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_RmlUIComponent_BindDataModelProperty")]
         private static extern bool Urho3D_RmlUIComponent_BindDataModelProperty(HandleRef receiver, string name, IntPtr getter, IntPtr getterHandle, IntPtr setter, IntPtr setterHandle);
 
+        [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_RmlUIComponent_BindDataModelEvent")]
+        private static extern bool Urho3D_RmlUIComponent_BindDataModelEvent(HandleRef receiver, string name, IntPtr callback, IntPtr callbackHandle);
+
 #if __IOS__
         [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
@@ -58,8 +61,23 @@ namespace Urho3DNet
             eventHandler(Variant.wrap(argPtr, false));
         }
 
+#if __IOS__
+        [global::ObjCRuntime.MonoNativeFunctionWrapper]
+#endif
+        private delegate void EventDelegate(IntPtr actionHandle, IntPtr argPtr);
+
+#if __IOS__
+        [global::ObjCRuntime.MonoPInvokeCallback(typeof(EventDelegate))]
+#endif
+        private static void EventCallback(IntPtr actionHandle, IntPtr argPtr)
+        {
+            var eventHandler = (Action<VariantList>)GCHandle.FromIntPtr(actionHandle).Target;
+            eventHandler(VariantList.wrap(argPtr, false));
+        }
+
         private static readonly GetterDelegate GetterCallbackInstance = GetterCallback;
         private static readonly SetterDelegate SetterCallbackInstance = SetterCallback;
+        private static readonly EventDelegate EventCallbackInstance = EventCallback;
 
         public bool BindDataModelProperty(string name, Action<Variant> getter, Action<Variant> setter)
         {
@@ -74,7 +92,10 @@ namespace Urho3DNet
 
         public bool BindDataModelEvent(string name, Action<global::Urho3DNet.VariantList> callback)
         {
-            return false;
+            IntPtr callbackHandle = GCHandle.ToIntPtr(GCHandle.Alloc(callback));
+            IntPtr callbackPtr = Marshal.GetFunctionPointerForDelegate(EventCallbackInstance);
+
+            return Urho3D_RmlUIComponent_BindDataModelEvent(swigCPtr, name, callbackPtr, callbackHandle);
         }
     }
 }

@@ -937,6 +937,10 @@ using ImGuiConfigFlags = unsigned;
 %ignore Urho3D::RmlUI::TryConvertVariant;
 %ignore Urho3D::RmlUIComponent::BindDataModelProperty;
 %ignore Urho3D::RmlUIComponent::BindDataModelEvent;
+
+// SWIG applies `override new` modifier by mistake.
+%csmethodmodifiers Urho3D::RmlUIComponent::OnNodeSet "protected override";
+
 %include "Urho3D/RmlUI/RmlSystem.h"
 %include "Urho3D/RmlUI/RmlUI.h"
 %include "Urho3D/RmlUI/RmlUIComponent.h"

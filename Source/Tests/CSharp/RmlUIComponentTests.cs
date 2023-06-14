@@ -38,29 +38,34 @@ namespace Urho3DNet.Tests
                 BindDataModelProperty("slider_value", GetSliderValue, SetSliderValue);
                 BindDataModelProperty("counter", GetCounter, SetCounter);
                 BindDataModelProperty("progress", GetProgress, SetProgress);
+                BindDataModelEvent("event", OnEvent);
             }
 
-            private void SetProgress(Variant obj)
+            private void OnEvent(VariantList args)
             {
             }
 
-            private void GetProgress(Variant obj)
+            private void SetProgress(Variant args)
             {
             }
 
-            private void SetCounter(Variant obj)
+            private void GetProgress(Variant args)
             {
             }
 
-            private void GetCounter(Variant obj)
+            private void SetCounter(Variant args)
             {
             }
 
-            private void SetSliderValue(Variant obj)
+            private void GetCounter(Variant args)
             {
             }
 
-            private void GetSliderValue(Variant obj)
+            private void SetSliderValue(Variant args)
+            {
+            }
+
+            private void GetSliderValue(Variant args)
             {
             }
         }

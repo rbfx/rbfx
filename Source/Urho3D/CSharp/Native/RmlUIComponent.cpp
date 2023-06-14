@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "Urho3D/RmlUI/RmlUI.h"
+
 #include <Urho3D/RmlUI/RmlUIComponent.h>
 #include <Urho3D/Script/Script.h>
 
@@ -30,6 +32,7 @@ namespace Urho3D
 
 typedef void(SWIGSTDCALL* GetterCallback)(void*, Variant*);
 typedef void(SWIGSTDCALL* SetterCallback)(void*, const Variant*);
+typedef void(SWIGSTDCALL* EventCallback)(void*, const VariantVector*);
 
 RmlUIComponent::GetterFunc WrapCSharpHandler(GetterCallback callback, void* callbackHandle)
 {
@@ -40,7 +43,7 @@ RmlUIComponent::GetterFunc WrapCSharpHandler(GetterCallback callback, void* call
             Script::GetRuntimeApi()->FreeGCHandle(handle);
     });
 
-    return [callback, callbackHandlePtr](Variant& variant)
+    return [=](Variant& variant)
     {
         callback(callbackHandlePtr.get(), &variant);
     };
@@ -55,30 +58,49 @@ RmlUIComponent::SetterFunc WrapCSharpHandler(SetterCallback callback, void* call
             Script::GetRuntimeApi()->FreeGCHandle(handle);
     });
 
-    return [callback, callbackHandlePtr](const Variant& variant)
+    return [=](const Variant& variant)
     {
         callback(callbackHandlePtr.get(), &variant);
     };
 }
+
+RmlUIComponent::EventFunc WrapCSharpHandler(EventCallback callback, void* callbackHandle)
+{
+    const ea::shared_ptr<void> callbackHandlePtr(callbackHandle,
+        [](void* handle)
+        {
+        if (handle)
+            Script::GetRuntimeApi()->FreeGCHandle(handle);
+    });
+
+    return [=](const VariantVector& args)
+    {
+        callback(callbackHandlePtr.get(), &args);
+    };
+}
 extern "C"
 {
-    URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_RmlUIComponent_BindDataModelProperty(RmlUIComponent* receiver,
-        char* jarg2,
-        GetterCallback getter, void* getterHandle, SetterCallback setter, void* setterHandle)
+    URHO3D_EXPORT_API bool SWIGSTDCALL Urho3D_RmlUIComponent_BindDataModelProperty(RmlUIComponent* receiver,
+        char* jarg2, GetterCallback getter, void* getterHandle, SetterCallback setter, void* setterHandle)
     {
         eastl::string* arg2 = 0;
 
-        if (!jarg2)
-        {
-            //SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
-            return;
-        }
-
-        eastl::string name(jarg2);
+        eastl::string name(jarg2 ? jarg2 : "");
 
         const auto getterHandler = WrapCSharpHandler(getter, getterHandle);
         const auto setterHandler = WrapCSharpHandler(setter, setterHandle);
-        receiver->BindDataModelProperty(name, getterHandler, setterHandler);
+        return receiver->BindDataModelProperty(name, getterHandler, setterHandler);
+    }
+
+    URHO3D_EXPORT_API bool SWIGSTDCALL Urho3D_RmlUIComponent_BindDataModelEvent(
+        RmlUIComponent* receiver, char* jarg2, EventCallback callback, void* callbackHandle)
+    {
+        eastl::string* arg2 = 0;
+
+        eastl::string name(jarg2 ? jarg2 : "");
+
+        const auto callbackHandler = WrapCSharpHandler(callback, callbackHandle);
+        return receiver->BindDataModelEvent(name, callbackHandler);
     }
 }
 
