@@ -144,12 +144,12 @@ protected:
     /// Get data model constructor. Only available in OnDataModelInitialized method.
     Rml::DataModelConstructor* GetDataModelConstructor() const { return modelConstructor_.get(); }
 
-private:
     /// Implement Component
     /// @{
     void OnSetEnabled() override;
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// @}
+private:
 
     /// Open a window document if it was not already open.
     void OpenInternal();
