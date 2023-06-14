@@ -581,7 +581,7 @@ bool RmlUI::TryConvertVariant(const Variant& src, Rml::Variant& dst)
     case VAR_NONE: dst = {}; return true;
     case VAR_BOOL: dst = src.Get<bool>(); return true;
     case VAR_INT: dst = src.Get<int>(); return true;
-    case VAR_INT64: dst = src.Get<int64_t>(); return true;
+    case VAR_INT64: dst = static_cast<int64_t>(src.Get<long long>()); return true;
     case VAR_FLOAT: dst = src.Get<float>(); return true;
     case VAR_DOUBLE: dst = src.Get<double>(); return true;
     case VAR_STRING: dst = src.Get<ea::string>(); return true;
