@@ -25,6 +25,7 @@
 #include "AmbientOcclusionPass.h"
 
 #include "../Graphics/Camera.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
 #include "../Resource/ResourceCache.h"

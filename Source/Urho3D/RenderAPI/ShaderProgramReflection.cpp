@@ -22,7 +22,8 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/Graphics/ShaderProgramLayout.h"
+#include "Urho3D/RenderAPI/ShaderProgramReflection.h"
+
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceBinding.h>
@@ -30,22 +31,22 @@
 namespace Urho3D
 {
 
-void ShaderProgramLayout::AddUniformBuffer(ShaderParameterGroup group, ea::string_view internalName, unsigned size)
+void ShaderProgramReflection::AddUniformBuffer(ShaderParameterGroup group, ea::string_view internalName, unsigned size)
 {
     uniformBuffers_[group] = UniformBufferReflection{size, 0u, ea::string{internalName}};
 }
 
-void ShaderProgramLayout::AddUniform(StringHash name, ShaderParameterGroup group, unsigned offset, unsigned size)
+void ShaderProgramReflection::AddUniform(StringHash name, ShaderParameterGroup group, unsigned offset, unsigned size)
 {
     uniforms_.emplace(name, UniformReflection{ group, offset, size });
 }
 
-void ShaderProgramLayout::AddShaderResource(StringHash name, ea::string_view internalName)
+void ShaderProgramReflection::AddShaderResource(StringHash name, ea::string_view internalName)
 {
     shaderResources_.emplace(name, ShaderResourceReflection{ea::string{internalName}});
 }
 
-void ShaderProgramLayout::RecalculateLayoutHash()
+void ShaderProgramReflection::RecalculateLayoutHash()
 {
     for (UniformBufferReflection& uniformBuffer : uniformBuffers_)
     {
@@ -66,7 +67,7 @@ void ShaderProgramLayout::RecalculateLayoutHash()
     }
 }
 
-void ShaderProgramLayout::ConnectToShaderVariables(Diligent::IShaderResourceBinding* binding)
+void ShaderProgramReflection::ConnectToShaderVariables(Diligent::IShaderResourceBinding* binding)
 {
     // TODO(diligent): Revisit this place? Do we want to reuse it for compute shaders?
     const unsigned maxShaderType = CS;

@@ -1,4 +1,5 @@
 #include "../GraphicsImpl.h"
+#include "../Graphics.h"
 #include "../PipelineState.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineStateCache.h>

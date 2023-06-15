@@ -36,7 +36,6 @@
 #include "../../Graphics/Renderer.h"
 #include "../../Graphics/Shader.h"
 #include "../../Graphics/ShaderPrecache.h"
-#include "../../Graphics/ShaderProgram.h"
 #include "../../Graphics/Texture2D.h"
 #include "../../Graphics/TextureCube.h"
 #include "../../Graphics/VertexBuffer.h"
@@ -375,7 +374,6 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 
         renderDevice_->OnDeviceLost.Subscribe(this, [this]()
         {
-            impl_->shaderPrograms_.clear();
             for (GPUObject* gpuObject : gpuObjects_)
                 gpuObject->OnDeviceLost();
             SendEvent(E_DEVICELOST);
@@ -831,8 +829,8 @@ void Graphics::Draw(
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex,
     unsigned minVertex, unsigned vertexCount)
 {
-    if (!impl_->shaderProgram_)
-        return;
+//    if (!impl_->shaderProgram_)
+//        return;
 
     PrepareDraw();
     assert(0);
@@ -1025,20 +1023,22 @@ void Graphics::SetPipelineState(PipelineState* pipelineState)
 
 }
 
-ShaderProgramLayout* Graphics::GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps)
+ShaderProgramReflection* Graphics::GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps)
 {
-    const auto combination = ea::make_pair(vs, ps);
-    auto iter = impl_->shaderPrograms_.find(combination);
-    if (iter != impl_->shaderPrograms_.end())
-        return iter->second;
-
-    // TODO: Some overhead due to redundant setting of shader program
-    ShaderVariation* prevVertexShader = vertexShader_;
-    ShaderVariation* prevPixelShader = pixelShader_;
-    SetShaders(vs, ps);
-    ShaderProgramLayout* layout = impl_->shaderProgram_;
-    SetShaders(prevVertexShader, prevPixelShader);
-    return layout;
+    assert(0);
+    return nullptr;
+//    const auto combination = ea::make_pair(vs, ps);
+//    auto iter = impl_->shaderPrograms_.find(combination);
+//    if (iter != impl_->shaderPrograms_.end())
+//        return iter->second;
+//
+//    // TODO: Some overhead due to redundant setting of shader program
+//    ShaderVariation* prevVertexShader = vertexShader_;
+//    ShaderVariation* prevPixelShader = pixelShader_;
+//    SetShaders(vs, ps);
+//    ShaderProgramReflection* layout = impl_->shaderProgram_;
+//    SetShaders(prevVertexShader, prevPixelShader);
+//    return layout;
 }
 
 void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
@@ -1048,6 +1048,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     if (vs != vertexShader_)
     {
+#if 0
         // Create the shader now if not yet created. If already attempted, do not retry
         if (vs && !vs->GetGPUObject())
         {
@@ -1066,7 +1067,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
             else
                 vs = nullptr;
         }
-
+#endif
         // impl_->deviceContext_->VSSetShader((ID3D11VertexShader*)(vs ? vs->GetGPUObject() : nullptr), nullptr, 0);
         vertexShader_ = vs;
         impl_->vertexDeclarationDirty_ = true;
@@ -1074,6 +1075,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     if (ps != pixelShader_)
     {
+#if 0
         if (ps && !ps->GetGPUObject())
         {
             if (ps->GetCompilerOutput().empty())
@@ -1091,27 +1093,28 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
             else
                 ps = nullptr;
         }
+#endif
 
         // impl_->deviceContext_->PSSetShader((ID3D11PixelShader*)(ps ? ps->GetGPUObject() : nullptr), nullptr, 0);
         pixelShader_ = ps;
     }
 
     // Update current shader parameters & constant buffers
-    if (vertexShader_ && pixelShader_)
-    {
-        ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
-        auto i = impl_->shaderPrograms_.find(key);
-        if (i != impl_->shaderPrograms_.end())
-            impl_->shaderProgram_ = i->second.Get();
-        else
-        {
-            ShaderProgram* newProgram = impl_->shaderPrograms_[key] =
-                new ShaderProgram(this, vertexShader_, pixelShader_);
-            impl_->shaderProgram_ = newProgram;
-        }
-    }
-    else
-        impl_->shaderProgram_ = nullptr;
+//    if (vertexShader_ && pixelShader_)
+//    {
+//        ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
+//        auto i = impl_->shaderPrograms_.find(key);
+//        if (i != impl_->shaderPrograms_.end())
+//            impl_->shaderProgram_ = i->second.Get();
+//        else
+//        {
+//            ShaderProgram* newProgram = impl_->shaderPrograms_[key] =
+//                new ShaderProgram(this, vertexShader_, pixelShader_);
+//            impl_->shaderProgram_ = newProgram;
+//        }
+//    }
+//    else
+//        impl_->shaderProgram_ = nullptr;
 
     // Store shader combination if shader dumping in progress
     if (shaderPrecache_)
@@ -1738,11 +1741,6 @@ VertexBuffer* Graphics::GetVertexBuffer(unsigned index) const
     return index < MAX_VERTEX_STREAMS ? vertexBuffers_[index] : nullptr;
 }
 
-ShaderProgram* Graphics::GetShaderProgram() const
-{
-    return impl_->shaderProgram_;
-}
-
 TextureUnit Graphics::GetTextureUnit(const ea::string& name)
 {
     auto i = textureUnits_.find(name);
@@ -1859,16 +1857,16 @@ void Graphics::OnWindowMoved()
 
 void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
 {
-    for (auto i = impl_->shaderPrograms_.begin(); i != impl_->shaderPrograms_.end();)
-    {
-        if (i->first.first == variation || i->first.second == variation)
-            i = impl_->shaderPrograms_.erase(i);
-        else
-            ++i;
-    }
-
-    if (vertexShader_ == variation || pixelShader_ == variation)
-        impl_->shaderProgram_ = nullptr;
+//    for (auto i = impl_->shaderPrograms_.begin(); i != impl_->shaderPrograms_.end();)
+//    {
+//        if (i->first.first == variation || i->first.second == variation)
+//            i = impl_->shaderPrograms_.erase(i);
+//        else
+//            ++i;
+//    }
+//
+//    if (vertexShader_ == variation || pixelShader_ == variation)
+//        impl_->shaderProgram_ = nullptr;
 }
 
 void Graphics::CleanupRenderSurface(RenderSurface* surface)
@@ -2219,7 +2217,6 @@ void Graphics::ResetCachedState()
     stencilCompareMask_ = M_MAX_UNSIGNED;
     stencilWriteMask_ = M_MAX_UNSIGNED;
     useClipPlane_ = false;
-    impl_->shaderProgram_ = nullptr;
     impl_->renderTargetsDirty_ = true;
     impl_->texturesDirty_ = true;
     impl_->vertexDeclarationDirty_ = true;

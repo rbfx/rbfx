@@ -38,7 +38,6 @@
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
 #include "../Engine/StateManager.h"
-#include "../Graphics/ConstantBufferManager.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/PipelineState.h"
@@ -347,7 +346,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     {
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
-        context_->RegisterSubsystem(new ConstantBufferManager(context_));
         context_->RegisterSubsystem(new PipelineStateCache(context_));
 #ifdef URHO3D_COMPUTE
         context_->RegisterSubsystem(new ComputeDevice(context_, context_->GetSubsystem<Graphics>()));

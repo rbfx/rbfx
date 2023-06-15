@@ -42,7 +42,7 @@ namespace Urho3D
 {
 
 class ComputeDevice;
-class ShaderProgramLayout;
+class ShaderProgramReflection;
 class File;
 class Image;
 class IndexBuffer;
@@ -51,7 +51,6 @@ class GraphicsImpl;
 class RenderSurface;
 class Shader;
 class ShaderPrecache;
-class ShaderProgram;
 class ShaderVariation;
 class Texture;
 class Texture2D;
@@ -191,7 +190,7 @@ public:
     void EndDebug();
 
     /// Return constant buffer layout for given shaders.
-    ShaderProgramLayout* GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps);
+    ShaderProgramReflection* GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shaders.
     void SetShaders(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shader constant buffers.
@@ -482,10 +481,6 @@ public:
 
     /// Return current pixel shader.
     ShaderVariation* GetPixelShader() const { return pixelShader_; }
-
-    /// Return shader program. This is an API-specific class and should not be used by applications.
-    /// @nobind
-    ShaderProgram* GetShaderProgram() const;
 
     /// Return texture unit index by name.
     TextureUnit GetTextureUnit(const ea::string& name);

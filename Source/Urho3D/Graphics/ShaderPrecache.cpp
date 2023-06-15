@@ -86,8 +86,9 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
         return;
     usedPtrCombinations_.insert(shaderPair);
 
-    ea::string vsName = vs->GetName();
-    ea::string psName = ps->GetName();
+    // TODO(diligent): Revisit
+    ea::string vsName = vs->GetDebugName();
+    ea::string psName = ps->GetDebugName();
     const ea::string& vsDefines = vs->GetDefines();
     const ea::string& psDefines = ps->GetDefines();
 

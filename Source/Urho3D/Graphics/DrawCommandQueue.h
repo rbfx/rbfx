@@ -24,18 +24,18 @@
 
 #include "../Core/Object.h"
 #include "../Graphics/ConstantBuffer.h"
-#include "../Graphics/ShaderProgramLayout.h"
+#include "../Graphics/ConstantBufferCollection.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/PipelineState.h"
-#include "../Graphics/ConstantBufferCollection.h"
 #include "../IO/Log.h"
-#include "../Graphics/ConstantBufferManager.h"
+#include "Urho3D/RenderAPI/ShaderProgramReflection.h"
 
 namespace Urho3D
 {
 
 class Graphics;
+class Texture;
 
 /// Reference to input shader resource. Only textures are supported now.
 struct ShaderResourceDesc
@@ -291,7 +291,7 @@ private:
     DrawCommandDescription currentDrawCommand_;
     /// Current shader resource group.
     ShaderResourceRange currentShaderResourceGroup_;
-    ShaderProgramLayout* currentShaderProgramReflection_{};
+    ShaderProgramReflection* currentShaderProgramReflection_{};
 
 };
 

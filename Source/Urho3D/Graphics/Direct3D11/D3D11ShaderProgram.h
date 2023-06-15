@@ -25,7 +25,7 @@
 #include <EASTL/unordered_map.h>
 
 #include "../../Graphics/ConstantBuffer.h"
-#include "../../Graphics/ShaderProgramLayout.h"
+#include "../../Graphics/ShaderProgramReflection.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/ShaderVariation.h"
 
@@ -33,7 +33,7 @@ namespace Urho3D
 {
 
 /// Combined information for specific vertex and pixel shaders.
-class URHO3D_API ShaderProgram : public ShaderProgramLayout
+class URHO3D_API ShaderProgram : public ShaderProgramReflection
 {
 public:
     /// Construct.

@@ -83,7 +83,7 @@ void DrawCommandQueue::Execute()
     // Cached current state
     PipelineState* currentPipelineState = nullptr;
     Diligent::IShaderResourceBinding* currentShaderResourceBinding = nullptr;
-    ShaderProgramLayout* currentShaderReflection = nullptr;
+    ShaderProgramReflection* currentShaderReflection = nullptr;
     IndexBuffer* currentIndexBuffer = nullptr;
     ea::array<VertexBuffer*, MAX_VERTEX_STREAMS> currentVertexBuffers{};
     ShaderResourceRange currentShaderResources;

@@ -12,7 +12,7 @@
 namespace Urho3D
 {
 
-struct CompiledShaderVariation
+struct ShaderBytecode
 {
     /// Version of the shader bytecode format. Increment when serialization format changes.
     static const unsigned Version = 1;

@@ -248,7 +248,7 @@ bool ComputeDevice::BuildPipeline()
     if (!programDirty_ && pipeline_ && srb_)
         return true;
 
-    RefCntAutoPtr<IShader> computeShader = computeShader_->GetGPUObject().Cast<IShader>(IID_Shader);
+    IShader* computeShader = computeShader_->GetHandle();
     unsigned hash = MakeHash((void*)computeShader);
     auto cacheEntry = cachedPipelines_.find(hash);
     if (cacheEntry != cachedPipelines_.end())
@@ -264,7 +264,7 @@ bool ComputeDevice::BuildPipeline()
 
     ComputePipelineStateCreateInfo ci;
 #ifdef URHO3D_DEBUG
-    ea::string dbgName = Format("{}(Compute)", computeShader_->GetName());
+    ea::string dbgName = Format("{}(Compute)", computeShader_->GetDebugName());
     ci.PSODesc.Name = dbgName.c_str();
 #endif
     ci.PSODesc.PipelineType = PIPELINE_TYPE_COMPUTE;
@@ -343,18 +343,18 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
         return;
     }
 
-    if (computeShader_ && !computeShader_->GetGPUObject())
-    {
-        if (computeShader_->GetCompilerOutput().empty())
-        {
-            bool success = computeShader_->Create();
-            if (!success)
-                URHO3D_LOGERROR("Failed to compile compute shader " + computeShader_->GetFullName() + ":\n"
-                    + computeShader_->GetCompilerOutput());
-        }
-        else
-            computeShader_ = nullptr;
-    }
+//    if (computeShader_ && !computeShader_->GetGPUObject())
+//    {
+//        if (computeShader_->GetCompilerOutput().empty())
+//        {
+//            bool success = computeShader_->Create();
+//            if (!success)
+//                URHO3D_LOGERROR("Failed to compile compute shader " + computeShader_->GetFullName() + ":\n"
+//                    + computeShader_->GetCompilerOutput());
+//        }
+//        else
+//            computeShader_ = nullptr;
+//    }
 
     if (!computeShader_)
         return;

@@ -26,6 +26,7 @@
 
 #include "../Core/CoreEvents.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"

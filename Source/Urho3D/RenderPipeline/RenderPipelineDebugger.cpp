@@ -45,7 +45,7 @@ namespace
 ea::tuple<ea::string, ea::string> MakeSortKey(const PipelineState& pipelineState)
 {
     const PipelineStateDesc& desc = pipelineState.GetDesc();
-    return { desc.vertexShader_->GetName(), desc.pixelShader_->GetName() };
+    return { desc.vertexShader_->GetDebugName(), desc.pixelShader_->GetDebugName() };
 }
 
 ea::tuple<ea::string> MakeSortKey(const Material& material)
@@ -53,9 +53,9 @@ ea::tuple<ea::string> MakeSortKey(const Material& material)
     return { material.GetName() };
 }
 
-ea::tuple<ShaderType, ea::string, ea::string> MakeSortKey(const ShaderVariation& shader)
+ea::tuple<ShaderType, ea::string> MakeSortKey(const RawShader& shader)
 {
-    return { shader.GetShaderType(), shader.GetName(), shader.GetDefines() };
+    return { shader.GetShaderType(), shader.GetDebugName() };
 }
 
 template <class T>
@@ -176,11 +176,11 @@ ea::string DebugFrameSnapshot::SceneShadersToString() const
     static const ea::string shaderTypes[] = { "VS", "PS" };
 
     ea::string result;
-    for (ShaderVariation* shader : GetSortedObjects(sceneShaders_))
+    for (RawShader* shader : GetSortedObjects(sceneShaders_))
     {
         const ea::string& shaderType = shaderTypes[shader->GetShaderType()];
-        result += Format("- {}: [{}]{}: {}\n",
-            static_cast<void*>(shader), shaderType, shader->GetName(), shader->GetDefines());
+        result += Format("- {}: [{}]{}\n",
+            static_cast<void*>(shader), shaderType, shader->GetDebugName());
     }
     return result;
 }

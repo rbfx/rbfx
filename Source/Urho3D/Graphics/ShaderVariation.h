@@ -25,7 +25,7 @@
 #include "Urho3D/Container/Ptr.h"
 #include "Urho3D/Graphics/GPUObject.h"
 #include "Urho3D/Graphics/GraphicsDefs.h"
-#include "Urho3D/RenderAPI/CompiledShaderVariation.h"
+#include "Urho3D/RenderAPI/RawShader.h"
 
 #include <EASTL/unordered_map.h>
 
@@ -43,47 +43,17 @@ struct SpirVShader;
 
 /// Vertex or pixel shader on the GPU.
 class URHO3D_API ShaderVariation
-    : public RefCounted
-    , public GPUObject
+    : public RawShader
 {
 public:
-    /// Construct.
-    ShaderVariation(Shader* owner, ShaderType type);
-    /// Destruct.
-    ~ShaderVariation() override;
+    ShaderVariation(Shader* owner, ShaderType type, const ea::string& defines);
 
-    /// Mark the GPU resource destroyed on graphics context destruction.
-    void OnDeviceLost() override;
-    /// Release the shader.
-    void Release() override;
-
-    /// Compile the shader. Return true if successful.
-    bool Create();
-    /// Set name.
-    void SetName(const ea::string& name);
-    /// Set defines.
-    void SetDefines(const ea::string& defines);
-
-    /// Return the owner resource.
-    Shader* GetOwner() const;
-
-    /// Return shader type.
-    ShaderType GetShaderType() const { return type_; }
-
-    /// Return shader name.
-    const ea::string& GetName() const { return name_; }
-
-    /// Return full shader name.
-    ea::string GetFullName() const { return name_ + "(" + defines_ + ")"; }
-
-    /// Return defines.
+    /// Return shader name (as used in resources).
+    ea::string GetShaderName() const;
+    /// Return full shader variation name with defines.
+    ea::string GetShaderVariationName() const;
+    /// Return defines used to create the shader.
     const ea::string& GetDefines() const { return defines_; }
-
-    /// Return compile error/warning string.
-    /// TODO(diligent): Revisit this getter
-    const ea::string& GetCompilerOutput() const { return compilerOutput_; }
-
-    const VertexShaderAttributeVector& GetVertexShaderAttributes() const { return compiled_.vertexAttributes_; }
 
 private:
     ea::string GetCachedVariationName(ea::string_view extension) const;
@@ -93,26 +63,16 @@ private:
     ea::string PrepareGLSLShaderCode(const ea::string& originalShaderCode) const;
     bool ProcessShaderSource(ea::string_view& translatedSource, const SpirVShader*& translatedSpirv,
         ConstByteSpan& translatedBytecode, ea::string_view originalShaderCode);
-    Diligent::IShader* CreateShader(const CompiledShaderVariation& compiledShader) const;
 
-    bool Compile();
+    bool Create();
+    bool CompileFromSource();
     bool LoadByteCode(const FileIdentifier& binaryShaderName);
     void SaveByteCode(const FileIdentifier& binaryShaderName);
 
-    /// Shader this variation belongs to.
+    /// Source shader.
     WeakPtr<Shader> owner_;
-    /// Shader type.
-    ShaderType type_{};
-
-    /// Shader name.
-    ea::string name_;
-    /// Defines to use in compiling.
+    /// Defines to use when compiling the shader.
     ea::string defines_;
-    /// Shader compile error string.
-    ea::string compilerOutput_;
-
-    /// Compiled shader info.
-    CompiledShaderVariation compiled_;
 };
 
 } // namespace Urho3D

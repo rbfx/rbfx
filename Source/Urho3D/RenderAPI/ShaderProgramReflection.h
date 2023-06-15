@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "../Container/IndexAllocator.h"
-#include "../Container/RefCounted.h"
-#include "../Graphics/GraphicsDefs.h"
+#include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <EASTL/array.h>
 #include <EASTL/fixed_vector.h>
@@ -36,7 +35,7 @@ namespace Diligent
 struct IShaderResourceBinding;
 struct IShaderResourceVariable;
 
-}
+} // namespace Diligent
 
 namespace Urho3D
 {
@@ -69,7 +68,7 @@ struct ShaderResourceReflection
 using ShaderResourceReflectionMap = ea::unordered_map<StringHash, ShaderResourceReflection>;
 
 /// Description of constant buffer layout of shader program.
-class URHO3D_API ShaderProgramLayout : public RefCounted, public IDFamily<ShaderProgramLayout>
+class URHO3D_API ShaderProgramReflection : public RefCounted
 {
 public:
     const UniformBufferReflection* GetUniformBuffer(ShaderParameterGroup group) const
@@ -112,4 +111,4 @@ private:
     ShaderResourceReflectionMap shaderResources_;
 };
 
-}
+} // namespace Urho3D

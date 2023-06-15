@@ -2,7 +2,7 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Urho3D/RenderAPI/CompiledShaderVariation.h"
+#include "Urho3D/RenderAPI/ShaderBytecode.h"
 
 #include "Urho3D/IO/ArchiveSerialization.h"
 #include "Urho3D/IO/BinaryArchive.h"
@@ -10,7 +10,7 @@
 namespace Urho3D
 {
 
-void CompiledShaderVariation::SerializeInBlock(Archive& archive)
+void ShaderBytecode::SerializeInBlock(Archive& archive)
 {
     const unsigned version = archive.SerializeVersion(Version);
     if (version != Version)
@@ -30,20 +30,20 @@ void CompiledShaderVariation::SerializeInBlock(Archive& archive)
     });
 }
 
-bool CompiledShaderVariation::SaveToFile(Serializer& dest) const
+bool ShaderBytecode::SaveToFile(Serializer& dest) const
 {
     // clang-format off
     const bool saved = ConsumeArchiveException([&]
     {
         BinaryOutputArchive archive{Context::GetInstance(), dest};
-        SerializeValue(archive, "compiledShaderVariation", const_cast<CompiledShaderVariation&>(*this));
+        SerializeValue(archive, "compiledShaderVariation", const_cast<ShaderBytecode&>(*this));
     }, false);
     // clang-format on
 
     return saved;
 }
 
-bool CompiledShaderVariation::LoadFromFile(Deserializer& source)
+bool ShaderBytecode::LoadFromFile(Deserializer& source)
 {
     // clang-format off
     const bool loaded = ConsumeArchiveException([&]

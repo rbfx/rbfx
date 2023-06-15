@@ -28,10 +28,11 @@
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/IndexBuffer.h"
-#include "../Graphics/ShaderProgramLayout.h"
 #include "../Graphics/VertexBuffer.h"
 #include "Urho3D/IO/FileIdentifier.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/RenderAPI/RawShader.h"
+#include "Urho3D/RenderAPI/ShaderProgramReflection.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceBinding.h>
@@ -45,7 +46,6 @@ namespace Urho3D
 
 class Geometry;
 class PipelineStateCache;
-class ShaderVariation;
 
 /// Set of input buffers with vertex and index data.
 struct GeometryBufferArray
@@ -146,11 +146,11 @@ struct PipelineStateDesc
 
     /// Shaders
     /// @{
-    ShaderVariation* vertexShader_{};
-    ShaderVariation* pixelShader_{};
-    ShaderVariation* domainShader_{};
-    ShaderVariation* hullShader_{};
-    ShaderVariation* geometryShader_{};
+    SharedPtr<RawShader> vertexShader_;
+    SharedPtr<RawShader> pixelShader_;
+    SharedPtr<RawShader> domainShader_;
+    SharedPtr<RawShader> hullShader_;
+    SharedPtr<RawShader> geometryShader_;
     /// @}
 
     /// Depth-stencil state
@@ -321,8 +321,8 @@ public:
     /// @{
     bool IsValid() const { return !!reflection_; }
     const PipelineStateDesc& GetDesc() const { return desc_; }
-    ShaderProgramLayout* GetReflection() const { return reflection_; }
-    unsigned GetShaderID() const { return reflection_->GetObjectID(); }
+    ShaderProgramReflection* GetReflection() const { return reflection_; }
+    unsigned GetShaderID() const { return 0; } // TODO(diligent): Reconsider
     /// @}
 
     Diligent::IPipelineState* GetHandle() const { return handle_; }
@@ -338,7 +338,7 @@ private:
     Diligent::RefCntAutoPtr<Diligent::IPipelineState> handle_{};
     Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> shaderResourceBinding_{};
     // TODO(diligent): We may want to actually share reflection objects between pipeline states.
-    SharedPtr<ShaderProgramLayout> reflection_;
+    SharedPtr<ShaderProgramReflection> reflection_;
 };
 
 /// Generic pipeline state cache.

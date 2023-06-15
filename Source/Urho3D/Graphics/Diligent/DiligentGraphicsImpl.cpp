@@ -41,7 +41,7 @@ GraphicsImpl::GraphicsImpl()
     defaultDepthStencilView_(nullptr),
     */
     resolveTexture_(nullptr)
-    , shaderProgram_(nullptr)
+    //, shaderProgram_(nullptr)
     , renderBackend_(RenderBackend::D3D11)
     , viewportDirty_(true)
     , adapterId_(M_MAX_UNSIGNED)

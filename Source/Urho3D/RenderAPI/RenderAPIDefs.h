@@ -352,4 +352,18 @@ enum class DeviceObjectEvent
     Destroy
 };
 
+/// Hard-coded uniform buffer slots.
+/// TODO(diligent): Make it more flexible?
+enum ShaderParameterGroup
+{
+    SP_FRAME = 0,
+    SP_CAMERA,
+    SP_ZONE,
+    SP_LIGHT,
+    SP_MATERIAL,
+    SP_OBJECT,
+    SP_CUSTOM,
+    MAX_SHADER_PARAMETER_GROUPS
+};
+
 } // namespace Urho3D

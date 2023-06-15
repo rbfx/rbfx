@@ -274,17 +274,6 @@ enum RenderSurfaceUpdateMode
 };
 
 /// Shader parameter groups for determining need to update. On APIs that support constant buffers, these correspond to different constant buffers.
-enum ShaderParameterGroup
-{
-    SP_FRAME = 0,
-    SP_CAMERA,
-    SP_ZONE,
-    SP_LIGHT,
-    SP_MATERIAL,
-    SP_OBJECT,
-    SP_CUSTOM,
-    MAX_SHADER_PARAMETER_GROUPS
-};
 static const char* shaderParameterGroupNames[] = {
     "Frame",
     "Camera",

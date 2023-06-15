@@ -124,7 +124,7 @@ ea::optional<ea::string_view> SanitizeResourceName(ea::string_view name)
 }
 
 /// TODO(diligent): Get rid of this hack when we remove other backends
-class ShaderReflectionImpl : public ShaderProgramLayout
+class ShaderReflectionImpl : public ShaderProgramReflection
 {
 public:
     void AddOrCheckUniformBuffer(ShaderParameterGroup group, ea::string_view internalName, unsigned size)
@@ -290,7 +290,7 @@ void InitializeImmutableSampler(
 }
 
 void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const PipelineStateDesc& desc,
-    const ShaderProgramLayout& reflection)
+    const ShaderProgramReflection& reflection)
 {
     static const auto defaultSampler = SamplerStateDesc::Bilinear();
 
@@ -360,12 +360,6 @@ void InitializeLayoutElements(ea::vector<Diligent::LayoutElement>& result,
     result.resize(numElements);
 }
 
-Diligent::IShader* ToHandle(ShaderVariation* shader)
-{
-    // TODO(diligent): Simplify this function, we should have better API.
-    return shader ? shader->GetGPUObject().Cast<Diligent::IShader>(Diligent::IID_Shader).RawPtr() : nullptr;
-}
-
 ea::optional<ShaderParameterGroup> ParseConstantBufferName(ea::string_view name)
 {
     static const ea::string builtinNames[] = {
@@ -430,7 +424,7 @@ void AppendShaderReflection(ShaderReflectionImpl& reflection, Diligent::IShader*
     }
 }
 
-SharedPtr<ShaderProgramLayout> ReflectShaders(std::initializer_list<Diligent::IShader*> shaders)
+SharedPtr<ShaderProgramReflection> ReflectShaders(std::initializer_list<Diligent::IShader*> shaders)
 {
     auto reflection = MakeShared<ShaderReflectionImpl>();
     for (Diligent::IShader* shader : shaders)
@@ -561,7 +555,7 @@ Diligent::ShaderCodeVariableDesc CreateUniformDesc(GLenum type, GLint elementCou
     return result;
 }
 
-SharedPtr<ShaderProgramLayout> ReflectGLProgram(GLuint programObject)
+SharedPtr<ShaderProgramReflection> ReflectGLProgram(GLuint programObject)
 {
     auto reflection = MakeShared<ShaderReflectionImpl>();
 
@@ -644,24 +638,29 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
     URHO3D_ASSERT(isOpenGL || hasSeparableShaderPrograms);
 
-    // TODO(diligent): This is hack to force shader compilation, we should not need it
-    graphics->GetShaderProgramLayout(desc_.vertexShader_, desc_.pixelShader_);
-
     GraphicsPipelineStateCreateInfo ci;
 
     ea::vector<LayoutElement> layoutElements;
     ea::vector<Diligent::ImmutableSamplerDesc> immutableSamplers;
 
-    Diligent::IShader* vertexShader = ToHandle(desc_.vertexShader_);
-    Diligent::IShader* pixelShader = ToHandle(desc_.pixelShader_);
-    Diligent::IShader* domainShader = ToHandle(desc_.domainShader_);
-    Diligent::IShader* hullShader = ToHandle(desc_.hullShader_);
-    Diligent::IShader* geometryShader = ToHandle(desc_.geometryShader_);
+    Diligent::IShader* vertexShader = desc_.vertexShader_ ? desc_.vertexShader_->GetHandle() : nullptr;
+    Diligent::IShader* pixelShader = desc_.pixelShader_ ? desc_.pixelShader_->GetHandle() : nullptr;
+    Diligent::IShader* domainShader = desc_.domainShader_ ? desc_.domainShader_->GetHandle() : nullptr;
+    Diligent::IShader* hullShader = desc_.hullShader_ ? desc_.hullShader_->GetHandle() : nullptr;
+    Diligent::IShader* geometryShader = desc_.geometryShader_ ? desc_.geometryShader_->GetHandle() : nullptr;
+
+    // TODO(diligent): Revisit
+    for (RawShader* shader : {desc_.vertexShader_, desc_.pixelShader_, desc_.domainShader_, desc_.hullShader_, desc_.geometryShader_})
+    {
+        if (shader)
+            shader->OnReloaded.Subscribe(this, &PipelineState::ResetCachedState);
+    }
 
     // On OpenGL, vertex layout initialization is postponed until the program is linked.
     if (!isOpenGL)
     {
-        const VertexShaderAttributeVector& vertexShaderAttributes = desc_.vertexShader_->GetVertexShaderAttributes();
+        const VertexShaderAttributeVector& vertexShaderAttributes =
+            desc_.vertexShader_->GetBytecode().vertexAttributes_;
         InitializeLayoutElements(layoutElements, desc_.GetVertexElements(), vertexShaderAttributes);
         ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
         ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();

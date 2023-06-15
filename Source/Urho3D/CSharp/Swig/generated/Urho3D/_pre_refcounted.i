@@ -72,7 +72,7 @@ URHO3D_REFCOUNTED(Urho3D::PluginManager);
 URHO3D_REFCOUNTED(Urho3D::ScriptBundlePlugin);
 URHO3D_REFCOUNTED(Urho3D::IndexBuffer);
 URHO3D_REFCOUNTED(Urho3D::DynamicIndexBuffer);
-URHO3D_REFCOUNTED(Urho3D::ShaderProgramLayout);
+URHO3D_REFCOUNTED(Urho3D::ShaderProgramReflection);
 URHO3D_REFCOUNTED(Urho3D::VertexBuffer);
 URHO3D_REFCOUNTED(Urho3D::DynamicVertexBuffer);
 URHO3D_REFCOUNTED(Urho3D::PipelineState);

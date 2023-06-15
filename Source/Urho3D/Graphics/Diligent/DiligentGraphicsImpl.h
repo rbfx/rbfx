@@ -24,7 +24,6 @@
 
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/GraphicsDefs.h"
-#include "../../Graphics/ShaderProgram.h"
 #include "../../Graphics/VertexDeclaration.h"
 #include "../../Math/Color.h"
 
@@ -56,7 +55,7 @@ namespace Urho3D
 
 #define URHO3D_LOGD3DERROR(msg, hr) URHO3D_LOGERRORF("%s (HRESULT %x)", msg, (unsigned)hr)
 
-using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram>>;
+//using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram>>;
 using VertexDeclarationMap = ea::unordered_map<unsigned long long, SharedPtr<VertexDeclaration>>;
 using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer>>;
 
@@ -172,10 +171,10 @@ private:
     VertexDeclarationMap vertexDeclarations_;
     /// Constant buffer search map.
     ConstantBufferMap allConstantBuffers_;
-    /// Shader programs.
-    ShaderProgramMap shaderPrograms_;
-    /// Shader program in use.
-    ShaderProgram* shaderProgram_;
+//    /// Shader programs.
+//    ShaderProgramMap shaderPrograms_;
+//    /// Shader program in use.
+//    ShaderProgram* shaderProgram_;
     /// Current running backend
     RenderBackend renderBackend_;
     /// Current adapter id
