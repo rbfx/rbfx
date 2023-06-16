@@ -24,7 +24,6 @@
 
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/GraphicsDefs.h"
-#include "../../Graphics/VertexDeclaration.h"
 #include "../../Math/Color.h"
 
 #ifdef PLATFORM_MACOS
@@ -56,7 +55,7 @@ namespace Urho3D
 #define URHO3D_LOGD3DERROR(msg, hr) URHO3D_LOGERRORF("%s (HRESULT %x)", msg, (unsigned)hr)
 
 //using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram>>;
-using VertexDeclarationMap = ea::unordered_map<unsigned long long, SharedPtr<VertexDeclaration>>;
+//using VertexDeclarationMap = ea::unordered_map<unsigned long long, SharedPtr<VertexDeclaration>>;
 using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer>>;
 
 class DiligentConstantBufferManager;
@@ -168,7 +167,7 @@ private:
     /// Last dirtied vertex buffer.
     unsigned lastDirtyVB_;
     /// Vertex declarations.
-    VertexDeclarationMap vertexDeclarations_;
+//    VertexDeclarationMap vertexDeclarations_;
     /// Constant buffer search map.
     ConstantBufferMap allConstantBuffers_;
 //    /// Shader programs.

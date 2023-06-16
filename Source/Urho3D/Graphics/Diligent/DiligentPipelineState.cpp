@@ -21,177 +21,6 @@ namespace Urho3D
 namespace
 {
 
-unsigned GetScalarUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType)
-{
-    switch (basicType)
-    {
-    case Diligent::SHADER_CODE_BASIC_TYPE_INT64:
-    case Diligent::SHADER_CODE_BASIC_TYPE_UINT64:
-    case Diligent::SHADER_CODE_BASIC_TYPE_DOUBLE: return sizeof(double);
-
-    default: return sizeof(float);
-    }
-}
-
-unsigned GetVectorUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType, unsigned numElements)
-{
-    switch (numElements)
-    {
-    case 1: return GetScalarUniformSize(basicType);
-
-    case 2: return 2 * GetScalarUniformSize(basicType);
-
-    case 3: return 3 * GetScalarUniformSize(basicType);
-
-    case 4: return 4 * GetScalarUniformSize(basicType);
-
-    default: return 0;
-    }
-}
-
-unsigned GetVectorArrayUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType, unsigned numElements, unsigned arraySize)
-{
-    const unsigned alignment = 4 * sizeof(float);
-    const unsigned elementSize = GetVectorUniformSize(basicType, numElements);
-    return arraySize * ((elementSize + alignment - 1) / alignment) * alignment;
-}
-
-unsigned GetMatrixUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType, unsigned innerSize, unsigned outerSize)
-{
-    return outerSize * GetVectorUniformSize(basicType, innerSize);
-}
-
-unsigned GetUniformSize(const Diligent::ShaderCodeVariableDesc& uniformDesc)
-{
-    if (uniformDesc.ArraySize > 1)
-    {
-        switch (uniformDesc.Class)
-        {
-        case Diligent::SHADER_CODE_VARIABLE_CLASS_SCALAR:
-            return GetVectorArrayUniformSize(uniformDesc.BasicType, 1, uniformDesc.ArraySize);
-
-        case Diligent::SHADER_CODE_VARIABLE_CLASS_VECTOR:
-            return GetVectorArrayUniformSize(
-                uniformDesc.BasicType, ea::max(uniformDesc.NumColumns, uniformDesc.NumRows), uniformDesc.ArraySize);
-
-        case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS:
-            return GetVectorArrayUniformSize(
-                uniformDesc.BasicType, uniformDesc.NumRows, uniformDesc.ArraySize * uniformDesc.NumColumns);
-
-        case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS:
-            return GetVectorArrayUniformSize(
-                uniformDesc.BasicType, uniformDesc.NumColumns, uniformDesc.ArraySize * uniformDesc.NumRows);
-
-        default: return 0;
-        }
-    }
-    else
-    {
-        switch (uniformDesc.Class)
-        {
-        case Diligent::SHADER_CODE_VARIABLE_CLASS_SCALAR: //
-            return GetScalarUniformSize(uniformDesc.BasicType);
-
-        case Diligent::SHADER_CODE_VARIABLE_CLASS_VECTOR:
-            return GetVectorUniformSize(uniformDesc.BasicType, ea::max(uniformDesc.NumColumns, uniformDesc.NumRows));
-
-        case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS:
-            return GetVectorArrayUniformSize(uniformDesc.BasicType, uniformDesc.NumRows, uniformDesc.NumColumns);
-
-        case Diligent::SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS:
-            return GetVectorArrayUniformSize(uniformDesc.BasicType, uniformDesc.NumColumns, uniformDesc.NumRows);
-
-        default: return 0;
-        }
-    }
-}
-
-ea::optional<ea::string_view> SanitizeUniformName(ea::string_view name)
-{
-    const auto pos = name.find('c');
-    if (pos == ea::string_view::npos || pos + 1 == name.length())
-        return ea::nullopt;
-
-    return name.substr(pos + 1);
-}
-
-ea::optional<ea::string_view> SanitizeResourceName(ea::string_view name)
-{
-    if (name.empty() || name[0] != 's')
-        return ea::nullopt;
-
-    return name.substr(1);
-}
-
-/// TODO(diligent): Get rid of this hack when we remove other backends
-class ShaderReflectionImpl : public ShaderProgramReflection
-{
-public:
-    void AddOrCheckUniformBuffer(ShaderParameterGroup group, ea::string_view internalName, unsigned size)
-    {
-        const UniformBufferReflection* oldBuffer = GetUniformBuffer(group);
-        if (oldBuffer)
-        {
-            if (oldBuffer->size_ != size)
-                URHO3D_LOGWARNING("Uniform buffer #{} has inconsistent size in different stages", group);
-            if (oldBuffer->internalName_ != internalName)
-                URHO3D_LOGWARNING("Uniform buffer #{} has inconsistent name in different stages", group);
-            return;
-        }
-
-        AddUniformBuffer(group, internalName, size);
-    }
-
-    void AddOrCheckUniform(ShaderParameterGroup group, const Diligent::ShaderCodeVariableDesc& desc)
-    {
-        const auto sanitatedName = SanitizeUniformName(desc.Name);
-        if (!sanitatedName)
-        {
-            URHO3D_LOGWARNING("Cannot parse uniform with name '{}'", desc.Name);
-            return;
-        }
-
-        const unsigned uniformSize = GetUniformSize(desc);
-        if (uniformSize == 0)
-        {
-            URHO3D_LOGWARNING("Cannot deduce the size of the uniform '{}'", *sanitatedName);
-            return;
-        }
-
-        AddOrCheckUniform(group, *sanitatedName, uniformSize, desc.Offset);
-    }
-
-    void AddOrCheckUniform(ShaderParameterGroup group, ea::string_view name, unsigned size, unsigned offset)
-    {
-        const auto nameHash = StringHash{name};
-        const UniformReflection* oldParameter = GetUniform(nameHash);
-        if (oldParameter)
-        {
-            if (oldParameter->size_ != size)
-                URHO3D_LOGWARNING("Uniform '{}' has inconsistent size in different stages", name);
-            if (oldParameter->offset_ != offset)
-                URHO3D_LOGWARNING("Uniform '{}' has inconsistent offset in different stages", name);
-            if (oldParameter->group_ != group)
-                URHO3D_LOGWARNING("Uniform '{}' has inconsistent owner in different stages", name);
-            return;
-        }
-
-        AddUniform(nameHash, group, offset, size);
-    }
-
-    void AddOrCheckShaderResource(StringHash name, ea::string_view internalName)
-    {
-        const ShaderResourceReflection* oldResource = GetShaderResource(name);
-        if (oldResource)
-        {
-            URHO3D_LOGWARNING("Shader resource '{}' is referenced by multiple shader stages", internalName);
-            return;
-        }
-
-        AddShaderResource(name, internalName);
-    }
-};
-
 void InitializeLayoutElementsMetadata(
     ea::vector<Diligent::LayoutElement>& result, ea::span<const VertexElementInBuffer> vertexElements)
 {
@@ -360,81 +189,6 @@ void InitializeLayoutElements(ea::vector<Diligent::LayoutElement>& result,
     result.resize(numElements);
 }
 
-ea::optional<ShaderParameterGroup> ParseConstantBufferName(ea::string_view name)
-{
-    static const ea::string builtinNames[] = {
-        "Frame",
-        "Camera",
-        "Zone",
-        "Light",
-        "Material",
-        "Object",
-        "Custom",
-    };
-    for (unsigned group = 0; group < MAX_SHADER_PARAMETER_GROUPS; ++group)
-    {
-        if (builtinNames[group] == name)
-            return static_cast<ShaderParameterGroup>(group);
-    }
-    return ea::nullopt;
-}
-
-void AppendConstantBufferToReflection(ShaderReflectionImpl& reflection, Diligent::IShader* shader,
-    unsigned resourceIndex, const Diligent::ShaderResourceDesc& desc)
-{
-    const auto bufferGroup = ParseConstantBufferName(desc.Name);
-    if (!bufferGroup)
-    {
-        URHO3D_LOGWARNING("Unknown constant buffer '{}' is ignored", desc.Name);
-        return;
-    }
-
-    const Diligent::ShaderCodeBufferDesc& bufferDesc = *shader->GetConstantBufferDesc(resourceIndex);
-    reflection.AddOrCheckUniformBuffer(*bufferGroup, desc.Name, bufferDesc.Size);
-
-    const unsigned numUniforms = bufferDesc.NumVariables;
-    for (unsigned uniformIndex = 0; uniformIndex < numUniforms; ++uniformIndex)
-    {
-        const Diligent::ShaderCodeVariableDesc& uniformDesc = bufferDesc.pVariables[uniformIndex];
-        reflection.AddOrCheckUniform(*bufferGroup, uniformDesc);
-    }
-}
-
-void AppendShaderReflection(ShaderReflectionImpl& reflection, Diligent::IShader* shader)
-{
-    const unsigned numResources = shader->GetResourceCount();
-    for (unsigned resourceIndex = 0; resourceIndex < numResources; ++resourceIndex)
-    {
-        Diligent::ShaderResourceDesc desc;
-        shader->GetResourceDesc(resourceIndex, desc);
-
-        switch (desc.Type)
-        {
-        case SHADER_RESOURCE_TYPE_CONSTANT_BUFFER:
-            AppendConstantBufferToReflection(reflection, shader, resourceIndex, desc);
-            break;
-
-        case SHADER_RESOURCE_TYPE_TEXTURE_SRV:
-            if (const auto sanitatedName = SanitizeResourceName(desc.Name))
-                reflection.AddOrCheckShaderResource(StringHash{*sanitatedName}, desc.Name);
-            break;
-
-        default: break;
-        }
-    }
-}
-
-SharedPtr<ShaderProgramReflection> ReflectShaders(std::initializer_list<Diligent::IShader*> shaders)
-{
-    auto reflection = MakeShared<ShaderReflectionImpl>();
-    for (Diligent::IShader* shader : shaders)
-    {
-        if (shader)
-            AppendShaderReflection(*reflection, shader);
-    }
-    return reflection;
-}
-
 #if GL_SUPPORTED || GLES_SUPPORTED
 
 VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
@@ -469,161 +223,6 @@ VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
     }
 
     return result;
-}
-
-ea::optional<ea::string_view> SanitateGLUniformName(ea::string_view name)
-{
-    // Remove trailing '[0]' from array names
-    const unsigned subscriptIndex = name.find('[');
-    if (subscriptIndex != ea::string::npos)
-    {
-        // If not the first index, skip
-        if (name.find("[0]", subscriptIndex) == ea::string::npos)
-            return ea::nullopt;
-
-        name = name.substr(0, subscriptIndex);
-    }
-
-    // Remove uniform buffer name
-    const unsigned dotIndex = name.find('.');
-    if (dotIndex != ea::string::npos)
-        name = name.substr(dotIndex + 1);
-
-    // Remove trailing 'c', ignore other uniforms
-    if (name.empty() || name[0] != 'c')
-        return ea::nullopt;
-
-    return name.substr(1);
-}
-
-void ConstructUniformDesc(Diligent::ShaderCodeVariableDesc& result, Diligent::SHADER_CODE_VARIABLE_CLASS kind,
-    Diligent::SHADER_CODE_BASIC_TYPE basicType, unsigned numColumns, unsigned numRows)
-{
-    result.Class = kind;
-    result.BasicType = basicType;
-    result.NumColumns = numColumns;
-    result.NumRows = numRows;
-}
-
-Diligent::ShaderCodeVariableDesc CreateUniformDesc(GLenum type, GLint elementCount)
-{
-    using namespace Diligent;
-
-    ShaderCodeVariableDesc result;
-    result.ArraySize = elementCount;
-    switch (type)
-    {
-    case GL_BOOL:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_SCALAR, SHADER_CODE_BASIC_TYPE_BOOL, 1, 1);
-        break;
-
-    case GL_INT:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_SCALAR, SHADER_CODE_BASIC_TYPE_INT, 1, 1);
-        break;
-
-    case GL_FLOAT:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_SCALAR, SHADER_CODE_BASIC_TYPE_FLOAT, 1, 1);
-        break;
-
-    case GL_FLOAT_VEC2:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 2, 1);
-        break;
-
-    case GL_FLOAT_VEC3:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 3, 1);
-        break;
-
-    case GL_FLOAT_VEC4:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_VECTOR, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 1);
-        break;
-
-    case GL_FLOAT_MAT3:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS, SHADER_CODE_BASIC_TYPE_FLOAT, 3, 3);
-        break;
-
-    case GL_FLOAT_MAT3x4:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 3);
-        break;
-
-    case GL_FLOAT_MAT4:
-        ConstructUniformDesc(result, SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS, SHADER_CODE_BASIC_TYPE_FLOAT, 4, 4);
-        break;
-
-    default: break;
-    }
-
-    return result;
-}
-
-SharedPtr<ShaderProgramReflection> ReflectGLProgram(GLuint programObject)
-{
-    auto reflection = MakeShared<ShaderReflectionImpl>();
-
-    GLint numUniformBlocks = 0;
-    GLint numUniforms = 0;
-    glGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &numUniformBlocks);
-    glGetProgramiv(programObject, GL_ACTIVE_UNIFORMS, &numUniforms);
-
-    ea::vector<ShaderParameterGroup> indexToGroup;
-
-    static const unsigned maxNameLength = 256;
-    char name[maxNameLength]{};
-
-    for (GLuint uniformBlockIndex = 0; uniformBlockIndex < static_cast<GLuint>(numUniformBlocks); ++uniformBlockIndex)
-    {
-        glGetActiveUniformBlockName(programObject, uniformBlockIndex, maxNameLength, nullptr, name);
-
-        const auto bufferGroup = ParseConstantBufferName(name);
-        if (!bufferGroup)
-        {
-            URHO3D_LOGWARNING("Unknown constant buffer '{}' is ignored", name);
-            continue;
-        }
-
-        GLint dataSize = 0;
-        glGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &dataSize);
-
-        reflection->AddOrCheckUniformBuffer(*bufferGroup, name, dataSize);
-
-        const unsigned blockIndex = glGetUniformBlockIndex(programObject, name);
-        if (blockIndex >= indexToGroup.size())
-            indexToGroup.resize(blockIndex + 1, MAX_SHADER_PARAMETER_GROUPS);
-        indexToGroup[blockIndex] = *bufferGroup;
-    }
-
-    for (GLuint uniformIndex = 0; uniformIndex < static_cast<GLuint>(numUniforms); ++uniformIndex)
-    {
-        GLint elementCount = 0;
-        GLenum type = 0;
-        glGetActiveUniform(programObject, uniformIndex, maxNameLength, nullptr, &elementCount, &type, name);
-
-        if (const auto sanitatedResourceName = SanitizeResourceName(name))
-        {
-            reflection->AddOrCheckShaderResource(StringHash{*sanitatedResourceName}, name);
-            continue;
-        }
-
-        const auto sanitatedName = SanitateGLUniformName(name);
-        if (!sanitatedName)
-            continue;
-
-        GLint blockIndex = 0;
-        GLint blockOffset = 0;
-        glGetActiveUniformsiv(programObject, 1, &uniformIndex, GL_UNIFORM_BLOCK_INDEX, &blockIndex);
-        glGetActiveUniformsiv(programObject, 1, &uniformIndex, GL_UNIFORM_OFFSET, &blockOffset);
-
-        if (blockIndex >= 0 && blockIndex < indexToGroup.size())
-        {
-            const ShaderParameterGroup group = indexToGroup[blockIndex];
-            if (group != MAX_SHADER_PARAMETER_GROUPS)
-            {
-                const unsigned size = GetUniformSize(CreateUniformDesc(type, elementCount));
-                reflection->AddOrCheckUniform(group, *sanitatedName, size, blockOffset);
-            }
-        }
-    }
-
-    return reflection;
 }
 
 #endif
@@ -669,7 +268,8 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     // On OpenGL, uniform layout initialization may be postponed.
     if (hasSeparableShaderPrograms)
     {
-        reflection_ = ReflectShaders({vertexShader, pixelShader, domainShader, hullShader, geometryShader});
+        Diligent::IShader* const shaders[] = {vertexShader, pixelShader, domainShader, hullShader, geometryShader};
+        reflection_ = MakeShared<ShaderProgramReflection>(shaders);
 
         InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
         ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
@@ -758,7 +358,7 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
 
         if (!hasSeparableShaderPrograms)
         {
-            reflection_ = ReflectGLProgram(programObjects[0]);
+            reflection_ = MakeShared<ShaderProgramReflection>(programObjects[0]);
 
             InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
             ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
@@ -784,7 +384,6 @@ bool PipelineState::BuildPipeline(Graphics* graphics)
     }
 
     handle_->CreateShaderResourceBinding(&shaderResourceBinding_, true);
-    reflection_->RecalculateLayoutHash();
     reflection_->ConnectToShaderVariables(shaderResourceBinding_);
 
     URHO3D_LOGDEBUG("Created Graphics Pipeline ({})", desc_.ToHash());

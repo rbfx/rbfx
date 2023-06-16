@@ -27,13 +27,20 @@
 
 #include <EASTL/array.h>
 #include <EASTL/fixed_vector.h>
+#include <EASTL/span.h>
 #include <EASTL/unordered_map.h>
+
+#include <initializer_list>
 
 namespace Diligent
 {
 
+struct IShader;
 struct IShaderResourceBinding;
 struct IShaderResourceVariable;
+struct ShaderCodeBufferDesc;
+struct ShaderCodeVariableDesc;
+struct ShaderResourceDesc;
 
 } // namespace Diligent
 
@@ -67,10 +74,18 @@ struct ShaderResourceReflection
 };
 using ShaderResourceReflectionMap = ea::unordered_map<StringHash, ShaderResourceReflection>;
 
-/// Description of constant buffer layout of shader program.
+/// Description of shader program: uniform buffers, resources, etc.
 class URHO3D_API ShaderProgramReflection : public RefCounted
 {
 public:
+    /// Create reflection from shaders.
+    /// @note It works only for GAPIs that can provide per-shader reflection data (this is everyone but old OpenGL).
+    explicit ShaderProgramReflection(ea::span<Diligent::IShader* const> shaders);
+    /// Create reflection from linked OpenGL shader program.
+    explicit ShaderProgramReflection(unsigned programObject);
+
+    /// Getters.
+    /// @{
     const UniformBufferReflection* GetUniformBuffer(ShaderParameterGroup group) const
     {
         if (group >= MAX_SHADER_PARAMETER_GROUPS || uniformBuffers_[group].size_ == 0)
@@ -96,14 +111,20 @@ public:
 
     const ShaderParameterReflectionMap& GetUniforms() const { return uniforms_; }
     const ShaderResourceReflectionMap& GetShaderResources() const { return shaderResources_; }
+    /// @}
 
-    void RecalculateLayoutHash();
     void ConnectToShaderVariables(Diligent::IShaderResourceBinding* binding);
 
-protected:
+private:
+    void ReflectShader(Diligent::IShader* shader);
+    void ReflectUniformBuffer(
+        const Diligent::ShaderResourceDesc& resourceDesc, const Diligent::ShaderCodeBufferDesc& bufferDesc);
+
     void AddUniformBuffer(ShaderParameterGroup group, ea::string_view internalName, unsigned size);
-    void AddUniform(StringHash name, ShaderParameterGroup group, unsigned offset, unsigned size);
+    void AddUniform(ea::string_view name, ShaderParameterGroup group, unsigned offset, unsigned size);
+    void AddUniform(ShaderParameterGroup group, const Diligent::ShaderCodeVariableDesc& desc);
     void AddShaderResource(StringHash name, ea::string_view internalName);
+    void RecalculateUniformHash();
 
 private:
     UniformBufferReflectionArray uniformBuffers_;

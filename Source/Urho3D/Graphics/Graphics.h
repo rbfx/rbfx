@@ -59,7 +59,6 @@ class TextureCube;
 class Vector3;
 class Vector4;
 class VertexBuffer;
-class VertexDeclaration;
 class PipelineState;
 class ShaderResourceBinding;
 class RenderDevice;
