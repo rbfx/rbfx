@@ -20,20 +20,27 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
-#include "../Graphics/DrawCommandQueue.h"
-#include "../Graphics/RenderSurface.h"
-#include "../Graphics/Texture.h"
+#include "Urho3D/Graphics/DrawCommandQueue.h"
+
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsImpl.h"
+#include "Urho3D/Graphics/RenderSurface.h"
+#include "Urho3D/Graphics/Texture.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
+
+GeometryBufferArray::GeometryBufferArray(const Geometry* geometry, VertexBuffer* instancingBuffer)
+    : GeometryBufferArray(geometry->GetVertexBuffers(), geometry->GetIndexBuffer(), instancingBuffer)
+{
+}
 
 DrawCommandQueue::DrawCommandQueue(Graphics* graphics)
     : graphics_(graphics)
@@ -98,9 +105,15 @@ void DrawCommandQueue::Execute()
         // Set pipeline state
         if (cmd.pipelineState_ != currentPipelineState)
         {
-            // Skip this pipeline if something goes wrong.
-            if (!cmd.pipelineState_->Apply(graphics_))
+            // TODO(diligent): This is used for shader reloading. Make better?
+            cmd.pipelineState_->Restore();
+
+            // TODO(diligent): Revisit error checking. Use default pipeline?
+            if (!cmd.pipelineState_->GetHandle())
                 continue;
+
+            // Skip this pipeline if something goes wrong.
+            graphics_->SetPipelineState(cmd.pipelineState_);
             currentPipelineState = cmd.pipelineState_;
             currentShaderResourceBinding = cmd.pipelineState_->GetShaderResourceBinding();
             currentShaderReflection = cmd.pipelineState_->GetReflection();

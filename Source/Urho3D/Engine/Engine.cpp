@@ -40,7 +40,7 @@
 #include "../Engine/StateManager.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/FreeFlyController.h"
@@ -346,7 +346,6 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     {
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
-        context_->RegisterSubsystem(new PipelineStateCache(context_));
 #ifdef URHO3D_COMPUTE
         context_->RegisterSubsystem(new ComputeDevice(context_, context_->GetSubsystem<Graphics>()));
 #endif
@@ -486,20 +485,34 @@ bool Engine::Initialize(const StringVariantMap& parameters)
     if (HasParameter(EP_TIME_OUT))
         timeOut_ = GetParameter(EP_TIME_OUT).GetInt() * 1000000LL;
 
-    if (auto psoCache = GetSubsystem<PipelineStateCache>())
-    {
-        psoCache->SetCacheDir(FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE_DIR).GetString()));
-        psoCache->Init();
-    }
-
     if (!headless_)
     {
+        context_->RegisterSubsystem(new PipelineStateCache(context_));
+
+        auto psoCache = GetSubsystem<PipelineStateCache>();
+        ByteVector cachedData;
+        // TODO(diligent): Extract to function?
+        if (const auto cacheFileId = FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE).GetString()))
+        {
+            auto vfs = GetSubsystem<VirtualFileSystem>();
+            if (vfs->Exists(cacheFileId))
+            {
+                if (const AbstractFilePtr file = vfs->OpenFile(cacheFileId, FILE_READ))
+                {
+                    cachedData.resize(file->GetSize());
+                    file->Read(cachedData.data(), cachedData.size());
+                }
+            }
+        }
+        psoCache->Initialize(cachedData);
+
 #ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_,
             GetParameter(EP_SYSTEMUI_FLAGS).GetUInt()));
         RegisterStandardSerializableHooks(context_);
 #endif
     }
+
     frameTimer_.Reset();
 
     URHO3D_LOGINFO("Initialized engine");
@@ -1139,7 +1152,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WINDOW_TITLE, "Urho3D");
     engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
-    engineParameters_->DefineVariable(EP_PSO_CACHE_DIR, "conf://psocache.bin");
+    engineParameters_->DefineVariable(EP_PSO_CACHE, "conf://psocache.bin");
     engineParameters_->DefineVariable(EP_RENDER_BACKEND, Variant::EMPTY);
 }
 
@@ -1165,7 +1178,17 @@ void Engine::DoExit()
 {
     // Save Pipeline State Cache into disk before exit
     if (auto psoCache = GetSubsystem<PipelineStateCache>())
-        psoCache->Save();
+    {
+        const auto cachedData = psoCache->GetCachedData();
+
+        // TODO(diligent): Extract to function?
+        if (const auto cacheFileId = FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE).GetString()))
+        {
+            auto vfs = GetSubsystem<VirtualFileSystem>();
+            if (const AbstractFilePtr file = vfs->OpenFile(cacheFileId, FILE_WRITE))
+                file->Write(cachedData.data(), cachedData.size());
+        }
+    }
 
     auto* graphics = GetSubsystem<Graphics>();
     if (graphics)

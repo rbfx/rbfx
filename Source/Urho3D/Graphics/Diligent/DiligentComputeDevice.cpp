@@ -289,9 +289,7 @@ bool ComputeDevice::BuildPipeline()
     ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
 
     ci.pCS = computeShader;
-    // Use PSO Cache if was created.
-    if(psoCache_->GetGPUPipelineCache())
-        ci.pPSOCache = psoCache_->GetGPUPipelineCache().Cast<IPipelineStateCache>(IID_PipelineStateCache);
+    ci.pPSOCache = psoCache_->GetHandle();
 
     auto device = graphics_->GetImpl()->GetDevice();
     device->CreateComputePipelineState(ci, &pipeline_);

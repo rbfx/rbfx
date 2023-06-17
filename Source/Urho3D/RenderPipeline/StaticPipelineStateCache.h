@@ -5,7 +5,7 @@
 #pragma once
 
 #include "Urho3D/Core/Object.h"
-#include "Urho3D/Graphics/PipelineState.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 #include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 

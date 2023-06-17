@@ -32,7 +32,7 @@
 #include "../../Graphics/GraphicsEvents.h"
 #include "../../Graphics/GraphicsImpl.h"
 #include "../../Graphics/IndexBuffer.h"
-#include "../../Graphics/PipelineState.h"
+#include "../../RenderAPI/PipelineState.h"
 #include "../../Graphics/Renderer.h"
 #include "../../Graphics/Shader.h"
 #include "../../Graphics/ShaderPrecache.h"
@@ -60,8 +60,6 @@
 #include <Diligent/Primitives/interface/DebugOutput.h>
 
 #include <EASTL/utility.h>
-
-#include "DiligentLookupSettings.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Graphics/GraphicsTools/interface/MapHelper.hpp>
@@ -166,6 +164,9 @@ EMSCRIPTEN_BINDINGS(Module)
 namespace Urho3D
 {
 using namespace Diligent;
+
+static const Diligent::VALUE_TYPE DiligentIndexBufferType[] = {
+    Diligent::VT_UNDEFINED, Diligent::VT_UINT16, Diligent::VT_UINT32};
 
 struct ClearFramebufferConstantBuffer
 {

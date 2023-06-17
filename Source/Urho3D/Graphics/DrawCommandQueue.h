@@ -27,7 +27,7 @@
 #include "../Graphics/ConstantBufferCollection.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/IndexBuffer.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../IO/Log.h"
 #include "Urho3D/RenderAPI/ShaderProgramReflection.h"
 
@@ -54,6 +54,48 @@ struct ShaderParameterDesc
 
 /// Shader resource group, range in array.
 using ShaderResourceRange = ea::pair<unsigned, unsigned>;
+
+/// Set of input buffers with vertex and index data.
+struct GeometryBufferArray
+{
+    IndexBuffer* indexBuffer_{};
+    ea::array<VertexBuffer*, MAX_VERTEX_STREAMS> vertexBuffers_{};
+
+    GeometryBufferArray() = default;
+
+    GeometryBufferArray(std::initializer_list<VertexBuffer*> vertexBuffers,
+        IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
+    {
+        ea::span<VertexBuffer* const> tempVertexBuffers(vertexBuffers.begin(), static_cast<unsigned>(vertexBuffers.size()));
+        Initialize(tempVertexBuffers, indexBuffer, instancingBuffer);
+    }
+
+    template <class Container>
+    GeometryBufferArray(Container&& vertexBuffers, IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
+    {
+        Initialize(vertexBuffers, indexBuffer, instancingBuffer);
+    }
+
+    explicit GeometryBufferArray(const Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
+
+private:
+    template <class Container>
+    void Initialize(Container&& vertexBuffers, IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
+    {
+        using eastl::size;
+        using eastl::begin;
+        using eastl::end;
+
+        const unsigned numVertexBuffers = size(vertexBuffers);
+        assert(numVertexBuffers + !!instancingBuffer <= MAX_VERTEX_STREAMS);
+
+        const auto iter = ea::copy(begin(vertexBuffers), end(vertexBuffers), vertexBuffers_.begin());
+        if (instancingBuffer)
+            *iter = instancingBuffer;
+
+        indexBuffer_ = indexBuffer;
+    }
+};
 
 /// Description of draw command.
 struct DrawCommandDescription

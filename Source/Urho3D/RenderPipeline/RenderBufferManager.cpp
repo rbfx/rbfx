@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/Graphics.h"
+#include "../Graphics/PipelineStateUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture2D.h"
@@ -390,7 +391,7 @@ StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(PipelineState
 {
     Geometry* quadGeometry = renderer_->GetQuadGeometry();
 
-    desc.InitializeInputLayoutAndPrimitiveType(quadGeometry);
+    InitializeInputLayoutAndPrimitiveType(desc, quadGeometry);
     desc.colorWriteEnabled_ = true;
 
     return pipelineStates_.CreateState(desc);
@@ -413,11 +414,7 @@ StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode ble
     desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);
 
     for (const auto& [name, samplerStateDesc] : samplers)
-    {
-        desc.samplerNames_[desc.numSamplers_] = StringHash{name};
-        desc.samplers_[desc.numSamplers_] = samplerStateDesc;
-        ++desc.numSamplers_;
-    }
+        desc.samplers_.Add(StringHash{name}, samplerStateDesc);
 
     return CreateQuadPipelineState(desc);
 }

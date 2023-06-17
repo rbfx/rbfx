@@ -24,7 +24,7 @@
 
 #include "../Core/NonCopyable.h"
 #include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 
 #include <EASTL/optional.h>
@@ -32,11 +32,13 @@
 namespace Urho3D
 {
 
+class Drawable;
 class Geometry;
+class IndexBuffer;
+class LightProcessor;
 class Material;
 class Pass;
-class Drawable;
-class LightProcessor;
+class VertexBuffer;
 struct SourceBatch;
 
 /// Key used to lookup cached pipeline states for PipelineBatch.

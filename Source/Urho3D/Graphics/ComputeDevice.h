@@ -37,7 +37,7 @@
 #elif defined(URHO3D_DILIGENT)
     #include <Diligent/Graphics/GraphicsEngine/interface/ResourceMapping.h>
     #include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceBinding.h>
-    #include "../Graphics/PipelineState.h"
+    #include "../RenderAPI/PipelineState.h"
     #include "../Engine/EngineEvents.h"
 #elif defined(URHO3D_OPENGL)
 #endif

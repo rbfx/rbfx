@@ -28,7 +28,7 @@
 #include "../Graphics/Batch.h"
 #include "../Graphics/Drawable.h"
 #include "../Graphics/DrawCommandQueue.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../Graphics/Viewport.h"
 #include "../Math/Color.h"
 
@@ -747,8 +747,6 @@ private:
     SkinningMode skinningMode_{};
     /// Number of bones used for software skinning.
     unsigned numSoftwareSkinningBones_{ 4 };
-    /// Pipeline state cache.
-    SharedPtr<PipelineStateCache> pipelineStateCache_;
     SharedPtr<DrawCommandQueue> defaultDrawQueue_;
 
     FrameStatistics frameStats_;

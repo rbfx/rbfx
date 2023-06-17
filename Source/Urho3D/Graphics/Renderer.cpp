@@ -279,8 +279,7 @@ inline ea::vector<VertexElement> CreateInstancingBufferElements(unsigned numExtr
 
 Renderer::Renderer(Context* context) :
     Object(context),
-    defaultZone_(MakeShared<Zone>(context)),
-    pipelineStateCache_(MakeShared<PipelineStateCache>(context))
+    defaultZone_(MakeShared<Zone>(context))
 {
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Renderer, HandleScreenMode));
 
@@ -614,7 +613,9 @@ void Renderer::ApplyShadowMapFilter(View* view, Texture2D* shadowMap, float blur
 
 SharedPtr<PipelineState> Renderer::GetOrCreatePipelineState(const PipelineStateDesc& desc)
 {
-    return pipelineStateCache_->GetPipelineState(desc);
+    // TODO(diligent): Revisit
+    auto pipelineStateCache = GetSubsystem<PipelineStateCache>();
+    return pipelineStateCache->GetPipelineState(desc);
 }
 
 Viewport* Renderer::GetViewport(unsigned index) const

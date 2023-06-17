@@ -22,15 +22,16 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include "Urho3D/Container/Ptr.h"
+
+#include <EASTL/span.h>
+#include <EASTL/unordered_map.h>
+#include <EASTL/utility.h>
+#include <EASTL/vector.h>
+#include <EASTL/weak_ptr.h>
 
 #include <cstddef>
 #include <type_traits>
-
-#include <EASTL/utility.h>
-#include <EASTL/weak_ptr.h>
-#include <EASTL/vector.h>
-#include <EASTL/unordered_map.h>
 
 namespace Urho3D
 {
@@ -154,6 +155,19 @@ template <class... T> struct hash<tuple<T...>>
                 Urho3D::CombineHash(result, hash);
         };
         ea::apply(calculate, value);
+        return result;
+    }
+};
+
+template <class T>
+struct hash<span<T>>
+{
+    size_t operator()(const span<T>& value) const
+    {
+        size_t result = 0;
+        Urho3D::CombineHash(result, value.size());
+        for (const auto& elem : value)
+            Urho3D::CombineHash(result, hash<T>{}(elem));
         return result;
     }
 };

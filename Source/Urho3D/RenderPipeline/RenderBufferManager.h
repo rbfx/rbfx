@@ -26,7 +26,7 @@
 #include "../Core/Object.h"
 #include "../Graphics/DrawCommandQueue.h"
 #include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "Urho3D/RenderPipeline/StaticPipelineStateCache.h"
 

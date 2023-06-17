@@ -7,9 +7,9 @@
 #include "Urho3D/SystemUI/ImGuiDiligentRendererEx.h"
 
 #include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/Graphics/PipelineState.h"
 #include "Urho3D/Graphics/Renderer.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/SystemUI/ImGui.h"
@@ -72,19 +72,19 @@ SharedPtr<PipelineState> CreateRenderPipeline(
     desc.output_.renderTargetFormats_[0] = colorBufferFormat;
     desc.output_.depthStencilFormat_ = depthBufferFormat;
 
-    desc.numVertexElements_ = 3;
-    desc.vertexElements_[0].bufferStride_ = sizeof(ImDrawVert);
-    desc.vertexElements_[0].semantic_ = SEM_POSITION;
-    desc.vertexElements_[0].type_ = TYPE_VECTOR2;
-    desc.vertexElements_[0].offset_ = 0;
-    desc.vertexElements_[1].bufferStride_ = sizeof(ImDrawVert);
-    desc.vertexElements_[1].semantic_ = SEM_TEXCOORD;
-    desc.vertexElements_[1].type_ = TYPE_VECTOR2;
-    desc.vertexElements_[1].offset_ = sizeof(ImVec2);
-    desc.vertexElements_[2].bufferStride_ = sizeof(ImDrawVert);
-    desc.vertexElements_[2].semantic_ = SEM_COLOR;
-    desc.vertexElements_[2].type_ = TYPE_UBYTE4_NORM;
-    desc.vertexElements_[2].offset_ = sizeof(ImVec2) + sizeof(ImVec2);
+    desc.inputLayout_.size_ = 3;
+    desc.inputLayout_.elements_[0].bufferStride_ = sizeof(ImDrawVert);
+    desc.inputLayout_.elements_[0].elementSemantic_ = SEM_POSITION;
+    desc.inputLayout_.elements_[0].elementType_ = TYPE_VECTOR2;
+    desc.inputLayout_.elements_[0].elementOffset_ = 0;
+    desc.inputLayout_.elements_[1].bufferStride_ = sizeof(ImDrawVert);
+    desc.inputLayout_.elements_[1].elementSemantic_ = SEM_TEXCOORD;
+    desc.inputLayout_.elements_[1].elementType_ = TYPE_VECTOR2;
+    desc.inputLayout_.elements_[1].elementOffset_ = sizeof(ImVec2);
+    desc.inputLayout_.elements_[2].bufferStride_ = sizeof(ImDrawVert);
+    desc.inputLayout_.elements_[2].elementSemantic_ = SEM_COLOR;
+    desc.inputLayout_.elements_[2].elementType_ = TYPE_UBYTE4_NORM;
+    desc.inputLayout_.elements_[2].elementOffset_ = sizeof(ImVec2) + sizeof(ImVec2);
     desc.colorWriteEnabled_ = true;
 
     ea::string shaderDefines;
@@ -99,7 +99,7 @@ SharedPtr<PipelineState> CreateRenderPipeline(
     desc.depthWriteEnabled_ = false;
     desc.blendMode_ = BLEND_ALPHA;
 
-    desc.AddSampler("Texture", SamplerStateDesc::Bilinear(ADDRESS_WRAP));
+    desc.samplers_.Add("Texture", SamplerStateDesc::Bilinear(ADDRESS_WRAP));
 
     return renderer->GetOrCreatePipelineState(desc);
 }
@@ -201,8 +201,7 @@ void ImGuiDiligentRendererEx::RenderSecondaryWindows()
 
 void ImGuiDiligentRendererEx::RenderDrawDataWith(ImDrawData* drawData, PipelineState* pipelineState)
 {
-    auto graphics = renderDevice_->GetContext()->GetSubsystem<Graphics>();
-    pipelineState->RestoreCachedState(graphics);
+    pipelineState->Restore();
     if (!pipelineState->IsValid())
         return;
 

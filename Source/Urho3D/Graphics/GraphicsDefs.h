@@ -43,17 +43,6 @@ class Vector3;
 #define DESKTOP_GRAPHICS
 //#endif
 
-/// Primitive type.
-enum PrimitiveType
-{
-    TRIANGLE_LIST = 0,
-    LINE_LIST,
-    POINT_LIST,
-    TRIANGLE_STRIP,
-    LINE_STRIP,
-    TRIANGLE_FAN
-};
-
 /// %Geometry type for vertex shader geometry variations.
 enum GeometryType
 {
@@ -67,63 +56,6 @@ enum GeometryType
     MAX_GEOMETRYTYPES = 7,
     // This is not a real geometry type for VS, but used to mark objects that do not desire to be instanced
     GEOM_STATIC_NOINSTANCING = 7,
-};
-
-/// Blending mode.
-enum BlendMode
-{
-    BLEND_REPLACE = 0,
-    BLEND_ADD,
-    BLEND_MULTIPLY,
-    BLEND_ALPHA,
-    BLEND_ADDALPHA,
-    BLEND_PREMULALPHA,
-    BLEND_INVDESTALPHA,
-    BLEND_SUBTRACT,
-    BLEND_SUBTRACTALPHA,
-    BLEND_DEFERRED_DECAL,
-    MAX_BLENDMODES
-};
-
-/// Depth or stencil compare mode.
-enum CompareMode
-{
-    CMP_ALWAYS = 0,
-    CMP_EQUAL,
-    CMP_NOTEQUAL,
-    CMP_LESS,
-    CMP_LESSEQUAL,
-    CMP_GREATER,
-    CMP_GREATEREQUAL,
-    MAX_COMPAREMODES
-};
-
-/// Culling mode.
-enum CullMode
-{
-    CULL_NONE = 0,
-    CULL_CCW,
-    CULL_CW,
-    MAX_CULLMODES
-};
-
-/// Fill mode.
-enum FillMode
-{
-    FILL_SOLID = 0,
-    FILL_WIREFRAME,
-    FILL_POINT,
-    MAX_FILLMODES
-};
-
-/// Stencil operation.
-enum StencilOp
-{
-    OP_KEEP = 0,
-    OP_ZERO,
-    OP_REF,
-    OP_INCR,
-    OP_DECR
 };
 
 /// Vertex/index buffer lock state.
@@ -156,19 +88,6 @@ enum LegacyVertexElement
     MAX_LEGACY_VERTEX_ELEMENTS
 };
 
-/// Arbitrary vertex declaration element datatypes.
-enum VertexElementType : unsigned char
-{
-    TYPE_INT = 0,
-    TYPE_FLOAT,
-    TYPE_VECTOR2,
-    TYPE_VECTOR3,
-    TYPE_VECTOR4,
-    TYPE_UBYTE4,
-    TYPE_UBYTE4_NORM,
-    MAX_VERTEX_ELEMENT_TYPES
-};
-
 /// Vertex element description for arbitrary vertex declarations.
 struct URHO3D_API VertexElement
 {
@@ -178,8 +97,7 @@ struct URHO3D_API VertexElement
         semantic_(SEM_POSITION),
         index_(0),
         perInstance_(false),
-        offset_(0),
-        location_(0)
+        offset_(0)
     {
     }
 
@@ -189,8 +107,7 @@ struct URHO3D_API VertexElement
         semantic_(semantic),
         index_(index),
         perInstance_(perInstance),
-        offset_(0),
-        location_(0)
+        offset_(0)
     {
     }
 
@@ -222,9 +139,6 @@ struct URHO3D_API VertexElement
     bool perInstance_;
     /// Offset of element from vertex start. Filled by VertexBuffer once the vertex declaration is built.
     unsigned offset_;
-    /// Location of element, used by Diligent on OpenGL
-    /// TODO(diligent): Remove this
-    unsigned location_;
 };
 
 /// Sizes of vertex element types.

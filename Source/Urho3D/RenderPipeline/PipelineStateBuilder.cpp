@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/Graphics.h"
+#include "../Graphics/PipelineStateUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
 #include "../RenderPipeline/CameraProcessor.h"
@@ -262,9 +263,9 @@ void PipelineStateBuilder::SetupInputLayoutAndPrimitiveType(
     PipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const
 {
     if (shaderProgramDesc.isInstancingUsed_)
-        pipelineStateDesc.InitializeInputLayoutAndPrimitiveType(geometry, instancingBuffer_->GetVertexBuffer());
+        InitializeInputLayoutAndPrimitiveType(pipelineStateDesc, geometry, instancingBuffer_->GetVertexBuffer());
     else
-        pipelineStateDesc.InitializeInputLayoutAndPrimitiveType(geometry);
+        InitializeInputLayoutAndPrimitiveType(pipelineStateDesc, geometry);
 }
 
 void PipelineStateBuilder::SetupShaders(PipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const
@@ -297,31 +298,31 @@ void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(const Material* mate
                 continue;
             if (textureName == ShaderResources::EnvMap)
                 materialHasEnvironmentMap = true;
-            pipelineStateDesc_.AddSampler(textureName, texture->GetSamplerStateDesc());
+            pipelineStateDesc_.samplers_.Add(textureName, texture->GetSamplerStateDesc());
         }
     }
 
     if (hasLightmap)
-        pipelineStateDesc_.AddSampler(ShaderResources::EmissiveMap, lightMapSampler);
+        pipelineStateDesc_.samplers_.Add(ShaderResources::EmissiveMap, lightMapSampler);
     if (light)
     {
         if (Texture* rampTexture = light->GetRampTexture())
-            pipelineStateDesc_.AddSampler(ShaderResources::LightRampMap, rampTexture->GetSamplerStateDesc());
+            pipelineStateDesc_.samplers_.Add(ShaderResources::LightRampMap, rampTexture->GetSamplerStateDesc());
         if (Texture* shapeTexture = light->GetShapeTexture())
-            pipelineStateDesc_.AddSampler(ShaderResources::LightSpotMap, shapeTexture->GetSamplerStateDesc());
+            pipelineStateDesc_.samplers_.Add(ShaderResources::LightSpotMap, shapeTexture->GetSamplerStateDesc());
     }
     if (lightProcessor && lightProcessor->HasShadow())
-        pipelineStateDesc_.AddSampler(ShaderResources::ShadowMap, shadowMapAllocator_->GetSamplerStateDesc());
+        pipelineStateDesc_.samplers_.Add(ShaderResources::ShadowMap, shadowMapAllocator_->GetSamplerStateDesc());
 
     if (hasAmbient)
     {
         if (!materialHasEnvironmentMap)
-            pipelineStateDesc_.AddSampler(ShaderResources::EnvMap, reflectionMapSampler);
-        pipelineStateDesc_.AddSampler(ShaderResources::ZoneCubeMap, reflectionMapSampler);
+            pipelineStateDesc_.samplers_.Add(ShaderResources::EnvMap, reflectionMapSampler);
+        pipelineStateDesc_.samplers_.Add(ShaderResources::ZoneCubeMap, reflectionMapSampler);
     }
 
     if (isRefractionPass)
-        pipelineStateDesc_.AddSampler(ShaderResources::EmissiveMap, refractionMapSampler);
+        pipelineStateDesc_.samplers_.Add(ShaderResources::EmissiveMap, refractionMapSampler);
 }
 
 }

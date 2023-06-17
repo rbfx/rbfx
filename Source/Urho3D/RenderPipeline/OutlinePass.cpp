@@ -133,9 +133,7 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
     if (needAlphaMask)
     {
         shaderProgramDesc_.AddShaderDefines(PS, "ALPHAMASK");
-        desc.numSamplers_ = 1;
-        desc.samplerNames_[0] = ShaderResources::DiffMap;
-        desc.samplers_[0] = diffMap->GetSamplerStateDesc();
+        desc.samplers_.Add(ShaderResources::DiffMap, diffMap->GetSamplerStateDesc());
     }
 
     builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_);

@@ -1,3 +1,4 @@
+// Copyright (c) 2008-2022 the Urho3D project.
 // Copyright (c) 2023-2023 the rbfx project.
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
@@ -17,6 +18,7 @@
 #include <EASTL/array.h>
 #include <EASTL/fixed_vector.h>
 #include <EASTL/optional.h>
+#include <EASTL/tuple.h>
 
 namespace Urho3D
 {
@@ -67,7 +69,7 @@ struct URHO3D_API FullscreenMode
 
     /// Operators.
     /// @{
-    const auto Tie() const { return ea::tie(size_.x_, size_.y_, refreshRate_); }
+    auto Tie() const { return ea::tie(size_.x_, size_.y_, refreshRate_); }
     bool operator==(const FullscreenMode& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const FullscreenMode& rhs) const { return Tie() != rhs.Tie(); }
     bool operator<(const FullscreenMode& rhs) const { return Tie() < rhs.Tie(); }
@@ -108,7 +110,7 @@ struct URHO3D_API WindowSettings
 };
 
 /// Immutable settings of the render device.
-struct RenderDeviceSettings
+struct URHO3D_API RenderDeviceSettings
 {
     /// Render backend to use.
     RenderBackend backend_{};
@@ -168,7 +170,7 @@ enum class TextureFlag
     None = 0,
     /// Texture can be used as possibly sampled shader resource.
     /// TODO(diligent): This is always true for now. Remove?
-    //BindShaderResource = 1 << 0,
+    // BindShaderResource = 1 << 0,
 
     /// Texture can be used as render target.
     BindRenderTarget = 1 << 1,
@@ -215,6 +217,19 @@ enum VertexElementSemantic : unsigned char
     MAX_VERTEX_ELEMENT_SEMANTICS
 };
 
+/// Arbitrary vertex declaration element datatypes.
+enum VertexElementType : unsigned char
+{
+    TYPE_INT = 0,
+    TYPE_FLOAT,
+    TYPE_VECTOR2,
+    TYPE_VECTOR3,
+    TYPE_VECTOR4,
+    TYPE_UBYTE4,
+    TYPE_UBYTE4_NORM,
+    MAX_VERTEX_ELEMENT_TYPES
+};
+
 /// Description of the single input required by the vertex shader.
 struct URHO3D_API VertexShaderAttribute
 {
@@ -259,6 +274,74 @@ enum class TextureCoordinate
 };
 static constexpr auto MaxTextureCoordinates = static_cast<unsigned>(TextureCoordinate::Count);
 
+/// Blending mode.
+enum BlendMode
+{
+    BLEND_REPLACE = 0,
+    BLEND_ADD,
+    BLEND_MULTIPLY,
+    BLEND_ALPHA,
+    BLEND_ADDALPHA,
+    BLEND_PREMULALPHA,
+    BLEND_INVDESTALPHA,
+    BLEND_SUBTRACT,
+    BLEND_SUBTRACTALPHA,
+    BLEND_DEFERRED_DECAL,
+    MAX_BLENDMODES
+};
+
+/// Depth or stencil compare mode.
+enum CompareMode
+{
+    CMP_ALWAYS = 0,
+    CMP_EQUAL,
+    CMP_NOTEQUAL,
+    CMP_LESS,
+    CMP_LESSEQUAL,
+    CMP_GREATER,
+    CMP_GREATEREQUAL,
+    MAX_COMPAREMODES
+};
+
+/// Culling mode.
+enum CullMode
+{
+    CULL_NONE = 0,
+    CULL_CCW,
+    CULL_CW,
+    MAX_CULLMODES
+};
+
+/// Fill mode.
+enum FillMode
+{
+    FILL_SOLID = 0,
+    FILL_WIREFRAME,
+    FILL_POINT,
+    MAX_FILLMODES
+};
+
+/// Stencil operation.
+enum StencilOp
+{
+    OP_KEEP = 0,
+    OP_ZERO,
+    OP_REF,
+    OP_INCR,
+    OP_DECR
+};
+
+/// Primitive type.
+enum PrimitiveType
+{
+    TRIANGLE_LIST = 0,
+    LINE_LIST,
+    POINT_LIST,
+    TRIANGLE_STRIP,
+    LINE_STRIP,
+    TRIANGLE_FAN
+};
+
 /// Description of immutable texture sampler bound to the pipeline.
 struct URHO3D_API SamplerStateDesc
 {
@@ -289,29 +372,21 @@ struct URHO3D_API SamplerStateDesc
 
     /// Operators.
     /// @{
-    bool operator==(const SamplerStateDesc& rhs) const
+    auto Tie() const
     {
-        return borderColor_ == rhs.borderColor_ //
-            && filterMode_ == rhs.filterMode_ //
-            && anisotropy_ == rhs.anisotropy_ //
-            && shadowCompare_ == rhs.shadowCompare_ //
-            && addressMode_ == rhs.addressMode_;
+        return ea::tie( //
+            borderColor_, //
+            filterMode_, //
+            anisotropy_, //
+            shadowCompare_, //
+            addressMode_[TextureCoordinate::U], //
+            addressMode_[TextureCoordinate::V], //
+            addressMode_[TextureCoordinate::W]);
     }
 
-    bool operator!=(const SamplerStateDesc& rhs) const { return !(*this == rhs); }
-
-    unsigned ToHash() const
-    {
-        unsigned hash = 0;
-        CombineHash(hash, MakeHash(borderColor_));
-        CombineHash(hash, filterMode_);
-        CombineHash(hash, anisotropy_);
-        CombineHash(hash, shadowCompare_);
-        CombineHash(hash, addressMode_[TextureCoordinate::U]);
-        CombineHash(hash, addressMode_[TextureCoordinate::V]);
-        CombineHash(hash, addressMode_[TextureCoordinate::W]);
-        return hash;
-    }
+    bool operator==(const SamplerStateDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const SamplerStateDesc& rhs) const { return Tie() != rhs.Tie(); }
+    unsigned ToHash() const { return MakeHash(Tie()); }
     /// @}
 };
 
@@ -324,23 +399,16 @@ struct URHO3D_API PipelineStateOutputDesc
 
     /// Operators.
     /// @{
-    bool operator ==(const PipelineStateOutputDesc& rhs) const
+    auto Tie() const
     {
-        return depthStencilFormat_ == rhs.depthStencilFormat_ //
-            && numRenderTargets_ == rhs.numRenderTargets_ //
-            && renderTargetFormats_ == rhs.renderTargetFormats_;
+        return ea::make_tuple( //
+            depthStencilFormat_, //
+            ea::span<const TextureFormat>(renderTargetFormats_.data(), numRenderTargets_));
     }
 
-    bool operator !=(const PipelineStateOutputDesc& rhs) const { return !(*this == rhs); }
-
-    unsigned ToHash() const
-    {
-        unsigned hash = 0;
-        CombineHash(hash, depthStencilFormat_);
-        for (unsigned i = 0; i < numRenderTargets_; ++i)
-            CombineHash(hash, renderTargetFormats_[i]);
-        return hash;
-    }
+    bool operator==(const PipelineStateOutputDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const PipelineStateOutputDesc& rhs) const { return Tie() != rhs.Tie(); }
+    unsigned ToHash() const { return MakeHash(Tie()); }
     /// @}
 };
 
@@ -364,6 +432,179 @@ enum ShaderParameterGroup
     SP_OBJECT,
     SP_CUSTOM,
     MAX_SHADER_PARAMETER_GROUPS
+};
+
+/// Description of input layout element.
+struct URHO3D_API InputLayoutElementDesc
+{
+    unsigned bufferIndex_{};
+    unsigned bufferStride_{};
+    unsigned elementOffset_{};
+    unsigned instanceStepRate_{};
+
+    VertexElementType elementType_{};
+    VertexElementSemantic elementSemantic_{};
+    unsigned char elementSemanticIndex_{};
+
+    /// Operators.
+    /// @{
+    auto Tie() const
+    {
+        return ea::tie( //
+            bufferIndex_, //
+            bufferStride_, //
+            elementOffset_, //
+            instanceStepRate_, //
+            elementType_, //
+            elementSemantic_, //
+            elementSemanticIndex_);
+    }
+
+    bool operator==(const InputLayoutElementDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const InputLayoutElementDesc& rhs) const { return Tie() != rhs.Tie(); }
+    unsigned ToHash() const { return MakeHash(Tie()); }
+    /// @}
+};
+
+/// Some vertex elements in layout may be unused and the hard GPU limit is only applied to the used ones.
+static const unsigned MaxNumVertexElements = 2 * Diligent::MAX_LAYOUT_ELEMENTS;
+/// Max number of immutable samplers on CPU side. Can be extended freely if needed.
+static const unsigned MaxNumImmutableSamplers = 16;
+
+/// Description of input layout of graphics pipeline state.
+struct URHO3D_API InputLayoutDesc
+{
+    unsigned size_{};
+    ea::array<InputLayoutElementDesc, MaxNumVertexElements> elements_;
+
+    /// Operators.
+    /// @{
+    auto Tie() const { return ea::make_tuple(ea::span<const InputLayoutElementDesc>(elements_.data(), size_)); }
+
+    bool operator==(const InputLayoutDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const InputLayoutDesc& rhs) const { return Tie() != rhs.Tie(); }
+    unsigned ToHash() const { return MakeHash(Tie()); }
+    /// @}
+};
+
+/// Description of immutable texture samplers used by the pipeline.
+struct URHO3D_API ImmutableSamplersDesc
+{
+    unsigned size_{};
+    ea::array<StringHash, MaxNumImmutableSamplers> names_;
+    ea::array<SamplerStateDesc, MaxNumImmutableSamplers> desc_;
+
+    /// Clear the collection.
+    void Clear() { size_ = 0; }
+    /// Add sampler to collection.
+    void Add(StringHash name, const SamplerStateDesc& desc)
+    {
+        if (size_ >= MaxNumImmutableSamplers)
+        {
+            URHO3D_ASSERTLOG(false, "Too many immutable samplers, increase MaxNumImmutableSamplers");
+            return;
+        }
+
+        names_[size_] = name;
+        desc_[size_] = desc;
+        ++size_;
+    }
+
+    /// Operators.
+    /// @{
+    auto Tie() const {
+        return ea::make_tuple( //
+            ea::span<const StringHash>(names_.data(), size_), //
+            ea::span<const SamplerStateDesc>(desc_.data(), size_));
+    }
+
+    bool operator==(const ImmutableSamplersDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const ImmutableSamplersDesc& rhs) const { return Tie() != rhs.Tie(); }
+    unsigned ToHash() const { return MakeHash(Tie()); }
+    /// @}
+};
+
+/// Description of graphics pipeline state.
+/// It does not specify shaders to avoid dependency on device objects.
+struct URHO3D_API GraphicsPipelineStateDesc
+{
+    /// Blend state.
+    /// @{
+    bool colorWriteEnabled_{};
+    BlendMode blendMode_{};
+    bool alphaToCoverageEnabled_{};
+    /// @}
+
+    /// Rasterizer state.
+    /// @{
+    FillMode fillMode_{};
+    CullMode cullMode_{};
+    float constantDepthBias_{};
+    float slopeScaledDepthBias_{};
+    bool scissorTestEnabled_{};
+    bool lineAntiAlias_{};
+    /// @}
+
+    /// Depth-stencil state.
+    /// @{
+    bool depthWriteEnabled_{};
+    bool stencilTestEnabled_{};
+    CompareMode depthCompareFunction_{};
+    CompareMode stencilCompareFunction_{};
+    StencilOp stencilOperationOnPassed_{};
+    StencilOp stencilOperationOnStencilFailed_{};
+    StencilOp stencilOperationOnDepthFailed_{};
+    unsigned stencilReferenceValue_{};
+    unsigned stencilCompareMask_{};
+    unsigned stencilWriteMask_{};
+    /// @}
+
+    /// Input layout.
+    InputLayoutDesc inputLayout_;
+    /// Primitive topology.
+    PrimitiveType primitiveType_{};
+    /// Render Target(s) and Depth Stencil formats.
+    PipelineStateOutputDesc output_;
+    /// Immutable Samplers.
+    ImmutableSamplersDesc samplers_;
+
+    /// Cached hash of the structure.
+    unsigned hash_{};
+    unsigned ToHash() const { return hash_; }
+
+    /// Operators.
+    /// @{
+    auto Tie() const {
+        return ea::tie( //
+            colorWriteEnabled_, //
+            blendMode_, //
+            alphaToCoverageEnabled_, //
+            fillMode_, //
+            cullMode_, //
+            constantDepthBias_, //
+            slopeScaledDepthBias_, //
+            scissorTestEnabled_, //
+            lineAntiAlias_, //
+            depthWriteEnabled_, //
+            stencilTestEnabled_, //
+            depthCompareFunction_, //
+            stencilCompareFunction_, //
+            stencilOperationOnPassed_, //
+            stencilOperationOnStencilFailed_, //
+            stencilOperationOnDepthFailed_, //
+            stencilReferenceValue_, //
+            stencilCompareMask_, //
+            stencilWriteMask_, //
+            inputLayout_, //
+            primitiveType_, //
+            output_, //
+            samplers_);
+    }
+
+    bool operator==(const GraphicsPipelineStateDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const GraphicsPipelineStateDesc& rhs) const { return Tie() != rhs.Tie(); }
+    void RecalculateHash() { hash_ = MakeHash(Tie()); }
+    /// @}
 };
 
 } // namespace Urho3D

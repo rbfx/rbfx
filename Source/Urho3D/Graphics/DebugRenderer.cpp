@@ -34,6 +34,7 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Geometry.h"
+#include "../Graphics/PipelineStateUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Math/Polyhedron.h"
 #include "../Resource/ResourceCache.h"
@@ -752,7 +753,7 @@ void DebugRenderer::InitializePipelineStates()
         bool depthWriteEnabled, bool lineAntiAlias, const ea::string& debugName)
     {
         PipelineStateDesc desc;
-        desc.InitializeInputLayout(GeometryBufferArray{ { vertexBuffer_ }, nullptr, nullptr });
+        InitializeInputLayout(desc.inputLayout_, {vertexBuffer_});
         desc.colorWriteEnabled_ = true;
 
         ea::string shaderDefines = "VERTEXCOLOR ";

@@ -27,7 +27,7 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Light.h"
 #include "../Graphics/Material.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../RenderPipeline/BatchCompositor.h"
 #include "../RenderPipeline/RenderPipelineDebugger.h"

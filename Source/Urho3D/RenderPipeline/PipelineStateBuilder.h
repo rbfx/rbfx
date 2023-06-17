@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/ShaderProgramCompositor.h"
 

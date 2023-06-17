@@ -25,6 +25,7 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
+#include "../Graphics/PipelineStateUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Technique.h"
 #include "../RenderPipeline/BatchStateCache.h"
@@ -147,7 +148,7 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
 #ifdef URHO3D_DEBUG
     desc.debugName_ = "UI Batch Pipeline - " + key.material_->GetName();
 #endif
-    desc.InitializeInputLayout(GeometryBufferArray{ { ctx.vertexBuffer_ }, ctx.indexBuffer_, nullptr });
+    InitializeInputLayout(desc.inputLayout_, {ctx.vertexBuffer_});
     desc.primitiveType_ = TRIANGLE_LIST;
     desc.output_ = key.outputDesc_;
     desc.colorWriteEnabled_ = true;
@@ -164,11 +165,11 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
         if (texture)
         {
             const StringHash textureName = Material::TextureUnitToShaderResource(unit);
-            desc.AddSampler(textureName, texture->GetSamplerStateDesc());
+            desc.samplers_.Add(textureName, texture->GetSamplerStateDesc());
         }
     }
     if (ctx.defaultSampler_)
-        desc.AddSampler(ShaderResources::DiffMap, *ctx.defaultSampler_);
+        desc.samplers_.Add(ShaderResources::DiffMap, *ctx.defaultSampler_);
 
     vertexShaderDefines_ = key.pass_->GetEffectiveVertexShaderDefines();
     pixelShaderDefines_ = key.pass_->GetEffectivePixelShaderDefines();
