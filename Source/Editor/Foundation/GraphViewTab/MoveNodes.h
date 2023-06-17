@@ -27,12 +27,15 @@
 
 namespace Urho3D
 {
-class GraphViewTab;
+namespace Detail
+{
+class GraphView;
+}
 
 class MoveNodesAction : public EditorAction
 {
 public:
-    MoveNodesAction(GraphViewTab* graphTab);
+    MoveNodesAction(Detail::GraphView* graphView);
 
     void Add(ax::NodeEditor::NodeId id, const Vector2& oldPos, const Vector2& newPos);
 
@@ -44,7 +47,7 @@ public:
     bool MergeWith(const EditorAction& other) override;
 
 private:
-    GraphViewTab* graphTab_;
+    Detail::GraphView* graphView_;
     ea::unordered_map<ax::NodeEditor::NodeId, ea::tuple<Vector2, Vector2>> nodes_;
 };
 

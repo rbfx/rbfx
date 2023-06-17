@@ -26,10 +26,10 @@
 namespace Urho3D
 {
 
-DeleteLinkAction::DeleteLinkAction(GraphViewTab* graphTab, ax::NodeEditor::LinkId id)
-    : graphTab_(graphTab)
+DeleteLinkAction::DeleteLinkAction(Detail::GraphView* graphView, ax::NodeEditor::LinkId id)
+    : graphView_(graphView)
 {
-    auto* view = graphTab_->GetGraphView();
+    auto* view = graphView_;
     auto linkIt = view->links_.find(id);
     if (linkIt != view->links_.end())
     {
@@ -39,7 +39,7 @@ DeleteLinkAction::DeleteLinkAction(GraphViewTab* graphTab, ax::NodeEditor::LinkI
 
 void DeleteLinkAction::Redo() const
 {
-    auto* view = graphTab_->GetGraphView();
+    auto* view = graphView_;
     for (auto& link : links_)
     {
         view->DeleteLink(link.linkId_);
@@ -48,7 +48,7 @@ void DeleteLinkAction::Redo() const
 
 void DeleteLinkAction::Undo() const
 {
-    auto* view = graphTab_->GetGraphView();
+    auto* view = graphView_;
     for (auto& link : links_)
     {
         view->AddLink(link.linkId_, link.from_, link.to_);
@@ -60,7 +60,7 @@ bool DeleteLinkAction::MergeWith(const EditorAction& other)
     const auto otherAction = dynamic_cast<const DeleteLinkAction*>(&other);
     if (!otherAction)
         return false;
-    if (otherAction->graphTab_ != graphTab_)
+    if (otherAction->graphView_ != graphView_)
         return false;
 
     links_.reserve(links_.size() + otherAction->links_.size());

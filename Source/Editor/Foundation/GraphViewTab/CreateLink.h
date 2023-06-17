@@ -29,7 +29,10 @@
 
 namespace Urho3D
 {
-class GraphViewTab;
+namespace Detail
+{
+class GraphView;
+}
 
 class CreateLinkAction : public EditorAction
 {
@@ -40,7 +43,7 @@ class CreateLinkAction : public EditorAction
         ax::NodeEditor::PinId to_;
     };
 public:
-    CreateLinkAction(GraphViewTab* graphTab, ax::NodeEditor::PinId from, ax::NodeEditor::PinId to);
+    CreateLinkAction(Detail::GraphView* graphView, ax::NodeEditor::PinId from, ax::NodeEditor::PinId to);
 
     /// Redo this action. May fail if external state has unexpectedly changed.
     void Redo() const override;
@@ -50,7 +53,7 @@ public:
     bool MergeWith(const EditorAction& other) override;
 
 private:
-    GraphViewTab* graphTab_;
+    Detail::GraphView* graphView_;
     ea::fixed_vector<LinkPrototype,1> links_;
 };
 

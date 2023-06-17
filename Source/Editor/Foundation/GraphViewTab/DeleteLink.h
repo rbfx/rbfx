@@ -29,7 +29,10 @@
 
 namespace Urho3D
 {
-class GraphViewTab;
+namespace Detail
+{
+class GraphView;
+}
 
 class DeleteLinkAction : public EditorAction
 {
@@ -41,7 +44,7 @@ class DeleteLinkAction : public EditorAction
     };
 
 public:
-    DeleteLinkAction(GraphViewTab* graphTab, ax::NodeEditor::LinkId linkId);
+    DeleteLinkAction(Detail::GraphView* graphView, ax::NodeEditor::LinkId linkId);
 
     /// Redo this action. May fail if external state has unexpectedly changed.
     void Redo() const override;
@@ -51,7 +54,7 @@ public:
     bool MergeWith(const EditorAction& other) override;
 
 private:
-    GraphViewTab* graphTab_;
+    Detail::GraphView* graphView_;
     ea::fixed_vector<LinkPrototype, 1> links_;
 };
 

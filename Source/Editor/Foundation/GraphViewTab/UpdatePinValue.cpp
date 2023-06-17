@@ -25,9 +25,9 @@
 
 namespace Urho3D
 {
-UpdatePinValueAction::UpdatePinValueAction(GraphViewTab* graphTab, ax::NodeEditor::NodeId id, ax::NodeEditor::PinId pin,
+UpdatePinValueAction::UpdatePinValueAction(Detail::GraphView* graphView, ax::NodeEditor::NodeId id, ax::NodeEditor::PinId pin,
     const Variant& oldValue, const Variant& newValue)
-    : graphTab_(graphTab)
+    : graphView_(graphView)
     , nodeId_(id)
     , pinId_(pin)
     , oldValue_(oldValue)
@@ -37,7 +37,7 @@ UpdatePinValueAction::UpdatePinValueAction(GraphViewTab* graphTab, ax::NodeEdito
 
 void UpdatePinValueAction::Redo() const
 {
-    const auto graphView = graphTab_->GetGraphView();
+    const auto graphView = graphView_;
     const auto node = graphView->nodes_.find(nodeId_);
     if (node != graphView->nodes_.end())
     {
@@ -55,7 +55,7 @@ void UpdatePinValueAction::Redo() const
 
 void UpdatePinValueAction::Undo() const
 {
-    const auto graphView = graphTab_->GetGraphView();
+    const auto graphView = graphView_;
     const auto node = graphView->nodes_.find(nodeId_);
     if (node != graphView->nodes_.end())
     {
@@ -76,7 +76,7 @@ bool UpdatePinValueAction::MergeWith(const EditorAction& other)
     const auto otherAction = dynamic_cast<const UpdatePinValueAction*>(&other);
     if (!otherAction)
         return false;
-    if (otherAction->graphTab_ != graphTab_)
+    if (otherAction->graphView_ != graphView_)
         return false;
     if (otherAction->nodeId_ != nodeId_)
         return false;

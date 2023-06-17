@@ -26,17 +26,17 @@
 namespace Urho3D
 {
 
-CreateLinkAction::CreateLinkAction(GraphViewTab* graphTab, ax::NodeEditor::PinId from, ax::NodeEditor::PinId to)
-    : graphTab_(graphTab)
+CreateLinkAction::CreateLinkAction(Detail::GraphView* graphView, ax::NodeEditor::PinId from, ax::NodeEditor::PinId to)
+    : graphView_(graphView)
 {
-    auto* view = graphTab_->GetGraphView();
+    auto* view = graphView_;
     ax::NodeEditor::LinkId id(view->nextUniqueId_++);
     links_.emplace_back(LinkPrototype{id, from, to});
 }
 
 void CreateLinkAction::Redo() const
 {
-    auto* view = graphTab_->GetGraphView();
+    auto* view = graphView_;
     for (auto& link: links_)
     {
         view->AddLink(link.linkId_, link.from_, link.to_);
@@ -45,7 +45,7 @@ void CreateLinkAction::Redo() const
 
 void CreateLinkAction::Undo() const
 {
-    auto* view = graphTab_->GetGraphView();
+    auto* view = graphView_;
     for (auto& link : links_)
     {
         view->DeleteLink(link.linkId_);
@@ -57,7 +57,7 @@ bool CreateLinkAction::MergeWith(const EditorAction& other)
     const auto otherAction = dynamic_cast<const CreateLinkAction*>(&other);
     if (!otherAction)
         return false;
-    if (otherAction->graphTab_ != graphTab_)
+    if (otherAction->graphView_ != graphView_)
         return false;
 
     links_.reserve(links_.size() + otherAction->links_.size());

@@ -27,8 +27,8 @@
 namespace Urho3D
 {
 
-MoveNodesAction::MoveNodesAction(GraphViewTab* graphTab)
-    : graphTab_(graphTab)
+MoveNodesAction::MoveNodesAction(Detail::GraphView* graphView)
+    : graphView_(graphView)
 {
 }
 
@@ -47,32 +47,28 @@ void MoveNodesAction::Add(ax::NodeEditor::NodeId id, const Vector2& oldPos, cons
 
 void MoveNodesAction::Redo() const
 {
-    auto graphView = graphTab_->GetGraphView();
-
     for (auto& kv : nodes_)
     {
-        auto it = graphView->nodes_.find(kv.first);
-        if (it != graphView->nodes_.end())
+        auto it = graphView_->nodes_.find(kv.first);
+        if (it != graphView_->nodes_.end())
         {
-            it->second.position_ = ea::get<1>(kv.second);
+            it->second.SetPosition(ea::get<1>(kv.second));
         }
     }
-    graphTab_->ApplyLayoutFromView();
 }
 
 void MoveNodesAction::Undo() const
 {
-    auto graphView = graphTab_->GetGraphView();
+    auto graphView = graphView_;
 
     for (auto& kv : nodes_)
     {
         auto it = graphView->nodes_.find(kv.first);
         if (it != graphView->nodes_.end())
         {
-            it->second.position_ = ea::get<0>(kv.second);
+            it->second.SetPosition(ea::get<0>(kv.second));
         }
     }
-    graphTab_->ApplyLayoutFromView();
 }
 
 bool MoveNodesAction::MergeWith(const EditorAction& other)
@@ -80,7 +76,7 @@ bool MoveNodesAction::MergeWith(const EditorAction& other)
     const auto otherAction = dynamic_cast<const MoveNodesAction*>(&other);
     if (!otherAction)
         return false;
-    if (otherAction->graphTab_ != graphTab_)
+    if (otherAction->graphView_ != graphView_)
         return false;
 
     for (auto& kv: otherAction->nodes_)

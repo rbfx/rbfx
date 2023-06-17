@@ -25,8 +25,8 @@
 
 namespace Urho3D
 {
-DeleteNodeAction::DeleteNodeAction(GraphViewTab* graphTab, const Detail::GraphNodeView* node)
-    : graphTab_(graphTab)
+DeleteNodeAction::DeleteNodeAction(Detail::GraphView* graphView, const Detail::GraphNodeView* node)
+    : graphView_(graphView)
 {
     if (node)
     {
@@ -38,7 +38,7 @@ void DeleteNodeAction::Redo() const
 {
     for (auto& node : nodes_)
     {
-        graphTab_->GetGraphView()->DeleteNode(node.id_);
+        graphView_->DeleteNode(node.id_);
     }
 }
 
@@ -46,7 +46,7 @@ void DeleteNodeAction::Undo() const
 {
     for (auto& node : nodes_)
     {
-        graphTab_->GetGraphView()->AddNode(node);
+        graphView_->AddNode(node);
     }
 }
 
@@ -55,7 +55,7 @@ bool DeleteNodeAction::MergeWith(const EditorAction& other)
     const auto otherAction = dynamic_cast<const DeleteNodeAction*>(&other);
     if (!otherAction)
         return false;
-    if (otherAction->graphTab_ != graphTab_)
+    if (otherAction->graphView_ != graphView_)
         return false;
 
     nodes_.reserve(nodes_.size() + otherAction->nodes_.size());

@@ -96,7 +96,10 @@ struct GraphNodeView
     ea::fixed_vector<GraphPinView,3> inputPins_;
     ea::fixed_vector<GraphPinView,1> exitPins_;
     ea::fixed_vector<GraphPinView,1> outputPins_;
+    /// Flag that indicates the position was updated from code and should be propagated to the editor.
+    bool setPosition_{};
     GraphPinView* GetPinView(const ::Urho3D::Detail::PinNodeViewRef& pinRef);
+    void SetPosition(const Vector2& vector2);
 };
 
 struct GraphView
@@ -119,7 +122,7 @@ struct GraphView
     /// Populate view from the graph resource.
     void Populate(Graph* graph);
     /// Build graph from view.
-    SharedPtr<Graph> BuildGraph(Context* context);
+    SharedPtr<Graph> BuildGraph(Context* context) const;
     /// Add graph node.
     ax::NodeEditor::NodeId AddNode(GraphNode* graphNode);
     /// Add graph node.
@@ -146,16 +149,17 @@ public:
     /// @{
     void RenderContent() override;
     bool IsUndoSupported() override { return true; }
-    void ApplyLayoutFromView();
     /// @}
 
-    Detail::GraphView* GetGraphView() { return &graph_; } 
     void Reset();
 
     virtual SharedPtr<GraphNode> CreateNewNodePopup() const;
 
 protected:
     virtual void RenderTitle();
+
+    void SetGraph(Graph* graph);
+    SharedPtr<Graph> BuildGraph() const;
 
     void RenderGraph();
     void RenderNode(Detail::GraphNodeView& node);
@@ -165,13 +169,18 @@ protected:
     void CreateNodeOrLink();
     void DeleteNodeOrLink();
 
+private:
+    Detail::GraphView* GetGraphView() { return &graph_; } 
+
     ax::NodeEditor::EditorContext* editorContext_ = nullptr; // Editor context, required to trace a editor state.
     bool showOrdinals_{};
-    bool applyLayout_{true};
     Detail::GraphView graph_;
     Widgets::EditVariantOptions editVariantOptions_;
     std::vector<ax::NodeEditor::NodeId> orderedNodeIds_;
     std::vector<ax::NodeEditor::NodeId> nodesToDelete_;
+    /// Number of frames left before executing of NavigateToContent.
+    /// This is a workaround for the editor bug that incorrectly evaluates control boundaries.
+    int navigateToContent_{};
 };
 
 } // namespace Urho3D

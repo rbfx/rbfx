@@ -28,12 +28,15 @@
 
 namespace Urho3D
 {
-class GraphViewTab;
+namespace Detail
+{
+class GraphView;
+}
 
 class UpdatePinValueAction : public EditorAction
 {
 public:
-    UpdatePinValueAction(GraphViewTab* graphTab, ax::NodeEditor::NodeId id, ax::NodeEditor::PinId pin,
+    UpdatePinValueAction(Detail::GraphView* graphView, ax::NodeEditor::NodeId id, ax::NodeEditor::PinId pin,
         const Variant& oldValue, const Variant& newValue);
 
     /// Redo this action. May fail if external state has unexpectedly changed.
@@ -44,7 +47,7 @@ public:
     bool MergeWith(const EditorAction& other) override;
 
 private:
-    GraphViewTab* graphTab_;
+    Detail::GraphView* graphView_;
     ax::NodeEditor::NodeId nodeId_;
     ax::NodeEditor::PinId pinId_;
     Variant oldValue_;

@@ -20,9 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "../../Core/IniHelpers.h"
 #include "../../Foundation/GraphViewTab/GraphViewTab.h"
 
+#include "../../Core/IniHelpers.h"
 #include "CreateLink.h"
 #include "CreateNode.h"
 #include "DeleteLink.h"
@@ -30,8 +30,8 @@
 #include "MoveNodes.h"
 #include "UpdatePinValue.h"
 
-#include <Urho3D/Resource/GraphNode.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
+#include <Urho3D/Resource/GraphNode.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
@@ -43,41 +43,38 @@ namespace Urho3D
 {
 namespace
 {
-    enum class PopupMenuType
+enum class PopupMenuType
+{
+    None,
+    Background
+};
+struct StablePinKey
+{
+    unsigned nodeId_;
+    unsigned pinIndex_;
+
+    template <typename T>
+    StablePinKey(const GraphPinRef<T>& pinRef)
+        : nodeId_(pinRef.GetNode() ? pinRef.GetNode()->GetID() : 0)
+        , pinIndex_(pinRef.GetNode() ? pinRef.GetNode()->GetPinIndex(pinRef.GetPin()) : 0)
     {
-        None,
-        Background
-    };
-    struct StablePinKey
+    }
+    bool operator<(const StablePinKey& rhs) const
     {
-        unsigned nodeId_;
-        unsigned pinIndex_;
+        return (nodeId_ < rhs.nodeId_) || ((nodeId_ == rhs.nodeId_) && (pinIndex_ < rhs.pinIndex_));
+    }
+    bool operator==(const StablePinKey& rhs) const { return (nodeId_ == rhs.nodeId_) && (pinIndex_ == rhs.pinIndex_); }
 
-        template <typename T> StablePinKey(const GraphPinRef<T>& pinRef)
-            : nodeId_(pinRef.GetNode() ? pinRef.GetNode()->GetID() : 0)
-            , pinIndex_(pinRef.GetNode() ? pinRef.GetNode()->GetPinIndex(pinRef.GetPin()) : 0)
-        {
-        }
-        bool operator<(const StablePinKey& rhs) const
-        {
-            return (nodeId_ < rhs.nodeId_) || ((nodeId_ == rhs.nodeId_) && (pinIndex_ < rhs.pinIndex_));
-        }
-        bool operator ==(const StablePinKey& rhs) const
-        {
-            return (nodeId_ == rhs.nodeId_) && (pinIndex_ == rhs.pinIndex_);
-        }
-
-        /// Return hash value for HashSet & HashMap.
-        unsigned ToHash() const
-        {
-            unsigned result = 0;
-            CombineHash(result, nodeId_);
-            CombineHash(result, pinIndex_);
-            return result;
-        }
-
-    };
-}
+    /// Return hash value for HashSet & HashMap.
+    unsigned ToHash() const
+    {
+        unsigned result = 0;
+        CombineHash(result, nodeId_);
+        CombineHash(result, pinIndex_);
+        return result;
+    }
+};
+} // namespace
 
 namespace Detail
 {
@@ -86,8 +83,8 @@ GraphPinView::GraphPinView(ax::NodeEditor::PinId id, const ea::string& title, Gr
     , title_(title)
     , pinType_(pinType)
     , kind_((pinType == GraphPinViewType::Enter || pinType == GraphPinViewType::Input)
-        ? ax::NodeEditor::PinKind::Input
-        : ax::NodeEditor::PinKind::Output)
+              ? ax::NodeEditor::PinKind::Input
+              : ax::NodeEditor::PinKind::Output)
     , link_(ed::LinkId::Invalid)
 {
 }
@@ -102,8 +99,8 @@ GraphPinView::GraphPinView(
     , tempValue_(value_)
     , text_(value.ToString())
     , kind_((pinType == GraphPinViewType::Enter || pinType == GraphPinViewType::Input)
-        ? ax::NodeEditor::PinKind::Input
-        : ax::NodeEditor::PinKind::Output)
+              ? ax::NodeEditor::PinKind::Input
+              : ax::NodeEditor::PinKind::Output)
     , link_(ed::LinkId::Invalid)
 {
 }
@@ -119,19 +116,21 @@ GraphPinView* GraphNodeView::GetPinView(const Urho3D::Detail::PinNodeViewRef& pi
     switch (pinRef.type_)
     {
     case GraphPinViewType::Output:
-            return (pinRef.index_ < outputPins_.size()) ? &outputPins_[pinRef.index_]
-                                                        : static_cast<GraphPinView*>(nullptr);
+        return (pinRef.index_ < outputPins_.size()) ? &outputPins_[pinRef.index_] : static_cast<GraphPinView*>(nullptr);
     case GraphPinViewType::Input:
-            return (pinRef.index_ < inputPins_.size()) ? &inputPins_[pinRef.index_]
-                                                        : static_cast<GraphPinView*>(nullptr);
+        return (pinRef.index_ < inputPins_.size()) ? &inputPins_[pinRef.index_] : static_cast<GraphPinView*>(nullptr);
     case GraphPinViewType::Enter:
-            return (pinRef.index_ < enterPins_.size()) ? &enterPins_[pinRef.index_]
-                                                        : static_cast<GraphPinView*>(nullptr);
+        return (pinRef.index_ < enterPins_.size()) ? &enterPins_[pinRef.index_] : static_cast<GraphPinView*>(nullptr);
     case GraphPinViewType::Exit:
-            return (pinRef.index_ < exitPins_.size()) ? &exitPins_[pinRef.index_]
-                                                        : static_cast<GraphPinView*>(nullptr);
+        return (pinRef.index_ < exitPins_.size()) ? &exitPins_[pinRef.index_] : static_cast<GraphPinView*>(nullptr);
     }
     return nullptr;
+}
+
+void GraphNodeView::SetPosition(const Vector2& vector2)
+{
+    position_ = vector2;
+    setPosition_ = true;
 }
 
 GraphPinView* GraphView::GetInputPinView(ax::NodeEditor::NodeId node, const ea::string& pinName)
@@ -194,8 +193,9 @@ void GraphView::AddLink(ax::NodeEditor::LinkId linkId, ax::NodeEditor::PinId fro
         case GraphPinViewType::Output:
         {
             auto* fromNode = GetNode(fromIt->second.node_);
-            auto* toNode =  GetNode(toIt->second.node_);
-            return AddLink(linkId, fromNode->outputPins_[fromIt->second.index_], toNode->inputPins_[toIt->second.index_]);
+            auto* toNode = GetNode(toIt->second.node_);
+            return AddLink(
+                linkId, fromNode->outputPins_[fromIt->second.index_], toNode->inputPins_[toIt->second.index_]);
         }
         case GraphPinViewType::Exit:
         {
@@ -240,7 +240,8 @@ void GraphView::Populate(Graph* graph)
                 auto connectedNodeId = nodeMap[connectedNode];
                 auto* connectedNodeView = GetNode(connectedNodeId);
                 const auto connectedPinIndex = connectedNode->GetPinIndex(connectedPinRef.GetPin());
-                AddLink(nextUniqueId_++, connectedNodeView->outputPins_[connectedPinIndex], nodeView->inputPins_[pinIndex]);
+                AddLink(
+                    nextUniqueId_++, connectedNodeView->outputPins_[connectedPinIndex], nodeView->inputPins_[pinIndex]);
             }
         }
         for (unsigned pinIndex = 0; pinIndex < node->GetNumExits(); ++pinIndex)
@@ -252,7 +253,8 @@ void GraphView::Populate(Graph* graph)
                 auto connectedNodeId = nodeMap[connectedNode];
                 auto* connectedNodeView = GetNode(connectedNodeId);
                 const auto connectedPinIndex = connectedNode->GetPinIndex(connectedPinRef.GetPin());
-                AddLink(nextUniqueId_++, nodeView->exitPins_[pinIndex], connectedNodeView->enterPins_[connectedPinIndex]);
+                AddLink(
+                    nextUniqueId_++, nodeView->exitPins_[pinIndex], connectedNodeView->enterPins_[connectedPinIndex]);
             }
         }
     }
@@ -260,9 +262,9 @@ void GraphView::Populate(Graph* graph)
     if (needLayouting)
     {
         int x = 0;
-        for (auto& node: nodes_)
+        for (auto& node : nodes_)
         {
-            node.second.position_ = Vector2(static_cast<float>(x), 0);
+            node.second.SetPosition(Vector2(static_cast<float>(x), 0));
             node.second.size_ = Vector2(100, 100);
             x += 100;
         }
@@ -270,12 +272,12 @@ void GraphView::Populate(Graph* graph)
     }
 }
 
-SharedPtr<Graph> GraphView::BuildGraph(Context* context)
+SharedPtr<Graph> GraphView::BuildGraph(Context* context) const
 {
     auto graph = MakeShared<Graph>(context);
     ea::unordered_map<ax::NodeEditor::NodeId, GraphNode*> nodeMap;
     ea::unordered_map<ax::NodeEditor::PinId, ea::tuple<GraphNode*, unsigned>> pinMap;
-    for (auto& nodeKeyValue: nodes_)
+    for (auto& nodeKeyValue : nodes_)
     {
         auto node = MakeShared<GraphNode>(context);
         graph->Add(node);
@@ -345,7 +347,7 @@ ax::NodeEditor::NodeId GraphView::AddNode(GraphNode* node)
 {
     auto nodeId = ax::NodeEditor::NodeId(nextUniqueId_++);
     GraphNodeView nodeView{nodeId, node->GetName()};
-    nodeView.position_ = node->GetPositionHint();
+    nodeView.SetPosition(node->GetPositionHint());
 
     for (unsigned pinIndex = 0; pinIndex < node->GetNumEnters(); ++pinIndex)
     {
@@ -377,7 +379,8 @@ ax::NodeEditor::NodeId GraphView::AddNode(GraphNode* node)
         auto pin = node->GetOutput(pinIndex);
         auto id = ed::PinId(nextUniqueId_++);
         pinToNode_[id] = {nodeId, GraphPinViewType::Output, pinIndex};
-        nodeView.outputPins_.emplace_back(id, pin.GetPin()->GetName(), GraphPinViewType::Output, pin.GetPin()->GetType(), Variant(pin.GetPin()->GetType()));
+        nodeView.outputPins_.emplace_back(id, pin.GetPin()->GetName(), GraphPinViewType::Output,
+            pin.GetPin()->GetType(), Variant(pin.GetPin()->GetType()));
     }
     AddNode(nodeView);
     return nodeId;
@@ -414,8 +417,8 @@ void GraphView::DeleteNode(const ax::NodeEditor::NodeId& id)
 
 } // namespace Detail
 
-GraphViewTab::GraphViewTab(Context* context, const ea::string& title, const ea::string& guid,
-    EditorTabFlags flags, EditorTabPlacement placement)
+GraphViewTab::GraphViewTab(Context* context, const ea::string& title, const ea::string& guid, EditorTabFlags flags,
+    EditorTabPlacement placement)
     : ResourceEditorTab(context, title, guid, flags, placement)
 {
     ed::Config config;
@@ -428,10 +431,8 @@ GraphViewTab::~GraphViewTab()
     ed::DestroyEditor(editorContext_);
 }
 
-
 void GraphViewTab::Reset()
 {
-    applyLayout_ = true;
     graph_.Reset();
 }
 
@@ -447,22 +448,25 @@ void GraphViewTab::RenderGraph()
     {
         const auto nodeId = nodeKeyValue.first;
         auto& node = nodeKeyValue.second;
-        if (applyLayout_)
+        if (node.setPosition_)
+        {
             ed::SetNodePosition(nodeId, ImVec2(node.position_.x_, node.position_.y_));
+        }
 
         RenderNode(node);
 
-        if (!applyLayout_)
+        if (!node.setPosition_)
         {
             auto newPos = ToVector2(ed::GetNodePosition(nodeId));
             if (!node.position_.Equals(newPos, 0.1f))
             {
                 if (!moveNodesAction)
-                    moveNodesAction = MakeShared<MoveNodesAction>(this);
+                    moveNodesAction = MakeShared<MoveNodesAction>(GetGraphView());
                 moveNodesAction->Add(nodeKeyValue.first, node.position_, newPos);
                 node.position_ = newPos;
             }
         }
+        node.setPosition_ = false;
         node.size_ = ToVector2(ed::GetNodeSize(nodeId));
     }
 
@@ -545,7 +549,7 @@ void GraphViewTab::DeleteNodeOrLink()
 
     for (const auto nodeToDelete : nodesToDelete_)
     {
-        auto action = MakeShared<DeleteNodeAction>(this, graph_.GetNode(nodeToDelete));
+        auto action = MakeShared<DeleteNodeAction>(GetGraphView(), graph_.GetNode(nodeToDelete));
         action->Redo();
         PushAction(action);
     }
@@ -604,28 +608,28 @@ void GraphViewTab::RenderPin(ed::NodeId nodeId, Detail::GraphPinView& pin)
         ImGui::SameLine();
         if (!pin.link_)
         {
-            //if (pin.valueType_ == VAR_NONE)
-            //{
-            //    const auto names = Variant::GetTypeNameList();
-            //    ImGui::SetNextItemWidth(ImGui::GetTextLineHeight()*6);
-            //    ed::Suspend();
-            //    if (ImGui::BeginCombo("##pinType", names[pin.value_.GetType()]))
-            //    {
-            //        for (unsigned index = 0; names[index]; ++index)
-            //        {
-            //            if (ui::Selectable(names[index], index == pin.value_.GetType()))
-            //            {
-            //                if (pin.value_ != index)
-            //                {
-            //                    pin.value_ = Variant(static_cast<VariantType>(index));
-            //                }
-            //            }
-            //        }
-            //        ImGui::EndCombo();
-            //    }
-            //    ed::Resume();
-            //    ImGui::SameLine();
-            //}
+            if (pin.valueType_ == VAR_NONE)
+            {
+                const auto names = Variant::GetTypeNameList();
+                ImGui::SetNextItemWidth(ImGui::GetTextLineHeight() * 6);
+                ed::Suspend();
+                if (ImGui::BeginCombo("##pinType", names[pin.value_.GetType()]))
+                {
+                    for (unsigned index = 0; names[index]; ++index)
+                    {
+                        if (ui::Selectable(names[index], index == pin.value_.GetType()))
+                        {
+                            if (pin.value_ != index)
+                            {
+                                pin.value_ = Variant(static_cast<VariantType>(index));
+                            }
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                ed::Resume();
+                ImGui::SameLine();
+            }
             if (pin.value_.GetType() != VAR_NONE)
             {
                 ImGui::PushID(static_cast<int>(pin.id_.Get()));
@@ -637,7 +641,8 @@ void GraphViewTab::RenderPin(ed::NodeId nodeId, Detail::GraphPinView& pin)
 
                     if (Widgets::EditVariant(pin.tempValue_, editVariantOptions_))
                     {
-                        PushAction(MakeShared<UpdatePinValueAction>(this, nodeId, pin.id_, pin.value_, pin.tempValue_));
+                        PushAction(MakeShared<UpdatePinValueAction>(
+                            GetGraphView(), nodeId, pin.id_, pin.value_, pin.tempValue_));
                         pin.value_ = pin.tempValue_;
                     }
                     ImGui::EndTable();
@@ -661,14 +666,20 @@ void GraphViewTab::RenderPin(ed::NodeId nodeId, Detail::GraphPinView& pin)
     ed::EndPin();
 }
 
-void GraphViewTab::ApplyLayoutFromView()
-{
-    applyLayout_ = true;
-}
-
 void GraphViewTab::RenderTitle()
 {
     ui::Text("%s", GetActiveResourceName().c_str());
+}
+
+void GraphViewTab::SetGraph(Graph* graph)
+{
+    graph_.Populate(graph);
+    navigateToContent_ = 2;
+}
+
+SharedPtr<Graph> GraphViewTab::BuildGraph() const
+{
+    return graph_.BuildGraph(context_);
 }
 
 void GraphViewTab::DeleteLink(const ax::NodeEditor::LinkId& deletedLinkId)
@@ -677,7 +688,7 @@ void GraphViewTab::DeleteLink(const ax::NodeEditor::LinkId& deletedLinkId)
         return;
     if (graph_.links_.find(deletedLinkId) != graph_.links_.end())
     {
-        const auto action = MakeShared<DeleteLinkAction>(this, deletedLinkId);
+        const auto action = MakeShared<DeleteLinkAction>(GetGraphView(), deletedLinkId);
         action->Redo();
         PushAction(action);
     }
@@ -728,7 +739,7 @@ bool GraphViewTab::CreateLink(const ax::NodeEditor::PinId& from, const ax::NodeE
         return false;
     }
 
-    const auto action = MakeShared<CreateLinkAction>(this, from, to);
+    const auto action = MakeShared<CreateLinkAction>(GetGraphView(), from, to);
     action->Redo();
     PushAction(action);
     return true;
@@ -740,11 +751,10 @@ void GraphViewTab::RenderContent()
 
     RenderTitle();
 
-   
     ed::SetCurrentEditor(editorContext_);
 
     if (ImGui::Button("Zoom to Content"))
-        ed::NavigateToContent();
+        navigateToContent_ = 2;
     ImGui::SameLine();
     if (ImGui::Button("Autolayout"))
         graph_.AutoLayout();
@@ -760,9 +770,9 @@ void GraphViewTab::RenderContent()
     // Start interaction with editor.
     ed::Begin("graph_view", imContentSize);
 
-    RenderGraph();
-
     const auto openPopupPosition = ImGui::GetMousePos();
+
+    RenderGraph();
 
     // Pick context menu to open
     ed::Suspend();
@@ -786,14 +796,22 @@ void GraphViewTab::RenderContent()
         {
             const auto nodeId = graph_.AddNode(node);
             auto* nodeView = graph_.GetNode(nodeId);
-            nodeView->position_ = Vector2(Round(newNodePosition.x), Round(newNodePosition.y));
-            PushAction(MakeShared<CreateNodeAction>(this, nodeView));
-            applyLayout_ = true;
+            nodeView->SetPosition(Vector2(Round(newNodePosition.x), Round(newNodePosition.y)));
+            PushAction(MakeShared<CreateNodeAction>(GetGraphView(), nodeView));
         }
 
         ImGui::EndPopup();
     }
     ed::Resume();
+
+    if (navigateToContent_)
+    {
+        --navigateToContent_;
+        if (!navigateToContent_)
+        {
+            ed::NavigateToContent();
+        }
+    }
 
     // End of interaction with editor.
     ed::End();
@@ -803,7 +821,7 @@ void GraphViewTab::RenderContent()
 
     if (showOrdinals_)
     {
-        int nodeCount = ed::GetNodeCount();
+        const int nodeCount = ed::GetNodeCount();
         orderedNodeIds_.resize(static_cast<size_t>(nodeCount));
         ed::GetOrderedNodeIds(orderedNodeIds_.data(), nodeCount);
 
@@ -838,8 +856,6 @@ void GraphViewTab::RenderContent()
     }
 
     ed::SetCurrentEditor(nullptr);
-
-    applyLayout_ = false;
 
     ImGui::EndChild();
 }
