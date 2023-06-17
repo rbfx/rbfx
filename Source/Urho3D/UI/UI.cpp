@@ -967,6 +967,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
 
     const float elapsedTime = GetSubsystem<Time>()->GetElapsedTime();
     UIBatchStateCreateContext batchStateCreateContext{ vertexBuffer_, nullptr };
+    Material* lastCustomMaterial = nullptr;
     for (unsigned i = batchStart; i < batchEnd; ++i)
     {
         const UIBatch& batch = batches[i];
@@ -1000,7 +1001,9 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
             drawQueue->CommitShaderParameterGroup(SP_CAMERA);
         }
 
-        if (drawQueue->BeginShaderParameterGroup(SP_MATERIAL))
+        // Assuming that custom batch material have different parameters that
+        // the material in previous batch. Further optimizations are possible.
+        if (drawQueue->BeginShaderParameterGroup(SP_MATERIAL, lastCustomMaterial != batch.customMaterial_))
         {
             if (!batch.customMaterial_)
                 drawQueue->AddShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
@@ -1042,6 +1045,8 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         drawQueue->CommitShaderResources();
 
         drawQueue->Draw(batch.vertexStart_ / UI_VERTEX_SIZE, (batch.vertexEnd_ - batch.vertexStart_) / UI_VERTEX_SIZE);
+
+        lastCustomMaterial = batch.customMaterial_;
     }
 
     drawQueue->Execute();

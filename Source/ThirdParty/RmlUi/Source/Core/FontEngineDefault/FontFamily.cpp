@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,8 +34,7 @@
 
 namespace Rml {
 
-FontFamily::FontFamily(const String& name) : name(name)
-{}
+FontFamily::FontFamily(const String& name) : name(name) {}
 
 FontFamily::~FontFamily()
 {
@@ -45,7 +44,6 @@ FontFamily::~FontFamily()
 		entry.face.reset();
 }
 
-// Returns a handle to the most appropriate font in the family, at the correct size.
 FontFaceHandleDefault* FontFamily::GetFaceHandle(Style::FontStyle style, Style::FontWeight weight, int size)
 {
 	int best_dist = INT_MAX;
@@ -56,7 +54,7 @@ FontFaceHandleDefault* FontFamily::GetFaceHandle(Style::FontStyle style, Style::
 
 		if (face->GetStyle() == style)
 		{
-			const int dist = Math::AbsoluteValue((int)face->GetWeight() - (int)weight);
+			const int dist = Math::Absolute((int)face->GetWeight() - (int)weight);
 			if (dist == 0)
 			{
 				// Direct match for weight, break the loop early.
@@ -78,7 +76,6 @@ FontFaceHandleDefault* FontFamily::GetFaceHandle(Style::FontStyle style, Style::
 	return matching_face->GetHandle(size, true);
 }
 
-// Adds a new face to the family.
 FontFace* FontFamily::AddFace(FontFaceHandleFreetype ft_face, Style::FontStyle style, Style::FontWeight weight, UniquePtr<byte[]> face_memory)
 {
 	auto face = MakeUnique<FontFace>(ft_face, style, weight);

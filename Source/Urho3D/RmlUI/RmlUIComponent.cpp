@@ -173,7 +173,7 @@ Vector2 RmlUIComponent::GetPosition() const
     if (document_ == nullptr)
         return position_;
 
-    Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::Box::BORDER));
+    Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::BoxArea::Border));
     if (useNormalized_)
     {
         IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
@@ -200,8 +200,8 @@ void RmlUIComponent::SetPosition(Vector2 pos)
         pos.x_ = Round(static_cast<float>(canvasSize.x_) * pos.x_);
         pos.y_ = Round(static_cast<float>(canvasSize.y_) * pos.y_);
     }
-    document_->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x_, Rml::Property::PX));
-    document_->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y_, Rml::Property::PX));
+    document_->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x_, Rml::Unit::PX));
+    document_->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y_, Rml::Unit::PX));
     document_->UpdateDocument();
 }
 
@@ -213,7 +213,7 @@ Vector2 RmlUIComponent::GetSize() const
     if (autoSize_)
         return Vector2::ZERO;
 
-    Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::Box::CONTENT));
+    Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::BoxArea::Content));
     if (useNormalized_)
     {
         IntVector2 canvasSize = ToIntVector2(document_->GetContext()->GetDimensions());
@@ -240,8 +240,8 @@ void RmlUIComponent::SetSize(Vector2 size)
         size.x_ = Round(static_cast<float>(canvasSize.x_) * size.x_);
         size.y_ = Round(static_cast<float>(canvasSize.y_) * size.y_);
     }
-    document_->SetProperty(Rml::PropertyId::Width, Rml::Property(size.x_, Rml::Property::PX));
-    document_->SetProperty(Rml::PropertyId::Height, Rml::Property(size.y_, Rml::Property::PX));
+    document_->SetProperty(Rml::PropertyId::Width, Rml::Property(size.x_, Rml::Unit::PX));
+    document_->SetProperty(Rml::PropertyId::Height, Rml::Property(size.y_, Rml::Unit::PX));
     document_->UpdateDocument();
 }
 
@@ -255,8 +255,8 @@ void RmlUIComponent::OnUICanvasResized(const RmlCanvasResizedArgs& args)
     // valid. Convert pixel size and position back to normalized coordiantes using old size and reapply them, which will use new canvas size
     // for calculating new pixel position and size.
 
-    Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::Box::BORDER));
-    Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::Box::CONTENT));
+    Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::BoxArea::Border));
+    Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::BoxArea::Content));
 
     pos.x_ = 1.0f / static_cast<float>(args.oldSize_.x_) * pos.x_;
     pos.y_ = 1.0f / static_cast<float>(args.oldSize_.y_) * pos.y_;
