@@ -92,12 +92,12 @@ bool RmlUIComponent::BindDataModelProperty(const ea::string& name, GetterFunc ge
         {
         Variant variant;
         getter(variant);
-        RmlUI::TryConvertVariant(variant, outputValue);
+        ToRmlUi(variant, outputValue);
         },
         [=](const Rml::Variant& inputValue)
         {
         Variant variant;
-        if (RmlUI::TryConvertVariant(inputValue, variant))
+        if (FromRmlUi(inputValue, variant))
         {
             setter(variant);
         }
@@ -119,7 +119,7 @@ bool RmlUIComponent::BindDataModelEvent(const ea::string& name, EventFunc eventC
         VariantVector urhoArgs;
         for (auto& src: args)
         {
-            RmlUI::TryConvertVariant(src, urhoArgs.push_back());
+            FromRmlUi(src, urhoArgs.push_back());
         }
         eventCallback(urhoArgs);
     });

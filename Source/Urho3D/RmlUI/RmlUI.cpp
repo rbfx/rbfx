@@ -540,7 +540,7 @@ void RmlUI::SetRenderTarget(std::nullptr_t, const Color& clearColor)
 }
 
 /// Try to convert variant from RmlUI to Urho3D.
-bool RmlUI::TryConvertVariant(const Rml::Variant& src, Variant& dst)
+bool FromRmlUi(const Rml::Variant& src, Variant& dst)
 {
     switch (src.GetType())
     {
@@ -574,7 +574,7 @@ bool RmlUI::TryConvertVariant(const Rml::Variant& src, Variant& dst)
 }
 
 /// Try to convert variant from Urho3D to RmlUI.
-bool RmlUI::TryConvertVariant(const Variant& src, Rml::Variant& dst)
+bool ToRmlUi(const Variant& src, Rml::Variant& dst)
 {
     switch (src.GetType())
     {

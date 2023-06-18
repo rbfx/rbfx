@@ -934,7 +934,8 @@ using ImGuiConfigFlags = unsigned;
 
 // --------------------------------------- RmlUI ---------------------------------------
 #if URHO3D_RMLUI
-%ignore Urho3D::RmlUI::TryConvertVariant;
+%ignore Urho3D::FromRmlUi;
+%ignore Urho3D::ToRmlUi;
 %ignore Urho3D::RmlUIComponent::BindDataModelProperty;
 %ignore Urho3D::RmlUIComponent::BindDataModelEvent;
 
