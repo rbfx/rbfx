@@ -161,11 +161,6 @@ private:
     ea::variant<NopAttributeActionState, State<IntVector2>, State<IntVector3>, State<Vector2>, State<Vector3>> state_;
 };
 
-template <typename T> void JumpByState::State<T>::Init(const JumpByState* state)
-{
-    positionDelta_ = static_cast<T>(state->GetDelta());
-}
-
 template <typename T> void JumpByState::State<T>::Update(float time, Variant& value)
 {
     if (triggered_)
@@ -192,12 +187,6 @@ public:
 private:
     ea::variant<NopAttributeActionState, State<Vector2>, State<Vector3>> state_;
 };
-
-template <typename T> void ScaleByState::State<T>::Init(const ScaleByState* state)
-{
-    scaleDelta_ = static_cast<T>(state->GetDelta());
-    previousScale_ = startScale_ = state->Get<T>();
-}
 
 template <typename T> void ScaleByState::State<T>::Update(float time, Variant& value)
 {

@@ -223,6 +223,26 @@ void MoveByQuadraticState::Update(float dt, Variant& value)
     ea::visit(callUpdate, state_);
 }
 
+template <> void JumpByState::State<Vector3>::Init(const JumpByState* state)
+{
+    positionDelta_ = state->GetDelta();
+}
+
+template <> void JumpByState::State<Vector2>::Init(const JumpByState* state)
+{
+    positionDelta_ = state->GetDelta().ToVector2();
+}
+
+template <> void JumpByState::State<IntVector3>::Init(const JumpByState* state)
+{
+    positionDelta_ = state->GetDelta().ToIntVector3();
+}
+
+template <> void JumpByState::State<IntVector2>::Init(const JumpByState* state)
+{
+    positionDelta_ = state->GetDelta().ToIntVector2();
+}
+
 JumpByState::JumpByState(JumpBy* action, Object* target)
     : AttributeActionState(action, target)
 {
@@ -245,6 +265,18 @@ void JumpByState::Update(float dt, Variant& value)
 {
     auto callUpdate = [&](auto& state) { state.Update(dt, value); };
     ea::visit(callUpdate, state_);
+}
+
+template <> void ScaleByState::State<Vector3>::Init(const ScaleByState* state)
+{
+    scaleDelta_ = state->GetDelta();
+    previousScale_ = startScale_ = state->Get<Vector3>();
+}
+
+template <> void ScaleByState::State<Vector2>::Init(const ScaleByState* state)
+{
+    scaleDelta_ = state->GetDelta().ToVector2();
+    previousScale_ = startScale_ = state->Get<Vector2>();
 }
 
 ScaleByState::ScaleByState(ScaleBy* action, Object* target)
