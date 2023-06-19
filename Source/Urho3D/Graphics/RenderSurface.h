@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/Viewport.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/Viewport.h"
 
 #include <Diligent/Common/interface/RefCntAutoPtr.hpp>
 #include <Diligent/Graphics/GraphicsEngine/interface/TextureView.h>
@@ -33,13 +33,14 @@
 namespace Urho3D
 {
 
+class RenderTargetView;
 class Texture;
 
 /// %Color or depth-stencil surface that can be rendered into.
 class URHO3D_API RenderSurface : public RefCounted
 {
 public:
-    explicit RenderSurface(Texture* parentTexture);
+    RenderSurface(Texture* parentTexture, unsigned slice);
     ~RenderSurface() override;
 
     /// Internal. Restore GPU resource.
@@ -64,8 +65,6 @@ public:
     void SetLinkedDepthStencil(RenderSurface* depthStencil);
     /// Queue manual update of the viewport(s).
     void QueueUpdate();
-    /// Release surface.
-    void Release();
 
     /// Return width.
     /// @property
@@ -114,11 +113,12 @@ public:
     /// @property
     Texture* GetParentTexture() const { return parentTexture_; }
 
+    /// Return slice of the parent texture.
+    unsigned GetSlice() const { return slice_; }
+
+    RenderTargetView GetView() const;
     bool IsRenderTarget() const;
     bool IsDepthStencil() const;
-
-    /// Return Diligent rendertarget or depth-stencil view.
-    Diligent::RefCntAutoPtr<Diligent::ITextureView> GetRenderTargetView() const { return renderTargetView_; }
 
     /// Return whether multisampled rendertarget needs resolve.
     /// @property
@@ -137,10 +137,10 @@ public:
     /// @}
 
 private:
-    /// Graphics subsystem.
-    WeakPtr<Graphics> graphics_;
     /// Parent texture.
-    WeakPtr<Texture> parentTexture_;
+    const WeakPtr<Texture> parentTexture_;
+    /// Slice of the parent texture.
+    const unsigned slice_{};
 
     /// Diligent rendertarget or depth-stencil view.
     Diligent::RefCntAutoPtr<Diligent::ITextureView> renderTargetView_;

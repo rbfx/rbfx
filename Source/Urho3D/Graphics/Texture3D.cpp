@@ -33,6 +33,7 @@
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include "../DebugNew.h"
 
@@ -149,6 +150,8 @@ bool Texture3D::SetSize(int width, int height, int depth, TextureFormat format, 
     params.format_ = format;
     params.size_ = {width, height, depth};
     params.numLevels_ = requestedLevels_;
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
 
     return Create(params);
 }

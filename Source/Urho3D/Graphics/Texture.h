@@ -152,7 +152,7 @@ public:
 
     /// Return whether is using sRGB sampling and writing.
     /// @property
-    bool GetSRGB() const { return sRGB_; }
+    bool GetSRGB() const;
 
     /// Return texture multisampling level (1 = no multisampling).
     /// @property
@@ -206,10 +206,6 @@ public:
     bool IsUnorderedAccess() const { return GetParams().flags_.Test(TextureFlag::BindUnorderedAccess); }
     /// @}
 
-    /// Convert format to sRGB.
-    /// @nobind
-    static TextureFormat ConvertSRGB(TextureFormat format, bool sRGB = true);
-
 private:
     /// Implement RawTexture.
     /// @{
@@ -235,10 +231,10 @@ protected:
 
     /// Requested mip levels.
     unsigned requestedLevels_{};
+    /// Whether sRGB sampling and writing is requested.
+    bool requestedSRGB_{};
     /// Mip levels to skip when loading per texture quality setting.
     unsigned mipsToSkip_[MAX_TEXTURE_QUALITY_LEVELS]{2, 1, 0};
-    /// sRGB sampling and writing mode flag.
-    bool sRGB_{};
     /// Whether the texture data is in linear color space (instead of gamma space).
     bool linear_{};
     /// Multisampling resolve needed -flag.

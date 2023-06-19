@@ -62,6 +62,7 @@ class VertexBuffer;
 class PipelineState;
 class ShaderResourceBinding;
 class RenderDevice;
+class RenderContext;
 
 struct ShaderParameter;
 
@@ -501,7 +502,7 @@ public:
     RenderSurface* GetDepthStencil() const { return depthStencil_; }
 
     /// Return the viewport coordinates.
-    IntRect GetViewport() const { return viewport_; }
+    const IntRect& GetViewport() const;
 
     /// Return blending mode.
     BlendMode GetBlendMode() const { return blendMode_; }
@@ -562,9 +563,6 @@ public:
 
     /// Return stencil write bitmask.
     unsigned GetStencilWriteMask() const { return stencilWriteMask_; }
-
-    /// Return whether a custom clipping plane is in use.
-    bool GetUseClipPlane() const { return useClipPlane_; }
 
     /// Return shader cache directory, Direct3D and Diligent only
     /// @property
@@ -630,8 +628,7 @@ public:
     unsigned GetSwapChainRTFormat();
     unsigned GetSwapChainDepthFormat();
 
-    PipelineStateOutputDesc GetSwapChainOutputDesc() const;
-    PipelineStateOutputDesc GetCurrentOutputDesc() const;
+    const PipelineStateOutputDesc& GetCurrentOutputDesc() const;
 
     /// Return the API-specific alpha texture format.
     static TextureFormat GetAlphaFormat();
@@ -696,6 +693,7 @@ public:
     /// Getters.
     /// @{
     RenderDevice* GetRenderDevice() const { return renderDevice_.Get(); }
+    RenderContext* GetRenderContext() const { return renderContext_.Get(); }
     /// @}
 
 private:
@@ -817,8 +815,6 @@ private:
     ConstantBufferRange constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Depth-stencil surface in use.
     RenderSurface* depthStencil_{};
-    /// Viewport coordinates.
-    IntRect viewport_;
     /// Default texture filtering mode.
     TextureFilterMode defaultTextureFilterMode_{FILTER_TRILINEAR};
     /// Default texture max. anisotropy level.
@@ -895,6 +891,7 @@ private:
     StringHash globalShaderDefinesHash_;
 
     SharedPtr<RenderDevice> renderDevice_;
+    WeakPtr<RenderContext> renderContext_;
 
     bool logShaderSources_{};
     ShaderTranslationPolicy policyGlsl_{ShaderTranslationPolicy::Verbatim};

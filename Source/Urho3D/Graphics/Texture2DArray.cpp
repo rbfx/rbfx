@@ -33,6 +33,7 @@
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include "../DebugNew.h"
 
@@ -145,6 +146,8 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, TextureForm
     params.arraySize_ = layers_;
     params.numLevels_ = requestedLevels_;
     params.flags_ = flags;
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
 
     return Create(params);
 }

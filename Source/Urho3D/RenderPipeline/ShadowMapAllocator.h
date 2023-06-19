@@ -35,6 +35,7 @@
 namespace Urho3D
 {
 
+class RenderContext;
 class Renderer;
 
 /// Utility to allocate shadow maps in texture atlas.
@@ -76,6 +77,7 @@ private:
     /// @{
     Graphics* graphics_{};
     Renderer* renderer_{};
+    RenderContext* renderContext_{};
     /// @}
 
     /// Settings

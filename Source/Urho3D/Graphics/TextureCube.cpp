@@ -33,6 +33,7 @@
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include "../DebugNew.h"
 
@@ -127,6 +128,8 @@ bool TextureCube::SetSize(int size, TextureFormat format, TextureFlags flags, in
     params.numLevels_ = requestedLevels_;
     params.flags_ = flags;
     params.multiSample_ = multiSample;
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
 
     return Create(params);
 }

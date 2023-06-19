@@ -28,25 +28,22 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
+#include "Urho3D/RenderAPI/RawTexture.h"
+#include "Urho3D/RenderAPI/RenderTargetView.h"
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-RenderSurface::RenderSurface(Texture* parentTexture)
+RenderSurface::RenderSurface(Texture* parentTexture, unsigned slice)
     : parentTexture_(parentTexture)
+    , slice_(slice)
 {
 }
 
 RenderSurface::~RenderSurface()
 {
-    // only release if parent texture hasn't expired, in that case
-    // parent texture was deleted and will have called release on render surface
-    if (!parentTexture_.Expired())
-    {
-        Release();
-    }
 }
 
 void RenderSurface::SetNumViewports(unsigned num)
@@ -131,10 +128,9 @@ IntRect RenderSurface::GetRect(Graphics* graphics, const RenderSurface* renderSu
 
 unsigned RenderSurface::GetFormat(Graphics* graphics, const RenderSurface* renderSurface)
 {
-    // TODO(diligent): Revisit formats
-    if (renderSurface && renderSurface->GetRenderTargetView())
-        return renderSurface->GetRenderTargetView()->GetDesc().Format;
-    return renderSurface ? renderSurface->GetParentTexture()->GetFormat() : graphics->GetSwapChainOutputDesc().renderTargetFormats_[0];
+    const auto rtv =
+        renderSurface ? renderSurface->GetView() : RenderTargetView::SwapChainColor(graphics->GetRenderDevice());
+    return rtv.GetFormat();
 }
 
 int RenderSurface::GetMultiSample(Graphics* graphics, const RenderSurface* renderSurface)
@@ -145,6 +141,11 @@ int RenderSurface::GetMultiSample(Graphics* graphics, const RenderSurface* rende
 bool RenderSurface::GetSRGB(Graphics* graphics, const RenderSurface* renderSurface)
 {
     return renderSurface ? renderSurface->GetParentTexture()->GetSRGB() : graphics->GetSRGB();
+}
+
+RenderTargetView RenderSurface::GetView() const
+{
+    return RenderTargetView::TextureSlice(parentTexture_, slice_);
 }
 
 bool RenderSurface::IsRenderTarget() const

@@ -50,6 +50,7 @@ namespace Urho3D
 {
 
 class DeviceObject;
+class RenderContext;
 
 /// Wrapper for window and GAPI backend.
 class URHO3D_API RenderDevice : public Object
@@ -92,6 +93,7 @@ public:
     const RenderBackend GetBackend() const { return deviceSettings_.backend_; }
     const RenderDeviceSettings& GetDeviceSettings() const { return deviceSettings_; }
     const WindowSettings& GetWindowSettings() const { return windowSettings_; }
+    RenderContext* GetRenderContext() const { return renderContext_; }
     SDL_Window* GetSDLWindow() const { return window_.get(); }
     void* GetMetalView() const { return metalView_.get(); }
     Diligent::IEngineFactory* GetFactory() { return factory_.RawPtr(); }
@@ -138,6 +140,8 @@ private:
     Diligent::RefCntAutoPtr<Diligent::IRenderDevice> renderDevice_;
     Diligent::RefCntAutoPtr<Diligent::IDeviceContext> deviceContext_;
     Diligent::RefCntAutoPtr<Diligent::ISwapChain> swapChain_;
+
+    SharedPtr<RenderContext> renderContext_;
 
     FrameIndex frameIndex_{FrameIndex::First};
 

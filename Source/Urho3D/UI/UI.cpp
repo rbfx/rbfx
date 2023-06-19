@@ -63,6 +63,9 @@
 #include "../UI/Window.h"
 #include "../UI/View3D.h"
 #include "../UI/UIComponent.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <cassert>
 #include <SDL.h>
@@ -938,24 +941,27 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
     if (batches.empty())
         return;
 
+    RenderDevice* renderDevice = graphics_->GetRenderDevice();
+    RenderContext* renderContext = graphics_->GetRenderContext();
     DrawCommandQueue* drawQueue = renderer_->GetDefaultDrawQueue();
 
-    unsigned alphaFormat = Graphics::GetAlphaFormat();
-    RenderSurface* surface = graphics_->GetRenderTarget(0);
-    const bool isSurfaceSRGB = RenderSurface::GetSRGB(graphics_, surface);
-    IntVector2 viewSize = graphics_->GetViewport().Size();
-    Vector2 invScreenSize(1.0f / (float)viewSize.x_, 1.0f / (float)viewSize.y_);
+    const RenderBackend backend = renderDevice->GetBackend();
+    const PipelineStateOutputDesc& outputDesc = renderContext->GetCurrentRenderTargetsDesc();
+    const bool isSwapChain = renderContext->IsSwapChainRenderTarget();
+    const bool isSurfaceSRGB = IsTextureFormatSRGB(outputDesc.renderTargetFormats_[0]);
+    const bool flipRect = !isSwapChain && backend == RenderBackend::OpenGL;
+
+    const IntVector2 viewSize = renderContext->GetCurrentViewport().Size();
+    const Vector2 invScreenSize(1.0f / (float)viewSize.x_, 1.0f / (float)viewSize.y_);
     Vector2 scale(2.0f * invScreenSize.x_, -2.0f * invScreenSize.y_);
     Vector2 offset(-1.0f, 1.0f);
 
-    if (surface)
+    if (flipRect)
     {
-#ifdef URHO3D_OPENGL
         // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the
         // same way as a render texture produced on Direct3D.
         offset.y_ = -offset.y_;
         scale.y_ = -scale.y_;
-#endif
     }
 
     Matrix4 projection(Matrix4::IDENTITY);
@@ -984,8 +990,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         const unsigned samplerStateHash = batch.texture_ ? batch.texture_->GetSamplerStateDesc().ToHash() : 0;
         batchStateCreateContext.defaultSampler_ = batch.texture_ ? &batch.texture_->GetSamplerStateDesc() : nullptr;
 
-        const UIBatchStateKey key{
-            isSurfaceSRGB, graphics_->GetCurrentOutputDesc(), material, pass, batch.blendMode_, samplerStateHash};
+        const UIBatchStateKey key{isSurfaceSRGB, outputDesc, material, pass, batch.blendMode_, samplerStateHash};
         PipelineState* pipelineState = batchStateCache_->GetOrCreatePipelineState(key, batchStateCreateContext);
         if (!pipelineState || !pipelineState->IsValid())
             continue;
@@ -1034,15 +1039,13 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         scissor.bottom_ = (int)(scissor.bottom_ * uiScale_);
 
         // Flip scissor vertically if using OpenGL texture rendering
-#ifdef URHO3D_OPENGL
-        if (surface)
+        if (flipRect)
         {
             int top = scissor.top_;
             int bottom = scissor.bottom_;
             scissor.top_ = viewSize.y_ - bottom;
             scissor.bottom_ = viewSize.y_ - top;
         }
-#endif
         drawQueue->SetScissorRect(scissor);
 
         // TODO(diligent): Revisit constants
@@ -2007,12 +2010,13 @@ void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
     {
         if (RenderSurface* surface = texture_->GetRenderSurface())
         {
-            graphics_->ResetRenderTargets();
-            graphics_->SetDepthStencil(surface->GetLinkedDepthStencil());
-            graphics_->SetRenderTarget(0, surface);
-            graphics_->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
+            RenderContext* renderContext = graphics_->GetRenderContext();
+
+            const RenderTargetView renderTargets[] = {surface->GetView()};
+            renderContext->SetRenderTargets(ea::nullopt, renderTargets);
+            renderContext->SetFullViewport();
             if (clearColor_.a_ > 0)
-                graphics_->Clear(CLEAR_COLOR, clearColor_);
+                renderContext->ClearRenderTarget(0, clearColor_);
             Render();
         }
     }

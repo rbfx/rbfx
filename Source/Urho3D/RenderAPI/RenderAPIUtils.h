@@ -28,4 +28,7 @@ URHO3D_API Diligent::SHADER_TYPE ToInternalShaderType(ShaderType type);
 URHO3D_API unsigned GetMipLevelCount(const IntVector3& size);
 URHO3D_API IntVector3 GetMipLevelSize(const IntVector3& size, unsigned level);
 
+URHO3D_API bool IsTextureFormatSRGB(TextureFormat format);
+URHO3D_API TextureFormat SetTextureFormatSRGB(TextureFormat format, bool sRGB = true);
+
 } // namespace Urho3D

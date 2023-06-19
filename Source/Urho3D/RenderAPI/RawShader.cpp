@@ -63,6 +63,9 @@ void RawShader::CreateGPU()
 {
     DestroyGPU();
 
+    if (bytecode_.IsEmpty())
+        return;
+
     Diligent::ShaderCreateInfo createInfo;
 #ifdef URHO3D_DEBUG
     createInfo.Desc.Name = GetDebugName().c_str();

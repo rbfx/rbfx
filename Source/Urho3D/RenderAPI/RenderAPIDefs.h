@@ -27,6 +27,10 @@ namespace Urho3D
 static constexpr unsigned MaxRenderTargets = 8;
 /// Maximum number of bound vertex buffers supported by the engine.
 static constexpr unsigned MaxVertexStreams = 4;
+/// Some vertex elements in layout may be unused and the hard GPU limit is only applied to the used ones.
+static constexpr unsigned MaxNumVertexElements = 2 * Diligent::MAX_LAYOUT_ELEMENTS;
+/// Max number of immutable samplers on CPU side. Can be extended freely if needed.
+static constexpr unsigned MaxNumImmutableSamplers = 16;
 
 /// Index of the frame, counted by the presents of the primary swap chain.
 enum class FrameIndex : unsigned long long
@@ -342,6 +346,15 @@ enum PrimitiveType
     TRIANGLE_FAN
 };
 
+enum ClearTarget : unsigned
+{
+    CLEAR_NONE = 0x0,
+    CLEAR_COLOR = 0x1,
+    CLEAR_DEPTH = 0x2,
+    CLEAR_STENCIL = 0x4,
+};
+URHO3D_FLAGSET(ClearTarget, ClearTargetFlags);
+
 /// Description of immutable texture sampler bound to the pipeline.
 struct URHO3D_API SamplerStateDesc
 {
@@ -465,11 +478,6 @@ struct URHO3D_API InputLayoutElementDesc
     unsigned ToHash() const { return MakeHash(Tie()); }
     /// @}
 };
-
-/// Some vertex elements in layout may be unused and the hard GPU limit is only applied to the used ones.
-static const unsigned MaxNumVertexElements = 2 * Diligent::MAX_LAYOUT_ELEMENTS;
-/// Max number of immutable samplers on CPU side. Can be extended freely if needed.
-static const unsigned MaxNumImmutableSamplers = 16;
 
 /// Description of input layout of graphics pipeline state.
 struct URHO3D_API InputLayoutDesc

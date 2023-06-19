@@ -39,6 +39,7 @@
 #include "../Input/InputEvents.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/Console.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/SystemUI/ImGuiDiligentRendererEx.h"
 
@@ -302,35 +303,17 @@ void SystemUI::OnRenderEnd()
         io.WantSetMousePos = true;
     }
 
-    // TODO(diligent): Revisit
     Graphics* graphics = GetSubsystem<Graphics>();
-    Diligent::IDeviceContext* deviceContext = graphics->GetImpl()->GetDeviceContext();
-    graphics->SetRenderTarget(0, (RenderSurface*)nullptr);
-    graphics->SetDepthStencil((RenderSurface*)nullptr);
-    graphics->PrepareDraw();
+    RenderContext* renderContext = graphics->GetRenderContext();
+    renderContext->SetSwapChainRenderTargets();
+    renderContext->SetFullViewport();
 
     impl_->RenderDrawData(ui::GetDrawData());
     impl_->RenderSecondaryWindows();
 
+    // TODO(diligent): Remove those
     graphics->SetVertexBuffer(nullptr);
     graphics->SetIndexBuffer(nullptr);
-#if 0
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-#if URHO3D_OPENGL
-        SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
-        SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
-#endif
-        ui::UpdatePlatformWindows();
-        ui::RenderPlatformWindowsDefault();
-#if URHO3D_OPENGL
-        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
-#elif URHO3D_D3D11
-        graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
-        graphicsImpl->MarkRenderTargetsDirty();
-#endif
-    }
-#endif
 }
 
 void SystemUI::OnMouseVisibilityChanged(StringHash, VariantMap& args)

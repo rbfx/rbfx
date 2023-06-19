@@ -438,7 +438,6 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
 
     batchRenderer_->RenderLightVolumeBatches(ctx, GetLightVolumeBatches());
 
-    graphics_->SetClipPlane(false);
     drawQueue_->Execute();
 
 #ifdef URHO3D_DEBUG
@@ -470,8 +469,6 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
         drawQueue_->SetScissorRect(batchGroup.scissorRect_);
     batchRenderer_->RenderBatches(ctx, batchGroup);
 
-    graphics_->SetClipPlane(camera->GetUseClipping(),
-        camera->GetClipPlane(), camera->GetView(), camera->GetGPUProjection());
     drawQueue_->Execute();
 
 #ifdef URHO3D_DEBUG

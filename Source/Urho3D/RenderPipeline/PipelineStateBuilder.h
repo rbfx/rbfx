@@ -73,8 +73,10 @@ private:
     void SetupLightVolumePassState(const LightProcessor* lightProcessor);
     void SetupShadowPassState(unsigned splitIndex, const LightProcessor* lightProcessor,
         const Material* material, const Pass* pass);
-    void SetupSamplersForUserOrShadowPass(const Material* material, const LightProcessor* lightProcessor,
-        bool hasLightmap, bool hasAmbient, bool isRefractionPass);
+    void SetupLightSamplers(const LightProcessor* lightProcessor);
+    void SetupSamplersForUserOrShadowPass(
+        const Material* material, bool hasLightmap, bool hasAmbient, bool isRefractionPass);
+    void SetupGeometryBufferSamplers();
     /// @}
 
     /// Objects whose settings contribute to pipeline states.

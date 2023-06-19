@@ -115,10 +115,9 @@ enum class RenderBufferFlag
     /// Texture content is preserved between frames.
     Persistent = 1 << 0,
     FixedTextureSize = 1 << 1,
-    sRGB = 1 << 2,
-    BilinearFiltering = 1 << 3,
-    CubeMap = 1 << 4,
-    NoMultiSampledAutoResolve = 1 << 5
+    BilinearFiltering = 1 << 2,
+    CubeMap = 1 << 3,
+    NoMultiSampledAutoResolve = 1 << 4
 };
 
 URHO3D_FLAGSET(RenderBufferFlag, RenderBufferFlags);

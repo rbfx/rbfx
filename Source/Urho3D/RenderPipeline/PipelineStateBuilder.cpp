@@ -106,7 +106,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
             key.geometry_, key.geometryType_, key.material_, key.pass_, light);
         SetupShadowPassState(ctx.shadowSplitIndex_, key.pixelLight_, key.material_, key.pass_);
 
-        SetupSamplersForUserOrShadowPass(key.material_, nullptr, false, false, false);
+        SetupSamplersForUserOrShadowPass(key.material_, false, false, false);
         SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
@@ -116,7 +116,8 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
             key.geometry_, key.geometryType_, key.pass_, light, hasShadow);
         SetupLightVolumePassState(key.pixelLight_);
 
-        // TODO(diligent): Setup samplers for light volume pass
+        SetupLightSamplers(key.pixelLight_);
+        SetupGeometryBufferSamplers();
         SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
@@ -149,7 +150,8 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
                 pipelineStateDesc_.blendMode_ = BLEND_SUBTRACTALPHA;
         }
 
-        SetupSamplersForUserOrShadowPass(key.material_, key.pixelLight_, hasLightmap, hasAmbient, isRefractionPass);
+        SetupLightSamplers(key.pixelLight_);
+        SetupSamplersForUserOrShadowPass(key.material_, hasLightmap, hasAmbient, isRefractionPass);
         SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
@@ -255,6 +257,7 @@ void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
         pipelineStateDesc_.stencilTestEnabled_ = true;
         pipelineStateDesc_.stencilOperationOnPassed_ = OP_REF;
         pipelineStateDesc_.stencilWriteMask_ = PORTABLE_LIGHTMASK;
+        // TODO(diligent): Remove stencilReferenceValue_?
         pipelineStateDesc_.stencilReferenceValue_ = drawable->GetLightMaskInZone() & PORTABLE_LIGHTMASK;
     }
 }
@@ -279,15 +282,28 @@ void PipelineStateBuilder::SetupShaders(PipelineStateDesc& pipelineStateDesc, Sh
         PS, shaderProgramDesc.shaderName_[PS], shaderProgramDesc.shaderDefines_[PS]);
 }
 
-void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(const Material* material,
-    const LightProcessor* lightProcessor, bool hasLightmap, bool hasAmbient, bool isRefractionPass)
+void PipelineStateBuilder::SetupLightSamplers(const LightProcessor* lightProcessor)
+{
+    const Light* light = lightProcessor ? lightProcessor->GetLight() : nullptr;
+    if (light)
+    {
+        if (Texture* rampTexture = light->GetRampTexture())
+            pipelineStateDesc_.samplers_.Add(ShaderResources::LightRampMap, rampTexture->GetSamplerStateDesc());
+        if (Texture* shapeTexture = light->GetShapeTexture())
+            pipelineStateDesc_.samplers_.Add(ShaderResources::LightSpotMap, shapeTexture->GetSamplerStateDesc());
+    }
+    if (lightProcessor && lightProcessor->HasShadow())
+        pipelineStateDesc_.samplers_.Add(ShaderResources::ShadowMap, shadowMapAllocator_->GetSamplerStateDesc());
+}
+
+void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(
+    const Material* material, bool hasLightmap, bool hasAmbient, bool isRefractionPass)
 {
     // TODO(diligent): Make configurable
     static const auto lightMapSampler = SamplerStateDesc::Bilinear();
     static const auto reflectionMapSampler = SamplerStateDesc::Bilinear();
     static const auto refractionMapSampler = SamplerStateDesc::Bilinear();
 
-    const Light* light = lightProcessor ? lightProcessor->GetLight() : nullptr;
     bool materialHasEnvironmentMap = false;
     for (const auto& [unit, texture] : material->GetTextures())
     {
@@ -304,15 +320,6 @@ void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(const Material* mate
 
     if (hasLightmap)
         pipelineStateDesc_.samplers_.Add(ShaderResources::EmissiveMap, lightMapSampler);
-    if (light)
-    {
-        if (Texture* rampTexture = light->GetRampTexture())
-            pipelineStateDesc_.samplers_.Add(ShaderResources::LightRampMap, rampTexture->GetSamplerStateDesc());
-        if (Texture* shapeTexture = light->GetShapeTexture())
-            pipelineStateDesc_.samplers_.Add(ShaderResources::LightSpotMap, shapeTexture->GetSamplerStateDesc());
-    }
-    if (lightProcessor && lightProcessor->HasShadow())
-        pipelineStateDesc_.samplers_.Add(ShaderResources::ShadowMap, shadowMapAllocator_->GetSamplerStateDesc());
 
     if (hasAmbient)
     {
@@ -323,6 +330,16 @@ void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(const Material* mate
 
     if (isRefractionPass)
         pipelineStateDesc_.samplers_.Add(ShaderResources::EmissiveMap, refractionMapSampler);
+
+    pipelineStateDesc_.samplers_.Add(ShaderResources::DepthBuffer, SamplerStateDesc::Nearest());
+}
+
+void PipelineStateBuilder::SetupGeometryBufferSamplers()
+{
+    pipelineStateDesc_.samplers_.Add(ShaderResources::DiffMap, SamplerStateDesc::Nearest());
+    pipelineStateDesc_.samplers_.Add(ShaderResources::SpecMap, SamplerStateDesc::Nearest());
+    pipelineStateDesc_.samplers_.Add(ShaderResources::NormalMap, SamplerStateDesc::Nearest());
+    pipelineStateDesc_.samplers_.Add(ShaderResources::DepthBuffer, SamplerStateDesc::Nearest());
 }
 
 }

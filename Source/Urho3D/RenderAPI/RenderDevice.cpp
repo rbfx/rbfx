@@ -11,6 +11,7 @@
 #include "Urho3D/RenderAPI/DeviceObject.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
 
 #include <Diligent/Common/interface/DefaultRawMemoryAllocator.hpp>
 #include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
@@ -559,6 +560,7 @@ RenderDevice::RenderDevice(
 RenderDevice::~RenderDevice()
 {
     SendDeviceObjectEvent(DeviceObjectEvent::Destroy);
+    deviceContext_->WaitForIdle();
 }
 
 void RenderDevice::InitializeWindow()
@@ -754,6 +756,8 @@ void RenderDevice::InitializeDevice()
 #endif
     default: throw RuntimeException("Unsupported render backend");
     }
+
+    renderContext_ = MakeShared<RenderContext>(this);
 }
 
 Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapChain(

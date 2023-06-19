@@ -128,6 +128,8 @@ public:
         unsigned level, const IntVector3& offset, const IntVector3& size, unsigned arraySlice, const void* data);
     /// Read texture data from GPU. This operation is very slow and shouldn't be used in real time.
     bool Read(unsigned slice, unsigned level, void* buffer, unsigned bufferSize);
+    /// For render target and depth-stencil textures, mark shader resource view dirty.
+    void MarkDirty();
 
     /// Evaluate approximate memory footprint of the texture on GPU.
     unsigned long long CalculateMemoryUseGPU() const;
@@ -148,9 +150,7 @@ public:
 
     /// Internal.
     /// @{
-    void SetLevelsDirty() { levelsDirty_ = true; }
     bool GetLevelsDirty() const { return levelsDirty_; }
-    void SetResolveDirty() { resolveDirty_ = true; }
     bool GetResolveDirty() const { return resolveDirty_; }
     /// @}
 

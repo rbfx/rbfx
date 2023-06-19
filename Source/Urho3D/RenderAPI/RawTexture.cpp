@@ -583,14 +583,18 @@ bool RawTexture::CreateRenderSurfaces(Diligent::ITextureView* defaultView, Dilig
 
 void RawTexture::GenerateLevels()
 {
-    if (!handles_.srv_)
+    if (params_.numLevels_ > 1)
     {
-        URHO3D_LOGWARNING("RawTexture::GenerateMips is ignored for uninitialized texture");
-        return;
+        if (!handles_.srv_)
+        {
+            URHO3D_LOGWARNING("RawTexture::GenerateMips is ignored for uninitialized texture");
+            return;
+        }
+
+        Diligent::IDeviceContext* immediateContext = renderDevice_->GetImmediateContext();
+        immediateContext->GenerateMips(handles_.srv_);
     }
 
-    Diligent::IDeviceContext* immediateContext = renderDevice_->GetImmediateContext();
-    immediateContext->GenerateMips(handles_.srv_);
     levelsDirty_ = false;
 }
 
@@ -609,8 +613,7 @@ void RawTexture::Resolve()
             immediateContext->ResolveTextureSubresource(handles_.texture_, handles_.resolvedTexture_, attribs);
         }
 
-        if (params_.numLevels_ > 1)
-            SetLevelsDirty();
+        MarkDirty();
     }
 
     resolveDirty_ = false;
@@ -755,6 +758,14 @@ bool RawTexture::Read(unsigned slice, unsigned level, void* buffer, unsigned buf
 
     immediateContext->UnmapTextureSubresource(stagingTexture, 0, 0);
     return true;
+}
+
+void RawTexture::MarkDirty()
+{
+    if (params_.numLevels_ > 1)
+        levelsDirty_ = true;
+    if (params_.multiSample_ > 1 && !params_.flags_.Test(TextureFlag::NoMultiSampledAutoResolve))
+        resolveDirty_ = true;
 }
 
 unsigned long long RawTexture::CalculateMemoryUseGPU() const

@@ -29,6 +29,7 @@
 #include "Urho3D/Graphics/RenderSurface.h"
 #include "Urho3D/Graphics/Texture.h"
 #include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 
@@ -73,6 +74,7 @@ void DrawCommandQueue::Execute()
     if (drawCommands_.empty())
         return;
 
+    RenderContext* renderContext = graphics_->GetRenderContext();
     Diligent::IDeviceContext* deviceContext = graphics_->GetImpl()->GetDeviceContext();
 
     // Constant buffers to store all shader parameters for queue
@@ -126,8 +128,15 @@ void DrawCommandQueue::Execute()
         // Set scissor
         if (cmd.scissorRect_ != currentScissorRect)
         {
-            const bool scissorEnabled = currentPipelineState->GetDesc().scissorTestEnabled_;
-            graphics_->SetScissorTest(scissorEnabled, scissorRects_[cmd.scissorRect_]);
+            const IntRect& scissorRect = scissorRects_[cmd.scissorRect_];
+
+            Diligent::Rect internalRect;
+            internalRect.left = scissorRect.left_;
+            internalRect.top = scissorRect.top_;
+            internalRect.right = scissorRect.right_;
+            internalRect.bottom = scissorRect.bottom_;
+
+            deviceContext->SetScissorRects(1, &internalRect, 0, 0);
             currentScissorRect = cmd.scissorRect_;
         }
 
@@ -160,9 +169,7 @@ void DrawCommandQueue::Execute()
             const ShaderResourceData& data = shaderResources_[i];
             Texture* texture = data.texture_;
 
-            // TODO(diligent): Revisit this place
-            RenderSurface* currRT = graphics_->GetRenderTarget(0);
-            if (currRT && currRT->GetParentTexture() == texture)
+            if (renderContext->IsBoundAsRenderTarget(texture))
                 texture = texture->GetBackupTexture(); // TODO(diligent): We should have default backup texture!
             if (!texture)
                 continue;

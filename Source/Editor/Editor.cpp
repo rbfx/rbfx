@@ -207,7 +207,7 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = resourcePrefixPath_;
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
-    engineParameters_[EP_SYSTEMUI_FLAGS] = ImGuiConfigFlags_DpiEnableScaleFonts;
+    engineParameters_[EP_SYSTEMUI_FLAGS] = ImGuiConfigFlags_DpiEnableScaleFonts; // TODO(diligent): This flag causes weird scale, revisit
 #if URHO3D_SYSTEMUI_VIEWPORTS
     engineParameters_[EP_SYSTEMUI_FLAGS] = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt() | ImGuiConfigFlags_ViewportsEnable /*| ImGuiConfigFlags_DpiEnableScaleViewports*/;
 #endif

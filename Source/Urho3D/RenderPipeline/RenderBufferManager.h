@@ -27,6 +27,7 @@
 #include "../Graphics/DrawCommandQueue.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../RenderAPI/PipelineState.h"
+#include "../RenderAPI/RenderContext.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "Urho3D/RenderPipeline/StaticPipelineStateCache.h"
 
@@ -99,13 +100,8 @@ public:
     /// If rectangle is specified, only part of render target is cleared.
     /// Changes currently bound depth-stencil and render targets.
     /// @{
-    void ClearDepthStencilRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-        ClearTargetFlags flags, float depth, unsigned stencil, CubeMapFace face = FACE_POSITIVE_X);
     void ClearDepthStencil(RenderBuffer* depthStencilBuffer,
         ClearTargetFlags flags, float depth, unsigned stencil, CubeMapFace face = FACE_POSITIVE_X);
-
-    void ClearColorRect(const IntRect& viewportRect, RenderBuffer* colorBuffer,
-        const Color& color, CubeMapFace face = FACE_POSITIVE_X);
     void ClearColor(RenderBuffer* colorBuffer,
         const Color& color, CubeMapFace face = FACE_POSITIVE_X);
 
@@ -167,6 +163,8 @@ public:
     const RenderBufferManagerSettings& GetSettings() const { return settings_; }
 
 private:
+    static constexpr unsigned MaxClearVariants = (CLEAR_COLOR | CLEAR_DEPTH | CLEAR_STENCIL).AsInteger() + 1;
+
     /// RenderPipeline callbacks
     /// @{
     void OnPipelineStatesInvalidated();
@@ -174,16 +172,17 @@ private:
     void OnRenderEnd(const CommonFrameInfo& frameInfo);
     /// @}
 
-    void InitializeCopyTexturePipelineState();
+    void InitializePipelineStates();
     void ResetCachedRenderBuffers();
     void CopyTextureRegion(ea::string_view debugComment, Texture* sourceTexture, const IntRect& sourceRect,
-        RenderSurface* destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical);
+        RenderTargetView destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical);
 
     /// External dependencies
     /// @{
     RenderPipelineInterface* renderPipeline_{};
     Graphics* graphics_{};
     Renderer* renderer_{};
+    RenderContext* renderContext_{};
     RenderPipelineDebugger* debugger_{};
     SharedPtr<DrawCommandQueue> drawQueue_;
     /// @}
@@ -199,6 +198,7 @@ private:
     StaticPipelineStateId copyTexturePipelineState_{};
     StaticPipelineStateId copyGammaToLinearTexturePipelineState_{};
     StaticPipelineStateId copyLinearToGammaTexturePipelineState_{};
+    StaticPipelineStateId clearPipelineState_[MaxClearVariants]{};
 
     SharedPtr<RenderBuffer> substituteRenderBuffers_[2];
     SharedPtr<RenderBuffer> substituteDepthBuffer_;

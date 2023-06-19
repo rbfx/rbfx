@@ -27,6 +27,7 @@
 #include "../Graphics/Drawable.h"
 #include "../Graphics/Graphics.h"
 #include "../RenderAPI/PipelineState.h"
+#include "../RenderAPI/RenderAPIUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture2D.h"
@@ -79,6 +80,7 @@ Texture2D* RenderBuffer::GetTexture2D() const
 RenderBuffer::RenderBuffer(RenderPipelineInterface* renderPipeline)
     : Object(renderPipeline->GetContext())
     , renderer_(GetSubsystem<Renderer>())
+    , renderDevice_(GetSubsystem<Graphics>()->GetRenderDevice())
 {
     renderPipeline->OnRenderBegin.Subscribe(this, &RenderBuffer::OnRenderBegin);
     renderPipeline->OnRenderEnd.Subscribe(this, &RenderBuffer::OnRenderEnd);
@@ -131,11 +133,10 @@ void TextureRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)
     const bool autoResolve = !params_.flags_.Test(RenderBufferFlag::NoMultiSampledAutoResolve);
     const bool isCubemap = params_.flags_.Test(RenderBufferFlag::CubeMap);
     const bool isFiltered = params_.flags_.Test(RenderBufferFlag::BilinearFiltering);
-    const bool isSRGB = params_.flags_.Test(RenderBufferFlag::sRGB);
 
     currentTexture_ = renderer_->GetScreenBuffer(currentSize_.x_, currentSize_.y_,
         params_.textureFormat_, params_.multiSampleLevel_, autoResolve,
-        isCubemap, isFiltered, isSRGB, persistenceKey_);
+        isCubemap, isFiltered, false, persistenceKey_);
     bufferIsReady_ = true;
 }
 
@@ -147,24 +148,20 @@ void TextureRenderBuffer::OnRenderEnd(const CommonFrameInfo& frameInfo)
 
 Texture* TextureRenderBuffer::GetTexture() const
 {
-    return CheckIfBufferIsReady() ? currentTexture_ : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return currentTexture_;
 }
 
-RenderSurface* TextureRenderBuffer::GetRenderSurface(CubeMapFace face) const
+RenderTargetView TextureRenderBuffer::GetView(unsigned slice) const
 {
-    return CheckIfBufferIsReady() ? GetRenderSurfaceFromTexture(currentTexture_, face) : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return RenderTargetView::TextureSlice(currentTexture_, slice);
 }
 
 IntRect TextureRenderBuffer::GetViewportRect() const
 {
-    return CheckIfBufferIsReady() ? IntRect{ IntVector2::ZERO, currentSize_ } : IntRect::ZERO;
-}
-
-TextureFormat TextureRenderBuffer::GetFormat() const
-{
-    // TODO(diligent): Get rid of srgb flag
-    const bool isSRGB = params_.flags_.Test(RenderBufferFlag::sRGB);
-    return static_cast<TextureFormat>(isSRGB ? Texture::ConvertSRGB(params_.textureFormat_) : params_.textureFormat_);
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return {IntVector2::ZERO, currentSize_};
 }
 
 ViewportColorRenderBuffer::ViewportColorRenderBuffer(RenderPipelineInterface* renderPipeline)
@@ -174,18 +171,14 @@ ViewportColorRenderBuffer::ViewportColorRenderBuffer(RenderPipelineInterface* re
 
 Texture* ViewportColorRenderBuffer::GetTexture() const
 {
-    return CheckIfBufferIsReady() ? renderTarget_->GetParentTexture() : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return renderTarget_ ? renderTarget_->GetParentTexture() : nullptr;
 }
 
-RenderSurface* ViewportColorRenderBuffer::GetRenderSurface(CubeMapFace face) const
+RenderTargetView ViewportColorRenderBuffer::GetView(unsigned slice) const
 {
-    return CheckIfBufferIsReady() ? renderTarget_ : nullptr;
-}
-
-TextureFormat ViewportColorRenderBuffer::GetFormat() const
-{
-    auto graphics = GetSubsystem<Graphics>();
-    return graphics->GetSwapChainOutputDesc().renderTargetFormats_[0];
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return renderTarget_ ? renderTarget_->GetView() : RenderTargetView::SwapChainColor(renderDevice_);
 }
 
 void ViewportColorRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)
@@ -207,18 +200,14 @@ ViewportDepthStencilRenderBuffer::ViewportDepthStencilRenderBuffer(RenderPipelin
 
 Texture* ViewportDepthStencilRenderBuffer::GetTexture() const
 {
-    return CheckIfBufferIsReady() && depthStencil_ ? depthStencil_->GetParentTexture() : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return depthStencil_ ? depthStencil_->GetParentTexture() : nullptr;
 }
 
-RenderSurface* ViewportDepthStencilRenderBuffer::GetRenderSurface(CubeMapFace face) const
+RenderTargetView ViewportDepthStencilRenderBuffer::GetView(unsigned slice) const
 {
-    return CheckIfBufferIsReady() ? depthStencil_ : nullptr;
-}
-
-TextureFormat ViewportDepthStencilRenderBuffer::GetFormat() const
-{
-    auto graphics = GetSubsystem<Graphics>();
-    return graphics->GetSwapChainOutputDesc().depthStencilFormat_;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return depthStencil_ ? depthStencil_->GetView() : RenderTargetView::SwapChainDepthStencil(renderDevice_);
 }
 
 void ViewportDepthStencilRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)

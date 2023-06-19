@@ -381,15 +381,6 @@ enum MaterialQuality : unsigned
     QUALITY_MAX = 15,
 };
 
-enum ClearTarget : unsigned
-{
-    CLEAR_NONE = 0x0,
-    CLEAR_COLOR = 0x1,
-    CLEAR_DEPTH = 0x2,
-    CLEAR_STENCIL = 0x4,
-};
-URHO3D_FLAGSET(ClearTarget, ClearTargetFlags);
-
 // Legacy vertex element bitmasks.
 enum VertexMask : unsigned
 {

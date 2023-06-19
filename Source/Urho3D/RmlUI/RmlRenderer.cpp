@@ -34,6 +34,9 @@
 #include "../IO/Log.h"
 #include "../Math/Matrix4.h"
 #include "../Resource/ResourceCache.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include "../DebugNew.h"
 
@@ -100,6 +103,9 @@ void RmlRenderer::BeginRendering()
 {
     auto graphics = GetSubsystem<Graphics>();
 
+    RenderDevice* renderDevice = graphics->GetRenderDevice();
+    RenderContext* renderContext = graphics->GetRenderContext();
+
     drawQueue_ = GetSubsystem<Renderer>()->GetDefaultDrawQueue();
     vertexBuffer_->Discard();
     indexBuffer_->Discard();
@@ -113,21 +119,23 @@ void RmlRenderer::BeginRendering()
     batchStateCreateContext_.vertexBuffer_ = vertexBuffer;
     batchStateCreateContext_.indexBuffer_ = indexBuffer;
 
-    renderSurface_ = graphics->GetRenderTarget(0);
-    isRenderSurfaceSRGB_ = RenderSurface::GetSRGB(graphics, renderSurface_);
+    const RenderBackend backend = renderDevice->GetBackend();
+    const PipelineStateOutputDesc& outputDesc = renderContext->GetCurrentRenderTargetsDesc();
+    const bool isSwapChain = renderContext->IsSwapChainRenderTarget();
+    isRenderSurfaceSRGB_ = IsTextureFormatSRGB(outputDesc.renderTargetFormats_[0]);
     viewportSize_ = graphics->GetViewport().Size();
+
+    // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the
+    // same way as a render texture produced on Direct3D.
+    flipRect_ = !isSwapChain && backend == RenderBackend::OpenGL;
 
     const Vector2 invScreenSize = Vector2::ONE / viewportSize_.ToVector2();
     Vector2 scale(2.0f * invScreenSize.x_, -2.0f * invScreenSize.y_);
     Vector2 offset(-1.0f, 1.0f);
-    if (renderSurface_)
+    if (flipRect_)
     {
-#ifdef URHO3D_OPENGL
-        // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the
-        // same way as a render texture produced on Direct3D.
         offset.y_ = -offset.y_;
         scale.y_ = -scale.y_;
-#endif
     }
 
     const float farClip_ = 1000.0f;
@@ -278,16 +286,13 @@ void RmlRenderer::SetScissorRegion(int x, int y, int width, int height)
     scissor_.bottom_ = y + height;
     scissor_.right_ = x + width;
 
-#ifdef URHO3D_OPENGL
-    // Flip scissor vertically if using OpenGL texture rendering
-    if (renderSurface_)
+    if (flipRect_)
     {
         int top = scissor_.top_;
         int bottom = scissor_.bottom_;
         scissor_.top_ = viewportSize_.y_ - bottom;
         scissor_.bottom_ = viewportSize_.y_ - top;
     }
-#endif
 
     // TODO: Support transformed scissors by doing scissor test on CPU
 }

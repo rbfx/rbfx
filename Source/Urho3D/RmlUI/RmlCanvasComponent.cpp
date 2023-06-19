@@ -147,7 +147,7 @@ void RmlCanvasComponent::ClearTexture()
     {
         clear.SetSize(w, h, 4);
         clear.Clear(Color::TRANSPARENT_BLACK);
-        texture_->SetData(&clear);
+        texture_->SetData(0, 0, 0, w, h, clear.GetData());
     }
 }
 

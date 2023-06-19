@@ -27,6 +27,7 @@
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderAPI/RenderTargetView.h"
 
 #include <EASTL/optional.h>
 
@@ -50,12 +51,10 @@ public:
     /// Return readable texture. May return null if not supported.
     virtual Texture* GetTexture() const = 0;
     /// Return render surface. Face could be specified for cubemap texture.
-    virtual RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const = 0;
+    virtual RenderTargetView GetView(unsigned slice = 0) const = 0;
     /// Return effective viewport rectangle.
     /// Always equal to whole texture for TextureRenderBuffer, not so for viewport buffers.
     virtual IntRect GetViewportRect() const = 0;
-    /// Return texture format.
-    virtual TextureFormat GetFormat() const = 0;
 
     /// Return readable Texture2D or null if not supported or use different texture type.
     Texture2D* GetTexture2D() const;
@@ -72,6 +71,7 @@ protected:
     /// @}
 
     Renderer* renderer_{};
+    RenderDevice* renderDevice_{};
     bool bufferIsReady_{};
 };
 
@@ -88,9 +88,8 @@ public:
     /// RenderBuffer implementation
     /// @{
     Texture* GetTexture() const override;
-    RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
+    RenderTargetView GetView(unsigned slice) const override;
     IntRect GetViewportRect() const override;
-    TextureFormat GetFormat() const override;
     /// @}
 
 private:
@@ -125,9 +124,8 @@ public:
     /// RenderBuffer implementation
     /// @{
     Texture* GetTexture() const override;
-    RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
+    RenderTargetView GetView(unsigned slice) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
-    TextureFormat GetFormat() const override;
     /// @}
 
 private:
@@ -151,9 +149,8 @@ public:
     /// RenderBuffer implementation
     /// @{
     Texture* GetTexture() const override;
-    RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
+    RenderTargetView GetView(unsigned slice) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
-    TextureFormat GetFormat() const override;
     /// @}
 
 private:

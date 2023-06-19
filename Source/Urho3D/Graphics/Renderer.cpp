@@ -844,13 +844,19 @@ void Renderer::Render()
             break;
         }
     }
+    for (unsigned i = 0; i < renderPipelineViews_.size(); ++i)
+    {
+        if (!renderPipelineViews_[i])
+            continue;
+
+        if (!renderPipelineViews_[i]->GetFrameInfo().renderTarget_)
+        {
+            hasBackbufferViews = true;
+            break;
+        }
+    }
     if (!hasBackbufferViews)
     {
-        graphics_->SetBlendMode(BLEND_REPLACE);
-        graphics_->SetColorWrite(true);
-        graphics_->SetDepthWrite(true);
-        graphics_->SetScissorTest(false);
-        graphics_->SetStencilTest(false);
         graphics_->ResetRenderTargets();
         graphics_->Clear(CLEAR_COLOR | CLEAR_DEPTH | CLEAR_STENCIL, defaultZone_->GetFogColor());
     }

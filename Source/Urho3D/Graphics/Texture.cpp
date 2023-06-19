@@ -101,27 +101,6 @@ bool IsCompressedEffective(const Image& image, RenderDevice* renderDevice)
     return !renderDevice || renderDevice->IsTextureFormatSupported(GetImageFormat(image));
 }
 
-using TextureFormatMap = ea::unordered_map<TextureFormat, TextureFormat>;
-
-ea::pair<TextureFormatMap, TextureFormatMap> GetTextureFormatSRGB()
-{
-    ea::unordered_map<TextureFormat, TextureFormat> toSrgb = {
-        {TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB },
-        {TextureFormat::TEX_FORMAT_BGRA8_UNORM, TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB },
-        {TextureFormat::TEX_FORMAT_BGRX8_UNORM, TextureFormat::TEX_FORMAT_BGRX8_UNORM_SRGB },
-        {TextureFormat::TEX_FORMAT_BC1_UNORM, TextureFormat::TEX_FORMAT_BC1_UNORM_SRGB },
-        {TextureFormat::TEX_FORMAT_BC2_UNORM, TextureFormat::TEX_FORMAT_BC2_UNORM_SRGB },
-        {TextureFormat::TEX_FORMAT_BC3_UNORM, TextureFormat::TEX_FORMAT_BC3_UNORM_SRGB },
-        {TextureFormat::TEX_FORMAT_BC7_UNORM, TextureFormat::TEX_FORMAT_BC7_UNORM_SRGB }
-    };
-    ea::unordered_map<TextureFormat, TextureFormat> fromSrgb;
-    for (const auto& [linear, srgb] : toSrgb)
-        fromSrgb[srgb] = linear;
-    return {toSrgb, fromSrgb};
-}
-
-const auto [linearToSrgb, srgbToLinear] = GetTextureFormatSRGB();
-
 } // namespace
 
 static const char* addressModeNames[] =
@@ -199,7 +178,7 @@ void Texture::SetLinear(bool linear)
 
 void Texture::SetSRGB(bool enable)
 {
-    sRGB_ = enable;
+    requestedSRGB_ = enable;
 }
 
 void Texture::SetBackupTexture(Texture* texture)
@@ -344,7 +323,7 @@ bool Texture::CreateGPU()
         {
             renderSurfaces_.clear();
             for (unsigned i = 0; i < numRenderSurfaces; ++i)
-                renderSurfaces_.push_back(MakeShared<RenderSurface>(this));
+                renderSurfaces_.push_back(MakeShared<RenderSurface>(this, i));
         }
 
         for (unsigned i = 0; i < numRenderSurfaces; ++i)
@@ -418,11 +397,9 @@ unsigned Texture::GetRowDataSize(int width) const
     return formatInfo.GetElementSize() * ((width + formatInfo.BlockWidth - 1) / formatInfo.BlockWidth);
 }
 
-TextureFormat Texture::ConvertSRGB(TextureFormat format, bool sRGB)
+bool Texture::GetSRGB() const
 {
-    const auto& map = sRGB ? linearToSrgb : srgbToLinear;
-    const auto iter = map.find(format);
-    return iter != map.end() ? iter->second : format;
+    return IsTextureFormatSRGB(GetParams().format_);
 }
 
 bool Texture::CreateForImage(const RawTextureParams& baseParams, Image* image)
@@ -441,8 +418,8 @@ bool Texture::CreateForImage(const RawTextureParams& baseParams, Image* image)
     params.size_ = GetMipLevelSize(image->GetSize(), mostDetailedLevel);
     params.numLevels_ = numLevels;
     params.format_ = ToHardwareFormat(GetImageFormat(*image), renderDevice);
-    if (sRGB_)
-        params.format_ = ConvertSRGB(params.format_);
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
     return Create(params);
 }
 
@@ -451,7 +428,7 @@ bool Texture::UpdateFromImage(unsigned arraySlice, Image* image)
     const TextureFormat internalFormat = GetFormat();
     const TextureFormat imageFormat = GetImageFormat(*image);
 
-    if (!image->IsCompressed() && (ConvertSRGB(internalFormat, false) == imageFormat))
+    if (!image->IsCompressed() && (SetTextureFormatSRGB(internalFormat, false) == imageFormat))
     {
         // If not compressed and not converted, upload image data as is
         const Image* currentLevel = image;
@@ -469,7 +446,7 @@ bool Texture::UpdateFromImage(unsigned arraySlice, Image* image)
             currentLevel = currentLevelHolder;
         }
     }
-    else if (ConvertSRGB(internalFormat, false) == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
+    else if (SetTextureFormatSRGB(internalFormat, false) == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
     {
         // RGBA8 is default format, use it if hardware format is not available.
         URHO3D_LOGWARNING("Image '{}' is converted to RGBA8 format on upload to GPU", GetName());
@@ -507,7 +484,7 @@ bool Texture::ReadToImage(unsigned arraySlice, unsigned level, Image* image)
         TextureFormat::TEX_FORMAT_BGRX8_UNORM,
     };
 
-    const auto imageFormat = ConvertSRGB(GetFormat(), false);
+    const auto imageFormat = SetTextureFormatSRGB(GetFormat(), false);
     if (ea::find(ea::begin(supportedFormats), ea::end(supportedFormats), imageFormat) == ea::end(supportedFormats))
     {
         URHO3D_LOGWARNING("Unsupported texture format, can not convert to Image");

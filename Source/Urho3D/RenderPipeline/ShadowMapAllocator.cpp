@@ -26,6 +26,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
 
 #include "../DebugNew.h"
 
@@ -50,6 +51,7 @@ ShadowMapAllocator::ShadowMapAllocator(Context* context)
     : Object(context)
     , graphics_(context_->GetSubsystem<Graphics>())
     , renderer_(context_->GetSubsystem<Renderer>())
+    , renderContext_(graphics_->GetRenderContext())
 {
     CacheSettings();
 }
@@ -127,42 +129,35 @@ bool ShadowMapAllocator::BeginShadowMapRendering(const ShadowMapRegion& shadowMa
     if (!shadowMap || shadowMap.pageIndex_ >= pages_.size())
         return false;
 
-    graphics_->SetTexture(TU_SHADOWMAP, nullptr);
-
     Texture2D* shadowMapTexture = shadowMap.texture_;
     AtlasPage& poolElement = pages_[shadowMap.pageIndex_];
 
     if (shadowMapTexture->IsDepthStencil())
     {
         // The shadow map is a depth stencil texture
-        graphics_->SetDepthStencil(shadowMapTexture);
-        graphics_->SetRenderTarget(0, shadowMapTexture->GetRenderSurface()->GetLinkedRenderTarget());
+        renderContext_->SetRenderTargets(RenderTargetView::Texture(shadowMapTexture), {});
     }
     else
     {
         // The shadow map is a color rendertarget
-        graphics_->SetDepthStencil(renderer_->GetDepthStencil(shadowMapTexture->GetWidth(), shadowMapTexture->GetHeight(),
-            shadowMapTexture->GetMultiSample(), shadowMapTexture->GetAutoResolve()));
-        graphics_->SetRenderTarget(0, shadowMapTexture);
-    }
+        RenderSurface* depthStencil = renderer_->GetDepthStencil(
+            shadowMapTexture->GetWidth(), shadowMapTexture->GetHeight(), shadowMapTexture->GetMultiSample(), false);
 
-    // Disable other render targets
-    for (unsigned i = 1; i < MAX_RENDERTARGETS; ++i)
-        graphics_->SetRenderTarget(i, (RenderSurface*) nullptr);
+        const RenderTargetView renderTargets[] = {RenderTargetView::Texture(shadowMapTexture)};
+        renderContext_->SetRenderTargets(depthStencil->GetView(), renderTargets);
+    }
 
     // Clear whole texture if needed
     if (poolElement.clearBeforeRendering_)
     {
         poolElement.clearBeforeRendering_ = false;
 
-        graphics_->SetViewport(shadowMapTexture->GetRect());
-        ClearTargetFlags clearFlags = CLEAR_DEPTH;
-        if (settings_.enableVarianceShadowMaps_ || dummyColorTexture_)
-            clearFlags |= CLEAR_COLOR;
-        graphics_->Clear(clearFlags, Color::WHITE);
+        renderContext_->ClearDepthStencil(CLEAR_DEPTH);
+        if (settings_.enableVarianceShadowMaps_)
+            renderContext_->ClearRenderTarget(0, Color::BLACK);
     }
 
-    graphics_->SetViewport(shadowMap.rect_);
+    renderContext_->SetViewport(shadowMap.rect_);
 
     return true;
 }

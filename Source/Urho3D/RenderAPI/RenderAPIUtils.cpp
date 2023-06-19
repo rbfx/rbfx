@@ -28,7 +28,25 @@ const ea::array<ea::string, MAX_VERTEX_ELEMENT_SEMANTICS> shaderInputsNames = {
     "", // SEM_OBJECTINDEX
 };
 
-}
+const auto textureFormatMapSRGB = []
+{
+    ea::unordered_map<TextureFormat, TextureFormat> toSrgb = {
+        {TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_BGRA8_UNORM, TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_BGRX8_UNORM, TextureFormat::TEX_FORMAT_BGRX8_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_BC1_UNORM, TextureFormat::TEX_FORMAT_BC1_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_BC2_UNORM, TextureFormat::TEX_FORMAT_BC2_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_BC3_UNORM, TextureFormat::TEX_FORMAT_BC3_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_BC7_UNORM, TextureFormat::TEX_FORMAT_BC7_UNORM_SRGB},
+    };
+
+    ea::unordered_map<TextureFormat, TextureFormat> fromSrgb;
+    for (const auto& [linear, srgb] : toSrgb)
+        fromSrgb[srgb] = linear;
+    return ea::make_pair(toSrgb, fromSrgb);
+}();
+
+} // namespace
 
 bool IsOpenGLESBackend(RenderBackend backend)
 {
@@ -127,6 +145,18 @@ IntVector3 GetMipLevelSize(const IntVector3& size, unsigned level)
     dim.y_ >>= level;
     dim.z_ >>= level;
     return VectorMax(dim, IntVector3::ONE);
+}
+
+bool IsTextureFormatSRGB(TextureFormat format)
+{
+    return textureFormatMapSRGB.second.contains(format);
+}
+
+TextureFormat SetTextureFormatSRGB(TextureFormat format, bool sRGB)
+{
+    const auto& map = sRGB ? textureFormatMapSRGB.first : textureFormatMapSRGB.second;
+    const auto iter = map.find(format);
+    return iter != map.end() ? iter->second : format;
 }
 
 } // namespace Urho3D
