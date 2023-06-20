@@ -131,6 +131,21 @@ struct EnumStringCaster
     }
 };
 
+template <> struct EnumStringCaster<unsigned>
+{
+    const char* const* enumConstants_{};
+
+    ea::string ToArchive(Archive& archive, const char* name, const unsigned& value) const
+    {
+        return enumConstants_[value];
+    }
+
+    unsigned FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        return GetStringListIndex(value.c_str(), enumConstants_, 0);
+    }
+};
+
 }
 
 /// Check whether the object can be serialized from/to Archive block.
