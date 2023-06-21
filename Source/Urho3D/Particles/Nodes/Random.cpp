@@ -39,12 +39,12 @@ namespace
 template <typename T>
 struct Generate
 {
-    void operator()(UpdateContext& context, const ParticleGraphPin& pin0, const Variant& min, const Variant& max)
+    void operator()(const UpdateContext& context, const ParticleGraphPin& pin0, const Variant& min, const Variant& max)
     {
         auto span = context.GetSpan<T>(pin0.GetMemoryReference());
-        for (T& val : span)
+        for (unsigned i = 0; i < context.indices_.size(); ++i)
         {
-            val = min.Lerp(max, Urho3D::Random()).Get<T>();
+            span[i] = min.Lerp(max, Urho3D::Random()).Get<T>();
         }
     }
 };

@@ -107,6 +107,30 @@ ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector2& offset, ea::
     return Then(action);
 }
 
+/// Build MoveBy action.
+ActionBuilder& ActionBuilder::MoveByQuadratic(
+    float duration, const Vector3& controlOffset, const Vector3& targetOffset, ea::string_view attributeName)
+{
+    const auto action = MakeShared<Actions::MoveByQuadratic>(context_);
+    action->SetAttributeName(attributeName);
+    action->SetDuration(duration);
+    action->SetControlDelta(controlOffset);
+    action->SetPositionDelta(targetOffset);
+    return Then(action);
+}
+
+ActionBuilder& ActionBuilder::MoveByQuadratic(
+    float duration, const Vector2& controlOffset, const Vector2& targetOffset, ea::string_view attributeName)
+{
+    const auto action = MakeShared<Actions::MoveByQuadratic>(context_);
+    action->SetAttributeName(attributeName);
+    action->SetDuration(duration);
+    action->SetControlDelta(controlOffset.ToVector3());
+    action->SetPositionDelta(targetOffset.ToVector3());
+    return Then(action);
+}
+
+
 ActionBuilder& ActionBuilder::JumpBy(const Vector3& offset, ea::string_view attributeName)
 {
     const auto action = MakeShared<Actions::JumpBy>(context_);

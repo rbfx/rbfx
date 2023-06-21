@@ -65,7 +65,7 @@ void MountedDirectory::StartWatching()
     fileWatcher_->StartWatching(directory_, true);
 
     // Subscribe BeginFrame for handling directory watcher
-    SubscribeToEvent(E_BEGINFRAME, [this](StringHash eventType, VariantMap& eventData) { ProcessUpdates(); });
+    SubscribeToEvent(E_BEGINFRAME, &MountedDirectory::ProcessUpdates);
 }
 
 void MountedDirectory::StopWatching()

@@ -120,7 +120,7 @@ public:
     /// Return texture attribute.
     ResourceRef GetTextureAttr() const;
     /// Update and return rendering transform, also used to transform child sprites.
-    const Matrix3x4& GetTransform() const;
+    const Matrix3x4& GetTransformMatrix() const;
 
 protected:
     /// Floating point position.

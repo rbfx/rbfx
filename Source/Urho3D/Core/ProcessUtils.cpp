@@ -37,14 +37,6 @@
 #include <CoreFoundation/CFUUID.h>
 #endif
 
-#if defined(IOS)
-#include <mach/mach_host.h>
-#elif defined(TVOS)
-extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
-#elif !defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(UWP)
-#include <LibCpuId/libcpuid.h>
-#endif
-
 #if defined(_WIN32)
 #include <windows.h>
 #include <rpc.h>
@@ -74,10 +66,6 @@ extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 #endif
 #ifndef _WIN32
 #include <unistd.h>
-#endif
-
-#if defined(__EMSCRIPTEN__) && defined(__EMSCRIPTEN_PTHREADS__)
-#include <emscripten/threading.h>
 #endif
 
 #if defined(__i386__)
@@ -126,67 +114,6 @@ static bool consoleOpened = false;
 static ea::string currentLine;
 static ea::vector<ea::string> arguments;
 static ea::string miniDumpDir;
-
-#if defined(IOS)
-static void GetCPUData(host_basic_info_data_t* data)
-{
-    mach_msg_type_number_t infoCount;
-    infoCount = HOST_BASIC_INFO_COUNT;
-    host_info(mach_host_self(), HOST_BASIC_INFO, (host_info_t)data, &infoCount);
-}
-#elif defined(__linux__)
-struct CpuCoreCount
-{
-    unsigned numPhysicalCores_;
-    unsigned numLogicalCores_;
-};
-
-// This function is used by all the target triplets with Linux as the OS, such as Android, RPI, desktop Linux, etc
-static void GetCPUData(struct CpuCoreCount* data)
-{
-    // Sanity check
-    assert(data);
-    // At least return 1 core
-    data->numPhysicalCores_ = data->numLogicalCores_ = 1;
-
-    FILE* fp;
-    int res;
-    unsigned i, j;
-
-    fp = fopen("/sys/devices/system/cpu/present", "r");
-    if (fp)
-    {
-        res = fscanf(fp, "%d-%d", &i, &j);                          // NOLINT(cert-err34-c)
-        fclose(fp);
-
-        if (res == 2 && i == 0)
-        {
-            data->numPhysicalCores_ = data->numLogicalCores_ = j + 1;
-
-            fp = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings_list", "r");
-            if (fp)
-            {
-                res = fscanf(fp, "%d,%d,%d,%d", &i, &j, &i, &j);    // NOLINT(cert-err34-c)
-                fclose(fp);
-
-                // Having sibling thread(s) indicates the CPU is using HT/SMT technology
-                if (res > 1)
-                    data->numPhysicalCores_ /= res;
-            }
-        }
-    }
-}
-
-#elif !defined(__EMSCRIPTEN__) && !defined(TVOS) && !defined(UWP)
-static void GetCPUData(struct cpu_id_t* data)
-{
-    if (cpu_identify(nullptr, data) < 0)
-    {
-        data->num_logical_cpus = 1;
-        data->num_cores = 1;
-    }
-}
-#endif
 
 void InitFPU()
 {
@@ -485,76 +412,9 @@ ea::string GetPlatformName()
     }
 }
 
-unsigned GetNumPhysicalCPUs()
-{
-#if defined(UWP)
-    // This is as good as it gets on UWP
-    return std::thread::hardware_concurrency();
-#elif defined(IOS)
-    host_basic_info_data_t data;
-    GetCPUData(&data);
-#if TARGET_OS_SIMULATOR
-    // Hardcoded to dual-core on simulator mode even if the host has more
-    return Min(2, data.physical_cpu);
-#else
-    return data.physical_cpu;
-#endif
-#elif defined(TVOS)
-#if TARGET_OS_SIMULATOR
-    return Min(2, SDL_TVOS_GetActiveProcessorCount());
-#else
-    return SDL_TVOS_GetActiveProcessorCount();
-#endif
-#elif defined(__linux__)
-    struct CpuCoreCount data{};
-    GetCPUData(&data);
-    return data.numPhysicalCores_;
-#elif defined(__EMSCRIPTEN__)
-#ifdef __EMSCRIPTEN_PTHREADS__
-    return emscripten_num_logical_cores();
-#else
-    return 1; // Targeting a single-threaded Emscripten build.
-#endif
-#else
-    struct cpu_id_t data;
-    GetCPUData(&data);
-    return (unsigned)data.num_cores;
-#endif
-}
-
 unsigned GetNumLogicalCPUs()
 {
-#if defined(UWP)
-    return std::thread::hardware_concurrency();
-#elif defined(IOS)
-    host_basic_info_data_t data;
-    GetCPUData(&data);
-#if TARGET_OS_SIMULATOR
-    return Min(2, data.logical_cpu);
-#else
-    return data.logical_cpu;
-#endif
-#elif defined(TVOS)
-#if TARGET_OS_SIMULATOR
-    return Min(2, SDL_TVOS_GetActiveProcessorCount());
-#else
-    return SDL_TVOS_GetActiveProcessorCount();
-#endif
-#elif defined(__linux__)
-    struct CpuCoreCount data{};
-    GetCPUData(&data);
-    return data.numLogicalCores_;
-#elif defined(__EMSCRIPTEN__)
-#ifdef __EMSCRIPTEN_PTHREADS__
-    return emscripten_num_logical_cores();
-#else
-    return 1; // Targeting a single-threaded Emscripten build.
-#endif
-#else
-    struct cpu_id_t data;
-    GetCPUData(&data);
-    return (unsigned)data.num_logical_cpus;
-#endif
+    return ea::max(1u, std::thread::hardware_concurrency());
 }
 
 void SetMiniDumpDir(const ea::string& pathName)

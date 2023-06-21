@@ -37,25 +37,43 @@ namespace Urho3D
 namespace
 {
 
-ea::unordered_map<SerializableHookKey, SerializableHookFunction> hooks;
+ea::unordered_map<AttributeHookKey, AttributeHookFunction> attributeHooks;
+ea::unordered_map<ObjectHookKey, ObjectHookFunction> objectHooks;
 
 }
 
-void SerializableInspectorWidget::RegisterHook(const SerializableHookKey& key, const SerializableHookFunction& function)
+void SerializableInspectorWidget::RegisterAttributeHook(const AttributeHookKey& key, const AttributeHookFunction& function)
 {
-    hooks[key] = function;
+    attributeHooks[key] = function;
 }
 
-void SerializableInspectorWidget::UnregisterHook(const SerializableHookKey& key)
+void SerializableInspectorWidget::UnregisterAttributeHook(const AttributeHookKey& key)
 {
-    hooks.erase(key);
+    attributeHooks.erase(key);
 }
 
-const SerializableHookFunction& SerializableInspectorWidget::GetHook(const SerializableHookKey& key)
+const AttributeHookFunction& SerializableInspectorWidget::GetAttributeHook(const AttributeHookKey& key)
 {
-    static const SerializableHookFunction empty{};
-    const auto iter = hooks.find(key);
-    return iter != hooks.end() ? iter->second : empty;
+    static const AttributeHookFunction empty{};
+    const auto iter = attributeHooks.find(key);
+    return iter != attributeHooks.end() ? iter->second : empty;
+}
+
+void SerializableInspectorWidget::RegisterObjectHook(const ObjectHookKey& key, const ObjectHookFunction& function)
+{
+    objectHooks[key] = function;
+}
+
+void SerializableInspectorWidget::UnregisterObjectHook(const ObjectHookKey& key)
+{
+    objectHooks.erase(key);
+}
+
+const ObjectHookFunction& SerializableInspectorWidget::GetObjectHook(const ObjectHookKey& key)
+{
+    static const ObjectHookFunction empty{};
+    const auto iter = objectHooks.find(key);
+    return iter != objectHooks.end() ? iter->second : empty;
 }
 
 SerializableInspectorWidget::SerializableInspectorWidget(Context* context, const WeakSerializableVector& objects)
@@ -127,6 +145,25 @@ void SerializableInspectorWidget::RenderContent()
     if (objects_.empty())
         return;
 
+    const ea::string& objectType = objects_[0]->GetTypeName();
+    const ObjectHookFunction& prependHook = GetObjectHook(ObjectHookKey{objectType, ObjectHookType::Prepend});
+    const ObjectHookFunction& appendHook = GetObjectHook(ObjectHookKey{objectType, ObjectHookType::Append});
+    const ObjectHookFunction& replaceHook = GetObjectHook(ObjectHookKey{objectType, ObjectHookType::Replace});
+
+    if (prependHook)
+        prependHook(objects_);
+
+    if (replaceHook)
+        replaceHook(objects_);
+    else
+        RenderObjects();
+
+    if (appendHook)
+        appendHook(objects_);
+}
+
+void SerializableInspectorWidget::RenderObjects()
+{
     const auto attributes = objects_[0]->GetAttributes();
     if (!attributes)
         return;
@@ -176,7 +213,7 @@ void SerializableInspectorWidget::RenderContent()
 
 void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 {
-    const SerializableHookFunction& hook = GetHook(SerializableHookKey{objects_[0]->GetTypeName(), info.name_});
+    const AttributeHookFunction& hook = GetAttributeHook(AttributeHookKey{objects_[0]->GetTypeName(), info.name_});
 
     if (!hook && info.GetMetadata(AttributeMetadata::IsAction).GetBool())
     {
@@ -194,7 +231,7 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 
     if (hook)
     {
-        SerializableHookContext ctx;
+        AttributeHookContext ctx;
         ctx.objects_ = &objects_;
         ctx.info_ = &info;
         ctx.isUndefined_ = isUndefined;

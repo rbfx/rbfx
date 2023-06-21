@@ -67,7 +67,10 @@ protected:
     public:
         void Update(UpdateContext& context) override {}
 
-        template <typename... Spans> void operator()(UpdateContext& context, unsigned numParticles, Spans... spans) {}
+        template <typename... Spans>
+        void operator()(const UpdateContext& context, unsigned numParticles, Spans... spans)
+        {
+        }
     };
 
 public:

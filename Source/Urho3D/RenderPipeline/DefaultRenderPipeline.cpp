@@ -202,11 +202,18 @@ void DefaultRenderPipelineView::ApplySettings()
         break;
     }
 
-    if (settings_.greyScale_)
+    const Vector4 hueSaturationValueContrast{
+        settings_.hueShift_,
+        settings_.saturation_,
+        settings_.brightness_,
+        settings_.contrast_,
+    };
+    if (!hueSaturationValueContrast.Equals(Vector4::ONE))
     {
         auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
             PostProcessPassFlag::NeedColorOutputReadAndWrite,
-            BLEND_REPLACE, "v2/P_GreyScale", "");
+            BLEND_REPLACE, "v2/P_HSV", "");
+        pass->AddShaderParameter("HSVParams", hueSaturationValueContrast);
         postProcessPasses_.push_back(pass);
     }
 
@@ -294,7 +301,9 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
         OnPipelineStatesInvalidated(this);
     }
 
-    outlineScenePass_->SetOutlineGroups(sceneProcessor_->GetFrameInfo().scene_);
+    const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
+    const bool drawDebugGeometry = fullFrameInfo.camera_->GetDrawDebugGeometry();
+    outlineScenePass_->SetOutlineGroups(fullFrameInfo.scene_, drawDebugGeometry);
 
     sceneProcessor_->Update();
 
@@ -307,6 +316,8 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
 void DefaultRenderPipelineView::Render()
 {
     URHO3D_PROFILE("ExecuteRenderPipeline");
+
+    const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
 
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
     RenderBufferManagerFrameSettings frameSettings;
@@ -326,8 +337,8 @@ void DefaultRenderPipelineView::Render()
     sceneProcessor_->PrepareInstancingBuffer();
     sceneProcessor_->RenderShadowMaps();
 
-    Camera* camera = sceneProcessor_->GetFrameInfo().camera_;
-    const Color fogColorInGammaSpace = sceneProcessor_->GetFrameInfo().camera_->GetEffectiveFogColor();
+    Camera* camera = fullFrameInfo.camera_;
+    const Color fogColorInGammaSpace = camera->GetEffectiveFogColor();
     const Color effectiveFogColor = settings_.sceneProcessor_.linearSpaceLighting_
         ? fogColorInGammaSpace.GammaToLinear()
         : fogColorInGammaSpace;
@@ -448,11 +459,12 @@ void DefaultRenderPipelineView::Render()
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessPass->Execute(camera);
 
-    auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
-    if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())
+    const bool drawDebugGeometry = settings_.drawDebugGeometry_ && camera->GetDrawDebugGeometry();
+    auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();
+    if (drawDebugGeometry && debug && debug->IsEnabledEffective() && debug->HasContent())
     {
         renderBufferManager_->SetOutputRenderTargets();
-        debug->SetView(sceneProcessor_->GetFrameInfo().camera_);
+        debug->SetView(camera);
         debug->Render();
     }
 

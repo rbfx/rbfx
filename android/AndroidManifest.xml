@@ -23,6 +23,7 @@
         android:icon="@drawable/icon"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:hardwareAccelerated="true"
+		android:largeHeap="true"
         android:allowBackup="false">
         <activity
             android:name="io.urho3d.UrhoActivity"

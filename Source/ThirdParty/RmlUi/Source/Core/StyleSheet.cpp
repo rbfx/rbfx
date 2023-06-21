@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -45,17 +45,14 @@ StyleSheet::StyleSheet()
 	specificity_offset = 0;
 }
 
-StyleSheet::~StyleSheet()
-{
-}
+StyleSheet::~StyleSheet() {}
 
-/// Combines this style sheet with another one, producing a new sheet
 UniquePtr<StyleSheet> StyleSheet::CombineStyleSheet(const StyleSheet& other_sheet) const
 {
 	RMLUI_ZoneScoped;
 
 	UniquePtr<StyleSheet> new_sheet = UniquePtr<StyleSheet>(new StyleSheet());
-	
+
 	new_sheet->root = root->DeepCopy();
 	new_sheet->specificity_offset = specificity_offset;
 	new_sheet->keyframes = keyframes;
@@ -88,14 +85,11 @@ void StyleSheet::MergeStyleSheet(const StyleSheet& other_sheet)
 		decorator_map[other_decorator.first] = other_decorator.second;
 	}
 
-	spritesheet_list.Reserve(
-		spritesheet_list.NumSpriteSheets() + other_sheet.spritesheet_list.NumSpriteSheets(),
-		spritesheet_list.NumSprites() + other_sheet.spritesheet_list.NumSprites()
-	);
+	spritesheet_list.Reserve(spritesheet_list.NumSpriteSheets() + other_sheet.spritesheet_list.NumSpriteSheets(),
+		spritesheet_list.NumSprites() + other_sheet.spritesheet_list.NumSprites());
 	spritesheet_list.Merge(other_sheet.spritesheet_list);
 }
 
-// Builds the node index for a combined style sheet.
 void StyleSheet::BuildNodeIndex()
 {
 	RMLUI_ZoneScoped;
@@ -103,8 +97,15 @@ void StyleSheet::BuildNodeIndex()
 	root->BuildIndex(styled_node_index);
 }
 
-// Returns the Keyframes of the given name, or null if it does not exist.
-const Keyframes * StyleSheet::GetKeyframes(const String & name) const
+const DecoratorSpecification* StyleSheet::GetDecoratorSpecification(const String& name) const
+{
+	auto it = decorator_map.find(name);
+	if (it != decorator_map.end())
+		return &(it->second);
+	return nullptr;
+}
+
+const Keyframes* StyleSheet::GetKeyframes(const String& name) const
 {
 	auto it = keyframes.find(name);
 	if (it != keyframes.end())
@@ -112,47 +113,71 @@ const Keyframes * StyleSheet::GetKeyframes(const String & name) const
 	return nullptr;
 }
 
-const Vector<SharedPtr<const Decorator>>& StyleSheet::InstanceDecorators(const DecoratorDeclarationList& declaration_list, const PropertySource* source) const
+const DecoratorPtrList& StyleSheet::InstanceDecorators(const DecoratorDeclarationList& declaration_list, const PropertySource* source) const
 {
+	RMLUI_ASSERT_NONRECURSIVE; // Since we may return a reference to the below static variable.
+	static DecoratorPtrList non_cached_decorator_list;
+
+	// Empty declaration values are used for interpolated values which we don't want to cache.
+	const bool enable_cache = !declaration_list.value.empty();
+
 	// Generate the cache key. Relative paths of textures may be affected by the source path, and ultimately
 	// which texture should be displayed. Thus, we need to include this path in the cache key.
 	String key;
-	key.reserve(declaration_list.value.size() + 1 + (source ? source->path.size() : 0));
-	key = declaration_list.value;
-	key += ';';
-	if (source)
-		key += source->path;
 
-	auto it_cache = decorator_cache.find(key);
-	if (it_cache != decorator_cache.end())
-		return it_cache->second;
+	if (enable_cache)
+	{
+		key.reserve(declaration_list.value.size() + 1 + (source ? source->path.size() : 0));
+		key = declaration_list.value;
+		key += ';';
+		if (source)
+			key += source->path;
 
-	Vector<SharedPtr<const Decorator>>& decorators = decorator_cache[key];
+		auto it_cache = decorator_cache.find(key);
+		if (it_cache != decorator_cache.end())
+			return it_cache->second;
+	}
+	else
+	{
+		non_cached_decorator_list.clear();
+	}
+
+	DecoratorPtrList& decorators = enable_cache ? decorator_cache[key] : non_cached_decorator_list;
+	decorators.reserve(declaration_list.list.size());
 
 	for (const DecoratorDeclaration& declaration : declaration_list.list)
 	{
+		SharedPtr<Decorator> decorator;
+
 		if (declaration.instancer)
 		{
 			RMLUI_ZoneScopedN("InstanceDecorator");
-			
-			if (SharedPtr<Decorator> decorator = declaration.instancer->InstanceDecorator(declaration.type, declaration.properties, DecoratorInstancerInterface(*this, source)))
-				decorators.push_back(std::move(decorator));
-			else
-				Log::Message(Log::LT_WARNING, "Decorator '%s' in '%s' could not be instanced, declared at %s:%d", declaration.type.c_str(), declaration_list.value.c_str(), source ? source->path.c_str() : "", source ? source->line_number : -1);
+			decorator =
+				declaration.instancer->InstanceDecorator(declaration.type, declaration.properties, DecoratorInstancerInterface(*this, source));
+
+			if (!decorator)
+				Log::Message(Log::LT_WARNING, "Decorator '%s' in '%s' could not be instanced, declared at %s:%d", declaration.type.c_str(),
+					declaration_list.value.c_str(), source ? source->path.c_str() : "", source ? source->line_number : -1);
 		}
 		else
 		{
 			// If we have no instancer, this means the type is the name of an @decorator rule.
-			SharedPtr<Decorator> decorator;
 			auto it_map = decorator_map.find(declaration.type);
 			if (it_map != decorator_map.end())
 				decorator = it_map->second.decorator;
 
-			if (decorator)
-				decorators.push_back(std::move(decorator));
-			else
-				Log::Message(Log::LT_WARNING, "Decorator name '%s' could not be found in any @decorator rule, declared at %s:%d", declaration.type.c_str(), source ? source->path.c_str() : "", source ? source->line_number : -1);
+			if (!decorator)
+				Log::Message(Log::LT_WARNING, "Decorator name '%s' could not be found in any @decorator rule, declared at %s:%d",
+					declaration.type.c_str(), source ? source->path.c_str() : "", source ? source->line_number : -1);
 		}
+
+		if (!decorator)
+		{
+			decorators.clear();
+			break;
+		}
+
+		decorators.push_back(std::move(decorator));
 	}
 
 	return decorators;
@@ -163,13 +188,12 @@ const Sprite* StyleSheet::GetSprite(const String& name) const
 	return spritesheet_list.GetSprite(name);
 }
 
-// Returns the compiled element definition for a given element hierarchy.
 SharedPtr<const ElementDefinition> StyleSheet::GetElementDefinition(const Element* element) const
 {
 	RMLUI_ASSERT_NONRECURSIVE;
 
 	// Using static to avoid allocations. Make sure we don't call this function recursively.
-	static Vector< const StyleSheetNode* > applicable_nodes;
+	static Vector<const StyleSheetNode*> applicable_nodes;
 	applicable_nodes.clear();
 
 	auto AddApplicableNodes = [element](const StyleSheetIndex::NodeIndex& node_index, const String& key) {
@@ -198,7 +222,7 @@ SharedPtr<const ElementDefinition> StyleSheet::GetElementDefinition(const Elemen
 	if (tag == "#text")
 		return nullptr;
 
-	// First, look up the indexed requirements. 
+	// First, look up the indexed requirements.
 	if (!id.empty())
 		AddApplicableNodes(styled_node_index.ids, id);
 

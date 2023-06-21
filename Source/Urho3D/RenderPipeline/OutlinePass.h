@@ -46,7 +46,7 @@ public:
         BatchStateCacheCallback* callback, const StringVector& outlinedPasses);
 
     /// Initialize outline groups from scene. Should be called every frame.
-    void SetOutlineGroups(Scene* scene);
+    void SetOutlineGroups(Scene* scene, bool drawDebugOutlines);
 
     /// Implement ScenePass
     /// @{
@@ -88,7 +88,7 @@ public:
 
     /// Implement PostProcessPass.
     /// @{
-    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
+    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::None; }
     void Execute(Camera* camera) override;
     /// @}
 

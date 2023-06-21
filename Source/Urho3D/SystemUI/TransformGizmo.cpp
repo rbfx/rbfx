@@ -213,7 +213,7 @@ bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool l
     {
         if (node)
         {
-            const Transform& oldTransform = node->GetDecomposedTransform();
+            const Transform& oldTransform = node->GetTransform();
             node->Translate(*delta, TS_WORLD);
             OnNodeTransformChanged(this, node, oldTransform);
         }
@@ -236,7 +236,7 @@ bool TransformNodesGizmo::ManipulateRotation(const TransformGizmo& gizmo, bool l
     {
         if (node)
         {
-            const Transform& oldTransform = node->GetDecomposedTransform();
+            const Transform& oldTransform = node->GetTransform();
             if (pivoted)
                 node->Rotate(*delta, TS_WORLD);
             else
@@ -262,7 +262,7 @@ bool TransformNodesGizmo::ManipulateScale(const TransformGizmo& gizmo, bool loca
     {
         if (node)
         {
-            const Transform& oldTransform = node->GetDecomposedTransform();
+            const Transform& oldTransform = node->GetTransform();
             if (pivoted)
                 node->Scale(*delta);
             else

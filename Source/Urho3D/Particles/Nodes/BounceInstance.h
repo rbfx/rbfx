@@ -41,10 +41,11 @@ namespace ParticleGraphNodes
 class BounceInstance final : public Bounce::InstanceBase
 {
 public:
-    void RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity);
+    void RayCastAndBounce(
+        const UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity);
 
-    template <typename Pin0, typename Pin1, typename Pin2, typename Pin3>
-    void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Pin2 pin2, Pin3 pin3)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pin0,
+        const SparseSpan<Vector3>& pin1, const SparseSpan<Vector3>& pin2, const SparseSpan<Vector3>& pin3)
     {
 #if URHO3D_PHYSICS
         auto node = GetNode();
@@ -59,7 +60,8 @@ public:
     }
 };
 
-inline void BounceInstance::RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos,
+inline void BounceInstance::RayCastAndBounce(
+    const UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos,
     Vector3& velocity)
 {
 #if URHO3D_PHYSICS

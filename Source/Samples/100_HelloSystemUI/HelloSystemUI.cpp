@@ -93,9 +93,7 @@ void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
             if (ui::Button("Show message box"))
             {
                 messageBox_ = new SystemMessageBox(context_, "Hello from SystemUI", "Sample Message Box");
-                SubscribeToEvent(E_MESSAGEACK, [&](StringHash, VariantMap&) {
-                    messageBox_ = nullptr;
-                });
+                SubscribeToEvent(E_MESSAGEACK, [&] { messageBox_ = nullptr; });
             }
         }
 

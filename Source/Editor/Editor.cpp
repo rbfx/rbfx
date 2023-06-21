@@ -58,6 +58,7 @@
 #include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
 #include "Foundation/SceneViewTab/SceneDebugInfo.h"
+#include "Foundation/SceneViewTab/SceneScreenshot.h"
 #include "Foundation/SettingsTab.h"
 #include "Foundation/SettingsTab/KeyBindingsPage.h"
 #include "Foundation/SettingsTab/LaunchPage.h"
@@ -126,7 +127,8 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefab", &Foundation_SceneDragAndDropPrefab);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
-    editorPluginManager_->AddPlugin("Foundation.SceneView.SceneDebugInfo", &Foundation_SceneDebugInfo);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.DebugInfo", &Foundation_SceneDebugInfo);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.Screenshot", &Foundation_SceneScreenshot);
 
     editorPluginManager_->AddPlugin("Foundation.Inspector.Empty", &Foundation_EmptyInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.AssetPipeline", &Foundation_AssetPipelineInspector);
@@ -249,10 +251,10 @@ void Editor::Start()
     if (auto debugHud = engine_->CreateDebugHud())
         debugHud->SetMode(DEBUGHUD_SHOW_NONE);
 
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { Render(); });
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateProjectStatus(); });
-    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
-    SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
+    SubscribeToEvent(E_UPDATE, &Editor::Render);
+    SubscribeToEvent(E_ENDFRAME, &Editor::UpdateProjectStatus);
+    SubscribeToEvent(E_EXITREQUESTED, &Editor::OnExitRequested);
+    SubscribeToEvent(E_CONSOLEURICLICK, &Editor::OnConsoleUriClick);
 
     if (!isHeadless)
     {
@@ -829,13 +831,21 @@ void Editor::OpenOrCreateProject()
 
 void Editor::OnConsoleUriClick(VariantMap& args)
 {
+    auto fileSystem = GetSubsystem<FileSystem>();
     using namespace ConsoleUriClick;
     if (ui::IsMouseClicked(MOUSEB_LEFT))
     {
+        const bool altHeld = ui::IsKeyDown(KEY_LALT) || ui::IsKeyDown(KEY_RALT);
         const ea::string& protocol = args[P_PROTOCOL].GetString();
         const ea::string& address = args[P_ADDRESS].GetString();
-        if (protocol == "res")
-            context_->GetSubsystem<FileSystem>()->SystemOpen(context_->GetSubsystem<ResourceCache>()->GetResourceFileName(address));
+
+        if (protocol == "file")
+        {
+            if (altHeld)
+                fileSystem->Reveal(address);
+            else
+                fileSystem->SystemOpen(address);
+        }
     }
 }
 

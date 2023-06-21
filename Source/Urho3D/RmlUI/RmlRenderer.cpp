@@ -93,7 +93,7 @@ RmlRenderer::RmlRenderer(Context* context)
     : Object(context)
 {
     InitializeGraphics();
-    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap&) { InitializeGraphics(); });
+    SubscribeToEvent(E_SCREENMODE, &RmlRenderer::InitializeGraphics);
 }
 
 void RmlRenderer::BeginRendering()
@@ -103,7 +103,7 @@ void RmlRenderer::BeginRendering()
     drawQueue_ = GetSubsystem<Renderer>()->GetDefaultDrawQueue();
     vertexBuffer_->Discard();
     indexBuffer_->Discard();
-    drawQueue_->Reset(false);
+    drawQueue_->Reset();
     textures_.clear();
 
     VertexBuffer* vertexBuffer = vertexBuffer_->GetVertexBuffer();
@@ -162,9 +162,15 @@ void RmlRenderer::InitializeGraphics()
     indexBuffer_ = MakeShared<DynamicIndexBuffer>(context_);
     indexBuffer_->Initialize(1024, true);
 
-    noTextureMaterial_ = Material::CreateBaseMaterial(context_, "Basic", "VERTEXCOLOR", "VERTEXCOLOR");
-    alphaMapMaterial_ = Material::CreateBaseMaterial(context_, "Basic", "DIFFMAP VERTEXCOLOR", "ALPHAMAP VERTEXCOLOR");
-    diffMapMaterial_ = Material::CreateBaseMaterial(context_, "Basic", "DIFFMAP VERTEXCOLOR", "DIFFMAP VERTEXCOLOR");
+    ea::string baseDefines = "VERTEXCOLOR ";
+    if (graphics->GetCaps().constantBuffersSupported_)
+        baseDefines += "URHO3D_USE_CBUFFERS ";
+    const ea::string alphaMapDefines = baseDefines + "ALPHAMAP ";
+    const ea::string diffMapDefines = baseDefines + "DIFFMAP ";
+
+    noTextureMaterial_ = Material::CreateBaseMaterial(context_, "v2/X_Basic", baseDefines, baseDefines);
+    alphaMapMaterial_ = Material::CreateBaseMaterial(context_, "v2/X_Basic", alphaMapDefines, alphaMapDefines);
+    diffMapMaterial_ = Material::CreateBaseMaterial(context_, "v2/X_Basic", diffMapDefines, diffMapDefines);
 }
 
 Material* RmlRenderer::GetBatchMaterial(Texture2D* texture)

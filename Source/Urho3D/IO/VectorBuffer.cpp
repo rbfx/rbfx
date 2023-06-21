@@ -141,6 +141,9 @@ void VectorBuffer::Resize(unsigned size)
 
 const ea::string& VectorBuffer::GetName() const
 {
+    auto& baseName = AbstractFile::GetName();
+    if (!baseName.empty())
+        return baseName;
     return vectorBufferName;
 }
 

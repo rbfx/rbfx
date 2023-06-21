@@ -51,6 +51,7 @@ public:
     ea::string GetResourceTitle() { return "Animation"; }
     bool SupportMultipleResources() { return false; }
     bool CanOpenResource(const ResourceFileDescriptor& desc) override;
+    void ResetCamera() override;
     /// @}
 
 protected:

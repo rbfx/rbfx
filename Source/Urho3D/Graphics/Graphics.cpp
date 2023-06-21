@@ -106,6 +106,7 @@ WindowMode ToWindowMode(bool fullscreen, bool borderless)
 }
 
 GraphicsCaps Graphics::caps;
+unsigned Graphics::maxBonesHWSkinned = 0;
 
 void Graphics::SetExternalWindow(void* window)
 {
@@ -641,6 +642,11 @@ void Graphics::OnScreenModeChanged()
     eventData[P_MONITOR] = screenParams_.monitor_;
     eventData[P_REFRESHRATE] = screenParams_.refreshRate_;
     SendEvent(E_SCREENMODE, eventData);
+}
+
+void Graphics::SetMaxBones(unsigned numBones)
+{
+    maxBonesHWSkinned = numBones;
 }
 
 void RegisterGraphicsLibrary(Context* context)

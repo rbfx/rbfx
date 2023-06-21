@@ -57,9 +57,12 @@ OutlineScenePass::OutlineScenePass(RenderPipelineInterface* renderPipeline,
         [](const ea::string& pass) { return Technique::GetPassIndex(pass); });
 }
 
-void OutlineScenePass::SetOutlineGroups(Scene* scene)
+void OutlineScenePass::SetOutlineGroups(Scene* scene, bool drawDebugOutlines)
 {
     scene->GetComponents<OutlineGroup>(outlineGroups_);
+
+    if (!drawDebugOutlines)
+        ea::erase_if(outlineGroups_, [](const OutlineGroup* group) { return group->IsDebug(); });
 
     const bool hasDrawables = ea::any_of(outlineGroups_.begin(), outlineGroups_.end(),
         [](const OutlineGroup* group) { return group->HasDrawables(); });

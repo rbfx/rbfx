@@ -655,7 +655,7 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     assert(document->GetContext() == rmlContext_);
 
     // Keep some properties of the old document
-    const Vector2 oldPosition = ToVector2(document->GetAbsoluteOffset(Rml::Box::BORDER));
+    const Vector2 oldPosition = ToVector2(document->GetAbsoluteOffset(Rml::BoxArea::Border));
     const Rml::ModalFlag oldModal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
     const bool oldVisible = document->IsVisible();
 

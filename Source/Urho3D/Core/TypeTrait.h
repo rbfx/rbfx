@@ -39,4 +39,28 @@ namespace Urho3D
     }
 #endif
 
+namespace Detail
+{
+
+template <class> struct MemberFunctionTraits;
+
+template <class Return, class Object, class... Args>
+struct MemberFunctionTraits<Return (Object::*)(Args...)>
+{
+    using ReturnType = Return;
+    using ObjectType = Object;
+};
+
+template <class Return, class Object, class... Args>
+struct MemberFunctionTraits<Return (Object::*)(Args...) const>
+{
+    using ReturnType = Return;
+    using ObjectType = Object;
+};
+
+}
+
+/// Helper type trait that extracts object type from member function pointer.
+template <class T> using MemberFunctionObject = typename Detail::MemberFunctionTraits<T>::ObjectType;
+
 }

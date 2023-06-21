@@ -21,7 +21,7 @@
 #
 
 if (NOT DESKTOP OR UWP)
-    # Tools are only useful on desktops. We will build win32 tools when targetting UWP.
+    # Tools are only useful on desktops. We will build win32 tools when targeting UWP.
     return ()
 endif ()
 

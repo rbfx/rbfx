@@ -2459,7 +2459,6 @@ private:
         if (isAlphaMask)
         {
             shaderDefines += "ALPHAMASK ";
-            // TODO: Add support in standard shader
             material.SetShaderParameter("AlphaCutoff", static_cast<float>(sourceMaterial.alphaCutoff));
         }
 

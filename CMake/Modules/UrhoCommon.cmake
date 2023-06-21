@@ -405,3 +405,10 @@ function (link_static_plugins TARGET PLUGIN_LIBRARIES)
     target_link_libraries (${TARGET}_StaticPlugins PRIVATE Urho3D ${PLUGIN_LIBRARIES})
     target_link_libraries (${TARGET} PRIVATE ${TARGET}_StaticPlugins)
 endfunction()
+
+function (install_third_party_libs)
+    if (NOT URHO3D_MERGE_STATIC_LIBS)
+        install(TARGETS ${ARGV} EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+    endif ()
+endfunction ()
+

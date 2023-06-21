@@ -1313,6 +1313,7 @@ void Material::ResetToDefaults()
     SetShaderParameter("Metallic", 1.0f);
     SetShaderParameter("DielectricReflectance", 0.5f);
     SetShaderParameter("NormalScale", 1.0f);
+    SetShaderParameter("AlphaCutoff", 0.5f);
     batchedParameterUpdate_ = false;
 
     cullMode_ = CULL_CCW;
@@ -1430,7 +1431,7 @@ void Material::ApplyShaderDefines(unsigned index)
 void Material::RefreshTextureEventSubscriptions()
 {
     UnsubscribeFromEvent(E_RELOADFINISHED);
-    const auto onReload = [this](StringHash, const VariantMap&) { MarkPipelineStateHashDirty(); };
+    const auto onReload = [this] { MarkPipelineStateHashDirty(); };
     for (const auto& item : textures_)
         SubscribeToEvent(item.second, E_RELOADFINISHED, onReload);
     MarkPipelineStateHashDirty();

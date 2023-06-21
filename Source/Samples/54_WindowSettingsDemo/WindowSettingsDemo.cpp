@@ -65,11 +65,7 @@ void WindowSettingsDemo::Start()
     // Create window with settings.
     InitSettings();
     SynchronizeSettings();
-    SubscribeToEvent(E_SCREENMODE,
-        [this](StringHash /*eventType*/, const VariantMap& /*eventData*/)
-    {
-        SynchronizeSettings();
-    });
+    SubscribeToEvent(E_SCREENMODE, &WindowSettingsDemo::SynchronizeSettings);
 
     // Set the mouse mode to use in the sample
     SetMouseMode(MM_FREE);
@@ -108,7 +104,7 @@ void WindowSettingsDemo::CreateScene()
 
     // Rotate object
     SubscribeToEvent(scene_, E_SCENEUPDATE,
-        [objectNode](StringHash /*eventType*/, VariantMap& eventData)
+        [objectNode](VariantMap& eventData)
     {
         const float timeStep = eventData[SceneUpdate::P_TIMESTEP].GetFloat();
         objectNode->Rotate(Quaternion(0.0f, 20.0f * timeStep, 0.0f), TS_WORLD);
@@ -238,7 +234,7 @@ void WindowSettingsDemo::InitSettings()
 
     // Apply settings when "Apply" button is clicked
     SubscribeToEvent(applyButton, E_RELEASED,
-        [this, graphics](StringHash /*eventType*/, const VariantMap& /*eventData*/)
+        [this, graphics]
     {
         const unsigned monitor = monitorControl_->GetSelection();
         if (monitor == M_MAX_UNSIGNED)

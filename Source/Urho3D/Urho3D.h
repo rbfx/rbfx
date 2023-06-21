@@ -20,8 +20,7 @@
 // THE SOFTWARE.
 //
 
-#ifndef URHO3D_API_H
-#define URHO3D_API_H
+#pragma once
 
 #ifdef _WIN32
 
@@ -110,4 +109,25 @@
 #   undef URHO3D_SSE
 #endif
 
+// Platform identification macros.
+#if defined(__ANDROID__)
+    #define URHO3D_PLATFORM_ANDROID 1
+#elif defined(IOS)
+    #define URHO3D_PLATFORM_IOS 1
+#elif defined(TVOS)
+    #define URHO3D_PLATFORM_TVOS 1
+#elif defined(__APPLE__)
+    #define URHO3D_PLATFORM_MACOS 1
+#elif UWP
+    #define URHO3D_PLATFORM_UNIVERSAL_WINDOWS 1
+#elif defined(_WIN32)
+    #define URHO3D_PLATFORM_WINDOWS 1
+#elif defined(RPI)
+    #define URHO3D_PLATFORM_RASPBERRY_PI 1
+#elif defined(__EMSCRIPTEN__)
+    #define URHO3D_PLATFORM_WEB 1
+#elif defined(__linux__)
+    #define URHO3D_PLATFORM_LINUX 1
+#else
+    #error Unsupported platform
 #endif

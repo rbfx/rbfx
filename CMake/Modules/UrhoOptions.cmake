@@ -192,6 +192,8 @@ option                (URHO3D_RMLUI              "HTML subset UIs via RmlUI midd
 option                (URHO3D_PARTICLE_GRAPH     "Particle Graph Effects"                                ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_COMPUTE            "Enable Compute shaders"                                ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT MOBILE;NOT URHO3D_GLES2" OFF)
 option                (URHO3D_ACTIONS            "Tweening actions"                                      ${URHO3D_ENABLE_ALL})
+option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from universal GLSL shaders to other GAPI via glslang and SPIRV-Cross" ON)
+option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ON)
 
 # Features
 set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
@@ -223,6 +225,7 @@ set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to
 
 # Misc
 rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
+option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel builds. A bool or a number of processors to use." ON)
 
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_EDITOR            "Build editor application"                              ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
@@ -235,7 +238,7 @@ option(URHO3D_SSL                               "Enable OpenSSL support"        
 
 if (WIN32)
     set(URHO3D_GRAPHICS_API D3D11 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D9 D3D11 OpenGL)
+    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D11 OpenGL)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
 elseif (IOS OR ANDROID)
     set(URHO3D_GRAPHICS_API GLES2 CACHE STRING "Graphics API")
@@ -249,12 +252,8 @@ if (URHO3D_GLES2 OR URHO3D_GLES3)
     set (URHO3D_OPENGL ON)
 endif ()
 
-cmake_dependent_option(URHO3D_SPIRV "Enable universal GLSL shaders for other GAPIs via glslang and SpirV" ON "URHO3D_D3D11" OFF)
 # Whether to use legacy renderer. Only OpenGL support legacy renderer.
 cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)
-if (URHO3D_D3D9)
-    set (URHO3D_LEGACY_RENDERER ON)
-endif ()
 
 if (URHO3D_CSHARP)
     set (URHO3D_MONOLITHIC_HEADER ON)   # Used by wrapper code
@@ -271,6 +270,10 @@ elseif ((URHO3D_TOOLS OR URHO3D_EDITOR) AND NOT MINI_URHO)
     set (URHO3D_FILEWATCHER ON)
     set (URHO3D_LOGGING ON)
     set (URHO3D_HASH_DEBUG ON)
+endif ()
+
+if (URHO3D_D3D11)
+    set (URHO3D_SHADER_TRANSLATOR ON)
 endif ()
 
 if (EMSCRIPTEN)

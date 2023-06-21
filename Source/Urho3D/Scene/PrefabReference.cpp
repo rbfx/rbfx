@@ -230,15 +230,38 @@ void PrefabReference::RemoveInstance()
     instanceNode_ = nullptr;
 }
 
-void PrefabReference::InstantiatePrefab(const NodePrefab& nodePrefab)
+void PrefabReference::InstantiatePrefab(const NodePrefab& nodePrefab, PrefabInstanceFlags instanceFlags)
 {
     const auto flags = PrefabLoadFlag::KeepExistingComponents | PrefabLoadFlag::KeepExistingChildren
         | PrefabLoadFlag::LoadAsTemporary | PrefabLoadFlag::IgnoreRootAttributes;
     PrefabReaderFromMemory reader{nodePrefab};
     node_->Load(reader, flags);
+
+    if (instanceFlags != PrefabInstanceFlag::None)
+    {
+        static const ea::unordered_map<ea::string, PrefabInstanceFlag> attributeToFlag = {
+            {"Scale", PrefabInstanceFlag::UpdateScale},
+            {"Position", PrefabInstanceFlag::UpdatePosition},
+            {"Rotation", PrefabInstanceFlag::UpdateRotation},
+            {"Tags", PrefabInstanceFlag::UpdateTags},
+            {"Name", PrefabInstanceFlag::UpdateName},
+            {"Variables", PrefabInstanceFlag::UpdateVariables},
+        };
+
+        for (const AttributePrefab& attribute : nodePrefab.GetNode().GetAttributes())
+        {
+            const auto iter = attributeToFlag.find(attribute.GetName());
+            if (iter == attributeToFlag.end())
+                continue;
+
+            const auto& [name, flag] = *iter;
+            if (instanceFlags.Test(flag))
+                node_->SetAttribute(name, attribute.GetValue());
+        }
+    }
 }
 
-void PrefabReference::CreateInstance(bool tryInplace)
+void PrefabReference::CreateInstance(bool tryInplace, PrefabInstanceFlags instanceFlags)
 {
     // Remove existing instance if moved to another node
     if (instanceNode_ && instanceNode_ != node_)
@@ -259,10 +282,10 @@ void PrefabReference::CreateInstance(bool tryInplace)
 
     RemoveTemporaryComponents(node_);
     RemoveTemporaryChildren(node_);
-    InstantiatePrefab(nodePrefab);
+    InstantiatePrefab(nodePrefab, instanceFlags);
 }
 
-void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bool createInstance)
+void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bool createInstance, PrefabInstanceFlags instanceFlags)
 {
     if (prefab == prefab_ && path == path_)
     {
@@ -279,7 +302,7 @@ void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bo
 
     if (prefab_)
     {
-        SubscribeToEvent(prefab_, E_RELOADFINISHED, [this](StringHash, VariantMap&) { CreateInstance(); });
+        SubscribeToEvent(prefab_, E_RELOADFINISHED, [this] { CreateInstance(); });
         prefabRef_ = GetResourceRef(prefab_, PrefabResource::GetTypeStatic());
     }
     else
@@ -288,7 +311,7 @@ void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bo
     }
 
     if (createInstance)
-        CreateInstance();
+        CreateInstance(false, instanceFlags);
 }
 
 void PrefabReference::SetPrefabAttr(ResourceRef prefab)

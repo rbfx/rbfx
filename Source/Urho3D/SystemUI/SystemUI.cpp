@@ -71,14 +71,14 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     PlatformInitialize();
 
     // Subscribe to events
-    SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
-    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
-    SubscribeToEvent(E_INPUTBEGIN, [this](StringHash, VariantMap& args) { OnInputBegin(); });
-    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(); });
-    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
-    SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
-    SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&) { PlatformInitialize(); });
+    SubscribeToEvent(E_SDLRAWINPUT, &SystemUI::OnRawEvent);
+    SubscribeToEvent(E_SCREENMODE, &SystemUI::OnScreenMode);
+    SubscribeToEvent(E_INPUTBEGIN, &SystemUI::OnInputBegin);
+    SubscribeToEvent(E_INPUTEND, &SystemUI::OnInputEnd);
+    SubscribeToEvent(E_ENDRENDERING, &SystemUI::OnRenderEnd);
+    SubscribeToEvent(E_ENDFRAME, [this] { referencedTextures_.clear(); });
+    SubscribeToEvent(E_DEVICELOST, &SystemUI::PlatformShutdown);
+    SubscribeToEvent(E_DEVICERESET, &SystemUI::PlatformInitialize);
     SubscribeToEvent(E_MOUSEVISIBLECHANGED, &SystemUI::OnMouseVisibilityChanged);
 }
 
@@ -384,11 +384,12 @@ void SystemUI::ReallocateFontTexture()
     ImGuiIO& io = ui::GetIO();
     ImGuiPlatformIO& platform_io = ui::GetPlatformIO();
 
+    // Initialize per-screen font atlases.
+    ClearPerScreenFonts();
+
     // Store main atlas, imgui expects it.
     io.Fonts->TexID = AllocateFontTexture(io.Fonts);
 
-    // Initialize per-screen font atlases.
-    ClearPerScreenFonts();
     io.AllFonts.push_back(io.Fonts);
     for (ImGuiPlatformMonitor& monitor : platform_io.Monitors)
     {

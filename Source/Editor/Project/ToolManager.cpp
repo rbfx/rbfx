@@ -26,21 +26,27 @@
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 namespace Urho3D
 {
 
+namespace
+{
+
+static const ea::string blenderDownloadUrl = "https://www.blender.org/download/";
+static const ea::string fbx2gltfDownloadUrl = "https://github.com/godotengine/FBX2glTF/releases";
+
+}
+
 ToolManager::ToolManager(Context* context)
     : SettingsPage(context)
 {
     ForceScan();
 
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&)
-    {
-        Update();
-    });
+    SubscribeToEvent(E_UPDATE, &ToolManager::Update);
 }
 
 ToolManager::~ToolManager()
@@ -69,19 +75,19 @@ void ToolManager::SerializeInBlock(Archive& archive)
 void ToolManager::RenderSettings()
 {
     ui::Text("Path to Blender executable (use system PATH if empty):");
-    RenderStatus(blender_.found_, blender_.path_);
+    RenderStatus(blender_.found_, blender_.path_, blenderDownloadUrl);
     if (ui::InputText("##BlenderPath", &blender_.path_))
         ScanBlender();
 
     ui::Separator();
 
     ui::Text("Path to FBX2glTF executable (use system PATH if empty):");
-    RenderStatus(fbx2gltf_.found_, fbx2gltf_.path_);
+    RenderStatus(fbx2gltf_.found_, fbx2gltf_.path_, fbx2gltfDownloadUrl);
     if (ui::InputText("##FBX2glTFPath", &fbx2gltf_.path_))
         ScanFBX2glTF();
 }
 
-void ToolManager::RenderStatus(bool found, const ea::string& path)
+void ToolManager::RenderStatus(bool found, const ea::string& path, const ea::string& hint)
 {
     if (found)
     {
@@ -90,11 +96,15 @@ void ToolManager::RenderStatus(bool found, const ea::string& path)
     }
     else
     {
-        const ColorScopeGuard guard{ImGuiCol_Text, ImVec4{1.0f, 0.0f, 0.0f, 1.0f}};
-        if (!path.empty())
-            ui::Text(ICON_FA_TRIANGLE_EXCLAMATION " Tool is not found by the path '%s'", path.c_str());
-        else
-            ui::Text(ICON_FA_TRIANGLE_EXCLAMATION " Tool is not found in system PATH");
+        {
+            const ColorScopeGuard guard{ImGuiCol_Text, ImVec4{1.0f, 0.0f, 0.0f, 1.0f}};
+            if (!path.empty())
+                ui::Text(ICON_FA_TRIANGLE_EXCLAMATION " Tool is not found by the path '%s'", path.c_str());
+            else
+                ui::Text(ICON_FA_TRIANGLE_EXCLAMATION " Tool is not found in system PATH");
+        }
+
+        Widgets::TextURL("Download 3rdParty tool...", hint);
     }
 }
 

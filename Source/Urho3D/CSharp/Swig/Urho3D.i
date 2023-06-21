@@ -390,9 +390,6 @@ namespace SDL
 %ignore Urho3D::TouchState::GetTouchedElement;
 %ignore Urho3D::Input::OnRawInput;
 
-%ignore Urho3D::DirectionAggregatorDetail::SubscriptionMask;
-%ignore Urho3D::DirectionalPadAdapterDetail::SubscriptionMask;
-
 %include "generated/Urho3D/_pre_input.i"
 %include "Urho3D/Input/InputConstants.h"
 %include "Urho3D/Input/Controls.h"
@@ -401,6 +398,7 @@ namespace SDL
 %include "Urho3D/Input/AxisAdapter.h"
 %include "Urho3D/Input/DirectionalPadAdapter.h"
 %include "Urho3D/Input/DirectionAggregator.h"
+%include "Urho3D/Input/PointerAdapter.h"
 %include "Urho3D/Input/InputMap.h"
 
 // --------------------------------------- IO ---------------------------------------
@@ -529,6 +527,7 @@ public:
 %include "Urho3D/Scene/Component.h"
 %include "Urho3D/Scene/Node.h"
 %include "Urho3D/Scene/Scene.h"
+%include "Urho3D/Scene/SceneResource.h"
 %include "Urho3D/Scene/SplinePath.h"
 %include "Urho3D/Scene/ValueAnimation.h"
 %include "Urho3D/Scene/LogicComponent.h"
@@ -935,6 +934,14 @@ using ImGuiConfigFlags = unsigned;
 %include "Urho3D/UI/Window.h"
 %include "Urho3D/UI/View3D.h"
 %nocsattribute Urho3D::LineEdit::GetCursor;
+
+// --------------------------------------- RmlUI ---------------------------------------
+#if URHO3D_RMLUI
+%include "Urho3D/RmlUI/RmlSystem.h"
+%include "Urho3D/RmlUI/RmlUI.h"
+%include "Urho3D/RmlUI/RmlUIComponent.h"
+%include "Urho3D/RmlUI/RmlCanvasComponent.h"
+#endif
 
 // --------------------------------------- Urho2D ---------------------------------------
 #if URHO3D_URHO2D

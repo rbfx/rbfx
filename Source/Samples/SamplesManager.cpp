@@ -148,6 +148,7 @@
 #endif
 #include "115_RayCast/RayCastSample.h"
 #include "116_VirtualFileSystem/VFSSample.h"
+#include "117_PointerAdapter/PointerAdapterSample.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -177,8 +178,15 @@ void SamplesManager::Setup()
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
-    if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
+    if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS)) 
+    {
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+        if (GetPlatform() == PlatformId::MacOS ||
+            GetPlatform() == PlatformId::iOS)
+            engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";../Resources;../..";
+        else
+            engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+    }
     engineParameters_[EP_AUTOLOAD_PATHS] = "Autoload";
 #if DESKTOP
     GetCommandLineParser().add_option("--sample", commandLineArgsTemp_);
@@ -231,7 +239,9 @@ void SamplesManager::Start()
     inspectorNode_ = MakeShared<Scene>(context_);
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
     // Keyboard arrow keys are already handled by UI
-    sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
+    DirectionalPadAdapterFlags flags = sampleSelectionScreen_->dpadAdapter_.GetSubscriptionMask();
+    flags.Set(DirectionalPadAdapterMask::Keyboard, false);
+    sampleSelectionScreen_->dpadAdapter_.SetSubscriptionMask(static_cast<DirectionalPadAdapterMask>(flags));
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
@@ -239,12 +249,12 @@ void SamplesManager::Start()
         debugHud->ToggleAll();
 #endif
     auto* input = context_->GetSubsystem<Input>();
-    SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnArrowKeyPress(args); });
-    SubscribeToEvent(input, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
-    SubscribeToEvent(E_SAMPLE_EXIT_REQUESTED, [this](StringHash, VariantMap&) { OnCloseCurrentSample(); });
-    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
-    SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
+    SubscribeToEvent(E_RELEASED, &SamplesManager::OnClickSample);
+    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, &SamplesManager::OnArrowKeyPress);
+    SubscribeToEvent(input, E_KEYUP, &SamplesManager::OnKeyPress);
+    SubscribeToEvent(E_SAMPLE_EXIT_REQUESTED, &SamplesManager::OnCloseCurrentSample);
+    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, &SamplesManager::OnButtonPress);
+    SubscribeToEvent(E_BEGINFRAME, &SamplesManager::OnFrameStart);
 
 #if URHO3D_RMLUI
     auto* rmlUi = context_->GetSubsystem<RmlUI>();
@@ -398,6 +408,7 @@ void SamplesManager::Start()
 #endif
     RegisterSample<RayCastSample>();
     RegisterSample<VFSSample>();
+    RegisterSample<PointerAdapterSample>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

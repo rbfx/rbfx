@@ -34,7 +34,7 @@ namespace ParticleGraphNodes
 class NormalizedEffectTimeInstance final : public NormalizedEffectTime::InstanceBase
 {
 public:
-    template <typename Pin0> void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<float>& pin0)
     {
         const float value = context.time_ / GetLayer()->GetDuration();
         for (unsigned i = 0; i < numParticles; ++i)

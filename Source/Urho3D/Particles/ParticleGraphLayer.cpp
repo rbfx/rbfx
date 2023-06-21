@@ -284,6 +284,8 @@ void ParticleGraphLayer::AttributeBufferLayout::EvaluateLayout(const ParticleGra
     }
     nodeInstances_ = Append(this, instanceSize);
     indices_ = Append<unsigned>(this, layer.capacity_);
+    scalarIndices_ = Append<unsigned>(this, layer.capacity_);
+    naturalIndices_ = Append<unsigned>(this, layer.capacity_);
     destructionQueue_ = Append<unsigned>(this, layer.capacity_);
     values_ = Append(this, 0);
 }

@@ -34,6 +34,7 @@
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
@@ -201,6 +202,7 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
     , tempPath_(projectPath_ + "Temp/")
+    , artifactsPath_(projectPath_ + "Artifacts/")
     , projectJsonPath_(projectPath_ + "Project.json")
     , settingsJsonPath_(settingsJsonPath)
     , cacheJsonPath_(projectPath_ + "Cache.json")
@@ -226,6 +228,8 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
 
     context_->RemoveSubsystem<PluginManager>();
     context_->RegisterSubsystem(pluginManager_);
+
+    SubscribeToEvent(E_ENDPLUGINRELOAD, [this] { pluginReloadEndTime_ = std::chrono::steady_clock::now(); });
 
     if (!isHeadless_ && !isReadOnly_)
         ui::GetIO().IniFilename = uiIniPath_.c_str();
@@ -522,6 +526,13 @@ void Project::EnsureDirectoryInitialized()
         fs->CreateDirsRecursive(tempPath_);
     }
 
+    if (!fs->DirExists(artifactsPath_))
+    {
+        if (fs->FileExists(artifactsPath_))
+            fs->Delete(artifactsPath_);
+        fs->CreateDirsRecursive(artifactsPath_);
+    }
+
     if (!fs->DirExists(coreDataPath_))
     {
         if (fs->FileExists(coreDataPath_))
@@ -688,6 +699,10 @@ void Project::SaveGitIgnore()
     content += "/Preview.png\n";
     content += "\n";
 
+    content += "# Ignore artifacts\n";
+    content += "/Artifacts/\n";
+    content += "\n";
+
     content += "# Ignore internal files\n";
     for (const ea::string& pattern : ignoredFileNames_)
         content += Format("{}\n", pattern);
@@ -736,6 +751,8 @@ void Project::Render()
     {
         initialized_ = true;
         initialFocusPending = true;
+
+        pluginReloadEndTime_ = ea::nullopt;
 
         OnInitialized(this);
 
@@ -868,6 +885,7 @@ void Project::RenderToolbar()
         focusedRootTab_->RenderToolbar();
 
     RenderAssetsToolbar();
+    RenderPluginReloadToolbar();
 }
 
 void Project::RenderAssetsToolbar()
@@ -884,6 +902,24 @@ void Project::RenderAssetsToolbar()
     // Show some small progress from the start for better visibility
     const float progress = Lerp(0.05f, 1.0f, ratio);
     ui::ProgressBar(progress, ImVec2{200.0f, 0.0f}, text.c_str());
+}
+
+void Project::RenderPluginReloadToolbar()
+{
+    using namespace std::chrono_literals;
+
+    if (!pluginReloadEndTime_)
+        return;
+
+    const auto currentTime = std::chrono::steady_clock::now();
+    const auto elapsedSeconds = std::chrono::duration<double>(currentTime - *pluginReloadEndTime_).count();
+    if (elapsedSeconds < 60.0)
+    {
+        const double elapsedSecondsPretty =
+            elapsedSeconds <= 10.0 ? Ceil(elapsedSeconds) : SnapFloor(elapsedSeconds, 10.0);
+        ui::SameLine();
+        ui::Text("Plugins reloaded: %.0f seconds ago", elapsedSecondsPretty);
+    }
 }
 
 void Project::RenderProjectMenu()
