@@ -38,7 +38,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Set movement velocity in node's local space.
-    virtual void SetVelocity(Vector3 velocity);
+    virtual void SetVelocity(const Vector3& velocity);
     /// Set yaw angle in degrees.
     virtual void SetYaw(float yaw);
     /// Set pitch angle in degrees.
