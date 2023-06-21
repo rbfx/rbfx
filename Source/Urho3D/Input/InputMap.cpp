@@ -20,11 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "Urho3D/Input/InputMap.h"
-
-#include "InputConstants.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Input/Input.h"
+#include "Urho3D/Input/InputConstants.h"
+#include "Urho3D/Input/InputMap.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/UI/UI.h"
 
 namespace Urho3D
 {
@@ -477,13 +479,16 @@ void ActionMapping::SerializeInBlock(Archive& archive)
         [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "button"); });
 }
 
-float ActionMapping::Evaluate(Input* input) const
+float ActionMapping::Evaluate(Input* input, bool isUIInFocus, float deadZone, int ignoreJoystickId) const
 {
-    for (auto& key: keyboardKeys_)
+    if (!isUIInFocus)
     {
-        if (input->GetScancodeDown(key.scancode_))
+        for (auto& key : keyboardKeys_)
         {
-            return 1.0f;
+            if (input->GetScancodeDown(key.scancode_))
+            {
+                return 1.0f;
+            }
         }
     }
     for (auto& button : mouseButtons_)
@@ -504,6 +509,10 @@ float ActionMapping::Evaluate(Input* input) const
         const auto state = input->GetJoystickByIndex(i);
         if (state)
         {
+            // Ignore accelerometer.
+            if (state->joystickID_ == ignoreJoystickId)
+                continue;
+
             const auto isController = state->IsController();
             for (auto& button : controllerButtons_)
             {
@@ -514,7 +523,7 @@ float ActionMapping::Evaluate(Input* input) const
             }
             if (state->GetNumHats() > 0)
             {
-                auto hatPos = state->GetHatPosition(0);
+                const auto hatPos = state->GetHatPosition(0);
                 for (auto& hat : controllerHats_)
                 {
                     if (0 != (hatPos & (1 << hat.hatPosition_)))
@@ -528,13 +537,13 @@ float ActionMapping::Evaluate(Input* input) const
             {
                 if (axis.controller_ == isController && state->HasAxisPosition(axis.axis_))
                 {
-                    auto pos = state->GetAxisPosition(axis.axis_);
-                    sum += axis.Translate(pos, 0.1f);
+                    const auto pos = state->GetAxisPosition(axis.axis_);
+                    sum += axis.Translate(pos, deadZone);
                 }
             }
         }
     }
-    return sum;
+    return Clamp(sum, 0.0f, 1.0f);
 }
 
 } // namespace Detail
@@ -542,6 +551,7 @@ float ActionMapping::Evaluate(Input* input) const
 InputMap::InputMap(Context* context)
     : BaseClassName(context)
 {
+    ignoreJoystickId_ = GetSubsystem<Input>()->FindAccelerometerJoystickId();
 }
 
 InputMap::~InputMap()
@@ -555,7 +565,14 @@ void InputMap::RegisterObject(Context* context)
 
 void InputMap::SerializeInBlock(Archive& archive)
 {
+    SerializeOptionalValue(archive, "metadata", metadata_, EmptyObject{});
+    SerializeOptionalValue(archive, "deadzone", deadZone_, DEFAULT_DEADZONE);
     SerializeMap(archive, "actions", actions_, "action");
+}
+
+void InputMap::SetDeadZone(float deadZone)
+{
+    deadZone_ = Max(0.0f, deadZone);
 }
 
 void InputMap::MapKeyboardKey(const ea::string& action, Scancode scancode)
@@ -637,7 +654,7 @@ void InputMap::MapMouseButton(const ea::string& action, MouseButton mouseButton)
     map.mouseButtons_.emplace_back(mouseButton);
 }
 
-const Detail::ActionMapping& InputMap::GetMapping(const ea::string& action)
+const Detail::ActionMapping& InputMap::GetMapping(const ea::string& action) const
 {
     static Detail::ActionMapping empty;
     auto it = actions_.find(action);
@@ -646,13 +663,45 @@ const Detail::ActionMapping& InputMap::GetMapping(const ea::string& action)
     return it->second;
 }
 
+
+void InputMap::AddMetadata(const ea::string& name, const Variant& value)
+{
+    metadata_.insert_or_assign(name, value);
+}
+
+void InputMap::RemoveMetadata(const ea::string& name)
+{
+    metadata_.erase(name);
+}
+
+void InputMap::RemoveAllMetadata()
+{
+    metadata_.clear();
+}
+
+const Variant& InputMap::GetMetadata(const ea::string& name) const
+{
+    auto it = metadata_.find(name);
+    if (it != metadata_.end())
+        return it->second;
+
+    return Variant::EMPTY;
+}
+
+bool InputMap::HasMetadata() const
+{
+    return !metadata_.empty();
+}
+
 float InputMap::Evaluate(const ea::string& action)
 {
     static Detail::ActionMapping empty;
     auto it = actions_.find(action);
     if (it == actions_.end())
         return 0.0f;
-    return it->second.Evaluate(context_->GetSubsystem<Input>());
+    const auto input = context_->GetSubsystem<Input>();
+    const auto ui = context_->GetSubsystem<UI>();
+    return it->second.Evaluate(input, ui ? ui->GetFocusElement() != nullptr : false, deadZone_, ignoreJoystickId_);
 }
 
 Detail::ActionMapping& InputMap::GetOrAddMapping(const ea::string& action)
@@ -666,5 +715,27 @@ const char* const* InputMap::GetScanCodeNames()
     return scancodeNames;
 }
 
+SharedPtr<InputMap> InputMap::Load(Context* context, const ea::string& name)
+{
+    SharedPtr<InputMap> result;
+    if (name.empty())
+    {
+        return result;
+    }
+
+    auto* cache = context->GetSubsystem<ResourceCache>();
+    const auto* vfs = context->GetSubsystem<VirtualFileSystem>();
+
+    const auto configFileId = FileIdentifier("config", name);
+    if (vfs->Exists(configFileId))
+    {
+        result = MakeShared<InputMap>(context);
+        result->SetName(name);
+        if (result->LoadFile(configFileId))
+            return result;
+    }
+    result = cache->GetResource<InputMap>(name);
+    return result;
+}
 
 } // namespace Urho3D

@@ -125,7 +125,7 @@ struct URHO3D_API ActionMapping
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive);
     /// Evaluate action state based on current input.
-    float Evaluate(Input* input) const;
+    float Evaluate(Input* input, bool isUIInFocus, float deadZone, int ignoreJoystickId) const;
 };
 }
 
@@ -135,6 +135,8 @@ class URHO3D_API InputMap : public SimpleResource
     URHO3D_OBJECT(InputMap, SimpleResource);
 
 public:
+    const float DEFAULT_DEADZONE{0.1f};
+
     /// Construct.
     explicit InputMap(Context* context);
     ~InputMap() override;
@@ -144,6 +146,12 @@ public:
 
     /// Force override of SerializeInBlock.
     void SerializeInBlock(Archive& archive) override;
+
+    /// Set dead zone half-width to mitigate axis drift.
+    void SetDeadZone(float deadZone);
+    /// Get dead zone half-width.
+    float GetDeadZone() const { return deadZone_; }
+
 
     /// Map keyboard key to the action.
     void MapKeyboardKey(const ea::string& action, Scancode scancode);
@@ -167,7 +175,21 @@ public:
     void MapMouseButton(const ea::string& action, MouseButton mouseButton);
 
     /// Get mapping for the action.
-    const Detail::ActionMapping& GetMapping(const ea::string& action);
+    const Detail::ActionMapping& GetMapping(const ea::string& action) const;
+
+    /// Add new metadata variable or overwrite old value.
+    void AddMetadata(const ea::string& name, const Variant& value);
+    /// Remove metadata variable.
+    void RemoveMetadata(const ea::string& name);
+    /// Remove all metadata variables.
+    void RemoveAllMetadata();
+    /// Return metadata variable.
+    const Variant& GetMetadata(const ea::string& name) const;
+    /// Return whether the resource has metadata.
+    bool HasMetadata() const;
+
+    /// Get all action mappings.
+    const ea::unordered_map<ea::string, Detail::ActionMapping>& GetMappings() const { return actions_; }
 
     /// Evaluate action state.
     float Evaluate(const ea::string& action);
@@ -175,11 +197,20 @@ public:
     /// Get scancode names.
     static const char* const* GetScanCodeNames();
 
+    /// Load input map from config or resources.
+    static SharedPtr<InputMap> Load(Context* context, const ea::string& name);
+
 private:
     Detail::ActionMapping& GetOrAddMapping(const ea::string& action);
 
     /// All mapped actions.
     ea::unordered_map<ea::string, Detail::ActionMapping> actions_;
+    /// Extra data: sensitivity, controller axis dead zone, etc.
+    StringVariantMap metadata_;
+    /// Axis dead zone.
+    float deadZone_{0.1f};
+    /// Joystick to ignore (SDL gyroscope virtual joystick)
+    int ignoreJoystickId_{-1};
 };
 
 } // namespace Urho3D

@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <Urho3D/Input/MoveAndOrbitComponent.h>
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Physics/PhysicsUtils.h>
 #include <Urho3D/Scene/LogicComponent.h>
@@ -40,15 +41,14 @@ const unsigned CTRL_BACK = (1u << 1u);
 const unsigned CTRL_LEFT = (1u << 2u);
 const unsigned CTRL_RIGHT = (1u << 3u);
 const unsigned CTRL_BRAKE = (1u << 4u);
-const float YAW_SENSITIVITY = 0.1f;
 const float ENGINE_POWER = 10.0f;
 const float MAX_WHEEL_ANGLE = 22.5f;
 
 // Vehicle component, responsible for physical movement according to controls.
 // Encapsulates RaycastVehicle
-class Vehicle2 : public LogicComponent
+class Vehicle2 : public MoveAndOrbitComponent
 {
-    URHO3D_OBJECT(Vehicle2, LogicComponent)
+    URHO3D_OBJECT(Vehicle2, MoveAndOrbitComponent)
 
 public :
     /// Construct.
@@ -69,6 +69,8 @@ public :
     void FixedUpdate(float timeStep) override;
     /// Updating wheel effects here.
     void PostUpdate(float timeStep) override;
+
+    void SetPitch(float pitch) override;
 
     /// Movement controls.
     Controls controls_;

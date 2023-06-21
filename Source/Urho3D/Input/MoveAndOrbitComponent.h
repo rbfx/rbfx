@@ -22,54 +22,39 @@
 
 #pragma once
 
-#include "Input.h"
-#include "Urho3D/Input/InputMap.h"
-#include "Urho3D/Resource/Resource.h"
-
+#include "Urho3D/Scene/LogicComponent.h"
 namespace Urho3D
 {
-namespace Detail
-{
-struct ActionState
-{
-    float lastKnownValue_{};
-};
-} // namespace Detail
 
-class URHO3D_API InputTranslator : public Object
+class URHO3D_API MoveAndOrbitComponent : public LogicComponent
 {
-    URHO3D_OBJECT(InputTranslator, Object);
+    URHO3D_OBJECT(MoveAndOrbitComponent, LogicComponent);
 
 public:
     /// Construct.
-    explicit InputTranslator(Context* context);
+    explicit MoveAndOrbitComponent(Context* context);
 
     /// Register object factory and attributes.
     static void RegisterObject(Context* context);
 
-    /// Returns true if the device is actively recording.
-    bool IsEnabled() const { return enabled_; }
-    /// Starts or stops recording.
-    void SetEnabled(bool state);
+    /// Set movement velocity in node's local space.
+    virtual void SetVelocity(Vector3 velocity);
+    /// Set yaw angle in degrees.
+    virtual void SetYaw(float yaw);
+    /// Set pitch angle in degrees.
+    virtual void SetPitch(float pitch);
 
-    /// Get input map.
-    InputMap* GetMap() const { return map_; }
-    /// Set input map.
-    void SetMap(InputMap* map);
-
-    /// Evaluate action state based on input.
-    float EvaluateActionState(const ea::string& action) const;
+    /// Get movement velocity in node's local space.
+    const Vector3& GetVelocity() const { return velocity_; }
+    /// Get yaw angle in degrees.
+    float GetYaw() const { return yaw_; }
+    /// Get pitch angle in degrees.
+    float GetPitch() const { return pitch_; }
 
 private:
-    /// Handle scene update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
-
-    /// Input map.
-    SharedPtr<InputMap> map_;
-    /// Is translator enabled.
-    bool enabled_{};
-    /// Last known action states.
-    ea::unordered_map<ea::string, Detail::ActionState> states_;
+    Vector3 velocity_{};
+    float yaw_{};
+    float pitch_{};
 };
 
 } // namespace Urho3D

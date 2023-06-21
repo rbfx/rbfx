@@ -40,7 +40,7 @@ public:
 
     void StartServer();
     void ConnectToServer(const ea::string& address);
-    void Stop();
+    void Stop() override;
 
     bool GetCheatAutoMovementCircle() const { return cheatAutoMovementCircle_; }
     bool GetCheatAutoAimHand() const { return cheatAutoAimHand_; }

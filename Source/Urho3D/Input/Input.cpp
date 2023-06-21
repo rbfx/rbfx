@@ -1527,6 +1527,26 @@ JoystickState* Input::GetJoystickByName(const ea::string& name)
     return nullptr;
 }
 
+SDL_JoystickID Input::FindAccelerometerJoystickId() const
+{
+    // Check if "accelerometer as joystick" option enabled in SDL (it is ON by default)
+    const auto accelerometerAsJoystick = SDL_GetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK);
+    if (!accelerometerAsJoystick || std::string_view("0") != accelerometerAsJoystick)
+    {
+        // Find and ignore virtual joystick id.
+        // SDL defines a virtual joystick as having 3 axis and no buttons or hats.
+        for (auto& joystickKeyValue : joysticks_)
+        {
+            auto& joystick = joystickKeyValue.second;
+            if (joystick.GetNumAxes() == 3 && joystick.GetNumButtons() == 0 && joystick.GetNumHats() == 0)
+            {
+                return joystickKeyValue.first;
+            }
+        }
+    }
+    return -1;
+}
+
 JoystickState* Input::GetJoystick(SDL_JoystickID id)
 {
     auto i = joysticks_.find(id);

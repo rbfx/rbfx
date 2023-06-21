@@ -22,10 +22,44 @@
 
 #include "../CommonUtils.h"
 
-#include "Urho3D/Input/InputMap.h"
-#include "Urho3D/Resource/XMLArchive.h"
+#include <Urho3D/Resource/XMLArchive.h>
+#include <Urho3D/Input/MoveAndOrbitController.h>
+#include <Urho3D/Input/InputMap.h>
 
 using namespace Urho3D;
+
+TEST_CASE("Build MoveAndOrbit config")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    const auto map = MakeShared<InputMap>(context);
+
+    // Uncomment this to override default sensitiviy:
+    //map->AddMetadata(MoveAndOrbitController::MOUSE_SENSITIVITY, MoveAndOrbitController::DEFAULT_MOUSE_SENSITIVITY);
+    //map->AddMetadata(
+    //    MoveAndOrbitController::TOUCH_MOVEMENT_SENSITIVITY, MoveAndOrbitController::DEFAULT_TOUCH_MOVEMENT_SENSITIVITY);
+    //map->AddMetadata(
+    //    MoveAndOrbitController::TOUCH_ROTATION_SENSITIVITY, MoveAndOrbitController::DEFAULT_TOUCH_ROTATION_SENSITIVITY);
+
+    map->MapKeyboardKey(MoveAndOrbitController::ACTION_FORWARD, SCANCODE_W);
+    map->MapKeyboardKey(MoveAndOrbitController::ACTION_FORWARD, SCANCODE_UP);
+    map->MapControllerAxis(MoveAndOrbitController::ACTION_FORWARD, CONTROLLER_AXIS_LEFTY, 0.0f, -1.0f);
+    map->MapKeyboardKey(MoveAndOrbitController::ACTION_BACK, SCANCODE_S);
+    map->MapKeyboardKey(MoveAndOrbitController::ACTION_BACK, SCANCODE_DOWN);
+    map->MapControllerAxis(MoveAndOrbitController::ACTION_BACK, CONTROLLER_AXIS_LEFTY, 0.0f, 1.0f);
+    map->MapKeyboardKey(MoveAndOrbitController::ACTION_LEFT, SCANCODE_A);
+    map->MapKeyboardKey(MoveAndOrbitController::ACTION_LEFT, SCANCODE_LEFT);
+    map->MapControllerAxis(MoveAndOrbitController::ACTION_LEFT, CONTROLLER_AXIS_LEFTX, 0.0f, -1.0f);
+    map->MapKeyboardKey(MoveAndOrbitController::ACTION_RIGHT, SCANCODE_D);
+    map->MapKeyboardKey(MoveAndOrbitController::ACTION_RIGHT, SCANCODE_RIGHT);
+    map->MapControllerAxis(MoveAndOrbitController::ACTION_RIGHT, CONTROLLER_AXIS_LEFTX, 0.0f, 1.0f);
+    map->MapControllerAxis(MoveAndOrbitController::ACTION_TURNLEFT, CONTROLLER_AXIS_RIGHTX, 0.0f, -1.0f);
+    map->MapControllerAxis(MoveAndOrbitController::ACTION_TURNRIGHT, CONTROLLER_AXIS_RIGHTX, 0.0f, 1.0f);
+    map->MapControllerAxis(MoveAndOrbitController::ACTION_LOOKUP, CONTROLLER_AXIS_RIGHTY, 0.0f, -1.0f);
+    map->MapControllerAxis(MoveAndOrbitController::ACTION_LOOKDOWN, CONTROLLER_AXIS_RIGHTY, 0.0f, 1.0f);
+
+    // Uncomment this to save the file:
+    //map->SaveFile(FileIdentifier("", "Input/MoveAndOrbit.inputmap"));
+}
 
 TEST_CASE("ActionMapping serialization")
 {

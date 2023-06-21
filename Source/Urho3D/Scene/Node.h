@@ -649,6 +649,8 @@ public:
     unsigned GetComponentIndex(const Component* component) const;
     /// Return component by type. If there are several, returns the first.
     Component* GetComponent(StringHash type, bool recursive = false) const;
+    /// Return component of type or inherited from the type. If there are several, returns the first.
+    Component* GetComponentImplementation(StringHash type, bool recursive = false) const;
     /// Return N-th component of given type.
     Component* GetNthComponent(StringHash type, unsigned index) const;
     /// Return component in parent node. If there are several, returns the first. May optional traverse up to the root node.
@@ -676,6 +678,8 @@ public:
     template <class T> void GetChildrenWithComponent(ea::vector<Node*>& dest, bool recursive = false) const;
     /// Template version of returning a component by type.
     template <class T> T* GetComponent(bool recursive = false) const;
+    /// Template version of returning a component of type or inherited from the type.
+    template <class T> T* GetComponentImplementation(bool recursive = false) const;
     /// Return N-th component of given type.
     template <class T> T* GetNthComponent(unsigned index) const;
     /// Template version of returning a parent's component by type.
@@ -812,6 +816,11 @@ template <class T> void Node::GetChildrenWithComponent(ea::vector<Node*>& dest, 
 }
 
 template <class T> T* Node::GetComponent(bool recursive) const { return static_cast<T*>(GetComponent(T::GetTypeStatic(), recursive)); }
+
+template <class T> T* Node::GetComponentImplementation(bool recursive) const
+{
+    return static_cast<T*>(GetComponentImplementation(T::GetTypeStatic(), recursive));
+}
 
 template <class T> T* Node::GetNthComponent(unsigned index) const { return static_cast<T*>(GetNthComponent(T::GetTypeStatic(), index)); }
 

@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,14 +32,15 @@
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/Input/MoveAndOrbitController.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/Scene/PrefabResource.h>
+#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
@@ -231,6 +233,7 @@ void CharacterDemo::CreateCharacter()
     // Remember it so that we can set the controls. Use a ea::weak_ptr because the scene hierarchy already owns it
     // and keeps it alive as long as it's not removed from the hierarchy
     character_ = objectNode->CreateComponent<Character>();
+    objectNode->CreateComponent<MoveAndOrbitController>()->LoadInputMap("Input/MoveAndOrbit.inputmap");
 }
 
 void CharacterDemo::CreateInstructions()
@@ -310,15 +313,10 @@ void CharacterDemo::Update(float timeStep)
                     }
                 }
             }
-            else
-            {
-                character_->controls_.yaw_ += (float)input->GetMouseMoveX() * YAW_SENSITIVITY;
-                character_->controls_.pitch_ += (float)input->GetMouseMoveY() * YAW_SENSITIVITY;
-            }
             // Limit pitch
             character_->controls_.pitch_ = Clamp(character_->controls_.pitch_, -80.0f, 80.0f);
             // Set rotation already here so that it's updated every rendering frame instead of every physics frame
-            character_->GetNode()->SetRotation(Quaternion(character_->controls_.yaw_, Vector3::UP));
+            character_->GetNode()->SetRotation(Quaternion(character_->GetYaw(), Vector3::UP));
 
             // Switch between 1st and 3rd person
             if (input->GetKeyPress(KEY_F))
@@ -357,11 +355,11 @@ void CharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData
 
     // Get camera lookat dir from character yaw + pitch
     const Quaternion& rot = characterNode->GetRotation();
-    Quaternion dir = rot * Quaternion(character_->controls_.pitch_, Vector3::RIGHT);
+    Quaternion dir = rot * Quaternion(character_->GetPitch(), Vector3::RIGHT);
 
     // Turn head to camera pitch, but limit to avoid unnatural animation
     Node* headNode = characterNode->GetChild("Mutant:Head", true);
-    float limitPitch = Clamp(character_->controls_.pitch_, -45.0f, 45.0f);
+    float limitPitch = Clamp(character_->GetPitch(), -45.0f, 45.0f);
     Quaternion headDir = rot * Quaternion(limitPitch, Vector3(1.0f, 0.0f, 0.0f));
     // This could be expanded to look at an arbitrary target, now just look at a point in front
     Vector3 headWorldTarget = headNode->GetWorldPosition() + headDir * Vector3(0.0f, 0.0f, -1.0f);

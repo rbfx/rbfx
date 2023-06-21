@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +35,7 @@
 #include "Character.h"
 
 Character::Character(Context* context) :
-    LogicComponent(context),
+    BaseClassName(context),
     onGround_(false),
     okToJump_(true),
     inAirTimer_(0.0f)
@@ -49,8 +50,8 @@ void Character::RegisterObject(Context* context)
 
     // These macros register the class attributes to the Context for automatic load / save handling.
     // We specify the Default attribute mode which means it will be used both for saving into file, and network replication
-    URHO3D_ATTRIBUTE("Controls Yaw", float, controls_.yaw_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Controls Pitch", float, controls_.pitch_, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Controls Yaw", GetYaw, SetYaw, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Controls Pitch", GetPitch, SetPitch, float, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("On Ground", bool, onGround_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("OK To Jump", bool, okToJump_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("In Air Timer", float, inAirTimer_, 0.0f, AM_DEFAULT);
@@ -83,19 +84,10 @@ void Character::FixedUpdate(float timeStep)
 
     // Update movement & animation
     const Quaternion& rot = node_->GetRotation();
-    Vector3 moveDir = Vector3::ZERO;
+    Vector3 moveDir = GetVelocity();
     const Vector3& velocity = body->GetLinearVelocity();
     // Velocity on the XZ plane
     Vector3 planeVelocity(velocity.x_, 0.0f, velocity.z_);
-
-    if (controls_.IsDown(CTRL_FORWARD))
-        moveDir += Vector3::FORWARD;
-    if (controls_.IsDown(CTRL_BACK))
-        moveDir += Vector3::BACK;
-    if (controls_.IsDown(CTRL_LEFT))
-        moveDir += Vector3::LEFT;
-    if (controls_.IsDown(CTRL_RIGHT))
-        moveDir += Vector3::RIGHT;
 
     // Normalize move vector so that diagonal strafing is not faster
     if (moveDir.LengthSquared() > 0.0f)

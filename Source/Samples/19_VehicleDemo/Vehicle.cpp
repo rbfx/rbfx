@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,8 +35,8 @@
 
 #include "Vehicle.h"
 
-Vehicle::Vehicle(Context* context) :
-    LogicComponent(context)
+Vehicle::Vehicle(Context* context)
+    : BaseClassName(context)
 {
     // Only the physics update event is needed: unsubscribe from the rest for optimization
     SetUpdateEventMask(USE_FIXEDUPDATE);
@@ -45,8 +46,8 @@ void Vehicle::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<Vehicle>();
 
-    URHO3D_ATTRIBUTE("Controls Yaw", float, controls_.yaw_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Controls Pitch", float, controls_.pitch_, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Controls Yaw", GetYaw, SetYaw, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Controls Pitch", GetPitch, SetPitch, float,  0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Steering", float, steering_, 0.0f, AM_DEFAULT);
     // Register wheel node IDs as attributes so that the wheel nodes can be reaquired on deserialization. They need to be tagged
     // as node ID's so that the deserialization code knows to rewrite the IDs in case they are different on load than on save
@@ -73,18 +74,12 @@ void Vehicle::ApplyAttributes()
 
 void Vehicle::FixedUpdate(float timeStep)
 {
-    float newSteering = 0.0f;
-    float accelerator = 0.0f;
-
     // Read controls
-    if (controls_.buttons_ & CTRL_LEFT)
-        newSteering = -1.0f;
-    if (controls_.buttons_ & CTRL_RIGHT)
-        newSteering = 1.0f;
-    if (controls_.buttons_ & CTRL_FORWARD)
-        accelerator = 1.0f;
-    if (controls_.buttons_ & CTRL_BACK)
-        accelerator = -0.5f;
+    const auto vel = GetVelocity();
+    const float newSteering = vel.x_;
+    float accelerator = vel.z_;
+    if (accelerator < 0.0f)
+        accelerator *= 0.5f;
 
     // When steering, wake up the wheel rigidbodies so that their orientation is updated
     if (newSteering != 0.0f)
@@ -116,6 +111,11 @@ void Vehicle::FixedUpdate(float timeStep)
     // Apply downforce proportional to velocity
     Vector3 localVelocity = hullRot.Inverse() * hullBody_->GetLinearVelocity();
     hullBody_->ApplyForce(hullRot * Vector3::DOWN * Abs(localVelocity.z_) * DOWN_FORCE);
+}
+
+void Vehicle::SetPitch(float pitch)
+{
+    MoveAndOrbitComponent::SetPitch(Clamp(pitch, 0.0f, 80.0f));
 }
 
 void Vehicle::Init()

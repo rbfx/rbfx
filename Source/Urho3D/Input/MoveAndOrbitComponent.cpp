@@ -21,58 +21,35 @@
 //
 
 #include "Urho3D/Core/Context.h"
-#include "Urho3D/Input/InputTranslator.h"
-
-#include "Input.h"
-#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Input/MoveAndOrbitComponent.h"
 
 namespace Urho3D
 {
 
-InputTranslator::InputTranslator(Context* context)
+MoveAndOrbitComponent::MoveAndOrbitComponent(Context* context)
     : BaseClassName(context)
 {
+    
 }
 
-void InputTranslator::RegisterObject(Context* context)
+void MoveAndOrbitComponent::RegisterObject(Context* context)
 {
-    context->AddFactoryReflection<InputTranslator>();
+    context->AddFactoryReflection<MoveAndOrbitComponent>();
 }
 
-void InputTranslator::SetEnabled(bool state)
+void MoveAndOrbitComponent::SetVelocity(Vector3 velocity)
 {
-    if (state != enabled_)
-    {
-        enabled_ = state;
-        if (enabled_)
-        {
-            SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(InputTranslator, HandleUpdate));
-        }
-        else
-        {
-            UnsubscribeFromEvent(E_UPDATE);
-        }
-    }
+    velocity_ = velocity;
 }
 
-void InputTranslator::SetMap(InputMap* map)
+void MoveAndOrbitComponent::SetYaw(float yaw)
 {
-    map_ = map;
+    yaw_ = yaw;
 }
 
-float InputTranslator::EvaluateActionState(const ea::string& action) const
+void MoveAndOrbitComponent::SetPitch(float pitch)
 {
-    if (!map_)
-        return 0.0f;
-    auto& mapping = map_->GetMapping(action);
-    return mapping.Evaluate(GetSubsystem<Input>());
-}
-
-void InputTranslator::HandleUpdate(StringHash eventType, VariantMap& eventData)
-{
-    if (!map_)
-        return;
-    auto input = GetSubsystem<Input>();
+    pitch_ = Clamp(pitch, -90.0f, 90.0f);
 }
 
 } // namespace Urho3D
