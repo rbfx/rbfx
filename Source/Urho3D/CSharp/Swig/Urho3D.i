@@ -399,7 +399,6 @@ namespace SDL
 %include "Urho3D/Input/DirectionalPadAdapter.h"
 %include "Urho3D/Input/DirectionAggregator.h"
 %include "Urho3D/Input/PointerAdapter.h"
-%include "Urho3D/Input/InputMap.h"
 
 // --------------------------------------- IO ---------------------------------------
 %ignore Urho3D::GetWideNativePath;
@@ -542,6 +541,7 @@ public:
 %include "Urho3D/Input/FreeFlyController.h"
 %include "Urho3D/Input/MoveAndOrbitComponent.h"
 %include "Urho3D/Input/MoveAndOrbitController.h"
+%include "Urho3D/Input/InputMap.h"
 
 // --------------------------------------- Audio ---------------------------------------
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
