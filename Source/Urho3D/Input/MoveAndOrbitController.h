@@ -102,6 +102,9 @@ private:
     /// Find touch states for movement and rotation.
     void FindTouchStates(const IntRect& movementRect, const IntRect& rotationRect, TouchState*& movementTouch,
         TouchState*& rotationTouch);
+    /// Get sensitivity value from input map or default one.
+    float GetSensitivity(const ea::string& key, float defaultValue) const;
+
     /// Input map.
     SharedPtr<InputMap> inputMap_;
     /// Component that provides animation states for the model.

@@ -21,6 +21,7 @@
 //
 
 #include "Urho3D/Input/MoveAndOrbitController.h"
+
 #include "Urho3D/Input/MoveAndOrbitComponent.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/CoreEvents.h"
@@ -100,17 +101,28 @@ void MoveAndOrbitController::Update(float timeStep)
 {
     LogicComponent::Update(timeStep);
 
-    if (!component_ || !inputMap_)
+    if (!component_)
         return;
 
     const auto input = GetSubsystem<Input>();
     float yaw = component_->GetYaw();
     float pitch = component_->GetPitch();
+    float originalYaw = yaw;
+    float originalPitch = pitch;
+    Vector3 originalVelocity = component_->GetVelocity();
 
-    auto forward = inputMap_->Evaluate(ACTION_FORWARD) - inputMap_->Evaluate(ACTION_BACK);
-    auto right = inputMap_->Evaluate(ACTION_RIGHT) - inputMap_->Evaluate(ACTION_LEFT);
-    auto turnRight = inputMap_->Evaluate(ACTION_TURNRIGHT) - inputMap_->Evaluate(ACTION_TURNLEFT);
-    auto lookDown = inputMap_->Evaluate(ACTION_LOOKDOWN) - inputMap_->Evaluate(ACTION_LOOKUP);
+    float forward = 0.0f;
+    float right = 0.0f;
+    float turnRight = 0.0f;
+    float lookDown = 0.0f;
+
+    if (inputMap_)
+    {
+        forward = inputMap_->Evaluate(ACTION_FORWARD) - inputMap_->Evaluate(ACTION_BACK);
+        right = inputMap_->Evaluate(ACTION_RIGHT) - inputMap_->Evaluate(ACTION_LEFT);
+        turnRight = inputMap_->Evaluate(ACTION_TURNRIGHT) - inputMap_->Evaluate(ACTION_TURNLEFT);
+        lookDown = inputMap_->Evaluate(ACTION_LOOKDOWN) - inputMap_->Evaluate(ACTION_LOOKUP);
+    }
 
     {
         auto sensitivity = inputMap_->GetMetadata(AXIS_ROTATION_SENSITIVITY).GetFloat();
@@ -128,9 +140,7 @@ void MoveAndOrbitController::Update(float timeStep)
 
     if (movementTouch)
     {
-        auto sensitivity = inputMap_->GetMetadata(TOUCH_MOVEMENT_SENSITIVITY).GetFloat();
-        if (sensitivity == 0)
-            sensitivity = DEFAULT_TOUCH_MOVEMENT_SENSITIVITY;
+        const auto sensitivity = GetSensitivity(TOUCH_MOVEMENT_SENSITIVITY, DEFAULT_TOUCH_MOVEMENT_SENSITIVITY);
         const auto delta = movementTouch->position_ - movementTouchOrigin_;
         right += delta.x_ * sensitivity;
         forward -= delta.y_ * sensitivity;
@@ -138,29 +148,37 @@ void MoveAndOrbitController::Update(float timeStep)
 
     if (rotationTouch)
     {
-        auto sensitivity = inputMap_->GetMetadata(TOUCH_ROTATION_SENSITIVITY).GetFloat();
-        if (sensitivity == 0)
-            sensitivity = DEFAULT_TOUCH_ROTATION_SENSITIVITY;
+        const auto sensitivity = GetSensitivity(TOUCH_ROTATION_SENSITIVITY, DEFAULT_TOUCH_ROTATION_SENSITIVITY);
         yaw += sensitivity * static_cast<float>(rotationTouch->delta_.x_);
         pitch += sensitivity * static_cast<float>(rotationTouch->delta_.y_);
     }
 
+    if (input->GetMouseMode() != MM_FREE || input->GetMouseButtonPress(MOUSEB_RIGHT))
     {
-        auto sensitivity = inputMap_->GetMetadata(MOUSE_SENSITIVITY).GetFloat();
-        if (sensitivity == 0)
-            sensitivity = DEFAULT_MOUSE_SENSITIVITY;
+        const auto sensitivity = GetSensitivity(MOUSE_SENSITIVITY, DEFAULT_MOUSE_SENSITIVITY);
         yaw += static_cast<float>(input->GetMouseMoveX()) * sensitivity;
         pitch += static_cast<float>(input->GetMouseMoveY()) * sensitivity;
     }
-    component_->SetPitch(pitch);
-    component_->SetYaw(yaw);
-    component_->SetVelocity(Vector3(Clamp(right, -1.0f, 1.0f), 0, Clamp(forward, -1.0f, 1.0f)));
+    pitch = Clamp(pitch, -90.0f, 90.0f);
+    if (!Equals(originalPitch, pitch))
+        component_->SetPitch(pitch);
+    if (!Equals(originalYaw, yaw))
+        component_->SetYaw(yaw);
+    const auto velocity = Vector3(Clamp(right, -1.0f, 1.0f), 0, Clamp(forward, -1.0f, 1.0f));
+    if (!originalVelocity.Equals(velocity))
+        component_->SetVelocity(velocity);
 }
 
 void MoveAndOrbitController::ConnectToComponent()
 {
     if (node_)
+    {
         component_ = node_->GetComponentImplementation<MoveAndOrbitComponent>();
+        if (!component_)
+        {
+            URHO3D_LOGERROR("MoveAndOrbitComponent not found on the same node as MoveAndOrbitController");
+        }
+    }
     else
         component_ = nullptr;
 }
@@ -243,4 +261,15 @@ void MoveAndOrbitController::FindTouchStates(const IntRect& movementRect, const 
         rotationTouchId_ = -1;
     }
 }
+
+float MoveAndOrbitController::GetSensitivity(const ea::string& key, float defaultValue) const
+{
+    if (!inputMap_)
+        return defaultValue;
+    const auto sensitivity = inputMap_->GetMetadata(key).GetFloat();
+    if (sensitivity == 0)
+        return  defaultValue;
+    return sensitivity;
+}
+
 } // namespace Urho3D
