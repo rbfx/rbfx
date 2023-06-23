@@ -156,6 +156,12 @@ RenderTargetView TextureRenderBuffer::GetView(unsigned slice) const
     return RenderTargetView::TextureSlice(currentTexture_, slice);
 }
 
+RenderTargetView TextureRenderBuffer::GetReadOnlyDepthView(unsigned slice) const
+{
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return RenderTargetView::ReadOnlyDepthSlice(currentTexture_, slice);
+}
+
 IntRect TextureRenderBuffer::GetViewportRect() const
 {
     URHO3D_ASSERT(CheckIfBufferIsReady());
@@ -177,6 +183,12 @@ RenderTargetView ViewportColorRenderBuffer::GetView(unsigned slice) const
 {
     URHO3D_ASSERT(CheckIfBufferIsReady());
     return renderTarget_ ? renderTarget_->GetView() : RenderTargetView::SwapChainColor(renderDevice_);
+}
+
+RenderTargetView ViewportColorRenderBuffer::GetReadOnlyDepthView(unsigned slice) const
+{
+    URHO3D_ASSERT(false);
+    return GetView(slice);
 }
 
 void ViewportColorRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)
@@ -206,6 +218,14 @@ RenderTargetView ViewportDepthStencilRenderBuffer::GetView(unsigned slice) const
 {
     URHO3D_ASSERT(CheckIfBufferIsReady());
     return depthStencil_ ? depthStencil_->GetView() : RenderTargetView::SwapChainDepthStencil(renderDevice_);
+}
+
+RenderTargetView ViewportDepthStencilRenderBuffer::GetReadOnlyDepthView(unsigned slice) const
+{
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return depthStencil_ //
+        ? depthStencil_->GetReadOnlyDepthView()
+        : RenderTargetView::SwapChainDepthStencil(renderDevice_);
 }
 
 void ViewportDepthStencilRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)

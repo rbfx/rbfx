@@ -117,6 +117,7 @@ public:
     unsigned GetSlice() const { return slice_; }
 
     RenderTargetView GetView() const;
+    RenderTargetView GetReadOnlyDepthView() const;
     bool IsRenderTarget() const;
     bool IsDepthStencil() const;
 

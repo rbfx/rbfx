@@ -85,17 +85,18 @@ public:
     /// If rectangle is not specified, all render buffers should have same size and viewport rectanges.
     /// @{
     void SetRenderTargetsRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-        ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
+        ea::span<RenderBuffer* const> colorBuffers, bool readOnlyDepth = false, CubeMapFace face = FACE_POSITIVE_X);
     void SetRenderTargets(RenderBuffer* depthStencilBuffer,
-        ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
+        ea::span<RenderBuffer* const> colorBuffers, bool readOnlyDepth = false, CubeMapFace face = FACE_POSITIVE_X);
 
     void SetRenderTargetsRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-        std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
-    void SetRenderTargets(RenderBuffer* depthStencilBuffer,
-        std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
+        std::initializer_list<RenderBuffer*> colorBuffers, bool readOnlyDepth = false,
+        CubeMapFace face = FACE_POSITIVE_X);
+    void SetRenderTargets(RenderBuffer* depthStencilBuffer, std::initializer_list<RenderBuffer*> colorBuffers,
+        bool readOnlyDepth = false, CubeMapFace face = FACE_POSITIVE_X);
 
-    void SetOutputRenderTargetsRect(const IntRect& viewportRect);
-    void SetOutputRenderTargets();
+    void SetOutputRenderTargetsRect(const IntRect& viewportRect, bool readOnlyDepth = false);
+    void SetOutputRenderTargets(bool readOnlyDepth = false);
     /// @}
 
     /// Clear color, depth and/or stencil render target(s).

@@ -98,11 +98,15 @@ struct URHO3D_API RawTextureHandles
     Diligent::RefCntAutoPtr<Diligent::ITextureView> rtv_;
     /// Texture view that can be used as depth-stencil buffer.
     Diligent::RefCntAutoPtr<Diligent::ITextureView> dsv_;
+    /// Texture view that can be used as read-only depth-stencil buffer.
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> dsvReadOnly_;
     /// Texture view that can be attached as unordered access resource.
     Diligent::RefCntAutoPtr<Diligent::ITextureView> uav_;
     /// Array of all 2D render target views for each array slice and for each cube texture face.
     /// Empty for 3D textures.
     ea::vector<Diligent::RefCntAutoPtr<Diligent::ITextureView>> renderSurfaces_;
+    /// Same as above, but read-only. Valid only for depth-stencil textures.
+    ea::vector<Diligent::RefCntAutoPtr<Diligent::ITextureView>> renderSurfacesReadOnly_;
     /// All requested UAVs.
     ea::unordered_map<RawTextureUAVKey, Diligent::RefCntAutoPtr<Diligent::ITextureView>> uavs_;
 
@@ -181,7 +185,8 @@ protected:
     virtual bool TryRestore() { return false; }
 
 private:
-    bool CreateRenderSurfaces(Diligent::ITextureView* defaultView, Diligent::TEXTURE_VIEW_TYPE viewType);
+    bool CreateRenderSurfaces(Diligent::ITextureView* defaultView, Diligent::TEXTURE_VIEW_TYPE viewType,
+        ea::vector<Diligent::RefCntAutoPtr<Diligent::ITextureView>>& renderSurfaces);
 
     RawTextureParams params_;
     SamplerStateDesc samplerDesc_;

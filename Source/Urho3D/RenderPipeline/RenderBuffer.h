@@ -50,6 +50,7 @@ public:
     virtual RawTexture* GetTexture() const = 0;
     /// Return render surface. Face could be specified for cubemap texture.
     virtual RenderTargetView GetView(unsigned slice = 0) const = 0;
+    virtual RenderTargetView GetReadOnlyDepthView(unsigned slice = 0) const = 0;
     /// Return effective viewport rectangle.
     /// Always equal to whole texture for TextureRenderBuffer, not so for viewport buffers.
     virtual IntRect GetViewportRect() const = 0;
@@ -83,6 +84,7 @@ public:
     /// @{
     RawTexture* GetTexture() const override;
     RenderTargetView GetView(unsigned slice) const override;
+    RenderTargetView GetReadOnlyDepthView(unsigned slice) const override;
     IntRect GetViewportRect() const override;
     /// @}
 
@@ -117,6 +119,7 @@ public:
     /// @{
     RawTexture* GetTexture() const override;
     RenderTargetView GetView(unsigned slice) const override;
+    RenderTargetView GetReadOnlyDepthView(unsigned slice) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
     /// @}
 
@@ -142,6 +145,7 @@ public:
     /// @{
     RawTexture* GetTexture() const override;
     RenderTargetView GetView(unsigned slice) const override;
+    RenderTargetView GetReadOnlyDepthView(unsigned slice) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
     /// @}
 

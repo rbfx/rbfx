@@ -28,6 +28,8 @@ public:
     static RenderTargetView SwapChainDepthStencil(RenderDevice* renderDevice);
     static RenderTargetView Texture(RawTexture* texture);
     static RenderTargetView TextureSlice(RawTexture* texture, unsigned slice);
+    static RenderTargetView ReadOnlyDepth(RawTexture* texture);
+    static RenderTargetView ReadOnlyDepthSlice(RawTexture* texture, unsigned slice);
     /// @}
 
     /// Mark referenced texture as dirty.
@@ -47,6 +49,8 @@ private:
     {
         Resource,
         ResourceSlice,
+        ReadOnlyResource,
+        ReadOnlyResourceSlice,
         SwapChainColor,
         SwapChainDepthStencil,
     };

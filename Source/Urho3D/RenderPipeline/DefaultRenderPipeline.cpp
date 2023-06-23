@@ -408,8 +408,9 @@ void DefaultRenderPipelineView::Render()
             {ShaderConsts::Camera_GBufferInvSize, renderBufferManager_->GetInvOutputSize()},
         };
 
-        renderBufferManager_->SetOutputRenderTargets();
+        renderBufferManager_->SetOutputRenderTargets(true);
         sceneProcessor_->RenderLightVolumeBatches("LightVolumes", camera, geometryBuffer, cameraParameters);
+        renderBufferManager_->SetOutputRenderTargets();
     }
     else
 #endif

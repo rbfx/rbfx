@@ -203,13 +203,14 @@ void RenderBufferManager::SwapColorBuffers(bool synchronizeContents)
 }
 
 void RenderBufferManager::SetRenderTargetsRect(const IntRect& viewportRect,
-    RenderBuffer* depthStencilBuffer, ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face)
+    RenderBuffer* depthStencilBuffer, ea::span<RenderBuffer* const> colorBuffers, bool readOnlyDepth, CubeMapFace face)
 {
     ea::optional<IntRect> defaultViewportRect;
     OptionalRawTextureRTV depthStencilRef;
     if (depthStencilBuffer)
     {
-        depthStencilRef = depthStencilBuffer->GetView(face);
+        depthStencilRef =
+            readOnlyDepth ? depthStencilBuffer->GetReadOnlyDepthView(face) : depthStencilBuffer->GetView(face);
         defaultViewportRect = depthStencilBuffer->GetViewportRect();
     }
 
@@ -236,31 +237,31 @@ void RenderBufferManager::SetRenderTargetsRect(const IntRect& viewportRect,
 }
 
 void RenderBufferManager::SetRenderTargets(RenderBuffer* depthStencilBuffer,
-    ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face)
+    ea::span<RenderBuffer* const> colorBuffers, bool readOnlyDepth, CubeMapFace face)
 {
-    SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, colorBuffers, face);
+    SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, colorBuffers, readOnlyDepth, face);
 }
 
 void RenderBufferManager::SetRenderTargetsRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-    std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face)
+    std::initializer_list<RenderBuffer*> colorBuffers, bool readOnlyDepth, CubeMapFace face)
 {
-    SetRenderTargetsRect(viewportRect, depthStencilBuffer, ToSpan(colorBuffers), face);
+    SetRenderTargetsRect(viewportRect, depthStencilBuffer, ToSpan(colorBuffers), readOnlyDepth, face);
 }
 
 void RenderBufferManager::SetRenderTargets(RenderBuffer* depthStencilBuffer,
-    std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face)
+    std::initializer_list<RenderBuffer*> colorBuffers, bool readOnlyDepth, CubeMapFace face)
 {
-    SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, ToSpan(colorBuffers), face);
+    SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, ToSpan(colorBuffers), readOnlyDepth, face);
 }
 
-void RenderBufferManager::SetOutputRenderTargetsRect(const IntRect& viewportRect)
+void RenderBufferManager::SetOutputRenderTargetsRect(const IntRect& viewportRect, bool readOnlyDepth)
 {
-    SetRenderTargetsRect(viewportRect, GetDepthStencilOutput(), { GetColorOutput() });
+    SetRenderTargetsRect(viewportRect, GetDepthStencilOutput(), { GetColorOutput() }, readOnlyDepth);
 }
 
-void RenderBufferManager::SetOutputRenderTargets()
+void RenderBufferManager::SetOutputRenderTargets(bool readOnlyDepth)
 {
-    SetRenderTargetsRect(IntRect::ZERO, GetDepthStencilOutput(), { GetColorOutput() });
+    SetRenderTargetsRect(IntRect::ZERO, GetDepthStencilOutput(), { GetColorOutput() }, readOnlyDepth);
 }
 
 void RenderBufferManager::ClearDepthStencil(RenderBuffer* depthStencilBuffer,

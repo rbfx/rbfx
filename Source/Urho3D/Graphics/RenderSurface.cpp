@@ -148,6 +148,11 @@ RenderTargetView RenderSurface::GetView() const
     return RenderTargetView::TextureSlice(parentTexture_, slice_);
 }
 
+RenderTargetView RenderSurface::GetReadOnlyDepthView() const
+{
+    return RenderTargetView::ReadOnlyDepthSlice(parentTexture_, slice_);
+}
+
 bool RenderSurface::IsRenderTarget() const
 {
     return parentTexture_->IsRenderTarget();

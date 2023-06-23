@@ -516,7 +516,7 @@ bool RawTexture::CreateGPU()
             return false;
         }
 
-        if (!CreateRenderSurfaces(handles_.rtv_, Diligent::TEXTURE_VIEW_RENDER_TARGET))
+        if (!CreateRenderSurfaces(handles_.rtv_, Diligent::TEXTURE_VIEW_RENDER_TARGET, handles_.renderSurfaces_))
         {
             URHO3D_LOGERROR("Failed to create render surfaces for texture");
             return false;
@@ -533,9 +533,26 @@ bool RawTexture::CreateGPU()
             return false;
         }
 
-        if (!CreateRenderSurfaces(handles_.dsv_, Diligent::TEXTURE_VIEW_DEPTH_STENCIL))
+        if (!CreateRenderSurfaces(handles_.dsv_, Diligent::TEXTURE_VIEW_DEPTH_STENCIL, handles_.renderSurfaces_))
         {
             URHO3D_LOGERROR("Failed to create render surfaces for texture");
+            return false;
+        }
+
+        Diligent::TextureViewDesc dsvReadOnlyDesc = handles_.dsv_->GetDesc();
+        dsvReadOnlyDesc.ViewType = Diligent::TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL;
+        handles_.texture_->CreateView(dsvReadOnlyDesc, &handles_.dsvReadOnly_);
+
+        if (!handles_.dsvReadOnly_)
+        {
+            URHO3D_LOGERROR("Failed to create read-only depth-stencil view for texture");
+            return false;
+        }
+
+        if (!CreateRenderSurfaces(handles_.dsvReadOnly_, Diligent::TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL,
+                handles_.renderSurfacesReadOnly_))
+        {
+            URHO3D_LOGERROR("Failed to create read-only render surfaces for texture");
             return false;
         }
     }
@@ -561,11 +578,12 @@ void RawTexture::DestroyGPU()
     handles_ = {};
 }
 
-bool RawTexture::CreateRenderSurfaces(Diligent::ITextureView* defaultView, Diligent::TEXTURE_VIEW_TYPE viewType)
+bool RawTexture::CreateRenderSurfaces(Diligent::ITextureView* defaultView, Diligent::TEXTURE_VIEW_TYPE viewType,
+    ea::vector<Diligent::RefCntAutoPtr<Diligent::ITextureView>>& renderSurfaces)
 {
     if (params_.type_ == TextureType::Texture2D)
     {
-        handles_.renderSurfaces_.emplace_back(defaultView);
+        renderSurfaces.emplace_back(defaultView);
     }
     else if (params_.type_ == TextureType::TextureCube || params_.type_ == TextureType::Texture2DArray)
     {
@@ -585,7 +603,7 @@ bool RawTexture::CreateRenderSurfaces(Diligent::ITextureView* defaultView, Dilig
                 return false;
             }
 
-            handles_.renderSurfaces_.push_back(view);
+            renderSurfaces.push_back(view);
         }
     }
 

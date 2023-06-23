@@ -48,7 +48,7 @@ void main()
     #ifdef URHO3D_PHYSICAL_MATERIAL
         half roughness = specularInput.a;
     #else
-        half specularPower = (1.0 - specularInput.a) * 255;
+        half specularPower = (1.0 - specularInput.a) * 255.0;
     #endif
 
     DirectLightData lightData = GetDeferredDirectLightData(worldPos, depth);

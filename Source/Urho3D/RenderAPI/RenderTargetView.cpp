@@ -47,6 +47,18 @@ RenderTargetView RenderTargetView::TextureSlice(RawTexture* texture, unsigned sl
     return {texture->GetRenderDevice(), texture, Type::ResourceSlice, slice};
 }
 
+RenderTargetView RenderTargetView::ReadOnlyDepth(RawTexture* texture)
+{
+    URHO3D_ASSERT(texture && texture->GetParams().flags_.Test(TextureFlag::BindDepthStencil));
+    return {texture->GetRenderDevice(), texture, Type::ReadOnlyResource, 0};
+}
+
+RenderTargetView RenderTargetView::ReadOnlyDepthSlice(RawTexture* texture, unsigned slice)
+{
+    URHO3D_ASSERT(texture && texture->GetParams().flags_.Test(TextureFlag::BindDepthStencil));
+    return {texture->GetRenderDevice(), texture, Type::ReadOnlyResourceSlice, slice};
+}
+
 void RenderTargetView::MarkDirty() const
 {
     if (texture_)
@@ -71,20 +83,32 @@ Diligent::ITextureView* RenderTargetView::GetView() const
     {
         if (!handles.rtv_ && !handles.dsv_)
         {
-            URHO3D_ASSERTLOG(false, "RenderTargetView::GetView called for resource without RTV");
+            URHO3D_ASSERTLOG(false, "RenderTargetView::GetView called for resource without RTV or DSV");
             return nullptr;
         }
 
         return handles.rtv_ ? handles.rtv_ : handles.dsv_;
     }
-    else
+    else if (type_ == Type::ReadOnlyResource)
     {
-        if (slice_ >= handles.renderSurfaces_.size())
+        if (!handles.dsvReadOnly_)
         {
-            URHO3D_ASSERTLOG(false, "Invalid slice index: {} of {}", slice_, handles.renderSurfaces_.size());
+            URHO3D_ASSERTLOG(false, "RenderTargetView::GetView called for resource without read-only DSV");
             return nullptr;
         }
-        return handles.renderSurfaces_[slice_];
+
+        return handles.dsvReadOnly_;
+    }
+    else
+    {
+        const auto& surfaces =
+            type_ == Type::ReadOnlyResourceSlice ? handles.renderSurfacesReadOnly_ : handles.renderSurfaces_;
+        if (slice_ >= surfaces.size())
+        {
+            URHO3D_ASSERTLOG(false, "Invalid slice index: {} of {}", slice_, surfaces.size());
+            return nullptr;
+        }
+        return surfaces[slice_];
     }
 }
 
@@ -97,7 +121,9 @@ TextureFormat RenderTargetView::GetFormat() const
     case Type::SwapChainDepthStencil: return renderDevice_->GetSwapChain()->GetDesc().DepthBufferFormat;
 
     case Type::Resource:
-    case Type::ResourceSlice: return texture_->GetParams().format_;
+    case Type::ResourceSlice:
+    case Type::ReadOnlyResource:
+    case Type::ReadOnlyResourceSlice: return texture_->GetParams().format_;
 
     default: URHO3D_ASSERT(false); return TextureFormat::TEX_FORMAT_UNKNOWN;
     }
@@ -111,7 +137,9 @@ int RenderTargetView::GetMultiSample() const
     case Type::SwapChainDepthStencil: return 1; // TODO(diligent): Support multi-sampling
 
     case Type::Resource:
-    case Type::ResourceSlice: return texture_->GetParams().multiSample_;
+    case Type::ResourceSlice:
+    case Type::ReadOnlyResource:
+    case Type::ReadOnlyResourceSlice: return texture_->GetParams().multiSample_;
 
     default: URHO3D_ASSERT(false); return 0;
     }
