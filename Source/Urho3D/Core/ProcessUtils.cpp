@@ -31,10 +31,17 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <thread>
+#include <EASTL/fixed_vector.h>
 
 #ifdef __APPLE__
 #include "TargetConditionals.h"
 #include <CoreFoundation/CFUUID.h>
+#endif
+
+#if defined(IOS)
+#include <mach/mach_host.h>
+#elif defined(TVOS)
+extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 #endif
 
 #if defined(_WIN32)
@@ -66,6 +73,10 @@
 #endif
 #ifndef _WIN32
 #include <unistd.h>
+#endif
+
+#if defined(__EMSCRIPTEN__) && defined(__EMSCRIPTEN_PTHREADS__)
+#include <emscripten/threading.h>
 #endif
 
 #if defined(__i386__)
@@ -410,6 +421,63 @@ ea::string GetPlatformName()
     default:
         return "(?)";
     }
+}
+
+unsigned GetNumPhysicalCPUs()
+{
+    int cpuCount = 0;
+#if defined(IOS)
+    host_basic_info_data_t data;
+    mach_msg_type_number_t infoCount;
+    infoCount = HOST_BASIC_INFO_COUNT;
+    host_info(mach_host_self(), HOST_BASIC_INFO, (host_info_t)&data, &infoCount);
+    cpuCount = data.physical_cpu;
+#elif defined(TVOS)
+    cpuCount = SDL_TVOS_GetActiveProcessorCount();
+#elif defined(APPLE) || defined(__FreeBSD__)
+    size_t size = sizeof(cpuCount);
+    sysctlbyname("hw.physicalcpu", &cpuCount, &size, nullptr, 0);
+#elif defined(__linux__)
+    FILE* fp = fopen("/proc/cpuinfo", "rb");
+    if (fp)
+    {
+        char line[1024];
+        while (fgets(line, sizeof(line), fp))
+        {
+            int id = 0;
+            if (sscanf(line, "core id%*[\t]: %d", &id) == 1)
+                cpuCount = Max(cpuCount, static_cast<unsigned>(id + 1));
+        }
+        fclose(fp);
+    }
+#elif defined(__EMSCRIPTEN__)
+#ifdef __EMSCRIPTEN_PTHREADS__
+    cpuCount = emscripten_num_logical_cores();
+#else
+    cpuCount = 1; // Targeting a single-threaded Emscripten build.
+#endif  // __EMSCRIPTEN_PTHREADS__
+#elif defined(_WIN32)
+    DWORD bufferSize = 0;
+    GetLogicalProcessorInformation(nullptr, &bufferSize);
+    if (ERROR_INSUFFICIENT_BUFFER == GetLastError())
+    {
+        const size_t entryCount = bufferSize / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+        ea::fixed_vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION, 64> entries(entryCount);
+        if (GetLogicalProcessorInformation(entries.data(), &bufferSize))
+        {
+            for (const auto& entry : entries)
+            {
+                if (entry.Relationship == RelationProcessorCore)
+                    cpuCount++;
+            }
+        }
+    }
+#endif
+    // This is as good as it gets on remaining platforms.
+    if (cpuCount == 0)
+        cpuCount = std::thread::hardware_concurrency();
+
+    return Max(1, cpuCount);
 }
 
 unsigned GetNumLogicalCPUs()
