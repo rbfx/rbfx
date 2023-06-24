@@ -138,19 +138,26 @@ void MoveAndOrbitController::Update(float timeStep)
     TouchState* rotationTouch = nullptr;
     FindTouchStates(movementRect, rotationRect, movementTouch, rotationTouch);
 
+    auto dpi = GetSubsystem<Graphics>()->GetDisplayDPI().z_;
+    dpi = dpi ? dpi : 96;
+
     if (movementTouch)
     {
         const auto sensitivity = GetSensitivity(TOUCH_MOVEMENT_SENSITIVITY, DEFAULT_TOUCH_MOVEMENT_SENSITIVITY);
+        float halfAreaSize = Min(movementRect.Width(),movementRect.Height())*0.45f;
+        float fullMotion = Min(dpi/sensitivity,halfAreaSize);
         const auto delta = movementTouch->position_ - movementTouchOrigin_;
-        right += delta.x_ * sensitivity;
-        forward -= delta.y_ * sensitivity;
+        right += Clamp(delta.x_ / fullMotion, -1.0f, 1.0f);
+        forward -= Clamp(delta.y_ / fullMotion, -1.0f, 1.0f);
     }
 
     if (rotationTouch)
     {
         const auto sensitivity = GetSensitivity(TOUCH_ROTATION_SENSITIVITY, DEFAULT_TOUCH_ROTATION_SENSITIVITY);
-        yaw += sensitivity * static_cast<float>(rotationTouch->delta_.x_);
-        pitch += sensitivity * static_cast<float>(rotationTouch->delta_.y_);
+        float halfAreaSize = Min(rotationRect.Width(),rotationRect.Height())*0.45f;
+        float halfPiDistance = Min(dpi/sensitivity,halfAreaSize);
+        yaw += static_cast<float>(rotationTouch->delta_.x_)/halfPiDistance*90.0f;
+        pitch += static_cast<float>(rotationTouch->delta_.y_)/halfPiDistance*90.0f;
     }
 
     if (input->GetMouseMode() != MM_FREE || input->GetMouseButtonPress(MOUSEB_RIGHT))

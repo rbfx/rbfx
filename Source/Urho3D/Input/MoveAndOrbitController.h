@@ -36,15 +36,18 @@ class URHO3D_API MoveAndOrbitController : public LogicComponent
 
 public:
     static inline constexpr float DEFAULT_MOUSE_SENSITIVITY{0.1f};
-    static inline constexpr float DEFAULT_TOUCH_MOVEMENT_SENSITIVITY{0.2f};
-    static inline constexpr float DEFAULT_TOUCH_ROTATION_SENSITIVITY{0.2f};
+    //Full motion per inch
+    static inline constexpr float DEFAULT_TOUCH_MOVEMENT_SENSITIVITY{1.0f};
+    //90' motion per inch
+    static inline constexpr float DEFAULT_TOUCH_ROTATION_SENSITIVITY{1.0f};
+    //Degrees per second
     static inline constexpr float DEFAULT_AXIS_ROTATION_SENSITIVITY{100.0f};
 
     static inline const ea::string MOUSE_SENSITIVITY{"MouseSensitivity"};
     static inline const ea::string AXIS_ROTATION_SENSITIVITY{"AxisRotationSensitivity"};
     static inline const ea::string TOUCH_MOVEMENT_SENSITIVITY{"TouchMovementSensitivity"};
     static inline const ea::string TOUCH_ROTATION_SENSITIVITY{"TouchRotationSensitivity"};
-    
+
     static inline const ea::string ACTION_FORWARD{"Forward"};
     static inline const ea::string ACTION_BACK{"Back"};
     static inline const ea::string ACTION_LEFT{"Left"};
