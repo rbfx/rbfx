@@ -203,17 +203,58 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
             levelHeight = image->GetHeight();
         }
 
-        switch (components)
+        if (image->IsHDR())
         {
-        case 1:
-            format = Graphics::GetAlphaFormat();
-            break;
+            switch (components)
+            {
+            case 1:
+                format = Graphics::GetFloat32Format();
+                break;
+            case 2:
+                format = Graphics::GetRGFloat32Format();
+                break;
+            case 3:
+                format = Graphics::GetRGBFloat32Format();
+                break;
+            case 4:
+                format = Graphics::GetRGBAFloat32Format();
+                break;
 
-        case 4:
-            format = Graphics::GetRGBAFormat();
-            break;
+            default: break;
+            }
+        }
+        else if (image->Is16Bit())
+        {
+            switch (components)
+            {
+            case 1:
+                format = DXGI_FORMAT_R16_UNORM;
+                break;
+            case 2:
+                format = DXGI_FORMAT_R16G16_UNORM;
+                break;
 
-        default: break;
+            case 4:
+                format = DXGI_FORMAT_R16G16B16A16_UNORM;
+                break;
+
+            default: break;
+            }
+        }
+        else
+        {
+            switch (components)
+            {
+            case 1:
+                format = Graphics::GetAlphaFormat();
+                break;
+
+            case 4:
+                format = Graphics::GetRGBAFormat();
+                break;
+
+            default: break;
+            }
         }
 
         // If image was previously compressed, reset number of requested levels to avoid error if level count is too high for new size

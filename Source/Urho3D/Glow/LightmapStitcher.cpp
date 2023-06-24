@@ -70,6 +70,7 @@ unsigned GetStitchTextureFormat(unsigned numChannels)
     {
     case 1: return Graphics::GetFloat32Format();
     case 2: return Graphics::GetRGFloat32Format();
+    case 3: return Graphics::GetRGBFloat32Format();
     case 4: return Graphics::GetRGBAFloat32Format();
     default:
         assert(0);

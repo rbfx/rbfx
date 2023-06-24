@@ -212,27 +212,55 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
             levelHeight = image->GetHeight();
         }
 
-        switch (components)
+        if (image->IsHDR())
         {
-        case 1:
-            format = useAlpha ? Graphics::GetAlphaFormat() : Graphics::GetLuminanceFormat();
-            break;
+            switch (components)
+            {
+            case 1:
+                format = Graphics::GetFloat32Format();
+                break;
 
-        case 2:
-            format = Graphics::GetLuminanceAlphaFormat();
-            break;
+            case 2:
+                format = Graphics::GetRGFloat32Format();
+                break;
 
-        case 3:
-            format = Graphics::GetRGBFormat();
-            break;
+            case 3:
+                format = Graphics::GetRGBFloat32Format();
+                break;
 
-        case 4:
-            format = Graphics::GetRGBAFormat();
-            break;
+            case 4:
+                format = Graphics::GetRGBAFloat32Format();
+                break;
 
-        default:
-            assert(false);  // Should not reach here
-            break;
+            default:
+                assert(false); // Should not reach here
+                break;
+            }
+        }
+        else
+        {
+            switch (components)
+            {
+            case 1:
+                format = useAlpha ? Graphics::GetAlphaFormat() : Graphics::GetLuminanceFormat();
+                break;
+
+            case 2:
+                format = Graphics::GetLuminanceAlphaFormat();
+                break;
+
+            case 3:
+                format = Graphics::GetRGBFormat();
+                break;
+
+            case 4:
+                format = Graphics::GetRGBAFormat();
+                break;
+
+            default:
+                assert(false); // Should not reach here
+                break;
+            }
         }
 
         // If image was previously compressed, reset number of requested levels to avoid error if level count is too high for new size

@@ -2686,6 +2686,15 @@ unsigned Graphics::GetRGBAFormat()
     return GL_RGBA;
 }
 
+unsigned Graphics::GetRGBFloat32Format()
+{
+#ifndef GL_ES_VERSION_2_0
+    return GL_RGB16F;
+#else
+    return GL_RGB;
+#endif
+}
+
 unsigned Graphics::GetRGBA16Format()
 {
 #ifndef GL_ES_VERSION_2_0
@@ -2812,6 +2821,8 @@ unsigned Graphics::GetFormat(const ea::string& formatName)
         return GetRGBA16Format();
     if (nameLower == "rgba16f")
         return GetRGBAFloat16Format();
+    if (nameLower == "rgb32f")
+        return GetRGBFloat32Format();
     if (nameLower == "rgba32f")
         return GetRGBAFloat32Format();
     if (nameLower == "rg16")

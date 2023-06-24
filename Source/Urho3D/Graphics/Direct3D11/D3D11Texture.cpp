@@ -117,6 +117,9 @@ unsigned Texture::GetRowDataSize(int width) const
     case DXGI_FORMAT_R16G16B16A16_FLOAT:
         return (unsigned)(width * 8);
 
+    case DXGI_FORMAT_R32G32_FLOAT:
+        return (unsigned)(width * 8);
+
     case DXGI_FORMAT_R32G32B32A32_FLOAT:
         return (unsigned)(width * 16);
 

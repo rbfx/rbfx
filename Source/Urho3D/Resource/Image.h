@@ -100,11 +100,11 @@ public:
     bool SaveFile(const FileIdentifier& fileName) const override;
 
     /// Set 2D size and number of color components. Old image data will be destroyed and new data is undefined. Return true if successful.
-    bool SetSize(int width, int height, unsigned components);
+    bool SetSize(int width, int height, unsigned components, unsigned bytesPerComponent = 1);
     /// Set 3D size and number of color components. Old image data will be destroyed and new data is undefined. Return true if successful.
-    bool SetSize(int width, int height, int depth, unsigned components);
+    bool SetSize(int width, int height, int depth, unsigned components, unsigned bytesPerComponent = 1);
     /// Set new image data.
-    void SetData(const unsigned char* pixelData);
+    void SetData(const void* pixelData);
     /// Set a 2D pixel.
     void SetPixel(int x, int y, const Color& color);
     /// Set a 3D pixel.
@@ -146,6 +146,12 @@ public:
     /// Whether this texture is in sRGB, only relevant for DDS.
     /// @property
     bool IsSRGB() const { return sRGB_; }
+    /// Whether this texture is in HDR.
+    /// @property
+    bool IsHDR() const { return bytesPerComponent_ == sizeof(float); }
+    /// Whether this texture is in 16bit.
+    /// @property
+    bool Is16Bit() const { return bytesPerComponent_ == sizeof(unsigned short); }
 
     /// Return a 2D pixel color.
     Color GetPixel(int x, int y) const;
@@ -181,6 +187,15 @@ public:
 
     /// Return pixel data.
     unsigned char* GetData() const { return data_.get(); }
+
+    /// Return bytes per component.
+    unsigned GetBytesPerComponent() const { return bytesPerComponent_; }
+
+     /// Return bytes per component.
+    unsigned GetBytesPerPixel() const { return components_ * bytesPerComponent_; }
+
+    /// Return row pitch.
+    unsigned GetRowPitch() const { return width_ * GetBytesPerPixel(); }
 
     /// Return whether is compressed.
     /// @property
@@ -226,7 +241,7 @@ public:
 
 private:
     /// Decode an image using stb_image.
-    static unsigned char* GetImageData(Deserializer& source, int& width, int& height, unsigned& components);
+    static unsigned char* GetImageData(Deserializer& source, int& width, int& height, unsigned& components, unsigned& bytesPerComponent);
     /// Free an image file's pixel data.
     static void FreeImageData(unsigned char* pixelData);
 
@@ -240,6 +255,8 @@ private:
     unsigned components_{};
     /// Number of compressed mip levels.
     unsigned numCompressedLevels_{};
+    /// Bytes per single component.
+    unsigned bytesPerComponent_{1};
     /// Cubemap status if DDS.
     bool cubemap_{};
     /// Texture array status if DDS.

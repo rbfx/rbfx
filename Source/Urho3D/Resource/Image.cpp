@@ -884,7 +884,7 @@ bool Image::BeginLoad(Deserializer& source)
         source.Seek(0);
         int width, height;
         unsigned components;
-        unsigned char* pixelData = GetImageData(source, width, height, components);
+        unsigned char* pixelData = GetImageData(source, width, height, components, bytesPerComponent_);
         if (!pixelData)
         {
             URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + ea::string(stbi_failure_reason()));
@@ -951,17 +951,17 @@ bool Image::SaveFile(const FileIdentifier& fileName) const
         return SavePNG(absoluteFileName);
 }
 
-bool Image::SetSize(int width, int height, unsigned components)
+bool Image::SetSize(int width, int height, unsigned components, unsigned bytesPerComponent)
 {
-    return SetSize(width, height, 1, components);
+    return SetSize(width, height, 1, components, bytesPerComponent);
 }
 
-bool Image::SetSize(int width, int height, int depth, unsigned components)
+bool Image::SetSize(int width, int height, int depth, unsigned components, unsigned bytesPerComponent)
 {
-    if (width == width_ && height == height_ && depth == depth_ && components == components_)
+    if (width == width_ && height == height_ && depth == depth_ && components == components_ && bytesPerComponent == bytesPerComponent_)
         return true;
 
-    if (width <= 0 || height <= 0 || depth <= 0)
+    if (width <= 0 || height <= 0 || depth <= 0 || bytesPerComponent <= 0)
         return false;
 
     if (components > 4)
@@ -970,11 +970,12 @@ bool Image::SetSize(int width, int height, int depth, unsigned components)
         return false;
     }
 
-    data_ = new unsigned char[width * height * depth * components];
+    data_ = new unsigned char[width * height * depth * components * bytesPerComponent];
     width_ = width;
     height_ = height;
     depth_ = depth;
     components_ = components;
+    bytesPerComponent_ = bytesPerComponent;
     compressedFormat_ = CF_NONE;
     numCompressedLevels_ = 0;
     nextLevel_.Reset();
@@ -1023,7 +1024,7 @@ void Image::SetPixelInt(int x, int y, int z, unsigned uintColor)
     }
 }
 
-void Image::SetData(const unsigned char* pixelData)
+void Image::SetData(const void* pixelData)
 {
     if (!data_)
         return;
@@ -1034,7 +1035,7 @@ void Image::SetData(const unsigned char* pixelData)
         return;
     }
 
-    auto size = (size_t)width_ * height_ * depth_ * components_;
+    auto size = (size_t)width_ * height_ * depth_ * components_ * bytesPerComponent_;
     if (pixelData)
         memcpy(data_.get(), pixelData, size);
     else
@@ -1055,7 +1056,7 @@ bool Image::LoadColorLUT(Deserializer& source)
     source.Seek(0);
     int width, height;
     unsigned components;
-    unsigned char* pixelDataIn = GetImageData(source, width, height, components);
+    unsigned char* pixelDataIn = GetImageData(source, width, height, components, bytesPerComponent_);
     if (!pixelDataIn)
     {
         URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + ea::string(stbi_failure_reason()));
@@ -2417,13 +2418,28 @@ void Image::GetLevels(ea::vector<const Image*>& levels) const
     }
 }
 
-unsigned char* Image::GetImageData(Deserializer& source, int& width, int& height, unsigned& components)
+unsigned char* Image::GetImageData(Deserializer& source, int& width, int& height, unsigned& components, unsigned& bytesPerComponent)
 {
     unsigned dataSize = source.GetSize();
 
     ea::shared_array<unsigned char> buffer(new unsigned char[dataSize]);
     source.Read(buffer.get(), dataSize);
-    return stbi_load_from_memory(buffer.get(), dataSize, &width, &height, (int*)&components, 0);
+
+    if (stbi_is_16_bit_from_memory(buffer.get(), (int)dataSize))
+    {
+        bytesPerComponent = sizeof(unsigned short);
+        return reinterpret_cast<unsigned char*>(stbi_load_16_from_memory(buffer.get(), (int)dataSize, &width, &height, (int*)&components, 0));
+    }
+    else if (stbi_is_hdr_from_memory(buffer.get(), (int)dataSize))
+    {
+        bytesPerComponent = sizeof(float);
+        return reinterpret_cast<unsigned char*>(stbi_loadf_from_memory(buffer.get(), (int)dataSize, &width, &height, (int*)&components, 0));
+    }
+    else
+    {
+        bytesPerComponent = sizeof(unsigned char);
+        return stbi_load_from_memory(buffer.get(), (int)dataSize, &width, &height, (int*)&components, 0);
+    }
 }
 
 void Image::FreeImageData(unsigned char* pixelData)

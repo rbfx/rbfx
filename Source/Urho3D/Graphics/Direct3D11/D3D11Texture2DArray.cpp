@@ -234,17 +234,40 @@ bool Texture2DArray::SetData(unsigned layer, Image* image, bool useAlpha)
             levelHeight = image->GetHeight();
         }
 
-        switch (components)
+        if (image->IsHDR())
         {
-        case 1:
-            format = Graphics::GetAlphaFormat();
-            break;
+            switch (components)
+            {
+            case 1:
+                format = Graphics::GetFloat32Format();
+                break;
+            case 2:
+                format = Graphics::GetRGFloat32Format();
+                break;
+            case 3:
+                format = Graphics::GetRGBFloat32Format();
+                break;
+            case 4:
+                format = Graphics::GetRGBAFloat32Format();
+                break;
 
-        case 4:
-            format = Graphics::GetRGBAFormat();
-            break;
+            default: break;
+            }
+        }
+        else
+        {
+            switch (components)
+            {
+            case 1:
+                format = Graphics::GetAlphaFormat();
+                break;
 
-        default: break;
+            case 4:
+                format = Graphics::GetRGBAFormat();
+                break;
+
+            default: break;
+            }
         }
 
         // Create the texture array when layer 0 is being loaded, check that rest of the layers are same size & format

@@ -1845,6 +1845,11 @@ unsigned Graphics::GetRGBAFloat16Format()
     return DXGI_FORMAT_R16G16B16A16_FLOAT;
 }
 
+unsigned Graphics::GetRGBFloat32Format()
+{
+    return DXGI_FORMAT_R32G32B32_FLOAT;
+}
+
 unsigned Graphics::GetRGBAFloat32Format()
 {
     return DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -1914,6 +1919,8 @@ unsigned Graphics::GetFormat(const ea::string& formatName)
         return GetRGBA16Format();
     if (nameLower == "rgba16f")
         return GetRGBAFloat16Format();
+    if (nameLower == "rgb32f")
+        return GetRGBFloat32Format();
     if (nameLower == "rgba32f")
         return GetRGBAFloat32Format();
     if (nameLower == "rg16")
