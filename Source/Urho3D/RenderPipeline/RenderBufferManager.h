@@ -160,6 +160,7 @@ public:
     Vector4 GetDefaultClipToUVSpaceOffsetAndScale() const;
     TextureFormat GetOutputColorFormat() const;
     TextureFormat GetOutputDepthStencilFormat() const;
+    unsigned GetOutputMultiSample() const { return colorOutputParams_.multiSampleLevel_; }
     const RenderBufferManagerSettings& GetSettings() const { return settings_; }
 
 private:

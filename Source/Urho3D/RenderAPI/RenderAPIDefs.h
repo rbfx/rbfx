@@ -409,6 +409,7 @@ struct URHO3D_API PipelineStateOutputDesc
     TextureFormat depthStencilFormat_{};
     unsigned numRenderTargets_{};
     ea::array<TextureFormat, MaxRenderTargets> renderTargetFormats_{};
+    unsigned multiSample_{1};
 
     /// Operators.
     /// @{
@@ -416,7 +417,8 @@ struct URHO3D_API PipelineStateOutputDesc
     {
         return ea::make_tuple( //
             depthStencilFormat_, //
-            ea::span<const TextureFormat>(renderTargetFormats_.data(), numRenderTargets_));
+            ea::span<const TextureFormat>(renderTargetFormats_.data(), numRenderTargets_), //
+            multiSample_);
     }
 
     bool operator==(const PipelineStateOutputDesc& rhs) const { return Tie() == rhs.Tie(); }

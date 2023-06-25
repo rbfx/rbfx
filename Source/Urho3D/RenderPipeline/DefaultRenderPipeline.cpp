@@ -268,10 +268,11 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
 
     renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
 
+    const unsigned outputMultiSample = renderBufferManager_->GetOutputMultiSample();
     const TextureFormat outputColorFormat = renderBufferManager_->GetOutputColorFormat();
     const TextureFormat outputDepthFormat = renderBufferManager_->GetOutputDepthStencilFormat();
 
-    const PipelineStateOutputDesc standardOutputDesc{outputDepthFormat, 1, {outputColorFormat}};
+    const PipelineStateOutputDesc standardOutputDesc{outputDepthFormat, 1, {outputColorFormat}, outputMultiSample};
     const PipelineStateOutputDesc deferredOutputDesc{
         outputDepthFormat, 4, {outputColorFormat, albedoFormat_, specularFormat_, normalFormat_}};
 

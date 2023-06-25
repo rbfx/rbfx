@@ -173,6 +173,8 @@ void DrawCommandQueue::Execute()
                 texture = texture->GetBackupTexture(); // TODO(diligent): We should have default backup texture!
             if (!texture)
                 continue;
+            if (texture->GetResolveDirty())
+                texture->Resolve();
             if (texture->GetLevelsDirty())
                 texture->GenerateLevels();
 

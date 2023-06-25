@@ -146,6 +146,7 @@ void RenderContext::UpdateCurrentRenderTargetInfo()
 
     Diligent::ITextureView* view = !currentRenderTargets_.empty() ? currentRenderTargets_[0] : currentDepthStencil_;
     currentDimensions_ = view ? GetTextureDimensions(view->GetTexture()) : IntVector2::ZERO;
+    currentOutputDesc_.multiSample_ = view ? view->GetTexture()->GetDesc().SampleCount : 1;
 }
 
 bool RenderContext::IsBoundAsRenderTarget(const RawTexture* texture) const

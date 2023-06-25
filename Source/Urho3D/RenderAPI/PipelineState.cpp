@@ -457,6 +457,7 @@ void PipelineState::CreateGPU()
     for (unsigned i = 0; i < desc_.output_.numRenderTargets_; ++i)
         ci.GraphicsPipeline.RTVFormats[i] = desc_.output_.renderTargetFormats_[i];
     ci.GraphicsPipeline.DSVFormat = desc_.output_.depthStencilFormat_;
+    ci.GraphicsPipeline.SmplDesc.Count = desc_.output_.multiSample_;
 
     ci.pVS = vertexShader;
     ci.pPS = pixelShader;

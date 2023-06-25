@@ -89,9 +89,6 @@ public:
     /// supported. On D3D feature level 10.1+, uses the standard level. Below that uses the best quality.
     unsigned GetMultiSampleQuality(Diligent::TEXTURE_FORMAT format, unsigned sampleCount) const;
 
-    /// Mark render targets as dirty. Must be called if render targets were set using DX11 device directly.
-    void MarkRenderTargetsDirty() { renderTargetsDirty_ = true; }
-
     unsigned FindBestAdapter(Diligent::IEngineFactory* engineFactory, Diligent::Version& version);
 
 private:
@@ -134,8 +131,6 @@ private:
     /// Vertex stream offsets per buffer.
     unsigned vertexOffsets_[MAX_VERTEX_STREAMS];
 #endif
-    /// Rendertargets dirty flag.
-    bool renderTargetsDirty_;
     /// Viewport dirty flag.
     bool viewportDirty_;
     /// Textures dirty flag.

@@ -175,7 +175,7 @@ void RenderToTexture::CreateScene()
 
             // Create a renderable texture (1024x768, RGB format), enable bilinear filtering on it
             SharedPtr<Texture2D> renderTexture(new Texture2D(context_));
-            renderTexture->SetSize(1024, 768, Graphics::GetRGBFormat(), TextureFlag::BindRenderTarget);
+            renderTexture->SetSize(1024, 768, Graphics::GetRGBFormat(), TextureFlag::BindRenderTarget, 4);
             renderTexture->SetFilterMode(FILTER_BILINEAR);
 
             // Create a new material from scratch, use the diffuse unlit technique, assign the render texture

@@ -534,10 +534,6 @@ void Graphics::EndFrame()
         SendEvent(E_ENDRENDERING);
 
         renderDevice_->Present();
-
-        for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-            impl_->renderTargetViews_[i] = nullptr;
-        impl_->renderTargetsDirty_ = true;
     }
 
     // Clean up too large scratch buffers
@@ -941,11 +937,6 @@ void Graphics::SetPipelineState(PipelineState* pipelineState)
 
     // TODO(diligent): We shouldn't need it cached
     pipelineState_ = pipelineState;
-    if (pipelineState_ && pipelineState_->GetDesc().depthCompareFunction_ == CMP_ALWAYS
-        && !pipelineState_->GetDesc().depthWriteEnabled_
-        && pipelineState_->GetDesc().output_.depthStencilFormat_ == TEX_FORMAT_UNKNOWN)
-        impl_->renderTargetsDirty_ = true;
-
 }
 
 ShaderProgramReflection* Graphics::GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps)
@@ -1697,7 +1688,6 @@ void Graphics::ResetCachedState()
     stencilCompareMask_ = M_MAX_UNSIGNED;
     stencilWriteMask_ = M_MAX_UNSIGNED;
     useClipPlane_ = false;
-    impl_->renderTargetsDirty_ = true;
     impl_->texturesDirty_ = true;
     impl_->vertexDeclarationDirty_ = true;
     impl_->blendStateDirty_ = true;

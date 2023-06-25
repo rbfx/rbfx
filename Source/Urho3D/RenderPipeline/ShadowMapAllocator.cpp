@@ -78,6 +78,7 @@ void ShadowMapAllocator::CacheSettings()
         shadowOutputDesc_.depthStencilFormat_ = static_cast<TextureFormat>(Graphics::GetDepthStencilFormat());
         shadowOutputDesc_.numRenderTargets_ = 1;
         shadowOutputDesc_.renderTargetFormats_[0] = static_cast<TextureFormat>(shadowMapFormat_);
+        shadowOutputDesc_.multiSample_ = settings_.varianceShadowMapMultiSample_;
     }
     else
     {
@@ -87,6 +88,7 @@ void ShadowMapAllocator::CacheSettings()
 
         shadowOutputDesc_.depthStencilFormat_ = static_cast<TextureFormat>(shadowMapFormat_);
         shadowOutputDesc_.numRenderTargets_ = 0;
+        shadowOutputDesc_.multiSample_ = 1;
     }
 
     shadowAtlasPageSize_ = static_cast<int>(settings_.shadowAtlasPageSize_) * IntVector2::ONE;
