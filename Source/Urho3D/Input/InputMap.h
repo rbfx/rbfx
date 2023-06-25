@@ -111,6 +111,8 @@ struct URHO3D_API MouseButtonMapping
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive);
 
+    MouseButtonFlags GetMask() const;
+
     unsigned mouseButton_{};
 };
 

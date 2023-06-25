@@ -465,6 +465,11 @@ void MouseButtonMapping::SerializeInBlock(Archive& archive)
         { SerializeEnum<unsigned, unsigned>(archive, name, value, buttonNames); });
 }
 
+MouseButtonFlags MouseButtonMapping::GetMask() const
+{
+    return static_cast<MouseButtonFlags>(1 << mouseButton_);
+}
+
 void ActionMapping::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "keys", keyboardKeys_, EmptyObject{},
@@ -493,7 +498,7 @@ float ActionMapping::Evaluate(Input* input, bool isUIInFocus, float deadZone, in
     }
     for (auto& button : mouseButtons_)
     {
-        if (input->GetMouseButtonDown(static_cast<MouseButtonFlags>(1 << button.mouseButton_)))
+        if (input->GetMouseButtonDown(button.GetMask()))
         {
             return 1.0f;
         }
@@ -645,6 +650,23 @@ void InputMap::MapHat(const ea::string& action, HatPosition hatPosition)
 
 void InputMap::MapMouseButton(const ea::string& action, MouseButton mouseButton)
 {
+    if (mouseButton == MOUSEB_NONE)
+        return;
+
+    unsigned value;
+
+    switch (mouseButton)
+    {
+    case MOUSEB_LEFT: value = SDL_BUTTON_LEFT - 1; break;
+    case MOUSEB_RIGHT: value = SDL_BUTTON_RIGHT - 1; break;
+    case MOUSEB_MIDDLE: value = SDL_BUTTON_MIDDLE - 1; break;
+    case MOUSEB_X1: value = SDL_BUTTON_X1 - 1; break;
+    case MOUSEB_X2: value = SDL_BUTTON_X2 - 1; break;
+        break;
+    default: URHO3D_LOGERROR("Can't map mouse button. Invalid MouseButton value.");
+        return;
+    }
+
     for (auto kv : actions_)
     {
         ea::erase_if(kv.second.mouseButtons_,
