@@ -32,6 +32,7 @@
 #include <fcntl.h>
 #include <thread>
 #include <EASTL/fixed_vector.h>
+#include <enkiTS/src/TaskScheduler.h>
 
 #ifdef __APPLE__
 #include "TargetConditionals.h"
@@ -480,7 +481,7 @@ unsigned GetNumPhysicalCPUs()
 
 unsigned GetNumLogicalCPUs()
 {
-    return ea::max(1u, std::thread::hardware_concurrency());
+    return ea::max(1u, enki::GetNumHardwareThreads());
 }
 
 void SetMiniDumpDir(const ea::string& pathName)
