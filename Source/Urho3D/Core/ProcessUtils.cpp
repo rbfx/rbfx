@@ -426,18 +426,18 @@ ea::string GetPlatformName()
 unsigned GetNumPhysicalCPUs()
 {
     int cpuCount = 0;
-#if defined(IOS)
+#if defined(URHO3D_PLATFORM_IOS)
     host_basic_info_data_t data;
     mach_msg_type_number_t infoCount;
     infoCount = HOST_BASIC_INFO_COUNT;
     host_info(mach_host_self(), HOST_BASIC_INFO, (host_info_t)&data, &infoCount);
     cpuCount = data.physical_cpu;
-#elif defined(TVOS)
+#elif defined(URHO3D_PLATFORM_TVOS)
     cpuCount = SDL_TVOS_GetActiveProcessorCount();
-#elif defined(APPLE) || defined(__FreeBSD__)
+#elif defined(URHO3D_PLATFORM_MACOS)
     size_t size = sizeof(cpuCount);
     sysctlbyname("hw.physicalcpu", &cpuCount, &size, nullptr, 0);
-#elif defined(__linux__)
+#elif defined(URHO3D_PLATFORM_LINUX)
     FILE* fp = fopen("/proc/cpuinfo", "rb");
     if (fp)
     {
@@ -450,13 +450,11 @@ unsigned GetNumPhysicalCPUs()
         }
         fclose(fp);
     }
-#elif defined(__EMSCRIPTEN__)
-#ifdef __EMSCRIPTEN_PTHREADS__
-    cpuCount = emscripten_num_logical_cores();
-#else
+#elif defined(URHO3D_PLATFORM_WEB)
+#ifndef __EMSCRIPTEN_PTHREADS__
     cpuCount = 1; // Targeting a single-threaded Emscripten build.
 #endif  // __EMSCRIPTEN_PTHREADS__
-#elif defined(_WIN32)
+#elif defined(URHO3D_PLATFORM_WINDOWS)
     DWORD bufferSize = 0;
     GetLogicalProcessorInformation(nullptr, &bufferSize);
     if (ERROR_INSUFFICIENT_BUFFER == GetLastError())
