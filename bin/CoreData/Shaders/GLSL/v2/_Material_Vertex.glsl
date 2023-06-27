@@ -8,7 +8,7 @@
 /// - vNormal
 /// - vTangent
 /// - vBitangentXY
-void FillVertexTransformOutputs(const VertexTransform vertexTransform)
+void FillVertexTransformOutputs(VertexTransform vertexTransform)
 {
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
     vWorldDepth = GetDepth(gl_Position);
@@ -51,7 +51,7 @@ void FillTexCoordOutputs()
 /// - vLightVec
 /// - vShadowPos
 /// - vShapePos
-void FillLightOutputs(const VertexTransform vertexTransform)
+void FillLightOutputs(VertexTransform vertexTransform)
 {
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
     vAmbientAndVertexLigthing = GetAmbientAndVertexLights(vertexTransform.position.xyz, vertexTransform.normal);

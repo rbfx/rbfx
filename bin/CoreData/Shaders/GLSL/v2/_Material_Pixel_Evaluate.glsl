@@ -3,7 +3,7 @@
 
 /// Return final surface alpha with optionally applied fade out.
 #ifdef URHO3D_SOFT_PARTICLES
-    half GetSoftParticleFade(const half fragmentDepth, const half backgroundDepth)
+    half GetSoftParticleFade(half fragmentDepth, half backgroundDepth)
     {
         half depthDelta = backgroundDepth - fragmentDepth - cFadeOffsetScale.x;
         return clamp(depthDelta * cFadeOffsetScale.y, 0.0, 1.0);
@@ -18,7 +18,7 @@
 
 #ifdef URHO3D_AMBIENT_PASS
     /// Calculate ambient lighting.
-    half3 CalculateAmbientLighting(const SurfaceData surfaceData)
+    half3 CalculateAmbientLighting(SurfaceData surfaceData)
     {
     #ifdef URHO3D_PHYSICAL_MATERIAL
 
@@ -78,7 +78,7 @@
     }
 
     /// Calculate lighting from per-pixel light source.
-    half3 CalculateDirectLighting(const SurfaceData surfaceData)
+    half3 CalculateDirectLighting(SurfaceData surfaceData)
     {
         DirectLightData lightData = GetForwardDirectLightData();
 
@@ -106,7 +106,7 @@
 
 /// Return color with applied lighting, but without fog.
 /// Fills all channels of geometry buffer except destination color.
-half3 GetSurfaceColor(const SurfaceData surfaceData)
+half3 GetSurfaceColor(SurfaceData surfaceData)
 {
 #ifdef URHO3D_AMBIENT_PASS
     half3 surfaceColor = CalculateAmbientLighting(surfaceData);
@@ -133,7 +133,7 @@ half3 GetSurfaceColor(const SurfaceData surfaceData)
 #else // URHO3D_IS_LIT
 
 /// Return color with optionally applied reflection, but without fog.
-half3 GetSurfaceColor(const SurfaceData surfaceData)
+half3 GetSurfaceColor(SurfaceData surfaceData)
 {
     half3 surfaceColor = surfaceData.albedo.rgb;
 #ifdef URHO3D_REFLECTION_MAPPING

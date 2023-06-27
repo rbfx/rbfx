@@ -91,7 +91,7 @@
 /// out: SurfaceData.roughness
 /// out: SurfaceData.occlusion
 #if (URHO3D_SPECULAR == 2) && defined(URHO3D_FEATURE_DERIVATIVES) && defined(URHO3D_PHYSICAL_MATERIAL)
-    half _GetAdjustedFragmentRoughness(const half roughness, const half3 normal)
+    half _GetAdjustedFragmentRoughness(half roughness, half3 normal)
     {
         half3 dNdx = dFdx(normal);
         half3 dNdy = dFdy(normal);
@@ -155,7 +155,7 @@
 /// Fill surface albedo and specular.
 /// out: SurfaceData.albedo
 /// out: SurfaceData.specular
-void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albedo, out half3 specular)
+void _GetFragmentAlbedoSpecular(half oneMinusReflectivity, out half4 albedo, out half3 specular)
 {
 #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
     half4 albedoInput = texture2D(sDiffMap, vTexCoord);
@@ -240,7 +240,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
 
         /// Planar reflections don't support reflection blending
         void FillSurfaceReflectionColorPlanar(out half4 reflectionColor[URHO3D_NUM_REFLECTIONS],
-            const vec2 screenPos, const half3 normal)
+            vec2 screenPos, half3 normal)
         {
             reflectionColor[0] = texture2D(sEnvMap, GetPlanarReflectionUV(screenPos, vec4(normal, 1.0)));
         }
@@ -266,7 +266,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
 
         /// Best quality reflections with optional LOD sampling
         half4 SampleCubeReflectionColor(in samplerCube source, \
-            half3 reflectionVec, const half roughness, const half roughnessFactor)
+            half3 reflectionVec, half roughness, half roughnessFactor)
         {
         #ifdef URHO3D_BLUR_REFLECTION
             return textureCubeLod(source, reflectionVec, roughness * roughnessFactor);
@@ -276,7 +276,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
         }
 
         void FillSurfaceReflectionColorCube(out half4 reflectionColor[URHO3D_NUM_REFLECTIONS],
-            const half3 normal, const half3 eyeVec, const half roughness)
+            half3 normal, half3 eyeVec, half roughness)
         {
             half3 reflectionVec0 = reflect(-eyeVec, normal);
 

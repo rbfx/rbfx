@@ -8,7 +8,7 @@ VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 #endif
 
 #ifdef URHO3D_VERTEX_SHADER
-void FillVertexOutputs(const VertexTransform vertexTransform)
+void FillVertexOutputs(VertexTransform vertexTransform)
 {
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
     ApplyClipPlane(gl_Position);

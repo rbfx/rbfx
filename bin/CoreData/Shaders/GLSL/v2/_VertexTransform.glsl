@@ -94,7 +94,7 @@ mat4 GetModelMatrix()
 
 /// Apply normal offset to position in world space.
 #ifdef URHO3D_SHADOW_NORMAL_OFFSET
-    void ApplyShadowNormalOffset(inout vec4 position, const half3 normal)
+    void ApplyShadowNormalOffset(inout vec4 position, half3 normal)
     {
         #ifdef URHO3D_LIGHT_DIRECTIONAL
             half3 lightDir = cLightDir;

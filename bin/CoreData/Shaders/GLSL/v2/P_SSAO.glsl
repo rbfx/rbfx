@@ -46,7 +46,7 @@ UNIFORM_BUFFER_BEGIN(6, Custom)
 UNIFORM_BUFFER_END(6, Custom)
 
 /// Sample view-space position from depth texture.
-vec3 SamplePosition(const vec2 texCoord)
+vec3 SamplePosition(vec2 texCoord)
 {
     float depth = texture2D(sDepthBuffer, texCoord).r;
     vec4 position = vec4(texCoord, depth, 1.0) * cTextureToView;
@@ -55,7 +55,7 @@ vec3 SamplePosition(const vec2 texCoord)
 
 /// Sample view-space normal from normal texture.
 #ifdef DEFERRED
-half3 SampleNormal(const vec2 texCoord)
+half3 SampleNormal(vec2 texCoord)
 {
     half3 worldNormal = DecodeNormal(texture2D(sNormalMap, texCoord));
     half3 normal = (vec4(worldNormal, 0.0) * cWorldToView).xyz;
@@ -64,7 +64,7 @@ half3 SampleNormal(const vec2 texCoord)
 #endif
 
 /// Sample world-space normal from normal texture.
-half3 SampleWorldNormal(const vec2 texCoord)
+half3 SampleWorldNormal(vec2 texCoord)
 {
 #ifdef DEFERRED
     return DecodeNormal(texture2D(sNormalMap, texCoord));
@@ -74,7 +74,7 @@ half3 SampleWorldNormal(const vec2 texCoord)
 }
 
 /// Reconstruct view-space normal from depth buffer.
-half3 ReconstructNormal(const vec3 centerPos, const vec2 texCoord)
+half3 ReconstructNormal(vec3 centerPos, vec2 texCoord)
 {
     vec2 offsetY = vec2(0.0, cInputInvSize.y);
     vec2 offsetX = vec2(cInputInvSize.x, 0.0);
@@ -100,7 +100,7 @@ half3 ReconstructNormal(const vec3 centerPos, const vec2 texCoord)
 }
 
 /// Get view-space normal via preferred method.
-vec3 SampleOrReconstructNormal(const vec3 centerPos, const vec2 texCoord)
+vec3 SampleOrReconstructNormal(vec3 centerPos, vec2 texCoord)
 {
 #ifdef DEFERRED
     return SampleNormal(texCoord);
@@ -110,7 +110,7 @@ vec3 SampleOrReconstructNormal(const vec3 centerPos, const vec2 texCoord)
 }
 
 /// Project vector to hemisphere.
-half3 ToHemisphere(const half3 direction, const half3 normal)
+half3 ToHemisphere(half3 direction, half3 normal)
 {
     half proj = dot(direction, normal);
     half factor = proj > 0.0 ? 1.0 : -1.0;
@@ -155,7 +155,7 @@ half GetSampleWeight(float baseZ, float sampleZ, half3 baseNormal, half3 sampleN
 
 /// Calculate blurred SSAO color from neighbour sample.
 void CalculateBlur(inout half4 finalColor, inout half finalWeight,
-    const vec2 texCoord, const vec3 basePosition, const half3 baseNormal, const half weightFactor)
+    vec2 texCoord, vec3 basePosition, half3 baseNormal, half weightFactor)
 {
     half4 color = texture2D(sDiffMap, texCoord);
 

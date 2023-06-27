@@ -20,7 +20,7 @@ vec2 Hammersley(uint seed, uint ct)
 	return vec2(float(seed) / float(ct), radInv);
 }
 
-mat3x3 CalcTangentSpace(const vec3 n)
+mat3x3 CalcTangentSpace(vec3 n)
 {
     vec3 alignmentCheck = abs(n.x) > 0.99f ? vec3(0, 0, 1) : vec3(1, 0, 0);
     vec3 tangent = normalize(cross(n, alignmentCheck));
@@ -34,8 +34,8 @@ vec3 ImportanceSample(vec2 interval, float roughness)
     roughFactor *= roughFactor;
 
 	const float phi = PI * 2.0 * interval.x;
-	const float cosTheta = sqrt((1.0 - interval.y) / (1.0 + (roughFactor - 1.0) * interval.y));
-	const float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+	float cosTheta = sqrt((1.0 - interval.y) / (1.0 + (roughFactor - 1.0) * interval.y));
+	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 
 	vec3 lobeVec;
 	lobeVec.x = sinTheta * cos(phi);
@@ -81,7 +81,7 @@ void main()
             break;
         }
 
-        const mat3x3 tanFrame = CalcTangentSpace(sampleDir);
+        mat3x3 tanFrame = CalcTangentSpace(sampleDir);
 
         vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 

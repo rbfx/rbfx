@@ -44,7 +44,7 @@
     #endif
 
     /// Return pixel lighting data for deferred rendering.
-    DirectLightData GetDeferredDirectLightData(const vec4 worldPos, const float depth)
+    DirectLightData GetDeferredDirectLightData(vec4 worldPos, float depth)
     {
         DirectLightData result;
         result.lightVec = NormalizeLightVector(GetLightVector(worldPos.xyz));
