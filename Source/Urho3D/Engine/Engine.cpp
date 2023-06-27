@@ -285,14 +285,14 @@ Engine::Engine(Context* context) :
 
 Engine::~Engine() = default;
 
-bool Engine::Initialize(const StringVariantMap& parameters)
+bool Engine::Initialize(const StringVariantMap& applicationParameters, const StringVariantMap& commandLineParameters)
 {
     if (initialized_)
         return true;
 
     URHO3D_PROFILE("InitEngine");
 
-    engineParameters_->DefineVariables(parameters);
+    engineParameters_->DefineVariables(applicationParameters);
     auto* fileSystem = GetSubsystem<FileSystem>();
 
     appPreferencesDir_ = GetParameter(EP_APPLICATION_PREFERENCES_DIR).GetString();
@@ -323,6 +323,9 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
     // Read and merge configs
     LoadConfigFiles();
+
+    // Override config values with command line parameters
+    engineParameters_->DefineVariables(commandLineParameters);
 
     // Set headless mode
     headless_ = GetParameter(EP_HEADLESS).GetBool();

@@ -51,7 +51,7 @@ public:
     ~Engine() override;
 
     /// Initialize engine using parameters given and show the application window. Return true if successful.
-    bool Initialize(const StringVariantMap& parameters);
+    bool Initialize(const StringVariantMap& applicationParameters, const StringVariantMap& commandLineParameters);
     /// Initialize virtual filesystem. Implicitly called by Initialize.
     void InitializeVirtualFileSystem();
     /// Run one frame.
