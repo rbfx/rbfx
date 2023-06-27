@@ -386,7 +386,8 @@ Input::Input(Context* context) :
     focusedThisFrame_(false),
     suppressNextMouseMove_(false),
     mouseMoveScaled_(false),
-    initialized_(false)
+    initialized_(false),
+    mouseMove_(0,0)
 {
     OnRawInput.Subscribe(this, RawInputPriority::SDLRawInput, &Input::OnSDLRawInput);
 

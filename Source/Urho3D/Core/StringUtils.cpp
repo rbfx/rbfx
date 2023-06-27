@@ -744,8 +744,18 @@ unsigned GetStringListIndex(const char* value, const ea::string* strings, unsign
 
 unsigned GetStringListIndex(const char* value, const char* const* strings, unsigned defaultIndex, bool caseSensitive)
 {
-    unsigned i = 0;
+    // Allow value to be index instead of string representation.
+    if (*value >= '0' && *value <= '9')
+    {
+        char* end;
+        const unsigned res = std::strtoul(value, &end, 10);
+        if (res != ULONG_MAX)
+        {
+            return res;
+        }
+    }
 
+    unsigned i = 0;
     while (strings[i])
     {
         if (!Compare(value, strings[i], caseSensitive))

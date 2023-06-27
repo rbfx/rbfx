@@ -160,11 +160,12 @@ void MoveAndOrbitController::Update(float timeStep)
         pitch += static_cast<float>(rotationTouch->delta_.y_)/halfPiDistance*90.0f;
     }
 
-    if (input->GetMouseMode() != MM_FREE || input->GetMouseButtonPress(MOUSEB_RIGHT))
+    if (input->GetMouseMode() != MM_FREE || input->GetMouseButtonDown(MOUSEB_RIGHT))
     {
         const auto sensitivity = GetSensitivity(MOUSE_SENSITIVITY, DEFAULT_MOUSE_SENSITIVITY);
-        yaw += static_cast<float>(input->GetMouseMoveX()) * sensitivity;
-        pitch += static_cast<float>(input->GetMouseMoveY()) * sensitivity;
+        auto move = input->GetMouseMove();
+        yaw += static_cast<float>(move.x_) * sensitivity;
+        pitch += static_cast<float>(move.y_) * sensitivity;
     }
     pitch = Clamp(pitch, -90.0f, 90.0f);
     if (!Equals(originalPitch, pitch))
