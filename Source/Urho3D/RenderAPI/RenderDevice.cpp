@@ -145,6 +145,14 @@ void ValidateWindowSettings(WindowSettings& settings)
     }
 }
 
+unsigned GetSupportedMultiSample(Diligent::IRenderDevice* device, unsigned multiSample, TextureFormat textureFormat)
+{
+    const Diligent::TextureFormatInfoExt& formatInfo = device->GetTextureFormatInfoExt(textureFormat);
+    while (multiSample > 1 && ((formatInfo.SampleCounts & multiSample) == 0))
+        multiSample >>= 1;
+    return ea::max(1u, multiSample);
+}
+
 unsigned ToSDLFlag(WindowMode mode)
 {
     switch (mode)
@@ -382,11 +390,11 @@ ea::shared_ptr<void> CreateGLContext(SDL_Window* window)
 class ProxySwapChainGL : public Diligent::SwapChainBase<Diligent::ISwapChainGL>
 {
 public:
-    using TBase = SwapChainBase<ISwapChainGL>;
+    using TBase = Diligent::SwapChainBase<Diligent::ISwapChainGL>;
 
-    ProxySwapChainGL(Diligent::IReferenceCounters* pRefCounters, Diligent::IRenderDevice* pDevice,
-        Diligent::IDeviceContext* pDeviceContext, const Diligent::SwapChainDesc& SCDesc, SDL_Window* window)
-        : TBase(pRefCounters, pDevice, pDeviceContext, SCDesc)
+    ProxySwapChainGL(Diligent::IReferenceCounters* refCounters, Diligent::IRenderDevice* device,
+        Diligent::IDeviceContext* deviceContext, const Diligent::SwapChainDesc& swapChainDesc, SDL_Window* window)
+        : TBase(refCounters, device, deviceContext, swapChainDesc)
         , window_(window)
     {
         InitializeParameters();
@@ -395,9 +403,9 @@ public:
 
     /// Implement ISwapChainGL
     /// @{
-    void DILIGENT_CALL_TYPE Present(Uint32 SyncInterval) override { SDL_GL_SwapWindow(window_); }
+    void DILIGENT_CALL_TYPE Present(Diligent::Uint32 syncInterval) override { SDL_GL_SwapWindow(window_); }
 
-    void DILIGENT_CALL_TYPE SetFullscreenMode(const Diligent::DisplayModeAttribs& DisplayMode) override
+    void DILIGENT_CALL_TYPE SetFullscreenMode(const Diligent::DisplayModeAttribs& displayMode) override
     {
         URHO3D_ASSERT(false, "Fullscreen mode cannot be set through the proxy swap chain");
     }
@@ -408,13 +416,13 @@ public:
     }
 
     void DILIGENT_CALL_TYPE Resize(
-        Uint32 NewWidth, Uint32 NewHeight, Diligent::SURFACE_TRANSFORM NewPreTransform) override
+        Diligent::Uint32 newWidth, Diligent::Uint32 newHeight, Diligent::SURFACE_TRANSFORM newPreTransform) override
     {
-        if (NewPreTransform == Diligent::SURFACE_TRANSFORM_OPTIMAL)
-            NewPreTransform = Diligent::SURFACE_TRANSFORM_IDENTITY;
-        URHO3D_ASSERT(NewPreTransform == Diligent::SURFACE_TRANSFORM_IDENTITY, "Unsupported pre-transform");
+        if (newPreTransform == Diligent::SURFACE_TRANSFORM_OPTIMAL)
+            newPreTransform = Diligent::SURFACE_TRANSFORM_IDENTITY;
+        URHO3D_ASSERT(newPreTransform == Diligent::SURFACE_TRANSFORM_IDENTITY, "Unsupported pre-transform");
 
-        if (TBase::Resize(NewWidth, NewHeight, NewPreTransform))
+        if (TBase::Resize(newWidth, newHeight, newPreTransform))
         {
             CreateDummyBuffers();
         }
@@ -441,8 +449,8 @@ private:
         int width{};
         int height{};
         SDL_GL_GetDrawableSize(window_, &width, &height);
-        m_SwapChainDesc.Width = static_cast<Uint32>(width);
-        m_SwapChainDesc.Height = static_cast<Uint32>(height);
+        m_SwapChainDesc.Width = static_cast<Diligent::Uint32>(width);
+        m_SwapChainDesc.Height = static_cast<Diligent::Uint32>(height);
 
         m_SwapChainDesc.ColorBufferFormat =
             IsSRGB() ? TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB : TextureFormat::TEX_FORMAT_RGBA8_UNORM;
@@ -517,6 +525,140 @@ private:
 };
 #endif
 
+class ProxySwapChainMS : public Diligent::ObjectBase<Diligent::ISwapChain>
+{
+public:
+    using TBase = Diligent::ObjectBase<Diligent::ISwapChain>;
+
+    ProxySwapChainMS(Diligent::IReferenceCounters* refCounters, Diligent::IRenderDevice* device,
+        Diligent::IDeviceContext* deviceContext, Diligent::ISwapChain* nativeSwapChain, TextureFormat depthFormat,
+        unsigned multiSample)
+        : TBase(refCounters)
+        , depthFormat_(depthFormat)
+        , multiSample_(multiSample)
+        , nativeSwapChain_(nativeSwapChain)
+        , renderDevice_(device)
+        , immediateContext_(deviceContext)
+    {
+        CreateDepthStencil();
+        CreateRenderTarget();
+    }
+
+    /// Implement ISwapChainGL
+    /// @{
+    void DILIGENT_CALL_TYPE Present(Diligent::Uint32 SyncInterval) override
+    {
+        if (msaaRenderTarget_)
+        {
+            Diligent::ITexture* currentBackBuffer = nativeSwapChain_->GetCurrentBackBufferRTV()->GetTexture();
+
+            Diligent::ResolveTextureSubresourceAttribs resolveAttribs;
+            resolveAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+            resolveAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+            immediateContext_->ResolveTextureSubresource(msaaRenderTarget_, currentBackBuffer, resolveAttribs);
+        }
+
+        nativeSwapChain_->Present(SyncInterval);
+    }
+
+    const Diligent::SwapChainDesc& DILIGENT_CALL_TYPE GetDesc() const override { return nativeSwapChain_->GetDesc(); }
+
+    void DILIGENT_CALL_TYPE Resize(
+        Diligent::Uint32 newWidth, Diligent::Uint32 newHeight, Diligent::SURFACE_TRANSFORM NewTransform) override
+    {
+        const Diligent::SwapChainDesc& swapChainDesc = nativeSwapChain_->GetDesc();
+        const Diligent::Uint32 oldWidth = swapChainDesc.Width;
+        const Diligent::Uint32 oldHeight = swapChainDesc.Height;
+
+        nativeSwapChain_->Resize(newWidth, newHeight, NewTransform);
+
+        if (swapChainDesc.Width != oldWidth || swapChainDesc.Height != oldHeight)
+        {
+            CreateDepthStencil();
+            CreateRenderTarget();
+        }
+    }
+
+    void DILIGENT_CALL_TYPE SetFullscreenMode(const Diligent::DisplayModeAttribs& DisplayMode) override
+    {
+        URHO3D_ASSERT(false, "Fullscreen mode cannot be set through the proxy swap chain");
+    }
+
+    void DILIGENT_CALL_TYPE SetWindowedMode() override
+    {
+        URHO3D_ASSERT(false, "Fullscreen mode cannot be set through the proxy swap chain");
+    }
+
+    void DILIGENT_CALL_TYPE SetMaximumFrameLatency(Diligent::Uint32 MaxLatency) override
+    {
+        nativeSwapChain_->SetMaximumFrameLatency(MaxLatency);
+    }
+
+    Diligent::ITextureView* DILIGENT_CALL_TYPE GetCurrentBackBufferRTV() override
+    {
+        return multiSample_ > 1 ? msaaRenderTargetView_ : nativeSwapChain_->GetCurrentBackBufferRTV();
+    }
+
+    Diligent::ITextureView* DILIGENT_CALL_TYPE GetDepthBufferDSV() override { return depthBufferView_; }
+    /// @}
+
+private:
+    void CreateDepthStencil()
+    {
+        const Diligent::SwapChainDesc& swapChainDesc = nativeSwapChain_->GetDesc();
+
+        Diligent::TextureDesc desc;
+        desc.Name = "Main depth buffer";
+        desc.Type = Diligent::RESOURCE_DIM_TEX_2D;
+        desc.Width = swapChainDesc.Width;
+        desc.Height = swapChainDesc.Height;
+        desc.Format = depthFormat_;
+        desc.SampleCount = multiSample_;
+        desc.Usage = Diligent::USAGE_DEFAULT;
+        desc.BindFlags = Diligent::BIND_DEPTH_STENCIL;
+
+        Diligent::RefCntAutoPtr<Diligent::ITexture> depthBuffer;
+        renderDevice_->CreateTexture(desc, nullptr, &depthBuffer);
+
+        depthBufferView_ = depthBuffer->GetDefaultView(Diligent::TEXTURE_VIEW_DEPTH_STENCIL);
+    }
+
+    void CreateRenderTarget()
+    {
+        if (multiSample_ <= 1)
+            return;
+
+        const Diligent::SwapChainDesc& swapChainDesc = nativeSwapChain_->GetDesc();
+
+        Diligent::TextureDesc desc;
+        desc.Name = "Main depth buffer";
+        desc.Type = Diligent::RESOURCE_DIM_TEX_2D;
+        desc.Width = swapChainDesc.Width;
+        desc.Height = swapChainDesc.Height;
+        desc.Format = swapChainDesc.ColorBufferFormat;
+        desc.SampleCount = multiSample_;
+        desc.Usage = Diligent::USAGE_DEFAULT;
+        desc.BindFlags = Diligent::BIND_RENDER_TARGET;
+
+        Diligent::RefCntAutoPtr<Diligent::ITexture> renderTarget;
+        renderDevice_->CreateTexture(desc, nullptr, &renderTarget);
+
+        msaaRenderTarget_ = renderTarget;
+        msaaRenderTargetView_ = msaaRenderTarget_->GetDefaultView(Diligent::TEXTURE_VIEW_RENDER_TARGET);
+    }
+
+    const TextureFormat depthFormat_{};
+    const unsigned multiSample_{};
+
+    const Diligent::RefCntAutoPtr<Diligent::ISwapChain> nativeSwapChain_;
+    const Diligent::RefCntAutoPtr<Diligent::IRenderDevice> renderDevice_;
+    const Diligent::RefCntAutoPtr<Diligent::IDeviceContext> immediateContext_;
+
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> depthBufferView_;
+    Diligent::RefCntAutoPtr<Diligent::ITexture> msaaRenderTarget_;
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> msaaRenderTargetView_;
+};
+
 #if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
 IntVector2 CalculateSwapChainSize(SDL_Window* window)
 {
@@ -575,7 +717,7 @@ void RenderDevice::InitializeWindow()
             throw RuntimeException("Could not create OpenGL context: {}", SDL_GetError());
 
         int effectiveMultiSample{};
-        if (SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &windowSettings_.multiSample_) == 0)
+        if (SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &effectiveMultiSample) == 0)
             windowSettings_.multiSample_ = ea::max(1, effectiveMultiSample);
 
         int effectiveSRGB{};
@@ -642,7 +784,7 @@ void RenderDevice::InitializeDevice()
 
     Diligent::SwapChainDesc swapChainDesc{};
     swapChainDesc.ColorBufferFormat = colorFormats[isBGRA][windowSettings_.sRGB_];
-    swapChainDesc.DepthBufferFormat = TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+    swapChainDesc.DepthBufferFormat = TextureFormat::TEX_FORMAT_UNKNOWN;
 #if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
     const IntVector2 swapChainSize = CalculateSwapChainSize(window_.get());
     swapChainDesc.Width = swapChainSize.x_;
@@ -654,6 +796,7 @@ void RenderDevice::InitializeDevice()
     fullscreenDesc.RefreshRateNumerator = windowSettings_.refreshRate_;
     fullscreenDesc.RefreshRateDenominator = 1;
 
+    Diligent::RefCntAutoPtr<Diligent::ISwapChain> nativeSwapChain;
     switch (deviceSettings_.backend_)
     {
 #if D3D11_SUPPORTED
@@ -667,13 +810,14 @@ void RenderDevice::InitializeDevice()
 
         factoryD3D11_->CreateDeviceAndContextsD3D11(createInfo, &renderDevice_, &deviceContext_);
         factoryD3D11_->CreateSwapChainD3D11(
-            renderDevice_, deviceContext_, swapChainDesc, fullscreenDesc, nativeWindow, &swapChain_);
+            renderDevice_, deviceContext_, swapChainDesc, fullscreenDesc, nativeWindow, &nativeSwapChain);
 
         renderDeviceD3D11_ =
             Diligent::RefCntAutoPtr<Diligent::IRenderDeviceD3D11>(renderDevice_, Diligent::IID_RenderDeviceD3D11);
         deviceContextD3D11_ =
             Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D11>(deviceContext_, Diligent::IID_DeviceContextD3D11);
-        swapChainD3D11_ = Diligent::RefCntAutoPtr<Diligent::ISwapChainD3D11>(swapChain_, Diligent::IID_SwapChainD3D11);
+        swapChainD3D11_ =
+            Diligent::RefCntAutoPtr<Diligent::ISwapChainD3D11>(nativeSwapChain, Diligent::IID_SwapChainD3D11);
         break;
     }
 #endif
@@ -690,13 +834,14 @@ void RenderDevice::InitializeDevice()
 
         factoryD3D12_->CreateDeviceAndContextsD3D12(createInfo, &renderDevice_, &deviceContext_);
         factoryD3D12_->CreateSwapChainD3D12(
-            renderDevice_, deviceContext_, swapChainDesc, fullscreenDesc, nativeWindow, &swapChain_);
+            renderDevice_, deviceContext_, swapChainDesc, fullscreenDesc, nativeWindow, &nativeSwapChain);
 
         renderDeviceD3D12_ =
             Diligent::RefCntAutoPtr<Diligent::IRenderDeviceD3D12>(renderDevice_, Diligent::IID_RenderDeviceD3D12);
         deviceContextD3D12_ =
             Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D12>(deviceContext_, Diligent::IID_DeviceContextD3D12);
-        swapChainD3D12_ = Diligent::RefCntAutoPtr<Diligent::ISwapChainD3D12>(swapChain_, Diligent::IID_SwapChainD3D12);
+        swapChainD3D12_ =
+            Diligent::RefCntAutoPtr<Diligent::ISwapChainD3D12>(nativeSwapChain, Diligent::IID_SwapChainD3D12);
         break;
     }
 #endif
@@ -718,13 +863,13 @@ void RenderDevice::InitializeDevice()
         createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);
 
         factoryVulkan_->CreateDeviceAndContextsVk(createInfo, &renderDevice_, &deviceContext_);
-        factoryVulkan_->CreateSwapChainVk(renderDevice_, deviceContext_, swapChainDesc, nativeWindow, &swapChain_);
+        factoryVulkan_->CreateSwapChainVk(renderDevice_, deviceContext_, swapChainDesc, nativeWindow, &nativeSwapChain);
 
         renderDeviceVulkan_ =
             Diligent::RefCntAutoPtr<Diligent::IRenderDeviceVk>(renderDevice_, Diligent::IID_RenderDeviceVk);
         deviceContextVulkan_ =
             Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk>(deviceContext_, Diligent::IID_DeviceContextVk);
-        swapChainVulkan_ = Diligent::RefCntAutoPtr<Diligent::ISwapChainVk>(swapChain_, Diligent::IID_SwapChainVk);
+        swapChainVulkan_ = Diligent::RefCntAutoPtr<Diligent::ISwapChainVk>(nativeSwapChain, Diligent::IID_SwapChainVk);
         break;
     }
 #endif
@@ -755,6 +900,18 @@ void RenderDevice::InitializeDevice()
     }
 #endif
     default: throw RuntimeException("Unsupported render backend");
+    }
+
+    // Wrap native swap chain with proxy that supports MSAA
+    if (nativeSwapChain)
+    {
+        const unsigned multiSample =
+            GetSupportedMultiSample(renderDevice_, windowSettings_.multiSample_, swapChainDesc.ColorBufferFormat);
+
+        auto& defaultAllocator = Diligent::DefaultRawMemoryAllocator::GetAllocator();
+        swapChain_ = NEW_RC_OBJ(defaultAllocator, "ProxySwapChainMS instance", ProxySwapChainMS)(
+            renderDevice_, deviceContext_, nativeSwapChain, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, multiSample);
+        windowSettings_.multiSample_ = multiSample;
     }
 
     renderContext_ = MakeShared<RenderContext>(this);

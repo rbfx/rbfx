@@ -58,7 +58,7 @@ bool IsSRGBTextureFormat(TextureFormat format)
 }
 
 SharedPtr<PipelineState> CreateRenderPipeline(
-    RenderDevice* renderDevice, TextureFormat colorBufferFormat, TextureFormat depthBufferFormat)
+    RenderDevice* renderDevice, TextureFormat colorBufferFormat, TextureFormat depthBufferFormat, unsigned multiSample)
 {
     auto renderer = renderDevice->GetContext()->GetSubsystem<Renderer>();
     auto graphics = renderDevice->GetContext()->GetSubsystem<Graphics>();
@@ -71,6 +71,7 @@ SharedPtr<PipelineState> CreateRenderPipeline(
     desc.output_.numRenderTargets_ = 1;
     desc.output_.renderTargetFormats_[0] = colorBufferFormat;
     desc.output_.depthStencilFormat_ = depthBufferFormat;
+    desc.output_.multiSample_ = multiSample;
 
     desc.inputLayout_.size_ = 3;
     desc.inputLayout_.elements_[0].bufferStride_ = sizeof(ImDrawVert);
@@ -131,11 +132,13 @@ ImGuiDiligentRendererEx::ImGuiDiligentRendererEx(RenderDevice* renderDevice)
     // clang-format on
 #endif
 
-    const Diligent::SwapChainDesc& swapChainDesc = renderDevice->GetSwapChain()->GetDesc();
-    primaryPipelineState_ =
-        CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, swapChainDesc.DepthBufferFormat);
+    Diligent::ISwapChain* swapChain = renderDevice->GetSwapChain();
+    const Diligent::SwapChainDesc& swapChainDesc = swapChain->GetDesc();
+    const unsigned multiSample = swapChain->GetCurrentBackBufferRTV()->GetTexture()->GetDesc().SampleCount;
+    primaryPipelineState_ = CreateRenderPipeline(
+        renderDevice, swapChainDesc.ColorBufferFormat, swapChainDesc.DepthBufferFormat, multiSample);
     secondaryPipelineState_ =
-        CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, TextureFormat::TEX_FORMAT_UNKNOWN);
+        CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, TextureFormat::TEX_FORMAT_UNKNOWN, 1);
 }
 
 ImGuiDiligentRendererEx::~ImGuiDiligentRendererEx()
